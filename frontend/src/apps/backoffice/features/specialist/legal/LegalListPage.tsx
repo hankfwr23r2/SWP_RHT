@@ -18,7 +18,7 @@ export default function LegalListPage() {
   const now = useNow()
   const { data: all } = useLoad(bookingsApi.list)
   const [tab, setTab] = useState<Tab>('todo')
-  const mine = (all ?? []).filter(b => b.intake?.specialist.name === session!.name && b.payment && b.clearance)
+  const mine = (all ?? []).filter(b => !!session?.name && b.intake?.specialist.name === session.name && b.payment && b.clearance)
   const groups: Record<Tab, Booking[]> = {
     todo: mine.filter(b => b.status === 'waybill_issued'),
     working: mine.filter(b => b.status === 'clearance_in_progress'),

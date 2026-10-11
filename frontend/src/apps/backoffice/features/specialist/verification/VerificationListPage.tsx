@@ -15,7 +15,7 @@ export default function VerificationListPage() {
   const { session } = useAuth()
   const { data: all } = useLoad(bookingsApi.list)
   const [tab, setTab] = useState<Tab>('todo')
-  const mine = (all ?? []).filter(b => b.intake?.specialist.name === session!.name && b.medical)
+  const mine = (all ?? []).filter(b => !!session?.name && b.intake?.specialist.name === session.name && b.medical)
   const groups: Record<Tab, Booking[]> = {
     todo: mine.filter(b => b.medical!.status === 'pending'),
     waiting: mine.filter(b => b.medical!.status === 'resubmit'),

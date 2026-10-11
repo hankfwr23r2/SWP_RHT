@@ -162,6 +162,11 @@ public class PaymentServiceImpl implements PaymentService {
                 .orElseThrow(() -> new IllegalStateException("Không tìm thấy thông tin báo giá của đơn hàng!"));
 
         Instant now = Instant.now();
+        // Kiểm tra báo giá còn hạn (đồng nhất với payDeposit)
+        if (quotation.getExpiresAt() != null && now.isAfter(quotation.getExpiresAt())) {
+            throw new IllegalStateException("Báo giá đã hết hạn 48 giờ! Vui lòng liên hệ Quản lý để cấp lại báo giá.");
+        }
+
         BigDecimal payAmount = (request.getAmount() != null)
                 ? request.getAmount()
                 : quotation.getBalanceAmount();

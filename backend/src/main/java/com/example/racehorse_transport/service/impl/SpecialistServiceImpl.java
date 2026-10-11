@@ -442,14 +442,18 @@ public class SpecialistServiceImpl implements SpecialistService {
 
     private void syncTripDocument(Booking booking, String type, List<String> photos, String status, String note) {
         try {
-            TripDocument doc = TripDocument.builder()
-                    .bookingID(booking)
-                    .documentType(type)
-                    .documentNumber("DOC-" + booking.getId() + "-" + type.toUpperCase())
-                    .fileUrl(!photos.isEmpty() ? photos.get(0) : null)
-                    .issueDate(LocalDate.now())
-                    .status("done".equalsIgnoreCase(status) ? "VALID" : "PENDING")
-                    .build();
+            // Upsert: tìm bản ghi cũ theo booking + type, cập nhật nếu có, tạo mới nếu chưa có
+            TripDocument doc = tripDocumentRepository
+                    .findByBookingIdAndDocumentType(booking.getId(), type)
+                    .orElse(TripDocument.builder()
+                            .bookingID(booking)
+                            .documentType(type)
+                            .documentNumber("DOC-" + booking.getId() + "-" + type.toUpperCase())
+                            .build());
+
+            doc.setFileUrl(!photos.isEmpty() ? photos.get(0) : null);
+            doc.setIssueDate(LocalDate.now());
+            doc.setStatus("done".equalsIgnoreCase(status) ? "VALID" : "PENDING");
             tripDocumentRepository.save(doc);
         } catch (Exception ex) {
             log.warn("Could not sync TripDocument: {}", ex.getMessage());
