@@ -1,0 +1,28 @@
+﻿package com.example.racehorse_transport.dto.document;
+
+import lombok.Data;
+import java.time.LocalDate;
+
+/**
+ * Request metadata khi khach hang upload ho so ngua (Form-data).
+ * File thuc te duoc gui rieng qua MultipartFile.
+ */
+@Data
+public class UploadHorseDocumentRequest {
+
+    /** ID con ngua can gan ho so */
+    private Integer horseId;
+
+    /**
+     * Loai giay to:
+     * PASSPORT        - Ho chieu ngua
+     * VACCINATION     - So tiem phong
+     * BLOOD_TEST      - Ket qua xet nghiem mau
+     * HEALTH_CERT     - Giay chung nhan kiem dich
+     * OTHER           - Giay to khac
+     */
+    private String documentType;
+
+    /** Ngay het han cua giay to (neu co) */
+    private LocalDate expiryDate;
+}
