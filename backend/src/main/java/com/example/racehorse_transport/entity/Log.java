@@ -33,9 +33,7 @@ public class Log {
     @Column(name = "Status", length = 50)
     private String status;
 
-    @Nationalized
-    @Lob
-    @Column(name = "Note")
+    @Column(name = "Note", columnDefinition = "TEXT")
     private String note;
 
     @Column(name = "createdAt")
