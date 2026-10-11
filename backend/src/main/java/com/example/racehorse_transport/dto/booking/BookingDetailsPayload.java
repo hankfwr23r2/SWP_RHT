@@ -20,6 +20,9 @@ public class BookingDetailsPayload {
     private Object quote;
     private Object payment;
     private Object medical;
+    private Object clearance;
+    private Object settlement;
+    private Object rating;
     private Object intake;
     private List<Map<String, Object>> history;
 }

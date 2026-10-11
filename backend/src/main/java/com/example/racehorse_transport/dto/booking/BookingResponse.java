@@ -38,6 +38,9 @@ public class BookingResponse {
     private Object quote;
     private Object payment;
     private Object medical;
+    private Object clearance;
+    private Object settlement;
+    private Object rating;
     private Object intake;
     private List<java.util.Map<String, Object>> history;
 }

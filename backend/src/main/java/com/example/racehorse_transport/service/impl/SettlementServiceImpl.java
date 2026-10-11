@@ -1,0 +1,437 @@
+package com.example.racehorse_transport.service.impl;
+
+import com.example.racehorse_transport.dto.booking.BookingDetailsPayload;
+import com.example.racehorse_transport.dto.booking.BookingResponse;
+import com.example.racehorse_transport.dto.booking.PartyContactDto;
+import com.example.racehorse_transport.dto.coordinator.VehicleTripDto;
+import com.example.racehorse_transport.dto.settlement.*;
+import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.Payment;
+import com.example.racehorse_transport.entity.Quotation;
+import com.example.racehorse_transport.entity.Vehicle;
+import com.example.racehorse_transport.repository.*;
+import com.example.racehorse_transport.service.SettlementService;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.*;
+import java.util.stream.Collectors;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class SettlementServiceImpl implements SettlementService {
+
+    private final BookingRepository bookingRepository;
+    private final PaymentRepository paymentRepository;
+    private final QuotationRepository quotationRepository;
+    private final VehicleRepository vehicleRepository;
+    private final StaffRepository staffRepository;
+    private final ObjectMapper objectMapper;
+
+    /**
+     * 1. Kê khai chi phí phát sinh thực tế có chứng từ (Evidence-First - Flow 6, bước 2)
+     */
+    @Override
+    @Transactional
+    public BookingResponse submitExpenses(String bookingIdentifier, SubmitExpensesRequest request, String username) {
+        Booking booking = findBookingByIdentifier(bookingIdentifier);
+        BookingDetailsPayload payload = extractPayload(booking);
+
+        List<ExpenseItemDto> expenses = (request != null && request.getExpenses() != null)
+                ? request.getExpenses()
+                : Collections.emptyList();
+
+        // Kiểm tra nguyên tắc Evidence-First: Nếu có chi phí thì bắt buộc phải có link ảnh chứng từ
+        for (ExpenseItemDto item : expenses) {
+            if (item.getAmount() != null && item.getAmount().compareTo(BigDecimal.ZERO) > 0) {
+                if (item.getPhoto() == null || item.getPhoto().trim().isEmpty()) {
+                    throw new IllegalArgumentException("Evidence-First: Khoản chi [" + item.getDescription() + "] bắt buộc phải có ảnh chụp hóa đơn/chứng từ!");
+                }
+            }
+        }
+
+        String actor = (request != null && request.getDriverName() != null && !request.getDriverName().isBlank())
+                ? request.getDriverName()
+                : (username != null ? username : "Tài xế");
+
+        // Quy tắc PRD 7.1: Nếu không có chi phí nào phát sinh -> Hệ thống tự phát hành Bảng quyết toán 0 đồng
+        if (expenses.isEmpty()) {
+            long now = System.currentTimeMillis();
+            long dueAt = now + (24 * 3600_000L); // 24 giờ sau khi phát hành
+
+            Map<String, Object> settlementMap = new HashMap<>();
+            settlementMap.put("items", Collections.emptyList());
+            settlementMap.put("total", BigDecimal.ZERO);
+            settlementMap.put("issuedAt", now);
+            settlementMap.put("dueAt", dueAt);
+            settlementMap.put("issuedBy", "Hệ thống");
+            settlementMap.put("paid", null);
+            payload.setSettlement(settlementMap);
+
+            booking.setStatus("settlement_issued");
+            appendHistory(payload, "Hệ thống", "Không có chi phí phát sinh: Hệ thống tự động phát hành Bảng quyết toán 0 đồng.");
+        } else {
+            // Có chi phí phát sinh -> Ghi nhận và chuyển sang chờ quản lý đối soát
+            Map<String, Object> settlementDraft = new HashMap<>();
+            settlementDraft.put("items", expenses);
+            settlementDraft.put("submittedAt", System.currentTimeMillis());
+            settlementDraft.put("submittedBy", actor);
+            payload.setSettlement(settlementDraft);
+
+            booking.setStatus("expenses_submitted");
+            appendHistory(payload, actor, "Kê khai " + expenses.size() + " khoản chi phí phát sinh thực tế (kèm ảnh chứng từ). Chờ Quản lý đối soát.");
+        }
+
+        savePayload(booking, payload);
+        Booking saved = bookingRepository.save(booking);
+        log.info("Submitted expenses for booking ID={}: status={}", saved.getId(), saved.getStatus());
+        return mapToBookingResponse(saved);
+    }
+
+    /**
+     * 2. Quản lý (Manager) đối soát chứng từ và phát hành Bảng quyết toán phát sinh (Flow 6, bước 3)
+     */
+    @Override
+    @Transactional
+    public SettlementResponse issueSettlement(String bookingIdentifier, IssueSettlementRequest request, String username) {
+        Booking booking = findBookingByIdentifier(bookingIdentifier);
+        BookingDetailsPayload payload = extractPayload(booking);
+
+        List<ExpenseItemDto> items = (request != null && request.getItems() != null)
+                ? request.getItems()
+                : Collections.emptyList();
+
+        // Tính tổng số tiền thuộc phần khách chịu (payer = "customer") theo quy định PRD 7.4 & 11.5
+        BigDecimal customerTotal = BigDecimal.ZERO;
+        for (ExpenseItemDto item : items) {
+            if ("customer".equalsIgnoreCase(item.getPayer()) && item.getAmount() != null) {
+                customerTotal = customerTotal.add(item.getAmount());
+            }
+        }
+
+        // Trừ chiết khấu / điều chỉnh thương mại nếu có
+        if (request != null && request.getAdjustment() != null) {
+            customerTotal = customerTotal.subtract(request.getAdjustment());
+            if (customerTotal.compareTo(BigDecimal.ZERO) < 0) {
+                customerTotal = BigDecimal.ZERO;
+            }
+        }
+
+        String managerName = (request != null && request.getManagerName() != null && !request.getManagerName().isBlank())
+                ? request.getManagerName()
+                : (username != null ? username : "Quản lý");
+
+        long now = System.currentTimeMillis();
+        long dueAt = now + (24 * 3600_000L); // Thời hạn 24 giờ theo PRD 7.4
+
+        Map<String, Object> settlementMap = new HashMap<>();
+        settlementMap.put("items", items);
+        settlementMap.put("total", customerTotal);
+        settlementMap.put("adjustment", request != null ? request.getAdjustment() : BigDecimal.ZERO);
+        settlementMap.put("note", request != null ? request.getNote() : "");
+        settlementMap.put("issuedAt", now);
+        settlementMap.put("dueAt", dueAt);
+        settlementMap.put("issuedBy", managerName);
+        settlementMap.put("paid", null);
+        payload.setSettlement(settlementMap);
+
+        booking.setStatus("settlement_issued");
+
+        appendHistory(payload, managerName, "Đối soát chứng từ chi phí và phát hành Bảng quyết toán phát sinh: "
+                + customerTotal + " VND (Hạn thanh toán 24 giờ).");
+
+        savePayload(booking, payload);
+        Booking saved = bookingRepository.save(booking);
+        log.info("Manager issued settlement for booking ID={}, total={}", saved.getId(), customerTotal);
+
+        return buildSettlementResponse(saved, payload, settlementMap);
+    }
+
+    /**
+     * 3. Khách hàng thanh toán phát sinh (nếu có) + gửi đánh giá -> Đóng đơn hàng (Flow 6, bước 4 & 5)
+     */
+    @Override
+    @Transactional
+    public BookingResponse payAndComplete(String bookingIdentifier, PaySettlementRequest request, String username) {
+        Booking booking = findBookingByIdentifier(bookingIdentifier);
+        BookingDetailsPayload payload = extractPayload(booking);
+
+        Map<String, Object> settlementMap = getMapFromObject(payload.getSettlement());
+        if (settlementMap == null) {
+            throw new IllegalStateException("Đơn hàng chưa được phát hành Bảng quyết toán!");
+        }
+
+        BigDecimal extraTotal = BigDecimal.ZERO;
+        Object totalObj = settlementMap.get("total");
+        if (totalObj instanceof Number) {
+            extraTotal = BigDecimal.valueOf(((Number) totalObj).doubleValue());
+        }
+
+        Instant now = Instant.now();
+        String actor = username != null ? username : "Khách hàng";
+
+        // Nếu có số tiền phát sinh > 0: Tạo record Payment loại SETTLEMENT
+        Payment settlementPayment = null;
+        if (extraTotal.compareTo(BigDecimal.ZERO) > 0) {
+            String paymentMethod = (request != null && request.getPaymentMethod() != null)
+                    ? request.getPaymentMethod()
+                    : "BANK_TRANSFER";
+            String txCode = (request != null && request.getTransactionCode() != null)
+                    ? request.getTransactionCode()
+                    : "SETTLE-" + booking.getId() + "-" + System.currentTimeMillis();
+
+            settlementPayment = Payment.builder()
+                    .bookingID(booking)
+                    .amount(extraTotal)
+                    .paymentDate(now)
+                    .paymentType("SETTLEMENT")
+                    .paymentMethod(paymentMethod)
+                    .transactionCode(txCode)
+                    .status("COMPLETED")
+                    .note("Thanh toán quyết toán phát sinh cho đơn BK-" + booking.getId())
+                    .build();
+            paymentRepository.save(settlementPayment);
+
+            Map<String, Object> paidInfo = new HashMap<>();
+            paidInfo.put("paidAt", now.toEpochMilli());
+            paidInfo.put("amount", extraTotal);
+            paidInfo.put("reference", txCode);
+            settlementMap.put("paid", paidInfo);
+        } else {
+            // Không có số tiền phát sinh (0 đồng)
+            Map<String, Object> paidInfo = new HashMap<>();
+            paidInfo.put("paidAt", now.toEpochMilli());
+            paidInfo.put("amount", BigDecimal.ZERO);
+            paidInfo.put("reference", "ZERO-SETTLEMENT");
+            settlementMap.put("paid", paidInfo);
+        }
+
+        payload.setSettlement(settlementMap);
+
+        // Lưu đánh giá của khách hàng (Rating 1-5 sao)
+        if (request != null && request.getRating() != null) {
+            Map<String, Object> ratingMap = new HashMap<>();
+            ratingMap.put("stars", request.getRating().getStars());
+            ratingMap.put("driverFeedback", request.getRating().getDriverFeedback());
+            ratingMap.put("escortFeedback", request.getRating().getEscortFeedback());
+            ratingMap.put("overallFeedback", request.getRating().getOverallFeedback());
+            ratingMap.put("submittedAt", now.toEpochMilli());
+            payload.setRating(ratingMap);
+        }
+
+        // Đóng đơn hàng
+        booking.setStatus("completed");
+
+        appendHistory(payload, actor, extraTotal.compareTo(BigDecimal.ZERO) > 0
+                ? "Thanh toán quyết toán phát sinh " + extraTotal + " VND và gửi đánh giá chuyến đi. Đóng đơn hàng (Completed)."
+                : "Xác nhận bảng quyết toán 0 đồng và gửi đánh giá chuyến đi. Đóng đơn hàng (Completed).");
+
+        // Giải phóng tài nguyên: Đổi trạng thái các xe trong chuyến sang AVAILABLE
+        releaseResources(payload);
+
+        savePayload(booking, payload);
+        Booking saved = bookingRepository.save(booking);
+        log.info("Booking ID={} completed and closed successfully", saved.getId());
+
+        return mapToBookingResponse(saved);
+    }
+
+    /**
+     * 4. Xem chi tiết Bảng quyết toán phát sinh của đơn hàng
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public SettlementResponse getSettlementDetail(String bookingIdentifier) {
+        Booking booking = findBookingByIdentifier(bookingIdentifier);
+        BookingDetailsPayload payload = extractPayload(booking);
+        Map<String, Object> settlementMap = getMapFromObject(payload.getSettlement());
+        return buildSettlementResponse(booking, payload, settlementMap != null ? settlementMap : Collections.emptyMap());
+    }
+
+    // =========================================================================
+    // HELPER METHODS
+    // =========================================================================
+
+    private void releaseResources(BookingDetailsPayload payload) {
+        if (payload.getTrips() != null) {
+            for (VehicleTripDto trip : payload.getTrips()) {
+                if (trip.getVehicleId() != null) {
+                    try {
+                        Vehicle vehicle = vehicleRepository.findByVehicleCode(trip.getVehicleId())
+                                .or(() -> vehicleRepository.findByLicensePlate(trip.getVehicleId()))
+                                .orElse(null);
+                        if (vehicle != null) {
+                            vehicle.setStatus("AVAILABLE");
+                            vehicleRepository.save(vehicle);
+                            log.info("Released vehicle {} to AVAILABLE", vehicle.getVehicleCode());
+                        }
+                    } catch (Exception ex) {
+                        log.warn("Could not release vehicle {}: {}", trip.getVehicleId(), ex.getMessage());
+                    }
+                }
+            }
+        }
+    }
+
+    private SettlementResponse buildSettlementResponse(Booking booking, BookingDetailsPayload payload, Map<String, Object> settlementMap) {
+        Quotation quotation = quotationRepository.findTopByBookingIdOrderBySentAtDesc(booking.getId()).orElse(null);
+        BigDecimal totalBasePaid = quotation != null && quotation.getTotalAmount() != null
+                ? quotation.getTotalAmount() : BigDecimal.ZERO;
+
+        BigDecimal extraTotal = BigDecimal.ZERO;
+        Object totalObj = settlementMap.get("total");
+        if (totalObj instanceof Number) {
+            extraTotal = BigDecimal.valueOf(((Number) totalObj).doubleValue());
+        }
+
+        List<ExpenseItemDto> items = new ArrayList<>();
+        Object itemsObj = settlementMap.get("items");
+        if (itemsObj instanceof List) {
+            try {
+                items = objectMapper.convertValue(itemsObj, new TypeReference<List<ExpenseItemDto>>() {});
+            } catch (Exception e) {
+                log.warn("Could not convert settlement items: {}", e.getMessage());
+            }
+        }
+
+        Long issuedAt = settlementMap.get("issuedAt") instanceof Number
+                ? ((Number) settlementMap.get("issuedAt")).longValue() : null;
+        Long dueAt = settlementMap.get("dueAt") instanceof Number
+                ? ((Number) settlementMap.get("dueAt")).longValue() : null;
+        String issuedBy = (String) settlementMap.get("issuedBy");
+        Object paidInfo = settlementMap.get("paid");
+
+        RatingDto rating = null;
+        if (payload.getRating() instanceof Map) {
+            try {
+                rating = objectMapper.convertValue(payload.getRating(), RatingDto.class);
+            } catch (Exception e) {
+                log.warn("Could not convert rating: {}", e.getMessage());
+            }
+        }
+
+        return SettlementResponse.builder()
+                .bookingId(booking.getId())
+                .bookingCode("BK-" + String.format("%03d", booking.getId()))
+                .waybillNo(booking.getWaybillNo())
+                .status(booking.getStatus())
+                .totalBasePaid(totalBasePaid)
+                .items(items)
+                .totalExtraAmount(extraTotal)
+                .issuedAt(issuedAt)
+                .dueAt(dueAt)
+                .issuedBy(issuedBy)
+                .paid(paidInfo != null)
+                .paidInfo(paidInfo)
+                .rating(rating)
+                .build();
+    }
+
+    private Booking findBookingByIdentifier(String bookingIdentifier) {
+        if (bookingIdentifier == null || bookingIdentifier.trim().isEmpty()) {
+            throw new IllegalArgumentException("Mã đơn hàng không được để trống!");
+        }
+        Integer id = parseBookingId(bookingIdentifier);
+        return bookingRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+    }
+
+    private Integer parseBookingId(String bookingIdentifier) {
+        String cleanId = bookingIdentifier.trim();
+        try {
+            if (cleanId.toUpperCase().startsWith("BK-")) {
+                return Integer.parseInt(cleanId.substring(3).trim());
+            } else if (cleanId.toUpperCase().startsWith("ORD-")) {
+                String[] parts = cleanId.split("-");
+                return Integer.parseInt(parts[parts.length - 1].trim());
+            } else {
+                return Integer.parseInt(cleanId);
+            }
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("Định dạng mã đơn không hợp lệ: " + bookingIdentifier);
+        }
+    }
+
+    private BookingDetailsPayload extractPayload(Booking booking) {
+        BookingDetailsPayload payload = new BookingDetailsPayload();
+        if (booking.getDetailsJson() != null && !booking.getDetailsJson().trim().isEmpty()) {
+            try {
+                payload = objectMapper.readValue(booking.getDetailsJson(), BookingDetailsPayload.class);
+            } catch (Exception ex) {
+                log.warn("Error reading detailsJson for booking {}: {}", booking.getId(), ex.getMessage());
+            }
+        }
+        return payload;
+    }
+
+    private void savePayload(Booking booking, BookingDetailsPayload payload) {
+        try {
+            booking.setDetailsJson(objectMapper.writeValueAsString(payload));
+        } catch (Exception ex) {
+            log.error("Could not serialize payload for booking {}: {}", booking.getId(), ex.getMessage());
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> getMapFromObject(Object obj) {
+        if (obj instanceof Map) {
+            return (Map<String, Object>) obj;
+        }
+        return null;
+    }
+
+    private void appendHistory(BookingDetailsPayload payload, String actor, String text) {
+        if (payload.getHistory() == null) {
+            payload.setHistory(new ArrayList<>());
+        }
+        Map<String, Object> entry = new HashMap<>();
+        entry.put("time", System.currentTimeMillis());
+        entry.put("actor", actor);
+        entry.put("text", text);
+        payload.getHistory().add(entry);
+    }
+
+    private BookingResponse mapToBookingResponse(Booking b) {
+        BookingDetailsPayload payload = extractPayload(b);
+        String customerFullName = (b.getCustomerID() != null && b.getCustomerID().getUser() != null)
+                ? b.getCustomerID().getUser().getUsername()
+                : "Khách hàng";
+
+        return BookingResponse.builder()
+                .id("BK-" + String.format("%03d", b.getId()))
+                .numericId(b.getId())
+                .type(b.getBookingType() != null ? b.getBookingType() : "domestic")
+                .customer(customerFullName)
+                .customerName(customerFullName)
+                .status(b.getStatus() != null ? b.getStatus() : "pending_intake")
+                .createdAt(b.getBookingDate() != null ? b.getBookingDate().toEpochMilli() : System.currentTimeMillis())
+                .departAt(b.getDepartureDate() != null ? b.getDepartureDate().toEpochMilli() : System.currentTimeMillis())
+                .originName(b.getPickupAddress())
+                .destName(b.getDropoffAddress())
+                .consignor(PartyContactDto.builder().name(b.getConsignorName()).phone(b.getConsignorPhone()).build())
+                .consignee(PartyContactDto.builder().name(b.getConsigneeName()).phone(b.getConsigneePhone()).build())
+                .totalHorses(b.getTotalHorses() != null ? b.getTotalHorses() : 1)
+                .horses(payload.getHorses())
+                .waybillNo(b.getWaybillNo())
+                .trips(payload.getTrips())
+                .route(payload.getRoute())
+                .gate(payload.getGate())
+                .plan(payload.getPlan())
+                .quote(payload.getQuote())
+                .payment(payload.getPayment())
+                .medical(payload.getMedical())
+                .clearance(payload.getClearance())
+                .settlement(payload.getSettlement())
+                .rating(payload.getRating())
+                .intake(payload.getIntake())
+                .history(payload.getHistory())
+                .build();
+    }
+}
