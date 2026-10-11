@@ -1,14 +1,14 @@
 // Hàm thuần của luồng đặt đơn → duyệt báo giá → đặt cọc (Flow 1). Khớp docs/PRD.md mục 2, 10, 11.
 import {
   BORDER_WINDOW, CLEARANCE_DOC, CLEARANCE_FEE, CLASS_FACTOR, CREW_FEE_PER_DAY, DEPOSIT_RATE, DOCS_CUTOFF_HOUR, FUEL_BOT_PER_KM, FUEL_BUFFER_RATE, HORSE_DOC, HORSE_DOC_TYPES, MARGIN_RATE,
-  BREED_INSURED_VALUE, INSURANCE_RATE_BOOKING, DELAY_ALERT_MINUTES, MAX_CONTINUOUS_HOURS, MIN_REST_MINUTES, QUOTE_VALID_HOURS, TARGET_LEG_HOURS, SINGLE_STALL_FEE, FEED_PACKAGE, WATER_PLAN, VEHICLE_CLASS, EXPENSE_CATEGORY, type BookingStatus, type ClearanceDocType, type ExpenseCategory, type IncidentAction, type IncidentKind, type Payer, type HorseDocType, type VehicleClass,
+  BREED_INSURED_VALUE, INSURANCE_RATE_BOOKING, DELAY_ALERT_MINUTES, HOME_BASE, RETURN_EARLIEST_RATIO, MAX_CONTINUOUS_HOURS, MIN_REST_MINUTES, QUOTE_VALID_HOURS, TARGET_LEG_HOURS, SINGLE_STALL_FEE, FEED_PACKAGE, WATER_PLAN, VEHICLE_CLASS, EXPENSE_CATEGORY, type BookingStatus, type ClearanceDocType, type ExpenseCategory, type IncidentAction, type IncidentKind, type Payer, type HorseDocType, type VehicleClass,
 } from '../config/booking-rules'
 import { DAY, HOUR, MIN_LEAD_DAYS } from '../config/business-rules'
-import { COUNTRY_LOCATIONS, GATES, PLACES, TRANSIT_STATIONS, type GeoPoint, type Gate } from '../config/network'
+import { COUNTRIES, COUNTRY_LOCATIONS, GATES, PLACES, TRANSIT_STATIONS, type GeoPoint, type Gate } from '../config/network'
 import { AVG_SPEED_KMH, BORDER_HOURS, DRIVE_HOURS_PER_DAY } from '../config/public-pricing'
 import type { Vehicle } from '../services/mock/fleet'
 import type { StaffMember } from '../services/mock/staff'
-import type { Adjustment, Booking, BookingHorse, Checkpoint, Clearance, ClearanceItem, HorseProfile, PlaceRef, Quote, QuoteLine, SettlementItem, RestStop, RouteLeg, RoutePlan, TripRun, VehicleTrip, WelfareLog } from '../types/booking'
+import type { Adjustment, Booking, BookingHorse, Checkpoint, Clearance, ClearanceItem, HorseProfile, PlaceRef, Quote, QuoteLine, SettlementItem, RestStop, HomeReturn, RouteLeg, RoutePlan, TripRun, VehicleTrip, WelfareLog } from '../types/booking'
 import { atHour, dayKey, startOfDay } from './dates'
 import { haversineKm, roadKm, truckCost } from './pricing'
 
@@ -204,6 +204,8 @@ export function busyResources(all: Booking[], departAt: number, exceptId?: strin
     if (t.driverId) crew.add(t.driverId)
     if (t.escortId) crew.add(t.escortId)
   }))
+  // Đang chạy về trụ sở sau khi giao ngựa ở nước ngoài: chưa chọn được cho đơn mới
+  returningTrips(all.filter(o => o.id !== exceptId)).forEach(({ t }) => { crew.add(t.driverId); crew.add(t.escortId) })
   return { vehicles, crew }
 }
 
@@ -214,17 +216,44 @@ export const crewAssigned = (t: Pick<VehicleTrip, 'driverId' | 'escortId'>) => !
 export const vehicleDocsOk = (v: Pick<Vehicle, 'inspectionNo' | 'transitPermit'>, international: boolean) => !!v.inspectionNo && (!international || !!v.transitPermit)
 
 // Lịch của một xe / tài xế / hộ tống: các đơn khác đang giữ họ (kèm ngày đi và tuyến), để Coordinator biết họ bận gì
-export interface Booked { order: string; departAt: number; route: string; trip: string }
+export interface Booked {
+  order: string; departAt: number; route: string; trip: string
+  countries: string // "Việt Nam → Lào": chiều của đơn, để biết người đang làm việc ở nước nào
+  returning?: { from: string; eta: number; late: boolean } // đã giao ngựa ở nước ngoài, đang về trụ sở
+}
 export interface Schedules { vehicles: Map<string, Booked[]>; drivers: Map<string, Booked[]>; escorts: Map<string, Booked[]> }
-export function schedulesOf(all: Booking[], exceptId: string): Schedules {
+export function schedulesOf(all: Booking[], exceptId: string, now = Date.now()): Schedules {
   const out: Schedules = { vehicles: new Map(), drivers: new Map(), escorts: new Map() }
   const put = (m: Map<string, Booked[]>, id: string, x: Booked) => { if (id) m.set(id, [...(m.get(id) ?? []), x]) }
+  const bookedOf = (o: Booking, t: VehicleTrip): Booked => ({
+    order: o.id, departAt: o.departAt, route: `${o.origin.name.split(' — ')[0]} → ${o.dest.name.split(' — ')[0]}`, trip: t.tripId,
+    countries: `${COUNTRIES[o.origin.country].name} → ${COUNTRIES[o.dest.country].name}`,
+    returning: t.homeReturn && !t.homeReturn.backAt ? { from: t.homeReturn.fromPlace, eta: t.homeReturn.eta, late: returnLate(t, now) } : undefined,
+  })
   all.filter(o => o.id !== exceptId && HOLDING.includes(o.status)).forEach(o => (o.trips ?? []).forEach(t => {
-    const x: Booked = { order: o.id, departAt: o.departAt, route: `${o.origin.name.split(' — ')[0]} → ${o.dest.name.split(' — ')[0]}`, trip: t.tripId }
+    const x = bookedOf(o, t)
     put(out.vehicles, t.vehicleId, x); put(out.drivers, t.driverId, x); put(out.escorts, t.escortId, x)
   }))
+  // Đơn đã giao xong (không còn giữ xe) nhưng Driver và Escort chưa về trụ sở: vẫn bị giữ, xe thì không
+  returningTrips(all.filter(o => o.id !== exceptId && !HOLDING.includes(o.status))).forEach(({ b, t }) => {
+    const x = bookedOf(b, t)
+    put(out.drivers, t.driverId, x); put(out.escorts, t.escortId, x)
+  })
   return out
 }
+// ===== Về trụ sở sau khi giao ngựa ở nước ngoài (PRD mục 1.4, 10.2) =====
+// Giờ về dự kiến: giờ giao xong cộng thời gian lái từ điểm giao về trụ sở (qua cửa khẩu). Chỉ tính khi điểm giao ở nước ngoài.
+export function planHomeReturn(b: Pick<Booking, 'dest'>, deliveredAt: number): HomeReturn | undefined {
+  if (b.dest.country === 'VN') return undefined
+  const to = findLocation(b.dest.id)
+  const driveMs = to ? travelHours(roadKm(haversineKm(to, HOME_BASE)), true) * HOUR : BORDER_HOURS * HOUR
+  return { fromPlace: `${b.dest.name.split(' — ')[0]} (${COUNTRIES[b.dest.country].name})`, eta: Math.round(deliveredAt + driveMs), earliestAt: Math.round(deliveredAt + driveMs * RETURN_EARLIEST_RATIO) }
+}
+// Chuyến mà Driver và Escort đang chạy về trụ sở
+export const returningTrips = (all: Booking[]) => all.flatMap(b => (b.trips ?? []).filter(t => t.homeReturn && !t.homeReturn.backAt).map(t => ({ b, t })))
+// Quá giờ về dự kiến từ 30 phút mà chưa xác nhận: cờ "Về trễ" (cùng ngưỡng Delayed Check-in)
+export const returnLate = (t: Pick<VehicleTrip, 'homeReturn'>, now = Date.now()) => !!t.homeReturn && !t.homeReturn.backAt && now - t.homeReturn.eta >= DELAY_ALERT_MINUTES * 60_000
+
 // Xe trùng lịch: đơn khác của xe có ngày đi cách ngày đi này dưới 3 ngày (cùng quy tắc với busyResources)
 export const clashOf = (booked: Booked[] | undefined, departAt: number) => (booked ?? []).find(x => Math.abs(x.departAt - departAt) < 3 * DAY)
 

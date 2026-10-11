@@ -1,7 +1,7 @@
 // Service đơn đặt chuyến (Flow 1–4). Tên hàm theo REST để sau này thay bằng API Spring Boot.
 // Mỗi hàm là một thao tác nghiệp vụ; trạng thái chỉ đổi qua các hàm này để giữ đúng cổng chuyển bước của PRD.
 import { BOOKING_STATUS, CLEARANCE_DOC, EXPENSE_CATEGORY, INCIDENT_ACTION, INCIDENT_KIND, MIN_REST_MINUTES, SETTLEMENT_GRACE_HOURS, publicStepOf, type ClearanceDocType, type ExpenseCategory, type IncidentAction, type IncidentKind, type Payer, type WelfareCondition } from '../config/booking-rules'
-import { CANCEL_AFTER_DEPOSIT, cancelRefund, crewAssigned, openIncidentOf, defaultPayer, incidentActionsFor, incidentLocation, pendingDeparture, needsFitCheck, settlementOf, blankClearance, buildCheckpoints, busyResources, canCompleteClearance, vehicleDocsOk, currentCheckpoint, gatesFor, deriveStatus, finalizeQuote, isQuoteExpired, manifestDocuments, nextBookingId, quoteLines, reviewDone, tripIdFor, validateRoutePlan, waybillNoOf } from '../lib/booking'
+import { CANCEL_AFTER_DEPOSIT, cancelRefund, crewAssigned, openIncidentOf, defaultPayer, incidentActionsFor, incidentLocation, pendingDeparture, needsFitCheck, settlementOf, blankClearance, buildCheckpoints, busyResources, canCompleteClearance, vehicleDocsOk, currentCheckpoint, gatesFor, deriveStatus, finalizeQuote, planHomeReturn, returnLate, isQuoteExpired, manifestDocuments, nextBookingId, quoteLines, reviewDone, tripIdFor, validateRoutePlan, waybillNoOf } from '../lib/booking'
 import { TRANSIT_STATIONS } from '../config/network'
 import type { Adjustment, Booking, Incident, IncidentPlan, Rating, ClearanceItem, HistoryEntry, MedicalReview, RoutePlan, SentBack, StaffRef, TripRun, VehicleTrip, WelfareLog } from '../types/booking'
 import { formatVND } from '../lib/format'
@@ -886,8 +886,25 @@ export const bookingsApi = {
     const now = Date.now()
     cp.doneAt = now; cp.returnedOriginals = true
     run.deliveredAt = now
+    t.homeReturn = planHomeReturn(b, now) // giao ở nước ngoài thì Driver và Escort chạy về trụ sở
     const out = commitTrips(b, by, `Xe ${tripId} hoàn tất giao ngựa`)
     notify(b, ['customer', 'manager'], `Xe ${tripId} đã giao ngựa — đơn ${b.id}`, out.status === 'delivered_pending_settlement' ? 'Mọi xe của đơn đã giao xong.' : 'Còn xe khác của đơn đang trên đường.')
+    return out
+  },
+
+  // Driver: xác nhận cả xe (Driver và Escort) đã về trụ sở. Chống câu giờ: chỉ bấm được sau mốc tối thiểu và phải có ảnh chụp trực tiếp tại trụ sở.
+  confirmHome: async (id: string, tripId: string, by: string, photo: string): Promise<Booking> => {
+    const b = must(id)
+    const t = tripOf(b, tripId)
+    const h = t.homeReturn
+    if (!h) throw new Error('Chuyến này không có bước về trụ sở.')
+    if (h.backAt) throw new Error('Chuyến này đã xác nhận về trụ sở.')
+    const now = Date.now()
+    if (now < h.earliestAt) throw new Error('Chưa tới giờ có thể về tới trụ sở, chưa xác nhận được.')
+    if (!photo) throw new Error('Cần chụp ảnh tại trụ sở.')
+    h.backAt = now; h.photo = photo; h.by = by
+    const out = commitTrips(b, by, `Xe ${tripId}: tài xế và hộ tống đã về trụ sở${returnLate(t, now) ? ' (trễ so với giờ dự kiến)' : ''}`)
+    notify(b, ['manager', 'coordinator'], `Xe ${tripId} đã về trụ sở — đơn ${id}`, 'Tài xế và hộ tống đã sẵn sàng nhận chuyến mới.')
     return out
   },
 
