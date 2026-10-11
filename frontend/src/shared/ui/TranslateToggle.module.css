@@ -1,0 +1,11 @@
+/* Công tắc ngôn ngữ 2 nấc VI | EN (thay emoji cờ) */
+.toggle { position: fixed; bottom: 24px; right: 24px; z-index: 999; display: flex; padding: 3px; background: var(--navy); border-radius: 999px; box-shadow: 0 6px 18px rgba(15, 23, 42, 0.25); font-size: 12px; font-weight: 700; letter-spacing: 0.04em; }
+.option { position: relative; z-index: 1; min-width: 38px; padding: 6px 10px; border: none; background: none; color: #94a3b8; cursor: pointer; border-radius: 999px; transition: color 0.25s; }
+.option:hover { color: white; }
+.current { color: white; cursor: default; }
+.thumb { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); background: var(--orange); border-radius: 999px; transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+.en .thumb { transform: translateX(100%); }
+
+/* Ẩn banner và tooltip của Google Translate */
+:global(.goog-te-banner-frame), :global(.goog-te-gadget-icon), :global(#goog-gt-tt), :global(.goog-tooltip) { display: none !important; }
+:global(body) { top: 0 !important; position: static !important; }

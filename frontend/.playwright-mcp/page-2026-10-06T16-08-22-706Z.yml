@@ -1,0 +1,270 @@
+- generic [ref=f40e3]:
+  - banner [ref=f40e4]:
+    - link "TM Trần Minh ops@equine.vn" [ref=f40e5] [cursor=pointer]:
+      - /url: /backoffice/coordinator/fleet-plan
+      - generic [ref=f40e6]: TM
+      - generic [ref=f40e7]:
+        - generic [ref=f40e8]: Trần Minh
+        - generic [ref=f40e9]: ops@equine.vn
+    - generic "Đường dẫn" [ref=f40e10]:
+      - generic [aria-hidden] [ref=f40e11]: 
+      - generic [ref=f40e12]:
+        - generic [aria-hidden] [ref=f40e13]: 
+        - text: Xe và lộ trình
+    - search [ref=f40e14]:
+      - generic [aria-hidden] [ref=f40e15]: 
+      - textbox "Tìm đơn hàng" [ref=f40e16]:
+        - /placeholder: Tìm đơn hàng, khách hàng…
+    - generic [ref=f40e17]:
+      - button "Thông báo" [ref=f40e19] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f40e20]: 
+      - button "Đăng xuất" [ref=f40e21] [cursor=pointer]:
+        - generic [ref=f40e22]: 
+  - generic [ref=f40e23]:
+    - complementary "Menu" [ref=f40e24]:
+      - generic [ref=f40e25]:
+        - generic [ref=f40e26]: Menu
+        - button "Thu gọn menu" [ref=f40e27] [cursor=pointer]:
+          - generic [ref=f40e28]: 
+      - navigation [ref=f40e29]:
+        - link "Xe và lộ trình 3 đơn chờ" [ref=f40e30] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan
+          - generic [aria-hidden] [ref=f40e31]: 
+          - generic [ref=f40e32]: Xe và lộ trình
+          - generic "3 đơn chờ" [ref=f40e33]: "3"
+        - link "Giấy cho tài xế 6 đơn chờ" [ref=f40e34] [cursor=pointer]:
+          - /url: /backoffice/coordinator/dispatch
+          - generic [aria-hidden] [ref=f40e35]: 
+          - generic [ref=f40e36]: Giấy cho tài xế
+          - generic "6 đơn chờ" [ref=f40e37]: "6"
+        - link "Giám sát" [ref=f40e38] [cursor=pointer]:
+          - /url: /backoffice/coordinator/monitoring
+          - generic [aria-hidden] [ref=f40e39]: 
+        - link "Sự cố 1 đơn chờ" [ref=f40e41] [cursor=pointer]:
+          - /url: /backoffice/coordinator/incidents
+          - generic [aria-hidden] [ref=f40e42]: 
+          - generic [ref=f40e43]: Sự cố
+          - generic "1 đơn chờ" [ref=f40e44]: "1"
+        - link "Đội xe" [ref=f40e45] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet
+          - generic [aria-hidden] [ref=f40e46]: 
+      - generic [ref=f40e48]:
+        - button "Cần xử lý 5" [expanded] [ref=f40e49] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f40e50]: 
+          - generic [ref=f40e51]: Cần xử lý
+          - generic [ref=f40e52]: "5"
+        - link "0125 · Lập phương án sự cố" [ref=f40e53] [cursor=pointer]:
+          - /url: /backoffice/coordinator/incidents
+          - generic [aria-hidden] [ref=f40e54]: 
+        - link "0102 · Chốt xe, lộ trình" [ref=f40e56] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0102
+          - generic [aria-hidden] [ref=f40e57]: 
+        - link "0131 · Chốt xe, lộ trình" [ref=f40e59] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0131
+          - generic [aria-hidden] [ref=f40e60]: 
+        - link "0132 · Chốt xe, lộ trình" [ref=f40e62] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0132
+          - generic [aria-hidden] [ref=f40e63]: 
+        - link "0113 · Nhập bộ giấy" [ref=f40e65] [cursor=pointer]:
+          - /url: /backoffice/coordinator/dispatch/ORD-2026-0113
+          - generic [aria-hidden] [ref=f40e66]: 
+    - main [ref=f40e68]:
+      - generic [ref=f40e71]:
+        - generic [ref=f40e72]:
+          - link "Xe và lộ trình" [ref=f40e73] [cursor=pointer]:
+            - /url: /backoffice/coordinator/fleet-plan
+          - text: /
+          - generic [ref=f40e74]: ORD-2026-0102
+        - generic [ref=f40e75]:
+          - heading "Đơn ORD-2026-0102" [level=1] [ref=f40e76]
+          - generic "Under Internal Review" [ref=f40e77]:
+            - generic [aria-hidden] [ref=f40e78]: 
+            - text: Đang thẩm định nội bộ
+          - generic [ref=f40e79]:
+            - generic [ref=f40e80]:
+              - generic [aria-hidden] [ref=f40e81]: 
+              - text: "Y tế: chờ thẩm định"
+            - generic [ref=f40e82]:
+              - generic [aria-hidden] [ref=f40e83]: 
+              - text: "Xe & lộ trình: chờ lập"
+        - generic [ref=f40e84]:
+          - generic [ref=f40e85]:
+            - generic [ref=f40e86]:
+              - heading " Chuyến đi" [level=3] [ref=f40e88]:
+                - generic [ref=f40e89]: 
+                - text: Chuyến đi
+              - generic [ref=f40e90]:
+                - generic [ref=f40e91]:
+                  - term [ref=f40e92]: Khách hàng
+                  - definition [ref=f40e93]: Trang trại Long Thành
+                - generic [ref=f40e94]:
+                  - term [ref=f40e95]: Loại chuyến
+                  - definition [ref=f40e96]: Trong nước
+                - generic [ref=f40e97]:
+                  - term [ref=f40e98]: Ngày khởi hành
+                  - definition [ref=f40e99]: 13/11/2026
+                - generic [ref=f40e100]:
+                  - term [ref=f40e101]: Điểm đón
+                  - definition [ref=f40e102]: Kho Long An
+                - generic [ref=f40e103]:
+                  - term [ref=f40e104]: Điểm giao
+                  - definition [ref=f40e105]: CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+                - generic [ref=f40e106]:
+                  - term [ref=f40e107]: Người gửi
+                  - definition [ref=f40e108]:
+                    - text: Trang trại Long Thành
+                    - generic [ref=f40e109]: 0901 456 789
+                - generic [ref=f40e110]:
+                  - term [ref=f40e111]: Người nhận
+                  - definition [ref=f40e112]:
+                    - text: CLB Cưỡi ngựa Sài Gòn
+                    - generic [ref=f40e113]: 0912 345 678
+                - generic [ref=f40e114]:
+                  - term [ref=f40e115]: Số ngựa
+                  - definition [ref=f40e116]: 3 con
+            - generic [ref=f40e117]:
+              - heading " Ngựa cần chở" [level=3] [ref=f40e119]:
+                - generic [ref=f40e120]: 
+                - text: Ngựa cần chở
+              - generic [ref=f40e121]:
+                - generic [ref=f40e122]:
+                  - generic [ref=f40e124]:
+                    - generic [ref=f40e125]: Kim Lân
+                    - generic [ref=f40e126]: Chip VN-985213 · Thoroughbred · Đực
+                  - generic [ref=f40e127]:
+                    - generic [ref=f40e128]: "Khoang: đơn mở rộng"
+                    - generic [ref=f40e129]:
+                      - text: "Thức ăn: Gói cơ bản"
+                      - generic [ref=f40e130]: (Cỏ khô thường)
+                    - generic [ref=f40e131]: "Cữ nước: Mỗi 3 giờ"
+                    - generic [ref=f40e132]: "Bảo hiểm: từ chối"
+                - generic [ref=f40e133]:
+                  - generic [ref=f40e135]:
+                    - generic [ref=f40e136]: Ngọc Long
+                    - generic [ref=f40e137]: Chip VN-985216 · Appaloosa · Đực
+                  - generic [ref=f40e138]:
+                    - generic [ref=f40e139]: "Khoang: tiêu chuẩn"
+                    - generic [ref=f40e140]:
+                      - text: "Thức ăn: Gói cơ bản"
+                      - generic [ref=f40e141]: (Cỏ khô thường)
+                    - generic [ref=f40e142]: "Cữ nước: Mỗi 3 giờ"
+                    - generic [ref=f40e143]: "Bảo hiểm: từ chối"
+                - generic [ref=f40e144]:
+                  - generic [ref=f40e146]:
+                    - generic [ref=f40e147]: Bạch Phong
+                    - generic [ref=f40e148]: Chip VN-985212 · Arabian · Cái
+                  - generic [ref=f40e149]:
+                    - generic [ref=f40e150]: "Khoang: tiêu chuẩn"
+                    - generic [ref=f40e151]:
+                      - text: "Thức ăn: Gói cơ bản"
+                      - generic [ref=f40e152]: (Cỏ khô thường)
+                    - generic [ref=f40e153]: "Cữ nước: Mỗi 3 giờ"
+                    - generic [ref=f40e154]: "Bảo hiểm: từ chối"
+            - generic [ref=f40e155]:
+              - generic [ref=f40e156]:
+                - heading " Xe của đơn" [level=3] [ref=f40e157]:
+                  - generic [ref=f40e158]: 
+                  - text: Xe của đơn
+                - button "+ Thêm xe" [ref=f40e160] [cursor=pointer]:
+                  - generic [ref=f40e161]: +
+                  - text: Thêm xe
+              - paragraph [ref=f40e162]:
+                - text: Bạn chọn xe cho đơn và chia ngựa lên các xe.
+                - button "Xem thêm" [ref=f40e163] [cursor=pointer]
+              - generic [ref=f40e164] [cursor=pointer]:
+                - generic [ref=f40e165]: Xe 1
+                - generic [ref=f40e167]:
+                  - generic [ref=f40e168]: Xe
+                  - button "Xe" [ref=f40e169]:
+                    - generic [aria-hidden] [ref=f40e170]: 
+                    - generic [ref=f40e171]: Chọn xe
+                    - emphasis [ref=f40e172]: Chọn
+                - list [ref=f40e173]:
+                  - listitem [ref=f40e174]:
+                    - generic [ref=f40e175]:
+                      - text: Kim Lân
+                      - generic [ref=f40e176]: Chip VN-985213
+                  - listitem [ref=f40e177]:
+                    - generic [ref=f40e178]:
+                      - text: Ngọc Long
+                      - generic [ref=f40e179]: Chip VN-985216
+                  - listitem [ref=f40e180]:
+                    - generic [ref=f40e181]:
+                      - text: Bạch Phong
+                      - generic [ref=f40e182]: Chip VN-985212
+            - generic [ref=f40e183]:
+              - generic [ref=f40e184]:
+                - heading " Lộ trình chi tiết" [level=3] [ref=f40e185]:
+                  - generic [ref=f40e186]: 
+                  - text: Lộ trình chi tiết
+                - generic [ref=f40e187]: Tổng thời gian lái ≈ 1.0 giờ (đang tính theo đường thật…) · 1 chặng · dùng chung cho mọi xe
+              - generic [ref=f40e188]:
+                - generic [ref=f40e189]: Giờ đón ngựa *
+                - textbox "Giờ đón ngựa *" [ref=f40e190]: 2026-11-13T05:00
+              - table [ref=f40e192]:
+                - rowgroup [ref=f40e193]:
+                  - row [ref=f40e194]:
+                    - columnheader "Chặng" [ref=f40e195]
+                    - columnheader "Từ → Đến" [ref=f40e196]
+                    - columnheader "Khởi hành" [ref=f40e197]
+                    - columnheader "Đến" [ref=f40e198]
+                    - columnheader "Lái liên tục" [ref=f40e199]
+                - rowgroup [ref=f40e200]:
+                  - row [ref=f40e201]:
+                    - cell "1" [ref=f40e202]
+                    - cell "Kho Long An → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)" [ref=f40e203]
+                    - cell "13/11/2026 05:00" [ref=f40e204]
+                    - cell "06:00" [ref=f40e205]
+                    - cell "1.0 giờ" [ref=f40e206]
+            - generic [ref=f40e207]:
+              - generic [ref=f40e208]:
+                - heading " Trạm trung chuyển" [level=3] [ref=f40e209]:
+                  - generic [ref=f40e210]: 
+                  - text: Trạm trung chuyển
+                - generic [ref=f40e211]:
+                  - button " Chọn trên bản đồ" [ref=f40e212] [cursor=pointer]:
+                    - generic [ref=f40e213]: 
+                    - text: Chọn trên bản đồ
+                  - button " Gợi ý lại" [ref=f40e214] [cursor=pointer]:
+                    - generic [ref=f40e215]: 
+                    - text: Gợi ý lại
+              - paragraph [ref=f40e216]: Các điểm xe đi qua giữa điểm đón và điểm trả. Bấm Chọn trên bản đồ để chọn trạm và đặt thời gian nghỉ; hệ thống tự xếp thứ tự và vẽ đường đi. Ngựa không đi liên tục quá 4 giờ, mỗi trạm nghỉ tối thiểu 30 phút.
+              - generic [ref=f40e217]:
+                - generic [ref=f40e218]: 
+                - text: Chưa chọn trạm nào. Bấm Chọn trên bản đồ hoặc Gợi ý lại.
+            - generic [ref=f40e219]:
+              - generic [ref=f40e220]:
+                - generic [ref=f40e221]: Ghi chú
+                - textbox "Ghi chú" [ref=f40e222]
+              - generic [ref=f40e223]:
+                - generic [ref=f40e224]: 
+                - list [ref=f40e225]:
+                  - listitem [ref=f40e226]: Xe 1 chưa chọn xe.
+              - generic [ref=f40e227]:
+                - generic [ref=f40e228]: Sửa các lỗi trên để xác nhận.
+                - generic [ref=f40e229]:
+                  - button " Không duyệt, từ chối đơn" [ref=f40e230] [cursor=pointer]:
+                    - generic [ref=f40e231]: 
+                    - text: Không duyệt, từ chối đơn
+                  - button " Xác nhận xe và lộ trình" [disabled] [ref=f40e232]:
+                    - generic [ref=f40e233]: 
+                    - text: Xác nhận xe và lộ trình
+          - complementary [ref=f40e234]:
+            - generic [ref=f40e235]:
+              - heading " Nhật ký đơn" [level=3] [ref=f40e237]:
+                - generic [ref=f40e238]: 
+                - text: Nhật ký đơn
+              - list [ref=f40e239]:
+                - listitem [ref=f40e240]:
+                  - generic [aria-hidden] [ref=f40e242]: 
+                  - generic [ref=f40e243]:
+                    - text: Tiếp nhận. Giao Phạm Văn Hưng (kiểm dịch) và Trần Minh (điều phối)
+                    - generic [ref=f40e244]: Quản lý · 05/10/2026 20:08
+                - listitem [ref=f40e245]:
+                  - generic [aria-hidden] [ref=f40e247]: 
+                  - generic [ref=f40e248]:
+                    - text: Gửi yêu cầu đặt đơn
+                    - generic [ref=f40e249]: Trang trại Long Thành · 05/10/2026 16:08
+  - group "Ngôn ngữ" [ref=f40e250]:
+    - button "VI" [pressed] [ref=f40e252]
+    - button "EN" [ref=f40e253] [cursor=pointer]

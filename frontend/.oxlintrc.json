@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "oxc"],
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+  },
+  "overrides": [
+    {
+      "files": ["src/apps/customer/**", "src/shared/**"],
+      "rules": {
+        "no-restricted-imports": ["error", {
+          "patterns": [{
+            "group": ["**/apps/backoffice/**", "**/backoffice/**"],
+            "message": "App khách và shared không được dùng code nội bộ (giá vốn, biên lãi)."
+          }]
+        }]
+      }
+    }
+  ]
+}

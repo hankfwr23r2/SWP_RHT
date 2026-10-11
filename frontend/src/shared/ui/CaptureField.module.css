@@ -1,0 +1,13 @@
+.field { display: grid; gap: 6px; }
+.label { font-size: 0.88rem; font-weight: 600; }
+.required::after { content: ' *'; color: var(--red); }
+.input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+.shot { display: flex; align-items: center; justify-content: center; gap: 10px; min-height: 56px; border: 2px dashed var(--orange); border-radius: var(--radius); background: var(--orange-soft); color: var(--orange); font-weight: 700; font-size: 1rem; cursor: pointer; }
+.shot:hover { background: #ffedd5; }
+.input:focus-visible ~ .shot { outline: 2px solid var(--orange); outline-offset: 2px; }
+.invalid { border-color: var(--red); background: var(--red-soft); color: var(--red); }
+.off { opacity: 0.5; pointer-events: none; }
+.done { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 14px; border: 1px solid #a7f3d0; background: var(--green-soft); border-radius: var(--radius); font-size: 0.9rem; }
+.done i { color: var(--green); font-size: 1.1rem; }
+.text { flex: 1; }
+.retake { color: var(--orange); font-weight: 600; font-size: 0.85rem; cursor: pointer; padding: 10px 4px; }

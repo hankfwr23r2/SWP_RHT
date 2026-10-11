@@ -1,0 +1,66 @@
+- generic [ref=f14e2]:
+  - banner [ref=f14e3]:
+    - generic [ref=f14e4]:
+      - link "EQ Vận chuyển Ngựa Điều phối viên" [ref=f14e5] [cursor=pointer]:
+        - /url: /backoffice/coordinator/fleet-plan
+        - generic [ref=f14e6]: EQ
+        - generic [ref=f14e7]: Vận chuyển Ngựa
+        - generic [ref=f14e8]: Điều phối viên
+      - navigation "Menu" [ref=f14e9]:
+        - link "Xe và lộ trình" [ref=f14e10] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan
+        - link "Giấy cho tài xế" [ref=f14e11] [cursor=pointer]:
+          - /url: /backoffice/coordinator/dispatch
+        - link "Giám sát" [ref=f14e12] [cursor=pointer]:
+          - /url: /backoffice/coordinator/monitoring
+        - link "Sự cố" [ref=f14e13] [cursor=pointer]:
+          - /url: /backoffice/coordinator/incidents
+        - link "Đội xe" [ref=f14e14] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet
+      - generic [ref=f14e15]:
+        - generic "Trần Minh" [ref=f14e16]: TM
+        - button " Đăng xuất" [ref=f14e17] [cursor=pointer]:
+          - generic [ref=f14e18]: 
+          - text: Đăng xuất
+  - main [ref=f14e19]:
+    - generic [ref=f14e211]:
+      - generic [ref=f14e212]:
+        - heading "Xe và lộ trình" [level=1] [ref=f14e213]
+        - paragraph [ref=f14e214]: Đơn được giao cho bạn. Hệ thống đã tự gán xe, tài xế và hộ tống (nhiều xe nếu đơn đông ngựa). Bạn xem lại, sửa nếu cần, lập lộ trình chi tiết rồi xác nhận.
+      - group "Lọc đơn" [ref=f14e215]:
+        - button "Cần xác nhận 1" [pressed] [ref=f14e216] [cursor=pointer]:
+          - text: Cần xác nhận
+          - generic [ref=f14e217]: "1"
+        - button "Đã chốt 17" [ref=f14e218] [cursor=pointer]:
+          - text: Đã chốt
+          - generic [ref=f14e219]: "17"
+      - table [ref=f14e221]:
+        - rowgroup [ref=f14e222]:
+          - row [ref=f14e223]:
+            - columnheader "Mã đơn" [ref=f14e224]
+            - columnheader "Khách hàng" [ref=f14e225]
+            - columnheader "Tuyến" [ref=f14e226]
+            - columnheader "Khởi hành" [ref=f14e227]
+            - columnheader "Ngựa · số xe" [ref=f14e228]
+            - columnheader "Giao lúc" [ref=f14e229]
+            - columnheader "Thao tác" [ref=f14e230]
+        - rowgroup [ref=f14e231]:
+          - row [ref=f14e232]:
+            - cell "ORD-2026-0102" [ref=f14e233]
+            - cell "Trang trại Long Thành" [ref=f14e234]
+            - cell "Kho Long An → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM) Trong nước" [ref=f14e235]:
+              - text: Kho Long An → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+              - generic [ref=f14e236]: Trong nước
+            - cell "10/11/2026" [ref=f14e237]
+            - cell "3 ngựa 1 xe · đã chốt" [ref=f14e238]:
+              - text: 3 ngựa
+              - generic [ref=f14e239]: 1 xe · đã chốt
+            - cell "02/10/2026 20:22" [ref=f14e240]
+            - cell [ref=f14e241]:
+              - link "Xem và xác nhận" [ref=f14e242] [cursor=pointer]:
+                - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0102
+  - contentinfo [ref=f14e205]: © 2026 Vận chuyển Ngựa đua. SWP Project.
+  - group "Ngôn ngữ" [ref=f14e206]:
+    - button "VI" [pressed] [ref=f14e208]
+    - button "EN" [ref=f14e209] [cursor=pointer]
+  - status [ref=f14e243]: Đã xác nhận 1 xe và lộ trình ORD-2026-0102

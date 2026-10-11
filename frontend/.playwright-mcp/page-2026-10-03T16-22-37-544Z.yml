@@ -1,0 +1,69 @@
+- generic [ref=f8e2]:
+  - banner [ref=f8e3]:
+    - generic [ref=f8e4]:
+      - link "EQ Vận chuyển Ngựa Quản lý" [ref=f8e5] [cursor=pointer]:
+        - /url: /backoffice/manager
+        - generic [ref=f8e6]: EQ
+        - generic [ref=f8e7]: Vận chuyển Ngựa
+        - generic [ref=f8e8]: Quản lý
+      - navigation "Menu" [ref=f8e9]:
+        - link "Bảng điều khiển" [ref=f8e10] [cursor=pointer]:
+          - /url: /backoffice/manager
+        - link "Tiếp nhận đơn" [ref=f8e11] [cursor=pointer]:
+          - /url: /backoffice/manager/intake
+        - link "Duyệt báo giá" [ref=f8e12] [cursor=pointer]:
+          - /url: /backoffice/manager/approvals
+        - link "Giấy tờ chuyến đi" [ref=f8e13] [cursor=pointer]:
+          - /url: /backoffice/manager/documents
+        - link "Nhân sự" [ref=f8e14] [cursor=pointer]:
+          - /url: /backoffice/manager/staff
+        - link "Báo cáo Chuyến đi" [ref=f8e15] [cursor=pointer]:
+          - /url: /backoffice/manager/trip-reports
+        - link "Sự cố & Chi Phí" [ref=f8e16] [cursor=pointer]:
+          - /url: /backoffice/manager/incidents
+      - generic [ref=f8e17]:
+        - generic "Quản lý" [ref=f8e18]: QL
+        - button " Đăng xuất" [ref=f8e19] [cursor=pointer]:
+          - generic [ref=f8e20]: 
+          - text: Đăng xuất
+  - main [ref=f8e21]:
+    - generic [ref=f8e24]:
+      - generic [ref=f8e25]:
+        - heading "Duyệt báo giá" [level=1] [ref=f8e26]
+        - paragraph [ref=f8e27]: Đơn đã có kết quả thẩm định y tế, phương án xe và lộ trình. Duyệt báo giá để gửi khách, khách có 48 giờ đặt cọc 30%.
+      - group "Lọc đơn" [ref=f8e28]:
+        - button "Chờ duyệt báo giá 1" [pressed] [ref=f8e29] [cursor=pointer]:
+          - text: Chờ duyệt báo giá
+          - generic [ref=f8e30]: "1"
+        - button "Đã gửi báo giá 17" [ref=f8e31] [cursor=pointer]:
+          - text: Đã gửi báo giá
+          - generic [ref=f8e32]: "17"
+      - table [ref=f8e34]:
+        - rowgroup [ref=f8e35]:
+          - row [ref=f8e36]:
+            - columnheader "Mã đơn" [ref=f8e37]
+            - columnheader "Khách hàng" [ref=f8e38]
+            - columnheader "Tuyến" [ref=f8e39]
+            - columnheader "Khởi hành" [ref=f8e40]
+            - columnheader "Ngựa" [ref=f8e41]
+            - columnheader "Trạng thái" [ref=f8e42]
+            - columnheader "Thao tác" [ref=f8e43]
+        - rowgroup [ref=f8e44]:
+          - row [ref=f8e45]:
+            - cell "ORD-2026-0104" [ref=f8e46]
+            - cell "Trang trại Long Thành" [ref=f8e47]
+            - cell "Kho Đồng Nai → Kho Viêng Chăn Quốc tế · Lao Bảo – Densavanh" [ref=f8e48]:
+              - text: Kho Đồng Nai → Kho Viêng Chăn
+              - generic [ref=f8e49]: Quốc tế · Lao Bảo – Densavanh
+            - cell "02/12/2026" [ref=f8e50]
+            - cell "2" [ref=f8e51]
+            - cell [ref=f8e52]:
+              - generic "Pending Final Commercial Approval" [ref=f8e53]:
+                - generic [aria-hidden] [ref=f8e54]: 
+                - text: Chờ Manager duyệt báo giá
+            - cell [ref=f8e55]:
+              - button "Duyệt báo giá" [ref=f8e56] [cursor=pointer]
+  - contentinfo [ref=f8e57]: © 2026 Vận chuyển Ngựa đua. SWP Project.
+  - group "Ngôn ngữ" [ref=f8e58]:
+    - button "VI" [pressed] [ref=f8e60]
+    - button "EN" [ref=f8e61] [cursor=pointer]

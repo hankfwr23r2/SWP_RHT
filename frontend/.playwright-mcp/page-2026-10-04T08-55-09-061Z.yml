@@ -1,0 +1,38 @@
+- generic [ref=f227e3]:
+  - generic [ref=f227e4]:
+    - link "EQ Vận chuyển Ngựa" [ref=f227e5] [cursor=pointer]:
+      - /url: /
+      - generic [ref=f227e6]: EQ
+      - text: Vận chuyển Ngựa
+    - generic [ref=f227e7]:
+      - heading "Vận chuyển Ngựa đua Chuyên nghiệp" [level=1] [ref=f227e8]
+      - paragraph [ref=f227e9]: An toàn, chuẩn quốc tế và giám sát 24/7 trên mọi dặm đường của chiến mã.
+    - generic [ref=f227e10]: © 2026 Vận chuyển Ngựa đua. SWP Project.
+  - generic [ref=f227e12]:
+    - link " Về Trang chủ" [ref=f227e14] [cursor=pointer]:
+      - /url: /
+      - generic [ref=f227e15]: 
+      - text: Về Trang chủ
+    - heading "Đăng nhập vào tài khoản" [level=2] [ref=f227e16]
+    - paragraph [ref=f227e17]: Đăng nhập để tiếp tục sử dụng dịch vụ vận chuyển chuyên nghiệp
+    - generic [ref=f227e18]:
+      - generic [ref=f227e19]:
+        - generic [ref=f227e20]: Email
+        - textbox "Email" [ref=f227e21]:
+          - /placeholder: example@gmail.com
+      - generic [ref=f227e22]:
+        - generic [ref=f227e23]: Mật khẩu
+        - textbox "Mật khẩu" [ref=f227e24]:
+          - /placeholder: ••••••••
+      - paragraph [ref=f227e25]:
+        - link "Quên mật khẩu?" [ref=f227e26] [cursor=pointer]:
+          - /url: "#"
+      - button "Đăng nhập" [ref=f227e27] [cursor=pointer]
+    - generic [ref=f227e28]:
+      - text: Nếu bạn chưa có tài khoản, bạn có thể
+      - link "Đăng ký tại đây!" [ref=f227e29] [cursor=pointer]:
+        - /url: /register
+    - generic [ref=f227e30]:
+      - text: "Dành cho nội bộ:"
+      - link "Đăng nhập nhân viên" [ref=f227e31] [cursor=pointer]:
+        - /url: /backoffice/login

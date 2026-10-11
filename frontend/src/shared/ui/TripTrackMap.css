@@ -1,0 +1,15 @@
+/* Bản đồ theo dõi xe (Driver xác nhận thủ công, không GPS) */
+.tt-wrap { position: relative; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); }
+.tt-map { height: 100%; width: 100%; }
+.tt-icon { background: transparent; border: 0; }
+.tt-pin { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; color: #fff; font: 700 0.72rem/1 Inter, sans-serif; box-shadow: 0 2px 6px rgba(15, 23, 42, 0.4); }
+.tt-a { background: #059669; } .tt-b { background: #dc2626; } .tt-g { background: #7c3aed; }
+.tt-st { display: block; width: 14px; height: 14px; margin: 10px; border-radius: 50%; border: 3px solid #94a3b8; background: #fff; }
+.tt-st.tt-done { border-color: #ea580c; background: #ea580c; }
+.tt-truck { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: #ea580c; color: #fff; font-size: 1.05rem; box-shadow: 0 0 0 5px rgba(234, 88, 12, 0.25), 0 4px 10px rgba(15, 23, 42, 0.4); animation: ttPulse 1.8s ease-out infinite; }
+@keyframes ttPulse { 0% { box-shadow: 0 0 0 0 rgba(234, 88, 12, 0.6), 0 4px 10px rgba(15, 23, 42, 0.4); } 100% { box-shadow: 0 0 0 18px rgba(234, 88, 12, 0), 0 4px 10px rgba(15, 23, 42, 0.4); } }
+.tt-legend { position: absolute; left: 10px; bottom: 22px; z-index: 800; display: flex; flex-wrap: wrap; gap: 10px; max-width: 80%; padding: 6px 10px; border-radius: 10px; background: rgba(255, 255, 255, 0.94); font-size: 0.76rem; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18); }
+.tt-spots { display: grid; gap: 6px; margin-top: 10px; }
+.tt-spots div { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+.tt-spots i { color: #ea580c; }
+@media (prefers-reduced-motion: reduce) { .tt-truck { animation: none; } }

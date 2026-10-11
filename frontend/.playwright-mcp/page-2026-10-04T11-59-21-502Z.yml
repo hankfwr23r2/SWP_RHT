@@ -1,0 +1,180 @@
+- generic [ref=f93e3]:
+  - banner [ref=f93e4]:
+    - link "EQ Vận chuyển Ngựa" [ref=f93e5] [cursor=pointer]:
+      - /url: /backoffice/manager
+      - generic [ref=f93e6]: EQ
+      - generic [ref=f93e7]: Vận chuyển Ngựa
+    - generic "Đường dẫn" [ref=f93e8]:
+      - generic [aria-hidden] [ref=f93e9]: 
+      - generic [ref=f93e10]:
+        - generic [aria-hidden] [ref=f93e11]: 
+        - text: Tiến độ đơn
+    - search [ref=f93e12]:
+      - generic [aria-hidden] [ref=f93e13]: 
+      - textbox "Tìm đơn hàng" [ref=f93e14]:
+        - /placeholder: Tìm đơn hàng, khách hàng…
+    - generic [ref=f93e15]:
+      - button "Thông báo" [ref=f93e17] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f93e18]: 
+      - generic "Quản lý" [ref=f93e19]: QL
+      - generic [ref=f93e20]: Quản lý
+      - button "Đăng xuất" [ref=f93e21] [cursor=pointer]:
+        - generic [ref=f93e22]: 
+  - generic [ref=f93e23]:
+    - navigation "Menu Quản lý" [ref=f93e24]:
+      - generic [ref=f93e25]: Việc cần làm
+      - link "Tổng quan" [ref=f93e26] [cursor=pointer]:
+        - /url: /backoffice/manager
+        - generic [aria-hidden] [ref=f93e27]: 
+      - link "Tiếp nhận 1 đơn chờ" [ref=f93e29] [cursor=pointer]:
+        - /url: /backoffice/manager/intake
+        - generic [aria-hidden] [ref=f93e30]: 
+        - generic [ref=f93e31]: Tiếp nhận
+        - generic "1 đơn chờ" [ref=f93e32]: "1"
+      - link "Duyệt giá 1 đơn chờ" [ref=f93e33] [cursor=pointer]:
+        - /url: /backoffice/manager/approvals
+        - generic [aria-hidden] [ref=f93e34]: 
+        - generic [ref=f93e35]: Duyệt giá
+        - generic "1 đơn chờ" [ref=f93e36]: "1"
+      - link "Sự cố 2 đơn chờ" [ref=f93e37] [cursor=pointer]:
+        - /url: /backoffice/manager/incidents
+        - generic [aria-hidden] [ref=f93e38]: 
+        - generic [ref=f93e39]: Sự cố
+        - generic "2 đơn chờ" [ref=f93e40]: "2"
+      - generic [ref=f93e41]: Theo dõi
+      - link "Tiến độ đơn" [ref=f93e42] [cursor=pointer]:
+        - /url: /backoffice/manager/progress
+        - generic [aria-hidden] [ref=f93e43]: 
+      - generic [ref=f93e45]: Báo cáo
+      - link "Chuyến đi" [ref=f93e46] [cursor=pointer]:
+        - /url: /backoffice/manager/trip-reports
+        - generic [aria-hidden] [ref=f93e47]: 
+    - main [ref=f93e49]:
+      - generic [ref=f93e52]:
+        - generic [ref=f93e53]:
+          - heading "Tiến độ đơn" [level=1] [ref=f93e54]
+          - paragraph [ref=f93e55]: Theo dõi trạng thái và tiến độ của mọi đơn. Trang chỉ để xem.
+        - generic [ref=f93e56]:
+          - tablist "Trạng thái" [ref=f93e57]:
+            - tab "Tất cả 26" [selected] [ref=f93e58] [cursor=pointer]:
+              - text: Tất cả
+              - generic [ref=f93e59]: "26"
+            - tab "Chờ tiếp nhận 1" [ref=f93e60] [cursor=pointer]:
+              - text: Chờ tiếp nhận
+              - generic [ref=f93e61]: "1"
+            - tab "Thẩm định 2" [ref=f93e62] [cursor=pointer]:
+              - text: Thẩm định
+              - generic [ref=f93e63]: "2"
+            - tab "Chờ duyệt giá 1" [ref=f93e64] [cursor=pointer]:
+              - text: Chờ duyệt giá
+              - generic [ref=f93e65]: "1"
+            - tab "Chờ đặt cọc 1" [ref=f93e66] [cursor=pointer]:
+              - text: Chờ đặt cọc
+              - generic [ref=f93e67]: "1"
+            - tab "Có vận đơn 2" [ref=f93e68] [cursor=pointer]:
+              - text: Có vận đơn
+              - generic [ref=f93e69]: "2"
+            - tab "Làm giấy tờ 3" [ref=f93e70] [cursor=pointer]:
+              - text: Làm giấy tờ
+              - generic [ref=f93e71]: "3"
+            - tab "Giấy tờ xong 1" [ref=f93e72] [cursor=pointer]:
+              - text: Giấy tờ xong
+              - generic [ref=f93e73]: "1"
+            - tab "Sẵn sàng đón 1" [ref=f93e74] [cursor=pointer]:
+              - text: Sẵn sàng đón
+              - generic [ref=f93e75]: "1"
+            - tab "Đến điểm đón 2" [ref=f93e76] [cursor=pointer]:
+              - text: Đến điểm đón
+              - generic [ref=f93e77]: "2"
+            - tab "Vận chuyển 3" [ref=f93e78] [cursor=pointer]:
+              - text: Vận chuyển
+              - generic [ref=f93e79]: "3"
+            - tab "Báo sự cố 1" [ref=f93e80] [cursor=pointer]:
+              - text: Báo sự cố
+              - generic [ref=f93e81]: "1"
+            - tab "Chờ duyệt khẩn cấp 1" [ref=f93e82] [cursor=pointer]:
+              - text: Chờ duyệt khẩn cấp
+              - generic [ref=f93e83]: "1"
+            - tab "Xử lý sự cố 1" [ref=f93e84] [cursor=pointer]:
+              - text: Xử lý sự cố
+              - generic [ref=f93e85]: "1"
+            - tab "Đã giao 1" [ref=f93e86] [cursor=pointer]:
+              - text: Đã giao
+              - generic [ref=f93e87]: "1"
+            - tab "Chờ đối soát 1" [ref=f93e88] [cursor=pointer]:
+              - text: Chờ đối soát
+              - generic [ref=f93e89]: "1"
+            - tab "Chờ khách trả 1" [ref=f93e90] [cursor=pointer]:
+              - text: Chờ khách trả
+              - generic [ref=f93e91]: "1"
+            - tab "Quá hạn trả 1" [ref=f93e92] [cursor=pointer]:
+              - text: Quá hạn trả
+              - generic [ref=f93e93]: "1"
+            - tab "Hoàn tất 1" [ref=f93e94] [cursor=pointer]:
+              - text: Hoàn tất
+              - generic [ref=f93e95]: "1"
+            - tab "Hết hạn 1" [ref=f93e96] [cursor=pointer]:
+              - text: Hết hạn
+              - generic [ref=f93e97]: "1"
+            - tab "Đã hủy 0" [ref=f93e98] [cursor=pointer]:
+              - text: Đã hủy
+              - generic [ref=f93e99]: "0"
+            - tab "Bị từ chối 0" [ref=f93e100] [cursor=pointer]:
+              - text: Bị từ chối
+              - generic [ref=f93e101]: "0"
+          - generic [ref=f93e102]:
+            - generic [ref=f93e103]:
+              - generic [aria-hidden] [ref=f93e104]: 
+              - textbox [ref=f93e105]:
+                - /placeholder: Tìm theo mã đơn, khách hàng, tuyến…
+                - text: "0118"
+            - generic [ref=f93e106]:
+              - text: Khởi hành
+              - textbox "Khởi hành từ ngày" [ref=f93e107]
+              - text: →
+              - textbox "Khởi hành đến ngày" [ref=f93e108]
+            - button "Xóa lọc" [ref=f93e109] [cursor=pointer]
+          - table [ref=f93e111]:
+            - rowgroup [ref=f93e112]:
+              - row [ref=f93e113]:
+                - columnheader "Mã đơn" [ref=f93e114]
+                - columnheader "Khách hàng" [ref=f93e115]
+                - columnheader "Tuyến" [ref=f93e116]
+                - columnheader "Khởi hành" [ref=f93e117]
+                - columnheader "Ngựa / xe" [ref=f93e118]
+                - columnheader "Trạng thái" [ref=f93e119]
+                - columnheader "Tiến độ" [ref=f93e120]
+                - columnheader "Giá trị" [ref=f93e121]
+            - rowgroup [ref=f93e122]:
+              - row [ref=f93e123]:
+                - cell "ORD-2026-0118 Quốc tế · Mộc Bài – Bavet" [ref=f93e124]:
+                  - text: ORD-2026-0118
+                  - generic [ref=f93e125]: Quốc tế · Mộc Bài – Bavet
+                - cell "CLB Ngựa Phương Nam" [ref=f93e126]
+                - cell "Kho Đồng Nai → Kho Phnom Penh" [ref=f93e127]
+                - cell "04/10/2026" [ref=f93e129]
+                - cell "2 ngựa · 1 xe" [ref=f93e130]
+                - cell [ref=f93e131]:
+                  - generic "Đang vận chuyển (In Transit)" [ref=f93e132]:
+                    - generic [aria-hidden] [ref=f93e133]: 
+                    - text: Vận chuyển
+                - 'cell "Bước 7/8: Vận chuyển Các bước của đơn Mốc 3/5 · Tới cửa khẩu" [ref=f93e134]':
+                  - generic [ref=f93e135]:
+                    - generic [ref=f93e136]: "Bước 7/8: Vận chuyển"
+                    - list "Các bước của đơn" [ref=f93e137]:
+                      - listitem "Gửi đơn" [ref=f93e138]
+                      - listitem "Thẩm định" [ref=f93e139]
+                      - listitem "Báo giá" [ref=f93e140]
+                      - listitem "Đặt cọc" [ref=f93e141]
+                      - listitem "Giấy tờ" [ref=f93e142]
+                      - listitem "Sẵn sàng" [ref=f93e143]
+                      - listitem "Vận chuyển" [ref=f93e144]
+                      - listitem "Quyết toán" [ref=f93e145]
+                    - generic [ref=f93e146]: Mốc 3/5 · Tới cửa khẩu
+                - cell "22,222,000 ₫" [ref=f93e147]
+          - generic [ref=f93e148]:
+            - generic [ref=f93e149]: Hiển thị 1 đơn hàng
+            - generic [ref=f93e150]: "Tổng giá trị: 22,222,000 ₫"
+  - group "Ngôn ngữ" [ref=f93e151]:
+    - button "VI" [pressed] [ref=f93e153]
+    - button "EN" [ref=f93e154] [cursor=pointer]

@@ -1,0 +1,32 @@
+/* Bản đồ sự cố: bổ sung cho các lớp .rm-* của bản đồ chọn trạm */
+.im-wrap { position: relative; }
+.im-map { height: 100%; }
+.im-panel { position: absolute; top: 12px; left: 12px; z-index: 800; display: grid; gap: 10px; width: 290px; max-height: calc(100% - 64px); overflow-y: auto; padding: 14px; border-radius: 14px; background: rgba(255, 255, 255, 0.97); box-shadow: 0 8px 28px rgba(15, 23, 42, 0.24); animation: rmSlide 0.25s ease-out; }
+.im-panel h4 { margin: 0; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.im-panel .im-head { display: flex; align-items: center; gap: 10px; }
+.im-panel .im-head b { display: block; font-size: 0.95rem; color: var(--navy); }
+.im-panel .im-head small { color: var(--muted); font-size: 0.78rem; }
+.im-icon { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: #fef2f2; color: #dc2626; }
+.im-list { display: grid; gap: 6px; }
+.im-opt { display: grid; gap: 1px; width: 100%; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 10px; background: white; font: inherit; text-align: left; cursor: pointer; transition: all 0.15s; }
+.im-opt:hover { border-color: #ea580c; }
+.im-opt.on { border-color: #ea580c; background: #fff7ed; }
+.im-opt b { font-size: 0.86rem; color: var(--navy); }
+.im-opt small { font-size: 0.76rem; color: var(--muted); }
+.im-opt .im-tag { justify-self: start; margin-top: 2px; padding: 1px 8px; border-radius: 999px; background: #dcfce7; color: #166534; font-size: 0.7rem; font-weight: 700; }
+.im-road { display: grid; gap: 2px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: 0.82rem; }
+.im-road b { color: var(--navy); }
+.im-road small { color: var(--muted); }
+.im-note { margin: 0; font-size: 0.8rem; line-height: 1.4; color: var(--text); }
+.rm-sos { width: 36px; height: 36px; background: #dc2626; font-size: 1.1rem; animation: rmPulseRed 1.3s ease-out infinite; }
+@keyframes rmPulseRed { 0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.65); } 100% { box-shadow: 0 0 0 18px rgba(220, 38, 38, 0); } }
+.rm-rs { background: #059669; font-size: 0.6rem; }
+.rm-rs-on { background: #ea580c; font-size: 0.7rem; box-shadow: 0 0 0 5px rgba(234, 88, 12, 0.25), 0 3px 8px rgba(15, 23, 42, 0.4); }
+.rm-legend .rm-sos { width: 16px; height: 16px; font-size: 0.6rem; animation: none; }
+.rm-legend .rm-rs { width: 18px; height: 18px; }
+@media (max-width: 760px) { .im-panel { width: 220px; } }
+@media (prefers-reduced-motion: reduce) { .rm-sos { animation: none; } }
+
+.im-wrap .rm-legend { left: auto; right: 12px; bottom: 12px; }
+
+.im-opt .im-rank { display: inline-grid; place-items: center; width: 20px; height: 20px; margin-right: 8px; border-radius: 50%; background: #ea580c; color: white; font-size: 0.72rem; font-weight: 700; }

@@ -1,0 +1,542 @@
+- generic [ref=f391e3]:
+  - banner [ref=f391e4]:
+    - link "TM Trần Minh ops@equine.vn" [ref=f391e5] [cursor=pointer]:
+      - /url: /backoffice/coordinator/fleet-plan
+      - generic [ref=f391e6]: TM
+      - generic [ref=f391e7]:
+        - generic [ref=f391e8]: Trần Minh
+        - generic [ref=f391e9]: ops@equine.vn
+    - generic "Đường dẫn" [ref=f391e10]:
+      - generic [aria-hidden] [ref=f391e11]: 
+      - generic [ref=f391e12]:
+        - generic [aria-hidden] [ref=f391e13]: 
+        - text: Xe và lộ trình
+    - search [ref=f391e14]:
+      - generic [aria-hidden] [ref=f391e15]: 
+      - textbox "Tìm đơn hàng" [ref=f391e16]:
+        - /placeholder: Tìm đơn hàng, khách hàng…
+    - generic [ref=f391e17]:
+      - button "Thông báo, 4 chưa đọc" [ref=f391e19] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f391e20]: 
+        - generic [ref=f391e21]: "4"
+      - button "Đăng xuất" [ref=f391e22] [cursor=pointer]:
+        - generic [ref=f391e23]: 
+  - generic [ref=f391e24]:
+    - complementary "Menu" [ref=f391e25]:
+      - generic [ref=f391e26]:
+        - generic [ref=f391e27]: Menu
+        - button "Thu gọn menu" [ref=f391e28] [cursor=pointer]:
+          - generic [ref=f391e29]: 
+      - navigation [ref=f391e30]:
+        - link "Xe và lộ trình 4 đơn chờ" [ref=f391e31] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan
+          - generic [aria-hidden] [ref=f391e32]: 
+          - generic [ref=f391e33]: Xe và lộ trình
+          - generic "4 đơn chờ" [ref=f391e34]: "4"
+        - link "Giấy cho tài xế 6 đơn chờ" [ref=f391e35] [cursor=pointer]:
+          - /url: /backoffice/coordinator/dispatch
+          - generic [aria-hidden] [ref=f391e36]: 
+          - generic [ref=f391e37]: Giấy cho tài xế
+          - generic "6 đơn chờ" [ref=f391e38]: "6"
+        - link "Giám sát" [ref=f391e39] [cursor=pointer]:
+          - /url: /backoffice/coordinator/monitoring
+          - generic [aria-hidden] [ref=f391e40]: 
+        - link "Sự cố 1 đơn chờ" [ref=f391e42] [cursor=pointer]:
+          - /url: /backoffice/coordinator/incidents
+          - generic [aria-hidden] [ref=f391e43]: 
+          - generic [ref=f391e44]: Sự cố
+          - generic "1 đơn chờ" [ref=f391e45]: "1"
+        - link "Đội xe" [ref=f391e46] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet
+          - generic [aria-hidden] [ref=f391e47]: 
+      - generic [ref=f391e49]:
+        - button "Cần xử lý 5" [expanded] [ref=f391e50] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f391e51]: 
+          - generic [ref=f391e52]: Cần xử lý
+          - generic [ref=f391e53]: "5"
+        - link "0125 · Lập phương án sự cố" [ref=f391e54] [cursor=pointer]:
+          - /url: /backoffice/coordinator/incidents
+          - generic [aria-hidden] [ref=f391e55]: 
+        - link "0102 · Chốt xe, lộ trình" [ref=f391e57] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0102
+          - generic [aria-hidden] [ref=f391e58]: 
+        - link "0131 · Chốt xe, lộ trình" [ref=f391e60] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0131
+          - generic [aria-hidden] [ref=f391e61]: 
+        - link "0132 · Chốt xe, lộ trình" [ref=f391e63] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0132
+          - generic [aria-hidden] [ref=f391e64]: 
+        - link "0133 · Chốt xe, lộ trình" [ref=f391e66] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0133
+          - generic [aria-hidden] [ref=f391e67]: 
+    - main [ref=f391e69]:
+      - generic [ref=f391e72]:
+        - generic [ref=f391e73]:
+          - link "Xe và lộ trình" [ref=f391e74] [cursor=pointer]:
+            - /url: /backoffice/coordinator/fleet-plan
+          - text: /
+          - generic [ref=f391e75]: ORD-2026-0133
+        - generic [ref=f391e76]:
+          - heading "Đơn ORD-2026-0133" [level=1] [ref=f391e77]
+          - generic "Under Internal Review" [ref=f391e78]:
+            - generic [aria-hidden] [ref=f391e79]: 
+            - text: Đang thẩm định nội bộ
+          - generic [ref=f391e80]:
+            - generic [ref=f391e81]:
+              - generic [aria-hidden] [ref=f391e82]: 
+              - text: "Y tế: đạt"
+            - generic [ref=f391e83]:
+              - generic [aria-hidden] [ref=f391e84]: 
+              - text: "Xe & lộ trình: chờ lập"
+        - generic [ref=f391e85]:
+          - generic [ref=f391e86]:
+            - generic [ref=f391e87]:
+              - heading " Chuyến đi" [level=3] [ref=f391e89]:
+                - generic [ref=f391e90]: 
+                - text: Chuyến đi
+              - generic [ref=f391e91]:
+                - generic [ref=f391e92]:
+                  - term [ref=f391e93]: Khách hàng
+                  - definition [ref=f391e94]: Trang trại Long Thành
+                - generic [ref=f391e95]:
+                  - term [ref=f391e96]: Loại chuyến
+                  - definition [ref=f391e97]: Trong nước
+                - generic [ref=f391e98]:
+                  - term [ref=f391e99]: Ngày khởi hành
+                  - definition [ref=f391e100]: 10/11/2026
+                - generic [ref=f391e101]:
+                  - term [ref=f391e102]: Điểm đón
+                  - definition [ref=f391e103]: Kho Đồng Nai
+                - generic [ref=f391e104]:
+                  - term [ref=f391e105]: Điểm giao
+                  - definition [ref=f391e106]: Kho Long An
+                - generic [ref=f391e107]:
+                  - term [ref=f391e108]: Người gửi
+                  - definition [ref=f391e109]:
+                    - text: Trang trại Long Thành
+                    - generic [ref=f391e110]: "0901234567"
+                - generic [ref=f391e111]:
+                  - term [ref=f391e112]: Người nhận
+                  - definition [ref=f391e113]:
+                    - text: CLB Mỹ Quỳnh
+                    - generic [ref=f391e114]: "0912345678"
+                - generic [ref=f391e115]:
+                  - term [ref=f391e116]: Số ngựa
+                  - definition [ref=f391e117]: 2 con
+            - generic [ref=f391e118]:
+              - heading " Ngựa cần chở" [level=3] [ref=f391e120]:
+                - generic [ref=f391e121]: 
+                - text: Ngựa cần chở
+              - generic [ref=f391e122]:
+                - generic [ref=f391e123]:
+                  - generic [ref=f391e125]:
+                    - generic [ref=f391e126]: Storm Runner
+                    - generic [ref=f391e127]: Chip VN-985211 · Thoroughbred · Thiến
+                  - generic [ref=f391e128]:
+                    - generic [ref=f391e129]: "Khoang: tiêu chuẩn"
+                    - generic [ref=f391e130]:
+                      - text: "Nhiệt độ yêu cầu:"
+                      - generic [ref=f391e131]: 22°C
+                    - generic [ref=f391e132]: "Bảo hiểm: mua, phí 20,000,000 ₫"
+                - generic [ref=f391e133]:
+                  - generic [ref=f391e135]:
+                    - generic [ref=f391e136]: Bạch Phong
+                    - generic [ref=f391e137]: Chip VN-985212 · Arabian · Cái
+                  - generic [ref=f391e138]:
+                    - generic [ref=f391e139]: "Khoang: tiêu chuẩn"
+                    - generic [ref=f391e140]:
+                      - text: "Nhiệt độ yêu cầu:"
+                      - generic [ref=f391e141]: 22°C
+                    - generic [ref=f391e142]: "Bảo hiểm: từ chối"
+            - generic [ref=f391e143]:
+              - generic [ref=f391e144]:
+                - heading " Xe của đơn" [level=3] [ref=f391e145]:
+                  - generic [ref=f391e146]: 
+                  - text: Xe của đơn
+                - button "+ Thêm xe" [ref=f391e148] [cursor=pointer]:
+                  - generic [ref=f391e149]: +
+                  - text: Thêm xe
+              - paragraph [ref=f391e150]:
+                - text: Bạn tự chọn xe, tài xế và nhân viên hộ tống cho từng chuyến, rồi chia ngựa lên các xe (đơn đông ngựa thì bấm Thêm xe).
+                - button "Xem thêm" [ref=f391e151] [cursor=pointer]
+              - generic [ref=f391e152] [cursor=pointer]:
+                - generic [ref=f391e153]: Xe 1
+                - generic [ref=f391e155]:
+                  - generic [ref=f391e156]:
+                    - generic [ref=f391e157]: Xe
+                    - button "Xe" [active] [ref=f391e158]:
+                      - generic [aria-hidden] [ref=f391e159]: 
+                      - generic [ref=f391e160]: Chọn xe
+                      - emphasis [ref=f391e161]: Chọn
+                  - generic [ref=f391e162]:
+                    - generic [ref=f391e163]: Tài xế
+                    - button "Tài xế" [ref=f391e164]:
+                      - generic [aria-hidden] [ref=f391e165]: 
+                      - generic [ref=f391e166]: Chọn tài xế
+                      - emphasis [ref=f391e167]: Chọn
+                  - generic [ref=f391e168]:
+                    - generic [ref=f391e169]: Nhân viên hộ tống
+                    - button "Nhân viên hộ tống" [ref=f391e170]:
+                      - generic [aria-hidden] [ref=f391e171]: 
+                      - generic [ref=f391e172]: Chọn nhân viên hộ tống
+                      - emphasis [ref=f391e173]: Chọn
+                - list [ref=f391e174]:
+                  - listitem [ref=f391e175]:
+                    - generic [ref=f391e176]:
+                      - text: Storm Runner
+                      - generic [ref=f391e177]: Chip VN-985211
+                  - listitem [ref=f391e178]:
+                    - generic [ref=f391e179]:
+                      - text: Bạch Phong
+                      - generic [ref=f391e180]: Chip VN-985212
+            - generic [ref=f391e181]:
+              - generic [ref=f391e182]:
+                - heading " Lộ trình chi tiết" [level=3] [ref=f391e183]:
+                  - generic [ref=f391e184]: 
+                  - text: Lộ trình chi tiết
+                - generic [ref=f391e185]: Tổng thời gian lái ≈ 1.3 giờ (theo đường bộ, chưa tính giao thông) · 1 chặng · dùng chung cho mọi xe
+              - generic [ref=f391e186]:
+                - generic [ref=f391e187]: Giờ đón ngựa *
+                - textbox "Giờ đón ngựa *" [ref=f391e188]: 2026-11-10T05:00
+              - table [ref=f391e190]:
+                - rowgroup [ref=f391e191]:
+                  - row [ref=f391e192]:
+                    - columnheader "Chặng" [ref=f391e193]
+                    - columnheader "Từ → Đến" [ref=f391e194]
+                    - columnheader "Khởi hành" [ref=f391e195]
+                    - columnheader "Đến" [ref=f391e196]
+                    - columnheader "Lái liên tục" [ref=f391e197]
+                - rowgroup [ref=f391e198]:
+                  - row [ref=f391e199]:
+                    - cell "1" [ref=f391e200]
+                    - cell "Kho Đồng Nai → Kho Long An" [ref=f391e201]
+                    - cell "10/11/2026 05:00" [ref=f391e202]
+                    - cell "06:15" [ref=f391e203]
+                    - cell "1.3 giờ" [ref=f391e204]
+            - generic [ref=f391e205]:
+              - generic [ref=f391e206]:
+                - heading " Trạm trung chuyển" [level=3] [ref=f391e207]:
+                  - generic [ref=f391e208]: 
+                  - text: Trạm trung chuyển
+                - generic [ref=f391e209]:
+                  - button " Chọn trên bản đồ" [ref=f391e210] [cursor=pointer]:
+                    - generic [ref=f391e211]: 
+                    - text: Chọn trên bản đồ
+                  - button " Gợi ý lại" [ref=f391e212] [cursor=pointer]:
+                    - generic [ref=f391e213]: 
+                    - text: Gợi ý lại
+              - paragraph [ref=f391e214]: Các điểm xe đi qua giữa điểm đón và điểm trả. Bấm Chọn trên bản đồ để chọn trạm và đặt thời gian nghỉ; hệ thống tự xếp thứ tự và vẽ đường đi. Ngựa không đi liên tục quá 4 giờ, mỗi trạm nghỉ tối thiểu 30 phút.
+              - generic [ref=f391e215]:
+                - generic [ref=f391e216]: 
+                - text: Chưa chọn trạm nào. Bấm Chọn trên bản đồ hoặc Gợi ý lại.
+            - generic [ref=f391e217]:
+              - generic [ref=f391e218]:
+                - generic [ref=f391e219]: Ghi chú
+                - textbox "Ghi chú" [ref=f391e220]
+              - generic [ref=f391e221]:
+                - generic [ref=f391e222]: 
+                - list [ref=f391e223]:
+                  - listitem [ref=f391e224]: Xe 1 chưa chọn xe.
+                  - listitem [ref=f391e225]: Xe 1 chưa chọn tài xế.
+                  - listitem [ref=f391e226]: Xe 1 chưa chọn nhân viên hộ tống.
+              - generic [ref=f391e227]:
+                - generic [ref=f391e228]: Sửa các lỗi trên để xác nhận.
+                - generic [ref=f391e229]:
+                  - button " Không duyệt, từ chối đơn" [ref=f391e230] [cursor=pointer]:
+                    - generic [ref=f391e231]: 
+                    - text: Không duyệt, từ chối đơn
+                  - button " Xác nhận xe và lộ trình" [disabled] [ref=f391e232]:
+                    - generic [ref=f391e233]: 
+                    - text: Xác nhận xe và lộ trình
+            - dialog [ref=f391e235]:
+              - generic [ref=f391e236]:
+                - generic [ref=f391e237]:
+                  - heading "Chọn xe" [level=3] [ref=f391e238]
+                  - generic [ref=f391e239]: Chuyến này đang xếp 2 ngựa. Xe bị khóa là xe trùng lịch hoặc thiếu giấy.
+                - button "Đóng" [ref=f391e240] [cursor=pointer]:
+                  - generic [ref=f391e241]: 
+              - generic [ref=f391e242]:
+                - generic [ref=f391e243]:
+                  - generic [ref=f391e244]:
+                    - generic [aria-hidden] [ref=f391e245]: 
+                    - textbox [ref=f391e246]:
+                      - /placeholder: Tìm biển số, mã xe
+                  - generic [ref=f391e247] [cursor=pointer]:
+                    - checkbox "Chỉ hiện chọn được" [ref=f391e248]
+                    - text: Chỉ hiện chọn được
+                  - generic [ref=f391e249]: 13/14 chọn được
+                - generic [ref=f391e250]:
+                  - button "Xe 29H-12345" [ref=f391e251] [cursor=pointer]:
+                    - generic [ref=f391e252]:
+                      - generic [ref=f391e253]: VH-001
+                      - generic [ref=f391e254]: Chưa có đơn
+                    - img "Xe 2 ngăn" [ref=f391e257]
+                    - generic [ref=f391e279]: 29H-12345
+                    - generic [ref=f391e280]:
+                      - text: Xe chuyên dụng
+                      - generic [ref=f391e281]: 2 ngăn
+                    - generic [ref=f391e282]:
+                      - generic [ref=f391e283]:
+                        - generic [ref=f391e284]: 
+                        - text: Đơn đang nhận
+                      - generic [ref=f391e285]: Chưa có đơn nào
+                  - button "Xe 51C-98765" [ref=f391e286] [cursor=pointer]:
+                    - generic [ref=f391e287]:
+                      - generic [ref=f391e288]: VH-002
+                      - generic [ref=f391e289]: Có đơn
+                    - img "Xe 4 ngăn" [ref=f391e292]
+                    - generic [ref=f391e316]: 51C-98765
+                    - generic [ref=f391e317]:
+                      - text: Xe chuyên dụng
+                      - generic [ref=f391e318]: 4 ngăn
+                    - generic [ref=f391e319]:
+                      - generic [ref=f391e320]:
+                        - generic [ref=f391e321]: 
+                        - text: Đơn đang nhận
+                      - generic [ref=f391e322]:
+                        - generic [ref=f391e323]: ORD-2026-0122
+                        - generic [ref=f391e324]: khởi hành 04/10/2026 · Kho Đồng Nai → Kho Long An
+                      - generic [ref=f391e325]:
+                        - generic [ref=f391e326]: ORD-2026-0103
+                        - generic [ref=f391e327]: khởi hành 23/11/2026 · Kho Bình Dương → Kho Đồng Nai
+                  - button "Xe 30A-55678" [ref=f391e328] [cursor=pointer]:
+                    - generic [ref=f391e329]:
+                      - generic [ref=f391e330]: VH-003
+                      - generic [ref=f391e331]: Có đơn
+                    - img "Xe 4 ngăn" [ref=f391e334]
+                    - generic [ref=f391e358]: 30A-55678
+                    - generic [ref=f391e359]:
+                      - text: Xe chuyên dụng
+                      - generic [ref=f391e360]: 4 ngăn
+                    - generic [ref=f391e361]:
+                      - generic [ref=f391e362]:
+                        - generic [ref=f391e363]: 
+                        - text: Đơn đang nhận
+                      - generic [ref=f391e364]:
+                        - generic [ref=f391e365]: ORD-2026-0122
+                        - generic [ref=f391e366]: khởi hành 04/10/2026 · Kho Đồng Nai → Kho Long An
+                  - button "Xe 51D-11122" [ref=f391e367] [cursor=pointer]:
+                    - generic [ref=f391e368]:
+                      - generic [ref=f391e369]: VH-004
+                      - generic [ref=f391e370]: Có đơn
+                    - img "Xe 6 ngăn" [ref=f391e373]
+                    - generic [ref=f391e399]: 51D-11122
+                    - generic [ref=f391e400]:
+                      - text: Xe chuyên dụng
+                      - generic [ref=f391e401]: 6 ngăn
+                    - generic [ref=f391e402]:
+                      - generic [ref=f391e403]:
+                        - generic [ref=f391e404]: 
+                        - text: Đơn đang nhận
+                      - generic [ref=f391e405]:
+                        - generic [ref=f391e406]: ORD-2026-0106
+                        - generic [ref=f391e407]: khởi hành 28/11/2026 · Kho Đồng Nai → Kho Phnom Penh
+                  - button "Xe 43C-222.11" [ref=f391e408] [cursor=pointer]:
+                    - generic [ref=f391e409]:
+                      - generic [ref=f391e410]: VH-005
+                      - generic [ref=f391e411]: Chưa có đơn
+                    - img "Xe 2 ngăn" [ref=f391e414]
+                    - generic [ref=f391e436]: 43C-222.11
+                    - generic [ref=f391e437]:
+                      - text: Xe chuyên dụng
+                      - generic [ref=f391e438]: 2 ngăn
+                    - generic [ref=f391e439]:
+                      - generic [ref=f391e440]:
+                        - generic [ref=f391e441]: 
+                        - text: Đơn đang nhận
+                      - generic [ref=f391e442]: Chưa có đơn nào
+                  - button "Xe 65C-101.22" [ref=f391e443] [cursor=pointer]:
+                    - generic [ref=f391e444]:
+                      - generic [ref=f391e445]: VH-006
+                      - generic [ref=f391e446]: Có đơn
+                    - img "Xe 2 ngăn" [ref=f391e449]
+                    - generic [ref=f391e471]: 65C-101.22
+                    - generic [ref=f391e472]:
+                      - text: Xe chuyên dụng
+                      - generic [ref=f391e473]: 2 ngăn
+                    - generic [ref=f391e474]:
+                      - generic [ref=f391e475]:
+                        - generic [ref=f391e476]: 
+                        - text: Đơn đang nhận
+                      - generic [ref=f391e477]:
+                        - generic [ref=f391e478]: ORD-2026-0104
+                        - generic [ref=f391e479]: khởi hành 03/12/2026 · Kho Đồng Nai → Kho Viêng Chăn
+                  - button "Xe 51C-123.45" [ref=f391e480] [cursor=pointer]:
+                    - generic [ref=f391e481]:
+                      - generic [ref=f391e482]: VH-007
+                      - generic [ref=f391e483]: Có đơn
+                    - img "Xe 4 ngăn" [ref=f391e486]
+                    - generic [ref=f391e510]: 51C-123.45
+                    - generic [ref=f391e511]:
+                      - text: Xe chuyên dụng
+                      - generic [ref=f391e512]: 4 ngăn
+                    - generic [ref=f391e513]:
+                      - generic [ref=f391e514]:
+                        - generic [ref=f391e515]: 
+                        - text: Đơn đang nhận
+                      - generic [ref=f391e516]:
+                        - generic [ref=f391e517]: ORD-2026-0116
+                        - generic [ref=f391e518]: khởi hành 05/10/2026 · Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+                      - generic [ref=f391e519]:
+                        - generic [ref=f391e520]: ORD-2026-0117
+                        - generic [ref=f391e521]: khởi hành 04/10/2026 · Kho Đồng Nai → Kho Long An
+                      - generic [ref=f391e522]:
+                        - generic [ref=f391e523]: ORD-2026-0125
+                        - generic [ref=f391e524]: khởi hành 04/10/2026 · Kho Đồng Nai → Kho Long An
+                      - generic [ref=f391e525]:
+                        - generic [ref=f391e526]: ORD-2026-0126
+                        - generic [ref=f391e527]: khởi hành 04/10/2026 · Kho Long An → Kho Bình Dương
+                      - generic [ref=f391e528]:
+                        - generic [ref=f391e529]: ORD-2026-0127
+                        - generic [ref=f391e530]: khởi hành 04/10/2026 · Kho Bình Dương → Kho Đồng Nai
+                      - generic [ref=f391e531]:
+                        - generic [ref=f391e532]: ORD-2026-0115
+                        - generic [ref=f391e533]: khởi hành 16/10/2026 · Kho Long An → Kho Bình Dương
+                  - button "Xe 60C-222.10" [ref=f391e534] [cursor=pointer]:
+                    - generic [ref=f391e535]:
+                      - generic [ref=f391e536]: VH-008
+                      - generic [ref=f391e537]: Chưa có đơn
+                    - img "Xe 2 ngăn" [ref=f391e540]
+                    - generic [ref=f391e562]: 60C-222.10
+                    - generic [ref=f391e563]:
+                      - text: Xe chuyên dụng
+                      - generic [ref=f391e564]: 2 ngăn
+                    - generic [ref=f391e565]:
+                      - generic [ref=f391e566]:
+                        - generic [ref=f391e567]: 
+                        - text: Đơn đang nhận
+                      - generic [ref=f391e568]: Chưa có đơn nào
+                  - 'button "Xe 29H-456.78, không chọn được: Trùng lịch với ORD-2026-0113 (khởi hành 09/11/2026)" [disabled] [ref=f391e569]':
+                    - generic [ref=f391e570]:
+                      - generic [ref=f391e571]: VH-009
+                      - generic [ref=f391e572]: Khóa
+                    - img "Xe 4 ngăn" [ref=f391e575]
+                    - generic [ref=f391e599]: 29H-456.78
+                    - generic [ref=f391e600]:
+                      - text: Xe chuyên dụng
+                      - generic [ref=f391e601]: 4 ngăn
+                    - generic [ref=f391e602]:
+                      - generic [ref=f391e603]:
+                        - generic [ref=f391e604]: 
+                        - text: Đơn đang nhận
+                      - generic [ref=f391e605]:
+                        - generic [ref=f391e606]: ORD-2026-0118
+                        - generic [ref=f391e607]: khởi hành 04/10/2026 · Kho Đồng Nai → Kho Phnom Penh
+                      - generic [ref=f391e608]:
+                        - generic [ref=f391e609]: ORD-2026-0113
+                        - generic [ref=f391e610]: khởi hành 09/11/2026 · Kho Đồng Nai → Kho Phnom Penh
+                        - emphasis [ref=f391e611]: Trùng ngày
+                      - generic [ref=f391e612]:
+                        - generic [ref=f391e613]: ORD-2026-0121
+                        - generic [ref=f391e614]: khởi hành 13/12/2026 · Kho Đồng Nai → Kho Phnom Penh
+                      - generic [ref=f391e615]:
+                        - generic [ref=f391e616]: ORD-2026-0105
+                        - generic [ref=f391e617]: khởi hành 13/11/2026 · Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+                    - generic [ref=f391e618]:
+                      - generic [ref=f391e619]: 
+                      - text: Trùng lịch với ORD-2026-0113 (khởi hành 09/11/2026)
+                  - button "Xe 51C-888.99" [ref=f391e620] [cursor=pointer]:
+                    - generic [ref=f391e621]:
+                      - generic [ref=f391e622]: VH-010
+                      - generic [ref=f391e623]: Có đơn
+                    - img "Xe 4 ngăn" [ref=f391e626]
+                    - generic [ref=f391e650]: 51C-888.99
+                    - generic [ref=f391e651]:
+                      - text: Xe chuyên dụng
+                      - generic [ref=f391e652]: 4 ngăn
+                    - generic [ref=f391e653]:
+                      - generic [ref=f391e654]:
+                        - generic [ref=f391e655]: 
+                        - text: Đơn đang nhận
+                      - generic [ref=f391e656]:
+                        - generic [ref=f391e657]: ORD-2026-0120
+                        - generic [ref=f391e658]: khởi hành 05/10/2026 · Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+                      - generic [ref=f391e659]:
+                        - generic [ref=f391e660]: ORD-2026-0121
+                        - generic [ref=f391e661]: khởi hành 13/12/2026 · Kho Đồng Nai → Kho Phnom Penh
+                  - button "Xe 61C-345.67" [ref=f391e662] [cursor=pointer]:
+                    - generic [ref=f391e663]:
+                      - generic [ref=f391e664]: VH-011
+                      - generic [ref=f391e665]: Có đơn
+                    - img "Xe 2 ngăn" [ref=f391e668]
+                    - generic [ref=f391e690]: 61C-345.67
+                    - generic [ref=f391e691]:
+                      - text: Xe chuyên dụng
+                      - generic [ref=f391e692]: 2 ngăn
+                    - generic [ref=f391e693]:
+                      - generic [ref=f391e694]:
+                        - generic [ref=f391e695]: 
+                        - text: Đơn đang nhận
+                      - generic [ref=f391e696]:
+                        - generic [ref=f391e697]: ORD-2026-0110
+                        - generic [ref=f391e698]: khởi hành 20/11/2026 · Kho Long An → Kho Bình Dương
+                  - button "Xe 70C-045.18" [ref=f391e699] [cursor=pointer]:
+                    - generic [ref=f391e700]:
+                      - generic [ref=f391e701]: VH-012
+                      - generic [ref=f391e702]: Có đơn
+                    - img "Xe 2 ngăn" [ref=f391e705]
+                    - generic [ref=f391e727]: 70C-045.18
+                    - generic [ref=f391e728]:
+                      - text: Xe chuyên dụng
+                      - generic [ref=f391e729]: 2 ngăn
+                    - generic [ref=f391e730]:
+                      - generic [ref=f391e731]:
+                        - generic [ref=f391e732]: 
+                        - text: Đơn đang nhận
+                      - generic [ref=f391e733]:
+                        - generic [ref=f391e734]: ORD-2026-0111
+                        - generic [ref=f391e735]: khởi hành 25/11/2026 · Kho Đồng Nai → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+                  - button "Xe 29C-310.77" [ref=f391e736] [cursor=pointer]:
+                    - generic [ref=f391e737]:
+                      - generic [ref=f391e738]: VH-013
+                      - generic [ref=f391e739]: Có đơn
+                    - img "Xe 2 ngăn" [ref=f391e742]
+                    - generic [ref=f391e764]: 29C-310.77
+                    - generic [ref=f391e765]:
+                      - text: Xe chuyên dụng
+                      - generic [ref=f391e766]: 2 ngăn
+                    - generic [ref=f391e767]:
+                      - generic [ref=f391e768]:
+                        - generic [ref=f391e769]: 
+                        - text: Đơn đang nhận
+                      - generic [ref=f391e770]:
+                        - generic [ref=f391e771]: ORD-2026-0112
+                        - generic [ref=f391e772]: khởi hành 17/11/2026 · Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+                  - button "Xe 51D-909.09" [ref=f391e773] [cursor=pointer]:
+                    - generic [ref=f391e774]:
+                      - generic [ref=f391e775]: VH-014
+                      - generic [ref=f391e776]: Chưa có đơn
+                    - img "Xe 9 ngăn" [ref=f391e779]
+                    - generic [ref=f391e808]: 51D-909.09
+                    - generic [ref=f391e809]:
+                      - text: Xe chuyên dụng
+                      - generic [ref=f391e810]: 9 ngăn
+                    - generic [ref=f391e811]:
+                      - generic [ref=f391e812]:
+                        - generic [ref=f391e813]: 
+                        - text: Đơn đang nhận
+                      - generic [ref=f391e814]: Chưa có đơn nào
+          - complementary [ref=f391e815]:
+            - generic [ref=f391e816]:
+              - heading " Nhật ký đơn" [level=3] [ref=f391e818]:
+                - generic [ref=f391e819]: 
+                - text: Nhật ký đơn
+              - list [ref=f391e820]:
+                - listitem [ref=f391e821]:
+                  - generic [aria-hidden] [ref=f391e823]: 
+                  - generic [ref=f391e824]:
+                    - text: Xác nhận đạt y tế
+                    - generic [ref=f391e825]: Nguyễn Thị Thu · 04/10/2026 15:53
+                - listitem [ref=f391e826]:
+                  - generic [aria-hidden] [ref=f391e828]: 
+                  - generic [ref=f391e829]:
+                    - text: Tiếp nhận. Giao Nguyễn Thị Thu (kiểm dịch) và Trần Minh (điều phối)
+                    - generic [ref=f391e830]: Quản lý · 04/10/2026 15:52
+                - listitem [ref=f391e831]:
+                  - generic [aria-hidden] [ref=f391e833]: 
+                  - generic [ref=f391e834]:
+                    - text: Gửi yêu cầu đặt đơn
+                    - generic [ref=f391e835]: Trang trại Long Thành · 04/10/2026 15:51
+  - group "Ngôn ngữ" [ref=f391e836]:
+    - button "VI" [pressed] [ref=f391e838]
+    - button "EN" [ref=f391e839] [cursor=pointer]

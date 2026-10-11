@@ -1,0 +1,5 @@
+.check { flex-shrink: 0; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; }
+.circle { stroke: currentColor; opacity: 0.9; stroke-dasharray: 151; stroke-dashoffset: 151; animation: draw 0.5s cubic-bezier(0.65, 0, 0.45, 1) forwards; }
+.tick { stroke: currentColor; stroke-dasharray: 36; stroke-dashoffset: 36; animation: draw 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.45s forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) { .circle, .tick { animation: none; stroke-dashoffset: 0; } }

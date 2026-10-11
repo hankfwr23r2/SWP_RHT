@@ -1,0 +1,8 @@
+/* Hình xe có chuyển động: rê chuột vào thì bánh quay và thùng xe rung nhẹ như đang chạy */
+.art { overflow: visible; }
+.wheel { transform-box: fill-box; transform-origin: center; }
+.art:hover .wheel, :global(.vehicle-live) .wheel { animation: spin 0.7s linear infinite; }
+.art:hover .body, :global(.vehicle-live) .body { animation: bump 0.5s ease-in-out infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes bump { 50% { transform: translateY(-1.5px); } }
+@media (prefers-reduced-motion: reduce) { .art:hover .wheel, .art:hover .body, :global(.vehicle-live) .wheel, :global(.vehicle-live) .body { animation: none; } }

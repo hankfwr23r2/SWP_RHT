@@ -1,0 +1,414 @@
+- generic [ref=f166e3]:
+  - banner [ref=f166e4]:
+    - link "TM Trần Minh ops@equine.vn" [ref=f166e5] [cursor=pointer]:
+      - /url: /backoffice/coordinator/fleet-plan
+      - generic [ref=f166e6]: TM
+      - generic [ref=f166e7]:
+        - generic [ref=f166e8]: Trần Minh
+        - generic [ref=f166e9]: ops@equine.vn
+    - generic "Đường dẫn" [ref=f166e10]:
+      - generic [aria-hidden] [ref=f166e11]: 
+      - generic [ref=f166e12]:
+        - generic [aria-hidden] [ref=f166e13]: 
+        - text: Đội xe
+    - search [ref=f166e14]:
+      - generic [aria-hidden] [ref=f166e15]: 
+      - textbox "Tìm đơn hàng" [ref=f166e16]:
+        - /placeholder: Tìm đơn hàng, khách hàng…
+    - generic [ref=f166e17]:
+      - button "Thông báo" [ref=f166e19] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f166e20]: 
+      - button "Đăng xuất" [ref=f166e21] [cursor=pointer]:
+        - generic [ref=f166e22]: 
+  - generic [ref=f166e23]:
+    - complementary "Menu" [ref=f166e24]:
+      - generic [ref=f166e25]:
+        - generic [ref=f166e26]: Menu
+        - button "Thu gọn menu" [ref=f166e27] [cursor=pointer]:
+          - generic [ref=f166e28]: 
+      - navigation [ref=f166e29]:
+        - link "Xe và lộ trình 1 đơn chờ" [ref=f166e30] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan
+          - generic [aria-hidden] [ref=f166e31]: 
+          - generic [ref=f166e32]: Xe và lộ trình
+          - generic "1 đơn chờ" [ref=f166e33]: "1"
+        - link "Giấy cho tài xế 6 đơn chờ" [ref=f166e34] [cursor=pointer]:
+          - /url: /backoffice/coordinator/dispatch
+          - generic [aria-hidden] [ref=f166e35]: 
+          - generic [ref=f166e36]: Giấy cho tài xế
+          - generic "6 đơn chờ" [ref=f166e37]: "6"
+        - link "Giám sát" [ref=f166e38] [cursor=pointer]:
+          - /url: /backoffice/coordinator/monitoring
+          - generic [aria-hidden] [ref=f166e39]: 
+        - link "Sự cố 1 đơn chờ" [ref=f166e41] [cursor=pointer]:
+          - /url: /backoffice/coordinator/incidents
+          - generic [aria-hidden] [ref=f166e42]: 
+          - generic [ref=f166e43]: Sự cố
+          - generic "1 đơn chờ" [ref=f166e44]: "1"
+        - link "Đội xe" [ref=f166e45] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet
+          - generic [aria-hidden] [ref=f166e46]: 
+      - generic [ref=f166e48]:
+        - button "Cần xử lý 5" [expanded] [ref=f166e49] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f166e50]: 
+          - generic [ref=f166e51]: Cần xử lý
+          - generic [ref=f166e52]: "5"
+        - link "0125 · Lập phương án sự cố" [ref=f166e53] [cursor=pointer]:
+          - /url: /backoffice/coordinator/incidents
+          - generic [aria-hidden] [ref=f166e54]: 
+        - link "0102 · Chốt xe, lộ trình" [ref=f166e56] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0102
+          - generic [aria-hidden] [ref=f166e57]: 
+        - link "0113 · Nhập bộ giấy" [ref=f166e59] [cursor=pointer]:
+          - /url: /backoffice/coordinator/dispatch/ORD-2026-0113
+          - generic [aria-hidden] [ref=f166e60]: 
+        - link "0112 · Nhập bộ giấy" [ref=f166e62] [cursor=pointer]:
+          - /url: /backoffice/coordinator/dispatch/ORD-2026-0112
+          - generic [aria-hidden] [ref=f166e63]: 
+        - link "0111 · Nhập bộ giấy" [ref=f166e65] [cursor=pointer]:
+          - /url: /backoffice/coordinator/dispatch/ORD-2026-0111
+          - generic [aria-hidden] [ref=f166e66]: 
+    - main [ref=f166e68]:
+      - generic [ref=f166e71]:
+        - generic [ref=f166e72]:
+          - heading "Quản lý đội xe" [level=1] [ref=f166e73]
+          - paragraph [ref=f166e74]: Theo dõi trạng thái từng xe, tài xế cố định và xe đang chở ngựa nào. Bấm vào xe để xem và sửa.
+        - generic [ref=f166e75]:
+          - tablist "Trạng thái xe" [ref=f166e76]:
+            - tab "Tất cả 14" [selected] [ref=f166e77] [cursor=pointer]:
+              - text: Tất cả
+              - generic [ref=f166e79]: "14"
+            - tab "Khả dụng 10" [ref=f166e80] [cursor=pointer]:
+              - text: Khả dụng
+              - generic [ref=f166e82]: "10"
+            - tab "Đang sử dụng 3" [ref=f166e83] [cursor=pointer]:
+              - text: Đang sử dụng
+              - generic [ref=f166e85]: "3"
+            - tab "Đang bảo dưỡng 1" [ref=f166e86] [cursor=pointer]:
+              - text: Đang bảo dưỡng
+              - generic [ref=f166e88]: "1"
+          - generic [ref=f166e89]:
+            - generic [aria-hidden] [ref=f166e90]: 
+            - textbox [ref=f166e91]:
+              - /placeholder: Tìm biển số, tên xe, tài xế
+          - button "+ Thêm phương tiện" [ref=f166e92] [cursor=pointer]:
+            - generic [ref=f166e93]: +
+            - text: Thêm phương tiện
+        - generic [ref=f166e94]:
+          - article "Xe 29H-12345" [ref=f166e95] [cursor=pointer]:
+            - generic [ref=f166e96]:
+              - generic [ref=f166e97]: VH-001
+              - generic [ref=f166e98]: Đang sử dụng
+            - img "Xe 2 ngăn" [ref=f166e101]
+            - generic [ref=f166e119]: 29H-12345
+            - generic [ref=f166e120]:
+              - text: Xe Thùng VIP
+              - generic [ref=f166e121]: Xe tải chuyên dụng · 2 ngăn
+            - generic [ref=f166e122]:
+              - generic [ref=f166e123]:
+                - generic [ref=f166e124]: Tài xế
+                - generic [ref=f166e125]: Nguyễn Văn A
+              - generic [ref=f166e126]:
+                - generic [ref=f166e127]: Đang chở
+                - generic [ref=f166e128]: Sẵn sàng
+              - generic [ref=f166e129]:
+                - generic [ref=f166e130]: Bảo trì gần nhất
+                - generic [ref=f166e131]: 15/09/2026
+            - generic [ref=f166e132]:
+              - button "Sửa" [ref=f166e133]
+              - button "Xóa" [ref=f166e134]
+          - article "Xe 51C-98765" [ref=f166e135] [cursor=pointer]:
+            - generic [ref=f166e136]:
+              - generic [ref=f166e137]: VH-002
+              - generic [ref=f166e138]: Khả dụng
+            - img "Xe 4 ngăn" [ref=f166e141]
+            - generic [ref=f166e161]: 51C-98765
+            - generic [ref=f166e162]:
+              - text: Xe Thùng Tiêu chuẩn
+              - generic [ref=f166e163]: Xe tải chuyên dụng · 4 ngăn
+            - generic [ref=f166e164]:
+              - generic [ref=f166e165]:
+                - generic [ref=f166e166]: Tài xế
+                - generic [ref=f166e167]: Trần Văn B
+              - generic [ref=f166e168]:
+                - generic [ref=f166e169]: Đang chở
+                - generic [ref=f166e170]: Storm Runner, Bạch Phong; Kim Lân; Kim Lân, Ngọc Long, Bạch Phong
+              - generic [ref=f166e171]:
+                - generic [ref=f166e172]: Bảo trì gần nhất
+                - generic [ref=f166e173]: 10/09/2026
+            - generic [ref=f166e174]:
+              - button "Sửa" [ref=f166e175]
+              - button "Xóa" [ref=f166e176]
+          - article "Xe 30A-55678" [ref=f166e177] [cursor=pointer]:
+            - generic [ref=f166e178]:
+              - generic [ref=f166e179]: VH-003
+              - generic [ref=f166e180]: Đang sử dụng
+            - img "Xe 4 ngăn" [ref=f166e183]
+            - generic [ref=f166e203]: 30A-55678
+            - generic [ref=f166e204]:
+              - text: Xe Thùng Lạnh
+              - generic [ref=f166e205]: Xe tải chuyên dụng · 4 ngăn
+            - generic [ref=f166e206]:
+              - generic [ref=f166e207]:
+                - generic [ref=f166e208]: Tài xế
+                - generic [ref=f166e209]: Lê Văn C
+              - generic [ref=f166e210]:
+                - generic [ref=f166e211]: Đang chở
+                - generic [ref=f166e212]: Kim Lân, Ngọc Long
+              - generic [ref=f166e213]:
+                - generic [ref=f166e214]: Bảo trì gần nhất
+                - generic [ref=f166e215]: 01/09/2026
+            - generic [ref=f166e216]:
+              - button "Sửa" [ref=f166e217]
+              - button "Xóa" [ref=f166e218]
+          - article "Xe 51D-11122" [ref=f166e219] [cursor=pointer]:
+            - generic [ref=f166e220]:
+              - generic [ref=f166e221]: VH-004
+              - generic [ref=f166e222]: Khả dụng
+            - img "Xe 6 ngăn" [ref=f166e225]
+            - generic [ref=f166e247]: 51D-11122
+            - generic [ref=f166e248]:
+              - text: Xe Container Quốc tế
+              - generic [ref=f166e249]: Container đặc biệt · 6 ngăn
+            - generic [ref=f166e250]:
+              - generic [ref=f166e251]:
+                - generic [ref=f166e252]: Tài xế
+                - generic [ref=f166e253]: Phạm Văn D
+              - generic [ref=f166e254]:
+                - generic [ref=f166e255]: Đang chở
+                - generic [ref=f166e256]: Bạch Phong, Ngọc Long, Storm Runner
+              - generic [ref=f166e257]:
+                - generic [ref=f166e258]: Bảo trì gần nhất
+                - generic [ref=f166e259]: 08/09/2026
+            - generic [ref=f166e260]:
+              - button "Sửa" [ref=f166e261]
+              - button "Xóa" [ref=f166e262]
+          - article "Xe 43C-222.11" [ref=f166e263] [cursor=pointer]:
+            - generic [ref=f166e264]:
+              - generic [ref=f166e265]: VH-005
+              - generic [ref=f166e266]: Đang bảo dưỡng
+            - img "Xe 2 ngăn" [ref=f166e269]
+            - generic [ref=f166e287]: 43C-222.11
+            - generic [ref=f166e288]:
+              - text: Xe Thùng VIP
+              - generic [ref=f166e289]: Xe tải chuyên dụng · 2 ngăn
+            - generic [ref=f166e290]:
+              - generic [ref=f166e291]:
+                - generic [ref=f166e292]: Tài xế
+                - generic [ref=f166e293]: Lê Minh Tuấn
+              - generic [ref=f166e294]:
+                - generic [ref=f166e295]: Đang chở
+                - generic [ref=f166e296]: Không khả dụng
+              - generic [ref=f166e297]:
+                - generic [ref=f166e298]: Bảo trì gần nhất
+                - generic [ref=f166e299]: 20/09/2026
+            - generic [ref=f166e300]:
+              - generic [ref=f166e301]: 
+              - text: Đang bảo dưỡng
+            - generic [ref=f166e302]:
+              - button "Sửa" [ref=f166e303]
+              - button "Xóa" [ref=f166e304]
+          - article "Xe 65C-101.22" [ref=f166e305] [cursor=pointer]:
+            - generic [ref=f166e306]:
+              - generic [ref=f166e307]: VH-006
+              - generic [ref=f166e308]: Khả dụng
+            - img "Xe 2 ngăn" [ref=f166e311]
+            - generic [ref=f166e329]: 65C-101.22
+            - generic [ref=f166e330]:
+              - text: Xe Mui bạt
+              - generic [ref=f166e331]: Xe tải chuyên dụng · 2 ngăn
+            - generic [ref=f166e332]:
+              - generic [ref=f166e333]:
+                - generic [ref=f166e334]: Tài xế
+                - generic [ref=f166e335]: Đặng Hoài Phúc
+              - generic [ref=f166e336]:
+                - generic [ref=f166e337]: Đang chở
+                - generic [ref=f166e338]: Storm Runner, Ngọc Long
+              - generic [ref=f166e339]:
+                - generic [ref=f166e340]: Bảo trì gần nhất
+                - generic [ref=f166e341]: 12/09/2026
+            - generic [ref=f166e342]:
+              - button "Sửa" [ref=f166e343]
+              - button "Xóa" [ref=f166e344]
+          - article "Xe 51C-123.45" [ref=f166e345] [cursor=pointer]:
+            - generic [ref=f166e346]:
+              - generic [ref=f166e347]: VH-007
+              - generic [ref=f166e348]: Đang sử dụng
+            - img "Xe 4 ngăn" [ref=f166e351]
+            - generic [ref=f166e371]: 51C-123.45
+            - generic [ref=f166e372]:
+              - text: Xe chuyên dụng 4 ngăn
+              - generic [ref=f166e373]: Xe tải chuyên dụng · 4 ngăn
+            - generic [ref=f166e374]:
+              - generic [ref=f166e375]:
+                - generic [ref=f166e376]: Tài xế
+                - generic [ref=f166e377]: Nguyễn Văn Hùng
+              - generic [ref=f166e378]:
+                - generic [ref=f166e379]: Đang chở
+                - generic [ref=f166e380]: Storm Runner, Kim Lân; Kim Lân, Ngọc Long; Kim Lân; Kim Lân; Kim Lân; Bạch Phong
+              - generic [ref=f166e381]:
+                - generic [ref=f166e382]: Bảo trì gần nhất
+                - generic [ref=f166e383]: 05/09/2026
+            - generic [ref=f166e384]:
+              - button "Sửa" [ref=f166e385]
+              - button "Xóa" [ref=f166e386]
+          - article "Xe 60C-222.10" [ref=f166e387] [cursor=pointer]:
+            - generic [ref=f166e388]:
+              - generic [ref=f166e389]: VH-008
+              - generic [ref=f166e390]: Khả dụng
+            - img "Xe 2 ngăn" [ref=f166e393]
+            - generic [ref=f166e411]: 60C-222.10
+            - generic [ref=f166e412]:
+              - text: Xe chuyên dụng 2 ngăn
+              - generic [ref=f166e413]: Xe tải chuyên dụng · 2 ngăn
+            - generic [ref=f166e414]:
+              - generic [ref=f166e415]:
+                - generic [ref=f166e416]: Tài xế
+                - generic [ref=f166e417]: Phan Thanh Hải
+              - generic [ref=f166e418]:
+                - generic [ref=f166e419]: Đang chở
+                - generic [ref=f166e420]: Sẵn sàng
+              - generic [ref=f166e421]:
+                - generic [ref=f166e422]: Bảo trì gần nhất
+                - generic [ref=f166e423]: 18/09/2026
+            - generic [ref=f166e424]:
+              - button "Sửa" [ref=f166e425]
+              - button "Xóa" [ref=f166e426]
+          - article "Xe 29H-456.78" [ref=f166e427] [cursor=pointer]:
+            - generic [ref=f166e428]:
+              - generic [ref=f166e429]: VH-009
+              - generic [ref=f166e430]: Khả dụng
+            - img "Xe 4 ngăn" [ref=f166e433]
+            - generic [ref=f166e453]: 29H-456.78
+            - generic [ref=f166e454]:
+              - text: Xe chuyên dụng 4 ngăn
+              - generic [ref=f166e455]: Xe tải chuyên dụng · 4 ngăn
+            - generic [ref=f166e456]:
+              - generic [ref=f166e457]:
+                - generic [ref=f166e458]: Tài xế
+                - generic [ref=f166e459]: Trần Quốc Bảo
+              - generic [ref=f166e460]:
+                - generic [ref=f166e461]: Đang chở
+                - generic [ref=f166e462]: Storm Runner, Bạch Phong; Storm Runner, Bạch Phong; Storm Runner, Bạch Phong, Kim Lân; Storm Runner, Bạch Phong, Kim Lân
+              - generic [ref=f166e463]:
+                - generic [ref=f166e464]: Bảo trì gần nhất
+                - generic [ref=f166e465]: 11/09/2026
+            - generic [ref=f166e466]:
+              - button "Sửa" [ref=f166e467]
+              - button "Xóa" [ref=f166e468]
+          - article "Xe 51C-888.99" [ref=f166e469] [cursor=pointer]:
+            - generic [ref=f166e470]:
+              - generic [ref=f166e471]: VH-010
+              - generic [ref=f166e472]: Khả dụng
+            - img "Xe 4 ngăn" [ref=f166e475]
+            - generic [ref=f166e495]: 51C-888.99
+            - generic [ref=f166e496]:
+              - text: Xe chuyên dụng 4 ngăn
+              - generic [ref=f166e497]: Xe tải chuyên dụng · 4 ngăn
+            - generic [ref=f166e498]:
+              - generic [ref=f166e499]:
+                - generic [ref=f166e500]: Tài xế
+                - generic [ref=f166e501]: Phạm Đức Anh
+              - generic [ref=f166e502]:
+                - generic [ref=f166e503]: Đang chở
+                - generic [ref=f166e504]: Bạch Phong; Thanh Vân, Hắc Mã, Ngọc Long
+              - generic [ref=f166e505]:
+                - generic [ref=f166e506]: Bảo trì gần nhất
+                - generic [ref=f166e507]: 03/09/2026
+            - generic [ref=f166e508]:
+              - button "Sửa" [ref=f166e509]
+              - button "Xóa" [ref=f166e510]
+          - article "Xe 61C-345.67" [ref=f166e511] [cursor=pointer]:
+            - generic [ref=f166e512]:
+              - generic [ref=f166e513]: VH-011
+              - generic [ref=f166e514]: Khả dụng
+            - img "Xe 2 ngăn" [ref=f166e517]
+            - generic [ref=f166e535]: 61C-345.67
+            - generic [ref=f166e536]:
+              - text: Xe chuyên dụng 2 ngăn
+              - generic [ref=f166e537]: Xe tải chuyên dụng · 2 ngăn
+            - generic [ref=f166e538]:
+              - generic [ref=f166e539]:
+                - generic [ref=f166e540]: Tài xế
+                - generic [ref=f166e541]: Võ Thanh Sơn
+              - generic [ref=f166e542]:
+                - generic [ref=f166e543]: Đang chở
+                - generic [ref=f166e544]: Kim Lân
+              - generic [ref=f166e545]:
+                - generic [ref=f166e546]: Bảo trì gần nhất
+                - generic [ref=f166e547]: 16/09/2026
+            - generic [ref=f166e548]:
+              - button "Sửa" [ref=f166e549]
+              - button "Xóa" [ref=f166e550]
+          - article "Xe 70C-045.18" [ref=f166e551] [cursor=pointer]:
+            - generic [ref=f166e552]:
+              - generic [ref=f166e553]: VH-012
+              - generic [ref=f166e554]: Khả dụng
+            - img "Xe 2 ngăn" [ref=f166e557]
+            - generic [ref=f166e575]: 70C-045.18
+            - generic [ref=f166e576]:
+              - text: Xe chuyên dụng 2 ngăn
+              - generic [ref=f166e577]: Xe tải chuyên dụng · 2 ngăn
+            - generic [ref=f166e578]:
+              - generic [ref=f166e579]:
+                - generic [ref=f166e580]: Tài xế
+                - generic [ref=f166e581]: Lê Văn Tài
+              - generic [ref=f166e582]:
+                - generic [ref=f166e583]: Đang chở
+                - generic [ref=f166e584]: Bạch Phong, Ngọc Long
+              - generic [ref=f166e585]:
+                - generic [ref=f166e586]: Bảo trì gần nhất
+                - generic [ref=f166e587]: 09/09/2026
+            - generic [ref=f166e588]:
+              - button "Sửa" [ref=f166e589]
+              - button "Xóa" [ref=f166e590]
+          - article "Xe 29C-310.77" [ref=f166e591] [cursor=pointer]:
+            - generic [ref=f166e592]:
+              - generic [ref=f166e593]: VH-013
+              - generic [ref=f166e594]: Khả dụng
+            - img "Xe 2 ngăn" [ref=f166e597]
+            - generic [ref=f166e615]: 29C-310.77
+            - generic [ref=f166e616]:
+              - text: Xe chuyên dụng 2 ngăn
+              - generic [ref=f166e617]: Xe tải chuyên dụng · 2 ngăn
+            - generic [ref=f166e618]:
+              - generic [ref=f166e619]:
+                - generic [ref=f166e620]: Tài xế
+                - generic [ref=f166e621]: Trịnh Văn Long
+              - generic [ref=f166e622]:
+                - generic [ref=f166e623]: Đang chở
+                - generic [ref=f166e624]: Storm Runner
+              - generic [ref=f166e625]:
+                - generic [ref=f166e626]: Bảo trì gần nhất
+                - generic [ref=f166e627]: 14/09/2026
+            - generic [ref=f166e628]:
+              - button "Sửa" [ref=f166e629]
+              - button "Xóa" [ref=f166e630]
+          - article "Xe 51D-909.09" [ref=f166e631] [cursor=pointer]:
+            - generic [ref=f166e632]:
+              - generic [ref=f166e633]: VH-014
+              - generic [ref=f166e634]: Khả dụng
+            - img "Xe 9 ngăn" [ref=f166e637]
+            - generic [ref=f166e662]: 51D-909.09
+            - generic [ref=f166e663]:
+              - text: Xe tải nặng 9 ngăn
+              - generic [ref=f166e664]: Xe tải chuyên dụng · 9 ngăn
+            - generic [ref=f166e665]:
+              - generic [ref=f166e666]:
+                - generic [ref=f166e667]: Tài xế
+                - generic [ref=f166e668]: Hoàng Văn Tâm
+              - generic [ref=f166e669]:
+                - generic [ref=f166e670]: Đang chở
+                - generic [ref=f166e671]: Sẵn sàng
+              - generic [ref=f166e672]:
+                - generic [ref=f166e673]: Bảo trì gần nhất
+                - generic [ref=f166e674]: 17/09/2026
+            - generic [ref=f166e675]:
+              - button "Sửa" [ref=f166e676]
+              - button "Xóa" [ref=f166e677]
+          - button "+ Thêm phương tiện" [ref=f166e678] [cursor=pointer]:
+            - generic [ref=f166e679]: +
+            - text: Thêm phương tiện
+  - group "Ngôn ngữ" [ref=f166e680]:
+    - button "VI" [pressed] [ref=f166e682]
+    - button "EN" [ref=f166e683] [cursor=pointer]

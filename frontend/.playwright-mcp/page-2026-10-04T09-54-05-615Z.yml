@@ -1,0 +1,158 @@
+- generic [ref=f4e2]:
+  - banner [ref=f4e3]:
+    - generic [ref=f4e4]:
+      - link "EQ Vận chuyển Ngựa Quản lý" [ref=f4e5] [cursor=pointer]:
+        - /url: /backoffice/manager
+        - generic [ref=f4e6]: EQ
+        - generic [ref=f4e7]: Vận chuyển Ngựa
+        - generic [ref=f4e8]: Quản lý
+      - navigation "Menu" [ref=f4e9]:
+        - generic: Việc cần làm
+        - link "Tổng quan" [ref=f4e10] [cursor=pointer]:
+          - /url: /backoffice/manager
+        - link "Tiếp nhận 1 đơn chờ" [ref=f4e11] [cursor=pointer]:
+          - /url: /backoffice/manager/intake
+          - text: Tiếp nhận
+          - generic "1 đơn chờ" [ref=f4e12]: "1"
+        - link "Duyệt giá 1 đơn chờ" [ref=f4e13] [cursor=pointer]:
+          - /url: /backoffice/manager/approvals
+          - text: Duyệt giá
+          - generic "1 đơn chờ" [ref=f4e14]: "1"
+        - link "Sự cố 2 đơn chờ" [ref=f4e15] [cursor=pointer]:
+          - /url: /backoffice/manager/incidents
+          - text: Sự cố
+          - generic "2 đơn chờ" [ref=f4e16]: "2"
+        - generic: Theo dõi
+        - link "Tiến độ đơn" [ref=f4e17] [cursor=pointer]:
+          - /url: /backoffice/manager/progress
+        - generic: Báo cáo
+        - link "Chuyến đi" [ref=f4e18] [cursor=pointer]:
+          - /url: /backoffice/manager/trip-reports
+      - generic [ref=f4e19]:
+        - button "Thông báo" [ref=f4e21] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f4e22]: 
+        - generic "Quản lý" [ref=f4e23]: QL
+        - button " Đăng xuất" [ref=f4e24] [cursor=pointer]:
+          - generic [ref=f4e25]: 
+          - text: Đăng xuất
+  - main [ref=f4e26]:
+    - generic [ref=f4e29]:
+      - heading "Tổng quan" [level=1] [ref=f4e31]
+      - generic [ref=f4e32]:
+        - link " 1 Chờ tiếp nhận Bấm để xử lý" [ref=f4e33] [cursor=pointer]:
+          - /url: /backoffice/manager/intake
+          - generic [ref=f4e34]: 
+          - generic [ref=f4e35]: "1"
+          - generic [ref=f4e36]: Chờ tiếp nhận
+          - generic [ref=f4e37]: Bấm để xử lý
+        - link " 1 Chờ duyệt giá Bấm để xử lý" [ref=f4e38] [cursor=pointer]:
+          - /url: /backoffice/manager/approvals
+          - generic [ref=f4e39]: 
+          - generic [ref=f4e40]: "1"
+          - generic [ref=f4e41]: Chờ duyệt giá
+          - generic [ref=f4e42]: Bấm để xử lý
+        - link " 2 Sự cố cần xử lý Bấm để xử lý" [ref=f4e43] [cursor=pointer]:
+          - /url: /backoffice/manager/incidents
+          - generic [ref=f4e44]: 
+          - generic [ref=f4e45]: "2"
+          - generic [ref=f4e46]: Sự cố cần xử lý
+          - generic [ref=f4e47]: Bấm để xử lý
+        - link " 8 Xe đang chạy Xem tiến độ" [ref=f4e48] [cursor=pointer]:
+          - /url: /backoffice/manager/progress
+          - generic [ref=f4e49]: 
+          - generic [ref=f4e50]: "8"
+          - generic [ref=f4e51]: Xe đang chạy
+          - generic [ref=f4e52]: Xem tiến độ
+      - heading "Số liệu năm 2026" [level=2] [ref=f4e53]
+      - generic [ref=f4e54]:
+        - generic [ref=f4e55]:
+          - generic [ref=f4e56]:
+            - generic [ref=f4e57]: 
+            - text: Doanh thu
+          - generic [ref=f4e58]: 44 Tỷ
+          - generic [ref=f4e59]: Tăng 12% so với năm trước
+        - generic [ref=f4e60]:
+          - generic [ref=f4e61]:
+            - generic [ref=f4e62]: 
+            - text: Chi phí vận hành
+          - generic [ref=f4e63]: 28,7 Tỷ
+          - generic [ref=f4e64]: Tăng 5% (do sự cố)
+        - generic [ref=f4e65]:
+          - generic [ref=f4e66]:
+            - generic [ref=f4e67]: 
+            - text: Lợi nhuận
+          - generic [ref=f4e68]: 15,3 Tỷ
+          - generic [ref=f4e69]: Biên lợi nhuận đạt 35%
+        - generic [ref=f4e70]:
+          - generic [ref=f4e71]:
+            - generic [ref=f4e72]: 
+            - text: Giao đúng giờ
+          - generic [ref=f4e73]: 95.0%
+          - generic [ref=f4e74]: 228/240 chuyến không trễ
+      - generic [ref=f4e75]:
+        - generic [ref=f4e76]:
+          - heading " Doanh thu và chi phí (tỷ VND)" [level=3] [ref=f4e78]:
+            - generic [ref=f4e79]: 
+            - text: Doanh thu và chi phí (tỷ VND)
+          - generic [ref=f4e80]:
+            - generic [ref=f4e81]:
+              - generic [ref=f4e82]:
+                - generic [ref=f4e83]: Doanh thu
+                - generic [ref=f4e85]: Chi phí
+                - generic [ref=f4e87]: Lợi nhuận
+              - button " Xem bảng" [ref=f4e89] [cursor=pointer]:
+                - generic [ref=f4e90]: 
+                - text: Xem bảng
+            - img "Doanh thu, chi phí và lợi nhuận theo tháng (tỷ VND)" [ref=f4e92]:
+              - generic [ref=f4e93]: "0"
+              - generic [ref=f4e95]: "2"
+              - generic [ref=f4e97]: "4"
+              - generic [ref=f4e99]: "6"
+              - generic [ref=f4e101]: T1
+              - generic [ref=f4e106]: T2
+              - generic [ref=f4e111]: T3
+              - generic [ref=f4e116]: T4
+              - generic [ref=f4e121]: T5
+              - generic [ref=f4e126]: T6
+              - generic [ref=f4e131]: T7
+              - generic [ref=f4e136]: T8
+              - generic [ref=f4e141]: T9
+              - generic [ref=f4e146]: T10
+              - generic [ref=f4e151]: T11
+              - generic [ref=f4e156]: T12
+              - generic [ref=f4e161]: 6 tỷ
+              - generic [ref=f4e162]: 3 tỷ
+              - generic [ref=f4e163]: 3 tỷ
+        - generic [ref=f4e164]:
+          - heading " Giao đúng giờ" [level=3] [ref=f4e166]:
+            - generic [ref=f4e167]: 
+            - text: Giao đúng giờ
+          - img "Đúng giờ 210 chuyến, Sớm 18 chuyến, Trễ 12 chuyến" [ref=f4e168]:
+            - 'generic "Đúng giờ: 210 chuyến" [ref=f4e169]'
+            - 'generic "Sớm: 18 chuyến" [ref=f4e170]'
+            - 'generic "Trễ: 12 chuyến" [ref=f4e171]'
+          - list [ref=f4e172]:
+            - listitem [ref=f4e173]:
+              - generic [ref=f4e174]:
+                - generic [ref=f4e175]: 
+                - text: Đúng giờ
+              - generic [ref=f4e176]: 210 chuyến
+              - generic [ref=f4e177]: 87.5%
+            - listitem [ref=f4e178]:
+              - generic [ref=f4e179]:
+                - generic [ref=f4e180]: 
+                - text: Sớm
+              - generic [ref=f4e181]: 18 chuyến
+              - generic [ref=f4e182]: 7.5%
+            - listitem [ref=f4e183]:
+              - generic [ref=f4e184]:
+                - generic [ref=f4e185]: 
+                - text: Trễ
+              - generic [ref=f4e186]: 12 chuyến
+              - generic [ref=f4e187]: 5.0%
+      - link "Xem báo cáo chuyến đi →" [ref=f4e188] [cursor=pointer]:
+        - /url: /backoffice/manager/trip-reports
+  - contentinfo [ref=f4e189]: © 2026 Vận chuyển Ngựa đua. SWP Project.
+  - group "Ngôn ngữ" [ref=f4e190]:
+    - button "VI" [pressed] [ref=f4e192]
+    - button "EN" [ref=f4e193] [cursor=pointer]

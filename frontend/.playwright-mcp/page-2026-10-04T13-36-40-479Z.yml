@@ -1,0 +1,419 @@
+- generic [ref=f213e3]:
+  - banner [ref=f213e4]:
+    - link "TM Trần Minh ops@equine.vn" [ref=f213e5] [cursor=pointer]:
+      - /url: /backoffice/coordinator/fleet-plan
+      - generic [ref=f213e6]: TM
+      - generic [ref=f213e7]:
+        - generic [ref=f213e8]: Trần Minh
+        - generic [ref=f213e9]: ops@equine.vn
+    - generic "Đường dẫn" [ref=f213e10]:
+      - generic [aria-hidden] [ref=f213e11]: 
+      - generic [ref=f213e12]:
+        - generic [aria-hidden] [ref=f213e13]: 
+        - text: Đội xe
+    - search [ref=f213e14]:
+      - generic [aria-hidden] [ref=f213e15]: 
+      - textbox "Tìm đơn hàng" [ref=f213e16]:
+        - /placeholder: Tìm đơn hàng, khách hàng…
+    - generic [ref=f213e17]:
+      - button "Thông báo" [ref=f213e19] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f213e20]: 
+      - button "Đăng xuất" [ref=f213e21] [cursor=pointer]:
+        - generic [ref=f213e22]: 
+  - generic [ref=f213e23]:
+    - complementary "Menu" [ref=f213e24]:
+      - generic [ref=f213e25]:
+        - generic [ref=f213e26]: Menu
+        - button "Thu gọn menu" [ref=f213e27] [cursor=pointer]:
+          - generic [ref=f213e28]: 
+      - navigation [ref=f213e29]:
+        - link "Xe và lộ trình 1 đơn chờ" [ref=f213e30] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan
+          - generic [aria-hidden] [ref=f213e31]: 
+          - generic [ref=f213e32]: Xe và lộ trình
+          - generic "1 đơn chờ" [ref=f213e33]: "1"
+        - link "Giấy cho tài xế 6 đơn chờ" [ref=f213e34] [cursor=pointer]:
+          - /url: /backoffice/coordinator/dispatch
+          - generic [aria-hidden] [ref=f213e35]: 
+          - generic [ref=f213e36]: Giấy cho tài xế
+          - generic "6 đơn chờ" [ref=f213e37]: "6"
+        - link "Giám sát" [ref=f213e38] [cursor=pointer]:
+          - /url: /backoffice/coordinator/monitoring
+          - generic [aria-hidden] [ref=f213e39]: 
+        - link "Sự cố 1 đơn chờ" [ref=f213e41] [cursor=pointer]:
+          - /url: /backoffice/coordinator/incidents
+          - generic [aria-hidden] [ref=f213e42]: 
+          - generic [ref=f213e43]: Sự cố
+          - generic "1 đơn chờ" [ref=f213e44]: "1"
+        - link "Đội xe" [ref=f213e45] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet
+          - generic [aria-hidden] [ref=f213e46]: 
+      - generic [ref=f213e48]:
+        - button "Cần xử lý 5" [expanded] [ref=f213e49] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f213e50]: 
+          - generic [ref=f213e51]: Cần xử lý
+          - generic [ref=f213e52]: "5"
+        - link "0125 · Lập phương án sự cố" [ref=f213e53] [cursor=pointer]:
+          - /url: /backoffice/coordinator/incidents
+          - generic [aria-hidden] [ref=f213e54]: 
+        - link "0102 · Chốt xe, lộ trình" [ref=f213e56] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0102
+          - generic [aria-hidden] [ref=f213e57]: 
+        - link "0113 · Nhập bộ giấy" [ref=f213e59] [cursor=pointer]:
+          - /url: /backoffice/coordinator/dispatch/ORD-2026-0113
+          - generic [aria-hidden] [ref=f213e60]: 
+        - link "0112 · Nhập bộ giấy" [ref=f213e62] [cursor=pointer]:
+          - /url: /backoffice/coordinator/dispatch/ORD-2026-0112
+          - generic [aria-hidden] [ref=f213e63]: 
+        - link "0111 · Nhập bộ giấy" [ref=f213e65] [cursor=pointer]:
+          - /url: /backoffice/coordinator/dispatch/ORD-2026-0111
+          - generic [aria-hidden] [ref=f213e66]: 
+    - main [ref=f213e68]:
+      - generic [ref=f213e71]:
+        - generic [ref=f213e72]:
+          - heading "Quản lý đội xe" [level=1] [ref=f213e73]
+          - paragraph [ref=f213e74]: Theo dõi trạng thái từng xe, tài xế cố định và xe đang chở ngựa nào. Bấm vào xe để xem và sửa.
+        - generic [ref=f213e75]:
+          - tablist "Trạng thái xe" [ref=f213e76]:
+            - tab "Tất cả 14" [selected] [ref=f213e77] [cursor=pointer]:
+              - text: Tất cả
+              - generic [ref=f213e79]: "14"
+            - tab "Chưa có đơn 4" [ref=f213e80] [cursor=pointer]:
+              - text: Chưa có đơn
+              - generic [ref=f213e82]: "4"
+            - tab "Có đơn 10" [ref=f213e83] [cursor=pointer]:
+              - text: Có đơn
+              - generic [ref=f213e85]: "10"
+          - generic [ref=f213e86]:
+            - generic [aria-hidden] [ref=f213e87]: 
+            - textbox [ref=f213e88]:
+              - /placeholder: Tìm biển số, tài xế, mã đơn
+          - button "+ Thêm phương tiện" [ref=f213e89] [cursor=pointer]:
+            - generic [ref=f213e90]: +
+            - text: Thêm phương tiện
+        - generic [ref=f213e91]:
+          - article "Xe 29H-12345" [ref=f213e92] [cursor=pointer]:
+            - generic [ref=f213e93]:
+              - generic [ref=f213e94]: VH-001
+              - generic [ref=f213e95]: Chưa có đơn
+            - img "Xe 2 ngăn" [ref=f213e98]
+            - generic [ref=f213e116]: 29H-12345
+            - generic [ref=f213e117]:
+              - text: Xe chuyên dụng
+              - generic [ref=f213e118]: 2 ngăn
+            - generic [ref=f213e119]:
+              - generic [aria-hidden] [ref=f213e120]: 
+              - generic [ref=f213e121]: Tài xế cố định
+              - generic [ref=f213e122]: Nguyễn Văn A
+            - generic [ref=f213e123]:
+              - generic [ref=f213e124]: Đơn đang nhận
+              - generic [ref=f213e125]: Chưa có đơn
+            - generic [ref=f213e126]:
+              - button "Sửa" [ref=f213e127]
+              - button "Xóa" [ref=f213e128]
+          - article "Xe 51C-98765" [ref=f213e129] [cursor=pointer]:
+            - generic [ref=f213e130]:
+              - generic [ref=f213e131]: VH-002
+              - generic [ref=f213e132]: Có đơn
+            - img "Xe 4 ngăn" [ref=f213e135]
+            - generic [ref=f213e155]: 51C-98765
+            - generic [ref=f213e156]:
+              - text: Xe chuyên dụng
+              - generic [ref=f213e157]: 4 ngăn
+            - generic [ref=f213e158]:
+              - generic [aria-hidden] [ref=f213e159]: 
+              - generic [ref=f213e160]: Tài xế cố định
+              - generic [ref=f213e161]: Trần Văn B
+            - generic [ref=f213e162]:
+              - generic [ref=f213e163]: Đơn đang nhận
+              - generic "Storm Runner, Bạch Phong" [ref=f213e164]:
+                - generic [ref=f213e165]: ORD-2026-0122
+                - generic [ref=f213e166]: khởi hành 04/10/2026 · 2 ngựa
+              - generic "Kim Lân" [ref=f213e167]:
+                - generic [ref=f213e168]: ORD-2026-0103
+                - generic [ref=f213e169]: khởi hành 23/11/2026 · 1 ngựa
+              - generic "Kim Lân, Ngọc Long, Bạch Phong" [ref=f213e170]:
+                - generic [ref=f213e171]: ORD-2026-0102
+                - generic [ref=f213e172]: khởi hành 11/11/2026 · 3 ngựa
+            - generic [ref=f213e173]:
+              - button "Sửa" [ref=f213e174]
+              - button "Xóa" [ref=f213e175]
+          - article "Xe 30A-55678" [ref=f213e176] [cursor=pointer]:
+            - generic [ref=f213e177]:
+              - generic [ref=f213e178]: VH-003
+              - generic [ref=f213e179]: Có đơn
+            - img "Xe 4 ngăn" [ref=f213e182]
+            - generic [ref=f213e202]: 30A-55678
+            - generic [ref=f213e203]:
+              - text: Xe chuyên dụng
+              - generic [ref=f213e204]: 4 ngăn
+            - generic [ref=f213e205]:
+              - generic [aria-hidden] [ref=f213e206]: 
+              - generic [ref=f213e207]: Tài xế cố định
+              - generic [ref=f213e208]: Lê Văn C
+            - generic [ref=f213e209]:
+              - generic [ref=f213e210]: Đơn đang nhận
+              - generic "Kim Lân, Ngọc Long" [ref=f213e211]:
+                - generic [ref=f213e212]: ORD-2026-0122
+                - generic [ref=f213e213]: khởi hành 04/10/2026 · 2 ngựa
+            - generic [ref=f213e214]:
+              - button "Sửa" [ref=f213e215]
+              - button "Xóa" [ref=f213e216]
+          - article "Xe 51D-11122" [ref=f213e217] [cursor=pointer]:
+            - generic [ref=f213e218]:
+              - generic [ref=f213e219]: VH-004
+              - generic [ref=f213e220]: Có đơn
+            - img "Xe 6 ngăn" [ref=f213e223]
+            - generic [ref=f213e245]: 51D-11122
+            - generic [ref=f213e246]:
+              - text: Xe chuyên dụng
+              - generic [ref=f213e247]: 6 ngăn
+            - generic [ref=f213e248]:
+              - generic [aria-hidden] [ref=f213e249]: 
+              - generic [ref=f213e250]: Tài xế cố định
+              - generic [ref=f213e251]: Phạm Văn D
+            - generic [ref=f213e252]:
+              - generic [ref=f213e253]: Đơn đang nhận
+              - generic "Bạch Phong, Ngọc Long, Storm Runner" [ref=f213e254]:
+                - generic [ref=f213e255]: ORD-2026-0106
+                - generic [ref=f213e256]: khởi hành 28/11/2026 · 3 ngựa
+            - generic [ref=f213e257]:
+              - button "Sửa" [ref=f213e258]
+              - button "Xóa" [ref=f213e259]
+          - article "Xe 43C-222.11" [ref=f213e260] [cursor=pointer]:
+            - generic [ref=f213e261]:
+              - generic [ref=f213e262]: VH-005
+              - generic [ref=f213e263]: Chưa có đơn
+            - img "Xe 2 ngăn" [ref=f213e266]
+            - generic [ref=f213e284]: 43C-222.11
+            - generic [ref=f213e285]:
+              - text: Xe chuyên dụng
+              - generic [ref=f213e286]: 2 ngăn
+            - generic [ref=f213e287]:
+              - generic [aria-hidden] [ref=f213e288]: 
+              - generic [ref=f213e289]: Tài xế cố định
+              - generic [ref=f213e290]: Lê Minh Tuấn
+            - generic [ref=f213e291]:
+              - generic [ref=f213e292]: Đơn đang nhận
+              - generic [ref=f213e293]: Chưa có đơn
+            - generic [ref=f213e294]:
+              - button "Sửa" [ref=f213e295]
+              - button "Xóa" [ref=f213e296]
+          - article "Xe 65C-101.22" [ref=f213e297] [cursor=pointer]:
+            - generic [ref=f213e298]:
+              - generic [ref=f213e299]: VH-006
+              - generic [ref=f213e300]: Có đơn
+            - img "Xe 2 ngăn" [ref=f213e303]
+            - generic [ref=f213e321]: 65C-101.22
+            - generic [ref=f213e322]:
+              - text: Xe chuyên dụng
+              - generic [ref=f213e323]: 2 ngăn
+            - generic [ref=f213e324]:
+              - generic [aria-hidden] [ref=f213e325]: 
+              - generic [ref=f213e326]: Tài xế cố định
+              - generic [ref=f213e327]: Đặng Hoài Phúc
+            - generic [ref=f213e328]:
+              - generic [ref=f213e329]: Đơn đang nhận
+              - generic "Storm Runner, Ngọc Long" [ref=f213e330]:
+                - generic [ref=f213e331]: ORD-2026-0104
+                - generic [ref=f213e332]: khởi hành 03/12/2026 · 2 ngựa
+            - generic [ref=f213e333]:
+              - button "Sửa" [ref=f213e334]
+              - button "Xóa" [ref=f213e335]
+          - article "Xe 51C-123.45" [ref=f213e336] [cursor=pointer]:
+            - generic [ref=f213e337]:
+              - generic [ref=f213e338]: VH-007
+              - generic [ref=f213e339]: Có đơn
+            - img "Xe 4 ngăn" [ref=f213e342]
+            - generic [ref=f213e362]: 51C-123.45
+            - generic [ref=f213e363]:
+              - text: Xe chuyên dụng
+              - generic [ref=f213e364]: 4 ngăn
+            - generic [ref=f213e365]:
+              - generic [aria-hidden] [ref=f213e366]: 
+              - generic [ref=f213e367]: Tài xế cố định
+              - generic [ref=f213e368]: Nguyễn Văn Hùng
+            - generic [ref=f213e369]:
+              - generic [ref=f213e370]: Đơn đang nhận
+              - generic "Storm Runner, Kim Lân" [ref=f213e371]:
+                - generic [ref=f213e372]: ORD-2026-0116
+                - generic [ref=f213e373]: khởi hành 05/10/2026 · 2 ngựa
+              - generic "Kim Lân, Ngọc Long" [ref=f213e374]:
+                - generic [ref=f213e375]: ORD-2026-0117
+                - generic [ref=f213e376]: khởi hành 04/10/2026 · 2 ngựa
+              - generic "Kim Lân" [ref=f213e377]:
+                - generic [ref=f213e378]: ORD-2026-0125
+                - generic [ref=f213e379]: khởi hành 04/10/2026 · 1 ngựa
+              - generic "Kim Lân" [ref=f213e380]:
+                - generic [ref=f213e381]: ORD-2026-0126
+                - generic [ref=f213e382]: khởi hành 04/10/2026 · 1 ngựa
+              - generic "Kim Lân" [ref=f213e383]:
+                - generic [ref=f213e384]: ORD-2026-0127
+                - generic [ref=f213e385]: khởi hành 04/10/2026 · 1 ngựa
+              - generic "Bạch Phong" [ref=f213e386]:
+                - generic [ref=f213e387]: ORD-2026-0115
+                - generic [ref=f213e388]: khởi hành 16/10/2026 · 1 ngựa
+            - generic [ref=f213e389]:
+              - button "Sửa" [ref=f213e390]
+              - button "Xóa" [ref=f213e391]
+          - article "Xe 60C-222.10" [ref=f213e392] [cursor=pointer]:
+            - generic [ref=f213e393]:
+              - generic [ref=f213e394]: VH-008
+              - generic [ref=f213e395]: Chưa có đơn
+            - img "Xe 2 ngăn" [ref=f213e398]
+            - generic [ref=f213e416]: 60C-222.10
+            - generic [ref=f213e417]:
+              - text: Xe chuyên dụng
+              - generic [ref=f213e418]: 2 ngăn
+            - generic [ref=f213e419]:
+              - generic [aria-hidden] [ref=f213e420]: 
+              - generic [ref=f213e421]: Tài xế cố định
+              - generic [ref=f213e422]: Phan Thanh Hải
+            - generic [ref=f213e423]:
+              - generic [ref=f213e424]: Đơn đang nhận
+              - generic [ref=f213e425]: Chưa có đơn
+            - generic [ref=f213e426]:
+              - button "Sửa" [ref=f213e427]
+              - button "Xóa" [ref=f213e428]
+          - article "Xe 29H-456.78" [ref=f213e429] [cursor=pointer]:
+            - generic [ref=f213e430]:
+              - generic [ref=f213e431]: VH-009
+              - generic [ref=f213e432]: Có đơn
+            - img "Xe 4 ngăn" [ref=f213e435]
+            - generic [ref=f213e455]: 29H-456.78
+            - generic [ref=f213e456]:
+              - text: Xe chuyên dụng
+              - generic [ref=f213e457]: 4 ngăn
+            - generic [ref=f213e458]:
+              - generic [aria-hidden] [ref=f213e459]: 
+              - generic [ref=f213e460]: Tài xế cố định
+              - generic [ref=f213e461]: Trần Quốc Bảo
+            - generic [ref=f213e462]:
+              - generic [ref=f213e463]: Đơn đang nhận
+              - generic "Storm Runner, Bạch Phong" [ref=f213e464]:
+                - generic [ref=f213e465]: ORD-2026-0118
+                - generic [ref=f213e466]: khởi hành 04/10/2026 · 2 ngựa
+              - generic "Storm Runner, Bạch Phong" [ref=f213e467]:
+                - generic [ref=f213e468]: ORD-2026-0113
+                - generic [ref=f213e469]: khởi hành 09/11/2026 · 2 ngựa
+              - generic "Storm Runner, Bạch Phong, Kim Lân" [ref=f213e470]:
+                - generic [ref=f213e471]: ORD-2026-0121
+                - generic [ref=f213e472]: khởi hành 13/12/2026 · 3 ngựa
+              - generic "Storm Runner, Bạch Phong, Kim Lân" [ref=f213e473]:
+                - generic [ref=f213e474]: ORD-2026-0105
+                - generic [ref=f213e475]: khởi hành 13/11/2026 · 3 ngựa
+            - generic [ref=f213e476]:
+              - button "Sửa" [ref=f213e477]
+              - button "Xóa" [ref=f213e478]
+          - article "Xe 51C-888.99" [ref=f213e479] [cursor=pointer]:
+            - generic [ref=f213e480]:
+              - generic [ref=f213e481]: VH-010
+              - generic [ref=f213e482]: Có đơn
+            - img "Xe 4 ngăn" [ref=f213e485]
+            - generic [ref=f213e505]: 51C-888.99
+            - generic [ref=f213e506]:
+              - text: Xe chuyên dụng
+              - generic [ref=f213e507]: 4 ngăn
+            - generic [ref=f213e508]:
+              - generic [aria-hidden] [ref=f213e509]: 
+              - generic [ref=f213e510]: Tài xế cố định
+              - generic [ref=f213e511]: Phạm Đức Anh
+            - generic [ref=f213e512]:
+              - generic [ref=f213e513]: Đơn đang nhận
+              - generic "Bạch Phong" [ref=f213e514]:
+                - generic [ref=f213e515]: ORD-2026-0120
+                - generic [ref=f213e516]: khởi hành 05/10/2026 · 1 ngựa
+              - generic "Thanh Vân, Hắc Mã, Ngọc Long" [ref=f213e517]:
+                - generic [ref=f213e518]: ORD-2026-0121
+                - generic [ref=f213e519]: khởi hành 13/12/2026 · 3 ngựa
+            - generic [ref=f213e520]:
+              - button "Sửa" [ref=f213e521]
+              - button "Xóa" [ref=f213e522]
+          - article "Xe 61C-345.67" [ref=f213e523] [cursor=pointer]:
+            - generic [ref=f213e524]:
+              - generic [ref=f213e525]: VH-011
+              - generic [ref=f213e526]: Có đơn
+            - img "Xe 2 ngăn" [ref=f213e529]
+            - generic [ref=f213e547]: 61C-345.67
+            - generic [ref=f213e548]:
+              - text: Xe chuyên dụng
+              - generic [ref=f213e549]: 2 ngăn
+            - generic [ref=f213e550]:
+              - generic [aria-hidden] [ref=f213e551]: 
+              - generic [ref=f213e552]: Tài xế cố định
+              - generic [ref=f213e553]: Võ Thanh Sơn
+            - generic [ref=f213e554]:
+              - generic [ref=f213e555]: Đơn đang nhận
+              - generic "Kim Lân" [ref=f213e556]:
+                - generic [ref=f213e557]: ORD-2026-0110
+                - generic [ref=f213e558]: khởi hành 20/11/2026 · 1 ngựa
+            - generic [ref=f213e559]:
+              - button "Sửa" [ref=f213e560]
+              - button "Xóa" [ref=f213e561]
+          - article "Xe 70C-045.18" [ref=f213e562] [cursor=pointer]:
+            - generic [ref=f213e563]:
+              - generic [ref=f213e564]: VH-012
+              - generic [ref=f213e565]: Có đơn
+            - img "Xe 2 ngăn" [ref=f213e568]
+            - generic [ref=f213e586]: 70C-045.18
+            - generic [ref=f213e587]:
+              - text: Xe chuyên dụng
+              - generic [ref=f213e588]: 2 ngăn
+            - generic [ref=f213e589]:
+              - generic [aria-hidden] [ref=f213e590]: 
+              - generic [ref=f213e591]: Tài xế cố định
+              - generic [ref=f213e592]: Lê Văn Tài
+            - generic [ref=f213e593]:
+              - generic [ref=f213e594]: Đơn đang nhận
+              - generic "Bạch Phong, Ngọc Long" [ref=f213e595]:
+                - generic [ref=f213e596]: ORD-2026-0111
+                - generic [ref=f213e597]: khởi hành 25/11/2026 · 2 ngựa
+            - generic [ref=f213e598]:
+              - button "Sửa" [ref=f213e599]
+              - button "Xóa" [ref=f213e600]
+          - article "Xe 29C-310.77" [ref=f213e601] [cursor=pointer]:
+            - generic [ref=f213e602]:
+              - generic [ref=f213e603]: VH-013
+              - generic [ref=f213e604]: Có đơn
+            - img "Xe 2 ngăn" [ref=f213e607]
+            - generic [ref=f213e625]: 29C-310.77
+            - generic [ref=f213e626]:
+              - text: Xe chuyên dụng
+              - generic [ref=f213e627]: 2 ngăn
+            - generic [ref=f213e628]:
+              - generic [aria-hidden] [ref=f213e629]: 
+              - generic [ref=f213e630]: Tài xế cố định
+              - generic [ref=f213e631]: Trịnh Văn Long
+            - generic [ref=f213e632]:
+              - generic [ref=f213e633]: Đơn đang nhận
+              - generic "Storm Runner" [ref=f213e634]:
+                - generic [ref=f213e635]: ORD-2026-0112
+                - generic [ref=f213e636]: khởi hành 17/11/2026 · 1 ngựa
+            - generic [ref=f213e637]:
+              - button "Sửa" [ref=f213e638]
+              - button "Xóa" [ref=f213e639]
+          - article "Xe 51D-909.09" [ref=f213e640] [cursor=pointer]:
+            - generic [ref=f213e641]:
+              - generic [ref=f213e642]: VH-014
+              - generic [ref=f213e643]: Chưa có đơn
+            - img "Xe 9 ngăn" [ref=f213e646]
+            - generic [ref=f213e671]: 51D-909.09
+            - generic [ref=f213e672]:
+              - text: Xe chuyên dụng
+              - generic [ref=f213e673]: 9 ngăn
+            - generic [ref=f213e674]:
+              - generic [aria-hidden] [ref=f213e675]: 
+              - generic [ref=f213e676]: Tài xế cố định
+              - generic [ref=f213e677]: Hoàng Văn Tâm
+            - generic [ref=f213e678]:
+              - generic [ref=f213e679]: Đơn đang nhận
+              - generic [ref=f213e680]: Chưa có đơn
+            - generic [ref=f213e681]:
+              - button "Sửa" [ref=f213e682]
+              - button "Xóa" [ref=f213e683]
+          - button "+ Thêm phương tiện" [ref=f213e684] [cursor=pointer]:
+            - generic [ref=f213e685]: +
+            - text: Thêm phương tiện
+  - group "Ngôn ngữ" [ref=f213e686]:
+    - button "VI" [pressed] [ref=f213e688]
+    - button "EN" [ref=f213e689] [cursor=pointer]

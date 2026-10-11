@@ -1,0 +1,127 @@
+- generic [ref=f49e3]:
+  - banner [ref=f49e4]:
+    - link "QL Quản lý manager@equine.vn" [ref=f49e5] [cursor=pointer]:
+      - /url: /backoffice/manager
+      - generic [ref=f49e6]: QL
+      - generic [ref=f49e7]:
+        - generic [ref=f49e8]: Quản lý
+        - generic [ref=f49e9]: manager@equine.vn
+    - generic "Đường dẫn" [ref=f49e10]:
+      - generic [aria-hidden] [ref=f49e11]: 
+      - generic [ref=f49e12]:
+        - generic [aria-hidden] [ref=f49e13]: 
+        - text: Duyệt giá
+    - search [ref=f49e14]:
+      - generic [aria-hidden] [ref=f49e15]: 
+      - textbox "Tìm đơn hàng" [ref=f49e16]:
+        - /placeholder: Tìm đơn hàng, khách hàng…
+    - generic [ref=f49e17]:
+      - button "Thông báo" [ref=f49e19] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f49e20]: 
+      - button "Đăng xuất" [ref=f49e21] [cursor=pointer]:
+        - generic [ref=f49e22]: 
+  - generic [ref=f49e23]:
+    - complementary "Menu" [ref=f49e24]:
+      - generic [ref=f49e25]:
+        - generic [ref=f49e26]: Menu
+        - button "Thu gọn menu" [ref=f49e27] [cursor=pointer]:
+          - generic [ref=f49e28]: 
+      - navigation [ref=f49e29]:
+        - link "Tổng quan" [ref=f49e30] [cursor=pointer]:
+          - /url: /backoffice/manager
+          - generic [aria-hidden] [ref=f49e31]: 
+        - link "Tiếp nhận 1 đơn chờ" [ref=f49e33] [cursor=pointer]:
+          - /url: /backoffice/manager/intake
+          - generic [aria-hidden] [ref=f49e34]: 
+          - generic [ref=f49e35]: Tiếp nhận
+          - generic "1 đơn chờ" [ref=f49e36]: "1"
+        - link "Duyệt giá 1 đơn chờ" [ref=f49e37] [cursor=pointer]:
+          - /url: /backoffice/manager/approvals
+          - generic [aria-hidden] [ref=f49e38]: 
+          - generic [ref=f49e39]: Duyệt giá
+          - generic "1 đơn chờ" [ref=f49e40]: "1"
+        - link "Sự cố 1 đơn chờ" [ref=f49e41] [cursor=pointer]:
+          - /url: /backoffice/manager/incidents
+          - generic [aria-hidden] [ref=f49e42]: 
+          - generic [ref=f49e43]: Sự cố
+          - generic "1 đơn chờ" [ref=f49e44]: "1"
+        - link "Tiến độ đơn 1 đơn chờ" [ref=f49e45] [cursor=pointer]:
+          - /url: /backoffice/manager/progress
+          - generic [aria-hidden] [ref=f49e46]: 
+          - generic [ref=f49e47]: Tiến độ đơn
+          - generic "1 đơn chờ" [ref=f49e48]: "1"
+        - link "Doanh thu" [ref=f49e49] [cursor=pointer]:
+          - /url: /backoffice/manager/reports
+          - generic [aria-hidden] [ref=f49e50]: 
+        - link "Chuyến đi" [ref=f49e52] [cursor=pointer]:
+          - /url: /backoffice/manager/trip-reports
+          - generic [aria-hidden] [ref=f49e53]: 
+      - generic [ref=f49e55]:
+        - button "Cần xử lý 4" [expanded] [ref=f49e56] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f49e57]: 
+          - generic [ref=f49e58]: Cần xử lý
+          - generic [ref=f49e59]: "4"
+        - link "0123 · Đối soát chi phí" [ref=f49e60] [cursor=pointer]:
+          - /url: /backoffice/manager/progress
+          - generic [aria-hidden] [ref=f49e61]: 
+        - link "0126 · Duyệt phương án sự cố" [ref=f49e63] [cursor=pointer]:
+          - /url: /backoffice/manager/incidents
+          - generic [aria-hidden] [ref=f49e64]: 
+        - link "0104 · Duyệt báo giá" [ref=f49e66] [cursor=pointer]:
+          - /url: /backoffice/manager/approvals
+          - generic [aria-hidden] [ref=f49e67]: 
+        - link "0101 · Tiếp nhận đơn" [ref=f49e69] [cursor=pointer]:
+          - /url: /backoffice/manager/intake
+          - generic [aria-hidden] [ref=f49e70]: 
+    - main [ref=f49e72]:
+      - generic [ref=f49e75]:
+        - generic [ref=f49e77]:
+          - heading "Duyệt báo giá" [level=1] [ref=f49e78]
+          - paragraph [ref=f49e79]: Duyệt để gửi khách; khách có 48 giờ đặt cọc 30%.
+        - generic [ref=f49e80]:
+          - tablist "Trạng thái" [ref=f49e81]:
+            - tab "Chờ duyệt báo giá 1" [selected] [ref=f49e82] [cursor=pointer]:
+              - text: Chờ duyệt báo giá
+              - generic [ref=f49e83]: "1"
+            - tab "Đã gửi báo giá 26" [ref=f49e84] [cursor=pointer]:
+              - text: Đã gửi báo giá
+              - generic [ref=f49e85]: "26"
+          - generic [ref=f49e86]:
+            - generic [ref=f49e87]:
+              - generic [aria-hidden] [ref=f49e88]: 
+              - textbox [ref=f49e89]:
+                - /placeholder: Tìm theo mã đơn, khách hàng, tuyến…
+            - generic [ref=f49e90]:
+              - text: Khởi hành
+              - textbox "Khởi hành từ ngày" [ref=f49e91]
+              - text: →
+              - textbox "Khởi hành đến ngày" [ref=f49e92]
+          - table [ref=f49e94]:
+            - rowgroup [ref=f49e95]:
+              - row [ref=f49e96]:
+                - columnheader "Mã đơn" [ref=f49e97]
+                - columnheader "Khách hàng" [ref=f49e98]
+                - columnheader "Tuyến" [ref=f49e99]
+                - columnheader "Khởi hành" [ref=f49e100]
+                - columnheader "Ngựa / xe" [ref=f49e101]
+                - columnheader "Trạng thái" [ref=f49e102]
+                - columnheader "Thao tác" [ref=f49e103]
+            - rowgroup [ref=f49e104]:
+              - row [ref=f49e105]:
+                - cell "ORD-2026-0104 Quốc tế · Lao Bảo – Densavanh" [ref=f49e106]:
+                  - text: ORD-2026-0104
+                  - generic [ref=f49e107]: Quốc tế · Lao Bảo – Densavanh
+                - cell "Trang trại Long Thành" [ref=f49e108]
+                - cell "Kho Đồng Nai → Kho Viêng Chăn" [ref=f49e109]
+                - cell "05/12/2026" [ref=f49e111]
+                - cell "2 con · 1 xe" [ref=f49e112]
+                - cell [ref=f49e113]:
+                  - generic "Chờ quản lý duyệt báo giá (Pending Final Commercial Approval)" [ref=f49e114]:
+                    - generic [aria-hidden] [ref=f49e115]: 
+                    - text: Chờ duyệt giá
+                - cell [ref=f49e116]:
+                  - button "Duyệt báo giá" [ref=f49e117] [cursor=pointer]
+          - generic [ref=f49e118]: Hiển thị 1 đơn hàng
+  - group "Ngôn ngữ" [ref=f49e120]:
+    - button "VI" [pressed] [ref=f49e122]
+    - button "EN" [ref=f49e123] [cursor=pointer]

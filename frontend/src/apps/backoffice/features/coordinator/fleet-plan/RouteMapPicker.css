@@ -1,0 +1,42 @@
+/* Bản đồ chọn trạm nghỉ (Leaflet dùng lớp .leaflet-*, phần dưới là điểm đánh dấu và bảng điều khiển) */
+.rm-wrap { position: relative; }
+.rm-map { height: min(64vh, 560px); border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: #e8eef5; z-index: 0; }
+.rm-icon { background: none; border: 0; }
+.rm-pin { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; border: 3px solid white; color: white; font-weight: 800; font-size: 0.85rem; line-height: 1; box-shadow: 0 3px 8px rgba(15, 23, 42, 0.4); }
+.rm-a { background: #059669; } .rm-b { background: #dc2626; } .rm-g { background: #7c3aed; }
+.rm-st { display: block; width: 16px; height: 16px; margin: 9px; border-radius: 50%; background: white; border: 3px solid #1d4ed8; box-shadow: 0 1px 4px rgba(15, 23, 42, 0.4); transition: transform 0.15s; cursor: pointer; box-sizing: border-box; }
+.rm-icon:hover .rm-st { transform: scale(1.35); }
+.rm-st.rm-on { display: grid; place-items: center; width: 30px; height: 30px; margin: 2px; border: 3px solid white; background: #ea580c; color: white; font-weight: 800; font-size: 0.85rem; box-shadow: 0 3px 10px rgba(234, 88, 12, 0.55); animation: rmPop 0.3s cubic-bezier(0.3, 1.6, 0.5, 1); }
+.rm-st.rm-active { animation: rmPulse 1.4s ease-out infinite; }
+@keyframes rmPop { from { transform: scale(0.4); } }
+@keyframes rmPulse { 0% { box-shadow: 0 0 0 0 rgba(234, 88, 12, 0.6); } 100% { box-shadow: 0 0 0 14px rgba(234, 88, 12, 0); } }
+.rm-route { stroke-dasharray: 12 10; animation: rmFlow 1s linear infinite; }
+@keyframes rmFlow { to { stroke-dashoffset: -22; } }
+
+.rm-panel { position: absolute; top: 12px; left: 12px; z-index: 800; display: grid; gap: 10px; width: 250px; padding: 14px; border-radius: 14px; background: rgba(255, 255, 255, 0.96); box-shadow: 0 8px 28px rgba(15, 23, 42, 0.22); backdrop-filter: blur(4px); animation: rmSlide 0.25s ease-out; }
+@keyframes rmSlide { from { opacity: 0; transform: translateX(-10px); } }
+.rm-head { display: flex; align-items: center; gap: 10px; }
+.rm-head b { display: block; font-size: 0.9rem; color: var(--navy); line-height: 1.25; }
+.rm-head small { color: var(--muted); font-size: 0.76rem; }
+.rm-num { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #ea580c; color: white; font-weight: 800; font-size: 0.85rem; }
+.rm-label { font-size: 0.74rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.rm-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.rm-chips button { padding: 6px 11px; border: 1px solid var(--line); border-radius: 999px; background: white; font: inherit; font-size: 0.8rem; font-weight: 600; color: var(--text); cursor: pointer; transition: all 0.15s; }
+.rm-chips button:hover { border-color: #ea580c; color: #ea580c; }
+.rm-chips button.on { background: #ea580c; border-color: #ea580c; color: white; }
+.rm-remove { padding: 7px 10px; border: 1px solid #fecaca; border-radius: 10px; background: #fef2f2; font: inherit; font-size: 0.82rem; font-weight: 600; color: #b91c1c; cursor: pointer; }
+.rm-remove:hover { background: #fee2e2; }
+.rm-hint { margin: 0; font-size: 0.84rem; line-height: 1.4; color: var(--text); }
+.rm-hint i { margin-right: 6px; color: #ea580c; }
+.rm-sum { display: flex; flex-wrap: wrap; gap: 4px 12px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: 0.78rem; color: var(--muted); }
+.rm-sum b { color: var(--navy); }
+.rm-road { display: grid; gap: 2px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: 0.84rem; color: var(--text); }
+.rm-road b { color: var(--navy); }
+.rm-road small { color: var(--muted); font-size: 0.74rem; }
+.rm-loading { color: var(--muted); }
+.rm-legend { position: absolute; left: 12px; bottom: 26px; z-index: 800; display: flex; flex-wrap: wrap; gap: 4px 14px; max-width: 70%; padding: 6px 10px; border-radius: 10px; background: rgba(255, 255, 255, 0.92); font-size: 0.76rem; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18); }
+.rm-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.rm-legend .rm-pin { width: 16px; height: 16px; font-size: 0.6rem; box-shadow: none; transform: none; border-radius: 50%; display: inline-grid; }
+.rm-legend .rm-st { width: 12px; height: 12px; margin: 0; border-width: 2px; display: inline-block; }
+@media (max-width: 700px) { .rm-panel { width: 200px; } .rm-legend { display: none; } }
+@media (prefers-reduced-motion: reduce) { .rm-st.rm-active, .rm-route, .rm-panel, .rm-st.rm-on { animation: none; } }

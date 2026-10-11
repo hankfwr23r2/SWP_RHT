@@ -1,0 +1,56 @@
+/* Đơn hàng của tôi: thanh tab trạng thái, bộ lọc, danh sách thẻ đơn */
+.tabBar { display: flex; flex-wrap: wrap; scrollbar-width: none; background: white; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+.tabBar::-webkit-scrollbar { display: none; }
+.tab { flex: 1 0 auto; display: inline-flex; justify-content: center; align-items: center; gap: 6px; padding: 14px 11px; border: 0; border-radius: 0; box-shadow: none; border-bottom: 3px solid transparent; background: none; font: inherit; font-size: 0.9rem; font-weight: 600; color: var(--text); cursor: pointer; white-space: nowrap; }
+.tab:hover { color: var(--orange); }
+.tab:focus-visible { outline: 2px solid var(--orange); outline-offset: -2px; }
+.tabOn { color: var(--orange); border-bottom-color: var(--orange); }
+.num { min-width: 20px; padding: 0 6px; border-radius: 999px; background: var(--bg-page); color: var(--muted); font-size: 0.74rem; line-height: 20px; text-align: center; }
+.tabOn .num { background: var(--orange-soft); color: var(--orange); }
+.numAlert { background: var(--red); color: white; }
+
+.filters { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; margin: 12px 0 16px; padding: 12px; background: white; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+.search { position: relative; flex: 1 1 280px; }
+.search i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+.search input { padding-left: 36px; }
+.dates { display: flex; align-items: center; gap: 8px; font-size: 0.84rem; color: var(--muted); }
+.dates input { width: 150px; }
+
+.list { display: grid; gap: 14px; }
+.card { background: white; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.card:hover { border-color: #fdba74; }
+.alertCard { border-left: 4px solid var(--orange); }
+.freshCard { border-color: var(--green); box-shadow: 0 0 0 3px #bbf7d0; }
+.freshNote { display: flex; gap: 10px; align-items: flex-start; padding: 12px 14px; margin-bottom: 14px; border: 1px solid #bbf7d0; border-radius: var(--radius); background: #f0fdf4; font-size: 0.9rem; }
+.freshNote i { color: var(--green); margin-top: 3px; }
+.head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 12px 18px; border-bottom: 1px solid var(--line); }
+.id { font-weight: 800; color: var(--navy); }
+.headRight { margin-left: auto; }
+.body { display: grid; grid-template-columns: 1fr minmax(220px, 300px); gap: 12px 24px; padding: 16px 18px; }
+.route { font-size: 1.02rem; font-weight: 700; color: var(--navy); }
+.meta { display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 6px; font-size: 0.84rem; color: var(--muted); }
+.meta i { color: var(--orange); margin-right: 5px; }
+.horses { margin-top: 8px; font-size: 0.84rem; }
+.stage b { font-size: 0.84rem; color: var(--navy); }
+.bar { display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; margin: 6px 0 0; list-style: none; }
+.bar li { height: 6px; border-radius: 3px; background: var(--line); }
+.segDone { background: var(--green) !important; }
+.segNow { background: var(--orange) !important; }
+.segStop { background: var(--red) !important; }
+.next { grid-column: 1 / -1; display: flex; gap: 8px; padding: 9px 12px; border-radius: var(--radius-sm); background: var(--bg-page); font-size: 0.86rem; }
+.nextWarn { background: var(--amber-soft); color: var(--amber); }
+.nextDanger { background: var(--red-soft); color: #991b1b; }
+.foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; padding: 12px 18px; background: #fffaf5; border-top: 1px solid var(--line); }
+.total { font-size: 0.86rem; color: var(--muted); }
+.total b { margin-left: 6px; font-size: 1.15rem; color: var(--orange); font-variant-numeric: tabular-nums; }
+.actions { display: flex; gap: 8px; }
+.empty { text-align: center; padding: 56px 20px; background: white; border: 1px dashed #cbd5e1; border-radius: var(--radius); color: var(--muted); }
+.empty i { font-size: 2.4rem; color: var(--orange); display: block; margin-bottom: 10px; }
+.count { margin-top: 12px; font-size: 0.84rem; color: var(--muted); }
+
+@media (max-width: 760px) {
+  .tabBar { flex-wrap: nowrap; overflow-x: auto; }
+  .body { grid-template-columns: 1fr; }
+  .dates input { width: 130px; }
+  .headRight { margin-left: 0; }
+}

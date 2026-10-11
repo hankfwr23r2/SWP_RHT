@@ -1,0 +1,80 @@
+- generic [ref=f37e3]:
+  - banner [ref=f37e4]:
+    - link "TM Trần Minh ops@equine.vn" [ref=f37e5] [cursor=pointer]:
+      - /url: /backoffice/coordinator/fleet-plan
+      - generic [ref=f37e6]: TM
+      - generic [ref=f37e7]:
+        - generic [ref=f37e8]: Trần Minh
+        - generic [ref=f37e9]: ops@equine.vn
+    - generic "Đường dẫn" [ref=f37e10]:
+      - generic [aria-hidden] [ref=f37e11]: 
+      - generic [ref=f37e12]:
+        - generic [aria-hidden] [ref=f37e13]: 
+        - text: Xe và lộ trình
+    - search [ref=f37e14]:
+      - generic [aria-hidden] [ref=f37e15]: 
+      - textbox "Tìm đơn hàng" [ref=f37e16]:
+        - /placeholder: Tìm đơn hàng, khách hàng…
+    - generic [ref=f37e17]:
+      - button "Thông báo" [ref=f37e19] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f37e20]: 
+      - button "Đăng xuất" [ref=f37e21] [cursor=pointer]:
+        - generic [ref=f37e22]: 
+  - generic [ref=f37e23]:
+    - complementary "Menu" [ref=f37e24]:
+      - generic [ref=f37e25]:
+        - generic [ref=f37e26]: Menu
+        - button "Thu gọn menu" [ref=f37e27] [cursor=pointer]:
+          - generic [ref=f37e28]: 
+      - navigation [ref=f37e29]:
+        - link "Xe và lộ trình 3 đơn chờ" [ref=f37e30] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan
+          - generic [aria-hidden] [ref=f37e31]: 
+          - generic [ref=f37e32]: Xe và lộ trình
+          - generic "3 đơn chờ" [ref=f37e33]: "3"
+        - link "Giấy cho tài xế 6 đơn chờ" [ref=f37e34] [cursor=pointer]:
+          - /url: /backoffice/coordinator/dispatch
+          - generic [aria-hidden] [ref=f37e35]: 
+          - generic [ref=f37e36]: Giấy cho tài xế
+          - generic "6 đơn chờ" [ref=f37e37]: "6"
+        - link "Giám sát" [ref=f37e38] [cursor=pointer]:
+          - /url: /backoffice/coordinator/monitoring
+          - generic [aria-hidden] [ref=f37e39]: 
+        - link "Sự cố 1 đơn chờ" [ref=f37e41] [cursor=pointer]:
+          - /url: /backoffice/coordinator/incidents
+          - generic [aria-hidden] [ref=f37e42]: 
+          - generic [ref=f37e43]: Sự cố
+          - generic "1 đơn chờ" [ref=f37e44]: "1"
+        - link "Đội xe" [ref=f37e45] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet
+          - generic [aria-hidden] [ref=f37e46]: 
+      - generic [ref=f37e48]:
+        - button "Cần xử lý 5" [expanded] [ref=f37e49] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f37e50]: 
+          - generic [ref=f37e51]: Cần xử lý
+          - generic [ref=f37e52]: "5"
+        - link "0125 · Lập phương án sự cố" [ref=f37e53] [cursor=pointer]:
+          - /url: /backoffice/coordinator/incidents
+          - generic [aria-hidden] [ref=f37e54]: 
+        - link "0102 · Chốt xe, lộ trình" [ref=f37e56] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0102
+          - generic [aria-hidden] [ref=f37e57]: 
+        - link "0131 · Chốt xe, lộ trình" [ref=f37e59] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0131
+          - generic [aria-hidden] [ref=f37e60]: 
+        - link "0132 · Chốt xe, lộ trình" [ref=f37e62] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0132
+          - generic [aria-hidden] [ref=f37e63]: 
+        - link "0113 · Nhập bộ giấy" [ref=f37e65] [cursor=pointer]:
+          - /url: /backoffice/coordinator/dispatch/ORD-2026-0113
+          - generic [aria-hidden] [ref=f37e66]: 
+    - main [ref=f37e68]:
+      - generic [ref=f37e72]:
+        - generic [ref=f37e73]: 
+        - generic [ref=f37e74]:
+          - text: Đơn ORD-2026-0103 không được giao cho bạn.
+          - link "Về danh sách" [ref=f37e75] [cursor=pointer]:
+            - /url: /backoffice/coordinator/fleet-plan
+  - group "Ngôn ngữ" [ref=f37e76]:
+    - button "VI" [pressed] [ref=f37e78]
+    - button "EN" [ref=f37e79] [cursor=pointer]

@@ -1,0 +1,758 @@
+- generic [ref=f90e3]:
+  - banner [ref=f90e4]:
+    - link "EQ Vận chuyển Ngựa" [ref=f90e5] [cursor=pointer]:
+      - /url: /backoffice/manager
+      - generic [ref=f90e6]: EQ
+      - generic [ref=f90e7]: Vận chuyển Ngựa
+    - generic "Đường dẫn" [ref=f90e8]:
+      - generic [aria-hidden] [ref=f90e9]: 
+      - generic [ref=f90e10]:
+        - generic [aria-hidden] [ref=f90e11]: 
+        - text: Tổng quan
+    - search [ref=f90e12]:
+      - generic [aria-hidden] [ref=f90e13]: 
+      - textbox "Tìm đơn hàng" [ref=f90e14]:
+        - /placeholder: Tìm đơn hàng, khách hàng…
+    - generic [ref=f90e15]:
+      - button "Thông báo" [ref=f90e17] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f90e18]: 
+      - generic "Quản lý" [ref=f90e19]: QL
+      - generic [ref=f90e20]: Quản lý
+      - button "Đăng xuất" [ref=f90e21] [cursor=pointer]:
+        - generic [ref=f90e22]: 
+  - generic [ref=f90e23]:
+    - navigation "Menu Quản lý" [ref=f90e24]:
+      - generic [ref=f90e25]: Việc cần làm
+      - link "Tổng quan" [ref=f90e26] [cursor=pointer]:
+        - /url: /backoffice/manager
+        - generic [aria-hidden] [ref=f90e27]: 
+      - link "Tiếp nhận 1 đơn chờ" [ref=f90e29] [cursor=pointer]:
+        - /url: /backoffice/manager/intake
+        - generic [aria-hidden] [ref=f90e30]: 
+        - generic [ref=f90e31]: Tiếp nhận
+        - generic "1 đơn chờ" [ref=f90e32]: "1"
+      - link "Duyệt giá 1 đơn chờ" [ref=f90e33] [cursor=pointer]:
+        - /url: /backoffice/manager/approvals
+        - generic [aria-hidden] [ref=f90e34]: 
+        - generic [ref=f90e35]: Duyệt giá
+        - generic "1 đơn chờ" [ref=f90e36]: "1"
+      - link "Sự cố 2 đơn chờ" [ref=f90e37] [cursor=pointer]:
+        - /url: /backoffice/manager/incidents
+        - generic [aria-hidden] [ref=f90e38]: 
+        - generic [ref=f90e39]: Sự cố
+        - generic "2 đơn chờ" [ref=f90e40]: "2"
+      - generic [ref=f90e41]: Theo dõi
+      - link "Tiến độ đơn" [ref=f90e42] [cursor=pointer]:
+        - /url: /backoffice/manager/progress
+        - generic [aria-hidden] [ref=f90e43]: 
+      - generic [ref=f90e45]: Báo cáo
+      - link "Chuyến đi" [ref=f90e46] [cursor=pointer]:
+        - /url: /backoffice/manager/trip-reports
+        - generic [aria-hidden] [ref=f90e47]: 
+    - main [ref=f90e49]:
+      - generic [ref=f90e52]:
+        - heading "Tổng quan" [level=1] [ref=f90e54]
+        - generic [ref=f90e55]:
+          - generic [ref=f90e56]:
+            - heading " Lịch khởi hành" [level=3] [ref=f90e57]:
+              - generic [ref=f90e58]: 
+              - text: Lịch khởi hành
+            - generic [ref=f90e59]:
+              - button "Tuần trước" [ref=f90e60] [cursor=pointer]:
+                - generic [ref=f90e61]: 
+              - button "Hôm nay" [ref=f90e62] [cursor=pointer]
+              - button "Tuần sau" [ref=f90e63] [cursor=pointer]:
+                - generic [ref=f90e64]: 
+          - generic [ref=f90e65]:
+            - generic [ref=f90e66]:
+              - generic [ref=f90e67]: CN, 04/10
+              - button "0118 Kho Phnom Penh" [ref=f90e68] [cursor=pointer]
+              - button "0119 CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)" [ref=f90e69] [cursor=pointer]
+              - button "0123 CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)" [ref=f90e70] [cursor=pointer]
+              - button "+8 chuyến nữa" [ref=f90e71] [cursor=pointer]
+            - generic [ref=f90e72]:
+              - generic [ref=f90e73]: Thứ 2, 05/10
+              - button "0116 CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)" [ref=f90e74] [cursor=pointer]
+              - button "0120 CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)" [ref=f90e75] [cursor=pointer]
+            - generic [ref=f90e76]:
+              - generic [ref=f90e77]: Thứ 3, 06/10
+              - generic [ref=f90e78]: Không có chuyến
+            - generic [ref=f90e79]:
+              - generic [ref=f90e80]: Thứ 4, 07/10
+              - generic [ref=f90e81]: Không có chuyến
+            - generic [ref=f90e82]:
+              - generic [ref=f90e83]: Thứ 5, 08/10
+              - generic [ref=f90e84]: Không có chuyến
+            - generic [ref=f90e85]:
+              - generic [ref=f90e86]: Thứ 6, 09/10
+              - generic [ref=f90e87]: Không có chuyến
+            - generic [ref=f90e88]:
+              - generic [ref=f90e89]: Thứ 7, 10/10
+              - generic [ref=f90e90]: Không có chuyến
+        - generic [ref=f90e91]:
+          - heading "Tất cả đơn" [level=2] [ref=f90e92]
+          - generic [ref=f90e93]:
+            - generic [ref=f90e94]:
+              - generic [aria-hidden] [ref=f90e95]: 
+              - textbox [ref=f90e96]:
+                - /placeholder: Tìm theo mã đơn, khách hàng, tuyến…
+            - generic [ref=f90e97]:
+              - generic [ref=f90e98]:
+                - generic [ref=f90e99]: 
+                - text: Kanban
+              - link " Bảng" [ref=f90e100] [cursor=pointer]:
+                - /url: /backoffice/manager/progress
+                - generic [ref=f90e101]: 
+                - text: Bảng
+        - generic [ref=f90e102]:
+          - region "Chờ tiếp nhận" [ref=f90e103]:
+            - generic [ref=f90e104]:
+              - generic [ref=f90e105]:
+                - generic [aria-hidden] [ref=f90e106]: 
+                - text: Chờ tiếp nhận
+              - generic [ref=f90e107]: "1"
+            - 'button "ORD-2026-0101 Cần duyệt  18/11/2026 Quốc tế Kho Đồng Nai → Kho Phnom Penh Tiến độ: 0% Chưa giao  2  0" [ref=f90e108] [cursor=pointer]':
+              - generic [ref=f90e109]:
+                - generic [ref=f90e110]: ORD-2026-0101
+                - generic [ref=f90e111]: Cần duyệt
+              - generic [ref=f90e112]:
+                - generic [ref=f90e113]:
+                  - generic [ref=f90e114]: 
+                  - text: 18/11/2026
+                - generic [ref=f90e115]: Quốc tế
+              - generic [ref=f90e116]: Kho Đồng Nai → Kho Phnom Penh
+              - generic [ref=f90e117]: "Tiến độ: 0%"
+              - generic [ref=f90e120]:
+                - generic [ref=f90e121]: Chưa giao
+                - generic [ref=f90e123]:
+                  - generic "Ngựa" [ref=f90e124]:
+                    - generic [ref=f90e125]: 
+                    - text: "2"
+                  - generic "Xe" [ref=f90e126]:
+                    - generic [ref=f90e127]: 
+                    - text: "0"
+          - region "Đang thẩm định" [ref=f90e128]:
+            - generic [ref=f90e129]:
+              - generic [ref=f90e130]:
+                - generic [aria-hidden] [ref=f90e131]: 
+                - text: Đang thẩm định
+              - generic [ref=f90e132]: "2"
+            - 'button "ORD-2026-0102  11/11/2026 Trong nước Kho Long An → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM) Tiến độ: 13% VH TM  3  1" [ref=f90e133] [cursor=pointer]':
+              - generic [ref=f90e134]: ORD-2026-0102
+              - generic [ref=f90e136]:
+                - generic [ref=f90e137]:
+                  - generic [ref=f90e138]: 
+                  - text: 11/11/2026
+                - generic [ref=f90e139]: Trong nước
+              - generic [ref=f90e140]: Kho Long An → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+              - generic [ref=f90e141]: "Tiến độ: 13%"
+              - generic [ref=f90e145]:
+                - generic [ref=f90e146]:
+                  - generic "Phạm Văn Hưng" [ref=f90e147]: VH
+                  - generic "Trần Minh" [ref=f90e148]: TM
+                - generic [ref=f90e149]:
+                  - generic "Ngựa" [ref=f90e150]:
+                    - generic [ref=f90e151]: 
+                    - text: "3"
+                  - generic "Xe" [ref=f90e152]:
+                    - generic [ref=f90e153]: 
+                    - text: "1"
+            - 'button "ORD-2026-0103  23/11/2026 Trong nước Kho Bình Dương → Kho Đồng Nai Tiến độ: 13% VH PT  1  1" [ref=f90e154] [cursor=pointer]':
+              - generic [ref=f90e155]: ORD-2026-0103
+              - generic [ref=f90e157]:
+                - generic [ref=f90e158]:
+                  - generic [ref=f90e159]: 
+                  - text: 23/11/2026
+                - generic [ref=f90e160]: Trong nước
+              - generic [ref=f90e161]: Kho Bình Dương → Kho Đồng Nai
+              - generic [ref=f90e162]: "Tiến độ: 13%"
+              - generic [ref=f90e166]:
+                - generic [ref=f90e167]:
+                  - generic "Phạm Văn Hưng" [ref=f90e168]: VH
+                  - generic "Phạm Tâm" [ref=f90e169]: PT
+                - generic [ref=f90e170]:
+                  - generic "Ngựa" [ref=f90e171]:
+                    - generic [ref=f90e172]: 
+                    - text: "1"
+                  - generic "Xe" [ref=f90e173]:
+                    - generic [ref=f90e174]: 
+                    - text: "1"
+          - region "Chờ duyệt giá" [ref=f90e175]:
+            - generic [ref=f90e176]:
+              - generic [ref=f90e177]:
+                - generic [aria-hidden] [ref=f90e178]: 
+                - text: Chờ duyệt giá
+              - generic [ref=f90e179]: "1"
+            - 'button "ORD-2026-0104 Cần duyệt  03/12/2026 Quốc tế Kho Đồng Nai → Kho Viêng Chăn Tiến độ: 25% TT TM  2  1" [ref=f90e180] [cursor=pointer]':
+              - generic [ref=f90e181]:
+                - generic [ref=f90e182]: ORD-2026-0104
+                - generic [ref=f90e183]: Cần duyệt
+              - generic [ref=f90e184]:
+                - generic [ref=f90e185]:
+                  - generic [ref=f90e186]: 
+                  - text: 03/12/2026
+                - generic [ref=f90e187]: Quốc tế
+              - generic [ref=f90e188]: Kho Đồng Nai → Kho Viêng Chăn
+              - generic [ref=f90e189]: "Tiến độ: 25%"
+              - generic [ref=f90e193]:
+                - generic [ref=f90e194]:
+                  - generic "Nguyễn Thị Thu" [ref=f90e195]: TT
+                  - generic "Trần Minh" [ref=f90e196]: TM
+                - generic [ref=f90e197]:
+                  - generic "Ngựa" [ref=f90e198]:
+                    - generic [ref=f90e199]: 
+                    - text: "2"
+                  - generic "Xe" [ref=f90e200]:
+                    - generic [ref=f90e201]: 
+                    - text: "1"
+          - region "Chờ đặt cọc" [ref=f90e202]:
+            - generic [ref=f90e203]:
+              - generic [ref=f90e204]:
+                - generic [aria-hidden] [ref=f90e205]: 
+                - text: Chờ đặt cọc
+              - generic [ref=f90e206]: "1"
+            - 'button "ORD-2026-0105  13/11/2026 Trong nước Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM) Tiến độ: 38% TT TM  3  1" [ref=f90e207] [cursor=pointer]':
+              - generic [ref=f90e208]: ORD-2026-0105
+              - generic [ref=f90e210]:
+                - generic [ref=f90e211]:
+                  - generic [ref=f90e212]: 
+                  - text: 13/11/2026
+                - generic [ref=f90e213]: Trong nước
+              - generic [ref=f90e214]: Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+              - generic [ref=f90e215]: "Tiến độ: 38%"
+              - generic [ref=f90e219]:
+                - generic [ref=f90e220]:
+                  - generic "Nguyễn Thị Thu" [ref=f90e221]: TT
+                  - generic "Trần Minh" [ref=f90e222]: TM
+                - generic [ref=f90e223]:
+                  - generic "Ngựa" [ref=f90e224]:
+                    - generic [ref=f90e225]: 
+                    - text: "3"
+                  - generic "Xe" [ref=f90e226]:
+                    - generic [ref=f90e227]: 
+                    - text: "1"
+          - region "Chuẩn bị chuyến" [ref=f90e228]:
+            - generic [ref=f90e229]:
+              - generic [ref=f90e230]:
+                - generic [aria-hidden] [ref=f90e231]: 
+                - text: Chuẩn bị chuyến
+              - generic [ref=f90e232]: "9"
+            - 'button "ORD-2026-0116  05/10/2026 Trong nước Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM) Tiến độ: 63% VH TM  2  1" [ref=f90e233] [cursor=pointer]':
+              - generic [ref=f90e234]: ORD-2026-0116
+              - generic [ref=f90e236]:
+                - generic [ref=f90e237]:
+                  - generic [ref=f90e238]: 
+                  - text: 05/10/2026
+                - generic [ref=f90e239]: Trong nước
+              - generic [ref=f90e240]: Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+              - generic [ref=f90e241]: "Tiến độ: 63%"
+              - generic [ref=f90e245]:
+                - generic [ref=f90e246]:
+                  - generic "Phạm Văn Hưng" [ref=f90e247]: VH
+                  - generic "Trần Minh" [ref=f90e248]: TM
+                - generic [ref=f90e249]:
+                  - generic "Ngựa" [ref=f90e250]:
+                    - generic [ref=f90e251]: 
+                    - text: "2"
+                  - generic "Xe" [ref=f90e252]:
+                    - generic [ref=f90e253]: 
+                    - text: "1"
+            - 'button "ORD-2026-0120  05/10/2026 Trong nước Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM) Tiến độ: 63% VH TM  1  1" [ref=f90e254] [cursor=pointer]':
+              - generic [ref=f90e255]: ORD-2026-0120
+              - generic [ref=f90e257]:
+                - generic [ref=f90e258]:
+                  - generic [ref=f90e259]: 
+                  - text: 05/10/2026
+                - generic [ref=f90e260]: Trong nước
+              - generic [ref=f90e261]: Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+              - generic [ref=f90e262]: "Tiến độ: 63%"
+              - generic [ref=f90e266]:
+                - generic [ref=f90e267]:
+                  - generic "Phạm Văn Hưng" [ref=f90e268]: VH
+                  - generic "Trần Minh" [ref=f90e269]: TM
+                - generic [ref=f90e270]:
+                  - generic "Ngựa" [ref=f90e271]:
+                    - generic [ref=f90e272]: 
+                    - text: "1"
+                  - generic "Xe" [ref=f90e273]:
+                    - generic [ref=f90e274]: 
+                    - text: "1"
+            - 'button "ORD-2026-0115  16/10/2026 Trong nước Kho Long An → Kho Bình Dương Tiến độ: 63% VH TM  1  1" [ref=f90e275] [cursor=pointer]':
+              - generic [ref=f90e276]: ORD-2026-0115
+              - generic [ref=f90e278]:
+                - generic [ref=f90e279]:
+                  - generic [ref=f90e280]: 
+                  - text: 16/10/2026
+                - generic [ref=f90e281]: Trong nước
+              - generic [ref=f90e282]: Kho Long An → Kho Bình Dương
+              - generic [ref=f90e283]: "Tiến độ: 63%"
+              - generic [ref=f90e287]:
+                - generic [ref=f90e288]:
+                  - generic "Phạm Văn Hưng" [ref=f90e289]: VH
+                  - generic "Trần Minh" [ref=f90e290]: TM
+                - generic [ref=f90e291]:
+                  - generic "Ngựa" [ref=f90e292]:
+                    - generic [ref=f90e293]: 
+                    - text: "1"
+                  - generic "Xe" [ref=f90e294]:
+                    - generic [ref=f90e295]: 
+                    - text: "1"
+            - 'button "ORD-2026-0113  09/11/2026 Quốc tế Kho Đồng Nai → Kho Phnom Penh Tiến độ: 50% VH TM  2  1" [ref=f90e296] [cursor=pointer]':
+              - generic [ref=f90e297]: ORD-2026-0113
+              - generic [ref=f90e299]:
+                - generic [ref=f90e300]:
+                  - generic [ref=f90e301]: 
+                  - text: 09/11/2026
+                - generic [ref=f90e302]: Quốc tế
+              - generic [ref=f90e303]: Kho Đồng Nai → Kho Phnom Penh
+              - generic [ref=f90e304]: "Tiến độ: 50%"
+              - generic [ref=f90e308]:
+                - generic [ref=f90e309]:
+                  - generic "Phạm Văn Hưng" [ref=f90e310]: VH
+                  - generic "Trần Minh" [ref=f90e311]: TM
+                - generic [ref=f90e312]:
+                  - generic "Ngựa" [ref=f90e313]:
+                    - generic [ref=f90e314]: 
+                    - text: "2"
+                  - generic "Xe" [ref=f90e315]:
+                    - generic [ref=f90e316]: 
+                    - text: "1"
+            - 'button "ORD-2026-0112  17/11/2026 Trong nước Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM) Tiến độ: 63% VH TM  1  1" [ref=f90e317] [cursor=pointer]':
+              - generic [ref=f90e318]: ORD-2026-0112
+              - generic [ref=f90e320]:
+                - generic [ref=f90e321]:
+                  - generic [ref=f90e322]: 
+                  - text: 17/11/2026
+                - generic [ref=f90e323]: Trong nước
+              - generic [ref=f90e324]: Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+              - generic [ref=f90e325]: "Tiến độ: 63%"
+              - generic [ref=f90e329]:
+                - generic [ref=f90e330]:
+                  - generic "Phạm Văn Hưng" [ref=f90e331]: VH
+                  - generic "Trần Minh" [ref=f90e332]: TM
+                - generic [ref=f90e333]:
+                  - generic "Ngựa" [ref=f90e334]:
+                    - generic [ref=f90e335]: 
+                    - text: "1"
+                  - generic "Xe" [ref=f90e336]:
+                    - generic [ref=f90e337]: 
+                    - text: "1"
+            - 'button "ORD-2026-0110  20/11/2026 Trong nước Kho Long An → Kho Bình Dương Tiến độ: 50% VH TM  1  1" [ref=f90e338] [cursor=pointer]':
+              - generic [ref=f90e339]: ORD-2026-0110
+              - generic [ref=f90e341]:
+                - generic [ref=f90e342]:
+                  - generic [ref=f90e343]: 
+                  - text: 20/11/2026
+                - generic [ref=f90e344]: Trong nước
+              - generic [ref=f90e345]: Kho Long An → Kho Bình Dương
+              - generic [ref=f90e346]: "Tiến độ: 50%"
+              - generic [ref=f90e350]:
+                - generic [ref=f90e351]:
+                  - generic "Phạm Văn Hưng" [ref=f90e352]: VH
+                  - generic "Trần Minh" [ref=f90e353]: TM
+                - generic [ref=f90e354]:
+                  - generic "Ngựa" [ref=f90e355]:
+                    - generic [ref=f90e356]: 
+                    - text: "1"
+                  - generic "Xe" [ref=f90e357]:
+                    - generic [ref=f90e358]: 
+                    - text: "1"
+            - 'button "ORD-2026-0111  25/11/2026 Trong nước Kho Đồng Nai → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM) Tiến độ: 50% VH TM  2  1" [ref=f90e359] [cursor=pointer]':
+              - generic [ref=f90e360]: ORD-2026-0111
+              - generic [ref=f90e362]:
+                - generic [ref=f90e363]:
+                  - generic [ref=f90e364]: 
+                  - text: 25/11/2026
+                - generic [ref=f90e365]: Trong nước
+              - generic [ref=f90e366]: Kho Đồng Nai → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+              - generic [ref=f90e367]: "Tiến độ: 50%"
+              - generic [ref=f90e371]:
+                - generic [ref=f90e372]:
+                  - generic "Phạm Văn Hưng" [ref=f90e373]: VH
+                  - generic "Trần Minh" [ref=f90e374]: TM
+                - generic [ref=f90e375]:
+                  - generic "Ngựa" [ref=f90e376]:
+                    - generic [ref=f90e377]: 
+                    - text: "2"
+                  - generic "Xe" [ref=f90e378]:
+                    - generic [ref=f90e379]: 
+                    - text: "1"
+            - 'button "ORD-2026-0106  28/11/2026 Quốc tế Kho Đồng Nai → Kho Phnom Penh Tiến độ: 50% VH TM  3  1" [ref=f90e380] [cursor=pointer]':
+              - generic [ref=f90e381]: ORD-2026-0106
+              - generic [ref=f90e383]:
+                - generic [ref=f90e384]:
+                  - generic [ref=f90e385]: 
+                  - text: 28/11/2026
+                - generic [ref=f90e386]: Quốc tế
+              - generic [ref=f90e387]: Kho Đồng Nai → Kho Phnom Penh
+              - generic [ref=f90e388]: "Tiến độ: 50%"
+              - generic [ref=f90e392]:
+                - generic [ref=f90e393]:
+                  - generic "Phạm Văn Hưng" [ref=f90e394]: VH
+                  - generic "Trần Minh" [ref=f90e395]: TM
+                - generic [ref=f90e396]:
+                  - generic "Ngựa" [ref=f90e397]:
+                    - generic [ref=f90e398]: 
+                    - text: "3"
+                  - generic "Xe" [ref=f90e399]:
+                    - generic [ref=f90e400]: 
+                    - text: "1"
+            - 'button "ORD-2026-0121  13/12/2026 Quốc tế Kho Đồng Nai → Kho Phnom Penh Tiến độ: 50% VH TM  6  2" [ref=f90e401] [cursor=pointer]':
+              - generic [ref=f90e402]: ORD-2026-0121
+              - generic [ref=f90e404]:
+                - generic [ref=f90e405]:
+                  - generic [ref=f90e406]: 
+                  - text: 13/12/2026
+                - generic [ref=f90e407]: Quốc tế
+              - generic [ref=f90e408]: Kho Đồng Nai → Kho Phnom Penh
+              - generic [ref=f90e409]: "Tiến độ: 50%"
+              - generic [ref=f90e413]:
+                - generic [ref=f90e414]:
+                  - generic "Phạm Văn Hưng" [ref=f90e415]: VH
+                  - generic "Trần Minh" [ref=f90e416]: TM
+                - generic [ref=f90e417]:
+                  - generic "Ngựa" [ref=f90e418]:
+                    - generic [ref=f90e419]: 
+                    - text: "6"
+                  - generic "Xe" [ref=f90e420]:
+                    - generic [ref=f90e421]: 
+                    - text: "2"
+          - region "Đang vận chuyển" [ref=f90e422]:
+            - generic [ref=f90e423]:
+              - generic [ref=f90e424]:
+                - generic [aria-hidden] [ref=f90e425]: 
+                - text: Đang vận chuyển
+              - generic [ref=f90e426]: "6"
+            - 'button "ORD-2026-0118  04/10/2026 Quốc tế Kho Đồng Nai → Kho Phnom Penh Tiến độ: 75% VH TM  2  1" [ref=f90e427] [cursor=pointer]':
+              - generic [ref=f90e428]: ORD-2026-0118
+              - generic [ref=f90e430]:
+                - generic [ref=f90e431]:
+                  - generic [ref=f90e432]: 
+                  - text: 04/10/2026
+                - generic [ref=f90e433]: Quốc tế
+              - generic [ref=f90e434]: Kho Đồng Nai → Kho Phnom Penh
+              - generic [ref=f90e435]: "Tiến độ: 75%"
+              - generic [ref=f90e439]:
+                - generic [ref=f90e440]:
+                  - generic "Phạm Văn Hưng" [ref=f90e441]: VH
+                  - generic "Trần Minh" [ref=f90e442]: TM
+                - generic [ref=f90e443]:
+                  - generic "Ngựa" [ref=f90e444]:
+                    - generic [ref=f90e445]: 
+                    - text: "2"
+                  - generic "Xe" [ref=f90e446]:
+                    - generic [ref=f90e447]: 
+                    - text: "1"
+            - 'button "ORD-2026-0117  04/10/2026 Trong nước Kho Đồng Nai → Kho Long An Tiến độ: 75% VH TM  2  1" [ref=f90e448] [cursor=pointer]':
+              - generic [ref=f90e449]: ORD-2026-0117
+              - generic [ref=f90e451]:
+                - generic [ref=f90e452]:
+                  - generic [ref=f90e453]: 
+                  - text: 04/10/2026
+                - generic [ref=f90e454]: Trong nước
+              - generic [ref=f90e455]: Kho Đồng Nai → Kho Long An
+              - generic [ref=f90e456]: "Tiến độ: 75%"
+              - generic [ref=f90e460]:
+                - generic [ref=f90e461]:
+                  - generic "Phạm Văn Hưng" [ref=f90e462]: VH
+                  - generic "Trần Minh" [ref=f90e463]: TM
+                - generic [ref=f90e464]:
+                  - generic "Ngựa" [ref=f90e465]:
+                    - generic [ref=f90e466]: 
+                    - text: "2"
+                  - generic "Xe" [ref=f90e467]:
+                    - generic [ref=f90e468]: 
+                    - text: "1"
+            - 'button "ORD-2026-0122  04/10/2026 Trong nước Kho Đồng Nai → Kho Long An Tiến độ: 75% VH TM  4  2" [ref=f90e469] [cursor=pointer]':
+              - generic [ref=f90e470]: ORD-2026-0122
+              - generic [ref=f90e472]:
+                - generic [ref=f90e473]:
+                  - generic [ref=f90e474]: 
+                  - text: 04/10/2026
+                - generic [ref=f90e475]: Trong nước
+              - generic [ref=f90e476]: Kho Đồng Nai → Kho Long An
+              - generic [ref=f90e477]: "Tiến độ: 75%"
+              - generic [ref=f90e481]:
+                - generic [ref=f90e482]:
+                  - generic "Phạm Văn Hưng" [ref=f90e483]: VH
+                  - generic "Trần Minh" [ref=f90e484]: TM
+                - generic [ref=f90e485]:
+                  - generic "Ngựa" [ref=f90e486]:
+                    - generic [ref=f90e487]: 
+                    - text: "4"
+                  - generic "Xe" [ref=f90e488]:
+                    - generic [ref=f90e489]: 
+                    - text: "2"
+            - 'button "ORD-2026-0125 Sự cố  04/10/2026 Trong nước Kho Đồng Nai → Kho Long An Tiến độ: 75% VH TM  1  1" [ref=f90e490] [cursor=pointer]':
+              - generic [ref=f90e491]:
+                - generic [ref=f90e492]: ORD-2026-0125
+                - generic [ref=f90e493]: Sự cố
+              - generic [ref=f90e494]:
+                - generic [ref=f90e495]:
+                  - generic [ref=f90e496]: 
+                  - text: 04/10/2026
+                - generic [ref=f90e497]: Trong nước
+              - generic [ref=f90e498]: Kho Đồng Nai → Kho Long An
+              - generic [ref=f90e499]: "Tiến độ: 75%"
+              - generic [ref=f90e503]:
+                - generic [ref=f90e504]:
+                  - generic "Phạm Văn Hưng" [ref=f90e505]: VH
+                  - generic "Trần Minh" [ref=f90e506]: TM
+                - generic [ref=f90e507]:
+                  - generic "Ngựa" [ref=f90e508]:
+                    - generic [ref=f90e509]: 
+                    - text: "1"
+                  - generic "Xe" [ref=f90e510]:
+                    - generic [ref=f90e511]: 
+                    - text: "1"
+            - 'button "ORD-2026-0126 Cần duyệt Sự cố  04/10/2026 Trong nước Kho Long An → Kho Bình Dương Tiến độ: 75% VH TM  1  1" [ref=f90e512] [cursor=pointer]':
+              - generic [ref=f90e513]:
+                - generic [ref=f90e514]: ORD-2026-0126
+                - generic [ref=f90e515]: Cần duyệt
+                - generic [ref=f90e516]: Sự cố
+              - generic [ref=f90e517]:
+                - generic [ref=f90e518]:
+                  - generic [ref=f90e519]: 
+                  - text: 04/10/2026
+                - generic [ref=f90e520]: Trong nước
+              - generic [ref=f90e521]: Kho Long An → Kho Bình Dương
+              - generic [ref=f90e522]: "Tiến độ: 75%"
+              - generic [ref=f90e526]:
+                - generic [ref=f90e527]:
+                  - generic "Phạm Văn Hưng" [ref=f90e528]: VH
+                  - generic "Trần Minh" [ref=f90e529]: TM
+                - generic [ref=f90e530]:
+                  - generic "Ngựa" [ref=f90e531]:
+                    - generic [ref=f90e532]: 
+                    - text: "1"
+                  - generic "Xe" [ref=f90e533]:
+                    - generic [ref=f90e534]: 
+                    - text: "1"
+            - 'button "ORD-2026-0127  04/10/2026 Trong nước Kho Bình Dương → Kho Đồng Nai Tiến độ: 75% VH TM  1  1" [ref=f90e535] [cursor=pointer]':
+              - generic [ref=f90e536]: ORD-2026-0127
+              - generic [ref=f90e538]:
+                - generic [ref=f90e539]:
+                  - generic [ref=f90e540]: 
+                  - text: 04/10/2026
+                - generic [ref=f90e541]: Trong nước
+              - generic [ref=f90e542]: Kho Bình Dương → Kho Đồng Nai
+              - generic [ref=f90e543]: "Tiến độ: 75%"
+              - generic [ref=f90e547]:
+                - generic [ref=f90e548]:
+                  - generic "Phạm Văn Hưng" [ref=f90e549]: VH
+                  - generic "Trần Minh" [ref=f90e550]: TM
+                - generic [ref=f90e551]:
+                  - generic "Ngựa" [ref=f90e552]:
+                    - generic [ref=f90e553]: 
+                    - text: "1"
+                  - generic "Xe" [ref=f90e554]:
+                    - generic [ref=f90e555]: 
+                    - text: "1"
+          - region "Quyết toán" [ref=f90e556]:
+            - generic [ref=f90e557]:
+              - generic [ref=f90e558]:
+                - generic [aria-hidden] [ref=f90e559]: 
+                - text: Quyết toán
+              - generic [ref=f90e560]: "4"
+            - 'button "ORD-2026-0119  04/10/2026 Trong nước Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM) Tiến độ: 88% VH TM  1  1" [ref=f90e561] [cursor=pointer]':
+              - generic [ref=f90e562]: ORD-2026-0119
+              - generic [ref=f90e564]:
+                - generic [ref=f90e565]:
+                  - generic [ref=f90e566]: 
+                  - text: 04/10/2026
+                - generic [ref=f90e567]: Trong nước
+              - generic [ref=f90e568]: Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+              - generic [ref=f90e569]: "Tiến độ: 88%"
+              - generic [ref=f90e573]:
+                - generic [ref=f90e574]:
+                  - generic "Phạm Văn Hưng" [ref=f90e575]: VH
+                  - generic "Trần Minh" [ref=f90e576]: TM
+                - generic [ref=f90e577]:
+                  - generic "Ngựa" [ref=f90e578]:
+                    - generic [ref=f90e579]: 
+                    - text: "1"
+                  - generic "Xe" [ref=f90e580]:
+                    - generic [ref=f90e581]: 
+                    - text: "1"
+            - 'button "ORD-2026-0123 Cần duyệt  04/10/2026 Trong nước Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM) Tiến độ: 88% VH TM  1  1" [ref=f90e582] [cursor=pointer]':
+              - generic [ref=f90e583]:
+                - generic [ref=f90e584]: ORD-2026-0123
+                - generic [ref=f90e585]: Cần duyệt
+              - generic [ref=f90e586]:
+                - generic [ref=f90e587]:
+                  - generic [ref=f90e588]: 
+                  - text: 04/10/2026
+                - generic [ref=f90e589]: Trong nước
+              - generic [ref=f90e590]: Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+              - generic [ref=f90e591]: "Tiến độ: 88%"
+              - generic [ref=f90e595]:
+                - generic [ref=f90e596]:
+                  - generic "Phạm Văn Hưng" [ref=f90e597]: VH
+                  - generic "Trần Minh" [ref=f90e598]: TM
+                - generic [ref=f90e599]:
+                  - generic "Ngựa" [ref=f90e600]:
+                    - generic [ref=f90e601]: 
+                    - text: "1"
+                  - generic "Xe" [ref=f90e602]:
+                    - generic [ref=f90e603]: 
+                    - text: "1"
+            - 'button "ORD-2026-0128  04/10/2026 Trong nước Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM) Tiến độ: 88% VH TM  1  1" [ref=f90e604] [cursor=pointer]':
+              - generic [ref=f90e605]: ORD-2026-0128
+              - generic [ref=f90e607]:
+                - generic [ref=f90e608]:
+                  - generic [ref=f90e609]: 
+                  - text: 04/10/2026
+                - generic [ref=f90e610]: Trong nước
+              - generic [ref=f90e611]: Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+              - generic [ref=f90e612]: "Tiến độ: 88%"
+              - generic [ref=f90e616]:
+                - generic [ref=f90e617]:
+                  - generic "Phạm Văn Hưng" [ref=f90e618]: VH
+                  - generic "Trần Minh" [ref=f90e619]: TM
+                - generic [ref=f90e620]:
+                  - generic "Ngựa" [ref=f90e621]:
+                    - generic [ref=f90e622]: 
+                    - text: "1"
+                  - generic "Xe" [ref=f90e623]:
+                    - generic [ref=f90e624]: 
+                    - text: "1"
+            - 'button "ORD-2026-0129 Sự cố  04/10/2026 Trong nước Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM) Tiến độ: 88% VH TM  1  1" [ref=f90e625] [cursor=pointer]':
+              - generic [ref=f90e626]:
+                - generic [ref=f90e627]: ORD-2026-0129
+                - generic [ref=f90e628]: Sự cố
+              - generic [ref=f90e629]:
+                - generic [ref=f90e630]:
+                  - generic [ref=f90e631]: 
+                  - text: 04/10/2026
+                - generic [ref=f90e632]: Trong nước
+              - generic [ref=f90e633]: Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+              - generic [ref=f90e634]: "Tiến độ: 88%"
+              - generic [ref=f90e638]:
+                - generic [ref=f90e639]:
+                  - generic "Phạm Văn Hưng" [ref=f90e640]: VH
+                  - generic "Trần Minh" [ref=f90e641]: TM
+                - generic [ref=f90e642]:
+                  - generic "Ngựa" [ref=f90e643]:
+                    - generic [ref=f90e644]: 
+                    - text: "1"
+                  - generic "Xe" [ref=f90e645]:
+                    - generic [ref=f90e646]: 
+                    - text: "1"
+          - region "Hoàn tất" [ref=f90e647]:
+            - generic [ref=f90e648]:
+              - generic [ref=f90e649]:
+                - generic [aria-hidden] [ref=f90e650]: 
+                - text: Hoàn tất
+              - generic [ref=f90e651]: "1"
+            - 'button "ORD-2026-0130  04/10/2026 Trong nước Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM) Tiến độ: 100% VH TM  1  1" [ref=f90e652] [cursor=pointer]':
+              - generic [ref=f90e653]: ORD-2026-0130
+              - generic [ref=f90e655]:
+                - generic [ref=f90e656]:
+                  - generic [ref=f90e657]: 
+                  - text: 04/10/2026
+                - generic [ref=f90e658]: Trong nước
+              - generic [ref=f90e659]: Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+              - generic [ref=f90e660]: "Tiến độ: 100%"
+              - generic [ref=f90e664]:
+                - generic [ref=f90e665]:
+                  - generic "Phạm Văn Hưng" [ref=f90e666]: VH
+                  - generic "Trần Minh" [ref=f90e667]: TM
+                - generic [ref=f90e668]:
+                  - generic "Ngựa" [ref=f90e669]:
+                    - generic [ref=f90e670]: 
+                    - text: "1"
+                  - generic "Xe" [ref=f90e671]:
+                    - generic [ref=f90e672]: 
+                    - text: "1"
+        - heading "Số liệu năm 2026" [level=2] [ref=f90e673]
+        - generic [ref=f90e674]:
+          - generic [ref=f90e675]:
+            - generic [ref=f90e676]:
+              - generic [ref=f90e677]: 
+              - text: Doanh thu
+            - generic [ref=f90e678]: 44 Tỷ
+            - generic [ref=f90e679]: Tăng 12% so với năm trước
+          - generic [ref=f90e680]:
+            - generic [ref=f90e681]:
+              - generic [ref=f90e682]: 
+              - text: Chi phí vận hành
+            - generic [ref=f90e683]: 28,7 Tỷ
+            - generic [ref=f90e684]: Tăng 5% (do sự cố)
+          - generic [ref=f90e685]:
+            - generic [ref=f90e686]:
+              - generic [ref=f90e687]: 
+              - text: Lợi nhuận
+            - generic [ref=f90e688]: 15,3 Tỷ
+            - generic [ref=f90e689]: Biên lợi nhuận đạt 35%
+          - generic [ref=f90e690]:
+            - generic [ref=f90e691]:
+              - generic [ref=f90e692]: 
+              - text: Giao đúng giờ
+            - generic [ref=f90e693]: 95.0%
+            - generic [ref=f90e694]: 228/240 chuyến không trễ
+        - generic [ref=f90e695]:
+          - generic [ref=f90e696]:
+            - heading " Doanh thu và chi phí (tỷ VND)" [level=3] [ref=f90e698]:
+              - generic [ref=f90e699]: 
+              - text: Doanh thu và chi phí (tỷ VND)
+            - generic [ref=f90e700]:
+              - generic [ref=f90e701]:
+                - generic [ref=f90e702]:
+                  - generic [ref=f90e703]: Doanh thu
+                  - generic [ref=f90e705]: Chi phí
+                  - generic [ref=f90e707]: Lợi nhuận
+                - button " Xem bảng" [ref=f90e709] [cursor=pointer]:
+                  - generic [ref=f90e710]: 
+                  - text: Xem bảng
+              - img "Doanh thu, chi phí và lợi nhuận theo tháng (tỷ VND)" [ref=f90e712]:
+                - generic [ref=f90e713]: "0"
+                - generic [ref=f90e715]: "2"
+                - generic [ref=f90e717]: "4"
+                - generic [ref=f90e719]: "6"
+                - generic [ref=f90e721]: T1
+                - generic [ref=f90e726]: T2
+                - generic [ref=f90e731]: T3
+                - generic [ref=f90e736]: T4
+                - generic [ref=f90e741]: T5
+                - generic [ref=f90e746]: T6
+                - generic [ref=f90e751]: T7
+                - generic [ref=f90e756]: T8
+                - generic [ref=f90e761]: T9
+                - generic [ref=f90e766]: T10
+                - generic [ref=f90e771]: T11
+                - generic [ref=f90e776]: T12
+                - generic [ref=f90e781]: 6 tỷ
+                - generic [ref=f90e782]: 3 tỷ
+                - generic [ref=f90e783]: 3 tỷ
+          - generic [ref=f90e784]:
+            - heading " Giao đúng giờ" [level=3] [ref=f90e786]:
+              - generic [ref=f90e787]: 
+              - text: Giao đúng giờ
+            - img "Đúng giờ 210 chuyến, Sớm 18 chuyến, Trễ 12 chuyến" [ref=f90e788]:
+              - 'generic "Đúng giờ: 210 chuyến" [ref=f90e789]'
+              - 'generic "Sớm: 18 chuyến" [ref=f90e790]'
+              - 'generic "Trễ: 12 chuyến" [ref=f90e791]'
+            - list [ref=f90e792]:
+              - listitem [ref=f90e793]:
+                - generic [ref=f90e794]:
+                  - generic [ref=f90e795]: 
+                  - text: Đúng giờ
+                - generic [ref=f90e796]: 210 chuyến
+                - generic [ref=f90e797]: 87.5%
+              - listitem [ref=f90e798]:
+                - generic [ref=f90e799]:
+                  - generic [ref=f90e800]: 
+                  - text: Sớm
+                - generic [ref=f90e801]: 18 chuyến
+                - generic [ref=f90e802]: 7.5%
+              - listitem [ref=f90e803]:
+                - generic [ref=f90e804]:
+                  - generic [ref=f90e805]: 
+                  - text: Trễ
+                - generic [ref=f90e806]: 12 chuyến
+                - generic [ref=f90e807]: 5.0%
+        - link "Xem báo cáo chuyến đi →" [ref=f90e808] [cursor=pointer]:
+          - /url: /backoffice/manager/trip-reports
+  - group "Ngôn ngữ" [ref=f90e809]:
+    - button "VI" [pressed] [ref=f90e811]
+    - button "EN" [ref=f90e812] [cursor=pointer]

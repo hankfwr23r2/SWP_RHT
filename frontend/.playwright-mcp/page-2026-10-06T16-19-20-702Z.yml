@@ -1,0 +1,216 @@
+- generic [ref=f46e3]:
+  - banner [ref=f46e4]:
+    - link "QL Quản lý manager@equine.vn" [ref=f46e5] [cursor=pointer]:
+      - /url: /backoffice/manager
+      - generic [ref=f46e6]: QL
+      - generic [ref=f46e7]:
+        - generic [ref=f46e8]: Quản lý
+        - generic [ref=f46e9]: manager@equine.vn
+    - generic "Đường dẫn" [ref=f46e10]:
+      - generic [aria-hidden] [ref=f46e11]: 
+      - generic [ref=f46e12]:
+        - generic [aria-hidden] [ref=f46e13]: 
+        - text: Tiếp nhận
+    - search [ref=f46e14]:
+      - generic [aria-hidden] [ref=f46e15]: 
+      - textbox "Tìm đơn hàng" [ref=f46e16]:
+        - /placeholder: Tìm đơn hàng, khách hàng…
+    - generic [ref=f46e17]:
+      - button "Thông báo" [ref=f46e19] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f46e20]: 
+      - button "Đăng xuất" [ref=f46e21] [cursor=pointer]:
+        - generic [ref=f46e22]: 
+  - generic [ref=f46e23]:
+    - complementary "Menu" [ref=f46e24]:
+      - generic [ref=f46e25]:
+        - generic [ref=f46e26]: Menu
+        - button "Thu gọn menu" [ref=f46e27] [cursor=pointer]:
+          - generic [ref=f46e28]: 
+      - navigation [ref=f46e29]:
+        - link "Tổng quan" [ref=f46e30] [cursor=pointer]:
+          - /url: /backoffice/manager
+          - generic [aria-hidden] [ref=f46e31]: 
+        - link "Tiếp nhận 1 đơn chờ" [ref=f46e33] [cursor=pointer]:
+          - /url: /backoffice/manager/intake
+          - generic [aria-hidden] [ref=f46e34]: 
+          - generic [ref=f46e35]: Tiếp nhận
+          - generic "1 đơn chờ" [ref=f46e36]: "1"
+        - link "Duyệt giá 1 đơn chờ" [ref=f46e37] [cursor=pointer]:
+          - /url: /backoffice/manager/approvals
+          - generic [aria-hidden] [ref=f46e38]: 
+          - generic [ref=f46e39]: Duyệt giá
+          - generic "1 đơn chờ" [ref=f46e40]: "1"
+        - link "Sự cố 1 đơn chờ" [ref=f46e41] [cursor=pointer]:
+          - /url: /backoffice/manager/incidents
+          - generic [aria-hidden] [ref=f46e42]: 
+          - generic [ref=f46e43]: Sự cố
+          - generic "1 đơn chờ" [ref=f46e44]: "1"
+        - link "Tiến độ đơn 1 đơn chờ" [ref=f46e45] [cursor=pointer]:
+          - /url: /backoffice/manager/progress
+          - generic [aria-hidden] [ref=f46e46]: 
+          - generic [ref=f46e47]: Tiến độ đơn
+          - generic "1 đơn chờ" [ref=f46e48]: "1"
+        - link "Doanh thu" [ref=f46e49] [cursor=pointer]:
+          - /url: /backoffice/manager/reports
+          - generic [aria-hidden] [ref=f46e50]: 
+        - link "Chuyến đi" [ref=f46e52] [cursor=pointer]:
+          - /url: /backoffice/manager/trip-reports
+          - generic [aria-hidden] [ref=f46e53]: 
+      - generic [ref=f46e55]:
+        - button "Cần xử lý 4" [expanded] [ref=f46e56] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f46e57]: 
+          - generic [ref=f46e58]: Cần xử lý
+          - generic [ref=f46e59]: "4"
+        - link "0123 · Đối soát chi phí" [ref=f46e60] [cursor=pointer]:
+          - /url: /backoffice/manager/progress
+          - generic [aria-hidden] [ref=f46e61]: 
+        - link "0126 · Duyệt phương án sự cố" [ref=f46e63] [cursor=pointer]:
+          - /url: /backoffice/manager/incidents
+          - generic [aria-hidden] [ref=f46e64]: 
+        - link "0104 · Duyệt báo giá" [ref=f46e66] [cursor=pointer]:
+          - /url: /backoffice/manager/approvals
+          - generic [aria-hidden] [ref=f46e67]: 
+        - link "0101 · Tiếp nhận đơn" [ref=f46e69] [cursor=pointer]:
+          - /url: /backoffice/manager/intake
+          - generic [aria-hidden] [ref=f46e70]: 
+    - main [ref=f46e72]:
+      - generic [ref=f46e73]:
+        - generic [ref=f46e75]:
+          - generic [ref=f46e77]:
+            - heading "Tiếp nhận đơn hàng" [level=1] [ref=f46e78]
+            - paragraph [ref=f46e79]: Giao Kiểm dịch viên và Điều phối viên thẩm định song song.
+          - generic [ref=f46e80]:
+            - tablist "Trạng thái" [ref=f46e81]:
+              - tab "Chờ tiếp nhận 1" [selected] [ref=f46e82] [cursor=pointer]:
+                - text: Chờ tiếp nhận
+                - generic [ref=f46e83]: "1"
+              - tab "Đang thẩm định 4" [ref=f46e84] [cursor=pointer]:
+                - text: Đang thẩm định
+                - generic [ref=f46e85]: "4"
+            - generic [ref=f46e86]:
+              - generic [ref=f46e87]:
+                - generic [aria-hidden] [ref=f46e88]: 
+                - textbox [ref=f46e89]:
+                  - /placeholder: Tìm theo mã đơn, khách hàng, tuyến…
+              - generic [ref=f46e90]:
+                - text: Khởi hành
+                - textbox "Khởi hành từ ngày" [ref=f46e91]
+                - text: →
+                - textbox "Khởi hành đến ngày" [ref=f46e92]
+            - table [ref=f46e94]:
+              - rowgroup [ref=f46e95]:
+                - row [ref=f46e96]:
+                  - columnheader "Mã đơn" [ref=f46e97]
+                  - columnheader "Khách hàng" [ref=f46e98]
+                  - columnheader "Tuyến" [ref=f46e99]
+                  - columnheader "Khởi hành" [ref=f46e100]
+                  - columnheader "Ngựa" [ref=f46e101]
+                  - columnheader "Gửi lúc" [ref=f46e102]
+                  - columnheader "Trạng thái" [ref=f46e103]
+                  - columnheader "Thao tác" [ref=f46e104]
+              - rowgroup [ref=f46e105]:
+                - row [ref=f46e106]:
+                  - cell "ORD-2026-0101 Quốc tế" [ref=f46e107]:
+                    - text: ORD-2026-0101
+                    - generic [ref=f46e108]: Quốc tế
+                  - cell "Trang trại Long Thành" [ref=f46e109]
+                  - cell "Kho Đồng Nai → Kho Phnom Penh" [ref=f46e110]
+                  - cell "20/11/2026" [ref=f46e112]
+                  - cell "2 con" [ref=f46e113]
+                  - cell "06/10/2026 13:19" [ref=f46e114]
+                  - cell [ref=f46e115]:
+                    - generic "Chờ quản lý tiếp nhận (Pending Manager Intake)" [ref=f46e116]:
+                      - generic [aria-hidden] [ref=f46e117]: 
+                      - text: Chờ tiếp nhận
+                  - cell [ref=f46e118]:
+                    - button "Tiếp nhận" [active] [ref=f46e119] [cursor=pointer]
+            - generic [ref=f46e120]: Hiển thị 1 đơn hàng
+        - dialog [ref=f46e127]:
+          - generic [ref=f46e128]:
+            - generic [ref=f46e129]:
+              - heading "Tiếp nhận ORD-2026-0101" [level=3] [ref=f46e130]
+              - generic [ref=f46e131]: Trang trại Long Thành · gửi lúc 06/10/2026 13:19
+            - button "Đóng" [ref=f46e132] [cursor=pointer]:
+              - generic [ref=f46e133]: 
+          - generic [ref=f46e134]:
+            - generic [ref=f46e135]:
+              - generic [ref=f46e136]:
+                - term [ref=f46e137]: Khách hàng
+                - definition [ref=f46e138]: Trang trại Long Thành
+              - generic [ref=f46e139]:
+                - term [ref=f46e140]: Loại chuyến
+                - definition [ref=f46e141]: Quốc tế (Việt Nam → Campuchia)
+              - generic [ref=f46e142]:
+                - term [ref=f46e143]: Ngày khởi hành
+                - definition [ref=f46e144]: 20/11/2026
+              - generic [ref=f46e145]:
+                - term [ref=f46e146]: Điểm đón
+                - definition [ref=f46e147]: Kho Đồng Nai
+              - generic [ref=f46e148]:
+                - term [ref=f46e149]: Điểm giao
+                - definition [ref=f46e150]: Kho Phnom Penh
+              - generic [ref=f46e151]:
+                - term [ref=f46e152]: Người gửi
+                - definition [ref=f46e153]:
+                  - text: Trang trại Long Thành
+                  - generic [ref=f46e154]: 0901 456 789
+              - generic [ref=f46e155]:
+                - term [ref=f46e156]: Người nhận
+                - definition [ref=f46e157]:
+                  - text: Trung tâm Kiểm dịch Phnom Penh
+                  - generic [ref=f46e158]: 0912 345 678
+              - generic [ref=f46e159]:
+                - term [ref=f46e160]: Số ngựa
+                - definition [ref=f46e161]: 2 con
+            - heading "Ngựa và dịch vụ" [level=4] [ref=f46e162]
+            - generic [ref=f46e163]:
+              - generic [ref=f46e164]:
+                - generic [ref=f46e166]:
+                  - generic [ref=f46e167]: Storm Runner
+                  - generic [ref=f46e168]: Chip VN-985211 · Thoroughbred · Thiến
+                - generic [ref=f46e169]:
+                  - generic [ref=f46e170]: "Khoang: tiêu chuẩn"
+                  - generic [ref=f46e171]:
+                    - text: "Thức ăn: Gói cơ bản"
+                    - generic [ref=f46e172]: (Cỏ khô thường)
+                  - generic [ref=f46e173]: "Cữ nước: Mỗi 3 giờ"
+                  - generic [ref=f46e174]: "Bảo hiểm: mua, phí 20,000,000 ₫"
+              - generic [ref=f46e175]:
+                - generic [ref=f46e177]:
+                  - generic [ref=f46e178]: Bạch Phong
+                  - generic [ref=f46e179]: Chip VN-985212 · Arabian · Cái
+                - generic [ref=f46e180]:
+                  - generic [ref=f46e181]: "Khoang: tiêu chuẩn"
+                  - generic [ref=f46e182]:
+                    - text: "Thức ăn: Gói cơ bản"
+                    - generic [ref=f46e183]: (Cỏ khô thường)
+                  - generic [ref=f46e184]: "Cữ nước: Mỗi 3 giờ"
+                  - generic [ref=f46e185]: "Bảo hiểm: từ chối"
+            - heading "Giao việc" [level=4] [ref=f46e186]
+            - generic [ref=f46e187]:
+              - generic [ref=f46e188]:
+                - generic [ref=f46e189]: Kiểm dịch viên (thẩm định y tế)
+                - button "Chọn người Chọn" [ref=f46e190] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f46e191]: 
+                  - generic [ref=f46e192]: Chọn người
+                  - generic [ref=f46e193]: Chọn
+              - generic [ref=f46e194]:
+                - generic [ref=f46e195]: Điều phối viên (xe và lộ trình)
+                - button "Chọn người Chọn" [ref=f46e196] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f46e197]: 
+                  - generic [ref=f46e198]: Chọn người
+                  - generic [ref=f46e199]: Chọn
+            - paragraph [ref=f46e200]:
+              - text: Chọn người đang hoạt động;
+              - button "Xem thêm" [ref=f46e201] [cursor=pointer]
+          - generic [ref=f46e202]:
+            - button "Đóng" [ref=f46e203] [cursor=pointer]
+            - button " Từ chối đơn" [ref=f46e204] [cursor=pointer]:
+              - generic [ref=f46e205]: 
+              - text: Từ chối đơn
+            - button " Tiếp nhận và kích hoạt thẩm định" [disabled] [ref=f46e206]:
+              - generic [ref=f46e207]: 
+              - text: Tiếp nhận và kích hoạt thẩm định
+  - group "Ngôn ngữ" [ref=f46e122]:
+    - button "VI" [pressed] [ref=f46e124]
+    - button "EN" [ref=f46e125] [cursor=pointer]

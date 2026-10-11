@@ -1,0 +1,816 @@
+- generic [ref=f18e3]:
+  - banner [ref=f18e4]:
+    - link "QL Quản lý manager@equine.vn" [ref=f18e5] [cursor=pointer]:
+      - /url: /backoffice/manager
+      - generic [ref=f18e6]: QL
+      - generic [ref=f18e7]:
+        - generic [ref=f18e8]: Quản lý
+        - generic [ref=f18e9]: manager@equine.vn
+    - generic "Đường dẫn" [ref=f18e10]:
+      - generic [aria-hidden] [ref=f18e11]: 
+      - generic [ref=f18e12]:
+        - generic [aria-hidden] [ref=f18e13]: 
+        - text: Tiến độ đơn
+    - search [ref=f18e14]:
+      - generic [aria-hidden] [ref=f18e15]: 
+      - textbox "Tìm đơn hàng" [ref=f18e16]:
+        - /placeholder: Tìm đơn hàng, khách hàng…
+    - generic [ref=f18e17]:
+      - button "Thông báo" [ref=f18e19] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f18e20]: 
+      - button "Đăng xuất" [ref=f18e21] [cursor=pointer]:
+        - generic [ref=f18e22]: 
+  - generic [ref=f18e23]:
+    - complementary "Menu" [ref=f18e24]:
+      - generic [ref=f18e25]:
+        - generic [ref=f18e26]: Menu
+        - button "Thu gọn menu" [ref=f18e27] [cursor=pointer]:
+          - generic [ref=f18e28]: 
+      - navigation [ref=f18e29]:
+        - link "Tổng quan" [ref=f18e30] [cursor=pointer]:
+          - /url: /backoffice/manager
+          - generic [aria-hidden] [ref=f18e31]: 
+        - link "Tiếp nhận 1 đơn chờ" [ref=f18e33] [cursor=pointer]:
+          - /url: /backoffice/manager/intake
+          - generic [aria-hidden] [ref=f18e34]: 
+          - generic [ref=f18e35]: Tiếp nhận
+          - generic "1 đơn chờ" [ref=f18e36]: "1"
+        - link "Duyệt giá 1 đơn chờ" [ref=f18e37] [cursor=pointer]:
+          - /url: /backoffice/manager/approvals
+          - generic [aria-hidden] [ref=f18e38]: 
+          - generic [ref=f18e39]: Duyệt giá
+          - generic "1 đơn chờ" [ref=f18e40]: "1"
+        - link "Sự cố 1 đơn chờ" [ref=f18e41] [cursor=pointer]:
+          - /url: /backoffice/manager/incidents
+          - generic [aria-hidden] [ref=f18e42]: 
+          - generic [ref=f18e43]: Sự cố
+          - generic "1 đơn chờ" [ref=f18e44]: "1"
+        - link "Tiến độ đơn 1 đơn chờ" [ref=f18e45] [cursor=pointer]:
+          - /url: /backoffice/manager/progress
+          - generic [aria-hidden] [ref=f18e46]: 
+          - generic [ref=f18e47]: Tiến độ đơn
+          - generic "1 đơn chờ" [ref=f18e48]: "1"
+        - link "Doanh thu" [ref=f18e49] [cursor=pointer]:
+          - /url: /backoffice/manager/reports
+          - generic [aria-hidden] [ref=f18e50]: 
+        - link "Chuyến đi" [ref=f18e52] [cursor=pointer]:
+          - /url: /backoffice/manager/trip-reports
+          - generic [aria-hidden] [ref=f18e53]: 
+      - generic [ref=f18e55]:
+        - button "Cần xử lý 4" [expanded] [ref=f18e56] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f18e57]: 
+          - generic [ref=f18e58]: Cần xử lý
+          - generic [ref=f18e59]: "4"
+        - link "0123 · Đối soát chi phí" [ref=f18e60] [cursor=pointer]:
+          - /url: /backoffice/manager/progress
+          - generic [aria-hidden] [ref=f18e61]: 
+        - link "0126 · Duyệt phương án sự cố" [ref=f18e63] [cursor=pointer]:
+          - /url: /backoffice/manager/incidents
+          - generic [aria-hidden] [ref=f18e64]: 
+        - link "0104 · Duyệt báo giá" [ref=f18e66] [cursor=pointer]:
+          - /url: /backoffice/manager/approvals
+          - generic [aria-hidden] [ref=f18e67]: 
+        - link "0101 · Tiếp nhận đơn" [ref=f18e69] [cursor=pointer]:
+          - /url: /backoffice/manager/intake
+          - generic [aria-hidden] [ref=f18e70]: 
+    - main [ref=f18e72]:
+      - generic [ref=f18e75]:
+        - generic [ref=f18e77]:
+          - heading "Tiến độ đơn" [level=1] [ref=f18e78]
+          - paragraph [ref=f18e79]: Theo dõi trạng thái và tiến độ của mọi đơn, xem giấy tờ, lộ trình, xe và nhân sự. Manager hủy được đơn đã cọc khi xe chưa nhận ngựa và đối soát chi phí sự cố sau khi giao.
+        - generic [ref=f18e80]:
+          - generic [ref=f18e81]:
+            - generic [ref=f18e82]:
+              - 'button " Lọc: Tất cả giai đoạn " [expanded] [active] [ref=f18e83] [cursor=pointer]':
+                - generic [ref=f18e84]: 
+                - text: "Lọc:"
+                - generic [ref=f18e85]: Tất cả giai đoạn
+                - generic [ref=f18e86]: 
+              - dialog "Lọc theo tiến độ" [ref=f18e704]:
+                - generic [ref=f18e705]:
+                  - generic [ref=f18e706]:
+                    - generic [ref=f18e707]: 
+                    - text: Lọc đơn theo tiến độ
+                  - button "Đóng bảng lọc" [ref=f18e708] [cursor=pointer]:
+                    - generic [ref=f18e709]: 
+                - generic [ref=f18e710]:
+                  - listbox "Tiến độ" [ref=f18e711]:
+                    - option " Tất cả giai đoạn ✓ 32 " [selected] [ref=f18e712] [cursor=pointer]:
+                      - generic [ref=f18e713]: 
+                      - generic [ref=f18e715]: Tất cả giai đoạn ✓
+                      - generic [ref=f18e716]: "32"
+                      - generic [ref=f18e717]: 
+                    - option " 1. Gửi đơn 1 " [ref=f18e718] [cursor=pointer]:
+                      - generic [ref=f18e719]: 
+                      - generic [ref=f18e721]: 1. Gửi đơn
+                      - generic [ref=f18e722]: "1"
+                      - generic [ref=f18e723]: 
+                    - option " 2. Thẩm định 4 " [ref=f18e724] [cursor=pointer]:
+                      - generic [ref=f18e725]: 
+                      - generic [ref=f18e727]: 2. Thẩm định
+                      - generic [ref=f18e728]: "4"
+                      - generic [ref=f18e729]: 
+                    - option " 3. Báo giá 1 " [ref=f18e730] [cursor=pointer]:
+                      - generic [ref=f18e731]: 
+                      - generic [ref=f18e733]: 3. Báo giá
+                      - generic [ref=f18e734]: "1"
+                      - generic [ref=f18e735]: 
+                    - option " 4. Đặt cọc 1 " [ref=f18e736] [cursor=pointer]:
+                      - generic [ref=f18e737]: 
+                      - generic [ref=f18e739]: 4. Đặt cọc
+                      - generic [ref=f18e740]: "1"
+                      - generic [ref=f18e741]: 
+                    - option " 5. Giấy tờ 5 " [ref=f18e742] [cursor=pointer]:
+                      - generic [ref=f18e743]: 
+                      - generic [ref=f18e745]: 5. Giấy tờ
+                      - generic [ref=f18e746]: "5"
+                      - generic [ref=f18e747]: 
+                    - option " 6. Sẵn sàng 4 " [ref=f18e748] [cursor=pointer]:
+                      - generic [ref=f18e749]: 
+                      - generic [ref=f18e751]: 6. Sẵn sàng
+                      - generic [ref=f18e752]: "4"
+                      - generic [ref=f18e753]: 
+                    - option " 7. Vận chuyển 10 " [ref=f18e754] [cursor=pointer]:
+                      - generic [ref=f18e755]: 
+                      - generic [ref=f18e757]: 7. Vận chuyển
+                      - generic [ref=f18e758]: "10"
+                      - generic [ref=f18e759]: 
+                    - option " 8. Quyết toán 4 " [ref=f18e760] [cursor=pointer]:
+                      - generic [ref=f18e761]: 
+                      - generic [ref=f18e763]: 8. Quyết toán
+                      - generic [ref=f18e764]: "4"
+                      - generic [ref=f18e765]: 
+                    - option " Hoàn tất 1 " [ref=f18e766] [cursor=pointer]:
+                      - generic [ref=f18e767]: 
+                      - generic [ref=f18e769]: Hoàn tất
+                      - generic [ref=f18e770]: "1"
+                      - generic [ref=f18e771]: 
+                    - option " Đã dừng 1 " [ref=f18e772] [cursor=pointer]:
+                      - generic [ref=f18e773]: 
+                      - generic [ref=f18e775]: Đã dừng
+                      - generic [ref=f18e776]: "1"
+                      - generic [ref=f18e777]: 
+                  - generic [ref=f18e779]:
+                    - generic [ref=f18e780]: 
+                    - paragraph [ref=f18e781]: Chọn một tiến độ bên trái để xem các trạng thái của tiến độ đó.
+            - generic [ref=f18e87]:
+              - generic [aria-hidden] [ref=f18e88]: 
+              - textbox [ref=f18e89]:
+                - /placeholder: Tìm theo mã đơn, khách hàng, tuyến…
+            - generic [ref=f18e90]:
+              - text: Khởi hành
+              - textbox "Khởi hành từ ngày" [ref=f18e91]
+              - text: →
+              - textbox "Khởi hành đến ngày" [ref=f18e92]
+          - table [ref=f18e94]:
+            - rowgroup [ref=f18e95]:
+              - row [ref=f18e96]:
+                - columnheader "Mã đơn" [ref=f18e97]
+                - columnheader "Khách hàng" [ref=f18e98]
+                - columnheader "Tuyến" [ref=f18e99]
+                - columnheader "Khởi hành" [ref=f18e100]
+                - columnheader "Ngựa / xe" [ref=f18e101]
+                - columnheader "Trạng thái" [ref=f18e102]
+                - columnheader "Tiến độ" [ref=f18e103]
+                - columnheader "Giá trị" [ref=f18e104]
+                - columnheader "Chi tiết" [ref=f18e105]
+                - columnheader "Thao tác" [ref=f18e106]
+            - rowgroup [ref=f18e107]:
+              - row [ref=f18e108]:
+                - cell "ORD-2026-0134 Trong nước" [ref=f18e109]:
+                  - text: ORD-2026-0134
+                  - generic [ref=f18e110]: Trong nước
+                - cell "Trang trại Long Thành" [ref=f18e111]
+                - cell "Kho Đồng Nai → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)" [ref=f18e112]
+                - cell "06/10/2026" [ref=f18e114]
+                - cell "1 ngựa · 1 xe" [ref=f18e115]
+                - cell [ref=f18e116]:
+                  - generic "Đang vận chuyển (In Transit)" [ref=f18e117]:
+                    - generic [aria-hidden] [ref=f18e118]: 
+                    - text: Vận chuyển
+                - 'cell "Bước 7/8: Vận chuyển Các bước của đơn Mốc 2/3 · Trạm trung chuyển 1" [ref=f18e119]':
+                  - generic [ref=f18e120]:
+                    - generic [ref=f18e121]: "Bước 7/8: Vận chuyển"
+                    - list "Các bước của đơn" [ref=f18e122]:
+                      - listitem "Gửi đơn" [ref=f18e123]
+                      - listitem "Thẩm định" [ref=f18e124]
+                      - listitem "Báo giá" [ref=f18e125]
+                      - listitem "Đặt cọc" [ref=f18e126]
+                      - listitem "Giấy tờ" [ref=f18e127]
+                      - listitem "Sẵn sàng" [ref=f18e128]
+                      - listitem "Vận chuyển" [ref=f18e129]
+                      - listitem "Quyết toán" [ref=f18e130]
+                    - generic [ref=f18e131]: Mốc 2/3 · Trạm trung chuyển 1
+                - cell "8,226,000 ₫" [ref=f18e132]
+                - cell [ref=f18e133]:
+                  - button " Xem giấy tờ, xe" [ref=f18e134] [cursor=pointer]:
+                    - generic [ref=f18e135]: 
+                    - text: Xem giấy tờ, xe
+                - cell [ref=f18e136]
+              - row [ref=f18e137]:
+                - cell "ORD-2026-0135 Trong nước" [ref=f18e138]:
+                  - text: ORD-2026-0135
+                  - generic [ref=f18e139]: Trong nước
+                - cell "Trang trại Long Thành" [ref=f18e140]
+                - cell "Kho Bình Dương → Kho Long An" [ref=f18e141]
+                - cell "06/10/2026" [ref=f18e143]
+                - cell "1 ngựa · 1 xe" [ref=f18e144]
+                - cell [ref=f18e145]:
+                  - generic "Đang vận chuyển (In Transit)" [ref=f18e146]:
+                    - generic [aria-hidden] [ref=f18e147]: 
+                    - text: Vận chuyển
+                - 'cell "Bước 7/8: Vận chuyển Các bước của đơn Mốc 3/3 · Bàn giao tại điểm giao" [ref=f18e148]':
+                  - generic [ref=f18e149]:
+                    - generic [ref=f18e150]: "Bước 7/8: Vận chuyển"
+                    - list "Các bước của đơn" [ref=f18e151]:
+                      - listitem "Gửi đơn" [ref=f18e152]
+                      - listitem "Thẩm định" [ref=f18e153]
+                      - listitem "Báo giá" [ref=f18e154]
+                      - listitem "Đặt cọc" [ref=f18e155]
+                      - listitem "Giấy tờ" [ref=f18e156]
+                      - listitem "Sẵn sàng" [ref=f18e157]
+                      - listitem "Vận chuyển" [ref=f18e158]
+                      - listitem "Quyết toán" [ref=f18e159]
+                    - generic [ref=f18e160]: Mốc 3/3 · Bàn giao tại điểm giao
+                - cell "6,529,000 ₫" [ref=f18e161]
+                - cell [ref=f18e162]:
+                  - button " Xem giấy tờ, xe" [ref=f18e163] [cursor=pointer]:
+                    - generic [ref=f18e164]: 
+                    - text: Xem giấy tờ, xe
+                - cell [ref=f18e165]
+              - row [ref=f18e166]:
+                - cell "ORD-2026-0136 Quốc tế · Mộc Bài – Bavet" [ref=f18e167]:
+                  - text: ORD-2026-0136
+                  - generic [ref=f18e168]: Quốc tế · Mộc Bài – Bavet
+                - cell "Trang trại Long Thành" [ref=f18e169]
+                - cell "Kho Đồng Nai → Kho Phnom Penh" [ref=f18e170]
+                - cell "06/10/2026" [ref=f18e172]
+                - cell "1 ngựa · 1 xe" [ref=f18e173]
+                - cell [ref=f18e174]:
+                  - generic "Đang vận chuyển (In Transit)" [ref=f18e175]:
+                    - generic [aria-hidden] [ref=f18e176]: 
+                    - text: Vận chuyển
+                - 'cell "Bước 7/8: Vận chuyển Các bước của đơn Mốc 4/5 · Hoàn tất thông quan" [ref=f18e177]':
+                  - generic [ref=f18e178]:
+                    - generic [ref=f18e179]: "Bước 7/8: Vận chuyển"
+                    - list "Các bước của đơn" [ref=f18e180]:
+                      - listitem "Gửi đơn" [ref=f18e181]
+                      - listitem "Thẩm định" [ref=f18e182]
+                      - listitem "Báo giá" [ref=f18e183]
+                      - listitem "Đặt cọc" [ref=f18e184]
+                      - listitem "Giấy tờ" [ref=f18e185]
+                      - listitem "Sẵn sàng" [ref=f18e186]
+                      - listitem "Vận chuyển" [ref=f18e187]
+                      - listitem "Quyết toán" [ref=f18e188]
+                    - generic [ref=f18e189]: Mốc 4/5 · Hoàn tất thông quan
+                - cell "17,434,000 ₫" [ref=f18e190]
+                - cell [ref=f18e191]:
+                  - button " Xem giấy tờ, xe" [ref=f18e192] [cursor=pointer]:
+                    - generic [ref=f18e193]: 
+                    - text: Xem giấy tờ, xe
+                - cell [ref=f18e194]
+              - row [ref=f18e195]:
+                - cell "ORD-2026-0137 Quốc tế · Mộc Bài – Bavet" [ref=f18e196]:
+                  - text: ORD-2026-0137
+                  - generic [ref=f18e197]: Quốc tế · Mộc Bài – Bavet
+                - cell "Trang trại Long Thành" [ref=f18e198]
+                - cell "Kho Đồng Nai → Kho Phnom Penh" [ref=f18e199]
+                - cell "06/10/2026" [ref=f18e201]
+                - cell "1 ngựa · 1 xe" [ref=f18e202]
+                - cell [ref=f18e203]:
+                  - generic "Đang vận chuyển (In Transit)" [ref=f18e204]:
+                    - generic [aria-hidden] [ref=f18e205]: 
+                    - text: Vận chuyển
+                - 'cell "Bước 7/8: Vận chuyển Các bước của đơn Mốc 5/5 · Bàn giao tại điểm giao" [ref=f18e206]':
+                  - generic [ref=f18e207]:
+                    - generic [ref=f18e208]: "Bước 7/8: Vận chuyển"
+                    - list "Các bước của đơn" [ref=f18e209]:
+                      - listitem "Gửi đơn" [ref=f18e210]
+                      - listitem "Thẩm định" [ref=f18e211]
+                      - listitem "Báo giá" [ref=f18e212]
+                      - listitem "Đặt cọc" [ref=f18e213]
+                      - listitem "Giấy tờ" [ref=f18e214]
+                      - listitem "Sẵn sàng" [ref=f18e215]
+                      - listitem "Vận chuyển" [ref=f18e216]
+                      - listitem "Quyết toán" [ref=f18e217]
+                    - generic [ref=f18e218]: Mốc 5/5 · Bàn giao tại điểm giao
+                - cell "17,434,000 ₫" [ref=f18e219]
+                - cell [ref=f18e220]:
+                  - button " Xem giấy tờ, xe" [ref=f18e221] [cursor=pointer]:
+                    - generic [ref=f18e222]: 
+                    - text: Xem giấy tờ, xe
+                - cell [ref=f18e223]
+              - row [ref=f18e224]:
+                - cell "ORD-2026-0118 Quốc tế · Mộc Bài – Bavet" [ref=f18e225]:
+                  - text: ORD-2026-0118
+                  - generic [ref=f18e226]: Quốc tế · Mộc Bài – Bavet
+                - cell "CLB Ngựa Phương Nam" [ref=f18e227]
+                - cell "Kho Đồng Nai → Kho Phnom Penh" [ref=f18e228]
+                - cell "06/10/2026" [ref=f18e230]
+                - cell "2 ngựa · 1 xe" [ref=f18e231]
+                - cell [ref=f18e232]:
+                  - generic "Đang vận chuyển (In Transit)" [ref=f18e233]:
+                    - generic [aria-hidden] [ref=f18e234]: 
+                    - text: Vận chuyển
+                - 'cell "Bước 7/8: Vận chuyển Các bước của đơn Mốc 3/5 · Tới cửa khẩu" [ref=f18e235]':
+                  - generic [ref=f18e236]:
+                    - generic [ref=f18e237]: "Bước 7/8: Vận chuyển"
+                    - list "Các bước của đơn" [ref=f18e238]:
+                      - listitem "Gửi đơn" [ref=f18e239]
+                      - listitem "Thẩm định" [ref=f18e240]
+                      - listitem "Báo giá" [ref=f18e241]
+                      - listitem "Đặt cọc" [ref=f18e242]
+                      - listitem "Giấy tờ" [ref=f18e243]
+                      - listitem "Sẵn sàng" [ref=f18e244]
+                      - listitem "Vận chuyển" [ref=f18e245]
+                      - listitem "Quyết toán" [ref=f18e246]
+                    - generic [ref=f18e247]: Mốc 3/5 · Tới cửa khẩu
+                - cell "22,222,000 ₫" [ref=f18e248]
+                - cell [ref=f18e249]:
+                  - button " Xem giấy tờ, xe" [ref=f18e250] [cursor=pointer]:
+                    - generic [ref=f18e251]: 
+                    - text: Xem giấy tờ, xe
+                - cell [ref=f18e252]
+              - row [ref=f18e253]:
+                - cell "ORD-2026-0119 Trong nước" [ref=f18e254]:
+                  - text: ORD-2026-0119
+                  - generic [ref=f18e255]: Trong nước
+                - cell "Trang trại Long Thành" [ref=f18e256]
+                - cell "Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)" [ref=f18e257]
+                - cell "06/10/2026" [ref=f18e259]
+                - cell "1 ngựa · 1 xe" [ref=f18e260]
+                - cell [ref=f18e261]:
+                  - generic "Đã giao, chờ tài xế gửi chi phí (Delivered - Pending Settlement)" [ref=f18e262]:
+                    - generic [aria-hidden] [ref=f18e263]: 
+                    - text: Đã giao
+                - 'cell "Bước 8/8: Quyết toán Các bước của đơn" [ref=f18e264]':
+                  - generic [ref=f18e265]:
+                    - generic [ref=f18e266]: "Bước 8/8: Quyết toán"
+                    - list "Các bước của đơn" [ref=f18e267]:
+                      - listitem "Gửi đơn" [ref=f18e268]
+                      - listitem "Thẩm định" [ref=f18e269]
+                      - listitem "Báo giá" [ref=f18e270]
+                      - listitem "Đặt cọc" [ref=f18e271]
+                      - listitem "Giấy tờ" [ref=f18e272]
+                      - listitem "Sẵn sàng" [ref=f18e273]
+                      - listitem "Vận chuyển" [ref=f18e274]
+                      - listitem "Quyết toán" [ref=f18e275]
+                - cell "7,745,000 ₫" [ref=f18e276]
+                - cell [ref=f18e277]:
+                  - button " Xem giấy tờ, xe" [ref=f18e278] [cursor=pointer]:
+                    - generic [ref=f18e279]: 
+                    - text: Xem giấy tờ, xe
+                - cell [ref=f18e280]
+              - row [ref=f18e281]:
+                - cell "ORD-2026-0123 Trong nước" [ref=f18e282]:
+                  - text: ORD-2026-0123
+                  - generic [ref=f18e283]: Trong nước
+                - cell "Trang trại Long Thành" [ref=f18e284]
+                - cell "Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)" [ref=f18e285]
+                - cell "06/10/2026" [ref=f18e287]
+                - cell "1 ngựa · 1 xe" [ref=f18e288]
+                - cell [ref=f18e289]:
+                  - generic "Chờ quản lý đối soát chi phí (Expenses Submitted - Pending Audit)" [ref=f18e290]:
+                    - generic [aria-hidden] [ref=f18e291]: 
+                    - text: Chờ đối soát
+                - 'cell "Bước 8/8: Quyết toán Các bước của đơn" [ref=f18e292]':
+                  - generic [ref=f18e293]:
+                    - generic [ref=f18e294]: "Bước 8/8: Quyết toán"
+                    - list "Các bước của đơn" [ref=f18e295]:
+                      - listitem "Gửi đơn" [ref=f18e296]
+                      - listitem "Thẩm định" [ref=f18e297]
+                      - listitem "Báo giá" [ref=f18e298]
+                      - listitem "Đặt cọc" [ref=f18e299]
+                      - listitem "Giấy tờ" [ref=f18e300]
+                      - listitem "Sẵn sàng" [ref=f18e301]
+                      - listitem "Vận chuyển" [ref=f18e302]
+                      - listitem "Quyết toán" [ref=f18e303]
+                - cell "7,745,000 ₫" [ref=f18e304]
+                - cell [ref=f18e305]:
+                  - button " Xem giấy tờ, xe" [ref=f18e306] [cursor=pointer]:
+                    - generic [ref=f18e307]: 
+                    - text: Xem giấy tờ, xe
+                - cell [ref=f18e308]:
+                  - button "Đối soát chi phí" [ref=f18e309] [cursor=pointer]
+              - row [ref=f18e310]:
+                - cell "ORD-2026-0128 Trong nước" [ref=f18e311]:
+                  - text: ORD-2026-0128
+                  - generic [ref=f18e312]: Trong nước
+                - cell "CLB Ngựa Phương Nam" [ref=f18e313]
+                - cell "Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)" [ref=f18e314]
+                - cell "06/10/2026" [ref=f18e316]
+                - cell "1 ngựa · 1 xe" [ref=f18e317]
+                - cell [ref=f18e318]:
+                  - generic "Đã phát hành quyết toán, chờ khách trả (Settlement Issued - Awaiting Final Payment)" [ref=f18e319]:
+                    - generic [aria-hidden] [ref=f18e320]: 
+                    - text: Chờ khách trả
+                - 'cell "Bước 8/8: Quyết toán Các bước của đơn" [ref=f18e321]':
+                  - generic [ref=f18e322]:
+                    - generic [ref=f18e323]: "Bước 8/8: Quyết toán"
+                    - list "Các bước của đơn" [ref=f18e324]:
+                      - listitem "Gửi đơn" [ref=f18e325]
+                      - listitem "Thẩm định" [ref=f18e326]
+                      - listitem "Báo giá" [ref=f18e327]
+                      - listitem "Đặt cọc" [ref=f18e328]
+                      - listitem "Giấy tờ" [ref=f18e329]
+                      - listitem "Sẵn sàng" [ref=f18e330]
+                      - listitem "Vận chuyển" [ref=f18e331]
+                      - listitem "Quyết toán" [ref=f18e332]
+                - cell "7,745,000 ₫" [ref=f18e333]
+                - cell [ref=f18e334]:
+                  - button " Xem giấy tờ, xe" [ref=f18e335] [cursor=pointer]:
+                    - generic [ref=f18e336]: 
+                    - text: Xem giấy tờ, xe
+                - cell [ref=f18e337]
+              - row [ref=f18e338]:
+                - cell "ORD-2026-0129 Trong nước" [ref=f18e339]:
+                  - text: ORD-2026-0129
+                  - generic [ref=f18e340]: Trong nước
+                - cell "CLB Ngựa Phương Nam" [ref=f18e341]
+                - cell "Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)" [ref=f18e342]
+                - cell "06/10/2026" [ref=f18e344]
+                - cell "1 ngựa · 1 xe" [ref=f18e345]
+                - cell [ref=f18e346]:
+                  - generic "Khách quá hạn thanh toán quyết toán (Payment Overdue)" [ref=f18e347]:
+                    - generic [aria-hidden] [ref=f18e348]: 
+                    - text: Quá hạn trả
+                - 'cell "Bước 8/8: Quyết toán Các bước của đơn" [ref=f18e349]':
+                  - generic [ref=f18e350]:
+                    - generic [ref=f18e351]: "Bước 8/8: Quyết toán"
+                    - list "Các bước của đơn" [ref=f18e352]:
+                      - listitem "Gửi đơn" [ref=f18e353]
+                      - listitem "Thẩm định" [ref=f18e354]
+                      - listitem "Báo giá" [ref=f18e355]
+                      - listitem "Đặt cọc" [ref=f18e356]
+                      - listitem "Giấy tờ" [ref=f18e357]
+                      - listitem "Sẵn sàng" [ref=f18e358]
+                      - listitem "Vận chuyển" [ref=f18e359]
+                      - listitem "Quyết toán" [ref=f18e360]
+                - cell "7,745,000 ₫" [ref=f18e361]
+                - cell [ref=f18e362]:
+                  - button " Xem giấy tờ, xe" [ref=f18e363] [cursor=pointer]:
+                    - generic [ref=f18e364]: 
+                    - text: Xem giấy tờ, xe
+                - cell [ref=f18e365]
+              - row [ref=f18e366]:
+                - cell "ORD-2026-0130 Trong nước" [ref=f18e367]:
+                  - text: ORD-2026-0130
+                  - generic [ref=f18e368]: Trong nước
+                - cell "CLB Ngựa Phương Nam" [ref=f18e369]
+                - cell "Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)" [ref=f18e370]
+                - cell "06/10/2026" [ref=f18e372]
+                - cell "1 ngựa · 1 xe" [ref=f18e373]
+                - cell [ref=f18e374]:
+                  - generic "Đã hoàn tất (Order Completed)" [ref=f18e375]:
+                    - generic [aria-hidden] [ref=f18e376]: 
+                    - text: Hoàn tất
+                - cell "Đã hoàn tất Các bước của đơn" [ref=f18e377]:
+                  - generic [ref=f18e378]:
+                    - generic [ref=f18e379]: Đã hoàn tất
+                    - list "Các bước của đơn" [ref=f18e380]:
+                      - listitem "Gửi đơn" [ref=f18e381]
+                      - listitem "Thẩm định" [ref=f18e382]
+                      - listitem "Báo giá" [ref=f18e383]
+                      - listitem "Đặt cọc" [ref=f18e384]
+                      - listitem "Giấy tờ" [ref=f18e385]
+                      - listitem "Sẵn sàng" [ref=f18e386]
+                      - listitem "Vận chuyển" [ref=f18e387]
+                      - listitem "Quyết toán" [ref=f18e388]
+                - cell "7,745,000 ₫" [ref=f18e389]
+                - cell [ref=f18e390]:
+                  - button " Xem giấy tờ, xe" [ref=f18e391] [cursor=pointer]:
+                    - generic [ref=f18e392]: 
+                    - text: Xem giấy tờ, xe
+                - cell [ref=f18e393]
+              - row [ref=f18e394]:
+                - cell "ORD-2026-0117 Trong nước" [ref=f18e395]:
+                  - text: ORD-2026-0117
+                  - generic [ref=f18e396]: Trong nước
+                - cell "CLB Ngựa Phương Nam" [ref=f18e397]
+                - cell "Kho Đồng Nai → Kho Long An" [ref=f18e398]
+                - cell "06/10/2026" [ref=f18e400]
+                - cell "2 ngựa · 1 xe" [ref=f18e401]
+                - cell [ref=f18e402]:
+                  - generic "Đang vận chuyển (In Transit)" [ref=f18e403]:
+                    - generic [aria-hidden] [ref=f18e404]: 
+                    - text: Vận chuyển
+                - 'cell "Bước 7/8: Vận chuyển Các bước của đơn Mốc 3/3 · Bàn giao tại điểm giao" [ref=f18e405]':
+                  - generic [ref=f18e406]:
+                    - generic [ref=f18e407]: "Bước 7/8: Vận chuyển"
+                    - list "Các bước của đơn" [ref=f18e408]:
+                      - listitem "Gửi đơn" [ref=f18e409]
+                      - listitem "Thẩm định" [ref=f18e410]
+                      - listitem "Báo giá" [ref=f18e411]
+                      - listitem "Đặt cọc" [ref=f18e412]
+                      - listitem "Giấy tờ" [ref=f18e413]
+                      - listitem "Sẵn sàng" [ref=f18e414]
+                      - listitem "Vận chuyển" [ref=f18e415]
+                      - listitem "Quyết toán" [ref=f18e416]
+                    - generic [ref=f18e417]: Mốc 3/3 · Bàn giao tại điểm giao
+                - cell "10,633,000 ₫" [ref=f18e418]
+                - cell [ref=f18e419]:
+                  - button " Xem giấy tờ, xe" [ref=f18e420] [cursor=pointer]:
+                    - generic [ref=f18e421]: 
+                    - text: Xem giấy tờ, xe
+                - cell [ref=f18e422]
+              - row [ref=f18e423]:
+                - cell "ORD-2026-0122 Trong nước" [ref=f18e424]:
+                  - text: ORD-2026-0122
+                  - generic [ref=f18e425]: Trong nước
+                - cell "CLB Ngựa Phương Nam" [ref=f18e426]
+                - cell "Kho Đồng Nai → Kho Long An" [ref=f18e427]
+                - cell "06/10/2026" [ref=f18e429]
+                - cell "4 ngựa · 2 xe" [ref=f18e430]
+                - cell [ref=f18e431]:
+                  - generic "Đang vận chuyển (In Transit)" [ref=f18e432]:
+                    - generic [aria-hidden] [ref=f18e433]: 
+                    - text: Vận chuyển
+                - 'cell "Bước 7/8: Vận chuyển Các bước của đơn Mốc 3/3 · Bàn giao tại điểm giao" [ref=f18e434]':
+                  - generic [ref=f18e435]:
+                    - generic [ref=f18e436]: "Bước 7/8: Vận chuyển"
+                    - list "Các bước của đơn" [ref=f18e437]:
+                      - listitem "Gửi đơn" [ref=f18e438]
+                      - listitem "Thẩm định" [ref=f18e439]
+                      - listitem "Báo giá" [ref=f18e440]
+                      - listitem "Đặt cọc" [ref=f18e441]
+                      - listitem "Giấy tờ" [ref=f18e442]
+                      - listitem "Sẵn sàng" [ref=f18e443]
+                      - listitem "Vận chuyển" [ref=f18e444]
+                      - listitem "Quyết toán" [ref=f18e445]
+                    - generic [ref=f18e446]: Mốc 3/3 · Bàn giao tại điểm giao
+                - cell "21,266,000 ₫" [ref=f18e447]
+                - cell [ref=f18e448]:
+                  - button " Xem giấy tờ, xe" [ref=f18e449] [cursor=pointer]:
+                    - generic [ref=f18e450]: 
+                    - text: Xem giấy tờ, xe
+                - cell [ref=f18e451]
+              - row [ref=f18e452]:
+                - cell "ORD-2026-0125 Trong nước" [ref=f18e453]:
+                  - text: ORD-2026-0125
+                  - generic [ref=f18e454]: Trong nước
+                - cell "CLB Ngựa Phương Nam" [ref=f18e455]
+                - cell "Kho Đồng Nai → Kho Long An" [ref=f18e456]
+                - cell "06/10/2026" [ref=f18e458]
+                - cell "1 ngựa · 1 xe" [ref=f18e459]
+                - cell [ref=f18e460]:
+                  - generic "Có sự cố, chờ điều phối lập phương án (Incident Reported - Action Required)" [ref=f18e461]:
+                    - generic [aria-hidden] [ref=f18e462]: 
+                    - text: Báo sự cố
+                - 'cell "Bước 7/8: Vận chuyển Các bước của đơn Mốc 3/3 · Bàn giao tại điểm giao" [ref=f18e463]':
+                  - generic [ref=f18e464]:
+                    - generic [ref=f18e465]: "Bước 7/8: Vận chuyển"
+                    - list "Các bước của đơn" [ref=f18e466]:
+                      - listitem "Gửi đơn" [ref=f18e467]
+                      - listitem "Thẩm định" [ref=f18e468]
+                      - listitem "Báo giá" [ref=f18e469]
+                      - listitem "Đặt cọc" [ref=f18e470]
+                      - listitem "Giấy tờ" [ref=f18e471]
+                      - listitem "Sẵn sàng" [ref=f18e472]
+                      - listitem "Vận chuyển" [ref=f18e473]
+                      - listitem "Quyết toán" [ref=f18e474]
+                    - generic [ref=f18e475]: Mốc 3/3 · Bàn giao tại điểm giao
+                - cell "10,633,000 ₫" [ref=f18e476]
+                - cell [ref=f18e477]:
+                  - button " Xem giấy tờ, xe" [ref=f18e478] [cursor=pointer]:
+                    - generic [ref=f18e479]: 
+                    - text: Xem giấy tờ, xe
+                - cell [ref=f18e480]
+              - row [ref=f18e481]:
+                - cell "ORD-2026-0126 Trong nước" [ref=f18e482]:
+                  - text: ORD-2026-0126
+                  - generic [ref=f18e483]: Trong nước
+                - cell "CLB Ngựa Phương Nam" [ref=f18e484]
+                - cell "Kho Long An → Kho Bình Dương" [ref=f18e485]
+                - cell "06/10/2026" [ref=f18e487]
+                - cell "1 ngựa · 1 xe" [ref=f18e488]
+                - cell [ref=f18e489]:
+                  - generic "Chờ quản lý duyệt phương án khẩn cấp (Pending Emergency Approval)" [ref=f18e490]:
+                    - generic [aria-hidden] [ref=f18e491]: 
+                    - text: Chờ duyệt khẩn cấp
+                - 'cell "Bước 7/8: Vận chuyển Các bước của đơn Mốc 3/3 · Bàn giao tại điểm giao" [ref=f18e492]':
+                  - generic [ref=f18e493]:
+                    - generic [ref=f18e494]: "Bước 7/8: Vận chuyển"
+                    - list "Các bước của đơn" [ref=f18e495]:
+                      - listitem "Gửi đơn" [ref=f18e496]
+                      - listitem "Thẩm định" [ref=f18e497]
+                      - listitem "Báo giá" [ref=f18e498]
+                      - listitem "Đặt cọc" [ref=f18e499]
+                      - listitem "Giấy tờ" [ref=f18e500]
+                      - listitem "Sẵn sàng" [ref=f18e501]
+                      - listitem "Vận chuyển" [ref=f18e502]
+                      - listitem "Quyết toán" [ref=f18e503]
+                    - generic [ref=f18e504]: Mốc 3/3 · Bàn giao tại điểm giao
+                - cell "8,226,000 ₫" [ref=f18e505]
+                - cell [ref=f18e506]:
+                  - button " Xem giấy tờ, xe" [ref=f18e507] [cursor=pointer]:
+                    - generic [ref=f18e508]: 
+                    - text: Xem giấy tờ, xe
+                - cell [ref=f18e509]
+              - row [ref=f18e510]:
+                - cell "ORD-2026-0127 Trong nước" [ref=f18e511]:
+                  - text: ORD-2026-0127
+                  - generic [ref=f18e512]: Trong nước
+                - cell "CLB Ngựa Phương Nam" [ref=f18e513]
+                - cell "Kho Bình Dương → Kho Đồng Nai" [ref=f18e514]
+                - cell "06/10/2026" [ref=f18e516]
+                - cell "1 ngựa · 1 xe" [ref=f18e517]
+                - cell [ref=f18e518]:
+                  - generic "Đang thực hiện phương án khẩn cấp (Emergency Plan Active)" [ref=f18e519]:
+                    - generic [aria-hidden] [ref=f18e520]: 
+                    - text: Xử lý sự cố
+                - 'cell "Bước 7/8: Vận chuyển Các bước của đơn Mốc 3/3 · Bàn giao tại điểm giao" [ref=f18e521]':
+                  - generic [ref=f18e522]:
+                    - generic [ref=f18e523]: "Bước 7/8: Vận chuyển"
+                    - list "Các bước của đơn" [ref=f18e524]:
+                      - listitem "Gửi đơn" [ref=f18e525]
+                      - listitem "Thẩm định" [ref=f18e526]
+                      - listitem "Báo giá" [ref=f18e527]
+                      - listitem "Đặt cọc" [ref=f18e528]
+                      - listitem "Giấy tờ" [ref=f18e529]
+                      - listitem "Sẵn sàng" [ref=f18e530]
+                      - listitem "Vận chuyển" [ref=f18e531]
+                      - listitem "Quyết toán" [ref=f18e532]
+                    - generic [ref=f18e533]: Mốc 3/3 · Bàn giao tại điểm giao
+                - cell "9,188,000 ₫" [ref=f18e534]
+                - cell [ref=f18e535]:
+                  - button " Xem giấy tờ, xe" [ref=f18e536] [cursor=pointer]:
+                    - generic [ref=f18e537]: 
+                    - text: Xem giấy tờ, xe
+                - cell [ref=f18e538]
+              - row [ref=f18e539]:
+                - cell "ORD-2026-0116 Trong nước" [ref=f18e540]:
+                  - text: ORD-2026-0116
+                  - generic [ref=f18e541]: Trong nước
+                - cell "Trang trại Long Thành" [ref=f18e542]
+                - cell "Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)" [ref=f18e543]
+                - cell "07/10/2026" [ref=f18e545]
+                - cell "2 ngựa · 1 xe" [ref=f18e546]
+                - cell [ref=f18e547]:
+                  - generic "Xe đang đến điểm đón (En Route to Pickup)" [ref=f18e548]:
+                    - generic [aria-hidden] [ref=f18e549]: 
+                    - text: Đến điểm đón
+                - 'cell "Bước 6/8: Sẵn sàng Các bước của đơn" [ref=f18e550]':
+                  - generic [ref=f18e551]:
+                    - generic [ref=f18e552]: "Bước 6/8: Sẵn sàng"
+                    - list "Các bước của đơn" [ref=f18e553]:
+                      - listitem "Gửi đơn" [ref=f18e554]
+                      - listitem "Thẩm định" [ref=f18e555]
+                      - listitem "Báo giá" [ref=f18e556]
+                      - listitem "Đặt cọc" [ref=f18e557]
+                      - listitem "Giấy tờ" [ref=f18e558]
+                      - listitem "Sẵn sàng" [ref=f18e559]
+                      - listitem "Vận chuyển" [ref=f18e560]
+                      - listitem "Quyết toán" [ref=f18e561]
+                - cell "7,745,000 ₫" [ref=f18e562]
+                - cell [ref=f18e563]:
+                  - button " Xem giấy tờ, xe" [ref=f18e564] [cursor=pointer]:
+                    - generic [ref=f18e565]: 
+                    - text: Xem giấy tờ, xe
+                - cell [ref=f18e566]:
+                  - button " Hủy đơn" [ref=f18e567] [cursor=pointer]:
+                    - generic [ref=f18e568]: 
+                    - text: Hủy đơn
+              - row [ref=f18e569]:
+                - cell "ORD-2026-0120 Trong nước" [ref=f18e570]:
+                  - text: ORD-2026-0120
+                  - generic [ref=f18e571]: Trong nước
+                - cell "Trang trại Long Thành" [ref=f18e572]
+                - cell "Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)" [ref=f18e573]
+                - cell "07/10/2026" [ref=f18e575]
+                - cell "1 ngựa · 1 xe" [ref=f18e576]
+                - cell [ref=f18e577]:
+                  - generic "Xe đang đến điểm đón (En Route to Pickup)" [ref=f18e578]:
+                    - generic [aria-hidden] [ref=f18e579]: 
+                    - text: Đến điểm đón
+                - 'cell "Bước 6/8: Sẵn sàng Các bước của đơn" [ref=f18e580]':
+                  - generic [ref=f18e581]:
+                    - generic [ref=f18e582]: "Bước 6/8: Sẵn sàng"
+                    - list "Các bước của đơn" [ref=f18e583]:
+                      - listitem "Gửi đơn" [ref=f18e584]
+                      - listitem "Thẩm định" [ref=f18e585]
+                      - listitem "Báo giá" [ref=f18e586]
+                      - listitem "Đặt cọc" [ref=f18e587]
+                      - listitem "Giấy tờ" [ref=f18e588]
+                      - listitem "Sẵn sàng" [ref=f18e589]
+                      - listitem "Vận chuyển" [ref=f18e590]
+                      - listitem "Quyết toán" [ref=f18e591]
+                - cell "7,745,000 ₫" [ref=f18e592]
+                - cell [ref=f18e593]:
+                  - button " Xem giấy tờ, xe" [ref=f18e594] [cursor=pointer]:
+                    - generic [ref=f18e595]: 
+                    - text: Xem giấy tờ, xe
+                - cell [ref=f18e596]:
+                  - button " Hủy đơn" [ref=f18e597] [cursor=pointer]:
+                    - generic [ref=f18e598]: 
+                    - text: Hủy đơn
+              - row [ref=f18e599]:
+                - cell "ORD-2026-0115 Trong nước" [ref=f18e600]:
+                  - text: ORD-2026-0115
+                  - generic [ref=f18e601]: Trong nước
+                - cell "Trang trại Long Thành" [ref=f18e602]
+                - cell "Kho Long An → Kho Bình Dương" [ref=f18e603]
+                - cell "18/10/2026" [ref=f18e605]
+                - cell "1 ngựa · 1 xe" [ref=f18e606]
+                - cell [ref=f18e607]:
+                  - generic "Sẵn sàng đón ngựa (Ready for Pickup)" [ref=f18e608]:
+                    - generic [aria-hidden] [ref=f18e609]: 
+                    - text: Sẵn sàng đón
+                - 'cell "Bước 6/8: Sẵn sàng Các bước của đơn" [ref=f18e610]':
+                  - generic [ref=f18e611]:
+                    - generic [ref=f18e612]: "Bước 6/8: Sẵn sàng"
+                    - list "Các bước của đơn" [ref=f18e613]:
+                      - listitem "Gửi đơn" [ref=f18e614]
+                      - listitem "Thẩm định" [ref=f18e615]
+                      - listitem "Báo giá" [ref=f18e616]
+                      - listitem "Đặt cọc" [ref=f18e617]
+                      - listitem "Giấy tờ" [ref=f18e618]
+                      - listitem "Sẵn sàng" [ref=f18e619]
+                      - listitem "Vận chuyển" [ref=f18e620]
+                      - listitem "Quyết toán" [ref=f18e621]
+                - cell "8,226,000 ₫" [ref=f18e622]
+                - cell [ref=f18e623]:
+                  - button " Xem giấy tờ, xe" [ref=f18e624] [cursor=pointer]:
+                    - generic [ref=f18e625]: 
+                    - text: Xem giấy tờ, xe
+                - cell [ref=f18e626]:
+                  - button " Hủy đơn" [ref=f18e627] [cursor=pointer]:
+                    - generic [ref=f18e628]: 
+                    - text: Hủy đơn
+              - row [ref=f18e629]:
+                - cell "ORD-2026-0107 Trong nước" [ref=f18e630]:
+                  - text: ORD-2026-0107
+                  - generic [ref=f18e631]: Trong nước
+                - cell "Trang trại Long Thành" [ref=f18e632]
+                - cell "Kho Đồng Nai → Kho Long An" [ref=f18e633]
+                - cell "08/11/2026" [ref=f18e635]
+                - cell "1 ngựa · 1 xe" [ref=f18e636]
+                - cell [ref=f18e637]:
+                  - generic "Báo giá hết hạn (Quote Expired)" [ref=f18e638]:
+                    - generic [aria-hidden] [ref=f18e639]: 
+                    - text: Hết hạn
+                - cell "Đã dừng Các bước của đơn" [ref=f18e640]:
+                  - generic [ref=f18e641]:
+                    - generic [ref=f18e642]: Đã dừng
+                    - list "Các bước của đơn" [ref=f18e643]:
+                      - listitem "Gửi đơn" [ref=f18e644]
+                      - listitem "Thẩm định" [ref=f18e645]
+                      - listitem "Báo giá" [ref=f18e646]
+                      - listitem "Đặt cọc" [ref=f18e647]
+                      - listitem "Giấy tờ" [ref=f18e648]
+                      - listitem "Sẵn sàng" [ref=f18e649]
+                      - listitem "Vận chuyển" [ref=f18e650]
+                      - listitem "Quyết toán" [ref=f18e651]
+                - cell "8,390,000 ₫" [ref=f18e652]
+                - cell [ref=f18e653]:
+                  - button " Xem giấy tờ, xe" [ref=f18e654] [cursor=pointer]:
+                    - generic [ref=f18e655]: 
+                    - text: Xem giấy tờ, xe
+                - cell [ref=f18e656]
+              - row [ref=f18e657]:
+                - cell "ORD-2026-0113 Quốc tế · Mộc Bài – Bavet" [ref=f18e658]:
+                  - text: ORD-2026-0113
+                  - generic [ref=f18e659]: Quốc tế · Mộc Bài – Bavet
+                - cell "CLB Ngựa Phương Nam" [ref=f18e660]
+                - cell "Kho Đồng Nai → Kho Phnom Penh" [ref=f18e661]
+                - cell "11/11/2026" [ref=f18e663]
+                - cell "2 ngựa · 1 xe" [ref=f18e664]
+                - cell [ref=f18e665]:
+                  - generic "Kiểm dịch viên đang làm thủ tục giấy tờ (Clearance In Progress)" [ref=f18e666]:
+                    - generic [aria-hidden] [ref=f18e667]: 
+                    - text: Làm giấy tờ
+                - 'cell "Bước 5/8: Giấy tờ Các bước của đơn" [ref=f18e668]':
+                  - generic [ref=f18e669]:
+                    - generic [ref=f18e670]: "Bước 5/8: Giấy tờ"
+                    - list "Các bước của đơn" [ref=f18e671]:
+                      - listitem "Gửi đơn" [ref=f18e672]
+                      - listitem "Thẩm định" [ref=f18e673]
+                      - listitem "Báo giá" [ref=f18e674]
+                      - listitem "Đặt cọc" [ref=f18e675]
+                      - listitem "Giấy tờ" [ref=f18e676]
+                      - listitem "Sẵn sàng" [ref=f18e677]
+                      - listitem "Vận chuyển" [ref=f18e678]
+                      - listitem "Quyết toán" [ref=f18e679]
+                - cell "22,222,000 ₫" [ref=f18e680]
+                - cell [ref=f18e681]:
+                  - button " Xem giấy tờ, xe" [ref=f18e682] [cursor=pointer]:
+                    - generic [ref=f18e683]: 
+                    - text: Xem giấy tờ, xe
+                - cell [ref=f18e684]:
+                  - button " Hủy đơn" [ref=f18e685] [cursor=pointer]:
+                    - generic [ref=f18e686]: 
+                    - text: Hủy đơn
+          - generic [ref=f18e687]:
+            - generic [ref=f18e688]: Hiển thị 32 đơn hàng
+            - generic [ref=f18e689]: "Tổng giá trị: 319,670,000 ₫"
+          - generic [ref=f18e690]:
+            - generic [ref=f18e691]: Hiển thị 1–20 trên 32
+            - generic [ref=f18e692]:
+              - button "Trang trước" [disabled] [ref=f18e693]:
+                - generic [ref=f18e694]: 
+              - button "1" [ref=f18e695] [cursor=pointer]
+              - button "2" [ref=f18e696] [cursor=pointer]
+              - button "Trang sau" [ref=f18e697] [cursor=pointer]:
+                - generic [ref=f18e698]: 
+  - group "Ngôn ngữ" [ref=f18e699]:
+    - button "VI" [pressed] [ref=f18e701]
+    - button "EN" [ref=f18e702] [cursor=pointer]

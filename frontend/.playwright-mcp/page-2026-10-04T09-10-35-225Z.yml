@@ -1,0 +1,163 @@
+- generic [ref=f236e2]:
+  - banner [ref=f236e3]:
+    - generic [ref=f236e4]:
+      - link "EQ Vận chuyển Ngựa Quản lý" [ref=f236e5] [cursor=pointer]:
+        - /url: /backoffice/manager
+        - generic [ref=f236e6]: EQ
+        - generic [ref=f236e7]: Vận chuyển Ngựa
+        - generic [ref=f236e8]: Quản lý
+      - navigation "Menu" [ref=f236e9]:
+        - link "Bảng điều khiển" [ref=f236e10] [cursor=pointer]:
+          - /url: /backoffice/manager
+        - link "Tiếp nhận đơn" [ref=f236e11] [cursor=pointer]:
+          - /url: /backoffice/manager/intake
+        - link "Duyệt báo giá" [ref=f236e12] [cursor=pointer]:
+          - /url: /backoffice/manager/approvals
+        - link "Tiến độ đơn" [ref=f236e13] [cursor=pointer]:
+          - /url: /backoffice/manager/progress
+        - link "Báo cáo Chuyến đi" [ref=f236e14] [cursor=pointer]:
+          - /url: /backoffice/manager/trip-reports
+        - link "Sự cố" [ref=f236e15] [cursor=pointer]:
+          - /url: /backoffice/manager/incidents
+      - generic [ref=f236e16]:
+        - button "Thông báo" [ref=f236e18] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f236e19]: 
+        - generic "Quản lý" [ref=f236e20]: QL
+        - button " Đăng xuất" [ref=f236e21] [cursor=pointer]:
+          - generic [ref=f236e22]: 
+          - text: Đăng xuất
+  - main [ref=f236e23]:
+    - generic [ref=f236e26]:
+      - generic [ref=f236e27]:
+        - text: Hệ thống Vận hành /
+        - generic [ref=f236e28]: Báo cáo Chuyến đi
+      - generic [ref=f236e29]:
+        - heading "Báo cáo Chuyến đi & Nhật ký" [level=1] [ref=f236e30]
+        - paragraph [ref=f236e31]: Xem xét các nhật ký vận chuyển đã hoàn thành, theo dõi sức khỏe ngựa và phản hồi của khách hàng.
+      - generic [ref=f236e32]:
+        - generic [ref=f236e33]: 
+        - textbox "Tìm mã đơn, khách hàng, tuyến..." [ref=f236e34]
+      - generic [ref=f236e35]:
+        - button "EQ-2026-9830 Hà Nội → Viêng Chăn (LA) Trường đua Thiên Mã 23/09/2026 5 trên 5 sao" [ref=f236e36] [cursor=pointer]:
+          - generic [ref=f236e37]: EQ-2026-9830
+          - generic [ref=f236e38]: Hà Nội → Viêng Chăn (LA)
+          - generic [ref=f236e39]: Trường đua Thiên Mã
+          - generic [ref=f236e40]:
+            - generic [ref=f236e41]:
+              - generic [aria-hidden] [ref=f236e42]: 
+              - text: 23/09/2026
+            - generic "5 trên 5 sao" [ref=f236e43]:
+              - generic [aria-hidden] [ref=f236e44]: 
+              - text: 5/5
+        - button "EQ-2026-9828 TP.HCM → Đà Nẵng CLB Ngựa Phú Thọ 20/09/2026 5 trên 5 sao" [ref=f236e45] [cursor=pointer]:
+          - generic [ref=f236e46]: EQ-2026-9828
+          - generic [ref=f236e47]: TP.HCM → Đà Nẵng
+          - generic [ref=f236e48]: CLB Ngựa Phú Thọ
+          - generic [ref=f236e49]:
+            - generic [ref=f236e50]:
+              - generic [aria-hidden] [ref=f236e51]: 
+              - text: 20/09/2026
+            - generic "5 trên 5 sao" [ref=f236e52]:
+              - generic [aria-hidden] [ref=f236e53]: 
+              - text: 5/5
+        - button "EQ-2026-9822 Đồng Nai → Phnom Penh (KH) Trang trại Long Thành 13/09/2026 5 trên 5 sao" [ref=f236e54] [cursor=pointer]:
+          - generic [ref=f236e55]: EQ-2026-9822
+          - generic [ref=f236e56]: Đồng Nai → Phnom Penh (KH)
+          - generic [ref=f236e57]: Trang trại Long Thành
+          - generic [ref=f236e58]:
+            - generic [ref=f236e59]:
+              - generic [aria-hidden] [ref=f236e60]: 
+              - text: 13/09/2026
+            - generic "5 trên 5 sao" [ref=f236e61]:
+              - generic [aria-hidden] [ref=f236e62]: 
+              - text: 5/5
+        - button "EQ-2026-9815 Cần Thơ → Phnom Penh (KH) Mekong Stud 05/09/2026 4 trên 5 sao" [ref=f236e63] [cursor=pointer]:
+          - generic [ref=f236e64]: EQ-2026-9815
+          - generic [ref=f236e65]: Cần Thơ → Phnom Penh (KH)
+          - generic [ref=f236e66]: Mekong Stud
+          - generic [ref=f236e67]:
+            - generic [ref=f236e68]:
+              - generic [aria-hidden] [ref=f236e69]: 
+              - text: 05/09/2026
+            - generic "4 trên 5 sao" [ref=f236e70]:
+              - generic [aria-hidden] [ref=f236e71]: 
+              - text: 4/5
+        - button "EQ-2026-9810 Bình Dương → TP.HCM Đại Nam Racing 28/08/2026 5 trên 5 sao" [ref=f236e72] [cursor=pointer]:
+          - generic [ref=f236e73]: EQ-2026-9810
+          - generic [ref=f236e74]: Bình Dương → TP.HCM
+          - generic [ref=f236e75]: Đại Nam Racing
+          - generic [ref=f236e76]:
+            - generic [ref=f236e77]:
+              - generic [aria-hidden] [ref=f236e78]: 
+              - text: 28/08/2026
+            - generic "5 trên 5 sao" [ref=f236e79]:
+              - generic [aria-hidden] [ref=f236e80]: 
+              - text: 5/5
+        - button "EQ-2026-9805 Hà Nội → Viêng Chăn (LA) Vientiane Turf Club 23/08/2026 4 trên 5 sao" [ref=f236e81] [cursor=pointer]:
+          - generic [ref=f236e82]: EQ-2026-9805
+          - generic [ref=f236e83]: Hà Nội → Viêng Chăn (LA)
+          - generic [ref=f236e84]: Vientiane Turf Club
+          - generic [ref=f236e85]:
+            - generic [ref=f236e86]:
+              - generic [aria-hidden] [ref=f236e87]: 
+              - text: 23/08/2026
+            - generic "4 trên 5 sao" [ref=f236e88]:
+              - generic [aria-hidden] [ref=f236e89]: 
+              - text: 4/5
+        - button "EQ-2026-9800 TP.HCM → Đà Nẵng CLB Ngựa Hà Thành 18/08/2026 5 trên 5 sao" [ref=f236e90] [cursor=pointer]:
+          - generic [ref=f236e91]: EQ-2026-9800
+          - generic [ref=f236e92]: TP.HCM → Đà Nẵng
+          - generic [ref=f236e93]: CLB Ngựa Hà Thành
+          - generic [ref=f236e94]:
+            - generic [ref=f236e95]:
+              - generic [aria-hidden] [ref=f236e96]: 
+              - text: 18/08/2026
+            - generic "5 trên 5 sao" [ref=f236e97]:
+              - generic [aria-hidden] [ref=f236e98]: 
+              - text: 5/5
+        - button "EQ-2026-9795 Đồng Nai → Phnom Penh (KH) Trang trại Tây Ninh Stud 13/08/2026 5 trên 5 sao" [ref=f236e99] [cursor=pointer]:
+          - generic [ref=f236e100]: EQ-2026-9795
+          - generic [ref=f236e101]: Đồng Nai → Phnom Penh (KH)
+          - generic [ref=f236e102]: Trang trại Tây Ninh Stud
+          - generic [ref=f236e103]:
+            - generic [ref=f236e104]:
+              - generic [aria-hidden] [ref=f236e105]: 
+              - text: 13/08/2026
+            - generic "5 trên 5 sao" [ref=f236e106]:
+              - generic [aria-hidden] [ref=f236e107]: 
+              - text: 5/5
+        - button "EQ-2026-9790 Đồng Nai → Phnom Penh (KH) Royal Cambodia Stables 09/08/2026 5 trên 5 sao" [ref=f236e108] [cursor=pointer]:
+          - generic [ref=f236e109]: EQ-2026-9790
+          - generic [ref=f236e110]: Đồng Nai → Phnom Penh (KH)
+          - generic [ref=f236e111]: Royal Cambodia Stables
+          - generic [ref=f236e112]:
+            - generic [ref=f236e113]:
+              - generic [aria-hidden] [ref=f236e114]: 
+              - text: 09/08/2026
+            - generic "5 trên 5 sao" [ref=f236e115]:
+              - generic [aria-hidden] [ref=f236e116]: 
+              - text: 5/5
+        - button "EQ-2026-9785 Hà Nội → Viêng Chăn (LA) Hoàng Gia Stud 02/08/2026 4 trên 5 sao" [ref=f236e117] [cursor=pointer]:
+          - generic [ref=f236e118]: EQ-2026-9785
+          - generic [ref=f236e119]: Hà Nội → Viêng Chăn (LA)
+          - generic [ref=f236e120]: Hoàng Gia Stud
+          - generic [ref=f236e121]:
+            - generic [ref=f236e122]:
+              - generic [aria-hidden] [ref=f236e123]: 
+              - text: 02/08/2026
+            - generic "4 trên 5 sao" [ref=f236e124]:
+              - generic [aria-hidden] [ref=f236e125]: 
+              - text: 4/5
+      - generic [ref=f236e126]:
+        - generic [ref=f236e127]: Hiển thị 1–10 trên 17
+        - generic [ref=f236e128]:
+          - button "Trang trước" [disabled] [ref=f236e129]:
+            - generic [ref=f236e130]: 
+          - button "1" [ref=f236e131] [cursor=pointer]
+          - button "2" [ref=f236e132] [cursor=pointer]
+          - button "Trang sau" [ref=f236e133] [cursor=pointer]:
+            - generic [ref=f236e134]: 
+  - contentinfo [ref=f236e135]: © 2026 Vận chuyển Ngựa đua. SWP Project.
+  - group "Ngôn ngữ" [ref=f236e136]:
+    - button "VI" [pressed] [ref=f236e138]
+    - button "EN" [ref=f236e139] [cursor=pointer]

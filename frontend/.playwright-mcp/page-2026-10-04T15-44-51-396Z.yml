@@ -1,0 +1,144 @@
+- generic [ref=f339e28]:
+  - banner [ref=f339e29]:
+    - link "TM Trần Minh ops@equine.vn" [ref=f339e30] [cursor=pointer]:
+      - /url: /backoffice/coordinator/fleet-plan
+      - generic [ref=f339e31]: TM
+      - generic [ref=f339e32]:
+        - generic [ref=f339e33]: Trần Minh
+        - generic [ref=f339e34]: ops@equine.vn
+    - generic "Đường dẫn" [ref=f339e35]:
+      - generic [aria-hidden] [ref=f339e36]: 
+      - generic [ref=f339e37]:
+        - generic [aria-hidden] [ref=f339e38]: 
+        - text: Xe và lộ trình
+    - search [ref=f339e39]:
+      - generic [aria-hidden] [ref=f339e40]: 
+      - textbox "Tìm đơn hàng" [ref=f339e41]:
+        - /placeholder: Tìm đơn hàng, khách hàng…
+    - generic [ref=f339e42]:
+      - button "Thông báo" [ref=f339e44] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f339e45]: 
+      - button "Đăng xuất" [ref=f339e46] [cursor=pointer]:
+        - generic [ref=f339e47]: 
+  - generic [ref=f339e48]:
+    - complementary "Menu" [ref=f339e49]:
+      - generic [ref=f339e50]:
+        - generic [ref=f339e51]: Menu
+        - button "Thu gọn menu" [ref=f339e52] [cursor=pointer]:
+          - generic [ref=f339e53]: 
+      - navigation [ref=f339e54]:
+        - link "Xe và lộ trình 3 đơn chờ" [ref=f339e55] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan
+          - generic [aria-hidden] [ref=f339e56]: 
+          - generic [ref=f339e57]: Xe và lộ trình
+          - generic "3 đơn chờ" [ref=f339e58]: "3"
+        - link "Giấy cho tài xế 6 đơn chờ" [ref=f339e59] [cursor=pointer]:
+          - /url: /backoffice/coordinator/dispatch
+          - generic [aria-hidden] [ref=f339e60]: 
+          - generic [ref=f339e61]: Giấy cho tài xế
+          - generic "6 đơn chờ" [ref=f339e62]: "6"
+        - link "Giám sát" [ref=f339e63] [cursor=pointer]:
+          - /url: /backoffice/coordinator/monitoring
+          - generic [aria-hidden] [ref=f339e64]: 
+        - link "Sự cố 1 đơn chờ" [ref=f339e66] [cursor=pointer]:
+          - /url: /backoffice/coordinator/incidents
+          - generic [aria-hidden] [ref=f339e67]: 
+          - generic [ref=f339e68]: Sự cố
+          - generic "1 đơn chờ" [ref=f339e69]: "1"
+        - link "Đội xe" [ref=f339e70] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet
+          - generic [aria-hidden] [ref=f339e71]: 
+      - generic [ref=f339e73]:
+        - button "Cần xử lý 5" [expanded] [ref=f339e74] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f339e75]: 
+          - generic [ref=f339e76]: Cần xử lý
+          - generic [ref=f339e77]: "5"
+        - link "0125 · Lập phương án sự cố" [ref=f339e78] [cursor=pointer]:
+          - /url: /backoffice/coordinator/incidents
+          - generic [aria-hidden] [ref=f339e79]: 
+        - link "0102 · Chốt xe, lộ trình" [ref=f339e81] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0102
+          - generic [aria-hidden] [ref=f339e82]: 
+        - link "0131 · Chốt xe, lộ trình" [ref=f339e84] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0131
+          - generic [aria-hidden] [ref=f339e85]: 
+        - link "0132 · Chốt xe, lộ trình" [ref=f339e87] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0132
+          - generic [aria-hidden] [ref=f339e88]: 
+        - link "0113 · Nhập bộ giấy" [ref=f339e90] [cursor=pointer]:
+          - /url: /backoffice/coordinator/dispatch/ORD-2026-0113
+          - generic [aria-hidden] [ref=f339e91]: 
+    - main [ref=f339e93]:
+      - generic [ref=f339e96]:
+        - generic [ref=f339e98]:
+          - heading "Xe và lộ trình" [level=1] [ref=f339e99]
+          - paragraph [ref=f339e100]: Chọn xe, tài xế và hộ tống cho từng chuyến, chia ngựa lên xe, lập lộ trình chi tiết rồi xác nhận.
+        - generic [ref=f339e101]:
+          - tablist "Trạng thái" [ref=f339e102]:
+            - tab "Cần xác nhận 3" [selected] [ref=f339e103] [cursor=pointer]:
+              - text: Cần xác nhận
+              - generic [ref=f339e104]: "3"
+            - tab "Đã chốt 22" [ref=f339e105] [cursor=pointer]:
+              - text: Đã chốt
+              - generic [ref=f339e106]: "22"
+          - generic [ref=f339e107]:
+            - generic [ref=f339e108]:
+              - generic [aria-hidden] [ref=f339e109]: 
+              - textbox [ref=f339e110]:
+                - /placeholder: Tìm theo mã đơn, khách hàng, tuyến…
+            - generic [ref=f339e111]:
+              - text: Khởi hành
+              - textbox "Khởi hành từ ngày" [ref=f339e112]
+              - text: →
+              - textbox "Khởi hành đến ngày" [ref=f339e113]
+          - table [ref=f339e115]:
+            - rowgroup [ref=f339e116]:
+              - row [ref=f339e117]:
+                - columnheader "Mã đơn" [ref=f339e118]
+                - columnheader "Khách hàng" [ref=f339e119]
+                - columnheader "Tuyến" [ref=f339e120]
+                - columnheader "Khởi hành" [ref=f339e121]
+                - columnheader "Ngựa / xe" [ref=f339e122]
+                - columnheader "Giao lúc" [ref=f339e123]
+                - columnheader "Thao tác" [ref=f339e124]
+            - rowgroup [ref=f339e125]:
+              - row [ref=f339e126]:
+                - cell "ORD-2026-0102 Trong nước" [ref=f339e127]:
+                  - text: ORD-2026-0102
+                  - generic [ref=f339e128]: Trong nước
+                - cell "Trang trại Long Thành" [ref=f339e129]
+                - cell "Kho Long An → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)" [ref=f339e130]
+                - cell "11/11/2026" [ref=f339e132]
+                - cell "3 con · 0 xe" [ref=f339e133]
+                - cell "03/10/2026 19:44" [ref=f339e134]
+                - cell [ref=f339e135]:
+                  - link "Xem và xác nhận" [ref=f339e136] [cursor=pointer]:
+                    - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0102
+              - row [ref=f339e137]:
+                - cell "ORD-2026-0131 Quốc tế · chưa chọn cửa khẩu" [ref=f339e138]:
+                  - text: ORD-2026-0131
+                  - generic [ref=f339e139]: Quốc tế · chưa chọn cửa khẩu
+                - cell "CLB Ngựa Phương Nam" [ref=f339e140]
+                - cell "Kho Đồng Nai → Kho Phnom Penh" [ref=f339e141]
+                - cell "15/11/2026" [ref=f339e143]
+                - cell "2 con · 0 xe" [ref=f339e144]
+                - cell "04/10/2026 09:44" [ref=f339e145]
+                - cell [ref=f339e146]:
+                  - link "Xem và xác nhận" [ref=f339e147] [cursor=pointer]:
+                    - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0131
+              - row [ref=f339e148]:
+                - cell "ORD-2026-0132 Quốc tế · chưa chọn cửa khẩu" [ref=f339e149]:
+                  - text: ORD-2026-0132
+                  - generic [ref=f339e150]: Quốc tế · chưa chọn cửa khẩu
+                - cell "CLB Ngựa Phương Nam" [ref=f339e151]
+                - cell "Kho Đồng Nai → Kho Viêng Chăn" [ref=f339e152]
+                - cell "20/11/2026" [ref=f339e154]
+                - cell "1 con · 0 xe" [ref=f339e155]
+                - cell "04/10/2026 10:44" [ref=f339e156]
+                - cell [ref=f339e157]:
+                  - link "Xem và xác nhận" [ref=f339e158] [cursor=pointer]:
+                    - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0132
+          - generic [ref=f339e159]: Hiển thị 3 đơn hàng
+  - group "Ngôn ngữ" [ref=f339e161]:
+    - button "VI" [pressed] [ref=f339e163]
+    - button "EN" [ref=f339e164] [cursor=pointer]

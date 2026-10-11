@@ -1,0 +1,97 @@
+- generic [ref=f544e2]:
+  - banner [ref=f544e3]:
+    - generic [ref=f544e4]:
+      - link "EQ Vận chuyển Ngựa Tài xế" [ref=f544e5] [cursor=pointer]:
+        - /url: /backoffice/driver
+        - generic [ref=f544e6]: EQ
+        - generic [ref=f544e7]: Vận chuyển Ngựa
+        - generic [ref=f544e8]: Tài xế
+      - navigation "Menu" [ref=f544e9]:
+        - link "Chuyến của tôi" [ref=f544e10] [cursor=pointer]:
+          - /url: /backoffice/driver
+      - generic [ref=f544e11]:
+        - button "Thông báo" [ref=f544e13] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f544e14]: 
+        - generic "Phạm Văn D" [ref=f544e15]: VD
+        - generic [ref=f544e16]: Phạm Văn D
+        - button " Đăng xuất" [ref=f544e17] [cursor=pointer]:
+          - generic [ref=f544e18]: 
+          - text: Đăng xuất
+  - main [ref=f544e19]:
+    - generic [ref=f544e20]:
+      - combobox "Chọn chuyến" [active] [ref=f544e22] [cursor=pointer]:
+        - generic [ref=f544e23]: TRP-0106-1 · Kho Đồng Nai → Kho Phnom Penh
+      - generic [ref=f544e26]:
+        - generic [ref=f544e27]:
+          - generic [ref=f544e28]: TRP-0106-1
+          - generic "Clearance Done" [ref=f544e69]:
+            - generic [aria-hidden] [ref=f544e30]: 
+            - text: Giấy tờ xong, chờ tài xế và hộ tống nhận lệnh
+        - generic [ref=f544e31]:
+          - text: Kho Đồng Nai
+          - generic [aria-hidden] [ref=f544e32]: 
+          - text: Kho Phnom Penh
+        - generic [ref=f544e33]:
+          - generic [ref=f544e34]:
+            - generic [aria-hidden] [ref=f544e35]: 
+            - text: 28/11/2026
+          - generic [ref=f544e36]:
+            - generic [aria-hidden] [ref=f544e37]: 
+            - text: 3 ngựa
+          - generic [ref=f544e70]:
+            - generic [aria-hidden] [ref=f544e71]: 
+            - text: Mộc Bài – Bavet
+      - tablist [ref=f544e38]:
+        - tab "Việc" [selected] [ref=f544e39] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f544e40]: 
+          - text: Việc
+        - tab "Hành trình" [ref=f544e41] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f544e42]: 
+          - text: Hành trình
+        - tab "Lệnh" [ref=f544e43] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f544e44]: 
+          - text: Lệnh
+      - generic [ref=f544e72]:
+        - heading "Nhận lệnh và chuẩn bị xe" [level=2] [ref=f544e73]:
+          - generic [aria-hidden] [ref=f544e74]: 
+          - text: Nhận lệnh và chuẩn bị xe
+        - paragraph [ref=f544e75]: Lệnh điều xe đã phát ngay sau khi khách đặt cọc. Tick từng mục khi đã có trên xe, rồi xác nhận.
+        - list [ref=f544e76]:
+          - listitem [ref=f544e77]:
+            - generic [ref=f544e78] [cursor=pointer]:
+              - checkbox "Bản in Lệnh điều xe" [ref=f544e79]
+              - generic [ref=f544e80]: Bản in Lệnh điều xe
+          - listitem [ref=f544e81]:
+            - generic [ref=f544e82] [cursor=pointer]:
+              - checkbox "Vận đơn" [ref=f544e83]
+              - generic [ref=f544e84]: Vận đơn
+          - listitem [ref=f544e85]:
+            - generic [ref=f544e86] [cursor=pointer]:
+              - checkbox "Giấy kiểm dịch, tờ khai, giấy ủy quyền áp tải nhà xe đã làm (bản in)" [ref=f544e87]
+              - generic [ref=f544e88]: Giấy kiểm dịch, tờ khai, giấy ủy quyền áp tải nhà xe đã làm (bản in)
+          - listitem [ref=f544e89]:
+            - generic [ref=f544e90] [cursor=pointer]:
+              - checkbox "Giấy phép vận tải liên vận quốc tế CLV / song phương (bản gốc kèm xe)" [ref=f544e91]
+              - generic [ref=f544e92]: Giấy phép vận tải liên vận quốc tế CLV / song phương (bản gốc kèm xe)
+          - listitem [ref=f544e93]:
+            - generic [ref=f544e94] [cursor=pointer]:
+              - checkbox "Sổ đăng kiểm xe chuyên dụng và Bảo hiểm trách nhiệm dân sự còn hiệu lực" [ref=f544e95]
+              - generic [ref=f544e96]: Sổ đăng kiểm xe chuyên dụng và Bảo hiểm trách nhiệm dân sự còn hiệu lực
+          - listitem [ref=f544e97]:
+            - generic [ref=f544e98] [cursor=pointer]:
+              - checkbox "02 bản \"Biên bản Giao nhận Động vật sống & Chứng từ gốc\" (ký tay với người gửi)" [ref=f544e99]
+              - generic [ref=f544e100]: 02 bản "Biên bản Giao nhận Động vật sống & Chứng từ gốc" (ký tay với người gửi)
+          - listitem [ref=f544e101]:
+            - generic [ref=f544e102] [cursor=pointer]:
+              - checkbox "02 bản \"Biên bản Bàn giao & Hoàn tất chuyến đi\" (ký tay với người nhận)" [ref=f544e103]
+              - generic [ref=f544e104]: 02 bản "Biên bản Bàn giao & Hoàn tất chuyến đi" (ký tay với người nhận)
+          - listitem [ref=f544e105]:
+            - generic [ref=f544e106] [cursor=pointer]:
+              - 'checkbox "Xe đã kiểm tra: dầu, lốp, điều hòa thùng, máy phát điện phụ" [ref=f544e107]'
+              - generic [ref=f544e108]: "Xe đã kiểm tra: dầu, lốp, điều hòa thùng, máy phát điện phụ"
+        - button " Tôi đã nhận lệnh (0/8)" [disabled] [ref=f544e109]:
+          - generic [ref=f544e110]: 
+          - text: Tôi đã nhận lệnh (0/8)
+  - group "Ngôn ngữ" [ref=f544e54]:
+    - button "VI" [pressed] [ref=f544e56]
+    - button "EN" [ref=f544e57] [cursor=pointer]

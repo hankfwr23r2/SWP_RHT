@@ -1,0 +1,390 @@
+- generic [ref=f61e3]:
+  - banner [ref=f61e4]:
+    - link "QL Quản lý manager@equine.vn" [ref=f61e5] [cursor=pointer]:
+      - /url: /backoffice/manager
+      - generic [ref=f61e6]: QL
+      - generic [ref=f61e7]:
+        - generic [ref=f61e8]: Quản lý
+        - generic [ref=f61e9]: manager@equine.vn
+    - generic "Đường dẫn" [ref=f61e10]:
+      - generic [aria-hidden] [ref=f61e11]: 
+      - generic [ref=f61e12]:
+        - generic [aria-hidden] [ref=f61e13]: 
+        - text: Duyệt giá
+    - search [ref=f61e14]:
+      - generic [aria-hidden] [ref=f61e15]: 
+      - textbox "Tìm đơn hàng" [ref=f61e16]:
+        - /placeholder: Tìm đơn hàng, khách hàng…
+    - generic [ref=f61e17]:
+      - button "Thông báo" [ref=f61e19] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f61e20]: 
+      - button "Đăng xuất" [ref=f61e21] [cursor=pointer]:
+        - generic [ref=f61e22]: 
+  - generic [ref=f61e23]:
+    - complementary "Menu" [ref=f61e24]:
+      - generic [ref=f61e25]:
+        - generic [ref=f61e26]: Menu
+        - button "Thu gọn menu" [ref=f61e27] [cursor=pointer]:
+          - generic [ref=f61e28]: 
+      - navigation [ref=f61e29]:
+        - link "Tổng quan" [ref=f61e30] [cursor=pointer]:
+          - /url: /backoffice/manager
+          - generic [aria-hidden] [ref=f61e31]: 
+        - link "Tiếp nhận 1 đơn chờ" [ref=f61e33] [cursor=pointer]:
+          - /url: /backoffice/manager/intake
+          - generic [aria-hidden] [ref=f61e34]: 
+          - generic [ref=f61e35]: Tiếp nhận
+          - generic "1 đơn chờ" [ref=f61e36]: "1"
+        - link "Duyệt giá 1 đơn chờ" [ref=f61e37] [cursor=pointer]:
+          - /url: /backoffice/manager/approvals
+          - generic [aria-hidden] [ref=f61e38]: 
+          - generic [ref=f61e39]: Duyệt giá
+          - generic "1 đơn chờ" [ref=f61e40]: "1"
+        - link "Sự cố 1 đơn chờ" [ref=f61e41] [cursor=pointer]:
+          - /url: /backoffice/manager/incidents
+          - generic [aria-hidden] [ref=f61e42]: 
+          - generic [ref=f61e43]: Sự cố
+          - generic "1 đơn chờ" [ref=f61e44]: "1"
+        - link "Tiến độ đơn 1 đơn chờ" [ref=f61e45] [cursor=pointer]:
+          - /url: /backoffice/manager/progress
+          - generic [aria-hidden] [ref=f61e46]: 
+          - generic [ref=f61e47]: Tiến độ đơn
+          - generic "1 đơn chờ" [ref=f61e48]: "1"
+        - link "Doanh thu" [ref=f61e49] [cursor=pointer]:
+          - /url: /backoffice/manager/reports
+          - generic [aria-hidden] [ref=f61e50]: 
+        - link "Chuyến đi" [ref=f61e52] [cursor=pointer]:
+          - /url: /backoffice/manager/trip-reports
+          - generic [aria-hidden] [ref=f61e53]: 
+      - generic [ref=f61e55]:
+        - button "Cần xử lý 4" [expanded] [ref=f61e56] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f61e57]: 
+          - generic [ref=f61e58]: Cần xử lý
+          - generic [ref=f61e59]: "4"
+        - link "0123 · Đối soát chi phí" [ref=f61e60] [cursor=pointer]:
+          - /url: /backoffice/manager/progress
+          - generic [aria-hidden] [ref=f61e61]: 
+        - link "0126 · Duyệt phương án sự cố" [ref=f61e63] [cursor=pointer]:
+          - /url: /backoffice/manager/incidents
+          - generic [aria-hidden] [ref=f61e64]: 
+        - link "0104 · Duyệt báo giá" [ref=f61e66] [cursor=pointer]:
+          - /url: /backoffice/manager/approvals
+          - generic [aria-hidden] [ref=f61e67]: 
+        - link "0101 · Tiếp nhận đơn" [ref=f61e69] [cursor=pointer]:
+          - /url: /backoffice/manager/intake
+          - generic [aria-hidden] [ref=f61e70]: 
+    - main [ref=f61e72]:
+      - generic [ref=f61e73]:
+        - generic [ref=f61e75]:
+          - generic [ref=f61e77]:
+            - heading "Duyệt báo giá" [level=1] [ref=f61e78]
+            - paragraph [ref=f61e79]: Duyệt để gửi khách; khách có 48 giờ đặt cọc 30%.
+          - generic [ref=f61e80]:
+            - tablist "Trạng thái" [ref=f61e81]:
+              - tab "Chờ duyệt báo giá 1" [selected] [ref=f61e82] [cursor=pointer]:
+                - text: Chờ duyệt báo giá
+                - generic [ref=f61e83]: "1"
+              - tab "Đã gửi báo giá 26" [ref=f61e84] [cursor=pointer]:
+                - text: Đã gửi báo giá
+                - generic [ref=f61e85]: "26"
+            - generic [ref=f61e86]:
+              - generic [ref=f61e87]:
+                - generic [aria-hidden] [ref=f61e88]: 
+                - textbox [ref=f61e89]:
+                  - /placeholder: Tìm theo mã đơn, khách hàng, tuyến…
+              - generic [ref=f61e90]:
+                - text: Khởi hành
+                - textbox "Khởi hành từ ngày" [ref=f61e91]
+                - text: →
+                - textbox "Khởi hành đến ngày" [ref=f61e92]
+            - table [ref=f61e94]:
+              - rowgroup [ref=f61e95]:
+                - row [ref=f61e96]:
+                  - columnheader "Mã đơn" [ref=f61e97]
+                  - columnheader "Khách hàng" [ref=f61e98]
+                  - columnheader "Tuyến" [ref=f61e99]
+                  - columnheader "Khởi hành" [ref=f61e100]
+                  - columnheader "Ngựa / xe" [ref=f61e101]
+                  - columnheader "Trạng thái" [ref=f61e102]
+                  - columnheader "Thao tác" [ref=f61e103]
+              - rowgroup [ref=f61e104]:
+                - row [ref=f61e105]:
+                  - cell "ORD-2026-0104 Quốc tế · Lao Bảo – Densavanh" [ref=f61e106]:
+                    - text: ORD-2026-0104
+                    - generic [ref=f61e107]: Quốc tế · Lao Bảo – Densavanh
+                  - cell "Trang trại Long Thành" [ref=f61e108]
+                  - cell "Kho Đồng Nai → Kho Viêng Chăn" [ref=f61e109]
+                  - cell "05/12/2026" [ref=f61e111]
+                  - cell "2 con · 1 xe" [ref=f61e112]
+                  - cell [ref=f61e113]:
+                    - generic "Chờ quản lý duyệt báo giá (Pending Final Commercial Approval)" [ref=f61e114]:
+                      - generic [aria-hidden] [ref=f61e115]: 
+                      - text: Chờ duyệt giá
+                  - cell [ref=f61e116]:
+                    - button "Duyệt báo giá" [active] [ref=f61e117] [cursor=pointer]
+            - generic [ref=f61e118]: Hiển thị 1 đơn hàng
+        - dialog [ref=f61e125]:
+          - generic [ref=f61e126]:
+            - generic [ref=f61e127]:
+              - heading "Duyệt báo giá ORD-2026-0104" [level=3] [ref=f61e128]
+              - generic [ref=f61e129]: Trang trại Long Thành · khởi hành 05/12/2026
+            - button "Đóng" [ref=f61e130] [cursor=pointer]:
+              - generic [ref=f61e131]: 
+          - generic [ref=f61e132]:
+            - generic [ref=f61e133]:
+              - generic [ref=f61e134]: 
+              - generic [ref=f61e135]: Giấy tờ bên dưới chỉ để Quản lý xem. Khi bấm “Duyệt và gửi báo giá”, khách chỉ nhận chi tiết đơn và bảng giá, không kèm giấy tờ nào.
+            - heading "Giấy ngựa Kiểm dịch viên đã duyệt" [level=4] [ref=f61e136]
+            - paragraph [ref=f61e137]: "Kết luận: Đạt · Nguyễn Thị Thu · 05/10/2026 10:25. Bấm ảnh để xem lớn."
+            - generic [ref=f61e138]:
+              - generic [ref=f61e140]:
+                - generic [ref=f61e141]: Storm Runner
+                - generic [ref=f61e142]: Chip VN-985211 · Thoroughbred
+              - generic [ref=f61e143]:
+                - generic [ref=f61e144]:
+                  - button "Xem ảnh scan.pdf" [ref=f61e145]:
+                    - generic [aria-hidden] [ref=f61e146]: 
+                  - generic [ref=f61e147]:
+                    - generic [ref=f61e148]: Hộ chiếu ngựa (FEI / National Passport)
+                    - generic [ref=f61e149]: scan.pdf · nộp 30/03/2026 16:25
+                - generic [ref=f61e150]:
+                  - button "Xem ảnh scan.pdf" [ref=f61e151]:
+                    - generic [aria-hidden] [ref=f61e152]: 
+                  - generic [ref=f61e153]:
+                    - generic [ref=f61e154]: Sổ tiêm phòng
+                    - generic [ref=f61e155]: scan.pdf · nộp 07/08/2026 16:25 · hạn 25/03/2027
+                - generic [ref=f61e156]:
+                  - button "Xem ảnh scan.pdf" [ref=f61e157]:
+                    - generic [aria-hidden] [ref=f61e158]: 
+                  - generic [ref=f61e159]:
+                    - generic [ref=f61e160]: Xét nghiệm EIA / Coggins
+                    - generic [ref=f61e161]: scan.pdf · nộp 27/08/2026 16:25 · hạn 23/02/2027
+            - generic [ref=f61e162]:
+              - generic [ref=f61e164]:
+                - generic [ref=f61e165]: Ngọc Long
+                - generic [ref=f61e166]: Chip VN-985216 · Appaloosa
+              - generic [ref=f61e167]:
+                - generic [ref=f61e168]:
+                  - button "Xem ảnh scan.pdf" [ref=f61e169]:
+                    - generic [aria-hidden] [ref=f61e170]: 
+                  - generic [ref=f61e171]:
+                    - generic [ref=f61e172]: Hộ chiếu ngựa (FEI / National Passport)
+                    - generic [ref=f61e173]: scan.pdf · nộp 18/07/2026 16:25
+                - generic [ref=f61e174]:
+                  - button "Xem ảnh scan.pdf" [ref=f61e175]:
+                    - generic [aria-hidden] [ref=f61e176]: 
+                  - generic [ref=f61e177]:
+                    - generic [ref=f61e178]: Sổ tiêm phòng
+                    - generic [ref=f61e179]: scan.pdf · nộp 11/09/2026 16:25 · hạn 04/04/2027
+                - generic [ref=f61e180]:
+                  - button "Xem ảnh scan.pdf" [ref=f61e181]:
+                    - generic [aria-hidden] [ref=f61e182]: 
+                  - generic [ref=f61e183]:
+                    - generic [ref=f61e184]: Xét nghiệm EIA / Coggins
+                    - generic [ref=f61e185]: scan.pdf · nộp 16/09/2026 16:25 · hạn 25/03/2027
+            - heading "Lộ trình Điều phối viên đã lập" [level=4] [ref=f61e186]
+            - paragraph [ref=f61e187]: 9 chặng, 8 trạm nghỉ, cửa khẩu Lao Bảo – Densavanh. Khởi hành 05/12/2026 05:00, đến 06/12/2026 16:48. Lập bởi Trần Minh.
+            - generic [ref=f61e189]:
+              - application "Bản đồ theo dõi xe" [ref=f61e190]:
+                - generic:
+                  - generic:
+                    - img:
+                      - generic:
+                        - generic [ref=f61e191] [cursor=pointer]
+                        - generic [ref=f61e192] [cursor=pointer]
+                  - generic:
+                    - button "A" [ref=f61e193] [cursor=pointer]
+                    - button "B" [ref=f61e195] [cursor=pointer]
+                    - button "⚑" [ref=f61e197] [cursor=pointer]
+                    - button [ref=f61e199] [cursor=pointer]
+                    - button [ref=f61e201] [cursor=pointer]
+                    - button [ref=f61e203] [cursor=pointer]
+                    - button [ref=f61e205] [cursor=pointer]
+                    - button [ref=f61e207] [cursor=pointer]
+                    - button [ref=f61e209] [cursor=pointer]
+                    - button [ref=f61e211] [cursor=pointer]
+                    - button [ref=f61e213] [cursor=pointer]
+                - generic:
+                  - generic [ref=f61e215]:
+                    - button "Zoom in" [ref=f61e216] [cursor=pointer]: +
+                    - button "Zoom out" [ref=f61e217] [cursor=pointer]: −
+                  - generic [ref=f61e218]:
+                    - link "Leaflet" [ref=f61e219] [cursor=pointer]:
+                      - /url: https://leafletjs.com
+                    - text: "| © OpenStreetMap"
+              - generic [ref=f61e224]:
+                - generic [ref=f61e225]: ● Trạm đã qua / chưa qua
+                - generic [ref=f61e226]: ⚑ Cửa khẩu
+            - heading "Xe, tài xế và hộ tống đã chọn" [level=4] [ref=f61e227]
+            - generic [ref=f61e229]:
+              - generic [ref=f61e230]:
+                - generic [ref=f61e231]:
+                  - generic [ref=f61e232]: Xe 1 · 65C-101.22
+                  - generic [ref=f61e233]: TRP-0104-1 · Light (2 ngăn) · đăng kiểm KD-2026-006651
+                - generic [ref=f61e234]: 2 ngựa
+              - generic [ref=f61e235]:
+                - generic [ref=f61e236]:
+                  - term [ref=f61e237]: Tài xế
+                  - definition [ref=f61e238]: —
+                - generic [ref=f61e239]:
+                  - term [ref=f61e240]: Hộ tống
+                  - definition [ref=f61e241]: —
+                - generic [ref=f61e242]:
+                  - term [ref=f61e243]: Ngựa trên xe
+                  - definition [ref=f61e244]: Storm Runner, Ngọc Long
+            - heading "Chuyến đi" [level=4] [ref=f61e245]
+            - generic [ref=f61e246]:
+              - generic [ref=f61e247]:
+                - term [ref=f61e248]: Khách hàng
+                - definition [ref=f61e249]: Trang trại Long Thành
+              - generic [ref=f61e250]:
+                - term [ref=f61e251]: Loại chuyến
+                - definition [ref=f61e252]: Quốc tế (Việt Nam → Lào)
+              - generic [ref=f61e253]:
+                - term [ref=f61e254]: Ngày khởi hành
+                - definition [ref=f61e255]: 05/12/2026
+              - generic [ref=f61e256]:
+                - term [ref=f61e257]: Điểm đón
+                - definition [ref=f61e258]: Kho Đồng Nai
+              - generic [ref=f61e259]:
+                - term [ref=f61e260]: Điểm giao
+                - definition [ref=f61e261]: Kho Viêng Chăn
+              - generic [ref=f61e262]:
+                - term [ref=f61e263]: Cửa khẩu (đã khóa)
+                - definition [ref=f61e264]: Lao Bảo – Densavanh
+              - generic [ref=f61e265]:
+                - term [ref=f61e266]: Người gửi
+                - definition [ref=f61e267]:
+                  - text: Trang trại Long Thành
+                  - generic [ref=f61e268]: 0901 456 789
+              - generic [ref=f61e269]:
+                - term [ref=f61e270]: Người nhận
+                - definition [ref=f61e271]:
+                  - text: Trung tâm Kiểm dịch Phnom Penh
+                  - generic [ref=f61e272]: 0912 345 678
+              - generic [ref=f61e273]:
+                - term [ref=f61e274]: Số ngựa
+                - definition [ref=f61e275]: 2 con
+            - heading "Ngựa và dịch vụ" [level=4] [ref=f61e276]
+            - generic [ref=f61e277]:
+              - generic [ref=f61e278]:
+                - generic [ref=f61e280]:
+                  - generic [ref=f61e281]: Storm Runner
+                  - generic [ref=f61e282]: Chip VN-985211 · Thoroughbred · Thiến
+                - generic [ref=f61e283]:
+                  - generic [ref=f61e284]: "Khoang: đơn mở rộng"
+                  - generic [ref=f61e285]:
+                    - text: "Thức ăn: Gói cơ bản"
+                    - generic [ref=f61e286]: (Cỏ khô thường)
+                  - generic [ref=f61e287]: "Cữ nước: Mỗi 3 giờ"
+                  - generic [ref=f61e288]: "Bảo hiểm: mua, phí 20,000,000 ₫"
+              - generic [ref=f61e289]:
+                - generic [ref=f61e291]:
+                  - generic [ref=f61e292]: Ngọc Long
+                  - generic [ref=f61e293]: Chip VN-985216 · Appaloosa · Đực
+                - generic [ref=f61e294]:
+                  - generic [ref=f61e295]: "Khoang: tiêu chuẩn"
+                  - generic [ref=f61e296]:
+                    - text: "Thức ăn: Gói cơ bản"
+                    - generic [ref=f61e297]: (Cỏ khô thường)
+                  - generic [ref=f61e298]: "Cữ nước: Mỗi 3 giờ"
+                  - generic [ref=f61e299]: "Bảo hiểm: từ chối"
+            - heading "Chọn tài xế và nhân viên hộ tống" [level=4] [ref=f61e300]
+            - paragraph [ref=f61e301]:
+              - text: Điều phối viên đã chọn
+              - generic [ref=f61e302]: 1 xe
+              - text: . Mỗi xe cần đúng 1 tài xế và 1 nhân viên hộ tống. Người đã được giao việc cho đơn khác thì bị khóa, đơn đó giao ngựa xong mới chọn lại được.
+            - generic [ref=f61e303] [cursor=pointer]:
+              - generic [ref=f61e304]: "Xe 1 · 65C-101.22 (Light, 2 ngăn) · 2 ngựa: Storm Runner, Ngọc Long"
+              - generic [ref=f61e305]:
+                - generic [ref=f61e306]:
+                  - generic [ref=f61e307]: Tài xế
+                  - button "Tài xế" [ref=f61e308]:
+                    - generic [aria-hidden] [ref=f61e309]: 
+                    - generic [ref=f61e310]: Chọn tài xế
+                    - emphasis [ref=f61e311]: Chọn
+                - generic [ref=f61e312]:
+                  - generic [ref=f61e313]: Nhân viên hộ tống
+                  - button "Nhân viên hộ tống" [ref=f61e314]:
+                    - generic [aria-hidden] [ref=f61e315]: 
+                    - generic [ref=f61e316]: Chọn nhân viên hộ tống
+                    - emphasis [ref=f61e317]: Chọn
+            - generic [ref=f61e318]:
+              - generic [ref=f61e319]: 
+              - list [ref=f61e320]:
+                - listitem [ref=f61e321]: Xe 1 chưa chọn tài xế.
+                - listitem [ref=f61e322]: Xe 1 chưa chọn nhân viên hộ tống.
+            - heading "Điều chỉnh báo giá (không bắt buộc)" [level=4] [ref=f61e323]
+            - button "+ Thêm dòng điều chỉnh" [ref=f61e324] [cursor=pointer]:
+              - generic [ref=f61e325]: +
+              - text: Thêm dòng điều chỉnh
+            - heading "Báo giá gửi khách" [level=4] [ref=f61e326]
+            - generic [ref=f61e327]:
+              - table [ref=f61e328]:
+                - caption [ref=f61e329]: Chi phí cố định trọn gói
+                - rowgroup [ref=f61e330]:
+                  - row [ref=f61e331]:
+                    - cell "Cước vận chuyển nguyên chuyến Xe Light (2 ngăn) · 1490 km" [ref=f61e332]:
+                      - generic [ref=f61e333]: Cước vận chuyển nguyên chuyến
+                      - generic [ref=f61e334]: Xe Light (2 ngăn) · 1490 km
+                    - cell "31,658,000 ₫" [ref=f61e335]
+                  - row [ref=f61e336]:
+                    - cell "Nhân sự kỹ thuật, 01 tài xế + 01 hộ tống 4 ngày" [ref=f61e337]:
+                      - generic [ref=f61e338]: Nhân sự kỹ thuật, 01 tài xế + 01 hộ tống
+                      - generic [ref=f61e339]: 4 ngày
+                    - cell "7,560,000 ₫" [ref=f61e340]
+                  - row [ref=f61e341]:
+                    - cell "Nhiên liệu và BOT Ước tính theo lộ trình 1490 km, đã gồm dự phòng" [ref=f61e342]:
+                      - generic [ref=f61e343]: Nhiên liệu và BOT
+                      - generic [ref=f61e344]: Ước tính theo lộ trình 1490 km, đã gồm dự phòng
+                    - cell "14,785,000 ₫" [ref=f61e345]
+                  - row [ref=f61e346]:
+                    - cell "Khoang đơn mở rộng 1 ngựa" [ref=f61e347]:
+                      - generic [ref=f61e348]: Khoang đơn mở rộng
+                      - generic [ref=f61e349]: 1 ngựa
+                    - cell "1,500,000 ₫" [ref=f61e350]
+                  - row [ref=f61e351]:
+                    - cell "Thủ tục kiểm dịch và hải quan Nhà xe làm trọn gói" [ref=f61e352]:
+                      - generic [ref=f61e353]: Thủ tục kiểm dịch và hải quan
+                      - generic [ref=f61e354]: Nhà xe làm trọn gói
+                    - cell "300,000 ₫" [ref=f61e355]
+                  - row [ref=f61e356]:
+                    - cell "Bảo hiểm Động vật Sống 1 ngựa mua bảo hiểm" [ref=f61e357]:
+                      - generic [ref=f61e358]: Bảo hiểm Động vật Sống
+                      - generic [ref=f61e359]: 1 ngựa mua bảo hiểm
+                    - cell "20,000,000 ₫" [ref=f61e360]
+              - generic [ref=f61e361]:
+                - generic [ref=f61e362]:
+                  - generic [ref=f61e363]: Tổng giá trị
+                  - generic [ref=f61e364]: 75,803,000 ₫
+                - generic [ref=f61e365]: Chưa gồm VAT. Giá cố định, nhiên liệu và phí cầu đường đã nằm trong báo giá.
+                - generic [ref=f61e366]:
+                  - generic [ref=f61e367]: Đặt cọc để nhận vận đơn (30%)
+                  - generic [ref=f61e368]: 22,741,000 ₫
+                - generic [ref=f61e369]:
+                  - generic [ref=f61e370]: Thanh toán còn lại vào ngày bốc ngựa (70%)
+                  - generic [ref=f61e371]: 53,062,000 ₫
+              - generic [ref=f61e372]:
+                - generic [ref=f61e373]:
+                  - generic [aria-hidden] [ref=f61e374]: 
+                  - text: "Không phụ thu ngoài phiếu: chỉ phát sinh thêm khi có sự cố liên quan đến ngựa hoặc dịch vụ bạn chọn thêm (xem"
+                  - link "chính sách chi phí sự cố" [ref=f61e375] [cursor=pointer]:
+                    - /url: /backoffice/terms?doc=incident_cost
+                  - text: ).
+                - generic [ref=f61e376]:
+                  - generic [aria-hidden] [ref=f61e377]: 
+                  - text: Báo giá có hiệu lực đến 08/10/2026 16:25.
+          - generic [ref=f61e378]:
+            - button "Đóng" [ref=f61e379] [cursor=pointer]
+            - button " Trả lại Kiểm dịch viên" [ref=f61e380] [cursor=pointer]:
+              - generic [ref=f61e381]: 
+              - text: Trả lại Kiểm dịch viên
+            - button " Trả lại Điều phối viên" [ref=f61e382] [cursor=pointer]:
+              - generic [ref=f61e383]: 
+              - text: Trả lại Điều phối viên
+            - button " Duyệt và gửi báo giá" [disabled] [ref=f61e384]:
+              - generic [ref=f61e385]: 
+              - text: Duyệt và gửi báo giá
+  - group "Ngôn ngữ" [ref=f61e120]:
+    - button "VI" [pressed] [ref=f61e122]
+    - button "EN" [ref=f61e123] [cursor=pointer]

@@ -1,0 +1,112 @@
+- generic [ref=f51e2]:
+  - banner [ref=f51e3]:
+    - generic [ref=f51e4]:
+      - link "EQ Vận chuyển Ngựa Quản lý" [ref=f51e5] [cursor=pointer]:
+        - /url: /backoffice/manager
+        - generic [ref=f51e6]: EQ
+        - generic [ref=f51e7]: Vận chuyển Ngựa
+        - generic [ref=f51e8]: Quản lý
+      - navigation "Menu"
+      - generic [ref=f51e9]:
+        - button "Thông báo" [ref=f51e11] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f51e12]: 
+        - generic "Quản lý" [ref=f51e13]: QL
+        - generic [ref=f51e14]: Quản lý
+        - button " Đăng xuất" [ref=f51e15] [cursor=pointer]:
+          - generic [ref=f51e16]: 
+          - text: Đăng xuất
+  - generic [ref=f51e17]:
+    - navigation "Menu Quản lý" [ref=f51e18]:
+      - generic [ref=f51e19]: Việc cần làm
+      - link "Tổng quan" [ref=f51e20] [cursor=pointer]:
+        - /url: /backoffice/manager
+        - generic [aria-hidden] [ref=f51e21]: 
+      - link "Tiếp nhận 1 đơn chờ" [ref=f51e23] [cursor=pointer]:
+        - /url: /backoffice/manager/intake
+        - generic [aria-hidden] [ref=f51e24]: 
+        - generic [ref=f51e25]: Tiếp nhận
+        - generic "1 đơn chờ" [ref=f51e26]: "1"
+      - link "Duyệt giá 1 đơn chờ" [ref=f51e27] [cursor=pointer]:
+        - /url: /backoffice/manager/approvals
+        - generic [aria-hidden] [ref=f51e28]: 
+        - generic [ref=f51e29]: Duyệt giá
+        - generic "1 đơn chờ" [ref=f51e30]: "1"
+      - link "Sự cố 2 đơn chờ" [ref=f51e31] [cursor=pointer]:
+        - /url: /backoffice/manager/incidents
+        - generic [aria-hidden] [ref=f51e32]: 
+        - generic [ref=f51e33]: Sự cố
+        - generic "2 đơn chờ" [ref=f51e34]: "2"
+      - generic [ref=f51e35]: Theo dõi
+      - link "Tiến độ đơn" [ref=f51e36] [cursor=pointer]:
+        - /url: /backoffice/manager/progress
+        - generic [aria-hidden] [ref=f51e37]: 
+      - generic [ref=f51e39]: Báo cáo
+      - link "Chuyến đi" [ref=f51e40] [cursor=pointer]:
+        - /url: /backoffice/manager/trip-reports
+        - generic [aria-hidden] [ref=f51e41]: 
+    - main [ref=f51e43]:
+      - generic [ref=f51e46]:
+        - generic [ref=f51e47]:
+          - heading "Sự cố và quyết toán" [level=1] [ref=f51e48]
+          - paragraph [ref=f51e49]: Duyệt phương án, đối soát chi phí, theo dõi thanh toán.
+        - generic [ref=f51e50]:
+          - tablist "Trạng thái" [ref=f51e51]:
+            - tab "Chờ duyệt phương án 1" [selected] [ref=f51e52] [cursor=pointer]:
+              - text: Chờ duyệt phương án
+              - generic [ref=f51e53]: "1"
+            - tab "Sự cố đang xử lý 2" [ref=f51e54] [cursor=pointer]:
+              - text: Sự cố đang xử lý
+              - generic [ref=f51e55]: "2"
+            - tab "Chờ đối soát 1" [ref=f51e56] [cursor=pointer]:
+              - text: Chờ đối soát
+              - generic [ref=f51e57]: "1"
+            - tab "Chờ khách thanh toán 2" [ref=f51e58] [cursor=pointer]:
+              - text: Chờ khách thanh toán
+              - generic [ref=f51e59]: "2"
+            - tab "Đã hoàn tất 1" [ref=f51e60] [cursor=pointer]:
+              - text: Đã hoàn tất
+              - generic [ref=f51e61]: "1"
+          - generic [ref=f51e62]:
+            - generic [ref=f51e63]:
+              - generic [aria-hidden] [ref=f51e64]: 
+              - textbox [ref=f51e65]:
+                - /placeholder: Tìm theo mã đơn, khách hàng, tuyến…
+            - generic [ref=f51e66]:
+              - text: Khởi hành
+              - textbox "Khởi hành từ ngày" [ref=f51e67]
+              - text: →
+              - textbox "Khởi hành đến ngày" [ref=f51e68]
+          - table [ref=f51e70]:
+            - rowgroup [ref=f51e71]:
+              - row [ref=f51e72]:
+                - columnheader "Mã đơn" [ref=f51e73]
+                - columnheader "Khách hàng" [ref=f51e74]
+                - columnheader "Tuyến" [ref=f51e75]
+                - columnheader "Nội dung" [ref=f51e76]
+                - columnheader "Thời gian" [ref=f51e77]
+                - columnheader "Trạng thái" [ref=f51e78]
+                - columnheader "Giá trị" [ref=f51e79]
+                - columnheader "Thao tác" [ref=f51e80]
+            - rowgroup [ref=f51e81]:
+              - row [ref=f51e82]:
+                - cell "ORD-2026-0126 Trong nước" [ref=f51e83]:
+                  - text: ORD-2026-0126
+                  - generic [ref=f51e84]: Trong nước
+                - cell "CLB Ngựa Phương Nam" [ref=f51e85]
+                - cell "Kho Long An → Kho Bình Dương" [ref=f51e86]
+                - cell "Hỏng phương tiện · xe TRP-0126-1 Xe cứu hộ đưa ngựa về chuồng đệm hoặc phòng khám (không chạy tiếp qua cửa khẩu), ETA mới 04/10/2026 14:32" [ref=f51e88]:
+                  - text: Hỏng phương tiện · xe TRP-0126-1
+                  - generic [ref=f51e89]: Xe cứu hộ đưa ngựa về chuồng đệm hoặc phòng khám (không chạy tiếp qua cửa khẩu), ETA mới 04/10/2026 14:32
+                - cell "Báo 04/10/2026 09:32" [ref=f51e90]
+                - cell [ref=f51e91]:
+                  - generic "Pending Emergency Approval" [ref=f51e92]:
+                    - generic [aria-hidden] [ref=f51e93]: 
+                    - text: Chờ quản lý duyệt phương án khẩn cấp
+                - cell "Đề nghị 2,500,000 ₫" [ref=f51e94]
+                - cell [ref=f51e95]:
+                  - button "Xem và duyệt" [ref=f51e96] [cursor=pointer]
+          - generic [ref=f51e97]: Hiển thị 1 đơn hàng
+  - contentinfo [ref=f51e99]: © 2026 Vận chuyển Ngựa đua. SWP Project.
+  - group "Ngôn ngữ" [ref=f51e100]:
+    - button "VI" [pressed] [ref=f51e102]
+    - button "EN" [ref=f51e103] [cursor=pointer]

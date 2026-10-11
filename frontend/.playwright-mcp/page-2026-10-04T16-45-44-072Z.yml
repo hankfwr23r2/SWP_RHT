@@ -1,0 +1,68 @@
+- generic [ref=f544e1]:
+  - generic [ref=f544e2]:
+    - banner [ref=f544e3]:
+      - generic [ref=f544e4]:
+        - link "EQ Vận chuyển Ngựa Tài xế" [ref=f544e5] [cursor=pointer]:
+          - /url: /backoffice/driver
+          - generic [ref=f544e6]: EQ
+          - generic [ref=f544e7]: Vận chuyển Ngựa
+          - generic [ref=f544e8]: Tài xế
+        - navigation "Menu" [ref=f544e9]:
+          - link "Chuyến của tôi" [ref=f544e10] [cursor=pointer]:
+            - /url: /backoffice/driver
+        - generic [ref=f544e11]:
+          - button "Thông báo" [ref=f544e13] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f544e14]: 
+          - generic "Phạm Văn D" [ref=f544e15]: VD
+          - generic [ref=f544e16]: Phạm Văn D
+          - button " Đăng xuất" [ref=f544e17] [cursor=pointer]:
+            - generic [ref=f544e18]: 
+            - text: Đăng xuất
+    - main [ref=f544e19]:
+      - generic [ref=f544e20]:
+        - combobox "Chọn chuyến" [expanded] [active] [ref=f544e22] [cursor=pointer]:
+          - generic [ref=f544e23]: TRP-0119-1 · Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+        - generic [ref=f544e26]:
+          - generic [ref=f544e27]:
+            - generic [ref=f544e28]: TRP-0119-1
+            - generic "Delivered - Pending Settlement" [ref=f544e29]:
+              - generic [aria-hidden] [ref=f544e30]: 
+              - text: Đã giao, chờ tài xế gửi chi phí
+          - generic [ref=f544e31]:
+            - text: Kho Bình Dương
+            - generic [aria-hidden] [ref=f544e32]: 
+            - text: CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+          - generic [ref=f544e33]:
+            - generic [ref=f544e34]:
+              - generic [aria-hidden] [ref=f544e35]: 
+              - text: 04/10/2026
+            - generic [ref=f544e36]:
+              - generic [aria-hidden] [ref=f544e37]: 
+              - text: 1 ngựa
+        - tablist [ref=f544e38]:
+          - tab "Việc" [selected] [ref=f544e39] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f544e40]: 
+            - text: Việc
+          - tab "Hành trình" [ref=f544e41] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f544e42]: 
+            - text: Hành trình
+          - tab "Lệnh" [ref=f544e43] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f544e44]: 
+            - text: Lệnh
+        - generic [ref=f544e45]:
+          - heading "Đã giao ngựa" [level=2] [ref=f544e46]:
+            - generic [aria-hidden] [ref=f544e47]: 
+            - text: Đã giao ngựa
+          - paragraph [ref=f544e48]: Giao xong lúc 04/10/2026 13:33.
+        - generic [ref=f544e49]:
+          - heading "Gửi bảng kê chi phí" [level=2] [ref=f544e50]:
+            - generic [aria-hidden] [ref=f544e51]: 
+            - text: Gửi bảng kê chi phí
+          - paragraph [ref=f544e52]: Chuyến không có chi phí sự cố. Giá đã cố định nên không cần hóa đơn nhiên liệu. Bấm gửi để Quản lý đối soát và phát hành quyết toán.
+          - button "Gửi bảng kê chi phí" [ref=f544e53] [cursor=pointer]
+    - group "Ngôn ngữ" [ref=f544e54]:
+      - button "VI" [pressed] [ref=f544e56]
+      - button "EN" [ref=f544e57] [cursor=pointer]
+  - listbox [ref=f544e62]:
+    - option "TRP-0119-1 · Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)" [selected] [ref=f544e63] [cursor=pointer]
+    - option "TRP-0106-1 · Kho Đồng Nai → Kho Phnom Penh" [ref=f544e67] [cursor=pointer]

@@ -1,0 +1,93 @@
+- generic [ref=f348e2]:
+  - banner [ref=f348e28]:
+    - generic [ref=f348e29]:
+      - link "EQ Vận chuyển Ngựa Tài xế" [ref=f348e30] [cursor=pointer]:
+        - /url: /backoffice/driver
+        - generic [ref=f348e31]: EQ
+        - generic [ref=f348e32]: Vận chuyển Ngựa
+        - generic [ref=f348e33]: Tài xế
+      - navigation "Menu" [ref=f348e34]:
+        - link "Chuyến của tôi" [ref=f348e35] [cursor=pointer]:
+          - /url: /backoffice/driver
+      - generic [ref=f348e36]:
+        - button "Thông báo" [ref=f348e38] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f348e39]: 
+        - generic "Nguyễn Văn Hùng" [ref=f348e40]: VH
+        - generic [ref=f348e41]: Nguyễn Văn Hùng
+        - button " Đăng xuất" [ref=f348e42] [cursor=pointer]:
+          - generic [ref=f348e43]: 
+          - text: Đăng xuất
+  - main [ref=f348e44]:
+    - generic [ref=f348e45]:
+      - combobox "Chọn chuyến" [ref=f348e47] [cursor=pointer]:
+        - generic [ref=f348e48]: TRP-0117-1 · Kho Đồng Nai → Kho Long An
+      - generic [ref=f348e51]:
+        - generic [ref=f348e52]:
+          - generic [ref=f348e53]: TRP-0117-1
+          - generic "In Transit" [ref=f348e54]:
+            - generic [aria-hidden] [ref=f348e55]: 
+            - text: Đang vận chuyển
+        - generic [ref=f348e56]:
+          - text: Kho Đồng Nai
+          - generic [aria-hidden] [ref=f348e57]: 
+          - text: Kho Long An
+        - generic [ref=f348e58]:
+          - generic [ref=f348e59]:
+            - generic [aria-hidden] [ref=f348e60]: 
+            - text: 04/10/2026
+          - generic [ref=f348e61]:
+            - generic [aria-hidden] [ref=f348e62]: 
+            - text: 2 ngựa
+      - tablist [ref=f348e63]:
+        - tab "Việc" [selected] [ref=f348e64] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f348e65]: 
+          - text: Việc
+        - tab "Hành trình" [ref=f348e66] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f348e67]: 
+          - text: Hành trình
+        - tab "Lệnh" [ref=f348e68] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f348e69]: 
+          - text: Lệnh
+      - generic [ref=f348e70]:
+        - heading "Tới điểm giao" [level=2] [ref=f348e71]:
+          - generic [aria-hidden] [ref=f348e72]: 
+          - text: Tới điểm giao
+        - paragraph [ref=f348e73]: Chụp ảnh cổng cơ sở tiếp nhận.
+        - generic [ref=f348e74]:
+          - generic [ref=f348e75]: Ảnh chụp tại chỗ *
+          - button "Ảnh chụp tại chỗ *" [ref=f348e76]
+          - generic [ref=f348e77] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f348e78]: 
+            - text: Chụp ảnh
+        - button " Đã tới điểm giao" [disabled] [ref=f348e79]:
+          - generic [ref=f348e80]: 
+          - text: Đã tới điểm giao
+      - generic [ref=f348e91]:
+        - heading "Báo sự cố khẩn cấp" [level=2] [ref=f348e92]:
+          - generic [aria-hidden] [ref=f348e93]: 
+          - text: Báo sự cố khẩn cấp
+        - radiogroup "Nhóm sự cố" [ref=f348e94]:
+          - generic [ref=f348e95]:
+            - radio "Sức khỏe ngựa Đau bụng, sốt, mất nước, chấn thương" [ref=f348e96]
+            - generic [ref=f348e97]: Sức khỏe ngựaĐau bụng, sốt, mất nước, chấn thương
+          - generic [ref=f348e98]:
+            - radio "Xe gặp sự cố Hỏng điều hòa thùng, nổ lốp, sự cố động cơ, tai nạn" [ref=f348e99]
+            - generic [ref=f348e100]: Xe gặp sự cốHỏng điều hòa thùng, nổ lốp, sự cố động cơ, tai nạn
+          - generic [ref=f348e101]:
+            - radio "Giao thông tắc nghẽn Kẹt xe, tắc đường, đường bị chặn" [checked] [active] [ref=f348e102]
+            - generic [ref=f348e103]: Giao thông tắc nghẽnKẹt xe, tắc đường, đường bị chặn
+        - generic [ref=f348e104]:
+          - generic [ref=f348e105]: Ảnh hiện trường *
+          - button "Ảnh hiện trường *" [ref=f348e106]
+          - generic [ref=f348e107] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f348e108]: 
+            - text: Chụp ảnh
+        - generic [ref=f348e109]:
+          - generic [ref=f348e110]: Ghi chú ngắn
+          - textbox "Ghi chú ngắn" [ref=f348e111]
+        - generic [ref=f348e112]:
+          - button "Hủy" [ref=f348e113] [cursor=pointer]
+          - button "Gửi báo động khẩn cấp" [disabled] [ref=f348e114]
+  - group "Ngôn ngữ" [ref=f348e83]:
+    - button "VI" [pressed] [ref=f348e85]
+    - button "EN" [ref=f348e86] [cursor=pointer]

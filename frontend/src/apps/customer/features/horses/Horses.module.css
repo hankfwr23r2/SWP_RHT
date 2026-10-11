@@ -1,0 +1,47 @@
+/* Hồ sơ ngựa: thẻ ngựa, bộ lọc, biểu mẫu */
+.head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+.head .pageHeader { margin: 0; }
+.summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+.sumCard { background: white; border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 18px; display: flex; align-items: center; gap: 14px; }
+.sumCard i { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-size: 1.1rem; }
+.sumCard .num { font-size: 1.5rem; font-weight: 800; color: var(--navy); line-height: 1.1; }
+.sumCard .lbl { font-size: 0.8rem; color: var(--muted); }
+.iconAll { background: var(--blue-soft); color: var(--blue); }
+.iconReady { background: var(--green-soft); color: var(--green); }
+.iconMissing { background: var(--amber-soft); color: var(--amber); }
+
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.pill { min-height: 40px; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line); background: white; font: inherit; font-size: 0.86rem; font-weight: 600; color: var(--text); cursor: pointer; }
+.pill:hover { border-color: var(--orange); }
+.pill:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+.pillOn { background: var(--orange); border-color: var(--orange); color: white; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+.horse { background: white; border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; display: flex; flex-direction: column; gap: 12px; box-shadow: var(--shadow); }
+.horseTop { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.horseName { font-size: 1.1rem; font-weight: 800; color: var(--navy); line-height: 1.25; }
+.chip { font-size: 0.78rem; color: var(--muted); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.85rem; color: var(--muted); }
+.meta i { color: var(--orange); margin-right: 5px; width: 14px; text-align: center; }
+.warn { font-size: 0.82rem; color: var(--amber); background: var(--amber-soft); border-radius: var(--radius-sm); padding: 8px 10px; }
+.horseFoot { margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
+.trips { font-size: 0.8rem; color: var(--muted); }
+
+.empty { text-align: center; padding: 48px 20px; background: white; border: 1px dashed #cbd5e1; border-radius: var(--radius); color: var(--muted); }
+.empty i { font-size: 2rem; color: var(--orange); margin-bottom: 10px; display: block; }
+.empty h3 { color: var(--navy); margin-bottom: 4px; }
+
+/* Biểu mẫu */
+.form { display: grid; gap: 18px; }
+.fieldset { border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px 16px; display: grid; gap: 12px; min-width: 0; }
+.fieldset legend { padding: 0 8px; font-weight: 700; font-size: 0.9rem; color: var(--navy); }
+.legendHint { font-weight: 400; font-size: 0.78rem; color: var(--muted); margin-left: 6px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+.docs { display: grid; gap: 16px; }
+.docRow { display: grid; grid-template-columns: 1fr 200px; gap: 16px; align-items: start; }
+
+@media (max-width: 720px) {
+  .summary { grid-template-columns: 1fr; }
+  .grid { grid-template-columns: 1fr; }
+  .grid2, .docRow { grid-template-columns: 1fr; }
+}

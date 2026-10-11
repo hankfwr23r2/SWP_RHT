@@ -1,0 +1,187 @@
+- generic [ref=f488e3]:
+  - banner [ref=f488e4]:
+    - link "VH Phạm Văn Hưng specialist@equine.vn" [ref=f488e5] [cursor=pointer]:
+      - /url: /backoffice/specialist/verification
+      - generic [ref=f488e6]: VH
+      - generic [ref=f488e7]:
+        - generic [ref=f488e8]: Phạm Văn Hưng
+        - generic [ref=f488e9]: specialist@equine.vn
+    - generic "Đường dẫn" [ref=f488e10]:
+      - generic [aria-hidden] [ref=f488e11]: 
+      - generic [ref=f488e12]:
+        - generic [aria-hidden] [ref=f488e13]: 
+        - text: Giấy tờ chuyến đi
+    - search [ref=f488e14]:
+      - generic [aria-hidden] [ref=f488e15]: 
+      - textbox "Tìm đơn hàng" [ref=f488e16]:
+        - /placeholder: Tìm đơn hàng, khách hàng…
+    - generic [ref=f488e17]:
+      - button "Thông báo" [ref=f488e19] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f488e20]: 
+      - button "Đăng xuất" [ref=f488e21] [cursor=pointer]:
+        - generic [ref=f488e22]: 
+  - generic [ref=f488e23]:
+    - complementary "Menu" [ref=f488e24]:
+      - generic [ref=f488e25]:
+        - generic [ref=f488e26]: Menu
+        - button "Thu gọn menu" [ref=f488e27] [cursor=pointer]:
+          - generic [ref=f488e28]: 
+      - navigation [ref=f488e29]:
+        - link "Thẩm định y tế 2 đơn chờ" [ref=f488e30] [cursor=pointer]:
+          - /url: /backoffice/specialist/verification
+          - generic [aria-hidden] [ref=f488e31]: 
+          - generic [ref=f488e32]: Thẩm định y tế
+          - generic "2 đơn chờ" [ref=f488e33]: "2"
+        - link "Giấy tờ chuyến đi 5 đơn chờ" [ref=f488e34] [cursor=pointer]:
+          - /url: /backoffice/specialist/legal
+          - generic [aria-hidden] [ref=f488e35]: 
+          - generic [ref=f488e36]: Giấy tờ chuyến đi
+          - generic "5 đơn chờ" [ref=f488e37]: "5"
+      - generic [ref=f488e38]:
+        - button "Cần xử lý 5" [expanded] [ref=f488e39] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f488e40]: 
+          - generic [ref=f488e41]: Cần xử lý
+          - generic [ref=f488e42]: "5"
+        - link "0102 · Thẩm định hồ sơ" [ref=f488e43] [cursor=pointer]:
+          - /url: /backoffice/specialist/verification/ORD-2026-0102
+          - generic [aria-hidden] [ref=f488e44]: 
+        - link "0131 · Thẩm định hồ sơ" [ref=f488e46] [cursor=pointer]:
+          - /url: /backoffice/specialist/verification/ORD-2026-0131
+          - generic [aria-hidden] [ref=f488e47]: 
+        - link "0113 · Làm giấy tờ" [ref=f488e49] [cursor=pointer]:
+          - /url: /backoffice/specialist/legal/ORD-2026-0113
+          - generic [aria-hidden] [ref=f488e50]: 
+        - link "0111 · Làm giấy tờ" [ref=f488e52] [cursor=pointer]:
+          - /url: /backoffice/specialist/legal/ORD-2026-0111
+          - generic [aria-hidden] [ref=f488e53]: 
+        - link "0110 · Làm giấy tờ" [ref=f488e55] [cursor=pointer]:
+          - /url: /backoffice/specialist/legal/ORD-2026-0110
+          - generic [aria-hidden] [ref=f488e56]: 
+    - main [ref=f488e58]:
+      - generic [ref=f488e61]:
+        - generic [ref=f488e62]:
+          - link "Giấy tờ chuyến đi" [ref=f488e63] [cursor=pointer]:
+            - /url: /backoffice/specialist/legal
+          - text: /
+          - generic [ref=f488e64]: ORD-2026-0110
+        - generic [ref=f488e65]:
+          - heading "Đơn ORD-2026-0110" [level=1] [ref=f488e66]
+          - generic "Clearance In Progress" [ref=f488e67]:
+            - generic [aria-hidden] [ref=f488e68]: 
+            - text: Kiểm dịch viên đang làm thủ tục giấy tờ
+        - generic [ref=f488e69]:
+          - generic [ref=f488e70]:
+            - generic [ref=f488e71]:
+              - heading " Chuyến đi" [level=3] [ref=f488e73]:
+                - generic [ref=f488e74]: 
+                - text: Chuyến đi
+              - generic [ref=f488e75]:
+                - generic [ref=f488e76]:
+                  - term [ref=f488e77]: Khách hàng
+                  - definition [ref=f488e78]: Trang trại Long Thành
+                - generic [ref=f488e79]:
+                  - term [ref=f488e80]: Loại chuyến
+                  - definition [ref=f488e81]: Trong nước
+                - generic [ref=f488e82]:
+                  - term [ref=f488e83]: Ngày khởi hành
+                  - definition [ref=f488e84]: 20/11/2026
+                - generic [ref=f488e85]:
+                  - term [ref=f488e86]: Điểm đón
+                  - definition [ref=f488e87]: Kho Long An
+                - generic [ref=f488e88]:
+                  - term [ref=f488e89]: Điểm giao
+                  - definition [ref=f488e90]: Kho Bình Dương
+                - generic [ref=f488e91]:
+                  - term [ref=f488e92]: Người gửi
+                  - definition [ref=f488e93]:
+                    - text: Trang trại Long Thành
+                    - generic [ref=f488e94]: 0901 456 789
+                - generic [ref=f488e95]:
+                  - term [ref=f488e96]: Người nhận
+                  - definition [ref=f488e97]:
+                    - text: CLB Cưỡi ngựa Sài Gòn
+                    - generic [ref=f488e98]: 0912 345 678
+                - generic [ref=f488e99]:
+                  - term [ref=f488e100]: Số ngựa
+                  - definition [ref=f488e101]: 1 con
+            - generic [ref=f488e102]:
+              - generic [ref=f488e103]: 
+              - generic [ref=f488e104]:
+                - text: "Khách báo sai thông tin:"
+                - list [ref=f488e105]:
+                  - listitem [ref=f488e106]:
+                    - text: Tên người nhận trên giấy kiểm dịch bị sai chính tả
+                    - generic [ref=f488e107]: (04/10/2026 12:28)
+            - generic [ref=f488e108]:
+              - generic [ref=f488e109]:
+                - heading " Hạng mục giấy tờ" [level=3] [ref=f488e110]:
+                  - generic [ref=f488e111]: 
+                  - text: Hạng mục giấy tờ
+                - generic [ref=f488e112]: 1/2 đã nộp
+              - paragraph [ref=f488e113]: Giấy làm bên ngoài hệ thống (cơ quan thú y, hải quan). Cập nhật trạng thái và ảnh chụp để khách xem tiến độ.
+              - generic [ref=f488e114]:
+                - generic [ref=f488e115]:
+                  - generic [ref=f488e116]:
+                    - generic [ref=f488e117]:
+                      - generic [ref=f488e118]: Giấy chứng nhận kiểm dịch động vật vận chuyển
+                      - generic [ref=f488e119]: Mộc đỏ của cơ quan thú y có thẩm quyền.
+                    - 'generic "Tự đổi theo ảnh: tải ảnh lên là Đã nộp" [ref=f488e120]':
+                      - generic [ref=f488e121]: 
+                      - text: Đã nộp
+                  - textbox "Ghi chú Giấy kiểm dịch" [ref=f488e123]:
+                    - /placeholder: Ghi chú tiến độ (khách và quản lý đều thấy)
+                    - text: Đã nộp hồ sơ ở Chi cục Thú y, chờ cấp giấy
+                  - list [ref=f488e124]:
+                    - listitem [ref=f488e125]:
+                      - button "Xem ảnh health_cert_scan.jpg" [ref=f488e126]:
+                        - generic [aria-hidden] [ref=f488e127]: 
+                      - button "Xóa health_cert_scan.jpg" [ref=f488e128] [cursor=pointer]:
+                        - generic [ref=f488e129]: 
+                  - generic [ref=f488e130]:
+                    - generic [ref=f488e131]: Thêm ảnh chụp giấy
+                    - button "Thêm ảnh chụp giấy" [ref=f488e132]
+                    - generic [ref=f488e133] [cursor=pointer]:
+                      - generic [aria-hidden] [ref=f488e134]: 
+                      - generic [ref=f488e135]: Chọn tệp từ máy (PDF, JPG, PNG, tối đa 5 MB)
+                - generic [ref=f488e136]:
+                  - generic [ref=f488e137]:
+                    - generic [ref=f488e138]:
+                      - generic [ref=f488e139]: Giấy ủy quyền áp tải
+                      - generic [ref=f488e140]: Song ngữ, ghi đúng tài xế và hộ tống của từng xe.
+                    - 'generic "Tự đổi theo ảnh: tải ảnh lên là Đã nộp" [ref=f488e141]':
+                      - generic [ref=f488e142]: 
+                      - text: Chưa nộp
+                  - textbox "Ghi chú Giấy ủy quyền áp tải" [ref=f488e144]:
+                    - /placeholder: Ghi chú tiến độ (khách và quản lý đều thấy)
+                  - generic [ref=f488e145]:
+                    - generic [ref=f488e146]: Thêm ảnh chụp giấy
+                    - button "Thêm ảnh chụp giấy" [ref=f488e147]
+                    - generic [ref=f488e148] [cursor=pointer]:
+                      - generic [aria-hidden] [ref=f488e149]: 
+                      - generic [ref=f488e150]: Chọn tệp từ máy (PDF, JPG, PNG, tối đa 5 MB)
+            - generic [ref=f488e152]:
+              - generic [ref=f488e153]:
+                - text: Chưa thể hoàn tất
+                - generic [ref=f488e154]: Còn 1 hạng mục chưa xong.
+              - button " Hoàn tất giấy tờ" [disabled] [ref=f488e155]:
+                - generic [ref=f488e156]: 
+                - text: Hoàn tất giấy tờ
+          - complementary [ref=f488e157]:
+            - generic [ref=f488e158]:
+              - heading " Nhật ký đơn" [level=3] [ref=f488e160]:
+                - generic [ref=f488e161]: 
+                - text: Nhật ký đơn
+              - list [ref=f488e162]:
+                - listitem [ref=f488e163]:
+                  - generic [aria-hidden] [ref=f488e165]: 
+                  - generic [ref=f488e166]:
+                    - text: Đặt cọc 30%, cấp Vận đơn VD-0110
+                    - generic [ref=f488e167]: Trang trại Long Thành · 28/09/2026 16:28
+                - listitem [ref=f488e168]:
+                  - generic [aria-hidden] [ref=f488e170]: 
+                  - generic [ref=f488e171]:
+                    - text: Gửi yêu cầu đặt đơn
+                    - generic [ref=f488e172]: Trang trại Long Thành · 25/09/2026 16:28
+  - group "Ngôn ngữ" [ref=f488e173]:
+    - button "VI" [pressed] [ref=f488e175]
+    - button "EN" [ref=f488e176] [cursor=pointer]

@@ -1,0 +1,11 @@
+.thumb { flex: none; display: grid; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--bg-page); color: var(--muted); font-size: 1.2rem; overflow: hidden; cursor: zoom-in; }
+.thumb:hover { border-color: var(--orange); }
+.thumb:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.backdrop { position: fixed; inset: 0; z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px; background: rgba(15, 23, 42, 0.88); }
+.big { max-width: min(92vw, 1100px); max-height: 78vh; border-radius: var(--radius-sm); background: white; object-fit: contain; }
+.noimg { display: grid; justify-items: center; gap: 10px; padding: 40px 32px; border-radius: var(--radius); background: white; color: var(--muted); text-align: center; max-width: 360px; }
+.noimg i { font-size: 3rem; color: var(--orange); }
+.caption { color: #e2e8f0; font-size: 0.85rem; word-break: break-all; text-align: center; }
+.close { position: absolute; top: 16px; right: 16px; width: 40px; height: 40px; border-radius: 50%; border: none; background: rgba(255, 255, 255, 0.16); color: white; font-size: 1.1rem; cursor: pointer; }
+.close:hover { background: rgba(255, 255, 255, 0.3); }

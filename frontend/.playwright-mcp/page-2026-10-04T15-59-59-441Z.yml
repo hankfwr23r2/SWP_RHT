@@ -1,0 +1,179 @@
+- generic [ref=f413e3]:
+  - banner [ref=f413e4]:
+    - link "TT Nguyễn Thị Thu nguyen.thi.thu@equine.vn" [ref=f413e5] [cursor=pointer]:
+      - /url: /backoffice/specialist/verification
+      - generic [ref=f413e6]: TT
+      - generic [ref=f413e7]:
+        - generic [ref=f413e8]: Nguyễn Thị Thu
+        - generic [ref=f413e9]: nguyen.thi.thu@equine.vn
+    - generic "Đường dẫn" [ref=f413e10]:
+      - generic [aria-hidden] [ref=f413e11]: 
+      - generic [ref=f413e12]:
+        - generic [aria-hidden] [ref=f413e13]: 
+        - text: Thẩm định y tế
+    - search [ref=f413e14]:
+      - generic [aria-hidden] [ref=f413e15]: 
+      - textbox "Tìm đơn hàng" [ref=f413e16]:
+        - /placeholder: Tìm đơn hàng, khách hàng…
+    - generic [ref=f413e17]:
+      - button "Thông báo" [ref=f413e19] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f413e20]: 
+      - button "Đăng xuất" [ref=f413e21] [cursor=pointer]:
+        - generic [ref=f413e22]: 
+  - generic [ref=f413e23]:
+    - complementary "Menu" [ref=f413e24]:
+      - generic [ref=f413e25]:
+        - generic [ref=f413e26]: Menu
+        - button "Thu gọn menu" [ref=f413e27] [cursor=pointer]:
+          - generic [ref=f413e28]: 
+      - navigation [ref=f413e29]:
+        - link "Thẩm định y tế 1 đơn chờ" [ref=f413e30] [cursor=pointer]:
+          - /url: /backoffice/specialist/verification
+          - generic [aria-hidden] [ref=f413e31]: 
+          - generic [ref=f413e32]: Thẩm định y tế
+          - generic "1 đơn chờ" [ref=f413e33]: "1"
+        - link "Giấy tờ chuyến đi" [ref=f413e34] [cursor=pointer]:
+          - /url: /backoffice/specialist/legal
+          - generic [aria-hidden] [ref=f413e35]: 
+      - generic [ref=f413e37]:
+        - button "Cần xử lý 1" [expanded] [ref=f413e38] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f413e39]: 
+          - generic [ref=f413e40]: Cần xử lý
+          - generic [ref=f413e41]: "1"
+        - link "0132 · Thẩm định hồ sơ" [ref=f413e42] [cursor=pointer]:
+          - /url: /backoffice/specialist/verification/ORD-2026-0132
+          - generic [aria-hidden] [ref=f413e43]: 
+    - main [ref=f413e45]:
+      - generic [ref=f413e48]:
+        - generic [ref=f413e49]:
+          - link "Thẩm định y tế" [ref=f413e50] [cursor=pointer]:
+            - /url: /backoffice/specialist/verification
+          - text: /
+          - generic [ref=f413e51]: ORD-2026-0132
+        - generic [ref=f413e52]:
+          - heading "Đơn ORD-2026-0132" [level=1] [ref=f413e53]
+          - generic "Under Internal Review" [ref=f413e54]:
+            - generic [aria-hidden] [ref=f413e55]: 
+            - text: Đang thẩm định nội bộ
+          - generic [ref=f413e56]:
+            - generic [ref=f413e57]:
+              - generic [aria-hidden] [ref=f413e58]: 
+              - text: "Y tế: chờ thẩm định"
+            - generic [ref=f413e59]:
+              - generic [aria-hidden] [ref=f413e60]: 
+              - text: "Xe & lộ trình: chờ lập"
+        - generic [ref=f413e61]:
+          - generic [ref=f413e62]:
+            - generic [ref=f413e63]:
+              - heading " Chuyến đi" [level=3] [ref=f413e65]:
+                - generic [ref=f413e66]: 
+                - text: Chuyến đi
+              - generic [ref=f413e67]:
+                - generic [ref=f413e68]:
+                  - term [ref=f413e69]: Khách hàng
+                  - definition [ref=f413e70]: CLB Ngựa Phương Nam
+                - generic [ref=f413e71]:
+                  - term [ref=f413e72]: Loại chuyến
+                  - definition [ref=f413e73]: Quốc tế (Việt Nam → Lào)
+                - generic [ref=f413e74]:
+                  - term [ref=f413e75]: Ngày khởi hành
+                  - definition [ref=f413e76]: 20/11/2026
+                - generic [ref=f413e77]:
+                  - term [ref=f413e78]: Điểm đón
+                  - definition [ref=f413e79]: Kho Đồng Nai
+                - generic [ref=f413e80]:
+                  - term [ref=f413e81]: Điểm giao
+                  - definition [ref=f413e82]: Kho Viêng Chăn
+                - generic [ref=f413e83]:
+                  - term [ref=f413e84]: Người gửi
+                  - definition [ref=f413e85]:
+                    - text: CLB Ngựa Phương Nam
+                    - generic [ref=f413e86]: 0901 456 789
+                - generic [ref=f413e87]:
+                  - term [ref=f413e88]: Người nhận
+                  - definition [ref=f413e89]:
+                    - text: Trang trại Chăn nuôi & Kiểm dịch Vientiane
+                    - generic [ref=f413e90]: 0912 345 678
+                - generic [ref=f413e91]:
+                  - term [ref=f413e92]: Số ngựa
+                  - definition [ref=f413e93]: 1 con
+            - generic [ref=f413e94]:
+              - heading " Đối chiếu hồ sơ 1 ngựa" [level=3] [ref=f413e96]:
+                - generic [ref=f413e97]: 
+                - text: Đối chiếu hồ sơ 1 ngựa
+              - generic [ref=f413e99]:
+                - generic [ref=f413e100]:
+                  - generic [ref=f413e101]:
+                    - generic [ref=f413e102]: Ngọc Long
+                    - generic [ref=f413e103]: Chip VN-985216 · Appaloosa · sinh 2021
+                  - generic [ref=f413e104]: Đủ giấy, còn hạn đến ngày đi
+                - list "Tình trạng giấy tờ" [ref=f413e105]:
+                  - listitem [ref=f413e106]:
+                    - generic [aria-hidden] [ref=f413e107]: 
+                    - generic [ref=f413e108]: Hộ chiếu
+                    - generic [ref=f413e109]: Đã nộp
+                  - listitem [ref=f413e110]:
+                    - generic [aria-hidden] [ref=f413e111]: 
+                    - generic [ref=f413e112]: Sổ tiêm
+                    - generic [ref=f413e113]: Đến 02/04/2027
+                  - listitem [ref=f413e114]:
+                    - generic [aria-hidden] [ref=f413e115]: 
+                    - generic [ref=f413e116]: Xét nghiệm
+                    - generic [ref=f413e117]: Đến 23/03/2027
+                - generic "Giấy khách đã nộp" [ref=f413e118]:
+                  - generic [ref=f413e119]:
+                    - button "Xem ảnh scan.pdf" [ref=f413e120]:
+                      - generic [aria-hidden] [ref=f413e121]: 
+                    - generic [ref=f413e122]:
+                      - generic [ref=f413e123]: Hộ chiếu ngựa (FEI / National Passport)
+                      - generic [ref=f413e124]: scan.pdf · nộp 16/07/2026 15:59
+                  - generic [ref=f413e125]:
+                    - button "Xem ảnh scan.pdf" [ref=f413e126]:
+                      - generic [aria-hidden] [ref=f413e127]: 
+                    - generic [ref=f413e128]:
+                      - generic [ref=f413e129]: Sổ tiêm phòng
+                      - generic [ref=f413e130]: scan.pdf · nộp 09/09/2026 15:59 · hạn 02/04/2027
+                  - generic [ref=f413e131]:
+                    - button "Xem ảnh scan.pdf" [ref=f413e132]:
+                      - generic [aria-hidden] [ref=f413e133]: 
+                    - generic [ref=f413e134]:
+                      - generic [ref=f413e135]: Xét nghiệm EIA / Coggins
+                      - generic [ref=f413e136]: scan.pdf · nộp 14/09/2026 15:59 · hạn 23/03/2027
+                - generic [ref=f413e137]:
+                  - generic [ref=f413e138]:
+                    - text: Khách yêu cầu
+                    - generic [ref=f413e139]: 22°C
+                  - generic [ref=f413e140]: "Dinh dưỡng: Cỏ khô Timothy, yến mạch"
+                - generic [ref=f413e141]:
+                  - checkbox "Đã đối chiếu hộ chiếu, microchip VN-985216 và hạn xét nghiệm EIA/EVA" [ref=f413e142]
+                  - text: Đã đối chiếu hộ chiếu, microchip VN-985216 và hạn xét nghiệm EIA/EVA
+            - generic [ref=f413e144]:
+              - generic [ref=f413e145]:
+                - text: Chưa thể xác nhận đạt
+                - generic [ref=f413e146]: Cần tick đối chiếu cả 1 ngựa.
+              - generic [ref=f413e147]:
+                - button " Yêu cầu bổ sung" [ref=f413e148] [cursor=pointer]:
+                  - generic [ref=f413e149]: 
+                  - text: Yêu cầu bổ sung
+                - button " Xác nhận đạt y tế" [disabled] [ref=f413e150]:
+                  - generic [ref=f413e151]: 
+                  - text: Xác nhận đạt y tế
+          - complementary [ref=f413e152]:
+            - generic [ref=f413e153]:
+              - heading " Nhật ký đơn" [level=3] [ref=f413e155]:
+                - generic [ref=f413e156]: 
+                - text: Nhật ký đơn
+              - list [ref=f413e157]:
+                - listitem [ref=f413e158]:
+                  - generic [aria-hidden] [ref=f413e160]: 
+                  - generic [ref=f413e161]:
+                    - text: Tiếp nhận. Giao Nguyễn Thị Thu (kiểm dịch) và Trần Minh (điều phối)
+                    - generic [ref=f413e162]: Quản lý · 04/10/2026 10:59
+                - listitem [ref=f413e163]:
+                  - generic [aria-hidden] [ref=f413e165]: 
+                  - generic [ref=f413e166]:
+                    - text: Gửi yêu cầu đặt đơn
+                    - generic [ref=f413e167]: Trang trại Long Thành · 04/10/2026 08:59
+  - group "Ngôn ngữ" [ref=f413e168]:
+    - button "VI" [pressed] [ref=f413e170]
+    - button "EN" [ref=f413e171] [cursor=pointer]

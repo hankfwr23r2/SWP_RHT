@@ -1,0 +1,176 @@
+- generic [ref=f14e2]:
+  - banner [ref=f14e3]:
+    - generic [ref=f14e4]:
+      - link "EQ Vận chuyển Ngựa" [ref=f14e5] [cursor=pointer]:
+        - /url: /portal
+        - generic [ref=f14e6]: EQ
+        - generic [ref=f14e7]: Vận chuyển Ngựa
+      - navigation "Menu" [ref=f14e8]:
+        - link "Trang chủ" [ref=f14e9] [cursor=pointer]:
+          - /url: /portal
+        - link "Hồ sơ ngựa" [ref=f14e10] [cursor=pointer]:
+          - /url: /horses
+        - link "Đặt chuyến mới" [ref=f14e11] [cursor=pointer]:
+          - /url: /booking/route
+        - link "Đơn của tôi" [ref=f14e12] [cursor=pointer]:
+          - /url: /orders
+      - generic [ref=f14e13]:
+        - link " 1900 6868" [ref=f14e14] [cursor=pointer]:
+          - /url: tel:19006868
+          - generic [ref=f14e15]: 
+          - strong [ref=f14e16]: 1900 6868
+        - button "Thông báo" [ref=f14e18] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f14e19]: 
+        - generic "Trang trại Long Thành" [ref=f14e20]: LT
+        - button " Đăng xuất" [ref=f14e21] [cursor=pointer]:
+          - generic [ref=f14e22]: 
+          - text: Đăng xuất
+  - main [ref=f14e23]:
+    - generic [ref=f14e26]:
+      - generic [ref=f14e27]:
+        - link "Trang chủ" [ref=f14e28] [cursor=pointer]:
+          - /url: /portal
+        - text: /
+        - link "Đơn của tôi" [ref=f14e29] [cursor=pointer]:
+          - /url: /orders
+        - text: /
+        - generic [ref=f14e30]: ORD-2026-0105
+      - generic [ref=f14e31]:
+        - generic [ref=f14e32]:
+          - heading "Đơn ORD-2026-0105" [level=1] [ref=f14e33]
+          - paragraph [ref=f14e34]: Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM) · khởi hành 13/11/2026 · 3 ngựa
+        - generic "Awaiting Payment" [ref=f14e35]:
+          - generic [aria-hidden] [ref=f14e36]: 
+          - text: Chờ đặt cọc
+      - generic [ref=f14e37]:
+        - paragraph [ref=f14e38]: "Bước 4/8: Đặt cọc"
+        - list "Tiến độ đơn" [ref=f14e39]:
+          - listitem [ref=f14e40]:
+            - generic [aria-hidden] [ref=f14e42]: 
+            - generic [ref=f14e43]: Gửi đơn
+          - listitem [ref=f14e44]:
+            - generic [aria-hidden] [ref=f14e46]: 
+            - generic [ref=f14e47]: Thẩm định
+          - listitem [ref=f14e48]:
+            - generic [aria-hidden] [ref=f14e50]: 
+            - generic [ref=f14e51]: Báo giá
+          - listitem [ref=f14e52]:
+            - generic [ref=f14e53]: "4"
+            - generic [ref=f14e54]: Đặt cọc
+          - listitem [ref=f14e55]:
+            - generic [ref=f14e56]: "5"
+            - generic [ref=f14e57]: Giấy tờ
+          - listitem [ref=f14e58]:
+            - generic [ref=f14e59]: "6"
+            - generic [ref=f14e60]: Sẵn sàng
+          - listitem [ref=f14e61]:
+            - generic [ref=f14e62]: "7"
+            - generic [ref=f14e63]: Vận chuyển
+          - listitem [ref=f14e64]:
+            - generic [ref=f14e65]: "8"
+            - generic [ref=f14e66]: Quyết toán
+        - status [ref=f14e67]:
+          - generic [aria-hidden] [ref=f14e68]: 
+          - generic [ref=f14e69]:
+            - generic [ref=f14e70]: Việc của bạn bây giờ
+            - heading "Đặt cọc 30% trong 37 giờ 59 phút" [level=2] [ref=f14e71]
+            - paragraph [ref=f14e72]: Báo giá có hiệu lực đến 06/10/2026 00:09. Quá hạn, xe và nhân sự được nhả cho đơn khác.
+            - link "Đặt cọc 30% " [ref=f14e73] [cursor=pointer]:
+              - /url: "#viec-cua-ban"
+              - text: Đặt cọc 30%
+              - generic [ref=f14e74]: 
+        - generic [ref=f14e76]:
+          - heading " Đặt cọc giữ xe" [level=3] [ref=f14e78]:
+            - generic [ref=f14e79]: 
+            - text: Đặt cọc giữ xe
+          - generic [ref=f14e80]:
+            - generic [ref=f14e81]: Số tiền cần đặt cọc (30%)
+            - strong [ref=f14e82]: 2,774,000 ₫
+          - generic "Thông tin chuyển khoản" [ref=f14e83]:
+            - generic [ref=f14e84]:
+              - generic [ref=f14e85]: Ngân hàng
+              - generic [ref=f14e86]: Vietcombank
+            - generic [ref=f14e87]:
+              - generic [ref=f14e88]: Số tài khoản
+              - generic [ref=f14e89]: 0071 000 123 456
+            - generic [ref=f14e90]:
+              - generic [ref=f14e91]: Chủ tài khoản
+              - generic [ref=f14e92]: CONG TY TNHH EQUINEZ LOGISTICS
+            - generic [ref=f14e93]:
+              - generic [ref=f14e94]: Nội dung
+              - generic [ref=f14e95]: ORD-2026-0105 COC
+          - group [ref=f14e96]:
+            - generic "Xem điều khoản vận chuyển" [ref=f14e97] [cursor=pointer]
+          - generic [ref=f14e98]:
+            - checkbox "Tôi đã đọc và đồng ý điều khoản vận chuyển, đồng ý đặt cọc 2,774,000 ₫." [ref=f14e99]
+            - generic [ref=f14e100]: Tôi đã đọc và đồng ý điều khoản vận chuyển, đồng ý đặt cọc 2,774,000 ₫.
+          - button "Thanh toán cọc" [disabled] [ref=f14e101]
+          - paragraph [ref=f14e102]: "Bản thử nghiệm: bấm thanh toán là ghi nhận đã nhận cọc."
+        - tablist "Chi tiết đơn" [ref=f14e103]:
+          - tab "Hành trình" [ref=f14e104] [cursor=pointer]
+          - tab "Thanh toán" [selected] [ref=f14e105] [cursor=pointer]
+          - tab "Thông tin đơn" [ref=f14e106] [cursor=pointer]
+        - generic [ref=f14e107]:
+          - heading " Báo giá" [level=3] [ref=f14e109]:
+            - generic [ref=f14e110]: 
+            - text: Báo giá
+          - generic [ref=f14e111]:
+            - table [ref=f14e112]:
+              - caption [ref=f14e113]: Chi phí cố định trọn gói
+              - rowgroup [ref=f14e114]:
+                - row [ref=f14e115]:
+                  - cell "Cước vận chuyển nguyên chuyến Xe Medium (4 đến 6 ngăn) · 30 km" [ref=f14e116]:
+                    - generic [ref=f14e117]: Cước vận chuyển nguyên chuyến
+                    - generic [ref=f14e118]: Xe Medium (4 đến 6 ngăn) · 30 km
+                  - cell "5,557,000 ₫" [ref=f14e119]
+                - row [ref=f14e120]:
+                  - cell "Nhân sự kỹ thuật, 01 tài xế + 01 hộ tống 1 ngày" [ref=f14e121]:
+                    - generic [ref=f14e122]: Nhân sự kỹ thuật, 01 tài xế + 01 hộ tống
+                    - generic [ref=f14e123]: 1 ngày
+                  - cell "1,890,000 ₫" [ref=f14e124]
+                - row [ref=f14e125]:
+                  - cell "Nhiên liệu và BOT Ước tính theo lộ trình 30 km, đã gồm dự phòng" [ref=f14e126]:
+                    - generic [ref=f14e127]: Nhiên liệu và BOT
+                    - generic [ref=f14e128]: Ước tính theo lộ trình 30 km, đã gồm dự phòng
+                  - cell "298,000 ₫" [ref=f14e129]
+                - row [ref=f14e130]:
+                  - cell "Khoang đơn mở rộng 1 ngựa" [ref=f14e131]:
+                    - generic [ref=f14e132]: Khoang đơn mở rộng
+                    - generic [ref=f14e133]: 1 ngựa
+                  - cell "1,500,000 ₫" [ref=f14e134]
+                - row [ref=f14e135]:
+                  - cell "Thủ tục kiểm dịch và hải quan Nhà xe làm giấy kiểm dịch trong nước" [ref=f14e136]:
+                    - generic [ref=f14e137]: Thủ tục kiểm dịch và hải quan
+                    - generic [ref=f14e138]: Nhà xe làm giấy kiểm dịch trong nước
+                  - cell "Đã gồm" [ref=f14e139]
+            - generic [ref=f14e140]:
+              - generic [ref=f14e141]:
+                - generic [ref=f14e142]: Tổng giá trị
+                - generic [ref=f14e143]: 9,245,000 ₫
+              - generic [ref=f14e144]: Chưa gồm VAT. Giá cố định, nhiên liệu và phí cầu đường đã nằm trong báo giá.
+              - generic [ref=f14e145]:
+                - generic [ref=f14e146]: Đặt cọc để nhận vận đơn (30%)
+                - generic [ref=f14e147]: 2,774,000 ₫
+              - generic [ref=f14e148]:
+                - generic [ref=f14e149]: Thanh toán còn lại vào ngày bốc ngựa (70%)
+                - generic [ref=f14e150]: 6,471,000 ₫
+            - generic [ref=f14e151]:
+              - generic [ref=f14e152]:
+                - generic [aria-hidden] [ref=f14e153]: 
+                - text: "Không phụ thu ngoài phiếu: chỉ phát sinh thêm khi có sự cố liên quan đến ngựa hoặc dịch vụ bạn chọn thêm (xem chính sách chi phí sự cố)."
+              - generic [ref=f14e154]:
+                - generic [aria-hidden] [ref=f14e155]: 
+                - text: Báo giá có hiệu lực đến 06/10/2026 00:09.
+        - group [ref=f14e156]:
+          - generic " Ai chịu chi phí khi có sự cố? " [ref=f14e157] [cursor=pointer]:
+            - generic [ref=f14e158]: 
+            - text: Ai chịu chi phí khi có sự cố? 
+        - paragraph [ref=f14e159]:
+          - text: Cần hỗ trợ? Gọi
+          - link "1900 6868" [ref=f14e160] [cursor=pointer]:
+            - /url: tel:19006868
+          - text: .
+  - contentinfo [ref=f14e161]: © 2026 Vận chuyển Ngựa đua · Việt Nam · Lào · Campuchia · Hotline 1900 6868
+  - group "Ngôn ngữ" [ref=f14e162]:
+    - button "VI" [pressed] [ref=f14e164]
+    - button "EN" [ref=f14e165] [cursor=pointer]

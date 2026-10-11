@@ -1,0 +1,25 @@
+.form-group:has(> .pp-btn) { min-width: 0; }
+.pp-btn { min-width: 0; max-width: 100%; overflow: hidden; display: flex; align-items: center; gap: 10px; width: 100%; min-height: 46px; padding: 10px 14px; border: 1.5px solid var(--line); border-radius: 12px; background: #fff; font: inherit; text-align: left; cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s; }
+.pp-btn:hover, .pp-btn:focus-visible { border-color: #ea580c; box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15); outline: none; }
+.pp-btn.invalid { border-color: #dc2626; }
+.pp-btn i { color: #ea580c; }
+.pp-btn span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pp-btn .pp-ph { color: var(--muted); }
+.pp-btn small { color: #ea580c; font-weight: 600; }
+.pp-body { display: grid; grid-template-columns: 300px 1fr; gap: 14px; height: min(60vh, 520px); }
+.pp-side { display: grid; grid-template-rows: auto 1fr; gap: 10px; min-height: 0; }
+.pp-search { position: relative; }
+.pp-search i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+.pp-search input { width: 100%; padding: 10px 12px 10px 36px; border: 1.5px solid var(--line); border-radius: 10px; font: inherit; }
+.pp-list { display: grid; align-content: start; gap: 6px; overflow-y: auto; padding-right: 2px; }
+.pp-item { display: grid; gap: 2px; width: 100%; padding: 9px 11px; border: 1.5px solid var(--line); border-radius: 10px; background: #fff; font: inherit; text-align: left; cursor: pointer; transition: all 0.15s; }
+.pp-item:hover { border-color: #ea580c; transform: translateX(2px); }
+.pp-item.on { border-color: #ea580c; background: #fff7ed; }
+.pp-item b { font-size: 0.88rem; color: var(--navy); }
+.pp-item small { color: var(--muted); font-size: 0.76rem; }
+.pp-map { border-radius: 12px; overflow: hidden; border: 1px solid var(--line); min-height: 280px; }
+.pp-pin { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: #ea580c; color: #fff; box-shadow: 0 3px 8px rgba(15, 23, 42, 0.4); border: 2px solid #fff; }
+.pp-pin i { transform: rotate(45deg); font-size: 0.75rem; }
+.pp-pin.pp-on { background: #059669; width: 38px; height: 38px; }
+.pp-empty { padding: 14px; text-align: center; color: var(--muted); font-size: 0.86rem; }
+@media (max-width: 760px) { .pp-body { grid-template-columns: 1fr; height: auto; } .pp-map { height: 260px; order: -1; } .pp-list { max-height: 220px; } }

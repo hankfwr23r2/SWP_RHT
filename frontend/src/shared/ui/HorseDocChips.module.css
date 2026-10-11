@@ -1,0 +1,6 @@
+.list { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 0.78rem; border: 1px solid transparent; }
+.chip b { font-weight: 700; }
+.ok { background: var(--green-soft); color: #065f46; border-color: #a7f3d0; }
+.expired { background: var(--amber-soft); color: var(--amber); border-color: #fde68a; }
+.missing { background: var(--red-soft); color: #991b1b; border-color: #fecaca; }

@@ -1,0 +1,257 @@
+- generic [ref=f65e3]:
+  - banner [ref=f65e4]:
+    - link "TM Trần Minh ops@equine.vn" [ref=f65e5] [cursor=pointer]:
+      - /url: /backoffice/coordinator/fleet-plan
+      - generic [ref=f65e6]: TM
+      - generic [ref=f65e7]:
+        - generic [ref=f65e8]: Trần Minh
+        - generic [ref=f65e9]: ops@equine.vn
+    - generic "Đường dẫn" [ref=f65e10]:
+      - generic [aria-hidden] [ref=f65e11]: 
+      - generic [ref=f65e12]:
+        - generic [aria-hidden] [ref=f65e13]: 
+        - text: Sự cố
+    - search [ref=f65e14]:
+      - generic [aria-hidden] [ref=f65e15]: 
+      - textbox "Tìm đơn hàng" [ref=f65e16]:
+        - /placeholder: Tìm đơn hàng, khách hàng…
+    - generic [ref=f65e17]:
+      - button "Thông báo" [ref=f65e19] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f65e20]: 
+      - button "Đăng xuất" [ref=f65e21] [cursor=pointer]:
+        - generic [ref=f65e22]: 
+  - generic [ref=f65e23]:
+    - complementary "Menu" [ref=f65e24]:
+      - generic [ref=f65e25]:
+        - generic [ref=f65e26]: Menu
+        - button "Thu gọn menu" [ref=f65e27] [cursor=pointer]:
+          - generic [ref=f65e28]: 
+      - navigation [ref=f65e29]:
+        - link "Xe và lộ trình 3 đơn chờ" [ref=f65e30] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan
+          - generic [aria-hidden] [ref=f65e31]: 
+          - generic [ref=f65e32]: Xe và lộ trình
+          - generic "3 đơn chờ" [ref=f65e33]: "3"
+        - link "Giấy cho tài xế 6 đơn chờ" [ref=f65e34] [cursor=pointer]:
+          - /url: /backoffice/coordinator/dispatch
+          - generic [aria-hidden] [ref=f65e35]: 
+          - generic [ref=f65e36]: Giấy cho tài xế
+          - generic "6 đơn chờ" [ref=f65e37]: "6"
+        - link "Giám sát" [ref=f65e38] [cursor=pointer]:
+          - /url: /backoffice/coordinator/monitoring
+          - generic [aria-hidden] [ref=f65e39]: 
+        - link "Sự cố 1 đơn chờ" [ref=f65e41] [cursor=pointer]:
+          - /url: /backoffice/coordinator/incidents
+          - generic [aria-hidden] [ref=f65e42]: 
+          - generic [ref=f65e43]: Sự cố
+          - generic "1 đơn chờ" [ref=f65e44]: "1"
+        - link "Đội xe" [ref=f65e45] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet
+          - generic [aria-hidden] [ref=f65e46]: 
+      - generic [ref=f65e48]:
+        - button "Cần xử lý 5" [expanded] [ref=f65e49] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f65e50]: 
+          - generic [ref=f65e51]: Cần xử lý
+          - generic [ref=f65e52]: "5"
+        - link "0125 · Lập phương án sự cố" [ref=f65e53] [cursor=pointer]:
+          - /url: /backoffice/coordinator/incidents
+          - generic [aria-hidden] [ref=f65e54]: 
+        - link "0102 · Chốt xe, lộ trình" [ref=f65e56] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0102
+          - generic [aria-hidden] [ref=f65e57]: 
+        - link "0131 · Chốt xe, lộ trình" [ref=f65e59] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0131
+          - generic [aria-hidden] [ref=f65e60]: 
+        - link "0132 · Chốt xe, lộ trình" [ref=f65e62] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0132
+          - generic [aria-hidden] [ref=f65e63]: 
+        - link "0113 · Nhập bộ giấy" [ref=f65e65] [cursor=pointer]:
+          - /url: /backoffice/coordinator/dispatch/ORD-2026-0113
+          - generic [aria-hidden] [ref=f65e66]: 
+    - main [ref=f65e68]:
+      - generic [ref=f65e69]:
+        - generic [ref=f65e71]:
+          - generic [ref=f65e73]:
+            - heading "Xử lý sự cố" [level=1] [ref=f65e74]
+            - paragraph [ref=f65e75]: Tài xế hoặc hộ tống bấm SOS thì sự cố hiện ở đây. Lập phương án và trình Quản lý duyệt.
+          - generic [ref=f65e76]:
+            - tablist "Trạng thái" [ref=f65e77]:
+              - tab "Cần lập phương án 1" [selected] [ref=f65e78] [cursor=pointer]:
+                - text: Cần lập phương án
+                - generic [ref=f65e79]: "1"
+              - tab "Chờ Quản lý duyệt 1" [ref=f65e80] [cursor=pointer]:
+                - text: Chờ Quản lý duyệt
+                - generic [ref=f65e81]: "1"
+              - tab "Đang xử lý 1" [ref=f65e82] [cursor=pointer]:
+                - text: Đang xử lý
+                - generic [ref=f65e83]: "1"
+              - tab "Đã xử lý xong 4" [ref=f65e84] [cursor=pointer]:
+                - text: Đã xử lý xong
+                - generic [ref=f65e85]: "4"
+            - generic [ref=f65e86]:
+              - generic [ref=f65e87]:
+                - generic [aria-hidden] [ref=f65e88]: 
+                - textbox [ref=f65e89]:
+                  - /placeholder: Tìm theo mã đơn, khách hàng, tuyến…
+              - generic [ref=f65e90]:
+                - text: Báo lúc
+                - textbox "Báo lúc từ ngày" [ref=f65e91]
+                - text: →
+                - textbox "Báo lúc đến ngày" [ref=f65e92]
+            - table [ref=f65e94]:
+              - rowgroup [ref=f65e95]:
+                - row [ref=f65e96]:
+                  - columnheader "Mã đơn" [ref=f65e97]
+                  - columnheader "Khách hàng" [ref=f65e98]
+                  - columnheader "Tuyến" [ref=f65e99]
+                  - columnheader "Sự cố" [ref=f65e100]
+                  - columnheader "Báo lúc" [ref=f65e101]
+                  - columnheader "Ghi chú" [ref=f65e102]
+                  - columnheader "Thao tác" [ref=f65e103]
+              - rowgroup [ref=f65e104]:
+                - row [ref=f65e105]:
+                  - cell "ORD-2026-0125 Trong nước" [ref=f65e106]:
+                    - text: ORD-2026-0125
+                    - generic [ref=f65e107]: Trong nước
+                  - cell "CLB Ngựa Phương Nam" [ref=f65e108]
+                  - cell "Kho Đồng Nai → Kho Long An" [ref=f65e109]
+                  - cell "Sức khỏe ngựa xe TRP-0125-1" [ref=f65e111]:
+                    - text: Sức khỏe ngựa
+                    - generic [ref=f65e112]: xe TRP-0125-1
+                  - cell "06/10/2026 14:30" [ref=f65e113]
+                  - cell "Ngựa đau bụng, đổ mồ hôi" [ref=f65e114]
+                  - cell [ref=f65e116]:
+                    - button "Lập phương án" [active] [ref=f65e117] [cursor=pointer]
+            - generic [ref=f65e118]: Hiển thị 1 đơn hàng
+        - dialog [ref=f65e125]:
+          - generic [ref=f65e126]:
+            - generic [ref=f65e127]:
+              - heading "Lập phương án INC-0125-1" [level=3] [ref=f65e128]
+              - generic [ref=f65e129]: ORD-2026-0125 · Sức khỏe ngựa · xe TRP-0125-1
+            - button "Đóng" [ref=f65e130] [cursor=pointer]:
+              - generic [ref=f65e131]: 
+          - generic [ref=f65e132]:
+            - generic [ref=f65e133]:
+              - application "Bản đồ sự cố" [ref=f65e134]:
+                - generic:
+                  - generic:
+                    - button "✓" [ref=f65e135] [cursor=pointer]
+                    - button "2" [ref=f65e137] [cursor=pointer]
+                    - button "3" [ref=f65e139] [cursor=pointer]
+                    - button "4" [ref=f65e141] [cursor=pointer]
+                    - button "5" [ref=f65e143] [cursor=pointer]
+                    - button "Trạm nghỉ Mộc Bài" [ref=f65e145] [cursor=pointer]
+                    - button "Trạm nghỉ Svay Rieng" [ref=f65e147] [cursor=pointer]
+                    - button "Trạm nghỉ Phan Thiết" [ref=f65e149] [cursor=pointer]
+                    - button "Trạm nghỉ Neak Loeung" [ref=f65e151] [cursor=pointer]
+                    - button "Trạm nghỉ Kampong Cham" [ref=f65e153] [cursor=pointer]
+                    - button "Trạm nghỉ Tịnh Biên" [ref=f65e155] [cursor=pointer]
+                    - button "Trạm nghỉ Phnom Penh" [ref=f65e157] [cursor=pointer]
+                    - button "Trạm nghỉ Buôn Ma Thuột" [ref=f65e159] [cursor=pointer]
+                    - button "Trạm nghỉ Nha Trang" [ref=f65e161] [cursor=pointer]
+                    - button "Trạm nghỉ Tuy Hòa" [ref=f65e163] [cursor=pointer]
+                    - button "Trạm nghỉ Quy Nhơn" [ref=f65e165] [cursor=pointer]
+                    - button "Trạm nghỉ Đà Nẵng" [ref=f65e167] [cursor=pointer]
+                    - button "Trạm nghỉ Huế" [ref=f65e169] [cursor=pointer]
+                    - button "Trạm nghỉ Lao Bảo" [ref=f65e171] [cursor=pointer]
+                    - button "Trạm nghỉ Đông Hà" [ref=f65e173] [cursor=pointer]
+                    - button "Trạm nghỉ Savannakhet" [ref=f65e175] [cursor=pointer]
+                    - button "Trạm nghỉ Thakhek" [ref=f65e177] [cursor=pointer]
+                    - button "Trạm nghỉ Hà Tĩnh" [ref=f65e179] [cursor=pointer]
+                    - button "Trạm nghỉ Cầu Treo" [ref=f65e181] [cursor=pointer]
+                    - button "Trạm nghỉ Vinh" [ref=f65e183] [cursor=pointer]
+                    - button "Trạm nghỉ Viêng Chăn" [ref=f65e185] [cursor=pointer]
+                    - button "A" [ref=f65e187] [cursor=pointer]
+                    - button "B" [ref=f65e189] [cursor=pointer]
+                    - button "!" [ref=f65e191] [cursor=pointer]
+                  - generic:
+                    - tooltip "Vị trí xe lúc báo sự cố"
+                - generic:
+                  - generic [ref=f65e193]:
+                    - button "Zoom in" [ref=f65e194] [cursor=pointer]: +
+                    - button "Zoom out" [ref=f65e195] [cursor=pointer]: −
+                  - generic [ref=f65e196]:
+                    - link "Leaflet" [ref=f65e197] [cursor=pointer]:
+                      - /url: https://leafletjs.com
+                    - text: "| © OpenStreetMap"
+              - generic [ref=f65e202]:
+                - generic [ref=f65e203]:
+                  - generic [ref=f65e204]: 
+                  - generic [ref=f65e206]:
+                    - generic [ref=f65e207]: Sức khỏe ngựa
+                    - generic [ref=f65e208]: Xe TRP-0125-1 · báo 06/10/2026 14:30
+                - paragraph [ref=f65e209]: Lập lại lộ trình đưa ngựa đến trạm nghỉ gần nhất.
+                - generic [ref=f65e210]:
+                  - heading "Chọn trạm nghỉ gần chỗ xe" [level=4] [ref=f65e211]
+                  - generic [ref=f65e212]:
+                    - generic [ref=f65e213]:
+                      - button "1 Trạm nghỉ Biên Hòa Đồng Nai · cách xe 19 km (đường chim bay) Gần nhất" [ref=f65e214] [cursor=pointer]:
+                        - generic [ref=f65e215]:
+                          - generic [ref=f65e216]: "1"
+                          - text: Trạm nghỉ Biên Hòa
+                        - generic [ref=f65e217]: Đồng Nai · cách xe 19 km (đường chim bay)
+                        - generic [ref=f65e218]: Gần nhất
+                      - button "2 Trạm nghỉ Củ Chi TP.HCM · cách xe 27 km (đường chim bay)" [ref=f65e219] [cursor=pointer]:
+                        - generic [ref=f65e220]:
+                          - generic [ref=f65e221]: "2"
+                          - text: Trạm nghỉ Củ Chi
+                        - generic [ref=f65e222]: TP.HCM · cách xe 27 km (đường chim bay)
+                      - button "3 Trạm nghỉ Đức Hòa Long An · cách xe 33 km (đường chim bay)" [ref=f65e223] [cursor=pointer]:
+                        - generic [ref=f65e224]:
+                          - generic [ref=f65e225]: "3"
+                          - text: Trạm nghỉ Đức Hòa
+                        - generic [ref=f65e226]: Long An · cách xe 33 km (đường chim bay)
+                      - button "4 Trạm nghỉ Long Thành Đồng Nai · cách xe 33 km (đường chim bay)" [ref=f65e227] [cursor=pointer]:
+                        - generic [ref=f65e228]:
+                          - generic [ref=f65e229]: "4"
+                          - text: Trạm nghỉ Long Thành
+                        - generic [ref=f65e230]: Đồng Nai · cách xe 33 km (đường chim bay)
+                      - button "5 Trạm nghỉ Trảng Bàng Tây Ninh · cách xe 42 km (đường chim bay)" [ref=f65e231] [cursor=pointer]:
+                        - generic [ref=f65e232]:
+                          - generic [ref=f65e233]: "5"
+                          - text: Trạm nghỉ Trảng Bàng
+                        - generic [ref=f65e234]: Tây Ninh · cách xe 42 km (đường chim bay)
+                    - button "Xem tất cả 26 trạm nghỉ" [ref=f65e235] [cursor=pointer]
+                - generic [ref=f65e236]:
+                  - generic [ref=f65e237]:
+                    - text: "Đưa ngựa tới trạm:"
+                    - generic [ref=f65e238]: 24.7 km · 23 phút
+                  - generic [ref=f65e239]: Theo đường bộ
+                - generic [ref=f65e240]:
+                  - heading "Thời gian nghỉ ngựa tại trạm" [level=4] [ref=f65e241]
+                  - generic [ref=f65e242]:
+                    - button "30 phút" [ref=f65e243] [cursor=pointer]
+                    - button "45 phút" [ref=f65e244] [cursor=pointer]
+                    - button "60 phút" [ref=f65e245] [cursor=pointer]
+                    - button "90 phút" [ref=f65e246] [cursor=pointer]
+                    - button "120 phút" [ref=f65e247] [cursor=pointer]
+              - generic [ref=f65e248]:
+                - generic [ref=f65e249]:
+                  - generic [ref=f65e250]: "!"
+                  - text: Vị trí xe
+                - generic [ref=f65e251]:
+                  - generic [ref=f65e252] [cursor=pointer]
+                  - text: Trạm nghỉ
+                - generic [ref=f65e253]:
+                  - generic [ref=f65e254]: A
+                  - text: Đón
+                - generic [ref=f65e255]:
+                  - generic [ref=f65e256]: B
+                  - text: Trả
+            - generic [ref=f65e257]:
+              - generic [ref=f65e258]:
+                - generic [ref=f65e259]: Giờ đến đích mới
+                - textbox "Giờ đến đích mới" [ref=f65e260]: 2026-10-06T18:50
+                - generic [ref=f65e261]: Hệ thống gợi ý theo đường vừa vẽ và thời gian nghỉ. Chậm 0 phút so với dự kiến cũ (06/10/2026 19:15).
+              - generic [ref=f65e262]:
+                - generic [ref=f65e263]: Ghi chú
+                - textbox "Ghi chú" [ref=f65e264]:
+                  - /placeholder: Số điện thoại liên hệ, lưu ý cho tài xế
+          - generic [ref=f65e265]:
+            - button "Đóng" [ref=f65e266] [cursor=pointer]
+            - button " Trình Quản lý duyệt" [ref=f65e267] [cursor=pointer]:
+              - generic [ref=f65e268]: 
+              - text: Trình Quản lý duyệt
+  - group "Ngôn ngữ" [ref=f65e120]:
+    - button "VI" [pressed] [ref=f65e122]
+    - button "EN" [ref=f65e123] [cursor=pointer]

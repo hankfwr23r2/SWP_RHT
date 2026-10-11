@@ -1,0 +1,30 @@
+- generic [ref=f1e3]:
+  - generic [ref=f1e4]:
+    - link "EQ Vận chuyển Ngựa" [ref=f1e5] [cursor=pointer]:
+      - /url: /
+      - generic [ref=f1e6]: EQ
+      - text: Vận chuyển Ngựa
+    - generic [ref=f1e7]:
+      - heading "Hệ thống Quản lý Vận hành" [level=1] [ref=f1e8]
+      - paragraph [ref=f1e9]: Nền tảng kiểm soát và điều phối toàn diện lộ trình vận chuyển ngựa đua an toàn, tiêu chuẩn.
+    - generic [ref=f1e10]: © 2026 Vận chuyển Ngựa đua. SWP Project.
+  - generic [ref=f1e12]:
+    - link " Về Trang chủ" [ref=f1e14] [cursor=pointer]:
+      - /url: /
+      - generic [ref=f1e15]: 
+      - text: Về Trang chủ
+    - heading "Cổng Quản lý" [level=2] [ref=f1e16]
+    - paragraph [ref=f1e17]: Vui lòng đăng nhập với tài khoản cấp quản lý
+    - generic [ref=f1e18]:
+      - generic [ref=f1e19]:
+        - generic [ref=f1e20]: Tên đăng nhập / Email
+        - textbox "Tên đăng nhập / Email" [ref=f1e21]:
+          - /placeholder: manager@equine.vn
+      - generic [ref=f1e22]:
+        - generic [ref=f1e23]: Mật khẩu
+        - textbox "Mật khẩu" [ref=f1e24]:
+          - /placeholder: ••••••••
+      - paragraph [ref=f1e25]:
+        - link "Quên mật khẩu?" [ref=f1e26] [cursor=pointer]:
+          - /url: "#"
+      - button "Đăng nhập Quản lý" [ref=f1e27] [cursor=pointer]

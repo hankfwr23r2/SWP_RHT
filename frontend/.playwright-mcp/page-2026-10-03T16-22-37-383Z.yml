@@ -1,0 +1,64 @@
+- generic [ref=f7e2]:
+  - banner [ref=f7e3]:
+    - generic [ref=f7e4]:
+      - link "EQ Vận chuyển Ngựa Quản lý" [ref=f7e5] [cursor=pointer]:
+        - /url: /backoffice/manager
+        - generic [ref=f7e6]: EQ
+        - generic [ref=f7e7]: Vận chuyển Ngựa
+        - generic [ref=f7e8]: Quản lý
+      - navigation "Menu" [ref=f7e9]:
+        - link "Bảng điều khiển" [ref=f7e10] [cursor=pointer]:
+          - /url: /backoffice/manager
+        - link "Tiếp nhận đơn" [ref=f7e11] [cursor=pointer]:
+          - /url: /backoffice/manager/intake
+        - link "Duyệt báo giá" [ref=f7e12] [cursor=pointer]:
+          - /url: /backoffice/manager/approvals
+        - link "Giấy tờ chuyến đi" [ref=f7e13] [cursor=pointer]:
+          - /url: /backoffice/manager/documents
+        - link "Nhân sự" [ref=f7e14] [cursor=pointer]:
+          - /url: /backoffice/manager/staff
+        - link "Báo cáo Chuyến đi" [ref=f7e15] [cursor=pointer]:
+          - /url: /backoffice/manager/trip-reports
+        - link "Sự cố & Chi Phí" [ref=f7e16] [cursor=pointer]:
+          - /url: /backoffice/manager/incidents
+      - generic [ref=f7e17]:
+        - generic "Quản lý" [ref=f7e18]: QL
+        - button " Đăng xuất" [ref=f7e19] [cursor=pointer]:
+          - generic [ref=f7e20]: 
+          - text: Đăng xuất
+  - main [ref=f7e21]:
+    - generic [ref=f7e24]:
+      - generic [ref=f7e25]:
+        - heading "Theo dõi giấy tờ chuyến đi" [level=1] [ref=f7e26]
+        - paragraph [ref=f7e27]: Specialist làm giấy kiểm dịch và hải quan cho mọi đơn đã đặt cọc. Quá 18:00 ngày trước ngày khởi hành mà chưa xong thì đơn hiện cảnh báo ở đây. Khách không bị tính phí vì việc này.
+      - group "Lọc đơn" [ref=f7e28]:
+        - button "Quá hạn 0" [pressed] [ref=f7e29] [cursor=pointer]:
+          - text: Quá hạn
+          - generic [ref=f7e30]: "0"
+        - button "Đang làm 6" [ref=f7e31] [cursor=pointer]:
+          - text: Đang làm
+          - generic [ref=f7e32]: "6"
+        - button "Đã xong 9" [ref=f7e33] [cursor=pointer]:
+          - text: Đã xong
+          - generic [ref=f7e34]: "9"
+      - table [ref=f7e36]:
+        - rowgroup [ref=f7e37]:
+          - row [ref=f7e38]:
+            - columnheader "Mã đơn" [ref=f7e39]
+            - columnheader "Khách hàng" [ref=f7e40]
+            - columnheader "Tuyến" [ref=f7e41]
+            - columnheader "Khởi hành" [ref=f7e42]
+            - columnheader "Mốc 18:00 D-1" [ref=f7e43]
+            - columnheader "Tiến độ" [ref=f7e44]
+            - columnheader "Phụ trách" [ref=f7e45]
+            - columnheader "Trạng thái" [ref=f7e46]
+        - rowgroup [ref=f7e47]:
+          - row [ref=f7e48]:
+            - cell " Không có đơn nào ở mục này." [ref=f7e49]:
+              - generic [ref=f7e50]:
+                - generic [ref=f7e51]: 
+                - text: Không có đơn nào ở mục này.
+  - contentinfo [ref=f7e52]: © 2026 Vận chuyển Ngựa đua. SWP Project.
+  - group "Ngôn ngữ" [ref=f7e53]:
+    - button "VI" [pressed] [ref=f7e55]
+    - button "EN" [ref=f7e56] [cursor=pointer]

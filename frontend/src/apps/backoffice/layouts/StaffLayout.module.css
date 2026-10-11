@@ -1,0 +1,2 @@
+/* Tài xế, hộ tống: giao diện di động */
+.mobileMain { max-width: 960px; margin: 0 auto; padding: 16px; min-height: calc(100vh - 64px); background: var(--bg-page); }

@@ -1,0 +1,171 @@
+- generic [ref=f17e2]:
+  - banner [ref=f17e3]:
+    - generic [ref=f17e4]:
+      - link "EQ Vận chuyển Ngựa" [ref=f17e5] [cursor=pointer]:
+        - /url: /portal
+        - generic [ref=f17e6]: EQ
+        - generic [ref=f17e7]: Vận chuyển Ngựa
+      - navigation "Menu" [ref=f17e8]:
+        - link "Trang chủ" [ref=f17e9] [cursor=pointer]:
+          - /url: /portal
+        - link "Hồ sơ ngựa" [ref=f17e10] [cursor=pointer]:
+          - /url: /horses
+        - link "Đặt chuyến mới" [ref=f17e11] [cursor=pointer]:
+          - /url: /booking/route
+        - link "Đơn của tôi" [ref=f17e12] [cursor=pointer]:
+          - /url: /orders
+      - generic [ref=f17e13]:
+        - link " 1900 6868" [ref=f17e14] [cursor=pointer]:
+          - /url: tel:19006868
+          - generic [ref=f17e15]: 
+          - strong [ref=f17e16]: 1900 6868
+        - button "Thông báo" [ref=f17e18] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f17e19]: 
+        - generic "Trang trại Long Thành" [ref=f17e20]: LT
+        - button " Đăng xuất" [ref=f17e21] [cursor=pointer]:
+          - generic [ref=f17e22]: 
+          - text: Đăng xuất
+  - main [ref=f17e23]:
+    - generic [ref=f17e26]:
+      - generic [ref=f17e27]:
+        - link "Trang chủ" [ref=f17e28] [cursor=pointer]:
+          - /url: /portal
+        - text: /
+        - link "Đơn của tôi" [ref=f17e29] [cursor=pointer]:
+          - /url: /orders
+        - text: /
+        - generic [ref=f17e30]: ORD-2026-0103
+      - generic [ref=f17e31]:
+        - generic [ref=f17e32]:
+          - heading "Đơn ORD-2026-0103" [level=1] [ref=f17e33]
+          - paragraph [ref=f17e34]: Kho Bình Dương → Kho Đồng Nai · khởi hành 23/11/2026 · 1 ngựa
+        - generic "Under Internal Review" [ref=f17e35]:
+          - generic [aria-hidden] [ref=f17e36]: 
+          - text: Đang thẩm định
+      - generic [ref=f17e37]:
+        - paragraph [ref=f17e38]: "Bước 2/8: Thẩm định"
+        - list "Tiến độ đơn" [ref=f17e39]:
+          - listitem [ref=f17e40]:
+            - generic [aria-hidden] [ref=f17e42]: 
+            - generic [ref=f17e43]: Gửi đơn
+          - listitem [ref=f17e44]:
+            - generic [ref=f17e45]: "2"
+            - generic [ref=f17e46]: Thẩm định
+          - listitem [ref=f17e47]:
+            - generic [ref=f17e48]: "3"
+            - generic [ref=f17e49]: Báo giá
+          - listitem [ref=f17e50]:
+            - generic [ref=f17e51]: "4"
+            - generic [ref=f17e52]: Đặt cọc
+          - listitem [ref=f17e53]:
+            - generic [ref=f17e54]: "5"
+            - generic [ref=f17e55]: Giấy tờ
+          - listitem [ref=f17e56]:
+            - generic [ref=f17e57]: "6"
+            - generic [ref=f17e58]: Sẵn sàng
+          - listitem [ref=f17e59]:
+            - generic [ref=f17e60]: "7"
+            - generic [ref=f17e61]: Vận chuyển
+          - listitem [ref=f17e62]:
+            - generic [ref=f17e63]: "8"
+            - generic [ref=f17e64]: Quyết toán
+        - status [ref=f17e65]:
+          - generic [aria-hidden] [ref=f17e66]: 
+          - generic [ref=f17e67]:
+            - generic [ref=f17e68]: Việc của bạn bây giờ
+            - heading "Cần bạn bổ sung hồ sơ ngựa" [level=2] [ref=f17e69]
+            - paragraph [ref=f17e70]: Phiếu xét nghiệm EIA bị mờ, không đọc được ngày lấy mẫu. Vui lòng tải lại bản rõ nét.
+            - link "Bổ sung hồ sơ " [ref=f17e71] [cursor=pointer]:
+              - /url: "#viec-cua-ban"
+              - text: Bổ sung hồ sơ
+              - generic [ref=f17e72]: 
+        - generic [ref=f17e74]:
+          - heading " Hồ sơ cần bổ sung" [level=3] [ref=f17e76]:
+            - generic [ref=f17e77]: 
+            - text: Hồ sơ cần bổ sung
+          - generic [ref=f17e78]: "H-003: Xét nghiệm EIA / Coggins"
+          - paragraph [ref=f17e81]: Cập nhật xong các giấy trên, bấm gửi lại để Kiểm dịch viên kiểm tra tiếp.
+          - button " Đã bổ sung, gửi lại" [ref=f17e82] [cursor=pointer]:
+            - generic [ref=f17e83]: 
+            - text: Đã bổ sung, gửi lại
+        - tablist "Chi tiết đơn" [ref=f17e84]:
+          - tab "Thông tin đơn" [selected] [ref=f17e85] [cursor=pointer]
+        - generic [ref=f17e86]:
+          - heading " Chuyến đi" [level=3] [ref=f17e88]:
+            - generic [ref=f17e89]: 
+            - text: Chuyến đi
+          - generic [ref=f17e90]:
+            - generic [ref=f17e91]:
+              - term [ref=f17e92]: Loại chuyến
+              - definition [ref=f17e93]: Trong nước
+            - generic [ref=f17e94]:
+              - term [ref=f17e95]: Ngày khởi hành
+              - definition [ref=f17e96]: 23/11/2026
+            - generic [ref=f17e97]:
+              - term [ref=f17e98]: Điểm đón
+              - definition [ref=f17e99]: Kho Bình Dương
+            - generic [ref=f17e100]:
+              - term [ref=f17e101]: Điểm giao
+              - definition [ref=f17e102]: Kho Đồng Nai
+            - generic [ref=f17e103]:
+              - term [ref=f17e104]: Người gửi
+              - definition [ref=f17e105]: Trang trại Long Thành
+            - generic [ref=f17e106]:
+              - term [ref=f17e107]: Người nhận
+              - definition [ref=f17e108]: CLB Cưỡi ngựa Sài Gòn
+        - generic [ref=f17e109]:
+          - heading " 1 ngựa · xe Light" [level=3] [ref=f17e111]:
+            - generic [ref=f17e112]: 
+            - text: 1 ngựa · xe Light
+          - generic [ref=f17e113]:
+            - generic [ref=f17e114]:
+              - text: Kim Lân
+              - generic [ref=f17e115]: Chip VN-985213 · Thoroughbred · Đực
+            - generic [ref=f17e116]: Khoang tiêu chuẩn · 22°C
+            - generic [ref=f17e117]: Từ chối bảo hiểm (trách nhiệm hạn chế)
+        - generic [ref=f17e118]:
+          - heading " Diễn biến" [level=3] [ref=f17e120]:
+            - generic [ref=f17e121]: 
+            - text: Diễn biến
+          - list [ref=f17e122]:
+            - listitem [ref=f17e123]:
+              - generic [aria-hidden] [ref=f17e125]: 
+              - generic [ref=f17e126]:
+                - text: Bạn đã gửi đơn
+                - generic [ref=f17e127]: 02/10/2026 10:09
+        - generic [ref=f17e128]:
+          - heading " Hủy đơn và hoàn cọc" [level=3] [ref=f17e130]:
+            - generic [ref=f17e131]: 
+            - text: Hủy đơn và hoàn cọc
+          - table [ref=f17e132]:
+            - rowgroup [ref=f17e133]:
+              - row [ref=f17e134]:
+                - cell "Hủy từ 7 ngày trở lên trước ngày khởi hành" [ref=f17e135]
+                - cell "Hoàn 80% tiền cọc" [ref=f17e136]
+              - row [ref=f17e137]:
+                - cell "Hủy từ 3 đến dưới 7 ngày trước ngày khởi hành" [ref=f17e138]
+                - cell "Hoàn 50% tiền cọc" [ref=f17e139]
+              - row [ref=f17e140]:
+                - cell "Hủy từ 72 giờ trước ngày khởi hành đến 18:00 ngày D-1" [ref=f17e141]
+                - cell "Hoàn 20% tiền cọc" [ref=f17e142]
+              - row [ref=f17e143]:
+                - cell "Hủy sau 18:00 ngày D-1 hoặc đúng ngày khởi hành" [ref=f17e144]
+                - cell "Không hoàn cọc" [ref=f17e145]
+              - row [ref=f17e146]:
+                - cell "Bất khả kháng (dịch bệnh, thiên tai, ngựa ốm có chứng nhận)" [ref=f17e147]
+                - cell "Hoàn 70% tiền cọc" [ref=f17e148]
+              - row [ref=f17e149]:
+                - cell "Đã trả số dư 70% mà xe chưa nhận ngựa" [ref=f17e150]
+                - cell "Hoàn 100% số dư" [ref=f17e151]
+          - button " Hủy đơn này" [ref=f17e152] [cursor=pointer]:
+            - generic [ref=f17e153]: 
+            - text: Hủy đơn này
+        - paragraph [ref=f17e154]:
+          - text: Cần hỗ trợ? Gọi
+          - link "1900 6868" [ref=f17e155] [cursor=pointer]:
+            - /url: tel:19006868
+          - text: .
+  - contentinfo [ref=f17e156]: © 2026 Vận chuyển Ngựa đua · Việt Nam · Lào · Campuchia · Hotline 1900 6868
+  - group "Ngôn ngữ" [ref=f17e157]:
+    - button "VI" [pressed] [ref=f17e159]
+    - button "EN" [ref=f17e160] [cursor=pointer]

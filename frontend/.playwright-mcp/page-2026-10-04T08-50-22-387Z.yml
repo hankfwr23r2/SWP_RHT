@@ -1,0 +1,125 @@
+- generic [ref=f218e2]:
+  - banner [ref=f218e3]:
+    - generic [ref=f218e4]:
+      - link "EQ Vận chuyển Ngựa" [ref=f218e5] [cursor=pointer]:
+        - /url: /portal
+        - generic [ref=f218e6]: EQ
+        - generic [ref=f218e7]: Vận chuyển Ngựa
+      - navigation "Menu" [ref=f218e8]:
+        - link "Trang chủ" [ref=f218e9] [cursor=pointer]:
+          - /url: /portal
+        - link "Hồ sơ ngựa" [ref=f218e10] [cursor=pointer]:
+          - /url: /horses
+        - link "Đặt chuyến mới" [ref=f218e11] [cursor=pointer]:
+          - /url: /booking/route
+        - link "Đơn của tôi" [ref=f218e12] [cursor=pointer]:
+          - /url: /orders
+        - link "Nghiệm thu" [ref=f218e13] [cursor=pointer]:
+          - /url: /acceptance
+      - generic [ref=f218e14]:
+        - link " 1900 6868" [ref=f218e15] [cursor=pointer]:
+          - /url: tel:19006868
+          - generic [ref=f218e16]: 
+          - strong [ref=f218e17]: 1900 6868
+        - button "Thông báo, 1 chưa đọc" [ref=f218e19] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f218e20]: 
+          - generic [ref=f218e21]: "1"
+        - generic "Trang trại Long Thành" [ref=f218e22]: LT
+        - button " Đăng xuất" [ref=f218e23] [cursor=pointer]:
+          - generic [ref=f218e24]: 
+          - text: Đăng xuất
+  - main [ref=f218e25]:
+    - generic [ref=f218e28]:
+      - generic [ref=f218e29]:
+        - link "Trang chủ" [ref=f218e30] [cursor=pointer]:
+          - /url: /portal
+        - text: /
+        - generic [ref=f218e31]: Nghiệm thu
+      - generic [ref=f218e32]:
+        - heading "Nghiệm thu cuối chuyến" [level=1] [ref=f218e33]
+        - paragraph [ref=f218e34]: Kiểm tra chuyến đã giao, xem bảng quyết toán, thanh toán và đánh giá để đóng đơn.
+      - generic [ref=f218e35]:
+        - navigation "Đơn cần nghiệm thu" [ref=f218e36]:
+          - button [ref=f218e37] [cursor=pointer]:
+            - generic [ref=f218e38]: ORD-2026-0119Đang đối soát
+          - button [pressed] [ref=f218e39] [cursor=pointer]:
+            - generic [ref=f218e40]: ORD-2026-0123Chờ bạn quyết toán
+        - generic [ref=f218e41]:
+          - generic [ref=f218e42]:
+            - generic [ref=f218e43]:
+              - heading " Ngựa đã được giao" [level=3] [ref=f218e44]:
+                - generic [ref=f218e45]: 
+                - text: Ngựa đã được giao
+              - generic "Settlement Issued - Awaiting Final Payment" [ref=f218e46]:
+                - generic [aria-hidden] [ref=f218e47]: 
+                - text: Chờ thanh toán quyết toán
+            - paragraph [ref=f218e48]: Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM) · khởi hành 04/10/2026 · 1 ngựa
+            - paragraph [ref=f218e49]: Xe TRP-0123-1 giao lúc 04/10/2026 05:43. Hộ chiếu ngựa và hồ sơ gốc đã trả cho người nhận, biên bản bàn giao có chữ ký đã được lưu.
+            - paragraph [ref=f218e50]: Giá chuyến đã cố định, nhiên liệu và cầu đường không tính thêm.
+          - generic [ref=f218e51]:
+            - heading " Sự cố trên đường" [level=3] [ref=f218e53]:
+              - generic [ref=f218e54]: 
+              - text: Sự cố trên đường
+            - paragraph [ref=f218e55]:
+              - text: Sức khỏe ngựa · báo lúc 04/10/2026 01:50
+              - generic [ref=f218e56]: Đã xử lý xong lúc 04/10/2026 03:50, xe tiếp tục hành trình. Ngựa được hộ tống chăm sóc liên tục.
+          - generic [ref=f218e57]:
+            - heading " Bảng quyết toán" [level=3] [ref=f218e59]:
+              - generic [ref=f218e60]: 
+              - text: Bảng quyết toán
+            - paragraph [ref=f218e61]: Giá chuyến đã cố định từ lúc báo giá, nhiên liệu và cầu đường không tính thêm. Dưới đây là các khoản phát sinh do ngựa mà bạn chịu theo chính sách.
+            - generic [ref=f218e62]:
+              - generic [ref=f218e63]:
+                - generic [ref=f218e64]:
+                  - button "Xem ảnh vet_fee_receipt.jpg" [ref=f218e65]:
+                    - generic [aria-hidden] [ref=f218e66]: 
+                  - text: "Viện phí thú y: Khám và truyền dịch"
+                - generic [ref=f218e67]: 1,200,000 ₫
+              - generic [ref=f218e68]:
+                - generic [ref=f218e69]:
+                  - button "Xem ảnh medicine_receipt.jpg" [ref=f218e70]:
+                    - generic [aria-hidden] [ref=f218e71]: 
+                  - text: "Thuốc cấp cứu: Thuốc giảm đau"
+                - generic [ref=f218e72]: 350,000 ₫
+              - generic [ref=f218e73]:
+                - generic [ref=f218e74]: Tổng phải trả
+                - generic [ref=f218e75]: 1,550,000 ₫
+            - paragraph [ref=f218e76]: "Hạn thanh toán: 05/10/2026 08:50. Quá hạn, tài khoản bị khóa đặt đơn mới."
+            - heading "Đánh giá chuyến đi" [level=4] [ref=f218e77]
+            - generic [ref=f218e78]:
+              - generic [ref=f218e79]:
+                - generic [ref=f218e80]: Chuyến đi
+                - combobox "Chuyến đi" [ref=f218e81]:
+                  - option "5 sao" [selected]
+                  - option "4 sao"
+                  - option "3 sao"
+                  - option "2 sao"
+                  - option "1 sao"
+              - generic [ref=f218e82]:
+                - generic [ref=f218e83]: Độ êm ái, an toàn của xe (tài xế)
+                - combobox "Độ êm ái, an toàn của xe (tài xế)" [ref=f218e84]:
+                  - option "5 sao" [selected]
+                  - option "4 sao"
+                  - option "3 sao"
+                  - option "2 sao"
+                  - option "1 sao"
+              - generic [ref=f218e85]:
+                - generic [ref=f218e86]: Chuyên nghiệp, sức khỏe ngựa (hộ tống)
+                - combobox "Chuyên nghiệp, sức khỏe ngựa (hộ tống)" [ref=f218e87]:
+                  - option "5 sao" [selected]
+                  - option "4 sao"
+                  - option "3 sao"
+                  - option "2 sao"
+                  - option "1 sao"
+            - generic [ref=f218e88]:
+              - generic [ref=f218e89]: Nhận xét
+              - textbox "Nhận xét" [ref=f218e90]
+            - button "Thanh toán 1,550,000 ₫ và gửi đánh giá" [ref=f218e91] [cursor=pointer]
+            - paragraph [ref=f218e92]: "Bản thử nghiệm: bấm thanh toán là ghi nhận đã nhận tiền."
+          - paragraph [ref=f218e93]:
+            - link "Xem chi tiết đơn ORD-2026-0123" [ref=f218e94] [cursor=pointer]:
+              - /url: /orders/ORD-2026-0123
+  - contentinfo [ref=f218e95]: © 2026 Vận chuyển Ngựa đua · Việt Nam · Lào · Campuchia · Hotline 1900 6868
+  - group "Ngôn ngữ" [ref=f218e96]:
+    - button "VI" [pressed] [ref=f218e98]
+    - button "EN" [ref=f218e99] [cursor=pointer]

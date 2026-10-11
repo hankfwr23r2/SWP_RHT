@@ -1,0 +1,235 @@
+- generic [ref=f357e75]:
+  - banner [ref=f357e76]:
+    - link "QL Quản lý manager@equine.vn" [ref=f357e77] [cursor=pointer]:
+      - /url: /backoffice/manager
+      - generic [ref=f357e78]: QL
+      - generic [ref=f357e79]:
+        - generic [ref=f357e80]: Quản lý
+        - generic [ref=f357e81]: manager@equine.vn
+    - generic "Đường dẫn" [ref=f357e82]:
+      - generic [aria-hidden] [ref=f357e83]: 
+      - generic [ref=f357e84]:
+        - generic [aria-hidden] [ref=f357e85]: 
+        - text: Sự cố
+    - search [ref=f357e86]:
+      - generic [aria-hidden] [ref=f357e87]: 
+      - textbox "Tìm đơn hàng" [ref=f357e88]:
+        - /placeholder: Tìm đơn hàng, khách hàng…
+    - generic [ref=f357e89]:
+      - button "Thông báo, 2 chưa đọc" [ref=f357e91] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f357e92]: 
+        - generic [ref=f357e93]: "2"
+      - button "Đăng xuất" [ref=f357e94] [cursor=pointer]:
+        - generic [ref=f357e95]: 
+  - generic [ref=f357e96]:
+    - complementary "Menu" [ref=f357e97]:
+      - generic [ref=f357e98]:
+        - generic [ref=f357e99]: Menu
+        - button "Thu gọn menu" [ref=f357e100] [cursor=pointer]:
+          - generic [ref=f357e101]: 
+      - navigation [ref=f357e102]:
+        - link "Tổng quan" [ref=f357e103] [cursor=pointer]:
+          - /url: /backoffice/manager
+          - generic [aria-hidden] [ref=f357e104]: 
+        - link "Tiếp nhận 1 đơn chờ" [ref=f357e106] [cursor=pointer]:
+          - /url: /backoffice/manager/intake
+          - generic [aria-hidden] [ref=f357e107]: 
+          - generic [ref=f357e108]: Tiếp nhận
+          - generic "1 đơn chờ" [ref=f357e109]: "1"
+        - link "Duyệt giá 1 đơn chờ" [ref=f357e110] [cursor=pointer]:
+          - /url: /backoffice/manager/approvals
+          - generic [aria-hidden] [ref=f357e111]: 
+          - generic [ref=f357e112]: Duyệt giá
+          - generic "1 đơn chờ" [ref=f357e113]: "1"
+        - link "Sự cố 3 đơn chờ" [ref=f357e114] [cursor=pointer]:
+          - /url: /backoffice/manager/incidents
+          - generic [aria-hidden] [ref=f357e115]: 
+          - generic [ref=f357e116]: Sự cố
+          - generic "3 đơn chờ" [ref=f357e117]: "3"
+        - link "Tiến độ đơn" [ref=f357e118] [cursor=pointer]:
+          - /url: /backoffice/manager/progress
+          - generic [aria-hidden] [ref=f357e119]: 
+        - link "Chuyến đi" [ref=f357e121] [cursor=pointer]:
+          - /url: /backoffice/manager/trip-reports
+          - generic [aria-hidden] [ref=f357e122]: 
+      - generic [ref=f357e124]:
+        - button "Cần xử lý 5" [expanded] [ref=f357e125] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f357e126]: 
+          - generic [ref=f357e127]: Cần xử lý
+          - generic [ref=f357e128]: "5"
+        - link "0123 · Đối soát chi phí" [ref=f357e129] [cursor=pointer]:
+          - /url: /backoffice/manager/incidents
+          - generic [aria-hidden] [ref=f357e130]: 
+        - link "0117 · Duyệt phương án sự cố" [ref=f357e132] [cursor=pointer]:
+          - /url: /backoffice/manager/incidents
+          - generic [aria-hidden] [ref=f357e133]: 
+        - link "0126 · Duyệt phương án sự cố" [ref=f357e135] [cursor=pointer]:
+          - /url: /backoffice/manager/incidents
+          - generic [aria-hidden] [ref=f357e136]: 
+        - link "0104 · Duyệt báo giá" [ref=f357e138] [cursor=pointer]:
+          - /url: /backoffice/manager/approvals
+          - generic [aria-hidden] [ref=f357e139]: 
+        - link "0101 · Tiếp nhận đơn" [ref=f357e141] [cursor=pointer]:
+          - /url: /backoffice/manager/intake
+          - generic [aria-hidden] [ref=f357e142]: 
+    - main [ref=f357e1]:
+      - generic [ref=f357e2]:
+        - generic [ref=f357e4]:
+          - generic [ref=f357e6]:
+            - heading "Sự cố và quyết toán" [level=1] [ref=f357e7]
+            - paragraph [ref=f357e8]: Duyệt phương án, đối soát chi phí, theo dõi thanh toán.
+          - generic [ref=f357e9]:
+            - tablist "Trạng thái" [ref=f357e10]:
+              - tab "Chờ duyệt phương án 2" [selected] [ref=f357e11] [cursor=pointer]:
+                - text: Chờ duyệt phương án
+                - generic [ref=f357e12]: "2"
+              - tab "Sự cố đang xử lý 2" [ref=f357e13] [cursor=pointer]:
+                - text: Sự cố đang xử lý
+                - generic [ref=f357e14]: "2"
+              - tab "Chờ đối soát 1" [ref=f357e15] [cursor=pointer]:
+                - text: Chờ đối soát
+                - generic [ref=f357e16]: "1"
+              - tab "Chờ khách thanh toán 2" [ref=f357e17] [cursor=pointer]:
+                - text: Chờ khách thanh toán
+                - generic [ref=f357e18]: "2"
+              - tab "Đã hoàn tất 1" [ref=f357e19] [cursor=pointer]:
+                - text: Đã hoàn tất
+                - generic [ref=f357e20]: "1"
+            - generic [ref=f357e21]:
+              - generic [ref=f357e22]:
+                - generic [aria-hidden] [ref=f357e23]: 
+                - textbox [ref=f357e24]:
+                  - /placeholder: Tìm theo mã đơn, khách hàng, tuyến…
+              - generic [ref=f357e25]:
+                - text: Khởi hành
+                - textbox "Khởi hành từ ngày" [ref=f357e26]
+                - text: →
+                - textbox "Khởi hành đến ngày" [ref=f357e27]
+            - table [ref=f357e29]:
+              - rowgroup [ref=f357e30]:
+                - row [ref=f357e31]:
+                  - columnheader "Mã đơn" [ref=f357e32]
+                  - columnheader "Khách hàng" [ref=f357e33]
+                  - columnheader "Tuyến" [ref=f357e34]
+                  - columnheader "Nội dung" [ref=f357e35]
+                  - columnheader "Thời gian" [ref=f357e36]
+                  - columnheader "Trạng thái" [ref=f357e37]
+                  - columnheader "Giá trị" [ref=f357e38]
+                  - columnheader "Thao tác" [ref=f357e39]
+              - rowgroup [ref=f357e40]:
+                - row [ref=f357e41]:
+                  - cell "ORD-2026-0117 Trong nước" [ref=f357e42]:
+                    - text: ORD-2026-0117
+                    - generic [ref=f357e43]: Trong nước
+                  - cell "CLB Ngựa Phương Nam" [ref=f357e44]
+                  - cell "Kho Đồng Nai → Kho Long An" [ref=f357e45]
+                  - cell "Giao thông tắc nghẽn · xe TRP-0117-1 Đổi sang lộ trình khác để tránh tắc nghẽn, ETA mới 04/10/2026 16:05" [ref=f357e47]:
+                    - text: Giao thông tắc nghẽn · xe TRP-0117-1
+                    - generic [ref=f357e48]: Đổi sang lộ trình khác để tránh tắc nghẽn, ETA mới 04/10/2026 16:05
+                  - cell "Báo 04/10/2026 15:47" [ref=f357e49]
+                  - cell [ref=f357e50]:
+                    - generic "Chờ quản lý duyệt phương án khẩn cấp (Pending Emergency Approval)" [ref=f357e51]:
+                      - generic [aria-hidden] [ref=f357e52]: 
+                      - text: Chờ duyệt khẩn cấp
+                  - cell "Đề nghị 0 ₫" [ref=f357e53]
+                  - cell [ref=f357e54]:
+                    - button "Xem và duyệt" [active] [ref=f357e55] [cursor=pointer]
+                - row [ref=f357e56]:
+                  - cell "ORD-2026-0126 Trong nước" [ref=f357e57]:
+                    - text: ORD-2026-0126
+                    - generic [ref=f357e58]: Trong nước
+                  - cell "CLB Ngựa Phương Nam" [ref=f357e59]
+                  - cell "Kho Long An → Kho Bình Dương" [ref=f357e60]
+                  - cell "Xe gặp sự cố · xe TRP-0126-1 Gọi cứu hộ sửa xe gần chỗ xe gặp nạn, đưa ngựa đến trạm nghỉ gần nhất, ETA mới 04/10/2026 18:47" [ref=f357e62]:
+                    - text: Xe gặp sự cố · xe TRP-0126-1
+                    - generic [ref=f357e63]: Gọi cứu hộ sửa xe gần chỗ xe gặp nạn, đưa ngựa đến trạm nghỉ gần nhất, ETA mới 04/10/2026 18:47
+                  - cell "Báo 04/10/2026 13:47" [ref=f357e64]
+                  - cell [ref=f357e65]:
+                    - generic "Chờ quản lý duyệt phương án khẩn cấp (Pending Emergency Approval)" [ref=f357e66]:
+                      - generic [aria-hidden] [ref=f357e67]: 
+                      - text: Chờ duyệt khẩn cấp
+                  - cell "Đề nghị 2,500,000 ₫" [ref=f357e68]
+                  - cell [ref=f357e69]:
+                    - button "Xem và duyệt" [ref=f357e70] [cursor=pointer]
+            - generic [ref=f357e71]: Hiển thị 2 đơn hàng
+        - dialog [ref=f357e145]:
+          - generic [ref=f357e146]:
+            - generic [ref=f357e147]:
+              - heading "Duyệt phương án INC-0117-1" [level=3] [ref=f357e148]
+              - generic [ref=f357e149]: ORD-2026-0117 · CLB Ngựa Phương Nam · Giao thông tắc nghẽn · xe TRP-0117-1
+            - button "Đóng" [ref=f357e150] [cursor=pointer]:
+              - generic [ref=f357e151]: 
+          - generic [ref=f357e152]:
+            - paragraph [ref=f357e153]:
+              - generic [ref=f357e154]: "Báo từ hiện trường (04/10/2026 15:47):"
+              - text: Kẹt xe dài do tai nạn phía trước
+              - button "Xem ảnh capture_1791128866563.jpg" [ref=f357e155]:
+                - generic [aria-hidden] [ref=f357e156]: 
+            - generic [ref=f357e158]:
+              - application "Bản đồ sự cố" [ref=f357e159]:
+                - generic:
+                  - generic:
+                    - button "A" [ref=f357e160] [cursor=pointer]
+                    - button "B" [ref=f357e162] [cursor=pointer]
+                    - button "!" [ref=f357e164] [cursor=pointer]
+                  - generic:
+                    - tooltip "Vị trí xe lúc báo sự cố"
+                - generic:
+                  - generic [ref=f357e166]:
+                    - button "Zoom in" [ref=f357e167] [cursor=pointer]: +
+                    - button "Zoom out" [ref=f357e168] [cursor=pointer]: −
+                  - generic [ref=f357e169]:
+                    - link "Leaflet" [ref=f357e170] [cursor=pointer]:
+                      - /url: https://leafletjs.com
+                    - text: "| © OpenStreetMap"
+              - generic [ref=f357e175]:
+                - generic [ref=f357e176]:
+                  - generic [ref=f357e177]: 
+                  - generic [ref=f357e179]:
+                    - generic [ref=f357e180]: Phương án đã lập
+                    - text: Đổi sang lộ trình khác để tránh tắc nghẽn
+                - generic [ref=f357e181]:
+                  - generic [ref=f357e182]:
+                    - text: "Lộ trình mới:"
+                    - generic [ref=f357e183]: 16.6 km · 16 phút
+                  - generic [ref=f357e184]: Giữ nguyên cửa khẩu đã chốt
+              - generic [ref=f357e185]:
+                - generic [ref=f357e186]:
+                  - generic [ref=f357e187]: "!"
+                  - text: Vị trí xe
+                - generic [ref=f357e188]:
+                  - generic [ref=f357e189] [cursor=pointer]
+                  - text: Trạm nghỉ
+                - generic [ref=f357e190]:
+                  - generic [ref=f357e191]: A
+                  - text: Đón
+                - generic [ref=f357e192]:
+                  - generic [ref=f357e193]: B
+                  - text: Trả
+            - generic [ref=f357e194]:
+              - generic [ref=f357e195]: 
+              - generic [ref=f357e196]:
+                - generic [ref=f357e197]: Đổi sang lộ trình khác để tránh tắc nghẽn.
+                - text: ETA mới 04/10/2026 16:05. Đề nghị hạn mức 0 ₫.
+            - generic [ref=f357e198]:
+              - generic [ref=f357e199]: Hạn mức chi khẩn cấp được duyệt (VNĐ)
+              - textbox "Hạn mức chi khẩn cấp được duyệt (VNĐ)" [ref=f357e200]: "0"
+            - generic [ref=f357e201]:
+              - checkbox "Tôi đã trực tiếp gọi điện cho khách CLB Ngựa Phương Nam thông báo tình hình và phương án" [ref=f357e202]
+              - text: Tôi đã trực tiếp gọi điện cho khách CLB Ngựa Phương Nam thông báo tình hình và phương án
+            - generic [ref=f357e203]:
+              - generic [ref=f357e204]: Lý do trả về (chỉ cần khi trả về)
+              - textbox "Lý do trả về (chỉ cần khi trả về)" [ref=f357e205]
+            - paragraph [ref=f357e206]:
+              - text: Chỉ Quản lý được duyệt thay đổi phương án di chuyển, hạn mức chi khẩn cấp và trực tiếp làm việc với khách khi có sự cố.
+              - button "Xem thêm" [ref=f357e207] [cursor=pointer]
+          - generic [ref=f357e208]:
+            - button " Trả về" [disabled] [ref=f357e209]:
+              - generic [ref=f357e210]: 
+              - text: Trả về
+            - button " Duyệt phương án" [disabled] [ref=f357e211]:
+              - generic [ref=f357e212]: 
+              - text: Duyệt phương án
+  - group "Ngôn ngữ" [ref=f357e213]:
+    - button "VI" [pressed] [ref=f357e215]
+    - button "EN" [ref=f357e216] [cursor=pointer]

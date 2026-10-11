@@ -1,0 +1,48 @@
+/* Popup lịch khởi hành */
+.bar { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+.title { font-size: 1.25rem; color: var(--navy); text-transform: capitalize; margin-right: auto; }
+.seg { display: inline-flex; padding: 3px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg-page); }
+.seg button { padding: 6px 16px; border: 0; border-radius: 8px; background: none; font: inherit; font-size: 0.86rem; font-weight: 600; color: var(--muted); cursor: pointer; }
+.seg .segOn { background: white; color: var(--navy); box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12); }
+.nav { display: inline-flex; gap: 4px; }
+.nav button { min-width: 36px; height: 34px; padding: 0 10px; border: 1px solid var(--line); border-radius: 10px; background: white; font: inherit; font-size: 0.84rem; font-weight: 600; color: var(--navy); cursor: pointer; }
+.nav button:hover { border-color: var(--orange); color: var(--orange); }
+
+.month { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.wk { padding: 8px; background: var(--bg-page); border-bottom: 1px solid var(--line); text-align: center; font-size: 0.76rem; font-weight: 700; color: var(--muted); }
+.cell { display: grid; align-content: start; gap: 4px; min-height: 96px; padding: 6px; border: 0; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); background: white; font: inherit; text-align: left; cursor: pointer; }
+.cell:nth-child(7n) { border-right: 0; }
+.cell:hover { background: #fffaf5; }
+.out { background: #fcfcfd; }
+.out .num { color: #c3c8d1; }
+.num { justify-self: end; display: grid; place-items: center; min-width: 26px; height: 26px; border-radius: 999px; font-size: 0.82rem; font-weight: 600; color: var(--navy); }
+.today { background: var(--orange); color: white; }
+.chip { display: block; padding: 2px 6px; border-radius: 6px; background: var(--orange-soft); color: var(--text); font-size: 0.72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chip b { color: var(--orange); }
+.more { padding: 0 6px; font-size: 0.72rem; font-weight: 600; color: var(--muted); }
+
+.year { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px 22px; }
+.mini { display: grid; gap: 6px; }
+.miniTitle { justify-self: start; padding: 0; border: 0; background: none; font: inherit; font-size: 1rem; font-weight: 700; color: var(--orange); cursor: pointer; }
+.miniGrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; font-size: 0.72rem; }
+.miniGrid i { font-style: normal; color: #9aa3b2; font-weight: 600; }
+.miniGrid button { aspect-ratio: 1; display: grid; place-items: center; border: 0; border-radius: 999px; background: none; font: inherit; font-size: 0.74rem; color: var(--navy); cursor: pointer; }
+.miniGrid button:hover:not(:disabled) { background: var(--bg-page); }
+.miniOut { visibility: hidden; }
+.miniHas { background: var(--orange-soft) !important; color: var(--orange) !important; font-weight: 700; }
+.miniToday { background: var(--orange) !important; color: white !important; font-weight: 700; }
+
+.dayList { display: grid; gap: 8px; }
+.dayItem { display: grid; grid-template-columns: 130px minmax(120px, 1fr) minmax(0, 2fr) auto; gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: white; font: inherit; font-size: 0.88rem; text-align: left; cursor: pointer; }
+.dayItem:hover { border-color: var(--orange); }
+.dayItem b { color: var(--navy); }
+.route { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+.empty { display: grid; justify-items: center; gap: 8px; padding: 48px 0; color: var(--muted); }
+.empty i { font-size: 2rem; color: #d1d5db; }
+
+@media (max-width: 760px) {
+  .year { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cell { min-height: 64px; }
+  .chip { display: none; }
+  .dayItem { grid-template-columns: 1fr; gap: 4px; }
+}

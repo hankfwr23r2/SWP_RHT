@@ -1,0 +1,28 @@
+.wrap { width: min(1440px, 100% - 32px); }
+.grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 16px; }
+.grid :global(.card) + :global(.card) { margin-top: 0; }
+
+.chartHead { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; flex-wrap: wrap; }
+.legend { display: flex; gap: 16px; font-size: 0.82rem; color: var(--text); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 12px; height: 12px; display: inline-block; }
+.chartBox { position: relative; }
+.chartBox svg { width: 100%; height: auto; display: block; }
+.axis { font-size: 11px; fill: var(--muted); }
+.direct { font-size: 11px; font-weight: 600; fill: var(--text); }
+.band { fill: var(--bg-soft); }
+.chartBox line { stroke: var(--line); stroke-dasharray: 4 4; }
+.tooltip { position: absolute; top: 8px; transform: translateX(-50%); background: white; border: 1px solid var(--line); border-radius: var(--radius-sm); box-shadow: var(--shadow-lg); padding: 8px 10px; font-size: 0.8rem; pointer-events: none; min-width: 150px; }
+.tooltip div { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+.tooltip i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.tooltip span { margin-left: auto; font-weight: 600; }
+
+.otdBar { display: flex; gap: 2px; height: 22px; border-radius: 6px; overflow: hidden; margin: 12px 0 16px; }
+.otdBar div { min-width: 4px; }
+.otdList { display: grid; gap: 10px; font-size: 0.9rem; }
+.otdList li { display: grid; grid-template-columns: 1fr auto 60px; gap: 10px; align-items: center; }
+.otdList li span:last-child { text-align: right; }
+
+@media (max-width: 1000px) { .grid { grid-template-columns: 1fr; } }
+
+.sectionTitle { font-size: 1.05rem; margin: 0 0 12px; color: var(--navy); }

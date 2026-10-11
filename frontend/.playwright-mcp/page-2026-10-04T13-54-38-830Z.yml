@@ -1,0 +1,276 @@
+- generic [ref=f225e3]:
+  - banner [ref=f225e4]:
+    - link "TM Trần Minh ops@equine.vn" [ref=f225e5] [cursor=pointer]:
+      - /url: /backoffice/coordinator/fleet-plan
+      - generic [ref=f225e6]: TM
+      - generic [ref=f225e7]:
+        - generic [ref=f225e8]: Trần Minh
+        - generic [ref=f225e9]: ops@equine.vn
+    - generic "Đường dẫn" [ref=f225e10]:
+      - generic [aria-hidden] [ref=f225e11]: 
+      - generic [ref=f225e12]:
+        - generic [aria-hidden] [ref=f225e13]: 
+        - text: Xe và lộ trình
+    - search [ref=f225e14]:
+      - generic [aria-hidden] [ref=f225e15]: 
+      - textbox "Tìm đơn hàng" [ref=f225e16]:
+        - /placeholder: Tìm đơn hàng, khách hàng…
+    - generic [ref=f225e17]:
+      - button "Thông báo" [ref=f225e19] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f225e20]: 
+      - button "Đăng xuất" [ref=f225e21] [cursor=pointer]:
+        - generic [ref=f225e22]: 
+  - generic [ref=f225e23]:
+    - complementary "Menu" [ref=f225e24]:
+      - generic [ref=f225e25]:
+        - generic [ref=f225e26]: Menu
+        - button "Thu gọn menu" [ref=f225e27] [cursor=pointer]:
+          - generic [ref=f225e28]: 
+      - navigation [ref=f225e29]:
+        - link "Xe và lộ trình 1 đơn chờ" [ref=f225e30] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan
+          - generic [aria-hidden] [ref=f225e31]: 
+          - generic [ref=f225e32]: Xe và lộ trình
+          - generic "1 đơn chờ" [ref=f225e33]: "1"
+        - link "Giấy cho tài xế 6 đơn chờ" [ref=f225e34] [cursor=pointer]:
+          - /url: /backoffice/coordinator/dispatch
+          - generic [aria-hidden] [ref=f225e35]: 
+          - generic [ref=f225e36]: Giấy cho tài xế
+          - generic "6 đơn chờ" [ref=f225e37]: "6"
+        - link "Giám sát" [ref=f225e38] [cursor=pointer]:
+          - /url: /backoffice/coordinator/monitoring
+          - generic [aria-hidden] [ref=f225e39]: 
+        - link "Sự cố 1 đơn chờ" [ref=f225e41] [cursor=pointer]:
+          - /url: /backoffice/coordinator/incidents
+          - generic [aria-hidden] [ref=f225e42]: 
+          - generic [ref=f225e43]: Sự cố
+          - generic "1 đơn chờ" [ref=f225e44]: "1"
+        - link "Đội xe" [ref=f225e45] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet
+          - generic [aria-hidden] [ref=f225e46]: 
+      - generic [ref=f225e48]:
+        - button "Cần xử lý 5" [expanded] [ref=f225e49] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f225e50]: 
+          - generic [ref=f225e51]: Cần xử lý
+          - generic [ref=f225e52]: "5"
+        - link "0125 · Lập phương án sự cố" [ref=f225e53] [cursor=pointer]:
+          - /url: /backoffice/coordinator/incidents
+          - generic [aria-hidden] [ref=f225e54]: 
+        - link "0102 · Chốt xe, lộ trình" [ref=f225e56] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0102
+          - generic [aria-hidden] [ref=f225e57]: 
+        - link "0113 · Nhập bộ giấy" [ref=f225e59] [cursor=pointer]:
+          - /url: /backoffice/coordinator/dispatch/ORD-2026-0113
+          - generic [aria-hidden] [ref=f225e60]: 
+        - link "0112 · Nhập bộ giấy" [ref=f225e62] [cursor=pointer]:
+          - /url: /backoffice/coordinator/dispatch/ORD-2026-0112
+          - generic [aria-hidden] [ref=f225e63]: 
+        - link "0111 · Nhập bộ giấy" [ref=f225e65] [cursor=pointer]:
+          - /url: /backoffice/coordinator/dispatch/ORD-2026-0111
+          - generic [aria-hidden] [ref=f225e66]: 
+    - main [ref=f225e68]:
+      - generic [ref=f225e71]:
+        - generic [ref=f225e72]:
+          - link "Xe và lộ trình" [ref=f225e73] [cursor=pointer]:
+            - /url: /backoffice/coordinator/fleet-plan
+          - text: /
+          - generic [ref=f225e74]: ORD-2026-0102
+        - generic [ref=f225e75]:
+          - heading "Đơn ORD-2026-0102" [level=1] [ref=f225e76]
+          - generic "Under Internal Review" [ref=f225e77]:
+            - generic [aria-hidden] [ref=f225e78]: 
+            - text: Đang thẩm định nội bộ
+          - generic [ref=f225e79]:
+            - generic [ref=f225e80]:
+              - generic [aria-hidden] [ref=f225e81]: 
+              - text: "Y tế: chờ thẩm định"
+            - generic [ref=f225e82]:
+              - generic [aria-hidden] [ref=f225e83]: 
+              - text: "Xe & lộ trình: chờ lập"
+        - generic [ref=f225e84]:
+          - generic [ref=f225e85]:
+            - generic [ref=f225e86]:
+              - heading " Chuyến đi" [level=3] [ref=f225e88]:
+                - generic [ref=f225e89]: 
+                - text: Chuyến đi
+              - generic [ref=f225e90]:
+                - generic [ref=f225e91]:
+                  - term [ref=f225e92]: Khách hàng
+                  - definition [ref=f225e93]: Trang trại Long Thành
+                - generic [ref=f225e94]:
+                  - term [ref=f225e95]: Loại chuyến
+                  - definition [ref=f225e96]: Trong nước
+                - generic [ref=f225e97]:
+                  - term [ref=f225e98]: Ngày khởi hành
+                  - definition [ref=f225e99]: 11/11/2026
+                - generic [ref=f225e100]:
+                  - term [ref=f225e101]: Điểm đón
+                  - definition [ref=f225e102]: Kho Long An
+                - generic [ref=f225e103]:
+                  - term [ref=f225e104]: Điểm giao
+                  - definition [ref=f225e105]: CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+                - generic [ref=f225e106]:
+                  - term [ref=f225e107]: Người gửi
+                  - definition [ref=f225e108]:
+                    - text: Trang trại Long Thành
+                    - generic [ref=f225e109]: 0901 456 789
+                - generic [ref=f225e110]:
+                  - term [ref=f225e111]: Người nhận
+                  - definition [ref=f225e112]:
+                    - text: CLB Cưỡi ngựa Sài Gòn
+                    - generic [ref=f225e113]: 0912 345 678
+                - generic [ref=f225e114]:
+                  - term [ref=f225e115]: Số ngựa
+                  - definition [ref=f225e116]: 3 con
+            - generic [ref=f225e117]:
+              - heading " Ngựa cần chở" [level=3] [ref=f225e119]:
+                - generic [ref=f225e120]: 
+                - text: Ngựa cần chở
+              - generic [ref=f225e121]:
+                - generic [ref=f225e122]:
+                  - generic [ref=f225e124]:
+                    - generic [ref=f225e125]: Kim Lân
+                    - generic [ref=f225e126]: Chip VN-985213 · Thoroughbred · Đực
+                  - generic [ref=f225e127]:
+                    - generic [ref=f225e128]: "Khoang: đơn mở rộng"
+                    - generic [ref=f225e129]:
+                      - text: "Nhiệt độ yêu cầu:"
+                      - generic [ref=f225e130]: 22°C
+                    - generic [ref=f225e131]: "Dinh dưỡng: Cỏ khô Timothy, yến mạch"
+                    - generic [ref=f225e132]: "Nước: Mỗi 3 giờ"
+                    - generic [ref=f225e133]: "Bảo hiểm: từ chối"
+                - generic [ref=f225e134]:
+                  - generic [ref=f225e136]:
+                    - generic [ref=f225e137]: Ngọc Long
+                    - generic [ref=f225e138]: Chip VN-985216 · Appaloosa · Đực
+                  - generic [ref=f225e139]:
+                    - generic [ref=f225e140]: "Khoang: tiêu chuẩn"
+                    - generic [ref=f225e141]:
+                      - text: "Nhiệt độ yêu cầu:"
+                      - generic [ref=f225e142]: 22°C
+                    - generic [ref=f225e143]: "Dinh dưỡng: Cỏ khô Timothy, yến mạch"
+                    - generic [ref=f225e144]: "Nước: Mỗi 3 giờ"
+                    - generic [ref=f225e145]: "Bảo hiểm: từ chối"
+                - generic [ref=f225e146]:
+                  - generic [ref=f225e148]:
+                    - generic [ref=f225e149]: Bạch Phong
+                    - generic [ref=f225e150]: Chip VN-985212 · Arabian · Cái
+                  - generic [ref=f225e151]:
+                    - generic [ref=f225e152]: "Khoang: tiêu chuẩn"
+                    - generic [ref=f225e153]:
+                      - text: "Nhiệt độ yêu cầu:"
+                      - generic [ref=f225e154]: 22°C
+                    - generic [ref=f225e155]: "Dinh dưỡng: Cỏ khô Timothy, yến mạch"
+                    - generic [ref=f225e156]: "Nước: Mỗi 3 giờ"
+                    - generic [ref=f225e157]: "Bảo hiểm: từ chối"
+            - generic [ref=f225e158]:
+              - generic [ref=f225e159]:
+                - heading " Xe của đơn" [level=3] [ref=f225e160]:
+                  - generic [ref=f225e161]: 
+                  - text: Xe của đơn
+                - generic [ref=f225e162]:
+                  - button "+ Thêm xe" [ref=f225e163] [cursor=pointer]:
+                    - generic [ref=f225e164]: +
+                    - text: Thêm xe
+                  - button " Gán lại tự động" [ref=f225e165] [cursor=pointer]:
+                    - generic [ref=f225e166]: 
+                    - text: Gán lại tự động
+              - paragraph [ref=f225e167]:
+                - text: Hệ thống đã chọn ít xe nhất và chia đều ngựa.
+                - button "Xem thêm" [ref=f225e168] [cursor=pointer]
+              - generic [ref=f225e169] [cursor=pointer]:
+                - generic [ref=f225e170]: Xe 1 · 51C-98765 (Medium, 4 ngăn)
+                - generic [ref=f225e172]:
+                  - generic [ref=f225e173]:
+                    - generic [ref=f225e174]: Xe
+                    - combobox "Xe" [ref=f225e176]:
+                      - generic [ref=f225e177]: 51C-98765 · 4 ngăn
+                  - generic [ref=f225e180]:
+                    - generic [ref=f225e181]: Tài xế
+                    - combobox "Tài xế" [ref=f225e183]:
+                      - generic [ref=f225e184]: Trần Văn B
+                  - generic [ref=f225e187]:
+                    - generic [ref=f225e188]: Nhân viên hộ tống
+                    - combobox "Nhân viên hộ tống" [ref=f225e190]:
+                      - generic [ref=f225e191]: Lê Thị C
+                - list [ref=f225e194]:
+                  - listitem [ref=f225e195]:
+                    - generic [ref=f225e196]:
+                      - text: Kim Lân
+                      - generic [ref=f225e197]: Chip VN-985213
+                  - listitem [ref=f225e198]:
+                    - generic [ref=f225e199]:
+                      - text: Ngọc Long
+                      - generic [ref=f225e200]: Chip VN-985216
+                  - listitem [ref=f225e201]:
+                    - generic [ref=f225e202]:
+                      - text: Bạch Phong
+                      - generic [ref=f225e203]: Chip VN-985212
+            - generic [ref=f225e204]:
+              - generic [ref=f225e205]:
+                - heading " Lộ trình chi tiết" [level=3] [ref=f225e206]:
+                  - generic [ref=f225e207]: 
+                  - text: Lộ trình chi tiết
+                - generic [ref=f225e208]: Tổng thời gian lái ≈ 1.0 giờ · 1 chặng · dùng chung cho mọi xe
+              - generic [ref=f225e209]:
+                - generic [ref=f225e210]: Giờ đón ngựa *
+                - textbox "Giờ đón ngựa *" [ref=f225e211]: 2026-11-11T05:00
+              - table [ref=f225e213]:
+                - rowgroup [ref=f225e214]:
+                  - row [ref=f225e215]:
+                    - columnheader "Chặng" [ref=f225e216]
+                    - columnheader "Từ → Đến" [ref=f225e217]
+                    - columnheader "Khởi hành" [ref=f225e218]
+                    - columnheader "Đến" [ref=f225e219]
+                    - columnheader "Lái liên tục" [ref=f225e220]
+                - rowgroup [ref=f225e221]:
+                  - row [ref=f225e222]:
+                    - cell "1" [ref=f225e223]
+                    - cell "Kho Long An → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)" [ref=f225e224]
+                    - cell "11/11/2026 05:00" [ref=f225e225]
+                    - cell "06:00" [ref=f225e226]
+                    - cell "1.0 giờ" [ref=f225e227]
+            - generic [ref=f225e228]:
+              - generic [ref=f225e229]:
+                - heading " Trạm trung chuyển" [level=3] [ref=f225e230]:
+                  - generic [ref=f225e231]: 
+                  - text: Trạm trung chuyển
+                - button " Gợi ý lại" [ref=f225e232] [cursor=pointer]:
+                  - generic [ref=f225e233]: 
+                  - text: Gợi ý lại
+              - paragraph [ref=f225e234]: Các điểm xe đi qua giữa điểm đón và điểm trả. Tại mỗi trạm ngựa dừng tối thiểu 30 phút, hộ tống kiểm tra thể trạng và ghi nhật ký an sinh. Ngựa không đi liên tục quá 3–4 giờ giữa hai trạm.
+              - button "+ Thêm trạm trung chuyển" [ref=f225e237] [cursor=pointer]:
+                - generic [ref=f225e238]: +
+                - text: Thêm trạm trung chuyển
+            - generic [ref=f225e239]:
+              - generic [ref=f225e240]:
+                - generic [ref=f225e241]: Ghi chú
+                - textbox "Ghi chú" [ref=f225e242]
+              - generic [ref=f225e243]:
+                - generic [ref=f225e244]: Xác nhận để chuyển quản lý duyệt báo giá (khi Kiểm dịch viên cũng đã duyệt y tế).
+                - generic [ref=f225e245]:
+                  - button " Không duyệt, từ chối đơn" [ref=f225e246] [cursor=pointer]:
+                    - generic [ref=f225e247]: 
+                    - text: Không duyệt, từ chối đơn
+                  - button " Xác nhận xe và lộ trình" [ref=f225e248] [cursor=pointer]:
+                    - generic [ref=f225e249]: 
+                    - text: Xác nhận xe và lộ trình
+          - complementary [ref=f225e250]:
+            - generic [ref=f225e251]:
+              - heading " Nhật ký đơn" [level=3] [ref=f225e253]:
+                - generic [ref=f225e254]: 
+                - text: Nhật ký đơn
+              - list [ref=f225e255]:
+                - listitem [ref=f225e256]:
+                  - generic [aria-hidden] [ref=f225e258]: 
+                  - generic [ref=f225e259]:
+                    - text: Tiếp nhận, hệ thống tự gán 1 xe. Giao Phạm Văn Hưng (kiểm dịch) và Trần Minh (điều phối)
+                    - generic [ref=f225e260]: Quản lý · 03/10/2026 17:54
+                - listitem [ref=f225e261]:
+                  - generic [aria-hidden] [ref=f225e263]: 
+                  - generic [ref=f225e264]:
+                    - text: Gửi yêu cầu đặt đơn
+                    - generic [ref=f225e265]: Trang trại Long Thành · 03/10/2026 13:54
+  - group "Ngôn ngữ" [ref=f225e266]:
+    - button "VI" [pressed] [ref=f225e268]
+    - button "EN" [ref=f225e269] [cursor=pointer]

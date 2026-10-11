@@ -1,0 +1,726 @@
+- generic [ref=f49e3]:
+  - banner [ref=f49e4]:
+    - link "QL Quản lý manager@equine.vn" [ref=f49e5] [cursor=pointer]:
+      - /url: /backoffice/manager
+      - generic [ref=f49e6]: QL
+      - generic [ref=f49e7]:
+        - generic [ref=f49e8]: Quản lý
+        - generic [ref=f49e9]: manager@equine.vn
+    - generic "Đường dẫn" [ref=f49e10]:
+      - generic [aria-hidden] [ref=f49e11]: 
+      - generic [ref=f49e12]:
+        - generic [aria-hidden] [ref=f49e13]: 
+        - text: Duyệt giá
+    - search [ref=f49e14]:
+      - generic [aria-hidden] [ref=f49e15]: 
+      - textbox "Tìm đơn hàng" [ref=f49e16]:
+        - /placeholder: Tìm đơn hàng, khách hàng…
+    - generic [ref=f49e17]:
+      - button "Thông báo" [ref=f49e19] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f49e20]: 
+      - button "Đăng xuất" [ref=f49e21] [cursor=pointer]:
+        - generic [ref=f49e22]: 
+  - generic [ref=f49e23]:
+    - complementary "Menu" [ref=f49e24]:
+      - generic [ref=f49e25]:
+        - generic [ref=f49e26]: Menu
+        - button "Thu gọn menu" [ref=f49e27] [cursor=pointer]:
+          - generic [ref=f49e28]: 
+      - navigation [ref=f49e29]:
+        - link "Tổng quan" [ref=f49e30] [cursor=pointer]:
+          - /url: /backoffice/manager
+          - generic [aria-hidden] [ref=f49e31]: 
+        - link "Tiếp nhận 1 đơn chờ" [ref=f49e33] [cursor=pointer]:
+          - /url: /backoffice/manager/intake
+          - generic [aria-hidden] [ref=f49e34]: 
+          - generic [ref=f49e35]: Tiếp nhận
+          - generic "1 đơn chờ" [ref=f49e36]: "1"
+        - link "Duyệt giá 1 đơn chờ" [ref=f49e37] [cursor=pointer]:
+          - /url: /backoffice/manager/approvals
+          - generic [aria-hidden] [ref=f49e38]: 
+          - generic [ref=f49e39]: Duyệt giá
+          - generic "1 đơn chờ" [ref=f49e40]: "1"
+        - link "Sự cố 1 đơn chờ" [ref=f49e41] [cursor=pointer]:
+          - /url: /backoffice/manager/incidents
+          - generic [aria-hidden] [ref=f49e42]: 
+          - generic [ref=f49e43]: Sự cố
+          - generic "1 đơn chờ" [ref=f49e44]: "1"
+        - link "Tiến độ đơn 1 đơn chờ" [ref=f49e45] [cursor=pointer]:
+          - /url: /backoffice/manager/progress
+          - generic [aria-hidden] [ref=f49e46]: 
+          - generic [ref=f49e47]: Tiến độ đơn
+          - generic "1 đơn chờ" [ref=f49e48]: "1"
+        - link "Doanh thu" [ref=f49e49] [cursor=pointer]:
+          - /url: /backoffice/manager/reports
+          - generic [aria-hidden] [ref=f49e50]: 
+        - link "Chuyến đi" [ref=f49e52] [cursor=pointer]:
+          - /url: /backoffice/manager/trip-reports
+          - generic [aria-hidden] [ref=f49e53]: 
+      - generic [ref=f49e55]:
+        - button "Cần xử lý 4" [expanded] [ref=f49e56] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f49e57]: 
+          - generic [ref=f49e58]: Cần xử lý
+          - generic [ref=f49e59]: "4"
+        - link "0123 · Đối soát chi phí" [ref=f49e60] [cursor=pointer]:
+          - /url: /backoffice/manager/progress
+          - generic [aria-hidden] [ref=f49e61]: 
+        - link "0126 · Duyệt phương án sự cố" [ref=f49e63] [cursor=pointer]:
+          - /url: /backoffice/manager/incidents
+          - generic [aria-hidden] [ref=f49e64]: 
+        - link "0104 · Duyệt báo giá" [ref=f49e66] [cursor=pointer]:
+          - /url: /backoffice/manager/approvals
+          - generic [aria-hidden] [ref=f49e67]: 
+        - link "0101 · Tiếp nhận đơn" [ref=f49e69] [cursor=pointer]:
+          - /url: /backoffice/manager/intake
+          - generic [aria-hidden] [ref=f49e70]: 
+    - main [ref=f49e72]:
+      - generic [ref=f49e73]:
+        - generic [ref=f49e75]:
+          - generic [ref=f49e77]:
+            - heading "Duyệt báo giá" [level=1] [ref=f49e78]
+            - paragraph [ref=f49e79]: Duyệt để gửi khách; khách có 48 giờ đặt cọc 30%.
+          - generic [ref=f49e80]:
+            - tablist "Trạng thái" [ref=f49e81]:
+              - tab "Chờ duyệt báo giá 1" [selected] [ref=f49e82] [cursor=pointer]:
+                - text: Chờ duyệt báo giá
+                - generic [ref=f49e83]: "1"
+              - tab "Đã gửi báo giá 26" [ref=f49e84] [cursor=pointer]:
+                - text: Đã gửi báo giá
+                - generic [ref=f49e85]: "26"
+            - generic [ref=f49e86]:
+              - generic [ref=f49e87]:
+                - generic [aria-hidden] [ref=f49e88]: 
+                - textbox [ref=f49e89]:
+                  - /placeholder: Tìm theo mã đơn, khách hàng, tuyến…
+              - generic [ref=f49e90]:
+                - text: Khởi hành
+                - textbox "Khởi hành từ ngày" [ref=f49e91]
+                - text: →
+                - textbox "Khởi hành đến ngày" [ref=f49e92]
+            - table [ref=f49e94]:
+              - rowgroup [ref=f49e95]:
+                - row [ref=f49e96]:
+                  - columnheader "Mã đơn" [ref=f49e97]
+                  - columnheader "Khách hàng" [ref=f49e98]
+                  - columnheader "Tuyến" [ref=f49e99]
+                  - columnheader "Khởi hành" [ref=f49e100]
+                  - columnheader "Ngựa / xe" [ref=f49e101]
+                  - columnheader "Trạng thái" [ref=f49e102]
+                  - columnheader "Thao tác" [ref=f49e103]
+              - rowgroup [ref=f49e104]:
+                - row [ref=f49e105]:
+                  - cell "ORD-2026-0104 Quốc tế · Lao Bảo – Densavanh" [ref=f49e106]:
+                    - text: ORD-2026-0104
+                    - generic [ref=f49e107]: Quốc tế · Lao Bảo – Densavanh
+                  - cell "Trang trại Long Thành" [ref=f49e108]
+                  - cell "Kho Đồng Nai → Kho Viêng Chăn" [ref=f49e109]
+                  - cell "05/12/2026" [ref=f49e111]
+                  - cell "2 con · 1 xe" [ref=f49e112]
+                  - cell [ref=f49e113]:
+                    - generic "Chờ quản lý duyệt báo giá (Pending Final Commercial Approval)" [ref=f49e114]:
+                      - generic [aria-hidden] [ref=f49e115]: 
+                      - text: Chờ duyệt giá
+                  - cell [ref=f49e116]:
+                    - button "Duyệt báo giá" [ref=f49e117] [cursor=pointer]
+            - generic [ref=f49e118]: Hiển thị 1 đơn hàng
+        - dialog [ref=f49e125]:
+          - generic [ref=f49e126]:
+            - generic [ref=f49e127]:
+              - heading "Duyệt báo giá ORD-2026-0104" [level=3] [ref=f49e128]
+              - generic [ref=f49e129]: Trang trại Long Thành · khởi hành 05/12/2026
+            - button "Đóng" [ref=f49e130] [cursor=pointer]:
+              - generic [ref=f49e131]: 
+          - generic [ref=f49e132]:
+            - generic [ref=f49e133]:
+              - generic [ref=f49e134]: 
+              - generic [ref=f49e135]: Giấy tờ bên dưới chỉ để Quản lý xem. Khi bấm “Duyệt và gửi báo giá”, khách chỉ nhận chi tiết đơn và bảng giá, không kèm giấy tờ nào.
+            - heading "Giấy ngựa Kiểm dịch viên đã duyệt" [level=4] [ref=f49e136]
+            - paragraph [ref=f49e137]: "Kết luận: Đạt · Nguyễn Thị Thu · 05/10/2026 10:19. Bấm ảnh để xem lớn."
+            - generic [ref=f49e138]:
+              - generic [ref=f49e140]:
+                - generic [ref=f49e141]: Storm Runner
+                - generic [ref=f49e142]: Chip VN-985211 · Thoroughbred
+              - generic [ref=f49e143]:
+                - generic [ref=f49e144]:
+                  - button "Xem ảnh scan.pdf" [ref=f49e145]:
+                    - generic [aria-hidden] [ref=f49e146]: 
+                  - generic [ref=f49e147]:
+                    - generic [ref=f49e148]: Hộ chiếu ngựa (FEI / National Passport)
+                    - generic [ref=f49e149]: scan.pdf · nộp 30/03/2026 16:19
+                - generic [ref=f49e150]:
+                  - button "Xem ảnh scan.pdf" [ref=f49e151]:
+                    - generic [aria-hidden] [ref=f49e152]: 
+                  - generic [ref=f49e153]:
+                    - generic [ref=f49e154]: Sổ tiêm phòng
+                    - generic [ref=f49e155]: scan.pdf · nộp 07/08/2026 16:19 · hạn 25/03/2027
+                - generic [ref=f49e156]:
+                  - button "Xem ảnh scan.pdf" [ref=f49e157]:
+                    - generic [aria-hidden] [ref=f49e158]: 
+                  - generic [ref=f49e159]:
+                    - generic [ref=f49e160]: Xét nghiệm EIA / Coggins
+                    - generic [ref=f49e161]: scan.pdf · nộp 27/08/2026 16:19 · hạn 23/02/2027
+            - generic [ref=f49e162]:
+              - generic [ref=f49e164]:
+                - generic [ref=f49e165]: Ngọc Long
+                - generic [ref=f49e166]: Chip VN-985216 · Appaloosa
+              - generic [ref=f49e167]:
+                - generic [ref=f49e168]:
+                  - button "Xem ảnh scan.pdf" [ref=f49e169]:
+                    - generic [aria-hidden] [ref=f49e170]: 
+                  - generic [ref=f49e171]:
+                    - generic [ref=f49e172]: Hộ chiếu ngựa (FEI / National Passport)
+                    - generic [ref=f49e173]: scan.pdf · nộp 18/07/2026 16:19
+                - generic [ref=f49e174]:
+                  - button "Xem ảnh scan.pdf" [ref=f49e175]:
+                    - generic [aria-hidden] [ref=f49e176]: 
+                  - generic [ref=f49e177]:
+                    - generic [ref=f49e178]: Sổ tiêm phòng
+                    - generic [ref=f49e179]: scan.pdf · nộp 11/09/2026 16:19 · hạn 04/04/2027
+                - generic [ref=f49e180]:
+                  - button "Xem ảnh scan.pdf" [ref=f49e181]:
+                    - generic [aria-hidden] [ref=f49e182]: 
+                  - generic [ref=f49e183]:
+                    - generic [ref=f49e184]: Xét nghiệm EIA / Coggins
+                    - generic [ref=f49e185]: scan.pdf · nộp 16/09/2026 16:19 · hạn 25/03/2027
+            - heading "Lộ trình Điều phối viên đã lập" [level=4] [ref=f49e186]
+            - paragraph [ref=f49e187]: 9 chặng, 8 trạm trung chuyển, cửa khẩu Lao Bảo – Densavanh. Khởi hành 05/12/2026 05:00, đến 06/12/2026 16:48. Lập bởi Trần Minh.
+            - generic [ref=f49e189]:
+              - application "Bản đồ theo dõi xe" [ref=f49e190]:
+                - generic:
+                  - generic:
+                    - img:
+                      - generic:
+                        - generic [ref=f49e191] [cursor=pointer]
+                        - generic [ref=f49e192] [cursor=pointer]
+                  - generic:
+                    - button "A" [ref=f49e193] [cursor=pointer]
+                    - button "B" [ref=f49e195] [cursor=pointer]
+                    - button "⚑" [ref=f49e197] [cursor=pointer]
+                    - button [ref=f49e199] [cursor=pointer]
+                    - button [ref=f49e201] [cursor=pointer]
+                    - button [ref=f49e203] [cursor=pointer]
+                    - button [ref=f49e205] [cursor=pointer]
+                    - button [ref=f49e207] [cursor=pointer]
+                    - button [ref=f49e209] [cursor=pointer]
+                    - button [ref=f49e211] [cursor=pointer]
+                    - button [ref=f49e213] [cursor=pointer]
+                - generic:
+                  - generic [ref=f49e215]:
+                    - button "Zoom in" [ref=f49e216] [cursor=pointer]: +
+                    - button "Zoom out" [ref=f49e217] [cursor=pointer]: −
+                  - generic [ref=f49e218]:
+                    - link "Leaflet" [ref=f49e219] [cursor=pointer]:
+                      - /url: https://leafletjs.com
+                    - text: "| © OpenStreetMap"
+              - generic [ref=f49e224]:
+                - generic [ref=f49e225]: ● Trạm đã qua / chưa qua
+                - generic [ref=f49e226]: ⚑ Cửa khẩu
+            - heading "Xe, tài xế và hộ tống đã chọn" [level=4] [ref=f49e227]
+            - generic [ref=f49e229]:
+              - generic [ref=f49e230]:
+                - generic [ref=f49e231]:
+                  - generic [ref=f49e232]: Xe 1 · 65C-101.22
+                  - generic [ref=f49e233]: TRP-0104-1 · Light (2 ngăn) · đăng kiểm KD-2026-006651
+                - generic [ref=f49e234]: 2 ngựa
+              - generic [ref=f49e235]:
+                - generic [ref=f49e236]:
+                  - term [ref=f49e237]: Tài xế
+                  - definition [ref=f49e238]: —
+                - generic [ref=f49e239]:
+                  - term [ref=f49e240]: Hộ tống
+                  - definition [ref=f49e241]: —
+                - generic [ref=f49e242]:
+                  - term [ref=f49e243]: Ngựa trên xe
+                  - definition [ref=f49e244]: Storm Runner, Ngọc Long
+            - heading "Chuyến đi" [level=4] [ref=f49e245]
+            - generic [ref=f49e246]:
+              - generic [ref=f49e247]:
+                - term [ref=f49e248]: Khách hàng
+                - definition [ref=f49e249]: Trang trại Long Thành
+              - generic [ref=f49e250]:
+                - term [ref=f49e251]: Loại chuyến
+                - definition [ref=f49e252]: Quốc tế (Việt Nam → Lào)
+              - generic [ref=f49e253]:
+                - term [ref=f49e254]: Ngày khởi hành
+                - definition [ref=f49e255]: 05/12/2026
+              - generic [ref=f49e256]:
+                - term [ref=f49e257]: Điểm đón
+                - definition [ref=f49e258]: Kho Đồng Nai
+              - generic [ref=f49e259]:
+                - term [ref=f49e260]: Điểm giao
+                - definition [ref=f49e261]: Kho Viêng Chăn
+              - generic [ref=f49e262]:
+                - term [ref=f49e263]: Cửa khẩu (đã khóa)
+                - definition [ref=f49e264]: Lao Bảo – Densavanh
+              - generic [ref=f49e265]:
+                - term [ref=f49e266]: Người gửi
+                - definition [ref=f49e267]:
+                  - text: Trang trại Long Thành
+                  - generic [ref=f49e268]: 0901 456 789
+              - generic [ref=f49e269]:
+                - term [ref=f49e270]: Người nhận
+                - definition [ref=f49e271]:
+                  - text: Trung tâm Kiểm dịch Phnom Penh
+                  - generic [ref=f49e272]: 0912 345 678
+              - generic [ref=f49e273]:
+                - term [ref=f49e274]: Số ngựa
+                - definition [ref=f49e275]: 2 con
+            - heading "Ngựa và dịch vụ" [level=4] [ref=f49e276]
+            - generic [ref=f49e277]:
+              - generic [ref=f49e278]:
+                - generic [ref=f49e280]:
+                  - generic [ref=f49e281]: Storm Runner
+                  - generic [ref=f49e282]: Chip VN-985211 · Thoroughbred · Thiến
+                - generic [ref=f49e283]:
+                  - generic [ref=f49e284]: "Khoang: đơn mở rộng"
+                  - generic [ref=f49e285]:
+                    - text: "Thức ăn: Gói cơ bản"
+                    - generic [ref=f49e286]: (Cỏ khô thường)
+                  - generic [ref=f49e287]: "Cữ nước: Mỗi 3 giờ"
+                  - generic [ref=f49e288]: "Bảo hiểm: mua, phí 20,000,000 ₫"
+              - generic [ref=f49e289]:
+                - generic [ref=f49e291]:
+                  - generic [ref=f49e292]: Ngọc Long
+                  - generic [ref=f49e293]: Chip VN-985216 · Appaloosa · Đực
+                - generic [ref=f49e294]:
+                  - generic [ref=f49e295]: "Khoang: tiêu chuẩn"
+                  - generic [ref=f49e296]:
+                    - text: "Thức ăn: Gói cơ bản"
+                    - generic [ref=f49e297]: (Cỏ khô thường)
+                  - generic [ref=f49e298]: "Cữ nước: Mỗi 3 giờ"
+                  - generic [ref=f49e299]: "Bảo hiểm: từ chối"
+            - heading "Chọn tài xế và nhân viên hộ tống" [level=4] [ref=f49e300]
+            - paragraph [ref=f49e301]:
+              - text: Điều phối viên đã chọn
+              - generic [ref=f49e302]: 1 xe
+              - text: . Mỗi xe cần đúng 1 tài xế và 1 nhân viên hộ tống. Người đã được giao việc cho đơn khác thì bị khóa, đơn đó giao ngựa xong mới chọn lại được.
+            - generic [ref=f49e303] [cursor=pointer]:
+              - generic [ref=f49e304]: "Xe 1 · 65C-101.22 (Light, 2 ngăn) · 2 ngựa: Storm Runner, Ngọc Long"
+              - generic [ref=f49e305]:
+                - generic [ref=f49e306]:
+                  - generic [ref=f49e307]: Tài xế
+                  - button "Tài xế" [active] [ref=f49e308]:
+                    - generic [aria-hidden] [ref=f49e309]: 
+                    - generic [ref=f49e310]: Chọn tài xế
+                    - emphasis [ref=f49e311]: Chọn
+                - generic [ref=f49e312]:
+                  - generic [ref=f49e313]: Nhân viên hộ tống
+                  - button "Nhân viên hộ tống" [ref=f49e314]:
+                    - generic [aria-hidden] [ref=f49e315]: 
+                    - generic [ref=f49e316]: Chọn nhân viên hộ tống
+                    - emphasis [ref=f49e317]: Chọn
+            - generic [ref=f49e318]:
+              - generic [ref=f49e319]: 
+              - list [ref=f49e320]:
+                - listitem [ref=f49e321]: Xe 1 chưa chọn tài xế.
+                - listitem [ref=f49e322]: Xe 1 chưa chọn nhân viên hộ tống.
+            - heading "Điều chỉnh báo giá (không bắt buộc)" [level=4] [ref=f49e323]
+            - button "+ Thêm dòng điều chỉnh" [ref=f49e324] [cursor=pointer]:
+              - generic [ref=f49e325]: +
+              - text: Thêm dòng điều chỉnh
+            - heading "Báo giá gửi khách" [level=4] [ref=f49e326]
+            - generic [ref=f49e327]:
+              - table [ref=f49e328]:
+                - caption [ref=f49e329]: Chi phí cố định trọn gói
+                - rowgroup [ref=f49e330]:
+                  - row [ref=f49e331]:
+                    - cell "Cước vận chuyển nguyên chuyến Xe Light (2 ngăn) · 1490 km" [ref=f49e332]:
+                      - generic [ref=f49e333]: Cước vận chuyển nguyên chuyến
+                      - generic [ref=f49e334]: Xe Light (2 ngăn) · 1490 km
+                    - cell "31,658,000 ₫" [ref=f49e335]
+                  - row [ref=f49e336]:
+                    - cell "Nhân sự kỹ thuật, 01 tài xế + 01 hộ tống 4 ngày" [ref=f49e337]:
+                      - generic [ref=f49e338]: Nhân sự kỹ thuật, 01 tài xế + 01 hộ tống
+                      - generic [ref=f49e339]: 4 ngày
+                    - cell "7,560,000 ₫" [ref=f49e340]
+                  - row [ref=f49e341]:
+                    - cell "Nhiên liệu và BOT Ước tính theo lộ trình 1490 km, đã gồm dự phòng" [ref=f49e342]:
+                      - generic [ref=f49e343]: Nhiên liệu và BOT
+                      - generic [ref=f49e344]: Ước tính theo lộ trình 1490 km, đã gồm dự phòng
+                    - cell "14,785,000 ₫" [ref=f49e345]
+                  - row [ref=f49e346]:
+                    - cell "Khoang đơn mở rộng 1 ngựa" [ref=f49e347]:
+                      - generic [ref=f49e348]: Khoang đơn mở rộng
+                      - generic [ref=f49e349]: 1 ngựa
+                    - cell "1,500,000 ₫" [ref=f49e350]
+                  - row [ref=f49e351]:
+                    - cell "Thủ tục kiểm dịch và hải quan Nhà xe làm trọn gói" [ref=f49e352]:
+                      - generic [ref=f49e353]: Thủ tục kiểm dịch và hải quan
+                      - generic [ref=f49e354]: Nhà xe làm trọn gói
+                    - cell "300,000 ₫" [ref=f49e355]
+                  - row [ref=f49e356]:
+                    - cell "Bảo hiểm Động vật Sống 1 ngựa mua bảo hiểm" [ref=f49e357]:
+                      - generic [ref=f49e358]: Bảo hiểm Động vật Sống
+                      - generic [ref=f49e359]: 1 ngựa mua bảo hiểm
+                    - cell "20,000,000 ₫" [ref=f49e360]
+              - generic [ref=f49e361]:
+                - generic [ref=f49e362]:
+                  - generic [ref=f49e363]: Tổng giá trị
+                  - generic [ref=f49e364]: 75,803,000 ₫
+                - generic [ref=f49e365]: Chưa gồm VAT. Giá cố định, nhiên liệu và phí cầu đường đã nằm trong báo giá.
+                - generic [ref=f49e366]:
+                  - generic [ref=f49e367]: Đặt cọc để nhận vận đơn (30%)
+                  - generic [ref=f49e368]: 22,741,000 ₫
+                - generic [ref=f49e369]:
+                  - generic [ref=f49e370]: Thanh toán còn lại vào ngày bốc ngựa (70%)
+                  - generic [ref=f49e371]: 53,062,000 ₫
+              - generic [ref=f49e372]:
+                - generic [ref=f49e373]:
+                  - generic [aria-hidden] [ref=f49e374]: 
+                  - text: "Không phụ thu ngoài phiếu: chỉ phát sinh thêm khi có sự cố liên quan đến ngựa hoặc dịch vụ bạn chọn thêm (xem"
+                  - link "chính sách chi phí sự cố" [ref=f49e375] [cursor=pointer]:
+                    - /url: /backoffice/terms?doc=incident_cost
+                  - text: ).
+                - generic [ref=f49e376]:
+                  - generic [aria-hidden] [ref=f49e377]: 
+                  - text: Báo giá có hiệu lực đến 08/10/2026 16:19.
+            - dialog [ref=f49e387]:
+              - generic [ref=f49e388]:
+                - generic [ref=f49e389]:
+                  - heading "Chọn tài xế" [level=3] [ref=f49e390]
+                  - generic [ref=f49e391]: Người đã được giao việc cho một đơn thì bị khóa, đơn giao ngựa xong mới chọn lại được.
+                - button "Đóng" [ref=f49e392] [cursor=pointer]:
+                  - generic [ref=f49e393]: 
+              - generic [ref=f49e394]:
+                - generic [ref=f49e395]:
+                  - generic [ref=f49e396]:
+                    - generic [aria-hidden] [ref=f49e397]: 
+                    - textbox [ref=f49e398]:
+                      - /placeholder: Tìm tên, mã, số điện thoại
+                  - generic [ref=f49e399] [cursor=pointer]:
+                    - checkbox "Chỉ hiện chọn được" [ref=f49e400]
+                    - text: Chỉ hiện chọn được
+                  - generic [ref=f49e401]: 6/18 chọn được
+                - generic [ref=f49e402]:
+                  - button "Nguyễn Văn A" [ref=f49e403] [cursor=pointer]:
+                    - generic [ref=f49e404]:
+                      - generic [ref=f49e405]: TX-01
+                      - generic [ref=f49e406]: Rảnh
+                    - generic [ref=f49e408]: VA
+                    - generic [ref=f49e409]:
+                      - text: Nguyễn Văn A
+                      - generic [ref=f49e410]: 0901 111 222 · GPLX FC-001-03571
+                    - generic [ref=f49e411]:
+                      - generic [ref=f49e412]:
+                        - generic [ref=f49e413]: 
+                        - text: Việc đã được giao
+                      - generic [ref=f49e414]: Chưa được giao việc
+                  - 'button "Trần Văn B, không chọn được: Đã được giao việc cho đơn ORD-2026-0122" [disabled] [ref=f49e415]':
+                    - generic [ref=f49e416]:
+                      - generic [ref=f49e417]: TX-02
+                      - generic [ref=f49e418]: Khóa
+                    - generic [ref=f49e420]: VB
+                    - generic [ref=f49e421]:
+                      - text: Trần Văn B
+                      - generic [ref=f49e422]: 0901 333 444 · GPLX FC-002-07142
+                    - generic [ref=f49e423]:
+                      - generic [ref=f49e424]:
+                        - generic [ref=f49e425]: 
+                        - text: Việc đã được giao
+                      - generic [ref=f49e426]:
+                        - generic [ref=f49e427]: ORD-2026-0122
+                        - generic [ref=f49e428]: khởi hành 06/10/2026 · Kho Đồng Nai → Kho Long An
+                    - generic [ref=f49e429]:
+                      - generic [ref=f49e430]: 
+                      - text: Đã được giao việc cho đơn ORD-2026-0122
+                  - 'button "Lê Văn C, không chọn được: Đã được giao việc cho đơn ORD-2026-0134" [disabled] [ref=f49e431]':
+                    - generic [ref=f49e432]:
+                      - generic [ref=f49e433]: TX-03
+                      - generic [ref=f49e434]: Khóa
+                    - generic [ref=f49e436]: VC
+                    - generic [ref=f49e437]:
+                      - text: Lê Văn C
+                      - generic [ref=f49e438]: 0901 555 666 · GPLX FC-003-10713
+                    - generic [ref=f49e439]:
+                      - generic [ref=f49e440]:
+                        - generic [ref=f49e441]: 
+                        - text: Việc đã được giao
+                      - generic [ref=f49e442]:
+                        - generic [ref=f49e443]: ORD-2026-0134
+                        - generic [ref=f49e444]: khởi hành 06/10/2026 · Kho Đồng Nai → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+                      - generic [ref=f49e445]:
+                        - generic [ref=f49e446]: ORD-2026-0122
+                        - generic [ref=f49e447]: khởi hành 06/10/2026 · Kho Đồng Nai → Kho Long An
+                    - generic [ref=f49e448]:
+                      - generic [ref=f49e449]: 
+                      - text: Đã được giao việc cho đơn ORD-2026-0134
+                  - 'button "Phạm Văn D, không chọn được: Đã được giao việc cho đơn ORD-2026-0106" [disabled] [ref=f49e450]':
+                    - generic [ref=f49e451]:
+                      - generic [ref=f49e452]: TX-04
+                      - generic [ref=f49e453]: Khóa
+                    - generic [ref=f49e455]: VD
+                    - generic [ref=f49e456]:
+                      - text: Phạm Văn D
+                      - generic [ref=f49e457]: 0901 777 888 · GPLX FC-004-14284
+                    - generic [ref=f49e458]:
+                      - generic [ref=f49e459]:
+                        - generic [ref=f49e460]: 
+                        - text: Việc đã được giao
+                      - generic [ref=f49e461]:
+                        - generic [ref=f49e462]: ORD-2026-0106
+                        - generic [ref=f49e463]: khởi hành 30/11/2026 · Kho Đồng Nai → Kho Phnom Penh
+                    - generic [ref=f49e464]:
+                      - generic [ref=f49e465]: 
+                      - text: Đã được giao việc cho đơn ORD-2026-0106
+                  - 'button "Đặng Hoài Phúc, không chọn được: Đã được giao việc cho đơn ORD-2026-0136" [disabled] [ref=f49e466]':
+                    - generic [ref=f49e467]:
+                      - generic [ref=f49e468]: TX-05
+                      - generic [ref=f49e469]: Khóa
+                    - generic [ref=f49e471]: HP
+                    - generic [ref=f49e472]:
+                      - text: Đặng Hoài Phúc
+                      - generic [ref=f49e473]: 0901 999 000 · GPLX FC-005-17855
+                    - generic [ref=f49e474]:
+                      - generic [ref=f49e475]:
+                        - generic [ref=f49e476]: 
+                        - text: Việc đã được giao
+                      - generic [ref=f49e477]:
+                        - generic [ref=f49e478]: ORD-2026-0136
+                        - generic [ref=f49e479]: khởi hành 06/10/2026 · Kho Đồng Nai → Kho Phnom Penh
+                    - generic [ref=f49e480]:
+                      - generic [ref=f49e481]: 
+                      - text: Đã được giao việc cho đơn ORD-2026-0136
+                  - 'button "Lê Minh Tuấn, không chọn được: Đã được giao việc cho đơn ORD-2026-0135" [disabled] [ref=f49e482]':
+                    - generic [ref=f49e483]:
+                      - generic [ref=f49e484]: TX-06
+                      - generic [ref=f49e485]: Khóa
+                    - generic [ref=f49e487]: MT
+                    - generic [ref=f49e488]:
+                      - text: Lê Minh Tuấn
+                      - generic [ref=f49e489]: 0903 121 314 · GPLX FC-006-21426
+                    - generic [ref=f49e490]:
+                      - generic [ref=f49e491]:
+                        - generic [ref=f49e492]: 
+                        - text: Việc đã được giao
+                      - generic [ref=f49e493]:
+                        - generic [ref=f49e494]: ORD-2026-0135
+                        - generic [ref=f49e495]: khởi hành 06/10/2026 · Kho Bình Dương → Kho Long An
+                    - generic [ref=f49e496]:
+                      - generic [ref=f49e497]: 
+                      - text: Đã được giao việc cho đơn ORD-2026-0135
+                  - 'button "Nguyễn Văn Hùng, không chọn được: Đã được giao việc cho đơn ORD-2026-0116" [disabled] [ref=f49e498]':
+                    - generic [ref=f49e499]:
+                      - generic [ref=f49e500]: TX-07
+                      - generic [ref=f49e501]: Khóa
+                    - generic [ref=f49e503]: VH
+                    - generic [ref=f49e504]:
+                      - text: Nguyễn Văn Hùng
+                      - generic [ref=f49e505]: 0908 111 222 · GPLX FC-007-24997
+                    - generic [ref=f49e506]:
+                      - generic [ref=f49e507]:
+                        - generic [ref=f49e508]: 
+                        - text: Việc đã được giao
+                      - generic [ref=f49e509]:
+                        - generic [ref=f49e510]: ORD-2026-0116
+                        - generic [ref=f49e511]: khởi hành 07/10/2026 · Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+                      - generic [ref=f49e512]:
+                        - generic [ref=f49e513]: ORD-2026-0117
+                        - generic [ref=f49e514]: khởi hành 06/10/2026 · Kho Đồng Nai → Kho Long An
+                      - generic [ref=f49e515]:
+                        - generic [ref=f49e516]: ORD-2026-0125
+                        - generic [ref=f49e517]: khởi hành 06/10/2026 · Kho Đồng Nai → Kho Long An
+                      - generic [ref=f49e518]:
+                        - generic [ref=f49e519]: ORD-2026-0126
+                        - generic [ref=f49e520]: khởi hành 06/10/2026 · Kho Long An → Kho Bình Dương
+                      - generic [ref=f49e521]:
+                        - generic [ref=f49e522]: ORD-2026-0127
+                        - generic [ref=f49e523]: khởi hành 06/10/2026 · Kho Bình Dương → Kho Đồng Nai
+                      - generic [ref=f49e524]:
+                        - generic [ref=f49e525]: ORD-2026-0115
+                        - generic [ref=f49e526]: khởi hành 18/10/2026 · Kho Long An → Kho Bình Dương
+                    - generic [ref=f49e527]:
+                      - generic [ref=f49e528]: 
+                      - text: Đã được giao việc cho đơn ORD-2026-0116
+                  - 'button "Phan Thanh Hải, không chọn được: Đã được giao việc cho đơn ORD-2026-0137" [disabled] [ref=f49e529]':
+                    - generic [ref=f49e530]:
+                      - generic [ref=f49e531]: TX-08
+                      - generic [ref=f49e532]: Khóa
+                    - generic [ref=f49e534]: TH
+                    - generic [ref=f49e535]:
+                      - text: Phan Thanh Hải
+                      - generic [ref=f49e536]: 0903 515 717 · GPLX FC-008-28568
+                    - generic [ref=f49e537]:
+                      - generic [ref=f49e538]:
+                        - generic [ref=f49e539]: 
+                        - text: Việc đã được giao
+                      - generic [ref=f49e540]:
+                        - generic [ref=f49e541]: ORD-2026-0137
+                        - generic [ref=f49e542]: khởi hành 06/10/2026 · Kho Đồng Nai → Kho Phnom Penh
+                    - generic [ref=f49e543]:
+                      - generic [ref=f49e544]: 
+                      - text: Đã được giao việc cho đơn ORD-2026-0137
+                  - 'button "Trần Quốc Bảo, không chọn được: Đã được giao việc cho đơn ORD-2026-0118" [disabled] [ref=f49e545]':
+                    - generic [ref=f49e546]:
+                      - generic [ref=f49e547]: TX-09
+                      - generic [ref=f49e548]: Khóa
+                    - generic [ref=f49e550]: QB
+                    - generic [ref=f49e551]:
+                      - text: Trần Quốc Bảo
+                      - generic [ref=f49e552]: 0903 818 919 · GPLX FC-009-32139
+                    - generic [ref=f49e553]:
+                      - generic [ref=f49e554]:
+                        - generic [ref=f49e555]: 
+                        - text: Việc đã được giao
+                      - generic [ref=f49e556]:
+                        - generic [ref=f49e557]: ORD-2026-0118
+                        - generic [ref=f49e558]: khởi hành 06/10/2026 · Kho Đồng Nai → Kho Phnom Penh
+                      - generic [ref=f49e559]:
+                        - generic [ref=f49e560]: ORD-2026-0113
+                        - generic [ref=f49e561]: khởi hành 11/11/2026 · Kho Đồng Nai → Kho Phnom Penh
+                      - generic [ref=f49e562]:
+                        - generic [ref=f49e563]: ORD-2026-0121
+                        - generic [ref=f49e564]: khởi hành 15/12/2026 · Kho Đồng Nai → Kho Phnom Penh
+                      - generic [ref=f49e565]:
+                        - generic [ref=f49e566]: ORD-2026-0105
+                        - generic [ref=f49e567]: khởi hành 15/11/2026 · Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+                    - generic [ref=f49e568]:
+                      - generic [ref=f49e569]: 
+                      - text: Đã được giao việc cho đơn ORD-2026-0118
+                  - 'button "Phạm Đức Anh, không chọn được: Đã được giao việc cho đơn ORD-2026-0120" [disabled] [ref=f49e570]':
+                    - generic [ref=f49e571]:
+                      - generic [ref=f49e572]: TX-10
+                      - generic [ref=f49e573]: Khóa
+                    - generic [ref=f49e575]: ĐA
+                    - generic [ref=f49e576]:
+                      - text: Phạm Đức Anh
+                      - generic [ref=f49e577]: 0904 202 303 · GPLX FC-010-35710
+                    - generic [ref=f49e578]:
+                      - generic [ref=f49e579]:
+                        - generic [ref=f49e580]: 
+                        - text: Việc đã được giao
+                      - generic [ref=f49e581]:
+                        - generic [ref=f49e582]: ORD-2026-0120
+                        - generic [ref=f49e583]: khởi hành 07/10/2026 · Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+                      - generic [ref=f49e584]:
+                        - generic [ref=f49e585]: ORD-2026-0121
+                        - generic [ref=f49e586]: khởi hành 15/12/2026 · Kho Đồng Nai → Kho Phnom Penh
+                    - generic [ref=f49e587]:
+                      - generic [ref=f49e588]: 
+                      - text: Đã được giao việc cho đơn ORD-2026-0120
+                  - 'button "Võ Thanh Sơn, không chọn được: Đã được giao việc cho đơn ORD-2026-0110" [disabled] [ref=f49e589]':
+                    - generic [ref=f49e590]:
+                      - generic [ref=f49e591]: TX-11
+                      - generic [ref=f49e592]: Khóa
+                    - generic [ref=f49e594]: TS
+                    - generic [ref=f49e595]:
+                      - text: Võ Thanh Sơn
+                      - generic [ref=f49e596]: 0904 404 505 · GPLX FC-011-39281
+                    - generic [ref=f49e597]:
+                      - generic [ref=f49e598]:
+                        - generic [ref=f49e599]: 
+                        - text: Việc đã được giao
+                      - generic [ref=f49e600]:
+                        - generic [ref=f49e601]: ORD-2026-0110
+                        - generic [ref=f49e602]: khởi hành 22/11/2026 · Kho Long An → Kho Bình Dương
+                    - generic [ref=f49e603]:
+                      - generic [ref=f49e604]: 
+                      - text: Đã được giao việc cho đơn ORD-2026-0110
+                  - 'button "Lê Văn Tài, không chọn được: Đã được giao việc cho đơn ORD-2026-0111" [disabled] [ref=f49e605]':
+                    - generic [ref=f49e606]:
+                      - generic [ref=f49e607]: TX-12
+                      - generic [ref=f49e608]: Khóa
+                    - generic [ref=f49e610]: VT
+                    - generic [ref=f49e611]:
+                      - text: Lê Văn Tài
+                      - generic [ref=f49e612]: 0904 606 707 · GPLX FC-012-42852
+                    - generic [ref=f49e613]:
+                      - generic [ref=f49e614]:
+                        - generic [ref=f49e615]: 
+                        - text: Việc đã được giao
+                      - generic [ref=f49e616]:
+                        - generic [ref=f49e617]: ORD-2026-0111
+                        - generic [ref=f49e618]: khởi hành 27/11/2026 · Kho Đồng Nai → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+                    - generic [ref=f49e619]:
+                      - generic [ref=f49e620]: 
+                      - text: Đã được giao việc cho đơn ORD-2026-0111
+                  - 'button "Trịnh Văn Long, không chọn được: Đã được giao việc cho đơn ORD-2026-0112" [disabled] [ref=f49e621]':
+                    - generic [ref=f49e622]:
+                      - generic [ref=f49e623]: TX-13
+                      - generic [ref=f49e624]: Khóa
+                    - generic [ref=f49e626]: VL
+                    - generic [ref=f49e627]:
+                      - text: Trịnh Văn Long
+                      - generic [ref=f49e628]: 0904 808 909 · GPLX FC-013-46423
+                    - generic [ref=f49e629]:
+                      - generic [ref=f49e630]:
+                        - generic [ref=f49e631]: 
+                        - text: Việc đã được giao
+                      - generic [ref=f49e632]:
+                        - generic [ref=f49e633]: ORD-2026-0112
+                        - generic [ref=f49e634]: khởi hành 19/11/2026 · Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+                    - generic [ref=f49e635]:
+                      - generic [ref=f49e636]: 
+                      - text: Đã được giao việc cho đơn ORD-2026-0112
+                  - button "Hoàng Văn Tâm" [ref=f49e637] [cursor=pointer]:
+                    - generic [ref=f49e638]:
+                      - generic [ref=f49e639]: TX-14
+                      - generic [ref=f49e640]: Rảnh
+                    - generic [ref=f49e642]: VT
+                    - generic [ref=f49e643]:
+                      - text: Hoàng Văn Tâm
+                      - generic [ref=f49e644]: 0905 121 212 · GPLX FC-014-49994
+                    - generic [ref=f49e645]:
+                      - generic [ref=f49e646]:
+                        - generic [ref=f49e647]: 
+                        - text: Việc đã được giao
+                      - generic [ref=f49e648]: Chưa được giao việc
+                  - button "Bùi Quang Vinh" [ref=f49e649] [cursor=pointer]:
+                    - generic [ref=f49e650]:
+                      - generic [ref=f49e651]: TX-15
+                      - generic [ref=f49e652]: Rảnh
+                    - generic [ref=f49e654]: QV
+                    - generic [ref=f49e655]:
+                      - text: Bùi Quang Vinh
+                      - generic [ref=f49e656]: 0905 232 323 · GPLX FC-015-53565
+                    - generic [ref=f49e657]:
+                      - generic [ref=f49e658]:
+                        - generic [ref=f49e659]: 
+                        - text: Việc đã được giao
+                      - generic [ref=f49e660]: Chưa được giao việc
+                  - button "Đinh Công Minh" [ref=f49e661] [cursor=pointer]:
+                    - generic [ref=f49e662]:
+                      - generic [ref=f49e663]: TX-16
+                      - generic [ref=f49e664]: Rảnh
+                    - generic [ref=f49e666]: CM
+                    - generic [ref=f49e667]:
+                      - text: Đinh Công Minh
+                      - generic [ref=f49e668]: 0905 343 434 · GPLX FC-016-57136
+                    - generic [ref=f49e669]:
+                      - generic [ref=f49e670]:
+                        - generic [ref=f49e671]: 
+                        - text: Việc đã được giao
+                      - generic [ref=f49e672]: Chưa được giao việc
+                  - button "Mai Văn Khoa" [ref=f49e673] [cursor=pointer]:
+                    - generic [ref=f49e674]:
+                      - generic [ref=f49e675]: TX-17
+                      - generic [ref=f49e676]: Rảnh
+                    - generic [ref=f49e678]: VK
+                    - generic [ref=f49e679]:
+                      - text: Mai Văn Khoa
+                      - generic [ref=f49e680]: 0905 454 545 · GPLX FC-017-60707
+                    - generic [ref=f49e681]:
+                      - generic [ref=f49e682]:
+                        - generic [ref=f49e683]: 
+                        - text: Việc đã được giao
+                      - generic [ref=f49e684]: Chưa được giao việc
+                  - button "Cao Xuân Lộc" [ref=f49e685] [cursor=pointer]:
+                    - generic [ref=f49e686]:
+                      - generic [ref=f49e687]: TX-18
+                      - generic [ref=f49e688]: Rảnh
+                    - generic [ref=f49e690]: XL
+                    - generic [ref=f49e691]:
+                      - text: Cao Xuân Lộc
+                      - generic [ref=f49e692]: 0905 565 656 · GPLX FC-018-64278
+                    - generic [ref=f49e693]:
+                      - generic [ref=f49e694]:
+                        - generic [ref=f49e695]: 
+                        - text: Việc đã được giao
+                      - generic [ref=f49e696]: Chưa được giao việc
+          - generic [ref=f49e378]:
+            - button "Đóng" [ref=f49e379] [cursor=pointer]
+            - button " Duyệt và gửi báo giá" [disabled] [ref=f49e380]:
+              - generic [ref=f49e381]: 
+              - text: Duyệt và gửi báo giá
+  - group "Ngôn ngữ" [ref=f49e120]:
+    - button "VI" [pressed] [ref=f49e122]
+    - button "EN" [ref=f49e123] [cursor=pointer]

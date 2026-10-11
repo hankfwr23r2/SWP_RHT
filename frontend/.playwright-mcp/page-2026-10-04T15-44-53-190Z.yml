@@ -1,0 +1,129 @@
+- generic [ref=f342e3]:
+  - banner [ref=f342e4]:
+    - link "TM Trần Minh ops@equine.vn" [ref=f342e5] [cursor=pointer]:
+      - /url: /backoffice/coordinator/fleet-plan
+      - generic [ref=f342e6]: TM
+      - generic [ref=f342e7]:
+        - generic [ref=f342e8]: Trần Minh
+        - generic [ref=f342e9]: ops@equine.vn
+    - generic "Đường dẫn" [ref=f342e10]:
+      - generic [aria-hidden] [ref=f342e11]: 
+      - generic [ref=f342e12]:
+        - generic [aria-hidden] [ref=f342e13]: 
+        - text: Sự cố
+    - search [ref=f342e14]:
+      - generic [aria-hidden] [ref=f342e15]: 
+      - textbox "Tìm đơn hàng" [ref=f342e16]:
+        - /placeholder: Tìm đơn hàng, khách hàng…
+    - generic [ref=f342e17]:
+      - button "Thông báo" [ref=f342e19] [cursor=pointer]:
+        - generic [aria-hidden] [ref=f342e20]: 
+      - button "Đăng xuất" [ref=f342e21] [cursor=pointer]:
+        - generic [ref=f342e22]: 
+  - generic [ref=f342e23]:
+    - complementary "Menu" [ref=f342e24]:
+      - generic [ref=f342e25]:
+        - generic [ref=f342e26]: Menu
+        - button "Thu gọn menu" [ref=f342e27] [cursor=pointer]:
+          - generic [ref=f342e28]: 
+      - navigation [ref=f342e29]:
+        - link "Xe và lộ trình 3 đơn chờ" [ref=f342e30] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan
+          - generic [aria-hidden] [ref=f342e31]: 
+          - generic [ref=f342e32]: Xe và lộ trình
+          - generic "3 đơn chờ" [ref=f342e33]: "3"
+        - link "Giấy cho tài xế 6 đơn chờ" [ref=f342e34] [cursor=pointer]:
+          - /url: /backoffice/coordinator/dispatch
+          - generic [aria-hidden] [ref=f342e35]: 
+          - generic [ref=f342e36]: Giấy cho tài xế
+          - generic "6 đơn chờ" [ref=f342e37]: "6"
+        - link "Giám sát" [ref=f342e38] [cursor=pointer]:
+          - /url: /backoffice/coordinator/monitoring
+          - generic [aria-hidden] [ref=f342e39]: 
+        - link "Sự cố 1 đơn chờ" [ref=f342e41] [cursor=pointer]:
+          - /url: /backoffice/coordinator/incidents
+          - generic [aria-hidden] [ref=f342e42]: 
+          - generic [ref=f342e43]: Sự cố
+          - generic "1 đơn chờ" [ref=f342e44]: "1"
+        - link "Đội xe" [ref=f342e45] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet
+          - generic [aria-hidden] [ref=f342e46]: 
+      - generic [ref=f342e48]:
+        - button "Cần xử lý 5" [expanded] [ref=f342e49] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f342e50]: 
+          - generic [ref=f342e51]: Cần xử lý
+          - generic [ref=f342e52]: "5"
+        - link "0125 · Lập phương án sự cố" [ref=f342e53] [cursor=pointer]:
+          - /url: /backoffice/coordinator/incidents
+          - generic [aria-hidden] [ref=f342e54]: 
+        - link "0102 · Chốt xe, lộ trình" [ref=f342e56] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0102
+          - generic [aria-hidden] [ref=f342e57]: 
+        - link "0131 · Chốt xe, lộ trình" [ref=f342e59] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0131
+          - generic [aria-hidden] [ref=f342e60]: 
+        - link "0132 · Chốt xe, lộ trình" [ref=f342e62] [cursor=pointer]:
+          - /url: /backoffice/coordinator/fleet-plan/ORD-2026-0132
+          - generic [aria-hidden] [ref=f342e63]: 
+        - link "0113 · Nhập bộ giấy" [ref=f342e65] [cursor=pointer]:
+          - /url: /backoffice/coordinator/dispatch/ORD-2026-0113
+          - generic [aria-hidden] [ref=f342e66]: 
+    - main [ref=f342e68]:
+      - generic [ref=f342e71]:
+        - generic [ref=f342e73]:
+          - heading "Xử lý sự cố" [level=1] [ref=f342e74]
+          - paragraph [ref=f342e75]: Tài xế hoặc hộ tống bấm SOS thì sự cố hiện ở đây. Lập phương án và trình Quản lý duyệt.
+        - generic [ref=f342e76]:
+          - tablist "Trạng thái" [ref=f342e77]:
+            - tab "Cần lập phương án 1" [selected] [ref=f342e78] [cursor=pointer]:
+              - text: Cần lập phương án
+              - generic [ref=f342e79]: "1"
+            - tab "Chờ Quản lý duyệt 1" [ref=f342e80] [cursor=pointer]:
+              - text: Chờ Quản lý duyệt
+              - generic [ref=f342e81]: "1"
+            - tab "Đang xử lý 1" [ref=f342e82] [cursor=pointer]:
+              - text: Đang xử lý
+              - generic [ref=f342e83]: "1"
+            - tab "Đã xử lý xong 4" [ref=f342e84] [cursor=pointer]:
+              - text: Đã xử lý xong
+              - generic [ref=f342e85]: "4"
+          - generic [ref=f342e86]:
+            - generic [ref=f342e87]:
+              - generic [aria-hidden] [ref=f342e88]: 
+              - textbox [ref=f342e89]:
+                - /placeholder: Tìm theo mã đơn, khách hàng, tuyến…
+            - generic [ref=f342e90]:
+              - text: Báo lúc
+              - textbox "Báo lúc từ ngày" [ref=f342e91]
+              - text: →
+              - textbox "Báo lúc đến ngày" [ref=f342e92]
+          - table [ref=f342e94]:
+            - rowgroup [ref=f342e95]:
+              - row [ref=f342e96]:
+                - columnheader "Mã đơn" [ref=f342e97]
+                - columnheader "Khách hàng" [ref=f342e98]
+                - columnheader "Tuyến" [ref=f342e99]
+                - columnheader "Sự cố" [ref=f342e100]
+                - columnheader "Báo lúc" [ref=f342e101]
+                - columnheader "Hạn mức" [ref=f342e102]
+                - columnheader "Ghi chú" [ref=f342e103]
+                - columnheader "Thao tác" [ref=f342e104]
+            - rowgroup [ref=f342e105]:
+              - row [ref=f342e106]:
+                - cell "ORD-2026-0125 Trong nước" [ref=f342e107]:
+                  - text: ORD-2026-0125
+                  - generic [ref=f342e108]: Trong nước
+                - cell "CLB Ngựa Phương Nam" [ref=f342e109]
+                - cell "Kho Đồng Nai → Kho Long An" [ref=f342e110]
+                - cell "Sức khỏe ngựa xe TRP-0125-1" [ref=f342e112]:
+                  - text: Sức khỏe ngựa
+                  - generic [ref=f342e113]: xe TRP-0125-1
+                - cell "04/10/2026 13:44" [ref=f342e114]
+                - cell "-" [ref=f342e115]
+                - cell "Ngựa đau bụng, đổ mồ hôi" [ref=f342e116]
+                - cell [ref=f342e118]:
+                  - button "Lập phương án" [ref=f342e119] [cursor=pointer]
+          - generic [ref=f342e120]: Hiển thị 1 đơn hàng
+  - group "Ngôn ngữ" [ref=f342e122]:
+    - button "VI" [pressed] [ref=f342e124]
+    - button "EN" [ref=f342e125] [cursor=pointer]

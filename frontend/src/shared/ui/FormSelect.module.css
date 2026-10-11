@@ -1,0 +1,22 @@
+/* Ô chọn thay <select> gốc. Danh sách xổ xuống nằm ngoài khung (portal) nên chỉ dùng biến toàn cục và giá trị cố định. */
+.root { position: relative; display: block; width: 100%; }
+.trigger { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 44px; height: 100%; padding: 0 12px 0 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: white; color: var(--text); font: inherit; text-align: left; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s, background 0.2s; }
+.trigger:hover:not(:disabled) { border-color: #b6bdc9; }
+.trigger:focus-visible, .trigger[aria-expanded='true'] { outline: none; border-color: var(--orange); box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15); }
+.trigger:disabled { background: #f4f5f7; color: var(--muted); cursor: not-allowed; }
+.invalid { border-color: var(--red); }
+.value { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chevron { flex: none; color: var(--muted); transition: transform 0.2s, color 0.2s; }
+.trigger[aria-expanded='true'] .chevron { transform: rotate(180deg); color: var(--orange); }
+
+.menu { position: fixed; z-index: 1000; max-height: 280px; overflow-y: auto; margin: 0; padding: 6px; list-style: none; background: white; border: 1px solid #e5e7ec; border-radius: 14px; box-shadow: 0 16px 40px rgba(15, 23, 42, 0.16), 0 2px 6px rgba(15, 23, 42, 0.06); animation: fsPop 0.14s ease-out; scrollbar-width: thin; }
+@keyframes fsPop { from { opacity: 0; transform: translateY(-4px) scale(0.98); } }
+@media (prefers-reduced-motion: reduce) { .menu { animation: none; } }
+.option { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 12px; border-radius: 10px; font-size: 0.92rem; color: #1e293b; cursor: pointer; }
+.option > span { min-width: 0; }
+.option svg { flex: none; color: #ea580c; }
+.active { background: #f4f5f7; }
+.selected { background: #fff7ed; color: #c2410c; font-weight: 600; }
+.selected.active { background: #ffedd5; }
+.disabled { opacity: 0.45; cursor: not-allowed; }
+.disabled.active { background: transparent; }

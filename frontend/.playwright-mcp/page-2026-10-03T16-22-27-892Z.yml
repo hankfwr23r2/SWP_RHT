@@ -1,0 +1,151 @@
+- generic [ref=f4e2]:
+  - banner [ref=f4e3]:
+    - generic [ref=f4e4]:
+      - link "EQ Vận chuyển Ngựa Quản lý" [ref=f4e5] [cursor=pointer]:
+        - /url: /backoffice/manager
+        - generic [ref=f4e6]: EQ
+        - generic [ref=f4e7]: Vận chuyển Ngựa
+        - generic [ref=f4e8]: Quản lý
+      - navigation "Menu" [ref=f4e9]:
+        - link "Bảng điều khiển" [ref=f4e10] [cursor=pointer]:
+          - /url: /backoffice/manager
+        - link "Tiếp nhận đơn" [ref=f4e11] [cursor=pointer]:
+          - /url: /backoffice/manager/intake
+        - link "Duyệt báo giá" [ref=f4e12] [cursor=pointer]:
+          - /url: /backoffice/manager/approvals
+        - link "Giấy tờ chuyến đi" [ref=f4e13] [cursor=pointer]:
+          - /url: /backoffice/manager/documents
+        - link "Nhân sự" [ref=f4e14] [cursor=pointer]:
+          - /url: /backoffice/manager/staff
+        - link "Báo cáo Chuyến đi" [ref=f4e15] [cursor=pointer]:
+          - /url: /backoffice/manager/trip-reports
+        - link "Sự cố & Chi Phí" [ref=f4e16] [cursor=pointer]:
+          - /url: /backoffice/manager/incidents
+      - generic [ref=f4e17]:
+        - generic "Quản lý" [ref=f4e18]: QL
+        - button " Đăng xuất" [ref=f4e19] [cursor=pointer]:
+          - generic [ref=f4e20]: 
+          - text: Đăng xuất
+  - main [ref=f4e21]:
+    - generic [ref=f4e23]:
+      - generic [ref=f4e24]:
+        - generic [ref=f4e26]:
+          - heading "Tiếp nhận đơn hàng" [level=1] [ref=f4e27]
+          - paragraph [ref=f4e28]: Đơn khách vừa gửi. Giao Kiểm dịch viên và Điều phối viên để họ thẩm định song song.
+        - group "Lọc đơn" [ref=f4e29]:
+          - button "Chờ tiếp nhận 1" [pressed] [ref=f4e30] [cursor=pointer]:
+            - text: Chờ tiếp nhận
+            - generic [ref=f4e31]: "1"
+          - button "Đang thẩm định 2" [ref=f4e32] [cursor=pointer]:
+            - text: Đang thẩm định
+            - generic [ref=f4e33]: "2"
+        - table [ref=f4e35]:
+          - rowgroup [ref=f4e36]:
+            - row [ref=f4e37]:
+              - columnheader "Mã đơn" [ref=f4e38]
+              - columnheader "Khách hàng" [ref=f4e39]
+              - columnheader "Tuyến" [ref=f4e40]
+              - columnheader "Khởi hành" [ref=f4e41]
+              - columnheader "Ngựa" [ref=f4e42]
+              - columnheader "Gửi lúc" [ref=f4e43]
+              - columnheader "Thao tác" [ref=f4e44]
+          - rowgroup [ref=f4e45]:
+            - row [ref=f4e46]:
+              - cell "ORD-2026-0101" [ref=f4e47]
+              - cell "Trang trại Long Thành" [ref=f4e48]
+              - cell "Kho Đồng Nai → Kho Phnom Penh Quốc tế · Mộc Bài – Bavet" [ref=f4e49]:
+                - text: Kho Đồng Nai → Kho Phnom Penh
+                - generic [ref=f4e50]: Quốc tế · Mộc Bài – Bavet
+              - cell "17/11/2026" [ref=f4e51]
+              - cell "2" [ref=f4e52]
+              - cell "03/10/2026 13:22" [ref=f4e53]
+              - cell [ref=f4e54]:
+                - button "Tiếp nhận" [active] [ref=f4e55] [cursor=pointer]
+      - dialog [ref=f4e62]:
+        - generic [ref=f4e63]:
+          - generic [ref=f4e64]:
+            - heading "Tiếp nhận ORD-2026-0101" [level=3] [ref=f4e65]
+            - generic [ref=f4e66]: Trang trại Long Thành · gửi lúc 03/10/2026 13:22
+          - button "Đóng" [ref=f4e67] [cursor=pointer]:
+            - generic [ref=f4e68]: 
+        - generic [ref=f4e69]:
+          - generic [ref=f4e70]:
+            - generic [ref=f4e71]:
+              - term [ref=f4e72]: Khách hàng
+              - definition [ref=f4e73]: Trang trại Long Thành
+            - generic [ref=f4e74]:
+              - term [ref=f4e75]: Loại chuyến
+              - definition [ref=f4e76]: Quốc tế (Việt Nam → Campuchia)
+            - generic [ref=f4e77]:
+              - term [ref=f4e78]: Ngày khởi hành
+              - definition [ref=f4e79]: 17/11/2026
+            - generic [ref=f4e80]:
+              - term [ref=f4e81]: Điểm đón
+              - definition [ref=f4e82]: Kho Đồng Nai
+            - generic [ref=f4e83]:
+              - term [ref=f4e84]: Điểm giao
+              - definition [ref=f4e85]: Kho Phnom Penh
+            - generic [ref=f4e86]:
+              - term [ref=f4e87]: Cửa khẩu (đã khóa)
+              - definition [ref=f4e88]: Mộc Bài – Bavet
+            - generic [ref=f4e89]:
+              - term [ref=f4e90]: Người gửi
+              - definition [ref=f4e91]:
+                - text: Trang trại Long Thành
+                - generic [ref=f4e92]: 0901 456 789
+            - generic [ref=f4e93]:
+              - term [ref=f4e94]: Người nhận
+              - definition [ref=f4e95]:
+                - text: Trung tâm Kiểm dịch Phnom Penh
+                - generic [ref=f4e96]: 0912 345 678
+            - generic [ref=f4e97]:
+              - term [ref=f4e98]: Số ngựa
+              - definition [ref=f4e99]: 2 con
+          - heading "Ngựa và dịch vụ" [level=4] [ref=f4e100]
+          - generic [ref=f4e101]:
+            - generic [ref=f4e102]:
+              - generic [ref=f4e104]:
+                - generic [ref=f4e105]: Storm Runner
+                - generic [ref=f4e106]: Chip VN-985211 · Thoroughbred · Thiến
+              - generic [ref=f4e107]:
+                - generic [ref=f4e108]: "Khoang: tiêu chuẩn"
+                - generic [ref=f4e109]:
+                  - text: "Nhiệt độ yêu cầu:"
+                  - generic [ref=f4e110]: 22°C
+                - generic [ref=f4e111]: "Dinh dưỡng: Cỏ khô Timothy, yến mạch"
+                - generic [ref=f4e112]: "Nước: Mỗi 3 giờ"
+                - generic [ref=f4e113]: "Bảo hiểm: mua, phí 20,000,000 ₫"
+            - generic [ref=f4e114]:
+              - generic [ref=f4e116]:
+                - generic [ref=f4e117]: Bạch Phong
+                - generic [ref=f4e118]: Chip VN-985212 · Arabian · Cái
+              - generic [ref=f4e119]:
+                - generic [ref=f4e120]: "Khoang: tiêu chuẩn"
+                - generic [ref=f4e121]:
+                  - text: "Nhiệt độ yêu cầu:"
+                  - generic [ref=f4e122]: 22°C
+                - generic [ref=f4e123]: "Dinh dưỡng: Cỏ khô Timothy, yến mạch"
+                - generic [ref=f4e124]: "Nước: Mỗi 3 giờ"
+                - generic [ref=f4e125]: "Bảo hiểm: từ chối"
+          - heading "Giao việc" [level=4] [ref=f4e126]
+          - generic [ref=f4e127]:
+            - generic [ref=f4e128]:
+              - generic [ref=f4e129]: Kiểm dịch viên (thẩm định y tế)
+              - combobox "Kiểm dịch viên (thẩm định y tế)" [ref=f4e130]:
+                - option "Nguyễn Thị Thu · 0 đơn đang làm (gợi ý)" [selected]
+                - option "Phạm Văn Hưng · 2 đơn đang làm"
+            - generic [ref=f4e131]:
+              - generic [ref=f4e132]: Điều phối viên (xe và lộ trình)
+              - combobox "Điều phối viên (xe và lộ trình)" [ref=f4e133]:
+                - option "Phạm Tâm · 0 đơn đang làm (gợi ý)" [selected]
+                - option "Trần Minh · 1 đơn đang làm"
+          - paragraph [ref=f4e134]: Hệ thống gợi ý người ít việc nhất và bỏ qua người đang nghỉ. Khi tiếp nhận, hệ thống tự gán xe, tài xế và hộ tống cho đơn (chia ngựa lên nhiều xe nếu cần). Nếu không đủ xe hoặc nhân sự rảnh, đơn ở lại hàng chờ và báo lỗi.
+        - generic [ref=f4e135]:
+          - button "Đóng" [ref=f4e136] [cursor=pointer]
+          - button " Tiếp nhận và kích hoạt thẩm định" [ref=f4e137] [cursor=pointer]:
+            - generic [ref=f4e138]: 
+            - text: Tiếp nhận và kích hoạt thẩm định
+  - contentinfo [ref=f4e56]: © 2026 Vận chuyển Ngựa đua. SWP Project.
+  - group "Ngôn ngữ" [ref=f4e57]:
+    - button "VI" [pressed] [ref=f4e59]
+    - button "EN" [ref=f4e60] [cursor=pointer]

@@ -1,0 +1,20 @@
+.sheet { display: grid; gap: 14px; }
+.table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.caption { text-align: left; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); padding-bottom: 8px; }
+.table td { padding: 10px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+.table tfoot td { border-bottom: none; color: var(--muted); font-size: 0.84rem; }
+.label { font-weight: 600; }
+.detail { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+.amount { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 600; padding-left: 16px; }
+.discount .amount { color: var(--green); }
+
+.totals { display: grid; gap: 8px; padding: 14px 16px; border-radius: var(--radius-sm); background: var(--bg-page); border: 1px solid var(--line); }
+.total, .deposit { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.total b { font-size: 1.25rem; color: var(--navy); font-variant-numeric: tabular-nums; }
+.note { font-size: 0.78rem; color: var(--muted); }
+.deposit { padding-top: 10px; border-top: 1px dashed #cbd5e1; font-weight: 600; }
+.deposit b { font-size: 1.15rem; color: var(--orange); font-variant-numeric: tabular-nums; }
+
+.after { display: grid; gap: 8px; font-size: 0.84rem; color: var(--muted); }
+.after i { width: 18px; color: var(--orange); }
+.after b { color: var(--text); }

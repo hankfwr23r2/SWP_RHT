@@ -1,0 +1,18 @@
+.wrap { position: relative; }
+.bell { position: relative; width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent; color: var(--navy); font-size: 1.05rem; cursor: pointer; display: grid; place-items: center; }
+.bell:hover { background: var(--bg-page); }
+.bell:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+.badge { position: absolute; top: 0; right: 0; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--red, #dc2626); color: white; font-size: 0.68rem; font-weight: 700; display: grid; place-items: center; line-height: 1; }
+.panel { position: absolute; right: 0; top: 46px; width: min(380px, calc(100vw - 24px)); max-height: 70vh; overflow-y: auto; overflow-x: hidden; background: white; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16); z-index: 60; }
+.head { position: sticky; top: 0; display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: white; border-bottom: 1px solid var(--line); }
+.readAll { border: none; background: none; color: var(--orange); font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; }
+.readAll:disabled { color: var(--muted); cursor: default; }
+.empty { padding: 28px 14px; text-align: center; color: var(--muted); font-size: 0.9rem; }
+.list { display: grid; }
+.item { position: relative; display: grid; gap: 2px; width: 100%; padding: 12px 14px 12px 26px; border: none; border-bottom: 1px solid var(--line); background: white; font: inherit; text-align: left; cursor: pointer; }
+.item:hover { background: var(--bg-page); }
+.unread { background: var(--orange-soft); }
+.dot { position: absolute; left: 11px; top: 18px; width: 8px; height: 8px; border-radius: 50%; background: var(--orange); }
+.title { font-size: 0.88rem; font-weight: 700; color: var(--navy); overflow-wrap: anywhere; }
+.text { font-size: 0.82rem; color: var(--text); overflow-wrap: anywhere; }
+.time { font-size: 0.74rem; color: var(--muted); }

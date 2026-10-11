@@ -1,0 +1,135 @@
+- generic [ref=f443e2]:
+  - banner [ref=f443e3]:
+    - generic [ref=f443e4]:
+      - link "EQ Vận chuyển Ngựa" [ref=f443e5] [cursor=pointer]:
+        - /url: /portal
+        - generic [ref=f443e6]: EQ
+        - generic [ref=f443e7]: Vận chuyển Ngựa
+      - navigation "Menu" [ref=f443e8]:
+        - link "Trang chủ" [ref=f443e9] [cursor=pointer]:
+          - /url: /portal
+        - link "Hồ sơ ngựa" [ref=f443e10] [cursor=pointer]:
+          - /url: /horses
+        - link "Đặt chuyến mới" [ref=f443e11] [cursor=pointer]:
+          - /url: /booking/route
+        - link "Đơn của tôi" [ref=f443e12] [cursor=pointer]:
+          - /url: /orders
+        - link "Lịch sử đơn" [ref=f443e13] [cursor=pointer]:
+          - /url: /history
+      - generic [ref=f443e14]:
+        - link " 1900 6868" [ref=f443e15] [cursor=pointer]:
+          - /url: tel:19006868
+          - generic [ref=f443e16]: 
+          - strong [ref=f443e17]: 1900 6868
+        - button "Thông báo" [ref=f443e19] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f443e20]: 
+        - generic "Trang trại Long Thành" [ref=f443e21]: LT
+        - generic [ref=f443e22]: Trang trại Long Thành
+        - button " Đăng xuất" [ref=f443e23] [cursor=pointer]:
+          - generic [ref=f443e24]: 
+          - text: Đăng xuất
+  - main [ref=f443e25]:
+    - generic [ref=f443e28]:
+      - generic [ref=f443e29]:
+        - link "Trang chủ" [ref=f443e30] [cursor=pointer]:
+          - /url: /portal
+        - text: /
+        - link "Đơn của tôi" [ref=f443e31] [cursor=pointer]:
+          - /url: /orders
+        - text: /
+        - generic [ref=f443e32]: ORD-2026-0116
+      - generic [ref=f443e33]:
+        - generic [ref=f443e34]:
+          - heading "Đơn ORD-2026-0116" [level=1] [ref=f443e35]
+          - paragraph [ref=f443e36]: Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM) · khởi hành 05/10/2026 · 2 ngựa
+        - generic "En Route to Pickup" [ref=f443e37]:
+          - generic [aria-hidden] [ref=f443e38]: 
+          - text: Xe đang đến điểm đón
+      - generic [ref=f443e39]:
+        - paragraph [ref=f443e40]: "Bước 6/8: Sẵn sàng"
+        - list "Tiến độ đơn" [ref=f443e41]:
+          - listitem [ref=f443e42]:
+            - generic [aria-hidden] [ref=f443e44]: 
+            - generic [ref=f443e45]: Gửi đơn
+          - listitem [ref=f443e46]:
+            - generic [aria-hidden] [ref=f443e48]: 
+            - generic [ref=f443e49]: Thẩm định
+          - listitem [ref=f443e50]:
+            - generic [aria-hidden] [ref=f443e52]: 
+            - generic [ref=f443e53]: Báo giá
+          - listitem [ref=f443e54]:
+            - generic [aria-hidden] [ref=f443e56]: 
+            - generic [ref=f443e57]: Đặt cọc
+          - listitem [ref=f443e58]:
+            - generic [aria-hidden] [ref=f443e60]: 
+            - generic [ref=f443e61]: Giấy tờ
+          - listitem [ref=f443e62]:
+            - generic [ref=f443e63]: "6"
+            - generic [ref=f443e64]: Sẵn sàng
+          - listitem [ref=f443e65]:
+            - generic [ref=f443e66]: "7"
+            - generic [ref=f443e67]: Vận chuyển
+          - listitem [ref=f443e68]:
+            - generic [ref=f443e69]: "8"
+            - generic [ref=f443e70]: Quyết toán
+        - status [ref=f443e71]:
+          - generic [aria-hidden] [ref=f443e72]: 
+          - generic [ref=f443e73]:
+            - generic [ref=f443e74]: Bạn không cần làm gì lúc này
+            - heading "Xe đang đến điểm đón ngựa" [level=2] [ref=f443e75]
+            - paragraph [ref=f443e76]: Vui lòng chuẩn bị bản gốc hồ sơ và có mặt tại điểm đón để ký biên bản giao nhận.
+        - tablist "Chi tiết đơn" [ref=f443e77]:
+          - tab "Hành trình" [selected] [ref=f443e78] [cursor=pointer]
+          - tab "Giấy tờ" [ref=f443e79] [cursor=pointer]
+          - tab "Thanh toán" [ref=f443e80] [cursor=pointer]
+          - tab "Lịch sử" [ref=f443e81] [cursor=pointer]
+          - tab "Thông tin đơn" [ref=f443e82] [cursor=pointer]
+        - generic [ref=f443e83]:
+          - heading " Theo dõi trên bản đồ" [level=3] [ref=f443e85]:
+            - generic [ref=f443e86]: 
+            - text: Theo dõi trên bản đồ
+          - generic [ref=f443e87]:
+            - generic [ref=f443e88]:
+              - application "Bản đồ theo dõi xe" [ref=f443e89]
+              - generic [ref=f443e90]:
+                - generic [ref=f443e91]:
+                  - generic [ref=f443e92]: 
+                  - text: Xe
+                - generic [ref=f443e93]: ● Trạm đã qua / chưa qua
+                - generic [ref=f443e94]: ⚑ Cửa khẩu
+            - generic [ref=f443e96]:
+              - generic [ref=f443e97]: 
+              - generic [ref=f443e98]: Chưa xuất phát
+            - paragraph [ref=f443e99]: Vị trí cập nhật khi tài xế xác nhận từng mốc (không phải GPS thời gian thực).
+        - generic [ref=f443e100]:
+          - heading " Lộ trình" [level=3] [ref=f443e102]:
+            - generic [ref=f443e103]: 
+            - text: Lộ trình
+          - list [ref=f443e104]:
+            - listitem [ref=f443e105]:
+              - generic [ref=f443e106]:
+                - generic [ref=f443e107]: "Chặng 1:"
+                - text: Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+              - generic [ref=f443e108]: Khởi hành 05/10/2026 05:00 · đến khoảng 05:36
+          - generic [ref=f443e109]:
+            - generic [ref=f443e110]: 
+            - generic [ref=f443e111]: "Nhắc bàn giao: chuẩn bị sẵn các bản gốc hồ sơ (Hộ chiếu ngựa, Sổ tiêm, Phiếu xét nghiệm) để giao cho tài xế tại điểm đón."
+        - generic [ref=f443e112]:
+          - heading " Xe của đơn" [level=3] [ref=f443e114]:
+            - generic [ref=f443e115]: 
+            - text: Xe của đơn
+          - generic [ref=f443e116]:
+            - generic [ref=f443e117]:
+              - text: 51C-123.45
+              - generic [ref=f443e118]: Xe chuyên dụng · 4 ngăn · mã chuyến TRP-0116-1
+            - generic [ref=f443e119]: Tài xế Nguyễn Văn Hùng · hộ tống Võ Thị Lan
+            - generic [ref=f443e120]: "Chở: Storm Runner, Kim Lân"
+        - paragraph [ref=f443e121]:
+          - text: Cần hỗ trợ? Gọi
+          - link "1900 6868" [ref=f443e122] [cursor=pointer]:
+            - /url: tel:19006868
+          - text: .
+  - contentinfo [ref=f443e123]: © 2026 Vận chuyển Ngựa đua · Việt Nam · Lào · Campuchia · Hotline 1900 6868
+  - group "Ngôn ngữ" [ref=f443e124]:
+    - button "VI" [pressed] [ref=f443e126]
+    - button "EN" [ref=f443e127] [cursor=pointer]

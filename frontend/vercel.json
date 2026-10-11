@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    {
+      "source": "/backoffice/:path*",
+      "destination": "/backoffice.html"
+    },
+    {
+      "source": "/backoffice",
+      "destination": "/backoffice.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

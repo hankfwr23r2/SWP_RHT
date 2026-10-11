@@ -1,0 +1,115 @@
+- generic [ref=f450e2]:
+  - banner [ref=f450e3]:
+    - generic [ref=f450e4]:
+      - link "EQ Vận chuyển Ngựa" [ref=f450e5] [cursor=pointer]:
+        - /url: /portal
+        - generic [ref=f450e6]: EQ
+        - generic [ref=f450e7]: Vận chuyển Ngựa
+      - navigation "Menu" [ref=f450e8]:
+        - link "Trang chủ" [ref=f450e9] [cursor=pointer]:
+          - /url: /portal
+        - link "Hồ sơ ngựa" [ref=f450e10] [cursor=pointer]:
+          - /url: /horses
+        - link "Đặt chuyến mới" [ref=f450e11] [cursor=pointer]:
+          - /url: /booking/route
+        - link "Đơn của tôi" [ref=f450e12] [cursor=pointer]:
+          - /url: /orders
+        - link "Lịch sử đơn" [ref=f450e13] [cursor=pointer]:
+          - /url: /history
+      - generic [ref=f450e14]:
+        - link " 1900 6868" [ref=f450e15] [cursor=pointer]:
+          - /url: tel:19006868
+          - generic [ref=f450e16]: 
+          - strong [ref=f450e17]: 1900 6868
+        - button "Thông báo" [ref=f450e19] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f450e20]: 
+        - generic "Trang trại Long Thành" [ref=f450e21]: LT
+        - generic [ref=f450e22]: Trang trại Long Thành
+        - button " Đăng xuất" [ref=f450e23] [cursor=pointer]:
+          - generic [ref=f450e24]: 
+          - text: Đăng xuất
+  - main [ref=f450e25]:
+    - generic [ref=f450e28]:
+      - generic [ref=f450e29]:
+        - link "Trang chủ" [ref=f450e30] [cursor=pointer]:
+          - /url: /portal
+        - text: /
+        - generic [ref=f450e31]: Đặt chuyến mới
+        - text: /
+        - generic [ref=f450e32]: Chuyến đi
+      - generic [ref=f450e33]:
+        - heading "Tạo yêu cầu vận chuyển" [level=1] [ref=f450e34]
+        - paragraph [ref=f450e35]: Chọn loại chuyến trước, hệ thống chỉ hỏi những thông tin cần cho loại chuyến đó.
+      - list "Các bước đặt chuyến" [ref=f450e36]:
+        - listitem [ref=f450e37]:
+          - generic [ref=f450e38]:
+            - generic [ref=f450e39]: "1"
+            - generic [ref=f450e40]: Chuyến đi
+        - listitem [ref=f450e41]:
+          - generic [ref=f450e42]:
+            - generic [ref=f450e43]: "2"
+            - generic [ref=f450e44]: Chọn ngựa
+        - listitem [ref=f450e45]:
+          - generic [ref=f450e46]:
+            - generic [ref=f450e47]: "3"
+            - generic [ref=f450e48]: Dịch vụ & bảo hiểm
+        - listitem [ref=f450e49]:
+          - generic [ref=f450e50]:
+            - generic [ref=f450e51]: "4"
+            - generic [ref=f450e52]: Xác nhận & gửi
+      - generic [ref=f450e53]:
+        - generic [ref=f450e55]:
+          - generic [ref=f450e56]:
+            - heading " Loại chuyến" [level=3] [ref=f450e58]:
+              - generic [ref=f450e59]: 
+              - text: Loại chuyến
+            - radiogroup "Loại chuyến" [ref=f450e60]:
+              - radio "Trong nước Đi và đến đều trong Việt Nam. Không qua cửa khẩu." [ref=f450e61] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f450e62]: 
+                - generic [ref=f450e63]: Trong nước
+                - generic [ref=f450e64]: Đi và đến đều trong Việt Nam. Không qua cửa khẩu.
+              - radio "Quốc tế Từ Việt Nam sang Campuchia hoặc Lào, hoặc từ Campuchia hoặc Lào về Việt Nam, qua một cửa khẩu bạn chọn." [ref=f450e65] [cursor=pointer]:
+                - generic [aria-hidden] [ref=f450e66]: 
+                - generic [ref=f450e67]: Quốc tế
+                - generic [ref=f450e68]: Từ Việt Nam sang Campuchia hoặc Lào, hoặc từ Campuchia hoặc Lào về Việt Nam, qua một cửa khẩu bạn chọn.
+          - generic [ref=f450e69]:
+            - link "Hủy" [ref=f450e70] [cursor=pointer]:
+              - /url: /portal
+            - 'button "Tiếp tục: Chọn ngựa " [disabled] [ref=f450e71]':
+              - text: "Tiếp tục: Chọn ngựa"
+              - generic [ref=f450e72]: 
+        - complementary "Tóm tắt đơn" [ref=f450e73]:
+          - generic [ref=f450e74]:
+            - heading " Tóm tắt đơn" [level=3] [ref=f450e76]:
+              - generic [ref=f450e77]: 
+              - text: Tóm tắt đơn
+            - generic [ref=f450e78]:
+              - generic [ref=f450e79]:
+                - term [ref=f450e80]: Loại chuyến
+                - definition [ref=f450e81]: Chưa chọn
+              - generic [ref=f450e82]:
+                - term [ref=f450e83]: Điểm đón
+                - definition [ref=f450e84]: —
+              - generic [ref=f450e85]:
+                - term [ref=f450e86]: Điểm giao
+                - definition [ref=f450e87]: —
+              - generic [ref=f450e88]:
+                - term [ref=f450e89]: Ngày khởi hành
+                - definition [ref=f450e90]: —
+              - generic [ref=f450e91]:
+                - term [ref=f450e92]: Số ngựa
+                - definition [ref=f450e93]: —
+            - paragraph [ref=f450e94]: Chọn loại chuyến để bắt đầu.
+          - generic [ref=f450e95]:
+            - generic [ref=f450e96]: 
+            - generic [ref=f450e97]:
+              - text: Sau khi gửi đơn
+              - list [ref=f450e98]:
+                - listitem [ref=f450e99]: Quản lý tiếp nhận, Kiểm dịch viên và Điều phối viên thẩm định song song.
+                - listitem [ref=f450e100]: Báo giá chính thức gửi cho bạn, có hiệu lực 48 giờ.
+                - listitem [ref=f450e101]: Đặt cọc 30% để nhận vận đơn. Nhà xe làm giấy kiểm dịch và hải quan giúp bạn.
+      - paragraph [ref=f450e102]: Đặt trước ngày khởi hành tối thiểu 30 ngày để kịp cách ly, xét nghiệm và đăng ký liên vận.
+  - contentinfo [ref=f450e103]: © 2026 Vận chuyển Ngựa đua · Việt Nam · Lào · Campuchia · Hotline 1900 6868
+  - group "Ngôn ngữ" [ref=f450e104]:
+    - button "VI" [pressed] [ref=f450e106]
+    - button "EN" [ref=f450e107] [cursor=pointer]

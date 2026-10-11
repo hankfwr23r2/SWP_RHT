@@ -1,0 +1,34 @@
+/* Trang Điều phối (gốc: Fleet And Route/OPS-*.css, fleet_route_sidebar.css) */
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+.gridWide { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.formRow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.selected td { background: var(--orange-soft); }
+.clickable { cursor: pointer; }
+
+/* Chặng lộ trình */
+.leg { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 10px; background: var(--bg-page); }
+.legHead { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; font-weight: 700; color: var(--navy); margin-bottom: 8px; }
+.legGrid { display: grid; grid-template-columns: minmax(220px, 1.4fr) 1fr 1fr; gap: 12px; align-items: end; font-size: 0.86rem; }
+.legGrid label { display: block; font-size: 0.74rem; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+.stopAdd { display: flex; gap: 8px; margin-top: 10px; }
+.stopAdd select { max-width: 320px; }
+.warn { color: var(--amber); font-size: 0.8rem; margin-top: 4px; }
+
+/* Giám sát */
+.map { display: grid; place-items: center; gap: 4px; height: 180px; border: 1px dashed var(--line); border-radius: var(--radius-sm); background: var(--bg-page); color: var(--muted); text-align: center; font-size: 0.86rem; }
+.map i { font-size: 1.8rem; }
+.feed { display: grid; gap: 8px; }
+.feedItem { padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--line); font-size: 0.85rem; }
+.feedEmergency { border-color: #fecaca; background: var(--red-soft); }
+.feedWarn { border-color: #fde68a; background: var(--amber-soft); }
+.feedInfo { border-color: #bfdbfe; background: var(--blue-soft); }
+.feedItem a { font-weight: 600; color: var(--orange); }
+.upload { display: flex; gap: 8px; margin-top: 14px; padding: 12px; border: 1px dashed var(--line); border-radius: var(--radius-sm); }
+.progress { height: 6px; border-radius: 999px; background: var(--bg-soft); overflow: hidden; margin-top: 4px; min-width: 80px; }
+.progress div { height: 100%; background: var(--green); }
+
+@media (max-width: 960px) {
+  .grid2, .gridWide, .legGrid { grid-template-columns: 1fr; }
+  .formRow { grid-template-columns: 1fr; }
+}

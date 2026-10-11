@@ -1,0 +1,65 @@
+/* Thành phần dùng chung các trang nội bộ */
+.toolbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
+.search { position: relative; }
+.search i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 0.85rem; }
+.search input { padding: 8px 14px 8px 34px; border: 1px solid var(--line); border-radius: var(--radius-sm); width: 280px; }
+.search input:focus { outline: none; border-color: var(--orange); box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15); }
+.tabsRow { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.nextLink { font-size: 0.85rem; font-weight: 600; color: var(--orange); padding-bottom: 12px; }
+.idCell { font-weight: 700; color: var(--orange); white-space: nowrap; }
+.amber { color: var(--amber); }
+
+/* Thanh bước trong hộp thoại */
+.stepper { display: flex; align-items: center; margin-bottom: 18px; }
+.step { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--muted); font-weight: 600; white-space: nowrap; }
+.dot { width: 26px; height: 26px; border-radius: 999px; border: 2px solid var(--line); background: white; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; }
+.stepDone { color: var(--text); }
+.stepDone .dot { background: var(--green); border-color: var(--green); color: white; }
+.stepCurrent { color: var(--orange); }
+.stepCurrent .dot { border-color: var(--orange); background: var(--orange-soft); }
+.stepRejected { color: var(--red); }
+.stepRejected .dot { background: var(--red); border-color: var(--red); color: white; }
+.line { flex: 1; height: 2px; background: var(--line); margin: 0 10px; min-width: 16px; }
+
+/* Mục có số thứ tự trong hộp thoại */
+.section { margin-top: 18px; }
+.sectionTitle { display: flex; align-items: center; gap: 10px; font-size: 0.92rem; font-weight: 700; color: var(--navy); margin-bottom: 10px; }
+.sectionNum { width: 22px; height: 22px; border-radius: 6px; background: var(--navy); color: white; font-size: 0.75rem; display: flex; align-items: center; justify-content: center; }
+.infoGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px 20px; }
+.infoItem { display: flex; flex-direction: column; font-size: 0.85rem; }
+.infoLabel { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); font-weight: 600; }
+.infoValue { font-weight: 600; }
+
+.horse { border: 1px solid var(--line); border-radius: var(--radius-sm); margin-bottom: 8px; }
+.horse summary { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; cursor: pointer; font-size: 0.88rem; flex-wrap: wrap; }
+.docs { padding: 0 12px 10px 28px; display: grid; gap: 4px; font-size: 0.82rem; color: var(--muted); }
+.docs i { color: var(--green); margin-right: 6px; }
+.note { margin-top: 8px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--blue-soft); color: #1e3a8a; font-size: 0.85rem; }
+
+.costList { display: grid; gap: 6px; font-size: 0.88rem; }
+.costList li { display: flex; justify-content: space-between; gap: 12px; }
+.costTotal { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--line); font-weight: 700; }
+
+.checks { display: grid; gap: 6px; font-size: 0.86rem; }
+.checkOk i { color: var(--green); margin-right: 8px; }
+.checkWarn { color: var(--amber); }
+.checkWarn i { margin-right: 8px; }
+
+.assignGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.hint { font-size: 0.8rem; color: var(--muted); margin-top: 8px; }
+.banner { margin-bottom: 12px; }
+
+.actionBox { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 14px; margin-top: 12px; background: var(--bg-page); }
+.actionDanger { border-color: #fecaca; background: var(--red-soft); }
+.optionLine { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; font-size: 0.88rem; cursor: pointer; }
+.optionLine input { margin-top: 3px; accent-color: var(--orange); }
+.optionOff { color: #94a3b8; cursor: not-allowed; }
+.optionWhy { font-size: 0.78rem; color: var(--muted); }
+.custom { border: 1px dashed #cbd5e1; border-radius: var(--radius-sm); padding: 10px; margin: 8px 0; display: grid; gap: 6px; background: white; }
+.customHead { display: flex; justify-content: space-between; align-items: center; font-weight: 700; font-size: 0.85rem; }
+.iconBtn { background: none; border: none; color: var(--muted); cursor: pointer; }
+.rejectBox { border: 1px solid #fecaca; background: var(--red-soft); border-radius: var(--radius-sm); padding: 14px; margin-top: 12px; }
+.shake { animation: shake 0.4s ease; }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+@media (max-width: 720px) { .assignGrid { grid-template-columns: 1fr; } .search input { width: 100%; } }

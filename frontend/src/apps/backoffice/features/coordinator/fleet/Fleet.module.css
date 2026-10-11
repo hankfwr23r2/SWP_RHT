@@ -1,0 +1,43 @@
+/* Đội xe dạng thẻ: mỗi xe một thẻ có hình xe, biển số, trạng thái và tài xế */
+.bar { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; margin-bottom: 16px; }
+.chips { display: inline-flex; flex-wrap: wrap; gap: 8px; margin-right: auto; }
+.chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 12px; background: white; font: inherit; font-size: 0.86rem; font-weight: 600; color: var(--text); cursor: pointer; }
+.chip:hover { border-color: var(--orange); }
+.chipOn { border-color: var(--orange); background: var(--orange-soft); color: var(--orange); }
+.dot { width: 10px; height: 10px; border-radius: 999px; }
+.num { min-width: 22px; padding: 0 6px; border-radius: 999px; background: #eef0f3; color: var(--muted); font-size: 0.74rem; line-height: 20px; text-align: center; }
+.chipOn .num { background: white; color: var(--orange); }
+.search { position: relative; }
+.search i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+.search input { padding-left: 36px; width: 210px; max-width: 100%; }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+.card { position: relative; display: grid; align-content: start; grid-template-columns: minmax(0, 1fr); min-width: 0; gap: 12px; padding: 16px; border: 1px solid var(--line); border-top: 4px solid var(--tone); border-radius: var(--radius); background: white; text-align: left; font: inherit; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s; }
+.card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+.card:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.code { font-size: 0.78rem; font-weight: 700; color: var(--muted); letter-spacing: 0.04em; }
+.status { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; background: color-mix(in srgb, var(--tone) 12%, white); color: var(--tone); font-size: 0.76rem; font-weight: 700; }
+.art { padding: 4px 8px 0; }
+.plate { justify-self: center; align-self: start; padding: 4px 16px; border: 2px solid #1e293b; border-radius: 8px; background: #fffbe6; font-size: 1.05rem; font-weight: 800; letter-spacing: 0.08em; color: #1e293b; }
+.name { text-align: center; font-weight: 600; color: var(--navy); }
+.name small { display: block; margin-top: 2px; font-weight: 500; color: var(--muted); }
+.rows { display: grid; gap: 6px; padding-top: 10px; border-top: 1px dashed var(--line); font-size: 0.84rem; }
+.rows div { display: flex; justify-content: space-between; gap: 10px; min-width: 0; }
+.rows span { flex: none; }
+.rows span { color: var(--muted); }
+.rows b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; font-weight: 600; }
+.warn { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 8px; background: var(--amber-soft); color: var(--amber); font-size: 0.74rem; font-weight: 600; }
+.actions { display: flex; justify-content: flex-end; gap: 6px; }
+.empty { grid-column: 1 / -1; padding: 56px 20px; border: 1px dashed #d5d9e0; border-radius: var(--radius); text-align: center; color: var(--muted); }
+.empty i { display: block; margin-bottom: 8px; font-size: 2.4rem; color: #d1d5db; }
+.add { display: grid; place-items: center; align-content: center; gap: 8px; min-height: 280px; border: 2px dashed #d5d9e0; border-radius: var(--radius); background: transparent; font: inherit; font-weight: 600; color: var(--muted); cursor: pointer; }
+.add:hover { border-color: var(--orange); color: var(--orange); }
+.add i { font-size: 1.6rem; }
+
+.orders { display: grid; gap: 6px; padding-top: 10px; border-top: 1px dashed var(--line); font-size: 0.84rem; }
+.ordersHead { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.order { display: grid; gap: 1px; padding: 6px 10px; border-left: 3px solid var(--tone); border-radius: 6px; background: color-mix(in srgb, var(--tone) 8%, white); }
+.order b { color: var(--navy); }
+.order small { color: var(--muted); }
+.noOrder { color: #9aa3b2; }

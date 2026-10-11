@@ -1,0 +1,25 @@
+/* Trip Manifest: dạng phiếu, in được */
+.manifest { display: grid; gap: 14px; font-size: 0.9rem; }
+.title { text-align: center; font-size: 1rem; letter-spacing: 0.03em; }
+.title small { display: block; font-weight: 500; font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+.sec { border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 12px 14px; display: grid; gap: 8px; background: white; }
+.sec h4 { display: flex; align-items: center; gap: 10px; font-size: 0.9rem; color: var(--navy); }
+.sec h4 b { width: 22px; height: 22px; border-radius: 6px; background: var(--navy); color: white; font-size: 0.75rem; display: grid; place-items: center; }
+.sec h5 { font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); margin-top: 6px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px 18px; }
+.grid dt { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); font-weight: 600; }
+.grid dd { font-weight: 600; }
+.grid dd span { display: block; font-weight: 400; font-size: 0.8rem; color: var(--muted); }
+.list { display: grid; gap: 4px; }
+.list i { color: var(--orange); margin-right: 6px; }
+.note { font-size: 0.85rem; background: var(--bg-page); border-radius: var(--radius-sm); padding: 8px 10px; }
+.note i { color: var(--orange); }
+.legs { display: grid; gap: 10px; padding-left: 0; list-style: none; }
+.legs li { padding-left: 12px; border-left: 3px solid #fed7aa; }
+.sub { font-size: 0.8rem; color: var(--muted); }
+.rest { margin-top: 4px; font-size: 0.82rem; color: var(--amber); }
+.checks { display: grid; gap: 6px; }
+.checks i { margin-right: 8px; color: var(--green); }
+.checks li:has(.fa-square) i { color: var(--muted); }
+
+@media print { .sec { break-inside: avoid; } }

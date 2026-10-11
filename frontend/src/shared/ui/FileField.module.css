@@ -1,0 +1,27 @@
+.field { display: grid; gap: 6px; }
+.label { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+.required::after { content: ' *'; color: var(--red); }
+.input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+
+.drop {
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px; min-height: 56px;
+  border: 1.5px dashed #cbd5e1; border-radius: var(--radius-sm); background: var(--bg-page);
+  color: var(--muted); font-size: 0.86rem; cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.drop i { font-size: 1.25rem; color: var(--orange); }
+.drop b { color: var(--orange); }
+.drop:hover, .input:focus-visible ~ .drop { border-color: var(--orange); background: var(--orange-soft); }
+.invalid { border-color: var(--red); background: var(--red-soft); }
+
+.chip {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px; min-height: 48px;
+  border: 1px solid #a7f3d0; background: var(--green-soft); border-radius: var(--radius-sm); font-size: 0.86rem;
+}
+.chip > i { color: var(--green); font-size: 1.1rem; }
+.name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.swap { color: var(--orange); font-weight: 600; font-size: 0.8rem; cursor: pointer; padding: 6px 4px; }
+.swap:hover { text-decoration: underline; }
+.remove { border: none; background: none; color: var(--muted); cursor: pointer; width: 32px; height: 32px; border-radius: 8px; }
+.remove:hover { background: white; color: var(--red); }
+.remove:focus-visible, .swap:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }

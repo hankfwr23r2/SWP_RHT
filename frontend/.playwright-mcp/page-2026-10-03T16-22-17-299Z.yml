@@ -1,0 +1,171 @@
+- generic [ref=f1e2]:
+  - banner [ref=f1e28]:
+    - generic [ref=f1e29]:
+      - link "EQ Vận chuyển Ngựa Quản lý" [ref=f1e30] [cursor=pointer]:
+        - /url: /backoffice/manager
+        - generic [ref=f1e31]: EQ
+        - generic [ref=f1e32]: Vận chuyển Ngựa
+        - generic [ref=f1e33]: Quản lý
+      - navigation "Menu" [ref=f1e34]:
+        - link "Bảng điều khiển" [ref=f1e35] [cursor=pointer]:
+          - /url: /backoffice/manager
+        - link "Tiếp nhận đơn" [ref=f1e36] [cursor=pointer]:
+          - /url: /backoffice/manager/intake
+        - link "Duyệt báo giá" [ref=f1e37] [cursor=pointer]:
+          - /url: /backoffice/manager/approvals
+        - link "Giấy tờ chuyến đi" [ref=f1e38] [cursor=pointer]:
+          - /url: /backoffice/manager/documents
+        - link "Nhân sự" [ref=f1e39] [cursor=pointer]:
+          - /url: /backoffice/manager/staff
+        - link "Báo cáo Chuyến đi" [ref=f1e40] [cursor=pointer]:
+          - /url: /backoffice/manager/trip-reports
+        - link "Sự cố & Chi Phí" [ref=f1e41] [cursor=pointer]:
+          - /url: /backoffice/manager/incidents
+      - generic [ref=f1e42]:
+        - generic "Quản lý" [ref=f1e43]: QL
+        - button " Đăng xuất" [ref=f1e44] [cursor=pointer]:
+          - generic [ref=f1e45]: 
+          - text: Đăng xuất
+  - main [ref=f1e46]:
+    - generic [ref=f1e49]:
+      - generic [ref=f1e50]:
+        - heading "Bảng điều khiển Quản lý" [level=1] [ref=f1e51]
+        - paragraph [ref=f1e52]: Tổng quan về Doanh thu và Trạng thái Nhân sự của toàn bộ hệ thống.
+      - generic [ref=f1e53]:
+        - generic [ref=f1e54]:
+          - generic [ref=f1e55]:
+            - generic [ref=f1e56]: 
+            - text: Tổng Doanh Thu (2026)
+          - generic [ref=f1e57]: 44 Tỷ
+          - generic [ref=f1e58]: Tăng 12% so với năm trước
+        - generic [ref=f1e59]:
+          - generic [ref=f1e60]:
+            - generic [ref=f1e61]: 
+            - text: Tổng Chi Phí Vận Hành
+          - generic [ref=f1e62]: 28,7 Tỷ
+          - generic [ref=f1e63]: Tăng 5% (do sự cố)
+        - generic [ref=f1e64]:
+          - generic [ref=f1e65]:
+            - generic [ref=f1e66]: 
+            - text: Lợi Nhuận Ròng
+          - generic [ref=f1e67]: 15,3 Tỷ
+          - generic [ref=f1e68]: Biên lợi nhuận đạt 35%
+        - generic [ref=f1e69]:
+          - generic [ref=f1e70]:
+            - generic [ref=f1e71]: 
+            - text: On-Time Delivery (OTD)
+          - generic [ref=f1e72]: 95.0%
+          - generic [ref=f1e73]: 228/240 chuyến không trễ
+      - generic [ref=f1e74]:
+        - generic [ref=f1e75]:
+          - heading " Doanh Thu & Chi Phí Vận Hành (2026, tỷ VND)" [level=3] [ref=f1e77]:
+            - generic [ref=f1e78]: 
+            - text: Doanh Thu & Chi Phí Vận Hành (2026, tỷ VND)
+          - generic [ref=f1e79]:
+            - generic [ref=f1e80]:
+              - generic [ref=f1e81]:
+                - generic [ref=f1e82]: Doanh thu
+                - generic [ref=f1e84]: Chi phí
+                - generic [ref=f1e86]: Lợi nhuận
+              - button " Xem bảng" [ref=f1e88] [cursor=pointer]:
+                - generic [ref=f1e89]: 
+                - text: Xem bảng
+            - img "Doanh thu, chi phí và lợi nhuận theo tháng (tỷ VND)" [ref=f1e91]:
+              - generic [ref=f1e92]: "0"
+              - generic [ref=f1e94]: "2"
+              - generic [ref=f1e96]: "4"
+              - generic [ref=f1e98]: "6"
+              - generic [ref=f1e100]: T1
+              - generic [ref=f1e105]: T2
+              - generic [ref=f1e110]: T3
+              - generic [ref=f1e115]: T4
+              - generic [ref=f1e120]: T5
+              - generic [ref=f1e125]: T6
+              - generic [ref=f1e130]: T7
+              - generic [ref=f1e135]: T8
+              - generic [ref=f1e140]: T9
+              - generic [ref=f1e145]: T10
+              - generic [ref=f1e150]: T11
+              - generic [ref=f1e155]: T12
+              - generic [ref=f1e160]: 6 tỷ
+              - generic [ref=f1e161]: 3 tỷ
+              - generic [ref=f1e162]: 3 tỷ
+        - generic [ref=f1e163]:
+          - heading " Chỉ số Hiệu suất Hoàn thành (OTD)" [level=3] [ref=f1e165]:
+            - generic [ref=f1e166]: 
+            - text: Chỉ số Hiệu suất Hoàn thành (OTD)
+          - img "Đúng giờ 210 chuyến, Sớm 18 chuyến, Trễ 12 chuyến" [ref=f1e167]:
+            - 'generic "Đúng giờ: 210 chuyến" [ref=f1e168]'
+            - 'generic "Sớm: 18 chuyến" [ref=f1e169]'
+            - 'generic "Trễ: 12 chuyến" [ref=f1e170]'
+          - list [ref=f1e171]:
+            - listitem [ref=f1e172]:
+              - generic [ref=f1e173]:
+                - generic [ref=f1e174]: 
+                - text: Đúng giờ
+              - generic [ref=f1e175]: 210 chuyến
+              - generic [ref=f1e176]: 87.5%
+            - listitem [ref=f1e177]:
+              - generic [ref=f1e178]:
+                - generic [ref=f1e179]: 
+                - text: Sớm
+              - generic [ref=f1e180]: 18 chuyến
+              - generic [ref=f1e181]: 7.5%
+            - listitem [ref=f1e182]:
+              - generic [ref=f1e183]:
+                - generic [ref=f1e184]: 
+                - text: Trễ
+              - generic [ref=f1e185]: 12 chuyến
+              - generic [ref=f1e186]: 5.0%
+      - generic [ref=f1e187]:
+        - generic [ref=f1e188]:
+          - heading " Hiệu suất Chuyến đi Gần đây" [level=3] [ref=f1e189]:
+            - generic [ref=f1e190]: 
+            - text: Hiệu suất Chuyến đi Gần đây
+          - link "Xem tất cả báo cáo →" [ref=f1e191] [cursor=pointer]:
+            - /url: /backoffice/manager/trip-reports
+        - table [ref=f1e193]:
+          - rowgroup [ref=f1e194]:
+            - row [ref=f1e195]:
+              - columnheader "Mã chuyến" [ref=f1e196]
+              - columnheader "Tuyến đường" [ref=f1e197]
+              - columnheader "Thời gian hoàn thành" [ref=f1e198]
+              - columnheader "Trạng thái (OTD)" [ref=f1e199]
+              - columnheader "Chi phí sự cố (nếu có)" [ref=f1e200]
+          - rowgroup [ref=f1e201]:
+            - row [ref=f1e202]:
+              - cell "#TR-9102" [ref=f1e203]
+              - cell "Hà Nội → Viêng Chăn (LA)" [ref=f1e204]
+              - 'cell "16:15 22/09 Dự kiến: 15:45" [ref=f1e205]':
+                - text: 16:15 22/09
+                - generic [ref=f1e206]: "Dự kiến: 15:45"
+              - cell "Trễ (30p)" [ref=f1e207]
+              - cell "-" [ref=f1e209]
+            - row [ref=f1e210]:
+              - cell "#TR-9101" [ref=f1e211]
+              - cell "TP.HCM → Đà Nẵng" [ref=f1e212]
+              - 'cell "14:40 19/09 Dự kiến: 14:40" [ref=f1e213]':
+                - text: 14:40 19/09
+                - generic [ref=f1e214]: "Dự kiến: 14:40"
+              - cell "Đúng giờ" [ref=f1e215]
+              - cell "-" [ref=f1e217]
+            - row [ref=f1e218]:
+              - cell "#TR-9100" [ref=f1e219]
+              - cell "Đồng Nai → Phnom Penh (KH)" [ref=f1e220]
+              - 'cell "13:20 12/09 Dự kiến: 13:30" [ref=f1e221]':
+                - text: 13:20 12/09
+                - generic [ref=f1e222]: "Dự kiến: 13:30"
+              - cell "Sớm (10p)" [ref=f1e223]
+              - cell "-" [ref=f1e225]
+            - row [ref=f1e226]:
+              - cell "#TR-9099" [ref=f1e227]
+              - cell "Cần Thơ → Phnom Penh (KH)" [ref=f1e228]
+              - 'cell "13:05 04/09 Dự kiến: 13:15" [ref=f1e229]':
+                - text: 13:05 04/09
+                - generic [ref=f1e230]: "Dự kiến: 13:15"
+              - cell "Sớm (10p)" [ref=f1e231]
+              - cell "-" [ref=f1e233]
+  - contentinfo [ref=f1e234]: © 2026 Vận chuyển Ngựa đua. SWP Project.
+  - group "Ngôn ngữ" [ref=f1e235]:
+    - button "VI" [pressed] [ref=f1e237]
+    - button "EN" [ref=f1e238] [cursor=pointer]

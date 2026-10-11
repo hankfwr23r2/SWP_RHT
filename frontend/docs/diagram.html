@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Architecture - 3-Tier Web Application</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #F8FAFC;
+            padding: 20px;
+        }
+
+        /* Canvas cho vẽ ngang (rộng hơn) */
+        .canvas {
+            position: relative;
+            width: 1700px;
+            height: 750px;
+            background: #FFFFFF;
+            margin: 0 auto;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        /* ===== TITLE BAR ===== */
+        .title-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 56px;
+            background: #0F172A;
+            display: flex;
+            align-items: center;
+            padding: 0 32px;
+            gap: 12px;
+        }
+
+        .title-bar .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .title-bar .dot.r {
+            background: #EF4444;
+        }
+
+        .title-bar .dot.y {
+            background: #F59E0B;
+        }
+
+        .title-bar .dot.g {
+            background: #22C55E;
+        }
+
+        .title-bar .title-text {
+            color: #FFFFFF;
+            font-size: 14px;
+            font-weight: 600;
+            margin-left: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        /* ===== DIAGRAM TITLE ===== */
+        .diagram-title {
+            position: absolute;
+            top: 80px;
+            left: 40px;
+        }
+
+        .diagram-title h1 {
+            font-size: 24px;
+            font-weight: 800;
+            color: #0F172A;
+        }
+
+        .diagram-title .sub {
+            font-size: 13px;
+            color: #64748B;
+            margin-top: 6px;
+            font-weight: 500;
+        }
+
+        /* ===== BOXES ===== */
+        .group-box {
+            position: absolute;
+            border: 2px dashed #94A3B8;
+            border-radius: 12px;
+            background: rgba(248, 250, 252, 0.6);
+        }
+
+        .group-box .group-title {
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: #FFFFFF;
+            padding: 4px 16px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #475569;
+            border-radius: 6px;
+            border: 1px solid #CBD5E1;
+        }
+
+        .accent-group {
+            position: absolute;
+            border: 2.5px solid #F97316;
+            border-radius: 14px;
+            background: rgba(255, 247, 237, 0.3);
+        }
+
+        .accent-group .accent-title {
+            position: absolute;
+            top: -14px;
+            left: 24px;
+            background: #FFF7ED;
+            padding: 4px 16px;
+            font-size: 12px;
+            font-weight: 700;
+            color: #EA580C;
+            border-radius: 6px;
+            border: 2px solid #F97316;
+        }
+
+        .layer-col {
+            position: absolute;
+            background: #FFFFFF;
+            border: 1.5px solid #E2E8F0;
+            border-radius: 10px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .layer-col .lr-title {
+            font-size: 12px;
+            font-weight: 800;
+            color: #475569;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #E2E8F0;
+        }
+
+        /* ===== COMPONENT ITEM ===== */
+        .comp {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px;
+            background: #F8FAFC;
+            border-radius: 8px;
+            border: 1px solid #E2E8F0;
+        }
+
+        .comp .comp-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+            background: #E2E8F0;
+        }
+
+        .comp .comp-text .ct-name {
+            font-size: 12px;
+            font-weight: 700;
+            color: #1E293B;
+        }
+
+        .comp .comp-text .ct-desc {
+            font-size: 10px;
+            color: #64748B;
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+
+        /* ===== ARROWS ===== */
+        .h-arrow {
+            position: absolute;
+            display: flex;
+            align-items: center;
+        }
+
+        .h-arrow .ha-line {
+            height: 2px;
+            background: #64748B;
+            flex: 1;
+        }
+
+        .h-arrow .ha-line.dashed {
+            background: repeating-linear-gradient(to right, #64748B 0, #64748B 6px, transparent 6px, transparent 12px);
+        }
+
+        .h-arrow .ha-head {
+            width: 0;
+            height: 0;
+            border-top: 5px solid transparent;
+            border-bottom: 5px solid transparent;
+            border-left: 7px solid #64748B;
+        }
+
+        .v-arrow {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .v-arrow .va-line {
+            width: 2px;
+            background: #64748B;
+            flex: 1;
+        }
+
+        .v-arrow .va-line.dashed {
+            background: repeating-linear-gradient(to bottom, #64748B 0, #64748B 6px, transparent 6px, transparent 12px);
+        }
+
+        .v-arrow .va-head {
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 7px solid #64748B;
+        }
+
+        .arrow-label {
+            position: absolute;
+            font-size: 10px;
+            font-weight: 600;
+            color: #475569;
+            background: #FFFFFF;
+            padding: 2px 8px;
+            border: 1px solid #E2E8F0;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        /* ===== CYLINDER (Database) ===== */
+        .cylinder {
+            position: relative;
+            margin: 10px auto;
+            width: 160px;
+        }
+
+        .cyl-top {
+            width: 100%;
+            height: 30px;
+            background: #FFF7ED;
+            border: 2px solid #F97316;
+            border-radius: 50%;
+            position: relative;
+            z-index: 2;
+        }
+
+        .cyl-body {
+            width: 100%;
+            margin-top: -15px;
+            background: #FFF7ED;
+            border-left: 2px solid #F97316;
+            border-right: 2px solid #F97316;
+            border-bottom: 2px solid #F97316;
+            border-radius: 0 0 50% 50%;
+            padding: 30px 16px 20px;
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+
+        .cyl-body .cyl-name {
+            font-size: 13px;
+            font-weight: 800;
+            color: #C2410C;
+        }
+
+        /* ===== L-SHAPE ARROW ===== */
+        .l-arrow-up-right {
+            position: absolute;
+            border-top: 2px dashed #64748B;
+            border-left: 2px dashed #64748B;
+            border-top-left-radius: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="canvas">
+
+        <!-- Tiêu đề -->
+        <div class="title-bar">
+            <div class="dot r"></div>
+            <div class="dot y"></div>
+            <div class="dot g"></div>
+            <div class="title-text">Hệ thống Quản lý Vận chuyển Ngựa Đua Xuyên Biên Giới (Kiến trúc 3 Tầng - 3 Tier)</div>
+        </div>
+        <div class="diagram-title">
+            <h1>System Architecture Diagram - 3-Tier Web App</h1>
+            <div class="sub">Thiết kế hệ thống web theo mô hình 3 Tầng: Presentation - Application - Database
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 1. ACTORS (NGƯỜI DÙNG) -->
+        <!-- ========================================== -->
+        <div style="position:absolute; top:360px; left:30px; text-align:center; width:120px;">
+            <div style="font-size:36px; color:#475569;">👥</div>
+            <div style="font-size:12px; font-weight:800; color:#1E293B; margin-top:8px;">Người dùng</div>
+            <div style="font-size:10px; color:#64748B; margin-top:4px;">Khách hàng (CUS)<br />Quản lý (Manager)<br />Điều phối (OPS)<br />Tài xế (Driver)<br />Hộ tống (Escort)</div>
+        </div>
+
+        <!-- Mũi tên Actor -> View -->
+        <div class="h-arrow" style="top:390px; left:140px; width:50px;">
+            <div class="ha-line"></div>
+            <div class="ha-head"></div>
+        </div>
+        <div class="arrow-label" style="top:370px; left:135px; border:none; background:transparent;">Thao tác UI</div>
+
+        <!-- ========================================== -->
+        <!-- 2. LAYER 1: VIEW (GIAO DIỆN) -->
+        <!-- ========================================== -->
+        <div class="group-box" style="top:300px; left:190px; width:220px; height:180px;">
+            <div class="group-title" style="color:#0284C7; border-color:#0284C7;">Tier 1: Presentation Layer</div>
+
+            <div class="comp" style="margin:24px 12px 12px; background:#F0F9FF; border-color:#BAE6FD;">
+                <div class="comp-icon" style="background:#E0F2FE; color:#0284C7;">🌐</div>
+                <div class="comp-text">
+                    <div class="ct-name" style="color:#0369A1;">Web Browser</div>
+                    <div class="ct-desc">Hiển thị giao diện cho người dùng cuối</div>
+                </div>
+            </div>
+
+            <div class="comp" style="margin:0 12px; background:#F0F9FF; border-color:#BAE6FD;">
+                <div class="comp-icon" style="background:#E0F2FE; color:#0284C7;">📄</div>
+                <div class="comp-text">
+                    <div class="ct-name" style="color:#0369A1;">HTML, CSS, JS</div>
+                    <div class="ct-desc">Vanilla JS, giao diện thân thiện, đa nền tảng</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mũi tên View -> Controller -->
+        <div class="h-arrow" style="top:390px; left:410px; width:60px;">
+            <div class="ha-line"></div>
+            <div class="ha-head"></div>
+        </div>
+        <div class="arrow-label" style="top:370px; left:410px;">HTTP Request</div>
+
+        <!-- ========================================== -->
+        <!-- 3. EXTERNAL SERVICES -->
+        <!-- ========================================== -->
+        <div class="group-box" style="top:100px; left:470px; width:650px; height:120px;">
+            <div class="group-title" style="color:#7C3AED; border-color:#7C3AED;">External Services (Dịch vụ bên ngoài)
+            </div>
+
+            <div style="display:flex; gap:12px; padding:24px 12px 0;">
+                <div class="comp" style="flex:1;">
+                    <div class="comp-icon" style="background:#EDE9FE; color:#7C3AED;">🔑</div>
+                    <div class="comp-text">
+                        <div class="ct-name">Dịch vụ Xác thực</div>
+                        <div class="ct-desc">Đăng nhập tài khoản qua SSO</div>
+                    </div>
+                </div>
+                <div class="comp" style="flex:1;">
+                    <div class="comp-icon" style="background:#EDE9FE; color:#7C3AED;">📧</div>
+                    <div class="comp-text">
+                        <div class="ct-name">Dịch vụ Email</div>
+                        <div class="ct-desc">Gửi thông báo lộ trình, OTP</div>
+                    </div>
+                </div>
+                <div class="comp" style="flex:1;">
+                    <div class="comp-icon" style="background:#EDE9FE; color:#7C3AED;">💳</div>
+                    <div class="comp-text">
+                        <div class="ct-name">Cổng Thanh Toán</div>
+                        <div class="ct-desc">Thanh toán cọc & số dư</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mũi tên chữ L: View -> Dịch vụ ngoài (SSO) -->
+        <div class="l-arrow-up-right" style="top:150px; left:300px; width:170px; height:150px;"></div>
+        <div
+            style="position:absolute; top:145px; left:462px; width:0; height:0; border-top:5px solid transparent; border-bottom:5px solid transparent; border-left:7px solid #64748B;">
+        </div>
+        <div class="arrow-label" style="top:140px; left:340px; background:#F8FAFC; border:none;">Đăng nhập SSO</div>
+
+        <!-- Mũi tên Service <-> Dịch vụ ngoài -->
+        <div class="v-arrow" style="top:220px; left:795px; height:60px;">
+            <div class="va-line dashed"></div>
+            <div class="va-head"></div>
+        </div>
+        <div class="arrow-label" style="top:230px; left:805px;">Gọi API bên ngoài</div>
+
+        <!-- ========================================== -->
+        <!-- 4. APPLICATION SERVER (Backend) -->
+        <!-- ========================================== -->
+        <div class="accent-group" style="top:250px; left:470px; width:920px; height:450px;">
+            <div class="accent-title">Tier 2: Application Layer (Spring Boot / Java)</div>
+
+            <div style="display:flex; justify-content:space-between; padding:30px 16px 16px; height:100%; gap:16px;">
+
+                <!-- CONTROLLER LAYER -->
+                <div class="layer-col" style="flex:1; border-color:#93C5FD; position:relative;">
+                    <div class="lr-title" style="color:#1D4ED8;"><span style="font-size:14px;">🚪</span> API Layer (Controller)</div>
+
+                    <div class="comp" style="background:#EFF6FF; border-color:#BFDBFE;">
+                        <div class="comp-text">
+                            <div class="ct-name" style="color:#1E40AF;">Spring Security</div>
+                            <div class="ct-desc">Kiểm tra Auth (JWT) & Phân quyền Roles.</div>
+                        </div>
+                    </div>
+
+                    <div class="comp" style="background:#EFF6FF; border-color:#BFDBFE; flex:1;">
+                        <div class="comp-text">
+                            <div class="ct-name" style="color:#1E40AF;">Spring REST Controllers</div>
+                            <div class="ct-desc">
+                                Tiếp nhận HTTP Request và trả về JSON.<br /><br />
+                                • AuthController<br />
+                                • TransportController<br />
+                                • TripController<br />
+                                • PaymentController
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mũi tên Controller -> Service -->
+                <div style="display:flex; align-items:center; position:relative; width:40px;">
+                    <div class="h-arrow" style="width:100%;">
+                        <div class="ha-line"></div>
+                        <div class="ha-head"></div>
+                    </div>
+                    <div class="arrow-label" style="top:190px; left:-15px;">Gọi hàm xử lý</div>
+                </div>
+
+                <!-- SERVICE LAYER -->
+                <div class="layer-col" style="flex:1.2; border-color:#FDBA74; position:relative;">
+                    <div class="lr-title" style="color:#C2410C;"><span style="font-size:14px;">⚙️</span> Business Layer (Service)</div>
+
+                    <div class="comp" style="background:#FFF7ED; border-color:#FED7AA; flex:1;">
+                        <div class="comp-text">
+                            <div class="ct-name" style="color:#9A3412;">Spring Services (@Service)</div>
+                            <div class="ct-desc">
+                                Chứa logic nghiệp vụ lõi.<br /><br />
+                                • TransportService<br />
+                                • RouteOptimizationService<br />
+                                • IncidentHandlingService<br />
+                                • PaymentService
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="comp" style="background:#FFF7ED; border-color:#FED7AA;">
+                        <div class="comp-text">
+                            <div class="ct-name" style="color:#9A3412;">Cross-Cutting Concerns</div>
+                            <div class="ct-desc">Logging (SLF4J), Exception Handling, Validation.</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mũi tên Service -> Repository -->
+                <div style="display:flex; align-items:center; position:relative; width:40px;">
+                    <div class="h-arrow" style="width:100%;">
+                        <div class="ha-line"></div>
+                        <div class="ha-head"></div>
+                    </div>
+                    <div class="arrow-label" style="top:190px; left:-10px;">Gọi truy xuất</div>
+                </div>
+
+                <!-- REPOSITORY LAYER -->
+                <div class="layer-col" style="flex:1; border-color:#86EFAC; position:relative;">
+                    <div class="lr-title" style="color:#15803D;"><span style="font-size:14px;">📂</span> Data Access Layer (Repository)</div>
+
+                    <div class="comp" style="background:#F0FDF4; border-color:#BBF7D0; flex:1;">
+                        <div class="comp-text">
+                            <div class="ct-name" style="color:#166534;">Spring Data JPA Repositories</div>
+                            <div class="ct-desc">
+                                Giao tiếp với CSDL qua ORM Hibernate.<br /><br />
+                                • AccountRepository<br />
+                                • TripRepository<br />
+                                • RouteRepository<br />
+                                • VehicleRepository
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="comp" style="background:#F0FDF4; border-color:#BBF7D0;">
+                        <div class="comp-text">
+                            <div class="ct-name" style="color:#166534;">Entity Mapping</div>
+                            <div class="ct-desc">JPA Entities và chuyển đổi DTO (MapStruct).</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Mũi tên Repository -> Database -->
+        <div class="h-arrow" style="top:475px; left:1390px; width:50px;">
+            <div class="ha-line"></div>
+            <div class="ha-head"></div>
+        </div>
+        <div class="arrow-label" style="top:450px; left:1390px;">Truy vấn SQL</div>
+
+        <!-- ========================================== -->
+        <!-- 5. TIER 3: DATABASE (Ngoài vùng App Server) -->
+        <!-- ========================================== -->
+        <div class="group-box" style="top:250px; left:1440px; width:220px; height:450px;">
+            <div class="group-title" style="color:#BE123C; border-color:#BE123C;">Tier 3: Database</div>
+
+            <div style="padding: 30px 12px 0;">
+                <div class="cylinder">
+                    <div class="cyl-top"></div>
+                    <div class="cyl-body">
+                        <div class="cyl-name">Microsoft SQL Server</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="padding:16px; display:flex; flex-wrap:wrap; gap:6px; justify-content:center;">
+                <div
+                    style="font-size:9px; font-weight:700; color:#991B1B; background:#FEF2F2; padding:4px 6px; border:1px solid #FECACA; border-radius:4px;">
+                    Account</div>
+                <div
+                    style="font-size:9px; font-weight:700; color:#991B1B; background:#FEF2F2; padding:4px 6px; border:1px solid #FECACA; border-radius:4px;">
+                    TransportReq</div>
+                <div
+                    style="font-size:9px; font-weight:700; color:#991B1B; background:#FEF2F2; padding:4px 6px; border:1px solid #FECACA; border-radius:4px;">
+                    Route / Leg</div>
+                <div
+                    style="font-size:9px; font-weight:700; color:#991B1B; background:#FEF2F2; padding:4px 6px; border:1px solid #FECACA; border-radius:4px;">
+                    Trip</div>
+                <div
+                    style="font-size:9px; font-weight:700; color:#991B1B; background:#FEF2F2; padding:4px 6px; border:1px solid #FECACA; border-radius:4px;">
+                    Payment</div>
+                <div
+                    style="font-size:9px; font-weight:700; color:#991B1B; background:#FEF2F2; padding:4px 6px; border:1px solid #FECACA; border-radius:4px;">
+                    Incident</div>
+            </div>
+
+            <div style="text-align:center; font-size:10px; color:#64748B; padding:10px 16px;">
+                Hệ quản trị CSDL quan hệ SQL Server, lưu trữ các Entity của hệ thống.
+            </div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

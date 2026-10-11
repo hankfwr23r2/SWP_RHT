@@ -1,0 +1,180 @@
+- generic [ref=f367e1]:
+  - generic [ref=f367e2]:
+    - banner [ref=f367e3]:
+      - generic [ref=f367e4]:
+        - link "EQ Vận chuyển Ngựa" [ref=f367e5] [cursor=pointer]:
+          - /url: /portal
+          - generic [ref=f367e6]: EQ
+          - generic [ref=f367e7]: Vận chuyển Ngựa
+        - navigation "Menu" [ref=f367e8]:
+          - link "Trang chủ" [ref=f367e9] [cursor=pointer]:
+            - /url: /portal
+          - link "Hồ sơ ngựa" [ref=f367e10] [cursor=pointer]:
+            - /url: /horses
+          - link "Đặt chuyến mới" [ref=f367e11] [cursor=pointer]:
+            - /url: /booking/route
+          - link "Đơn của tôi" [ref=f367e12] [cursor=pointer]:
+            - /url: /orders
+          - link "Lịch sử đơn" [ref=f367e13] [cursor=pointer]:
+            - /url: /history
+        - generic [ref=f367e14]:
+          - link " 1900 6868" [ref=f367e15] [cursor=pointer]:
+            - /url: tel:19006868
+            - generic [ref=f367e16]: 
+            - strong [ref=f367e17]: 1900 6868
+          - button "Thông báo" [ref=f367e19] [cursor=pointer]:
+            - generic [aria-hidden] [ref=f367e20]: 
+          - generic "Trang trại Long Thành" [ref=f367e21]: LT
+          - generic [ref=f367e22]: Trang trại Long Thành
+          - button " Đăng xuất" [ref=f367e23] [cursor=pointer]:
+            - generic [ref=f367e24]: 
+            - text: Đăng xuất
+    - main [ref=f367e25]:
+      - generic [ref=f367e28]:
+        - generic [ref=f367e29]:
+          - link "Trang chủ" [ref=f367e30] [cursor=pointer]:
+            - /url: /portal
+          - text: /
+          - generic [ref=f367e31]: Đặt chuyến mới
+          - text: /
+          - generic [ref=f367e32]: Chuyến đi
+        - generic [ref=f367e33]:
+          - heading "Tạo yêu cầu vận chuyển" [level=1] [ref=f367e34]
+          - paragraph [ref=f367e35]: Chọn loại chuyến trước, hệ thống chỉ hỏi những thông tin cần cho loại chuyến đó.
+        - list "Các bước đặt chuyến" [ref=f367e36]:
+          - listitem [ref=f367e37]:
+            - generic [ref=f367e38]:
+              - generic [ref=f367e39]: "1"
+              - generic [ref=f367e40]: Chuyến đi
+          - listitem [ref=f367e41]:
+            - generic [ref=f367e42]:
+              - generic [ref=f367e43]: "2"
+              - generic [ref=f367e44]: Chọn ngựa
+          - listitem [ref=f367e45]:
+            - generic [ref=f367e46]:
+              - generic [ref=f367e47]: "3"
+              - generic [ref=f367e48]: Dịch vụ & bảo hiểm
+          - listitem [ref=f367e49]:
+            - generic [ref=f367e50]:
+              - generic [ref=f367e51]: "4"
+              - generic [ref=f367e52]: Xác nhận & gửi
+        - generic [ref=f367e53]:
+          - generic [ref=f367e55]:
+            - generic [ref=f367e56]:
+              - heading " Loại chuyến" [level=3] [ref=f367e58]:
+                - generic [ref=f367e59]: 
+                - text: Loại chuyến
+              - radiogroup "Loại chuyến" [ref=f367e60]:
+                - radio "Trong nước Đi và đến đều trong Việt Nam. Không qua cửa khẩu." [checked] [ref=f367e61] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f367e62]: 
+                  - generic [ref=f367e63]: Trong nước
+                  - generic [ref=f367e64]: Đi và đến đều trong Việt Nam. Không qua cửa khẩu.
+                - radio "Quốc tế Từ Việt Nam sang Campuchia hoặc Lào, hoặc từ Campuchia hoặc Lào về Việt Nam, qua một cửa khẩu bạn chọn." [ref=f367e65] [cursor=pointer]:
+                  - generic [aria-hidden] [ref=f367e66]: 
+                  - generic [ref=f367e67]: Quốc tế
+                  - generic [ref=f367e68]: Từ Việt Nam sang Campuchia hoặc Lào, hoặc từ Campuchia hoặc Lào về Việt Nam, qua một cửa khẩu bạn chọn.
+            - generic [ref=f367e108]:
+              - heading " Tuyến đường và ngày đi" [level=3] [ref=f367e110]:
+                - generic [ref=f367e111]: 
+                - text: Tuyến đường và ngày đi
+              - generic [ref=f367e112]:
+                - generic [ref=f367e113]:
+                  - generic [ref=f367e114]: Điểm đón (Việt Nam) *
+                  - combobox "Điểm đón (Việt Nam) *" [expanded] [active] [ref=f367e116] [cursor=pointer]:
+                    - generic [ref=f367e117]: — Chọn điểm đón —
+                - generic [ref=f367e120]:
+                  - generic [ref=f367e121]: Điểm giao (Việt Nam) *
+                  - combobox "Điểm giao (Việt Nam) *" [ref=f367e123] [cursor=pointer]:
+                    - generic [ref=f367e124]: — Chọn điểm giao —
+              - generic [ref=f367e127]:
+                - generic [ref=f367e128]: Ngày khởi hành *
+                - textbox "Ngày khởi hành *" [ref=f367e129]
+                - generic [ref=f367e130]: Sớm nhất 03/11/2026 (đặt trước tối thiểu 30 ngày). Các ngày trước đó không chọn được.
+            - generic [ref=f367e131]:
+              - heading " Người gửi và người nhận" [level=3] [ref=f367e133]:
+                - generic [ref=f367e134]: 
+                - text: Người gửi và người nhận
+              - paragraph [ref=f367e135]: Thông tin để lập biên bản giao nhận và hồ sơ vận chuyển.
+              - heading "Người gửi (Consignor)" [level=4] [ref=f367e136]
+              - generic [ref=f367e137]:
+                - generic [ref=f367e138]:
+                  - generic [ref=f367e139]: Tên *
+                  - textbox "Tên *" [ref=f367e140]:
+                    - /placeholder: Họ tên hoặc tên đơn vị
+                    - text: Trang trại Long Thành
+                - generic [ref=f367e141]:
+                  - generic [ref=f367e142]: Số điện thoại *
+                  - textbox "Số điện thoại *" [ref=f367e143]:
+                    - /placeholder: "VD: 0901 234 567"
+                - generic [ref=f367e144]:
+                  - generic [ref=f367e145]: CCCD / MST / Hộ chiếu *
+                  - textbox "CCCD / MST / Hộ chiếu *" [ref=f367e146]:
+                    - /placeholder: Số giấy tờ định danh
+                - generic [ref=f367e147]:
+                  - generic [ref=f367e148]: Địa chỉ chi tiết *
+                  - textbox "Địa chỉ chi tiết *" [ref=f367e149]:
+                    - /placeholder: Số nhà, đường, phường/xã, tỉnh/thành
+              - heading "Người nhận (Consignee)" [level=4] [ref=f367e150]
+              - generic [ref=f367e151]:
+                - generic [ref=f367e152]:
+                  - generic [ref=f367e153]: Tên *
+                  - textbox "Tên *" [ref=f367e154]:
+                    - /placeholder: Họ tên hoặc tên đơn vị
+                - generic [ref=f367e155]:
+                  - generic [ref=f367e156]: Số điện thoại *
+                  - textbox "Số điện thoại *" [ref=f367e157]:
+                    - /placeholder: "VD: 0901 234 567"
+                - generic [ref=f367e158]:
+                  - generic [ref=f367e159]: CCCD / MST / Hộ chiếu *
+                  - textbox "CCCD / MST / Hộ chiếu *" [ref=f367e160]:
+                    - /placeholder: Số giấy tờ định danh
+                - generic [ref=f367e161]:
+                  - generic [ref=f367e162]: Địa chỉ chi tiết *
+                  - textbox "Địa chỉ chi tiết *" [ref=f367e163]:
+                    - /placeholder: Số nhà, đường, phường/xã, tỉnh/thành
+            - generic [ref=f367e69]:
+              - link "Hủy" [ref=f367e70] [cursor=pointer]:
+                - /url: /portal
+              - 'button "Tiếp tục: Chọn ngựa " [ref=f367e71] [cursor=pointer]':
+                - text: "Tiếp tục: Chọn ngựa"
+                - generic [ref=f367e72]: 
+          - complementary "Tóm tắt đơn" [ref=f367e73]:
+            - generic [ref=f367e74]:
+              - heading " Tóm tắt đơn" [level=3] [ref=f367e76]:
+                - generic [ref=f367e77]: 
+                - text: Tóm tắt đơn
+              - generic [ref=f367e78]:
+                - generic [ref=f367e79]:
+                  - term [ref=f367e80]: Loại chuyến
+                  - definition [ref=f367e81]: Trong nước
+                - generic [ref=f367e82]:
+                  - term [ref=f367e83]: Điểm đón
+                  - definition [ref=f367e84]: —
+                - generic [ref=f367e85]:
+                  - term [ref=f367e86]: Điểm giao
+                  - definition [ref=f367e87]: —
+                - generic [ref=f367e88]:
+                  - term [ref=f367e89]: Ngày khởi hành
+                  - definition [ref=f367e90]: —
+                - generic [ref=f367e91]:
+                  - term [ref=f367e92]: Số ngựa
+                  - definition [ref=f367e93]: —
+            - generic [ref=f367e95]:
+              - generic [ref=f367e96]: 
+              - generic [ref=f367e97]:
+                - text: Sau khi gửi đơn
+                - list [ref=f367e98]:
+                  - listitem [ref=f367e99]: Quản lý tiếp nhận, Kiểm dịch viên và Điều phối viên thẩm định song song.
+                  - listitem [ref=f367e100]: Báo giá chính thức gửi cho bạn, có hiệu lực 48 giờ.
+                  - listitem [ref=f367e101]: Đặt cọc 30% để nhận vận đơn. Nhà xe làm giấy kiểm dịch và hải quan giúp bạn.
+        - paragraph [ref=f367e102]: Đặt trước ngày khởi hành tối thiểu 30 ngày để kịp cách ly, xét nghiệm và đăng ký liên vận.
+    - contentinfo [ref=f367e103]: © 2026 Vận chuyển Ngựa đua · Việt Nam · Lào · Campuchia · Hotline 1900 6868
+    - group "Ngôn ngữ" [ref=f367e104]:
+      - button "VI" [pressed] [ref=f367e106]
+      - button "EN" [ref=f367e107] [cursor=pointer]
+  - listbox [ref=f367e168]:
+    - option "— Chọn điểm đón —" [selected] [ref=f367e169] [cursor=pointer]
+    - option "Kho Đồng Nai — Trang trại Đua ngựa Long Thành" [ref=f367e173] [cursor=pointer]
+    - option "Kho Long An — Trang trại Huấn luyện Mỹ Quỳnh (Đức Hòa)" [ref=f367e175] [cursor=pointer]
+    - option "Kho Bình Dương — Trung tâm Cưỡi ngựa Đức Hòa" [ref=f367e177] [cursor=pointer]
+    - option "CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)" [ref=f367e179] [cursor=pointer]

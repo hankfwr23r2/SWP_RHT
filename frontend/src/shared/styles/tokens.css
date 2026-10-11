@@ -1,0 +1,29 @@
+/* Bộ màu, font, bo góc lấy từ trang chủ (home.css). Mọi trang dùng chung. */
+:root {
+  --orange: #ea580c;
+  --orange-dark: #c2410c;
+  --orange-soft: #fff7ed;
+  --navy: #0f172a;
+  --navy-2: #1e293b;
+  --text: #1e293b;
+  --muted: #64748b;
+  --line: #e2e8f0;
+  --bg-soft: #f4f4f5;
+  --bg-page: #f8fafc;
+  --white: #ffffff;
+
+  --green: #059669;
+  --green-soft: #ecfdf5;
+  --red: #dc2626;
+  --red-soft: #fef2f2;
+  --amber: #b45309;
+  --amber-soft: #fffbeb;
+  --blue: #1d4ed8;
+  --blue-soft: #eff6ff;
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
+  --shadow-lg: 0 16px 32px rgba(15, 23, 42, 0.12);
+  --font: 'Inter', sans-serif;
+}

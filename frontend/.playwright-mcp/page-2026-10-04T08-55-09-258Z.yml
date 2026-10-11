@@ -1,0 +1,74 @@
+- generic [ref=f228e2]:
+  - banner [ref=f228e3]:
+    - generic [ref=f228e4]:
+      - link "EQ Vận chuyển Ngựa" [ref=f228e5] [cursor=pointer]:
+        - /url: /portal
+        - generic [ref=f228e6]: EQ
+        - generic [ref=f228e7]: Vận chuyển Ngựa
+      - navigation "Menu" [ref=f228e8]:
+        - link "Trang chủ" [ref=f228e9] [cursor=pointer]:
+          - /url: /portal
+        - link "Hồ sơ ngựa" [ref=f228e10] [cursor=pointer]:
+          - /url: /horses
+        - link "Đặt chuyến mới" [ref=f228e11] [cursor=pointer]:
+          - /url: /booking/route
+        - link "Đơn của tôi" [ref=f228e12] [cursor=pointer]:
+          - /url: /orders
+        - link "Nghiệm thu" [ref=f228e13] [cursor=pointer]:
+          - /url: /acceptance
+      - generic [ref=f228e14]:
+        - link " 1900 6868" [ref=f228e15] [cursor=pointer]:
+          - /url: tel:19006868
+          - generic [ref=f228e16]: 
+          - strong [ref=f228e17]: 1900 6868
+        - button "Thông báo" [ref=f228e19] [cursor=pointer]:
+          - generic [aria-hidden] [ref=f228e20]: 
+        - generic "Trang trại Long Thành" [ref=f228e21]: LT
+        - button " Đăng xuất" [ref=f228e22] [cursor=pointer]:
+          - generic [ref=f228e23]: 
+          - text: Đăng xuất
+  - main [ref=f228e24]:
+    - generic [ref=f228e27]:
+      - generic [ref=f228e28]:
+        - link "Trang chủ" [ref=f228e29] [cursor=pointer]:
+          - /url: /portal
+        - text: /
+        - generic [ref=f228e30]: Nghiệm thu
+      - generic [ref=f228e31]:
+        - heading "Nghiệm thu cuối chuyến" [level=1] [ref=f228e32]
+        - paragraph [ref=f228e33]: Bấm vào một đơn để nghiệm thu, xem bảng quyết toán, thanh toán và đánh giá.
+      - generic [ref=f228e34]:
+        - link "ORD-2026-0119 Đã giao ngựa Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM) 04/10/2026 · 1 ngựa Đã giao ngựa an toàn Xem" [ref=f228e35] [cursor=pointer]:
+          - /url: /acceptance/ORD-2026-0119
+          - generic [ref=f228e36]:
+            - generic [ref=f228e37]: ORD-2026-0119
+            - generic "Delivered - Pending Settlement" [ref=f228e38]:
+              - generic [aria-hidden] [ref=f228e39]: 
+              - text: Đã giao ngựa
+          - generic [ref=f228e40]: Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+          - generic [ref=f228e41]: 04/10/2026 · 1 ngựa
+          - generic [ref=f228e42]:
+            - generic [aria-hidden] [ref=f228e43]: 
+            - generic [ref=f228e44]: Đã giao ngựa an toàn
+          - generic [ref=f228e45]:
+            - text: Xem
+            - generic [aria-hidden] [ref=f228e46]: 
+        - link "ORD-2026-0123 Đã giao, đang quyết toán Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM) 04/10/2026 · 1 ngựa Đang đối soát chi phí Xem" [ref=f228e47] [cursor=pointer]:
+          - /url: /acceptance/ORD-2026-0123
+          - generic [ref=f228e48]:
+            - generic [ref=f228e49]: ORD-2026-0123
+            - generic "Expenses Submitted - Pending Audit" [ref=f228e50]:
+              - generic [aria-hidden] [ref=f228e51]: 
+              - text: Đã giao, đang quyết toán
+          - generic [ref=f228e52]: Kho Bình Dương → CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)
+          - generic [ref=f228e53]: 04/10/2026 · 1 ngựa
+          - generic [ref=f228e54]:
+            - generic [aria-hidden] [ref=f228e55]: 
+            - generic [ref=f228e56]: Đang đối soát chi phí
+          - generic [ref=f228e57]:
+            - text: Xem
+            - generic [aria-hidden] [ref=f228e58]: 
+  - contentinfo [ref=f228e59]: © 2026 Vận chuyển Ngựa đua · Việt Nam · Lào · Campuchia · Hotline 1900 6868
+  - group "Ngôn ngữ" [ref=f228e60]:
+    - button "VI" [pressed] [ref=f228e62]
+    - button "EN" [ref=f228e63] [cursor=pointer]
