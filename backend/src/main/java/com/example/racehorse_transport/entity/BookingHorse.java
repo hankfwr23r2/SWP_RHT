@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 @Getter
@@ -27,5 +28,6 @@ public class BookingHorse {
     @Column(name = "AddedDate")
     private Instant addedDate;
 
-
+    @Column(name = "TotalHorseServicePrice", precision = 18, scale = 2)
+    private BigDecimal totalHorseServicePrice;
 }

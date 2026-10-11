@@ -25,3 +25,7 @@ frontend/dist/
 frontend/dist-ssr/
 frontend/*.local
 frontend/.env
+
+# Local properties & database dumps
+*application-local.properties
+*.sql
