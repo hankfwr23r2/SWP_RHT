@@ -78,8 +78,6 @@ public class Booking {
     @Column(name = "WaybillNo", length = 50)
     private String waybillNo;
 
-    @Nationalized
-    @Lob
-    @Column(name = "DetailsJson")
+    @Column(name = "DetailsJson", columnDefinition = "TEXT")
     private String detailsJson;
 }

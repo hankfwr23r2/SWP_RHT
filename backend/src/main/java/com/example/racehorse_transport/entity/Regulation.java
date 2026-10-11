@@ -24,9 +24,7 @@ public class Regulation {
     @Column(name = "RegulationName")
     private String regulationName;
 
-    @Nationalized
-    @Lob
-    @Column(name = "description")
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
     @Size(max = 50)

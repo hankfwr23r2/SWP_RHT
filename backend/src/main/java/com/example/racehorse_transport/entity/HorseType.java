@@ -20,9 +20,7 @@ public class HorseType {
     @Column(name = "typeName")
     private String typeName;
 
-    @Nationalized
-    @Lob
-    @Column(name = "description")
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
 

@@ -22,9 +22,7 @@ public class Route {
     @Column(name = "RouteName")
     private String routeName;
 
-    @Nationalized
-    @Lob
-    @Column(name = "description")
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
     @Column(name = "estimatedTime")

@@ -40,9 +40,7 @@ public class HorseHealthLog {
     @Column(name = "weight", precision = 10, scale = 2)
     private BigDecimal weight;
 
-    @Nationalized
-    @Lob
-    @Column(name = "symptoms")
+    @Column(name = "symptoms", columnDefinition = "TEXT")
     private String symptoms;
 
 
