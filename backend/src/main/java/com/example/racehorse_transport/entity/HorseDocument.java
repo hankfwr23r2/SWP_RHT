@@ -2,14 +2,16 @@ package com.example.racehorse_transport.entity;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.Instant;
 import java.time.LocalDate;
 
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "HORSE_DOCUMENT")
 public class HorseDocument {
@@ -40,5 +42,17 @@ public class HorseDocument {
     @Column(name = "UploadDate")
     private Instant uploadDate;
 
+    /** Ghi chu cua chuyen vien khi duyet / tu choi */
+    @Size(max = 1000)
+    @Column(name = "review_note", length = 1000)
+    private String reviewNote;
 
+    /** Ten chuyen vien da duyet / tu choi */
+    @Size(max = 200)
+    @Column(name = "reviewer_name", length = 200)
+    private String reviewerName;
+
+    /** Thoi diem chuyen vien duyet / tu choi */
+    @Column(name = "reviewed_at")
+    private Instant reviewedAt;
 }
