@@ -9,6 +9,7 @@ import type { Booking, Checkpoint, VehicleTrip } from '@shared/types/booking'
 import { CaptureField } from '@shared/ui/CaptureField'
 import { useToast } from '@shared/ui/toast'
 import { Checklist, Panel } from '../../shared/field'
+import { HomeReturnPanel } from '../../shared/HomeReturnPanel'
 import { IncidentPanel, SosPanel, SubmitExpensesPanel } from '../../shared/IncidentField'
 import s from '../../shared/field.module.css'
 
@@ -118,7 +119,12 @@ function DriverSteps({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
   const cp = currentCheckpoint(t)
   const pickup = t.run?.checkpoints[0]
 
-  if (t.run?.deliveredAt) return <Panel title="Đã giao ngựa" icon="fa-flag-checkered" tone="ok"><p>Giao xong lúc {formatDateTime(t.run.deliveredAt)}. </p></Panel>
+  if (t.run?.deliveredAt) return (
+    <>
+      <Panel title="Đã giao ngựa" icon="fa-flag-checkered" tone="ok"><p>Giao xong lúc {formatDateTime(t.run.deliveredAt)}. </p></Panel>
+      <HomeReturnPanel b={b} t={t} role="driver" run={run} />
+    </>
+  )
 
   if (t.departedAt && !t.run?.startedAt) {
     if (!pickup?.arrivedAt) return <ArriveStep key="pickup" title="Xác nhận có mặt tại điểm đón" icon="fa-location-dot" button="Đã tới điểm đón" hint={`Khi tới trang trại, chụp ảnh cổng hoặc khu chuồng. Dự kiến ${b.route ? formatDateTime(b.route.legs[0].departAt) : 'đúng hẹn'}.`} run={run} action={photo => bookingsApi.arriveAtPickup(b.id, t.tripId, session!.name, photo)} />
