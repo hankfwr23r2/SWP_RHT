@@ -1,0 +1,24 @@
+/* Popup tab dọc: cao cố định, chỉ vùng nội dung bên phải cuộn */
+.modal { width: min(1040px, 100%); height: min(780px, calc(100vh - 32px)); display: flex; flex-direction: column; overflow: hidden; }
+.body { flex: 1; min-height: 0; display: grid; grid-template-columns: 168px minmax(0, 1fr); }
+.tabs { display: flex; flex-direction: column; gap: 4px; padding: 14px 0 14px 12px; background: var(--bg-soft); border-right: 1px solid var(--line); overflow-x: hidden; overflow-y: auto; }
+.tab { position: relative; display: flex; align-items: center; gap: 9px; padding: 12px 14px 12px 12px; border: 1px solid transparent; border-right: 0; border-radius: 10px 0 0 10px; background: none; box-shadow: none; font: inherit; font-size: 0.86rem; font-weight: 600; color: var(--muted); text-align: left; cursor: pointer; }
+.tab > span { flex: 1; line-height: 1.25; }
+.tab:hover { color: var(--orange); background: rgba(255, 255, 255, 0.6); }
+.tab:focus-visible { outline: 2px solid var(--orange); outline-offset: -2px; }
+.on { background: white; color: var(--orange); border-color: var(--line); margin-right: -1px; padding-right: 15px; }
+.on::after { content: ''; position: absolute; left: 0; top: 8px; bottom: 8px; width: 3px; border-radius: 3px; background: var(--orange); }
+.dot { font-size: 0.85rem; }
+.ok { color: var(--green); }
+.warn { color: var(--amber); }
+.count { min-width: 20px; padding: 0 6px; border-radius: 999px; background: var(--red); color: white; font-size: 0.72rem; font-style: normal; line-height: 20px; text-align: center; }
+.panel { padding: 20px 22px; overflow-y: auto; min-width: 0; }
+.panel > h4:first-child { margin-top: 0 !important; }
+
+@media (max-width: 720px) {
+  .body { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
+  .tabs { flex-direction: row; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; padding: 8px 8px 0; border-right: 0; border-bottom: 1px solid var(--line); }
+  .tab { border-radius: 10px 10px 0 0; border-right: 1px solid transparent; white-space: nowrap; }
+  .on { margin: 0 0 -1px; border-right-color: var(--line); }
+  .on::after { left: 8px; right: 8px; top: 0; bottom: auto; width: auto; height: 3px; }
+}

@@ -60,8 +60,6 @@ public class Quotation {
     @Column(name = "status", length = 50)
     private String status; // PENDING, ACCEPTED, REJECTED, EXPIRED
 
-    @Nationalized
-    @Lob
-    @Column(name = "quote_lines_json")
+    @Column(name = "quote_lines_json", columnDefinition = "TEXT")
     private String quoteLinesJson;
 }

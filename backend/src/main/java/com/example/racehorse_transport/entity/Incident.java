@@ -36,9 +36,7 @@ public class Incident {
     @Column(name = "IncidentType", length = 100)
     private String incidentType;
 
-    @Nationalized
-    @Lob
-    @Column(name = "description")
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
     @Size(max = 50)

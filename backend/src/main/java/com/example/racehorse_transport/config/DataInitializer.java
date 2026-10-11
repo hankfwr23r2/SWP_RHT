@@ -7,7 +7,6 @@ import com.example.racehorse_transport.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -21,17 +20,9 @@ public class DataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final StaffRepository staffRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public void run(String... args) {
-        // 1. Tắt IDENTITY_CACHE trên SQL Server để ngăn ngừa ID bị nhảy số khi restart server
-        try {
-            jdbcTemplate.execute("ALTER DATABASE SCOPED CONFIGURATION SET IDENTITY_CACHE = OFF;");
-            log.info("SQL Server IDENTITY_CACHE has been set to OFF.");
-        } catch (Exception e) {
-            log.warn("Could not set IDENTITY_CACHE: {}", e.getMessage());
-        }
 
         // 2. Tự động khởi tạo tài khoản Admin mặc định
         seedStaff("admin01", "admin01@gmail.com", "admin123", "ADMIN", "ADMIN-01");

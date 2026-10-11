@@ -36,14 +36,10 @@ public class SystemLog {
     @Column(name = "TargetRecordID")
     private Integer targetRecordID;
 
-    @Nationalized
-    @Lob
-    @Column(name = "OldData")
+    @Column(name = "OldData", columnDefinition = "TEXT")
     private String oldData;
 
-    @Nationalized
-    @Lob
-    @Column(name = "NewData")
+    @Column(name = "NewData", columnDefinition = "TEXT")
     private String newData;
 
     @Column(name = "CreatedAt")

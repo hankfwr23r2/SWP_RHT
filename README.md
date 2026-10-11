@@ -4,7 +4,7 @@ Dự án Hệ thống Vận chuyển Ngựa đua (RaceHorse Transport System).
 
 ## Cấu trúc thư mục (Monorepo)
 
-- `backend/`: Spring Boot 3 API (Java 17, Spring Security, JWT, SQL Server, JPA/Hibernate).
+- `backend/`: Spring Boot 3 API (Java 21, Spring Security, JWT, PostgreSQL, JPA/Hibernate).
 - `frontend/`: React 19 + TypeScript + Vite (Customer SPA & Backoffice SPA).
 
 ---
@@ -16,7 +16,7 @@ Chỉ cần cài đặt Docker Desktop và chạy đúng 1 lệnh tại thư m�
 ```bash
 docker compose up -d
 ```
-- Tự động bật Microsoft SQL Server 2022, tạo database và nạp sẵn tài khoản Admin.
+- Tự động bật PostgreSQL 16 Alpine, tạo database `horse_transport_db` và nạp sẵn tài khoản Admin/Nhân sự.
 - Tự động bật Backend tại: `http://localhost:8080/api/v1`
 - Tự động bật Frontend tại: `http://localhost:5173`
 - Để dừng hệ thống: `docker compose down`

@@ -143,15 +143,16 @@ const TABS: [Tab, string][] = [['order', 'Tra cứu đơn hàng'], ['price', 'B�
 function Lookup() {
   const { search, hash } = useLocation()
   const fromUrl = new URLSearchParams(search).get('tab') as Tab | null
-  const [tab, setTab] = useState<Tab>(fromUrl ?? 'order')
+  const [activeTab, setActiveTab] = useState<Tab | null>(null)
+  const tab = activeTab ?? fromUrl ?? 'order'
+
   useEffect(() => {
-    if (fromUrl) setTab(fromUrl)
     if (hash) document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: 'smooth' })
-  }, [fromUrl, hash])
+  }, [hash])
   return (
     <section className={cx('wrap', s.lookup)} id="tra-cuu">
       <div className={s.lookupTabs} role="tablist">
-        {TABS.map(([key, label]) => <button key={key} className={cx(s.lookupTab, tab === key && s.active)} onClick={() => setTab(key)}>{label}</button>)}
+        {TABS.map(([key, label]) => <button key={key} className={cx(s.lookupTab, tab === key && s.active)} onClick={() => setActiveTab(key)}>{label}</button>)}
       </div>
       <div className={s.lookupCard}>
         <div className={cx(s.lookupPanel, s.active)} key={tab}>

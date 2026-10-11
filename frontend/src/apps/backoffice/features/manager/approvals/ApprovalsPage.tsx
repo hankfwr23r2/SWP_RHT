@@ -10,11 +10,11 @@ import { bookingsApi } from '@shared/services/bookings'
 import { crewApi, vehiclesApi } from '@shared/services/fleet'
 import { useLoad } from '@shared/services/useLoad'
 import type { Booking } from '@shared/types/booking'
-import { Modal } from '@shared/ui/Modal'
 import { QuoteSheet } from '@shared/ui/QuoteSheet'
 import { useToast } from '@shared/ui/toast'
-import { ClearanceSection, FleetRouteSection, HorseDocsSection } from '../../../shared/BookingEvidence'
-import { HorseConfigList, TripSummary } from '../../../shared/BookingParts'
+import { FleetRouteSection, HorseDocsSection } from '../../../shared/BookingEvidence'
+import { OrderInfo, PartiesInfo } from '../../../shared/BookingParts'
+import { SideTabsModal } from '../../../shared/SideTabsModal'
 import { ResourcePicker } from '../../../shared/ResourcePicker'
 import { ListPage, idCell, routeCell, statusCell, type Column } from '../../../shared/ListPage'
 import { placeShort } from '../../../shared/place'
@@ -46,14 +46,16 @@ function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booking[]; o
     if (!p.escortId) out.push(`Xe ${i + 1} chưa chọn nhân viên hộ tống.`)
     const d = crew?.find(c => c.id === p.driverId), e = crew?.find(c => c.id === p.escortId)
     const dc = sched.drivers.get(p.driverId)?.[0], ec = sched.escorts.get(p.escortId)?.[0]
-    if (d && dc) out.push(`Tài xế ${d.name} đã được giao việc cho đơn ${dc.order}.`)
-    if (e && ec) out.push(`Hộ tống ${e.name} đã được giao việc cho đơn ${ec.order}.`)
+    const why = (x: NonNullable<typeof dc>) => (x.returning ? `đang về trụ sở từ ${x.returning.from} (đơn ${x.order})` : `đang đi đơn ${x.order} (${x.countries})`)
+    if (d && dc) out.push(`Tài xế ${d.name} ${why(dc)}.`)
+    if (e && ec) out.push(`Hộ tống ${e.name} ${why(ec)}.`)
     return out
   })
   const [rows, setRows] = useState<AdjRow[]>([])
   const [busy, setBusy] = useState(false)
+  const [now] = useState(() => Date.now())
   const adjustments = rows.filter(r => r.label.trim() && digits(r.amount) > 0).map(r => ({ label: r.label.trim(), amount: r.kind === 'discount' ? -digits(r.amount) : digits(r.amount) }))
-  const preview = draft && finalizeQuote(draft.lines, adjustments, Date.now(), session!.name)
+  const preview = draft && finalizeQuote(draft.lines, adjustments, now, session!.name)
   const set = (i: number, patch: Partial<AdjRow>) => setRows(r => r.map((x, j) => (j === i ? { ...x, ...patch } : x)))
 
   const sendBack = async () => {
@@ -67,25 +69,10 @@ function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booking[]; o
     catch (e) { toast(e instanceof Error ? e.message : 'Không gửi được', 'error'); setBusy(false) }
   }
 
-  return (
-    <Modal
-      wide onClose={onClose} title={`Duyệt báo giá ${b.id}`} subtitle={`${b.customer} · khởi hành ${formatDate(b.departAt)}`}
-      footer={back
-        ? <><button className="btn btn-ghost" onClick={() => setBack(null)}>Quay lại</button><button className="btn btn-danger" disabled={busy || !back.reason.trim()} onClick={sendBack}><i className="fa-solid fa-rotate-left" /> Xác nhận trả lại</button></>
-        : <><button className="btn btn-ghost" onClick={onClose}>Đóng</button><button className="btn btn-ghost" onClick={() => setBack({ to: 'specialist', reason: '' })}><i className="fa-solid fa-user-doctor" /> Trả lại Kiểm dịch viên</button><button className="btn btn-ghost" onClick={() => setBack({ to: 'coordinator', reason: '' })}><i className="fa-solid fa-route" /> Trả lại Điều phối viên</button><button className="btn btn-primary" disabled={busy || !preview || !!crewErrors.length} onClick={send}><i className="fa-solid fa-paper-plane" /> Duyệt và gửi báo giá</button></>}
-    >
-      <div className="alert alert-info"><i className="fa-solid fa-eye" /><div><b>Giấy tờ bên dưới chỉ để Quản lý xem.</b> Khi bấm “Duyệt và gửi báo giá”, khách chỉ nhận chi tiết đơn và bảng giá, không kèm giấy tờ nào.</div></div>
-      <ClearanceSection b={b} quiet />
-      <HorseDocsSection b={b} />
-      <FleetRouteSection b={b} />
-
-      <h4 style={{ margin: '18px 0 10px' }}>Chuyến đi</h4>
-      <TripSummary b={b} />
-      <h4 style={{ margin: '18px 0 10px' }}>Ngựa và dịch vụ</h4>
-      <HorseConfigList b={b} />
-
-      <h4 style={{ margin: '18px 0 10px' }}>Chọn tài xế và nhân viên hộ tống</h4>
-      <p className={s.hint} style={{ marginBottom: 10 }}>Điều phối viên đã chọn <b>{trips.length} xe</b>. Mỗi xe cần đúng 1 tài xế và 1 nhân viên hộ tống. Người đã được giao việc cho đơn khác thì bị khóa, đơn đó giao ngựa xong mới chọn lại được.</p>
+  const crewTab = (
+    <>
+      <h4 style={{ margin: '0 0 10px' }}>Chọn tài xế và nhân viên hộ tống</h4>
+      <p className={s.hint} style={{ marginBottom: 10 }}>Điều phối viên đã chọn <b>{trips.length} xe</b>. Mỗi xe cần đúng 1 tài xế và 1 nhân viên hộ tống. Tài xế và hộ tống luôn xuất phát từ trụ sở ở Việt Nam. Người đang đi đơn khác hoặc đang chạy về trụ sở thì bị khóa, về tới trụ sở mới chọn lại được.</p>
       {trips.map((t, i) => {
         const v = vehicles?.find(x => x.id === t.vehicleId)
         const p = picks[t.tripId]
@@ -109,8 +96,12 @@ function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booking[]; o
         )
       })}
       {crewErrors.length > 0 && <div className="alert alert-warning"><i className="fa-solid fa-triangle-exclamation" /><ul>{crewErrors.map(x => <li key={x}>{x}</li>)}</ul></div>}
-
-      <h4 style={{ margin: '18px 0 10px' }}>Điều chỉnh báo giá (không bắt buộc)</h4>
+    </>
+  )
+  const quoteTab = (
+    <>
+      <div className="alert alert-info" style={{ marginBottom: 16 }}><i className="fa-solid fa-eye" /><div><b>Giấy tờ ở các mục bên trái chỉ để Quản lý xem.</b> Khi bấm “Duyệt và gửi báo giá”, khách chỉ nhận chi tiết đơn và bảng giá, không kèm giấy tờ nào.</div></div>
+      <h4 style={{ margin: '0 0 10px' }}>Điều chỉnh báo giá (không bắt buộc)</h4>
       {rows.map((r, i) => (
         <div key={i} className={s.adj}>
           <input className="form-control" aria-label="Nội dung điều chỉnh" placeholder={r.kind === 'discount' ? 'VD: Khách hàng thân thiết' : 'VD: Phụ phí chuyến gấp'} value={r.label} onChange={e => set(i, { label: e.target.value })} />
@@ -125,13 +116,33 @@ function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booking[]; o
 
       <h4 style={{ margin: '18px 0 10px' }}>Báo giá gửi khách</h4>
       {preview ? <QuoteSheet {...preview} /> : <p className="text-muted">Đang tính…</p>}
-      {back && (
-        <div className="form-group" style={{ marginTop: 18 }}>
+    </>
+  )
+  return (
+    <>
+      <SideTabsModal
+        onClose={onClose} title={`Duyệt báo giá ${b.id}`} subtitle={`${b.customer} · khởi hành ${formatDate(b.departAt)}`}
+        top={
+          back && (
+        <div className="form-group">
           <label htmlFor="sb" className="required">{back.to === 'specialist' ? 'Lý do trả lại Kiểm dịch viên (duyệt lại hồ sơ ngựa)' : 'Lý do trả lại Điều phối viên (làm lại xe và lộ trình)'}</label>
           <textarea id="sb" className="form-control" rows={3} value={back.reason} onChange={e => setBack({ ...back, reason: e.target.value })} />
           <div className="form-hint">{back.to === 'specialist' ? 'Đơn quay về Kiểm dịch viên để duyệt lại hồ sơ ngựa; xe và lộ trình của Điều phối viên được giữ nguyên.' : 'Đơn quay về Điều phối viên để chọn lại xe và lập lại lộ trình; Driver, Escort bạn đã chọn sẽ bị bỏ và chọn lại sau.'}</div>
         </div>
-      )}
+      )
+        }
+        tabs={[
+          { id: 'customer', label: 'Khách hàng', icon: 'fa-user', content: <PartiesInfo b={b} /> },
+          { id: 'docs', label: 'Hồ sơ ngựa', icon: 'fa-file-medical', content: <HorseDocsSection b={b} /> },
+          { id: 'order', label: 'Thông tin đơn', icon: 'fa-clipboard-list', content: <OrderInfo b={b} /> },
+          { id: 'route', label: 'Xe và lộ trình', icon: 'fa-route', content: <FleetRouteSection b={b} /> },
+          { id: 'crew', label: 'Tài xế, hộ tống', icon: 'fa-id-card', state: crewErrors.length ? 'warn' : 'ok', count: crewErrors.length || undefined, content: crewTab },
+          { id: 'quote', label: 'Báo giá', icon: 'fa-file-invoice-dollar', content: quoteTab },
+        ]}
+        footer={back
+        ? <><button className="btn btn-ghost" onClick={() => setBack(null)}>Quay lại</button><button className="btn btn-danger" disabled={busy || !back.reason.trim()} onClick={sendBack}><i className="fa-solid fa-rotate-left" /> Xác nhận trả lại</button></>
+        : <><button className="btn btn-ghost" onClick={onClose}>Đóng</button><button className="btn btn-ghost" onClick={() => setBack({ to: 'specialist', reason: '' })}><i className="fa-solid fa-user-doctor" /> Trả lại Kiểm dịch viên</button><button className="btn btn-ghost" onClick={() => setBack({ to: 'coordinator', reason: '' })}><i className="fa-solid fa-route" /> Trả lại Điều phối viên</button><button className="btn btn-primary" disabled={busy || !preview || !!crewErrors.length} onClick={send}><i className="fa-solid fa-paper-plane" /> Duyệt và gửi báo giá</button></>}
+      />
       {picking && vehicles && crew && (() => {
         const kind = picking.kind
         return (
@@ -144,7 +155,7 @@ function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booking[]; o
           />
         )
       })()}
-    </Modal>
+    </>
   )
 }
 

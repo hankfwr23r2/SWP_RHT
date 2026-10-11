@@ -119,6 +119,8 @@ export interface WelfareLog {
   photo: string
   note: string
 }
+// Xe giao ngựa ở nước ngoài xong thì Driver và Escort chạy về trụ sở; Driver xác nhận có ảnh chụp tại trụ sở
+export interface HomeReturn { fromPlace: string; eta: number; earliestAt: number; backAt?: number; photo?: string; by?: string }
 export interface TripRun { checkpoints: Checkpoint[]; welfare: WelfareLog[]; startedAt?: number; deliveredAt?: number }
 
 // ===== Mỗi xe của đơn là một chuyến (PRD mục 1.4, 10.2) =====
@@ -133,6 +135,7 @@ export interface VehicleTrip {
   driverPack?: DriverPack
   departedAt?: number // Driver bấm bắt đầu đến điểm đón
   run?: TripRun
+  homeReturn?: HomeReturn
 }
 export interface Waybill { no: string; issuedAt: number }
 export interface PlanConfirmed { at: number; by: string; note: string }

@@ -20,9 +20,7 @@ public class Category {
     @Column(name = "CategoryName")
     private String categoryName;
 
-    @Nationalized
-    @Lob
-    @Column(name = "description")
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
 

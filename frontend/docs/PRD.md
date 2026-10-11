@@ -1,7 +1,7 @@
 # PRD — Hệ thống Vận chuyển Ngựa đua
 
 > Tài liệu nghiệp vụ gốc. Nội dung lấy từ bộ quy trình do chủ dự án chốt (Flow 1–6, quy định hồ sơ, hạng xe, gói cước). Quy trình đặt trước tiên; các mục sau (hạng xe, gói cước, giấy tờ) phải tuân thủ quy trình.
-> Cập nhật lần cuối: 06/10/2026.
+> Cập nhật lần cuối: 11/10/2026.
 
 ## Mục lục
 
@@ -79,6 +79,7 @@ D = ngày khởi hành.
 12. **Evidence-First:** chưa có ảnh chứng từ hợp lệ thì ô nhập số tiền bị khóa (áp dụng cho chi phí sự cố, mục 7.3).
 13. **Lộ trình lập một lần:** Coordinator lập lộ trình chi tiết ngay ở Flow 1. Lộ trình chỉ sửa khi có sự cố (Flow 5).
 14. **Thanh toán hai đợt:** cọc 30% để có Vận đơn; 70% còn lại trả ngày D. Chưa trả đủ thì xe không được bắt đầu hành trình.
+15. **Nhân sự xuất phát từ trụ sở Việt Nam:** nhà xe chỉ có trụ sở ở Việt Nam, nên Driver và Escort luôn xuất phát từ đó, kể cả đơn chiều từ Lào / Campuchia về Việt Nam (họ đi sang đón ngựa). Mọi đơn đều có một đầu là Việt Nam (Việt Nam ⇄ Lào, Việt Nam ⇄ Campuchia); hệ thống không chở giữa hai nước ngoài với nhau. Giao ngựa ở nước ngoài xong thì Driver và Escort **về trụ sở** (mục 5.8) rồi mới nhận được chuyến mới.
 
 ### 1.5. Thông báo đẩy
 
@@ -103,6 +104,7 @@ Mọi vai trò có chuông thông báo trên thanh menu (số chưa đọc, bấ
 | Manager hủy đơn | Khách (kèm số tiền hoàn), Specialist, Coordinator, Driver và Escort của các xe |
 | Xe bắt đầu hành trình | Khách, Manager, Coordinator |
 | Xe giao ngựa xong | Khách, Manager |
+| Driver xác nhận cả xe đã về trụ sở (mục 5.8) | Manager, Coordinator |
 
 ---
 
@@ -221,7 +223,7 @@ Giấy tờ chỉ để Manager xem, **không gửi kèm khách**: bấm "Approv
 
 **Trả lại để làm lại:** nếu thấy chưa đạt, Manager không duyệt mà bấm **Trả lại Kiểm dịch viên** (duyệt lại hồ sơ ngựa; xe và lộ trình giữ nguyên) hoặc **Trả lại Điều phối viên** (chọn lại xe và lập lại lộ trình; Driver, Escort đã chọn bị bỏ), bắt buộc ghi lý do. Đơn quay về **Under Internal Review**, người nhận thấy lý do trên đơn và nhận thông báo; làm xong thì đơn lại về chờ Manager duyệt báo giá. Chỉ trả lại được khi đơn đang `Pending Final Commercial Approval`.
 
-**Chọn Driver và Escort:** trước khi gửi báo giá, Manager **nhìn số xe** Coordinator đã chọn rồi chọn **01 Driver và 01 Escort cho từng xe** (popup thẻ). Driver và Escort quản lý theo kiểu **giao việc (assign task)**: người đã được giao vào một chuyến của đơn khác thì **bị khóa, không chọn được** (không xét ngày đi), cho tới khi đơn đó giao ngựa xong. Chưa chọn đủ cho mọi xe thì chưa gửi được báo giá. Driver và Escort chỉ nhận "chuyến mới" sau khi khách cọc (mục 1.5).
+**Chọn Driver và Escort:** trước khi gửi báo giá, Manager **nhìn số xe** Coordinator đã chọn rồi chọn **01 Driver và 01 Escort cho từng xe** (popup thẻ). Driver và Escort quản lý theo kiểu **giao việc (assign task)**: người **đang đi đơn** khác thì **bị khóa, không chọn được** (không xét ngày đi), cho tới khi đơn đó giao ngựa xong; giao ngựa ở nước ngoài thì họ chuyển sang **đang về trụ sở** và vẫn khóa cho tới khi về (mục 5.8). Thẻ chọn ghi rõ họ đang đi đơn nào, đi nước nào, hoặc đang về từ đâu và giờ về dự kiến. Chưa chọn đủ cho mọi xe thì chưa gửi được báo giá. Driver và Escort chỉ nhận "chuyến mới" sau khi khách cọc (mục 1.5).
 
 Manager rà soát, điều chỉnh chiết khấu thương mại (nếu có), bấm **"Approve & Send Quotation"**. → **Awaiting Payment**.
 
@@ -410,6 +412,16 @@ Vị trí xe suy từ các xác nhận của Driver ở mục 5.1, không dùng 
 - Driver bấm **tiếp tục hành trình** (bắt đầu hành trình, rời trạm, rời cửa khẩu): xe đang chạy, hiển thị **ở giữa** mốc vừa rời và mốc kế tiếp.
 - Khách xem bản đồ lộ trình (điểm đón, trạm, cửa khẩu, điểm giao, đoạn đã đi, xe), mỗi xe một biểu tượng. Driver thấy dòng trạng thái "Đang ở …" hoặc "Đang trên đường từ … tới …".
 
+### 5.8. Về trụ sở sau khi giao ngựa ở nước ngoài
+
+Chỉ áp dụng khi điểm giao ở Lào hoặc Campuchia. Mỗi xe có một lượt về riêng; Driver và Escort của xe đó đi cùng nhau.
+
+- **Trạng thái nhân sự:** **Đang đi đơn** (từ lúc được giao chuyến tới khi giao ngựa xong) → **Đang về** (sau khi giao ngựa ở nước ngoài, chưa về trụ sở) → **Sẵn sàng**. Người Đang về bị khóa như người Đang đi đơn.
+- **Giờ về dự kiến** = giờ giao xong cộng thời gian lái từ điểm giao về trụ sở (có tính cửa khẩu).
+- **Xác nhận:** Driver bấm **Đã về trụ sở**, bắt buộc chụp ảnh trực tiếp tại trụ sở (Timestamp, như các mốc check-in). Escort đi cùng xe nên không có nút riêng; một lần xác nhận mở lại cho cả hai.
+- **Chống câu giờ:** nút chỉ mở sau **80% thời gian lái dự kiến** (không bấm sớm cho xong). Quá giờ dự kiến **30 phút** (cùng ngưỡng Delayed Check-in) mà chưa bấm thì gắn cờ **Về trễ**; Coordinator và Manager thấy cờ này, không có thông báo đẩy.
+- **Hiển thị:** thẻ chọn Driver / Escort của Manager (trạng thái, nước, giờ về); trang Giám sát của Coordinator có danh sách nhân sự đang ngoài trụ sở (chỉ xem, không chọn người); app Driver và Escort có thẻ **Đang về trụ sở**.
+
 ---
 
 ## 6. Flow 5 — Xử lý sự cố & điều chỉnh khẩn cấp
@@ -541,7 +553,7 @@ Manager ký duyệt, bấm **Phê duyệt & Phát hành Quyết toán (Approve &
 
 - Hệ thống chuyển đơn sang **Order Completed**.
 - Tăng số chuyến đi thành công của cá thể ngựa trong kho (ví dụ hiển thị "Đã có 6 đơn"); cập nhật nhật ký hành trình vào lý lịch cá thể ngựa.
-- Chuyển mọi xe chuyên dụng sang **Available**; chuyển các Driver và Escort sang **Available**.
+- Chuyển mọi xe chuyên dụng sang **Available**. Driver và Escort chỉ sang **Available** khi đã về trụ sở (mục 5.8); đơn giao ở Việt Nam thì ngay khi giao xong.
 - → **Archived / Completed**.
 
 ---
@@ -621,7 +633,7 @@ Căn cứ tiêu chuẩn chế tạo xe vận chuyển ngựa của các hãng l�
 
 - Mỗi đơn có **một hoặc nhiều xe**. **Coordinator tự chọn xe**; hệ thống không gán tự động. Khuyến nghị dùng **ít xe nhất**: nếu có xe chứa đủ số ngựa thì dùng một xe; đơn đông ngựa thì chia ngựa cho nhiều xe (ví dụ 6 ngựa mà không có xe 6 chỗ: 2 xe, mỗi xe 3 ngựa). Số ngựa trên mỗi xe không vượt sức chứa của xe.
 - Mỗi xe có **01 Driver + 01 Escort do Manager chọn**, sau khi Coordinator đã chọn xe và nhìn theo số xe đó (xe không có tài xế riêng). Xe, Driver, Escort nằm ở ba popup riêng; mỗi thẻ hiện lịch các đơn khác mà xe hoặc người đó đang giữ.
-- **Khóa xe trùng lịch:** xe đang giữ cho đơn khác có **ngày đi cách ngày đi này dưới 3 ngày** thì bị khóa, nêu rõ trùng với đơn nào. **Driver và Escort khóa theo giao việc:** đã được giao vào một chuyến của đơn chưa kết thúc thì không chọn được (bất kể ngày đi), thẻ ghi rõ đã giao việc cho đơn nào; xe giao ngựa xong thì họ được mở lại. Cách này thay cho việc tự suy ra "có đơn cùng ngày" hay "về kịp". Xe thiếu giấy đăng kiểm (và giấy phép liên vận với tuyến quốc tế) cũng bị khóa. Một xe, Driver hoặc Escort không được chọn hai lần trong cùng một đơn. Manager chỉ biết nhân viên (Specialist, Coordinator) đang hoạt động hay nghỉ, không quản lý số đơn họ đang nhận. Hệ thống kiểm tra lại khi xác nhận phương án.
+- **Khóa xe trùng lịch:** xe đang giữ cho đơn khác có **ngày đi cách ngày đi này dưới 3 ngày** thì bị khóa, nêu rõ trùng với đơn nào. **Driver và Escort khóa theo giao việc:** đang đi đơn chưa giao xong thì không chọn được (bất kể ngày đi), thẻ ghi rõ đang đi đơn nào và đi nước nào; giao ngựa ở nước ngoài xong thì họ **đang về trụ sở** và vẫn khóa, thẻ ghi về từ đâu và giờ về dự kiến; chỉ khi Driver xác nhận đã về trụ sở (mục 5.8) họ mới được mở lại (đơn giao ngựa tại Việt Nam thì mở lại ngay khi giao xong). Xe chuyên dụng không áp quy tắc này (xem mục 14). Cách này thay cho việc tự suy ra "có đơn cùng ngày" hay "về kịp". Xe thiếu giấy đăng kiểm (và giấy phép liên vận với tuyến quốc tế) cũng bị khóa. Một xe, Driver hoặc Escort không được chọn hai lần trong cùng một đơn. Manager chỉ biết nhân viên (Specialist, Coordinator) đang hoạt động hay nghỉ, không quản lý số đơn họ đang nhận. Hệ thống kiểm tra lại khi xác nhận phương án.
 - **Không quản lý bảo dưỡng xe.** Trạng thái của xe chỉ có hai: **Có đơn** (đang giữ chỗ cho một đơn chưa kết thúc) hoặc **Chưa có đơn**, hệ thống tự suy ra từ các đơn. Điều kiện để một xe được gán vẫn là xe rảnh vào ngày D và đủ giấy đăng kiểm (và giấy phép liên vận với tuyến quốc tế).
 - Mỗi ngựa thuộc đúng một xe. Dù xe còn chỗ trống, **không** ghép ngựa của đơn khác (Charter độc quyền).
 - Mỗi xe có chuyến riêng (mã chuyến, Lệnh điều xe, check-in, nhật ký an sinh, biên bản); đơn hoàn tất khi mọi xe giao xong.
@@ -752,6 +764,8 @@ Theo thứ tự xuất hiện trong quy trình:
 | Hủy đơn | `Cancelled` (khách từ chối báo giá hoặc hủy đơn, hoặc Manager hủy đơn; tiền theo mục 8.3) |
 | Từ chối đơn | `Order Rejected` (Manager không tiếp nhận ở `Pending Manager Intake`, hoặc Coordinator không duyệt xe và lộ trình ở `Under Internal Review`; chưa có cọc nên không hoàn / mất tiền) |
 
+**Trạng thái nhân sự** (Driver, Escort) suy từ các chuyến, không phải trạng thái đơn: Đang đi đơn, Đang về (kèm cờ Về trễ), Sẵn sàng (mục 5.8).
+
 Trạng thái sự cố (Flow 5) của đơn suy từ các sự cố đang mở của các xe, ưu tiên `Incident Reported - Action Required`, rồi `Pending Emergency Approval`, rồi `Emergency Plan Active`. Mỗi xe có tối đa một sự cố đang mở; xe có sự cố mở thì không check-in hay đi tiếp được.
 
 **Bước tiến độ hiển thị** (khách và Manager) khớp quy trình: Gửi đơn → Thẩm định → Báo giá → Đặt cọc → Giấy tờ → Sẵn sàng (gồm `Clearance Done`, `Ready for Pickup`, `En Route to Pickup`) → Vận chuyển (gồm `In Transit` và các trạng thái sự cố) → Quyết toán (từ `Delivered - Pending Settlement` đến khi khách thanh toán) → hoàn tất. Trạm nghỉ, cửa khẩu chỉ là **mốc nhỏ** bên trong bước Vận chuyển, hiển thị theo từng xe.
@@ -771,6 +785,7 @@ Các điểm dưới đây là **giả định tạm** cần chủ dự án xác
 6. **Giấy chỉ khách có (ATA Carnet, Hóa đơn thương mại):** nhà xe không tự lập được. Tạm thời: khách giao bản gốc cho Driver tại điểm đón, Specialist ghi nhận vào hạng mục giấy tờ. Cần chủ dự án chốt cách xử lý.
 7. **Flow 5, 6 đã dựng, còn các phần chưa làm:** hủy chuyến bất khả kháng khi xe hỏng hoàn toàn (mục 6.5), người nhận từ chối (mục 8.1), cầm giữ ngựa và chuyển hồ sơ Pháp lý sau 7 ngày (mục 8.2), nhiều sự cố cùng lúc trên một xe. Khi Payment Overdue hệ thống mới chặn đặt đơn mới, chưa khóa xem Kho Hồ sơ ngựa. Các trang cũ Bảng điều khiển, Báo cáo chuyến đi (Manager), Giám sát sự cố và Đội xe (Điều phối) vẫn chạy trên dữ liệu cũ.
 7a. **Giả định khi dựng Flow 5, 6:** Không có hạn mức chi khẩn cấp (Coordinator không đề nghị, Manager không duyệt), Driver / Escort kê chi phí có chứng từ; mỗi khoản chi có bên chịu mặc định theo mục 11.5 và Manager sửa được lúc đối soát; Payment Overdue chỉ áp dụng khi bảng quyết toán có khoản phải trả; cứu hộ, sửa xe và tắc nghẽn giao thông thì mọi khoản mặc định nhà xe chịu (chỉ thuốc, viện phí, phí trạm nghỉ do ngựa thì khách); sự cố sức khỏe ngựa và xe gặp sự cố cần Escort xác nhận ngựa đủ sức trước khi Driver tiếp tục hành trình, tắc nghẽn thì không. Danh mục điểm cứu hộ (`RESCUE_POINTS`) là số mẫu; vị trí xe lúc báo sự cố là mô phỏng; đường thay thế chỉ tính giữa vị trí xe và điểm kế tiếp (giới hạn của dịch vụ bản đồ).
+10. **Về trụ sở (mục 5.8), số mẫu:** trụ sở tạm đặt ở TP. Hồ Chí Minh (`HOME_BASE`), mốc mở nút 80% thời gian lái (`RETURN_EARLIEST_RATIO`), cờ trễ 30 phút. Giờ về dự kiến tính theo đường chim bay nhân hệ số đường bộ, chưa gọi dịch vụ bản đồ. **Xe chuyên dụng chưa áp quy tắc "đang về"** (vẫn khóa theo ngày đi), dù thực tế xe chạy về cùng nhân sự; Escort không có nút xác nhận riêng. Chủ dự án có thể muốn khóa nhân sự theo giờ về dự kiến (cho chọn nếu về kịp trước ngày đi đơn mới); tạm thời khóa cho tới khi về.
 9. **Báo cáo (mục 15):** chi phí vận hành là giá vốn ước tính từ báo giá (giả định biên 5%), chưa có chi phí thực tế; doanh thu ghi nhận theo ngày đặt cọc (chưa theo ngày giao). Cần chủ dự án chốt cách ghi nhận doanh thu và chi phí thật.
 8. **Giao diện:** danh mục xe cần có số đăng kiểm (và giấy phép liên vận cho tuyến quốc tế), thiếu thì hệ thống không gán xe. Xem trước ảnh dạng popup chỉ hiện ảnh vừa chọn trong phiên (chưa có kho tệp), ảnh mẫu hiện ô thay thế.
 

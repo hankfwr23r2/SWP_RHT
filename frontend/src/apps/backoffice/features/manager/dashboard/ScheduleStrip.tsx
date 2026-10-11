@@ -10,7 +10,7 @@ const startOfDay = (t: number) => { const d = new Date(t); d.setHours(0, 0, 0, 0
 const label = (t: number) => new Date(t).toLocaleDateString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit' })
 
 export function ScheduleStrip({ orders, onOpen, onCalendar }: { orders: Booking[]; onOpen: (b: Booking) => void; onCalendar: () => void }) {
-  const today = startOfDay(Date.now())
+  const [today] = useState(() => startOfDay(Date.now()))
   // Mở ở ngày có chuyến sắp tới gần nhất để không phải lật lịch tìm
   const next = orders.map(b => startOfDay(b.departAt)).filter(d => d >= today).sort((a, z) => a - z)[0]
   const [start, setStart] = useState(next ?? today)
