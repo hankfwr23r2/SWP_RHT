@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.hibernate.annotations.Nationalized;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 @Getter
@@ -34,6 +35,9 @@ public class Booking {
 
     @Column(name = "DepartureDate")
     private Instant departureDate;
+
+    @Column(name = "TotalBookingPrice", precision = 18, scale = 2)
+    private BigDecimal totalBookingPrice;
 
     @Size(max = 50)
     @Column(name = "Status", length = 50)

@@ -3,7 +3,6 @@ package com.example.racehorse_transport.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.*;
-import org.hibernate.annotations.Nationalized;
 
 import java.time.Instant;
 
