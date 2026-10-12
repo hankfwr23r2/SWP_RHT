@@ -3,7 +3,6 @@ package com.example.racehorse_transport.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.*;
-import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -33,7 +32,6 @@ public class Quotation {
     private BigDecimal adjustmentAmount;
 
     @Size(max = 255)
-    @Nationalized
     @Column(name = "adjustment_note")
     private String adjustmentNote;
 
