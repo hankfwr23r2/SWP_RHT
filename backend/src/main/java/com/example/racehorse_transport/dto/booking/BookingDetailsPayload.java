@@ -22,6 +22,8 @@ public class BookingDetailsPayload {
     private Object medical;
     private Object clearance;
     private Object settlement;
+    private Object arrival;
+    private Object handover;
     private Object rating;
     private Object intake;
     private List<Map<String, Object>> history;
