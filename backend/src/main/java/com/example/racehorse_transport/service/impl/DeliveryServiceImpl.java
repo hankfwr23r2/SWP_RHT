@@ -241,7 +241,6 @@ public class DeliveryServiceImpl implements DeliveryService {
             Vehicle vehicle = vehicleRepository.findById(request.getVehicleId())
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy xe ID: " + request.getVehicleId()));
 
-            vehicle.setCurrentLocation("Trụ sở chính — Việt Nam");
             if ("NEEDS_MAINTENANCE".equalsIgnoreCase(request.getVehicleCondition())) {
                 vehicle.setStatus("INACTIVE"); // Xe cần bảo dưỡng đại tu
             } else {
@@ -261,7 +260,6 @@ public class DeliveryServiceImpl implements DeliveryService {
             if (bv.getVehicleID() != null) {
                 Vehicle v = bv.getVehicleID();
                 v.setStatus("AVAILABLE");
-                v.setCurrentLocation("Trụ sở chính — Việt Nam");
                 vehicleRepository.save(v);
                 log.info("Released Vehicle ID={} to AVAILABLE at Central HQ", v.getId());
             }

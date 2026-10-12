@@ -264,9 +264,24 @@ public class SettlementServiceImpl implements SettlementService {
             for (VehicleTripDto trip : payload.getTrips()) {
                 if (trip.getVehicleId() != null) {
                     try {
-                        Vehicle vehicle = vehicleRepository.findByVehicleCode(trip.getVehicleId())
-                                .or(() -> vehicleRepository.findByLicensePlate(trip.getVehicleId()))
-                                .orElse(null);
+                        String vid = trip.getVehicleId().trim();
+                        Vehicle vehicle = null;
+                        try {
+                            int numId = Integer.parseInt(vid);
+                            vehicle = vehicleRepository.findById(numId).orElse(null);
+                        } catch (NumberFormatException ignored) {}
+
+                        if (vehicle == null && vid.matches("(?i)(VH|XE)-\\d+")) {
+                            try {
+                                int numId = Integer.parseInt(vid.replaceAll("[^0-9]", ""));
+                                vehicle = vehicleRepository.findById(numId).orElse(null);
+                            } catch (Exception ignored) {}
+                        }
+
+                        if (vehicle == null) {
+                            vehicle = vehicleRepository.findByLicensePlate(vid).orElse(null);
+                        }
+
                         if (vehicle != null) {
                             vehicle.setStatus("AVAILABLE");
                             vehicleRepository.save(vehicle);
