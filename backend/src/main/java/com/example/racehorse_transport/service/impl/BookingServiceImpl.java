@@ -863,6 +863,9 @@ public class BookingServiceImpl implements BookingService {
                 .quote(payload != null ? payload.getQuote() : null)
                 .payment(payload != null ? payload.getPayment() : null)
                 .medical(payload != null ? payload.getMedical() : null)
+                .clearance(payload != null ? payload.getClearance() : null)
+                .settlement(payload != null ? payload.getSettlement() : null)
+                .rating(payload != null ? payload.getRating() : null)
                 .intake(payload != null ? payload.getIntake() : null)
                 .history(payload != null ? payload.getHistory() : null)
                 .build();

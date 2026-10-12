@@ -5,6 +5,18 @@ import com.example.racehorse_transport.entity.HorseDocument;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface HorseDocumentRepository extends JpaRepository<HorseDocument, Integer> {
+
+    /** Lấy tất cả hồ sơ của một con ngựa theo HorseID */
+    List<HorseDocument> findByHorseID_Id(Integer horseId);
+
+    /** Lấy hồ sơ theo trạng thái (PENDING, APPROVED, REJECTED) */
+    List<HorseDocument> findByStatus(String status);
+
+    /** Lấy hồ sơ của một con ngựa theo loại giấy tờ */
+    List<HorseDocument> findByHorseID_IdAndDocumentType(Integer horseId, String documentType);
 }
+
