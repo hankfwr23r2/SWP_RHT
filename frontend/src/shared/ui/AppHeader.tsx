@@ -48,7 +48,7 @@ export function AppHeader({ homeHref, badge, links, isActive, userName, onLogout
     <header className={`${s.header} ${scrolled ? s.scrolled : ''}`}>
       <div className={`${s.inner} ${contained ? s.contained : ''}`}>
         <Link to={homeHref} className={s.brand}>
-          <span className={s.brandMark}>EQ</span>
+          <img src="/logo.png" alt="" className={s.brandMark} />
           <span className={s.brandText}>Vận chuyển Ngựa</span>
           {badge && <span className={s.badge}>{badge}</span>}
         </Link>

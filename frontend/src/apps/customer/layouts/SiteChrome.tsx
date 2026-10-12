@@ -20,7 +20,7 @@ function useScrolled(y: number) {
 }
 
 function Brand({ to }: { to: string }) {
-  return <Link to={to} className={s.brand}><span className={s.brandMark}>EQ</span><span>Vận chuyển Ngựa</span></Link>
+  return <Link to={to} className={s.brand}><img src="/logo.png" alt="" className={s.brandMark} /><span>Vận chuyển Ngựa</span></Link>
 }
 
 const navClass = ({ isActive }: { isActive: boolean }) => cx(s.navLink, isActive && s.active)

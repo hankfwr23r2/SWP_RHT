@@ -25,12 +25,11 @@
 }
 
 .brandMark {
-  background: var(--orange);
-  color: white;
-  font-weight: 800;
-  font-size: 0.85rem;
-  padding: 5px 8px;
-  border-radius: 6px;
+  width: 48px;
+  height: 48px;
+  padding: 4px;
+  border-radius: 12px;
+  background: white;
 }
 
 .content h1 {
