@@ -13,7 +13,7 @@ import { atHour, dayKey, startOfDay } from './dates'
 import { haversineKm, roadKm, truckCost } from './pricing'
 
 // ===== Ngày khởi hành =====
-// Ngày sớm nhất được chọn: hôm nay + 30 ngày (00:00)
+// Ngày sớm nhất được chọn: hôm nay + 20 ngày (00:00)
 export function earliestDeparture(now = Date.now()) {
   const d = startOfDay(now)
   d.setDate(d.getDate() + MIN_LEAD_DAYS)
