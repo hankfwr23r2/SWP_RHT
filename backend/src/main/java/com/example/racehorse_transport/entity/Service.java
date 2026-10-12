@@ -23,7 +23,6 @@ import java.math.BigDecimal;
 public class Service {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "ServiceID", nullable = false)
     private Integer id;
 
