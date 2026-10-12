@@ -28,9 +28,9 @@ describe('hồ sơ ngựa mẫu', () => {
 })
 
 describe('đơn mẫu', () => {
-  it('mã đơn không trùng, đặt trước ngày đi ít nhất 30 ngày', () => {
+  it('mã đơn không trùng, đặt trước ngày đi ít nhất 20 ngày', () => {
     expect(new Set(bookings.map(b => b.id)).size).toBe(bookings.length)
-    bookings.forEach(b => expect(b.departAt - b.createdAt, b.id).toBeGreaterThanOrEqual(30 * 86_400_000 - 86_400_000))
+    bookings.forEach(b => expect(b.departAt - b.createdAt, b.id).toBeGreaterThanOrEqual(20 * 86_400_000 - 86_400_000))
   })
   it('mọi trạng thái của luồng mới đều có đơn mẫu', () => {
     expect(new Set(bookings.map(b => b.status))).toEqual(new Set(['pending_intake', 'under_review', 'pending_commercial', 'awaiting_payment', 'quote_expired', 'waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed']))

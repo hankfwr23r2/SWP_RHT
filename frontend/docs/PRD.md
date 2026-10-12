@@ -67,7 +67,7 @@ D = ngày khởi hành.
 
 1. **Charter độc quyền:** các xe của một đơn chỉ chở ngựa của đơn đó. Không ghép ngựa của đơn khác (bảo đảm an toàn sinh học). **Một đơn có thể có nhiều xe** (mục 10.2).
 2. **Định biên cứng:** mỗi xe đúng **01 Driver + 01 Escort**. Coordinator chọn xe trước; **Manager** nhìn số xe đã chọn rồi chọn Driver và Escort cho từng xe, hệ thống không gán tự động. **Tài xế không gắn cố định với xe**: xe, Driver và Escort là ba danh sách riêng.
-3. **Lead time 30 ngày:** khách đặt trước ngày khởi hành tối thiểu 30 ngày (phục vụ cách ly, xét nghiệm dịch tễ, làm thủ tục).
+3. **Lead time 20 ngày:** khách đặt trước ngày khởi hành tối thiểu 20 ngày (phục vụ cách ly, xét nghiệm dịch tễ, làm thủ tục).
 4. **Nhà xe làm thủ tục:** khách chỉ cần biết ngựa được chở tới nơi. Giấy kiểm dịch, hải quan và giấy pháp lý chuyến đi do nhà xe (Specialist) làm; khách chỉ xem tiến độ (mục 9).
 5. **Báo giá cố định, không phụ thu:** phí nào cố định được thì cố định; phí không cố định được (nhiên liệu, BOT) ước tính theo lộ trình và đưa thẳng vào báo giá; nhà xe chịu chênh lệch. Chỉ phát sinh thêm khi có sự cố thuộc phần khách chịu (mục 11.5) hoặc dịch vụ khách chọn thêm.
 6. **Biển số cố định:** không điều xe thay thế giữa chặng, để giữ tính pháp lý của giấy kiểm dịch và tờ khai hải quan.
@@ -137,7 +137,7 @@ Trang "Hồ sơ ngựa" trên Cổng khách hàng. Khách khai báo một lần;
 
 ### 2.2. Bước 1 — Khách tạo đơn từ kho hồ sơ
 
-- **Khóa lịch tự động (Lead Time Validation):** vô hiệu hóa mọi ngày trong vòng 30 ngày kể từ ngày hiện tại. Ngày khởi hành ≥ ngày hiện tại + 30 ngày.
+- **Khóa lịch tự động (Lead Time Validation):** vô hiệu hóa mọi ngày trong vòng 20 ngày kể từ ngày hiện tại. Ngày khởi hành ≥ ngày hiện tại + 20 ngày.
 - **Tuyến đường & chủ thể:**
   - Phân loại tuyến: Nội địa hoặc Quốc tế liên vận CLV.
   - Người gửi (Consignor) và Người nhận (Consignee): tên, SĐT, CCCD/MST/Hộ chiếu, địa chỉ chi tiết.
@@ -742,7 +742,6 @@ Nội địa = đi và đến đều trong Việt Nam, theo quy định của Ch
 **Đơn đi và đến trong cùng một tỉnh:** tạm thời áp dụng như đơn Nội địa thông thường. Danh mục giản lược cho đơn cùng tỉnh chốt sau.
 
 **Không áp dụng cho nội địa:** Import Permit, Chứng nhận cách ly trước xuất phát, ATA Carnet, Hóa đơn thương mại / Kê khai giá trị, Tờ khai hải quan, Giấy phép vận tải liên vận quốc tế, hộ chiếu tài xế và phụ xe.
-
 **Bản gốc Driver thu tại điểm đón (Flow 4):** Hộ chiếu ngựa, Sổ tiêm và phiếu xét nghiệm. Trả lại cho Consignee ở điểm giao như tuyến quốc tế.
 
 **Khác với tuyến Quốc tế:** Flow 4 bỏ mốc 3 và mốc 4 (cửa khẩu, thông quan); Specialist không làm Tờ khai hải quan và không chọn cửa khẩu.
@@ -785,6 +784,7 @@ Các điểm dưới đây là **giả định tạm** cần chủ dự án xác
 6. **Giấy chỉ khách có (ATA Carnet, Hóa đơn thương mại):** nhà xe không tự lập được. Tạm thời: khách giao bản gốc cho Driver tại điểm đón, Specialist ghi nhận vào hạng mục giấy tờ. Cần chủ dự án chốt cách xử lý.
 7. **Flow 5, 6 đã dựng, còn các phần chưa làm:** hủy chuyến bất khả kháng khi xe hỏng hoàn toàn (mục 6.5), người nhận từ chối (mục 8.1), cầm giữ ngựa và chuyển hồ sơ Pháp lý sau 7 ngày (mục 8.2), nhiều sự cố cùng lúc trên một xe. Khi Payment Overdue hệ thống mới chặn đặt đơn mới, chưa khóa xem Kho Hồ sơ ngựa. Các trang cũ Bảng điều khiển, Báo cáo chuyến đi (Manager), Giám sát sự cố và Đội xe (Điều phối) vẫn chạy trên dữ liệu cũ.
 7a. **Giả định khi dựng Flow 5, 6:** Không có hạn mức chi khẩn cấp (Coordinator không đề nghị, Manager không duyệt), Driver / Escort kê chi phí có chứng từ; mỗi khoản chi có bên chịu mặc định theo mục 11.5 và Manager sửa được lúc đối soát; Payment Overdue chỉ áp dụng khi bảng quyết toán có khoản phải trả; cứu hộ, sửa xe và tắc nghẽn giao thông thì mọi khoản mặc định nhà xe chịu (chỉ thuốc, viện phí, phí trạm nghỉ do ngựa thì khách); sự cố sức khỏe ngựa và xe gặp sự cố cần Escort xác nhận ngựa đủ sức trước khi Driver tiếp tục hành trình, tắc nghẽn thì không. Danh mục điểm cứu hộ (`RESCUE_POINTS`) là số mẫu; vị trí xe lúc báo sự cố là mô phỏng; đường thay thế chỉ tính giữa vị trí xe và điểm kế tiếp (giới hạn của dịch vụ bản đồ).
+11. **Lead time lệch code:** PRD đã chốt 20 ngày (mục 1.4, 2.2) nhưng `MIN_LEAD_DAYS` trong `src/shared/config/business-rules.ts` còn là 30; sửa code và test theo sau.
 10. **Về trụ sở (mục 5.8), số mẫu:** trụ sở tạm đặt ở TP. Hồ Chí Minh (`HOME_BASE`), mốc mở nút 80% thời gian lái (`RETURN_EARLIEST_RATIO`), cờ trễ 30 phút. Giờ về dự kiến tính theo đường chim bay nhân hệ số đường bộ, chưa gọi dịch vụ bản đồ. **Xe chuyên dụng chưa áp quy tắc "đang về"** (vẫn khóa theo ngày đi), dù thực tế xe chạy về cùng nhân sự; Escort không có nút xác nhận riêng. Chủ dự án có thể muốn khóa nhân sự theo giờ về dự kiến (cho chọn nếu về kịp trước ngày đi đơn mới); tạm thời khóa cho tới khi về.
 9. **Báo cáo (mục 15):** chi phí vận hành là giá vốn ước tính từ báo giá (giả định biên 5%), chưa có chi phí thực tế; doanh thu ghi nhận theo ngày đặt cọc (chưa theo ngày giao). Cần chủ dự án chốt cách ghi nhận doanh thu và chi phí thật.
 8. **Giao diện:** danh mục xe cần có số đăng kiểm (và giấy phép liên vận cho tuyến quốc tế), thiếu thì hệ thống không gán xe. Xem trước ảnh dạng popup chỉ hiện ảnh vừa chọn trong phiên (chưa có kho tệp), ảnh mẫu hiện ô thay thế.
