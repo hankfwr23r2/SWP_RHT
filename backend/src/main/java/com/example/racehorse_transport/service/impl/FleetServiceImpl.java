@@ -215,12 +215,6 @@ public class FleetServiceImpl implements FleetService {
             if (byId.isPresent()) return byId.get();
         } catch (NumberFormatException ignored) {}
 
-        Optional<Vehicle> byCode = vehicleRepository.findByVehicleCode(clean);
-        if (byCode.isPresent()) return byCode.get();
-
-        Optional<Vehicle> byPlate = vehicleRepository.findByLicensePlate(clean);
-        if (byPlate.isPresent()) return byPlate.get();
-
         if (clean.matches("(?i)(VH|XE)-\\d+")) {
             String digits = clean.replaceAll("[^0-9]", "");
             try {
@@ -228,6 +222,16 @@ public class FleetServiceImpl implements FleetService {
                 Optional<Vehicle> byId = vehicleRepository.findById(numId);
                 if (byId.isPresent()) return byId.get();
             } catch (Exception ignored) {}
+        }
+
+        Optional<Vehicle> byPlate = vehicleRepository.findByLicensePlate(clean);
+        if (byPlate.isPresent()) return byPlate.get();
+
+        // Tìm kiếm dự phòng theo mã định danh sinh tự động (getVehicleCode)
+        for (Vehicle v : vehicleRepository.findAll()) {
+            if (clean.equalsIgnoreCase(v.getVehicleCode())) {
+                return v;
+            }
         }
 
         throw new IllegalArgumentException("Không tìm thấy xe phù hợp: " + identifier);
