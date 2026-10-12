@@ -48,8 +48,12 @@ public class FleetServiceImpl implements FleetService {
 
     @Override
     public List<VehicleResponse> getAvailableVehicles(Instant departDate, String tripType) {
-        Instant checkDate = departDate != null ? departDate : Instant.now();
-        boolean isInternational = "international".equalsIgnoreCase(tripType);
+        Instant newDepart = departDate != null ? departDate : Instant.now();
+        boolean newIsInter = "international".equalsIgnoreCase(tripType);
+        int newDaysBefore = newIsInter ? 2 : 1;
+        int newDaysAfter = newIsInter ? 4 : 2;
+        Instant newStart = newDepart.minus(newDaysBefore, ChronoUnit.DAYS);
+        Instant newEnd = newDepart.plus(newDaysAfter, ChronoUnit.DAYS);
 
         List<Vehicle> allVehicles = vehicleRepository.findAll();
         List<Booking> holdingBookings = getHoldingBookings();
@@ -61,22 +65,20 @@ public class FleetServiceImpl implements FleetService {
             Instant bookingDepart = booking.getDepartureDate() != null ? booking.getDepartureDate() : booking.getBookingDate();
             if (bookingDepart == null) continue;
 
-            // Tính khoảng đệm giữ xe khứ hồi về trụ sở VN
-            // Chuyến quốc tế: trước 2 ngày (chạy rỗng sang đón) đến sau 4 ngày (chạy về trụ sở VN)
-            // Chuyến nội địa: trước 1 ngày đến sau 2 ngày
-            int daysBefore = isInternational ? 2 : 1;
-            int daysAfter = isInternational ? 4 : 2;
+            // Tính khoảng đệm giữ xe khứ hồi về trụ sở VN dựa theo chính đơn hàng đang giữ xe
+            boolean existingIsInter = booking.getBookingType() != null && booking.getBookingType().equalsIgnoreCase("international");
+            int existingDaysBefore = existingIsInter ? 2 : 1;
+            int existingDaysAfter = existingIsInter ? 4 : 2;
 
-            Instant busyStart = bookingDepart.minus(daysBefore, ChronoUnit.DAYS);
-            Instant busyEnd = bookingDepart.plus(daysAfter, ChronoUnit.DAYS);
+            Instant busyStart = bookingDepart.minus(existingDaysBefore, ChronoUnit.DAYS);
+            Instant busyEnd = bookingDepart.plus(existingDaysAfter, ChronoUnit.DAYS);
 
-            // Kiểm tra xem checkDate có nằm trong khoảng khóa lịch hay không
-            if (!checkDate.isBefore(busyStart) && !checkDate.isAfter(busyEnd)) {
+            // Kiểm tra hai khoảng thời gian có giao nhau (overlap) hay không
+            if (!newEnd.isBefore(busyStart) && !newStart.isAfter(busyEnd)) {
                 List<BookingVehicle> bvs = bookingVehicleRepository.findByBookingID_Id(booking.getId());
                 for (BookingVehicle bv : bvs) {
                     if (bv.getVehicleID() != null) {
-                        String tripTag = booking.getBookingType() != null && booking.getBookingType().equalsIgnoreCase("international")
-                                ? "quốc tế" : "nội địa";
+                        String tripTag = existingIsInter ? "quốc tế" : "nội địa";
                         busyMap.put(bv.getVehicleID().getId(),
                                 "Đang chạy đơn BK-" + String.format("%03d", booking.getId()) + " (" + tripTag + ", dự kiến về bãi: " + busyEnd + ")");
                     }
@@ -110,7 +112,9 @@ public class FleetServiceImpl implements FleetService {
 
     @Override
     public List<CrewResponse> getAvailableCrew(Instant departDate, String role) {
-        Instant checkDate = departDate != null ? departDate : Instant.now();
+        Instant newDepart = departDate != null ? departDate : Instant.now();
+        Instant newStart = newDepart.minus(1, ChronoUnit.DAYS);
+        Instant newEnd = newDepart.plus(2, ChronoUnit.DAYS);
 
         List<Staff> staffList = role != null && !role.isBlank() && !role.equalsIgnoreCase("ALL")
                 ? staffRepository.findByRoleIgnoreCase(role)
@@ -125,19 +129,21 @@ public class FleetServiceImpl implements FleetService {
             Instant bookingDepart = booking.getDepartureDate() != null ? booking.getDepartureDate() : booking.getBookingDate();
             if (bookingDepart == null) continue;
 
-            boolean isInternational = booking.getBookingType() != null && booking.getBookingType().equalsIgnoreCase("international");
-            int daysBefore = isInternational ? 2 : 1;
-            int daysAfter = isInternational ? 4 : 2;
+            boolean existingIsInter = booking.getBookingType() != null && booking.getBookingType().equalsIgnoreCase("international");
+            int existingDaysBefore = existingIsInter ? 2 : 1;
+            int existingDaysAfter = existingIsInter ? 4 : 2;
 
-            Instant busyStart = bookingDepart.minus(daysBefore, ChronoUnit.DAYS);
-            Instant busyEnd = bookingDepart.plus(daysAfter, ChronoUnit.DAYS);
+            Instant busyStart = bookingDepart.minus(existingDaysBefore, ChronoUnit.DAYS);
+            Instant busyEnd = bookingDepart.plus(existingDaysAfter, ChronoUnit.DAYS);
 
-            if (!checkDate.isBefore(busyStart) && !checkDate.isAfter(busyEnd)) {
+            // Kiểm tra hai khoảng thời gian có giao nhau hay không
+            if (!newEnd.isBefore(busyStart) && !newStart.isAfter(busyEnd)) {
                 List<BookingAssignment> assignments = bookingAssignmentRepository.findByBookingID_Id(booking.getId());
                 for (BookingAssignment ba : assignments) {
                     if (ba.getStaffID() != null) {
+                        String tripTag = existingIsInter ? "quốc tế" : "nội địa";
                         busyMap.put(ba.getStaffID().getId(),
-                                "Đang phục vụ đơn BK-" + String.format("%03d", booking.getId()) + " (về dự kiến: " + busyEnd + ")");
+                                "Đang phục vụ đơn BK-" + String.format("%03d", booking.getId()) + " (" + tripTag + ", về dự kiến: " + busyEnd + ")");
                     }
                 }
             }
@@ -236,10 +242,12 @@ public class FleetServiceImpl implements FleetService {
             throw new IllegalStateException("Xe " + vehicle.getLicensePlate() + " đang bảo dưỡng định kỳ, không thể xếp xe!");
         }
 
-        Instant checkDate = departDate != null ? departDate : Instant.now();
-        boolean isInternational = "international".equalsIgnoreCase(tripType);
-        int daysBefore = isInternational ? 2 : 1;
-        int daysAfter = isInternational ? 4 : 2;
+        Instant newDepart = departDate != null ? departDate : Instant.now();
+        boolean newIsInter = "international".equalsIgnoreCase(tripType);
+        int newDaysBefore = newIsInter ? 2 : 1;
+        int newDaysAfter = newIsInter ? 4 : 2;
+        Instant newStart = newDepart.minus(newDaysBefore, ChronoUnit.DAYS);
+        Instant newEnd = newDepart.plus(newDaysAfter, ChronoUnit.DAYS);
 
         List<Booking> holdingBookings = getHoldingBookings();
         for (Booking b : holdingBookings) {
@@ -249,15 +257,19 @@ public class FleetServiceImpl implements FleetService {
             Instant bookingDepart = b.getDepartureDate() != null ? b.getDepartureDate() : b.getBookingDate();
             if (bookingDepart == null) continue;
 
-            Instant busyStart = bookingDepart.minus(daysBefore, ChronoUnit.DAYS);
-            Instant busyEnd = bookingDepart.plus(daysAfter, ChronoUnit.DAYS);
+            boolean existingIsInter = b.getBookingType() != null && b.getBookingType().equalsIgnoreCase("international");
+            int existingDaysBefore = existingIsInter ? 2 : 1;
+            int existingDaysAfter = existingIsInter ? 4 : 2;
 
-            if (!checkDate.isBefore(busyStart) && !checkDate.isAfter(busyEnd)) {
+            Instant busyStart = bookingDepart.minus(existingDaysBefore, ChronoUnit.DAYS);
+            Instant busyEnd = bookingDepart.plus(existingDaysAfter, ChronoUnit.DAYS);
+
+            // Kiểm tra hai khoảng thời gian có giao nhau hay không
+            if (!newEnd.isBefore(busyStart) && !newStart.isAfter(busyEnd)) {
                 List<BookingVehicle> bvs = bookingVehicleRepository.findByBookingID_Id(b.getId());
                 for (BookingVehicle bv : bvs) {
                     if (bv.getVehicleID() != null && bv.getVehicleID().getId().equals(vehicleId)) {
-                        String tripTag = b.getBookingType() != null && b.getBookingType().equalsIgnoreCase("international")
-                                ? "quốc tế" : "nội địa";
+                        String tripTag = existingIsInter ? "quốc tế" : "nội địa";
                         throw new IllegalStateException("Xe " + vehicle.getLicensePlate() + " (" + vehicle.getVehicleName() + ") trùng lịch với đơn BK-"
                                 + String.format("%03d", b.getId()) + " (" + tripTag + ", khứ hồi về trụ sở VN đến " + busyEnd + ")!");
                     }
@@ -313,10 +325,12 @@ public class FleetServiceImpl implements FleetService {
             throw new IllegalStateException("Nhân sự " + staff.getStaffCode() + " hiện không hoạt động / nghỉ phép!");
         }
 
-        Instant checkDate = departDate != null ? departDate : Instant.now();
-        boolean isInternational = "international".equalsIgnoreCase(tripType);
-        int daysBefore = isInternational ? 2 : 1;
-        int daysAfter = isInternational ? 4 : 2;
+        Instant newDepart = departDate != null ? departDate : Instant.now();
+        boolean newIsInter = "international".equalsIgnoreCase(tripType);
+        int newDaysBefore = newIsInter ? 2 : 1;
+        int newDaysAfter = newIsInter ? 4 : 2;
+        Instant newStart = newDepart.minus(newDaysBefore, ChronoUnit.DAYS);
+        Instant newEnd = newDepart.plus(newDaysAfter, ChronoUnit.DAYS);
 
         List<Booking> holdingBookings = getHoldingBookings();
         for (Booking b : holdingBookings) {
@@ -326,15 +340,19 @@ public class FleetServiceImpl implements FleetService {
             Instant bookingDepart = b.getDepartureDate() != null ? b.getDepartureDate() : b.getBookingDate();
             if (bookingDepart == null) continue;
 
-            Instant busyStart = bookingDepart.minus(daysBefore, ChronoUnit.DAYS);
-            Instant busyEnd = bookingDepart.plus(daysAfter, ChronoUnit.DAYS);
+            boolean existingIsInter = b.getBookingType() != null && b.getBookingType().equalsIgnoreCase("international");
+            int existingDaysBefore = existingIsInter ? 2 : 1;
+            int existingDaysAfter = existingIsInter ? 4 : 2;
 
-            if (!checkDate.isBefore(busyStart) && !checkDate.isAfter(busyEnd)) {
+            Instant busyStart = bookingDepart.minus(existingDaysBefore, ChronoUnit.DAYS);
+            Instant busyEnd = bookingDepart.plus(existingDaysAfter, ChronoUnit.DAYS);
+
+            // Kiểm tra hai khoảng thời gian có giao nhau hay không
+            if (!newEnd.isBefore(busyStart) && !newStart.isAfter(busyEnd)) {
                 List<BookingAssignment> assignments = bookingAssignmentRepository.findByBookingID_Id(b.getId());
                 for (BookingAssignment ba : assignments) {
                     if (ba.getStaffID() != null && ba.getStaffID().getId().equals(staffId)) {
-                        String tripTag = b.getBookingType() != null && b.getBookingType().equalsIgnoreCase("international")
-                                ? "quốc tế" : "nội địa";
+                        String tripTag = existingIsInter ? "quốc tế" : "nội địa";
                         throw new IllegalStateException("Nhân sự " + staff.getStaffCode() + " (" + staff.getRole() + ") đang được giao phục vụ đơn BK-"
                                 + String.format("%03d", b.getId()) + " (" + tripTag + ", khứ hồi về trụ sở VN đến " + busyEnd + ")!");
                     }
