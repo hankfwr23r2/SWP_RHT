@@ -1,13 +1,20 @@
 package com.example.racehorse_transport.service;
 
-import com.example.racehorse_transport.entity.Incident;
+import com.example.racehorse_transport.dto.incident.*;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface IncidentService {
-    List<Incident> findAll();
-    Optional<Incident> findById(Integer id);
-    Incident save(Incident entity);
-    void deleteById(Integer id);
+
+    IncidentResponse reportIncident(ReportIncidentRequest request);
+
+    IncidentResponse proposeExternalPlan(Integer incidentId, ProposeExternalPlanRequest request);
+
+    IncidentResponse approveIncidentPlan(Integer incidentId, ApproveIncidentPlanRequest request);
+
+    IncidentResponse completeResolution(Integer incidentId, ResolveIncidentRequest request);
+
+    List<IncidentResponse> getIncidentsByBooking(Integer bookingId);
+
+    List<IncidentResponse> getAllIncidents(String status);
 }

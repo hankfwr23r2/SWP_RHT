@@ -1,10 +1,12 @@
 package com.example.racehorse_transport.entity;
 
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.Nationalized;
@@ -18,34 +20,40 @@ public class Location {
     @Column(name = "LocationID", nullable = false)
     private Integer id;
 
-    @Size(max = 100)
-    @Column(name = "LocationType", length = 100)
+    @NotNull
+    @Size(max = 20)
+    @Column(name = "LocationType", nullable = false, length = 20)
+    @Pattern(regexp = "Warehouse|RidingClub|RaceTrack|Stable|RestStop|BorderGate")
     private String locationType;
 
+    @NotNull
     @Size(max = 255)
     @Nationalized
     @Column(name = "LocationName")
     private String locationName;
 
+    @NotNull
     @Size(max = 255)
     @Nationalized
     @Column(name = "address")
     private String address;
 
+    @NotNull
     @Size(max = 100)
     @Nationalized
     @Column(name = "city", length = 100)
     private String city;
 
+    @NotNull
     @Size(max = 100)
     @Nationalized
     @Column(name = "province", length = 100)
     private String province;
-
+    
+    @NotNull
     @Size(max = 100)
     @Nationalized
     @Column(name = "country", length = 100)
     private String country;
-
 
 }

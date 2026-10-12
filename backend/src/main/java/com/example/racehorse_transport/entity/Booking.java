@@ -84,4 +84,5 @@ public class Booking {
 
     @Column(name = "DetailsJson", columnDefinition = "TEXT")
     private String detailsJson;
+    
 }
