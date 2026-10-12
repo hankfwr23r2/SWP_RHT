@@ -4,7 +4,6 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.Nationalized;
 
 import java.time.Instant;
 
@@ -38,6 +37,5 @@ public class Log {
 
     @Column(name = "createdAt")
     private Instant createdAt;
-
 
 }

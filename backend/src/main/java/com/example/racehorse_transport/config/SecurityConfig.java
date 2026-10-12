@@ -2,6 +2,7 @@ package com.example.racehorse_transport.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -24,6 +25,9 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // Kích hoạt CORS theo cấu hình CorsConfigurationSource
+                .cors(Customizer.withDefaults())
+                
                 // Tắt CSRF vì REST API dùng JWT (stateless) không cần CSRF token
                 .csrf(AbstractHttpConfigurer::disable)
                 
