@@ -16,7 +16,7 @@ public class CorsConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOriginPatterns("http://localhost:*", "https://*.vercel.app", "https://*.pages.dev")
+                .allowedOriginPatterns("http://localhost:*", "https://*.vercel.app", "https://*.pages.dev", "http://127.0.0.1:*")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 .allowedHeaders("*")
                 .allowCredentials(true);
@@ -29,7 +29,8 @@ public class CorsConfig implements WebMvcConfigurer {
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:*",
                 "https://*.vercel.app",
-                "https://*.pages.dev"
+                "https://*.pages.dev",
+                "http://127.0.0.1:*"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));

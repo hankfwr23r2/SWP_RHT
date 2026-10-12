@@ -18,10 +18,10 @@ const doc = (expiresAt?: number) => ({ fileName: 'f.pdf', uploadedAt: NOW, expir
 const bh = (over: Partial<BookingHorse> = {}): BookingHorse => ({ horseId: 'H1', name: 'A', microchip: 'VN-1', breed: 'Thoroughbred', sex: 'mare', stall: 'standard', feedPackage: 'basic', waterPlan: 'every_3h', insurance: { opted: false }, ...over })
 
 describe('ngày khởi hành', () => {
-  it('sớm nhất là hôm nay + 30 ngày', () => {
-    expect(earliestDeparture(NOW)).toBe(new Date(2026, 9, 31).getTime()) // 01/10 + 30 ngày = 31/10, 00:00
+  it('sớm nhất là hôm nay + 20 ngày', () => {
+    expect(earliestDeparture(NOW)).toBe(new Date(2026, 9, 21).getTime()) // 01/10 + 20 ngày = 21/10, 00:00
   })
-  it('chặn ngày trong vòng 30 ngày, cho phép từ ngày thứ 30', () => {
+  it('chặn ngày trong vòng 20 ngày, cho phép từ ngày thứ 20', () => {
     expect(isDepartureAllowed(earliestDeparture(NOW) - DAY, NOW)).toBe(false)
     expect(isDepartureAllowed(earliestDeparture(NOW), NOW)).toBe(true)
   })
