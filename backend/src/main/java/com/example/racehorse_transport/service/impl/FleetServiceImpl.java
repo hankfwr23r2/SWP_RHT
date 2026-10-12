@@ -180,8 +180,8 @@ public class FleetServiceImpl implements FleetService {
                 .plate(v.getLicensePlate())
                 .capacity(v.getCapacity())
                 .status(v.getStatus())
-                .homeDepot(v.getHomeDepot() != null ? v.getHomeDepot() : "Trụ sở chính — TP.HCM")
-                .currentLocation(v.getCurrentLocation() != null ? v.getCurrentLocation() : "Trụ sở chính — TP.HCM")
+                .homeDepot("Trụ sở chính — Việt Nam")
+                .currentLocation("Trụ sở chính — Việt Nam")
                 .isAvailable(!"MAINTENANCE".equalsIgnoreCase(v.getStatus()))
                 .busyReason(null)
                 .build();
