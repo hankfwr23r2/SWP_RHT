@@ -1,7 +1,7 @@
 // Coordinator: chốt xe và lộ trình một đơn trong một trang (PRD mục 2.4, nhánh B).
 // Coordinator tự chọn xe (đơn đông ngựa thì nhiều xe), chia ngựa lên xe, lập lộ trình rồi xác nhận. Tài xế và hộ tống do Manager chọn sau.
 import { ReadMore } from '@shared/ui/ReadMore'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { MAX_CONTINUOUS_HOURS, MIN_REST_MINUTES, VEHICLE_CLASS } from '@shared/config/booking-rules'
@@ -41,6 +41,27 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
   // ----- xe, ngựa -----
   // Chưa chốt phương án thì chưa có xe nào: bắt đầu với một chuyến trống chở cả đơn, Coordinator tự chọn xe (thêm xe nếu một xe không đủ chỗ)
   const [trips, setTrips] = useState<Draft[]>(b.trips?.length ? b.trips.map(t => ({ vehicleId: t.vehicleId, horseIds: t.horseIds })) : [{ vehicleId: '', horseIds: b.horses.map(h => h.horseId) }])
+
+  useEffect(() => {
+    if (!vehicles.length) return
+    setTrips(prev => {
+      let changed = false
+      const next = prev.map((t, idx) => {
+        if (!t.vehicleId) {
+          const count = t.horseIds.length
+          const match = vehicles.find(v => v.capacity >= count && !clashOf(sched.vehicles.get(v.id), b.departAt) && !prev.some((other, j) => j !== idx && other.vehicleId === v.id))
+            || vehicles.find(v => !clashOf(sched.vehicles.get(v.id), b.departAt) && !prev.some((other, j) => j !== idx && other.vehicleId === v.id))
+          if (match) {
+            changed = true
+            return { ...t, vehicleId: match.id }
+          }
+        }
+        return t
+      })
+      return changed ? next : prev
+    })
+  }, [vehicles, sched, b.departAt])
+
   const [note, setNote] = useState(b.plan?.note ?? '')
   const [working, setWorking] = useState(false)
   const [reason, setReason] = useState<string | null>(null) // không null = đang nhập lý do từ chối đơn
@@ -128,6 +149,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
   return (
     <>
       {b.sentBack?.to === 'coordinator' && <div className="alert alert-warning"><i className="fa-solid fa-rotate-left" /><div><b>Quản lý trả lại đơn này:</b> {b.sentBack.reason} <span className="sub-text">({b.sentBack.by}, {formatDateTime(b.sentBack.at)})</span></div></div>}
+      {b.plan && <div className="alert alert-info"><i className="fa-solid fa-circle-check" /><div><b>Bạn đã xác nhận xe và lộ trình</b> lúc {formatDateTime(b.plan.at)}. Đang chờ Kiểm dịch viên duyệt hồ sơ ngựa để chuyển Quản lý duyệt báo giá. Bạn có thể cập nhật lại bên dưới nếu cần.</div></div>}
       <div className="card">
         <div className="card-header"><h3><i className="fa-solid fa-truck" /> {trips.length > 1 ? `${trips.length} xe của đơn` : 'Xe của đơn'}</h3><span style={{ display: 'flex', gap: 8 }}>{trips.length > 1 && <button className="btn btn-outline btn-sm" onClick={splitEvenly}><i className="fa-solid fa-scale-balanced" /> Chia đều ngựa</button>}<button className="btn btn-outline btn-sm" onClick={addTrip}><i className="fa-solid fa-plus" /> Thêm xe</button></span></div>
         <ReadMore className={s.hint} text={'Bạn chọn xe cho đơn và chia ngựa lên các xe. Ưu tiên ít xe nhất: có xe đủ chỗ thì dùng một xe; nếu không (ví dụ 6 ngựa mà không còn xe 6 ngăn) thì bấm Thêm xe và chia ngựa, chẳng hạn 2 xe mỗi xe 3 ngựa. Tài xế và nhân viên hộ tống do Quản lý chọn sau, dựa vào số xe bạn đã chọn. Xe đã có đơn trùng lịch (ngày đi cách dưới 3 ngày) bị khóa và nêu rõ trùng với đơn nào.'} />
@@ -268,13 +290,15 @@ export default function FleetPlanPage() {
   const { data: vehicles } = useLoad(vehiclesApi.list)
 
   if (!b || !all || !vehicles) return <div className="page"><div className="wrap"><p className="text-muted">Đang tải…</p></div></div>
-  if (b.intake?.coordinator.name !== session!.name) return <div className="page"><div className="wrap"><div className="alert alert-danger"><i className="fa-solid fa-lock" /><div>Đơn {b.id} không được giao cho bạn. <Link to="/coordinator/fleet-plan" className="text-orange font-semibold">Về danh sách</Link></div></div></div></div>
+  const isAssigned = !b.intake || b.intake.coordinator.name === session?.name || session?.role === 'admin' || session?.role === 'manager'
+  if (!isAssigned) return <div className="page"><div className="wrap"><div className="alert alert-danger"><i className="fa-solid fa-lock" /><div>Đơn {b.id} hiện được giao cho {b.intake?.coordinator.name || 'điều phối viên khác'}. <Link to="/coordinator/fleet-plan" className="text-orange font-semibold">Về danh sách</Link></div></div></div></div>
 
   return (
     <div className="page">
       <div className="wrap">
         <div className="breadcrumb"><Link to="/coordinator/fleet-plan">Xe và lộ trình</Link> / <span className="text-orange font-semibold">{b.id}</span></div>
         <div className="page-header" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}><h1>Đơn {b.id}</h1><BookingStatusBadge status={b.status} audience="staff" /><ReviewChips b={b} /></div>
+        {!b.intake && <div className="alert alert-info" style={{ marginBottom: 16 }}><i className="fa-solid fa-circle-info" /><div>Đơn chưa được Quản lý tiếp nhận và phân công chính thức. Đang hiển thị ở chế độ xem trước.</div></div>}
         <div className={s.layout}>
           <div className={s.main}>
             <div className="card"><div className="card-header"><h3><i className="fa-solid fa-route" /> Chuyến đi</h3></div><TripSummary b={b} /></div>

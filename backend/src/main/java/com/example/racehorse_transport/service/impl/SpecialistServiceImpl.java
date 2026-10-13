@@ -77,11 +77,13 @@ public class SpecialistServiceImpl implements SpecialistService {
         appendHistory(payload, specialist, "Duyệt hồ sơ ngựa ĐẠT: Đầy đủ Hộ chiếu, Sổ tiêm phòng và Xét nghiệm máu hợp lệ.");
 
         // Kiểm tra xem Coordinator đã chốt xe và lộ trình chưa
-        if (payload.getTrips() != null && !payload.getTrips().isEmpty()) {
-            booking.setStatus("pending_quote_approval");
+        boolean planConfirmed = payload.getTrips() != null && !payload.getTrips().isEmpty() && payload.getPlan() != null;
+        if (planConfirmed) {
+            booking.setStatus("pending_commercial");
             appendHistory(payload, "Hệ thống", "Hồ sơ ngựa và phương án xe đều đã duyệt xong -> Chuyển Quản lý duyệt báo giá.");
         } else {
             booking.setStatus("under_review");
+            appendHistory(payload, specialist, "Đã duyệt hồ sơ ngựa ĐẠT. Đang chờ Điều phối viên chốt phương án xe và lộ trình.");
         }
 
         savePayload(booking, payload);
@@ -349,6 +351,11 @@ public class SpecialistServiceImpl implements SpecialistService {
             } catch (Exception ex) {
                 log.warn("Error reading detailsJson: {}", ex.getMessage());
             }
+        }
+        if (payload.getMedical() == null) {
+            Map<String, Object> med = new HashMap<>();
+            med.put("status", "pending");
+            payload.setMedical(med);
         }
         return payload;
     }

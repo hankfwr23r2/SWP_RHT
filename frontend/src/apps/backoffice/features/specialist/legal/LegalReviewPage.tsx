@@ -109,7 +109,8 @@ export default function LegalReviewPage() {
   const { data: b, reload } = useLoad(() => bookingsApi.get(id), [id])
 
   if (!b) return <div className="page"><div className="wrap"><p className="text-muted">Đang tải…</p></div></div>
-  if (b.intake?.specialist.name !== session!.name) return <div className="page"><div className="wrap"><div className="alert alert-danger"><i className="fa-solid fa-lock" /><div>Đơn {b.id} không được giao cho bạn. <Link to="/specialist/legal" className="text-orange font-semibold">Về danh sách</Link></div></div></div></div>
+  const isAssigned = !b.intake || b.intake.specialist.name === session?.name || session?.role === 'admin' || session?.role === 'manager'
+  if (!isAssigned) return <div className="page"><div className="wrap"><div className="alert alert-danger"><i className="fa-solid fa-lock" /><div>Đơn {b.id} hiện được giao cho {b.intake?.specialist.name || 'chuyên viên khác'}. <Link to="/specialist/legal" className="text-orange font-semibold">Về danh sách</Link></div></div></div></div>
 
   return (
     <div className="page">

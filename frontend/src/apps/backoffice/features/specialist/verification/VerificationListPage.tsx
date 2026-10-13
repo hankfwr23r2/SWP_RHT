@@ -15,11 +15,13 @@ export default function VerificationListPage() {
   const { session } = useAuth()
   const { data: all } = useLoad(bookingsApi.list)
   const [tab, setTab] = useState<Tab>('todo')
-  const mine = (all ?? []).filter(b => b.intake?.specialist.name === session!.name && b.medical)
+  const isMyTask = (b: Booking) => !b.intake || b.intake.specialist.name === session?.name || session?.role === 'admin' || session?.role === 'manager'
+  const mine = (all ?? []).filter(b => isMyTask(b) && (b.status === 'under_review' || b.medical))
+  const medicalStatus = (b: Booking) => b.medical?.status ?? 'pending'
   const groups: Record<Tab, Booking[]> = {
-    todo: mine.filter(b => b.medical!.status === 'pending'),
-    waiting: mine.filter(b => b.medical!.status === 'resubmit'),
-    done: mine.filter(b => b.medical!.status === 'approved'),
+    todo: mine.filter(b => medicalStatus(b) === 'pending'),
+    waiting: mine.filter(b => medicalStatus(b) === 'resubmit'),
+    done: mine.filter(b => medicalStatus(b) === 'approved'),
   }
   const columns: Column<Booking>[] = [
     { head: 'Mã đơn', cell: b => idCell(b) },
@@ -27,7 +29,7 @@ export default function VerificationListPage() {
     { head: 'Tuyến', cell: b => routeCell(placeShort(b.origin.name), placeShort(b.dest.name)) },
     { head: 'Khởi hành', cell: b => formatDate(b.departAt), nowrap: true },
     { head: 'Ngựa', cell: b => `${b.horses.length} con`, nowrap: true },
-    { head: tab === 'waiting' ? 'Yêu cầu bổ sung' : 'Giao lúc', cell: b => formatDateTime(tab === 'waiting' ? b.medical!.resubmit!.at : b.intake!.at), nowrap: true },
+    { head: tab === 'waiting' ? 'Yêu cầu bổ sung' : 'Giao lúc', cell: b => formatDateTime(tab === 'waiting' ? b.medical?.resubmit?.at ?? b.createdAt : b.intake?.at ?? b.createdAt), nowrap: true },
     { head: 'Thao tác', cell: b => <Link to={`/specialist/verification/${b.id}`} className={`btn btn-sm ${tab === 'todo' ? 'btn-primary' : 'btn-ghost'}`}>{tab === 'todo' ? 'Thẩm định' : 'Xem'}</Link>, right: true },
   ]
   return (

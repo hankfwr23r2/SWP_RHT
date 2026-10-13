@@ -31,7 +31,7 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
 
   const problems = horses.flatMap(h => { const r = horseReadiness(h, b.departAt); return [...r.missing, ...r.expired].map(doc => ({ horseId: h.id, doc })) })
   const allChecked = checked.length === horses.length
-  const canApprove = allChecked && !problems.length
+  const canApprove = allChecked
 
   const run = async (fn: () => Promise<unknown>, ok: string) => {
     setBusy(true)
@@ -68,8 +68,8 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
                   ) })}
                 </div>
                 {bh && <div className={s.config}><span>Thức ăn: <b>{FEED_PACKAGE[bh.feedPackage].label}</b></span><span>Cữ nước: <b>{WATER_PLAN[bh.waterPlan].label}</b></span></div>}
-                {b.medical?.status === 'pending' && (
-                  <label className={s.check}><input type="checkbox" checked={checked.includes(h.id)} disabled={!r.ok} onChange={e => { const on = e.target.checked; setChecked(c => (on ? [...c, h.id] : c.filter(x => x !== h.id))) }} />
+                {(b.medical?.status ?? 'pending') === 'pending' && (
+                  <label className={s.check}><input type="checkbox" checked={checked.includes(h.id)} onChange={e => { const on = e.target.checked; setChecked(c => (on ? [...c, h.id] : c.filter(x => x !== h.id))) }} />
                     Đã đối chiếu hộ chiếu, microchip {h.microchip} và hạn xét nghiệm EIA/EVA</label>
                 )}
               </div>
@@ -78,13 +78,13 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
         </div>
       </div>
 
-      {b.medical?.status === 'pending' && (
+      {(b.medical?.status ?? 'pending') === 'pending' && (
         <>
           <div className="card">
             <div className={s.actionBar}>
               <div>
                 <b>{canApprove ? 'Sẵn sàng duyệt hồ sơ ngựa' : 'Chưa thể xác nhận đạt'}</b>
-                <div className={s.hint}>{!allChecked ? `Cần tick đối chiếu cả ${horses.length} ngựa. ` : ''}{problems.length ? 'Có giấy thiếu hoặc hết hạn, hãy yêu cầu khách bổ sung. ' : ''}</div>
+                <div className={s.hint}>{!allChecked ? `Cần tick đối chiếu cả ${horses.length} ngựa. ` : ''}{problems.length ? 'Có giấy thiếu hoặc hết hạn trên hệ thống. Nếu hồ sơ thực tế đạt, hãy tick đối chiếu để duyệt; nếu không đạt, hãy bấm Yêu cầu bổ sung. ' : ''}</div>
               </div>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 <button className="btn btn-ghost" onClick={startFix} disabled={busy}><i className="fa-solid fa-rotate-left" /> Yêu cầu bổ sung</button>
@@ -117,7 +117,7 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
         <div className="alert alert-warning"><i className="fa-solid fa-hourglass-half" /><div><b>Đang chờ khách bổ sung.</b> {b.medical.resubmit?.reason} Khi khách gửi lại, đơn sẽ quay về mục “Cần thẩm định”.</div></div>
       )}
       {b.medical?.status === 'approved' && (
-        <div className="alert alert-success"><i className="fa-solid fa-circle-check" /><div><b>Đã duyệt hồ sơ ngựa</b> lúc {b.medical.at && formatDateTime(b.medical.at)}.</div></div>
+        <div className="alert alert-success"><i className="fa-solid fa-circle-check" /><div><b>Đã duyệt hồ sơ ngựa</b> lúc {b.medical.at && formatDateTime(b.medical.at)}.{!b.plan && ' Đang chờ Điều phối viên chốt xe và lộ trình để chuyển Quản lý duyệt báo giá.'}</div></div>
       )}
     </>
   )
@@ -134,13 +134,15 @@ export default function VerifyPage() {
   }, [id, b?.medical?.status])
 
   if (!b || !horses) return <div className="page"><div className="wrap"><p className="text-muted">Đang tải…</p></div></div>
-  if (b.intake?.specialist.name !== session!.name) return <div className="page"><div className="wrap"><div className="alert alert-danger"><i className="fa-solid fa-lock" /><div>Đơn {b.id} không được giao cho bạn. <Link to="/specialist/verification" className="text-orange font-semibold">Về danh sách</Link></div></div></div></div>
+  const isAssigned = !b.intake || b.intake.specialist.name === session?.name || session?.role === 'admin' || session?.role === 'manager'
+  if (!isAssigned) return <div className="page"><div className="wrap"><div className="alert alert-danger"><i className="fa-solid fa-lock" /><div>Đơn {b.id} hiện được giao cho {b.intake?.specialist.name || 'chuyên viên khác'}. <Link to="/specialist/verification" className="text-orange font-semibold">Về danh sách</Link></div></div></div></div>
 
   return (
     <div className="page">
       <div className="wrap">
         <div className="breadcrumb"><Link to="/specialist/verification">Duyệt hồ sơ ngựa</Link> / <span className="text-orange font-semibold">{b.id}</span></div>
         <div className="page-header" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}><h1>Đơn {b.id}</h1><BookingStatusBadge status={b.status} audience="staff" /><ReviewChips b={b} /></div>
+        {!b.intake && <div className="alert alert-info" style={{ marginBottom: 16 }}><i className="fa-solid fa-circle-info" /><div>Đơn chưa được Quản lý tiếp nhận và phân công chính thức. Đang hiển thị ở chế độ xem trước.</div></div>}
         <div className={s.layout}>
           <div className={s.main}>
             {b.sentBack?.to === 'specialist' && <div className="alert alert-warning"><i className="fa-solid fa-rotate-left" /><div><b>Quản lý trả lại đơn này:</b> {b.sentBack.reason} <span className="sub-text">({b.sentBack.by}, {formatDateTime(b.sentBack.at)})</span></div></div>}

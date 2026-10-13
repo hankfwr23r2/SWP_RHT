@@ -15,16 +15,17 @@ export default function FleetPlanListPage() {
   const { session } = useAuth()
   const { data: all } = useLoad(bookingsApi.list)
   const [tab, setTab] = useState<Tab>('todo')
-  const mine = (all ?? []).filter(b => b.intake?.coordinator.name === session!.name)
-  const todo = mine.filter(b => b.status === 'under_review')
-  const done = mine.filter(b => b.status !== 'under_review' && b.plan)
+  const isMyTask = (b: Booking) => !b.intake || b.intake.coordinator.name === session?.name || session?.role === 'admin' || session?.role === 'manager'
+  const mine = (all ?? []).filter(isMyTask)
+  const todo = mine.filter(b => b.status === 'under_review' && !b.plan)
+  const done = mine.filter(b => !!b.plan)
   const columns: Column<Booking>[] = [
     { head: 'Mã đơn', cell: b => idCell({ ...b, gate: b.gate ?? (b.type === 'international' ? 'chưa chọn cửa khẩu' : undefined) }) },
     { head: 'Khách hàng', cell: b => b.customer, nowrap: true },
     { head: 'Tuyến', cell: b => routeCell(placeShort(b.origin.name), placeShort(b.dest.name)) },
     { head: 'Khởi hành', cell: b => formatDate(b.departAt), nowrap: true },
     { head: 'Ngựa / xe', cell: b => `${b.horses.length} con · ${b.trips?.length ?? 0} xe${b.plan ? ' · đã chốt' : ''}`, nowrap: true },
-    { head: tab === 'done' ? 'Chốt lúc' : 'Giao lúc', cell: b => formatDateTime(tab === 'done' ? b.plan!.at : b.intake!.at), nowrap: true },
+    { head: tab === 'done' ? 'Chốt lúc' : 'Giao lúc', cell: b => formatDateTime(tab === 'done' ? b.plan?.at ?? b.createdAt : b.intake?.at ?? b.createdAt), nowrap: true },
     { head: 'Thao tác', cell: b => <Link to={`/coordinator/fleet-plan/${b.id}`} className={`btn btn-sm ${tab === 'todo' ? 'btn-primary' : 'btn-ghost'}`}>{tab === 'todo' ? 'Xem và xác nhận' : 'Xem'}</Link>, right: true },
   ]
   return (

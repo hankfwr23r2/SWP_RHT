@@ -58,7 +58,25 @@ public class ManagerBookingController {
         return ResponseEntity.ok(ApiResponse.success(response, "Đã trả lại hồ sơ đơn hàng"));
     }
 
-    // 6. API Kích hoạt quét & giải phóng xe/kíp xe quá hạn 48h (Dành cho Quản lý / Batch Job)
+    // 6. API Manager tiếp nhận và kích hoạt thẩm định song song (pending_intake -> under_review)
+    @PostMapping("/{id}/activate")
+    public ResponseEntity<ApiResponse<BookingResponse>> activateBooking(
+            @PathVariable("id") String id,
+            @RequestBody com.example.racehorse_transport.dto.manager.ActivateBookingRequest request) {
+        BookingResponse response = bookingService.activateBooking(id, request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Tiếp nhận đơn hàng và kích hoạt thẩm định thành công"));
+    }
+
+    // 7. API Manager hoặc Coordinator từ chối đơn hàng
+    @PostMapping("/{id}/reject")
+    public ResponseEntity<ApiResponse<BookingResponse>> rejectBooking(
+            @PathVariable("id") String id,
+            @RequestBody com.example.racehorse_transport.dto.manager.RejectBookingRequest request) {
+        BookingResponse response = bookingService.rejectBooking(id, request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Đã từ chối đơn hàng thành công"));
+    }
+
+    // 8. API Kích hoạt quét & giải phóng xe/kíp xe quá hạn 48h (Dành cho Quản lý / Batch Job)
     @PostMapping("/maintenance/release-expired")
     public ResponseEntity<ApiResponse<Integer>> releaseExpired() {
         int count = bookingService.releaseExpiredQuotations();

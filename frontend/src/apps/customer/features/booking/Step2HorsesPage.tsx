@@ -68,7 +68,7 @@ export default function Step2HorsesPage() {
           {list.map(h => {
             const why = reasonOf(h, departAt)
             const on = selected.includes(h.id)
-            const blocked = !!why || (!on && full)
+            const blocked = !on && full
             return (
               <div key={h.id} className={`${s.pick} ${on ? s.pickOn : ''} ${why ? s.pickOff : ''}`} onClick={e => { if (!blocked && !(e.target as HTMLElement).closest('button, input')) toggle(h.id) }}>
                 <input type="checkbox" id={`pick-${h.id}`} checked={on} disabled={blocked} onChange={() => toggle(h.id)} aria-describedby={`pick-meta-${h.id}`} />

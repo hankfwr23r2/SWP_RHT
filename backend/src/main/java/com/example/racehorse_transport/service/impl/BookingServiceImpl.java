@@ -98,12 +98,24 @@ public class BookingServiceImpl implements BookingService {
                 ? Instant.ofEpochMilli(request.getDepartAt())
                 : Instant.now().plusSeconds(86400 * 3);
 
-        // 4. Serialize cấu hình chi tiết ngựa vào detailsJson
+        // 4. Serialize cấu hình chi tiết ngựa và khởi tạo payload vào detailsJson
         String detailsJson = null;
         try {
-            detailsJson = objectMapper.writeValueAsString(request.getHorses());
+            BookingDetailsPayload initialPayload = new BookingDetailsPayload();
+            initialPayload.setHorses(request.getHorses() != null ? request.getHorses() : new ArrayList<>());
+            Map<String, Object> initialMedical = new HashMap<>();
+            initialMedical.put("status", "pending");
+            initialPayload.setMedical(initialMedical);
+            List<Map<String, Object>> hist = new ArrayList<>();
+            Map<String, Object> hEntry = new HashMap<>();
+            hEntry.put("time", System.currentTimeMillis());
+            hEntry.put("actor", customer != null && customer.getUser() != null ? customer.getUser().getUsername() : customerUsername);
+            hEntry.put("text", "Gửi yêu cầu đặt đơn");
+            hist.add(hEntry);
+            initialPayload.setHistory(hist);
+            detailsJson = objectMapper.writeValueAsString(initialPayload);
         } catch (Exception e) {
-            log.warn("Could not serialize horses detailsJson: {}", e.getMessage());
+            log.warn("Could not serialize initial detailsJson: {}", e.getMessage());
         }
 
         // 5. Tạo đơn hàng Booking mới
@@ -194,6 +206,88 @@ public class BookingServiceImpl implements BookingService {
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public BookingResponse activateBooking(String bookingIdentifier, com.example.racehorse_transport.dto.manager.ActivateBookingRequest request) {
+        Integer bookingId = parseBookingId(bookingIdentifier);
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+
+        if (!"pending_intake".equalsIgnoreCase(booking.getStatus())) {
+            throw new IllegalStateException("Đơn hàng không ở bước chờ tiếp nhận (pending_intake)!");
+        }
+
+        BookingDetailsPayload payload = extractPayload(booking);
+
+        Map<String, Object> intakeMap = new HashMap<>();
+        intakeMap.put("at", System.currentTimeMillis());
+        intakeMap.put("by", request != null && request.getBy() != null ? request.getBy() : "Quản lý");
+        intakeMap.put("specialist", request != null ? request.getSpecialist() : null);
+        intakeMap.put("coordinator", request != null ? request.getCoordinator() : null);
+        payload.setIntake(intakeMap);
+
+        if (payload.getMedical() == null) {
+            Map<String, Object> med = new HashMap<>();
+            med.put("status", "pending");
+            payload.setMedical(med);
+        }
+
+        String spName = (request != null && request.getSpecialist() != null && request.getSpecialist().get("name") != null)
+                ? String.valueOf(request.getSpecialist().get("name")) : "Chuyên viên kiểm dịch";
+        String coName = (request != null && request.getCoordinator() != null && request.getCoordinator().get("name") != null)
+                ? String.valueOf(request.getCoordinator().get("name")) : "Điều phối viên";
+
+        appendHistory(payload, request != null && request.getBy() != null ? request.getBy() : "Quản lý",
+                "Tiếp nhận đơn. Giao " + spName + " (kiểm dịch) và " + coName + " (điều phối)");
+
+        booking.setStatus("under_review");
+        savePayload(booking, payload);
+        Booking saved = bookingRepository.save(booking);
+
+        logAction("MANAGER_ACTIVATE_BOOKING", saved.getId(), "Quản lý tiếp nhận đơn BK-" + saved.getId() + " và kích hoạt thẩm định song song");
+        log.info("Manager activated booking ID={} -> status=under_review", saved.getId());
+        return mapToResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public BookingResponse rejectBooking(String bookingIdentifier, com.example.racehorse_transport.dto.manager.RejectBookingRequest request) {
+        Integer bookingId = parseBookingId(bookingIdentifier);
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+
+        String role = request != null && request.getRole() != null ? request.getRole().toLowerCase() : "manager";
+        if ("manager".equals(role) && !"pending_intake".equalsIgnoreCase(booking.getStatus())) {
+            throw new IllegalStateException("Quản lý chỉ từ chối được đơn đang chờ tiếp nhận (pending_intake)!");
+        }
+        if ("coordinator".equals(role) && !"under_review".equalsIgnoreCase(booking.getStatus())) {
+            throw new IllegalStateException("Điều phối viên chỉ từ chối được đơn đang thẩm định (under_review)!");
+        }
+
+        BookingDetailsPayload payload = extractPayload(booking);
+        String reason = (request != null && request.getReason() != null) ? request.getReason().trim() : "Từ chối đơn";
+
+        Map<String, Object> rejectionMap = new HashMap<>();
+        rejectionMap.put("at", System.currentTimeMillis());
+        rejectionMap.put("by", request != null && request.getBy() != null ? request.getBy() : "Quản lý");
+        rejectionMap.put("role", role);
+        rejectionMap.put("reason", reason);
+
+        if (payload.getHistory() == null) {
+            payload.setHistory(new ArrayList<>());
+        }
+        appendHistory(payload, request != null && request.getBy() != null ? request.getBy() : "Quản lý",
+                "Từ chối đơn: " + reason);
+
+        booking.setStatus("rejected");
+        savePayload(booking, payload);
+        Booking saved = bookingRepository.save(booking);
+
+        logAction("REJECT_BOOKING", saved.getId(), "Từ chối đơn BK-" + saved.getId() + " bởi " + role + ": " + reason);
+        log.info("Booking ID={} rejected by {}: reason={}", saved.getId(), role, reason);
+        return mapToResponse(saved);
     }
 
     @Override
@@ -311,26 +405,40 @@ public class BookingServiceImpl implements BookingService {
         historyEntry.put("text", "Xác nhận " + request.getTrips().size() + " xe và lộ trình di chuyển");
         payload.getHistory().add(historyEntry);
 
+        // 6. Kiểm tra điều kiện đồng bộ chuyển trạng thái (reviewDone gate)
+        String medicalStatus = getMedicalStatus(payload);
+        boolean medicalApproved = "approved".equalsIgnoreCase(medicalStatus);
+
+        if (medicalApproved) {
+            booking.setStatus("pending_commercial");
+            appendHistory(payload, "Hệ thống", "Hồ sơ ngựa và phương án xe đều đã duyệt xong -> Chuyển Quản lý duyệt báo giá.");
+        } else {
+            booking.setStatus("under_review");
+            appendHistory(payload, "Hệ thống", "Điều phối viên đã chốt xe và lộ trình. Đang chờ Chuyên viên kiểm dịch thẩm định hồ sơ ngựa.");
+        }
+
         try {
             booking.setDetailsJson(objectMapper.writeValueAsString(payload));
         } catch (Exception ex) {
             log.error("Could not serialize payload: {}", ex.getMessage());
         }
 
-        // 6. Cập nhật trạng thái đơn sang pending_commercial
-        booking.setStatus("pending_commercial");
         Booking updatedBooking = bookingRepository.save(booking);
 
         // 7. Ghi nhật ký hệ thống SYSTEM_LOG
         try {
+            String logDesc = medicalApproved
+                    ? "Điều phối viên (" + (request.getBy() != null ? request.getBy() : "coordinator") + ") chốt "
+                            + request.getTrips().size() + " xe và lộ trình đơn BK-" + updatedBooking.getId()
+                            + ", cả 2 bên đã đạt -> chuyển Quản lý duyệt báo giá."
+                    : "Điều phối viên (" + (request.getBy() != null ? request.getBy() : "coordinator") + ") chốt "
+                            + request.getTrips().size() + " xe và lộ trình đơn BK-" + updatedBooking.getId()
+                            + ", đang chờ Chuyên viên kiểm dịch thẩm định hồ sơ ngựa.";
             SystemLog sysLog = SystemLog.builder()
                     .actionType("COORDINATOR_CONFIRM_PLAN")
                     .targetTable("BOOKING")
                     .targetRecordID(updatedBooking.getId())
-                    .newData(
-                            "Điều phối viên (" + (request.getBy() != null ? request.getBy() : "coordinator") + ") chốt "
-                                    + request.getTrips().size() + " xe và lộ trình đơn BK-" + updatedBooking.getId()
-                                    + ", chuyển quản lý duyệt báo giá & phân tài/hộ tống.")
+                    .newData(logDesc)
                     .createdAt(Instant.now())
                     .build();
             systemLogRepository.save(sysLog);
@@ -358,6 +466,13 @@ public class BookingServiceImpl implements BookingService {
         }
 
         BookingDetailsPayload payload = extractPayload(booking);
+        String medicalStatus = getMedicalStatus(payload);
+        if (!"approved".equalsIgnoreCase(medicalStatus)) {
+            throw new IllegalStateException("Chuyên viên kiểm dịch chưa duyệt đạt hồ sơ ngựa!");
+        }
+        if (payload.getPlan() == null) {
+            throw new IllegalStateException("Điều phối viên chưa chốt phương án xe và lộ trình!");
+        }
         List<VehicleTripDto> trips = payload.getTrips();
         if (trips == null || trips.isEmpty()) {
             throw new IllegalStateException("Đơn hàng chưa có phương án xe để phân tài xế và hộ tống!");
@@ -456,6 +571,13 @@ public class BookingServiceImpl implements BookingService {
         }
 
         BookingDetailsPayload payload = extractPayload(booking);
+        String medicalStatus = getMedicalStatus(payload);
+        if (!"approved".equalsIgnoreCase(medicalStatus)) {
+            throw new IllegalStateException("Chuyên viên kiểm dịch chưa duyệt đạt hồ sơ ngựa!");
+        }
+        if (payload.getPlan() == null) {
+            throw new IllegalStateException("Điều phối viên chưa chốt phương án xe và lộ trình!");
+        }
         List<VehicleTripDto> trips = payload.getTrips();
         if (trips == null || trips.isEmpty()) {
             throw new IllegalStateException("Đơn chưa có phương án xe để gửi báo giá!");
@@ -773,7 +895,23 @@ public class BookingServiceImpl implements BookingService {
                 log.warn("Error reading detailsJson: {}", ex.getMessage());
             }
         }
+        if (payload.getMedical() == null) {
+            Map<String, Object> med = new HashMap<>();
+            med.put("status", "pending");
+            payload.setMedical(med);
+        }
         return payload;
+    }
+
+    private String getMedicalStatus(BookingDetailsPayload payload) {
+        if (payload == null || payload.getMedical() == null) {
+            return "";
+        }
+        if (payload.getMedical() instanceof Map<?, ?> map) {
+            Object status = map.get("status");
+            return status != null ? String.valueOf(status) : "";
+        }
+        return "";
     }
 
     private void savePayload(Booking booking, BookingDetailsPayload payload) {
@@ -839,6 +977,13 @@ public class BookingServiceImpl implements BookingService {
             }
         }
 
+        Object medical = payload != null ? payload.getMedical() : null;
+        if (medical == null) {
+            Map<String, Object> defMed = new HashMap<>();
+            defMed.put("status", "pending");
+            medical = defMed;
+        }
+
         return BookingResponse.builder()
                 .id(formattedId)
                 .numericId(b.getId())
@@ -862,7 +1007,7 @@ public class BookingServiceImpl implements BookingService {
                 .plan(payload != null ? payload.getPlan() : null)
                 .quote(payload != null ? payload.getQuote() : null)
                 .payment(payload != null ? payload.getPayment() : null)
-                .medical(payload != null ? payload.getMedical() : null)
+                .medical(medical)
                 .clearance(payload != null ? payload.getClearance() : null)
                 .settlement(payload != null ? payload.getSettlement() : null)
                 .rating(payload != null ? payload.getRating() : null)
