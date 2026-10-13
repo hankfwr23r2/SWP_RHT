@@ -1,7 +1,7 @@
 // Manager: tiếp nhận đơn mới và kích hoạt thẩm định song song (PRD mục 2.3).
 // Manager chọn Kiểm dịch viên và Điều phối viên đang hoạt động để giao việc (không xem số đơn họ đang làm).
 import { ReadMore } from '@shared/ui/ReadMore'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '@shared/auth/AuthContext'
 import { formatDate, formatDateTime } from '@shared/lib/format'
 import { activeStaff } from '@shared/lib/booking'
@@ -9,10 +9,9 @@ import { bookingsApi } from '@shared/services/bookings'
 import { staffApi } from '@shared/services/staff'
 import { useLoad } from '@shared/services/useLoad'
 import type { Booking } from '@shared/types/booking'
+import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
-import { HorseDocsSection } from '../../../shared/BookingEvidence'
-import { OrderInfo, PartiesInfo, ReviewChips } from '../../../shared/BookingParts'
-import { SideTabsModal } from '../../../shared/SideTabsModal'
+import { HorseConfigList, ReviewChips, TripSummary } from '../../../shared/BookingParts'
 import { ListPage, idCell, routeCell, statusCell, type Column } from '../../../shared/ListPage'
 import { placeShort } from '../../../shared/place'
 import s from '../../../shared/booking.module.css'
@@ -37,11 +36,21 @@ function IntakeModal({ b, onClose, onDone }: { b: Booking; onClose: () => void; 
   const { data: staff } = useLoad(staffApi.list)
   const specialists = staff ? activeStaff(staff, 'specialist') : []
   const coordinators = staff ? activeStaff(staff, 'coordinator') : []
-  const [sp, setSp] = useState('')
-  const [co, setCo] = useState('')
+  const [sp, setSp] = useState(b.intake?.specialist.id ?? '')
+  const [co, setCo] = useState(b.intake?.coordinator.id ?? '')
   const [busy, setBusy] = useState(false)
   const [reason, setReason] = useState<string | null>(null) // không null = đang nhập lý do từ chối
-  const spId = sp, coId = co // Manager tự chọn, không có người mặc định
+
+  useEffect(() => {
+    if (!sp && (b.intake?.specialist.id || specialists[0]?.id)) {
+      setSp(b.intake?.specialist.id || specialists[0].id)
+    }
+    if (!co && (b.intake?.coordinator.id || coordinators[0]?.id)) {
+      setCo(b.intake?.coordinator.id || coordinators[0].id)
+    }
+  }, [specialists, coordinators, sp, co, b.intake])
+
+  const spId = sp, coId = co
 
   const activate = async () => {
     const a = specialists.find(x => x.id === spId)
@@ -66,9 +75,23 @@ function IntakeModal({ b, onClose, onDone }: { b: Booking; onClose: () => void; 
 
   const [pick, setPick] = useState<'specialist' | 'coordinator' | null>(null)
 
-  const assign = (
-    <>
-      <h4 style={{ margin: '0 0 10px' }}>Giao việc thẩm định song song</h4>
+  return (
+    <Modal
+      wide onClose={onClose} title={`Tiếp nhận ${b.id}`} subtitle={`${b.customer} · gửi lúc ${formatDateTime(b.createdAt)}`}
+      footer={reason === null
+        ? <><button className="btn btn-ghost" onClick={onClose}>Đóng</button><button className="btn btn-ghost" onClick={() => setReason('')}><i className="fa-solid fa-ban" /> Từ chối đơn</button><button className="btn btn-primary" disabled={busy || !spId || !coId} onClick={activate}><i className="fa-solid fa-play" /> Tiếp nhận và kích hoạt thẩm định</button></>
+        : <><button className="btn btn-ghost" onClick={() => setReason(null)}>Quay lại</button><button className="btn btn-danger" disabled={busy || !reason.trim()} onClick={reject}><i className="fa-solid fa-ban" /> Xác nhận từ chối</button></>}
+    >
+      {reason !== null && (
+        <div className="form-group">
+          <label htmlFor="rj" className="required">Lý do từ chối (khách sẽ thấy)</label>
+          <textarea id="rj" className="form-control" rows={3} value={reason} onChange={e => setReason(e.target.value)} />
+        </div>
+      )}
+      <TripSummary b={b} />
+      <h4 style={{ margin: '18px 0 10px' }}>Ngựa và dịch vụ</h4>
+      <HorseConfigList b={b} />
+      <h4 style={{ margin: '18px 0 10px' }}>Giao việc</h4>
       <div className={s.form2}>
         <div className="form-group">
           <label>Kiểm dịch viên (duyệt hồ sơ ngựa)</label>
@@ -80,31 +103,8 @@ function IntakeModal({ b, onClose, onDone }: { b: Booking; onClose: () => void; 
         </div>
       </div>
       <ReadMore className={s.hint} text={'Chọn người đang hoạt động; người đang nghỉ bị khóa. Tiếp nhận xong, Điều phối viên chọn xe (chia ngựa lên nhiều xe nếu cần) và lập lộ trình, rồi bạn chọn tài xế và hộ tống cho từng xe khi duyệt báo giá.'} />
-    </>
-  )
-
-  return (
-    <>
-      <SideTabsModal
-        onClose={onClose} title={`Tiếp nhận ${b.id}`} subtitle={`${b.customer} · gửi lúc ${formatDateTime(b.createdAt)}`}
-        top={reason !== null && (
-          <div className="form-group">
-            <label htmlFor="rj" className="required">Lý do từ chối (khách sẽ thấy)</label>
-            <textarea id="rj" className="form-control" rows={3} value={reason} onChange={e => setReason(e.target.value)} />
-          </div>
-        )}
-        tabs={[
-          { id: 'customer', label: 'Khách hàng', icon: 'fa-user', content: <PartiesInfo b={b} /> },
-          { id: 'docs', label: 'Hồ sơ ngựa', icon: 'fa-file-medical', content: <HorseDocsSection b={b} reviewed={false} /> },
-          { id: 'order', label: 'Thông tin đơn', icon: 'fa-clipboard-list', content: <OrderInfo b={b} /> },
-          { id: 'assign', label: 'Giao việc', icon: 'fa-user-check', state: spId && coId ? 'ok' : 'warn', content: assign },
-        ]}
-        footer={reason === null
-          ? <><button className="btn btn-ghost" onClick={onClose}>Đóng</button><button className="btn btn-ghost" onClick={() => setReason('')}><i className="fa-solid fa-ban" /> Từ chối đơn</button><button className="btn btn-primary" disabled={busy || !spId || !coId} onClick={activate}><i className="fa-solid fa-play" /> Tiếp nhận và kích hoạt thẩm định</button></>
-          : <><button className="btn btn-ghost" onClick={() => setReason(null)}>Quay lại</button><button className="btn btn-danger" disabled={busy || !reason.trim()} onClick={reject}><i className="fa-solid fa-ban" /> Xác nhận từ chối</button></>}
-      />
       {pick && staff && <StaffPicker task={pick} staff={staff} selected={(pick === 'specialist' ? spId : coId) ?? ''} onPick={id => (pick === 'specialist' ? setSp(id) : setCo(id))} onClose={() => setPick(null)} />}
-    </>
+    </Modal>
   )
 }
 

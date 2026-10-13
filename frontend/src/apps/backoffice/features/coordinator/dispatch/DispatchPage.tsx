@@ -47,7 +47,8 @@ export default function DispatchPage() {
   const { data: crew } = useLoad(crewApi.list)
 
   if (!b || !vehicles || !crew) return <div className="page"><div className="wrap"><p className="text-muted">Đang tải…</p></div></div>
-  if (b.intake?.coordinator.name !== session!.name) return <div className="page"><div className="wrap"><div className="alert alert-danger"><i className="fa-solid fa-lock" /><div>Đơn {b.id} không được giao cho bạn. <Link to="/coordinator/dispatch" className="text-orange font-semibold">Về danh sách</Link></div></div></div></div>
+  const isAssigned = !b.intake || b.intake.coordinator.name === session?.name || session?.role === 'admin' || session?.role === 'manager'
+  if (!isAssigned) return <div className="page"><div className="wrap"><div className="alert alert-danger"><i className="fa-solid fa-lock" /><div>Đơn {b.id} hiện được giao cho {b.intake?.coordinator.name || 'điều phối viên khác'}. <Link to="/coordinator/dispatch" className="text-orange font-semibold">Về danh sách</Link></div></div></div></div>
 
   const editable = ['waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'in_transit'].includes(b.status)
   return (
