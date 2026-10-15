@@ -7,6 +7,7 @@ import com.example.racehorse_transport.dto.booking.PartyContactDto;
 import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.repository.*;
 import com.example.racehorse_transport.service.BookingService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -114,8 +115,8 @@ public class BookingServiceImpl implements BookingService {
             hist.add(hEntry);
             initialPayload.setHistory(hist);
             detailsJson = objectMapper.writeValueAsString(initialPayload);
-        } catch (Exception e) {
-            log.warn("Could not serialize initial detailsJson: {}", e.getMessage());
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("Không thể lưu chi tiết đơn vận chuyển.", e);
         }
 
         // 5. Tạo đơn hàng Booking mới
@@ -140,35 +141,28 @@ public class BookingServiceImpl implements BookingService {
         // 6. Lưu danh sách ngựa cơ bản của khách hàng
         if (request.getHorses() != null) {
             for (BookingHorseDto hDto : request.getHorses()) {
-                try {
-                    Horse horse = Horse.builder()
-                            .customerID(customer)
-                            .horseName(hDto.getName() != null ? hDto.getName().trim() : "Ngựa chưa đặt tên")
-                            .microchipID(hDto.getMicrochip() != null ? hDto.getMicrochip().trim() : null)
-                            .gender(hDto.getSex() != null ? hDto.getSex().trim() : "stallion")
-                            .status("ACTIVE")
-                            .build();
-                    horseRepository.save(horse);
-                } catch (Exception ex) {
-                    log.warn("Could not save horse: {}", ex.getMessage());
-                }
+                Horse horse = Horse.builder()
+                        .customerID(customer)
+                        .horseName(hDto.getName() != null ? hDto.getName().trim() : "Ngựa chưa đặt tên")
+                        .microchipID(hDto.getMicrochip() != null ? hDto.getMicrochip().trim() : null)
+                        .gender(hDto.getSex() != null ? hDto.getSex().trim() : "stallion")
+                        .status("ACTIVE")
+                        .build();
+                horseRepository.save(horse);
             }
         }
 
         // 7. Ghi Audit Log vào SYSTEM_LOG
-        try {
-            SystemLog sysLog = SystemLog.builder()
-                    .actionbyUserid(user)
-                    .actionType("CREATE_BOOKING")
-                    .targetTable("BOOKING")
-                    .targetRecordID(savedBooking.getId())
-                    .newData("Tạo đơn vận chuyển " + savedBooking.getTotalHorses() + " con ngựa ("
-                            + savedBooking.getPickupAddress() + " -> " + savedBooking.getDropoffAddress() + ")")
-                    .createdAt(Instant.now())
-                    .build();
-            systemLogRepository.save(sysLog);
-        } catch (Exception ignored) {
-        }
+        SystemLog sysLog = SystemLog.builder()
+                .actionbyUserid(user)
+                .actionType("CREATE_BOOKING")
+                .targetTable("BOOKING")
+                .targetRecordID(savedBooking.getId())
+                .newData("Tạo đơn vận chuyển " + savedBooking.getTotalHorses() + " con ngựa ("
+                        + savedBooking.getPickupAddress() + " -> " + savedBooking.getDropoffAddress() + ")")
+                .createdAt(Instant.now())
+                .build();
+        systemLogRepository.save(sysLog);
 
         log.info("Successfully created booking ID={} for user={}", savedBooking.getId(), customerUsername);
         return mapToResponse(savedBooking);
@@ -190,6 +184,16 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponse getBookingById(Integer id, String customerUsername) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng có ID: " + id));
+
+        if (customerUsername != null) {
+            User owner = booking.getCustomerID() != null ? booking.getCustomerID().getUser() : null;
+            boolean ownsBooking = owner != null
+                    && (customerUsername.equals(owner.getUsername()) || customerUsername.equals(owner.getEmail()));
+            if (!ownsBooking) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Bạn không có quyền xem đơn hàng này.");
+            }
+        }
 
         return mapToResponse(booking);
     }
@@ -309,8 +313,8 @@ public class BookingServiceImpl implements BookingService {
             } else {
                 bookingId = Integer.parseInt(cleanId);
             }
-        } catch (Exception ex) {
-            throw new IllegalArgumentException("Định dạng mã đơn không hợp lệ: " + bookingIdentifier);
+        } catch (NumberFormatException ex) {
+            throw new IllegalArgumentException("Định dạng mã đơn không hợp lệ: " + bookingIdentifier, ex);
         }
 
         // 2. Tìm đơn hàng
@@ -891,8 +895,8 @@ public class BookingServiceImpl implements BookingService {
                             });
                     payload.setHorses(horses);
                 }
-            } catch (Exception ex) {
-                log.warn("Error reading detailsJson: {}", ex.getMessage());
+            } catch (JsonProcessingException ex) {
+                throw new IllegalStateException("Không thể đọc chi tiết đơn " + booking.getId() + ".", ex);
             }
         }
         if (payload.getMedical() == null) {
@@ -917,8 +921,8 @@ public class BookingServiceImpl implements BookingService {
     private void savePayload(Booking booking, BookingDetailsPayload payload) {
         try {
             booking.setDetailsJson(objectMapper.writeValueAsString(payload));
-        } catch (Exception ex) {
-            log.error("Could not serialize payload: {}", ex.getMessage());
+        } catch (JsonProcessingException ex) {
+            throw new IllegalStateException("Không thể lưu chi tiết đơn " + booking.getId() + ".", ex);
         }
     }
 
@@ -934,17 +938,14 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private void logAction(String actionType, Integer targetRecordId, String newData) {
-        try {
-            SystemLog sysLog = SystemLog.builder()
-                    .actionType(actionType)
-                    .targetTable("BOOKING")
-                    .targetRecordID(targetRecordId)
-                    .newData(newData)
-                    .createdAt(Instant.now())
-                    .build();
-            systemLogRepository.save(sysLog);
-        } catch (Exception ignored) {
-        }
+        SystemLog sysLog = SystemLog.builder()
+                .actionType(actionType)
+                .targetTable("BOOKING")
+                .targetRecordID(targetRecordId)
+                .newData(newData)
+                .createdAt(Instant.now())
+                .build();
+        systemLogRepository.save(sysLog);
     }
 
     private BookingResponse mapToResponse(Booking b) {
@@ -973,7 +974,8 @@ public class BookingServiceImpl implements BookingService {
                     horseDtos = objectMapper.readValue(json, new TypeReference<List<BookingHorseDto>>() {
                     });
                 }
-            } catch (Exception ignored) {
+            } catch (JsonProcessingException ex) {
+                throw new IllegalStateException("Không thể đọc chi tiết đơn " + b.getId() + ".", ex);
             }
         }
 
