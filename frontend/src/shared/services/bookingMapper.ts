@@ -42,8 +42,8 @@ function horseOf(h: BackendBookingResponse['horses'][number]): BookingHorse {
 }
 
 function tripOf(t: NonNullable<BackendBookingResponse['trips']>[number]): VehicleTrip {
-  const { tripId, vehicleId, driverId, escortId, horseIds, ...rest } = t
-  return { tripId, vehicleId, driverId: driverId ?? '', escortId: escortId ?? '', horseIds, acks: {}, ...rest } as VehicleTrip
+  const { tripId, vehicleId, driverId, escortId, horseIds, ...rest } = t as any
+  return { tripId, vehicleId, driverId: driverId ?? '', escortId: escortId ?? '', horseIds, acks: rest.acks ?? {}, ...rest } as VehicleTrip
 }
 
 export function toBooking(r: BackendBookingResponse, customer?: string): Booking {

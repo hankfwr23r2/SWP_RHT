@@ -37,13 +37,17 @@ public interface BookingService {
     BookingResponse sendQuote(String bookingIdentifier, com.example.racehorse_transport.dto.manager.SendQuoteRequest request);
     BookingResponse sendBack(String bookingIdentifier, com.example.racehorse_transport.dto.manager.SendBackRequest request);
 
-    // Nghiệp vụ Phase 4 & 5: Khách hàng duyệt cọc 30%, từ chối báo giá, giải phóng 48h tự động, gửi lại hồ sơ
+    // Nghiệp vụ Phase 4 & 5: Khách hàng duyệt cọc 30%, từ chối báo giá, giải phóng 48h tự động, gửi lại hồ sơ, thanh toán 70% ngày D
     BookingResponse resubmitDocuments(String bookingIdentifier, String customerUsername);
     BookingResponse payDeposit(String bookingIdentifier, String customerUsername, com.example.racehorse_transport.dto.booking.PayDepositRequest request);
+    BookingResponse payBalance(String bookingIdentifier, String customerUsername, com.example.racehorse_transport.dto.booking.PayBalanceRequest request);
     BookingResponse rejectQuote(String bookingIdentifier, String customerUsername, com.example.racehorse_transport.dto.booking.RejectQuoteRequest request);
     int releaseExpiredQuotations();
 
     // Dev 4: Bàn giao, ký nhận, kết thúc đơn hàng (Flow 6)
     boolean completeBookingDelivery(Integer bookingId, String recipientName, String recipientSignature, String note);
+
+    // Flow 4: Cập nhật tiến độ chuyến xe (check-in, quét chip, thu hồ sơ, xuất phát, an sinh, về HQ)
+    BookingResponse updateTripProgress(String bookingIdentifier, com.example.racehorse_transport.dto.field.TripUpdateRequest request);
 }
 

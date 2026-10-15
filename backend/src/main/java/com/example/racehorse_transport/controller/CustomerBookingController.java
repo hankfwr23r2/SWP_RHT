@@ -125,4 +125,20 @@ public class CustomerBookingController {
         BookingResponse response = bookingService.resubmitDocuments(id, username);
         return ResponseEntity.ok(ApiResponse.success(response, "Đã gửi lại hồ sơ cho Chuyên viên kiểm dịch thẩm định"));
     }
+
+    // 7. API Khách hàng thanh toán 70% còn lại trước giờ khởi hành (ngày D - Flow 4)
+    @PostMapping("/{id}/pay-balance")
+    public ResponseEntity<ApiResponse<BookingResponse>> payBalance(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+            @PathVariable("id") String id,
+            @RequestBody(required = false) com.example.racehorse_transport.dto.booking.PayBalanceRequest request) {
+        String username = extractUsername(authHeader);
+        if (username == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Vui lòng đăng nhập để thanh toán số dư!"));
+        }
+
+        BookingResponse response = bookingService.payBalance(id, username, request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Thanh toán 70% còn lại thành công! Xe đã đủ điều kiện bắt đầu hành trình."));
+    }
 }
