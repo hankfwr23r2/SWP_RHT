@@ -43,7 +43,7 @@ public class Incident {
     @Column(name = "incident_type", length = 100)
     private String incidentType; // VEHICLE_BREAKDOWN, HORSE_HEALTH, TRAFFIC_DELAY, HANDOVER_TIMEOUT
 
-    @Column(name = "description", columnDefinition = "NVARCHAR(MAX)")
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
     @Size(max = 50)
@@ -82,7 +82,7 @@ public class Incident {
     @Column(name = "invoice_url", length = 500)
     private String invoiceUrl;
 
-    @Column(name = "directive", columnDefinition = "NVARCHAR(MAX)")
+    @Column(name = "directive", columnDefinition = "TEXT")
     private String directive;
 
     @Column(name = "created_at")

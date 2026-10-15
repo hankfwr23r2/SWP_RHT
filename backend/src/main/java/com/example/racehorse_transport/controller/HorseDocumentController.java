@@ -3,6 +3,8 @@ package com.example.racehorse_transport.controller;
 import com.example.racehorse_transport.dto.document.HorseDocumentResponse;
 import com.example.racehorse_transport.dto.document.ReviewHorseDocumentRequest;
 import com.example.racehorse_transport.entity.HorseDocument;
+import com.example.racehorse_transport.entity.Horse;
+import com.example.racehorse_transport.repository.HorseRepository;
 import com.example.racehorse_transport.response.ApiResponse;
 import com.example.racehorse_transport.service.HorseDocumentService;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +12,9 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -32,6 +37,7 @@ import java.util.List;
 public class HorseDocumentController {
 
     private final HorseDocumentService horseDocumentService;
+    private final HorseRepository horseRepository;
 
     /**
      * Upload hồ sơ ngựa (Flow 2 - Bước 1).
@@ -52,7 +58,10 @@ public class HorseDocumentController {
             @RequestParam("horseId") Integer horseId,
             @RequestParam(value = "documentType", required = false, defaultValue = "OTHER") String documentType,
             @RequestParam(value = "expiryDate", required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate expiryDate) {
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate expiryDate,
+            Authentication authentication) {
+
+        assertHorseAccess(horseId, authentication);
 
         HorseDocumentResponse response = horseDocumentService.uploadHorseDocument(
                 horseId, documentType, expiryDate, file);
@@ -95,11 +104,23 @@ public class HorseDocumentController {
     @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'INSPECTOR', 'MANAGER', 'COORDINATOR', 'ADMIN')")
     @GetMapping("/horse/{horseId}")
     public ResponseEntity<ApiResponse<List<HorseDocumentResponse>>> getDocumentsByHorse(
-            @PathVariable Integer horseId) {
+            @PathVariable Integer horseId, Authentication authentication) {
+
+        assertHorseAccess(horseId, authentication);
 
         List<HorseDocumentResponse> documents = horseDocumentService.getDocumentsByHorse(horseId);
         return ResponseEntity.ok(ApiResponse.success(documents,
                 "Lấy danh sách hồ sơ ngựa ID=" + horseId + " thành công. Tổng: " + documents.size()));
+    }
+
+    private void assertHorseAccess(Integer horseId, Authentication authentication) {
+        if (authentication == null || !authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_CUSTOMER"))) return;
+        Horse horse = horseRepository.findById(horseId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy ngựa với ID: " + horseId));
+        if (horse.getCustomerID() == null || horse.getCustomerID().getUser() == null
+                || !authentication.getName().equalsIgnoreCase(horse.getCustomerID().getUser().getUsername())) {
+            throw new AccessDeniedException("Bạn không có quyền truy cập giấy tờ ngựa này.");
+        }
     }
 
     /**

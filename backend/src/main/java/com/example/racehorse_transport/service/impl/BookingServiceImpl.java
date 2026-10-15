@@ -138,17 +138,22 @@ public class BookingServiceImpl implements BookingService {
 
         Booking savedBooking = bookingRepository.save(booking);
 
-        // 6. Lưu danh sách ngựa cơ bản của khách hàng
+        // 6. Xác nhận các ngựa được chọn thuộc chính khách hàng này.
+        // Hồ sơ ngựa đã được tạo ở luồng quản lý hồ sơ, không nhân bản khi tạo booking.
         if (request.getHorses() != null) {
             for (BookingHorseDto hDto : request.getHorses()) {
-                Horse horse = Horse.builder()
-                        .customerID(customer)
-                        .horseName(hDto.getName() != null ? hDto.getName().trim() : "Ngựa chưa đặt tên")
-                        .microchipID(hDto.getMicrochip() != null ? hDto.getMicrochip().trim() : null)
-                        .gender(hDto.getSex() != null ? hDto.getSex().trim() : "stallion")
-                        .status("ACTIVE")
-                        .build();
-                horseRepository.save(horse);
+                if (hDto.getHorseId() == null || hDto.getHorseId().isBlank()) {
+                    throw new IllegalArgumentException("Mỗi ngựa trong đơn phải được chọn từ Hồ sơ ngựa.");
+                }
+                String numericId = hDto.getHorseId().replaceAll("\\D", "");
+                if (numericId.isBlank()) {
+                    throw new IllegalArgumentException("Mã hồ sơ ngựa không hợp lệ: " + hDto.getHorseId());
+                }
+                Horse horse = horseRepository.findById(Integer.valueOf(numericId))
+                        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hồ sơ ngựa " + hDto.getHorseId()));
+                if (horse.getCustomerID() == null || !customer.getId().equals(horse.getCustomerID().getId())) {
+                    throw new IllegalArgumentException("Hồ sơ ngựa " + hDto.getHorseId() + " không thuộc tài khoản của bạn.");
+                }
             }
         }
 

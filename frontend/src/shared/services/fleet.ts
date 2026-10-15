@@ -1,5 +1,5 @@
 // Service đội xe và người đi theo chuyến kết nối Backend Spring Boot (/fleet/vehicles, /fleet/crew)
-import { backendFleetApi } from '../api/fleet'
+import { backendFleetApi, type BackendVehicleResponse } from '../api/fleet'
 import { seedCrew, seedVehicles } from '../fixtures/fleet'
 import type { CrewMember, Vehicle } from '../types/fleet'
 import { createStore } from './store'
@@ -8,31 +8,50 @@ const vehicles = createStore<Vehicle>('vehicles', () => import.meta.env?.MODE ==
 const crew = createStore<CrewMember>('crew', () => import.meta.env?.MODE === 'test' ? seedCrew() : [])
 const isTestEnv = import.meta.env?.MODE === 'test'
 
+const mapVehicle = (v: BackendVehicleResponse): Vehicle => ({
+  id: v.code || `VH-${String(v.id).padStart(3, '0')}`,
+  name: v.name || 'Xe chuyên dụng',
+  type: v.type || 'Xe chuyên dụng',
+  capacity: v.capacity || 2,
+  plate: v.plate || '',
+  vin: v.vin,
+  inspectionNo: v.inspectionNo,
+  transitPermit: v.transitPermit,
+})
+
+const toVehiclePayload = (v: Omit<Vehicle, 'id'>): Parameters<typeof backendFleetApi.createVehicle>[0] => ({
+  type: v.type,
+  capacity: v.capacity,
+  plate: v.plate,
+  vin: v.vin,
+  inspectionNo: v.inspectionNo,
+  transitPermit: v.transitPermit,
+})
+
 export const vehiclesApi = {
   list: async (departAt?: number, tripType?: string): Promise<Vehicle[]> => {
     if (!isTestEnv) {
       const beVehicles = await backendFleetApi.getVehicles(departAt, tripType)
-      return beVehicles.map(v => ({
-            id: v.code || `VH-${String(v.id).padStart(3, '0')}`,
-            name: v.name || 'Xe chuyên dụng',
-            type: v.type || 'Xe chuyên dụng',
-            capacity: v.capacity || 2,
-            plate: v.plate,
-          }))
+      return beVehicles.map(mapVehicle)
     }
     return structuredClone(vehicles.all())
   },
   create: async (data: Omit<Vehicle, 'id'>) => {
-    if (!isTestEnv) throw new Error('API backend chưa hỗ trợ tạo xe.')
+    if (!isTestEnv) return mapVehicle(await backendFleetApi.createVehicle(toVehiclePayload(data)))
     const next = Math.max(0, ...vehicles.all().map(v => Number(v.id.slice(3)))) + 1
     return structuredClone(vehicles.add({ id: `VH-${String(next).padStart(3, '0')}`, ...data }))
   },
   update: async (id: string, patch: Partial<Vehicle>) => {
-    if (!isTestEnv) throw new Error('API backend chưa hỗ trợ cập nhật xe.')
+    if (!isTestEnv) {
+      const current = (await vehiclesApi.list()).find(v => v.id === id)
+      if (!current) throw new Error('Không tìm thấy xe.')
+      const { id: _id, ...payload } = { ...current, ...patch }
+      return mapVehicle(await backendFleetApi.updateVehicle(id, toVehiclePayload(payload)))
+    }
     return structuredClone(vehicles.update(id, patch))
   },
   remove: async (id: string) => {
-    if (!isTestEnv) throw new Error('API backend chưa hỗ trợ xóa xe.')
+    if (!isTestEnv) return backendFleetApi.removeVehicle(id)
     vehicles.remove(id)
   },
 }

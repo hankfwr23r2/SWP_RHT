@@ -14,6 +14,9 @@ public class VehicleResponse {
     private String type;
     private String plate;
     private Integer capacity;
+    private String vin;
+    private String inspectionNo;
+    private String transitPermit;
     private String status;
     private String homeDepot;
     private String currentLocation;

@@ -42,6 +42,11 @@ public class Horse {
     @Column(name = "Gender", length = 20)
     private String gender;
 
+    @Size(max = 100)
+    @Nationalized
+    @Column(name = "breed", length = 100)
+    private String breed;
+
     @Size(max = 50)
     @Nationalized
     @Column(name = "color", length = 50)
@@ -52,6 +57,16 @@ public class Horse {
 
     @Column(name = "Weight", precision = 10, scale = 2)
     private BigDecimal weight;
+
+    @Column(name = "identification_marks", columnDefinition = "TEXT")
+    private String identificationMarks;
+
+    @Column(name = "completed_trips", nullable = false)
+    private Integer completedTrips;
+
+    // Existing PostgreSQL installations store this value as epoch milliseconds (BIGINT).
+    @Column(name = "created_at")
+    private Long createdAt;
 
     @Size(max = 50)
     @Column(name = "status", length = 50)

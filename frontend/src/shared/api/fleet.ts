@@ -7,11 +7,24 @@ export interface BackendVehicleResponse {
   type: string
   plate: string
   capacity: number
+  vin?: string
+  inspectionNo?: string
+  transitPermit?: string
   status: string
   homeDepot?: string
   currentLocation?: string
   isAvailable: boolean
   busyReason?: string
+}
+
+export interface VehiclePayload {
+  type: string
+  capacity: number
+  plate: string
+  vin?: string
+  inspectionNo?: string
+  transitPermit?: string
+  status?: string
 }
 
 export interface BackendCrewResponse {
@@ -47,5 +60,19 @@ export const backendFleetApi = {
       },
     })
     return res.data.data
+  },
+
+  createVehicle: async (payload: VehiclePayload): Promise<BackendVehicleResponse> => {
+    const res = await apiClient.post<ApiResponse<BackendVehicleResponse>>('/fleet/vehicles', payload)
+    return res.data.data
+  },
+
+  updateVehicle: async (id: string, payload: VehiclePayload): Promise<BackendVehicleResponse> => {
+    const res = await apiClient.put<ApiResponse<BackendVehicleResponse>>(`/fleet/vehicles/${encodeURIComponent(id)}`, payload)
+    return res.data.data
+  },
+
+  removeVehicle: async (id: string): Promise<void> => {
+    await apiClient.delete(`/fleet/vehicles/${encodeURIComponent(id)}`)
   },
 }

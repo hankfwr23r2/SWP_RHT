@@ -2,12 +2,14 @@ package com.example.racehorse_transport.controller;
 
 import com.example.racehorse_transport.dto.fleet.CrewResponse;
 import com.example.racehorse_transport.dto.fleet.VehicleResponse;
+import com.example.racehorse_transport.dto.fleet.VehicleRequest;
 import com.example.racehorse_transport.response.ApiResponse;
 import com.example.racehorse_transport.service.FleetService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
 import java.time.Instant;
 import java.util.List;
@@ -52,5 +54,24 @@ public class FleetController {
         }
 
         return ResponseEntity.ok(ApiResponse.success(crew, "Lấy danh sách nhân sự kíp xe thành công"));
+    }
+
+    @PostMapping("/vehicles")
+    @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<VehicleResponse>> createVehicle(@Valid @RequestBody VehicleRequest request) {
+        return ResponseEntity.status(201).body(ApiResponse.success(fleetService.createVehicle(request), "Tạo xe thành công"));
+    }
+
+    @PutMapping("/vehicles/{id}")
+    @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<VehicleResponse>> updateVehicle(@PathVariable String id, @Valid @RequestBody VehicleRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(fleetService.updateVehicle(id, request), "Cập nhật xe thành công"));
+    }
+
+    @DeleteMapping("/vehicles/{id}")
+    @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER', 'ADMIN')")
+    public ResponseEntity<ApiResponse<Void>> deleteVehicle(@PathVariable String id) {
+        fleetService.deleteVehicle(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Xóa xe thành công"));
     }
 }

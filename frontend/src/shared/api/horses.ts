@@ -7,9 +7,13 @@ export interface BackendHorseDto {
   horseName: string
   microchipID: string
   gender?: string
+  breed?: string
   color?: string
   age?: number
   weight?: number
+  identificationMarks?: string
+  completedTrips?: number
+  createdAt?: string
   status?: string
 }
 
@@ -51,6 +55,11 @@ export const backendHorseApi = {
   // Tạo mới ngựa
   create: async (payload: BackendHorseDto): Promise<BackendHorseDto> => {
     const res = await apiClient.post<ApiResponse<BackendHorseDto>>('/horses', payload)
+    return res.data.data
+  },
+
+  update: async (id: number, payload: BackendHorseDto): Promise<BackendHorseDto> => {
+    const res = await apiClient.put<ApiResponse<BackendHorseDto>>(`/horses/${id}`, payload)
     return res.data.data
   },
 
