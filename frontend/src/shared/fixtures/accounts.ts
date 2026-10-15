@@ -1,26 +1,13 @@
-// Tài khoản hệ thống mẫu: quản trị viên, quản lý, nhân viên (từ danh bạ), tài xế, hộ tống và khách hàng.
-// Số mẫu; khi có backend, tài khoản và mật khẩu (băm) nằm ở server.
-import { HOUR, DAY } from '../../config/business-rules'
-import type { Role } from '../../types/role'
+// Fixture tài khoản phục vụ Unit Tests
+import { DAY, HOUR } from '../config/business-rules'
+import type { Account, AccountLog } from '../types/account'
+import { ADMIN_EMAIL } from '../types/account'
+import type { Role } from '../types/role'
 import { seedCrew } from './fleet'
 import { seedStaff } from './staff'
 
-export type AccountStatus = 'active' | 'locked'
-export interface AccountLog { time: number; actor: string; text: string }
-export interface Account {
-  id: string
-  name: string
-  email: string
-  phone: string
-  role: Role
-  status: AccountStatus
-  createdAt: number
-  lastLoginAt?: number
-  password?: string // chỉ có khi quản trị viên tạo hoặc đặt lại; tài khoản mẫu nhận mọi mật khẩu
-  history: AccountLog[]
-}
+export { ADMIN_EMAIL }
 
-export const ADMIN_EMAIL = 'admin@equine.vn'
 const slug = (name: string) => name.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().replace(/[^a-z0-9]+/g, '.').replace(/^\.|\.$/g, '')
 
 export const seedAccounts = (): Account[] => {

@@ -1,6 +1,6 @@
 // Dữ liệu mẫu của Điều phối phải khớp bộ đơn chung
 import { describe, expect, it } from 'vitest'
-import { tripStatus } from '../trips'
+import { tripStatus } from '../services/trips'
 import { seedCrew, seedVehicles } from './fleet'
 import { seedOrders } from './orders'
 import { seedOtherOrders } from './orders-others'

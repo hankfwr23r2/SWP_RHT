@@ -2,10 +2,10 @@
 // Gộp đơn trùng giữa các trang; đánh số lại mã bị trùng mà khác đơn:
 //   tiếp nhận 1052 → 1076 · tiếp nhận 1050 → 1077 · nhân sự 1058 → 1078.
 // Ngày tính tương đối theo ngày soạn dữ liệu cũ (24/09/2026 = hôm nay).
-import { DAY, HOUR } from '../../config/business-rules'
-import { atTime, daysFromToday, workdaysAgo } from '../../lib/dates'
-import { DOCS_CROSS_BORDER, DOCS_DOMESTIC, type DocKey } from '../../config/documents'
-import type { DocDecision, Horse, Order, ServiceLine } from '../../types/order'
+import { DAY, HOUR } from '../config/business-rules'
+import { atTime, daysFromToday, workdaysAgo } from '../lib/dates'
+import { DOCS_CROSS_BORDER, DOCS_DOMESTIC, type DocKey } from '../config/documents'
+import type { DocDecision, Horse, Order, ServiceLine } from '../types/order'
 
 const H = (name: string, breed: string, sex: string, chip: string): Horse => ({ name, breed, sex, chip })
 // Giá ở trang Tiếp nhận chỉ có [hạng mục, số tiền]

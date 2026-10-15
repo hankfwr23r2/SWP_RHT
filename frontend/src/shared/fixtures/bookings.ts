@@ -1,13 +1,13 @@
 // Dữ liệu mẫu của luồng đặt đơn (Flow 1): hồ sơ ngựa của khách mẫu và các đơn ở từng trạng thái.
 // Đơn mẫu ở mọi trạng thái của luồng mới, gồm đơn nhiều xe. Sửa file này thì tăng MOCK_VERSION trong store.ts.
-import type { HorseDocType } from '../../config/booking-rules'
-import { DAY, HOUR } from '../../config/business-rules'
-import { AVG_SPEED_KMH } from '../../config/public-pricing'
-import { COUNTRY_LOCATIONS, RESCUE_POINTS, TRANSIT_STATIONS, type GeoPoint } from '../../config/network'
-import { findLocation, nearestTo, blankClearance, settlementOf, buildCheckpoints, buildRoutePlan, finalizeQuote, layoutLegs, manifestDocuments, quoteLines, tripIdFor, waybillNoOf } from '../../lib/booking'
-import { daysFromToday } from '../../lib/dates'
-import type { IncidentPlan, PlanLine } from '../../types/booking'
-import type { Booking, BookingHorse, Clearance, ClearanceStatus, HorseDoc, Incident, HorseProfile, Party, PlaceRef, Sex, TripRun, VehicleTrip, WelfareLog } from '../../types/booking'
+import type { HorseDocType } from '../config/booking-rules'
+import { DAY, HOUR } from '../config/business-rules'
+import { AVG_SPEED_KMH } from '../config/public-pricing'
+import { COUNTRY_LOCATIONS, RESCUE_POINTS, TRANSIT_STATIONS, type GeoPoint } from '../config/network'
+import { findLocation, nearestTo, blankClearance, settlementOf, buildCheckpoints, buildRoutePlan, finalizeQuote, layoutLegs, manifestDocuments, quoteLines, tripIdFor, waybillNoOf } from '../lib/booking'
+import { daysFromToday } from '../lib/dates'
+import type { IncidentPlan, PlanLine } from '../types/booking'
+import type { Booking, BookingHorse, Clearance, ClearanceStatus, HorseDoc, Incident, HorseProfile, Party, PlaceRef, Sex, TripRun, VehicleTrip, WelfareLog } from '../types/booking'
 import { CUSTOMER } from './orders'
 import { seedCrew, seedDriverOf, seedVehicles } from './fleet'
 

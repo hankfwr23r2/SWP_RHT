@@ -1,30 +1,11 @@
+import type { ReportLeg, TripReport } from '../types/trip'
 // Lịch sử chuyến đã hoàn thành (trang Báo cáo chuyến đi, bảng "Hiệu suất chuyến đi gần đây" ở Bảng điều khiển).
 // Gốc: Manager/manager_trip_reports.html (17 dòng, 1 báo cáo chi tiết viết cứng) + manager_dashboard.html.
 // Đồng bộ: khách lấy từ bộ khách chung, tuyến trong 3 nước; mỗi báo cáo có chặng, nhật ký sức khỏe, sự kiện, đánh giá.
-import { atTime } from '../../lib/dates'
+import { atTime } from '../lib/dates'
 
-export interface ReportLeg { title: string; kind: 'ground' | 'gate'; meta: string; route: string; planned: [string, string]; actual: [string, string] }
-export interface TripReport {
-  id: string // mã đơn
-  tripId: string
-  customer: string
-  route: string
-  type: string
-  horses: string
-  escort: string
-  completedAt: number
-  plannedAt: number
-  otd: 'on_time' | 'early' | 'late'
-  otdMinutes: number
-  incidentCost: number
-  incidentNote: string
-  totalTime: string
-  legs: ReportLeg[]
-  health: [time: string, event: string, ok: boolean][]
-  events: [time: string, event: string, ok: boolean][]
-  rating: number
-  feedback: string
-}
+
+
 
 // Tuyến mẫu: chặng dự kiến / thực tế (giờ)
 const ROUTES: Record<string, { route: string; type: string; total: string; legs: ReportLeg[] }> = {

@@ -2,7 +2,8 @@
 // Tạo tài khoản nhân viên thì đồng bộ vào danh bạ (nhân sự / tài xế / hộ tống) để được phân công; khóa kiểm dịch viên / điều phối viên thì danh bạ chuyển sang nghỉ.
 import type { Role } from '../types/role'
 import { crewApi } from './fleet'
-import { seedAccounts, type Account } from './mock/accounts'
+import { seedAccounts } from '../fixtures/accounts'
+import type { Account } from '../types/account'
 import { staffApi } from './staff'
 import { createStore } from './store'
 

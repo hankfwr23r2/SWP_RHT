@@ -1,6 +1,6 @@
 // Dữ liệu mẫu của luồng đặt đơn phải khớp quy tắc nghiệp vụ
 import { describe, expect, it } from 'vitest'
-import { canCompleteClearance, currentCheckpoint, delayedCheckpoint, horseReadiness, reviewDone, validateRoutePlan, waybillNoOf } from '../../lib/booking'
+import { canCompleteClearance, currentCheckpoint, delayedCheckpoint, horseReadiness, reviewDone, validateRoutePlan, waybillNoOf } from '../lib/booking'
 import { seedVehicles } from './fleet'
 import { CUSTOMER } from './orders'
 import { seedBookings, seedHorses } from './bookings'

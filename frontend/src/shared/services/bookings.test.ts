@@ -5,7 +5,7 @@ import { COUNTRY_LOCATIONS } from '../config/network'
 import { bookingsApi, customerBookingsApi } from './bookings'
 import { crewApi, vehiclesApi } from './fleet'
 import type { Booking } from '../types/booking'
-import { CUSTOMER } from './mock/orders'
+import { CUSTOMER } from '../fixtures/orders'
 
 const ID = 'ORD-2026-0116' // en_route_to_pickup, 1 xe, 2 ngựa, nội địa, đã trả 70%
 const T = 'TRP-0116-1'

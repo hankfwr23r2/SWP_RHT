@@ -1,7 +1,7 @@
 // Service Hồ sơ ngựa của khách kết nối Backend Spring Boot (/horses, /horse-documents)
 import { backendHorseApi } from '../api/horses'
 import type { HorseProfile } from '../types/booking'
-import { seedHorses } from './mock/bookings'
+import { seedHorses } from '../fixtures/bookings'
 import { createStore } from './store'
 
 const store = createStore<HorseProfile>('horses', seedHorses)

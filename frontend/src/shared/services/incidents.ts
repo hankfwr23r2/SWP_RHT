@@ -1,7 +1,8 @@
 // Service sự cố kết nối Backend Spring Boot (/incidents)
 import { backendIncidentApi } from '../api/incidents'
 import { createStore } from './store'
-import { seedIncidents, type Incident } from './mock/incidents'
+import { seedIncidents } from '../fixtures/incidents'
+import type { Incident } from '../types/incident'
 
 const store = createStore<Incident>('incidents', seedIncidents)
 

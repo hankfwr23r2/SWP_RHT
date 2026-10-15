@@ -4,7 +4,7 @@ import { bookingsApi, customerBookingsApi } from './bookings'
 import { busyResources } from '../lib/booking'
 import { crewApi } from './fleet'
 import { noticesApi } from './notices'
-import { CUSTOMER } from './mock/orders'
+import { CUSTOMER } from '../fixtures/orders'
 
 const SP = { id: 'KD-01', name: 'Phạm Văn Hưng' }
 const CO = { id: 'DP-01', name: 'Trần Minh' }
