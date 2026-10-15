@@ -27,6 +27,7 @@
 @REM   MVNW_VERBOSE - true: enable verbose log; others: silence the output
 @REM ----------------------------------------------------------------------------
 
+@IF "%JAVA_HOME%"=="" IF EXIST "C:\Program Files\Java\jdk-21.0.12.1" SET "JAVA_HOME=C:\Program Files\Java\jdk-21.0.12.1"
 @IF "%__MVNW_ARG0_NAME__%"=="" (SET __MVNW_ARG0_NAME__=%~nx0)
 @SET __MVNW_CMD__=
 @SET __MVNW_ERROR__=
@@ -46,6 +47,9 @@
 : end batch / begin powershell #>
 
 $ErrorActionPreference = "Stop"
+if (!$env:JAVA_HOME -and (Test-Path "C:\Program Files\Java\jdk-21.0.12.1")) {
+  $env:JAVA_HOME = "C:\Program Files\Java\jdk-21.0.12.1"
+}
 if ($env:MVNW_VERBOSE -eq "true") {
   $VerbosePreference = "Continue"
 }
