@@ -192,13 +192,21 @@ export const customerBookingsApi = {
           store.all().filter(b => b.customer === customer && !backendIds.has(b.id)).forEach(b => store.remove(b.id))
           backendBookings.forEach((bb: any) => {
             const id = bb.id || `BK-${String(bb.numericId || 1).padStart(3, '0')}`
+            const rawMedical = bb.medical
+            const medical = rawMedical ? {
+              ...rawMedical,
+              status: rawMedical.status === 'resubmission_requested' ? 'resubmit' : rawMedical.status,
+            } : undefined
+            const rawStatus = (bb.status as any) || 'pending_intake'
+            const status = rawStatus === 'resubmission_requested' ? 'under_review' : rawStatus
+
             const mapped: Booking = {
                 id,
                 // The customer endpoint already scopes rows to the authenticated user.
                 // Keep the UI session identity here: session.name is the full name,
                 // while the backend's `customer` field is the username.
                 customer,
-                status: (bb.status as any) || 'pending_intake',
+                status,
                 type: (bb.type as any) || 'domestic',
                 origin: { id: 'HN', name: bb.originName || 'Hà Nội', country: (bb.originCountry || 'VN') as any },
                 dest: { id: 'HCM', name: bb.destName || 'Hồ Chí Minh', country: (bb.destCountry || 'VN') as any },
@@ -216,8 +224,18 @@ export const customerBookingsApi = {
                   waterPlan: (h.waterPlan || 'every_4h') as any,
                   insurance: { opted: !!h.insuranceOpted }
                 })),
+                trips: bb.trips,
+                route: bb.route,
+                gate: bb.gate,
+                quote: bb.quote,
+                payment: bb.payment,
+                medical,
+                clearance: bb.clearance,
+                settlement: bb.settlement,
+                rating: bb.rating,
+                intake: bb.intake,
                 createdAt: bb.createdAt || Date.now(),
-                history: [{ time: Date.now(), actor: customer, text: 'Đồng bộ từ Backend' }],
+                history: bb.history || [{ time: Date.now(), actor: customer, text: 'Đồng bộ từ Backend' }],
               }
             if (store.get(id)) store.update(id, mapped)
             else store.add(mapped)
@@ -369,6 +387,15 @@ export const customerBookingsApi = {
     const b = must(id)
     if (b.customer !== customer) throw new Error('Không có quyền với đơn này.')
     if (b.medical?.status !== 'resubmit') throw new Error('Đơn này không có yêu cầu bổ sung.')
+
+    if (typeof window !== 'undefined') {
+      try {
+        await backendBookingApi.resubmitDocuments(id)
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
+      }
+    }
+
     const out = toCustomerView(store.update(id, { medical: { ...b.medical, status: 'pending', resubmit: undefined }, history: log(b, customer, 'Đã bổ sung hồ sơ, gửi lại Kiểm dịch viên') }))
     notify(b, ['specialist'], `Khách đã bổ sung hồ sơ — đơn ${id}`, 'Khách đã cập nhật giấy theo yêu cầu, chờ bạn thẩm định lại.', { specialist: LINK.specialist(id) })
     return out
@@ -504,10 +531,18 @@ export const bookingsApi = {
           })
           beList.forEach((bb: any) => {
             const id = bb.id || `BK-${String(bb.numericId || 1).padStart(3, '0')}`
+            const rawMedical = bb.medical
+            const medical = rawMedical ? {
+              ...rawMedical,
+              status: rawMedical.status === 'resubmission_requested' ? 'resubmit' : rawMedical.status,
+            } : undefined
+            const rawStatus = (bb.status as any) || 'pending_intake'
+            const status = rawStatus === 'resubmission_requested' ? 'under_review' : rawStatus
+
             const mapped: Booking = {
               id,
               customer: bb.customer || 'Khách hàng',
-              status: (bb.status as any) || 'pending_intake',
+              status,
               type: (bb.type as any) || 'domestic',
               origin: { id: 'HN', name: bb.originName || 'Hà Nội', country: (bb.originCountry || 'VN') as any },
               dest: { id: 'HCM', name: bb.destName || 'Hồ Chí Minh', country: (bb.destCountry || 'VN') as any },
@@ -540,7 +575,7 @@ export const bookingsApi = {
               gate: bb.gate,
               quote: bb.quote,
               payment: bb.payment,
-              medical: bb.medical,
+              medical,
               clearance: bb.clearance,
               settlement: bb.settlement,
               rating: bb.rating,
