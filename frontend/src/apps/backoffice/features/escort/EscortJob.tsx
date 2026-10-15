@@ -75,7 +75,7 @@ export function EscortJob({ b, t, reload }: { b: Booking; t: VehicleTrip; reload
   return (
     <>
       <EscortSteps b={b} t={t} run={run} />
-      {t.run?.startedAt && !t.run.deliveredAt && <SosPanel b={b} t={t} run={run} />}
+      {(b.status === 'in_transit' || (t.run?.startedAt && !t.run.deliveredAt)) && <SosPanel b={b} t={t} run={run} />}
     </>
   )
 }

@@ -2,21 +2,24 @@ import apiClient, { type ApiResponse } from './client'
 import type { BackendBookingResponse } from './bookings'
 
 export interface ExpenseItemPayload {
+  id: string
   category: string
-  label: string
+  description: string
   photo: string
   amount: number
-  payer?: 'customer' | 'company'
+  payer: 'customer' | 'carrier'
 }
 
 export interface SubmitExpensesPayload {
-  note?: string
+  tripId?: string
+  driverName?: string
   expenses?: ExpenseItemPayload[]
 }
 
 export interface IssueSettlementPayload {
-  adjustments?: Array<{ label: string; amount: number; payer?: string }>
-  payers?: Record<string, string>
+  managerName?: string
+  items?: ExpenseItemPayload[]
+  adjustment?: number
   note?: string
 }
 

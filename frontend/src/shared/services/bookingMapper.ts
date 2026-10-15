@@ -1,9 +1,10 @@
 // Chuyển đơn từ backend (BookingResponse) sang kiểu Booking của frontend.
 // Không điền giá trị mặc định giả: trường backend chưa trả thì để trống hoặc không có.
 import type { BackendBookingResponse } from '../api/bookings'
-import type { BookingStatus } from '../config/booking-rules'
+import type { BackendIncidentResponse } from '../api/incidents'
+import type { BookingStatus, IncidentKind } from '../config/booking-rules'
 import type { CountryCode } from '../config/network'
-import type { Booking, BookingHorse, Clearance, HistoryEntry, MedicalReview, Payment, PlaceRef, Quote, Rating, RoutePlan, Settlement, VehicleTrip } from '../types/booking'
+import type { Booking, BookingHorse, Clearance, HistoryEntry, Incident, IncidentExpense, MedicalReview, Payment, PlaceRef, Quote, Rating, RoutePlan, Settlement, VehicleTrip } from '../types/booking'
 import { COUNTRY_LOCATIONS, PLACES } from '../config/network'
 
 const allPlaces = (): { id: string; name: string; country: CountryCode }[] => [
@@ -46,6 +47,53 @@ function tripOf(t: NonNullable<BackendBookingResponse['trips']>[number]): Vehicl
   return { tripId, vehicleId, driverId: driverId ?? '', escortId: escortId ?? '', horseIds, acks: {}, ...rest } as VehicleTrip
 }
 
+export function incidentKindOf(value: string): IncidentKind | undefined {
+  switch (value.toUpperCase()) {
+    case 'HORSE_HEALTH': return 'horse_health'
+    case 'VEHICLE_BREAKDOWN': return 'vehicle_breakdown'
+    case 'TRAFFIC_JAM':
+    case 'TRAFFIC_DELAY': return 'traffic_jam'
+    default: return undefined
+  }
+}
+
+export function incidentStatusOf(value: string): Incident['status'] {
+  switch (value.toLowerCase()) {
+    case 'proposed':
+    case 'pending_approval': return 'pending_approval'
+    case 'active': return 'active'
+    case 'resolved': return 'resolved'
+    default: return 'reported'
+  }
+}
+
+export function incidentOf(response: BackendIncidentResponse): Incident | undefined {
+  const kind = incidentKindOf(response.incidentType)
+  if (!kind || !response.tripId || !response.location || response.createdAt === undefined) return undefined
+  const expenses: IncidentExpense[] = (response.expenses ?? []).map(expense => ({
+    ...expense,
+    category: expense.category as IncidentExpense['category'],
+    payer: expense.payer === 'customer' ? 'customer' : 'carrier',
+  }))
+  return {
+    id: response.formattedId,
+    tripId: response.tripId,
+    kind,
+    reportedBy: response.reporter ?? '',
+    reportedAt: response.createdAt,
+    location: response.location,
+    photo: response.photoUrl ?? '',
+    note: response.description ?? '',
+    status: incidentStatusOf(response.status),
+    expenses,
+    ...(response.plan ? { plan: response.plan } : {}),
+    ...(response.rejection ? { rejection: response.rejection } : {}),
+    ...(response.approval ? { approval: response.approval } : {}),
+    ...(response.fitConfirmedAt !== undefined ? { fitConfirmedAt: response.fitConfirmedAt } : {}),
+    ...(response.resolvedAt !== undefined ? { resolvedAt: response.resolvedAt } : {}),
+  }
+}
+
 export function toBooking(r: BackendBookingResponse, customer?: string): Booking {
   const history: HistoryEntry[] = r.history ?? []
   const waybillAt = num(r.payment?.paidAt) ?? r.createdAt
@@ -84,6 +132,7 @@ export function toBooking(r: BackendBookingResponse, customer?: string): Booking
   if (r.clearance) b.clearance = r.clearance as Clearance
   if (r.settlement) b.settlement = r.settlement as Settlement
   if (r.rating) b.rating = r.rating as Rating
+  const incidents = (r.incidents ?? []).map(incidentOf).filter((incident): incident is Incident => !!incident)
+  if (incidents.length) b.incidents = incidents
   return b
 }
-

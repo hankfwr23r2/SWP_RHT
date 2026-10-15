@@ -1,14 +1,18 @@
 import apiClient, { type ApiResponse } from './client'
+import type { IncidentPlan } from '../types/booking'
 
 export interface BackendIncidentResponse {
   id: number
   formattedId: string // INC-001
   bookingId: number
   bookingCode: string // BK-003
-  reporter: string
+  reporter?: string
+  tripId?: string
+  location?: { lat: number; lng: number }
+  photoUrl?: string
   incidentName: string
   incidentType: string
-  description: string
+  description?: string
   status: string // open, proposed, active, resolved, rejected
   resolutionType?: string
   partnerName?: string
@@ -19,37 +23,56 @@ export interface BackendIncidentResponse {
   costBearer?: string
   invoiceUrl?: string
   directive?: string
+  plan?: IncidentPlan
+  expenses?: Array<{ id: string; category: string; label: string; photo: string; amount: number; payer: string; at: number; by: string }>
+  rejection?: { reason: string; at: number; by: string }
+  approval?: { at: number; by: string }
+  fitConfirmedAt?: number
+  newEta?: number
   createdAt?: number
   resolvedAt?: number
 }
 
 export interface ReportIncidentPayload {
   bookingId: number
-  reporter: string
+  tripId: string
   incidentName: string
   incidentType: string
   description: string
-  photoUrl?: string
+  photoUrl: string
+  latitude: number
+  longitude: number
 }
 
 export interface ProposeExternalPlanPayload {
-  partnerName: string
-  partnerService: string
+  resolutionType: string
+  description?: string
+  plan: IncidentPlan
+  partnerName?: string
+  partnerService?: string
   partnerPhone?: string
-  estimatedCost: number
-  directive?: string
+  estimatedCost?: number
+  costBearer?: string
 }
 
 export interface ApproveIncidentPlanPayload {
   directive?: string
   costBearer?: string
-  approvedAmount?: number
+  approvedCost?: number
 }
 
 export interface ResolveIncidentPayload {
-  actualCost: number
-  invoiceUrl: string
+  actualCost?: number
+  invoiceUrl?: string
   note?: string
+}
+
+export interface AddIncidentExpensePayload {
+  category: string
+  label: string
+  photo: string
+  amount: number
+  payer: string
 }
 
 export const backendIncidentApi = {
@@ -68,6 +91,26 @@ export const backendIncidentApi = {
   // 3. Manager phê duyệt phương án & bảo lãnh chi phí -> POST /api/v1/incidents/{id}/approve-plan
   approvePlan: async (id: number, payload: ApproveIncidentPlanPayload): Promise<BackendIncidentResponse> => {
     const res = await apiClient.post<ApiResponse<BackendIncidentResponse>>(`/incidents/${id}/approve-plan`, payload)
+    return res.data.data
+  },
+
+  rejectPlan: async (id: number, reason: string): Promise<BackendIncidentResponse> => {
+    const res = await apiClient.post<ApiResponse<BackendIncidentResponse>>(`/incidents/${id}/reject-plan`, { reason })
+    return res.data.data
+  },
+
+  addExpense: async (id: number, payload: AddIncidentExpensePayload): Promise<BackendIncidentResponse> => {
+    const res = await apiClient.post<ApiResponse<BackendIncidentResponse>>(`/incidents/${id}/expenses`, payload)
+    return res.data.data
+  },
+
+  confirmFit: async (id: number): Promise<BackendIncidentResponse> => {
+    const res = await apiClient.post<ApiResponse<BackendIncidentResponse>>(`/incidents/${id}/confirm-fit`)
+    return res.data.data
+  },
+
+  resumeJourney: async (id: number): Promise<BackendIncidentResponse> => {
+    const res = await apiClient.post<ApiResponse<BackendIncidentResponse>>(`/incidents/${id}/resume`)
     return res.data.data
   },
 

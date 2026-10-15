@@ -1,17 +1,24 @@
 // Service đơn đặt chuyến (Flow 1–6): chỉ gọi API Spring Boot, không giữ dữ liệu ở máy khách.
 // Chức năng mà backend chưa có hoặc đang làm lệch quy trình (docs/PRD.md) không nối API: gọi vào sẽ báo "Backend chưa hỗ trợ".
-import { CLEARANCE_DOC, type ClearanceDocType, type Payer } from '../config/booking-rules'
-import { crewAssigned, finalizeQuote, quoteLines } from '../lib/booking'
-import type { Adjustment, Booking, Incident, Rating, RoutePlan, StaffRef, VehicleTrip } from '../types/booking'
-import { backendBookingApi } from '../api/bookings'
+import { CLEARANCE_DOC, INCIDENT_KIND, type ClearanceDocType, type IncidentKind, type Payer } from '../config/booking-rules'
+import { crewAssigned, defaultPayer, finalizeQuote, incidentLocation, quoteLines } from '../lib/booking'
+import type { Adjustment, Booking, Incident, IncidentExpense, IncidentPlan, Rating, RoutePlan, StaffRef, VehicleTrip } from '../types/booking'
+import { backendBookingApi, type BackendBookingResponse } from '../api/bookings'
+import { backendIncidentApi, type BackendIncidentResponse } from '../api/incidents'
 import { backendSettlementApi } from '../api/settlements'
 import { specialistApi } from '../api/specialist'
-import { toBooking } from './bookingMapper'
+import { incidentKindOf, incidentStatusOf, toBooking } from './bookingMapper'
 import { vehiclesApi, crewApi } from './fleet'
 
 // Gọi vào là báo lỗi rõ chức năng nào backend chưa làm; giao diện hiện lỗi này ở thông báo.
 const notSupported = (what: string) => async (..._args: unknown[]): Promise<never> => {
   throw new Error(`Backend chưa hỗ trợ: ${what}.`)
+}
+
+function numericId(id: string, prefix: string): number {
+  const match = new RegExp(`^(?:${prefix}-)?(\\d+)$`, 'i').exec(id.trim())
+  if (!match) throw new Error(`Mã ${prefix.toLowerCase()} không hợp lệ: ${id}.`)
+  return Number(match[1])
 }
 
 function backofficeRole(): string | null {
@@ -40,6 +47,33 @@ const toCustomerView = (b: Booking): CustomerBookingView => {
   else delete out.route
   if (!SHOW_TEAM.includes(b.status)) delete out.route
   return out
+}
+
+function customerIncidentOf(response: BackendIncidentResponse): CustomerIncident | undefined {
+  const kind = incidentKindOf(response.incidentType)
+  if (!kind || response.createdAt === undefined) return undefined
+  return {
+    id: response.formattedId,
+    kind,
+    status: incidentStatusOf(response.status),
+    reportedAt: response.createdAt,
+    ...(response.resolvedAt !== undefined ? { resolvedAt: response.resolvedAt } : {}),
+    ...(incidentStatusOf(response.status) === 'active' && response.newEta !== undefined
+      ? { newEta: response.newEta }
+      : {}),
+  }
+}
+
+function toCustomerBooking(
+  response: BackendBookingResponse,
+  incidents: BackendIncidentResponse[],
+  customer: string,
+): CustomerBookingView {
+  const booking = toCustomerView(toBooking(response, customer))
+  const publicIncidents = incidents.map(customerIncidentOf)
+    .filter((incident): incident is CustomerIncident => !!incident)
+  if (publicIncidents.length) booking.incidents = publicIncidents
+  return booking
 }
 
 // Thông tin từng xe của đơn cho khách: biển số, tài xế, hộ tống, ngựa trên xe. Chỉ của đơn mình, sau khi đã có báo giá.
@@ -81,10 +115,19 @@ export const publicBookingsApi = {
 
 // Dành cho app khách
 export const customerBookingsApi = {
-  list: async (customer: string): Promise<CustomerBookingView[]> =>
-    (await backendBookingApi.getCustomerBookings()).map(r => toCustomerView(toBooking(r, customer))).sort((a, b) => b.createdAt - a.createdAt),
-  get: async (customer: string, id: string): Promise<CustomerBookingView | undefined> =>
-    toCustomerView(toBooking(await backendBookingApi.getCustomerBookingById(id), customer)),
+  list: async (customer: string): Promise<CustomerBookingView[]> => {
+    const bookings = await backendBookingApi.getCustomerBookings()
+    const withIncidents = await Promise.all(bookings.map(async booking => ({
+      ...booking,
+      incidents: await backendIncidentApi.getByBooking(booking.numericId),
+    })))
+    return withIncidents.map(r => toCustomerBooking(r, r.incidents, customer)).sort((a, b) => b.createdAt - a.createdAt)
+  },
+  get: async (customer: string, id: string): Promise<CustomerBookingView | undefined> => {
+    const booking = await backendBookingApi.getCustomerBookingById(id)
+    const incidents = await backendIncidentApi.getByBooking(booking.numericId)
+    return toCustomerBooking(booking, incidents, customer)
+  },
   create: async (customer: string, input: NewBookingInput): Promise<CustomerBookingView> => {
     // PRD mục 8.2: khách có đơn quá hạn thanh toán quyết toán thì chưa đặt được đơn mới (backend chưa kiểm)
     if ((await backendBookingApi.getCustomerBookings()).some(b => b.status === 'payment_overdue')) throw new Error('Bạn có đơn quá hạn thanh toán quyết toán nên chưa đặt được đơn mới. Vui lòng thanh toán trước.')
@@ -135,12 +178,29 @@ export const customerBookingsApi = {
 // Danh sách đơn theo vai trò đang đăng nhập. Driver, Escort: backend chưa có API đơn của chuyến mình nên chưa có dữ liệu.
 async function listForRole() {
   const role = backofficeRole()
-  if (role === 'coordinator') return backendBookingApi.getCoordinatorBookings()
+  if (role === 'driver' || role === 'escort') {
+    const bookings = await backendBookingApi.getAssignedBookings()
+    const incidents = await Promise.all(bookings.map(booking => backendIncidentApi.getByBooking(booking.numericId)))
+    return bookings.map((booking, index) => ({ ...booking, incidents: incidents[index] }))
+  }
+  if (role === 'coordinator') {
+    const [bookings, incidents] = await Promise.all([backendBookingApi.getCoordinatorBookings(), backendIncidentApi.list()])
+    return bookings.map(booking => ({
+      ...booking,
+      incidents: incidents.filter(incident => incident.bookingId === booking.numericId),
+    }))
+  }
   if (role === 'specialist') {
     const [verify, clearance] = await Promise.all([specialistApi.getVerificationBookings(), specialistApi.getClearanceBookings()])
     return [...verify, ...clearance.filter(c => !verify.some(v => v.id === c.id))]
   }
-  if (role === 'manager' || role === 'admin') return backendBookingApi.getAllBookings()
+  if (role === 'manager' || role === 'admin') {
+    const [bookings, incidents] = await Promise.all([backendBookingApi.getAllBookings(), backendIncidentApi.list()])
+    return bookings.map(booking => ({
+      ...booking,
+      incidents: incidents.filter(incident => incident.bookingId === booking.numericId),
+    }))
+  }
   return []
 }
 
@@ -219,20 +279,70 @@ export const bookingsApi = {
   completeDelivery: notSupported('Driver hoàn tất giao ngựa (backend dùng trạng thái ngoài PRD)') as (id: string, tripId: string, by: string) => Promise<Booking>,
   confirmHome: notSupported('Driver xác nhận đã về trụ sở (backend chỉ đổi trạng thái xe)') as (id: string, tripId: string, by: string, photo: string) => Promise<Booking>,
 
-  // ===== Flow 5: sự cố khẩn cấp. Mô hình của backend (đội ngoài) khác PRD mục 6 =====
-  reportIncident: notSupported('báo sự cố SOS (backend không trả sự cố theo xe)') as (id: string, tripId: string, by: string, kind: Incident['kind'], photo: string, note: string) => Promise<Booking>,
-  planIncident: notSupported('Điều phối viên lập phương án sự cố trên bản đồ') as (id: string, incidentId: string, by: string, input: Record<string, unknown>) => Promise<Booking>,
-  rejectIncident: notSupported('Manager trả lại phương án sự cố') as (id: string, incidentId: string, by: string, reason: string) => Promise<Booking>,
-  approveIncident: notSupported('Manager duyệt phương án sự cố') as (id: string, incidentId: string, by: string) => Promise<Booking>,
-  addIncidentExpense: notSupported('kê chi phí sự cố') as (id: string, incidentId: string, by: string, input: Record<string, unknown>) => Promise<Booking>,
-  confirmFit: notSupported('Escort xác nhận ngựa đủ sức đi tiếp') as (id: string, incidentId: string, by: string) => Promise<Booking>,
-  resumeJourney: notSupported('Driver tiếp tục hành trình sau sự cố') as (id: string, incidentId: string, by: string) => Promise<Booking>,
+  // ===== Flow 5: sự cố khẩn cấp =====
+  reportIncident: async (id: string, tripId: string, _by: string, kind: IncidentKind, photo: string, note: string, booking: Booking, trip: VehicleTrip) => {
+    const location = incidentLocation(booking, trip)
+    return backendIncidentApi.report({
+      bookingId: numericId(id, 'BK'),
+      tripId,
+      incidentName: INCIDENT_KIND[kind].label,
+      incidentType: kind.toUpperCase(),
+      description: note.trim(),
+      photoUrl: photo,
+      latitude: location.lat,
+      longitude: location.lng,
+    })
+  },
+  planIncident: async (_id: string, incidentId: string, by: string, input: Omit<IncidentPlan, 'at' | 'by'>) => {
+    const rescue = input.rescue
+    return backendIncidentApi.proposeExternal(numericId(incidentId, 'INC'), {
+      resolutionType: input.action === 'reroute' ? 'REROUTE' : 'EXTERNAL_PARTNER',
+      description: input.note,
+      plan: { ...input, at: Date.now(), by },
+      partnerName: rescue?.name,
+      partnerService: rescue ? 'Cứu hộ phương tiện' : input.station ? 'Đưa ngựa tới trạm nghỉ' : undefined,
+      partnerPhone: rescue?.phone,
+    })
+  },
+  rejectIncident: async (_id: string, incidentId: string, _by: string, reason: string) =>
+    backendIncidentApi.rejectPlan(numericId(incidentId, 'INC'), reason.trim()),
+  approveIncident: async (_id: string, incidentId: string, _by: string) =>
+    backendIncidentApi.approvePlan(numericId(incidentId, 'INC'), {}),
+  addIncidentExpense: async (_id: string, incidentId: string, _by: string, input: Pick<IncidentExpense, 'category' | 'label' | 'photo' | 'amount'>, incident: Incident) =>
+    backendIncidentApi.addExpense(numericId(incidentId, 'INC'), {
+      ...input,
+      label: input.label.trim() || input.category,
+      payer: defaultPayer(incident.kind, input.category),
+    }),
+  confirmFit: async (_id: string, incidentId: string, _by: string) =>
+    backendIncidentApi.confirmFit(numericId(incidentId, 'INC')),
+  resumeJourney: async (_id: string, incidentId: string, _by: string) =>
+    backendIncidentApi.resumeJourney(numericId(incidentId, 'INC')),
 
   // ===== Flow 6: quyết toán =====
-  submitExpenses: async (id: string, _by: string): Promise<Booking> =>
-    toBooking(await backendSettlementApi.submitExpenses(id, { note: 'Tài xế gửi bảng kê chi phí phát sinh', expenses: [] })),
-  issueSettlement: async (id: string, _by: string, payers: Record<string, Payer> = {}): Promise<Booking> => {
-    await backendSettlementApi.issue(id, { payers, note: 'Quản lý đối soát và phát hành quyết toán' })
+  submitExpenses: async (id: string, _by: string): Promise<Booking> => {
+    const incidents = await backendIncidentApi.getByBooking(numericId(id, 'BK'))
+    const expenses = incidents.flatMap(incident => (incident.expenses ?? []).map(expense => ({
+      id: expense.id,
+      category: expense.category,
+      description: expense.label,
+      photo: expense.photo,
+      amount: expense.amount,
+      payer: expense.payer === 'customer' ? 'customer' as const : 'carrier' as const,
+    })))
+    return toBooking(await backendSettlementApi.submitExpenses(id, { expenses }))
+  },
+  issueSettlement: async (id: string, by: string, payers: Record<string, Payer> = {}): Promise<Booking> => {
+    const booking = await byId(id)
+    const items = (booking.incidents ?? []).flatMap(incident => incident.expenses.map(expense => ({
+      id: expense.id,
+      category: expense.category,
+      description: expense.label,
+      photo: expense.photo,
+      amount: expense.amount,
+      payer: payers[expense.id] ?? expense.payer,
+    })))
+    await backendSettlementApi.issue(id, { managerName: by, items, note: 'Quản lý đối soát và phát hành quyết toán' })
     return byId(id)
   },
 }

@@ -2,6 +2,7 @@ package com.example.racehorse_transport.controller;
 
 import com.example.racehorse_transport.dto.BookingDTO;
 import com.example.racehorse_transport.dto.CompleteDeliveryRequest;
+import com.example.racehorse_transport.dto.booking.BookingResponse;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.response.ApiResponse;
 import com.example.racehorse_transport.service.BookingService;
@@ -10,6 +11,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -50,6 +52,14 @@ public class BookingController {
         } else {
             return ResponseEntity.status(404).body(ApiResponse.error("Không tìm thấy đơn hàng ID: " + id));
         }
+    }
+
+    @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT')")
+    @GetMapping("/assigned")
+    public ResponseEntity<ApiResponse<List<BookingResponse>>> getAssignedBookings(
+            Authentication authentication) {
+        List<BookingResponse> bookings = bookingService.getAssignedBookings(authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success(bookings, "Lấy danh sách chuyến được phân công thành công"));
     }
 
     // 3. Dev 4: Bàn giao, ký nhận và kết thúc đơn hàng (Flow 6)

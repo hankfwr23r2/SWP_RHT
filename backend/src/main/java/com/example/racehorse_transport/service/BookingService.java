@@ -25,6 +25,8 @@ public interface BookingService {
     // Nghiệp vụ Flow 1: Manager xem đơn theo trạng thái (chờ tiếp nhận)
     List<BookingResponse> getBookingsByStatus(String status);
 
+    List<BookingResponse> getAssignedBookings(String username);
+
     // Nghiệp vụ Flow 1: Manager tiếp nhận đơn & kích hoạt thẩm định song song (pending_intake -> under_review)
     BookingResponse activateBooking(String bookingIdentifier, com.example.racehorse_transport.dto.manager.ActivateBookingRequest request);
     BookingResponse rejectBooking(String bookingIdentifier, com.example.racehorse_transport.dto.manager.RejectBookingRequest request);
@@ -46,4 +48,3 @@ public interface BookingService {
     // Dev 4: Bàn giao, ký nhận, kết thúc đơn hàng (Flow 6)
     boolean completeBookingDelivery(Integer bookingId, String recipientName, String recipientSignature, String note);
 }
-

@@ -108,7 +108,7 @@ export function DriverJob({ b, t, reload }: { b: Booking; t: VehicleTrip; reload
     <>
       {t.run?.startedAt && !t.run.deliveredAt && <div className="alert alert-info" style={{ marginBottom: 12 }}><i className="fa-solid fa-truck-fast" /><div><b>{spotLabel(t)}</b></div></div>}
       <DriverSteps b={b} t={t} run={run} />
-      {t.run?.startedAt && !t.run.deliveredAt && <SosPanel b={b} t={t} run={run} />}
+      {(b.status === 'in_transit' || (t.run?.startedAt && !t.run.deliveredAt)) && <SosPanel b={b} t={t} run={run} />}
       {b.status === 'delivered_pending_settlement' && <SubmitExpensesPanel b={b} run={run} />}
     </>
   )

@@ -34,6 +34,50 @@ public class Incident {
     @JoinColumn(name = "LogID")
     private Log logID;
 
+    @Size(max = 100)
+    @Column(name = "trip_id", length = 100)
+    private String tripId;
+
+    @Size(max = 500)
+    @Column(name = "photo_url", length = 500)
+    private String photoUrl;
+
+    @Column(name = "location_lat")
+    private Double locationLat;
+
+    @Column(name = "location_lng")
+    private Double locationLng;
+
+    @Column(name = "plan_json", columnDefinition = "TEXT")
+    private String planJson;
+
+    @Column(name = "expenses_json", columnDefinition = "TEXT")
+    private String expensesJson;
+
+    @Column(name = "rejection_reason", columnDefinition = "TEXT")
+    private String rejectionReason;
+
+    @Column(name = "rejection_at")
+    private Instant rejectionAt;
+
+    @Size(max = 100)
+    @Column(name = "rejection_by", length = 100)
+    private String rejectionBy;
+
+    @Column(name = "approved_at")
+    private Instant approvedAt;
+
+    @Size(max = 100)
+    @Column(name = "approved_by", length = 100)
+    private String approvedBy;
+
+    @Column(name = "fit_confirmed_at")
+    private Instant fitConfirmedAt;
+
+    @Size(max = 100)
+    @Column(name = "fit_confirmed_by", length = 100)
+    private String fitConfirmedBy;
+
     @Size(max = 255)
     @Nationalized
     @Column(name = "incident_name")
