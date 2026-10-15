@@ -19,8 +19,7 @@ export function useFieldTrips(role: 'driver' | 'escort') {
   const me = crew?.find(c => c.role === role && c.name === session!.name)
   const key = role === 'driver' ? 'driverId' : 'escortId'
   const trips: FieldTrip[] = (all ?? [])
-    .filter(b => FIELD_STATUSES.includes(b.status))
-    .flatMap(b => (b.trips ?? []).filter(t => me && t[key] === me.id).map(t => ({ b, t })))
+    .flatMap(b => (b.trips ?? []).filter(t => me && t[key] === me.id && (FIELD_STATUSES.includes(b.status) || (t.homeReturn && !t.homeReturn.backAt))).map(t => ({ b, t })))
     .sort((x, y) => x.b.departAt - y.b.departAt || x.t.tripId.localeCompare(y.t.tripId))
   const trip = trips.find(x => x.t.tripId === selected) ?? trips[0]
   return {
