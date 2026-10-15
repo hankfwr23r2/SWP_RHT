@@ -16,9 +16,9 @@ import { PlacePicker } from '@shared/ui/PlacePicker'
 
 type Partner = 'KH' | 'LA'
 const PARTNERS: Partner[] = ['KH', 'LA']
-const TYPES: [TransportType, string, string, string][] = [
-  ['domestic', 'fa-truck', 'Trong nước', 'Đi và đến đều trong Việt Nam. Không qua cửa khẩu.'],
-  ['international', 'fa-earth-asia', 'Quốc tế', 'Từ Việt Nam sang Campuchia hoặc Lào, hoặc từ Campuchia hoặc Lào về Việt Nam, qua một cửa khẩu bạn chọn.'],
+const TYPES: [TransportType, string, string][] = [
+  ['domestic', 'fa-truck', 'Trong nước'],
+  ['international', 'fa-earth-asia', 'Quốc tế'],
 ]
 
 function Segment<T extends string>({ value, options, onChange, label }: { value: T | ''; options: [T, React.ReactNode][]; onChange: (v: T) => void; label: string }) {
@@ -106,11 +106,10 @@ export default function Step1RoutePage() {
         <div className="card" data-card>
           <div className="card-header"><h3><i className="fa-solid fa-signs-post" /> Loại chuyến</h3></div>
           <div className={s.typeGrid} role="radiogroup" aria-label="Loại chuyến">
-            {TYPES.map(([v, icon, title, desc]) => (
+            {TYPES.map(([v, icon, title]) => (
               <button key={v} type="button" role="radio" aria-checked={type === v} className={`${s.typeCard} ${type === v ? s.typeOn : ''}`} onClick={() => { setType(v); reset() }}>
                 <i className={`fa-solid ${icon}`} aria-hidden="true" />
                 <span className={s.typeTitle}>{title}</span>
-                <span className={s.typeDesc}>{desc}</span>
               </button>
             ))}
           </div>
