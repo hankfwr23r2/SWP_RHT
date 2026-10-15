@@ -16,6 +16,7 @@ import { backendIncidentApi } from '../api/incidents'
 import { backendDeliveryApi } from '../api/delivery'
 import { backendSettlementApi } from '../api/settlements'
 import { paymentApi } from '../api/payments'
+import { healthLogsApi } from '../api/healthLogs'
 
 
 const store = createStore<Booking>('bookings', () => import.meta.env?.MODE === 'test' ? seedBookings() : [])
@@ -1070,6 +1071,28 @@ export const bookingsApi = {
     if (!data.photo) throw new Error('Cần chụp ảnh ngựa trong khoang.')
     const entry: WelfareLog = { id: `WL-${run.welfare.length + 1}`, checkpointId: cp.id, at: Date.now(), by, ...data }
     run.welfare = [...run.welfare, entry]
+
+    if (typeof window !== 'undefined') {
+      try {
+        const bookingNum = Number(id.replace(/\D/g, '')) || undefined
+        for (const hid of t.horseIds) {
+          const horseNum = Number(hid.replace(/\D/g, ''))
+          if (horseNum) {
+            await healthLogsApi.create({
+              horseId: horseNum,
+              bookingId: bookingNum,
+              healthStatus: data.condition === 'normal' ? 'Bình thường' : data.condition === 'stress' ? 'Căng thẳng' : 'Đổ mồ hôi nhiều',
+              symptoms: data.note || (data.hay ? 'Đã bổ sung cỏ khô' : undefined),
+            })
+          }
+        }
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') {
+          console.warn('Lỗi ghi nhật ký an sinh lên Backend:', error)
+        }
+      }
+    }
+
     return commitTrips(b, by, `Nhật ký an sinh ${tripId}: ${data.condition === 'normal' ? 'bình thường' : data.condition === 'stress' ? 'căng thẳng' : 'đổ mồ hôi nhiều'}`)
   },
 
