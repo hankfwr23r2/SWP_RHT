@@ -3,7 +3,6 @@ import { useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { NoticeBell } from '@shared/ui/NoticeBell'
-import { ChangePasswordModal } from '@shared/ui/ChangePasswordModal'
 import { STAFF_MENUS } from './staffMenus'
 import { ROLE_LABEL, type StaffRole } from '@shared/types/role'
 import { HOME_OF } from './staffMenus'
@@ -17,7 +16,6 @@ export function StaffTopbar() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const [q, setQ] = useState('')
-  const [showPasswordModal, setShowPasswordModal] = useState(false)
   const initials = (session?.name ?? '').split(' ').filter(Boolean).slice(-2).map(w => w[0]).join('').toUpperCase()
   const role = session!.role as StaffRole
   // Mục menu khớp dài nhất với đường dẫn (trang chi tiết thuộc mục cha của nó)
@@ -25,7 +23,6 @@ export function StaffTopbar() {
   const search = (e: FormEvent) => { e.preventDefault(); if (q.trim()) navigate(`${SEARCH_IN[role]}?q=${encodeURIComponent(q.trim())}`) }
   return (
     <header className={s.topbar}>
-      <Link to={HOME_OF[role]} className={s.brand}><img src="/logo.png" alt="" className={s.brandMark} /><span>Vận chuyển Ngựa</span></Link>
       <Link to={HOME_OF[role]} className={s.account} title="Về trang chính">
         <span className={s.avatar}>{initials}</span>
         <span className={s.who}><b>{session?.name}</b><small>{session?.username.includes('@') ? session.username : ROLE_LABEL[role]}</small></span>
@@ -40,15 +37,8 @@ export function StaffTopbar() {
       </form>
       <div className={s.right}>
         <NoticeBell />
-        <button className={s.logout} onClick={() => setShowPasswordModal(true)} aria-label="Đổi mật khẩu" title="Đổi mật khẩu">
-          <i className="fa-solid fa-key" />
-        </button>
-        <button className={s.logout} onClick={() => { logout(); navigate('/login') }} aria-label="Đăng xuất" title="Đăng xuất">
-          <i className="fa-solid fa-arrow-right-from-bracket" />
-        </button>
+        <button className={s.logout} onClick={() => { logout(); navigate('/login') }} aria-label="Đăng xuất" title="Đăng xuất"><i className="fa-solid fa-arrow-right-from-bracket" /></button>
       </div>
-
-      {showPasswordModal && <ChangePasswordModal onClose={() => setShowPasswordModal(false)} />}
     </header>
   )
 }

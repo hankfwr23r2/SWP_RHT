@@ -1,7 +1,7 @@
 // Service đơn đặt chuyến (Flow 1–4). Tên hàm theo REST để sau này thay bằng API Spring Boot.
 // Mỗi hàm là một thao tác nghiệp vụ; trạng thái chỉ đổi qua các hàm này để giữ đúng cổng chuyển bước của PRD.
 import { BOOKING_STATUS, CLEARANCE_DOC, EXPENSE_CATEGORY, INCIDENT_ACTION, INCIDENT_KIND, MIN_REST_MINUTES, SETTLEMENT_GRACE_HOURS, publicStepOf, type ClearanceDocType, type ExpenseCategory, type IncidentAction, type IncidentKind, type Payer, type WelfareCondition } from '../config/booking-rules'
-import { CANCEL_AFTER_DEPOSIT, cancelRefund, crewAssigned, openIncidentOf, defaultPayer, incidentActionsFor, incidentLocation, pendingDeparture, needsFitCheck, settlementOf, blankClearance, buildCheckpoints, busyResources, canCompleteClearance, vehicleDocsOk, currentCheckpoint, gatesFor, deriveStatus, finalizeQuote, planHomeReturn, returnLate, isQuoteExpired, manifestDocuments, nextBookingId, quoteLines, reviewDone, tripIdFor, validateRoutePlan, waybillNoOf } from '../lib/booking'
+import { CANCEL_AFTER_DEPOSIT, cancelRefund, crewAssigned, openIncidentOf, defaultPayer, incidentActionsFor, incidentLocation, pendingDeparture, needsFitCheck, settlementOf, blankClearance, buildCheckpoints, busyResources, canCompleteClearance, vehicleDocsOk, currentCheckpoint, gatesFor, deriveStatus, finalizeQuote, isQuoteExpired, manifestDocuments, nextBookingId, quoteLines, reviewDone, tripIdFor, validateRoutePlan, waybillNoOf } from '../lib/booking'
 import { TRANSIT_STATIONS } from '../config/network'
 import type { Adjustment, Booking, Incident, IncidentPlan, Rating, ClearanceItem, HistoryEntry, MedicalReview, RoutePlan, SentBack, StaffRef, TripRun, VehicleTrip, WelfareLog } from '../types/booking'
 import { formatVND } from '../lib/format'
@@ -10,7 +10,6 @@ import { horsesApi } from './horses'
 import { pushNotice } from './notices'
 import { seedBookings } from './mock/bookings'
 import { createStore } from './store'
-import { backendBookingApi, type BackendBookingResponse } from '../api/bookings'
 
 const store = createStore<Booking>('bookings', seedBookings)
 
@@ -111,52 +110,6 @@ const toCustomerView = (b: Booking): CustomerBookingView => {
   return out
 }
 
-export function backendToBooking(b: BackendBookingResponse): Booking {
-  return {
-    id: b.id,
-    type: (b.type === 'international' ? 'international' : 'domestic') as any,
-    origin: {
-      id: b.originName || 'VN-ORIGIN',
-      name: b.originName || 'Điểm đón',
-      country: ((b.originCountry as any) || 'VN'),
-    },
-    dest: {
-      id: b.destName || 'VN-DEST',
-      name: b.destName || 'Điểm đến',
-      country: ((b.destCountry as any) || 'VN'),
-    },
-    departAt: b.departAt ?? Date.now(),
-    consignor: {
-      name: b.consignor?.name ?? '',
-      phone: b.consignor?.phone ?? '',
-      idNumber: '',
-      address: '',
-    },
-    consignee: {
-      name: b.consignee?.name ?? '',
-      phone: b.consignee?.phone ?? '',
-      idNumber: '',
-      address: '',
-    },
-    horses: (b.horses ?? []).map((h, i) => ({
-      horseId: h.horseId || `H-${b.numericId}-${i + 1}`,
-      name: h.name,
-      microchip: h.microchip ?? '',
-      breed: h.breed ?? 'Thoroughbred',
-      sex: (h.sex ?? 'stallion') as any,
-      stall: (h.stall ?? 'standard') as any,
-      feedPackage: (h.feedPackage ?? 'standard') as any,
-      waterPlan: (h.waterPlan ?? 'auto') as any,
-      insurance: { opted: !!h.insuranceOpted },
-    })),
-    customer: b.customer || 'Khách hàng',
-    createdAt: b.createdAt ?? Date.now(),
-    status: (b.status ?? 'pending_intake') as any,
-    history: [{ time: b.createdAt ?? Date.now(), actor: b.customer || 'Khách hàng', text: 'Gửi yêu cầu đặt đơn' }],
-  }
-}
-
-
 // Thông tin từng xe của đơn cho khách: biển số, tài xế, hộ tống, ngựa trên xe. Chỉ của đơn mình, sau khi đã có báo giá.
 export interface TripTeam {
   tripId: string
@@ -213,70 +166,17 @@ export const publicBookingsApi = {
 export const customerBookingsApi = {
   list: async (customer: string): Promise<CustomerBookingView[]> => {
     applySystemRules()
-    try {
-      const beList = await backendBookingApi.getCustomerBookings()
-      if (beList && beList.length > 0) {
-        for (const item of beList) {
-          if (!store.get(item.id)) {
-            store.add(backendToBooking(item))
-          }
-        }
-      }
-    } catch {
-      // Offline fallback
-    }
     return store.all().filter(b => b.customer === customer).map(toCustomerView).sort((a, b) => b.createdAt - a.createdAt)
   },
   get: async (customer: string, id: string): Promise<CustomerBookingView | undefined> => {
     applySystemRules()
-    let b = store.get(id)
-    if (!b && id.startsWith('BK-')) {
-      try {
-        const numId = parseInt(id.replace(/\D/g, ''), 10)
-        if (!isNaN(numId)) {
-          const beRes = await backendBookingApi.getCustomerBookingById(numId)
-          if (beRes) {
-            b = backendToBooking(beRes)
-            store.add(b)
-          }
-        }
-      } catch {
-        // Offline fallback
-      }
-    }
+    const b = store.get(id)
     return b && b.customer === customer ? toCustomerView(b) : undefined
   },
   create: async (customer: string, input: NewBookingInput): Promise<CustomerBookingView> => {
     const now = Date.now()
     if (store.all().some(o => o.customer === customer && o.status === 'payment_overdue')) throw new Error('Bạn có đơn quá hạn thanh toán quyết toán nên chưa đặt được đơn mới. Vui lòng thanh toán trước.')
-
-    let b: Booking
-    try {
-      const beRes = await backendBookingApi.create({
-        type: input.type,
-        originName: input.origin.name,
-        originCountry: input.origin.country,
-        destName: input.dest.name,
-        destCountry: input.dest.country,
-        departAt: input.departAt,
-        consignor: { name: input.consignor.name, phone: input.consignor.phone },
-        consignee: { name: input.consignee.name, phone: input.consignee.phone },
-        horses: input.horses.map(h => ({
-          horseId: h.horseId,
-          name: h.name,
-          microchip: h.microchip,
-          breed: h.breed,
-          sex: h.sex,
-          stall: h.stall,
-          feedPackage: h.feedPackage,
-          waterPlan: h.waterPlan,
-          insuranceOpted: h.insurance?.opted,
-        })),
-      })
-      b = backendToBooking(beRes)
-    } catch {
-      b = { ...input, id: nextBookingId(store.all()), customer, createdAt: now, status: 'pending_intake', history: [{ time: now, actor: customer, text: 'Gửi yêu cầu đặt đơn' }] }
-    }
+    const b: Booking = { ...input, id: nextBookingId(store.all()), customer, createdAt: now, status: 'pending_intake', history: [{ time: now, actor: customer, text: 'Gửi yêu cầu đặt đơn' }] }
     store.add(b)
     notify(b, ['manager'], `Đơn mới ${b.id}`, `${customer} vừa gửi đơn ${input.horses.length} ngựa, chờ tiếp nhận.`, { manager: LINK.manager.intake })
     return toCustomerView(b)
@@ -307,13 +207,6 @@ export const customerBookingsApi = {
       status: 'cancelled', cancellation: { at: Date.now(), reason: reason.trim(), by: 'customer', refund: 0 },
       history: log(b, customer, `Từ chối báo giá${reason.trim() ? `: ${reason.trim()}` : ''}`),
     }))
-    if (typeof window !== 'undefined') {
-      try {
-        await backendBookingApi.rejectQuote(id, { reason: reason.trim() })
-      } catch (e) {
-        console.warn('Backend rejectQuote sync error:', e)
-      }
-    }
     notify(b, ['manager', 'specialist', 'coordinator'], `Đơn ${id}: khách từ chối báo giá`, reason.trim() || 'Khách không đồng ý báo giá.')
     return out
   },
@@ -357,13 +250,6 @@ export const customerBookingsApi = {
       clearance: b.clearance ?? blankClearance(b.type),
       history: log(b, customer, `Đặt cọc 30%, cấp Vận đơn ${waybill.no}`),
     }))
-    if (typeof window !== 'undefined') {
-      try {
-        await backendBookingApi.payDeposit(id, { amount: b.quote!.deposit, transactionCode: `EQZ-${id.slice(-4)}-DEP` })
-      } catch (e) {
-        console.warn('Backend payDeposit sync error:', e)
-      }
-    }
     notify(b, ['manager', 'specialist', 'coordinator'], `Khách đã đặt cọc — đơn ${id}`, `Cọc ${formatVND(b.quote!.deposit)}, vận đơn ${waybill.no}. Bắt đầu làm giấy tờ và chuẩn bị chuyến.`, { specialist: LINK.specialist(id, true), coordinator: LINK.coordinator(id, true) })
     await notifyCrew(b, `Chuyến mới ${id}`, 'Lệnh điều xe đã phát xuống app. Xem tuyến, ngựa trên xe và nhận lệnh.')
     return out
@@ -410,41 +296,8 @@ const issueSettlementOf = (b: Booking, by: string, text: string): Booking => {
 
 // Dành cho app nội bộ
 export const bookingsApi = {
-  list: async (): Promise<Booking[]> => {
-    applySystemRules()
-    try {
-      const beList = await backendBookingApi.getAllBookings()
-      if (beList && beList.length > 0) {
-        for (const item of beList) {
-          if (!store.get(item.id)) {
-            store.add(backendToBooking(item))
-          }
-        }
-      }
-    } catch {
-      // Offline fallback
-    }
-    return structuredClone(store.all()).sort((a, b) => a.createdAt - b.createdAt)
-  },
-  get: async (id: string): Promise<Booking | undefined> => {
-    applySystemRules()
-    let b = store.get(id)
-    if (!b && id.startsWith('BK-')) {
-      try {
-        const numId = parseInt(id.replace(/\D/g, ''), 10)
-        if (!isNaN(numId)) {
-          const beRes = await backendBookingApi.getCustomerBookingById(numId)
-          if (beRes) {
-            b = backendToBooking(beRes)
-            store.add(b)
-          }
-        }
-      } catch {
-        // Offline fallback
-      }
-    }
-    return b ? structuredClone(b) : undefined
-  },
+  list: async (): Promise<Booking[]> => { applySystemRules(); return structuredClone(store.all()).sort((a, b) => a.createdAt - b.createdAt) },
+  get: async (id: string): Promise<Booking | undefined> => { applySystemRules(); return structuredClone(store.get(id)) },
 
   // Manager: tiếp nhận, giao Kiểm dịch viên và Điều phối viên. Xe, tài xế, hộ tống do Điều phối viên chọn khi lập lộ trình.
   activate: async (id: string, by: string, specialist: StaffRef, coordinator: StaffRef): Promise<Booking> => {
@@ -549,21 +402,6 @@ export const bookingsApi = {
       status: reviewDone(next) ? 'pending_commercial' : 'under_review',
       history: log(b, by, reviewDone(next) ? `Xác nhận ${trips.length} xe và lộ trình. Đủ điều kiện, chuyển quản lý duyệt báo giá` : `Xác nhận ${trips.length} xe và lộ trình`),
     }))
-    // Đồng bộ phương án xe và lộ trình xuống Backend SQL Server (khi chạy trên trình duyệt)
-    if (typeof window !== 'undefined') {
-      try {
-        await backendBookingApi.confirmFleetPlan(id, {
-          by,
-          trips: input.trips.map(t => ({ vehicleId: t.vehicleId, horseIds: t.horseIds })),
-          route: input.route,
-          gate: input.gate,
-          note: input.note,
-        })
-      } catch (apiErr) {
-        console.warn('Backend confirmFleetPlan sync notification:', apiErr)
-      }
-    }
-
     notify(b, ['manager'], `Điều phối viên đã chốt xe và lộ trình — đơn ${id}`, reviewDone(next) ? `${trips.length} xe. Đơn đã đủ điều kiện, chờ bạn duyệt báo giá.` : `${trips.length} xe. Còn chờ Kiểm dịch viên thẩm định hồ sơ ngựa.`, { manager: reviewDone(next) ? LINK.manager.approvals : LINK.manager.intake })
     return out
   },
@@ -579,13 +417,6 @@ export const bookingsApi = {
       ? { medical: { status: 'pending' } }
       : { plan: undefined, route: undefined, trips: undefined, gate: undefined } // chọn lại xe nên Driver, Escort đã chọn cũng bỏ
     const out = structuredClone(store.update(id, { ...patch, sentBack, status: 'under_review', history: log(b, by, `Trả lại ${label}: ${reason.trim()}`) }))
-    if (typeof window !== 'undefined') {
-      try {
-        await backendBookingApi.sendBack(id, { by, to, reason: reason.trim() })
-      } catch (e) {
-        console.warn('Backend sendBack sync error:', e)
-      }
-    }
     notify(out, [to], `Đơn ${id} được trả lại`, `Quản lý yêu cầu ${label.toLowerCase()}: ${reason.trim()}`, to === 'specialist' ? {} : { coordinator: LINK.coordinator(id) })
     return out
   },
@@ -608,15 +439,7 @@ export const bookingsApi = {
       if (busy.crew.has(p.escortId)) throw new Error('Nhân viên hộ tống đã được giữ cho đơn khác có ngày đi gần ngày này.')
     })
     const next = trips.map(t => { const p = picks.find(x => x.tripId === t.tripId)!; return { ...t, driverId: p.driverId, escortId: p.escortId } })
-    const out = structuredClone(store.update(id, { trips: next, history: log(b, by, `Chọn tài xế và hộ tống cho ${next.length} xe`) }))
-    if (typeof window !== 'undefined') {
-      try {
-        await backendBookingApi.assignCrew(id, { by, picks })
-      } catch (e) {
-        console.warn('Backend assignCrew sync error:', e)
-      }
-    }
-    return out
+    return structuredClone(store.update(id, { trips: next, history: log(b, by, `Chọn tài xế và hộ tống cho ${next.length} xe`) }))
   },
 
   // Manager: dòng báo giá do hệ thống tính (chưa gồm phụ phí và chiết khấu)
@@ -637,21 +460,6 @@ export const bookingsApi = {
     const { lines } = await bookingsApi.quoteDraft(id)
     const quote = finalizeQuote(lines, adjustments.filter(a => a.label.trim() && a.amount !== 0), Date.now(), by)
     const out = structuredClone(store.update(id, { quote, status: 'awaiting_payment', history: log(b, by, 'Duyệt và gửi báo giá') }))
-    if (typeof window !== 'undefined') {
-      try {
-        await backendBookingApi.sendQuote(id, {
-          by,
-          adjustments: adjustments.filter(a => a.label.trim() && a.amount !== 0),
-          lines,
-          subtotal: quote.subtotal,
-          total: quote.total,
-          deposit: quote.deposit,
-          balance: quote.balance,
-        })
-      } catch (e) {
-        console.warn('Backend sendQuote sync error:', e)
-      }
-    }
     notify(b, ['customer'], `Báo giá đơn ${id}`, `Tổng ${formatVND(quote.total)}, đặt cọc ${formatVND(quote.deposit)} trong 48 giờ.`)
     return out
   },
@@ -886,25 +694,74 @@ export const bookingsApi = {
     const now = Date.now()
     cp.doneAt = now; cp.returnedOriginals = true
     run.deliveredAt = now
-    t.homeReturn = planHomeReturn(b, now) // giao ở nước ngoài thì Driver và Escort chạy về trụ sở
     const out = commitTrips(b, by, `Xe ${tripId} hoàn tất giao ngựa`)
     notify(b, ['customer', 'manager'], `Xe ${tripId} đã giao ngựa — đơn ${b.id}`, out.status === 'delivered_pending_settlement' ? 'Mọi xe của đơn đã giao xong.' : 'Còn xe khác của đơn đang trên đường.')
     return out
   },
 
-  // Driver: xác nhận cả xe (Driver và Escort) đã về trụ sở. Chống câu giờ: chỉ bấm được sau mốc tối thiểu và phải có ảnh chụp trực tiếp tại trụ sở.
-  confirmHome: async (id: string, tripId: string, by: string, photo: string): Promise<Booking> => {
+  // Driver: báo quá hạn 2 giờ bàn giao ngựa do người nhận không tới / từ chối / chưa sẵn sàng, kích hoạt an sinh
+  reportDeliveryTimeout: async (
+    id: string,
+    tripId: string,
+    by: string,
+    input: {
+      timeoutReason: 'UNREACHABLE' | 'DESTINATION_UNREADY' | 'CONSIGNEE_REJECTED'
+      selectedAction: 'STABLE_NEARBY' | 'RETURN_TO_HQ'
+      partnerName?: string
+      partnerPhone?: string
+      estimatedCost?: number
+      note: string
+    }
+  ): Promise<Booking> => {
     const b = must(id)
-    const t = tripOf(b, tripId)
-    const h = t.homeReturn
-    if (!h) throw new Error('Chuyến này không có bước về trụ sở.')
-    if (h.backAt) throw new Error('Chuyến này đã xác nhận về trụ sở.')
-    const now = Date.now()
-    if (now < h.earliestAt) throw new Error('Chưa tới giờ có thể về tới trụ sở, chưa xác nhận được.')
-    if (!photo) throw new Error('Cần chụp ảnh tại trụ sở.')
-    h.backAt = now; h.photo = photo; h.by = by
-    const out = commitTrips(b, by, `Xe ${tripId}: tài xế và hộ tống đã về trụ sở${returnLate(t, now) ? ' (trễ so với giờ dự kiến)' : ''}`)
-    notify(b, ['manager', 'coordinator'], `Xe ${tripId} đã về trụ sở — đơn ${id}`, 'Tài xế và hộ tống đã sẵn sàng nhận chuyến mới.')
+    const t = liveTrip(b, tripId)
+    running(t)
+    const cp = currentCheckpoint(t)
+    if (cp?.type !== 'delivery' || !cp.arrivedAt) throw new Error('Chưa tới điểm giao.')
+
+    const reasonLabel =
+      input.timeoutReason === 'UNREACHABLE' ? 'Không liên lạc được người nhận' :
+      input.timeoutReason === 'DESTINATION_UNREADY' ? 'Cơ sở đích chưa sẵn sàng nhận' : 'Người nhận từ chối nhận'
+    const actionLabel =
+      input.selectedAction === 'STABLE_NEARBY'
+        ? `Thuê chuồng lưu trú khẩn cấp gần nhất${input.partnerName ? ` (${input.partnerName})` : ''}`
+        : 'Chở ngựa quay về Trụ sở chính Việt Nam'
+
+    const incId = INCIDENT_NO(b)
+    const inc: Incident = {
+      id: incId,
+      tripId,
+      kind: 'horse_health',
+      reportedBy: by,
+      reportedAt: Date.now(),
+      location: incidentLocation(b, t),
+      photo: cp.photo || 'handover_timeout.jpg',
+      note: `[Quá hạn 2h bàn giao] Lý do: ${reasonLabel}. Phương án: ${actionLabel}. Ghi chú: ${input.note.trim() || 'Không có'}`,
+      status: 'active',
+      plan: {
+        action: 'to_station',
+        station: input.partnerName || 'Trạm lưu trú khẩn cấp gần nhất',
+        restMinutes: 720,
+        newEta: Date.now() + 12 * 3600 * 1000,
+        note: actionLabel,
+        at: Date.now(),
+        by,
+      },
+      approval: { at: Date.now(), by: 'Hệ thống tự động kích hoạt an sinh' },
+      expenses: input.estimatedCost && input.estimatedCost > 0 ? [{
+        id: `EXP-${b.id.slice(-4)}-${(b.incidents ?? []).reduce((n, i) => n + i.expenses.length, 0) + 1}`,
+        category: 'holding_stable',
+        label: `Phí thuê chuồng / lưu ca xe quá hạn 2h (${actionLabel})`,
+        photo: 'chung_tu_luu_chuong.jpg',
+        amount: Math.round(input.estimatedCost),
+        payer: 'customer',
+        at: Date.now(),
+        by,
+      }] : [],
+    }
+    b.incidents = [...(b.incidents ?? []), inc]
+    const out = commitIncident(b, by, `Xe ${tripId} kích hoạt phương án an sinh quá hạn 2h: ${actionLabel}`)
+    notify(b, ['manager', 'coordinator', 'customer'], `Quá hạn 2h giao ngựa — đơn ${id}`, `Xe ${tripId}: ${actionLabel}. Chi phí phát sinh được tính vào quyết toán.`, { manager: LINK.manager.incidents, coordinator: '/coordinator/incidents' })
     return out
   },
 

@@ -4,7 +4,7 @@ import type { HorseDocType } from '../../config/booking-rules'
 import { DAY, HOUR } from '../../config/business-rules'
 import { AVG_SPEED_KMH } from '../../config/public-pricing'
 import { COUNTRY_LOCATIONS, RESCUE_POINTS, TRANSIT_STATIONS, type GeoPoint } from '../../config/network'
-import { findLocation, planHomeReturn, nearestTo, blankClearance, settlementOf, buildCheckpoints, buildRoutePlan, finalizeQuote, layoutLegs, manifestDocuments, quoteLines, tripIdFor, waybillNoOf } from '../../lib/booking'
+import { findLocation, nearestTo, blankClearance, settlementOf, buildCheckpoints, buildRoutePlan, finalizeQuote, layoutLegs, manifestDocuments, quoteLines, tripIdFor, waybillNoOf } from '../../lib/booking'
 import { daysFromToday } from '../../lib/dates'
 import type { IncidentPlan, PlanLine } from '../../types/booking'
 import type { Booking, BookingHorse, Clearance, ClearanceStatus, HorseDoc, Incident, HorseProfile, Party, PlaceRef, Sex, TripRun, VehicleTrip, WelfareLog } from '../../types/booking'
@@ -192,11 +192,6 @@ export const seedBookings = (): Booking[] => {
   const b19 = running(dom('ORD-2026-0119', 'KHO-BD', 'CLB-SG'), [bookingHorse(h(2))], [['VH-004', 'NV-04', [0]]], 34, 'delivered_pending_settlement', NOW - 9 * HOUR, 5, 'Trạm nghỉ Thủ Dầu Một', undefined, () => 3)
   b19.history = crewHist(b19, [9 * HOUR, 'Phạm Văn D', 'Bắt đầu hành trình'], [3 * HOUR, 'Phạm Văn D', 'Hoàn tất giao ngựa. Chờ tài xế gửi chi phí để quyết toán'])
 
-  // Đã giao ngựa ở Phnom Penh: tài xế và hộ tống đang chạy về trụ sở (khóa chọn cho đơn mới, PRD mục 10.2)
-  const b38 = running(intl('ORD-2026-0138', 'KHO-DN', 'KHO-PNH', 'Mộc Bài – Bavet'), [bookingHorse(h(5))], [['VH-010', 'NV-06', [0]]], 36, 'delivered_pending_settlement', NOW - 9 * HOUR, 6, 'Trạm nghỉ Củ Chi', NOW - 5 * HOUR, () => 99)
-  b38.trips![0].homeReturn = planHomeReturn(b38, NOW - 2 * HOUR)
-  b38.history = crewHist(b38, [9 * HOUR, crewName(b38.trips![0].driverId), 'Bắt đầu hành trình'], [2 * HOUR, crewName(b38.trips![0].driverId), 'Hoàn tất giao ngựa. Tài xế và hộ tống đang về trụ sở'])
-
   // Bốn đơn của khách demo để thử bản đồ theo dõi: xe đang dừng ở trạm, đang chạy giữa đường, đang ở cửa khẩu, vừa thông quan chờ rời cửa khẩu
   const track = (b: Booking, who: string, ...more: [number, string, string][]) => { b.history = crewHist(b, [5 * HOUR, who, 'Bắt đầu hành trình'], ...more); return b }
   const b34 = running(dom('ORD-2026-0134', 'KHO-DN', 'CLB-SG'), [bookingHorse(h(1))], [['VH-003', 'NV-05', [0]]], 36, 'in_transit', NOW - 3 * HOUR, 4, 'Trạm nghỉ Biên Hòa', undefined, () => 2)
@@ -323,7 +318,7 @@ export const seedBookings = (): Booking[] => {
     { ...b7, clearance: blankClearance('domestic'), intake: intake(NOW - 6 * DAY, staffKD2, staffDP3), medical: medicalOk(NOW - 5 * DAY, staffKD2.name), quote: draftQuote(b7, ['VH-006'], NOW - 3 * DAY),
       history: [log(NOW - 7 * DAY, CUSTOMER.name, 'Gửi yêu cầu đặt đơn'), log(NOW - 3 * DAY, 'Quản lý', 'Duyệt và gửi báo giá'), log(NOW - 1 * DAY, 'Hệ thống', 'Quá 48 giờ chưa đặt cọc: báo giá hết hạn, nhả xe và nhân sự')] },
 
-    b10, b11, b12, b13, b15, b16, b17, b18, b19, b20, b21, b22, b23, b25, b26, b27, b28, b29, b30, b34, b35, b36, b37, b38,
+    b10, b11, b12, b13, b15, b16, b17, b18, b19, b20, b21, b22, b23, b25, b26, b27, b28, b29, b30, b34, b35, b36, b37,
   ]
   // Xe, tài xế, hộ tống do Điều phối viên chọn khi lập lộ trình: đơn chưa chốt phương án thì chưa có chuyến nào
   const unplanned = (o: Booking) => (o.status === 'pending_intake' || o.status === 'under_review') && !o.plan ? { ...o, trips: undefined } : o

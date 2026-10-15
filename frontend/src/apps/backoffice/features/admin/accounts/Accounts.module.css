@@ -20,14 +20,3 @@
 .secret span { color: var(--muted); font-size: 0.84rem; }
 .secret code { font-size: 1.3rem; font-weight: 700; letter-spacing: 0.06em; color: var(--navy); }
 @media (max-width: 700px) { .form { grid-template-columns: 1fr; } }
-
-/* Audit Log Timeline */
-.timeline { display: flex; flex-direction: column; gap: 12px; max-height: 400px; overflow-y: auto; padding: 4px 8px; }
-.timelineItem { display: flex; gap: 14px; padding: 12px 14px; background: var(--bg-page); border: 1px solid var(--line); border-radius: 10px; position: relative; }
-.timelineIcon { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0; }
-.timelineContent { flex: 1; display: flex; flex-direction: column; gap: 4px; font-size: 0.88rem; }
-.timelineHeader { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; }
-.timelineHeader b { color: var(--navy); }
-.timelineHeader small { color: var(--muted); font-size: 0.78rem; }
-.timelineDesc { color: var(--text-dark, #334155); }
-.timelineMeta { display: flex; gap: 12px; font-size: 0.78rem; color: var(--muted); }

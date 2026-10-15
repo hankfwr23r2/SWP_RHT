@@ -42,53 +42,6 @@ export function TripSummary({ b }: { b: Booking }) {
   )
 }
 
-// Tab "Khách hàng": chỉ thông tin người (khách, người gửi, người nhận)
-export function PartiesInfo({ b }: { b: Booking }) {
-  const party = (title: string, icon: string, p: { name: string; phone: string; idNumber: string; address: string }) => (
-    <div className={s.horse}>
-      <div className={s.horseName}><i className={`fa-solid ${icon}`} aria-hidden="true" style={{ color: 'var(--orange)', marginRight: 8 }} />{title}</div>
-      <dl className={s.grid}>
-        <div><dt>Họ tên</dt><dd>{p.name}</dd></div>
-        <div><dt>Số điện thoại</dt><dd>{p.phone}</dd></div>
-        <div><dt>CCCD / MST / Hộ chiếu</dt><dd>{p.idNumber || '-'}</dd></div>
-        <div><dt>Địa chỉ</dt><dd>{p.address || '-'}</dd></div>
-      </dl>
-    </div>
-  )
-  return (
-    <div style={{ display: 'grid', gap: 12 }}>
-      <div className={s.horse}>
-        <div className={s.horseName}><i className="fa-solid fa-user" aria-hidden="true" style={{ color: 'var(--orange)', marginRight: 8 }} />Khách đặt đơn</div>
-        <dl className={s.grid}>
-          <div><dt>Tài khoản</dt><dd>{b.customer}</dd></div>
-          <div><dt>Gửi đơn lúc</dt><dd>{formatDateTime(b.createdAt)}</dd></div>
-        </dl>
-      </div>
-      {party('Người gửi (Consignor)', 'fa-arrow-up-from-bracket', b.consignor)}
-      {party('Người nhận (Consignee)', 'fa-arrow-down-to-bracket', b.consignee)}
-    </div>
-  )
-}
-
-// Tab "Thông tin đơn": chuyến đi và các lựa chọn của khách cho từng ngựa
-export function OrderInfo({ b }: { b: Booking }) {
-  return (
-    <>
-      <h4 style={{ margin: '0 0 10px' }}>Chuyến đi</h4>
-      <dl className={s.grid}>
-        <div><dt>Loại chuyến</dt><dd>{b.type === 'international' ? `Quốc tế (${COUNTRIES[b.origin.country].name} → ${COUNTRIES[b.dest.country].name})` : 'Trong nước'}</dd></div>
-        <div><dt>Ngày khởi hành</dt><dd>{formatDate(b.departAt)}</dd></div>
-        <div><dt>Số ngựa</dt><dd>{b.horses.length} con</dd></div>
-        <div><dt>Điểm đón</dt><dd>{placeShort(b.origin.name)}</dd></div>
-        <div><dt>Điểm giao</dt><dd>{placeShort(b.dest.name)}</dd></div>
-        {b.gate && <div><dt>Cửa khẩu (đã khóa)</dt><dd>{b.gate}</dd></div>}
-      </dl>
-      <h4 style={{ margin: '18px 0 10px' }}>Khách chọn cho từng ngựa</h4>
-      <HorseConfigList b={b} />
-    </>
-  )
-}
-
 // Cấu hình dịch vụ từng ngựa khách đã chọn (chỉ đọc)
 export function HorseConfigList({ b }: { b: Booking }) {
   return (
