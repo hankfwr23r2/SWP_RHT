@@ -4,18 +4,20 @@ import { Link } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { formatDate, formatDateTime } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
-import { useLoad } from '@shared/services/useLoad'
+import { useAutoRefresh, useLoad } from '@shared/services/useLoad'
 import { ListPage, idCell, routeCell, type Column } from '../../../shared/ListPage'
 import type { Booking } from '@shared/types/booking'
 import { placeShort } from '../../../shared/place'
+import { isAssignedTo } from '@shared/lib/staffAssignment'
 
 type Tab = 'todo' | 'waiting' | 'done'
 
 export default function VerificationListPage() {
   const { session } = useAuth()
-  const { data: all } = useLoad(bookingsApi.list)
+  const { data: all, reload } = useLoad(bookingsApi.list)
+  useAutoRefresh(reload)
   const [tab, setTab] = useState<Tab>('todo')
-  const isMyTask = (b: Booking) => !b.intake || b.intake.specialist.name === session?.name || session?.role === 'admin' || session?.role === 'manager'
+  const isMyTask = (b: Booking) => !b.intake || isAssignedTo(b.intake.specialist, session?.name) || session?.role === 'admin' || session?.role === 'manager'
   const mine = (all ?? []).filter(b => isMyTask(b) && (b.status === 'under_review' || b.medical))
   const medicalStatus = (b: Booking) => b.medical?.status ?? 'pending'
   const groups: Record<Tab, Booking[]> = {

@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@shared/auth/AuthContext'
 import { currentCheckpoint, delayedCheckpoint, lastWelfare, needsAttention } from '@shared/lib/booking'
+import { isAssignedTo } from '@shared/lib/staffAssignment'
 import { formatDateTime } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
 import { crewApi } from '@shared/services/fleet'
@@ -27,7 +28,7 @@ export default function MonitoringPage() {
 
   // Một chuyến = một xe của một đơn; đang chạy từ lúc xe xuất phát đến điểm đón tới khi giao xong
   const active: FieldTrip[] = (all ?? []).flatMap(b => (b.trips ?? []).filter(t => t.departedAt && !t.run?.deliveredAt).map(t => ({ b, t })))
-  const mine = active.filter(x => x.b.intake?.coordinator.name === session!.name)
+  const mine = active.filter(x => isAssignedTo(x.b.intake?.coordinator, session?.name))
   const shown = (tab === 'mine' ? mine : active).sort((x, y) => x.b.departAt - y.b.departAt || x.t.tripId.localeCompare(y.t.tripId))
   const late = active.filter(x => delayedCheckpoint(x.t, now))
   const trip = shown.find(x => x.t.tripId === selected) ?? shown[0]

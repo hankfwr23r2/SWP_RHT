@@ -4,18 +4,20 @@ import { Link } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { formatDate, formatDateTime } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
-import { useLoad } from '@shared/services/useLoad'
+import { useAutoRefresh, useLoad } from '@shared/services/useLoad'
 import { ListPage, idCell, routeCell, type Column } from '../../../shared/ListPage'
 import type { Booking } from '@shared/types/booking'
 import { placeShort } from '../../../shared/place'
+import { isAssignedTo } from '@shared/lib/staffAssignment'
 
 type Tab = 'todo' | 'done'
 
 export default function FleetPlanListPage() {
   const { session } = useAuth()
-  const { data: all } = useLoad(bookingsApi.list)
+  const { data: all, reload } = useLoad(bookingsApi.list)
+  useAutoRefresh(reload)
   const [tab, setTab] = useState<Tab>('todo')
-  const isMyTask = (b: Booking) => !b.intake || b.intake.coordinator.name === session?.name || session?.role === 'admin' || session?.role === 'manager'
+  const isMyTask = (b: Booking) => !b.intake || isAssignedTo(b.intake.coordinator, session?.name) || session?.role === 'admin' || session?.role === 'manager'
   const mine = (all ?? []).filter(isMyTask)
   const todo = mine.filter(b => b.status === 'under_review' && !b.plan)
   const done = mine.filter(b => !!b.plan)

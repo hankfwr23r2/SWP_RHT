@@ -15,3 +15,18 @@ export function useLoad<T>(fn: () => Promise<T>, deps: unknown[] = []) {
   useEffect(() => { reload() }, [reload])
   return { data, reload }
 }
+
+/** Refresh role work queues after updates made from another staff session. */
+export function useAutoRefresh(reload: () => void, intervalMs = 15_000) {
+  useEffect(() => {
+    const refreshWhenVisible = () => { if (!document.hidden) reload() }
+    window.addEventListener('focus', refreshWhenVisible)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+    const timer = window.setInterval(refreshWhenVisible, intervalMs)
+    return () => {
+      window.removeEventListener('focus', refreshWhenVisible)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+      window.clearInterval(timer)
+    }
+  }, [intervalMs, reload])
+}

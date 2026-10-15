@@ -20,6 +20,16 @@ import { paymentApi } from '../api/payments'
 
 const store = createStore<Booking>('bookings', () => import.meta.env?.MODE === 'test' ? seedBookings() : [])
 
+function backofficeRole(): string | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const session = sessionStorage.getItem('SWP_SESSION_backoffice')
+    return session ? (JSON.parse(session) as { role?: string }).role ?? null : null
+  } catch {
+    return null
+  }
+}
+
 // ===== Thông báo đẩy (chỉ báo tin, không ghi nhật ký) =====
 type Who = 'customer' | 'manager' | 'specialist' | 'coordinator'
 const LINK = {
@@ -183,7 +193,10 @@ export const customerBookingsApi = {
             const id = bb.id || `BK-${String(bb.numericId || 1).padStart(3, '0')}`
             const mapped: Booking = {
                 id,
-                customer: bb.customer || customer,
+                // The customer endpoint already scopes rows to the authenticated user.
+                // Keep the UI session identity here: session.name is the full name,
+                // while the backend's `customer` field is the username.
+                customer,
                 status: (bb.status as any) || 'pending_intake',
                 type: (bb.type as any) || 'domestic',
                 origin: { id: 'HN', name: bb.originName || 'Hà Nội', country: (bb.originCountry || 'VN') as any },
@@ -470,7 +483,17 @@ export const bookingsApi = {
     applySystemRules()
     if (typeof window !== 'undefined') {
       try {
-        const beList = await backendBookingApi.getAllBookings()
+        const role = backofficeRole()
+        const pathname = window.location.pathname
+        const beList = role === 'coordinator'
+          ? await backendBookingApi.getCoordinatorBookings()
+          : role === 'specialist'
+            ? await (pathname.includes('/specialist/legal')
+              ? specialistApi.getClearanceBookings()
+              : specialistApi.getVerificationBookings())
+            : role === 'manager' || role === 'admin' || !role
+              ? await backendBookingApi.getAllBookings()
+              : []
         if (Array.isArray(beList)) {
           const beIds = new Set(beList.map((bb: any) => bb.id || `BK-${String(bb.numericId || 1).padStart(3, '0')}`))
           store.all().forEach(b => {

@@ -4,6 +4,7 @@ import { ReadMore } from '@shared/ui/ReadMore'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
+import { isAssignedTo } from '@shared/lib/staffAssignment'
 import { MAX_CONTINUOUS_HOURS, MIN_REST_MINUTES, VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { GATES, TRANSIT_STATIONS } from '@shared/config/network'
 import { AVG_SPEED_KMH } from '@shared/config/public-pricing'
@@ -290,7 +291,7 @@ export default function FleetPlanPage() {
   const { data: vehicles } = useLoad(vehiclesApi.list)
 
   if (!b || !all || !vehicles) return <div className="page"><div className="wrap"><p className="text-muted">Đang tải…</p></div></div>
-  const isAssigned = !b.intake || b.intake.coordinator.name === session?.name || session?.role === 'admin' || session?.role === 'manager'
+  const isAssigned = !b.intake || isAssignedTo(b.intake.coordinator, session?.name) || session?.role === 'admin' || session?.role === 'manager'
   if (!isAssigned) return <div className="page"><div className="wrap"><div className="alert alert-danger"><i className="fa-solid fa-lock" /><div>Đơn {b.id} hiện được giao cho {b.intake?.coordinator.name || 'điều phối viên khác'}. <Link to="/coordinator/fleet-plan" className="text-orange font-semibold">Về danh sách</Link></div></div></div></div>
 
   return (

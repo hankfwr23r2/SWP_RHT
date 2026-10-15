@@ -10,6 +10,7 @@ import { useNow } from '@shared/ui/useNow'
 import { ListPage, idCell, routeCell, statusCell, type Column } from '../../../shared/ListPage'
 import type { Booking } from '@shared/types/booking'
 import { placeShort } from '../../../shared/place'
+import { isAssignedTo } from '@shared/lib/staffAssignment'
 
 type Tab = 'todo' | 'working' | 'done'
 
@@ -18,7 +19,7 @@ export default function LegalListPage() {
   const now = useNow()
   const { data: all } = useLoad(bookingsApi.list)
   const [tab, setTab] = useState<Tab>('todo')
-  const mine = (all ?? []).filter(b => b.intake?.specialist.name === session!.name && b.payment && b.clearance)
+  const mine = (all ?? []).filter(b => isAssignedTo(b.intake?.specialist, session?.name) && b.payment && b.clearance)
   const groups: Record<Tab, Booking[]> = {
     todo: mine.filter(b => b.status === 'waybill_issued'),
     working: mine.filter(b => b.status === 'clearance_in_progress'),

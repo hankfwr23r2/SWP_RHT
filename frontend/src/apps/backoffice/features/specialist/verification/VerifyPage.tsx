@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { FEED_PACKAGE, WATER_PLAN, HORSE_DOC, HORSE_DOC_TYPES, type HorseDocType } from '@shared/config/booking-rules'
 import { horseReadiness } from '@shared/lib/booking'
+import { isAssignedTo } from '@shared/lib/staffAssignment'
 import { formatDate, formatDateTime } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
 import { horsesApi } from '@shared/services/horses'
@@ -134,7 +135,7 @@ export default function VerifyPage() {
   }, [id, b?.medical?.status])
 
   if (!b || !horses) return <div className="page"><div className="wrap"><p className="text-muted">Đang tải…</p></div></div>
-  const isAssigned = !b.intake || b.intake.specialist.name === session?.name || session?.role === 'admin' || session?.role === 'manager'
+  const isAssigned = !b.intake || isAssignedTo(b.intake.specialist, session?.name) || session?.role === 'admin' || session?.role === 'manager'
   if (!isAssigned) return <div className="page"><div className="wrap"><div className="alert alert-danger"><i className="fa-solid fa-lock" /><div>Đơn {b.id} hiện được giao cho {b.intake?.specialist.name || 'chuyên viên khác'}. <Link to="/specialist/verification" className="text-orange font-semibold">Về danh sách</Link></div></div></div></div>
 
   return (
