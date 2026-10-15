@@ -9,7 +9,7 @@ import { HOME_OF } from './staffMenus'
 import s from './StaffShell.module.css'
 
 // Trang danh sách nhận từ khóa tìm kiếm của từng vai trò
-const SEARCH_IN: Record<StaffRole, string> = { admin: '/admin/accounts', manager: '/manager/progress', specialist: '/specialist/verification', coordinator: '/coordinator/fleet-plan', driver: '/driver', escort: '/escort' }
+const SEARCH_IN: Record<StaffRole, string> = { admin: '/admin/accounts', manager: '/manager', specialist: '/specialist/verification', coordinator: '/coordinator/fleet-plan', driver: '/driver', escort: '/escort' }
 
 export function StaffTopbar() {
   const { session, logout } = useAuth()
@@ -23,6 +23,7 @@ export function StaffTopbar() {
   const search = (e: FormEvent) => { e.preventDefault(); if (q.trim()) navigate(`${SEARCH_IN[role]}?q=${encodeURIComponent(q.trim())}`) }
   return (
     <header className={s.topbar}>
+      <Link to={HOME_OF[role]} className={s.brand}><img src="/logo.png" alt="" className={s.brandMark} /><span>Vận chuyển Ngựa</span></Link>
       <Link to={HOME_OF[role]} className={s.account} title="Về trang chính">
         <span className={s.avatar}>{initials}</span>
         <span className={s.who}><b>{session?.name}</b><small>{session?.username.includes('@') ? session.username : ROLE_LABEL[role]}</small></span>

@@ -6,7 +6,7 @@ import { COUNTRY_LOCATIONS, PLACES, TRANSIT_STATIONS } from '../config/network'
 import type { StaffMember } from '../types/staff'
 import type { Booking, BookingHorse, HorseProfile, VehicleTrip, Checkpoint, TripRun } from '../types/booking'
 import {
-  schedulesOf, clashOf, vehicleSpot, vehiclePoint, pendingDeparture, spotLabel, nearestTo, projectOnPath, pointsAhead, pointAlong, bookingPath, incidentLocation, needsFitCheck, transitProgress, defaultPayer, incidentActionsFor, settlementOf, approvedSubOf, APPROVED_SUBS, orderGroupOf, ORDER_GROUPS, capacitiesFor, estimateQuote, busyResources, buildRoutePlan, gatesFor, suggestGate, suggestTransitStations, canCompleteClearance, classForHorses, defaultClearanceItems, deriveStatus, docsDueAt, earliestDeparture, finalizeQuote, horseReadiness,
+  schedulesOf, clashOf, planHomeReturn, returnLate, returningTrips, vehicleSpot, vehiclePoint, pendingDeparture, spotLabel, nearestTo, projectOnPath, pointsAhead, pointAlong, bookingPath, incidentLocation, needsFitCheck, transitProgress, defaultPayer, incidentActionsFor, settlementOf, approvedSubOf, APPROVED_SUBS, orderGroupOf, ORDER_GROUPS, capacitiesFor, estimateQuote, busyResources, buildRoutePlan, gatesFor, suggestGate, suggestTransitStations, canCompleteClearance, classForHorses, defaultClearanceItems, deriveStatus, docsDueAt, earliestDeparture, finalizeQuote, horseReadiness,
   insuranceFee, isClearanceOverdue, isDepartureAllowed, isQuoteExpired, layoutLegs, manifestDocuments, nextBookingId, quoteLines, reviewDone, routeKm, activeStaff,
   findLocation, arrivalOf, routeOutline, managerBoardOf, managerCounts, orderTabOf, tripIdFor, validateRoutePlan, vehicleClassOf,
 } from './booking'
@@ -172,7 +172,7 @@ describe('lịch bận của xe, tài xế, hộ tống (PRD mục 10.2)', () =>
   const DAYS = 86_400_000
   const D = new Date('2026-12-10T05:00:00').getTime()
   const order = (id: string, offsetDays: number, status: BookingStatus, trip: { vehicleId: string; driverId: string; escortId: string }) => ({
-    id, status, departAt: D + offsetDays * DAYS, origin: { name: 'Kho A — x' }, dest: { name: 'Kho B — y' },
+    id, status, departAt: D + offsetDays * DAYS, origin: { name: 'Kho A — x', country: 'VN' }, dest: { name: 'Kho B — y', country: 'VN' },
     trips: [{ tripId: `${id}-1`, ...trip, horseIds: [], acks: {} }],
   }) as unknown as Booking
   const all = [
@@ -617,5 +617,45 @@ describe('vị trí xe theo xác nhận thủ công của Driver', () => {
     const done = mk({ arrivedAt: 3, doneAt: 4 }); done[2].arrivedAt = 5; done[2].doneAt = 6
     expect(vehicleSpot(run(done, { deliveredAt: 6 }))).toEqual({ kind: 'at', index: 2 })
     expect(spotLabel(run(done, { deliveredAt: 6 }))).toBe('Đã giao ngựa tại điểm giao')
+  })
+})
+
+describe('Driver và Escort về trụ sở sau khi giao ngựa ở nước ngoài (PRD mục 10.2)', () => {
+  const H = 3_600_000
+  const NOW0 = new Date('2026-12-10T05:00:00').getTime()
+  const abroad = (status: BookingStatus, homeReturn?: { backAt?: number }) => ({
+    id: 'ORD-9', status, departAt: NOW0, origin: { id: 'KHO-DN', name: 'Kho Đồng Nai — x', country: 'VN' }, dest: { id: 'KHO-PNH', name: 'Kho Phnom Penh — y', country: 'KH' },
+    trips: [{ tripId: 'ORD-9-1', vehicleId: 'V9', driverId: 'D9', escortId: 'E9', horseIds: [], acks: {}, run: { deliveredAt: NOW0 }, homeReturn: homeReturn && { fromPlace: 'Kho Phnom Penh (Campuchia)', eta: NOW0 + 8 * H, earliestAt: NOW0 + 6 * H, ...homeReturn } }],
+  }) as unknown as Booking
+
+  it('giao ở nước ngoài thì có giờ về dự kiến, bấm về sớm nhất trước giờ dự kiến; giao ở Việt Nam thì không phải về', () => {
+    const r = planHomeReturn(abroad('delivered_pending_settlement'), NOW0)!
+    expect(r.eta).toBeGreaterThan(NOW0)
+    expect(r.earliestAt).toBeGreaterThan(NOW0)
+    expect(r.earliestAt).toBeLessThan(r.eta)
+    expect(planHomeReturn({ dest: { id: 'CLB-SG', name: 'CLB', country: 'VN' } }, NOW0)).toBeUndefined()
+  })
+  it('đơn đã giao xong vẫn giữ Driver và Escort tới khi về trụ sở, xe thì được nhả', () => {
+    const o = abroad('delivered_pending_settlement', {})
+    const s = schedulesOf([o], 'ORD-X')
+    expect(s.drivers.get('D9')![0].returning?.from).toBe('Kho Phnom Penh (Campuchia)')
+    expect(s.drivers.get('D9')![0].countries).toBe('Việt Nam → Campuchia')
+    expect(s.escorts.has('E9')).toBe(true)
+    expect(s.vehicles.has('V9')).toBe(false)
+    const busy = busyResources([o], NOW0 + 30 * 86_400_000)
+    expect(busy.crew.has('D9') && busy.crew.has('E9')).toBe(true)
+    expect(busy.vehicles.has('V9')).toBe(false)
+  })
+  it('đã xác nhận về trụ sở thì mở lại', () => {
+    const o = abroad('delivered_pending_settlement', { backAt: NOW0 + 7 * H })
+    expect(schedulesOf([o], 'ORD-X').drivers.has('D9')).toBe(false)
+    expect(busyResources([o], NOW0).crew.size).toBe(0)
+    expect(returningTrips([o])).toHaveLength(0)
+  })
+  it('cờ Về trễ khi quá giờ dự kiến 30 phút mà chưa xác nhận', () => {
+    const t = abroad('completed', {}).trips![0]
+    expect(returnLate(t, NOW0 + 8 * H + 29 * 60_000)).toBe(false)
+    expect(returnLate(t, NOW0 + 8 * H + 30 * 60_000)).toBe(true)
+    expect(returnLate({ homeReturn: { ...t.homeReturn!, backAt: NOW0 + 9 * H } }, NOW0 + 20 * H)).toBe(false)
   })
 })

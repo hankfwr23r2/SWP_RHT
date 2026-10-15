@@ -14,7 +14,7 @@ export function workOf(role: StaffRole | undefined, list: Booking[], name: strin
   if (role === 'manager') {
     const n = managerCounts(list)
     return {
-      counts: { '/manager/intake': n.intake, '/manager/approvals': n.quote, '/manager/incidents': n.incident, '/manager/progress': n.audit },
+      counts: { '/manager/intake': n.intake, '/manager/approvals': n.quote, '/manager/incidents': n.incident },
       urgent: list.flatMap(b => { const a = managerAction(b); return a ? [{ id: b.id, label: a.label, to: a.to }] : [] }),
     }
   }

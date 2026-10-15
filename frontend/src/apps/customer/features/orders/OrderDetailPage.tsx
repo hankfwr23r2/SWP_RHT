@@ -185,7 +185,7 @@ function CancelModal({ b, owner, onClose, onDone }: { b: CustomerBookingView; ow
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
   const paid = b.payment?.amount ?? 0
-  const refund = cancelRefund(b, 'customer')
+  const refund = cancelRefund(b)
   const send = async () => {
     setBusy(true)
     try { await customerBookingsApi.cancel(owner, b.id, reason); toast('Đã hủy đơn'); onDone() } catch (e) { toast(e instanceof Error ? e.message : 'Không hủy được', 'error'); setBusy(false) }

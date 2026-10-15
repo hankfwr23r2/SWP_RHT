@@ -9,6 +9,7 @@ import type { Booking, Checkpoint, VehicleTrip } from '@shared/types/booking'
 import { CaptureField } from '@shared/ui/CaptureField'
 import { useToast } from '@shared/ui/toast'
 import { Panel } from '../../shared/field'
+import { HomeReturnPanel } from '../../shared/HomeReturnPanel'
 import { IncidentPanel, SosPanel } from '../../shared/IncidentField'
 import s from '../../shared/field.module.css'
 
@@ -83,7 +84,12 @@ function EscortSteps({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
   const cp = currentCheckpoint(t)
   const pickup = t.run?.checkpoints[0]
 
-  if (t.run?.deliveredAt) return <Panel title="Đã giao ngựa" icon="fa-flag-checkered" tone="ok"><p>Chuyến hoàn tất lúc {formatDateTime(t.run.deliveredAt)}. Cảm ơn bạn.</p></Panel>
+  if (t.run?.deliveredAt) return (
+    <>
+      <Panel title="Đã giao ngựa" icon="fa-flag-checkered" tone="ok"><p>Chuyến hoàn tất lúc {formatDateTime(t.run.deliveredAt)}. Cảm ơn bạn.</p></Panel>
+      <HomeReturnPanel b={b} t={t} role="escort" run={run} />
+    </>
+  )
   if (t.departedAt && !t.run?.startedAt) {
     return pickup?.arrivedAt ? <ScanStep key={pickup.chips?.length ?? 0} b={b} t={t} run={run} /> : <Panel title="Xe đang đến điểm đón" icon="fa-truck-moving" tone="warn"><p>Khi tài xế xác nhận có mặt tại điểm đón, bạn sẽ quét microchip từng con trên xe này và đối soát với hộ chiếu ngựa.</p></Panel>
   }

@@ -1,15 +1,32 @@
 import { describe, expect, it } from 'vitest'
 import { MARGIN_RATE } from '../config/booking-rules'
 import { DAY } from '../config/business-rules'
-import { seedBookings } from '../fixtures/bookings'
 import type { Booking } from '../types/booking'
 import { changePct, orderFinance, series, summarize } from './report'
 
-const all = seedBookings()
 const NOW = Date.now()
-const quoted = (over: Partial<Booking> = {}): Booking => ({
-  ...all.find(b => b.payment && b.quote && b.status !== 'cancelled')!, incidents: [], settlement: undefined, cancellation: undefined, ...over,
-})
+const LINES = [
+  { label: 'Cước vận chuyển nguyên chuyến', amount: 10_500_000 },
+  { label: 'Nhân sự kỹ thuật (01 Driver + 01 Escort)', amount: 1_890_000 },
+  { label: 'Nhiên liệu và BOT', amount: 1_050_000 },
+  { label: 'Phí thủ tục kiểm dịch và hải quan', amount: 300_000 },
+]
+const TOTAL = LINES.reduce((n, l) => n + l.amount, 0)
+// Đơn dựng tại chỗ cho phép thử công thức báo cáo: đã cọc, có báo giá, một xe đã giao ngựa
+const order = (i: number, over: Partial<Booking> = {}): Booking => {
+  const paidAt = NOW - (i + 1) * 3 * DAY
+  const startedAt = paidAt + DAY
+  return {
+    id: `T-${i}`, customer: 'Khách thử', createdAt: paidAt - DAY, status: 'completed',
+    payment: { paidAt, amount: Math.round(TOTAL * 0.3), reference: `P-${i}` }, balance: { paidAt: startedAt, amount: TOTAL - Math.round(TOTAL * 0.3), reference: `B-${i}` },
+    quote: { lines: LINES, adjustments: [], subtotal: TOTAL, total: TOTAL, deposit: Math.round(TOTAL * 0.3), balance: TOTAL - Math.round(TOTAL * 0.3), sentAt: paidAt - DAY, expiresAt: paidAt + DAY, sentBy: 'Quản lý' },
+    trips: [{ tripId: `TRP-${i}-1`, run: { startedAt, deliveredAt: startedAt + 8 * 3_600_000, checkpoints: [{ type: 'delivery', plannedAt: startedAt + 9 * 3_600_000, arrivedAt: startedAt + 8 * 3_600_000 }] } }],
+    rating: { trip: 5, driver: 4, escort: 5, comment: '', at: startedAt + 9 * 3_600_000 },
+    ...over,
+  } as unknown as Booking
+}
+const all: Booking[] = [...Array.from({ length: 8 }, (_, i) => order(i)), order(9, { payment: undefined, balance: undefined, status: 'awaiting_payment' })]
+const quoted = (over: Partial<Booking> = {}): Booking => order(0, { incidents: [], settlement: undefined, cancellation: undefined, ...over })
 
 describe('doanh thu và chi phí vận hành của một đơn', () => {
   it('đơn chưa cọc thì chưa có doanh thu', () => {

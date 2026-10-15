@@ -1,8 +1,8 @@
-// Chọn xe, tài xế hoặc hộ tống cho một chuyến: popup dạng thẻ. Mỗi thẻ cho biết người / xe đó đang bận đơn nào;
-// ai trùng lịch (ngày đi cách dưới 3 ngày) thì khóa lại và nói rõ trùng với đơn nào.
+// Chọn xe, tài xế hoặc hộ tống cho một chuyến: popup dạng thẻ. Thẻ tài xế, hộ tống cho biết đang bận đơn nào; thẻ xe chỉ nêu trạng thái
+// (đi đơn được không). Ai trùng lịch (ngày đi cách dưới 3 ngày) thì khóa lại.
 import { useEffect, useState } from 'react'
 import { clashOf, vehicleDocsOk, type Booked } from '@shared/lib/booking'
-import { formatDate } from '@shared/lib/format'
+import { formatDate, formatDateTime } from '@shared/lib/format'
 import type { CrewMember, Vehicle } from '@shared/services/fleet'
 import { Modal } from '@shared/ui/Modal'
 import { VehicleArt } from '../features/coordinator/fleet/VehicleArt'
@@ -10,7 +10,7 @@ import p from './ResourcePicker.module.css'
 
 export type PickKind = 'vehicle' | 'driver' | 'escort'
 const TEXT: Record<PickKind, { title: string; search: string; idle: string; icon: string }> = {
-  vehicle: { title: 'Chọn xe', search: 'Tìm biển số, mã xe', idle: 'Chưa có đơn', icon: 'fa-truck' },
+  vehicle: { title: 'Chọn xe', search: 'Tìm biển số, mã xe', idle: 'Sẵn sàng', icon: 'fa-truck' },
   driver: { title: 'Chọn tài xế', search: 'Tìm tên, mã, số điện thoại', idle: 'Rảnh', icon: 'fa-id-card' },
   escort: { title: 'Chọn nhân viên hộ tống', search: 'Tìm tên, mã, số điện thoại', idle: 'Rảnh', icon: 'fa-horse-head' },
 }
@@ -31,7 +31,7 @@ interface Props {
   onClose: () => void
 }
 
-interface Row { id: string; vehicle?: Vehicle; person?: CrewMember; booked: Booked[]; reason: string }
+interface Row { id: string; vehicle?: Vehicle; person?: CrewMember; booked: Booked[]; reason: string; clash: boolean }
 
 export function ResourcePicker({ kind, vehicles, people, schedules, departAt, international, usedHere, selected, horses, onPick, onClose }: Props) {
   const [text, setText] = useState('')
@@ -47,8 +47,8 @@ export function ResourcePicker({ kind, vehicles, people, schedules, departAt, in
     const clash = kind === 'vehicle' ? clashOf(booked, departAt) : undefined
     const assigned = kind !== 'vehicle' ? booked[0] : undefined
     const noDocs = r.vehicle && !vehicleDocsOk(r.vehicle, international)
-    const reason = noDocs ? `Thiếu giấy đăng kiểm${international ? ' / liên vận' : ''}` : clash ? `Trùng lịch với ${clash.order} (khởi hành ${formatDate(clash.departAt)})` : assigned ? `Đã được giao việc cho đơn ${assigned.order}` : usedHere.has(r.id) && r.id !== selected ? 'Đã chọn ở chuyến khác của đơn này' : ''
-    return { ...r, booked, reason }
+    const reason = noDocs ? `Thiếu giấy đăng kiểm${international ? ' / liên vận' : ''}` : clash ? 'Đã có đơn trùng lịch chạy' : assigned ? (assigned.returning ? `Đang về trụ sở từ ${assigned.returning.from}, dự kiến ${formatDateTime(assigned.returning.eta)}` : `Đang đi đơn ${assigned.order} (${assigned.countries})`) : usedHere.has(r.id) && r.id !== selected ? 'Đã chọn ở chuyến khác của đơn này' : ''
+    return { ...r, booked, reason, clash: !!clash && !noDocs }
   })
   const keyword = text.trim().toLowerCase()
   const shown = rows.filter(r => {
@@ -64,7 +64,7 @@ export function ResourcePicker({ kind, vehicles, people, schedules, departAt, in
   }
 
   return (
-    <Modal wide onClose={onClose} title={t.title} subtitle={kind === 'vehicle' ? `Chuyến này đang xếp ${horses} ngựa. Xe bị khóa là xe trùng lịch hoặc thiếu giấy.` : 'Người đã được giao việc cho một đơn thì bị khóa, đơn giao ngựa xong mới chọn lại được.'}>
+    <Modal wide onClose={onClose} title={t.title} subtitle={kind === 'vehicle' ? `Chuyến này đang xếp ${horses} ngựa. Xe bị khóa là xe trùng lịch hoặc thiếu giấy.` : 'Tài xế và hộ tống luôn xuất phát từ trụ sở ở Việt Nam. Người đang đi đơn hoặc đang chạy về trụ sở thì bị khóa, về tới trụ sở mới chọn lại được.'}>
       <div className={p.bar}>
         <label className={p.search}><i className="fa-solid fa-magnifying-glass" aria-hidden="true" /><input className="form-control" placeholder={t.search} value={text} onChange={e => setText(e.target.value)} /></label>
         <label className={p.check}><input type="checkbox" checked={onlyOk} onChange={e => setOnlyOk(e.target.checked)} /> Chỉ hiện chọn được</label>
@@ -74,10 +74,9 @@ export function ResourcePicker({ kind, vehicles, people, schedules, departAt, in
 
       <div className={p.grid}>
         {shown.map((r, i) => {
-          const clash = kind === 'vehicle' ? clashOf(r.booked, departAt) : undefined
           const busyNow = r.booked.length > 0
-          const tone = r.reason ? '#dc2626' : busyNow ? '#ea580c' : '#059669'
-          const label = r.reason ? 'Khóa' : busyNow ? (kind === 'vehicle' ? 'Có đơn' : 'Đã giao việc') : t.idle
+          const tone = r.clash ? '#ea580c' : r.reason ? '#dc2626' : kind !== 'vehicle' && busyNow ? '#ea580c' : '#059669'
+          const label = kind !== 'vehicle' && busyNow ? (r.booked[0].returning ? 'Đang về' : 'Đang đi đơn') : r.clash ? 'Có đơn' : r.reason ? 'Khóa' : kind === 'vehicle' ? t.idle : busyNow ? 'Có đơn' : t.idle
           return (
             <button
               key={r.id} type="button" aria-disabled={!!r.reason} aria-pressed={r.id === selected}
@@ -87,7 +86,7 @@ export function ResourcePicker({ kind, vehicles, people, schedules, departAt, in
             >
               <div className={p.top}>
                 <span className={p.code}>{r.id}</span>
-                <span className={p.status}><span className={`${p.dot} ${!r.reason && !busyNow ? p.live : ''}`} />{label}</span>
+                <span className={p.status}><span className={`${p.dot} ${!r.reason && (kind === 'vehicle' || !busyNow) ? p.live : ''}`} />{label}</span>
               </div>
 
               {r.vehicle ? (
@@ -103,13 +102,16 @@ export function ResourcePicker({ kind, vehicles, people, schedules, departAt, in
                 </>
               )}
 
+              {kind === 'vehicle' ? (
+                <div className={p.sched}><span className={r.reason ? p.lock : p.free}>{r.clash ? 'Đã có đơn trùng lịch, không chọn được' : r.reason ? 'Không nhận được đơn này' : 'Sẵn sàng nhận đơn'}</span></div>
+              ) : (
               <div className={p.sched}>
-                <span className={p.schedHead}><i className="fa-regular fa-calendar" /> {kind === 'vehicle' ? 'Đơn đang nhận' : 'Việc đã được giao'}</span>
+                <span className={p.schedHead}><i className="fa-regular fa-calendar" /> Đang làm việc</span>
                 {r.booked.length ? r.booked.map(x => {
-                  const hit = clash?.order === x.order
-                  return <div key={x.order + x.trip} className={`${p.job} ${hit ? p.hit : ''}`}><b>{x.order}</b><small>khởi hành {formatDate(x.departAt)} · {x.route}</small>{hit && <em>Trùng ngày</em>}</div>
-                }) : <span className={p.free}>{kind === 'vehicle' ? 'Chưa có đơn nào' : 'Chưa được giao việc'}</span>}
+                  return <div key={x.order + x.trip} className={p.job}><b>{x.order}</b><small>{x.returning ? `đã giao ở ${x.returning.from} · về tới trụ sở dự kiến ${formatDateTime(x.returning.eta)}${x.returning.late ? ' · về trễ' : ''}` : `khởi hành ${formatDate(x.departAt)} · ${x.countries}`}</small></div>
+                }) : <span className={p.free}>Sẵn sàng tại trụ sở Việt Nam</span>}
               </div>
+              )}
 
               {r.reason && <span className={p.lock}><i className="fa-solid fa-lock" />{r.reason}</span>}
               {r.id === selected && <span className={p.tick}><i className="fa-solid fa-circle-check" /> Đang chọn</span>}
