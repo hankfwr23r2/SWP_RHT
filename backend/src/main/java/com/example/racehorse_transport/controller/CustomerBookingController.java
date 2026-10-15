@@ -79,19 +79,6 @@ public class CustomerBookingController {
         return ResponseEntity.ok(ApiResponse.success(response, "Lấy chi tiết đơn hàng thành công"));
     }
 
-    @PostMapping("/{id}/resubmit")
-    public ResponseEntity<ApiResponse<BookingResponse>> resubmitBooking(
-            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
-            @PathVariable String id) {
-        String username = extractUsername(authHeader);
-        if (username == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Vui lòng đăng nhập để gửi lại hồ sơ!"));
-        }
-        BookingResponse response = bookingService.resubmitBooking(id, username);
-        return ResponseEntity.ok(ApiResponse.success(response, "Đã gửi lại hồ sơ cho Kiểm dịch viên"));
-    }
-
     // 4. API Khách hàng thanh toán đặt cọc 30% để nhận Vận đơn (Waybill)
     @PostMapping("/{id}/pay-deposit")
     public ResponseEntity<ApiResponse<BookingResponse>> payDeposit(
