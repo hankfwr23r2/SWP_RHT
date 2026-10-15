@@ -6,9 +6,9 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { isAssignedTo } from '@shared/lib/staffAssignment'
 import { MAX_CONTINUOUS_HOURS, MIN_REST_MINUTES, VEHICLE_CLASS } from '@shared/config/booking-rules'
-import { GATES, TRANSIT_STATIONS } from '@shared/config/network'
+import { TRANSIT_STATIONS } from '@shared/config/network'
 import { AVG_SPEED_KMH } from '@shared/config/public-pricing'
-import { borderOutsideWindow, buildRoutePlan, clashOf, estimateBorderEta, findLocation, gatesFor, layoutLegs, routeKm, suggestGate, routeOutline, schedulesOf, validateRoutePlan, vehicleClassOf } from '@shared/lib/booking'
+import { buildRoutePlan, clashOf, findLocation, layoutLegs, routeKm, routeOutline, schedulesOf, validateRoutePlan, vehicleClassOf } from '@shared/lib/booking'
 import { atHour } from '@shared/lib/dates'
 import { formatClock, formatDate, formatDateTime } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
@@ -94,43 +94,32 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
   // Chia đều ngựa cho các xe (ví dụ 6 ngựa mà không có xe 6 ngăn thì 2 xe, mỗi xe 3 ngựa)
   const splitEvenly = () => setTrips(ts => { const ids = ts.flatMap(t => t.horseIds); return ts.map((t, j) => ({ ...t, horseIds: ids.filter((_, k) => k % ts.length === j) })) })
   // ----- lộ trình (một lộ trình dùng chung cho mọi xe) -----
-  const gates = international ? gatesFor(b.origin, b.dest) : []
-  const suggested = international ? suggestGate(b.origin, b.dest) : undefined
-  const [gate, setGate] = useState(b.gate ?? suggested ?? (gates[0]?.name ?? ''))
   const origin = findLocation(b.origin.id), dest = findLocation(b.dest.id)
-  const gateGeo = gate ? GATES.find(g => g.name === gate) : undefined
-  const estHours = routeKm(b.origin, b.dest, gate || undefined) / AVG_SPEED_KMH // ước lượng khi chưa lấy được đường bộ
-  const initial = useMemo(() => b.route ?? buildRoutePlan({ ...b, gate: gate || undefined }, atHour(new Date(b.departAt), 5)), [b, gate]) // eslint-disable-line react-hooks/exhaustive-deps
+  const estHours = routeKm(b.origin, b.dest) / AVG_SPEED_KMH // ước lượng khi chưa lấy được đường bộ
+  const initial = useMemo(() => b.route ?? buildRoutePlan(b, atHour(new Date(b.departAt), 5)), [b]) // eslint-disable-line react-hooks/exhaustive-deps
   const [etd, setEtd] = useState(toLocal(initial.legs[0].departAt))
   const [rests, setRests] = useState<RestStop[]>(initial.rests)
-  const [borderText, setBorderText] = useState(initial.borderEta ? toLocal(initial.borderEta) : '')
-  const [borderTouched, setBorderTouched] = useState(!!b.route?.borderEta)
   const etdT = fromLocal(etd)
   // Thời gian lái lấy theo đường bộ thật (Google có giao thông theo giờ khởi hành, hoặc OSRM); chưa lấy được thì dùng ước lượng
   const stationsOnRoute = rests.flatMap(r => TRANSIT_STATIONS.filter(x => x.name === r.name))
-  const roadPath = origin && dest ? routeOutline(origin, gateGeo, dest, stationsOnRoute).path : undefined
+  const roadPath = origin && dest ? routeOutline(origin, undefined, dest, stationsOnRoute).path : undefined
   const { route: road, loading: roadLoading } = useRoadRoute(roadPath, Number.isNaN(etdT) ? undefined : etdT)
   const driveHours = road?.hours ?? estHours
-  // Gợi ý lại các trạm nghỉ (tự động theo cửa khẩu nếu có)
-  const resuggest = (g?: string) => {
-    const chosenGate = g ?? gate
-    const plan = buildRoutePlan({ ...b, gate: chosenGate || undefined }, Number.isNaN(etdT) ? atHour(new Date(b.departAt), 5) : etdT)
+  // Gợi ý lại các trạm nghỉ
+  const resuggest = () => {
+    const plan = buildRoutePlan(b, Number.isNaN(etdT) ? atHour(new Date(b.departAt), 5) : etdT)
     setRests(plan.rests)
-    setBorderTouched(false)
   }
-  const pickGate = (g: string) => { setGate(g); resuggest(g) }
   const legs = useMemo(() => (Number.isNaN(etdT) ? initial.legs : layoutLegs(b.origin.name, b.dest.name, etdT, rests, driveHours)), [etdT, rests, b, driveHours, initial.legs])
-  const borderEta = international ? (borderTouched ? fromLocal(borderText) : estimateBorderEta(legs)) : undefined
-  const route = { legs, rests: rests.map((r, i) => ({ ...r, afterLeg: i + 1 })), borderEta: borderEta && !Number.isNaN(borderEta) ? borderEta : undefined }
-  const { errors: routeErrors, warnings } = validateRoutePlan(route, international)
+  const route = { legs, rests: rests.map((r, i) => ({ ...r, afterLeg: i + 1 })) }
+  const { errors: routeErrors, warnings } = validateRoutePlan(route, false)
   if (Number.isNaN(etdT)) routeErrors.unshift('Nhập giờ khởi hành hợp lệ.')
-  if (international && !gates.some(g => g.name === gate)) routeErrors.unshift('Chọn cửa khẩu cho tuyến này.')
   const errors = [...tripErrors, ...routeErrors]
 
   const confirm = async () => {
     setWorking(true)
     try {
-      await bookingsApi.confirmPlan(b.id, session!.name, { trips, route, gate: international ? gate : undefined, note: note.trim() })
+      await bookingsApi.confirmPlan(b.id, session!.name, { trips, route, note: note.trim() })
       toast(`Đã xác nhận ${trips.length} xe và lộ trình ${b.id}`)
       onDone()
       navigate('/coordinator/fleet-plan')
@@ -204,26 +193,9 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
         </div>
       </div>
 
-      {international && (
-        <div className="card">
-          <div className="card-header"><h3><i className="fa-solid fa-flag" /> Cửa khẩu (Tuyến quốc tế)</h3><span className="sub-text">Hệ thống tự động gợi ý cửa khẩu tối ưu, bạn có thể đổi nếu cần</span></div>
-          <div className="form-group" style={{ maxWidth: 420, margin: 0 }}>
-            <label htmlFor="gate" className="required">Cửa khẩu thông quan</label>
-            <FormSelect id="gate" className="form-control" value={gate} onChange={e => pickGate(e.target.value)}>
-              {gates.map(g => (
-                <option key={g.name} value={g.name}>
-                  {g.name}{g.name === suggested ? ' (Gợi ý tối ưu: quãng đường ngắn nhất)' : ` · ${routeKm(b.origin, b.dest, g.name)} km`}
-                </option>
-              ))}
-            </FormSelect>
-            <div className="form-hint">Đổi cửa khẩu thì hệ thống tự động tính lại lộ trình và gợi ý lại các trạm nghỉ.</div>
-          </div>
-        </div>
-      )}
-
       <div className="card">
-        <div className="card-header"><h3><i className="fa-solid fa-location-dot" /> Trạm nghỉ</h3><span style={{ display: 'flex', gap: 8 }}><button className="btn btn-primary btn-sm" onClick={() => setMapOpen(true)}><i className="fa-solid fa-map-location-dot" /> Chọn trên bản đồ</button><button className="btn btn-outline btn-sm" onClick={() => resuggest(gate)}><i className="fa-solid fa-wand-magic-sparkles" /> Gợi ý lại</button></span></div>
-        <p className={s.hint} style={{ marginBottom: 10 }}>Các điểm xe đi qua giữa điểm đón và điểm trả{international ? ', theo cửa khẩu đã chọn' : ''}. Bấm <b>Chọn trên bản đồ</b> để chọn trạm và đặt thời gian nghỉ; hệ thống tự xếp thứ tự và vẽ đường đi. Ngựa không đi liên tục quá {MAX_CONTINUOUS_HOURS} giờ, mỗi trạm nghỉ tối thiểu {MIN_REST_MINUTES} phút.</p>
+        <div className="card-header"><h3><i className="fa-solid fa-location-dot" /> Trạm nghỉ</h3><span style={{ display: 'flex', gap: 8 }}><button className="btn btn-primary btn-sm" onClick={() => setMapOpen(true)}><i className="fa-solid fa-map-location-dot" /> Chọn trên bản đồ</button><button className="btn btn-outline btn-sm" onClick={resuggest}><i className="fa-solid fa-wand-magic-sparkles" /> Gợi ý lại</button></span></div>
+        <p className={s.hint} style={{ marginBottom: 10 }}>Các điểm xe đi qua giữa điểm đón và điểm trả. Bấm <b>Chọn trên bản đồ</b> để chọn trạm và đặt thời gian nghỉ; hệ thống tự xếp thứ tự và vẽ đường đi. Ngựa không đi liên tục quá {MAX_CONTINUOUS_HOURS} giờ, mỗi trạm nghỉ tối thiểu {MIN_REST_MINUTES} phút.</p>
         {rests.length ? (
           <ol className={s.stopList}>
             {rests.map((r, i) => (
@@ -239,17 +211,6 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
           </ol>
         ) : <div className={s.stopEmpty}><i className="fa-solid fa-map" /> Chưa chọn trạm nào. Bấm <b>Chọn trên bản đồ</b> hoặc <b>Gợi ý lại</b>.</div>}
       </div>
-
-      {international && (
-        <div className="card">
-          <div className="card-header"><h3><i className="fa-solid fa-flag" /> Giờ tới cửa khẩu {gate}</h3></div>
-          <div className="form-group" style={{ maxWidth: 320, margin: 0 }}>
-            <label htmlFor="border" className="required">Giờ dự kiến tới cửa khẩu</label>
-            <input id="border" type="datetime-local" className="form-control" value={borderTouched ? borderText : borderEta ? toLocal(borderEta) : ''} onChange={e => { setBorderTouched(true); setBorderText(e.target.value) }} />
-            <div className="form-hint" style={borderEta && borderOutsideWindow(borderEta) ? { color: 'var(--amber)' } : undefined}>Nên rơi vào 07:30–16:30 để thông quan và khám lâm sàng trong ngày. Hệ thống ước lượng theo hành trình.</div>
-          </div>
-        </div>
-      )}
 
       <div className="card">
         <div className="form-group"><label htmlFor="pn">Ghi chú</label><input id="pn" className="form-control" value={note} onChange={e => setNote(e.target.value)} /></div>
@@ -272,8 +233,8 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
       </div>
       {mapOpen && origin && dest && (
         <RouteMapPicker
-          origin={{ ...origin, name: b.origin.name }} dest={{ ...dest, name: b.dest.name }} gate={gateGeo ? { ...gateGeo, name: gateGeo.name } : undefined}
-          departAt={Number.isNaN(etdT) ? undefined : etdT} value={rests} onApply={picked => { setRests(picked); setBorderTouched(false) }} onClose={() => setMapOpen(false)}
+          origin={{ ...origin, name: b.origin.name }} dest={{ ...dest, name: b.dest.name }} gate={undefined}
+          departAt={Number.isNaN(etdT) ? undefined : etdT} value={rests} onApply={picked => setRests(picked)} onClose={() => setMapOpen(false)}
         />
       )}
       {picking !== null && trips[picking] && (
