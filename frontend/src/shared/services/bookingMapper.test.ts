@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { BackendBookingResponse } from '../api/bookings'
-import { placeOf, toBooking } from './bookingMapper'
+import type { BackendIncidentResponse } from '../api/incidents'
+import { incidentOf, placeOf, toBooking } from './bookingMapper'
 
 const base: BackendBookingResponse = {
   id: 'BK-007', numericId: 7, type: 'international', customer: 'khach01', customerName: 'Nguyễn Văn A', status: 'waybill_issued',
@@ -39,5 +40,60 @@ describe('chuyển đơn từ backend sang frontend', () => {
     expect(b.trips![0]).toMatchObject({ tripId: 'TRP-007-1', vehicleId: '3', driverId: 'TX-01', escortId: 'NV-01', acks: {} })
     expect(b.trips![0].run).toBeUndefined()
     expect(toBooking({ ...base, trips: [{ tripId: 'T', vehicleId: '1', horseIds: [] }] }).trips![0].driverId).toBe('')
+  })
+})
+
+describe('chuyển sự cố Flow 5 từ backend sang frontend', () => {
+  const incident: BackendIncidentResponse = {
+    id: 7,
+    formattedId: 'INC-007',
+    bookingId: 12,
+    bookingCode: 'BK-012',
+    tripId: 'TRP-012-1',
+    location: { lat: 10.8, lng: 106.6 },
+    photoUrl: 'https://example.test/incident.jpg',
+    incidentName: 'Sức khỏe ngựa',
+    incidentType: 'HORSE_HEALTH',
+    description: 'Đau bụng',
+    status: 'active',
+    createdAt: 1_700_000_000_000,
+    fitConfirmedAt: 1_700_000_100_000,
+    plan: {
+      action: 'to_station',
+      note: 'Đưa tới trạm gần nhất',
+      newEta: 1_700_010_000_000,
+      at: 1_700_000_050_000,
+      by: 'coordinator',
+      station: 'Trạm nghỉ',
+      restMinutes: 60,
+    },
+    expenses: [{
+      id: 'expense-1',
+      category: 'vet_fee',
+      label: 'Khám thú y',
+      photo: 'https://example.test/invoice.jpg',
+      amount: 500_000,
+      payer: 'customer',
+      at: 1_700_000_070_000,
+      by: 'driver',
+    }],
+  }
+
+  it('maps backend incident metadata and expenses to the field-app shape', () => {
+    expect(incidentOf(incident)).toMatchObject({
+      id: 'INC-007',
+      tripId: 'TRP-012-1',
+      kind: 'horse_health',
+      status: 'active',
+      location: { lat: 10.8, lng: 106.6 },
+      photo: 'https://example.test/incident.jpg',
+      fitConfirmedAt: 1_700_000_100_000,
+      plan: { action: 'to_station', station: 'Trạm nghỉ' },
+      expenses: [{ category: 'vet_fee', payer: 'customer', amount: 500_000 }],
+    })
+  })
+
+  it('ignores incident categories outside Flow 5', () => {
+    expect(incidentOf({ ...incident, incidentType: 'HANDOVER_TIMEOUT' })).toBeUndefined()
   })
 })

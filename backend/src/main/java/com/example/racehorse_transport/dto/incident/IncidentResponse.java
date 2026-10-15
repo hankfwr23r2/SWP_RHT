@@ -3,6 +3,8 @@ package com.example.racehorse_transport.dto.incident;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
 
 @Data
 @Builder
@@ -15,6 +17,9 @@ public class IncidentResponse {
     private Integer bookingId;
     private String bookingCode; // BK-003
     private String reporter;
+    private String tripId;
+    private Map<String, Double> location;
+    private String photoUrl;
     private String incidentName;
     private String incidentType;
     private String description;
@@ -28,6 +33,12 @@ public class IncidentResponse {
     private String costBearer; // COMPANY, CUSTOMER
     private String invoiceUrl;
     private String directive;
+    private Map<String, Object> plan;
+    private List<Map<String, Object>> expenses;
+    private Map<String, Object> rejection;
+    private Map<String, Object> approval;
+    private Long fitConfirmedAt;
+    private Long newEta;
     private Long createdAt;
     private Long resolvedAt;
 }

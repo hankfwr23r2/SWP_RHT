@@ -1,4 +1,5 @@
 import apiClient, { type ApiResponse } from './client'
+import type { BackendIncidentResponse } from './incidents'
 
 export interface BookingPartyDto {
   name: string
@@ -59,6 +60,7 @@ export interface BackendBookingResponse {
   settlement?: unknown
   rating?: unknown
   intake?: unknown
+  incidents?: BackendIncidentResponse[]
   history?: Array<{ time: number; actor: string; text: string }>
 }
 
@@ -78,6 +80,11 @@ export const backendBookingApi = {
   // 3. Khách hàng xem chi tiết đơn (GET /api/v1/customer/bookings/{id})
   getCustomerBookingById: async (id: number | string): Promise<BackendBookingResponse> => {
     const res = await apiClient.get<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${id}`)
+    return res.data.data
+  },
+
+  getAssignedBookings: async (): Promise<BackendBookingResponse[]> => {
+    const res = await apiClient.get<ApiResponse<BackendBookingResponse[]>>('/bookings/assigned')
     return res.data.data
   },
 
@@ -173,4 +180,3 @@ export const backendBookingApi = {
     return res.data.data
   },
 }
-

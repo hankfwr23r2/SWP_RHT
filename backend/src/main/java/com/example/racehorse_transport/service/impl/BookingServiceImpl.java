@@ -219,6 +219,22 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<BookingResponse> getAssignedBookings(String username) {
+        User user = userRepository.findByUsernameOrEmail(username, username)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thông tin người dùng: " + username));
+        return bookingAssignmentRepository.findByStaffID_Id(user.getId()).stream()
+                .filter(assignment -> assignment.getBookingID() != null)
+                .filter(assignment -> "ASSIGNED".equalsIgnoreCase(assignment.getStatus()))
+                .map(assignment -> assignment.getBookingID())
+                .filter(booking -> booking.getStatus() != null
+                        && !Set.of("cancelled", "rejected", "completed").contains(booking.getStatus().toLowerCase()))
+                .distinct()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Override
     @Transactional
     public BookingResponse activateBooking(String bookingIdentifier, com.example.racehorse_transport.dto.manager.ActivateBookingRequest request) {
         Integer bookingId = parseBookingId(bookingIdentifier);

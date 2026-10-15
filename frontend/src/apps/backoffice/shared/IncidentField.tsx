@@ -37,7 +37,7 @@ export function SosPanel({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }
       <div className="form-group" style={{ margin: 0 }}><label htmlFor="sos-note">Ghi chú ngắn</label><input id="sos-note" className="form-control" style={{ minHeight: 48 }} value={note} onChange={e => setNote(e.target.value)} /></div>
       <div style={{ display: 'flex', gap: 8 }}>
         <button className="btn btn-ghost" onClick={() => setOpen(false)}>Hủy</button>
-        <button className={`btn btn-primary ${s.big}`} disabled={!photo} onClick={() => run(() => bookingsApi.reportIncident(b.id, t.tripId, session!.name, kind, photo!, note), 'Đã gửi báo động. Quản lý và Điều phối viên nhận ngay')}>Gửi báo động khẩn cấp</button>
+        <button className={`btn btn-primary ${s.big}`} disabled={!photo} onClick={() => run(() => bookingsApi.reportIncident(b.id, t.tripId, session!.name, kind, photo!, note, b, t), 'Đã gửi báo động. Quản lý và Điều phối viên nhận ngay')}>Gửi báo động khẩn cấp</button>
       </div>
     </Panel>
   )
@@ -57,7 +57,7 @@ function ExpenseForm({ b, inc, run }: { b: Booking; inc: Incident; run: Run }) {
       <CaptureField label="Ảnh hóa đơn / biên lai (chụp trước)" required value={photo} onChange={setPhoto} />
       <div className="form-group" style={{ margin: 0 }}><label htmlFor="ex-label">Nội dung</label><input id="ex-label" className="form-control" style={{ minHeight: 48 }} value={label} onChange={e => setLabel(e.target.value)} /></div>
       <div className="form-group" style={{ margin: 0 }}><label htmlFor="ex-amount">Số tiền trên hóa đơn (VNĐ){!photo && ' — chụp ảnh trước để mở khóa'}</label><input id="ex-amount" inputMode="numeric" className="form-control" style={{ minHeight: 48 }} disabled={!photo} value={amount} onChange={e => setAmount(e.target.value.replace(/\D/g, ''))} /></div>
-      <button className={`btn btn-outline ${s.big}`} disabled={!photo || !Number(amount)} onClick={() => run(async () => { await bookingsApi.addIncidentExpense(b.id, inc.id, session!.name, { category, label, photo: photo!, amount: Number(amount) }); reset() }, 'Đã ghi chi phí kèm chứng từ')}>Thêm chi phí</button>
+      <button className={`btn btn-outline ${s.big}`} disabled={!photo || !Number(amount)} onClick={() => run(async () => { await bookingsApi.addIncidentExpense(b.id, inc.id, session!.name, { category, label, photo: photo!, amount: Number(amount) }, inc); reset() }, 'Đã ghi chi phí kèm chứng từ')}>Thêm chi phí</button>
     </>
   )
 }
