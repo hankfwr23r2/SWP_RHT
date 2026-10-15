@@ -42,5 +42,6 @@ public class BookingResponse {
     private Object settlement;
     private Object rating;
     private Object intake;
+    private Object rejection;
     private List<java.util.Map<String, Object>> history;
 }

@@ -446,6 +446,7 @@ public class SettlementServiceImpl implements SettlementService {
                 .settlement(payload.getSettlement())
                 .rating(payload.getRating())
                 .intake(payload.getIntake())
+                .rejection(payload.getRejection())
                 .history(payload.getHistory())
                 .build();
     }

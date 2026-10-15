@@ -54,4 +54,16 @@ public class CoordinatorBookingController {
         BookingResponse response = bookingService.getBookingById(bookingId, null);
         return ResponseEntity.ok(ApiResponse.success(response, "Lấy chi tiết đơn hàng thành công"));
     }
+
+    // 4. Điều phối viên từ chối đơn hàng (không xếp được xe / lộ trình)
+    @PostMapping("/{id}/reject")
+    public ResponseEntity<ApiResponse<BookingResponse>> rejectBooking(
+            @PathVariable("id") String id,
+            @RequestBody com.example.racehorse_transport.dto.manager.RejectBookingRequest request) {
+        if (request != null && (request.getRole() == null || request.getRole().isBlank())) {
+            request.setRole("coordinator");
+        }
+        BookingResponse response = bookingService.rejectBooking(id, request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Đã từ chối đơn hàng thành công"));
+    }
 }

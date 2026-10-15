@@ -343,6 +343,7 @@ public class BookingServiceImpl implements BookingService {
         appendHistory(payload, request != null && request.getBy() != null ? request.getBy() : "Quản lý",
                 "Từ chối đơn: " + reason);
 
+        payload.setRejection(rejectionMap);
         booking.setStatus("rejected");
         savePayload(booking, payload);
         Booking saved = bookingRepository.save(booking);
@@ -1194,6 +1195,7 @@ public class BookingServiceImpl implements BookingService {
                 .settlement(payload != null ? payload.getSettlement() : null)
                 .rating(payload != null ? payload.getRating() : null)
                 .intake(payload != null ? payload.getIntake() : null)
+                .rejection(payload != null ? payload.getRejection() : null)
                 .history(payload != null ? payload.getHistory() : null)
                 .build();
     }

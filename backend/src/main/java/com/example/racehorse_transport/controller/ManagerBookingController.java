@@ -70,6 +70,7 @@ public class ManagerBookingController {
     }
 
     // 7. API Manager hoặc Coordinator từ chối đơn hàng
+    @PreAuthorize("hasAnyRole('MANAGER', 'COORDINATOR', 'ADMIN')")
     @PostMapping("/{id}/reject")
     public ResponseEntity<ApiResponse<BookingResponse>> rejectBooking(
             @PathVariable("id") String id,

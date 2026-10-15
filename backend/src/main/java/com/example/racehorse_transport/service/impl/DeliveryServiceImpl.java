@@ -348,6 +348,7 @@ public class DeliveryServiceImpl implements DeliveryService {
                 .payment(payload.getPayment())
                 .medical(payload.getMedical())
                 .intake(payload.getIntake())
+                .rejection(payload.getRejection())
                 .history(payload.getHistory())
                 .build();
     }
