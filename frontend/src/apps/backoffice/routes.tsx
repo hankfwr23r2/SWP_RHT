@@ -21,7 +21,6 @@ import DispatchPage from './features/coordinator/dispatch/DispatchPage'
 import MonitoringPage from './features/coordinator/monitoring/MonitoringPage'
 import CoordinatorIncidentsPage from './features/coordinator/incidents/CoordinatorIncidentsPage'
 import FleetPage from './features/coordinator/fleet/FleetPage'
-import CrewDetailPage from './features/coordinator/crew/CrewDetailPage'
 import DriverPage from './features/driver/DriverPage'
 import EscortPage from './features/escort/EscortPage'
 
@@ -57,7 +56,6 @@ export const routes: AppRoute[] = [
   { path: '/coordinator/monitoring', page: MonitoringPage, roles: CO, title: 'Giám sát vận chuyển', layout: 'staff' },
   { path: '/coordinator/incidents', page: CoordinatorIncidentsPage, roles: CO, title: 'Xử lý sự cố', layout: 'staff' },
   { path: '/coordinator/fleet', page: FleetPage, roles: CO, title: 'Quản lý đội xe', layout: 'staff' },
-  { path: '/coordinator/staff/:id', page: CrewDetailPage, roles: CO, title: 'Chi tiết nhân sự', layout: 'staff' },
 
   { path: '/driver', page: DriverPage, roles: ['driver'], title: 'Chuyến của tôi', layout: 'mobile' },
   { path: '/escort', page: EscortPage, roles: ['escort'], title: 'Nhật ký sức khỏe ngựa', layout: 'mobile' },
