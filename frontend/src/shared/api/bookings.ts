@@ -154,5 +154,23 @@ export const backendBookingApi = {
     const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${id}/resubmit`)
     return res.data.data
   },
+
+  // 15. Customer thanh toán 70% còn lại trước giờ khởi hành (ngày D - Flow 4)
+  payBalance: async (id: number | string, payload?: { paymentMethod?: string; amount?: number; transactionCode?: string }): Promise<BackendBookingResponse> => {
+    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${id}/pay-balance`, payload ?? {})
+    return res.data.data
+  },
+
+  // 16. Kíp xe (Driver / Escort) lấy danh sách đơn vận chuyển (GET /api/v1/field/bookings)
+  getFieldBookings: async (): Promise<BackendBookingResponse[]> => {
+    const res = await apiClient.get<ApiResponse<BackendBookingResponse[]>>('/field/bookings')
+    return res.data.data
+  },
+
+  // 17. Kíp xe cập nhật tiến độ chuyến xe (POST /api/v1/field/bookings/{id}/trip-update)
+  updateTripProgress: async (id: number | string, payload: { tripId: string; action: string; actor?: string; payload?: Record<string, unknown> }): Promise<BackendBookingResponse> => {
+    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/field/bookings/${id}/trip-update`, payload)
+    return res.data.data
+  },
 }
 

@@ -49,6 +49,7 @@ public class BookingServiceImpl implements BookingService {
     private final PaymentRepository paymentRepository;
     private final FleetService fleetService;
     private final LogRepository logRepository;
+    private final VehicleRepository vehicleRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -839,6 +840,84 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional
+    public BookingResponse payBalance(String bookingIdentifier, String customerUsername,
+            com.example.racehorse_transport.dto.booking.PayBalanceRequest request) {
+        Integer bookingId = parseBookingId(bookingIdentifier);
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+
+        // Kiểm tra xem đơn đã cọc 30% chưa
+        List<Payment> existingPayments = paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(booking.getId());
+        boolean hasDeposit = existingPayments.stream()
+                .anyMatch(p -> "DEPOSIT".equalsIgnoreCase(p.getPaymentType()) && "COMPLETED".equalsIgnoreCase(p.getStatus()));
+        if (!hasDeposit && booking.getWaybillNo() == null) {
+            throw new IllegalStateException("Đơn hàng chưa thanh toán tiền cọc 30%! Vui lòng cọc trước khi thanh toán số dư.");
+        }
+
+        boolean alreadyPaidBalance = existingPayments.stream()
+                .anyMatch(p -> "BALANCE".equalsIgnoreCase(p.getPaymentType()) && "COMPLETED".equalsIgnoreCase(p.getStatus()));
+        if (alreadyPaidBalance) {
+            throw new IllegalStateException("Đơn hàng này đã thanh toán đủ 70% còn lại!");
+        }
+
+        Quotation quotation = quotationRepository.findTopByBookingIdOrderBySentAtDesc(booking.getId())
+                .orElseThrow(() -> new IllegalStateException("Không tìm thấy thông tin báo giá của đơn hàng!"));
+
+        Instant now = Instant.now();
+        BigDecimal payAmount = (request != null && request.getAmount() != null)
+                ? request.getAmount()
+                : (quotation.getBalanceAmount() != null ? quotation.getBalanceAmount() : quotation.getTotalAmount().multiply(new BigDecimal("0.7")));
+
+        String paymentMethod = (request != null && request.getPaymentMethod() != null && !request.getPaymentMethod().isBlank())
+                ? request.getPaymentMethod()
+                : "BANK_TRANSFER";
+
+        String transactionCode = (request != null && request.getTransactionCode() != null && !request.getTransactionCode().isBlank())
+                ? request.getTransactionCode()
+                : "BAL-" + String.format("%04d", booking.getId()) + "-" + System.currentTimeMillis();
+
+        Payment payment = Payment.builder()
+                .bookingID(booking)
+                .amount(payAmount)
+                .paymentDate(now)
+                .paymentType("BALANCE")
+                .paymentMethod(paymentMethod)
+                .transactionCode(transactionCode)
+                .status("COMPLETED")
+                .note("Khách hàng thanh toán 70% cước còn lại ngày D cho đơn BK-" + booking.getId())
+                .build();
+        paymentRepository.save(payment);
+
+        BookingDetailsPayload payload = extractPayload(booking);
+        Map<String, Object> paymentMap;
+        if (payload.getPayment() instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> existing = (Map<String, Object>) payload.getPayment();
+            paymentMap = existing;
+        } else {
+            paymentMap = new HashMap<>();
+        }
+        paymentMap.put("balancePaid", true);
+        paymentMap.put("balanceAmount", payAmount);
+        paymentMap.put("balancePaidAt", now.toEpochMilli());
+        paymentMap.put("balanceTransaction", transactionCode);
+        paymentMap.put("balanceMethod", paymentMethod);
+        paymentMap.put("isFullyPaidFixedRate", true);
+        payload.setPayment(paymentMap);
+
+        appendHistory(payload, customerUsername != null ? customerUsername : "Khách hàng",
+                "Thanh toán 70% còn lại (" + payAmount + " VND). Đã đủ điều kiện để xe bắt đầu hành trình.");
+        savePayload(booking, payload);
+        Booking updated = bookingRepository.save(booking);
+
+        logAction("PAY_BALANCE", updated.getId(),
+                "Khách hàng thanh toán 70% còn lại (" + payAmount + " VND) cho đơn BK-" + updated.getId());
+        log.info("Successfully paid balance for booking ID={}", updated.getId());
+        return mapToResponse(updated);
+    }
+
+    @Override
+    @Transactional
     public BookingResponse rejectQuote(String bookingIdentifier, String customerUsername,
             com.example.racehorse_transport.dto.booking.RejectQuoteRequest request) {
         Integer bookingId = parseBookingId(bookingIdentifier);
@@ -1098,5 +1177,198 @@ public class BookingServiceImpl implements BookingService {
         logRepository.save(deliveryLog);
 
         return true;
+    }
+
+    @Override
+    @Transactional
+    public BookingResponse updateTripProgress(String bookingIdentifier, com.example.racehorse_transport.dto.field.TripUpdateRequest request) {
+        Integer bookingId = parseBookingId(bookingIdentifier);
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+
+        BookingDetailsPayload payload = extractPayload(booking);
+        List<com.example.racehorse_transport.dto.coordinator.VehicleTripDto> trips = payload.getTrips();
+        if (trips == null || trips.isEmpty()) {
+            throw new IllegalStateException("Đơn hàng chưa có thông tin chuyến xe!");
+        }
+
+        String tripId = request.getTripId();
+        com.example.racehorse_transport.dto.coordinator.VehicleTripDto targetTrip = trips.stream()
+                .filter(t -> t.getTripId() != null && t.getTripId().equalsIgnoreCase(tripId))
+                .findFirst()
+                .orElse(trips.get(0));
+
+        String action = request.getAction() != null ? request.getAction() : "";
+        String actor = request.getActor() != null ? request.getActor() : "Kíp xe";
+        Map<String, Object> reqPayload = request.getPayload() != null ? request.getPayload() : new HashMap<>();
+        long now = System.currentTimeMillis();
+
+        switch (action.toUpperCase()) {
+            case "ACKNOWLEDGE":
+            case "ACK": {
+                String who = String.valueOf(reqPayload.getOrDefault("who", "driver"));
+                Map<String, Object> acks = targetTrip.getAcks() != null ? targetTrip.getAcks() : new HashMap<>();
+                acks.put(who, now);
+                targetTrip.setAcks(acks);
+                appendHistory(payload, actor, actor + " (" + ("driver".equalsIgnoreCase(who) ? "Tài xế" : "Hộ tống") + ") đã nhận Lệnh điều xe");
+                break;
+            }
+            case "DEPART_TO_PICKUP": {
+                targetTrip.setDepartedAt(now);
+                booking.setStatus("en_route_to_pickup");
+                appendHistory(payload, actor, "Xe bắt đầu xuất phát đến điểm đón ngựa");
+                break;
+            }
+            case "ARRIVE_PICKUP": {
+                Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> checkpoints = (List<Map<String, Object>>) run.computeIfAbsent("checkpoints", k -> new ArrayList<>());
+                if (checkpoints.isEmpty()) {
+                    Map<String, Object> cp = new HashMap<>();
+                    cp.put("id", "pickup");
+                    cp.put("type", "pickup");
+                    cp.put("arrivedAt", now);
+                    cp.put("photo", reqPayload.get("photo"));
+                    checkpoints.add(cp);
+                } else {
+                    checkpoints.get(0).put("arrivedAt", now);
+                    checkpoints.get(0).put("photo", reqPayload.get("photo"));
+                }
+                targetTrip.setRun(run);
+                appendHistory(payload, actor, "Tài xế đã có mặt tại điểm đón");
+                break;
+            }
+            case "SCAN_CHIP": {
+                String chip = String.valueOf(reqPayload.getOrDefault("chip", "")).toUpperCase().trim();
+                Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> checkpoints = (List<Map<String, Object>>) run.computeIfAbsent("checkpoints", k -> new ArrayList<>());
+                if (checkpoints.isEmpty()) {
+                    Map<String, Object> cp = new HashMap<>();
+                    cp.put("id", "pickup");
+                    checkpoints.add(cp);
+                }
+                Map<String, Object> pickup = checkpoints.get(0);
+                @SuppressWarnings("unchecked")
+                List<String> chips = (List<String>) pickup.computeIfAbsent("chips", k -> new ArrayList<>());
+                if (!chips.contains(chip) && !chip.isEmpty()) {
+                    chips.add(chip);
+                }
+                targetTrip.setRun(run);
+                appendHistory(payload, actor, "Hộ tống quét microchip: " + chip);
+                break;
+            }
+            case "COLLECT_ORIGINALS": {
+                Object items = reqPayload.get("items");
+                Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> checkpoints = (List<Map<String, Object>>) run.computeIfAbsent("checkpoints", k -> new ArrayList<>());
+                if (checkpoints.isEmpty()) {
+                    Map<String, Object> cp = new HashMap<>();
+                    cp.put("id", "pickup");
+                    checkpoints.add(cp);
+                }
+                checkpoints.get(0).put("originals", items);
+                targetTrip.setRun(run);
+                appendHistory(payload, actor, "Tài xế đã thu đủ hồ sơ gốc");
+                break;
+            }
+            case "UPLOAD_HANDOVER": {
+                String photo = String.valueOf(reqPayload.getOrDefault("photo", ""));
+                Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> checkpoints = (List<Map<String, Object>>) run.computeIfAbsent("checkpoints", k -> new ArrayList<>());
+                if (!checkpoints.isEmpty()) {
+                    checkpoints.get(0).put("handoverPhoto", photo);
+                }
+                targetTrip.setRun(run);
+                appendHistory(payload, actor, "Tải ảnh biên bản giao nhận có chữ ký");
+                break;
+            }
+            case "START_JOURNEY": {
+                booking.setStatus("in_transit");
+                Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
+                run.put("startedAt", now);
+                targetTrip.setRun(run);
+                appendHistory(payload, actor, "Xe bắt đầu hành trình vận chuyển ngựa");
+                break;
+            }
+            case "ARRIVE_CHECKPOINT": {
+                String cpId = String.valueOf(reqPayload.getOrDefault("checkpointId", ""));
+                String photo = String.valueOf(reqPayload.getOrDefault("photo", ""));
+                Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> checkpoints = (List<Map<String, Object>>) run.computeIfAbsent("checkpoints", k -> new ArrayList<>());
+                for (Map<String, Object> cp : checkpoints) {
+                    if (cpId.equals(cp.get("id"))) {
+                        cp.put("arrivedAt", now);
+                        cp.put("photo", photo);
+                    }
+                }
+                targetTrip.setRun(run);
+                appendHistory(payload, actor, "Xe tới trạm dừng / mốc: " + cpId);
+                break;
+            }
+            case "SUBMIT_WELFARE": {
+                Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> welfareList = (List<Map<String, Object>>) run.computeIfAbsent("welfare", k -> new ArrayList<>());
+                Map<String, Object> w = new HashMap<>(reqPayload);
+                w.put("at", now);
+                w.put("by", actor);
+                welfareList.add(w);
+                targetTrip.setRun(run);
+                appendHistory(payload, actor, "Hộ tống gửi nhật ký an sinh ngựa");
+                break;
+            }
+            case "CONTINUE_JOURNEY": {
+                appendHistory(payload, actor, "Xe tiếp tục hành trình");
+                break;
+            }
+            case "CUSTOMS_CLEARED": {
+                appendHistory(payload, actor, "Đã hoàn tất thủ tục thông quan tại cửa khẩu");
+                break;
+            }
+            case "COMPLETE_DELIVERY": {
+                Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
+                run.put("deliveredAt", now);
+                targetTrip.setRun(run);
+
+                Map<String, Object> hr = new HashMap<>();
+                hr.put("fromPlace", booking.getDropoffAddress() != null ? booking.getDropoffAddress() : "Điểm giao");
+                hr.put("earliestAt", now + 1000);
+                hr.put("eta", now + 7200000L);
+                targetTrip.setHomeReturn(hr);
+
+                booking.setStatus("delivered_pending_settlement");
+                appendHistory(payload, actor, "Hoàn tất bàn giao ngựa, đơn chuyển sang chờ đối soát chi phí");
+                break;
+            }
+            case "CONFIRM_HOME": {
+                Map<String, Object> hr = targetTrip.getHomeReturn() != null ? targetTrip.getHomeReturn() : new HashMap<>();
+                hr.put("backAt", now);
+                targetTrip.setHomeReturn(hr);
+
+                if (targetTrip.getVehicleId() != null) {
+                    try {
+                        Integer vId = Integer.parseInt(targetTrip.getVehicleId().replaceAll("[^0-9]", ""));
+                        vehicleRepository.findById(vId).ifPresent(v -> {
+                            v.setStatus("AVAILABLE");
+                            vehicleRepository.save(v);
+                        });
+                    } catch (Exception ignored) {}
+                }
+                appendHistory(payload, actor, "Xe và kíp xe đã về tới Trụ sở chính Việt Nam, sẵn sàng nhận chuyến mới");
+                break;
+            }
+            default: {
+                log.warn("Unknown trip action: {}", action);
+            }
+        }
+
+        savePayload(booking, payload);
+        Booking updated = bookingRepository.save(booking);
+        logAction("TRIP_UPDATE_" + action, updated.getId(), actor + " thực hiện " + action + " cho chuyến " + tripId);
+        return mapToResponse(updated);
     }
 }
