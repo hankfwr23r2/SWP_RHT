@@ -29,7 +29,12 @@
 
 ## 2. Quy Trình Đồng Bộ Frontend & Backend Khi Sửa Lỗi / Phát Triển
 
-Khi thêm endpoint mới hoặc chỉnh sửa API giữa BE và FE, bắt buộc tuân theo các nguyên tắc sau:
+### 2.0. Nguyên Tắc Bắt Buộc: Xác Nhận Trước Khi Sửa Code (Confirmation Before Edit)
+> [!IMPORTANT]
+> **Agent tuyệt đối không được tự ý sửa code khi chưa được người dùng xác nhận!**
+> 1. **Bước 1 - Đưa ra phương án**: Giải thích rõ nguyên nhân, đề xuất giải pháp kỹ thuật cụ thể và danh sách file dự kiến sửa đổi.
+> 2. **Bước 2 - Chờ xác nhận**: Hỏi ý kiến người dùng và dừng lại chờ phản hồi đồng ý.
+> 3. **Bước 3 - Tiến hành thực hiện**: Chỉ bắt đầu sửa mã nguồn sau khi người dùng xác nhận đồng ý (ví dụ: "đồng ý", "làm đi", "ok", "tiến hành"...).
 
 ### 2.1. Chuẩn Hóa Routing & Tiền Tố Path
 - Backend đã cấu hình `server.servlet.context-path=/api/v1` trong `application.properties`.
