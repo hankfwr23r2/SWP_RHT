@@ -16,10 +16,24 @@ Chỉ cần cài đặt Docker Desktop và chạy đúng 1 lệnh tại thư m�
 ```bash
 docker compose up -d
 ```
-- Tự động bật PostgreSQL 16 Alpine, tạo database `horse_transport_db` và nạp sẵn tài khoản Admin/Nhân sự.
+- Tự động bật PostgreSQL 16 Alpine và tạo database `horse_transport_db`.
 - Tự động bật Backend tại: `http://localhost:8080/api/v1`
 - Tự động bật Frontend tại: `http://localhost:5173`
 - Để dừng hệ thống: `docker compose down`
+
+Để tạo tài khoản quản trị đầu tiên, cấu hình `APP_BOOTSTRAP_ADMIN_USERNAME`,
+`APP_BOOTSTRAP_ADMIN_EMAIL` và `APP_BOOTSTRAP_ADMIN_PASSWORD` trong môi trường
+chạy Docker Compose trước khi khởi động. Ví dụ trong PowerShell:
+
+```powershell
+$env:APP_BOOTSTRAP_ADMIN_USERNAME = "admin"
+$env:APP_BOOTSTRAP_ADMIN_EMAIL = "admin@example.com"
+$env:APP_BOOTSTRAP_ADMIN_PASSWORD = "<set-a-unique-strong-password>"
+docker compose up -d
+```
+
+Nếu không cấu hình đủ ba biến, backend sẽ không tạo tài khoản mẫu mặc định.
+Tài khoản và dữ liệu đã có trong database không bị xóa.
 
 ---
 

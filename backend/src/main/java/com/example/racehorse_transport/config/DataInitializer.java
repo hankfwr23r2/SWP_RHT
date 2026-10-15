@@ -6,6 +6,7 @@ import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -21,26 +22,23 @@ public class DataInitializer implements CommandLineRunner {
     private final StaffRepository staffRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @Value("${app.bootstrap-admin.username:}")
+    private String bootstrapAdminUsername;
+
+    @Value("${app.bootstrap-admin.email:}")
+    private String bootstrapAdminEmail;
+
+    @Value("${app.bootstrap-admin.password:}")
+    private String bootstrapAdminPassword;
+
     @Override
     public void run(String... args) {
+        if (isBlank(bootstrapAdminUsername) || isBlank(bootstrapAdminEmail) || isBlank(bootstrapAdminPassword)) {
+            log.info("Admin bootstrap skipped; configure APP_BOOTSTRAP_ADMIN_USERNAME, APP_BOOTSTRAP_ADMIN_EMAIL, and APP_BOOTSTRAP_ADMIN_PASSWORD to create the initial administrator.");
+            return;
+        }
 
-        // 2. Tự động khởi tạo tài khoản Admin mặc định
-        seedStaff("admin01", "admin01@gmail.com", "admin123", "ADMIN", "ADMIN-01");
-
-        // 3. Tự động khởi tạo nhân sự vận hành cốt lõi nếu chưa có
-        seedStaff("manager01", "manager01@gmail.com", "Password@123", "MANAGER", "MG-01");
-        seedStaff("coordinator01", "coordinator01@gmail.com", "Password@123", "COORDINATOR", "CO-01");
-        seedStaff("specialist01", "specialist01@gmail.com", "Password@123", "SPECIALIST", "SP-01");
-
-        // Drivers (Tài xế)
-        seedStaff("driver01", "driver01@gmail.com", "Password@123", "DRIVER", "TX-01");
-        seedStaff("driver02", "driver02@gmail.com", "Password@123", "DRIVER", "TX-02");
-        seedStaff("driver03", "driver03@gmail.com", "Password@123", "DRIVER", "TX-03");
-
-        // Escorts (Hộ tống / Chuyên viên thú y)
-        seedStaff("escort01", "escort01@gmail.com", "Password@123", "ESCORT", "NV-01");
-        seedStaff("escort02", "escort02@gmail.com", "Password@123", "ESCORT", "NV-02");
-        seedStaff("escort03", "escort03@gmail.com", "Password@123", "ESCORT", "NV-03");
+        seedStaff(bootstrapAdminUsername.trim(), bootstrapAdminEmail.trim(), bootstrapAdminPassword, "ADMIN", "ADMIN-01");
     }
 
     private void seedStaff(String username, String email, String rawPassword, String role, String staffCode) {
@@ -61,5 +59,9 @@ public class DataInitializer implements CommandLineRunner {
 
             log.info(">>> Seeded staff account: role={}, username={}, email={} (UserID: {})", role, username, email, user.getId());
         }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 }

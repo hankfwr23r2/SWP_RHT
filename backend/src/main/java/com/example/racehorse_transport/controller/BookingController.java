@@ -41,7 +41,7 @@ public class BookingController {
     }
 
     // 2. Xem chi tiết đơn hàng
-    @PreAuthorize("hasAnyRole('CUSTOMER', 'COORDINATOR', 'MANAGER', 'SPECIALIST', 'ADMIN', 'DRIVER', 'ESCORT')")
+    @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER', 'SPECIALIST', 'ADMIN', 'DRIVER', 'ESCORT')")
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<BookingDTO>> getBookingById(@PathVariable Integer id) {
         Optional<Booking> bookingOpt = bookingService.findById(id);
