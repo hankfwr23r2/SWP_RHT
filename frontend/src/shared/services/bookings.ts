@@ -10,6 +10,13 @@ import { horsesApi } from './horses'
 import { pushNotice } from './notices'
 import { seedBookings } from './mock/bookings'
 import { createStore } from './store'
+import { backendBookingApi } from '../api/bookings'
+import { specialistApi } from '../api/specialist'
+import { backendIncidentApi } from '../api/incidents'
+import { backendDeliveryApi } from '../api/delivery'
+import { backendSettlementApi } from '../api/settlements'
+import { paymentApi } from '../api/payments'
+
 
 const store = createStore<Booking>('bookings', seedBookings)
 
@@ -166,6 +173,44 @@ export const publicBookingsApi = {
 export const customerBookingsApi = {
   list: async (customer: string): Promise<CustomerBookingView[]> => {
     applySystemRules()
+    if (typeof window !== 'undefined') {
+      try {
+        const backendBookings = await backendBookingApi.getCustomerBookings()
+        if (Array.isArray(backendBookings) && backendBookings.length > 0) {
+          backendBookings.forEach((bb: any) => {
+            const id = bb.id || `BK-${String(bb.numericId || 1).padStart(3, '0')}`
+            if (!store.get(id)) {
+              store.add({
+                id,
+                customer,
+                status: (bb.status as any) || 'pending_intake',
+                type: (bb.type as any) || 'domestic',
+                origin: { id: 'HN', name: bb.originName || 'Hà Nội', country: (bb.originCountry || 'VN') as any },
+                dest: { id: 'HCM', name: bb.destName || 'Hồ Chí Minh', country: (bb.destCountry || 'VN') as any },
+                departAt: bb.departAt || Date.now(),
+                consignor: { name: bb.consignor?.name || customer, phone: bb.consignor?.phone || '0901234567', idNumber: '001099000000', address: 'Hà Nội' },
+                consignee: { name: bb.consignee?.name || 'Người nhận', phone: bb.consignee?.phone || '0909876543', idNumber: '001099000001', address: 'Hồ Chí Minh' },
+                horses: (bb.horses || []).map((h: any, idx: number) => ({
+                  horseId: h.horseId || `H-${idx + 1}`,
+                  name: h.name || `Ngựa #${idx + 1}`,
+                  microchip: h.microchip || `MC-${idx + 1}`,
+                  breed: h.breed || 'Thoroughbred',
+                  sex: (h.sex || 'stallion') as any,
+                  stall: (h.stall || 'standard') as any,
+                  feedPackage: (h.feedPackage || 'standard') as any,
+                  waterPlan: (h.waterPlan || 'every_4h') as any,
+                  insurance: { opted: !!h.insuranceOpted }
+                })),
+                createdAt: bb.createdAt || Date.now(),
+                history: [{ time: Date.now(), actor: customer, text: 'Đồng bộ từ Backend' }],
+              })
+            }
+          })
+        }
+      } catch {
+        // Fallback
+      }
+    }
     return store.all().filter(b => b.customer === customer).map(toCustomerView).sort((a, b) => b.createdAt - a.createdAt)
   },
   get: async (customer: string, id: string): Promise<CustomerBookingView | undefined> => {
@@ -176,6 +221,41 @@ export const customerBookingsApi = {
   create: async (customer: string, input: NewBookingInput): Promise<CustomerBookingView> => {
     const now = Date.now()
     if (store.all().some(o => o.customer === customer && o.status === 'payment_overdue')) throw new Error('Bạn có đơn quá hạn thanh toán quyết toán nên chưa đặt được đơn mới. Vui lòng thanh toán trước.')
+
+    if (typeof window !== 'undefined') {
+      try {
+        await backendBookingApi.create({
+          type: input.type,
+          originName: input.origin.name,
+          originCountry: input.origin.country,
+          destName: input.dest.name,
+          destCountry: input.dest.country,
+          departAt: input.departAt,
+          consignor: {
+            name: input.consignor.name,
+            phone: input.consignor.phone,
+          },
+          consignee: {
+            name: input.consignee.name,
+            phone: input.consignee.phone,
+          },
+          horses: input.horses.map(h => ({
+            horseId: h.horseId,
+            name: h.name,
+            microchip: h.microchip,
+            breed: h.breed,
+            sex: h.sex,
+            stall: h.stall,
+            feedPackage: h.feedPackage,
+            waterPlan: h.waterPlan,
+            insuranceOpted: h.insurance?.opted,
+          })),
+        })
+      } catch {
+        // Fallback
+      }
+    }
+
     const b: Booking = { ...input, id: nextBookingId(store.all()), customer, createdAt: now, status: 'pending_intake', history: [{ time: now, actor: customer, text: 'Gửi yêu cầu đặt đơn' }] }
     store.add(b)
     notify(b, ['manager'], `Đơn mới ${b.id}`, `${customer} vừa gửi đơn ${input.horses.length} ngựa, chờ tiếp nhận.`, { manager: LINK.manager.intake })
@@ -203,6 +283,15 @@ export const customerBookingsApi = {
     const b = must(id)
     if (b.customer !== customer) throw new Error('Không có quyền với đơn này.')
     if (b.status !== 'awaiting_payment') throw new Error('Chỉ từ chối được báo giá khi đơn đang chờ đặt cọc.')
+
+    if (typeof window !== 'undefined') {
+      try {
+        await backendBookingApi.reject(id, { by: customer, reason: reason.trim() })
+      } catch {
+        // Fallback
+      }
+    }
+
     const out = toCustomerView(store.update(id, {
       status: 'cancelled', cancellation: { at: Date.now(), reason: reason.trim(), by: 'customer', refund: 0 },
       history: log(b, customer, `Từ chối báo giá${reason.trim() ? `: ${reason.trim()}` : ''}`),
@@ -218,6 +307,15 @@ export const customerBookingsApi = {
     if (b.status === 'awaiting_payment') throw new Error('Đơn đang chờ đặt cọc: dùng Từ chối báo giá.')
     if (!CANCEL_AFTER_DEPOSIT.includes(b.status)) throw new Error(['pending_intake', 'under_review', 'pending_commercial'].includes(b.status) ? 'Đơn đang được thẩm định để báo giá, chỉ hủy được khi đã có báo giá.' : 'Đơn này không hủy được ở bước hiện tại.')
     if (!reason.trim()) throw new Error('Cần ghi lý do hủy.')
+
+    if (typeof window !== 'undefined') {
+      try {
+        await paymentApi.cancelWithRefund(id, reason.trim())
+      } catch {
+        // Fallback
+      }
+    }
+
     const refund = cancelRefund(b, 'customer')
     const out = toCustomerView(store.update(id, {
       status: 'cancelled', cancellation: { at: Date.now(), reason: reason.trim(), by: 'customer', refund },
@@ -243,6 +341,21 @@ export const customerBookingsApi = {
     if (b.customer !== customer) throw new Error('Không có quyền với đơn này.')
     if (b.status === 'quote_expired') throw new Error('Báo giá đã hết hạn 48 giờ, không thể đặt cọc.')
     expect(b, 'awaiting_payment', 'Đơn này không ở bước chờ đặt cọc.')
+
+    if (typeof window !== 'undefined') {
+      try {
+        await paymentApi.payDeposit({
+          bookingId: id,
+          amount: b.quote!.deposit,
+          paymentType: 'DEPOSIT',
+          paymentMethod: 'VNPAY',
+          note: `Thanh toan coc don ${id}`,
+        })
+      } catch {
+        // Fallback
+      }
+    }
+
     const now = Date.now()
     const waybill = { no: waybillNoOf(id), issuedAt: now }
     const out = toCustomerView(store.update(id, {
@@ -260,6 +373,21 @@ export const customerBookingsApi = {
     if (b.customer !== customer) throw new Error('Không có quyền với đơn này.')
     if (b.balance) throw new Error('Đơn đã thanh toán số dư.')
     if (b.status !== 'ready_for_pickup' && b.status !== 'en_route_to_pickup') throw new Error('Chưa đến bước thanh toán số dư.')
+
+    if (typeof window !== 'undefined') {
+      try {
+        await paymentApi.payBalance({
+          bookingId: id,
+          amount: b.quote!.balance,
+          paymentType: 'BALANCE',
+          paymentMethod: 'VNPAY',
+          note: `Thanh toan 70% con lai don ${id}`,
+        })
+      } catch {
+        // Fallback
+      }
+    }
+
     const out = toCustomerView(store.update(id, { balance: { paidAt: Date.now(), amount: b.quote!.balance, reference: `EQZ-${id.slice(-4)}-BAL` }, history: log(b, customer, 'Thanh toán 70% còn lại') }))
     notify(b, ['manager', 'coordinator'], `Khách đã trả 70% — đơn ${id}`, `Đã nhận ${formatVND(b.quote!.balance)}, xe được phép bắt đầu hành trình.`, { coordinator: LINK.coordinator(id, true) })
     return out
@@ -270,6 +398,23 @@ export const customerBookingsApi = {
     if (b.customer !== customer) throw new Error('Không có quyền với đơn này.')
     if (!['settlement_issued', 'payment_overdue'].includes(b.status) || !b.settlement) throw new Error(b.status === 'completed' ? 'Đơn đã đóng.' : 'Bảng quyết toán chưa phát hành.')
     if (![rating.trip, rating.driver, rating.escort].every(n => Number.isInteger(n) && n >= 1 && n <= 5)) throw new Error('Chấm điểm từ 1 đến 5 sao cho chuyến đi, tài xế và hộ tống.')
+
+    if (typeof window !== 'undefined') {
+      try {
+        await backendSettlementApi.payAndComplete(id, {
+          paymentMethod: 'VNPAY',
+          rating: {
+            trip: rating.trip,
+            driver: rating.driver,
+            escort: rating.escort,
+            comment: rating.comment,
+          },
+        })
+      } catch {
+        // Fallback
+      }
+    }
+
     const now = Date.now()
     const paid = { paidAt: now, amount: b.settlement.total, reference: `EQZ-${id.slice(-4)}-FIN` }
     const out = toCustomerView(store.update(id, { status: 'completed', settlement: { ...b.settlement, paid }, rating: { ...rating, at: now }, history: log(b, customer, b.settlement.total ? `Thanh toán quyết toán ${formatVND(b.settlement.total)} và đánh giá chuyến đi` : 'Xác nhận quyết toán và đánh giá chuyến đi') }))
@@ -303,6 +448,15 @@ export const bookingsApi = {
   activate: async (id: string, by: string, specialist: StaffRef, coordinator: StaffRef): Promise<Booking> => {
     const b = must(id)
     expect(b, 'pending_intake', 'Đơn này đã được tiếp nhận.')
+
+    if (typeof window !== 'undefined') {
+      try {
+        await backendBookingApi.activate(id, { by, specialist, coordinator })
+      } catch {
+        // Fallback
+      }
+    }
+
     const activated = structuredClone(store.update(id, {
       status: 'under_review', clearance: blankClearance(b.type),
       intake: { at: Date.now(), by, specialist, coordinator },
@@ -336,6 +490,15 @@ export const bookingsApi = {
     if (role === 'manager') expect(b, 'pending_intake', 'Chỉ từ chối được đơn đang chờ tiếp nhận.')
     else expect(b, 'under_review', 'Chỉ từ chối được đơn đang thẩm định.')
     if (!reason.trim()) throw new Error('Cần ghi lý do từ chối.')
+
+    if (typeof window !== 'undefined') {
+      try {
+        await backendBookingApi.reject(id, { by, reason: reason.trim() })
+      } catch {
+        // Fallback
+      }
+    }
+
     const out = structuredClone(store.update(id, {
       status: 'rejected', rejection: { at: Date.now(), by, role, reason: reason.trim() },
       history: log(b, by, `Từ chối đơn${role === 'coordinator' ? ' (không duyệt xe và lộ trình)' : ''}: ${reason.trim()}`),
@@ -349,6 +512,15 @@ export const bookingsApi = {
   approveMedical: async (id: string, by: string): Promise<Booking> => {
     const b = must(id)
     expect(b, 'under_review', 'Đơn không ở bước thẩm định.')
+
+    if (typeof window !== 'undefined') {
+      try {
+        await specialistApi.approveMedical(id, { specialistName: by })
+      } catch {
+        // Fallback
+      }
+    }
+
     const medical: MedicalReview = { status: 'approved', at: Date.now(), by }
     const next = { ...b, medical }
     const out = structuredClone(store.update(id, {
@@ -365,6 +537,15 @@ export const bookingsApi = {
     expect(b, 'under_review', 'Đơn không ở bước thẩm định.')
     if (!reason.trim()) throw new Error('Cần ghi lý do yêu cầu bổ sung.')
     if (!items.length) throw new Error('Chọn ít nhất một giấy cần bổ sung.')
+
+    if (typeof window !== 'undefined') {
+      try {
+        await specialistApi.requestResubmission(id, { specialistName: by, reason: reason.trim(), items })
+      } catch {
+        // Fallback
+      }
+    }
+
     const out = structuredClone(store.update(id, {
       medical: { ...b.medical, status: 'resubmit', at: Date.now(), by, resubmit: { reason: reason.trim(), items, at: Date.now() } },
       history: log(b, by, `Yêu cầu khách bổ sung hồ sơ: ${reason.trim()}`),
@@ -396,6 +577,21 @@ export const bookingsApi = {
     const { errors } = validateRoutePlan(input.route, international)
     if (errors.length) throw new Error(errors[0])
     const trips: VehicleTrip[] = input.trips.map((t, i) => ({ ...t, driverId: '', escortId: '', tripId: tripIdFor(id, i + 1), acks: {} }))
+
+    if (typeof window !== 'undefined') {
+      try {
+        await backendBookingApi.confirmFleetPlan(id, {
+          by,
+          trips: trips.map(t => ({ vehicleId: t.vehicleId, horseIds: t.horseIds, tripId: t.tripId })),
+          route: input.route,
+          gate: input.gate,
+          note: input.note,
+        })
+      } catch {
+        // Fallback
+      }
+    }
+
     const next = { ...b, plan: { at: Date.now(), by, note: input.note } }
     const out = structuredClone(store.update(id, {
       trips, route: { ...input.route, completedAt: Date.now(), by }, plan: next.plan, sentBack: b.sentBack?.to === 'coordinator' ? undefined : b.sentBack, gate: international ? input.gate : undefined,
@@ -411,6 +607,15 @@ export const bookingsApi = {
     const b = must(id)
     expect(b, 'pending_commercial', 'Chỉ trả lại được đơn đang chờ duyệt báo giá.')
     if (!reason.trim()) throw new Error('Cần ghi lý do trả lại.')
+
+    if (typeof window !== 'undefined') {
+      try {
+        await backendBookingApi.sendBack(id, { by, to, reason: reason.trim() })
+      } catch {
+        // Fallback
+      }
+    }
+
     const sentBack: SentBack = { to, reason: reason.trim(), at: Date.now(), by }
     const label = to === 'specialist' ? 'Kiểm dịch viên duyệt lại hồ sơ ngựa' : 'Điều phối viên làm lại xe và lộ trình'
     const patch: Partial<Booking> = to === 'specialist'
@@ -438,6 +643,15 @@ export const bookingsApi = {
       if (busy.crew.has(p.driverId)) throw new Error('Tài xế đã được giữ cho đơn khác có ngày đi gần ngày này.')
       if (busy.crew.has(p.escortId)) throw new Error('Nhân viên hộ tống đã được giữ cho đơn khác có ngày đi gần ngày này.')
     })
+
+    if (typeof window !== 'undefined') {
+      try {
+        await backendBookingApi.assignCrew(id, { by, picks })
+      } catch {
+        // Fallback
+      }
+    }
+
     const next = trips.map(t => { const p = picks.find(x => x.tripId === t.tripId)!; return { ...t, driverId: p.driverId, escortId: p.escortId } })
     return structuredClone(store.update(id, { trips: next, history: log(b, by, `Chọn tài xế và hộ tống cho ${next.length} xe`) }))
   },
@@ -459,6 +673,23 @@ export const bookingsApi = {
     if (!(b.trips ?? []).every(crewAssigned)) throw new Error('Chọn tài xế và hộ tống cho tất cả các xe trước khi gửi báo giá.')
     const { lines } = await bookingsApi.quoteDraft(id)
     const quote = finalizeQuote(lines, adjustments.filter(a => a.label.trim() && a.amount !== 0), Date.now(), by)
+
+    if (typeof window !== 'undefined') {
+      try {
+        await backendBookingApi.sendQuote(id, {
+          by,
+          adjustments: adjustments.filter(a => a.label.trim() && a.amount !== 0),
+          lines,
+          subtotal: quote.subtotal,
+          total: quote.total,
+          deposit: quote.deposit,
+          balance: quote.balance,
+        })
+      } catch {
+        // Fallback
+      }
+    }
+
     const out = structuredClone(store.update(id, { quote, status: 'awaiting_payment', history: log(b, by, 'Duyệt và gửi báo giá') }))
     notify(b, ['customer'], `Báo giá đơn ${id}`, `Tổng ${formatVND(quote.total)}, đặt cọc ${formatVND(quote.deposit)} trong 48 giờ.`)
     return out
@@ -469,6 +700,15 @@ export const bookingsApi = {
   acceptWaybill: async (id: string, by: string): Promise<Booking> => {
     const b = must(id)
     expect(b, 'waybill_issued', 'Đơn này chưa có Vận đơn hoặc đã được tiếp nhận.')
+
+    if (typeof window !== 'undefined') {
+      try {
+        await specialistApi.acceptWaybill(id)
+      } catch {
+        // Fallback
+      }
+    }
+
     const out = structuredClone(store.update(id, {
       status: 'clearance_in_progress', clearance: { ...(b.clearance ?? blankClearance(b.type)), acceptedAt: Date.now(), acceptedBy: by },
       history: log(b, by, `Tiếp nhận Vận đơn ${b.waybill?.no ?? ''}, bắt đầu làm giấy tờ`),
@@ -483,6 +723,20 @@ export const bookingsApi = {
     if (!STAFF_ON_CLEARANCE.includes(b.status) || !b.clearance) throw new Error('Đơn không ở bước làm giấy tờ.')
     const item = b.clearance.items.find(i => i.type === type)
     if (!item) throw new Error('Hạng mục này không có trong đơn.')
+
+    if (typeof window !== 'undefined') {
+      try {
+        await specialistApi.updateClearanceItem(id, {
+          type,
+          note: patch.note,
+          photos: patch.photos,
+          status: patch.photos?.length ? 'done' : 'todo',
+        })
+      } catch {
+        // Fallback
+      }
+    }
+
     const merged = { ...item, ...patch }
     const next: ClearanceItem = { ...merged, status: merged.photos.length ? 'done' : 'todo', updatedAt: Date.now(), by }
     const items = b.clearance.items.map(i => (i.type === type ? next : i))
@@ -500,6 +754,15 @@ export const bookingsApi = {
     if (!STAFF_ON_CLEARANCE.includes(b.status) || !b.clearance) throw new Error('Đơn không ở bước làm giấy tờ.')
     if (CLEARANCE_DOC[type].international && b.type !== 'international') throw new Error('Giấy này chỉ áp dụng cho tuyến quốc tế.')
     if (b.clearance.items.some(i => i.type === type)) throw new Error('Hạng mục này đã có trong đơn.')
+
+    if (typeof window !== 'undefined') {
+      try {
+        await specialistApi.addClearanceItem(id, { type, label: CLEARANCE_DOC[type]?.short })
+      } catch {
+        // Fallback
+      }
+    }
+
     const items = [...b.clearance.items, { type, status: 'todo' as const, note: '', photos: [] }]
     return structuredClone(store.update(id, { clearance: { ...b.clearance, items }, history: log(b, by, `Thêm hạng mục giấy tờ "${CLEARANCE_DOC[type].short}"`) }))
   },
@@ -511,6 +774,15 @@ export const bookingsApi = {
     if (b.type !== 'international') throw new Error('Chỉ tuyến quốc tế mới ghi nhận thông quan.')
     const horse = b.horses.find(h => h.horseId === horseId)
     if (!horse) throw new Error('Ngựa này không có trong đơn.')
+
+    if (typeof window !== 'undefined') {
+      try {
+        await specialistApi.markHorseCleared(id, horseId, cleared)
+      } catch {
+        // Fallback
+      }
+    }
+
     const rest = b.clearance.horsesCleared.filter(x => x !== horseId)
     return structuredClone(store.update(id, { clearance: { ...b.clearance, horsesCleared: cleared ? [...rest, horseId] : rest }, history: log(b, by, `${cleared ? 'Ghi nhận' : 'Bỏ ghi nhận'} giấy thông quan của ${horse.name}`) }))
   },
@@ -521,6 +793,15 @@ export const bookingsApi = {
     if (!STAFF_ON_CLEARANCE.includes(b.status)) throw new Error('Đơn không ở bước làm giấy tờ.')
     const why = canCompleteClearance(b)
     if (why) throw new Error(why)
+
+    if (typeof window !== 'undefined') {
+      try {
+        await specialistApi.completeClearance(id)
+      } catch {
+        // Fallback
+      }
+    }
+
     const done = { ...b, status: 'clearance_done' as const }
     const out = structuredClone(store.update(id, {
       clearance: { ...b.clearance!, doneAt: Date.now(), doneBy: by }, status: deriveStatus(done),
@@ -569,6 +850,15 @@ export const bookingsApi = {
     const t = liveTrip(b, tripId)
     if (!t.departedAt || t.run?.startedAt) throw new Error('Xe chưa ở bước đến điểm đón.')
     if (!photo) throw new Error('Cần chụp ảnh tại điểm đón.')
+
+    if (typeof window !== 'undefined') {
+      try {
+        await backendDeliveryApi.arrive(id, { photoUrl: photo, note: `Tài xế ${tripId} tới điểm đón` })
+      } catch {
+        // Fallback
+      }
+    }
+
     const run: TripRun = t.run ?? { checkpoints: buildCheckpoints(b), welfare: [] }
     t.run = run
     const cp = run.checkpoints[0]
@@ -691,6 +981,22 @@ export const bookingsApi = {
     if (cp?.type !== 'delivery' || !cp.arrivedAt) throw new Error('Chưa tới điểm giao.')
     if (!run.welfare.some(w => w.checkpointId === cp.id)) throw new Error('Hộ tống chưa kiểm tra thể trạng lần cuối.')
     if (!cp.handoverPhoto) throw new Error('Chưa có ảnh Biên bản Bàn giao & Hoàn tất có chữ ký.')
+
+    if (typeof window !== 'undefined') {
+      try {
+        await backendDeliveryApi.completeHandover(id, {
+          recipientName: b.consignee.name,
+          recipientPhone: b.consignee.phone,
+          recipientSignature: 'signed',
+          handoverPhotoUrl: cp.handoverPhoto,
+          originalDocsHandedOver: true,
+          note: `Hoàn tất giao ngựa xe ${tripId}`,
+        })
+      } catch {
+        // Fallback
+      }
+    }
+
     const now = Date.now()
     cp.doneAt = now; cp.returnedOriginals = true
     run.deliveredAt = now
@@ -718,6 +1024,21 @@ export const bookingsApi = {
     running(t)
     const cp = currentCheckpoint(t)
     if (cp?.type !== 'delivery' || !cp.arrivedAt) throw new Error('Chưa tới điểm giao.')
+
+    if (typeof window !== 'undefined') {
+      try {
+        await backendDeliveryApi.reportTimeout(id, {
+          timeoutReason: input.timeoutReason,
+          selectedAction: input.selectedAction,
+          partnerName: input.partnerName,
+          partnerPhone: input.partnerPhone,
+          estimatedCost: input.estimatedCost,
+          note: input.note,
+        })
+      } catch {
+        // Fallback
+      }
+    }
 
     const reasonLabel =
       input.timeoutReason === 'UNREACHABLE' ? 'Không liên lạc được người nhận' :
@@ -765,6 +1086,30 @@ export const bookingsApi = {
     return out
   },
 
+  // Driver / Coordinator: Xe quay về Trụ sở chính Việt Nam -> Xe chuyển sang AVAILABLE (Single HQ)
+  returnToHq: async (id: string, tripId: string, by: string, proofImageUrl = 'return_hq.jpg'): Promise<Booking> => {
+    const b = must(id)
+    const t = tripOf(b, tripId)
+    const vId = Number(t.vehicleId.replace(/\D/g, '')) || 1
+
+    if (typeof window !== 'undefined') {
+      try {
+        await backendDeliveryApi.returnToHq({
+          vehicleId: vId,
+          driverUsername: by,
+          proofImageUrl,
+          vehicleCondition: 'GOOD',
+          note: `Xe ${tripId} đã hoàn tất kiểm tra và quay về Trụ sở chính`,
+        })
+      } catch {
+        // Fallback
+      }
+    }
+
+    t.returnedToHqAt = Date.now()
+    return commitTrips(b, by, `Xe ${tripId} đã trở về Trụ sở chính Việt Nam và sẵn sàng cho các chuyến kế tiếp`)
+  },
+
   // ===== Flow 5: sự cố khẩn cấp =====
   // Driver / Escort: bấm SOS cho một xe đang chạy
   reportIncident: async (id: string, tripId: string, by: string, kind: IncidentKind, photo: string, note: string): Promise<Booking> => {
@@ -774,6 +1119,23 @@ export const bookingsApi = {
     if (!t.run?.startedAt || t.run.deliveredAt) throw new Error('Xe chưa chở ngựa hoặc đã giao xong, không báo sự cố được.')
     if (openIncidentOf(b, tripId)) throw new Error(`Xe ${tripId} đang có sự cố chưa xử lý xong.`)
     if (!photo) throw new Error('Cần chụp ảnh hiện trường sự cố.')
+
+    const numericBookingId = Number(id.replace(/\D/g, '')) || 1
+    if (typeof window !== 'undefined') {
+      try {
+        await backendIncidentApi.report({
+          bookingId: numericBookingId,
+          reporter: by,
+          incidentName: `Sự cố ${INCIDENT_KIND[kind].label} trên xe ${tripId}`,
+          incidentType: kind,
+          description: note.trim() || 'Tài xế / hộ tống báo sự cố khẩn cấp.',
+          photoUrl: photo,
+        })
+      } catch {
+        // Fallback
+      }
+    }
+
     const inc: Incident = { id: INCIDENT_NO(b), tripId, kind, reportedBy: by, reportedAt: Date.now(), location: incidentLocation(b, t), photo, note: note.trim(), status: 'reported', expenses: [] }
     b.incidents = [...(b.incidents ?? []), inc]
     const out = commitIncident(b, by, `SOS xe ${tripId}: ${INCIDENT_KIND[kind].label.toLowerCase()}`)
@@ -794,6 +1156,23 @@ export const bookingsApi = {
     }
     if (input.action === 'rescue_and_station' && !input.rescue) throw new Error('Chọn điểm cứu hộ gần chỗ xe gặp sự cố.')
     if (input.action === 'reroute' && !input.detour) throw new Error('Chọn lộ trình mới để tránh tắc nghẽn.')
+
+    const numericIncidentId = Number(incidentId.replace(/\D/g, '')) || 1
+    if (typeof window !== 'undefined') {
+      try {
+        const partner = input.station || (typeof input.rescue === 'object' && input.rescue ? input.rescue.name : '') || 'Đội cứu hộ đối tác'
+        await backendIncidentApi.proposeExternal(numericIncidentId, {
+          partnerName: partner,
+          partnerService: input.action,
+          partnerPhone: '0901234567',
+          estimatedCost: 2000000,
+          directive: input.note,
+        })
+      } catch {
+        // Fallback
+      }
+    }
+
     const { action, newEta, station, restMinutes, rescue, rescueLine, toStation, detour } = input
     inc.plan = { action, newEta, note: input.note.trim(), at: Date.now(), by, ...(action !== 'reroute' ? { station, restMinutes, toStation } : {}), ...(action === 'rescue_and_station' ? { rescue, rescueLine } : {}), ...(action === 'reroute' ? { detour } : {}) }
     inc.status = 'pending_approval'
@@ -819,6 +1198,20 @@ export const bookingsApi = {
     const b = must(id)
     const inc = incidentById(b, incidentId)
     if (inc.status !== 'pending_approval') throw new Error('Sự cố này không ở bước chờ duyệt.')
+
+    const numericIncidentId = Number(incidentId.replace(/\D/g, '')) || 1
+    if (typeof window !== 'undefined') {
+      try {
+        await backendIncidentApi.approvePlan(numericIncidentId, {
+          directive: 'Đã phê duyệt phương án cứu hộ/trung chuyển',
+          costBearer: 'COMPANY_ESCROW',
+          approvedAmount: 2000000,
+        })
+      } catch {
+        // Fallback
+      }
+    }
+
     inc.approval = { at: Date.now(), by }
     inc.status = 'active'
     const out = commitIncident(b, by, `Duyệt phương án khẩn cấp ${incidentId}`)
@@ -852,6 +1245,20 @@ export const bookingsApi = {
     const inc = incidentById(b, incidentId)
     if (inc.status !== 'active') throw new Error('Phương án khẩn cấp chưa được duyệt hoặc đã xong.')
     if (needsFitCheck(inc.kind) && !inc.fitConfirmedAt) throw new Error('Hộ tống chưa xác nhận ngựa đủ sức đi tiếp.')
+
+    const numericIncidentId = Number(incidentId.replace(/\D/g, '')) || 1
+    if (typeof window !== 'undefined') {
+      try {
+        await backendIncidentApi.completeResolution(numericIncidentId, {
+          actualCost: 2000000,
+          invoiceUrl: 'invoice_incident.jpg',
+          note: 'Đã nghiệm thu hiện trường, tiếp tục hành trình',
+        })
+      } catch {
+        // Fallback
+      }
+    }
+
     inc.status = 'resolved'
     inc.resolvedAt = Date.now()
     const out = commitIncident(b, by, `Tiếp tục hành trình chính xe ${inc.tripId}, sự cố ${incidentId} đã xử lý xong`)
@@ -864,6 +1271,25 @@ export const bookingsApi = {
   submitExpenses: async (id: string, by: string): Promise<Booking> => {
     const b = must(id)
     if (b.status !== 'delivered_pending_settlement') throw new Error('Đơn chưa giao xong hoặc đã gửi bảng kê.')
+
+    if (typeof window !== 'undefined') {
+      try {
+        const expenses = (b.incidents ?? []).flatMap(i => i.expenses).map(e => ({
+          category: e.category,
+          label: e.label,
+          photo: e.photo,
+          amount: e.amount,
+          payer: (e.payer === 'carrier' ? 'company' : e.payer) as 'customer' | 'company' | undefined,
+        }))
+        await backendSettlementApi.submitExpenses(id, {
+          note: 'Tài xế gửi bảng kê chi phí phát sinh',
+          expenses,
+        })
+      } catch {
+        // Fallback
+      }
+    }
+
     const noExpenses = !(b.incidents ?? []).some(i => i.expenses.length)
     if (noExpenses) return issueSettlementOf(b, 'Hệ thống', 'Không có chi phí phát sinh: hệ thống phát hành bảng quyết toán 0 đồng')
     const out = structuredClone(store.update(id, { status: 'expenses_submitted', expensesSubmittedAt: Date.now(), history: log(b, by, 'Gửi bảng kê chi phí kèm chứng từ') }))
@@ -875,6 +1301,24 @@ export const bookingsApi = {
     const b = must(id)
     if (b.status !== 'expenses_submitted') throw new Error('Đơn chưa ở bước đối soát chi phí.')
     b.incidents?.forEach(i => i.expenses.forEach(e => { if (payers[e.id]) e.payer = payers[e.id] }))
+
+    if (typeof window !== 'undefined') {
+      try {
+        const adjustments = (b.incidents ?? []).flatMap(i => i.expenses).map(e => ({
+          label: e.label,
+          amount: e.amount,
+          payer: payers[e.id] || e.payer,
+        }))
+        await backendSettlementApi.issue(id, {
+          adjustments,
+          payers,
+          note: 'Quản lý đối soát và phát hành quyết toán',
+        })
+      } catch {
+        // Fallback
+      }
+    }
+
     return issueSettlementOf(b, by, 'Đối soát chi phí và phát hành bảng quyết toán')
   },
 }
