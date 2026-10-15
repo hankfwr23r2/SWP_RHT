@@ -191,9 +191,15 @@ export const bookingsApi = {
     toBooking(await specialistApi.updateClearanceItem(id, { type, note: patch.note, photos: patch.photos, status: patch.photos?.length ? 'done' : 'todo' })),
   addClearanceItem: async (id: string, _by: string, type: ClearanceDocType): Promise<Booking> =>
     toBooking(await specialistApi.addClearanceItem(id, { type, label: CLEARANCE_DOC[type]?.short })),
-  markHorseCleared: async (id: string, _by: string, horseId: string, cleared: boolean): Promise<Booking> =>
-    toBooking(await specialistApi.markHorseCleared(id, horseId, cleared)),
-  completeClearance: async (id: string, _by: string): Promise<Booking> => toBooking(await specialistApi.completeClearance(id)),
+  // Giấy thông quan áp dụng chung cho cả lô (PRD sau PR #28): hoàn tất giấy tờ thì mọi ngựa của đơn quốc tế coi như đã có giấy.
+  // Backend vẫn đòi cờ từng ngựa nên đánh dấu đủ rồi mới hoàn tất.
+  completeClearance: async (id: string, _by: string): Promise<Booking> => {
+    const b = await byId(id)
+    if (b.type === 'international') {
+      for (const h of b.horses) if (!b.clearance?.horsesCleared.includes(h.horseId)) await specialistApi.markHorseCleared(id, h.horseId, true)
+    }
+    return toBooking(await specialistApi.completeClearance(id))
+  },
 
   // ===== Flow 3, 4: lệnh điều xe, check-in, nhật ký lộ trình. Backend chưa có API cho các bước này =====
   setDriverPack: notSupported('Điều phối viên nhập bộ giấy cho Driver') as (id: string, tripId: string, by: string, items: string[]) => Promise<Booking>,

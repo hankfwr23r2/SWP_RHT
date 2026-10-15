@@ -81,11 +81,14 @@ function Work({ b, onDone }: { b: Booking; onDone: () => void }) {
 
       {b.type === 'international' && (
         <div className="card">
-          <div className="card-header"><h3><i className="fa-solid fa-stamp" /> Giấy thông quan theo ngựa</h3><span className="sub-text">{c.horsesCleared.length}/{b.horses.length}</span></div>
-          <p className={s.hint} style={{ marginBottom: 10 }}>Hệ thống chỉ ghi nhận ngựa đã có giấy thông quan. Giấy lấy từ đâu do vận hành xử lý.</p>
-          <div className={s.reasonList}>
+          <div className="card-header"><h3><i className="fa-solid fa-horse-head" /> Danh sách cá thể ngựa theo lô</h3><span className="sub-text">{b.horses.length} cá thể</span></div>
+          <p className={s.hint} style={{ marginBottom: 10 }}>Bộ hồ sơ kiểm dịch xuất khẩu và giấy phép nhập khẩu trên áp dụng chung cho tất cả các cá thể ngựa của đơn này:</p>
+          <div style={{ display: 'grid', gap: 8 }}>
             {b.horses.map(h => (
-              <label key={h.horseId}><input type="checkbox" disabled={!editable || busy} checked={c.horsesCleared.includes(h.horseId)} onChange={e => run(() => bookingsApi.markHorseCleared(b.id, session!.name, h.horseId, e.target.checked), `${h.name}: ${e.target.checked ? 'đã có' : 'bỏ ghi nhận'} giấy thông quan`)} />{h.name} <span className={s.sub}>Chip {h.microchip}</span></label>
+              <div key={h.horseId} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 10px', background: 'var(--bg-subtle, #f8fafc)', borderRadius: 6 }}>
+                <i className="fa-solid fa-circle-check" style={{ color: 'var(--green, #16a34a)' }} />
+                <span><b>{h.name}</b> · <span className={s.sub}>Mã chip: {h.microchip}</span> · <span className={s.sub}>{h.breed}</span></span>
+              </div>
             ))}
           </div>
         </div>

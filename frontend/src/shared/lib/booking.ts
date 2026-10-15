@@ -285,11 +285,7 @@ export function canCompleteClearance(b: Pick<Booking, 'type' | 'horses' | 'clear
   const c = b.clearance
   if (!c) return 'Đơn chưa có danh sách giấy tờ.'
   const { done, total } = clearanceProgress(c)
-  if (done < total) return `Còn ${total - done} hạng mục chưa xong.`
-  if (b.type === 'international') {
-    const missing = b.horses.filter(h => !c.horsesCleared.includes(h.horseId))
-    if (missing.length) return `Chưa ghi nhận thông quan cho: ${missing.map(h => h.name).join(', ')}.`
-  }
+  if (done < total) return `Còn ${total - done} hạng mục giấy tờ chưa xong.`
   return null
 }
 
