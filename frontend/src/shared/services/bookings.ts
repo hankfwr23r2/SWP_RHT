@@ -119,7 +119,8 @@ export const customerBookingsApi = {
     toCustomerView(toBooking(await backendBookingApi.rejectQuote(id, { reason: reason.trim() }), customer)),
   // Backend hủy đơn theo chính sách hoàn 50% trước D-15, lệch PRD mục 8.3 (mất 100% cọc, hoàn số dư 70%)
   cancel: notSupported('khách hủy đơn đã cọc (chính sách hoàn tiền của backend lệch PRD mục 8.3)') as (customer: string, id: string, reason: string) => Promise<CustomerBookingView>,
-  resubmit: notSupported('khách gửi lại hồ sơ ngựa sau khi Kiểm dịch viên yêu cầu bổ sung') as (customer: string, id: string) => Promise<CustomerBookingView>,
+  resubmit: async (customer: string, id: string): Promise<CustomerBookingView> =>
+    toCustomerView(toBooking(await backendBookingApi.resubmitDocuments(id), customer)),
   payDeposit: async (customer: string, id: string): Promise<CustomerBookingView> =>
     toCustomerView(toBooking(await backendBookingApi.payDeposit(id, { paymentMethod: 'VNPAY' }), customer)),
   // Backend chặn trả 70% khi báo giá quá 48 giờ, nên không trả được vào ngày D
@@ -161,7 +162,8 @@ export const bookingsApi = {
     toBooking(await backendBookingApi.reject(id, { by, role, reason: reason.trim() })),
   approveMedical: async (id: string, by: string): Promise<Booking> =>
     toBooking(await specialistApi.approveMedical(id, { specialistName: by })),
-  requestResubmission: notSupported('Kiểm dịch viên yêu cầu bổ sung hồ sơ ngựa (backend đặt trạng thái không có trong PRD)') as (id: string, by: string, reason: string, items: { horseId: string; doc: 'passport' | 'vaccine' | 'lab' }[]) => Promise<Booking>,
+  requestResubmission: async (id: string, by: string, reason: string, items: { horseId: string; doc: 'passport' | 'vaccine' | 'lab' }[]): Promise<Booking> =>
+    toBooking(await specialistApi.requestResubmission(id, { specialistName: by, reason: reason.trim(), items })),
   confirmPlan: notSupported('Điều phối viên chốt xe và lộ trình (backend khóa xe theo 1 đến 4 ngày, không kiểm đăng kiểm, lệch PRD mục 10.2)') as (id: string, by: string, input: { trips: Pick<VehicleTrip, 'vehicleId' | 'horseIds'>[]; route: Pick<RoutePlan, 'legs' | 'rests' | 'borderEta'>; gate?: string; note?: string }) => Promise<Booking>,
   sendBack: async (id: string, by: string, to: 'specialist' | 'coordinator', reason: string): Promise<Booking> =>
     toBooking(await backendBookingApi.sendBack(id, { by, to, reason: reason.trim() })),

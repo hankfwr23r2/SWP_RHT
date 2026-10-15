@@ -148,5 +148,11 @@ export const backendBookingApi = {
     const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${id}/reject-quote`, payload)
     return res.data.data
   },
+
+  // 14. Customer gửi lại hồ sơ ngựa sau khi được yêu cầu bổ sung (POST /api/v1/customer/bookings/{id}/resubmit)
+  resubmitDocuments: async (id: number | string): Promise<BackendBookingResponse> => {
+    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${id}/resubmit`)
+    return res.data.data
+  },
 }
 

@@ -725,6 +725,50 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional
+    public BookingResponse resubmitDocuments(String bookingIdentifier, String customerUsername) {
+        Integer bookingId = parseBookingId(bookingIdentifier);
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+
+        if (customerUsername != null) {
+            User owner = booking.getCustomerID() != null ? booking.getCustomerID().getUser() : null;
+            boolean ownsBooking = owner != null
+                    && (customerUsername.equals(owner.getUsername()) || customerUsername.equals(owner.getEmail()));
+            if (!ownsBooking) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Bạn không có quyền thao tác trên đơn hàng này.");
+            }
+        }
+
+        BookingDetailsPayload payload = extractPayload(booking);
+        String medicalStatus = getMedicalStatus(payload);
+        if (!"resubmit".equalsIgnoreCase(medicalStatus) && !"resubmission_requested".equalsIgnoreCase(medicalStatus)) {
+            throw new IllegalStateException("Đơn hàng này hiện không có yêu cầu bổ sung hồ sơ!");
+        }
+
+        Map<String, Object> medicalMap = payload.getMedical() instanceof Map<?, ?>
+                ? new HashMap<>((Map<String, Object>) payload.getMedical())
+                : new HashMap<>();
+        medicalMap.put("status", "pending");
+        medicalMap.remove("resubmit");
+        medicalMap.put("resubmittedAt", System.currentTimeMillis());
+        payload.setMedical(medicalMap);
+
+        booking.setStatus("under_review");
+
+        appendHistory(payload, customerUsername != null ? customerUsername : "Khách hàng",
+                "Đã bổ sung hồ sơ, gửi lại Kiểm dịch viên");
+        savePayload(booking, payload);
+
+        Booking updated = bookingRepository.save(booking);
+        logAction("RESUBMIT_DOCUMENTS", updated.getId(),
+                "Khách hàng (" + customerUsername + ") gửi lại hồ sơ cho Chuyên viên kiểm dịch duyệt lại");
+        log.info("Booking ID={} resubmitted documents by {}", updated.getId(), customerUsername);
+        return mapToResponse(updated);
+    }
+
+    @Override
+    @Transactional
     public BookingResponse payDeposit(String bookingIdentifier, String customerUsername,
             com.example.racehorse_transport.dto.booking.PayDepositRequest request) {
         Integer bookingId = parseBookingId(bookingIdentifier);

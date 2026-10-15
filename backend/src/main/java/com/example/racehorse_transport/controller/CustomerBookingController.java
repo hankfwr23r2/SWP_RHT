@@ -110,4 +110,19 @@ public class CustomerBookingController {
         BookingResponse response = bookingService.rejectQuote(id, username, request);
         return ResponseEntity.ok(ApiResponse.success(response, "Đã từ chối báo giá. Đơn hàng đã hủy và giải phóng xe."));
     }
+
+    // 6. API Khách hàng gửi lại hồ sơ ngựa sau khi được yêu cầu bổ sung
+    @PostMapping("/{id}/resubmit")
+    public ResponseEntity<ApiResponse<BookingResponse>> resubmitDocuments(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+            @PathVariable("id") String id) {
+        String username = extractUsername(authHeader);
+        if (username == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Vui lòng đăng nhập để gửi lại hồ sơ!"));
+        }
+
+        BookingResponse response = bookingService.resubmitDocuments(id, username);
+        return ResponseEntity.ok(ApiResponse.success(response, "Đã gửi lại hồ sơ cho Chuyên viên kiểm dịch thẩm định"));
+    }
 }

@@ -43,7 +43,7 @@ public class SpecialistServiceImpl implements SpecialistService {
         return all.stream()
                 .filter(b -> {
                     String s = b.getStatus() != null ? b.getStatus().toLowerCase() : "";
-                    return s.contains("review") || s.contains("verification") || s.contains("pending_intake") || s.contains("intake");
+                    return s.contains("review") || s.contains("verification") || s.contains("pending_intake") || s.contains("intake") || s.contains("resubmit");
                 })
                 .map(this::mapToBookingResponse)
                 .collect(Collectors.toList());
@@ -104,8 +104,14 @@ public class SpecialistServiceImpl implements SpecialistService {
 
         String reason = (request != null && request.getReason() != null) ? request.getReason() : "Hồ sơ chưa đạt yêu cầu kiểm dịch";
 
+        Map<String, Object> resubmitInfo = new HashMap<>();
+        resubmitInfo.put("reason", reason);
+        resubmitInfo.put("items", request != null ? request.getItems() : Collections.emptyList());
+        resubmitInfo.put("at", System.currentTimeMillis());
+
         Map<String, Object> medicalMap = getOrCreateMap(payload.getMedical());
-        medicalMap.put("status", "resubmission_requested");
+        medicalMap.put("status", "resubmit");
+        medicalMap.put("resubmit", resubmitInfo);
         medicalMap.put("conclusion", "rejected");
         medicalMap.put("reason", reason);
         medicalMap.put("items", request != null ? request.getItems() : Collections.emptyList());
@@ -113,7 +119,7 @@ public class SpecialistServiceImpl implements SpecialistService {
         medicalMap.put("requestedBy", specialist);
         payload.setMedical(medicalMap);
 
-        booking.setStatus("resubmission_requested");
+        booking.setStatus("under_review");
 
         appendHistory(payload, specialist, "Yêu cầu khách hàng bổ sung lại hồ sơ ngựa. Lý do: " + reason);
 

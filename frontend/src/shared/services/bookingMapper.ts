@@ -60,12 +60,18 @@ export function toBooking(r: BackendBookingResponse, customer?: string): Booking
     consignor: { name: r.consignor?.name ?? '', phone: r.consignor?.phone ?? '', idNumber: '', address: '' },
     consignee: { name: r.consignee?.name ?? '', phone: r.consignee?.phone ?? '', idNumber: '', address: '' },
     horses: (r.horses ?? []).map(horseOf),
-    status: r.status as BookingStatus,
+    status: (r.status === 'resubmission_requested' ? 'under_review' : r.status) as BookingStatus,
     history,
   }
   if (r.gate) b.gate = r.gate
   if (r.intake) b.intake = r.intake as Booking['intake']
-  if (r.medical) b.medical = r.medical as MedicalReview
+  if (r.medical) {
+    const med = r.medical as any
+    b.medical = {
+      ...med,
+      status: med.status === 'resubmission_requested' ? 'resubmit' : med.status,
+    } as MedicalReview
+  }
   if (r.trips?.length) b.trips = r.trips.map(tripOf)
   if (r.plan) b.plan = r.plan as Booking['plan']
   if (r.route) b.route = r.route as RoutePlan
