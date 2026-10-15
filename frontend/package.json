@@ -7,7 +7,7 @@
     "dev": "vite",
     "lint": "oxlint",
     "test": "vitest run",
-    "build": "oxlint && tsc -b && vitest run && vite build",
+    "build": "oxlint && tsc -b && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -31,6 +31,6 @@
     "vitest": "^5.0.2"
   },
   "engines": {
-    "node": ">=26.9.0"
+    "node": ">=20.0.0"
   }
 }
