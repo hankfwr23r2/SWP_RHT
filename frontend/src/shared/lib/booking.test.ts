@@ -18,10 +18,10 @@ const doc = (expiresAt?: number) => ({ fileName: 'f.pdf', uploadedAt: NOW, expir
 const bh = (over: Partial<BookingHorse> = {}): BookingHorse => ({ horseId: 'H1', name: 'A', microchip: 'VN-1', breed: 'Thoroughbred', sex: 'mare', stall: 'standard', feedPackage: 'basic', waterPlan: 'every_3h', insurance: { opted: false }, ...over })
 
 describe('ngày khởi hành', () => {
-  it('sớm nhất là hôm nay + 30 ngày', () => {
-    expect(earliestDeparture(NOW)).toBe(new Date(2026, 9, 31).getTime()) // 01/10 + 30 ngày = 31/10, 00:00
+  it('sớm nhất là hôm nay + MIN_LEAD_DAYS', () => {
+    expect(earliestDeparture(NOW)).toBe(new Date(2026, 9, 21).getTime()) // 01/10 + 20 ngày = 21/10, 00:00
   })
-  it('chặn ngày trong vòng 30 ngày, cho phép từ ngày thứ 30', () => {
+  it('chặn ngày trong vòng MIN_LEAD_DAYS, cho phép từ ngày thứ 20', () => {
     expect(isDepartureAllowed(earliestDeparture(NOW) - DAY, NOW)).toBe(false)
     expect(isDepartureAllowed(earliestDeparture(NOW), NOW)).toBe(true)
   })
@@ -206,13 +206,12 @@ describe('giấy tờ do Specialist làm (Flow 2)', () => {
     expect(defaultClearanceItems('domestic').map(i => i.type)).toEqual(['health_cert', 'poa'])
     expect(defaultClearanceItems('international').map(i => i.type)).toEqual(['health_cert', 'poa', 'customs_declaration', 'import_permit'])
   })
-  it('chưa xong hạng mục hoặc thiếu cờ thông quan thì chưa hoàn tất được', () => {
+  it('chưa xong hạng mục giấy tờ thì chưa hoàn tất được, xong đủ giấy tờ thì hoàn tất', () => {
     const items = defaultClearanceItems('international')
     const base = { type: 'international' as const, horses: [bh({ horseId: 'H1' }), bh({ horseId: 'H2' })] }
     expect(canCompleteClearance({ ...base, clearance: { items, horsesCleared: [] } })).toMatch(/hạng mục/)
     const done = items.map(i => ({ ...i, status: 'done' as const }))
-    expect(canCompleteClearance({ ...base, clearance: { items: done, horsesCleared: ['H1'] } })).toMatch(/thông quan/)
-    expect(canCompleteClearance({ ...base, clearance: { items: done, horsesCleared: ['H1', 'H2'] } })).toBeNull()
+    expect(canCompleteClearance({ ...base, clearance: { items: done, horsesCleared: [] } })).toBeNull()
   })
   it('nội địa không đòi cờ thông quan', () => {
     const done = defaultClearanceItems('domestic').map(i => ({ ...i, status: 'done' as const }))

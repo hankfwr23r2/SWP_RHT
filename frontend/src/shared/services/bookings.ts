@@ -933,7 +933,7 @@ export const bookingsApi = {
 
     const done = { ...b, status: 'clearance_done' as const }
     const out = structuredClone(store.update(id, {
-      clearance: { ...b.clearance!, doneAt: Date.now(), doneBy: by }, status: deriveStatus(done),
+      clearance: { ...b.clearance!, doneAt: Date.now(), doneBy: by, horsesCleared: b.type === 'international' ? b.horses.map(h => h.horseId) : [] }, status: deriveStatus(done),
       history: log(b, by, 'Hoàn tất toàn bộ giấy tờ kiểm dịch và hải quan'),
     }))
     notify(b, ['customer', 'manager'], `Giấy tờ đã xong — đơn ${id}`, 'Giấy kiểm dịch và hải quan đã hoàn tất. Xe sẵn sàng đi đón ngựa khi tài xế và hộ tống nhận lệnh.')

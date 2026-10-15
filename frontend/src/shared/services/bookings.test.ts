@@ -111,15 +111,13 @@ describe('Lệnh điều xe (Flow 3)', () => {
 })
 
 describe('giấy tờ do Specialist làm (Flow 2)', () => {
-  it('chỉ tiếp nhận Vận đơn khi waybill_issued; không hoàn tất khi còn hạng mục chưa xong hoặc thiếu cờ thông quan', async () => {
+  it('chỉ tiếp nhận Vận đơn khi waybill_issued; không hoàn tất khi còn hạng mục chưa xong', async () => {
     const id = 'ORD-2026-0106' // intl, waybill_issued
     expect(await fail(bookingsApi.acceptWaybill('ORD-2026-0113', SP))).toMatch(/chưa có Vận đơn hoặc đã được tiếp nhận/)
     expect((await bookingsApi.acceptWaybill(id, SP)).status).toBe('clearance_in_progress')
     expect(await fail(bookingsApi.completeClearance(id, SP))).toMatch(/hạng mục/)
     const b = (await bookingsApi.get(id))!
     for (const i of b.clearance!.items) await bookingsApi.updateClearanceItem(id, SP, i.type, { photos: ['a.jpg'] })
-    expect(await fail(bookingsApi.completeClearance(id, SP))).toMatch(/thông quan/)
-    for (const h of b.horses) await bookingsApi.markHorseCleared(id, SP, h.horseId, true)
     expect((await bookingsApi.completeClearance(id, SP)).status).toBe('clearance_done')
   })
   it('nội địa không ghi nhận thông quan, không thêm giấy hải quan', async () => {
