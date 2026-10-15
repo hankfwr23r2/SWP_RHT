@@ -11,8 +11,6 @@ import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
 import { AuditModal } from './AuditModal'
 import { ClearanceSection, FleetRouteSection, HorseDocsSection } from '../../../shared/BookingEvidence'
-import { OrderInfo, PartiesInfo } from '../../../shared/BookingParts'
-import { SideTabsModal } from '../../../shared/SideTabsModal'
 import { ListPage, idCell, routeCell, statusCell, type Column } from '../../../shared/ListPage'
 import { placeShort } from '../../../shared/place'
 import s from './Progress.module.css'
@@ -43,15 +41,12 @@ function Stage({ b }: { b: Booking }) {
 
 function DetailModal({ b, onClose }: { b: Booking; onClose: () => void }) {
   return (
-    <SideTabsModal onClose={onClose} title={`Chi tiết ${b.id}`} subtitle={`${b.customer} · ${placeShort(b.origin.name)} → ${placeShort(b.dest.name)} · khởi hành ${formatDate(b.departAt)}`}
-      footer={<button className="btn btn-ghost" onClick={onClose}>Đóng</button>}
-      tabs={[
-        { id: 'customer', label: 'Khách hàng', icon: 'fa-user', content: <PartiesInfo b={b} /> },
-        { id: 'order', label: 'Thông tin đơn', icon: 'fa-clipboard-list', content: <OrderInfo b={b} /> },
-        { id: 'docs', label: 'Hồ sơ ngựa', icon: 'fa-file-medical', content: <HorseDocsSection b={b} reviewed={!!b.medical} /> },
-        { id: 'clearance', label: 'Giấy chuyến đi', icon: 'fa-stamp', content: <ClearanceSection b={b} /> },
-        { id: 'route', label: 'Xe và lộ trình', icon: 'fa-route', content: <FleetRouteSection b={b} /> },
-      ]} />
+    <Modal wide onClose={onClose} title={`Chi tiết ${b.id}`} subtitle={`${b.customer} · ${placeShort(b.origin.name)} → ${placeShort(b.dest.name)} · khởi hành ${formatDate(b.departAt)}`}
+      footer={<button className="btn btn-ghost" onClick={onClose}>Đóng</button>}>
+      <ClearanceSection b={b} />
+      <HorseDocsSection b={b} />
+      <FleetRouteSection b={b} />
+    </Modal>
   )
 }
 

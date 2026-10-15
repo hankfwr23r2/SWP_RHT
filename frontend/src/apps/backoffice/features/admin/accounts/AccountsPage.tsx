@@ -1,11 +1,10 @@
 // Quản trị viên: quản lý tài khoản hệ thống. Danh sách theo vai trò, tạo tài khoản nhân viên, sửa thông tin,
 // khóa / mở khóa, đặt lại mật khẩu, xem lịch sử thao tác của từng tài khoản.
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useParams } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { formatDateTime } from '@shared/lib/format'
 import { accountsApi, isOpsRole } from '@shared/services/accounts'
-import type { AccountLogItem } from '@shared/api/adminAccounts'
 import type { Account } from '@shared/services/mock/accounts'
 import { useLoad } from '@shared/services/useLoad'
 import { ROLE_LABEL, type Role } from '@shared/types/role'
@@ -25,7 +24,6 @@ type Dialog =
   | { kind: 'edit'; account: Account | null } // null = tạo mới
   | { kind: 'lock'; account: Account }
   | { kind: 'reset'; account: Account }
-  | { kind: 'logs'; account: Account }
   | { kind: 'secret'; title: string; who: string; email: string; password: string }
 
 function AccountModal({ account, actor, defaultRole, onClose, onDone }: { account: Account | null; actor: string; defaultRole: Role; onClose: () => void; onDone: (result?: { account: Account; password: string }) => void }) {
@@ -67,76 +65,6 @@ function AccountModal({ account, actor, defaultRole, onClose, onDone }: { accoun
   )
 }
 
-function getActionMeta(actionType: string) {
-  switch (actionType) {
-    case 'CREATE_ACCOUNT':
-      return { label: 'Tạo tài khoản', icon: 'fa-user-plus', color: '#16a34a', bg: '#dcfce7' }
-    case 'LOCK_ACCOUNT':
-      return { label: 'Khóa tài khoản', icon: 'fa-lock', color: '#dc2626', bg: '#fee2e2' }
-    case 'UNLOCK_ACCOUNT':
-      return { label: 'Mở khóa tài khoản', icon: 'fa-lock-open', color: '#15803d', bg: '#e6f6ec' }
-    case 'RESET_PASSWORD':
-      return { label: 'Đặt lại mật khẩu', icon: 'fa-key', color: '#d97706', bg: '#fef3c7' }
-    case 'CHANGE_PASSWORD':
-      return { label: 'Đổi mật khẩu', icon: 'fa-shield-halved', color: '#2563eb', bg: '#dbeafe' }
-    default:
-      return { label: actionType, icon: 'fa-clock-rotate-left', color: '#475569', bg: '#f1f5f9' }
-  }
-}
-
-function AccountHistoryModal({ account, onClose }: { account: Account; onClose: () => void }) {
-  const [logs, setLogs] = useState<AccountLogItem[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    accountsApi.getLogs(account.id)
-      .then(res => setLogs(res))
-      .catch(() => setLogs([]))
-      .finally(() => setLoading(false))
-  }, [account.id])
-
-  return (
-    <Modal wide onClose={onClose} title="Lịch sử hoạt động tài khoản" subtitle={`${account.name} (${account.email}) · ${account.id}`}
-      footer={<button className="btn btn-primary" onClick={onClose}>Đóng</button>}>
-      {loading ? (
-        <div style={{ padding: '36px 20px', textAlign: 'center', color: 'var(--muted)' }}>
-          <i className="fa-solid fa-spinner fa-spin" style={{ marginRight: 8 }} /> Đang tải lịch sử hoạt động...
-        </div>
-      ) : logs.length === 0 ? (
-        <div style={{ padding: '36px 20px', textAlign: 'center', color: 'var(--muted)' }}>
-          Chưa có ghi nhận nhật ký nào cho tài khoản này.
-        </div>
-      ) : (
-        <div className={s.timeline}>
-          {logs.map((item, idx) => {
-            const meta = getActionMeta(item.actionType)
-            const timeStr = item.createdAt ? formatDateTime(new Date(item.createdAt).getTime()) : 'Vừa xong'
-            const actor = item.actionByName || 'Hệ thống'
-            return (
-              <div key={item.id ?? idx} className={s.timelineItem}>
-                <div className={s.timelineIcon} style={{ background: meta.bg, color: meta.color }}>
-                  <i className={`fa-solid ${meta.icon}`} />
-                </div>
-                <div className={s.timelineContent}>
-                  <div className={s.timelineHeader}>
-                    <b style={{ color: meta.color }}>{meta.label}</b>
-                    <small>{timeStr}</small>
-                  </div>
-                  <div className={s.timelineDesc}>{item.description || meta.label}</div>
-                  <div className={s.timelineMeta}>
-                    <span><i className="fa-solid fa-user-gear" style={{ marginRight: 4 }} /> Người thực hiện: <b>{actor}</b></span>
-                    {item.actionByEmail && <span>({item.actionByEmail})</span>}
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
-    </Modal>
-  )
-}
-
 export default function AccountsPage() {
   const toast = useToast()
   const { session } = useAuth()
@@ -163,7 +91,6 @@ export default function AccountsPage() {
     { head: 'Đăng nhập gần nhất', cell: a => (a.lastLoginAt ? formatDateTime(a.lastLoginAt) : 'Chưa đăng nhập'), nowrap: true },
     { head: 'Thao tác', right: true, cell: a => (
       <span className={s.actions}>
-        <button className="btn btn-ghost btn-sm" onClick={() => setDialog({ kind: 'logs', account: a })} title="Lịch sử hoạt động"><i className="fa-solid fa-clock-rotate-left" /></button>
         <button className="btn btn-ghost btn-sm" onClick={() => setDialog({ kind: 'edit', account: a })}>Sửa</button>
         <button className="btn btn-ghost btn-sm" onClick={() => setDialog({ kind: 'reset', account: a })} title="Đặt lại mật khẩu"><i className="fa-solid fa-key" /></button>
         <button className={`btn btn-ghost btn-sm ${a.status === 'active' ? 'text-red' : ''}`} onClick={() => (a.status === 'active' ? setDialog({ kind: 'lock', account: a }) : run(async () => { await accountsApi.setLocked(a.id, false, me); toast(`Đã mở khóa ${a.name}`); close(); reload() }))}>{a.status === 'active' ? 'Khóa' : 'Mở khóa'}</button>
@@ -176,10 +103,6 @@ export default function AccountsPage() {
       <ListPage title={tab === 'all' ? 'Tài khoản hệ thống' : tab === 'locked' ? 'Tài khoản đã khóa' : `Tài khoản · ${ROLE_LABEL[tab]}`} subtitle="Tạo tài khoản nhân viên, khóa hoặc mở khóa, đặt lại mật khẩu. Khách hàng tự đăng ký; bạn chỉ khóa hoặc mở khóa được." tabs={tabs} tab={tab} onTab={() => undefined} hideTabs
         rows={rows} rowKey={a => a.id} columns={columns} haystack={a => [a.id, a.name, a.email, a.phone, ROLE_LABEL[a.role]]} loaded={!!all} emptyText="Không có tài khoản nào ở mục này." searchPlaceholder="Tìm theo tên, email, số điện thoại…" hotRow={a => a.status === 'locked'}
         actions={<button className="btn btn-primary" onClick={() => setDialog({ kind: 'edit', account: null })}><i className="fa-solid fa-user-plus" /> Tạo tài khoản</button>} />
-
-      {dialog?.kind === 'logs' && (
-        <AccountHistoryModal account={dialog.account} onClose={close} />
-      )}
 
       {dialog?.kind === 'edit' && (
         <AccountModal account={dialog.account} actor={me.name} defaultRole={CREATABLE.includes(tab as Role) ? (tab as Role) : 'specialist'} onClose={close} onDone={result => {

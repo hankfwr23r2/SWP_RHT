@@ -164,11 +164,6 @@ export const BORDER_WINDOW = { open: 7 * 60 + 30, close: 16 * 60 + 30 } // ETA c
 
 // ===== Hành trình và nhật ký (Flow 4, PRD mục 5) =====
 export const DELAY_ALERT_MINUTES = 30 // trễ mốc 30–45 phút thì cờ vàng Delayed Check-in
-
-// ===== Nhân sự về trụ sở sau khi giao ngựa ở nước ngoài (PRD mục 1.4, 10.2) =====
-// Driver và Escort luôn xuất phát từ trụ sở ở Việt Nam. Giao ngựa ở Lào / Campuchia xong thì "Đang về" cho tới khi Driver xác nhận đã về trụ sở.
-export const HOME_BASE = { name: 'Trụ sở nhà xe (TP. Hồ Chí Minh)', lat: 10.78, lng: 106.7 } // số mẫu
-export const RETURN_EARLIEST_RATIO = 0.8 // chỉ được bấm "Đã về trụ sở" sau 80% thời gian lái dự kiến (số mẫu)
 export type WelfareCondition = 'normal' | 'stress' | 'sweating'
 export const WELFARE_CONDITION: Record<WelfareCondition, { label: string; tone: Tone }> = {
   normal: { label: 'Bình thường', tone: 'success' },

@@ -5,7 +5,6 @@ import { Link, NavLink, useLocation } from 'react-router'
 import { gsap } from 'gsap'
 import { useGSAP } from '@gsap/react'
 import { NoticeBell } from './NoticeBell'
-import { ChangePasswordModal } from './ChangePasswordModal'
 import s from './AppHeader.module.css'
 
 export interface AppHeaderProps {
@@ -26,7 +25,6 @@ export function AppHeader({ homeHref, badge, links, isActive, userName, onLogout
   const nav = useRef<HTMLElement>(null)
   const bar = useRef<HTMLSpanElement>(null)
   const [scrolled, setScrolled] = useState(false)
-  const [showPasswordModal, setShowPasswordModal] = useState(false)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 4)
@@ -48,7 +46,7 @@ export function AppHeader({ homeHref, badge, links, isActive, userName, onLogout
     <header className={`${s.header} ${scrolled ? s.scrolled : ''}`}>
       <div className={`${s.inner} ${contained ? s.contained : ''}`}>
         <Link to={homeHref} className={s.brand}>
-          <img src="/logo.png" alt="" className={s.brandMark} />
+          <span className={s.brandMark}>EQ</span>
           <span className={s.brandText}>Vận chuyển Ngựa</span>
           {badge && <span className={s.badge}>{badge}</span>}
         </Link>
@@ -63,12 +61,9 @@ export function AppHeader({ homeHref, badge, links, isActive, userName, onLogout
           <NoticeBell />
           <span className={s.avatar} title={userName}>{initialsOf(userName)}</span>
           <span className={s.userName}>{userName}</span>
-          <button className={s.logout} onClick={() => setShowPasswordModal(true)} title="Đổi mật khẩu"><i className="fa-solid fa-key" /> Đổi MK</button>
           <button className={s.logout} onClick={onLogout}><i className="fa-solid fa-arrow-right-from-bracket" /> Đăng xuất</button>
         </div>
       </div>
-
-      {showPasswordModal && <ChangePasswordModal onClose={() => setShowPasswordModal(false)} />}
     </header>
   )
 }

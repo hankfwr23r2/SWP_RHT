@@ -1,5 +1,5 @@
 // Máy trạng thái của luồng đặt đơn: giấy tờ do Specialist làm, nhiều xe, thanh toán hai đợt, và hành trình từng xe.
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import { buildRoutePlan, busyResources, manifestDocuments, routeKm, vehicleDocsOk } from '../lib/booking'
 import { COUNTRY_LOCATIONS } from '../config/network'
 import { bookingsApi, customerBookingsApi } from './bookings'
@@ -60,6 +60,7 @@ describe('hành trình một xe (Flow 4)', () => {
   })
   it('giao ngựa: cần Escort kiểm tra lần cuối và ảnh biên bản có chữ ký', async () => {
     expect(await fail(bookingsApi.completeDelivery(ID, T, D))).toMatch(/Chưa tới điểm giao/)
+    expect(await fail(bookingsApi.reportDeliveryTimeout(ID, T, D, { timeoutReason: 'UNREACHABLE', selectedAction: 'STABLE_NEARBY', note: 'Chưa tới' }))).toMatch(/Chưa tới điểm giao/)
     await bookingsApi.arriveCheckpoint(ID, T, D, 'capture_delivery.jpg')
     expect(await fail(bookingsApi.completeDelivery(ID, T, D))).toMatch(/kiểm tra thể trạng/)
     await bookingsApi.submitWelfare(ID, T, E, { condition: 'normal', waterLiters: 2, hay: false, photo: 'ngua_cuoi.jpg', note: 'Ngựa khỏe' })
@@ -372,30 +373,5 @@ describe('từ chối đơn (Flow 1)', () => {
     const b = await bookingsApi.rejectOrder('ORD-2026-0102', 'Điều phối', 'coordinator', 'Không đủ xe ngày D')
     expect(b.status).toBe('rejected')
     expect(await fail(bookingsApi.rejectOrder('ORD-2026-0102', 'Điều phối', 'coordinator', 'x'))).toMatch(/đang thẩm định/)
-  })
-})
-
-describe('về trụ sở sau khi giao ngựa ở nước ngoài', () => {
-  const ID = 'ORD-2026-0138' // đã giao ở Phnom Penh, Driver và Escort đang về
-  const T = 'TRP-0138-1'
-  afterEach(() => { vi.useRealTimers() })
-
-  it('đơn giao trong nước thì không có bước về trụ sở', async () => {
-    expect(await fail(bookingsApi.confirmHome('ORD-2026-0119', 'TRP-0119-1', D, 'tru_so.jpg'))).toMatch(/không có bước về trụ sở/)
-  })
-  it('chưa tới mốc tối thiểu thì chưa xác nhận được (chống bấm sớm)', async () => {
-    expect(await fail(bookingsApi.confirmHome(ID, T, D, 'tru_so.jpg'))).toMatch(/Chưa tới giờ/)
-  })
-  it('tới mốc thì phải có ảnh, rồi xác nhận được một lần và Driver, Escort được mở lại', async () => {
-    vi.useFakeTimers({ toFake: ['Date'] })
-    vi.setSystemTime(Date.now() + 12 * 3_600_000)
-    expect(await fail(bookingsApi.confirmHome(ID, T, D, ''))).toMatch(/ảnh/)
-    const t0 = (await bookingsApi.get(ID))!.trips![0]
-    const out = await bookingsApi.confirmHome(ID, T, D, 'tru_so.jpg')
-    expect(out.trips![0].homeReturn).toMatchObject({ photo: 'tru_so.jpg', by: D })
-    expect(out.trips![0].homeReturn!.backAt).toBeTruthy()
-    expect(await fail(bookingsApi.confirmHome(ID, T, D, 'tru_so.jpg'))).toMatch(/đã xác nhận/)
-    const busy = busyResources(await bookingsApi.list(), Date.now() + 40 * 86_400_000)
-    expect(busy.crew.has(t0.driverId) && busy.crew.has(t0.escortId)).toBe(false)
   })
 })

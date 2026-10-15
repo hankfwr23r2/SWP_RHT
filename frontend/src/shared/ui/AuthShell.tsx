@@ -19,8 +19,8 @@ export function AuthShell({ title, subtitle, heading = 'Vận chuyển Ngựa đ
     <div className={s.layout}>
       <div className={s.left}>
         {homeExternal
-          ? <a href={homeHref} className={s.brand}><img src="/logo.png" alt="" className={s.brandMark} />Vận chuyển Ngựa</a>
-          : <Link to={homeHref} className={s.brand}><img src="/logo.png" alt="" className={s.brandMark} />Vận chuyển Ngựa</Link>}
+          ? <a href={homeHref} className={s.brand}><span className={s.brandMark}>EQ</span>Vận chuyển Ngựa</a>
+          : <Link to={homeHref} className={s.brand}><span className={s.brandMark}>EQ</span>Vận chuyển Ngựa</Link>}
         <div className={s.content}>
           <h1>{heading}</h1>
           <p>{tagline}</p>
