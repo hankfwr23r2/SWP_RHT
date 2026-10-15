@@ -1,6 +1,5 @@
 // Bảng Kanban các giai đoạn của đơn: mỗi cột một giai đoạn, thẻ có ngày khởi hành, thanh tiến độ và người phụ trách.
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router'
 import { BOOKING_STEPS, stepOf } from '@shared/config/booking-rules'
 import { managerBoardOf, type BoardCol } from '@shared/lib/booking'
 import { formatDate } from '@shared/lib/format'
@@ -74,7 +73,6 @@ export function OrderBoard({ orders, onOpen }: { orders: Booking[]; onOpen: (b: 
                 </>
               )}
               {!all.length && <div className={s.colEmpty}>Không có đơn</div>}
-              {all.length > list.length && <Link to="/manager/progress" className={s.link}>Xem tất cả {all.length} đơn →</Link>}
             </section>
           )
         })}

@@ -11,12 +11,14 @@ import { TripTrackMap } from '@shared/ui/TripTrackMap'
 import s from './booking.module.css'
 
 // Giấy của từng ngựa do khách nộp và Specialist đã đối chiếu
-export function HorseDocsSection({ b }: { b: Booking }) {
+export function HorseDocsSection({ b, reviewed = true }: { b: Booking; reviewed?: boolean }) {
   const { data: horses } = useLoad(async () => (await Promise.all(b.horses.map(h => horsesApi.byId(h.horseId)))).filter(Boolean), [b.id])
   return (
     <>
-      <h4 style={{ margin: '18px 0 10px' }}>Giấy ngựa Kiểm dịch viên đã duyệt</h4>
-      <p className={s.hint} style={{ marginTop: -4 }}>Kết luận: <b>{b.medical?.status === 'approved' ? 'Đạt' : 'Chưa đạt'}</b>{b.medical?.by ? ` · ${b.medical.by}` : ''}{b.medical?.at ? ` · ${formatDateTime(b.medical.at)}` : ''}. Bấm ảnh để xem lớn.</p>
+      <h4 style={{ margin: '18px 0 10px' }}>{reviewed ? 'Giấy ngựa Kiểm dịch viên đã duyệt' : 'Giấy ngựa khách đã nộp'}</h4>
+      {reviewed
+        ? <p className={s.hint} style={{ marginTop: -4 }}>Kết luận: <b>{b.medical?.status === 'approved' ? 'Đạt' : 'Chưa đạt'}</b>{b.medical?.by ? ` · ${b.medical.by}` : ''}{b.medical?.at ? ` · ${formatDateTime(b.medical.at)}` : ''}. Bấm ảnh để xem lớn.</p>
+        : <p className={s.hint} style={{ marginTop: -4 }}>Kiểm dịch viên sẽ đối chiếu sau khi bạn tiếp nhận. Bấm ảnh để xem lớn.</p>}
       {(horses ?? []).map(h => h && (
         <div key={h.id} className={s.horse}>
           <div className={s.horseTop}><div><div className={s.horseName}>{h.name}</div><div className={s.horseMeta}>Chip {h.microchip} · {h.breed}</div></div></div>
@@ -52,7 +54,8 @@ export function FleetRouteSection({ b }: { b: Booking }) {
           <TripTrackMap b={b} trips={[]} plain height={300} />
         </>
       )}
-      <h4 style={{ margin: '18px 0 10px' }}>{trips.length > 1 ? `${trips.length} xe, tài xế và hộ tống đã chọn` : 'Xe, tài xế và hộ tống đã chọn'}</h4>
+      {!b.route && !trips.length && <p className={s.hint}>Điều phối viên chưa chọn xe và lập lộ trình.</p>}
+      {trips.length > 0 && <h4 style={{ margin: '18px 0 10px' }}>{trips.length > 1 ? `${trips.length} xe, tài xế và hộ tống đã chọn` : 'Xe, tài xế và hộ tống đã chọn'}</h4>}
       <div style={{ display: 'grid', gap: 10 }}>
         {trips.map((t, i) => {
           const v = vehicles?.find(x => x.id === t.vehicleId), d = person(t.driverId), e = person(t.escortId)

@@ -92,7 +92,11 @@ function OrderLookup() {
     if (codes.length > MAX_TRACK_CODES) return setError({ field: 'codes', message: `Tối đa ${MAX_TRACK_CODES} mã đơn mỗi lần tra cứu.` })
     if (!/^\d{4}$/.test(phone.trim())) return setError({ field: 'phone', message: 'Nhập đúng 4 số cuối số điện thoại người đặt.' })
     setError(null)
-    setRows(await Promise.all(codes.map(async code => ({ code, result: await trackOrder(code, phone.trim()) }))))
+    try {
+      setRows(await Promise.all(codes.map(async code => ({ code, result: await trackOrder(code, phone.trim()) }))))
+    } catch (e) {
+      setError({ field: 'codes', message: e instanceof Error ? e.message : 'Không tra cứu được.' })
+    }
   }
 
   return (

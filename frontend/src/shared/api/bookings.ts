@@ -47,6 +47,19 @@ export interface BackendBookingResponse {
   totalHorses: number
   horses: BookingHorseDto[]
   waybillNo?: string
+  // Kết quả từng bước: backend lưu dạng JSON theo đúng hình dạng của frontend
+  trips?: Array<{ tripId: string; vehicleId: string; driverId?: string; escortId?: string; horseIds: string[] } & Record<string, unknown>>
+  route?: unknown
+  gate?: string
+  plan?: unknown
+  quote?: unknown
+  payment?: Record<string, unknown>
+  medical?: unknown
+  clearance?: unknown
+  settlement?: unknown
+  rating?: unknown
+  intake?: unknown
+  history?: Array<{ time: number; actor: string; text: string }>
 }
 
 export const backendBookingApi = {
@@ -125,8 +138,14 @@ export const backendBookingApi = {
   },
 
   // 13. Manager/Coordinator từ chối đơn hàng (POST /api/v1/manager/bookings/{id}/reject)
-  reject: async (id: number | string, payload: { by?: string; reason?: string }): Promise<BackendBookingResponse> => {
+  reject: async (id: number | string, payload: { by?: string; role?: 'manager' | 'coordinator'; reason?: string }): Promise<BackendBookingResponse> => {
     const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/manager/bookings/${id}/reject`, payload)
+    return res.data.data
+  },
+
+  // Khách từ chối báo giá khi đơn đang chờ đặt cọc (POST /api/v1/customer/bookings/{id}/reject-quote)
+  rejectQuote: async (id: number | string, payload: { reason?: string }): Promise<BackendBookingResponse> => {
+    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${id}/reject-quote`, payload)
     return res.data.data
   },
 }

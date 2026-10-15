@@ -4,7 +4,7 @@
 .inner { display: flex; align-items: center; gap: 24px; height: 64px; width: min(1440px, 100% - 32px); margin: 0 auto; }
 .contained { width: min(1200px, 100% - 32px); }
 .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; color: var(--navy); white-space: nowrap; }
-.brandMark { background: var(--orange); color: white; font-weight: 800; font-size: 0.8rem; padding: 4px 7px; border-radius: 6px; }
+.brandMark { width: 38px; height: 38px; }
 .badge { font-size: 0.72rem; font-weight: 700; color: var(--orange); background: var(--orange-soft); padding: 2px 8px; border-radius: 999px; }
 .nav { display: flex; gap: 16px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; font-size: 0.88rem; font-weight: 500; position: relative; }
 .nav::-webkit-scrollbar { display: none; }

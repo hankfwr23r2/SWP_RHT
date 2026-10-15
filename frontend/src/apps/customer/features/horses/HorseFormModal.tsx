@@ -67,7 +67,12 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
       const refreshed = (await horsesApi.get(owner, saved.id)) ?? saved
       onSaved(refreshed)
     } catch (err) {
-      setFormError(err instanceof Error ? err.message : 'Không lưu được.')
+      const message = err instanceof Error ? err.message : 'Không lưu được.'
+      // Lỗi về mã microchip hiện ngay dưới ô nhập, không đưa lên đầu biểu mẫu
+      if (!editing && /microchip/i.test(message)) {
+        setErrors({ microchip: 'Mã microchip không hợp lệ, vui lòng nhập lại.' })
+        document.getElementById('h-chip')?.focus()
+      } else setFormError(message)
       setBusy(false)
     }
   }
@@ -95,7 +100,7 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
             </div>
             <div className="form-group">
               <label htmlFor="h-chip" className="required">Mã microchip</label>
-              <input id="h-chip" className={`form-control ${errors.microchip ? 'invalid' : ''}`} value={microchip} onChange={e => setMicrochip(e.target.value)} placeholder="VD: VN-985211" disabled={editing} aria-describedby="h-chip-hint" style={{ fontVariantNumeric: 'tabular-nums' }} />
+              <input id="h-chip" className={`form-control ${errors.microchip ? 'invalid' : ''}`} value={microchip} onChange={e => { setMicrochip(e.target.value); if (errors.microchip) setErrors(({ microchip: _m, ...rest }) => rest) }} placeholder="VD: VN-985211" disabled={editing} aria-describedby="h-chip-hint" style={{ fontVariantNumeric: 'tabular-nums' }} />
               {errors.microchip && <div className="form-error">{errors.microchip}</div>}
               <div id="h-chip-hint" className="form-hint">{editing ? 'Mã microchip là khóa định danh, không sửa được sau khi lưu.' : 'Không sửa được sau khi lưu. Kiểm tra kỹ trước khi lưu.'}</div>
             </div>

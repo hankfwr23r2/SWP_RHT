@@ -8,15 +8,16 @@ export interface ApiResponse<T = unknown> {
 }
 
 // 2. Quản lý lưu trữ Access Token (ưu tiên an toàn và tiện lợi khi gọi API)
-const TOKEN_KEY = 'SWP_ACCESS_TOKEN'
+// App khách và app nội bộ chạy chung một trình duyệt: mỗi app giữ token riêng, nếu không đăng nhập Manager sẽ ghi đè token của khách
+const tokenKey = () => `SWP_ACCESS_TOKEN_${typeof window !== 'undefined' && window.location.pathname.startsWith('/backoffice') ? 'backoffice' : 'customer'}`
 
 export const tokenStorage = {
-  get: (): string | null => (typeof localStorage !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null),
+  get: (): string | null => (typeof localStorage !== 'undefined' ? localStorage.getItem(tokenKey()) : null),
   set: (token: string): void => {
-    if (typeof localStorage !== 'undefined') localStorage.setItem(TOKEN_KEY, token)
+    if (typeof localStorage !== 'undefined') localStorage.setItem(tokenKey(), token)
   },
   remove: (): void => {
-    if (typeof localStorage !== 'undefined') localStorage.removeItem(TOKEN_KEY)
+    if (typeof localStorage !== 'undefined') localStorage.removeItem(tokenKey())
   },
 }
 
