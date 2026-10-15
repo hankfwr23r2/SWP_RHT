@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,6 +20,7 @@ public class IncidentController {
     private final IncidentService incidentService;
 
     // 1. Driver/Escort Báo cáo sự cố khẩn cấp (SOS)
+    @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'COORDINATOR', 'ADMIN')")
     @PostMapping("/report")
     public ResponseEntity<ApiResponse<IncidentResponse>> reportIncident(@Valid @RequestBody ReportIncidentRequest request) {
         IncidentResponse response = incidentService.reportIncident(request);
@@ -27,6 +29,7 @@ public class IncidentController {
     }
 
     // 2. Coordinator Đề xuất phương án Gọi Đội Ngoài (Cứu hộ xe / Thú y cơ động)
+    @PreAuthorize("hasAnyRole('COORDINATOR', 'ADMIN')")
     @PostMapping("/{id}/propose-external")
     public ResponseEntity<ApiResponse<IncidentResponse>> proposeExternalPlan(
             @PathVariable("id") Integer id,
@@ -36,6 +39,7 @@ public class IncidentController {
     }
 
     // 3. Manager Phê duyệt phương án & Bảo lãnh chi phí
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
     @PostMapping("/{id}/approve-plan")
     public ResponseEntity<ApiResponse<IncidentResponse>> approveIncidentPlan(
             @PathVariable("id") Integer id,
@@ -45,6 +49,7 @@ public class IncidentController {
     }
 
     // 4. Kíp xe Nghiệm thu hiện trường, Lưu hóa đơn đội ngoài & Tiếp tục hành trình
+    @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'COORDINATOR', 'ADMIN')")
     @PostMapping("/{id}/complete-resolution")
     public ResponseEntity<ApiResponse<IncidentResponse>> completeResolution(
             @PathVariable("id") Integer id,
@@ -54,6 +59,7 @@ public class IncidentController {
     }
 
     // 5. Lấy danh sách sự cố
+    @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER', 'DRIVER', 'ESCORT', 'ADMIN')")
     @GetMapping
     public ResponseEntity<ApiResponse<List<IncidentResponse>>> getAllIncidents(
             @RequestParam(value = "status", required = false) String status) {
@@ -62,6 +68,7 @@ public class IncidentController {
     }
 
     // 6. Lấy sự cố theo đơn hàng
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'COORDINATOR', 'MANAGER', 'DRIVER', 'ESCORT', 'ADMIN')")
     @GetMapping("/booking/{bookingId}")
     public ResponseEntity<ApiResponse<List<IncidentResponse>>> getIncidentsByBooking(
             @PathVariable("bookingId") Integer bookingId) {

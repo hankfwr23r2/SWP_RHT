@@ -12,12 +12,17 @@ import org.springframework.http.ResponseCookie;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Component
 public class JwtUtils {
 
-    @Value("${app.jwt.secret:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}")
+    @Value("${app.jwt.secret:${APP_JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}}")
     private String jwtSecret;
+
+    // Danh sách đen token đã thu hồi (Revoked / Blacklisted tokens) khi Đăng xuất
+    private final Set<String> blacklistedTokens = ConcurrentHashMap.newKeySet();
 
     @Value("${app.jwt.access-token-expiration-ms:900000}")
     private long accessTokenExpirationMs;
@@ -129,8 +134,22 @@ public class JwtUtils {
                 .getBody();
     }
 
-    // Kiểm tra tính hợp lệ của token
+    // Thu hồi token (đưa vào blacklist khi đăng xuất)
+    public void blacklistToken(String token) {
+        if (token != null && !token.isBlank()) {
+            blacklistedTokens.add(token.trim());
+        }
+    }
+
+    public boolean isBlacklisted(String token) {
+        return token != null && blacklistedTokens.contains(token.trim());
+    }
+
+    // Kiểm tra tính hợp lệ của token (bao gồm cả kiểm tra blacklist)
     public boolean validateToken(String token) {
+        if (token == null || token.isBlank() || isBlacklisted(token)) {
+            return false;
+        }
         try {
             Jwts.parserBuilder()
                     .setSigningKey(getSigningKey())

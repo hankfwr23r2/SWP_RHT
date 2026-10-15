@@ -39,7 +39,7 @@ public class AdminAccountController {
                 return jwtUtils.getUsernameFromToken(token);
             }
         }
-        return "admin";
+        throw new org.springframework.security.access.AccessDeniedException("Không xác định được danh tính người thực hiện!");
     }
 
     // 1. API Lấy danh sách toàn bộ tài khoản

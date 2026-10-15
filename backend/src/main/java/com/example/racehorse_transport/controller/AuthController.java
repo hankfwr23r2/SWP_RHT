@@ -69,13 +69,27 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(authResponse, "Làm mới Access Token thành công"));
     }
 
-    // API Đăng xuất - Xóa HttpOnly Cookie
+    // API Đăng xuất - Thu hồi token và Xóa HttpOnly Cookie
     @PostMapping("/logout")
-    public ResponseEntity<ApiResponse<String>> logout() {
+    public ResponseEntity<ApiResponse<String>> logout(
+            HttpServletRequest request,
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
+
+        // 1. Thu hồi Refresh Token từ cookie
+        String refreshToken = jwtUtils.getRefreshTokenFromCookies(request);
+        if (refreshToken != null) {
+            jwtUtils.blacklistToken(refreshToken);
+        }
+
+        // 2. Thu hồi Access Token từ Authorization header nếu có
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            jwtUtils.blacklistToken(authHeader.substring(7));
+        }
+
         ResponseCookie cleanCookie = jwtUtils.getCleanRefreshCookie();
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cleanCookie.toString())
-                .body(ApiResponse.success("Đăng xuất thành công", "Thành công"));
+                .body(ApiResponse.success("Đăng xuất thành công, token đã bị thu hồi", "Thành công"));
     }
 
     // API Đổi mật khẩu cá nhân cho người dùng đang đăng nhập

@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,6 +30,7 @@ public class BookingController {
     }
 
     // 1. Lấy tất cả đơn hàng
+    @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER', 'SPECIALIST', 'ADMIN')")
     @GetMapping
     public ResponseEntity<ApiResponse<List<BookingDTO>>> getAllBookings() {
         List<Booking> bookings = bookingService.findAll();
@@ -39,6 +41,7 @@ public class BookingController {
     }
 
     // 2. Xem chi tiết đơn hàng
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'COORDINATOR', 'MANAGER', 'SPECIALIST', 'ADMIN', 'DRIVER', 'ESCORT')")
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<BookingDTO>> getBookingById(@PathVariable Integer id) {
         Optional<Booking> bookingOpt = bookingService.findById(id);
@@ -50,6 +53,7 @@ public class BookingController {
     }
 
     // 3. Dev 4: Bàn giao, ký nhận và kết thúc đơn hàng (Flow 6)
+    @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'ADMIN')")
     @PostMapping("/{id}/complete-delivery")
     public ResponseEntity<ApiResponse<String>> completeDelivery(
             @PathVariable Integer id,

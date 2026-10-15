@@ -10,6 +10,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -21,6 +25,10 @@ public class DeliveryController {
     private final JwtUtils jwtUtils;
 
     private String extractUsername(String authHeader) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
+            return auth.getName();
+        }
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
             if (jwtUtils.validateToken(token)) {
@@ -31,6 +39,7 @@ public class DeliveryController {
     }
 
     // 1. Kíp xe check-in đến điểm giao đích & kích hoạt đếm thời gian 2h
+    @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'ADMIN')")
     @PostMapping("/{id}/arrive")
     public ResponseEntity<ApiResponse<BookingResponse>> arriveDelivery(
             @PathVariable("id") Integer id,
@@ -40,6 +49,7 @@ public class DeliveryController {
     }
 
     // 2. Ký Biên bản Bàn giao & Nghiệm thu (Không rating tài xế)
+    @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'ADMIN')")
     @PostMapping("/{id}/complete")
     public ResponseEntity<ApiResponse<BookingResponse>> completeHandover(
             @PathVariable("id") Integer id,
@@ -49,6 +59,7 @@ public class DeliveryController {
     }
 
     // 3. Xử lý ngoại lệ: Quá 2 giờ người nhận không tới / mất liên lạc / cơ sở chưa nhận
+    @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'ADMIN')")
     @PostMapping("/{id}/timeout")
     public ResponseEntity<ApiResponse<BookingResponse>> reportDeliveryTimeout(
             @PathVariable("id") Integer id,
@@ -58,6 +69,7 @@ public class DeliveryController {
     }
 
     // 4. Manager đối soát hóa đơn đội ngoài & phát hành Bảng quyết toán phát sinh
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
     @PostMapping("/{id}/settlement")
     public ResponseEntity<ApiResponse<BookingResponse>> issueSettlement(
             @PathVariable("id") Integer id,
@@ -67,6 +79,7 @@ public class DeliveryController {
     }
 
     // 5. Khách hàng thanh toán số dư quyết toán phát sinh
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
     @PostMapping("/{id}/pay-settlement")
     public ResponseEntity<ApiResponse<BookingResponse>> paySettlement(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
@@ -74,13 +87,14 @@ public class DeliveryController {
             @RequestBody(required = false) PaySettlementRequest request) {
         String username = extractUsername(authHeader);
         if (username == null) {
-            username = "customer01"; // Fallback nếu gọi qua test script
+            throw new AccessDeniedException("Yêu cầu xác thực tài khoản khách hàng để thanh toán quyết toán");
         }
         BookingResponse response = deliveryService.paySettlement(id, username, request);
         return ResponseEntity.ok(ApiResponse.success(response, "Thanh toán quyết toán thành công, đơn hàng hoàn tất!"));
     }
 
     // 6. Kíp xe xác nhận xe đã về đến Trụ sở chính Việt Nam -> Xe về AVAILABLE
+    @PreAuthorize("hasAnyRole('DRIVER', 'COORDINATOR', 'ADMIN')")
     @PostMapping("/vehicles/return-to-hq")
     public ResponseEntity<ApiResponse<String>> returnToHq(@RequestBody ReturnToHqRequest request) {
         deliveryService.returnToHq(request);

@@ -6,6 +6,7 @@ import com.example.racehorse_transport.response.ApiResponse;
 import com.example.racehorse_transport.service.FleetService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -13,6 +14,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/fleet")
+@PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER', 'SPECIALIST', 'ADMIN', 'DRIVER', 'ESCORT')")
 @RequiredArgsConstructor
 public class FleetController {
 

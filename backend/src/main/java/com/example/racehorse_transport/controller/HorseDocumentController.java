@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -44,6 +45,7 @@ public class HorseDocumentController {
      *   - documentType : PASSPORT | VACCINATION | BLOOD_TEST | HEALTH_CERT | OTHER
      *   - expiryDate   : Ngày hết hạn (yyyy-MM-dd, không bắt buộc)
      */
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'ADMIN')")
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<HorseDocumentResponse>> uploadDocument(
             @RequestParam("file") MultipartFile file,
@@ -70,6 +72,7 @@ public class HorseDocumentController {
      *   "reviewerName": "Nguyen A"  // Tên chuyên viên
      * }
      */
+    @PreAuthorize("hasAnyRole('SPECIALIST', 'INSPECTOR', 'MANAGER', 'ADMIN')")
     @PutMapping("/{id}/review")
     public ResponseEntity<ApiResponse<HorseDocumentResponse>> reviewDocument(
             @PathVariable Integer id,
@@ -89,6 +92,7 @@ public class HorseDocumentController {
      *
      * GET /api/v1/horse-documents/horse/{horseId}
      */
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'INSPECTOR', 'MANAGER', 'COORDINATOR', 'ADMIN')")
     @GetMapping("/horse/{horseId}")
     public ResponseEntity<ApiResponse<List<HorseDocumentResponse>>> getDocumentsByHorse(
             @PathVariable Integer horseId) {
@@ -103,6 +107,7 @@ public class HorseDocumentController {
      *
      * GET /api/v1/horse-documents/pending
      */
+    @PreAuthorize("hasAnyRole('SPECIALIST', 'INSPECTOR', 'MANAGER', 'ADMIN')")
     @GetMapping("/pending")
     public ResponseEntity<ApiResponse<List<HorseDocumentResponse>>> getPendingDocuments() {
         List<HorseDocumentResponse> pending = horseDocumentService.getPendingDocuments();
@@ -115,6 +120,7 @@ public class HorseDocumentController {
      *
      * GET /api/v1/horse-documents/{id}
      */
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'INSPECTOR', 'MANAGER', 'COORDINATOR', 'ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<HorseDocumentResponse>> getDocumentById(
             @PathVariable Integer id) {
