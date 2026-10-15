@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,6 +29,7 @@ public class HorseHealthLogController {
     }
 
     // 1. Lấy tất cả nhật ký sức khỏe
+    @PreAuthorize("hasAnyRole('SPECIALIST', 'INSPECTOR', 'MANAGER', 'ADMIN', 'COORDINATOR')")
     @GetMapping
     public ResponseEntity<ApiResponse<List<HorseHealthLogDTO>>> getAllLogs() {
         List<HorseHealthLog> logs = horseHealthLogService.findAll();
@@ -38,6 +40,7 @@ public class HorseHealthLogController {
     }
 
     // 2. Lấy nhật ký sức khỏe theo mã ngựa
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'INSPECTOR', 'MANAGER', 'ADMIN', 'COORDINATOR', 'ESCORT', 'DRIVER')")
     @GetMapping("/horse/{horseId}")
     public ResponseEntity<ApiResponse<List<HorseHealthLogDTO>>> getLogsByHorse(@PathVariable Integer horseId) {
         List<HorseHealthLog> logs = horseHealthLogService.findByHorseId(horseId);
@@ -48,6 +51,7 @@ public class HorseHealthLogController {
     }
 
     // 3. Lấy nhật ký sức khỏe theo đơn hàng / chuyến đi
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'INSPECTOR', 'MANAGER', 'ADMIN', 'COORDINATOR', 'ESCORT', 'DRIVER')")
     @GetMapping("/booking/{bookingId}")
     public ResponseEntity<ApiResponse<List<HorseHealthLogDTO>>> getLogsByBooking(@PathVariable Integer bookingId) {
         List<HorseHealthLog> logs = horseHealthLogService.findByBookingId(bookingId);
@@ -58,6 +62,7 @@ public class HorseHealthLogController {
     }
 
     // 4. Dev 4: Escort cập nhật sức khỏe / an sinh ngựa trên chuyến đi
+    @PreAuthorize("hasAnyRole('ESCORT', 'DRIVER', 'SPECIALIST', 'ADMIN')")
     @PostMapping
     public ResponseEntity<ApiResponse<HorseHealthLogDTO>> createHealthLog(@Valid @RequestBody UpdateHealthLogRequest request) {
         HorseHealthLog saved = horseHealthLogService.updateHorseHealthStatusByEscort(

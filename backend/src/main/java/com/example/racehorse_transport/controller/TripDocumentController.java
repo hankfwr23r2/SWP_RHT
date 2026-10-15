@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,6 +30,7 @@ public class TripDocumentController {
     }
 
     // 1. Lấy tất cả giấy tờ trong hệ thống (dành cho quản lý)
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN', 'COORDINATOR')")
     @GetMapping
     public ResponseEntity<ApiResponse<List<TripDocumentDTO>>> getAllDocuments() {
         List<TripDocument> docs = tripDocumentService.findAll();
@@ -39,6 +41,7 @@ public class TripDocumentController {
     }
 
     // 2. Lấy danh sách giấy tờ theo đơn hàng / chuyến đi (để tài xế xem và tick chọn)
+    @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'COORDINATOR', 'MANAGER', 'ADMIN', 'CUSTOMER')")
     @GetMapping("/booking/{bookingId}")
     public ResponseEntity<ApiResponse<List<TripDocumentDTO>>> getDocumentsByBooking(@PathVariable Integer bookingId) {
         List<TripDocument> docs = tripDocumentService.findByBookingId(bookingId);
@@ -49,6 +52,7 @@ public class TripDocumentController {
     }
 
     // 3. Xem chi tiết 1 giấy tờ
+    @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'COORDINATOR', 'MANAGER', 'ADMIN', 'CUSTOMER')")
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<TripDocumentDTO>> getDocumentById(@PathVariable Integer id) {
         Optional<TripDocument> docOpt = tripDocumentService.findById(id);
@@ -60,6 +64,7 @@ public class TripDocumentController {
     }
 
     // 4. API Dev 4: Tài xế xác nhận danh sách giấy tờ hợp lệ
+    @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'ADMIN')")
     @PostMapping("/verify")
     public ResponseEntity<ApiResponse<String>> verifyDocuments(@Valid @RequestBody VerifyDocumentRequest request) {
         tripDocumentService.verifyTripDocuments(request.getRouteId(), request.getDocumentIds());

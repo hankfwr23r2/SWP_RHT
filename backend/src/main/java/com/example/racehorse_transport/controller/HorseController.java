@@ -5,6 +5,7 @@ import com.example.racehorse_transport.entity.Horse;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import com.example.racehorse_transport.response.ApiResponse;
 import com.example.racehorse_transport.service.HorseService;
@@ -26,6 +27,7 @@ public class HorseController {
         this.modelMapper = modelMapper;
     }
 
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'INSPECTOR', 'MANAGER', 'ADMIN', 'COORDINATOR')")
     @GetMapping
     public ResponseEntity<ApiResponse<List<HorseDTO>>> getAllHorses() {
         List<Horse> horses = horseService.findAll();
@@ -35,6 +37,7 @@ public class HorseController {
         return ResponseEntity.ok(ApiResponse.success(dtos, "Success fetching all horses"));
     }
 
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'INSPECTOR', 'MANAGER', 'ADMIN', 'COORDINATOR', 'ESCORT', 'DRIVER')")
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<HorseDTO>> getHorseById(@PathVariable Integer id) {
         Optional<Horse> horse = horseService.findById(id);
@@ -46,6 +49,7 @@ public class HorseController {
         }
     }
 
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'ADMIN')")
     @PostMapping
     public ResponseEntity<ApiResponse<HorseDTO>> createHorse(@RequestBody HorseDTO horseDTO) {
         Horse horse = modelMapper.map(horseDTO, Horse.class);
@@ -54,6 +58,7 @@ public class HorseController {
         return ResponseEntity.ok(ApiResponse.success(resultDTO, "Horse created successfully"));
     }
 
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteHorse(@PathVariable Integer id) {
         horseService.deleteById(id);
