@@ -479,14 +479,14 @@ describe('bước tiến độ khớp quy trình', () => {
 })
 
 describe('managerCounts', () => {
-  it('đếm đơn chờ tiếp nhận, chờ duyệt giá, sự cố, chờ đối soát và xe đang chạy', () => {
+  it('đếm đơn chờ tiếp nhận, chờ duyệt giá, sự cố và xe đang chạy', () => {
     const inc = (status: string) => ({ status }) as Incident
     const n = managerCounts([
       { status: 'pending_intake' }, { status: 'pending_commercial' }, { status: 'pending_commercial' },
       { status: 'in_transit', incidents: [inc('pending_approval'), inc('active')] },
       { status: 'expenses_submitted' },
     ])
-    expect(n).toEqual({ intake: 1, quote: 2, incident: 1, audit: 1, moving: 1 })
+    expect(n).toEqual({ intake: 1, quote: 2, incident: 1, moving: 1 })
   })
 })
 

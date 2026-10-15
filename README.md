@@ -14,7 +14,7 @@ Dự án Hệ thống Vận chuyển Ngựa đua (RaceHorse Transport System).
 ### Cách 1: Chạy toàn bộ hệ thống bằng Docker (Khuyên dùng)
 Chỉ cần cài đặt Docker Desktop và chạy đúng 1 lệnh tại thư mục gốc:
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
 - Tự động bật PostgreSQL 16 Alpine và tạo database `horse_transport_db`.
 - Tự động bật Backend tại: `http://localhost:8080/api/v1`

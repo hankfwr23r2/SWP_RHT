@@ -65,6 +65,21 @@ export interface BackendBookingResponse {
   history?: Array<{ time: number; actor: string; text: string }>
 }
 
+export function toNumericBookingId(identifier: number | string): number {
+  if (typeof identifier === 'number') {
+    if (Number.isSafeInteger(identifier) && identifier > 0) return identifier
+    throw new Error('Mã đơn hàng không hợp lệ.')
+  }
+
+  const value = identifier.trim()
+  const match = /^(?:BK-)?(\d+)$/i.exec(value)
+  const numericId = match ? Number(match[1]) : Number.NaN
+  if (!Number.isSafeInteger(numericId) || numericId <= 0) {
+    throw new Error(`Mã đơn hàng không hợp lệ: ${identifier}`)
+  }
+  return numericId
+}
+
 export const backendBookingApi = {
   // 1. Khách hàng tạo đơn vận chuyển mới (POST /api/v1/customer/bookings)
   create: async (payload: CreateBookingPayload): Promise<BackendBookingResponse> => {
@@ -80,12 +95,18 @@ export const backendBookingApi = {
 
   // 3. Khách hàng xem chi tiết đơn (GET /api/v1/customer/bookings/{id})
   getCustomerBookingById: async (id: number | string): Promise<BackendBookingResponse> => {
-    const res = await apiClient.get<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${id}`)
+    const numericId = toNumericBookingId(id)
+    const res = await apiClient.get<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${numericId}`)
     return res.data.data
   },
 
   getAssignedBookings: async (): Promise<BackendBookingResponse[]> => {
     const res = await apiClient.get<ApiResponse<BackendBookingResponse[]>>('/bookings/assigned')
+    return res.data.data
+  },
+
+  resubmitCustomerBooking: async (id: number | string): Promise<BackendBookingResponse> => {
+    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${id}/resubmit`)
     return res.data.data
   },
 

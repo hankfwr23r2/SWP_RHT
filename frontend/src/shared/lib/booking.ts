@@ -359,7 +359,6 @@ export const managerCounts = (list: Pick<Booking, 'status' | 'incidents' | 'medi
   intake: list.filter(b => b.status === 'pending_intake').length,
   quote: list.filter(b => b.status === 'pending_commercial').length,
   incident: list.reduce((n, b) => n + (b.incidents ?? []).filter(i => i.status === 'pending_approval').length, 0),
-  audit: list.filter(b => b.status === 'expenses_submitted').length, // đối soát chi phí, làm ở trang Tiến độ đơn
   moving: list.filter(b => orderGroupOf(b) === 'moving').length,
 })
 

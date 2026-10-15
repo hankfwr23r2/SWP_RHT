@@ -2,6 +2,7 @@ package com.example.racehorse_transport.controller;
 
 import com.example.racehorse_transport.dto.document.HorseDocumentResponse;
 import com.example.racehorse_transport.dto.document.ReviewHorseDocumentRequest;
+import com.example.racehorse_transport.dto.document.UpdateHorseDocumentExpiryRequest;
 import com.example.racehorse_transport.entity.HorseDocument;
 import com.example.racehorse_transport.entity.Horse;
 import com.example.racehorse_transport.repository.HorseRepository;
@@ -17,6 +18,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import jakarta.validation.Valid;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -94,6 +96,23 @@ public class HorseDocumentController {
                 : "Hồ sơ đã bị TỪ CHỐI. Khách hàng cần bổ sung lại.";
 
         return ResponseEntity.ok(ApiResponse.success(response, message));
+    }
+
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'ADMIN')")
+    @PutMapping("/{id}/expiry")
+    public ResponseEntity<ApiResponse<HorseDocumentResponse>> updateDocumentExpiry(
+            @PathVariable Integer id,
+            @Valid @RequestBody UpdateHorseDocumentExpiryRequest request,
+            Authentication authentication) {
+        HorseDocument document = horseDocumentService.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hồ sơ ID: " + id));
+        Integer horseId = document.getHorseID() != null ? document.getHorseID().getId() : null;
+        if (horseId == null) {
+            throw new IllegalArgumentException("Hồ sơ không gắn với ngựa nào.");
+        }
+        assertHorseAccess(horseId, authentication);
+        HorseDocumentResponse response = horseDocumentService.updateExpiryDate(id, request.getExpiryDate());
+        return ResponseEntity.ok(ApiResponse.success(response, "Đã cập nhật ngày hết hạn giấy tờ."));
     }
 
     /**

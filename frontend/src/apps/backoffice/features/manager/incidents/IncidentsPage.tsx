@@ -1,4 +1,4 @@
-// Manager: duyệt phương án sự cố và theo dõi sự cố đang xử lý (Flow 5, PRD mục 6.6). Đối soát chi phí nằm ở trang Tiến độ đơn.
+// Manager: duyệt phương án sự cố và theo dõi sự cố đang xử lý (Flow 5, PRD mục 6.6).
 import { useState } from 'react'
 import { useAuth } from '@shared/auth/AuthContext'
 import { INCIDENT_ACTION, INCIDENT_KIND } from '@shared/config/booking-rules'

@@ -186,6 +186,16 @@ public class HorseDocumentServiceImpl implements HorseDocumentService {
         return mapToResponse(saved);
     }
 
+    @Override
+    @Transactional
+    public HorseDocumentResponse updateExpiryDate(Integer documentId, LocalDate expiryDate) {
+        HorseDocument document = horseDocumentRepository.findById(documentId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Không tìm thấy hồ sơ với ID: " + documentId));
+        document.setExpiryDate(expiryDate);
+        return mapToResponse(horseDocumentRepository.save(document));
+    }
+
     /**
      * Overload duyệt/từ chối hồ sơ trả về Entity (tương thích ngược).
      */

@@ -88,6 +88,11 @@ export const backendHorseApi = {
     return res.data.data
   },
 
+  updateDocumentExpiry: async (docId: number, expiryDate: string): Promise<BackendHorseDocResponse> => {
+    const res = await apiClient.put<ApiResponse<BackendHorseDocResponse>>(`/horse-documents/${docId}/expiry`, { expiryDate })
+    return res.data.data
+  },
+
   // Specialist duyệt tài liệu ngựa
   reviewDocument: async (docId: number, approved: boolean, note: string, reviewerName: string): Promise<BackendHorseDocResponse> => {
     const res = await apiClient.put<ApiResponse<BackendHorseDocResponse>>(`/horse-documents/${docId}/review`, {
