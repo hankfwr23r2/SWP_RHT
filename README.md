@@ -4,7 +4,7 @@ Dự án Hệ thống Vận chuyển Ngựa đua (RaceHorse Transport System).
 
 ## Cấu trúc thư mục (Monorepo)
 
-- `backend/`: Spring Boot 3 API (Java 21, Spring Security, JWT, PostgreSQL, JPA/Hibernate).
+- `backend/`: Spring Boot API (Java 26, Spring Security, JWT, PostgreSQL, JPA/Hibernate).
 - `frontend/`: React 19 + TypeScript + Vite (Customer SPA & Backoffice SPA).
 
 ---
