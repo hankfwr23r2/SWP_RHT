@@ -166,8 +166,8 @@ export const customerBookingsApi = {
     toCustomerView(toBooking(await backendBookingApi.resubmitDocuments(id), customer)),
   payDeposit: async (customer: string, id: string): Promise<CustomerBookingView> =>
     toCustomerView(toBooking(await backendBookingApi.payDeposit(id, { paymentMethod: 'VNPAY' }), customer)),
-  // Backend chặn trả 70% khi báo giá quá 48 giờ, nên không trả được vào ngày D
-  payBalance: notSupported('trả 70% còn lại ngày D (backend chặn khi báo giá quá 48 giờ)') as (customer: string, id: string) => Promise<CustomerBookingView>,
+  payBalance: async (customer: string, id: string): Promise<CustomerBookingView> =>
+    toCustomerView(toBooking(await backendBookingApi.payBalance(id, { paymentMethod: 'VNPAY' }), customer)),
   settle: async (customer: string, id: string, rating: Omit<Rating, 'at'>): Promise<CustomerBookingView> => {
     if (![rating.trip, rating.driver, rating.escort].every(n => Number.isInteger(n) && n >= 1 && n <= 5)) throw new Error('Chấm điểm từ 1 đến 5 sao cho chuyến đi, tài xế và hộ tống.')
     const out = await backendSettlementApi.payAndComplete(id, { paymentMethod: 'VNPAY', rating: { trip: rating.trip, driver: rating.driver, escort: rating.escort, comment: rating.comment } })
@@ -175,7 +175,7 @@ export const customerBookingsApi = {
   },
 }
 
-// Danh sách đơn theo vai trò đang đăng nhập. Driver, Escort: backend chưa có API đơn của chuyến mình nên chưa có dữ liệu.
+// Danh sách đơn theo vai trò đang đăng nhập.
 async function listForRole() {
   const role = backofficeRole()
   if (role === 'driver' || role === 'escort') {
@@ -263,21 +263,34 @@ export const bookingsApi = {
     return toBooking(await specialistApi.completeClearance(id))
   },
 
-  // ===== Flow 3, 4: lệnh điều xe, check-in, nhật ký lộ trình. Backend chưa có API cho các bước này =====
+  // ===== Flow 3, 4: lệnh điều xe, check-in, nhật ký lộ trình =====
   setDriverPack: notSupported('Điều phối viên nhập bộ giấy cho Driver') as (id: string, tripId: string, by: string, items: string[]) => Promise<Booking>,
-  acknowledgeTrip: notSupported('Driver, Escort nhận lệnh điều xe') as (id: string, tripId: string, who: 'driver' | 'escort', by: string) => Promise<Booking>,
-  departToPickup: notSupported('Driver bắt đầu đi tới điểm đón') as (id: string, tripId: string, by: string) => Promise<Booking>,
-  arriveAtPickup: notSupported('Driver tới điểm đón') as (id: string, tripId: string, by: string, photo: string) => Promise<Booking>,
-  scanChip: notSupported('Escort quét microchip') as (id: string, tripId: string, by: string, chip: string) => Promise<Booking>,
-  collectOriginals: notSupported('Driver thu hồ sơ gốc') as (id: string, tripId: string, by: string, items: string[]) => Promise<Booking>,
-  uploadHandover: notSupported('Driver tải biên bản giao nhận') as (id: string, tripId: string, by: string, photo: string) => Promise<Booking>,
-  startJourney: notSupported('Driver bắt đầu hành trình (backend chưa có cổng 70% ngày D)') as (id: string, tripId: string, by: string) => Promise<Booking>,
-  arriveCheckpoint: notSupported('Driver check-in trạm nghỉ, cửa khẩu (backend check-in theo tuyến, không theo xe)') as (id: string, tripId: string, by: string, photo: string) => Promise<Booking>,
-  submitWelfare: notSupported('Escort ghi nhật ký an sinh theo mốc') as (id: string, tripId: string, by: string, data: { condition: string; waterLiters: number; hay: boolean; photo: string; note: string }) => Promise<Booking>,
-  continueJourney: notSupported('Driver tiếp tục hành trình') as (id: string, tripId: string, by: string) => Promise<Booking>,
-  customsCleared: notSupported('Driver xác nhận thông quan') as (id: string, tripId: string, by: string, stampPhotos: string[]) => Promise<Booking>,
-  completeDelivery: notSupported('Driver hoàn tất giao ngựa (backend dùng trạng thái ngoài PRD)') as (id: string, tripId: string, by: string) => Promise<Booking>,
-  confirmHome: notSupported('Driver xác nhận đã về trụ sở (backend chỉ đổi trạng thái xe)') as (id: string, tripId: string, by: string, photo: string) => Promise<Booking>,
+  acknowledgeTrip: async (id: string, tripId: string, who: 'driver' | 'escort', by: string): Promise<Booking> =>
+    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'ACKNOWLEDGE', actor: by, payload: { who } })),
+  departToPickup: async (id: string, tripId: string, by: string): Promise<Booking> =>
+    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'DEPART_TO_PICKUP', actor: by })),
+  arriveAtPickup: async (id: string, tripId: string, by: string, photo: string): Promise<Booking> =>
+    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'ARRIVE_PICKUP', actor: by, payload: { photo } })),
+  scanChip: async (id: string, tripId: string, by: string, chip: string): Promise<Booking> =>
+    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'SCAN_CHIP', actor: by, payload: { chip } })),
+  collectOriginals: async (id: string, tripId: string, by: string, items: string[]): Promise<Booking> =>
+    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'COLLECT_ORIGINALS', actor: by, payload: { items } })),
+  uploadHandover: async (id: string, tripId: string, by: string, photo: string): Promise<Booking> =>
+    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'UPLOAD_HANDOVER', actor: by, payload: { photo } })),
+  startJourney: async (id: string, tripId: string, by: string): Promise<Booking> =>
+    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'START_JOURNEY', actor: by })),
+  arriveCheckpoint: async (id: string, tripId: string, by: string, photo: string): Promise<Booking> =>
+    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'ARRIVE_CHECKPOINT', actor: by, payload: { photo } })),
+  submitWelfare: async (id: string, tripId: string, by: string, data: { condition: string; waterLiters: number; hay: boolean; photo: string; note: string }): Promise<Booking> =>
+    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'SUBMIT_WELFARE', actor: by, payload: data })),
+  continueJourney: async (id: string, tripId: string, by: string): Promise<Booking> =>
+    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'CONTINUE_JOURNEY', actor: by })),
+  customsCleared: async (id: string, tripId: string, by: string, stampPhotos: string[]): Promise<Booking> =>
+    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'CUSTOMS_CLEARED', actor: by, payload: { stampPhotos } })),
+  completeDelivery: async (id: string, tripId: string, by: string): Promise<Booking> =>
+    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'COMPLETE_DELIVERY', actor: by })),
+  confirmHome: async (id: string, tripId: string, by: string, photo: string): Promise<Booking> =>
+    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'CONFIRM_HOME', actor: by, payload: { photo } })),
 
   // ===== Flow 5: sự cố khẩn cấp =====
   reportIncident: async (id: string, tripId: string, _by: string, kind: IncidentKind, photo: string, note: string, booking: Booking, trip: VehicleTrip) => {
