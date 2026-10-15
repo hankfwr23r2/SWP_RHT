@@ -1,6 +1,5 @@
 // Bảng điều khiển Quản lý: lịch khởi hành và bảng tất cả đơn. Số liệu doanh thu nằm ở trang Báo cáo doanh thu.
 import { useState } from 'react'
-import { useSearchParams } from 'react-router'
 import { useStaggerIn } from '@shared/motion/motion'
 import { bookingsApi } from '@shared/services/bookings'
 import { useLoad } from '@shared/services/useLoad'
@@ -13,11 +12,10 @@ import bd from './Board.module.css'
 import s from './Dashboard.module.css'
 
 export default function DashboardPage() {
-  const { data: all } = useLoad(bookingsApi.list)
-  const [params] = useSearchParams()
+  const { data: all, reload } = useLoad(bookingsApi.list)
   const [open, setOpenId] = useState<string | null>(null)
   const [calendar, setCalendar] = useState(false)
-  const [text, setText] = useState(() => params.get('q') ?? '')
+  const [text, setText] = useState('')
   const keyword = text.trim().toLowerCase()
   const orders = (all ?? []).filter(b => !keyword || [b.id, b.customer, b.origin.name, b.dest.name].some(v => v.toLowerCase().includes(keyword)))
   const setOpen = (b: Booking) => setOpenId(b.id)
@@ -33,13 +31,13 @@ export default function DashboardPage() {
           <h2 className={s.sectionTitle} style={{ margin: 0 }}>Tất cả đơn</h2>
           <div className={bd.boardTools}>
             <label className={bd.search}><i className="fa-solid fa-magnifying-glass" aria-hidden="true" /><input className="form-control" placeholder="Tìm theo mã đơn, khách hàng, tuyến…" value={text} onChange={e => setText(e.target.value)} /></label>
-            <span className={bd.seg}><span className={bd.segOn}><i className="fa-solid fa-table-columns" /> Kanban</span></span>
+            
           </div>
         </div>
         <OrderBoard orders={orders} onOpen={setOpen} />
       </div>
       {calendar && <CalendarModal orders={all ?? []} onClose={() => setCalendar(false)} onOpen={b => { setCalendar(false); setOpen(b) }} />}
-      {opened && <OrderDetailModal b={opened} onClose={() => setOpenId(null)} />}
+      {opened && <OrderDetailModal b={opened} onClose={() => setOpenId(null)} onDone={() => { setOpenId(null); reload() }} />}
     </div>
   )
 }
