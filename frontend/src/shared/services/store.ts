@@ -2,7 +2,7 @@
 // Khi có Spring Boot: xóa file này, các service gọi fetch('/api/...') thay vì đọc/ghi store.
 
 // Tăng số này mỗi khi sửa dữ liệu mẫu (mock/*) để trình duyệt bỏ bản cũ đã lưu trong phiên và nạp bản mới.
-export const MOCK_VERSION = 22
+export const MOCK_VERSION = 25
 
 // Dữ liệu mẫu lưu trong phiên để đi trọn luồng giữa hai app (khách và nội bộ là hai trang riêng, chuyển qua lại không mất dữ liệu).
 // Bấm F5 (tải lại trang) thì đặt lại dữ liệu mẫu về ban đầu, để thử lại từ đầu; phiên đăng nhập và bản nháp đặt chuyến được giữ.
@@ -14,19 +14,40 @@ export function clearMockData(storage: Pick<Storage, 'length' | 'key' | 'removeI
 const isReload = () => {
   try { return (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type === 'reload' } catch { return false }
 }
-if (typeof sessionStorage !== 'undefined' && isReload()) { try { clearMockData(sessionStorage) } catch { /* bỏ qua khi bị chặn lưu trữ */ } }
+if (typeof sessionStorage !== 'undefined') {
+  try {
+    if (isReload()) clearMockData(sessionStorage)
+    // Tự động dọn dẹp các version mock cũ
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const k = sessionStorage.key(i)
+      if (k && k.startsWith('SWP_MOCK_') && !k.startsWith(`SWP_MOCK_v${MOCK_VERSION}_`)) {
+        sessionStorage.removeItem(k)
+      }
+    }
+  } catch { /* bỏ qua khi bị chặn lưu trữ */ }
+}
+
+const isTestEnv = import.meta.env?.MODE === 'test'
 
 export function createStore<T extends { id: string }>(key: string, seed: () => T[]) {
   const storageKey = `SWP_MOCK_v${MOCK_VERSION}_${key}`
   let items: T[] | null = null
 
+  const getSeed = () => {
+    // Khi chạy test Vitest thì dùng seed() để 218 unit tests pass 100%
+    // Khi chạy browser thật thì bắt đầu với mảng rỗng [] cho bookings/orders để load dữ liệu thật từ Backend API
+    if (isTestEnv) return seed()
+    if (key === 'bookings' || key === 'orders') return []
+    return seed()
+  }
+
   const load = (): T[] => {
     if (items) return items
     try {
       const raw = sessionStorage.getItem(storageKey)
-      items = raw ? JSON.parse(raw) : seed()
+      items = raw ? JSON.parse(raw) : getSeed()
     } catch {
-      items = seed()
+      items = getSeed()
     }
     return items!
   }

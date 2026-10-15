@@ -441,8 +441,88 @@ const issueSettlementOf = (b: Booking, by: string, text: string): Booking => {
 
 // Dành cho app nội bộ
 export const bookingsApi = {
-  list: async (): Promise<Booking[]> => { applySystemRules(); return structuredClone(store.all()).sort((a, b) => a.createdAt - b.createdAt) },
-  get: async (id: string): Promise<Booking | undefined> => { applySystemRules(); return structuredClone(store.get(id)) },
+  list: async (): Promise<Booking[]> => {
+    applySystemRules()
+    if (typeof window !== 'undefined') {
+      try {
+        const beList = await backendBookingApi.getAllBookings()
+        if (Array.isArray(beList)) {
+          const beIds = new Set(beList.map((bb: any) => bb.id || `BK-${String(bb.numericId || 1).padStart(3, '0')}`))
+          store.all().forEach(b => {
+            if (!beIds.has(b.id)) {
+              store.remove(b.id)
+            }
+          })
+          beList.forEach((bb: any) => {
+            const id = bb.id || `BK-${String(bb.numericId || 1).padStart(3, '0')}`
+            const mapped: Booking = {
+              id,
+              customer: bb.customer || 'Khách hàng',
+              status: (bb.status as any) || 'pending_intake',
+              type: (bb.type as any) || 'domestic',
+              origin: { id: 'HN', name: bb.originName || 'Hà Nội', country: (bb.originCountry || 'VN') as any },
+              dest: { id: 'HCM', name: bb.destName || 'Hồ Chí Minh', country: (bb.destCountry || 'VN') as any },
+              departAt: bb.departAt || Date.now(),
+              consignor: {
+                name: bb.consignor?.name || bb.customer || 'Người gửi',
+                phone: bb.consignor?.phone || '0901234567',
+                idNumber: '001099000000',
+                address: bb.originName || 'Hà Nội',
+              },
+              consignee: {
+                name: bb.consignee?.name || 'Người nhận',
+                phone: bb.consignee?.phone || '0909876543',
+                idNumber: '001099000001',
+                address: bb.destName || 'Hồ Chí Minh',
+              },
+              horses: (bb.horses || []).map((h: any, idx: number) => ({
+                horseId: h.horseId || `H-${idx + 1}`,
+                name: h.name || `Ngựa #${idx + 1}`,
+                microchip: h.microchip || `MC-${idx + 1}`,
+                breed: h.breed || 'Thoroughbred',
+                sex: (h.sex || 'stallion') as any,
+                stall: (h.stall || 'standard') as any,
+                feedPackage: (h.feedPackage || 'standard') as any,
+                waterPlan: (h.waterPlan || 'every_4h') as any,
+                insurance: { opted: !!h.insuranceOpted }
+              })),
+              trips: bb.trips,
+              route: bb.route,
+              gate: bb.gate,
+              quote: bb.quote,
+              payment: bb.payment,
+              medical: bb.medical,
+              clearance: bb.clearance,
+              settlement: bb.settlement,
+              rating: bb.rating,
+              intake: bb.intake,
+              createdAt: bb.createdAt || Date.now(),
+              history: bb.history || [{ time: Date.now(), actor: 'System', text: 'Đồng bộ từ Backend' }],
+            }
+            if (store.get(id)) {
+              store.update(id, mapped)
+            } else {
+              store.add(mapped)
+            }
+          })
+        }
+      } catch {
+        // Fallback
+      }
+    }
+    return structuredClone(store.all()).sort((a, b) => a.createdAt - b.createdAt)
+  },
+  get: async (id: string): Promise<Booking | undefined> => {
+    applySystemRules()
+    if (typeof window !== 'undefined' && !store.get(id)) {
+      try {
+        await bookingsApi.list()
+      } catch {
+        // Fallback
+      }
+    }
+    return structuredClone(store.get(id))
+  },
 
   // Manager: tiếp nhận, giao Kiểm dịch viên và Điều phối viên. Xe, tài xế, hộ tống do Điều phối viên chọn khi lập lộ trình.
   activate: async (id: string, by: string, specialist: StaffRef, coordinator: StaffRef): Promise<Booking> => {
