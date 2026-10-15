@@ -50,7 +50,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
                         .userId(user.getId())
                         .name(user.getUsername() != null ? user.getUsername() : staff.getStaffCode())
                         .email(user.getEmail())
-                        .phone(null)
+                        .phone(staff.getPhone())
                         .role(role)
                         .status(status)
                         .staffCode(staff.getStaffCode())
@@ -116,6 +116,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
         staff.setStaffCode(staffCode);
         staff.setHireDate(LocalDate.now());
         staff.setEmploymentStatus("ACTIVE");
+        staff.setPhone(request.getPhone() != null ? request.getPhone().trim() : null);
         staffRepository.save(staff);
 
         // 6. Ghi Audit Log vào SYSTEM_LOG

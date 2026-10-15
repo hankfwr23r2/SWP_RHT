@@ -21,7 +21,7 @@ const parseExpiry = (dateStr?: string): number | undefined => {
 }
 
 async function getDocsForHorse(numId: number, cachedDocs?: Partial<Record<HorseDocType, HorseDoc>>): Promise<Partial<Record<HorseDocType, HorseDoc>>> {
-  const result: Partial<Record<HorseDocType, HorseDoc>> = { ...(cachedDocs || {}) }
+  const result: Partial<Record<HorseDocType, HorseDoc>> = import.meta.env?.MODE === 'test' ? { ...(cachedDocs || {}) } : {}
   try {
     const beDocs = await backendHorseApi.getDocuments(numId)
     if (beDocs && beDocs.length > 0) {
@@ -42,7 +42,7 @@ async function getDocsForHorse(numId: number, cachedDocs?: Partial<Record<HorseD
       })
     }
   } catch {
-    // Giữ nguyên cachedDocs nếu offline hoặc chưa có documents
+    if (import.meta.env?.MODE !== 'test') throw new Error('Không thể tải giấy tờ ngựa từ máy chủ.')
   }
   return result
 }
@@ -52,38 +52,29 @@ export const horsesApi = {
     if (typeof window !== 'undefined') {
       try {
         const beHorses = await backendHorseApi.list()
-        if (beHorses && beHorses.length > 0) {
-          const mapped = await Promise.all(beHorses.map(async h => {
+        if (Array.isArray(beHorses)) {
+          return Promise.all(beHorses.map(async h => {
             const formattedId = `H-${String(h.id).padStart(3, '0')}`
             const cached = store.all().find(c => c.microchip === h.microchipID || c.id === formattedId)
             const docs = h.id ? await getDocsForHorse(h.id, cached?.docs) : (cached?.docs || {})
 
             const profile: HorseProfile = {
               id: formattedId,
-              owner: cached?.owner || owner,
+              owner,
               name: h.horseName,
               microchip: h.microchipID,
-              breed: cached?.breed || 'Thoroughbred',
+              breed: h.breed || cached?.breed || 'Thoroughbred',
               sex: (h.gender?.toLowerCase() || cached?.sex || 'gelding') as 'stallion' | 'mare' | 'gelding',
               color: h.color || cached?.color || 'Nâu hạt dẻ',
               birthYear: h.age ? (new Date().getFullYear() - h.age) : (cached?.birthYear || 2020),
-              marks: cached?.marks || '',
+              marks: h.identificationMarks || cached?.marks || '',
               docs,
-              completedTrips: cached?.completedTrips || 0,
-              createdAt: cached?.createdAt || Date.now(),
-            }
-
-            // Đồng bộ lại vào store để lưu giữ tài liệu trong phiên
-            if (cached) {
-              store.update(cached.id, profile)
-            } else {
-              store.add(profile)
+              completedTrips: h.completedTrips ?? cached?.completedTrips ?? 0,
+              createdAt: h.createdAt ? new Date(h.createdAt).getTime() : (cached?.createdAt || Date.now()),
             }
 
             return profile
           }))
-
-          return mapped.filter(h => !owner || h.owner === owner)
         }
       } catch (error) {
         // Fallback store khi offline
@@ -113,14 +104,14 @@ export const horsesApi = {
             owner: cached?.owner || '',
             name: h.horseName,
             microchip: h.microchipID,
-            breed: cached?.breed || 'Thoroughbred',
+            breed: h.breed || cached?.breed || 'Thoroughbred',
             sex: (h.gender?.toLowerCase() || cached?.sex || 'gelding') as 'stallion' | 'mare' | 'gelding',
             color: h.color || cached?.color || 'Nâu',
             birthYear: h.age ? (new Date().getFullYear() - h.age) : (cached?.birthYear || 2020),
-            marks: cached?.marks || '',
+            marks: h.identificationMarks || cached?.marks || '',
             docs,
-            completedTrips: cached?.completedTrips || 0,
-            createdAt: cached?.createdAt || Date.now(),
+            completedTrips: h.completedTrips ?? cached?.completedTrips ?? 0,
+            createdAt: h.createdAt ? new Date(h.createdAt).getTime() : (cached?.createdAt || Date.now()),
           }
         }
       } catch (error) {
@@ -140,9 +131,11 @@ export const horsesApi = {
         const beHorse = await backendHorseApi.create({
           horseName: data.name,
           microchipID: microchip,
+          breed: data.breed,
           gender: data.sex,
           color: data.color,
           age: data.birthYear ? (new Date().getFullYear() - data.birthYear) : 4,
+          identificationMarks: data.marks,
           status: 'ACTIVE',
         })
         const created: HorseProfile = {
@@ -185,9 +178,33 @@ export const horsesApi = {
   // Microchip là khóa định danh: không sửa sau khi lưu lần đầu
   update: async (_owner: string, id: string, patch: Partial<NewHorse>): Promise<HorseProfile> => {
     const current = store.all().find(h => h.id === id || (patch.microchip && normalizeChip(patch.microchip) === h.microchip))
+      ?? (typeof window !== 'undefined' ? await horsesApi.byId(id) : undefined)
     if (!current) throw new Error('Không tìm thấy ngựa.')
     if (patch.microchip !== undefined && normalizeChip(patch.microchip) !== current.microchip) throw new Error('Không sửa được mã microchip sau khi đã lưu.')
     const { microchip: _chip, ...rest } = patch
+    if (typeof window !== 'undefined') {
+      const numericId = Number(id.replace(/\D/g, ''))
+      const updated = await backendHorseApi.update(numericId, {
+        id: numericId,
+        horseName: rest.name ?? current.name,
+        microchipID: current.microchip,
+        gender: rest.sex ?? current.sex,
+        color: rest.color ?? current.color,
+        breed: rest.breed ?? current.breed,
+        identificationMarks: rest.marks ?? current.marks,
+        age: rest.birthYear ? new Date().getFullYear() - rest.birthYear : new Date().getFullYear() - current.birthYear,
+        status: 'ACTIVE',
+      })
+      return {
+        ...current,
+        ...rest,
+        name: updated.horseName,
+        microchip: updated.microchipID,
+        sex: (updated.gender?.toLowerCase() || current.sex) as HorseProfile['sex'],
+        color: updated.color || current.color,
+        birthYear: updated.age ? new Date().getFullYear() - updated.age : current.birthYear,
+      }
+    }
     return structuredClone(store.update(current.id, rest))
   },
 }

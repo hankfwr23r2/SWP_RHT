@@ -2,6 +2,7 @@ package com.example.racehorse_transport.service;
 
 import com.example.racehorse_transport.dto.fleet.CrewResponse;
 import com.example.racehorse_transport.dto.fleet.VehicleResponse;
+import com.example.racehorse_transport.dto.fleet.VehicleRequest;
 
 import java.time.Instant;
 import java.util.List;
@@ -9,6 +10,9 @@ import java.util.List;
 public interface FleetService {
     List<VehicleResponse> getAllVehicles();
     List<VehicleResponse> getAvailableVehicles(Instant departDate, String tripType);
+    VehicleResponse createVehicle(VehicleRequest request);
+    VehicleResponse updateVehicle(String identifier, VehicleRequest request);
+    void deleteVehicle(String identifier);
     List<CrewResponse> getAllCrew(String role);
     List<CrewResponse> getAvailableCrew(Instant departDate, String role);
     com.example.racehorse_transport.entity.Vehicle findVehicleByIdOrCode(String identifier);

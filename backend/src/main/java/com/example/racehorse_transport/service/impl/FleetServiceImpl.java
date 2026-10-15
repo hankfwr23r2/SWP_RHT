@@ -2,6 +2,7 @@ package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.fleet.CrewResponse;
 import com.example.racehorse_transport.dto.fleet.VehicleResponse;
+import com.example.racehorse_transport.dto.fleet.VehicleRequest;
 import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.repository.*;
 import com.example.racehorse_transport.service.FleetService;
@@ -103,6 +104,51 @@ public class FleetServiceImpl implements FleetService {
     }
 
     @Override
+    @org.springframework.transaction.annotation.Transactional
+    public VehicleResponse createVehicle(VehicleRequest request) {
+        String plate = request.getPlate().trim().toUpperCase(Locale.ROOT);
+        if (vehicleRepository.findByLicensePlate(plate).isPresent()) {
+            throw new IllegalArgumentException("Biển số xe đã tồn tại.");
+        }
+        Vehicle vehicle = new Vehicle();
+        applyVehicleRequest(vehicle, request, plate);
+        return mapToVehicleResponse(vehicleRepository.save(vehicle));
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public VehicleResponse updateVehicle(String identifier, VehicleRequest request) {
+        Vehicle vehicle = findVehicleByIdOrCode(identifier);
+        String plate = request.getPlate().trim().toUpperCase(Locale.ROOT);
+        vehicleRepository.findByLicensePlate(plate)
+                .filter(existing -> !existing.getId().equals(vehicle.getId()))
+                .ifPresent(existing -> { throw new IllegalArgumentException("Biển số xe đã tồn tại."); });
+        applyVehicleRequest(vehicle, request, plate);
+        return mapToVehicleResponse(vehicleRepository.save(vehicle));
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public void deleteVehicle(String identifier) {
+        Vehicle vehicle = findVehicleByIdOrCode(identifier);
+        if (!bookingVehicleRepository.findByVehicleID_Id(vehicle.getId()).isEmpty()) {
+            throw new IllegalStateException("Không thể xóa xe đã được gán vào đơn hàng.");
+        }
+        vehicleRepository.delete(vehicle);
+    }
+
+    private void applyVehicleRequest(Vehicle vehicle, VehicleRequest request, String plate) {
+        vehicle.setVehicleType(request.getType().trim());
+        vehicle.setCapacity(request.getCapacity());
+        vehicle.setLicensePlate(plate);
+        vehicle.setVin(request.getVin());
+        vehicle.setInspectionNo(request.getInspectionNo());
+        vehicle.setTransitPermit(request.getTransitPermit());
+        vehicle.setStatus(request.getStatus() == null || request.getStatus().isBlank()
+                ? "ACTIVE" : request.getStatus().trim().toUpperCase(Locale.ROOT));
+    }
+
+    @Override
     public List<CrewResponse> getAllCrew(String role) {
         List<Staff> staffList = role != null && !role.isBlank() && !role.equalsIgnoreCase("ALL")
                 ? staffRepository.findByRoleIgnoreCase(role)
@@ -179,6 +225,9 @@ public class FleetServiceImpl implements FleetService {
                 .type(v.getVehicleType() != null ? v.getVehicleType() : "medium")
                 .plate(v.getLicensePlate())
                 .capacity(v.getCapacity())
+                .vin(v.getVin())
+                .inspectionNo(v.getInspectionNo())
+                .transitPermit(v.getTransitPermit())
                 .status(v.getStatus())
                 .homeDepot("Trụ sở chính — Việt Nam")
                 .currentLocation("Trụ sở chính — Việt Nam")
@@ -195,7 +244,7 @@ public class FleetServiceImpl implements FleetService {
                 .staffCode(s.getStaffCode() != null ? s.getStaffCode() : "NV-" + s.getId())
                 .name(fullName)
                 .role(s.getRole())
-                .phone("0908" + String.format("%06d", s.getId() * 111111 % 1000000))
+                .phone(s.getPhone())
                 .email(email)
                 .employmentStatus(s.getEmploymentStatus())
                 .isAvailable("ACTIVE".equalsIgnoreCase(s.getEmploymentStatus()))

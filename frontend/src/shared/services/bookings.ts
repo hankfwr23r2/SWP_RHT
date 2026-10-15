@@ -20,6 +20,16 @@ import { paymentApi } from '../api/payments'
 
 const store = createStore<Booking>('bookings', () => import.meta.env?.MODE === 'test' ? seedBookings() : [])
 
+function backofficeRole(): string | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const session = sessionStorage.getItem('SWP_SESSION_backoffice')
+    return session ? (JSON.parse(session) as { role?: string }).role ?? null : null
+  } catch {
+    return null
+  }
+}
+
 // ===== Thông báo đẩy (chỉ báo tin, không ghi nhật ký) =====
 type Who = 'customer' | 'manager' | 'specialist' | 'coordinator'
 const LINK = {
@@ -176,24 +186,28 @@ export const customerBookingsApi = {
     if (typeof window !== 'undefined') {
       try {
         const backendBookings = await backendBookingApi.getCustomerBookings()
-        if (Array.isArray(backendBookings) && backendBookings.length > 0) {
+        if (Array.isArray(backendBookings)) {
+          const backendIds = new Set(backendBookings.map((bb: any) => bb.id || `BK-${String(bb.numericId || 1).padStart(3, '0')}`))
+          store.all().filter(b => b.customer === customer && !backendIds.has(b.id)).forEach(b => store.remove(b.id))
           backendBookings.forEach((bb: any) => {
             const id = bb.id || `BK-${String(bb.numericId || 1).padStart(3, '0')}`
-            if (!store.get(id)) {
-              store.add({
+            const mapped: Booking = {
                 id,
+                // The customer endpoint already scopes rows to the authenticated user.
+                // Keep the UI session identity here: session.name is the full name,
+                // while the backend's `customer` field is the username.
                 customer,
                 status: (bb.status as any) || 'pending_intake',
                 type: (bb.type as any) || 'domestic',
                 origin: { id: 'HN', name: bb.originName || 'Hà Nội', country: (bb.originCountry || 'VN') as any },
                 dest: { id: 'HCM', name: bb.destName || 'Hồ Chí Minh', country: (bb.destCountry || 'VN') as any },
                 departAt: bb.departAt || Date.now(),
-                consignor: { name: bb.consignor?.name || customer, phone: bb.consignor?.phone || '0901234567', idNumber: '001099000000', address: 'Hà Nội' },
-                consignee: { name: bb.consignee?.name || 'Người nhận', phone: bb.consignee?.phone || '0909876543', idNumber: '001099000001', address: 'Hồ Chí Minh' },
+                consignor: { name: bb.consignor?.name || customer, phone: bb.consignor?.phone || '', idNumber: '', address: bb.originName || '' },
+                consignee: { name: bb.consignee?.name || '', phone: bb.consignee?.phone || '', idNumber: '', address: bb.destName || '' },
                 horses: (bb.horses || []).map((h: any, idx: number) => ({
                   horseId: h.horseId || `H-${idx + 1}`,
-                  name: h.name || `Ngựa #${idx + 1}`,
-                  microchip: h.microchip || `MC-${idx + 1}`,
+                  name: h.name || `Hồ sơ ngựa ${h.horseId || idx + 1}`,
+                  microchip: h.microchip || '',
                   breed: h.breed || 'Thoroughbred',
                   sex: (h.sex || 'stallion') as any,
                   stall: (h.stall || 'standard') as any,
@@ -203,8 +217,9 @@ export const customerBookingsApi = {
                 })),
                 createdAt: bb.createdAt || Date.now(),
                 history: [{ time: Date.now(), actor: customer, text: 'Đồng bộ từ Backend' }],
-              })
-            }
+              }
+            if (store.get(id)) store.update(id, mapped)
+            else store.add(mapped)
           })
         }
       } catch (error) {
@@ -215,11 +230,34 @@ export const customerBookingsApi = {
   },
   get: async (customer: string, id: string): Promise<CustomerBookingView | undefined> => {
     applySystemRules()
+    if (typeof window !== 'undefined' && import.meta.env?.MODE !== 'test') {
+      const numericId = id.replace(/\D/g, '')
+      if (!numericId) return undefined
+      const bb = await backendBookingApi.getCustomerBookingById(numericId)
+      await customerBookingsApi.list(customer)
+      const refreshed = store.get(bb.id || id)
+      return refreshed?.customer === customer ? toCustomerView(refreshed) : undefined
+    }
     const b = store.get(id)
     return b && b.customer === customer ? toCustomerView(b) : undefined
   },
   create: async (customer: string, input: NewBookingInput): Promise<CustomerBookingView> => {
     const now = Date.now()
+    if (typeof window !== 'undefined' && import.meta.env?.MODE !== 'test') {
+      const existing = await backendBookingApi.getCustomerBookings()
+      if (existing.some(b => b.status === 'payment_overdue')) throw new Error('Bạn có đơn quá hạn thanh toán quyết toán nên chưa đặt được đơn mới. Vui lòng thanh toán trước.')
+      const created = await backendBookingApi.create({
+        type: input.type, originName: input.origin.name, originCountry: input.origin.country,
+        destName: input.dest.name, destCountry: input.dest.country, departAt: input.departAt,
+        consignor: { name: input.consignor.name, phone: input.consignor.phone },
+        consignee: { name: input.consignee.name, phone: input.consignee.phone },
+        horses: input.horses.map(h => ({ horseId: h.horseId, name: h.name, microchip: h.microchip, breed: h.breed, sex: h.sex, stall: h.stall, feedPackage: h.feedPackage, waterPlan: h.waterPlan, insuranceOpted: h.insurance?.opted })),
+      })
+      await customerBookingsApi.list(customer)
+      const saved = store.get(created.id)
+      if (!saved) throw new Error('Đơn đã được lưu nhưng không tải lại được từ máy chủ.')
+      return toCustomerView(saved)
+    }
     if (store.all().some(o => o.customer === customer && o.status === 'payment_overdue')) throw new Error('Bạn có đơn quá hạn thanh toán quyết toán nên chưa đặt được đơn mới. Vui lòng thanh toán trước.')
 
     if (typeof window !== 'undefined') {
@@ -445,7 +483,17 @@ export const bookingsApi = {
     applySystemRules()
     if (typeof window !== 'undefined') {
       try {
-        const beList = await backendBookingApi.getAllBookings()
+        const role = backofficeRole()
+        const pathname = window.location.pathname
+        const beList = role === 'coordinator'
+          ? await backendBookingApi.getCoordinatorBookings()
+          : role === 'specialist'
+            ? await (pathname.includes('/specialist/legal')
+              ? specialistApi.getClearanceBookings()
+              : specialistApi.getVerificationBookings())
+            : role === 'manager' || role === 'admin' || !role
+              ? await backendBookingApi.getAllBookings()
+              : []
         if (Array.isArray(beList)) {
           const beIds = new Set(beList.map((bb: any) => bb.id || `BK-${String(bb.numericId || 1).padStart(3, '0')}`))
           store.all().forEach(b => {

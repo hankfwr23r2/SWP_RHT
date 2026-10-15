@@ -36,5 +36,9 @@ public class Staff {
     @Column(name = "EmploymentStatus", length = 50)
     private String employmentStatus;
 
+    @Size(max = 20)
+    @Column(name = "Phone", length = 20)
+    private String phone;
+
 
 }

@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.Instant;
 
 @Getter
 @Setter
@@ -18,8 +19,12 @@ public class HorseDTO implements Serializable {
     private String horseName;
     private String microchipID;
     private String gender;
+    private String breed;
     private String color;
     private Integer age;
     private BigDecimal weight;
+    private String identificationMarks;
+    private Integer completedTrips;
+    private Instant createdAt;
     private String status;
 }

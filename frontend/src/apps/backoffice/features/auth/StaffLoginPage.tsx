@@ -24,7 +24,9 @@ function LoginForm({ managerOnly }: { managerOnly: boolean }) {
     try {
       const res = await authApi.loginStaff({ username: email, password })
       const rawRole = (res.role || 'manager').toLowerCase()
-      const role = rawRole as StaffRole
+      // Backend stores inspector staff as INSPECTOR; the backoffice route
+      // configuration and menus use the product-facing role name specialist.
+      const role = (rawRole === 'inspector' ? 'specialist' : rawRole) as StaffRole
 
       if (managerOnly && role !== 'manager' && role !== 'admin') {
         setError('Tài khoản của bạn không có quyền truy cập vào cổng Quản lý.')

@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { Link, NavLink, useLocation } from 'react-router'
 import { bookingsApi } from '@shared/services/bookings'
-import { useLoad } from '@shared/services/useLoad'
+import { useAutoRefresh, useLoad } from '@shared/services/useLoad'
 import { accountsApi } from '@shared/services/accounts'
 import { workOf } from '../shared/staffWork'
 import { useAuth } from '@shared/auth/AuthContext'
@@ -21,7 +21,8 @@ export function StaffSidebar() {
   const [collapsed, setCollapsed] = useState(readCollapsed)
   const [urgentOpen, setUrgentOpen] = useState(true)
   // Tải lại mỗi lần đổi trang để duyệt xong là số giảm ngay
-  const { data: all } = useLoad(bookingsApi.list, [pathname])
+  const { data: all, reload } = useLoad(bookingsApi.list, [pathname])
+  useAutoRefresh(reload)
   const { data: accounts } = useLoad(role === 'admin' ? accountsApi.list : async () => [], [pathname, role])
   const { counts: workCounts, urgent: allUrgent } = workOf(role, all ?? [], session!.name)
   // Quản trị viên: số tài khoản theo từng loại; các vai trò khác: số việc đang chờ

@@ -1,6 +1,7 @@
 // Điều phối viên: lập phương án xử lý sự cố, trình Manager duyệt (Flow 5, PRD mục 6.5).
 import { useState } from 'react'
 import { INCIDENT_KIND } from '@shared/config/booking-rules'
+import { isAssignedTo } from '@shared/lib/staffAssignment'
 import { formatDateTime } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
 import { useAuth } from '@shared/auth/AuthContext'
@@ -18,7 +19,7 @@ export default function CoordinatorIncidentsPage() {
   const { data: all, reload } = useLoad(bookingsApi.list)
   const [tab, setTab] = useState<Tab>('todo')
   const [open, setOpen] = useState<Item | null>(null)
-  const mine = (all ?? []).filter(b => b.intake?.coordinator.name === session!.name).flatMap(b => (b.incidents ?? []).map(i => ({ b, i })))
+  const mine = (all ?? []).filter(b => isAssignedTo(b.intake?.coordinator, session?.name)).flatMap(b => (b.incidents ?? []).map(i => ({ b, i })))
   const groups: Record<Tab, Item[]> = {
     todo: mine.filter(x => x.i.status === 'reported'),
     waiting: mine.filter(x => x.i.status === 'pending_approval'),

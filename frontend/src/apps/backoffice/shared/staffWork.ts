@@ -3,6 +3,7 @@ import { managerCounts } from '@shared/lib/booking'
 import type { Booking } from '@shared/types/booking'
 import type { StaffRole } from '@shared/types/role'
 import { managerAction } from './managerAction'
+import { isAssignedTo } from '@shared/lib/staffAssignment'
 
 export interface Urgent { id: string; label: string; to: string }
 export interface StaffWork { counts: Record<string, number>; urgent: Urgent[] }
@@ -18,7 +19,7 @@ export function workOf(role: StaffRole | undefined, list: Booking[], name: strin
     }
   }
   if (role === 'specialist') {
-    const mine = list.filter(b => b.intake?.specialist.name === name)
+    const mine = list.filter(b => isAssignedTo(b.intake?.specialist, name))
     const verify = mine.filter(b => b.medical?.status === 'pending')
     const legal = mine.filter(b => b.payment && b.clearance && (b.status === 'waybill_issued' || b.status === 'clearance_in_progress'))
     return {
@@ -30,7 +31,7 @@ export function workOf(role: StaffRole | undefined, list: Booking[], name: strin
     }
   }
   if (role === 'coordinator') {
-    const mine = list.filter(b => b.intake?.coordinator.name === name)
+    const mine = list.filter(b => isAssignedTo(b.intake?.coordinator, name))
     const plan = mine.filter(b => b.status === 'under_review')
     const pack = mine.filter(b => b.payment && DISPATCH_OPEN.includes(b.status) && (b.trips ?? []).some(t => !t.driverPack))
     const sos = mine.flatMap(b => (b.incidents ?? []).filter(i => i.status === 'reported').map(i => ({ b, i })))
