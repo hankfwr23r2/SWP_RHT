@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { MARGIN_RATE } from '../config/booking-rules'
 import { DAY } from '../config/business-rules'
-import { seedBookings } from '../services/mock/bookings'
+import { seedBookings } from '../fixtures/bookings'
 import type { Booking } from '../types/booking'
 import { changePct, orderFinance, series, summarize } from './report'
 

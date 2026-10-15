@@ -2,7 +2,7 @@
 // Chỉ cho biết người đó đang hoạt động hay đang nghỉ (nghỉ thì khóa kèm lý do), không hiện số đơn họ đang làm.
 import { useState } from 'react'
 import { formatDate } from '@shared/lib/format'
-import type { StaffMember } from '@shared/services/mock/staff'
+import type { StaffMember } from '@shared/types/staff'
 import { Modal } from '@shared/ui/Modal'
 import p from './ResourcePicker.module.css'
 

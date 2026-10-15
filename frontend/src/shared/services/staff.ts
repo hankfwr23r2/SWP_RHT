@@ -1,6 +1,7 @@
 // Service nhân sự nội bộ (kiểm dịch viên, điều phối viên). Sau này: GET/PATCH /api/staff
 import type { Order } from '../types/order'
-import { seedStaff, type StaffMember } from './mock/staff'
+import { seedStaff } from '../fixtures/staff'
+import type { StaffMember } from '../types/staff'
 import { createStore } from './store'
 
 const store = createStore<StaffMember>('staff', seedStaff)

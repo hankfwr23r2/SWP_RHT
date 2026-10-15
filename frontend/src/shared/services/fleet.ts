@@ -1,6 +1,7 @@
 // Service đội xe và người đi theo chuyến kết nối Backend Spring Boot (/fleet/vehicles, /fleet/crew)
 import { backendFleetApi } from '../api/fleet'
-import { seedCrew, seedVehicles, type CrewMember, type Vehicle } from './mock/fleet'
+import { seedCrew, seedVehicles } from '../fixtures/fleet'
+import type { CrewMember, Vehicle } from '../types/fleet'
 import { createStore } from './store'
 
 const vehicles = createStore<Vehicle>('vehicles', seedVehicles)

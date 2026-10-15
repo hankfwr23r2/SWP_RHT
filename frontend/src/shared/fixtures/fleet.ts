@@ -1,23 +1,13 @@
-// Đội xe và người đi theo chuyến (tài xế, hộ tống). Gốc: Fleet And Route/ops_data.js (vehicles, staff).
-// Gộp thêm xe và người đã ghi trong đơn mẫu (review, trip.contacts) để mọi trang dùng chung một danh sách.
-// Mỗi xe có một tài xế cố định: chọn xe là gán tài xế theo.
+// Fixture dữ liệu xe và nhân viên tổ đội phục vụ Unit Tests
+import type { CrewMember, Vehicle } from '../types/fleet'
 
-export interface Vehicle {
-  id: string
-  name: string
-  type: string
-  capacity: number // số ngăn
-  plate: string
-  vin?: string // số khung
-  inspectionNo?: string // số giấy đăng kiểm
-  transitPermit?: string // giấy phép liên vận CLV
+const SEED_DRIVER: Record<string, string> = {
+  'VH-001': 'TX-01', 'VH-002': 'TX-02', 'VH-003': 'TX-03', 'VH-004': 'TX-04',
+  'VH-005': 'TX-06', 'VH-006': 'TX-05', 'VH-007': 'TX-07', 'VH-008': 'TX-08',
+  'VH-009': 'TX-09', 'VH-010': 'TX-10', 'VH-011': 'TX-11', 'VH-012': 'TX-12',
+  'VH-013': 'TX-13', 'VH-014': 'TX-14'
 }
-
-// Xe không gắn với tài xế: tài xế do Điều phối chọn khi lập lộ trình. Bảng này chỉ để dựng dữ liệu mẫu (đơn mẫu đã có tài xế).
-const SEED_DRIVER: Record<string, string> = {'VH-001': 'TX-01', 'VH-002': 'TX-02', 'VH-003': 'TX-03', 'VH-004': 'TX-04', 'VH-005': 'TX-06', 'VH-006': 'TX-05', 'VH-007': 'TX-07', 'VH-008': 'TX-08', 'VH-009': 'TX-09', 'VH-010': 'TX-10', 'VH-011': 'TX-11', 'VH-012': 'TX-12', 'VH-013': 'TX-13', 'VH-014': 'TX-14'}
 export const seedDriverOf = (vehicleId: string) => SEED_DRIVER[vehicleId] ?? ''
-
-export interface CrewMember { id: string; name: string; role: 'driver' | 'escort'; phone: string; note?: string; idNumber?: string; license?: string }
 
 const rawVehicles = (): Vehicle[] => [
   { id: 'VH-001', name: 'Xe chuyên dụng', type: 'Xe chuyên dụng', capacity: 2, plate: '29H-12345' },
@@ -67,16 +57,17 @@ const rawCrew = (): CrewMember[] => [
   { id: 'NV-10', name: 'Phùng Bảo Ngọc', role: 'escort', phone: '0906 565 656', note: 'NVCS 5 năm KN' },
 ]
 
-// Giấy tờ xe và định danh nhân sự là số mẫu sinh theo mã, để Carrier Info Sheet có đủ trường (PRD mục 2.7). Thay bằng dữ liệu thật khi có backend.
 const num = (id: string) => id.replace(/\D/g, '').padStart(3, '0')
+
 export const seedVehicles = (): Vehicle[] => rawVehicles().map(v => ({
   ...v,
   vin: `RHT${num(v.id)}EQ2026${String(Number(num(v.id)) * 7919).padStart(6, '0')}`,
   inspectionNo: `KD-2026-${num(v.id)}${v.plate.replace(/\D/g, '').slice(0, 3)}`,
   transitPermit: `CLV-26-${num(v.id)}`,
 }))
+
 export const seedCrew = (): CrewMember[] => rawCrew().map(c => {
-  const n = Number(num(c.id)) + (c.role === 'escort' ? 500 : 0) // tài xế và hộ tống cùng số thứ tự vẫn có CCCD khác nhau
+  const n = Number(num(c.id)) + (c.role === 'escort' ? 500 : 0)
   return {
     ...c,
     idNumber: `0${String(n).padStart(3, '0')}2${String(n * 104729).padStart(7, '0').slice(0, 7)}`,

@@ -3,8 +3,8 @@
 import { acceptanceDeadline, paymentDeadline } from '../lib/deadlines'
 import { formatDateTime } from '../lib/format'
 import type { Order } from '../types/order'
-import { seedOrders } from './mock/orders'
-import { seedOtherOrders } from './mock/orders-others'
+import { seedOrders } from '../fixtures/orders'
+import { seedOtherOrders } from '../fixtures/orders-others'
 import { createStore } from './store'
 
 // Bộ đơn chung: khách mẫu Trang trại Long Thành + các khách khác

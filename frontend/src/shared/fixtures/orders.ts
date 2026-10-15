@@ -1,9 +1,9 @@
 // Bộ đơn mẫu CHUẨN của toàn hệ thống (gốc: CUS/don_cua_toi.js). Mọi vai trò đọc cùng bộ này.
 // Ngày giờ tính tương đối so với lúc mở trang để các trạng thái hạn chót luôn hiện đúng.
-import { APPRAISAL_WORKING_DAYS, HOUR } from '../../config/business-rules'
-import { atTime, daysFromToday, workdaysAgo } from '../../lib/dates'
-import { formatDate } from '../../lib/format'
-import type { Horse, Order } from '../../types/order'
+import { APPRAISAL_WORKING_DAYS, HOUR } from '../config/business-rules'
+import { atTime, daysFromToday, workdaysAgo } from '../lib/dates'
+import { formatDate } from '../lib/format'
+import type { Horse, Order } from '../types/order'
 
 export const CUSTOMER = { name: 'Trang trại Long Thành', phoneLast4: '3456', email: 'longthanh.farm@gmail.com' }
 

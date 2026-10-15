@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { bookingsApi, customerBookingsApi } from './bookings'
 import { horsesApi } from './horses'
-import { CUSTOMER } from './mock/orders'
+import { CUSTOMER } from '../fixtures/orders'
 
 const ID = 'ORD-2026-0117' // in_transit, 1 xe, 2 ngựa, nội địa
 const T = 'TRP-0117-1'

@@ -3,7 +3,7 @@ import { DAY, HOUR } from '../config/business-rules'
 import { BOOKING_STATUS, BOOKING_STEPS, stepOf, statusRank, type BookingStatus } from '../config/booking-rules'
 import type { Incident, IncidentExpense } from '../types/booking'
 import { COUNTRY_LOCATIONS, PLACES, TRANSIT_STATIONS } from '../config/network'
-import type { StaffMember } from '../services/mock/staff'
+import type { StaffMember } from '../types/staff'
 import type { Booking, BookingHorse, HorseProfile, VehicleTrip, Checkpoint, TripRun } from '../types/booking'
 import {
   schedulesOf, clashOf, vehicleSpot, vehiclePoint, pendingDeparture, spotLabel, nearestTo, projectOnPath, pointsAhead, pointAlong, bookingPath, incidentLocation, needsFitCheck, transitProgress, defaultPayer, incidentActionsFor, settlementOf, approvedSubOf, APPROVED_SUBS, orderGroupOf, ORDER_GROUPS, capacitiesFor, estimateQuote, busyResources, buildRoutePlan, gatesFor, suggestGate, suggestTransitStations, canCompleteClearance, classForHorses, defaultClearanceItems, deriveStatus, docsDueAt, earliestDeparture, finalizeQuote, horseReadiness,

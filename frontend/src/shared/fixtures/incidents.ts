@@ -1,28 +1,11 @@
+import type { Incident } from '../types/incident'
 // Sự cố trên đường. Gốc: Fleet And Route/ops_data.js (sự cố do điều phối ghi nhận, đề xuất cách xử lý)
 // + Manager/manager_duyet_su_co.html (chi phí, bên chịu phí, bảo hiểm; Manager duyệt hoặc từ chối).
 // Chuyến TR-9021 → đơn EQ-2026-1080, TR-9042 → đơn EQ-2026-1079, TR-9028 → đơn EQ-2026-1028.
-import { atTime } from '../../lib/dates'
+import { atTime } from '../lib/dates'
 
-export type IncidentStatus = 'open' | 'proposed' | 'approved' | 'rejected' // open: chờ điều phối đề xuất · proposed: chờ Manager
-export interface Incident {
-  id: string
-  tripId: string
-  orderId: string
-  leg: string
-  time: number
-  severity: 'emergency' | 'medium' | 'low'
-  type: string
-  desc: string
-  status: IncidentStatus
-  proposal: string
-  report?: string // báo cáo chi tiết của điều phối viên
-  cost?: number // chi phí phát sinh dự kiến (VND)
-  bearer?: 'company' | 'customer'
-  claim?: string // khả năng claim bảo hiểm
-  attachments?: string[]
-  directive?: string // chỉ đạo của Manager khi duyệt
-  rejectReason?: string
-}
+
+
 
 export const seedIncidents = (): Incident[] => [
   { id: 'INC-001', tripId: 'TR-9021', orderId: 'EQ-2026-1080', leg: '1/2', time: atTime(0, '10:30'), severity: 'emergency', type: 'Y tế ngựa', desc: 'Nhịp tim bất thường, ngựa bỏ ăn trên cabin', status: 'open', proposal: '' },

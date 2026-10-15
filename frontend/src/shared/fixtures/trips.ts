@@ -1,26 +1,17 @@
+import type { Leg, OpsTrip } from '../types/trip'
 // Chuyến xe nội bộ của Điều phối (mã TR-xxxx, nối sang đơn qua orderId). Gốc: Fleet And Route/ops_data.js (trips).
 // Khách, tuyến, số ngựa, ngày đi lấy từ đơn; chuyến chỉ giữ phần của Điều phối: kết quả khảo sát và các chặng.
 // Nối mã chuyến cũ sang đơn cùng khách/tuyến trong bộ đơn chung:
 //   TR-9021 → EQ-2026-1080 · TR-9042 → EQ-2026-1079 · TR-9028 → EQ-2026-1028 · TR-9035 → EQ-2026-1045
 //   TR-9036 → EQ-2026-1078 · TR-9050 → EQ-2026-1044 · TR-9051 → EQ-2026-1057 · TR-9018 → EQ-2026-1036
 // Các đơn khác đã qua bước lập lộ trình được tạo chuyến TR-91xx, chặng suy từ điểm dừng, xe và hộ tống theo kết quả thẩm định (review).
-import { atTime } from '../../lib/dates'
-import { legsFromStops } from '../../lib/trip'
-import type { Order } from '../../types/order'
+import { atTime } from '../lib/dates'
+import { legsFromStops } from '../lib/trip'
+import type { Order } from '../types/order'
 import { seedCrew, seedDriverOf, seedVehicles } from './fleet'
 import { seedOrders } from './orders'
 import { seedOtherOrders } from './orders-others'
 
-export interface Leg { no: number; from: string; to: string; vehicleId: string; driverId: string; escortId: string }
-export interface OpsTrip {
-  id: string
-  orderId: string
-  feasible?: boolean // kết quả khảo sát (chưa có = chờ khảo sát)
-  assessNote: string
-  assessedAt?: number
-  legs: Leg[]
-  activity: { time: number; text: string }[] // nhật ký hiện trường (ảnh chặng) ở trang Giám sát
-}
 
 const leg = (no: number, from: string, to: string, vehicleId = '', driverId = '', escortId = ''): Leg => ({ no, from, to, vehicleId, driverId, escortId })
 

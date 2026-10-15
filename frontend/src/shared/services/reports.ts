@@ -1,5 +1,6 @@
 // Báo cáo chuyến đã hoàn thành. Sau này: GET /api/trip-reports
-import { seedTripHistory, type TripReport } from './mock/trip-history'
+import { seedTripHistory } from '../fixtures/trip-history'
+import type { TripReport } from '../types/trip'
 
 export const reportsApi = {
   list: async (): Promise<TripReport[]> => seedTripHistory().sort((a, b) => b.completedAt - a.completedAt),
