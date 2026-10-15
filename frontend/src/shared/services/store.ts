@@ -1,80 +1,36 @@
-// Kho dữ liệu mẫu trong bộ nhớ, lưu sessionStorage để đi trọn luồng giữa các trang trong cùng tab.
-// Khi có Spring Boot: xóa file này, các service gọi fetch('/api/...') thay vì đọc/ghi store.
-
-// Tăng số này mỗi khi sửa dữ liệu mẫu (mock/*) để trình duyệt bỏ bản cũ đã lưu trong phiên và nạp bản mới.
-export const MOCK_VERSION = 25
-
-// Dữ liệu mẫu lưu trong phiên để đi trọn luồng giữa hai app (khách và nội bộ là hai trang riêng, chuyển qua lại không mất dữ liệu).
-// Bấm F5 (tải lại trang) thì đặt lại dữ liệu mẫu về ban đầu, để thử lại từ đầu; phiên đăng nhập và bản nháp đặt chuyến được giữ.
+// Xóa dữ liệu mock còn sót lại từ các phiên bản frontend cũ.
 export function clearMockData(storage: Pick<Storage, 'length' | 'key' | 'removeItem'>) {
   const keys: string[] = []
   for (let i = 0; i < storage.length; i++) { const k = storage.key(i); if (k?.startsWith('SWP_MOCK_')) keys.push(k) }
   keys.forEach(k => storage.removeItem(k))
 }
-const isReload = () => {
-  try { return (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type === 'reload' } catch { return false }
-}
 if (typeof sessionStorage !== 'undefined') {
   try {
-    if (isReload()) clearMockData(sessionStorage)
-    // Tự động dọn dẹp các version mock cũ
-    for (let i = 0; i < sessionStorage.length; i++) {
-      const k = sessionStorage.key(i)
-      if (k && k.startsWith('SWP_MOCK_') && !k.startsWith(`SWP_MOCK_v${MOCK_VERSION}_`)) {
-        sessionStorage.removeItem(k)
-      }
-    }
+    clearMockData(sessionStorage)
   } catch { /* bỏ qua khi bị chặn lưu trữ */ }
 }
 
 const isTestEnv = import.meta.env?.MODE === 'test'
 
-export function createStore<T extends { id: string }>(key: string, seed: () => T[]) {
-  const storageKey = `SWP_MOCK_v${MOCK_VERSION}_${key}`
-  let items: T[] | null = null
-
-  const getSeed = () => {
-    // Khi chạy test Vitest thì dùng seed() để 218 unit tests pass 100%
-    // Khi chạy browser thật thì bắt đầu với mảng rỗng [] cho bookings/orders để load dữ liệu thật từ Backend API
-    if (isTestEnv) return seed()
-    if (key === 'bookings' || key === 'orders') return []
-    return seed()
-  }
-
-  const load = (): T[] => {
-    if (items) return items
-    try {
-      const raw = sessionStorage.getItem(storageKey)
-      items = raw ? JSON.parse(raw) : getSeed()
-    } catch {
-      items = getSeed()
-    }
-    return items!
-  }
-  const persist = () => {
-    try { sessionStorage.setItem(storageKey, JSON.stringify(items)) } catch { /* bỏ qua khi bị chặn lưu trữ */ }
-  }
+export function createStore<T extends { id: string }>(_key: string, seed: () => T[]) {
+  let items = isTestEnv ? seed() : []
 
   return {
-    all: () => load(),
-    get: (id: string) => load().find(x => x.id === id),
+    all: () => items,
+    get: (id: string) => items.find(x => x.id === id),
     update(id: string, patch: Partial<T>) {
-      const list = load()
-      const i = list.findIndex(x => x.id === id)
+      const i = items.findIndex(x => x.id === id)
       if (i < 0) throw new Error(`Không tìm thấy ${id}`)
-      list[i] = { ...list[i], ...patch }
-      persist()
-      return list[i]
+      items[i] = { ...items[i], ...patch }
+      return items[i]
     },
     add(item: T) {
-      load().push(item)
-      persist()
+      items.push(item)
       return item
     },
     remove(id: string) {
-      items = load().filter(x => x.id !== id)
-      persist()
+      items = items.filter(x => x.id !== id)
     },
-    reset() { items = seed(); persist() },
+    reset() { items = isTestEnv ? seed() : [] },
   }
 }

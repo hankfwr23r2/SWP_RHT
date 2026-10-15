@@ -8,7 +8,7 @@ import { seedOtherOrders } from '../fixtures/orders-others'
 import { createStore } from './store'
 
 // Bộ đơn chung: khách mẫu Trang trại Long Thành + các khách khác
-const store = createStore<Order>('orders', () => [...seedOrders(), ...seedOtherOrders()])
+const store = createStore<Order>('orders', () => import.meta.env?.MODE === 'test' ? [...seedOrders(), ...seedOtherOrders()] : [])
 
 // Quy tắc hệ thống chạy mỗi lần đọc đơn (docs/PRD.md mục 3):
 // - quá hạn thanh toán → đơn tự hủy, nhả chỗ xe giữ tạm

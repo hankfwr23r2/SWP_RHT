@@ -4,7 +4,7 @@ import { createStore } from './store'
 import { seedIncidents } from '../fixtures/incidents'
 import type { Incident } from '../types/incident'
 
-const store = createStore<Incident>('incidents', seedIncidents)
+const store = createStore<Incident>('incidents', () => import.meta.env?.MODE === 'test' ? seedIncidents() : [])
 
 export const incidentsApi = {
   list: async (): Promise<Incident[]> => {
@@ -29,8 +29,9 @@ export const incidentsApi = {
             directive: item.directive,
           }))
         }
-      } catch {
+      } catch (error) {
         // Fallback store khi offline
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
     return structuredClone(store.all())
@@ -56,8 +57,9 @@ export const incidentsApi = {
         }
         store.add(created)
         return structuredClone(created)
-      } catch {
+      } catch (error) {
         // Fallback store
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
     const next = Math.max(0, ...store.all().map(i => Number(i.id.slice(4)))) + 1

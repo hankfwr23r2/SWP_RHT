@@ -30,7 +30,7 @@ export const routes: AppRoute[] = [
   { path: '/orders', page: OrdersPage, roles: C, title: 'Đơn của tôi', layout: 'customer' },
   { path: '/history', page: HistoryPage, roles: C, title: 'Lịch sử đơn', layout: 'customer' },
   { path: '/terms', page: PolicyPage, roles: [], title: 'Điều khoản và chính sách', layout: 'public' },
-  { path: '/orders/:id', page: OrderDetailPage, roles: C, title: 'Chi tiết đơn', example: 'ORD-2026-0105', layout: 'customer' },
+  { path: '/orders/:id', page: OrderDetailPage, roles: C, title: 'Chi tiết đơn', layout: 'customer' },
 ]
 
 routes.push({ path: '/sitemap', page: () => <SitemapPage app="customer" />, roles: [], title: 'Sitemap', layout: 'public' })

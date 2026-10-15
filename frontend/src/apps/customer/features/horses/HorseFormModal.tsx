@@ -28,6 +28,7 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
   const [birthYear, setBirthYear] = useState(String(horse?.birthYear ?? ''))
   const [marks, setMarks] = useState(horse?.marks ?? '')
   const [docs, setDocs] = useState<Partial<Record<HorseDocType, HorseDoc>>>(horse?.docs ?? {})
+  const [files, setFiles] = useState<Partial<Record<HorseDocType, File>>>({})
   const [errors, setErrors] = useState<Errors>({})
   const [busy, setBusy] = useState(false)
   const [formError, setFormError] = useState('')
@@ -56,7 +57,15 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
     setFormError('')
     const data: NewHorse = { name: name.trim(), microchip, breed, sex, color: color.trim(), birthYear: Number(birthYear), marks: marks.trim(), docs }
     try {
-      onSaved(editing ? await horsesApi.update(owner, horse.id, data) : await horsesApi.create(owner, data))
+      const saved = editing ? await horsesApi.update(owner, horse.id, data) : await horsesApi.create(owner, data)
+      for (const t of HORSE_DOC_TYPES) {
+        const file = files[t]
+        if (!file) continue
+        const expiry = docs[t]?.expiresAt && HORSE_DOC[t].hasExpiry ? new Date(docs[t]!.expiresAt!).toISOString().slice(0, 10) : undefined
+        await horsesApi.uploadDocument(saved.id, t, file, expiry)
+      }
+      const refreshed = (await horsesApi.get(owner, saved.id)) ?? saved
+      onSaved(refreshed)
     } catch (err) {
       setFormError(err instanceof Error ? err.message : 'Không lưu được.')
       setBusy(false)
@@ -120,7 +129,7 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
           <div className={s.docs}>
             {HORSE_DOC_TYPES.map(t => (
               <div key={t} className={s.docRow}>
-                <FileField label={HORSE_DOC[t].label} hint={HORSE_DOC[t].hint} fileName={docs[t]?.fileName || undefined} onChange={f => setDoc(t, f ? { fileName: f, uploadedAt: Date.now() } : undefined)} />
+                <FileField label={HORSE_DOC[t].label} hint={HORSE_DOC[t].hint} fileName={docs[t]?.fileName || undefined} onChange={(f, file) => { setDoc(t, f ? { fileName: f, uploadedAt: Date.now() } : undefined); setFiles(current => { const next = { ...current }; if (file) next[t] = file; else delete next[t]; return next }) }} />
                 {docs[t] && HORSE_DOC[t].hasExpiry && (
                   <div className="form-group">
                     <label htmlFor={`h-exp-${t}`} className="required">Ngày hết hạn</label>

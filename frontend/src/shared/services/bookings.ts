@@ -18,7 +18,7 @@ import { backendSettlementApi } from '../api/settlements'
 import { paymentApi } from '../api/payments'
 
 
-const store = createStore<Booking>('bookings', seedBookings)
+const store = createStore<Booking>('bookings', () => import.meta.env?.MODE === 'test' ? seedBookings() : [])
 
 // ===== Thông báo đẩy (chỉ báo tin, không ghi nhật ký) =====
 type Who = 'customer' | 'manager' | 'specialist' | 'coordinator'
@@ -207,8 +207,8 @@ export const customerBookingsApi = {
             }
           })
         }
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
     return store.all().filter(b => b.customer === customer).map(toCustomerView).sort((a, b) => b.createdAt - a.createdAt)
@@ -251,8 +251,8 @@ export const customerBookingsApi = {
             insuranceOpted: h.insurance?.opted,
           })),
         })
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -287,8 +287,8 @@ export const customerBookingsApi = {
     if (typeof window !== 'undefined') {
       try {
         await backendBookingApi.reject(id, { by: customer, reason: reason.trim() })
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -311,8 +311,8 @@ export const customerBookingsApi = {
     if (typeof window !== 'undefined') {
       try {
         await paymentApi.cancelWithRefund(id, reason.trim())
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -351,8 +351,8 @@ export const customerBookingsApi = {
           paymentMethod: 'VNPAY',
           note: `Thanh toan coc don ${id}`,
         })
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -383,8 +383,8 @@ export const customerBookingsApi = {
           paymentMethod: 'VNPAY',
           note: `Thanh toan 70% con lai don ${id}`,
         })
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -410,8 +410,8 @@ export const customerBookingsApi = {
             comment: rating.comment,
           },
         })
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -506,8 +506,8 @@ export const bookingsApi = {
             }
           })
         }
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
     return structuredClone(store.all()).sort((a, b) => a.createdAt - b.createdAt)
@@ -517,8 +517,8 @@ export const bookingsApi = {
     if (typeof window !== 'undefined' && !store.get(id)) {
       try {
         await bookingsApi.list()
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
     return structuredClone(store.get(id))
@@ -532,8 +532,8 @@ export const bookingsApi = {
     if (typeof window !== 'undefined') {
       try {
         await backendBookingApi.activate(id, { by, specialist, coordinator })
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -574,8 +574,8 @@ export const bookingsApi = {
     if (typeof window !== 'undefined') {
       try {
         await backendBookingApi.reject(id, { by, reason: reason.trim() })
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -596,8 +596,8 @@ export const bookingsApi = {
     if (typeof window !== 'undefined') {
       try {
         await specialistApi.approveMedical(id, { specialistName: by })
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -621,8 +621,8 @@ export const bookingsApi = {
     if (typeof window !== 'undefined') {
       try {
         await specialistApi.requestResubmission(id, { specialistName: by, reason: reason.trim(), items })
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -667,8 +667,8 @@ export const bookingsApi = {
           gate: input.gate,
           note: input.note,
         })
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -691,8 +691,8 @@ export const bookingsApi = {
     if (typeof window !== 'undefined') {
       try {
         await backendBookingApi.sendBack(id, { by, to, reason: reason.trim() })
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -727,8 +727,8 @@ export const bookingsApi = {
     if (typeof window !== 'undefined') {
       try {
         await backendBookingApi.assignCrew(id, { by, picks })
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -765,8 +765,8 @@ export const bookingsApi = {
           deposit: quote.deposit,
           balance: quote.balance,
         })
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -784,8 +784,8 @@ export const bookingsApi = {
     if (typeof window !== 'undefined') {
       try {
         await specialistApi.acceptWaybill(id)
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -812,8 +812,8 @@ export const bookingsApi = {
           photos: patch.photos,
           status: patch.photos?.length ? 'done' : 'todo',
         })
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -838,8 +838,8 @@ export const bookingsApi = {
     if (typeof window !== 'undefined') {
       try {
         await specialistApi.addClearanceItem(id, { type, label: CLEARANCE_DOC[type]?.short })
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -858,8 +858,8 @@ export const bookingsApi = {
     if (typeof window !== 'undefined') {
       try {
         await specialistApi.markHorseCleared(id, horseId, cleared)
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -877,8 +877,8 @@ export const bookingsApi = {
     if (typeof window !== 'undefined') {
       try {
         await specialistApi.completeClearance(id)
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -934,8 +934,8 @@ export const bookingsApi = {
     if (typeof window !== 'undefined') {
       try {
         await backendDeliveryApi.arrive(id, { photoUrl: photo, note: `Tài xế ${tripId} tới điểm đón` })
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -1072,8 +1072,8 @@ export const bookingsApi = {
           originalDocsHandedOver: true,
           note: `Hoàn tất giao ngựa xe ${tripId}`,
         })
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -1115,8 +1115,8 @@ export const bookingsApi = {
           estimatedCost: input.estimatedCost,
           note: input.note,
         })
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -1181,8 +1181,8 @@ export const bookingsApi = {
           vehicleCondition: 'GOOD',
           note: `Xe ${tripId} đã hoàn tất kiểm tra và quay về Trụ sở chính`,
         })
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -1211,8 +1211,8 @@ export const bookingsApi = {
           description: note.trim() || 'Tài xế / hộ tống báo sự cố khẩn cấp.',
           photoUrl: photo,
         })
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -1248,8 +1248,8 @@ export const bookingsApi = {
           estimatedCost: 2000000,
           directive: input.note,
         })
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -1287,8 +1287,8 @@ export const bookingsApi = {
           costBearer: 'COMPANY_ESCROW',
           approvedAmount: 2000000,
         })
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -1334,8 +1334,8 @@ export const bookingsApi = {
           invoiceUrl: 'invoice_incident.jpg',
           note: 'Đã nghiệm thu hiện trường, tiếp tục hành trình',
         })
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -1365,8 +1365,8 @@ export const bookingsApi = {
           note: 'Tài xế gửi bảng kê chi phí phát sinh',
           expenses,
         })
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -1394,8 +1394,8 @@ export const bookingsApi = {
           payers,
           note: 'Quản lý đối soát và phát hành quyết toán',
         })
-      } catch {
-        // Fallback
+      } catch (error) {
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 

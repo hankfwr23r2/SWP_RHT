@@ -29,3 +29,4 @@ frontend/.env
 # Local properties & database dumps
 *application-local.properties
 *.sql
+/.env

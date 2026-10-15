@@ -75,7 +75,6 @@ function DeliveryStep({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Check
   const [photo, setPhoto] = useState<string | undefined>(cp.handoverPhoto)
   const [returned, setReturned] = useState(false)
   const [now, setNow] = useState(Date.now())
-  const [demoExpired, setDemoExpired] = useState(false)
   const [showTimeoutModal, setShowTimeoutModal] = useState(false)
 
   // Form states cho báo quá hạn 2h
@@ -93,7 +92,7 @@ function DeliveryStep({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Check
 
   const arrivedAt = cp.arrivedAt ?? now
   const elapsedMs = Math.max(0, now - arrivedAt)
-  const remainingMs = demoExpired ? 0 : Math.max(0, GRACE_PERIOD_MS - elapsedMs)
+  const remainingMs = Math.max(0, GRACE_PERIOD_MS - elapsedMs)
   const isExpired = remainingMs === 0
 
   const welfare = t.run!.welfare.some(w => w.checkpointId === cp.id)
@@ -108,9 +107,6 @@ function DeliveryStep({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Check
             <i className="fa-solid fa-clock" style={{ marginRight: 8, color: 'var(--blue)' }} />
             <b>Thời gian chờ bàn giao miễn phí:</b> Còn lại <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: 16, color: 'var(--blue)' }}>{formatRemaining(remainingMs)}</span> (tối đa 2 giờ).
           </div>
-          <button type="button" className="btn btn-ghost btn-xs" onClick={() => setDemoExpired(true)} title="Tua nhanh để thử nghiệm kịch bản quá hạn">
-            ⚡ Giả lập hết 2h (Demo)
-          </button>
         </div>
       ) : (
         <div className="alert alert-danger" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 12, borderRadius: 12, padding: '12px 16px' }}>
@@ -121,7 +117,6 @@ function DeliveryStep({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Check
               <div style={{ fontSize: 13, marginTop: 2 }}>Người nhận chưa nhận ngựa. Nhằm bảo đảm an toàn cho ngựa, tài xế kích hoạt phương án an sinh (phí thuê chuồng/lưu ca xe sẽ tính vào quyết toán).</div>
             </div>
           </div>
-          {demoExpired && <button type="button" className="btn btn-ghost btn-xs" onClick={() => setDemoExpired(false)}>Đặt lại giờ</button>}
         </div>
       )}
 
