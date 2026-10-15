@@ -1,12 +1,12 @@
 // Service Hồ sơ ngựa của khách kết nối Backend Spring Boot (/horses, /horse-documents)
-import { backendHorseApi } from '../api/horses'
+import { backendHorseApi, HORSE_DOC_BACKEND_TYPE } from '../api/horses'
 import type { HorseDocType } from '../config/booking-rules'
 import { fromIsoDay } from '../lib/booking'
 import type { HorseDoc, HorseProfile } from '../types/booking'
 import { seedHorses } from '../fixtures/bookings'
 import { createStore } from './store'
 
-const store = createStore<HorseProfile>('horses', seedHorses)
+const store = createStore<HorseProfile>('horses', () => import.meta.env?.MODE === 'test' ? seedHorses() : [])
 
 export type NewHorse = Omit<HorseProfile, 'id' | 'owner' | 'completedTrips' | 'createdAt'>
 const normalizeChip = (s: string) => s.trim().toUpperCase()
@@ -85,8 +85,9 @@ export const horsesApi = {
 
           return mapped.filter(h => !owner || h.owner === owner)
         }
-      } catch {
+      } catch (error) {
         // Fallback store khi offline
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
     return structuredClone(store.all().filter(h => !owner || h.owner === owner))
@@ -122,8 +123,9 @@ export const horsesApi = {
             createdAt: cached?.createdAt || Date.now(),
           }
         }
-      } catch {
+      } catch (error) {
         // Fallback
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
     return structuredClone(cached)
@@ -154,6 +156,7 @@ export const horsesApi = {
         store.add(created)
         return structuredClone(created)
       } catch (err) {
+        if (import.meta.env?.MODE !== 'test') throw err
         if (err instanceof Error && !err.message.includes('Network Error')) {
           // nếu backend báo lỗi cụ thể (ví dụ trùng microchip), ném lỗi
         }
@@ -163,6 +166,12 @@ export const horsesApi = {
     if (store.all().some(h => h.microchip === microchip)) throw new Error(`Microchip ${microchip} đã có trong hệ thống.`)
     const next = Math.max(0, ...store.all().map(h => Number(h.id.slice(2)))) + 1
     return structuredClone(store.add({ ...data, microchip, id: `H-${String(next).padStart(3, '0')}`, owner, completedTrips: 0, createdAt: Date.now() }))
+  },
+
+  uploadDocument: async (horseId: string, type: HorseDocType, file: File, expiryDate?: string) => {
+    const id = Number(horseId.replace(/\D/g, ''))
+    if (!id) throw new Error('Mã hồ sơ ngựa không hợp lệ.')
+    return backendHorseApi.uploadDocument(id, HORSE_DOC_BACKEND_TYPE[type], file, expiryDate)
   },
 
   // Đơn hoàn tất: cộng số chuyến đã chạy vào lý lịch từng ngựa (PRD mục 7.6)

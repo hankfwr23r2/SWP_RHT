@@ -7,19 +7,19 @@ interface FileFieldProps {
   label: string
   hint?: string
   fileName?: string
-  onChange: (fileName: string | undefined) => void
+  onChange: (fileName: string | undefined, file?: File) => void
   required?: boolean
   invalid?: boolean
   accept?: string
 }
 
-// Ô tải giấy tờ. Giả lập: chỉ lưu tên tệp (khi có backend, tải tệp lên máy chủ).
+// Ô chọn giấy tờ, trả cả tên tệp và File để luồng nghiệp vụ tải lên backend.
 export function FileField({ label, hint, fileName, onChange, required, invalid, accept = '.pdf,.jpg,.jpeg,.png' }: FileFieldProps) {
   const id = useId()
   return (
     <div className={s.field}>
       <div className={`${s.label} ${required ? s.required : ''}`} id={`${id}-l`}>{label}</div>
-      <input id={id} className={s.input} type="file" accept={accept} aria-labelledby={`${id}-l`} onChange={e => { const f = e.target.files?.[0]; if (f) { rememberPreview(f.name, f); onChange(f.name) } e.target.value = '' }} />
+      <input id={id} className={s.input} type="file" accept={accept} aria-labelledby={`${id}-l`} onChange={e => { const f = e.target.files?.[0]; if (f) { rememberPreview(f.name, f); onChange(f.name, f) } e.target.value = '' }} />
       {fileName ? (
         <div className={s.chip}>
           <ImageThumb name={fileName} size={40} />

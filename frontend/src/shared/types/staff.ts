@@ -6,5 +6,5 @@ export interface StaffMember {
   status: 'working' | 'off'
   offTo?: number
   offReason?: string
-  kpi: { late: number; transferredOut: number } // số liệu trong tháng
+  kpi?: { late: number; transferredOut: number } // số liệu trong tháng, nếu backend có
 }

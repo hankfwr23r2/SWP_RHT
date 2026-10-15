@@ -8,11 +8,9 @@ import { ROLE_LABEL, type Role } from '@shared/types/role'
 
 type App = 'customer' | 'backoffice'
 const BASE: Record<App, string> = { customer: '', backoffice: '/backoffice' }
-// Tài khoản mẫu để đăng nhập (giả lập: email chứa từ khóa vai trò)
-const ACCOUNT: Record<Role, string> = {
-  customer: 'email bất kỳ ở trang Đăng nhập khách',
-  admin: 'admin@equine.vn', manager: 'manager@equine.vn', specialist: 'specialist@equine.vn', coordinator: 'ops@equine.vn', driver: 'driver@equine.vn', escort: 'escort@equine.vn',
-}
+const ACCOUNT: Record<Role, string> = Object.fromEntries(
+  (['customer', 'admin', 'manager', 'specialist', 'coordinator', 'driver', 'escort'] as Role[]).map(role => [role, 'Tài khoản được cấp'])
+) as Record<Role, string>
 const ORDER: (Role | 'public')[] = ['public', 'customer', 'admin', 'manager', 'specialist', 'coordinator', 'driver', 'escort']
 
 interface Entry { app: App; route: AppRoute }
@@ -23,10 +21,10 @@ export function SitemapPage({ app }: { app: App }) {
     Promise.all([import('../customer/routes'), import('../backoffice/routes')]).then(([c, b]) => setEntries([
       ...c.routes.map(route => ({ app: 'customer' as const, route })),
       ...b.routes.map(route => ({ app: 'backoffice' as const, route })),
-    ].filter(e => e.route.path !== '/sitemap')))
+    ].filter(e => e.route.path !== '/sitemap' && !e.route.path.includes(':'))))
   }, [])
   const groupOf = (r: AppRoute) => r.roles[0] ?? 'public'
-  const url = (e: Entry) => BASE[e.app] + (e.route.example ? e.route.path.replace(':id', e.route.example) : e.route.path)
+  const url = (e: Entry) => BASE[e.app] + e.route.path
 
   return (
     <div className="page">

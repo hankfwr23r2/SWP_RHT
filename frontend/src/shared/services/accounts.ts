@@ -7,7 +7,7 @@ import type { Account } from '../types/account'
 import { staffApi } from './staff'
 import { createStore } from './store'
 
-const store = createStore<Account>('accounts', seedAccounts)
+const store = createStore<Account>('accounts', () => import.meta.env?.MODE === 'test' ? seedAccounts() : [])
 
 export interface AccountInput { name: string; email: string; phone: string; role: Role }
 export type AuthResult = { ok: true; account?: Account } | { ok: false; reason: string }
@@ -40,8 +40,9 @@ export const accountsApi = {
             history: [],
           }))
         }
-      } catch {
+      } catch (error) {
         // Dùng mock store khi backend offline
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
     return structuredClone(store.all()).map(({ password: _p, ...a }) => a)
@@ -86,6 +87,7 @@ export const accountsApi = {
         }
         return { account, password: res.tempPassword || tempPassword() }
       } catch (err) {
+        if (import.meta.env?.MODE !== 'test') throw err
         if (err instanceof Error && !err.message.includes('Network Error')) {
           throw err
         }
@@ -127,8 +129,9 @@ export const accountsApi = {
     if (typeof window !== 'undefined' && userIdMatch) {
       try {
         await adminAccountsApi.toggleLock(Number(userIdMatch[0]), locked)
-      } catch {
+      } catch (error) {
         // Dùng mock store khi chạy test hoặc offline
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 
@@ -147,8 +150,9 @@ export const accountsApi = {
       try {
         const pass = await adminAccountsApi.resetPassword(Number(userIdMatch[0]))
         if (pass) return pass
-      } catch {
+      } catch (error) {
         // Dùng mock store khi chạy test hoặc offline
+        if (import.meta.env?.MODE !== 'test') throw error
       }
     }
 

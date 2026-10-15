@@ -1,5 +1,5 @@
 // Dữ liệu mẫu của luồng đặt đơn (Flow 1): hồ sơ ngựa của khách mẫu và các đơn ở từng trạng thái.
-// Đơn mẫu ở mọi trạng thái của luồng mới, gồm đơn nhiều xe. Sửa file này thì tăng MOCK_VERSION trong store.ts.
+// Đơn mẫu chỉ dùng trong test nghiệp vụ; không nạp bộ dữ liệu này khi chạy frontend thật.
 import type { HorseDocType } from '../config/booking-rules'
 import { DAY, HOUR } from '../config/business-rules'
 import { AVG_SPEED_KMH } from '../config/public-pricing'

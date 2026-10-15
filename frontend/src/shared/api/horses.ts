@@ -18,14 +18,22 @@ export interface BackendHorseDocResponse {
   horseId: number
   horseName: string
   documentType: string
-  documentUrl: string
+  fileUrl?: string
+  documentUrl?: string
   status: string
   rejectionReason?: string
   reviewerName?: string
   reviewedAt?: string
   expiryDate?: string
+  uploadDate?: string
   uploadedAt?: string
 }
+
+export const HORSE_DOC_BACKEND_TYPE = {
+  passport: 'PASSPORT',
+  vaccine: 'VACCINATION',
+  lab: 'BLOOD_TEST',
+} as const
 
 export const backendHorseApi = {
   // Lấy tất cả ngựa

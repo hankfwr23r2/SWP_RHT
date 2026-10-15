@@ -1,19 +1,36 @@
 // Service nhân sự nội bộ (kiểm dịch viên, điều phối viên). Sau này: GET/PATCH /api/staff
 import type { Order } from '../types/order'
+import { backendFleetApi } from '../api/fleet'
 import { seedStaff } from '../fixtures/staff'
 import type { StaffMember } from '../types/staff'
 import { createStore } from './store'
 
-const store = createStore<StaffMember>('staff', seedStaff)
+const testStore = createStore<StaffMember>('staff', () => import.meta.env?.MODE === 'test' ? seedStaff() : [])
+const isTestEnv = import.meta.env?.MODE === 'test'
 
 export const staffApi = {
-  list: async (): Promise<StaffMember[]> => structuredClone(store.all()),
-  update: async (id: string, patch: Partial<StaffMember>) => structuredClone(store.update(id, patch)),
-  // Thêm người mới vào danh bạ (do quản trị viên tạo tài khoản): mã KD-xx cho kiểm dịch viên, DP-xx cho điều phối viên
+  list: async (): Promise<StaffMember[]> => isTestEnv ? structuredClone(testStore.all()) : (await backendFleetApi.getCrew()).flatMap(member => {
+    const role = member.role.toUpperCase()
+    if (role !== 'SPECIALIST' && role !== 'INSPECTOR' && role !== 'COORDINATOR') return []
+    return [{
+      id: member.staffCode || String(member.userId),
+      name: member.name,
+      phone: member.phone || '',
+      role: role === 'COORDINATOR' ? 'coordinator' : 'inspector',
+      status: member.employmentStatus.toUpperCase() === 'ACTIVE' ? 'working' : 'off',
+    }]
+  }),
+  update: async (id: string, patch: Partial<StaffMember>) => {
+    if (isTestEnv) return structuredClone(testStore.update(id, patch))
+    throw new Error('Cập nhật nhân sự phải thực hiện qua API quản lý tài khoản.')
+  },
   create: async (data: Pick<StaffMember, 'name' | 'phone' | 'role'>) => {
-    const prefix = data.role === 'inspector' ? 'KD' : 'DP'
-    const next = Math.max(0, ...store.all().filter(s => s.id.startsWith(prefix)).map(s => Number(s.id.slice(3)))) + 1
-    return structuredClone(store.add({ id: `${prefix}-${String(next).padStart(2, '0')}`, ...data, status: 'working', kpi: { late: 0, transferredOut: 0 } }))
+    if (isTestEnv) {
+      const prefix = data.role === 'inspector' ? 'KD' : 'DP'
+      const next = Math.max(0, ...testStore.all().filter(s => s.id.startsWith(prefix)).map(s => Number(s.id.slice(3)))) + 1
+      return structuredClone(testStore.add({ id: `${prefix}-${String(next).padStart(2, '0')}`, ...data, status: 'working', kpi: { late: 0, transferredOut: 0 } }))
+    }
+    throw new Error('Tạo nhân sự phải thực hiện qua API quản lý tài khoản.')
   },
 }
 

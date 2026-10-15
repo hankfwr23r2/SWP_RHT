@@ -9,7 +9,6 @@ import { HOUR } from '../config/business-rules'
 import { legsFromStops, splitStop, tripHours } from '../lib/trip'
 import type { Checkpoint, HealthLog, Order, Vitals } from '../types/order'
 import { crewApi, vehiclesApi } from './fleet'
-import { seedDriverOf } from '../fixtures/fleet'
 import { incidentsApi } from './incidents'
 import { seedTrips } from '../fixtures/trips'
 import type { Leg, OpsTrip } from '../types/trip'
@@ -29,7 +28,7 @@ export const TRIP_STATUS_LABEL: Record<TripStatus, string> = {
 
 export interface TripView extends OpsTrip { status: TripStatus; order: Order }
 
-const store = createStore<OpsTrip>('trips', seedTrips)
+const store = createStore<OpsTrip>('trips', () => import.meta.env?.MODE === 'test' ? seedTrips() : [])
 
 export function tripStatus(t: OpsTrip, o: Order): TripStatus | null {
   if (o.status === 'in_transit') return 'in_transit'
@@ -124,8 +123,9 @@ export const tripsApi = {
   // Điều phối chọn XE: tài xế mặc định của dữ liệu cũ, hộ tống tự gán người rảnh nhất
   async setVehicle(id: string, legNo: number, vehicleId: string) {
     const v = (await vehiclesApi.list()).find(x => x.id === vehicleId)
+    const drivers = (await crewApi.list()).filter(member => member.role === 'driver')
     const escortId = v ? await autoEscort(id) : ''
-    setLegs(id, store.get(id)!.legs.map(l => (l.no === legNo ? { ...l, vehicleId, driverId: v ? seedDriverOf(v.id) : '', escortId } : l)))
+    setLegs(id, store.get(id)!.legs.map(l => (l.no === legNo ? { ...l, vehicleId, driverId: v ? drivers[0]?.id ?? '' : '', escortId } : l)))
     await resyncIfRouted(id)
   },
   // Đổi hộ tống tay; bỏ trống = về chế độ tự động
@@ -200,7 +200,7 @@ export const tripsApi = {
       status: 'delivered', deliveredAt: now,
       trip: { ...trip, checkpoints, updatedAt: now },
       handover: {
-        vehicle: `${v.name} · ${v.plate}`, driver: crew.find(c => c.id === seedDriverOf(v.id))?.name ?? '',
+        vehicle: `${v.name} · ${v.plate}`, driver: crew.find(c => c.id === t.legs[t.legs.length - 1].driverId)?.name ?? '',
         groom: trip.contacts.find(c => c[0] === 'NV chăm sóc')?.[1] ?? '', inspector: o.inspector ?? '',
         pickup: vitalsOf(measured[measured.length - 1], trip.checkpoints[0].time),
         delivery: vitalsOf(measured[0], now),

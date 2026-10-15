@@ -100,7 +100,7 @@ function OrderLookup() {
       <form className={s.lookupRow} noValidate onSubmit={submit}>
         <div className={cx(s.field, s.fieldGrow)}>
           <i className="fa-solid fa-magnifying-glass" />
-          <input className={cx(error?.field === 'codes' && s.inputError)} value={codesText} onChange={e => { setCodesText(e.target.value); setError(null) }} placeholder="Nhập mã đơn (cách nhau bởi dấu phẩy), tối đa 5 đơn. VD: ORD-2026-0116" />
+          <input className={cx(error?.field === 'codes' && s.inputError)} value={codesText} onChange={e => { setCodesText(e.target.value); setError(null) }} placeholder="Nhập mã đơn cần tra cứu (cách nhau bởi dấu phẩy)" />
         </div>
         <div className={cx(s.field, s.fieldPhone)}>
           <i className="fa-solid fa-phone" />
@@ -108,7 +108,6 @@ function OrderLookup() {
         </div>
         <button className="btn btn-solid" type="submit">Tìm kiếm</button>
       </form>
-      <p className={s.lookupHint}>Dữ liệu mẫu: ORD-2026-0116, ORD-2026-0117, ORD-2026-0105, ORD-2026-0101 · 4 số cuối <strong>6789</strong></p>
       {error && <p className={s.formError}><i className="fa-solid fa-circle-exclamation" /> {error.message}</p>}
       {!error && rows.length > 0 && (
         <div className={s.trackList}>

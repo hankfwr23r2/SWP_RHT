@@ -50,7 +50,7 @@ function LoginForm({ managerOnly }: { managerOnly: boolean }) {
       {error && <div className={`alert alert-danger ${s.error}`}><i className="fa-solid fa-circle-exclamation" /><div>{error}</div></div>}
       <div className="form-group">
         <label htmlFor="email">{managerOnly ? 'Tên đăng nhập / Email' : 'Email'}</label>
-        <input className="form-control" id="email" name="email" placeholder={managerOnly ? 'manager@equine.vn' : 'VD: manager, coordinator...'} required onChange={() => setError('')} />
+        <input className="form-control" id="email" name="email" placeholder="Email hoặc tên đăng nhập được cấp" required onChange={() => setError('')} />
       </div>
       <div className="form-group">
         <label htmlFor="password">Mật khẩu</label>

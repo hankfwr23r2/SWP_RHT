@@ -35,7 +35,7 @@ export const routes: AppRoute[] = [
   { path: '/manager/login', page: ManagerLoginPage, roles: [], title: 'Đăng nhập Quản lý', layout: 'bare' },
 
   { path: '/admin/accounts', page: AccountsPage, roles: A, title: 'Tài khoản hệ thống', layout: 'staff' },
-  { path: '/admin/accounts/:role', page: AccountsPage, roles: A, title: 'Tài khoản theo loại', example: 'locked', layout: 'staff' },
+  { path: '/admin/accounts/:role', page: AccountsPage, roles: A, title: 'Tài khoản theo loại', layout: 'staff' },
 
   { path: '/manager', page: DashboardPage, roles: M, title: 'Bảng điều khiển', layout: 'staff' },
   { path: '/manager/intake', page: IntakePage, roles: M, title: 'Tiếp nhận đơn hàng', layout: 'staff' },
@@ -46,18 +46,18 @@ export const routes: AppRoute[] = [
   { path: '/manager/incidents', page: IncidentsPage, roles: M, title: 'Sự cố', layout: 'staff' },
 
   { path: '/specialist/verification', page: VerificationListPage, roles: SP, title: 'Duyệt hồ sơ ngựa', layout: 'staff' },
-  { path: '/specialist/verification/:id', page: VerifyPage, roles: SP, title: 'Duyệt hồ sơ ngựa một đơn', example: 'ORD-2026-0102', layout: 'staff' },
+  { path: '/specialist/verification/:id', page: VerifyPage, roles: SP, title: 'Duyệt hồ sơ ngựa một đơn', layout: 'staff' },
   { path: '/specialist/legal', page: LegalListPage, roles: SP, title: 'Giấy tờ chuyến đi', layout: 'staff' },
-  { path: '/specialist/legal/:id', page: LegalReviewPage, roles: SP, title: 'Làm giấy tờ một đơn', example: 'ORD-2026-0109', layout: 'staff' },
+  { path: '/specialist/legal/:id', page: LegalReviewPage, roles: SP, title: 'Làm giấy tờ một đơn', layout: 'staff' },
 
   { path: '/coordinator/fleet-plan', page: FleetPlanListPage, roles: CO, title: 'Xe và lộ trình', layout: 'staff' },
-  { path: '/coordinator/fleet-plan/:id', page: FleetPlanPage, roles: CO, title: 'Chốt xe và lộ trình một đơn', example: 'ORD-2026-0102', layout: 'staff' },
+  { path: '/coordinator/fleet-plan/:id', page: FleetPlanPage, roles: CO, title: 'Chốt xe và lộ trình một đơn', layout: 'staff' },
   { path: '/coordinator/dispatch', page: DispatchListPage, roles: CO, title: 'Giấy cho tài xế', layout: 'staff' },
-  { path: '/coordinator/dispatch/:id', page: DispatchPage, roles: CO, title: 'Nhập bộ giấy cho tài xế', example: 'ORD-2026-0111', layout: 'staff' },
+  { path: '/coordinator/dispatch/:id', page: DispatchPage, roles: CO, title: 'Nhập bộ giấy cho tài xế', layout: 'staff' },
   { path: '/coordinator/monitoring', page: MonitoringPage, roles: CO, title: 'Giám sát vận chuyển', layout: 'staff' },
   { path: '/coordinator/incidents', page: CoordinatorIncidentsPage, roles: CO, title: 'Xử lý sự cố', layout: 'staff' },
   { path: '/coordinator/fleet', page: FleetPage, roles: CO, title: 'Quản lý đội xe', layout: 'staff' },
-  { path: '/coordinator/staff/:id', page: CrewDetailPage, roles: CO, title: 'Chi tiết nhân sự', example: 'TX-07', layout: 'staff' },
+  { path: '/coordinator/staff/:id', page: CrewDetailPage, roles: CO, title: 'Chi tiết nhân sự', layout: 'staff' },
 
   { path: '/driver', page: DriverPage, roles: ['driver'], title: 'Chuyến của tôi', layout: 'mobile' },
   { path: '/escort', page: EscortPage, roles: ['escort'], title: 'Nhật ký sức khỏe ngựa', layout: 'mobile' },
