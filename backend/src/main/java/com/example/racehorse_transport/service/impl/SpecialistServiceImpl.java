@@ -515,6 +515,7 @@ public class SpecialistServiceImpl implements SpecialistService {
                 .medical(payload.getMedical())
                 .clearance(payload.getClearance())
                 .intake(payload.getIntake())
+                .rejection(payload.getRejection())
                 .history(payload.getHistory())
                 .build();
     }

@@ -4,7 +4,7 @@ import type { BackendBookingResponse } from '../api/bookings'
 import type { BackendIncidentResponse } from '../api/incidents'
 import type { BookingStatus, IncidentKind } from '../config/booking-rules'
 import type { CountryCode } from '../config/network'
-import type { Booking, BookingHorse, Clearance, HistoryEntry, Incident, IncidentExpense, MedicalReview, Payment, PlaceRef, Quote, Rating, RoutePlan, Settlement, VehicleTrip } from '../types/booking'
+import type { Booking, BookingHorse, Clearance, HistoryEntry, Incident, IncidentExpense, MedicalReview, Payment, PlaceRef, Quote, Rating, Rejection, RoutePlan, Settlement, VehicleTrip } from '../types/booking'
 import { COUNTRY_LOCATIONS, PLACES } from '../config/network'
 
 const allPlaces = (): { id: string; name: string; country: CountryCode }[] => [
@@ -132,6 +132,7 @@ export function toBooking(r: BackendBookingResponse, customer?: string): Booking
   if (r.clearance) b.clearance = r.clearance as Clearance
   if (r.settlement) b.settlement = r.settlement as Settlement
   if (r.rating) b.rating = r.rating as Rating
+  if (r.rejection) b.rejection = r.rejection as Rejection
   const incidents = (r.incidents ?? []).map(incidentOf).filter((incident): incident is Incident => !!incident)
   if (incidents.length) b.incidents = incidents
   return b

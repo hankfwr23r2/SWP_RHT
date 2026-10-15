@@ -60,6 +60,7 @@ export interface BackendBookingResponse {
   settlement?: unknown
   rating?: unknown
   intake?: unknown
+  rejection?: { at: number; by: string; role: 'manager' | 'coordinator'; reason: string }
   incidents?: BackendIncidentResponse[]
   history?: Array<{ time: number; actor: string; text: string }>
 }
@@ -144,9 +145,10 @@ export const backendBookingApi = {
     return res.data.data
   },
 
-  // 13. Manager/Coordinator từ chối đơn hàng (POST /api/v1/manager/bookings/{id}/reject)
+  // 13. Manager/Coordinator từ chối đơn hàng (POST /api/v1/manager/bookings/{id}/reject hoặc /coordinator/bookings/{id}/reject)
   reject: async (id: number | string, payload: { by?: string; role?: 'manager' | 'coordinator'; reason?: string }): Promise<BackendBookingResponse> => {
-    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/manager/bookings/${id}/reject`, payload)
+    const endpoint = payload.role === 'coordinator' ? `/coordinator/bookings/${id}/reject` : `/manager/bookings/${id}/reject`
+    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(endpoint, payload)
     return res.data.data
   },
 
