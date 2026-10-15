@@ -133,6 +133,7 @@ export interface VehicleTrip {
   driverPack?: DriverPack
   departedAt?: number // Driver bấm bắt đầu đến điểm đón
   run?: TripRun
+  returnedToHqAt?: number // Driver xác nhận xe đã về Trụ sở chính (Single HQ)
 }
 export interface Waybill { no: string; issuedAt: number }
 export interface PlanConfirmed { at: number; by: string; note: string }

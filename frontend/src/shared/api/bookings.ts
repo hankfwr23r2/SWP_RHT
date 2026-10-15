@@ -112,9 +112,16 @@ export const backendBookingApi = {
     return res.data.data
   },
 
-  // 11. Customer từ chối báo giá (POST /api/v1/customer/bookings/{id}/reject-quote)
-  rejectQuote: async (id: number | string, payload?: { reason?: string }): Promise<BackendBookingResponse> => {
-    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${id}/reject-quote`, payload ?? {})
+  // 12. Manager kích hoạt thẩm định song song (POST /api/v1/manager/bookings/{id}/activate)
+  activate: async (id: number | string, payload: { by?: string; specialist?: any; coordinator?: any }): Promise<BackendBookingResponse> => {
+    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/manager/bookings/${id}/activate`, payload)
+    return res.data.data
+  },
+
+  // 13. Manager/Coordinator từ chối đơn hàng (POST /api/v1/manager/bookings/{id}/reject)
+  reject: async (id: number | string, payload: { by?: string; reason?: string }): Promise<BackendBookingResponse> => {
+    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/manager/bookings/${id}/reject`, payload)
     return res.data.data
   },
 }
+

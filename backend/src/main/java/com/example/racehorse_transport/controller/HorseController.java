@@ -15,7 +15,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/horses")
+@RequestMapping("/horses")
 public class HorseController {
 
     private final HorseService horseService;
