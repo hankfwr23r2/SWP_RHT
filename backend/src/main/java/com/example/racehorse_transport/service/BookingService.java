@@ -22,6 +22,9 @@ public interface BookingService {
     // Nghiệp vụ Flow 1: Xem chi tiết đơn
     BookingResponse getBookingById(Integer id, String customerUsername);
 
+    // Khách gửi lại hồ sơ sau khi bổ sung theo yêu cầu thẩm định.
+    BookingResponse resubmitBooking(String bookingIdentifier, String customerUsername);
+
     // Nghiệp vụ Flow 1: Manager xem đơn theo trạng thái (chờ tiếp nhận)
     List<BookingResponse> getBookingsByStatus(String status);
 

@@ -205,6 +205,42 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    @Transactional
+    public BookingResponse resubmitBooking(String bookingIdentifier, String customerUsername) {
+        Integer bookingId = parseBookingId(bookingIdentifier);
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+
+        User owner = booking.getCustomerID() != null ? booking.getCustomerID().getUser() : null;
+        boolean ownsBooking = owner != null && (customerUsername.equals(owner.getUsername())
+                || customerUsername.equals(owner.getEmail()));
+        if (!ownsBooking) {
+            throw new org.springframework.security.access.AccessDeniedException("Bạn không có quyền với đơn này.");
+        }
+        if (!"resubmission_requested".equalsIgnoreCase(booking.getStatus())) {
+            throw new IllegalStateException("Đơn này không chờ khách bổ sung hồ sơ.");
+        }
+
+        BookingDetailsPayload payload = extractPayload(booking);
+        Map<String, Object> medical = new HashMap<>();
+        if (payload.getMedical() instanceof Map<?, ?> current) {
+            current.forEach((key, value) -> medical.put(String.valueOf(key), value));
+        }
+        medical.put("status", "pending");
+        medical.put("resubmittedAt", System.currentTimeMillis());
+        medical.remove("reason");
+        medical.remove("items");
+        medical.remove("requestedAt");
+        medical.remove("requestedBy");
+        payload.setMedical(medical);
+        booking.setStatus("under_review");
+        appendHistory(payload, customerUsername, "Khách đã bổ sung hồ sơ và gửi lại Kiểm dịch viên thẩm định");
+        savePayload(booking, payload);
+
+        return mapToResponse(bookingRepository.save(booking));
+    }
+
+    @Override
     public List<BookingResponse> getBookingsByStatus(String status) {
         if (status == null || status.trim().isEmpty() || "ALL".equalsIgnoreCase(status)) {
             return bookingRepository.findAllByOrderByBookingDateDesc()

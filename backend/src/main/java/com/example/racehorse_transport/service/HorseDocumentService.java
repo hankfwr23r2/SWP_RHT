@@ -48,6 +48,8 @@ public interface HorseDocumentService {
      */
     HorseDocumentResponse reviewDocument(Integer documentId, ReviewHorseDocumentRequest request);
 
+    HorseDocumentResponse updateExpiryDate(Integer documentId, LocalDate expiryDate);
+
     /**
      * Overload duyệt hoặc từ chối hồ sơ ngựa nhận tham số rời (tương thích ngược).
      */

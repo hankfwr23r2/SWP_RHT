@@ -60,9 +60,17 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
       const saved = editing ? await horsesApi.update(owner, horse.id, data) : await horsesApi.create(owner, data)
       for (const t of HORSE_DOC_TYPES) {
         const file = files[t]
-        if (!file) continue
-        const expiry = docs[t]?.expiresAt && HORSE_DOC[t].hasExpiry ? new Date(docs[t]!.expiresAt!).toISOString().slice(0, 10) : undefined
-        await horsesApi.uploadDocument(saved.id, t, file, expiry)
+        const expiry = docs[t]?.expiresAt && HORSE_DOC[t].hasExpiry ? toIsoDay(docs[t]!.expiresAt!) : undefined
+        if (file) {
+          await horsesApi.uploadDocument(saved.id, t, file, expiry)
+          continue
+        }
+
+        const previousDoc = horse?.docs[t]
+        if (editing && previousDoc?.expiresAt !== docs[t]?.expiresAt && docs[t]?.expiresAt !== undefined) {
+          if (!previousDoc?.documentId) throw new Error(`Không tìm thấy mã giấy tờ ${HORSE_DOC[t].label} để cập nhật ngày hết hạn.`)
+          await horsesApi.updateDocumentExpiry(previousDoc.documentId, expiry!)
+        }
       }
       const refreshed = (await horsesApi.get(owner, saved.id)) ?? saved
       onSaved(refreshed)

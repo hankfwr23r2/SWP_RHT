@@ -19,6 +19,7 @@ function docsOf(list: BackendHorseDocResponse[]): Partial<Record<HorseDocType, H
     if (!key) continue
     const url = d.documentUrl ?? d.fileUrl
     out[key] = {
+      documentId: d.id,
       fileName: url ? url.split('/').pop() || url : `${key}.pdf`,
       uploadedAt: new Date(d.uploadedAt ?? d.uploadDate ?? Date.now()).getTime(),
       expiresAt: d.expiryDate ? fromIsoDay(d.expiryDate) : undefined,
@@ -69,6 +70,9 @@ export const horsesApi = {
     if (!id) throw new Error('Mã hồ sơ ngựa không hợp lệ.')
     return backendHorseApi.uploadDocument(id, HORSE_DOC_BACKEND_TYPE[type], file, expiryDate)
   },
+
+  updateDocumentExpiry: async (documentId: number, expiryDate: string) =>
+    backendHorseApi.updateDocumentExpiry(documentId, expiryDate),
 
   // Microchip là khóa định danh: không sửa sau khi lưu lần đầu
   update: async (owner: string, id: string, patch: Partial<NewHorse>): Promise<HorseProfile> => {

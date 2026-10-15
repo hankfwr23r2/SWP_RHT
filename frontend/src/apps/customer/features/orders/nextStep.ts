@@ -81,6 +81,8 @@ function baseStep(b: CustomerBookingView, now: number): NextStep {
       const at = Math.max(0, ...(b.trips ?? []).map(t => t.run?.deliveredAt ?? 0))
       return { tone: 'success', icon: 'fa-flag-checkered', title: 'Đã giao ngựa an toàn', text: `Ngựa đã được bàn giao cho người nhận${at ? ` lúc ${formatDateTime(at)}` : ''}. Giá đã cố định nên bạn không phải trả thêm, trừ khi có khoản phát sinh liên quan đến ngựa (nếu có, chúng tôi sẽ gửi bảng quyết toán).`, actionNeeded: false }
     }
+    default:
+      return { tone: 'info', icon: 'fa-clock', title: 'Đơn đang được xử lý', text: 'Nhà xe đang cập nhật tiến độ đơn. Vui lòng tải lại trang sau ít phút.', actionNeeded: false }
   }
 }
 

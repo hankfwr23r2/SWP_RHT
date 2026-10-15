@@ -43,7 +43,8 @@ public class SpecialistServiceImpl implements SpecialistService {
         return all.stream()
                 .filter(b -> {
                     String s = b.getStatus() != null ? b.getStatus().toLowerCase() : "";
-                    return s.contains("review") || s.contains("verification") || s.contains("pending_intake") || s.contains("intake") || s.contains("resubmit");
+                    return s.contains("review") || s.contains("verification") || s.contains("pending_intake")
+                            || s.contains("intake") || s.contains("resubmission_requested");
                 })
                 .map(this::mapToBookingResponse)
                 .collect(Collectors.toList());
