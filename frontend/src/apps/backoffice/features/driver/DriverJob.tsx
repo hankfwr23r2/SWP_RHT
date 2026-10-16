@@ -59,10 +59,83 @@ function PickupStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
   )
 }
 
+import { backendDeliveryApi } from '@shared/api/delivery'
+import { toNumericBookingId } from '@shared/api/bookings'
+import { Modal } from '@shared/ui/Modal'
+
+function TimeoutModal({ b, onClose, run }: { b: Booking; onClose: () => void; run: Run }) {
+  const [reason, setReason] = useState('UNREACHABLE')
+  const [action, setAction] = useState('STABLE_NEARBY')
+  const [partnerName, setPartnerName] = useState('')
+  const [partnerPhone, setPartnerPhone] = useState('')
+  const [cost, setCost] = useState('1500000')
+  const [note, setNote] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const submit = async () => {
+    setBusy(true)
+    try {
+      await run(() => backendDeliveryApi.reportTimeout(toNumericBookingId(b.id), {
+        timeoutReason: reason,
+        selectedAction: action,
+        partnerName: action === 'STABLE_NEARBY' ? partnerName.trim() || undefined : undefined,
+        partnerPhone: action === 'STABLE_NEARBY' ? partnerPhone.trim() || undefined : undefined,
+        estimatedCost: action === 'STABLE_NEARBY' ? Number(cost) || 0 : undefined,
+        note: note.trim() || 'Quá hạn 2 giờ người nhận không tới nhận ngựa.',
+      }), 'Đã ghi nhận ngoại lệ quá 2h và kích hoạt phương án an sinh')
+      onClose()
+    } catch {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Modal onClose={onClose} title="Báo sự cố quá hạn 2h bàn giao" subtitle="Kích hoạt quy trình an sinh khẩn cấp khi người nhận không đến"
+      footer={<><button className="btn btn-ghost" onClick={onClose}>Hủy</button><button className="btn btn-danger" disabled={busy} onClick={submit}>Xác nhận kích hoạt an sinh</button></>}>
+      <div className="form-group">
+        <label htmlFor="tr">Lý do quá hạn</label>
+        <select id="tr" className="form-control" value={reason} onChange={e => setReason(e.target.value)}>
+          <option value="UNREACHABLE">Mất liên lạc với người nhận (Không nghe máy)</option>
+          <option value="DESTINATION_UNREADY">Cơ sở tiếp nhận / chuồng đích chưa sẵn sàng</option>
+          <option value="CONSIGNEE_REJECTED">Người nhận từ chối nhận ngựa</option>
+        </select>
+      </div>
+      <div className="form-group">
+        <label htmlFor="ta">Phương án xử lý khẩn cấp</label>
+        <select id="ta" className="form-control" value={action} onChange={e => setAction(e.target.value)}>
+          <option value="STABLE_NEARBY">Thuê chuồng / đưa ngựa vào trạm nghỉ gần nhất</option>
+          <option value="RETURN_TO_HQ">Quay xe chuyển ngựa về Trụ sở chính (Việt Nam)</option>
+        </select>
+      </div>
+      {action === 'STABLE_NEARBY' && (
+        <>
+          <div className="form-group">
+            <label htmlFor="pn">Tên trạm nghỉ / chuồng đệm</label>
+            <input id="pn" className="form-control" placeholder="VD: Trại ngựa tạm Đức Hòa" value={partnerName} onChange={e => setPartnerName(e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label htmlFor="pp">Số điện thoại liên hệ</label>
+            <input id="pp" className="form-control" placeholder="VD: 0901 234 567" value={partnerPhone} onChange={e => setPartnerPhone(e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label htmlFor="pc">Chi phí lưu chuồng ước tính (VNĐ)</label>
+            <input id="pc" inputMode="numeric" className="form-control" value={cost} onChange={e => setCost(e.target.value.replace(/\D/g, ''))} />
+          </div>
+        </>
+      )}
+      <div className="form-group">
+        <label htmlFor="tn">Ghi chú hiện trường</label>
+        <textarea id="tn" className="form-control" rows={3} placeholder="Mô tả tình hình thực tế tại điểm giao..." value={note} onChange={e => setNote(e.target.value)} />
+      </div>
+    </Modal>
+  )
+}
+
 function DeliveryStep({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Checkpoint; run: Run }) {
   const { session } = useAuth()
   const [photo, setPhoto] = useState<string | undefined>(cp.handoverPhoto)
   const [returned, setReturned] = useState(false)
+  const [showTimeout, setShowTimeout] = useState(false)
   const welfare = t.run!.welfare.some(w => w.checkpointId === cp.id)
   const ready = welfare && returned && !!cp.handoverPhoto
   return (
@@ -77,9 +150,12 @@ function DeliveryStep({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Check
         <button className="btn btn-outline" disabled={!photo || photo === cp.handoverPhoto} onClick={() => run(() => bookingsApi.uploadHandover(b.id, t.tripId, session!.name, photo!), 'Đã tải ảnh biên bản')}><i className="fa-solid fa-upload" /> Tải ảnh biên bản</button>
       </Panel>
       <button className={`btn btn-primary ${s.big}`} disabled={!ready} onClick={() => run(() => bookingsApi.completeDelivery(b.id, t.tripId, session!.name), 'Đã giao ngựa. Khách nhận thông báo')}><i className="fa-solid fa-flag-checkered" /> Hoàn tất giao ngựa</button>
+      <button type="button" className="btn btn-outline btn-full" style={{ marginTop: 10, borderColor: 'var(--orange)', color: 'var(--orange)' }} onClick={() => setShowTimeout(true)}><i className="fa-solid fa-clock-rotate-left" /> Quá hạn 2 giờ: Báo sự cố không nhận ngựa</button>
+      {showTimeout && <TimeoutModal b={b} onClose={() => setShowTimeout(false)} run={run} />}
     </>
   )
 }
+
 
 function CustomsStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
   const { session } = useAuth()

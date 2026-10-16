@@ -4,7 +4,6 @@ import { useRef, useState, useEffect, type ReactNode } from 'react'
 import { Link, NavLink, useLocation } from 'react-router'
 import { gsap } from 'gsap'
 import { useGSAP } from '@gsap/react'
-import { NoticeBell } from './NoticeBell'
 import s from './AppHeader.module.css'
 
 export interface AppHeaderProps {
@@ -58,7 +57,6 @@ export function AppHeader({ homeHref, badge, links, isActive, userName, onLogout
         </nav>
         <div className={s.right}>
           {extra}
-          <NoticeBell />
           <span className={s.avatar} title={userName}>{initialsOf(userName)}</span>
           <span className={s.userName}>{userName}</span>
           <button className={s.logout} onClick={onLogout}><i className="fa-solid fa-arrow-right-from-bracket" /> Đăng xuất</button>
