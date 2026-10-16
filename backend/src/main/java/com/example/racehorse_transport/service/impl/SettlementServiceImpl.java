@@ -104,9 +104,34 @@ public class SettlementServiceImpl implements SettlementService {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
         BookingDetailsPayload payload = extractPayload(booking);
 
-        List<ExpenseItemDto> items = (request != null && request.getItems() != null)
-                ? request.getItems()
-                : Collections.emptyList();
+        List<ExpenseItemDto> items = new ArrayList<>();
+        if (request != null && request.getItems() != null && !request.getItems().isEmpty()) {
+            items.addAll(request.getItems());
+        } else {
+            // Lấy từ bảng kê chi phí đã lưu trong settlement draft nếu có
+            Map<String, Object> existingDraft = getMapFromObject(payload.getSettlement());
+            if (existingDraft != null && existingDraft.get("items") instanceof List) {
+                try {
+                    List<ExpenseItemDto> draftItems = objectMapper.convertValue(
+                            existingDraft.get("items"),
+                            new TypeReference<List<ExpenseItemDto>>() {});
+                    if (draftItems != null) {
+                        items.addAll(draftItems);
+                    }
+                } catch (Exception ex) {
+                    log.warn("Could not parse existing draft settlement items: {}", ex.getMessage());
+                }
+            }
+        }
+
+        // Cập nhật bên chịu (payer) từ request.getPayers() nếu được truyền vào
+        if (request != null && request.getPayers() != null && !request.getPayers().isEmpty()) {
+            for (ExpenseItemDto it : items) {
+                if (it.getId() != null && request.getPayers().containsKey(it.getId())) {
+                    it.setPayer(request.getPayers().get(it.getId()));
+                }
+            }
+        }
 
         // Tính tổng số tiền thuộc phần khách chịu (payer = "customer") theo quy định PRD 7.4 & 11.5
         BigDecimal customerTotal = BigDecimal.ZERO;
@@ -215,13 +240,14 @@ public class SettlementServiceImpl implements SettlementService {
 
         payload.setSettlement(settlementMap);
 
-        // Lưu đánh giá của khách hàng (Rating 1-5 sao)
+        // Lưu đánh giá của khách hàng (Rating 1-5 sao + nhận xét)
         if (request != null && request.getRating() != null) {
             Map<String, Object> ratingMap = new HashMap<>();
             ratingMap.put("stars", request.getRating().getStars());
-            ratingMap.put("driverFeedback", request.getRating().getDriverFeedback());
-            ratingMap.put("escortFeedback", request.getRating().getEscortFeedback());
-            ratingMap.put("overallFeedback", request.getRating().getOverallFeedback());
+            String comment = request.getRating().getComment() != null
+                    ? request.getRating().getComment()
+                    : request.getRating().getOverallFeedback();
+            ratingMap.put("comment", comment);
             ratingMap.put("submittedAt", now.toEpochMilli());
             payload.setRating(ratingMap);
         }

@@ -169,8 +169,18 @@ export const customerBookingsApi = {
   payBalance: async (customer: string, id: string): Promise<CustomerBookingView> =>
     toCustomerView(toBooking(await backendBookingApi.payBalance(id, { paymentMethod: 'VNPAY' }), customer)),
   settle: async (customer: string, id: string, rating: Omit<Rating, 'at'>): Promise<CustomerBookingView> => {
-    if (![rating.trip, rating.driver, rating.escort].every(n => Number.isInteger(n) && n >= 1 && n <= 5)) throw new Error('Chấm điểm từ 1 đến 5 sao cho chuyến đi, tài xế và hộ tống.')
-    const out = await backendSettlementApi.payAndComplete(id, { paymentMethod: 'VNPAY', rating: { trip: rating.trip, driver: rating.driver, escort: rating.escort, comment: rating.comment } })
+    const stars = rating.stars ?? rating.trip ?? 5
+    if (!Number.isInteger(stars) || stars < 1 || stars > 5) throw new Error('Chấm điểm từ 1 đến 5 sao.')
+    const out = await backendSettlementApi.payAndComplete(id, {
+      paymentMethod: 'VNPAY',
+      rating: {
+        stars,
+        comment: rating.comment,
+        trip: stars,
+        driver: stars,
+        escort: stars,
+      },
+    })
     return toCustomerView(toBooking(out, customer))
   },
 }
@@ -224,10 +234,12 @@ export const bookingsApi = {
     toBooking(await specialistApi.approveMedical(id, { specialistName: by })),
   requestResubmission: async (id: string, by: string, reason: string, items: { horseId: string; doc: 'passport' | 'vaccine' | 'lab' }[]): Promise<Booking> =>
     toBooking(await specialistApi.requestResubmission(id, { specialistName: by, reason: reason.trim(), items })),
-  confirmPlan: notSupported('Điều phối viên chốt xe và lộ trình (backend khóa xe theo 1 đến 4 ngày, không kiểm đăng kiểm, lệch PRD mục 10.2)') as (id: string, by: string, input: { trips: Pick<VehicleTrip, 'vehicleId' | 'horseIds'>[]; route: Pick<RoutePlan, 'legs' | 'rests' | 'borderEta'>; gate?: string; note?: string }) => Promise<Booking>,
+  confirmPlan: async (id: string, by: string, input: { trips: Pick<VehicleTrip, 'vehicleId' | 'horseIds'>[]; route: Pick<RoutePlan, 'legs' | 'rests' | 'borderEta'>; gate?: string; note?: string }): Promise<Booking> =>
+    toBooking(await backendBookingApi.confirmFleetPlan(id, { by, trips: input.trips, route: input.route, gate: input.gate, note: input.note })),
   sendBack: async (id: string, by: string, to: 'specialist' | 'coordinator', reason: string): Promise<Booking> =>
     toBooking(await backendBookingApi.sendBack(id, { by, to, reason: reason.trim() })),
-  assignCrew: notSupported('Manager chọn tài xế và hộ tống (backend khóa người theo khung ngày, lệch PRD mục 10.2)') as (id: string, by: string, picks: { tripId: string; driverId: string; escortId: string }[]) => Promise<Booking>,
+  assignCrew: async (id: string, by: string, picks: { tripId: string; driverId: string; escortId: string }[]): Promise<Booking> =>
+    toBooking(await backendBookingApi.assignCrew(id, { by, picks })),
   quoteDraft: async (id: string) => {
     const b = await byId(id)
     if (!b.trips?.length) throw new Error('Đơn chưa có phương án xe.')
@@ -334,7 +346,9 @@ export const bookingsApi = {
 
   // ===== Flow 6: quyết toán =====
   submitExpenses: async (id: string, _by: string): Promise<Booking> => {
-    const incidents = await backendIncidentApi.getByBooking(numericId(id, 'BK'))
+    const b = await byId(id).catch(() => null)
+    const incidentsFromApi = await backendIncidentApi.getByBooking(numericId(id, 'BK')).catch(() => [])
+    const incidents = incidentsFromApi.length ? incidentsFromApi : (b?.incidents ?? [])
     const expenses = incidents.flatMap(incident => (incident.expenses ?? []).map(expense => ({
       id: expense.id,
       category: expense.category,
@@ -355,7 +369,16 @@ export const bookingsApi = {
       amount: expense.amount,
       payer: payers[expense.id] ?? expense.payer,
     })))
-    await backendSettlementApi.issue(id, { managerName: by, items, note: 'Quản lý đối soát và phát hành quyết toán' })
+    const payerMap: Record<string, 'customer' | 'carrier'> = {}
+    Object.entries(payers).forEach(([k, v]) => {
+      payerMap[k] = v === 'customer' ? 'customer' : 'carrier'
+    })
+    await backendSettlementApi.issue(id, {
+      managerName: by,
+      items,
+      payers: payerMap,
+      note: 'Quản lý đối soát và phát hành quyết toán',
+    })
     return byId(id)
   },
 }

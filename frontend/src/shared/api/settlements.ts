@@ -21,16 +21,18 @@ export interface IssueSettlementPayload {
   items?: ExpenseItemPayload[]
   adjustment?: number
   note?: string
+  payers?: Record<string, 'customer' | 'carrier'>
 }
 
 export interface PaySettlementPayload {
   paymentMethod?: string
   transactionCode?: string
   rating?: {
-    trip: number
-    driver: number
-    escort: number
+    stars: number
     comment?: string
+    trip?: number
+    driver?: number
+    escort?: number
   }
 }
 
@@ -52,10 +54,11 @@ export interface SettlementDetailResponse {
     payer: 'customer' | 'company'
   }>
   rating?: {
-    trip: number
-    driver: number
-    escort: number
+    stars?: number
     comment?: string
+    trip?: number
+    driver?: number
+    escort?: number
   }
 }
 

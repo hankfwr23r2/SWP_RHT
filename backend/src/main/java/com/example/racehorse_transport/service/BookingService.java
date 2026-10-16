@@ -48,6 +48,7 @@ public interface BookingService {
     BookingResponse payBalance(String bookingIdentifier, String customerUsername, com.example.racehorse_transport.dto.booking.PayBalanceRequest request);
     BookingResponse rejectQuote(String bookingIdentifier, String customerUsername, com.example.racehorse_transport.dto.booking.RejectQuoteRequest request);
     int releaseExpiredQuotations();
+    int markOverdueSettlements();
 
     // Dev 4: Bàn giao, ký nhận, kết thúc đơn hàng (Flow 6)
     boolean completeBookingDelivery(Integer bookingId, String recipientName, String recipientSignature, String note);

@@ -25,18 +25,22 @@ export function IncidentsCard({ b }: { b: CustomerBookingView }) {
 export function SettlementCard({ b, owner, onDone }: { b: CustomerBookingView; owner: string; onDone: () => void }) {
   const toast = useToast()
   const [busy, setBusy] = useState(false)
-  const [r, setR] = useState({ trip: 5, driver: 5, escort: 5, comment: '' })
+  const [stars, setStars] = useState(5)
+  const [comment, setComment] = useState('')
   const st = b.settlement
   if (!st) return null
   const open = b.status === 'settlement_issued' || b.status === 'payment_overdue'
   const submit = async () => {
     setBusy(true)
-    try { await customerBookingsApi.settle(owner, b.id, r); toast(st.total ? 'Đã thanh toán và gửi đánh giá. Đơn hoàn tất' : 'Đã gửi đánh giá. Đơn hoàn tất'); onDone() } catch (e) { toast(e instanceof Error ? e.message : 'Không thực hiện được', 'error'); setBusy(false) }
+    try {
+      await customerBookingsApi.settle(owner, b.id, { stars, comment, trip: stars, driver: stars, escort: stars })
+      toast(st.total ? 'Đã thanh toán và gửi đánh giá. Đơn hoàn tất' : 'Đã gửi đánh giá. Đơn hoàn tất')
+      onDone()
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Không thực hiện được', 'error')
+      setBusy(false)
+    }
   }
-  const stars = (key: 'trip' | 'driver' | 'escort', label: string) => (
-    <div className="form-group" style={{ margin: 0 }}><label htmlFor={`rt-${key}`}>{label}</label>
-      <FormSelect id={`rt-${key}`} className="form-control" value={r[key]} onChange={e => setR({ ...r, [key]: Number(e.target.value) })}>{[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n} sao</option>)}</FormSelect></div>
-  )
   return (
     <div className="card">
       <div className="card-header"><h3><i className="fa-solid fa-file-invoice-dollar" /> Bảng quyết toán</h3>{b.status === 'payment_overdue' && <span className="badge badge-danger">Quá hạn</span>}{b.status === 'completed' && <span className="badge badge-success">Đã hoàn tất</span>}</div>
@@ -47,14 +51,19 @@ export function SettlementCard({ b, owner, onDone }: { b: CustomerBookingView; o
       {open && st.total > 0 && <p className="form-hint" style={{ marginTop: 8 }}>Hạn thanh toán: {formatDateTime(st.dueAt)}. Quá hạn, tài khoản bị khóa đặt đơn mới.</p>}
       {open && (
         <>
-          <h4 style={{ margin: '16px 0 8px' }}>Đánh giá chuyến đi</h4>
-          <div className={s.grid}>{stars('trip', 'Chuyến đi')}{stars('driver', 'Độ êm ái, an toàn của xe (tài xế)')}{stars('escort', 'Chuyên nghiệp, sức khỏe ngựa (hộ tống)')}</div>
-          <div className="form-group"><label htmlFor="rt-note">Nhận xét</label><input id="rt-note" className="form-control" value={r.comment} onChange={e => setR({ ...r, comment: e.target.value })} /></div>
+          <h4 style={{ margin: '16px 0 8px' }}>Đánh giá dịch vụ</h4>
+          <div className="form-group">
+            <label htmlFor="rt-stars">Mức độ hài lòng</label>
+            <FormSelect id="rt-stars" className="form-control" value={stars} onChange={e => setStars(Number(e.target.value))}>
+              {[5, 4, 3, 2, 1].map(n => <option key={n} value={n}>{n} sao {n === 5 ? '(Rất hài lòng)' : n === 4 ? '(Hài lòng)' : n === 3 ? '(Bình thường)' : n === 2 ? '(Chưa hài lòng)' : '(Rất không hài lòng)'}</option>)}
+            </FormSelect>
+          </div>
+          <div className="form-group"><label htmlFor="rt-note">Nhận xét (không bắt buộc)</label><input id="rt-note" className="form-control" placeholder="Góp ý hoặc chia sẻ trải nghiệm của bạn…" value={comment} onChange={e => setComment(e.target.value)} /></div>
           <button className="btn btn-primary btn-lg btn-full" disabled={busy} onClick={submit}>{busy ? 'Đang xử lý…' : st.total ? `Thanh toán ${formatVND(st.total)} và gửi đánh giá` : 'Xác nhận và gửi đánh giá'}</button>
           {st.total > 0 && <p className="form-hint" style={{ textAlign: 'center' }}>Bản thử nghiệm: bấm thanh toán là ghi nhận đã nhận tiền.</p>}
         </>
       )}
-      {b.rating && <p style={{ marginTop: 12 }}>Bạn đã chấm: chuyến {b.rating.trip}/5, tài xế {b.rating.driver}/5, hộ tống {b.rating.escort}/5{b.rating.comment ? `. "${b.rating.comment}"` : ''}</p>}
+      {b.rating && <p style={{ marginTop: 12 }}>Bạn đã chấm: {b.rating.stars ?? b.rating.trip}/5 ★{b.rating.comment ? `. "${b.rating.comment}"` : ''}</p>}
     </div>
   )
 }
