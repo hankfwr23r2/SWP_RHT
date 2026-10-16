@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@shared/auth/AuthContext'
 import { QUOTE_VALID_HOURS } from '@shared/config/booking-rules'
 import { VEHICLE_CLASS } from '@shared/config/booking-rules'
-import { finalizeQuote, schedulesOf, vehicleClassOf } from '@shared/lib/booking'
+import { finalizeQuote, sameVehicleId, schedulesOf, vehicleClassOf } from '@shared/lib/booking'
 import { formatDate, formatDateTime, formatVND } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
 import { crewApi, vehiclesApi } from '@shared/services/fleet'
@@ -100,7 +100,7 @@ function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booking[]; o
       <h4 style={{ margin: '0 0 10px' }}>Chọn tài xế và nhân viên hộ tống</h4>
       <p className={s.hint} style={{ marginBottom: 10 }}>Điều phối viên đã chọn <b>{trips.length} xe</b>. Mỗi xe cần đúng 1 tài xế và 1 nhân viên hộ tống. Tài xế và hộ tống luôn xuất phát từ trụ sở ở Việt Nam. Người đang đi đơn khác hoặc đang chạy về trụ sở thì bị khóa, về tới trụ sở mới chọn lại được.</p>
       {trips.map((t, i) => {
-        const v = vehicles?.find(x => x.id === t.vehicleId)
+        const v = vehicles?.find(x => sameVehicleId(x.id, t.vehicleId))
         const p = picks[t.tripId]
         const d = crew?.find(c => c.id === p.driverId), e = crew?.find(c => c.id === p.escortId)
         return (

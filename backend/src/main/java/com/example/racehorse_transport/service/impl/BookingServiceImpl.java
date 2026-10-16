@@ -424,8 +424,11 @@ public class BookingServiceImpl implements BookingService {
             if (trip.getTripId() == null || trip.getTripId().trim().isEmpty()) {
                 trip.setTripId("TRP-" + String.format("%03d", booking.getId()) + "-" + (i + 1));
             }
-            // Gán vehicleId là id chuẩn dạng số
-            trip.setVehicleId(String.valueOf(vehicle.getId()));
+            // Chuẩn hóa vehicleId đồng bộ với Frontend (VH-XXX hoặc vehicleCode)
+            String vCode = vehicle.getVehicleCode() != null && !vehicle.getVehicleCode().isBlank()
+                    ? vehicle.getVehicleCode()
+                    : ("VH-" + String.format("%03d", vehicle.getId()));
+            trip.setVehicleId(vCode);
 
             BookingVehicle bv = BookingVehicle.builder()
                     .id(new BookingVehicleId(booking.getId(), vehicle.getId()))

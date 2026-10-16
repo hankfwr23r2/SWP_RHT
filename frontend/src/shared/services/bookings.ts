@@ -1,7 +1,7 @@
 // Service đơn đặt chuyến (Flow 1–6): chỉ gọi API Spring Boot, không giữ dữ liệu ở máy khách.
 // Chức năng mà backend chưa có hoặc đang làm lệch quy trình (docs/PRD.md) không nối API: gọi vào sẽ báo "Backend chưa hỗ trợ".
 import { CLEARANCE_DOC, INCIDENT_KIND, type ClearanceDocType, type IncidentKind, type Payer } from '../config/booking-rules'
-import { crewAssigned, defaultPayer, finalizeQuote, incidentLocation, quoteLines } from '../lib/booking'
+import { crewAssigned, defaultPayer, finalizeQuote, incidentLocation, quoteLines, sameVehicleId } from '../lib/booking'
 import type { Adjustment, Booking, Incident, IncidentExpense, IncidentPlan, Rating, RoutePlan, StaffRef, VehicleTrip } from '../types/booking'
 import { backendBookingApi, type BackendBookingResponse } from '../api/bookings'
 import { backendIncidentApi, type BackendIncidentResponse } from '../api/incidents'
@@ -146,7 +146,7 @@ export const customerBookingsApi = {
     if (!b.trips || !SHOW_TEAM.includes(b.status)) return []
     const [vehicles, crew] = await Promise.all([vehiclesApi.list(), crewApi.list()])
     return b.trips.flatMap(t => {
-      const v = vehicles.find(x => x.id === t.vehicleId)
+      const v = vehicles.find(x => sameVehicleId(x.id, t.vehicleId))
       const driver = crew.find(x => x.id === t.driverId)
       const escort = crew.find(x => x.id === t.escortId)
       if (!v || !driver || !escort) return []
@@ -244,7 +244,7 @@ export const bookingsApi = {
     const b = await byId(id)
     if (!b.trips?.length) throw new Error('Đơn chưa có phương án xe.')
     const all = await vehiclesApi.list()
-    const vs = b.trips.map(t => all.find(v => v.id === t.vehicleId)).filter((v): v is NonNullable<typeof v> => !!v)
+    const vs = b.trips.map(t => all.find(v => sameVehicleId(v.id, t.vehicleId))).filter((v): v is NonNullable<typeof v> => !!v)
     if (vs.length !== b.trips.length) throw new Error('Không tìm thấy xe của đơn.')
     return quoteLines(b, vs)
   },

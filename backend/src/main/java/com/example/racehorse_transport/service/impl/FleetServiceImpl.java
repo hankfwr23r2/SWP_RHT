@@ -348,6 +348,14 @@ public class FleetServiceImpl implements FleetService {
             staffOpt = staffRepository.findByStaffCode(clean);
         }
 
+        if (staffOpt.isEmpty() && clean.matches("(?i)(TX|NV|DRV|ESC)-\\d+")) {
+            String digits = clean.replaceAll("[^0-9]", "");
+            try {
+                int numId = Integer.parseInt(digits);
+                staffOpt = staffRepository.findById(numId);
+            } catch (Exception ignored) {}
+        }
+
         if (staffOpt.isEmpty()) {
             Optional<User> userOpt = userRepository.findByUsernameOrEmail(clean, clean);
             if (userOpt.isPresent()) {
