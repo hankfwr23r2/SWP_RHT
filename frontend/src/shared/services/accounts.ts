@@ -30,9 +30,14 @@ export const accountsApi = {
     return { account: accountOf(res), password: res.tempPassword }
   },
 
-  // Backend chưa có API sửa họ tên, email, số điện thoại
-  update: async (_id: string, _patch: Pick<AccountInput, 'name' | 'email' | 'phone'>, _actor: string): Promise<Account> => {
-    throw new Error('Backend chưa hỗ trợ: sửa thông tin tài khoản.')
+  // Cập nhật thông tin tài khoản: họ tên, email, số điện thoại
+  update: async (id: string, patch: Pick<AccountInput, 'name' | 'email' | 'phone'>, _actor: string): Promise<Account> => {
+    const name = patch.name.trim()
+    const email = norm(patch.email)
+    if (!name) throw new Error('Cần nhập họ tên.')
+    if (!EMAIL.test(email)) throw new Error('Email không hợp lệ.')
+    const res = await adminAccountsApi.update(userIdOf(id), { name, email, phone: patch.phone?.trim() })
+    return accountOf(res)
   },
 
   // Khóa / mở khóa. Không tự khóa mình và không khóa quản trị viên cuối cùng.

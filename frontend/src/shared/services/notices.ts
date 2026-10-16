@@ -1,4 +1,5 @@
-// Thông báo đẩy xuống từng vai trò (chuông trên thanh menu). Backend chưa có API thông báo nên chuông luôn trống.
+// Thông báo đẩy xuống từng vai trò (chuông trên thanh menu). Kết nối GET/PATCH /api/v1/notifications
+import apiClient, { type ApiResponse } from '../api/client'
 import type { Role } from '../types/role'
 
 export interface Notice {
@@ -14,7 +15,30 @@ export interface Notice {
 }
 
 export const noticesApi = {
-  list: async (_role: Role, _name?: string): Promise<Notice[]> => [],
-  markRead: async (_id: string): Promise<void> => {},
-  markAllRead: async (_role: Role, _name?: string): Promise<void> => {},
+  list: async (role: Role, name?: string): Promise<Notice[]> => {
+    try {
+      const res = await apiClient.get<ApiResponse<Notice[]>>('/notifications', {
+        params: { role, name },
+      })
+      return res.data.data ?? []
+    } catch {
+      return []
+    }
+  },
+  markRead: async (id: string): Promise<void> => {
+    try {
+      await apiClient.patch(`/notifications/${id}/read`)
+    } catch {
+      // ignore
+    }
+  },
+  markAllRead: async (role: Role, name?: string): Promise<void> => {
+    try {
+      await apiClient.patch('/notifications/read-all', null, {
+        params: { role, name },
+      })
+    } catch {
+      // ignore
+    }
+  },
 }

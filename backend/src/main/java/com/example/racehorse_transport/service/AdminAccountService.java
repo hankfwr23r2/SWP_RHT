@@ -15,6 +15,9 @@ public interface AdminAccountService {
     AccountResponse createStaffAccount(CreateStaffRequest request, String actorUsername);
     AccountResponse createStaffAccount(CreateStaffRequest request);
 
+    // Cập nhật thông tin tài khoản (Họ tên, Email, SĐT)
+    AccountResponse updateAccount(Integer userId, com.example.racehorse_transport.dto.admin.UpdateAccountRequest request, String actorUsername);
+
     // 3. Khóa hoặc mở khóa tài khoản
     void toggleAccountStatus(Integer userId, boolean lock, String actorUsername, String reason);
     void toggleAccountStatus(Integer userId, boolean lock);
