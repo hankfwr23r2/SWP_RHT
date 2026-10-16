@@ -37,6 +37,9 @@ function ScanStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
   )
 }
 
+import { healthLogsApi } from '@shared/api/healthLogs'
+import { toNumericBookingId } from '@shared/api/bookings'
+
 function WelfareForm({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Checkpoint; run: Run }) {
   const { session } = useAuth()
   const final = cp.type === 'delivery'
@@ -46,6 +49,26 @@ function WelfareForm({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Checkp
   const [photo, setPhoto] = useState<string>()
   const [note, setNote] = useState('')
   const valid = !!photo && water !== ''
+
+  const submit = async () => {
+    // Ghi nhận nhật ký an sinh của chuyến đi
+    await bookingsApi.submitWelfare(b.id, t.tripId, session!.name, { condition, waterLiters: Number(water), hay, photo: photo!, note: note.trim() })
+
+    // Ghi nhận nhật ký sức khỏe từng cá thể ngựa vào bảng horse_health_logs (POST /api/v1/horse-health-logs)
+    const tripHorses = b.horses.filter(h => t.horseIds.includes(h.horseId))
+    const bookingNumId = toNumericBookingId(b.id)
+    await Promise.all(tripHorses.map(h => {
+      const hId = Number(h.horseId.replace(/\D/g, ''))
+      if (!hId) return Promise.resolve(null)
+      return healthLogsApi.create({
+        horseId: hId,
+        bookingId: bookingNumId,
+        healthStatus: condition.toUpperCase(),
+        symptoms: note.trim() || `Cấp nước ${water}L, cỏ: ${hay ? 'đủ' : 'chưa'}`,
+      }).catch(() => null)
+    }))
+  }
+
   return (
     <Panel title={final ? 'Kiểm tra thể trạng lần cuối' : `Nhật ký an sinh · ${cp.place}`} icon="fa-heart-pulse" tone="warn">
       <p>{final ? 'Hạ ngựa an toàn, kiểm tra lần cuối cùng người nhận.' : 'Trong lúc xe dừng ở trạm nghỉ, kiểm tra ngựa và ghi nhật ký.'}</p>
@@ -60,7 +83,7 @@ function WelfareForm({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Checkp
       <label style={{ display: 'flex', gap: 12, alignItems: 'center', minHeight: 48 }}><input type="checkbox" checked={hay} onChange={e => setHay(e.target.checked)} style={{ width: 22, height: 22, accentColor: 'var(--orange)' }} />Đã bổ sung cỏ khô</label>
       <CaptureField label="Ảnh ngựa trong khoang" required value={photo} onChange={setPhoto} />
       <div className="form-group" style={{ margin: 0 }}><label htmlFor="wnote">Ghi chú</label><input id="wnote" className="form-control" style={{ minHeight: 48 }} value={note} onChange={e => setNote(e.target.value)} placeholder="VD: ngựa đổ mồ hôi nhẹ, đã xịt nước" /></div>
-      <button className={`btn btn-primary ${s.big}`} disabled={!valid} onClick={() => run(() => bookingsApi.submitWelfare(b.id, t.tripId, session!.name, { condition, waterLiters: Number(water), hay, photo: photo!, note: note.trim() }), 'Đã gửi nhật ký an sinh')}><i className="fa-solid fa-paper-plane" /> Gửi nhật ký an sinh</button>
+      <button className={`btn btn-primary ${s.big}`} disabled={!valid} onClick={() => run(submit, 'Đã gửi nhật ký an sinh')}><i className="fa-solid fa-paper-plane" /> Gửi nhật ký an sinh</button>
     </Panel>
   )
 }

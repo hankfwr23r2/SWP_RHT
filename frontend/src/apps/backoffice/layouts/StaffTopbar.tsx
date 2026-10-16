@@ -2,7 +2,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
-import { NoticeBell } from '@shared/ui/NoticeBell'
 import { STAFF_MENUS } from './staffMenus'
 import { ROLE_LABEL, type StaffRole } from '@shared/types/role'
 import { HOME_OF } from './staffMenus'
@@ -37,7 +36,6 @@ export function StaffTopbar() {
         <input value={q} onChange={e => setQ(e.target.value)} placeholder="Tìm đơn hàng, khách hàng…" aria-label="Tìm đơn hàng" />
       </form>
       <div className={s.right}>
-        <NoticeBell />
         <button className={s.logout} onClick={() => { logout(); navigate('/login') }} aria-label="Đăng xuất" title="Đăng xuất"><i className="fa-solid fa-arrow-right-from-bracket" /></button>
       </div>
     </header>

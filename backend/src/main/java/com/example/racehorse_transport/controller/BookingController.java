@@ -3,6 +3,7 @@ package com.example.racehorse_transport.controller;
 import com.example.racehorse_transport.dto.BookingDTO;
 import com.example.racehorse_transport.dto.CompleteDeliveryRequest;
 import com.example.racehorse_transport.dto.booking.BookingResponse;
+import com.example.racehorse_transport.dto.booking.PublicTrackingResponse;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.response.ApiResponse;
 import com.example.racehorse_transport.service.BookingService;
@@ -29,6 +30,18 @@ public class BookingController {
     public BookingController(BookingService bookingService, ModelMapper modelMapper) {
         this.bookingService = bookingService;
         this.modelMapper = modelMapper;
+    }
+
+    // Tra cứu đơn công khai theo mã đơn và 4 số cuối số điện thoại (không cần đăng nhập)
+    @GetMapping("/public-track")
+    public ResponseEntity<ApiResponse<PublicTrackingResponse>> getPublicTracking(
+            @RequestParam("code") String code,
+            @RequestParam("phoneLast4") String phoneLast4) {
+        PublicTrackingResponse response = bookingService.getPublicTracking(code, phoneLast4);
+        if (response == null) {
+            return ResponseEntity.status(404).body(ApiResponse.error("Không tìm thấy đơn hàng hoặc 4 số cuối điện thoại không khớp."));
+        }
+        return ResponseEntity.ok(ApiResponse.success(response, "Tra cứu tiến độ đơn hàng thành công"));
     }
 
     // 1. Lấy tất cả đơn hàng

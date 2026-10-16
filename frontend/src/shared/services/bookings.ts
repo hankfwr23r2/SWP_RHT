@@ -7,13 +7,10 @@ import { backendBookingApi, type BackendBookingResponse } from '../api/bookings'
 import { backendIncidentApi, type BackendIncidentResponse } from '../api/incidents'
 import { backendSettlementApi } from '../api/settlements'
 import { specialistApi } from '../api/specialist'
+import apiClient, { type ApiResponse } from '../api/client'
+import { paymentApi } from '../api/payments'
 import { incidentKindOf, incidentStatusOf, toBooking } from './bookingMapper'
 import { vehiclesApi, crewApi } from './fleet'
-
-// Gọi vào là báo lỗi rõ chức năng nào backend chưa làm; giao diện hiện lỗi này ở thông báo.
-const notSupported = (what: string) => async (..._args: unknown[]): Promise<never> => {
-  throw new Error(`Backend chưa hỗ trợ: ${what}.`)
-}
 
 function numericId(id: string, prefix: string): number {
   const match = new RegExp(`^(?:${prefix}-)?(\\d+)$`, 'i').exec(id.trim())
@@ -108,9 +105,18 @@ export interface NewBookingInput {
 }
 
 
-// Công khai: không cần đăng nhập. Backend chưa có API tra cứu công khai theo mã đơn và 4 số cuối SĐT.
+// Công khai: không cần đăng nhập. Tra cứu đơn theo mã đơn và 4 số cuối SĐT.
 export const publicBookingsApi = {
-  track: notSupported('tra cứu đơn công khai theo mã đơn') as (code: string, phoneLast4: string) => Promise<PublicTracking | null>,
+  track: async (code: string, phoneLast4: string): Promise<PublicTracking | null> => {
+    try {
+      const res = await apiClient.get<ApiResponse<PublicTracking>>('/bookings/public-track', {
+        params: { code: code.trim(), phoneLast4: phoneLast4.trim() },
+      })
+      return res.data.data ?? null
+    } catch {
+      return null
+    }
+  },
 }
 
 // Dành cho app khách
@@ -160,8 +166,11 @@ export const customerBookingsApi = {
   // Khách từ chối báo giá: đơn đóng (Cancelled), chưa cọc nên miễn phí
   rejectQuote: async (customer: string, id: string, reason: string): Promise<CustomerBookingView> =>
     toCustomerView(toBooking(await backendBookingApi.rejectQuote(id, { reason: reason.trim() }), customer)),
-  // Backend hủy đơn theo chính sách hoàn 50% trước D-15, lệch PRD mục 8.3 (mất 100% cọc, hoàn số dư 70%)
-  cancel: notSupported('khách hủy đơn đã cọc (chính sách hoàn tiền của backend lệch PRD mục 8.3)') as (customer: string, id: string, reason: string) => Promise<CustomerBookingView>,
+  // Khách hủy đơn sau khi đặt cọc: mất 100% tiền cọc, số dư 70% đã trả (nếu có) được hoàn trả
+  cancel: async (customer: string, id: string, reason: string): Promise<CustomerBookingView> => {
+    await paymentApi.cancelWithRefund(id, reason)
+    return toCustomerView(toBooking(await backendBookingApi.getCustomerBookingById(id), customer))
+  },
   resubmit: async (customer: string, id: string): Promise<CustomerBookingView> =>
     toCustomerView(toBooking(await backendBookingApi.resubmitDocuments(id), customer)),
   payDeposit: async (customer: string, id: string): Promise<CustomerBookingView> =>

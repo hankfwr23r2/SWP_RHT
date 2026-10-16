@@ -5,7 +5,8 @@ import { previewOf } from '../lib/previews'
 import s from './ImageThumb.module.css'
 
 export function ImageLightbox({ name, onClose }: { name: string; onClose: () => void }) {
-  const src = previewOf(name)
+  const isUrl = name.startsWith('http://') || name.startsWith('https://') || name.startsWith('blob:')
+  const src = isUrl ? name : previewOf(name)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     document.addEventListener('keydown', onKey)
@@ -24,7 +25,8 @@ export function ImageLightbox({ name, onClose }: { name: string; onClose: () => 
 
 export function ImageThumb({ name, size = 56 }: { name: string; size?: number }) {
   const [open, setOpen] = useState(false)
-  const src = previewOf(name)
+  const isUrl = name.startsWith('http://') || name.startsWith('https://') || name.startsWith('blob:')
+  const src = isUrl ? name : previewOf(name)
   return (
     <>
       <button type="button" className={s.thumb} style={{ width: size, height: size }} onClick={() => setOpen(true)} title={`Xem ${name}`} aria-label={`Xem ảnh ${name}`}>
@@ -34,3 +36,4 @@ export function ImageThumb({ name, size = 56 }: { name: string; size?: number })
     </>
   )
 }
+

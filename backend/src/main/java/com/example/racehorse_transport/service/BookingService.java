@@ -2,6 +2,7 @@ package com.example.racehorse_transport.service;
 
 import com.example.racehorse_transport.dto.booking.CreateBookingRequest;
 import com.example.racehorse_transport.dto.booking.BookingResponse;
+import com.example.racehorse_transport.dto.booking.PublicTrackingResponse;
 import com.example.racehorse_transport.entity.Booking;
 
 import java.util.List;
@@ -55,4 +56,7 @@ public interface BookingService {
 
     // Flow 4: Cập nhật tiến độ chuyến xe (check-in, quét chip, thu hồ sơ, xuất phát, an sinh, về HQ)
     BookingResponse updateTripProgress(String bookingIdentifier, com.example.racehorse_transport.dto.field.TripUpdateRequest request);
+
+    // Flow công khai: Tra cứu hành trình đơn hàng bằng mã đơn và 4 số cuối SĐT
+    PublicTrackingResponse getPublicTracking(String code, String phoneLast4);
 }
