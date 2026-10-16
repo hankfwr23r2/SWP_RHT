@@ -1,11 +1,10 @@
-// Bước 2: chọn ngựa từ Hồ sơ ngựa (PRD mục 2.2). Chỉ ngựa đủ giấy và còn hiệu lực đến ngày khởi hành mới chọn được.
+﻿// Bước 2: chọn ngựa từ Hồ sơ ngựa (PRD mục 2.2). Chỉ ngựa đủ giấy và còn hiệu lực đến ngày khởi hành mới chọn được.
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
-import { HORSE_DOC, VEHICLE_CLASS } from '@shared/config/booking-rules'
+import { VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { MAX_HORSES } from '@shared/config/business-rules'
 import { ageOf, classForHorses, fromIsoDay, horseReadiness } from '@shared/lib/booking'
-import { formatDate } from '@shared/lib/format'
 import { horsesApi } from '@shared/services/horses'
 import { useLoad } from '@shared/services/useLoad'
 import { SEX_LABEL, type HorseProfile } from '@shared/types/booking'
@@ -15,15 +14,6 @@ import { HorseFormModal } from '../horses/HorseFormModal'
 import { BookingShell } from './BookingShell'
 import { defaultConfig, useBookingDraft } from './draft'
 import s from './Booking.module.css'
-
-function reasonOf(h: HorseProfile, departAt: number) {
-  const r = horseReadiness(h, departAt)
-  if (r.ok) return ''
-  const parts: string[] = []
-  if (r.missing.length) parts.push(`Thiếu ${r.missing.map(t => HORSE_DOC[t].short).join(', ')}`)
-  if (r.expired.length) parts.push(`Hết hạn trước ngày đi (${formatDate(departAt)}): ${r.expired.map(t => HORSE_DOC[t].short).join(', ')}`)
-  return parts.join('. ')
-}
 
 export default function Step2HorsesPage() {
   const navigate = useNavigate()
@@ -40,7 +30,8 @@ export default function Step2HorsesPage() {
 
   if (!draft.type || !draft.departDate) return <Navigate to="/booking/route" replace />
   const departAt = fromIsoDay(draft.departDate)
-  const list = horses ?? []
+  // Chỉ hiển thị ngựa đủ giấy tờ và còn hiệu lực — ngựa thiếu/hết hạn không đưa vào
+  const list = (horses ?? []).filter(h => horseReadiness(h, departAt).ok)
   const full = selected.length >= MAX_HORSES
   const toggle = (id: string) => setSelected(sel => (sel.includes(id) ? sel.filter(x => x !== id) : sel.length >= MAX_HORSES ? sel : [...sel, id]))
   const cls = selected.length ? VEHICLE_CLASS[classForHorses(selected.length)] : null
@@ -64,21 +55,23 @@ export default function Step2HorsesPage() {
 
         <div className={s.pickList} role="group" aria-label="Danh sách ngựa" style={{ marginTop: 12 }}>
           {!horses && <p className="text-muted">Đang tải…</p>}
-          {horses && !list.length && <p className="text-muted">Chưa có ngựa nào. Bấm “Thêm ngựa” để khai báo.</p>}
+          {horses && !list.length && (
+            <p className="text-muted">
+              Không có ngựa nào đủ điều kiện cho chuyến này.{' '}
+              <Link to="/horses">Vào Hồ sơ ngựa</Link> để bổ sung giấy tờ còn thiếu hoặc hết hạn.
+            </p>
+          )}
           {list.map(h => {
-            const why = reasonOf(h, departAt)
             const on = selected.includes(h.id)
             const blocked = !on && full
             return (
-              <div key={h.id} className={`${s.pick} ${on ? s.pickOn : ''} ${why ? s.pickOff : ''}`} onClick={e => { if (!blocked && !(e.target as HTMLElement).closest('button, input')) toggle(h.id) }}>
+              <div key={h.id} className={`${s.pick} ${on ? s.pickOn : ''}`} onClick={e => { if (!blocked && !(e.target as HTMLElement).closest('button, input')) toggle(h.id) }}>
                 <input type="checkbox" id={`pick-${h.id}`} checked={on} disabled={blocked} onChange={() => toggle(h.id)} aria-describedby={`pick-meta-${h.id}`} />
                 <div>
                   <label htmlFor={`pick-${h.id}`} className={s.pickName}>{h.name}</label>
                   <div id={`pick-meta-${h.id}`} className={s.pickMeta}>Chip {h.microchip} · {h.breed} · {SEX_LABEL[h.sex]} · {ageOf(h)} tuổi</div>
                   <HorseDocChips horse={h} at={departAt} />
-                  {why && <div className={s.pickWhy}><i className="fa-solid fa-triangle-exclamation" /> {why}</div>}
                 </div>
-                {why && <button type="button" className="btn btn-primary btn-sm" onClick={() => setModal({ horse: h })}>Bổ sung giấy</button>}
               </div>
             )
           })}
