@@ -13,7 +13,16 @@ public class ExpenseItemDto {
     private String id;
     private String category; // "vet_fee", "medicine", "holding_stable", "rescue", "extra_service"
     private String description;
+    private String label;
     private BigDecimal amount;
     private String photo; // URL ảnh chụp hóa đơn từ Cloudinary (Evidence-First)
     private String payer; // "customer" (Khách chịu) hoặc "carrier" (Nhà xe chịu)
+
+    public String getDescription() {
+        return description != null ? description : label;
+    }
+
+    public String getLabel() {
+        return label != null ? label : description;
+    }
 }

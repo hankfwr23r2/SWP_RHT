@@ -59,7 +59,9 @@ export function summarize(bookings: Booking[], from: number, to: number): Report
   const fin = bookings.map(orderFinance).filter((f): f is OrderFinance => !!f && f.at >= from && f.at < to)
   const perf = bookings.flatMap(b => (b.trips ?? []).map(t => tripPerformance(b, t))).filter((p): p is TripPerf => !!p && p.startedAt >= from && p.startedAt < to)
   const done = perf.filter(p => p.deliveredAt)
-  const ratings = bookings.filter(b => b.rating && b.rating.at >= from && b.rating.at < to).map(b => (b.rating!.trip + b.rating!.driver + b.rating!.escort) / 3)
+  const ratings = bookings
+    .filter(b => b.rating && b.rating.at >= from && b.rating.at < to)
+    .map(b => b.rating!.stars ?? ((b.rating!.trip ?? 0) + (b.rating!.driver ?? 0) + (b.rating!.escort ?? 0)) / 3)
   const revenue = sum(fin.map(f => f.revenue)), cost = sum(fin.map(f => f.cost))
   return {
     revenue, cost, profit: revenue - cost, margin: pct(revenue - cost, revenue), collected: sum(fin.map(f => f.collected)), orders: fin.length,

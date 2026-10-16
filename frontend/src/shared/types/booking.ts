@@ -183,7 +183,7 @@ export interface Incident {
 }
 export interface SettlementItem { label: string; amount: number; photo?: string }
 export interface Settlement { items: SettlementItem[]; total: number; issuedAt: number; dueAt: number; by: string; paid?: Payment }
-export interface Rating { trip: number; driver: number; escort: number; comment: string; at: number }
+export interface Rating { stars: number; comment?: string; at: number; trip?: number; driver?: number; escort?: number }
 export interface HistoryEntry { time: number; actor: string; text: string }
 
 export interface Booking {

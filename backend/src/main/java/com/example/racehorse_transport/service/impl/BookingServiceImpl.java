@@ -95,6 +95,16 @@ public class BookingServiceImpl implements BookingService {
                     return customerRepository.save(c);
                 });
 
+        // 2b. Kiểm tra quy tắc PRD mục 8.2: Chặn tạo đơn mới nếu khách có đơn quá hạn thanh toán quyết toán (payment_overdue)
+        List<Booking> customerBookings = bookingRepository.findByCustomerID_IdOrderByBookingDateDesc(customer.getId());
+        if (customerBookings != null) {
+            boolean hasOverdue = customerBookings.stream()
+                    .anyMatch(b -> "payment_overdue".equalsIgnoreCase(b.getStatus()));
+            if (hasOverdue) {
+                throw new IllegalStateException("Bạn có đơn hàng đang quá hạn thanh toán quyết toán (payment_overdue). Vui lòng thanh toán trước khi tạo đơn mới!");
+            }
+        }
+
         // 3. Chuyển đổi timestamp ngày khởi hành
         Instant departureInstant = request.getDepartAt() != null
                 ? Instant.ofEpochMilli(request.getDepartAt())
@@ -1040,6 +1050,38 @@ public class BookingServiceImpl implements BookingService {
 
         if (count > 0) {
             log.info("Released {} expired bookings from awaiting_payment", count);
+        }
+        return count;
+    }
+
+    @Override
+    @Transactional
+    public int markOverdueSettlements() {
+        List<Booking> issuedBookings = bookingRepository.findByStatusOrderByBookingDateAsc("settlement_issued");
+        int count = 0;
+        long now = System.currentTimeMillis();
+
+        for (Booking booking : issuedBookings) {
+            BookingDetailsPayload payload = extractPayload(booking);
+            if (payload != null && payload.getSettlement() instanceof Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> settMap = (Map<String, Object>) payload.getSettlement();
+                Object dueAtObj = settMap.get("dueAt");
+                if (dueAtObj instanceof Number) {
+                    long dueAt = ((Number) dueAtObj).longValue();
+                    if (now > dueAt) {
+                        booking.setStatus("payment_overdue");
+                        appendHistory(payload, "Hệ thống", "Bảng quyết toán quá hạn 24 giờ. Trạng thái chuyển sang payment_overdue (Khóa quyền tạo đơn mới).");
+                        savePayload(booking, payload);
+                        bookingRepository.save(booking);
+                        logAction("SETTLEMENT_OVERDUE", booking.getId(), "Đơn BK-" + booking.getId() + " quá hạn thanh toán quyết toán 24h.");
+                        count++;
+                    }
+                }
+            }
+        }
+        if (count > 0) {
+            log.info("Marked {} bookings as payment_overdue", count);
         }
         return count;
     }
