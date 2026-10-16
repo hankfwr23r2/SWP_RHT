@@ -211,6 +211,14 @@ export function busyResources(all: Booking[], departAt: number, exceptId?: strin
 // ===== Chọn xe, tài xế, hộ tống (PRD mục 10.2): Coordinator chọn xe, sau đó Manager chọn tài xế và hộ tống; hệ thống chỉ khóa người và xe trùng lịch =====
 // Xe đã có đủ tài xế và hộ tống chưa (Manager chọn lúc duyệt báo giá)
 export const crewAssigned = (t: Pick<VehicleTrip, 'driverId' | 'escortId'>) => !!t.driverId && !!t.escortId
+// So sánh mã xe linh hoạt (chuẩn hóa VH-XXX hoặc số ID)
+export const sameVehicleId = (a?: string, b?: string): boolean => {
+  if (!a || !b) return false
+  if (a.toLowerCase() === b.toLowerCase()) return true
+  const numA = a.replace(/\D/g, '')
+  const numB = b.replace(/\D/g, '')
+  return numA !== '' && numA === numB
+}
 // Xe phải có giấy đăng kiểm; tuyến quốc tế còn cần giấy phép liên vận (PRD mục 2.4)
 export const vehicleDocsOk = (v: Pick<Vehicle, 'inspectionNo' | 'transitPermit'>, international: boolean) => !!v.inspectionNo && (!international || !!v.transitPermit)
 

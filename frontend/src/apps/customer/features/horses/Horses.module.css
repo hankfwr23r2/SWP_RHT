@@ -45,3 +45,72 @@
   .grid { grid-template-columns: 1fr; }
   .grid2, .docRow { grid-template-columns: 1fr; }
 }
+
+/* Tabs trong modal thêm / sửa ngựa */
+.tabBar {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid var(--line);
+  margin-bottom: 6px;
+}
+.tabBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--muted);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+.tabBtn:hover {
+  color: var(--navy);
+  background: rgba(0, 0, 0, 0.03);
+}
+.tabActive {
+  color: var(--orange);
+  font-weight: 700;
+}
+.tabActive::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--orange);
+  border-radius: 3px 3px 0 0;
+}
+.tabBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: var(--muted);
+}
+.tabBadgeSuccess {
+  background: #dcfce7;
+  color: #16a34a;
+}
+.tabDotError {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  display: inline-block;
+}
+.tabActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+

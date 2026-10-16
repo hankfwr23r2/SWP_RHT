@@ -27,11 +27,17 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
   const [color, setColor] = useState(horse?.color ?? '')
   const [birthYear, setBirthYear] = useState(String(horse?.birthYear ?? ''))
   const [marks, setMarks] = useState(horse?.marks ?? '')
+  const [tab, setTab] = useState<'info' | 'docs'>('info')
   const [docs, setDocs] = useState<Partial<Record<HorseDocType, HorseDoc>>>(horse?.docs ?? {})
   const [files, setFiles] = useState<Partial<Record<HorseDocType, File>>>({})
   const [errors, setErrors] = useState<Errors>({})
   const [busy, setBusy] = useState(false)
   const [formError, setFormError] = useState('')
+
+  const uploadedDocsCount = HORSE_DOC_TYPES.filter(t => !!docs[t] && (files[t] || docs[t]?.fileName)).length
+  const allDocsUploaded = uploadedDocsCount === HORSE_DOC_TYPES.length
+  const hasInfoError = !!(errors.name || errors.microchip || errors.color || errors.birthYear)
+  const hasDocsError = HORSE_DOC_TYPES.some(t => !!errors[`${t}Expiry`])
 
   const setDoc = (t: HorseDocType, patch: Partial<HorseDoc> | undefined) =>
     setDocs(d => { const next = { ...d }; if (!patch) delete next[t]; else next[t] = { fileName: '', uploadedAt: Date.now(), ...d[t], ...patch }; return next })
@@ -47,7 +53,14 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
       if (docs[t] && HORSE_DOC[t].hasExpiry && !docs[t]!.expiresAt) e[`${t}Expiry`] = 'Nhập ngày hết hạn của giấy.'
     })
     setErrors(e)
-    return !Object.keys(e).length
+    const errKeys = Object.keys(e)
+    if (errKeys.length > 0) {
+      const infoErr = !!(e.name || e.microchip || e.color || e.birthYear)
+      if (infoErr) setTab('info')
+      else setTab('docs')
+      return false
+    }
+    return true
   }
 
   const submit = async (ev: FormEvent) => {
@@ -79,6 +92,7 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
       // Lỗi về mã microchip hiện ngay dưới ô nhập, không đưa lên đầu biểu mẫu
       if (!editing && /microchip/i.test(message)) {
         setErrors({ microchip: 'Mã microchip không hợp lệ, vui lòng nhập lại.' })
+        setTab('info')
         document.getElementById('h-chip')?.focus()
       } else setFormError(message)
       setBusy(false)
@@ -92,68 +106,121 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
       subtitle="Khai báo một lần, các lần đặt sau chỉ cần chọn ngựa."
       footer={<>
         <button type="button" className="btn btn-ghost" onClick={onClose}>Hủy</button>
+        {tab === 'info' ? (
+          <button type="button" className="btn btn-outline" onClick={() => setTab('docs')}>
+            Tiếp: Giấy tờ ({uploadedDocsCount}/3) <i className="fa-solid fa-arrow-right" />
+          </button>
+        ) : (
+          <button type="button" className="btn btn-ghost" onClick={() => setTab('info')}>
+            <i className="fa-solid fa-arrow-left" /> Nhận dạng
+          </button>
+        )}
         <button type="submit" form="horse-form" className="btn btn-primary" disabled={busy}>{busy ? 'Đang lưu…' : editing ? 'Lưu thay đổi' : 'Lưu vào hồ sơ'}</button>
       </>}
     >
+      <div className={s.tabBar} role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'info'}
+          className={`${s.tabBtn} ${tab === 'info' ? s.tabActive : ''}`}
+          onClick={() => setTab('info')}
+        >
+          <i className="fa-solid fa-horse" /> Nhận dạng & Đặc điểm
+          {hasInfoError && <span className={s.tabDotError} title="Có trường chưa điền" />}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === 'docs'}
+          className={`${s.tabBtn} ${tab === 'docs' ? s.tabActive : ''}`}
+          onClick={() => setTab('docs')}
+        >
+          <i className="fa-solid fa-file-medical" /> Giấy tờ & Kiểm dịch
+          <span className={`${s.tabBadge} ${allDocsUploaded ? s.tabBadgeSuccess : ''}`}>
+            {uploadedDocsCount}/{HORSE_DOC_TYPES.length} giấy
+          </span>
+          {hasDocsError && <span className={s.tabDotError} title="Có giấy hết hạn/thiếu" />}
+        </button>
+      </div>
+
       <form id="horse-form" onSubmit={submit} noValidate className={s.form}>
         {formError && <div className="alert alert-danger"><i className="fa-solid fa-circle-exclamation" /><div>{formError}</div></div>}
 
-        <fieldset className={s.fieldset}>
-          <legend>Nhận dạng</legend>
-          <div className={s.grid2}>
-            <div className="form-group">
-              <label htmlFor="h-name" className="required">Tên ngựa</label>
-              <input id="h-name" className={`form-control ${errors.name ? 'invalid' : ''}`} value={name} onChange={e => setName(e.target.value)} placeholder="VD: Storm Runner" />
-              {errors.name && <div className="form-error">{errors.name}</div>}
-            </div>
-            <div className="form-group">
-              <label htmlFor="h-chip" className="required">Mã microchip</label>
-              <input id="h-chip" className={`form-control ${errors.microchip ? 'invalid' : ''}`} value={microchip} onChange={e => { setMicrochip(e.target.value); if (errors.microchip) setErrors(({ microchip: _m, ...rest }) => rest) }} placeholder="VD: VN-985211" disabled={editing} aria-describedby="h-chip-hint" style={{ fontVariantNumeric: 'tabular-nums' }} />
-              {errors.microchip && <div className="form-error">{errors.microchip}</div>}
-              <div id="h-chip-hint" className="form-hint">{editing ? 'Mã microchip là khóa định danh, không sửa được sau khi lưu.' : 'Không sửa được sau khi lưu. Kiểm tra kỹ trước khi lưu.'}</div>
-            </div>
-            <div className="form-group">
-              <label htmlFor="h-breed">Giống</label>
-              <FormSelect id="h-breed" className="form-control" value={breed} onChange={e => setBreed(e.target.value)}>{BREEDS.map(b => <option key={b}>{b}</option>)}</FormSelect>
-            </div>
-            <div className="form-group">
-              <label htmlFor="h-sex">Giới tính</label>
-              <FormSelect id="h-sex" className="form-control" value={sex} onChange={e => setSex(e.target.value as Sex)}>{(Object.keys(SEX_LABEL) as Sex[]).map(k => <option key={k} value={k}>{SEX_LABEL[k]}</option>)}</FormSelect>
-            </div>
-            <div className="form-group">
-              <label htmlFor="h-color" className="required">Màu lông</label>
-              <input id="h-color" className={`form-control ${errors.color ? 'invalid' : ''}`} value={color} onChange={e => setColor(e.target.value)} placeholder="VD: Nâu đỏ (Bay)" />
-              {errors.color && <div className="form-error">{errors.color}</div>}
-            </div>
-            <div className="form-group">
-              <label htmlFor="h-year" className="required">Năm sinh</label>
-              <input id="h-year" className={`form-control ${errors.birthYear ? 'invalid' : ''}`} inputMode="numeric" value={birthYear} onChange={e => setBirthYear(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="VD: 2020" />
-              {errors.birthYear && <div className="form-error">{errors.birthYear}</div>}
-            </div>
-          </div>
-          <div className="form-group">
-            <label htmlFor="h-marks">Đặc điểm nhận dạng</label>
-            <input id="h-marks" className="form-control" value={marks} onChange={e => setMarks(e.target.value)} placeholder="VD: Sao trắng trán, tất trắng chân sau" />
-          </div>
-        </fieldset>
-
-        <fieldset className={s.fieldset}>
-          <legend>Giấy tờ dịch tễ <span className={s.legendHint}>Cần đủ 3 giấy còn hạn để ngựa ở trạng thái “Sẵn sàng đặt”.</span></legend>
-          <div className={s.docs}>
-            {HORSE_DOC_TYPES.map(t => (
-              <div key={t} className={s.docRow}>
-                <FileField label={HORSE_DOC[t].label} hint={HORSE_DOC[t].hint} fileName={docs[t]?.fileName || undefined} onChange={(f, file) => { setDoc(t, f ? { fileName: f, uploadedAt: Date.now() } : undefined); setFiles(current => { const next = { ...current }; if (file) next[t] = file; else delete next[t]; return next }) }} />
-                {docs[t] && HORSE_DOC[t].hasExpiry && (
-                  <div className="form-group">
-                    <label htmlFor={`h-exp-${t}`} className="required">Ngày hết hạn</label>
-                    <input id={`h-exp-${t}`} type="date" className={`form-control ${errors[`${t}Expiry`] ? 'invalid' : ''}`} value={docs[t]!.expiresAt ? toIsoDay(docs[t]!.expiresAt!) : ''} onChange={e => setDoc(t, { expiresAt: e.target.value ? fromIsoDay(e.target.value) : undefined })} />
-                    {errors[`${t}Expiry`] && <div className="form-error">{errors[`${t}Expiry`]}</div>}
-                  </div>
-                )}
+        {tab === 'info' && (
+          <>
+            <fieldset className={s.fieldset}>
+              <legend>Nhận dạng</legend>
+              <div className={s.grid2}>
+                <div className="form-group">
+                  <label htmlFor="h-name" className="required">Tên ngựa</label>
+                  <input id="h-name" className={`form-control ${errors.name ? 'invalid' : ''}`} value={name} onChange={e => setName(e.target.value)} placeholder="VD: Storm Runner" />
+                  {errors.name && <div className="form-error">{errors.name}</div>}
+                </div>
+                <div className="form-group">
+                  <label htmlFor="h-chip" className="required">Mã microchip</label>
+                  <input id="h-chip" className={`form-control ${errors.microchip ? 'invalid' : ''}`} value={microchip} onChange={e => { setMicrochip(e.target.value); if (errors.microchip) setErrors(({ microchip: _m, ...rest }) => rest) }} placeholder="VD: VN-985211" disabled={editing} aria-describedby="h-chip-hint" style={{ fontVariantNumeric: 'tabular-nums' }} />
+                  {errors.microchip && <div className="form-error">{errors.microchip}</div>}
+                  <div id="h-chip-hint" className="form-hint">{editing ? 'Mã microchip là khóa định danh, không sửa được sau khi lưu.' : 'Không sửa được sau khi lưu. Kiểm tra kỹ trước khi lưu.'}</div>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="h-breed">Giống</label>
+                  <FormSelect id="h-breed" className="form-control" value={breed} onChange={e => setBreed(e.target.value)}>{BREEDS.map(b => <option key={b}>{b}</option>)}</FormSelect>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="h-sex">Giới tính</label>
+                  <FormSelect id="h-sex" className="form-control" value={sex} onChange={e => setSex(e.target.value as Sex)}>{(Object.keys(SEX_LABEL) as Sex[]).map(k => <option key={k} value={k}>{SEX_LABEL[k]}</option>)}</FormSelect>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="h-color" className="required">Màu lông</label>
+                  <input id="h-color" className={`form-control ${errors.color ? 'invalid' : ''}`} value={color} onChange={e => setColor(e.target.value)} placeholder="VD: Nâu đỏ (Bay)" />
+                  {errors.color && <div className="form-error">{errors.color}</div>}
+                </div>
+                <div className="form-group">
+                  <label htmlFor="h-year" className="required">Năm sinh</label>
+                  <input id="h-year" className={`form-control ${errors.birthYear ? 'invalid' : ''}`} inputMode="numeric" value={birthYear} onChange={e => setBirthYear(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="VD: 2020" />
+                  {errors.birthYear && <div className="form-error">{errors.birthYear}</div>}
+                </div>
               </div>
-            ))}
-          </div>
-        </fieldset>
+              <div className="form-group">
+                <label htmlFor="h-marks">Đặc điểm nhận dạng</label>
+                <input id="h-marks" className="form-control" value={marks} onChange={e => setMarks(e.target.value)} placeholder="VD: Sao trắng trán, tất trắng chân sau" />
+              </div>
+            </fieldset>
+            <div className={s.tabActions}>
+              <button type="button" className="btn btn-outline btn-sm" onClick={() => setTab('docs')}>
+                Tiếp tục: Giấy tờ & Kiểm dịch ({uploadedDocsCount}/3) <i className="fa-solid fa-arrow-right" />
+              </button>
+            </div>
+          </>
+        )}
+
+        {tab === 'docs' && (
+          <>
+            <fieldset className={s.fieldset}>
+              <legend>Giấy tờ dịch tễ <span className={s.legendHint}>Cần đủ 3 giấy còn hạn để ngựa ở trạng thái “Sẵn sàng đặt”.</span></legend>
+              <div className={s.docs}>
+                {HORSE_DOC_TYPES.map(t => (
+                  <div key={t} className={s.docRow}>
+                    <FileField label={HORSE_DOC[t].label} hint={HORSE_DOC[t].hint} fileName={docs[t]?.fileName || undefined} onChange={(f, file) => { setDoc(t, f ? { fileName: f, uploadedAt: Date.now() } : undefined); setFiles(current => { const next = { ...current }; if (file) next[t] = file; else delete next[t]; return next }) }} />
+                    {docs[t] && HORSE_DOC[t].hasExpiry && (
+                      <div className="form-group">
+                        <label htmlFor={`h-exp-${t}`} className="required">Ngày hết hạn</label>
+                        <input id={`h-exp-${t}`} type="date" className={`form-control ${errors[`${t}Expiry`] ? 'invalid' : ''}`} value={docs[t]!.expiresAt ? toIsoDay(docs[t]!.expiresAt!) : ''} onChange={e => setDoc(t, { expiresAt: e.target.value ? fromIsoDay(e.target.value) : undefined })} />
+                        {errors[`${t}Expiry`] && <div className="form-error">{errors[`${t}Expiry`]}</div>}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </fieldset>
+            <div className={s.tabActions}>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setTab('info')}>
+                <i className="fa-solid fa-arrow-left" /> Quay lại: Nhận dạng
+              </button>
+            </div>
+          </>
+        )}
       </form>
     </Modal>
   )
