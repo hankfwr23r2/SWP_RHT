@@ -1,4 +1,3 @@
-// Trang chủ công khai. Chuyển từ index.html + home.js.
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react'
 import { gsap } from 'gsap'
 import { MotionPathPlugin } from 'gsap/MotionPathPlugin'
@@ -11,7 +10,7 @@ import { MIN_LEAD_DAYS } from '@shared/config/business-rules'
 import { COUNTRIES, COUNTRY_LOCATIONS, GATES, type CountryCode } from '@shared/config/network'
 import { DEPOSIT_RATE } from '@shared/config/booking-rules'
 import { findLocation, routeKm, tripDays } from '@shared/lib/booking'
-import { formatDate } from '@shared/lib/format'
+import { formatDate, formatDateTime } from '@shared/lib/format'
 import { trackOrder, type PublicTracking } from '@shared/services/tracking'
 import { FLAG_SVG } from '@shared/ui/flags'
 import { PHOTOS } from '@shared/config/photos'
@@ -84,6 +83,7 @@ function OrderLookup() {
   const [phone, setPhone] = useState('')
   const [error, setError] = useState<{ field: 'codes' | 'phone'; message: string } | null>(null)
   const [rows, setRows] = useState<TrackRow[]>([])
+  const [loading, setLoading] = useState(false)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -92,10 +92,14 @@ function OrderLookup() {
     if (codes.length > MAX_TRACK_CODES) return setError({ field: 'codes', message: `Tối đa ${MAX_TRACK_CODES} mã đơn mỗi lần tra cứu.` })
     if (!/^\d{4}$/.test(phone.trim())) return setError({ field: 'phone', message: 'Nhập đúng 4 số cuối số điện thoại người đặt.' })
     setError(null)
+    setLoading(true)
     try {
-      setRows(await Promise.all(codes.map(async code => ({ code, result: await trackOrder(code, phone.trim()) }))))
-    } catch (e) {
-      setError({ field: 'codes', message: e instanceof Error ? e.message : 'Không tra cứu được.' })
+      const results = await Promise.all(codes.map(async code => ({ code, result: await trackOrder(code, phone.trim()) })))
+      setRows(results)
+    } catch (err) {
+      setError({ field: 'codes', message: err instanceof Error ? err.message : 'Không tra cứu được.' })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -104,32 +108,67 @@ function OrderLookup() {
       <form className={s.lookupRow} noValidate onSubmit={submit}>
         <div className={cx(s.field, s.fieldGrow)}>
           <i className="fa-solid fa-magnifying-glass" />
-          <input className={cx(error?.field === 'codes' && s.inputError)} value={codesText} onChange={e => { setCodesText(e.target.value); setError(null) }} placeholder="Nhập mã đơn cần tra cứu (cách nhau bởi dấu phẩy)" />
+          <input
+            className={cx(error?.field === 'codes' && s.inputError)}
+            value={codesText}
+            onChange={e => { setCodesText(e.target.value); setError(null) }}
+            placeholder="Nhập mã đơn cần tra cứu (ví dụ: BK-1 hoặc VD-..., cách nhau bởi dấu phẩy)"
+          />
         </div>
         <div className={cx(s.field, s.fieldPhone)}>
           <i className="fa-solid fa-phone" />
-          <input className={cx(error?.field === 'phone' && s.inputError)} value={phone} onChange={e => { setPhone(e.target.value); setError(null) }} inputMode="numeric" maxLength={4} placeholder="4 số cuối SĐT người đặt" />
+          <input
+            className={cx(error?.field === 'phone' && s.inputError)}
+            value={phone}
+            onChange={e => { setPhone(e.target.value); setError(null) }}
+            inputMode="numeric"
+            maxLength={4}
+            placeholder="4 số cuối SĐT người đặt"
+          />
         </div>
-        <button className="btn btn-solid" type="submit">Tìm kiếm</button>
+        <button className="btn btn-solid" type="submit" disabled={loading}>
+          {loading ? 'Đang tìm…' : 'Tìm kiếm'}
+        </button>
       </form>
       {error && <p className={s.formError}><i className="fa-solid fa-circle-exclamation" /> {error.message}</p>}
       {!error && rows.length > 0 && (
         <div className={s.trackList}>
           {rows.map(({ code, result: o }, i) => o ? (
             <div key={code} className={s.trackItem} style={{ animationDelay: `${i * 80}ms` }}>
-              <div className={s.trackHead}><span className={s.trackCode}>{code}</span><span className={cx(s.trackStatus, o.tone && s[o.tone])}>{o.status}</span></div>
-              <div className={s.trackMeta}><i className="fa-solid fa-route" /> {o.route} · Khởi hành {formatDate(o.depart)}</div>
+              <div className={s.trackHead}>
+                <span className={s.trackCode}>{code}</span>
+                <span className={cx(s.trackStatus, o.tone && s[o.tone])}>{o.status}</span>
+              </div>
+              <div className={s.trackMeta}>
+                <i className="fa-solid fa-route" /> {o.route} · Khởi hành {o.depart ? formatDate(o.depart) : 'Chưa định ngày'}
+              </div>
               <div className={s.trackSteps}>
                 {STEPS.map((label, k) => {
-                  const state = o.done || k < o.step ? 'done' : k === o.step ? 'current' : ''
-                  return <div key={label} className={cx(s.trackStep, state && s[state])}><span className={s.dot}>{state === 'done' && <i className="fa-solid fa-check" />}</span><div>{label}</div></div>
+                  const state = o.done || k < (o.step ?? 0) ? 'done' : k === o.step ? 'current' : ''
+                  return (
+                    <div key={label} className={cx(s.trackStep, state && s[state])}>
+                      <span className={s.dot}>{state === 'done' && <i className="fa-solid fa-check" />}</span>
+                      <div>{label}</div>
+                    </div>
+                  )
                 })}
               </div>
-              {o.now && <div className={s.trackNow}><i className="fa-solid fa-location-dot" /> <b>{o.now.place}</b><br />Cập nhật lúc {formatClockDate(o.now.at)} · Dự kiến giao {formatClockDate(o.now.eta)}</div>}
-              {o.note && <div className={s.trackNow}><i className="fa-solid fa-circle-info" /> {o.note}</div>}
+              {o.now && (
+                <div className={s.trackNow}>
+                  <i className="fa-solid fa-location-dot" /> <b>{o.now.place}</b><br />
+                  Cập nhật lúc {formatDateTime(o.now.at)} · Dự kiến giao {formatDateTime(o.now.eta)}
+                </div>
+              )}
+              {o.note && (
+                <div className={s.trackNow}>
+                  <i className="fa-solid fa-circle-info" /> {o.note}
+                </div>
+              )}
             </div>
           ) : (
-            <div key={code} className={cx(s.trackItem, s.trackMiss)} style={{ animationDelay: `${i * 80}ms` }}><b>{code}</b>: không tìm thấy đơn, hoặc 4 số cuối điện thoại không khớp.</div>
+            <div key={code} className={cx(s.trackItem, s.trackMiss)} style={{ animationDelay: `${i * 80}ms` }}>
+              <b>{code}</b>: không tìm thấy đơn, hoặc 4 số cuối điện thoại không khớp.
+            </div>
           ))}
         </div>
       )}
@@ -137,8 +176,6 @@ function OrderLookup() {
   )
 }
 
-const pad = (n: number) => String(n).padStart(2, '0')
-const formatClockDate = (t: number) => { const d = new Date(t); return `${pad(d.getHours())}:${pad(d.getMinutes())} ${formatDate(t)}` }
 
 type Tab = 'order' | 'price'
 const TABS: [Tab, string][] = [['order', 'Tra cứu đơn hàng'], ['price', 'Bảng giá']]

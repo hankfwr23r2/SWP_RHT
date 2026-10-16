@@ -11,4 +11,5 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
     List<Booking> findByCustomerID_IdOrderByBookingDateDesc(Integer customerId);
     List<Booking> findByStatusOrderByBookingDateAsc(String status);
     List<Booking> findAllByOrderByBookingDateDesc();
+    java.util.Optional<Booking> findByWaybillNoIgnoreCase(String waybillNo);
 }

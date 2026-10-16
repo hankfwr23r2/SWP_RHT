@@ -29,7 +29,7 @@ export default function DriverPage() {
 
   const { b, t } = trip
   const items = [...(t.driverPack?.items ?? manifestDocuments(b).system), 'Xe đã kiểm tra: dầu, lốp, điều hòa thùng, máy phát điện phụ']
-  const acked = t.acks.driver
+  const acked = t.acks?.driver
   const cleared = !!b.clearance?.doneAt
   const run = async (fn: () => Promise<unknown>, msg: string) => {
     setBusy(true)
@@ -58,13 +58,13 @@ export default function DriverPage() {
           )}
           {!t.departedAt && acked && !cleared && (
             <Panel title="Đã nhận lệnh, chờ giấy tờ" icon="fa-hourglass-half">
-              <p>Bạn xác nhận lúc {formatDateTime(acked)}. Nhà xe đang làm giấy kiểm dịch và hải quan. Xe chỉ đi đón ngựa khi giấy tờ xong{t.acks.escort ? '' : ' và hộ tống đã nhận lệnh'}.</p>
+              <p>Bạn xác nhận lúc {formatDateTime(acked)}. Nhà xe đang làm giấy kiểm dịch và hải quan. Xe chỉ đi đón ngựa khi giấy tờ xong{t.acks?.escort ? '' : ' và hộ tống đã nhận lệnh'}.</p>
             </Panel>
           )}
-          {!t.departedAt && acked && cleared && !t.acks.escort && (
+          {!t.departedAt && acked && cleared && !t.acks?.escort && (
             <Panel title="Đã nhận lệnh" icon="fa-circle-check" tone="ok"><p>Bạn xác nhận lúc {formatDateTime(acked)}. Đang chờ nhân viên hộ tống xác nhận.</p></Panel>
           )}
-          {!t.departedAt && acked && cleared && !!t.acks.escort && (
+          {!t.departedAt && acked && cleared && !!t.acks?.escort && (
             <Panel title="Sẵn sàng đón ngựa" icon="fa-truck-fast" tone="ok">
               <p>Giấy tờ đã xong, tài xế và hộ tống đều đã nhận lệnh. Giờ đón dự kiến {b.route && formatDateTime(b.route.legs[0].departAt)}. Khi xuất phát từ bãi xe, bấm bên dưới.</p>
               <button className={`btn btn-primary ${s.big}`} disabled={busy} onClick={() => run(() => bookingsApi.departToPickup(b.id, t.tripId, session!.name), 'Đã bắt đầu đến điểm đón')}><i className="fa-solid fa-truck-moving" /> Bắt đầu đến điểm đón</button>

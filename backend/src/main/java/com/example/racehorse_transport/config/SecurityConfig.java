@@ -55,8 +55,8 @@ public class SecurityConfig {
                 
                 // Cấu hình phân quyền truy cập URL
                 .authorizeHttpRequests(auth -> auth
-                        // Cho phép truy cập tự do vào các API Auth và Swagger UI tài liệu API
-                        .requestMatchers("/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                        // Cho phép truy cập tự do vào các API Auth, Swagger UI tài liệu API, và tra cứu đơn công khai
+                        .requestMatchers("/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/bookings/public-track").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         // Phân quyền API Admin: Chỉ duy nhất tài khoản có ROLE_ADMIN

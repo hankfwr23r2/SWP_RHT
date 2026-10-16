@@ -250,49 +250,21 @@ public class PaymentServiceImpl implements PaymentService {
                     .build();
         }
 
-        // Trường hợp 2: Đã cọc -> Tính toán theo lead-time ngày khởi hành D
+        // Trường hợp 2: Đã cọc -> Khách tự ý hủy đơn: Mất 100% tiền cọc (không hoàn tiền)
         BigDecimal depositPaid = depositOpt.get().getAmount();
         long daysToDeparture = 0;
         if (booking.getDepartureDate() != null) {
             daysToDeparture = ChronoUnit.DAYS.between(now, booking.getDepartureDate());
         }
 
-        int refundPercentage;
-        BigDecimal refundAmount;
-        BigDecimal penaltyAmount;
-        String policyMsg;
+        int refundPercentage = 0;
+        BigDecimal refundAmount = BigDecimal.ZERO;
+        BigDecimal penaltyAmount = depositPaid;
+        String policyMsg = "Khách hàng tự ý hủy đơn sau khi đặt cọc. Không áp dụng hoàn cọc. Toàn bộ tiền cọc (" + penaltyAmount + " VND) tính vào phí phạt giữ chỗ và chuẩn bị phương tiện.";
 
-        if (daysToDeparture >= 15) {
-            // Hủy trước ngày D >= 15 ngày: hoàn 50% cọc, nhà xe giữ 50% cọc làm phí hủy
-            refundPercentage = 50;
-            refundAmount = depositPaid.multiply(BigDecimal.valueOf(0.5));
-            penaltyAmount = depositPaid.subtract(refundAmount);
-            policyMsg = "Hủy đơn trước D-15 ngày (" + daysToDeparture + " ngày). Hoàn 50% tiền cọc (" + refundAmount + " VND). Phí phạt hủy: " + penaltyAmount + " VND.";
-        } else {
-            // Hủy trước ngày D < 15 ngày: không hoàn cọc (100% tiền cọc tính vào phí phạt)
-            refundPercentage = 0;
-            refundAmount = BigDecimal.ZERO;
-            penaltyAmount = depositPaid;
-            policyMsg = "Hủy đơn cận ngày D (" + daysToDeparture + " ngày < 15 ngày). Không áp dụng hoàn cọc. Toàn bộ tiền cọc (" + penaltyAmount + " VND) tính vào phí phạt hủy.";
-        }
-
-        // Ghi nhận dòng tiền hoàn (REFUND) nếu có
         Payment refundPayment = null;
-        if (refundAmount.compareTo(BigDecimal.ZERO) > 0) {
-            refundPayment = Payment.builder()
-                    .bookingID(booking)
-                    .amount(refundAmount)
-                    .paymentDate(now)
-                    .paymentType("REFUND")
-                    .paymentMethod("BANK_TRANSFER")
-                    .transactionCode("REF-" + booking.getId() + "-" + System.currentTimeMillis())
-                    .status("COMPLETED")
-                    .note("Hoàn lại 50% tiền cọc do hủy đơn trước 15 ngày: " + refundAmount + " VND")
-                    .build();
-            paymentRepository.save(refundPayment);
-        }
 
-        // Ghi nhận phí phạt hủy (PENALTY)
+        // Ghi nhận phí phạt hủy (PENALTY): khấu trừ 100% tiền cọc
         Payment penaltyPayment = Payment.builder()
                 .bookingID(booking)
                 .amount(penaltyAmount)
@@ -301,7 +273,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .paymentMethod("DEDUCTION")
                 .transactionCode("PEN-" + booking.getId() + "-" + System.currentTimeMillis())
                 .status("COMPLETED")
-                .note("Phí phạt hủy đơn: " + penaltyAmount + " VND")
+                .note("Phí phạt hủy đơn (mất 100% tiền cọc): " + penaltyAmount + " VND")
                 .build();
         paymentRepository.save(penaltyPayment);
 

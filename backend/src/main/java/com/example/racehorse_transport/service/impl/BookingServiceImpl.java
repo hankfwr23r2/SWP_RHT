@@ -3,6 +3,7 @@ package com.example.racehorse_transport.service.impl;
 import com.example.racehorse_transport.dto.booking.BookingHorseDto;
 import com.example.racehorse_transport.dto.booking.BookingResponse;
 import com.example.racehorse_transport.dto.booking.CreateBookingRequest;
+import com.example.racehorse_transport.dto.booking.PublicTrackingResponse;
 import com.example.racehorse_transport.dto.booking.PartyContactDto;
 import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.repository.*;
@@ -1539,5 +1540,159 @@ public class BookingServiceImpl implements BookingService {
         Booking updated = bookingRepository.save(booking);
         logAction("TRIP_UPDATE_" + action, updated.getId(), actor + " thực hiện " + action + " cho chuyến " + tripId);
         return mapToResponse(updated);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public PublicTrackingResponse getPublicTracking(String code, String phoneLast4) {
+        if (code == null || code.isBlank() || phoneLast4 == null || phoneLast4.isBlank()) {
+            return null;
+        }
+
+        String trimmedCode = code.trim();
+        String cleanPhoneLast4 = phoneLast4.replaceAll("\\D", "").trim();
+        if (cleanPhoneLast4.length() < 4) {
+            return null;
+        }
+        cleanPhoneLast4 = cleanPhoneLast4.substring(cleanPhoneLast4.length() - 4);
+
+        // 1. Tìm booking theo ID hoặc WaybillNo
+        Optional<Booking> bookingOpt = Optional.empty();
+        String digitsOnly = trimmedCode.replaceAll("\\D", "");
+        if (!digitsOnly.isBlank()) {
+            try {
+                bookingOpt = bookingRepository.findById(Integer.parseInt(digitsOnly));
+            } catch (Exception ignored) {}
+        }
+        if (bookingOpt.isEmpty()) {
+            bookingOpt = bookingRepository.findByWaybillNoIgnoreCase(trimmedCode);
+        }
+        if (bookingOpt.isEmpty()) {
+            return null;
+        }
+
+        Booking booking = bookingOpt.get();
+
+        // 2. Xác thực 4 số cuối số điện thoại (Consignor, Consignee, hoặc Customer Phone)
+        boolean phoneMatched = false;
+        if (checkPhoneLast4(booking.getConsignorPhone(), cleanPhoneLast4)
+                || checkPhoneLast4(booking.getConsigneePhone(), cleanPhoneLast4)) {
+            phoneMatched = true;
+        } else if (booking.getCustomerID() != null) {
+            if (checkPhoneLast4(booking.getCustomerID().getPhone(), cleanPhoneLast4)) {
+                phoneMatched = true;
+            }
+        }
+
+        if (!phoneMatched) {
+            return null;
+        }
+
+        // 3. Map dữ liệu sang PublicTrackingResponse
+        String origin = booking.getPickupAddress() != null && !booking.getPickupAddress().isBlank()
+                ? booking.getPickupAddress().split(" — ")[0]
+                : "Điểm đón";
+        String dest = booking.getDropoffAddress() != null && !booking.getDropoffAddress().isBlank()
+                ? booking.getDropoffAddress().split(" — ")[0]
+                : "Điểm giao";
+        String route = origin + " → " + dest;
+
+        String depart = booking.getDepartureDate() != null ? booking.getDepartureDate().toString() : null;
+        String status = booking.getStatus() != null ? booking.getStatus() : "pending_intake";
+
+        int step = resolvePublicStep(status);
+        boolean done = "completed".equalsIgnoreCase(status);
+        String statusLabel = resolvePublicCustomerStatus(status);
+        String tone = resolvePublicTone(status);
+
+        BookingDetailsPayload payload = extractPayload(booking);
+        Map<String, Object> nowMap = null;
+        if (payload != null && payload.getTrips() != null && !payload.getTrips().isEmpty()) {
+            VehicleTripDto trip = payload.getTrips().get(0);
+            if (trip.getRun() != null) {
+                Object cpObj = trip.getRun().get("checkpoints");
+                if (cpObj instanceof List<?> list && !list.isEmpty()) {
+                    Object last = list.get(list.size() - 1);
+                    if (last instanceof Map<?, ?> rawMap) {
+                        nowMap = new HashMap<>();
+                        Object placeVal = rawMap.get("name");
+                        Object atVal = rawMap.get("at");
+                        Object etaVal = rawMap.get("eta");
+                        nowMap.put("place", placeVal != null ? placeVal.toString() : "Đang trên hành trình");
+                        nowMap.put("at", atVal != null ? atVal : System.currentTimeMillis());
+                        nowMap.put("eta", etaVal != null ? etaVal : System.currentTimeMillis() + 3600000L);
+                    }
+                }
+            }
+        }
+
+        return PublicTrackingResponse.builder()
+                .route(route)
+                .depart(depart)
+                .step(step)
+                .done(done)
+                .status(statusLabel)
+                .tone(tone)
+                .now(nowMap)
+                .note(null)
+                .build();
+    }
+
+    private boolean checkPhoneLast4(String fullPhone, String last4) {
+        if (fullPhone == null || fullPhone.isBlank() || last4 == null || last4.isBlank()) {
+            return false;
+        }
+        String digits = fullPhone.replaceAll("\\D", "");
+        return digits.endsWith(last4);
+    }
+
+    private int resolvePublicStep(String status) {
+        if (status == null) return 0;
+        return switch (status.toLowerCase()) {
+            case "pending_intake", "cancelled", "rejected" -> 0;
+            case "under_review", "pending_commercial" -> 1;
+            case "awaiting_payment", "quote_expired" -> 2;
+            case "waybill_issued", "clearance_in_progress", "clearance_done", "ready_for_pickup", "en_route_to_pickup" -> 3;
+            case "in_transit", "incident_reported", "pending_emergency_approval", "emergency_plan_active",
+                 "delivered_pending_settlement", "expenses_submitted", "settlement_issued", "payment_overdue", "completed" -> 4;
+            default -> 0;
+        };
+    }
+
+    private String resolvePublicCustomerStatus(String status) {
+        if (status == null) return "Đang xử lý";
+        return switch (status.toLowerCase()) {
+            case "pending_intake" -> "Đã gửi, chờ tiếp nhận";
+            case "under_review" -> "Đang thẩm định";
+            case "pending_commercial" -> "Đang lập báo giá";
+            case "awaiting_payment" -> "Chờ đặt cọc";
+            case "quote_expired" -> "Báo giá hết hạn";
+            case "waybill_issued" -> "Đã có vận đơn";
+            case "clearance_in_progress" -> "Đang làm thủ tục giấy tờ";
+            case "clearance_done" -> "Giấy tờ đã xong";
+            case "ready_for_pickup" -> "Sẵn sàng đón ngựa";
+            case "en_route_to_pickup" -> "Xe đang đến điểm đón";
+            case "in_transit" -> "Đang vận chuyển";
+            case "incident_reported", "pending_emergency_approval" -> "Xe gặp sự cố, đang xử lý";
+            case "emergency_plan_active" -> "Đang xử lý sự cố, ngựa được chăm sóc";
+            case "delivered_pending_settlement" -> "Đã giao ngựa";
+            case "expenses_submitted" -> "Đã giao, đang quyết toán";
+            case "settlement_issued" -> "Chờ thanh toán quyết toán";
+            case "payment_overdue" -> "Quá hạn thanh toán";
+            case "completed" -> "Đã hoàn tất";
+            case "cancelled" -> "Đã hủy";
+            case "rejected" -> "Đơn bị từ chối";
+            default -> status;
+        };
+    }
+
+    private String resolvePublicTone(String status) {
+        if (status == null) return null;
+        return switch (status.toLowerCase()) {
+            case "awaiting_payment", "settlement_issued", "emergency_plan_active" -> "warn";
+            case "incident_reported", "pending_emergency_approval", "payment_overdue", "rejected" -> "bad";
+            case "completed", "waybill_issued", "clearance_done", "delivered_pending_settlement" -> "done";
+            default -> null;
+        };
     }
 }

@@ -35,7 +35,7 @@ export default function EscortPage() {
   if (!trip) return <Empty text="Bạn chưa có chuyến nào cần xử lý." />
 
   const { b, t } = trip
-  const acked = t.acks.escort
+  const acked = t.acks?.escort
   const run = async (fn: () => Promise<unknown>, msg: string) => {
     setBusy(true)
     try { await fn(); toast(msg); setChecked([]); reload() } catch (e) { toast(e instanceof Error ? e.message : 'Không thực hiện được', 'error') }
@@ -62,9 +62,9 @@ export default function EscortPage() {
             </Panel>
           )}
           {!t.departedAt && acked && (
-            <Panel title="Đã nhận lệnh" icon="fa-circle-check" tone="ok"><p>Bạn xác nhận lúc {formatDateTime(acked)}. {!b.clearance?.doneAt ? 'Nhà xe đang làm giấy tờ, xe chỉ đi đón ngựa khi giấy tờ xong. ' : ''}{t.acks.driver ? '' : 'Đang chờ tài xế xác nhận.'}</p></Panel>
+            <Panel title="Đã nhận lệnh" icon="fa-circle-check" tone="ok"><p>Bạn xác nhận lúc {formatDateTime(acked)}. {!b.clearance?.doneAt ? 'Nhà xe đang làm giấy tờ, xe chỉ đi đón ngựa khi giấy tờ xong. ' : ''}{t.acks?.driver ? '' : 'Đang chờ tài xế xác nhận.'}</p></Panel>
           )}
-          {!t.departedAt && acked && !!t.acks.driver && !!b.clearance?.doneAt && <Panel title="Sẵn sàng đón ngựa" icon="fa-truck-fast" tone="ok"><p>Giờ đón dự kiến {b.route && formatDateTime(b.route.legs[0].departAt)}. Chờ tài xế bắt đầu đến điểm đón.</p></Panel>}
+          {!t.departedAt && acked && !!t.acks?.driver && !!b.clearance?.doneAt && <Panel title="Sẵn sàng đón ngựa" icon="fa-truck-fast" tone="ok"><p>Giờ đón dự kiến {b.route && formatDateTime(b.route.legs[0].departAt)}. Chờ tài xế bắt đầu đến điểm đón.</p></Panel>}
           <EscortJob key={t.tripId} b={b} t={t} reload={reload} />
         </>
       )}

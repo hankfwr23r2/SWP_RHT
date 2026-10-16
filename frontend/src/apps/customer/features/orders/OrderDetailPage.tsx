@@ -376,9 +376,13 @@ export default function OrderDetailPage() {
               </div>
               {CANCEL_AFTER_DEPOSIT.includes(b.status) && (
                 <div className="card">
-                  <div className="card-header"><h3><i className="fa-solid fa-ban" /> Hủy đơn</h3></div>
-                  <p className="form-hint">Hủy sau khi đã đặt cọc: mất 100% tiền cọc. Số dư 70% (nếu đã trả) được hoàn đủ.</p>
-                  <button className="btn btn-ghost btn-sm" style={{ marginTop: 12 }} onClick={() => setCancelling(true)}><i className="fa-solid fa-ban" /> Hủy đơn này</button>
+                  <div className="card-header">
+                    <h3><i className="fa-solid fa-circle-info" /> Hủy hoặc thay đổi lịch trình</h3>
+                    <button className="btn btn-danger btn-sm" onClick={() => setCancelling(true)}>
+                      <i className="fa-solid fa-ban" /> Hủy đơn này
+                    </button>
+                  </div>
+                  <p className="form-hint">Lưu ý: Quý khách tự ý hủy đơn sau khi đặt cọc sẽ mất 100% tiền cọc đã đóng theo quy định. Nếu đã thanh toán trước 70% số dư, số dư sẽ được hoàn lại.</p>
                 </div>
               )}
             </>
