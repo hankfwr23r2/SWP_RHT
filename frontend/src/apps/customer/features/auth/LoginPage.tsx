@@ -11,6 +11,7 @@ export default function LoginPage() {
   const from = (useLocation().state as { from?: string } | null)?.from
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showPwd, setShowPwd] = useState(false)
 
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -46,7 +47,12 @@ export default function LoginPage() {
         </div>
         <div className="form-group">
           <label htmlFor="password">Mật khẩu</label>
-          <input className="form-control" type="password" id="password" name="password" placeholder="••••••••" required />
+          <div style={{ position: 'relative' }}>
+            <input className="form-control" type={showPwd ? 'text' : 'password'} id="password" name="password" placeholder="••••••••" required style={{ paddingRight: 40 }} />
+            <button type="button" onClick={() => setShowPwd(v => !v)} aria-label={showPwd ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-muted, #888)', padding: 0, lineHeight: 1 }}>
+              <i className={`fa-solid ${showPwd ? 'fa-eye-slash' : 'fa-eye'}`} />
+            </button>
+          </div>
         </div>
         <p className="text-right small" style={{ marginBottom: 16 }}><a href="#" className="text-orange">Quên mật khẩu?</a></p>
         <button type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading}>
