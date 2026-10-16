@@ -57,6 +57,9 @@ public interface BookingService {
     // Flow 4: Cập nhật tiến độ chuyến xe (check-in, quét chip, thu hồ sơ, xuất phát, an sinh, về HQ)
     BookingResponse updateTripProgress(String bookingIdentifier, com.example.racehorse_transport.dto.field.TripUpdateRequest request);
 
+    // Flow 3-5: Driver/Escort lấy danh sách chuyến được phân công cho mình (filter server-side theo staffCode/username)
+    List<BookingResponse> getMyFieldBookings(String username, String role);
+
     // Flow công khai: Tra cứu hành trình đơn hàng bằng mã đơn và 4 số cuối SĐT
     PublicTrackingResponse getPublicTracking(String code, String phoneLast4);
 }

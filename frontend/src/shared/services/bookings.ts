@@ -148,20 +148,24 @@ export const customerBookingsApi = {
   },
   // Xe, tài xế, hộ tống của từng chuyến (chỉ của đơn mình, sau khi đã có báo giá)
   team: async (customer: string, id: string): Promise<TripTeam[]> => {
-    const b = toBooking(await backendBookingApi.getCustomerBookingById(id), customer)
-    if (!b.trips || !SHOW_TEAM.includes(b.status)) return []
-    const [vehicles, crew] = await Promise.all([vehiclesApi.list(), crewApi.list()])
-    return b.trips.flatMap(t => {
-      const v = vehicles.find(x => sameVehicleId(x.id, t.vehicleId))
-      const driver = crew.find(x => x.id === t.driverId)
-      const escort = crew.find(x => x.id === t.escortId)
-      if (!v || !driver || !escort) return []
-      return [{
-        tripId: t.tripId, horseNames: b.horses.filter(h => t.horseIds.includes(h.horseId)).map(h => h.name),
-        vehicle: { plate: v.plate, kind: v.name, stalls: v.capacity },
-        driver: { name: driver.name, phone: driver.phone }, escort: { name: escort.name, phone: escort.phone },
-      }]
-    })
+    try {
+      const b = toBooking(await backendBookingApi.getCustomerBookingById(id), customer)
+      if (!b.trips || !SHOW_TEAM.includes(b.status)) return []
+      const [vehicles, crew] = await Promise.all([vehiclesApi.list(), crewApi.list()])
+      return b.trips.flatMap(t => {
+        const v = vehicles.find(x => sameVehicleId(x.id, t.vehicleId))
+        const driver = crew.find(x => x.id === t.driverId)
+        const escort = crew.find(x => x.id === t.escortId)
+        if (!v || !driver || !escort) return []
+        return [{
+          tripId: t.tripId, horseNames: b.horses.filter(h => t.horseIds.includes(h.horseId)).map(h => h.name),
+          vehicle: { plate: v.plate, kind: v.name, stalls: v.capacity },
+          driver: { name: driver.name, phone: driver.phone }, escort: { name: escort.name, phone: escort.phone },
+        }]
+      })
+    } catch {
+      return []
+    }
   },
   // Khách từ chối báo giá: đơn đóng (Cancelled), chưa cọc nên miễn phí
   rejectQuote: async (customer: string, id: string, reason: string): Promise<CustomerBookingView> =>
@@ -198,7 +202,7 @@ export const customerBookingsApi = {
 async function listForRole() {
   const role = backofficeRole()
   if (role === 'driver' || role === 'escort') {
-    const bookings = await backendBookingApi.getAssignedBookings()
+    const bookings = await backendBookingApi.myFieldBookings()
     const incidents = await Promise.all(bookings.map(booking => backendIncidentApi.getByBooking(booking.numericId)))
     return bookings.map((booking, index) => ({ ...booking, incidents: incidents[index] }))
   }

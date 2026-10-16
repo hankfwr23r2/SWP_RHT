@@ -51,6 +51,7 @@ public class BookingServiceImpl implements BookingService {
     private final FleetService fleetService;
     private final LogRepository logRepository;
     private final VehicleRepository vehicleRepository;
+    private final StaffRepository staffRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -261,6 +262,62 @@ public class BookingServiceImpl implements BookingService {
         }
         return bookingRepository.findByStatusOrderByBookingDateAsc(status)
                 .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    private static final Set<String> FIELD_STATUSES = Set.of(
+            "waybill_issued", "clearance_in_progress", "clearance_done", "ready_for_pickup",
+            "en_route_to_pickup", "in_transit", "incident_reported",
+            "pending_emergency_approval", "emergency_plan_active", "delivered_pending_settlement"
+    );
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BookingResponse> getMyFieldBookings(String username, String role) {
+        Staff me = staffRepository.findByUser_Username(username)
+                .or(() -> staffRepository.findAll().stream()
+                        .filter(s -> s.getUser() != null && (
+                                username.equalsIgnoreCase(s.getUser().getUsername()) ||
+                                username.equalsIgnoreCase(s.getUser().getEmail())))
+                        .findFirst())
+                .orElse(null);
+        String myCode = (me != null && me.getStaffCode() != null) ? me.getStaffCode() : "";
+        String myId = (me != null && me.getId() != null) ? String.valueOf(me.getId()) : "";
+        String myName = (me != null && me.getUser() != null && me.getUser().getUsername() != null) ? me.getUser().getUsername() : "";
+
+        Set<Integer> assignedBookingIds = new HashSet<>();
+        if (me != null) {
+            bookingAssignmentRepository.findByStaffID_Id(me.getId()).forEach(a -> {
+                if (a.getBookingID() != null) {
+                    assignedBookingIds.add(a.getBookingID().getId());
+                }
+            });
+        }
+
+        boolean isEscort = "ESCORT".equalsIgnoreCase(role);
+        return bookingRepository.findAllByOrderByBookingDateDesc().stream()
+                .filter(b -> b.getStatus() != null && FIELD_STATUSES.contains(b.getStatus()))
+                .filter(b -> {
+                    if (assignedBookingIds.contains(b.getId())) {
+                        return true;
+                    }
+                    if (b.getDetailsJson() == null) return false;
+                    try {
+                        BookingDetailsPayload payload = objectMapper.readValue(b.getDetailsJson(), BookingDetailsPayload.class);
+                        if (payload.getTrips() == null) return false;
+                        return payload.getTrips().stream().anyMatch(t -> {
+                            String assigned = isEscort ? t.getEscortId() : t.getDriverId();
+                            if (assigned == null || assigned.isBlank()) return false;
+                            return assigned.equalsIgnoreCase(myCode)
+                                    || assigned.equalsIgnoreCase(myId)
+                                    || assigned.equalsIgnoreCase(username)
+                                    || (!myName.isBlank() && assigned.equalsIgnoreCase(myName));
+                        });
+                    } catch (Exception e) {
+                        return false;
+                    }
+                })
                 .map(this::mapToResponse)
                 .toList();
     }
