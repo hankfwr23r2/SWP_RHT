@@ -5,6 +5,7 @@ import { useAuth } from '@shared/auth/AuthContext'
 import { STAFF_MENUS } from './staffMenus'
 import { ROLE_LABEL, type StaffRole } from '@shared/types/role'
 import { HOME_OF } from './staffMenus'
+import { NoticeBell } from '@shared/ui/NoticeBell'
 import s from './StaffShell.module.css'
 
 // Trang danh sách nhận từ khóa tìm kiếm của từng vai trò
@@ -36,6 +37,7 @@ export function StaffTopbar() {
         <input value={q} onChange={e => setQ(e.target.value)} placeholder="Tìm đơn hàng, khách hàng…" aria-label="Tìm đơn hàng" />
       </form>
       <div className={s.right}>
+        <NoticeBell />
         <button className={s.logout} onClick={() => { logout(); navigate('/login') }} aria-label="Đăng xuất" title="Đăng xuất"><i className="fa-solid fa-arrow-right-from-bracket" /></button>
       </div>
     </header>

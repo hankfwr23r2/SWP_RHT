@@ -148,6 +148,72 @@ public class AdminAccountServiceImpl implements AdminAccountService {
 
     @Override
     @Transactional
+    public AccountResponse updateAccount(Integer userId, com.example.racehorse_transport.dto.admin.UpdateAccountRequest request, String actorUsername) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng có ID: " + userId));
+
+        String oldEmail = user.getEmail() != null ? user.getEmail() : "";
+        String oldName = user.getUsername() != null ? user.getUsername() : "";
+        String newEmail = request.getEmail().trim().toLowerCase();
+        String newName = request.getName().trim();
+        String newPhone = request.getPhone() != null ? request.getPhone().trim() : "";
+
+        // Kiểm tra email nếu thay đổi
+        if (!newEmail.equalsIgnoreCase(oldEmail)) {
+            if (userRepository.existsByEmail(newEmail)) {
+                throw new IllegalArgumentException("Email " + newEmail + " đã được sử dụng bởi tài khoản khác!");
+            }
+            user.setEmail(newEmail);
+        }
+
+        user.setUsername(newName);
+        userRepository.save(user);
+
+        String role = "customer";
+        String status = "active";
+        String staffCode = null;
+        LocalDate hireDate = null;
+
+        Optional<Staff> staffOpt = staffRepository.findById(userId);
+        if (staffOpt.isPresent()) {
+            Staff staff = staffOpt.get();
+            staff.setPhone(newPhone);
+            staffRepository.save(staff);
+            role = staff.getRole() != null ? staff.getRole().toLowerCase() : "staff";
+            status = "ACTIVE".equalsIgnoreCase(staff.getEmploymentStatus()) ? "active" : "locked";
+            staffCode = staff.getStaffCode();
+            hireDate = staff.getHireDate();
+        } else {
+            Optional<Customer> customerOpt = customerRepository.findById(userId);
+            if (customerOpt.isPresent()) {
+                Customer customer = customerOpt.get();
+                customer.setFullName(newName);
+                customer.setPhone(newPhone);
+                customerRepository.save(customer);
+            }
+        }
+
+        recordSystemLog(actorUsername, "UPDATE_ACCOUNT", userId,
+                "Name: " + oldName + ", Email: " + oldEmail,
+                "Name: " + newName + ", Email: " + newEmail + ", Phone: " + newPhone,
+                "Cập nhật thông tin tài khoản ID: " + userId);
+
+        return AccountResponse.builder()
+                .id("TK-" + String.format("%03d", user.getId()))
+                .userId(user.getId())
+                .name(newName)
+                .email(newEmail)
+                .phone(newPhone)
+                .role(role)
+                .status(status)
+                .staffCode(staffCode)
+                .hireDate(hireDate)
+                .history(getAccountLogs(user.getId()))
+                .build();
+    }
+
+    @Override
+    @Transactional
     public void toggleAccountStatus(Integer userId, boolean lock, String actorUsername, String reason) {
         Staff staff = staffRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhân viên có ID: " + userId));

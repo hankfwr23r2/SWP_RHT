@@ -63,7 +63,7 @@ public class SecurityConfig {
                         .requestMatchers("/admin/**").hasRole("ADMIN")
 
                         // Phân quyền API Manager: Chỉ Quản lý và Admin
-                        .requestMatchers("/manager/**").hasAnyRole("MANAGER", "ADMIN")
+                        .requestMatchers("/manager/**", "/trip-reports/**").hasAnyRole("MANAGER", "ADMIN")
 
                         // Phân quyền API Điều phối viên: Coordinator, Manager, Admin
                         .requestMatchers("/coordinator/**").hasAnyRole("COORDINATOR", "MANAGER", "ADMIN")
@@ -73,6 +73,9 @@ public class SecurityConfig {
 
                         // Phân quyền API Khách hàng: Customer, Admin
                         .requestMatchers("/customer/**").hasAnyRole("CUSTOMER", "ADMIN")
+
+                        // Thông báo nội bộ cho mọi tài khoản đã đăng nhập
+                        .requestMatchers("/notifications/**").authenticated()
 
                         // Mọi endpoint còn lại đều bắt buộc phải đăng nhập (có token hợp lệ)
                         .anyRequest().authenticated()

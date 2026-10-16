@@ -3,6 +3,7 @@ package com.example.racehorse_transport.controller;
 import com.example.racehorse_transport.dto.admin.AccountLogResponse;
 import com.example.racehorse_transport.dto.admin.AccountResponse;
 import com.example.racehorse_transport.dto.admin.CreateStaffRequest;
+import com.example.racehorse_transport.dto.admin.UpdateAccountRequest;
 import com.example.racehorse_transport.response.ApiResponse;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.service.AdminAccountService;
@@ -58,6 +59,17 @@ public class AdminAccountController {
         AccountResponse response = adminAccountService.createStaffAccount(request, actor);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "Tạo tài khoản nhân viên thành công"));
+    }
+
+    // Cập nhật thông tin tài khoản (Họ tên, Email, Số điện thoại)
+    @PutMapping("/{userId}")
+    public ResponseEntity<ApiResponse<AccountResponse>> updateAccount(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+            @PathVariable Integer userId,
+            @Valid @RequestBody UpdateAccountRequest request) {
+        String actor = extractActor(authHeader);
+        AccountResponse response = adminAccountService.updateAccount(userId, request, actor);
+        return ResponseEntity.ok(ApiResponse.success(response, "Cập nhật thông tin tài khoản thành công"));
     }
 
     // 3. API Khóa / Mở khóa tài khoản

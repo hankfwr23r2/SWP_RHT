@@ -6,6 +6,7 @@ import { useAuth } from '@shared/auth/AuthContext'
 import { HOTLINE } from '@shared/config/business-rules'
 import { PageTransition } from '@shared/motion/motion'
 import { AppHeader, appHeaderStyles as h } from '@shared/ui/AppHeader'
+import { NoticeBell } from '@shared/ui/NoticeBell'
 import { TranslateToggle } from '@shared/ui/TranslateToggle'
 
 const MENU: [string, string][] = [
@@ -27,7 +28,12 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
       <AppHeader
         homeHref="/portal" contained links={MENU} isActive={isActive} userName={session?.name}
         onLogout={() => { logout(); navigate('/') }}
-        extra={<a href={`tel:${HOTLINE.replace(/\s/g, '')}`} className={h.hotline}><i className="fa-solid fa-headset" /> <strong>{HOTLINE}</strong></a>}
+        extra={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <NoticeBell />
+            <a href={`tel:${HOTLINE.replace(/\s/g, '')}`} className={h.hotline}><i className="fa-solid fa-headset" /> <strong>{HOTLINE}</strong></a>
+          </div>
+        }
       />
       <main><PageTransition>{children}</PageTransition></main>
       <footer className={h.footer}>© 2026 Vận chuyển Ngựa đua · Việt Nam · Lào · Campuchia · Hotline {HOTLINE}</footer>

@@ -47,6 +47,12 @@ export const adminAccountsApi = {
     return res.data.data
   },
 
+  // Cập nhật thông tin tài khoản (PUT /api/v1/admin/accounts/{userId})
+  update: async (userId: number, payload: { name: string; email: string; phone?: string }): Promise<AccountApiItem> => {
+    const res = await apiClient.put<ApiResponse<AccountApiItem>>(`/admin/accounts/${userId}`, payload)
+    return res.data.data
+  },
+
   // 3. Khóa hoặc Mở khóa tài khoản (PATCH /api/v1/admin/accounts/{userId}/status)
   toggleLock: async (userId: number, locked: boolean, reason?: string): Promise<void> => {
     await apiClient.patch(`/admin/accounts/${userId}/status`, { locked, reason })
