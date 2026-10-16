@@ -275,8 +275,8 @@ export const bookingsApi = {
     return toBooking(await specialistApi.completeClearance(id))
   },
 
-  // ===== Flow 3, 4: lệnh điều xe, check-in, nhật ký lộ trình =====
-  setDriverPack: notSupported('Điều phối viên nhập bộ giấy cho Driver') as (id: string, tripId: string, by: string, items: string[]) => Promise<Booking>,
+  setDriverPack: async (id: string, tripId: string, by: string, items: string[]): Promise<Booking> =>
+    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'SET_DRIVER_PACK', actor: by, payload: { items } })),
   acknowledgeTrip: async (id: string, tripId: string, who: 'driver' | 'escort', by: string): Promise<Booking> =>
     toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'ACKNOWLEDGE', actor: by, payload: { who } })),
   departToPickup: async (id: string, tripId: string, by: string): Promise<Booking> =>

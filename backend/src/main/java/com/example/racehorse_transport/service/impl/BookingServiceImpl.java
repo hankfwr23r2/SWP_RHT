@@ -1312,6 +1312,19 @@ public class BookingServiceImpl implements BookingService {
                 appendHistory(payload, actor, actor + " (" + ("driver".equalsIgnoreCase(who) ? "Tài xế" : "Hộ tống") + ") đã nhận Lệnh điều xe");
                 break;
             }
+            case "SET_DRIVER_PACK": {
+                @SuppressWarnings("unchecked")
+                List<String> items = reqPayload.get("items") instanceof List<?> list
+                        ? (List<String>) list
+                        : new ArrayList<>();
+                Map<String, Object> pack = new HashMap<>();
+                pack.put("items", items);
+                pack.put("at", now);
+                pack.put("by", actor);
+                targetTrip.setDriverPack(pack);
+                appendHistory(payload, actor, "Điều phối viên (" + actor + ") đã lập bộ " + items.size() + " giấy tờ bàn giao cho tài xế");
+                break;
+            }
             case "DEPART_TO_PICKUP": {
                 targetTrip.setDepartedAt(now);
                 booking.setStatus("en_route_to_pickup");
