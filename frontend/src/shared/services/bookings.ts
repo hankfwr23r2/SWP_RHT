@@ -189,7 +189,7 @@ export const customerBookingsApi = {
 async function listForRole() {
   const role = backofficeRole()
   if (role === 'driver' || role === 'escort') {
-    const bookings = await backendBookingApi.getAssignedBookings()
+    const bookings = await backendBookingApi.myFieldBookings()
     const incidents = await Promise.all(bookings.map(booking => backendIncidentApi.getByBooking(booking.numericId)))
     return bookings.map((booking, index) => ({ ...booking, incidents: incidents[index] }))
   }

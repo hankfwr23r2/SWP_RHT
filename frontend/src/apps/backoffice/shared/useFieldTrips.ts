@@ -16,10 +16,15 @@ export function useFieldTrips(role: 'driver' | 'escort') {
   const { data: crew } = useLoad(crewApi.list)
   const { data: vehicles } = useLoad(vehiclesApi.list)
   const [selected, setSelected] = useState('')
-  const me = crew?.find(c => c.role === role && c.name === session!.name)
+  const me = crew?.find(c => c.role === role && (c.name === session?.name || c.id === session?.username || c.name === session?.username))
   const key = role === 'driver' ? 'driverId' : 'escortId'
   const trips: FieldTrip[] = (all ?? [])
-    .flatMap(b => (b.trips ?? []).filter(t => me && t[key] === me.id && (FIELD_STATUSES.includes(b.status) || (t.homeReturn && !t.homeReturn.backAt))).map(t => ({ b, t })))
+    .flatMap(b => (b.trips ?? []).filter(t => {
+      const matchMe = me ? (t[key] === me.id || t[key] === me.name) : false
+      const matchSession = session ? (t[key] === session.username || t[key] === session.name) : false
+      const isAssigned = matchMe || matchSession
+      return isAssigned && (FIELD_STATUSES.includes(b.status) || (t.homeReturn && !t.homeReturn.backAt))
+    }).map(t => ({ b, t })))
     .sort((x, y) => x.b.departAt - y.b.departAt || x.t.tripId.localeCompare(y.t.tripId))
   const trip = trips.find(x => x.t.tripId === selected) ?? trips[0]
   return {

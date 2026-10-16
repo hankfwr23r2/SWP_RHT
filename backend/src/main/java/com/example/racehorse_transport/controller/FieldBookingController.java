@@ -6,6 +6,8 @@ import com.example.racehorse_transport.service.BookingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,12 +20,26 @@ public class FieldBookingController {
 
     private final BookingService bookingService;
 
-    // 1. Kíp xe (Tài xế / Hộ tống) lấy danh sách các đơn vận chuyển
+    // 1. Kíp xe (Tài xế / Hộ tống) lấy danh sách các đơn vận chuyển (tất cả — dành cho MANAGER/ADMIN)
     @GetMapping
     public ResponseEntity<ApiResponse<List<BookingResponse>>> getFieldBookings(
             @RequestParam(value = "status", required = false, defaultValue = "ALL") String status) {
         List<BookingResponse> bookings = bookingService.getBookingsByStatus(status);
         return ResponseEntity.ok(ApiResponse.success(bookings, "Lấy danh sách đơn hàng cho kíp xe thành công"));
+    }
+
+    // 1b. Driver/Escort lấy CHÍNH XÁC chuyến được phân công cho mình (filter server-side theo JWT)
+    @GetMapping("/mine")
+    @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'ADMIN')")
+    public ResponseEntity<ApiResponse<List<BookingResponse>>> getMyFieldBookings(Authentication auth) {
+        String username = auth.getName();
+        String role = auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .filter(a -> a.startsWith("ROLE_"))
+                .map(a -> a.substring(5))
+                .findFirst().orElse("DRIVER");
+        List<BookingResponse> bookings = bookingService.getMyFieldBookings(username, role);
+        return ResponseEntity.ok(ApiResponse.success(bookings, "Lấy danh sách chuyến của bạn thành công"));
     }
 
     // 2. Kíp xe xem chi tiết một đơn

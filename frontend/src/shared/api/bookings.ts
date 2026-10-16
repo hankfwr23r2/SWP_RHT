@@ -202,4 +202,10 @@ export const backendBookingApi = {
     const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/field/bookings/${id}/trip-update`, payload)
     return res.data.data
   },
+
+  // 18. Driver/Escort lấy CHÍNH XÁC chuyến được phân công cho mình (GET /api/v1/field/bookings/mine)
+  myFieldBookings: async (): Promise<BackendBookingResponse[]> => {
+    const res = await apiClient.get<ApiResponse<BackendBookingResponse[]>>('/field/bookings/mine')
+    return res.data.data
+  },
 }
