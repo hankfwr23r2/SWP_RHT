@@ -20,6 +20,12 @@ import s from '../../../shared/booking.module.css'
 type Pair = { horseId: string; doc: HorseDocType }
 const key = (p: Pair) => `${p.horseId}:${p.doc}`
 
+const renderDocLabel = (text: string) => {
+  const match = text.match(/^(.*?)\s*(\(.*?\))\s*$/)
+  if (!match) return text
+  return <>{match[1]} <span style={{ color: 'var(--text-muted, #64748b)', fontWeight: 400, fontSize: '0.88em' }}>{match[2]}</span></>
+}
+
 function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onDone: () => void }) {
   const toast = useToast()
   const navigate = useNavigate()
@@ -64,7 +70,7 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
                   {HORSE_DOC_TYPES.map(d => { const f = h.docs[d]; return (
                     <div key={d} className={s.docFile}>
                       {f ? <ImageThumb name={f.fileName} size={64} /> : <span className={s.docEmpty}><i className="fa-regular fa-file" aria-hidden="true" /></span>}
-                      <div><b>{HORSE_DOC[d].label}</b><small>{f ? `${f.fileName} · nộp ${formatDateTime(f.uploadedAt)}${f.expiresAt ? ` · hạn ${formatDate(f.expiresAt)}` : ''}` : 'Khách chưa nộp'}</small></div>
+                      <div><b>{renderDocLabel(HORSE_DOC[d].label)}</b><small>{f ? `${f.fileName} · nộp ${formatDateTime(f.uploadedAt)}${f.expiresAt ? ` · hạn ${formatDate(f.expiresAt)}` : ''}` : 'Khách chưa nộp'}</small></div>
                     </div>
                   ) })}
                 </div>

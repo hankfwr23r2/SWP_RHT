@@ -10,6 +10,12 @@ import { ImageThumb } from '@shared/ui/ImageThumb'
 import { TripTrackMap } from '@shared/ui/TripTrackMap'
 import s from './booking.module.css'
 
+const renderDocLabel = (text: string) => {
+  const match = text.match(/^(.*?)\s*(\(.*?\))\s*$/)
+  if (!match) return text
+  return <>{match[1]} <span style={{ color: 'var(--text-muted, #64748b)', fontWeight: 400, fontSize: '0.88em' }}>{match[2]}</span></>
+}
+
 // Giấy của từng ngựa do khách nộp và Specialist đã đối chiếu
 export function HorseDocsSection({ b, reviewed = true }: { b: Booking; reviewed?: boolean }) {
   const { data: horses } = useLoad(async () => (await Promise.all(b.horses.map(h => horsesApi.byId(h.horseId)))).filter(Boolean), [b.id])
@@ -26,7 +32,7 @@ export function HorseDocsSection({ b, reviewed = true }: { b: Booking; reviewed?
             {HORSE_DOC_TYPES.map(d => { const f = h.docs[d]; return (
               <div key={d} className={s.docFile}>
                 {f ? <ImageThumb name={f.fileName} size={56} /> : <span className={s.docEmpty}><i className="fa-regular fa-file" aria-hidden="true" /></span>}
-                <div><b>{HORSE_DOC[d].label}</b><small>{f ? `${f.fileName} · nộp ${formatDateTime(f.uploadedAt)}${f.expiresAt ? ` · hạn ${formatDate(f.expiresAt)}` : ''}` : 'Khách chưa nộp'}</small></div>
+                <div><b>{renderDocLabel(HORSE_DOC[d].label)}</b><small>{f ? `${f.fileName} · nộp ${formatDateTime(f.uploadedAt)}${f.expiresAt ? ` · hạn ${formatDate(f.expiresAt)}` : ''}` : 'Khách chưa nộp'}</small></div>
               </div>
             ) })}
           </div>

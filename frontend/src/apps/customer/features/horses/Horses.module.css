@@ -38,7 +38,8 @@
 .legendHint { font-weight: 400; font-size: 0.78rem; color: var(--muted); margin-left: 6px; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
 .docs { display: grid; gap: 16px; }
-.docRow { display: grid; grid-template-columns: 1fr 200px; gap: 16px; align-items: start; }
+.docRow { display: grid; grid-template-columns: 1fr 240px; gap: 16px; align-items: start; }
+.subNote { font-weight: 400; color: var(--muted); font-size: 0.84em; }
 
 @media (max-width: 720px) {
   .summary { grid-template-columns: 1fr; }
