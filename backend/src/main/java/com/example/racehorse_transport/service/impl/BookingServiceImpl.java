@@ -260,7 +260,7 @@ public class BookingServiceImpl implements BookingService {
                     .map(this::mapToResponse)
                     .toList();
         }
-        return bookingRepository.findByStatusOrderByBookingDateAsc(status)
+        return bookingRepository.findByStatusOrderByBookingDateDesc(status)
                 .stream()
                 .map(this::mapToResponse)
                 .toList();

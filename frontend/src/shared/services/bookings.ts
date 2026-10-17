@@ -234,7 +234,7 @@ const byId = async (id: string): Promise<Booking> => {
 
 // Dành cho app nội bộ
 export const bookingsApi = {
-  list: async (): Promise<Booking[]> => (await listForRole()).map(r => toBooking(r)).sort((a, b) => a.createdAt - b.createdAt),
+  list: async (): Promise<Booking[]> => (await listForRole()).map(r => toBooking(r)).sort((a, b) => b.createdAt - a.createdAt),
   get: async (id: string): Promise<Booking | undefined> => (await bookingsApi.list()).find(b => b.id === id),
 
   // ===== Flow 1 =====
