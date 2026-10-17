@@ -51,22 +51,4 @@ export function lastWorkingDayBefore(t: Time, days: number) {
   return d
 }
 
-// ===== Mốc tương đối cho dữ liệu mẫu =====
 export const today = () => startOfDay(Date.now())
-// Ngày làm việc gần nhất tính tới hôm nay
-export const baseWorkingDay = () => (isWorkingDay(today()) ? today() : shiftWorkingDays(today(), -1))
-export function daysFromToday(k: number, hour = 0) {
-  const d = today()
-  d.setDate(d.getDate() + k)
-  d.setHours(hour)
-  return d.getTime()
-}
-export const workdaysAgo = (k: number, hour = 9) => atHour(k === 0 ? baseWorkingDay() : shiftWorkingDays(baseWorkingDay(), -k), hour)
-// Mốc giờ cụ thể k ngày so với hôm nay, vd. atTime(-2, '08:15')
-export function atTime(k: number, hhmm: string) {
-  const [h, m] = hhmm.split(':').map(Number)
-  const d = today()
-  d.setDate(d.getDate() + k)
-  d.setHours(h, m, 0, 0)
-  return d.getTime()
-}

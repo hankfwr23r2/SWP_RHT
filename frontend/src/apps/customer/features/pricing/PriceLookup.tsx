@@ -11,7 +11,7 @@ const roundK = (n: number) => Math.round(n / 1000) * 1000
 
 // ===== Bảng giá (cùng công thức với báo giá) =====
 const CLASSES = Object.keys(VEHICLE_CLASS) as VehicleClass[]
-const SAMPLE_KM = [50, 150, 300, 600, 1000, 1500]
+const PRICE_TIER_KM = [50, 150, 300, 600, 1000, 1500]
 export function PriceTable() {
   return (
     <>
@@ -20,7 +20,7 @@ export function PriceTable() {
           <h3><i className="fa-solid fa-truck" /> Cước vận chuyển, mỗi xe</h3>
           <table className={s.priceTable}>
             <thead><tr><th>Quãng đường</th>{CLASSES.map(c => <th key={c}>{VEHICLE_CLASS[c].label} ({VEHICLE_CLASS[c].stalls})</th>)}</tr></thead>
-            <tbody>{SAMPLE_KM.map(km => <tr key={km}><td>{km} km</td>{CLASSES.map(c => <td key={c}>{formatVND(roundK(truckCost(km, false) * CLASS_FACTOR[c] * (1 + MARGIN_RATE)))}</td>)}</tr>)}</tbody>
+            <tbody>{PRICE_TIER_KM.map(km => <tr key={km}><td>{km} km</td>{CLASSES.map(c => <td key={c}>{formatVND(roundK(truckCost(km, false) * CLASS_FACTOR[c] * (1 + MARGIN_RATE)))}</td>)}</tr>)}</tbody>
           </table>
         </div>
         <div>
