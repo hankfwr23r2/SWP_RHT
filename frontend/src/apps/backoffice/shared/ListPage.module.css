@@ -29,6 +29,7 @@
 .table td { padding: 12px; border-bottom: 1px solid #eef0f3; vertical-align: middle; }
 .table tbody tr:hover { background: #fffaf5; }
 .right { text-align: right !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.center { text-align: center !important; white-space: nowrap; }
 .nowrap { white-space: nowrap; }
 .hotRow { box-shadow: inset 3px 0 0 var(--orange); }
 .empty { text-align: center; padding: 64px 20px; color: var(--muted); }

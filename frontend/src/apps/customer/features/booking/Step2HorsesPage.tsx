@@ -1,4 +1,4 @@
-﻿// Bước 2: chọn ngựa từ Hồ sơ ngựa (PRD mục 2.2). Chỉ ngựa đủ giấy và còn hiệu lực đến ngày khởi hành mới chọn được.
+// Bước 2: chọn ngựa từ Hồ sơ ngựa (PRD mục 2.2). Chỉ ngựa đủ giấy và còn hiệu lực đến ngày khởi hành mới chọn được.
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
@@ -51,7 +51,7 @@ export default function Step2HorsesPage() {
           <h3><i className="fa-solid fa-horse-head" /> Ngựa trong hồ sơ</h3>
           <button type="button" className="btn btn-outline btn-sm" onClick={() => setModal({})}><i className="fa-solid fa-plus" /> Thêm ngựa</button>
         </div>
-        <p className={s.limit}>Đã chọn <b>{selected.length}</b> / {MAX_HORSES} ngựa{cls && <> · xe dự kiến <b>{cls.label}</b> ({cls.stalls})</>}</p>
+        <p className={s.limit}>Đã chọn <b>{selected.length}</b> / {MAX_HORSES} ngựa{cls && <> · xe dự kiến <b>{cls.label}</b> <span className={s.subNote}>({cls.stalls})</span></>}</p>
 
         <div className={s.pickList} role="group" aria-label="Danh sách ngựa" style={{ marginTop: 12 }}>
           {!horses && <p className="text-muted">Đang tải…</p>}

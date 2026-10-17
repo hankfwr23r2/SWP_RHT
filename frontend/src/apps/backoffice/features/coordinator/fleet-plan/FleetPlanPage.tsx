@@ -8,7 +8,7 @@ import { isAssignedTo } from '@shared/lib/staffAssignment'
 import { MAX_CONTINUOUS_HOURS, MIN_REST_MINUTES, VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { GATES, TRANSIT_STATIONS } from '@shared/config/network'
 import { AVG_SPEED_KMH } from '@shared/config/public-pricing'
-import { borderOutsideWindow, buildRoutePlan, clashOf, estimateBorderEta, findLocation, gatesFor, layoutLegs, routeKm, suggestGate, routeOutline, schedulesOf, validateRoutePlan, vehicleClassOf } from '@shared/lib/booking'
+import { borderOutsideWindow, buildRoutePlan, clashOf, estimateBorderEta, findLocation, gatesFor, layoutLegs, routeKm, suggestGate, suggestGateWithSavings, suggestOptimalDepartureForBorder, routeOutline, schedulesOf, validateRoutePlan, vehicleClassOf } from '@shared/lib/booking'
 import { atHour } from '@shared/lib/dates'
 import { formatClock, formatDate, formatDateTime } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
@@ -95,7 +95,8 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
   const splitEvenly = () => setTrips(ts => { const ids = ts.flatMap(t => t.horseIds); return ts.map((t, j) => ({ ...t, horseIds: ids.filter((_, k) => k % ts.length === j) })) })
   // ----- lộ trình (một lộ trình dùng chung cho mọi xe) -----
   const gates = international ? gatesFor(b.origin, b.dest) : []
-  const suggested = international ? suggestGate(b.origin, b.dest) : undefined
+  const suggestedInfo = international ? suggestGateWithSavings(b.origin, b.dest) : undefined
+  const suggested = suggestedInfo?.gate ?? (international ? suggestGate(b.origin, b.dest) : undefined)
   const [gate, setGate] = useState(b.gate ?? suggested ?? (gates[0]?.name ?? ''))
   const origin = findLocation(b.origin.id), dest = findLocation(b.dest.id)
   const gateGeo = gate ? GATES.find(g => g.name === gate) : undefined
@@ -106,11 +107,25 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
   const [borderText, setBorderText] = useState(initial.borderEta ? toLocal(initial.borderEta) : '')
   const [borderTouched, setBorderTouched] = useState(!!b.route?.borderEta)
   const etdT = fromLocal(etd)
-  // Thời gian lái lấy theo đường bộ thật (Google có giao thông theo giờ khởi hành, hoặc OSRM); chưa lấy được thì dùng ước lượng
+  // Thời gian lái lấy theo đường bộ OSRM; chưa lấy được thì dùng ước lượng
   const stationsOnRoute = rests.flatMap(r => TRANSIT_STATIONS.filter(x => x.name === r.name))
   const roadPath = origin && dest ? routeOutline(origin, gateGeo, dest, stationsOnRoute).path : undefined
   const { route: road, loading: roadLoading } = useRoadRoute(roadPath, Number.isNaN(etdT) ? undefined : etdT)
   const driveHours = road?.hours ?? estHours
+
+  const optimalEtd = useMemo(() => {
+    if (!international) return undefined
+    const driveHoursToGate = driveHours * 0.55
+    return suggestOptimalDepartureForBorder(b.departAt, driveHoursToGate, 45)
+  }, [international, driveHours, b.departAt])
+
+  const applyOptimalEtd = () => {
+    if (!optimalEtd) return
+    setEtd(toLocal(optimalEtd))
+    setBorderTouched(false)
+    toast('Đã áp dụng giờ xuất phát thông minh cho thông quan cửa khẩu.')
+  }
+
   // Gợi ý lại các trạm nghỉ (tự động theo cửa khẩu nếu có)
   const resuggest = (g?: string) => {
     const chosenGate = g ?? gate
@@ -119,8 +134,8 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
     setBorderTouched(false)
   }
   const pickGate = (g: string) => { setGate(g); resuggest(g) }
-  const legs = useMemo(() => (Number.isNaN(etdT) ? initial.legs : layoutLegs(b.origin.name, b.dest.name, etdT, rests, driveHours)), [etdT, rests, b, driveHours, initial.legs])
-  const borderEta = international ? (borderTouched ? fromLocal(borderText) : estimateBorderEta(legs)) : undefined
+  const legs = useMemo(() => (Number.isNaN(etdT) ? initial.legs : layoutLegs(b.origin.name, b.dest.name, etdT, rests, driveHours, gate, true)), [etdT, rests, b, driveHours, gate, initial.legs])
+  const borderEta = international ? (borderTouched ? fromLocal(borderText) : estimateBorderEta(legs, rests, gate)) : undefined
   const route = { legs, rests: rests.map((r, i) => ({ ...r, afterLeg: i + 1 })), borderEta: borderEta && !Number.isNaN(borderEta) ? borderEta : undefined }
   const { errors: routeErrors, warnings } = validateRoutePlan(route, international)
   if (Number.isNaN(etdT)) routeErrors.unshift('Nhập giờ khởi hành hợp lệ.')
@@ -206,17 +221,24 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
 
       {international && (
         <div className="card">
-          <div className="card-header"><h3><i className="fa-solid fa-flag" /> Cửa khẩu (Tuyến quốc tế)</h3><span className="sub-text">Hệ thống tự động gợi ý cửa khẩu tối ưu, bạn có thể đổi nếu cần</span></div>
-          <div className="form-group" style={{ maxWidth: 420, margin: 0 }}>
+          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+            <h3><i className="fa-solid fa-flag" /> Cửa khẩu (Tuyến quốc tế)</h3>
+            {suggestedInfo?.savingsKm && (
+              <span className="badge badge-success">
+                <i className="fa-solid fa-wand-magic-sparkles" /> Tiết kiệm {suggestedInfo.savingsKm} km
+              </span>
+            )}
+          </div>
+          <div className="form-group" style={{ maxWidth: 460, margin: 0 }}>
             <label htmlFor="gate" className="required">Cửa khẩu thông quan</label>
             <FormSelect id="gate" className="form-control" value={gate} onChange={e => pickGate(e.target.value)}>
               {gates.map(g => (
                 <option key={g.name} value={g.name}>
-                  {g.name}{g.name === suggested ? ' (Gợi ý tối ưu: quãng đường ngắn nhất)' : ` · ${routeKm(b.origin, b.dest, g.name)} km`}
+                  {g.name}{g.name === suggested ? ` (Hệ thống đề xuất tối ưu: ${routeKm(b.origin, b.dest, g.name)} km)` : ` · ${routeKm(b.origin, b.dest, g.name)} km`}
                 </option>
               ))}
             </FormSelect>
-            <div className="form-hint">Đổi cửa khẩu thì hệ thống tự động tính lại lộ trình và gợi ý lại các trạm nghỉ.</div>
+            <div className="form-hint">Hệ thống tự động đề xuất cửa khẩu ngắn nhất cho tuyến này. Bạn có thể đổi nếu cần.</div>
           </div>
         </div>
       )}
@@ -242,11 +264,47 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
 
       {international && (
         <div className="card">
-          <div className="card-header"><h3><i className="fa-solid fa-flag" /> Giờ tới cửa khẩu {gate}</h3></div>
-          <div className="form-group" style={{ maxWidth: 320, margin: 0 }}>
+          <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+            <h3><i className="fa-solid fa-flag" /> Giờ tới cửa khẩu {gate}</h3>
+            {optimalEtd && (
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                onClick={applyOptimalEtd}
+                title="Tự động căn giờ đón ngựa để xe tới cửa khẩu trong khung giờ hành chính 07:30 - 16:30"
+              >
+                <i className="fa-solid fa-bolt" style={{ color: 'var(--orange)' }} /> Áp dụng giờ xuất phát thông minh ({formatClock(optimalEtd)})
+              </button>
+            )}
+          </div>
+          <div className="form-group" style={{ maxWidth: 360, margin: 0 }}>
             <label htmlFor="border" className="required">Giờ dự kiến tới cửa khẩu</label>
-            <input id="border" type="datetime-local" className="form-control" value={borderTouched ? borderText : borderEta ? toLocal(borderEta) : ''} onChange={e => { setBorderTouched(true); setBorderText(e.target.value) }} />
-            <div className="form-hint" style={borderEta && borderOutsideWindow(borderEta) ? { color: 'var(--amber)' } : undefined}>Nên rơi vào 07:30–16:30 để thông quan và khám lâm sàng trong ngày. Hệ thống ước lượng theo hành trình.</div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input
+                id="border"
+                type="datetime-local"
+                className="form-control"
+                value={borderTouched ? borderText : borderEta ? toLocal(borderEta) : ''}
+                onChange={e => { setBorderTouched(true); setBorderText(e.target.value) }}
+              />
+              {borderTouched && (
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setBorderTouched(false)}
+                  title="Tính lại tự động theo lộ trình"
+                >
+                  <i className="fa-solid fa-rotate" /> Tự động
+                </button>
+              )}
+            </div>
+            <div className="form-hint" style={borderEta && borderOutsideWindow(borderEta) ? { color: 'var(--amber)' } : undefined}>
+              {borderEta && borderOutsideWindow(borderEta) ? (
+                <span>⚠️ Giờ tới cửa khẩu ngoài khung 07:30–16:30. Hãy bấm "Áp dụng giờ xuất phát thông minh" để tự động căn giờ tối ưu.</span>
+              ) : (
+                <span>✓ Khung giờ thông quan lý tưởng (07:30–16:30). Hệ thống tự động tính từ giờ đón và thời gian lái thực tế.</span>
+              )}
+            </div>
           </div>
         </div>
       )}

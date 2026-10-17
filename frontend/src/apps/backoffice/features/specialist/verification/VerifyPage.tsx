@@ -20,6 +20,12 @@ import s from '../../../shared/booking.module.css'
 type Pair = { horseId: string; doc: HorseDocType }
 const key = (p: Pair) => `${p.horseId}:${p.doc}`
 
+const renderDocLabel = (text: string) => {
+  const match = text.match(/^(.*?)\s*(\(.*?\))\s*$/)
+  if (!match) return text
+  return <>{match[1]} <span style={{ color: 'var(--text-muted, #64748b)', fontWeight: 400, fontSize: '0.88em' }}>{match[2]}</span></>
+}
+
 function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onDone: () => void }) {
   const toast = useToast()
   const navigate = useNavigate()
@@ -64,7 +70,7 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
                   {HORSE_DOC_TYPES.map(d => { const f = h.docs[d]; return (
                     <div key={d} className={s.docFile}>
                       {f ? <ImageThumb name={f.fileName} size={64} /> : <span className={s.docEmpty}><i className="fa-regular fa-file" aria-hidden="true" /></span>}
-                      <div><b>{HORSE_DOC[d].label}</b><small>{f ? `${f.fileName} · nộp ${formatDateTime(f.uploadedAt)}${f.expiresAt ? ` · hạn ${formatDate(f.expiresAt)}` : ''}` : 'Khách chưa nộp'}</small></div>
+                      <div><b>{renderDocLabel(HORSE_DOC[d].label)}</b><small>{f ? `${f.fileName} · nộp ${formatDateTime(f.uploadedAt)}${f.expiresAt ? ` · hạn ${formatDate(f.expiresAt)}` : ''}` : 'Khách chưa nộp'}</small></div>
                     </div>
                   ) })}
                 </div>
@@ -141,8 +147,29 @@ export default function VerifyPage() {
   return (
     <div className="page">
       <div className="wrap">
-        <div className="breadcrumb"><Link to="/specialist/verification">Duyệt hồ sơ ngựa</Link> / <span className="text-orange font-semibold">{b.id}</span></div>
-        <div className="page-header" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}><h1>Đơn {b.id}</h1><BookingStatusBadge status={b.status} audience="staff" /><ReviewChips b={b} /></div>
+        <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <h1>Đơn {b.id}</h1>
+            <BookingStatusBadge status={b.status} audience="staff" />
+            <ReviewChips b={b} />
+          </div>
+          {(['waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup'].includes(b.status) || !!b.waybill || !!b.clearance) && (
+            <Link to={`/specialist/legal/${b.id}`} className="btn btn-outline btn-sm">
+              <i className="fa-solid fa-file-signature" /> Xem Giấy tờ chuyến đi ➔
+            </Link>
+          )}
+        </div>
+        {(['waybill_issued', 'clearance_in_progress', 'clearance_done'].includes(b.status) || !!b.waybill) && (
+          <div className="alert alert-info" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <i className="fa-solid fa-file-signature" />
+              <span>Đơn này đã có Vận đơn và đang ở bước làm giấy tờ kiểm dịch & thông quan.</span>
+            </div>
+            <Link to={`/specialist/legal/${b.id}`} className="btn btn-primary btn-sm">
+              Mở Giấy tờ chuyến đi
+            </Link>
+          </div>
+        )}
         {!b.intake && <div className="alert alert-info" style={{ marginBottom: 16 }}><i className="fa-solid fa-circle-info" /><div>Đơn chưa được Quản lý tiếp nhận và phân công chính thức. Đang hiển thị ở chế độ xem trước.</div></div>}
         <div className={s.layout}>
           <div className={s.main}>

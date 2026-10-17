@@ -64,4 +64,14 @@ public interface SpecialistService {
      * Hoàn tất toàn bộ giấy tờ kiểm dịch & hải quan -> Chuyển đơn sang clearance_done
      */
     BookingResponse completeClearance(String bookingIdentifier, String username);
+
+    /**
+     * Chuyển đơn xác nhận dịch tễ qua Specialist để duyệt (sau khi kíp xe xác nhận)
+     */
+    BookingResponse transferForQuarantine(String bookingIdentifier, String username);
+
+    /**
+     * Specialist duyệt xác nhận dịch tễ của chuyến đi
+     */
+    BookingResponse approveQuarantine(String bookingIdentifier, ApproveMedicalRequest request, String username);
 }
