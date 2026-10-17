@@ -31,7 +31,7 @@ function PickButton({ person, icon, onClick }: { person?: { name: string }; icon
   )
 }
 
-function IntakeModal({ b, onClose, onDone }: { b: Booking; onClose: () => void; onDone: () => void }) {
+export function IntakeModal({ b, onClose, onDone }: { b: Booking; onClose: () => void; onDone: () => void }) {
   const toast = useToast()
   const { session } = useAuth()
   const { data: staff } = useLoad(staffApi.list)
@@ -81,11 +81,11 @@ function IntakeModal({ b, onClose, onDone }: { b: Booking; onClose: () => void; 
       <h4 style={{ margin: '0 0 10px' }}>Giao việc thẩm định song song</h4>
       <div className={s.form2}>
         <div className="form-group">
-          <label>Kiểm dịch viên (duyệt hồ sơ ngựa)</label>
+          <label>Kiểm dịch viên <span style={{ color: 'var(--text-muted, #64748b)', fontWeight: 400, fontSize: '0.85em' }}>(duyệt hồ sơ ngựa)</span></label>
           <PickButton icon="fa-user-doctor" person={spId ? specialists.find(x => x.id === spId) : undefined} onClick={() => setPick('specialist')} />
         </div>
         <div className="form-group">
-          <label>Điều phối viên (xe và lộ trình)</label>
+          <label>Điều phối viên <span style={{ color: 'var(--text-muted, #64748b)', fontWeight: 400, fontSize: '0.85em' }}>(xe và lộ trình)</span></label>
           <PickButton icon="fa-route" person={coId ? coordinators.find(x => x.id === coId) : undefined} onClick={() => setPick('coordinator')} />
         </div>
       </div>
@@ -99,7 +99,7 @@ function IntakeModal({ b, onClose, onDone }: { b: Booking; onClose: () => void; 
         onClose={onClose} title={`Tiếp nhận ${b.id}`} subtitle={`${b.customer} · gửi lúc ${formatDateTime(b.createdAt)}`}
         top={reason !== null && (
           <div className="form-group">
-            <label htmlFor="rj" className="required">Lý do từ chối (khách sẽ thấy)</label>
+            <label htmlFor="rj" className="required">Lý do từ chối <span style={{ color: 'var(--text-muted, #64748b)', fontWeight: 400, fontSize: '0.85em' }}>(khách sẽ thấy)</span></label>
             <textarea id="rj" className="form-control" rows={3} value={reason} onChange={e => setReason(e.target.value)} />
           </div>
         )}

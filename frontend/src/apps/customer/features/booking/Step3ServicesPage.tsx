@@ -74,7 +74,7 @@ export default function Step3ServicesPage() {
               <div><div id={`h-${h.id}`} className={s.horseName}>{h.name}</div><div className={s.horseChip}>Chip {h.microchip} · {h.breed} · {SEX_LABEL[h.sex]}</div></div>
             </div>
 
-            <div>
+            <div className={s.serviceSection}>
               <div className={s.fieldLabel} id={`stall-${h.id}`}>Khoang trên xe</div>
               <div className={s.optRow} role="radiogroup" aria-labelledby={`stall-${h.id}`}>
                 {([['standard', 'Khoang tiêu chuẩn', 'Đã gồm trong cước vận chuyển.'], ['single', 'Khoang đơn mở rộng', 'Rộng hơn, phụ thu theo từng ngựa.']] as const).map(([v, t, d]) => (
@@ -83,7 +83,7 @@ export default function Step3ServicesPage() {
               </div>
             </div>
 
-            <div>
+            <div className={s.serviceSection}>
               <div className={s.fieldLabel} id={`feed-${h.id}`}>Gói thức ăn</div>
               <div className={s.optRow} role="radiogroup" aria-labelledby={`feed-${h.id}`}>
                 {FEED_PACKAGE_IDS.map(id => (
@@ -92,7 +92,7 @@ export default function Step3ServicesPage() {
               </div>
             </div>
 
-            <div>
+            <div className={s.serviceSection}>
               <div className={s.fieldLabel} id={`water-${h.id}`}>Cữ nước</div>
               <div className={s.optRow} role="radiogroup" aria-labelledby={`water-${h.id}`}>
                 {WATER_PLAN_IDS.map(id => (
@@ -101,14 +101,14 @@ export default function Step3ServicesPage() {
               </div>
             </div>
 
-            <div>
+            <div className={s.serviceSection}>
               <div className={s.labelRow}>
                 <div className={`${s.fieldLabel} required`} id={`ins-${h.id}`}>Bảo hiểm chuyến đi</div>
                 <InsuranceNote id={`ins-note-${h.id}`} breed={h.breed} />
               </div>
               <div className={s.optRow} role="radiogroup" aria-labelledby={`ins-${h.id}`} {...(submitted && !c.insurance ? { 'data-problem': true } : {})}>
                 <label className={s.opt}><input type="radio" name={`ins-${h.id}`} checked={c.insurance === 'buy'} onChange={() => set(h.id, { insurance: 'buy' })} /><b>Mua bảo hiểm</b><span>Phí {formatVND(insuranceFee(h.breed))} cho giống {h.breed}.</span></label>
-                <label className={s.opt}><input type="radio" name={`ins-${h.id}`} checked={c.insurance === 'decline'} onChange={() => set(h.id, { insurance: 'decline' })} /><b>Từ chối</b><span>Áp dụng trách nhiệm hạn chế của nhà xe.</span></label>
+                <label className={s.opt}><input type="radio" name={`ins-${h.id}`} checked={c.insurance === 'decline'} onChange={() => set(h.id, { insurance: 'decline' })} /><b>Từ chối</b><span>Áp dụng trách nhiệm hạn chế <span className={s.subNote}>(của nhà xe)</span>.</span></label>
               </div>
               {submitted && !c.insurance && <div className="form-error">Chọn mua hoặc từ chối bảo hiểm cho {h.name}.</div>}
             </div>

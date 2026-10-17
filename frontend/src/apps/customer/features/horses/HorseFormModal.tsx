@@ -1,13 +1,35 @@
-// Biểu mẫu thêm / sửa ngựa trong Hồ sơ ngựa. Dùng ở trang Hồ sơ ngựa và ở bước chọn ngựa khi đặt đơn.
 import { useState, type FormEvent } from 'react'
 import { HORSE_BREEDS as BREEDS, HORSE_DOC, HORSE_DOC_TYPES, type HorseDocType } from '@shared/config/booking-rules'
 import { fromIsoDay, toIsoDay } from '@shared/lib/booking'
+import { formatDate } from '@shared/lib/format'
 import { horsesApi, type NewHorse } from '@shared/services/horses'
 import { SEX_LABEL, type HorseDoc, type HorseProfile, type Sex } from '@shared/types/booking'
 import { FileField } from '@shared/ui/FileField'
 import { Modal } from '@shared/ui/Modal'
 import s from './Horses.module.css'
 import { FormSelect } from '@shared/ui/FormSelect'
+
+const getInitialEventDate = (t: HorseDocType, expiresAt?: number): string => {
+  if (!expiresAt) return ''
+  const d = new Date(expiresAt)
+  if (t === 'vaccine') {
+    d.setFullYear(d.getFullYear() - 1)
+  } else if (t === 'lab') {
+    d.setMonth(d.getMonth() - 6)
+  }
+  return toIsoDay(d.getTime())
+}
+
+const computeExpiryFromEventDate = (t: HorseDocType, dateIso: string): number | undefined => {
+  if (!dateIso) return undefined
+  const d = new Date(dateIso)
+  if (t === 'vaccine') {
+    d.setFullYear(d.getFullYear() + 1)
+  } else if (t === 'lab') {
+    d.setMonth(d.getMonth() + 6)
+  }
+  return fromIsoDay(d.toISOString().slice(0, 10))
+}
 
 type Errors = Partial<Record<'name' | 'microchip' | 'color' | 'birthYear' | HorseDocType | `${HorseDocType}Expiry`, string>>
 
@@ -19,6 +41,8 @@ interface Props {
 }
 
 export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
+  const [now] = useState(() => Date.now())
+  const todayIso = toIsoDay(now)
   const editing = !!horse
   const [name, setName] = useState(horse?.name ?? '')
   const [microchip, setMicrochip] = useState(horse?.microchip ?? '')
@@ -30,6 +54,10 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
   const [tab, setTab] = useState<'info' | 'docs'>('info')
   const [docs, setDocs] = useState<Partial<Record<HorseDocType, HorseDoc>>>(horse?.docs ?? {})
   const [files, setFiles] = useState<Partial<Record<HorseDocType, File>>>({})
+  const [eventDates, setEventDates] = useState<Partial<Record<HorseDocType, string>>>(() => ({
+    vaccine: getInitialEventDate('vaccine', horse?.docs.vaccine?.expiresAt),
+    lab: getInitialEventDate('lab', horse?.docs.lab?.expiresAt),
+  }))
   const [errors, setErrors] = useState<Errors>({})
   const [busy, setBusy] = useState(false)
   const [formError, setFormError] = useState('')
@@ -40,7 +68,25 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
   const hasDocsError = HORSE_DOC_TYPES.some(t => !!errors[`${t}Expiry`])
 
   const setDoc = (t: HorseDocType, patch: Partial<HorseDoc> | undefined) =>
-    setDocs(d => { const next = { ...d }; if (!patch) delete next[t]; else next[t] = { fileName: '', uploadedAt: Date.now(), ...d[t], ...patch }; return next })
+    setDocs(d => {
+      const next = { ...d }
+      if (!patch) {
+        delete next[t]
+        setEventDates(prev => ({ ...prev, [t]: '' }))
+      } else {
+        next[t] = { fileName: '', uploadedAt: Date.now(), ...d[t], ...patch }
+      }
+      return next
+    })
+
+  const handleDateChange = (t: HorseDocType, value: string) => {
+    setEventDates(prev => ({ ...prev, [t]: value }))
+    const expiresAt = computeExpiryFromEventDate(t, value)
+    setDoc(t, { expiresAt })
+    if (value) {
+      setErrors(prev => ({ ...prev, [`${t}Expiry`]: undefined }))
+    }
+  }
 
   const validate = () => {
     const e: Errors = {}
@@ -50,7 +96,9 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
     const year = Number(birthYear)
     if (!year || year < 1990 || year > new Date().getFullYear()) e.birthYear = 'Nhập năm sinh hợp lệ.'
     HORSE_DOC_TYPES.forEach(t => {
-      if (docs[t] && HORSE_DOC[t].hasExpiry && !docs[t]!.expiresAt) e[`${t}Expiry`] = 'Nhập ngày hết hạn của giấy.'
+      if (docs[t] && HORSE_DOC[t].hasExpiry && !docs[t]!.expiresAt) {
+        e[`${t}Expiry`] = t === 'vaccine' ? 'Nhập ngày tiêm phòng gần nhất.' : t === 'lab' ? 'Nhập ngày xét nghiệm gần nhất.' : 'Nhập ngày hết hạn của giấy.'
+      }
     })
     setErrors(e)
     const errKeys = Object.keys(e)
@@ -205,8 +253,33 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
                     <FileField label={HORSE_DOC[t].label} hint={HORSE_DOC[t].hint} fileName={docs[t]?.fileName || undefined} onChange={(f, file) => { setDoc(t, f ? { fileName: f, uploadedAt: Date.now() } : undefined); setFiles(current => { const next = { ...current }; if (file) next[t] = file; else delete next[t]; return next }) }} />
                     {docs[t] && HORSE_DOC[t].hasExpiry && (
                       <div className="form-group">
-                        <label htmlFor={`h-exp-${t}`} className="required">Ngày hết hạn</label>
-                        <input id={`h-exp-${t}`} type="date" className={`form-control ${errors[`${t}Expiry`] ? 'invalid' : ''}`} value={docs[t]!.expiresAt ? toIsoDay(docs[t]!.expiresAt!) : ''} onChange={e => setDoc(t, { expiresAt: e.target.value ? fromIsoDay(e.target.value) : undefined })} />
+                        <label htmlFor={`h-exp-${t}`} className="required">
+                          {t === 'vaccine' ? 'Ngày tiêm phòng gần nhất' : t === 'lab' ? 'Ngày xét nghiệm gần nhất' : 'Ngày cấp'}
+                        </label>
+                        <input
+                          id={`h-exp-${t}`}
+                          type="date"
+                          max={todayIso}
+                          className={`form-control ${errors[`${t}Expiry`] ? 'invalid' : ''}`}
+                          value={eventDates[t] ?? ''}
+                          onChange={e => handleDateChange(t, e.target.value)}
+                        />
+                        {docs[t]!.expiresAt && (
+                          <div style={{ marginTop: 6, fontSize: '0.82rem', lineHeight: 1.3 }}>
+                            {docs[t]!.expiresAt! < now ? (
+                              <span style={{ color: 'var(--color-danger, #dc2626)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />
+                                Hết hiệu lực ngày {formatDate(docs[t]!.expiresAt!)} (cần tiêm nhắc lại)
+                              </span>
+                            ) : (
+                              <span style={{ color: '#16a34a', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <i className="fa-solid fa-circle-check" aria-hidden="true" />
+                                Hiệu lực đến: <b>{formatDate(docs[t]!.expiresAt!)}</b>
+                                <span className={s.subNote}> ({t === 'vaccine' ? '12 tháng' : '6 tháng'})</span>
+                              </span>
+                            )}
+                          </div>
+                        )}
                         {errors[`${t}Expiry`] && <div className="form-error">{errors[`${t}Expiry`]}</div>}
                       </div>
                     )}

@@ -14,6 +14,7 @@ import { managerAction } from '../../../shared/managerAction'
 import { SideTabsModal } from '../../../shared/SideTabsModal'
 import s from '../../../shared/booking.module.css'
 import { AuditModal } from './AuditModal'
+import { IntakeModal } from '../intake/IntakePage'
 
 // Tài xế và hộ tống Manager đã chọn cho từng xe (chỉ xem; chọn ở trang Duyệt giá)
 function CrewTab({ b }: { b: Booking }) {
@@ -40,6 +41,7 @@ function CrewTab({ b }: { b: Booking }) {
 
 export function OrderDetailModal({ b, onClose, onDone }: { b: Booking; onClose: () => void; onDone: () => void }) {
   const [audit, setAudit] = useState(false)
+  const [intakeOpen, setIntakeOpen] = useState(false)
   const act = managerAction(b)
   const at = stepOf(b.status)
   const summary = (
@@ -66,12 +68,17 @@ export function OrderDetailModal({ b, onClose, onDone }: { b: Booking; onClose: 
         ]}
         footer={<>
           <button className="btn btn-ghost" onClick={onClose}>Đóng</button>
-          {b.status === 'expenses_submitted'
-            ? <button className="btn btn-primary" onClick={() => setAudit(true)}><i className="fa-solid fa-file-invoice-dollar" /> Đối soát chi phí</button>
-            : act && <Link to={act.to} className="btn btn-primary">{act.label}</Link>}
+          {b.status === 'expenses_submitted' ? (
+            <button className="btn btn-primary" onClick={() => setAudit(true)}><i className="fa-solid fa-file-invoice-dollar" /> Đối soát chi phí</button>
+          ) : b.status === 'pending_intake' ? (
+            <button className="btn btn-primary" onClick={() => setIntakeOpen(true)}><i className="fa-solid fa-play" /> Tiếp nhận đơn</button>
+          ) : act ? (
+            <Link to={act.to} className="btn btn-primary">{act.label}</Link>
+          ) : null}
         </>}
       />
       {audit && <AuditModal b={b} onClose={() => setAudit(false)} onDone={() => { setAudit(false); onDone() }} />}
+      {intakeOpen && <IntakeModal b={b} onClose={() => setIntakeOpen(false)} onDone={() => { setIntakeOpen(false); onDone() }} />}
     </>
   )
 }
