@@ -19,11 +19,20 @@ export default function LegalListPage() {
   const now = useNow()
   const { data: all } = useLoad(bookingsApi.list)
   const [tab, setTab] = useState<Tab>('todo')
-  const mine = (all ?? []).filter(b => isAssignedTo(b.intake?.specialist, session?.name) && b.payment && b.clearance)
+  const isMine = (b: Booking) =>
+    !b.intake?.specialist ||
+    isAssignedTo(b.intake.specialist, session?.name) ||
+    isAssignedTo(b.intake.specialist, session?.username) ||
+    session?.role === 'admin' ||
+    session?.role === 'manager'
+
+  const mine = (all ?? []).filter(b =>
+    isMine(b) && (['waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup'].includes(b.status) || !!b.waybill || !!b.clearance)
+  )
   const groups: Record<Tab, Booking[]> = {
-    todo: mine.filter(b => b.status === 'waybill_issued'),
-    working: mine.filter(b => b.status === 'clearance_in_progress'),
-    done: mine.filter(b => b.clearance!.doneAt),
+    todo: mine.filter(b => b.status === 'waybill_issued' && !b.clearance?.doneAt),
+    working: mine.filter(b => (b.status === 'clearance_in_progress' || b.status === 'ready_for_pickup') && !b.clearance?.doneAt),
+    done: mine.filter(b => !!b.clearance?.doneAt || b.status === 'clearance_done'),
   }
   const columns: Column<Booking>[] = [
     { head: 'Mã đơn', cell: b => idCell(b) },
@@ -31,12 +40,12 @@ export default function LegalListPage() {
     { head: 'Tuyến', cell: b => routeCell(placeShort(b.origin.name), placeShort(b.dest.name)) },
     { head: 'Khởi hành', cell: b => formatDate(b.departAt), nowrap: true },
     { head: 'Trạng thái', cell: b => statusCell(b.status) },
-    { head: 'Hạng mục đã nộp', cell: b => { const p = clearanceProgress(b.clearance!); return `${p.done}/${p.total}` }, nowrap: true },
+    { head: 'Hạng mục đã nộp', cell: b => { const p = b.clearance ? clearanceProgress(b.clearance) : { done: 0, total: 0 }; return `${p.done}/${p.total}` }, nowrap: true },
     { head: 'Cảnh báo', minWidth: 120, cell: b => {
       const late = isClearanceOverdue(b, now)
       return late ? <span style={{ color: 'var(--red)', fontSize: '0.82rem' }}>Quá {formatDateTime(docsDueAt(b.departAt))} mà giấy chưa xong.</span> : '-'
     } },
-    { head: 'Thao tác', cell: b => <Link to={`/specialist/legal/${b.id}`} className={`btn btn-sm ${tab === 'done' ? 'btn-ghost' : 'btn-primary'}`}>{tab === 'todo' ? 'Tiếp nhận' : tab === 'working' ? 'Làm giấy tờ' : 'Xem'}</Link>, right: true },
+    { head: 'Thao tác', cell: b => <Link to={`/specialist/legal/${b.id}`} className={`btn btn-sm ${tab === 'done' ? 'btn-ghost' : 'btn-primary'}`}>{tab === 'todo' ? 'Xem chi tiết' : tab === 'working' ? 'Làm giấy tờ' : 'Xem'}</Link>, center: true },
   ]
   return (
     <ListPage title="Giấy tờ chuyến đi" subtitle="Tiếp nhận Vận đơn, làm giấy kiểm dịch và hải quan, cập nhật từng hạng mục kèm ảnh để khách và quản lý theo dõi."

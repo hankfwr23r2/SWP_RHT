@@ -1368,6 +1368,42 @@ public class BookingServiceImpl implements BookingService {
                 acks.put(who, now);
                 targetTrip.setAcks(acks);
                 appendHistory(payload, actor, actor + " (" + ("driver".equalsIgnoreCase(who) ? "Tài xế" : "Hộ tống") + ") đã nhận Lệnh điều xe");
+
+                // Kiểm tra xem kíp xe (Driver và Escort) của các chuyến đã xác nhận đủ chưa
+                boolean allTripsAcked = trips.stream().allMatch(t -> {
+                    Map<String, Object> a = t.getAcks();
+                    return a != null && a.get("driver") != null && a.get("escort") != null;
+                });
+
+                if (allTripsAcked) {
+                    // Lấy tên Specialist được Quản lý phân công từ lúc tiếp nhận đơn
+                    String specialistName = "Chuyên viên kiểm dịch";
+                    if (payload.getIntake() instanceof Map<?, ?> intakeMap && intakeMap.get("specialist") instanceof Map<?, ?> spMap) {
+                        if (spMap.get("name") != null) {
+                            specialistName = String.valueOf(spMap.get("name"));
+                        }
+                    }
+
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> clearanceMap = payload.getClearance() instanceof Map<?, ?> existingClr
+                            ? new HashMap<>((Map<String, Object>) existingClr)
+                            : new HashMap<>();
+
+                    clearanceMap.put("crewAckedAt", now);
+
+                    if (clearanceMap.get("doneAt") != null) {
+                        booking.setStatus("ready_for_pickup");
+                        appendHistory(payload, "Hệ thống", "Kíp xe (Tài xế & Hộ tống) đã nhận lệnh điều xe. Giấy tờ đã hoàn tất trước đó, đơn hàng chuyển sang trạng thái Sẵn sàng đón ngựa!");
+                        log.info("Booking ID={} advanced to ready_for_pickup because clearance was already done", booking.getId());
+                    } else {
+                        booking.setStatus("clearance_in_progress");
+                        clearanceMap.put("specialistName", specialistName);
+                        clearanceMap.put("quarantineStatus", "PENDING_SPECIALIST_REVIEW");
+                        appendHistory(payload, "Hệ thống", "Kíp xe (Tài xế & Hộ tống) đã xác nhận đủ giấy tờ chuyến đi. Đơn được tự động chuyển sang Chuyên viên kiểm dịch (" + specialistName + ") để duyệt xác nhận dịch tễ.");
+                        log.info("Booking ID={} automatically transferred to Specialist [{}] for quarantine review after crew acknowledged", booking.getId(), specialistName);
+                    }
+                    payload.setClearance(clearanceMap);
+                }
                 break;
             }
             case "SET_DRIVER_PACK": {

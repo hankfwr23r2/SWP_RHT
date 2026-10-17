@@ -89,4 +89,14 @@ export const specialistApi = {
     const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/specialist/bookings/${id}/complete-clearance`)
     return res.data.data
   },
+
+  transferQuarantine: async (id: string | number): Promise<BackendBookingResponse> => {
+    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/specialist/bookings/${id}/transfer-quarantine`)
+    return res.data.data
+  },
+
+  approveQuarantine: async (id: string | number, note?: string): Promise<BackendBookingResponse> => {
+    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/specialist/bookings/${id}/approve-quarantine`, { note })
+    return res.data.data
+  },
 }

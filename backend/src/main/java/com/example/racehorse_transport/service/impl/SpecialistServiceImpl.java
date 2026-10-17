@@ -305,16 +305,119 @@ public class SpecialistServiceImpl implements SpecialistService {
         long now = System.currentTimeMillis();
         clearanceMap.put("doneAt", now);
         clearanceMap.put("doneBy", username != null ? username : "Chuyên viên");
+        clearanceMap.put("handedOverToCrewAt", now);
         payload.setClearance(clearanceMap);
 
-        booking.setStatus("clearance_done");
+        // Kiểm tra xem kíp xe (Driver và Escort) của các chuyến đã xác nhận đủ chưa
+        List<com.example.racehorse_transport.dto.coordinator.VehicleTripDto> trips = payload.getTrips();
+        boolean allTripsAcked = trips != null && !trips.isEmpty() && trips.stream().allMatch(t -> {
+            Map<String, Object> a = t.getAcks();
+            return a != null && a.get("driver") != null && a.get("escort") != null;
+        });
 
-        appendHistory(payload, username != null ? username : "Chuyên viên",
-                "Hoàn tất toàn bộ hồ sơ kiểm dịch & hải quan. Sẵn sàng phát lệnh bàn giao xe!");
+        if (allTripsAcked) {
+            booking.setStatus("ready_for_pickup");
+            appendHistory(payload, username != null ? username : "Chuyên viên",
+                    "Hoàn tất toàn bộ hồ sơ kiểm dịch & hải quan. Kíp xe đã nhận lệnh, đơn hàng chuyển sang trạng thái Sẵn sàng đón ngựa!");
+        } else {
+            booking.setStatus("clearance_done");
+            appendHistory(payload, username != null ? username : "Chuyên viên",
+                    "Hoàn tất toàn bộ hồ sơ kiểm dịch & hải quan. Đã chuyển giao cho kíp xe (Tài xế & Hộ tống) nhận lệnh điều xe!");
+        }
 
         savePayload(booking, payload);
         Booking saved = bookingRepository.save(booking);
-        log.info("Clearance completed for booking ID={}", saved.getId());
+        log.info("Clearance completed for booking ID={}, status={}", saved.getId(), saved.getStatus());
+        return mapToBookingResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public BookingResponse transferForQuarantine(String bookingIdentifier, String username) {
+        Booking booking = findBookingByIdentifier(bookingIdentifier);
+        BookingDetailsPayload payload = extractPayload(booking);
+
+        // Kiểm tra xem kíp xe (Driver & Escort) đã xác nhận chưa
+        List<com.example.racehorse_transport.dto.coordinator.VehicleTripDto> trips = payload.getTrips();
+        if (trips != null && !trips.isEmpty()) {
+            boolean allAcked = trips.stream().allMatch(t -> {
+                Map<String, Object> acks = t.getAcks();
+                return acks != null && acks.get("driver") != null && acks.get("escort") != null;
+            });
+            if (!allAcked) {
+                throw new IllegalStateException("Kíp xe (Tài xế và Hộ tống) chưa hoàn tất xác nhận giấy tờ chuyến đi!");
+            }
+        }
+
+        // Lấy tên Specialist được phân công từ intake
+        String specialistName = "Chuyên viên kiểm dịch";
+        if (payload.getIntake() instanceof Map<?, ?> intakeMap && intakeMap.get("specialist") instanceof Map<?, ?> spMap) {
+            if (spMap.get("name") != null) {
+                specialistName = String.valueOf(spMap.get("name"));
+            }
+        }
+
+        booking.setStatus("clearance_in_progress");
+
+        Map<String, Object> clearanceMap = getOrCreateClearanceMap(payload, booking);
+        clearanceMap.put("crewAckedAt", System.currentTimeMillis());
+        clearanceMap.put("specialistName", specialistName);
+        clearanceMap.put("quarantineStatus", "PENDING_SPECIALIST_REVIEW");
+        payload.setClearance(clearanceMap);
+
+        appendHistory(payload, username != null ? username : "Hệ thống",
+                "Kíp xe đã xác nhận đủ giấy tờ. Chuyển đơn sang Chuyên viên kiểm dịch (" + specialistName + ") để duyệt xác nhận dịch tễ.");
+
+        savePayload(booking, payload);
+        Booking saved = bookingRepository.save(booking);
+        log.info("Booking ID={} transferred for quarantine review to Specialist [{}]", saved.getId(), specialistName);
+        return mapToBookingResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public BookingResponse approveQuarantine(String bookingIdentifier, ApproveMedicalRequest request, String username) {
+        Booking booking = findBookingByIdentifier(bookingIdentifier);
+        BookingDetailsPayload payload = extractPayload(booking);
+
+        String assignedSpecialist = null;
+        if (payload.getIntake() instanceof Map<?, ?> intakeMap && intakeMap.get("specialist") instanceof Map<?, ?> spMap) {
+            if (spMap.get("name") != null) {
+                assignedSpecialist = String.valueOf(spMap.get("name"));
+            }
+        }
+
+        String reviewer = (request != null && request.getSpecialistName() != null && !request.getSpecialistName().isBlank())
+                ? request.getSpecialistName()
+                : (username != null ? username : (assignedSpecialist != null ? assignedSpecialist : "Chuyên viên kiểm dịch"));
+
+        Map<String, Object> clearanceMap = getOrCreateClearanceMap(payload, booking);
+        clearanceMap.put("quarantineStatus", "APPROVED");
+        clearanceMap.put("quarantineApprovedAt", System.currentTimeMillis());
+        clearanceMap.put("quarantineApprovedBy", reviewer);
+        String note = (request != null && request.getNote() != null && !request.getNote().isBlank())
+                ? request.getNote()
+                : "Hồ sơ dịch tễ và kiểm dịch động vật của chuyến đi đạt chuẩn.";
+        clearanceMap.put("quarantineNote", note);
+
+        // Đánh dấu mục kiểm dịch health_cert trong clearance items
+        List<Map<String, Object>> items = getClearanceItemsList(clearanceMap);
+        for (Map<String, Object> item : items) {
+            if ("health_cert".equalsIgnoreCase(String.valueOf(item.get("type")))) {
+                item.put("status", "done");
+                item.put("updatedAt", System.currentTimeMillis());
+                item.put("updatedBy", reviewer);
+                item.put("note", note);
+            }
+        }
+
+        payload.setClearance(clearanceMap);
+
+        appendHistory(payload, reviewer, "Chuyên viên kiểm dịch đã duyệt ĐẠT xác nhận dịch tễ cho chuyến đi: " + note);
+
+        savePayload(booking, payload);
+        Booking saved = bookingRepository.save(booking);
+        log.info("Specialist [{}] approved quarantine for booking ID={}", reviewer, saved.getId());
         return mapToBookingResponse(saved);
     }
 
