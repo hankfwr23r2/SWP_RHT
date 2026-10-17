@@ -180,7 +180,8 @@ public class SettlementServiceImpl implements SettlementService {
     }
 
     /**
-     * 3. Khách hàng thanh toán phát sinh (nếu có) + gửi đánh giá -> Đóng đơn hàng (Flow 6, bước 4 & 5)
+     * 3. Khách hàng xác nhận Bảng quyết toán 0 đồng + gửi đánh giá -> Đóng đơn hàng (Flow 6, bước 4 & 5).
+     * Có khoản phát sinh phải trả thì bắt buộc thanh toán qua VNPAY (xem confirmSettlementPaid).
      */
     @Override
     @Transactional
@@ -193,80 +194,91 @@ public class SettlementServiceImpl implements SettlementService {
             throw new IllegalStateException("Đơn hàng chưa được phát hành Bảng quyết toán!");
         }
 
-        BigDecimal extraTotal = BigDecimal.ZERO;
-        Object totalObj = settlementMap.get("total");
-        if (totalObj instanceof Number) {
-            extraTotal = BigDecimal.valueOf(((Number) totalObj).doubleValue());
+        BigDecimal extraTotal = settlementTotal(settlementMap);
+        if (extraTotal.compareTo(BigDecimal.ZERO) > 0) {
+            throw new IllegalStateException("Bảng quyết toán có khoản phát sinh " + extraTotal
+                    + " VND, vui lòng thanh toán qua VNPAY.");
         }
 
         Instant now = Instant.now();
-        String actor = username != null ? username : "Khách hàng";
-
-        // Nếu có số tiền phát sinh > 0: Tạo record Payment loại SETTLEMENT
-        Payment settlementPayment = null;
-        if (extraTotal.compareTo(BigDecimal.ZERO) > 0) {
-            String paymentMethod = (request != null && request.getPaymentMethod() != null)
-                    ? request.getPaymentMethod()
-                    : "BANK_TRANSFER";
-            String txCode = (request != null && request.getTransactionCode() != null)
-                    ? request.getTransactionCode()
-                    : "SETTLE-" + booking.getId() + "-" + System.currentTimeMillis();
-
-            settlementPayment = Payment.builder()
-                    .bookingID(booking)
-                    .amount(extraTotal)
-                    .paymentDate(now)
-                    .paymentType("SETTLEMENT")
-                    .paymentMethod(paymentMethod)
-                    .transactionCode(txCode)
-                    .status("COMPLETED")
-                    .note("Thanh toán quyết toán phát sinh cho đơn BK-" + booking.getId())
-                    .build();
-            paymentRepository.save(settlementPayment);
-
-            Map<String, Object> paidInfo = new HashMap<>();
-            paidInfo.put("paidAt", now.toEpochMilli());
-            paidInfo.put("amount", extraTotal);
-            paidInfo.put("reference", txCode);
-            settlementMap.put("paid", paidInfo);
-        } else {
-            // Không có số tiền phát sinh (0 đồng)
-            Map<String, Object> paidInfo = new HashMap<>();
-            paidInfo.put("paidAt", now.toEpochMilli());
-            paidInfo.put("amount", BigDecimal.ZERO);
-            paidInfo.put("reference", "ZERO-SETTLEMENT");
-            settlementMap.put("paid", paidInfo);
-        }
-
+        Map<String, Object> paidInfo = new HashMap<>();
+        paidInfo.put("paidAt", now.toEpochMilli());
+        paidInfo.put("amount", BigDecimal.ZERO);
+        paidInfo.put("reference", "ZERO-SETTLEMENT");
+        settlementMap.put("paid", paidInfo);
         payload.setSettlement(settlementMap);
 
-        // Lưu đánh giá của khách hàng (Rating 1-5 sao + nhận xét)
         if (request != null && request.getRating() != null) {
-            Map<String, Object> ratingMap = new HashMap<>();
-            ratingMap.put("stars", request.getRating().getStars());
-            String comment = request.getRating().getComment() != null
-                    ? request.getRating().getComment()
-                    : request.getRating().getOverallFeedback();
-            ratingMap.put("comment", comment);
-            ratingMap.put("submittedAt", now.toEpochMilli());
-            payload.setRating(ratingMap);
+            payload.setRating(toRatingMap(request.getRating(), now));
         }
 
-        // Đóng đơn hàng
-        booking.setStatus("completed");
-
-        appendHistory(payload, actor, extraTotal.compareTo(BigDecimal.ZERO) > 0
-                ? "Thanh toán quyết toán phát sinh " + extraTotal + " VND và gửi đánh giá chuyến đi. Đóng đơn hàng (Completed)."
-                : "Xác nhận bảng quyết toán 0 đồng và gửi đánh giá chuyến đi. Đóng đơn hàng (Completed).");
-
-        // Giải phóng tài nguyên: Đổi trạng thái các xe trong chuyến sang AVAILABLE
-        releaseResources(payload);
-
-        savePayload(booking, payload);
-        Booking saved = bookingRepository.save(booking);
-        log.info("Booking ID={} completed and closed successfully", saved.getId());
-
+        Booking saved = closeBooking(booking, payload, username != null ? username : "Khách hàng",
+                "Xác nhận bảng quyết toán 0 đồng và gửi đánh giá chuyến đi. Đóng đơn hàng (Completed).");
         return mapToBookingResponse(saved);
+    }
+
+    /**
+     * Chuẩn bị thanh toán quyết toán qua VNPAY: kiểm tra trạng thái, giữ tạm đánh giá của khách,
+     * trả về số tiền phát sinh khách phải trả.
+     */
+    @Override
+    @Transactional
+    public BigDecimal holdForVnpay(Booking booking, RatingDto rating) {
+        String status = booking.getStatus() != null ? booking.getStatus().toLowerCase() : "";
+        if (!status.equals("settlement_issued") && !status.equals("payment_overdue")) {
+            throw new IllegalStateException("Đơn hàng không ở bước thanh toán quyết toán! Trạng thái hiện tại: " + booking.getStatus());
+        }
+        BookingDetailsPayload payload = extractPayload(booking);
+        Map<String, Object> settlementMap = getMapFromObject(payload.getSettlement());
+        if (settlementMap == null) {
+            throw new IllegalStateException("Đơn hàng chưa được phát hành Bảng quyết toán!");
+        }
+        BigDecimal extraTotal = settlementTotal(settlementMap);
+        if (extraTotal.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalStateException("Bảng quyết toán 0 đồng, không cần thanh toán qua VNPAY.");
+        }
+        // Đánh giá chỉ được ghi chính thức khi VNPAY xác nhận đã nhận tiền
+        if (rating != null) {
+            settlementMap.put("pendingRating", toRatingMap(rating, Instant.now()));
+        } else {
+            settlementMap.remove("pendingRating");
+        }
+        payload.setSettlement(settlementMap);
+        savePayload(booking, payload);
+        bookingRepository.save(booking);
+        return extraTotal;
+    }
+
+    /**
+     * Áp hiệu ứng sau khi VNPAY xác nhận đã nhận tiền quyết toán: ghi đánh giá, đóng đơn, nhả xe về AVAILABLE.
+     */
+    @Override
+    @Transactional
+    public Booking confirmSettlementPaid(Payment payment, String actor) {
+        Booking booking = payment.getBookingID();
+        BookingDetailsPayload payload = extractPayload(booking);
+        Map<String, Object> settlementMap = getMapFromObject(payload.getSettlement());
+        if (settlementMap == null) {
+            settlementMap = new HashMap<>();
+        }
+        Instant paidAt = payment.getPaymentDate() != null ? payment.getPaymentDate() : Instant.now();
+
+        Map<String, Object> paidInfo = new HashMap<>();
+        paidInfo.put("paidAt", paidAt.toEpochMilli());
+        paidInfo.put("amount", payment.getAmount());
+        paidInfo.put("reference", payment.getTransactionCode());
+        paidInfo.put("method", payment.getPaymentMethod());
+        settlementMap.put("paid", paidInfo);
+
+        Object pendingRating = settlementMap.remove("pendingRating");
+        if (pendingRating instanceof Map) {
+            payload.setRating(pendingRating);
+        }
+        payload.setSettlement(settlementMap);
+
+        return closeBooking(booking, payload, actor != null ? actor : "Khách hàng",
+                "Thanh toán quyết toán phát sinh " + payment.getAmount() + " VND qua " + payment.getPaymentMethod()
+                        + " và gửi đánh giá chuyến đi. Đóng đơn hàng (Completed).");
     }
 
     /**
@@ -284,6 +296,32 @@ public class SettlementServiceImpl implements SettlementService {
     // =========================================================================
     // HELPER METHODS
     // =========================================================================
+
+    private BigDecimal settlementTotal(Map<String, Object> settlementMap) {
+        Object totalObj = settlementMap.get("total");
+        return totalObj instanceof Number
+                ? BigDecimal.valueOf(((Number) totalObj).doubleValue())
+                : BigDecimal.ZERO;
+    }
+
+    private Map<String, Object> toRatingMap(RatingDto rating, Instant now) {
+        Map<String, Object> ratingMap = new HashMap<>();
+        ratingMap.put("stars", rating.getStars());
+        ratingMap.put("comment", rating.getComment() != null ? rating.getComment() : rating.getOverallFeedback());
+        ratingMap.put("submittedAt", now.toEpochMilli());
+        return ratingMap;
+    }
+
+    // Đóng đơn hàng và giải phóng xe trong chuyến về AVAILABLE
+    private Booking closeBooking(Booking booking, BookingDetailsPayload payload, String actor, String historyText) {
+        booking.setStatus("completed");
+        appendHistory(payload, actor, historyText);
+        releaseResources(payload);
+        savePayload(booking, payload);
+        Booking saved = bookingRepository.save(booking);
+        log.info("Booking ID={} completed and closed successfully", saved.getId());
+        return saved;
+    }
 
     private void releaseResources(BookingDetailsPayload payload) {
         if (payload.getTrips() != null) {

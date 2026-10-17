@@ -4,7 +4,7 @@ import { BIG_TRUCK_FACTOR } from './public-pricing'
 
 // ===== Cọc, báo giá =====
 export const DEPOSIT_RATE = 0.3 // cọc 30% để nhận Vận đơn; 70% còn lại trả ngày D (PRD mục 2.6, 11.1)
-export const QUOTE_VALID_HOURS = 48 // hạn giữ báo giá; quá hạn thì đơn hết hiệu lực
+export const QUOTE_VALID_HOURS = 24 // hạn giữ báo giá; quá hạn thì đơn hết hiệu lực
 export const DOCS_CUTOFF_HOUR = 18 // 18:00 ngày D-1: mốc cảnh báo nội bộ giấy tờ (PRD mục 3.4)
 
 // ===== Hạng xe (PRD mục 10) =====

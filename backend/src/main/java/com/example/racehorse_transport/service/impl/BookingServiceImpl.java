@@ -39,6 +39,9 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class BookingServiceImpl implements BookingService {
 
+    // Hạn giữ báo giá: quá hạn chưa đặt cọc thì nhả xe và kíp xe
+    public static final int QUOTE_VALID_HOURS = 24;
+
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final CustomerRepository customerRepository;
@@ -733,7 +736,7 @@ public class BookingServiceImpl implements BookingService {
                 : total.subtract(deposit);
 
         Instant now = Instant.now();
-        Instant expiresAt = now.plus(48, ChronoUnit.HOURS); // Hiệu lực 48 giờ
+        Instant expiresAt = now.plus(QUOTE_VALID_HOURS, ChronoUnit.HOURS);
 
         User sentByUser = null;
         if (request.getBy() != null && !request.getBy().isBlank()) {
@@ -790,7 +793,7 @@ public class BookingServiceImpl implements BookingService {
         payload.setQuote(quoteMap);
 
         appendHistory(payload, request.getBy() != null ? request.getBy() : "Quản lý",
-                "Duyệt và phát hành báo giá: Tổng " + total + " VND, Đặt cọc 30%: " + deposit + " VND (Hiệu lực 48h)");
+                "Duyệt và phát hành báo giá: Tổng " + total + " VND, Đặt cọc 30%: " + deposit + " VND (Hiệu lực " + QUOTE_VALID_HOURS + " giờ)");
         savePayload(booking, payload);
 
         booking.setStatus("awaiting_payment");
@@ -892,52 +895,17 @@ public class BookingServiceImpl implements BookingService {
         return mapToResponse(updated);
     }
 
+    // Áp hiệu ứng sau khi đã nhận đủ tiền cọc 30% (luồng VNPAY): chốt báo giá, cấp Vận đơn
     @Override
     @Transactional
-    public BookingResponse payDeposit(String bookingIdentifier, String customerUsername,
-            com.example.racehorse_transport.dto.booking.PayDepositRequest request) {
-        Integer bookingId = parseBookingId(bookingIdentifier);
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+    public Booking confirmDepositPaid(Payment payment, String actor) {
+        Booking booking = payment.getBookingID();
+        Instant paidAt = payment.getPaymentDate() != null ? payment.getPaymentDate() : Instant.now();
 
-        if (!"awaiting_payment".equalsIgnoreCase(booking.getStatus())) {
-            throw new IllegalStateException("Đơn hàng không ở bước chờ thanh toán đặt cọc!");
-        }
-
-        Quotation quotation = quotationRepository.findTopByBookingIdOrderBySentAtDesc(booking.getId())
-                .orElseThrow(() -> new IllegalStateException("Không tìm thấy thông tin báo giá của đơn hàng!"));
-
-        Instant now = Instant.now();
-        if (quotation.getExpiresAt() != null && now.isAfter(quotation.getExpiresAt())) {
-            throw new IllegalStateException("Báo giá đã hết hạn 48 giờ, không thể đặt cọc!");
-        }
-
-        BigDecimal payAmount = (request != null && request.getAmount() != null)
-                ? request.getAmount()
-                : quotation.getDepositAmount();
-
-        String paymentMethod = (request != null && request.getPaymentMethod() != null)
-                ? request.getPaymentMethod()
-                : "BANK_TRANSFER";
-
-        String transactionCode = (request != null && request.getTransactionCode() != null)
-                ? request.getTransactionCode()
-                : "DEP-" + String.format("%04d", booking.getId()) + "-" + System.currentTimeMillis();
-
-        Payment payment = Payment.builder()
-                .bookingID(booking)
-                .amount(payAmount)
-                .paymentDate(now)
-                .paymentType("DEPOSIT")
-                .paymentMethod(paymentMethod)
-                .transactionCode(transactionCode)
-                .status("COMPLETED")
-                .note("Khách hàng thanh toán cọc 30% cho đơn BK-" + booking.getId())
-                .build();
-        paymentRepository.save(payment);
-
-        quotation.setStatus("ACCEPTED");
-        quotationRepository.save(quotation);
+        quotationRepository.findTopByBookingIdOrderBySentAtDesc(booking.getId()).ifPresent(quotation -> {
+            quotation.setStatus("ACCEPTED");
+            quotationRepository.save(quotation);
+        });
 
         String waybillNo = "VD-2026-" + String.format("%04d", booking.getId());
         booking.setWaybillNo(waybillNo);
@@ -945,72 +913,30 @@ public class BookingServiceImpl implements BookingService {
 
         BookingDetailsPayload payload = extractPayload(booking);
         Map<String, Object> paymentMap = new HashMap<>();
-        paymentMap.put("paidAt", now.toEpochMilli());
-        paymentMap.put("amount", payAmount);
-        paymentMap.put("reference", transactionCode);
+        paymentMap.put("paidAt", paidAt.toEpochMilli());
+        paymentMap.put("amount", payment.getAmount());
+        paymentMap.put("reference", payment.getTransactionCode());
+        paymentMap.put("method", payment.getPaymentMethod());
         payload.setPayment(paymentMap);
 
-        appendHistory(payload, customerUsername != null ? customerUsername : "Khách hàng",
-                "Đặt cọc 30% (" + payAmount + " VND), cấp Vận đơn " + waybillNo);
+        appendHistory(payload, actor != null ? actor : "Khách hàng",
+                "Đặt cọc 30% (" + payment.getAmount() + " VND) qua " + payment.getPaymentMethod() + ", cấp Vận đơn " + waybillNo);
         savePayload(booking, payload);
-
         Booking updated = bookingRepository.save(booking);
 
         logAction("PAY_DEPOSIT", updated.getId(),
-                "Khách hàng thanh toán cọc 30% (" + payAmount + " VND), cấp Vận đơn " + waybillNo);
-        log.info("Successfully paid deposit for booking ID={}, waybill={}", updated.getId(), waybillNo);
-        return mapToResponse(updated);
+                "Khách hàng thanh toán cọc 30% (" + payment.getAmount() + " VND) qua " + payment.getPaymentMethod()
+                        + ", mã GD " + payment.getTransactionCode() + ", cấp Vận đơn " + waybillNo);
+        log.info("Deposit confirmed for booking ID={}, waybill={}", updated.getId(), waybillNo);
+        return updated;
     }
 
+    // Áp hiệu ứng sau khi đã nhận đủ 70% còn lại (luồng VNPAY): đủ điều kiện cho xe xuất phát
     @Override
     @Transactional
-    public BookingResponse payBalance(String bookingIdentifier, String customerUsername,
-            com.example.racehorse_transport.dto.booking.PayBalanceRequest request) {
-        Integer bookingId = parseBookingId(bookingIdentifier);
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
-
-        // Kiểm tra xem đơn đã cọc 30% chưa
-        List<Payment> existingPayments = paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(booking.getId());
-        boolean hasDeposit = existingPayments.stream()
-                .anyMatch(p -> "DEPOSIT".equalsIgnoreCase(p.getPaymentType()) && "COMPLETED".equalsIgnoreCase(p.getStatus()));
-        if (!hasDeposit && booking.getWaybillNo() == null) {
-            throw new IllegalStateException("Đơn hàng chưa thanh toán tiền cọc 30%! Vui lòng cọc trước khi thanh toán số dư.");
-        }
-
-        boolean alreadyPaidBalance = existingPayments.stream()
-                .anyMatch(p -> "BALANCE".equalsIgnoreCase(p.getPaymentType()) && "COMPLETED".equalsIgnoreCase(p.getStatus()));
-        if (alreadyPaidBalance) {
-            throw new IllegalStateException("Đơn hàng này đã thanh toán đủ 70% còn lại!");
-        }
-
-        Quotation quotation = quotationRepository.findTopByBookingIdOrderBySentAtDesc(booking.getId())
-                .orElseThrow(() -> new IllegalStateException("Không tìm thấy thông tin báo giá của đơn hàng!"));
-
-        Instant now = Instant.now();
-        BigDecimal payAmount = (request != null && request.getAmount() != null)
-                ? request.getAmount()
-                : (quotation.getBalanceAmount() != null ? quotation.getBalanceAmount() : quotation.getTotalAmount().multiply(new BigDecimal("0.7")));
-
-        String paymentMethod = (request != null && request.getPaymentMethod() != null && !request.getPaymentMethod().isBlank())
-                ? request.getPaymentMethod()
-                : "BANK_TRANSFER";
-
-        String transactionCode = (request != null && request.getTransactionCode() != null && !request.getTransactionCode().isBlank())
-                ? request.getTransactionCode()
-                : "BAL-" + String.format("%04d", booking.getId()) + "-" + System.currentTimeMillis();
-
-        Payment payment = Payment.builder()
-                .bookingID(booking)
-                .amount(payAmount)
-                .paymentDate(now)
-                .paymentType("BALANCE")
-                .paymentMethod(paymentMethod)
-                .transactionCode(transactionCode)
-                .status("COMPLETED")
-                .note("Khách hàng thanh toán 70% cước còn lại ngày D cho đơn BK-" + booking.getId())
-                .build();
-        paymentRepository.save(payment);
+    public Booking confirmBalancePaid(Payment payment, String actor) {
+        Booking booking = payment.getBookingID();
+        Instant paidAt = payment.getPaymentDate() != null ? payment.getPaymentDate() : Instant.now();
 
         BookingDetailsPayload payload = extractPayload(booking);
         Map<String, Object> paymentMap;
@@ -1022,22 +948,24 @@ public class BookingServiceImpl implements BookingService {
             paymentMap = new HashMap<>();
         }
         paymentMap.put("balancePaid", true);
-        paymentMap.put("balanceAmount", payAmount);
-        paymentMap.put("balancePaidAt", now.toEpochMilli());
-        paymentMap.put("balanceTransaction", transactionCode);
-        paymentMap.put("balanceMethod", paymentMethod);
+        paymentMap.put("balanceAmount", payment.getAmount());
+        paymentMap.put("balancePaidAt", paidAt.toEpochMilli());
+        paymentMap.put("balanceTransaction", payment.getTransactionCode());
+        paymentMap.put("balanceMethod", payment.getPaymentMethod());
         paymentMap.put("isFullyPaidFixedRate", true);
         payload.setPayment(paymentMap);
 
-        appendHistory(payload, customerUsername != null ? customerUsername : "Khách hàng",
-                "Thanh toán 70% còn lại (" + payAmount + " VND). Đã đủ điều kiện để xe bắt đầu hành trình.");
+        appendHistory(payload, actor != null ? actor : "Khách hàng",
+                "Thanh toán 70% còn lại (" + payment.getAmount() + " VND) qua " + payment.getPaymentMethod()
+                        + ". Đã đủ điều kiện để xe bắt đầu hành trình.");
         savePayload(booking, payload);
         Booking updated = bookingRepository.save(booking);
 
         logAction("PAY_BALANCE", updated.getId(),
-                "Khách hàng thanh toán 70% còn lại (" + payAmount + " VND) cho đơn BK-" + updated.getId());
-        log.info("Successfully paid balance for booking ID={}", updated.getId());
-        return mapToResponse(updated);
+                "Khách hàng thanh toán 70% còn lại (" + payment.getAmount() + " VND) qua " + payment.getPaymentMethod()
+                        + ", mã GD " + payment.getTransactionCode() + " cho đơn BK-" + updated.getId());
+        log.info("Balance confirmed for booking ID={}", updated.getId());
+        return updated;
     }
 
     @Override
@@ -1097,13 +1025,13 @@ public class BookingServiceImpl implements BookingService {
 
                     booking.setStatus("quote_expired");
                     BookingDetailsPayload payload = extractPayload(booking);
-                    appendHistory(payload, "Hệ thống", "Báo giá hết hạn 48 giờ, tự động giải phóng xe và kíp xe.");
+                    appendHistory(payload, "Hệ thống", "Báo giá hết hạn " + QUOTE_VALID_HOURS + " giờ, tự động giải phóng xe và kíp xe.");
                     savePayload(booking, payload);
                     bookingRepository.save(booking);
 
                     logAction("QUOTE_AUTO_EXPIRED_RELEASE_FLEET", booking.getId(),
                             "Báo giá đơn BK-" + booking.getId()
-                                    + " hết hạn 48 giờ. Đã tự động giải phóng xe và kíp xe.");
+                                    + " hết hạn " + QUOTE_VALID_HOURS + " giờ. Đã tự động giải phóng xe và kíp xe.");
                     count++;
                 }
             }

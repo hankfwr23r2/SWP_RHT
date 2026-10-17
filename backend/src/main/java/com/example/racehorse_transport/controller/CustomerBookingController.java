@@ -79,22 +79,6 @@ public class CustomerBookingController {
         return ResponseEntity.ok(ApiResponse.success(response, "Lấy chi tiết đơn hàng thành công"));
     }
 
-    // 4. API Khách hàng thanh toán đặt cọc 30% để nhận Vận đơn (Waybill)
-    @PostMapping("/{id}/pay-deposit")
-    public ResponseEntity<ApiResponse<BookingResponse>> payDeposit(
-            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
-            @PathVariable("id") String id,
-            @RequestBody(required = false) com.example.racehorse_transport.dto.booking.PayDepositRequest request) {
-        String username = extractUsername(authHeader);
-        if (username == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Vui lòng đăng nhập để thanh toán cọc!"));
-        }
-
-        BookingResponse response = bookingService.payDeposit(id, username, request);
-        return ResponseEntity.ok(ApiResponse.success(response, "Thanh toán cọc 30% thành công! Vận đơn đã được cấp."));
-    }
-
     // 5. API Khách hàng từ chối báo giá (giải phóng xe và kíp xe)
     @PostMapping("/{id}/reject-quote")
     public ResponseEntity<ApiResponse<BookingResponse>> rejectQuote(
@@ -124,21 +108,5 @@ public class CustomerBookingController {
 
         BookingResponse response = bookingService.resubmitDocuments(id, username);
         return ResponseEntity.ok(ApiResponse.success(response, "Đã gửi lại hồ sơ cho Chuyên viên kiểm dịch thẩm định"));
-    }
-
-    // 7. API Khách hàng thanh toán 70% còn lại trước giờ khởi hành (ngày D - Flow 4)
-    @PostMapping("/{id}/pay-balance")
-    public ResponseEntity<ApiResponse<BookingResponse>> payBalance(
-            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
-            @PathVariable("id") String id,
-            @RequestBody(required = false) com.example.racehorse_transport.dto.booking.PayBalanceRequest request) {
-        String username = extractUsername(authHeader);
-        if (username == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Vui lòng đăng nhập để thanh toán số dư!"));
-        }
-
-        BookingResponse response = bookingService.payBalance(id, username, request);
-        return ResponseEntity.ok(ApiResponse.success(response, "Thanh toán 70% còn lại thành công! Xe đã đủ điều kiện bắt đầu hành trình."));
     }
 }

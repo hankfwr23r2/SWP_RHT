@@ -32,9 +32,15 @@ export function SettlementCard({ b, owner, onDone }: { b: CustomerBookingView; o
   const open = b.status === 'settlement_issued' || b.status === 'payment_overdue'
   const submit = async () => {
     setBusy(true)
+    const rating = { stars, comment, trip: stars, driver: stars, escort: stars }
     try {
-      await customerBookingsApi.settle(owner, b.id, { stars, comment, trip: stars, driver: stars, escort: stars })
-      toast(st.total ? 'Đã thanh toán và gửi đánh giá. Đơn hoàn tất' : 'Đã gửi đánh giá. Đơn hoàn tất')
+      // Có khoản phải trả: sang cổng VNPAY, đơn chỉ đóng khi VNPAY xác nhận đã nhận tiền
+      if (st.total > 0) {
+        window.location.assign(await customerBookingsApi.settlementVnpayUrl(b.id, rating))
+        return
+      }
+      await customerBookingsApi.settle(owner, b.id, rating)
+      toast('Đã gửi đánh giá. Đơn hoàn tất')
       onDone()
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Không thực hiện được', 'error')
@@ -59,8 +65,8 @@ export function SettlementCard({ b, owner, onDone }: { b: CustomerBookingView; o
             </FormSelect>
           </div>
           <div className="form-group"><label htmlFor="rt-note">Nhận xét (không bắt buộc)</label><input id="rt-note" className="form-control" placeholder="Góp ý hoặc chia sẻ trải nghiệm của bạn…" value={comment} onChange={e => setComment(e.target.value)} /></div>
-          <button className="btn btn-primary btn-lg btn-full" disabled={busy} onClick={submit}>{busy ? 'Đang xử lý…' : st.total ? `Thanh toán ${formatVND(st.total)} và gửi đánh giá` : 'Xác nhận và gửi đánh giá'}</button>
-          {st.total > 0 && <p className="form-hint" style={{ textAlign: 'center' }}>Bản thử nghiệm: bấm thanh toán là ghi nhận đã nhận tiền.</p>}
+          <button className="btn btn-primary btn-lg btn-full" disabled={busy} onClick={submit}>{busy ? (st.total ? 'Đang chuyển sang VNPAY…' : 'Đang xử lý…') : st.total ? `Thanh toán ${formatVND(st.total)} qua VNPAY và gửi đánh giá` : 'Xác nhận và gửi đánh giá'}</button>
+          {st.total > 0 && <p className="form-hint" style={{ textAlign: 'center' }}>Bạn sẽ được chuyển sang cổng VNPAY. Đánh giá được ghi nhận khi thanh toán thành công.</p>}
         </>
       )}
       {b.rating && <p style={{ marginTop: 12 }}>Bạn đã chấm: {b.rating.stars ?? b.rating.trip}/5 ★{b.rating.comment ? `. "${b.rating.comment}"` : ''}</p>}

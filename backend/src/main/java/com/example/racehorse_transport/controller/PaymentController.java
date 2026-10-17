@@ -31,35 +31,7 @@ public class PaymentController {
     }
 
     /**
-     * 1. API Khách hàng thanh toán đặt cọc 30% để nhận Vận đơn (Waybill)
-     * POST /api/v1/payments/deposit
-     */
-    @PostMapping("/deposit")
-    public ResponseEntity<ApiResponse<PaymentResponse>> payDeposit(
-            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
-            @Valid @RequestBody ProcessPaymentRequest request) {
-
-        String username = extractUsername(authHeader);
-        PaymentResponse response = paymentService.payDeposit(request, username);
-        return ResponseEntity.ok(ApiResponse.success(response, "Thanh toán cọc 30% thành công! Vận đơn đã được cấp."));
-    }
-
-    /**
-     * 2. API Khách hàng thanh toán 70% còn lại trước giờ khởi hành (ngày D - Flow 4)
-     * POST /api/v1/payments/balance
-     */
-    @PostMapping("/balance")
-    public ResponseEntity<ApiResponse<PaymentResponse>> payBalance(
-            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
-            @Valid @RequestBody ProcessPaymentRequest request) {
-
-        String username = extractUsername(authHeader);
-        PaymentResponse response = paymentService.payBalance(request, username);
-        return ResponseEntity.ok(ApiResponse.success(response, "Thanh toán 70% còn lại thành công! Xe đã đủ điều kiện bắt đầu hành trình."));
-    }
-
-    /**
-     * 3. API Hủy đơn kèm chính sách hoàn cọc / phí phạt theo ngày (PRD mục 8.2 & 8.3)
+     * 1. API Hủy đơn kèm chính sách hoàn cọc / phí phạt theo ngày (PRD mục 8.2 & 8.3)
      * POST /api/v1/payments/cancel
      */
     @PostMapping("/cancel")
@@ -74,7 +46,7 @@ public class PaymentController {
     }
 
     /**
-     * 4. API Xem tóm tắt tình hình tài chính của đơn hàng
+     * 2. API Xem tóm tắt tình hình tài chính của đơn hàng
      * GET /api/v1/payments/booking/{bookingId}/summary
      */
     @GetMapping("/booking/{bookingId}/summary")
@@ -86,7 +58,7 @@ public class PaymentController {
     }
 
     /**
-     * 5. API Xem lịch sử tất cả các đợt thanh toán của một đơn hàng
+     * 3. API Xem lịch sử tất cả các đợt thanh toán của một đơn hàng
      * GET /api/v1/payments/booking/{bookingId}
      */
     @GetMapping("/booking/{bookingId}")
@@ -98,7 +70,7 @@ public class PaymentController {
     }
 
     /**
-     * 6. API Xem chi tiết 1 giao dịch thanh toán
+     * 4. API Xem chi tiết 1 giao dịch thanh toán
      * GET /api/v1/payments/{id}
      */
     @GetMapping("/{id}")

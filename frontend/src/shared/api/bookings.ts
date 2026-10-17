@@ -142,7 +142,7 @@ export const backendBookingApi = {
     return res.data.data
   },
 
-  // 8. Manager duyệt và phát hành báo giá 48h (POST /api/v1/manager/bookings/{id}/send-quote)
+  // 8. Manager duyệt và phát hành báo giá 24h (POST /api/v1/manager/bookings/{id}/send-quote)
   sendQuote: async (id: number | string, payload: { by?: string; adjustments: Array<{ label: string; amount: number }>; lines?: any[]; subtotal?: number; total?: number; deposit?: number; balance?: number }): Promise<BackendBookingResponse> => {
     const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/manager/bookings/${id}/send-quote`, payload)
     return res.data.data
@@ -151,12 +151,6 @@ export const backendBookingApi = {
   // 9. Manager trả đơn về Specialist / Coordinator (POST /api/v1/manager/bookings/{id}/send-back)
   sendBack: async (id: number | string, payload: { by?: string; to: 'specialist' | 'coordinator'; reason: string }): Promise<BackendBookingResponse> => {
     const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/manager/bookings/${id}/send-back`, payload)
-    return res.data.data
-  },
-
-  // 10. Customer thanh toán đặt cọc 30% (POST /api/v1/customer/bookings/{id}/pay-deposit)
-  payDeposit: async (id: number | string, payload?: { paymentMethod?: string; amount?: number; transactionCode?: string }): Promise<BackendBookingResponse> => {
-    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${id}/pay-deposit`, payload ?? {})
     return res.data.data
   },
 
@@ -182,12 +176,6 @@ export const backendBookingApi = {
   // 14. Customer gửi lại hồ sơ ngựa sau khi được yêu cầu bổ sung (POST /api/v1/customer/bookings/{id}/resubmit)
   resubmitDocuments: async (id: number | string): Promise<BackendBookingResponse> => {
     const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${id}/resubmit`)
-    return res.data.data
-  },
-
-  // 15. Customer thanh toán 70% còn lại trước giờ khởi hành (ngày D - Flow 4)
-  payBalance: async (id: number | string, payload?: { paymentMethod?: string; amount?: number; transactionCode?: string }): Promise<BackendBookingResponse> => {
-    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${id}/pay-balance`, payload ?? {})
     return res.data.data
   },
 

@@ -14,6 +14,7 @@ import OrdersPage from './features/orders/OrdersPage'
 import OrderDetailPage from './features/orders/OrderDetailPage'
 import HistoryPage from './features/orders/HistoryPage'
 import PolicyPage from './features/policies/PolicyPage'
+import VnpayReturnPage from './features/payment/VnpayReturnPage'
 
 const C = ['customer'] as AppRoute['roles']
 
@@ -31,6 +32,7 @@ export const routes: AppRoute[] = [
   { path: '/history', page: HistoryPage, roles: C, title: 'Lịch sử đơn', layout: 'customer' },
   { path: '/terms', page: PolicyPage, roles: [], title: 'Điều khoản và chính sách', layout: 'public' },
   { path: '/orders/:id', page: OrderDetailPage, roles: C, title: 'Chi tiết đơn', layout: 'customer' },
+  { path: '/payment/vnpay-return', page: VnpayReturnPage, roles: [], title: 'Kết quả thanh toán', layout: 'public' },
 ]
 
 routes.push({ path: '/sitemap', page: () => <SitemapPage app="customer" />, roles: [], title: 'Sitemap', layout: 'public' })

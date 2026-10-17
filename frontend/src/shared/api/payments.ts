@@ -1,14 +1,5 @@
 import apiClient, { type ApiResponse } from './client'
 
-export interface ProcessPaymentPayload {
-  bookingId: string | number
-  amount?: number
-  paymentType?: 'DEPOSIT' | 'BALANCE' | 'PENALTY' | 'REFUND' | 'SETTLEMENT'
-  paymentMethod?: 'BANK_TRANSFER' | 'VNPAY' | 'CARD' | 'CASH'
-  transactionCode?: string
-  note?: string
-}
-
 export interface PaymentDto {
   id: number
   bookingId: number
@@ -52,20 +43,59 @@ export interface CancelWithRefundDto {
   refundPayment?: PaymentDto
 }
 
+export type VnpayPaymentType = 'DEPOSIT' | 'BALANCE' | 'SETTLEMENT'
+
+export interface VnpayRatingPayload {
+  stars: number
+  comment?: string
+}
+
+export interface VnpayCreateDto {
+  paymentUrl: string
+  transactionCode: string
+  amount: number
+  expiresAt: number
+}
+
+export interface VnpayResultDto {
+  success: boolean
+  rspCode: string
+  message: string
+  bookingId?: number
+  bookingCode?: string
+  paymentType?: string
+  paymentStatus?: string
+  amount?: number
+  transactionCode?: string
+  gatewayTransactionNo?: string
+  bankCode?: string
+}
+
+// Chỉ giữ các tham số vnp_* mà VNPAY gắn vào URL trang kết quả
+export function vnpayParamsFrom(search: string): Record<string, string> {
+  const params: Record<string, string> = {}
+  new URLSearchParams(search).forEach((value, key) => {
+    if (key.startsWith('vnp_')) params[key] = value
+  })
+  return params
+}
+
 export const paymentApi = {
   /**
-   * 1. Thanh toán cọc 30% để nhận Vận đơn (POST /api/v1/payments/deposit)
+   * 1. Tạo link thanh toán VNPAY cho cọc 30% / số dư 70% / quyết toán (POST /api/v1/payments/vnpay/create).
+   * Số tiền do backend tự tính từ báo giá / bảng quyết toán, client chỉ gửi mã đơn và loại thanh toán.
+   * Quyết toán gửi kèm đánh giá; đánh giá chỉ được ghi khi VNPAY xác nhận đã nhận tiền.
    */
-  payDeposit: async (payload: ProcessPaymentPayload): Promise<PaymentDto> => {
-    const res = await apiClient.post<ApiResponse<PaymentDto>>('/payments/deposit', payload)
+  createVnpay: async (bookingId: string | number, paymentType: VnpayPaymentType, rating?: VnpayRatingPayload): Promise<VnpayCreateDto> => {
+    const res = await apiClient.post<ApiResponse<VnpayCreateDto>>('/payments/vnpay/create', { bookingId: String(bookingId), paymentType, rating })
     return res.data.data
   },
 
   /**
-   * 2. Thanh toán 70% còn lại trước giờ khởi hành ngày D (POST /api/v1/payments/balance)
+   * 2. Gửi lại tham số VNPAY trả về trình duyệt để backend kiểm tra chữ ký và ghi nhận (GET /api/v1/payments/vnpay/return)
    */
-  payBalance: async (payload: ProcessPaymentPayload): Promise<PaymentDto> => {
-    const res = await apiClient.post<ApiResponse<PaymentDto>>('/payments/balance', payload)
+  verifyVnpayReturn: async (params: Record<string, string>): Promise<VnpayResultDto> => {
+    const res = await apiClient.get<ApiResponse<VnpayResultDto>>('/payments/vnpay/return', { params })
     return res.data.data
   },
 

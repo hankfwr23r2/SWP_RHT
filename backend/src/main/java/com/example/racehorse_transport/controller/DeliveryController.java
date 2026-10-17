@@ -3,17 +3,11 @@ package com.example.racehorse_transport.controller;
 import com.example.racehorse_transport.dto.booking.BookingResponse;
 import com.example.racehorse_transport.dto.field.*;
 import com.example.racehorse_transport.response.ApiResponse;
-import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.service.DeliveryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -22,21 +16,6 @@ import org.springframework.web.bind.annotation.*;
 public class DeliveryController {
 
     private final DeliveryService deliveryService;
-    private final JwtUtils jwtUtils;
-
-    private String extractUsername(String authHeader) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
-            return auth.getName();
-        }
-        if (authHeader != null && authHeader.startsWith("Bearer ")) {
-            String token = authHeader.substring(7);
-            if (jwtUtils.validateToken(token)) {
-                return jwtUtils.getUsernameFromToken(token);
-            }
-        }
-        return null;
-    }
 
     // 1. Kíp xe check-in đến điểm giao đích & kích hoạt đếm thời gian 2h
     @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'ADMIN')")
@@ -78,22 +57,7 @@ public class DeliveryController {
         return ResponseEntity.ok(ApiResponse.success(response, "Quản lý đã phát hành Bảng quyết toán phát sinh thành công"));
     }
 
-    // 5. Khách hàng thanh toán số dư quyết toán phát sinh
-    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
-    @PostMapping("/{id}/pay-settlement")
-    public ResponseEntity<ApiResponse<BookingResponse>> paySettlement(
-            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
-            @PathVariable("id") Integer id,
-            @RequestBody(required = false) PaySettlementRequest request) {
-        String username = extractUsername(authHeader);
-        if (username == null) {
-            throw new AccessDeniedException("Yêu cầu xác thực tài khoản khách hàng để thanh toán quyết toán");
-        }
-        BookingResponse response = deliveryService.paySettlement(id, username, request);
-        return ResponseEntity.ok(ApiResponse.success(response, "Thanh toán quyết toán thành công, đơn hàng hoàn tất!"));
-    }
-
-    // 6. Kíp xe xác nhận xe đã về đến Trụ sở chính Việt Nam -> Xe về AVAILABLE
+    // 5. Kíp xe xác nhận xe đã về đến Trụ sở chính Việt Nam -> Xe về AVAILABLE
     @PreAuthorize("hasAnyRole('DRIVER', 'COORDINATOR', 'ADMIN')")
     @PostMapping("/vehicles/return-to-hq")
     public ResponseEntity<ApiResponse<String>> returnToHq(@RequestBody ReturnToHqRequest request) {

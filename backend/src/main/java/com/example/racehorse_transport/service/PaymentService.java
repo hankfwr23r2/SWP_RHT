@@ -18,16 +18,6 @@ public interface PaymentService {
     // =========================================================================
 
     /**
-     * Khách hàng đặt cọc 30% để nhận Vận đơn (Waybill)
-     */
-    PaymentResponse payDeposit(ProcessPaymentRequest request, String username);
-
-    /**
-     * Khách hàng thanh toán 70% còn lại trước giờ khởi hành (ngày D - Flow 4)
-     */
-    PaymentResponse payBalance(ProcessPaymentRequest request, String username);
-
-    /**
      * Hủy đơn và xử lý hoàn cọc / phạt cọc theo quy tắc thời gian (PRD mục 8.2 & 8.3)
      */
     CancelWithRefundResponse cancelWithRefundPolicy(String bookingIdentifier, CancelBookingRequest request, String username);

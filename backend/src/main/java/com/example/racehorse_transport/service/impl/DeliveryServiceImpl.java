@@ -189,53 +189,6 @@ public class DeliveryServiceImpl implements DeliveryService {
 
     @Override
     @Transactional
-    public BookingResponse paySettlement(Integer bookingId, String customerUsername, PaySettlementRequest request) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng ID: " + bookingId));
-
-        BigDecimal payAmount = request != null && request.getAmount() != null ? request.getAmount() : BigDecimal.ZERO;
-
-        // Lưu bản ghi thanh toán quyết toán vào bảng PAYMENT
-        Payment payment = Payment.builder()
-                .bookingID(booking)
-                .amount(payAmount)
-                .paymentDate(Instant.now())
-                .paymentType("SETTLEMENT")
-                .paymentMethod(request != null && request.getPaymentMethod() != null ? request.getPaymentMethod() : "BANK_TRANSFER")
-                .transactionCode(request != null && request.getTransactionRef() != null ? request.getTransactionRef() : "SETTLE-" + booking.getId() + "-" + System.currentTimeMillis())
-                .status("COMPLETED")
-                .note("Khách hàng thanh toán quyết toán phát sinh cho đơn BK-" + booking.getId())
-                .build();
-        paymentRepository.save(payment);
-
-        BookingDetailsPayload payload = extractPayload(booking);
-        if (payload.getSettlement() instanceof Map) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> settMap = (Map<String, Object>) payload.getSettlement();
-            settMap.put("settledAt", System.currentTimeMillis());
-            settMap.put("paidAmount", payAmount);
-        }
-
-        // Đóng đơn hoàn tất
-        booking.setStatus("completed");
-        appendHistory(payload, customerUsername != null ? customerUsername : "Khách hàng",
-                "Thanh toán quyết toán " + payAmount + " VND thành công. Đơn hàng hoàn tất.");
-
-        // Giải phóng xe về AVAILABLE tại Trụ sở chính VN
-        releaseVehiclesToAvailable(booking.getId());
-
-        savePayload(booking, payload);
-        Booking updated = bookingRepository.save(booking);
-
-        logAction("SETTLEMENT_PAID", updated.getId(),
-                "Khách hàng thanh toán quyết toán " + payAmount + " VND cho đơn BK-" + updated.getId() + ", giải phóng xe về AVAILABLE.");
-
-        log.info("Settlement paid for booking ID={}, order completed", updated.getId());
-        return mapToResponse(updated);
-    }
-
-    @Override
-    @Transactional
     public void returnToHq(ReturnToHqRequest request) {
         if (request.getVehicleId() != null) {
             Vehicle vehicle = vehicleRepository.findById(request.getVehicleId())

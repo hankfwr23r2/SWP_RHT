@@ -7,7 +7,7 @@ import { backendIncidentApi, type BackendIncidentResponse } from '../api/inciden
 import { backendSettlementApi } from '../api/settlements'
 import { specialistApi } from '../api/specialist'
 import apiClient, { type ApiResponse } from '../api/client'
-import { paymentApi } from '../api/payments'
+import { paymentApi, type VnpayPaymentType } from '../api/payments'
 import { incidentKindOf, incidentStatusOf, toBooking } from './bookingMapper'
 import { vehiclesApi, crewApi } from './fleet'
 
@@ -15,6 +15,12 @@ function numericId(id: string, prefix: string): number {
   const match = new RegExp(`^(?:${prefix}-)?(\\d+)$`, 'i').exec(id.trim())
   if (!match) throw new Error(`Mã ${prefix.toLowerCase()} không hợp lệ: ${id}.`)
   return Number(match[1])
+}
+
+function starsOf(rating: Omit<Rating, 'at'>): number {
+  const stars = rating.stars ?? rating.trip ?? 5
+  if (!Number.isInteger(stars) || stars < 1 || stars > 5) throw new Error('Chấm điểm từ 1 đến 5 sao.')
+  return stars
 }
 
 function backofficeRole(): string | null {
@@ -176,15 +182,16 @@ export const customerBookingsApi = {
   },
   resubmit: async (customer: string, id: string): Promise<CustomerBookingView> =>
     toCustomerView(toBooking(await backendBookingApi.resubmitDocuments(id), customer)),
-  payDeposit: async (customer: string, id: string): Promise<CustomerBookingView> =>
-    toCustomerView(toBooking(await backendBookingApi.payDeposit(id, { paymentMethod: 'VNPAY' }), customer)),
-  payBalance: async (customer: string, id: string): Promise<CustomerBookingView> =>
-    toCustomerView(toBooking(await backendBookingApi.payBalance(id, { paymentMethod: 'VNPAY' }), customer)),
+  // Link sang cổng VNPAY cho cọc 30% / số dư 70%; đơn chỉ đổi trạng thái khi VNPAY xác nhận đã nhận tiền
+  vnpayUrl: async (id: string, type: Exclude<VnpayPaymentType, 'SETTLEMENT'>): Promise<string> =>
+    (await paymentApi.createVnpay(id, type)).paymentUrl,
+  // Quyết toán có khoản phải trả: đánh giá gửi kèm, đơn chỉ đóng khi VNPAY xác nhận đã nhận tiền
+  settlementVnpayUrl: async (id: string, rating: Omit<Rating, 'at'>): Promise<string> =>
+    (await paymentApi.createVnpay(id, 'SETTLEMENT', { stars: starsOf(rating), comment: rating.comment })).paymentUrl,
+  // Quyết toán 0 đồng: chỉ gửi đánh giá và đóng đơn
   settle: async (customer: string, id: string, rating: Omit<Rating, 'at'>): Promise<CustomerBookingView> => {
-    const stars = rating.stars ?? rating.trip ?? 5
-    if (!Number.isInteger(stars) || stars < 1 || stars > 5) throw new Error('Chấm điểm từ 1 đến 5 sao.')
+    const stars = starsOf(rating)
     const out = await backendSettlementApi.payAndComplete(id, {
-      paymentMethod: 'VNPAY',
       rating: {
         stars,
         comment: rating.comment,
@@ -260,7 +267,7 @@ export const bookingsApi = {
     if (vs.length !== b.trips.length) throw new Error('Không tìm thấy xe của đơn.')
     return quoteLines(b, vs)
   },
-  // Manager: duyệt và gửi báo giá, khách có 48 giờ để đặt cọc. Tiền do frontend tính theo biểu giá rồi gửi lên.
+  // Manager: duyệt và gửi báo giá, khách có QUOTE_VALID_HOURS (24) giờ để đặt cọc. Tiền do frontend tính theo biểu giá rồi gửi lên.
   sendQuote: async (id: string, by: string, adjustments: Adjustment[]): Promise<Booking> => {
     const b = await byId(id)
     if (b.status !== 'pending_commercial') throw new Error('Đơn không ở bước duyệt báo giá.')

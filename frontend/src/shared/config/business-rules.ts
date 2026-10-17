@@ -35,7 +35,7 @@ export const CHOICE_HOURS = 48
 
 // ===== Thanh toán =====
 // Hạn = mốc SỚM HƠN của (duyệt + PAYMENT_HOURS) và 17:00 của (khởi hành − PAYMENT_CAP_DAYS).
-export const PAYMENT_HOURS = 48
+export const PAYMENT_HOURS = 24
 export const PAYMENT_CAP_DAYS = 2
 export const URGENT_HOURS = 12 // còn ít hơn số giờ này thì cảnh báo đỏ
 
@@ -52,7 +52,6 @@ export const ISSUE_RESPONSE_HOURS = 4
 // ===== Liên hệ, thanh toán =====
 export const HOTLINE = '1900 6868'
 export const OFFICE_ADDRESS = 'Văn phòng Vận chuyển Ngựa, 120 Xô Viết Nghệ Tĩnh, TP.HCM'
-export const BANK = { name: 'Vietcombank', account: '0071 000 123 456', owner: 'CONG TY TNHH EQUINEZ LOGISTICS' }
 
 // ===== Điều khoản và chính sách (PRD mục 11.5): mỗi văn bản là một tệp ảnh hoặc PDF, xem ở trang /terms =====
 // Thay tệp trong public/policies rồi đổi đường dẫn ở đây (đuôi .pdf thì hiện bằng khung PDF, còn lại hiện như ảnh).
