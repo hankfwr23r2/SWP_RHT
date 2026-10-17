@@ -35,7 +35,7 @@ export const CHOICE_HOURS = 48
 
 // ===== Thanh toán =====
 // Hạn = mốc SỚM HƠN của (duyệt + PAYMENT_HOURS) và 17:00 của (khởi hành − PAYMENT_CAP_DAYS).
-export const PAYMENT_HOURS = 48
+export const PAYMENT_HOURS = 24
 export const PAYMENT_CAP_DAYS = 2
 export const URGENT_HOURS = 12 // còn ít hơn số giờ này thì cảnh báo đỏ
 

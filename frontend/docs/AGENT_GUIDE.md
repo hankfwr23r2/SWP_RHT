@@ -14,7 +14,7 @@
 ### 1.2. 6 Luồng Nghiệp Vụ Cốt Lõi (Core Business Flows)
 1. **Flow 1: Khách đặt đơn & Quản lý hồ sơ ngựa**: Khách tạo đơn (nội địa/quốc tế), chọn hoặc tạo hồ sơ ngựa, đính kèm giấy chứng nhận kiểm dịch.
 2. **Flow 2: Thẩm định song song & Chốt xe - lộ trình**: Quản lý kích hoạt thẩm định song song. Kiểm dịch viên duyệt y tế; Điều phối viên chốt xe, lộ trình và phân công kíp xe độc lập.
-3. **Flow 3: Phê duyệt báo giá & Đặt cọc 30%**: Quản lý duyệt và phát hành báo giá hiệu lực 48 giờ. Khách thanh toán cọc 30% để hệ thống phát hành số Vận đơn điện tử (Waybill). Khách hủy đơn tại bước này sẽ bị áp dụng quy tắc khấu trừ cọc.
+3. **Flow 3: Phê duyệt báo giá & Đặt cọc 30%**: Quản lý duyệt và phát hành báo giá hiệu lực 24 giờ. Khách thanh toán cọc 30% để hệ thống phát hành số Vận đơn điện tử (Waybill). Khách hủy đơn tại bước này sẽ bị áp dụng quy tắc khấu trừ cọc.
 4. **Flow 4: Vận hành chuyến & Đơn Trụ Sở (Single HQ)**: Tài xế và Hộ tống check-in từng mốc, quét chip, thu chứng từ gốc, nhận đủ 70% số dư trước khi xuất phát, bàn giao ngựa, báo quá hạn 2h nếu người nhận không đến. Xe và kíp xe sau khi giao ngựa **phải xác nhận trở về Trụ sở chính tại Việt Nam** mới chuyển sang trạng thái `AVAILABLE`.
 5. **Flow 5: Sự cố hành trình (SOS) & Đề xuất đối tác**: Tài xế/Hộ tống báo SOS, Điều phối viên lập phương án trên bản đồ (gọi cứu hộ, đưa ngựa vào trạm nghỉ, đổi lộ trình), Quản lý duyệt phương án & chi phí.
 6. **Flow 6: Quyết toán chi phí & Đóng đơn**: Tài xế nộp bảng kê chi phí phát sinh kèm hóa đơn, Quản lý đối soát và phát hành bảng quyết toán (hạn 24h), Khách thanh toán quyết toán và chấm điểm chuyến đi để hoàn tất đóng đơn.

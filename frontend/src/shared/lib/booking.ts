@@ -373,7 +373,7 @@ export const managerCounts = (list: Pick<Booking, 'status' | 'incidents' | 'medi
 // Nhóm Đã duyệt chia nhỏ theo việc khách cần làm về thanh toán
 export type ApprovedSub = 'await_deposit' | 'deposited' | 'pay_at_pickup' | 'ready'
 export const APPROVED_SUBS: Record<ApprovedSub, { label: string; icon: string; hint: string }> = {
-  await_deposit: { label: 'Chờ đặt cọc', icon: 'fa-credit-card', hint: 'Bạn cần đặt cọc 30% trong 48 giờ để nhận vận đơn' },
+  await_deposit: { label: 'Chờ đặt cọc', icon: 'fa-credit-card', hint: `Bạn cần đặt cọc 30% trong ${QUOTE_VALID_HOURS} giờ để nhận vận đơn` },
   deposited: { label: 'Đã cọc, nhà xe chuẩn bị', icon: 'fa-file-signature', hint: 'Nhà xe làm giấy kiểm dịch, hải quan và chuẩn bị xe. Bạn không cần làm gì thêm' },
   pay_at_pickup: { label: 'Thanh toán lúc bốc ngựa', icon: 'fa-wallet', hint: 'Xe đã sẵn sàng. Trả 70% còn lại vào ngày bốc ngựa để xe được xuất bến' },
   ready: { label: 'Sẵn sàng đón ngựa', icon: 'fa-circle-check', hint: 'Đã thanh toán đủ. Chuẩn bị bản gốc hồ sơ ngựa để giao cho tài xế' },

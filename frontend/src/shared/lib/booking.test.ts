@@ -114,13 +114,13 @@ describe('báo giá', () => {
     expect(q.deposit).toBe(3_000_000)
     expect(q.balance).toBe(7_000_000)
     expect(q.deposit + q.balance).toBe(q.total)
-    expect(q.expiresAt - q.sentAt).toBe(48 * HOUR)
+    expect(q.expiresAt - q.sentAt).toBe(24 * HOUR)
   })
-  it('quá 48 giờ chưa đặt cọc thì hết hạn', () => {
+  it('quá 24 giờ chưa đặt cọc thì hết hạn', () => {
     const q = finalizeQuote([{ label: 'x', detail: '', amount: 1_000_000 }], [], NOW, 'Quản lý')
-    expect(isQuoteExpired({ status: 'awaiting_payment', quote: q }, NOW + 47 * HOUR)).toBe(false)
-    expect(isQuoteExpired({ status: 'awaiting_payment', quote: q }, NOW + 49 * HOUR)).toBe(true)
-    expect(isQuoteExpired({ status: 'waybill_issued', quote: q }, NOW + 49 * HOUR)).toBe(false)
+    expect(isQuoteExpired({ status: 'awaiting_payment', quote: q }, NOW + 23 * HOUR)).toBe(false)
+    expect(isQuoteExpired({ status: 'awaiting_payment', quote: q }, NOW + 25 * HOUR)).toBe(true)
+    expect(isQuoteExpired({ status: 'waybill_issued', quote: q }, NOW + 25 * HOUR)).toBe(false)
   })
 })
 

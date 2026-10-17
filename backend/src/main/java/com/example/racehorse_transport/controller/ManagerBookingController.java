@@ -42,13 +42,13 @@ public class ManagerBookingController {
         return ResponseEntity.ok(ApiResponse.success(response, "Phân công kíp xe thành công"));
     }
 
-    // 4. API Manager duyệt và phát hành báo giá (hiệu lực 48h)
+    // 4. API Manager duyệt và phát hành báo giá (hiệu lực 24h)
     @PostMapping("/{id}/send-quote")
     public ResponseEntity<ApiResponse<BookingResponse>> sendQuote(
             @PathVariable("id") String id,
             @jakarta.validation.Valid @RequestBody com.example.racehorse_transport.dto.manager.SendQuoteRequest request) {
         BookingResponse response = bookingService.sendQuote(id, request);
-        return ResponseEntity.ok(ApiResponse.success(response, "Phát hành báo giá thành công (hiệu lực 48 giờ)"));
+        return ResponseEntity.ok(ApiResponse.success(response, "Phát hành báo giá thành công (hiệu lực 24 giờ)"));
     }
 
     // 5. API Manager trả đơn về Specialist hoặc Coordinator
@@ -79,7 +79,7 @@ public class ManagerBookingController {
         return ResponseEntity.ok(ApiResponse.success(response, "Đã từ chối đơn hàng thành công"));
     }
 
-    // 8. API Kích hoạt quét & giải phóng xe/kíp xe quá hạn 48h (Dành cho Quản lý / Batch Job)
+    // 8. API Kích hoạt quét & giải phóng xe/kíp xe quá hạn 24h (Dành cho Quản lý / Batch Job)
     @PostMapping("/maintenance/release-expired")
     public ResponseEntity<ApiResponse<Integer>> releaseExpired() {
         int count = bookingService.releaseExpiredQuotations();

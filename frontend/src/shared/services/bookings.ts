@@ -260,7 +260,7 @@ export const bookingsApi = {
     if (vs.length !== b.trips.length) throw new Error('Không tìm thấy xe của đơn.')
     return quoteLines(b, vs)
   },
-  // Manager: duyệt và gửi báo giá, khách có 48 giờ để đặt cọc. Tiền do frontend tính theo biểu giá rồi gửi lên.
+  // Manager: duyệt và gửi báo giá, khách có QUOTE_VALID_HOURS (24) giờ để đặt cọc. Tiền do frontend tính theo biểu giá rồi gửi lên.
   sendQuote: async (id: string, by: string, adjustments: Adjustment[]): Promise<Booking> => {
     const b = await byId(id)
     if (b.status !== 'pending_commercial') throw new Error('Đơn không ở bước duyệt báo giá.')

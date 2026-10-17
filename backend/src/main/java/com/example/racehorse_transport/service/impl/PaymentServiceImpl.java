@@ -79,7 +79,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         Instant now = Instant.now();
         if (quotation.getExpiresAt() != null && now.isAfter(quotation.getExpiresAt())) {
-            throw new IllegalStateException("Báo giá đã hết hạn 48 giờ! Vui lòng liên hệ Quản lý để cấp lại báo giá.");
+            throw new IllegalStateException("Báo giá đã hết hạn 24 giờ! Vui lòng liên hệ Quản lý để cấp lại báo giá.");
         }
 
         BigDecimal payAmount = (request.getAmount() != null)

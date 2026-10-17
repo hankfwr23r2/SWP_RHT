@@ -142,7 +142,7 @@ export const backendBookingApi = {
     return res.data.data
   },
 
-  // 8. Manager duyệt và phát hành báo giá 48h (POST /api/v1/manager/bookings/{id}/send-quote)
+  // 8. Manager duyệt và phát hành báo giá 24h (POST /api/v1/manager/bookings/{id}/send-quote)
   sendQuote: async (id: number | string, payload: { by?: string; adjustments: Array<{ label: string; amount: number }>; lines?: any[]; subtotal?: number; total?: number; deposit?: number; balance?: number }): Promise<BackendBookingResponse> => {
     const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/manager/bookings/${id}/send-quote`, payload)
     return res.data.data

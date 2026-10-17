@@ -39,6 +39,9 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class BookingServiceImpl implements BookingService {
 
+    // Hạn giữ báo giá: quá hạn chưa đặt cọc thì nhả xe và kíp xe
+    public static final int QUOTE_VALID_HOURS = 24;
+
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final CustomerRepository customerRepository;
@@ -733,7 +736,7 @@ public class BookingServiceImpl implements BookingService {
                 : total.subtract(deposit);
 
         Instant now = Instant.now();
-        Instant expiresAt = now.plus(48, ChronoUnit.HOURS); // Hiệu lực 48 giờ
+        Instant expiresAt = now.plus(QUOTE_VALID_HOURS, ChronoUnit.HOURS);
 
         User sentByUser = null;
         if (request.getBy() != null && !request.getBy().isBlank()) {
@@ -790,7 +793,7 @@ public class BookingServiceImpl implements BookingService {
         payload.setQuote(quoteMap);
 
         appendHistory(payload, request.getBy() != null ? request.getBy() : "Quản lý",
-                "Duyệt và phát hành báo giá: Tổng " + total + " VND, Đặt cọc 30%: " + deposit + " VND (Hiệu lực 48h)");
+                "Duyệt và phát hành báo giá: Tổng " + total + " VND, Đặt cọc 30%: " + deposit + " VND (Hiệu lực " + QUOTE_VALID_HOURS + " giờ)");
         savePayload(booking, payload);
 
         booking.setStatus("awaiting_payment");
@@ -909,7 +912,7 @@ public class BookingServiceImpl implements BookingService {
 
         Instant now = Instant.now();
         if (quotation.getExpiresAt() != null && now.isAfter(quotation.getExpiresAt())) {
-            throw new IllegalStateException("Báo giá đã hết hạn 48 giờ, không thể đặt cọc!");
+            throw new IllegalStateException("Báo giá đã hết hạn " + QUOTE_VALID_HOURS + " giờ, không thể đặt cọc!");
         }
 
         BigDecimal payAmount = (request != null && request.getAmount() != null)
@@ -1097,13 +1100,13 @@ public class BookingServiceImpl implements BookingService {
 
                     booking.setStatus("quote_expired");
                     BookingDetailsPayload payload = extractPayload(booking);
-                    appendHistory(payload, "Hệ thống", "Báo giá hết hạn 48 giờ, tự động giải phóng xe và kíp xe.");
+                    appendHistory(payload, "Hệ thống", "Báo giá hết hạn " + QUOTE_VALID_HOURS + " giờ, tự động giải phóng xe và kíp xe.");
                     savePayload(booking, payload);
                     bookingRepository.save(booking);
 
                     logAction("QUOTE_AUTO_EXPIRED_RELEASE_FLEET", booking.getId(),
                             "Báo giá đơn BK-" + booking.getId()
-                                    + " hết hạn 48 giờ. Đã tự động giải phóng xe và kíp xe.");
+                                    + " hết hạn " + QUOTE_VALID_HOURS + " giờ. Đã tự động giải phóng xe và kíp xe.");
                     count++;
                 }
             }
