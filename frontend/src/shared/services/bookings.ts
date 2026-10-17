@@ -1,5 +1,4 @@
-// Service đơn đặt chuyến (Flow 1–6): chỉ gọi API Spring Boot, không giữ dữ liệu ở máy khách.
-// Chức năng mà backend chưa có hoặc đang làm lệch quy trình (docs/PRD.md) không nối API: gọi vào sẽ báo "Backend chưa hỗ trợ".
+// Service đơn đặt chuyến (Flow 1–6): kết nối trực tiếp API Spring Boot, không giữ dữ liệu ở máy khách.
 import { CLEARANCE_DOC, INCIDENT_KIND, type ClearanceDocType, type IncidentKind, type Payer } from '../config/booking-rules'
 import { crewAssigned, defaultPayer, finalizeQuote, incidentLocation, quoteLines, sameVehicleId } from '../lib/booking'
 import type { Adjustment, Booking, Incident, IncidentExpense, IncidentPlan, Rating, RoutePlan, StaffRef, VehicleTrip } from '../types/booking'

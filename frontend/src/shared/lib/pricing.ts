@@ -1,7 +1,8 @@
 // Hàm tính quãng đường và cước xe theo bậc km, dùng cho báo giá thật (lib/booking.ts quoteLines).
 import type { GeoPoint } from '../config/network'
 import { BIG_TRUCK_FACTOR, KM_TIERS, ROAD_FACTOR, TRIP_OPEN_FEE } from '../config/public-pricing'
-import type { ServiceLine } from '../types/order'
+
+export type ServiceLine = [name: string, detail: string, amount: number]
 
 export function haversineKm(a: GeoPoint, b: GeoPoint) {
   const rad = (x: number) => x * Math.PI / 180

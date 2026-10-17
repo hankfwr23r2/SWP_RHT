@@ -1,5 +1,4 @@
-// Báo cáo của Quản lý: doanh thu, chi phí vận hành và hiệu suất hoàn thành chuyến, tính từ các đơn (PRD mục 15).
-// Số tiền là số mẫu theo biểu giá mẫu (PRD mục 14.1). Khi có backend phải tính lại ở server.
+// Báo cáo của Quản lý: tính toán tổng hợp doanh thu, chi phí vận hành và hiệu suất từ dữ liệu đơn hàng backend (PRD mục 15).
 import { DELAY_ALERT_MINUTES, MARGIN_RATE } from '../config/booking-rules'
 import { DAY } from '../config/business-rules'
 import type { Booking, VehicleTrip } from '../types/booking'

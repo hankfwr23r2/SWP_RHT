@@ -1,6 +1,5 @@
-// Chỉ đường theo đường giao thông thật: vẽ đường lên bản đồ và lấy thời gian lái làm giờ đến dự kiến.
-// Thứ tự thử: Google Routes API (có giao thông theo giờ khởi hành, cần khóa) → OSRM công khai (không giao thông) → null (nơi gọi tự quay về nét thẳng).
-// Khi có backend: gọi dịch vụ chỉ đường ở server để giấu khóa và có thể dùng chế độ xe tải.
+// Chỉ đường theo đường giao thông: vẽ đường lên bản đồ và tính thời gian lái làm giờ đến dự kiến.
+// Cơ chế Dual Engine: Google Routes API (xét giao thông thời gian thực) có dự phòng tự động sang OSRM khi ngoại tuyến hoặc không có API key.
 import type { GeoPoint } from '../config/network'
 
 export interface RoadRoute {

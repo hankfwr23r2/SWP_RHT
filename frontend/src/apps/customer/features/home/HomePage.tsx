@@ -202,16 +202,16 @@ function Lookup() {
   )
 }
 
-// ===== Mạng lưới =====
-// Tuyến mẫu theo từng nước, lấy từ các kho và cửa khẩu có thật trong hệ thống. Điểm giữa là cửa khẩu (thông quan) hoặc trạm nghỉ (nghỉ ngựa).
+// ===== Mạng lưới vận chuyển =====
+// Tuyến đường thực tế theo từng nước: xuất phát từ trụ sở/kho đến các kho nhận/giao và qua cửa khẩu.
 type Stop = { x: number; y: number; name: string; sub: string }
-const sample = (from: string, to: string, gate?: string) => {
+const calcNetworkRoute = (from: string, to: string, gate?: string) => {
   const a = findLocation(from)!, b = findLocation(to)!
   const ref = (l: typeof a, country: CountryCode) => ({ id: l.id, name: l.name, country })
   const km = routeKm(ref(a, 'VN'), ref(b, 'VN'), gate)
   return { km, days: tripDays(km, !!gate) }
 }
-const road = (from: string, to: string, gate?: string) => { const r = sample(from, to, gate); return `${r.km} km · ${r.days} ngày` }
+const road = (from: string, to: string, gate?: string) => { const r = calcNetworkRoute(from, to, gate); return `${r.km} km · ${r.days} ngày` }
 const JOURNEYS: Record<CountryCode, { stops: [Stop, Stop, Stop]; mid: 'gate' | 'station'; summary: string }> = {
   VN: { mid: 'station', summary: `Tuyến nội địa · ${road('KHO-DN', 'KHO-LA')}`, stops: [
     { x: 40, y: 70, name: 'Kho Đồng Nai', sub: 'Nhận ngựa' },

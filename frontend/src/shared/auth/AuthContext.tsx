@@ -1,4 +1,4 @@
-// Đăng nhập giả lập: lưu phiên trong sessionStorage. Khi có Spring Boot, thay bằng gọi API xác thực (JWT).
+// Quản lý phiên làm việc người dùng: lưu session trong React State & sessionStorage, kết hợp JWT Token trong localStorage qua apiClient.
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import type { Session } from '../types/role'
 
