@@ -2,6 +2,10 @@ package com.example.racehorse_transport.service;
 
 import com.example.racehorse_transport.dto.booking.BookingResponse;
 import com.example.racehorse_transport.dto.settlement.*;
+import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.Payment;
+
+import java.math.BigDecimal;
 
 public interface SettlementService {
 
@@ -24,4 +28,14 @@ public interface SettlementService {
      * 4. Xem chi tiết Bảng quyết toán phát sinh của đơn hàng
      */
     SettlementResponse getSettlementDetail(String bookingIdentifier);
+
+    /**
+     * Chuẩn bị thanh toán quyết toán qua VNPAY: giữ tạm đánh giá, trả về số tiền phát sinh phải trả
+     */
+    BigDecimal holdForVnpay(Booking booking, RatingDto rating);
+
+    /**
+     * Áp hiệu ứng sau khi VNPAY xác nhận đã nhận tiền quyết toán: ghi đánh giá, đóng đơn, nhả xe
+     */
+    Booking confirmSettlementPaid(Payment payment, String actor);
 }

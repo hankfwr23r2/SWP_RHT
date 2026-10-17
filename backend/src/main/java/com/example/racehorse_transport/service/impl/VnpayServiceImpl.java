@@ -12,6 +12,7 @@ import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.PaymentRepository;
 import com.example.racehorse_transport.repository.QuotationRepository;
 import com.example.racehorse_transport.service.BookingService;
+import com.example.racehorse_transport.service.SettlementService;
 import com.example.racehorse_transport.service.VnpayService;
 import com.example.racehorse_transport.util.VnpayUtil;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +49,7 @@ public class VnpayServiceImpl implements VnpayService {
     private final QuotationRepository quotationRepository;
     private final PaymentRepository paymentRepository;
     private final BookingService bookingService;
+    private final SettlementService settlementService;
 
     @Override
     @Transactional
@@ -101,6 +103,14 @@ public class VnpayServiceImpl implements VnpayService {
                         : quotation.getTotalAmount().multiply(new BigDecimal("0.7"));
                 orderInfo = "Thanh toan 70% con lai don BK-" + booking.getId();
                 prefix = "BAL";
+            }
+            case "SETTLEMENT" -> {
+                if (hasCompleted(payments, "SETTLEMENT")) {
+                    throw new IllegalStateException("Đơn hàng này đã thanh toán quyết toán!");
+                }
+                amount = settlementService.holdForVnpay(booking, request.getRating());
+                orderInfo = "Thanh toan quyet toan phat sinh don BK-" + booking.getId();
+                prefix = "SET";
             }
             default -> throw new IllegalArgumentException("Loại thanh toán không hợp lệ: " + request.getPaymentType());
         }
@@ -209,6 +219,7 @@ public class VnpayServiceImpl implements VnpayService {
         switch (payment.getPaymentType().toUpperCase()) {
             case "DEPOSIT" -> bookingService.confirmDepositPaid(payment, actor);
             case "BALANCE" -> bookingService.confirmBalancePaid(payment, actor);
+            case "SETTLEMENT" -> settlementService.confirmSettlementPaid(payment, actor);
             default -> throw new IllegalStateException("Loại thanh toán không hỗ trợ: " + payment.getPaymentType());
         }
         log.info("VNPAY payment txnRef={} confirmed for booking ID={}", txnRef, booking.getId());
@@ -223,6 +234,8 @@ public class VnpayServiceImpl implements VnpayService {
         return switch (payment.getPaymentType().toUpperCase()) {
             case "DEPOSIT" -> "awaiting_payment".equalsIgnoreCase(booking.getStatus()) && !hasCompleted(payments, "DEPOSIT");
             case "BALANCE" -> !isClosed(booking) && !hasCompleted(payments, "BALANCE");
+            case "SETTLEMENT" -> ("settlement_issued".equalsIgnoreCase(booking.getStatus())
+                    || "payment_overdue".equalsIgnoreCase(booking.getStatus())) && !hasCompleted(payments, "SETTLEMENT");
             default -> false;
         };
     }

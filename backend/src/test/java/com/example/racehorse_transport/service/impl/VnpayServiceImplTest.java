@@ -13,6 +13,8 @@ import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.PaymentRepository;
 import com.example.racehorse_transport.repository.QuotationRepository;
 import com.example.racehorse_transport.service.BookingService;
+import com.example.racehorse_transport.service.SettlementService;
+import com.example.racehorse_transport.dto.settlement.RatingDto;
 import com.example.racehorse_transport.util.VnpayUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,6 +51,7 @@ class VnpayServiceImplTest {
     private final QuotationRepository quotationRepository = mock(QuotationRepository.class);
     private final PaymentRepository paymentRepository = mock(PaymentRepository.class);
     private final BookingService bookingService = mock(BookingService.class);
+    private final SettlementService settlementService = mock(SettlementService.class);
     private VnpayServiceImpl service;
     private Booking booking;
 
@@ -60,7 +63,7 @@ class VnpayServiceImplTest {
         ReflectionTestUtils.setField(props, "payUrl", "https://pay.test/vpcpay.html");
         ReflectionTestUtils.setField(props, "returnUrl", "http://localhost:5173/payment/vnpay-return");
         ReflectionTestUtils.setField(props, "expireMinutes", 15);
-        service = new VnpayServiceImpl(props, bookingRepository, quotationRepository, paymentRepository, bookingService);
+        service = new VnpayServiceImpl(props, bookingRepository, quotationRepository, paymentRepository, bookingService, settlementService);
 
         User user = new User();
         user.setUsername("khach1");
@@ -204,5 +207,26 @@ class VnpayServiceImplTest {
         assertThat(res.isSuccess()).isFalse();
         assertThat(payment.getStatus()).isEqualTo("NEEDS_REVIEW");
         verify(bookingService, never()).confirmDepositPaid(any(), anyString());
+    }
+
+    @Test
+    void settlement_holdsRatingThenClosesOrderOnlyAfterVnpayConfirms() {
+        booking.setStatus("settlement_issued");
+        RatingDto rating = RatingDto.builder().stars(5).comment("Tốt").build();
+        when(settlementService.holdForVnpay(booking, rating)).thenReturn(new BigDecimal("1250000"));
+
+        VnpayCreateResponse res = service.createPaymentUrl(
+                VnpayCreateRequest.builder().bookingId("BK-012").paymentType("SETTLEMENT").rating(rating).build(), "khach1", "1.2.3.4");
+
+        assertThat(res.getAmount()).isEqualByComparingTo("1250000");
+        assertThat(res.getTransactionCode()).startsWith("SET0012");
+        verify(settlementService, never()).confirmSettlementPaid(any(), anyString());
+
+        Payment payment = Payment.builder().id(2).bookingID(booking).amount(new BigDecimal("1250000"))
+                .paymentType("SETTLEMENT").paymentMethod("VNPAY").transactionCode("DEP00121").status("PENDING").build();
+        when(paymentRepository.findByTransactionCode("DEP00121")).thenReturn(Optional.of(payment));
+
+        assertThat(service.confirm(signedCallback("125000000", "00")).isSuccess()).isTrue();
+        verify(settlementService, times(1)).confirmSettlementPaid(payment, "khach1");
     }
 }

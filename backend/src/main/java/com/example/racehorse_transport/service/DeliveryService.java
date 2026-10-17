@@ -18,7 +18,6 @@ public interface DeliveryService {
     BookingResponse issueSettlement(Integer bookingId, IssueSettlementRequest request);
 
     // 5. Khách hàng thanh toán số dư quyết toán phát sinh
-    BookingResponse paySettlement(Integer bookingId, String customerUsername, PaySettlementRequest request);
 
     // 6. Kíp xe xác nhận xe và nhân sự đã về tới Trụ sở chính Việt Nam
     void returnToHq(ReturnToHqRequest request);

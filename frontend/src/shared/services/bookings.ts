@@ -17,6 +17,12 @@ function numericId(id: string, prefix: string): number {
   return Number(match[1])
 }
 
+function starsOf(rating: Omit<Rating, 'at'>): number {
+  const stars = rating.stars ?? rating.trip ?? 5
+  if (!Number.isInteger(stars) || stars < 1 || stars > 5) throw new Error('Chấm điểm từ 1 đến 5 sao.')
+  return stars
+}
+
 function backofficeRole(): string | null {
   if (typeof window === 'undefined') return null
   try {
@@ -177,13 +183,15 @@ export const customerBookingsApi = {
   resubmit: async (customer: string, id: string): Promise<CustomerBookingView> =>
     toCustomerView(toBooking(await backendBookingApi.resubmitDocuments(id), customer)),
   // Link sang cổng VNPAY cho cọc 30% / số dư 70%; đơn chỉ đổi trạng thái khi VNPAY xác nhận đã nhận tiền
-  vnpayUrl: async (id: string, type: VnpayPaymentType): Promise<string> =>
+  vnpayUrl: async (id: string, type: Exclude<VnpayPaymentType, 'SETTLEMENT'>): Promise<string> =>
     (await paymentApi.createVnpay(id, type)).paymentUrl,
+  // Quyết toán có khoản phải trả: đánh giá gửi kèm, đơn chỉ đóng khi VNPAY xác nhận đã nhận tiền
+  settlementVnpayUrl: async (id: string, rating: Omit<Rating, 'at'>): Promise<string> =>
+    (await paymentApi.createVnpay(id, 'SETTLEMENT', { stars: starsOf(rating), comment: rating.comment })).paymentUrl,
+  // Quyết toán 0 đồng: chỉ gửi đánh giá và đóng đơn
   settle: async (customer: string, id: string, rating: Omit<Rating, 'at'>): Promise<CustomerBookingView> => {
-    const stars = rating.stars ?? rating.trip ?? 5
-    if (!Number.isInteger(stars) || stars < 1 || stars > 5) throw new Error('Chấm điểm từ 1 đến 5 sao.')
+    const stars = starsOf(rating)
     const out = await backendSettlementApi.payAndComplete(id, {
-      paymentMethod: 'VNPAY',
       rating: {
         stars,
         comment: rating.comment,
