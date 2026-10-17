@@ -73,6 +73,11 @@ export interface Clearance {
   horsesCleared: string[] // horseId đã có giấy thông quan (quốc tế)
   acceptedAt?: number // Specialist tiếp nhận Vận đơn
   acceptedBy?: string
+  quarantineStatus?: 'PENDING_SPECIALIST_REVIEW' | 'APPROVED'
+  quarantineApprovedAt?: number
+  quarantineApprovedBy?: string
+  quarantineNote?: string
+  crewAckedAt?: number
   doneAt?: number
   doneBy?: string
 }

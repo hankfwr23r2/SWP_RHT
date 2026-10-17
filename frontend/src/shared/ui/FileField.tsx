@@ -13,12 +13,23 @@ interface FileFieldProps {
   accept?: string
 }
 
+function renderLabel(text: React.ReactNode) {
+  if (typeof text !== 'string') return text
+  const match = text.match(/^(.*?)\s*(\(.*?\))\s*$/)
+  if (!match) return text
+  return (
+    <>
+      {match[1]} <span style={{ color: 'var(--muted, #64748b)', fontWeight: 400, fontSize: '0.88em' }}>{match[2]}</span>
+    </>
+  )
+}
+
 // Ô chọn giấy tờ, trả cả tên tệp và File để luồng nghiệp vụ tải lên backend.
 export function FileField({ label, hint, fileName, onChange, required, invalid, accept = '.pdf,.jpg,.jpeg,.png' }: FileFieldProps) {
   const id = useId()
   return (
     <div className={s.field}>
-      <div className={`${s.label} ${required ? s.required : ''}`} id={`${id}-l`}>{label}</div>
+      <div className={`${s.label} ${required ? s.required : ''}`} id={`${id}-l`}>{renderLabel(label)}</div>
       <input id={id} className={s.input} type="file" accept={accept} aria-labelledby={`${id}-l`} onChange={e => { const f = e.target.files?.[0]; if (f) { rememberPreview(f.name, f); onChange(f.name, f) } e.target.value = '' }} />
       {fileName ? (
         <div className={s.chip}>

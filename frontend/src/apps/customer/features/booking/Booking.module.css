@@ -112,6 +112,40 @@
 
 .actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
 
+.subNote {
+  font-weight: 400;
+  color: var(--muted, #64748b);
+  font-size: 0.88em;
+}
+
+.divider {
+  height: 1px;
+  background: var(--line, #e2e8f0);
+  margin: 18px 0;
+}
+
+.partyBlock {
+  padding: 14px 16px;
+  background: #f8fafc;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: var(--radius-sm, 8px);
+  margin-bottom: 14px;
+}
+
+.partyBlock:last-child {
+  margin-bottom: 0;
+}
+
+.serviceSection {
+  padding: 14px 0;
+  border-top: 1px solid var(--line, #e2e8f0);
+}
+
+.serviceSection:first-of-type {
+  border-top: none;
+  padding-top: 4px;
+}
+
 @media (max-width: 960px) {
   .layout { grid-template-columns: 1fr; }
   .aside { position: static; order: -1; }

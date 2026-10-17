@@ -71,6 +71,19 @@ export function suggestGate(origin: PlaceRef, dest: PlaceRef): string | undefine
   const gates = gatesFor(origin, dest)
   return [...gates].sort((a, b) => routeKm(origin, dest, a.name) - routeKm(origin, dest, b.name))[0]?.name
 }
+
+// Gợi ý cửa khẩu kèm thông tin so sánh số km tiết kiệm được so với phương án khác
+export function suggestGateWithSavings(origin: PlaceRef, dest: PlaceRef): { gate: string; km: number; savingsKm?: number } | undefined {
+  const gates = gatesFor(origin, dest)
+  if (!gates.length) return undefined
+  const sorted = [...gates]
+    .map(g => ({ gate: g.name, km: routeKm(origin, dest, g.name) }))
+    .sort((a, b) => a.km - b.km)
+  const best = sorted[0]
+  const second = sorted[1]
+  const savingsKm = second && second.km > best.km ? Math.round(second.km - best.km) : undefined
+  return { gate: best.gate, km: Math.round(best.km), savingsKm }
+}
 // Gợi ý trạm nghỉ: chia đều đường đi (điểm đón → cửa khẩu → điểm trả), mỗi điểm chia lấy trạm gần nhất chưa dùng
 export function suggestTransitStations(origin: PlaceRef, dest: PlaceRef, gate: string | undefined, count: number): string[] {
   const a = findLocation(origin.id), b = findLocation(dest.id)
@@ -404,25 +417,103 @@ export function deriveStatus(b: Pick<Booking, 'status' | 'trips' | 'clearance' |
 const placeName = (n: string) => n.split(' — ')[0]
 const MIN = 60_000
 
-// Chia chặng đều nhau theo danh sách trạm nghỉ. Ngựa không đi liên tục quá 3–4 giờ.
-export function layoutLegs(from: string, to: string, etd: number, rests: Pick<RestStop, 'name' | 'minutes'>[], driveHours: number): RouteLeg[] {
+// Tính khoảng cách từng chặng dựa trên vị trí thực tế của các điểm
+export function computeLegDistances(fromName: string, toName: string, rests: Pick<RestStop, 'name'>[], gate?: string): number[] {
+  const findPt = (name: string): GeoPoint | undefined => {
+    const clean = placeName(name).trim().toLowerCase()
+    const st = TRANSIT_STATIONS.find(s => s.name.toLowerCase() === clean || s.name.toLowerCase().includes(clean) || clean.includes(s.name.toLowerCase().replace(/^trạm nghỉ /, '')))
+    if (st) return st
+    const loc = Object.values(COUNTRY_LOCATIONS).flat().find(l => l.name.toLowerCase().includes(clean) || clean.includes(l.name.toLowerCase().split(' — ')[0]))
+    if (loc) return loc
+    const pl = PLACES.find(p => p.name.toLowerCase().includes(clean) || clean.includes(p.name.toLowerCase()))
+    if (pl) return pl
+    const g = GATES.find(x => x.name.toLowerCase().includes(clean) || clean.includes(x.name.toLowerCase()))
+    if (g) return g
+    return undefined
+  }
+
+  const pFrom = findPt(fromName)
+  const pTo = findPt(toName)
+  const pRests = rests.map(r => findPt(r.name))
+
   const n = rests.length + 1
-  const legMs = (driveHours / n) * 60 * MIN
+  if (!pFrom || !pTo || pRests.some(p => !p)) return []
+
+  const gPt = gate ? GATES.find(g => g.name === gate) : undefined
+  const pts: GeoPoint[] = [pFrom, ...(pRests as GeoPoint[]), pTo]
+  const dists: number[] = []
+
+  for (let i = 0; i < n; i++) {
+    const a = pts[i]
+    const b = pts[i + 1]
+    let d = haversineKm(a, b)
+    if (gPt && i === Math.floor(n / 2)) {
+      d = haversineKm(a, gPt) + haversineKm(gPt, b)
+    }
+    dists.push(Math.max(15, roadKm(d)))
+  }
+  return dists
+}
+
+// Chia chặng theo tỷ lệ khoảng cách thực tế giữa các trạm nghỉ (khi bật useRealDistances) hoặc chia đều (mặc định)
+export function layoutLegs(
+  from: string,
+  to: string,
+  etd: number,
+  rests: Pick<RestStop, 'name' | 'minutes'>[],
+  driveHours: number,
+  gate?: string,
+  useRealDistances = false
+): RouteLeg[] {
+  const n = rests.length + 1
+  const dists = useRealDistances ? computeLegDistances(from, to, rests, gate) : []
+  const totalDist = dists.reduce((sum, d) => sum + d, 0)
   const names = [placeName(from), ...rests.map(r => r.name || `Trạm nghỉ ${rests.indexOf(r) + 1}`), placeName(to)]
   const legs: RouteLeg[] = []
   let t = etd
   for (let i = 0; i < n; i++) {
+    const legMs = useRealDistances && totalDist > 0 && dists.length === n
+      ? (dists[i] / totalDist) * driveHours * 60 * MIN
+      : (driveHours / n) * 60 * MIN
     legs.push({ no: i + 1, from: names[i], to: names[i + 1], departAt: Math.round(t), arriveAt: Math.round(t + legMs) })
     t += legMs + (rests[i]?.minutes ?? 0) * MIN
   }
   return legs
 }
 
-// Giờ xe tới cửa khẩu: ước lượng ở khoảng 60% hành trình
-export function estimateBorderEta(legs: RouteLeg[]) {
+// Giờ xe tới cửa khẩu: tính theo vị trí chặng tới cửa khẩu thay vì nhân cứng 60%
+export function estimateBorderEta(
+  legs: RouteLeg[],
+  _rests?: Pick<RestStop, 'name' | 'minutes'>[],
+  gate?: string
+): number | undefined {
   if (!legs.length) return undefined
+  if (gate && legs.length > 1) {
+    const borderLegIdx = Math.max(1, Math.min(legs.length - 1, Math.round(legs.length * 0.55)))
+    return legs[borderLegIdx - 1]?.arriveAt
+  }
   const start = legs[0].departAt, end = legs[legs.length - 1].arriveAt
   return Math.round(start + (end - start) * 0.6)
+}
+
+// Đề xuất giờ xuất phát tối ưu sao cho xe tới cửa khẩu rơi vào khung giờ vàng thông quan (08:30 - 11:30)
+export function suggestOptimalDepartureForBorder(
+  targetDate: number,
+  driveHoursToGate: number,
+  restMinutesBefore = 45
+): number {
+  const d = new Date(targetDate)
+  const targetBorderMinutes = 10 * 60 + 15 // 10:15 AM
+  const travelMinutes = Math.round(driveHoursToGate * 60) + restMinutesBefore
+  let departMinutes = targetBorderMinutes - travelMinutes
+  if (departMinutes < 4 * 60 + 30) {
+    // Nếu quá sớm trước 4h30 sáng, chuyển sang khung giờ đầu chiều (13:30)
+    departMinutes = Math.max(5 * 60, 13 * 60 + 30 - travelMinutes)
+  }
+  const h = Math.floor(departMinutes / 60)
+  const m = Math.round(departMinutes % 60)
+  d.setHours(h, m, 0, 0)
+  return d.getTime()
 }
 
 // Phương án mặc định cho Coordinator chỉnh: chia chặng vừa đủ, trạm nghỉ gợi ý theo cửa khẩu, mỗi trạm dừng 45 phút
@@ -432,8 +523,8 @@ export function buildRoutePlan(b: Pick<Booking, 'type' | 'origin' | 'dest' | 'ga
   const n = Math.max(1, Math.ceil(driveHours / TARGET_LEG_HOURS))
   const names = suggestTransitStations(b.origin, b.dest, b.gate, n - 1)
   const rests: RestStop[] = names.map((name, i) => ({ afterLeg: i + 1, name, minutes: 45 }))
-  const legs = layoutLegs(b.origin.name, b.dest.name, etd, rests, driveHours)
-  return { legs, rests, borderEta: international ? estimateBorderEta(legs) : undefined }
+  const legs = layoutLegs(b.origin.name, b.dest.name, etd, rests, driveHours, b.gate)
+  return { legs, rests, borderEta: international ? estimateBorderEta(legs, rests, b.gate) : undefined }
 }
 
 const minutesOfDay = (t: number) => new Date(t).getHours() * 60 + new Date(t).getMinutes()

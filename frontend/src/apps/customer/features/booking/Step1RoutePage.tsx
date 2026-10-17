@@ -139,12 +139,12 @@ export default function Step1RoutePage() {
             {countries && (
               <div className={s.grid2}>
                 <div className="form-group">
-                  <label htmlFor="origin" className="required">Điểm đón ({COUNTRIES[countries.origin].name})</label>
+                  <label htmlFor="origin" className="required">Điểm đón <span className={s.subNote}>({COUNTRIES[countries.origin].name})</span></label>
                   <PlacePicker id="origin" label={`Chọn điểm đón (${COUNTRIES[countries.origin].name})`} invalid={submitted && !!errors.origin} value={originId} onChange={setOriginId} options={locations(countries.origin, type === 'domestic' ? destId : undefined)} />
                   {show(errors.origin)}
                 </div>
                 <div className="form-group">
-                  <label htmlFor="dest" className="required">Điểm giao ({COUNTRIES[countries.dest].name})</label>
+                  <label htmlFor="dest" className="required">Điểm giao <span className={s.subNote}>({COUNTRIES[countries.dest].name})</span></label>
                   <PlacePicker id="dest" label={`Chọn điểm giao (${COUNTRIES[countries.dest].name})`} invalid={submitted && !!errors.dest} value={destId} onChange={setDestId} options={locations(countries.dest, type === 'domestic' ? originId : undefined)} />
                   {show(errors.dest)}
                 </div>
@@ -161,7 +161,7 @@ export default function Step1RoutePage() {
             <div className="form-group" style={{ maxWidth: 320 }}>
               <label htmlFor="date" className="required">Ngày khởi hành</label>
               <input id="date" type="date" className={`form-control ${submitted && errors.date ? 'invalid' : ''}`} min={toIsoDay(min)} value={date} onChange={e => setDate(e.target.value)} />
-              <div className="form-hint">Sớm nhất {formatDate(min)} (đặt trước tối thiểu {MIN_LEAD_DAYS} ngày). Các ngày trước đó không chọn được.</div>
+              <div className="form-hint">Sớm nhất {formatDate(min)} <span className={s.subNote}>(đặt trước tối thiểu {MIN_LEAD_DAYS} ngày)</span>. Các ngày trước đó không chọn được.</div>
               {show(errors.date)}
             </div>
           </div>
@@ -171,10 +171,20 @@ export default function Step1RoutePage() {
           <div className="card" data-card>
             <div className="card-header"><h3><i className="fa-solid fa-people-arrows" /> Người gửi và người nhận</h3></div>
             <p className={s.sectionHint}>Thông tin để lập biên bản giao nhận và hồ sơ vận chuyển.</p>
-            <h4 className="font-semibold" style={{ marginBottom: 10 }}>Người gửi (Consignor)</h4>
-            <PartyFields id="consignor" party={consignor} onChange={setConsignor} errors={submitted ? consignorErr : {}} />
-            <h4 className="font-semibold" style={{ margin: '8px 0 10px' }}>Người nhận (Consignee)</h4>
-            <PartyFields id="consignee" party={consignee} onChange={setConsignee} errors={submitted ? consigneeErr : {}} />
+            <div className={s.partyBlock}>
+              <h4 className="font-semibold" style={{ marginBottom: 12, color: 'var(--navy)' }}>
+                <i className="fa-solid fa-paper-plane" style={{ color: 'var(--orange)', marginRight: 6 }} />
+                Người gửi <span className={s.subNote}>(Consignor)</span>
+              </h4>
+              <PartyFields id="consignor" party={consignor} onChange={setConsignor} errors={submitted ? consignorErr : {}} />
+            </div>
+            <div className={s.partyBlock}>
+              <h4 className="font-semibold" style={{ marginBottom: 12, color: 'var(--navy)' }}>
+                <i className="fa-solid fa-location-dot" style={{ color: 'var(--orange)', marginRight: 6 }} />
+                Người nhận <span className={s.subNote}>(Consignee)</span>
+              </h4>
+              <PartyFields id="consignee" party={consignee} onChange={setConsignee} errors={submitted ? consigneeErr : {}} />
+            </div>
           </div>
         )}
 

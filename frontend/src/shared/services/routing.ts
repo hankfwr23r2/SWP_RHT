@@ -1,21 +1,21 @@
-// Chỉ đường theo đường giao thông: vẽ đường lên bản đồ và tính thời gian lái làm giờ đến dự kiến.
-// Cơ chế Dual Engine: Google Routes API (xét giao thông thời gian thực) có dự phòng tự động sang OSRM khi ngoại tuyến hoặc không có API key.
+// Chỉ đường theo mạng lưới đường bộ: dùng OSRM (Open Source Routing Machine) mã nguồn mở miễn phí 100%.
+// Không phụ thuộc vào Google Maps API (không tốn phí, không cần API Key).
+// Có cơ chế tự động dự phòng ngoại tuyến (Offline Geometry Fallback) khi mất mạng hoặc OSRM phản hồi chậm.
 import type { GeoPoint } from '../config/network'
 
 export interface RoadRoute {
   path: [lat: number, lng: number][] // các điểm để vẽ đường
   km: number
   hours: number // thời gian lái, chưa gồm thời gian nghỉ ở trạm
-  source: 'google' | 'osrm'
-  traffic: boolean // đã tính giao thông theo giờ khởi hành
+  source: 'osrm' | 'offline'
+  traffic: boolean
 }
-export interface RoadOptions { googleKey?: string; signal?: AbortSignal }
+export interface RoadOptions { signal?: AbortSignal }
 
-const GOOGLE_URL = 'https://routes.googleapis.com/directions/v2:computeRoutes'
 const OSRM_URL = 'https://router.project-osrm.org/route/v1/driving'
-const MAX_VIA = 25 // Google cho tối đa 25 điểm trung gian
+const AVG_SPEED_KMH = 65
 
-// Giải mã đường mã hóa kiểu Google (encoded polyline, độ chính xác 5 chữ số thập phân)
+// Giải mã đường mã hóa kiểu Google/OSRM (encoded polyline, độ chính xác 5 chữ số thập phân)
 export function decodePolyline(encoded: string): [number, number][] {
   const out: [number, number][] = []
   let i = 0, lat = 0, lng = 0
@@ -28,24 +28,21 @@ export function decodePolyline(encoded: string): [number, number][] {
   return out
 }
 
-const latLng = (p: GeoPoint) => ({ location: { latLng: { latitude: p.lat, longitude: p.lng } } })
+const haversineKm = (a: GeoPoint, b: GeoPoint) => {
+  const r = Math.PI / 180, dLat = (b.lat - a.lat) * r, dLng = (b.lng - a.lng) * r
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) ** 2
+  return 12742 * Math.asin(Math.sqrt(h))
+}
 
-async function viaGoogle(points: GeoPoint[], departAt: number | undefined, key: string, signal?: AbortSignal): Promise<RoadRoute | null> {
-  const via = points.slice(1, -1).slice(0, MAX_VIA)
-  // Giờ khởi hành phải ở tương lai thì Google mới dự báo giao thông theo giờ đó
-  const future = departAt !== undefined && departAt > Date.now() + 60_000
-  const res = await fetch(GOOGLE_URL, {
-    method: 'POST', signal,
-    headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline' },
-    body: JSON.stringify({
-      origin: latLng(points[0]), destination: latLng(points[points.length - 1]), intermediates: via.map(latLng),
-      travelMode: 'DRIVE', routingPreference: 'TRAFFIC_AWARE', ...(future ? { departureTime: new Date(departAt!).toISOString() } : {}),
-    }),
-  })
-  if (!res.ok) return null
-  const r = (await res.json()).routes?.[0]
-  if (!r?.polyline?.encodedPolyline || !r.duration) return null
-  return { path: decodePolyline(r.polyline.encodedPolyline), km: (r.distanceMeters ?? 0) / 1000, hours: parseFloat(r.duration) / 3600, source: 'google', traffic: true }
+function viaOffline(points: GeoPoint[]): RoadRoute {
+  let straightKm = 0
+  for (let i = 0; i < points.length - 1; i++) {
+    straightKm += haversineKm(points[i], points[i + 1])
+  }
+  const km = Math.round(straightKm * 1.25) // Hệ số uốn lượn đường bộ thực tế
+  const hours = parseFloat((km / AVG_SPEED_KMH).toFixed(1))
+  const path: [number, number][] = points.map(p => [p.lat, p.lng])
+  return { path, km, hours, source: 'offline', traffic: false }
 }
 
 async function viaOsrm(points: GeoPoint[], signal?: AbortSignal): Promise<RoadRoute | null> {
@@ -54,62 +51,61 @@ async function viaOsrm(points: GeoPoint[], signal?: AbortSignal): Promise<RoadRo
   if (!res.ok) return null
   const r = (await res.json()).routes?.[0]
   if (!r?.geometry?.coordinates) return null
-  return { path: (r.geometry.coordinates as [number, number][]).map(([lng, lat]) => [lat, lng] as [number, number]), km: r.distance / 1000, hours: r.duration / 3600, source: 'osrm', traffic: false }
+  return {
+    path: (r.geometry.coordinates as [number, number][]).map(([lng, lat]) => [lat, lng] as [number, number]),
+    km: Math.round(r.distance / 1000),
+    hours: parseFloat((r.duration / 3600).toFixed(1)),
+    source: 'osrm',
+    traffic: false,
+  }
 }
 
 const cache = new Map<string, RoadRoute>()
-const keyOf = (points: GeoPoint[], departAt: number | undefined, withGoogle: boolean) =>
-  `${withGoogle ? 'g' : 'o'}|${departAt === undefined ? '' : Math.floor(departAt / 3_600_000)}|${points.map(p => `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`).join(';')}`
+const keyOf = (points: GeoPoint[]) => points.map(p => `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`).join(';')
 
-export async function roadRoute(points: GeoPoint[], departAt?: number, opts: RoadOptions = {}): Promise<RoadRoute | null> {
+export async function roadRoute(points: GeoPoint[], _departAt?: number, opts: RoadOptions = {}): Promise<RoadRoute | null> {
   if (points.length < 2) return null
-  const googleKey = opts.googleKey ?? (import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined)
-  const k = keyOf(points, departAt, !!googleKey)
+  const k = keyOf(points)
   const hit = cache.get(k)
   if (hit) return hit
-  const attempt = async (fn: () => Promise<RoadRoute | null>) => { try { return await fn() } catch { return null } } // lỗi mạng, hết hạn mức, bị hủy: thử cách tiếp theo
-  const out = (googleKey ? await attempt(() => viaGoogle(points, departAt, googleKey, opts.signal)) : null) ?? await attempt(() => viaOsrm(points, opts.signal))
+  const attempt = async (fn: () => Promise<RoadRoute | null>) => { try { return await fn() } catch { return null } }
+  const out = (await attempt(() => viaOsrm(points, opts.signal))) ?? viaOffline(points)
   if (out) cache.set(k, out)
   return out
 }
+
 // Làm thưa đường vẽ (giữ tối đa max điểm, luôn giữ điểm đầu và cuối) để lưu trong phương án sự cố gọn nhẹ
 export function thinPath(path: [number, number][], max = 120): [number, number][] {
   if (path.length <= max) return path
   const step = (path.length - 1) / (max - 1)
   return Array.from({ length: max }, (_, i) => path[Math.round(i * step)])
 }
+
 export const clearRoadCache = () => { cache.clear(); alternatives.clear() }
 
-// Các đường thay thế giữa hai điểm (cho sự cố tắc nghẽn): đường đầu tiên là đường nhanh nhất, các đường sau là phương án khác.
-// Google và OSRM chỉ trả đường thay thế khi không có điểm trung gian, nên chỉ nhận đúng hai điểm.
+// Các đường thay thế giữa hai điểm (cho sự cố tắc nghẽn)
 const alternatives = new Map<string, RoadRoute[]>()
-export async function roadAlternatives(from: GeoPoint, to: GeoPoint, departAt?: number, opts: RoadOptions = {}): Promise<RoadRoute[]> {
-  const googleKey = opts.googleKey ?? (import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined)
-  const k = keyOf([from, to], departAt, !!googleKey)
+export async function roadAlternatives(from: GeoPoint, to: GeoPoint, _departAt?: number, opts: RoadOptions = {}): Promise<RoadRoute[]> {
+  const k = keyOf([from, to])
   const hit = alternatives.get(k)
   if (hit) return hit
   const attempt = async (fn: () => Promise<RoadRoute[]>) => { try { return await fn() } catch { return [] } }
-  const fromGoogle = googleKey ? await attempt(async () => {
-    const future = departAt !== undefined && departAt > Date.now() + 60_000
-    const res = await fetch(GOOGLE_URL, {
-      method: 'POST', signal: opts.signal,
-      headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': googleKey, 'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline' },
-      body: JSON.stringify({ origin: latLng(from), destination: latLng(to), travelMode: 'DRIVE', routingPreference: 'TRAFFIC_AWARE', computeAlternativeRoutes: true, ...(future ? { departureTime: new Date(departAt!).toISOString() } : {}) }),
-    })
-    if (!res.ok) return []
-    const routes = ((await res.json()).routes ?? []) as { duration?: string; distanceMeters?: number; polyline?: { encodedPolyline?: string } }[]
-    return routes.filter(r => r.polyline?.encodedPolyline && r.duration).map(r => ({ path: decodePolyline(r.polyline!.encodedPolyline!), km: (r.distanceMeters ?? 0) / 1000, hours: parseFloat(r.duration!) / 3600, source: 'google' as const, traffic: true }))
-  }) : []
-  const out = fromGoogle.length ? fromGoogle : await attempt(async () => {
+  const out = await attempt(async () => {
     const res = await fetch(`${OSRM_URL}/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson&alternatives=true`, { signal: opts.signal })
     if (!res.ok) return []
     const routes = ((await res.json()).routes ?? []) as { distance: number; duration: number; geometry?: { coordinates: [number, number][] } }[]
-    return routes.filter(r => r.geometry?.coordinates).map(r => ({ path: r.geometry!.coordinates.map(([lng, lat]) => [lat, lng] as [number, number]), km: r.distance / 1000, hours: r.duration / 3600, source: 'osrm' as const, traffic: false }))
+    return routes.filter(r => r.geometry?.coordinates).map(r => ({
+      path: r.geometry!.coordinates.map(([lng, lat]) => [lat, lng] as [number, number]),
+      km: Math.round(r.distance / 1000),
+      hours: parseFloat((r.duration / 3600).toFixed(1)),
+      source: 'osrm' as const,
+      traffic: false,
+    }))
   })
   if (out.length) alternatives.set(k, out)
-  return out
+  return out.length ? out : [viaOffline([from, to])]
 }
 
 // Ghi chú nguồn thời gian lái cho Coordinator
 export const roadNote = (r: RoadRoute | null | undefined, loading: boolean) =>
-  loading ? 'đang tính theo đường thật…' : !r ? 'ước lượng theo quãng đường (chưa lấy được đường bộ)' : r.traffic ? 'theo Google, có tính giao thông theo giờ khởi hành' : 'theo đường bộ, chưa tính giao thông'
+  loading ? 'đang tính lộ trình đường bộ…' : !r ? 'ước lượng theo quãng đường' : r.source === 'osrm' ? 'theo bản đồ đường bộ OSRM (miễn phí)' : 'ước lượng theo khoảng cách thực tế'

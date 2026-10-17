@@ -241,7 +241,7 @@ const byId = async (id: string): Promise<Booking> => {
 
 // Dành cho app nội bộ
 export const bookingsApi = {
-  list: async (): Promise<Booking[]> => (await listForRole()).map(r => toBooking(r)).sort((a, b) => a.createdAt - b.createdAt),
+  list: async (): Promise<Booking[]> => (await listForRole()).map(r => toBooking(r)).sort((a, b) => b.createdAt - a.createdAt),
   get: async (id: string): Promise<Booking | undefined> => (await bookingsApi.list()).find(b => b.id === id),
 
   // ===== Flow 1 =====
@@ -293,6 +293,8 @@ export const bookingsApi = {
     }
     return toBooking(await specialistApi.completeClearance(id))
   },
+  transferQuarantine: async (id: string): Promise<Booking> => toBooking(await specialistApi.transferQuarantine(id)),
+  approveQuarantine: async (id: string, _by: string, note?: string): Promise<Booking> => toBooking(await specialistApi.approveQuarantine(id, note)),
 
   setDriverPack: async (id: string, tripId: string, by: string, items: string[]): Promise<Booking> =>
     toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'SET_DRIVER_PACK', actor: by, payload: { items } })),

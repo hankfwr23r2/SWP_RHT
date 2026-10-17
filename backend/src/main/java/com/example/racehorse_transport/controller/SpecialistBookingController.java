@@ -174,4 +174,33 @@ public class SpecialistBookingController {
         BookingResponse response = specialistService.completeClearance(id, username);
         return ResponseEntity.ok(ApiResponse.success(response, "Đã hoàn tất toàn bộ giấy tờ kiểm dịch & hải quan cho chuyến đi"));
     }
+
+    /**
+     * 11. Chuyển đơn xác nhận dịch tễ qua Specialist để duyệt (sau khi kíp xe xác nhận)
+     * POST /api/v1/specialist/bookings/{id}/transfer-quarantine
+     */
+    @PostMapping("/{id}/transfer-quarantine")
+    public ResponseEntity<ApiResponse<BookingResponse>> transferForQuarantine(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+            @PathVariable("id") String id) {
+
+        String username = extractUsername(authHeader);
+        BookingResponse response = specialistService.transferForQuarantine(id, username);
+        return ResponseEntity.ok(ApiResponse.success(response, "Đã chuyển đơn sang Kiểm dịch viên để duyệt xác nhận dịch tễ"));
+    }
+
+    /**
+     * 12. Specialist duyệt xác nhận dịch tễ của chuyến đi
+     * POST /api/v1/specialist/bookings/{id}/approve-quarantine
+     */
+    @PostMapping("/{id}/approve-quarantine")
+    public ResponseEntity<ApiResponse<BookingResponse>> approveQuarantine(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+            @PathVariable("id") String id,
+            @RequestBody(required = false) ApproveMedicalRequest request) {
+
+        String username = extractUsername(authHeader);
+        BookingResponse response = specialistService.approveQuarantine(id, request, username);
+        return ResponseEntity.ok(ApiResponse.success(response, "Duyệt xác nhận dịch tễ chuyến đi thành công"));
+    }
 }

@@ -85,7 +85,7 @@ export default function Step4ReviewPage() {
       <div className={`card ${s.review}`} data-card>
         <div className="card-header"><h3><i className="fa-solid fa-route" /> Chuyến đi</h3><Link to="/booking/route" className={s.editLink}>Sửa</Link></div>
         <dl className={s.reviewGrid}>
-          <div><dt>Loại chuyến</dt><dd>{international ? `Quốc tế (${COUNTRIES[countries.origin].name} → ${COUNTRIES[countries.dest].name})` : 'Trong nước'}</dd></div>
+          <div><dt>Loại chuyến</dt><dd>{international ? <>Quốc tế <span className={s.subNote}>({COUNTRIES[countries.origin].name} → {COUNTRIES[countries.dest].name})</span></> : 'Trong nước'}</dd></div>
           <div><dt>Ngày khởi hành</dt><dd>{formatDate(fromIsoDay(draft.departDate))}</dd></div>
           <div><dt>Điểm đón</dt><dd>{origin.name}</dd></div>
           <div><dt>Điểm giao</dt><dd>{dest.name}</dd></div>
@@ -95,14 +95,14 @@ export default function Step4ReviewPage() {
       </div>
 
       <div className="card" data-card>
-        <div className="card-header"><h3><i className="fa-solid fa-horse-head" /> {rows.length} ngựa · xe {cls.label} ({cls.stalls})</h3><Link to="/booking/services" className={s.editLink}>Sửa</Link></div>
+        <div className="card-header"><h3><i className="fa-solid fa-horse-head" /> {rows.length} ngựa · xe {cls.label} <span className={s.subNote}>({cls.stalls})</span></h3><Link to="/booking/services" className={s.editLink}>Sửa</Link></div>
         {rows.map(h => {
           const c = draft.config[h.id]
           return (
             <div key={h.id} className={s.reviewHorse}>
               <div><b>{h.name}</b> <small>Chip {h.microchip} · {h.breed} · {SEX_LABEL[h.sex]}</small></div>
               <div className="text-right">{c.stall === 'single' ? 'Khoang đơn' : 'Khoang tiêu chuẩn'}</div>
-              <small>{c.insurance === 'buy' ? 'Mua bảo hiểm chuyến đi' : 'Từ chối bảo hiểm (trách nhiệm hạn chế)'}</small>
+              <small>{c.insurance === 'buy' ? 'Mua bảo hiểm chuyến đi' : <>Từ chối bảo hiểm <span className={s.subNote}>(trách nhiệm hạn chế)</span></>}</small>
               <small className="text-right">{c.insurance === 'buy' ? `Phí ${formatVND(insuranceFee(h.breed))}` : ''}</small>
             </div>
           )
