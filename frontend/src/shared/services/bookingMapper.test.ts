@@ -21,6 +21,15 @@ describe('chuyển đơn từ backend sang frontend', () => {
     expect(b.quote).toBeUndefined()
     expect(b.history).toEqual([])
   })
+  it('giữ CCCD và địa chỉ người gửi, người nhận backend trả về', () => {
+    const b = toBooking({
+      ...base,
+      consignor: { name: 'Gửi', phone: '0901111111', idNumber: '079123456789', address: '12 Lê Lợi, Q.1' },
+      consignee: { name: 'Nhận', phone: '0902222222', idNumber: 'N1234567', address: 'Phnom Penh' },
+    })
+    expect(b.consignor).toEqual({ name: 'Gửi', phone: '0901111111', idNumber: '079123456789', address: '12 Lê Lợi, Q.1' })
+    expect(b.consignee).toEqual({ name: 'Nhận', phone: '0902222222', idNumber: 'N1234567', address: 'Phnom Penh' })
+  })
   it('tên khách lấy theo tham số khi app khách truyền vào', () => {
     expect(toBooking(base, 'Tên đăng nhập').customer).toBe('Tên đăng nhập')
   })

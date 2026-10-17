@@ -4,6 +4,8 @@ import type { BackendIncidentResponse } from './incidents'
 export interface BookingPartyDto {
   name: string
   phone: string
+  idNumber?: string // CCCD / MST / Hộ chiếu
+  address?: string
 }
 
 export interface BookingHorseDto {

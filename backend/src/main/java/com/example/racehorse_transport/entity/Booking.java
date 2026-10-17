@@ -65,6 +65,25 @@ public class Booking {
     @Column(name = "ConsigneePhone", length = 50)
     private String consigneePhone;
 
+    // CCCD / MST / Hộ chiếu và địa chỉ của người gửi, người nhận (không bắt buộc)
+    @Size(max = 50)
+    @Column(name = "ConsignorIdNumber", length = 50)
+    private String consignorIdNumber;
+
+    @Size(max = 255)
+    @Nationalized
+    @Column(name = "ConsignorAddress")
+    private String consignorAddress;
+
+    @Size(max = 50)
+    @Column(name = "ConsigneeIdNumber", length = 50)
+    private String consigneeIdNumber;
+
+    @Size(max = 255)
+    @Nationalized
+    @Column(name = "ConsigneeAddress")
+    private String consigneeAddress;
+
     @Size(max = 255)
     @Nationalized
     @Column(name = "PickupAddress")

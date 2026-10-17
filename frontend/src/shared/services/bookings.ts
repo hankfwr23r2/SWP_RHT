@@ -27,6 +27,13 @@ function backofficeRole(): string | null {
   }
 }
 
+// Người gửi / nhận gửi lên API: CCCD và địa chỉ để trống thì bỏ qua
+const partyDto = (p: Booking['consignor']) => ({
+  name: p.name, phone: p.phone,
+  ...(p.idNumber.trim() ? { idNumber: p.idNumber.trim() } : {}),
+  ...(p.address.trim() ? { address: p.address.trim() } : {}),
+})
+
 // Bỏ trường nội bộ trước khi đưa sang app khách; xe, lộ trình chỉ hiện khi báo giá đã gửi
 const QUOTED: Booking['status'][] = ['awaiting_payment', 'quote_expired', 'waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed']
 export type CustomerTrip = Omit<VehicleTrip, 'driverPack' | 'acks'>
@@ -139,8 +146,8 @@ export const customerBookingsApi = {
     const created = await backendBookingApi.create({
       type: input.type, originName: input.origin.name, originCountry: input.origin.country,
       destName: input.dest.name, destCountry: input.dest.country, departAt: input.departAt,
-      consignor: { name: input.consignor.name, phone: input.consignor.phone },
-      consignee: { name: input.consignee.name, phone: input.consignee.phone },
+      consignor: partyDto(input.consignor),
+      consignee: partyDto(input.consignee),
       horses: input.horses.map(h => ({ horseId: h.horseId, name: h.name, microchip: h.microchip, breed: h.breed, sex: h.sex, stall: h.stall, feedPackage: h.feedPackage, waterPlan: h.waterPlan, insuranceOpted: h.insurance?.opted })),
     })
     return toCustomerView(toBooking(created, customer))

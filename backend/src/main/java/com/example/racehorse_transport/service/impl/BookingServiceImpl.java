@@ -143,6 +143,10 @@ public class BookingServiceImpl implements BookingService {
                 .consignorPhone(request.getConsignor() != null ? request.getConsignor().getPhone().trim() : "")
                 .consigneeName(request.getConsignee() != null ? request.getConsignee().getName().trim() : "")
                 .consigneePhone(request.getConsignee() != null ? request.getConsignee().getPhone().trim() : "")
+                .consignorIdNumber(request.getConsignor() != null ? trimToNull(request.getConsignor().getIdNumber()) : null)
+                .consignorAddress(request.getConsignor() != null ? trimToNull(request.getConsignor().getAddress()) : null)
+                .consigneeIdNumber(request.getConsignee() != null ? trimToNull(request.getConsignee().getIdNumber()) : null)
+                .consigneeAddress(request.getConsignee() != null ? trimToNull(request.getConsignee().getAddress()) : null)
                 .pickupAddress(request.getOriginName() != null ? request.getOriginName().trim() : "")
                 .dropoffAddress(request.getDestName() != null ? request.getDestName().trim() : "")
                 .totalHorses(request.getHorses() != null ? request.getHorses().size() : 1)
@@ -1221,6 +1225,10 @@ public class BookingServiceImpl implements BookingService {
         payload.getHistory().add(entry);
     }
 
+    private static String trimToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
     private void logAction(String actionType, Integer targetRecordId, String newData) {
         SystemLog sysLog = SystemLog.builder()
                 .actionType(actionType)
@@ -1282,8 +1290,8 @@ public class BookingServiceImpl implements BookingService {
                         b.getDepartureDate() != null ? b.getDepartureDate().toEpochMilli() : System.currentTimeMillis())
                 .originName(b.getPickupAddress())
                 .destName(b.getDropoffAddress())
-                .consignor(PartyContactDto.builder().name(b.getConsignorName()).phone(b.getConsignorPhone()).build())
-                .consignee(PartyContactDto.builder().name(b.getConsigneeName()).phone(b.getConsigneePhone()).build())
+                .consignor(PartyContactDto.consignorOf(b))
+                .consignee(PartyContactDto.consigneeOf(b))
                 .totalHorses(b.getTotalHorses() != null ? b.getTotalHorses() : 1)
                 .horses(horseDtos)
                 .waybillNo(b.getWaybillNo())
