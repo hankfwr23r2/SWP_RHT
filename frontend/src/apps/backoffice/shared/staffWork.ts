@@ -19,9 +19,9 @@ export function workOf(role: StaffRole | undefined, list: Booking[], name: strin
     }
   }
   if (role === 'specialist') {
-    const mine = list.filter(b => isAssignedTo(b.intake?.specialist, name))
+    const mine = list.filter(b => !b.intake?.specialist || isAssignedTo(b.intake?.specialist, name))
     const verify = mine.filter(b => b.medical?.status === 'pending')
-    const legal = mine.filter(b => b.payment && b.clearance && (b.status === 'waybill_issued' || b.status === 'clearance_in_progress'))
+    const legal = mine.filter(b => b.status === 'waybill_issued' || b.status === 'clearance_in_progress')
     return {
       counts: { '/specialist/verification': verify.length, '/specialist/legal': legal.length },
       urgent: [

@@ -49,7 +49,7 @@ function Work({ b, onDone }: { b: Booking; onDone: () => void }) {
   const navigate = useNavigate()
   const { session } = useAuth()
   const [busy, setBusy] = useState(false)
-  const c = b.clearance!
+  const c = b.clearance ?? { items: [{ type: 'health_cert', status: 'todo', note: '', photos: [] }], horsesCleared: [] }
   const editable = ['waybill_issued', 'clearance_in_progress'].includes(b.status)
   const p = clearanceProgress(c)
   const why = canCompleteClearance(b)
@@ -62,8 +62,30 @@ function Work({ b, onDone }: { b: Booking; onDone: () => void }) {
 
   return (
     <>
-      {b.status === 'waybill_issued' && (
-        <div className="alert alert-info"><i className="fa-solid fa-file-contract" /><div style={{ flex: 1 }}><b>Vận đơn {b.waybill?.no} chờ bạn tiếp nhận.</b> Bấm tiếp nhận để bắt đầu làm giấy tờ.</div><button className="btn btn-primary btn-sm" disabled={busy} onClick={() => run(() => bookingsApi.acceptWaybill(b.id, session!.name), 'Đã tiếp nhận Vận đơn')}>Tiếp nhận Vận đơn</button></div>
+      {b.status === 'waybill_issued' && !c.crewAckedAt && (
+        <div className="alert alert-info"><i className="fa-solid fa-file-contract" /><div style={{ flex: 1 }}><b>Vận đơn {b.waybill?.no} đã phát hành.</b> Bạn có thể cập nhật giấy tờ kiểm dịch và tải ảnh hồ sơ. Khi hoàn tất, giấy tờ sẽ được chuyển giao cho kíp xe (Tài xế & Hộ tống) thực hiện đón ngựa.</div></div>
+      )}
+      {c.quarantineStatus === 'PENDING_SPECIALIST_REVIEW' && (
+        <div className="alert alert-info" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <i className="fa-solid fa-shield-virus" style={{ fontSize: '1.25rem' }} />
+            <div>
+              <b>Đơn đã được chuyển qua bạn để duyệt xác nhận dịch tễ chuyến đi.</b>
+              <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>Kíp xe đã xác nhận đủ giấy tờ. Vui lòng kiểm tra và duyệt đạt xác nhận dịch tễ.</div>
+            </div>
+          </div>
+          <button className="btn btn-primary btn-sm" disabled={busy} onClick={() => run(() => bookingsApi.approveQuarantine(b.id, session!.name), 'Đã duyệt ĐẠT xác nhận dịch tễ chuyến đi')}>
+            <i className="fa-solid fa-check-double" /> Duyệt ĐẠT dịch tễ
+          </button>
+        </div>
+      )}
+      {c.quarantineStatus === 'APPROVED' && (
+        <div className="alert alert-success" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <i className="fa-solid fa-circle-check" />
+          <div>
+            <b>Đã duyệt ĐẠT xác nhận dịch tễ cho chuyến đi</b>{c.quarantineApprovedBy ? ` bởi ${c.quarantineApprovedBy}` : ''}{c.quarantineApprovedAt ? ` lúc ${formatDateTime(c.quarantineApprovedAt)}` : ''}.
+          </div>
+        </div>
       )}
       {isClearanceOverdue(b) && <div className="alert alert-danger"><i className="fa-solid fa-triangle-exclamation" /><div>Đã quá mốc 18:00 ngày trước ngày khởi hành ({formatDateTime(docsDueAt(b.departAt))}) mà giấy tờ chưa xong. Quản lý đã được cảnh báo.</div></div>}
 
@@ -97,8 +119,8 @@ function Work({ b, onDone }: { b: Booking; onDone: () => void }) {
       {editable && (
         <div className="card">
           <div className={s.actionBar}>
-            <div><b>{why ? 'Chưa thể hoàn tất' : 'Mọi giấy tờ đã xong'}</b><div className={s.hint}>{why ?? 'Hoàn tất để xe được phép đi đón ngựa khi tài xế và hộ tống đã nhận lệnh.'}</div></div>
-            <button className="btn btn-primary" disabled={!!why || busy || b.status === 'waybill_issued'} onClick={() => run(() => bookingsApi.completeClearance(b.id, session!.name), `Đã hoàn tất giấy tờ ${b.id}`, () => navigate('/specialist/legal'))}><i className="fa-solid fa-stamp" /> Hoàn tất giấy tờ</button>
+            <div><b>{why ? 'Chưa thể hoàn tất' : 'Mọi giấy tờ đã xong'}</b><div className={s.hint}>{why ?? 'Hoàn tất để chuyển giao cho kíp xe (Tài xế & Hộ tống) nhận lệnh điều xe và sẵn sàng đón ngựa.'}</div></div>
+            <button className="btn btn-primary" disabled={!!why || busy} onClick={() => run(() => bookingsApi.completeClearance(b.id, session!.name), `Đã hoàn tất giấy tờ ${b.id}`, () => navigate('/specialist/legal'))}><i className="fa-solid fa-stamp" /> Hoàn tất giấy tờ</button>
           </div>
         </div>
       )}
@@ -113,7 +135,7 @@ export default function LegalReviewPage() {
   const { data: b, reload } = useLoad(() => bookingsApi.get(id), [id])
 
   if (!b) return <div className="page"><div className="wrap"><p className="text-muted">Đang tải…</p></div></div>
-  const isAssigned = !b.intake || isAssignedTo(b.intake.specialist, session?.name) || session?.role === 'admin' || session?.role === 'manager'
+  const isAssigned = !b.intake || isAssignedTo(b.intake.specialist, session?.name) || isAssignedTo(b.intake.specialist, session?.username) || session?.role === 'admin' || session?.role === 'manager'
   if (!isAssigned) return <div className="page"><div className="wrap"><div className="alert alert-danger"><i className="fa-solid fa-lock" /><div>Đơn {b.id} hiện được giao cho {b.intake?.specialist.name || 'chuyên viên khác'}. <Link to="/specialist/legal" className="text-orange font-semibold">Về danh sách</Link></div></div></div></div>
 
   return (
@@ -124,7 +146,7 @@ export default function LegalReviewPage() {
         <div className={s.layout}>
           <div className={s.main}>
             <div className="card"><div className="card-header"><h3><i className="fa-solid fa-route" /> Chuyến đi</h3></div><TripSummary b={b} /></div>
-            {b.clearance && b.payment
+            {b.clearance || b.waybill || ['waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup'].includes(b.status)
               ? <Work b={b} onDone={reload} />
               : <div className="alert alert-info"><i className="fa-solid fa-hourglass-half" /><div>Đơn chưa đặt cọc nên chưa có Vận đơn và chưa bắt đầu làm giấy tờ.</div></div>}
           </div>

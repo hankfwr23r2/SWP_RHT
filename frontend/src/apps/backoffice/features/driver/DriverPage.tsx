@@ -49,7 +49,7 @@ export default function DriverPage() {
         <>
           {!t.departedAt && !acked && (
             <Panel title="Nhận lệnh và chuẩn bị xe" icon="fa-clipboard-check">
-              <p>Lệnh điều xe đã phát ngay sau khi khách đặt cọc. Tick từng mục khi đã có trên xe, rồi xác nhận.</p>
+              <p>{cleared ? 'Giấy tờ chuyến đi đã được Chuyên viên hoàn tất và bàn giao. Vui lòng kiểm tra xe, tick từng mục khi đã có trên xe, rồi xác nhận nhận lệnh.' : 'Lệnh điều xe đã phát ngay sau khi khách đặt cọc. Tick từng mục khi đã có trên xe, rồi xác nhận.'}</p>
               <Checklist items={items} checked={checked} onChange={setChecked} />
               <button className={`btn btn-primary ${s.big}`} disabled={checked.length < items.length || busy} onClick={() => run(() => bookingsApi.acknowledgeTrip(b.id, t.tripId, 'driver', session!.name), 'Đã xác nhận nhận Lệnh điều xe')}>
                 <i className="fa-solid fa-check" /> Tôi đã nhận lệnh ({checked.length}/{items.length})
@@ -57,12 +57,12 @@ export default function DriverPage() {
             </Panel>
           )}
           {!t.departedAt && acked && !cleared && (
-            <Panel title="Đã nhận lệnh, chờ giấy tờ" icon="fa-hourglass-half">
-              <p>Bạn xác nhận lúc {formatDateTime(acked)}. Nhà xe đang làm giấy kiểm dịch và hải quan. Xe chỉ đi đón ngựa khi giấy tờ xong{t.acks?.escort ? '' : ' và hộ tống đã nhận lệnh'}.</p>
+            <Panel title={t.acks?.escort ? "Kíp xe đã xác nhận, chuyển kiểm dịch viên" : "Đã nhận lệnh, chờ hộ tống xác nhận"} icon="fa-shield-virus">
+              <p>Bạn xác nhận lúc {formatDateTime(acked)}.{t.acks?.escort ? ' Cả tài xế và hộ tống đã xác nhận giấy tờ. Đơn đã được chuyển qua Kiểm dịch viên để duyệt xác nhận dịch tễ và giấy thông quan.' : ' Đang chờ nhân viên hộ tống xác nhận để tự động chuyển sang Kiểm dịch viên.'}</p>
             </Panel>
           )}
           {!t.departedAt && acked && cleared && !t.acks?.escort && (
-            <Panel title="Đã nhận lệnh" icon="fa-circle-check" tone="ok"><p>Bạn xác nhận lúc {formatDateTime(acked)}. Đang chờ nhân viên hộ tống xác nhận.</p></Panel>
+            <Panel title="Đã nhận lệnh, giấy tờ đã hoàn tất" icon="fa-circle-check" tone="ok"><p>Bạn xác nhận lúc {formatDateTime(acked)}. Giấy tờ chuyến đi đã hoàn tất. Đang chờ nhân viên hộ tống xác nhận để bắt đầu đón ngựa.</p></Panel>
           )}
           {!t.departedAt && acked && cleared && !!t.acks?.escort && (
             <Panel title="Sẵn sàng đón ngựa" icon="fa-truck-fast" tone="ok">

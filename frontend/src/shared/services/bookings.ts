@@ -286,6 +286,8 @@ export const bookingsApi = {
     }
     return toBooking(await specialistApi.completeClearance(id))
   },
+  transferQuarantine: async (id: string): Promise<Booking> => toBooking(await specialistApi.transferQuarantine(id)),
+  approveQuarantine: async (id: string, _by: string, note?: string): Promise<Booking> => toBooking(await specialistApi.approveQuarantine(id, note)),
 
   setDriverPack: async (id: string, tripId: string, by: string, items: string[]): Promise<Booking> =>
     toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'SET_DRIVER_PACK', actor: by, payload: { items } })),

@@ -129,7 +129,21 @@ export function toBooking(r: BackendBookingResponse, customer?: string): Booking
   const balance = balanceOf(r.payment)
   if (balance) b.balance = balance
   if (r.waybillNo) b.waybill = { no: r.waybillNo, issuedAt: waybillAt }
-  if (r.clearance) b.clearance = r.clearance as Clearance
+  if (r.clearance) {
+    b.clearance = r.clearance as Clearance
+  } else if (['waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup'].includes(r.status) || r.waybillNo) {
+    b.clearance = {
+      items: [
+        { type: 'health_cert' as const, status: 'todo' as const, note: '', photos: [] },
+        ...(r.type === 'international' ? [
+          { type: 'customs_declaration' as const, status: 'todo' as const, note: '', photos: [] },
+          { type: 'import_permit' as const, status: 'todo' as const, note: '', photos: [] },
+          { type: 'poa' as const, status: 'todo' as const, note: '', photos: [] },
+        ] : []),
+      ],
+      horsesCleared: [],
+    }
+  }
   if (r.settlement) b.settlement = r.settlement as Settlement
   if (r.rating) b.rating = r.rating as Rating
   if (r.rejection) b.rejection = r.rejection as Rejection
