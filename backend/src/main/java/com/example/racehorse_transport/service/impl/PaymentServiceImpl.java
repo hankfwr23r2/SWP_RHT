@@ -61,153 +61,7 @@ public class PaymentServiceImpl implements PaymentService {
     // =========================================================================
 
     /**
-     * 1. Khách hàng thanh toán đặt cọc 30% để nhận Vận đơn (Waybill)
-     */
-    @Override
-    @Transactional
-    public PaymentResponse payDeposit(ProcessPaymentRequest request, String username) {
-        Integer bookingId = parseBookingId(request.getBookingId());
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + request.getBookingId()));
-
-        if (!"awaiting_payment".equalsIgnoreCase(booking.getStatus())) {
-            throw new IllegalStateException("Đơn hàng không ở trạng thái chờ thanh toán cọc! Trạng thái hiện tại: " + booking.getStatus());
-        }
-
-        Quotation quotation = quotationRepository.findTopByBookingIdOrderBySentAtDesc(booking.getId())
-                .orElseThrow(() -> new IllegalStateException("Không tìm thấy thông tin báo giá của đơn hàng!"));
-
-        Instant now = Instant.now();
-        if (quotation.getExpiresAt() != null && now.isAfter(quotation.getExpiresAt())) {
-            throw new IllegalStateException("Báo giá đã hết hạn 24 giờ! Vui lòng liên hệ Quản lý để cấp lại báo giá.");
-        }
-
-        BigDecimal payAmount = (request.getAmount() != null)
-                ? request.getAmount()
-                : quotation.getDepositAmount();
-
-        String paymentMethod = (request.getPaymentMethod() != null && !request.getPaymentMethod().isBlank())
-                ? request.getPaymentMethod()
-                : "BANK_TRANSFER";
-
-        String transactionCode = (request.getTransactionCode() != null && !request.getTransactionCode().isBlank())
-                ? request.getTransactionCode()
-                : "DEP-" + String.format("%04d", booking.getId()) + "-" + System.currentTimeMillis();
-
-        Payment payment = Payment.builder()
-                .bookingID(booking)
-                .amount(payAmount)
-                .paymentDate(now)
-                .paymentType("DEPOSIT")
-                .paymentMethod(paymentMethod)
-                .transactionCode(transactionCode)
-                .status("COMPLETED")
-                .note(request.getNote() != null ? request.getNote() : "Thanh toán cọc 30% cho đơn BK-" + booking.getId())
-                .build();
-        Payment savedPayment = paymentRepository.save(payment);
-
-        quotation.setStatus("ACCEPTED");
-        quotationRepository.save(quotation);
-
-        String waybillNo = "VD-2026-" + String.format("%04d", booking.getId());
-        booking.setWaybillNo(waybillNo);
-        booking.setStatus("waybill_issued");
-
-        BookingDetailsPayload payload = extractPayload(booking);
-        Map<String, Object> paymentMap = getOrCreatePaymentMap(payload);
-        paymentMap.put("depositPaid", true);
-        paymentMap.put("depositAmount", payAmount);
-        paymentMap.put("depositPaidAt", now.toEpochMilli());
-        paymentMap.put("depositTransaction", transactionCode);
-        paymentMap.put("depositMethod", paymentMethod);
-        payload.setPayment(paymentMap);
-
-        appendHistory(payload, username != null ? username : "Khách hàng",
-                "Thanh toán cọc 30% (" + payAmount + " VND), cấp Vận đơn " + waybillNo);
-        savePayload(booking, payload);
-        bookingRepository.save(booking);
-
-        log.info("Successfully processed DEPOSIT payment ID={} for booking ID={}, waybill={}",
-                savedPayment.getId(), booking.getId(), waybillNo);
-
-        return mapToPaymentResponse(savedPayment, booking);
-    }
-
-    /**
-     * 2. Khách hàng thanh toán 70% còn lại trước giờ khởi hành (ngày D - Flow 4)
-     */
-    @Override
-    @Transactional
-    public PaymentResponse payBalance(ProcessPaymentRequest request, String username) {
-        Integer bookingId = parseBookingId(request.getBookingId());
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + request.getBookingId()));
-
-        // Kiểm tra đơn đã cọc chưa
-        List<Payment> existingPayments = paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(booking.getId());
-        boolean hasDeposit = existingPayments.stream()
-                .anyMatch(p -> "DEPOSIT".equalsIgnoreCase(p.getPaymentType()) && "COMPLETED".equalsIgnoreCase(p.getStatus()));
-        if (!hasDeposit) {
-            throw new IllegalStateException("Đơn hàng chưa thanh toán tiền cọc 30%! Vui lòng cọc trước khi thanh toán số dư.");
-        }
-
-        // Kiểm tra xem đã thanh toán 70% chưa
-        boolean alreadyPaidBalance = existingPayments.stream()
-                .anyMatch(p -> "BALANCE".equalsIgnoreCase(p.getPaymentType()) && "COMPLETED".equalsIgnoreCase(p.getStatus()));
-        if (alreadyPaidBalance) {
-            throw new IllegalStateException("Đơn hàng này đã thanh toán đủ 70% còn lại!");
-        }
-
-        Quotation quotation = quotationRepository.findTopByBookingIdOrderBySentAtDesc(booking.getId())
-                .orElseThrow(() -> new IllegalStateException("Không tìm thấy thông tin báo giá của đơn hàng!"));
-
-        Instant now = Instant.now();
-
-        BigDecimal payAmount = (request.getAmount() != null)
-                ? request.getAmount()
-                : quotation.getBalanceAmount();
-
-        String paymentMethod = (request.getPaymentMethod() != null && !request.getPaymentMethod().isBlank())
-                ? request.getPaymentMethod()
-                : "BANK_TRANSFER";
-
-        String transactionCode = (request.getTransactionCode() != null && !request.getTransactionCode().isBlank())
-                ? request.getTransactionCode()
-                : "BAL-" + String.format("%04d", booking.getId()) + "-" + System.currentTimeMillis();
-
-        Payment payment = Payment.builder()
-                .bookingID(booking)
-                .amount(payAmount)
-                .paymentDate(now)
-                .paymentType("BALANCE")
-                .paymentMethod(paymentMethod)
-                .transactionCode(transactionCode)
-                .status("COMPLETED")
-                .note(request.getNote() != null ? request.getNote() : "Thanh toán 70% cước còn lại ngày D cho đơn BK-" + booking.getId())
-                .build();
-        Payment savedPayment = paymentRepository.save(payment);
-
-        BookingDetailsPayload payload = extractPayload(booking);
-        Map<String, Object> paymentMap = getOrCreatePaymentMap(payload);
-        paymentMap.put("balancePaid", true);
-        paymentMap.put("balanceAmount", payAmount);
-        paymentMap.put("balancePaidAt", now.toEpochMilli());
-        paymentMap.put("balanceTransaction", transactionCode);
-        paymentMap.put("balanceMethod", paymentMethod);
-        paymentMap.put("isFullyPaidFixedRate", true);
-        payload.setPayment(paymentMap);
-
-        appendHistory(payload, username != null ? username : "Khách hàng",
-                "Thanh toán 70% còn lại (" + payAmount + " VND). Đã đủ điều kiện để xe bắt đầu hành trình.");
-        savePayload(booking, payload);
-        bookingRepository.save(booking);
-
-        log.info("Successfully processed BALANCE payment ID={} for booking ID={}", savedPayment.getId(), booking.getId());
-        return mapToPaymentResponse(savedPayment, booking);
-    }
-
-    /**
-     * 3. Hủy đơn hàng và áp dụng chính sách hoàn cọc / phạt cọc (PRD mục 8.2 & 8.3)
+     * 1. Hủy đơn hàng và áp dụng chính sách hoàn cọc / phạt cọc (PRD mục 8.2 & 8.3)
      */
     @Override
     @Transactional
@@ -307,7 +161,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     /**
-     * 4. Xem tóm tắt tài chính của đơn hàng
+     * 2. Xem tóm tắt tài chính của đơn hàng
      */
     @Override
     @Transactional(readOnly = true)
@@ -371,7 +225,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     /**
-     * 5. Lấy danh sách lịch sử tất cả các đợt thanh toán của một đơn
+     * 3. Lấy danh sách lịch sử tất cả các đợt thanh toán của một đơn
      */
     @Override
     @Transactional(readOnly = true)
@@ -387,7 +241,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     /**
-     * 6. Lấy chi tiết một giao dịch thanh toán
+     * 4. Lấy chi tiết một giao dịch thanh toán
      */
     @Override
     @Transactional(readOnly = true)

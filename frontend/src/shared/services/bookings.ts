@@ -7,7 +7,7 @@ import { backendIncidentApi, type BackendIncidentResponse } from '../api/inciden
 import { backendSettlementApi } from '../api/settlements'
 import { specialistApi } from '../api/specialist'
 import apiClient, { type ApiResponse } from '../api/client'
-import { paymentApi } from '../api/payments'
+import { paymentApi, type VnpayPaymentType } from '../api/payments'
 import { incidentKindOf, incidentStatusOf, toBooking } from './bookingMapper'
 import { vehiclesApi, crewApi } from './fleet'
 
@@ -176,10 +176,9 @@ export const customerBookingsApi = {
   },
   resubmit: async (customer: string, id: string): Promise<CustomerBookingView> =>
     toCustomerView(toBooking(await backendBookingApi.resubmitDocuments(id), customer)),
-  payDeposit: async (customer: string, id: string): Promise<CustomerBookingView> =>
-    toCustomerView(toBooking(await backendBookingApi.payDeposit(id, { paymentMethod: 'VNPAY' }), customer)),
-  payBalance: async (customer: string, id: string): Promise<CustomerBookingView> =>
-    toCustomerView(toBooking(await backendBookingApi.payBalance(id, { paymentMethod: 'VNPAY' }), customer)),
+  // Link sang cổng VNPAY cho cọc 30% / số dư 70%; đơn chỉ đổi trạng thái khi VNPAY xác nhận đã nhận tiền
+  vnpayUrl: async (id: string, type: VnpayPaymentType): Promise<string> =>
+    (await paymentApi.createVnpay(id, type)).paymentUrl,
   settle: async (customer: string, id: string, rating: Omit<Rating, 'at'>): Promise<CustomerBookingView> => {
     const stars = rating.stars ?? rating.trip ?? 5
     if (!Number.isInteger(stars) || stars < 1 || stars > 5) throw new Error('Chấm điểm từ 1 đến 5 sao.')

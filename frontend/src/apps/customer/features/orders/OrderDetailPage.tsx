@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { BOOKING_STEPS, HORSE_DOC, stepOf, VEHICLE_CLASS } from '@shared/config/booking-rules'
-import { BANK, HOTLINE } from '@shared/config/business-rules'
+import { HOTLINE } from '@shared/config/business-rules'
 import { COUNTRIES } from '@shared/config/network'
 import { CANCEL_AFTER_DEPOSIT, arrivalOf, cancelRefund, insuranceFee, vehicleClassOf } from '@shared/lib/booking'
 import { formatClock, formatDate, formatDateTime, formatVND } from '@shared/lib/format'
@@ -94,7 +94,8 @@ function PayCard({ b, owner, onDone }: { b: CustomerBookingView; owner: string; 
   }
   const pay = async () => {
     setBusy(true)
-    try { await customerBookingsApi.payDeposit(owner, b.id); toast('Đã đặt cọc, nhà xe bắt đầu làm giấy tờ'); onDone() } catch (e) { toast(e instanceof Error ? e.message : 'Không thanh toán được', 'error'); setBusy(false); onDone() }
+    // Chuyển sang cổng VNPAY; đơn chỉ được cấp Vận đơn khi VNPAY xác nhận đã nhận tiền
+    try { window.location.assign(await customerBookingsApi.vnpayUrl(b.id, 'DEPOSIT')) } catch (e) { toast(e instanceof Error ? e.message : 'Không tạo được link thanh toán', 'error'); setBusy(false); onDone() }
   }
   return (
     <div className={`card ${s.pay}`}>
@@ -108,16 +109,10 @@ function PayCard({ b, owner, onDone }: { b: CustomerBookingView; owner: string; 
           <small>Thời gian dự kiến theo lộ trình đã duyệt, có thể thay đổi nếu gặp sự cố trên đường.</small>
         </div>
       )}
-      <div className={s.bank} aria-label="Thông tin chuyển khoản">
-        <div><span>Ngân hàng</span><b>{BANK.name}</b></div>
-        <div><span>Số tài khoản</span><b>{BANK.account}</b></div>
-        <div><span>Chủ tài khoản</span><b>{BANK.owner}</b></div>
-        <div><span>Nội dung</span><b>{b.id} COC</b></div>
-      </div>
+      <p className="form-hint"><i className="fa-solid fa-shield-halved" /> Thanh toán qua cổng VNPAY bằng thẻ ATM nội địa, Visa/Master hoặc quét QR. Vận đơn được cấp ngay khi VNPAY xác nhận.</p>
       <p className="form-hint"><PolicyLink doc="transport">Xem điều khoản vận chuyển</PolicyLink></p>
       <label className={s.ack}><input type="checkbox" checked={ok} onChange={e => setOk(e.target.checked)} /><span>Tôi đã đọc và đồng ý điều khoản vận chuyển, đồng ý đặt cọc {formatVND(b.quote!.deposit)}.</span></label>
-      <button className="btn btn-primary btn-lg btn-full" disabled={!ok || busy} onClick={pay}>{busy ? 'Đang xử lý…' : 'Thanh toán cọc'}</button>
-      <p className="form-hint" style={{ textAlign: 'center' }}>Bản thử nghiệm: bấm thanh toán là ghi nhận đã nhận cọc.</p>
+      <button className="btn btn-primary btn-lg btn-full" disabled={!ok || busy} onClick={pay}>{busy ? 'Đang chuyển sang VNPAY…' : 'Thanh toán cọc qua VNPAY'}</button>
       <button className="btn btn-ghost btn-full" style={{ marginTop: 8 }} disabled={busy} onClick={() => setRejecting(true)}><i className="fa-solid fa-ban" /> Không đồng ý, từ chối báo giá</button>
       {rejecting && (
         <Modal onClose={() => setRejecting(false)} title="Từ chối báo giá?" subtitle="Bạn chưa đặt cọc nên không mất phí. Đơn sẽ đóng, xe và nhân sự được nhả cho đơn khác."
@@ -147,13 +142,13 @@ function TripsCard({ team }: { team: TripTeam[] }) {
 }
 
 // Thanh toán 70% còn lại vào ngày bốc ngựa
-function BalanceCard({ b, owner, onDone, showAction = true }: { b: CustomerBookingView; owner: string; onDone: () => void; showAction?: boolean }) {
+function BalanceCard({ b, showAction = true }: { b: CustomerBookingView; showAction?: boolean }) {
   const toast = useToast()
   const [busy, setBusy] = useState(false)
   if (!b.quote || !POST_PAYMENT.includes(b.status)) return null
   const pay = async () => {
     setBusy(true)
-    try { await customerBookingsApi.payBalance(owner, b.id); toast('Đã thanh toán số dư'); onDone() } catch (e) { toast(e instanceof Error ? e.message : 'Không thanh toán được', 'error'); setBusy(false) }
+    try { window.location.assign(await customerBookingsApi.vnpayUrl(b.id, 'BALANCE')) } catch (e) { toast(e instanceof Error ? e.message : 'Không tạo được link thanh toán', 'error'); setBusy(false) }
   }
   const canPay = !b.balance && (b.status === 'ready_for_pickup' || b.status === 'en_route_to_pickup')
   return (
@@ -163,9 +158,8 @@ function BalanceCard({ b, owner, onDone, showAction = true }: { b: CustomerBooki
         <div><span>Đặt cọc 30%</span><b>{formatVND(b.payment?.amount ?? b.quote.deposit)} · đã trả</b></div>
         <div><span>Còn lại 70% (ngày bốc ngựa)</span><b>{formatVND(b.quote.balance)}{b.balance ? ' · đã trả' : ''}</b></div>
       </div>
-      {canPay && showAction && <button className="btn btn-primary btn-lg btn-full" style={{ marginTop: 12 }} disabled={busy} onClick={pay}>{busy ? 'Đang xử lý…' : `Thanh toán ${formatVND(b.quote.balance)}`}</button>}
+      {canPay && showAction && <button className="btn btn-primary btn-lg btn-full" style={{ marginTop: 12 }} disabled={busy} onClick={pay}>{busy ? 'Đang chuyển sang VNPAY…' : `Thanh toán ${formatVND(b.quote.balance)} qua VNPAY`}</button>}
       {!b.balance && !canPay && showAction && <p className="form-hint" style={{ marginTop: 10 }}>Nút thanh toán sẽ mở khi xe sẵn sàng đón ngựa.</p>}
-      {canPay && showAction && <p className="form-hint" style={{ textAlign: 'center' }}>Bản thử nghiệm: bấm thanh toán là ghi nhận đã nhận tiền.</p>}
     </div>
   )
 }
@@ -288,7 +282,7 @@ export default function OrderDetailPage() {
             <div id="viec-cua-ban" className={s.main}>
               {needResubmit && <Resubmit b={b} owner={owner} onDone={reloadAll} />}
               {b.status === 'awaiting_payment' && b.quote && <PayCard b={b} owner={owner} onDone={reloadAll} />}
-              {canPayBalance && <BalanceCard b={b} owner={owner} onDone={reloadAll} />}
+              {canPayBalance && <BalanceCard b={b} />}
               {payOpen && <SettlementCard b={b} owner={owner} onDone={reloadAll} />}
             </div>
           )}
@@ -327,7 +321,7 @@ export default function OrderDetailPage() {
 
           {tab === 'pay' && (
             <>
-              {POST_PAYMENT.includes(b.status) && <BalanceCard b={b} owner={owner} onDone={reloadAll} showAction={false} />}
+              {POST_PAYMENT.includes(b.status) && <BalanceCard b={b} showAction={false} />}
               {!payOpen && <SettlementCard b={b} owner={owner} onDone={reloadAll} />}
               {b.quote && (
                 <div className="card">

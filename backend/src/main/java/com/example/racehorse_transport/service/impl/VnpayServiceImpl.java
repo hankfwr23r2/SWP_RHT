@@ -320,7 +320,7 @@ public class VnpayServiceImpl implements VnpayService {
         if (payment != null) {
             Booking booking = payment.getBookingID();
             builder.bookingId(booking != null ? booking.getId() : null)
-                    .bookingCode(booking != null ? "BK-" + booking.getId() : null)
+                    .bookingCode(booking != null ? String.format("BK-%03d", booking.getId()) : null)
                     .paymentType(payment.getPaymentType())
                     .paymentStatus(payment.getStatus())
                     .amount(payment.getAmount())
