@@ -1043,6 +1043,79 @@ public class BookingServiceImpl implements BookingService {
         return mapToResponse(updated);
     }
 
+    // Áp hiệu ứng sau khi đã nhận đủ tiền cọc 30% (luồng VNPAY): chốt báo giá, cấp Vận đơn
+    @Override
+    @Transactional
+    public Booking confirmDepositPaid(Payment payment, String actor) {
+        Booking booking = payment.getBookingID();
+        Instant paidAt = payment.getPaymentDate() != null ? payment.getPaymentDate() : Instant.now();
+
+        quotationRepository.findTopByBookingIdOrderBySentAtDesc(booking.getId()).ifPresent(quotation -> {
+            quotation.setStatus("ACCEPTED");
+            quotationRepository.save(quotation);
+        });
+
+        String waybillNo = "VD-2026-" + String.format("%04d", booking.getId());
+        booking.setWaybillNo(waybillNo);
+        booking.setStatus("waybill_issued");
+
+        BookingDetailsPayload payload = extractPayload(booking);
+        Map<String, Object> paymentMap = new HashMap<>();
+        paymentMap.put("paidAt", paidAt.toEpochMilli());
+        paymentMap.put("amount", payment.getAmount());
+        paymentMap.put("reference", payment.getTransactionCode());
+        paymentMap.put("method", payment.getPaymentMethod());
+        payload.setPayment(paymentMap);
+
+        appendHistory(payload, actor != null ? actor : "Khách hàng",
+                "Đặt cọc 30% (" + payment.getAmount() + " VND) qua " + payment.getPaymentMethod() + ", cấp Vận đơn " + waybillNo);
+        savePayload(booking, payload);
+        Booking updated = bookingRepository.save(booking);
+
+        logAction("PAY_DEPOSIT", updated.getId(),
+                "Khách hàng thanh toán cọc 30% (" + payment.getAmount() + " VND) qua " + payment.getPaymentMethod()
+                        + ", mã GD " + payment.getTransactionCode() + ", cấp Vận đơn " + waybillNo);
+        log.info("Deposit confirmed for booking ID={}, waybill={}", updated.getId(), waybillNo);
+        return updated;
+    }
+
+    // Áp hiệu ứng sau khi đã nhận đủ 70% còn lại (luồng VNPAY): đủ điều kiện cho xe xuất phát
+    @Override
+    @Transactional
+    public Booking confirmBalancePaid(Payment payment, String actor) {
+        Booking booking = payment.getBookingID();
+        Instant paidAt = payment.getPaymentDate() != null ? payment.getPaymentDate() : Instant.now();
+
+        BookingDetailsPayload payload = extractPayload(booking);
+        Map<String, Object> paymentMap;
+        if (payload.getPayment() instanceof Map) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> existing = (Map<String, Object>) payload.getPayment();
+            paymentMap = existing;
+        } else {
+            paymentMap = new HashMap<>();
+        }
+        paymentMap.put("balancePaid", true);
+        paymentMap.put("balanceAmount", payment.getAmount());
+        paymentMap.put("balancePaidAt", paidAt.toEpochMilli());
+        paymentMap.put("balanceTransaction", payment.getTransactionCode());
+        paymentMap.put("balanceMethod", payment.getPaymentMethod());
+        paymentMap.put("isFullyPaidFixedRate", true);
+        payload.setPayment(paymentMap);
+
+        appendHistory(payload, actor != null ? actor : "Khách hàng",
+                "Thanh toán 70% còn lại (" + payment.getAmount() + " VND) qua " + payment.getPaymentMethod()
+                        + ". Đã đủ điều kiện để xe bắt đầu hành trình.");
+        savePayload(booking, payload);
+        Booking updated = bookingRepository.save(booking);
+
+        logAction("PAY_BALANCE", updated.getId(),
+                "Khách hàng thanh toán 70% còn lại (" + payment.getAmount() + " VND) qua " + payment.getPaymentMethod()
+                        + ", mã GD " + payment.getTransactionCode() + " cho đơn BK-" + updated.getId());
+        log.info("Balance confirmed for booking ID={}", updated.getId());
+        return updated;
+    }
+
     @Override
     @Transactional
     public BookingResponse rejectQuote(String bookingIdentifier, String customerUsername,

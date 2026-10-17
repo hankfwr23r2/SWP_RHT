@@ -4,6 +4,7 @@ import com.example.racehorse_transport.dto.booking.CreateBookingRequest;
 import com.example.racehorse_transport.dto.booking.BookingResponse;
 import com.example.racehorse_transport.dto.booking.PublicTrackingResponse;
 import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.Payment;
 
 import java.util.List;
 import java.util.Optional;
@@ -47,6 +48,9 @@ public interface BookingService {
     BookingResponse resubmitDocuments(String bookingIdentifier, String customerUsername);
     BookingResponse payDeposit(String bookingIdentifier, String customerUsername, com.example.racehorse_transport.dto.booking.PayDepositRequest request);
     BookingResponse payBalance(String bookingIdentifier, String customerUsername, com.example.racehorse_transport.dto.booking.PayBalanceRequest request);
+    // Áp hiệu ứng nghiệp vụ sau khi cổng thanh toán xác nhận đã nhận tiền
+    Booking confirmDepositPaid(Payment payment, String actor);
+    Booking confirmBalancePaid(Payment payment, String actor);
     BookingResponse rejectQuote(String bookingIdentifier, String customerUsername, com.example.racehorse_transport.dto.booking.RejectQuoteRequest request);
     int releaseExpiredQuotations();
     int markOverdueSettlements();

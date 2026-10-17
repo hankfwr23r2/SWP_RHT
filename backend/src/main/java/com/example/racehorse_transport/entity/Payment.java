@@ -46,7 +46,16 @@ public class Payment {
 
     @Size(max = 50)
     @Column(name = "status", length = 50)
-    private String status; // PENDING, COMPLETED, FAILED
+    private String status; // PENDING, COMPLETED, FAILED, NEEDS_REVIEW (đã trừ tiền nhưng đơn không còn hợp lệ)
+
+    // Mã giao dịch phía VNPAY (vnp_TransactionNo) và ngân hàng khách dùng (vnp_BankCode)
+    @Size(max = 50)
+    @Column(name = "gateway_transaction_no", length = 50)
+    private String gatewayTransactionNo;
+
+    @Size(max = 20)
+    @Column(name = "bank_code", length = 20)
+    private String bankCode;
 
     @Size(max = 255)
     @Nationalized

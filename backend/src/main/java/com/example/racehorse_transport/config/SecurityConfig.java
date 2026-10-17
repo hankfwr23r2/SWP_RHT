@@ -59,6 +59,9 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/bookings/public-track").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
+                        // VNPAY gọi IPN server-to-server và trang kết quả gửi lại tham số: bảo vệ bằng chữ ký HMAC, không cần token
+                        .requestMatchers(HttpMethod.GET, "/payments/vnpay/ipn", "/payments/vnpay/return").permitAll()
+
                         // Phân quyền API Admin: Chỉ duy nhất tài khoản có ROLE_ADMIN
                         .requestMatchers("/admin/**").hasRole("ADMIN")
 
