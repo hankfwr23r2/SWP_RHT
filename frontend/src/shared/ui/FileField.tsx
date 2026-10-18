@@ -7,6 +7,7 @@ interface FileFieldProps {
   label: string
   hint?: string
   fileName?: string
+  fileUrl?: string
   onChange: (fileName: string | undefined, file?: File) => void
   required?: boolean
   invalid?: boolean
@@ -25,7 +26,7 @@ function renderLabel(text: React.ReactNode) {
 }
 
 // Ô chọn giấy tờ, trả cả tên tệp và File để luồng nghiệp vụ tải lên backend.
-export function FileField({ label, hint, fileName, onChange, required, invalid, accept = '.pdf,.jpg,.jpeg,.png' }: FileFieldProps) {
+export function FileField({ label, hint, fileName, fileUrl, onChange, required, invalid, accept = '.pdf,.jpg,.jpeg,.png' }: FileFieldProps) {
   const id = useId()
   return (
     <div className={s.field}>
@@ -33,7 +34,7 @@ export function FileField({ label, hint, fileName, onChange, required, invalid, 
       <input id={id} className={s.input} type="file" accept={accept} aria-labelledby={`${id}-l`} onChange={e => { const f = e.target.files?.[0]; if (f) { rememberPreview(f.name, f); onChange(f.name, f) } e.target.value = '' }} />
       {fileName ? (
         <div className={s.chip}>
-          <ImageThumb name={fileName} size={40} />
+          <ImageThumb name={fileUrl || fileName} size={40} />
           <span className={s.name}>{fileName}</span>
           <label htmlFor={id} className={s.swap}>Đổi tệp</label>
           <button type="button" className={s.remove} onClick={() => onChange(undefined)} aria-label={`Xóa tệp ${fileName}`}><i className="fa-solid fa-xmark" aria-hidden="true" /></button>

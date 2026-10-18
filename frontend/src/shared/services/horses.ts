@@ -21,6 +21,7 @@ function docsOf(list: BackendHorseDocResponse[]): Partial<Record<HorseDocType, H
     out[key] = {
       documentId: d.id,
       fileName: url ? url.split('/').pop() || url : `${key}.pdf`,
+      fileUrl: url,
       uploadedAt: new Date(d.uploadedAt ?? d.uploadDate ?? Date.now()).getTime(),
       expiresAt: d.expiryDate ? fromIsoDay(d.expiryDate) : undefined,
     }

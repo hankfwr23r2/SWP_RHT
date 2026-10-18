@@ -69,7 +69,7 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
                 <div className={s.docFiles} aria-label="Giấy khách đã nộp">
                   {HORSE_DOC_TYPES.map(d => { const f = h.docs[d]; return (
                     <div key={d} className={s.docFile}>
-                      {f ? <ImageThumb name={f.fileName} size={64} /> : <span className={s.docEmpty}><i className="fa-regular fa-file" aria-hidden="true" /></span>}
+                      {f ? <ImageThumb name={f.fileUrl || f.fileName} size={64} /> : <span className={s.docEmpty}><i className="fa-regular fa-file" aria-hidden="true" /></span>}
                       <div><b>{renderDocLabel(HORSE_DOC[d].label)}</b><small>{f ? `${f.fileName} · nộp ${formatDateTime(f.uploadedAt)}${f.expiresAt ? ` · hạn ${formatDate(f.expiresAt)}` : ''}` : 'Khách chưa nộp'}</small></div>
                     </div>
                   ) })}
