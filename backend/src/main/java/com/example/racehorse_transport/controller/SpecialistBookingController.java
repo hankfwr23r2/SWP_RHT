@@ -42,8 +42,9 @@ public class SpecialistBookingController {
      * GET /api/v1/specialist/bookings/verification
      */
     @GetMapping("/verification")
-    public ResponseEntity<ApiResponse<List<BookingResponse>>> getVerificationBookings() {
-        List<BookingResponse> list = specialistService.getVerificationBookings();
+    public ResponseEntity<ApiResponse<List<BookingResponse>>> getVerificationBookings(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
+        List<BookingResponse> list = specialistService.getVerificationBookings(extractUsername(authHeader));
         return ResponseEntity.ok(ApiResponse.success(list, "Lấy danh sách đơn chờ thẩm định hồ sơ ngựa thành công"));
     }
 
@@ -53,8 +54,9 @@ public class SpecialistBookingController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<BookingResponse>> getBookingDetail(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
             @PathVariable("id") String id) {
-        BookingResponse response = specialistService.getBookingDetail(id);
+        BookingResponse response = specialistService.getBookingDetail(id, extractUsername(authHeader));
         return ResponseEntity.ok(ApiResponse.success(response, "Lấy chi tiết đơn hàng thành công"));
     }
 
@@ -97,8 +99,9 @@ public class SpecialistBookingController {
      * GET /api/v1/specialist/bookings/clearance
      */
     @GetMapping("/clearance")
-    public ResponseEntity<ApiResponse<List<BookingResponse>>> getClearanceBookings() {
-        List<BookingResponse> list = specialistService.getClearanceBookings();
+    public ResponseEntity<ApiResponse<List<BookingResponse>>> getClearanceBookings(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
+        List<BookingResponse> list = specialistService.getClearanceBookings(extractUsername(authHeader));
         return ResponseEntity.ok(ApiResponse.success(list, "Lấy danh sách đơn làm thủ tục kiểm dịch thành công"));
     }
 

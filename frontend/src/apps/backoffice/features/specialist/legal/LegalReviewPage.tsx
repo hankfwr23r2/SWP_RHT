@@ -1,6 +1,6 @@
 // Specialist: làm giấy tờ kiểm dịch và hải quan một đơn (PRD mục 3). Cập nhật từng hạng mục kèm ảnh; tuyến quốc tế ghi nhận thông quan từng ngựa.
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { CLEARANCE_DOC, type ClearanceDocType } from '@shared/config/booking-rules'
 import { canCompleteClearance, clearanceProgress, docsDueAt, isClearanceOverdue } from '@shared/lib/booking'
@@ -165,11 +165,12 @@ function Work({ b, onDone }: { b: Booking; onDone: () => void }) {
 export default function LegalReviewPage() {
   const { id = '' } = useParams()
   const { session } = useAuth()
-  const { data: b, reload } = useLoad(() => bookingsApi.get(id), [id])
+  const { data: b, loaded, reload } = useLoad(() => bookingsApi.get(id), [id])
 
-  if (!b) return <div className="page"><div className="wrap"><p className="text-muted">Đang tải…</p></div></div>
-  const isAssigned = !b.intake || isAssignedTo(b.intake.specialist, session?.name) || isAssignedTo(b.intake.specialist, session?.username) || session?.role === 'admin' || session?.role === 'manager'
-  if (!isAssigned) return <div className="page"><div className="wrap"><div className="alert alert-danger"><i className="fa-solid fa-lock" /><div>Đơn {b.id} hiện được giao cho {b.intake?.specialist.name || 'chuyên viên khác'}. <Link to="/specialist/legal" className="text-orange font-semibold">Về danh sách</Link></div></div></div></div>
+  if (!loaded) return <div className="page"><div className="wrap"><p className="text-muted">Đang tải…</p></div></div>
+  if (!b || !b.intake?.specialist || (!isAssignedTo(b.intake.specialist, session?.name) && !isAssignedTo(b.intake.specialist, session?.username))) {
+    return <Navigate to="/specialist/legal" replace />
+  }
 
   return (
     <div className="page">

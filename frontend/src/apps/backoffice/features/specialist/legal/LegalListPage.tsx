@@ -12,26 +12,22 @@ import type { Booking } from '@shared/types/booking'
 import { placeShort } from '../../../shared/place'
 import { isAssignedTo } from '@shared/lib/staffAssignment'
 
-type Tab = 'todo' | 'working' | 'done'
+type Tab = 'working' | 'done'
 
 export default function LegalListPage() {
   const { session } = useAuth()
   const now = useNow()
   const { data: all } = useLoad(bookingsApi.list)
-  const [tab, setTab] = useState<Tab>('todo')
+  const [tab, setTab] = useState<Tab>('working')
   const isMine = (b: Booking) =>
-    !b.intake?.specialist ||
-    isAssignedTo(b.intake.specialist, session?.name) ||
-    isAssignedTo(b.intake.specialist, session?.username) ||
-    session?.role === 'admin' ||
-    session?.role === 'manager'
+    !!b.intake?.specialist &&
+    (isAssignedTo(b.intake.specialist, session?.name) || isAssignedTo(b.intake.specialist, session?.username))
 
   const mine = (all ?? []).filter(b =>
     isMine(b) && (['waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup'].includes(b.status) || !!b.waybill || !!b.clearance)
   )
   const groups: Record<Tab, Booking[]> = {
-    todo: mine.filter(b => b.status === 'waybill_issued' && !b.clearance?.doneAt),
-    working: mine.filter(b => (b.status === 'clearance_in_progress' || b.status === 'ready_for_pickup') && !b.clearance?.doneAt),
+    working: mine.filter(b => ['waybill_issued', 'clearance_in_progress', 'ready_for_pickup'].includes(b.status) && !b.clearance?.doneAt),
     done: mine.filter(b => !!b.clearance?.doneAt || b.status === 'clearance_done'),
   }
   const columns: Column<Booking>[] = [
@@ -45,11 +41,11 @@ export default function LegalListPage() {
       const late = isClearanceOverdue(b, now)
       return late ? <span style={{ color: 'var(--red)', fontSize: '0.82rem' }}>Quá {formatDateTime(docsDueAt(b.departAt))} mà giấy chưa xong.</span> : '-'
     } },
-    { head: 'Thao tác', cell: b => <Link to={`/specialist/legal/${b.id}`} className={`btn btn-sm ${tab === 'done' ? 'btn-ghost' : 'btn-primary'}`}>{tab === 'todo' ? 'Xem chi tiết' : tab === 'working' ? 'Làm giấy tờ' : 'Xem'}</Link>, center: true },
+    { head: 'Thao tác', cell: b => <Link to={`/specialist/legal/${b.id}`} className={`btn btn-sm ${tab === 'done' ? 'btn-ghost' : 'btn-primary'}`}>{tab === 'done' ? 'Xem' : b.status === 'waybill_issued' ? 'Xem chi tiết' : 'Làm giấy tờ'}</Link>, center: true },
   ]
   return (
     <ListPage title="Giấy tờ chuyến đi" subtitle="Tiếp nhận Vận đơn, làm giấy kiểm dịch và hải quan, cập nhật từng hạng mục kèm ảnh để khách và quản lý theo dõi."
-      tabs={[['todo', 'Vận đơn mới', groups.todo.length], ['working', 'Đang làm', groups.working.length], ['done', 'Đã xong', groups.done.length]]} tab={tab} onTab={setTab} hot={['todo']}
+      tabs={[['working', 'Cần làm', groups.working.length], ['done', 'Đã xong', groups.done.length]]} tab={tab} onTab={setTab} hot={['working']}
       rows={groups[tab]} rowKey={b => b.id} columns={columns} haystack={b => [b.id, b.customer, b.origin.name, b.dest.name, b.waybill?.no ?? '']} dateOf={b => b.departAt} loaded={!!all} emptyText="Không có đơn nào ở mục này."
       hotRow={b => isClearanceOverdue(b, now)} />
   )

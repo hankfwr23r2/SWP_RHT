@@ -4,7 +4,7 @@ import { COUNTRIES } from '@shared/config/network'
 import { insuranceFee } from '@shared/lib/booking'
 import { formatDate, formatDateTime } from '@shared/lib/format'
 import { FEED_PACKAGE, WATER_PLAN } from '@shared/config/booking-rules'
-import { SEX_LABEL, type Booking } from '@shared/types/booking'
+import { SEX_LABEL, type Booking, type PlaceRef } from '@shared/types/booking'
 import { formatVND } from '@shared/lib/format'
 import { placeShort } from './place'
 import s from './booking.module.css'
@@ -26,14 +26,14 @@ export function ReviewChips({ b }: { b: Booking }) {
   )
 }
 
-export function TripSummary({ b }: { b: Booking }) {
+export function TripSummary({ b, placeLabel = place => placeShort(place.name) }: { b: Booking; placeLabel?: (place: PlaceRef) => string }) {
   return (
     <dl className={s.grid}>
       <div><dt>Khách hàng</dt><dd>{b.customer}</dd></div>
       <div><dt>Loại chuyến</dt><dd>{b.type === 'international' ? `Quốc tế (${COUNTRIES[b.origin.country].name} → ${COUNTRIES[b.dest.country].name})` : 'Trong nước'}</dd></div>
       <div><dt>Ngày khởi hành</dt><dd>{formatDate(b.departAt)}</dd></div>
-      <div><dt>Điểm đón</dt><dd>{placeShort(b.origin.name)}</dd></div>
-      <div><dt>Điểm giao</dt><dd>{placeShort(b.dest.name)}</dd></div>
+      <div><dt>Điểm đón</dt><dd>{placeLabel(b.origin)}</dd></div>
+      <div><dt>Điểm giao</dt><dd>{placeLabel(b.dest)}</dd></div>
       {b.gate && <div><dt>Cửa khẩu (đã khóa)</dt><dd>{b.gate}</dd></div>}
       <div><dt>Người gửi</dt><dd>{b.consignor.name}<div className={s.sub}>{b.consignor.phone}</div></dd></div>
       <div><dt>Người nhận</dt><dd>{b.consignee.name}<div className={s.sub}>{b.consignee.phone}</div></dd></div>
@@ -178,4 +178,3 @@ export function OrderCard({ id, customer, route, kind, badge, meta = [], note, s
     </article>
   )
 }
-

@@ -1,6 +1,6 @@
 // Specialist: duyệt hồ sơ ngựa một đơn. Đạt thì xác nhận; sai sót thì yêu cầu khách bổ sung (bắt buộc ghi lý do).
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, Navigate, useNavigate, useParams } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { FEED_PACKAGE, WATER_PLAN, HORSE_DOC, HORSE_DOC_TYPES, type HorseDocType } from '@shared/config/booking-rules'
 import { horseReadiness } from '@shared/lib/booking'
@@ -19,6 +19,11 @@ import s from '../../../shared/booking.module.css'
 
 type Pair = { horseId: string; doc: HorseDocType }
 const key = (p: Pair) => `${p.horseId}:${p.doc}`
+const vietnamesePlaceName = (place: Booking['origin']) => {
+  if (place.id === 'CLB-SG') return 'CLB Cưỡi ngựa Sài Gòn - Q.2, TP.HCM'
+  if (place.id === 'CLB-VTE') return 'CLB Mã cầu & Cưỡi ngựa Viêng Chăn'
+  return place.name.split(' — ')[0]
+}
 
 const renderDocLabel = (text: string) => {
   const match = text.match(/^(.*?)\s*(\(.*?\))\s*$/)
@@ -201,16 +206,16 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
 export default function VerifyPage() {
   const { id = '' } = useParams()
   const { session } = useAuth()
-  const { data: b, reload } = useLoad(() => bookingsApi.get(id), [id])
-  const { data: horses } = useLoad(async () => {
-    const booking = await bookingsApi.get(id)
-    if (!booking) return []
-    return (await Promise.all(booking.horses.map(h => horsesApi.byId(h.horseId)))).filter(Boolean) as HorseProfile[]
-  }, [id, b?.medical?.status])
+  const { data: b, loaded, reload } = useLoad(() => bookingsApi.get(id), [id])
+  const { data: horses } = useLoad(async () => b
+    ? (await Promise.all(b.horses.map(h => horsesApi.byId(h.horseId)))).filter(Boolean) as HorseProfile[]
+    : [], [b?.id, b?.medical?.status])
 
-  if (!b || !horses) return <div className="page"><div className="wrap"><p className="text-muted">Đang tải…</p></div></div>
-  const isAssigned = !b.intake || isAssignedTo(b.intake.specialist, session?.name) || session?.role === 'admin' || session?.role === 'manager'
-  if (!isAssigned) return <div className="page"><div className="wrap"><div className="alert alert-danger"><i className="fa-solid fa-lock" /><div>Đơn {b.id} hiện được giao cho {b.intake?.specialist.name || 'chuyên viên khác'}. <Link to="/specialist/verification" className="text-orange font-semibold">Về danh sách</Link></div></div></div></div>
+  if (!loaded) return <div className="page"><div className="wrap"><p className="text-muted">Đang tải…</p></div></div>
+  if (!b || !b.intake?.specialist || (!isAssignedTo(b.intake.specialist, session?.name) && !isAssignedTo(b.intake.specialist, session?.username))) {
+    return <Navigate to="/specialist/verification" replace />
+  }
+  if (!horses) return <div className="page"><div className="wrap"><p className="text-muted">Đang tải…</p></div></div>
 
   return (
     <div className="page">
@@ -238,11 +243,10 @@ export default function VerifyPage() {
             </Link>
           </div>
         )}
-        {!b.intake && <div className="alert alert-info" style={{ marginBottom: 16 }}><i className="fa-solid fa-circle-info" /><div>Đơn chưa được Quản lý tiếp nhận và phân công chính thức. Đang hiển thị ở chế độ xem trước.</div></div>}
         <div className={s.layout}>
           <div className={s.main}>
             {b.sentBack?.to === 'specialist' && <div className="alert alert-warning"><i className="fa-solid fa-rotate-left" /><div><b>Quản lý trả lại đơn này:</b> {b.sentBack.reason} <span className="sub-text">({b.sentBack.by}, {formatDateTime(b.sentBack.at)})</span></div></div>}
-            <div className="card"><div className="card-header"><h3><i className="fa-solid fa-route" /> Chuyến đi</h3></div><TripSummary b={b} /></div>
+            <div className="card"><div className="card-header"><h3><i className="fa-solid fa-route" /> Chuyến đi</h3></div><TripSummary b={b} placeLabel={vietnamesePlaceName} /></div>
             <Review key={b.medical?.status} b={b} horses={horses} onDone={reload} />
           </div>
           <aside className={s.side}>
