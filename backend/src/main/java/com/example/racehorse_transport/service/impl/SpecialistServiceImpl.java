@@ -12,6 +12,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 public class SpecialistServiceImpl implements SpecialistService {
 
     private final BookingRepository bookingRepository;
+    private final StaffRepository staffRepository;
     private final TripDocumentRepository tripDocumentRepository;
     private final RegulationRepository regulationRepository;
     private final LocationRepository locationRepository;
@@ -37,14 +39,16 @@ public class SpecialistServiceImpl implements SpecialistService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<BookingResponse> getVerificationBookings() {
+    public List<BookingResponse> getVerificationBookings(String username) {
         List<Booking> all = bookingRepository.findAllByOrderByBookingDateDesc();
+        Staff actor = findStaff(username);
         // Lấy các đơn ở giai đoạn thẩm định hồ sơ ngựa
         return all.stream()
                 .filter(b -> {
                     String s = b.getStatus() != null ? b.getStatus().toLowerCase() : "";
-                    return s.contains("review") || s.contains("verification") || s.contains("pending_intake")
+                    boolean inPhase = s.contains("review") || s.contains("verification") || s.contains("pending_intake")
                             || s.contains("intake") || s.contains("resubmission_requested");
+                    return inPhase && (isPrivileged(actor) || isAssignedToSpecialist(actor, b));
                 })
                 .map(this::mapToBookingResponse)
                 .collect(Collectors.toList());
@@ -52,8 +56,9 @@ public class SpecialistServiceImpl implements SpecialistService {
 
     @Override
     @Transactional(readOnly = true)
-    public BookingResponse getBookingDetail(String bookingIdentifier) {
+    public BookingResponse getBookingDetail(String bookingIdentifier, String username) {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
+        requireAssignment(username, booking);
         return mapToBookingResponse(booking);
     }
 
@@ -61,6 +66,7 @@ public class SpecialistServiceImpl implements SpecialistService {
     @Transactional
     public BookingResponse approveMedical(String bookingIdentifier, ApproveMedicalRequest request, String username) {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
+        requireAssignment(username, booking);
         BookingDetailsPayload payload = extractPayload(booking);
 
         String specialist = (request != null && request.getSpecialistName() != null && !request.getSpecialistName().isBlank())
@@ -97,6 +103,7 @@ public class SpecialistServiceImpl implements SpecialistService {
     @Transactional
     public BookingResponse requestResubmission(String bookingIdentifier, RequestResubmissionRequest request, String username) {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
+        requireAssignment(username, booking);
         BookingDetailsPayload payload = extractPayload(booking);
 
         String specialist = (request != null && request.getSpecialistName() != null && !request.getSpecialistName().isBlank())
@@ -136,15 +143,17 @@ public class SpecialistServiceImpl implements SpecialistService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<BookingResponse> getClearanceBookings() {
+    public List<BookingResponse> getClearanceBookings(String username) {
         List<Booking> all = bookingRepository.findAllByOrderByBookingDateDesc();
+        Staff actor = findStaff(username);
         // Lấy các đơn ở giai đoạn làm giấy tờ kiểm dịch và hải quan
         return all.stream()
                 .filter(b -> {
                     String s = b.getStatus() != null ? b.getStatus().toLowerCase() : "";
-                    return s.equals("waybill_issued") || s.equals("clearance_in_progress")
+                    boolean inPhase = s.equals("waybill_issued") || s.equals("clearance_in_progress")
                             || s.equals("clearance_done") || s.equals("ready_for_pickup")
                             || s.contains("clearance");
+                    return inPhase && (isPrivileged(actor) || isAssignedToSpecialist(actor, b));
                 })
                 .map(this::mapToBookingResponse)
                 .collect(Collectors.toList());
@@ -154,6 +163,7 @@ public class SpecialistServiceImpl implements SpecialistService {
     @Transactional
     public BookingResponse acceptWaybill(String bookingIdentifier, String username) {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
+        requireAssignment(username, booking);
         BookingDetailsPayload payload = extractPayload(booking);
 
         booking.setStatus("clearance_in_progress");
@@ -177,6 +187,7 @@ public class SpecialistServiceImpl implements SpecialistService {
     @Transactional
     public BookingResponse updateClearanceItem(String bookingIdentifier, UpdateClearanceItemRequest request, String username) {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
+        requireAssignment(username, booking);
         BookingDetailsPayload payload = extractPayload(booking);
 
         Map<String, Object> clearanceMap = getOrCreateClearanceMap(payload, booking);
@@ -224,6 +235,7 @@ public class SpecialistServiceImpl implements SpecialistService {
     @Transactional
     public BookingResponse addClearanceItem(String bookingIdentifier, AddClearanceItemRequest request, String username) {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
+        requireAssignment(username, booking);
         BookingDetailsPayload payload = extractPayload(booking);
 
         Map<String, Object> clearanceMap = getOrCreateClearanceMap(payload, booking);
@@ -253,6 +265,7 @@ public class SpecialistServiceImpl implements SpecialistService {
     @Transactional
     public BookingResponse markHorseCleared(String bookingIdentifier, MarkHorseClearedRequest request, String username) {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
+        requireAssignment(username, booking);
         BookingDetailsPayload payload = extractPayload(booking);
 
         Map<String, Object> clearanceMap = getOrCreateClearanceMap(payload, booking);
@@ -281,6 +294,7 @@ public class SpecialistServiceImpl implements SpecialistService {
     @Transactional
     public BookingResponse completeClearance(String bookingIdentifier, String username) {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
+        requireAssignment(username, booking);
         BookingDetailsPayload payload = extractPayload(booking);
 
         Map<String, Object> clearanceMap = getOrCreateClearanceMap(payload, booking);
@@ -327,6 +341,7 @@ public class SpecialistServiceImpl implements SpecialistService {
     @Transactional
     public BookingResponse transferForQuarantine(String bookingIdentifier, String username) {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
+        requireAssignment(username, booking);
         BookingDetailsPayload payload = extractPayload(booking);
 
         // Kiểm tra xem kíp xe (Driver & Escort) đã xác nhận chưa
@@ -370,6 +385,7 @@ public class SpecialistServiceImpl implements SpecialistService {
     @Transactional
     public BookingResponse approveQuarantine(String bookingIdentifier, ApproveMedicalRequest request, String username) {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
+        requireAssignment(username, booking);
         BookingDetailsPayload payload = extractPayload(booking);
 
         String assignedSpecialist = null;
@@ -460,6 +476,55 @@ public class SpecialistServiceImpl implements SpecialistService {
             payload.setMedical(med);
         }
         return payload;
+    }
+
+    private Staff findStaff(String username) {
+        if (username == null || username.isBlank()) return null;
+        return staffRepository.findByUser_Username(username)
+                .or(() -> staffRepository.findAll().stream()
+                        .filter(staff -> staff.getUser() != null
+                                && (username.equalsIgnoreCase(staff.getUser().getUsername())
+                                || username.equalsIgnoreCase(staff.getUser().getEmail())))
+                        .findFirst())
+                .orElse(null);
+    }
+
+    private boolean isPrivileged(Staff actor) {
+        return actor != null && ("MANAGER".equalsIgnoreCase(actor.getRole()) || "ADMIN".equalsIgnoreCase(actor.getRole()));
+    }
+
+    private boolean isAssignedToSpecialist(Staff actor, Booking booking) {
+        if (actor == null) return false;
+        Object intakeValue = extractPayload(booking).getIntake();
+        if (!(intakeValue instanceof Map<?, ?> intake)) return false;
+        Object specialistValue = intake.get("specialist");
+        if (!(specialistValue instanceof Map<?, ?> specialist)) return false;
+
+        Set<String> assignedIdentities = new HashSet<>();
+        addIdentity(assignedIdentities, specialist.get("id"));
+        addIdentity(assignedIdentities, specialist.get("name"));
+
+        Set<String> staffIdentities = new HashSet<>();
+        addIdentity(staffIdentities, actor.getStaffCode());
+        addIdentity(staffIdentities, actor.getId());
+        if (actor.getUser() != null) {
+            addIdentity(staffIdentities, actor.getUser().getUsername());
+            addIdentity(staffIdentities, actor.getUser().getEmail());
+        }
+        return assignedIdentities.stream().anyMatch(staffIdentities::contains);
+    }
+
+    private void addIdentity(Set<String> identities, Object identity) {
+        if (identity != null && !identity.toString().isBlank()) {
+            identities.add(identity.toString().trim().toLowerCase(Locale.ROOT));
+        }
+    }
+
+    private void requireAssignment(String username, Booking booking) {
+        Staff actor = findStaff(username);
+        if (!isPrivileged(actor) && !isAssignedToSpecialist(actor, booking)) {
+            throw new AccessDeniedException("Đơn hàng chưa được phân công cho tài khoản này.");
+        }
     }
 
     private void savePayload(Booking booking, BookingDetailsPayload payload) {

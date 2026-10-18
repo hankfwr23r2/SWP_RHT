@@ -45,7 +45,7 @@ public class BookingController {
     }
 
     // 1. Lấy tất cả đơn hàng
-    @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER', 'SPECIALIST', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER', 'ADMIN')")
     @GetMapping
     public ResponseEntity<ApiResponse<List<BookingDTO>>> getAllBookings() {
         List<Booking> bookings = bookingService.findAll();
@@ -56,7 +56,7 @@ public class BookingController {
     }
 
     // 2. Xem chi tiết đơn hàng
-    @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER', 'SPECIALIST', 'ADMIN', 'DRIVER', 'ESCORT')")
+    @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER', 'ADMIN', 'DRIVER', 'ESCORT')")
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<BookingDTO>> getBookingById(@PathVariable Integer id) {
         Optional<Booking> bookingOpt = bookingService.findById(id);

@@ -17,7 +17,9 @@ export default function VerificationListPage() {
   const { data: all, reload } = useLoad(bookingsApi.list)
   useAutoRefresh(reload)
   const [tab, setTab] = useState<Tab>('todo')
-  const isMyTask = (b: Booking) => !b.intake || isAssignedTo(b.intake.specialist, session?.name) || session?.role === 'admin' || session?.role === 'manager'
+  const isMyTask = (b: Booking) =>
+    !!b.intake?.specialist &&
+    (isAssignedTo(b.intake.specialist, session?.name) || isAssignedTo(b.intake.specialist, session?.username))
   const mine = (all ?? []).filter(b => isMyTask(b) && (b.status === 'under_review' || b.medical))
   const medicalStatus = (b: Booking) => b.medical?.status ?? 'pending'
   const groups: Record<Tab, Booking[]> = {

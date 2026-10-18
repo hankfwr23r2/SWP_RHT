@@ -14,12 +14,12 @@ public interface SpecialistService {
     /**
      * Lấy danh sách các đơn cần duyệt hồ sơ ngựa (trạng thái: under_review, pending_intake, etc.)
      */
-    List<BookingResponse> getVerificationBookings();
+    List<BookingResponse> getVerificationBookings(String username);
 
     /**
      * Lấy chi tiết một đơn hàng để kiểm tra hồ sơ ngựa
      */
-    BookingResponse getBookingDetail(String bookingIdentifier);
+    BookingResponse getBookingDetail(String bookingIdentifier, String username);
 
     /**
      * Specialist duyệt hồ sơ ngựa là ĐẠT (Approve Medical/Horse Profile)
@@ -38,7 +38,7 @@ public interface SpecialistService {
     /**
      * Lấy danh sách các đơn đang trong giai đoạn làm thủ tục kiểm dịch & hải quan (waybill_issued, clearance_in_progress, clearance_done)
      */
-    List<BookingResponse> getClearanceBookings();
+    List<BookingResponse> getClearanceBookings(String username);
 
     /**
      * Specialist tiếp nhận Vận đơn sau khi khách đã cọc -> Chuyển sang clearance_in_progress

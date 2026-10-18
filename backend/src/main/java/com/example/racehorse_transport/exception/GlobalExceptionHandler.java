@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.exception;
 
 import com.example.racehorse_transport.response.ApiResponse;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -13,6 +14,12 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Object>> handleAccessDeniedException(AccessDeniedException ex) {
+        ApiResponse<Object> response = ApiResponse.error(ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
+    }
 
     // Bắt các lỗi do logic nghiệp vụ tự quăng ra (VD: Username đã tồn tại, Sai mật khẩu...)
     @ExceptionHandler(IllegalArgumentException.class)
@@ -47,4 +54,3 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
-
