@@ -131,8 +131,11 @@ public class FleetServiceImpl implements FleetService {
     @org.springframework.transaction.annotation.Transactional
     public void deleteVehicle(String identifier) {
         Vehicle vehicle = findVehicleByIdOrCode(identifier);
-        if (!bookingVehicleRepository.findByVehicleID_Id(vehicle.getId()).isEmpty()) {
-            throw new IllegalStateException("Không thể xóa xe đã được gán vào đơn hàng.");
+        if ("BUSY".equalsIgnoreCase(vehicle.getStatus())
+                || "IN_USE".equalsIgnoreCase(vehicle.getStatus())
+                || "ON_TRIP".equalsIgnoreCase(vehicle.getStatus())
+                || !bookingVehicleRepository.findByVehicleID_Id(vehicle.getId()).isEmpty()) {
+            throw new IllegalStateException("Không thể xóa xe đang bận hoặc đã được gán vào đơn hàng.");
         }
         vehicleRepository.delete(vehicle);
     }
