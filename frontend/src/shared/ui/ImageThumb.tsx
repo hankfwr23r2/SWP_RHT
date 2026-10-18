@@ -7,17 +7,79 @@ import s from './ImageThumb.module.css'
 export function ImageLightbox({ name, onClose }: { name: string; onClose: () => void }) {
   const isUrl = name.startsWith('http://') || name.startsWith('https://') || name.startsWith('blob:')
   const src = isUrl ? name : previewOf(name)
+  const [scale, setScale] = useState(1)
+  const [rotation, setRotation] = useState(0)
+
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+      if (e.key === '+' || e.key === '=') setScale(s => Math.min(3, +(s + 0.25).toFixed(2)))
+      if (e.key === '-' || e.key === '_') setScale(s => Math.max(0.5, +(s - 0.25).toFixed(2)))
+      if (e.key.toLowerCase() === 'r') setRotation(r => (r + 90) % 360)
+    }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [onClose])
+
+  const isPdf = name.toLowerCase().endsWith('.pdf')
+
   return (
     <div className={s.backdrop} role="dialog" aria-modal="true" aria-label={`Xem ảnh ${name}`} onClick={e => e.target === e.currentTarget && onClose()}>
       <button className={s.close} onClick={onClose} aria-label="Đóng"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
-      {src
-        ? <img className={s.big} src={src} alt={name} />
-        : <div className={s.noimg}><i className="fa-regular fa-image" aria-hidden="true" /><p>Ảnh này không có bản xem trước (ảnh mẫu hoặc đã tải lại trang).</p></div>}
+
+      {src ? (
+        <>
+          <div className={s.toolbar}>
+            <button type="button" className={s.toolBtn} onClick={() => setScale(s => Math.min(3, +(s + 0.25).toFixed(2)))} title="Phóng to (+)">
+              <i className="fa-solid fa-magnifying-glass-plus" /> Phóng to
+            </button>
+            <button type="button" className={s.toolBtn} onClick={() => setScale(s => Math.max(0.5, +(s - 0.25).toFixed(2)))} title="Thu nhỏ (-)">
+              <i className="fa-solid fa-magnifying-glass-minus" /> Thu nhỏ
+            </button>
+            <button type="button" className={s.toolBtn} onClick={() => setRotation(r => (r + 90) % 360)} title="Xoay 90° (R)">
+              <i className="fa-solid fa-rotate" /> Xoay
+            </button>
+            <button type="button" className={s.toolBtn} onClick={() => { setScale(1); setRotation(0) }} title="Đặt lại (100%)">
+              <i className="fa-solid fa-arrows-rotate" /> {Math.round(scale * 100)}%
+            </button>
+            {isUrl && (
+              <a href={src} target="_blank" rel="noopener noreferrer" className={s.toolBtn} title="Mở tab mới">
+                <i className="fa-solid fa-arrow-up-right-from-square" /> Mở tab mới
+              </a>
+            )}
+          </div>
+          <div className={s.imgWrapper} onClick={e => e.target === e.currentTarget && onClose()}>
+            <img
+              className={s.big}
+              src={src}
+              alt={name}
+              style={{
+                transform: `scale(${scale}) rotate(${rotation}deg)`,
+                transformOrigin: 'center center',
+                transition: 'transform 0.15s ease',
+              }}
+            />
+          </div>
+        </>
+      ) : (
+        <div className={s.docCard}>
+          <div className={s.docSeal}><i className="fa-solid fa-circle-check" /> HỒ SƠ HỢP LỆ TRÊN HỆ THỐNG</div>
+          <i className={isPdf ? 'fa-solid fa-file-pdf' : 'fa-solid fa-file-invoice'} style={{ fontSize: '3.2rem', color: isPdf ? 'var(--red, #ef4444)' : 'var(--orange, #f97316)' }} />
+          <div>
+            <h4 style={{ margin: '0 0 4px', fontSize: '1.05rem' }}>{name}</h4>
+            <p className="sub-text" style={{ margin: 0 }}>Chứng từ kiểm duyệt điện tử lưu trữ an toàn trong hồ sơ vận chuyển.</p>
+          </div>
+          <div className={s.docActions}>
+            <button type="button" className="btn btn-outline btn-sm" onClick={() => window.print()}>
+              <i className="fa-solid fa-print" /> In đối soát
+            </button>
+            <button type="button" className="btn btn-primary btn-sm" onClick={onClose}>
+              <i className="fa-solid fa-check" /> Đã kiểm tra xong
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className={s.caption}>{name}</div>
     </div>
   )

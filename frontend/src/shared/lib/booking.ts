@@ -726,3 +726,75 @@ export function settlementOf(b: Pick<Booking, 'incidents'>): { items: Settlement
   const items = (b.incidents ?? []).flatMap(i => i.expenses).filter(e => e.payer === 'customer').map(e => ({ label: `${EXPENSE_CATEGORY[e.category]}: ${e.label}`, amount: e.amount, photo: e.photo }))
   return { items, total: items.reduce((n, i) => n + i.amount, 0) }
 }
+
+// Tự động phân bổ xe thông minh (Smart Fleet Allocation):
+// 1. Lọc xe hợp lệ (đăng kiểm, liên vận nếu quốc tế, không trùng lịch).
+// 2. Nếu vừa 1 xe: chọn xe có sức chứa nhỏ nhất mà vẫn đủ chỗ (Best-fit single vehicle) để tránh lãng phí xe lớn.
+// 3. Nếu vượt sức chứa 1 xe: tự động chia thành nhiều xe (Multi-vehicle) ưu tiên xe to giảm dần để tối thiểu số chuyến.
+export interface AutoPackDraft {
+  vehicleId: string
+  horseIds: string[]
+}
+
+export function autoPackFleet(
+  horseIds: string[],
+  vehicles: Vehicle[],
+  schedVehicles: Map<string, Booked[]>,
+  departAt: number,
+  international: boolean
+): AutoPackDraft[] {
+  if (!horseIds.length) return [{ vehicleId: '', horseIds: [] }]
+
+  // 1. Lọc xe khả dụng: giấy tờ đạt + không trùng lịch trong vòng 3 ngày
+  const available = vehicles.filter(v =>
+    vehicleDocsOk(v, international) && !clashOf(schedVehicles.get(v.id), departAt)
+  )
+
+  // Nếu không có xe nào đạt chuẩn, trả về 1 chuyến chưa gán xe để điều phối viên nhận biết
+  if (!available.length) {
+    return [{ vehicleId: '', horseIds: [...horseIds] }]
+  }
+
+  // Trường hợp 1: Tất cả ngựa có thể xếp vừa vào 1 xe duy nhất
+  // Tìm xe có capacity >= horseIds.length nhỏ nhất (Best-Fit Single Vehicle)
+  const singleFits = available
+    .filter(v => v.capacity >= horseIds.length)
+    .sort((a, b) => a.capacity - b.capacity)
+
+  if (singleFits.length > 0) {
+    return [{ vehicleId: singleFits[0].id, horseIds: [...horseIds] }]
+  }
+
+  // Trường hợp 2: Số ngựa vượt quá sức chứa của bất kỳ xe đơn lẻ nào -> Cần chia nhiều xe (Multi-vehicle Bin Packing)
+  // Sắp xếp xe khả dụng theo sức chứa giảm dần (Best-Fit Decreasing) để dùng ít xe nhất
+  const sortedVehicles = [...available].sort((a, b) => b.capacity - a.capacity)
+  const results: AutoPackDraft[] = []
+  let remainingHorses = [...horseIds]
+  const usedVehicleIds = new Set<string>()
+
+  for (const v of sortedVehicles) {
+    if (!remainingHorses.length) break
+    if (usedVehicleIds.has(v.id)) continue
+
+    const takeCount = Math.min(v.capacity, remainingHorses.length)
+    const assigned = remainingHorses.slice(0, takeCount)
+    remainingHorses = remainingHorses.slice(takeCount)
+    usedVehicleIds.add(v.id)
+
+    results.push({
+      vehicleId: v.id,
+      horseIds: assigned,
+    })
+  }
+
+  // Nếu vẫn còn ngựa mà đã hết xe khả dụng -> để lại ở chuyến cuối chưa gán xe để điều phối viên thấy cảnh báo
+  if (remainingHorses.length > 0) {
+    results.push({
+      vehicleId: '',
+      horseIds: remainingHorses,
+    })
+  }
+
+  return results
+}
+
