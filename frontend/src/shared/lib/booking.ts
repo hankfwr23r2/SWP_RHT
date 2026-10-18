@@ -4,7 +4,7 @@ import {
   BREED_INSURED_VALUE, INSURANCE_RATE_BOOKING, DELAY_ALERT_MINUTES, HOME_BASE, RETURN_EARLIEST_RATIO, MAX_CONTINUOUS_HOURS, MIN_REST_MINUTES, QUOTE_VALID_HOURS, TARGET_LEG_HOURS, SINGLE_STALL_FEE, FEED_PACKAGE, WATER_PLAN, VEHICLE_CLASS, EXPENSE_CATEGORY, type BookingStatus, type ClearanceDocType, type ExpenseCategory, type IncidentAction, type IncidentKind, type Payer, type HorseDocType, type VehicleClass,
 } from '../config/booking-rules'
 import { DAY, HOUR, MIN_LEAD_DAYS } from '../config/business-rules'
-import { COUNTRIES, COUNTRY_LOCATIONS, GATES, PLACES, TRANSIT_STATIONS, type GeoPoint, type Gate } from '../config/network'
+import { COUNTRIES, COUNTRY_LOCATIONS, GATES, PLACES, TRANSIT_STATIONS, type GeoPoint, type Gate, type CountryCode } from '../config/network'
 import { AVG_SPEED_KMH, BORDER_HOURS, DRIVE_HOURS_PER_DAY } from '../config/public-pricing'
 import type { Vehicle } from '../types/fleet'
 import type { StaffMember } from '../types/staff'
@@ -52,11 +52,22 @@ export const classForHorses = (n: number): VehicleClass => vehicleClassOf(n)
 
 // ===== Tuyến, quãng đường =====
 // Điểm nhận / giao khi đặt đơn; bảng giá công khai còn nhận cả các thành phố trong PLACES
-export const findLocation = (id: string) => Object.values(COUNTRY_LOCATIONS).flat().find(l => l.id === id) ?? PLACES.find(p => p.id === id)
+export const findLocation = (id: string, country?: string) => {
+  const all = [...Object.values(COUNTRY_LOCATIONS).flat(), ...PLACES]
+  const exact = all.find(l => l.id === id)
+  if (exact) return exact
+  const clean = id.toLowerCase().trim()
+  const matched = all.find(l => l.name.toLowerCase().includes(clean) || clean.includes(l.name.toLowerCase().split(' — ')[0].trim()))
+  if (matched) return matched
+  if (country && COUNTRY_LOCATIONS[country as CountryCode]?.length) {
+    return COUNTRY_LOCATIONS[country as CountryCode][0]
+  }
+  return undefined
+}
 
 export function routeKm(origin: PlaceRef, dest: PlaceRef, gate?: string) {
-  const a = findLocation(origin.id)
-  const b = findLocation(dest.id)
+  const a = findLocation(origin.id, origin.country)
+  const b = findLocation(dest.id, dest.country)
   if (!a || !b) return 0
   const g = gate ? GATES.find(x => x.name === gate) : undefined
   return roadKm(g ? haversineKm(a, g) + haversineKm(g, b) : haversineKm(a, b))

@@ -4,7 +4,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { MIN_LEAD_DAYS } from '@shared/config/business-rules'
-import { COUNTRIES, COUNTRY_LOCATIONS, type CountryCode } from '@shared/config/network'
+import { COUNTRIES } from '@shared/config/network'
 import { earliestDeparture, fromIsoDay, isDepartureAllowed, toIsoDay } from '@shared/lib/booking'
 import { formatDate } from '@shared/lib/format'
 import type { Party, TransportType } from '@shared/types/booking'
@@ -12,7 +12,6 @@ import { Flag } from '@shared/ui/Flag'
 import { BookingShell } from './BookingShell'
 import { countriesOf, useBookingDraft } from './draft'
 import s from './Booking.module.css'
-import { PlacePicker } from '@shared/ui/PlacePicker'
 
 type Partner = 'KH' | 'LA'
 const PARTNERS: Partner[] = ['KH', 'LA']
@@ -81,8 +80,8 @@ export default function Step1RoutePage() {
   const errors = {
     type: !type ? 'Chọn loại chuyến.' : '',
     partner: type === 'international' && !partner ? 'Chọn nước bạn.' : '',
-    origin: countries && !originId ? 'Chọn điểm đón.' : '',
-    dest: countries && !destId ? 'Chọn điểm giao.' : '',
+    origin: countries && !originId.trim() ? 'Nhập điểm đón.' : '',
+    dest: countries && !destId.trim() ? 'Nhập điểm giao.' : '',
     date: dateError,
   }
   const consignorErr = partyErrors(consignor)
@@ -97,8 +96,6 @@ export default function Step1RoutePage() {
     save({ type, partner, direction, originId, destId, departDate: date, consignor, consignee })
     navigate('/booking/horses')
   }
-
-  const locations = (country: CountryCode, exclude?: string) => COUNTRY_LOCATIONS[country].filter(l => l.id !== exclude)
 
   return (
     <BookingShell step={1} title="Tạo yêu cầu vận chuyển" subtitle="Chọn loại chuyến trước, hệ thống chỉ hỏi những thông tin cần cho loại chuyến đó.">
@@ -140,12 +137,26 @@ export default function Step1RoutePage() {
               <div className={s.grid2}>
                 <div className="form-group">
                   <label htmlFor="origin" className="required">Điểm đón <span className={s.subNote}>({COUNTRIES[countries.origin].name})</span></label>
-                  <PlacePicker id="origin" label={`Chọn điểm đón (${COUNTRIES[countries.origin].name})`} invalid={submitted && !!errors.origin} value={originId} onChange={setOriginId} options={locations(countries.origin, type === 'domestic' ? destId : undefined)} />
+                  <input
+                    id="origin"
+                    type="text"
+                    className={`form-control ${submitted && errors.origin ? 'invalid' : ''}`}
+                    placeholder={`Nhập điểm đón (${COUNTRIES[countries.origin].name})`}
+                    value={originId}
+                    onChange={e => setOriginId(e.target.value)}
+                  />
                   {show(errors.origin)}
                 </div>
                 <div className="form-group">
                   <label htmlFor="dest" className="required">Điểm giao <span className={s.subNote}>({COUNTRIES[countries.dest].name})</span></label>
-                  <PlacePicker id="dest" label={`Chọn điểm giao (${COUNTRIES[countries.dest].name})`} invalid={submitted && !!errors.dest} value={destId} onChange={setDestId} options={locations(countries.dest, type === 'domestic' ? originId : undefined)} />
+                  <input
+                    id="dest"
+                    type="text"
+                    className={`form-control ${submitted && errors.dest ? 'invalid' : ''}`}
+                    placeholder={`Nhập điểm giao (${COUNTRIES[countries.dest].name})`}
+                    value={destId}
+                    onChange={e => setDestId(e.target.value)}
+                  />
                   {show(errors.dest)}
                 </div>
               </div>
