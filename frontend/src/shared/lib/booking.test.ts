@@ -255,7 +255,7 @@ describe('lộ trình chi tiết (Flow 3)', () => {
     expect(legs[0].arriveAt - legs[0].departAt).toBe(3 * 3_600_000)
     expect(legs[1].departAt - legs[0].arriveAt).toBe(45 * 60_000)
   })
-  it('phương án mặc định hợp lệ: không chặng nào quá 4 giờ, có trạm thú y', () => {
+  it('phương án mặc định hợp lệ: không chặng nào quá 3 giờ, có trạm thú y', () => {
     const origin = { id: 'KHO-DN', name: 'Kho Đồng Nai', country: 'VN' as const }
     const dest = { id: 'KHO-VTE', name: 'Kho Viêng Chăn', country: 'LA' as const }
     const plan = buildRoutePlan({ type: 'international', origin, dest, gate: 'Lao Bảo – Densavanh' }, etd)
@@ -265,10 +265,10 @@ describe('lộ trình chi tiết (Flow 3)', () => {
     plan.rests.forEach(r => expect(r.name, 'trạm nghỉ có tên gợi ý').toBeTruthy())
     expect(validateRoutePlan(plan, true).errors).toEqual([])
   })
-  it('chặng quá 4 giờ, nghỉ dưới 30 phút, thiếu trạm thú y đều bị chặn', () => {
+  it('chặng quá 3 giờ, nghỉ dưới 30 phút, thiếu trạm thú y đều bị chặn', () => {
     const legs = layoutLegs('A', 'B', etd, [], 5)
     const r = validateRoutePlan({ legs, rests: [{ afterLeg: 1, name: 'X', minutes: 20 }], borderEta: undefined }, false)
-    expect(r.errors.join(' | ')).toMatch(/vượt 4 giờ/)
+    expect(r.errors.join(' | ')).toMatch(/vượt 3 giờ/)
     expect(r.errors.join(' | ')).toMatch(/tối thiểu 30 phút/)
     expect(r.errors.join(' | ')).not.toMatch(/Thú y/)
   })

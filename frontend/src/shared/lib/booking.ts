@@ -520,7 +520,9 @@ export function suggestOptimalDepartureForBorder(
 export function buildRoutePlan(b: Pick<Booking, 'type' | 'origin' | 'dest' | 'gate'>, etd: number): RoutePlan {
   const international = b.type === 'international'
   const driveHours = routeKm(b.origin, b.dest, b.gate) / AVG_SPEED_KMH
-  const n = Math.max(1, Math.ceil(driveHours / TARGET_LEG_HOURS))
+  const minLegs = Math.max(1, Math.ceil(driveHours / MAX_CONTINUOUS_HOURS))
+  const targetLegs = Math.max(1, Math.ceil(driveHours / TARGET_LEG_HOURS))
+  const n = Math.max(minLegs, targetLegs)
   const names = suggestTransitStations(b.origin, b.dest, b.gate, n - 1)
   const rests: RestStop[] = names.map((name, i) => ({ afterLeg: i + 1, name, minutes: 45 }))
   const legs = layoutLegs(b.origin.name, b.dest.name, etd, rests, driveHours, b.gate)

@@ -24,7 +24,11 @@ function PickModal({ label, options, value, onPick, onClose }: { label: string; 
     if (!box.current) return
     const m = L.map(box.current, { zoomControl: false })
     L.control.zoom({ position: 'topright' }).addTo(m)
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '© OpenStreetMap' }).addTo(m)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      subdomains: 'abcd',
+      attribution: '© OpenStreetMap contributors © CARTO',
+    }).addTo(m)
     layer.current = L.layerGroup().addTo(m)
     map.current = m
     m.setView([options[0]?.lat ?? 10.8, options[0]?.lng ?? 106.7], 9)

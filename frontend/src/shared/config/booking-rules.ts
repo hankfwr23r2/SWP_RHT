@@ -157,8 +157,8 @@ export const BREED_INSURED_VALUE: Record<string, number> = {
 }
 
 // ===== Lộ trình: trạm nghỉ và Lệnh điều xe (Flow 1, 3, PRD mục 4.2) =====
-export const MAX_CONTINUOUS_HOURS = 4 // ngựa không đi liên tục quá 3–4 giờ
-export const TARGET_LEG_HOURS = 3.5
+export const MAX_CONTINUOUS_HOURS = 3 // quy chuẩn an sinh: ngựa không đi liên tục quá 3 giờ
+export const TARGET_LEG_HOURS = 2.5 // mục tiêu lý tưởng 2.0–2.5 giờ mỗi chặng
 export const MIN_REST_MINUTES = 30
 export const BORDER_WINDOW = { open: 7 * 60 + 30, close: 16 * 60 + 30 } // ETA cửa khẩu nên rơi vào 07:30–16:30
 

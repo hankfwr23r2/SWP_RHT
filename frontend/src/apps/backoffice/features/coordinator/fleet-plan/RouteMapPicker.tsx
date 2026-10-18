@@ -63,7 +63,11 @@ export function RouteMapPicker({ origin, dest, gate, departAt, value, onApply, o
     if (!box.current) return
     const m = L.map(box.current, { zoomControl: false, attributionControl: true })
     L.control.zoom({ position: 'topright' }).addTo(m)
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '© OpenStreetMap' }).addTo(m)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      subdomains: 'abcd',
+      attribution: '© OpenStreetMap contributors © CARTO',
+    }).addTo(m)
     // Mở ra đã zoom vào tuyến (điểm đón, điểm trả, cửa khẩu); các trạm xa hơn thì kéo bản đồ để thấy
     const route = [origin, dest, ...(gate ? [gate] : [])]
     m.fitBounds(L.latLngBounds(route.map(p => [p.lat, p.lng] as [number, number])), { padding: [90, 90], maxZoom: 11 })
