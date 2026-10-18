@@ -28,6 +28,16 @@ export interface PlaceRef { id: string; name: string; country: CountryCode }
 export interface Party { name: string; phone: string; idNumber: string; address: string }
 export type StallType = 'standard' | 'single'
 
+export interface HorseUnfitInfo {
+  reason: string
+  temperature?: number
+  symptoms?: string
+  photo?: string
+  at: number
+  by: string
+  discountAmount?: number
+}
+
 export interface BookingHorse {
   horseId: string
   name: string
@@ -38,6 +48,8 @@ export interface BookingHorse {
   feedPackage: FeedPackageId // gói thức ăn
   waterPlan: WaterPlanId // cữ nước
   insurance: { opted: boolean }
+  status?: 'eligible' | 'unfit'
+  unfitInfo?: HorseUnfitInfo
 }
 
 export interface StaffRef { id: string; name: string }

@@ -18,6 +18,8 @@ export interface BookingHorseDto {
   feedPackage?: string
   waterPlan?: string
   insuranceOpted?: boolean
+  status?: string
+  unfitInfo?: Record<string, unknown>
 }
 
 export interface CreateBookingPayload {

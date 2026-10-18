@@ -1485,6 +1485,127 @@ public class BookingServiceImpl implements BookingService {
                 appendHistory(payload, actor, "Hộ tống quét microchip: " + chip);
                 break;
             }
+            case "EXCLUDE_UNFIT_HORSE": {
+                String horseId = String.valueOf(reqPayload.getOrDefault("horseId", "")).trim();
+                String reason = String.valueOf(reqPayload.getOrDefault("reason", "Ốm / Sốt không đủ điều kiện khởi hành")).trim();
+                String symptoms = String.valueOf(reqPayload.getOrDefault("symptoms", "")).trim();
+                String photo = String.valueOf(reqPayload.getOrDefault("photo", "")).trim();
+                Double temp = reqPayload.get("temperature") != null ? Double.valueOf(reqPayload.get("temperature").toString()) : null;
+                BigDecimal discountAmount = BigDecimal.ZERO;
+                if (reqPayload.get("discountAmount") != null) {
+                    try {
+                        discountAmount = new BigDecimal(reqPayload.get("discountAmount").toString());
+                    } catch (Exception ignored) {
+                    }
+                }
+
+                // 1. Cập nhật trạng thái cá thể ngựa trong payload
+                String horseName = horseId;
+                if (payload.getHorses() != null) {
+                    for (BookingHorseDto h : payload.getHorses()) {
+                        if (horseId.equalsIgnoreCase(h.getHorseId())) {
+                            horseName = h.getName() != null ? h.getName() : horseId;
+                            h.setStatus("UNFIT");
+                            Map<String, Object> unfitInfo = new HashMap<>();
+                            unfitInfo.put("reason", reason);
+                            unfitInfo.put("symptoms", symptoms);
+                            unfitInfo.put("photo", photo);
+                            if (temp != null) {
+                                unfitInfo.put("temperature", temp);
+                            }
+                            unfitInfo.put("at", now);
+                            unfitInfo.put("by", actor);
+                            unfitInfo.put("discountAmount", discountAmount.doubleValue());
+                            h.setUnfitInfo(unfitInfo);
+                            break;
+                        }
+                    }
+                }
+
+                // 2. Loại bỏ cá thể ngựa khỏi trip.horseIds và pickup chips
+                if (targetTrip.getHorseIds() != null) {
+                    targetTrip.getHorseIds().removeIf(id -> id.equalsIgnoreCase(horseId));
+                }
+                Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> checkpoints = (List<Map<String, Object>>) run.computeIfAbsent("checkpoints", k -> new ArrayList<>());
+                if (!checkpoints.isEmpty()) {
+                    Map<String, Object> pickup = checkpoints.get(0);
+                    if (payload.getHorses() != null) {
+                        for (BookingHorseDto h : payload.getHorses()) {
+                            if (horseId.equalsIgnoreCase(h.getHorseId()) && h.getMicrochip() != null) {
+                                @SuppressWarnings("unchecked")
+                                List<String> chips = (List<String>) pickup.get("chips");
+                                if (chips != null) {
+                                    chips.remove(h.getMicrochip().toUpperCase());
+                                }
+                            }
+                        }
+                    }
+                }
+                targetTrip.setRun(run);
+
+                // 3. Giảm trừ chi phí cho khách hàng
+                if (discountAmount.compareTo(BigDecimal.ZERO) > 0 && payload.getQuote() instanceof Map<?, ?> rawQuoteMap) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> quoteMap = new HashMap<>((Map<String, Object>) rawQuoteMap);
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> adjustments = new ArrayList<>();
+                    if (quoteMap.get("adjustments") instanceof List<?> rawList) {
+                        for (Object o : rawList) {
+                            if (o instanceof Map<?, ?> m) {
+                                adjustments.add(new HashMap<>((Map<String, Object>) m));
+                            }
+                        }
+                    }
+
+                    Map<String, Object> adj = new HashMap<>();
+                    adj.put("label", "Giảm trừ không tiếp nhận ngựa " + horseName + " (" + reason + ")");
+                    adj.put("amount", discountAmount.negate().doubleValue());
+                    adjustments.add(adj);
+                    quoteMap.put("adjustments", adjustments);
+
+                    BigDecimal currentTotal = quoteMap.get("total") != null ? new BigDecimal(quoteMap.get("total").toString()) : BigDecimal.ZERO;
+                    BigDecimal currentBalance = quoteMap.get("balance") != null ? new BigDecimal(quoteMap.get("balance").toString()) : BigDecimal.ZERO;
+                    BigDecimal newTotal = currentTotal.subtract(discountAmount).max(BigDecimal.ZERO);
+                    BigDecimal newBalance = currentBalance.subtract(discountAmount).max(BigDecimal.ZERO);
+
+                    quoteMap.put("total", newTotal.doubleValue());
+                    quoteMap.put("balance", newBalance.doubleValue());
+                    payload.setQuote(quoteMap);
+
+                    booking.setTotalBookingPrice(newTotal);
+                    booking.setTotalHorses(Math.max(1, (booking.getTotalHorses() != null ? booking.getTotalHorses() : 1) - 1));
+
+                    final BigDecimal finalDiscount = discountAmount;
+                    quotationRepository.findTopByBookingIdOrderBySentAtDesc(booking.getId()).ifPresent(q -> {
+                        q.setTotalAmount(newTotal);
+                        q.setBalanceAmount(newBalance);
+                        BigDecimal existingAdj = q.getAdjustmentAmount() != null ? q.getAdjustmentAmount() : BigDecimal.ZERO;
+                        q.setAdjustmentAmount(existingAdj.subtract(finalDiscount));
+                        quotationRepository.save(q);
+                    });
+                }
+
+                // 4. Ghi log cảnh báo khẩn cấp an sinh
+                Log emergencyLog = new Log();
+                emergencyLog.setId((int) (logRepository.count() + 1));
+                emergencyLog.setBookingID(booking);
+                emergencyLog.setLogType("EMERGENCY_HEALTH_ALERT");
+                emergencyLog.setStatus("UNFIT_FOR_TRAVEL");
+                emergencyLog.setNote("TỪ CHỐI TIẾP NHẬN NGỰA TẠI ĐIỂM ĐÓN [" + horseName + "]: " + reason
+                        + (temp != null ? " | Thân nhiệt: " + temp + "°C" : "")
+                        + (!symptoms.isBlank() ? " | Triệu chứng: " + symptoms : "")
+                        + " | Giảm trừ chi phí khách: " + discountAmount + " VND");
+                emergencyLog.setCreatedAt(Instant.now());
+                logRepository.save(emergencyLog);
+
+                // 5. Ghi lịch sử đơn hàng
+                appendHistory(payload, actor, "Hộ tống từ chối tiếp nhận ngựa [" + horseName + "] do " + reason
+                        + (temp != null ? " (Thân nhiệt: " + temp + "°C)" : "")
+                        + (discountAmount.compareTo(BigDecimal.ZERO) > 0 ? ". Đã giảm trừ " + discountAmount + " VND cho khách hàng" : ""));
+                break;
+            }
             case "COLLECT_ORIGINALS": {
                 Object items = reqPayload.get("items");
                 Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
