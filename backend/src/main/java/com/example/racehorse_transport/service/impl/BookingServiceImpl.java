@@ -122,6 +122,8 @@ public class BookingServiceImpl implements BookingService {
         String detailsJson = null;
         try {
             BookingDetailsPayload initialPayload = new BookingDetailsPayload();
+            initialPayload.setOriginCountry(request.getOriginCountry());
+            initialPayload.setDestCountry(request.getDestCountry());
             initialPayload.setHorses(request.getHorses() != null ? request.getHorses() : new ArrayList<>());
             Map<String, Object> initialMedical = new HashMap<>();
             initialMedical.put("status", "pending");
@@ -1313,7 +1315,9 @@ public class BookingServiceImpl implements BookingService {
                 .departAt(
                         b.getDepartureDate() != null ? b.getDepartureDate().toEpochMilli() : System.currentTimeMillis())
                 .originName(b.getPickupAddress())
+                .originCountry(payload != null ? payload.getOriginCountry() : null)
                 .destName(b.getDropoffAddress())
+                .destCountry(payload != null ? payload.getDestCountry() : null)
                 .consignor(PartyContactDto.consignorOf(b))
                 .consignee(PartyContactDto.consigneeOf(b))
                 .totalHorses(b.getTotalHorses() != null ? b.getTotalHorses() : 1)
