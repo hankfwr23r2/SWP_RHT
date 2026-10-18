@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/api/v1/:path*",
-      "destination": "https://swp-rht.onrender.com/api/v1/:path*"
+      "destination": "https://knowledge-integrate-turner-asbestos.trycloudflare.com/api/v1/:path*"
     },
     {
       "source": "/backoffice/:path*",

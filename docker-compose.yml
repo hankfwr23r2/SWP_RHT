@@ -13,7 +13,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d horse_transport_db"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d horse_transport_db" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -55,5 +55,16 @@ services:
     ports:
       - "5173:80"
 
+  # 4. Cloudflare Tunnel (Mở Backend ra Internet cho Vercel / Client)
+  cloudflare-tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: racehorse-tunnel
+    restart: unless-stopped
+    depends_on:
+      - backend
+    # Trỏ thẳng vào port 8080 của container backend (Spring Boot)
+    command: tunnel --url http://backend:8080
+
 volumes:
   postgres_data:
+
