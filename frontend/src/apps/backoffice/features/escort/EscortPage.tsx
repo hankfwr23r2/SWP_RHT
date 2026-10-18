@@ -52,24 +52,25 @@ export default function EscortPage() {
       {tab === 'journey' && <Panel title="Các mốc hành trình" icon="fa-route"><TripTimeline trip={t} now={now} staff /></Panel>}
       {tab === 'job' && (
         <>
-          {!t.departedAt && !acked && (
+          {!t.departedAt && (b.clearance?.doneAt || b.status === 'ready_for_pickup') && (
+            <Panel title="Sẵn sàng đón ngựa" icon="fa-truck-fast" tone="ok">
+              <p>Giấy tờ kiểm dịch & hải quan đã hoàn tất. Giờ đón dự kiến: {b.route && formatDateTime(b.route.legs[0].departAt)}. Đang chờ tài xế bắt đầu xuất phát đến điểm đón.</p>
+            </Panel>
+          )}
+          {!t.departedAt && !b.clearance?.doneAt && b.status !== 'ready_for_pickup' && !acked && (
             <Panel title="Nhận lệnh và chuẩn bị" icon="fa-clipboard-check">
-              <p>{b.clearance?.doneAt ? 'Giấy tờ chuyến đi đã được Chuyên viên hoàn tất và bàn giao. Vui lòng chuẩn bị tủ thuốc và dụng cụ, tick từng mục rồi xác nhận nhận lệnh.' : 'Lệnh điều xe đã phát ngay sau khi khách đặt cọc. Tick từng mục khi đã chuẩn bị, rồi xác nhận nhận lệnh.'}</p>
+              <p>Lệnh điều xe đã phát. Tick từng mục khi đã chuẩn bị, rồi xác nhận nhận lệnh.</p>
               <Checklist items={KIT} checked={checked} onChange={setChecked} />
               <button className={`btn btn-primary ${s.big}`} disabled={checked.length < KIT.length || busy} onClick={() => run(() => bookingsApi.acknowledgeTrip(b.id, t.tripId, 'escort', session!.name), 'Đã xác nhận nhận Lệnh điều xe')}>
                 <i className="fa-solid fa-check" /> Tôi đã nhận lệnh ({checked.length}/{KIT.length})
               </button>
             </Panel>
           )}
-          {!t.departedAt && acked && !b.clearance?.doneAt && (
-            <Panel title={t.acks?.driver ? "Kíp xe đã xác nhận, chuyển kiểm dịch viên" : "Đã nhận lệnh, chờ tài xế xác nhận"} icon="fa-shield-virus">
-              <p>Bạn xác nhận lúc {formatDateTime(acked)}.{t.acks?.driver ? ' Cả tài xế và hộ tống đã xác nhận giấy tờ. Đơn đã được chuyển qua Kiểm dịch viên để duyệt xác nhận dịch tễ và giấy thông quan.' : ' Đang chờ tài xế xác nhận để tự động chuyển sang Kiểm dịch viên.'}</p>
+          {!t.departedAt && !b.clearance?.doneAt && b.status !== 'ready_for_pickup' && acked && (
+            <Panel title="Đã nhận lệnh, chờ hoàn tất giấy tờ" icon="fa-clock">
+              <p>Bạn đã xác nhận lúc {formatDateTime(acked)}. Chuyên viên kiểm dịch đang hoàn tất thủ tục giấy tờ pháp lý cho đơn hàng.</p>
             </Panel>
           )}
-          {!t.departedAt && acked && !t.acks?.driver && !!b.clearance?.doneAt && (
-            <Panel title="Đã nhận lệnh, giấy tờ đã hoàn tất" icon="fa-circle-check" tone="ok"><p>Bạn xác nhận lúc {formatDateTime(acked)}. Giấy tờ chuyến đi đã hoàn tất. Đang chờ tài xế xác nhận để bắt đầu đón ngựa.</p></Panel>
-          )}
-          {!t.departedAt && acked && !!t.acks?.driver && !!b.clearance?.doneAt && <Panel title="Sẵn sàng đón ngựa" icon="fa-truck-fast" tone="ok"><p>Giờ đón dự kiến {b.route && formatDateTime(b.route.legs[0].departAt)}. Chờ tài xế bắt đầu đến điểm đón.</p></Panel>}
           <EscortJob key={t.tripId} b={b} t={t} reload={reload} />
         </>
       )}

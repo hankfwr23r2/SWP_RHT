@@ -47,27 +47,26 @@ export default function DriverPage() {
       {tab === 'journey' && <Panel title="Các mốc hành trình" icon="fa-route"><TripTimeline trip={t} now={now} staff /></Panel>}
       {tab === 'job' && (
         <>
-          {!t.departedAt && !acked && (
+          {!t.departedAt && (cleared || b.status === 'ready_for_pickup') && (
+            <Panel title="Sẵn sàng đón ngựa" icon="fa-truck-fast" tone="ok">
+              <p>Giấy tờ kiểm dịch & hải quan đã hoàn tất, đơn hàng sẵn sàng thực hiện. Giờ đón dự kiến: {b.route && formatDateTime(b.route.legs[0].departAt)}. Khi xuất phát từ bãi xe, bấm bên dưới để bắt đầu chuyến đi.</p>
+              <button className={`btn btn-primary ${s.big}`} disabled={busy} onClick={() => run(() => bookingsApi.departToPickup(b.id, t.tripId, session!.name), 'Đã bắt đầu đến điểm đón')}>
+                <i className="fa-solid fa-truck-moving" /> Xuất phát đến điểm đón ngựa
+              </button>
+            </Panel>
+          )}
+          {!t.departedAt && !cleared && b.status !== 'ready_for_pickup' && !acked && (
             <Panel title="Nhận lệnh và chuẩn bị xe" icon="fa-clipboard-check">
-              <p>{cleared ? 'Giấy tờ chuyến đi đã được Chuyên viên hoàn tất và bàn giao. Vui lòng kiểm tra xe, tick từng mục khi đã có trên xe, rồi xác nhận nhận lệnh.' : 'Lệnh điều xe đã phát ngay sau khi khách đặt cọc. Tick từng mục khi đã có trên xe, rồi xác nhận.'}</p>
+              <p>Lệnh điều xe đã phát. Tick từng mục khi đã kiểm tra xe, rồi xác nhận.</p>
               <Checklist items={items} checked={checked} onChange={setChecked} />
               <button className={`btn btn-primary ${s.big}`} disabled={checked.length < items.length || busy} onClick={() => run(() => bookingsApi.acknowledgeTrip(b.id, t.tripId, 'driver', session!.name), 'Đã xác nhận nhận Lệnh điều xe')}>
                 <i className="fa-solid fa-check" /> Tôi đã nhận lệnh ({checked.length}/{items.length})
               </button>
             </Panel>
           )}
-          {!t.departedAt && acked && !cleared && (
-            <Panel title={t.acks?.escort ? "Kíp xe đã xác nhận, chuyển kiểm dịch viên" : "Đã nhận lệnh, chờ hộ tống xác nhận"} icon="fa-shield-virus">
-              <p>Bạn xác nhận lúc {formatDateTime(acked)}.{t.acks?.escort ? ' Cả tài xế và hộ tống đã xác nhận giấy tờ. Đơn đã được chuyển qua Kiểm dịch viên để duyệt xác nhận dịch tễ và giấy thông quan.' : ' Đang chờ nhân viên hộ tống xác nhận để tự động chuyển sang Kiểm dịch viên.'}</p>
-            </Panel>
-          )}
-          {!t.departedAt && acked && cleared && !t.acks?.escort && (
-            <Panel title="Đã nhận lệnh, giấy tờ đã hoàn tất" icon="fa-circle-check" tone="ok"><p>Bạn xác nhận lúc {formatDateTime(acked)}. Giấy tờ chuyến đi đã hoàn tất. Đang chờ nhân viên hộ tống xác nhận để bắt đầu đón ngựa.</p></Panel>
-          )}
-          {!t.departedAt && acked && cleared && !!t.acks?.escort && (
-            <Panel title="Sẵn sàng đón ngựa" icon="fa-truck-fast" tone="ok">
-              <p>Giấy tờ đã xong, tài xế và hộ tống đều đã nhận lệnh. Giờ đón dự kiến {b.route && formatDateTime(b.route.legs[0].departAt)}. Khi xuất phát từ bãi xe, bấm bên dưới.</p>
-              <button className={`btn btn-primary ${s.big}`} disabled={busy} onClick={() => run(() => bookingsApi.departToPickup(b.id, t.tripId, session!.name), 'Đã bắt đầu đến điểm đón')}><i className="fa-solid fa-truck-moving" /> Bắt đầu đến điểm đón</button>
+          {!t.departedAt && !cleared && b.status !== 'ready_for_pickup' && acked && (
+            <Panel title="Đã nhận lệnh, chờ hoàn tất giấy tờ" icon="fa-clock">
+              <p>Bạn đã xác nhận lúc {formatDateTime(acked)}. Chuyên viên kiểm dịch đang hoàn tất thủ tục giấy tờ pháp lý cho đơn hàng.</p>
             </Panel>
           )}
           <DriverJob key={t.tripId} b={b} t={t} reload={reload} />
