@@ -26,10 +26,23 @@ public class Regulation {
     @JoinColumn(name = "StaffID", nullable = false)
     private Staff staffID;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "LocationID")
+    private Location locationID;
+
+    @Size(max = 50)
+    @Column(name = "document_type", length = 50)
+    private String documentType;
+
+    @Size(max = 100)
+    @Nationalized
+    @Column(name = "country", length = 100)
+    private String country;
+
     @NotBlank
     @Size(max = 255)
     @Nationalized
-    @Column(name = "RegulationName", nullable = false, unique = true, length = 255)
+    @Column(name = "RegulationName", nullable = false, length = 255)
     private String regulationName;
 
     @Column(name = "description", columnDefinition = "TEXT")

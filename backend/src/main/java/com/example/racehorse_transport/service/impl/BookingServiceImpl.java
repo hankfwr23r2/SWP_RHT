@@ -55,6 +55,9 @@ public class BookingServiceImpl implements BookingService {
     private final LogRepository logRepository;
     private final VehicleRepository vehicleRepository;
     private final StaffRepository staffRepository;
+    private final RegulationRepository regulationRepository;
+    private final LocationRepository locationRepository;
+    private final TripDocumentRepository tripDocumentRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -923,6 +926,9 @@ public class BookingServiceImpl implements BookingService {
         paymentMap.put("method", payment.getPaymentMethod());
         payload.setPayment(paymentMap);
 
+        // Kéo tự động các quy định pháp lý tương ứng từ bảng REGULATION theo cửa khẩu của đơn
+        initClearanceRegulationsForBooking(booking, payload);
+
         appendHistory(payload, actor != null ? actor : "Khách hàng",
                 "Đặt cọc 30% (" + payment.getAmount() + " VND) qua " + payment.getPaymentMethod() + ", cấp Vận đơn " + waybillNo);
         savePayload(booking, payload);
@@ -933,6 +939,93 @@ public class BookingServiceImpl implements BookingService {
                         + ", mã GD " + payment.getTransactionCode() + ", cấp Vận đơn " + waybillNo);
         log.info("Deposit confirmed for booking ID={}, waybill={}", updated.getId(), waybillNo);
         return updated;
+    }
+
+    private void initClearanceRegulationsForBooking(Booking booking, BookingDetailsPayload payload) {
+        boolean isInternational = "international".equalsIgnoreCase(booking.getBookingType());
+        String gateName = payload.getGate();
+
+        // 1. Tìm bản ghi Location loại BorderGate nếu là tuyến quốc tế
+        Location borderGate = null;
+        if (isInternational && gateName != null && !gateName.trim().isEmpty()) {
+            String cleanGate = gateName.trim().toLowerCase();
+            borderGate = locationRepository.findAll().stream()
+                    .filter(l -> "BorderGate".equalsIgnoreCase(l.getLocationType()))
+                    .filter(l -> {
+                        String name = l.getLocationName() != null ? l.getLocationName().toLowerCase() : "";
+                        return cleanGate.contains(name) || name.contains(cleanGate)
+                                || (cleanGate.contains("mộc bài") && name.contains("mộc bài"))
+                                || (cleanGate.contains("lao bảo") && name.contains("lao bảo"))
+                                || (cleanGate.contains("tịnh biên") && name.contains("tịnh biên"))
+                                || (cleanGate.contains("cầu treo") && name.contains("cầu treo"))
+                                || (cleanGate.contains("hà tiên") && name.contains("hà tiên"))
+                                || (cleanGate.contains("tây trang") && name.contains("tây trang"));
+                    })
+                    .findFirst()
+                    .orElse(null);
+        }
+
+        // 2. Kéo danh sách Regulation từ database
+        List<Regulation> applicableRegs = new ArrayList<>();
+        // a. Các quy định chung (nội địa & chuẩn bị): locationID is null
+        applicableRegs.addAll(regulationRepository.findByLocationIDIsNullAndStatus("ACTIVE"));
+
+        // b. Nếu là quốc tế, kéo các quy định gắn riêng với Cửa khẩu đó
+        if (isInternational) {
+            if (borderGate != null) {
+                applicableRegs.addAll(regulationRepository.findByLocationID_IdAndStatus(borderGate.getId(), "ACTIVE"));
+            } else {
+                applicableRegs.addAll(regulationRepository.findByStatus("ACTIVE").stream()
+                        .filter(r -> r.getLocationID() != null)
+                        .toList());
+            }
+        }
+
+        // 3. Khởi tạo clearance.items
+        List<Map<String, Object>> items = new ArrayList<>();
+        for (Regulation reg : applicableRegs) {
+            Map<String, Object> item = new HashMap<>();
+            String type = reg.getDocumentType() != null ? reg.getDocumentType() : ("doc_" + reg.getId());
+            item.put("type", type);
+            item.put("label", reg.getRegulationName());
+            item.put("hint", reg.getDescription());
+            item.put("note", "");
+            item.put("status", "todo");
+            item.put("photos", new ArrayList<String>());
+            item.put("regulationId", reg.getId());
+            if (reg.getLocationID() != null) {
+                item.put("gateName", reg.getLocationID().getLocationName());
+                item.put("gateLocationId", reg.getLocationID().getId());
+            }
+            items.add(item);
+
+            // Khởi tạo bản ghi trong TRIP_DOCUMENT
+            try {
+                TripDocument tripDoc = tripDocumentRepository.findByBookingIdAndDocumentType(booking.getId(), type)
+                        .orElse(TripDocument.builder()
+                                .bookingID(booking)
+                                .regulationID(reg)
+                                .documentType(type)
+                                .documentNumber("DOC-" + booking.getId() + "-" + type.toUpperCase())
+                                .status("PENDING")
+                                .build());
+                tripDoc.setRegulationID(reg);
+                tripDocumentRepository.save(tripDoc);
+            } catch (Exception ex) {
+                log.warn("Could not pre-create TripDocument for booking ID={}, reg ID={}: {}", booking.getId(), reg.getId(), ex.getMessage());
+            }
+        }
+
+        Map<String, Object> clearanceMap = new HashMap<>();
+        clearanceMap.put("items", items);
+        clearanceMap.put("horsesCleared", new ArrayList<String>());
+        if (borderGate != null) {
+            clearanceMap.put("gateName", borderGate.getLocationName());
+            clearanceMap.put("gateLocationId", borderGate.getId());
+        } else if (gateName != null) {
+            clearanceMap.put("gateName", gateName);
+        }
+        payload.setClearance(clearanceMap);
     }
 
     // Áp hiệu ứng sau khi đã nhận đủ 70% còn lại (luồng VNPAY): đủ điều kiện cho xe xuất phát

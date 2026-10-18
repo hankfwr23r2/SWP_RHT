@@ -5,10 +5,8 @@ import com.example.racehorse_transport.dto.booking.BookingHorseDto;
 import com.example.racehorse_transport.dto.booking.BookingResponse;
 import com.example.racehorse_transport.dto.booking.PartyContactDto;
 import com.example.racehorse_transport.dto.specialist.*;
-import com.example.racehorse_transport.entity.Booking;
-import com.example.racehorse_transport.entity.TripDocument;
-import com.example.racehorse_transport.repository.BookingRepository;
-import com.example.racehorse_transport.repository.TripDocumentRepository;
+import com.example.racehorse_transport.entity.*;
+import com.example.racehorse_transport.repository.*;
 import com.example.racehorse_transport.service.SpecialistService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,6 +27,8 @@ public class SpecialistServiceImpl implements SpecialistService {
 
     private final BookingRepository bookingRepository;
     private final TripDocumentRepository tripDocumentRepository;
+    private final RegulationRepository regulationRepository;
+    private final LocationRepository locationRepository;
     private final ObjectMapper objectMapper;
 
     // =========================================================================
@@ -489,48 +489,111 @@ public class SpecialistServiceImpl implements SpecialistService {
     @SuppressWarnings("unchecked")
     private Map<String, Object> getOrCreateClearanceMap(BookingDetailsPayload payload, Booking booking) {
         if (payload.getClearance() instanceof Map) {
-            return (Map<String, Object>) payload.getClearance();
+            Map<String, Object> existing = (Map<String, Object>) payload.getClearance();
+            if (existing.get("items") instanceof List && !((List<?>) existing.get("items")).isEmpty()) {
+                return existing;
+            }
         }
-        Map<String, Object> clearanceMap = new HashMap<>();
+        Map<String, Object> clearanceMap = (payload.getClearance() instanceof Map)
+                ? (Map<String, Object>) payload.getClearance()
+                : new HashMap<>();
 
-        // Khởi tạo các hạng mục cơ bản theo PRD mục 3.3
-        List<Map<String, Object>> items = new ArrayList<>();
         boolean isInternational = "international".equalsIgnoreCase(booking.getBookingType());
+        String gateName = payload.getGate();
 
-        // 1. Health Cert
-        Map<String, Object> healthCert = new HashMap<>();
-        healthCert.put("type", "health_cert");
-        healthCert.put("label", "Giấy chứng nhận kiểm dịch động vật");
-        healthCert.put("status", "todo");
-        healthCert.put("photos", new ArrayList<String>());
-        items.add(healthCert);
+        Location borderGate = null;
+        if (isInternational && gateName != null && !gateName.trim().isEmpty()) {
+            String cleanGate = gateName.trim().toLowerCase();
+            borderGate = locationRepository.findAll().stream()
+                    .filter(l -> "BorderGate".equalsIgnoreCase(l.getLocationType()))
+                    .filter(l -> {
+                        String name = l.getLocationName() != null ? l.getLocationName().toLowerCase() : "";
+                        return cleanGate.contains(name) || name.contains(cleanGate)
+                                || (cleanGate.contains("mộc bài") && name.contains("mộc bài"))
+                                || (cleanGate.contains("lao bảo") && name.contains("lao bảo"))
+                                || (cleanGate.contains("tịnh biên") && name.contains("tịnh biên"))
+                                || (cleanGate.contains("cầu treo") && name.contains("cầu treo"))
+                                || (cleanGate.contains("hà tiên") && name.contains("hà tiên"))
+                                || (cleanGate.contains("tây trang") && name.contains("tây trang"));
+                    })
+                    .findFirst()
+                    .orElse(null);
+        }
 
-        // 2. Các giấy tờ cho tuyến quốc tế
+        List<Regulation> applicableRegs = new ArrayList<>();
+        applicableRegs.addAll(regulationRepository.findByLocationIDIsNullAndStatus("ACTIVE"));
         if (isInternational) {
-            Map<String, Object> customs = new HashMap<>();
-            customs.put("type", "customs_declaration");
-            customs.put("label", "Tờ khai hải quan điện tử");
-            customs.put("status", "todo");
-            customs.put("photos", new ArrayList<String>());
-            items.add(customs);
+            if (borderGate != null) {
+                applicableRegs.addAll(regulationRepository.findByLocationID_IdAndStatus(borderGate.getId(), "ACTIVE"));
+            } else {
+                applicableRegs.addAll(regulationRepository.findByStatus("ACTIVE").stream()
+                        .filter(r -> r.getLocationID() != null)
+                        .toList());
+            }
+        }
 
-            Map<String, Object> importPermit = new HashMap<>();
-            importPermit.put("type", "import_permit");
-            importPermit.put("label", "Giấy phép nhập khẩu (Import Permit)");
-            importPermit.put("status", "todo");
-            importPermit.put("photos", new ArrayList<String>());
-            items.add(importPermit);
+        List<Map<String, Object>> items = new ArrayList<>();
+        for (Regulation reg : applicableRegs) {
+            Map<String, Object> item = new HashMap<>();
+            String type = reg.getDocumentType() != null ? reg.getDocumentType() : ("doc_" + reg.getId());
+            item.put("type", type);
+            item.put("label", reg.getRegulationName());
+            item.put("hint", reg.getDescription());
+            item.put("note", "");
+            item.put("status", "todo");
+            item.put("photos", new ArrayList<String>());
+            item.put("regulationId", reg.getId());
+            if (reg.getLocationID() != null) {
+                item.put("gateName", reg.getLocationID().getLocationName());
+                item.put("gateLocationId", reg.getLocationID().getId());
+            }
+            items.add(item);
+        }
 
-            Map<String, Object> poa = new HashMap<>();
-            poa.put("type", "poa");
-            poa.put("label", "Giấy ủy quyền áp tải (PoA)");
-            poa.put("status", "todo");
-            poa.put("photos", new ArrayList<String>());
-            items.add(poa);
+        // Fallback tối thiểu nếu bảng Regulation chưa có data
+        if (items.isEmpty()) {
+            Map<String, Object> healthCert = new HashMap<>();
+            healthCert.put("type", "health_cert");
+            healthCert.put("label", "Giấy chứng nhận kiểm dịch động vật");
+            healthCert.put("status", "todo");
+            healthCert.put("photos", new ArrayList<String>());
+            items.add(healthCert);
+
+            if (isInternational) {
+                Map<String, Object> customs = new HashMap<>();
+                customs.put("type", "customs_declaration");
+                customs.put("label", "Tờ khai hải quan điện tử");
+                customs.put("status", "todo");
+                customs.put("photos", new ArrayList<String>());
+                items.add(customs);
+
+                Map<String, Object> importPermit = new HashMap<>();
+                importPermit.put("type", "import_permit");
+                importPermit.put("label", "Giấy phép nhập khẩu (Import Permit)");
+                importPermit.put("status", "todo");
+                importPermit.put("photos", new ArrayList<String>());
+                items.add(importPermit);
+
+                Map<String, Object> poa = new HashMap<>();
+                poa.put("type", "poa");
+                poa.put("label", "Giấy ủy quyền áp tải (PoA)");
+                poa.put("status", "todo");
+                poa.put("photos", new ArrayList<String>());
+                items.add(poa);
+            }
         }
 
         clearanceMap.put("items", items);
-        clearanceMap.put("horsesCleared", new ArrayList<String>());
+        if (!clearanceMap.containsKey("horsesCleared")) {
+            clearanceMap.put("horsesCleared", new ArrayList<String>());
+        }
+        if (borderGate != null) {
+            clearanceMap.put("gateName", borderGate.getLocationName());
+            clearanceMap.put("gateLocationId", borderGate.getId());
+        } else if (gateName != null) {
+            clearanceMap.put("gateName", gateName);
+        }
+
         payload.setClearance(clearanceMap);
         return clearanceMap;
     }
@@ -567,6 +630,17 @@ public class SpecialistServiceImpl implements SpecialistService {
                             .documentType(type)
                             .documentNumber("DOC-" + booking.getId() + "-" + type.toUpperCase())
                             .build());
+
+            // Gán RegulationID nếu chưa có
+            if (doc.getRegulationID() == null) {
+                Regulation reg = regulationRepository.findAll().stream()
+                        .filter(r -> type.equalsIgnoreCase(r.getDocumentType()))
+                        .findFirst()
+                        .orElse(null);
+                if (reg != null) {
+                    doc.setRegulationID(reg);
+                }
+            }
 
             doc.setFileUrl(!photos.isEmpty() ? photos.get(0) : null);
             doc.setIssueDate(LocalDate.now());
