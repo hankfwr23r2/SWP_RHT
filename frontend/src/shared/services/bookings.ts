@@ -313,6 +313,20 @@ export const bookingsApi = {
     toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'ARRIVE_PICKUP', actor: by, payload: { photo } })),
   scanChip: async (id: string, tripId: string, by: string, chip: string): Promise<Booking> =>
     toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'SCAN_CHIP', actor: by, payload: { chip } })),
+  excludeUnfitHorse: async (
+    id: string,
+    tripId: string,
+    by: string,
+    payload: {
+      horseId: string
+      reason: string
+      symptoms: string
+      photo: string
+      temperature?: number
+      discountAmount: number
+    }
+  ): Promise<Booking> =>
+    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'EXCLUDE_UNFIT_HORSE', actor: by, payload })),
   collectOriginals: async (id: string, tripId: string, by: string, items: string[]): Promise<Booking> =>
     toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'COLLECT_ORIGINALS', actor: by, payload: { items } })),
   uploadHandover: async (id: string, tripId: string, by: string, photo: string): Promise<Booking> =>

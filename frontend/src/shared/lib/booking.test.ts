@@ -4,12 +4,14 @@ import { BOOKING_STATUS, BOOKING_STEPS, stepOf, statusRank, type BookingStatus }
 import type { Incident, IncidentExpense } from '../types/booking'
 import { COUNTRY_LOCATIONS, PLACES, TRANSIT_STATIONS } from '../config/network'
 import type { StaffMember } from '../types/staff'
+import type { Vehicle } from '../types/fleet'
 import type { Booking, BookingHorse, HorseProfile, VehicleTrip, Checkpoint, TripRun } from '../types/booking'
 import {
   schedulesOf, clashOf, planHomeReturn, returnLate, returningTrips, vehicleSpot, vehiclePoint, pendingDeparture, spotLabel, nearestTo, projectOnPath, pointsAhead, pointAlong, bookingPath, incidentLocation, needsFitCheck, transitProgress, defaultPayer, incidentActionsFor, settlementOf, approvedSubOf, APPROVED_SUBS, orderGroupOf, ORDER_GROUPS, capacitiesFor, estimateQuote, busyResources, buildRoutePlan, gatesFor, suggestGate, suggestTransitStations, canCompleteClearance, classForHorses, defaultClearanceItems, deriveStatus, docsDueAt, earliestDeparture, finalizeQuote, horseReadiness,
   insuranceFee, isClearanceOverdue, isDepartureAllowed, isQuoteExpired, layoutLegs, manifestDocuments, nextBookingId, quoteLines, reviewDone, routeKm, activeStaff,
-  findLocation, arrivalOf, routeOutline, managerBoardOf, managerCounts, orderTabOf, tripIdFor, validateRoutePlan, vehicleClassOf,
+  findLocation, arrivalOf, routeOutline, managerBoardOf, managerCounts, orderTabOf, tripIdFor, validateRoutePlan, vehicleClassOf, autoPackFleet,
 } from './booking'
+
 
 const NOW = new Date(2026, 9, 1, 10, 0).getTime() // 01/10/2026 10:00
 
@@ -659,3 +661,52 @@ describe('Driver và Escort về trụ sở sau khi giao ngựa ở nước ngo�
     expect(returnLate({ homeReturn: { ...t.homeReturn!, backAt: NOW0 + 9 * H } }, NOW0 + 20 * H)).toBe(false)
   })
 })
+
+describe('autoPackFleet - Tự động phân bổ xe thông minh', () => {
+  const v1: Vehicle = { id: 'V1', name: 'Xe 2 chỗ', type: 'light', capacity: 2, plate: '51B-001', inspectionNo: 'DK-1' }
+  const v2: Vehicle = { id: 'V2', name: 'Xe 4 chỗ', type: 'medium', capacity: 4, plate: '51B-002', inspectionNo: 'DK-2' }
+  const v3: Vehicle = { id: 'V3', name: 'Xe 4 chỗ quốc tế', type: 'medium', capacity: 4, plate: '51B-003', inspectionNo: 'DK-3', transitPermit: 'LV-1' }
+
+  it('chọn xe nhỏ nhất vừa đủ (Best-fit) để không lãng phí xe lớn', () => {
+    // 1 ngựa -> chọn xe 2 chỗ V1 thay vì xe 4 chỗ V2
+    const res = autoPackFleet(['H1'], [v2, v1], new Map(), NOW, false)
+    expect(res).toHaveLength(1)
+    expect(res[0].vehicleId).toBe('V1')
+    expect(res[0].horseIds).toEqual(['H1'])
+  })
+
+  it('chọn xe 4 chỗ khi có 3 ngựa', () => {
+    const res = autoPackFleet(['H1', 'H2', 'H3'], [v1, v2], new Map(), NOW, false)
+    expect(res).toHaveLength(1)
+    expect(res[0].vehicleId).toBe('V2')
+    expect(res[0].horseIds).toEqual(['H1', 'H2', 'H3'])
+  })
+
+  it('tự động chia nhiều xe khi số ngựa vượt quá sức chứa 1 xe (Multi-vehicle Bin Packing)', () => {
+    // 5 ngựa, có xe 4 chỗ (V2) và xe 2 chỗ (V1) -> chia làm 2 xe: Xe 4 chỗ (4 con) + Xe 2 chỗ (1 con)
+    const res = autoPackFleet(['H1', 'H2', 'H3', 'H4', 'H5'], [v1, v2], new Map(), NOW, false)
+    expect(res).toHaveLength(2)
+    expect(res[0].vehicleId).toBe('V2')
+    expect(res[0].horseIds).toEqual(['H1', 'H2', 'H3', 'H4'])
+    expect(res[1].vehicleId).toBe('V1')
+    expect(res[1].horseIds).toEqual(['H5'])
+  })
+
+  it('lọc xe thiếu giấy phép liên vận khi đi tuyến quốc tế', () => {
+    // Tuyến quốc tế: V2 không có transitPermit nên chỉ có V3 được chọn
+    const res = autoPackFleet(['H1', 'H2', 'H3'], [v2, v3], new Map(), NOW, true)
+    expect(res).toHaveLength(1)
+    expect(res[0].vehicleId).toBe('V3')
+  })
+
+  it('lọc xe bị trùng lịch trong vòng 3 ngày', () => {
+    const sched = new Map([
+      ['V1', [{ order: 'ORD-1', departAt: NOW + DAY, route: 'HN -> HP', trip: 'T1', countries: 'VN -> VN' }]]
+    ])
+    // V1 bị trùng lịch -> chọn V2
+    const res = autoPackFleet(['H1'], [v1, v2], sched, NOW, false)
+    expect(res).toHaveLength(1)
+    expect(res[0].vehicleId).toBe('V2')
+  })
+})
+

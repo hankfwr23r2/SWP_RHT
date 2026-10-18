@@ -26,6 +26,13 @@ const renderDocLabel = (text: string) => {
   return <>{match[1]} <span style={{ color: 'var(--text-muted, #64748b)', fontWeight: 400, fontSize: '0.88em' }}>{match[2]}</span></>
 }
 
+const COMMON_REASONS = [
+  'Ảnh phiếu xét nghiệm EIA/EVA bị mờ, không đọc được ngày lấy mẫu.',
+  'Giấy chứng nhận tiêm phòng quá hạn so với ngày xuất phát.',
+  'Ảnh trang hộ chiếu không hiển thị rõ mã số microchip.',
+  'Phiếu xét nghiệm thiếu mộc hoặc chữ ký xác nhận của trạm kiểm dịch.',
+]
+
 function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onDone: () => void }) {
   const toast = useToast()
   const navigate = useNavigate()
@@ -39,6 +46,7 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
   const problems = horses.flatMap(h => { const r = horseReadiness(h, b.departAt); return [...r.missing, ...r.expired].map(doc => ({ horseId: h.id, doc })) })
   const allChecked = checked.length === horses.length
   const canApprove = allChecked
+  const lastResubmitted = b.medical?.lastResubmit?.items || []
 
   const run = async (fn: () => Promise<unknown>, ok: string) => {
     setBusy(true)
@@ -53,8 +61,34 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
 
   return (
     <>
+      {Boolean(b.medical?.resubmittedAt || b.medical?.lastResubmit) && (b.medical?.status ?? 'pending') === 'pending' && (
+        <div className="alert alert-info" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <i className="fa-solid fa-rotate-right" style={{ color: 'var(--orange)', fontSize: '1.25rem' }} />
+          <div>
+            <b>Khách hàng đã nộp lại hồ sơ bổ sung</b>
+            {b.medical?.resubmittedAt ? ` lúc ${formatDateTime(b.medical.resubmittedAt)}` : ''}
+            {b.medical?.lastResubmit?.reason ? `: "${b.medical.lastResubmit.reason}"` : ''}.
+            <div style={{ fontSize: '0.84rem', marginTop: 2, color: 'var(--text-muted, #64748b)' }}>
+              Các giấy tờ khách vừa nộp lại đã được đánh dấu nhãn cam <b>[Khách vừa nộp lại]</b> để đối soát nhanh.
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="card">
-        <div className="card-header"><h3><i className="fa-solid fa-horse-head" /> Đối chiếu hồ sơ {horses.length} ngựa</h3></div>
+        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+          <h3><i className="fa-solid fa-horse-head" /> Đối chiếu hồ sơ {horses.length} ngựa</h3>
+          {(b.medical?.status ?? 'pending') === 'pending' && !allChecked && (
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              onClick={() => setChecked(horses.map(h => h.id))}
+              title="Đánh dấu tất cả ngựa đã đối chiếu xong"
+            >
+              <i className="fa-solid fa-check-double" /> Chọn nhanh tất cả ({horses.length} ngựa)
+            </button>
+          )}
+        </div>
         <div style={{ display: 'grid', gap: 12 }}>
           {horses.map(h => {
             const r = horseReadiness(h, b.departAt)
@@ -67,12 +101,26 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
                 </div>
                 <HorseDocChips horse={h} at={b.departAt} />
                 <div className={s.docFiles} aria-label="Giấy khách đã nộp">
-                  {HORSE_DOC_TYPES.map(d => { const f = h.docs[d]; return (
-                    <div key={d} className={s.docFile}>
-                      {f ? <ImageThumb name={f.fileUrl || f.fileName} size={64} /> : <span className={s.docEmpty}><i className="fa-regular fa-file" aria-hidden="true" /></span>}
-                      <div><b>{renderDocLabel(HORSE_DOC[d].label)}</b><small>{f ? `${f.fileName} · nộp ${formatDateTime(f.uploadedAt)}${f.expiresAt ? ` · hạn ${formatDate(f.expiresAt)}` : ''}` : 'Khách chưa nộp'}</small></div>
-                    </div>
-                  ) })}
+                  {HORSE_DOC_TYPES.map(d => {
+                    const f = h.docs[d]
+                    const isResubmitted = lastResubmitted.some(item => item.horseId === h.id && item.doc === d)
+                    return (
+                      <div key={d} className={`${s.docFile} ${isResubmitted ? s.docResubmitted : ''}`}>
+                        {f ? <ImageThumb name={f.fileUrl || f.fileName} size={64} /> : <span className={s.docEmpty}><i className="fa-regular fa-file" aria-hidden="true" /></span>}
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                            <b>{renderDocLabel(HORSE_DOC[d].label)}</b>
+                            {isResubmitted && (
+                              <span className="badge badge-warning" style={{ fontSize: '0.72rem', padding: '2px 6px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <i className="fa-solid fa-rotate-right" /> Khách vừa nộp lại
+                              </span>
+                            )}
+                          </div>
+                          <small>{f ? `${f.fileName} · nộp ${formatDateTime(f.uploadedAt)}${f.expiresAt ? ` · hạn ${formatDate(f.expiresAt)}` : ''}` : 'Khách chưa nộp'}</small>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
                 {bh && <div className={s.config}><span>Thức ăn: <b>{FEED_PACKAGE[bh.feedPackage].label}</b></span><span>Cữ nước: <b>{WATER_PLAN[bh.waterPlan].label}</b></span></div>}
                 {(b.medical?.status ?? 'pending') === 'pending' && (
@@ -93,7 +141,12 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
                 <b>{canApprove ? 'Sẵn sàng duyệt hồ sơ ngựa' : 'Chưa thể xác nhận đạt'}</b>
                 <div className={s.hint}>{!allChecked ? `Cần tick đối chiếu cả ${horses.length} ngựa. ` : ''}{problems.length ? 'Có giấy thiếu hoặc hết hạn trên hệ thống. Nếu hồ sơ thực tế đạt, hãy tick đối chiếu để duyệt; nếu không đạt, hãy bấm Yêu cầu bổ sung. ' : ''}</div>
               </div>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                {!allChecked && (
+                  <button type="button" className="btn btn-outline" onClick={() => setChecked(horses.map(h => h.id))}>
+                    <i className="fa-solid fa-check-double" /> Chọn tất cả đạt
+                  </button>
+                )}
                 <button className="btn btn-ghost" onClick={startFix} disabled={busy}><i className="fa-solid fa-rotate-left" /> Yêu cầu bổ sung</button>
                 <button className="btn btn-primary" onClick={approve} disabled={!canApprove || busy}><i className="fa-solid fa-circle-check" /> Duyệt hồ sơ ngựa</button>
               </div>
@@ -109,8 +162,22 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
                 <div className="form-group" style={{ margin: 0 }}>
                   <label htmlFor="reason" className="required">Lý do (khách sẽ thấy)</label>
                   <textarea id="reason" className="form-control" rows={3} value={reason} onChange={e => setReason(e.target.value)} placeholder="VD: Phiếu xét nghiệm EIA bị mờ, không đọc được ngày lấy mẫu." />
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--muted)', alignSelf: 'center' }}>Gợi ý nhanh:</span>
+                    {COMMON_REASONS.map(r => (
+                      <button
+                        key={r}
+                        type="button"
+                        className="btn btn-outline btn-sm"
+                        style={{ fontSize: '0.78rem', padding: '2px 8px', borderRadius: 999 }}
+                        onClick={() => setReason(prev => (prev ? `${prev}. ${r}` : r))}
+                      >
+                        + {r}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 10 }}>
                   <button className="btn btn-ghost" onClick={() => setFixing(false)}>Hủy</button>
                   <button className="btn btn-danger" onClick={requestFix} disabled={busy || !reason.trim() || !items.length}>Gửi yêu cầu bổ sung</button>
                 </div>
@@ -123,6 +190,7 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
       {b.medical?.status === 'resubmit' && (
         <div className="alert alert-warning"><i className="fa-solid fa-hourglass-half" /><div><b>Đang chờ khách bổ sung.</b> {b.medical.resubmit?.reason} Khi khách gửi lại, đơn sẽ quay về mục “Cần thẩm định”.</div></div>
       )}
+
       {b.medical?.status === 'approved' && (
         <div className="alert alert-success"><i className="fa-solid fa-circle-check" /><div><b>Đã duyệt hồ sơ ngựa</b> lúc {b.medical.at && formatDateTime(b.medical.at)}.{!b.plan && ' Đang chờ Điều phối viên chốt xe và lộ trình để chuyển Quản lý duyệt báo giá.'}</div></div>
       )}

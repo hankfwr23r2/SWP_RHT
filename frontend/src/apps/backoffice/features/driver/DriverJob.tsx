@@ -30,17 +30,24 @@ function ArriveStep({ title, icon, button, hint, run, action }: { title: string;
 function PickupStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
   const { session } = useAuth()
   const pickup = t.run!.checkpoints[0]
-  const horses = b.horses.filter(h => t.horseIds.includes(h.horseId))
+  const horses = b.horses.filter(h => t.horseIds.includes(h.horseId) && h.status !== 'unfit')
+  const unfitHorses = b.horses.filter(h => h.status === 'unfit')
   const originalsAll = manifestDocuments(b).originals
   const [photo, setPhoto] = useState<string | undefined>(pickup.handoverPhoto)
   const scanned = pickup.chips?.length ?? 0
   const paid = !!b.balance
-  const ready = paid && scanned >= horses.length && (pickup.originals?.length ?? 0) >= originalsAll.length && !!pickup.handoverPhoto
+  const horsesOk = horses.length === 0 || scanned >= horses.length
+  const ready = paid && horsesOk && (pickup.originals?.length ?? 0) >= originalsAll.length && !!pickup.handoverPhoto
   return (
     <>
-      <Panel title="Hộ tống quét microchip" icon="fa-wave-square" tone={scanned >= horses.length ? 'ok' : undefined}>
+      <Panel title="Hộ tống quét microchip" icon="fa-wave-square" tone={horsesOk ? 'ok' : undefined}>
         <p>Hộ tống quét từng con trên xe này và đối soát với hộ chiếu ngựa. Đã quét <b>{scanned}/{horses.length}</b> ngựa.</p>
         <ul className={s.checklist}>{horses.map(h => <li key={h.horseId} style={{ padding: '6px 0', fontSize: '0.9rem' }}><i className={`fa-solid ${pickup.chips?.includes(h.microchip.toUpperCase()) ? 'fa-circle-check' : 'fa-circle'}`} style={{ color: pickup.chips?.includes(h.microchip.toUpperCase()) ? 'var(--green)' : 'var(--line)', marginRight: 8 }} />{h.name} · {h.microchip}</li>)}</ul>
+        {unfitHorses.length > 0 && (
+          <div style={{ marginTop: 10, padding: '8px 12px', background: 'var(--danger-soft, #fee2e2)', borderRadius: 'var(--radius)', fontSize: '0.88rem', color: 'var(--red)' }}>
+            <i className="fa-solid fa-ban" /> Đã loại bỏ {unfitHorses.length} cá thể ngựa do ốm/sốt ({unfitHorses.map(h => h.name).join(', ')}). Chi phí đã được giảm trừ cho khách.
+          </div>
+        )}
       </Panel>
       <Panel title="Thu chứng từ gốc" icon="fa-folder-open">
         <p>Kiểm tra và nhận đủ bản gốc từ người gửi. Tick từng giấy khi đã nhận.</p>
