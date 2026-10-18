@@ -64,8 +64,8 @@ export function PartiesInfo({ b }: { b: Booking }) {
           <div><dt>Gửi đơn lúc</dt><dd>{formatDateTime(b.createdAt)}</dd></div>
         </dl>
       </div>
-      {party('Người gửi (Consignor)', 'fa-arrow-up-from-bracket', b.consignor)}
-      {party('Người nhận (Consignee)', 'fa-arrow-down-to-bracket', b.consignee)}
+      {party('Người gửi', 'fa-arrow-up-from-bracket', b.consignor)}
+      {party('Người nhận', 'fa-arrow-down-to-bracket', b.consignee)}
     </div>
   )
 }
