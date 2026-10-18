@@ -57,9 +57,10 @@ export function InlineRouteMap({ origin, dest, gate, departAt, rests, onOpenPick
     if (!box.current) return
     const m = L.map(box.current, { zoomControl: false, attributionControl: true })
     L.control.zoom({ position: 'topright' }).addTo(m)
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
       maxZoom: 19,
-      attribution: '© OpenStreetMap contributors',
+      subdomains: 'abcd',
+      attribution: '© OpenStreetMap contributors © CARTO',
     }).addTo(m)
 
     const route = [origin, dest, ...(gate ? [gate] : [])]
@@ -184,16 +185,6 @@ export function InlineRouteMap({ origin, dest, gate, departAt, rests, onOpenPick
           <i className="fa-solid fa-mug-hot" style={{ color: '#059669', marginRight: 5 }} />
           <b>{rests.length}</b> trạm dừng nghỉ
         </span>
-        {onOpenPicker && (
-          <button
-            type="button"
-            className="btn btn-primary btn-sm"
-            onClick={onOpenPicker}
-            style={{ padding: '3px 8px', fontSize: '0.75rem', marginLeft: 6 }}
-          >
-            <i className="fa-solid fa-up-right-and-down-left-from-center" /> Mở rộng bản đồ
-          </button>
-        )}
       </div>
       <div
         style={{

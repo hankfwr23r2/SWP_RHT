@@ -115,25 +115,53 @@ export function suggestGateWithSavings(origin: PlaceRef, dest: PlaceRef): { gate
   const savingsKm = second && second.km > best.km ? Math.round(second.km - best.km) : undefined
   return { gate: best.gate, km: Math.round(best.km), savingsKm }
 }
-// Gợi ý trạm nghỉ: chia đều đường đi (điểm đón → cửa khẩu → điểm trả), mỗi điểm chia lấy trạm gần nhất chưa dùng
+// Gợi ý trạm nghỉ: chia đều đường đi (điểm đón → cửa khẩu → điểm trả), mỗi phân đoạn chỉ chọn trạm thuộc quốc gia tương ứng
 export function suggestTransitStations(origin: PlaceRef, dest: PlaceRef, gate: string | undefined, count: number): string[] {
-  const a = findLocation(origin.id), b = findLocation(dest.id)
+  const a = findLocation(origin.id, origin.country), b = findLocation(dest.id, dest.country)
   if (!a || !b || count <= 0) return []
   const g = gate ? GATES.find(x => x.name === gate) : undefined
   const pts = g ? [a, g, b] : [a, b]
   const seg = pts.slice(1).map((p, i) => haversineKm(pts[i], p))
   const total = seg.reduce((t, x) => t + x, 0)
+  if (total <= 0) return []
+
+  // Phân định quốc gia cho từng phân đoạn:
+  // - Tuyến nội địa: tất cả đều là VN
+  // - Tuyến quốc tế: đoạn 0 (đến cửa khẩu) là origin.country (thường VN), đoạn 1 (sau cửa khẩu) là dest.country
+  const segCountries: CountryCode[] = g
+    ? [(origin.country as CountryCode) || 'VN', (dest.country as CountryCode) || (g.country as CountryCode)]
+    : [(origin.country as CountryCode) || 'VN']
+
   const used = new Set<string>()
-  return Array.from({ length: count }, (_, i) => {
+  const pickedStations: (typeof TRANSIT_STATIONS)[number][] = []
+
+  for (let i = 0; i < count; i++) {
     let d = (total * (i + 1)) / (count + 1)
     let k = 0
     while (k < seg.length - 1 && d > seg[k]) { d -= seg[k]; k++ }
     const f = seg[k] ? d / seg[k] : 0
-    const at = { lat: pts[k].lat + (pts[k + 1].lat - pts[k].lat) * f, lng: pts[k].lng + (pts[k + 1].lng - pts[k].lng) * f }
-    const best = TRANSIT_STATIONS.filter(s => !used.has(s.name)).sort((x, y) => haversineKm(at, x) - haversineKm(at, y))[0]
+    const at = {
+      lat: pts[k].lat + (pts[k + 1].lat - pts[k].lat) * f,
+      lng: pts[k].lng + (pts[k + 1].lng - pts[k].lng) * f,
+    }
+    const targetCountry = segCountries[k] || 'VN'
+
+    // Lọc các trạm thuộc đúng quốc gia của phân đoạn và chưa sử dụng
+    let pool = TRANSIT_STATIONS.filter(s => s.country === targetCountry && !used.has(s.name))
+    if (!pool.length) {
+      // Dự phòng nếu hết trạm nước đích: lấy trạm chưa dùng bất kỳ
+      pool = TRANSIT_STATIONS.filter(s => !used.has(s.name))
+    }
+    if (!pool.length) break
+
+    const best = [...pool].sort((x, y) => haversineKm(at, x) - haversineKm(at, y))[0]
     used.add(best.name)
-    return best.name
-  })
+    pickedStations.push(best)
+  }
+
+  // Tự động sắp xếp trạm theo đúng lộ trình di chuyển từ điểm đón đến điểm trả
+  const ordered = routeOutline(a, g, b, pickedStations)
+  return ordered.stations.map(s => s.name)
 }
 // Xếp các trạm theo thứ tự xe đi qua: chiếu từng trạm lên đường đi điểm đón → (cửa khẩu) → điểm trả,
 // rồi sắp theo quãng đường dọc đường đi. Trả về trạm đã xếp và các điểm để vẽ đường (có cửa khẩu chen đúng chỗ).
@@ -474,11 +502,23 @@ export function computeLegDistances(fromName: string, toName: string, rests: Pic
   const pts: GeoPoint[] = [pFrom, ...(pRests as GeoPoint[]), pTo]
   const dists: number[] = []
 
+  let gateIdx = -1
+  if (gPt) {
+    let minDetour = Infinity
+    for (let i = 0; i < n; i++) {
+      const detour = haversineKm(pts[i], gPt) + haversineKm(gPt, pts[i + 1]) - haversineKm(pts[i], pts[i + 1])
+      if (detour < minDetour) {
+        minDetour = detour
+        gateIdx = i
+      }
+    }
+  }
+
   for (let i = 0; i < n; i++) {
     const a = pts[i]
     const b = pts[i + 1]
     let d = haversineKm(a, b)
-    if (gPt && i === Math.floor(n / 2)) {
+    if (gPt && i === gateIdx) {
       d = haversineKm(a, gPt) + haversineKm(gPt, b)
     }
     dists.push(Math.max(15, roadKm(d)))
@@ -503,9 +543,10 @@ export function layoutLegs(
   const legs: RouteLeg[] = []
   let t = etd
   for (let i = 0; i < n; i++) {
-    const legMs = useRealDistances && totalDist > 0 && dists.length === n
-      ? (dists[i] / totalDist) * driveHours * 60 * MIN
-      : (driveHours / n) * 60 * MIN
+    const ratio = useRealDistances && totalDist > 0 && dists.length === n
+      ? 0.45 * (dists[i] / totalDist) + 0.55 * (1 / n)
+      : (1 / n)
+    const legMs = ratio * driveHours * 60 * MIN
     legs.push({ no: i + 1, from: names[i], to: names[i + 1], departAt: Math.round(t), arriveAt: Math.round(t + legMs) })
     t += legMs + (rests[i]?.minutes ?? 0) * MIN
   }

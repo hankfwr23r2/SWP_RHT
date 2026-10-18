@@ -62,34 +62,58 @@ export const COUNTRY_LOCATIONS: Record<CountryCode, BookingLocation[]> = {
 }
 
 // Danh mục trạm nghỉ (checkpoint dọc tuyến, số mẫu để chạy thử). Hệ thống gợi ý các trạm gần đường đi nhất theo cửa khẩu đã chọn.
-export interface TransitStation extends GeoPoint { name: string; area: string }
+export interface TransitStation extends GeoPoint { name: string; area: string; country: CountryCode }
 export const TRANSIT_STATIONS: TransitStation[] = [
-  { name: 'Trạm nghỉ Long Thành', area: 'Đồng Nai', lat: 10.78, lng: 107.0 },
-  { name: 'Trạm nghỉ Biên Hòa', area: 'Đồng Nai', lat: 10.95, lng: 106.82 },
-  { name: 'Trạm nghỉ Đức Hòa', area: 'Long An', lat: 10.88, lng: 106.4 },
-  { name: 'Trạm nghỉ Củ Chi', area: 'TP.HCM', lat: 10.97, lng: 106.5 },
-  { name: 'Trạm nghỉ Trảng Bàng', area: 'Tây Ninh', lat: 11.03, lng: 106.37 },
-  { name: 'Trạm nghỉ Mộc Bài', area: 'Tây Ninh', lat: 11.07, lng: 106.2 },
-  { name: 'Trạm nghỉ Svay Rieng', area: 'Campuchia', lat: 11.09, lng: 105.8 },
-  { name: 'Trạm nghỉ Neak Loeung', area: 'Campuchia', lat: 11.26, lng: 105.28 },
-  { name: 'Trạm nghỉ Phnom Penh', area: 'Campuchia', lat: 11.56, lng: 104.92 },
-  { name: 'Trạm nghỉ Tịnh Biên', area: 'An Giang', lat: 10.6, lng: 104.95 },
-  { name: 'Trạm nghỉ Kampong Cham', area: 'Campuchia', lat: 12.0, lng: 105.46 },
-  { name: 'Trạm nghỉ Phan Thiết', area: 'Bình Thuận', lat: 10.93, lng: 108.1 },
-  { name: 'Trạm nghỉ Nha Trang', area: 'Khánh Hòa', lat: 12.24, lng: 109.2 },
-  { name: 'Trạm nghỉ Tuy Hòa', area: 'Phú Yên', lat: 13.1, lng: 109.3 },
-  { name: 'Trạm nghỉ Quy Nhơn', area: 'Bình Định', lat: 13.78, lng: 109.22 },
-  { name: 'Trạm nghỉ Buôn Ma Thuột', area: 'Đắk Lắk', lat: 12.67, lng: 108.04 },
-  { name: 'Trạm nghỉ Đà Nẵng', area: 'Đà Nẵng', lat: 16.05, lng: 108.2 },
-  { name: 'Trạm nghỉ Huế', area: 'Thừa Thiên Huế', lat: 16.46, lng: 107.6 },
-  { name: 'Trạm nghỉ Đông Hà', area: 'Quảng Trị', lat: 16.82, lng: 107.1 },
-  { name: 'Trạm nghỉ Lao Bảo', area: 'Quảng Trị', lat: 16.62, lng: 106.6 },
-  { name: 'Trạm nghỉ Savannakhet', area: 'Lào', lat: 16.57, lng: 104.75 },
-  { name: 'Trạm nghỉ Thakhek', area: 'Lào', lat: 17.4, lng: 104.8 },
-  { name: 'Trạm nghỉ Hà Tĩnh', area: 'Hà Tĩnh', lat: 18.34, lng: 105.9 },
-  { name: 'Trạm nghỉ Cầu Treo', area: 'Hà Tĩnh', lat: 18.38, lng: 105.13 },
-  { name: 'Trạm nghỉ Vinh', area: 'Nghệ An', lat: 18.67, lng: 105.68 },
-  { name: 'Trạm nghỉ Viêng Chăn', area: 'Lào', lat: 17.97, lng: 102.6 },
+  // Việt Nam - Miền Nam & Tây Ninh / An Giang
+  { name: 'Trạm nghỉ Long Thành', area: 'Đồng Nai', country: 'VN', lat: 10.78, lng: 107.0 },
+  { name: 'Trạm nghỉ Biên Hòa', area: 'Đồng Nai', country: 'VN', lat: 10.95, lng: 106.82 },
+  { name: 'Trạm nghỉ Đức Hòa', area: 'Long An', country: 'VN', lat: 10.88, lng: 106.4 },
+  { name: 'Trạm nghỉ Củ Chi', area: 'TP.HCM', country: 'VN', lat: 10.97, lng: 106.5 },
+  { name: 'Trạm nghỉ Trảng Bàng', area: 'Tây Ninh', country: 'VN', lat: 11.03, lng: 106.37 },
+  { name: 'Trạm nghỉ Mộc Bài', area: 'Tây Ninh', country: 'VN', lat: 11.07, lng: 106.2 },
+  { name: 'Trạm nghỉ Tịnh Biên', area: 'An Giang', country: 'VN', lat: 10.6, lng: 104.95 },
+
+  // Việt Nam - Trục Duyên hải & Miền Trung (Bắc Nam)
+  { name: 'Trạm nghỉ Phan Thiết', area: 'Bình Thuận', country: 'VN', lat: 10.93, lng: 108.1 },
+  { name: 'Trạm nghỉ Phan Rang', area: 'Ninh Thuận', country: 'VN', lat: 11.56, lng: 108.99 },
+  { name: 'Trạm nghỉ Nha Trang', area: 'Khánh Hòa', country: 'VN', lat: 12.24, lng: 109.2 },
+  { name: 'Trạm nghỉ Tuy Hòa', area: 'Phú Yên', country: 'VN', lat: 13.1, lng: 109.3 },
+  { name: 'Trạm nghỉ Quy Nhơn', area: 'Bình Định', country: 'VN', lat: 13.78, lng: 109.22 },
+  { name: 'Trạm nghỉ Quảng Ngãi', area: 'Quảng Ngãi', country: 'VN', lat: 15.12, lng: 108.8 },
+  { name: 'Trạm nghỉ Đà Nẵng', area: 'Đà Nẵng', country: 'VN', lat: 16.05, lng: 108.2 },
+  { name: 'Trạm nghỉ Huế', area: 'Thừa Thiên Huế', country: 'VN', lat: 16.46, lng: 107.6 },
+  { name: 'Trạm nghỉ Đông Hà', area: 'Quảng Trị', country: 'VN', lat: 16.82, lng: 107.1 },
+  { name: 'Trạm nghỉ Lao Bảo', area: 'Quảng Trị', country: 'VN', lat: 16.62, lng: 106.6 },
+  { name: 'Trạm nghỉ Đồng Hới', area: 'Quảng Bình', country: 'VN', lat: 17.47, lng: 106.6 },
+  { name: 'Trạm nghỉ Hà Tĩnh', area: 'Hà Tĩnh', country: 'VN', lat: 18.34, lng: 105.9 },
+  { name: 'Trạm nghỉ Cầu Treo', area: 'Hà Tĩnh', country: 'VN', lat: 18.38, lng: 105.13 },
+  { name: 'Trạm nghỉ Vinh', area: 'Nghệ An', country: 'VN', lat: 18.67, lng: 105.68 },
+  { name: 'Trạm nghỉ Thanh Hóa', area: 'Thanh Hóa', country: 'VN', lat: 19.8, lng: 105.78 },
+  { name: 'Trạm nghỉ Ninh Bình', area: 'Ninh Bình', country: 'VN', lat: 20.25, lng: 105.97 },
+  { name: 'Trạm nghỉ Hà Nội', area: 'Hà Nội', country: 'VN', lat: 21.03, lng: 105.85 },
+
+  // Việt Nam - Tây Nguyên
+  { name: 'Trạm nghỉ Buôn Ma Thuột', area: 'Đắk Lắk', country: 'VN', lat: 12.67, lng: 108.04 },
+  { name: 'Trạm nghỉ Pleiku', area: 'Gia Lai', country: 'VN', lat: 13.98, lng: 108.0 },
+  { name: 'Trạm nghỉ Kon Tum', area: 'Kon Tum', country: 'VN', lat: 14.35, lng: 108.0 },
+
+  // Lào
+  { name: 'Trạm nghỉ Savannakhet', area: 'Lào', country: 'LA', lat: 16.57, lng: 104.75 },
+  { name: 'Trạm nghỉ Thakhek', area: 'Lào', country: 'LA', lat: 17.4, lng: 104.8 },
+  { name: 'Trạm nghỉ Paksan', area: 'Lào', country: 'LA', lat: 18.38, lng: 103.65 },
+  { name: 'Trạm nghỉ Viêng Chăn', area: 'Lào', country: 'LA', lat: 17.97, lng: 102.6 },
+  { name: 'Trạm nghỉ Pakse', area: 'Lào', country: 'LA', lat: 15.12, lng: 105.8 },
+  { name: 'Trạm nghỉ Luang Prabang', area: 'Lào', country: 'LA', lat: 19.89, lng: 102.13 },
+
+  // Campuchia
+  { name: 'Trạm nghỉ Bavet', area: 'Campuchia', country: 'KH', lat: 11.08, lng: 106.15 },
+  { name: 'Trạm nghỉ Svay Rieng', area: 'Campuchia', country: 'KH', lat: 11.09, lng: 105.8 },
+  { name: 'Trạm nghỉ Neak Loeung', area: 'Campuchia', country: 'KH', lat: 11.26, lng: 105.28 },
+  { name: 'Trạm nghỉ Phnom Penh', area: 'Campuchia', country: 'KH', lat: 11.56, lng: 104.92 },
+  { name: 'Trạm nghỉ Kampong Cham', area: 'Campuchia', country: 'KH', lat: 12.0, lng: 105.46 },
+  { name: 'Trạm nghỉ Pursat', area: 'Campuchia', country: 'KH', lat: 12.53, lng: 103.92 },
+  { name: 'Trạm nghỉ Battambang', area: 'Campuchia', country: 'KH', lat: 13.1, lng: 103.2 },
+  { name: 'Trạm nghỉ Siem Reap', area: 'Campuchia', country: 'KH', lat: 13.36, lng: 103.86 },
 ]
 
 // Điểm cứu hộ giao thông và sửa xe dọc tuyến (số mẫu để chạy thử): Coordinator gọi điểm gần chỗ xe gặp sự cố nhất
