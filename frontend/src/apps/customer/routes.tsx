@@ -15,6 +15,7 @@ import OrderDetailPage from './features/orders/OrderDetailPage'
 import HistoryPage from './features/orders/HistoryPage'
 import PolicyPage from './features/policies/PolicyPage'
 import VnpayReturnPage from './features/payment/VnpayReturnPage'
+import ProfilePage from './features/profile/ProfilePage'
 
 const C = ['customer'] as AppRoute['roles']
 
@@ -23,6 +24,7 @@ export const routes: AppRoute[] = [
   { path: '/login', page: LoginPage, roles: [], title: 'Đăng nhập', layout: 'bare' },
   { path: '/register', page: RegisterPage, roles: [], title: 'Đăng ký', layout: 'bare' },
   { path: '/portal', page: PortalPage, roles: C, title: 'Trang chủ', layout: 'customer' },
+  { path: '/profile', page: ProfilePage, roles: C, title: 'Hồ sơ cá nhân', layout: 'customer' },
   { path: '/horses', page: HorsesPage, roles: C, title: 'Hồ sơ ngựa', layout: 'customer' },
   { path: '/booking/route', page: Step1RoutePage, roles: C, title: 'Đặt chuyến · Chuyến đi', layout: 'customer' },
   { path: '/booking/horses', page: Step2HorsesPage, roles: C, title: 'Đặt chuyến · Chọn ngựa', layout: 'customer' },
