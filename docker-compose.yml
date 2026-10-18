@@ -55,16 +55,6 @@ services:
     ports:
       - "5173:80"
 
-  # 4. Cloudflare Tunnel (Mở Backend ra Internet cho Vercel / Client)
-  cloudflare-tunnel:
-    image: cloudflare/cloudflared:latest
-    container_name: racehorse-tunnel
-    restart: unless-stopped
-    depends_on:
-      - backend
-    # Trỏ thẳng vào port 8080 của container backend (Spring Boot)
-    command: tunnel --url http://backend:8080
-
 volumes:
   postgres_data:
 
