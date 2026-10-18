@@ -15,7 +15,6 @@ const MENU: [string, string][] = [
   ['/booking/route', 'Đặt chuyến mới'],
   ['/orders', 'Đơn của tôi'],
   ['/history', 'Lịch sử đơn'],
-  ['/profile', 'Tài khoản'],
 ]
 
 const isActive = (to: string, path: string) =>
