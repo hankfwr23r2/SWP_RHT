@@ -1,6 +1,6 @@
 // Coordinator: chốt xe và lộ trình một đơn trong một trang (PRD mục 2.4, nhánh B).
 // Coordinator tự chọn xe (đơn đông ngựa thì nhiều xe), chia ngựa lên xe, lập lộ trình rồi xác nhận.
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { isAssignedTo } from '@shared/lib/staffAssignment'
@@ -165,11 +165,18 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
   const gateGeo = gate ? GATES.find(g => g.name === gate) : undefined
   const estHours = routeKm(b.origin, b.dest, gate || undefined) / AVG_SPEED_KMH
 
+  const defaultEtdTime = useMemo(() => {
+    if (international) {
+      return suggestOptimalDepartureForBorder(b.departAt, estHours * 0.55, 45)
+    }
+    return atHour(new Date(b.departAt), 5)
+  }, [international, b.departAt, estHours])
+
   const initial = useMemo(
-    () => b.route ?? buildRoutePlan({ ...b, gate: gate || undefined }, atHour(new Date(b.departAt), 5)),
-    [b, gate]
+    () => b.route ?? buildRoutePlan({ ...b, gate: gate || undefined }, defaultEtdTime),
+    [b, gate, defaultEtdTime]
   )
-  const [etd, setEtd] = useState(toLocal(initial.legs[0].departAt))
+  const [etd] = useState(toLocal(initial.legs[0]?.departAt ?? defaultEtdTime))
   const [rests, setRests] = useState<RestStop[]>(initial.rests)
   const [borderText, setBorderText] = useState(initial.borderEta ? toLocal(initial.borderEta) : '')
   const [borderTouched, setBorderTouched] = useState(!!b.route?.borderEta)
@@ -180,28 +187,15 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
   const { route: road, loading: roadLoading } = useRoadRoute(roadPath, Number.isNaN(etdT) ? undefined : etdT)
   const driveHours = road?.hours ?? estHours
 
-  const optimalEtd = useMemo(() => {
-    if (!international) return undefined
-    const driveHoursToGate = driveHours * 0.55
-    return suggestOptimalDepartureForBorder(b.departAt, driveHoursToGate, 45)
-  }, [international, driveHours, b.departAt])
-
-  const applyOptimalEtd = () => {
-    if (!optimalEtd) return
-    setEtd(toLocal(optimalEtd))
-    setBorderTouched(false)
-    toast('Đã áp dụng giờ xuất phát thông minh cho thông quan cửa khẩu.')
-  }
-
   const resuggest = (g?: string) => {
     const chosenGate = g ?? gate
     const plan = buildRoutePlan(
       { ...b, gate: chosenGate || undefined },
-      Number.isNaN(etdT) ? atHour(new Date(b.departAt), 5) : etdT
+      Number.isNaN(etdT) ? defaultEtdTime : etdT
     )
     setRests(plan.rests)
     setBorderTouched(false)
-    toast('Đã tự động tính toán các trạm dừng nghỉ theo chuẩn an sinh (≤ 3 giờ / trạm).')
+    toast('Đã tự động tính toán các trạm dừng nghỉ theo chuẩn an sinh (≤ 4 giờ / trạm).')
   }
 
   const pickGate = (g: string) => {
@@ -230,20 +224,6 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
   if (Number.isNaN(etdT)) routeErrors.unshift('Nhập giờ khởi hành hợp lệ.')
   if (international && !gates.some(g => g.name === gate)) routeErrors.unshift('Chọn cửa khẩu cho tuyến này.')
   const errors = [...tripErrors, ...routeErrors]
-
-  // Helper chỉnh giờ khởi hành nhanh
-  const currentEtdDate = Number.isNaN(etdT) ? new Date(b.departAt) : new Date(etdT)
-  const currentHour = currentEtdDate.getHours()
-  const currentMinute = currentEtdDate.getMinutes()
-  const currentHourStr = pad(currentHour)
-  const currentMinuteStr = pad(currentMinute)
-
-  const setEtdTime = (h: number, m: number) => {
-    const d = new Date(b.departAt)
-    d.setHours(h, m, 0, 0)
-    setEtd(toLocal(d.getTime()))
-    setBorderTouched(false)
-  }
 
   const confirm = async () => {
     setWorking(true)
@@ -548,12 +528,12 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
               <i className="fa-solid fa-up-right-and-down-left-from-center" /> Chọn trạm trên bản đồ
             </button>
             <button className="btn btn-outline btn-sm" onClick={() => resuggest(gate)}>
-              <i className="fa-solid fa-wand-magic-sparkles" /> Gợi ý chuẩn ≤ 3h
+              <i className="fa-solid fa-wand-magic-sparkles" /> Gợi ý chuẩn ≤ 4h
             </button>
           </span>
         </div>
         <div className="form-hint" style={{ marginBottom: 12 }}>
-          Quy chuẩn an sinh: Xe chạy tối đa <b>3.0 giờ</b> phải dừng nghỉ tối thiểu 30–45 phút để kiểm tra sức khỏe và cho ngựa uống nước.
+          Quy chuẩn an sinh: Xe chạy tối đa <b>4.0 giờ</b> phải dừng nghỉ tối thiểu 30–45 phút để kiểm tra sức khỏe và cho ngựa uống nước.
         </div>
 
         {/* BẢN ĐỒ INLINE TRỰC TIẾP TRÊN TRANG */}
@@ -606,7 +586,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
           <div className={s.stopEmpty}>
             <i className="fa-solid fa-mug-hot" /> Chưa có trạm dừng nghỉ nào.{' '}
             <button type="button" className="btn btn-outline btn-sm" onClick={() => resuggest(gate)} style={{ marginLeft: 8 }}>
-              Tự động phân bổ trạm chuẩn ≤ 3h
+              Tự động phân bổ trạm chuẩn ≤ 4h
             </button>
           </div>
         )}
@@ -623,81 +603,63 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
           </span>
         </div>
 
-        {/* BỘ CHỌN GIỜ KHỞI HÀNH 1-CLICK */}
+        {/* THÔNG TIN THỜI GIAN HÀNH TRÌNH TỰ ĐỊNH */}
         <div
           style={{
             background: '#f8fafc',
             border: '1px solid var(--line)',
             borderRadius: 10,
-            padding: '12px 16px',
+            padding: '14px 18px',
             marginBottom: 16,
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: 16,
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10, marginBottom: 8 }}>
-            <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--navy)' }}>
+          <div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
               <i className="fa-regular fa-calendar-check" style={{ color: 'var(--orange)', marginRight: 6 }} />
-              Ngày khởi hành: {formatDate(b.departAt)} (Cố định theo khách)
-            </span>
-            <span style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>
-              Giờ đón hiện tại: <b>{currentHourStr}:{currentMinuteStr}</b>
-            </span>
+              Ngày xuất phát
+            </div>
+            <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--navy)' }}>
+              {legs[0] ? formatDateTime(legs[0].departAt) : formatDate(b.departAt)}
+            </div>
+            <div style={{ fontSize: '0.78rem', color: '#16a34a', marginTop: 2 }}>
+              <i className="fa-solid fa-circle-check" style={{ marginRight: 4 }} />
+              Hệ thống tự định giờ xuất phát tối ưu
+            </div>
           </div>
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text)' }}>Khung giờ nhanh:</span>
-            <button
-              type="button"
-              className={`btn btn-sm ${currentHour === 5 && currentMinute === 0 ? 'btn-primary' : 'btn-outline'}`}
-              onClick={() => setEtdTime(5, 0)}
-            >
-              05:00 Sáng
-            </button>
-            <button
-              type="button"
-              className={`btn btn-sm ${currentHour === 6 && currentMinute === 30 ? 'btn-primary' : 'btn-outline'}`}
-              onClick={() => setEtdTime(6, 30)}
-            >
-              06:30 Sáng
-            </button>
-            {optimalEtd && (
-              <button
-                type="button"
-                className={`btn btn-sm ${Math.abs(etdT - optimalEtd) < 60000 ? 'btn-primary' : 'btn-outline'}`}
-                onClick={applyOptimalEtd}
-                title="Tự động căn giờ để tới cửa khẩu trong khung hành chính"
-              >
-                <i className="fa-solid fa-bolt" style={{ color: 'var(--orange)' }} /> {formatClock(optimalEtd)} (Tối ưu thông quan)
-              </button>
+          <div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+              <i className="fa-solid fa-flag-checkered" style={{ color: '#0284c7', marginRight: 6 }} />
+              Ngày đến dự kiến
+            </div>
+            <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--navy)' }}>
+              {legs.length ? formatDateTime(legs[legs.length - 1].arriveAt) : 'Đang tính toán…'}
+            </div>
+            {legs.length > 0 && (
+              <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: 2 }}>
+                Tổng hành trình: {((legs[legs.length - 1].arriveAt - legs[0].departAt) / 3_600_000).toFixed(1)} giờ
+              </div>
             )}
-            <button
-              type="button"
-              className={`btn btn-sm ${currentHour === 13 && currentMinute === 30 ? 'btn-primary' : 'btn-outline'}`}
-              onClick={() => setEtdTime(13, 30)}
-            >
-              13:30 Chiều
-            </button>
+          </div>
 
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <label htmlFor="customTime" style={{ margin: 0, fontSize: '0.82rem', color: 'var(--muted)' }}>
-                Tùy chỉnh:
-              </label>
-              <input
-                id="customTime"
-                type="time"
-                className="form-control"
-                style={{ width: 105, padding: '4px 8px', fontSize: '0.82rem' }}
-                value={`${currentHourStr}:${currentMinuteStr}`}
-                onChange={e => {
-                  if (!e.target.value) return
-                  const [h, m] = e.target.value.split(':').map(Number)
-                  setEtdTime(h, m)
-                }}
-              />
+          <div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+              <i className="fa-solid fa-heart-pulse" style={{ color: '#ea580c', marginRight: 6 }} />
+              Quy chuẩn an sinh
+            </div>
+            <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--navy)' }}>
+              {rests.length} trạm dừng nghỉ
+            </div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: 2 }}>
+              Nghỉ 30–45 phút / trạm (tối đa 4.0h lái liên tục)
             </div>
           </div>
         </div>
 
-        {/* BẢNG CÁC CHẶNG LÁI */}
+        {/* BẢNG CÁC CHẶNG LÁI & ĐIỂM DỪNG NGHỈ */}
         <div className="table-wrap">
           <table className="data-table">
             <thead>
@@ -710,44 +672,65 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
               </tr>
             </thead>
             <tbody>
-              {legs.map(l => {
+              {legs.map((l, idx) => {
                 const h = (l.arriveAt - l.departAt) / 3_600_000
                 const isOverWelfare = h > MAX_CONTINUOUS_HOURS
+                const restStop = rests[idx]
+                const departDay = new Date(l.departAt).toDateString()
+                const arriveDay = new Date(l.arriveAt).toDateString()
+                const isNextDay = departDay !== arriveDay
 
                 return (
-                  <tr
-                    key={l.no}
-                    style={isOverWelfare ? { background: 'rgba(239, 68, 68, 0.08)' } : undefined}
-                  >
-                    <td className="font-semibold">{l.no}</td>
-                    <td>
-                      {l.from} → {l.to}
-                    </td>
-                    <td className="nowrap">{formatDateTime(l.departAt)}</td>
-                    <td className="nowrap">{formatClock(l.arriveAt)}</td>
-                    <td className="text-right nowrap">
-                      {isOverWelfare ? (
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                          <span className="badge badge-danger">
-                            ⚠️ {h.toFixed(1)}h (Vượt 3h)
+                  <Fragment key={l.no}>
+                    <tr style={isOverWelfare ? { background: 'rgba(239, 68, 68, 0.08)' } : undefined}>
+                      <td className="font-semibold">{l.no}</td>
+                      <td>
+                        {l.from} → {l.to}
+                      </td>
+                      <td className="nowrap">{formatDateTime(l.departAt)}</td>
+                      <td className="nowrap">
+                        {isNextDay ? formatDateTime(l.arriveAt) : formatClock(l.arriveAt)}
+                        {isNextDay && (
+                          <span className="badge badge-info" style={{ marginLeft: 6, fontSize: '0.7rem' }}>
+                            +1 ngày
                           </span>
-                          <button
-                            type="button"
-                            className="btn btn-ghost btn-sm text-red"
-                            onClick={() => setMapOpen(true)}
-                            title="Bấm để chèn trạm nghỉ chia nhỏ chặng này"
-                            style={{ padding: '2px 6px', fontSize: '0.75rem' }}
-                          >
-                            + Thêm trạm
-                          </button>
-                        </div>
-                      ) : (
-                        <span style={{ fontWeight: 600, color: 'var(--text)' }}>
-                          {h.toFixed(1)} giờ
-                        </span>
-                      )}
-                    </td>
-                  </tr>
+                        )}
+                      </td>
+                      <td className="text-right nowrap">
+                        {isOverWelfare ? (
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                            <span className="badge badge-danger">
+                              ⚠️ {h.toFixed(1)}h (Vượt 4h)
+                            </span>
+                            <button
+                              type="button"
+                              className="btn btn-ghost btn-sm text-red"
+                              onClick={() => setMapOpen(true)}
+                              title="Bấm để chèn trạm nghỉ chia nhỏ chặng này"
+                              style={{ padding: '2px 6px', fontSize: '0.75rem' }}
+                            >
+                              + Thêm trạm
+                            </button>
+                          </div>
+                        ) : (
+                          <span style={{ fontWeight: 600, color: 'var(--text)' }}>
+                            {h.toFixed(1)} giờ
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                    {restStop && idx < legs.length - 1 && (
+                      <tr style={{ background: '#f8fafc', fontSize: '0.82rem' }}>
+                        <td colSpan={2} style={{ padding: '7px 14px', color: '#047857' }}>
+                          <i className="fa-solid fa-mug-hot" style={{ marginRight: 6 }} />
+                          <b>Dừng nghỉ: {restStop.name}</b>
+                        </td>
+                        <td colSpan={3} style={{ padding: '7px 14px', color: 'var(--muted)' }}>
+                          Nghỉ <b>{restStop.minutes} phút</b> ({formatClock(l.arriveAt)} → {formatClock(legs[idx + 1].departAt)}) · Kiểm tra an sinh & cho uống nước
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 )
               })}
             </tbody>

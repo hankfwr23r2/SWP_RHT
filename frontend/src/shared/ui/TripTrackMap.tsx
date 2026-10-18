@@ -30,9 +30,10 @@ export function TripTrackMap({ b, trips, height = 360, plain }: Props) {
     if (!box.current) return
     const m = L.map(box.current, { zoomControl: false })
     L.control.zoom({ position: 'topright' }).addTo(m)
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
       maxZoom: 19,
-      attribution: '© OpenStreetMap contributors',
+      subdomains: 'abcd',
+      attribution: '© OpenStreetMap contributors © CARTO',
     }).addTo(m)
     m.setView([10.8, 106.7], 9)
     layer.current = L.layerGroup().addTo(m)

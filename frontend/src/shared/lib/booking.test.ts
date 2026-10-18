@@ -267,10 +267,10 @@ describe('lộ trình chi tiết (Flow 3)', () => {
     plan.rests.forEach(r => expect(r.name, 'trạm nghỉ có tên gợi ý').toBeTruthy())
     expect(validateRoutePlan(plan, true).errors).toEqual([])
   })
-  it('chặng quá 3 giờ, nghỉ dưới 30 phút, thiếu trạm thú y đều bị chặn', () => {
+  it('chặng quá 4 giờ, nghỉ dưới 30 phút, thiếu trạm thú y đều bị chặn', () => {
     const legs = layoutLegs('A', 'B', etd, [], 5)
     const r = validateRoutePlan({ legs, rests: [{ afterLeg: 1, name: 'X', minutes: 20 }], borderEta: undefined }, false)
-    expect(r.errors.join(' | ')).toMatch(/vượt 3 giờ/)
+    expect(r.errors.join(' | ')).toMatch(/vượt 4 giờ/)
     expect(r.errors.join(' | ')).toMatch(/tối thiểu 30 phút/)
     expect(r.errors.join(' | ')).not.toMatch(/Thú y/)
   })
