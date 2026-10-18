@@ -7,7 +7,7 @@ RUN mvn dependency:go-offline -B
 COPY src ./src
 RUN mvn clean package -DskipTests
 
-# Stage 2: Chạy ứng dụng bằng JRE 26 gọn nhẹ
+# Stage 2: Chạy ứng dụng bằng JRE 21 gọn nhẹ
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=builder /app/target/*.jar app.jar
