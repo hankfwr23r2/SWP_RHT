@@ -142,6 +142,79 @@
   margin-bottom: 0;
 }
 
+.partyHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.quickMeBtn {
+  font-size: 0.78rem;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--orange);
+  background: var(--orange-soft);
+  color: var(--orange);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+
+.quickMeBtn:hover {
+  background: var(--orange);
+  color: white;
+}
+
+.venueChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.venueChip {
+  font-size: 0.78rem;
+  padding: 5px 11px;
+  border-radius: 8px;
+  border: 1px dashed var(--line);
+  background: var(--bg-page);
+  color: var(--text);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s;
+}
+
+.venueChip:hover {
+  border-color: var(--orange);
+  color: var(--orange);
+  background: white;
+}
+
+.addressPreview {
+  grid-column: 1 / -1;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  color: var(--navy);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: -6px;
+  margin-bottom: 6px;
+}
+
+.addressPreview i {
+  color: var(--orange);
+}
+
 .serviceSection {
   padding: 14px 0;
   border-top: 1px solid var(--line, #e2e8f0);

@@ -5,6 +5,7 @@ import {
 } from '../config/booking-rules'
 import { DAY, HOUR, MIN_LEAD_DAYS } from '../config/business-rules'
 import { COUNTRIES, COUNTRY_LOCATIONS, GATES, PLACES, TRANSIT_STATIONS, type GeoPoint, type Gate, type CountryCode } from '../config/network'
+import { FAMOUS_HORSE_VENUES, PROVINCES_DATA } from '../config/administrative'
 import { AVG_SPEED_KMH, BORDER_HOURS, DRIVE_HOURS_PER_DAY } from '../config/public-pricing'
 import type { Vehicle } from '../types/fleet'
 import type { StaffMember } from '../types/staff'
@@ -59,6 +60,25 @@ export const findLocation = (id: string, country?: string) => {
   const clean = id.toLowerCase().trim()
   const matched = all.find(l => l.name.toLowerCase().includes(clean) || clean.includes(l.name.toLowerCase().split(' — ')[0].trim()))
   if (matched) return matched
+
+  // Kiểm tra danh mục trang trại ngựa nổi tiếng
+  const venue = FAMOUS_HORSE_VENUES.find(v => v.id === id || v.name.toLowerCase().includes(clean) || clean.includes(v.name.toLowerCase()))
+  if (venue) return { id, name: venue.name, lat: venue.lat, lng: venue.lng }
+
+  // Kiểm tra địa chỉ 2 cấp (Tỉnh / Thành và Xã / Phường)
+  for (const prov of PROVINCES_DATA) {
+    const provMatched = clean.includes(prov.name.toLowerCase()) || clean.includes(prov.code.toLowerCase())
+    if (provMatched) {
+      for (const w of prov.wards) {
+        const wClean = w.name.toLowerCase().replace(/^(xã|phường|sangkat|ban|krong)\s+/i, '').split('(')[0].trim()
+        if (clean.includes(wClean)) {
+          return { id, name: id, lat: w.lat, lng: w.lng }
+        }
+      }
+      return { id, name: id, lat: prov.lat, lng: prov.lng }
+    }
+  }
+
   if (country && COUNTRY_LOCATIONS[country as CountryCode]?.length) {
     return COUNTRY_LOCATIONS[country as CountryCode][0]
   }
