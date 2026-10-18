@@ -39,12 +39,30 @@ public class FleetServiceImpl implements FleetService {
             "in_transit",
             "incident_reported",
             "pending_emergency_approval",
-            "emergency_plan_active"
-    );
+            "emergency_plan_active");
 
     @Override
     public List<VehicleResponse> getAllVehicles() {
-        return vehicleRepository.findAll().stream().map(this::mapToVehicleResponse).toList();
+        List<Booking> holdingBookings = getHoldingBookings();
+        Set<Integer> busyVehicleIds = new HashSet<>();
+        for (Booking b : holdingBookings) {
+            List<BookingVehicle> bvs = bookingVehicleRepository.findByBookingID_Id(b.getId());
+            for (BookingVehicle bv : bvs) {
+                if (bv.getVehicleID() != null && bv.getVehicleID().getId() != null) {
+                    busyVehicleIds.add(bv.getVehicleID().getId());
+                }
+            }
+        }
+
+        return vehicleRepository.findAll().stream().map(v -> {
+            VehicleResponse res = mapToVehicleResponse(v);
+            if (busyVehicleIds.contains(v.getId()) || "BUSY".equalsIgnoreCase(v.getStatus())) {
+                res.setStatus("BUSY");
+                res.setAvailable(false);
+                res.setBusyReason("Xe đang được gán cho chuyến đi");
+            }
+            return res;
+        }).toList();
     }
 
     @Override
@@ -63,11 +81,15 @@ public class FleetServiceImpl implements FleetService {
         Map<Integer, String> busyMap = new HashMap<>();
 
         for (Booking booking : holdingBookings) {
-            Instant bookingDepart = booking.getDepartureDate() != null ? booking.getDepartureDate() : booking.getBookingDate();
-            if (bookingDepart == null) continue;
+            Instant bookingDepart = booking.getDepartureDate() != null ? booking.getDepartureDate()
+                    : booking.getBookingDate();
+            if (bookingDepart == null)
+                continue;
 
-            // Tính khoảng đệm giữ xe khứ hồi về trụ sở VN dựa theo chính đơn hàng đang giữ xe
-            boolean existingIsInter = booking.getBookingType() != null && booking.getBookingType().equalsIgnoreCase("international");
+            // Tính khoảng đệm giữ xe khứ hồi về trụ sở VN dựa theo chính đơn hàng đang giữ
+            // xe
+            boolean existingIsInter = booking.getBookingType() != null
+                    && booking.getBookingType().equalsIgnoreCase("international");
             int existingDaysBefore = existingIsInter ? 2 : 1;
             int existingDaysAfter = existingIsInter ? 4 : 2;
 
@@ -81,7 +103,8 @@ public class FleetServiceImpl implements FleetService {
                     if (bv.getVehicleID() != null) {
                         String tripTag = existingIsInter ? "quốc tế" : "nội địa";
                         busyMap.put(bv.getVehicleID().getId(),
-                                "Đang chạy đơn BK-" + String.format("%03d", booking.getId()) + " (" + tripTag + ", dự kiến về bãi: " + busyEnd + ")");
+                                "Đang chạy đơn BK-" + String.format("%03d", booking.getId()) + " (" + tripTag
+                                        + ", dự kiến về bãi: " + busyEnd + ")");
                     }
                 }
             }
@@ -119,11 +142,36 @@ public class FleetServiceImpl implements FleetService {
     @org.springframework.transaction.annotation.Transactional
     public VehicleResponse updateVehicle(String identifier, VehicleRequest request) {
         Vehicle vehicle = findVehicleByIdOrCode(identifier);
-        String plate = request.getPlate().trim().toUpperCase(Locale.ROOT);
-        vehicleRepository.findByLicensePlate(plate)
-                .filter(existing -> !existing.getId().equals(vehicle.getId()))
-                .ifPresent(existing -> { throw new IllegalArgumentException("Biển số xe đã tồn tại."); });
-        applyVehicleRequest(vehicle, request, plate);
+
+        // Biển số xe không cho phép thay đổi khi chỉnh sửa
+        String plate = vehicle.getLicensePlate();
+
+        // Kiểm tra xem xe có đang bận có chuyến không
+        boolean isBusy = "BUSY".equalsIgnoreCase(vehicle.getStatus())
+                || !bookingVehicleRepository.findByVehicleID_Id(vehicle.getId()).stream()
+                        .filter(bv -> bv.getBookingID() != null && bv.getBookingID().getStatus() != null
+                                && HOLDING_STATUSES.contains(bv.getBookingID().getStatus().toLowerCase()))
+                        .toList().isEmpty();
+
+        vehicle.setVehicleType(request.getType() != null ? request.getType().trim() : vehicle.getVehicleType());
+        if (request.getCapacity() != null && request.getCapacity() > 0) {
+            vehicle.setCapacity(request.getCapacity());
+        }
+        if (request.getVin() != null) {
+            vehicle.setVin(request.getVin());
+        }
+        if (request.getInspectionNo() != null) {
+            vehicle.setInspectionNo(request.getInspectionNo());
+        }
+        if (request.getTransitPermit() != null) {
+            vehicle.setTransitPermit(request.getTransitPermit());
+        }
+
+        // Nếu xe không bận và có yêu cầu đổi trạng thái thì mới cho đổi
+        if (!isBusy && request.getStatus() != null && !request.getStatus().isBlank()) {
+            vehicle.setStatus(request.getStatus().trim().toUpperCase(Locale.ROOT));
+        }
+
         return mapToVehicleResponse(vehicleRepository.save(vehicle));
     }
 
@@ -131,10 +179,11 @@ public class FleetServiceImpl implements FleetService {
     @org.springframework.transaction.annotation.Transactional
     public void deleteVehicle(String identifier) {
         Vehicle vehicle = findVehicleByIdOrCode(identifier);
-        if ("BUSY".equalsIgnoreCase(vehicle.getStatus())
+        boolean isBusy = "BUSY".equalsIgnoreCase(vehicle.getStatus())
                 || "IN_USE".equalsIgnoreCase(vehicle.getStatus())
                 || "ON_TRIP".equalsIgnoreCase(vehicle.getStatus())
-                || !bookingVehicleRepository.findByVehicleID_Id(vehicle.getId()).isEmpty()) {
+                || !bookingVehicleRepository.findByVehicleID_Id(vehicle.getId()).isEmpty();
+        if (isBusy) {
             throw new IllegalStateException("Không thể xóa xe đang bận hoặc đã được gán vào đơn hàng.");
         }
         vehicleRepository.delete(vehicle);
@@ -148,7 +197,8 @@ public class FleetServiceImpl implements FleetService {
         vehicle.setInspectionNo(request.getInspectionNo());
         vehicle.setTransitPermit(request.getTransitPermit());
         vehicle.setStatus(request.getStatus() == null || request.getStatus().isBlank()
-                ? "ACTIVE" : request.getStatus().trim().toUpperCase(Locale.ROOT));
+                ? "ACTIVE"
+                : request.getStatus().trim().toUpperCase(Locale.ROOT));
     }
 
     @Override
@@ -175,10 +225,13 @@ public class FleetServiceImpl implements FleetService {
         Map<Integer, String> busyMap = new HashMap<>();
 
         for (Booking booking : holdingBookings) {
-            Instant bookingDepart = booking.getDepartureDate() != null ? booking.getDepartureDate() : booking.getBookingDate();
-            if (bookingDepart == null) continue;
+            Instant bookingDepart = booking.getDepartureDate() != null ? booking.getDepartureDate()
+                    : booking.getBookingDate();
+            if (bookingDepart == null)
+                continue;
 
-            boolean existingIsInter = booking.getBookingType() != null && booking.getBookingType().equalsIgnoreCase("international");
+            boolean existingIsInter = booking.getBookingType() != null
+                    && booking.getBookingType().equalsIgnoreCase("international");
             int existingDaysBefore = existingIsInter ? 2 : 1;
             int existingDaysAfter = existingIsInter ? 4 : 2;
 
@@ -192,7 +245,8 @@ public class FleetServiceImpl implements FleetService {
                     if (ba.getStaffID() != null) {
                         String tripTag = existingIsInter ? "quốc tế" : "nội địa";
                         busyMap.put(ba.getStaffID().getId(),
-                                "Đang phục vụ đơn BK-" + String.format("%03d", booking.getId()) + " (" + tripTag + ", về dự kiến: " + busyEnd + ")");
+                                "Đang phục vụ đơn BK-" + String.format("%03d", booking.getId()) + " (" + tripTag
+                                        + ", về dự kiến: " + busyEnd + ")");
                     }
                 }
             }
@@ -264,20 +318,25 @@ public class FleetServiceImpl implements FleetService {
         try {
             int numId = Integer.parseInt(clean);
             Optional<Vehicle> byId = vehicleRepository.findById(numId);
-            if (byId.isPresent()) return byId.get();
-        } catch (NumberFormatException ignored) {}
+            if (byId.isPresent())
+                return byId.get();
+        } catch (NumberFormatException ignored) {
+        }
 
         if (clean.matches("(?i)(VH|XE)-\\d+")) {
             String digits = clean.replaceAll("[^0-9]", "");
             try {
                 int numId = Integer.parseInt(digits);
                 Optional<Vehicle> byId = vehicleRepository.findById(numId);
-                if (byId.isPresent()) return byId.get();
-            } catch (Exception ignored) {}
+                if (byId.isPresent())
+                    return byId.get();
+            } catch (Exception ignored) {
+            }
         }
 
         Optional<Vehicle> byPlate = vehicleRepository.findByLicensePlate(clean);
-        if (byPlate.isPresent()) return byPlate.get();
+        if (byPlate.isPresent())
+            return byPlate.get();
 
         // Tìm kiếm dự phòng theo mã định danh sinh tự động (getVehicleCode)
         for (Vehicle v : vehicleRepository.findAll()) {
@@ -290,12 +349,14 @@ public class FleetServiceImpl implements FleetService {
     }
 
     @Override
-    public void validateVehicleAvailability(Integer vehicleId, Instant departDate, String tripType, Integer excludeBookingId) {
+    public void validateVehicleAvailability(Integer vehicleId, Instant departDate, String tripType,
+            Integer excludeBookingId) {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy xe có ID: " + vehicleId));
 
         if ("MAINTENANCE".equalsIgnoreCase(vehicle.getStatus())) {
-            throw new IllegalStateException("Xe " + vehicle.getLicensePlate() + " đang bảo dưỡng định kỳ, không thể xếp xe!");
+            throw new IllegalStateException(
+                    "Xe " + vehicle.getLicensePlate() + " đang bảo dưỡng định kỳ, không thể xếp xe!");
         }
 
         Instant newDepart = departDate != null ? departDate : Instant.now();
@@ -311,9 +372,11 @@ public class FleetServiceImpl implements FleetService {
                 continue;
             }
             Instant bookingDepart = b.getDepartureDate() != null ? b.getDepartureDate() : b.getBookingDate();
-            if (bookingDepart == null) continue;
+            if (bookingDepart == null)
+                continue;
 
-            boolean existingIsInter = b.getBookingType() != null && b.getBookingType().equalsIgnoreCase("international");
+            boolean existingIsInter = b.getBookingType() != null
+                    && b.getBookingType().equalsIgnoreCase("international");
             int existingDaysBefore = existingIsInter ? 2 : 1;
             int existingDaysAfter = existingIsInter ? 4 : 2;
 
@@ -326,8 +389,10 @@ public class FleetServiceImpl implements FleetService {
                 for (BookingVehicle bv : bvs) {
                     if (bv.getVehicleID() != null && bv.getVehicleID().getId().equals(vehicleId)) {
                         String tripTag = existingIsInter ? "quốc tế" : "nội địa";
-                        throw new IllegalStateException("Xe " + vehicle.getLicensePlate() + " (" + vehicle.getVehicleName() + ") trùng lịch với đơn BK-"
-                                + String.format("%03d", b.getId()) + " (" + tripTag + ", khứ hồi về trụ sở VN đến " + busyEnd + ")!");
+                        throw new IllegalStateException("Xe " + vehicle.getLicensePlate() + " ("
+                                + vehicle.getVehicleName() + ") trùng lịch với đơn BK-"
+                                + String.format("%03d", b.getId()) + " (" + tripTag + ", khứ hồi về trụ sở VN đến "
+                                + busyEnd + ")!");
                     }
                 }
             }
@@ -345,7 +410,8 @@ public class FleetServiceImpl implements FleetService {
         try {
             int numId = Integer.parseInt(clean);
             staffOpt = staffRepository.findById(numId);
-        } catch (NumberFormatException ignored) {}
+        } catch (NumberFormatException ignored) {
+        }
 
         if (staffOpt.isEmpty()) {
             staffOpt = staffRepository.findByStaffCode(clean);
@@ -356,7 +422,8 @@ public class FleetServiceImpl implements FleetService {
             try {
                 int numId = Integer.parseInt(digits);
                 staffOpt = staffRepository.findById(numId);
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
 
         if (staffOpt.isEmpty()) {
@@ -373,7 +440,8 @@ public class FleetServiceImpl implements FleetService {
         Staff staff = staffOpt.get();
         if (expectedRole != null && !expectedRole.trim().isEmpty() && !expectedRole.equalsIgnoreCase("ALL")) {
             if (staff.getRole() == null || !staff.getRole().equalsIgnoreCase(expectedRole)) {
-                throw new IllegalArgumentException("Nhân sự " + staff.getStaffCode() + " không có vai trò " + expectedRole + " (vai trò hiện tại: " + staff.getRole() + ")!");
+                throw new IllegalArgumentException("Nhân sự " + staff.getStaffCode() + " không có vai trò "
+                        + expectedRole + " (vai trò hiện tại: " + staff.getRole() + ")!");
             }
         }
 
@@ -381,7 +449,8 @@ public class FleetServiceImpl implements FleetService {
     }
 
     @Override
-    public void validateCrewAvailability(Integer staffId, Instant departDate, String tripType, Integer excludeBookingId) {
+    public void validateCrewAvailability(Integer staffId, Instant departDate, String tripType,
+            Integer excludeBookingId) {
         Staff staff = staffRepository.findById(staffId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhân sự có ID: " + staffId));
 
@@ -402,9 +471,11 @@ public class FleetServiceImpl implements FleetService {
                 continue;
             }
             Instant bookingDepart = b.getDepartureDate() != null ? b.getDepartureDate() : b.getBookingDate();
-            if (bookingDepart == null) continue;
+            if (bookingDepart == null)
+                continue;
 
-            boolean existingIsInter = b.getBookingType() != null && b.getBookingType().equalsIgnoreCase("international");
+            boolean existingIsInter = b.getBookingType() != null
+                    && b.getBookingType().equalsIgnoreCase("international");
             int existingDaysBefore = existingIsInter ? 2 : 1;
             int existingDaysAfter = existingIsInter ? 4 : 2;
 
@@ -417,8 +488,10 @@ public class FleetServiceImpl implements FleetService {
                 for (BookingAssignment ba : assignments) {
                     if (ba.getStaffID() != null && ba.getStaffID().getId().equals(staffId)) {
                         String tripTag = existingIsInter ? "quốc tế" : "nội địa";
-                        throw new IllegalStateException("Nhân sự " + staff.getStaffCode() + " (" + staff.getRole() + ") đang được giao phục vụ đơn BK-"
-                                + String.format("%03d", b.getId()) + " (" + tripTag + ", khứ hồi về trụ sở VN đến " + busyEnd + ")!");
+                        throw new IllegalStateException("Nhân sự " + staff.getStaffCode() + " (" + staff.getRole()
+                                + ") đang được giao phục vụ đơn BK-"
+                                + String.format("%03d", b.getId()) + " (" + tripTag + ", khứ hồi về trụ sở VN đến "
+                                + busyEnd + ")!");
                     }
                 }
             }
