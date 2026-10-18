@@ -23,14 +23,29 @@ function ItemRow({ b, item, editable, run }: { b: Booking; item: ClearanceItem; 
   const { session } = useAuth()
   const [note, setNote] = useState(item.note)
   const patch = (p: { note?: string; photos?: string[] }, msg: string) => run(() => bookingsApi.updateClearanceItem(b.id, session!.name, item.type, p), msg)
+  
+  const label = item.label || CLEARANCE_DOC[item.type]?.label || item.type
+  const hint = item.hint || CLEARANCE_DOC[item.type]?.hint || ''
+  const short = CLEARANCE_DOC[item.type]?.short || label
+
   return (
     <div className={s.horse}>
       <div className={s.horseTop}>
-        <div><div className={s.horseName}>{CLEARANCE_DOC[item.type].label}</div><div className={s.horseMeta}>{CLEARANCE_DOC[item.type].hint}</div></div>
+        <div>
+          <div className={s.horseName} style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span>{label}</span>
+            {item.gateName && (
+              <span className="badge badge-info" style={{ fontSize: '0.75rem', fontWeight: 500, padding: '2px 8px' }}>
+                <i className="fa-solid fa-archway" style={{ marginRight: 4 }} /> {item.gateName}
+              </span>
+            )}
+          </div>
+          {hint && <div className={s.horseMeta}>{hint}</div>}
+        </div>
         <span className={`badge ${item.status === 'done' ? 'badge-success' : 'badge-muted'}`} title="Tự đổi theo ảnh: tải ảnh lên là Đã nộp"><i className={`fa-solid ${item.status === 'done' ? 'fa-circle-check' : 'fa-circle'}`} /> {STATUS_LABEL[item.status]}</span>
       </div>
       <div className="form-group" style={{ margin: '8px 0 0' }}>
-        <input className="form-control" aria-label={`Ghi chú ${CLEARANCE_DOC[item.type].short}`} placeholder="Ghi chú tiến độ (khách và quản lý đều thấy)" disabled={!editable} value={note} onChange={e => setNote(e.target.value)} onBlur={() => { if (note !== item.note) patch({ note }, 'Đã lưu ghi chú') }} />
+        <input className="form-control" aria-label={`Ghi chú ${short}`} placeholder="Ghi chú tiến độ (khách và quản lý đều thấy)" disabled={!editable} value={note} onChange={e => setNote(e.target.value)} onBlur={() => { if (note !== item.note) patch({ note }, 'Đã lưu ghi chú') }} />
       </div>
       {item.photos.length > 0 && (
         <ul style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '8px 0 0' }}>
@@ -60,10 +75,28 @@ function Work({ b, onDone }: { b: Booking; onDone: () => void }) {
     try { await fn(); toast(msg); onDone(); after?.() } catch (e) { toast(e instanceof Error ? e.message : 'Không thực hiện được', 'error') } finally { setBusy(false) }
   }
 
+  const assignedGate = b.gate || c.gateName
+
   return (
     <>
       {b.status === 'waybill_issued' && !c.crewAckedAt && (
         <div className="alert alert-info"><i className="fa-solid fa-file-contract" /><div style={{ flex: 1 }}><b>Vận đơn {b.waybill?.no} đã phát hành.</b> Bạn có thể cập nhật giấy tờ kiểm dịch và tải ảnh hồ sơ. Khi hoàn tất, giấy tờ sẽ được chuyển giao cho kíp xe (Tài xế & Hộ tống) thực hiện đón ngựa.</div></div>
+      )}
+      {assignedGate && (
+        <div className="alert alert-info" style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '8px 0 16px' }}>
+          <i className="fa-solid fa-archway" style={{ fontSize: '1.4rem', color: '#0284c7' }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>
+              Cửa khẩu thông quan chỉ định: <span style={{ color: '#0369a1' }}>{assignedGate}</span>
+            </div>
+            <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>
+              Hệ thống đã tự động liên kết danh mục giấy tờ pháp lý từ cơ sở dữ liệu quy định kiểm dịch & hải quan theo đúng cặp cửa khẩu này.
+            </div>
+          </div>
+          <span className="badge badge-primary">
+            <i className="fa-solid fa-shield-halved" /> Quy định cửa khẩu
+          </span>
+        </div>
       )}
       {c.quarantineStatus === 'PENDING_SPECIALIST_REVIEW' && (
         <div className="alert alert-info" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>

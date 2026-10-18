@@ -67,12 +67,26 @@ export interface Quote {
 
 // ===== Giấy tờ pháp lý do Specialist làm (Flow 2) =====
 export type ClearanceStatus = 'todo' | 'done' // Chưa nộp / Đã nộp (nộp cho cơ quan chức năng)
-export interface ClearanceItem { type: ClearanceDocType; status: ClearanceStatus; note: string; photos: string[]; updatedAt?: number; by?: string }
+export interface ClearanceItem {
+  type: ClearanceDocType
+  status: ClearanceStatus
+  note: string
+  photos: string[]
+  updatedAt?: number
+  by?: string
+  label?: string
+  hint?: string
+  regulationId?: number
+  gateName?: string
+  gateLocationId?: number
+}
 export interface Clearance {
   items: ClearanceItem[]
   horsesCleared: string[] // horseId đã có giấy thông quan (quốc tế)
   acceptedAt?: number // Specialist tiếp nhận Vận đơn
   acceptedBy?: string
+  gateName?: string
+  gateLocationId?: number
   quarantineStatus?: 'PENDING_SPECIALIST_REVIEW' | 'APPROVED'
   quarantineApprovedAt?: number
   quarantineApprovedBy?: string
