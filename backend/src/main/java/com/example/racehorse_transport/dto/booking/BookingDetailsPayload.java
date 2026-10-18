@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.dto.booking;
 
 import com.example.racehorse_transport.dto.coordinator.VehicleTripDto;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.*;
 
 import java.util.List;
@@ -11,7 +12,10 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class BookingDetailsPayload {
+    private String originCountry;
+    private String destCountry;
     private List<BookingHorseDto> horses;
     private List<VehicleTripDto> trips;
     private Object route;

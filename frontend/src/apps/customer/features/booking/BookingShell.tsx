@@ -17,7 +17,7 @@ const STEPS: [path: string, label: string][] = [
   ['/booking/review', 'Xác nhận & gửi'],
 ]
 
-const nameOf = (id: string) => Object.values(COUNTRY_LOCATIONS).flat().find(l => l.id === id)?.name.split(' — ')[0]
+const nameOf = (id: string) => Object.values(COUNTRY_LOCATIONS).flat().find(l => l.id === id)?.name.split(' — ')[0] || id
 
 function Summary() {
   const { draft } = useBookingDraft()
