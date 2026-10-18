@@ -103,7 +103,11 @@ export function ClearanceSection({ b, quiet }: { b: Booking; quiet?: boolean }) 
               {i.photos.length ? i.photos.map((ph, k) => <ImageThumb key={ph + k} name={ph} size={56} />) : <span className={s.docEmpty}><i className="fa-regular fa-file" aria-hidden="true" /></span>}
             </div>
             <div style={{ flex: 1 }}>
-              <b>{CLEARANCE_DOC[i.type].label}</b>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                <b>{i.label || CLEARANCE_DOC[i.type]?.label || i.type}</b>
+                {i.gateName && <span className="badge badge-info" style={{ fontSize: '0.75rem', fontWeight: 500 }}><i className="fa-solid fa-archway" style={{ marginRight: 4 }} />{i.gateName}</span>}
+              </div>
+              {i.hint && <small style={{ display: 'block', color: 'var(--text-muted)' }}>{i.hint}</small>}
               <small><span className={`badge ${i.status === 'done' ? 'badge-success' : 'badge-muted'}`}>{i.status === 'done' ? 'Đã nộp' : 'Chưa nộp'}</span>{i.updatedAt ? ` · ${formatDateTime(i.updatedAt)}` : ''}{i.by ? ` · ${i.by}` : ''}</small>
               {i.note && <small>Ghi chú: {i.note}</small>}
             </div>
