@@ -1,9 +1,9 @@
-// Bước 2: chọn ngựa từ Hồ sơ ngựa (PRD mục 2.2). Chỉ ngựa đủ giấy và còn hiệu lực đến ngày khởi hành mới chọn được.
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { MAX_HORSES } from '@shared/config/business-rules'
+import { COUNTRY_LOCATIONS } from '@shared/config/network'
 import { ageOf, classForHorses, fromIsoDay, horseReadiness } from '@shared/lib/booking'
 import { horsesApi } from '@shared/services/horses'
 import { useLoad } from '@shared/services/useLoad'
@@ -25,20 +25,52 @@ export default function Step2HorsesPage() {
   const [selected, setSelected] = useState<string[]>(draft.horseIds)
   const [modal, setModal] = useState<{ horse?: HorseProfile } | null>(null)
   const [submitted, setSubmitted] = useState(false)
+  const [confirmedRelocation, setConfirmedRelocation] = useState(false)
+  const [relocationError, setRelocationError] = useState('')
+
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { save({ horseIds: selected }) }, [selected])
 
   if (!draft.type || !draft.departDate) return <Navigate to="/booking/route" replace />
   const departAt = fromIsoDay(draft.departDate)
+
+  // Điểm đón được chọn ở bước 1
+  const allLocations = Object.values(COUNTRY_LOCATIONS).flat()
+  const originLoc = allLocations.find(l => l.id === draft.originId)
+  const originName = originLoc ? originLoc.name : (draft.originId || 'Điểm đón đã chọn')
+
+  const isLocationMatch = (h: HorseProfile) => {
+    if (!h.currentLocationName) return false
+    const normCur = h.currentLocationName.toLowerCase().replace(/đ/g, 'd')
+    const normOrig = originName.toLowerCase().replace(/đ/g, 'd')
+    return normCur.includes(normOrig) || normOrig.includes(normCur)
+  }
+
   // Chỉ hiển thị ngựa đủ giấy tờ và còn hiệu lực — ngựa thiếu/hết hạn không đưa vào
   const list = (horses ?? []).filter(h => horseReadiness(h, departAt).ok)
   const full = selected.length >= MAX_HORSES
-  const toggle = (id: string) => setSelected(sel => (sel.includes(id) ? sel.filter(x => x !== id) : sel.length >= MAX_HORSES ? sel : [...sel, id]))
+
+  const toggle = (id: string, inTransit?: boolean) => {
+    if (inTransit) return
+    setSelected(sel => (sel.includes(id) ? sel.filter(x => x !== id) : sel.length >= MAX_HORSES ? sel : [...sel, id]))
+  }
+
   const cls = selected.length ? VEHICLE_CLASS[classForHorses(selected.length)] : null
+
+  const selectedHorses = list.filter(h => selected.includes(h.id))
+  const mismatchedHorses = selectedHorses.filter(h => !isLocationMatch(h))
+  const hasDifferentLocation = mismatchedHorses.length > 0
 
   const next = () => {
     setSubmitted(true)
     if (!selected.length) return
+
+    if (hasDifferentLocation && !confirmedRelocation) {
+      setRelocationError('Vui lòng đánh dấu xác nhận vị trí chuồng thực tế của ngựa trước khi tiếp tục.')
+      return
+    }
+    setRelocationError('')
+
     const config = Object.fromEntries(selected.map(id => [id, draft.config[id] ?? defaultConfig()]))
     save({ horseIds: selected, config })
     navigate('/booking/services')
@@ -63,20 +95,99 @@ export default function Step2HorsesPage() {
           )}
           {list.map(h => {
             const on = selected.includes(h.id)
-            const blocked = !on && full
+            const inTransit = h.transitStatus === 'IN_TRANSIT'
+            const blocked = (!on && full) || inTransit
+            const matchLoc = isLocationMatch(h)
+
             return (
-              <div key={h.id} className={`${s.pick} ${on ? s.pickOn : ''}`} onClick={e => { if (!blocked && !(e.target as HTMLElement).closest('button, input')) toggle(h.id) }}>
-                <input type="checkbox" id={`pick-${h.id}`} checked={on} disabled={blocked} onChange={() => toggle(h.id)} aria-describedby={`pick-meta-${h.id}`} />
-                <div>
-                  <label htmlFor={`pick-${h.id}`} className={s.pickName}>{h.name}</label>
-                  <div id={`pick-meta-${h.id}`} className={s.pickMeta}>Chip {h.microchip} · {h.breed} · {SEX_LABEL[h.sex]} · {ageOf(h)} tuổi</div>
+              <div
+                key={h.id}
+                className={`${s.pick} ${on ? s.pickOn : ''}`}
+                style={inTransit ? { opacity: 0.65, background: '#f8fafc', cursor: 'not-allowed' } : undefined}
+                onClick={e => { if (!blocked && !(e.target as HTMLElement).closest('button, input')) toggle(h.id, inTransit) }}
+              >
+                <input
+                  type="checkbox"
+                  id={`pick-${h.id}`}
+                  checked={on}
+                  disabled={blocked}
+                  onChange={() => toggle(h.id, inTransit)}
+                  aria-describedby={`pick-meta-${h.id}`}
+                />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
+                    <label htmlFor={`pick-${h.id}`} className={s.pickName} style={{ cursor: inTransit ? 'not-allowed' : 'pointer' }}>
+                      {h.name}
+                    </label>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      {inTransit ? (
+                        <span className="badge badge-warning" style={{ fontSize: '0.74rem' }}>
+                          <i className="fa-solid fa-truck-fast" /> Đang vận chuyển ở chuyến khác
+                        </span>
+                      ) : matchLoc ? (
+                        <span className="badge badge-success" style={{ fontSize: '0.74rem' }}>
+                          <i className="fa-solid fa-circle-check" /> Trùng điểm đón
+                        </span>
+                      ) : (
+                        <span className="badge badge-neutral" style={{ fontSize: '0.74rem' }} title={`Hiện ở: ${h.currentLocationName || 'Chưa cập nhật'}`}>
+                          <i className="fa-solid fa-location-dot" /> Khác điểm đón
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div id={`pick-meta-${h.id}`} className={s.pickMeta}>
+                    Chip {h.microchip} · {h.breed} · {SEX_LABEL[h.sex]} · {ageOf(h)} tuổi
+                    {h.currentLocationName && (
+                      <span style={{ marginLeft: 8, color: matchLoc ? '#16a34a' : 'var(--muted)' }}>
+                        • Vị trí chuồng: <strong>{h.currentLocationName}</strong>
+                      </span>
+                    )}
+                  </div>
                   <HorseDocChips horse={h} at={departAt} />
+                  {inTransit && (
+                    <div style={{ fontSize: '0.8rem', color: '#b45309', marginTop: 4 }}>
+                      ⚠️ Cá thể ngựa này đang trong một chuyến vận chuyển khác và chưa hoàn tất bàn giao về chuồng.
+                    </div>
+                  )}
                 </div>
               </div>
             )
           })}
         </div>
-        {submitted && !selected.length && <div className="form-error" role="alert">Chọn ít nhất một con ngựa.</div>}
+
+        {/* Thông báo xác nhận đối soát vị trí chuồng nếu có ngựa khác điểm đón */}
+        {hasDifferentLocation && (
+          <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 8, padding: '12px 16px', marginTop: 16 }}>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+              <i className="fa-solid fa-circle-info" style={{ color: '#d97706', fontSize: '1.1rem', marginTop: 2 }} />
+              <div style={{ fontSize: '0.86rem', color: '#92400e', flex: 1 }}>
+                <div>
+                  <strong>Lưu ý về vị trí chuồng hiện tại:</strong> Có <strong>{mismatchedHorses.length}</strong> cá thể ngựa bạn chọn ({mismatchedHorses.map(m => m.name).join(', ')}) hiện được ghi nhận ở địa chỉ khác với điểm đón <em>({originName})</em>.
+                </div>
+                <div style={{ marginTop: 8 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 600, color: '#78350f' }}>
+                    <input
+                      type="checkbox"
+                      checked={confirmedRelocation}
+                      onChange={e => {
+                        setConfirmedRelocation(e.target.checked)
+                        if (e.target.checked) setRelocationError('')
+                      }}
+                    />
+                    <span>Tôi xác nhận ngựa đã/sẽ được di chuyển tới điểm đón trên trước giờ kíp xe đến tiếp nhận.</span>
+                  </label>
+                </div>
+                {relocationError && (
+                  <div style={{ color: '#dc2626', fontWeight: 600, marginTop: 4 }}>
+                    <i className="fa-solid fa-triangle-exclamation" /> {relocationError}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {submitted && !selected.length && <div className="form-error" role="alert" style={{ marginTop: 10 }}>Chọn ít nhất một con ngựa.</div>}
       </div>
 
       <div className={s.actions}>

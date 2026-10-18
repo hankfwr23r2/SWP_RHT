@@ -1642,6 +1642,26 @@ public class BookingServiceImpl implements BookingService {
                 run.put("startedAt", now);
                 targetTrip.setRun(run);
                 appendHistory(payload, actor, "Xe bắt đầu hành trình vận chuyển ngựa");
+
+                // Cập nhật trạng thái ngựa sang IN_TRANSIT
+                if (payload.getHorses() != null) {
+                    for (BookingHorseDto hDto : payload.getHorses()) {
+                        if (hDto.getHorseId() != null && !hDto.getHorseId().isBlank()) {
+                            try {
+                                String numId = hDto.getHorseId().replaceAll("\\D", "");
+                                if (!numId.isEmpty()) {
+                                    Integer hId = Integer.parseInt(numId);
+                                    horseRepository.findById(hId).ifPresent(h -> {
+                                        h.setTransitStatus("IN_TRANSIT");
+                                        horseRepository.save(h);
+                                    });
+                                }
+                            } catch (Exception ex) {
+                                log.warn("Không thể cập nhật transitStatus cho ngựa {}: {}", hDto.getHorseId(), ex.getMessage());
+                            }
+                        }
+                    }
+                }
                 break;
             }
             case "ARRIVE_CHECKPOINT": {

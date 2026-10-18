@@ -72,5 +72,25 @@ public class Horse {
     @Column(name = "status", length = 50)
     private String status;
 
+    @Size(max = 255)
+    @Nationalized
+    @Column(name = "current_location_name")
+    private String currentLocationName;
+
+    @Size(max = 10)
+    @Column(name = "current_country", length = 10)
+    private String currentCountry;
+
+    @Column(name = "location_updated_at")
+    private Long locationUpdatedAt;
+
+    @Size(max = 50)
+    @Column(name = "location_source", length = 50)
+    private String locationSource;
+
+    @Size(max = 50)
+    @Column(name = "transit_status", length = 50)
+    private String transitStatus;
 
 }
+

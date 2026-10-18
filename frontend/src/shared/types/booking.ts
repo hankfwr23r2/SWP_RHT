@@ -7,6 +7,22 @@ export const SEX_LABEL: Record<Sex, string> = { stallion: 'Đực', mare: 'Cái'
 
 // ===== Hồ sơ ngựa =====
 export interface HorseDoc { fileName: string; fileUrl?: string; uploadedAt: number; expiresAt?: number; documentId?: number }
+export interface HorseJourneyLog {
+  id: number
+  horseId: number
+  bookingId?: number
+  tripCode?: string
+  fromLocation?: string
+  toLocation?: string
+  departAt?: number
+  arrivedAt?: number
+  driverName?: string
+  proofImageUrl?: string
+  notes?: string
+  source?: 'SYSTEM_DELIVERY' | 'OWNER_RELOCATION'
+  createdAt: number
+}
+
 export interface HorseProfile {
   id: string
   owner: string
@@ -20,6 +36,11 @@ export interface HorseProfile {
   docs: Partial<Record<HorseDocType, HorseDoc>>
   completedTrips: number
   createdAt: number
+  currentLocationName?: string
+  currentCountry?: string
+  locationUpdatedAt?: number
+  locationSource?: 'SYSTEM_DELIVERY' | 'OWNER_RELOCATION' | 'INITIAL_REGISTRATION'
+  transitStatus?: 'STABLE_IDLE' | 'IN_TRANSIT'
 }
 
 // ===== Đơn =====

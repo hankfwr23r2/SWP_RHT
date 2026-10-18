@@ -15,6 +15,27 @@ export interface BackendHorseDto {
   completedTrips?: number
   createdAt?: string
   status?: string
+  currentLocationName?: string
+  currentCountry?: string
+  locationUpdatedAt?: number
+  locationSource?: string
+  transitStatus?: string
+}
+
+export interface BackendHorseJourneyLogDto {
+  id: number
+  horseId: number
+  bookingId?: number
+  tripCode?: string
+  fromLocation?: string
+  toLocation?: string
+  departAt?: number
+  arrivedAt?: number
+  driverName?: string
+  proofImageUrl?: string
+  notes?: string
+  source?: string
+  createdAt: number
 }
 
 export interface BackendHorseDocResponse {
@@ -100,6 +121,18 @@ export const backendHorseApi = {
       note,
       reviewerName,
     })
+    return res.data.data
+  },
+
+  // Cập nhật vị trí chuồng hiện tại của ngựa (Dời chuồng ngoài hệ thống / cập nhật thủ công)
+  updateLocation: async (id: number, payload: { locationName: string; country?: string; reason?: string; notes?: string }): Promise<BackendHorseDto> => {
+    const res = await apiClient.patch<ApiResponse<BackendHorseDto>>(`/horses/${id}/location`, payload)
+    return res.data.data
+  },
+
+  // Lấy lịch sử hành trình & các chặng di chuyển của ngựa
+  getJourneyLogs: async (id: number): Promise<BackendHorseJourneyLogDto[]> => {
+    const res = await apiClient.get<ApiResponse<BackendHorseJourneyLogDto[]>>(`/horses/${id}/journey-logs`)
     return res.data.data
   },
 }

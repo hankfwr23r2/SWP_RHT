@@ -27,4 +27,10 @@ public class HorseDTO implements Serializable {
     private Integer completedTrips;
     private Instant createdAt;
     private String status;
+    private String currentLocationName;
+    private String currentCountry;
+    private Long locationUpdatedAt;
+    private String locationSource;
+    private String transitStatus;
 }
+

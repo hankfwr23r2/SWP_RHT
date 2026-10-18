@@ -16,7 +16,7 @@ public class CorsConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOriginPatterns("http://localhost:*", "https://*.vercel.app", "https://*.pages.dev", "http://127.0.0.1:*", "https://*.trycloudflare.com")
+                .allowedOriginPatterns("http://localhost:*", "https://*.vercel.app", "https://*.pages.dev", "http://127.0.0.1:*", "https://*.trycloudflare.com", "https://*.onrender.com")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 .allowedHeaders("*")
                 .allowCredentials(true);
@@ -31,7 +31,8 @@ public class CorsConfig implements WebMvcConfigurer {
                 "https://*.vercel.app",
                 "https://*.pages.dev",
                 "http://127.0.0.1:*",
-                "https://*.trycloudflare.com"
+                "https://*.trycloudflare.com",
+                "https://*.onrender.com"
         ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
@@ -41,4 +42,5 @@ public class CorsConfig implements WebMvcConfigurer {
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
+
 }

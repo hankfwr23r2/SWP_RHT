@@ -35,6 +35,11 @@ function profileOf(h: BackendHorseDto, owner: string, docs: Partial<Record<Horse
     breed: h.breed ?? '', sex: (h.gender?.toLowerCase() ?? '') as HorseProfile['sex'], color: h.color ?? '',
     birthYear: h.age !== undefined ? thisYear() - h.age : 0, marks: h.identificationMarks ?? '',
     docs, completedTrips: h.completedTrips ?? 0, createdAt: h.createdAt ? new Date(h.createdAt).getTime() : 0,
+    currentLocationName: h.currentLocationName,
+    currentCountry: h.currentCountry,
+    locationUpdatedAt: h.locationUpdatedAt,
+    locationSource: h.locationSource as HorseProfile['locationSource'],
+    transitStatus: h.transitStatus as HorseProfile['transitStatus'],
   }
 }
 
@@ -84,5 +89,21 @@ export const horsesApi = {
     const merged = { name: patch.name ?? current.name, breed: patch.breed ?? current.breed, sex: patch.sex ?? current.sex, color: patch.color ?? current.color, birthYear: patch.birthYear ?? current.birthYear, marks: patch.marks ?? current.marks }
     const updated = await backendHorseApi.update(n, { id: n, ...payloadOf(merged, current.microchip) })
     return profileOf(updated, owner, current.docs)
+  },
+
+  // Cập nhật vị trí chuồng ngựa hiện tại (Dời chuồng ngoài hệ thống / cập nhật thủ công)
+  updateLocation: async (id: string, payload: { locationName: string; country?: string; reason?: string; notes?: string }): Promise<HorseProfile> => {
+    const n = numericId(id)
+    if (!n) throw new Error('Mã hồ sơ ngựa không hợp lệ.')
+    const updated = await backendHorseApi.updateLocation(n, payload)
+    const docs = docsOf(await backendHorseApi.getDocuments(n))
+    return profileOf(updated, '', docs)
+  },
+
+  // Lấy toàn bộ nhật ký hành trình của cá thể ngựa
+  getJourneyLogs: async (id: string) => {
+    const n = numericId(id)
+    if (!n) return []
+    return backendHorseApi.getJourneyLogs(n)
   },
 }

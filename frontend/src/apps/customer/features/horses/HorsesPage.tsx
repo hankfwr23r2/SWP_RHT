@@ -10,6 +10,8 @@ import { SEX_LABEL, type HorseProfile } from '@shared/types/booking'
 import { HorseDocChips } from '@shared/ui/HorseDocChips'
 import { useToast } from '@shared/ui/toast'
 import { HorseFormModal } from './HorseFormModal'
+import { HorseJourneyModal } from './HorseJourneyModal'
+import { RelocateHorseModal } from './RelocateHorseModal'
 import s from './Horses.module.css'
 
 type Filter = 'all' | 'ready' | 'missing'
@@ -27,6 +29,8 @@ export default function HorsesPage() {
   const { data: horses, reload } = useLoad(() => horsesApi.list(owner), [owner])
   const [filter, setFilter] = useState<Filter>('all')
   const [modal, setModal] = useState<{ horse?: HorseProfile } | null>(null)
+  const [relocateHorse, setRelocateHorse] = useState<HorseProfile | null>(null)
+  const [journeyHorse, setJourneyHorse] = useState<HorseProfile | null>(null)
   const list = horses ?? []
   const ready = list.filter(h => horseReadiness(h).ok)
   const shown = filter === 'all' ? list : filter === 'ready' ? ready : list.filter(h => !horseReadiness(h).ok)
@@ -39,7 +43,7 @@ export default function HorsesPage() {
         <div className={s.head}>
           <div className="page-header" style={{ margin: 0 }}>
             <h1>Hồ sơ ngựa</h1>
-            <p>Khai báo một lần. Khi đặt chuyến, bạn chỉ cần chọn ngựa đã “Sẵn sàng đặt”.</p>
+            <p>Khai báo một lần. Theo dõi vị trí chuồng, sổ hành trình điện tử và kiểm tra tính sẵn sàng trước khi đặt chuyến.</p>
           </div>
           <button className="btn btn-primary" onClick={() => setModal({})}><i className="fa-solid fa-plus" /> Thêm ngựa</button>
         </div>
@@ -78,11 +82,42 @@ export default function HorsesPage() {
                     <span><i className="fa-solid fa-cake-candles" />{ageOf(h)} tuổi</span>
                     <span><i className="fa-solid fa-palette" />{h.color}</span>
                   </div>
+
+                  {/* Vị trí chuồng hiện tại & Nguồn gốc kiểm soát */}
+                  <div style={{ background: '#f8fafc', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6, fontSize: '0.82rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flex: 1 }}>
+                      <i className="fa-solid fa-location-dot" style={{ color: 'var(--orange)', flexShrink: 0 }} />
+                      <span style={{ fontWeight: 600, color: 'var(--navy)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={h.currentLocationName || 'Chưa cập nhật'}>
+                        {h.currentLocationName || 'Chưa cập nhật vị trí chuồng'}
+                      </span>
+                    </div>
+                    <div>
+                      {h.transitStatus === 'IN_TRANSIT' ? (
+                        <span className="badge badge-warning" style={{ fontSize: '0.72rem' }}>Đang vận chuyển</span>
+                      ) : h.locationSource === 'SYSTEM_DELIVERY' ? (
+                        <span className="badge badge-success" style={{ fontSize: '0.72rem' }} title="Xác thực tự động từ chuyến giao gần nhất">✓ Đã xác thực</span>
+                      ) : (
+                        <span className="badge badge-neutral" style={{ fontSize: '0.72rem' }} title="Chủ nuôi tự cập nhật">Chủ cập nhật</span>
+                      )}
+                    </div>
+                  </div>
+
                   <HorseDocChips horse={h} />
                   {!r.ok && <div className={s.warn}>Cần {r.missing.length ? 'tải thêm' : 'cập nhật'} giấy tờ trước khi đặt chuyến.</div>}
+
                   <div className={s.horseFoot}>
-                    <span className={s.trips}><i className="fa-solid fa-route" /> {h.completedTrips} chuyến đã hoàn thành</span>
-                    <button className={`btn btn-sm ${r.ok ? 'btn-ghost' : 'btn-primary'}`} onClick={() => setModal({ horse: h })}>{r.ok ? 'Xem / sửa' : 'Bổ sung giấy'}</button>
+                    <span className={s.trips}><i className="fa-solid fa-route" /> {h.completedTrips} chuyến</span>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <button className="btn btn-sm btn-ghost" title="Xem sổ hành trình điện tử" onClick={() => setJourneyHorse(h)}>
+                        <i className="fa-solid fa-passport" /> Sổ hành trình
+                      </button>
+                      <button className="btn btn-sm btn-ghost" title="Cập nhật chuồng / dời chuồng" onClick={() => setRelocateHorse(h)}>
+                        <i className="fa-solid fa-map-pin" /> Dời chuồng
+                      </button>
+                      <button className={`btn btn-sm ${r.ok ? 'btn-ghost' : 'btn-primary'}`} onClick={() => setModal({ horse: h })}>
+                        {r.ok ? 'Xem / sửa' : 'Bổ sung giấy'}
+                      </button>
+                    </div>
                   </div>
                 </article>
               )
@@ -95,6 +130,26 @@ export default function HorsesPage() {
         <HorseFormModal
           owner={owner} horse={modal.horse} onClose={() => setModal(null)}
           onSaved={h => { setModal(null); reload(); toast(modal.horse ? `Đã cập nhật hồ sơ ${h.name}` : `Đã thêm ${h.name} vào hồ sơ`) }}
+        />
+      )}
+
+      {relocateHorse && (
+        <RelocateHorseModal
+          horse={relocateHorse}
+          onClose={() => setRelocateHorse(null)}
+          onSaved={updated => {
+            setRelocateHorse(null)
+            reload()
+            toast(`Đã cập nhật vị trí chuồng mới cho ${updated.name}`)
+          }}
+        />
+      )}
+
+      {journeyHorse && (
+        <HorseJourneyModal
+          horse={journeyHorse}
+          onClose={() => setJourneyHorse(null)}
+          onOpenRelocate={() => setRelocateHorse(journeyHorse)}
         />
       )}
     </div>

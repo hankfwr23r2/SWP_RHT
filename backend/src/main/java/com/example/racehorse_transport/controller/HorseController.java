@@ -1,10 +1,14 @@
 package com.example.racehorse_transport.controller;
 
 import com.example.racehorse_transport.dto.HorseDTO;
+import com.example.racehorse_transport.dto.HorseJourneyLogDTO;
+import com.example.racehorse_transport.dto.UpdateHorseLocationRequest;
 import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.Horse;
+import com.example.racehorse_transport.entity.HorseJourneyLog;
 import com.example.racehorse_transport.entity.User;
 import com.example.racehorse_transport.repository.CustomerRepository;
+import com.example.racehorse_transport.repository.HorseJourneyLogRepository;
 import com.example.racehorse_transport.repository.HorseRepository;
 import com.example.racehorse_transport.repository.UserRepository;
 import com.example.racehorse_transport.response.ApiResponse;
@@ -29,6 +33,7 @@ public class HorseController {
     private final HorseRepository horseRepository;
     private final CustomerRepository customerRepository;
     private final UserRepository userRepository;
+    private final HorseJourneyLogRepository horseJourneyLogRepository;
 
     @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'INSPECTOR', 'MANAGER', 'ADMIN', 'COORDINATOR')")
     @GetMapping
@@ -85,6 +90,81 @@ public class HorseController {
         return ResponseEntity.ok(ApiResponse.success(toDto(horseService.save(horse)), "Cập nhật hồ sơ ngựa thành công"));
     }
 
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN', 'MANAGER')")
+    @PatchMapping("/{id}/location")
+    public ResponseEntity<ApiResponse<HorseDTO>> updateLocation(
+            @PathVariable Integer id,
+            @RequestBody UpdateHorseLocationRequest request,
+            Authentication authentication) {
+        Horse horse = horseService.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hồ sơ ngựa."));
+        ensureCanManage(horse, authentication);
+
+        if (request.getLocationName() == null || request.getLocationName().isBlank()) {
+            throw new IllegalArgumentException("Tên địa điểm chuồng mới không được để trống.");
+        }
+
+        String oldLocation = horse.getCurrentLocationName();
+        String newLocation = request.getLocationName().trim();
+
+        horse.setCurrentLocationName(newLocation);
+        if (request.getCountry() != null && !request.getCountry().isBlank()) {
+            horse.setCurrentCountry(request.getCountry().trim().toUpperCase());
+        } else if (horse.getCurrentCountry() == null) {
+            horse.setCurrentCountry("VN");
+        }
+        horse.setLocationUpdatedAt(System.currentTimeMillis());
+        horse.setLocationSource("OWNER_DECLARED");
+        horse.setTransitStatus("STABLE_IDLE");
+
+        Horse saved = horseService.save(horse);
+
+        // Lưu bản ghi nhật ký hành trình / di dời chuồng
+        HorseJourneyLog log = HorseJourneyLog.builder()
+                .horse(saved)
+                .fromLocation(oldLocation != null ? oldLocation : "Vị trí ban đầu")
+                .toLocation(newLocation)
+                .departAt(System.currentTimeMillis())
+                .arrivedAt(System.currentTimeMillis())
+                .driverName(authentication.getName() + " (Chủ ngựa)")
+                .notes(request.getReason() != null ? request.getReason() : "Chủ ngựa tự dời vị trí chuồng")
+                .source("OWNER_RELOCATION")
+                .createdAt(System.currentTimeMillis())
+                .build();
+        horseJourneyLogRepository.save(log);
+
+        return ResponseEntity.ok(ApiResponse.success(toDto(saved), "Cập nhật vị trí ngựa thành công"));
+    }
+
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'INSPECTOR', 'MANAGER', 'ADMIN', 'COORDINATOR', 'ESCORT', 'DRIVER')")
+    @GetMapping("/{id}/journey-logs")
+    public ResponseEntity<ApiResponse<List<HorseJourneyLogDTO>>> getJourneyLogs(
+            @PathVariable Integer id,
+            Authentication authentication) {
+        Horse horse = horseService.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hồ sơ ngựa."));
+        ensureCanView(horse, authentication);
+
+        List<HorseJourneyLog> logs = horseJourneyLogRepository.findByHorse_IdOrderByCreatedAtDesc(id);
+        List<HorseJourneyLogDTO> dtos = logs.stream().map(l -> HorseJourneyLogDTO.builder()
+                .id(l.getId())
+                .horseId(l.getHorse().getId())
+                .bookingId(l.getBookingId())
+                .tripCode(l.getTripCode())
+                .fromLocation(l.getFromLocation())
+                .toLocation(l.getToLocation())
+                .departAt(l.getDepartAt())
+                .arrivedAt(l.getArrivedAt())
+                .driverName(l.getDriverName())
+                .proofImageUrl(l.getProofImageUrl())
+                .notes(l.getNotes())
+                .source(l.getSource())
+                .createdAt(l.getCreatedAt())
+                .build()).toList();
+
+        return ResponseEntity.ok(ApiResponse.success(dtos, "Lấy lịch sử hành trình ngựa thành công"));
+    }
+
     @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteHorse(@PathVariable Integer id, Authentication authentication) {
@@ -105,6 +185,11 @@ public class HorseController {
         if (request.getWeight() != null) horse.setWeight(request.getWeight());
         if (request.getIdentificationMarks() != null) horse.setIdentificationMarks(request.getIdentificationMarks());
         if (request.getStatus() != null) horse.setStatus(request.getStatus());
+        if (request.getCurrentLocationName() != null) horse.setCurrentLocationName(request.getCurrentLocationName().trim());
+        if (request.getCurrentCountry() != null) horse.setCurrentCountry(request.getCurrentCountry().trim());
+        if (request.getLocationUpdatedAt() != null) horse.setLocationUpdatedAt(request.getLocationUpdatedAt());
+        if (request.getLocationSource() != null) horse.setLocationSource(request.getLocationSource());
+        if (request.getTransitStatus() != null) horse.setTransitStatus(request.getTransitStatus());
         if (horse.getCompletedTrips() == null) horse.setCompletedTrips(request.getCompletedTrips() == null ? 0 : request.getCompletedTrips());
         if (horse.getCreatedAt() == null) horse.setCreatedAt(request.getCreatedAt() == null ? Instant.now().toEpochMilli() : request.getCreatedAt().toEpochMilli());
     }
@@ -125,8 +210,14 @@ public class HorseController {
         dto.setCompletedTrips(horse.getCompletedTrips());
         dto.setCreatedAt(horse.getCreatedAt() == null ? null : Instant.ofEpochMilli(horse.getCreatedAt()));
         dto.setStatus(horse.getStatus());
+        dto.setCurrentLocationName(horse.getCurrentLocationName());
+        dto.setCurrentCountry(horse.getCurrentCountry());
+        dto.setLocationUpdatedAt(horse.getLocationUpdatedAt());
+        dto.setLocationSource(horse.getLocationSource());
+        dto.setTransitStatus(horse.getTransitStatus());
         return dto;
     }
+
 
     private User currentUser(Authentication authentication) {
         return userRepository.findByUsernameOrEmail(authentication.getName(), authentication.getName())
