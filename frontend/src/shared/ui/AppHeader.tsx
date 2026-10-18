@@ -12,6 +12,7 @@ export interface AppHeaderProps {
   links: [to: string, label: string][]
   isActive?: (to: string, pathname: string) => boolean
   userName?: string
+  profileHref?: string
   onLogout: () => void
   extra?: ReactNode
   contained?: boolean // căn thanh menu theo cùng bề rộng nội dung trang (1200px), không kéo giãn hết màn hình
@@ -19,7 +20,7 @@ export interface AppHeaderProps {
 
 const initialsOf = (name = '') => name.split(' ').filter(Boolean).slice(-2).map(w => w[0]).join('').toUpperCase()
 
-export function AppHeader({ homeHref, badge, links, isActive, userName, onLogout, extra, contained }: AppHeaderProps) {
+export function AppHeader({ homeHref, badge, links, isActive, userName, profileHref, onLogout, extra, contained }: AppHeaderProps) {
   const { pathname } = useLocation()
   const nav = useRef<HTMLElement>(null)
   const bar = useRef<HTMLSpanElement>(null)
@@ -57,8 +58,17 @@ export function AppHeader({ homeHref, badge, links, isActive, userName, onLogout
         </nav>
         <div className={s.right}>
           {extra}
-          <span className={s.avatar} title={userName}>{initialsOf(userName)}</span>
-          <span className={s.userName}>{userName}</span>
+          {profileHref ? (
+            <Link to={profileHref} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', color: 'inherit' }} title="Xem hồ sơ cá nhân">
+              <span className={s.avatar} title={userName}>{initialsOf(userName)}</span>
+              <span className={s.userName}>{userName}</span>
+            </Link>
+          ) : (
+            <>
+              <span className={s.avatar} title={userName}>{initialsOf(userName)}</span>
+              <span className={s.userName}>{userName}</span>
+            </>
+          )}
           <button className={s.logout} onClick={onLogout}><i className="fa-solid fa-arrow-right-from-bracket" /> Đăng xuất</button>
         </div>
       </div>

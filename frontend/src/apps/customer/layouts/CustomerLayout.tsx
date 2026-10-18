@@ -15,6 +15,7 @@ const MENU: [string, string][] = [
   ['/booking/route', 'Đặt chuyến mới'],
   ['/orders', 'Đơn của tôi'],
   ['/history', 'Lịch sử đơn'],
+  ['/profile', 'Tài khoản'],
 ]
 
 const isActive = (to: string, path: string) =>
@@ -26,7 +27,7 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
   return (
     <>
       <AppHeader
-        homeHref="/portal" contained links={MENU} isActive={isActive} userName={session?.name}
+        homeHref="/portal" contained links={MENU} isActive={isActive} userName={session?.name} profileHref="/profile"
         onLogout={() => { logout(); navigate('/') }}
         extra={
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>

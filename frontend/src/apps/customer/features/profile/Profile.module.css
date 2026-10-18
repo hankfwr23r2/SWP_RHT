@@ -1,0 +1,294 @@
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 20px 80px;
+}
+
+.topBar {
+  margin-bottom: 24px;
+}
+
+.backBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 8px 16px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.backBtn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.heroCard {
+  background: linear-gradient(135deg, #064e3b 0%, #047857 50%, #0d9488 100%);
+  color: #fff;
+  border-radius: 20px;
+  padding: 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  box-shadow: 0 10px 25px -5px rgba(5, 150, 105, 0.25);
+  margin-bottom: 32px;
+}
+
+.profileInfo {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.avatarBig {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #047857;
+  font-size: 26px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+
+.nameBlock h1 {
+  font-size: 24px;
+  font-weight: 700;
+  margin: 0 0 6px;
+  line-height: 1.2;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.roleBadge {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.statsRow {
+  display: flex;
+  gap: 16px;
+}
+
+.statBox {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 12px 20px;
+  border-radius: 14px;
+  text-align: center;
+  min-width: 110px;
+}
+
+.statVal {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.statLabel {
+  font-size: 12px;
+  opacity: 0.85;
+  margin-top: 4px;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 28px;
+}
+
+.tabBtn {
+  background: none;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  color: #64748b;
+  padding: 12px 20px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  transition: all 0.2s;
+}
+
+.tabBtn:hover {
+  color: #0f172a;
+}
+
+.activeTab {
+  color: #059669;
+}
+
+.activeTab::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #059669;
+  border-radius: 2px 2px 0 0;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 32px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.cardHeader {
+  margin-bottom: 24px;
+}
+
+.cardHeader h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px;
+}
+
+.cardHeader p {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.formFull {
+  grid-column: span 2;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.field input,
+.field textarea {
+  padding: 10px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #0f172a;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  background: #ffffff;
+}
+
+.field input:focus,
+.field textarea:focus {
+  border-color: #059669;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15);
+}
+
+.field input:disabled {
+  background: #f8fafc;
+  color: #64748b;
+  cursor: not-allowed;
+  border-color: #e2e8f0;
+}
+
+.fieldHint {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.actionRow {
+  margin-top: 28px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.saveBtn {
+  background: #059669;
+  color: #fff;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 24px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.saveBtn:hover {
+  background: #047857;
+}
+
+.saveBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.loadingBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  color: #64748b;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .heroCard {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+  .formFull {
+    grid-column: span 1;
+  }
+  .statsRow {
+    width: 100%;
+  }
+  .statBox {
+    flex: 1;
+  }
+}

@@ -74,8 +74,8 @@ public class SecurityConfig {
                         // Phân quyền API Kiểm dịch viên: Specialist, Inspector, Manager, Admin
                         .requestMatchers("/specialist/**").hasAnyRole("SPECIALIST", "INSPECTOR", "MANAGER", "ADMIN")
 
-                        // Phân quyền API Khách hàng: Customer, Admin
-                        .requestMatchers("/customer/**").hasAnyRole("CUSTOMER", "ADMIN")
+                        // Phân quyền API Khách hàng: Chỉ Khách hàng (ROLE_CUSTOMER)
+                        .requestMatchers("/customer/**").hasRole("CUSTOMER")
 
                         // Thông báo nội bộ cho mọi tài khoản đã đăng nhập
                         .requestMatchers("/notifications/**").authenticated()
