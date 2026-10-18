@@ -250,7 +250,7 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
               <div className={s.docs}>
                 {HORSE_DOC_TYPES.map(t => (
                   <div key={t} className={s.docRow}>
-                    <FileField label={HORSE_DOC[t].label} hint={HORSE_DOC[t].hint} fileName={docs[t]?.fileName || undefined} onChange={(f, file) => { setDoc(t, f ? { fileName: f, uploadedAt: Date.now() } : undefined); setFiles(current => { const next = { ...current }; if (file) next[t] = file; else delete next[t]; return next }) }} />
+                    <FileField label={HORSE_DOC[t].label} hint={HORSE_DOC[t].hint} fileName={docs[t]?.fileName || undefined} fileUrl={docs[t]?.fileUrl} onChange={(f, file) => { setDoc(t, f ? { fileName: f, uploadedAt: Date.now() } : undefined); setFiles(current => { const next = { ...current }; if (file) next[t] = file; else delete next[t]; return next }) }} />
                     {docs[t] && HORSE_DOC[t].hasExpiry && (
                       <div className="form-group">
                         <label htmlFor={`h-exp-${t}`} className="required">
