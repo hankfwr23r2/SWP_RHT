@@ -61,6 +61,8 @@ export interface MedicalReview {
   at?: number
   by?: string
   resubmit?: { reason: string; items: { horseId: string; doc: HorseDocType }[]; at: number }
+  lastResubmit?: { reason: string; items: { horseId: string; doc: HorseDocType }[]; at: number }
+  resubmittedAt?: number
 }
 
 export interface QuoteLine { label: string; detail: string; amount: number }

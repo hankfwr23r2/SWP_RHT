@@ -144,7 +144,9 @@
 /* Giấy tờ ngựa khách đã nộp (Specialist bấm ảnh để xem lớn) */
 .docFiles { display: grid; gap: 8px; margin: 10px 0; }
 .docFile { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+.docResubmitted { border-color: var(--orange); background: #fffbf5; box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.15); }
 .docFile div { display: grid; gap: 2px; min-width: 0; }
 .docFile b { font-size: 0.86rem; color: var(--navy); }
 .docFile small { font-size: 0.76rem; color: var(--muted); overflow-wrap: anywhere; }
 .docEmpty { display: grid; place-items: center; flex: none; width: 64px; height: 64px; border: 1.5px dashed var(--line); border-radius: 10px; color: var(--muted); }
+

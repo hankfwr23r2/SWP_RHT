@@ -885,6 +885,9 @@ public class BookingServiceImpl implements BookingService {
                 ? new HashMap<>((Map<String, Object>) payload.getMedical())
                 : new HashMap<>();
         medicalMap.put("status", "pending");
+        if (medicalMap.get("resubmit") instanceof Map<?, ?> resubmitMap) {
+            medicalMap.put("lastResubmit", resubmitMap);
+        }
         medicalMap.remove("resubmit");
         medicalMap.put("resubmittedAt", System.currentTimeMillis());
         payload.setMedical(medicalMap);

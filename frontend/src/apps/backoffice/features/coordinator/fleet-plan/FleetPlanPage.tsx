@@ -23,6 +23,8 @@ import {
   schedulesOf,
   validateRoutePlan,
   vehicleClassOf,
+  vehicleDocsOk,
+  autoPackFleet,
 } from '@shared/lib/booking'
 import { atHour } from '@shared/lib/dates'
 import { formatClock, formatDate, formatDateTime } from '@shared/lib/format'
@@ -58,41 +60,52 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
   const sched = useMemo(() => schedulesOf(all, b.id), [all, b.id])
 
   // ----- xe, ngựa -----
-  const [trips, setTrips] = useState<Draft[]>(
-    b.trips?.length
-      ? b.trips.map(t => ({ vehicleId: t.vehicleId, horseIds: t.horseIds }))
-      : [{ vehicleId: '', horseIds: b.horses.map(h => h.horseId) }]
-  )
+  const initialTrips = useMemo<Draft[]>(() => {
+    if (b.trips?.length) {
+      return b.trips.map(t => ({ vehicleId: t.vehicleId, horseIds: t.horseIds }))
+    }
+    if (vehicles.length) {
+      return autoPackFleet(
+        b.horses.map(h => h.horseId),
+        vehicles,
+        sched.vehicles,
+        b.departAt,
+        international
+      )
+    }
+    return [{ vehicleId: '', horseIds: b.horses.map(h => h.horseId) }]
+  }, [b.trips, b.horses, b.departAt, vehicles, sched.vehicles, international])
 
+  const [trips, setTrips] = useState<Draft[]>(initialTrips)
+
+  // Tự động phân bổ thông minh khi danh sách xe khả dụng được tải về nếu chưa gán
   useEffect(() => {
     if (!vehicles.length) return
     setTrips(prev => {
-      let changed = false
-      const next = prev.map((t, idx) => {
-        if (!t.vehicleId) {
-          const count = t.horseIds.length
-          const match =
-            vehicles.find(
-              v =>
-                v.capacity >= count &&
-                !clashOf(sched.vehicles.get(v.id), b.departAt) &&
-                !prev.some((other, j) => j !== idx && other.vehicleId === v.id)
-            ) ||
-            vehicles.find(
-              v =>
-                !clashOf(sched.vehicles.get(v.id), b.departAt) &&
-                !prev.some((other, j) => j !== idx && other.vehicleId === v.id)
-            )
-          if (match) {
-            changed = true
-            return { ...t, vehicleId: match.id }
-          }
-        }
-        return t
-      })
-      return changed ? next : prev
+      if (prev.length === 1 && !prev[0].vehicleId) {
+        return autoPackFleet(
+          b.horses.map(h => h.horseId),
+          vehicles,
+          sched.vehicles,
+          b.departAt,
+          international
+        )
+      }
+      return prev
     })
-  }, [vehicles, sched, b.departAt])
+  }, [vehicles, sched.vehicles, b.departAt, international, b.horses])
+
+  const runAutoPack = () => {
+    const packed = autoPackFleet(
+      b.horses.map(h => h.horseId),
+      vehicles,
+      sched.vehicles,
+      b.departAt,
+      international
+    )
+    setTrips(packed)
+    toast('Đã tự động tính toán và phân bổ xe tối ưu (Best-fit).')
+  }
 
   const [note, setNote] = useState(b.plan?.note ?? '')
   const [working, setWorking] = useState(false)
@@ -116,10 +129,15 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
     const v = vehicles.find(x => x.id === t.vehicleId)
     if (!t.horseIds.length) out.push(`Xe ${i + 1} chưa có ngựa nào.`)
     if (!v) out.push(`Xe ${i + 1} chưa chọn xe.`)
-    else if (t.horseIds.length > v.capacity)
-      out.push(`Xe ${i + 1} chỉ có ${v.capacity} ngăn, đang xếp ${t.horseIds.length} ngựa.`)
-    const clash = v ? clashOf(sched.vehicles.get(t.vehicleId), b.departAt) : undefined
-    if (v && clash) out.push(`Xe ${v.plate} trùng lịch với ${clash.order} (khởi hành ${formatDate(clash.departAt)}).`)
+    else {
+      if (t.horseIds.length > v.capacity)
+        out.push(`Xe ${i + 1} chỉ có ${v.capacity} ngăn, đang xếp ${t.horseIds.length} ngựa.`)
+      const clash = clashOf(sched.vehicles.get(t.vehicleId), b.departAt)
+      if (clash) out.push(`Xe ${v.plate} trùng lịch với ${clash.order} (khởi hành ${formatDate(clash.departAt)}).`)
+      if (!vehicleDocsOk(v, international)) {
+        out.push(`Xe ${v.plate} chưa đủ điều kiện giấy tờ (${!v.inspectionNo ? 'thiếu đăng kiểm' : 'thiếu giấy phép liên vận quốc tế'}).`)
+      }
+    }
     return out
   })
 
@@ -285,7 +303,15 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
           <h3>
             <i className="fa-solid fa-truck" /> {trips.length > 1 ? `${trips.length} xe chuyên dụng` : 'Xe chuyên dụng của đơn'}
           </h3>
-          <span style={{ display: 'flex', gap: 8 }}>
+          <span style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="btn btn-outline btn-sm text-orange font-semibold"
+              onClick={runAutoPack}
+              title="Tự động tính số lượng xe cần thiết và chọn xe tối ưu theo sức chứa (Best-fit)"
+            >
+              <i className="fa-solid fa-wand-magic-sparkles" /> Tự động xếp xe tối ưu
+            </button>
             {trips.length > 1 && (
               <button className="btn btn-outline btn-sm" onClick={splitEvenly}>
                 <i className="fa-solid fa-scale-balanced" /> Chia đều ngựa
@@ -297,7 +323,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
           </span>
         </div>
         <div className="form-hint" style={{ marginBottom: 12 }}>
-          Ưu tiên xe đủ số ngăn cho ngựa. Phương tiện trùng lịch trong vòng 3 ngày sẽ tự động bị khóa và cảnh báo.
+          Ưu tiên xe đủ số ngăn cho ngựa. Phương tiện trùng lịch trong vòng 3 ngày hoặc thiếu giấy tờ sẽ tự động bị khóa và cảnh báo.
         </div>
 
         {trips.map((t, i) => {
@@ -305,6 +331,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
           const isOverloaded = v && t.horseIds.length > v.capacity
           const booked = v ? sched.vehicles.get(t.vehicleId) : undefined
           const hasClash = v && clashOf(booked, b.departAt)
+          const docMissing = v && !vehicleDocsOk(v, international)
 
           return (
             <div
@@ -313,7 +340,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
               style={{
                 display: 'block',
                 marginBottom: 12,
-                border: isOverloaded || hasClash ? '1px solid var(--red)' : undefined,
+                border: isOverloaded || hasClash || docMissing ? '1px solid var(--red)' : undefined,
               }}
             >
               <div className={s.pickName} style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
@@ -328,6 +355,29 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
                 )}
               </div>
 
+              {/* THANH TẢI TRỌNG SỨC CHỨA XE TRỰC QUAN */}
+              {v && (
+                <div style={{ margin: '8px 0 10px', maxWidth: 420 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: 4 }}>
+                    <span style={{ color: 'var(--muted)' }}>Tải trọng khoang:</span>
+                    <span style={{ fontWeight: 700, color: isOverloaded ? 'var(--red)' : t.horseIds.length === v.capacity ? 'var(--green)' : 'var(--text)' }}>
+                      {t.horseIds.length}/{v.capacity} ngăn ({v.capacity ? Math.round((t.horseIds.length / v.capacity) * 100) : 0}%)
+                    </span>
+                  </div>
+                  <div style={{ height: 7, background: '#e2e8f0', borderRadius: 999, overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        width: `${Math.min(100, v.capacity ? Math.round((t.horseIds.length / v.capacity) * 100) : 0)}%`,
+                        height: '100%',
+                        background: isOverloaded ? 'var(--red, #ef4444)' : t.horseIds.length === v.capacity ? 'var(--green, #16a34a)' : 'var(--orange, #f97316)',
+                        borderRadius: 999,
+                        transition: 'width 0.3s ease',
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
               {isOverloaded && (
                 <div style={{ color: 'var(--red)', fontSize: '0.82rem', marginTop: 4, fontWeight: 600 }}>
                   <i className="fa-solid fa-circle-exclamation" /> Xe chỉ có {v.capacity} ngăn nhưng đang xếp {t.horseIds.length} ngựa. Vui lòng thêm xe hoặc đổi xe lớn hơn!
@@ -336,6 +386,11 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
               {hasClash && (
                 <div style={{ color: 'var(--red)', fontSize: '0.82rem', marginTop: 4, fontWeight: 600 }}>
                   <i className="fa-solid fa-triangle-exclamation" /> Xe {v.plate} bị trùng lịch với đơn {hasClash.order}!
+                </div>
+              )}
+              {docMissing && (
+                <div style={{ color: 'var(--red)', fontSize: '0.82rem', marginTop: 4, fontWeight: 600 }}>
+                  <i className="fa-solid fa-triangle-exclamation" /> Xe chưa đủ điều kiện giấy tờ ({!v.inspectionNo ? 'chưa có số đăng kiểm' : 'thiếu giấy phép liên vận quốc tế cho tuyến này'})!
                 </div>
               )}
 
@@ -362,6 +417,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
                   </span>
                 )}
               </div>
+
 
               <ul style={{ display: 'grid', gap: 6, marginTop: 8 }}>
                 {t.horseIds.map(hid => {
