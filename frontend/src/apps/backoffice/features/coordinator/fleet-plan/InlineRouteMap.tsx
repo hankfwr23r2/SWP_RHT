@@ -57,10 +57,9 @@ export function InlineRouteMap({ origin, dest, gate, departAt, rests, onOpenPick
     if (!box.current) return
     const m = L.map(box.current, { zoomControl: false, attributionControl: true })
     L.control.zoom({ position: 'topright' }).addTo(m)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      subdomains: 'abcd',
-      attribution: '© OpenStreetMap contributors © CARTO',
+      attribution: '© OpenStreetMap contributors',
     }).addTo(m)
 
     const route = [origin, dest, ...(gate ? [gate] : [])]
@@ -146,7 +145,7 @@ export function InlineRouteMap({ origin, dest, gate, departAt, rests, onOpenPick
   }, [outline, rests, road, origin, dest, gate, onOpenPicker])
 
   return (
-    <div style={{ position: 'relative', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--line)' }}>
+    <div style={{ position: 'relative', isolation: 'isolate', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--line)' }}>
       <div
         ref={box}
         style={{ height: 320, width: '100%', background: '#f1f5f9' }}
