@@ -73,13 +73,29 @@ public class ReferenceDataSeeder implements CommandLineRunner {
             new String[] { "10", "Từ chối", "4", "0", "ACTIVE" }
     };
 
-    // {RegulationName, Description, Status}
+    // {RegulationName, Description, Status, LocationID, DocumentType, Country}
     private static final String[][] REGULATIONS = {
-            new String[] { "Veterinary Health Certificate", "Yêu cầu giấy chứng nhận sức khỏe thú y cho ngựa trước khi xuất khẩu.", "ACTIVE" },
-            new String[] { "Equine Vaccination Requirements", "Yêu cầu hồ sơ tiêm phòng theo quy định của nước nhập khẩu.", "ACTIVE" },
-            new String[] { "Animal Import Permit", "Yêu cầu giấy phép nhập khẩu động vật từ cơ quan có thẩm quyền.", "ACTIVE" },
-            new String[] { "Customs Declaration", "Yêu cầu khai báo hải quan khi vận chuyển ngựa qua biên giới.", "ACTIVE" },
-            new String[] { "Animal Quarantine Requirements", "Yêu cầu kiểm dịch động vật tại cửa khẩu hoặc cơ sở được chỉ định.", "ACTIVE" }
+            // Quy định áp dụng chung (Nội địa & chuẩn bị chung)
+            new String[] { "Giấy chứng nhận kiểm dịch động vật vận chuyển", "Yêu cầu mộc đỏ của Chi cục Thú y vùng trước khi vận chuyển theo Thông tư 25/2016/TT-BNNPTNT.", "ACTIVE", "", "health_cert", "Việt Nam" },
+            new String[] { "Giấy ủy quyền áp tải & vận chuyển ngựa", "Văn bản ủy quyền song ngữ xác nhận lái xe và nhân viên hộ tống chịu trách nhiệm áp tải cá thể ngựa.", "ACTIVE", "", "poa", "Việt Nam" },
+
+            // Cửa khẩu Mộc Bài - Bavet (ID 16 - Campuchia)
+            new String[] { "Tờ khai hải quan điện tử cửa khẩu Mộc Bài - Bavet", "Khai báo hải quan qua cặp cửa khẩu Mộc Bài (Tây Ninh) - Bavet (Svay Rieng), đính kèm số vận đơn và biển số xe vận chuyển.", "ACTIVE", "16", "customs_declaration", "Campuchia" },
+            new String[] { "Giấy phép nhập khẩu động vật Campuchia (MAFF)", "Giấy phép nhập khẩu do Cục Thú y và Sức khỏe Động vật Campuchia (Bộ Nông Lâm Thủy sản) phê duyệt cho ngựa nhập cảnh qua Bavet.", "ACTIVE", "16", "import_permit", "Campuchia" },
+            new String[] { "Chứng thư kiểm dịch thú y biên giới Mộc Bài", "Kiểm tra lâm sàng động vật sống và cấp giấy kiểm dịch biên giới xuất cảnh sang Campuchia.", "ACTIVE", "16", "quarantine_cert", "Campuchia" },
+
+            // Cửa khẩu Tịnh Biên - Phnom Den (ID 18 - Campuchia)
+            new String[] { "Tờ khai hải quan xuất nhập cảnh Tịnh Biên - Phnom Den", "Khai báo thủ tục hải quan xuất cảnh ngựa thể thao qua cửa khẩu Tịnh Biên (An Giang).", "ACTIVE", "18", "customs_declaration", "Campuchia" },
+            new String[] { "Giấy phép nhập khẩu Campuchia qua Phnom Den", "Giấy phép kiểm dịch nhập khẩu từ Bộ Nông Lâm Thủy sản Campuchia cho ngựa qua tỉnh Takeo.", "ACTIVE", "18", "import_permit", "Campuchia" },
+
+            // Cửa khẩu Lao Bảo - Densavanh (ID 24 - Lào)
+            new String[] { "Tờ khai hải quan điện tử cửa khẩu Lao Bảo - Densavanh", "Khai báo hải quan hàng hóa đặc biệt qua Hành lang kinh tế Đông - Tây tại cặp cửa khẩu Lao Bảo (Quảng Trị) - Densavanh (Lào).", "ACTIVE", "24", "customs_declaration", "Lào" },
+            new String[] { "Giấy phép nhập khẩu động vật CHDCND Lào (DLF)", "Giấy phép nhập khẩu do Cục Chăn nuôi và Thủy sản Lào (Bộ Nông Lâm) phê duyệt.", "ACTIVE", "24", "import_permit", "Lào" },
+            new String[] { "Sổ tạm xuất - tái nhập ATA Carnet qua Lào", "Sổ chứng từ hải quan quốc tế cho ngựa đua/ngựa thể thao và phương tiện chuyên dụng lưu thông tạm thời.", "ACTIVE", "24", "ata_carnet", "Lào" },
+
+            // Cửa khẩu Cầu Treo - Nam Phao (ID 25 - Lào)
+            new String[] { "Tờ khai hải quan cửa khẩu quốc tế Cầu Treo - Nam Phao", "Khai báo hải quan phương tiện và động vật sống qua cửa khẩu Cầu Treo (Hà Tĩnh) sang tỉnh Bolikhamxay (Lào).", "ACTIVE", "25", "customs_declaration", "Lào" },
+            new String[] { "Giấy phép nhập khẩu động vật qua Cửa khẩu Nam Phao", "Giấy phép nhập khẩu động vật sống vào lãnh thổ Lào qua tỉnh Bolikhamxay.", "ACTIVE", "25", "import_permit", "Lào" }
     };
 
     // {HorseTypeID, TypeName, Description}
@@ -308,20 +324,40 @@ public class ReferenceDataSeeder implements CommandLineRunner {
         }
     }
 
-    // Tài liệu ghi người phụ trách là StaffID 2 hoặc 4, nhưng ràng buộc bảng yêu cầu vai trò SPECIALIST: gán cho Specialist đã nạp
+    // Gán người phụ trách là Specialist đã nạp và liên kết quy định tới cửa khẩu tương ứng
     private void seedRegulations() {
-        if (regulationRepository.count() > 0) return;
         Staff specialist = userRepository.findByUsername("specialist01").flatMap(u -> staffRepository.findById(u.getId())).orElse(null);
         if (specialist == null) {
             log.warn("Regulations not seeded: specialist01 account is missing.");
             return;
         }
         for (String[] r : REGULATIONS) {
-            Regulation g = new Regulation();
-            g.setStaffID(specialist);
-            g.setRegulationName(r[0]);
-            g.setDescription(r[1]);
-            g.setStatus(r[2]);
+            String name = r[0];
+            String desc = r[1];
+            String status = r[2];
+            Integer locId = (r[3] != null && !r[3].trim().isEmpty()) ? Integer.valueOf(r[3].trim()) : null;
+            String docType = r[4];
+            String country = r[5];
+
+            Location location = locId != null ? locationRepository.findById(locId).orElse(null) : null;
+
+            Regulation g = regulationRepository.findAll().stream()
+                    .filter(reg -> name.equalsIgnoreCase(reg.getRegulationName()) ||
+                            (docType != null && docType.equalsIgnoreCase(reg.getDocumentType()) &&
+                                    (locId == null ? reg.getLocationID() == null : (reg.getLocationID() != null && locId.equals(reg.getLocationID().getId())))))
+                    .findFirst()
+                    .orElse(null);
+
+            if (g == null) {
+                g = new Regulation();
+                g.setStaffID(specialist);
+                g.setRegulationName(name);
+            }
+            g.setDescription(desc);
+            g.setStatus(status);
+            g.setLocationID(location);
+            g.setDocumentType(docType);
+            g.setCountry(country);
             regulationRepository.save(g);
         }
     }
