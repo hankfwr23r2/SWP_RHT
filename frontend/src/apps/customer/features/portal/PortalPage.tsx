@@ -21,6 +21,9 @@ const STEP_TEXT = [
   `Nhận báo giá chính thức, có hiệu lực ${QUOTE_VALID_HOURS} giờ.`,
   `Đặt cọc ${DEPOSIT_RATE * 100}% để nhận vận đơn. Nhà xe làm giấy kiểm dịch và hải quan, bạn theo dõi tiến độ.`,
   'Ngày bốc ngựa: trả số dư còn lại, giao bản gốc hồ sơ ngựa cho tài xế.',
+  'Xe, tài xế và hộ tống chuẩn bị sẵn sàng tại điểm đón để tiếp nhận ngựa.',
+  'Theo dõi hành trình di chuyển và tình trạng chăm sóc ngựa theo thời gian thực.',
+  'Bàn giao ngựa tại điểm đến, nghiệm thu và đối soát các chi phí phát sinh (nếu có).',
 ]
 
 export default function PortalPage() {

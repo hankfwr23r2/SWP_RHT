@@ -166,14 +166,35 @@ export default function FleetPage() {
           footer={<><button className="btn btn-ghost" onClick={closeForm}>Hủy</button><button className="btn btn-primary" onClick={save}><i className="fa-solid fa-floppy-disk" /> Lưu thông tin</button></>}>
           <div className={c.formRow}>
             <div className="form-group"><label>Sức chứa (ngăn)</label><input type="number" min={1} className="form-control" value={form.capacity} onChange={e => set('capacity')(parseInt(e.target.value, 10))} /></div>
-            <div className="form-group"><label className="required">Biển số</label><input className={cx('form-control', invalid === 'plate' && 'invalid')} value={form.plate} onChange={e => set('plate')(e.target.value)} /></div>
+            <div className="form-group">
+              <label className="required">Biển số</label>
+              <input
+                className={cx('form-control', invalid === 'plate' && 'invalid')}
+                value={form.plate}
+                disabled={!!editing}
+                style={editing ? { background: '#f1f5f9', cursor: 'not-allowed' } : undefined}
+                onChange={e => set('plate')(e.target.value)}
+              />
+              {editing && <div className="form-hint">Biển số xe là định danh cố định, không thể thay đổi.</div>}
+            </div>
             <div className="form-group">
               <label>Trạng thái</label>
-              <select className="form-control" value={form.status ?? 'AVAILABLE'} onChange={e => set('status')(e.target.value)}>
+              <select
+                className="form-control"
+                value={form.status ?? 'AVAILABLE'}
+                disabled={isBusy(form.status)}
+                style={isBusy(form.status) ? { background: '#f1f5f9', cursor: 'not-allowed' } : undefined}
+                onChange={e => set('status')(e.target.value)}
+              >
+                {isBusy(form.status) && <option value="BUSY">Đang bận</option>}
                 <option value="AVAILABLE">Sẵn sàng</option>
                 <option value="MAINTENANCE">Chưa sẵn sàng</option>
-                <option value="BUSY">Đang bận</option>
               </select>
+              {isBusy(form.status) && (
+                <div className="form-hint text-orange" style={{ fontWeight: 600 }}>
+                  <i className="fa-solid fa-lock" /> Xe đang có chuyến đi (Đang bận), không thể đổi trạng thái.
+                </div>
+              )}
             </div>
           </div>
         </Modal>

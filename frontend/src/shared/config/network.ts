@@ -64,14 +64,17 @@ export const COUNTRY_LOCATIONS: Record<CountryCode, BookingLocation[]> = {
 // Danh mục trạm nghỉ (checkpoint dọc tuyến, số mẫu để chạy thử). Hệ thống gợi ý các trạm gần đường đi nhất theo cửa khẩu đã chọn.
 export interface TransitStation extends GeoPoint { name: string; area: string; country: CountryCode }
 export const TRANSIT_STATIONS: TransitStation[] = [
-  // Việt Nam - Miền Nam & Tây Ninh / An Giang
+  // Việt Nam - Miền Nam & Tây Nam Bộ
   { name: 'Trạm nghỉ Long Thành', area: 'Đồng Nai', country: 'VN', lat: 10.78, lng: 107.0 },
   { name: 'Trạm nghỉ Biên Hòa', area: 'Đồng Nai', country: 'VN', lat: 10.95, lng: 106.82 },
   { name: 'Trạm nghỉ Đức Hòa', area: 'Long An', country: 'VN', lat: 10.88, lng: 106.4 },
   { name: 'Trạm nghỉ Củ Chi', area: 'TP.HCM', country: 'VN', lat: 10.97, lng: 106.5 },
   { name: 'Trạm nghỉ Trảng Bàng', area: 'Tây Ninh', country: 'VN', lat: 11.03, lng: 106.37 },
   { name: 'Trạm nghỉ Mộc Bài', area: 'Tây Ninh', country: 'VN', lat: 11.07, lng: 106.2 },
+  { name: 'Trạm nghỉ Tiền Giang', area: 'Tiền Giang', country: 'VN', lat: 10.38, lng: 106.35 },
+  { name: 'Trạm nghỉ Cần Thơ', area: 'Cần Thơ', country: 'VN', lat: 10.04, lng: 105.74 },
   { name: 'Trạm nghỉ Tịnh Biên', area: 'An Giang', country: 'VN', lat: 10.6, lng: 104.95 },
+  { name: 'Trạm nghỉ Hà Tiên', area: 'Kiên Giang', country: 'VN', lat: 10.38, lng: 104.48 },
 
   // Việt Nam - Trục Duyên hải & Miền Trung (Bắc Nam)
   { name: 'Trạm nghỉ Phan Thiết', area: 'Bình Thuận', country: 'VN', lat: 10.93, lng: 108.1 },
@@ -93,6 +96,7 @@ export const TRANSIT_STATIONS: TransitStation[] = [
   { name: 'Trạm nghỉ Hà Nội', area: 'Hà Nội', country: 'VN', lat: 21.03, lng: 105.85 },
 
   // Việt Nam - Tây Nguyên
+  { name: 'Trạm nghỉ Đà Lạt', area: 'Lâm Đồng', country: 'VN', lat: 11.94, lng: 108.44 },
   { name: 'Trạm nghỉ Buôn Ma Thuột', area: 'Đắk Lắk', country: 'VN', lat: 12.67, lng: 108.04 },
   { name: 'Trạm nghỉ Pleiku', area: 'Gia Lai', country: 'VN', lat: 13.98, lng: 108.0 },
   { name: 'Trạm nghỉ Kon Tum', area: 'Kon Tum', country: 'VN', lat: 14.35, lng: 108.0 },
@@ -102,6 +106,7 @@ export const TRANSIT_STATIONS: TransitStation[] = [
   { name: 'Trạm nghỉ Thakhek', area: 'Lào', country: 'LA', lat: 17.4, lng: 104.8 },
   { name: 'Trạm nghỉ Paksan', area: 'Lào', country: 'LA', lat: 18.38, lng: 103.65 },
   { name: 'Trạm nghỉ Viêng Chăn', area: 'Lào', country: 'LA', lat: 17.97, lng: 102.6 },
+  { name: 'Trạm nghỉ Vang Vieng', area: 'Lào', country: 'LA', lat: 18.92, lng: 102.45 },
   { name: 'Trạm nghỉ Pakse', area: 'Lào', country: 'LA', lat: 15.12, lng: 105.8 },
   { name: 'Trạm nghỉ Luang Prabang', area: 'Lào', country: 'LA', lat: 19.89, lng: 102.13 },
 
@@ -111,6 +116,7 @@ export const TRANSIT_STATIONS: TransitStation[] = [
   { name: 'Trạm nghỉ Neak Loeung', area: 'Campuchia', country: 'KH', lat: 11.26, lng: 105.28 },
   { name: 'Trạm nghỉ Phnom Penh', area: 'Campuchia', country: 'KH', lat: 11.56, lng: 104.92 },
   { name: 'Trạm nghỉ Kampong Cham', area: 'Campuchia', country: 'KH', lat: 12.0, lng: 105.46 },
+  { name: 'Trạm nghỉ Kampong Thom', area: 'Campuchia', country: 'KH', lat: 12.71, lng: 104.88 },
   { name: 'Trạm nghỉ Pursat', area: 'Campuchia', country: 'KH', lat: 12.53, lng: 103.92 },
   { name: 'Trạm nghỉ Battambang', area: 'Campuchia', country: 'KH', lat: 13.1, lng: 103.2 },
   { name: 'Trạm nghỉ Siem Reap', area: 'Campuchia', country: 'KH', lat: 13.36, lng: 103.86 },

@@ -26,7 +26,7 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
   return (
     <>
       <AppHeader
-        homeHref="/portal" contained links={MENU} isActive={isActive} userName={session?.name}
+        homeHref="/portal" contained links={MENU} isActive={isActive} userName={session?.name} profileHref="/profile"
         onLogout={() => { logout(); navigate('/') }}
         extra={
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
