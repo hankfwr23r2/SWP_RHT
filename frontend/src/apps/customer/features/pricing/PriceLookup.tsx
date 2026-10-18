@@ -16,26 +16,47 @@ export function PriceTable() {
   return (
     <>
       <div className={s.priceGrid}>
-        <div>
+        <div className={s.priceCard}>
           <h3><i className="fa-solid fa-truck" /> Cước vận chuyển, mỗi xe</h3>
           <table className={s.priceTable}>
-            <thead><tr><th>Quãng đường</th>{CLASSES.map(c => <th key={c}>{VEHICLE_CLASS[c].label} ({VEHICLE_CLASS[c].stalls})</th>)}</tr></thead>
-            <tbody>{PRICE_TIER_KM.map(km => <tr key={km}><td>{km} km</td>{CLASSES.map(c => <td key={c}>{formatVND(roundK(truckCost(km, false) * CLASS_FACTOR[c] * (1 + MARGIN_RATE)))}</td>)}</tr>)}</tbody>
+            <thead>
+              <tr>
+                <th className={s.colText}>Quãng đường</th>
+                {CLASSES.map(c => <th key={c} className={s.colNum}>{VEHICLE_CLASS[c].label} ({VEHICLE_CLASS[c].stalls})</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {PRICE_TIER_KM.map(km => (
+                <tr key={km}>
+                  <td className={s.colText}><b>{km} km</b></td>
+                  {CLASSES.map(c => (
+                    <td key={c} className={s.colNum}>
+                      {formatVND(roundK(truckCost(km, false) * CLASS_FACTOR[c] * (1 + MARGIN_RATE)))}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
           </table>
         </div>
-        <div>
+        <div className={s.priceCard}>
           <h3><i className="fa-solid fa-horse-head" /> Các khoản cố định khác</h3>
           <table className={s.priceTable}>
-            <thead><tr><th>Hạng mục</th><th>Đơn giá</th></tr></thead>
+            <thead>
+              <tr>
+                <th className={s.colText}>Hạng mục</th>
+                <th className={s.colNum}>Đơn giá</th>
+              </tr>
+            </thead>
             <tbody>
-              <tr><td>Nhân sự (01 tài xế + 01 hộ tống), mỗi xe</td><td>{formatVND(roundK(CREW_FEE_PER_DAY * (1 + MARGIN_RATE)))}/ngày</td></tr>
-              <tr><td>Nhiên liệu và phí cầu đường, mỗi xe</td><td>{formatVND(roundK(100 * FUEL_BOT_PER_KM * (1 + FUEL_BUFFER_RATE) * (1 + MARGIN_RATE)))}/100 km</td></tr>
-              <tr><td>Khoang đơn mở rộng</td><td>{formatVND(SINGLE_STALL_FEE)}/ngựa</td></tr>
-              {FEED_PACKAGE_IDS.filter(id => FEED_PACKAGE[id].fee > 0).map(id => <tr key={id}><td>Thức ăn · {FEED_PACKAGE[id].label}</td><td>{formatVND(FEED_PACKAGE[id].fee)}/ngựa</td></tr>)}
-              {WATER_PLAN_IDS.filter(id => WATER_PLAN[id].fee > 0).map(id => <tr key={id}><td>Cữ nước · {WATER_PLAN[id].label}</td><td>{formatVND(WATER_PLAN[id].fee)}/ngựa</td></tr>)}
-              <tr><td>Thủ tục kiểm dịch (nội địa)</td><td>{CLEARANCE_FEE.domestic ? formatVND(CLEARANCE_FEE.domestic) : 'Đã gồm trong cước'}</td></tr>
-              <tr><td>Thủ tục kiểm dịch và hải quan (quốc tế)</td><td>{formatVND(CLEARANCE_FEE.international)}/chuyến</td></tr>
-              {HORSE_BREEDS.map(b => <tr key={b}><td>Bảo hiểm Động vật Sống · {b}</td><td>{formatVND(insuranceFee(b))}/ngựa</td></tr>)}
+              <tr><td className={s.colText}>Nhân sự (01 tài xế + 01 hộ tống), mỗi xe</td><td className={s.colNum}>{formatVND(roundK(CREW_FEE_PER_DAY * (1 + MARGIN_RATE)))}/ngày</td></tr>
+              <tr><td className={s.colText}>Nhiên liệu và phí cầu đường, mỗi xe</td><td className={s.colNum}>{formatVND(roundK(100 * FUEL_BOT_PER_KM * (1 + FUEL_BUFFER_RATE) * (1 + MARGIN_RATE)))}/100 km</td></tr>
+              <tr><td className={s.colText}>Khoang đơn mở rộng</td><td className={s.colNum}>{formatVND(SINGLE_STALL_FEE)}/ngựa</td></tr>
+              {FEED_PACKAGE_IDS.filter(id => FEED_PACKAGE[id].fee > 0).map(id => <tr key={id}><td className={s.colText}>Thức ăn · {FEED_PACKAGE[id].label}</td><td className={s.colNum}>{formatVND(FEED_PACKAGE[id].fee)}/ngựa</td></tr>)}
+              {WATER_PLAN_IDS.filter(id => WATER_PLAN[id].fee > 0).map(id => <tr key={id}><td className={s.colText}>Cữ nước · {WATER_PLAN[id].label}</td><td className={s.colNum}>{formatVND(WATER_PLAN[id].fee)}/ngựa</td></tr>)}
+              <tr><td className={s.colText}>Thủ tục kiểm dịch (nội địa)</td><td className={s.colNum}>{CLEARANCE_FEE.domestic ? formatVND(CLEARANCE_FEE.domestic) : 'Đã gồm trong cước'}</td></tr>
+              <tr><td className={s.colText}>Thủ tục kiểm dịch và hải quan (quốc tế)</td><td className={s.colNum}>{formatVND(CLEARANCE_FEE.international)}/chuyến</td></tr>
+              {HORSE_BREEDS.map(b => <tr key={b}><td className={s.colText}>Bảo hiểm Động vật Sống · {b}</td><td className={s.colNum}>{formatVND(insuranceFee(b))}/ngựa</td></tr>)}
             </tbody>
           </table>
         </div>
