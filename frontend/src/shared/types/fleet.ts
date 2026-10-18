@@ -4,6 +4,7 @@ export interface Vehicle {
   type: string
   capacity: number // số ngăn
   plate: string
+  status?: string // AVAILABLE, MAINTENANCE, BUSY
   vin?: string // số khung
   inspectionNo?: string // số giấy đăng kiểm
   transitPermit?: string // giấy phép liên vận CLV

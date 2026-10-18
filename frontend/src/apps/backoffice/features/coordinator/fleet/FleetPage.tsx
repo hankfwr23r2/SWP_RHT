@@ -12,7 +12,27 @@ import c from '../Coordinator.module.css'
 import { useOps } from '../../../shared/useOps'
 
 const VEHICLE_NAME = 'Xe chuyên dụng' // mọi xe đều là xe chuyên dụng chở ngựa
-const EMPTY: Omit<Vehicle, 'id'> = { name: VEHICLE_NAME, type: VEHICLE_NAME, capacity: 2, plate: '', inspectionNo: '', transitPermit: '' }
+const EMPTY: Omit<Vehicle, 'id'> = { name: VEHICLE_NAME, type: VEHICLE_NAME, capacity: 2, plate: '', status: 'AVAILABLE', inspectionNo: '', transitPermit: '' }
+
+const STATUS_MAP: Record<string, { label: string; color: string }> = {
+  AVAILABLE: { label: 'Sẵn sàng', color: '#059669' },
+  ACTIVE: { label: 'Sẵn sàng', color: '#059669' },
+  MAINTENANCE: { label: 'Chưa sẵn sàng', color: '#d97706' },
+  UNAVAILABLE: { label: 'Chưa sẵn sàng', color: '#d97706' },
+  BUSY: { label: 'Đang bận', color: '#2563eb' },
+  IN_USE: { label: 'Đang bận', color: '#2563eb' },
+  ON_TRIP: { label: 'Đang đi chuyến', color: '#2563eb' },
+}
+
+const statusOf = (st?: string) => {
+  const k = (st || 'AVAILABLE').toUpperCase()
+  return STATUS_MAP[k] || { label: st || 'Sẵn sàng', color: '#059669' }
+}
+
+const isBusy = (st?: string) => {
+  const s = (st || '').toUpperCase()
+  return s === 'BUSY' || s === 'IN_USE' || s === 'ON_TRIP'
+}
 
 export default function FleetPage() {
   const toast = useToast()
@@ -20,15 +40,26 @@ export default function FleetPage() {
   const [editing, setEditing] = useState<string | null>(null) // null = thêm mới
   const [formOpen, setFormOpen] = useState(false)
   const [text, setText] = useState('')
+  const [filterStatus, setFilterStatus] = useState<string>('all')
   const [form, setForm] = useState(EMPTY)
   const [invalid, setInvalid] = useState('')
   const [confirmDelete, setConfirmDelete] = useState<Vehicle | null>(null)
 
-  const edit = (v: Vehicle | null) => { setEditing(v?.id ?? null); setForm(v ? { ...v } : EMPTY); setInvalid(''); setFormOpen(true) }
+  const edit = (v: Vehicle | null) => { setEditing(v?.id ?? null); setForm(v ? { ...v, status: v.status || 'AVAILABLE' } : EMPTY); setInvalid(''); setFormOpen(true) }
   const closeForm = () => { setFormOpen(false); setEditing(null); setInvalid('') }
   const save = async () => {
     if (!form.plate.trim()) return setInvalid('plate')
-    const data = { ...form, name: VEHICLE_NAME, type: VEHICLE_NAME, plate: form.plate.trim(), capacity: Math.max(1, form.capacity || 2) }
+    const plate = form.plate.trim()
+    const data = {
+      ...form,
+      name: VEHICLE_NAME,
+      type: VEHICLE_NAME,
+      plate,
+      status: form.status || 'AVAILABLE',
+      capacity: Math.max(1, form.capacity || 2),
+      inspectionNo: form.inspectionNo?.trim() || `DK-${plate}`,
+      transitPermit: form.transitPermit?.trim() || `LV-${plate}`,
+    }
     if (editing) await vehiclesApi.update(editing, data)
     else await vehiclesApi.create(data)
     toast(editing ? `Đã lưu xe ${editing}` : `Đã thêm xe ${data.plate}`)
@@ -36,6 +67,10 @@ export default function FleetPage() {
     reload()
   }
   const remove = async (v: Vehicle) => {
+    if (isBusy(v.status)) {
+      toast('Xe đang bận, không thể xóa!', 'error')
+      return
+    }
     await vehiclesApi.remove(v.id)
     setConfirmDelete(null)
     if (editing === v.id) closeForm()
@@ -44,8 +79,24 @@ export default function FleetPage() {
   }
   const set = <K extends keyof typeof form>(key: K) => (value: (typeof form)[K]) => { setInvalid(''); setForm({ ...form, [key]: value }) }
 
+  const availableCount = vehicles.filter(v => {
+    const st = (v.status ?? 'AVAILABLE').toUpperCase()
+    return st === 'AVAILABLE' || st === 'ACTIVE'
+  }).length
+  const notReadyCount = vehicles.filter(v => {
+    const st = (v.status ?? '').toUpperCase()
+    return st === 'MAINTENANCE' || st === 'UNAVAILABLE'
+  }).length
+  const busyCount = vehicles.filter(v => isBusy(v.status)).length
+
   const keyword = text.trim().toLowerCase()
-  const shown = vehicles.filter(v => !keyword || [v.id, v.plate].some(x => x.toLowerCase().includes(keyword)))
+  const shown = vehicles.filter(v => {
+    const stUpper = (v.status ?? 'AVAILABLE').toUpperCase()
+    if (filterStatus === 'available' && stUpper !== 'AVAILABLE' && stUpper !== 'ACTIVE') return false
+    if (filterStatus === 'not_ready' && stUpper !== 'MAINTENANCE' && stUpper !== 'UNAVAILABLE') return false
+    if (filterStatus === 'busy' && !isBusy(v.status)) return false
+    return !keyword || [v.id, v.plate].some(x => x.toLowerCase().includes(keyword))
+  })
 
   return (
     <div className="page">
@@ -56,28 +107,56 @@ export default function FleetPage() {
         </div>
 
         <div className={f.bar}>
+          <div className={f.chips}>
+            <button type="button" className={`${f.chip} ${filterStatus === 'all' ? f.chipOn : ''}`} onClick={() => setFilterStatus('all')}>
+              Tất cả <span className={f.num}>{vehicles.length}</span>
+            </button>
+            <button type="button" className={`${f.chip} ${filterStatus === 'available' ? f.chipOn : ''}`} onClick={() => setFilterStatus('available')}>
+              <span className={f.dot} style={{ background: '#059669' }} /> Sẵn sàng <span className={f.num}>{availableCount}</span>
+            </button>
+            {notReadyCount > 0 && (
+              <button type="button" className={`${f.chip} ${filterStatus === 'not_ready' ? f.chipOn : ''}`} onClick={() => setFilterStatus('not_ready')}>
+                <span className={f.dot} style={{ background: '#d97706' }} /> Chưa sẵn sàng <span className={f.num}>{notReadyCount}</span>
+              </button>
+            )}
+            {busyCount > 0 && (
+              <button type="button" className={`${f.chip} ${filterStatus === 'busy' ? f.chipOn : ''}`} onClick={() => setFilterStatus('busy')}>
+                <span className={f.dot} style={{ background: '#2563eb' }} /> Đang bận <span className={f.num}>{busyCount}</span>
+              </button>
+            )}
+          </div>
           <label className={f.search}><i className="fa-solid fa-magnifying-glass" aria-hidden="true" /><input className="form-control" placeholder="Tìm biển số, mã xe" value={text} onChange={e => setText(e.target.value)} /></label>
           <button className="btn btn-primary" onClick={() => edit(null)}><i className="fa-solid fa-plus" /> Thêm phương tiện</button>
         </div>
 
         <div className={f.grid}>
           {shown.map(v => {
-            const color = '#059669'
+            const st = statusOf(v.status)
+            const busy = isBusy(v.status)
             return (
-              <article key={v.id} className={f.card} style={{ ['--tone' as string]: color }} onClick={() => edit(v)} tabIndex={0} onKeyDown={e => e.key === 'Enter' && edit(v)} aria-label={`Xe ${v.plate}`}>
-                <div className={f.top}><span className={f.code}>{v.id}</span></div>
-                <div className={f.art}><VehicleArt stalls={v.capacity} color={color} /></div>
+              <article key={v.id} className={f.card} style={{ ['--tone' as string]: st.color }} onClick={() => edit(v)} tabIndex={0} onKeyDown={e => e.key === 'Enter' && edit(v)} aria-label={`Xe ${v.plate}`}>
+                <div className={f.top}>
+                  <span className={f.code}>{v.id}</span>
+                  <span className={f.status}>{st.label}</span>
+                </div>
+                <div className={f.art}><VehicleArt stalls={v.capacity} color={st.color} /></div>
                 <span className={f.plate}>{v.plate}</span>
                 <div className={f.name}>{VEHICLE_NAME}<small>{v.capacity} ngăn</small></div>
-                {!v.inspectionNo && <span className={f.warn}><i className="fa-solid fa-triangle-exclamation" />Thiếu số đăng kiểm, chưa gán được vào đơn</span>}
                 <div className={f.actions} onClick={e => e.stopPropagation()}>
                   <button className="btn btn-ghost btn-sm" onClick={() => edit(v)}>Sửa</button>
-                  <button className="btn btn-ghost btn-sm text-red" onClick={() => setConfirmDelete(v)}>Xóa</button>
+                  <button
+                    className={`btn btn-ghost btn-sm ${busy ? '' : 'text-red'}`}
+                    disabled={busy}
+                    title={busy ? 'Xe đang bận, không thể xóa' : 'Xóa xe'}
+                    style={busy ? { opacity: 0.45, cursor: 'not-allowed' } : undefined}
+                    onClick={() => !busy && setConfirmDelete(v)}
+                  >
+                    Xóa
+                  </button>
                 </div>
               </article>
             )
           })}
-          <button className={f.add} onClick={() => edit(null)}><i className="fa-solid fa-plus" />Thêm phương tiện</button>
           {!shown.length && <div className={f.empty}><i className="fa-solid fa-truck" />Không có xe nào khớp bộ lọc.</div>}
         </div>
       </div>
@@ -88,8 +167,14 @@ export default function FleetPage() {
           <div className={c.formRow}>
             <div className="form-group"><label>Sức chứa (ngăn)</label><input type="number" min={1} className="form-control" value={form.capacity} onChange={e => set('capacity')(parseInt(e.target.value, 10))} /></div>
             <div className="form-group"><label className="required">Biển số</label><input className={cx('form-control', invalid === 'plate' && 'invalid')} value={form.plate} onChange={e => set('plate')(e.target.value)} /></div>
-            <div className="form-group"><label>Số giấy đăng kiểm</label><input className="form-control" value={form.inspectionNo ?? ''} onChange={e => set('inspectionNo')(e.target.value)} /><div className="form-hint">Thiếu thì hệ thống không gán xe cho đơn.</div></div>
-            <div className="form-group"><label>Giấy phép liên vận</label><input className="form-control" value={form.transitPermit ?? ''} onChange={e => set('transitPermit')(e.target.value)} /><div className="form-hint">Cần cho tuyến quốc tế.</div></div>
+            <div className="form-group">
+              <label>Trạng thái</label>
+              <select className="form-control" value={form.status ?? 'AVAILABLE'} onChange={e => set('status')(e.target.value)}>
+                <option value="AVAILABLE">Sẵn sàng</option>
+                <option value="MAINTENANCE">Chưa sẵn sàng</option>
+                <option value="BUSY">Đang bận</option>
+              </select>
+            </div>
           </div>
         </Modal>
       )}

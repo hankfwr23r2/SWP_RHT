@@ -55,6 +55,12 @@
 .promise ul { margin: 6px 0 0; padding-left: 16px; list-style: disc; display: grid; gap: 4px; }
 
 /* Chọn ngựa */
+.searchBox { position: relative; margin: 12px 0 14px; }
+.searchBox i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 0.9rem; pointer-events: none; }
+.searchBox input { width: 100%; height: 42px; padding: 0 38px 0 38px; border: 1.5px solid var(--line); border-radius: var(--radius-sm); background: white; font: inherit; font-size: 0.9rem; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.searchBox input:focus { outline: none; border-color: var(--orange); box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.14); }
+.searchClear { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--muted); font-size: 0.88rem; padding: 6px 8px; cursor: pointer; border-radius: 4px; }
+.searchClear:hover { color: var(--text); }
 .pickList { display: grid; gap: 10px; }
 .pick { display: grid; grid-template-columns: 28px 1fr auto; gap: 14px; align-items: start; padding: 14px 16px; border: 1.5px solid var(--line); border-radius: var(--radius); background: white; cursor: pointer; transition: border-color 0.15s ease, background 0.15s ease; }
 .pick:hover { border-color: var(--orange); }
