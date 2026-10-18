@@ -306,24 +306,16 @@ public class SpecialistServiceImpl implements SpecialistService {
         clearanceMap.put("doneAt", now);
         clearanceMap.put("doneBy", username != null ? username : "Chuyên viên");
         clearanceMap.put("handedOverToCrewAt", now);
+        clearanceMap.put("crewAckedAt", now);
+        clearanceMap.put("quarantineStatus", "APPROVED");
+        clearanceMap.put("quarantineApprovedAt", now);
+        clearanceMap.put("quarantineApprovedBy", username != null ? username : "Chuyên viên");
         payload.setClearance(clearanceMap);
 
-        // Kiểm tra xem kíp xe (Driver và Escort) của các chuyến đã xác nhận đủ chưa
-        List<com.example.racehorse_transport.dto.coordinator.VehicleTripDto> trips = payload.getTrips();
-        boolean allTripsAcked = trips != null && !trips.isEmpty() && trips.stream().allMatch(t -> {
-            Map<String, Object> a = t.getAcks();
-            return a != null && a.get("driver") != null && a.get("escort") != null;
-        });
-
-        if (allTripsAcked) {
-            booking.setStatus("ready_for_pickup");
-            appendHistory(payload, username != null ? username : "Chuyên viên",
-                    "Hoàn tất toàn bộ hồ sơ kiểm dịch & hải quan. Kíp xe đã nhận lệnh, đơn hàng chuyển sang trạng thái Sẵn sàng đón ngựa!");
-        } else {
-            booking.setStatus("clearance_done");
-            appendHistory(payload, username != null ? username : "Chuyên viên",
-                    "Hoàn tất toàn bộ hồ sơ kiểm dịch & hải quan. Đã chuyển giao cho kíp xe (Tài xế & Hộ tống) nhận lệnh điều xe!");
-        }
+        // Chuyển thẳng sang Sẵn sàng đón ngựa (Phương án 1: Tuyến tính hóa luồng)
+        booking.setStatus("ready_for_pickup");
+        appendHistory(payload, username != null ? username : "Chuyên viên",
+                "Hoàn tất toàn bộ hồ sơ kiểm dịch & hải quan. Đã bàn giao hồ sơ cho kíp xe, đơn hàng sẵn sàng đón ngựa!");
 
         savePayload(booking, payload);
         Booking saved = bookingRepository.save(booking);
