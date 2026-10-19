@@ -8,16 +8,15 @@ import { useLoad } from '@shared/services/useLoad'
 import { ListPage, idCell, routeCell, statusCell, type Column } from '../../../shared/ListPage'
 import type { Booking } from '@shared/types/booking'
 import { placeShort } from '../../../shared/place'
-import { isAssignedTo } from '@shared/lib/staffAssignment'
+import { isCoordinatorTask, DISPATCH_OPEN } from '../../../shared/staffWork'
 
 type Tab = 'todo' | 'done'
-const OPEN = ['waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup']
 
 export default function DispatchListPage() {
   const { session } = useAuth()
   const { data: all } = useLoad(bookingsApi.list)
   const [tab, setTab] = useState<Tab>('todo')
-  const mine = (all ?? []).filter(b => isAssignedTo(b.intake?.coordinator, session?.name) && b.payment && OPEN.includes(b.status))
+  const mine = (all ?? []).filter(b => isCoordinatorTask(b, session?.name, session?.username, session?.role) && DISPATCH_OPEN.includes(b.status))
   const groups: Record<Tab, Booking[]> = {
     todo: mine.filter(b => (b.trips ?? []).some(t => !t.driverPack)),
     done: mine.filter(b => (b.trips ?? []).every(t => t.driverPack)),

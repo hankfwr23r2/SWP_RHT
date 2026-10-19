@@ -41,10 +41,9 @@ export function IncidentMap({ height = 460, location, origin, dest, gate, statio
     if (!box.current) return
     const m = L.map(box.current, { zoomControl: false })
     L.control.zoom({ position: 'topright' }).addTo(m)
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      subdomains: 'abcd',
-      attribution: '© OpenStreetMap contributors © CARTO',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(m)
     m.setView([location.lat, location.lng], 10)
     layer.current = L.layerGroup().addTo(m)

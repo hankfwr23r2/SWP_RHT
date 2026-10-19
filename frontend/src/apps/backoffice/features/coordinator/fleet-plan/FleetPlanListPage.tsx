@@ -8,7 +8,7 @@ import { useAutoRefresh, useLoad } from '@shared/services/useLoad'
 import { ListPage, idCell, routeCell, type Column } from '../../../shared/ListPage'
 import type { Booking } from '@shared/types/booking'
 import { placeShort } from '../../../shared/place'
-import { isAssignedTo } from '@shared/lib/staffAssignment'
+import { isCoordinatorTask } from '../../../shared/staffWork'
 
 type Tab = 'todo' | 'done'
 
@@ -17,8 +17,7 @@ export default function FleetPlanListPage() {
   const { data: all, reload } = useLoad(bookingsApi.list)
   useAutoRefresh(reload)
   const [tab, setTab] = useState<Tab>('todo')
-  const isMyTask = (b: Booking) => !b.intake || isAssignedTo(b.intake.coordinator, session?.name) || session?.role === 'admin' || session?.role === 'manager'
-  const mine = (all ?? []).filter(isMyTask)
+  const mine = (all ?? []).filter(b => isCoordinatorTask(b, session?.name, session?.username, session?.role))
   const todo = mine.filter(b => b.status === 'under_review' && !b.plan)
   const done = mine.filter(b => !!b.plan)
   const columns: Column<Booking>[] = [
