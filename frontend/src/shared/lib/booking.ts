@@ -808,6 +808,11 @@ export interface AutoPackDraft {
   horseIds: string[]
 }
 
+export const isVehicleReadyForDispatch = (v: Vehicle): boolean => {
+  const s = (v.status || 'AVAILABLE').toUpperCase().replace(/[\s_-]/g, '')
+  return s === 'AVAILABLE' || s === 'ACTIVE' || s === ''
+}
+
 export function autoPackFleet(
   horseIds: string[],
   vehicles: Vehicle[],
@@ -817,9 +822,9 @@ export function autoPackFleet(
 ): AutoPackDraft[] {
   if (!horseIds.length) return [{ vehicleId: '', horseIds: [] }]
 
-  // 1. Lọc xe khả dụng: giấy tờ đạt + không trùng lịch trong vòng 3 ngày
+  // 1. Lọc xe khả dụng: trạng thái sẵn sàng (không bận/bảo dưỡng) + giấy tờ đạt + không trùng lịch trong vòng 3 ngày
   const available = vehicles.filter(v =>
-    vehicleDocsOk(v, international) && !clashOf(schedVehicles.get(v.id), departAt)
+    isVehicleReadyForDispatch(v) && vehicleDocsOk(v, international) && !clashOf(schedVehicles.get(v.id), departAt)
   )
 
   // Nếu không có xe nào đạt chuẩn, trả về 1 chuyến chưa gán xe để điều phối viên nhận biết
