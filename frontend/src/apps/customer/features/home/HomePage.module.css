@@ -40,6 +40,14 @@
 .input-error { border-color: #dc2626 !important; box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12) !important; }
 .form-error { margin-top: 10px; color: #dc2626; font-size: 0.85rem; }
 
+/* Tóm tắt lợi ích riêng của trang giới thiệu công khai */
+.public-benefits { padding: 20px 0 8px; }
+.public-benefit-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.public-benefit { display: grid; grid-template-columns: 44px 1fr; align-items: start; gap: 12px; padding: 16px; background: white; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+.public-benefit-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 12px; background: var(--orange-soft); color: var(--orange); font-size: 1.1rem; }
+.public-benefit h2 { margin: 1px 0 4px; color: var(--navy); font-size: 0.95rem; font-weight: 700; }
+.public-benefit p { color: var(--muted); font-size: 0.82rem; line-height: 1.45; }
+
 /* Kết quả tra cứu đơn */
 .track-list { display: grid; gap: 14px; margin-top: 18px; }
 .track-item { border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; animation: dropUp 0.35s ease both; }
@@ -120,6 +128,8 @@
 .network-cols h4 { font-size: 0.78rem; text-transform: uppercase; color: var(--muted); letter-spacing: 0.03em; margin-bottom: 8px; }
 .network-cols ul { list-style: none; display: grid; gap: 6px; font-size: 0.9rem; }
 .network-cols li i { color: var(--orange); width: 18px; }
+.network-cols p { font-size: 0.9rem; line-height: 1.55; }
+.network-cols p i { color: var(--orange); width: 18px; }
 
 /* Về chúng tôi */
 .about { display: grid; grid-template-columns: 43% 1fr; align-items: center; gap: 48px; padding-bottom: 72px; }
@@ -203,6 +213,7 @@
     .lookup-row { flex-direction: column; }
     .field-phone { width: 100%; }
     .lookup-row :global(.btn) { padding: 12px; }
+    .public-benefit-grid { grid-template-columns: 1fr; }
     .fee-result, .price-grid, .network-cols { grid-template-columns: 1fr; }
     .price-notes { grid-template-columns: 1fr; }
     .about { grid-template-columns: 1fr; gap: 32px; }

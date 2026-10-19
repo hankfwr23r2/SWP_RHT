@@ -2,7 +2,6 @@
 // Trang khách đã đăng nhập dùng khung gọn: CustomerLayout.tsx.
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, NavLink } from 'react-router'
-import { HOTLINE } from '@shared/config/business-rules'
 import { TranslateToggle } from '@shared/ui/TranslateToggle'
 import s from './SiteChrome.module.css'
 
@@ -69,10 +68,6 @@ function Footer() {
           <Link to="/register">Đăng ký</Link>
           <Link to="/login">Đặt chuyến</Link>
         </div>
-        <div>
-          <h4>Liên hệ</h4>
-          <p><i className="fa-solid fa-phone" /> {HOTLINE} (24/7)</p>
-        </div>
       </div>
       <div className={cx('wrap', s.copyright)}>© 2026 Vận chuyển Ngựa đua. SWP Project.</div>
     </footer>
@@ -88,7 +83,6 @@ export function PublicLayout({ children }: { children: ReactNode }) {
       <div className={s.topbar}>
         <div className={cx('wrap', s.topbarInner)}>
           <span>Vận chuyển ngựa đua đường bộ · Việt Nam · Lào · Campuchia</span>
-          <span><i className="fa-solid fa-phone" /> Hotline <strong>{HOTLINE}</strong> (24/7)</span>
         </div>
       </div>
       <header className={cx(s.header, scrolled && s.scrolled)}>
@@ -102,7 +96,6 @@ export function PublicLayout({ children }: { children: ReactNode }) {
       </header>
       <main>{children}</main>
       <Footer />
-      <a href={`tel:${HOTLINE.replace(/\s/g, '')}`} className={s.floatCall} aria-label={`Gọi hotline ${HOTLINE}`}><i className="fa-solid fa-phone" /></a>
       <button className={cx(s.floatTop, showTop && s.shown)} aria-label="Lên đầu trang" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}><i className="fa-solid fa-chevron-up" /></button>
       <TranslateToggle />
     </>

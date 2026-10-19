@@ -4,8 +4,8 @@ export type CountryCode = 'VN' | 'LA' | 'KH'
 
 export const COUNTRIES: Record<CountryCode, { name: string; meta: string }> = {
   VN: { name: 'Việt Nam', meta: 'Nội địa & xuất phát' },
-  LA: { name: 'Lào', meta: 'Qua 3 cửa khẩu' },
-  KH: { name: 'Campuchia', meta: 'Qua 2 cửa khẩu' },
+  LA: { name: 'Lào', meta: 'Tuyến xuyên biên giới' },
+  KH: { name: 'Campuchia', meta: 'Tuyến xuyên biên giới' },
 }
 
 export interface GeoPoint { lat: number; lng: number }

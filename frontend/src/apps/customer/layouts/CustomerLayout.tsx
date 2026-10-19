@@ -3,7 +3,6 @@
 import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
-import { HOTLINE } from '@shared/config/business-rules'
 import { PageTransition } from '@shared/motion/motion'
 import { AppHeader, appHeaderStyles as h } from '@shared/ui/AppHeader'
 import { NoticeBell } from '@shared/ui/NoticeBell'
@@ -31,12 +30,11 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
         extra={
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
             <NoticeBell />
-            <a href={`tel:${HOTLINE.replace(/\s/g, '')}`} className={h.hotline}><i className="fa-solid fa-headset" /> <strong>{HOTLINE}</strong></a>
           </div>
         }
       />
       <main><PageTransition>{children}</PageTransition></main>
-      <footer className={h.footer}>© 2026 Vận chuyển Ngựa đua · Việt Nam · Lào · Campuchia · Hotline {HOTLINE}</footer>
+      <footer className={h.footer}>© 2026 Vận chuyển Ngựa đua · Việt Nam · Lào · Campuchia</footer>
       <TranslateToggle />
     </>
   )
