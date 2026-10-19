@@ -96,8 +96,10 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
     const year = Number(birthYear)
     if (!year || year < 1990 || year > new Date().getFullYear()) e.birthYear = 'Nhập năm sinh hợp lệ.'
     HORSE_DOC_TYPES.forEach(t => {
+      // vaccine và lab không còn input ngày trên UI nên không validate expiry
+      if (t === 'vaccine' || t === 'lab') return
       if (docs[t] && HORSE_DOC[t].hasExpiry && !docs[t]!.expiresAt) {
-        e[`${t}Expiry`] = t === 'vaccine' ? 'Nhập ngày tiêm phòng gần nhất.' : t === 'lab' ? 'Nhập ngày xét nghiệm gần nhất.' : 'Nhập ngày hết hạn của giấy.'
+        e[`${t}Expiry`] = 'Nhập ngày hết hạn của giấy.'
       }
     })
     setErrors(e)
@@ -156,11 +158,11 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
         <button type="button" className="btn btn-ghost" onClick={onClose}>Hủy</button>
         {tab === 'info' ? (
           <button type="button" className="btn btn-outline" onClick={() => setTab('docs')}>
-            Tiếp: Giấy tờ ({uploadedDocsCount}/3) <i className="fa-solid fa-arrow-right" />
+            Tiếp tục: Giấy tờ &amp; Kiểm dịch ({uploadedDocsCount}/3) <i className="fa-solid fa-arrow-right" />
           </button>
         ) : (
           <button type="button" className="btn btn-ghost" onClick={() => setTab('info')}>
-            <i className="fa-solid fa-arrow-left" /> Nhận dạng
+            <i className="fa-solid fa-arrow-left" /> Quay lại: Nhận dạng
           </button>
         )}
         <button type="submit" form="horse-form" className="btn btn-primary" disabled={busy}>{busy ? 'Đang lưu…' : editing ? 'Lưu thay đổi' : 'Lưu vào hồ sơ'}</button>
@@ -235,11 +237,7 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
                 <input id="h-marks" className="form-control" value={marks} onChange={e => setMarks(e.target.value)} placeholder="VD: Sao trắng trán, tất trắng chân sau" />
               </div>
             </fieldset>
-            <div className={s.tabActions}>
-              <button type="button" className="btn btn-outline btn-sm" onClick={() => setTab('docs')}>
-                Tiếp tục: Giấy tờ & Kiểm dịch ({uploadedDocsCount}/3) <i className="fa-solid fa-arrow-right" />
-              </button>
-            </div>
+
           </>
         )}
 
@@ -251,11 +249,9 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
                 {HORSE_DOC_TYPES.map(t => (
                   <div key={t} className={s.docRow}>
                     <FileField label={HORSE_DOC[t].label} fileName={docs[t]?.fileName || undefined} fileUrl={docs[t]?.fileUrl} onChange={(f, file) => { setDoc(t, f ? { fileName: f, uploadedAt: Date.now() } : undefined); setFiles(current => { const next = { ...current }; if (file) next[t] = file; else delete next[t]; return next }) }} />
-                    {docs[t] && HORSE_DOC[t].hasExpiry && (
+                    {docs[t] && HORSE_DOC[t].hasExpiry && t !== 'vaccine' && t !== 'lab' && (
                       <div className="form-group">
-                        <label htmlFor={`h-exp-${t}`} className="required">
-                          {t === 'vaccine' ? 'Ngày tiêm phòng gần nhất' : t === 'lab' ? 'Ngày xét nghiệm gần nhất' : 'Ngày cấp'}
-                        </label>
+                        <label htmlFor={`h-exp-${t}`} className="required">Ngày cấp</label>
                         <input
                           id={`h-exp-${t}`}
                           type="date"
@@ -269,13 +265,12 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
                             {docs[t]!.expiresAt! < now ? (
                               <span style={{ color: 'var(--color-danger, #dc2626)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                                 <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />
-                                Hết hiệu lực ngày {formatDate(docs[t]!.expiresAt!)} (cần tiêm nhắc lại)
+                                Hết hiệu lực ngày {formatDate(docs[t]!.expiresAt!)}
                               </span>
                             ) : (
                               <span style={{ color: '#16a34a', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                                 <i className="fa-solid fa-circle-check" aria-hidden="true" />
                                 Hiệu lực đến: <b>{formatDate(docs[t]!.expiresAt!)}</b>
-                                <span className={s.subNote}> ({t === 'vaccine' ? '12 tháng' : '6 tháng'})</span>
                               </span>
                             )}
                           </div>
@@ -287,11 +282,7 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
                 ))}
               </div>
             </fieldset>
-            <div className={s.tabActions}>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setTab('info')}>
-                <i className="fa-solid fa-arrow-left" /> Quay lại: Nhận dạng
-              </button>
-            </div>
+
           </>
         )}
       </form>
