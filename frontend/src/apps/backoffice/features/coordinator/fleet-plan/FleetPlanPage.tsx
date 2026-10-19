@@ -3,7 +3,6 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
-import { isAssignedTo } from '@shared/lib/staffAssignment'
 import { MAX_CONTINUOUS_HOURS, VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { GATES, TRANSIT_STATIONS } from '@shared/config/network'
 import { AVG_SPEED_KMH } from '@shared/config/public-pricing'
@@ -30,7 +29,8 @@ import { atHour } from '@shared/lib/dates'
 import { formatClock, formatDate, formatDateTime } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
 import { vehiclesApi, type Vehicle } from '@shared/services/fleet'
-import { useLoad } from '@shared/services/useLoad'
+import { useAutoRefresh, useLoad } from '@shared/services/useLoad'
+import { isCoordinatorTask } from '../../../shared/staffWork'
 import type { Booking, RestStop, VehicleTrip } from '@shared/types/booking'
 import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
 import { useToast } from '@shared/ui/toast'
@@ -865,7 +865,8 @@ export default function FleetPlanPage() {
   const { session } = useAuth()
   const { data: b, reload } = useLoad(() => bookingsApi.get(id), [id])
   const { data: all } = useLoad(bookingsApi.list)
-  const { data: vehicles } = useLoad(vehiclesApi.list)
+  const { data: vehicles, reload: reloadVehicles } = useLoad(vehiclesApi.list)
+  useAutoRefresh(reloadVehicles)
   const [showOrderDetails, setShowOrderDetails] = useState(false)
 
   if (!b || !all || !vehicles)
@@ -877,11 +878,7 @@ export default function FleetPlanPage() {
       </div>
     )
 
-  const isAssigned =
-    !b.intake ||
-    isAssignedTo(b.intake.coordinator, session?.name) ||
-    session?.role === 'admin' ||
-    session?.role === 'manager'
+  const isAssigned = isCoordinatorTask(b, session?.name, session?.username, session?.role)
 
   if (!isAssigned)
     return (

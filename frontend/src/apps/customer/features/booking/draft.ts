@@ -1,5 +1,4 @@
-// Bản nháp đơn đặt chuyến qua 4 bước, lưu sessionStorage (PRD mục 2.2).
-import { useSyncExternalStore } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 import type { FeedPackageId, WaterPlanId } from '@shared/config/booking-rules'
 import type { Party, StallType, TransportType } from '@shared/types/booking'
 
@@ -60,10 +59,22 @@ const write = (next: BookingDraft | null) => {
   listeners.forEach(fn => fn())
 }
 
+export const saveDraft = (patch: Partial<BookingDraft>) => {
+  const current = getSnapshot()
+  const next = { ...current, ...patch }
+  if (JSON.stringify(current) === JSON.stringify(next)) {
+    return current
+  }
+  write(next)
+  return next
+}
+
+export const clearDraft = () => write(null)
+
 export function useBookingDraft() {
   const draft = useSyncExternalStore(subscribe, getSnapshot)
-  const save = (patch: Partial<BookingDraft>) => { const next = { ...getSnapshot(), ...patch }; write(next); return next }
-  const clear = () => write(null)
+  const save = useCallback((patch: Partial<BookingDraft>) => saveDraft(patch), [])
+  const clear = useCallback(() => clearDraft(), [])
   return { draft, save, clear }
 }
 

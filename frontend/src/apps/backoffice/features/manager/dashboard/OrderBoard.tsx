@@ -57,7 +57,7 @@ export function OrderBoard({ orders, onOpen }: { orders: Booking[]; onOpen: (b: 
       <button className={`${s.arrow} ${s.arrowR} ${edge.right ? '' : s.arrowOff}`} onClick={() => go(1)} aria-label="Cuộn sang phải"><i className="fa-solid fa-chevron-right" /></button>
       <div className={s.board} ref={box} onScroll={measure}>
         {COLS.map(([k, label, icon, tone]) => {
-          const all = orders.filter(b => managerBoardOf(b.status) === k).sort((a, z) => (k === 'done' ? z.departAt - a.departAt : a.departAt - z.departAt))
+          const all = orders.filter(b => managerBoardOf(b.status) === k).sort((a, z) => a.id.localeCompare(z.id, undefined, { numeric: true }))
           const list = k === 'done' ? all.slice(0, MAX_DONE) : all
           const head = list.slice(0, COLLAPSED)
           const rest = list.slice(COLLAPSED)

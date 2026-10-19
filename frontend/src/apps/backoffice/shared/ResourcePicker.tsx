@@ -17,6 +17,16 @@ const TEXT: Record<PickKind, { title: string; search: string; idle: string; icon
 const initials = (name: string) => name.split(' ').filter(Boolean).slice(-2).map(w => w[0]).join('').toUpperCase()
 const hue = (id: string) => [...id].reduce((n, c) => n + c.charCodeAt(0) * 7, 0) % 360
 
+const isVehicleBusy = (st?: string) => {
+  const s = (st || '').toUpperCase()
+  return s === 'BUSY' || s === 'IN_USE' || s === 'ON_TRIP'
+}
+
+const isVehicleMaint = (st?: string) => {
+  const s = (st || '').toUpperCase()
+  return s === 'MAINTENANCE' || s === 'UNAVAILABLE'
+}
+
 interface Props {
   kind: PickKind
   vehicles: Vehicle[]
@@ -46,9 +56,20 @@ export function ResourcePicker({ kind, vehicles, people, schedules, departAt, in
     // Xe: trùng lịch theo ngày đi. Tài xế, hộ tống: đã được giao việc cho đơn nào thì khóa, không xét ngày
     const clash = kind === 'vehicle' ? clashOf(booked, departAt) : undefined
     const assigned = kind !== 'vehicle' ? booked[0] : undefined
+    const inMaint = r.vehicle && isVehicleMaint(r.vehicle.status)
     const noDocs = r.vehicle && !vehicleDocsOk(r.vehicle, international)
-    const reason = noDocs ? `Thiếu giấy đăng kiểm${international ? ' / liên vận' : ''}` : clash ? 'Đã có đơn trùng lịch chạy' : assigned ? (assigned.returning ? `Đang về trụ sở từ ${assigned.returning.from}, dự kiến ${formatDateTime(assigned.returning.eta)}` : `Đang đi đơn ${assigned.order} (${assigned.countries})`) : usedHere.has(r.id) && r.id !== selected ? 'Đã chọn ở chuyến khác của đơn này' : ''
-    return { ...r, booked, reason, clash: !!clash && !noDocs }
+    const reason = inMaint
+      ? 'Xe đang bảo dưỡng định kỳ / chưa sẵn sàng'
+      : noDocs
+        ? `Thiếu giấy đăng kiểm${international ? ' / liên vận' : ''}`
+        : clash
+          ? 'Đã có đơn trùng lịch chạy'
+          : assigned
+            ? (assigned.returning ? `Đang về trụ sở từ ${assigned.returning.from}, dự kiến ${formatDateTime(assigned.returning.eta)}` : `Đang đi đơn ${assigned.order} (${assigned.countries})`)
+            : usedHere.has(r.id) && r.id !== selected
+              ? 'Đã chọn ở chuyến khác của đơn này'
+              : ''
+    return { ...r, booked, reason, clash: !!clash && !noDocs && !inMaint }
   })
   const keyword = text.trim().toLowerCase()
   const shown = rows.filter(r => {
@@ -75,8 +96,32 @@ export function ResourcePicker({ kind, vehicles, people, schedules, departAt, in
       <div className={p.grid}>
         {shown.map((r, i) => {
           const busyNow = r.booked.length > 0
-          const tone = r.clash ? '#ea580c' : r.reason ? '#dc2626' : kind !== 'vehicle' && busyNow ? '#ea580c' : '#059669'
-          const label = kind !== 'vehicle' && busyNow ? (r.booked[0].returning ? 'Đang về' : 'Đang đi đơn') : r.clash ? 'Có đơn' : r.reason ? 'Khóa' : kind === 'vehicle' ? t.idle : busyNow ? 'Có đơn' : t.idle
+          const vBusy = r.vehicle ? isVehicleBusy(r.vehicle.status) : false
+          const inMaint = r.vehicle ? isVehicleMaint(r.vehicle.status) : false
+          const tone = inMaint
+            ? '#d97706'
+            : r.clash
+              ? '#ea580c'
+              : r.reason
+                ? '#dc2626'
+                : kind === 'vehicle'
+                  ? (vBusy ? '#2563eb' : '#059669')
+                  : (busyNow ? '#ea580c' : '#059669')
+          const label = kind === 'vehicle'
+            ? (inMaint
+                ? 'Chưa sẵn sàng'
+                : r.clash
+                  ? 'Có đơn'
+                  : r.reason
+                    ? 'Khóa'
+                    : vBusy
+                      ? 'Đang bận'
+                      : t.idle)
+            : (busyNow
+                ? (r.booked[0]?.returning ? 'Đang về' : 'Đang đi đơn')
+                : r.reason
+                  ? 'Khóa'
+                  : t.idle)
           return (
             <button
               key={r.id} type="button" aria-disabled={!!r.reason} aria-pressed={r.id === selected}
