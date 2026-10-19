@@ -60,6 +60,8 @@ export function ResourcePicker({ kind, vehicles, people, schedules, departAt, in
     const noDocs = r.vehicle && !vehicleDocsOk(r.vehicle, international)
     const reason = inMaint
       ? 'Xe đang bảo dưỡng định kỳ / chưa sẵn sàng'
+      : r.vehicle && isVehicleBusy(r.vehicle.status) && r.id !== selected
+        ? 'Xe đang được gán cho chuyến khác'
       : noDocs
         ? `Thiếu giấy đăng kiểm${international ? ' / liên vận' : ''}`
         : clash

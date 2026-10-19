@@ -1,5 +1,5 @@
 // Bước 3: cấu hình từng ngựa: khoang, gói thức ăn, cữ nước, bảo hiểm mua hoặc từ chối (PRD mục 2.2).
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { FEED_PACKAGE, FEED_PACKAGE_IDS, HORSE_BREEDS, WATER_PLAN, WATER_PLAN_IDS } from '@shared/config/booking-rules'
@@ -41,13 +41,19 @@ export default function Step3ServicesPage() {
   const { draft, save } = useBookingDraft()
   const { data: horses } = useLoad(() => horsesApi.list(owner), [owner])
   const [config, setConfig] = useState<Record<string, HorseConfig>>(() => Object.fromEntries(draft.horseIds.map(id => [id, { ...defaultConfig(), ...draft.config[id] }])))
+  const [activeIndex, setActiveIndex] = useState(0)
   const [ack, setAck] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+
+  useEffect(() => {
+    if (submitted) document.querySelector('[data-problem]')?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }, [activeIndex, submitted])
 
   if (!draft.type || !draft.departDate) return <Navigate to="/booking/route" replace />
   if (!draft.horseIds.length) return <Navigate to="/booking/horses" replace />
 
   const rows = draft.horseIds.map(id => horses?.find(h => h.id === id)).filter(Boolean) as NonNullable<typeof horses>
+  const activeHorse = rows[activeIndex]
   const set = (id: string, patch: Partial<HorseConfig>) => setConfig(c => ({ ...c, [id]: { ...c[id], ...patch } }))
   const declined = rows.filter(h => config[h.id].insurance === 'decline')
   const problems = rows.flatMap(h => {
@@ -58,14 +64,31 @@ export default function Step3ServicesPage() {
 
   const next = () => {
     setSubmitted(true)
-    if (problems.length) { document.querySelector('[data-problem]')?.scrollIntoView({ block: 'center', behavior: 'smooth' }); return }
+    if (problems.length) {
+      const firstMissingInsurance = rows.findIndex(h => !config[h.id]?.insurance)
+      if (firstMissingInsurance >= 0) setActiveIndex(firstMissingInsurance)
+      return
+    }
     save({ config })
     navigate('/booking/review')
   }
 
   return (
     <BookingShell step={3} title="Dịch vụ và bảo hiểm" subtitle="Thiết lập chăm sóc riêng cho từng con. Bảo hiểm chuyến đi chọn riêng cho từng ngựa.">
-      {rows.map(h => {
+      {activeHorse && (
+        <>
+          <div className={s.horseNavigator} aria-label="Chọn ngựa để thiết lập dịch vụ">
+            <button type="button" className="btn btn-ghost" aria-label="Ngựa trước" disabled={activeIndex === 0} onClick={() => setActiveIndex(i => Math.max(0, i - 1))}>&lt;</button>
+            <label className={s.horseSelectLabel}>
+              <span>Ngựa {activeIndex + 1}/{rows.length}</span>
+              <select className="form-control" value={activeHorse.id} onChange={e => setActiveIndex(rows.findIndex(h => h.id === e.target.value))}>
+                {rows.map((h, i) => <option key={h.id} value={h.id}>{i + 1}. {h.name}</option>)}
+              </select>
+            </label>
+            <button type="button" className="btn btn-ghost" aria-label="Ngựa tiếp theo" disabled={activeIndex === rows.length - 1} onClick={() => setActiveIndex(i => Math.min(rows.length - 1, i + 1))}>&gt;</button>
+          </div>
+          {(() => {
+        const h = activeHorse
         const c = config[h.id]
         return (
           <section key={h.id} className={`card ${s.horseCard}`} data-card aria-labelledby={`h-${h.id}`}>
@@ -114,7 +137,9 @@ export default function Step3ServicesPage() {
             </div>
           </section>
         )
-      })}
+      })()}
+        </>
+      )}
 
       {declined.length > 0 && (
         <div className="card" data-card {...(submitted && !ack ? { 'data-problem': true } : {})}>

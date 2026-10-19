@@ -4,10 +4,8 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import {
-  FAMOUS_HORSE_VENUES,
   PROVINCES_DATA,
   buildFullAddress,
-  type HorseVenue,
   type ProvinceInfo,
 } from '@shared/config/administrative'
 import { MIN_LEAD_DAYS } from '@shared/config/business-rules'
@@ -92,20 +90,8 @@ interface LocationPickerProps {
 
 function LocationPicker({ country, address, onChange, errors }: LocationPickerProps) {
   const provinces = useMemo(() => PROVINCES_DATA.filter(p => p.country === country), [country])
-  const venues = useMemo(() => {
-    const provCodes = new Set(provinces.map(p => p.code))
-    return FAMOUS_HORSE_VENUES.filter(v => provCodes.has(v.provinceCode))
-  }, [provinces])
 
   const selectedProv: ProvinceInfo | undefined = provinces.find(p => p.code === address.provinceCode)
-
-  const handleVenuePick = (v: HorseVenue) => {
-    onChange({
-      provinceCode: v.provinceCode,
-      wardName: v.wardName,
-      detail: v.address,
-    })
-  }
 
   const handleProvChange = (code: string) => {
     onChange({
@@ -133,29 +119,6 @@ function LocationPicker({ country, address, onChange, errors }: LocationPickerPr
 
   return (
     <div style={{ display: 'grid', gap: 10, marginTop: 4 }}>
-      {venues.length > 0 && (
-        <div>
-          <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginBottom: 6 }}>
-            <i className="fa-solid fa-wand-magic-sparkles" style={{ color: 'var(--orange)', marginRight: 5 }} />
-            Địa điểm / trang trại phổ biến (chọn nhanh 1 chạm):
-          </div>
-          <div className={s.venueChips}>
-            {venues.map(v => (
-              <button
-                key={v.id}
-                type="button"
-                className={s.venueChip}
-                onClick={() => handleVenuePick(v)}
-                title={v.address}
-              >
-                <i className="fa-solid fa-horse" />
-                <span>{v.name.split(' (')[0]}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       <div className={s.grid2}>
         <div className="form-group">
           <label className="required">

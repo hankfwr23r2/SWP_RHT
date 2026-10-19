@@ -7,9 +7,8 @@ import { CountUp, reducedMotion, useScrollReveal } from '@shared/motion/motion'
 import { Link, useLocation } from 'react-router'
 import { PUBLIC_STEPS, QUOTE_VALID_HOURS, VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { MIN_LEAD_DAYS } from '@shared/config/business-rules'
-import { COUNTRIES, COUNTRY_LOCATIONS, GATES, type CountryCode } from '@shared/config/network'
+import { COUNTRIES, type CountryCode } from '@shared/config/network'
 import { DEPOSIT_RATE } from '@shared/config/booking-rules'
-import { findLocation, routeKm, tripDays } from '@shared/lib/booking'
 import { formatDate, formatDateTime } from '@shared/lib/format'
 import { trackOrder, type PublicTracking } from '@shared/services/tracking'
 import { FLAG_SVG } from '@shared/ui/flags'
@@ -22,6 +21,11 @@ gsap.registerPlugin(MotionPathPlugin)
 const cx = (...c: (string | false | undefined)[]) => c.filter(Boolean).join(' ')
 const MAX_TRACK_CODES = 5
 const STEPS = PUBLIC_STEPS
+const PUBLIC_BENEFITS: [string, string, string][] = [
+  ['fa-truck-fast', 'Xe chuyên dụng', 'Xe nguyên chuyến với khoang phù hợp số ngựa của bạn.'],
+  ['fa-file-circle-check', 'Hỗ trợ giấy tờ', 'Đội ngũ phụ trách kiểm dịch và thủ tục cho chuyến đi.'],
+  ['fa-map-location-dot', 'Theo dõi hành trình', 'Cập nhật tiến độ đơn và hành trình vận chuyển trên hệ thống.'],
+]
 
 // ===== Banner trượt =====
 const SLIDES = [
@@ -203,28 +207,21 @@ function Lookup() {
 }
 
 // ===== Mạng lưới vận chuyển =====
-// Tuyến đường thực tế theo từng nước: xuất phát từ trụ sở/kho đến các kho nhận/giao và qua cửa khẩu.
+// Sơ đồ minh họa phạm vi tuyến, không đại diện cho một lộ trình vận hành cụ thể.
 type Stop = { x: number; y: number; name: string; sub: string }
-const calcNetworkRoute = (from: string, to: string, gate?: string) => {
-  const a = findLocation(from)!, b = findLocation(to)!
-  const ref = (l: typeof a, country: CountryCode) => ({ id: l.id, name: l.name, country })
-  const km = routeKm(ref(a, 'VN'), ref(b, 'VN'), gate)
-  return { km, days: tripDays(km, !!gate) }
-}
-const road = (from: string, to: string, gate?: string) => { const r = calcNetworkRoute(from, to, gate); return `${r.km} km · ${r.days} ngày` }
 const JOURNEYS: Record<CountryCode, { stops: [Stop, Stop, Stop]; mid: 'gate' | 'station'; summary: string }> = {
-  VN: { mid: 'station', summary: `Tuyến nội địa · ${road('KHO-DN', 'KHO-LA')}`, stops: [
-    { x: 40, y: 70, name: 'Kho Đồng Nai', sub: 'Nhận ngựa' },
-    { x: 450, y: 140, name: 'Trạm Biên Hòa', sub: 'Nghỉ ngựa · kiểm tra thể trạng' },
-    { x: 860, y: 60, name: 'Kho Long An', sub: 'Giao ngựa' }] },
-  LA: { mid: 'gate', summary: `Tuyến Việt Nam – Lào · qua cửa khẩu Lao Bảo · ${road('KHO-DN', 'KHO-VTE', 'Lao Bảo – Densavanh')}`, stops: [
-    { x: 40, y: 140, name: 'Kho Đồng Nai', sub: 'Nhận ngựa' },
-    { x: 450, y: 60, name: 'Lao Bảo – Densavanh', sub: 'Thông quan · kiểm dịch' },
-    { x: 860, y: 130, name: 'Kho Viêng Chăn', sub: 'Giao ngựa' }] },
-  KH: { mid: 'gate', summary: `Tuyến Việt Nam – Campuchia · qua cửa khẩu Mộc Bài · ${road('KHO-DN', 'KHO-PNH', 'Mộc Bài – Bavet')}`, stops: [
-    { x: 40, y: 120, name: 'Kho Đồng Nai', sub: 'Nhận ngựa' },
-    { x: 450, y: 90, name: 'Mộc Bài – Bavet', sub: 'Thông quan · kiểm dịch' },
-    { x: 860, y: 70, name: 'Kho Phnom Penh', sub: 'Giao ngựa' }] },
+  VN: { mid: 'station', summary: 'Tuyến vận chuyển nội địa, kết nối các điểm phục vụ trên toàn quốc.', stops: [
+    { x: 40, y: 70, name: 'Điểm nhận', sub: 'Đón ngựa' },
+    { x: 450, y: 140, name: 'Trạm nghỉ', sub: 'Chăm sóc trên đường' },
+    { x: 860, y: 60, name: 'Điểm giao', sub: 'Bàn giao ngựa' }] },
+  LA: { mid: 'gate', summary: 'Tuyến xuyên biên giới kết nối Việt Nam và Lào.', stops: [
+    { x: 40, y: 140, name: 'Điểm nhận', sub: 'Đón ngựa' },
+    { x: 450, y: 60, name: 'Cửa khẩu', sub: 'Hỗ trợ thủ tục' },
+    { x: 860, y: 130, name: 'Điểm giao', sub: 'Bàn giao ngựa' }] },
+  KH: { mid: 'gate', summary: 'Tuyến xuyên biên giới kết nối Việt Nam và Campuchia.', stops: [
+    { x: 40, y: 120, name: 'Điểm nhận', sub: 'Đón ngựa' },
+    { x: 450, y: 90, name: 'Cửa khẩu', sub: 'Hỗ trợ thủ tục' },
+    { x: 860, y: 70, name: 'Điểm giao', sub: 'Bàn giao ngựa' }] },
 }
 const pathOf = ([a, b, c]: Stop[]) =>
   `M ${a.x} ${a.y} C ${a.x + 170} ${a.y - 90}, ${b.x - 170} ${b.y - 60}, ${b.x} ${b.y} S ${c.x - 170} ${c.y + 90}, ${c.x} ${c.y}`
@@ -303,7 +300,6 @@ export function Network() {
     if (reducedMotion()) return
     gsap.fromTo(`.${s.flag}`, { y: 40, scale: 0.85, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.7, stagger: 0.15, ease: 'back.out(1.6)', scrollTrigger: { trigger: flagsRef.current, start: 'top 85%', once: true } })
   }, { scope: flagsRef })
-  const gates = active === 'VN' ? GATES : GATES.filter(g => g.country === active)
   return (
     <section className={s.network} id="mang-luoi">
       <div className="wrap">
@@ -320,13 +316,10 @@ export function Network() {
         </div>
         <Journey country={active} />
         <div className={cx(s.networkDetail, s.reveal)}>
-          <h3>{COUNTRIES[active].name}</h3>
+          <h3>Phạm vi mạng lưới</h3>
           <div className={s.networkCols} key={active}>
-            <div><h4>Điểm nhận / giao ngựa</h4><ul>{COUNTRY_LOCATIONS[active].map(p => <li key={p.id}><i className="fa-solid fa-location-dot" /> {p.name.split(' — ')[0]}<span style={{ color: 'var(--muted)' }}>{p.name.includes(' — ') ? ` · ${p.name.split(' — ')[1]}` : ''}</span></li>)}</ul></div>
-            <div>
-              <h4>{active === 'VN' ? 'Cửa khẩu đường bộ phục vụ' : 'Cửa khẩu với Việt Nam'}</h4>
-              <ul>{gates.map(g => <li key={g.name}><i className="fa-solid fa-flag" /> {g.name}{active === 'VN' && <span style={{ color: 'var(--muted)' }}> ({COUNTRIES[g.country].name})</span>}</li>)}</ul>
-            </div>
+            <div><h4>Điểm phục vụ</h4><p><i className="fa-solid fa-location-dot" /> 10+ điểm nhận, giao và đối tác trong mạng lưới.</p></div>
+            <div><h4>Tuyến quốc tế</h4><p><i className="fa-solid fa-flag" /> 10+ cửa khẩu kết nối các tuyến trong khu vực.</p></div>
           </div>
         </div>
       </div>
@@ -338,7 +331,7 @@ const FEATURES: [string, React.ReactNode, string][] = [
   ['fa-earth-asia', <><CountUp to={3} /> quốc gia</>, 'Việt Nam, Lào, Campuchia'],
   ['fa-truck', 'Xe nguyên chuyến', `${Object.values(VEHICLE_CLASS).map(c => c.label).join(', ')}: từ 2 đến 9 ngăn. Không ghép ngựa của đơn khác`],
   ['fa-user-doctor', 'Kiểm dịch viên riêng', 'Duyệt hồ sơ ngựa, làm giấy kiểm dịch, hải quan và báo tiến độ từng giấy cho bạn'],
-  ['fa-flag', <><CountUp to={GATES.length} /> cửa khẩu</>, 'Cửa khẩu đường bộ quốc tế với Lào và Campuchia, chọn sẵn khi lập lộ trình'],
+  ['fa-flag', <>10+ cửa khẩu</>, 'Các tuyến kết nối Việt Nam với Lào và Campuchia'],
 ]
 
 const SERVICES: [string, string, string, string, string][] = [
@@ -414,6 +407,16 @@ export default function HomePage() {
     <div ref={scope}>
       <Hero />
       <Lookup />
+      <section className={s.publicBenefits} aria-label="Lợi ích dịch vụ">
+        <div className={cx('wrap', s.publicBenefitGrid)}>
+          {PUBLIC_BENEFITS.map(([icon, title, text]) => (
+            <article key={title} className={s.publicBenefit}>
+              <span className={s.publicBenefitIcon}><i className={`fa-solid ${icon}`} aria-hidden="true" /></span>
+              <div><h2>{title}</h2><p>{text}</p></div>
+            </article>
+          ))}
+        </div>
+      </section>
       <Network />
 
       <About />

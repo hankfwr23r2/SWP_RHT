@@ -1,4 +1,4 @@
-// Đơn hàng của tôi: thanh tab theo giai đoạn (có số đơn), tìm kiếm, lọc ngày khởi hành, mỗi đơn một thẻ có tiến độ và nút việc cần làm.
+// Đơn hàng của tôi: lọc theo trạng thái, tìm kiếm, lọc ngày khởi hành, mỗi đơn một thẻ có tiến độ và nút việc cần làm.
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
@@ -59,29 +59,27 @@ export default function OrdersPage() {
         {fresh && (
           <div className={s.freshNote} role="status">
             <i className="fa-solid fa-circle-check" aria-hidden="true" />
-            <span>Đơn <b>{fresh.b.id}</b> vừa gửi nằm ở tab <b>{TABS.find(t => t[0] === fresh.tab)?.[1]}</b>, bước <b>{stepOf(fresh.b.status) + 1}/{BOOKING_STEPS.length}: {BOOKING_STEPS[stepOf(fresh.b.status)]}</b>. Thẻ đơn được đánh dấu bên dưới.</span>
+            <span>Đơn <b>{fresh.b.id}</b> vừa gửi nằm trong bộ lọc <b>{TABS.find(t => t[0] === fresh.tab)?.[1]}</b>, bước <b>{stepOf(fresh.b.status) + 1}/{BOOKING_STEPS.length}: {BOOKING_STEPS[stepOf(fresh.b.status)]}</b>. Thẻ đơn được đánh dấu bên dưới.</span>
           </div>
         )}
 
-        <div className={s.tabBar} role="tablist" aria-label="Trạng thái đơn">
-          {TABS.map(([k, label]) => {
-            const n = filtered.filter(x => k === 'all' || x.tab === k).length
-            return (
-              <button key={k} role="tab" aria-selected={tab === k} className={`${s.tab} ${tab === k ? s.tabOn : ''}`} onClick={() => setTab(k)}>
-                {label}<span className={`${s.num} ${k === 'supplement' && n ? s.numAlert : ''}`}>{n}</span>
-              </button>
-            )
-          })}
-        </div>
-
         <div className={s.filters}>
           <label className={s.search}><i className="fa-solid fa-magnifying-glass" aria-hidden="true" /><input className="form-control" placeholder="Tìm theo mã đơn, điểm đón, điểm giao, tên ngựa" value={text} onChange={e => setText(e.target.value)} /></label>
+          <label className={s.statusFilter} htmlFor="order-status-filter">
+            <span>Trạng thái</span>
+            <select id="order-status-filter" className={`form-control ${s.statusSelect}`} value={tab} onChange={e => setTab(e.target.value as Tab)}>
+              {TABS.map(([k, label]) => {
+                const n = filtered.filter(x => k === 'all' || x.tab === k).length
+                return <option key={k} value={k}>{label} ({n})</option>
+              })}
+            </select>
+          </label>
           <div className={s.dates}>Khởi hành<input type="date" className="form-control" aria-label="Khởi hành từ ngày" value={from} onChange={e => setFrom(e.target.value)} />→<input type="date" className="form-control" aria-label="Khởi hành đến ngày" value={to} onChange={e => setTo(e.target.value)} /></div>
           {filtering && <button className="btn btn-ghost btn-sm" onClick={() => { setText(''); setFrom(''); setTo('') }}>Xóa lọc</button>}
         </div>
 
         {orders && !list.length ? (
-          <div className={s.empty}><i className="fa-solid fa-box-open" /><h3>{filtering ? 'Không có đơn nào khớp bộ lọc' : 'Chưa có đơn hàng nào ở mục này'}</h3><p>{filtering ? 'Thử đổi từ khóa hoặc khoảng ngày.' : 'Chọn tab khác hoặc đặt chuyến mới.'}</p></div>
+          <div className={s.empty}><i className="fa-solid fa-box-open" /><h3>{filtering ? 'Không có đơn nào khớp bộ lọc' : 'Chưa có đơn hàng nào ở mục này'}</h3><p>{filtering ? 'Thử đổi từ khóa hoặc khoảng ngày.' : 'Chọn trạng thái khác hoặc đặt chuyến mới.'}</p></div>
         ) : (
           <div ref={ref} className={s.list}>
             {list.map(({ b, next }) => {
