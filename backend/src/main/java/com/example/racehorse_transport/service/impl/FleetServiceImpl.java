@@ -41,6 +41,18 @@ public class FleetServiceImpl implements FleetService {
             "pending_emergency_approval",
             "emergency_plan_active");
 
+    private boolean isBusyStatus(String status) {
+        if (status == null || status.isBlank()) return false;
+        String s = status.toUpperCase(Locale.ROOT).replace("_", "").replace(" ", "").replace("-", "");
+        return "BUSY".equals(s) || "INUSE".equals(s) || "ONTRIP".equals(s);
+    }
+
+    private boolean isMaintenanceStatus(String status) {
+        if (status == null || status.isBlank()) return false;
+        String s = status.toUpperCase(Locale.ROOT).replace("_", "").replace(" ", "").replace("-", "");
+        return "MAINTENANCE".equals(s) || "UNAVAILABLE".equals(s);
+    }
+
     @Override
     public List<VehicleResponse> getAllVehicles() {
         List<Booking> holdingBookings = getHoldingBookings();
@@ -56,7 +68,7 @@ public class FleetServiceImpl implements FleetService {
 
         return vehicleRepository.findAll().stream().map(v -> {
             VehicleResponse res = mapToVehicleResponse(v);
-            if (busyVehicleIds.contains(v.getId()) || "BUSY".equalsIgnoreCase(v.getStatus())) {
+            if (busyVehicleIds.contains(v.getId()) || isBusyStatus(v.getStatus())) {
                 res.setStatus("BUSY");
                 res.setAvailable(false);
                 res.setBusyReason("Xe đang được gán cho chuyến đi");
@@ -112,9 +124,13 @@ public class FleetServiceImpl implements FleetService {
 
         return allVehicles.stream().map(v -> {
             VehicleResponse res = mapToVehicleResponse(v);
-            if ("MAINTENANCE".equalsIgnoreCase(v.getStatus())) {
+            if (isMaintenanceStatus(v.getStatus())) {
                 res.setAvailable(false);
                 res.setBusyReason("Xe đang bảo dưỡng định kỳ");
+            } else if (isBusyStatus(v.getStatus())) {
+                res.setStatus("BUSY");
+                res.setAvailable(false);
+                res.setBusyReason("Xe đang được gán cho chuyến đi");
             } else if (busyMap.containsKey(v.getId())) {
                 res.setAvailable(false);
                 res.setBusyReason(busyMap.get(v.getId()));
@@ -354,9 +370,13 @@ public class FleetServiceImpl implements FleetService {
         Vehicle vehicle = vehicleRepository.findById(vehicleId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy xe có ID: " + vehicleId));
 
-        if ("MAINTENANCE".equalsIgnoreCase(vehicle.getStatus())) {
+        if (isMaintenanceStatus(vehicle.getStatus())) {
             throw new IllegalStateException(
                     "Xe " + vehicle.getLicensePlate() + " đang bảo dưỡng định kỳ, không thể xếp xe!");
+        }
+        if (isBusyStatus(vehicle.getStatus())) {
+            throw new IllegalStateException(
+                    "Xe " + vehicle.getLicensePlate() + " (" + vehicle.getVehicleName() + ") đang bận chuyến đi khác!");
         }
 
         Instant newDepart = departDate != null ? departDate : Instant.now();

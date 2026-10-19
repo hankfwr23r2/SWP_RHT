@@ -14,25 +14,28 @@ import { useOps } from '../../../shared/useOps'
 const VEHICLE_NAME = 'Xe chuyên dụng' // mọi xe đều là xe chuyên dụng chở ngựa
 const EMPTY: Omit<Vehicle, 'id'> = { name: VEHICLE_NAME, type: VEHICLE_NAME, capacity: 2, plate: '', status: 'AVAILABLE', inspectionNo: '', transitPermit: '' }
 
+const normalizeStatusKey = (st?: string): string => {
+  const s = (st || 'AVAILABLE').toUpperCase().replace(/[\s_-]/g, '')
+  if (s === 'BUSY' || s === 'INUSE' || s === 'ONTRIP') return 'BUSY'
+  if (s === 'MAINTENANCE' || s === 'UNAVAILABLE') return 'MAINTENANCE'
+  if (s === 'AVAILABLE' || s === 'ACTIVE' || s === '') return 'AVAILABLE'
+  return s
+}
+
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   AVAILABLE: { label: 'Sẵn sàng', color: '#059669' },
-  ACTIVE: { label: 'Sẵn sàng', color: '#059669' },
   MAINTENANCE: { label: 'Chưa sẵn sàng', color: '#d97706' },
-  UNAVAILABLE: { label: 'Chưa sẵn sàng', color: '#d97706' },
   BUSY: { label: 'Đang bận', color: '#2563eb' },
-  IN_USE: { label: 'Đang bận', color: '#2563eb' },
-  ON_TRIP: { label: 'Đang đi chuyến', color: '#2563eb' },
 }
 
 const statusOf = (st?: string) => {
-  const k = (st || 'AVAILABLE').toUpperCase()
-  return STATUS_MAP[k] || { label: st || 'Sẵn sàng', color: '#059669' }
+  const k = normalizeStatusKey(st)
+  return STATUS_MAP[k] || { label: 'Sẵn sàng', color: '#059669' }
 }
 
-const isBusy = (st?: string) => {
-  const s = (st || '').toUpperCase()
-  return s === 'BUSY' || s === 'IN_USE' || s === 'ON_TRIP'
-}
+const isBusy = (st?: string) => normalizeStatusKey(st) === 'BUSY'
+const isAvailable = (st?: string) => normalizeStatusKey(st) === 'AVAILABLE'
+const isMaintenance = (st?: string) => normalizeStatusKey(st) === 'MAINTENANCE'
 
 export default function FleetPage() {
   const toast = useToast()
@@ -79,21 +82,14 @@ export default function FleetPage() {
   }
   const set = <K extends keyof typeof form>(key: K) => (value: (typeof form)[K]) => { setInvalid(''); setForm({ ...form, [key]: value }) }
 
-  const availableCount = vehicles.filter(v => {
-    const st = (v.status ?? 'AVAILABLE').toUpperCase()
-    return st === 'AVAILABLE' || st === 'ACTIVE'
-  }).length
-  const notReadyCount = vehicles.filter(v => {
-    const st = (v.status ?? '').toUpperCase()
-    return st === 'MAINTENANCE' || st === 'UNAVAILABLE'
-  }).length
+  const availableCount = vehicles.filter(v => isAvailable(v.status)).length
+  const notReadyCount = vehicles.filter(v => isMaintenance(v.status)).length
   const busyCount = vehicles.filter(v => isBusy(v.status)).length
 
   const keyword = text.trim().toLowerCase()
   const shown = vehicles.filter(v => {
-    const stUpper = (v.status ?? 'AVAILABLE').toUpperCase()
-    if (filterStatus === 'available' && stUpper !== 'AVAILABLE' && stUpper !== 'ACTIVE') return false
-    if (filterStatus === 'not_ready' && stUpper !== 'MAINTENANCE' && stUpper !== 'UNAVAILABLE') return false
+    if (filterStatus === 'available' && !isAvailable(v.status)) return false
+    if (filterStatus === 'not_ready' && !isMaintenance(v.status)) return false
     if (filterStatus === 'busy' && !isBusy(v.status)) return false
     return !keyword || [v.id, v.plate].some(x => x.toLowerCase().includes(keyword))
   })

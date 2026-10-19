@@ -18,12 +18,12 @@ const initials = (name: string) => name.split(' ').filter(Boolean).slice(-2).map
 const hue = (id: string) => [...id].reduce((n, c) => n + c.charCodeAt(0) * 7, 0) % 360
 
 const isVehicleBusy = (st?: string) => {
-  const s = (st || '').toUpperCase()
-  return s === 'BUSY' || s === 'IN_USE' || s === 'ON_TRIP'
+  const s = (st || '').toUpperCase().replace(/[\s_-]/g, '')
+  return s === 'BUSY' || s === 'INUSE' || s === 'ONTRIP'
 }
 
 const isVehicleMaint = (st?: string) => {
-  const s = (st || '').toUpperCase()
+  const s = (st || '').toUpperCase().replace(/[\s_-]/g, '')
   return s === 'MAINTENANCE' || s === 'UNAVAILABLE'
 }
 

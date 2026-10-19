@@ -2,13 +2,21 @@
 import { backendFleetApi, type BackendVehicleResponse } from '../api/fleet'
 import type { CrewMember, Vehicle } from '../types/fleet'
 
+const normalizeStatus = (st?: string): string => {
+  const s = (st || 'AVAILABLE').toUpperCase().replace(/[\s_-]/g, '')
+  if (s === 'BUSY' || s === 'INUSE' || s === 'ONTRIP') return 'BUSY'
+  if (s === 'MAINTENANCE' || s === 'UNAVAILABLE') return 'MAINTENANCE'
+  if (s === 'AVAILABLE' || s === 'ACTIVE' || s === '') return 'AVAILABLE'
+  return st || 'AVAILABLE'
+}
+
 const mapVehicle = (v: BackendVehicleResponse): Vehicle => ({
   id: v.code || `VH-${String(v.id).padStart(3, '0')}`,
   name: v.name || 'Xe chuyên dụng',
   type: v.type || 'Xe chuyên dụng',
   capacity: v.capacity || 2,
   plate: v.plate || '',
-  status: v.status || 'AVAILABLE',
+  status: normalizeStatus(v.status),
   vin: v.vin,
   inspectionNo: v.inspectionNo,
   transitPermit: v.transitPermit,
