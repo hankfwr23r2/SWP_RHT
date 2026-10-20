@@ -30,7 +30,7 @@ export function ImageLightbox({ name, onClose, toolbarVariant = 'default' }: { n
       <button className={s.close} onClick={onClose} aria-label="Đóng"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
 
       {src ? (
-        <>
+        <div className={s.lightboxInner}>
           <div className={`${s.toolbar} ${toolbarVariant === 'balanced' ? s.balancedToolbar : ''}`}>
             <button type="button" className={s.toolBtn} onClick={() => setScale(s => Math.min(3, +(s + 0.25).toFixed(2)))} title="Phóng to (+)">
               <i className="fa-solid fa-magnifying-glass-plus" /> Phóng to
@@ -62,7 +62,7 @@ export function ImageLightbox({ name, onClose, toolbarVariant = 'default' }: { n
               }}
             />
           </div>
-        </>
+        </div>
       ) : (
         <div className={s.docCard}>
           <div className={s.docSeal}><i className="fa-solid fa-circle-check" /> HỒ SƠ HỢP LỆ TRÊN HỆ THỐNG</div>
@@ -81,8 +81,6 @@ export function ImageLightbox({ name, onClose, toolbarVariant = 'default' }: { n
           </div>
         </div>
       )}
-
-      <div className={s.caption}>{name}</div>
     </div>
   )
 }
