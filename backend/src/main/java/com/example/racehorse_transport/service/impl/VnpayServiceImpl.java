@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,7 +56,15 @@ public class VnpayServiceImpl implements VnpayService {
     @Transactional
     public VnpayCreateResponse createPaymentUrl(VnpayCreateRequest request, String username, String clientIp) {
         if (!props.isConfigured()) {
-            throw new IllegalStateException("Hệ thống chưa cấu hình cổng VNPAY (VNPAY_TMN_CODE, VNPAY_HASH_SECRET).");
+            List<String> missingConfig = new ArrayList<>();
+            if (props.getTmnCode() == null || props.getTmnCode().isBlank()) {
+                missingConfig.add("VNPAY_TMN_CODE");
+            }
+            if (props.getHashSecret() == null || props.getHashSecret().isBlank()) {
+                missingConfig.add("VNPAY_HASH_SECRET");
+            }
+            throw new IllegalStateException("Hệ thống chưa cấu hình VNPAY. Thiếu biến môi trường: "
+                    + String.join(", ", missingConfig) + ".");
         }
         String type = request.getPaymentType().trim().toUpperCase();
         Booking booking = findOwnedBooking(request.getBookingId(), username);
