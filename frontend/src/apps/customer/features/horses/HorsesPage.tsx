@@ -20,7 +20,7 @@ type Filter = 'all' | 'ready' | 'missing'
 function ReadyBadge({ ok }: { ok: boolean }) {
   return ok
     ? <span className="badge badge-success"><i className="fa-solid fa-circle-check" aria-hidden="true" /> Sẵn sàng đặt</span>
-    : <span className="badge badge-warning"><i className="fa-solid fa-triangle-exclamation" aria-hidden="true" /> Thiếu giấy</span>
+    : <span className="badge badge-warning"><i className="fa-solid fa-triangle-exclamation" aria-hidden="true" /> Thiếu giấy tờ</span>
 }
 
 export default function HorsesPage() {
@@ -68,11 +68,11 @@ export default function HorsesPage() {
         <div className={s.summary}>
           <div className={s.sumCard}><i className={`fa-solid fa-horse-head ${s.iconAll}`} /><div><div className={s.num}>{list.length}</div><div className={s.lbl}>Ngựa trong hồ sơ</div></div></div>
           <div className={s.sumCard}><i className={`fa-solid fa-circle-check ${s.iconReady}`} /><div><div className={s.num}>{ready.length}</div><div className={s.lbl}>Sẵn sàng đặt</div></div></div>
-          <div className={s.sumCard}><i className={`fa-solid fa-file-circle-exclamation ${s.iconMissing}`} /><div><div className={s.num}>{list.length - ready.length}</div><div className={s.lbl}>Cần bổ sung giấy</div></div></div>
+          <div className={s.sumCard}><i className={`fa-solid fa-file-circle-exclamation ${s.iconMissing}`} /><div><div className={s.num}>{list.length - ready.length}</div><div className={s.lbl}>Cần bổ sung giấy tờ</div></div></div>
         </div>
 
         <div className={s.filters} role="group" aria-label="Lọc ngựa">
-          {([['all', 'Tất cả'], ['ready', 'Sẵn sàng đặt'], ['missing', 'Thiếu giấy']] as [Filter, string][]).map(([k, label]) => (
+          {([['all', 'Tất cả'], ['ready', 'Sẵn sàng đặt'], ['missing', 'Thiếu giấy tờ']] as [Filter, string][]).map(([k, label]) => (
             <button key={k} className={`${s.pill} ${filter === k ? s.pillOn : ''}`} aria-pressed={filter === k} onClick={() => setFilter(k)}>{label}</button>
           ))}
         </div>
@@ -100,42 +100,50 @@ export default function HorsesPage() {
                     <span><i className="fa-solid fa-palette" />{h.color}</span>
                   </div>
 
-                  {/* Vị trí chuồng hiện tại & Nguồn gốc kiểm soát */}
-                  <div style={{ background: '#f8fafc', padding: '8px 12px', borderRadius: 8, border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6, fontSize: '0.82rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flex: 1 }}>
-                      <i className="fa-solid fa-location-dot" style={{ color: 'var(--orange)', flexShrink: 0 }} />
-                      <span style={{ fontWeight: 600, color: 'var(--navy)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={h.currentLocationName || 'Chưa cập nhật'}>
+                  <div className={s.location}>
+                    <div className={s.locationName}>
+                      <i className="fa-solid fa-location-dot" aria-hidden="true" />
+                      <span title={h.currentLocationName || 'Chưa cập nhật vị trí chuồng'}>
                         {h.currentLocationName || 'Chưa cập nhật vị trí chuồng'}
                       </span>
                     </div>
                     <div>
                       {h.transitStatus === 'IN_TRANSIT' ? (
-                        <span className="badge badge-warning" style={{ fontSize: '0.72rem' }}>Đang vận chuyển</span>
+                        <span className="badge badge-warning">Đang vận chuyển</span>
                       ) : h.locationSource === 'SYSTEM_DELIVERY' ? (
-                        <span className="badge badge-success" style={{ fontSize: '0.72rem' }} title="Xác thực tự động từ chuyến giao gần nhất">✓ Đã xác thực</span>
+                        <span className="badge badge-success" title="Xác thực tự động từ chuyến giao gần nhất">Đã xác thực</span>
                       ) : (
-                        <span className="badge badge-neutral" style={{ fontSize: '0.72rem' }} title="Chủ nuôi tự cập nhật">Chủ cập nhật</span>
+                        <span className="badge badge-neutral" title="Vị trí do chủ nuôi tự cập nhật">Chủ nuôi cập nhật</span>
                       )}
                     </div>
                   </div>
 
                   <HorseDocChips horse={h} />
-                  {!r.ok && <div className={s.warn}>Cần {r.missing.length ? 'tải thêm' : 'cập nhật'} giấy tờ trước khi đặt chuyến.</div>}
+                  {!r.ok && (
+                    <div className={s.warn}>
+                      {r.missing.length && r.expired.length
+                        ? 'Bổ sung giấy tờ còn thiếu và gia hạn giấy đã hết hạn để đặt chuyến.'
+                        : r.missing.length
+                          ? 'Bổ sung giấy tờ còn thiếu để đặt chuyến.'
+                          : 'Gia hạn giấy tờ đã hết hạn để đặt chuyến.'}
+                    </div>
+                  )}
 
                   <div className={s.horseFoot}>
                     <span className={s.trips}><i className="fa-solid fa-route" /> {h.completedTrips} chuyến</span>
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                      <button className="btn btn-sm btn-ghost" title="Xem sổ hành trình điện tử" onClick={() => setJourneyHorse(h)}>
+                    <div className={s.horseActions} aria-label={`Thao tác với ${h.name}`}>
+                      <button className={`btn btn-sm btn-primary ${s.primaryAction}`} onClick={() => setModal({ horse: h })}>
+                        <i className={`fa-solid ${r.ok ? 'fa-pen-to-square' : 'fa-file-circle-plus'}`} aria-hidden="true" />
+                        {r.ok ? 'Chỉnh sửa hồ sơ' : 'Bổ sung giấy tờ'}
+                      </button>
+                      <button className={`btn btn-sm btn-ghost ${s.secondaryAction}`} title="Xem sổ hành trình điện tử" onClick={() => setJourneyHorse(h)}>
                         <i className="fa-solid fa-passport" /> Sổ hành trình
                       </button>
-                      <button className="btn btn-sm btn-ghost" title="Cập nhật chuồng / dời chuồng" onClick={() => setRelocateHorse(h)}>
-                        <i className="fa-solid fa-map-pin" /> Dời chuồng
+                      <button className={`btn btn-sm btn-ghost ${s.secondaryAction}`} title="Cập nhật vị trí chuồng" onClick={() => setRelocateHorse(h)}>
+                        <i className="fa-solid fa-map-pin" /> Cập nhật vị trí
                       </button>
-                      <button className={`btn btn-sm ${r.ok ? 'btn-ghost' : 'btn-primary'}`} onClick={() => setModal({ horse: h })}>
-                        {r.ok ? 'Xem / sửa' : 'Bổ sung giấy'}
-                      </button>
-                      <button className="btn btn-ghost btn-sm text-red" onClick={() => setDeleteHorse(h)}>
-                        Xóa
+                      <button className={`btn btn-sm ${s.deleteAction}`} onClick={() => setDeleteHorse(h)}>
+                        <i className="fa-regular fa-trash-can" aria-hidden="true" /> Xóa hồ sơ
                       </button>
                     </div>
                   </div>
