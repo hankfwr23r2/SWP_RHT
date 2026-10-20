@@ -68,7 +68,7 @@ export function FleetRouteSection({ b }: { b: Booking }) {
           return (
             <div key={t.tripId} className={s.horse}>
               <div className={s.horseTop}>
-                <div><div className={s.horseName}>Xe {i + 1} · {v?.plate ?? t.vehicleId}</div><div className={s.horseMeta}>{t.tripId}{v ? ` · ${VEHICLE_CLASS[vehicleClassOf(v.capacity)].label} (${v.capacity} ngăn)` : ''}{v?.inspectionNo ? ` · đăng kiểm ${v.inspectionNo}` : ''}</div></div>
+                <div><div className={s.horseName}>Xe {i + 1} · {v?.plate ?? t.vehicleId}</div><div className={s.horseMeta}>{t.tripId}{v ? ` · ${VEHICLE_CLASS[vehicleClassOf(v.capacity)].label} (${v.capacity} ngăn)` : ''}</div></div>
                 <span className="badge badge-info">{t.horseIds.length} ngựa</span>
               </div>
               <dl className={s.grid}>

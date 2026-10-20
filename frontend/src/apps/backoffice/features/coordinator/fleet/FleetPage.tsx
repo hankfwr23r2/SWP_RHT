@@ -14,7 +14,7 @@ import { useOps } from '../../../shared/useOps'
 const VEHICLE_NAME = 'Xe chuyên dụng' // mọi xe đều là xe chuyên dụng chở ngựa
 const VEHICLE_CAPACITIES = [2, 4, 6, 9] as const
 const isSupportedCapacity = (capacity: number) => VEHICLE_CAPACITIES.some(option => option === capacity)
-const EMPTY: Omit<Vehicle, 'id'> = { name: VEHICLE_NAME, type: VEHICLE_NAME, capacity: 2, plate: '', status: 'AVAILABLE', inspectionNo: '', transitPermit: '' }
+const EMPTY: Omit<Vehicle, 'id'> = { name: VEHICLE_NAME, type: VEHICLE_NAME, capacity: 2, plate: '', status: 'AVAILABLE' }
 
 const normalizeStatusKey = (st?: string): string => {
   const s = (st || 'AVAILABLE').toUpperCase().replace(/[\s_-]/g, '')
@@ -62,8 +62,6 @@ export default function FleetPage() {
       type: VEHICLE_NAME,
       plate,
       status: form.status || 'AVAILABLE',
-      inspectionNo: form.inspectionNo?.trim() || `DK-${plate}`,
-      transitPermit: form.transitPermit?.trim() || `LV-${plate}`,
     }
     if (editing) await vehiclesApi.update(editing, data)
     else await vehiclesApi.create(data)
