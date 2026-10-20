@@ -183,16 +183,20 @@ public class BookingServiceImpl implements BookingService {
         }
 
         // 7. Ghi Audit Log vào SYSTEM_LOG
-        SystemLog sysLog = SystemLog.builder()
-                .actionbyUserid(user)
-                .actionType("CREATE_BOOKING")
-                .targetTable("BOOKING")
-                .targetRecordID(savedBooking.getId())
-                .newData("Tạo đơn vận chuyển " + savedBooking.getTotalHorses() + " con ngựa ("
-                        + savedBooking.getPickupAddress() + " -> " + savedBooking.getDropoffAddress() + ")")
-                .createdAt(Instant.now())
-                .build();
-        systemLogRepository.save(sysLog);
+        try {
+            SystemLog sysLog = SystemLog.builder()
+                    .actionbyUserid(user)
+                    .actionType("CREATE_BOOKING")
+                    .targetTable("BOOKING")
+                    .targetRecordID(savedBooking.getId())
+                    .newData("Tạo đơn vận chuyển " + savedBooking.getTotalHorses() + " con ngựa ("
+                            + savedBooking.getPickupAddress() + " -> " + savedBooking.getDropoffAddress() + ")")
+                    .createdAt(Instant.now())
+                    .build();
+            systemLogRepository.save(sysLog);
+        } catch (Exception ex) {
+            log.warn("Failed to write system log for CREATE_BOOKING: {}", ex.getMessage());
+        }
 
         log.info("Successfully created booking ID={} for user={}", savedBooking.getId(), customerUsername);
         return mapToResponse(savedBooking);
@@ -1256,14 +1260,18 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private void logAction(String actionType, Integer targetRecordId, String newData) {
-        SystemLog sysLog = SystemLog.builder()
-                .actionType(actionType)
-                .targetTable("BOOKING")
-                .targetRecordID(targetRecordId)
-                .newData(newData)
-                .createdAt(Instant.now())
-                .build();
-        systemLogRepository.save(sysLog);
+        try {
+            SystemLog sysLog = SystemLog.builder()
+                    .actionType(actionType)
+                    .targetTable("BOOKING")
+                    .targetRecordID(targetRecordId)
+                    .newData(newData)
+                    .createdAt(Instant.now())
+                    .build();
+            systemLogRepository.save(sysLog);
+        } catch (Exception ex) {
+            log.warn("Failed to write system log for action {}: {}", actionType, ex.getMessage());
+        }
     }
 
     private BookingResponse mapToResponse(Booking b) {
