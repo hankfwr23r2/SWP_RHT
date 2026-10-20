@@ -28,10 +28,12 @@ export function StaffTopbar() {
         <span className={s.avatar}>{initials}</span>
         <span className={s.who}><b>{session?.name}</b><small>{session?.username.includes('@') ? session.username : ROLE_LABEL[role]}</small></span>
       </Link>
-      <span className={s.crumb} aria-label="Đường dẫn">
-        <i className="fa-solid fa-chevron-right" aria-hidden="true" />
-        <span className={s.here}>{here && <i className={`fa-solid ${here[2]?.icon}`} aria-hidden="true" />}{here ? here[1] : ROLE_LABEL[role]}</span>
-      </span>
+      {role !== 'specialist' && (
+        <span className={s.crumb} aria-label="Đường dẫn">
+          <i className="fa-solid fa-chevron-right" aria-hidden="true" />
+          <span className={s.here}>{here && <i className={`fa-solid ${here[2]?.icon}`} aria-hidden="true" />}{here ? here[1] : ROLE_LABEL[role]}</span>
+        </span>
+      )}
       <form className={s.search} onSubmit={search} role="search">
         <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
         <input value={q} onChange={e => setQ(e.target.value)} placeholder="Tìm đơn hàng, khách hàng…" aria-label="Tìm đơn hàng" />
