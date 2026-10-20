@@ -22,6 +22,12 @@ export interface BackendHorseDto {
   transitStatus?: string
 }
 
+export interface BackendHorseTypeDto {
+  id: number
+  typeName: string
+  description?: string
+}
+
 export interface BackendHorseJourneyLogDto {
   id: number
   horseId: number
@@ -60,6 +66,11 @@ export const HORSE_DOC_BACKEND_TYPE = {
 } as const
 
 export const backendHorseApi = {
+  listTypes: async (): Promise<BackendHorseTypeDto[]> => {
+    const res = await apiClient.get<ApiResponse<BackendHorseTypeDto[]>>('/horse-types')
+    return res.data.data
+  },
+
   // Lấy tất cả ngựa
   list: async (): Promise<BackendHorseDto[]> => {
     const res = await apiClient.get<ApiResponse<BackendHorseDto[]>>('/horses')

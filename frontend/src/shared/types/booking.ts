@@ -29,6 +29,7 @@ export interface HorseProfile {
   name: string
   microchip: string // khóa định danh, không sửa sau khi lưu
   breed: string
+  horseTypeId?: number
   sex: Sex
   color: string
   birthYear: number

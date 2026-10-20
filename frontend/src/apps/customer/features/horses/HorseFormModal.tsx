@@ -1,13 +1,14 @@
 import { useState, type FormEvent } from 'react'
-import { HORSE_BREEDS as BREEDS, HORSE_DOC, HORSE_DOC_TYPES, type HorseDocType } from '@shared/config/booking-rules'
+import { HORSE_DOC, HORSE_DOC_TYPES, type HorseDocType } from '@shared/config/booking-rules'
 import { horsesApi, type NewHorse } from '@shared/services/horses'
+import { useLoad } from '@shared/services/useLoad'
 import { SEX_LABEL, type HorseDoc, type HorseProfile, type Sex } from '@shared/types/booking'
 import { FileField } from '@shared/ui/FileField'
 import { Modal } from '@shared/ui/Modal'
 import s from './Horses.module.css'
 import { FormSelect } from '@shared/ui/FormSelect'
 
-type Errors = Partial<Record<'name' | 'microchip' | 'color' | 'birthYear' | HorseDocType, string>>
+type Errors = Partial<Record<'name' | 'microchip' | 'breed' | 'color' | 'birthYear' | HorseDocType, string>>
 
 interface Props {
   owner: string
@@ -18,9 +19,10 @@ interface Props {
 
 export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
   const editing = !!horse
+  const { data: horseTypes, loaded: horseTypesLoaded, reload: reloadHorseTypes } = useLoad(() => horsesApi.listTypes(), [])
   const [name, setName] = useState(horse?.name ?? '')
   const [microchip, setMicrochip] = useState(horse?.microchip ?? '')
-  const [breed, setBreed] = useState(horse?.breed ?? BREEDS[0])
+  const [breed, setBreed] = useState(horse?.breed)
   const [sex, setSex] = useState<Sex>(horse?.sex ?? 'mare')
   const [color, setColor] = useState(horse?.color ?? '')
   const [birthYear, setBirthYear] = useState(String(horse?.birthYear ?? ''))
@@ -34,7 +36,14 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
 
   const uploadedDocsCount = HORSE_DOC_TYPES.filter(t => !!docs[t] && (files[t] || docs[t]?.fileName)).length
   const allDocsUploaded = uploadedDocsCount === HORSE_DOC_TYPES.length
-  const hasInfoError = !!(errors.name || errors.microchip || errors.color || errors.birthYear)
+  const hasInfoError = !!(errors.name || errors.microchip || errors.breed || errors.color || errors.birthYear)
+
+  const savedType = horse?.horseTypeId
+    ? horseTypes?.find(type => type.id === horse.horseTypeId)
+    : undefined
+  const selectedBreed = breed ?? savedType?.typeName ?? horseTypes?.[0]?.typeName ?? ''
+
+  const legacyBreed = !!selectedBreed && selectedBreed !== 'Khác' && !horseTypes?.some(type => type.typeName === selectedBreed)
   const setDoc = (t: HorseDocType, patch: Partial<HorseDoc> | undefined) =>
     setDocs(d => {
       const next = { ...d }
@@ -50,13 +59,14 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
     const e: Errors = {}
     if (!name.trim()) e.name = 'Nhập tên ngựa.'
     if (!microchip.trim()) e.microchip = 'Nhập mã microchip.'
+    if (!selectedBreed) e.breed = 'Chọn giống ngựa.'
     if (!color.trim()) e.color = 'Nhập màu lông.'
     const year = Number(birthYear)
     if (!year || year < 1990 || year > new Date().getFullYear()) e.birthYear = 'Nhập năm sinh hợp lệ.'
     setErrors(e)
     const errKeys = Object.keys(e)
     if (errKeys.length > 0) {
-      const infoErr = !!(e.name || e.microchip || e.color || e.birthYear)
+      const infoErr = !!(e.name || e.microchip || e.breed || e.color || e.birthYear)
       if (infoErr) setTab('info')
       else setTab('docs')
       return false
@@ -69,7 +79,8 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
     if (!validate()) return
     setBusy(true)
     setFormError('')
-    const data: NewHorse = { name: name.trim(), microchip, breed, sex, color: color.trim(), birthYear: Number(birthYear), marks: marks.trim(), docs }
+    const type = horseTypes?.find(option => option.typeName === selectedBreed)
+    const data: NewHorse = { name: name.trim(), microchip, breed: selectedBreed, horseTypeId: type?.id ?? (selectedBreed === 'Khác' ? undefined : horse?.horseTypeId), sex, color: color.trim(), birthYear: Number(birthYear), marks: marks.trim(), docs }
     try {
       const saved = editing ? await horsesApi.update(owner, horse.id, data) : await horsesApi.create(owner, data)
       for (const t of HORSE_DOC_TYPES) {
@@ -108,7 +119,7 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
             <i className="fa-solid fa-arrow-left" /> Quay lại: Nhận dạng
           </button>
         )}
-        <button type="submit" form="horse-form" className="btn btn-primary" disabled={busy}>{busy ? 'Đang lưu…' : editing ? 'Lưu thay đổi' : 'Lưu vào hồ sơ'}</button>
+        <button type="submit" form="horse-form" className="btn btn-primary" disabled={busy || !horseTypes?.length}>{busy ? 'Đang lưu…' : editing ? 'Lưu thay đổi' : 'Lưu vào hồ sơ'}</button>
       </>}
     >
       <div className={s.tabBar} role="tablist">
@@ -156,8 +167,19 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
                   <div id="h-chip-hint" className="form-hint">{editing ? 'Mã microchip là khóa định danh, không sửa được sau khi lưu.' : 'Không sửa được sau khi lưu. Kiểm tra kỹ trước khi lưu.'}</div>
                 </div>
                 <div className="form-group">
-                  <label htmlFor="h-breed">Giống</label>
-                  <FormSelect id="h-breed" className="form-control" value={breed} onChange={e => setBreed(e.target.value)}>{BREEDS.map(b => <option key={b}>{b}</option>)}</FormSelect>
+                  <label htmlFor="h-breed" className="required">Giống</label>
+                  <FormSelect id="h-breed" className={`form-control ${errors.breed ? 'invalid' : ''}`} value={selectedBreed} onChange={e => { setBreed(e.target.value); if (errors.breed) setErrors(({ breed: _breed, ...rest }) => rest) }} disabled={!horseTypes?.length}>
+                    {!selectedBreed && <option value="" disabled>{horseTypesLoaded ? 'Chọn giống ngựa' : 'Đang tải danh sách giống…'}</option>}
+                    {horseTypes?.map(type => <option key={type.id} value={type.typeName}>{type.typeName}</option>)}
+                    {legacyBreed && <option value={selectedBreed}>{selectedBreed}</option>}
+                    <option value="Khác">Khác</option>
+                  </FormSelect>
+                  {errors.breed && <div className="form-error">{errors.breed}</div>}
+                  {horseTypesLoaded && !horseTypes?.length && (
+                    <div className="form-error">
+                      Không tải được danh sách giống ngựa. <button type="button" className="btn btn-ghost btn-sm" onClick={reloadHorseTypes}>Thử lại</button>
+                    </div>
+                  )}
                 </div>
                 <div className="form-group">
                   <label htmlFor="h-sex">Giới tính</label>
