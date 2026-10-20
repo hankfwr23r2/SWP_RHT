@@ -5,7 +5,6 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.time.Instant;
-import java.time.LocalDate;
 
 @Getter
 @Setter
@@ -17,7 +16,7 @@ import java.time.LocalDate;
 public class HorseDocument {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "DocumentID", nullable = false)
+    @Column(name = "documentid", nullable = false)
     private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -31,9 +30,6 @@ public class HorseDocument {
     @Size(max = 500)
     @Column(name = "file_url", length = 500)
     private String fileUrl;
-
-    @Column(name = "expiryDate")
-    private LocalDate expiryDate;
 
     @Size(max = 50)
     @Column(name = "status", length = 50)

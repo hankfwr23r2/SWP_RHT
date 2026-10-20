@@ -1,7 +1,7 @@
 // Bằng chứng để Manager duyệt báo giá: giấy ngựa Specialist đã duyệt, lộ trình trên bản đồ, xe / tài xế / hộ tống Coordinator đã chọn.
 import { CLEARANCE_DOC, HORSE_DOC, HORSE_DOC_TYPES, VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { clearanceProgress, vehicleClassOf } from '@shared/lib/booking'
-import { formatDate, formatDateTime } from '@shared/lib/format'
+import { formatDateTime } from '@shared/lib/format'
 import { crewApi, vehiclesApi } from '@shared/services/fleet'
 import { horsesApi } from '@shared/services/horses'
 import { useLoad } from '@shared/services/useLoad'
@@ -32,7 +32,7 @@ export function HorseDocsSection({ b, reviewed = true }: { b: Booking; reviewed?
             {HORSE_DOC_TYPES.map(d => { const f = h.docs[d]; return (
               <div key={d} className={s.docFile}>
                 {f ? <ImageThumb name={f.fileUrl || f.fileName} size={56} /> : <span className={s.docEmpty}><i className="fa-regular fa-file" aria-hidden="true" /></span>}
-                <div><b>{renderDocLabel(HORSE_DOC[d].label)}</b><small>{f ? `${f.fileName} · nộp ${formatDateTime(f.uploadedAt)}${f.expiresAt ? ` · hạn ${formatDate(f.expiresAt)}` : ''}` : 'Khách chưa nộp'}</small></div>
+                <div><b>{renderDocLabel(HORSE_DOC[d].label)}</b><small>{f ? `${f.fileName} · nộp ${formatDateTime(f.uploadedAt)}` : 'Khách chưa nộp'}</small></div>
               </div>
             ) })}
           </div>

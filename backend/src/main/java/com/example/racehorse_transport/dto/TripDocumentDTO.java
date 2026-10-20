@@ -20,6 +20,5 @@ public class TripDocumentDTO implements Serializable {
     private String documentNumber;
     private String fileUrl;
     private LocalDate issueDate;
-    private LocalDate expiryDate;
     private String status;
 }

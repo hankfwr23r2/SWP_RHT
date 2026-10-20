@@ -16,7 +16,7 @@ import {
 const NOW = new Date(2026, 9, 1, 10, 0).getTime() // 01/10/2026 10:00
 
 const horse = (docs: HorseProfile['docs']): HorseProfile => ({ id: 'H1', owner: 'x', name: 'A', microchip: 'VN-1', breed: 'Thoroughbred', sex: 'mare', color: 'Nâu', birthYear: 2020, marks: '', docs, completedTrips: 0, createdAt: NOW })
-const doc = (expiresAt?: number) => ({ fileName: 'f.pdf', uploadedAt: NOW, expiresAt })
+const doc = () => ({ fileName: 'f.pdf', uploadedAt: NOW })
 const bh = (over: Partial<BookingHorse> = {}): BookingHorse => ({ horseId: 'H1', name: 'A', microchip: 'VN-1', breed: 'Thoroughbred', sex: 'mare', stall: 'standard', feedPackage: 'basic', waterPlan: 'every_3h', insurance: { opted: false }, ...over })
 
 describe('ngày khởi hành', () => {
@@ -35,20 +35,13 @@ describe('ngày khởi hành', () => {
 })
 
 describe('hồ sơ ngựa', () => {
-  const future = NOW + 200 * DAY
-  it('đủ 3 giấy còn hạn là sẵn sàng đặt', () => {
-    expect(horseReadiness(horse({ passport: doc(), vaccine: doc(future), lab: doc(future) }), NOW).ok).toBe(true)
+  it('đủ 3 giấy đã nộp là sẵn sàng đặt', () => {
+    expect(horseReadiness(horse({ passport: doc(), vaccine: doc(), lab: doc() })).ok).toBe(true)
   })
-  it('thiếu giấy hoặc hết hạn thì báo đúng giấy', () => {
-    const r = horseReadiness(horse({ passport: doc(), vaccine: doc(NOW - DAY) }), NOW)
+  it('báo đúng giấy còn thiếu', () => {
+    const r = horseReadiness(horse({ passport: doc(), vaccine: doc() }))
     expect(r.ok).toBe(false)
     expect(r.missing).toEqual(['lab'])
-    expect(r.expired).toEqual(['vaccine'])
-  })
-  it('giấy hết hạn trước ngày khởi hành thì không đủ điều kiện', () => {
-    const h = horse({ passport: doc(), vaccine: doc(NOW + 10 * DAY), lab: doc(NOW + 100 * DAY) })
-    expect(horseReadiness(h, NOW).ok).toBe(true)
-    expect(horseReadiness(h, NOW + 40 * DAY).expired).toEqual(['vaccine'])
   })
 })
 
@@ -709,4 +702,3 @@ describe('autoPackFleet - Tự động phân bổ xe thông minh', () => {
     expect(res[0].vehicleId).toBe('V2')
   })
 })
-

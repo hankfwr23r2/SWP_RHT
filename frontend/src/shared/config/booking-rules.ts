@@ -17,10 +17,10 @@ export const VEHICLE_CLASS: Record<VehicleClass, { label: string; kind: string; 
 
 // ===== Hồ sơ ngựa (PRD mục 2.1, 12) =====
 export type HorseDocType = 'passport' | 'vaccine' | 'lab'
-export const HORSE_DOC: Record<HorseDocType, { label: string; short: string; hint: string; hasExpiry: boolean }> = {
-  passport: { label: 'Hộ chiếu ngựa (FEI / National Passport)', short: 'Hộ chiếu', hint: 'Có sơ đồ nhận dạng và số microchip trùng chip trên thân ngựa.', hasExpiry: false },
-  vaccine: { label: 'Sổ tiêm phòng', short: 'Sổ tiêm', hint: 'Cúm ngựa còn hạn trong 6 đến 12 tháng, Uốn ván còn hiệu lực.', hasExpiry: true },
-  lab: { label: 'Xét nghiệm EIA / Coggins', short: 'Xét nghiệm', hint: 'Kết quả âm tính trong vòng 6 đến 12 tháng.', hasExpiry: true },
+export const HORSE_DOC: Record<HorseDocType, { label: string; short: string; hint: string }> = {
+  passport: { label: 'Hộ chiếu ngựa (FEI / National Passport)', short: 'Hộ chiếu', hint: 'Có sơ đồ nhận dạng và số microchip trùng chip trên thân ngựa.' },
+  vaccine: { label: 'Sổ tiêm phòng', short: 'Sổ tiêm', hint: 'Có thông tin tiêm phòng của ngựa.' },
+  lab: { label: 'Xét nghiệm EIA / Coggins', short: 'Xét nghiệm', hint: 'Có kết quả xét nghiệm EIA / Coggins.' },
 }
 export const HORSE_BREEDS = ['Thoroughbred', 'Arabian', 'Quarter Horse', 'Warmblood', 'Appaloosa', 'Khác']
 export const HORSE_DOC_TYPES = Object.keys(HORSE_DOC) as HorseDocType[]
@@ -175,4 +175,3 @@ export const WELFARE_CONDITION: Record<WelfareCondition, { label: string; tone: 
   stress: { label: 'Căng thẳng (Stress)', tone: 'warning' },
   sweating: { label: 'Đổ mồ hôi nhiều', tone: 'warning' },
 }
-

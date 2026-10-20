@@ -5,8 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
-
 /**
  * Request metadata khi khach hang upload ho so ngua (Form-data).
  * File thuc te duoc gui rieng qua MultipartFile.
@@ -29,7 +27,4 @@ public class UploadHorseDocumentRequest {
      * OTHER           - Giay to khac
      */
     private String documentType;
-
-    /** Ngay het han cua giay to (neu co) */
-    private LocalDate expiryDate;
 }
