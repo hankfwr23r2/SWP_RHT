@@ -134,8 +134,8 @@ export default function HorsesPage() {
                       <button className={`btn btn-sm ${r.ok ? 'btn-ghost' : 'btn-primary'}`} onClick={() => setModal({ horse: h })}>
                         {r.ok ? 'Xem / sửa' : 'Bổ sung giấy'}
                       </button>
-                      <button className="btn btn-sm btn-danger" onClick={() => setDeleteHorse(h)}>
-                        <i className="fa-solid fa-trash" aria-hidden="true" /> Xóa
+                      <button className="btn btn-ghost btn-sm text-red" onClick={() => setDeleteHorse(h)}>
+                        Xóa
                       </button>
                     </div>
                   </div>
