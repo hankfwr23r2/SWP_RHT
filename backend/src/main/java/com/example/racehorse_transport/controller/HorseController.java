@@ -8,6 +8,7 @@ import com.example.racehorse_transport.entity.Horse;
 import com.example.racehorse_transport.entity.HorseJourneyLog;
 import com.example.racehorse_transport.entity.User;
 import com.example.racehorse_transport.repository.CustomerRepository;
+import com.example.racehorse_transport.repository.HorseTypeRepository;
 import com.example.racehorse_transport.repository.HorseJourneyLogRepository;
 import com.example.racehorse_transport.repository.HorseRepository;
 import com.example.racehorse_transport.repository.UserRepository;
@@ -31,6 +32,7 @@ public class HorseController {
 
     private final HorseService horseService;
     private final HorseRepository horseRepository;
+    private final HorseTypeRepository horseTypeRepository;
     private final CustomerRepository customerRepository;
     private final UserRepository userRepository;
     private final HorseJourneyLogRepository horseJourneyLogRepository;
@@ -185,6 +187,12 @@ public class HorseController {
         if (request.getWeight() != null) horse.setWeight(request.getWeight());
         if (request.getIdentificationMarks() != null) horse.setIdentificationMarks(request.getIdentificationMarks());
         if (request.getStatus() != null) horse.setStatus(request.getStatus());
+        if (request.getHorseTypeID() != null) {
+            horse.setHorseTypeID(horseTypeRepository.findById(request.getHorseTypeID())
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giống ngựa.")));
+        } else if ("Khác".equalsIgnoreCase(request.getBreed())) {
+            horse.setHorseTypeID(null);
+        }
         if (request.getCurrentLocationName() != null) horse.setCurrentLocationName(request.getCurrentLocationName().trim());
         if (request.getCurrentCountry() != null) horse.setCurrentCountry(request.getCurrentCountry().trim());
         if (request.getLocationUpdatedAt() != null) horse.setLocationUpdatedAt(request.getLocationUpdatedAt());

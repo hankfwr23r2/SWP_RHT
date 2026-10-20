@@ -4,6 +4,7 @@ import type { HorseDocType } from '../config/booking-rules'
 import type { HorseDoc, HorseProfile } from '../types/booking'
 
 export type NewHorse = Omit<HorseProfile, 'id' | 'owner' | 'completedTrips' | 'createdAt'>
+export type HorseTypeOption = { id: number; typeName: string; description?: string }
 const normalizeChip = (s: string) => s.trim().toUpperCase()
 const horseCode = (id?: number) => `H-${String(id ?? 0).padStart(3, '0')}`
 const numericId = (id: string) => Number(id.replace(/\D/g, ''))
@@ -30,7 +31,7 @@ function docsOf(list: BackendHorseDocResponse[]): Partial<Record<HorseDocType, H
 function profileOf(h: BackendHorseDto, owner: string, docs: Partial<Record<HorseDocType, HorseDoc>>): HorseProfile {
   return {
     id: horseCode(h.id), owner, name: h.horseName, microchip: h.microchipID,
-    breed: h.breed ?? '', sex: (h.gender?.toLowerCase() ?? '') as HorseProfile['sex'], color: h.color ?? '',
+    breed: h.breed ?? '', horseTypeId: h.horseTypeID, sex: (h.gender?.toLowerCase() ?? '') as HorseProfile['sex'], color: h.color ?? '',
     birthYear: h.age !== undefined ? thisYear() - h.age : 0, marks: h.identificationMarks ?? '',
     docs, completedTrips: h.completedTrips ?? 0, createdAt: h.createdAt ? new Date(h.createdAt).getTime() : 0,
     currentLocationName: h.currentLocationName,
@@ -44,12 +45,15 @@ function profileOf(h: BackendHorseDto, owner: string, docs: Partial<Record<Horse
 const withDocs = async (h: BackendHorseDto, owner: string) =>
   profileOf(h, owner, h.id ? docsOf(await backendHorseApi.getDocuments(h.id)) : {})
 
-const payloadOf = (data: Pick<NewHorse, 'name' | 'breed' | 'sex' | 'color' | 'birthYear' | 'marks'>, microchip: string): BackendHorseDto => ({
+const payloadOf = (data: Pick<NewHorse, 'name' | 'breed' | 'horseTypeId' | 'sex' | 'color' | 'birthYear' | 'marks'>, microchip: string): BackendHorseDto => ({
+  horseTypeID: data.horseTypeId,
   horseName: data.name, microchipID: microchip, breed: data.breed, gender: data.sex, color: data.color,
   age: thisYear() - data.birthYear, identificationMarks: data.marks, status: 'ACTIVE',
 })
 
 export const horsesApi = {
+  listTypes: async (): Promise<HorseTypeOption[]> => backendHorseApi.listTypes(),
+
   list: async (owner: string): Promise<HorseProfile[]> =>
     Promise.all((await backendHorseApi.list()).map(h => withDocs(h, owner))),
 
@@ -87,7 +91,7 @@ export const horsesApi = {
     const current = n ? await horsesApi.byId(id) : undefined
     if (!current) throw new Error('Không tìm thấy ngựa.')
     if (patch.microchip !== undefined && normalizeChip(patch.microchip) !== current.microchip) throw new Error('Không sửa được mã microchip sau khi đã lưu.')
-    const merged = { name: patch.name ?? current.name, breed: patch.breed ?? current.breed, sex: patch.sex ?? current.sex, color: patch.color ?? current.color, birthYear: patch.birthYear ?? current.birthYear, marks: patch.marks ?? current.marks }
+    const merged = { name: patch.name ?? current.name, breed: patch.breed ?? current.breed, horseTypeId: patch.horseTypeId ?? current.horseTypeId, sex: patch.sex ?? current.sex, color: patch.color ?? current.color, birthYear: patch.birthYear ?? current.birthYear, marks: patch.marks ?? current.marks }
     const updated = await backendHorseApi.update(n, { id: n, ...payloadOf(merged, current.microchip) })
     return profileOf(updated, owner, current.docs)
   },
