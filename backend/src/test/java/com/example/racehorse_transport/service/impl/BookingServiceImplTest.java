@@ -27,6 +27,7 @@ import com.example.racehorse_transport.service.FleetService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.time.Instant;
 import java.util.List;
@@ -85,6 +86,7 @@ class BookingServiceImplTest {
         User user = new User();
         user.setId(7);
         user.setUsername("phuc");
+        user.setEmail("phuc@example.com");
         customer = new Customer();
         customer.setId(7);
         customer.setUser(user);
@@ -209,6 +211,46 @@ class BookingServiceImplTest {
                 .hasMessageContaining("không thuộc tài khoản của bạn");
 
         verify(systemLogRepository, never()).save(any());
+    }
+
+    @Test
+    void getBookingById_allowsOwnerUsernameOrEmail() {
+        Booking booking = bookingOwnedByCustomer();
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+
+        BookingResponse byUsername = service.getBookingById(42, "phuc");
+        BookingResponse byEmail = service.getBookingById(42, "phuc@example.com");
+
+        assertThat(byUsername.getNumericId()).isEqualTo(42);
+        assertThat(byEmail.getNumericId()).isEqualTo(42);
+    }
+
+    @Test
+    void getBookingById_rejectsAnotherCustomer() {
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(bookingOwnedByCustomer()));
+
+        assertThatThrownBy(() -> service.getBookingById(42, "another-customer"))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("không có quyền xem đơn hàng này");
+    }
+
+    @Test
+    void getBookingById_rejectsUnknownBooking() {
+        when(bookingRepository.findById(404)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getBookingById(404, "phuc"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Không tìm thấy đơn hàng có ID: 404");
+    }
+
+    private Booking bookingOwnedByCustomer() {
+        return Booking.builder()
+                .id(42)
+                .customerID(customer)
+                .status("pending_intake")
+                .bookingDate(Instant.parse("2026-10-20T10:00:00Z"))
+                .departureDate(Instant.parse("2027-01-15T10:00:00Z"))
+                .build();
     }
 
     private void givenCustomerCanCreateBooking() {
