@@ -55,8 +55,8 @@ public class SecurityConfig {
                 
                 // Cấu hình phân quyền truy cập URL
                 .authorizeHttpRequests(auth -> auth
-                        // Cho phép truy cập tự do vào các API Auth, Swagger UI tài liệu API, và tra cứu đơn công khai
-                        .requestMatchers("/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/bookings/public-track").permitAll()
+                        // Cho phép truy cập tự do vào các API Auth, Swagger UI tài liệu API, tra cứu đơn công khai và health check
+                        .requestMatchers("/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/bookings/public-track", "/health", "/health/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
                         // VNPAY gọi IPN server-to-server và trang kết quả gửi lại tham số: bảo vệ bằng chữ ký HMAC, không cần token
