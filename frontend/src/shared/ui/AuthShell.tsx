@@ -25,7 +25,7 @@ export function AuthShell({ title, subtitle, heading = 'Vận chuyển Ngựa đ
           <h1>{heading}</h1>
           <p>{tagline}</p>
         </div>
-        <div className={s.footer}>© 2026 Vận chuyển Ngựa đua. SWP Project.</div>
+        <div className={s.footer}>Hệ thống vận chuyển ngựa đua chuyên nghiệp</div>
       </div>
       <div className={s.right}>
         <div className={s.box}>

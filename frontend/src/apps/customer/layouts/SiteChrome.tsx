@@ -69,7 +69,7 @@ function Footer() {
           <Link to="/login">Đặt chuyến</Link>
         </div>
       </div>
-      <div className={cx('wrap', s.copyright)}>© 2026 Vận chuyển Ngựa đua. SWP Project.</div>
+      <div className={cx('wrap', s.copyright)}>Hệ thống vận chuyển ngựa đua chuyên nghiệp</div>
     </footer>
   )
 }
