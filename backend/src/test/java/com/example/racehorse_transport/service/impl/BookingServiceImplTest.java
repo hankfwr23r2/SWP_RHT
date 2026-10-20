@@ -31,8 +31,12 @@ import org.springframework.security.access.AccessDeniedException;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -241,6 +245,69 @@ class BookingServiceImplTest {
         assertThatThrownBy(() -> service.getBookingById(404, "phuc"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Không tìm thấy đơn hàng có ID: 404");
+    }
+
+    @Test
+    void resubmitBooking_resetsMedicalReviewForOwner() {
+        Booking booking = bookingOwnedByCustomer();
+        booking.setStatus("resubmission_requested");
+        booking.setDetailsJson("""
+                {
+                  "medical": {
+                    "status": "rejected",
+                    "reason": "Thiếu chứng từ",
+                    "items": ["health certificate"],
+                    "requestedAt": 1000,
+                    "requestedBy": "specialist"
+                  },
+                  "history": []
+                }
+                """);
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        BookingResponse response = service.resubmitBooking("BK-042", "phuc");
+
+        assertThat(response.getStatus()).isEqualTo("under_review");
+        assertThat(response.getMedical()).isInstanceOf(Map.class);
+        Map<?, ?> medical = (Map<?, ?>) response.getMedical();
+        assertEquals("pending", medical.get("status"));
+        assertTrue(medical.containsKey("resubmittedAt"));
+        assertFalse(medical.containsKey("reason"));
+        assertFalse(medical.containsKey("items"));
+        assertFalse(medical.containsKey("requestedAt"));
+        assertFalse(medical.containsKey("requestedBy"));
+        assertThat(response.getHistory()).hasSize(1);
+        assertThat(response.getHistory().get(0))
+                .containsEntry("actor", "phuc")
+                .containsEntry("text", "Khách đã bổ sung hồ sơ và gửi lại Kiểm dịch viên thẩm định");
+        verify(bookingRepository).save(booking);
+    }
+
+    @Test
+    void resubmitBooking_rejectsAnotherCustomer() {
+        Booking booking = bookingOwnedByCustomer();
+        booking.setStatus("resubmission_requested");
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+
+        assertThatThrownBy(() -> service.resubmitBooking("42", "another-customer"))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("không có quyền");
+
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
+    void resubmitBooking_rejectsBookingInAnotherStatus() {
+        Booking booking = bookingOwnedByCustomer();
+        booking.setStatus("pending_intake");
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+
+        assertThatThrownBy(() -> service.resubmitBooking("ORD-42", "phuc"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("không chờ khách bổ sung hồ sơ");
+
+        verify(bookingRepository, never()).save(any(Booking.class));
     }
 
     private Booking bookingOwnedByCustomer() {
