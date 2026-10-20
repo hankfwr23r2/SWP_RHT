@@ -44,7 +44,7 @@ export function StaffLayout({ children }: { children: ReactNode }) {
     <>
       <Header />
       <main><PageTransition>{children}</PageTransition></main>
-      <footer className={h.footer}>© 2026 Vận chuyển Ngựa đua. SWP Project.</footer>
+      <footer className={h.footer}>Hệ thống vận chuyển ngựa đua chuyên nghiệp</footer>
       <TranslateToggle />
     </>
   )
