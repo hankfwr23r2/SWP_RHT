@@ -15,8 +15,6 @@ import LegalListPage from './features/specialist/legal/LegalListPage'
 import LegalReviewPage from './features/specialist/legal/LegalReviewPage'
 import FleetPlanListPage from './features/coordinator/fleet-plan/FleetPlanListPage'
 import FleetPlanPage from './features/coordinator/fleet-plan/FleetPlanPage'
-import DispatchListPage from './features/coordinator/dispatch/DispatchListPage'
-import DispatchPage from './features/coordinator/dispatch/DispatchPage'
 import MonitoringPage from './features/coordinator/monitoring/MonitoringPage'
 import CoordinatorIncidentsPage from './features/coordinator/incidents/CoordinatorIncidentsPage'
 import FleetPage from './features/coordinator/fleet/FleetPage'
@@ -49,8 +47,6 @@ export const routes: AppRoute[] = [
 
   { path: '/coordinator/fleet-plan', page: FleetPlanListPage, roles: CO, title: 'Xe và lộ trình', layout: 'staff' },
   { path: '/coordinator/fleet-plan/:id', page: FleetPlanPage, roles: CO, title: 'Chốt xe và lộ trình một đơn', layout: 'staff' },
-  { path: '/coordinator/dispatch', page: DispatchListPage, roles: CO, title: 'Giấy cho tài xế', layout: 'staff' },
-  { path: '/coordinator/dispatch/:id', page: DispatchPage, roles: CO, title: 'Nhập bộ giấy cho tài xế', layout: 'staff' },
   { path: '/coordinator/monitoring', page: MonitoringPage, roles: CO, title: 'Giám sát vận chuyển', layout: 'staff' },
   { path: '/coordinator/incidents', page: CoordinatorIncidentsPage, roles: CO, title: 'Xử lý sự cố', layout: 'staff' },
   { path: '/coordinator/fleet', page: FleetPage, roles: CO, title: 'Quản lý đội xe', layout: 'staff' },
