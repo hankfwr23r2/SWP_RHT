@@ -60,7 +60,7 @@ export function OrderDetailModal({ b, onClose, onDone }: { b: Booking; onClose: 
         tabs={[
           { id: 'summary', label: 'Tổng quan', icon: 'fa-chart-pie', content: summary },
           { id: 'customer', label: 'Khách hàng', icon: 'fa-user', content: <PartiesInfo b={b} /> },
-          { id: 'docs', label: 'Hồ sơ ngựa', icon: 'fa-file-medical', content: <HorseDocsSection b={b} /> },
+          { id: 'docs', label: 'Hồ sơ ngựa', icon: 'fa-file-medical', content: <HorseDocsSection b={b} reviewed={b.status !== 'pending_intake'} /> },
           { id: 'order', label: 'Thông tin đơn', icon: 'fa-clipboard-list', content: <OrderInfo b={b} /> },
           { id: 'papers', label: 'Giấy tờ chuyến', icon: 'fa-file-signature', content: <ClearanceSection b={b} /> },
           { id: 'crew', label: 'Tài xế, hộ tống', icon: 'fa-id-card', state: (b.trips ?? []).length && (b.trips ?? []).every(x => x.driverId && x.escortId) ? 'ok' : undefined, content: <CrewTab b={b} /> },

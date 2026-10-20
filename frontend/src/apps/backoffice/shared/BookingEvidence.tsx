@@ -21,10 +21,10 @@ export function HorseDocsSection({ b, reviewed = true }: { b: Booking; reviewed?
   const { data: horses } = useLoad(async () => (await Promise.all(b.horses.map(h => horsesApi.byId(h.horseId)))).filter(Boolean), [b.id])
   return (
     <>
-      <h4 style={{ margin: '18px 0 10px' }}>{reviewed ? 'Giấy ngựa Kiểm dịch viên đã duyệt' : 'Giấy ngựa khách đã nộp'}</h4>
+      <h4 style={{ margin: '18px 0 10px' }}>{reviewed ? 'Giấy ngựa Kiểm dịch viên đã duyệt' : 'Giấy ngựa Kiểm dịch viên sẽ duyệt'}</h4>
       {reviewed
         ? <p className={s.hint} style={{ marginTop: -4 }}>Kết luận: <b>{b.medical?.status === 'approved' ? 'Đạt' : 'Chưa đạt'}</b>{b.medical?.by ? ` · ${b.medical.by}` : ''}{b.medical?.at ? ` · ${formatDateTime(b.medical.at)}` : ''}. Bấm ảnh để xem lớn.</p>
-        : <p className={s.hint} style={{ marginTop: -4 }}>Kiểm dịch viên sẽ đối chiếu sau khi bạn tiếp nhận. Bấm ảnh để xem lớn.</p>}
+        : <p className={s.hint} style={{ marginTop: -4 }}>Kết luận: <b>Chưa duyệt</b>. Kiểm dịch viên sẽ đối chiếu sau khi bạn tiếp nhận. Bấm ảnh để xem lớn.</p>}
       {(horses ?? []).map(h => h && (
         <div key={h.id} className={s.horse}>
           <div className={s.horseTop}><div><div className={s.horseName}>{h.name}</div><div className={s.horseMeta}>Chip {h.microchip} · {h.breed}</div></div></div>
