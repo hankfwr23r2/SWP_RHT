@@ -8,6 +8,7 @@ import { horsesApi } from '@shared/services/horses'
 import { useLoad } from '@shared/services/useLoad'
 import { SEX_LABEL, type HorseProfile } from '@shared/types/booking'
 import { HorseDocChips } from '@shared/ui/HorseDocChips'
+import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
 import { HorseFormModal } from './HorseFormModal'
 import { HorseJourneyModal } from './HorseJourneyModal'
@@ -31,10 +32,26 @@ export default function HorsesPage() {
   const [modal, setModal] = useState<{ horse?: HorseProfile } | null>(null)
   const [relocateHorse, setRelocateHorse] = useState<HorseProfile | null>(null)
   const [journeyHorse, setJourneyHorse] = useState<HorseProfile | null>(null)
+  const [deleteHorse, setDeleteHorse] = useState<HorseProfile | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const list = horses ?? []
   const ready = list.filter(h => horseReadiness(h).ok)
   const shown = filter === 'all' ? list : filter === 'ready' ? ready : list.filter(h => !horseReadiness(h).ok)
   const gridRef = useStaggerIn('[data-horse]', [filter, list.length])
+  const removeHorse = async () => {
+    if (!deleteHorse) return
+    setDeleting(true)
+    try {
+      await horsesApi.remove(deleteHorse.id)
+      toast(`Đã xóa hồ sơ ${deleteHorse.name}`)
+      setDeleteHorse(null)
+      reload()
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Không thể xóa hồ sơ ngựa.', 'error')
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   return (
     <div className="page">
@@ -117,6 +134,9 @@ export default function HorsesPage() {
                       <button className={`btn btn-sm ${r.ok ? 'btn-ghost' : 'btn-primary'}`} onClick={() => setModal({ horse: h })}>
                         {r.ok ? 'Xem / sửa' : 'Bổ sung giấy'}
                       </button>
+                      <button className="btn btn-sm btn-danger" onClick={() => setDeleteHorse(h)}>
+                        <i className="fa-solid fa-trash" aria-hidden="true" /> Xóa
+                      </button>
                     </div>
                   </div>
                 </article>
@@ -151,6 +171,24 @@ export default function HorsesPage() {
           onClose={() => setJourneyHorse(null)}
           onOpenRelocate={() => setRelocateHorse(journeyHorse)}
         />
+      )}
+
+      {deleteHorse && (
+        <Modal
+          title={`Xóa hồ sơ ${deleteHorse.name}?`}
+          subtitle="Hành động này không thể hoàn tác."
+          onClose={() => { if (!deleting) setDeleteHorse(null) }}
+          footer={
+            <>
+              <button className="btn btn-ghost" disabled={deleting} onClick={() => setDeleteHorse(null)}>Hủy</button>
+              <button className="btn btn-danger" disabled={deleting} onClick={removeHorse}>
+                <i className="fa-solid fa-trash" aria-hidden="true" /> {deleting ? 'Đang xóa…' : 'Xác nhận xóa'}
+              </button>
+            </>
+          }
+        >
+          <p>Hồ sơ ngựa và giấy tờ liên quan sẽ bị xóa. Hồ sơ đã được dùng trong đơn vận chuyển hoặc có lịch sử chăm sóc, hành trình sẽ không thể xóa.</p>
+        </Modal>
       )}
     </div>
   )

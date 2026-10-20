@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface HorseJourneyLogRepository extends JpaRepository<HorseJourneyLog, Long> {
     List<HorseJourneyLog> findByHorse_IdOrderByCreatedAtDesc(Integer horseId);
+    boolean existsByHorse_Id(Integer horseId);
 }
