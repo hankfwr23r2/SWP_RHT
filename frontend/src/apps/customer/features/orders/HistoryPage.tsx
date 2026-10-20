@@ -32,13 +32,14 @@ export default function HistoryPage() {
         <div className="breadcrumb"><Link to="/portal">Trang chủ</Link> / <span className="text-orange font-semibold">Lịch sử đơn</span></div>
         <div className="page-header"><h1>Lịch sử đơn</h1><p>Các đơn đã kết thúc. Bấm một đơn để xem lại diễn biến và hồ sơ.</p></div>
 
-        <div className={s.tabBar} role="tablist" aria-label="Kết quả đơn">
-          {TABS.map(([k, label]) => (
-            <button key={k} role="tab" aria-selected={tab === k} className={`${s.tab} ${tab === k ? s.tabOn : ''}`} onClick={() => setTab(k)}>{label}<span className={s.num}>{count(k)}</span></button>
-          ))}
-        </div>
         <div className={s.filters}>
           <label className={s.search}><i className="fa-solid fa-magnifying-glass" aria-hidden="true" /><input className="form-control" placeholder="Tìm theo mã đơn, điểm đón, điểm giao, tên ngựa" value={text} onChange={e => setText(e.target.value)} /></label>
+          <label className={s.statusFilter} htmlFor="history-status-filter">
+            <span>Trạng thái</span>
+            <select id="history-status-filter" className={`form-control ${s.statusSelect}`} value={tab} onChange={e => setTab(e.target.value as Tab)}>
+              {TABS.map(([k, label]) => <option key={k} value={k}>{label} ({count(k)})</option>)}
+            </select>
+          </label>
         </div>
 
         <div className="table-wrap">
