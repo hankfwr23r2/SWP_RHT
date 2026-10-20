@@ -121,11 +121,7 @@ export default function HorsesPage() {
                   <HorseDocChips horse={h} />
                   {!r.ok && (
                     <div className={s.warn}>
-                      {r.missing.length && r.expired.length
-                        ? 'Bổ sung giấy tờ còn thiếu và gia hạn giấy đã hết hạn để đặt chuyến.'
-                        : r.missing.length
-                          ? 'Bổ sung giấy tờ còn thiếu để đặt chuyến.'
-                          : 'Gia hạn giấy tờ đã hết hạn để đặt chuyến.'}
+                      Bổ sung giấy tờ còn thiếu để đặt chuyến.
                     </div>
                   )}
 

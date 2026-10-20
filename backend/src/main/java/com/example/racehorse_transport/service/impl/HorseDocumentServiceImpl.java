@@ -15,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -78,7 +77,6 @@ public class HorseDocumentServiceImpl implements HorseDocumentService {
     @Transactional
     public HorseDocumentResponse uploadHorseDocument(Integer horseId,
                                                      String documentType,
-                                                     LocalDate expiryDate,
                                                      MultipartFile file) {
         // 1. Kiểm tra con ngựa tồn tại
         Horse horse = horseRepository.findById(horseId)
@@ -112,7 +110,6 @@ public class HorseDocumentServiceImpl implements HorseDocumentService {
         document.setHorseID(horse);
         document.setDocumentType(docType);
         document.setFileUrl(fileUrl);
-        document.setExpiryDate(expiryDate);
         document.setStatus("PENDING");          // Chờ chuyên viên duyệt
         document.setUploadDate(Instant.now());
 
@@ -121,17 +118,6 @@ public class HorseDocumentServiceImpl implements HorseDocumentService {
                 horseId, docType, fileUrl);
 
         return mapToResponse(saved);
-    }
-
-    /**
-     * Overload upload hồ sơ ngựa trả về Entity (tương thích ngược).
-     */
-    @Override
-    @Transactional
-    public HorseDocument uploadHorseDocument(Integer horseId, String documentType,
-                                             MultipartFile file, LocalDate expiryDate) {
-        HorseDocumentResponse response = uploadHorseDocument(horseId, documentType, expiryDate, file);
-        return horseDocumentRepository.findById(response.getId()).orElse(null);
     }
 
     /**
@@ -184,16 +170,6 @@ public class HorseDocumentServiceImpl implements HorseDocumentService {
 
         HorseDocument saved = horseDocumentRepository.save(document);
         return mapToResponse(saved);
-    }
-
-    @Override
-    @Transactional
-    public HorseDocumentResponse updateExpiryDate(Integer documentId, LocalDate expiryDate) {
-        HorseDocument document = horseDocumentRepository.findById(documentId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Không tìm thấy hồ sơ với ID: " + documentId));
-        document.setExpiryDate(expiryDate);
-        return mapToResponse(horseDocumentRepository.save(document));
     }
 
     /**
@@ -253,7 +229,6 @@ public class HorseDocumentServiceImpl implements HorseDocumentService {
                 .horseName(horseName)
                 .documentType(doc.getDocumentType())
                 .fileUrl(doc.getFileUrl())
-                .expiryDate(doc.getExpiryDate())
                 .status(doc.getStatus())
                 .uploadDate(doc.getUploadDate())
                 .reviewNote(doc.getReviewNote())

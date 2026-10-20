@@ -2,14 +2,12 @@ package com.example.racehorse_transport.controller;
 
 import com.example.racehorse_transport.dto.document.HorseDocumentResponse;
 import com.example.racehorse_transport.dto.document.ReviewHorseDocumentRequest;
-import com.example.racehorse_transport.dto.document.UpdateHorseDocumentExpiryRequest;
 import com.example.racehorse_transport.entity.HorseDocument;
 import com.example.racehorse_transport.entity.Horse;
 import com.example.racehorse_transport.repository.HorseRepository;
 import com.example.racehorse_transport.response.ApiResponse;
 import com.example.racehorse_transport.service.HorseDocumentService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,9 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import jakarta.validation.Valid;
 
-import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -51,7 +47,6 @@ public class HorseDocumentController {
      *   - file         : File ảnh (JPG/PNG) hoặc PDF
      *   - horseId      : ID con ngựa
      *   - documentType : PASSPORT | VACCINATION | BLOOD_TEST | HEALTH_CERT | OTHER
-     *   - expiryDate   : Ngày hết hạn (yyyy-MM-dd, không bắt buộc)
      */
     @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'ADMIN')")
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -59,14 +54,12 @@ public class HorseDocumentController {
             @RequestParam("file") MultipartFile file,
             @RequestParam("horseId") Integer horseId,
             @RequestParam(value = "documentType", required = false, defaultValue = "OTHER") String documentType,
-            @RequestParam(value = "expiryDate", required = false)
-            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate expiryDate,
             Authentication authentication) {
 
         assertHorseAccess(horseId, authentication);
 
         HorseDocumentResponse response = horseDocumentService.uploadHorseDocument(
-                horseId, documentType, expiryDate, file);
+                horseId, documentType, file);
 
         return ResponseEntity.ok(ApiResponse.success(response,
                 "Upload hồ sơ thành công! Hồ sơ đang chờ chuyên viên xét duyệt."));
@@ -96,23 +89,6 @@ public class HorseDocumentController {
                 : "Hồ sơ đã bị TỪ CHỐI. Khách hàng cần bổ sung lại.";
 
         return ResponseEntity.ok(ApiResponse.success(response, message));
-    }
-
-    @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'ADMIN')")
-    @PutMapping("/{id}/expiry")
-    public ResponseEntity<ApiResponse<HorseDocumentResponse>> updateDocumentExpiry(
-            @PathVariable Integer id,
-            @Valid @RequestBody UpdateHorseDocumentExpiryRequest request,
-            Authentication authentication) {
-        HorseDocument document = horseDocumentService.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hồ sơ ID: " + id));
-        Integer horseId = document.getHorseID() != null ? document.getHorseID().getId() : null;
-        if (horseId == null) {
-            throw new IllegalArgumentException("Hồ sơ không gắn với ngựa nào.");
-        }
-        assertHorseAccess(horseId, authentication);
-        HorseDocumentResponse response = horseDocumentService.updateExpiryDate(id, request.getExpiryDate());
-        return ResponseEntity.ok(ApiResponse.success(response, "Đã cập nhật ngày hết hạn giấy tờ."));
     }
 
     /**
@@ -175,7 +151,6 @@ public class HorseDocumentController {
                 .horseName(doc.getHorseID() != null ? doc.getHorseID().getHorseName() : null)
                 .documentType(doc.getDocumentType())
                 .fileUrl(doc.getFileUrl())
-                .expiryDate(doc.getExpiryDate())
                 .status(doc.getStatus())
                 .uploadDate(doc.getUploadDate())
                 .reviewNote(doc.getReviewNote())
@@ -186,4 +161,3 @@ public class HorseDocumentController {
         return ResponseEntity.ok(ApiResponse.success(response, "Lấy chi tiết hồ sơ thành công."));
     }
 }
-

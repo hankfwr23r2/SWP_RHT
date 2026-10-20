@@ -5,7 +5,7 @@ import { useAuth } from '@shared/auth/AuthContext'
 import { FEED_PACKAGE, WATER_PLAN, HORSE_DOC, HORSE_DOC_TYPES, type HorseDocType } from '@shared/config/booking-rules'
 import { horseReadiness } from '@shared/lib/booking'
 import { isAssignedTo } from '@shared/lib/staffAssignment'
-import { formatDate, formatDateTime } from '@shared/lib/format'
+import { formatDateTime } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
 import { horsesApi } from '@shared/services/horses'
 import { useLoad } from '@shared/services/useLoad'
@@ -52,7 +52,7 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
   const idx = Math.min(pageIdx, horses.length - 1)
   const cur = horses[idx]
 
-  const problems = horses.flatMap(h => { const r = horseReadiness(h, b.departAt); return [...r.missing, ...r.expired].map(doc => ({ horseId: h.id, doc })) })
+  const problems = horses.flatMap(h => horseReadiness(h).missing.map(doc => ({ horseId: h.id, doc })))
   const allChecked = checked.length === horses.length
   const canApprove = allChecked
   const lastResubmitted = b.medical?.lastResubmit?.items || []
@@ -131,15 +131,15 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
         )}
         {/* Nội dung một ngựa */}
         {cur && (() => {
-          const r = horseReadiness(cur, b.departAt)
+          const r = horseReadiness(cur)
           const bh = b.horses.find(x => x.horseId === cur.id)
           return (
             <div key={cur.id} className={s.horse} style={{ border: 'none', borderRadius: 0, padding: '12px 16px 16px' }}>
               <div className={s.horseTop}>
                 <div><div className={s.horseName}>{cur.name}</div><div className={s.horseMeta}>Chip {cur.microchip} · {cur.breed} · sinh {cur.birthYear}</div></div>
-                {r.ok ? <span className="badge badge-success">Đủ giấy, còn hạn đến ngày đi</span> : <span className="badge badge-danger">Giấy chưa đạt</span>}
+                {r.ok ? <span className="badge badge-success">Đã nộp đủ giấy</span> : <span className="badge badge-danger">Thiếu giấy tờ</span>}
               </div>
-              <HorseDocChips horse={cur} at={b.departAt} />
+              <HorseDocChips horse={cur} />
               <div className={s.docFiles} aria-label="Giấy khách đã nộp">
                 {HORSE_DOC_TYPES.map(d => {
                   const f = cur.docs[d]
@@ -156,7 +156,7 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
                             </span>
                           )}
                         </div>
-                        <small>{f ? `${f.fileName} · nộp ${formatDateTime(f.uploadedAt)}${f.expiresAt ? ` · hạn ${formatDate(f.expiresAt)}` : ''}` : 'Khách chưa nộp'}</small>
+                        <small>{f ? `${f.fileName} · nộp ${formatDateTime(f.uploadedAt)}` : 'Khách chưa nộp'}</small>
                       </div>
                     </div>
                   )
@@ -167,7 +167,7 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
                 <label className={s.check}>
                   <input type="checkbox" checked={checked.includes(cur.id)}
                     onChange={e => { const on = e.target.checked; setChecked(c => on ? [...c, cur.id] : c.filter(x => x !== cur.id)) }} />
-                  Đã đối chiếu hộ chiếu, microchip {cur.microchip} và hạn xét nghiệm EIA/EVA
+                  Đã đối chiếu hộ chiếu, microchip {cur.microchip} và giấy xét nghiệm EIA/EVA
                 </label>
               )}
             </div>

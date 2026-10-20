@@ -1,6 +1,6 @@
 // Hàm thuần của luồng đặt đơn → duyệt báo giá → đặt cọc (Flow 1). Khớp docs/PRD.md mục 2, 10, 11.
 import {
-  BORDER_WINDOW, CLEARANCE_DOC, CLEARANCE_FEE, CLASS_FACTOR, CREW_FEE_PER_DAY, DEPOSIT_RATE, DOCS_CUTOFF_HOUR, FUEL_BOT_PER_KM, FUEL_BUFFER_RATE, HORSE_DOC, HORSE_DOC_TYPES, MARGIN_RATE,
+  BORDER_WINDOW, CLEARANCE_DOC, CLEARANCE_FEE, CLASS_FACTOR, CREW_FEE_PER_DAY, DEPOSIT_RATE, DOCS_CUTOFF_HOUR, FUEL_BOT_PER_KM, FUEL_BUFFER_RATE, HORSE_DOC_TYPES, MARGIN_RATE,
   BREED_INSURED_VALUE, INSURANCE_RATE_BOOKING, DELAY_ALERT_MINUTES, HOME_BASE, RETURN_EARLIEST_RATIO, MAX_CONTINUOUS_HOURS, MIN_REST_MINUTES, QUOTE_VALID_HOURS, TARGET_LEG_HOURS, SINGLE_STALL_FEE, FEED_PACKAGE, WATER_PLAN, VEHICLE_CLASS, EXPENSE_CATEGORY, type BookingStatus, type ClearanceDocType, type ExpenseCategory, type IncidentAction, type IncidentKind, type Payer, type HorseDocType, type VehicleClass,
 } from '../config/booking-rules'
 import { DAY, HOUR, MIN_LEAD_DAYS } from '../config/business-rules'
@@ -34,14 +34,10 @@ export const CANCEL_AFTER_DEPOSIT: Booking['status'][] = ['waybill_issued', 'cle
 export const cancelRefund = (b: Pick<Booking, 'balance'>) => b.balance?.amount ?? 0
 
 // ===== Hồ sơ ngựa =====
-// Đủ 3 giấy và còn hiệu lực tại mốc `at` (mặc định: hôm nay; khi đặt đơn: ngày khởi hành)
-export function horseReadiness(h: HorseProfile, at = startOfDay(Date.now()).getTime()) {
+// Sẵn sàng khi đã có đủ 3 giấy tờ ngựa.
+export function horseReadiness(h: HorseProfile) {
   const missing: HorseDocType[] = HORSE_DOC_TYPES.filter(t => !h.docs[t])
-  const expired: HorseDocType[] = HORSE_DOC_TYPES.filter(t => {
-    const d = h.docs[t]
-    return !!d && HORSE_DOC[t].hasExpiry && (d.expiresAt === undefined || d.expiresAt < at)
-  })
-  return { ok: !missing.length && !expired.length, missing, expired }
+  return { ok: !missing.length, missing }
 }
 
 export const ageOf = (h: Pick<HorseProfile, 'birthYear'>, now = Date.now()) => new Date(now).getFullYear() - h.birthYear
@@ -874,4 +870,3 @@ export function autoPackFleet(
 
   return results
 }
-

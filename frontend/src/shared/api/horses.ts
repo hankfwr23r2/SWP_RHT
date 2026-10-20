@@ -49,7 +49,6 @@ export interface BackendHorseDocResponse {
   rejectionReason?: string
   reviewerName?: string
   reviewedAt?: string
-  expiryDate?: string
   uploadDate?: string
   uploadedAt?: string
 }
@@ -96,21 +95,15 @@ export const backendHorseApi = {
   },
 
   // Upload tài liệu ngựa
-  uploadDocument: async (horseId: number, documentType: string, file: File, expiryDate?: string): Promise<BackendHorseDocResponse> => {
+  uploadDocument: async (horseId: number, documentType: string, file: File): Promise<BackendHorseDocResponse> => {
     const formData = new FormData()
     formData.append('file', file)
     formData.append('horseId', String(horseId))
     formData.append('documentType', documentType)
-    if (expiryDate) formData.append('expiryDate', expiryDate)
 
     const res = await apiClient.post<ApiResponse<BackendHorseDocResponse>>('/horse-documents/upload', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
-    return res.data.data
-  },
-
-  updateDocumentExpiry: async (docId: number, expiryDate: string): Promise<BackendHorseDocResponse> => {
-    const res = await apiClient.put<ApiResponse<BackendHorseDocResponse>>(`/horse-documents/${docId}/expiry`, { expiryDate })
     return res.data.data
   },
 

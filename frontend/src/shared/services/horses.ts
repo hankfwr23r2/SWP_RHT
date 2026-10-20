@@ -1,7 +1,6 @@
 // Service Hồ sơ ngựa của khách, gọi Backend Spring Boot (/horses, /horse-documents). Không giữ dữ liệu ở máy khách.
 import { backendHorseApi, HORSE_DOC_BACKEND_TYPE, type BackendHorseDto, type BackendHorseDocResponse } from '../api/horses'
 import type { HorseDocType } from '../config/booking-rules'
-import { fromIsoDay } from '../lib/booking'
 import type { HorseDoc, HorseProfile } from '../types/booking'
 
 export type NewHorse = Omit<HorseProfile, 'id' | 'owner' | 'completedTrips' | 'createdAt'>
@@ -23,7 +22,6 @@ function docsOf(list: BackendHorseDocResponse[]): Partial<Record<HorseDocType, H
       fileName: url ? url.split('/').pop() || url : `${key}.pdf`,
       fileUrl: url,
       uploadedAt: new Date(d.uploadedAt ?? d.uploadDate ?? Date.now()).getTime(),
-      expiresAt: d.expiryDate ? fromIsoDay(d.expiryDate) : undefined,
     }
   }
   return out
@@ -77,14 +75,11 @@ export const horsesApi = {
     await backendHorseApi.remove(n)
   },
 
-  uploadDocument: async (horseId: string, type: HorseDocType, file: File, expiryDate?: string) => {
+  uploadDocument: async (horseId: string, type: HorseDocType, file: File) => {
     const id = numericId(horseId)
     if (!id) throw new Error('Mã hồ sơ ngựa không hợp lệ.')
-    return backendHorseApi.uploadDocument(id, HORSE_DOC_BACKEND_TYPE[type], file, expiryDate)
+    return backendHorseApi.uploadDocument(id, HORSE_DOC_BACKEND_TYPE[type], file)
   },
-
-  updateDocumentExpiry: async (documentId: number, expiryDate: string) =>
-    backendHorseApi.updateDocumentExpiry(documentId, expiryDate),
 
   // Microchip là khóa định danh: không sửa sau khi lưu lần đầu
   update: async (owner: string, id: string, patch: Partial<NewHorse>): Promise<HorseProfile> => {
