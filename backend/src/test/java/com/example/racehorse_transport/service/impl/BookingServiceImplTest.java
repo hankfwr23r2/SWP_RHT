@@ -4,9 +4,11 @@ import com.example.racehorse_transport.dto.booking.BookingHorseDto;
 import com.example.racehorse_transport.dto.booking.BookingResponse;
 import com.example.racehorse_transport.dto.booking.CreateBookingRequest;
 import com.example.racehorse_transport.dto.booking.PartyContactDto;
+import com.example.racehorse_transport.dto.booking.RejectQuoteRequest;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.Horse;
+import com.example.racehorse_transport.entity.Quotation;
 import com.example.racehorse_transport.entity.User;
 import com.example.racehorse_transport.repository.BookingAssignmentRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
@@ -42,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -308,6 +311,67 @@ class BookingServiceImplTest {
                 .hasMessageContaining("không chờ khách bổ sung hồ sơ");
 
         verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
+    void rejectQuote_cancelsBookingAndReleasesReservedResources() {
+        Booking booking = bookingOwnedByCustomer();
+        booking.setStatus("awaiting_payment");
+        booking.setDetailsJson("{\"history\":[]}");
+        Quotation quotation = Quotation.builder().booking(booking).status("PENDING").build();
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(42)).thenReturn(Optional.of(quotation));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        BookingResponse response = service.rejectQuote(
+                "BK-042", "phuc", RejectQuoteRequest.builder().reason("  Giá vượt ngân sách  ").build());
+
+        assertThat(response.getStatus()).isEqualTo("cancelled");
+        assertThat(quotation.getStatus()).isEqualTo("REJECTED");
+        assertThat(response.getHistory()).hasSize(1);
+        assertThat(response.getHistory().get(0))
+                .containsEntry("actor", "phuc")
+                .containsEntry("text", "Từ chối báo giá: Giá vượt ngân sách. Đơn đã hủy, giải phóng xe và kíp xe.");
+        verify(quotationRepository).save(quotation);
+        verify(bookingVehicleRepository).deleteByBookingID_Id(42);
+        verify(bookingAssignmentRepository).deleteByBookingID_Id(42);
+        verify(bookingRepository).save(booking);
+        verify(systemLogRepository).save(any());
+    }
+
+    @Test
+    void rejectQuote_usesDefaultReasonAndAllowsMissingQuotation() {
+        Booking booking = bookingOwnedByCustomer();
+        booking.setStatus("awaiting_payment");
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(42)).thenReturn(Optional.empty());
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        BookingResponse response = service.rejectQuote("42", "phuc", null);
+
+        assertThat(response.getStatus()).isEqualTo("cancelled");
+        assertThat(response.getHistory().get(0).get("text"))
+                .isEqualTo("Từ chối báo giá: Khách hàng không đồng ý báo giá. Đơn đã hủy, giải phóng xe và kíp xe.");
+        verify(quotationRepository, never()).save(any(Quotation.class));
+        verify(bookingVehicleRepository).deleteByBookingID_Id(42);
+        verify(bookingAssignmentRepository).deleteByBookingID_Id(42);
+    }
+
+    @Test
+    void rejectQuote_rejectsBookingNotWaitingForDeposit() {
+        Booking booking = bookingOwnedByCustomer();
+        booking.setStatus("under_review");
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+
+        assertThatThrownBy(() -> service.rejectQuote("42", "phuc", RejectQuoteRequest.builder().build()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("chờ đặt cọc");
+
+        verify(quotationRepository, never()).findTopByBookingIdOrderBySentAtDesc(42);
+        verify(bookingVehicleRepository, never()).deleteByBookingID_Id(42);
+        verify(bookingAssignmentRepository, never()).deleteByBookingID_Id(42);
+        verify(bookingRepository, never()).save(any(Booking.class));
+        verify(systemLogRepository, never()).save(any());
     }
 
     private Booking bookingOwnedByCustomer() {
