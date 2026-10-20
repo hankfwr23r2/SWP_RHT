@@ -284,6 +284,37 @@ class BookingServiceImplTest {
     }
 
     @Test
+    void getBookingsByStatus_filtersAndMapsBookings() {
+        Booking booking = bookingOwnedByCustomer();
+        booking.setStatus("under_review");
+        when(bookingRepository.findByStatusOrderByBookingDateDesc("under_review")).thenReturn(List.of(booking));
+
+        List<BookingResponse> responses = service.getBookingsByStatus("under_review");
+
+        assertThat(responses).hasSize(1);
+        assertThat(responses.get(0).getNumericId()).isEqualTo(42);
+        assertThat(responses.get(0).getStatus()).isEqualTo("under_review");
+        verify(bookingRepository).findByStatusOrderByBookingDateDesc("under_review");
+        verify(bookingRepository, never()).findAllByOrderByBookingDateDesc();
+    }
+
+    @Test
+    void getBookingsByStatus_returnsAllForNullBlankOrAllFilter() {
+        Booking booking = bookingOwnedByCustomer();
+        when(bookingRepository.findAllByOrderByBookingDateDesc()).thenReturn(List.of(booking));
+
+        for (String status : List.of("", "  ", "ALL")) {
+            List<BookingResponse> responses = service.getBookingsByStatus(status);
+            assertThat(responses).hasSize(1);
+            assertThat(responses.get(0).getNumericId()).isEqualTo(42);
+        }
+        assertThat(service.getBookingsByStatus(null)).hasSize(1);
+
+        verify(bookingRepository, org.mockito.Mockito.times(4)).findAllByOrderByBookingDateDesc();
+        verify(bookingRepository, never()).findByStatusOrderByBookingDateDesc(any(String.class));
+    }
+
+    @Test
     void resubmitBooking_resetsMedicalReviewForOwner() {
         Booking booking = bookingOwnedByCustomer();
         booking.setStatus("resubmission_requested");
