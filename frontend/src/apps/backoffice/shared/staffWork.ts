@@ -6,7 +6,6 @@ import { isAssignedTo } from '@shared/lib/staffAssignment'
 
 export interface StaffWork { counts: Record<string, number> }
 
-export const DISPATCH_OPEN: Booking['status'][] = ['waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup']
 
 export function isCoordinatorTask(b: Booking, name?: string, username?: string, role?: string): boolean {
   if (role === 'admin' || role === 'manager') return true
@@ -35,10 +34,9 @@ export function workOf(role: StaffRole | undefined, list: Booking[], name: strin
   if (role === 'coordinator') {
     const mine = list.filter(b => isCoordinatorTask(b, name, username, role))
     const plan = mine.filter(b => b.status === 'under_review' && !b.plan)
-    const pack = mine.filter(b => DISPATCH_OPEN.includes(b.status) && (b.trips ?? []).some(t => !t.driverPack))
     const sos = mine.flatMap(b => (b.incidents ?? []).filter(i => i.status === 'reported').map(i => ({ b, i })))
     return {
-      counts: { '/coordinator/fleet-plan': plan.length, '/coordinator/dispatch': pack.length, '/coordinator/incidents': sos.length },
+      counts: { '/coordinator/fleet-plan': plan.length, '/coordinator/incidents': sos.length },
     }
   }
   return { counts: {} }
