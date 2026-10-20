@@ -144,7 +144,7 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
             <div className={s.actionBar}>
               <div>
                 <b>{canApprove ? 'Sẵn sàng duyệt hồ sơ ngựa' : 'Chưa thể xác nhận đạt'}</b>
-                <div className={s.hint}>{!allChecked ? `Cần tick đối chiếu cả ${horses.length} ngựa. ` : ''}{problems.length ? 'Có giấy thiếu hoặc hết hạn trên hệ thống. Nếu hồ sơ thực tế đạt, hãy tick đối chiếu để duyệt; nếu không đạt, hãy bấm Yêu cầu bổ sung. ' : ''}</div>
+                <div className={s.hint}>{!allChecked ? `Cần tick đối chiếu cả ${horses.length} ngựa. ` : ''}{problems.length ? 'Có giấy thiếu hoặc hết hạn trên hệ thống. Nếu hồ sơ thực tế đạt, hãy tick đối chiếu để duyệt. Nếu không đạt, hãy bấm Yêu cầu bổ sung. ' : ''}</div>
               </div>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
                 {!allChecked && (

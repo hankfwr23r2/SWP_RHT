@@ -304,7 +304,7 @@ export function Network() {
     <section className={s.network} id="mang-luoi">
       <div className="wrap">
         <h2 className={cx('section-title', s.reveal)}>Mạng lưới phủ sóng 3 nước</h2>
-        <p className={cx('section-sub', s.reveal)}>Tuyến nội địa Việt Nam và tuyến xuyên biên giới Việt Nam – Lào, Việt Nam – Campuchia qua các cửa khẩu đường bộ quốc tế. Bạn chọn điểm đón và điểm giao trên bản đồ; nhà xe chọn cửa khẩu và các trạm nghỉ dọc đường.</p>
+        <p className={cx('section-sub', s.reveal)}>Tuyến nội địa Việt Nam và tuyến xuyên biên giới Việt Nam – Lào, Việt Nam – Campuchia qua các cửa khẩu đường bộ quốc tế. Bạn chọn điểm đón và điểm giao trên bản đồ, nhà xe chọn cửa khẩu và các trạm nghỉ dọc đường.</p>
         <div ref={flagsRef} className={s.flags}>
           {(Object.keys(COUNTRIES) as CountryCode[]).map(code => (
             <button key={code} className={cx(s.flag, code === active && s.active)} onClick={() => setActive(code)}>
@@ -443,7 +443,7 @@ export default function HomePage() {
       <section className={s.cta} style={{ '--bg': `url('${PHOTOS.race.src}')` } as CSSProperties}>
         <div className={cx('wrap', s.reveal)}>
           <h2>Đặt chuyến vận chuyển ngựa đua</h2>
-          <p>Đặt trước tối thiểu {MIN_LEAD_DAYS} ngày · Báo giá cố định, hiệu lực {QUOTE_VALID_HOURS} giờ · Cọc {DEPOSIT_RATE * 100}% để nhận Vận đơn</p>
+          <p>Đặt trước tối thiểu {MIN_LEAD_DAYS} ngày. Báo giá cố định, hiệu lực {QUOTE_VALID_HOURS} giờ. Đặt cọc {DEPOSIT_RATE * 100}% để nhận Vận đơn.</p>
           <Link to="/login" className="btn btn-white btn-lg">Đặt chuyến ngay</Link>
         </div>
       </section>

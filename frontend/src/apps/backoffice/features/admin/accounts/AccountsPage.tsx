@@ -128,7 +128,7 @@ export default function AccountsPage() {
       {dialog?.kind === 'secret' && (
         <Modal onClose={close} title={dialog.title} subtitle={`${dialog.who} · ${dialog.email}`} footer={<button className="btn btn-primary" onClick={close}>Đã ghi lại, đóng</button>}>
           <div className={s.secret}><span>Mật khẩu tạm</span><code>{dialog.password}</code><button className="btn btn-outline btn-sm" onClick={() => { navigator.clipboard?.writeText(dialog.password); toast('Đã sao chép mật khẩu', 'info') }}><i className="fa-regular fa-copy" /> Sao chép</button></div>
-          <p className="form-hint" style={{ marginTop: 10 }}>Mật khẩu này chỉ hiện một lần. Bản thử nghiệm lưu trong phiên trình duyệt; khi có backend, mật khẩu được băm ở server.</p>
+          <p className="form-hint" style={{ marginTop: 10 }}>Mật khẩu này chỉ hiện một lần. Bản thử nghiệm lưu trong phiên trình duyệt, khi có backend, mật khẩu được băm ở server.</p>
         </Modal>
       )}
     </>
