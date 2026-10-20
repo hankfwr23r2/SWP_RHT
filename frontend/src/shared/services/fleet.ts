@@ -17,9 +17,6 @@ const mapVehicle = (v: BackendVehicleResponse): Vehicle => ({
   capacity: v.capacity || 2,
   plate: v.plate || '',
   status: normalizeStatus(v.status),
-  vin: v.vin,
-  inspectionNo: v.inspectionNo,
-  transitPermit: v.transitPermit,
 })
 
 const toVehiclePayload = (v: Omit<Vehicle, 'id'>): Parameters<typeof backendFleetApi.createVehicle>[0] => ({
@@ -27,9 +24,6 @@ const toVehiclePayload = (v: Omit<Vehicle, 'id'>): Parameters<typeof backendFlee
   capacity: v.capacity,
   plate: v.plate,
   status: v.status,
-  vin: v.vin,
-  inspectionNo: v.inspectionNo,
-  transitPermit: v.transitPermit,
 })
 
 export const vehiclesApi = {

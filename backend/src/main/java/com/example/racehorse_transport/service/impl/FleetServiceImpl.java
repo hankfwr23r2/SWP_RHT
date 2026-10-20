@@ -173,16 +173,6 @@ public class FleetServiceImpl implements FleetService {
         if (request.getCapacity() != null && request.getCapacity() > 0) {
             vehicle.setCapacity(request.getCapacity());
         }
-        if (request.getVin() != null) {
-            vehicle.setVin(request.getVin());
-        }
-        if (request.getInspectionNo() != null) {
-            vehicle.setInspectionNo(request.getInspectionNo());
-        }
-        if (request.getTransitPermit() != null) {
-            vehicle.setTransitPermit(request.getTransitPermit());
-        }
-
         // Nếu xe không bận và có yêu cầu đổi trạng thái thì mới cho đổi
         if (!isBusy && request.getStatus() != null && !request.getStatus().isBlank()) {
             vehicle.setStatus(request.getStatus().trim().toUpperCase(Locale.ROOT));
@@ -209,9 +199,6 @@ public class FleetServiceImpl implements FleetService {
         vehicle.setVehicleType(request.getType().trim());
         vehicle.setCapacity(request.getCapacity());
         vehicle.setLicensePlate(plate);
-        vehicle.setVin(request.getVin());
-        vehicle.setInspectionNo(request.getInspectionNo());
-        vehicle.setTransitPermit(request.getTransitPermit());
         vehicle.setStatus(request.getStatus() == null || request.getStatus().isBlank()
                 ? "ACTIVE"
                 : request.getStatus().trim().toUpperCase(Locale.ROOT));
@@ -298,9 +285,6 @@ public class FleetServiceImpl implements FleetService {
                 .type(v.getVehicleType() != null ? v.getVehicleType() : "medium")
                 .plate(v.getLicensePlate())
                 .capacity(v.getCapacity())
-                .vin(v.getVin())
-                .inspectionNo(v.getInspectionNo())
-                .transitPermit(v.getTransitPermit())
                 .status(v.getStatus())
                 .homeDepot("Trụ sở chính — Việt Nam")
                 .currentLocation("Trụ sở chính — Việt Nam")

@@ -26,21 +26,6 @@ public class Vehicle {
     @Column(name = "license_plate", length = 50)
     private String licensePlate;
 
-    @Column(name = "capacity")
-    private Integer capacity;
-
-    @Size(max = 100)
-    @Column(name = "vin", length = 100)
-    private String vin;
-
-    @Size(max = 100)
-    @Column(name = "inspection_no", length = 100)
-    private String inspectionNo;
-
-    @Size(max = 100)
-    @Column(name = "transit_permit", length = 100)
-    private String transitPermit;
-
     @Size(max = 50)
     @Column(name = "status", length = 50)
     private String status;
@@ -67,7 +52,6 @@ public class Vehicle {
      * - Mặc định: 2 ngăn
      */
     public Integer getCapacity() {
-        if (capacity != null && capacity > 0) return capacity;
         if (vehicleType == null || vehicleType.isBlank()) {
             return 2;
         }
@@ -89,7 +73,10 @@ public class Vehicle {
     }
 
     public void setCapacity(Integer capacity) {
-        this.capacity = capacity;
+        if (capacity == null || capacity <= 0 || capacity > 20) return;
+        String type = vehicleType == null ? "" : vehicleType.trim();
+        type = type.replaceFirst("(?i)\\s+\\d+\\s*(?:ngăn|stalls?)\\s*$", "").trim();
+        vehicleType = (type.isEmpty() ? "Xe chuyên dụng" : type) + " " + capacity + " ngăn";
     }
 
     /**

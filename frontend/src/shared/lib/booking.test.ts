@@ -656,20 +656,20 @@ describe('Driver và Escort về trụ sở sau khi giao ngựa ở nước ngo�
 })
 
 describe('autoPackFleet - Tự động phân bổ xe thông minh', () => {
-  const v1: Vehicle = { id: 'V1', name: 'Xe 2 chỗ', type: 'light', capacity: 2, plate: '51B-001', inspectionNo: 'DK-1' }
-  const v2: Vehicle = { id: 'V2', name: 'Xe 4 chỗ', type: 'medium', capacity: 4, plate: '51B-002', inspectionNo: 'DK-2' }
-  const v3: Vehicle = { id: 'V3', name: 'Xe 4 chỗ quốc tế', type: 'medium', capacity: 4, plate: '51B-003', inspectionNo: 'DK-3', transitPermit: 'LV-1' }
+  const v1: Vehicle = { id: 'V1', name: 'Xe 2 chỗ', type: 'light', capacity: 2, plate: '51B-001' }
+  const v2: Vehicle = { id: 'V2', name: 'Xe 4 chỗ', type: 'medium', capacity: 4, plate: '51B-002' }
+  const v3: Vehicle = { id: 'V3', name: 'Xe 4 chỗ quốc tế', type: 'medium', capacity: 4, plate: '51B-003' }
 
   it('chọn xe nhỏ nhất vừa đủ (Best-fit) để không lãng phí xe lớn', () => {
     // 1 ngựa -> chọn xe 2 chỗ V1 thay vì xe 4 chỗ V2
-    const res = autoPackFleet(['H1'], [v2, v1], new Map(), NOW, false)
+    const res = autoPackFleet(['H1'], [v2, v1], new Map(), NOW)
     expect(res).toHaveLength(1)
     expect(res[0].vehicleId).toBe('V1')
     expect(res[0].horseIds).toEqual(['H1'])
   })
 
   it('chọn xe 4 chỗ khi có 3 ngựa', () => {
-    const res = autoPackFleet(['H1', 'H2', 'H3'], [v1, v2], new Map(), NOW, false)
+    const res = autoPackFleet(['H1', 'H2', 'H3'], [v1, v2], new Map(), NOW)
     expect(res).toHaveLength(1)
     expect(res[0].vehicleId).toBe('V2')
     expect(res[0].horseIds).toEqual(['H1', 'H2', 'H3'])
@@ -677,7 +677,7 @@ describe('autoPackFleet - Tự động phân bổ xe thông minh', () => {
 
   it('tự động chia nhiều xe khi số ngựa vượt quá sức chứa 1 xe (Multi-vehicle Bin Packing)', () => {
     // 5 ngựa, có xe 4 chỗ (V2) và xe 2 chỗ (V1) -> chia làm 2 xe: Xe 4 chỗ (4 con) + Xe 2 chỗ (1 con)
-    const res = autoPackFleet(['H1', 'H2', 'H3', 'H4', 'H5'], [v1, v2], new Map(), NOW, false)
+    const res = autoPackFleet(['H1', 'H2', 'H3', 'H4', 'H5'], [v1, v2], new Map(), NOW)
     expect(res).toHaveLength(2)
     expect(res[0].vehicleId).toBe('V2')
     expect(res[0].horseIds).toEqual(['H1', 'H2', 'H3', 'H4'])
@@ -685,11 +685,10 @@ describe('autoPackFleet - Tự động phân bổ xe thông minh', () => {
     expect(res[1].horseIds).toEqual(['H5'])
   })
 
-  it('lọc xe thiếu giấy phép liên vận khi đi tuyến quốc tế', () => {
-    // Tuyến quốc tế: V2 không có transitPermit nên chỉ có V3 được chọn
-    const res = autoPackFleet(['H1', 'H2', 'H3'], [v2, v3], new Map(), NOW, true)
+  it('không lọc xe theo mã giấy tờ giả không được lưu trong vehicle', () => {
+    const res = autoPackFleet(['H1', 'H2', 'H3'], [v2, v3], new Map(), NOW)
     expect(res).toHaveLength(1)
-    expect(res[0].vehicleId).toBe('V3')
+    expect(res[0].vehicleId).toBe('V2')
   })
 
   it('lọc xe bị trùng lịch trong vòng 3 ngày', () => {
@@ -697,7 +696,7 @@ describe('autoPackFleet - Tự động phân bổ xe thông minh', () => {
       ['V1', [{ order: 'ORD-1', departAt: NOW + DAY, route: 'HN -> HP', trip: 'T1', countries: 'VN -> VN' }]]
     ])
     // V1 bị trùng lịch -> chọn V2
-    const res = autoPackFleet(['H1'], [v1, v2], sched, NOW, false)
+    const res = autoPackFleet(['H1'], [v1, v2], sched, NOW)
     expect(res).toHaveLength(1)
     expect(res[0].vehicleId).toBe('V2')
   })

@@ -24,15 +24,6 @@ public class VehicleRequest {
     @Size(max = 50)
     private String plate;
 
-    @Size(max = 100)
-    private String vin;
-
-    @Size(max = 100)
-    private String inspectionNo;
-
-    @Size(max = 100)
-    private String transitPermit;
-
     @Size(max = 50)
     private String status;
 }
