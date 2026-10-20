@@ -252,6 +252,38 @@ class BookingServiceImplTest {
     }
 
     @Test
+    void getCustomerBookings_returnsBookingsForAuthenticatedCustomer() {
+        Booking booking = bookingOwnedByCustomer();
+        booking.setBookingType("international");
+        booking.setPickupAddress("Hanoi");
+        booking.setDropoffAddress("Tokyo");
+        when(userRepository.findByUsernameOrEmail("phuc", "phuc")).thenReturn(Optional.of(customer.getUser()));
+        when(bookingRepository.findByCustomerID_IdOrderByBookingDateDesc(7)).thenReturn(List.of(booking));
+
+        List<BookingResponse> responses = service.getCustomerBookings("phuc");
+
+        assertThat(responses).hasSize(1);
+        assertThat(responses.get(0).getNumericId()).isEqualTo(42);
+        assertThat(responses.get(0).getCustomer()).isEqualTo("phuc");
+        assertThat(responses.get(0).getStatus()).isEqualTo("pending_intake");
+        assertThat(responses.get(0).getType()).isEqualTo("international");
+        assertThat(responses.get(0).getOriginName()).isEqualTo("Hanoi");
+        assertThat(responses.get(0).getDestName()).isEqualTo("Tokyo");
+        verify(bookingRepository).findByCustomerID_IdOrderByBookingDateDesc(7);
+    }
+
+    @Test
+    void getCustomerBookings_rejectsUnknownUser() {
+        when(userRepository.findByUsernameOrEmail("missing", "missing")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.getCustomerBookings("missing"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Không tìm thấy thông tin người dùng: missing");
+
+        verify(bookingRepository, never()).findByCustomerID_IdOrderByBookingDateDesc(any(Integer.class));
+    }
+
+    @Test
     void resubmitBooking_resetsMedicalReviewForOwner() {
         Booking booking = bookingOwnedByCustomer();
         booking.setStatus("resubmission_requested");
