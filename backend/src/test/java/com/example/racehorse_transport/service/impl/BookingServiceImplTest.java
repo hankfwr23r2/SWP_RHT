@@ -5,6 +5,7 @@ import com.example.racehorse_transport.dto.booking.BookingResponse;
 import com.example.racehorse_transport.dto.booking.CreateBookingRequest;
 import com.example.racehorse_transport.dto.booking.PartyContactDto;
 import com.example.racehorse_transport.dto.booking.RejectQuoteRequest;
+import com.example.racehorse_transport.dto.manager.RejectBookingRequest;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.Horse;
@@ -370,6 +371,93 @@ class BookingServiceImplTest {
         verify(quotationRepository, never()).findTopByBookingIdOrderBySentAtDesc(42);
         verify(bookingVehicleRepository, never()).deleteByBookingID_Id(42);
         verify(bookingAssignmentRepository, never()).deleteByBookingID_Id(42);
+        verify(bookingRepository, never()).save(any(Booking.class));
+        verify(systemLogRepository, never()).save(any());
+    }
+
+    @Test
+    void rejectBooking_recordsManagerRejection() {
+        Booking booking = bookingOwnedByCustomer();
+        booking.setStatus("pending_intake");
+        booking.setDetailsJson("{\"history\":[]}");
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        BookingResponse response = service.rejectBooking(
+                "BK-042",
+                RejectBookingRequest.builder()
+                        .by("manager1")
+                        .role("manager")
+                        .reason("  Hồ sơ không đầy đủ  ")
+                        .build());
+
+        assertThat(response.getStatus()).isEqualTo("rejected");
+        assertThat(response.getRejection())
+                .isInstanceOfSatisfying(Map.class, rejection -> {
+                    assertThat(rejection.get("by")).isEqualTo("manager1");
+                    assertThat(rejection.get("role")).isEqualTo("manager");
+                    assertThat(rejection.get("reason")).isEqualTo("Hồ sơ không đầy đủ");
+                });
+        assertThat(response.getHistory()).hasSize(1);
+        assertThat(response.getHistory().get(0))
+                .containsEntry("actor", "manager1")
+                .containsEntry("text", "Từ chối đơn: Hồ sơ không đầy đủ");
+        verify(bookingRepository).save(booking);
+        verify(systemLogRepository).save(any());
+    }
+
+    @Test
+    void rejectBooking_allowsCoordinatorOnlyDuringReview() {
+        Booking booking = bookingOwnedByCustomer();
+        booking.setStatus("under_review");
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        BookingResponse response = service.rejectBooking(
+                "ORD-42",
+                RejectBookingRequest.builder()
+                        .by("coordinator1")
+                        .role("coordinator")
+                        .reason("Không thể sắp xếp lộ trình")
+                        .build());
+
+        assertThat(response.getStatus()).isEqualTo("rejected");
+        assertThat(response.getRejection())
+                .isInstanceOfSatisfying(Map.class, rejection -> {
+                    assertThat(rejection.get("role")).isEqualTo("coordinator");
+                    assertThat(rejection.get("reason")).isEqualTo("Không thể sắp xếp lộ trình");
+                });
+        verify(bookingRepository).save(booking);
+    }
+
+    @Test
+    void rejectBooking_rejectsManagerWhenBookingIsNotPendingIntake() {
+        Booking booking = bookingOwnedByCustomer();
+        booking.setStatus("under_review");
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+
+        assertThatThrownBy(() -> service.rejectBooking(
+                "42",
+                RejectBookingRequest.builder().role("manager").reason("reason").build()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("pending_intake");
+
+        verify(bookingRepository, never()).save(any(Booking.class));
+        verify(systemLogRepository, never()).save(any());
+    }
+
+    @Test
+    void rejectBooking_rejectsCoordinatorWhenBookingIsNotUnderReview() {
+        Booking booking = bookingOwnedByCustomer();
+        booking.setStatus("pending_intake");
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+
+        assertThatThrownBy(() -> service.rejectBooking(
+                "42",
+                RejectBookingRequest.builder().role("coordinator").reason("reason").build()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("under_review");
+
         verify(bookingRepository, never()).save(any(Booking.class));
         verify(systemLogRepository, never()).save(any());
     }
