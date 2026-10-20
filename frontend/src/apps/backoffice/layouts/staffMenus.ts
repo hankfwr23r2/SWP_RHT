@@ -28,7 +28,6 @@ export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: 
   ],
   coordinator: [
     ['/coordinator/fleet-plan', 'Xe và lộ trình', { icon: 'fa-route' }],
-    ['/coordinator/dispatch', 'Giấy cho tài xế', { icon: 'fa-folder-open' }],
     ['/coordinator/monitoring', 'Giám sát', { icon: 'fa-satellite-dish' }],
     ['/coordinator/incidents', 'Sự cố', { icon: 'fa-triangle-exclamation' }],
     ['/coordinator/fleet', 'Đội xe', { icon: 'fa-truck' }],

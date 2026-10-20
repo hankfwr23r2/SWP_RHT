@@ -173,7 +173,7 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
                 </button>
               )) : <p className="im-note">{alts.loading ? 'Đang tìm đường thay thế…' : 'Chưa lấy được đường thay thế, đang dùng đường nối thẳng.'}</p>}
             </div>
-            <p className="im-note" style={{ marginTop: 6 }}>Giữ nguyên cửa khẩu đã chốt{gate ? ` (${gate.name})` : ''}; chỉ đổi đường đi tới điểm kế tiếp.</p>
+            <p className="im-note" style={{ marginTop: 6 }}>Giữ nguyên cửa khẩu đã chốt{gate ? ` (${gate.name})` : ''}, chỉ đổi đường đi tới điểm kế tiếp.</p>
           </div>
         )}
         {loading && <p className="im-note"><i className="fa-solid fa-spinner fa-spin" /> Đang tính đường đi…</p>}

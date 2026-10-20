@@ -13,6 +13,8 @@ public interface HorseHealthLogRepository extends JpaRepository<HorseHealthLog, 
     @Query("SELECT h FROM HorseHealthLog h WHERE h.horseID.id = :horseId")
     List<HorseHealthLog> findByHorseId(@Param("horseId") Integer horseId);
 
+    boolean existsByHorseID_Id(Integer horseId);
+
     @Query("SELECT h FROM HorseHealthLog h WHERE h.bookingID.id = :bookingId")
     List<HorseHealthLog> findByBookingId(@Param("bookingId") Integer bookingId);
 }

@@ -5,7 +5,7 @@ import { useAuth } from '@shared/auth/AuthContext'
 import { FEED_PACKAGE, WATER_PLAN, HORSE_DOC, HORSE_DOC_TYPES, type HorseDocType } from '@shared/config/booking-rules'
 import { horseReadiness } from '@shared/lib/booking'
 import { isAssignedTo } from '@shared/lib/staffAssignment'
-import { formatDate, formatDateTime } from '@shared/lib/format'
+import { formatDateTime } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
 import { horsesApi } from '@shared/services/horses'
 import { useLoad } from '@shared/services/useLoad'
@@ -47,8 +47,12 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
   const [reason, setReason] = useState('')
   const [items, setItems] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
+  // Phân trang từng ngựa
+  const [pageIdx, setPageIdx] = useState(0)
+  const idx = Math.min(pageIdx, horses.length - 1)
+  const cur = horses[idx]
 
-  const problems = horses.flatMap(h => { const r = horseReadiness(h, b.departAt); return [...r.missing, ...r.expired].map(doc => ({ horseId: h.id, doc })) })
+  const problems = horses.flatMap(h => horseReadiness(h).missing.map(doc => ({ horseId: h.id, doc })))
   const allChecked = checked.length === horses.length
   const canApprove = allChecked
   const lastResubmitted = b.medical?.lastResubmit?.items || []
@@ -81,61 +85,108 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
       )}
 
       <div className="card">
+        {/* Header + nút < > */}
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
           <h3><i className="fa-solid fa-horse-head" /> Đối chiếu hồ sơ {horses.length} ngựa</h3>
-          {(b.medical?.status ?? 'pending') === 'pending' && !allChecked && (
-            <button
-              type="button"
-              className="btn btn-outline btn-sm"
-              onClick={() => setChecked(horses.map(h => h.id))}
-              title="Đánh dấu tất cả ngựa đã đối chiếu xong"
-            >
-              <i className="fa-solid fa-check-double" /> Chọn nhanh tất cả ({horses.length} ngựa)
-            </button>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            {(b.medical?.status ?? 'pending') === 'pending' && !allChecked && (
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                onClick={() => setChecked(horses.map(h => h.id))}
+                title="Đánh dấu tất cả ngựa đã đối chiếu xong"
+              >
+                <i className="fa-solid fa-check-double" /> Chọn nhanh tất cả ({horses.length} ngựa)
+              </button>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button type="button" className="btn btn-outline btn-sm" style={{ padding: '4px 10px', minWidth: 32 }}
+                onClick={() => setPageIdx(i => Math.max(0, i - 1))} disabled={idx === 0} title="Ngựa trước">
+                <i className="fa-solid fa-chevron-left" />
+              </button>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--navy)', whiteSpace: 'nowrap', minWidth: 56, textAlign: 'center' }}>
+                {idx + 1} / {horses.length}
+              </span>
+              <button type="button" className="btn btn-outline btn-sm" style={{ padding: '4px 10px', minWidth: 32 }}
+                onClick={() => setPageIdx(i => Math.min(horses.length - 1, i + 1))} disabled={idx === horses.length - 1} title="Ngựa tiếp theo">
+                <i className="fa-solid fa-chevron-right" />
+              </button>
+            </div>
+          </div>
         </div>
-        <div style={{ display: 'grid', gap: 12 }}>
-          {horses.map(h => {
-            const r = horseReadiness(h, b.departAt)
-            const bh = b.horses.find(x => x.horseId === h.id)
-            return (
-              <div key={h.id} className={s.horse}>
-                <div className={s.horseTop}>
-                  <div><div className={s.horseName}>{h.name}</div><div className={s.horseMeta}>Chip {h.microchip} · {h.breed} · sinh {h.birthYear}</div></div>
-                  {r.ok ? <span className="badge badge-success">Đủ giấy, còn hạn đến ngày đi</span> : <span className="badge badge-danger">Giấy chưa đạt</span>}
-                </div>
-                <HorseDocChips horse={h} at={b.departAt} />
-                <div className={s.docFiles} aria-label="Giấy khách đã nộp">
-                  {HORSE_DOC_TYPES.map(d => {
-                    const f = h.docs[d]
-                    const isResubmitted = lastResubmitted.some(item => item.horseId === h.id && item.doc === d)
-                    return (
-                      <div key={d} className={`${s.docFile} ${isResubmitted ? s.docResubmitted : ''}`}>
-                        {f ? <ImageThumb name={f.fileUrl || f.fileName} size={64} /> : <span className={s.docEmpty}><i className="fa-regular fa-file" aria-hidden="true" /></span>}
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                            <b>{renderDocLabel(HORSE_DOC[d].label)}</b>
-                            {isResubmitted && (
-                              <span className="badge badge-warning" style={{ fontSize: '0.72rem', padding: '2px 6px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                <i className="fa-solid fa-rotate-right" /> Khách vừa nộp lại
-                              </span>
-                            )}
-                          </div>
-                          <small>{f ? `${f.fileName} · nộp ${formatDateTime(f.uploadedAt)}${f.expiresAt ? ` · hạn ${formatDate(f.expiresAt)}` : ''}` : 'Khách chưa nộp'}</small>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-                {bh && <div className={s.config}><span>Thức ăn: <b>{FEED_PACKAGE[bh.feedPackage].label}</b></span><span>Cữ nước: <b>{WATER_PLAN[bh.waterPlan].label}</b></span></div>}
-                {(b.medical?.status ?? 'pending') === 'pending' && (
-                  <label className={s.check}><input type="checkbox" checked={checked.includes(h.id)} onChange={e => { const on = e.target.checked; setChecked(c => (on ? [...c, h.id] : c.filter(x => x !== h.id))) }} />
-                    Đã đối chiếu hộ chiếu, microchip {h.microchip} và hạn xét nghiệm EIA/EVA</label>
-                )}
+        {/* Dot indicator */}
+        {horses.length > 1 && (
+          <div style={{ display: 'flex', gap: 6, padding: '10px 16px 2px', justifyContent: 'center' }}>
+            {horses.map((horse, i) => (
+              <button key={horse.id} type="button" onClick={() => setPageIdx(i)} title={horse.name}
+                aria-label={`Chuyển sang ngựa ${horse.name}`}
+                style={{
+                  width: i === idx ? 24 : 8, height: 8, borderRadius: 999, border: 'none', cursor: 'pointer',
+                  background: i === idx ? 'var(--orange)' : checked.includes(horse.id) ? 'var(--green, #16a34a)' : 'var(--line)',
+                  transition: 'width 0.2s, background 0.2s', padding: 0, flexShrink: 0,
+                }}
+              />
+            ))}
+          </div>
+        )}
+        {/* Nội dung một ngựa */}
+        {cur && (() => {
+          const r = horseReadiness(cur)
+          const bh = b.horses.find(x => x.horseId === cur.id)
+          return (
+            <div key={cur.id} className={s.horse} style={{ border: 'none', borderRadius: 0, padding: '12px 16px 16px' }}>
+              <div className={s.horseTop}>
+                <div><div className={s.horseName}>{cur.name}</div><div className={s.horseMeta}>Chip {cur.microchip} · {cur.breed} · sinh {cur.birthYear}</div></div>
+                {r.ok ? <span className="badge badge-success">Đã nộp đủ giấy</span> : <span className="badge badge-danger">Thiếu giấy tờ</span>}
               </div>
-            )
-          })}
-        </div>
+              <HorseDocChips horse={cur} />
+              <div className={s.docFiles} aria-label="Giấy khách đã nộp">
+                {HORSE_DOC_TYPES.map(d => {
+                  const f = cur.docs[d]
+                  const isResubmitted = lastResubmitted.some(item => item.horseId === cur.id && item.doc === d)
+                  return (
+                    <div key={d} className={`${s.docFile} ${isResubmitted ? s.docResubmitted : ''}`}>
+                      {f ? <ImageThumb name={f.fileUrl || f.fileName} size={64} toolbarVariant="balanced" /> : <span className={s.docEmpty}><i className="fa-regular fa-file" aria-hidden="true" /></span>}
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <b>{renderDocLabel(HORSE_DOC[d].label)}</b>
+                          {isResubmitted && (
+                            <span className="badge badge-warning" style={{ fontSize: '0.72rem', padding: '2px 6px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                              <i className="fa-solid fa-rotate-right" /> Khách vừa nộp lại
+                            </span>
+                          )}
+                        </div>
+                        <small>{f ? `${f.fileName} · nộp ${formatDateTime(f.uploadedAt)}` : 'Khách chưa nộp'}</small>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              {bh && <div className={s.config}><span>Thức ăn: <b>{FEED_PACKAGE[bh.feedPackage].label}</b></span><span>Cữ nước: <b>{WATER_PLAN[bh.waterPlan].label}</b></span></div>}
+              {(b.medical?.status ?? 'pending') === 'pending' && (
+                <label className={s.check}>
+                  <input type="checkbox" checked={checked.includes(cur.id)}
+                    onChange={e => { const on = e.target.checked; setChecked(c => on ? [...c, cur.id] : c.filter(x => x !== cur.id)) }} />
+                  Đã đối chiếu hộ chiếu, microchip {cur.microchip} và giấy xét nghiệm EIA/EVA
+                </label>
+              )}
+            </div>
+          )
+        })()}
+        {/* Footer điều hướng */}
+        {horses.length > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 16px', borderTop: '1px solid var(--line)', background: 'var(--bg-page)', borderRadius: '0 0 var(--radius) var(--radius)' }}>
+            <button type="button" className="btn btn-outline btn-sm"
+              onClick={() => setPageIdx(i => Math.max(0, i - 1))} disabled={idx === 0}>
+              <i className="fa-solid fa-chevron-left" /> {idx > 0 ? horses[idx - 1].name : ''}
+            </button>
+            <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{checked.length}/{horses.length} ngựa đã đối chiếu</span>
+            <button type="button" className="btn btn-outline btn-sm"
+              onClick={() => setPageIdx(i => Math.min(horses.length - 1, i + 1))} disabled={idx === horses.length - 1}>
+              {idx < horses.length - 1 ? horses[idx + 1].name : ''} <i className="fa-solid fa-chevron-right" />
+            </button>
+          </div>
+        )}
       </div>
 
       {(b.medical?.status ?? 'pending') === 'pending' && (
@@ -144,7 +195,7 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
             <div className={s.actionBar}>
               <div>
                 <b>{canApprove ? 'Sẵn sàng duyệt hồ sơ ngựa' : 'Chưa thể xác nhận đạt'}</b>
-                <div className={s.hint}>{!allChecked ? `Cần tick đối chiếu cả ${horses.length} ngựa. ` : ''}{problems.length ? 'Có giấy thiếu hoặc hết hạn trên hệ thống. Nếu hồ sơ thực tế đạt, hãy tick đối chiếu để duyệt; nếu không đạt, hãy bấm Yêu cầu bổ sung. ' : ''}</div>
+                <div className={s.hint}>{!allChecked ? `Cần tick đối chiếu cả ${horses.length} ngựa. ` : ''}{problems.length ? 'Có giấy thiếu hoặc hết hạn trên hệ thống. Nếu hồ sơ thực tế đạt, hãy tick đối chiếu để duyệt. Nếu không đạt, hãy bấm Yêu cầu bổ sung. ' : ''}</div>
               </div>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
                 {!allChecked && (

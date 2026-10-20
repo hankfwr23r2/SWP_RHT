@@ -4,7 +4,7 @@ import { useAuth } from '@shared/auth/AuthContext'
 import { VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { MAX_HORSES } from '@shared/config/business-rules'
 import { COUNTRY_LOCATIONS } from '@shared/config/network'
-import { ageOf, classForHorses, fromIsoDay, horseReadiness } from '@shared/lib/booking'
+import { ageOf, classForHorses, horseReadiness } from '@shared/lib/booking'
 import { horsesApi } from '@shared/services/horses'
 import { useLoad } from '@shared/services/useLoad'
 import { SEX_LABEL, type HorseProfile } from '@shared/types/booking'
@@ -29,8 +29,6 @@ export default function Step2HorsesPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { save({ horseIds: selected }) }, [selected])
 
-  const departAt = useMemo(() => (draft.departDate ? fromIsoDay(draft.departDate) : Date.now()), [draft.departDate])
-
   // Điểm đón được chọn ở bước 1
   const allLocations = Object.values(COUNTRY_LOCATIONS).flat()
   const originLoc = allLocations.find(l => l.id === draft.originId)
@@ -43,10 +41,10 @@ export default function Step2HorsesPage() {
     return normCur.includes(normOrig) || normOrig.includes(normCur)
   }
 
-  // Chỉ hiển thị ngựa đủ giấy tờ và còn hiệu lực — ngựa thiếu/hết hạn không đưa vào
+  // Chỉ hiển thị ngựa đã nộp đủ giấy tờ.
   const readyList = useMemo(
-    () => (horses ?? []).filter(h => horseReadiness(h, departAt).ok),
-    [horses, departAt]
+    () => (horses ?? []).filter(h => horseReadiness(h).ok),
+    [horses]
   )
 
   const query = search.trim().toLowerCase()
@@ -184,7 +182,7 @@ export default function Step2HorsesPage() {
                       </span>
                     )}
                   </div>
-                  <HorseDocChips horse={h} at={departAt} />
+                  <HorseDocChips horse={h} />
                   {inTransit && (
                     <div style={{ fontSize: '0.8rem', color: '#b45309', marginTop: 4 }}>
                       ⚠️ Cá thể ngựa này đang trong một chuyến vận chuyển khác và chưa hoàn tất bàn giao về chuồng.

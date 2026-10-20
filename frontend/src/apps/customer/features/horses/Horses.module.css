@@ -24,8 +24,19 @@
 .meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.85rem; color: var(--muted); }
 .meta i { color: var(--orange); margin-right: 5px; width: 14px; text-align: center; }
 .warn { font-size: 0.82rem; color: var(--amber); background: var(--amber-soft); border-radius: var(--radius-sm); padding: 8px 10px; }
-.horseFoot { margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
+.location { display: flex; justify-content: space-between; align-items: center; gap: 8px 12px; flex-wrap: wrap; padding: 9px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--bg-page); font-size: 0.82rem; }
+.locationName { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; color: var(--navy); font-weight: 600; }
+.locationName i { flex: none; color: var(--orange); }
+.locationName span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.location :global(.badge) { font-size: 0.72rem; }
+.horseFoot { margin-top: auto; display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
 .trips { font-size: 0.8rem; color: var(--muted); }
+.horseActions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.horseActions button { min-width: 0; min-height: 38px; justify-content: center; text-align: center; }
+.primaryAction { grid-column: 1 / -1; }
+.secondaryAction { padding-inline: 8px; }
+.deleteAction { grid-column: 1 / -1; justify-self: end; min-height: 30px !important; padding: 4px 8px; border-color: transparent; background: transparent; color: var(--red); }
+.deleteAction:hover:not(:disabled) { border-color: transparent; background: var(--red-soft, #fef2f2); color: var(--red); }
 
 .empty { text-align: center; padding: 48px 20px; background: white; border: 1px dashed #cbd5e1; border-radius: var(--radius); color: var(--muted); }
 .empty i { font-size: 2rem; color: var(--orange); margin-bottom: 10px; display: block; }
@@ -114,4 +125,3 @@
   justify-content: flex-end;
   margin-top: 8px;
 }
-

@@ -115,7 +115,7 @@ export default function ReportsPage() {
             </table>
           </div>
         </div>
-        <p className={s.note}>Doanh thu = giá trị đơn đã đặt cọc (gồm khoản phát sinh khách chịu); chi phí vận hành = giá vốn theo báo giá (bỏ biên lợi nhuận 5% khỏi cước, nhân sự, nhiên liệu và BOT) + chi phí sự cố nhà xe chịu. Số mẫu theo biểu giá mẫu.</p>
+        <p className={s.note}>Doanh thu = giá trị đơn đã đặt cọc (gồm khoản phát sinh khách chịu), chi phí vận hành = giá vốn theo báo giá (bỏ biên lợi nhuận 5% khỏi cước, nhân sự, nhiên liệu và BOT) + chi phí sự cố nhà xe chịu. Số mẫu theo biểu giá mẫu.</p>
       </div>
     </div>
   )

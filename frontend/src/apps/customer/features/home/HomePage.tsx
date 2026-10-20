@@ -304,7 +304,7 @@ export function Network() {
     <section className={s.network} id="mang-luoi">
       <div className="wrap">
         <h2 className={cx('section-title', s.reveal)}>Mạng lưới phủ sóng 3 nước</h2>
-        <p className={cx('section-sub', s.reveal)}>Tuyến nội địa Việt Nam và tuyến xuyên biên giới Việt Nam – Lào, Việt Nam – Campuchia qua các cửa khẩu đường bộ quốc tế. Bạn chọn điểm đón và điểm giao trên bản đồ; nhà xe chọn cửa khẩu và các trạm nghỉ dọc đường.</p>
+        <p className={cx('section-sub', s.reveal)}>Tuyến nội địa Việt Nam và tuyến xuyên biên giới Việt Nam – Lào, Việt Nam – Campuchia qua các cửa khẩu đường bộ quốc tế. Bạn chọn điểm đón và điểm giao trên bản đồ, nhà xe chọn cửa khẩu và các trạm nghỉ dọc đường.</p>
         <div ref={flagsRef} className={s.flags}>
           {(Object.keys(COUNTRIES) as CountryCode[]).map(code => (
             <button key={code} className={cx(s.flag, code === active && s.active)} onClick={() => setActive(code)}>
@@ -343,11 +343,11 @@ const SERVICES: [string, string, string, string, string][] = [
 
 const PROCESS: [string, string, string, string][] = [
   ['fa-paper-plane', 'Gửi đơn', 'Chọn điểm đón, điểm giao trên bản đồ, chọn ngựa từ Hồ sơ ngựa, dịch vụ và bảo hiểm.', `Trước ngày đi ≥ ${MIN_LEAD_DAYS} ngày`],
-  ['fa-magnifying-glass', 'Thẩm định', 'Quản lý tiếp nhận; Kiểm dịch viên duyệt hồ sơ ngựa; Điều phối viên chọn xe, tài xế, hộ tống và lập lộ trình.', 'Song song, trước khi báo giá'],
+  ['fa-magnifying-glass', 'Thẩm định', 'Quản lý tiếp nhận. Kiểm dịch viên duyệt hồ sơ ngựa. Điều phối viên chọn xe, tài xế, hộ tống và lập lộ trình.', 'Song song, trước khi báo giá'],
   ['fa-credit-card', 'Báo giá & đặt cọc', `Báo giá cố định có hiệu lực ${QUOTE_VALID_HOURS} giờ. Đặt cọc ${DEPOSIT_RATE * 100}% để nhận Vận đơn.`, `Trong ${QUOTE_VALID_HOURS} giờ`],
-  ['fa-folder-open', 'Làm giấy tờ', 'Nhà xe làm giấy kiểm dịch (và hải quan nếu đi quốc tế); bạn chỉ cần xem tiến độ từng giấy đã nộp.', 'Trước ngày đi'],
+  ['fa-folder-open', 'Làm giấy tờ', 'Nhà xe làm giấy kiểm dịch (và hải quan nếu đi quốc tế), bạn chỉ cần xem tiến độ từng giấy đã nộp.', 'Trước ngày đi'],
   ['fa-truck-moving', 'Vận chuyển', `Ngày bốc ngựa bạn trả ${100 - DEPOSIT_RATE * 100}% còn lại. Tài xế check-in từng mốc, hộ tống ghi nhật ký sức khỏe, bạn xem xe trên bản đồ.`, 'Theo lộ trình'],
-  ['fa-clipboard-check', 'Bàn giao & quyết toán', 'Ký biên bản giao nhận. Chỉ khi có sự cố liên quan đến ngựa mới có khoản phát sinh có chứng từ; sau đó bạn đánh giá chuyến đi.', 'Trong 24 giờ sau khi có quyết toán'],
+  ['fa-clipboard-check', 'Bàn giao & quyết toán', 'Ký biên bản giao nhận. Chỉ khi có sự cố liên quan đến ngựa mới có khoản phát sinh có chứng từ, sau đó bạn đánh giá chuyến đi.', 'Trong 24 giờ sau khi có quyết toán'],
 ]
 
 function useStepsLine() {
@@ -443,17 +443,12 @@ export default function HomePage() {
       <section className={s.cta} style={{ '--bg': `url('${PHOTOS.race.src}')` } as CSSProperties}>
         <div className={cx('wrap', s.reveal)}>
           <h2>Đặt chuyến vận chuyển ngựa đua</h2>
-          <p>Đặt trước tối thiểu {MIN_LEAD_DAYS} ngày · Báo giá cố định, hiệu lực {QUOTE_VALID_HOURS} giờ · Cọc {DEPOSIT_RATE * 100}% để nhận Vận đơn</p>
+          <p>Đặt trước tối thiểu {MIN_LEAD_DAYS} ngày. Báo giá cố định, hiệu lực {QUOTE_VALID_HOURS} giờ. Đặt cọc {DEPOSIT_RATE * 100}% để nhận Vận đơn.</p>
           <Link to="/login" className="btn btn-white btn-lg">Đặt chuyến ngay</Link>
         </div>
       </section>
 
-      <section className={s.credits} aria-label="Nguồn ảnh">
-        <div className="wrap">
-          <b>Nguồn ảnh</b> (Wikimedia Commons):{' '}
-          {Object.values(PHOTOS).map((ph, i) => <span key={ph.src}>{i > 0 && ' · '}<a href={ph.page} target="_blank" rel="noreferrer">{ph.alt}</a>, {ph.author}, {ph.license}</span>)}
-        </div>
-      </section>
+
     </div>
   )
 }

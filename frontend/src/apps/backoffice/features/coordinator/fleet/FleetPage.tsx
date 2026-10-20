@@ -12,6 +12,8 @@ import c from '../Coordinator.module.css'
 import { useOps } from '../../../shared/useOps'
 
 const VEHICLE_NAME = 'Xe chuyên dụng' // mọi xe đều là xe chuyên dụng chở ngựa
+const VEHICLE_CAPACITIES = [2, 4, 6, 9] as const
+const isSupportedCapacity = (capacity: number) => VEHICLE_CAPACITIES.some(option => option === capacity)
 const EMPTY: Omit<Vehicle, 'id'> = { name: VEHICLE_NAME, type: VEHICLE_NAME, capacity: 2, plate: '', status: 'AVAILABLE', inspectionNo: '', transitPermit: '' }
 
 const normalizeStatusKey = (st?: string): string => {
@@ -51,6 +53,7 @@ export default function FleetPage() {
   const edit = (v: Vehicle | null) => { setEditing(v?.id ?? null); setForm(v ? { ...v, status: v.status || 'AVAILABLE' } : EMPTY); setInvalid(''); setFormOpen(true) }
   const closeForm = () => { setFormOpen(false); setEditing(null); setInvalid('') }
   const save = async () => {
+    if (!isSupportedCapacity(form.capacity)) return setInvalid('capacity')
     if (!form.plate.trim()) return setInvalid('plate')
     const plate = form.plate.trim()
     const data = {
@@ -59,7 +62,6 @@ export default function FleetPage() {
       type: VEHICLE_NAME,
       plate,
       status: form.status || 'AVAILABLE',
-      capacity: Math.max(1, form.capacity || 2),
       inspectionNo: form.inspectionNo?.trim() || `DK-${plate}`,
       transitPermit: form.transitPermit?.trim() || `LV-${plate}`,
     }
@@ -161,7 +163,22 @@ export default function FleetPage() {
         <Modal wide onClose={closeForm} title={editing ? `Xe chuyên dụng ${editing}` : 'Thêm xe chuyên dụng mới'} subtitle={editing ? form.plate : undefined}
           footer={<><button className="btn btn-ghost" onClick={closeForm}>Hủy</button><button className="btn btn-primary" onClick={save}><i className="fa-solid fa-floppy-disk" /> Lưu thông tin</button></>}>
           <div className={c.formRow}>
-            <div className="form-group"><label>Sức chứa (ngăn)</label><input type="number" min={1} className="form-control" value={form.capacity} onChange={e => set('capacity')(parseInt(e.target.value, 10))} /></div>
+            <div className="form-group">
+              <label>Sức chứa (ngăn)</label>
+              <select
+                className={cx('form-control', invalid === 'capacity' && 'invalid')}
+                value={isSupportedCapacity(form.capacity) ? form.capacity : ''}
+                onChange={e => set('capacity')(Number(e.target.value))}
+              >
+                <option value="" disabled>Chọn sức chứa</option>
+                {VEHICLE_CAPACITIES.map(capacity => <option key={capacity} value={capacity}>{capacity} ngăn</option>)}
+              </select>
+              {!isSupportedCapacity(form.capacity) && (
+                <div className={`form-hint ${invalid === 'capacity' ? 'text-red' : ''}`}>
+                  Sức chứa hiện tại không thuộc các mức cho phép. Hãy chọn 2, 4, 6 hoặc 9 ngăn.
+                </div>
+              )}
+            </div>
             <div className="form-group">
               <label className="required">Biển số</label>
               <input

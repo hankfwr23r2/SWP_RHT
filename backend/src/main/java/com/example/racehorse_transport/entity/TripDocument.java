@@ -46,9 +46,6 @@ public class TripDocument {
     @Column(name = "issue_Date")
     private LocalDate issueDate;
 
-    @Column(name = "expiryDate")
-    private LocalDate expiryDate;
-
     @Size(max = 50)
     @Column(name = "status", length = 50)
     private String status;

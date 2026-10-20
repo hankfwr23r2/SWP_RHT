@@ -6,7 +6,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
-import java.time.LocalDate;
 
 /**
  * Response tra ve sau khi upload hoac review ho so ngua.
@@ -22,8 +21,6 @@ public class HorseDocumentResponse {
     private String horseName;
     private String documentType;
     private String fileUrl;
-    private LocalDate expiryDate;
-
     /**
      * Trang thai ho so:
      * PENDING  - Cho duyet

@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react'
 import { previewOf } from '../lib/previews'
 import s from './ImageThumb.module.css'
 
-export function ImageLightbox({ name, onClose }: { name: string; onClose: () => void }) {
+type ToolbarVariant = 'default' | 'balanced'
+
+export function ImageLightbox({ name, onClose, toolbarVariant = 'default' }: { name: string; onClose: () => void; toolbarVariant?: ToolbarVariant }) {
   const isUrl = name.startsWith('http://') || name.startsWith('https://') || name.startsWith('blob:')
   const src = isUrl ? name : previewOf(name)
   const [scale, setScale] = useState(1)
@@ -29,7 +31,7 @@ export function ImageLightbox({ name, onClose }: { name: string; onClose: () => 
 
       {src ? (
         <>
-          <div className={s.toolbar}>
+          <div className={`${s.toolbar} ${toolbarVariant === 'balanced' ? s.balancedToolbar : ''}`}>
             <button type="button" className={s.toolBtn} onClick={() => setScale(s => Math.min(3, +(s + 0.25).toFixed(2)))} title="Phóng to (+)">
               <i className="fa-solid fa-magnifying-glass-plus" /> Phóng to
             </button>
@@ -85,7 +87,7 @@ export function ImageLightbox({ name, onClose }: { name: string; onClose: () => 
   )
 }
 
-export function ImageThumb({ name, size = 56 }: { name: string; size?: number }) {
+export function ImageThumb({ name, size = 56, toolbarVariant = 'default' }: { name: string; size?: number; toolbarVariant?: ToolbarVariant }) {
   const [open, setOpen] = useState(false)
   const isUrl = name.startsWith('http://') || name.startsWith('https://') || name.startsWith('blob:')
   const src = isUrl ? name : previewOf(name)
@@ -94,8 +96,7 @@ export function ImageThumb({ name, size = 56 }: { name: string; size?: number })
       <button type="button" className={s.thumb} style={{ width: size, height: size }} onClick={() => setOpen(true)} title={`Xem ${name}`} aria-label={`Xem ảnh ${name}`}>
         {src ? <img src={src} alt="" /> : <i className="fa-regular fa-image" aria-hidden="true" />}
       </button>
-      {open && <ImageLightbox name={name} onClose={() => setOpen(false)} />}
+      {open && <ImageLightbox name={name} onClose={() => setOpen(false)} toolbarVariant={toolbarVariant} />}
     </>
   )
 }
-

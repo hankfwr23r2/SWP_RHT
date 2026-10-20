@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
 
@@ -51,13 +52,37 @@ public class CloudinaryStorageServiceImpl implements StorageService {
     }
 
     @Override
-    public void deleteFile(String publicId) {
-        if (publicId == null || publicId.isBlank()) return;
+    public void deleteFile(String fileReference) {
+        if (fileReference == null || fileReference.isBlank()) return;
         try {
-            cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
+            String publicId = fileReference;
+            String resourceType = "image";
+            if (fileReference.startsWith("http://") || fileReference.startsWith("https://")) {
+                String path = URI.create(fileReference).getPath();
+                String[] uploadPath = path.split("/upload/", 2);
+                if (uploadPath.length != 2) {
+                    throw new IllegalArgumentException("URL Cloudinary không hợp lệ.");
+                }
+
+                String[] resourcePath = uploadPath[0].split("/");
+                String candidateType = resourcePath[resourcePath.length - 1];
+                if (candidateType.equals("image") || candidateType.equals("raw") || candidateType.equals("video")) {
+                    resourceType = candidateType;
+                }
+
+                String assetPath = uploadPath[1];
+                if (assetPath.matches("^v\\d+/.*")) {
+                    assetPath = assetPath.replaceFirst("^v\\d+/", "");
+                }
+                int extension = assetPath.lastIndexOf('.');
+                publicId = extension > assetPath.lastIndexOf('/') ? assetPath.substring(0, extension) : assetPath;
+            }
+
+            cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", resourceType));
             log.info("Deleted file from Cloudinary: publicId={}", publicId);
         } catch (IOException e) {
             log.error("Failed to delete file from Cloudinary: {}", e.getMessage(), e);
+            throw new IllegalStateException("Không thể xóa tệp hồ sơ ngựa khỏi bộ lưu trữ.", e);
         }
     }
 }
