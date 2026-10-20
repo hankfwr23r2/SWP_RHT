@@ -448,12 +448,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className={s.credits} aria-label="Nguồn ảnh">
-        <div className="wrap">
-          <b>Nguồn ảnh</b> (Wikimedia Commons):{' '}
-          {Object.values(PHOTOS).map((ph, i) => <span key={ph.src}>{i > 0 && ' · '}<a href={ph.page} target="_blank" rel="noreferrer">{ph.alt}</a>, {ph.author}, {ph.license}</span>)}
-        </div>
-      </section>
+
     </div>
   )
 }
