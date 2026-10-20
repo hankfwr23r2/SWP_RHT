@@ -48,14 +48,35 @@ function CrewDuty({ all, crew, now }: { all: Booking[]; crew: CrewMember[]; now:
 export default function MonitoringPage() {
   const { session } = useAuth()
   const now = useNow(15_000)
-  const { data: all, reload } = useLoad(bookingsApi.list)
-  const { data: crew } = useLoad(crewApi.list)
+  const { data: all, loaded: bookingsLoaded, reload } = useLoad(bookingsApi.list)
+  const { data: crew, loaded: crewLoaded, reload: reloadCrew } = useLoad(crewApi.list)
   const [tab, setTab] = useState<Tab>('mine')
   const [selected, setSelected] = useState('')
   useEffect(() => { reload() }, [now, reload]) // cập nhật định kỳ để thấy check-in mới
 
+  if (all === undefined || crew === undefined) {
+    const loading = (!bookingsLoaded && all === undefined) || (!crewLoaded && crew === undefined)
+    return (
+      <div className="page">
+        <div className="wrap">
+          <div className={s.empty} role="status">
+            {loading ? (
+              <><i className="fa-solid fa-spinner fa-spin" />Đang tải dữ liệu giám sát...</>
+            ) : (
+              <>
+                <i className="fa-solid fa-triangle-exclamation" />
+                Không thể tải dữ liệu giám sát.
+                <button className="btn btn-primary" onClick={() => { reload(); reloadCrew() }}>Thử lại</button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   // Một chuyến = một xe của một đơn; đang chạy từ lúc xe xuất phát đến điểm đón tới khi giao xong
-  const active: FieldTrip[] = (all ?? []).flatMap(b => (b.trips ?? []).filter(t => t.departedAt && !t.run?.deliveredAt).map(t => ({ b, t })))
+  const active: FieldTrip[] = all.flatMap(b => (b.trips ?? []).filter(t => t.departedAt && !t.run?.deliveredAt).map(t => ({ b, t })))
   const mine = active.filter(x => isAssignedTo(x.b.intake?.coordinator, session?.name))
   const shown = (tab === 'mine' ? mine : active).sort((x, y) => x.b.departAt - y.b.departAt || x.t.tripId.localeCompare(y.t.tripId))
   const late = active.filter(x => delayedCheckpoint(x.t, now))
@@ -71,9 +92,9 @@ export default function MonitoringPage() {
         </div>
         {late.length > 0 && <div className="alert alert-warning" style={{ marginBottom: 16 }}><i className="fa-solid fa-triangle-exclamation" /><div><b>{late.length} chuyến trễ mốc từ 30 phút:</b> {late.map(x => `${x.t.tripId} (${currentCheckpoint(x.t)?.label.toLowerCase()})`).join(', ')}. Gọi tài xế kiểm tra kẹt xe hoặc sự cố đường bộ.</div></div>}
 
-        <CrewDuty all={all ?? []} crew={crew ?? []} now={now} />
+        <CrewDuty all={all} crew={crew} now={now} />
 
-        {all && !shown.length ? (
+        {!shown.length ? (
           <div className={s.empty}><i className="fa-solid fa-truck" />Không có chuyến nào đang chạy.</div>
         ) : (
           <div className={s.layout}>
