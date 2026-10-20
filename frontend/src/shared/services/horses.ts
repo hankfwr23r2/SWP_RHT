@@ -71,6 +71,12 @@ export const horsesApi = {
     return profileOf(await backendHorseApi.create(payloadOf(data, microchip)), owner, {})
   },
 
+  remove: async (id: string): Promise<void> => {
+    const n = numericId(id)
+    if (!n) throw new Error('Mã hồ sơ ngựa không hợp lệ.')
+    await backendHorseApi.remove(n)
+  },
+
   uploadDocument: async (horseId: string, type: HorseDocType, file: File, expiryDate?: string) => {
     const id = numericId(horseId)
     if (!id) throw new Error('Mã hồ sơ ngựa không hợp lệ.')
