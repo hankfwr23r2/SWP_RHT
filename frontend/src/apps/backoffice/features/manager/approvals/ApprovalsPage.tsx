@@ -153,7 +153,7 @@ function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booking[]; o
         <div className="form-group">
           <label htmlFor="sb" className="required">{back.to === 'specialist' ? 'Lý do trả lại Kiểm dịch viên (duyệt lại hồ sơ ngựa)' : 'Lý do trả lại Điều phối viên (làm lại xe và lộ trình)'}</label>
           <textarea id="sb" className="form-control" rows={3} value={back.reason} onChange={e => setBack({ ...back, reason: e.target.value })} />
-          <div className="form-hint">{back.to === 'specialist' ? 'Đơn quay về Kiểm dịch viên để duyệt lại hồ sơ ngựa; xe và lộ trình của Điều phối viên được giữ nguyên.' : 'Đơn quay về Điều phối viên để chọn lại xe và lập lại lộ trình; Driver, Escort bạn đã chọn sẽ bị bỏ và chọn lại sau.'}</div>
+          <div className="form-hint">{back.to === 'specialist' ? 'Đơn quay về Kiểm dịch viên để duyệt lại hồ sơ ngựa, xe và lộ trình của Điều phối viên được giữ nguyên.' : 'Đơn quay về Điều phối viên để chọn lại xe và lập lại lộ trình, Driver và Escort bạn đã chọn sẽ bị bỏ và chọn lại sau.'}</div>
         </div>
       )
         }
