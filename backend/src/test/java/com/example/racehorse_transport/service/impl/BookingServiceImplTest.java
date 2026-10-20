@@ -159,4 +159,78 @@ class BookingServiceImplTest {
         verify(systemLogRepository, never()).save(any());
         verify(horseRepository, never()).findById(any(Integer.class));
     }
+
+    @Test
+    void createBooking_rejectsHorseWithoutProfileId() {
+        givenCustomerCanCreateBooking();
+
+        assertThatThrownBy(() -> service.createBooking("phuc", requestWithHorseId(" ")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("phải được chọn từ Hồ sơ ngựa");
+
+        verify(horseRepository, never()).findById(any(Integer.class));
+        verify(systemLogRepository, never()).save(any());
+    }
+
+    @Test
+    void createBooking_rejectsMalformedHorseProfileId() {
+        givenCustomerCanCreateBooking();
+
+        assertThatThrownBy(() -> service.createBooking("phuc", requestWithHorseId("HORSE-ABC")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Mã hồ sơ ngựa không hợp lệ");
+
+        verify(horseRepository, never()).findById(any(Integer.class));
+        verify(systemLogRepository, never()).save(any());
+    }
+
+    @Test
+    void createBooking_rejectsHorseProfileThatDoesNotExist() {
+        givenCustomerCanCreateBooking();
+        when(horseRepository.findById(12)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.createBooking("phuc", requestWithHorseId("HORSE-12")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Không tìm thấy hồ sơ ngựa HORSE-12");
+
+        verify(systemLogRepository, never()).save(any());
+    }
+
+    @Test
+    void createBooking_rejectsHorseOwnedByAnotherCustomer() {
+        givenCustomerCanCreateBooking();
+        Customer anotherCustomer = new Customer();
+        anotherCustomer.setId(8);
+        when(horseRepository.findById(12))
+                .thenReturn(Optional.of(Horse.builder().id(12).customerID(anotherCustomer).build()));
+
+        assertThatThrownBy(() -> service.createBooking("phuc", requestWithHorseId("HORSE-12")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("không thuộc tài khoản của bạn");
+
+        verify(systemLogRepository, never()).save(any());
+    }
+
+    private void givenCustomerCanCreateBooking() {
+        when(userRepository.findByUsernameOrEmail("phuc", "phuc")).thenReturn(Optional.of(customer.getUser()));
+        when(customerRepository.findById(7)).thenReturn(Optional.of(customer));
+        when(bookingRepository.findByCustomerID_IdOrderByBookingDateDesc(7)).thenReturn(List.of());
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> {
+            Booking saved = invocation.getArgument(0);
+            saved.setId(42);
+            return saved;
+        });
+    }
+
+    private CreateBookingRequest requestWithHorseId(String horseId) {
+        return CreateBookingRequest.builder()
+                .type("domestic")
+                .originName("Hanoi")
+                .destName("Ho Chi Minh City")
+                .departAt(Instant.parse("2027-01-15T10:00:00Z").toEpochMilli())
+                .consignor(PartyContactDto.builder().name("Sender").phone("0900").build())
+                .consignee(PartyContactDto.builder().name("Receiver").phone("0901").build())
+                .horses(List.of(BookingHorseDto.builder().horseId(horseId).build()))
+                .build();
+    }
 }
