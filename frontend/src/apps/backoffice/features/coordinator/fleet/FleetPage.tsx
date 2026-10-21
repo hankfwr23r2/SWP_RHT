@@ -50,9 +50,22 @@ export default function FleetPage() {
   const [invalid, setInvalid] = useState('')
   const [confirmDelete, setConfirmDelete] = useState<Vehicle | null>(null)
 
-  const edit = (v: Vehicle | null) => { setEditing(v?.id ?? null); setForm(v ? { ...v, status: v.status || 'AVAILABLE' } : EMPTY); setInvalid(''); setFormOpen(true) }
+  const edit = (v: Vehicle | null) => {
+    if (v && isBusy(v.status)) {
+      toast('Xe đang bận, không thể chỉnh sửa!', 'error')
+      return
+    }
+    setEditing(v?.id ?? null)
+    setForm(v ? { ...v, status: v.status || 'AVAILABLE' } : EMPTY)
+    setInvalid('')
+    setFormOpen(true)
+  }
   const closeForm = () => { setFormOpen(false); setEditing(null); setInvalid('') }
   const save = async () => {
+    if (editing && isBusy(form.status)) {
+      toast('Xe đang bận, không thể chỉnh sửa!', 'error')
+      return
+    }
     if (!isSupportedCapacity(form.capacity)) return setInvalid('capacity')
     if (!form.plate.trim()) return setInvalid('plate')
     const plate = form.plate.trim()
@@ -130,7 +143,7 @@ export default function FleetPage() {
             const st = statusOf(v.status)
             const busy = isBusy(v.status)
             return (
-              <article key={v.id} className={f.card} style={{ ['--tone' as string]: st.color }} onClick={() => edit(v)} tabIndex={0} onKeyDown={e => e.key === 'Enter' && edit(v)} aria-label={`Xe ${v.plate}`}>
+              <article key={v.id} className={f.card} style={{ ['--tone' as string]: st.color }} onClick={() => !busy && edit(v)} tabIndex={busy ? -1 : 0} onKeyDown={e => !busy && e.key === 'Enter' && edit(v)} aria-label={`Xe ${v.plate}`}>
                 <div className={f.top}>
                   <span className={f.code}>{v.id}</span>
                   <span className={f.status}>{st.label}</span>
@@ -139,7 +152,15 @@ export default function FleetPage() {
                 <span className={f.plate}>{v.plate}</span>
                 <div className={f.name}>{VEHICLE_NAME}<small>{v.capacity} ngăn</small></div>
                 <div className={f.actions} onClick={e => e.stopPropagation()}>
-                  <button className="btn btn-ghost btn-sm" onClick={() => edit(v)}>Sửa</button>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    disabled={busy}
+                    title={busy ? 'Xe đang bận, không thể chỉnh sửa' : 'Sửa xe'}
+                    style={busy ? { opacity: 0.45, cursor: 'not-allowed' } : undefined}
+                    onClick={() => edit(v)}
+                  >
+                    Sửa
+                  </button>
                   <button
                     className={`btn btn-ghost btn-sm ${busy ? '' : 'text-red'}`}
                     disabled={busy}
@@ -159,13 +180,14 @@ export default function FleetPage() {
 
       {formOpen && (
         <Modal wide onClose={closeForm} title={editing ? `Xe chuyên dụng ${editing}` : 'Thêm xe chuyên dụng mới'} subtitle={editing ? form.plate : undefined}
-          footer={<><button className="btn btn-ghost" onClick={closeForm}>Hủy</button><button className="btn btn-primary" onClick={save}><i className="fa-solid fa-floppy-disk" /> Lưu thông tin</button></>}>
+          footer={<><button className="btn btn-ghost" onClick={closeForm}>Hủy</button><button className="btn btn-primary" onClick={save} disabled={!!editing && isBusy(form.status)}><i className="fa-solid fa-floppy-disk" /> Lưu thông tin</button></>}>
           <div className={c.formRow}>
             <div className="form-group">
               <label>Sức chứa (ngăn)</label>
               <select
                 className={cx('form-control', invalid === 'capacity' && 'invalid')}
                 value={isSupportedCapacity(form.capacity) ? form.capacity : ''}
+                disabled={!!editing && isBusy(form.status)}
                 onChange={e => set('capacity')(Number(e.target.value))}
               >
                 <option value="" disabled>Chọn sức chứa</option>
@@ -193,14 +215,17 @@ export default function FleetPage() {
               <select
                 className="form-control"
                 value={form.status ?? 'AVAILABLE'}
-                disabled={isBusy(form.status)}
-                style={isBusy(form.status) ? { background: '#f1f5f9', cursor: 'not-allowed' } : undefined}
+                disabled={!!editing || isBusy(form.status)}
+                style={editing || isBusy(form.status) ? { background: '#f1f5f9', cursor: 'not-allowed' } : undefined}
                 onChange={e => set('status')(e.target.value)}
               >
                 {isBusy(form.status) && <option value="BUSY">Đang bận</option>}
                 <option value="AVAILABLE">Sẵn sàng</option>
                 <option value="MAINTENANCE">Chưa sẵn sàng</option>
               </select>
+              {editing && !isBusy(form.status) && (
+                <div className="form-hint">Khi sửa xe, chỉ có thể thay đổi số ngăn.</div>
+              )}
               {isBusy(form.status) && (
                 <div className="form-hint text-orange" style={{ fontWeight: 600 }}>
                   <i className="fa-solid fa-lock" /> Xe đang có chuyến đi (Đang bận), không thể đổi trạng thái.

@@ -158,24 +158,16 @@ public class FleetServiceImpl implements FleetService {
     @org.springframework.transaction.annotation.Transactional
     public VehicleResponse updateVehicle(String identifier, VehicleRequest request) {
         Vehicle vehicle = findVehicleByIdOrCode(identifier);
+        boolean isBusy = isBusyStatus(vehicle.getStatus())
+                || bookingVehicleRepository.findByVehicleID_Id(vehicle.getId()).stream()
+                        .anyMatch(bv -> bv.getBookingID() != null && bv.getBookingID().getStatus() != null
+                                && HOLDING_STATUSES.contains(bv.getBookingID().getStatus().toLowerCase(Locale.ROOT)));
+        if (isBusy) {
+            throw new IllegalStateException("Xe đang bận hoặc đang được giữ cho chuyến đi, không thể chỉnh sửa.");
+        }
 
-        // Biển số xe không cho phép thay đổi khi chỉnh sửa
-        String plate = vehicle.getLicensePlate();
-
-        // Kiểm tra xem xe có đang bận có chuyến không
-        boolean isBusy = "BUSY".equalsIgnoreCase(vehicle.getStatus())
-                || !bookingVehicleRepository.findByVehicleID_Id(vehicle.getId()).stream()
-                        .filter(bv -> bv.getBookingID() != null && bv.getBookingID().getStatus() != null
-                                && HOLDING_STATUSES.contains(bv.getBookingID().getStatus().toLowerCase()))
-                        .toList().isEmpty();
-
-        vehicle.setVehicleType(request.getType() != null ? request.getType().trim() : vehicle.getVehicleType());
         if (request.getCapacity() != null && request.getCapacity() > 0) {
             vehicle.setCapacity(request.getCapacity());
-        }
-        // Nếu xe không bận và có yêu cầu đổi trạng thái thì mới cho đổi
-        if (!isBusy && request.getStatus() != null && !request.getStatus().isBlank()) {
-            vehicle.setStatus(request.getStatus().trim().toUpperCase(Locale.ROOT));
         }
 
         return mapToVehicleResponse(vehicleRepository.save(vehicle));
