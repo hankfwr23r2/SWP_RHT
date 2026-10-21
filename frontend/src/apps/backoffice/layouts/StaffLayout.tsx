@@ -20,7 +20,7 @@ function Header() {
   return (
     <AppHeader
       homeHref={role ? HOME_OF[role] : '/login'} badge={role && ROLE_LABEL[role]}
-      links={role ? STAFF_MENUS[role].map(([to, label]): [string, string] => [to, label]) : []} userName={session?.name}
+      links={role ? STAFF_MENUS[role].map(([to, label]): [string, string] => [to, label]) : []} userName={session?.name} profileHref="/profile"
       onLogout={() => { logout(); navigate('/login') }}
     />
   )
