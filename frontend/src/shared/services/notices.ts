@@ -41,4 +41,10 @@ export const noticesApi = {
       // ignore
     }
   },
+  delete: async (id: string, role: Role): Promise<void> => {
+    await apiClient.delete(`/notifications/${id}`, { params: { role } })
+  },
+  deleteAll: async (role: Role): Promise<void> => {
+    await apiClient.delete('/notifications', { params: { role } })
+  },
 }
