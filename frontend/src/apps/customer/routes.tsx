@@ -2,6 +2,7 @@
 import type { AppRoute } from '@shared/routing/types'
 import { SitemapPage } from '../sitemap/SitemapPage'
 import LoginPage from './features/auth/LoginPage'
+import { CustomerForgotPasswordPage } from '@shared/auth/ForgotPasswordPage'
 import RegisterPage from './features/auth/RegisterPage'
 import HomePage from './features/home/HomePage'
 import PortalPage from './features/portal/PortalPage'
@@ -22,6 +23,7 @@ const C = ['customer'] as AppRoute['roles']
 export const routes: AppRoute[] = [
   { path: '/', page: HomePage, roles: [], title: 'Trang chủ', layout: 'public' },
   { path: '/login', page: LoginPage, roles: [], title: 'Đăng nhập', layout: 'bare' },
+  { path: '/forgot-password', page: CustomerForgotPasswordPage, roles: [], title: 'Quên mật khẩu', layout: 'bare' },
   { path: '/register', page: RegisterPage, roles: [], title: 'Đăng ký', layout: 'bare' },
   { path: '/portal', page: PortalPage, roles: C, title: 'Trang chủ', layout: 'customer' },
   { path: '/profile', page: ProfilePage, roles: C, title: 'Hồ sơ cá nhân', layout: 'customer' },

@@ -21,6 +21,7 @@ import FleetPage from './features/coordinator/fleet/FleetPage'
 import DriverPage from './features/driver/DriverPage'
 import EscortPage from './features/escort/EscortPage'
 import StaffProfilePage from './features/profile/StaffProfilePage'
+import { StaffForgotPasswordPage } from '@shared/auth/ForgotPasswordPage'
 
 const A: AppRoute['roles'] = ['admin']
 const M: AppRoute['roles'] = ['manager']
@@ -28,6 +29,7 @@ const SP: AppRoute['roles'] = ['specialist']
 const CO: AppRoute['roles'] = ['coordinator']
 
 export const routes: AppRoute[] = [
+  { path: '/forgot-password', page: StaffForgotPasswordPage, roles: [], title: 'Khôi phục mật khẩu', layout: 'bare' },
   { path: '/profile', page: StaffProfilePage, roles: ['admin', 'manager', 'specialist', 'coordinator', 'driver', 'escort'], title: 'Hồ sơ nhân viên', layout: 'staff' },
   { path: '/login', page: StaffLoginPage, roles: [], title: 'Đăng nhập nội bộ', layout: 'bare' },
   { path: '/manager/login', page: ManagerLoginPage, roles: [], title: 'Đăng nhập Quản lý', layout: 'bare' },

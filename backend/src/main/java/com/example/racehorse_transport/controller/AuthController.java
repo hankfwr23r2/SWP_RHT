@@ -3,8 +3,11 @@ package com.example.racehorse_transport.controller;
 import com.example.racehorse_transport.dto.AuthResponse;
 import com.example.racehorse_transport.dto.LoginRequest;
 import com.example.racehorse_transport.dto.RegisterRequest;
+import com.example.racehorse_transport.dto.PasswordResetOtpRequest;
+import com.example.racehorse_transport.dto.ResetPasswordWithOtpRequest;
 import com.example.racehorse_transport.response.ApiResponse;
 import com.example.racehorse_transport.service.AuthService;
+import com.example.racehorse_transport.service.PasswordResetService;
 import com.example.racehorse_transport.security.JwtUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -25,7 +28,21 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final PasswordResetService passwordResetService;
     private final JwtUtils jwtUtils;
+
+    @PostMapping("/password-reset/request-otp")
+    public ResponseEntity<ApiResponse<Void>> requestPasswordResetOtp(@Valid @RequestBody PasswordResetOtpRequest request) {
+        passwordResetService.requestOtp(request.getEmail());
+        return ResponseEntity.ok(ApiResponse.success(null,
+                "Nếu email có tài khoản, mã OTP sẽ được gửi đến hộp thư của bạn."));
+    }
+
+    @PostMapping("/password-reset/complete")
+    public ResponseEntity<ApiResponse<Void>> resetPasswordWithOtp(@Valid @RequestBody ResetPasswordWithOtpRequest request) {
+        passwordResetService.resetPassword(request);
+        return ResponseEntity.ok(ApiResponse.success(null, "Đặt lại mật khẩu thành công. Bạn có thể đăng nhập."));
+    }
 
     // API Đăng ký tài khoản
     @PostMapping("/register")

@@ -54,7 +54,7 @@ export default function LoginPage() {
             </button>
           </div>
         </div>
-        <p className="text-right small" style={{ marginBottom: 16 }}><a href="#" className="text-orange">Quên mật khẩu?</a></p>
+        <p className="text-right small" style={{ marginBottom: 16 }}><Link to="/forgot-password" className="text-orange">Quên mật khẩu?</Link></p>
         <button type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading}>
           {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
         </button>

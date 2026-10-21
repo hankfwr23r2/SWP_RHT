@@ -35,6 +35,13 @@ export interface ChangePasswordPayload {
   confirmPassword: string
 }
 
+export interface ResetPasswordWithOtpPayload {
+  email: string
+  otp: string
+  newPassword: string
+  confirmPassword: string
+}
+
 export const authApi = {
   // 1. Đăng nhập Khách hàng -> POST /api/v1/auth/customer/login
   loginCustomer: async (payload: LoginPayload): Promise<AuthResponseData> => {
@@ -68,6 +75,16 @@ export const authApi = {
   // 6. Đổi mật khẩu cá nhân -> POST /api/v1/auth/change-password
   changePassword: async (payload: ChangePasswordPayload): Promise<void> => {
     await apiClient.post('/auth/change-password', payload)
+  },
+
+  requestPasswordResetOtp: async (email: string): Promise<string> => {
+    const res = await apiClient.post<ApiResponse<void>>('/auth/password-reset/request-otp', { email })
+    return res.data.message
+  },
+
+  resetPasswordWithOtp: async (payload: ResetPasswordWithOtpPayload): Promise<string> => {
+    const res = await apiClient.post<ApiResponse<void>>('/auth/password-reset/complete', payload)
+    return res.data.message
   },
 }
 

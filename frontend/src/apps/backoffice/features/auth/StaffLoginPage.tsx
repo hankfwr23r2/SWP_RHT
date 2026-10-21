@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { authApi } from '@shared/api/auth'
 import { tokenStorage } from '@shared/api/client'
@@ -64,7 +64,7 @@ function LoginForm({ managerOnly }: { managerOnly: boolean }) {
           </button>
         </div>
       </div>
-      <p className="text-right small" style={{ marginBottom: 16 }}><a href="#" className="text-orange">Quên mật khẩu?</a></p>
+      <p className="text-right small" style={{ marginBottom: 16 }}><Link to="/forgot-password" className="text-orange">Quên mật khẩu?</Link></p>
       <button type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading}>
         {loading ? 'Đang xác thực...' : managerOnly ? 'Đăng nhập Quản lý' : 'Đăng nhập'}
       </button>
