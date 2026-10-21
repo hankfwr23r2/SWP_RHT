@@ -95,7 +95,11 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
       const message = err instanceof Error ? err.message : 'Không lưu được.'
       // Lỗi về mã microchip hiện ngay dưới ô nhập, không đưa lên đầu biểu mẫu
       if (!editing && /microchip/i.test(message)) {
-        setErrors({ microchip: 'Mã microchip không hợp lệ, vui lòng nhập lại.' })
+        // Phân biệt lỗi trùng mã vs lỗi khác để thông báo rõ ràng cho khách hàng
+        const chipError = /đã được sử dụng|đã tồn tại|already|duplicate/i.test(message)
+          ? `Mã microchip "${microchip.trim()}" đã có trong hệ thống. Vui lòng kiểm tra lại mã trên chip gắn ở ngựa.`
+          : message
+        setErrors({ microchip: chipError })
         setTab('info')
         document.getElementById('h-chip')?.focus()
       } else setFormError(message)
