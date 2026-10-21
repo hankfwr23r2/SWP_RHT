@@ -23,4 +23,10 @@ public interface NotificationRepository extends JpaRepository<Notification, Inte
            "(:role IS NULL OR n.recipientRole IS NULL OR LOWER(n.recipientRole) = LOWER(:role)) AND " +
            "(:username IS NULL OR n.recipientUsername IS NULL OR LOWER(n.recipientUsername) = LOWER(:username))")
     int markAllAsRead(@Param("role") String role, @Param("username") String username);
+
+    @Modifying
+    @Query("DELETE FROM Notification n WHERE " +
+           "(:role IS NULL OR n.recipientRole IS NULL OR LOWER(n.recipientRole) = LOWER(:role)) AND " +
+           "(:username IS NULL OR n.recipientUsername IS NULL OR LOWER(n.recipientUsername) = LOWER(:username))")
+    int deleteForUser(@Param("role") String role, @Param("username") String username);
 }
