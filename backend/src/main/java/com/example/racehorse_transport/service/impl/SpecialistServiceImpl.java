@@ -48,7 +48,12 @@ public class SpecialistServiceImpl implements SpecialistService {
                     String s = b.getStatus() != null ? b.getStatus().toLowerCase() : "";
                     boolean inPhase = s.contains("review") || s.contains("verification") || s.contains("pending_intake")
                             || s.contains("intake") || s.contains("resubmission_requested");
-                    return inPhase && (isPrivileged(actor) || isAssignedToSpecialist(actor, b));
+                    Object medical = extractPayload(b).getMedical();
+                    boolean approvedAwaitingQuotation = "pending_commercial".equals(s)
+                            && medical instanceof Map<?, ?> medicalMap
+                            && "approved".equalsIgnoreCase(Objects.toString(medicalMap.get("status"), ""));
+                    return (inPhase || approvedAwaitingQuotation)
+                            && (isPrivileged(actor) || isAssignedToSpecialist(actor, b));
                 })
                 .map(this::mapToBookingResponse)
                 .collect(Collectors.toList());

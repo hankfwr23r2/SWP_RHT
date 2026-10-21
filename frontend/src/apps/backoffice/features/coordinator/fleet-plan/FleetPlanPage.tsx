@@ -22,7 +22,6 @@ import {
   schedulesOf,
   validateRoutePlan,
   vehicleClassOf,
-  vehicleDocsOk,
   autoPackFleet,
 } from '@shared/lib/booking'
 import { atHour } from '@shared/lib/dates'
@@ -69,12 +68,11 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
         b.horses.map(h => h.horseId),
         vehicles,
         sched.vehicles,
-        b.departAt,
-        international
+        b.departAt
       )
     }
     return [{ vehicleId: '', horseIds: b.horses.map(h => h.horseId) }]
-  }, [b.trips, b.horses, b.departAt, vehicles, sched.vehicles, international])
+  }, [b.trips, b.horses, b.departAt, vehicles, sched.vehicles])
 
   const [trips, setTrips] = useState<Draft[]>(initialTrips)
 
@@ -87,21 +85,19 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
           b.horses.map(h => h.horseId),
           vehicles,
           sched.vehicles,
-          b.departAt,
-          international
+          b.departAt
         )
       }
       return prev
     })
-  }, [vehicles, sched.vehicles, b.departAt, international, b.horses])
+  }, [vehicles, sched.vehicles, b.departAt, b.horses])
 
   const runAutoPack = () => {
     const packed = autoPackFleet(
       b.horses.map(h => h.horseId),
       vehicles,
       sched.vehicles,
-      b.departAt,
-      international
+      b.departAt
     )
     setTrips(packed)
     toast('Đã tự động tính toán và phân bổ xe tối ưu (Best-fit).')
@@ -134,9 +130,6 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
         out.push(`Xe ${i + 1} chỉ có ${v.capacity} ngăn, đang xếp ${t.horseIds.length} ngựa.`)
       const clash = clashOf(sched.vehicles.get(t.vehicleId), b.departAt)
       if (clash) out.push(`Xe ${v.plate} trùng lịch với ${clash.order} (khởi hành ${formatDate(clash.departAt)}).`)
-      if (!vehicleDocsOk(v, international)) {
-        out.push(`Xe ${v.plate} chưa đủ điều kiện giấy tờ (${!v.inspectionNo ? 'thiếu đăng kiểm' : 'thiếu giấy phép liên vận quốc tế'}).`)
-      }
     }
     return out
   })
@@ -303,7 +296,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
           </span>
         </div>
         <div className="form-hint" style={{ marginBottom: 12 }}>
-          Ưu tiên xe đủ số ngăn cho ngựa. Phương tiện trùng lịch trong vòng 3 ngày hoặc thiếu giấy tờ sẽ tự động bị khóa và cảnh báo.
+          Ưu tiên xe đủ số ngăn cho ngựa. Phương tiện trùng lịch trong vòng 3 ngày sẽ tự động bị khóa và cảnh báo.
         </div>
 
         {trips.map((t, i) => {
@@ -311,8 +304,6 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
           const isOverloaded = v && t.horseIds.length > v.capacity
           const booked = v ? sched.vehicles.get(t.vehicleId) : undefined
           const hasClash = v && clashOf(booked, b.departAt)
-          const docMissing = v && !vehicleDocsOk(v, international)
-
           return (
             <div
               key={i}
@@ -320,7 +311,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
               style={{
                 display: 'block',
                 marginBottom: 12,
-                border: isOverloaded || hasClash || docMissing ? '1px solid var(--red)' : undefined,
+                border: isOverloaded || hasClash ? '1px solid var(--red)' : undefined,
               }}
             >
               <div className={s.pickName} style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
@@ -368,12 +359,6 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
                   <i className="fa-solid fa-triangle-exclamation" /> Xe {v.plate} bị trùng lịch với đơn {hasClash.order}!
                 </div>
               )}
-              {docMissing && (
-                <div style={{ color: 'var(--red)', fontSize: '0.82rem', marginTop: 4, fontWeight: 600 }}>
-                  <i className="fa-solid fa-triangle-exclamation" /> Xe chưa đủ điều kiện giấy tờ ({!v.inspectionNo ? 'chưa có số đăng kiểm' : 'thiếu giấy phép liên vận quốc tế cho tuyến này'})!
-                </div>
-              )}
-
               <div className="form-group" style={{ marginTop: 10, maxWidth: 420 }}>
                 <label htmlFor={`vehicle${i}`}>Chọn phương tiện</label>
                 <button
@@ -847,7 +832,6 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
           vehicles={vehicles}
           people={[]}
           departAt={b.departAt}
-          international={international}
           schedules={sched.vehicles}
           usedHere={usedVehicles}
           selected={trips[picking].vehicleId}

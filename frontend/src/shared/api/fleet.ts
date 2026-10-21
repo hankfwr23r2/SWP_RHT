@@ -7,9 +7,6 @@ export interface BackendVehicleResponse {
   type: string
   plate: string
   capacity: number
-  vin?: string
-  inspectionNo?: string
-  transitPermit?: string
   status: string
   homeDepot?: string
   currentLocation?: string
@@ -21,9 +18,6 @@ export interface VehiclePayload {
   type: string
   capacity: number
   plate: string
-  vin?: string
-  inspectionNo?: string
-  transitPermit?: string
   status?: string
 }
 

@@ -313,13 +313,12 @@ public class ReferenceDataSeeder implements CommandLineRunner {
         }
     }
 
-    // Tài liệu không có số đăng kiểm và giấy phép liên vận của xe; điền số mẫu theo biển số để xe gán được vào đơn (PRD mục 14.2)
+    // Capacity is encoded in vehicle_type because the vehicle table stores only its core fields.
     private void seedVehicles() {
         if (vehicleRepository.count() > 0) return;
         for (String[] r : VEHICLES) {
             vehicleRepository.save(Vehicle.builder()
-                    .vehicleType(r[0]).licensePlate(r[1]).capacity(Integer.valueOf(r[2])).status(r[3])
-                    .inspectionNo("DK-" + r[1]).transitPermit("LV-" + r[1])
+                    .vehicleType(r[0]).licensePlate(r[1]).status(r[3])
                     .build());
         }
     }

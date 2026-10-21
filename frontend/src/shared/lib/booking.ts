@@ -287,9 +287,6 @@ export const sameVehicleId = (a?: string, b?: string): boolean => {
   const numB = b.replace(/\D/g, '')
   return numA !== '' && numA === numB
 }
-// Xe phải có giấy đăng kiểm; tuyến quốc tế còn cần giấy phép liên vận (PRD mục 2.4)
-export const vehicleDocsOk = (v: Pick<Vehicle, 'inspectionNo' | 'transitPermit'>, international: boolean) => !!v.inspectionNo && (!international || !!v.transitPermit)
-
 // Lịch của một xe / tài xế / hộ tống: các đơn khác đang giữ họ (kèm ngày đi và tuyến), để Coordinator biết họ bận gì
 export interface Booked {
   order: string; departAt: number; route: string; trip: string
@@ -796,7 +793,7 @@ export function settlementOf(b: Pick<Booking, 'incidents'>): { items: Settlement
 }
 
 // Tự động phân bổ xe thông minh (Smart Fleet Allocation):
-// 1. Lọc xe hợp lệ (đăng kiểm, liên vận nếu quốc tế, không trùng lịch).
+// 1. Lọc xe sẵn sàng và không trùng lịch.
 // 2. Nếu vừa 1 xe: chọn xe có sức chứa nhỏ nhất mà vẫn đủ chỗ (Best-fit single vehicle) để tránh lãng phí xe lớn.
 // 3. Nếu vượt sức chứa 1 xe: tự động chia thành nhiều xe (Multi-vehicle) ưu tiên xe to giảm dần để tối thiểu số chuyến.
 export interface AutoPackDraft {
@@ -813,14 +810,13 @@ export function autoPackFleet(
   horseIds: string[],
   vehicles: Vehicle[],
   schedVehicles: Map<string, Booked[]>,
-  departAt: number,
-  international: boolean
+  departAt: number
 ): AutoPackDraft[] {
   if (!horseIds.length) return [{ vehicleId: '', horseIds: [] }]
 
-  // 1. Lọc xe khả dụng: trạng thái sẵn sàng (không bận/bảo dưỡng) + giấy tờ đạt + không trùng lịch trong vòng 3 ngày
+  // 1. Lọc xe khả dụng: trạng thái sẵn sàng (không bận/bảo dưỡng) và không trùng lịch.
   const available = vehicles.filter(v =>
-    isVehicleReadyForDispatch(v) && vehicleDocsOk(v, international) && !clashOf(schedVehicles.get(v.id), departAt)
+    isVehicleReadyForDispatch(v) && !clashOf(schedVehicles.get(v.id), departAt)
   )
 
   // Nếu không có xe nào đạt chuẩn, trả về 1 chuyến chưa gán xe để điều phối viên nhận biết

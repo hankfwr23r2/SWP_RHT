@@ -173,7 +173,7 @@ function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booking[]; o
         const kind = picking.kind
         return (
           <ResourcePicker
-            kind={kind} vehicles={vehicles} people={crew.filter(c => c.role === kind)} departAt={b.departAt} international={b.type === 'international'}
+            kind={kind} vehicles={vehicles} people={crew.filter(c => c.role === kind)} departAt={b.departAt}
             schedules={kind === 'driver' ? sched.drivers : sched.escorts} usedHere={used(kind === 'driver' ? 'driverId' : 'escortId')}
             selected={picks[picking.tripId][kind === 'driver' ? 'driverId' : 'escortId']} horses={0}
             onPick={id => setPicks(x => ({ ...x, [picking.tripId]: { ...x[picking.tripId], [kind === 'driver' ? 'driverId' : 'escortId']: id } }))}

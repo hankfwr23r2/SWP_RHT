@@ -1,7 +1,7 @@
 // Chọn xe, tài xế hoặc hộ tống cho một chuyến: popup dạng thẻ. Thẻ tài xế, hộ tống cho biết đang bận đơn nào; thẻ xe chỉ nêu trạng thái
 // (đi đơn được không). Ai trùng lịch (ngày đi cách dưới 3 ngày) thì khóa lại.
 import { useEffect, useState } from 'react'
-import { clashOf, vehicleDocsOk, type Booked } from '@shared/lib/booking'
+import { clashOf, type Booked } from '@shared/lib/booking'
 import { formatDate, formatDateTime } from '@shared/lib/format'
 import type { CrewMember, Vehicle } from '@shared/services/fleet'
 import { Modal } from '@shared/ui/Modal'
@@ -33,7 +33,6 @@ interface Props {
   people: CrewMember[] // tài xế hoặc hộ tống tùy kind
   schedules: Map<string, Booked[]> // lịch các đơn khác đang giữ từng xe / người
   departAt: number
-  international: boolean
   usedHere: Set<string> // đã chọn ở chuyến khác của đơn này
   selected: string
   horses: number // số ngựa đang xếp trên chuyến này (để cảnh báo xe không đủ chỗ)
@@ -43,7 +42,7 @@ interface Props {
 
 interface Row { id: string; vehicle?: Vehicle; person?: CrewMember; booked: Booked[]; reason: string; clash: boolean }
 
-export function ResourcePicker({ kind, vehicles, people, schedules, departAt, international, usedHere, selected, horses, onPick, onClose }: Props) {
+export function ResourcePicker({ kind, vehicles, people, schedules, departAt, usedHere, selected, horses, onPick, onClose }: Props) {
   const [text, setText] = useState('')
   const [onlyOk, setOnlyOk] = useState(false) // chỉ hiện người / xe chọn được
   const [shake, setShake] = useState<string | null>(null) // thẻ khóa vừa bị bấm: rung và nêu lý do
@@ -57,13 +56,10 @@ export function ResourcePicker({ kind, vehicles, people, schedules, departAt, in
     const clash = kind === 'vehicle' ? clashOf(booked, departAt) : undefined
     const assigned = kind !== 'vehicle' ? booked[0] : undefined
     const inMaint = r.vehicle && isVehicleMaint(r.vehicle.status)
-    const noDocs = r.vehicle && !vehicleDocsOk(r.vehicle, international)
     const reason = inMaint
       ? 'Xe đang bảo dưỡng định kỳ / chưa sẵn sàng'
       : r.vehicle && isVehicleBusy(r.vehicle.status) && r.id !== selected
         ? 'Xe đang được gán cho chuyến khác'
-      : noDocs
-        ? `Thiếu giấy đăng kiểm${international ? ' / liên vận' : ''}`
         : clash
           ? 'Đã có đơn trùng lịch chạy'
           : assigned
@@ -71,7 +67,7 @@ export function ResourcePicker({ kind, vehicles, people, schedules, departAt, in
             : usedHere.has(r.id) && r.id !== selected
               ? 'Đã chọn ở chuyến khác của đơn này'
               : ''
-    return { ...r, booked, reason, clash: !!clash && !noDocs && !inMaint }
+    return { ...r, booked, reason, clash: !!clash && !inMaint }
   })
   const keyword = text.trim().toLowerCase()
   const shown = rows.filter(r => {
@@ -87,7 +83,7 @@ export function ResourcePicker({ kind, vehicles, people, schedules, departAt, in
   }
 
   return (
-    <Modal wide onClose={onClose} title={t.title} subtitle={kind === 'vehicle' ? `Chuyến này đang xếp ${horses} ngựa. Xe bị khóa là xe trùng lịch hoặc thiếu giấy.` : 'Tài xế và hộ tống luôn xuất phát từ trụ sở ở Việt Nam. Người đang đi đơn hoặc đang chạy về trụ sở thì bị khóa, về tới trụ sở mới chọn lại được.'}>
+    <Modal wide onClose={onClose} title={t.title} subtitle={kind === 'vehicle' ? `Chuyến này đang xếp ${horses} ngựa. Xe trùng lịch sẽ bị khóa.` : 'Tài xế và hộ tống luôn xuất phát từ trụ sở ở Việt Nam. Người đang đi đơn hoặc đang chạy về trụ sở thì bị khóa, về tới trụ sở mới chọn lại được.'}>
       <div className={p.bar}>
         <label className={p.search}><i className="fa-solid fa-magnifying-glass" aria-hidden="true" /><input className="form-control" placeholder={t.search} value={text} onChange={e => setText(e.target.value)} /></label>
         <label className={p.check}><input type="checkbox" checked={onlyOk} onChange={e => setOnlyOk(e.target.checked)} /> Chỉ hiện chọn được</label>
