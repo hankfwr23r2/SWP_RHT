@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import { customerProfileApi, type CustomerProfileDto } from '@shared/api/customerProfile'
 import { useAuth } from '@shared/auth/AuthContext'
 import { useToast } from '@shared/ui/toast'
+import { isValidPersonName, isValidRegionalPhone } from '@shared/lib/contactValidation'
 import s from './Profile.module.css'
 
 export default function ProfilePage() {
@@ -59,8 +60,12 @@ export default function ProfilePage() {
 
   const handleUpdateInfo = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!fullName.trim()) {
-      toast('Vui lòng nhập Họ và tên', 'error')
+    if (!isValidPersonName(fullName)) {
+      toast('Họ tên cần có từ 2 đến 100 ký tự và chỉ gồm chữ cái, dấu cách, dấu nháy hoặc gạch nối.', 'error')
+      return
+    }
+    if (phone.trim() && !isValidRegionalPhone(phone)) {
+      toast('Số điện thoại cần thuộc Việt Nam, Campuchia hoặc Lào.', 'error')
       return
     }
 
@@ -221,6 +226,8 @@ export default function ProfilePage() {
                   onChange={e => setFullName(e.target.value)}
                   placeholder="Nhập họ và tên đầy đủ"
                   required
+                  minLength={2}
+                  maxLength={100}
                 />
               </div>
 
@@ -231,6 +238,7 @@ export default function ProfilePage() {
                   value={phone}
                   onChange={e => setPhone(e.target.value)}
                   placeholder="Ví dụ: 0912 345 678"
+                  autoComplete="tel"
                 />
               </div>
 

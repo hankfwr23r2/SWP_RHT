@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { authApi } from '@shared/api/auth'
 import { AuthShell, authStyles as s } from '@shared/ui/AuthShell'
+import { isValidEmail, isValidPersonName, isValidRegionalPhone } from '@shared/lib/contactValidation'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
@@ -19,6 +20,22 @@ export default function RegisterPage() {
     const fullName = (form.get('fullname') as string).trim()
     const phone = (form.get('phone') as string).trim()
     const address = (form.get('address') as string)?.trim() || ''
+
+    if (!isValidPersonName(fullName)) {
+      setError('Họ tên cần có từ 2 đến 100 ký tự, chỉ gồm chữ cái và dấu cách, dấu nháy hoặc gạch nối.')
+      setLoading(false)
+      return
+    }
+    if (!isValidEmail(email)) {
+      setError('Email không đúng định dạng. Ví dụ: ten@example.com.')
+      setLoading(false)
+      return
+    }
+    if (!isValidRegionalPhone(phone)) {
+      setError('Số điện thoại cần thuộc Việt Nam, Campuchia hoặc Lào.')
+      setLoading(false)
+      return
+    }
 
     // Sử dụng email làm username nếu không có trường username riêng
     const username = email
@@ -52,11 +69,11 @@ export default function RegisterPage() {
         )}
         <div className="form-group">
           <label htmlFor="fullname">Họ và Tên</label>
-          <input className="form-control" id="fullname" name="fullname" type="text" placeholder="Nhập họ và tên" required />
+          <input className="form-control" id="fullname" name="fullname" type="text" placeholder="Nhập họ và tên" autoComplete="name" required minLength={2} maxLength={100} onChange={() => setError('')} />
         </div>
         <div className="form-group">
           <label htmlFor="email">Email (dùng làm tên đăng nhập)</label>
-          <input className="form-control" id="email" name="email" type="email" placeholder="example@gmail.com" required onChange={() => setError('')} />
+          <input className="form-control" id="email" name="email" type="email" placeholder="example@gmail.com" autoComplete="email" required onChange={() => setError('')} />
         </div>
         <div className="form-group">
           <label htmlFor="password">Mật khẩu</label>
@@ -64,7 +81,7 @@ export default function RegisterPage() {
         </div>
         <div className="form-group">
           <label htmlFor="phone">Số điện thoại</label>
-          <input className="form-control" id="phone" name="phone" type="tel" placeholder="Nhập số điện thoại" required />
+          <input className="form-control" id="phone" name="phone" type="tel" placeholder="+84, +855 hoặc +856" autoComplete="tel" required onChange={() => setError('')} />
         </div>
         <div className="form-group">
           <label htmlFor="address">Địa chỉ / Trang trại</label>

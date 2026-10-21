@@ -12,6 +12,7 @@ import { MIN_LEAD_DAYS } from '@shared/config/business-rules'
 import { COUNTRIES, type CountryCode } from '@shared/config/network'
 import { earliestDeparture, fromIsoDay, isDepartureAllowed, toIsoDay } from '@shared/lib/booking'
 import { formatDate } from '@shared/lib/format'
+import { isValidContactName, isValidRegionalPhone } from '@shared/lib/contactValidation'
 import type { Party, TransportType } from '@shared/types/booking'
 import { Flag } from '@shared/ui/Flag'
 import { BookingShell } from './BookingShell'
@@ -266,14 +267,14 @@ export default function Step1RoutePage() {
     partner: type === 'international' && !partner ? 'Chọn nước bạn.' : '',
     date: dateError,
     // Người gửi
-    consignorName: !consignor.name.trim() ? 'Nhập tên người gửi.' : '',
-    consignorPhone: !consignor.phone.trim() ? 'Nhập số điện thoại người gửi.' : '',
+    consignorName: !isValidContactName(consignor.name) ? 'Nhập tên hợp lệ (2–100 ký tự, cần có chữ cái). Có thể nhập tên cá nhân hoặc trang trại.' : '',
+    consignorPhone: !isValidRegionalPhone(consignor.phone) ? 'Nhập số hợp lệ của Việt Nam, Campuchia hoặc Lào.' : '',
     pickupProv: !pickupAddr.provinceCode ? 'Chọn tỉnh/thành điểm đón.' : '',
     pickupWard: !pickupAddr.wardName ? 'Chọn xã/phường điểm đón.' : '',
     pickupDetail: !pickupAddr.detail.trim() ? 'Nhập tên trang trại / địa chỉ đón cụ thể.' : '',
     // Người nhận
-    consigneeName: !consignee.name.trim() ? 'Nhập tên người nhận.' : '',
-    consigneePhone: !consignee.phone.trim() ? 'Nhập số điện thoại người nhận.' : '',
+    consigneeName: !isValidContactName(consignee.name) ? 'Nhập tên hợp lệ (2–100 ký tự, cần có chữ cái). Có thể nhập tên cá nhân hoặc trang trại.' : '',
+    consigneePhone: !isValidRegionalPhone(consignee.phone) ? 'Nhập số hợp lệ của Việt Nam, Campuchia hoặc Lào.' : '',
     dropoffProv: !dropoffAddr.provinceCode ? 'Chọn tỉnh/thành điểm giao.' : '',
     dropoffWard: !dropoffAddr.wardName ? 'Chọn xã/phường điểm giao.' : '',
     dropoffDetail: !dropoffAddr.detail.trim() ? 'Nhập tên trang trại / địa chỉ giao cụ thể.' : '',
@@ -444,6 +445,7 @@ export default function Step1RoutePage() {
                   id="consignor-name"
                   className={`form-control ${submitted && errors.consignorName ? 'invalid' : ''}`}
                   value={consignor.name}
+                  maxLength={100}
                   placeholder="Ví dụ: Nguyễn Văn A hoặc Trại ngựa Long Thành"
                   onChange={e => setConsignor({ ...consignor, name: e.target.value })}
                 />
@@ -459,6 +461,8 @@ export default function Step1RoutePage() {
                   className={`form-control ${submitted && errors.consignorPhone ? 'invalid' : ''}`}
                   value={consignor.phone}
                   placeholder="Ví dụ: 0901 234 567"
+                  type="tel"
+                  autoComplete="tel"
                   onChange={e => setConsignor({ ...consignor, phone: e.target.value })}
                 />
                 {show(errors.consignorPhone)}
@@ -519,6 +523,7 @@ export default function Step1RoutePage() {
                   id="consignee-name"
                   className={`form-control ${submitted && errors.consigneeName ? 'invalid' : ''}`}
                   value={consignee.name}
+                  maxLength={100}
                   placeholder="Ví dụ: Trần Văn B hoặc CLB Cưỡi ngựa..."
                   onChange={e => setConsignee({ ...consignee, name: e.target.value })}
                 />
@@ -534,6 +539,8 @@ export default function Step1RoutePage() {
                   className={`form-control ${submitted && errors.consigneePhone ? 'invalid' : ''}`}
                   value={consignee.phone}
                   placeholder="Ví dụ: 0912 345 678"
+                  type="tel"
+                  autoComplete="tel"
                   onChange={e => setConsignee({ ...consignee, phone: e.target.value })}
                 />
                 {show(errors.consigneePhone)}
