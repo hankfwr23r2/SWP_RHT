@@ -29,6 +29,17 @@ export default function VnpayReturnPage() {
   const failure = !params.vnp_TxnRef ? 'Không có thông tin giao dịch từ VNPAY.' : error
   const ok = result?.success === true
 
+  const targetOrder = useMemo(() => {
+    if (result?.bookingCode) return result.bookingCode
+    const txn = params.vnp_TxnRef
+    if (txn && txn.length >= 7) {
+      const numPart = txn.slice(3, 7)
+      const id = parseInt(numPart, 10)
+      if (!isNaN(id)) return `BK-${String(id).padStart(3, '0')}`
+    }
+    return null
+  }, [result?.bookingCode, params.vnp_TxnRef])
+
   return (
     <div className="page">
       <div className="wrap" style={{ maxWidth: 560 }}>
@@ -49,9 +60,16 @@ export default function VnpayReturnPage() {
                   {result.gatewayTransactionNo && <div><span className="text-muted">Mã giao dịch VNPAY: </span><b>{result.gatewayTransactionNo}</b></div>}
                 </div>
               )}
-              <Link className="btn btn-primary btn-full" to={result?.bookingCode ? `/orders/${result.bookingCode}` : '/orders'}>
-                {result?.bookingCode ? 'Xem đơn hàng' : 'Về danh sách đơn'}
-              </Link>
+              <div style={{ display: 'grid', gap: 8, marginTop: 16 }}>
+                <Link className="btn btn-primary btn-full" to={targetOrder ? `/orders/${targetOrder}` : '/orders'}>
+                  {ok ? (targetOrder ? 'Xem đơn hàng' : 'Về danh sách đơn') : (targetOrder ? 'Quay lại đơn hàng để thanh toán lại' : 'Về danh sách đơn')}
+                </Link>
+                {!ok && targetOrder && (
+                  <Link className="btn btn-ghost btn-full" to="/orders">
+                    Về danh sách đơn
+                  </Link>
+                )}
+              </div>
             </>
           )}
         </div>

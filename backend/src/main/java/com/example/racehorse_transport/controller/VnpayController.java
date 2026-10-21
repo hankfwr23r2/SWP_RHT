@@ -91,7 +91,18 @@ public class VnpayController {
      */
     @GetMapping("/return")
     public ResponseEntity<ApiResponse<VnpayResultResponse>> vnpayReturn(@RequestParam Map<String, String> params) {
-        VnpayResultResponse response = vnpayService.confirm(params);
-        return ResponseEntity.ok(ApiResponse.success(response, response.getMessage()));
+        try {
+            VnpayResultResponse response = vnpayService.confirm(params);
+            return ResponseEntity.ok(ApiResponse.success(response, response.getMessage()));
+        } catch (Exception ex) {
+            log.error("VNPAY Return confirmation error, txnRef={}: {}", params.get("vnp_TxnRef"), ex.getMessage(), ex);
+            VnpayResultResponse fallback = VnpayResultResponse.builder()
+                    .success(false)
+                    .rspCode("99")
+                    .message("Không thể hoàn tất kiểm tra giao dịch: " + ex.getMessage())
+                    .transactionCode(params.get("vnp_TxnRef"))
+                    .build();
+            return ResponseEntity.ok(ApiResponse.success(fallback, fallback.getMessage()));
+        }
     }
 }
