@@ -129,6 +129,15 @@ public class VnpayServiceImpl implements VnpayService {
             throw new IllegalStateException("Số tiền cần thanh toán không hợp lệ!");
         }
 
+        // Dọn dẹp các giao dịch PENDING trước đó của cùng loại để không bị kẹt transaction dở dang
+        for (Payment p : payments) {
+            if (type.equalsIgnoreCase(p.getPaymentType()) && "PENDING".equalsIgnoreCase(p.getStatus())) {
+                p.setStatus("CANCELLED");
+                p.setNote("Hủy do người dùng tạo phiên thanh toán VNPAY mới");
+                paymentRepository.save(p);
+            }
+        }
+
         String txnRef = prefix + String.format("%04d", booking.getId()) + now.toEpochMilli();
         Payment payment = Payment.builder()
                 .bookingID(booking)
