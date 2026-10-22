@@ -181,9 +181,9 @@
 
 /* Xác nhận */
 .review { display: grid; gap: 14px; }
-.reviewGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px 20px; }
-.reviewGrid dt { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); font-weight: 600; }
-.reviewGrid dd { font-weight: 600; }
+.reviewGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; }
+.reviewGrid dt { font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+.reviewGrid dd { font-weight: 600; line-height: 1.45; margin: 0; word-break: break-word; }
 .reviewHorse { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 0.88rem; }
 .reviewHorse:last-child { border-bottom: none; }
 .reviewHorse small { color: var(--muted); }
@@ -306,7 +306,7 @@
   .aside > .promise { display: none; }
 }
 @media (max-width: 720px) {
-  .typeGrid, .grid2, .optRow { grid-template-columns: 1fr; }
+  .typeGrid, .grid2, .optRow, .reviewGrid { grid-template-columns: 1fr; }
   .routePicker { grid-template-columns: 1fr; }
   .swapBtn { justify-self: center; margin: -2px 0; transform: rotate(90deg); }
   .routePreview { padding: 14px; }
