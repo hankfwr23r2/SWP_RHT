@@ -15,7 +15,7 @@ public class ExpenseItemDto {
     private String description;
     private String label;
     private BigDecimal amount;
-    private String photo; // URL ảnh chụp hóa đơn từ Cloudinary (Evidence-First)
+    private String photo; // Đường dẫn ảnh chụp hóa đơn.
     private String payer; // "customer" (Khách chịu) hoặc "carrier" (Nhà xe chịu)
 
     public String getDescription() {

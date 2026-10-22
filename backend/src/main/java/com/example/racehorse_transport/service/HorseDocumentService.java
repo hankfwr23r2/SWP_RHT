@@ -19,7 +19,7 @@ public interface HorseDocumentService {
     // =========================================================================
 
     /**
-     * Upload hồ sơ ngựa lên Cloudinary và lưu metadata vào DB (trả về DTO).
+     * Tải hồ sơ ngựa lên hệ thống lưu trữ và lưu metadata vào cơ sở dữ liệu.
      *
      * @param horseId      ID con ngựa cần gắn hồ sơ
      * @param documentType Loại giấy tờ (PASSPORT, VACCINATION, BLOOD_TEST, HEALTH_CERT, OTHER)

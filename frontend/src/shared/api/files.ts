@@ -9,7 +9,7 @@ export interface FileUploadResponse {
 
 export const fileApi = {
   /**
-   * Upload 1 file lên Cloudinary
+   * Tải một tệp lên hệ thống lưu trữ.
    * @param file File ảnh hoặc PDF
    * @param folder Thư mục phân loại (ví dụ: 'horses', 'clearance', 'settlement')
    */
@@ -27,7 +27,7 @@ export const fileApi = {
   },
 
   /**
-   * Upload nhiều file cùng lúc lên Cloudinary
+   * Tải nhiều tệp lên hệ thống lưu trữ.
    * @param files Danh sách File
    * @param folder Thư mục phân loại
    */

@@ -35,7 +35,7 @@ public class CloudinaryStorageServiceImpl implements StorageService {
             cleanName = cleanName.replaceAll("[^a-zA-Z0-9_-]", "_");
             String publicId = (folder != null && !folder.isBlank() ? folder + "/" : "") + cleanName + "_" + UUID.randomUUID().toString().substring(0, 8);
 
-            // Upload lên Cloudinary với resource_type: auto (hỗ trợ cả ảnh PNG/JPG và tài liệu PDF)
+            // Tự nhận diện loại tệp để hỗ trợ ảnh PNG/JPG và tài liệu PDF.
             Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
                     "public_id", publicId,
                     "resource_type", "auto",
@@ -43,11 +43,11 @@ public class CloudinaryStorageServiceImpl implements StorageService {
             ));
 
             String secureUrl = (String) uploadResult.get("secure_url");
-            log.info("Uploaded file to Cloudinary successfully: url={}", secureUrl);
+            log.info("Uploaded file successfully: url={}", secureUrl);
             return secureUrl;
         } catch (IOException e) {
-            log.error("Failed to upload file to Cloudinary: {}", e.getMessage(), e);
-            throw new RuntimeException("Lỗi trong quá trình upload file lên Cloudinary: " + e.getMessage());
+            log.error("Failed to upload file: {}", e.getMessage(), e);
+            throw new RuntimeException("Không thể tải tệp lên hệ thống.");
         }
     }
 
@@ -61,7 +61,7 @@ public class CloudinaryStorageServiceImpl implements StorageService {
                 String path = URI.create(fileReference).getPath();
                 String[] uploadPath = path.split("/upload/", 2);
                 if (uploadPath.length != 2) {
-                    throw new IllegalArgumentException("URL Cloudinary không hợp lệ.");
+                    throw new IllegalArgumentException("Đường dẫn tệp không hợp lệ.");
                 }
 
                 String[] resourcePath = uploadPath[0].split("/");
@@ -79,9 +79,9 @@ public class CloudinaryStorageServiceImpl implements StorageService {
             }
 
             cloudinary.uploader().destroy(publicId, ObjectUtils.asMap("resource_type", resourceType));
-            log.info("Deleted file from Cloudinary: publicId={}", publicId);
+            log.info("Deleted stored file: publicId={}", publicId);
         } catch (IOException e) {
-            log.error("Failed to delete file from Cloudinary: {}", e.getMessage(), e);
+            log.error("Failed to delete stored file: {}", e.getMessage(), e);
             throw new IllegalStateException("Không thể xóa tệp hồ sơ ngựa khỏi bộ lưu trữ.", e);
         }
     }
