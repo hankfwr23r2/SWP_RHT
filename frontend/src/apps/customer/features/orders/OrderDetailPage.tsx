@@ -234,8 +234,9 @@ export default function OrderDetailPage() {
   useEffect(() => { if (running) reload() }, [now, running, reload])
 
   if (b === undefined) return <div className="page"><div className="wrap"><p className="text-muted">Đang tải…</p></div></div>
+  const trips = b.trips ?? []
   const next = nextStep(b, now)
-  const hasJourney = (b.trips ?? []).some(t => t.run) || (ROUTE_VISIBLE.includes(b.status) && !!b.route)
+  const hasJourney = trips.some(t => t.run) || (ROUTE_VISIBLE.includes(b.status) && !!b.route)
   const tabs: Tab[] = [...(hasJourney ? ['journey' as const] : []), ...(POST_PAYMENT.includes(b.status) ? ['docs' as const] : []), ...(b.quote ? ['pay' as const] : []), 'history', 'info']
   // Tab mặc định theo giai đoạn: đang đi đường thì Hành trình, đang làm giấy thì Giấy tờ, còn lại Thanh toán / Thông tin
   const auto: Tab = ROUTE_STAGE.includes(b.status) ? 'journey' : POST_PAYMENT.includes(b.status) ? 'docs' : b.quote ? 'pay' : 'info'
@@ -318,22 +319,22 @@ export default function OrderDetailPage() {
 
           {tab === 'journey' && (
             <>
-              {(b.trips ?? []).some(t => t.run) && (
+              {trips.some(t => t.run) && (
                 <div className="card">
                   <div className="card-header"><h3><i className="fa-solid fa-location-dot" /> Hành trình</h3>{b.status === 'in_transit' && <span className="badge badge-info">Đang chạy</span>}</div>
-                  {b.trips!.filter(t => t.run).map((t, i) => (
+                  {trips.filter(t => t.run).map((t, i) => (
                     <div key={t.tripId}>
-                      {b.trips!.length > 1 && <p className="form-hint" style={{ margin: '8px 0' }}><b>Xe {b.trips!.indexOf(t) + 1}</b> · {t.tripId}</p>}
+                      {trips.length > 1 && <p className="form-hint" style={{ margin: '8px 0' }}><b>Xe {trips.indexOf(t) + 1}</b> · {t.tripId}</p>}
                       <TripTimeline trip={t} now={now} />
-                      {i < b.trips!.filter(x => x.run).length - 1 && <hr style={{ margin: '14px 0' }} />}
+                      {i < trips.filter(x => x.run).length - 1 && <hr style={{ margin: '14px 0' }} />}
                     </div>
                   ))}
                 </div>
               )}
-              {(b.trips ?? []).length > 0 && b.route && (ROUTE_VISIBLE.includes(b.status) || (b.trips ?? []).some(t => t.run)) && (
+              {trips.length > 0 && b.route && (ROUTE_VISIBLE.includes(b.status) || trips.some(t => t.run)) && (
                 <div className="card">
                   <div className="card-header"><h3><i className="fa-solid fa-map-location-dot" /> Theo dõi trên bản đồ</h3></div>
-                  <TripTrackMap b={b} trips={b.trips!} />
+                  <TripTrackMap b={b} trips={trips} />
                 </div>
               )}
               <IncidentsCard b={b} />
