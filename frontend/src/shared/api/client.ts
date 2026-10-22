@@ -144,7 +144,15 @@ apiClient.interceptors.response.use(
       }
 
       // Lấy câu thông báo lỗi cụ thể từ Backend gửi lên nếu có
-      const serverMessage = data?.message || 'Có lỗi xảy ra từ máy chủ.'
+      let serverMessage = data?.message || 'Có lỗi xảy ra từ máy chủ.'
+      if (data?.data && typeof data.data === 'object' && !Array.isArray(data.data)) {
+        const details = Object.entries(data.data)
+          .map(([, val]) => (typeof val === 'string' ? val : JSON.stringify(val)))
+          .filter(Boolean)
+        if (details.length > 0) {
+          serverMessage = `${serverMessage}: ${details.join('; ')}`
+        }
+      }
       return Promise.reject(new Error(serverMessage))
     }
 

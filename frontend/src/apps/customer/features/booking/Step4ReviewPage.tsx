@@ -59,6 +59,14 @@ export default function Step4ReviewPage() {
 
   const submit = async () => {
     if (busy) return
+    if (!draft.consignor.name?.trim() || !draft.consignor.phone?.trim() || !draft.consignor.idNumber?.trim()) {
+      toast('Thông tin người gửi chưa đầy đủ (Họ tên, SĐT, CCCD/Hộ chiếu). Vui lòng bấm "Sửa" để quay lại Bước 1 bổ sung.', 'error')
+      return
+    }
+    if (!draft.consignee.name?.trim() || !draft.consignee.phone?.trim() || !draft.consignee.idNumber?.trim()) {
+      toast('Thông tin người nhận chưa đầy đủ (Họ tên, SĐT, CCCD/Hộ chiếu). Vui lòng bấm "Sửa" để quay lại Bước 1 bổ sung.', 'error')
+      return
+    }
     setBusy(true)
     try {
       const order = await customerBookingsApi.create(owner, {
@@ -88,8 +96,22 @@ export default function Step4ReviewPage() {
           <div><dt>Ngày khởi hành</dt><dd>{formatDate(fromIsoDay(draft.departDate))}</dd></div>
           <div><dt>Điểm đón</dt><dd>{origin.name}</dd></div>
           <div><dt>Điểm giao</dt><dd>{dest.name}</dd></div>
-          <div><dt>Người gửi</dt><dd>{draft.consignor.name}<br /><small className="text-muted">{draft.consignor.phone}</small></dd></div>
-          <div><dt>Người nhận</dt><dd>{draft.consignee.name}<br /><small className="text-muted">{draft.consignee.phone}</small></dd></div>
+          <div>
+            <dt>Người gửi</dt>
+            <dd>
+              {draft.consignor.name}
+              <br /><small className="text-muted">{draft.consignor.phone}</small>
+              {draft.consignor.idNumber ? <><br /><small className="text-muted">CCCD/HC: {draft.consignor.idNumber}</small></> : <><br /><small className="text-danger font-semibold">Thiếu CCCD/Hộ chiếu</small></>}
+            </dd>
+          </div>
+          <div>
+            <dt>Người nhận</dt>
+            <dd>
+              {draft.consignee.name}
+              <br /><small className="text-muted">{draft.consignee.phone}</small>
+              {draft.consignee.idNumber ? <><br /><small className="text-muted">CCCD/HC: {draft.consignee.idNumber}</small></> : <><br /><small className="text-danger font-semibold">Thiếu CCCD/Hộ chiếu</small></>}
+            </dd>
+          </div>
         </dl>
       </div>
 

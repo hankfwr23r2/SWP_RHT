@@ -16,6 +16,7 @@ import { isValidContactName, isValidRegionalPhone } from '@shared/lib/contactVal
 import type { Party, TransportType } from '@shared/types/booking'
 import { Flag } from '@shared/ui/Flag'
 import { FormSelect } from '@shared/ui/FormSelect'
+import { useToast } from '@shared/ui/toast'
 import { BookingShell } from './BookingShell'
 import { ArrowRightIcon, CalendarIcon, CheckIcon, GlobeIcon, PinIcon, RouteIcon, SenderIcon, SwapIcon, TruckIcon, UserIcon } from './BookingIcons'
 import { DepartureDatePicker } from './DepartureDatePicker'
@@ -168,6 +169,7 @@ function LocationPicker({ country, address, onChange, errors }: LocationPickerPr
 
 export default function Step1RoutePage() {
   const navigate = useNavigate()
+  const toast = useToast()
   const { session } = useAuth()
   const { draft, save } = useBookingDraft()
 
@@ -309,6 +311,7 @@ export default function Step1RoutePage() {
     e.preventDefault()
     setSubmitted(true)
     if (!valid) {
+      toast('Vui lòng hoàn thành các thông tin bắt buộc (CCCD / Hộ chiếu, SĐT, địa chỉ) trước khi tiếp tục.', 'error')
       document.querySelector('.invalid, .form-error')?.scrollIntoView({ block: 'center', behavior: 'smooth' })
       return
     }
