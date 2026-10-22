@@ -48,7 +48,16 @@ function tripOf(t: NonNullable<BackendBookingResponse['trips']>[number]): Vehicl
   const { tripId, vehicleId, driverId, escortId, horseIds, acks, run, ...rest } = t as any
   const normalizedRun = run ? {
     ...run,
-    checkpoints: Array.isArray(run.checkpoints) ? run.checkpoints : [],
+    checkpoints: Array.isArray(run.checkpoints)
+      ? run.checkpoints.map((c: any) => ({
+          ...c,
+          id: c.id ?? 'checkpoint',
+          type: c.type ?? 'rest',
+          label: c.label || c.name || (c.type === 'pickup' ? 'Điểm đón' : c.type === 'delivery' ? 'Điểm giao' : c.type === 'customs' ? 'Cửa khẩu' : c.id || 'Trạm nghỉ'),
+          place: c.place || c.location || '',
+          plannedAt: Number(c.plannedAt || 0),
+        }))
+      : [],
     welfare: Array.isArray(run.welfare) ? run.welfare : [],
   } : undefined
   return { tripId, vehicleId, driverId: driverId ?? '', escortId: escortId ?? '', horseIds, ...rest, run: normalizedRun, acks: acks ?? {} } as VehicleTrip

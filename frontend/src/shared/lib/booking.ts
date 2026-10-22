@@ -660,7 +660,9 @@ export function buildCheckpoints(b: Pick<Booking, 'type' | 'origin' | 'dest' | '
 }
 
 // Mốc đang chờ làm: mốc đầu tiên chưa hoàn tất
-export const currentCheckpoint = (t: { run?: TripRun }) => t.run?.checkpoints.find(c => !c.doneAt)
+export const currentCheckpoint = (t: { run?: TripRun }) => t.run?.checkpoints.find((c, index) =>
+  !c.doneAt && !(index === 0 && c.type === 'pickup' && !!t.run?.startedAt && !!c.arrivedAt),
+)
 export const checkpointState = (cp: Checkpoint, current?: Checkpoint): 'done' | 'current' | 'locked' => (cp.doneAt ? 'done' : cp === current ? 'current' : 'locked')
 // Mốc nhỏ của bước Vận chuyển: các mốc (đón, trạm nghỉ, cửa khẩu, giao) đã xong / tổng và mốc hiện tại
 export function transitProgress(t: { run?: TripRun }): { done: number; total: number; current?: string } | undefined {
@@ -687,7 +689,7 @@ export function vehicleSpot(t: { run?: TripRun }): VehicleSpot {
   cps.forEach((c, k) => { if (c.arrivedAt) i = k })
   if (i < 0) return { kind: 'at', index: 0 }
   const c = cps[i], next = cps[i + 1]
-  const left = c.type === 'delivery' ? false : c.type === 'border' ? !!next?.doneAt || !!cps[i + 2]?.arrivedAt : c.type === 'customs' ? !!c.leftAt || !!next?.arrivedAt : !!c.doneAt
+  const left = c.type === 'delivery' ? false : c.type === 'border' ? !!c.doneAt || !!next?.arrivedAt : c.type === 'customs' ? !!c.leftAt || !!next?.arrivedAt : c.type === 'pickup' ? !!c.doneAt || (!!t.run?.startedAt && !!c.arrivedAt) : !!c.doneAt
   return left && next ? { kind: 'between', from: i, to: i + 1 } : { kind: 'at', index: i }
 }
 export function spotLabel(t: { run?: TripRun; departedAt?: number }): string {

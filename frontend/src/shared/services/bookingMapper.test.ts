@@ -45,8 +45,8 @@ describe('chuyển đơn từ backend sang frontend', () => {
     expect(b.waybill).toEqual({ no: 'VD-2026-0007', issuedAt: 2_000 })
   })
   it('xe và chuyến: backend chỉ trả mã, các bước vận hành chưa có thì để trống', () => {
-    const b = toBooking({ ...base, trips: [{ tripId: 'TRP-007-1', vehicleId: '3', driverId: 'TX-01', escortId: 'NV-01', horseIds: ['H-001'] }] })
-    expect(b.trips![0]).toMatchObject({ tripId: 'TRP-007-1', vehicleId: '3', driverId: 'TX-01', escortId: 'NV-01', acks: {} })
+    const b = toBooking({ ...base, trips: [{ tripId: 'TRP-007-1', vehicleId: '3', driverId: 'DR-01', escortId: 'ES-01', horseIds: ['H-001'] }] })
+    expect(b.trips![0]).toMatchObject({ tripId: 'TRP-007-1', vehicleId: '3', driverId: 'DR-01', escortId: 'ES-01', acks: {} })
     expect(b.trips![0].run).toBeUndefined()
     expect(toBooking({ ...base, trips: [{ tripId: 'T', vehicleId: '1', horseIds: [] }] }).trips![0].driverId).toBe('')
   })

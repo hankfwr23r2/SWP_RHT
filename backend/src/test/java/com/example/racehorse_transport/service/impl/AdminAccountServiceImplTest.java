@@ -67,6 +67,33 @@ class AdminAccountServiceImplTest {
         assertThat(response.getStaffCode()).isEqualTo("SP-02");
     }
 
+    @Test
+    void createStaffAccount_usesAdminCodePrefix() {
+        when(staffRepository.countByRoleIgnoreCase("admin")).thenReturn(1L);
+
+        AccountResponse response = service.createStaffAccount(request("admin"));
+
+        assertThat(response.getStaffCode()).isEqualTo("ADMIN-02");
+    }
+
+    @Test
+    void createStaffAccount_usesDriverCodePrefix() {
+        when(staffRepository.countByRoleIgnoreCase("driver")).thenReturn(1L);
+
+        AccountResponse response = service.createStaffAccount(request("driver"));
+
+        assertThat(response.getStaffCode()).isEqualTo("DR-02");
+    }
+
+    @Test
+    void createStaffAccount_usesEscortCodePrefix() {
+        when(staffRepository.countByRoleIgnoreCase("escort")).thenReturn(1L);
+
+        AccountResponse response = service.createStaffAccount(request("escort"));
+
+        assertThat(response.getStaffCode()).isEqualTo("ES-02");
+    }
+
     private CreateStaffRequest request(String role) {
         return CreateStaffRequest.builder()
                 .name("Test Staff")

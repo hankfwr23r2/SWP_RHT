@@ -1286,6 +1286,157 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
+    private void validateJourneyStart(Booking booking, BookingDetailsPayload payload, VehicleTripDto trip) {
+        if (trip.getDepartedAt() == null) {
+            throw new IllegalStateException("Xe cần xuất phát đến điểm đón trước khi bắt đầu vận chuyển.");
+        }
+        Map<String, Object> run = trip.getRun();
+        if (run != null && run.get("startedAt") != null) {
+            throw new IllegalStateException("Hành trình của chuyến xe đã bắt đầu.");
+        }
+        List<Map<String, Object>> checkpoints = run == null ? List.of() : checkpointMaps(run.get("checkpoints"));
+        Map<String, Object> pickup = checkpoints.stream()
+                .filter(cp -> "pickup".equals(cp.get("type")) || "pickup".equals(cp.get("id")))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Tài xế cần xác nhận đã đến điểm đón trước khi xuất phát."));
+        if (pickup.get("arrivedAt") == null || isBlank(pickup.get("photo"))) {
+            throw new IllegalStateException("Cần xác nhận điểm đón kèm ảnh trước khi xuất phát.");
+        }
+
+        Map<?, ?> payment = payload.getPayment() instanceof Map<?, ?> p ? p : Map.of();
+        if (!Boolean.TRUE.equals(payment.get("balancePaid"))) {
+            throw new IllegalStateException("Khách hàng cần thanh toán đủ 70% còn lại trước khi xe xuất phát.");
+        }
+        if (isBlank(pickup.get("handoverPhoto"))) {
+            throw new IllegalStateException("Cần ảnh biên bản giao nhận đã ký trước khi xuất phát.");
+        }
+
+        List<String> originals = stringList(pickup.get("originals"));
+        if (!originals.containsAll(List.of(
+                "Hộ chiếu ngựa bản gốc (FEI / National Passport)",
+                "Sổ tiêm phòng",
+                "Phiếu xét nghiệm EIA/EVA, bản gốc kèm 02 bản sao công chứng"))) {
+            throw new IllegalStateException("Cần xác nhận đã nhận đủ hồ sơ gốc của ngựa trước khi xuất phát.");
+        }
+
+        Set<String> tripHorseIds = new HashSet<>(trip.getHorseIds() != null ? trip.getHorseIds() : List.of());
+        Set<String> scanned = new HashSet<>();
+        for (String chip : stringList(pickup.get("chips"))) scanned.add(chip.toUpperCase());
+        if (payload.getHorses() != null) {
+            for (BookingHorseDto horse : payload.getHorses()) {
+                if (horse.getHorseId() == null || !tripHorseIds.contains(horse.getHorseId())
+                        || "UNFIT".equalsIgnoreCase(horse.getStatus())) continue;
+                if (isBlank(horse.getMicrochip()) || !scanned.contains(horse.getMicrochip().toUpperCase())) {
+                    throw new IllegalStateException("Cần quét microchip của tất cả ngựa đủ điều kiện trên chuyến trước khi xuất phát.");
+                }
+            }
+        }
+    }
+
+    private List<Map<String, Object>> ensureRouteCheckpoints(Booking booking, BookingDetailsPayload payload, VehicleTripDto trip) {
+        Map<String, Object> run = trip.getRun() != null ? trip.getRun() : new HashMap<>();
+        List<Map<String, Object>> existing = checkpointMaps(run.get("checkpoints"));
+        Map<String, Map<String, Object>> byId = new HashMap<>();
+        for (Map<String, Object> cp : existing) {
+            if (cp.get("id") != null) byId.put(String.valueOf(cp.get("id")), cp);
+        }
+
+        Object routeValue = payload.getRoute();
+        Map<String, Object> route = objectMap(routeValue);
+        Map<String, Object> pickup = byId.getOrDefault("pickup", new HashMap<>());
+        pickup.put("id", "pickup");
+        pickup.put("type", "pickup");
+        pickup.putIfAbsent("label", "Nhận ngựa tại điểm đón");
+        pickup.putIfAbsent("place", booking.getPickupAddress() != null ? booking.getPickupAddress() : "Điểm đón");
+        if (run.get("startedAt") != null && pickup.get("arrivedAt") != null) {
+            pickup.putIfAbsent("doneAt", run.get("startedAt"));
+        }
+
+        List<Map<String, Object>> ordered = new ArrayList<>();
+        ordered.add(pickup);
+        List<Map<String, Object>> middle = new ArrayList<>();
+        List<Map<String, Object>> legs = route == null ? List.of() : mapList(route.get("legs"));
+        List<Map<String, Object>> rests = route == null ? List.of() : mapList(route.get("rests"));
+        for (int i = 0; i < rests.size(); i++) {
+            Map<String, Object> rest = rests.get(i);
+            String id = "rest-" + (i + 1);
+            Map<String, Object> cp = byId.getOrDefault(id, new HashMap<>());
+            cp.put("id", id);
+            cp.put("type", "rest");
+            cp.putIfAbsent("label", "Trạm nghỉ " + (i + 1));
+            cp.putIfAbsent("place", String.valueOf(rest.getOrDefault("name", "Trạm nghỉ " + (i + 1))));
+            long plannedAt = legs.isEmpty() ? System.currentTimeMillis()
+                    : number(legs.get(Math.min(i, legs.size() - 1)).get("arriveAt"), System.currentTimeMillis());
+            cp.putIfAbsent("plannedAt", plannedAt);
+            middle.add(cp);
+        }
+
+        long borderEta = route == null ? 0L : number(route.get("borderEta"), 0L);
+        if ("international".equalsIgnoreCase(booking.getBookingType()) && borderEta > 0) {
+            String gate = payload.getGate() != null && !payload.getGate().isBlank() ? payload.getGate() : "Cửa khẩu";
+            Map<String, Object> border = byId.getOrDefault("border", new HashMap<>());
+            border.put("id", "border"); border.put("type", "border");
+            border.putIfAbsent("label", "Tới cửa khẩu"); border.putIfAbsent("place", gate); border.putIfAbsent("plannedAt", borderEta);
+            middle.add(border);
+            Map<String, Object> customs = byId.getOrDefault("customs", new HashMap<>());
+            customs.put("id", "customs"); customs.put("type", "customs");
+            customs.putIfAbsent("label", "Hoàn tất thông quan"); customs.putIfAbsent("place", gate); customs.putIfAbsent("plannedAt", borderEta + 90 * 60_000L);
+            middle.add(customs);
+        }
+        middle.sort((a, b) -> {
+            int byTime = Long.compare(number(a.get("plannedAt"), 0L), number(b.get("plannedAt"), 0L));
+            if (byTime != 0) return byTime;
+            return "border".equals(a.get("type")) ? -1 : "border".equals(b.get("type")) ? 1 : 0;
+        });
+        ordered.addAll(middle);
+
+        Map<String, Object> delivery = byId.getOrDefault("delivery", new HashMap<>());
+        delivery.put("id", "delivery"); delivery.put("type", "delivery");
+        delivery.putIfAbsent("label", "Bàn giao tại điểm giao");
+        delivery.putIfAbsent("place", booking.getDropoffAddress() != null ? booking.getDropoffAddress() : "Điểm giao");
+        long lastArrival = legs.isEmpty() ? System.currentTimeMillis() : number(legs.get(legs.size() - 1).get("arriveAt"), System.currentTimeMillis());
+        long lastPlanned = middle.isEmpty() ? 0L : number(middle.get(middle.size() - 1).get("plannedAt"), 0L);
+        delivery.putIfAbsent("plannedAt", Math.max(lastArrival, lastPlanned + (middle.isEmpty() ? 0L : 30 * 60_000L)));
+        ordered.add(delivery);
+        return ordered;
+    }
+
+    private List<Map<String, Object>> checkpointMaps(Object value) {
+        return mapList(value);
+    }
+
+    private List<Map<String, Object>> mapList(Object value) {
+        if (!(value instanceof List<?> list)) return new ArrayList<>();
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (Object item : list) {
+            Map<String, Object> map = objectMap(item);
+            if (map != null) result.add(map);
+        }
+        return result;
+    }
+
+    private Map<String, Object> objectMap(Object value) {
+        if (!(value instanceof Map<?, ?> map)) return null;
+        Map<String, Object> result = new HashMap<>();
+        map.forEach((key, item) -> result.put(String.valueOf(key), item));
+        return result;
+    }
+
+    private List<String> stringList(Object value) {
+        if (!(value instanceof List<?> list)) return List.of();
+        return list.stream().filter(item -> item != null).map(String::valueOf).toList();
+    }
+
+    private boolean isBlank(Object value) {
+        return value == null || String.valueOf(value).isBlank();
+    }
+
+    private long number(Object value, long fallback) {
+        if (value instanceof Number n) return n.longValue();
+        try { return value == null ? fallback : Long.parseLong(String.valueOf(value)); }
+        catch (NumberFormatException ignored) { return fallback; }
+    }
+
     private void appendHistory(BookingDetailsPayload payload, String actor, String text) {
         if (payload.getHistory() == null) {
             payload.setHistory(new ArrayList<>());
@@ -1348,6 +1499,15 @@ public class BookingServiceImpl implements BookingService {
         }
 
         Object medical = payload != null ? payload.getMedical() : null;
+        if (payload != null && payload.getTrips() != null) {
+            for (VehicleTripDto trip : payload.getTrips()) {
+                Map<String, Object> run = trip.getRun();
+                if (run != null && run.get("startedAt") != null) {
+                    run.put("checkpoints", ensureRouteCheckpoints(b, payload, trip));
+                    trip.setRun(run);
+                }
+            }
+        }
         if (medical == null) {
             Map<String, Object> defMed = new HashMap<>();
             defMed.put("status", "pending");
@@ -1439,7 +1599,12 @@ public class BookingServiceImpl implements BookingService {
         com.example.racehorse_transport.dto.coordinator.VehicleTripDto targetTrip = trips.stream()
                 .filter(t -> t.getTripId() != null && t.getTripId().equalsIgnoreCase(tripId))
                 .findFirst()
-                .orElse(trips.get(0));
+                .orElseThrow(() -> new IllegalArgumentException("Unknown trip: " + tripId));
+        Map<String, Object> activeRun = targetTrip.getRun();
+        if (activeRun != null && activeRun.get("startedAt") != null) {
+            activeRun.put("checkpoints", ensureRouteCheckpoints(booking, payload, targetTrip));
+            targetTrip.setRun(activeRun);
+        }
 
         String action = request.getAction() != null ? request.getAction() : "";
         String actor = request.getActor() != null ? request.getActor() : "Kíp xe";
@@ -1504,19 +1669,33 @@ public class BookingServiceImpl implements BookingService {
                 break;
             }
             case "ARRIVE_PICKUP": {
+                if (targetTrip.getDepartedAt() == null) throw new IllegalStateException("The vehicle must depart for pickup before checking in.");
+                if (targetTrip.getRun() != null && targetTrip.getRun().get("startedAt") != null) {
+                    throw new IllegalStateException("The transport journey has already started.");
+                }
+                if (isBlank(reqPayload.get("photo"))) throw new IllegalArgumentException("A pickup photo is required.");
                 Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> checkpoints = (List<Map<String, Object>>) run.computeIfAbsent("checkpoints", k -> new ArrayList<>());
+                String pickupLoc = booking.getPickupAddress() != null && !booking.getPickupAddress().isBlank()
+                        ? booking.getPickupAddress() : "Điểm đón";
                 if (checkpoints.isEmpty()) {
                     Map<String, Object> cp = new HashMap<>();
                     cp.put("id", "pickup");
                     cp.put("type", "pickup");
+                    cp.put("label", "Điểm đón");
+                    cp.put("place", pickupLoc);
                     cp.put("arrivedAt", now);
                     cp.put("photo", reqPayload.get("photo"));
                     checkpoints.add(cp);
                 } else {
-                    checkpoints.get(0).put("arrivedAt", now);
-                    checkpoints.get(0).put("photo", reqPayload.get("photo"));
+                    Map<String, Object> first = checkpoints.get(0);
+                    first.putIfAbsent("id", "pickup");
+                    first.putIfAbsent("type", "pickup");
+                    first.putIfAbsent("label", "Điểm đón");
+                    first.putIfAbsent("place", pickupLoc);
+                    first.put("arrivedAt", now);
+                    first.put("photo", reqPayload.get("photo"));
                 }
                 targetTrip.setRun(run);
                 appendHistory(payload, actor, "Tài xế đã có mặt tại điểm đón");
@@ -1527,10 +1706,21 @@ public class BookingServiceImpl implements BookingService {
                 Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> checkpoints = (List<Map<String, Object>>) run.computeIfAbsent("checkpoints", k -> new ArrayList<>());
+                String pickupLoc = booking.getPickupAddress() != null && !booking.getPickupAddress().isBlank()
+                        ? booking.getPickupAddress() : "Điểm đón";
                 if (checkpoints.isEmpty()) {
                     Map<String, Object> cp = new HashMap<>();
                     cp.put("id", "pickup");
+                    cp.put("type", "pickup");
+                    cp.put("label", "Điểm đón");
+                    cp.put("place", pickupLoc);
                     checkpoints.add(cp);
+                } else {
+                    Map<String, Object> first = checkpoints.get(0);
+                    first.putIfAbsent("id", "pickup");
+                    first.putIfAbsent("type", "pickup");
+                    first.putIfAbsent("label", "Điểm đón");
+                    first.putIfAbsent("place", pickupLoc);
                 }
                 Map<String, Object> pickup = checkpoints.get(0);
                 @SuppressWarnings("unchecked")
@@ -1668,10 +1858,21 @@ public class BookingServiceImpl implements BookingService {
                 Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> checkpoints = (List<Map<String, Object>>) run.computeIfAbsent("checkpoints", k -> new ArrayList<>());
+                String pickupLoc = booking.getPickupAddress() != null && !booking.getPickupAddress().isBlank()
+                        ? booking.getPickupAddress() : "Điểm đón";
                 if (checkpoints.isEmpty()) {
                     Map<String, Object> cp = new HashMap<>();
                     cp.put("id", "pickup");
+                    cp.put("type", "pickup");
+                    cp.put("label", "Điểm đón");
+                    cp.put("place", pickupLoc);
                     checkpoints.add(cp);
+                } else {
+                    Map<String, Object> first = checkpoints.get(0);
+                    first.putIfAbsent("id", "pickup");
+                    first.putIfAbsent("type", "pickup");
+                    first.putIfAbsent("label", "Điểm đón");
+                    first.putIfAbsent("place", pickupLoc);
                 }
                 checkpoints.get(0).put("originals", items);
                 targetTrip.setRun(run);
@@ -1680,20 +1881,34 @@ public class BookingServiceImpl implements BookingService {
             }
             case "UPLOAD_HANDOVER": {
                 String photo = String.valueOf(reqPayload.getOrDefault("photo", ""));
+                String checkpointId = String.valueOf(reqPayload.getOrDefault("checkpointId", "pickup"));
                 Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> checkpoints = (List<Map<String, Object>>) run.computeIfAbsent("checkpoints", k -> new ArrayList<>());
-                if (!checkpoints.isEmpty()) {
-                    checkpoints.get(0).put("handoverPhoto", photo);
+                Map<String, Object> handoverCheckpoint = checkpoints.stream()
+                        .filter(cp -> checkpointId.equals(String.valueOf(cp.get("id"))))
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalArgumentException("Unknown handover checkpoint: " + checkpointId));
+                if (!"pickup".equals(handoverCheckpoint.get("type")) && !"delivery".equals(handoverCheckpoint.get("type"))) {
+                    throw new IllegalStateException("Handover evidence is only accepted at pickup or delivery.");
                 }
+                if (isBlank(photo)) throw new IllegalArgumentException("A signed handover photo is required.");
+                handoverCheckpoint.put("handoverPhoto", photo);
                 targetTrip.setRun(run);
                 appendHistory(payload, actor, "Tải ảnh biên bản giao nhận có chữ ký");
                 break;
             }
             case "START_JOURNEY": {
+                validateJourneyStart(booking, payload, targetTrip);
                 booking.setStatus("in_transit");
                 Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
+                List<Map<String, Object>> checkpoints = ensureRouteCheckpoints(booking, payload, targetTrip);
+                if (checkpoints.isEmpty() || !"pickup".equals(String.valueOf(checkpoints.get(0).get("type")))) {
+                    throw new IllegalStateException("Trip is missing its pickup checkpoint.");
+                }
+                checkpoints.get(0).put("doneAt", now);
                 run.put("startedAt", now);
+                run.put("checkpoints", checkpoints);
                 targetTrip.setRun(run);
                 appendHistory(payload, actor, "Xe bắt đầu hành trình vận chuyển ngựa");
 
@@ -1724,12 +1939,29 @@ public class BookingServiceImpl implements BookingService {
                 Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> checkpoints = (List<Map<String, Object>>) run.computeIfAbsent("checkpoints", k -> new ArrayList<>());
+                if (run.get("startedAt") == null) throw new IllegalStateException("Journey has not started.");
+                if (photo.isBlank()) throw new IllegalArgumentException("A checkpoint photo is required.");
+                Map<String, Object> arrivedCheckpoint = null;
                 for (Map<String, Object> cp : checkpoints) {
                     if (cpId.equals(cp.get("id"))) {
-                        cp.put("arrivedAt", now);
-                        cp.put("photo", photo);
+                        arrivedCheckpoint = cp;
+                        break;
                     }
                 }
+                if (arrivedCheckpoint == null) throw new IllegalArgumentException("Unknown checkpoint: " + cpId);
+                if ("pickup".equals(arrivedCheckpoint.get("type")) || "customs".equals(arrivedCheckpoint.get("type"))) {
+                    throw new IllegalStateException("This checkpoint must be completed through its dedicated workflow.");
+                }
+                Map<String, Object> expectedCheckpoint = checkpoints.stream()
+                        .filter(cp -> cp.get("doneAt") == null)
+                        .findFirst()
+                        .orElse(null);
+                if (expectedCheckpoint == null || !cpId.equals(String.valueOf(expectedCheckpoint.get("id")))) {
+                    throw new IllegalStateException("Check in at the next unfinished checkpoint in route order.");
+                }
+                arrivedCheckpoint.put("arrivedAt", now);
+                arrivedCheckpoint.put("photo", photo);
+                if ("border".equals(arrivedCheckpoint.get("type"))) arrivedCheckpoint.put("doneAt", now);
                 targetTrip.setRun(run);
                 appendHistory(payload, actor, "Xe tới trạm dừng / mốc: " + cpId);
                 break;
@@ -1738,7 +1970,28 @@ public class BookingServiceImpl implements BookingService {
                 Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> welfareList = (List<Map<String, Object>>) run.computeIfAbsent("welfare", k -> new ArrayList<>());
+                String checkpointId = String.valueOf(reqPayload.getOrDefault("checkpointId", ""));
+                if (run.get("startedAt") == null) throw new IllegalStateException("Journey has not started.");
+                Map<String, Object> checkpoint = checkpointMaps(run.get("checkpoints")).stream()
+                        .filter(cp -> checkpointId.equals(String.valueOf(cp.get("id"))))
+                        .findFirst().orElseThrow(() -> new IllegalArgumentException("Unknown welfare checkpoint: " + checkpointId));
+                if (!"rest".equals(checkpoint.get("type")) && !"delivery".equals(checkpoint.get("type"))) {
+                    throw new IllegalStateException("Welfare logs are only accepted at rest stops and delivery.");
+                }
+                Map<String, Object> expectedWelfareCheckpoint = checkpointMaps(run.get("checkpoints")).stream()
+                        .filter(cp -> cp.get("doneAt") == null)
+                        .findFirst().orElse(null);
+                if (expectedWelfareCheckpoint == null || !checkpointId.equals(String.valueOf(expectedWelfareCheckpoint.get("id")))) {
+                    throw new IllegalStateException("Submit the welfare log at the current route checkpoint.");
+                }
+                if (checkpoint.get("arrivedAt") == null) throw new IllegalStateException("Check in at this checkpoint before submitting the welfare log.");
+                if (isBlank(reqPayload.get("photo"))) throw new IllegalArgumentException("A welfare photo is required.");
+                if (welfareList.stream().anyMatch(item -> checkpointId.equals(String.valueOf(item.get("checkpointId"))))) {
+                    throw new IllegalStateException("A welfare log has already been submitted for this checkpoint.");
+                }
                 Map<String, Object> w = new HashMap<>(reqPayload);
+                w.put("id", "welfare-" + now);
+                w.put("checkpointId", checkpointId);
                 w.put("at", now);
                 w.put("by", actor);
                 welfareList.add(w);
@@ -1747,16 +2000,95 @@ public class BookingServiceImpl implements BookingService {
                 break;
             }
             case "CONTINUE_JOURNEY": {
+                Map<String, Object> journeyRun = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
+                if (journeyRun.get("startedAt") == null) throw new IllegalStateException("Journey has not started.");
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> journeyCheckpoints = (List<Map<String, Object>>) journeyRun.computeIfAbsent("checkpoints", k -> new ArrayList<>());
+                Map<String, Object> customsStop = journeyCheckpoints.stream()
+                        .filter(cp -> "customs".equals(cp.get("type")) && cp.get("doneAt") != null && cp.get("leftAt") == null)
+                        .findFirst().orElse(null);
+                if (customsStop != null) {
+                    customsStop.put("leftAt", now);
+                } else {
+                    Map<String, Object> restStop = journeyCheckpoints.stream()
+                            .filter(cp -> "rest".equals(cp.get("type")) && cp.get("arrivedAt") != null && cp.get("doneAt") == null)
+                            .findFirst()
+                            .orElseThrow(() -> new IllegalStateException("No rest stop is waiting to continue."));
+                    Map<String, Object> currentStop = journeyCheckpoints.stream()
+                            .filter(cp -> cp.get("doneAt") == null)
+                            .findFirst().orElse(null);
+                    if (currentStop != restStop) throw new IllegalStateException("Continue from the current route checkpoint.");
+                    String restId = String.valueOf(restStop.get("id"));
+                    List<Map<String, Object>> welfare = mapList(journeyRun.get("welfare"));
+                    if (welfare.stream().noneMatch(item -> restId.equals(String.valueOf(item.get("checkpointId"))))) {
+                        throw new IllegalStateException("The escort must submit the horse welfare log before leaving the rest stop.");
+                    }
+                    restStop.put("doneAt", now);
+                    restStop.put("leftAt", now);
+                }
+                targetTrip.setRun(journeyRun);
                 appendHistory(payload, actor, "Xe tiếp tục hành trình");
                 break;
             }
             case "CUSTOMS_CLEARED": {
+                Map<String, Object> customsRun = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> customsCheckpoints = (List<Map<String, Object>>) customsRun.computeIfAbsent("checkpoints", k -> new ArrayList<>());
+                Map<String, Object> customs = customsCheckpoints.stream()
+                        .filter(cp -> "customs".equals(cp.get("type")) && cp.get("doneAt") == null)
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalStateException("No customs checkpoint is waiting for clearance."));
+                Map<String, Object> expectedCustoms = customsCheckpoints.stream()
+                        .filter(cp -> cp.get("doneAt") == null)
+                        .findFirst().orElse(null);
+                if (expectedCustoms != customs) throw new IllegalStateException("Reach the border checkpoint before customs clearance.");
+                Object stampPhotos = reqPayload.get("stampPhotos");
+                if (!(stampPhotos instanceof List<?> photos) || photos.isEmpty()) {
+                    throw new IllegalArgumentException("Stamped customs documents are required.");
+                }
+                customs.put("stampPhotos", stampPhotos);
+                customs.putIfAbsent("arrivedAt", now);
+                customs.put("doneAt", now);
+                targetTrip.setRun(customsRun);
                 appendHistory(payload, actor, "Đã hoàn tất thủ tục thông quan tại cửa khẩu");
                 break;
             }
             case "COMPLETE_DELIVERY": {
                 Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
+                if (run.get("startedAt") == null) throw new IllegalStateException("Journey has not started.");
+                Map<String, Object> delivery = checkpointMaps(run.get("checkpoints")).stream()
+                        .filter(cp -> "delivery".equals(cp.get("type")))
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalStateException("Trip is missing its delivery checkpoint."));
+                Map<String, Object> expectedDelivery = checkpointMaps(run.get("checkpoints")).stream()
+                        .filter(cp -> cp.get("doneAt") == null)
+                        .findFirst().orElse(null);
+                if (expectedDelivery == null || !"delivery".equals(expectedDelivery.get("type"))) {
+                    throw new IllegalStateException("Complete the earlier route checkpoints before delivery.");
+                }
+                if (delivery.get("arrivedAt") == null || isBlank(delivery.get("photo"))) {
+                    throw new IllegalStateException("Check in at the delivery point with a photo before completing delivery.");
+                }
+                if (isBlank(delivery.get("handoverPhoto"))) {
+                    throw new IllegalStateException("Upload the signed delivery handover record before completing delivery.");
+                }
+                if (!Boolean.TRUE.equals(reqPayload.get("returnedOriginals"))) {
+                    throw new IllegalStateException("Confirm that the original documents were returned before completing delivery.");
+                }
+                List<Map<String, Object>> deliveryWelfare = mapList(run.get("welfare"));
+                if (deliveryWelfare.stream().noneMatch(item -> "delivery".equals(String.valueOf(item.get("checkpointId"))))) {
+                    throw new IllegalStateException("The escort must submit the final horse welfare log before delivery is complete.");
+                }
                 run.put("deliveredAt", now);
+                Object deliveryCheckpoints = run.get("checkpoints");
+                if (deliveryCheckpoints instanceof List<?> list) {
+                    for (Object item : list) {
+                        if (item instanceof Map<?, ?> cp && "delivery".equals(cp.get("type"))) {
+                            @SuppressWarnings("unchecked") Map<Object, Object> mutable = (Map<Object, Object>) cp;
+                            mutable.put("doneAt", now);
+                        }
+                    }
+                }
                 targetTrip.setRun(run);
 
                 Map<String, Object> hr = new HashMap<>();
