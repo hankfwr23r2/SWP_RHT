@@ -1,9 +1,8 @@
 // Manager: báo cáo doanh thu, chi phí vận hành và hiệu suất hoàn thành chuyến (PRD mục 15). Chỉ xem.
 import { useMemo, useState } from 'react'
-import { BOOKING_STATUS } from '@shared/config/booking-rules'
 import { DAY } from '@shared/config/business-rules'
 import { formatDate, formatVND } from '@shared/lib/format'
-import { changePct, orderFinance, series, summarize } from '@shared/lib/report'
+import { bookingStatusLabel, changePct, orderFinance, series, summarize } from '@shared/lib/report'
 import { bookingsApi } from '@shared/services/bookings'
 import { useLoad } from '@shared/services/useLoad'
 import { useToast } from '@shared/ui/toast'
@@ -39,7 +38,7 @@ export default function ReportsPage() {
 
   const exportCsv = () => {
     const rows = [['Mã đơn', 'Khách hàng', 'Ngày đặt cọc', 'Doanh thu', 'Chi phí vận hành', 'Lợi nhuận', 'Đã thu', 'Trạng thái'],
-      ...(all ?? []).map(orderFinance).filter(f => f && f.at >= from && f.at < to).map(f => [f!.id, f!.customer, formatDate(f!.at), f!.revenue, f!.cost, f!.profit, f!.collected, BOOKING_STATUS[f!.status].label])]
+      ...(all ?? []).map(orderFinance).filter(f => f && f.at >= from && f.at < to).map(f => [f!.id, f!.customer, formatDate(f!.at), f!.revenue, f!.cost, f!.profit, f!.collected, bookingStatusLabel(f!.status)])]
     const csv = '﻿' + rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
     const a = document.createElement('a')
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = `bao-cao-${days}-ngay.csv`; a.click(); URL.revokeObjectURL(a.href)
@@ -108,7 +107,7 @@ export default function ReportsPage() {
               <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Ngày đặt cọc</th><th className={s.r}>Doanh thu</th><th className={s.r}>Chi phí</th><th className={s.r}>Lợi nhuận</th><th>Trạng thái</th></tr></thead>
               <tbody>
                 {recent.map(f => f && (
-                  <tr key={f.id}><td><b>{f.id}</b></td><td>{f.customer}</td><td>{formatDate(f.at)}</td><td className={s.r}>{formatVND(f.revenue)}</td><td className={s.r}>{formatVND(f.cost)}</td><td className={`${s.r} ${f.profit >= 0 ? s.pos : s.neg}`}>{formatVND(f.profit)}</td><td>{BOOKING_STATUS[f.status].label}</td></tr>
+                  <tr key={f.id}><td><b>{f.id}</b></td><td>{f.customer}</td><td>{formatDate(f.at)}</td><td className={s.r}>{formatVND(f.revenue)}</td><td className={s.r}>{formatVND(f.cost)}</td><td className={`${s.r} ${f.profit >= 0 ? s.pos : s.neg}`}>{formatVND(f.profit)}</td><td>{bookingStatusLabel(f.status)}</td></tr>
                 ))}
                 {!recent.length && <tr><td colSpan={7} className={s.empty}>Chưa có đơn đặt cọc trong khoảng này.</td></tr>}
               </tbody>
