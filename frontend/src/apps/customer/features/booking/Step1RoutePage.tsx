@@ -9,51 +9,31 @@ import {
   type ProvinceInfo,
 } from '@shared/config/administrative'
 import { MIN_LEAD_DAYS } from '@shared/config/business-rules'
-import { COUNTRIES, type CountryCode } from '@shared/config/network'
-import { earliestDeparture, fromIsoDay, isDepartureAllowed, toIsoDay } from '@shared/lib/booking'
+import { COUNTRIES, GATES, type CountryCode } from '@shared/config/network'
+import { earliestDeparture, fromIsoDay, isDepartureAllowed } from '@shared/lib/booking'
 import { formatDate } from '@shared/lib/format'
 import { isValidContactName, isValidRegionalPhone } from '@shared/lib/contactValidation'
 import type { Party, TransportType } from '@shared/types/booking'
 import { Flag } from '@shared/ui/Flag'
+import { FormSelect } from '@shared/ui/FormSelect'
 import { BookingShell } from './BookingShell'
+import { ArrowRightIcon, CalendarIcon, CheckIcon, GlobeIcon, PinIcon, RouteIcon, SenderIcon, SwapIcon, TruckIcon, UserIcon } from './BookingIcons'
+import { DepartureDatePicker } from './DepartureDatePicker'
 import { countriesOf, useBookingDraft } from './draft'
 import s from './Booking.module.css'
 
-type Partner = 'KH' | 'LA'
-const PARTNERS: Partner[] = ['KH', 'LA']
-const TYPES: [TransportType, string, string][] = [
-  ['domestic', 'fa-truck', 'Trong nước'],
-  ['international', 'fa-earth-asia', 'Quốc tế'],
+type Partner = Exclude<CountryCode, 'VN'>
+const PARTNER_COUNTRIES: CountryCode[] = ['VN', 'KH', 'LA']
+const TYPES: [TransportType, string, string, string][] = [
+  ['domestic', 'Trong nước', 'Việt Nam → Việt Nam', 'Vận chuyển giữa các tỉnh, thành trong nước. Không qua cửa khẩu.'],
+  ['international', 'Quốc tế', 'Việt Nam ↔ Lào / Campuchia', 'Vận chuyển xuyên biên giới, có kiểm dịch và thông quan.'],
 ]
 
-function Segment<T extends string>({
-  value,
-  options,
-  onChange,
-  label,
-}: {
-  value: T | ''
-  options: [T, React.ReactNode][]
-  onChange: (v: T) => void
-  label: string
-}) {
-  return (
-    <div className={s.segment} role="radiogroup" aria-label={label}>
-      {options.map(([v, text]) => (
-        <button
-          key={v}
-          type="button"
-          role="radio"
-          aria-checked={value === v}
-          className={value === v ? s.segOn : ''}
-          onClick={() => onChange(v)}
-        >
-          {text}
-        </button>
-      ))}
-    </div>
-  )
-}
+const countryOption = (code: CountryCode) => (
+  <span className={s.countryOption}>
+    <Flag code={code} size={18} /> {COUNTRIES[code].name}
+  </span>
+)
 
 interface AddressState {
   provinceCode: string
@@ -175,7 +155,7 @@ function LocationPicker({ country, address, onChange, errors }: LocationPickerPr
 
         {fullAddr && (
           <div className={s.addressPreview}>
-            <i className="fa-solid fa-location-dot" />
+            <PinIcon />
             <span>
               <b>Địa chỉ định vị:</b> {fullAddr}
             </span>
@@ -191,21 +171,35 @@ export default function Step1RoutePage() {
   const { session } = useAuth()
   const { draft, save } = useBookingDraft()
 
+  const initialCountries = countriesOf(draft)
   const [type, setType] = useState(draft.type)
-  const [partner, setPartner] = useState(draft.partner)
-  const [direction, setDirection] = useState(draft.direction)
+  const [originCountry, setOriginCountry] = useState<CountryCode>(initialCountries?.origin ?? 'VN')
+  const [destCountry, setDestCountry] = useState<CountryCode | ''>(initialCountries?.dest ?? '')
   const [date, setDate] = useState(draft.departDate)
 
-  const countries = countriesOf({ type, partner, direction })
-  const originCountry: CountryCode = countries?.origin ?? 'VN'
-  const destCountry: CountryCode = countries?.dest ?? 'VN'
+  const partner: Partner | '' = type === 'international'
+    ? originCountry !== 'VN'
+      ? originCountry
+      : destCountry && destCountry !== 'VN'
+        ? destCountry
+        : ''
+    : ''
+  const direction: 'out' | 'in' = type === 'international' && originCountry !== 'VN' ? 'in' : 'out'
+  const countries = type === 'domestic'
+    ? { origin: 'VN' as const, dest: 'VN' as const }
+    : partner && destCountry
+      ? { origin: originCountry, dest: destCountry }
+      : null
+  const originC = countries?.origin ?? 'VN'
+  const destC = countries?.dest ?? 'VN'
+  const routeReady = type === 'domestic' || (type === 'international' && !!partner)
 
   // Khởi tạo trạng thái địa chỉ 2 cấp
   const [pickupAddr, setPickupAddr] = useState<AddressState>(() =>
-    parseAddress(draft.originId || draft.consignor.address, originCountry)
+    parseAddress(draft.originId || draft.consignor.address, originC)
   )
   const [dropoffAddr, setDropoffAddr] = useState<AddressState>(() =>
-    parseAddress(draft.destId || draft.consignee.address, destCountry)
+    parseAddress(draft.destId || draft.consignee.address, destC)
   )
 
   const [consignor, setConsignor] = useState<Party>(() =>
@@ -245,6 +239,32 @@ export default function Step1RoutePage() {
     setDropoffAddr({ provinceCode: '', wardName: '', detail: '' })
   }
 
+  const changeType = (next: TransportType) => {
+    if (next === type) return
+    setType(next)
+    reset()
+    setOriginCountry('VN')
+    setDestCountry(next === 'domestic' ? 'VN' : '')
+  }
+
+  const changeOrigin = (next: CountryCode) => {
+    setOriginCountry(next)
+    setDestCountry(next === 'VN' ? (destCountry === 'VN' ? '' : destCountry) : 'VN')
+    reset()
+  }
+
+  const changeDest = (next: string) => {
+    setDestCountry(next as CountryCode)
+    reset()
+  }
+
+  const swapCountries = () => {
+    if (!destCountry) return
+    setOriginCountry(destCountry)
+    setDestCountry(originCountry)
+    reset()
+  }
+
   // Điền nhanh thông tin tài khoản vào Người gửi
   const fillMe = () => {
     if (!session) return
@@ -264,20 +284,20 @@ export default function Step1RoutePage() {
   // Kiểm tra lỗi
   const errors = {
     type: !type ? 'Chọn loại chuyến.' : '',
-    partner: type === 'international' && !partner ? 'Chọn nước bạn.' : '',
+    partner: type === 'international' && !partner ? 'Chọn nước khởi hành và nước đến.' : '',
     date: dateError,
     // Người gửi
-    consignorName: !isValidContactName(consignor.name) ? 'Nhập tên hợp lệ (2–100 ký tự, cần có chữ cái). Có thể nhập tên cá nhân hoặc trang trại.' : '',
-    consignorPhone: !isValidRegionalPhone(consignor.phone) ? 'Nhập số hợp lệ của Việt Nam, Campuchia hoặc Lào.' : '',
-    pickupProv: !pickupAddr.provinceCode ? 'Chọn tỉnh/thành điểm đón.' : '',
-    pickupWard: !pickupAddr.wardName ? 'Chọn xã/phường điểm đón.' : '',
-    pickupDetail: !pickupAddr.detail.trim() ? 'Nhập tên trang trại / địa chỉ đón cụ thể.' : '',
+    consignorName: routeReady && !isValidContactName(consignor.name) ? 'Nhập tên hợp lệ (2–100 ký tự, cần có chữ cái). Có thể nhập tên cá nhân hoặc trang trại.' : '',
+    consignorPhone: routeReady && !isValidRegionalPhone(consignor.phone) ? 'Nhập số hợp lệ của Việt Nam, Campuchia hoặc Lào.' : '',
+    pickupProv: routeReady && !pickupAddr.provinceCode ? 'Chọn tỉnh/thành điểm đón.' : '',
+    pickupWard: routeReady && !pickupAddr.wardName ? 'Chọn xã/phường điểm đón.' : '',
+    pickupDetail: routeReady && !pickupAddr.detail.trim() ? 'Nhập tên trang trại / địa chỉ đón cụ thể.' : '',
     // Người nhận
-    consigneeName: !isValidContactName(consignee.name) ? 'Nhập tên hợp lệ (2–100 ký tự, cần có chữ cái). Có thể nhập tên cá nhân hoặc trang trại.' : '',
-    consigneePhone: !isValidRegionalPhone(consignee.phone) ? 'Nhập số hợp lệ của Việt Nam, Campuchia hoặc Lào.' : '',
-    dropoffProv: !dropoffAddr.provinceCode ? 'Chọn tỉnh/thành điểm giao.' : '',
-    dropoffWard: !dropoffAddr.wardName ? 'Chọn xã/phường điểm giao.' : '',
-    dropoffDetail: !dropoffAddr.detail.trim() ? 'Nhập tên trang trại / địa chỉ giao cụ thể.' : '',
+    consigneeName: routeReady && !isValidContactName(consignee.name) ? 'Nhập tên hợp lệ (2–100 ký tự, cần có chữ cái). Có thể nhập tên cá nhân hoặc trang trại.' : '',
+    consigneePhone: routeReady && !isValidRegionalPhone(consignee.phone) ? 'Nhập số hợp lệ của Việt Nam, Campuchia hoặc Lào.' : '',
+    dropoffProv: routeReady && !dropoffAddr.provinceCode ? 'Chọn tỉnh/thành điểm giao.' : '',
+    dropoffWard: routeReady && !dropoffAddr.wardName ? 'Chọn xã/phường điểm giao.' : '',
+    dropoffDetail: routeReady && !dropoffAddr.detail.trim() ? 'Nhập tên trang trại / địa chỉ giao cụ thể.' : '',
   }
 
   const valid = !Object.values(errors).some(Boolean)
@@ -313,121 +333,140 @@ export default function Step1RoutePage() {
         {/* KHỐI 1: LOẠI CHUYẾN */}
         <div className="card" data-card>
           <div className="card-header">
-            <h3>
-              <i className="fa-solid fa-signs-post" /> Loại chuyến
-            </h3>
+            <h3><RouteIcon /> Loại chuyến</h3>
           </div>
           <div className={s.typeGrid} role="radiogroup" aria-label="Loại chuyến">
-            {TYPES.map(([v, icon, title]) => (
+            {TYPES.map(([value, title, route, desc]) => (
               <button
-                key={v}
+                key={value}
                 type="button"
                 role="radio"
-                aria-checked={type === v}
-                className={`${s.typeCard} ${type === v ? s.typeOn : ''}`}
-                onClick={() => {
-                  setType(v)
-                  reset()
-                }}
+                aria-checked={type === value}
+                className={`${s.typeCard} ${type === value ? s.typeOn : ''}`}
+                onClick={() => changeType(value)}
               >
-                <i className={`fa-solid ${icon}`} aria-hidden="true" />
-                <span className={s.typeTitle}>{title}</span>
+                <span className={s.typeIcon}>{value === 'domestic' ? <TruckIcon /> : <GlobeIcon />}</span>
+                <span className={s.typeBody}>
+                  <span className={s.typeTop}>
+                    <span className={s.typeTitle}>{title}</span>
+                    {type === value && <span className={s.typeCheck}><CheckIcon /></span>}
+                  </span>
+                  <span className={s.typeRoute}>{route}</span>
+                  <span className={s.typeDesc}>{desc}</span>
+                </span>
               </button>
             ))}
           </div>
           {show(errors.type)}
         </div>
 
-        {/* KHỐI 2: CHIỀU VẬN CHUYỂN & NGÀY KHỞI HÀNH */}
+        {/* KHỐI 2: HÀNH TRÌNH & NGÀY KHỞI HÀNH */}
         {type && (
           <div className="card" data-card>
             <div className="card-header">
-              <h3>
-                <i className="fa-solid fa-route" /> Thiết lập chuyến đi
-              </h3>
+              <h3><RouteIcon /> Hành trình &amp; ngày đi</h3>
             </div>
 
-            {type === 'international' && (
-              <div className={s.grid2} style={{ marginBottom: 16 }}>
-                <div className="form-group">
-                  <label className="required">Nước bạn</label>
-                  <Segment
-                    label="Nước bạn"
-                    value={partner}
-                    onChange={p => {
-                      setPartner(p)
-                      reset()
-                    }}
-                    options={PARTNERS.map(c => [
-                      c,
-                      <span key={c} className={s.inlineFlag}>
-                        <Flag code={c} size={16} /> {COUNTRIES[c].name}
-                      </span>,
-                    ])}
-                  />
-                  {show(errors.partner)}
-                </div>
-                <div className="form-group">
-                  <label className="required">Chiều đi</label>
-                  <Segment
-                    label="Chiều đi"
-                    value={direction}
-                    onChange={d => {
-                      setDirection(d)
-                      reset()
-                    }}
-                    options={[
-                      ['out', `Việt Nam → ${partner ? COUNTRIES[partner].name : 'nước bạn'}`],
-                      ['in', `${partner ? COUNTRIES[partner].name : 'Nước bạn'} → Việt Nam`],
-                    ]}
-                  />
-                </div>
-              </div>
-            )}
+            <div className={s.routeSetup}>
+              {type === 'international' && (
+                <div className={s.routePicker}>
+                  <div className="form-group">
+                    <label className="required" htmlFor="origin-country">Nước khởi hành</label>
+                    <FormSelect
+                      id="origin-country"
+                      value={originCountry}
+                      onChange={e => changeOrigin(e.target.value as CountryCode)}
+                      className={submitted && errors.partner ? 'invalid' : ''}
+                    >
+                      {PARTNER_COUNTRIES.map(code => <option key={code} value={code}>{countryOption(code)}</option>)}
+                    </FormSelect>
+                  </div>
 
-            {type === 'international' && partner && (
-              <div className="alert alert-info" style={{ marginBottom: 16 }}>
-                <i className="fa-solid fa-circle-info" />
-                <div>
-                  Hệ thống tự động đề xuất cửa khẩu tối ưu theo cung đường (Mộc Bài, Tịnh Biên, Lao Bảo...). Nhà xe
-                  sẽ hướng dẫn và hỗ trợ hoàn tất thủ tục kiểm dịch, hải quan quốc tế.
+                  <button
+                    type="button"
+                    className={s.swapBtn}
+                    onClick={swapCountries}
+                    disabled={!destCountry}
+                    aria-label="Đổi chiều vận chuyển"
+                    title="Đổi chiều"
+                  >
+                    <SwapIcon />
+                  </button>
+
+                  <div className="form-group">
+                    <label className="required" htmlFor="dest-country">Nước đến</label>
+                    <FormSelect
+                      id="dest-country"
+                      value={destCountry}
+                      onChange={e => changeDest(e.target.value)}
+                      disabled={originCountry !== 'VN'}
+                      className={submitted && errors.partner && !destCountry ? 'invalid' : ''}
+                    >
+                      {originCountry === 'VN' ? (
+                        <>
+                          <option value="">Chọn quốc gia đến</option>
+                          <option value="KH">{countryOption('KH')}</option>
+                          <option value="LA">{countryOption('LA')}</option>
+                        </>
+                      ) : <option value="VN">{countryOption('VN')}</option>}
+                    </FormSelect>
+                  </div>
+                </div>
+              )}
+
+              <div className={s.routePreview}>
+                <div className={s.routeEnds}>
+                  <div className={s.routeEnd}>
+                    <Flag code={originC} size={24} />
+                    <span className={s.routeText}><small>Khởi hành</small><b>{COUNTRIES[originC].name}</b></span>
+                  </div>
+                  <span className={s.routeArrow}><span /><ArrowRightIcon /><span /></span>
+                  <div className={s.routeEnd}>
+                    {partner
+                      ? <Flag code={destC} size={24} />
+                      : <span className={s.routeFlagEmpty}><GlobeIcon /></span>}
+                    <span className={s.routeText}><small>Điểm đến</small><b>{partner ? COUNTRIES[destC].name : 'Chọn quốc gia'}</b></span>
+                  </div>
+                </div>
+                <div className={s.routeMeta}>
+                  <PinIcon />
+                  <span>
+                    {type === 'domestic'
+                      ? 'Tuyến nội địa, không qua cửa khẩu.'
+                      : partner
+                        ? `Cửa khẩu tham khảo: ${GATES.filter(g => g.country === partner).map(g => g.name).join(' · ')}. Nhà xe hỗ trợ kiểm dịch và hải quan.`
+                        : 'Chọn nước đến để xem cửa khẩu và thủ tục.'}
+                  </span>
                 </div>
               </div>
-            )}
 
-            <div className="form-group" style={{ maxWidth: 340 }}>
-              <label htmlFor="date" className="required">
-                Ngày khởi hành
-              </label>
-              <input
-                id="date"
-                type="date"
-                className={`form-control ${submitted && errors.date ? 'invalid' : ''}`}
-                min={toIsoDay(min)}
-                value={date}
-                onChange={e => setDate(e.target.value)}
-              />
-              <div className="form-hint">
-                Sớm nhất {formatDate(min)}{' '}
-                <span className={s.subNote}>(đặt trước tối thiểu {MIN_LEAD_DAYS} ngày để bảo đảm xe chuyên dụng)</span>.
+              {show(errors.partner)}
+
+              <div className={s.dateBlock}>
+                <div className={s.dateBlockHead}>
+                  <h4><CalendarIcon /> Ngày khởi hành</h4>
+                  <span className={s.dateMin}>Sớm nhất {formatDate(min)}</span>
+                </div>
+                <DepartureDatePicker value={date} min={min} onChange={setDate} invalid={submitted && !!errors.date} />
+                <div className="form-hint">Đặt trước tối thiểu {MIN_LEAD_DAYS} ngày để bảo đảm xe chuyên dụng và thủ tục.</div>
+                {show(errors.date)}
               </div>
-              {show(errors.date)}
             </div>
           </div>
         )}
 
         {/* KHỐI 3: NGƯỜI GỬI & ĐIỂM ĐÓN NGỰA */}
-        {type && (
+        {routeReady && (
           <div className="card" data-card>
             <div className="card-header">
               <div className={s.partyHeader} style={{ width: '100%', marginBottom: 0 }}>
                 <h3 style={{ margin: 0 }}>
-                  <i className="fa-solid fa-paper-plane" style={{ color: 'var(--orange)', marginRight: 8 }} />
-                  Người gửi & Điểm đón ngựa <span className={s.subNote}>({COUNTRIES[originCountry].name})</span>
+                  <SenderIcon />
+                  Người gửi &amp; Điểm đón ngựa <span className={s.subNote}>({COUNTRIES[originC].name})</span>
                 </h3>
                 {session?.name && (
                   <button type="button" className={s.quickMeBtn} onClick={fillMe}>
-                    <i className="fa-regular fa-user" /> Tôi là người gửi
+                    <UserIcon /> Tôi là người gửi
                   </button>
                 )}
               </div>
@@ -471,7 +510,7 @@ export default function Step1RoutePage() {
 
             {/* BỘ CHỌN ĐỊA CHỈ 2 CẤP ĐIỂM ĐÓN */}
             <LocationPicker
-              country={originCountry}
+              country={originC}
               address={pickupAddr}
               onChange={setPickupAddr}
               errors={
@@ -502,12 +541,12 @@ export default function Step1RoutePage() {
         )}
 
         {/* KHỐI 4: NGƯỜI NHẬN & ĐIỂM GIAO NGỰA */}
-        {type && (
+        {routeReady && (
           <div className="card" data-card>
             <div className="card-header">
               <h3>
-                <i className="fa-solid fa-location-dot" style={{ color: 'var(--orange)', marginRight: 8 }} />
-                Người nhận & Điểm giao ngựa <span className={s.subNote}>({COUNTRIES[destCountry].name})</span>
+                <PinIcon />
+                Người nhận &amp; Điểm giao ngựa <span className={s.subNote}>({COUNTRIES[destC].name})</span>
               </h3>
             </div>
             <p className={s.sectionHint}>
@@ -549,7 +588,7 @@ export default function Step1RoutePage() {
 
             {/* BỘ CHỌN ĐỊA CHỈ 2 CẤP ĐIỂM GIAO */}
             <LocationPicker
-              country={destCountry}
+              country={destC}
               address={dropoffAddr}
               onChange={setDropoffAddr}
               errors={
@@ -584,7 +623,7 @@ export default function Step1RoutePage() {
             Hủy
           </Link>
           <button type="submit" className="btn btn-primary" disabled={!type}>
-            Tiếp tục: Chọn ngựa <i className="fa-solid fa-arrow-right" />
+            Tiếp tục: Chọn ngựa <ArrowRightIcon />
           </button>
         </div>
       </form>
