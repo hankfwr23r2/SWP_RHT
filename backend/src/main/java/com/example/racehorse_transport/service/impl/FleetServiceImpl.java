@@ -476,6 +476,33 @@ public class FleetServiceImpl implements FleetService {
             if (excludeBookingId != null && excludeBookingId.equals(b.getId())) {
                 continue;
             }
+
+            boolean isAssigned = isStaffAssignedToBooking(b, staffId, staff.getStaffCode());
+            if (!isAssigned) {
+                continue;
+            }
+
+            // 1. Kiểm tra nếu đơn đang thực tế lăn bánh ngoài đường hoặc đang trên đường về trụ sở
+            String status = b.getStatus() != null ? b.getStatus().toLowerCase(Locale.ROOT) : "";
+            boolean isActiveOnRoad = Set.of(
+                    "en_route_to_pickup", "ready_for_pickup", "in_transit",
+                    "incident_reported", "pending_emergency_approval", "emergency_plan_active",
+                    "delivered_pending_settlement").contains(status);
+
+            boolean isReturning = b.getDetailsJson() != null
+                    && b.getDetailsJson().contains("\"homeReturn\"")
+                    && !b.getDetailsJson().contains("\"backAt\"");
+
+            if (isActiveOnRoad || isReturning) {
+                Instant twoDaysFromNow = Instant.now().plus(2, ChronoUnit.DAYS);
+                if (newDepart.isBefore(twoDaysFromNow)) {
+                    throw new IllegalStateException("Nhân sự " + staff.getStaffCode() + " (" + staff.getRole()
+                            + ") hiện đang thực hiện chuyến đi ngoài đường (đơn BK-"
+                            + String.format("%03d", b.getId()) + ") chưa về trụ sở!");
+                }
+            }
+
+            // 2. Kiểm tra xung đột lịch trình theo khoảng ngày an toàn
             Instant bookingDepart = b.getDepartureDate() != null ? b.getDepartureDate() : b.getBookingDate();
             if (bookingDepart == null)
                 continue;
@@ -490,17 +517,31 @@ public class FleetServiceImpl implements FleetService {
 
             // Kiểm tra hai khoảng thời gian có giao nhau hay không
             if (!newEnd.isBefore(busyStart) && !newStart.isAfter(busyEnd)) {
-                List<BookingAssignment> assignments = bookingAssignmentRepository.findByBookingID_Id(b.getId());
-                for (BookingAssignment ba : assignments) {
-                    if (ba.getStaffID() != null && ba.getStaffID().getId().equals(staffId)) {
-                        String tripTag = existingIsInter ? "quốc tế" : "nội địa";
-                        throw new IllegalStateException("Nhân sự " + staff.getStaffCode() + " (" + staff.getRole()
-                                + ") đang được giao phục vụ đơn BK-"
-                                + String.format("%03d", b.getId()) + " (" + tripTag + ", khứ hồi về trụ sở VN đến "
-                                + busyEnd + ")!");
-                    }
-                }
+                String tripTag = existingIsInter ? "quốc tế" : "nội địa";
+                throw new IllegalStateException("Nhân sự " + staff.getStaffCode() + " (" + staff.getRole()
+                        + ") trùng lịch chạy với đơn BK-"
+                        + String.format("%03d", b.getId()) + " (" + tripTag + ", từ "
+                        + busyStart + " đến " + busyEnd + ")!");
             }
         }
+    }
+
+    private boolean isStaffAssignedToBooking(Booking b, Integer staffId, String staffCode) {
+        List<BookingAssignment> assignments = bookingAssignmentRepository.findByBookingID_Id(b.getId());
+        for (BookingAssignment ba : assignments) {
+            if (ba.getStaffID() != null && ba.getStaffID().getId().equals(staffId)) {
+                return true;
+            }
+        }
+        if (b.getDetailsJson() != null) {
+            String json = b.getDetailsJson();
+            if (staffCode != null && !staffCode.isBlank() && json.contains("\"" + staffCode + "\"")) {
+                return true;
+            }
+            if (json.contains("\"driverId\":\"" + staffId + "\"") || json.contains("\"escortId\":\"" + staffId + "\"")) {
+                return true;
+            }
+        }
+        return false;
     }
 }
