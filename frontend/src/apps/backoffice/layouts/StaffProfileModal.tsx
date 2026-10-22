@@ -24,6 +24,8 @@ export function StaffProfileModal({ session, onClose }: { session: Session; onCl
         <dd style={{ margin: 0, fontWeight: 600 }}>{session.name}</dd>
         <dt style={{ color: 'var(--muted)' }}>Email / tên đăng nhập</dt>
         <dd style={{ margin: 0, overflowWrap: 'anywhere' }}>{session.username}</dd>
+        <dt style={{ color: 'var(--muted)' }}>Mã nhân viên</dt>
+        <dd style={{ margin: 0 }}>{session.staffCode || 'Chưa có mã nhân viên'}</dd>
         <dt style={{ color: 'var(--muted)' }}>Vai trò</dt>
         <dd style={{ margin: 0 }}>{ROLE_LABEL[session.role]}</dd>
       </dl>

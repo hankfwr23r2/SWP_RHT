@@ -27,6 +27,7 @@ export default function StaffProfilePage() {
         <dl className={s.details}>
           <div><dt>Họ và tên</dt><dd>{session.name}</dd></div>
           <div><dt>Email / tên đăng nhập</dt><dd>{session.username}</dd></div>
+          <div><dt>Mã nhân viên</dt><dd>{session.staffCode || 'Chưa có mã nhân viên'}</dd></div>
           <div><dt>Vai trò</dt><dd>{ROLE_LABEL[session.role]}</dd></div>
         </dl>
         <p className={s.note}>Thông tin tài khoản do quản trị viên quản lý. Bạn có thể tự thay đổi mật khẩu.</p>

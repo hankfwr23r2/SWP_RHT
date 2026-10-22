@@ -39,6 +39,7 @@ function LoginForm({ managerOnly }: { managerOnly: boolean }) {
         role,
         name: res.fullName || res.username,
         username: res.email || res.username,
+        staffCode: res.staffCode,
       })
       navigate(HOME_OF[role] ?? '/manager')
     } catch (err) {

@@ -11,4 +11,4 @@ export const ROLE_LABEL: Record<Role, string> = {
   escort: 'Hộ tống',
 }
 
-export interface Session { role: Role; name: string; username: string }
+export interface Session { role: Role; name: string; username: string; staffCode?: string }
