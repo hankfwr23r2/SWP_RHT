@@ -69,7 +69,7 @@ public class HorseDocumentServiceImpl implements HorseDocumentService {
      *
      * Luồng xử lý:
      * 1. Kiểm tra con ngựa tồn tại
-     * 2. Upload file lên Cloudinary (folder: "horse-documents/{horseId}")
+     * 2. Tải tệp lên hệ thống lưu trữ (thư mục: "horse-documents/{horseId}").
      * 3. Lưu metadata vào bảng HORSE_DOCUMENT với status = PENDING
      * 4. Trả về thông tin hồ sơ vừa tạo
      */
@@ -101,7 +101,7 @@ public class HorseDocumentServiceImpl implements HorseDocumentService {
                 ? documentType.toUpperCase()
                 : "OTHER";
 
-        // 3. Upload lên Cloudinary, phân loại theo thư mục horse-documents/{horseId}
+        // 3. Tải lên và phân loại theo thư mục horse-documents/{horseId}.
         String folder = "horse-documents/" + horseId;
         String fileUrl = storageService.uploadFile(file, folder);
 
