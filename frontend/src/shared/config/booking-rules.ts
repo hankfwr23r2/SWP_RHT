@@ -22,7 +22,29 @@ export const HORSE_DOC: Record<HorseDocType, { label: string; short: string; hin
   vaccine: { label: 'Sổ tiêm phòng', short: 'Sổ tiêm', hint: 'Có thông tin tiêm phòng của ngựa.' },
   lab: { label: 'Xét nghiệm EIA / Coggins', short: 'Xét nghiệm', hint: 'Có kết quả xét nghiệm EIA / Coggins.' },
 }
-export const HORSE_BREEDS = ['Thoroughbred', 'Arabian', 'Quarter Horse', 'Warmblood', 'Appaloosa', 'Khác']
+export const HORSE_BREEDS = [
+  'Thoroughbred',
+  'Arabian',
+  'American Quarter Horse',
+  'Friesian',
+  'Andalusian',
+  'Lusitano',
+  'Appaloosa',
+  'American Paint Horse',
+  'Morgan',
+  'Tennessee Walking Horse',
+  'Standardbred',
+  'Hanoverian',
+  'Akhal-Teke',
+  'Mustang',
+  'Clydesdale',
+  'Shire',
+  'Belgian Draft',
+  'Percheron',
+  'Haflinger',
+  'Shetland Pony',
+  'Khác',
+]
 export const HORSE_DOC_TYPES = Object.keys(HORSE_DOC) as HorseDocType[]
 
 // ===== Chăm sóc trên xe (PRD mục 2.4) =====
@@ -153,7 +175,30 @@ export const DEMURRAGE_PER_HOUR = 400_000 // phí lưu xe chờ, chỉ khi lỗi
 export const INSURANCE_RATE_BOOKING = 0.02 // trên giá trị bảo hiểm của giống ngựa
 // Giá trị bảo hiểm theo giống (VNĐ). Khách không tự khai; số mẫu, chờ bảng giá thật của nhà bảo hiểm.
 export const BREED_INSURED_VALUE: Record<string, number> = {
-  Thoroughbred: 1_000_000_000, Arabian: 800_000_000, 'Quarter Horse': 600_000_000, Warmblood: 900_000_000, Appaloosa: 500_000_000, Khác: 400_000_000,
+  Thoroughbred: 1_000_000_000,
+  Arabian: 800_000_000,
+  'American Quarter Horse': 600_000_000,
+  Friesian: 850_000_000,
+  Andalusian: 800_000_000,
+  Lusitano: 800_000_000,
+  Appaloosa: 500_000_000,
+  'American Paint Horse': 550_000_000,
+  Morgan: 550_000_000,
+  'Tennessee Walking Horse': 550_000_000,
+  Standardbred: 700_000_000,
+  Hanoverian: 900_000_000,
+  'Akhal-Teke': 950_000_000,
+  Mustang: 500_000_000,
+  Clydesdale: 600_000_000,
+  Shire: 600_000_000,
+  'Belgian Draft': 500_000_000,
+  Percheron: 550_000_000,
+  Haflinger: 450_000_000,
+  'Shetland Pony': 350_000_000,
+  Khác: 400_000_000,
+  // Tương thích ngược dữ liệu cũ
+  'Quarter Horse': 600_000_000,
+  Warmblood: 900_000_000,
 }
 
 // ===== Lộ trình: trạm nghỉ và Lệnh điều xe (Flow 1, 3, PRD mục 4.2) =====
