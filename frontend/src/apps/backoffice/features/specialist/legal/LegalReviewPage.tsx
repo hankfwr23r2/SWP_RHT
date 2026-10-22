@@ -50,7 +50,7 @@ function ItemRow({ b, item, editable, run }: { b: Booking; item: ClearanceItem; 
       {item.photos.length > 0 && (
         <ul style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '8px 0 0' }}>
           {item.photos.map((p, i) => (
-            <li key={p + i} style={{ position: 'relative' }}><ImageThumb name={p} size={64} />{editable && <button className={s.iconBtn} style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, background: 'white' }} aria-label={`Xóa ${p}`} onClick={() => patch({ photos: item.photos.filter((_, j) => j !== i) }, 'Đã xóa ảnh')}><i className="fa-solid fa-xmark" /></button>}</li>
+            <li key={p + i} style={{ position: 'relative' }}><ImageThumb name={p} size={64} title={`${label} · Đơn ${b.id}`} />{editable && <button className={s.iconBtn} style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, background: 'white' }} aria-label={`Xóa ${p}`} onClick={() => patch({ photos: item.photos.filter((_, j) => j !== i) }, 'Đã xóa ảnh')}><i className="fa-solid fa-xmark" /></button>}</li>
           ))}
         </ul>
       )}

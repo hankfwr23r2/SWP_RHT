@@ -146,7 +146,16 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
                   const isResubmitted = lastResubmitted.some(item => item.horseId === cur.id && item.doc === d)
                   return (
                     <div key={d} className={`${s.docFile} ${isResubmitted ? s.docResubmitted : ''}`}>
-                      {f ? <ImageThumb name={f.fileUrl || f.fileName} size={64} toolbarVariant="balanced" /> : <span className={s.docEmpty}><i className="fa-regular fa-file" aria-hidden="true" /></span>}
+                      {f ? (
+                        <ImageThumb
+                          name={f.fileUrl || f.fileName}
+                          size={64}
+                          toolbarVariant="balanced"
+                          title={`${HORSE_DOC[d].label} · ${cur.name} (${cur.microchip})`}
+                        />
+                      ) : (
+                        <span className={s.docEmpty}><i className="fa-regular fa-file" aria-hidden="true" /></span>
+                      )}
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                           <b>{renderDocLabel(HORSE_DOC[d].label)}</b>

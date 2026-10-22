@@ -7,9 +7,13 @@ describe('xem trước ảnh', () => {
     rememberPreview('giay_kiem_dich.jpg', new Blob(['x'], { type: 'image/jpeg' }))
     expect(previewOf('giay_kiem_dich.jpg')).toMatch(/^blob:/)
   })
-  it('tệp không phải ảnh (PDF) hoặc tên chưa từng chọn thì không có xem trước', () => {
+  it('tệp PDF hoặc ảnh đều được lưu xem trước', () => {
     rememberPreview('ho_so.pdf', new Blob(['x'], { type: 'application/pdf' }))
-    expect(previewOf('ho_so.pdf')).toBeUndefined()
+    expect(previewOf('ho_so.pdf')).toMatch(/^blob:/)
+  })
+  it('tệp không hợp lệ hoặc tên chưa từng chọn thì không có xem trước', () => {
+    rememberPreview('tai_lieu.zip', new Blob(['x'], { type: 'application/zip' }))
+    expect(previewOf('tai_lieu.zip')).toBeUndefined()
     expect(previewOf('khong_co.jpg')).toBeUndefined()
     expect(previewOf(undefined)).toBeUndefined()
   })
