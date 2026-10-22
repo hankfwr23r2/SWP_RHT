@@ -1,14 +1,14 @@
 /* Lọc đơn hàng */
-.statusFilter { display: flex; flex: 0 1 330px; align-items: center; gap: 8px; min-width: 260px; }
+.statusFilter { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; }
 .statusFilter > span { font-size: 0.84rem; color: var(--muted); white-space: nowrap; }
-.statusSelect { flex: 1; min-width: 0; }
+.statusSelect { min-width: 140px; }
 
 .filters { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; margin: 12px 0 16px; padding: 12px; background: white; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
-.search { position: relative; flex: 1 1 280px; }
-.search i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); }
-.search input { padding-left: 36px; }
-.dates { display: flex; align-items: center; gap: 8px; font-size: 0.84rem; color: var(--muted); }
-.dates input { width: 150px; }
+.search { position: relative; flex: 1 1 320px; min-width: 260px; }
+.search i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.search input { width: 100%; padding-left: 36px; }
+.dates { display: flex; align-items: center; gap: 8px; font-size: 0.84rem; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+.dates input { width: 135px; }
 
 .list { display: grid; gap: 14px; }
 .card { background: white; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }

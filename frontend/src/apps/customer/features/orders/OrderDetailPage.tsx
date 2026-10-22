@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { BOOKING_STEPS, HORSE_DOC, stepOf, VEHICLE_CLASS } from '@shared/config/booking-rules'
-import { HOTLINE } from '@shared/config/business-rules'
 import { COUNTRIES } from '@shared/config/network'
 import { CANCEL_AFTER_DEPOSIT, arrivalOf, cancelRefund, insuranceFee, vehicleClassOf } from '@shared/lib/booking'
 import { formatClock, formatDate, formatDateTime, formatVND } from '@shared/lib/format'
@@ -33,19 +32,19 @@ function Progress({ b }: { b: CustomerBookingView }) {
   const expired = b.status === 'quote_expired' || b.status === 'rejected'
   return (
     <>
-    <p className={s.stepNow2}>{at >= BOOKING_STEPS.length ? 'Đơn đã hoàn tất' : `Bước ${at + 1}/${BOOKING_STEPS.length}: ${BOOKING_STEPS[at]}`}</p>
-    <ol className={s.progress} aria-label="Tiến độ đơn">
-      {BOOKING_STEPS.map((label, i) => {
-        const done = i < at
-        const state = done ? s.stepDone : i === at ? (expired ? s.stepStop : s.stepNow) : ''
-        return (
-          <li key={label} className={`${s.stepItem} ${state}`} aria-current={i === at ? 'step' : undefined}>
-            <span className={s.stepNum}>{done ? <i className="fa-solid fa-check" aria-hidden="true" /> : expired && i === at ? <i className="fa-solid fa-xmark" aria-hidden="true" /> : i + 1}</span>
-            <div>{label}</div>
-          </li>
-        )
-      })}
-    </ol>
+      <p className={s.stepNow2}>{at >= BOOKING_STEPS.length ? 'Đơn đã hoàn tất' : `Bước ${at + 1}/${BOOKING_STEPS.length}: ${BOOKING_STEPS[at]}`}</p>
+      <ol className={s.progress} aria-label="Tiến độ đơn">
+        {BOOKING_STEPS.map((label, i) => {
+          const done = i < at
+          const state = done ? s.stepDone : i === at ? (expired ? s.stepStop : s.stepNow) : ''
+          return (
+            <li key={label} className={`${s.stepItem} ${state}`} aria-current={i === at ? 'step' : undefined}>
+              <span className={s.stepNum}>{done ? <i className="fa-solid fa-check" aria-hidden="true" /> : expired && i === at ? <i className="fa-solid fa-xmark" aria-hidden="true" /> : i + 1}</span>
+              <div>{label}</div>
+            </li>
+          )
+        })}
+      </ol>
     </>
   )
 }
@@ -407,8 +406,6 @@ export default function OrderDetailPage() {
               )}
             </>
           )}
-
-          <p className="form-hint">Cần hỗ trợ? Gọi <a href={`tel:${HOTLINE.replace(/\s/g, '')}`} className="text-orange font-semibold">{HOTLINE}</a>.</p>
         </div>
       </div>
       {cancelling && <CancelModal b={b} owner={owner} onClose={() => setCancelling(false)} onDone={() => { setCancelling(false); reloadAll() }} />}

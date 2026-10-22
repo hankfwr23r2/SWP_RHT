@@ -11,7 +11,6 @@ import { horsesApi } from '@shared/services/horses'
 import { useLoad } from '@shared/services/useLoad'
 import { SEX_LABEL, type PlaceRef } from '@shared/types/booking'
 import { Modal } from '@shared/ui/Modal'
-import { ReadMore } from '@shared/ui/ReadMore'
 import { useToast } from '@shared/ui/toast'
 import { BookingShell } from './BookingShell'
 import { countriesOf, useBookingDraft } from './draft'
@@ -109,10 +108,6 @@ export default function Step4ReviewPage() {
         })}
       </div>
 
-      <div className="alert alert-info" data-card>
-        <i className="fa-solid fa-circle-info" />
-        <ReadMore text={'Bạn không cần làm giấy kiểm dịch hay thủ tục hải quan. Nhà xe sẽ làm trọn gói sau khi bạn đặt cọc và báo tiến độ cho bạn. Bạn chỉ cần giao bản gốc hồ sơ ngựa cho tài xế khi nhận ngựa.'} />
-      </div>
 
       <div className={s.actions}>
         <Link to="/booking/services" className="btn btn-ghost"><i className="fa-solid fa-arrow-left" /> Dịch vụ và bảo hiểm</Link>

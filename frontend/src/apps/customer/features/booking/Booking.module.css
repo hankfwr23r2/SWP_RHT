@@ -20,29 +20,100 @@
 .current .stepNum { border-color: var(--orange); box-shadow: 0 0 0 4px rgba(234, 88, 12, 0.14); }
 
 /* Thẻ chọn loại chuyến */
-.typeGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.typeGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .typeCard {
-  display: grid; gap: 4px; justify-items: start; text-align: left; padding: 16px 18px; min-height: 44px;
-  border: 1.5px solid var(--line); border-radius: var(--radius); background: white; font: inherit; color: var(--text); cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 12px; align-items: start; text-align: left;
+  padding: 16px 18px; min-height: 44px; border: 0; border-radius: var(--radius);
+  background: #f1f5f9; font: inherit; color: var(--text); cursor: pointer;
+  transition: background 0.1s ease-out;
 }
-.typeCard > i { font-size: 1.3rem; color: var(--orange); margin-bottom: 4px; }
-.typeCard:hover { border-color: var(--orange); }
-.typeCard:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
-.typeOn { border-color: var(--orange); background: var(--orange-soft); box-shadow: 0 0 0 1px var(--orange); }
+.typeCard:hover { background: #e8eef5; }
+.typeCard:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+.typeOn { background: var(--orange); box-shadow: 0 6px 16px rgba(234, 88, 12, 0.22); }
+.typeOn:hover { background: var(--orange-dark); }
+.typeIcon { display: block; width: 24px; height: 24px; padding-top: 1px; color: var(--muted); }
+.typeIcon svg { width: 24px; height: 24px; }
+.typeOn .typeIcon { color: white; }
+.typeBody { display: grid; gap: 5px; min-width: 0; }
+.typeTop { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .typeTitle { font-weight: 700; font-size: 1rem; color: var(--navy); }
-.typeDesc { font-size: 0.84rem; color: var(--muted); line-height: 1.45; }
+.typeOn .typeTitle { color: white; }
+.typeCheck { display: grid; place-items: center; flex: none; width: 18px; height: 18px; color: var(--navy); }
+.typeOn .typeCheck { color: white; }
+.typeCheck svg { width: 16px; height: 16px; stroke-width: 2; }
+.typeRoute { font-size: 0.8rem; font-weight: 500; color: var(--muted); }
+.typeOn .typeRoute { color: #ffedd5; }
 
-.segment { display: flex; flex-wrap: wrap; width: 100%; border: 1px solid var(--line); border-radius: var(--radius-sm); overflow: hidden; background: white; }
-.segment button { flex: 1; padding: 9px 16px; min-height: 44px; border: none; background: none; font: inherit; font-size: 0.88rem; color: var(--text); cursor: pointer; white-space: nowrap; text-align: center; }
-.segment button + button { border-left: 1px solid var(--line); }
-.segment button:hover { background: var(--bg-page); }
-.segment button:focus-visible { outline: 2px solid var(--orange); outline-offset: -2px; }
-.segment button.segOn { background: var(--orange); color: white; font-weight: 600; }
-.inlineFlag { display: inline-flex; align-items: center; gap: 6px; }
+.countryOption { display: inline-flex; align-items: center; gap: 8px; }
+:global(.card-header) h3 svg { flex: none; width: 20px; height: 20px; color: var(--navy); }
+
+.routeSetup { display: grid; gap: 14px; }
+.routePicker { display: grid; grid-template-columns: minmax(0, 1fr) 46px minmax(0, 1fr); gap: 12px; align-items: end; }
+.routePicker > :global(.form-group) { margin-bottom: 0; }
+.swapBtn {
+  display: grid; place-items: center; width: 46px; height: 46px; margin-bottom: 1px;
+  border: 1px solid var(--line); border-radius: 50%; background: white; color: var(--navy); cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+}
+.swapBtn:hover:not(:disabled) { border-color: var(--navy); background: #eef2f6; color: var(--navy); }
+.swapBtn:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
+.swapBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.routePreview { display: grid; gap: 10px; padding: 14px 16px; border-radius: var(--radius); background: var(--navy); color: white; }
+.routeEnds { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.routeEnd { display: flex; align-items: center; gap: 9px; min-width: 0; }
+.routeText { display: grid; gap: 1px; min-width: 0; }
+.routeText small { font-size: 0.66rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #94a3b8; }
+.routeText b { font-size: 0.95rem; color: white; }
+.routeArrow { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 56px; color: #cbd5e1; }
+.routeArrow span { height: 1px; flex: 1; background: currentColor; opacity: 0.55; }
+.routeArrow svg { flex: none; }
+.routeFlagEmpty { display: grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.1); color: #cbd5e1; }
+.routeFlagEmpty svg { width: 15px; height: 15px; }
+
+.dateBlock { display: grid; gap: 10px; padding-top: 2px; }
+.dateBlockHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.dateBlockHead h4 { display: flex; align-items: center; gap: 8px; font-size: 0.92rem; font-weight: 700; color: var(--navy); }
+.dateBlockHead h4 svg { width: 18px; height: 18px; color: var(--navy); }
+.dateMin { font-size: 0.78rem; color: var(--muted); }
+.datePicker { display: grid; gap: 10px; width: min(100%, 420px); }
+.dateDisplay {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px;
+  border: 1px solid transparent; border-radius: var(--radius-sm); background: var(--bg-page);
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+.dateDisplay:focus-within { border-color: var(--navy); background: white; box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08); }
+.dateDisplay.dateInvalid { border-color: var(--red); }
+.dateDisplayIcon { display: grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 8px; background: #eef2f6; color: var(--navy); }
+.dateDisplayIcon svg { width: 18px; height: 18px; }
+.dateInput {
+  flex: 1; min-width: 0; border: none; outline: none; background: transparent; padding: 4px 0;
+  font: inherit; font-size: 0.95rem; font-weight: 600; color: var(--navy); letter-spacing: 0.02em;
+}
+.dateInput::placeholder { color: var(--muted); font-weight: 500; letter-spacing: 0; }
+.dateToggle { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border: none; border-radius: 6px; background: none; color: var(--muted); cursor: pointer; transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease; }
+.dateToggle:hover { background: #eef2f6; color: var(--navy); }
+.dateToggleOpen { transform: rotate(180deg); color: var(--navy); }
+.datePanel { padding: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: white; box-shadow: var(--shadow-lg); }
+.datePanelHead { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.datePanelHead b { font-size: 0.92rem; color: var(--navy); }
+.dateNav { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 8px; background: white; color: var(--navy); cursor: pointer; }
+.dateNav:hover:not(:disabled) { border-color: var(--navy); }
+.dateNav:disabled { opacity: 0.35; cursor: not-allowed; }
+.dateWeek, .dateGrid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.dateWeek span { padding: 3px 0; text-align: center; font-size: 0.68rem; font-weight: 700; color: var(--muted); text-transform: uppercase; }
+.dateDay { position: relative; display: grid; place-items: center; min-height: 36px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text); font: inherit; font-size: 0.85rem; cursor: pointer; }
+.dateDay:hover:not(:disabled) { background: #eef2f6; color: var(--navy); }
+.dateDay:focus-visible { outline: 2px solid var(--navy); outline-offset: 1px; }
+.dateDay:disabled { color: #cbd5e1; cursor: not-allowed; }
+.dateDaySelected { background: var(--navy); color: white; font-weight: 700; }
+.dateDaySelected:hover:not(:disabled) { background: #0f172a; color: white; }
+.dateDayEarliest::after { content: ''; position: absolute; bottom: 5px; left: 50%; width: 4px; height: 4px; border-radius: 50%; background: currentColor; transform: translateX(-50%); }
+.dateFoot { display: flex; align-items: center; justify-content: flex-end; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); font-size: 0.75rem; }
+.dateFoot button { border: none; background: none; padding: 4px 0; color: var(--navy); font: inherit; font-weight: 700; cursor: pointer; }
+.dateFoot button:hover { text-decoration: underline; }
 
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
-.sectionHint { font-size: 0.84rem; color: var(--muted); margin: -4px 0 14px; }
 
 /* Cột tóm tắt */
 .sum { display: grid; gap: 10px; font-size: 0.86rem; }
@@ -110,9 +181,9 @@
 
 /* Xác nhận */
 .review { display: grid; gap: 14px; }
-.reviewGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px 20px; }
-.reviewGrid dt { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); font-weight: 600; }
-.reviewGrid dd { font-weight: 600; }
+.reviewGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; }
+.reviewGrid dt { font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+.reviewGrid dd { font-weight: 600; line-height: 1.45; margin: 0; word-break: break-word; }
 .reviewHorse { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 0.88rem; }
 .reviewHorse:last-child { border-bottom: none; }
 .reviewHorse small { color: var(--muted); }
@@ -154,10 +225,10 @@
 .quickMeBtn {
   font-size: 0.78rem;
   padding: 4px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--orange);
-  background: var(--orange-soft);
-  color: var(--orange);
+  border-radius: 6px;
+  border: none;
+  background: var(--bg-page);
+  color: var(--navy);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -167,8 +238,7 @@
 }
 
 .quickMeBtn:hover {
-  background: var(--orange);
-  color: white;
+  background: #eef2f6;
 }
 
 .venueChips {
@@ -213,8 +283,11 @@
   margin-bottom: 6px;
 }
 
-.addressPreview i {
-  color: var(--orange);
+.addressPreview svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--navy);
 }
 
 .serviceSection {
@@ -233,7 +306,12 @@
   .aside > .promise { display: none; }
 }
 @media (max-width: 720px) {
-  .typeGrid, .grid2, .optRow { grid-template-columns: 1fr; }
+  .typeGrid, .grid2, .optRow, .reviewGrid { grid-template-columns: 1fr; }
+  .routePicker { grid-template-columns: 1fr; }
+  .swapBtn { justify-self: center; margin: -2px 0; transform: rotate(90deg); }
+  .routePreview { padding: 14px; }
+  .routeArrow { min-width: 36px; }
+  .datePicker { width: 100%; }
   .stepLabel { display: none; }
   .current .stepLabel { display: block; position: absolute; top: 44px; left: 50%; transform: translateX(-50%); white-space: nowrap; }
   .stepper { padding-bottom: 36px; }
