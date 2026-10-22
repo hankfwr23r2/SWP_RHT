@@ -689,7 +689,8 @@ export function vehicleSpot(t: { run?: TripRun }): VehicleSpot {
   cps.forEach((c, k) => { if (c.arrivedAt) i = k })
   if (i < 0) return { kind: 'at', index: 0 }
   const c = cps[i], next = cps[i + 1]
-  const left = c.type === 'delivery' ? false : c.type === 'border' ? !!c.doneAt || !!next?.arrivedAt : c.type === 'customs' ? !!c.leftAt || !!next?.arrivedAt : c.type === 'pickup' ? !!c.doneAt || (!!t.run?.startedAt && !!c.arrivedAt) : !!c.doneAt
+  const sameBorderCheckpoint = c.type === 'border' && next?.type === 'customs' && next.place === c.place
+  const left = c.type === 'delivery' ? false : sameBorderCheckpoint ? !!next?.leftAt : c.type === 'border' ? !!c.doneAt || !!next?.arrivedAt : c.type === 'customs' ? !!c.leftAt || !!next?.arrivedAt : c.type === 'pickup' ? !!c.doneAt || (!!t.run?.startedAt && !!c.arrivedAt) : !!c.doneAt
   return left && next ? { kind: 'between', from: i, to: i + 1 } : { kind: 'at', index: i }
 }
 export function spotLabel(t: { run?: TripRun; departedAt?: number }): string {
