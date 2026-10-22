@@ -8,6 +8,7 @@ import { bookingsApi } from '@shared/services/bookings'
 import type { Booking, Checkpoint, VehicleTrip } from '@shared/types/booking'
 import { CaptureField } from '@shared/ui/CaptureField'
 import { useToast } from '@shared/ui/toast'
+import { HorseDocsModal } from '../../shared/HorseDocsModal'
 import { Checklist, Panel } from '../../shared/field'
 import { HomeReturnPanel } from '../../shared/HomeReturnPanel'
 import { IncidentPanel, SosPanel, SubmitExpensesPanel } from '../../shared/IncidentField'
@@ -34,6 +35,7 @@ function PickupStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
   const unfitHorses = b.horses.filter(h => h.status === 'unfit')
   const originalsAll = manifestDocuments(b).originals
   const [photo, setPhoto] = useState<string | undefined>(pickup.handoverPhoto)
+  const [showDocs, setShowDocs] = useState(false)
   const scanned = pickup.chips?.length ?? 0
   const paid = !!b.balance
   const horsesOk = horses.length === 0 || scanned >= horses.length
@@ -50,9 +52,23 @@ function PickupStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
         )}
       </Panel>
       <Panel title="Thu chứng từ gốc" icon="fa-folder-open">
-        <p>Kiểm tra và nhận đủ bản gốc từ người gửi. Tick từng giấy khi đã nhận.</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
+          <p style={{ margin: 0 }}>Kiểm tra và nhận đủ bản gốc từ người gửi. Tick từng giấy khi đã nhận.</p>
+          {horses.length > 0 && (
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              style={{ fontSize: '0.8rem', padding: '3px 8px', display: 'inline-flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}
+              onClick={() => setShowDocs(true)}
+              title="Đối chiếu bản điện tử đã được chuyên viên thẩm định"
+            >
+              <i className="fa-solid fa-file-shield" /> Xem hồ sơ điện tử
+            </button>
+          )}
+        </div>
         <Checklist items={originalsAll} checked={pickup.originals ?? []} onChange={next => run(() => bookingsApi.collectOriginals(b.id, t.tripId, session!.name, next), 'Đã ghi nhận chứng từ gốc')} />
       </Panel>
+      {showDocs && <HorseDocsModal horses={horses} onClose={() => setShowDocs(false)} />}
       <Panel title="Ký biên bản giao nhận" icon="fa-file-signature">
         <ReadMore text={'Dùng 02 bản in “Biên bản Giao nhận Động vật sống & Chứng từ gốc”. Người gửi và bạn cùng ký bút mực, mỗi bên giữ 01 bản, rồi chụp biên bản đã ký.'} />
         <CaptureField label="Ảnh biên bản có đủ chữ ký" required value={photo} onChange={setPhoto} />
