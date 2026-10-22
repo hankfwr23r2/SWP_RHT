@@ -8,9 +8,9 @@ function Icon(props: SVGProps<SVGSVGElement>) {
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="1.6"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      strokeWidth="1.5"
+      strokeLinecap="square"
+      strokeLinejoin="miter"
       aria-hidden="true"
       {...props}
     />
@@ -20,11 +20,11 @@ function Icon(props: SVGProps<SVGSVGElement>) {
 export function TruckIcon() {
   return (
     <Icon>
-      <path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h8A1.5 1.5 0 0 1 14 7.5V16H3V7.5Z" />
-      <path d="M14 9h3.1a2 2 0 0 1 1.7.9L21 13.2V16h-7V9Z" />
-      <path d="M7.5 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
-      <path d="M17.5 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
-      <path d="M9.5 16h4" />
+      <path d="M3 7h10v9H3z" />
+      <path d="M13 10h4l3 3v3h-7" />
+      <circle cx="7" cy="18" r="1.8" />
+      <circle cx="17.5" cy="18" r="1.8" />
+      <path d="M8.8 18h6.9" />
     </Icon>
   )
 }
@@ -32,9 +32,9 @@ export function TruckIcon() {
 export function GlobeIcon() {
   return (
     <Icon>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M3 12h18" />
-      <path d="M12 3c2.7 2.5 4.2 5.7 4.2 9S14.7 18.5 12 21c-2.7-2.5-4.2-5.7-4.2-9S9.3 5.5 12 3Z" />
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M3.5 12h17" />
+      <path d="M12 3.5c2.4 2.4 3.8 5.3 3.8 8.5S14.4 18.1 12 20.5c-2.4-2.4-3.8-5.3-3.8-8.5S9.6 5.9 12 3.5Z" />
     </Icon>
   )
 }
@@ -42,9 +42,9 @@ export function GlobeIcon() {
 export function RouteIcon() {
   return (
     <Icon>
-      <circle cx="5.5" cy="18.5" r="2" />
-      <circle cx="18.5" cy="5.5" r="2" />
-      <path d="M7.5 18.5h4a3 3 0 0 0 3-3v-7a3 3 0 0 1 3-3" strokeDasharray="1 3" />
+      <rect x="4" y="16" width="4" height="4" />
+      <rect x="16" y="4" width="4" height="4" />
+      <path d="M8 18h4V8h4" />
     </Icon>
   )
 }
@@ -52,8 +52,8 @@ export function RouteIcon() {
 export function CalendarIcon() {
   return (
     <Icon>
-      <rect x="3" y="5" width="18" height="16" rx="2" />
-      <path d="M8 3v4M16 3v4M3 10h18" />
+      <rect x="3.5" y="5" width="17" height="15" />
+      <path d="M8 3v4M16 3v4M3.5 9.5h17" />
     </Icon>
   )
 }
@@ -61,8 +61,10 @@ export function CalendarIcon() {
 export function SenderIcon() {
   return (
     <Icon>
-      <path d="m4 5 16 7-16 7 3-7-3-7Z" />
-      <path d="M7 12h13" />
+      <path d="M3 20V9l9-5 9 5v11" />
+      <path d="M3 20h18" />
+      <path d="M7 20v-7h10v7" />
+      <path d="M7 13h10" />
     </Icon>
   )
 }

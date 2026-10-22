@@ -22,23 +22,24 @@
 /* Thẻ chọn loại chuyến */
 .typeGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 .typeCard {
-  display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 14px; align-items: start; text-align: left;
-  padding: 18px; min-height: 44px; border: 1.5px solid var(--line); border-radius: var(--radius);
+  display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 12px; align-items: start; text-align: left;
+  padding: 16px 18px; min-height: 44px; border: 1.5px solid var(--line); border-radius: var(--radius);
   background: white; font: inherit; color: var(--text); cursor: pointer;
-  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease;
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
 }
 .typeCard:hover { border-color: #fdba74; box-shadow: var(--shadow); }
 .typeCard:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
-.typeOn { border-color: var(--orange); background: linear-gradient(180deg, #fffaf5, var(--orange-soft)); box-shadow: 0 0 0 1px var(--orange); }
-.typeIcon { display: grid; place-items: center; width: 46px; height: 46px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg-page); color: var(--navy); }
-.typeOn .typeIcon { border-color: #fed7aa; background: white; color: var(--orange); }
+.typeOn { border-color: var(--orange); background: white; box-shadow: inset 3px 0 0 var(--orange); }
+.typeIcon { display: block; width: 24px; height: 24px; padding-top: 1px; color: var(--muted); }
+.typeIcon svg { width: 24px; height: 24px; }
+.typeOn .typeIcon { color: var(--orange); }
 .typeBody { display: grid; gap: 5px; min-width: 0; }
 .typeTop { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.typeTitle { font-weight: 800; font-size: 1.05rem; color: var(--navy); }
-.typeCheck { display: grid; place-items: center; flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--orange); color: white; }
-.typeCheck svg { width: 13px; height: 13px; stroke-width: 2.4; }
-.typeRoute { font-size: 0.82rem; font-weight: 600; color: var(--orange-dark); }
-.typeDesc { font-size: 0.82rem; color: var(--muted); line-height: 1.45; }
+.typeTitle { font-weight: 700; font-size: 1rem; color: var(--navy); }
+.typeCheck { display: grid; place-items: center; flex: none; width: 18px; height: 18px; color: var(--orange); }
+.typeCheck svg { width: 16px; height: 16px; stroke-width: 2; }
+.typeRoute { font-size: 0.8rem; font-weight: 600; color: var(--orange-dark); }
+.typeDesc { font-size: 0.82rem; color: var(--muted); line-height: 1.5; }
 
 .countryOption { display: inline-flex; align-items: center; gap: 8px; }
 :global(.card-header) h3 svg { flex: none; width: 20px; height: 20px; color: var(--orange); }
