@@ -32,19 +32,19 @@ function Progress({ b }: { b: CustomerBookingView }) {
   const expired = b.status === 'quote_expired' || b.status === 'rejected'
   return (
     <>
-    <p className={s.stepNow2}>{at >= BOOKING_STEPS.length ? 'Đơn đã hoàn tất' : `Bước ${at + 1}/${BOOKING_STEPS.length}: ${BOOKING_STEPS[at]}`}</p>
-    <ol className={s.progress} aria-label="Tiến độ đơn">
-      {BOOKING_STEPS.map((label, i) => {
-        const done = i < at
-        const state = done ? s.stepDone : i === at ? (expired ? s.stepStop : s.stepNow) : ''
-        return (
-          <li key={label} className={`${s.stepItem} ${state}`} aria-current={i === at ? 'step' : undefined}>
-            <span className={s.stepNum}>{done ? <i className="fa-solid fa-check" aria-hidden="true" /> : expired && i === at ? <i className="fa-solid fa-xmark" aria-hidden="true" /> : i + 1}</span>
-            <div>{label}</div>
-          </li>
-        )
-      })}
-    </ol>
+      <p className={s.stepNow2}>{at >= BOOKING_STEPS.length ? 'Đơn đã hoàn tất' : `Bước ${at + 1}/${BOOKING_STEPS.length}: ${BOOKING_STEPS[at]}`}</p>
+      <ol className={s.progress} aria-label="Tiến độ đơn">
+        {BOOKING_STEPS.map((label, i) => {
+          const done = i < at
+          const state = done ? s.stepDone : i === at ? (expired ? s.stepStop : s.stepNow) : ''
+          return (
+            <li key={label} className={`${s.stepItem} ${state}`} aria-current={i === at ? 'step' : undefined}>
+              <span className={s.stepNum}>{done ? <i className="fa-solid fa-check" aria-hidden="true" /> : expired && i === at ? <i className="fa-solid fa-xmark" aria-hidden="true" /> : i + 1}</span>
+              <div>{label}</div>
+            </li>
+          )
+        })}
+      </ol>
     </>
   )
 }
