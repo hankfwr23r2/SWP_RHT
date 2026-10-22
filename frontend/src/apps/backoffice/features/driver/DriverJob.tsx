@@ -83,7 +83,6 @@ function PickupStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
       </Panel>
       {showDocs && <HorseDocsModal horses={horses} onClose={() => setShowDocs(false)} />}
       <Panel title="Ký biên bản giao nhận" icon="fa-file-signature">
-        <ReadMore text={'Dùng 02 bản in “Biên bản Giao nhận Động vật sống & Chứng từ gốc”. Người gửi và bạn cùng ký bút mực, mỗi bên giữ 01 bản, rồi chụp biên bản đã ký.'} />
         <CaptureField label="Ảnh biên bản có đủ chữ ký" required value={photo} onChange={setPhoto} />
         <button className="btn btn-outline" disabled={!photo || photo === pickup.handoverPhoto} onClick={() => run(() => bookingsApi.uploadHandover(b.id, t.tripId, session!.name, pickup.id, photo!), 'Đã tải ảnh biên bản')}><i className="fa-solid fa-upload" /> Tải ảnh biên bản</button>
       </Panel>

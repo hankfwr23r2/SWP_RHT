@@ -291,15 +291,18 @@ export const sameVehicleId = (a?: string, b?: string): boolean => {
 export interface Booked {
   order: string; departAt: number; route: string; trip: string
   countries: string // "Việt Nam → Lào": chiều của đơn, để biết người đang làm việc ở nước nào
+  active?: boolean // đơn đang thực tế lăn bánh ngoài đường
   returning?: { from: string; eta: number; late: boolean } // đã giao ngựa ở nước ngoài, đang về trụ sở
 }
 export interface Schedules { vehicles: Map<string, Booked[]>; drivers: Map<string, Booked[]>; escorts: Map<string, Booked[]> }
 export function schedulesOf(all: Booking[], exceptId: string, now = Date.now()): Schedules {
   const out: Schedules = { vehicles: new Map(), drivers: new Map(), escorts: new Map() }
   const put = (m: Map<string, Booked[]>, id: string, x: Booked) => { if (id) m.set(id, [...(m.get(id) ?? []), x]) }
+  const activeStatuses: Booking['status'][] = ['en_route_to_pickup', 'ready_for_pickup', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active']
   const bookedOf = (o: Booking, t: VehicleTrip): Booked => ({
     order: o.id, departAt: o.departAt, route: `${o.origin.name.split(' — ')[0]} → ${o.dest.name.split(' — ')[0]}`, trip: t.tripId,
     countries: `${COUNTRIES[o.origin.country].name} → ${COUNTRIES[o.dest.country].name}`,
+    active: activeStatuses.includes(o.status),
     returning: t.homeReturn && !t.homeReturn.backAt ? { from: t.homeReturn.fromPlace, eta: t.homeReturn.eta, late: returnLate(t, now) } : undefined,
   })
   all.filter(o => o.id !== exceptId && HOLDING.includes(o.status)).forEach(o => (o.trips ?? []).forEach(t => {
@@ -328,6 +331,42 @@ export const returnLate = (t: Pick<VehicleTrip, 'homeReturn'>, now = Date.now())
 
 // Xe trùng lịch: đơn khác của xe có ngày đi cách ngày đi này dưới 3 ngày (cùng quy tắc với busyResources)
 export const clashOf = (booked: Booked[] | undefined, departAt: number) => (booked ?? []).find(x => Math.abs(x.departAt - departAt) < 3 * DAY)
+
+// So sánh linh hoạt mã nhân viên (hỗ trợ DR-01, TX-01, NV-01, ES-01 hoặc ID số)
+export const sameStaffId = (a?: string, b?: string): boolean => {
+  if (!a || !b) return false
+  if (a.toLowerCase() === b.toLowerCase()) return true
+  const cleanA = a.replace(/^(TX|DR|NV|ES|HT)-/i, '').replace(/\D/g, '')
+  const cleanB = b.replace(/^(TX|DR|NV|ES|HT)-/i, '').replace(/\D/g, '')
+  return cleanA !== '' && cleanA === cleanB
+}
+
+// Tìm lịch của nhân sự trong Map bất kể định dạng mã hoặc tên
+export function findCrewBooked(schedules: Map<string, Booked[]>, id?: string, name?: string): Booked[] {
+  if (!id && !name) return []
+  if (id && schedules.has(id)) return schedules.get(id)!
+  for (const [k, v] of schedules.entries()) {
+    if (id && sameStaffId(k, id)) return v
+    if (name && k.toLowerCase() === name.toLowerCase()) return v
+  }
+  return []
+}
+
+// Trùng lịch của nhân sự:
+// 1. Nếu đang trên đường về trụ sở mà giờ về sau giờ đơn mới khởi hành -> Xung đột
+// 2. Nếu đơn đang chạy thực tế trên đường và đơn mới khởi hành trong 2 ngày tới -> Xung đột
+// 3. Nếu trùng lịch theo khoảng thời gian chuyến đi (quốc tế 5 ngày, nội địa 3 ngày) -> Xung đột
+// 4. Nếu đơn mới cách xa hơn nhiều ngày -> RẢNH!
+export function crewClashOf(booked: Booked[] | undefined, departAt: number, now = Date.now()): Booked | undefined {
+  if (!booked?.length) return undefined
+  return booked.find(x => {
+    if (x.returning && x.returning.eta && departAt <= x.returning.eta + 12 * HOUR) return true
+    if (x.active && departAt <= now + 2 * DAY) return true
+    const isInter = x.countries.includes('Campuchia') || x.countries.includes('Lào')
+    const days = isInter ? 5 * DAY : 3 * DAY
+    return Math.abs(x.departAt - departAt) < days
+  })
+}
 
 export const tripIdFor = (bookingId: string, index: number) => `TRP-${bookingId.slice(-4)}-${index}`
 export const waybillNoOf = (bookingId: string) => `VD-${bookingId.slice(-4)}`
