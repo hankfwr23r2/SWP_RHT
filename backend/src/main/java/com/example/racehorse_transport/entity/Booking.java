@@ -65,7 +65,7 @@ public class Booking {
     @Column(name = "ConsigneePhone", length = 50)
     private String consigneePhone;
 
-    // CCCD / MST / Hộ chiếu và địa chỉ của người gửi, người nhận (không bắt buộc)
+    // CCCD / MST / Hộ chiếu (bắt buộc khi tạo đơn mới) và địa chỉ của người gửi, người nhận
     @Size(max = 50)
     @Column(name = "ConsignorIdNumber", length = 50)
     private String consignorIdNumber;

@@ -289,12 +289,14 @@ export default function Step1RoutePage() {
     // Người gửi
     consignorName: routeReady && !isValidContactName(consignor.name) ? 'Nhập tên hợp lệ (2–100 ký tự, cần có chữ cái). Có thể nhập tên cá nhân hoặc trang trại.' : '',
     consignorPhone: routeReady && !isValidRegionalPhone(consignor.phone) ? 'Nhập số hợp lệ của Việt Nam, Campuchia hoặc Lào.' : '',
+    consignorId: routeReady && !consignor.idNumber?.trim() ? 'Nhập CCCD / MST / Hộ chiếu người gửi.' : '',
     pickupProv: routeReady && !pickupAddr.provinceCode ? 'Chọn tỉnh/thành điểm đón.' : '',
     pickupWard: routeReady && !pickupAddr.wardName ? 'Chọn xã/phường điểm đón.' : '',
     pickupDetail: routeReady && !pickupAddr.detail.trim() ? 'Nhập tên trang trại / địa chỉ đón cụ thể.' : '',
     // Người nhận
     consigneeName: routeReady && !isValidContactName(consignee.name) ? 'Nhập tên hợp lệ (2–100 ký tự, cần có chữ cái). Có thể nhập tên cá nhân hoặc trang trại.' : '',
     consigneePhone: routeReady && !isValidRegionalPhone(consignee.phone) ? 'Nhập số hợp lệ của Việt Nam, Campuchia hoặc Lào.' : '',
+    consigneeId: routeReady && !consignee.idNumber?.trim() ? 'Nhập CCCD / MST / Hộ chiếu người nhận.' : '',
     dropoffProv: routeReady && !dropoffAddr.provinceCode ? 'Chọn tỉnh/thành điểm giao.' : '',
     dropoffWard: routeReady && !dropoffAddr.wardName ? 'Chọn xã/phường điểm giao.' : '',
     dropoffDetail: routeReady && !dropoffAddr.detail.trim() ? 'Nhập tên trang trại / địa chỉ giao cụ thể.' : '',
@@ -509,18 +511,20 @@ export default function Step1RoutePage() {
               }
             />
 
-            {/* TRƯỜNG CCCD / MST TÙY CHỌN */}
+            {/* CCCD / MST / HỘ CHIẾU NGƯỜI GỬI */}
             <div className="form-group" style={{ marginTop: 12, maxWidth: 360 }}>
-              <label htmlFor="consignor-idNumber">
-                CCCD / MST / Hộ chiếu <span className={s.subNote}>(Không bắt buộc)</span>
+              <label htmlFor="consignor-idNumber" className="required">
+                CCCD / MST / Hộ chiếu
               </label>
               <input
                 id="consignor-idNumber"
-                className="form-control"
+                className={`form-control ${submitted && errors.consignorId ? 'invalid' : ''}`}
                 value={consignor.idNumber}
-                placeholder="Số giấy tờ định danh (nếu cần lập hợp đồng công chứng)"
+                maxLength={50}
+                placeholder="Số CCCD / MST / Hộ chiếu người gửi"
                 onChange={e => setConsignor({ ...consignor, idNumber: e.target.value })}
               />
+              {show(errors.consignorId)}
             </div>
           </div>
         )}
@@ -584,18 +588,20 @@ export default function Step1RoutePage() {
               }
             />
 
-            {/* TRƯỜNG CCCD / MST TÙY CHỌN */}
+            {/* CCCD / MST / HỘ CHIẾU NGƯỜI NHẬN */}
             <div className="form-group" style={{ marginTop: 12, maxWidth: 360 }}>
-              <label htmlFor="consignee-idNumber">
-                CCCD / MST / Hộ chiếu <span className={s.subNote}>(Không bắt buộc)</span>
+              <label htmlFor="consignee-idNumber" className="required">
+                CCCD / MST / Hộ chiếu
               </label>
               <input
                 id="consignee-idNumber"
-                className="form-control"
+                className={`form-control ${submitted && errors.consigneeId ? 'invalid' : ''}`}
                 value={consignee.idNumber}
-                placeholder="Số giấy tờ người nhận (nếu có)"
+                maxLength={50}
+                placeholder="Số CCCD / MST / Hộ chiếu người nhận"
                 onChange={e => setConsignee({ ...consignee, idNumber: e.target.value })}
               />
+              {show(errors.consigneeId)}
             </div>
           </div>
         )}

@@ -22,8 +22,9 @@ public class PartyContactDto {
     @Pattern(regexp = ContactPatterns.REGIONAL_PHONE, message = "Số điện thoại phải thuộc Việt Nam, Campuchia hoặc Lào")
     private String phone;
 
+    @NotBlank(message = "CCCD / MST / Hộ chiếu không được để trống")
     @Size(max = 50, message = "CCCD / MST / Hộ chiếu tối đa 50 ký tự")
-    private String idNumber; // CCCD / MST / Hộ chiếu (không bắt buộc)
+    private String idNumber; // CCCD / MST / Hộ chiếu
 
     @Size(max = 255, message = "Địa chỉ tối đa 255 ký tự")
     private String address; // không bắt buộc
