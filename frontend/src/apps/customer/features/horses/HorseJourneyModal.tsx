@@ -38,7 +38,7 @@ export function HorseJourneyModal({ horse, onClose, onOpenRelocate }: Props) {
     <Modal
       title={
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <i className="fa-solid fa-passport" style={{ color: 'var(--orange)' }} />
+          <i className="fa-solid fa-passport" style={{ color: 'var(--icon-accent)' }} />
           <span>Sổ Hành Trình Số (FEI Passport) — {horse.name}</span>
         </div>
       }
@@ -86,7 +86,7 @@ export function HorseJourneyModal({ horse, onClose, onOpenRelocate }: Props) {
 
         {loading && (
           <div style={{ textAlign: 'center', padding: '36px 0', color: 'var(--muted)' }}>
-            <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '1.8rem', color: 'var(--orange)', marginBottom: 8 }} />
+            <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: '1.8rem', color: 'var(--icon-accent)', marginBottom: 8 }} />
             <div>Đang truy vấn lịch sử hành trình từ hệ thống...</div>
           </div>
         )}
@@ -110,7 +110,7 @@ export function HorseJourneyModal({ horse, onClose, onOpenRelocate }: Props) {
         {!loading && !error && logs.length > 0 && (
           <div style={{ display: 'grid', gap: 12, position: 'relative' }}>
             <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--navy)', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <i className="fa-solid fa-timeline" style={{ color: 'var(--orange)' }} />
+              <i className="fa-solid fa-timeline" style={{ color: 'var(--icon-accent)' }} />
               <span>Dòng thời gian các chặng di chuyển ({logs.length})</span>
             </div>
 
@@ -158,7 +158,7 @@ export function HorseJourneyModal({ horse, onClose, onOpenRelocate }: Props) {
                         <i className="fa-solid fa-circle-dot" style={{ color: '#0ea5e9', fontSize: '0.8rem' }} />
                         <span style={{ fontWeight: 600 }}>{log.fromLocation || 'Điểm khởi hành'}</span>
                       </div>
-                      <i className="fa-solid fa-arrow-right-long" style={{ color: 'var(--muted)' }} />
+                      <i className="fa-solid fa-arrow-right-long" style={{ color: 'var(--icon-accent)' }} />
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <i className="fa-solid fa-location-dot" style={{ color: '#ef4444', fontSize: '0.85rem' }} />
                         <span style={{ fontWeight: 700, color: 'var(--navy)' }}>{log.toLocation || 'Điểm đến'}</span>

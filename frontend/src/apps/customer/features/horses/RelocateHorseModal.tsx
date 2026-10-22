@@ -68,7 +68,7 @@ export function RelocateHorseModal({ horse, onClose, onSaved }: Props) {
     <Modal
       title={
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <i className="fa-solid fa-map-location-dot" style={{ color: 'var(--orange)' }} />
+          <i className="fa-solid fa-map-location-dot" style={{ color: 'var(--icon-accent)' }} />
           <span>Cập nhật vị trí chuồng — {horse.name}</span>
         </div>
       }
@@ -86,7 +86,7 @@ export function RelocateHorseModal({ horse, onClose, onSaved }: Props) {
         <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: 8, border: '1px solid #e2e8f0', fontSize: '0.88rem' }}>
           <div style={{ color: 'var(--muted)', marginBottom: 4 }}>Vị trí chuồng hiện tại:</div>
           <div style={{ fontWeight: 700, color: 'var(--navy)', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <i className="fa-solid fa-location-dot" style={{ color: 'var(--orange)' }} />
+            <i className="fa-solid fa-location-dot" style={{ color: 'var(--icon-accent)' }} />
             <span>{horse.currentLocationName || 'Chưa xác định / Khởi tạo lần đầu'}</span>
           </div>
           {horse.transitStatus === 'IN_TRANSIT' && (

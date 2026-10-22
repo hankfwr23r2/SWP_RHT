@@ -14,10 +14,11 @@
 .step > a:focus-visible { outline: 2px solid var(--orange); outline-offset: 4px; border-radius: 8px; }
 .stepNum { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 999px; background: white; border: 3px solid var(--line); font-weight: 700; }
 .done { color: var(--text); }
-.done::before, .current::before { background: var(--orange); }
-.done .stepNum { background: var(--orange); border-color: var(--orange); color: white; }
-.current { color: var(--orange); font-weight: 700; }
-.current .stepNum { border-color: var(--orange); box-shadow: 0 0 0 4px rgba(234, 88, 12, 0.14); }
+.done::before { background: var(--icon-success); }
+.current::before { background: var(--icon-accent); }
+.done .stepNum { background: var(--icon-success); border-color: var(--icon-success); color: white; }
+.current { color: var(--icon-accent); font-weight: 700; }
+.current .stepNum { border-color: var(--icon-accent); box-shadow: 0 0 0 4px rgba(234, 88, 12, 0.14); }
 
 /* Thẻ chọn loại chuyến */
 .typeGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
@@ -31,7 +32,7 @@
 .typeCard:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
 .typeOn { background: var(--orange); box-shadow: 0 6px 16px rgba(234, 88, 12, 0.22); }
 .typeOn:hover { background: var(--orange-dark); }
-.typeIcon { display: block; width: 24px; height: 24px; padding-top: 1px; color: var(--muted); }
+.typeIcon { display: block; width: 24px; height: 24px; padding-top: 1px; color: var(--icon-accent); }
 .typeIcon svg { width: 24px; height: 24px; }
 .typeOn .typeIcon { color: white; }
 .typeBody { display: grid; gap: 5px; min-width: 0; }
@@ -45,7 +46,7 @@
 .typeOn .typeRoute { color: #ffedd5; }
 
 .countryOption { display: inline-flex; align-items: center; gap: 8px; }
-:global(.card-header) h3 svg { flex: none; width: 20px; height: 20px; color: var(--navy); }
+:global(.card-header) h3 svg { flex: none; width: 20px; height: 20px; color: var(--icon-accent); }
 
 .routeSetup { display: grid; gap: 14px; }
 .routePicker { display: grid; grid-template-columns: minmax(0, 1fr) 46px minmax(0, 1fr); gap: 12px; align-items: end; }
@@ -74,7 +75,7 @@
 .dateBlock { display: grid; gap: 10px; padding-top: 2px; }
 .dateBlockHead { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
 .dateBlockHead h4 { display: flex; align-items: center; gap: 8px; font-size: 0.92rem; font-weight: 700; color: var(--navy); }
-.dateBlockHead h4 svg { width: 18px; height: 18px; color: var(--navy); }
+.dateBlockHead h4 svg { width: 18px; height: 18px; color: var(--icon-accent); }
 .dateMin { font-size: 0.78rem; color: var(--muted); }
 .datePicker { display: grid; gap: 10px; width: min(100%, 420px); }
 .dateDisplay {
@@ -84,7 +85,7 @@
 }
 .dateDisplay:focus-within { border-color: var(--navy); background: white; box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08); }
 .dateDisplay.dateInvalid { border-color: var(--red); }
-.dateDisplayIcon { display: grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 8px; background: #eef2f6; color: var(--navy); }
+.dateDisplayIcon { display: grid; place-items: center; flex: none; width: 34px; height: 34px; border-radius: 8px; background: #eef2f6; color: var(--icon-accent); }
 .dateDisplayIcon svg { width: 18px; height: 18px; }
 .dateInput {
   flex: 1; min-width: 0; border: none; outline: none; background: transparent; padding: 4px 0;
@@ -121,13 +122,13 @@
 .sum dt { color: var(--muted); }
 .sum dd { font-weight: 600; word-break: break-word; }
 .sumHint { margin-top: 12px; font-size: 0.82rem; color: var(--muted); }
-.promise { display: flex; gap: 12px; padding: 14px 16px; border-radius: var(--radius); background: var(--blue-soft); color: #1e3a8a; font-size: 0.82rem; }
-.promise > i { margin-top: 3px; }
+.promise { display: flex; gap: 12px; padding: 14px 16px; border: 1px solid var(--line); border-left: 3px solid var(--blue); border-radius: var(--radius); background: white; color: var(--text); font-size: 0.82rem; }
+.promise > i { margin-top: 3px; color: var(--icon-info); }
 .promise ul { margin: 6px 0 0; padding-left: 16px; list-style: disc; display: grid; gap: 4px; }
 
 /* Chọn ngựa */
 .searchBox { position: relative; margin: 12px 0 14px; }
-.searchBox i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 0.9rem; pointer-events: none; }
+.searchBox i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--icon-accent); font-size: 0.9rem; pointer-events: none; }
 .searchBox input { width: 100%; height: 42px; padding: 0 38px 0 38px; border: 1.5px solid var(--line); border-radius: var(--radius-sm); background: white; font: inherit; font-size: 0.9rem; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
 .searchBox input:focus { outline: none; border-color: var(--orange); box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.14); }
 .searchClear { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--muted); font-size: 0.88rem; padding: 6px 8px; cursor: pointer; border-radius: 4px; }
@@ -165,8 +166,8 @@
 .labelRow { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; }
 .labelRow .fieldLabel { margin-bottom: 0; }
 .note { position: relative; display: inline-flex; }
-.noteBtn { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--muted); font-size: 0.8rem; cursor: default; transition: color 0.15s; }
-.noteBtn:hover, .noteBtn:focus-visible { color: var(--orange); }
+.noteBtn { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--icon-accent); font-size: 0.8rem; cursor: default; transition: color 0.15s; }
+.noteBtn:hover, .noteBtn:focus-visible { color: var(--icon-accent); }
 .noteBtn:focus-visible { outline: 2px solid var(--orange); outline-offset: 1px; }
 .noteBox { display: none; position: absolute; top: 100%; left: -6px; z-index: 20; width: min(320px, 85vw); max-height: 320px; overflow-y: auto; margin-top: 6px; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: white; box-shadow: var(--shadow-lg); font-size: 0.84rem; }
 .note:hover .noteBox, .note:focus-within .noteBox { display: block; }

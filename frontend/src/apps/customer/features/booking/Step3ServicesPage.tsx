@@ -94,7 +94,7 @@ export default function Step3ServicesPage() {
         return (
           <section key={h.id} className={`card ${s.horseCard}`} data-card aria-labelledby={`h-${h.id}`}>
             <div className={s.horseHead}>
-              <i className="fa-solid fa-horse" style={{ fontSize: '1.4rem', color: 'var(--orange)' }} aria-hidden="true" />
+              <i className="fa-solid fa-horse" style={{ fontSize: '1.4rem', color: 'var(--icon-accent)' }} aria-hidden="true" />
               <div><div id={`h-${h.id}`} className={s.horseName}>{h.name}</div><div className={s.horseChip}>Chip {h.microchip} · {h.breed} · {SEX_LABEL[h.sex]}</div></div>
             </div>
 

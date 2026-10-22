@@ -6,9 +6,9 @@
 .sumCard i { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-size: 1.1rem; }
 .sumCard .num { font-size: 1.5rem; font-weight: 800; color: var(--navy); line-height: 1.1; }
 .sumCard .lbl { font-size: 0.8rem; color: var(--muted); }
-.iconAll { background: var(--blue-soft); color: var(--blue); }
-.iconReady { background: var(--green-soft); color: var(--green); }
-.iconMissing { background: var(--amber-soft); color: var(--amber); }
+.iconAll { background: var(--bg-page); color: var(--icon-accent); }
+.iconReady { background: var(--bg-page); color: var(--icon-success); }
+.iconMissing { background: var(--bg-page); color: var(--icon-warning); }
 
 .filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
 .pill { min-height: 40px; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line); background: white; font: inherit; font-size: 0.86rem; font-weight: 600; color: var(--text); cursor: pointer; }
@@ -22,11 +22,11 @@
 .horseName { font-size: 1.1rem; font-weight: 800; color: var(--navy); line-height: 1.25; }
 .chip { font-size: 0.78rem; color: var(--muted); font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
 .meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 0.85rem; color: var(--muted); }
-.meta i { color: var(--orange); margin-right: 5px; width: 14px; text-align: center; }
-.warn { font-size: 0.82rem; color: var(--amber); background: var(--amber-soft); border-radius: var(--radius-sm); padding: 8px 10px; }
+.meta i { color: var(--icon-accent); margin-right: 5px; width: 14px; text-align: center; }
+.warn { font-size: 0.82rem; color: var(--icon-warning); background: white; border: 1px solid var(--line); border-left: 3px solid var(--icon-warning); border-radius: var(--radius-sm); padding: 8px 10px; }
 .location { display: flex; justify-content: space-between; align-items: center; gap: 8px 12px; flex-wrap: wrap; padding: 9px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--bg-page); font-size: 0.82rem; }
 .locationName { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; color: var(--navy); font-weight: 600; }
-.locationName i { flex: none; color: var(--orange); }
+.locationName i { flex: none; color: var(--icon-accent); }
 .locationName span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .location :global(.badge) { font-size: 0.72rem; }
 .horseFoot { margin-top: auto; display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
@@ -39,7 +39,7 @@
 .deleteAction:hover:not(:disabled) { border-color: transparent; background: var(--red-soft, #fef2f2); color: var(--red); }
 
 .empty { text-align: center; padding: 48px 20px; background: white; border: 1px dashed #cbd5e1; border-radius: var(--radius); color: var(--muted); }
-.empty i { font-size: 2rem; color: var(--orange); margin-bottom: 10px; display: block; }
+.empty i { font-size: 2rem; color: var(--icon-accent); margin-bottom: 10px; display: block; }
 .empty h3 { color: var(--navy); margin-bottom: 4px; }
 
 /* Biểu mẫu */

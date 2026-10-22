@@ -7,6 +7,7 @@ import { PageTransition } from '@shared/motion/motion'
 import { AppHeader, appHeaderStyles as h } from '@shared/ui/AppHeader'
 import { NoticeBell } from '@shared/ui/NoticeBell'
 import { TranslateToggle } from '@shared/ui/TranslateToggle'
+import './customer-theme.css'
 
 const MENU: [string, string][] = [
   ['/portal', 'Trang chủ'],
@@ -33,7 +34,7 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
           </div>
         }
       />
-      <main><PageTransition>{children}</PageTransition></main>
+      <main className="customer-theme"><PageTransition>{children}</PageTransition></main>
       <footer className={h.footer}>© 2026 Vận chuyển Ngựa đua · Việt Nam · Lào · Campuchia</footer>
       <TranslateToggle />
     </>

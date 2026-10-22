@@ -20,7 +20,7 @@ export function ClearanceProgressCard({ b }: { b: CustomerBookingView }) {
   return (
     <div className="card">
       <div className="card-header"><h3><i className="fa-solid fa-file-signature" /> Giấy tờ kiểm dịch và hải quan</h3><span className={`badge ${done === total ? 'badge-success' : 'badge-info'}`}>{done}/{total} hạng mục</span></div>
-      <p className="form-hint" style={{ marginBottom: 12 }}>Nhà xe làm trọn gói các giấy tờ này cho bạn. Bạn chỉ cần theo dõi tiến độ, không phải làm gì.</p>
+      <p className="form-hint" style={{ marginBottom: 12 }}>Nhà xe làm trọn gói các giấy tờ này cho bạn.</p>
       <ul className={s.fix}>
         {c.items.map(i => {
           const label = i.label || CLEARANCE_DOC[i.type]?.short || CLEARANCE_DOC[i.type]?.label || i.type

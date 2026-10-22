@@ -271,8 +271,8 @@ export default function OrderDetailPage() {
           <div className={`${s.next} ${TONE[next.tone]}`} role="status">
             <i className={`fa-solid ${next.icon}`} aria-hidden="true" />
             <div className={s.nextBody}>
-              <span className={s.nextTag}>{next.actionNeeded ? 'Việc của bạn bây giờ' : 'Bạn không cần làm gì lúc này'}</span>
-              <h2>{next.title}</h2><p>{next.text}</p>
+              <h2>{next.title}</h2>
+              {(next.actionNeeded || b.status === 'rejected' || b.status === 'cancelled') && <p>{next.text}</p>}
               {b.status === 'rejected' && <Link to="/booking/route" className="btn btn-primary"><i className="fa-solid fa-plus" /> Đặt chuyến mới</Link>}
               {next.cta && <a href="#viec-cua-ban" className="btn btn-primary" onClick={e => { e.preventDefault(); document.getElementById('viec-cua-ban')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>{next.cta} <i className="fa-solid fa-arrow-down" /></a>}
             </div>

@@ -1,0 +1,54 @@
+.customer-theme {
+  --icon-accent: var(--orange);
+  --icon-info: var(--blue);
+  --icon-success: var(--green);
+  --icon-warning: var(--amber);
+  --icon-danger: var(--red);
+  --icon-muted: var(--navy-2);
+}
+
+.customer-theme :is(.card-header h2, .card-header h3) i,
+.customer-theme :is(.card-header h2, .card-header h3) svg {
+  flex: none;
+  color: var(--icon-accent);
+}
+
+.customer-theme .badge {
+  border: 1px solid var(--line);
+  background: var(--bg-page);
+  color: var(--navy-2);
+}
+
+.customer-theme .badge i {
+  color: var(--badge-accent, var(--icon-accent));
+}
+
+.customer-theme .badge-success { --badge-accent: var(--icon-success); }
+.customer-theme .badge-warning { --badge-accent: var(--icon-warning); }
+.customer-theme .badge-danger { --badge-accent: var(--icon-danger); }
+.customer-theme .badge-info { --badge-accent: var(--icon-info); }
+.customer-theme .badge-orange { --badge-accent: var(--icon-accent); }
+.customer-theme .badge-muted { --badge-accent: var(--icon-muted); }
+
+.customer-theme .alert {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--alert-accent, var(--icon-accent));
+  background: white;
+  color: var(--text);
+}
+
+.customer-theme .alert i {
+  color: var(--alert-accent, var(--icon-accent));
+}
+
+.customer-theme .alert-info { --alert-accent: var(--icon-info); }
+.customer-theme .alert-warning { --alert-accent: var(--icon-warning); }
+.customer-theme .alert-danger,
+.customer-theme .alert-error { --alert-accent: var(--icon-danger); }
+.customer-theme .alert-success { --alert-accent: var(--icon-success); }
+
+.customer-theme .form-hint i,
+.customer-theme .meta i,
+.customer-theme .empty i {
+  color: var(--icon-accent);
+}
