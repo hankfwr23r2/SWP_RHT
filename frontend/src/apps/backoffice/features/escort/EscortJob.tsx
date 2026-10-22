@@ -238,7 +238,7 @@ function WelfareForm({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Checkp
 
   const submit = async () => {
     // Ghi nhận nhật ký an sinh của chuyến đi
-    await bookingsApi.submitWelfare(b.id, t.tripId, session!.name, { condition, waterLiters: Number(water), hay, photo: photo!, note: note.trim() })
+    await bookingsApi.submitWelfare(b.id, t.tripId, session!.name, { checkpointId: cp.id, condition, waterLiters: Number(water), hay, photo: photo!, note: note.trim() })
 
     // Ghi nhận nhật ký sức khỏe từng cá thể ngựa vào bảng horse_health_logs (POST /api/v1/horse-health-logs)
     const tripHorses = b.horses.filter(h => t.horseIds.includes(h.horseId))

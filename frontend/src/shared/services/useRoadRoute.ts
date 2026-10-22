@@ -12,7 +12,7 @@ export function useRoadRoute(points: GeoPoint[] | undefined, departAt?: number) 
     const timer = setTimeout(() => { roadRoute(points, departAt, { signal: ctl.signal }).then(route => { if (!ctl.signal.aborted) setState({ key, route }) }) }, 400)
     return () => { clearTimeout(timer); ctl.abort() }
   }, [key]) // eslint-disable-line react-hooks/exhaustive-deps
-  return { route: state.route, loading: !!key && state.key !== key }
+  return { route: state.key === key ? state.route : null, loading: !!key && state.key !== key }
 }
 
 // Các đường thay thế giữa hai điểm (sự cố tắc nghẽn)
