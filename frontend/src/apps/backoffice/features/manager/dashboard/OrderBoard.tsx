@@ -42,7 +42,34 @@ function Card({ b, onOpen }: { b: Booking; onOpen: (b: Booking) => void }) {
   )
 }
 
-export function OrderBoard({ orders, onOpen }: { orders: Booking[]; onOpen: (b: Booking) => void }) {
+export type SortOption = 'newest' | 'urgent' | 'depart' | 'oldest'
+
+const isTrouble = (b: Booking) =>
+  b.status === 'incident_reported' || b.status === 'pending_emergency_approval' || b.status === 'payment_overdue'
+
+const sortBookings = (list: Booking[], sortBy: SortOption) => {
+  return [...list].sort((a, z) => {
+    if (sortBy === 'urgent') {
+      const aUrgent = Number(!!managerAction(a) || isTrouble(a))
+      const zUrgent = Number(!!managerAction(z) || isTrouble(z))
+      if (aUrgent !== zUrgent) return zUrgent - aUrgent
+      // Nếu cùng mức độ ưu tiên, đơn mới hơn lên trước
+      return z.id.localeCompare(a.id, undefined, { numeric: true })
+    }
+    if (sortBy === 'depart') {
+      const diff = a.departAt - z.departAt
+      if (diff !== 0) return diff
+      return z.id.localeCompare(a.id, undefined, { numeric: true })
+    }
+    if (sortBy === 'oldest') {
+      return a.id.localeCompare(z.id, undefined, { numeric: true })
+    }
+    // Mặc định 'newest': đơn mới nhất lên trước
+    return z.id.localeCompare(a.id, undefined, { numeric: true })
+  })
+}
+
+export function OrderBoard({ orders, sortBy = 'newest', onOpen }: { orders: Booking[]; sortBy?: SortOption; onOpen: (b: Booking) => void }) {
   const box = useRef<HTMLDivElement>(null)
   const [edge, setEdge] = useState({ left: false, right: false })
   const [open, setOpen] = useState<Set<BoardCol>>(new Set())
@@ -57,7 +84,8 @@ export function OrderBoard({ orders, onOpen }: { orders: Booking[]; onOpen: (b: 
       <button className={`${s.arrow} ${s.arrowR} ${edge.right ? '' : s.arrowOff}`} onClick={() => go(1)} aria-label="Cuộn sang phải"><i className="fa-solid fa-chevron-right" /></button>
       <div className={s.board} ref={box} onScroll={measure}>
         {COLS.map(([k, label, icon, tone]) => {
-          const all = orders.filter(b => managerBoardOf(b.status) === k).sort((a, z) => a.id.localeCompare(z.id, undefined, { numeric: true }))
+          const filtered = orders.filter(b => managerBoardOf(b.status) === k)
+          const all = sortBookings(filtered, sortBy)
           const list = k === 'done' ? all.slice(0, MAX_DONE) : all
           const head = list.slice(0, COLLAPSED)
           const rest = list.slice(COLLAPSED)

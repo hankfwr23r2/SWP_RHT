@@ -29,7 +29,9 @@ export function ScheduleStrip({ orders, onOpen, onCalendar }: { orders: Booking[
       </div>
       <div className={s.week}>
         {days.map(d => {
-          const events = orders.filter(b => startOfDay(b.departAt) === d)
+          const events = orders
+            .filter(b => startOfDay(b.departAt) === d)
+            .sort((a, z) => a.departAt - z.departAt || a.id.localeCompare(z.id, undefined, { numeric: true }))
           return (
             <div key={d} className={`${s.day} ${d === today ? s.dayToday : ''}`}>
               <b>{label(d)}</b>
