@@ -140,7 +140,69 @@ public class BookingServiceImpl implements BookingService {
             throw new IllegalStateException("Không thể lưu chi tiết đơn vận chuyển.", e);
         }
 
-        // 5. Tạo đơn hàng Booking mới
+        // 5. Xác nhận các ngựa được chọn:
+        // - Phải thuộc tài khoản của khách hàng này
+        // - Không được mang trạng thái IN_TRANSIT
+        // - Không được đang nằm trong bất kỳ đơn hàng nào chưa hoàn tất (khác completed, cancelled, rejected, quote_expired)
+        if (request.getHorses() != null && !request.getHorses().isEmpty()) {
+            Set<String> finishedStatuses = Set.of("completed", "cancelled", "rejected", "quote_expired");
+            Map<Integer, String> horseToActiveBookingMap = new HashMap<>();
+
+            if (customerBookings != null) {
+                for (Booking cb : customerBookings) {
+                    String cbStatus = cb.getStatus() != null ? cb.getStatus().toLowerCase() : "";
+                    if (!finishedStatuses.contains(cbStatus)) {
+                        if (cb.getDetailsJson() != null && !cb.getDetailsJson().isBlank()) {
+                            try {
+                                BookingDetailsPayload p = objectMapper.readValue(cb.getDetailsJson(), BookingDetailsPayload.class);
+                                if (p != null && p.getHorses() != null) {
+                                    for (BookingHorseDto activeHorse : p.getHorses()) {
+                                        if (activeHorse.getHorseId() != null) {
+                                            String num = activeHorse.getHorseId().replaceAll("\\D", "");
+                                            if (!num.isEmpty()) {
+                                                Integer aId = Integer.valueOf(num);
+                                                horseToActiveBookingMap.putIfAbsent(aId, "#BK-" + cb.getId() + " (" + cb.getStatus() + ")");
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (Exception e) {
+                                log.warn("Không thể đọc detailsJson của đơn hàng {}: {}", cb.getId(), e.getMessage());
+                            }
+                        }
+                    }
+                }
+            }
+
+            for (BookingHorseDto hDto : request.getHorses()) {
+                if (hDto.getHorseId() == null || hDto.getHorseId().isBlank()) {
+                    throw new IllegalArgumentException("Mỗi ngựa trong đơn phải được chọn từ Hồ sơ ngựa.");
+                }
+                String numericId = hDto.getHorseId().replaceAll("\\D", "");
+                if (numericId.isBlank()) {
+                    throw new IllegalArgumentException("Mã hồ sơ ngựa không hợp lệ: " + hDto.getHorseId());
+                }
+                Integer horseId = Integer.valueOf(numericId);
+                Horse horse = horseRepository.findById(horseId)
+                        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hồ sơ ngựa " + hDto.getHorseId()));
+                if (horse.getCustomerID() == null || !customer.getId().equals(horse.getCustomerID().getId())) {
+                    throw new IllegalArgumentException("Hồ sơ ngựa " + hDto.getHorseId() + " không thuộc tài khoản của bạn.");
+                }
+
+                if ("IN_TRANSIT".equalsIgnoreCase(horse.getTransitStatus())) {
+                    throw new IllegalStateException("Ngựa \"" + (horse.getHorseName() != null ? horse.getHorseName() : hDto.getHorseId())
+                            + "\" (" + hDto.getHorseId() + ") đang trong hành trình vận chuyển (IN_TRANSIT), không thể chọn vào đơn mới.");
+                }
+
+                if (horseToActiveBookingMap.containsKey(horseId)) {
+                    String activeBookingInfo = horseToActiveBookingMap.get(horseId);
+                    throw new IllegalStateException("Ngựa \"" + (horse.getHorseName() != null ? horse.getHorseName() : hDto.getHorseId())
+                            + "\" (" + hDto.getHorseId() + ") đã được đặt trong đơn hàng " + activeBookingInfo + " chưa hoàn tất, không thể chọn vào đơn mới.");
+                }
+            }
+        }
+
+        // 6. Tạo đơn hàng Booking mới
         Booking booking = Booking.builder()
                 .customerID(customer)
                 .bookingDate(Instant.now())
@@ -162,25 +224,6 @@ public class BookingServiceImpl implements BookingService {
                 .build();
 
         Booking savedBooking = bookingRepository.save(booking);
-
-        // 6. Xác nhận các ngựa được chọn thuộc chính khách hàng này.
-        // Hồ sơ ngựa đã được tạo ở luồng quản lý hồ sơ, không nhân bản khi tạo booking.
-        if (request.getHorses() != null) {
-            for (BookingHorseDto hDto : request.getHorses()) {
-                if (hDto.getHorseId() == null || hDto.getHorseId().isBlank()) {
-                    throw new IllegalArgumentException("Mỗi ngựa trong đơn phải được chọn từ Hồ sơ ngựa.");
-                }
-                String numericId = hDto.getHorseId().replaceAll("\\D", "");
-                if (numericId.isBlank()) {
-                    throw new IllegalArgumentException("Mã hồ sơ ngựa không hợp lệ: " + hDto.getHorseId());
-                }
-                Horse horse = horseRepository.findById(Integer.valueOf(numericId))
-                        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hồ sơ ngựa " + hDto.getHorseId()));
-                if (horse.getCustomerID() == null || !customer.getId().equals(horse.getCustomerID().getId())) {
-                    throw new IllegalArgumentException("Hồ sơ ngựa " + hDto.getHorseId() + " không thuộc tài khoản của bạn.");
-                }
-            }
-        }
 
         // 7. Ghi Audit Log vào SYSTEM_LOG
         try {
@@ -1724,6 +1767,29 @@ public class BookingServiceImpl implements BookingService {
 
                 booking.setStatus("delivered_pending_settlement");
                 appendHistory(payload, actor, "Hoàn tất bàn giao ngựa, đơn chuyển sang chờ đối soát chi phí");
+
+                // Cập nhật trạng thái ngựa sang STABLE_IDLE khi giao xong
+                if (payload.getHorses() != null) {
+                    for (BookingHorseDto hDto : payload.getHorses()) {
+                        if (hDto.getHorseId() != null && !hDto.getHorseId().isBlank()) {
+                            try {
+                                String numId = hDto.getHorseId().replaceAll("\\D", "");
+                                if (!numId.isEmpty()) {
+                                    Integer hId = Integer.parseInt(numId);
+                                    horseRepository.findById(hId).ifPresent(h -> {
+                                        h.setTransitStatus("STABLE_IDLE");
+                                        if (booking.getDropoffAddress() != null && !booking.getDropoffAddress().isBlank()) {
+                                            h.setCurrentLocationName(booking.getDropoffAddress());
+                                        }
+                                        horseRepository.save(h);
+                                    });
+                                }
+                            } catch (Exception ex) {
+                                log.warn("Không thể cập nhật transitStatus cho ngựa {}: {}", hDto.getHorseId(), ex.getMessage());
+                            }
+                        }
+                    }
+                }
                 break;
             }
             case "CONFIRM_HOME": {

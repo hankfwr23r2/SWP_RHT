@@ -146,8 +146,32 @@ export const customerBookingsApi = {
     return toCustomerBooking(booking, incidents, customer)
   },
   create: async (customer: string, input: NewBookingInput): Promise<CustomerBookingView> => {
-    // PRD mục 8.2: khách có đơn quá hạn thanh toán quyết toán thì chưa đặt được đơn mới (backend chưa kiểm)
-    if ((await backendBookingApi.getCustomerBookings()).some(b => b.status === 'payment_overdue')) throw new Error('Bạn có đơn quá hạn thanh toán quyết toán nên chưa đặt được đơn mới. Vui lòng thanh toán trước.')
+    // PRD mục 8.2: khách có đơn quá hạn thanh toán quyết toán thì chưa đặt được đơn mới
+    const currentBookings = await backendBookingApi.getCustomerBookings()
+    if (currentBookings.some(b => b.status === 'payment_overdue')) {
+      throw new Error('Bạn có đơn quá hạn thanh toán quyết toán nên chưa đặt được đơn mới. Vui lòng thanh toán trước.')
+    }
+
+    // Kiểm tra chặn nếu có ngựa đang nằm trong đơn hàng khác chưa hoàn tất
+    const FINISHED = new Set(['completed', 'cancelled', 'rejected', 'quote_expired'])
+    const busyHorseMap = new Map<string, string>()
+    for (const b of currentBookings) {
+      if (!FINISHED.has((b.status || '').toLowerCase())) {
+        for (const h of (b.horses || [])) {
+          if (h.horseId) {
+            const num = h.horseId.replace(/\D/g, '')
+            if (num) busyHorseMap.set(num, b.id || `#BK-${b.numericId}`)
+          }
+        }
+      }
+    }
+    for (const reqH of input.horses) {
+      const num = reqH.horseId ? reqH.horseId.replace(/\D/g, '') : ''
+      if (num && busyHorseMap.has(num)) {
+        throw new Error(`Ngựa ${reqH.name || reqH.horseId} đã được đặt trong đơn ${busyHorseMap.get(num)} chưa hoàn tất.`)
+      }
+    }
+
     const created = await backendBookingApi.create({
       type: input.type, originName: input.origin.name, originCountry: input.origin.country,
       destName: input.dest.name, destCountry: input.dest.country, departAt: input.departAt,
