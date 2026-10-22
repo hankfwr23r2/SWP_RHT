@@ -9,7 +9,7 @@ import {
   type ProvinceInfo,
 } from '@shared/config/administrative'
 import { MIN_LEAD_DAYS } from '@shared/config/business-rules'
-import { COUNTRIES, GATES, type CountryCode } from '@shared/config/network'
+import { COUNTRIES, type CountryCode } from '@shared/config/network'
 import { earliestDeparture, fromIsoDay, isDepartureAllowed } from '@shared/lib/booking'
 import { formatDate } from '@shared/lib/format'
 import { isValidContactName, isValidRegionalPhone } from '@shared/lib/contactValidation'
@@ -24,9 +24,9 @@ import s from './Booking.module.css'
 
 type Partner = Exclude<CountryCode, 'VN'>
 const PARTNER_COUNTRIES: CountryCode[] = ['VN', 'KH', 'LA']
-const TYPES: [TransportType, string, string, string][] = [
-  ['domestic', 'Trong nước', 'Việt Nam → Việt Nam', 'Vận chuyển giữa các tỉnh, thành trong nước. Không qua cửa khẩu.'],
-  ['international', 'Quốc tế', 'Việt Nam ↔ Lào / Campuchia', 'Vận chuyển xuyên biên giới, có kiểm dịch và thông quan.'],
+const TYPES: [TransportType, string, string][] = [
+  ['domestic', 'Trong nước', 'Việt Nam → Việt Nam'],
+  ['international', 'Quốc tế', 'Việt Nam ↔ Lào / Campuchia'],
 ]
 
 const countryOption = (code: CountryCode) => (
@@ -336,7 +336,7 @@ export default function Step1RoutePage() {
             <h3><RouteIcon /> Loại chuyến</h3>
           </div>
           <div className={s.typeGrid} role="radiogroup" aria-label="Loại chuyến">
-            {TYPES.map(([value, title, route, desc]) => (
+            {TYPES.map(([value, title, route]) => (
               <button
                 key={value}
                 type="button"
@@ -352,7 +352,6 @@ export default function Step1RoutePage() {
                     {type === value && <span className={s.typeCheck}><CheckIcon /></span>}
                   </span>
                   <span className={s.typeRoute}>{route}</span>
-                  <span className={s.typeDesc}>{desc}</span>
                 </span>
               </button>
             ))}
@@ -428,16 +427,6 @@ export default function Step1RoutePage() {
                     <span className={s.routeText}><small>Điểm đến</small><b>{partner ? COUNTRIES[destC].name : 'Chọn quốc gia'}</b></span>
                   </div>
                 </div>
-                <div className={s.routeMeta}>
-                  <PinIcon />
-                  <span>
-                    {type === 'domestic'
-                      ? 'Tuyến nội địa, không qua cửa khẩu.'
-                      : partner
-                        ? `Cửa khẩu tham khảo: ${GATES.filter(g => g.country === partner).map(g => g.name).join(' · ')}. Nhà xe hỗ trợ kiểm dịch và hải quan.`
-                        : 'Chọn nước đến để xem cửa khẩu và thủ tục.'}
-                  </span>
-                </div>
               </div>
 
               {show(errors.partner)}
@@ -448,7 +437,6 @@ export default function Step1RoutePage() {
                   <span className={s.dateMin}>Sớm nhất {formatDate(min)}</span>
                 </div>
                 <DepartureDatePicker value={date} min={min} onChange={setDate} invalid={submitted && !!errors.date} />
-                <div className="form-hint">Đặt trước tối thiểu {MIN_LEAD_DAYS} ngày để bảo đảm xe chuyên dụng và thủ tục.</div>
                 {show(errors.date)}
               </div>
             </div>
@@ -471,9 +459,6 @@ export default function Step1RoutePage() {
                 )}
               </div>
             </div>
-            <p className={s.sectionHint}>
-              Thông tin liên hệ người bàn giao và địa chỉ chuồng/trang trại xe sẽ đến đón ngựa.
-            </p>
 
             <div className={s.grid2}>
               <div className="form-group">
@@ -549,9 +534,6 @@ export default function Step1RoutePage() {
                 Người nhận &amp; Điểm giao ngựa <span className={s.subNote}>({COUNTRIES[destC].name})</span>
               </h3>
             </div>
-            <p className={s.sectionHint}>
-              Thông tin liên hệ người tiếp nhận và địa chỉ trường đua/trang trại đích xe bàn giao ngựa.
-            </p>
 
             <div className={s.grid2}>
               <div className="form-group">
