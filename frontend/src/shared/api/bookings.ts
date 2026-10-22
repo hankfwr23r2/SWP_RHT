@@ -152,8 +152,8 @@ export const backendBookingApi = {
     return res.data.data
   },
 
-  // 9. Manager trả đơn về Specialist / Coordinator (POST /api/v1/manager/bookings/{id}/send-back)
-  sendBack: async (id: number | string, payload: { by?: string; to: 'specialist' | 'coordinator'; reason: string }): Promise<BackendBookingResponse> => {
+  // 9. Manager trả đơn về Specialist / Coordinator / Both (POST /api/v1/manager/bookings/{id}/send-back)
+  sendBack: async (id: number | string, payload: { by?: string; to: 'specialist' | 'coordinator' | 'both'; reason: string }): Promise<BackendBookingResponse> => {
     const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/manager/bookings/${id}/send-back`, payload)
     return res.data.data
   },

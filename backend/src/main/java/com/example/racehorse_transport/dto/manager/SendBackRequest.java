@@ -9,6 +9,6 @@ import lombok.*;
 @AllArgsConstructor
 public class SendBackRequest {
     private String by;
-    private String to; // "specialist" or "coordinator"
+    private String to; // "specialist", "coordinator", or "both"
     private String reason;
 }
