@@ -103,7 +103,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
         user.setPasswordHash(passwordEncoder.encode(tempPassword));
         User savedUser = userRepository.save(user);
 
-        // 4. Sinh mã nhân viên tự động theo vai trò (TX-01, QL-01, DP-01, KD-01...)
+        // 4. Sinh mã nhân viên tự động theo vai trò
         String rawRole = request.getRole().trim().toLowerCase();
         String prefix = getStaffCodePrefix(rawRole);
         long count = staffRepository.countByRoleIgnoreCase(rawRole) + 1;
@@ -333,8 +333,8 @@ public class AdminAccountServiceImpl implements AdminAccountService {
     private String getStaffCodePrefix(String role) {
         return switch (role.toLowerCase()) {
             case "manager" -> "QL";
-            case "coordinator" -> "DP";
-            case "specialist" -> "KD";
+            case "coordinator" -> "CO";
+            case "specialist" -> "SP";
             case "driver" -> "TX";
             case "escort" -> "HT";
             case "admin" -> "ADM";

@@ -37,7 +37,7 @@ function LoginForm({ managerOnly }: { managerOnly: boolean }) {
       tokenStorage.set(res.accessToken)
       login({
         role,
-        name: res.fullName || res.staffCode || res.username,
+        name: res.fullName || res.username,
         username: res.email || res.username,
       })
       navigate(HOME_OF[role] ?? '/manager')
