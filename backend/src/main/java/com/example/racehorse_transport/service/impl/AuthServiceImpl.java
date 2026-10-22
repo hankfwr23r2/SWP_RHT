@@ -130,6 +130,7 @@ public class AuthServiceImpl implements AuthService {
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .role(staffRole)
+                .fullName(user.getUsername())
                 .staffCode(staff.getStaffCode())
                 .build();
     }
@@ -158,6 +159,7 @@ public class AuthServiceImpl implements AuthService {
                 throw new IllegalArgumentException("Tài khoản nhân viên đã bị vô hiệu hóa!");
             }
             role = staff.getRole() != null ? staff.getRole().toUpperCase() : "STAFF";
+            fullName = user.getUsername();
             staffCode = staff.getStaffCode();
         } else {
             Optional<Customer> customerOpt = customerRepository.findById(user.getId());
@@ -227,4 +229,3 @@ public class AuthServiceImpl implements AuthService {
         }
     }
 }
-

@@ -223,9 +223,6 @@ public class SpecialistServiceImpl implements SpecialistService {
         targetItem.put("updatedAt", System.currentTimeMillis());
         targetItem.put("updatedBy", username != null ? username : "Chuyên viên");
 
-        // Đồng bộ vào thực thể TRIP_DOCUMENT trong cơ sở dữ liệu nếu có ảnh
-        syncTripDocument(booking, type, photos, newStatus, request.getNote());
-
         appendHistory(payload, username != null ? username : "Chuyên viên",
                 "Cập nhật giấy tờ [" + type + "]: " + ("done".equals(newStatus) ? "ĐÃ NỘP (kèm ảnh)" : "CHƯA NỘP"));
 
@@ -682,38 +679,6 @@ public class SpecialistServiceImpl implements SpecialistService {
         return list;
     }
 
-    private void syncTripDocument(Booking booking, String type, List<String> photos, String status, String note) {
-        try {
-            // Upsert: tìm bản ghi cũ theo booking + type, cập nhật nếu có, tạo mới nếu chưa có
-            TripDocument doc = tripDocumentRepository
-                    .findByBookingIdAndDocumentType(booking.getId(), type)
-                    .stream()
-                    .findFirst()
-                    .orElse(TripDocument.builder()
-                            .bookingID(booking)
-                            .documentType(type)
-                            .documentNumber("DOC-" + booking.getId() + "-" + type.toUpperCase())
-                            .build());
-
-            // Gán RegulationID nếu chưa có
-            if (doc.getRegulationID() == null) {
-                Regulation reg = regulationRepository.findAll().stream()
-                        .filter(r -> type.equalsIgnoreCase(r.getDocumentType()))
-                        .findFirst()
-                        .orElse(null);
-                if (reg != null) {
-                    doc.setRegulationID(reg);
-                }
-            }
-
-            doc.setFileUrl(!photos.isEmpty() ? photos.get(0) : null);
-            doc.setIssueDate(LocalDate.now());
-            doc.setStatus("done".equalsIgnoreCase(status) ? "VALID" : "PENDING");
-            tripDocumentRepository.save(doc);
-        } catch (Exception ex) {
-            log.warn("Could not sync TripDocument: {}", ex.getMessage());
-        }
-    }
 
     private void appendHistory(BookingDetailsPayload payload, String actor, String text) {
         if (payload.getHistory() == null) {
