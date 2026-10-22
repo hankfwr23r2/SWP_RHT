@@ -5,6 +5,7 @@ import { VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { MAX_HORSES } from '@shared/config/business-rules'
 import { COUNTRY_LOCATIONS } from '@shared/config/network'
 import { ageOf, classForHorses, horseReadiness } from '@shared/lib/booking'
+import { backendBookingApi } from '@shared/api/bookings'
 import { horsesApi } from '@shared/services/horses'
 import { useLoad } from '@shared/services/useLoad'
 import { SEX_LABEL, type HorseProfile } from '@shared/types/booking'
@@ -14,17 +15,57 @@ import { BookingShell } from './BookingShell'
 import { defaultConfig, useBookingDraft } from './draft'
 import s from './Booking.module.css'
 
+const FINISHED_STATUSES = new Set(['completed', 'cancelled', 'rejected', 'quote_expired'])
+
 export default function Step2HorsesPage() {
   const navigate = useNavigate()
   const { session } = useAuth()
   const owner = session!.name
   const { draft, save } = useBookingDraft()
   const { data: horses } = useLoad(() => horsesApi.list(owner), [owner])
+  const { data: customerBookings } = useLoad(() => backendBookingApi.getCustomerBookings(), [])
   const [selected, setSelected] = useState<string[]>(draft.horseIds)
   const [search, setSearch] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [confirmedRelocation, setConfirmedRelocation] = useState(false)
   const [relocationError, setRelocationError] = useState('')
+
+  // Map từ numeric ID của ngựa -> thông tin đơn hàng chưa hoàn tất
+  const activeHorseBookingMap = useMemo(() => {
+    const map = new Map<number, string>()
+    if (!customerBookings) return map
+    for (const b of customerBookings) {
+      const st = (b.status || '').toLowerCase()
+      if (!FINISHED_STATUSES.has(st)) {
+        if (b.horses && Array.isArray(b.horses)) {
+          for (const bh of b.horses) {
+            if (bh.horseId) {
+              const num = Number(bh.horseId.replace(/\D/g, ''))
+              if (num && !map.has(num)) {
+                map.set(num, b.id || `#BK-${b.numericId}`)
+              }
+            }
+          }
+        }
+      }
+    }
+    return map
+  }, [customerBookings])
+
+  // Tự động loại bỏ khỏi selected những ngựa đang bận/đang vận chuyển nếu có lưu trong draft cũ
+  useEffect(() => {
+    if (!horses) return
+    setSelected(prev => {
+      const valid = prev.filter(id => {
+        const h = horses.find(item => item.id === id)
+        if (!h) return true
+        const numId = Number(h.id.replace(/\D/g, ''))
+        const isBusy = h.transitStatus === 'IN_TRANSIT' || activeHorseBookingMap.has(numId)
+        return !isBusy
+      })
+      return valid.length === prev.length ? prev : valid
+    })
+  }, [horses, activeHorseBookingMap])
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { save({ horseIds: selected }) }, [selected])
@@ -67,8 +108,8 @@ export default function Step2HorsesPage() {
 
   const full = selected.length >= MAX_HORSES
 
-  const toggle = (id: string, inTransit?: boolean) => {
-    if (inTransit) return
+  const toggle = (id: string, busy?: boolean) => {
+    if (busy) return
     setSelected(sel => (sel.includes(id) ? sel.filter(x => x !== id) : sel.length >= MAX_HORSES ? sel : [...sel, id]))
   }
 
@@ -81,6 +122,16 @@ export default function Step2HorsesPage() {
   const next = () => {
     setSubmitted(true)
     if (!selected.length) return
+
+    // Chặn nếu có bất kỳ ngựa nào đang bận trong đơn khác chưa hoàn tất
+    const busySelected = selectedHorses.filter(h => {
+      const numId = Number(h.id.replace(/\D/g, ''))
+      return h.transitStatus === 'IN_TRANSIT' || activeHorseBookingMap.has(numId)
+    })
+    if (busySelected.length > 0) {
+      setRelocationError(`Ngựa ${busySelected.map(h => h.name).join(', ')} hiện đang trong đơn hàng khác chưa hoàn tất, không thể tiếp tục.`)
+      return
+    }
 
     if (hasDifferentLocation && !confirmedRelocation) {
       setRelocationError('Vui lòng đánh dấu xác nhận vị trí chuồng thực tế của ngựa trước khi tiếp tục.')
@@ -135,33 +186,40 @@ export default function Step2HorsesPage() {
           {pager.rows.map(h => {
             const on = selected.includes(h.id)
             const inTransit = h.transitStatus === 'IN_TRANSIT'
-            const blocked = (!on && full) || inTransit
+            const numId = Number(h.id.replace(/\D/g, ''))
+            const activeBookingCode = activeHorseBookingMap.get(numId)
+            const isBusy = inTransit || Boolean(activeBookingCode)
+            const blocked = (!on && full) || isBusy
             const matchLoc = isLocationMatch(h)
 
             return (
               <div
                 key={h.id}
                 className={`${s.pick} ${on ? s.pickOn : ''}`}
-                style={inTransit ? { opacity: 0.65, background: '#f8fafc', cursor: 'not-allowed' } : undefined}
-                onClick={e => { if (!blocked && !(e.target as HTMLElement).closest('button, input')) toggle(h.id, inTransit) }}
+                style={isBusy ? { opacity: 0.65, background: '#f8fafc', cursor: 'not-allowed' } : undefined}
+                onClick={e => { if (!blocked && !(e.target as HTMLElement).closest('button, input')) toggle(h.id, isBusy) }}
               >
                 <input
                   type="checkbox"
                   id={`pick-${h.id}`}
                   checked={on}
                   disabled={blocked}
-                  onChange={() => toggle(h.id, inTransit)}
+                  onChange={() => toggle(h.id, isBusy)}
                   aria-describedby={`pick-meta-${h.id}`}
                 />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
-                    <label htmlFor={`pick-${h.id}`} className={s.pickName} style={{ cursor: inTransit ? 'not-allowed' : 'pointer' }}>
+                    <label htmlFor={`pick-${h.id}`} className={s.pickName} style={{ cursor: isBusy ? 'not-allowed' : 'pointer' }}>
                       {h.name}
                     </label>
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                       {inTransit ? (
                         <span className="badge badge-warning" style={{ fontSize: '0.74rem' }}>
                           <i className="fa-solid fa-truck-fast" /> Đang vận chuyển ở chuyến khác
+                        </span>
+                      ) : activeBookingCode ? (
+                        <span className="badge badge-warning" style={{ fontSize: '0.74rem' }} title={`Đã được đặt trong đơn ${activeBookingCode}`}>
+                          <i className="fa-solid fa-clock-rotate-left" /> Đã đặt trong {activeBookingCode}
                         </span>
                       ) : matchLoc ? (
                         <span className="badge badge-success" style={{ fontSize: '0.74rem' }}>
@@ -186,6 +244,11 @@ export default function Step2HorsesPage() {
                   {inTransit && (
                     <div style={{ fontSize: '0.8rem', color: '#b45309', marginTop: 4 }}>
                       ⚠️ Cá thể ngựa này đang trong một chuyến vận chuyển khác và chưa hoàn tất bàn giao về chuồng.
+                    </div>
+                  )}
+                  {!inTransit && activeBookingCode && (
+                    <div style={{ fontSize: '0.8rem', color: '#b45309', marginTop: 4 }}>
+                      ⚠️ Cá thể ngựa này đã được đặt trong đơn {activeBookingCode} đang trong quá trình xử lý chưa hoàn tất.
                     </div>
                   )}
                 </div>

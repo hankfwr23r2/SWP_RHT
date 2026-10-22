@@ -13,7 +13,7 @@ type Props = { b: Pick<Booking, 'origin' | 'dest' | 'gate' | 'route'>; trips: Pi
 const pin = (cls: string, text: string) => L.divIcon({ className: 'tt-icon', html: `<span class="tt-pin ${cls}">${text}</span>`, iconSize: [24, 24], iconAnchor: [12, 12] })
 const ll = (p: GeoPoint): [number, number] => [p.lat, p.lng]
 
-export function TripTrackMap({ b, trips, height = 360, plain }: Props) {
+export function TripTrackMap({ b, trips = [], height = 360, plain }: Props) {
   const box = useRef<HTMLDivElement>(null)
   const map = useRef<L.Map | null>(null)
   const layer = useRef<L.LayerGroup | null>(null)

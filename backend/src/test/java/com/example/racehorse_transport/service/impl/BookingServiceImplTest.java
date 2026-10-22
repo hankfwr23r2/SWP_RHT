@@ -171,6 +171,64 @@ class BookingServiceImplTest {
     }
 
     @Test
+    void createBooking_rejectsHorseInTransit() {
+        BookingHorseDto horseDto = BookingHorseDto.builder().horseId("HORSE-12").name("Lightning").build();
+        CreateBookingRequest request = CreateBookingRequest.builder()
+                .horses(List.of(horseDto))
+                .consignor(PartyContactDto.builder().name("Sender").phone("0900").build())
+                .build();
+        Horse horse = Horse.builder()
+                .id(12)
+                .horseName("Lightning")
+                .customerID(customer)
+                .transitStatus("IN_TRANSIT")
+                .build();
+
+        when(userRepository.findByUsernameOrEmail("phuc", "phuc")).thenReturn(Optional.of(customer.getUser()));
+        when(customerRepository.findById(7)).thenReturn(Optional.of(customer));
+        when(bookingRepository.findByCustomerID_IdOrderByBookingDateDesc(7)).thenReturn(List.of());
+        when(horseRepository.findById(12)).thenReturn(Optional.of(horse));
+
+        assertThatThrownBy(() -> service.createBooking("phuc", request))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("IN_TRANSIT");
+
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
+    void createBooking_rejectsHorseInUncompletedBooking() {
+        BookingHorseDto horseDto = BookingHorseDto.builder().horseId("HORSE-12").name("Lightning").build();
+        CreateBookingRequest request = CreateBookingRequest.builder()
+                .horses(List.of(horseDto))
+                .consignor(PartyContactDto.builder().name("Sender").phone("0900").build())
+                .build();
+        Horse horse = Horse.builder()
+                .id(12)
+                .horseName("Lightning")
+                .customerID(customer)
+                .transitStatus("STABLE_IDLE")
+                .build();
+
+        Booking existingActiveBooking = Booking.builder()
+                .id(99)
+                .status("in_transit")
+                .detailsJson("{\"horses\":[{\"horseId\":\"HORSE-12\",\"name\":\"Lightning\"}]}")
+                .build();
+
+        when(userRepository.findByUsernameOrEmail("phuc", "phuc")).thenReturn(Optional.of(customer.getUser()));
+        when(customerRepository.findById(7)).thenReturn(Optional.of(customer));
+        when(bookingRepository.findByCustomerID_IdOrderByBookingDateDesc(7)).thenReturn(List.of(existingActiveBooking));
+        when(horseRepository.findById(12)).thenReturn(Optional.of(horse));
+
+        assertThatThrownBy(() -> service.createBooking("phuc", request))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("#BK-99");
+
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
     void createBooking_rejectsHorseWithoutProfileId() {
         givenCustomerCanCreateBooking();
 
