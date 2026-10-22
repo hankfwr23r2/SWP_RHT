@@ -13,6 +13,7 @@ export interface AppHeaderProps {
   isActive?: (to: string, pathname: string) => boolean
   userName?: string
   profileHref?: string
+  onProfile?: () => void
   onLogout: () => void
   extra?: ReactNode
   contained?: boolean // căn thanh menu theo cùng bề rộng nội dung trang (1200px), không kéo giãn hết màn hình
@@ -20,7 +21,7 @@ export interface AppHeaderProps {
 
 const initialsOf = (name = '') => name.split(' ').filter(Boolean).slice(-2).map(w => w[0]).join('').toUpperCase()
 
-export function AppHeader({ homeHref, badge, links, isActive, userName, profileHref, onLogout, extra, contained }: AppHeaderProps) {
+export function AppHeader({ homeHref, badge, links, isActive, userName, profileHref, onProfile, onLogout, extra, contained }: AppHeaderProps) {
   const { pathname } = useLocation()
   const nav = useRef<HTMLElement>(null)
   const bar = useRef<HTMLSpanElement>(null)
@@ -58,7 +59,12 @@ export function AppHeader({ homeHref, badge, links, isActive, userName, profileH
         </nav>
         <div className={s.right}>
           {extra}
-          {profileHref ? (
+          {onProfile ? (
+            <button type="button" className={s.profileButton} onClick={onProfile} title="Xem hồ sơ cá nhân" aria-haspopup="dialog">
+              <span className={s.avatar} title={userName}>{initialsOf(userName)}</span>
+              <span className={s.userName}>{userName}</span>
+            </button>
+          ) : profileHref ? (
             <Link to={profileHref} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', color: 'inherit' }} title="Xem hồ sơ cá nhân">
               <span className={s.avatar} title={userName}>{initialsOf(userName)}</span>
               <span className={s.userName}>{userName}</span>

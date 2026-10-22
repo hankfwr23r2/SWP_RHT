@@ -45,9 +45,13 @@ export function FormSelect({ value, onChange, children, id, className = '', styl
   const place = useCallback(() => {
     const r = trigger.current?.getBoundingClientRect()
     if (!r) return
-    const below = innerHeight - r.bottom
-    // Hết chỗ phía dưới (dưới 240px) mà phía trên rộng hơn thì mở lên trên
-    if (below < 240 && r.top > below) setBox({ bottom: innerHeight - r.top + 6, left: r.left, width: r.width })
+    const dialog = trigger.current?.closest('.modal')?.getBoundingClientRect()
+    const visibleTop = Math.max(0, dialog?.top ?? 0)
+    const visibleBottom = Math.min(innerHeight, dialog?.bottom ?? innerHeight)
+    const below = visibleBottom - r.bottom
+    const above = r.top - visibleTop
+    // Tính khoảng trống bên trong hộp thoại để menu không bị chân hộp thoại che.
+    if (below < 240 && above > below) setBox({ bottom: innerHeight - r.top + 6, left: r.left, width: r.width })
     else setBox({ top: r.bottom + 6, left: r.left, width: r.width })
   }, [])
 

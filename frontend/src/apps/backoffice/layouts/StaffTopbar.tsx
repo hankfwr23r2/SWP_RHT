@@ -6,6 +6,7 @@ import { STAFF_MENUS } from './staffMenus'
 import { ROLE_LABEL, type StaffRole } from '@shared/types/role'
 import { HOME_OF } from './staffMenus'
 import { NoticeBell } from '@shared/ui/NoticeBell'
+import { StaffProfileModal } from './StaffProfileModal'
 import s from './StaffShell.module.css'
 
 // Trang danh sách nhận từ khóa tìm kiếm của từng vai trò
@@ -16,18 +17,20 @@ export function StaffTopbar() {
   const { pathname } = useLocation()
   const navigate = useNavigate()
   const [q, setQ] = useState('')
+  const [showProfile, setShowProfile] = useState(false)
   const initials = (session?.name ?? '').split(' ').filter(Boolean).slice(-2).map(w => w[0]).join('').toUpperCase()
   const role = session!.role as StaffRole
   // Mục menu khớp dài nhất với đường dẫn (trang chi tiết thuộc mục cha của nó)
   const here = STAFF_MENUS[role].filter(([to]) => pathname === to || pathname.startsWith(to + '/')).sort((a, z) => z[0].length - a[0].length)[0]
   const search = (e: FormEvent) => { e.preventDefault(); if (q.trim()) navigate(`${SEARCH_IN[role]}?q=${encodeURIComponent(q.trim())}`) }
   return (
+    <>
     <header className={s.topbar}>
       <Link to={HOME_OF[role]} className={s.brand}><img src="/logo.png" alt="" className={s.brandMark} /><span>Vận chuyển Ngựa</span></Link>
-      <Link to="/profile" className={`${s.account} ${s.profileButton}`} title="Hồ sơ">
+      <button type="button" className={`${s.account} ${s.profileButton}`} onClick={() => setShowProfile(true)} title="Hồ sơ" aria-haspopup="dialog">
         <span className={s.avatar}>{initials}</span>
         <span className={s.who}><b>{session?.name}</b><small>{session?.username.includes('@') ? session.username : ROLE_LABEL[role]}</small></span>
-      </Link>
+      </button>
       {role !== 'specialist' && (
         <span className={s.crumb} aria-label="Đường dẫn">
           <i className="fa-solid fa-chevron-right" aria-hidden="true" />
@@ -43,5 +46,7 @@ export function StaffTopbar() {
         <button className={s.logout} onClick={() => { logout(); navigate('/login') }} aria-label="Đăng xuất" title="Đăng xuất"><i className="fa-solid fa-arrow-right-from-bracket" /></button>
       </div>
     </header>
+    {showProfile && session && <StaffProfileModal session={session} onClose={() => setShowProfile(false)} />}
+    </>
   )
 }

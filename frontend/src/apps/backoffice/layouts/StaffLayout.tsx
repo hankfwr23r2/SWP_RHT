@@ -1,5 +1,5 @@
 // Khung chung của app nội bộ: header gọn (dùng chung với app khách) + menu theo vai trò.
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { PageTransition } from '@shared/motion/motion'
@@ -12,17 +12,22 @@ import m from './StaffShell.module.css'
 import './manager-theme.css'
 import { StaffSidebar } from './StaffSidebar'
 import { StaffTopbar } from './StaffTopbar'
+import { StaffProfileModal } from './StaffProfileModal'
 
 function Header() {
   const { session, logout } = useAuth()
   const navigate = useNavigate()
+  const [showProfile, setShowProfile] = useState(false)
   const role = session?.role as StaffRole | undefined
   return (
+    <>
     <AppHeader
       homeHref={role ? HOME_OF[role] : '/login'} badge={role && ROLE_LABEL[role]}
-      links={role ? STAFF_MENUS[role].map(([to, label]): [string, string] => [to, label]) : []} userName={session?.name} profileHref="/profile"
+      links={role ? STAFF_MENUS[role].map(([to, label]): [string, string] => [to, label]) : []} userName={session?.name} onProfile={() => setShowProfile(true)}
       onLogout={() => { logout(); navigate('/login') }}
     />
+    {showProfile && session && <StaffProfileModal session={session} onClose={() => setShowProfile(false)} />}
+    </>
   )
 }
 
