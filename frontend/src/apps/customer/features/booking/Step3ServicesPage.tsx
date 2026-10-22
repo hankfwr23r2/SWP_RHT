@@ -24,9 +24,12 @@ function InsuranceNote({ id, breed }: { id: string; breed: string }) {
         <b>Phí bảo hiểm chuyến đi theo giống ngựa</b>
         <table className={s.noteTable}>
           <tbody>
-            {HORSE_BREEDS.map(b => (
-              <tr key={b} className={b === breed ? s.noteCurrent : undefined}><td>{b}</td><td>{formatVND(insuranceFee(b))}</td></tr>
-            ))}
+            {HORSE_BREEDS.map(b => {
+              const isCurrent = b === breed || (b === 'American Quarter Horse' && breed === 'Quarter Horse') || (!HORSE_BREEDS.includes(breed) && b === 'Khác')
+              return (
+                <tr key={b} className={isCurrent ? s.noteCurrent : undefined}><td>{b}</td><td>{formatVND(insuranceFee(b))}</td></tr>
+              )
+            })}
           </tbody>
         </table>
       </div>
@@ -78,14 +81,12 @@ export default function Step3ServicesPage() {
       {activeHorse && (
         <>
           <div className={s.horseNavigator} aria-label="Chọn ngựa để thiết lập dịch vụ">
-            <button type="button" className="btn btn-ghost" aria-label="Ngựa trước" disabled={activeIndex === 0} onClick={() => setActiveIndex(i => Math.max(0, i - 1))}>&lt;</button>
             <label className={s.horseSelectLabel}>
               <span>Ngựa {activeIndex + 1}/{rows.length}</span>
               <select className="form-control" value={activeHorse.id} onChange={e => setActiveIndex(rows.findIndex(h => h.id === e.target.value))}>
                 {rows.map((h, i) => <option key={h.id} value={h.id}>{i + 1}. {h.name}</option>)}
               </select>
             </label>
-            <button type="button" className="btn btn-ghost" aria-label="Ngựa tiếp theo" disabled={activeIndex === rows.length - 1} onClick={() => setActiveIndex(i => Math.min(rows.length - 1, i + 1))}>&gt;</button>
           </div>
           {(() => {
         const h = activeHorse
