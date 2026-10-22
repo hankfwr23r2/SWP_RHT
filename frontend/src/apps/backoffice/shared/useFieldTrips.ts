@@ -10,6 +10,19 @@ import type { FieldTrip } from './field'
 // Trạng thái đơn mà Driver / Escort nhìn thấy trên app (từ lúc có Vận đơn, Lệnh điều xe phát ngay sau cọc)
 export const FIELD_STATUSES: Booking['status'][] = ['waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'delivered_pending_settlement']
 
+function canonicalStaffId(value: string, role: 'driver' | 'escort') {
+  const normalized = value.trim().toUpperCase()
+  if (role === 'driver' && /^TX-\d+$/.test(normalized)) return `DR-${normalized.slice(3)}`
+  if (role === 'escort' && /^(NV|HT)-\d+$/.test(normalized)) return `ES-${normalized.slice(normalized.indexOf('-') + 1)}`
+  return normalized
+}
+
+function assignedToMe(assigned: string | undefined, role: 'driver' | 'escort', identifiers: (string | undefined)[]) {
+  if (!assigned) return false
+  const normalized = canonicalStaffId(assigned, role)
+  return identifiers.some(id => !!id && normalized === canonicalStaffId(id, role))
+}
+
 export function useFieldTrips(role: 'driver' | 'escort') {
   const { session } = useAuth()
   const { data: all, reload } = useLoad(bookingsApi.list)
@@ -20,9 +33,7 @@ export function useFieldTrips(role: 'driver' | 'escort') {
   const key = role === 'driver' ? 'driverId' : 'escortId'
   const trips: FieldTrip[] = (all ?? [])
     .flatMap(b => (b.trips ?? []).filter(t => {
-      const matchMe = me ? (t[key] === me.id || t[key] === me.name) : false
-      const matchSession = session ? (t[key] === session.username || t[key] === session.name) : false
-      const isAssigned = matchMe || matchSession
+      const isAssigned = assignedToMe(t[key], role, [me?.id, me?.name, session?.username, session?.name])
       return isAssigned && (FIELD_STATUSES.includes(b.status) || (t.homeReturn && !t.homeReturn.backAt))
     }).map(t => ({ b, t })))
     .sort((x, y) => x.b.departAt - y.b.departAt || x.t.tripId.localeCompare(y.t.tripId))

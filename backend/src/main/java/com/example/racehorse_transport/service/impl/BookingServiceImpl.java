@@ -368,10 +368,7 @@ public class BookingServiceImpl implements BookingService {
                         return payload.getTrips().stream().anyMatch(t -> {
                             String assigned = isEscort ? t.getEscortId() : t.getDriverId();
                             if (assigned == null || assigned.isBlank()) return false;
-                            return assigned.equalsIgnoreCase(myCode)
-                                    || assigned.equalsIgnoreCase(myId)
-                                    || assigned.equalsIgnoreCase(username)
-                                    || (!myName.isBlank() && assigned.equalsIgnoreCase(myName));
+                            return matchesStaffIdentifier(assigned, myCode, myId, username, myName, role);
                         });
                     } catch (Exception e) {
                         return false;
@@ -379,6 +376,26 @@ public class BookingServiceImpl implements BookingService {
                 })
                 .map(this::mapToResponse)
                 .toList();
+    }
+
+    private boolean matchesStaffIdentifier(String assigned, String staffCode, String staffId, String username, String name, String role) {
+        String normalized = canonicalStaffIdentifier(assigned, role);
+        return normalized.equals(canonicalStaffIdentifier(staffCode, role))
+                || normalized.equals(canonicalStaffIdentifier(staffId, role))
+                || normalized.equals(canonicalStaffIdentifier(username, role))
+                || (!name.isBlank() && normalized.equals(canonicalStaffIdentifier(name, role)));
+    }
+
+    private String canonicalStaffIdentifier(String value, String role) {
+        if (value == null) return "";
+        String normalized = value.trim().toUpperCase(java.util.Locale.ROOT);
+        if ("DRIVER".equalsIgnoreCase(role) && normalized.matches("^TX-\\d+$")) {
+            return "DR-" + normalized.substring(3);
+        }
+        if ("ESCORT".equalsIgnoreCase(role) && normalized.matches("^(NV|HT)-\\d+$")) {
+            return "ES-" + normalized.substring(normalized.indexOf('-') + 1);
+        }
+        return normalized;
     }
 
     @Override
