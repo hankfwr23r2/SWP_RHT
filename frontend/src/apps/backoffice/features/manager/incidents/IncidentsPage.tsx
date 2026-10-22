@@ -17,8 +17,9 @@ import s from '../../../shared/booking.module.css'
 
 type Tab = 'approve' | 'active' | 'done'
 type Item = { b: Booking; i: Incident }
+export { type Item as IncidentItem }
 
-function ApproveModal({ item, onClose, onDone }: { item: Item; onClose: () => void; onDone: () => void }) {
+export function ApproveModal({ item, onClose, onDone }: { item: Item; onClose: () => void; onDone: () => void }) {
   const toast = useToast()
   const { session } = useAuth()
   const { b, i } = item

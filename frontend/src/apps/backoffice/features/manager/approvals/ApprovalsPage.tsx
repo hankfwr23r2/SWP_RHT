@@ -26,7 +26,7 @@ interface AdjRow { kind: 'surcharge' | 'discount'; label: string; amount: string
 const digits = (v: string) => Number(v.replace(/\D/g, '')) || 0
 
 type Pick2 = { driverId: string; escortId: string }
-function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booking[]; onClose: () => void; onDone: () => void }) {
+export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booking[]; onClose: () => void; onDone: () => void }) {
   const toast = useToast()
   const { session } = useAuth()
   const { data: draft } = useLoad(() => bookingsApi.quoteDraft(b.id), [b.id])
