@@ -1022,22 +1022,6 @@ public class BookingServiceImpl implements BookingService {
                 item.put("gateLocationId", reg.getLocationID().getId());
             }
             items.add(item);
-
-            // Khởi tạo bản ghi trong TRIP_DOCUMENT
-            try {
-                TripDocument tripDoc = tripDocumentRepository.findByBookingIdAndDocumentType(booking.getId(), type)
-                        .orElse(TripDocument.builder()
-                                .bookingID(booking)
-                                .regulationID(reg)
-                                .documentType(type)
-                                .documentNumber("DOC-" + booking.getId() + "-" + type.toUpperCase())
-                                .status("PENDING")
-                                .build());
-                tripDoc.setRegulationID(reg);
-                tripDocumentRepository.save(tripDoc);
-            } catch (Exception ex) {
-                log.warn("Could not pre-create TripDocument for booking ID={}, reg ID={}: {}", booking.getId(), reg.getId(), ex.getMessage());
-            }
         }
 
         Map<String, Object> clearanceMap = new HashMap<>();

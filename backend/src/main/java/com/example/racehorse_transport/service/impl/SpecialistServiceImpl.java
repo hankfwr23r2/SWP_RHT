@@ -687,6 +687,8 @@ public class SpecialistServiceImpl implements SpecialistService {
             // Upsert: tìm bản ghi cũ theo booking + type, cập nhật nếu có, tạo mới nếu chưa có
             TripDocument doc = tripDocumentRepository
                     .findByBookingIdAndDocumentType(booking.getId(), type)
+                    .stream()
+                    .findFirst()
                     .orElse(TripDocument.builder()
                             .bookingID(booking)
                             .documentType(type)
