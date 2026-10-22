@@ -335,9 +335,9 @@ public class AdminAccountServiceImpl implements AdminAccountService {
             case "manager" -> "QL";
             case "coordinator" -> "CO";
             case "specialist" -> "SP";
-            case "driver" -> "TX";
-            case "escort" -> "HT";
-            case "admin" -> "ADM";
+            case "driver" -> "DR";
+            case "escort" -> "ES";
+            case "admin" -> "ADMIN";
             default -> "NV";
         };
     }

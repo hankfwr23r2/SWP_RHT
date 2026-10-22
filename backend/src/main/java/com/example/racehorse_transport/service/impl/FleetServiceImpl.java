@@ -290,7 +290,7 @@ public class FleetServiceImpl implements FleetService {
         String email = s.getUser() != null ? s.getUser().getEmail() : "";
         return CrewResponse.builder()
                 .userId(s.getId())
-                .staffCode(s.getStaffCode() != null ? s.getStaffCode() : "NV-" + s.getId())
+                .staffCode(s.getStaffCode() != null ? s.getStaffCode() : fallbackStaffCode(s))
                 .name(fullName)
                 .role(s.getRole())
                 .phone(s.getPhone())
@@ -299,6 +299,16 @@ public class FleetServiceImpl implements FleetService {
                 .isAvailable("ACTIVE".equalsIgnoreCase(s.getEmploymentStatus()))
                 .busyReason(null)
                 .build();
+    }
+
+    private String fallbackStaffCode(Staff staff) {
+        String prefix = switch (staff.getRole() == null ? "" : staff.getRole().toUpperCase(Locale.ROOT)) {
+            case "ADMIN" -> "ADMIN";
+            case "DRIVER" -> "DR";
+            case "ESCORT" -> "ES";
+            default -> "NV";
+        };
+        return prefix + "-" + String.format("%02d", staff.getId());
     }
 
     @Override
