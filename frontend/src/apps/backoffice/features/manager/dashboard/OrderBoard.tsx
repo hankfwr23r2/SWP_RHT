@@ -47,6 +47,9 @@ export type SortOption = 'newest' | 'urgent' | 'depart' | 'oldest'
 const isTrouble = (b: Booking) =>
   b.status === 'incident_reported' || b.status === 'pending_emergency_approval' || b.status === 'payment_overdue'
 
+const newestFirst = (a: Booking, z: Booking) =>
+  z.createdAt - a.createdAt || z.id.localeCompare(a.id, undefined, { numeric: true })
+
 const sortBookings = (list: Booking[], sortBy: SortOption) => {
   return [...list].sort((a, z) => {
     if (sortBy === 'urgent') {
@@ -54,18 +57,18 @@ const sortBookings = (list: Booking[], sortBy: SortOption) => {
       const zUrgent = Number(!!managerAction(z) || isTrouble(z))
       if (aUrgent !== zUrgent) return zUrgent - aUrgent
       // Nếu cùng mức độ ưu tiên, đơn mới hơn lên trước
-      return z.id.localeCompare(a.id, undefined, { numeric: true })
+      return newestFirst(a, z)
     }
     if (sortBy === 'depart') {
       const diff = a.departAt - z.departAt
       if (diff !== 0) return diff
-      return z.id.localeCompare(a.id, undefined, { numeric: true })
+      return newestFirst(a, z)
     }
     if (sortBy === 'oldest') {
-      return a.id.localeCompare(z.id, undefined, { numeric: true })
+      return a.createdAt - z.createdAt || a.id.localeCompare(z.id, undefined, { numeric: true })
     }
     // Mặc định 'newest': đơn mới nhất lên trước
-    return z.id.localeCompare(a.id, undefined, { numeric: true })
+    return newestFirst(a, z)
   })
 }
 
