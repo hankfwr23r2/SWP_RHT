@@ -45,8 +45,13 @@ function horseOf(h: BackendBookingResponse['horses'][number]): BookingHorse {
 }
 
 function tripOf(t: NonNullable<BackendBookingResponse['trips']>[number]): VehicleTrip {
-  const { tripId, vehicleId, driverId, escortId, horseIds, acks, ...rest } = t as any
-  return { tripId, vehicleId, driverId: driverId ?? '', escortId: escortId ?? '', horseIds, ...rest, acks: acks ?? {} } as VehicleTrip
+  const { tripId, vehicleId, driverId, escortId, horseIds, acks, run, ...rest } = t as any
+  const normalizedRun = run ? {
+    ...run,
+    checkpoints: Array.isArray(run.checkpoints) ? run.checkpoints : [],
+    welfare: Array.isArray(run.welfare) ? run.welfare : [],
+  } : undefined
+  return { tripId, vehicleId, driverId: driverId ?? '', escortId: escortId ?? '', horseIds, ...rest, run: normalizedRun, acks: acks ?? {} } as VehicleTrip
 }
 
 export function incidentKindOf(value: string): IncidentKind | undefined {

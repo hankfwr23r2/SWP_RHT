@@ -19,7 +19,7 @@ export function TripTimeline({ trip, now, staff }: Props) {
     <ol className={s.list}>
       {cps.map(cp => {
         const state = checkpointState(cp, current)
-        const welfare = trip.run!.welfare.filter(w => w.checkpointId === cp.id)
+        const welfare = (trip.run?.welfare ?? []).filter(w => w.checkpointId === cp.id)
         return (
           <li key={cp.id} className={`${s.item} ${s[state]}`}>
             <span className={s.dot} aria-hidden="true">{state === 'done' ? <i className="fa-solid fa-check" /> : <i className={`fa-solid ${ICON[cp.type]}`} />}</span>
