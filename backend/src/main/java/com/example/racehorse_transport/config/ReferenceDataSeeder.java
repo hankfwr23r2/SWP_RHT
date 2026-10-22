@@ -200,16 +200,16 @@ public class ReferenceDataSeeder implements CommandLineRunner {
 
     // {Username, Email, PasswordHash (BCrypt), Role, StaffCode (trống = khách hàng)}
     private static final String[][] USERS = {
-            new String[] { "admin01", "admin01@gmail.com", "$2a$10$NvMt0W6fYHAZBRFOC2oMUuJGaD3DO44Hdj5BMpA3Rl9Uvmg/EthB6", "ADMIN", "AD-01" },
+            new String[] { "admin01", "admin01@gmail.com", "$2a$10$NvMt0W6fYHAZBRFOC2oMUuJGaD3DO44Hdj5BMpA3Rl9Uvmg/EthB6", "ADMIN", "ADMIN-01" },
             new String[] { "manager01", "manager01@gmail.com", "$2a$10$oCT1ZM0QYjNPtKNmXb.7mOd5JQXsn.yWtBuJ1ikOSfq7gCRTVgD8S", "MANAGER", "MG-01" },
             new String[] { "coordinator01", "coordinator01@gmail.com", "$2a$10$MYudrVPfSATaXNtwM81Qn.IXgMAuqgSH/M2/ZtjKw7o1UmiUZLyYS", "COORDINATOR", "CO-01" },
             new String[] { "specialist01", "specialist01@gmail.com", "$2a$10$2Q2V4bYeRlVYaVjGPNGkye5xeP9jbddQYFjnArkrs/0yXwABffk5q", "SPECIALIST", "SP-01" },
-            new String[] { "driver01", "driver01@gmail.com", "$2a$10$9c3BNoho5vhi0L8xLpCmleZ3E97VQFafkJZJQcfFKWfklEVgx1p1u", "DRIVER", "TX-01" },
-            new String[] { "driver02", "driver02@gmail.com", "$2a$10$qT7p9vk7qISLnaqusLiMUOPwxkqim3D8bporY9.ZTgxznbu3Hsx2G", "DRIVER", "TX-02" },
-            new String[] { "drive03", "driver03@gmail.com", "$2a$10$fBPO1w/j7TL6OQ5lRAFj8OYCZJD2EwGY7Yob2RZu82sHPdtxVq/q6", "DRIVER", "TX-03" },
-            new String[] { "escort01", "escort01@gmail.com", "$2a$10$1qLVpCjGZqVCxBW8M/50ZOjGT1Ax/vGfcPz2dHBqwxipdK8TLOO4K", "ESCORT", "NV-01" },
-            new String[] { "escort02", "escort02@gmail.com", "$2a$10$DSFOE.KOZZ/09HcOlWlk2ON.JefUicNnEdagL31Rhim2pySMDriK2", "ESCORT", "NV-02" },
-            new String[] { "escort03", "escort03@gmail.com", "$2a$10$iTet6pr/GugLxBk755TcxuTy4BVmcyoE1coaqXMN2v5zC2g3xmRui", "ESCORT", "NV-03" },
+            new String[] { "driver01", "driver01@gmail.com", "$2a$10$9c3BNoho5vhi0L8xLpCmleZ3E97VQFafkJZJQcfFKWfklEVgx1p1u", "DRIVER", "DR-01" },
+            new String[] { "driver02", "driver02@gmail.com", "$2a$10$qT7p9vk7qISLnaqusLiMUOPwxkqim3D8bporY9.ZTgxznbu3Hsx2G", "DRIVER", "DR-02" },
+            new String[] { "drive03", "driver03@gmail.com", "$2a$10$fBPO1w/j7TL6OQ5lRAFj8OYCZJD2EwGY7Yob2RZu82sHPdtxVq/q6", "DRIVER", "DR-03" },
+            new String[] { "escort01", "escort01@gmail.com", "$2a$10$1qLVpCjGZqVCxBW8M/50ZOjGT1Ax/vGfcPz2dHBqwxipdK8TLOO4K", "ESCORT", "ES-01" },
+            new String[] { "escort02", "escort02@gmail.com", "$2a$10$DSFOE.KOZZ/09HcOlWlk2ON.JefUicNnEdagL31Rhim2pySMDriK2", "ESCORT", "ES-02" },
+            new String[] { "escort03", "escort03@gmail.com", "$2a$10$iTet6pr/GugLxBk755TcxuTy4BVmcyoE1coaqXMN2v5zC2g3xmRui", "ESCORT", "ES-03" },
             new String[] { "phanlong795@gmail.com", "phanlong795@gmail.com", "$2a$10$/GgrtSBJ8bctpBfi4Heac..YwzNB17.LjdOFmFy8R7CrKIe6sRGVG", "CUSTOMER", "" }
     };
 
