@@ -11,6 +11,17 @@ const firstOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1)
 const completeDate = (text: string) =>
   /^\d{1,2}[/.-]\d{1,2}[/.-]\d{4}$/.test(text) || /^\d{8}$/.test(text)
 
+function maskDate(raw: string) {
+  const dayPart = raw.split(/[/.-]/, 1)[0]
+  if (/[/.-]/.test(raw) && dayPart.length === 1) {
+    return raw.replace(/[^\d/.-]/g, '').slice(0, 10)
+  }
+  const digits = raw.replace(/\D/g, '').slice(0, 8)
+  if (digits.length <= 2) return digits
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`
+}
+
 function parseTyped(text: string): number | null {
   const clean = text.trim()
   const separated = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/.exec(clean)
@@ -61,7 +72,7 @@ export function DepartureDatePicker({ value, min, onChange, invalid }: Props) {
   }
 
   const updateText = (raw: string) => {
-    const next = raw.slice(0, 10)
+    const next = maskDate(raw)
     setText(next)
 
     if (!next.trim()) {
@@ -123,6 +134,7 @@ export function DepartureDatePicker({ value, min, onChange, invalid }: Props) {
             }
           }}
           placeholder="dd/mm/yyyy"
+          inputMode="numeric"
           maxLength={10}
           autoComplete="off"
           spellCheck={false}
