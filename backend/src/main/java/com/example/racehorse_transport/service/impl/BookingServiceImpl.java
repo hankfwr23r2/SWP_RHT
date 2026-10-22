@@ -836,8 +836,23 @@ public class BookingServiceImpl implements BookingService {
         }
 
         BookingDetailsPayload payload = extractPayload(booking);
+        String toTarget = request.getTo() != null ? request.getTo().trim().toLowerCase() : "both";
+        boolean toSpecialist = "specialist".equals(toTarget) || "both".equals(toTarget);
+        boolean toCoordinator = "coordinator".equals(toTarget) || "both".equals(toTarget);
+
         String label;
-        if ("specialist".equalsIgnoreCase(request.getTo())) {
+        if (toSpecialist && toCoordinator) {
+            label = "cả Kiểm dịch viên (duyệt lại hồ sơ) và Điều phối viên (làm lại xe & lộ trình)";
+            if (payload.getMedical() instanceof Map) {
+                ((Map<String, Object>) payload.getMedical()).put("status", "pending");
+            }
+            bookingVehicleRepository.deleteByBookingID_Id(booking.getId());
+            bookingAssignmentRepository.deleteByBookingID_Id(booking.getId());
+            payload.setTrips(null);
+            payload.setRoute(null);
+            payload.setPlan(null);
+            payload.setGate(null);
+        } else if (toSpecialist) {
             label = "Kiểm dịch viên duyệt lại hồ sơ ngựa";
             if (payload.getMedical() instanceof Map) {
                 ((Map<String, Object>) payload.getMedical()).put("status", "pending");
