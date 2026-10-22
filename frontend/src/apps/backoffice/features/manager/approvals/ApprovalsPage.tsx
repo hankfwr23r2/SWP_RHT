@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@shared/auth/AuthContext'
 import { QUOTE_VALID_HOURS } from '@shared/config/booking-rules'
 import { VEHICLE_CLASS } from '@shared/config/booking-rules'
-import { finalizeQuote, sameVehicleId, schedulesOf, vehicleClassOf } from '@shared/lib/booking'
+import { finalizeQuote, sameVehicleId, schedulesOf, vehicleClassOf, crewClashOf, findCrewBooked } from '@shared/lib/booking'
 import { formatDate, formatDateTime, formatVND } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
 import { crewApi, vehiclesApi } from '@shared/services/fleet'
@@ -41,8 +41,8 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
     setPicks(prev => {
       let changed = false
       const next = { ...prev }
-      const availableDrivers = crew.filter(c => c.role === 'driver' && !sched.drivers.has(c.id))
-      const availableEscorts = crew.filter(c => c.role === 'escort' && !sched.escorts.has(c.id))
+      const availableDrivers = crew.filter(c => c.role === 'driver' && !crewClashOf(findCrewBooked(sched.drivers, c.id, c.name), b.departAt))
+      const availableEscorts = crew.filter(c => c.role === 'escort' && !crewClashOf(findCrewBooked(sched.escorts, c.id, c.name), b.departAt))
       let dIdx = 0, eIdx = 0
       for (const t of trips) {
         const cur = next[t.tripId] || { driverId: '', escortId: '' }
@@ -60,7 +60,7 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
       }
       return changed ? next : prev
     })
-  }, [crew, trips, sched])
+  }, [crew, trips, sched, b.departAt])
 
   const [picking, setPicking] = useState<{ tripId: string; kind: 'driver' | 'escort' } | null>(null)
   const [back, setBack] = useState<{ to: 'specialist' | 'coordinator' | 'both'; reason: string } | null>(null) // đang nhập lý do trả lại
@@ -72,8 +72,9 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
     if (!p.driverId) out.push(`Xe ${i + 1} chưa chọn tài xế.`)
     if (!p.escortId) out.push(`Xe ${i + 1} chưa chọn nhân viên hộ tống.`)
     const d = crew?.find(c => c.id === p.driverId), e = crew?.find(c => c.id === p.escortId)
-    const dc = sched.drivers.get(p.driverId)?.[0], ec = sched.escorts.get(p.escortId)?.[0]
-    const why = (x: NonNullable<typeof dc>) => (x.returning ? `đang về trụ sở từ ${x.returning.from} (đơn ${x.order})` : `đang đi đơn ${x.order} (${x.countries})`)
+    const dc = crewClashOf(findCrewBooked(sched.drivers, p.driverId, d?.name), b.departAt)
+    const ec = crewClashOf(findCrewBooked(sched.escorts, p.escortId, e?.name), b.departAt)
+    const why = (x: NonNullable<typeof dc>) => (x.returning ? `đang về trụ sở từ ${x.returning.from} (đơn ${x.order})` : x.active ? `đang đi đơn ${x.order} (${x.countries})` : `trùng lịch với đơn ${x.order} (khởi hành ${formatDate(x.departAt)})`)
     if (d && dc) out.push(`Tài xế ${d.name} ${why(dc)}.`)
     if (e && ec) out.push(`Hộ tống ${e.name} ${why(ec)}.`)
     return out

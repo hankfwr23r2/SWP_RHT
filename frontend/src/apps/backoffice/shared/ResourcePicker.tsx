@@ -1,7 +1,7 @@
 // Chọn xe, tài xế hoặc hộ tống cho một chuyến: popup dạng thẻ. Thẻ tài xế, hộ tống cho biết đang bận đơn nào; thẻ xe chỉ nêu trạng thái
 // (đi đơn được không). Ai trùng lịch (ngày đi cách dưới 3 ngày) thì khóa lại.
 import { useEffect, useState } from 'react'
-import { clashOf, type Booked } from '@shared/lib/booking'
+import { clashOf, crewClashOf, findCrewBooked, type Booked } from '@shared/lib/booking'
 import { formatDate, formatDateTime } from '@shared/lib/format'
 import type { CrewMember, Vehicle } from '@shared/services/fleet'
 import { Modal } from '@shared/ui/Modal'
@@ -51,22 +51,19 @@ export function ResourcePicker({ kind, vehicles, people, schedules, departAt, us
 
   const base: Pick<Row, 'id' | 'vehicle' | 'person'>[] = kind === 'vehicle' ? vehicles.map(v => ({ id: v.id, vehicle: v })) : people.map(c => ({ id: c.id, person: c }))
   const rows: Row[] = base.map(r => {
-    const booked = schedules.get(r.id) ?? []
-    // Xe: trùng lịch theo ngày đi. Tài xế, hộ tống: đã được giao việc cho đơn nào thì khóa, không xét ngày
-    const clash = kind === 'vehicle' ? clashOf(booked, departAt) : undefined
-    const assigned = kind !== 'vehicle' ? booked[0] : undefined
+    const booked = kind === 'vehicle' ? (schedules.get(r.id) ?? []) : findCrewBooked(schedules, r.id, r.person?.name)
+    // Xe: trùng lịch theo ngày đi. Tài xế, hộ tống: xét xung đột theo khoảng ngày và hành trình thực tế
+    const clash = kind === 'vehicle' ? clashOf(booked, departAt) : crewClashOf(booked, departAt)
     const inMaint = r.vehicle && isVehicleMaint(r.vehicle.status)
     const reason = inMaint
       ? 'Xe đang bảo dưỡng định kỳ / chưa sẵn sàng'
       : r.vehicle && isVehicleBusy(r.vehicle.status) && r.id !== selected
         ? 'Xe đang được gán cho chuyến khác'
         : clash
-          ? 'Đã có đơn trùng lịch chạy'
-          : assigned
-            ? (assigned.returning ? `Đang về trụ sở từ ${assigned.returning.from}, dự kiến ${formatDateTime(assigned.returning.eta)}` : `Đang đi đơn ${assigned.order} (${assigned.countries})`)
-            : usedHere.has(r.id) && r.id !== selected
-              ? 'Đã chọn ở chuyến khác của đơn này'
-              : ''
+          ? (clash.returning ? `Đang về trụ sở từ ${clash.returning.from}, dự kiến ${formatDateTime(clash.returning.eta)}` : clash.active ? `Đang đi đơn ${clash.order} (${clash.countries})` : `Trùng lịch với đơn ${clash.order} (${formatDate(clash.departAt)})`)
+          : usedHere.has(r.id) && r.id !== selected
+            ? 'Đã chọn ở chuyến khác của đơn này'
+            : ''
     return { ...r, booked, reason, clash: !!clash && !inMaint }
   })
   const keyword = text.trim().toLowerCase()
