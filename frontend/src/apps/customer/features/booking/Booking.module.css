@@ -24,12 +24,12 @@
 .typeCard {
   display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 12px; align-items: start; text-align: left;
   padding: 16px 18px; min-height: 44px; border: 0; border-radius: var(--radius);
-  background: var(--bg-page); font: inherit; color: var(--text); cursor: pointer;
+  background: #f1f5f9; font: inherit; color: var(--text); cursor: pointer;
   transition: background 0.18s ease;
 }
-.typeCard:hover { background: #eef2f6; }
+.typeCard:hover { background: #e8eef5; }
 .typeCard:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
-.typeOn { background: #e8eef5; }
+.typeOn { background: #dbe4ee; }
 .typeIcon { display: block; width: 24px; height: 24px; padding-top: 1px; color: var(--muted); }
 .typeIcon svg { width: 24px; height: 24px; }
 .typeOn .typeIcon { color: var(--navy); }
@@ -222,8 +222,8 @@
   font-size: 0.78rem;
   padding: 4px 10px;
   border-radius: 6px;
-  border: 1px solid var(--line);
-  background: white;
+  border: none;
+  background: var(--bg-page);
   color: var(--navy);
   cursor: pointer;
   display: inline-flex;
@@ -234,7 +234,7 @@
 }
 
 .quickMeBtn:hover {
-  background: var(--bg-page);
+  background: #eef2f6;
 }
 
 .venueChips {
