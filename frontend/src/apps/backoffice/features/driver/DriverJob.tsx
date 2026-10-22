@@ -66,7 +66,20 @@ function PickupStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
             </button>
           )}
         </div>
-        <Checklist items={originalsAll} checked={pickup.originals ?? []} onChange={next => run(() => bookingsApi.collectOriginals(b.id, t.tripId, session!.name, next), 'Đã ghi nhận chứng từ gốc')} />
+        <Checklist
+          items={originalsAll}
+          checked={pickup.originals ?? []}
+          onChange={next => {
+            const current = pickup.originals ?? []
+            const isAdding = next.length > current.length
+            const added = next.find(x => !current.includes(x))
+            const removed = current.find(x => !next.includes(x))
+            const msg = isAdding
+              ? (added ? `Đã nhận chứng từ: ${added}` : 'Đã ghi nhận nhận chứng từ gốc')
+              : (removed ? `Đã hủy nhận chứng từ: ${removed}` : 'Đã bỏ chọn chứng từ gốc')
+            return run(() => bookingsApi.collectOriginals(b.id, t.tripId, session!.name, next), msg)
+          }}
+        />
       </Panel>
       {showDocs && <HorseDocsModal horses={horses} onClose={() => setShowDocs(false)} />}
       <Panel title="Ký biên bản giao nhận" icon="fa-file-signature">

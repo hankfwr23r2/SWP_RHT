@@ -721,7 +721,7 @@ export function delayedCheckpoint(t: { run?: TripRun }, now = Date.now()) {
   const waiting = cp && !cp.arrivedAt && cp.type !== 'customs'
   return waiting && now - cp.plannedAt >= DELAY_ALERT_MINUTES * 60_000 ? cp : undefined
 }
-export const lastWelfare = (t: { run?: TripRun }): WelfareLog | undefined => t.run?.welfare[t.run.welfare.length - 1]
+export const lastWelfare = (t: { run?: TripRun }): WelfareLog | undefined => t.run?.welfare?.length ? t.run.welfare[t.run.welfare.length - 1] : undefined
 export const needsAttention = (w?: WelfareLog) => !!w && w.condition !== 'normal'
 
 
