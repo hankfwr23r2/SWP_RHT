@@ -100,7 +100,7 @@ export default function AccountsPage() {
 
   return (
     <>
-      <ListPage title={tab === 'all' ? 'Tài khoản hệ thống' : tab === 'locked' ? 'Tài khoản đã khóa' : `Tài khoản · ${ROLE_LABEL[tab]}`} subtitle="Tạo tài khoản nhân viên, khóa hoặc mở khóa, đặt lại mật khẩu. Khách hàng tự đăng ký; bạn chỉ khóa hoặc mở khóa được." tabs={tabs} tab={tab} onTab={() => undefined} hideTabs
+      <ListPage title={tab === 'all' ? 'Tài khoản hệ thống' : tab === 'locked' ? 'Tài khoản đã khóa' : `Tài khoản · ${ROLE_LABEL[tab]}`} subtitle="Tạo tài khoản nhân viên, khóa hoặc mở khóa, đặt lại mật khẩu. Khách hàng tự đăng ký; bạn chỉ khóa hoặc mở khóa được." tabs={tabs} tab={tab} onTab={() => undefined} hideTabs hideCount
         rows={rows} rowKey={a => a.id} columns={columns} haystack={a => [a.id, a.name, a.email, a.phone, ROLE_LABEL[a.role]]} loaded={!!all} emptyText="Không có tài khoản nào ở mục này." searchPlaceholder="Tìm theo tên, email, số điện thoại…" hotRow={a => a.status === 'locked'}
         actions={<button className="btn btn-primary" onClick={() => setDialog({ kind: 'edit', account: null })}><i className="fa-solid fa-user-plus" /> Tạo tài khoản</button>} />
 
