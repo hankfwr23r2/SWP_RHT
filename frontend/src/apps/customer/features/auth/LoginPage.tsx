@@ -16,11 +16,15 @@ export default function LoginPage() {
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
-    setLoading(true)
     const data = new FormData(e.currentTarget)
     const email = (data.get('email') as string).trim()
     const password = (data.get('password') as string) ?? ''
 
+    if (!email) { setError('Vui lòng nhập email.'); return }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('Email không hợp lệ. Vui lòng kiểm tra lại.'); return }
+    if (!password) { setError('Vui lòng nhập mật khẩu.'); return }
+
+    setLoading(true)
     try {
       const res = await authApi.loginCustomer({ username: email, password })
       tokenStorage.set(res.accessToken)
@@ -39,17 +43,17 @@ export default function LoginPage() {
 
   return (
     <AuthShell title="Đăng nhập vào tài khoản" subtitle="Đăng nhập để tiếp tục sử dụng dịch vụ vận chuyển chuyên nghiệp" back={<Link to="/"><i className="fa-solid fa-arrow-left" /> Về Trang chủ</Link>}>
-      <form onSubmit={submit}>
+      <form onSubmit={submit} noValidate>
         {error && <div className={`alert alert-danger ${s.error}`}><i className="fa-solid fa-circle-exclamation" /><div>{error}</div></div>}
         <div className="form-group">
           <label htmlFor="email">Email</label>
-          <input className="form-control" type="email" id="email" name="email" placeholder="example@gmail.com" required onChange={() => setError('')} />
+          <input className="form-control" type="email" id="email" name="email" placeholder="example@gmail.com" autoComplete="email" onChange={() => setError('')} />
         </div>
         <div className="form-group">
           <label htmlFor="password">Mật khẩu</label>
-          <div style={{ position: 'relative' }}>
-            <input className="form-control" type={showPwd ? 'text' : 'password'} id="password" name="password" placeholder="••••••••" required style={{ paddingRight: 40 }} />
-            <button type="button" onClick={() => setShowPwd(v => !v)} aria-label={showPwd ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-muted, #888)', padding: 0, lineHeight: 1 }}>
+          <div className={s.pwdWrap}>
+            <input className="form-control" type={showPwd ? 'text' : 'password'} id="password" name="password" placeholder="••••••••" autoComplete="current-password" />
+            <button type="button" className={s.pwdToggle} onClick={() => setShowPwd(v => !v)} aria-label={showPwd ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}>
               <i className={`fa-solid ${showPwd ? 'fa-eye-slash' : 'fa-eye'}`} />
             </button>
           </div>
