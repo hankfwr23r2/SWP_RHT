@@ -3,7 +3,7 @@
 const previews = new Map<string, string>()
 
 export function rememberPreview(name: string, file: Blob) {
-  if (!file.type.startsWith('image/')) return
+  if (!file.type.startsWith('image/') && file.type !== 'application/pdf') return
   const old = previews.get(name)
   if (old) URL.revokeObjectURL(old)
   previews.set(name, URL.createObjectURL(file))

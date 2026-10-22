@@ -3,3 +3,27 @@
 .chip b { font-weight: 700; }
 .ok { background: var(--green-soft); color: #065f46; border-color: #a7f3d0; }
 .missing { background: var(--red-soft); color: #991b1b; border-color: #fecaca; }
+.btnChip {
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
+}
+.btnChip:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+.btnChip:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+.viewIcon {
+  margin-left: 2px;
+  font-size: 0.72rem;
+  opacity: 0.75;
+}
+.btnChip:hover .viewIcon {
+  opacity: 1;
+  color: var(--orange, #ea580c);
+}

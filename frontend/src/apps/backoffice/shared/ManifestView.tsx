@@ -1,14 +1,16 @@
-// Lệnh điều xe (Trip Manifest, PRD mục 4.3): mỗi xe một lệnh. Dùng ở app Driver và Escort.
+import { useState } from 'react'
 import { VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { manifestDocuments, vehicleClassOf } from '@shared/lib/booking'
 import { formatClock, formatDateTime } from '@shared/lib/format'
 import type { CrewMember, Vehicle } from '@shared/services/fleet'
 import { SEX_LABEL, type Booking, type VehicleTrip } from '@shared/types/booking'
+import { HorseDocsModal } from './HorseDocsModal'
 import s from './manifest.module.css'
 
 interface Props { b: Booking; trip: VehicleTrip; vehicle?: Vehicle; driver?: CrewMember; escort?: CrewMember }
 
 export function ManifestView({ b, trip, vehicle, driver, escort }: Props) {
+  const [showDocs, setShowDocs] = useState(false)
   const docs = manifestDocuments(b)
   const horses = b.horses.filter(h => trip.horseIds.includes(h.horseId))
   const route = b.route
@@ -36,11 +38,25 @@ export function ManifestView({ b, trip, vehicle, driver, escort }: Props) {
       </section>
 
       <section className={s.sec}>
-        <h4><b>3</b> Ngựa trên xe</h4>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <h4 style={{ margin: 0 }}><b>3</b> Ngựa trên xe</h4>
+          {horses.length > 0 && (
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              style={{ padding: '3px 8px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+              onClick={() => setShowDocs(true)}
+              title="Xem hồ sơ giấy tờ điện tử của ngựa"
+            >
+              <i className="fa-solid fa-file-shield" /> Xem hồ sơ điện tử
+            </button>
+          )}
+        </div>
         <ul className={s.list}>
           {horses.map(h => <li key={h.horseId}><b>{h.name}</b> · Chip {h.microchip} · {SEX_LABEL[h.sex]} · {h.stall === 'single' ? 'Khoang đơn' : 'Khoang tiêu chuẩn'}{b.type === 'international' && <> · Giấy thông quan: <b>{b.clearance?.horsesCleared.includes(h.horseId) ? 'đã có' : 'chưa có'}</b></>}</li>)}
         </ul>
       </section>
+      {showDocs && <HorseDocsModal horses={horses} onClose={() => setShowDocs(false)} />}
 
       <section className={s.sec}>
         <h4><b>4</b> Lịch trình từng chặng</h4>

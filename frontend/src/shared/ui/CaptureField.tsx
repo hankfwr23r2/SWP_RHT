@@ -2,7 +2,7 @@ import { useId, useState } from 'react'
 import { fileApi } from '../api/files'
 import { captureName, captureTime } from '../lib/capture'
 import { rememberPreview } from '../lib/previews'
-import { ImageThumb } from './ImageThumb'
+import { ImageLightbox, ImageThumb } from './ImageThumb'
 import { formatClock } from '../lib/format'
 import s from './CaptureField.module.css'
 
@@ -12,6 +12,7 @@ interface Props { label: string; value?: string; onChange: (name: string | undef
 export function CaptureField({ label, value, onChange, hint, required, invalid, disabled }: Props) {
   const id = useId()
   const [uploading, setUploading] = useState(false)
+  const [viewing, setViewing] = useState(false)
   const at = captureTime(value)
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,9 +49,13 @@ export function CaptureField({ label, value, onChange, hint, required, invalid, 
         </div>
       ) : value ? (
         <div className={s.done}>
-          <ImageThumb name={value} size={40} />
+          <ImageThumb name={value} size={40} title={label} />
           <span className={s.text}>{at ? <>Đã chụp lúc <b>{formatClock(at)}</b></> : 'Đã tải ảnh lên hệ thống'}</span>
+          <button type="button" className={s.viewBtn} onClick={() => setViewing(true)} title={`Xem lại ${label}`} aria-label={`Xem lại ${label}`}>
+            <i className="fa-regular fa-eye" aria-hidden="true" /> Xem lại
+          </button>
           {!disabled && <label htmlFor={id} className={s.retake}>Chụp lại</label>}
+          {viewing && <ImageLightbox name={value} title={label} onClose={() => setViewing(false)} />}
         </div>
       ) : (
         <label htmlFor={id} className={`${s.shot} ${invalid ? s.invalid : ''} ${disabled ? s.off : ''}`}>

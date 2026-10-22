@@ -20,8 +20,10 @@
 }
 .chip > i { color: var(--green); font-size: 1.1rem; }
 .name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
-.swap { color: var(--orange); font-weight: 600; font-size: 0.8rem; cursor: pointer; padding: 6px 4px; }
+.viewBtn { border: 1px solid #cbd5e1; background: white; color: var(--navy, #0f172a); font-weight: 600; font-size: 0.8rem; cursor: pointer; padding: 4px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; transition: all 0.15s ease; white-space: nowrap; }
+.viewBtn:hover { border-color: var(--orange); color: var(--orange); }
+.swap { color: var(--orange); font-weight: 600; font-size: 0.8rem; cursor: pointer; padding: 6px 4px; white-space: nowrap; }
 .swap:hover { text-decoration: underline; }
-.remove { border: none; background: none; color: var(--muted); cursor: pointer; width: 32px; height: 32px; border-radius: 8px; }
+.remove { border: none; background: none; color: var(--muted); cursor: pointer; width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0; }
 .remove:hover { background: white; color: var(--red); }
 .remove:focus-visible, .swap:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }

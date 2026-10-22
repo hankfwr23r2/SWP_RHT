@@ -96,7 +96,7 @@ public class HorseDocumentController {
      *
      * GET /api/v1/horse-documents/horse/{horseId}
      */
-    @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'INSPECTOR', 'MANAGER', 'COORDINATOR', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'INSPECTOR', 'MANAGER', 'COORDINATOR', 'DRIVER', 'ESCORT', 'ADMIN')")
     @GetMapping("/horse/{horseId}")
     public ResponseEntity<ApiResponse<List<HorseDocumentResponse>>> getDocumentsByHorse(
             @PathVariable Integer horseId, Authentication authentication) {
@@ -136,7 +136,7 @@ public class HorseDocumentController {
      *
      * GET /api/v1/horse-documents/{id}
      */
-    @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'INSPECTOR', 'MANAGER', 'COORDINATOR', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'INSPECTOR', 'MANAGER', 'COORDINATOR', 'DRIVER', 'ESCORT', 'ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<HorseDocumentResponse>> getDocumentById(
             @PathVariable Integer id) {
