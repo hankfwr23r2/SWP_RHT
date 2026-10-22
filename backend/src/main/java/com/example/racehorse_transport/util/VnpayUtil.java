@@ -21,12 +21,23 @@ public final class VnpayUtil {
     private VnpayUtil() {
     }
 
-    // Chuỗi tham số đã sắp xếp theo tên, bỏ giá trị rỗng, encode US-ASCII (dùng cho cả hash và query string)
+    // Chuỗi tham số đã sắp xếp theo tên, bỏ giá trị rỗng, encode UTF-8 (dùng cho cả hash và query string khi tạo URL thanh toán)
     public static String buildQuery(Map<String, String> params) {
         StringJoiner joiner = new StringJoiner("&");
         new TreeMap<>(params).forEach((key, value) -> {
             if (value != null && !value.isEmpty()) {
                 joiner.add(encode(key) + "=" + encode(value));
+            }
+        });
+        return joiner.toString();
+    }
+
+    // Chuỗi tham số đã sắp xếp theo tên, bỏ giá trị rỗng, không URL-encode (chuẩn VNPAY dùng để verify Return URL & IPN)
+    public static String buildRawQuery(Map<String, String> params) {
+        StringJoiner joiner = new StringJoiner("&");
+        new TreeMap<>(params).forEach((key, value) -> {
+            if (value != null && !value.isEmpty()) {
+                joiner.add(key + "=" + value);
             }
         });
         return joiner.toString();
@@ -42,6 +53,7 @@ public final class VnpayUtil {
     }
 
     // Kiểm tra chữ ký của tham số VNPAY gửi về (IPN hoặc Return URL)
+    // Hỗ trợ cả chuẩn raw text theo tài liệu SDK VNPay lẫn chuẩn query-encoded để đảm bảo tương thích 100%
     public static boolean verify(Map<String, String> params, String secret) {
         String received = params.get(SECURE_HASH);
         if (received == null || received.isBlank() || secret == null || secret.isBlank()) {
@@ -50,9 +62,19 @@ public final class VnpayUtil {
         Map<String, String> fields = new HashMap<>(params);
         fields.remove(SECURE_HASH);
         fields.remove(SECURE_HASH_TYPE);
-        String expected = sign(fields, secret);
+
+        // 1. Kiểm tra theo chuẩn chuỗi thô (Raw) mà framework/Spring Boot đã parse
+        String rawHash = hmacSha512(secret, buildRawQuery(fields));
+        if (MessageDigest.isEqual(
+                rawHash.toLowerCase().getBytes(StandardCharsets.US_ASCII),
+                received.toLowerCase().getBytes(StandardCharsets.US_ASCII))) {
+            return true;
+        }
+
+        // 2. Dự phòng trường hợp đối tác gửi/tính trên chuỗi đã URL-encode
+        String encodedHash = sign(fields, secret);
         return MessageDigest.isEqual(
-                expected.toLowerCase().getBytes(StandardCharsets.US_ASCII),
+                encodedHash.toLowerCase().getBytes(StandardCharsets.US_ASCII),
                 received.toLowerCase().getBytes(StandardCharsets.US_ASCII));
     }
 
@@ -71,17 +93,27 @@ public final class VnpayUtil {
         }
     }
 
-    // IP thật của khách khi backend chạy sau proxy (Render, Nginx...)
+    // IP thật của khách khi backend chạy sau proxy (Render, Nginx...). VNPay chỉ chấp nhận IPv4 hợp lệ.
     public static String clientIp(HttpServletRequest request) {
         String forwarded = request.getHeader("X-Forwarded-For");
         if (forwarded != null && !forwarded.isBlank()) {
-            return forwarded.split(",")[0].trim();
+            String ip = forwarded.split(",")[0].trim();
+            if (isValidIpv4(ip)) {
+                return ip;
+            }
         }
         String ip = request.getRemoteAddr();
-        return (ip == null || ip.isBlank()) ? "127.0.0.1" : ip;
+        if (ip != null && isValidIpv4(ip.trim())) {
+            return ip.trim();
+        }
+        return "127.0.0.1";
+    }
+
+    private static boolean isValidIpv4(String ip) {
+        return ip != null && ip.matches("^((25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)\\.){3}(25[0-5]|(2[0-4]|1\\d|[1-9]|)\\d)$");
     }
 
     private static String encode(String value) {
-        return URLEncoder.encode(value, StandardCharsets.US_ASCII);
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 }
