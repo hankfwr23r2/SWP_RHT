@@ -19,6 +19,7 @@ const TABS: [Tab, string][] = [
   ['all', 'Tất cả'], ['confirm', 'Chờ xác nhận'], ['supplement', 'Cần bổ sung'], ['pay', 'Chờ thanh toán'], ['prepare', 'Chuẩn bị'],
   ['moving', 'Đang vận chuyển'], ['settle', 'Chờ quyết toán'], ['done', 'Hoàn thành'], ['closed', 'Đã hủy'],
 ]
+const TONE: Record<string, string> = { info: s.nextInfo, orange: s.nextOrange, warning: s.nextWarning, danger: s.nextDanger, success: s.nextSuccess, muted: s.nextMuted }
 const isTab = (v: string | null): v is Tab => TABS.some(t => t[0] === v)
 const placeName = (n: string) => n.split(' — ')[0]
 const day = (v: string, end = false) => (v ? new Date(`${v}T${end ? '23:59:59' : '00:00:00'}`).getTime() : 0)
@@ -59,7 +60,7 @@ export default function OrdersPage() {
         {fresh && (
           <div className={s.freshNote} role="status">
             <i className="fa-solid fa-circle-check" aria-hidden="true" />
-            <span>Đơn <b>{fresh.b.id}</b> vừa gửi nằm trong bộ lọc <b>{TABS.find(t => t[0] === fresh.tab)?.[1]}</b>, bước <b>{stepOf(fresh.b.status) + 1}/{BOOKING_STEPS.length}: {BOOKING_STEPS[stepOf(fresh.b.status)]}</b>. Thẻ đơn được đánh dấu bên dưới.</span>
+            <span>Đơn <b>{fresh.b.id}</b> vừa gửi.</span>
           </div>
         )}
 
@@ -108,8 +109,8 @@ export default function OrdersPage() {
                       <b>{stopped ? BOOKING_STEPS[Math.min(at, BOOKING_STEPS.length - 1)] + ': đã dừng' : at >= BOOKING_STEPS.length ? 'Đã hoàn tất' : `Bước ${at + 1}/${BOOKING_STEPS.length}: ${BOOKING_STEPS[at]}`}</b>
                       <ol className={s.bar} aria-label="Tiến độ đơn">{BOOKING_STEPS.map((label, i) => <li key={label} title={label} className={i < at ? s.segDone : i === at ? (stopped ? s.segStop : s.segNow) : ''} />)}</ol>
                     </div>
-                    <div className={`${s.next} ${next.tone === 'danger' ? s.nextDanger : next.tone === 'warning' ? s.nextWarn : ''}`}>
-                      <i className={`fa-solid ${next.icon}`} aria-hidden="true" /> <span><b>{next.title}.</b> {next.actionNeeded ? '' : next.text}</span>
+                    <div className={`${s.next} ${TONE[next.tone]}`}>
+                      <i className={`fa-solid ${next.icon}`} aria-hidden="true" /> <span><b>{next.title}.</b>{next.actionNeeded && <> {next.text}</>}</span>
                     </div>
                   </div>
                   <div className={s.foot}>
