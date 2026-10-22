@@ -21,6 +21,7 @@ export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: 
     ['/manager/incidents', 'Sự cố', { icon: 'fa-triangle-exclamation' }],
     ['/manager/reports', 'Doanh thu', { group: 'Báo cáo', icon: 'fa-chart-line' }],
     ['/manager/trip-reports', 'Chuyến đi', { icon: 'fa-clipboard-check' }],
+    ['/manager/cancelled-orders', 'Đơn đã hủy', { icon: 'fa-ban' }],
   ],
   specialist: [
     ['/specialist/verification', 'Duyệt hồ sơ ngựa', { icon: 'fa-file-medical' }],
