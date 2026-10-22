@@ -29,20 +29,20 @@
 }
 .typeCard:hover { background: #e8eef5; }
 .typeCard:focus-visible { outline: 2px solid var(--navy); outline-offset: 2px; }
-.typeOn { background: var(--navy); }
-.typeOn:hover { background: var(--navy); }
+.typeOn { background: var(--orange-soft); }
+.typeOn:hover { background: #ffedd5; }
 .typeIcon { display: block; width: 24px; height: 24px; padding-top: 1px; color: var(--muted); }
 .typeIcon svg { width: 24px; height: 24px; }
-.typeOn .typeIcon { color: white; }
+.typeOn .typeIcon { color: var(--navy); }
 .typeBody { display: grid; gap: 5px; min-width: 0; }
 .typeTop { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .typeTitle { font-weight: 700; font-size: 1rem; color: var(--navy); }
-.typeOn .typeTitle { color: white; }
+.typeOn .typeTitle { color: var(--orange-dark); }
 .typeCheck { display: grid; place-items: center; flex: none; width: 18px; height: 18px; color: var(--navy); }
-.typeOn .typeCheck { color: white; }
+.typeOn .typeCheck { color: var(--orange-dark); }
 .typeCheck svg { width: 16px; height: 16px; stroke-width: 2; }
 .typeRoute { font-size: 0.8rem; font-weight: 500; color: var(--muted); }
-.typeOn .typeRoute { color: #cbd5e1; }
+.typeOn .typeRoute { color: #9a3412; }
 
 .countryOption { display: inline-flex; align-items: center; gap: 8px; }
 :global(.card-header) h3 svg { flex: none; width: 20px; height: 20px; color: var(--navy); }
