@@ -1507,16 +1507,25 @@ public class BookingServiceImpl implements BookingService {
                 Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> checkpoints = (List<Map<String, Object>>) run.computeIfAbsent("checkpoints", k -> new ArrayList<>());
+                String pickupLoc = booking.getPickupAddress() != null && !booking.getPickupAddress().isBlank()
+                        ? booking.getPickupAddress() : "Điểm đón";
                 if (checkpoints.isEmpty()) {
                     Map<String, Object> cp = new HashMap<>();
                     cp.put("id", "pickup");
                     cp.put("type", "pickup");
+                    cp.put("label", "Điểm đón");
+                    cp.put("place", pickupLoc);
                     cp.put("arrivedAt", now);
                     cp.put("photo", reqPayload.get("photo"));
                     checkpoints.add(cp);
                 } else {
-                    checkpoints.get(0).put("arrivedAt", now);
-                    checkpoints.get(0).put("photo", reqPayload.get("photo"));
+                    Map<String, Object> first = checkpoints.get(0);
+                    first.putIfAbsent("id", "pickup");
+                    first.putIfAbsent("type", "pickup");
+                    first.putIfAbsent("label", "Điểm đón");
+                    first.putIfAbsent("place", pickupLoc);
+                    first.put("arrivedAt", now);
+                    first.put("photo", reqPayload.get("photo"));
                 }
                 targetTrip.setRun(run);
                 appendHistory(payload, actor, "Tài xế đã có mặt tại điểm đón");
@@ -1527,10 +1536,21 @@ public class BookingServiceImpl implements BookingService {
                 Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> checkpoints = (List<Map<String, Object>>) run.computeIfAbsent("checkpoints", k -> new ArrayList<>());
+                String pickupLoc = booking.getPickupAddress() != null && !booking.getPickupAddress().isBlank()
+                        ? booking.getPickupAddress() : "Điểm đón";
                 if (checkpoints.isEmpty()) {
                     Map<String, Object> cp = new HashMap<>();
                     cp.put("id", "pickup");
+                    cp.put("type", "pickup");
+                    cp.put("label", "Điểm đón");
+                    cp.put("place", pickupLoc);
                     checkpoints.add(cp);
+                } else {
+                    Map<String, Object> first = checkpoints.get(0);
+                    first.putIfAbsent("id", "pickup");
+                    first.putIfAbsent("type", "pickup");
+                    first.putIfAbsent("label", "Điểm đón");
+                    first.putIfAbsent("place", pickupLoc);
                 }
                 Map<String, Object> pickup = checkpoints.get(0);
                 @SuppressWarnings("unchecked")
@@ -1668,10 +1688,21 @@ public class BookingServiceImpl implements BookingService {
                 Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> checkpoints = (List<Map<String, Object>>) run.computeIfAbsent("checkpoints", k -> new ArrayList<>());
+                String pickupLoc = booking.getPickupAddress() != null && !booking.getPickupAddress().isBlank()
+                        ? booking.getPickupAddress() : "Điểm đón";
                 if (checkpoints.isEmpty()) {
                     Map<String, Object> cp = new HashMap<>();
                     cp.put("id", "pickup");
+                    cp.put("type", "pickup");
+                    cp.put("label", "Điểm đón");
+                    cp.put("place", pickupLoc);
                     checkpoints.add(cp);
+                } else {
+                    Map<String, Object> first = checkpoints.get(0);
+                    first.putIfAbsent("id", "pickup");
+                    first.putIfAbsent("type", "pickup");
+                    first.putIfAbsent("label", "Điểm đón");
+                    first.putIfAbsent("place", pickupLoc);
                 }
                 checkpoints.get(0).put("originals", items);
                 targetTrip.setRun(run);

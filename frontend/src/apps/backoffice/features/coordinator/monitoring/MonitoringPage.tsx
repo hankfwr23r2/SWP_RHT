@@ -90,7 +90,7 @@ export default function MonitoringPage() {
           <h1>Giám sát vận chuyển</h1>
           <p>Theo dõi tiến độ từng chuyến theo ảnh xác nhận có mặt thật. Liên hệ tài xế hoặc hộ tống khi có cờ cảnh báo.</p>
         </div>
-        {late.length > 0 && <div className="alert alert-warning" style={{ marginBottom: 16 }}><i className="fa-solid fa-triangle-exclamation" /><div><b>{late.length} chuyến trễ mốc từ 30 phút:</b> {late.map(x => `${x.t.tripId} (${currentCheckpoint(x.t)?.label.toLowerCase()})`).join(', ')}. Gọi tài xế kiểm tra kẹt xe hoặc sự cố đường bộ.</div></div>}
+        {late.length > 0 && <div className="alert alert-warning" style={{ marginBottom: 16 }}><i className="fa-solid fa-triangle-exclamation" /><div><b>{late.length} chuyến trễ mốc từ 30 phút:</b> {late.map(x => `${x.t.tripId} (${(currentCheckpoint(x.t)?.label || currentCheckpoint(x.t)?.place || currentCheckpoint(x.t)?.id || 'mốc tiếp theo').toLowerCase()})`).join(', ')}. Gọi tài xế kiểm tra kẹt xe hoặc sự cố đường bộ.</div></div>}
 
         <CrewDuty all={all} crew={crew} now={now} />
 
@@ -120,7 +120,7 @@ export default function MonitoringPage() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}><b>{t.tripId}</b>{isLate && <span className="badge badge-warning">Trễ mốc</span>}{needsAttention(w) && <span className="badge badge-danger">Ngựa cần chú ý</span>}</div>
                     <div className={s.sub}>{placeShort(b.origin.name)} → {placeShort(b.dest.name)} · {t.horseIds.length} ngựa</div>
                     <div style={{ height: 8, borderRadius: 999, background: 'var(--bg-soft)', margin: '10px 0 6px', overflow: 'hidden' }}><div style={{ width: `${cps.length ? (done / cps.length) * 100 : 0}%`, height: '100%', background: isLate ? 'var(--amber)' : 'var(--green)' }} /></div>
-                    <div className={s.sub}>{cps.length ? `${done}/${cps.length} mốc` : 'Chưa nhận ngựa'}{currentCheckpoint(t) ? ` · tiếp: ${currentCheckpoint(t)!.label.toLowerCase()}` : ''}</div>
+                    <div className={s.sub}>{cps.length ? `${done}/${cps.length} mốc` : 'Chưa nhận ngựa'}{currentCheckpoint(t) ? ` · tiếp: ${(currentCheckpoint(t)?.label || currentCheckpoint(t)?.place || currentCheckpoint(t)?.id || '').toLowerCase()}` : ''}</div>
                     <div className={s.sub}>Tài xế {driver?.name} {driver?.phone} · Hộ tống {escort?.name} {escort?.phone}</div>
                   </button>
                 )
