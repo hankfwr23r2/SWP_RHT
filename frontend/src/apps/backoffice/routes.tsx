@@ -7,6 +7,7 @@ import IntakePage from './features/manager/intake/IntakePage'
 import ApprovalsPage from './features/manager/approvals/ApprovalsPage'
 import DashboardPage from './features/manager/dashboard/DashboardPage'
 import TripReportsPage from './features/manager/trip-reports/TripReportsPage'
+import CancelledOrdersPage from './features/manager/cancelled-orders/CancelledOrdersPage'
 import ReportsPage from './features/manager/reports/ReportsPage'
 import IncidentsPage from './features/manager/incidents/IncidentsPage'
 import VerificationListPage from './features/specialist/verification/VerificationListPage'
@@ -42,6 +43,7 @@ export const routes: AppRoute[] = [
   { path: '/manager/approvals', page: ApprovalsPage, roles: M, title: 'Duyệt báo giá', layout: 'staff' },
   { path: '/manager/reports', page: ReportsPage, roles: M, title: 'Báo cáo doanh thu', layout: 'staff' },
   { path: '/manager/trip-reports', page: TripReportsPage, roles: M, title: 'Báo cáo Chuyến đi', layout: 'staff' },
+  { path: '/manager/cancelled-orders', page: CancelledOrdersPage, roles: M, title: 'Đơn đã hủy', layout: 'staff' },
   { path: '/manager/incidents', page: IncidentsPage, roles: M, title: 'Sự cố', layout: 'staff' },
 
   { path: '/specialist/verification', page: VerificationListPage, roles: SP, title: 'Duyệt hồ sơ ngựa', layout: 'staff' },
