@@ -29,9 +29,10 @@
 .nextSuccess { background: var(--green-soft); border-color: #a7f3d0; color: #065f46; }
 .nextMuted { background: var(--bg-soft); border-color: var(--line); color: var(--muted); }
 
-.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 12px 20px; }
-.grid dt { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); font-weight: 600; }
-.grid dd { font-weight: 600; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 24px; }
+.grid dt { font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
+.grid dd { font-weight: 600; line-height: 1.45; margin: 0; word-break: break-word; }
+.gridFull { grid-column: 1 / -1; }
 .horseRow { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 0.88rem; }
 .horseRow:last-child { border-bottom: none; }
 .horseRow small { color: var(--muted); }
@@ -75,6 +76,9 @@
 @media (max-width: 960px) {
   .sheetGrid { grid-template-columns: 1fr; }
   .stepItem { font-size: 0.7rem; }
+}
+@media (max-width: 720px) {
+  .grid { grid-template-columns: 1fr; }
 }
 
 /* Nộp giấy tờ pháp lý */
