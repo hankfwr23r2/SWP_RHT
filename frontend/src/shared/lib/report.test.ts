@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { MARGIN_RATE } from '../config/booking-rules'
 import { DAY } from '../config/business-rules'
 import type { Booking } from '../types/booking'
-import { changePct, orderFinance, series, summarize } from './report'
+import { bookingStatusLabel, changePct, orderFinance, series, summarize } from './report'
 
 const NOW = Date.now()
 const LINES = [
@@ -56,6 +56,12 @@ describe('doanh thu và chi phí vận hành của một đơn', () => {
 })
 
 describe('tổng hợp báo cáo', () => {
+  it('hiển thị an toàn trạng thái đơn chưa có nhãn hoặc bị thiếu', () => {
+    expect(bookingStatusLabel('completed')).toBe('Đã hoàn tất')
+    expect(bookingStatusLabel('new_backend_status')).toBe('new_backend_status')
+    expect(bookingStatusLabel(undefined)).toBe('Không xác định')
+  })
+
   it('doanh thu - chi phí = lợi nhuận; tỷ lệ nằm trong 0–100', () => {
     const s = summarize(all, NOW - 90 * DAY, NOW + DAY)
     expect(s.orders).toBeGreaterThan(5)
