@@ -58,14 +58,14 @@ export function PartiesInfo({ b }: { b: Booking }) {
   return (
     <div style={{ display: 'grid', gap: 12 }}>
       <div className={s.horse}>
-        <div className={s.horseName}><i className="fa-solid fa-user" aria-hidden="true" style={{ color: 'var(--orange)', marginRight: 8 }} />Khách đặt đơn</div>
+        <div className={s.horseName}><i className="fa-solid fa-circle-user" aria-hidden="true" style={{ color: 'var(--orange)', marginRight: 8 }} />Khách đặt đơn</div>
         <dl className={s.grid}>
           <div><dt>Tài khoản</dt><dd>{b.customer}</dd></div>
           <div><dt>Gửi đơn lúc</dt><dd>{formatDateTime(b.createdAt)}</dd></div>
         </dl>
       </div>
-      {party('Người gửi', 'fa-arrow-up-from-bracket', b.consignor)}
-      {party('Người nhận', 'fa-arrow-down-to-bracket', b.consignee)}
+      {party('Người gửi', 'fa-box', b.consignor)}
+      {party('Người nhận', 'fa-location-dot', b.consignee)}
     </div>
   )
 }
