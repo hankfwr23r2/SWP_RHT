@@ -15,7 +15,7 @@ public interface TripDocumentRepository extends JpaRepository<TripDocument, Inte
     List<TripDocument> findByBookingId(@Param("bookingId") Integer bookingId);
 
     @Query("SELECT td FROM TripDocument td WHERE td.bookingID.id = :bookingId AND td.documentType = :documentType")
-    Optional<TripDocument> findByBookingIdAndDocumentType(@Param("bookingId") Integer bookingId,
-                                                          @Param("documentType") String documentType);
+    List<TripDocument> findByBookingIdAndDocumentType(@Param("bookingId") Integer bookingId,
+                                                      @Param("documentType") String documentType);
 }
 
