@@ -1,7 +1,7 @@
 import { useState } from 'react'
 
 // Phân trang phía giao diện, mặc định 10 dòng/trang như các bảng cũ.
-export function usePagination<T>(items: T[], perPage = 10) {
+export function usePagination<T>(items: T[], perPage = 10, showRange = true) {
   const [page, setPage] = useState(1)
   const totalPages = Math.max(1, Math.ceil(items.length / perPage))
   const current = Math.min(page, totalPages)
@@ -11,7 +11,7 @@ export function usePagination<T>(items: T[], perPage = 10) {
 
   const bar = (
     <div className="pagination">
-      <span>Hiển thị {from}–{to} trên {items.length}</span>
+      {showRange && <span>Hiển thị {from}–{to} trên {items.length}</span>}
       <div className="pagination-buttons">
         <button disabled={current === 1} onClick={() => setPage(current - 1)} aria-label="Trang trước"><i className="fa-solid fa-chevron-left" /></button>
         {Array.from({ length: totalPages }, (_, i) => (

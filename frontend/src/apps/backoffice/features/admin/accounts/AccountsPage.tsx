@@ -42,11 +42,11 @@ function AccountModal({ account, actor, defaultRole, onClose, onDone }: { accoun
   }
   return (
     <Modal wide onClose={onClose} title={account ? `Tài khoản ${account.id}` : 'Tạo tài khoản'} subtitle={account ? ROLE_LABEL[account.role] : 'Mật khẩu tạm được tạo tự động và chỉ hiện một lần sau khi tạo.'}
-      footer={<><button className="btn btn-ghost" onClick={onClose}>Hủy</button><button className="btn btn-primary" disabled={busy || !name.trim() || !email.trim()} onClick={save}><i className="fa-solid fa-floppy-disk" /> {account ? 'Lưu thay đổi' : 'Tạo tài khoản'}</button></>}>
+      footer={<><button className="btn btn-ghost" onClick={onClose}>Hủy</button><button className="btn btn-primary" disabled={busy || !name.trim() || !email.trim() || (!account && !phone.trim())} onClick={save}><i className="fa-solid fa-floppy-disk" /> {account ? 'Lưu thay đổi' : 'Tạo tài khoản'}</button></>}>
       <div className={s.form}>
         <div className="form-group"><label htmlFor="ac-name" className="required">Họ tên</label><input id="ac-name" className="form-control" value={name} disabled={nameLocked} onChange={e => setName(e.target.value)} />{nameLocked && <div className="form-hint">Họ tên gắn với đơn và lịch phân công nên không đổi được.</div>}</div>
-        <div className="form-group"><label htmlFor="ac-mail" className="required">Email đăng nhập</label><input id="ac-mail" type="email" className="form-control" value={email} onChange={e => setEmail(e.target.value)} /></div>
-        <div className="form-group"><label htmlFor="ac-phone">Số điện thoại</label><input id="ac-phone" className="form-control" value={phone} onChange={e => setPhone(e.target.value)} /></div>
+        <div className="form-group"><label htmlFor="ac-mail" className="required">Email đăng nhập</label><input id="ac-mail" type="email" autoComplete="email" className="form-control" value={email} onChange={e => setEmail(e.target.value)} required /></div>
+        <div className="form-group"><label htmlFor="ac-phone" className={!account ? 'required' : undefined}>Số điện thoại</label><input id="ac-phone" type="tel" autoComplete="tel" placeholder="+84, +855 hoặc +856" className="form-control" value={phone} onChange={e => setPhone(e.target.value)} required={!account} />{!account && <div className="form-hint">Nhập số hợp lệ của Việt Nam, Campuchia hoặc Lào.</div>}</div>
         <div className="form-group">
           <label htmlFor="ac-role">Vai trò</label>
           {account ? <input id="ac-role" className="form-control" value={ROLE_LABEL[account.role]} disabled /> : (
@@ -100,7 +100,7 @@ export default function AccountsPage() {
 
   return (
     <>
-      <ListPage title={tab === 'all' ? 'Tài khoản hệ thống' : tab === 'locked' ? 'Tài khoản đã khóa' : `Tài khoản · ${ROLE_LABEL[tab]}`} subtitle="Tạo tài khoản nhân viên, khóa hoặc mở khóa, đặt lại mật khẩu. Khách hàng tự đăng ký; bạn chỉ khóa hoặc mở khóa được." tabs={tabs} tab={tab} onTab={() => undefined} hideTabs
+      <ListPage title={tab === 'all' ? 'Tài khoản hệ thống' : tab === 'locked' ? 'Tài khoản đã khóa' : `Tài khoản · ${ROLE_LABEL[tab]}`} subtitle="Tạo tài khoản nhân viên, khóa hoặc mở khóa, đặt lại mật khẩu. Khách hàng tự đăng ký; bạn chỉ khóa hoặc mở khóa được." tabs={tabs} tab={tab} onTab={() => undefined} hideTabs hideCount
         rows={rows} rowKey={a => a.id} columns={columns} haystack={a => [a.id, a.name, a.email, a.phone, ROLE_LABEL[a.role]]} loaded={!!all} emptyText="Không có tài khoản nào ở mục này." searchPlaceholder="Tìm theo tên, email, số điện thoại…" hotRow={a => a.status === 'locked'}
         actions={<button className="btn btn-primary" onClick={() => setDialog({ kind: 'edit', account: null })}><i className="fa-solid fa-user-plus" /> Tạo tài khoản</button>} />
 

@@ -28,13 +28,14 @@ interface Props<T, K extends string> {
   searchPlaceholder?: string
   filters?: ReactNode // ô lọc thêm, đặt đầu hàng lọc
   hideTabs?: boolean // danh mục nằm ở thanh bên nên không hiện thanh tab
+  hideCount?: boolean // ẩn số lượng bản ghi ở chân trang
   actions?: ReactNode // nút cạnh tiêu đề (ví dụ "Tạo tài khoản")
   hotRow?: (r: T) => boolean // đơn cần chú ý: viền cam bên trái
 }
 
 const day = (v: string, end = false) => (v ? new Date(`${v}T${end ? '23:59:59' : '00:00:00'}`).getTime() : 0)
 
-export function ListPage<T, K extends string>({ title, subtitle, tabs, tab, onTab, hot = [], rows, rowKey, columns, haystack, dateOf, dateLabel = 'Khởi hành', loaded, emptyText, summary, hotRow, actions, filters, searchPlaceholder = 'Tìm theo mã đơn, khách hàng, tuyến…', hideTabs }: Props<T, K>) {
+export function ListPage<T, K extends string>({ title, subtitle, tabs, tab, onTab, hot = [], rows, rowKey, columns, haystack, dateOf, dateLabel = 'Khởi hành', loaded, emptyText, summary, hotRow, actions, filters, searchPlaceholder = 'Tìm theo mã đơn, khách hàng, tuyến…', hideTabs, hideCount }: Props<T, K>) {
   const [params] = useSearchParams()
   const [text, setText] = useState(params.get('q') ?? '') // tìm từ ô tìm kiếm trên thanh trên
   const [from, setFrom] = useState('')
@@ -43,7 +44,7 @@ export function ListPage<T, K extends string>({ title, subtitle, tabs, tab, onTa
   const shown = rows.filter(r =>
     (!keyword || haystack(r).some(v => v.toLowerCase().includes(keyword))) &&
     (!dateOf || ((!from || dateOf(r) >= day(from)) && (!to || dateOf(r) <= day(to, true)))))
-  const pager = usePagination(shown, 20)
+  const pager = usePagination(shown, 20, !hideCount)
   const filtering = !!(keyword || from || to)
   const change = (fn: () => void) => { fn(); pager.reset() }
 
@@ -80,10 +81,10 @@ export function ListPage<T, K extends string>({ title, subtitle, tabs, tab, onTa
             </table>
             {loaded && !shown.length && <div className={s.empty}><i className="fa-solid fa-box-open" /><p>{filtering ? 'Không có đơn nào khớp bộ lọc.' : emptyText}</p></div>}
           </div>
-          <div className={s.foot}>
-            <span>Hiển thị <b>{shown.length}</b> đơn hàng</span>
+          {(!hideCount || summary) && <div className={s.foot}>
+            {!hideCount && <span>Hiển thị <b>{shown.length}</b> đơn hàng</span>}
             {summary && <span>{summary(shown)}</span>}
-          </div>
+          </div>}
           {shown.length > 20 && pager.bar}
         </section>
       </div>

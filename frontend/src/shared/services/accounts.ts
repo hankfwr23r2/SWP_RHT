@@ -1,12 +1,12 @@
 // Service tài khoản hệ thống (quản trị viên), gọi Backend Spring Boot (/admin/accounts). Không giữ dữ liệu ở máy khách.
 import { adminAccountsApi, type AccountApiItem } from '../api/adminAccounts'
+import { isValidEmail, isValidRegionalPhone } from '../lib/contactValidation'
 import type { Account } from '../types/account'
 import type { Role } from '../types/role'
 
 export interface AccountInput { name: string; email: string; phone: string; role: Role }
 
 const norm = (email: string) => email.trim().toLowerCase()
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const OPS: Role[] = ['specialist', 'coordinator', 'driver', 'escort'] // tên gắn với đơn và lịch phân công nên không đổi sau khi tạo
 export const isOpsRole = (r: Role) => OPS.includes(r)
 const userIdOf = (id: string) => Number(id.replace(/\D/g, ''))
@@ -24,8 +24,10 @@ export const accountsApi = {
     const name = input.name.trim()
     const email = norm(input.email)
     if (!name) throw new Error('Cần nhập họ tên.')
-    if (!EMAIL.test(email)) throw new Error('Email không hợp lệ.')
-    const res = await adminAccountsApi.create({ name, email, phone: input.phone, role: input.role })
+    if (!isValidEmail(email)) throw new Error('Email không đúng định dạng. Ví dụ: ten@example.com.')
+    const phone = input.phone.trim()
+    if (!isValidRegionalPhone(phone)) throw new Error('Số điện thoại cần thuộc Việt Nam, Campuchia hoặc Lào.')
+    const res = await adminAccountsApi.create({ name, email, phone, role: input.role })
     if (!res.tempPassword) throw new Error('Backend không trả mật khẩu tạm cho tài khoản mới.')
     return { account: accountOf(res), password: res.tempPassword }
   },
@@ -35,7 +37,7 @@ export const accountsApi = {
     const name = patch.name.trim()
     const email = norm(patch.email)
     if (!name) throw new Error('Cần nhập họ tên.')
-    if (!EMAIL.test(email)) throw new Error('Email không hợp lệ.')
+    if (!isValidEmail(email)) throw new Error('Email không hợp lệ.')
     const res = await adminAccountsApi.update(userIdOf(id), { name, email, phone: patch.phone?.trim() })
     return accountOf(res)
   },
