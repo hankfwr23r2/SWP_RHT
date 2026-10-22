@@ -1,7 +1,6 @@
 // Chi tiết một đơn từ bảng Kanban, dạng tab bên hông như màn Tiếp nhận: khách, hồ sơ ngựa, đơn, giấy tờ, xe và lộ trình, diễn biến.
 // Manager chỉ xem; đơn chờ đối soát thì có nút Đối soát chi phí (Flow 6, PRD mục 7.4).
 import { useState } from 'react'
-import { Link } from 'react-router'
 import { BOOKING_STEPS, stepOf } from '@shared/config/booking-rules'
 import { formatVND } from '@shared/lib/format'
 import { crewApi, vehiclesApi } from '@shared/services/fleet'
@@ -10,11 +9,12 @@ import type { Booking } from '@shared/types/booking'
 import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
 import { ClearanceSection, FleetRouteSection, HorseDocsSection } from '../../../shared/BookingEvidence'
 import { History, OrderInfo, PartiesInfo } from '../../../shared/BookingParts'
-import { managerAction } from '../../../shared/managerAction'
 import { SideTabsModal } from '../../../shared/SideTabsModal'
 import s from '../../../shared/booking.module.css'
 import { AuditModal } from './AuditModal'
 import { IntakeModal } from '../intake/IntakePage'
+import { QuoteModal } from '../approvals/ApprovalsPage'
+import { ApproveModal } from '../incidents/IncidentsPage'
 
 // Tài xế và hộ tống Manager đã chọn cho từng xe (chỉ xem; chọn ở trang Duyệt giá)
 function CrewTab({ b }: { b: Booking }) {
@@ -39,10 +39,12 @@ function CrewTab({ b }: { b: Booking }) {
   )
 }
 
-export function OrderDetailModal({ b, onClose, onDone }: { b: Booking; onClose: () => void; onDone: () => void }) {
+export function OrderDetailModal({ b, all = [], onClose, onDone }: { b: Booking; all?: Booking[]; onClose: () => void; onDone: () => void }) {
   const [audit, setAudit] = useState(false)
   const [intakeOpen, setIntakeOpen] = useState(false)
-  const act = managerAction(b)
+  const [quoteOpen, setQuoteOpen] = useState(false)
+  const [incidentOpen, setIncidentOpen] = useState(false)
+  const pendingIncident = (b.incidents ?? []).find(i => i.status === 'pending_approval')
   const at = stepOf(b.status)
   const summary = (
     <>
@@ -72,13 +74,19 @@ export function OrderDetailModal({ b, onClose, onDone }: { b: Booking; onClose: 
             <button className="btn btn-primary" onClick={() => setAudit(true)}><i className="fa-solid fa-file-invoice-dollar" /> Đối soát chi phí</button>
           ) : b.status === 'pending_intake' ? (
             <button className="btn btn-primary" onClick={() => setIntakeOpen(true)}><i className="fa-solid fa-play" /> Tiếp nhận đơn</button>
-          ) : act ? (
-            <Link to={act.to} className="btn btn-primary">{act.label}</Link>
+          ) : b.status === 'pending_commercial' ? (
+            <button className="btn btn-primary" onClick={() => setQuoteOpen(true)}><i className="fa-solid fa-file-signature" /> Duyệt báo giá</button>
+          ) : pendingIncident ? (
+            <button className="btn btn-primary" onClick={() => setIncidentOpen(true)}><i className="fa-solid fa-triangle-exclamation" /> Duyệt phương án sự cố</button>
           ) : null}
         </>}
       />
       {audit && <AuditModal b={b} onClose={() => setAudit(false)} onDone={() => { setAudit(false); onDone() }} />}
       {intakeOpen && <IntakeModal b={b} onClose={() => setIntakeOpen(false)} onDone={() => { setIntakeOpen(false); onDone() }} />}
+      {quoteOpen && <QuoteModal b={b} all={all} onClose={() => setQuoteOpen(false)} onDone={() => { setQuoteOpen(false); onDone() }} />}
+      {incidentOpen && pendingIncident && (
+        <ApproveModal item={{ b, i: pendingIncident }} onClose={() => setIncidentOpen(false)} onDone={() => { setIncidentOpen(false); onDone() }} />
+      )}
     </>
   )
 }

@@ -37,7 +37,7 @@ export default function DashboardPage() {
         <OrderBoard orders={orders} onOpen={setOpen} />
       </div>
       {calendar && <CalendarModal orders={all ?? []} onClose={() => setCalendar(false)} onOpen={b => { setCalendar(false); setOpen(b) }} />}
-      {opened && <OrderDetailModal b={opened} onClose={() => setOpenId(null)} onDone={() => { setOpenId(null); reload() }} />}
+      {opened && <OrderDetailModal b={opened} all={all ?? []} onClose={() => setOpenId(null)} onDone={() => { setOpenId(null); reload() }} />}
     </div>
   )
 }
