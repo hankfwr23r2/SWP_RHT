@@ -1,7 +1,12 @@
 package com.example.racehorse_transport.config;
 
 import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.BookingAssignment;
+import com.example.racehorse_transport.repository.BookingAssignmentRepository;
+import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -15,6 +20,8 @@ import static org.mockito.Mockito.when;
 class OperationalStaffCodeMigrationTest {
 
     private final StaffRepository staffRepository = mock(StaffRepository.class);
+    private final BookingRepository bookingRepository = mock(BookingRepository.class);
+    private final BookingAssignmentRepository bookingAssignmentRepository = mock(BookingAssignmentRepository.class);
 
     @Test
     void runNormalizesLegacyAdminDriverAndEscortCodes() {
@@ -25,8 +32,9 @@ class OperationalStaffCodeMigrationTest {
         Staff escort2 = staff(34, "ESCORT", "HT-04");
         Staff manager = staff(2, "MANAGER", "MG-01");
         when(staffRepository.findAll()).thenReturn(List.of(admin, admin2, driver, escort, escort2, manager));
+        when(bookingRepository.findAll()).thenReturn(List.of());
 
-        new OperationalStaffCodeMigration(staffRepository).run();
+        migration().run();
 
         assertThat(admin.getStaffCode()).isEqualTo("ADMIN-01");
         assertThat(admin2.getStaffCode()).isEqualTo("ADMIN-02");
@@ -42,8 +50,9 @@ class OperationalStaffCodeMigrationTest {
         Staff legacyDriver = staff(5, "DRIVER", "TX-01");
         Staff existingDriver = staff(6, "DRIVER", "DR-01");
         when(staffRepository.findAll()).thenReturn(List.of(legacyDriver, existingDriver));
+        when(bookingRepository.findAll()).thenReturn(List.of());
 
-        new OperationalStaffCodeMigration(staffRepository).run();
+        migration().run();
 
         assertThat(legacyDriver.getStaffCode()).isEqualTo("DR-02");
         assertThat(existingDriver.getStaffCode()).isEqualTo("DR-01");
@@ -56,10 +65,48 @@ class OperationalStaffCodeMigrationTest {
                 staff(1, "ADMIN", "ADMIN-01"),
                 staff(5, "DRIVER", "DR-01"),
                 staff(8, "ESCORT", "ES-01")));
+        when(bookingRepository.findAll()).thenReturn(List.of());
 
-        new OperationalStaffCodeMigration(staffRepository).run();
+        migration().run();
 
         verify(staffRepository, never()).saveAll(org.mockito.ArgumentMatchers.anyList());
+    }
+
+    @Test
+    void runMigratesTripAssignmentsToTheAssignedStaffCurrentCodes() {
+        Staff driver = staff(5, "DRIVER", "DR-02");
+        Staff escort = staff(8, "ESCORT", "ES-01");
+        Booking booking = new Booking();
+        booking.setId(13);
+        booking.setDetailsJson("{\"trips\":[{\"tripId\":\"TRP-013-1\",\"driverId\":\"TX-01\",\"escortId\":\"NV-01\"}],\"custom\":true}");
+        when(staffRepository.findAll()).thenReturn(List.of(driver, escort));
+        when(bookingRepository.findAll()).thenReturn(List.of(booking));
+        when(bookingAssignmentRepository.findByBookingID_Id(13)).thenReturn(List.of(
+                assignment("DRIVER", "TRP-013-1", driver),
+                assignment("ESCORT", "TRP-013-1", escort)));
+
+        migration().run();
+
+        assertThat(booking.getDetailsJson()).contains("\"driverId\":\"DR-02\"")
+                .contains("\"escortId\":\"ES-01\"")
+                .contains("\"custom\":true");
+        verify(bookingRepository).saveAll(List.of(booking));
+    }
+
+    private OperationalStaffCodeMigration migration() {
+        return new OperationalStaffCodeMigration(staffRepository, bookingRepository, bookingAssignmentRepository,
+                new ObjectMapper());
+    }
+
+    private BookingAssignment assignment(String role, String tripId, Staff staff) {
+        Booking booking = new Booking();
+        booking.setId(13);
+        BookingAssignment assignment = new BookingAssignment();
+        assignment.setBookingID(booking);
+        assignment.setStaffID(staff);
+        assignment.setAssignRole(role);
+        assignment.setNote("assignment for " + tripId);
+        return assignment;
     }
 
     private Staff staff(int id, String role, String staffCode) {
