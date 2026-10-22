@@ -12,19 +12,27 @@ import './TripTrackMap.css'
 type Props = { b: Pick<Booking, 'origin' | 'dest' | 'gate' | 'route'>; trips: Pick<VehicleTrip, 'tripId' | 'run' | 'departedAt'>[]; height?: number; plain?: boolean } // plain: chỉ vẽ lộ trình đã lập, không có xe
 const pin = (cls: string, text: string) => L.divIcon({ className: 'tt-icon', html: `<span class="tt-pin ${cls}">${text}</span>`, iconSize: [24, 24], iconAnchor: [12, 12] })
 const ll = (p: GeoPoint): [number, number] => [p.lat, p.lng]
+const validPoint = (point: GeoPoint) => Number.isFinite(point.lat) && Number.isFinite(point.lng) && Math.abs(point.lat) <= 90 && Math.abs(point.lng) <= 180
+const validLatLng = ([lat, lng]: [number, number]) => Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180
 
 export function TripTrackMap({ b, trips = [], height = 360, plain }: Props) {
   const box = useRef<HTMLDivElement>(null)
   const map = useRef<L.Map | null>(null)
   const layer = useRef<L.LayerGroup | null>(null)
-  const fitted = useRef(0)
+  const fitted = useRef('')
   const pts = useMemo(() => bookingPath(b), [b])
   const road = useRoadRoute(pts.length > 1 ? pts : undefined)
-  const line = road.route?.path ?? pts.map(ll)
-  const cars = trips.map((t, i) => ({ t, i, at: vehiclePoint(b, t) })).filter(x => x.at)
+  const line = (road.route?.path ?? pts.map(ll)).filter(validLatLng)
+  const cars = trips.flatMap(t => {
+    const at = vehiclePoint(b, t)
+    return at && validPoint(at) ? [{ t, at }] : []
+  })
   // Các mốc đã qua (trạm nghỉ, cửa khẩu) của xe đi xa nhất
   const passed = new Set(trips.flatMap(t => (t.run?.checkpoints ?? []).filter(c => c.arrivedAt && c.type !== 'pickup' && c.type !== 'delivery').map(c => c.place)))
-  const sig = cars.map(c => `${c.at!.lat.toFixed(4)},${c.at!.lng.toFixed(4)}`).join('|') + [...passed].join(',') + line.length
+  const lineKey = line.map(([lat, lng]) => `${lat.toFixed(4)},${lng.toFixed(4)}`).join(';')
+  const carKey = cars.map(c => `${c.at.lat.toFixed(4)},${c.at.lng.toFixed(4)}`).join('|')
+  const restsKey = (b.route?.rests ?? []).map(r => `${r.name}:${r.minutes}`).join('|')
+  const sig = `${lineKey}#${carKey}#${[...passed].join(',')}#${b.gate ?? ''}#${restsKey}`
 
   useEffect(() => {
     if (!box.current) return
@@ -38,18 +46,22 @@ export function TripTrackMap({ b, trips = [], height = 360, plain }: Props) {
     layer.current = L.layerGroup().addTo(m)
     map.current = m
     const timers = [60, 350].map(ms => setTimeout(() => m.invalidateSize(), ms))
-    return () => { timers.forEach(clearTimeout); m.remove(); map.current = null; layer.current = null; fitted.current = 0 }
+    return () => { timers.forEach(clearTimeout); m.remove(); map.current = null; layer.current = null; fitted.current = '' }
   }, [])
 
   useEffect(() => {
     const g = layer.current, m = map.current
-    if (!g || !m || line.length < 2) return
+    if (!g || !m) return
     g.clearLayers()
-    L.polyline(line, { color: '#fff', weight: 9, opacity: 0.9 }).addTo(g)
-    L.polyline(line, { color: '#475569', weight: 4, opacity: 0.95, dashArray: '9 8' }).addTo(g)
+    if (line.length > 1) {
+      L.polyline(line, { color: '#fff', weight: 9, opacity: 0.9 }).addTo(g)
+      L.polyline(line, { color: '#475569', weight: 4, opacity: 0.95, dashArray: '9 8' }).addTo(g)
+    }
     // Đoạn đã đi: từ điểm đón tới xe đi xa nhất
-    const far = cars.map(c => ({ c, at: projectOnPath(line.map(([lat, lng]) => ({ lat, lng })), c.at!).segment })).sort((x, z) => z.at - x.at)[0]
-    if (far) L.polyline([...line.slice(0, far.at + 1), ll(far.c.at!)], { color: '#ea580c', weight: 7, opacity: 1 }).addTo(g)
+    const far = line.length > 1
+      ? cars.map(c => ({ c, at: projectOnPath(line.map(([lat, lng]) => ({ lat, lng })), c.at).segment })).sort((x, z) => z.at - x.at)[0]
+      : undefined
+    if (far) L.polyline([...line.slice(0, far.at + 1), ll(far.c.at)], { color: '#ea580c', weight: 7, opacity: 1 }).addTo(g)
     const a = findLocation(b.origin.id), z = findLocation(b.dest.id)
     if (a) L.marker(ll(a), { icon: pin('tt-a', 'A') }).bindTooltip(`Điểm đón: ${b.origin.name.split(' — ')[0]}`, { direction: 'top', offset: [0, -12] }).addTo(g)
     if (z) L.marker(ll(z), { icon: pin('tt-b', 'B') }).bindTooltip(`Điểm giao: ${b.dest.name.split(' — ')[0]}`, { direction: 'top', offset: [0, -12] }).addTo(g)
@@ -61,9 +73,20 @@ export function TripTrackMap({ b, trips = [], height = 360, plain }: Props) {
       L.marker(ll(s), { icon: L.divIcon({ className: 'tt-icon', html: `<span class="tt-st ${passed.has(r.name) ? 'tt-done' : ''}"></span>`, iconSize: [34, 34], iconAnchor: [17, 17] }) }).bindTooltip(`${r.name} · nghỉ ${r.minutes} phút${passed.has(r.name) ? ' (đã qua)' : ''}`, { direction: 'top', offset: [0, -12] }).addTo(g)
     })
     cars.forEach(({ t, at }) => {
-      L.marker(ll(at!), { zIndexOffset: 1000, icon: L.divIcon({ className: 'tt-icon', html: '<span class="tt-truck"><i class="fa-solid fa-truck"></i></span>', iconSize: [40, 40], iconAnchor: [20, 20] }) }).bindTooltip(`${t.tripId}: ${spotLabel(t)}`, { direction: 'top', offset: [0, -20] }).addTo(g)
+      L.marker(ll(at), { zIndexOffset: 1000, icon: L.divIcon({ className: 'tt-icon', html: '<span class="tt-truck"><i class="fa-solid fa-truck"></i></span>', iconSize: [40, 40], iconAnchor: [20, 20] }) }).bindTooltip(`${t.tripId}: ${spotLabel(t)}`, { direction: 'top', offset: [0, -20] }).addTo(g)
     })
-    if (fitted.current !== line.length) { m.invalidateSize(); m.fitBounds(L.latLngBounds(line), { padding: [40, 40] }); fitted.current = line.length }
+    const focusPoints = [...line, ...cars.map(({ at }) => ll(at))]
+    const boundsKey = `${lineKey}#${carKey}`
+    if (boundsKey !== fitted.current) {
+      m.invalidateSize()
+      if (focusPoints.length > 1) {
+        m.fitBounds(L.latLngBounds(focusPoints), { padding: [40, 40], maxZoom: 10 })
+      } else {
+        const focus = cars[0]?.at ?? findLocation(b.origin.id) ?? findLocation(b.dest.id)
+        if (focus && validPoint(focus)) m.setView(ll(focus), 9)
+      }
+      fitted.current = boundsKey
+    }
   }, [sig, b.origin.id, b.dest.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (

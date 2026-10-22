@@ -352,20 +352,20 @@ export const bookingsApi = {
     toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'EXCLUDE_UNFIT_HORSE', actor: by, payload })),
   collectOriginals: async (id: string, tripId: string, by: string, items: string[]): Promise<Booking> =>
     toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'COLLECT_ORIGINALS', actor: by, payload: { items } })),
-  uploadHandover: async (id: string, tripId: string, by: string, photo: string): Promise<Booking> =>
-    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'UPLOAD_HANDOVER', actor: by, payload: { photo } })),
+  uploadHandover: async (id: string, tripId: string, by: string, checkpointId: string, photo: string): Promise<Booking> =>
+    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'UPLOAD_HANDOVER', actor: by, payload: { checkpointId, photo } })),
   startJourney: async (id: string, tripId: string, by: string): Promise<Booking> =>
     toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'START_JOURNEY', actor: by })),
-  arriveCheckpoint: async (id: string, tripId: string, by: string, photo: string): Promise<Booking> =>
-    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'ARRIVE_CHECKPOINT', actor: by, payload: { photo } })),
-  submitWelfare: async (id: string, tripId: string, by: string, data: { condition: string; waterLiters: number; hay: boolean; photo: string; note: string }): Promise<Booking> =>
+  arriveCheckpoint: async (id: string, tripId: string, by: string, checkpointId: string, photo: string): Promise<Booking> =>
+    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'ARRIVE_CHECKPOINT', actor: by, payload: { checkpointId, photo } })),
+  submitWelfare: async (id: string, tripId: string, by: string, data: { checkpointId: string; condition: string; waterLiters: number; hay: boolean; photo: string; note: string }): Promise<Booking> =>
     toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'SUBMIT_WELFARE', actor: by, payload: data })),
   continueJourney: async (id: string, tripId: string, by: string): Promise<Booking> =>
     toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'CONTINUE_JOURNEY', actor: by })),
   customsCleared: async (id: string, tripId: string, by: string, stampPhotos: string[]): Promise<Booking> =>
     toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'CUSTOMS_CLEARED', actor: by, payload: { stampPhotos } })),
   completeDelivery: async (id: string, tripId: string, by: string): Promise<Booking> =>
-    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'COMPLETE_DELIVERY', actor: by })),
+    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'COMPLETE_DELIVERY', actor: by, payload: { returnedOriginals: true } })),
   confirmHome: async (id: string, tripId: string, by: string, photo: string): Promise<Booking> =>
     toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'CONFIRM_HOME', actor: by, payload: { photo } })),
 
