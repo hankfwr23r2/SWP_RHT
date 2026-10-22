@@ -138,10 +138,8 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
       {rows.map((r, i) => (
         <div key={i} className={s.adj}>
           <input className="form-control" aria-label="Nội dung điều chỉnh" placeholder={r.kind === 'discount' ? 'VD: Khách hàng thân thiết' : 'VD: Phụ phí chuyến gấp'} value={r.label} onChange={e => set(i, { label: e.target.value })} />
-          <div style={{ display: 'flex', gap: 6 }}>
-            <FormSelect className="form-control" aria-label="Loại điều chỉnh" value={r.kind} onChange={e => set(i, { kind: e.target.value as AdjRow['kind'] })} style={{ width: 110 }}><option value="surcharge">Phụ phí</option><option value="discount">Chiết khấu</option></FormSelect>
-            <input className="form-control" aria-label="Số tiền" inputMode="numeric" placeholder="Số tiền" value={r.amount ? digits(r.amount).toLocaleString('en-US') : ''} onChange={e => set(i, { amount: String(digits(e.target.value) || '') })} />
-          </div>
+          <FormSelect className="form-control" aria-label="Loại điều chỉnh" value={r.kind} onChange={e => set(i, { kind: e.target.value as AdjRow['kind'] })}><option value="surcharge">Phụ phí</option><option value="discount">Chiết khấu</option></FormSelect>
+          <input className="form-control" aria-label="Số tiền" inputMode="numeric" placeholder="Số tiền" value={r.amount ? digits(r.amount).toLocaleString('en-US') : ''} onChange={e => set(i, { amount: String(digits(e.target.value) || '') })} />
           <button className={s.iconBtn} aria-label="Xóa dòng" onClick={() => setRows(x => x.filter((_, j) => j !== i))}><i className="fa-solid fa-trash" /></button>
         </div>
       ))}
@@ -256,7 +254,7 @@ export default function ApprovalsPage() {
   ]
   return (
     <>
-      <ListPage title="Duyệt báo giá" subtitle={`Duyệt để gửi khách; khách có ${QUOTE_VALID_HOURS} giờ đặt cọc 30%.`} tabs={[['todo', 'Chờ duyệt báo giá', todo.length], ['sent', 'Đã gửi báo giá', sent.length]]} tab={tab} onTab={setTab} hot={['todo']}
+      <ListPage title="Duyệt báo giá" subtitle={`Duyệt để gửi khách, khách có ${QUOTE_VALID_HOURS} giờ đặt cọc 30%.`} tabs={[['todo', 'Chờ duyệt báo giá', todo.length], ['sent', 'Đã gửi báo giá', sent.length]]} tab={tab} onTab={setTab} hot={['todo']}
         rows={tab === 'todo' ? todo : sent} rowKey={b => b.id} columns={columns} haystack={b => [b.id, b.customer, b.origin.name, b.dest.name]} dateOf={b => b.departAt} loaded={!!all}
         emptyText={tab === 'todo' ? 'Không có đơn nào chờ duyệt báo giá.' : 'Chưa gửi báo giá nào.'}
         summary={r => (tab === 'sent' ? <>Tổng báo giá: <b>{formatVND(r.reduce((n, b) => n + (b.quote?.total ?? 0), 0))}</b></> : null)} />

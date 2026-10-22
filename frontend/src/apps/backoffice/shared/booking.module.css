@@ -54,7 +54,7 @@
 .iconBtn:hover { color: var(--red); border-color: var(--red); }
 .iconBtn:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
 
-.adj { display: grid; grid-template-columns: 1fr 160px 40px; gap: 8px; align-items: center; margin-bottom: 8px; }
+.adj { display: grid; grid-template-columns: minmax(160px, 1fr) 130px 160px 40px; gap: 8px; align-items: center; margin-bottom: 8px; }
 .actionBar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 .actionBox { border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; background: var(--bg-page); display: grid; gap: 12px; }
 .actionDanger { border-color: #fecaca; background: var(--red-soft); }
