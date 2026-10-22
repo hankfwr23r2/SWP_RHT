@@ -87,7 +87,10 @@ export const paymentApi = {
    * Quyết toán gửi kèm đánh giá; đánh giá chỉ được ghi khi VNPAY xác nhận đã nhận tiền.
    */
   createVnpay: async (bookingId: string | number, paymentType: VnpayPaymentType, rating?: VnpayRatingPayload): Promise<VnpayCreateDto> => {
-    const res = await apiClient.post<ApiResponse<VnpayCreateDto>>('/payments/vnpay/create', { bookingId: String(bookingId), paymentType, rating })
+    const returnUrl = typeof window !== 'undefined' && window.location?.origin
+      ? `${window.location.origin}/payment/vnpay-return`
+      : undefined
+    const res = await apiClient.post<ApiResponse<VnpayCreateDto>>('/payments/vnpay/create', { bookingId: String(bookingId), paymentType, rating, returnUrl })
     return res.data.data
   },
 

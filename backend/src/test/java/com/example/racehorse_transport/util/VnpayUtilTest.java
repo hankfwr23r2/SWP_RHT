@@ -65,4 +65,21 @@ class VnpayUtilTest {
         missing.remove(VnpayUtil.SECURE_HASH);
         assertThat(VnpayUtil.verify(missing, SECRET)).isFalse();
     }
+
+    @Test
+    void buildRawQuery_doesNotUrlEncodeValues() {
+        assertThat(VnpayUtil.buildRawQuery(sampleParams())).isEqualTo(
+                "vnp_Amount=300000000&vnp_OrderInfo=Thanh toan coc 30% don BK-12&vnp_TxnRef=DEP00121&vnp_Version=2.1.0");
+    }
+
+    @Test
+    void verify_acceptsRawUnencodedParamsReturnedByVnpay() {
+        Map<String, String> params = sampleParams();
+        // Giả lập VNPay ký trên chuỗi raw
+        String rawQuery = VnpayUtil.buildRawQuery(params);
+        String rawSignature = VnpayUtil.hmacSha512(SECRET, rawQuery);
+        params.put(VnpayUtil.SECURE_HASH, rawSignature);
+
+        assertThat(VnpayUtil.verify(params, SECRET)).isTrue();
+    }
 }

@@ -54,6 +54,12 @@ public class VnpayController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("Vui lòng đăng nhập để thanh toán!"));
         }
+        if (request.getReturnUrl() == null || request.getReturnUrl().isBlank()) {
+            String origin = httpRequest.getHeader("Origin");
+            if (origin != null && !origin.isBlank() && origin.startsWith("http")) {
+                request.setReturnUrl(origin.replaceAll("/+$", "") + "/payment/vnpay-return");
+            }
+        }
         VnpayCreateResponse response = vnpayService.createPaymentUrl(request, username, VnpayUtil.clientIp(httpRequest));
         return ResponseEntity.ok(ApiResponse.success(response, "Đã tạo link thanh toán VNPAY"));
     }

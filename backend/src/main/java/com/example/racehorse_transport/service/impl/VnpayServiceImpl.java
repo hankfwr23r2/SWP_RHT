@@ -95,7 +95,7 @@ public class VnpayServiceImpl implements VnpayService {
                     }
                 }
                 amount = quotation.getDepositAmount();
-                orderInfo = "Thanh toan coc 30% don BK-" + booking.getId();
+                orderInfo = "Thanh toan coc don BK-" + booking.getId();
                 prefix = "DEP";
             }
             case "BALANCE" -> {
@@ -110,7 +110,7 @@ public class VnpayServiceImpl implements VnpayService {
                 amount = quotation.getBalanceAmount() != null
                         ? quotation.getBalanceAmount()
                         : quotation.getTotalAmount().multiply(new BigDecimal("0.7"));
-                orderInfo = "Thanh toan 70% con lai don BK-" + booking.getId();
+                orderInfo = "Thanh toan con lai don BK-" + booking.getId();
                 prefix = "BAL";
             }
             case "SETTLEMENT" -> {
@@ -118,7 +118,7 @@ public class VnpayServiceImpl implements VnpayService {
                     throw new IllegalStateException("Đơn hàng này đã thanh toán quyết toán!");
                 }
                 amount = settlementService.holdForVnpay(booking, request.getRating());
-                orderInfo = "Thanh toan quyet toan phat sinh don BK-" + booking.getId();
+                orderInfo = "Thanh toan quyet toan don BK-" + booking.getId();
                 prefix = "SET";
             }
             default -> throw new IllegalArgumentException("Loại thanh toán không hợp lệ: " + request.getPaymentType());
@@ -151,6 +151,10 @@ public class VnpayServiceImpl implements VnpayService {
                 .build();
         paymentRepository.save(payment);
 
+        String returnUrl = (request.getReturnUrl() != null && request.getReturnUrl().trim().startsWith("http"))
+                ? request.getReturnUrl().trim()
+                : props.getReturnUrl();
+
         Map<String, String> params = new HashMap<>();
         params.put("vnp_Version", VnpayProperties.VERSION);
         params.put("vnp_Command", "pay");
@@ -161,7 +165,7 @@ public class VnpayServiceImpl implements VnpayService {
         params.put("vnp_OrderInfo", orderInfo);
         params.put("vnp_OrderType", "other");
         params.put("vnp_Locale", "vn");
-        params.put("vnp_ReturnUrl", props.getReturnUrl());
+        params.put("vnp_ReturnUrl", returnUrl);
         params.put("vnp_IpAddr", clientIp);
         params.put("vnp_CreateDate", VNP_DATE.format(now));
         params.put("vnp_ExpireDate", VNP_DATE.format(expiresAt));

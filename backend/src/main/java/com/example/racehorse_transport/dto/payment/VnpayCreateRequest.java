@@ -21,4 +21,7 @@ public class VnpayCreateRequest {
     // Đánh giá chuyến đi gửi kèm khi thanh toán quyết toán, chỉ ghi nhận khi VNPAY xác nhận đã nhận tiền
     @Valid
     private RatingDto rating;
+
+    // Trang kết quả phía Frontend (tùy chọn, tự động dùng origin của client nếu truyền vào)
+    private String returnUrl;
 }
