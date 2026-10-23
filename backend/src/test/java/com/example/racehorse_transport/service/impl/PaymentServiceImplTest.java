@@ -99,4 +99,20 @@ class PaymentServiceImplTest {
         assertThat(service.getPaymentsByBooking("BK-42", null)).hasSize(1);
         assertThat(service.getPaymentDetail(1, "phuc").getId()).isEqualTo(1);
     }
+
+    @Test
+    void cancel_afterBalancePaid_isRejected() {
+        booking.setStatus("ready_for_pickup");
+        Payment deposit = Payment.builder().id(1).bookingID(booking).amount(new BigDecimal("3000000"))
+                .paymentType("DEPOSIT").status("COMPLETED").build();
+        Payment balance = Payment.builder().id(2).bookingID(booking).amount(new BigDecimal("7000000"))
+                .paymentType("BALANCE").status("COMPLETED").build();
+        when(paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(42)).thenReturn(List.of(balance, deposit));
+
+        assertThatThrownBy(() -> service.cancelWithRefundPolicy("BK-42", CancelBookingRequest.builder().reason("Đổi lịch").build(), "phuc"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("hotline");
+        assertThat(booking.getStatus()).isEqualTo("ready_for_pickup");
+        verify(bookingRepository, never()).save(any());
+    }
 }

@@ -14,6 +14,7 @@ import com.example.racehorse_transport.repository.QuotationRepository;
 import com.example.racehorse_transport.service.BookingService;
 import com.example.racehorse_transport.service.SettlementService;
 import com.example.racehorse_transport.service.VnpayService;
+import com.example.racehorse_transport.util.CustomerBookingRules;
 import com.example.racehorse_transport.util.VnpayUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -105,6 +106,9 @@ public class VnpayServiceImpl implements VnpayService {
                 }
                 if (hasCompleted(payments, "BALANCE")) {
                     throw new IllegalStateException("Đơn hàng này đã thanh toán đủ 70% còn lại!");
+                }
+                if (!CustomerBookingRules.canPayBalance(booking.getStatus(), false)) {
+                    throw new IllegalStateException("Chỉ thanh toán 70% còn lại khi xe đã sẵn sàng đón ngựa.");
                 }
                 Quotation quotation = latestQuotation(booking);
                 amount = quotation.getBalanceAmount() != null

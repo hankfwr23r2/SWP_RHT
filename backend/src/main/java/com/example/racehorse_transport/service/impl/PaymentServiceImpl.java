@@ -10,6 +10,7 @@ import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.PaymentRepository;
 import com.example.racehorse_transport.repository.QuotationRepository;
 import com.example.racehorse_transport.service.PaymentService;
+import com.example.racehorse_transport.util.CustomerBookingRules;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,10 +33,6 @@ public class PaymentServiceImpl implements PaymentService {
     private final BookingRepository bookingRepository;
     private final QuotationRepository quotationRepository;
     private final ObjectMapper objectMapper;
-
-    // Khách chỉ hủy được sau khi đặt cọc và trước khi xe chở ngựa đi
-    private static final Set<String> CANCELLABLE_STATUSES = Set.of(
-            "waybill_issued", "clearance_in_progress", "clearance_done", "ready_for_pickup", "en_route_to_pickup");
 
     // =========================================================================
     // CRUD CƠ BẢN
@@ -66,7 +63,7 @@ public class PaymentServiceImpl implements PaymentService {
     // =========================================================================
 
     /**
-     * 1. Hủy đơn hàng và áp dụng chính sách hoàn cọc / phạt cọc (PRD mục 8.2 & 8.3)
+     * 1. Khách hủy đơn của mình (mất cọc). Quy tắc nằm ở CustomerBookingRules.
      */
     @Override
     @Transactional
@@ -76,11 +73,16 @@ public class PaymentServiceImpl implements PaymentService {
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
 
         requireOwner(booking, username);
-        if (!CANCELLABLE_STATUSES.contains(booking.getStatus())) {
+        List<Payment> existingPayments = paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(booking.getId());
+        boolean balancePaid = existingPayments.stream()
+                .anyMatch(p -> "BALANCE".equalsIgnoreCase(p.getPaymentType()) && "COMPLETED".equalsIgnoreCase(p.getStatus()));
+        if (balancePaid) {
+            throw new IllegalStateException("Đơn đã thanh toán đủ nên không tự hủy được. Vui lòng liên hệ hotline để được hỗ trợ.");
+        }
+        if (!CustomerBookingRules.canCancel(booking.getStatus(), false)) {
             throw new IllegalStateException("Không thể hủy đơn hàng ở trạng thái: " + booking.getStatus());
         }
 
-        List<Payment> existingPayments = paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(booking.getId());
         Optional<Payment> depositOpt = existingPayments.stream()
                 .filter(p -> "DEPOSIT".equalsIgnoreCase(p.getPaymentType()) && "COMPLETED".equalsIgnoreCase(p.getStatus()))
                 .findFirst();

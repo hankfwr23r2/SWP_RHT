@@ -229,4 +229,34 @@ class VnpayServiceImplTest {
         assertThat(service.confirm(signedCallback("125000000", "00")).isSuccess()).isTrue();
         verify(settlementService, times(1)).confirmSettlementPaid(payment, "khach1");
     }
+
+    private Payment completedDeposit() {
+        return Payment.builder().id(2).bookingID(booking).amount(new BigDecimal("3000000"))
+                .paymentType("DEPOSIT").paymentMethod("VNPAY").status("COMPLETED").build();
+    }
+
+    @Test
+    void createBalance_beforeTheVehicleIsReady_isRejected() {
+        booking.setStatus("clearance_in_progress");
+        when(paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(anyInt())).thenReturn(List.of(completedDeposit()));
+
+        assertThatThrownBy(() -> service.createPaymentUrl(
+                VnpayCreateRequest.builder().bookingId("12").paymentType("BALANCE").build(), "khach1", "1.2.3.4"))
+                .isInstanceOf(IllegalStateException.class);
+        verify(paymentRepository, never()).save(any());
+    }
+
+    @Test
+    void createBalance_onceTheVehicleIsReady_savesPendingPayment() {
+        booking.setStatus("ready_for_pickup");
+        when(paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(anyInt())).thenReturn(List.of(completedDeposit()));
+        when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(12))
+                .thenReturn(Optional.of(quotation(Instant.now().plus(10, ChronoUnit.HOURS))));
+
+        service.createPaymentUrl(VnpayCreateRequest.builder().bookingId("12").paymentType("BALANCE").build(), "khach1", "1.2.3.4");
+
+        ArgumentCaptor<Payment> saved = ArgumentCaptor.forClass(Payment.class);
+        verify(paymentRepository).save(saved.capture());
+        assertThat(saved.getValue().getAmount()).isEqualByComparingTo("7000000");
+    }
 }
