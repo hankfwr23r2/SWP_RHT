@@ -22,7 +22,7 @@ export function TripPicker({ trips, value, onChange }: { trips: FieldTrip[]; val
 export function TripHeader({ b, t }: FieldTrip) {
   return (
     <div className={s.head}>
-      <div className={s.headTop}><span className={s.trip}>{t.tripId}</span><BookingStatusBadge status={b.status} audience="staff" /></div>
+      <div className={s.headTop}><span className={s.trip}>{t.tripId}</span><BookingStatusBadge status={b.status} labels={b} audience="staff" /></div>
       <div className={s.route}>{placeShort(b.origin.name)}<i className="fa-solid fa-arrow-right" aria-hidden="true" />{placeShort(b.dest.name)}</div>
       <div className={s.meta}><span><i className="fa-solid fa-calendar-day" aria-hidden="true" /> {formatDate(b.departAt)}</span><span><i className="fa-solid fa-horse-head" aria-hidden="true" /> {t.horseIds.length} ngựa</span>{b.gate && <span><i className="fa-solid fa-flag" aria-hidden="true" /> {b.gate}</span>}</div>
     </div>

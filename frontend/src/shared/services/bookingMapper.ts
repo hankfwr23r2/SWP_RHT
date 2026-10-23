@@ -126,6 +126,8 @@ export function toBooking(r: BackendBookingResponse, customer?: string): Booking
     consignee: { name: r.consignee?.name ?? '', phone: r.consignee?.phone ?? '', idNumber: r.consignee?.idNumber ?? '', address: r.consignee?.address ?? '' },
     horses: (r.horses ?? []).map(horseOf),
     status: (r.status === 'resubmission_requested' ? 'under_review' : r.status) as BookingStatus,
+    statusLabel: r.statusLabel,
+    customerStatusLabel: r.customerStatusLabel,
     history,
   }
   if (r.gate) b.gate = r.gate

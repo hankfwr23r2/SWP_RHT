@@ -921,7 +921,7 @@ export default function FleetPlanPage() {
 
         <div className="page-header" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <h1>Đơn {b.id}</h1>
-          <BookingStatusBadge status={b.status} audience="staff" />
+          <BookingStatusBadge status={b.status} labels={b} audience="staff" />
           <ReviewChips b={b} />
         </div>
 

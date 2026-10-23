@@ -92,7 +92,7 @@ export default function OrdersPage() {
                     <span className={s.id}>{b.id}</span>
                     {b.id === newId && <span className="badge badge-success">Vừa đặt</span>}
                     <span className="badge badge-muted">{b.type === 'international' ? 'Quốc tế' : 'Trong nước'}</span>
-                    <span className={s.headRight}><BookingStatusBadge status={b.status} /></span>
+                    <span className={s.headRight}><BookingStatusBadge status={b.status} labels={b} /></span>
                   </div>
                   <div className={s.body}>
                     <div>

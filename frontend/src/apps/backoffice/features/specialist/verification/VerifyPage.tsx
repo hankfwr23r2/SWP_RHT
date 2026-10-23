@@ -283,7 +283,7 @@ export default function VerifyPage() {
         <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
             <h1>Đơn {b.id}</h1>
-            <BookingStatusBadge status={b.status} audience="staff" />
+            <BookingStatusBadge status={b.status} labels={b} audience="staff" />
             <ReviewChips b={b} />
           </div>
           {(['waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup'].includes(b.status) || !!b.waybill || !!b.clearance) && (

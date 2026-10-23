@@ -101,7 +101,7 @@ export default function MonitoringPage() {
             <div className={s.main}>
               {trip && (
                 <div className="card">
-                  <div className="card-header"><h3><i className="fa-solid fa-route" /> {trip.t.tripId} · {placeShort(trip.b.origin.name)} → {placeShort(trip.b.dest.name)}</h3><BookingStatusBadge status={trip.b.status} audience="staff" /></div>
+                  <div className="card-header"><h3><i className="fa-solid fa-route" /> {trip.t.tripId} · {placeShort(trip.b.origin.name)} → {placeShort(trip.b.dest.name)}</h3><BookingStatusBadge status={trip.b.status} labels={trip.b} audience="staff" /></div>
                   <p className={s.hint} style={{ marginBottom: 12 }}>Xe chở: {trip.b.horses.filter(h => trip.t.horseIds.includes(h.horseId)).map(h => h.name).join(', ')}.{!trip.t.run && trip.t.departedAt ? ` Xe đang đến điểm đón (xuất phát ${formatDateTime(trip.t.departedAt)}). Mốc hành trình hiện khi tài xế xác nhận có mặt tại điểm đón.` : ''}</p>
                   <TripTimeline trip={trip.t} now={now} staff />
                 </div>

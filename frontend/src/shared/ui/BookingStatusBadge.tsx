@@ -28,13 +28,16 @@ const ICON: Record<BookingStatus, string> = {
 }
 const CLASS: Record<Tone, string> = { info: 'badge-info', warning: 'badge-warning', success: 'badge-success', danger: 'badge-danger', muted: 'badge-muted', orange: 'badge-orange' }
 
+type Labels = { statusLabel?: string; customerStatusLabel?: string }
+
 // Nhãn trạng thái đơn. Khách thấy nhãn dễ hiểu; nội bộ thấy nhãn nghiệp vụ, mã gốc theo PRD nằm ở tooltip.
-export function BookingStatusBadge({ status, audience = 'customer', text }: { status: BookingStatus; audience?: 'customer' | 'staff'; text?: string }) {
+// Có `labels` (đơn nhận từ backend) thì hiện nhãn backend trả; bảng ở frontend chỉ dùng khi thiếu.
+export function BookingStatusBadge({ status, audience = 'customer', text, labels }: { status: BookingStatus; audience?: 'customer' | 'staff'; text?: string; labels?: Labels }) {
   // Trạng thái backend mới thêm mà frontend chưa biết: hiện nguyên mã thay vì làm trắng cả trang
   const s = BOOKING_STATUS[status] ?? { code: status, label: status, customerLabel: status, tone: 'muted' as Tone }
   return (
     <span className={`badge ${CLASS[s.tone]}`} title={text ? `${s.label} (${s.code})` : s.code}>
-      <i className={`fa-solid ${ICON[status] ?? 'fa-circle-info'}`} aria-hidden="true" /> {text ?? (audience === 'customer' ? s.customerLabel : s.label)}
+      <i className={`fa-solid ${ICON[status] ?? 'fa-circle-info'}`} aria-hidden="true" /> {text ?? (audience === 'customer' ? labels?.customerStatusLabel ?? s.customerLabel : labels?.statusLabel ?? s.label)}
     </span>
   )
 }

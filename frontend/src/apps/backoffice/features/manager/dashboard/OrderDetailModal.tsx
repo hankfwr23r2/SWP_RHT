@@ -48,7 +48,7 @@ export function OrderDetailModal({ b, all = [], onClose, onDone }: { b: Booking;
   const at = stepOf(b.status)
   const summary = (
     <>
-      <p><BookingStatusBadge status={b.status} audience="staff" /> {at >= BOOKING_STEPS.length ? 'Đã hoàn tất' : `Bước ${at + 1}/${BOOKING_STEPS.length}: ${BOOKING_STEPS[at]}`}</p>
+      <p><BookingStatusBadge status={b.status} labels={b} audience="staff" /> {at >= BOOKING_STEPS.length ? 'Đã hoàn tất' : `Bước ${at + 1}/${BOOKING_STEPS.length}: ${BOOKING_STEPS[at]}`}</p>
       <p>{b.quote ? <>Giá trị {formatVND(b.quote.total)} (cọc {formatVND(b.quote.deposit)})</> : 'Chưa có báo giá'}</p>
       {b.intake && <p>Kiểm dịch: <b>{b.intake.specialist.name}</b> · Điều phối: <b>{b.intake.coordinator.name}</b></p>}
       <h4 style={{ margin: '18px 0 10px' }}>Diễn biến</h4>
