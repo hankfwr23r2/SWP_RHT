@@ -15,6 +15,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class IncidentServiceImplTest {
@@ -54,5 +55,27 @@ class IncidentServiceImplTest {
         assertThat(response.getDescription()).isNull();
         assertThat(response.getPartnerName()).isNull();
         assertThat(response.getEstimatedCost()).isNull();
+    }
+
+    @Test
+    void incidentsOfSeveralBookingsAreLoadedInOneQuery() {
+        Booking first = new Booking();
+        first.setId(1);
+        Booking second = new Booking();
+        second.setId(2);
+        when(incidentRepository.findByBookingID_IdIn(List.of(1, 2))).thenReturn(List.of(
+                Incident.builder().id(7).bookingID(first).status("active").description("Nổ lốp").build(),
+                Incident.builder().id(8).bookingID(second).status("resolved").build()));
+
+        List<IncidentResponse> incidents = service.getIncidentsForBookings(List.of(1, 2));
+
+        assertThat(incidents).extracting(IncidentResponse::getBookingId).containsExactly(1, 2);
+        assertThat(incidents.get(0).getDescription()).isEqualTo("Nổ lốp");
+    }
+
+    @Test
+    void noBookingsMeansNoQuery() {
+        assertThat(service.getIncidentsForBookings(List.of())).isEmpty();
+        verifyNoInteractions(incidentRepository);
     }
 }
