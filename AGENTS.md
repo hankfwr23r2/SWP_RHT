@@ -16,5 +16,5 @@
 ## 2. Quy Trình Đồng Bộ & Kiểm Thử
 - Khi được phép sửa code, phải tuân thủ tài liệu hướng dẫn tại `frontend/docs/AGENT_GUIDE.md`:
   - Kiểm tra tính tương thích giữa Frontend và Backend.
-  - Chạy đầy đủ Quality Gate (`mvnw compile`, `npm run lint`, `npx tsc -b`, `npm test`, `npm run build`).
-  - Không phá vỡ 218 unit tests và kiến trúc Single HQ.
+  - Chạy đầy đủ Quality Gate (`mvnw verify`, `npm run lint`, `npx tsc -b`, `npm test`, `npm run build`).
+  - Không phá vỡ unit test hiện có và kiến trúc Single HQ.
