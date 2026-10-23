@@ -13,6 +13,7 @@ import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import com.example.racehorse_transport.entity.SystemLog;
+import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.SystemLogRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -193,7 +194,7 @@ public class AuthServiceImpl implements AuthService {
 
         // 1. Tìm user theo username hoặc email
         User user = userRepository.findByUsernameOrEmail(username, username)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thông tin tài khoản người dùng!"));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin tài khoản người dùng!"));
 
         // 2. Kiểm tra mật khẩu hiện tại
         if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPasswordHash())) {

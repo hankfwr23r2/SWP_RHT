@@ -4,6 +4,7 @@ import com.example.racehorse_transport.dto.document.HorseDocumentResponse;
 import com.example.racehorse_transport.dto.document.ReviewHorseDocumentRequest;
 import com.example.racehorse_transport.entity.Horse;
 import com.example.racehorse_transport.entity.HorseDocument;
+import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.HorseDocumentRepository;
 import com.example.racehorse_transport.repository.HorseRepository;
 import com.example.racehorse_transport.service.HorseDocumentService;
@@ -186,7 +187,7 @@ public class HorseDocumentServiceImpl implements HorseDocumentService {
     @Transactional(readOnly = true)
     public List<HorseDocumentResponse> getDocumentsByHorse(Integer horseId) {
         if (!horseRepository.existsById(horseId)) {
-            throw new IllegalArgumentException("Không tìm thấy ngựa với ID: " + horseId);
+            throw new ResourceNotFoundException("Không tìm thấy ngựa với ID: " + horseId);
         }
         return horseDocumentRepository.findByHorseID_Id(horseId)
                 .stream()

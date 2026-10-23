@@ -9,6 +9,7 @@ import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Payment;
 import com.example.racehorse_transport.entity.Quotation;
 import com.example.racehorse_transport.entity.Vehicle;
+import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.*;
 import com.example.racehorse_transport.service.SettlementService;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -418,7 +419,7 @@ public class SettlementServiceImpl implements SettlementService {
         }
         Integer id = parseBookingId(bookingIdentifier);
         return bookingRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
     }
 
     private Integer parseBookingId(String bookingIdentifier) {

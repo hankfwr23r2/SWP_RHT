@@ -24,6 +24,7 @@ import java.util.Optional;
 import com.example.racehorse_transport.dto.booking.BookingDetailsPayload;
 import com.example.racehorse_transport.dto.coordinator.CoordinatorPlanRequest;
 import com.example.racehorse_transport.dto.coordinator.VehicleTripDto;
+import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.dto.manager.*;
 import com.example.racehorse_transport.service.FleetService;
 import com.example.racehorse_transport.util.CustomerBookingRules;
@@ -71,7 +72,7 @@ public class BookingServiceImpl implements BookingService {
         // 1. Tìm thông tin User
         User user = userRepository.findByUsernameOrEmail(customerUsername, customerUsername)
                 .orElseThrow(
-                        () -> new IllegalArgumentException("Không tìm thấy thông tin người dùng: " + customerUsername));
+                        () -> new ResourceNotFoundException("Không tìm thấy thông tin người dùng: " + customerUsername));
 
         // 2. Tìm hoặc tự động tạo Customer profile
         Customer customer = customerRepository.findById(user.getId())
@@ -230,7 +231,7 @@ public class BookingServiceImpl implements BookingService {
     public List<BookingResponse> getCustomerBookings(String customerUsername) {
         User user = userRepository.findByUsernameOrEmail(customerUsername, customerUsername)
                 .orElseThrow(
-                        () -> new IllegalArgumentException("Không tìm thấy thông tin người dùng: " + customerUsername));
+                        () -> new ResourceNotFoundException("Không tìm thấy thông tin người dùng: " + customerUsername));
 
         return bookingRepository.findByCustomerID_IdOrderByBookingDateDesc(user.getId())
                 .stream()
@@ -241,7 +242,7 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public BookingResponse getBookingById(Integer id, String customerUsername) {
         Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng có ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng có ID: " + id));
 
         if (customerUsername != null) {
             User owner = booking.getCustomerID() != null ? booking.getCustomerID().getUser() : null;
@@ -261,7 +262,7 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponse resubmitBooking(String bookingIdentifier, String customerUsername) {
         Integer bookingId = parseBookingId(bookingIdentifier);
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
 
         User owner = booking.getCustomerID() != null ? booking.getCustomerID().getUser() : null;
         boolean ownsBooking = owner != null && (customerUsername.equals(owner.getUsername())
@@ -382,7 +383,7 @@ public class BookingServiceImpl implements BookingService {
     @Transactional(readOnly = true)
     public List<BookingResponse> getAssignedBookings(String username) {
         User user = userRepository.findByUsernameOrEmail(username, username)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thông tin người dùng: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin người dùng: " + username));
         return bookingAssignmentRepository.findByStaffID_Id(user.getId()).stream()
                 .filter(assignment -> assignment.getBookingID() != null)
                 .filter(assignment -> "ASSIGNED".equalsIgnoreCase(assignment.getStatus()))
@@ -399,7 +400,7 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponse activateBooking(String bookingIdentifier, com.example.racehorse_transport.dto.manager.ActivateBookingRequest request) {
         Integer bookingId = parseBookingId(bookingIdentifier);
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
 
         if (!"pending_intake".equalsIgnoreCase(booking.getStatus())) {
             throw new IllegalStateException("Đơn hàng không ở bước chờ tiếp nhận (pending_intake)!");
@@ -442,7 +443,7 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponse rejectBooking(String bookingIdentifier, com.example.racehorse_transport.dto.manager.RejectBookingRequest request) {
         Integer bookingId = parseBookingId(bookingIdentifier);
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
 
         String role = request != null && request.getRole() != null ? request.getRole().toLowerCase() : "manager";
         if ("manager".equals(role) && !"pending_intake".equalsIgnoreCase(booking.getStatus())) {
@@ -502,7 +503,7 @@ public class BookingServiceImpl implements BookingService {
 
         // 2. Tìm đơn hàng
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng ID: " + bookingIdentifier));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng ID: " + bookingIdentifier));
 
         if (request.getTrips() == null || request.getTrips().isEmpty()) {
             throw new IllegalArgumentException("Phương án điều phối phải có ít nhất 1 chuyến xe!");
@@ -644,7 +645,7 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponse assignCrew(String bookingIdentifier, AssignCrewRequest request) {
         Integer bookingId = parseBookingId(bookingIdentifier);
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
 
         if (!"pending_commercial".equalsIgnoreCase(booking.getStatus())) {
             throw new IllegalStateException(
@@ -754,7 +755,7 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponse sendQuote(String bookingIdentifier, SendQuoteRequest request) {
         Integer bookingId = parseBookingId(bookingIdentifier);
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
 
         if (!"pending_commercial".equalsIgnoreCase(booking.getStatus())) {
             throw new IllegalStateException("Đơn hàng không ở bước duyệt báo giá (pending_commercial)!");
@@ -865,7 +866,7 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponse sendBack(String bookingIdentifier, SendBackRequest request) {
         Integer bookingId = parseBookingId(bookingIdentifier);
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
 
         if (!"pending_commercial".equalsIgnoreCase(booking.getStatus())) {
             throw new IllegalStateException("Chỉ trả lại được đơn đang chờ duyệt báo giá!");
@@ -924,7 +925,7 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponse resubmitDocuments(String bookingIdentifier, String customerUsername) {
         Integer bookingId = parseBookingId(bookingIdentifier);
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
 
         if (customerUsername != null) {
             User owner = booking.getCustomerID() != null ? booking.getCustomerID().getUser() : null;
@@ -1119,7 +1120,7 @@ public class BookingServiceImpl implements BookingService {
             com.example.racehorse_transport.dto.booking.RejectQuoteRequest request) {
         Integer bookingId = parseBookingId(bookingIdentifier);
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
 
         if (!"awaiting_payment".equalsIgnoreCase(booking.getStatus())) {
             throw new IllegalStateException("Chỉ từ chối báo giá khi đơn đang ở bước chờ đặt cọc!");
@@ -1559,7 +1560,7 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponse updateTripProgress(String bookingIdentifier, com.example.racehorse_transport.dto.field.TripUpdateRequest request) {
         Integer bookingId = parseBookingId(bookingIdentifier);
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
 
         BookingDetailsPayload payload = extractPayload(booking);
         List<com.example.racehorse_transport.dto.coordinator.VehicleTripDto> trips = payload.getTrips();

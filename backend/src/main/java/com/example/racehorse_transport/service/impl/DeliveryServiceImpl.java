@@ -4,6 +4,7 @@ import com.example.racehorse_transport.dto.booking.BookingDetailsPayload;
 import com.example.racehorse_transport.dto.booking.BookingHorseDto;
 import com.example.racehorse_transport.dto.booking.BookingResponse;
 import com.example.racehorse_transport.dto.booking.PartyContactDto;
+import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.dto.field.*;
 import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.repository.*;
@@ -38,7 +39,7 @@ public class DeliveryServiceImpl implements DeliveryService {
     @Transactional
     public BookingResponse arriveDelivery(Integer bookingId, DeliveryArriveRequest request) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng ID: " + bookingId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng ID: " + bookingId));
 
         BookingDetailsPayload payload = extractPayload(booking);
         Map<String, Object> arrivalMap = new HashMap<>();
@@ -64,7 +65,7 @@ public class DeliveryServiceImpl implements DeliveryService {
     @Transactional
     public BookingResponse completeHandover(Integer bookingId, HandoverCompleteRequest request) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng ID: " + bookingId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng ID: " + bookingId));
 
         BookingDetailsPayload payload = extractPayload(booking);
         Map<String, Object> handoverMap = new HashMap<>();
@@ -154,7 +155,7 @@ public class DeliveryServiceImpl implements DeliveryService {
     @Transactional
     public BookingResponse reportDeliveryTimeout(Integer bookingId, DeliveryTimeoutRequest request) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng ID: " + bookingId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng ID: " + bookingId));
 
         String action = request.getSelectedAction() != null ? request.getSelectedAction() : "STABLE_NEARBY";
         String reason = request.getTimeoutReason() != null ? request.getTimeoutReason() : "UNREACHABLE";

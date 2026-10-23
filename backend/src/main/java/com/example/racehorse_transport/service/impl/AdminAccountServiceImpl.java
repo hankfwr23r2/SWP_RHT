@@ -7,6 +7,7 @@ import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.SystemLog;
 import com.example.racehorse_transport.entity.User;
+import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.CustomerRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.SystemLogRepository;
@@ -150,7 +151,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
     @Transactional
     public AccountResponse updateAccount(Integer userId, com.example.racehorse_transport.dto.admin.UpdateAccountRequest request, String actorUsername) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng có ID: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng có ID: " + userId));
 
         String oldEmail = user.getEmail() != null ? user.getEmail() : "";
         String oldName = user.getUsername() != null ? user.getUsername() : "";
@@ -216,7 +217,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
     @Transactional
     public void toggleAccountStatus(Integer userId, boolean lock, String actorUsername, String reason) {
         Staff staff = staffRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhân viên có ID: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhân viên có ID: " + userId));
 
         // Quy tắc bảo mật: Không được khóa Admin duy nhất còn hoạt động trong hệ thống
         if (lock && "ADMIN".equalsIgnoreCase(staff.getRole())) {
@@ -250,7 +251,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
     @Transactional
     public String resetPassword(Integer userId, String actorUsername) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy người dùng có ID: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng có ID: " + userId));
 
         String tempPassword = "Eq" + UUID.randomUUID().toString().replace("-", "").substring(0, 6) + (10 + (int)(Math.random() * 90));
         user.setPasswordHash(passwordEncoder.encode(tempPassword));

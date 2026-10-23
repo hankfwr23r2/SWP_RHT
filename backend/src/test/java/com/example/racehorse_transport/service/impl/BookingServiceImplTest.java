@@ -11,6 +11,7 @@ import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.Horse;
 import com.example.racehorse_transport.entity.Quotation;
 import com.example.racehorse_transport.entity.User;
+import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.BookingAssignmentRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.BookingVehicleRepository;
@@ -305,7 +306,7 @@ class BookingServiceImplTest {
         when(bookingRepository.findById(404)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.getBookingById(404, "phuc"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Không tìm thấy đơn hàng có ID: 404");
     }
 
@@ -335,7 +336,7 @@ class BookingServiceImplTest {
         when(userRepository.findByUsernameOrEmail("missing", "missing")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.getCustomerBookings("missing"))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Không tìm thấy thông tin người dùng: missing");
 
         verify(bookingRepository, never()).findByCustomerID_IdOrderByBookingDateDesc(any(Integer.class));

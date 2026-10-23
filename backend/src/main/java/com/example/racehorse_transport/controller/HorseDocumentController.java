@@ -3,6 +3,7 @@ package com.example.racehorse_transport.controller;
 import com.example.racehorse_transport.dto.document.HorseDocumentResponse;
 import com.example.racehorse_transport.dto.document.ReviewHorseDocumentRequest;
 import com.example.racehorse_transport.entity.Horse;
+import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.HorseRepository;
 import com.example.racehorse_transport.response.ApiResponse;
 import com.example.racehorse_transport.service.HorseDocumentService;
@@ -123,7 +124,7 @@ public class HorseDocumentController {
     private void assertHorseAccess(Integer horseId, Authentication authentication) {
         if (authentication == null || !authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_CUSTOMER"))) return;
         Horse horse = horseRepository.findById(horseId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy ngựa với ID: " + horseId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngựa với ID: " + horseId));
         if (horse.getCustomerID() == null || horse.getCustomerID().getUser() == null
                 || !authentication.getName().equalsIgnoreCase(horse.getCustomerID().getUser().getUsername())) {
             throw new AccessDeniedException("Bạn không có quyền truy cập giấy tờ ngựa này.");

@@ -7,6 +7,7 @@ import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.Horse;
 import com.example.racehorse_transport.entity.HorseJourneyLog;
 import com.example.racehorse_transport.entity.User;
+import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.CustomerRepository;
 import com.example.racehorse_transport.repository.HorseTypeRepository;
 import com.example.racehorse_transport.repository.HorseJourneyLogRepository;
@@ -82,7 +83,7 @@ public class HorseController {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<HorseDTO>> updateHorse(@PathVariable Integer id, @RequestBody HorseDTO request, Authentication authentication) {
         Horse horse = horseService.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hồ sơ ngựa."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ ngựa."));
         ensureCanManage(horse, authentication);
         if (request.getMicrochipID() != null && !request.getMicrochipID().equalsIgnoreCase(horse.getMicrochipID())) {
             throw new IllegalArgumentException("Không thể thay đổi mã microchip sau khi lưu.");
@@ -99,7 +100,7 @@ public class HorseController {
             @RequestBody UpdateHorseLocationRequest request,
             Authentication authentication) {
         Horse horse = horseService.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hồ sơ ngựa."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ ngựa."));
         ensureCanManage(horse, authentication);
 
         if (request.getLocationName() == null || request.getLocationName().isBlank()) {
@@ -144,7 +145,7 @@ public class HorseController {
             @PathVariable Integer id,
             Authentication authentication) {
         Horse horse = horseService.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hồ sơ ngựa."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ ngựa."));
         ensureCanView(horse, authentication);
 
         List<HorseJourneyLog> logs = horseJourneyLogRepository.findByHorse_IdOrderByCreatedAtDesc(id);
@@ -171,7 +172,7 @@ public class HorseController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteHorse(@PathVariable Integer id, Authentication authentication) {
         Horse horse = horseService.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hồ sơ ngựa."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ ngựa."));
         ensureCanManage(horse, authentication);
         horseService.deleteById(id);
         return ResponseEntity.ok(ApiResponse.success(null, "Xóa hồ sơ ngựa thành công"));

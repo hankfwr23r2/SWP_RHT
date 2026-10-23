@@ -2,6 +2,7 @@ package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.entity.Horse;
 import com.example.racehorse_transport.entity.HorseDocument;
+import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.BookingHorseRepository;
 import com.example.racehorse_transport.repository.HorseDocumentRepository;
 import com.example.racehorse_transport.repository.HorseHealthLogRepository;
@@ -65,7 +66,7 @@ public class HorseServiceImpl implements HorseService {
     @Transactional
     public void deleteById(Integer id) {
         Horse horse = horseRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hồ sơ ngựa."));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ ngựa."));
         if (hasHistory(horse, id)) {
             throw new IllegalArgumentException("Không thể xóa hồ sơ ngựa đã được sử dụng trong đơn vận chuyển hoặc có lịch sử chăm sóc, hành trình.");
         }

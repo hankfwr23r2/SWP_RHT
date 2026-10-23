@@ -5,6 +5,7 @@ import com.example.racehorse_transport.entity.Horse;
 import com.example.racehorse_transport.entity.HorseHealthLog;
 import com.example.racehorse_transport.entity.Log;
 import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.HorseHealthLogRepository;
 import com.example.racehorse_transport.repository.HorseRepository;
@@ -93,7 +94,7 @@ public class HorseHealthLogServiceImpl implements HorseHealthLogService {
                                                            Integer escortStaffId) {
         // 1. Kiểm tra con ngựa này có tồn tại trong hệ thống không
         Horse horse = horseRepository.findById(horseId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy ngựa có ID: " + horseId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngựa có ID: " + horseId));
 
         // 2. Tìm chuyến đi / booking (nếu có)
         Booking booking = null;

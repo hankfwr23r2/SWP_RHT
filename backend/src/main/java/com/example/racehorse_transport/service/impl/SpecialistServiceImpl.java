@@ -3,6 +3,7 @@ package com.example.racehorse_transport.service.impl;
 import com.example.racehorse_transport.dto.booking.BookingDetailsPayload;
 import com.example.racehorse_transport.dto.booking.BookingResponse;
 import com.example.racehorse_transport.dto.booking.PartyContactDto;
+import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.dto.specialist.*;
 import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.repository.*;
@@ -437,7 +438,7 @@ public class SpecialistServiceImpl implements SpecialistService {
         }
         Integer id = parseBookingId(bookingIdentifier);
         return bookingRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
     }
 
     private Integer parseBookingId(String bookingIdentifier) {
