@@ -330,3 +330,9 @@
   .pick { grid-template-columns: 28px 1fr; }
   .pick > :last-child { grid-column: 2; }
 }
+
+/* Hộp giới thiệu hành lang an toàn ở bước chuyến đi */
+.corridorNote { display: flex; align-items: center; gap: 12px; margin-top: 16px; padding: 12px 16px; background: var(--bg-page); border: 1px solid var(--line); border-radius: 10px; font-size: 0.88rem; line-height: 1.4; }
+.corridorNote b { color: var(--navy); }
+.corridorNote p { margin: 2px 0 0; color: var(--muted); }
+.corridorIcon { display: flex; flex: none; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: 50%; background: var(--orange-soft); color: var(--orange); font-size: 1.1rem; }
