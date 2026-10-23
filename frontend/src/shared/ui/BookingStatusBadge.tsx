@@ -15,6 +15,9 @@ const ICON: Record<BookingStatus, string> = {
   incident_reported: 'fa-triangle-exclamation',
   pending_emergency_approval: 'fa-hourglass-half',
   emergency_plan_active: 'fa-kit-medical',
+  arrived: 'fa-location-dot',
+  handover_timeout: 'fa-clock',
+  returning_to_hq: 'fa-rotate-left',
   delivered_pending_settlement: 'fa-flag-checkered',
   expenses_submitted: 'fa-receipt',
   settlement_issued: 'fa-file-invoice-dollar',
@@ -27,10 +30,11 @@ const CLASS: Record<Tone, string> = { info: 'badge-info', warning: 'badge-warnin
 
 // Nhãn trạng thái đơn. Khách thấy nhãn dễ hiểu; nội bộ thấy nhãn nghiệp vụ, mã gốc theo PRD nằm ở tooltip.
 export function BookingStatusBadge({ status, audience = 'customer', text }: { status: BookingStatus; audience?: 'customer' | 'staff'; text?: string }) {
-  const s = BOOKING_STATUS[status]
+  // Trạng thái backend mới thêm mà frontend chưa biết: hiện nguyên mã thay vì làm trắng cả trang
+  const s = BOOKING_STATUS[status] ?? { code: status, label: status, customerLabel: status, tone: 'muted' as Tone }
   return (
     <span className={`badge ${CLASS[s.tone]}`} title={text ? `${s.label} (${s.code})` : s.code}>
-      <i className={`fa-solid ${ICON[status]}`} aria-hidden="true" /> {text ?? (audience === 'customer' ? s.customerLabel : s.label)}
+      <i className={`fa-solid ${ICON[status] ?? 'fa-circle-info'}`} aria-hidden="true" /> {text ?? (audience === 'customer' ? s.customerLabel : s.label)}
     </span>
   )
 }

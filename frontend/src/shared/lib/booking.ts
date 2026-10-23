@@ -413,7 +413,8 @@ export function orderGroupOf(b: { status: BookingStatus; medical?: { status: str
   switch (b.status) {
     case 'pending_intake': case 'under_review': case 'pending_commercial': return 'new'
     case 'awaiting_payment': case 'waybill_issued': case 'clearance_in_progress': case 'clearance_done': case 'ready_for_pickup': return 'approved'
-    case 'en_route_to_pickup': case 'in_transit': case 'incident_reported': case 'pending_emergency_approval': case 'emergency_plan_active': return 'moving'
+    case 'en_route_to_pickup': case 'in_transit': case 'incident_reported': case 'pending_emergency_approval': case 'emergency_plan_active':
+    case 'arrived': case 'handover_timeout': case 'returning_to_hq': return 'moving'
     case 'delivered_pending_settlement': case 'expenses_submitted': case 'settlement_issued': case 'payment_overdue': return 'settle'
     case 'completed': return 'done'
     case 'quote_expired': case 'cancelled': case 'rejected': return 'closed'
@@ -430,7 +431,8 @@ export function orderTabOf(b: Pick<Booking, 'status' | 'medical' | 'balance' | '
     case 'waybill_issued': case 'clearance_in_progress': case 'clearance_done': return 'prepare'
     case 'ready_for_pickup': return b.balance ? 'prepare' : 'pay'
     case 'en_route_to_pickup': return b.balance ? 'moving' : 'pay'
-    case 'in_transit': case 'incident_reported': case 'pending_emergency_approval': case 'emergency_plan_active': return 'moving'
+    case 'in_transit': case 'incident_reported': case 'pending_emergency_approval': case 'emergency_plan_active':
+    case 'arrived': case 'handover_timeout': case 'returning_to_hq': return 'moving'
     case 'delivered_pending_settlement': case 'expenses_submitted': return 'settle'
     case 'settlement_issued': case 'payment_overdue': return b.settlement?.total ? 'pay' : 'settle'
     case 'completed': return 'done'
@@ -447,7 +449,8 @@ export function managerBoardOf(s: BookingStatus): BoardCol | undefined {
     case 'pending_commercial': return 'quote'
     case 'awaiting_payment': return 'deposit'
     case 'waybill_issued': case 'clearance_in_progress': case 'clearance_done': case 'ready_for_pickup': case 'en_route_to_pickup': return 'prepare'
-    case 'in_transit': case 'incident_reported': case 'pending_emergency_approval': case 'emergency_plan_active': return 'moving'
+    case 'in_transit': case 'incident_reported': case 'pending_emergency_approval': case 'emergency_plan_active':
+    case 'arrived': case 'handover_timeout': case 'returning_to_hq': return 'moving'
     case 'delivered_pending_settlement': case 'expenses_submitted': case 'settlement_issued': case 'payment_overdue': return 'settle'
     case 'completed': return 'done'
     case 'quote_expired': case 'cancelled': case 'rejected': return undefined
