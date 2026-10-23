@@ -1,4 +1,4 @@
-import { useEffect, type ComponentType, type ReactNode } from 'react'
+import { Suspense, useEffect, type ComponentType, type ReactNode } from 'react'
 import { createBrowserRouter, Outlet } from 'react-router'
 import { RequireRole } from '../auth/RequireRole'
 import type { AppRoute } from './types'
@@ -18,7 +18,8 @@ export function buildRouter(routes: AppRoute[], layouts: Layouts, opts: { basena
       children: routes.map(r => {
         const Page = r.page
         const Layout = (r.layout && layouts[r.layout]) || (({ children }: { children: ReactNode }) => children)
-        let element = <Titled title={r.title}><Layout><Page /></Layout></Titled>
+        // Suspense nằm trong layout: khi trang lazy đang tải, menu/khung vẫn đứng yên, chỉ phần nội dung chờ
+        let element = <Titled title={r.title}><Layout><Suspense fallback={null}><Page /></Suspense></Layout></Titled>
         if (r.roles.length) element = <RequireRole roles={r.roles} loginPath={opts.loginPath}>{element}</RequireRole>
         return { path: r.path, element }
       }),
