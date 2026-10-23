@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.dto.booking;
 
+import com.example.racehorse_transport.util.BookingStatusLabels;
 import lombok.*;
 
 import java.util.List;
@@ -48,4 +49,13 @@ public class BookingResponse {
     private Object intake;
     private Object rejection;
     private List<java.util.Map<String, Object>> history;
+
+    // Nhãn của trạng thái hiện tại, lấy từ BookingStatusLabels; mọi nơi dựng BookingResponse đều có sẵn
+    public String getStatusLabel() {
+        return BookingStatusLabels.staffLabel(status);
+    }
+
+    public String getCustomerStatusLabel() {
+        return BookingStatusLabels.customerLabel(status);
+    }
 }
