@@ -4,13 +4,13 @@ import {
   routesApi,
   type BackendRouteResponse,
   type BackendLocationResponse,
-  type BackendLocationRouteResponse,
   type CreateRoutePayload,
 } from '@shared/api/routes'
 import { useLoad } from '@shared/services/useLoad'
 import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
 import { ListPage, type Column, type TabDef } from '../../../shared/ListPage'
+import s from './AdminRoutes.module.css'
 
 type Tab = 'all' | 'ACTIVE' | 'INACTIVE'
 
@@ -28,28 +28,26 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
   const [distance, setDistance] = useState(route?.distance ? String(route.distance) : '')
   const [estimatedTime, setEstimatedTime] = useState(route?.estimatedTime ? String(route.estimatedTime) : '')
   const [status, setStatus] = useState(route?.status ?? 'ACTIVE')
-  const [selectedLocationIds, setSelectedLocationIds] = useState<number[]>([])
   const [busy, setBusy] = useState(false)
 
-  // Nạp danh sách điểm dừng của tuyến nếu đang sửa
-  useLoad(async () => {
-    if (!route) return
-    try {
-      const stops = await routesApi.getRouteStops(route.id)
-      setSelectedLocationIds(stops.map(s => s.locationID))
-    } catch {
-      // Bỏ qua lỗi nạp stops
-    }
-  }, [route])
+  // Điểm dừng đã lưu của tuyến đang sửa. Lỗi tải sẽ hiện thông báo (useLoad), không bị bỏ qua.
+  const { data: savedStopIds, loaded: stopsLoaded } = useLoad(
+    async () => (route ? (await routesApi.getRouteStops(route.id)).map(stop => stop.locationID) : []),
+    [route],
+  )
+  // undefined = admin chưa chỉnh danh sách, dùng danh sách đã lưu
+  const [pickedIds, setPickedIds] = useState<number[]>()
+  const selectedLocationIds = pickedIds ?? savedStopIds ?? []
+  const editStops = (change: (ids: number[]) => number[]) => setPickedIds(prev => change(prev ?? savedStopIds ?? []))
 
   const toggleLocation = (locId: number) => {
-    setSelectedLocationIds(prev =>
+    editStops(prev =>
       prev.includes(locId) ? prev.filter(id => id !== locId) : [...prev, locId]
     )
   }
 
   const moveOrder = (index: number, direction: 'up' | 'down') => {
-    setSelectedLocationIds(prev => {
+    editStops(prev => {
       const copy = [...prev]
       const targetIndex = direction === 'up' ? index - 1 : index + 1
       if (targetIndex < 0 || targetIndex >= copy.length) return prev
@@ -73,7 +71,9 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
         distance: distance ? Number(distance) : undefined,
         estimatedTime: estimatedTime ? Number(estimatedTime) : undefined,
         status,
-        stops: selectedLocationIds.map((locId, idx) => ({
+        // Không tải được điểm dừng đã lưu và admin chưa chỉnh: không gửi stops để backend giữ nguyên,
+        // tránh gửi danh sách rỗng làm xoá hết điểm dừng của tuyến
+        stops: route && !pickedIds && !savedStopIds ? undefined : selectedLocationIds.map((locId, idx) => ({
           locationId: locId,
           stopOrder: idx + 1,
         })),
@@ -106,7 +106,7 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
           </button>
           <button
             className="btn btn-primary"
-            disabled={busy || !name.trim()}
+            disabled={busy || !name.trim() || (!!route && !stopsLoaded)}
             onClick={save}
           >
             <i className="fa-solid fa-floppy-disk" /> {route ? 'Lưu thay đổi' : 'Tạo tuyến đường'}
@@ -114,8 +114,8 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
         </>
       }
     >
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+      <div className={s.form}>
+        <div className={`form-group ${s.full}`}>
           <label htmlFor="rt-name" className="required">
             Tên tuyến hành lang cố định
           </label>
@@ -153,7 +153,7 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
           />
         </div>
 
-        <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+        <div className={`form-group ${s.full}`}>
           <label htmlFor="rt-desc">Mô tả & Hướng dẫn kỹ thuật</label>
           <textarea
             id="rt-desc"
@@ -179,136 +179,78 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
         </div>
       </div>
 
-      <div style={{ marginTop: 20 }}>
-        <h4 style={{ margin: '0 0 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>
-            <i className="fa-solid fa-map-pin" style={{ color: 'var(--orange)' }} /> Nút giao & Trạm dừng trên tuyến ({selectedLocationIds.length} điểm)
-          </span>
-          <span style={{ fontSize: '0.82rem', fontWeight: 'normal', color: 'var(--muted)' }}>
-            Tích chọn và điều chỉnh thứ tự di chuyển từ điểm đi đến điểm đến
-          </span>
-        </h4>
+      <h4 className={s.stopsHead}>
+        <span>
+          <i className="fa-solid fa-map-pin" /> Nút giao & Trạm dừng trên tuyến ({selectedLocationIds.length} điểm)
+        </span>
+        <small>Tích chọn và điều chỉnh thứ tự di chuyển từ điểm đi đến điểm đến</small>
+      </h4>
 
-        {/* Danh sách các điểm đã chọn theo thứ tự */}
-        {selectedLocationIds.length > 0 && (
-          <div style={{ marginBottom: 16, padding: 12, background: 'var(--surface-soft, #f8fafc)', borderRadius: 8, border: '1px solid var(--line, #e2e8f0)' }}>
-            <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: 8, color: 'var(--text-strong)' }}>
-              Trình tự các mốc dừng/nút giao (Stop Order):
-            </div>
-            <div style={{ display: 'grid', gap: 6 }}>
-              {selectedLocationIds.map((locId, idx) => {
-                const loc = locations.find(l => l.id === locId)
-                if (!loc) return null
-                return (
-                  <div
-                    key={locId}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '6px 12px',
-                      background: '#fff',
-                      borderRadius: 6,
-                      border: '1px solid var(--line, #e2e8f0)',
-                      fontSize: '0.88rem',
-                    }}
+      {/* Danh sách các điểm đã chọn theo thứ tự */}
+      {selectedLocationIds.length > 0 && (
+        <div className={s.picked}>
+          <div className={s.pickedTitle}>Trình tự các mốc dừng/nút giao (Stop Order):</div>
+          {selectedLocationIds.map((locId, idx) => {
+            const loc = locations.find(l => l.id === locId)
+            if (!loc) return null
+            return (
+              <div key={locId} className={s.pickedRow}>
+                <div className={s.pickedName}>
+                  <span className={s.order}>{idx + 1}</span>
+                  <span>
+                    <b>{loc.locationName}</b> ({loc.locationType} · {loc.province || loc.city})
+                  </span>
+                </div>
+                <div className={s.rowActions}>
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    disabled={idx === 0}
+                    onClick={() => moveOrder(idx, 'up')}
+                    title="Di chuyển lên trước"
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span
-                        style={{
-                          width: 22,
-                          height: 22,
-                          borderRadius: '50%',
-                          background: 'var(--primary, #ea580c)',
-                          color: '#fff',
-                          fontSize: '0.78rem',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontWeight: 'bold',
-                        }}
-                      >
-                        {idx + 1}
-                      </span>
-                      <span>
-                        <b>{loc.locationName}</b> ({loc.locationType} · {loc.province || loc.city})
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', gap: 4 }}>
-                      <button
-                        type="button"
-                        className="btn btn-outline btn-sm"
-                        style={{ padding: '2px 8px' }}
-                        disabled={idx === 0}
-                        onClick={() => moveOrder(idx, 'up')}
-                        title="Di chuyển lên trước"
-                      >
-                        <i className="fa-solid fa-arrow-up" />
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-outline btn-sm"
-                        style={{ padding: '2px 8px' }}
-                        disabled={idx === selectedLocationIds.length - 1}
-                        onClick={() => moveOrder(idx, 'down')}
-                        title="Di chuyển xuống sau"
-                      >
-                        <i className="fa-solid fa-arrow-down" />
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-danger btn-sm"
-                        style={{ padding: '2px 8px' }}
-                        onClick={() => toggleLocation(locId)}
-                        title="Xóa mốc"
-                      >
-                        <i className="fa-solid fa-xmark" />
-                      </button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Danh mục các điểm khả dụng để chọn */}
-        <div style={{ maxHeight: 220, overflowY: 'auto', border: '1px solid var(--line, #e2e8f0)', borderRadius: 8, padding: 8 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 8 }}>
-            {locations.map(loc => {
-              const checked = selectedLocationIds.includes(loc.id)
-              return (
-                <label
-                  key={loc.id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: 8,
-                    padding: '8px 10px',
-                    borderRadius: 6,
-                    border: `1px solid ${checked ? 'var(--primary, #ea580c)' : 'var(--line, #e2e8f0)'}`,
-                    background: checked ? 'var(--primary-soft, #fff7ed)' : '#fff',
-                    cursor: 'pointer',
-                    fontSize: '0.85rem',
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleLocation(loc.id)}
-                    style={{ marginTop: 3 }}
-                  />
-                  <div>
-                    <div style={{ fontWeight: 600, color: 'var(--text-strong)' }}>{loc.locationName}</div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--muted)' }}>
-                      {loc.locationType} · {loc.city}, {loc.country}
-                    </div>
-                  </div>
-                </label>
-              )
-            })}
-          </div>
+                    <i className="fa-solid fa-arrow-up" />
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    disabled={idx === selectedLocationIds.length - 1}
+                    onClick={() => moveOrder(idx, 'down')}
+                    title="Di chuyển xuống sau"
+                  >
+                    <i className="fa-solid fa-arrow-down" />
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-danger btn-sm"
+                    onClick={() => toggleLocation(locId)}
+                    title="Xóa mốc"
+                  >
+                    <i className="fa-solid fa-xmark" />
+                  </button>
+                </div>
+              </div>
+            )
+          })}
         </div>
+      )}
+
+      {/* Danh mục các điểm khả dụng để chọn */}
+      <div className={s.choices}>
+        {locations.map(loc => {
+          const checked = selectedLocationIds.includes(loc.id)
+          return (
+            <label key={loc.id} className={`${s.choice} ${checked ? s.choiceOn : ''}`}>
+              <input type="checkbox" checked={checked} onChange={() => toggleLocation(loc.id)} />
+              <div>
+                <b>{loc.locationName}</b>
+                <small>
+                  {loc.locationType} · {loc.city}, {loc.country}
+                </small>
+              </div>
+            </label>
+          )
+        })}
       </div>
     </Modal>
   )
@@ -321,17 +263,7 @@ function StopsViewModal({
   route: BackendRouteResponse
   onClose: () => void
 }) {
-  const [stops, setStops] = useState<BackendLocationRouteResponse[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useLoad(async () => {
-    try {
-      const data = await routesApi.getRouteStops(route.id)
-      setStops(data)
-    } finally {
-      setLoading(false)
-    }
-  }, [route])
+  const { data: stops, loaded } = useLoad(() => routesApi.getRouteStops(route.id), [route])
 
   return (
     <Modal
@@ -344,50 +276,22 @@ function StopsViewModal({
         </button>
       }
     >
-      {loading ? (
-        <div style={{ padding: 24, textAlign: 'center' }}>Đang nạp danh sách mốc dừng...</div>
+      {!loaded ? (
+        <div className={s.notice}>Đang nạp danh sách mốc dừng...</div>
+      ) : !stops ? (
+        <div className={s.notice}>Không tải được danh sách mốc dừng của tuyến này.</div>
       ) : stops.length === 0 ? (
-        <div style={{ padding: 24, textAlign: 'center', color: 'var(--muted)' }}>
-          Tuyến đường này chưa được gán mốc dừng/nút giao nào.
-        </div>
+        <div className={s.notice}>Tuyến đường này chưa được gán mốc dừng/nút giao nào.</div>
       ) : (
-        <div style={{ display: 'grid', gap: 10 }}>
-          {stops.map((s, idx) => (
-            <div
-              key={s.locationID}
-              style={{
-                display: 'flex',
-                gap: 12,
-                padding: '10px 14px',
-                background: 'var(--surface-soft, #f8fafc)',
-                borderRadius: 8,
-                border: '1px solid var(--line, #e2e8f0)',
-                alignItems: 'center',
-              }}
-            >
-              <div
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: '50%',
-                  background: 'var(--primary, #ea580c)',
-                  color: '#fff',
-                  fontWeight: 'bold',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '0.85rem',
-                }}
-              >
-                {idx + 1}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>
-                  {s.locationName || `Địa điểm #${s.locationID}`}
-                </div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>
-                  Loại: <b>{s.locationType || 'Nút giao / Trạm'}</b> · {s.address || s.province || s.country}
-                </div>
+        <div className={s.stopList}>
+          {stops.map((st, idx) => (
+            <div key={st.locationID} className={s.stop}>
+              <span className={`${s.order} ${s.orderLg}`}>{idx + 1}</span>
+              <div>
+                <b>{st.locationName || `Địa điểm #${st.locationID}`}</b>
+                <small>
+                  Loại: <b>{st.locationType || 'Nút giao / Trạm'}</b> · {st.address || st.province || st.country}
+                </small>
               </div>
             </div>
           ))}
@@ -399,25 +303,11 @@ function StopsViewModal({
 
 export default function AdminRoutesPage() {
   const toast = useToast()
-  const [routes, setRoutes] = useState<BackendRouteResponse[]>([])
-  const [locations, setLocations] = useState<BackendLocationResponse[]>([])
   const [tab, setTab] = useState<Tab>('all')
   const [modal, setModal] = useState<{ kind: 'edit'; route: BackendRouteResponse | null } | { kind: 'stops'; route: BackendRouteResponse } | null>(null)
 
-  const reload = async () => {
-    try {
-      const [rtData, locData] = await Promise.all([
-        routesApi.listRoutes(),
-        routesApi.listLocations(),
-      ])
-      setRoutes(rtData)
-      setLocations(locData)
-    } catch {
-      // Bỏ qua lỗi kết nối ban đầu
-    }
-  }
-
-  const { loaded } = useLoad(reload, [])
+  const { data, loaded, reload } = useLoad(() => Promise.all([routesApi.listRoutes(), routesApi.listLocations()]))
+  const [routes, locations] = data ?? [[], []]
 
   const rows = routes.filter(r => (tab === 'all' ? true : r.status === tab))
 
@@ -431,16 +321,12 @@ export default function AdminRoutesPage() {
     {
       head: 'Mã & Tên tuyến hành lang',
       cell: r => (
-        <div>
-          <div style={{ fontWeight: 600, color: 'var(--text-strong)' }}>
-            <span style={{ color: 'var(--orange)', marginRight: 6 }}>#{r.id}</span>
+        <div className={s.name}>
+          <b>
+            <span>#{r.id}</span>
             {r.routeName}
-          </div>
-          {r.description && (
-            <div style={{ fontSize: '0.82rem', color: 'var(--muted)', marginTop: 2 }}>
-              {r.description}
-            </div>
-          )}
+          </b>
+          {r.description && <small>{r.description}</small>}
         </div>
       ),
     },
@@ -457,17 +343,7 @@ export default function AdminRoutesPage() {
     {
       head: 'Trạng thái',
       cell: r => (
-        <span
-          className={`badge ${r.status === 'ACTIVE' ? 'badge-success' : 'badge-neutral'}`}
-          style={{
-            padding: '4px 10px',
-            borderRadius: 12,
-            fontSize: '0.8rem',
-            fontWeight: 600,
-            background: r.status === 'ACTIVE' ? '#dcfce7' : '#f1f5f9',
-            color: r.status === 'ACTIVE' ? '#15803d' : '#64748b',
-          }}
-        >
+        <span className={`badge ${r.status === 'ACTIVE' ? 'badge-success' : 'badge-muted'}`}>
           {r.status === 'ACTIVE' ? 'Đang khai thác' : 'Tạm dừng'}
         </span>
       ),
@@ -476,7 +352,7 @@ export default function AdminRoutesPage() {
     {
       head: 'Thao tác',
       cell: r => (
-        <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end' }}>
+        <div className={s.actions}>
           <button
             type="button"
             className="btn btn-outline btn-sm"
@@ -496,8 +372,7 @@ export default function AdminRoutesPage() {
           {r.status === 'ACTIVE' ? (
             <button
               type="button"
-              className="btn btn-ghost btn-sm"
-              style={{ color: 'var(--red)' }}
+              className={`btn btn-ghost btn-sm ${s.pause}`}
               onClick={async () => {
                 if (window.confirm(`Bạn có chắc muốn tạm dừng tuyến ${r.routeName}?`)) {
                   try {
@@ -516,8 +391,7 @@ export default function AdminRoutesPage() {
           ) : (
             <button
               type="button"
-              className="btn btn-ghost btn-sm"
-              style={{ color: 'var(--green)' }}
+              className={`btn btn-ghost btn-sm ${s.resume}`}
               onClick={async () => {
                 try {
                   await routesApi.updateRoute(r.id, { routeName: r.routeName, status: 'ACTIVE' })
