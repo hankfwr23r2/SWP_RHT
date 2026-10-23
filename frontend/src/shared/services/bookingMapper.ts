@@ -4,7 +4,7 @@ import type { BackendBookingResponse } from '../api/bookings'
 import type { BackendIncidentResponse } from '../api/incidents'
 import type { BookingStatus, IncidentKind } from '../config/booking-rules'
 import type { CountryCode } from '../config/network'
-import type { Booking, BookingHorse, Clearance, HistoryEntry, Incident, IncidentExpense, MedicalReview, Payment, PlaceRef, Quote, Rating, Rejection, RoutePlan, Settlement, VehicleTrip } from '../types/booking'
+import type { Booking, BookingHorse, Cancellation, Clearance, HistoryEntry, Incident, IncidentExpense, MedicalReview, Payment, PlaceRef, Quote, Rating, Rejection, RoutePlan, Settlement, VehicleTrip } from '../types/booking'
 import { COUNTRY_LOCATIONS, PLACES } from '../config/network'
 
 const allPlaces = (): { id: string; name: string; country: CountryCode }[] => [
@@ -24,6 +24,13 @@ const num = (v: unknown): number | undefined => (typeof v === 'number' ? v : und
 function paymentOf(p: Record<string, unknown> | undefined): Payment | undefined {
   const paidAt = num(p?.paidAt), amount = num(p?.amount)
   return paidAt !== undefined && amount !== undefined ? { paidAt, amount, reference: String(p?.reference ?? '') } : undefined
+}
+
+// Khách hủy sau cọc: backend ghi vào cùng bản ghi thanh toán (cancelled, cancelledAt, cancelReason, refundAmount).
+// Đơn cũ hủy trước khi có cancelledAt thì chưa biết thời điểm hủy.
+function cancellationOf(p: Record<string, unknown> | undefined): Cancellation | undefined {
+  if (!p?.cancelled) return undefined
+  return { at: num(p.cancelledAt), reason: String(p.cancelReason ?? ''), by: 'customer', refund: num(p.refundAmount) ?? 0 }
 }
 
 // Tiền 70% ngày D: backend ghi cùng bản ghi thanh toán với tiền cọc, khác khóa
@@ -146,6 +153,8 @@ export function toBooking(r: BackendBookingResponse, customer?: string): Booking
   const payment = paymentOf(r.payment)
   if (payment) b.payment = payment
   const balance = balanceOf(r.payment)
+  const cancellation = cancellationOf(r.payment)
+  if (cancellation) b.cancellation = cancellation
   if (balance) b.balance = balance
   b.canCancel = r.canCancel === true
   b.canPayBalance = r.canPayBalance === true
