@@ -3,13 +3,13 @@ import { lazy } from 'react'
 import type { AppRoute } from '@shared/routing/types'
 import LoginPage from './features/auth/LoginPage'
 import HomePage from './features/home/HomePage'
+import { portalLoader } from './features/portal/portalLoader'
 
 // Trang chủ và đăng nhập tải ngay; các trang còn lại chỉ tải khi mở tới (lazy), để lần mở web đầu tiên
 // không phải tải cả thư viện bản đồ (~1,7 MB) mà trang chủ không dùng.
 const SitemapPage = lazy(() => import('../sitemap/SitemapPage').then(m => ({ default: m.SitemapPage })))
 const CustomerForgotPasswordPage = lazy(() => import('@shared/auth/ForgotPasswordPage').then(m => ({ default: m.CustomerForgotPasswordPage })))
 const RegisterPage = lazy(() => import('./features/auth/RegisterPage'))
-const PortalPage = lazy(() => import('./features/portal/PortalPage'))
 const HorsesPage = lazy(() => import('./features/horses/HorsesPage'))
 const Step1RoutePage = lazy(() => import('./features/booking/Step1RoutePage'))
 const Step2HorsesPage = lazy(() => import('./features/booking/Step2HorsesPage'))
@@ -29,7 +29,7 @@ export const routes: AppRoute[] = [
   { path: '/login', page: LoginPage, roles: [], title: 'Đăng nhập', layout: 'bare' },
   { path: '/forgot-password', page: CustomerForgotPasswordPage, roles: [], title: 'Quên mật khẩu', layout: 'bare' },
   { path: '/register', page: RegisterPage, roles: [], title: 'Đăng ký', layout: 'bare' },
-  { path: '/portal', page: PortalPage, roles: C, title: 'Trang chủ', layout: 'customer' },
+  { path: '/portal', lazyPage: () => import('./features/portal/PortalPage'), loader: portalLoader, roles: C, title: 'Trang chủ', layout: 'customer' },
   { path: '/profile', page: ProfilePage, roles: C, title: 'Hồ sơ cá nhân', layout: 'customer' },
   { path: '/horses', page: HorsesPage, roles: C, title: 'Hồ sơ ngựa', layout: 'customer' },
   { path: '/booking/route', page: Step1RoutePage, roles: C, title: 'Đặt chuyến · Chuyến đi', layout: 'customer' },

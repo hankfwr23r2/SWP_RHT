@@ -35,7 +35,8 @@ export default function LoginPage() {
         name: res.fullName || res.username,
         username: res.email || res.username,
       })
-      navigate(from ?? '/portal')
+      // Chờ router tải xong trang đích (kể cả dữ liệu) rồi mới thôi trạng thái đang đăng nhập
+      await navigate(from ?? '/portal')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Đăng nhập thất bại. Vui lòng kiểm tra lại.')
     } finally {
