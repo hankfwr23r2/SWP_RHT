@@ -357,6 +357,15 @@ public class IncidentServiceImpl implements IncidentService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<IncidentResponse> getCustomerIncidents(String customerUsername) {
+        return incidentRepository.findByBookingID_CustomerID_User_Username(customerUsername)
+                .stream()
+                .map(this::mapToCustomerResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<IncidentResponse> getAllIncidents(String status) {
         List<Incident> list = (status != null && !status.isBlank() && !status.equalsIgnoreCase("ALL"))
                 ? incidentRepository.findByStatus(status.toLowerCase())

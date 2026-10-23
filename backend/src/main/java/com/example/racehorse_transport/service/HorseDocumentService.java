@@ -49,4 +49,12 @@ public interface HorseDocumentService {
      * @return Danh sách hồ sơ
      */
     List<HorseDocumentResponse> getDocumentsByHorse(Integer horseId);
+
+    /**
+     * Lấy hồ sơ của mọi con ngựa thuộc khách hàng đang đăng nhập.
+     *
+     * @param customerUsername Tài khoản khách hàng
+     * @return Danh sách hồ sơ
+     */
+    List<HorseDocumentResponse> getCustomerDocuments(String customerUsername);
 }

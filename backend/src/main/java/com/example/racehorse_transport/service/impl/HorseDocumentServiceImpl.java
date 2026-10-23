@@ -194,6 +194,18 @@ public class HorseDocumentServiceImpl implements HorseDocumentService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Lấy hồ sơ của mọi con ngựa thuộc khách hàng (một truy vấn thay cho từng ngựa).
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<HorseDocumentResponse> getCustomerDocuments(String customerUsername) {
+        return horseDocumentRepository.findByHorseID_CustomerID_User_UsernameIgnoreCase(customerUsername)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
     // =========================================================================
     // HELPER METHODS
     // =========================================================================
