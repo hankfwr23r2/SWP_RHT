@@ -9,6 +9,7 @@ import { routeOutline } from '@shared/lib/booking'
 import { useRoadRoute } from '@shared/services/useRoadRoute'
 import type { RestStop } from '@shared/types/booking'
 import { Modal } from '@shared/ui/Modal'
+import { addVietmapBaseLayer, VIETMAP_MAP_OPTIONS } from '@shared/ui/vietmapLeaflet'
 import './RouteMapPicker.css'
 
 type Point = GeoPoint & { name: string }
@@ -61,12 +62,9 @@ export function RouteMapPicker({ origin, dest, gate, departAt, value, onApply, o
   // Dựng bản đồ một lần
   useEffect(() => {
     if (!box.current) return
-    const m = L.map(box.current, { zoomControl: false, attributionControl: true })
+    const m = L.map(box.current, { ...VIETMAP_MAP_OPTIONS, zoomControl: false, attributionControl: true })
     L.control.zoom({ position: 'topright' }).addTo(m)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    }).addTo(m)
+    addVietmapBaseLayer(m)
     // Mở ra đã zoom vào tuyến (điểm đón, điểm trả, cửa khẩu); các trạm xa hơn thì kéo bản đồ để thấy
     const route = [origin, dest, ...(gate ? [gate] : [])]
     m.fitBounds(L.latLngBounds(route.map(p => [p.lat, p.lng] as [number, number])), { padding: [90, 90], maxZoom: 11 })
