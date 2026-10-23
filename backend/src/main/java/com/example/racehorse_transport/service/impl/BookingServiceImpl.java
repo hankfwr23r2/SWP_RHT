@@ -60,26 +60,6 @@ public class BookingServiceImpl implements BookingService {
     private final TripDocumentRepository tripDocumentRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    @Override
-    public List<Booking> findAll() {
-        return bookingRepository.findAll();
-    }
-
-    @Override
-    public Optional<Booking> findById(Integer id) {
-        return bookingRepository.findById(id);
-    }
-
-    @Override
-    public Booking save(Booking entity) {
-        return bookingRepository.save(entity);
-    }
-
-    @Override
-    public void deleteById(Integer id) {
-        bookingRepository.deleteById(id);
-    }
-
     // =========================================================================
     // PHẦN VIỆC CỦA DEV 1 (Lead): Quản lý Đơn hàng (Flow 1)
     // =========================================================================
@@ -1563,39 +1543,6 @@ public class BookingServiceImpl implements BookingService {
                 .rejection(payload != null ? payload.getRejection() : null)
                 .history(payload != null ? payload.getHistory() : null)
                 .build();
-    }
-
-    // Dev 4: Bàn giao, ký nhận, kết thúc đơn hàng (Flow 6)
-    @Override
-    @Transactional
-    public boolean completeBookingDelivery(Integer bookingId, String recipientName, String recipientSignature,
-            String note) {
-        // 1. Tìm đơn hàng cần hoàn thành
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng có ID: " + bookingId));
-
-        // 2. Kiểm tra trạng thái hiện tại
-        if ("COMPLETED".equalsIgnoreCase(booking.getStatus())) {
-            throw new IllegalArgumentException("Đơn hàng này đã được bàn giao và hoàn tất trước đó!");
-        }
-
-        // 3. Cập nhật trạng thái đơn hàng sang "COMPLETED" (Hoàn thành)
-        booking.setStatus("COMPLETED");
-        bookingRepository.save(booking);
-
-        // 4. Lưu biên bản bàn giao & chữ ký vào bảng LOG hệ thống để đối soát
-        Log deliveryLog = new Log();
-        deliveryLog.setId((int) (logRepository.count() + 1));
-        deliveryLog.setBookingID(booking);
-        deliveryLog.setLogType("DELIVERY_COMPLETED");
-        deliveryLog.setStatus("SUCCESS");
-        deliveryLog.setNote("Hoàn tất bàn giao ngựa. Người nhận: " + recipientName
-                + (recipientSignature != null ? " | Chữ ký/Biên bản: " + recipientSignature : "")
-                + (note != null ? " | Ghi chú: " + note : ""));
-        deliveryLog.setCreatedAt(Instant.now());
-        logRepository.save(deliveryLog);
-
-        return true;
     }
 
     @Override
