@@ -35,7 +35,7 @@ export default function Step4ReviewPage() {
     const toList = () => navigate(`/orders?group=confirm&new=${placed.id}`)
     return (
       <Modal onClose={toList} title={<><i className="fa-solid fa-circle-check" style={{ color: 'var(--green)' }} /> Đã gửi đơn {placed.id}</>} subtitle="Đơn của bạn đã được ghi nhận"
-        footer={<><button className="btn btn-ghost" onClick={() => navigate(`/orders/${placed.id}`)}>Xem chi tiết đơn</button><button className="btn btn-primary" onClick={toList}>Xem đơn vừa đặt</button></>}>
+        footer={<button className="btn btn-primary" onClick={toList}>Đến trang Đơn của tôi</button>}>
         <dl className={s.reviewGrid}>
           <div><dt>Tuyến</dt><dd>{placed.route}</dd></div>
           <div><dt>Ngày khởi hành</dt><dd>{placed.date}</dd></div>
