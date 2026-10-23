@@ -1,9 +1,12 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.dto.route.CreateRouteRequest;
+import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.LocationRoute;
 import com.example.racehorse_transport.entity.LocationRouteId;
 import com.example.racehorse_transport.entity.Log;
 import com.example.racehorse_transport.entity.Route;
+import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.repository.LocationRouteRepository;
 import com.example.racehorse_transport.repository.LogRepository;
 import com.example.racehorse_transport.repository.RouteRepository;
@@ -14,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -22,14 +26,17 @@ public class RouteServiceImpl implements RouteService {
 
     private final RouteRepository routeRepository;
     private final LocationRouteRepository locationRouteRepository;
+    private final LocationRepository locationRepository;
     private final LogRepository logRepository;
 
     @Autowired
     public RouteServiceImpl(RouteRepository routeRepository,
                             LocationRouteRepository locationRouteRepository,
+                            LocationRepository locationRepository,
                             LogRepository logRepository) {
         this.routeRepository = routeRepository;
         this.locationRouteRepository = locationRouteRepository;
+        this.locationRepository = locationRepository;
         this.logRepository = logRepository;
     }
 
@@ -102,4 +109,96 @@ public class RouteServiceImpl implements RouteService {
 
         return true;
     }
-}
+
+    // =========================================================================
+    // PHẦN VIỆC CỦA ADMIN: Quản lý tuyến đường cố định & trạm dừng
+    // =========================================================================
+
+    @Override
+    @Transactional
+    public Route createRoute(CreateRouteRequest request) {
+        if (request == null || request.getRouteName() == null || request.getRouteName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Tên tuyến đường không được để trống!");
+        }
+
+        Route route = new Route();
+        Integer maxId = routeRepository.findAll().stream().mapToInt(Route::getId).max().orElse(0);
+        route.setId(maxId + 1);
+        route.setRouteName(request.getRouteName().trim());
+        route.setDescription(request.getDescription());
+        route.setEstimatedTime(request.getEstimatedTime());
+        route.setDistance(request.getDistance());
+        route.setStatus(request.getStatus() != null && !request.getStatus().isBlank()
+                ? request.getStatus().trim().toUpperCase()
+                : "ACTIVE");
+
+        Route savedRoute = routeRepository.save(route);
+        saveRouteStops(savedRoute, request.getStops());
+        return savedRoute;
+    }
+
+    @Override
+    @Transactional
+    public Route updateRoute(Integer id, CreateRouteRequest request) {
+        Route route = routeRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tuyến đường có ID: " + id));
+
+        if (request.getRouteName() != null && !request.getRouteName().trim().isEmpty()) {
+            route.setRouteName(request.getRouteName().trim());
+        }
+        if (request.getDescription() != null) {
+            route.setDescription(request.getDescription());
+        }
+        if (request.getEstimatedTime() != null) {
+            route.setEstimatedTime(request.getEstimatedTime());
+        }
+        if (request.getDistance() != null) {
+            route.setDistance(request.getDistance());
+        }
+        if (request.getStatus() != null && !request.getStatus().isBlank()) {
+            route.setStatus(request.getStatus().trim().toUpperCase());
+        }
+
+        Route savedRoute = routeRepository.save(route);
+        if (request.getStops() != null) {
+            saveRouteStops(savedRoute, request.getStops());
+        }
+        return savedRoute;
+    }
+
+    @Override
+    @Transactional
+    public void deactivateRoute(Integer id) {
+        Route route = routeRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tuyến đường có ID: " + id));
+        route.setStatus("INACTIVE");
+        routeRepository.save(route);
+    }
+
+    private void saveRouteStops(Route route, List<CreateRouteRequest.RouteStopItem> stops) {
+        locationRouteRepository.deleteByRouteId(route.getId());
+        if (stops == null || stops.isEmpty()) {
+            return;
+        }
+
+        List<LocationRoute> newStops = new ArrayList<>();
+        for (int i = 0; i < stops.size(); i++) {
+            CreateRouteRequest.RouteStopItem stopItem = stops.get(i);
+            if (stopItem.getLocationId() == null) continue;
+
+            Location location = locationRepository.findById(stopItem.getLocationId())
+                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy điểm dừng ID: " + stopItem.getLocationId()));
+
+            LocationRoute lr = new LocationRoute();
+            LocationRouteId lrId = new LocationRouteId();
+            lrId.setRouteID(route.getId());
+            lrId.setLocationID(location.getId());
+            lr.setId(lrId);
+            lr.setRouteID(route);
+            lr.setLocationID(location);
+            lr.setStopOrder(stopItem.getStopOrder() != null ? stopItem.getStopOrder() : (i + 1));
+            newStops.add(lr);
+        }
+        locationRouteRepository.saveAll(newStops);
+    }
+}

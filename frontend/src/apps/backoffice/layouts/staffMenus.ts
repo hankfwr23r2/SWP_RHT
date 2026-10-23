@@ -4,7 +4,8 @@ import type { StaffRole } from '@shared/types/role'
 export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: { group?: string; icon?: string }][]> = {
   // Danh mục tài khoản theo vai trò; số lượng hiện cạnh từng mục
   admin: [
-    ['/admin/accounts', 'Tất cả tài khoản', { icon: 'fa-users-gear' }],
+    ['/admin/routes', 'Tuyến đường cố định', { group: 'Mạng lưới hành lang an toàn', icon: 'fa-road' }],
+    ['/admin/accounts', 'Tất cả tài khoản', { group: 'Quản lý tài khoản', icon: 'fa-users-gear' }],
     ['/admin/accounts/admin', 'Quản trị viên', { icon: 'fa-user-shield' }],
     ['/admin/accounts/manager', 'Quản lý', { icon: 'fa-user-tie' }],
     ['/admin/accounts/specialist', 'Kiểm dịch viên', { icon: 'fa-user-doctor' }],

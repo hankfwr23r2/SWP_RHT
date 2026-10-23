@@ -19,4 +19,11 @@ public class LocationRouteDTO implements Serializable {
     private Integer stopOrder;
     private LocalTime arrivalTime;
     private LocalTime departureTime;
+
+    private String locationName;
+    private String locationType;
+    private String address;
+    private String province;
+    private String country;
 }
+

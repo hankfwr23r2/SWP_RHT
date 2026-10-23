@@ -3,6 +3,7 @@ import type { AppRoute } from '@shared/routing/types'
 import { SitemapPage } from '../sitemap/SitemapPage'
 import { ManagerLoginPage, StaffLoginPage } from './features/auth/StaffLoginPage'
 import AccountsPage from './features/admin/accounts/AccountsPage'
+import AdminRoutesPage from './features/admin/routes/AdminRoutesPage'
 import IntakePage from './features/manager/intake/IntakePage'
 import ApprovalsPage from './features/manager/approvals/ApprovalsPage'
 import DashboardPage from './features/manager/dashboard/DashboardPage'
@@ -37,6 +38,7 @@ export const routes: AppRoute[] = [
 
   { path: '/admin/accounts', page: AccountsPage, roles: A, title: 'Tài khoản hệ thống', layout: 'staff' },
   { path: '/admin/accounts/:role', page: AccountsPage, roles: A, title: 'Tài khoản theo loại', layout: 'staff' },
+  { path: '/admin/routes', page: AdminRoutesPage, roles: A, title: 'Tuyến đường cố định', layout: 'staff' },
 
   { path: '/manager', page: DashboardPage, roles: M, title: 'Bảng điều khiển', layout: 'staff' },
   { path: '/manager/intake', page: IntakePage, roles: M, title: 'Tiếp nhận đơn hàng', layout: 'staff' },
