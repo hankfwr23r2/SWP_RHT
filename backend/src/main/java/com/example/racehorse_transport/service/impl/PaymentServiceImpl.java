@@ -11,6 +11,7 @@ import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.PaymentRepository;
 import com.example.racehorse_transport.repository.QuotationRepository;
 import com.example.racehorse_transport.service.PaymentService;
+import com.example.racehorse_transport.util.BookingDetailsJson;
 import com.example.racehorse_transport.util.CustomerBookingRules;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -318,18 +319,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     private BookingDetailsPayload extractPayload(Booking booking) {
-        BookingDetailsPayload payload = new BookingDetailsPayload();
-        if (booking.getDetailsJson() != null && !booking.getDetailsJson().trim().isEmpty()) {
-            String json = booking.getDetailsJson().trim();
-            try {
-                if (json.startsWith("{")) {
-                    payload = objectMapper.readValue(json, BookingDetailsPayload.class);
-                }
-            } catch (Exception ex) {
-                log.warn("Error reading detailsJson for booking {}: {}", booking.getId(), ex.getMessage());
-            }
-        }
-        return payload;
+        return BookingDetailsJson.read(objectMapper, booking);
     }
 
     private void savePayload(Booking booking, BookingDetailsPayload payload) {

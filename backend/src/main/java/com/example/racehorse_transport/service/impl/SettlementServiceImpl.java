@@ -12,6 +12,7 @@ import com.example.racehorse_transport.entity.Vehicle;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.*;
 import com.example.racehorse_transport.service.SettlementService;
+import com.example.racehorse_transport.util.BookingDetailsJson;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -439,15 +440,7 @@ public class SettlementServiceImpl implements SettlementService {
     }
 
     private BookingDetailsPayload extractPayload(Booking booking) {
-        BookingDetailsPayload payload = new BookingDetailsPayload();
-        if (booking.getDetailsJson() != null && !booking.getDetailsJson().trim().isEmpty()) {
-            try {
-                payload = objectMapper.readValue(booking.getDetailsJson(), BookingDetailsPayload.class);
-            } catch (Exception ex) {
-                log.warn("Error reading detailsJson for booking {}: {}", booking.getId(), ex.getMessage());
-            }
-        }
-        return payload;
+        return BookingDetailsJson.read(objectMapper, booking);
     }
 
     private void savePayload(Booking booking, BookingDetailsPayload payload) {
