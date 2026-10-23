@@ -23,9 +23,9 @@ export function StaffSidebar() {
   useAutoRefresh(reload)
   const { data: accounts } = useLoad(role === 'admin' ? accountsApi.list : async () => [], [pathname, role])
   const { counts: workCounts } = workOf(role, all ?? [], session!.name, session!.username)
-  // Quản trị viên: số tài khoản theo từng loại; các vai trò khác: số việc đang chờ
+  // Quản trị viên: tổng số tài khoản ở mục duy nhất; các vai trò khác: số việc đang chờ
   const count: Record<string, number> = role === 'admin'
-    ? { '/admin/accounts': accounts?.length ?? 0, '/admin/accounts/locked': accounts?.filter(a => a.status === 'locked').length ?? 0, ...Object.fromEntries((['admin', 'manager', 'specialist', 'coordinator', 'driver', 'escort', 'customer'] as const).map(r => [`/admin/accounts/${r}`, accounts?.filter(a => a.role === r).length ?? 0])) }
+    ? { '/admin/accounts': accounts?.length ?? 0 }
     : workCounts
   const toggle = () => setCollapsed(c => { try { localStorage.setItem(KEY, c ? '0' : '1') } catch { /* không lưu được thì thôi */ } return !c })
 
