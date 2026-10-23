@@ -5,6 +5,7 @@ import com.example.racehorse_transport.response.ApiResponse;
 import com.example.racehorse_transport.service.BookingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -74,7 +75,11 @@ public class ManagerBookingController {
     @PostMapping("/{id}/reject")
     public ResponseEntity<ApiResponse<BookingResponse>> rejectBooking(
             @PathVariable("id") String id,
-            @RequestBody com.example.racehorse_transport.dto.manager.RejectBookingRequest request) {
+            @RequestBody com.example.racehorse_transport.dto.manager.RejectBookingRequest request,
+            Authentication authentication) {
+        // Người từ chối và vai trò lấy từ token, không tin body: vai trò quyết định đơn ở bước nào được từ chối
+        request.setBy(authentication.getName());
+        request.setRole("manager");
         BookingResponse response = bookingService.rejectBooking(id, request);
         return ResponseEntity.ok(ApiResponse.success(response, "Đã từ chối đơn hàng thành công"));
     }
