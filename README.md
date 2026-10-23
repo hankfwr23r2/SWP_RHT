@@ -37,6 +37,41 @@ Tài khoản và dữ liệu đã có trong database không bị xóa.
 
 ---
 
+### Docker trong nhóm: dùng chung cách dựng, không dùng chung dữ liệu
+
+`docker-compose.yml` giúp mọi máy có cùng Postgres 16, cùng tên DB, mật khẩu và cấu trúc bảng.
+Container chạy trên máy ai thì dữ liệu nằm trên máy người đó: đơn bạn tạo, người khác không thấy và ngược lại.
+Database dùng chung duy nhất là Aiven của bản deploy, không dùng để code.
+
+| Mục đích | Lệnh (chạy ở thư mục gốc) |
+|---|---|
+| Code hằng ngày: chỉ bật DB + pgAdmin, backend/frontend chạy trên máy (Cách 2) | `docker compose up -d postgres pgadmin` |
+| Chạy cả hệ thống giống bản deploy (Cách 1) | `docker compose up -d --build` |
+| Xem container đang chạy / log backend | `docker compose ps` · `docker compose logs -f backend` |
+| Tắt (giữ dữ liệu) | `docker compose stop` |
+| Xoá sạch dữ liệu local để làm lại từ đầu | `docker compose down -v` |
+
+Chia sẻ một bộ dữ liệu mẫu (ví dụ trước buổi demo) mà không dùng chung DB:
+```bash
+# Người có dữ liệu: xuất ra file (file .sql đã bị gitignore, gửi qua Drive/Zalo, không đưa lên GitHub)
+docker exec racehorse-postgres pg_dump -U postgres -d horse_transport_db > du-lieu-mau.sql
+# Người nhận: làm sạch DB rồi nạp file, sau đó mới bật backend
+docker compose down -v && docker compose up -d --wait postgres
+docker exec -i racehorse-postgres psql -U postgres -d horse_transport_db < du-lieu-mau.sql
+```
+
+Thử backend trong điều kiện giống Render gói free (0,1 CPU, 512 MB) để kiểm tra độ chậm
+(`swp_rht_default` là mạng Docker đặt theo tên thư mục dự án; xem tên đúng trên máy bằng `docker network ls`):
+```bash
+cd backend && ./mvnw -q package -DskipTests && cd ..
+docker run --rm --network swp_rht_default --cpus 0.1 --memory 512m -p 8090:8080 \
+  -v "$PWD/backend/target/RaceHorse_Transport-0.0.1-SNAPSHOT.jar:/app/app.jar:ro" \
+  -e SPRING_DATASOURCE_URL=jdbc:postgresql://racehorse-postgres:5432/horse_transport_db \
+  eclipse-temurin:21-jre java -XX:TieredStopAtLevel=1 -jar /app/app.jar
+```
+
+---
+
 ### Cách 2: Chạy thủ công trên máy (Local Dev)
 
 Mỗi người dùng một database Postgres riêng trên máy mình. Backend mặc định kết nối Postgres local,
