@@ -511,6 +511,33 @@ class BookingServiceImplTest {
     }
 
     @Test
+    void sendQuote_computesTheTotalsItselfAndIgnoresTheOnesSent() {
+        Booking booking = bookingOwnedByCustomer();
+        booking.setStatus("pending_commercial");
+        booking.setDetailsJson("{\"medical\":{\"status\":\"approved\"},\"plan\":{\"at\":1},"
+                + "\"trips\":[{\"tripId\":\"TRP-042-1\",\"vehicleId\":\"VH-001\",\"driverId\":\"DR-01\",\"escortId\":\"ES-01\",\"horseIds\":[]}]}");
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        var line = new com.example.racehorse_transport.dto.manager.QuoteLineDto();
+        line.setLabel("Cước vận chuyển");
+        line.setAmount(new java.math.BigDecimal("10000000"));
+        var request = com.example.racehorse_transport.dto.manager.SendQuoteRequest.builder()
+                .by("manager01").lines(List.of(line)).adjustments(List.of())
+                .subtotal(java.math.BigDecimal.ONE).total(java.math.BigDecimal.ONE)
+                .deposit(java.math.BigDecimal.ONE).balance(java.math.BigDecimal.ZERO).build();
+
+        service.sendQuote("BK-042", request);
+
+        ArgumentCaptor<Quotation> saved = ArgumentCaptor.forClass(Quotation.class);
+        verify(quotationRepository).save(saved.capture());
+        assertThat(saved.getValue().getSubtotal()).isEqualByComparingTo("10000000");
+        assertThat(saved.getValue().getTotalAmount()).isEqualByComparingTo("10000000");
+        assertThat(saved.getValue().getDepositAmount()).isEqualByComparingTo("3000000");
+        assertThat(saved.getValue().getBalanceAmount()).isEqualByComparingTo("7000000");
+        assertThat(booking.getDetailsJson()).contains("\"total\":10000000").contains("\"deposit\":3000000");
+    }
+
+    @Test
     void rejectBooking_recordsManagerRejection() {
         Booking booking = bookingOwnedByCustomer();
         booking.setStatus("pending_intake");

@@ -28,6 +28,7 @@ import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.dto.manager.*;
 import com.example.racehorse_transport.service.FleetService;
 import com.example.racehorse_transport.util.BookingDetailsJson;
+import com.example.racehorse_transport.util.QuoteTotals;
 import com.example.racehorse_transport.util.CustomerBookingRules;
 
 import java.math.BigDecimal;
@@ -770,13 +771,11 @@ public class BookingServiceImpl implements BookingService {
             }
         }
 
-        BigDecimal total = request.getTotal() != null ? request.getTotal() : BigDecimal.ZERO;
-        BigDecimal deposit = request.getDeposit() != null && request.getDeposit().compareTo(BigDecimal.ZERO) > 0
-                ? request.getDeposit()
-                : total.multiply(new BigDecimal("0.30"));
-        BigDecimal balance = request.getBalance() != null && request.getBalance().compareTo(BigDecimal.ZERO) > 0
-                ? request.getBalance()
-                : total.subtract(deposit);
+        // Tổng, cọc, số dư do backend tính từ các dòng và khoản điều chỉnh; bỏ qua các con số tổng client gửi
+        QuoteTotals totals = QuoteTotals.of(request.getLines(), request.getAdjustments());
+        BigDecimal total = totals.total();
+        BigDecimal deposit = totals.deposit();
+        BigDecimal balance = totals.balance();
 
         Instant now = Instant.now();
         Instant expiresAt = now.plus(QUOTE_VALID_HOURS, ChronoUnit.HOURS);
@@ -796,19 +795,10 @@ public class BookingServiceImpl implements BookingService {
             log.warn("Could not serialize quote lines: {}", ex.getMessage());
         }
 
-        BigDecimal adjustmentSum = BigDecimal.ZERO;
-        if (request.getAdjustments() != null) {
-            for (QuoteAdjustmentDto adj : request.getAdjustments()) {
-                if (adj.getAmount() != null) {
-                    adjustmentSum = adjustmentSum.add(adj.getAmount());
-                }
-            }
-        }
-
         Quotation quotation = Quotation.builder()
                 .booking(booking)
-                .subtotal(request.getSubtotal() != null ? request.getSubtotal() : total)
-                .adjustmentAmount(adjustmentSum)
+                .subtotal(totals.subtotal())
+                .adjustmentAmount(totals.adjustments())
                 .adjustmentNote(request.getAdjustments() != null && !request.getAdjustments().isEmpty()
                         ? request.getAdjustments().get(0).getLabel()
                         : null)
@@ -826,7 +816,7 @@ public class BookingServiceImpl implements BookingService {
         Map<String, Object> quoteMap = new HashMap<>();
         quoteMap.put("lines", request.getLines());
         quoteMap.put("adjustments", request.getAdjustments());
-        quoteMap.put("subtotal", request.getSubtotal());
+        quoteMap.put("subtotal", totals.subtotal());
         quoteMap.put("total", total);
         quoteMap.put("deposit", deposit);
         quoteMap.put("balance", balance);

@@ -47,7 +47,10 @@ public class ManagerBookingController {
     @PostMapping("/{id}/send-quote")
     public ResponseEntity<ApiResponse<BookingResponse>> sendQuote(
             @PathVariable("id") String id,
-            @jakarta.validation.Valid @RequestBody com.example.racehorse_transport.dto.manager.SendQuoteRequest request) {
+            @jakarta.validation.Valid @RequestBody com.example.racehorse_transport.dto.manager.SendQuoteRequest request,
+            Authentication authentication) {
+        // Người phát hành báo giá lấy từ token, không tin body
+        request.setBy(authentication.getName());
         BookingResponse response = bookingService.sendQuote(id, request);
         return ResponseEntity.ok(ApiResponse.success(response, "Phát hành báo giá thành công (hiệu lực 24 giờ)"));
     }
