@@ -29,13 +29,14 @@ interface Props<T, K extends string> {
   filters?: ReactNode // ô lọc thêm, đặt đầu hàng lọc
   hideTabs?: boolean // danh mục nằm ở thanh bên nên không hiện thanh tab
   hideCount?: boolean // ẩn số lượng bản ghi ở chân trang
+  countLabel?: string // đơn vị đếm ở chân trang, mặc định "đơn hàng"
   actions?: ReactNode // nút cạnh tiêu đề (ví dụ "Tạo tài khoản")
   hotRow?: (r: T) => boolean // đơn cần chú ý: viền cam bên trái
 }
 
 const day = (v: string, end = false) => (v ? new Date(`${v}T${end ? '23:59:59' : '00:00:00'}`).getTime() : 0)
 
-export function ListPage<T, K extends string>({ title, subtitle, tabs, tab, onTab, hot = [], rows, rowKey, columns, haystack, dateOf, dateLabel = 'Khởi hành', loaded, emptyText, summary, hotRow, actions, filters, searchPlaceholder = 'Tìm theo mã đơn, khách hàng, tuyến…', hideTabs, hideCount }: Props<T, K>) {
+export function ListPage<T, K extends string>({ title, subtitle, tabs, tab, onTab, hot = [], rows, rowKey, columns, haystack, dateOf, dateLabel = 'Khởi hành', loaded, emptyText, summary, hotRow, actions, filters, searchPlaceholder = 'Tìm theo mã đơn, khách hàng, tuyến…', hideTabs, hideCount, countLabel = 'đơn hàng' }: Props<T, K>) {
   const [params] = useSearchParams()
   const [text, setText] = useState(params.get('q') ?? '') // tìm từ ô tìm kiếm trên thanh trên
   const [from, setFrom] = useState('')
@@ -82,7 +83,7 @@ export function ListPage<T, K extends string>({ title, subtitle, tabs, tab, onTa
             {loaded && !shown.length && <div className={s.empty}><i className="fa-solid fa-box-open" /><p>{filtering ? 'Không có đơn nào khớp bộ lọc.' : emptyText}</p></div>}
           </div>
           {(!hideCount || summary) && <div className={s.foot}>
-            {!hideCount && <span>Hiển thị <b>{shown.length}</b> đơn hàng</span>}
+            {!hideCount && <span>Hiển thị <b>{shown.length}</b> {countLabel}</span>}
             {summary && <span>{summary(shown)}</span>}
           </div>}
           {shown.length > 20 && pager.bar}

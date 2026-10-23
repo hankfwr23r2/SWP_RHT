@@ -38,7 +38,7 @@ export default function CoordinatorIncidentsPage() {
   ]
   return (
     <>
-      <ListPage title="Xử lý sự cố" subtitle="Tài xế hoặc hộ tống bấm SOS thì sự cố hiện ở đây. Lập phương án và trình Quản lý duyệt."
+      <ListPage countLabel="sự cố" title="Xử lý sự cố" subtitle="Tài xế hoặc hộ tống bấm SOS thì sự cố hiện ở đây. Lập phương án và trình Quản lý duyệt."
         tabs={[['todo', 'Cần lập phương án', groups.todo.length], ['waiting', 'Chờ Quản lý duyệt', groups.waiting.length], ['active', 'Đang xử lý', groups.active.length], ['done', 'Đã xử lý xong', groups.done.length]]} tab={tab} onTab={setTab} hot={['todo']}
         rows={shown} rowKey={x => x.i.id} columns={columns} haystack={x => [x.b.id, x.b.customer, x.b.origin.name, x.b.dest.name, x.i.tripId]} dateOf={x => x.i.reportedAt} dateLabel="Báo lúc" loaded={!!all}
         emptyText="Không có sự cố nào ở mục này." hotRow={x => x.i.status === 'reported'} />

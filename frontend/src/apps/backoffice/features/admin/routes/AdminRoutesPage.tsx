@@ -427,6 +427,7 @@ export default function AdminRoutesPage() {
         loaded={loaded}
         emptyText="Chưa có tuyến đường nào phù hợp."
         searchPlaceholder="Tìm theo tên tuyến, mô tả..."
+        countLabel="tuyến"
         actions={
           <button
             className="btn btn-primary"
