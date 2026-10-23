@@ -338,7 +338,7 @@ public class SettlementServiceImpl implements SettlementService {
                             try {
                                 int numId = Integer.parseInt(vid.replaceAll("[^0-9]", ""));
                                 vehicle = vehicleRepository.findById(numId).orElse(null);
-                            } catch (Exception ignored) {}
+                            } catch (NumberFormatException ignored) {}
                         }
 
                         if (vehicle == null) {

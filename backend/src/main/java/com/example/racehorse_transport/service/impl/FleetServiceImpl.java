@@ -332,7 +332,7 @@ public class FleetServiceImpl implements FleetService {
                 Optional<Vehicle> byId = vehicleRepository.findById(numId);
                 if (byId.isPresent())
                     return byId.get();
-            } catch (Exception ignored) {
+            } catch (NumberFormatException ignored) {
             }
         }
 
@@ -428,7 +428,7 @@ public class FleetServiceImpl implements FleetService {
             try {
                 int numId = Integer.parseInt(digits);
                 staffOpt = staffRepository.findById(numId);
-            } catch (Exception ignored) {
+            } catch (NumberFormatException ignored) {
             }
         }
 
