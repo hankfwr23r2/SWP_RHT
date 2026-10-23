@@ -82,10 +82,15 @@ export default function Step2HorsesPage() {
     return normCur.includes(normOrig) || normOrig.includes(normCur)
   }
 
-  // Chỉ hiển thị ngựa đã nộp đủ giấy tờ.
+  // Chỉ hiển thị ngựa đã nộp đủ giấy tờ và không đang trong chuyến/đơn khác.
   const readyList = useMemo(
-    () => (horses ?? []).filter(h => horseReadiness(h).ok),
-    [horses]
+    () => (horses ?? []).filter(h => {
+      if (!horseReadiness(h).ok) return false
+      const numId = Number(h.id.replace(/\D/g, ''))
+      const isBusy = h.transitStatus === 'IN_TRANSIT' || activeHorseBookingMap.has(numId)
+      return !isBusy
+    }),
+    [horses, activeHorseBookingMap]
   )
 
   const query = search.trim().toLowerCase()

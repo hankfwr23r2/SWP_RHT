@@ -1,13 +1,14 @@
 /* Hồ sơ ngựa: thẻ ngựa, bộ lọc, biểu mẫu */
 .head { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
 .head .pageHeader { margin: 0; }
-.summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+.summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
 .sumCard { background: white; border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 18px; display: flex; align-items: center; gap: 14px; }
 .sumCard i { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-size: 1.1rem; }
 .sumCard .num { font-size: 1.5rem; font-weight: 800; color: var(--navy); line-height: 1.1; }
 .sumCard .lbl { font-size: 0.8rem; color: var(--muted); }
 .iconAll { background: var(--bg-page); color: var(--icon-accent); }
 .iconReady { background: var(--bg-page); color: var(--icon-success); }
+.iconTransit { background: var(--bg-page); color: var(--orange); }
 .iconMissing { background: var(--bg-page); color: var(--icon-warning); }
 
 .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
@@ -19,10 +20,10 @@
 
 .searchBox { position: relative; min-width: 320px; }
 .searchBox i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--icon-accent); font-size: 0.9rem; pointer-events: none; }
-.searchBox input { width: 100%; height: 40px; padding: 0 38px 0 38px; border: 1.5px solid var(--line); border-radius: 999px; background: white; font: inherit; font-size: 0.88rem; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.searchBox input { width: 100%; height: 40px; padding: 0 42px 0 38px; border: 1.5px solid var(--line); border-radius: 999px; background: white; font: inherit; font-size: 0.88rem; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
 .searchBox input:focus { outline: none; border-color: var(--orange); box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.14); }
-.searchClear { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--muted); font-size: 0.88rem; padding: 6px 8px; cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
-.searchClear:hover { color: var(--text); }
+.searchClear { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 22px; height: 22px; border-radius: 50%; background: none; border: none; color: var(--muted); font-size: 0.8rem; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background-color 0.15s, color 0.15s; }
+.searchClear:hover { background: #f1f5f9; color: var(--navy); }
 
 .grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
 .paginationWrap { margin-top: 24px; padding: 14px 18px; background: white; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
@@ -63,6 +64,7 @@
 .subNote { font-weight: 400; color: var(--muted); font-size: 0.84em; }
 
 @media (max-width: 1024px) {
+  .summary { grid-template-columns: repeat(2, 1fr); }
   .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
