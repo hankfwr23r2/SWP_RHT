@@ -9,7 +9,7 @@ import { CustomerLayout } from './layouts/CustomerLayout'
 import { PublicLayout } from './layouts/SiteChrome'
 import { routes } from './routes'
 
-const router = buildRouter(routes, { public: PublicLayout, customer: CustomerLayout }, { loginPath: '/login' })
+const router = buildRouter(routes, { public: PublicLayout, customer: CustomerLayout }, { app: 'customer', loginPath: '/login' })
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

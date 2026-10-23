@@ -1,12 +1,11 @@
 // Hồ sơ ngựa (PRD mục 2.1): khách khai báo một lần, các lần đặt sau chỉ cần chọn ngựa.
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
-import { backendBookingApi } from '@shared/api/bookings'
 import { useAuth } from '@shared/auth/AuthContext'
 import { ageOf, horseReadiness } from '@shared/lib/booking'
 import { useStaggerIn } from '@shared/motion/motion'
+import { usePageData } from '@shared/routing/pageData'
 import { horsesApi } from '@shared/services/horses'
-import { useLoad } from '@shared/services/useLoad'
 import { SEX_LABEL, type HorseProfile } from '@shared/types/booking'
 import { HorseDocChips } from '@shared/ui/HorseDocChips'
 import { Modal } from '@shared/ui/Modal'
@@ -14,6 +13,7 @@ import { useToast } from '@shared/ui/toast'
 import { usePagination } from '@shared/ui/usePagination'
 import { HorseFormModal } from './HorseFormModal'
 import { HorseJourneyModal } from './HorseJourneyModal'
+import type { horsesLoader } from './loaders'
 import { RelocateHorseModal } from './RelocateHorseModal'
 import s from './Horses.module.css'
 
@@ -39,8 +39,7 @@ export default function HorsesPage() {
   const { session } = useAuth()
   const owner = session!.name
   const toast = useToast()
-  const { data: horses, reload } = useLoad(() => horsesApi.list(owner), [owner])
-  const { data: customerBookings } = useLoad(() => backendBookingApi.getCustomerBookings(), [])
+  const { horses, customerBookings, reload } = usePageData<typeof horsesLoader>()
   const [filter, setFilter] = useState<Filter>('all')
   const [search, setSearch] = useState('')
   const [modal, setModal] = useState<{ horse?: HorseProfile } | null>(null)

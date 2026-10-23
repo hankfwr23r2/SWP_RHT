@@ -1,7 +1,7 @@
 // Coordinator: chốt xe và lộ trình một đơn trong một trang (PRD mục 2.4, nhánh B).
 // Coordinator tự chọn xe (đơn đông ngựa thì nhiều xe), chia ngựa lên xe, lập lộ trình rồi xác nhận.
 import { Fragment, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { MAX_CONTINUOUS_HOURS, VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { GATES, TRANSIT_STATIONS } from '@shared/config/network'
@@ -27,7 +27,7 @@ import {
 import { atHour } from '@shared/lib/dates'
 import { formatClock, formatDate, formatDateTime } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
-import { vehiclesApi, type Vehicle } from '@shared/services/fleet'
+import { type Vehicle } from '@shared/services/fleet'
 import { useAutoRefresh, useLoad } from '@shared/services/useLoad'
 import { isCoordinatorTask } from '../../../shared/staffWork'
 import type { Booking, RestStop, VehicleTrip } from '@shared/types/booking'
@@ -42,6 +42,8 @@ import { InlineRouteMap } from './InlineRouteMap'
 import { roadNote } from '@shared/services/routing'
 import { useRoadRoute } from '@shared/services/useRoadRoute'
 import { routesApi, type BackendRouteResponse } from '@shared/api/routes'
+import { usePageData } from '@shared/routing/pageData'
+import type { fleetPlanLoader } from '../../../shared/loaders'
 
 const pad = (n: number) => String(n).padStart(2, '0')
 const toLocal = (t: number) => {
@@ -873,12 +875,9 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
 }
 
 export default function FleetPlanPage() {
-  const { id = '' } = useParams()
   const { session } = useAuth()
-  const { data: b, reload } = useLoad(() => bookingsApi.get(id), [id])
-  const { data: all } = useLoad(bookingsApi.list)
-  const { data: vehicles, reload: reloadVehicles } = useLoad(vehiclesApi.list)
-  useAutoRefresh(reloadVehicles)
+  const { b, all, vehicles, reload } = usePageData<typeof fleetPlanLoader>()
+  useAutoRefresh(reload)
   const [showOrderDetails, setShowOrderDetails] = useState(false)
 
   if (!b || !all || !vehicles)

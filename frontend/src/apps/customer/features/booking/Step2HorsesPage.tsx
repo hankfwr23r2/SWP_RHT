@@ -1,17 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
-import { useAuth } from '@shared/auth/AuthContext'
 import { VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { MAX_HORSES } from '@shared/config/business-rules'
 import { COUNTRY_LOCATIONS } from '@shared/config/network'
 import { ageOf, classForHorses, horseReadiness } from '@shared/lib/booking'
-import { backendBookingApi } from '@shared/api/bookings'
-import { horsesApi } from '@shared/services/horses'
-import { useLoad } from '@shared/services/useLoad'
+import { usePageData } from '@shared/routing/pageData'
 import { SEX_LABEL, type HorseProfile } from '@shared/types/booking'
 import { HorseDocChips } from '@shared/ui/HorseDocChips'
 import { usePagination } from '@shared/ui/usePagination'
 import { BookingShell } from './BookingShell'
+import type { horsesLoader } from '../horses/loaders'
 import { defaultConfig, useBookingDraft } from './draft'
 import s from './Booking.module.css'
 
@@ -19,11 +17,8 @@ const FINISHED_STATUSES = new Set(['completed', 'cancelled', 'rejected', 'quote_
 
 export default function Step2HorsesPage() {
   const navigate = useNavigate()
-  const { session } = useAuth()
-  const owner = session!.name
   const { draft, save } = useBookingDraft()
-  const { data: horses } = useLoad(() => horsesApi.list(owner), [owner])
-  const { data: customerBookings } = useLoad(() => backendBookingApi.getCustomerBookings(), [])
+  const { horses, customerBookings } = usePageData<typeof horsesLoader>()
   const [selected, setSelected] = useState<string[]>(draft.horseIds)
   const [search, setSearch] = useState('')
   const [submitted, setSubmitted] = useState(false)

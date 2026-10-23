@@ -2,25 +2,10 @@
 import { lazy } from 'react'
 import type { AppRoute } from '@shared/routing/types'
 import { ManagerLoginPage, StaffLoginPage } from './features/auth/StaffLoginPage'
+import { accountsLoader, adminRoutesLoader, bookingListLoader, bookingLoader, fleetPlanLoader, monitoringLoader, tripReportsLoader, verifyLoader } from './shared/loaders'
 // Trang đăng nhập tải ngay; các trang còn lại chỉ tải khi mở tới (lazy), mỗi vai trò chỉ tải phần mình dùng.
+// Trang có loader khai báo lazyPage: router tải file trang song song với dữ liệu rồi mới vẽ trang.
 const SitemapPage = lazy(() => import('../sitemap/SitemapPage').then(m => ({ default: m.SitemapPage })))
-const AccountsPage = lazy(() => import('./features/admin/accounts/AccountsPage'))
-const AdminRoutesPage = lazy(() => import('./features/admin/routes/AdminRoutesPage'))
-const IntakePage = lazy(() => import('./features/manager/intake/IntakePage'))
-const ApprovalsPage = lazy(() => import('./features/manager/approvals/ApprovalsPage'))
-const DashboardPage = lazy(() => import('./features/manager/dashboard/DashboardPage'))
-const TripReportsPage = lazy(() => import('./features/manager/trip-reports/TripReportsPage'))
-const CancelledOrdersPage = lazy(() => import('./features/manager/cancelled-orders/CancelledOrdersPage'))
-const ReportsPage = lazy(() => import('./features/manager/reports/ReportsPage'))
-const IncidentsPage = lazy(() => import('./features/manager/incidents/IncidentsPage'))
-const VerificationListPage = lazy(() => import('./features/specialist/verification/VerificationListPage'))
-const VerifyPage = lazy(() => import('./features/specialist/verification/VerifyPage'))
-const LegalListPage = lazy(() => import('./features/specialist/legal/LegalListPage'))
-const LegalReviewPage = lazy(() => import('./features/specialist/legal/LegalReviewPage'))
-const FleetPlanListPage = lazy(() => import('./features/coordinator/fleet-plan/FleetPlanListPage'))
-const FleetPlanPage = lazy(() => import('./features/coordinator/fleet-plan/FleetPlanPage'))
-const MonitoringPage = lazy(() => import('./features/coordinator/monitoring/MonitoringPage'))
-const CoordinatorIncidentsPage = lazy(() => import('./features/coordinator/incidents/CoordinatorIncidentsPage'))
 const FleetPage = lazy(() => import('./features/coordinator/fleet/FleetPage'))
 const DriverPage = lazy(() => import('./features/driver/DriverPage'))
 const EscortPage = lazy(() => import('./features/escort/EscortPage'))
@@ -38,27 +23,27 @@ export const routes: AppRoute[] = [
   { path: '/login', page: StaffLoginPage, roles: [], title: 'Đăng nhập nội bộ', layout: 'bare' },
   { path: '/manager/login', page: ManagerLoginPage, roles: [], title: 'Đăng nhập Quản lý', layout: 'bare' },
 
-  { path: '/admin/routes', page: AdminRoutesPage, roles: A, title: 'Tuyến đường cố định', layout: 'staff' },
-  { path: '/admin/accounts', page: AccountsPage, roles: A, title: 'Tất cả tài khoản', layout: 'staff' },
-  { path: '/admin/accounts/:role', page: AccountsPage, roles: A, title: 'Tài khoản theo loại', layout: 'staff' },
+  { path: '/admin/routes', lazyPage: () => import('./features/admin/routes/AdminRoutesPage'), loader: adminRoutesLoader, roles: A, title: 'Tuyến đường cố định', layout: 'staff' },
+  { path: '/admin/accounts', lazyPage: () => import('./features/admin/accounts/AccountsPage'), loader: accountsLoader, roles: A, title: 'Tất cả tài khoản', layout: 'staff' },
+  { path: '/admin/accounts/:role', lazyPage: () => import('./features/admin/accounts/AccountsPage'), loader: accountsLoader, roles: A, title: 'Tài khoản theo loại', layout: 'staff' },
 
-  { path: '/manager', page: DashboardPage, roles: M, title: 'Bảng điều khiển', layout: 'staff' },
-  { path: '/manager/intake', page: IntakePage, roles: M, title: 'Tiếp nhận đơn hàng', layout: 'staff' },
-  { path: '/manager/approvals', page: ApprovalsPage, roles: M, title: 'Duyệt báo giá', layout: 'staff' },
-  { path: '/manager/reports', page: ReportsPage, roles: M, title: 'Báo cáo doanh thu', layout: 'staff' },
-  { path: '/manager/trip-reports', page: TripReportsPage, roles: M, title: 'Báo cáo Chuyến đi', layout: 'staff' },
-  { path: '/manager/cancelled-orders', page: CancelledOrdersPage, roles: M, title: 'Đơn đã hủy', layout: 'staff' },
-  { path: '/manager/incidents', page: IncidentsPage, roles: M, title: 'Sự cố', layout: 'staff' },
+  { path: '/manager', lazyPage: () => import('./features/manager/dashboard/DashboardPage'), loader: bookingListLoader, roles: M, title: 'Bảng điều khiển', layout: 'staff' },
+  { path: '/manager/intake', lazyPage: () => import('./features/manager/intake/IntakePage'), loader: bookingListLoader, roles: M, title: 'Tiếp nhận đơn hàng', layout: 'staff' },
+  { path: '/manager/approvals', lazyPage: () => import('./features/manager/approvals/ApprovalsPage'), loader: bookingListLoader, roles: M, title: 'Duyệt báo giá', layout: 'staff' },
+  { path: '/manager/reports', lazyPage: () => import('./features/manager/reports/ReportsPage'), loader: bookingListLoader, roles: M, title: 'Báo cáo doanh thu', layout: 'staff' },
+  { path: '/manager/trip-reports', lazyPage: () => import('./features/manager/trip-reports/TripReportsPage'), loader: tripReportsLoader, roles: M, title: 'Báo cáo Chuyến đi', layout: 'staff' },
+  { path: '/manager/cancelled-orders', lazyPage: () => import('./features/manager/cancelled-orders/CancelledOrdersPage'), loader: bookingListLoader, roles: M, title: 'Đơn đã hủy', layout: 'staff' },
+  { path: '/manager/incidents', lazyPage: () => import('./features/manager/incidents/IncidentsPage'), loader: bookingListLoader, roles: M, title: 'Sự cố', layout: 'staff' },
 
-  { path: '/specialist/verification', page: VerificationListPage, roles: SP, title: 'Duyệt hồ sơ ngựa', layout: 'staff' },
-  { path: '/specialist/verification/:id', page: VerifyPage, roles: SP, title: 'Duyệt hồ sơ ngựa một đơn', layout: 'staff' },
-  { path: '/specialist/legal', page: LegalListPage, roles: SP, title: 'Giấy tờ chuyến đi', layout: 'staff' },
-  { path: '/specialist/legal/:id', page: LegalReviewPage, roles: SP, title: 'Làm giấy tờ một đơn', layout: 'staff' },
+  { path: '/specialist/verification', lazyPage: () => import('./features/specialist/verification/VerificationListPage'), loader: bookingListLoader, roles: SP, title: 'Duyệt hồ sơ ngựa', layout: 'staff' },
+  { path: '/specialist/verification/:id', lazyPage: () => import('./features/specialist/verification/VerifyPage'), loader: verifyLoader, roles: SP, title: 'Duyệt hồ sơ ngựa một đơn', layout: 'staff' },
+  { path: '/specialist/legal', lazyPage: () => import('./features/specialist/legal/LegalListPage'), loader: bookingListLoader, roles: SP, title: 'Giấy tờ chuyến đi', layout: 'staff' },
+  { path: '/specialist/legal/:id', lazyPage: () => import('./features/specialist/legal/LegalReviewPage'), loader: bookingLoader, roles: SP, title: 'Làm giấy tờ một đơn', layout: 'staff' },
 
-  { path: '/coordinator/fleet-plan', page: FleetPlanListPage, roles: CO, title: 'Xe và lộ trình', layout: 'staff' },
-  { path: '/coordinator/fleet-plan/:id', page: FleetPlanPage, roles: CO, title: 'Chốt xe và lộ trình một đơn', layout: 'staff' },
-  { path: '/coordinator/monitoring', page: MonitoringPage, roles: CO, title: 'Giám sát vận chuyển', layout: 'staff' },
-  { path: '/coordinator/incidents', page: CoordinatorIncidentsPage, roles: CO, title: 'Xử lý sự cố', layout: 'staff' },
+  { path: '/coordinator/fleet-plan', lazyPage: () => import('./features/coordinator/fleet-plan/FleetPlanListPage'), loader: bookingListLoader, roles: CO, title: 'Xe và lộ trình', layout: 'staff' },
+  { path: '/coordinator/fleet-plan/:id', lazyPage: () => import('./features/coordinator/fleet-plan/FleetPlanPage'), loader: fleetPlanLoader, roles: CO, title: 'Chốt xe và lộ trình một đơn', layout: 'staff' },
+  { path: '/coordinator/monitoring', lazyPage: () => import('./features/coordinator/monitoring/MonitoringPage'), loader: monitoringLoader, roles: CO, title: 'Giám sát vận chuyển', layout: 'staff' },
+  { path: '/coordinator/incidents', lazyPage: () => import('./features/coordinator/incidents/CoordinatorIncidentsPage'), loader: bookingListLoader, roles: CO, title: 'Xử lý sự cố', layout: 'staff' },
   { path: '/coordinator/fleet', page: FleetPage, roles: CO, title: 'Quản lý đội xe', layout: 'staff' },
 
   { path: '/driver', page: DriverPage, roles: ['driver'], title: 'Chuyến của tôi', layout: 'mobile' },

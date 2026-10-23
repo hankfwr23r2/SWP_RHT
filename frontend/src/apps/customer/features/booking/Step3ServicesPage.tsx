@@ -1,15 +1,14 @@
 // Bước 3: cấu hình từng ngựa: khoang, gói thức ăn, cữ nước, bảo hiểm mua hoặc từ chối (PRD mục 2.2).
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
-import { useAuth } from '@shared/auth/AuthContext'
 import { FEED_PACKAGE, FEED_PACKAGE_IDS, HORSE_BREEDS, WATER_PLAN, WATER_PLAN_IDS } from '@shared/config/booking-rules'
 import { insuranceFee } from '@shared/lib/booking'
 import { formatVND } from '@shared/lib/format'
-import { horsesApi } from '@shared/services/horses'
-import { useLoad } from '@shared/services/useLoad'
+import { usePageData } from '@shared/routing/pageData'
 import { SEX_LABEL } from '@shared/types/booking'
 import { PolicyLink } from '@shared/ui/PolicyLink'
 import { BookingShell } from './BookingShell'
+import type { horseListLoader } from '../horses/loaders'
 import { defaultConfig, useBookingDraft, type HorseConfig } from './draft'
 import s from './Booking.module.css'
 
@@ -39,10 +38,8 @@ function InsuranceNote({ id, breed }: { id: string; breed: string }) {
 
 export default function Step3ServicesPage() {
   const navigate = useNavigate()
-  const { session } = useAuth()
-  const owner = session!.name
   const { draft, save } = useBookingDraft()
-  const { data: horses } = useLoad(() => horsesApi.list(owner), [owner])
+  const { horses } = usePageData<typeof horseListLoader>()
   const [config, setConfig] = useState<Record<string, HorseConfig>>(() => Object.fromEntries(draft.horseIds.map(id => [id, { ...defaultConfig(), ...draft.config[id] }])))
   const [activeIndex, setActiveIndex] = useState(0)
   const [ack, setAck] = useState(false)

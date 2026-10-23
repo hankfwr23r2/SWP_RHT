@@ -1,16 +1,15 @@
 // Đơn hàng của tôi: lọc theo trạng thái, tìm kiếm, lọc ngày khởi hành, mỗi đơn một thẻ có tiến độ và nút việc cần làm.
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { useAuth } from '@shared/auth/AuthContext'
 import { BOOKING_STEPS, stepOf, statusRank } from '@shared/config/booking-rules'
 import { arrivalOf, orderTabOf, type OrderTab } from '@shared/lib/booking'
 import { formatDate, formatVND } from '@shared/lib/format'
 import { useStaggerIn } from '@shared/motion/motion'
-import { customerBookingsApi } from '@shared/services/bookings'
-import { useLoad } from '@shared/services/useLoad'
+import { usePageData } from '@shared/routing/pageData'
 import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
 import { useNow } from '@shared/ui/useNow'
 import { nextStep } from './nextStep'
+import type { ordersLoader } from './loaders'
 import s from './OrdersList.module.css'
 
 type Tab = 'all' | OrderTab
@@ -25,9 +24,8 @@ const placeName = (n: string) => n.split(' — ')[0]
 const day = (v: string, end = false) => (v ? new Date(`${v}T${end ? '23:59:59' : '00:00:00'}`).getTime() : 0)
 
 export default function OrdersPage() {
-  const { session } = useAuth()
   const now = useNow()
-  const { data: orders } = useLoad(() => customerBookingsApi.list(session!.name), [session?.name])
+  const { orders } = usePageData<typeof ordersLoader>()
   const [params, setParams] = useSearchParams()
   const q = params.get('group')
   const newId = params.get('new') // đơn khách vừa gửi: báo đơn nằm ở đâu và làm nổi thẻ đơn đó

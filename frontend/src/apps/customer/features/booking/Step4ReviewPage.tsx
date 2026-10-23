@@ -6,13 +6,13 @@ import { FEED_PACKAGE, VEHICLE_CLASS, WATER_PLAN } from '@shared/config/booking-
 import { COUNTRIES } from '@shared/config/network'
 import { classForHorses, findLocation, fromIsoDay, insuranceFee } from '@shared/lib/booking'
 import { formatDate, formatVND } from '@shared/lib/format'
+import { usePageData } from '@shared/routing/pageData'
 import { customerBookingsApi } from '@shared/services/bookings'
-import { horsesApi } from '@shared/services/horses'
-import { useLoad } from '@shared/services/useLoad'
 import { SEX_LABEL, type PlaceRef } from '@shared/types/booking'
 import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
 import { BookingShell } from './BookingShell'
+import type { horseListLoader } from '../horses/loaders'
 import { countriesOf, useBookingDraft } from './draft'
 import s from './Booking.module.css'
 
@@ -23,7 +23,7 @@ export default function Step4ReviewPage() {
   const { session } = useAuth()
   const owner = session!.name
   const { draft, clear } = useBookingDraft()
-  const { data: horses } = useLoad(() => horsesApi.list(owner), [owner])
+  const { horses } = usePageData<typeof horseListLoader>()
   const [busy, setBusy] = useState(false)
   const [sent, setSent] = useState(false) // đã gửi: bản nháp bị xóa, không chuyển ngược về bước 1
 

@@ -1,13 +1,12 @@
 // Specialist: làm giấy tờ kiểm dịch và hải quan một đơn (PRD mục 3). Cập nhật từng hạng mục kèm ảnh; tuyến quốc tế ghi nhận thông quan từng ngựa.
 import { useState } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router'
+import { Link, Navigate, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { CLEARANCE_DOC, type ClearanceDocType } from '@shared/config/booking-rules'
 import { canCompleteClearance, clearanceProgress, docsDueAt, isClearanceOverdue } from '@shared/lib/booking'
 import { isAssignedTo } from '@shared/lib/staffAssignment'
 import { formatDateTime } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
-import { useLoad } from '@shared/services/useLoad'
 import type { Booking, ClearanceItem, ClearanceStatus } from '@shared/types/booking'
 import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
 import { FileField } from '@shared/ui/FileField'
@@ -16,6 +15,8 @@ import { useToast } from '@shared/ui/toast'
 import { History, TripSummary } from '../../../shared/BookingParts'
 import s from '../../../shared/booking.module.css'
 import { FormSelect } from '@shared/ui/FormSelect'
+import { usePageData } from '@shared/routing/pageData'
+import type { bookingLoader } from '../../../shared/loaders'
 
 const STATUS_LABEL: Record<ClearanceStatus, string> = { todo: 'Chưa nộp', done: 'Đã nộp' }
 
@@ -163,11 +164,9 @@ function Work({ b, onDone }: { b: Booking; onDone: () => void }) {
 }
 
 export default function LegalReviewPage() {
-  const { id = '' } = useParams()
   const { session } = useAuth()
-  const { data: b, loaded, reload } = useLoad(() => bookingsApi.get(id), [id])
+  const { b, reload } = usePageData<typeof bookingLoader>()
 
-  if (!loaded) return <div className="page"><div className="wrap"><p className="text-muted">Đang tải…</p></div></div>
   if (!b || !b.intake?.specialist || (!isAssignedTo(b.intake.specialist, session?.name) && !isAssignedTo(b.intake.specialist, session?.username))) {
     return <Navigate to="/specialist/legal" replace />
   }

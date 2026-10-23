@@ -1,12 +1,11 @@
 // Lịch sử đơn của khách: các đơn đã kết thúc (hoàn thành, đã hủy, hết hạn báo giá, bị từ chối), có tìm kiếm và lọc.
 import { useState } from 'react'
 import { Link } from 'react-router'
-import { useAuth } from '@shared/auth/AuthContext'
 import { orderTabOf } from '@shared/lib/booking'
 import { formatDate, formatDateTime, formatVND } from '@shared/lib/format'
-import { customerBookingsApi } from '@shared/services/bookings'
-import { useLoad } from '@shared/services/useLoad'
+import { usePageData } from '@shared/routing/pageData'
 import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
+import type { ordersLoader } from './loaders'
 import s from './OrdersList.module.css'
 
 type Tab = 'all' | 'done' | 'closed'
@@ -14,8 +13,7 @@ const TABS: [Tab, string][] = [['all', 'Tất cả'], ['done', 'Hoàn thành'], 
 const placeName = (n: string) => n.split(' — ')[0]
 
 export default function HistoryPage() {
-  const { session } = useAuth()
-  const { data: orders } = useLoad(() => customerBookingsApi.list(session!.name), [session?.name])
+  const { orders } = usePageData<typeof ordersLoader>()
   const [tab, setTab] = useState<Tab>('all')
   const [text, setText] = useState('')
   const finished = (orders ?? []).filter(b => ['done', 'closed'].includes(orderTabOf(b)))

@@ -5,13 +5,14 @@ import { useAuth } from '@shared/auth/AuthContext'
 import { formatDateTime } from '@shared/lib/format'
 import { accountsApi, isOpsRole } from '@shared/services/accounts'
 import type { Account } from '@shared/types/account'
-import { useLoad } from '@shared/services/useLoad'
 import { ROLE_LABEL, type Role } from '@shared/types/role'
 import { FormSelect } from '@shared/ui/FormSelect'
 import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
 import { ListPage, type Column } from '../../../shared/ListPage'
 import s from './Accounts.module.css'
+import { usePageData } from '@shared/routing/pageData'
+import type { accountsLoader } from '../../../shared/loaders'
 
 const ROLES: Role[] = ['admin', 'manager', 'specialist', 'coordinator', 'driver', 'escort', 'customer']
 // Vai trò có thể chọn khi tạo tài khoản mới (khách tự đăng ký nên không tạo ở đây)
@@ -101,7 +102,7 @@ export default function AccountsPage() {
   const toast = useToast()
   const { session } = useAuth()
   const me = { name: session!.name, email: session!.username }
-  const { data: all, reload } = useLoad(accountsApi.list)
+  const { all, reload } = usePageData<typeof accountsLoader>()
   const [dialog, setDialog] = useState<Dialog | null>(null)
   const [why, setWhy] = useState('')
   const [busy, setBusy] = useState(false)

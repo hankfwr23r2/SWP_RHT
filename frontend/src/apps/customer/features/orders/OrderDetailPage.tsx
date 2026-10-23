@@ -6,6 +6,7 @@ import { BOOKING_STEPS, HORSE_DOC, stepOf, VEHICLE_CLASS } from '@shared/config/
 import { COUNTRIES } from '@shared/config/network'
 import { arrivalOf, insuranceFee, vehicleClassOf } from '@shared/lib/booking'
 import { formatClock, formatDate, formatDateTime, formatVND } from '@shared/lib/format'
+import { usePageData } from '@shared/routing/pageData'
 import { customerBookingsApi, type CustomerBookingView, type TripTeam } from '@shared/services/bookings'
 import { horsesApi } from '@shared/services/horses'
 import { useLoad } from '@shared/services/useLoad'
@@ -21,6 +22,7 @@ import { useNow } from '@shared/ui/useNow'
 import { HorseFormModal } from '../horses/HorseFormModal'
 import { IncidentsCard, SettlementCard } from './SettlementCard'
 import { ClearanceProgressCard } from './ClearanceProgressCard'
+import type { orderDetailLoader } from './loaders'
 import { POST_PAYMENT, ROUTE_STAGE, ROUTE_VISIBLE, nextStep } from './nextStep'
 import s from './OrderDetail.module.css'
 
@@ -222,7 +224,7 @@ export default function OrderDetailPage() {
   const { session } = useAuth()
   const owner = session!.name
   const now = useNow()
-  const { data: b, reload } = useLoad(() => customerBookingsApi.get(owner, id), [owner, id])
+  const { b, reload } = usePageData<typeof orderDetailLoader>()
   const [cancelling, setCancelling] = useState(false)
   const [picked, setPicked] = useState<Tab | null>(null)
   const { data: team = [] } = useLoad(() => customerBookingsApi.team(owner, id), [owner, id, b?.status])
