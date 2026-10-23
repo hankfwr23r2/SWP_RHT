@@ -2,6 +2,7 @@ package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.admin.AccountResponse;
 import com.example.racehorse_transport.dto.admin.CreateStaffRequest;
+import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.User;
 import com.example.racehorse_transport.repository.CustomerRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
@@ -12,11 +13,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AdminAccountServiceImplTest {
@@ -47,6 +52,24 @@ class AdminAccountServiceImplTest {
         when(passwordEncoder.encode(anyString())).thenReturn("encoded-password");
         when(systemLogRepository.findByTargetTableAndTargetRecordIDOrderByCreatedAtDesc("USER", 42))
                 .thenReturn(List.of());
+    }
+
+    @Test
+    void toggleAccountStatus_refusesToLockTheSignedInAdmin() {
+        User user = new User();
+        user.setId(1);
+        user.setUsername("admin01");
+        Staff me = new Staff();
+        me.setId(1);
+        me.setUser(user);
+        me.setRole("ADMIN");
+        me.setEmploymentStatus("ACTIVE");
+        when(staffRepository.findById(1)).thenReturn(Optional.of(me));
+
+        assertThatThrownBy(() -> service.toggleAccountStatus(1, true, "admin01", "thử"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("chính mình");
+        verify(staffRepository, never()).save(any(Staff.class));
     }
 
     @Test

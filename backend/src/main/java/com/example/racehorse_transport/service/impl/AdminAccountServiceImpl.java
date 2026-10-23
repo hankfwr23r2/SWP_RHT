@@ -218,6 +218,11 @@ public class AdminAccountServiceImpl implements AdminAccountService {
         Staff staff = staffRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhân viên có ID: " + userId));
 
+        // Không được tự khóa tài khoản đang đăng nhập (khóa xong sẽ bị đẩy ra và không tự mở lại được)
+        if (lock && actorUsername != null && staff.getUser() != null && actorUsername.equalsIgnoreCase(staff.getUser().getUsername())) {
+            throw new IllegalArgumentException("Không thể tự khóa tài khoản của chính mình.");
+        }
+
         // Quy tắc bảo mật: Không được khóa Admin duy nhất còn hoạt động trong hệ thống
         if (lock && "ADMIN".equalsIgnoreCase(staff.getRole())) {
             long activeAdminCount = staffRepository.findAll().stream()
