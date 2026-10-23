@@ -87,6 +87,17 @@ class PaymentServiceImplTest {
     }
 
     @Test
+    void cancel_afterDeposit_recordsWhenAndWhyForTheCustomerViews() {
+        service.cancelWithRefundPolicy("BK-42", CancelBookingRequest.builder().reason("Đổi lịch").build(), "phuc");
+
+        assertThat(booking.getDetailsJson())
+                .contains("\"cancelled\":true")
+                .contains("\"cancelReason\":\"Đổi lịch\"")
+                .contains("\"refundAmount\":0")
+                .containsPattern("\"cancelledAt\":\\d{13}");
+    }
+
+    @Test
     void paymentViews_forAnotherCustomer_areDenied() {
         assertThatThrownBy(() -> service.getPaymentSummary("BK-42", "khac")).isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> service.getPaymentsByBooking("BK-42", "khac")).isInstanceOf(AccessDeniedException.class);
