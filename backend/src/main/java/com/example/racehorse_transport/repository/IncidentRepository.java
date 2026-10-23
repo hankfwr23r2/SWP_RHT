@@ -10,6 +10,7 @@ import java.util.List;
 @Repository
 public interface IncidentRepository extends JpaRepository<Incident, Integer> {
     List<Incident> findByBookingID_Id(Integer bookingId);
+    List<Incident> findByBookingID_CustomerID_User_Username(String username);
     List<Incident> findByBookingID_IdAndCostBearer(Integer bookingId, String costBearer);
     List<Incident> findByStatus(String status);
 }

@@ -25,6 +25,7 @@ import java.util.List;
  *  POST /api/v1/horse-documents/upload              - Khách hàng upload hồ sơ
  *  PUT  /api/v1/horse-documents/{id}/review         - Chuyên viên duyệt / từ chối
  *  GET  /api/v1/horse-documents/horse/{horseId}     - Xem hồ sơ của một con ngựa
+ *  GET  /api/v1/horse-documents/mine                - Khách hàng xem hồ sơ của mọi con ngựa của mình
  *  GET  /api/v1/horse-documents/pending             - Danh sách hồ sơ chờ duyệt
  *  GET  /api/v1/horse-documents/{id}               - Chi tiết một hồ sơ
  */
@@ -105,6 +106,18 @@ public class HorseDocumentController {
         List<HorseDocumentResponse> documents = horseDocumentService.getDocumentsByHorse(horseId);
         return ResponseEntity.ok(ApiResponse.success(documents,
                 "Lấy danh sách hồ sơ ngựa ID=" + horseId + " thành công. Tổng: " + documents.size()));
+    }
+
+    /**
+     * Khách hàng lấy hồ sơ của mọi con ngựa của mình trong một lần gọi.
+     *
+     * GET /api/v1/horse-documents/mine
+     */
+    @PreAuthorize("hasRole('CUSTOMER')")
+    @GetMapping("/mine")
+    public ResponseEntity<ApiResponse<List<HorseDocumentResponse>>> getMyDocuments(Authentication authentication) {
+        List<HorseDocumentResponse> documents = horseDocumentService.getCustomerDocuments(authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success(documents, "Lấy hồ sơ ngựa của khách hàng thành công"));
     }
 
     private void assertHorseAccess(Integer horseId, Authentication authentication) {

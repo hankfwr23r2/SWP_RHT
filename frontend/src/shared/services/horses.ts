@@ -54,8 +54,11 @@ const payloadOf = (data: Pick<NewHorse, 'name' | 'breed' | 'horseTypeId' | 'sex'
 export const horsesApi = {
   listTypes: async (): Promise<HorseTypeOption[]> => backendHorseApi.listTypes(),
 
-  list: async (owner: string): Promise<HorseProfile[]> =>
-    Promise.all((await backendHorseApi.list()).map(h => withDocs(h, owner))),
+  // Ngựa và giấy tờ của mọi ngựa tải song song, mỗi loại một request
+  list: async (owner: string): Promise<HorseProfile[]> => {
+    const [horses, docs] = await Promise.all([backendHorseApi.list(), backendHorseApi.getMyDocuments()])
+    return horses.map(h => profileOf(h, owner, docsOf(docs.filter(d => d.horseId === h.id))))
+  },
 
   get: async (owner: string, id: string): Promise<HorseProfile | undefined> =>
     (await horsesApi.list(owner)).find(h => h.id === id),

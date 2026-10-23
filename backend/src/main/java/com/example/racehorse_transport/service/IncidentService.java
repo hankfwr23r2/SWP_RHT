@@ -24,5 +24,7 @@ public interface IncidentService {
 
     List<IncidentResponse> getIncidentsByBooking(Integer bookingId, String requester, String role);
 
+    List<IncidentResponse> getCustomerIncidents(String customerUsername);
+
     List<IncidentResponse> getAllIncidents(String status);
 }

@@ -25,6 +25,8 @@ export default function LoginPage() {
     if (!password) { setError('Vui lòng nhập mật khẩu.'); return }
 
     setLoading(true)
+    // Tải trước trang chủ khách song song với request đăng nhập, để vào trang là gọi dữ liệu ngay
+    if (!from) void import('../portal/PortalPage')
     try {
       const res = await authApi.loginCustomer({ username: email, password })
       tokenStorage.set(res.accessToken)
