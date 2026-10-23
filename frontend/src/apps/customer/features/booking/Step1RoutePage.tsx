@@ -418,21 +418,23 @@ export default function Step1RoutePage() {
                 </div>
               )}
 
-              <div className={s.routePreview}>
-                <div className={s.routeEnds}>
-                  <div className={s.routeEnd}>
-                    <Flag code={originC} size={24} />
-                    <span className={s.routeText}><small>Khởi hành</small><b>{COUNTRIES[originC].name}</b></span>
-                  </div>
-                  <span className={s.routeArrow}><span /><ArrowRightIcon /><span /></span>
-                  <div className={s.routeEnd}>
-                    {partner
-                      ? <Flag code={destC} size={24} />
-                      : <span className={s.routeFlagEmpty}><GlobeIcon /></span>}
-                    <span className={s.routeText}><small>Điểm đến</small><b>{partner ? COUNTRIES[destC].name : 'Chọn quốc gia'}</b></span>
+              {type === 'international' && (
+                <div className={s.routePreview}>
+                  <div className={s.routeEnds}>
+                    <div className={s.routeEnd}>
+                      <Flag code={originC} size={24} />
+                      <span className={s.routeText}><small>Khởi hành</small><b>{COUNTRIES[originC].name}</b></span>
+                    </div>
+                    <span className={s.routeArrow}><span /><ArrowRightIcon /><span /></span>
+                    <div className={s.routeEnd}>
+                      {partner
+                        ? <Flag code={destC} size={24} />
+                        : <span className={s.routeFlagEmpty}><GlobeIcon /></span>}
+                      <span className={s.routeText}><small>Điểm đến</small><b>{partner ? COUNTRIES[destC].name : 'Chọn quốc gia'}</b></span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {show(errors.partner)}
 

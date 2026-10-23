@@ -19,8 +19,13 @@ public class CorsConfig implements WebMvcConfigurer {
                 .allowedOriginPatterns("http://localhost:*", "https://*.vercel.app", "https://*.pages.dev", "http://127.0.0.1:*", "https://*.onrender.com")
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                 .allowedHeaders("*")
-                .allowCredentials(true);
+                .allowCredentials(true)
+                .maxAge(PREFLIGHT_CACHE_SECONDS);
     }
+
+    // Cho trình duyệt nhớ kết quả kiểm tra CORS (preflight) 2 giờ; không đặt thì trình duyệt chỉ nhớ ~5 giây
+    // và gửi thêm một request OPTIONS trước gần như mọi lần gọi API (thêm ~200 ms mỗi lần khi chạy Vercel + Render)
+    private static final long PREFLIGHT_CACHE_SECONDS = 7200;
 
     // Cung cấp Bean cho Spring Security Filter Chain tự động sử dụng
     @Bean
@@ -36,6 +41,7 @@ public class CorsConfig implements WebMvcConfigurer {
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(PREFLIGHT_CACHE_SECONDS);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

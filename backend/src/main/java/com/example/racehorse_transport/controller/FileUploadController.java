@@ -20,7 +20,7 @@ public class FileUploadController {
     private final StorageService storageService;
 
     /**
-     * Upload một file lên Cloudinary
+     * Tải một tệp lên hệ thống lưu trữ.
      * POST /api/v1/files/upload
      * form-data: file (MultipartFile), folder (String - optional)
      */
@@ -38,11 +38,11 @@ public class FileUploadController {
                 .size(file.getSize())
                 .build();
 
-        return ResponseEntity.ok(ApiResponse.success(response, "Upload file lên Cloudinary thành công"));
+        return ResponseEntity.ok(ApiResponse.success(response, "Tải tệp lên thành công"));
     }
 
     /**
-     * Upload nhiều file cùng lúc lên Cloudinary (hữu ích cho nhiều trang hộ chiếu, biên bản, hóa đơn)
+     * Tải nhiều tệp cùng lúc lên hệ thống lưu trữ.
      * POST /api/v1/files/upload-multiple
      * form-data: files (List<MultipartFile>), folder (String - optional)
      */

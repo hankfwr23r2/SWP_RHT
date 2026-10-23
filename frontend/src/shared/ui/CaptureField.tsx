@@ -8,7 +8,7 @@ import s from './CaptureField.module.css'
 
 interface Props { label: string; value?: string; onChange: (name: string | undefined) => void; hint?: string; required?: boolean; invalid?: boolean; disabled?: boolean }
 
-// Chụp ảnh trực tiếp bằng camera hoặc chọn ảnh tải lên Cloudinary (POST /api/v1/files/upload)
+// Chụp ảnh trực tiếp bằng camera hoặc chọn ảnh gửi lên hệ thống.
 export function CaptureField({ label, value, onChange, hint, required, invalid, disabled }: Props) {
   const id = useId()
   const [uploading, setUploading] = useState(false)
@@ -29,7 +29,7 @@ export function CaptureField({ label, value, onChange, hint, required, invalid, 
         throw new Error('Không nhận được URL ảnh từ server.')
       }
     } catch {
-      // Fallback khi offline hoặc môi trường dev không có Cloudinary backend
+      // Fallback khi offline hoặc môi trường dev chưa kết nối được máy chủ lưu trữ.
       const n = captureName()
       rememberPreview(n, f)
       onChange(n)
@@ -45,7 +45,7 @@ export function CaptureField({ label, value, onChange, hint, required, invalid, 
         onChange={handleFileChange} />
       {uploading ? (
         <div className={s.shot} style={{ cursor: 'wait', opacity: 0.8 }}>
-          <i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Đang tải ảnh lên Cloudinary…
+          <i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Đang lưu ảnh…
         </div>
       ) : value ? (
         <div className={s.done}>

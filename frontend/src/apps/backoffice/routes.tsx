@@ -1,29 +1,31 @@
 // Danh sách trang của app nội bộ: URL → trang → vai trò.
+import { lazy } from 'react'
 import type { AppRoute } from '@shared/routing/types'
-import { SitemapPage } from '../sitemap/SitemapPage'
 import { ManagerLoginPage, StaffLoginPage } from './features/auth/StaffLoginPage'
-import AccountsPage from './features/admin/accounts/AccountsPage'
-import AdminRoutesPage from './features/admin/routes/AdminRoutesPage'
-import IntakePage from './features/manager/intake/IntakePage'
-import ApprovalsPage from './features/manager/approvals/ApprovalsPage'
-import DashboardPage from './features/manager/dashboard/DashboardPage'
-import TripReportsPage from './features/manager/trip-reports/TripReportsPage'
-import CancelledOrdersPage from './features/manager/cancelled-orders/CancelledOrdersPage'
-import ReportsPage from './features/manager/reports/ReportsPage'
-import IncidentsPage from './features/manager/incidents/IncidentsPage'
-import VerificationListPage from './features/specialist/verification/VerificationListPage'
-import VerifyPage from './features/specialist/verification/VerifyPage'
-import LegalListPage from './features/specialist/legal/LegalListPage'
-import LegalReviewPage from './features/specialist/legal/LegalReviewPage'
-import FleetPlanListPage from './features/coordinator/fleet-plan/FleetPlanListPage'
-import FleetPlanPage from './features/coordinator/fleet-plan/FleetPlanPage'
-import MonitoringPage from './features/coordinator/monitoring/MonitoringPage'
-import CoordinatorIncidentsPage from './features/coordinator/incidents/CoordinatorIncidentsPage'
-import FleetPage from './features/coordinator/fleet/FleetPage'
-import DriverPage from './features/driver/DriverPage'
-import EscortPage from './features/escort/EscortPage'
-import StaffProfilePage from './features/profile/StaffProfilePage'
-import { StaffForgotPasswordPage } from '@shared/auth/ForgotPasswordPage'
+// Trang đăng nhập tải ngay; các trang còn lại chỉ tải khi mở tới (lazy), mỗi vai trò chỉ tải phần mình dùng.
+const SitemapPage = lazy(() => import('../sitemap/SitemapPage').then(m => ({ default: m.SitemapPage })))
+const AccountsPage = lazy(() => import('./features/admin/accounts/AccountsPage'))
+const AdminRoutesPage = lazy(() => import('./features/admin/routes/AdminRoutesPage'))
+const IntakePage = lazy(() => import('./features/manager/intake/IntakePage'))
+const ApprovalsPage = lazy(() => import('./features/manager/approvals/ApprovalsPage'))
+const DashboardPage = lazy(() => import('./features/manager/dashboard/DashboardPage'))
+const TripReportsPage = lazy(() => import('./features/manager/trip-reports/TripReportsPage'))
+const CancelledOrdersPage = lazy(() => import('./features/manager/cancelled-orders/CancelledOrdersPage'))
+const ReportsPage = lazy(() => import('./features/manager/reports/ReportsPage'))
+const IncidentsPage = lazy(() => import('./features/manager/incidents/IncidentsPage'))
+const VerificationListPage = lazy(() => import('./features/specialist/verification/VerificationListPage'))
+const VerifyPage = lazy(() => import('./features/specialist/verification/VerifyPage'))
+const LegalListPage = lazy(() => import('./features/specialist/legal/LegalListPage'))
+const LegalReviewPage = lazy(() => import('./features/specialist/legal/LegalReviewPage'))
+const FleetPlanListPage = lazy(() => import('./features/coordinator/fleet-plan/FleetPlanListPage'))
+const FleetPlanPage = lazy(() => import('./features/coordinator/fleet-plan/FleetPlanPage'))
+const MonitoringPage = lazy(() => import('./features/coordinator/monitoring/MonitoringPage'))
+const CoordinatorIncidentsPage = lazy(() => import('./features/coordinator/incidents/CoordinatorIncidentsPage'))
+const FleetPage = lazy(() => import('./features/coordinator/fleet/FleetPage'))
+const DriverPage = lazy(() => import('./features/driver/DriverPage'))
+const EscortPage = lazy(() => import('./features/escort/EscortPage'))
+const StaffProfilePage = lazy(() => import('./features/profile/StaffProfilePage'))
+const StaffForgotPasswordPage = lazy(() => import('@shared/auth/ForgotPasswordPage').then(m => ({ default: m.StaffForgotPasswordPage })))
 
 const A: AppRoute['roles'] = ['admin']
 const M: AppRoute['roles'] = ['manager']
@@ -36,9 +38,9 @@ export const routes: AppRoute[] = [
   { path: '/login', page: StaffLoginPage, roles: [], title: 'Đăng nhập nội bộ', layout: 'bare' },
   { path: '/manager/login', page: ManagerLoginPage, roles: [], title: 'Đăng nhập Quản lý', layout: 'bare' },
 
-  { path: '/admin/accounts', page: AccountsPage, roles: A, title: 'Tài khoản hệ thống', layout: 'staff' },
-  { path: '/admin/accounts/:role', page: AccountsPage, roles: A, title: 'Tài khoản theo loại', layout: 'staff' },
   { path: '/admin/routes', page: AdminRoutesPage, roles: A, title: 'Tuyến đường cố định', layout: 'staff' },
+  { path: '/admin/accounts', page: AccountsPage, roles: A, title: 'Tất cả tài khoản', layout: 'staff' },
+  { path: '/admin/accounts/:role', page: AccountsPage, roles: A, title: 'Tài khoản theo loại', layout: 'staff' },
 
   { path: '/manager', page: DashboardPage, roles: M, title: 'Bảng điều khiển', layout: 'staff' },
   { path: '/manager/intake', page: IntakePage, roles: M, title: 'Tiếp nhận đơn hàng', layout: 'staff' },

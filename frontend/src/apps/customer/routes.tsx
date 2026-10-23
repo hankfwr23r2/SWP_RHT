@@ -1,22 +1,26 @@
 // Danh sách trang của app khách: URL → trang → vai trò. Rỗng roles = công khai.
+import { lazy } from 'react'
 import type { AppRoute } from '@shared/routing/types'
-import { SitemapPage } from '../sitemap/SitemapPage'
 import LoginPage from './features/auth/LoginPage'
-import { CustomerForgotPasswordPage } from '@shared/auth/ForgotPasswordPage'
-import RegisterPage from './features/auth/RegisterPage'
 import HomePage from './features/home/HomePage'
-import PortalPage from './features/portal/PortalPage'
-import HorsesPage from './features/horses/HorsesPage'
-import Step1RoutePage from './features/booking/Step1RoutePage'
-import Step2HorsesPage from './features/booking/Step2HorsesPage'
-import Step3ServicesPage from './features/booking/Step3ServicesPage'
-import Step4ReviewPage from './features/booking/Step4ReviewPage'
-import OrdersPage from './features/orders/OrdersPage'
-import OrderDetailPage from './features/orders/OrderDetailPage'
-import HistoryPage from './features/orders/HistoryPage'
-import PolicyPage from './features/policies/PolicyPage'
-import VnpayReturnPage from './features/payment/VnpayReturnPage'
-import ProfilePage from './features/profile/ProfilePage'
+
+// Trang chủ và đăng nhập tải ngay; các trang còn lại chỉ tải khi mở tới (lazy), để lần mở web đầu tiên
+// không phải tải cả thư viện bản đồ (~1,7 MB) mà trang chủ không dùng.
+const SitemapPage = lazy(() => import('../sitemap/SitemapPage').then(m => ({ default: m.SitemapPage })))
+const CustomerForgotPasswordPage = lazy(() => import('@shared/auth/ForgotPasswordPage').then(m => ({ default: m.CustomerForgotPasswordPage })))
+const RegisterPage = lazy(() => import('./features/auth/RegisterPage'))
+const PortalPage = lazy(() => import('./features/portal/PortalPage'))
+const HorsesPage = lazy(() => import('./features/horses/HorsesPage'))
+const Step1RoutePage = lazy(() => import('./features/booking/Step1RoutePage'))
+const Step2HorsesPage = lazy(() => import('./features/booking/Step2HorsesPage'))
+const Step3ServicesPage = lazy(() => import('./features/booking/Step3ServicesPage'))
+const Step4ReviewPage = lazy(() => import('./features/booking/Step4ReviewPage'))
+const OrdersPage = lazy(() => import('./features/orders/OrdersPage'))
+const OrderDetailPage = lazy(() => import('./features/orders/OrderDetailPage'))
+const HistoryPage = lazy(() => import('./features/orders/HistoryPage'))
+const PolicyPage = lazy(() => import('./features/policies/PolicyPage'))
+const VnpayReturnPage = lazy(() => import('./features/payment/VnpayReturnPage'))
+const ProfilePage = lazy(() => import('./features/profile/ProfilePage'))
 
 const C = ['customer'] as AppRoute['roles']
 

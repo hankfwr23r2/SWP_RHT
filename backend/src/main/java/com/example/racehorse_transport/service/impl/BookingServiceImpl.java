@@ -355,8 +355,7 @@ public class BookingServiceImpl implements BookingService {
         }
 
         boolean isEscort = "ESCORT".equalsIgnoreCase(role);
-        return bookingRepository.findAllByOrderByBookingDateDesc().stream()
-                .filter(b -> b.getStatus() != null && FIELD_STATUSES.contains(b.getStatus()))
+        return bookingRepository.findByStatusInOrderByBookingDateDesc(FIELD_STATUSES).stream()
                 .filter(b -> {
                     if (assignedBookingIds.contains(b.getId())) {
                         return true;

@@ -1,8 +1,6 @@
 // Coordinator: giám sát các chuyến (mỗi xe một chuyến) đang chạy. Mốc đổi xám, cam, xanh; quá giờ 30 phút thì cờ vàng Delayed Check-in (Flow 4, PRD mục 5.7).
 import { useEffect, useState } from 'react'
-import { useAuth } from '@shared/auth/AuthContext'
 import { currentCheckpoint, delayedCheckpoint, lastWelfare, needsAttention, schedulesOf } from '@shared/lib/booking'
-import { isAssignedTo } from '@shared/lib/staffAssignment'
 import { formatDateTime } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
 import { crewApi, type CrewMember } from '@shared/services/fleet'
@@ -16,7 +14,7 @@ import type { FieldTrip } from '../../../shared/field'
 import { placeShort } from '../../../shared/place'
 import s from '../../../shared/booking.module.css'
 
-type Tab = 'mine' | 'all'
+type Tab = 'not_started' | 'running'
 
 // Tài xế và hộ tống đang ngoài trụ sở: đang đi đơn (nước nào) hoặc đang về. Điều phối viên xem để lập lộ trình cho hợp lý, không chọn người.
 function CrewDuty({ all, crew, now }: { all: Booking[]; crew: CrewMember[]; now: number }) {
@@ -46,11 +44,10 @@ function CrewDuty({ all, crew, now }: { all: Booking[]; crew: CrewMember[]; now:
 }
 
 export default function MonitoringPage() {
-  const { session } = useAuth()
   const now = useNow(15_000)
   const { data: all, loaded: bookingsLoaded, reload } = useLoad(bookingsApi.list)
   const { data: crew, loaded: crewLoaded, reload: reloadCrew } = useLoad(crewApi.list)
-  const [tab, setTab] = useState<Tab>('mine')
+  const [tab, setTab] = useState<Tab>('not_started')
   const [selected, setSelected] = useState('')
   useEffect(() => { reload() }, [now, reload]) // cập nhật định kỳ để thấy check-in mới
 
@@ -76,9 +73,12 @@ export default function MonitoringPage() {
   }
 
   // Một chuyến = một xe của một đơn; đang chạy từ lúc xe xuất phát đến điểm đón tới khi giao xong
-  const active: FieldTrip[] = all.flatMap(b => (b.trips ?? []).filter(t => t.departedAt && !t.run?.deliveredAt).map(t => ({ b, t })))
-  const mine = active.filter(x => isAssignedTo(x.b.intake?.coordinator, session?.name))
-  const shown = (tab === 'mine' ? mine : active).sort((x, y) => x.b.departAt - y.b.departAt || x.t.tripId.localeCompare(y.t.tripId))
+  const monitorable: FieldTrip[] = all.flatMap(b => (b.trips ?? [])
+    .filter(t => !t.run?.deliveredAt && !['completed', 'cancelled', 'quote_expired', 'rejected'].includes(b.status))
+    .map(t => ({ b, t })))
+  const notStarted = monitorable.filter(x => !x.t.departedAt)
+  const active = monitorable.filter(x => !!x.t.departedAt)
+  const shown = (tab === 'not_started' ? notStarted : active).sort((x, y) => x.b.departAt - y.b.departAt || x.t.tripId.localeCompare(y.t.tripId))
   const late = active.filter(x => delayedCheckpoint(x.t, now))
   const trip = shown.find(x => x.t.tripId === selected) ?? shown[0]
   const nameOf = (id?: string) => crew?.find(c => c.id === id)
@@ -95,7 +95,7 @@ export default function MonitoringPage() {
         <CrewDuty all={all} crew={crew} now={now} />
 
         {!shown.length ? (
-          <div className={s.empty}><i className="fa-solid fa-truck" />Không có chuyến nào đang chạy.</div>
+          <div className={s.empty}><i className="fa-solid fa-truck" />{tab === 'not_started' ? 'Không có chuyến nào chưa chạy.' : 'Không có chuyến nào đang chạy.'}</div>
         ) : (
           <div className={s.layout}>
             <div className={s.main}>
@@ -108,7 +108,7 @@ export default function MonitoringPage() {
               )}
             </div>
             <aside className={s.side}>
-              <FilterNav<Tab> value={tab} onChange={setTab} tabs={[['mine', 'Chuyến của tôi', mine.length], ['all', 'Tất cả chuyến', active.length]]} />
+              <FilterNav<Tab> value={tab} onChange={setTab} tabs={[['not_started', 'Chuyến chưa chạy', notStarted.length], ['running', 'Chuyến đang chạy', active.length]]} />
               {shown.map(({ b, t }) => {
                 const cps = t.run?.checkpoints ?? []
                 const done = cps.filter(c => c.doneAt).length

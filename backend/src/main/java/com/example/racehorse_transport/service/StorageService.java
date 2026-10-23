@@ -4,10 +4,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface StorageService {
     /**
-     * Upload một file lên hệ thống lưu trữ (Cloudinary)
+     * Tải một tệp lên hệ thống lưu trữ.
      * @param file File từ client gửi lên (ảnh, PDF...)
      * @param folder Thư mục phân loại (ví dụ: "horses", "clearance", "settlement")
-     * @return URL công khai (https://res.cloudinary.com/...)
+     * @return Đường dẫn công khai của tệp đã tải lên.
      */
     String uploadFile(MultipartFile file, String folder);
 

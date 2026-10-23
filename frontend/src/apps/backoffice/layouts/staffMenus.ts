@@ -2,18 +2,10 @@ import type { StaffRole } from '@shared/types/role'
 
 // Menu theo vai trò. Các mục của Flow 1 (tiếp nhận, duyệt báo giá, duyệt hồ sơ ngựa, phương án xe) theo quy trình mới.
 export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: { group?: string; icon?: string }][]> = {
-  // Danh mục tài khoản theo vai trò; số lượng hiện cạnh từng mục
+  // Quản trị viên chỉ có một mục; lọc và sort được thực hiện inline trên trang
   admin: [
-    ['/admin/routes', 'Tuyến đường cố định', { group: 'Mạng lưới hành lang an toàn', icon: 'fa-road' }],
-    ['/admin/accounts', 'Tất cả tài khoản', { group: 'Quản lý tài khoản', icon: 'fa-users-gear' }],
-    ['/admin/accounts/admin', 'Quản trị viên', { icon: 'fa-user-shield' }],
-    ['/admin/accounts/manager', 'Quản lý', { icon: 'fa-user-tie' }],
-    ['/admin/accounts/specialist', 'Kiểm dịch viên', { icon: 'fa-user-doctor' }],
-    ['/admin/accounts/coordinator', 'Điều phối viên', { icon: 'fa-route' }],
-    ['/admin/accounts/driver', 'Tài xế', { icon: 'fa-id-card' }],
-    ['/admin/accounts/escort', 'Hộ tống', { icon: 'fa-horse-head' }],
-    ['/admin/accounts/customer', 'Khách hàng', { icon: 'fa-user' }],
-    ['/admin/accounts/locked', 'Đã khóa', { icon: 'fa-lock' }],
+    ['/admin/routes', 'Tuyến đường cố định', { icon: 'fa-road' }],
+    ['/admin/accounts', 'Tất cả tài khoản', { icon: 'fa-users-gear' }],
   ],
   manager: [
     ['/manager', 'Tổng quan', { group: 'Việc cần làm', icon: 'fa-chart-pie' }],

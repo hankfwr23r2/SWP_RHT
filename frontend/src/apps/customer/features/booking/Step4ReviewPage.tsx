@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
-import { VEHICLE_CLASS } from '@shared/config/booking-rules'
+import { FEED_PACKAGE, VEHICLE_CLASS, WATER_PLAN } from '@shared/config/booking-rules'
 import { COUNTRIES } from '@shared/config/network'
 import { classForHorses, findLocation, fromIsoDay, insuranceFee } from '@shared/lib/booking'
 import { formatDate, formatVND } from '@shared/lib/format'
@@ -35,7 +35,7 @@ export default function Step4ReviewPage() {
     const toList = () => navigate(`/orders?group=confirm&new=${placed.id}`)
     return (
       <Modal onClose={toList} title={<><i className="fa-solid fa-circle-check" style={{ color: 'var(--green)' }} /> Đã gửi đơn {placed.id}</>} subtitle="Đơn của bạn đã được ghi nhận"
-        footer={<><button className="btn btn-ghost" onClick={() => navigate(`/orders/${placed.id}`)}>Xem chi tiết đơn</button><button className="btn btn-primary" onClick={toList}>Xem đơn vừa đặt</button></>}>
+        footer={<button className="btn btn-primary" onClick={toList}>Đến trang Đơn của tôi</button>}>
         <dl className={s.reviewGrid}>
           <div><dt>Tuyến</dt><dd>{placed.route}</dd></div>
           <div><dt>Ngày khởi hành</dt><dd>{placed.date}</dd></div>
@@ -118,13 +118,43 @@ export default function Step4ReviewPage() {
       <div className="card" data-card>
         <div className="card-header"><h3><i className="fa-solid fa-horse-head" /> {rows.length} ngựa · xe {cls.label} <span className={s.subNote}>({cls.stalls})</span></h3><Link to="/booking/services" className={s.editLink}>Sửa</Link></div>
         {rows.map(h => {
-          const c = draft.config[h.id]
+          const c = draft.config[h.id] ?? {}
+          const feed = FEED_PACKAGE[c.feedPackage] ?? FEED_PACKAGE.basic
+          const water = WATER_PLAN[c.waterPlan] ?? WATER_PLAN.every_3h
           return (
-            <div key={h.id} className={s.reviewHorse}>
-              <div><b>{h.name}</b> <small>Chip {h.microchip} · {h.breed} · {SEX_LABEL[h.sex]}</small></div>
-              <div className="text-right">{c.stall === 'single' ? 'Khoang đơn' : 'Khoang tiêu chuẩn'}</div>
-              <small>{c.insurance === 'buy' ? 'Mua bảo hiểm chuyến đi' : <>Từ chối bảo hiểm <span className={s.subNote}>(trách nhiệm hạn chế)</span></>}</small>
-              <small className="text-right">{c.insurance === 'buy' ? `Phí ${formatVND(insuranceFee(h.breed))}` : ''}</small>
+            <div key={h.id} className={s.reviewHorseItem}>
+              <div className={s.reviewHorseHead}>
+                <div>
+                  <span className={s.reviewHorseName}>{h.name}</span>
+                  <span className={s.reviewHorseMeta}>Chip {h.microchip} · {h.breed} · {SEX_LABEL[h.sex]}</span>
+                </div>
+              </div>
+              <div className={s.reviewServicesGrid}>
+                <div className={s.reviewServiceCol}>
+                  <span className={s.reviewServiceLabel}><i className="fa-solid fa-border-all" /> Khoang xe</span>
+                  <span className={s.reviewServiceVal}>{c.stall === 'single' ? 'Khoang đơn mở rộng' : 'Khoang tiêu chuẩn'}</span>
+                  <span className={s.reviewServiceSub}>{c.stall === 'single' ? 'Phụ thu khoang riêng' : 'Đã gồm trong cước'}</span>
+                </div>
+                <div className={s.reviewServiceCol}>
+                  <span className={s.reviewServiceLabel}><i className="fa-solid fa-wheat-awn" /> Gói thức ăn</span>
+                  <span className={s.reviewServiceVal}>{feed.label}</span>
+                  <span className={s.reviewServiceSub}>{feed.items.join(', ')}{feed.fee ? ` (+${formatVND(feed.fee)})` : ''}</span>
+                </div>
+                <div className={s.reviewServiceCol}>
+                  <span className={s.reviewServiceLabel}><i className="fa-solid fa-faucet-droplet" /> Cữ uống nước</span>
+                  <span className={s.reviewServiceVal}>{water.label}</span>
+                  <span className={s.reviewServiceSub}>{water.hint}{water.fee ? ` (+${formatVND(water.fee)})` : ''}</span>
+                </div>
+                <div className={s.reviewServiceCol}>
+                  <span className={s.reviewServiceLabel}><i className="fa-solid fa-shield-halved" /> Bảo hiểm chuyến đi</span>
+                  <span className={s.reviewServiceVal} style={{ color: c.insurance === 'buy' ? 'var(--orange)' : 'var(--text)' }}>
+                    {c.insurance === 'buy' ? 'Mua bảo hiểm chuyến đi' : 'Từ chối bảo hiểm'}
+                  </span>
+                  <span className={s.reviewServiceSub}>
+                    {c.insurance === 'buy' ? `Phí ${formatVND(insuranceFee(h.breed))}` : 'Trách nhiệm hạn chế của nhà xe'}
+                  </span>
+                </div>
+              </div>
             </div>
           )
         })}

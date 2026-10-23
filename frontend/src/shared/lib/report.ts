@@ -1,10 +1,17 @@
 // Báo cáo của Quản lý: tính toán tổng hợp doanh thu, chi phí vận hành và hiệu suất từ dữ liệu đơn hàng backend (PRD mục 15).
-import { DELAY_ALERT_MINUTES, MARGIN_RATE } from '../config/booking-rules'
+import { BOOKING_STATUS, DELAY_ALERT_MINUTES, MARGIN_RATE, type BookingStatus } from '../config/booking-rules'
 import { DAY } from '../config/business-rules'
 import type { Booking, VehicleTrip } from '../types/booking'
 
 // Dòng báo giá đã gộp biên lợi nhuận 5% (cước, nhân sự, nhiên liệu và BOT): giá vốn = tiền / (1 + biên). Dòng còn lại tính nguyên.
 const MARGINED = /^(Cước vận chuyển|Nhân sự kỹ thuật|Nhiên liệu và BOT)/
+
+export function bookingStatusLabel(status: string | undefined): string {
+  if (!status) return 'Không xác định'
+  return Object.hasOwn(BOOKING_STATUS, status)
+    ? BOOKING_STATUS[status as BookingStatus].label
+    : status
+}
 
 export interface OrderFinance {
   id: string; customer: string; at: number // at = ngày đặt cọc (đơn có hiệu lực)
