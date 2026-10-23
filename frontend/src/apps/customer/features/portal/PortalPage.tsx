@@ -1,18 +1,18 @@
 // Trang chủ của khách sau đăng nhập: giao diện như trang chủ công khai (banner, tra cứu cước, mạng lưới, dịch vụ), giữ nguyên phần việc của khách (số liệu nhanh, việc cần làm, các bước của một đơn).
-import { Link } from 'react-router'
+import { useEffect } from 'react'
+import { Link, useLoaderData } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { BOOKING_STEPS, DEPOSIT_RATE, QUOTE_VALID_HOURS } from '@shared/config/booking-rules'
 import { horseReadiness } from '@shared/lib/booking'
 import { formatDate } from '@shared/lib/format'
 import { useStaggerIn } from '@shared/motion/motion'
-import { customerBookingsApi } from '@shared/services/bookings'
-import { horsesApi } from '@shared/services/horses'
-import { useLoad } from '@shared/services/useLoad'
 import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
+import { useToast } from '@shared/ui/toast'
 import { useNow } from '@shared/ui/useNow'
 import { About, Hero, Network, Services, portalLinks, useLandingReveal } from '../home/HomePage'
 import { nextStep } from '../orders/nextStep'
 import { PriceLookup } from '../pricing/PriceLookup'
+import type { portalLoader } from './portalLoader'
 import s from './PortalPage.module.css'
 
 const STEP_TEXT = [
@@ -30,9 +30,13 @@ export default function PortalPage() {
   const { session } = useAuth()
   const owner = session!.name
   const now = useNow()
-  const { data: orders } = useLoad(() => customerBookingsApi.list(owner), [owner])
-  const { data: horses } = useLoad(() => horsesApi.list(owner), [owner])
-  // Các thẻ có sẵn trước khi dữ liệu về: chỉ chạy hiệu ứng một lần lúc vào trang, không chạy lại khi đơn/ngựa tải xong (trang sẽ giật)
+  // Đơn và ngựa do router tải sẵn (portalLoader) trước khi trang hiện
+  const data = useLoaderData<typeof portalLoader>()
+  const orders = data?.orders
+  const horses = data?.horses
+  const toast = useToast()
+  useEffect(() => { for (const error of data?.errors ?? []) toast(error, 'error') }, [data, toast])
+  // Chỉ chạy hiệu ứng một lần lúc vào trang (trang sẽ giật nếu chạy lại)
   const ref = useStaggerIn('[data-card]')
 
   const withNext = (orders ?? []).map(b => ({ b, next: nextStep(b, now) }))
