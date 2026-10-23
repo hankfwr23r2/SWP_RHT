@@ -1,7 +1,6 @@
-// Quản trị viên: quản lý tài khoản hệ thống. Danh sách theo vai trò, tạo tài khoản nhân viên, sửa thông tin,
-// khóa / mở khóa, đặt lại mật khẩu, xem lịch sử thao tác của từng tài khoản.
+// Quản trị viên: quản lý tài khoản hệ thống. Mặc định sắp xếp mới nhất lên đầu.
+// Lọc thêm theo vai trò và trạng thái, tìm kiếm tên / email / SĐT.
 import { useState } from 'react'
-import { useParams } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { formatDateTime } from '@shared/lib/format'
 import { accountsApi, isOpsRole } from '@shared/services/accounts'
@@ -11,14 +10,22 @@ import { ROLE_LABEL, type Role } from '@shared/types/role'
 import { FormSelect } from '@shared/ui/FormSelect'
 import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
-import { ListPage, type Column, type TabDef } from '../../../shared/ListPage'
+import { ListPage, type Column } from '../../../shared/ListPage'
 import s from './Accounts.module.css'
 
-type Tab = 'all' | Role | 'locked'
 const ROLES: Role[] = ['admin', 'manager', 'specialist', 'coordinator', 'driver', 'escort', 'customer']
 // Vai trò có thể chọn khi tạo tài khoản mới (khách tự đăng ký nên không tạo ở đây)
 const CREATABLE: Role[] = ['admin', 'manager', 'specialist', 'coordinator', 'driver', 'escort']
 const initials = (name: string) => name.split(' ').filter(Boolean).slice(-2).map(w => w[0]).join('').toUpperCase()
+
+type SortKey = 'newest' | 'oldest' | 'name_asc' | 'name_desc' | 'last_login'
+const SORT_OPTIONS: [SortKey, string][] = [
+  ['newest', 'Mới nhất trước'],
+  ['oldest', 'Cũ nhất trước'],
+  ['name_asc', 'Tên A → Z'],
+  ['name_desc', 'Tên Z → A'],
+  ['last_login', 'Đăng nhập gần nhất'],
+]
 
 type Dialog =
   | { kind: 'edit'; account: Account | null } // null = tạo mới
@@ -65,21 +72,52 @@ function AccountModal({ account, actor, defaultRole, onClose, onDone }: { accoun
   )
 }
 
+function sortAccounts(list: Account[], key: SortKey): Account[] {
+  return [...list].sort((a, b) => {
+    switch (key) {
+      case 'newest': {
+        const diff = (b.createdAt ?? 0) - (a.createdAt ?? 0)
+        if (diff !== 0) return diff
+        const idA = Number(a.id.replace(/\D/g, '')) || 0
+        const idB = Number(b.id.replace(/\D/g, '')) || 0
+        return idB - idA
+      }
+      case 'oldest': {
+        const diff = (a.createdAt ?? 0) - (b.createdAt ?? 0)
+        if (diff !== 0) return diff
+        const idA = Number(a.id.replace(/\D/g, '')) || 0
+        const idB = Number(b.id.replace(/\D/g, '')) || 0
+        return idA - idB
+      }
+      case 'name_asc':  return a.name.localeCompare(b.name, 'vi')
+      case 'name_desc': return b.name.localeCompare(a.name, 'vi')
+      case 'last_login':return (b.lastLoginAt ?? 0) - (a.lastLoginAt ?? 0)
+      default:          return 0
+    }
+  })
+}
+
 export default function AccountsPage() {
   const toast = useToast()
   const { session } = useAuth()
   const me = { name: session!.name, email: session!.username }
   const { data: all, reload } = useLoad(accountsApi.list)
-  // Danh mục tài khoản nằm ở thanh bên: loại đang xem lấy từ đường dẫn /admin/accounts/:role
-  const { role: param } = useParams()
-  const tab: Tab = [...ROLES, 'locked'].includes(param as Tab) ? (param as Tab) : 'all'
   const [dialog, setDialog] = useState<Dialog | null>(null)
   const [why, setWhy] = useState('')
   const [busy, setBusy] = useState(false)
+
+  // Filter + Sort state
+  const [roleFilter, setRoleFilter] = useState<Role | 'all'>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'locked'>('all')
+  const [sortKey, setSortKey] = useState<SortKey>('newest')
+
   const list = all ?? []
-  const count = (t: Tab) => (t === 'all' ? list.length : t === 'locked' ? list.filter(a => a.status === 'locked').length : list.filter(a => a.role === t).length)
-  const tabs: TabDef<Tab>[] = [['all', 'Tất cả', list.length], ...ROLES.map((r): TabDef<Tab> => [r, ROLE_LABEL[r], count(r)]), ['locked', 'Đã khóa', count('locked')]]
-  const rows = list.filter(a => (tab === 'all' ? true : tab === 'locked' ? a.status === 'locked' : a.role === tab))
+  const filtered = list.filter(a =>
+    (roleFilter === 'all' || a.role === roleFilter) &&
+    (statusFilter === 'all' || a.status === statusFilter)
+  )
+  const rows = sortAccounts(filtered, sortKey)
+
   const close = () => { setDialog(null); setWhy(''); setBusy(false) }
   const run = async (fn: () => Promise<void>) => { setBusy(true); try { await fn() } catch (e) { toast(e instanceof Error ? e.message : 'Không thực hiện được', 'error'); setBusy(false) } }
 
@@ -98,14 +136,78 @@ export default function AccountsPage() {
     ) },
   ]
 
+  // Bộ lọc inline truyền vào ListPage qua prop filters
+  const filterBar = (
+    <div className={s.filterBar}>
+      <div className={s.filterGroup}>
+        <label className={s.filterLabel} htmlFor="ac-role-filter">
+          <i className="fa-solid fa-user-tag" /> Vai trò
+        </label>
+        <FormSelect
+          id="ac-role-filter"
+          className={`form-control ${s.filterSelect}`}
+          value={roleFilter}
+          onChange={e => setRoleFilter(e.target.value as Role | 'all')}
+        >
+          <option value="all">Tất cả vai trò ({list.length})</option>
+          {ROLES.map(r => (
+            <option key={r} value={r}>
+              {ROLE_LABEL[r]} ({list.filter(a => a.role === r).length})
+            </option>
+          ))}
+        </FormSelect>
+      </div>
+
+      <div className={s.filterGroup}>
+        <label className={s.filterLabel} htmlFor="ac-status-filter">
+          <i className="fa-solid fa-circle-half-stroke" /> Trạng thái
+        </label>
+        <FormSelect
+          id="ac-status-filter"
+          className={`form-control ${s.filterSelect}`}
+          value={statusFilter}
+          onChange={e => setStatusFilter(e.target.value as 'all' | 'active' | 'locked')}
+        >
+          <option value="all">Tất cả ({list.length})</option>
+          <option value="active">Hoạt động ({list.filter(a => a.status === 'active').length})</option>
+          <option value="locked">Đã khóa ({list.filter(a => a.status === 'locked').length})</option>
+        </FormSelect>
+      </div>
+
+      <div className={s.filterGroup}>
+        <label className={s.filterLabel} htmlFor="ac-sort">
+          <i className="fa-solid fa-arrow-up-wide-short" /> Sắp xếp
+        </label>
+        <FormSelect
+          id="ac-sort"
+          className={`form-control ${s.filterSelect}`}
+          value={sortKey}
+          onChange={e => setSortKey(e.target.value as SortKey)}
+        >
+          {SORT_OPTIONS.map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+        </FormSelect>
+      </div>
+    </div>
+  )
+
   return (
     <>
-      <ListPage title={tab === 'all' ? 'Tài khoản hệ thống' : tab === 'locked' ? 'Tài khoản đã khóa' : `Tài khoản · ${ROLE_LABEL[tab]}`} subtitle="Tạo tài khoản nhân viên, khóa hoặc mở khóa, đặt lại mật khẩu. Khách hàng tự đăng ký; bạn chỉ khóa hoặc mở khóa được." tabs={tabs} tab={tab} onTab={() => undefined} hideTabs hideCount
-        rows={rows} rowKey={a => a.id} columns={columns} haystack={a => [a.id, a.name, a.email, a.phone, ROLE_LABEL[a.role]]} loaded={!!all} emptyText="Không có tài khoản nào ở mục này." searchPlaceholder="Tìm theo tên, email, số điện thoại…" hotRow={a => a.status === 'locked'}
-        actions={<button className="btn btn-primary" onClick={() => setDialog({ kind: 'edit', account: null })}><i className="fa-solid fa-user-plus" /> Tạo tài khoản</button>} />
+      <ListPage
+        title="Tất cả tài khoản"
+        subtitle="Tạo tài khoản nhân viên, khóa hoặc mở khóa, đặt lại mật khẩu. Khách hàng tự đăng ký; bạn chỉ khóa hoặc mở khóa được."
+        rows={rows} rowKey={a => a.id} columns={columns}
+        haystack={a => [a.id, a.name, a.email, a.phone, ROLE_LABEL[a.role]]}
+        loaded={!!all} emptyText="Không có tài khoản nào khớp bộ lọc."
+        searchPlaceholder="Tìm theo tên, email, số điện thoại…"
+        hotRow={a => a.status === 'locked'}
+        filters={filterBar}
+        hideTabs hideCount
+        summary={r => <span>Hiển thị <b>{r.length}</b> tài khoản</span>}
+        actions={<button className="btn btn-primary" onClick={() => setDialog({ kind: 'edit', account: null })}><i className="fa-solid fa-user-plus" /> Tạo tài khoản</button>}
+      />
 
       {dialog?.kind === 'edit' && (
-        <AccountModal account={dialog.account} actor={me.name} defaultRole={CREATABLE.includes(tab as Role) ? (tab as Role) : 'specialist'} onClose={close} onDone={result => {
+        <AccountModal account={dialog.account} actor={me.name} defaultRole={CREATABLE.includes(roleFilter as Role) ? (roleFilter as Role) : 'specialist'} onClose={close} onDone={result => {
           close(); reload()
           if (result) setDialog({ kind: 'secret', title: 'Đã tạo tài khoản', who: result.account.name, email: result.account.email, password: result.password })
         }} />

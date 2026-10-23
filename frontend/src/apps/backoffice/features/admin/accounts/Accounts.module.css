@@ -19,4 +19,12 @@
 .secret { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 16px; border: 1px dashed #cbd5e1; border-radius: 12px; background: var(--bg-page); }
 .secret span { color: var(--muted); font-size: 0.84rem; }
 .secret code { font-size: 1.3rem; font-weight: 700; letter-spacing: 0.06em; color: var(--navy); }
-@media (max-width: 700px) { .form { grid-template-columns: 1fr; } }
+
+/* Thanh lọc & sắp xếp inline */
+.filterBar { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: flex-end; }
+.filterGroup { display: flex; flex-direction: column; gap: 4px; min-width: 160px; }
+.filterLabel { font-size: 0.74rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; display: flex; align-items: center; gap: 5px; }
+.filterSelect { padding: 6px 10px; font-size: 0.84rem; min-width: 160px; }
+
+@media (max-width: 700px) { .form { grid-template-columns: 1fr; } .filterBar { flex-direction: column; } .filterGroup { width: 100%; } }
+
