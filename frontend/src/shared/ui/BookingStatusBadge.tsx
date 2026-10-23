@@ -15,6 +15,9 @@ const ICON: Record<BookingStatus, string> = {
   incident_reported: 'fa-triangle-exclamation',
   pending_emergency_approval: 'fa-hourglass-half',
   emergency_plan_active: 'fa-kit-medical',
+  arrived: 'fa-location-dot',
+  handover_timeout: 'fa-clock',
+  returning_to_hq: 'fa-rotate-left',
   delivered_pending_settlement: 'fa-flag-checkered',
   expenses_submitted: 'fa-receipt',
   settlement_issued: 'fa-file-invoice-dollar',
@@ -25,12 +28,16 @@ const ICON: Record<BookingStatus, string> = {
 }
 const CLASS: Record<Tone, string> = { info: 'badge-info', warning: 'badge-warning', success: 'badge-success', danger: 'badge-danger', muted: 'badge-muted', orange: 'badge-orange' }
 
+type Labels = { statusLabel?: string; customerStatusLabel?: string }
+
 // Nhãn trạng thái đơn. Khách thấy nhãn dễ hiểu; nội bộ thấy nhãn nghiệp vụ, mã gốc theo PRD nằm ở tooltip.
-export function BookingStatusBadge({ status, audience = 'customer', text }: { status: BookingStatus; audience?: 'customer' | 'staff'; text?: string }) {
-  const s = BOOKING_STATUS[status]
+// Có `labels` (đơn nhận từ backend) thì hiện nhãn backend trả; bảng ở frontend chỉ dùng khi thiếu.
+export function BookingStatusBadge({ status, audience = 'customer', text, labels }: { status: BookingStatus; audience?: 'customer' | 'staff'; text?: string; labels?: Labels }) {
+  // Trạng thái backend mới thêm mà frontend chưa biết: hiện nguyên mã thay vì làm trắng cả trang
+  const s = BOOKING_STATUS[status] ?? { code: status, label: status, customerLabel: status, tone: 'muted' as Tone }
   return (
     <span className={`badge ${CLASS[s.tone]}`} title={text ? `${s.label} (${s.code})` : s.code}>
-      <i className={`fa-solid ${ICON[status]}`} aria-hidden="true" /> {text ?? (audience === 'customer' ? s.customerLabel : s.label)}
+      <i className={`fa-solid ${ICON[status] ?? 'fa-circle-info'}`} aria-hidden="true" /> {text ?? (audience === 'customer' ? labels?.customerStatusLabel ?? s.customerLabel : labels?.statusLabel ?? s.label)}
     </span>
   )
 }

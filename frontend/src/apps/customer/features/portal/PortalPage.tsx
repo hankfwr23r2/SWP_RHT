@@ -69,7 +69,7 @@ export default function PortalPage() {
             {todo.map(({ b, next }) => (
               <Link key={b.id} to={`/orders/${b.id}`} className={`${s.todo} ${next.tone === 'danger' ? s.todoDanger : s.todoWarn}`}>
                 <i className={`fa-solid ${next.icon}`} aria-hidden="true" />
-                <div><b>{b.id}</b> <BookingStatusBadge status={b.status} /><div className={s.todoTitle}>{next.title}</div><div className={s.todoSub}>Khởi hành {formatDate(b.departAt)} · {b.horses.length} ngựa</div></div>
+                <div><b>{b.id}</b> <BookingStatusBadge status={b.status} labels={b} /><div className={s.todoTitle}>{next.title}</div><div className={s.todoSub}>Khởi hành {formatDate(b.departAt)} · {b.horses.length} ngựa</div></div>
                 <span className="btn btn-primary btn-sm">Xử lý</span>
               </Link>
             ))}

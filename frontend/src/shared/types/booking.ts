@@ -255,6 +255,8 @@ export interface Booking {
   consignee: Party
   horses: BookingHorse[]
   status: BookingStatus
+  statusLabel?: string // nhãn backend trả (nhân viên)
+  customerStatusLabel?: string // nhãn backend trả (khách)
 
   // ----- nội bộ (khách không thấy) -----
   intake?: { at: number; by: string; specialist: StaffRef; coordinator: StaffRef }

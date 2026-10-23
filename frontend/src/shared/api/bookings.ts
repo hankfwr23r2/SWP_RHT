@@ -41,6 +41,8 @@ export interface BackendBookingResponse {
   customer: string
   customerName: string
   status: string
+  statusLabel?: string // nhãn trạng thái cho nhân viên, backend trả theo bảng BookingStatusLabels
+  customerStatusLabel?: string // nhãn trạng thái cho khách
   createdAt: number
   departAt: number
   originName: string

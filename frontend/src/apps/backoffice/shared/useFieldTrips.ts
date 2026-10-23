@@ -8,7 +8,7 @@ import type { Booking } from '@shared/types/booking'
 import type { FieldTrip } from './field'
 
 // Trạng thái đơn mà Driver / Escort nhìn thấy trên app (từ lúc có Vận đơn, Lệnh điều xe phát ngay sau cọc)
-export const FIELD_STATUSES: Booking['status'][] = ['waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'delivered_pending_settlement']
+export const FIELD_STATUSES: Booking['status'][] = ['waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement']
 
 function canonicalStaffId(value: string, role: 'driver' | 'escort') {
   const normalized = value.trim().toUpperCase()

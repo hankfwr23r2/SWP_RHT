@@ -175,7 +175,7 @@ export default function LegalReviewPage() {
     <div className="page">
       <div className="wrap">
         <div className="breadcrumb"><Link to="/specialist/legal">Giấy tờ chuyến đi</Link> / <span className="text-orange font-semibold">{b.id}</span></div>
-        <div className="page-header" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}><h1>Đơn {b.id}</h1><BookingStatusBadge status={b.status} audience="staff" /></div>
+        <div className="page-header" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}><h1>Đơn {b.id}</h1><BookingStatusBadge status={b.status} labels={b} audience="staff" /></div>
         <div className={s.layout}>
           <div className={s.main}>
             <div className="card"><div className="card-header"><h3><i className="fa-solid fa-route" /> Chuyến đi</h3></div><TripSummary b={b} /></div>

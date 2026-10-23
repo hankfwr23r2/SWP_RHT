@@ -89,7 +89,7 @@ export function CalendarModal({ orders, onOpen, onClose }: { orders: Booking[]; 
               <b>{b.id}</b>
               <span>{b.customer}</span>
               <span className={s.route}>{placeShort(b.origin.name)} → {placeShort(b.dest.name)}</span>
-              <BookingStatusBadge status={b.status} audience="staff" />
+              <BookingStatusBadge status={b.status} labels={b} audience="staff" />
             </button>
           ))}
           {!at(cursor).length && <p className={s.empty}><i className="fa-regular fa-calendar" />Không có chuyến khởi hành trong ngày này</p>}

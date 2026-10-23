@@ -263,7 +263,7 @@ export default function OrderDetailPage() {
     <div className="page">
       <div className="wrap">
         <div className="breadcrumb"><Link to="/portal">Trang chủ</Link> / <Link to="/orders">Đơn của tôi</Link> / <span className="text-orange font-semibold">{b.id}</span></div>
-        <div className={`page-header ${s.titleRow}`}><div><h1>Đơn {b.id}</h1><p>{route} · khởi hành {formatDate(b.departAt)} · {b.horses.length} ngựa</p></div><BookingStatusBadge status={b.status} /></div>
+        <div className={`page-header ${s.titleRow}`}><div><h1>Đơn {b.id}</h1><p>{route} · khởi hành {formatDate(b.departAt)} · {b.horses.length} ngựa</p></div><BookingStatusBadge status={b.status} labels={b} /></div>
 
         <div className={s.main}>
           <Progress b={b} />

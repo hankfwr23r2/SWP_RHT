@@ -6,9 +6,9 @@ import { formatDateTime, formatVND, timeLeftText } from '@shared/lib/format'
 import type { CustomerBookingView } from '@shared/services/bookings'
 
 // Đã đặt cọc: có Vận đơn, nhà xe làm giấy tờ
-export const POST_PAYMENT: CustomerBookingView['status'][] = ['waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed']
+export const POST_PAYMENT: CustomerBookingView['status'][] = ['waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed']
 // Từ lúc giấy tờ xong trở đi: hành trình quan trọng hơn giấy tờ
-export const ROUTE_STAGE: CustomerBookingView['status'][] = ['clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed']
+export const ROUTE_STAGE: CustomerBookingView['status'][] = ['clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed']
 // Đã có lộ trình: khách xem được tóm tắt hành trình (lộ trình lập từ trước báo giá)
 export const ROUTE_VISIBLE: CustomerBookingView['status'][] = ['awaiting_payment', 'quote_expired', ...POST_PAYMENT]
 
@@ -77,6 +77,12 @@ function baseStep(b: CustomerBookingView, now: number): NextStep {
       return { tone: 'danger', icon: 'fa-circle-xmark', title: 'Nhà xe không nhận đơn này', text: `${b.rejection?.role === 'coordinator' ? 'Điều phối viên không xếp được xe và lộ trình' : 'Quản lý không tiếp nhận đơn'}. Lý do: ${b.rejection?.reason ?? 'không nêu'}. Bạn có thể chỉnh lại và đặt chuyến mới.`, actionNeeded: false }
     case 'cancelled':
       return { tone: 'muted', icon: 'fa-ban', title: 'Đơn đã hủy', text: !b.payment ? 'Đơn đã đóng khi chưa đặt cọc, không phát sinh phí.' : b.cancellation?.by === 'manager' ? `Nhà xe đã hủy đơn. Hoàn ${formatVND(b.cancellation.refund)} về tài khoản bạn dùng để thanh toán.` : b.cancellation?.refund ? `Tiền cọc không được hoàn. Số dư đã trả ${formatVND(b.cancellation.refund)} được hoàn về tài khoản bạn dùng để thanh toán.` : 'Tiền cọc không được hoàn theo chính sách hủy đơn.', actionNeeded: false }
+    case 'arrived':
+      return { tone: 'info', icon: 'fa-location-dot', title: 'Xe đã tới điểm giao', text: 'Xe đã tới điểm giao và đang chờ người nhận ra bàn giao ngựa.', actionNeeded: false }
+    case 'handover_timeout':
+      return { tone: 'danger', icon: 'fa-clock', title: 'Quá giờ nhận ngựa', text: 'Người nhận chưa nhận ngựa trong 2 giờ chờ miễn phí. Ngựa đã được đưa vào chuồng lưu trú gần điểm giao để chăm sóc; phí lưu chuồng tính vào bảng quyết toán. Vui lòng liên hệ nhà xe để hẹn lại giờ nhận.', actionNeeded: false }
+    case 'returning_to_hq':
+      return { tone: 'warning', icon: 'fa-rotate-left', title: 'Ngựa đang được chở về trụ sở', text: 'Người nhận không nhận ngựa trong 2 giờ chờ miễn phí nên xe đang chở ngựa về Trụ sở chính tại Việt Nam. Chi phí phát sinh tính vào bảng quyết toán. Vui lòng liên hệ nhà xe.', actionNeeded: false }
     case 'delivered_pending_settlement': {
       const at = Math.max(0, ...(b.trips ?? []).map(t => t.run?.deliveredAt ?? 0))
       return { tone: 'success', icon: 'fa-flag-checkered', title: 'Đã giao ngựa an toàn', text: `Ngựa đã được bàn giao cho người nhận${at ? ` lúc ${formatDateTime(at)}` : ''}. Giá đã cố định nên bạn không phải trả thêm, trừ khi có khoản phát sinh liên quan đến ngựa (nếu có, chúng tôi sẽ gửi bảng quyết toán).`, actionNeeded: false }

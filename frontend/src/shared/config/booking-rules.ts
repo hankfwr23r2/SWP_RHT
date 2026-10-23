@@ -55,6 +55,7 @@ export type BookingStatus =
   | 'waybill_issued' | 'clearance_in_progress' | 'clearance_done' // Flow 2
   | 'ready_for_pickup' | 'en_route_to_pickup' // Flow 3
   | 'in_transit' | 'incident_reported' | 'pending_emergency_approval' | 'emergency_plan_active' // Flow 5
+  | 'arrived' | 'handover_timeout' | 'returning_to_hq' // Flow 4: tới điểm giao; quá 2 giờ chưa bàn giao (lưu chuồng hoặc chở về trụ sở)
   | 'delivered_pending_settlement' // Flow 4
   | 'expenses_submitted' | 'settlement_issued' | 'payment_overdue' | 'completed' // Flow 6
   | 'cancelled' // khách từ chối báo giá (PRD mục 2.6)
@@ -75,6 +76,9 @@ export const BOOKING_STATUS: Record<BookingStatus, { code: string; label: string
   incident_reported: { code: 'Incident Reported - Action Required', label: 'Có sự cố, chờ điều phối lập phương án', customerLabel: 'Xe gặp sự cố, đang xử lý', tone: 'danger' },
   pending_emergency_approval: { code: 'Pending Emergency Approval', label: 'Chờ quản lý duyệt phương án khẩn cấp', customerLabel: 'Xe gặp sự cố, đang xử lý', tone: 'danger' },
   emergency_plan_active: { code: 'Emergency Plan Active', label: 'Đang thực hiện phương án khẩn cấp', customerLabel: 'Đang xử lý sự cố, ngựa được chăm sóc', tone: 'warning' },
+  arrived: { code: 'Arrived at Destination', label: 'Xe đã tới điểm giao, chờ bàn giao', customerLabel: 'Xe đã tới điểm giao', tone: 'info' },
+  handover_timeout: { code: 'Handover Timeout - Stabled', label: 'Quá hạn bàn giao, ngựa đang lưu chuồng gần điểm giao', customerLabel: 'Quá giờ nhận ngựa, ngựa đang được lưu chuồng', tone: 'danger' },
+  returning_to_hq: { code: 'Handover Timeout - Returning to HQ', label: 'Quá hạn bàn giao, xe chở ngựa về trụ sở', customerLabel: 'Ngựa đang được chở về trụ sở', tone: 'warning' },
   delivered_pending_settlement: { code: 'Delivered - Pending Settlement', label: 'Đã giao, chờ tài xế gửi chi phí', customerLabel: 'Đã giao ngựa', tone: 'success' },
   expenses_submitted: { code: 'Expenses Submitted - Pending Audit', label: 'Chờ quản lý đối soát chi phí', customerLabel: 'Đã giao, đang quyết toán', tone: 'orange' },
   settlement_issued: { code: 'Settlement Issued - Awaiting Final Payment', label: 'Đã phát hành quyết toán, chờ khách trả', customerLabel: 'Chờ thanh toán quyết toán', tone: 'warning' },
@@ -89,6 +93,7 @@ export const STATUS_SHORT: Record<BookingStatus, string> = {
   pending_intake: 'Chờ tiếp nhận', under_review: 'Thẩm định', pending_commercial: 'Chờ duyệt giá', awaiting_payment: 'Chờ đặt cọc', quote_expired: 'Hết hạn',
   waybill_issued: 'Có vận đơn', clearance_in_progress: 'Làm giấy tờ', clearance_done: 'Giấy tờ xong', ready_for_pickup: 'Sẵn sàng đón', en_route_to_pickup: 'Đến điểm đón',
   in_transit: 'Vận chuyển', incident_reported: 'Báo sự cố', pending_emergency_approval: 'Chờ duyệt khẩn cấp', emergency_plan_active: 'Xử lý sự cố',
+  arrived: 'Tới điểm giao', handover_timeout: 'Quá hạn giao', returning_to_hq: 'Về trụ sở',
   delivered_pending_settlement: 'Đã giao', expenses_submitted: 'Chờ đối soát', settlement_issued: 'Chờ khách trả', payment_overdue: 'Quá hạn trả', completed: 'Hoàn tất',
   cancelled: 'Đã hủy', rejected: 'Bị từ chối',
 }
@@ -104,14 +109,14 @@ export const stepOf = (s: BookingStatus): number => ({
   pending_intake: 0, under_review: 1, pending_commercial: 2, awaiting_payment: 3, quote_expired: 3,
   waybill_issued: 4, clearance_in_progress: 4,
   clearance_done: 5, ready_for_pickup: 5, en_route_to_pickup: 5,
-  in_transit: 6, incident_reported: 6, pending_emergency_approval: 6, emergency_plan_active: 6,
+  in_transit: 6, incident_reported: 6, pending_emergency_approval: 6, emergency_plan_active: 6, arrived: 6, handover_timeout: 6, returning_to_hq: 6,
   delivered_pending_settlement: 7, expenses_submitted: 7, settlement_issued: 7, payment_overdue: 7,
   completed: BOOKING_STEPS.length, cancelled: 0, rejected: 1,
 }[s])
 
 // Tra cứu công khai ở trang chủ chỉ cho thấy 5 bước gọn
 export const PUBLIC_STEPS = ['Gửi đơn', 'Thẩm định', 'Đặt cọc', 'Chuẩn bị chuyến', 'Vận chuyển']
-export const publicStepOf = (s: BookingStatus): number => (s === 'pending_intake' || s === 'cancelled' || s === 'rejected' ? 0 : s === 'under_review' || s === 'pending_commercial' ? 1 : s === 'awaiting_payment' || s === 'quote_expired' ? 2 : ['in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed'].includes(s) ? 4 : 3)
+export const publicStepOf = (s: BookingStatus): number => (s === 'pending_intake' || s === 'cancelled' || s === 'rejected' ? 0 : s === 'under_review' || s === 'pending_commercial' ? 1 : s === 'awaiting_payment' || s === 'quote_expired' ? 2 : ['in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed'].includes(s) ? 4 : 3)
 
 // ===== Sự cố và chi phí (Flow 5, PRD mục 6, 11.5) =====
 export type IncidentKind = 'horse_health' | 'vehicle_breakdown' | 'traffic_jam'

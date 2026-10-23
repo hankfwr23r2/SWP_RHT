@@ -21,6 +21,10 @@ describe('chuyển đơn từ backend sang frontend', () => {
     expect(b.quote).toBeUndefined()
     expect(b.history).toEqual([])
   })
+  it('giữ nhãn trạng thái backend trả để hiển thị', () => {
+    const b = toBooking({ ...base, status: 'handover_timeout', statusLabel: 'Quá hạn bàn giao, ngựa đang lưu chuồng gần điểm giao', customerStatusLabel: 'Quá giờ nhận ngựa, ngựa đang được lưu chuồng' })
+    expect(b).toMatchObject({ status: 'handover_timeout', statusLabel: 'Quá hạn bàn giao, ngựa đang lưu chuồng gần điểm giao', customerStatusLabel: 'Quá giờ nhận ngựa, ngựa đang được lưu chuồng' })
+  })
   it('giữ CCCD và địa chỉ người gửi, người nhận backend trả về', () => {
     const b = toBooking({
       ...base,

@@ -302,6 +302,19 @@ class BookingServiceImplTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void fieldCrewStillSeesBookingsWaitingForHandoverAfterArrival() {
+        when(staffRepository.findByUser_Username("driver02")).thenReturn(Optional.empty());
+        when(staffRepository.findAll()).thenReturn(List.of());
+        ArgumentCaptor<java.util.Collection<String>> statuses = ArgumentCaptor.forClass(java.util.Collection.class);
+        when(bookingRepository.findByStatusInOrderByBookingDateDesc(statuses.capture())).thenReturn(List.of());
+
+        service.getMyFieldBookings("driver02", "DRIVER");
+
+        assertThat(statuses.getValue()).contains("arrived", "handover_timeout", "returning_to_hq");
+    }
+
+    @Test
     void getBookingById_rejectsUnknownBooking() {
         when(bookingRepository.findById(404)).thenReturn(Optional.empty());
 

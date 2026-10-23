@@ -50,7 +50,7 @@ export default function HistoryPage() {
                   <td>{placeName(b.origin.name)} → {placeName(b.dest.name)}</td>
                   <td className="nowrap">{formatDate(b.departAt)}</td>
                   <td>{b.horses.map(h => h.name).join(', ')}</td>
-                  <td className="nowrap"><BookingStatusBadge status={b.status} /><div className="sub-text">{b.rejection ? formatDateTime(b.rejection.at) : b.cancellation ? formatDateTime(b.cancellation.at) : b.settlement?.paid ? formatDateTime(b.settlement.paid.paidAt) : ''}</div></td>
+                  <td className="nowrap"><BookingStatusBadge status={b.status} labels={b} /><div className="sub-text">{b.rejection ? formatDateTime(b.rejection.at) : b.cancellation ? formatDateTime(b.cancellation.at) : b.settlement?.paid ? formatDateTime(b.settlement.paid.paidAt) : ''}</div></td>
                   <td className="nowrap">{money(b)}</td>
                   <td className="nowrap">{b.rating ? `${b.rating.stars ?? b.rating.trip}/5 ★` : '-'}</td>
                   <td className="text-right"><Link to={`/orders/${b.id}`} className="btn btn-ghost btn-sm">Xem lại</Link></td>
