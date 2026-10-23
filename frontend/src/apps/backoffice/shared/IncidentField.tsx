@@ -77,6 +77,7 @@ export function IncidentPanel({ b, inc, role, run }: { b: Booking; inc: Incident
           <>
           <IncidentPlanView b={b} i={inc} height={300} />
           <p><b>Đã duyệt:</b> {INCIDENT_ACTION[inc.plan.action]}. ETA mới {formatDateTime(inc.plan.newEta)}.{inc.plan.note ? ` Ghi chú: ${inc.plan.note}` : ''}</p>
+          {inc.directive && <p style={{ marginTop: 6, color: 'var(--primary, #0284c7)' }}><b>Chỉ đạo từ Quản lý:</b> {inc.directive}</p>}
           </>
         )}
       </Panel>

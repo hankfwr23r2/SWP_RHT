@@ -106,6 +106,9 @@ public class IncidentServiceImpl implements IncidentService {
                 ? request.getCostBearer().toUpperCase(Locale.ROOT)
                 : "COMPANY");
         incident.setStatus("proposed");
+        incident.setRejectionReason(null);
+        incident.setRejectionAt(null);
+        incident.setRejectionBy(null);
         if (request.getPlan() != null) {
             Map<String, Object> plan = new LinkedHashMap<>(request.getPlan());
             plan.put("at", Instant.now().toEpochMilli());

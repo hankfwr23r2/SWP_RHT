@@ -396,8 +396,17 @@ export const bookingsApi = {
   },
   rejectIncident: async (_id: string, incidentId: string, _by: string, reason: string) =>
     backendIncidentApi.rejectPlan(numericId(incidentId, 'INC'), reason.trim()),
-  approveIncident: async (_id: string, incidentId: string, _by: string) =>
-    backendIncidentApi.approvePlan(numericId(incidentId, 'INC'), {}),
+  approveIncident: async (
+    _id: string,
+    incidentId: string,
+    _by: string,
+    options?: { directive?: string; approvedCost?: number; costBearer?: 'COMPANY' | 'CUSTOMER' }
+  ) =>
+    backendIncidentApi.approvePlan(numericId(incidentId, 'INC'), {
+      directive: options?.directive?.trim() || undefined,
+      approvedCost: options?.approvedCost,
+      costBearer: options?.costBearer,
+    }),
   addIncidentExpense: async (_id: string, incidentId: string, _by: string, input: Pick<IncidentExpense, 'category' | 'label' | 'photo' | 'amount'>, incident: Incident) =>
     backendIncidentApi.addExpense(numericId(incidentId, 'INC'), {
       ...input,
