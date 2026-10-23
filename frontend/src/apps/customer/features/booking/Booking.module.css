@@ -188,6 +188,17 @@
 .reviewHorse { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 0.88rem; }
 .reviewHorse:last-child { border-bottom: none; }
 .reviewHorse small { color: var(--muted); }
+.reviewHorseItem { padding: 16px 0; border-bottom: 1px solid var(--line); }
+.reviewHorseItem:first-child { padding-top: 4px; }
+.reviewHorseItem:last-child { border-bottom: none; padding-bottom: 4px; }
+.reviewHorseHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+.reviewHorseName { font-weight: 700; font-size: 1.02rem; color: var(--navy); }
+.reviewHorseMeta { font-size: 0.8rem; color: var(--muted); margin-left: 8px; }
+.reviewServicesGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: var(--radius-sm, 8px); padding: 12px 14px; font-size: 0.84rem; }
+.reviewServiceCol { display: flex; flex-direction: column; gap: 2px; }
+.reviewServiceLabel { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); font-weight: 600; display: flex; align-items: center; gap: 5px; }
+.reviewServiceVal { font-weight: 600; color: var(--navy); line-height: 1.35; }
+.reviewServiceSub { font-size: 0.76rem; color: var(--muted); font-weight: 400; }
 .editLink { font-size: 0.82rem; font-weight: 600; color: var(--orange); }
 
 .actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 4px; }
