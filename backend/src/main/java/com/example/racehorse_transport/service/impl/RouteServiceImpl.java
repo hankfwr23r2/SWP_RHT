@@ -5,6 +5,7 @@ import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.LocationRoute;
 import com.example.racehorse_transport.entity.LocationRouteId;
 import com.example.racehorse_transport.entity.Route;
+import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.repository.LocationRouteRepository;
 import com.example.racehorse_transport.repository.RouteRepository;
@@ -97,7 +98,7 @@ public class RouteServiceImpl implements RouteService {
     @Transactional
     public Route updateRoute(Integer id, CreateRouteRequest request) {
         Route route = routeRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tuyến đường có ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tuyến đường có ID: " + id));
 
         if (request.getRouteName() != null && !request.getRouteName().trim().isEmpty()) {
             route.setRouteName(request.getRouteName().trim());
@@ -126,7 +127,7 @@ public class RouteServiceImpl implements RouteService {
     @Transactional
     public void deactivateRoute(Integer id) {
         Route route = routeRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tuyến đường có ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tuyến đường có ID: " + id));
         route.setStatus("INACTIVE");
         routeRepository.save(route);
     }

@@ -8,6 +8,7 @@ import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Payment;
 import com.example.racehorse_transport.entity.Quotation;
 import com.example.racehorse_transport.entity.User;
+import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.PaymentRepository;
 import com.example.racehorse_transport.repository.QuotationRepository;
@@ -269,7 +270,7 @@ public class VnpayServiceImpl implements VnpayService {
     private Booking findOwnedBooking(String bookingIdentifier, String username) {
         Integer bookingId = parseBookingId(bookingIdentifier);
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
         User owner = booking.getCustomerID() != null ? booking.getCustomerID().getUser() : null;
         boolean ownsBooking = owner != null && username != null
                 && (username.equals(owner.getUsername()) || username.equals(owner.getEmail()));

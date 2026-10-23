@@ -6,6 +6,7 @@ import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Incident;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.SystemLog;
+import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.BookingAssignmentRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.IncidentRepository;
@@ -83,7 +84,7 @@ public class IncidentServiceImpl implements IncidentService {
     @Transactional
     public IncidentResponse proposeExternalPlan(Integer incidentId, ProposeExternalPlanRequest request, String actor) {
         Incident incident = incidentRepository.findById(incidentId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sự cố ID: " + incidentId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố ID: " + incidentId));
 
         requireStatus(incident, "reported", "open");
         if (request.getResolutionType() != null
@@ -148,7 +149,7 @@ public class IncidentServiceImpl implements IncidentService {
     @Transactional
     public IncidentResponse approveIncidentPlan(Integer incidentId, ApproveIncidentPlanRequest request, String actor) {
         Incident incident = incidentRepository.findById(incidentId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sự cố ID: " + incidentId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố ID: " + incidentId));
 
         requireStatus(incident, "proposed");
         if (request.getCostBearer() != null
@@ -190,7 +191,7 @@ public class IncidentServiceImpl implements IncidentService {
     @Transactional
     public IncidentResponse rejectIncidentPlan(Integer incidentId, RejectIncidentPlanRequest request, String actor) {
         Incident incident = incidentRepository.findById(incidentId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sự cố ID: " + incidentId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố ID: " + incidentId));
         requireStatus(incident, "proposed");
         incident.setStatus("reported");
         incident.setRejectionReason(request.getReason().trim());
@@ -211,7 +212,7 @@ public class IncidentServiceImpl implements IncidentService {
     @Transactional
     public IncidentResponse addExpense(Integer incidentId, IncidentExpenseRequest request, String actor, String role) {
         Incident incident = incidentRepository.findById(incidentId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sự cố ID: " + incidentId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố ID: " + incidentId));
         requireStatus(incident, "active");
         ensureActorAssignedToBooking(incident, actor, role);
         if (!Set.of("vet_fee", "medicine", "holding_stable", "rescue", "repair", "other")
@@ -253,7 +254,7 @@ public class IncidentServiceImpl implements IncidentService {
     @Transactional
     public IncidentResponse confirmFit(Integer incidentId, String actor, String role) {
         Incident incident = incidentRepository.findById(incidentId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sự cố ID: " + incidentId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố ID: " + incidentId));
         requireStatus(incident, "active");
         ensureActorAssignedToBooking(incident, actor, role);
         if ("TRAFFIC_JAM".equalsIgnoreCase(incident.getIncidentType())
@@ -272,7 +273,7 @@ public class IncidentServiceImpl implements IncidentService {
     @Transactional
     public IncidentResponse resumeJourney(Integer incidentId, String actor, String role) {
         Incident incident = incidentRepository.findById(incidentId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sự cố ID: " + incidentId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố ID: " + incidentId));
         requireStatus(incident, "active");
         ensureActorAssignedToBooking(incident, actor, role);
         if (!"TRAFFIC_JAM".equalsIgnoreCase(incident.getIncidentType())
@@ -299,7 +300,7 @@ public class IncidentServiceImpl implements IncidentService {
     @Transactional
     public IncidentResponse completeResolution(Integer incidentId, ResolveIncidentRequest request, String actor) {
         Incident incident = incidentRepository.findById(incidentId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy sự cố ID: " + incidentId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố ID: " + incidentId));
 
         requireStatus(incident, "active");
         if (request.getActualCost() != null && request.getActualCost().compareTo(BigDecimal.ZERO) < 0) {
@@ -337,7 +338,7 @@ public class IncidentServiceImpl implements IncidentService {
     @Transactional(readOnly = true)
     public List<IncidentResponse> getIncidentsByBooking(Integer bookingId, String requester, String role) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng ID: " + bookingId));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng ID: " + bookingId));
         if ("CUSTOMER".equals(role)) {
             String owner = booking.getCustomerID() != null && booking.getCustomerID().getUser() != null
                     ? booking.getCustomerID().getUser().getUsername() : null;

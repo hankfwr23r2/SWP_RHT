@@ -4,6 +4,7 @@ import com.example.racehorse_transport.dto.customer.CustomerProfileResponse;
 import com.example.racehorse_transport.dto.customer.UpdateCustomerProfileRequest;
 import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.User;
+import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.CustomerRepository;
 import com.example.racehorse_transport.repository.HorseRepository;
@@ -26,7 +27,7 @@ public class CustomerProfileServiceImpl implements CustomerProfileService {
     @Transactional(readOnly = true)
     public CustomerProfileResponse getProfile(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thông tin tài khoản: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin tài khoản: " + username));
 
         Customer customer = customerRepository.findById(user.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Tài khoản chưa có thông tin khách hàng!"));
@@ -50,7 +51,7 @@ public class CustomerProfileServiceImpl implements CustomerProfileService {
     @Transactional
     public CustomerProfileResponse updateProfile(String username, UpdateCustomerProfileRequest request) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy thông tin tài khoản: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin tài khoản: " + username));
 
         Customer customer = customerRepository.findById(user.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Tài khoản chưa có thông tin khách hàng!"));

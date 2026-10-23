@@ -5,10 +5,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.HashMap;
@@ -40,11 +45,47 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
+    // Tài nguyên theo đường dẫn (đơn, sự cố, ngựa...) không tồn tại
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ApiResponse<Object>> handleResourceNotFound(ResourceNotFoundException ex) {
+        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
+    }
+
     // Gọi sai đường dẫn API
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ApiResponse<Object>> handleNoResourceFound(NoResourceFoundException ex) {
         ApiResponse<Object> response = ApiResponse.error("Không tìm thấy API: /" + ex.getResourcePath());
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
+    // Body không đọc được (JSON sai cú pháp, sai kiểu trường): lỗi của request, không phải lỗi máy chủ
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiResponse<Object>> handleUnreadableBody(HttpMessageNotReadableException ex) {
+        log.warn("Body không hợp lệ: {}", ex.getMessage());
+        return new ResponseEntity<>(ApiResponse.error("Dữ liệu gửi lên không đúng định dạng."), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ApiResponse<Object>> handleMissingParameter(MissingServletRequestParameterException ex) {
+        return new ResponseEntity<>(ApiResponse.error("Thiếu tham số bắt buộc: " + ex.getParameterName()), HttpStatus.BAD_REQUEST);
+    }
+
+    // Tham số trên URL sai kiểu (VD: /incidents/abc trong khi cần số)
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Object>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        return new ResponseEntity<>(ApiResponse.error("Tham số không hợp lệ: " + ex.getName()), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiResponse<Object>> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+        return new ResponseEntity<>(ApiResponse.error("API không hỗ trợ phương thức " + ex.getMethod()), HttpStatus.METHOD_NOT_ALLOWED);
+    }
+
+    // Controller tự chọn mã lỗi (VD: NotificationController trả 404/403): giữ đúng mã đó
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ApiResponse<Object>> handleResponseStatus(ResponseStatusException ex) {
+        String message = ex.getReason() != null ? ex.getReason() : HttpStatus.valueOf(ex.getStatusCode().value()).getReasonPhrase();
+        return new ResponseEntity<>(ApiResponse.error(message), ex.getStatusCode());
     }
 
     // Bắt lỗi Validation (@Valid, @NotBlank, @Email...)
@@ -71,7 +112,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Object>> handleGeneralException(Exception ex) {
         // Ghi kèm stack trace để tìm được nguyên nhân trong log Render
         log.error("Lỗi chưa xử lý", ex);
-        ApiResponse<Object> response = ApiResponse.error(ex.getMessage() != null ? ex.getMessage() : "Lỗi hệ thống");
+        // Không trả ex.getMessage() cho client: có thể lộ tên lớp, câu SQL, đường dẫn nội bộ
+        ApiResponse<Object> response = ApiResponse.error("Lỗi hệ thống, vui lòng thử lại sau.");
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
