@@ -632,7 +632,9 @@ public class BookingServiceImpl implements BookingService {
                     .createdAt(Instant.now())
                     .build();
             systemLogRepository.save(sysLog);
-        } catch (Exception ignored) {
+        } catch (Exception ex) {
+            // Nhật ký lỗi không được làm hỏng thao tác chính, nhưng phải để lại dấu vết
+            log.warn("Không ghi được nhật ký hệ thống COORDINATOR_CONFIRM_PLAN: {}", ex.getMessage());
         }
 
         log.info("Coordinator successfully confirmed fleet plan for booking ID={}", updatedBooking.getId());

@@ -271,7 +271,10 @@ public class DeliveryServiceImpl implements DeliveryService {
                     .createdAt(Instant.now())
                     .build();
             systemLogRepository.save(sysLog);
-        } catch (Exception ignored) {}
+        } catch (Exception ex) {
+            // Nhật ký lỗi không được làm hỏng thao tác chính, nhưng phải để lại dấu vết
+            log.warn("Không ghi được nhật ký hệ thống {}: {}", actionType, ex.getMessage());
+        }
     }
 
     private BookingResponse mapToResponse(Booking b) {
