@@ -8,7 +8,7 @@
 
 ### 1.1. Kiến Trúc Repository & Công Nghệ
 - **Mô hình Monorepo**: Repository GitHub `hankfwr23r2/SWP_RHT` (nhánh chính: `main`).
-  - `backend/`: Java 21, Spring Boot 3, Spring Security (JWT Access Token + HttpOnly Refresh Token Cookie, RBAC `@PreAuthorize`), Hibernate/JPA, PostgreSQL (Aiven Cloud). Context path toàn hệ thống: `server.servlet.context-path=/api/v1`.
+  - `backend/`: Java 21, Spring Boot 4, Spring Security (JWT Access Token + HttpOnly Refresh Token Cookie, RBAC `@PreAuthorize`), Hibernate/JPA, PostgreSQL (khi code dùng Postgres local chạy bằng Docker; bản deploy dùng Aiven). Context path toàn hệ thống: `server.servlet.context-path=/api/v1`.
   - `frontend/`: React 19, TypeScript, Vite, React Router, Vitest. Build ra 2 ứng dụng độc lập: Customer Portal (`/`) và Backoffice Portal (`/backoffice`). Deploy production trên Vercel.
 
 ### 1.2. 6 Luồng Nghiệp Vụ Cốt Lõi (Core Business Flows)
@@ -55,15 +55,15 @@
   ```
 
 ### 2.3. Cơ Chế Dual-Mode (Resilience & 0 Breaking Tests)
-Để vừa gọi API thực tế trên trình duyệt vừa giữ cho **100% 218 Unit Tests Vitest** luôn pass:
+Để vừa gọi API thực tế trên trình duyệt vừa giữ cho **toàn bộ Unit Test Vitest** luôn pass:
 1. **Trên Trình duyệt người dùng thật (`typeof window !== 'undefined'`)**: Gọi trực tiếp REST API Spring Boot qua `apiClient`. Store khởi tạo mảng rỗng `[]`, không lưu mock data vào `sessionStorage`.
 2. **Trong môi trường Kiểm thử Vitest (`import.meta.env?.MODE === 'test'`)**: Sử dụng test fixtures để các bài test logic nghiệp vụ chạy nhanh, độc lập và ổn định, không bị gãy khi CI/CD không có kết nối mạng.
 
 ### 2.4. Tiêu Chuẩn Kiểm Tra Chất Lượng (Quality Gate) Bắt Buộc
-Trước khi đẩy bất kỳ commit nào lên Git, Agent bắt buộc phải chạy và đạt kết quả xanh cho tất cả các lệnh sau:
+Trước khi đẩy bất kỳ commit nào lên Git, Agent bắt buộc phải chạy và đạt kết quả xanh cho tất cả các lệnh sau (lệnh backend chạy trong `backend/`, các lệnh còn lại trong `frontend/`). GitHub Actions (`.github/workflows/ci.yml`) chạy lại đúng các bước này cho mọi Pull Request:
 ```powershell
-# 1. Kiểm tra Backend (Java 21)
-$env:JAVA_HOME = "C:\Program Files\Java\jdk-21.0.12.1"; .\mvnw.cmd compile -DskipTests
+# 1. Kiểm tra Backend (Java 21): biên dịch và chạy test, cần Postgres local đang chạy (docker compose up -d postgres)
+.\mvnw.cmd verify
 
 # 2. Kiểm tra Lint Frontend (oxlint)
 npm run lint
@@ -71,7 +71,7 @@ npm run lint
 # 3. Kiểm tra kiểu dữ liệu TypeScript
 npx tsc -b
 
-# 4. Chạy toàn bộ 218 Unit Tests
+# 4. Chạy toàn bộ Unit Test
 npm test
 
 # 5. Build kiểm tra bundle production

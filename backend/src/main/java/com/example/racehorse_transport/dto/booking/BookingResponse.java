@@ -37,6 +37,10 @@ public class BookingResponse {
     private Object plan;
     private Object quote;
     private Object payment;
+    // Việc khách được làm, do backend quyết định (CustomerBookingRules); frontend chỉ hiện nút theo các cờ này
+    private Boolean canCancel;
+    private Boolean canPayBalance;
+    private java.math.BigDecimal cancelPenalty; // số tiền cọc mất nếu hủy lúc này
     private Object medical;
     private Object clearance;
     private Object settlement;

@@ -26,13 +26,6 @@ export const isDepartureAllowed = (departAt: number, now = Date.now()) => depart
 // 18:00 ngày D-1: mốc cảnh báo giấy tờ chưa xong
 export const docsDueAt = (departAt: number) => atHour(new Date(departAt - DAY), DOCS_CUTOFF_HOUR)
 
-// ===== Hủy đơn (PRD mục 8.3) =====
-// Sau cọc, xe chưa nhận ngựa thì còn hủy được. Đã nhận ngựa thì xử lý theo mục 8.1.
-export const CANCEL_AFTER_DEPOSIT: Booking['status'][] = ['waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup', 'en_route_to_pickup']
-// Khách chỉ hủy được sau cọc (mất cọc). Lúc thẩm định chưa có báo giá thì phải đợi; lúc chờ cọc dùng Từ chối báo giá.
-// Tiền trả lại khi khách hủy: mất 100% cọc, chỉ nhận lại số dư 70% đã trả.
-export const cancelRefund = (b: Pick<Booking, 'balance'>) => b.balance?.amount ?? 0
-
 // ===== Hồ sơ ngựa =====
 // Sẵn sàng khi đã có đủ 3 giấy tờ ngựa.
 export function horseReadiness(h: HorseProfile) {

@@ -615,4 +615,28 @@ class BookingServiceImplTest {
                 .horses(List.of(BookingHorseDto.builder().horseId(horseId).build()))
                 .build();
     }
+
+    @Test
+    void getBookingById_tellsTheCustomerWhatTheyCanDo() {
+        Booking booking = bookingOwnedByCustomer();
+        booking.setStatus("ready_for_pickup");
+        booking.setDetailsJson("{\"payment\":{\"amount\":3000000}}");
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+
+        BookingResponse beforeBalance = service.getBookingById(42, "phuc");
+        assertThat(beforeBalance.getCanCancel()).isTrue();
+        assertThat(beforeBalance.getCanPayBalance()).isTrue();
+        assertThat(beforeBalance.getCancelPenalty()).isEqualByComparingTo("3000000");
+
+        booking.setDetailsJson("{\"payment\":{\"amount\":3000000,\"balancePaid\":true}}");
+        BookingResponse afterBalance = service.getBookingById(42, "phuc");
+        assertThat(afterBalance.getCanCancel()).isFalse();
+        assertThat(afterBalance.getCanPayBalance()).isFalse();
+
+        booking.setStatus("clearance_in_progress");
+        booking.setDetailsJson("{\"payment\":{\"amount\":3000000}}");
+        BookingResponse duringClearance = service.getBookingById(42, "phuc");
+        assertThat(duringClearance.getCanCancel()).isTrue();
+        assertThat(duringClearance.getCanPayBalance()).isFalse();
+    }
 }

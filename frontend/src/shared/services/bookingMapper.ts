@@ -145,6 +145,9 @@ export function toBooking(r: BackendBookingResponse, customer?: string): Booking
   if (payment) b.payment = payment
   const balance = balanceOf(r.payment)
   if (balance) b.balance = balance
+  b.canCancel = r.canCancel === true
+  b.canPayBalance = r.canPayBalance === true
+  if (r.cancelPenalty != null) b.cancelPenalty = r.cancelPenalty
   if (r.waybillNo) b.waybill = { no: r.waybillNo, issuedAt: waybillAt }
   if (r.clearance) {
     b.clearance = r.clearance as Clearance

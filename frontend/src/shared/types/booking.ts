@@ -271,6 +271,10 @@ export interface Booking {
   waybill?: Waybill
   clearance?: Clearance
   balance?: Payment // 70% ngày D
+  // Việc khách được làm lúc này, do backend quyết định; frontend chỉ hiện nút theo các cờ này
+  canCancel?: boolean
+  canPayBalance?: boolean
+  cancelPenalty?: number // số tiền cọc mất nếu hủy lúc này
   incidents?: Incident[]
   expensesSubmittedAt?: number // Driver đã gửi bảng kê chi phí sau giao
   settlement?: Settlement

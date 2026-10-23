@@ -7,6 +7,8 @@ import com.example.racehorse_transport.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,11 +31,19 @@ public class PaymentController {
         return null;
     }
 
+    // Khách chỉ được xem thanh toán của đơn mình; nhân viên (null) xem mọi đơn
+    private String customerUsernameOf(Authentication authentication) {
+        boolean isCustomer = authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_CUSTOMER".equals(a.getAuthority()));
+        return isCustomer ? authentication.getName() : null;
+    }
+
     /**
-     * 1. API Hủy đơn kèm chính sách hoàn cọc / phí phạt theo ngày (PRD mục 8.2 & 8.3)
+     * 1. API Khách hủy đơn của mình sau khi đặt cọc (mất cọc)
      * POST /api/v1/payments/cancel
      */
     @PostMapping("/cancel")
+    @PreAuthorize("hasRole('CUSTOMER')")
     public ResponseEntity<ApiResponse<CancelWithRefundResponse>> cancelBookingWithRefund(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
             @RequestParam("bookingId") String bookingId,
@@ -49,10 +59,12 @@ public class PaymentController {
      * GET /api/v1/payments/booking/{bookingId}/summary
      */
     @GetMapping("/booking/{bookingId}/summary")
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<PaymentSummaryResponse>> getPaymentSummary(
+            Authentication authentication,
             @PathVariable("bookingId") String bookingId) {
 
-        PaymentSummaryResponse response = paymentService.getPaymentSummary(bookingId);
+        PaymentSummaryResponse response = paymentService.getPaymentSummary(bookingId, customerUsernameOf(authentication));
         return ResponseEntity.ok(ApiResponse.success(response, "Lấy thông tin tài chính đơn hàng thành công"));
     }
 
@@ -61,10 +73,12 @@ public class PaymentController {
      * GET /api/v1/payments/booking/{bookingId}
      */
     @GetMapping("/booking/{bookingId}")
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<List<PaymentResponse>>> getPaymentsByBooking(
+            Authentication authentication,
             @PathVariable("bookingId") String bookingId) {
 
-        List<PaymentResponse> responses = paymentService.getPaymentsByBooking(bookingId);
+        List<PaymentResponse> responses = paymentService.getPaymentsByBooking(bookingId, customerUsernameOf(authentication));
         return ResponseEntity.ok(ApiResponse.success(responses, "Lấy lịch sử thanh toán thành công"));
     }
 
@@ -73,10 +87,12 @@ public class PaymentController {
      * GET /api/v1/payments/{id}
      */
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'MANAGER', 'ADMIN')")
     public ResponseEntity<ApiResponse<PaymentResponse>> getPaymentDetail(
+            Authentication authentication,
             @PathVariable("id") Integer id) {
 
-        PaymentResponse response = paymentService.getPaymentDetail(id);
+        PaymentResponse response = paymentService.getPaymentDetail(id, customerUsernameOf(authentication));
         return ResponseEntity.ok(ApiResponse.success(response, "Lấy chi tiết giao dịch thành công"));
     }
 }

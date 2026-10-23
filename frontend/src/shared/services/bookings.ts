@@ -205,7 +205,7 @@ export const customerBookingsApi = {
   // Khách từ chối báo giá: đơn đóng (Cancelled), chưa cọc nên miễn phí
   rejectQuote: async (customer: string, id: string, reason: string): Promise<CustomerBookingView> =>
     toCustomerView(toBooking(await backendBookingApi.rejectQuote(id, { reason: reason.trim() }), customer)),
-  // Khách hủy đơn sau khi đặt cọc: mất 100% tiền cọc, số dư 70% đã trả (nếu có) được hoàn trả
+  // Khách hủy đơn sau khi đặt cọc và trước khi trả 70%: mất 100% tiền cọc
   cancel: async (customer: string, id: string, reason: string): Promise<CustomerBookingView> => {
     await paymentApi.cancelWithRefund(id, reason)
     return toCustomerView(toBooking(await backendBookingApi.getCustomerBookingById(id), customer))

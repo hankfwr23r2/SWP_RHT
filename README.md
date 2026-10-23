@@ -4,7 +4,7 @@ Dự án Hệ thống Vận chuyển Ngựa đua (RaceHorse Transport System).
 
 ## Cấu trúc thư mục (Monorepo)
 
-- `backend/`: Spring Boot API (Java 26, Spring Security, JWT, PostgreSQL, JPA/Hibernate).
+- `backend/`: Spring Boot API (Java 21, Spring Security, JWT, PostgreSQL, JPA/Hibernate).
 - `frontend/`: React 19 + TypeScript + Vite (Customer SPA & Backoffice SPA).
 
 ---
@@ -60,16 +60,6 @@ docker compose down -v && docker compose up -d --wait postgres
 docker exec -i racehorse-postgres psql -U postgres -d horse_transport_db < du-lieu-mau.sql
 ```
 
-Thử backend trong điều kiện giống Render gói free (0,1 CPU, 512 MB) để kiểm tra độ chậm
-(`swp_rht_default` là mạng Docker đặt theo tên thư mục dự án; xem tên đúng trên máy bằng `docker network ls`):
-```bash
-cd backend && ./mvnw -q package -DskipTests && cd ..
-docker run --rm --network swp_rht_default --cpus 0.1 --memory 512m -p 8090:8080 \
-  -v "$PWD/backend/target/RaceHorse_Transport-0.0.1-SNAPSHOT.jar:/app/app.jar:ro" \
-  -e SPRING_DATASOURCE_URL=jdbc:postgresql://racehorse-postgres:5432/horse_transport_db \
-  eclipse-temurin:21-jre java -XX:TieredStopAtLevel=1 -jar /app/app.jar
-```
-
 ---
 
 ### Cách 2: Chạy thủ công trên máy (Local Dev)
@@ -98,6 +88,8 @@ docker compose up -d postgres pgadmin
 - Làm lại database từ đầu (xoá toàn bộ dữ liệu local): `docker compose down -v` rồi chạy lại lệnh trên.
 
 #### 1. Backend (`backend/`)
+- Cần JDK 21 trở lên (21, 25, 26… đều được): Maven luôn biên dịch với `--release 21`, nên code không được dùng
+  API của Java mới hơn 21. Docker và Render chạy JDK 21.
 - Lần đầu nên bật seeder để có sẵn danh mục, xe, quy định giấy tờ và tài khoản mẫu
   (chỉ nạp vào bảng đang trống, chạy lại không bị nhân đôi):
   ```bash

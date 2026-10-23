@@ -26,6 +26,7 @@ import com.example.racehorse_transport.dto.coordinator.CoordinatorPlanRequest;
 import com.example.racehorse_transport.dto.coordinator.VehicleTripDto;
 import com.example.racehorse_transport.dto.manager.*;
 import com.example.racehorse_transport.service.FleetService;
+import com.example.racehorse_transport.util.CustomerBookingRules;
 
 import java.math.BigDecimal;
 import java.time.temporal.ChronoUnit;
@@ -1510,6 +1511,10 @@ public class BookingServiceImpl implements BookingService {
             medical = defMed;
         }
 
+        Map<?, ?> paymentMap = payload != null && payload.getPayment() instanceof Map<?, ?> m ? m : Map.of();
+        boolean balancePaid = Boolean.TRUE.equals(paymentMap.get("balancePaid"));
+        boolean canCancel = CustomerBookingRules.canCancel(b.getStatus(), balancePaid);
+
         return BookingResponse.builder()
                 .id(formattedId)
                 .numericId(b.getId())
@@ -1535,6 +1540,10 @@ public class BookingServiceImpl implements BookingService {
                 .plan(payload != null ? payload.getPlan() : null)
                 .quote(payload != null ? payload.getQuote() : null)
                 .payment(payload != null ? payload.getPayment() : null)
+                .canCancel(canCancel)
+                .canPayBalance(CustomerBookingRules.canPayBalance(b.getStatus(), balancePaid))
+                .cancelPenalty(canCancel && paymentMap.get("amount") != null
+                        ? new BigDecimal(paymentMap.get("amount").toString()) : null)
                 .medical(medical)
                 .clearance(payload != null ? payload.getClearance() : null)
                 .settlement(payload != null ? payload.getSettlement() : null)

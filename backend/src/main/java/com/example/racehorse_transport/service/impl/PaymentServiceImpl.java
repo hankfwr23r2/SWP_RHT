@@ -5,13 +5,16 @@ import com.example.racehorse_transport.dto.payment.*;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Payment;
 import com.example.racehorse_transport.entity.Quotation;
+import com.example.racehorse_transport.entity.User;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.PaymentRepository;
 import com.example.racehorse_transport.repository.QuotationRepository;
 import com.example.racehorse_transport.service.PaymentService;
+import com.example.racehorse_transport.util.CustomerBookingRules;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,7 +63,7 @@ public class PaymentServiceImpl implements PaymentService {
     // =========================================================================
 
     /**
-     * 1. Hủy đơn hàng và áp dụng chính sách hoàn cọc / phạt cọc (PRD mục 8.2 & 8.3)
+     * 1. Khách hủy đơn của mình (mất cọc). Quy tắc nằm ở CustomerBookingRules.
      */
     @Override
     @Transactional
@@ -69,18 +72,24 @@ public class PaymentServiceImpl implements PaymentService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
 
-        if ("cancelled".equalsIgnoreCase(booking.getStatus()) || "completed".equalsIgnoreCase(booking.getStatus())) {
+        requireOwner(booking, username);
+        List<Payment> existingPayments = paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(booking.getId());
+        boolean balancePaid = existingPayments.stream()
+                .anyMatch(p -> "BALANCE".equalsIgnoreCase(p.getPaymentType()) && "COMPLETED".equalsIgnoreCase(p.getStatus()));
+        if (balancePaid) {
+            throw new IllegalStateException("Đơn đã thanh toán đủ nên không tự hủy được. Vui lòng liên hệ hotline để được hỗ trợ.");
+        }
+        if (!CustomerBookingRules.canCancel(booking.getStatus(), false)) {
             throw new IllegalStateException("Không thể hủy đơn hàng ở trạng thái: " + booking.getStatus());
         }
 
-        List<Payment> existingPayments = paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(booking.getId());
         Optional<Payment> depositOpt = existingPayments.stream()
                 .filter(p -> "DEPOSIT".equalsIgnoreCase(p.getPaymentType()) && "COMPLETED".equalsIgnoreCase(p.getStatus()))
                 .findFirst();
 
         Instant now = Instant.now();
         String reason = (request != null && request.getReason() != null) ? request.getReason() : "Khách hàng hủy đơn";
-        String actor = (request != null && request.getCancelledBy() != null) ? request.getCancelledBy() : (username != null ? username : "Khách hàng");
+        String actor = username;
 
         // Trường hợp 1: Chưa cọc -> Hủy miễn phí, không mất tiền
         if (depositOpt.isEmpty()) {
@@ -164,10 +173,13 @@ public class PaymentServiceImpl implements PaymentService {
      */
     @Override
     @Transactional(readOnly = true)
-    public PaymentSummaryResponse getPaymentSummary(String bookingIdentifier) {
+    public PaymentSummaryResponse getPaymentSummary(String bookingIdentifier, String customerUsername) {
         Integer bookingId = parseBookingId(bookingIdentifier);
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+        if (customerUsername != null) {
+            requireOwner(booking, customerUsername);
+        }
 
         Quotation quotation = quotationRepository.findTopByBookingIdOrderBySentAtDesc(booking.getId()).orElse(null);
         List<Payment> payments = paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(booking.getId());
@@ -228,10 +240,13 @@ public class PaymentServiceImpl implements PaymentService {
      */
     @Override
     @Transactional(readOnly = true)
-    public List<PaymentResponse> getPaymentsByBooking(String bookingIdentifier) {
+    public List<PaymentResponse> getPaymentsByBooking(String bookingIdentifier, String customerUsername) {
         Integer bookingId = parseBookingId(bookingIdentifier);
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+        if (customerUsername != null) {
+            requireOwner(booking, customerUsername);
+        }
 
         List<Payment> payments = paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(booking.getId());
         return payments.stream()
@@ -244,15 +259,27 @@ public class PaymentServiceImpl implements PaymentService {
      */
     @Override
     @Transactional(readOnly = true)
-    public PaymentResponse getPaymentDetail(Integer paymentId) {
+    public PaymentResponse getPaymentDetail(Integer paymentId, String customerUsername) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giao dịch thanh toán ID: " + paymentId));
+        if (customerUsername != null) {
+            requireOwner(payment.getBookingID(), customerUsername);
+        }
         return mapToPaymentResponse(payment, payment.getBookingID());
     }
 
     // =========================================================================
     // HELPER METHODS
     // =========================================================================
+
+    private void requireOwner(Booking booking, String username) {
+        User owner = booking != null && booking.getCustomerID() != null ? booking.getCustomerID().getUser() : null;
+        boolean ownsBooking = owner != null && username != null
+                && (username.equals(owner.getUsername()) || username.equals(owner.getEmail()));
+        if (!ownsBooking) {
+            throw new AccessDeniedException("Bạn không có quyền với đơn hàng này.");
+        }
+    }
 
     private PaymentResponse mapToPaymentResponse(Payment payment, Booking booking) {
         return PaymentResponse.builder()
