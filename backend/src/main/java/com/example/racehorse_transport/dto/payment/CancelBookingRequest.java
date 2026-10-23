@@ -9,5 +9,4 @@ import lombok.*;
 @AllArgsConstructor
 public class CancelBookingRequest {
     private String reason;
-    private String cancelledBy;
 }

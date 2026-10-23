@@ -5,6 +5,7 @@ import com.example.racehorse_transport.dto.payment.*;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Payment;
 import com.example.racehorse_transport.entity.Quotation;
+import com.example.racehorse_transport.entity.User;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.PaymentRepository;
 import com.example.racehorse_transport.repository.QuotationRepository;
@@ -12,6 +13,7 @@ import com.example.racehorse_transport.service.PaymentService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +32,10 @@ public class PaymentServiceImpl implements PaymentService {
     private final BookingRepository bookingRepository;
     private final QuotationRepository quotationRepository;
     private final ObjectMapper objectMapper;
+
+    // Khách chỉ hủy được sau khi đặt cọc và trước khi xe chở ngựa đi
+    private static final Set<String> CANCELLABLE_STATUSES = Set.of(
+            "waybill_issued", "clearance_in_progress", "clearance_done", "ready_for_pickup", "en_route_to_pickup");
 
     // =========================================================================
     // CRUD CƠ BẢN
@@ -69,7 +75,8 @@ public class PaymentServiceImpl implements PaymentService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
 
-        if ("cancelled".equalsIgnoreCase(booking.getStatus()) || "completed".equalsIgnoreCase(booking.getStatus())) {
+        requireOwner(booking, username);
+        if (!CANCELLABLE_STATUSES.contains(booking.getStatus())) {
             throw new IllegalStateException("Không thể hủy đơn hàng ở trạng thái: " + booking.getStatus());
         }
 
@@ -80,7 +87,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         Instant now = Instant.now();
         String reason = (request != null && request.getReason() != null) ? request.getReason() : "Khách hàng hủy đơn";
-        String actor = (request != null && request.getCancelledBy() != null) ? request.getCancelledBy() : (username != null ? username : "Khách hàng");
+        String actor = username;
 
         // Trường hợp 1: Chưa cọc -> Hủy miễn phí, không mất tiền
         if (depositOpt.isEmpty()) {
@@ -164,10 +171,13 @@ public class PaymentServiceImpl implements PaymentService {
      */
     @Override
     @Transactional(readOnly = true)
-    public PaymentSummaryResponse getPaymentSummary(String bookingIdentifier) {
+    public PaymentSummaryResponse getPaymentSummary(String bookingIdentifier, String customerUsername) {
         Integer bookingId = parseBookingId(bookingIdentifier);
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+        if (customerUsername != null) {
+            requireOwner(booking, customerUsername);
+        }
 
         Quotation quotation = quotationRepository.findTopByBookingIdOrderBySentAtDesc(booking.getId()).orElse(null);
         List<Payment> payments = paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(booking.getId());
@@ -228,10 +238,13 @@ public class PaymentServiceImpl implements PaymentService {
      */
     @Override
     @Transactional(readOnly = true)
-    public List<PaymentResponse> getPaymentsByBooking(String bookingIdentifier) {
+    public List<PaymentResponse> getPaymentsByBooking(String bookingIdentifier, String customerUsername) {
         Integer bookingId = parseBookingId(bookingIdentifier);
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+        if (customerUsername != null) {
+            requireOwner(booking, customerUsername);
+        }
 
         List<Payment> payments = paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(booking.getId());
         return payments.stream()
@@ -244,15 +257,27 @@ public class PaymentServiceImpl implements PaymentService {
      */
     @Override
     @Transactional(readOnly = true)
-    public PaymentResponse getPaymentDetail(Integer paymentId) {
+    public PaymentResponse getPaymentDetail(Integer paymentId, String customerUsername) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giao dịch thanh toán ID: " + paymentId));
+        if (customerUsername != null) {
+            requireOwner(payment.getBookingID(), customerUsername);
+        }
         return mapToPaymentResponse(payment, payment.getBookingID());
     }
 
     // =========================================================================
     // HELPER METHODS
     // =========================================================================
+
+    private void requireOwner(Booking booking, String username) {
+        User owner = booking != null && booking.getCustomerID() != null ? booking.getCustomerID().getUser() : null;
+        boolean ownsBooking = owner != null && username != null
+                && (username.equals(owner.getUsername()) || username.equals(owner.getEmail()));
+        if (!ownsBooking) {
+            throw new AccessDeniedException("Bạn không có quyền với đơn hàng này.");
+        }
+    }
 
     private PaymentResponse mapToPaymentResponse(Payment payment, Booking booking) {
         return PaymentResponse.builder()

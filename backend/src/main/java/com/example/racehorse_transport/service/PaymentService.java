@@ -18,22 +18,23 @@ public interface PaymentService {
     // =========================================================================
 
     /**
-     * Hủy đơn và xử lý hoàn cọc / phạt cọc theo quy tắc thời gian (PRD mục 8.2 & 8.3)
+     * Khách hủy đơn của chính mình sau khi đặt cọc (mất cọc). Chỉ chủ đơn được hủy, và chỉ trước khi xe chở ngựa đi.
      */
     CancelWithRefundResponse cancelWithRefundPolicy(String bookingIdentifier, CancelBookingRequest request, String username);
 
     /**
      * Xem tóm tắt tài chính (tổng tiền, đã cọc, còn thiếu, trạng thái đã thanh toán đủ chưa)
      */
-    PaymentSummaryResponse getPaymentSummary(String bookingIdentifier);
+    PaymentSummaryResponse getPaymentSummary(String bookingIdentifier, String customerUsername);
 
     /**
      * Lấy danh sách lịch sử tất cả các đợt thanh toán của một đơn hàng
      */
-    List<PaymentResponse> getPaymentsByBooking(String bookingIdentifier);
+    List<PaymentResponse> getPaymentsByBooking(String bookingIdentifier, String customerUsername);
 
     /**
-     * Lấy chi tiết một giao dịch thanh toán
+     * Lấy chi tiết một giao dịch thanh toán.
+     * Ở các hàm xem: customerUsername khác null thì người gọi là khách và phải là chủ đơn; null là nhân viên.
      */
-    PaymentResponse getPaymentDetail(Integer paymentId);
+    PaymentResponse getPaymentDetail(Integer paymentId, String customerUsername);
 }
