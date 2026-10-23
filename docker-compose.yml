@@ -18,6 +18,25 @@ services:
       timeout: 5s
       retries: 5
 
+  # Xem bảng và dữ liệu Postgres local trên web: http://localhost:5050 (không cần đăng nhập pgAdmin;
+  # máy chủ "RaceHorse local" đã khai báo sẵn, lần đầu mở nhập mật khẩu DB ở trên và chọn lưu mật khẩu)
+  pgadmin:
+    image: dpage/pgadmin4:9.8
+    container_name: racehorse-pgadmin
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    environment:
+      PGADMIN_DEFAULT_EMAIL: dev@example.com
+      PGADMIN_DEFAULT_PASSWORD: RaceHorse@2026
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    ports:
+      - "5050:80"
+    volumes:
+      - ./docker/pgadmin/servers.json:/pgadmin4/servers.json:ro
+      - pgadmin_data:/var/lib/pgadmin
+
   # 2. Backend Spring Boot 3
   backend:
     build:
@@ -59,4 +78,5 @@ services:
 
 volumes:
   postgres_data:
+  pgadmin_data:
 

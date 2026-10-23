@@ -1,0 +1,13 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "RaceHorse local",
+      "Group": "Servers",
+      "Host": "postgres",
+      "Port": 5432,
+      "MaintenanceDB": "horse_transport_db",
+      "Username": "postgres",
+      "SSLMode": "prefer"
+    }
+  }
+}
