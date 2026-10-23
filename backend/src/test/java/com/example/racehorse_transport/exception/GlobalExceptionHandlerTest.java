@@ -54,4 +54,12 @@ class GlobalExceptionHandlerTest {
         assertThat(handler.handleResponseStatus(new ResponseStatusException(HttpStatus.NOT_FOUND)).getStatusCode())
                 .isEqualTo(HttpStatus.NOT_FOUND);
     }
+
+    @Test
+    void unexpectedErrorsAre500WithoutInternalDetails() {
+        var response = handler.handleGeneralException(new NullPointerException("Cannot invoke \"Booking.getStatus()\" because \"b\" is null"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        assertThat(response.getBody().getMessage()).doesNotContain("Booking.getStatus");
+    }
 }

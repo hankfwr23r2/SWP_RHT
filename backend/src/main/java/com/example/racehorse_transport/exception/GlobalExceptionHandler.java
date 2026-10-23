@@ -112,7 +112,8 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Object>> handleGeneralException(Exception ex) {
         // Ghi kèm stack trace để tìm được nguyên nhân trong log Render
         log.error("Lỗi chưa xử lý", ex);
-        ApiResponse<Object> response = ApiResponse.error(ex.getMessage() != null ? ex.getMessage() : "Lỗi hệ thống");
+        // Không trả ex.getMessage() cho client: có thể lộ tên lớp, câu SQL, đường dẫn nội bộ
+        ApiResponse<Object> response = ApiResponse.error("Lỗi hệ thống, vui lòng thử lại sau.");
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
