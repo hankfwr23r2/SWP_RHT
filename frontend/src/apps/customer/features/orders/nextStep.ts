@@ -49,11 +49,11 @@ function baseStep(b: CustomerBookingView, now: number): NextStep {
     case 'clearance_done':
       return { tone: 'success', icon: 'fa-stamp', title: 'Giấy tờ đã xong', text: 'Xe, tài xế và hộ tống đang chuẩn bị nhận lệnh. Hãy chuẩn bị bản gốc hồ sơ ngựa để giao cho tài xế.', actionNeeded: false }
     case 'ready_for_pickup':
-      return b.balance
+      return !b.canPayBalance
         ? { tone: 'success', icon: 'fa-circle-check', title: 'Tài xế và hộ tống đã sẵn sàng', text: 'Hãy chuẩn bị sẵn các bản gốc hồ sơ ngựa (Hộ chiếu, Sổ tiêm, Phiếu xét nghiệm) để bàn giao cho tài xế tại điểm đón.', actionNeeded: false }
-        : { tone: 'warning', icon: 'fa-credit-card', title: `Thanh toán 70% còn lại: ${formatVND(b.quote!.balance)}`, text: 'Xe đã sẵn sàng. Bạn thanh toán số dư vào ngày bốc ngựa để xe được xuất bến. Hãy chuẩn bị bản gốc hồ sơ ngựa để bàn giao.', actionNeeded: true }
+        : { tone: 'warning', icon: 'fa-credit-card', title: `Thanh toán 70% còn lại: ${formatVND(b.quote!.balance)}`, text: 'Xe đã sẵn sàng. Bạn thanh toán số dư vào ngày bốc ngựa để xe được xuất bến. Thanh toán xong là chốt chuyến, không tự hủy được nữa. Hãy chuẩn bị bản gốc hồ sơ ngựa để bàn giao.', actionNeeded: true }
     case 'en_route_to_pickup':
-      return b.balance
+      return !b.canPayBalance
         ? { tone: 'info', icon: 'fa-truck-moving', title: 'Xe đang đến điểm đón ngựa', text: 'Vui lòng chuẩn bị bản gốc hồ sơ và có mặt tại điểm đón để ký biên bản giao nhận.', actionNeeded: false }
         : { tone: 'danger', icon: 'fa-credit-card', title: `Thanh toán 70% còn lại: ${formatVND(b.quote!.balance)}`, text: 'Xe đang đến điểm đón. Chưa thanh toán đủ thì xe chưa được bắt đầu hành trình.', actionNeeded: true }
     case 'in_transit': {

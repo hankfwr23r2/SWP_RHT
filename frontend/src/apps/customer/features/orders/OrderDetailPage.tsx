@@ -4,7 +4,7 @@ import { Link, useParams } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { BOOKING_STEPS, HORSE_DOC, stepOf, VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { COUNTRIES } from '@shared/config/network'
-import { CANCEL_AFTER_DEPOSIT, arrivalOf, cancelRefund, insuranceFee, vehicleClassOf } from '@shared/lib/booking'
+import { arrivalOf, insuranceFee, vehicleClassOf } from '@shared/lib/booking'
 import { formatClock, formatDate, formatDateTime, formatVND } from '@shared/lib/format'
 import { customerBookingsApi, type CustomerBookingView, type TripTeam } from '@shared/services/bookings'
 import { horsesApi } from '@shared/services/horses'
@@ -149,7 +149,7 @@ function BalanceCard({ b, showAction = true }: { b: CustomerBookingView; showAct
     setBusy(true)
     try { window.location.assign(await customerBookingsApi.vnpayUrl(b.id, 'BALANCE')) } catch (e) { toast(e instanceof Error ? e.message : 'Không tạo được link thanh toán', 'error'); setBusy(false) }
   }
-  const canPay = !b.balance && (b.status === 'ready_for_pickup' || b.status === 'en_route_to_pickup')
+  const canPay = b.canPayBalance === true
   return (
     <div className="card">
       <div className="card-header"><h3><i className="fa-solid fa-wallet" /> Thanh toán</h3></div>
@@ -172,13 +172,12 @@ function IncidentPolicy() {
   )
 }
 
-// Hủy đơn (chỉ sau cọc): mất cọc, số dư 70% đã trả (nếu có) được hoàn (PRD mục 8.3)
+// Hủy đơn (chỉ sau cọc, trước khi trả 70%): mất cọc. Backend quyết định được hủy hay không và số tiền mất.
 function CancelModal({ b, owner, onClose, onDone }: { b: CustomerBookingView; owner: string; onClose: () => void; onDone: () => void }) {
   const toast = useToast()
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
-  const paid = b.payment?.amount ?? 0
-  const refund = cancelRefund(b)
+  const penalty = b.cancelPenalty ?? 0
   const send = async () => {
     setBusy(true)
     try { await customerBookingsApi.cancel(owner, b.id, reason); toast('Đã hủy đơn'); onDone() } catch (e) { toast(e instanceof Error ? e.message : 'Không hủy được', 'error'); setBusy(false) }
@@ -187,8 +186,7 @@ function CancelModal({ b, owner, onClose, onDone }: { b: CustomerBookingView; ow
     <Modal onClose={onClose} title={`Hủy đơn ${b.id}`} subtitle="Bạn đã đặt cọc nên sẽ mất tiền cọc."
       footer={<><button className="btn btn-ghost" onClick={onClose}>Giữ đơn</button><button className="btn btn-danger" disabled={busy || !reason.trim()} onClick={send}>Xác nhận hủy đơn</button></>}>
       <div className={s.refundBox}>
-        <div><span>Tiền cọc đã đặt (không hoàn)</span><b className="text-red">{formatVND(paid)}</b></div>
-        {refund > 0 && <div><span>Số dư 70% đã trả (hoàn 100%)</span><b className="text-green">{formatVND(refund)}</b></div>}
+        <div><span>Tiền cọc đã đặt (không hoàn)</span><b className="text-red">{formatVND(penalty)}</b></div>
       </div>
       <div className="form-group" style={{ margin: '14px 0 0' }}><label htmlFor="cr" className="required">Lý do hủy</label><textarea id="cr" className="form-control" rows={3} value={reason} onChange={e => setReason(e.target.value)} /></div>
     </Modal>
@@ -256,7 +254,7 @@ export default function OrderDetailPage() {
   ].sort((x, y) => x.time - y.time)
   const route = `${placeName(b.origin.name)} → ${placeName(b.dest.name)}`
   const payOpen = b.status === 'settlement_issued' || b.status === 'payment_overdue'
-  const canPayBalance = !b.balance && (b.status === 'ready_for_pickup' || b.status === 'en_route_to_pickup')
+  const canPayBalance = b.canPayBalance === true
   const needResubmit = b.status === 'under_review' && b.medical?.status === 'resubmit'
 
   return (
@@ -394,7 +392,7 @@ export default function OrderDetailPage() {
                   </div>
                 ))}
               </div>
-              {CANCEL_AFTER_DEPOSIT.includes(b.status) && (
+              {b.canCancel && (
                 <div className="card">
                   <div className="card-header">
                     <h3><i className="fa-solid fa-circle-info" /> Hủy hoặc thay đổi lịch trình</h3>
@@ -402,7 +400,7 @@ export default function OrderDetailPage() {
                       <i className="fa-solid fa-ban" /> Hủy đơn này
                     </button>
                   </div>
-                  <p className="form-hint">Lưu ý: Quý khách tự ý hủy đơn sau khi đặt cọc sẽ mất 100% tiền cọc đã đóng theo quy định. Nếu đã thanh toán trước 70% số dư, số dư sẽ được hoàn lại.</p>
+                  <p className="form-hint">Lưu ý: Quý khách tự ý hủy đơn sau khi đặt cọc sẽ mất 100% tiền cọc đã đóng theo quy định. Khi đã thanh toán 70% còn lại, chuyến đi được chốt và không tự hủy được nữa; cần hỗ trợ vui lòng gọi hotline.</p>
                 </div>
               )}
             </>

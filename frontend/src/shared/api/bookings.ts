@@ -59,6 +59,9 @@ export interface BackendBookingResponse {
   plan?: unknown
   quote?: unknown
   payment?: Record<string, unknown>
+  canCancel?: boolean
+  canPayBalance?: boolean
+  cancelPenalty?: number
   medical?: unknown
   clearance?: unknown
   settlement?: unknown

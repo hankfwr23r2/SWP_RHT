@@ -103,7 +103,7 @@ export const paymentApi = {
   },
 
   /**
-   * 3. Hủy đơn kèm chính sách hoàn cọc / phạt cọc (POST /api/v1/payments/cancel)
+   * 3. Khách hủy đơn sau cọc, trước khi trả 70%: mất cọc (POST /api/v1/payments/cancel)
    */
   cancelWithRefund: async (bookingId: string | number, reason?: string): Promise<CancelWithRefundDto> => {
     const res = await apiClient.post<ApiResponse<CancelWithRefundDto>>('/payments/cancel', { reason }, {
