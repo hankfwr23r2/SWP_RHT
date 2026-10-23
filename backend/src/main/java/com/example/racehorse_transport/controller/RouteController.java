@@ -74,12 +74,44 @@ public class RouteController {
         return ResponseEntity.ok(ApiResponse.success("Tài xế đã check-in thành công tại điểm dừng", "Thành công"));
     }
 
+    // 5. Admin: Tạo mới tuyến đường cố định
+    @PostMapping
+    public ResponseEntity<ApiResponse<RouteDTO>> createRoute(@Valid @RequestBody com.example.racehorse_transport.dto.route.CreateRouteRequest request) {
+        Route created = routeService.createRoute(request);
+        RouteDTO dto = modelMapper.map(created, RouteDTO.class);
+        return ResponseEntity.ok(ApiResponse.success(dto, "Tạo tuyến đường cố định thành công"));
+    }
+
+    // 6. Admin: Cập nhật tuyến đường cố định
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<RouteDTO>> updateRoute(
+            @PathVariable Integer id,
+            @Valid @RequestBody com.example.racehorse_transport.dto.route.CreateRouteRequest request) {
+        Route updated = routeService.updateRoute(id, request);
+        RouteDTO dto = modelMapper.map(updated, RouteDTO.class);
+        return ResponseEntity.ok(ApiResponse.success(dto, "Cập nhật tuyến đường thành công"));
+    }
+
+    // 7. Admin: Ngừng kích hoạt tuyến đường
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteRoute(@PathVariable Integer id) {
+        routeService.deactivateRoute(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Ngừng kích hoạt tuyến đường thành công"));
+    }
+
     private LocationRouteDTO toDTO(LocationRoute entity) {
         LocationRouteDTO dto = modelMapper.map(entity, LocationRouteDTO.class);
         if (entity.getId() != null) {
             dto.setRouteID(entity.getId().getRouteID());
             dto.setLocationID(entity.getId().getLocationID());
         }
+        if (entity.getLocationID() != null) {
+            dto.setLocationName(entity.getLocationID().getLocationName());
+            dto.setLocationType(entity.getLocationID().getLocationType());
+            dto.setAddress(entity.getLocationID().getAddress());
+            dto.setProvince(entity.getLocationID().getProvince());
+            dto.setCountry(entity.getLocationID().getCountry());
+        }
         return dto;
     }
-}
+}

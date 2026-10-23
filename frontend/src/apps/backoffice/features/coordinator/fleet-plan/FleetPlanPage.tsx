@@ -41,6 +41,7 @@ import { RouteMapPicker } from './RouteMapPicker'
 import { InlineRouteMap } from './InlineRouteMap'
 import { roadNote } from '@shared/services/routing'
 import { useRoadRoute } from '@shared/services/useRoadRoute'
+import { routesApi, type BackendRouteResponse } from '@shared/api/routes'
 
 const pad = (n: number) => String(n).padStart(2, '0')
 const toLocal = (t: number) => {
@@ -171,11 +172,22 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
   )
   const [etd] = useState(toLocal(initial.legs[0]?.departAt ?? defaultEtdTime))
   const [rests, setRests] = useState<RestStop[]>(initial.rests)
+  const [corridors, setCorridors] = useState<BackendRouteResponse[]>([])
   const [borderText, setBorderText] = useState(initial.borderEta ? toLocal(initial.borderEta) : '')
   const [borderTouched, setBorderTouched] = useState(!!b.route?.borderEta)
   const etdT = fromLocal(etd)
 
+  useLoad(async () => {
+    try {
+      const list = await routesApi.listRoutes()
+      setCorridors(list.filter(r => r.status === 'ACTIVE'))
+    } catch {
+      // Bỏ qua lỗi nạp corridors
+    }
+  }, [])
+
   const stationsOnRoute = rests.flatMap(r => TRANSIT_STATIONS.filter(x => x.name === r.name))
+
   const roadPath = origin && dest ? routeOutline(origin, gateGeo, dest, stationsOnRoute).path : undefined
   const { route: road, loading: roadLoading } = useRoadRoute(roadPath, Number.isNaN(etdT) ? undefined : etdT)
   const driveHours = road?.hours ?? estHours
@@ -521,7 +533,23 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
           Quy chuẩn an sinh: Xe chạy tối đa <b>4.0 giờ</b> phải dừng nghỉ tối thiểu 30–45 phút để kiểm tra sức khỏe và cho ngựa uống nước.
         </div>
 
+        {corridors.length > 0 && (
+          <div style={{ marginBottom: 14, padding: '10px 14px', background: 'var(--surface-soft, #f8fafc)', border: '1px solid var(--line, #e2e8f0)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <i className="fa-solid fa-road" style={{ color: 'var(--orange, #ea580c)' }} />
+              <span style={{ fontSize: '0.88rem' }}>
+                Hành lang an toàn: <b>{corridors[0].routeName}</b>
+                {corridors[0].distance && <span style={{ color: 'var(--muted)', marginLeft: 6 }}>({corridors[0].distance} km)</span>}
+              </span>
+            </div>
+            <span style={{ fontSize: '0.78rem', background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: 6, fontWeight: 600 }}>
+              <i className="fa-solid fa-shield-check" /> Trục cố định an toàn
+            </span>
+          </div>
+        )}
+
         {/* BẢN ĐỒ INLINE TRỰC TIẾP TRÊN TRANG */}
+
         {origin && dest && (
           <div style={{ marginBottom: 16 }}>
             <InlineRouteMap

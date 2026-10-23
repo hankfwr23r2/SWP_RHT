@@ -4,6 +4,7 @@ import type { StaffRole } from '@shared/types/role'
 export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: { group?: string; icon?: string }][]> = {
   // Quản trị viên chỉ có một mục; lọc và sort được thực hiện inline trên trang
   admin: [
+    ['/admin/routes', 'Tuyến đường cố định', { icon: 'fa-road' }],
     ['/admin/accounts', 'Tất cả tài khoản', { icon: 'fa-users-gear' }],
   ],
   manager: [

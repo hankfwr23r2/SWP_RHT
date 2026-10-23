@@ -2,10 +2,10 @@
 import { lazy } from 'react'
 import type { AppRoute } from '@shared/routing/types'
 import { ManagerLoginPage, StaffLoginPage } from './features/auth/StaffLoginPage'
-
 // Trang đăng nhập tải ngay; các trang còn lại chỉ tải khi mở tới (lazy), mỗi vai trò chỉ tải phần mình dùng.
 const SitemapPage = lazy(() => import('../sitemap/SitemapPage').then(m => ({ default: m.SitemapPage })))
 const AccountsPage = lazy(() => import('./features/admin/accounts/AccountsPage'))
+const AdminRoutesPage = lazy(() => import('./features/admin/routes/AdminRoutesPage'))
 const IntakePage = lazy(() => import('./features/manager/intake/IntakePage'))
 const ApprovalsPage = lazy(() => import('./features/manager/approvals/ApprovalsPage'))
 const DashboardPage = lazy(() => import('./features/manager/dashboard/DashboardPage'))
@@ -38,7 +38,9 @@ export const routes: AppRoute[] = [
   { path: '/login', page: StaffLoginPage, roles: [], title: 'Đăng nhập nội bộ', layout: 'bare' },
   { path: '/manager/login', page: ManagerLoginPage, roles: [], title: 'Đăng nhập Quản lý', layout: 'bare' },
 
+  { path: '/admin/routes', page: AdminRoutesPage, roles: A, title: 'Tuyến đường cố định', layout: 'staff' },
   { path: '/admin/accounts', page: AccountsPage, roles: A, title: 'Tất cả tài khoản', layout: 'staff' },
+  { path: '/admin/accounts/:role', page: AccountsPage, roles: A, title: 'Tài khoản theo loại', layout: 'staff' },
 
   { path: '/manager', page: DashboardPage, roles: M, title: 'Bảng điều khiển', layout: 'staff' },
   { path: '/manager/intake', page: IntakePage, roles: M, title: 'Tiếp nhận đơn hàng', layout: 'staff' },
