@@ -32,7 +32,8 @@ export default function PortalPage() {
   const now = useNow()
   const { data: orders } = useLoad(() => customerBookingsApi.list(owner), [owner])
   const { data: horses } = useLoad(() => horsesApi.list(owner), [owner])
-  const ref = useStaggerIn('[data-card]', [orders?.length, horses?.length])
+  // Các thẻ có sẵn trước khi dữ liệu về: chỉ chạy hiệu ứng một lần lúc vào trang, không chạy lại khi đơn/ngựa tải xong (trang sẽ giật)
+  const ref = useStaggerIn('[data-card]')
 
   const withNext = (orders ?? []).map(b => ({ b, next: nextStep(b, now) }))
   const todo = withNext.filter(x => x.next.actionNeeded)
