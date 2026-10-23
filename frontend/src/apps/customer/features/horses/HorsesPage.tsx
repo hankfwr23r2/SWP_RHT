@@ -1,5 +1,5 @@
 // Hồ sơ ngựa (PRD mục 2.1): khách khai báo một lần, các lần đặt sau chỉ cần chọn ngựa.
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { ageOf, horseReadiness } from '@shared/lib/booking'
@@ -10,6 +10,7 @@ import { SEX_LABEL, type HorseProfile } from '@shared/types/booking'
 import { HorseDocChips } from '@shared/ui/HorseDocChips'
 import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
+import { usePagination } from '@shared/ui/usePagination'
 import { HorseFormModal } from './HorseFormModal'
 import { HorseJourneyModal } from './HorseJourneyModal'
 import { RelocateHorseModal } from './RelocateHorseModal'
@@ -29,6 +30,7 @@ export default function HorsesPage() {
   const toast = useToast()
   const { data: horses, reload } = useLoad(() => horsesApi.list(owner), [owner])
   const [filter, setFilter] = useState<Filter>('all')
+  const [search, setSearch] = useState('')
   const [modal, setModal] = useState<{ horse?: HorseProfile } | null>(null)
   const [relocateHorse, setRelocateHorse] = useState<HorseProfile | null>(null)
   const [journeyHorse, setJourneyHorse] = useState<HorseProfile | null>(null)
@@ -36,8 +38,32 @@ export default function HorsesPage() {
   const [deleting, setDeleting] = useState(false)
   const list = horses ?? []
   const ready = list.filter(h => horseReadiness(h).ok)
-  const shown = filter === 'all' ? list : filter === 'ready' ? ready : list.filter(h => !horseReadiness(h).ok)
-  const gridRef = useStaggerIn('[data-horse]', [filter, list.length])
+
+  const query = search.trim().toLowerCase()
+  const filteredList = useMemo(() => {
+    let res = list
+    if (filter === 'ready') res = res.filter(h => horseReadiness(h).ok)
+    else if (filter === 'missing') res = res.filter(h => !horseReadiness(h).ok)
+
+    if (query) {
+      res = res.filter(h =>
+        h.name.toLowerCase().includes(query) ||
+        h.microchip.toLowerCase().includes(query) ||
+        h.breed.toLowerCase().includes(query) ||
+        h.color.toLowerCase().includes(query) ||
+        (h.currentLocationName && h.currentLocationName.toLowerCase().includes(query))
+      )
+    }
+    return res
+  }, [list, filter, query])
+
+  const pager = usePagination(filteredList, 9)
+
+  useEffect(() => {
+    pager.reset()
+  }, [filter, search])
+
+  const gridRef = useStaggerIn('[data-horse]', [filter, search, pager.rows.length])
   const removeHorse = async () => {
     if (!deleteHorse) return
     setDeleting(true)
@@ -71,21 +97,63 @@ export default function HorsesPage() {
           <div className={s.sumCard}><i className={`fa-solid fa-file-circle-exclamation ${s.iconMissing}`} /><div><div className={s.num}>{list.length - ready.length}</div><div className={s.lbl}>Cần bổ sung giấy tờ</div></div></div>
         </div>
 
-        <div className={s.filters} role="group" aria-label="Lọc ngựa">
-          {([['all', 'Tất cả'], ['ready', 'Sẵn sàng đặt'], ['missing', 'Thiếu giấy tờ']] as [Filter, string][]).map(([k, label]) => (
-            <button key={k} className={`${s.pill} ${filter === k ? s.pillOn : ''}`} aria-pressed={filter === k} onClick={() => setFilter(k)}>{label}</button>
-          ))}
+        <div className={s.toolbar}>
+          <div className={s.filters} role="group" aria-label="Lọc ngựa">
+            {([['all', 'Tất cả'], ['ready', 'Sẵn sàng đặt'], ['missing', 'Thiếu giấy tờ']] as [Filter, string][]).map(([k, label]) => (
+              <button key={k} className={`${s.pill} ${filter === k ? s.pillOn : ''}`} aria-pressed={filter === k} onClick={() => setFilter(k)}>{label}</button>
+            ))}
+          </div>
+
+          <div className={s.searchBox}>
+            <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
+            <input
+              type="text"
+              placeholder="Tìm theo tên ngựa, mã chip, giống…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              aria-label="Tìm kiếm ngựa trong hồ sơ"
+            />
+            {search && (
+              <button
+                type="button"
+                className={s.searchClear}
+                onClick={() => setSearch('')}
+                title="Xóa tìm kiếm"
+                aria-label="Xóa tìm kiếm"
+              >
+                <i className="fa-solid fa-xmark" />
+              </button>
+            )}
+          </div>
         </div>
 
-        {horses && !shown.length ? (
+        {horses && !pager.rows.length ? (
           <div className={s.empty}>
             <i className="fa-solid fa-horse" />
-            <h3>{list.length ? 'Không có ngựa nào ở mục này' : 'Chưa có ngựa nào trong hồ sơ'}</h3>
-            <p>{list.length ? 'Chọn mục khác để xem.' : 'Thêm ngựa đầu tiên để bắt đầu đặt chuyến.'}</p>
+            <h3>
+              {!list.length
+                ? 'Chưa có ngựa nào trong hồ sơ'
+                : query
+                ? `Không tìm thấy ngựa phù hợp với "${search}"`
+                : 'Không có ngựa nào ở mục này'}
+            </h3>
+            <p>
+              {!list.length
+                ? 'Thêm ngựa đầu tiên để bắt đầu đặt chuyến.'
+                : query
+                ? 'Hãy thử tìm bằng từ khóa khác hoặc xóa tìm kiếm.'
+                : 'Chọn mục khác để xem.'}
+            </p>
+            {query && (
+              <button type="button" className="btn btn-ghost" style={{ marginTop: 8 }} onClick={() => setSearch('')}>
+                <i className="fa-solid fa-rotate-left" /> Xóa tìm kiếm
+              </button>
+            )}
           </div>
         ) : (
-          <div ref={gridRef} className={s.grid}>
-            {shown.map(h => {
+          <>
+            <div ref={gridRef} className={s.grid}>
+              {pager.rows.map(h => {
               const r = horseReadiness(h)
               return (
                 <article key={h.id} data-horse className={s.horse}>
@@ -146,7 +214,14 @@ export default function HorsesPage() {
                 </article>
               )
             })}
-          </div>
+            </div>
+
+            {filteredList.length > 9 && (
+              <div className={s.paginationWrap}>
+                {pager.bar}
+              </div>
+            )}
+          </>
         )}
       </div>
 

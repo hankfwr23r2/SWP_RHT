@@ -10,13 +10,23 @@
 .iconReady { background: var(--bg-page); color: var(--icon-success); }
 .iconMissing { background: var(--bg-page); color: var(--icon-warning); }
 
-.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.toolbar { display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; }
 .pill { min-height: 40px; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line); background: white; font: inherit; font-size: 0.86rem; font-weight: 600; color: var(--text); cursor: pointer; }
 .pill:hover { border-color: var(--orange); }
 .pill:focus-visible { outline: 2px solid var(--orange); outline-offset: 2px; }
 .pillOn { background: var(--orange); border-color: var(--orange); color: white; }
 
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+.searchBox { position: relative; min-width: 320px; }
+.searchBox i { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--icon-accent); font-size: 0.9rem; pointer-events: none; }
+.searchBox input { width: 100%; height: 40px; padding: 0 38px 0 38px; border: 1.5px solid var(--line); border-radius: 999px; background: white; font: inherit; font-size: 0.88rem; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.searchBox input:focus { outline: none; border-color: var(--orange); box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.14); }
+.searchClear { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--muted); font-size: 0.88rem; padding: 6px 8px; cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: center; }
+.searchClear:hover { color: var(--text); }
+
+.grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.paginationWrap { margin-top: 24px; padding: 14px 18px; background: white; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+.paginationWrap :global(.pagination) { padding-top: 0; }
 .horse { background: white; border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; display: flex; flex-direction: column; gap: 12px; box-shadow: var(--shadow); }
 .horseTop { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
 .horseName { font-size: 1.1rem; font-weight: 800; color: var(--navy); line-height: 1.25; }
@@ -52,8 +62,14 @@
 .docRow { display: grid; grid-template-columns: 1fr 240px; gap: 16px; align-items: start; }
 .subNote { font-weight: 400; color: var(--muted); font-size: 0.84em; }
 
+@media (max-width: 1024px) {
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 @media (max-width: 720px) {
   .summary { grid-template-columns: 1fr; }
+  .toolbar { flex-direction: column; align-items: stretch; }
+  .searchBox { width: 100%; min-width: 0; }
   .grid { grid-template-columns: 1fr; }
   .grid2, .docRow { grid-template-columns: 1fr; }
 }
