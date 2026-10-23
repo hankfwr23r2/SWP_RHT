@@ -30,3 +30,6 @@ frontend/.env
 *application-local.properties
 *.sql
 /.env
+
+# Ảnh chụp và log do công cụ Playwright MCP sinh ra khi chạy thử giao diện
+.playwright-mcp/
