@@ -3,18 +3,19 @@ import { useState } from 'react'
 import { Link } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { formatDate, formatDateTime } from '@shared/lib/format'
-import { bookingsApi } from '@shared/services/bookings'
-import { useAutoRefresh, useLoad } from '@shared/services/useLoad'
+import { useAutoRefresh } from '@shared/services/useLoad'
 import { ListPage, idCell, routeCell, type Column } from '../../../shared/ListPage'
 import type { Booking } from '@shared/types/booking'
 import { placeShort } from '../../../shared/place'
 import { isCoordinatorTask } from '../../../shared/staffWork'
+import { usePageData } from '@shared/routing/pageData'
+import type { bookingListLoader } from '../../../shared/loaders'
 
 type Tab = 'todo' | 'done'
 
 export default function FleetPlanListPage() {
   const { session } = useAuth()
-  const { data: all, reload } = useLoad(bookingsApi.list)
+  const { all, reload } = usePageData<typeof bookingListLoader>()
   useAutoRefresh(reload)
   const [tab, setTab] = useState<Tab>('todo')
   const mine = (all ?? []).filter(b => isCoordinatorTask(b, session?.name, session?.username, session?.role))

@@ -11,6 +11,8 @@ import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
 import { ListPage, type Column, type TabDef } from '../../../shared/ListPage'
 import s from './AdminRoutes.module.css'
+import { usePageData } from '@shared/routing/pageData'
+import type { adminRoutesLoader } from '../../../shared/loaders'
 
 type Tab = 'all' | 'ACTIVE' | 'INACTIVE'
 
@@ -306,8 +308,7 @@ export default function AdminRoutesPage() {
   const [tab, setTab] = useState<Tab>('all')
   const [modal, setModal] = useState<{ kind: 'edit'; route: BackendRouteResponse | null } | { kind: 'stops'; route: BackendRouteResponse } | null>(null)
 
-  const { data, loaded, reload } = useLoad(() => Promise.all([routesApi.listRoutes(), routesApi.listLocations()]))
-  const [routes, locations] = data ?? [[], []]
+  const { routes = [], locations = [], reload } = usePageData<typeof adminRoutesLoader>()
 
   const rows = routes.filter(r => (tab === 'all' ? true : r.status === tab))
 
@@ -424,7 +425,7 @@ export default function AdminRoutesPage() {
         rowKey={r => String(r.id)}
         columns={columns}
         haystack={r => [r.routeName, r.description ?? '', String(r.id)]}
-        loaded={loaded}
+        loaded
         emptyText="Chưa có tuyến đường nào phù hợp."
         searchPlaceholder="Tìm theo tên tuyến, mô tả..."
         countLabel="tuyến"

@@ -4,7 +4,6 @@ import { useAuth } from '@shared/auth/AuthContext'
 import { INCIDENT_ACTION, INCIDENT_KIND } from '@shared/config/booking-rules'
 import { formatDateTime, formatVND } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
-import { useLoad } from '@shared/services/useLoad'
 import type { Booking, Incident } from '@shared/types/booking'
 import { ImageThumb } from '@shared/ui/ImageThumb'
 import { Modal } from '@shared/ui/Modal'
@@ -14,6 +13,8 @@ import { ListPage, idCell, routeCell, statusCell, type Column } from '../../../s
 import { placeShort } from '../../../shared/place'
 import { IncidentPlanView } from '../../../shared/IncidentPlanView'
 import s from '../../../shared/booking.module.css'
+import { usePageData } from '@shared/routing/pageData'
+import type { bookingListLoader } from '../../../shared/loaders'
 
 type Tab = 'approve' | 'active' | 'returned' | 'done'
 type Item = { b: Booking; i: Incident }
@@ -63,7 +64,7 @@ export function ApproveModal({ item, onClose, onDone }: { item: Item; onClose: (
 type Row = { key: string; b: Booking; i?: Incident }
 
 export default function IncidentsPage() {
-  const { data: all, reload } = useLoad(bookingsApi.list)
+  const { all, reload } = usePageData<typeof bookingListLoader>()
   const [tab, setTab] = useState<Tab>('approve')
   const [approve, setApprove] = useState<Item | null>(null)
   const list = all ?? []

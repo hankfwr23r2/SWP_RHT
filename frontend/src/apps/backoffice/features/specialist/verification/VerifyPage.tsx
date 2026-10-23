@@ -1,14 +1,12 @@
 // Specialist: duyệt hồ sơ ngựa một đơn. Đạt thì xác nhận; sai sót thì yêu cầu khách bổ sung (bắt buộc ghi lý do).
 import { useState } from 'react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router'
+import { Link, Navigate, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { FEED_PACKAGE, WATER_PLAN, HORSE_DOC, HORSE_DOC_TYPES, type HorseDocType } from '@shared/config/booking-rules'
 import { horseReadiness } from '@shared/lib/booking'
 import { isAssignedTo } from '@shared/lib/staffAssignment'
 import { formatDateTime } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
-import { horsesApi } from '@shared/services/horses'
-import { useLoad } from '@shared/services/useLoad'
 import type { Booking, HorseProfile } from '@shared/types/booking'
 import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
 import { HorseDocChips } from '@shared/ui/HorseDocChips'
@@ -16,6 +14,8 @@ import { ImageThumb } from '@shared/ui/ImageThumb'
 import { useToast } from '@shared/ui/toast'
 import { History, ReviewChips, TripSummary } from '../../../shared/BookingParts'
 import s from '../../../shared/booking.module.css'
+import { usePageData } from '@shared/routing/pageData'
+import type { verifyLoader } from '../../../shared/loaders'
 
 type Pair = { horseId: string; doc: HorseDocType }
 const key = (p: Pair) => `${p.horseId}:${p.doc}`
@@ -264,14 +264,9 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
 }
 
 export default function VerifyPage() {
-  const { id = '' } = useParams()
   const { session } = useAuth()
-  const { data: b, loaded, reload } = useLoad(() => bookingsApi.get(id), [id])
-  const { data: horses } = useLoad(async () => b
-    ? (await Promise.all(b.horses.map(h => horsesApi.byId(h.horseId)))).filter(Boolean) as HorseProfile[]
-    : [], [b?.id, b?.medical?.status])
+  const { b, horses, reload } = usePageData<typeof verifyLoader>()
 
-  if (!loaded) return <div className="page"><div className="wrap"><p className="text-muted">Đang tải…</p></div></div>
   if (!b || !b.intake?.specialist || (!isAssignedTo(b.intake.specialist, session?.name) && !isAssignedTo(b.intake.specialist, session?.username))) {
     return <Navigate to="/specialist/verification" replace />
   }

@@ -17,6 +17,8 @@ import { ListPage, idCell, routeCell, statusCell, type Column } from '../../../s
 import { placeShort } from '../../../shared/place'
 import s from '../../../shared/booking.module.css'
 import { StaffPicker } from '../../../shared/StaffPicker'
+import { usePageData } from '@shared/routing/pageData'
+import type { bookingListLoader } from '../../../shared/loaders'
 
 type Tab = 'new' | 'running'
 
@@ -119,7 +121,7 @@ export function IntakeModal({ b, onClose, onDone }: { b: Booking; onClose: () =>
 }
 
 export default function IntakePage() {
-  const { data: all, reload } = useLoad(bookingsApi.list)
+  const { all, reload } = usePageData<typeof bookingListLoader>()
   const [tab, setTab] = useState<Tab>('new')
   const [open, setOpen] = useState<Booking | null>(null)
   const list = all ?? []

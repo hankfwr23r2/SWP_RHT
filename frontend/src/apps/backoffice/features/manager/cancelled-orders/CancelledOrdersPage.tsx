@@ -1,14 +1,14 @@
 import { useState } from 'react'
 import { formatDate } from '@shared/lib/format'
-import { bookingsApi } from '@shared/services/bookings'
-import { useLoad } from '@shared/services/useLoad'
 import type { Booking } from '@shared/types/booking'
 import { OrderDetailModal } from '../dashboard/OrderDetailModal'
 import { ListPage, idCell, routeCell, statusCell, type Column } from '../../../shared/ListPage'
 import { placeShort } from '../../../shared/place'
+import { usePageData } from '@shared/routing/pageData'
+import type { bookingListLoader } from '../../../shared/loaders'
 
 export default function CancelledOrdersPage() {
-  const { data: all, reload } = useLoad(bookingsApi.list)
+  const { all, reload } = usePageData<typeof bookingListLoader>()
   const [open, setOpen] = useState<Booking | null>(null)
   const orders = (all ?? []).filter(b => b.status === 'cancelled')
   const columns: Column<Booking>[] = [

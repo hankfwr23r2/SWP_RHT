@@ -1,7 +1,5 @@
 import { useState } from 'react'
 import { useStaggerIn } from '@shared/motion/motion'
-import { bookingsApi } from '@shared/services/bookings'
-import { useLoad } from '@shared/services/useLoad'
 import type { Booking } from '@shared/types/booking'
 import { FormSelect } from '@shared/ui/FormSelect'
 import { OrderBoard, type SortOption } from './OrderBoard'
@@ -10,9 +8,11 @@ import { CalendarModal } from './CalendarModal'
 import { ScheduleStrip } from './ScheduleStrip'
 import bd from './Board.module.css'
 import s from './Dashboard.module.css'
+import { usePageData } from '@shared/routing/pageData'
+import type { bookingListLoader } from '../../../shared/loaders'
 
 export default function DashboardPage() {
-  const { data: all, reload } = useLoad(bookingsApi.list)
+  const { all, reload } = usePageData<typeof bookingListLoader>()
   const [open, setOpenId] = useState<string | null>(null)
   const [calendar, setCalendar] = useState(false)
   const [text, setText] = useState('')

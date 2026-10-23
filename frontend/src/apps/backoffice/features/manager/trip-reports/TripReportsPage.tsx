@@ -2,12 +2,13 @@
 // Bản cũ chỉ có 1 báo cáo chi tiết viết cứng; nay bấm dòng nào xem báo cáo dòng đó. Xuất PDF dùng hộp thoại in của trình duyệt.
 import { useState } from 'react'
 import { formatDate } from '@shared/lib/format'
-import { reportsApi, type TripReport } from '@shared/services/reports'
-import { useLoad } from '@shared/services/useLoad'
+import { type TripReport } from '@shared/services/reports'
 import { Modal } from '@shared/ui/Modal'
 import { usePagination } from '@shared/ui/usePagination'
 import { SearchBox, partStyles as m } from '../../../shared/parts'
 import s from './TripReports.module.css'
+import { usePageData } from '@shared/routing/pageData'
+import type { tripReportsLoader } from '../../../shared/loaders'
 
 const toMin = (hhmm: string) => { const [h, mi] = hhmm.split(':').map(Number); return h * 60 + mi }
 function legStatus(planned: string, actual: string) {
@@ -63,7 +64,7 @@ function ReportDetail({ r, onExport }: { r: TripReport; onExport: () => void }) 
 }
 
 export default function TripReportsPage() {
-  const { data: reports = [] } = useLoad(reportsApi.list)
+  const { reports = [] } = usePageData<typeof tripReportsLoader>()
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<string>()
   const [exporting, setExporting] = useState(false)

@@ -3,20 +3,20 @@ import { useState } from 'react'
 import { INCIDENT_KIND } from '@shared/config/booking-rules'
 import { isAssignedTo } from '@shared/lib/staffAssignment'
 import { formatDateTime } from '@shared/lib/format'
-import { bookingsApi } from '@shared/services/bookings'
 import { useAuth } from '@shared/auth/AuthContext'
-import { useLoad } from '@shared/services/useLoad'
 import type { Booking, Incident } from '@shared/types/booking'
 import { IncidentPlanner } from './IncidentPlanner'
 import { ListPage, idCell, routeCell, type Column } from '../../../shared/ListPage'
 import { placeShort } from '../../../shared/place'
+import { usePageData } from '@shared/routing/pageData'
+import type { bookingListLoader } from '../../../shared/loaders'
 
 type Tab = 'todo' | 'waiting' | 'active' | 'done'
 type Item = { b: Booking; i: Incident }
 
 export default function CoordinatorIncidentsPage() {
   const { session } = useAuth()
-  const { data: all, reload } = useLoad(bookingsApi.list)
+  const { all, reload } = usePageData<typeof bookingListLoader>()
   const [tab, setTab] = useState<Tab>('todo')
   const [open, setOpen] = useState<Item | null>(null)
   const mine = (all ?? []).filter(b => isAssignedTo(b.intake?.coordinator, session?.name)).flatMap(b => (b.incidents ?? []).map(i => ({ b, i })))

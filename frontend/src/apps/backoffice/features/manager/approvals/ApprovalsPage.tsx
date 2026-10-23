@@ -20,6 +20,8 @@ import { ListPage, idCell, routeCell, statusCell, type Column } from '../../../s
 import { placeShort } from '../../../shared/place'
 import s from '../../../shared/booking.module.css'
 import { FormSelect } from '@shared/ui/FormSelect'
+import { usePageData } from '@shared/routing/pageData'
+import type { bookingListLoader } from '../../../shared/loaders'
 
 type Tab = 'todo' | 'sent'
 interface AdjRow { kind: 'surcharge' | 'discount'; label: string; amount: string }
@@ -237,7 +239,7 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
 }
 
 export default function ApprovalsPage() {
-  const { data: all, reload } = useLoad(bookingsApi.list)
+  const { all, reload } = usePageData<typeof bookingListLoader>()
   const [tab, setTab] = useState<Tab>('todo')
   const [open, setOpen] = useState<Booking | null>(null)
   const list = all ?? []

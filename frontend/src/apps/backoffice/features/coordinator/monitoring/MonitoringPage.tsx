@@ -2,10 +2,8 @@
 import { useEffect, useState } from 'react'
 import { currentCheckpoint, delayedCheckpoint, lastWelfare, needsAttention, schedulesOf } from '@shared/lib/booking'
 import { formatDateTime } from '@shared/lib/format'
-import { bookingsApi } from '@shared/services/bookings'
-import { crewApi, type CrewMember } from '@shared/services/fleet'
+import { type CrewMember } from '@shared/services/fleet'
 import type { Booking } from '@shared/types/booking'
-import { useLoad } from '@shared/services/useLoad'
 import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
 import { TripTimeline } from '@shared/ui/TripTimeline'
 import { useNow } from '@shared/ui/useNow'
@@ -13,6 +11,8 @@ import { FilterNav } from '../../../shared/BookingParts'
 import type { FieldTrip } from '../../../shared/field'
 import { placeShort } from '../../../shared/place'
 import s from '../../../shared/booking.module.css'
+import { usePageData } from '@shared/routing/pageData'
+import type { monitoringLoader } from '../../../shared/loaders'
 
 type Tab = 'not_started' | 'running'
 
@@ -45,27 +45,20 @@ function CrewDuty({ all, crew, now }: { all: Booking[]; crew: CrewMember[]; now:
 
 export default function MonitoringPage() {
   const now = useNow(15_000)
-  const { data: all, loaded: bookingsLoaded, reload } = useLoad(bookingsApi.list)
-  const { data: crew, loaded: crewLoaded, reload: reloadCrew } = useLoad(crewApi.list)
+  const { all, crew, reload } = usePageData<typeof monitoringLoader>()
   const [tab, setTab] = useState<Tab>('not_started')
   const [selected, setSelected] = useState('')
   useEffect(() => { reload() }, [now, reload]) // cập nhật định kỳ để thấy check-in mới
 
+  // Router đã tải xong trước khi trang hiện: còn thiếu tức là tải lỗi
   if (all === undefined || crew === undefined) {
-    const loading = (!bookingsLoaded && all === undefined) || (!crewLoaded && crew === undefined)
     return (
       <div className="page">
         <div className="wrap">
           <div className={s.empty} role="status">
-            {loading ? (
-              <><i className="fa-solid fa-spinner fa-spin" />Đang tải dữ liệu giám sát...</>
-            ) : (
-              <>
-                <i className="fa-solid fa-triangle-exclamation" />
-                Không thể tải dữ liệu giám sát.
-                <button className="btn btn-primary" onClick={() => { reload(); reloadCrew() }}>Thử lại</button>
-              </>
-            )}
+            <i className="fa-solid fa-triangle-exclamation" />
+            Không thể tải dữ liệu giám sát.
+            <button className="btn btn-primary" onClick={() => reload()}>Thử lại</button>
           </div>
         </div>
       </div>

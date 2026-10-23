@@ -4,20 +4,20 @@ import { Link } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { clearanceProgress, docsDueAt, isClearanceOverdue } from '@shared/lib/booking'
 import { formatDate, formatDateTime } from '@shared/lib/format'
-import { bookingsApi } from '@shared/services/bookings'
-import { useLoad } from '@shared/services/useLoad'
 import { useNow } from '@shared/ui/useNow'
 import { ListPage, idCell, routeCell, statusCell, type Column } from '../../../shared/ListPage'
 import type { Booking } from '@shared/types/booking'
 import { placeShort } from '../../../shared/place'
 import { isAssignedTo } from '@shared/lib/staffAssignment'
+import { usePageData } from '@shared/routing/pageData'
+import type { bookingListLoader } from '../../../shared/loaders'
 
 type Tab = 'working' | 'done'
 
 export default function LegalListPage() {
   const { session } = useAuth()
   const now = useNow()
-  const { data: all } = useLoad(bookingsApi.list)
+  const { all } = usePageData<typeof bookingListLoader>()
   const [tab, setTab] = useState<Tab>('working')
   const isMine = (b: Booking) =>
     !!b.intake?.specialist &&
