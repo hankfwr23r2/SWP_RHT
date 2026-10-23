@@ -1714,7 +1714,9 @@ public class BookingServiceImpl implements BookingService {
                 if (reqPayload.get("discountAmount") != null) {
                     try {
                         discountAmount = new BigDecimal(reqPayload.get("discountAmount").toString());
-                    } catch (Exception ignored) {
+                    } catch (NumberFormatException ex) {
+                        // Số tiền sai thì dừng, không âm thầm giảm trừ 0 đồng
+                        throw new IllegalArgumentException("Số tiền giảm trừ không hợp lệ: " + reqPayload.get("discountAmount"));
                     }
                 }
 
