@@ -3,6 +3,7 @@ package com.example.racehorse_transport.service.impl;
 import com.example.racehorse_transport.dto.booking.BookingHorseDto;
 import com.example.racehorse_transport.dto.booking.BookingResponse;
 import com.example.racehorse_transport.dto.booking.CreateBookingRequest;
+import com.example.racehorse_transport.dto.booking.CustomerTripTeamResponse;
 import com.example.racehorse_transport.dto.booking.PublicTrackingResponse;
 import com.example.racehorse_transport.dto.booking.PartyContactDto;
 import com.example.racehorse_transport.entity.*;
@@ -256,6 +257,52 @@ public class BookingServiceImpl implements BookingService {
         }
 
         return mapToResponse(booking);
+    }
+
+    // Xe và kíp xe chỉ hiện cho khách từ lúc có báo giá; đơn chưa duyệt, hết hạn, hủy hoặc bị từ chối thì không
+    private static final Set<String> TEAM_HIDDEN_STATUSES = Set.of(
+            "pending_intake", "under_review", "resubmission_requested", "pending_commercial",
+            "quote_expired", "cancelled", "rejected");
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CustomerTripTeamResponse> getCustomerTripTeam(Integer id, String customerUsername) {
+        BookingResponse booking = getBookingById(id, customerUsername); // kiểm tra đơn thuộc khách đang đăng nhập
+        if (booking.getStatus() == null || TEAM_HIDDEN_STATUSES.contains(booking.getStatus()) || booking.getTrips() == null) {
+            return List.of();
+        }
+        Map<String, String> horseNames = new HashMap<>();
+        if (booking.getHorses() != null) {
+            booking.getHorses().forEach(h -> horseNames.put(h.getHorseId(), h.getName()));
+        }
+        List<CustomerTripTeamResponse> team = new ArrayList<>();
+        for (VehicleTripDto trip : booking.getTrips()) {
+            try {
+                Vehicle vehicle = fleetService.findVehicleByIdOrCode(trip.getVehicleId());
+                Staff driver = fleetService.findStaffByIdOrCode(trip.getDriverId(), "DRIVER");
+                Staff escort = fleetService.findStaffByIdOrCode(trip.getEscortId(), "ESCORT");
+                team.add(CustomerTripTeamResponse.builder()
+                        .tripId(trip.getTripId())
+                        .horseNames(trip.getHorseIds() == null ? List.of()
+                                : trip.getHorseIds().stream().map(hid -> horseNames.getOrDefault(hid, hid)).toList())
+                        .vehicle(CustomerTripTeamResponse.TeamVehicle.builder()
+                                .plate(vehicle.getLicensePlate()).kind(vehicle.getVehicleName()).stalls(vehicle.getCapacity()).build())
+                        .driver(teamMember(driver))
+                        .escort(teamMember(escort))
+                        .build());
+            } catch (IllegalArgumentException ex) {
+                // Chuyến chưa đủ xe hoặc kíp xe (đang chốt dở): bỏ qua như trước đây frontend vẫn làm
+                log.debug("Bỏ qua chuyến {} của đơn {}: {}", trip.getTripId(), id, ex.getMessage());
+            }
+        }
+        return team;
+    }
+
+    private CustomerTripTeamResponse.TeamMember teamMember(Staff staff) {
+        return CustomerTripTeamResponse.TeamMember.builder()
+                .name(staff.getUser() != null ? staff.getUser().getUsername() : "Nhân viên " + staff.getId())
+                .phone(staff.getPhone())
+                .build();
     }
 
     @Override

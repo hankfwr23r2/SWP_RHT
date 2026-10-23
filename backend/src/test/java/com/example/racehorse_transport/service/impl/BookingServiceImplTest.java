@@ -3,6 +3,7 @@ package com.example.racehorse_transport.service.impl;
 import com.example.racehorse_transport.dto.booking.BookingHorseDto;
 import com.example.racehorse_transport.dto.booking.BookingResponse;
 import com.example.racehorse_transport.dto.booking.CreateBookingRequest;
+import com.example.racehorse_transport.dto.booking.CustomerTripTeamResponse;
 import com.example.racehorse_transport.dto.booking.PartyContactDto;
 import com.example.racehorse_transport.dto.booking.RejectQuoteRequest;
 import com.example.racehorse_transport.dto.manager.RejectBookingRequest;
@@ -10,7 +11,9 @@ import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.Horse;
 import com.example.racehorse_transport.entity.Quotation;
+import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.User;
+import com.example.racehorse_transport.entity.Vehicle;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.BookingAssignmentRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
@@ -356,6 +359,42 @@ class BookingServiceImplTest {
     }
 
     @Test
+    void getCustomerTripTeam_returnsVehicleAndCrewOfEachTrip() {
+        Booking booking = bookingOwnedByCustomer();
+        booking.setStatus("waybill_issued");
+        booking.setDetailsJson("{\"horses\":[{\"horseId\":\"H-001\",\"name\":\"Storm\"}],"
+                + "\"trips\":[{\"tripId\":\"TRP-042-1\",\"vehicleId\":\"VH-001\",\"driverId\":\"DR-01\",\"escortId\":\"ES-01\",\"horseIds\":[\"H-001\"]}]}");
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        Vehicle vehicle = Vehicle.builder().id(1).vehicleType("Xe 2 ngăn").licensePlate("51C-123.45").build();
+        when(fleetService.findVehicleByIdOrCode("VH-001")).thenReturn(vehicle);
+        when(fleetService.findStaffByIdOrCode("DR-01", "DRIVER")).thenReturn(staff("driver01", "0901000001"));
+        when(fleetService.findStaffByIdOrCode("ES-01", "ESCORT")).thenReturn(staff("escort01", "0901000002"));
+
+        List<CustomerTripTeamResponse> team = service.getCustomerTripTeam(42, "phuc");
+
+        assertThat(team).hasSize(1);
+        CustomerTripTeamResponse trip = team.get(0);
+        assertThat(trip.getTripId()).isEqualTo("TRP-042-1");
+        assertThat(trip.getHorseNames()).containsExactly("Storm");
+        assertThat(trip.getVehicle().getPlate()).isEqualTo("51C-123.45");
+        assertThat(trip.getVehicle().getStalls()).isEqualTo(2);
+        assertThat(trip.getDriver().getName()).isEqualTo("driver01");
+        assertThat(trip.getEscort().getPhone()).isEqualTo("0901000002");
+    }
+
+    @Test
+    void getCustomerTripTeam_isEmptyBeforeTheQuoteAndForOtherCustomers() {
+        Booking booking = bookingOwnedByCustomer();
+        booking.setStatus("pending_commercial");
+        booking.setDetailsJson("{\"trips\":[{\"tripId\":\"TRP-042-1\",\"vehicleId\":\"VH-001\",\"driverId\":\"DR-01\",\"escortId\":\"ES-01\",\"horseIds\":[]}]}");
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+
+        assertThat(service.getCustomerTripTeam(42, "phuc")).isEmpty();
+        assertThatThrownBy(() -> service.getCustomerTripTeam(42, "another-customer")).isInstanceOf(AccessDeniedException.class);
+        verify(fleetService, never()).findVehicleByIdOrCode(any());
+    }
+
+    @Test
     void getBookingsByStatus_filtersAndMapsBookings() {
         Booking booking = bookingOwnedByCustomer();
         booking.setStatus("under_review");
@@ -595,6 +634,15 @@ class BookingServiceImplTest {
 
         verify(bookingRepository, never()).save(any(Booking.class));
         verify(systemLogRepository, never()).save(any());
+    }
+
+    private Staff staff(String username, String phone) {
+        User user = new User();
+        user.setUsername(username);
+        Staff staff = new Staff();
+        staff.setUser(user);
+        staff.setPhone(phone);
+        return staff;
     }
 
     private Booking bookingOwnedByCustomer() {
