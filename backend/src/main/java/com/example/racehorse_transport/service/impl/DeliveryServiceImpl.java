@@ -201,36 +201,6 @@ public class DeliveryServiceImpl implements DeliveryService {
 
     @Override
     @Transactional
-    public BookingResponse issueSettlement(Integer bookingId, IssueSettlementRequest request) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng ID: " + bookingId));
-
-        BookingDetailsPayload payload = extractPayload(booking);
-        Map<String, Object> settlementMap = new HashMap<>();
-        settlementMap.put("issuedAt", System.currentTimeMillis());
-        settlementMap.put("extraCost", request.getExtraCost());
-        settlementMap.put("lines", request.getLines());
-        settlementMap.put("note", request.getNote());
-        settlementMap.put("manager", request.getManagerUsername());
-
-        payload.setSettlement(settlementMap);
-        booking.setStatus("settlement_issued");
-
-        appendHistory(payload, request.getManagerUsername() != null ? request.getManagerUsername() : "Quản lý",
-                "Phát hành Bảng quyết toán phát sinh: " + request.getExtraCost() + " VND (kèm hóa đơn chứng từ đội ngoài). Chờ khách thanh toán.");
-
-        savePayload(booking, payload);
-        Booking updated = bookingRepository.save(booking);
-
-        logAction("SETTLEMENT_ISSUED", updated.getId(),
-                "Quản lý phát hành quyết toán " + request.getExtraCost() + " VND cho đơn BK-" + updated.getId());
-
-        log.info("Issued settlement statement for booking ID={}, amount={}", updated.getId(), request.getExtraCost());
-        return mapToResponse(updated);
-    }
-
-    @Override
-    @Transactional
     public void returnToHq(ReturnToHqRequest request) {
         if (request.getVehicleId() != null) {
             Vehicle vehicle = vehicleRepository.findById(request.getVehicleId())
