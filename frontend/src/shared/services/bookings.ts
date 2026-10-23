@@ -237,9 +237,9 @@ export const customerBookingsApi = {
 async function listForRole() {
   const role = backofficeRole()
   if (role === 'driver' || role === 'escort') {
-    const bookings = await backendBookingApi.myFieldBookings()
-    const incidents = await Promise.all(bookings.map(booking => backendIncidentApi.getByBooking(booking.numericId)))
-    return bookings.map((booking, index) => ({ ...booking, incidents: incidents[index] }))
+    // Đơn và sự cố của mọi chuyến tải song song, mỗi loại một request
+    const [bookings, incidents] = await Promise.all([backendBookingApi.myFieldBookings(), backendIncidentApi.getMyFieldIncidents()])
+    return bookings.map(booking => ({ ...booking, incidents: incidents.filter(i => i.bookingId === booking.numericId) }))
   }
   if (role === 'coordinator') {
     const [bookings, incidents] = await Promise.all([backendBookingApi.getCoordinatorBookings(), backendIncidentApi.list()])
