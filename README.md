@@ -39,13 +39,33 @@ Tài khoản và dữ liệu đã có trong database không bị xóa.
 
 ### Cách 2: Chạy thủ công trên máy (Local Dev)
 
+Mỗi người dùng một database Postgres riêng trên máy mình. Backend mặc định kết nối Postgres local,
+nên chạy trên máy không bao giờ đụng vào database của bản deploy (Aiven). Không dùng mật khẩu Aiven khi code.
+
+#### 0. Database Postgres + pgAdmin (Docker)
+```bash
+docker compose up -d postgres pgadmin
+```
+- Postgres: `localhost:5432`, database `horse_transport_db`, user `postgres`, mật khẩu `RaceHorse@2026`.
+- Xem bảng và dữ liệu: mở `http://localhost:5050` → **Servers → RaceHorse local** → nhập mật khẩu ở trên
+  (tick *Save Password*) → **Databases → horse_transport_db → Schemas → public → Tables**,
+  chuột phải một bảng → *View/Edit Data*.
+- Làm lại database từ đầu (xoá toàn bộ dữ liệu local): `docker compose down -v` rồi chạy lại lệnh trên.
+
 #### 1. Backend (`backend/`)
-- Mở thư mục `backend/` trong IntelliJ IDEA hoặc chạy lệnh:
+- Lần đầu nên bật seeder để có sẵn danh mục, xe, quy định giấy tờ và tài khoản mẫu
+  (chỉ nạp vào bảng đang trống, chạy lại không bị nhân đôi):
   ```bash
   cd backend
-  ./mvnw spring-boot:run
+  APP_SEED_REFERENCE_DATA=true ./mvnw spring-boot:run
   ```
+  PowerShell: `$env:APP_SEED_REFERENCE_DATA="true"; ./mvnw spring-boot:run`.
+  IntelliJ: thêm `APP_SEED_REFERENCE_DATA=true` vào *Environment variables* của Run Configuration.
 - Backend chạy mặc định tại: `http://localhost:8080` (Context-path: `/api/v1`).
+- Tài khoản mẫu: `admin01`, `manager01`, `coordinator01`, `specialist01`, `driver01`–`driver03`,
+  `escort01`–`escort03` (đăng nhập bằng email `<tên>@gmail.com`); mật khẩu xem tài liệu nhóm (tab Data).
+- Thanh toán VNPay về đúng trang local: đặt thêm `VNPAY_RETURN_URL=http://localhost:5173/payment/vnpay-return`.
+- Cần xem câu SQL backend chạy: đặt thêm `SPRING_JPA_SHOW_SQL=true`.
 
 #### 2. Frontend (`frontend/`)
 - Di chuyển vào thư mục `frontend/`, cài đặt thư viện và chạy:
@@ -57,3 +77,5 @@ Tài khoản và dữ liệu đã có trong database không bị xóa.
 - Customer App: `http://localhost:5173/`
 - Backoffice / Admin App: `http://localhost:5173/backoffice`
 - Vite đã cấu hình proxy tự động chuyển tiếp `/api/v1` sang `http://localhost:8080/api/v1`.
+- Bản đồ Vietmap cần key: tạo `frontend/.env` (đã được gitignore) theo mẫu `frontend/.env.example`
+  và điền `VITE_VIETMAP_API_KEY`. Thiếu key thì bản đồ để trống, các chức năng khác vẫn chạy.
