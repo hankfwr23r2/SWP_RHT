@@ -26,6 +26,7 @@ import com.example.racehorse_transport.dto.coordinator.CoordinatorPlanRequest;
 import com.example.racehorse_transport.dto.coordinator.VehicleTripDto;
 import com.example.racehorse_transport.dto.manager.*;
 import com.example.racehorse_transport.service.FleetService;
+import com.example.racehorse_transport.util.BookingDetailsJson;
 import com.example.racehorse_transport.util.CustomerBookingRules;
 
 import java.math.BigDecimal;
@@ -559,22 +560,7 @@ public class BookingServiceImpl implements BookingService {
         bookingVehicleRepository.saveAll(newVehicles);
 
         // 5. Cập nhật detailsJson của Booking
-        BookingDetailsPayload payload = new BookingDetailsPayload();
-        if (booking.getDetailsJson() != null && !booking.getDetailsJson().trim().isEmpty()) {
-            String existingJson = booking.getDetailsJson().trim();
-            try {
-                if (existingJson.startsWith("{")) {
-                    payload = objectMapper.readValue(existingJson, BookingDetailsPayload.class);
-                } else if (existingJson.startsWith("[")) {
-                    List<BookingHorseDto> horses = objectMapper.readValue(existingJson,
-                            new TypeReference<List<BookingHorseDto>>() {
-                            });
-                    payload.setHorses(horses);
-                }
-            } catch (Exception ex) {
-                log.warn("Error reading existing detailsJson: {}", ex.getMessage());
-            }
-        }
+        BookingDetailsPayload payload = BookingDetailsJson.read(objectMapper, booking);
 
         payload.setTrips(request.getTrips());
         payload.setRoute(request.getRoute());
@@ -1240,22 +1226,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private BookingDetailsPayload extractPayload(Booking booking) {
-        BookingDetailsPayload payload = new BookingDetailsPayload();
-        if (booking.getDetailsJson() != null && !booking.getDetailsJson().trim().isEmpty()) {
-            String json = booking.getDetailsJson().trim();
-            try {
-                if (json.startsWith("{")) {
-                    payload = objectMapper.readValue(json, BookingDetailsPayload.class);
-                } else if (json.startsWith("[")) {
-                    List<BookingHorseDto> horses = objectMapper.readValue(json,
-                            new TypeReference<List<BookingHorseDto>>() {
-                            });
-                    payload.setHorses(horses);
-                }
-            } catch (JsonProcessingException ex) {
-                throw new IllegalStateException("Không thể đọc chi tiết đơn " + booking.getId() + ".", ex);
-            }
-        }
+        BookingDetailsPayload payload = BookingDetailsJson.read(objectMapper, booking);
         if (payload.getMedical() == null) {
             Map<String, Object> med = new HashMap<>();
             med.put("status", "pending");

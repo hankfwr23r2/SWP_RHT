@@ -7,6 +7,7 @@ import com.example.racehorse_transport.dto.specialist.*;
 import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.repository.*;
 import com.example.racehorse_transport.service.SpecialistService;
+import com.example.racehorse_transport.util.BookingDetailsJson;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -457,17 +458,7 @@ public class SpecialistServiceImpl implements SpecialistService {
     }
 
     private BookingDetailsPayload extractPayload(Booking booking) {
-        BookingDetailsPayload payload = new BookingDetailsPayload();
-        if (booking.getDetailsJson() != null && !booking.getDetailsJson().trim().isEmpty()) {
-            String json = booking.getDetailsJson().trim();
-            try {
-                if (json.startsWith("{")) {
-                    payload = objectMapper.readValue(json, BookingDetailsPayload.class);
-                }
-            } catch (Exception ex) {
-                log.warn("Error reading detailsJson: {}", ex.getMessage());
-            }
-        }
+        BookingDetailsPayload payload = BookingDetailsJson.read(objectMapper, booking);
         if (payload.getMedical() == null) {
             Map<String, Object> med = new HashMap<>();
             med.put("status", "pending");

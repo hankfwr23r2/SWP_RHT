@@ -8,6 +8,7 @@ import com.example.racehorse_transport.dto.field.*;
 import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.repository.*;
 import com.example.racehorse_transport.service.DeliveryService;
+import com.example.racehorse_transport.util.BookingDetailsJson;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -232,14 +233,7 @@ public class DeliveryServiceImpl implements DeliveryService {
     }
 
     private BookingDetailsPayload extractPayload(Booking b) {
-        if (b.getDetailsJson() != null && !b.getDetailsJson().trim().isEmpty()) {
-            try {
-                if (b.getDetailsJson().trim().startsWith("{")) {
-                    return objectMapper.readValue(b.getDetailsJson().trim(), BookingDetailsPayload.class);
-                }
-            } catch (Exception ignored) {}
-        }
-        return new BookingDetailsPayload();
+        return BookingDetailsJson.read(objectMapper, b);
     }
 
     private void savePayload(Booking b, BookingDetailsPayload payload) {
