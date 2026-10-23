@@ -85,6 +85,16 @@ docker compose up -d postgres pgadmin
 - Xem bảng và dữ liệu: mở `http://localhost:5050` → **Servers → RaceHorse local** → nhập mật khẩu ở trên
   (tick *Save Password*) → **Databases → horse_transport_db → Schemas → public → Tables**,
   chuột phải một bảng → *View/Edit Data*.
+- Chạy câu SQL: chọn `horse_transport_db` → **Tools → Query Tool** (`Alt+Shift+Q`), gõ câu lệnh rồi bấm `F5`.
+  Lưới dữ liệu không tự cập nhật khi backend ghi thêm: bấm `F5` lại; bảng mới do backend tạo thì chuột phải
+  **Tables → Refresh**.
+- Không thấy máy chủ **RaceHorse local**: pgAdmin chỉ đọc `docker/pgadmin/servers.json` lần đầu khởi động.
+  Xoá phần cài đặt của pgAdmin (không mất dữ liệu Postgres) rồi bật lại:
+  `docker compose rm -sf pgadmin && docker volume rm swp_rht_pgadmin_data && docker compose up -d pgadmin`
+  (tên volume xem bằng `docker volume ls`). Hoặc tự thêm máy chủ: *Host* `postgres` (không phải `localhost`,
+  vì pgAdmin chạy trong Docker), *Port* `5432`, user và mật khẩu như trên.
+- Bảng trống: chưa bật seeder, xem mục Backend bên dưới.
+- Dùng IntelliJ, DBeaver hoặc pgAdmin cài trên máy thay cho bản web: kết nối `localhost:5432` với thông tin trên.
 - Làm lại database từ đầu (xoá toàn bộ dữ liệu local): `docker compose down -v` rồi chạy lại lệnh trên.
 
 #### 1. Backend (`backend/`)
