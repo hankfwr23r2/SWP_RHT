@@ -47,17 +47,7 @@ public class DeliveryController {
         return ResponseEntity.ok(ApiResponse.success(response, "Đã ghi nhận ngoại lệ quá giờ bàn giao và kích hoạt an sinh ngựa"));
     }
 
-    // 4. Manager đối soát hóa đơn đội ngoài & phát hành Bảng quyết toán phát sinh
-    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
-    @PostMapping("/{id}/settlement")
-    public ResponseEntity<ApiResponse<BookingResponse>> issueSettlement(
-            @PathVariable("id") Integer id,
-            @RequestBody IssueSettlementRequest request) {
-        BookingResponse response = deliveryService.issueSettlement(id, request);
-        return ResponseEntity.ok(ApiResponse.success(response, "Quản lý đã phát hành Bảng quyết toán phát sinh thành công"));
-    }
-
-    // 5. Kíp xe xác nhận xe đã về đến Trụ sở chính Việt Nam -> Xe về AVAILABLE
+    // 4. Kíp xe xác nhận xe đã về đến Trụ sở chính Việt Nam -> Xe về AVAILABLE
     @PreAuthorize("hasAnyRole('DRIVER', 'COORDINATOR', 'ADMIN')")
     @PostMapping("/vehicles/return-to-hq")
     public ResponseEntity<ApiResponse<String>> returnToHq(@RequestBody ReturnToHqRequest request) {

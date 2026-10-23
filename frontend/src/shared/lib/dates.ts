@@ -31,18 +31,6 @@ export function shiftWorkingDays(t: Time, n: number) {
   return d
 }
 
-// Số ngày làm việc trong khoảng (from, to] tính theo ngày
-export function workingDaysBetween(from: Time, to: Time) {
-  const d = startOfDay(from)
-  const end = startOfDay(to)
-  let count = 0
-  while (d < end) {
-    d.setDate(d.getDate() + 1)
-    if (isWorkingDay(d)) count++
-  }
-  return count
-}
-
 // Lùi `days` ngày lịch, rơi vào ngày nghỉ thì lùi tiếp về ngày làm việc gần nhất (giữ giờ)
 export function lastWorkingDayBefore(t: Time, days: number) {
   const d = new Date(t)
@@ -51,4 +39,3 @@ export function lastWorkingDayBefore(t: Time, days: number) {
   return d
 }
 
-export const today = () => startOfDay(Date.now())

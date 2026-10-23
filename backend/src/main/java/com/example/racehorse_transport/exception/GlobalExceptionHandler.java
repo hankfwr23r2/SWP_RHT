@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.exception;
 
 import com.example.racehorse_transport.response.ApiResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -8,10 +9,12 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -26,6 +29,22 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Object>> handleIllegalArgumentException(IllegalArgumentException ex) {
         ApiResponse<Object> response = ApiResponse.error(ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    // Thao tác không hợp lệ với trạng thái hiện tại (VD: đơn không còn chờ bổ sung hồ sơ): lỗi nghiệp vụ, không phải lỗi máy chủ.
+    // Trước đây rơi xuống handler chung nên trả 500, nhìn trên Render/Network như backend bị sập.
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<ApiResponse<Object>> handleIllegalStateException(IllegalStateException ex) {
+        log.warn("Từ chối thao tác: {}", ex.getMessage());
+        ApiResponse<Object> response = ApiResponse.error(ex.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+    }
+
+    // Gọi sai đường dẫn API
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Object>> handleNoResourceFound(NoResourceFoundException ex) {
+        ApiResponse<Object> response = ApiResponse.error("Không tìm thấy API: /" + ex.getResourcePath());
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
 
     // Bắt lỗi Validation (@Valid, @NotBlank, @Email...)
@@ -50,6 +69,8 @@ public class GlobalExceptionHandler {
     // Bắt các lỗi chung chưa được xử lý cụ thể
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleGeneralException(Exception ex) {
+        // Ghi kèm stack trace để tìm được nguyên nhân trong log Render
+        log.error("Lỗi chưa xử lý", ex);
         ApiResponse<Object> response = ApiResponse.error(ex.getMessage() != null ? ex.getMessage() : "Lỗi hệ thống");
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }

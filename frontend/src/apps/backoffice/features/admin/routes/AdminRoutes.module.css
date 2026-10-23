@@ -1,0 +1,40 @@
+/* Trang tuyến đường cố định của quản trị viên */
+.form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.full { grid-column: 1 / -1; }
+
+.stopsHead { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin: 20px 0 10px; }
+.stopsHead i { color: var(--orange); }
+.stopsHead small { font-size: 0.82rem; font-weight: normal; color: var(--muted); }
+
+.picked { display: grid; gap: 6px; margin-bottom: 16px; padding: 12px; background: var(--bg-page); border: 1px solid var(--line); border-radius: 8px; }
+.pickedTitle { font-size: 0.85rem; font-weight: 600; margin-bottom: 2px; }
+.pickedRow { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 12px; background: white; border: 1px solid var(--line); border-radius: 6px; font-size: 0.88rem; }
+.pickedName { display: flex; align-items: center; gap: 10px; }
+.rowActions { display: flex; gap: 4px; }
+.rowActions :global(.btn) { padding: 2px 8px; }
+
+.order { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 50%; background: var(--orange); color: white; font-size: 0.78rem; font-weight: 700; }
+.orderLg { width: 28px; height: 28px; font-size: 0.85rem; }
+
+.choices { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; max-height: 220px; overflow-y: auto; padding: 8px; border: 1px solid var(--line); border-radius: 8px; }
+.choice { display: flex; align-items: flex-start; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: white; font-size: 0.85rem; cursor: pointer; }
+.choice input { margin-top: 3px; }
+.choice b { display: block; font-weight: 600; }
+.choice small { display: block; font-size: 0.78rem; color: var(--muted); }
+.choiceOn { border-color: var(--orange); background: var(--orange-soft); }
+
+.notice { padding: 24px; text-align: center; color: var(--muted); }
+.stopList { display: grid; gap: 10px; }
+.stop { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bg-page); border: 1px solid var(--line); border-radius: 8px; }
+.stop > div > b { display: block; font-size: 0.95rem; }
+.stop small { display: block; font-size: 0.82rem; color: var(--muted); }
+.stop small b { color: var(--text); }
+
+.name b { color: var(--navy); }
+.name span { margin-right: 6px; color: var(--orange); }
+.name small { display: block; margin-top: 2px; font-size: 0.82rem; color: var(--muted); }
+.actions { display: flex; justify-content: flex-end; gap: 6px; }
+.pause { color: var(--red); }
+.resume { color: var(--green); }
+
+@media (max-width: 700px) { .form { grid-template-columns: 1fr; } }

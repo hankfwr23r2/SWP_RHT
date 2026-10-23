@@ -8,7 +8,6 @@ import com.example.racehorse_transport.dto.field.*;
 import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.repository.*;
 import com.example.racehorse_transport.service.DeliveryService;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -197,36 +196,6 @@ public class DeliveryServiceImpl implements DeliveryService {
                 "Kích hoạt xử lý ngoại lệ bàn giao quá giờ: " + action + ", chi phí dự kiến: " + request.getEstimatedCost());
 
         log.info("Delivery timeout reported for booking ID={}, action={}", updated.getId(), action);
-        return mapToResponse(updated);
-    }
-
-    @Override
-    @Transactional
-    public BookingResponse issueSettlement(Integer bookingId, IssueSettlementRequest request) {
-        Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng ID: " + bookingId));
-
-        BookingDetailsPayload payload = extractPayload(booking);
-        Map<String, Object> settlementMap = new HashMap<>();
-        settlementMap.put("issuedAt", System.currentTimeMillis());
-        settlementMap.put("extraCost", request.getExtraCost());
-        settlementMap.put("lines", request.getLines());
-        settlementMap.put("note", request.getNote());
-        settlementMap.put("manager", request.getManagerUsername());
-
-        payload.setSettlement(settlementMap);
-        booking.setStatus("settlement_issued");
-
-        appendHistory(payload, request.getManagerUsername() != null ? request.getManagerUsername() : "Quản lý",
-                "Phát hành Bảng quyết toán phát sinh: " + request.getExtraCost() + " VND (kèm hóa đơn chứng từ đội ngoài). Chờ khách thanh toán.");
-
-        savePayload(booking, payload);
-        Booking updated = bookingRepository.save(booking);
-
-        logAction("SETTLEMENT_ISSUED", updated.getId(),
-                "Quản lý phát hành quyết toán " + request.getExtraCost() + " VND cho đơn BK-" + updated.getId());
-
-        log.info("Issued settlement statement for booking ID={}, amount={}", updated.getId(), request.getExtraCost());
         return mapToResponse(updated);
     }
 

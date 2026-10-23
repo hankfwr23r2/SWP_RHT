@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.dto.route;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -26,6 +27,7 @@ public class CreateRouteRequest implements Serializable {
 
     private String status; // ACTIVE, INACTIVE
 
+    @Valid
     private List<RouteStopItem> stops;
 
     @Getter

@@ -369,7 +369,6 @@ export function crewClashOf(booked: Booked[] | undefined, departAt: number, now 
 }
 
 export const tripIdFor = (bookingId: string, index: number) => `TRP-${bookingId.slice(-4)}-${index}`
-export const waybillNoOf = (bookingId: string) => `VD-${bookingId.slice(-4)}`
 
 // Nhân viên đang hoạt động (không nghỉ), có thể giao việc. Manager chỉ cần biết điều này, không xem số đơn họ đang làm.
 export function activeStaff(staff: StaffMember[], task: 'specialist' | 'coordinator') {
@@ -389,7 +388,6 @@ export const defaultClearanceItems = (type: Booking['type']): ClearanceItem[] =>
   (Object.keys(CLEARANCE_DOC) as ClearanceDocType[])
     .filter(t => CLEARANCE_DOC[t].base && (type === 'international' || !CLEARANCE_DOC[t].international))
     .map(t => ({ type: t, status: 'todo', note: '', photos: [] }))
-export const blankClearance = (type: Booking['type']): Clearance => ({ items: defaultClearanceItems(type), horsesCleared: [] })
 export const clearanceProgress = (c: Clearance) => ({ done: c.items.filter(i => i.status === 'done').length, total: c.items.length })
 
 // Lý do chưa hoàn tất được (null = được)
@@ -675,27 +673,6 @@ export function manifestDocuments(b: Pick<Booking, 'type'>) {
       'Phiếu xét nghiệm EIA/EVA, bản gốc kèm 02 bản sao công chứng',
     ],
   }
-}
-
-// ===== Hành trình thực tế (Flow 4, PRD mục 5) =====
-// Các mốc check-in của chuyến: đón ngựa, từng trạm nghỉ, cửa khẩu và thông quan (quốc tế), giao ngựa
-export function buildCheckpoints(b: Pick<Booking, 'type' | 'origin' | 'dest' | 'route' | 'gate'>): Checkpoint[] {
-  const r = b.route
-  if (!r) return []
-  const place = (n: string) => n.split(' — ')[0]
-  const rests: Checkpoint[] = r.rests.map((x, i) => ({ id: `rest-${i + 1}`, type: 'rest', label: `Trạm nghỉ ${i + 1}`, place: x.name, plannedAt: r.legs[i]?.arriveAt ?? r.legs[0].departAt }))
-  const mid: Checkpoint[] = [...rests]
-  if (b.type === 'international' && r.borderEta) {
-    mid.push({ id: 'border', type: 'border', label: 'Tới cửa khẩu', place: b.gate ?? 'Cửa khẩu', plannedAt: r.borderEta })
-    mid.push({ id: 'customs', type: 'customs', label: 'Hoàn tất thông quan', place: b.gate ?? 'Cửa khẩu', plannedAt: r.borderEta + 90 * 60_000 })
-  }
-  mid.sort((x, y) => x.plannedAt - y.plannedAt || (x.type === 'border' ? -1 : 0))
-  const last = r.legs[r.legs.length - 1]
-  return [
-    { id: 'pickup', type: 'pickup', label: 'Nhận ngựa tại điểm đón', place: place(b.origin.name), plannedAt: r.legs[0].departAt },
-    ...mid,
-    { id: 'delivery', type: 'delivery', label: 'Bàn giao tại điểm giao', place: place(b.dest.name), plannedAt: Math.max(last.arriveAt, (mid[mid.length - 1]?.plannedAt ?? 0) + 30 * 60_000) },
-  ]
 }
 
 // Mốc đang chờ làm: mốc đầu tiên chưa hoàn tất

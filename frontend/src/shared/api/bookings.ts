@@ -134,6 +134,12 @@ export const backendBookingApi = {
     return res.data.data
   },
 
+  // Coordinator / Manager / Admin xem chi tiết một đơn (GET /api/v1/coordinator/bookings/{id})
+  getCoordinatorBookingById: async (id: number | string): Promise<BackendBookingResponse> => {
+    const res = await apiClient.get<ApiResponse<BackendBookingResponse>>(`/coordinator/bookings/${id}`)
+    return res.data.data
+  },
+
   // 6. Coordinator chốt xe & lộ trình (POST /api/v1/coordinator/bookings/{id}/fleet-plan)
   confirmFleetPlan: async (id: number | string, payload: { by?: string; trips: Array<{ vehicleId: string; horseIds: string[]; driverId?: string; escortId?: string; tripId?: string }>; route?: any; gate?: string; note?: string }): Promise<BackendBookingResponse> => {
     const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/coordinator/bookings/${id}/fleet-plan`, payload)
@@ -198,6 +204,12 @@ export const backendBookingApi = {
   // 18. Driver/Escort lấy CHÍNH XÁC chuyến được phân công cho mình (GET /api/v1/field/bookings/mine)
   myFieldBookings: async (): Promise<BackendBookingResponse[]> => {
     const res = await apiClient.get<ApiResponse<BackendBookingResponse[]>>('/field/bookings/mine')
+    return res.data.data
+  },
+
+  // Tài xế / hộ tống xem chi tiết một đơn (GET /api/v1/field/bookings/{id})
+  getFieldBookingById: async (id: number | string): Promise<BackendBookingResponse> => {
+    const res = await apiClient.get<ApiResponse<BackendBookingResponse>>(`/field/bookings/${id}`)
     return res.data.data
   },
 }

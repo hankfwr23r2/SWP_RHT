@@ -2,9 +2,6 @@ import type { Role } from './role'
 
 export type AccountStatus = 'active' | 'locked'
 
-// Chỉ dùng để tạo tài khoản trong fixture kiểm thử.
-export const ADMIN_EMAIL = 'admin@equine.vn'
-
 export interface AccountLog {
   time: number
   actor: string

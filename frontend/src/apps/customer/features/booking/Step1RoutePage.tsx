@@ -612,15 +612,15 @@ export default function Step1RoutePage() {
         )}
 
         {routeReady && (
-          <div style={{ marginTop: 16, padding: '12px 16px', background: 'var(--surface-soft, #f8fafc)', border: '1px solid var(--line, #e2e8f0)', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--primary-soft, #fff7ed)', color: 'var(--orange, #ea580c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', flexShrink: 0 }}>
+          <div className={s.corridorNote}>
+            <span className={s.corridorIcon}>
               <i className="fa-solid fa-shield-halved" />
-            </div>
-            <div style={{ fontSize: '0.88rem', lineHeight: 1.4 }}>
-              <b style={{ color: 'var(--text-strong)' }}>Bảo trợ Hành lang An toàn (Mô hình Nút giao tiếp cận):</b>
-              <div style={{ color: 'var(--muted)', marginTop: 2 }}>
+            </span>
+            <div>
+              <b>Bảo trợ Hành lang An toàn (Mô hình Nút giao tiếp cận):</b>
+              <p>
                 Xe chuyên dụng sẽ đón tận nơi tại trang trại của bạn, sau đó nhập vào nút giao cao tốc gần nhất để di chuyển trên hành lang an toàn đã được kiểm định thú y.
-              </div>
+              </p>
             </div>
           </div>
         )}

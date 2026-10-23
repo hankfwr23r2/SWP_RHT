@@ -4,7 +4,6 @@ import com.example.racehorse_transport.dto.payment.*;
 import com.example.racehorse_transport.response.ApiResponse;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.service.PaymentService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;

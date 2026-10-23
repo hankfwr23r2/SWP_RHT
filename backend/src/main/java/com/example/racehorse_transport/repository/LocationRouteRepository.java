@@ -20,4 +20,4 @@ public interface LocationRouteRepository extends JpaRepository<LocationRoute, Lo
     @Transactional
     @Query("DELETE FROM LocationRoute lr WHERE lr.id.routeID = :routeId")
     void deleteByRouteId(@Param("routeId") Integer routeId);
-}
+}

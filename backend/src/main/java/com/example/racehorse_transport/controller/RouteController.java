@@ -1,6 +1,5 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.CheckInRequest;
 import com.example.racehorse_transport.dto.LocationRouteDTO;
 import com.example.racehorse_transport.dto.RouteDTO;
 import com.example.racehorse_transport.entity.LocationRoute;
@@ -11,6 +10,7 @@ import jakarta.validation.Valid;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -62,19 +62,8 @@ public class RouteController {
         return ResponseEntity.ok(ApiResponse.success(dtos, "Lấy danh sách điểm dừng thành công"));
     }
 
-    // 4. Dev 4: Tài xế check-in điểm dừng (kèm GPS / Hình ảnh)
-    @PostMapping("/check-in")
-    public ResponseEntity<ApiResponse<String>> checkIn(@Valid @RequestBody CheckInRequest request) {
-        routeService.checkInAtLocation(
-                request.getRouteId(),
-                request.getLocationId(),
-                request.getImageUrl(),
-                request.getGpsCoords()
-        );
-        return ResponseEntity.ok(ApiResponse.success("Tài xế đã check-in thành công tại điểm dừng", "Thành công"));
-    }
-
-    // 5. Admin: Tạo mới tuyến đường cố định
+    // 4. Admin: Tạo mới tuyến đường cố định
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public ResponseEntity<ApiResponse<RouteDTO>> createRoute(@Valid @RequestBody com.example.racehorse_transport.dto.route.CreateRouteRequest request) {
         Route created = routeService.createRoute(request);
@@ -82,7 +71,8 @@ public class RouteController {
         return ResponseEntity.ok(ApiResponse.success(dto, "Tạo tuyến đường cố định thành công"));
     }
 
-    // 6. Admin: Cập nhật tuyến đường cố định
+    // 5. Admin: Cập nhật tuyến đường cố định
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponse<RouteDTO>> updateRoute(
             @PathVariable Integer id,
@@ -92,7 +82,8 @@ public class RouteController {
         return ResponseEntity.ok(ApiResponse.success(dto, "Cập nhật tuyến đường thành công"));
     }
 
-    // 7. Admin: Ngừng kích hoạt tuyến đường
+    // 6. Admin: Ngừng kích hoạt tuyến đường
+    @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> deleteRoute(@PathVariable Integer id) {
         routeService.deactivateRoute(id);
@@ -114,4 +105,4 @@ public class RouteController {
         }
         return dto;
     }
-}
+}

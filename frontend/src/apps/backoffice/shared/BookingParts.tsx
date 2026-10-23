@@ -1,5 +1,4 @@
 // Thành phần dùng chung cho các trang nội bộ của Flow 1: tóm tắt đơn, tiến độ hai nhánh, nhật ký.
-import type { ReactNode } from 'react'
 import { COUNTRIES } from '@shared/config/network'
 import { insuranceFee } from '@shared/lib/booking'
 import { formatDate, formatDateTime } from '@shared/lib/format'
@@ -132,49 +131,5 @@ export function FilterNav<T extends string>({ tabs, value, onChange }: { tabs: [
         <button key={k} className={`${s.filterItem} ${value === k ? s.filterItemOn : ''}`} aria-pressed={value === k} onClick={() => onChange(k)}><span>{label}</span><span className={s.count}>{n}</span></button>
       ))}
     </nav>
-  )
-}
-
-// Trang danh sách: bộ lọc dọc bên trái, danh sách đơn dạng thẻ bên phải
-export function ListLayout<T extends string>({ tabs, value, onChange, children }: { tabs: [T, string, number][]; value: T; onChange: (v: T) => void; children: ReactNode }) {
-  return (
-    <div className={s.listLayout}>
-      <FilterNav tabs={tabs} value={value} onChange={onChange} />
-      <div className={s.cards}>{children}</div>
-    </div>
-  )
-}
-
-export function EmptyCard({ icon = 'fa-circle-check', text }: { icon?: string; text: string }) {
-  return <div className={`card ${s.empty}`}><i className={`fa-solid ${icon}`} />{text}</div>
-}
-
-interface OrderCardProps {
-  id: string
-  customer: string
-  route: string // "Điểm đón → Điểm giao"
-  kind: string // Trong nước / Quốc tế · cửa khẩu
-  badge?: ReactNode // trạng thái
-  meta?: [icon: string, label: string, value: ReactNode][] // các thông tin nhỏ dưới tuyến
-  note?: ReactNode // dòng nổi bật (tiến độ, cảnh báo)
-  side?: ReactNode // số tiền...
-  action?: ReactNode // nút thao tác
-  alert?: boolean
-}
-// Một đơn là một thẻ chữ nhật
-export function OrderCard({ id, customer, route, kind, badge, meta = [], note, side, action, alert }: OrderCardProps) {
-  return (
-    <article className={`${s.ordCard} ${alert ? s.ordAlert : ''}`}>
-      <div>
-        <div className={s.ordTop}><span className={s.id}>{id}</span>{badge}<span className="badge badge-muted">{kind}</span></div>
-        <div className={s.ordRoute} title={route}>{route}</div>
-        <div className={s.ordMeta}>
-          <span><i className="fa-solid fa-user" aria-hidden="true" />{customer}</span>
-          {meta.map(([icon, label, value]) => <span key={label}><i className={`fa-solid ${icon}`} aria-hidden="true" />{label}: <b>{value}</b></span>)}
-        </div>
-        {note && <div className={s.ordNote}>{note}</div>}
-      </div>
-      <div className={s.ordSide}>{side}{action}</div>
-    </article>
   )
 }

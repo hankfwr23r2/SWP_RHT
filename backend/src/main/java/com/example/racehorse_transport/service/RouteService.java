@@ -19,14 +19,9 @@ public interface RouteService {
     List<LocationRoute> getStopsByRouteId(Integer routeId);
 
     // ==========================================
-    // Dev 4: Tài xế check-in tại điểm dừng
-    // ==========================================
-    boolean checkInAtLocation(Integer routeId, Integer locationId, String imageUrl, String gpsCoords);
-
-    // ==========================================
     // Admin: Quản lý tuyến đường cố định
     // ==========================================
     Route createRoute(CreateRouteRequest request);
     Route updateRoute(Integer id, CreateRouteRequest request);
     void deactivateRoute(Integer id);
-}
+}

@@ -263,16 +263,22 @@ async function listForRole() {
   return []
 }
 
-const byId = async (id: string): Promise<Booking> => {
-  const b = (await listForRole()).find(x => x.id === id)
-  if (!b) throw new Error(`Không tìm thấy đơn ${id}.`)
-  return toBooking(b)
+// Một đơn theo vai trò đang đăng nhập: gọi endpoint chi tiết của đơn đó thay vì tải cả danh sách rồi lọc
+async function getForRole(id: string) {
+  const role = backofficeRole()
+  if (role === 'specialist') return specialistApi.getBookingDetail(id)
+  const booking = role === 'driver' || role === 'escort'
+    ? await backendBookingApi.getFieldBookingById(id)
+    : await backendBookingApi.getCoordinatorBookingById(id)
+  return { ...booking, incidents: await backendIncidentApi.getByBooking(booking.numericId) }
 }
+
+const byId = async (id: string): Promise<Booking> => toBooking(await getForRole(id))
 
 // Dành cho app nội bộ
 export const bookingsApi = {
   list: async (): Promise<Booking[]> => (await listForRole()).map(r => toBooking(r)).sort((a, b) => b.createdAt - a.createdAt),
-  get: async (id: string): Promise<Booking | undefined> => (await bookingsApi.list()).find(b => b.id === id),
+  get: async (id: string): Promise<Booking | undefined> => byId(id),
 
   // ===== Flow 1 =====
   activate: async (id: string, by: string, specialist: StaffRef, coordinator: StaffRef): Promise<Booking> =>
