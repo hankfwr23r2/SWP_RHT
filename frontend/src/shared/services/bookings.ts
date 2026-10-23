@@ -133,12 +133,11 @@ export const publicBookingsApi = {
 // Dành cho app khách
 export const customerBookingsApi = {
   list: async (customer: string): Promise<CustomerBookingView[]> => {
-    const bookings = await backendBookingApi.getCustomerBookings()
-    const withIncidents = await Promise.all(bookings.map(async booking => ({
-      ...booking,
-      incidents: await backendIncidentApi.getByBooking(booking.numericId),
-    })))
-    return withIncidents.map(r => toCustomerBooking(r, r.incidents, customer)).sort((a, b) => b.createdAt - a.createdAt)
+    // Đơn và sự cố của mọi đơn tải song song, mỗi loại một request
+    const [bookings, incidents] = await Promise.all([backendBookingApi.getCustomerBookings(), backendIncidentApi.getMine()])
+    return bookings
+      .map(b => toCustomerBooking(b, incidents.filter(i => i.bookingId === b.numericId), customer))
+      .sort((a, b) => b.createdAt - a.createdAt)
   },
   get: async (customer: string, id: string): Promise<CustomerBookingView | undefined> => {
     const booking = await backendBookingApi.getCustomerBookingById(id)

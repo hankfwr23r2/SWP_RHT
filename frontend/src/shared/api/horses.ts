@@ -105,6 +105,12 @@ export const backendHorseApi = {
     return res.data.data
   },
 
+  // Khách lấy tài liệu của mọi ngựa của mình
+  getMyDocuments: async (): Promise<BackendHorseDocResponse[]> => {
+    const res = await apiClient.get<ApiResponse<BackendHorseDocResponse[]>>('/horse-documents/mine')
+    return res.data.data
+  },
+
   // Upload tài liệu ngựa
   uploadDocument: async (horseId: number, documentType: string, file: File): Promise<BackendHorseDocResponse> => {
     const formData = new FormData()
