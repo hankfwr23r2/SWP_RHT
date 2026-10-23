@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router'
 import { useAuth } from '../auth/AuthContext'
 import { formatDateTime } from '../lib/format'
 import { noticesApi, type Notice } from '../services/notices'
+import { useAutoRefresh } from '../services/useLoad'
 import { useToast } from './toast'
 import s from './NoticeBell.module.css'
 
@@ -27,12 +28,10 @@ export function NoticeBell() {
       if (request === listRequest.current) setItems(nextItems)
     })
   }, [role])
-  // Cập nhật định kỳ để thấy tin mới do vai trò khác vừa gửi (cùng tab)
-  useEffect(() => {
-    load()
-    const t = setInterval(load, 3000)
-    return () => clearInterval(t)
-  }, [load])
+  // Cập nhật định kỳ để thấy tin mới do vai trò khác vừa gửi: 15 giây một lần và khi quay lại tab, bỏ qua lúc tab bị ẩn
+  // (trước đây 3 giây một lần kể cả tab ẩn, mỗi người dùng chiếm ~20 request/phút làm cạn kết nối DB)
+  useEffect(() => { load() }, [load])
+  useAutoRefresh(load)
   useEffect(() => {
     if (!open) return
     const onDown = (e: MouseEvent) => { if (!box.current?.contains(e.target as Node)) setOpen(false) }
