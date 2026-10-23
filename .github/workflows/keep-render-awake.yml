@@ -1,0 +1,17 @@
+# Render gói free tự ngủ khi 15 phút không có request; lần mở tiếp theo phải chờ backend khởi động lại (~1-2 phút).
+# Workflow này gọi /health 10 phút một lần để backend luôn thức. Chỉ chạy trên nhánh main (quy định của GitHub
+# với lịch hẹn giờ). GitHub có thể chạy trễ vài phút lúc cao điểm, nên trước buổi demo vẫn nên tự mở /health một lần.
+name: Keep Render awake
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping backend health
+        run: curl --fail --silent --show-error --max-time 180 --retry 3 --retry-delay 10 https://swp-rht-f9yd.onrender.com/api/v1/health
