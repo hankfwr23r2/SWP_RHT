@@ -227,7 +227,7 @@ export default function OrderDetailPage() {
   const { b, reload } = usePageData<typeof orderDetailLoader>()
   const [cancelling, setCancelling] = useState(false)
   const [picked, setPicked] = useState<Tab | null>(null)
-  const { data: team = [] } = useLoad(() => customerBookingsApi.team(owner, id), [owner, id, b?.status])
+  const { data: team = [] } = useLoad(() => customerBookingsApi.team(id), [id, b?.status])
   const reloadAll = () => reload()
   // Đang chạy: cập nhật định kỳ để thấy mốc check-in mới
   const running = ['en_route_to_pickup', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active'].includes(b?.status ?? '')

@@ -9,7 +9,7 @@ import { specialistApi } from '../api/specialist'
 import apiClient, { type ApiResponse } from '../api/client'
 import { paymentApi, type VnpayPaymentType } from '../api/payments'
 import { incidentKindOf, incidentStatusOf, toBooking } from './bookingMapper'
-import { vehiclesApi, crewApi } from './fleet'
+import { vehiclesApi } from './fleet'
 
 function numericId(id: string, prefix: string): number {
   const match = new RegExp(`^(?:${prefix}-)?(\\d+)$`, 'i').exec(id.trim())
@@ -181,22 +181,10 @@ export const customerBookingsApi = {
     return toCustomerView(toBooking(created, customer))
   },
   // Xe, tài xế, hộ tống của từng chuyến (chỉ của đơn mình, sau khi đã có báo giá)
-  team: async (customer: string, id: string): Promise<TripTeam[]> => {
+  team: async (id: string): Promise<TripTeam[]> => {
+    // Backend tự kiểm tra đơn thuộc khách và chỉ trả xe, kíp xe ở các trạng thái khách được xem
     try {
-      const b = toBooking(await backendBookingApi.getCustomerBookingById(id), customer)
-      if (!b.trips || !SHOW_TEAM.includes(b.status)) return []
-      const [vehicles, crew] = await Promise.all([vehiclesApi.list(), crewApi.list()])
-      return b.trips.flatMap(t => {
-        const v = vehicles.find(x => sameVehicleId(x.id, t.vehicleId))
-        const driver = crew.find(x => x.id === t.driverId)
-        const escort = crew.find(x => x.id === t.escortId)
-        if (!v || !driver || !escort) return []
-        return [{
-          tripId: t.tripId, horseNames: b.horses.filter(h => t.horseIds.includes(h.horseId)).map(h => h.name),
-          vehicle: { plate: v.plate, kind: v.name, stalls: v.capacity },
-          driver: { name: driver.name, phone: driver.phone }, escort: { name: escort.name, phone: escort.phone },
-        }]
-      })
+      return await backendBookingApi.getCustomerTripTeam(id)
     } catch {
       return []
     }
