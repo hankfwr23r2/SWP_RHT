@@ -6,11 +6,9 @@ import com.example.racehorse_transport.entity.HorseDocument;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface HorseDocumentService {
     List<HorseDocument> findAll();
-    Optional<HorseDocument> findById(Integer id);
     HorseDocument save(HorseDocument entity);
     void deleteById(Integer id);
 
@@ -51,11 +49,4 @@ public interface HorseDocumentService {
      * @return Danh sách hồ sơ
      */
     List<HorseDocumentResponse> getDocumentsByHorse(Integer horseId);
-
-    /**
-     * Lấy danh sách hồ sơ đang chờ duyệt (status = PENDING).
-     *
-     * @return Danh sách hồ sơ chờ duyệt
-     */
-    List<HorseDocumentResponse> getPendingDocuments();
 }

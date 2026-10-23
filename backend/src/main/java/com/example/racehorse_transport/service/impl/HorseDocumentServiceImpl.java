@@ -16,7 +16,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -43,11 +42,6 @@ public class HorseDocumentServiceImpl implements HorseDocumentService {
     @Override
     public List<HorseDocument> findAll() {
         return horseDocumentRepository.findAll();
-    }
-
-    @Override
-    public Optional<HorseDocument> findById(Integer id) {
-        return horseDocumentRepository.findById(id);
     }
 
     @Override
@@ -195,19 +189,6 @@ public class HorseDocumentServiceImpl implements HorseDocumentService {
             throw new IllegalArgumentException("Không tìm thấy ngựa với ID: " + horseId);
         }
         return horseDocumentRepository.findByHorseID_Id(horseId)
-                .stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Lấy danh sách hồ sơ đang chờ duyệt (status = PENDING).
-     * Dành cho chuyên viên xem queue công việc cần xử lý.
-     */
-    @Override
-    @Transactional(readOnly = true)
-    public List<HorseDocumentResponse> getPendingDocuments() {
-        return horseDocumentRepository.findByStatus("PENDING")
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
