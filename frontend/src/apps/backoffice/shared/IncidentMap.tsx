@@ -4,6 +4,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useEffect, useRef, type ReactNode } from 'react'
 import type { GeoPoint, RescuePoint, TransitStation } from '@shared/config/network'
+import { addVietmapBaseLayer, VIETMAP_MAP_OPTIONS } from '@shared/ui/vietmapLeaflet'
 import '../features/coordinator/fleet-plan/RouteMapPicker.css'
 import './IncidentMap.css'
 
@@ -39,12 +40,9 @@ export function IncidentMap({ height = 460, location, origin, dest, gate, statio
 
   useEffect(() => {
     if (!box.current) return
-    const m = L.map(box.current, { zoomControl: false })
+    const m = L.map(box.current, { ...VIETMAP_MAP_OPTIONS, zoomControl: false })
     L.control.zoom({ position: 'topright' }).addTo(m)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    }).addTo(m)
+    addVietmapBaseLayer(m)
     m.setView([location.lat, location.lng], 10)
     layer.current = L.layerGroup().addTo(m)
     map.current = m
