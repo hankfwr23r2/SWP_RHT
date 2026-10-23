@@ -103,6 +103,7 @@ export function incidentOf(response: BackendIncidentResponse): Incident | undefi
     status: incidentStatusOf(response.status),
     expenses,
     ...(response.plan ? { plan: response.plan } : {}),
+    ...(response.directive ? { directive: response.directive } : {}),
     ...(response.rejection ? { rejection: response.rejection } : {}),
     ...(response.approval ? { approval: response.approval } : {}),
     ...(response.fitConfirmedAt !== undefined ? { fitConfirmedAt: response.fitConfirmedAt } : {}),

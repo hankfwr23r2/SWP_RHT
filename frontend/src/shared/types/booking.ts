@@ -230,6 +230,7 @@ export interface Incident {
   note: string
   status: IncidentStatus
   plan?: IncidentPlan
+  directive?: string
   rejection?: { reason: string; at: number; by: string }
   approval?: { at: number; by: string }
   fitConfirmedAt?: number // Escort xác nhận ngựa đủ sức đi tiếp (sự cố sức khỏe)
