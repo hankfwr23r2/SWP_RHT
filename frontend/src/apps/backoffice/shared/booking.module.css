@@ -14,9 +14,9 @@
 .chipWarn { background: var(--amber-soft); color: var(--amber); border-color: #fde68a; }
 
 .layout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; align-items: start; }
-.main { display: grid; gap: 16px; }
+.main { display: grid; gap: 16px; min-width: 0; }
 .main > :global(.card) + :global(.card), .side > :global(.card) + :global(.card) { margin-top: 0; }
-.side { display: grid; gap: 16px; position: sticky; top: 88px; }
+.side { display: grid; gap: 16px; position: sticky; top: 88px; min-width: 0; }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px 20px; }
 .grid dt { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); font-weight: 600; }
@@ -129,4 +129,3 @@
 .docFile b { font-size: 0.86rem; color: var(--navy); }
 .docFile small { font-size: 0.76rem; color: var(--muted); overflow-wrap: anywhere; }
 .docEmpty { display: grid; place-items: center; flex: none; width: 64px; height: 64px; border: 1.5px dashed var(--line); border-radius: 10px; color: var(--muted); }
-
