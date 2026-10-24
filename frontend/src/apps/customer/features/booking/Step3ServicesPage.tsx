@@ -1,46 +1,36 @@
-// Bước 3: cấu hình từng ngựa: khoang, gói thức ăn, cữ nước, bảo hiểm mua hoặc từ chối (PRD mục 2.2).
+// Bước 3: chọn dịch vụ đang được áp dụng cho từng ngựa.
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
-import { FEED_PACKAGE, FEED_PACKAGE_IDS, HORSE_BREEDS, WATER_PLAN, WATER_PLAN_IDS } from '@shared/config/booking-rules'
-import { insuranceFee } from '@shared/lib/booking'
 import { formatVND } from '@shared/lib/format'
 import { usePageData } from '@shared/routing/pageData'
-import { SEX_LABEL } from '@shared/types/booking'
+import { SEX_LABEL, type BookingServiceCategory } from '@shared/types/booking'
 import { PolicyLink } from '@shared/ui/PolicyLink'
+import type { ServiceCatalogItem } from '@shared/api/serviceCatalog'
 import { BookingShell } from './BookingShell'
 import type { horseListLoader } from '../horses/loaders'
-import { defaultConfig, useBookingDraft, type HorseConfig } from './draft'
+import { defaultConfig, isDeclinedInsurance, serviceOptionFor, useBookingDraft, type HorseConfig } from './draft'
 import s from './Booking.module.css'
 
-// Icon dấu chấm than: rê chuột (hoặc focus bằng bàn phím) thì xổ ra bảng phí bảo hiểm theo giống. Chỉ hiện phí, không hiện giá trị ngựa.
-function InsuranceNote({ id, breed }: { id: string; breed: string }) {
-  return (
-    <span className={s.note}>
-      <button type="button" className={s.noteBtn} aria-label="Lưu ý: phí bảo hiểm theo giống ngựa" aria-describedby={id}>
-        <i className="fa-solid fa-circle-exclamation" aria-hidden="true" />
-      </button>
-      <div id={id} role="tooltip" className={s.noteBox}>
-        <b>Phí bảo hiểm chuyến đi theo giống ngựa</b>
-        <table className={s.noteTable}>
-          <tbody>
-            {HORSE_BREEDS.map(b => {
-              const isCurrent = b === breed || (b === 'American Quarter Horse' && breed === 'Quarter Horse') || (!HORSE_BREEDS.includes(breed) && b === 'Khác')
-              return (
-                <tr key={b} className={isCurrent ? s.noteCurrent : undefined}><td>{b}</td><td>{formatVND(insuranceFee(b))}</td></tr>
-              )
-            })}
-          </tbody>
-        </table>
-      </div>
-    </span>
-  )
+const SERVICE_GROUPS: { key: BookingServiceCategory; categoryId: number; label: string; icon: string }[] = [
+  { key: 'stall', categoryId: 1, label: 'Khoang trên xe', icon: 'fa-border-all' },
+  { key: 'feed', categoryId: 2, label: 'Gói thức ăn', icon: 'fa-wheat-awn' },
+  { key: 'water', categoryId: 3, label: 'Cữ nước', icon: 'fa-faucet-droplet' },
+  { key: 'insurance', categoryId: 4, label: 'Bảo hiểm chuyến đi', icon: 'fa-shield-halved' },
+]
+
+function legacySelection(category: BookingServiceCategory, service: ServiceCatalogItem): Partial<HorseConfig> {
+  if (category === 'stall') return { stall: service.id === 2 ? 'single' : 'standard' }
+  if (category === 'feed') return { feedPackage: service.id === 4 ? 'advanced' : service.id === 5 ? 'sport' : 'basic' }
+  if (category === 'water') return { waterPlan: service.id === 7 ? 'every_2h' : service.id === 8 ? 'every_1h' : 'every_3h' }
+  return { insurance: isDeclinedInsurance(service) ? 'decline' : 'buy' }
 }
 
 export default function Step3ServicesPage() {
   const navigate = useNavigate()
   const { draft, save } = useBookingDraft()
-  const { horses } = usePageData<typeof horseListLoader>()
-  const [config, setConfig] = useState<Record<string, HorseConfig>>(() => Object.fromEntries(draft.horseIds.map(id => [id, { ...defaultConfig(), ...draft.config[id] }])))
+  const { horses, services = [] } = usePageData<typeof horseListLoader>()
+  const [config, setConfig] = useState<Record<string, HorseConfig>>(() =>
+    Object.fromEntries(draft.horseIds.map(id => [id, { ...defaultConfig(), ...draft.config[id] }])))
   const [activeIndex, setActiveIndex] = useState(0)
   const [ack, setAck] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -54,88 +44,92 @@ export default function Step3ServicesPage() {
 
   const rows = draft.horseIds.map(id => horses?.find(h => h.id === id)).filter(Boolean) as NonNullable<typeof horses>
   const activeHorse = rows[activeIndex]
-  const set = (id: string, patch: Partial<HorseConfig>) => setConfig(c => ({ ...c, [id]: { ...c[id], ...patch } }))
-  const declined = rows.filter(h => config[h.id].insurance === 'decline')
-  const problems = rows.flatMap(h => {
-    const c = config[h.id]
-    return !c.insurance ? [`${h.name}: chọn mua hoặc từ chối bảo hiểm`] : []
-  })
+  const set = (id: string, patch: Partial<HorseConfig>) => setConfig(current => ({ ...current, [id]: { ...current[id], ...patch } }))
+  const declined = rows.filter(h => isDeclinedInsurance(serviceOptionFor(services, config[h.id], 'insurance')))
+  const problems = rows.length === 0 || rows.length !== draft.horseIds.length
+    ? ['Không tải được đủ hồ sơ ngựa hoặc danh mục dịch vụ. Vui lòng tải lại trang.']
+    : rows.flatMap(h => SERVICE_GROUPS
+      .filter(group => !serviceOptionFor(services, config[h.id], group.key))
+      .map(group => `${h.name}: hiện không có dịch vụ ${group.label.toLocaleLowerCase()} đang áp dụng`))
+  problems.push(...rows.filter(h => !config[h.id].insurance && !config[h.id].selectedServices?.insurance)
+    .map(h => `${h.name}: chọn dịch vụ bảo hiểm chuyến đi`))
   if (declined.length && !ack) problems.push('Xác nhận Điều khoản Trách nhiệm Hạn chế')
 
   const next = () => {
     setSubmitted(true)
     if (problems.length) {
-      const firstMissingInsurance = rows.findIndex(h => !config[h.id]?.insurance)
-      if (firstMissingInsurance >= 0) setActiveIndex(firstMissingInsurance)
+      if (rows.length === 0 || rows.length !== draft.horseIds.length) return
+      const firstMissing = rows.findIndex(h => SERVICE_GROUPS.some(group => !serviceOptionFor(services, config[h.id], group.key))
+        || (!config[h.id].insurance && !config[h.id].selectedServices?.insurance))
+      if (firstMissing >= 0) setActiveIndex(firstMissing)
       return
     }
-    save({ config })
+    const selectedConfig = Object.fromEntries(rows.map(h => {
+      const current = config[h.id]
+      const selectedServices = Object.fromEntries(SERVICE_GROUPS.map(group => [
+        group.key,
+        current.selectedServices?.[group.key] ?? serviceOptionFor(services, current, group.key)?.id,
+      ])) as Partial<Record<BookingServiceCategory, number>>
+      return [h.id, { ...current, selectedServices }]
+    }))
+    save({ config: selectedConfig })
     navigate('/booking/review')
   }
 
   return (
-    <BookingShell step={3} title="Dịch vụ và bảo hiểm" subtitle="Thiết lập chăm sóc riêng cho từng con. Bảo hiểm chuyến đi chọn riêng cho từng ngựa.">
+    <BookingShell step={3} title="Dịch vụ và bảo hiểm" subtitle="Các lựa chọn và đơn giá được cập nhật theo danh mục dịch vụ đang áp dụng.">
       {activeHorse && (
         <>
           <div className={s.horseNavigator} aria-label="Chọn ngựa để thiết lập dịch vụ">
             <label className={s.horseSelectLabel}>
               <span>Ngựa {activeIndex + 1}/{rows.length}</span>
               <select className="form-control" value={activeHorse.id} onChange={e => setActiveIndex(rows.findIndex(h => h.id === e.target.value))}>
-                {rows.map((h, i) => <option key={h.id} value={h.id}>{i + 1}. {h.name}</option>)}
+                {rows.map((horse, index) => <option key={horse.id} value={horse.id}>{index + 1}. {horse.name}</option>)}
               </select>
             </label>
           </div>
           {(() => {
-        const h = activeHorse
-        const c = config[h.id]
-        return (
-          <section key={h.id} className={`card ${s.horseCard}`} data-card aria-labelledby={`h-${h.id}`}>
-            <div className={s.horseHead}>
-              <i className="fa-solid fa-horse" style={{ fontSize: '1.4rem', color: 'var(--icon-accent)' }} aria-hidden="true" />
-              <div><div id={`h-${h.id}`} className={s.horseName}>{h.name}</div><div className={s.horseChip}>Chip {h.microchip} · {h.breed} · {SEX_LABEL[h.sex]}</div></div>
-            </div>
+            const horse = activeHorse
+            const current = config[horse.id]
+            return (
+              <section key={horse.id} className={`card ${s.horseCard}`} data-card aria-labelledby={`h-${horse.id}`}>
+                <div className={s.horseHead}>
+                  <i className="fa-solid fa-horse" style={{ fontSize: '1.4rem', color: 'var(--icon-accent)' }} aria-hidden="true" />
+                  <div><div id={`h-${horse.id}`} className={s.horseName}>{horse.name}</div><div className={s.horseChip}>Chip {horse.microchip} · {horse.breed} · {SEX_LABEL[horse.sex]}</div></div>
+                </div>
 
-            <div className={s.serviceSection}>
-              <div className={s.fieldLabel} id={`stall-${h.id}`}>Khoang trên xe</div>
-              <div className={s.optRow} role="radiogroup" aria-labelledby={`stall-${h.id}`}>
-                {([['standard', 'Khoang tiêu chuẩn', 'Đã gồm trong cước vận chuyển.'], ['single', 'Khoang đơn mở rộng', 'Rộng hơn, phụ thu theo từng ngựa.']] as const).map(([v, t, d]) => (
-                  <label key={v} className={s.opt}><input type="radio" name={`stall-${h.id}`} checked={c.stall === v} onChange={() => set(h.id, { stall: v })} /><b>{t}</b><span>{d}</span></label>
-                ))}
-              </div>
-            </div>
-
-            <div className={s.serviceSection}>
-              <div className={s.fieldLabel} id={`feed-${h.id}`}>Gói thức ăn</div>
-              <div className={s.optRow} role="radiogroup" aria-labelledby={`feed-${h.id}`}>
-                {FEED_PACKAGE_IDS.map(id => (
-                  <label key={id} className={s.opt}><input type="radio" name={`feed-${h.id}`} checked={c.feedPackage === id} onChange={() => set(h.id, { feedPackage: id })} /><b>{FEED_PACKAGE[id].label}</b><span>{FEED_PACKAGE[id].items.join(', ')}.</span><span>{FEED_PACKAGE[id].fee ? `+${formatVND(FEED_PACKAGE[id].fee)}` : 'Đã gồm trong cước.'}</span></label>
-                ))}
-              </div>
-            </div>
-
-            <div className={s.serviceSection}>
-              <div className={s.fieldLabel} id={`water-${h.id}`}>Cữ nước</div>
-              <div className={s.optRow} role="radiogroup" aria-labelledby={`water-${h.id}`}>
-                {WATER_PLAN_IDS.map(id => (
-                  <label key={id} className={s.opt}><input type="radio" name={`water-${h.id}`} checked={c.waterPlan === id} onChange={() => set(h.id, { waterPlan: id })} /><b>{WATER_PLAN[id].label}</b><span>{WATER_PLAN[id].hint}</span><span>{WATER_PLAN[id].fee ? `+${formatVND(WATER_PLAN[id].fee)}` : 'Đã gồm trong cước.'}</span></label>
-                ))}
-              </div>
-            </div>
-
-            <div className={s.serviceSection}>
-              <div className={s.labelRow}>
-                <div className={`${s.fieldLabel} required`} id={`ins-${h.id}`}>Bảo hiểm chuyến đi</div>
-                <InsuranceNote id={`ins-note-${h.id}`} breed={h.breed} />
-              </div>
-              <div className={s.optRow} role="radiogroup" aria-labelledby={`ins-${h.id}`} {...(submitted && !c.insurance ? { 'data-problem': true } : {})}>
-                <label className={s.opt}><input type="radio" name={`ins-${h.id}`} checked={c.insurance === 'buy'} onChange={() => set(h.id, { insurance: 'buy' })} /><b>Mua bảo hiểm</b><span>Phí {formatVND(insuranceFee(h.breed))} cho giống {h.breed}.</span></label>
-                <label className={s.opt}><input type="radio" name={`ins-${h.id}`} checked={c.insurance === 'decline'} onChange={() => set(h.id, { insurance: 'decline' })} /><b>Từ chối</b><span>Áp dụng trách nhiệm hạn chế <span className={s.subNote}>(của nhà xe)</span>.</span></label>
-              </div>
-              {submitted && !c.insurance && <div className="form-error">Chọn mua hoặc từ chối bảo hiểm cho {h.name}.</div>}
-            </div>
-          </section>
-        )
-      })()}
+                {SERVICE_GROUPS.map(group => {
+                  const options = services.filter(service => service.categoryId === group.categoryId)
+                  const chosen = serviceOptionFor(services, current, group.key)
+                  return (
+                    <div className={s.serviceSection} key={group.key}>
+                      <div className={`${s.fieldLabel} ${group.key === 'insurance' ? 'required' : ''}`} id={`${group.key}-${horse.id}`}>
+                        <i className={`fa-solid ${group.icon}`} aria-hidden="true" /> {group.label}
+                      </div>
+                      <div className={s.optRow} role="radiogroup" aria-labelledby={`${group.key}-${horse.id}`}
+                        {...(submitted && (!chosen || (group.key === 'insurance' && !current.insurance && !current.selectedServices?.insurance)) ? { 'data-problem': true } : {})}>
+                        {options.length ? options.map(service => (
+                          <label key={service.id} className={s.opt}>
+                            <input
+                              type="radio"
+                              name={`${group.key}-${horse.id}`}
+                              checked={chosen?.id === service.id}
+                              onChange={() => set(horse.id, {
+                                selectedServices: { ...current.selectedServices, [group.key]: service.id },
+                                ...legacySelection(group.key, service),
+                              })}
+                            />
+                            <b>{service.serviceName}</b>
+                            <span>{service.price > 0 ? `+${formatVND(service.price)} / ngựa` : 'Miễn phí / Đã gồm'}</span>
+                          </label>
+                        )) : <span>Hiện chưa có lựa chọn đang áp dụng.</span>}
+                      </div>
+                    </div>
+                  )
+                })}
+              </section>
+            )
+          })()}
         </>
       )}
 
@@ -148,6 +142,8 @@ export default function Step3ServicesPage() {
           {submitted && !ack && <div className="form-error">Cần xác nhận để tiếp tục.</div>}
         </div>
       )}
+
+      {submitted && problems.length > 0 && <div className="form-error">{problems[0]}</div>}
 
       <div className={s.actions}>
         <Link to="/booking/horses" className="btn btn-ghost"><i className="fa-solid fa-arrow-left" /> Chọn ngựa</Link>

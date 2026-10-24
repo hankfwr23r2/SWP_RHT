@@ -1,11 +1,14 @@
 import { useCallback, useSyncExternalStore } from 'react'
 import type { FeedPackageId, WaterPlanId } from '@shared/config/booking-rules'
+import type { BookingServiceCategory } from '@shared/types/booking'
+import type { ServiceCatalogItem } from '@shared/api/serviceCatalog'
 import type { Party, StallType, TransportType } from '@shared/types/booking'
 
 export interface HorseConfig {
   stall: StallType
   feedPackage: FeedPackageId
   waterPlan: WaterPlanId
+  selectedServices?: Partial<Record<BookingServiceCategory, number>>
   insurance: 'buy' | 'decline' | '' // phải chọn rõ cho từng ngựa
 }
 
@@ -33,7 +36,39 @@ export const emptyDraft = (): BookingDraft => ({
 
 export const defaultConfig = (): HorseConfig => ({
   stall: 'standard', feedPackage: 'basic', waterPlan: 'every_3h', insurance: '',
+  selectedServices: {},
 })
+
+const CATEGORY_IDS: Record<BookingServiceCategory, number> = {
+  stall: 1,
+  feed: 2,
+  water: 3,
+  insurance: 4,
+}
+
+const LEGACY_SERVICE_IDS = {
+  stall: (config: HorseConfig) => config.stall === 'single' ? 2 : 1,
+  feed: (config: HorseConfig) => ({ basic: 3, advanced: 4, sport: 5 })[config.feedPackage],
+  water: (config: HorseConfig) => ({ every_3h: 6, every_2h: 7, every_1h: 8 })[config.waterPlan],
+  insurance: (config: HorseConfig) => config.insurance === 'decline' ? 10 : 9,
+} satisfies Record<BookingServiceCategory, (config: HorseConfig) => number>
+
+export function serviceOptionFor(
+  services: ServiceCatalogItem[],
+  config: HorseConfig,
+  category: BookingServiceCategory,
+): ServiceCatalogItem | undefined {
+  const options = services.filter(service => service.categoryId === CATEGORY_IDS[category])
+  const selectedId = config.selectedServices?.[category]
+  const preferredId = LEGACY_SERVICE_IDS[category](config)
+  if (selectedId !== undefined) return options.find(service => service.id === selectedId)
+  return options.find(service => service.id === preferredId)
+    ?? options[0]
+}
+
+export function isDeclinedInsurance(service: ServiceCatalogItem | undefined): boolean {
+  return !!service && (service.id === 10 || service.serviceName.trim().toLocaleLowerCase().includes('từ chối'))
+}
 
 // Bản nháp là một kho dùng chung: cột tóm tắt và các bước cùng đọc, nên khách gõ tới đâu tóm tắt cập nhật tới đó.
 const listeners = new Set<() => void>()

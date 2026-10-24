@@ -69,9 +69,20 @@ export interface BookingHorse {
   stall: StallType
   feedPackage: FeedPackageId // gói thức ăn
   waterPlan: WaterPlanId // cữ nước
+  selectedServices?: Partial<Record<BookingServiceCategory, BookingServiceSnapshot>>
   insurance: { opted: boolean }
   status?: 'eligible' | 'unfit'
   unfitInfo?: HorseUnfitInfo
+}
+
+export type BookingServiceCategory = 'stall' | 'feed' | 'water' | 'insurance'
+
+export interface BookingServiceSnapshot {
+  id: number
+  serviceName: string
+  categoryId: number
+  categoryName: string
+  price: number
 }
 
 export interface StaffRef { id: string; name: string }

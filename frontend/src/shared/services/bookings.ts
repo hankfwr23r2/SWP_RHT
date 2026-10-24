@@ -176,7 +176,18 @@ export const customerBookingsApi = {
       destName: input.dest.name, destCountry: input.dest.country, departAt: input.departAt,
       consignor: partyDto(input.consignor),
       consignee: partyDto(input.consignee),
-      horses: input.horses.map(h => ({ horseId: h.horseId, name: h.name, microchip: h.microchip, breed: h.breed, sex: h.sex, stall: h.stall, feedPackage: h.feedPackage, waterPlan: h.waterPlan, insuranceOpted: h.insurance?.opted })),
+      horses: input.horses.map(h => ({
+        horseId: h.horseId,
+        name: h.name,
+        microchip: h.microchip,
+        breed: h.breed,
+        sex: h.sex,
+        stall: h.stall,
+        feedPackage: h.feedPackage,
+        waterPlan: h.waterPlan,
+        insuranceOpted: h.insurance?.opted,
+        selectedServices: h.selectedServices,
+      })),
     })
     return toCustomerView(toBooking(created, customer))
   },

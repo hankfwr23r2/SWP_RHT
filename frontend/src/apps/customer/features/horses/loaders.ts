@@ -9,6 +9,12 @@ export async function horsesLoader({ session }: PageLoaderContext) {
 
 // Đặt chuyến bước 3, 4: chỉ cần ngựa
 export async function horseListLoader({ session }: PageLoaderContext) {
-  const { horsesApi } = await import('@shared/services/horses')
-  return loadAll({ horses: horsesApi.list(session.name) })
+  const [{ horsesApi }, { serviceCatalogApi }] = await Promise.all([
+    import('@shared/services/horses'),
+    import('@shared/api/serviceCatalog'),
+  ])
+  return loadAll({
+    horses: horsesApi.list(session.name),
+    services: serviceCatalogApi.listActive(),
+  })
 }

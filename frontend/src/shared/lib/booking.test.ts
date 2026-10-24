@@ -78,6 +78,36 @@ describe('báo giá', () => {
     const ins = quoteLines(base, [{ capacity: 2 }]).lines.find(l => l.label === 'Bảo hiểm Động vật Sống')
     expect(ins?.amount).toBe(insuranceFee('Thoroughbred'))
   })
+  it('dùng tên và đơn giá dịch vụ đã chụp từ catalog khi lập báo giá', () => {
+    const service = (id: number, serviceName: string, categoryId: number, price: number) => ({
+      id, serviceName, categoryId, categoryName: `Nhóm ${categoryId}`, price,
+    })
+    const horses = [
+      bh({
+        selectedServices: {
+          stall: service(1, 'Khoang tiêu chuẩn', 1, 1_000_000),
+          feed: service(4, 'Gói cao cấp', 2, 300_000),
+          water: service(7, 'Mỗi 2 giờ', 3, 50_000),
+          insurance: service(9, 'Mua bảo hiểm', 4, 20_000_000),
+        },
+      }),
+      bh({
+        selectedServices: {
+          stall: service(2, 'Khoang đơn', 1, 2_000_000),
+          feed: service(5, 'Gói thể thao', 2, 500_000),
+          water: service(8, 'Mỗi giờ', 3, 100_000),
+          insurance: service(10, 'Từ chối', 4, 0),
+        },
+      }),
+    ]
+    const { lines } = quoteLines({ ...base, horses }, [{ capacity: 2 }])
+    const amount = (label: string) => lines.find(line => line.label === label)?.amount
+
+    expect(amount('Khoang trên xe')).toBe(3_000_000)
+    expect(amount('Gói thức ăn')).toBe(800_000)
+    expect(amount('Cữ nước')).toBe(150_000)
+    expect(amount('Bảo hiểm chuyến đi')).toBe(20_000_000)
+  })
   it('mỗi xe có cước, nhân sự, nhiên liệu và BOT; không có phí lưu xe hay Carrier Info Sheet', () => {
     const { lines } = quoteLines(base, [{ capacity: 2 }, { capacity: 4 }])
     expect(lines.filter(l => /^Cước/.test(l.label))).toHaveLength(2)

@@ -202,15 +202,50 @@ export function quoteLines(b: QuoteInput, vehicles: Pick<Vehicle, 'capacity'>[])
       { label: `Nhiên liệu và BOT${tag}`, detail: `Ước tính theo lộ trình ${km} km, đã gồm dự phòng`, amount: roundK(km * FUEL_BOT_PER_KM * (1 + FUEL_BUFFER_RATE) * m) },
     )
   })
-  const singles = b.horses.filter(h => h.stall === 'single').length
-  if (singles) lines.push({ label: 'Khoang đơn mở rộng', detail: `${singles} ngựa`, amount: singles * SINGLE_STALL_FEE })
-  const feed = b.horses.filter(h => FEED_PACKAGE[h.feedPackage].fee > 0)
-  if (feed.length) lines.push({ label: 'Gói thức ăn', detail: `${feed.length} ngựa chọn gói trả phí`, amount: feed.reduce((t, h) => t + FEED_PACKAGE[h.feedPackage].fee, 0) })
-  const water = b.horses.filter(h => WATER_PLAN[h.waterPlan].fee > 0)
-  if (water.length) lines.push({ label: 'Cữ nước tăng cường', detail: `${water.length} ngựa chọn cữ dày hơn mặc định`, amount: water.reduce((t, h) => t + WATER_PLAN[h.waterPlan].fee, 0) })
+  const addServiceLine = (
+    category: 'stall' | 'feed' | 'water' | 'insurance',
+    label: string,
+    legacyFee: (horse: BookingHorse) => number,
+  ) => {
+    const selected = b.horses.map(h => h.selectedServices?.[category])
+    const amount = b.horses.reduce((total, horse, index) =>
+      total + (selected[index] ? selected[index]!.price : legacyFee(horse)), 0)
+    if (amount <= 0) return
+    const pricedSelections = selected.filter(service => service && service.price > 0)
+    const names = [...new Set(pricedSelections.map(service => service!.serviceName))]
+    const pricedHorses = b.horses.filter((horse, index) =>
+      selected[index] ? selected[index]!.price > 0 : legacyFee(horse) > 0).length
+    const detail = names.length
+      ? `${pricedHorses} ngựa · ${names.join(', ')}`
+      : `${pricedHorses} ngựa`
+    lines.push({ label, detail, amount })
+  }
+
+  if (b.horses.some(horse => horse.selectedServices?.stall)) {
+    addServiceLine('stall', 'Khoang trên xe', horse => horse.stall === 'single' ? SINGLE_STALL_FEE : 0)
+  } else {
+    const singles = b.horses.filter(horse => horse.stall === 'single').length
+    if (singles) lines.push({ label: 'Khoang đơn mở rộng', detail: `${singles} ngựa`, amount: singles * SINGLE_STALL_FEE })
+  }
+  if (b.horses.some(horse => horse.selectedServices?.feed)) {
+    addServiceLine('feed', 'Gói thức ăn', horse => FEED_PACKAGE[horse.feedPackage].fee)
+  } else {
+    const feed = b.horses.filter(horse => FEED_PACKAGE[horse.feedPackage].fee > 0)
+    if (feed.length) lines.push({ label: 'Gói thức ăn', detail: `${feed.length} ngựa chọn gói trả phí`, amount: feed.reduce((total, horse) => total + FEED_PACKAGE[horse.feedPackage].fee, 0) })
+  }
+  if (b.horses.some(horse => horse.selectedServices?.water)) {
+    addServiceLine('water', 'Cữ nước', horse => WATER_PLAN[horse.waterPlan].fee)
+  } else {
+    const water = b.horses.filter(horse => WATER_PLAN[horse.waterPlan].fee > 0)
+    if (water.length) lines.push({ label: 'Cữ nước tăng cường', detail: `${water.length} ngựa chọn cữ dày hơn mặc định`, amount: water.reduce((total, horse) => total + WATER_PLAN[horse.waterPlan].fee, 0) })
+  }
   lines.push({ label: 'Thủ tục kiểm dịch và hải quan', detail: international ? 'Nhà xe làm trọn gói' : 'Nhà xe làm giấy kiểm dịch trong nước', amount: international ? CLEARANCE_FEE.international : CLEARANCE_FEE.domestic })
-  const insured = b.horses.filter(h => h.insurance.opted)
-  if (insured.length) lines.push({ label: 'Bảo hiểm Động vật Sống', detail: `${insured.length} ngựa mua bảo hiểm`, amount: insured.reduce((t, h) => t + insuranceFee(h.breed), 0) })
+  if (b.horses.some(horse => horse.selectedServices?.insurance)) {
+    addServiceLine('insurance', 'Bảo hiểm chuyến đi', horse => horse.insurance.opted ? insuranceFee(horse.breed) : 0)
+  } else {
+    const insured = b.horses.filter(horse => horse.insurance.opted)
+    if (insured.length) lines.push({ label: 'Bảo hiểm Động vật Sống', detail: `${insured.length} ngựa mua bảo hiểm`, amount: insured.reduce((total, horse) => total + insuranceFee(horse.breed), 0) })
+  }
   return { lines, km, days }
 }
 

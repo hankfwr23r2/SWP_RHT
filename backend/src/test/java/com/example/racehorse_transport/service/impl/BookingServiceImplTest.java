@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.booking.BookingHorseDto;
+import com.example.racehorse_transport.dto.booking.BookingServiceSelectionDto;
 import com.example.racehorse_transport.dto.booking.BookingResponse;
 import com.example.racehorse_transport.dto.booking.CreateBookingRequest;
 import com.example.racehorse_transport.dto.booking.CustomerTripTeamResponse;
@@ -9,6 +10,7 @@ import com.example.racehorse_transport.dto.booking.RejectQuoteRequest;
 import com.example.racehorse_transport.dto.manager.RejectBookingRequest;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Customer;
+import com.example.racehorse_transport.entity.Category;
 import com.example.racehorse_transport.entity.Horse;
 import com.example.racehorse_transport.entity.Quotation;
 import com.example.racehorse_transport.dto.admin.SystemConfigResponse;
@@ -28,6 +30,7 @@ import com.example.racehorse_transport.repository.PaymentRepository;
 import com.example.racehorse_transport.repository.QuotationRepository;
 import com.example.racehorse_transport.repository.RegulationRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.repository.ServiceRepository;
 import com.example.racehorse_transport.repository.SystemLogRepository;
 import com.example.racehorse_transport.repository.TripDocumentRepository;
 import com.example.racehorse_transport.repository.UserRepository;
@@ -76,6 +79,7 @@ class BookingServiceImplTest {
     private final TripDocumentRepository tripDocumentRepository = mock(TripDocumentRepository.class);
     private final SystemConfigService systemConfigService = mock(SystemConfigService.class);
     private final com.example.racehorse_transport.repository.RouteRepository routeRepository = mock(com.example.racehorse_transport.repository.RouteRepository.class);
+    private final ServiceRepository serviceRepository = mock(ServiceRepository.class);
 
     private BookingServiceImpl service;
     private Customer customer;
@@ -100,7 +104,8 @@ class BookingServiceImplTest {
                 locationRepository,
                 systemConfigService,
                 tripDocumentRepository,
-                routeRepository);
+                routeRepository,
+                serviceRepository);
 
         when(systemConfigService.getConfig("MIN_LEAD_DAYS")).thenReturn(config("MIN_LEAD_DAYS", "20"));
         when(systemConfigService.getConfig("DEPOSIT_RATE")).thenReturn(config("DEPOSIT_RATE", "0.30"));
@@ -124,7 +129,15 @@ class BookingServiceImplTest {
     void createBooking_savesPendingBookingAndAuditLog() {
         Instant departure = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
                 .plusDays(25).atTime(10, 0).atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant();
-        BookingHorseDto horseDto = BookingHorseDto.builder().horseId("HORSE-12").name("Lightning").build();
+        BookingHorseDto horseDto = BookingHorseDto.builder()
+                .horseId("HORSE-12")
+                .name("Lightning")
+                .selectedServices(Map.of(
+                        "stall", serviceSelection(1),
+                        "feed", serviceSelection(3),
+                        "water", serviceSelection(6),
+                        "insurance", serviceSelection(10)))
+                .build();
         CreateBookingRequest request = CreateBookingRequest.builder()
                 .type("INTERNATIONAL")
                 .originName("  Hanoi  ")
@@ -142,6 +155,10 @@ class BookingServiceImplTest {
         when(customerRepository.findById(7)).thenReturn(Optional.of(customer));
         when(bookingRepository.findByCustomerID_IdOrderByBookingDateDesc(7)).thenReturn(List.of());
         when(horseRepository.findById(12)).thenReturn(Optional.of(horse));
+        when(serviceRepository.findById(1)).thenReturn(Optional.of(service(1, "Khoang tiêu chuẩn", 1, "1", "ACTIVE")));
+        when(serviceRepository.findById(3)).thenReturn(Optional.of(service(3, "Gói cơ bản", 2, "0", "ACTIVE")));
+        when(serviceRepository.findById(6)).thenReturn(Optional.of(service(6, "Mỗi 3 giờ", 3, "0", "ACTIVE")));
+        when(serviceRepository.findById(10)).thenReturn(Optional.of(service(10, "Từ chối", 4, "0", "ACTIVE")));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> {
             Booking saved = invocation.getArgument(0);
             saved.setId(42);
@@ -161,13 +178,67 @@ class BookingServiceImplTest {
         assertThat(response.getHorses()).hasSize(1);
         assertThat(response.getHorses().get(0).getHorseId()).isEqualTo("HORSE-12");
         assertThat(response.getHorses().get(0).getName()).isEqualTo("Lightning");
+        assertThat(response.getHorses().get(0).getSelectedServices().get("stall").getPrice())
+                .isEqualByComparingTo("1");
+        assertThat(response.getHorses().get(0).getInsuranceOpted()).isFalse();
 
         ArgumentCaptor<Booking> savedBooking = ArgumentCaptor.forClass(Booking.class);
         verify(bookingRepository).save(savedBooking.capture());
         assertThat(savedBooking.getValue().getConsignorName()).isEqualTo("Sender");
         assertThat(savedBooking.getValue().getConsignorPhone()).isEqualTo("0900");
         assertThat(savedBooking.getValue().getDetailsJson()).contains("\"originCountry\":\"VN\"");
+        assertThat(savedBooking.getValue().getDetailsJson()).contains("\"serviceName\":\"Khoang tiêu chuẩn\"");
         verify(systemLogRepository).save(any());
+    }
+
+    @Test
+    void createBooking_rejectsServiceThatWasPausedAfterCatalogLoad() {
+        Instant departure = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
+                .plusDays(25).atTime(10, 0).atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant();
+        BookingHorseDto horseDto = BookingHorseDto.builder()
+                .horseId("HORSE-12")
+                .name("Lightning")
+                .selectedServices(Map.of(
+                        "stall", serviceSelection(1),
+                        "feed", serviceSelection(3),
+                        "water", serviceSelection(6),
+                        "insurance", serviceSelection(10)))
+                .build();
+        CreateBookingRequest request = CreateBookingRequest.builder()
+                .type("DOMESTIC")
+                .departAt(departure.toEpochMilli())
+                .horses(List.of(horseDto))
+                .build();
+        when(userRepository.findByUsernameOrEmail("phuc", "phuc")).thenReturn(Optional.of(customer.getUser()));
+        when(customerRepository.findById(7)).thenReturn(Optional.of(customer));
+        when(bookingRepository.findByCustomerID_IdOrderByBookingDateDesc(7)).thenReturn(List.of());
+        when(serviceRepository.findById(1)).thenReturn(Optional.of(service(1, "Khoang tiêu chuẩn", 1, "1000000", "INACTIVE")));
+        when(serviceRepository.findById(3)).thenReturn(Optional.of(service(3, "Gói cơ bản", 2, "0", "ACTIVE")));
+        when(serviceRepository.findById(6)).thenReturn(Optional.of(service(6, "Mỗi 3 giờ", 3, "0", "ACTIVE")));
+        when(serviceRepository.findById(10)).thenReturn(Optional.of(service(10, "Từ chối", 4, "0", "ACTIVE")));
+
+        assertThatThrownBy(() -> service.createBooking("phuc", request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("vừa được tạm ngưng");
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    private BookingServiceSelectionDto serviceSelection(int id) {
+        return BookingServiceSelectionDto.builder().id(id).build();
+    }
+
+    private com.example.racehorse_transport.entity.Service service(
+            int id, String name, int categoryId, String price, String status) {
+        Category category = new Category();
+        category.setId(categoryId);
+        category.setCategoryName("Category " + categoryId);
+        com.example.racehorse_transport.entity.Service item = new com.example.racehorse_transport.entity.Service();
+        item.setId(id);
+        item.setServiceName(name);
+        item.setCategoryID(category);
+        item.setPrice(new java.math.BigDecimal(price));
+        item.setStatus(status);
+        return item;
     }
 
     @Test

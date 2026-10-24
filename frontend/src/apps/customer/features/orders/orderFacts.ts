@@ -38,8 +38,14 @@ export function orderFacts(b: CustomerBookingView, team: TripTeam[]): FactGroup[
     ...b.horses.map(h => ({
       label: 'Ngựa',
       value: h.name,
-      sub: joined(`Chip ${h.microchip}`, h.breed, SEX_LABEL[h.sex], h.stall === 'single' ? 'Khoang đơn' : 'Khoang tiêu chuẩn',
-        `Thức ăn: ${FEED_PACKAGE[h.feedPackage].label}`, `Nước: ${WATER_PLAN[h.waterPlan].label}`, h.insurance.opted ? `Mua bảo hiểm, phí ${formatVND(insuranceFee(h.breed))}` : 'Từ chối bảo hiểm (trách nhiệm hạn chế)'),
+      sub: joined(`Chip ${h.microchip}`, h.breed, SEX_LABEL[h.sex], h.selectedServices?.stall?.serviceName ?? (h.stall === 'single' ? 'Khoang đơn' : 'Khoang tiêu chuẩn'),
+        `Thức ăn: ${h.selectedServices?.feed?.serviceName ?? FEED_PACKAGE[h.feedPackage].label}`,
+        `Nước: ${h.selectedServices?.water?.serviceName ?? WATER_PLAN[h.waterPlan].label}`,
+        h.selectedServices?.insurance
+          ? h.insurance.opted
+            ? `${h.selectedServices.insurance.serviceName}, phí ${formatVND(h.selectedServices.insurance.price)}`
+            : `${h.selectedServices.insurance.serviceName} (trách nhiệm hạn chế)`
+          : h.insurance.opted ? `Mua bảo hiểm, phí ${formatVND(insuranceFee(h.breed))}` : 'Từ chối bảo hiểm (trách nhiệm hạn chế)'),
     })),
   ]
 
