@@ -669,7 +669,9 @@ public class BookingServiceImpl implements BookingService {
                     .createdAt(Instant.now())
                     .build();
             systemLogRepository.save(sysLog);
-        } catch (Exception ignored) {
+        } catch (Exception ex) {
+            // Nhật ký lỗi không được làm hỏng thao tác chính, nhưng phải để lại dấu vết
+            log.warn("Không ghi được nhật ký hệ thống COORDINATOR_CONFIRM_PLAN: {}", ex.getMessage());
         }
 
         log.info("Coordinator successfully confirmed fleet plan for booking ID={}", updatedBooking.getId());
@@ -1736,7 +1738,9 @@ public class BookingServiceImpl implements BookingService {
                 if (reqPayload.get("discountAmount") != null) {
                     try {
                         discountAmount = new BigDecimal(reqPayload.get("discountAmount").toString());
-                    } catch (Exception ignored) {
+                    } catch (NumberFormatException ex) {
+                        // Số tiền sai thì dừng, không âm thầm giảm trừ 0 đồng
+                        throw new IllegalArgumentException("Số tiền giảm trừ không hợp lệ: " + reqPayload.get("discountAmount"));
                     }
                 }
 
@@ -2130,7 +2134,9 @@ public class BookingServiceImpl implements BookingService {
                             v.setStatus("AVAILABLE");
                             vehicleRepository.save(v);
                         });
-                    } catch (Exception ignored) {}
+                    } catch (NumberFormatException ex) {
+                        log.warn("Không nhả được xe {} khi về trụ sở: mã xe không hợp lệ", targetTrip.getVehicleId());
+                    }
                 }
                 appendHistory(payload, actor, "Xe và kíp xe đã về tới Trụ sở chính Việt Nam, sẵn sàng nhận chuyến mới");
                 break;
@@ -2166,7 +2172,7 @@ public class BookingServiceImpl implements BookingService {
         if (!digitsOnly.isBlank()) {
             try {
                 bookingOpt = bookingRepository.findById(Integer.parseInt(digitsOnly));
-            } catch (Exception ignored) {}
+            } catch (NumberFormatException ignored) {}
         }
         if (bookingOpt.isEmpty()) {
             bookingOpt = bookingRepository.findByWaybillNoIgnoreCase(trimmedCode);

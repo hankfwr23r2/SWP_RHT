@@ -296,6 +296,25 @@ class BookingServiceImplTest {
     }
 
     @Test
+    void excludeUnfitHorse_rejectsAnUnreadableDiscountInsteadOfUsingZero() {
+        Booking booking = bookingOwnedByCustomer();
+        booking.setStatus("ready_for_pickup");
+        booking.setDetailsJson("{\"horses\":[{\"horseId\":\"H-001\",\"name\":\"Storm\"}],"
+                + "\"trips\":[{\"tripId\":\"TRP-042-1\",\"vehicleId\":\"VH-001\",\"horseIds\":[\"H-001\"]}]}");
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        var request = new com.example.racehorse_transport.dto.field.TripUpdateRequest();
+        request.setTripId("TRP-042-1");
+        request.setAction("EXCLUDE_UNFIT_HORSE");
+        request.setActor("escort01");
+        request.setPayload(Map.of("horseId", "H-001", "discountAmount", "năm triệu"));
+
+        assertThatThrownBy(() -> service.updateTripProgress("BK-042", request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("giảm trừ");
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
     void getBookingById_rejectsAnotherCustomer() {
         when(bookingRepository.findById(42)).thenReturn(Optional.of(bookingOwnedByCustomer()));
 

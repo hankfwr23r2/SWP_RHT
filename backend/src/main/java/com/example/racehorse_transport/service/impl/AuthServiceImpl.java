@@ -12,6 +12,7 @@ import com.example.racehorse_transport.repository.UserRepository;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.service.AuthService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import com.example.racehorse_transport.entity.SystemLog;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.SystemLogRepository;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
@@ -217,7 +219,7 @@ public class AuthServiceImpl implements AuthService {
 
         // 6. Ghi Audit Log vào SYSTEM_LOG
         try {
-            SystemLog log = SystemLog.builder()
+            SystemLog sysLog = SystemLog.builder()
                     .actionbyUserid(user)
                     .actionType("CHANGE_PASSWORD")
                     .targetTable("USER")
@@ -225,8 +227,10 @@ public class AuthServiceImpl implements AuthService {
                     .newData("Người dùng tự đổi mật khẩu cá nhân thành công")
                     .createdAt(Instant.now())
                     .build();
-            systemLogRepository.save(log);
-        } catch (Exception ignored) {
+            systemLogRepository.save(sysLog);
+        } catch (Exception ex) {
+            // Nhật ký lỗi không được làm hỏng thao tác chính, nhưng phải để lại dấu vết
+            log.warn("Không ghi được nhật ký hệ thống CHANGE_PASSWORD: {}", ex.getMessage());
         }
     }
 }
