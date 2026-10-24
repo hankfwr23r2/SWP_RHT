@@ -1,0 +1,66 @@
+/* Trang quản lý Dịch vụ & Gói cước của Admin */
+.form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.full {
+  grid-column: 1 / -1;
+}
+
+.name b {
+  color: var(--navy);
+  font-weight: 600;
+}
+
+.name span {
+  margin-right: 6px;
+  color: var(--orange);
+  font-weight: 700;
+}
+
+.name small {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.categoryTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  background: var(--bg-page);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  font-size: 0.82rem;
+  color: var(--navy);
+  font-weight: 500;
+}
+
+.price {
+  font-weight: 600;
+  color: var(--navy);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.pause {
+  color: var(--red);
+}
+
+.resume {
+  color: var(--green);
+}
+
+@media (max-width: 700px) {
+  .form {
+    grid-template-columns: 1fr;
+  }
+}

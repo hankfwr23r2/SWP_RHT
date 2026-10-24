@@ -2,7 +2,7 @@
 import { lazy } from 'react'
 import type { AppRoute } from '@shared/routing/types'
 import { ManagerLoginPage, StaffLoginPage } from './features/auth/StaffLoginPage'
-import { accountsLoader, adminRoutesLoader, bookingListLoader, bookingLoader, fleetPlanLoader, monitoringLoader, tripReportsLoader, verifyLoader } from './shared/loaders'
+import { accountsLoader, adminRoutesLoader, adminServicesLoader, bookingListLoader, bookingLoader, fleetPlanLoader, monitoringLoader, tripReportsLoader, verifyLoader } from './shared/loaders'
 // Trang đăng nhập tải ngay; các trang còn lại chỉ tải khi mở tới (lazy), mỗi vai trò chỉ tải phần mình dùng.
 // Trang có loader khai báo lazyPage: router tải file trang song song với dữ liệu rồi mới vẽ trang.
 const SitemapPage = lazy(() => import('../sitemap/SitemapPage').then(m => ({ default: m.SitemapPage })))
@@ -24,6 +24,7 @@ export const routes: AppRoute[] = [
   { path: '/manager/login', page: ManagerLoginPage, roles: [], title: 'Đăng nhập Quản lý', layout: 'bare' },
 
   { path: '/admin/routes', lazyPage: () => import('./features/admin/routes/AdminRoutesPage'), loader: adminRoutesLoader, roles: A, title: 'Tuyến đường cố định', layout: 'staff' },
+  { path: '/admin/services', lazyPage: () => import('./features/admin/services/AdminServicesPage'), loader: adminServicesLoader, roles: A, title: 'Dịch vụ & Biểu phí', layout: 'staff' },
   { path: '/admin/accounts', lazyPage: () => import('./features/admin/accounts/AccountsPage'), loader: accountsLoader, roles: A, title: 'Tất cả tài khoản', layout: 'staff' },
   { path: '/admin/accounts/:role', lazyPage: () => import('./features/admin/accounts/AccountsPage'), loader: accountsLoader, roles: A, title: 'Tài khoản theo loại', layout: 'staff' },
 
