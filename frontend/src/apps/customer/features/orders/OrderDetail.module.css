@@ -33,6 +33,11 @@
 .grid dt { font-size: 0.76rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); font-weight: 600; margin-bottom: 4px; }
 .grid dd { font-weight: 600; line-height: 1.45; margin: 0; word-break: break-word; }
 .gridFull { grid-column: 1 / -1; }
+.factSub { display: block; margin-top: 2px; font-weight: 400; font-size: 0.84rem; color: var(--muted); }
+.quoteFacts { display: grid; gap: 6px; margin: 0 0 14px; padding: 12px 14px; background: var(--bg-page); border: 1px solid var(--line); border-radius: var(--radius-sm); font-size: 0.88rem; }
+.quoteFacts div { display: grid; grid-template-columns: 96px 1fr; gap: 10px; }
+.quoteFacts dt { color: var(--muted); }
+.quoteFacts dd { margin: 0; font-weight: 600; word-break: break-word; }
 .horseRow { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 0.88rem; }
 .horseRow:last-child { border-bottom: none; }
 .horseRow small { color: var(--muted); }
