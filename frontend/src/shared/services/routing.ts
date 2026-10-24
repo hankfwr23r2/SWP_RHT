@@ -81,16 +81,44 @@ async function viaOsrm(points: GeoPoint[], signal?: AbortSignal): Promise<RoadRo
 }
 
 const cache = new Map<string, RoadRoute>()
+const alternatives = new Map<string, RoadRoute[]>()
 const keyOf = (points: GeoPoint[]) => points.map(p => `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`).join(';')
+
+const SESSION_PREFIX = 'RHT_ROAD_'
+
+function loadSession<T>(key: string): T | null {
+  if (typeof window === 'undefined' || typeof window.sessionStorage === 'undefined') return null
+  try {
+    const raw = window.sessionStorage.getItem(SESSION_PREFIX + key)
+    return raw ? (JSON.parse(raw) as T) : null
+  } catch {
+    return null
+  }
+}
+
+function saveSession<T>(key: string, data: T): void {
+  if (typeof window === 'undefined' || typeof window.sessionStorage === 'undefined') return
+  try {
+    window.sessionStorage.setItem(SESSION_PREFIX + key, JSON.stringify(data))
+  } catch {
+    // Không làm gián đoạn luồng nếu sessionStorage bị đầy dung lượng
+  }
+}
 
 export async function roadRoute(points: GeoPoint[], _departAt?: number, opts: RoadOptions = {}): Promise<RoadRoute | null> {
   if (points.length < 2) return null
   const k = keyOf(points)
-  const hit = cache.get(k)
-  if (hit) return hit
+  const hit = cache.get(k) ?? loadSession<RoadRoute>(k)
+  if (hit) {
+    if (!cache.has(k)) cache.set(k, hit)
+    return hit
+  }
   const attempt = async (fn: () => Promise<RoadRoute | null>) => { try { return await fn() } catch { return null } }
   const out = (await attempt(() => viaOsrm(points, opts.signal))) ?? viaOffline(points)
-  if (out) cache.set(k, out)
+  if (out) {
+    cache.set(k, out)
+    saveSession(k, out)
+  }
   return out
 }
 
@@ -101,10 +129,18 @@ export function thinPath(path: [number, number][], max = 120): [number, number][
   return Array.from({ length: max }, (_, i) => path[Math.round(i * step)])
 }
 
-export const clearRoadCache = () => { cache.clear(); alternatives.clear() }
-
-// Các đường thay thế giữa hai điểm (cho sự cố tắc nghẽn)
-const alternatives = new Map<string, RoadRoute[]>()
+export const clearRoadCache = () => {
+  cache.clear()
+  alternatives.clear()
+  if (typeof window !== 'undefined' && typeof window.sessionStorage !== 'undefined') {
+    try {
+      const keys = Object.keys(window.sessionStorage).filter(k => k.startsWith(SESSION_PREFIX))
+      keys.forEach(k => window.sessionStorage.removeItem(k))
+    } catch {
+      // ignore
+    }
+  }
+}
 
 async function viaOsrmWithAlternatives(points: GeoPoint[], signal?: AbortSignal): Promise<RoadRoute[]> {
   const coords = points.map(p => `${p.lng},${p.lat}`).join(';')
@@ -133,19 +169,28 @@ async function viaOsrmWithAlternatives(points: GeoPoint[], signal?: AbortSignal)
 export async function roadRoutesWithAlternatives(points: GeoPoint[], _departAt?: number, opts: RoadOptions = {}): Promise<RoadRoute[]> {
   if (points.length < 2) return []
   const k = 'alts:' + keyOf(points)
-  const hit = alternatives.get(k)
-  if (hit) return hit
+  const hit = alternatives.get(k) ?? loadSession<RoadRoute[]>(k)
+  if (hit) {
+    if (!alternatives.has(k)) alternatives.set(k, hit)
+    return hit
+  }
   const attempt = async (fn: () => Promise<RoadRoute[]>) => { try { return await fn() } catch { return [] } }
   const osrmRoutes = await attempt(() => viaOsrmWithAlternatives(points, opts.signal))
   const out = osrmRoutes.length > 0 ? osrmRoutes : [viaOffline(points)]
-  if (out.length) alternatives.set(k, out)
+  if (out.length) {
+    alternatives.set(k, out)
+    saveSession(k, out)
+  }
   return out
 }
 
 export async function roadAlternatives(from: GeoPoint, to: GeoPoint, _departAt?: number, opts: RoadOptions = {}): Promise<RoadRoute[]> {
   const k = keyOf([from, to])
-  const hit = alternatives.get(k)
-  if (hit) return hit
+  const hit = alternatives.get(k) ?? loadSession<RoadRoute[]>(k)
+  if (hit) {
+    if (!alternatives.has(k)) alternatives.set(k, hit)
+    return hit
+  }
   const attempt = async (fn: () => Promise<RoadRoute[]>) => { try { return await fn() } catch { return [] } }
   const out = await attempt(async () => {
     const res = await fetch(`${OSRM_URL}/${from.lng},${from.lat};${to.lng},${to.lat}?overview=full&geometries=geojson&alternatives=true`, { signal: opts.signal })
@@ -159,7 +204,10 @@ export async function roadAlternatives(from: GeoPoint, to: GeoPoint, _departAt?:
       traffic: false,
     }))
   })
-  if (out.length) alternatives.set(k, out)
+  if (out.length) {
+    alternatives.set(k, out)
+    saveSession(k, out)
+  }
   return out.length ? out : [viaOffline([from, to])]
 }
 
