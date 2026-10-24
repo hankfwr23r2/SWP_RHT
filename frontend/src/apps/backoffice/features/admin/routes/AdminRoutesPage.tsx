@@ -7,6 +7,7 @@ import {
   type BackendRouteResponse,
   type BackendLocationResponse,
   type CreateRoutePayload,
+  type CreateRestStopPayload,
 } from '@shared/api/routes'
 import { useLoad } from '@shared/services/useLoad'
 import { Modal } from '@shared/ui/Modal'
@@ -465,10 +466,178 @@ function StopsViewModal({
   )
 }
 
+function RestStopsModal({
+  locations,
+  onClose,
+  onChanged,
+}: {
+  locations: BackendLocationResponse[]
+  onClose: () => void
+  onChanged: () => void
+}) {
+  const toast = useToast()
+  const [stops, setStops] = useState(() => locations.filter(location => location.locationType === 'RestStop'))
+  const [formId, setFormId] = useState<number | null>()
+  const [locationName, setLocationName] = useState('')
+  const [address, setAddress] = useState('')
+  const [city, setCity] = useState('')
+  const [province, setProvince] = useState('')
+  const [country, setCountry] = useState('')
+  const [busy, setBusy] = useState(false)
+  const isEditing = formId !== undefined
+
+  const openCreateForm = () => {
+    setFormId(null)
+    setLocationName('')
+    setAddress('')
+    setCity('')
+    setProvince('')
+    setCountry('')
+  }
+
+  const openEditForm = (stop: BackendLocationResponse) => {
+    setFormId(stop.id)
+    setLocationName(stop.locationName)
+    setAddress(stop.address)
+    setCity(stop.city)
+    setProvince(stop.province)
+    setCountry(stop.country)
+  }
+
+  const save = async () => {
+    if (formId === undefined) return
+    const values = [locationName, address, city, province, country]
+    if (values.some(value => !value.trim())) {
+      toast('Vui lòng nhập đầy đủ tên trạm, địa chỉ, thành phố, tỉnh/thành và quốc gia', 'error')
+      return
+    }
+    setBusy(true)
+    try {
+      const payload: CreateRestStopPayload = {
+        locationName: locationName.trim(),
+        address: address.trim(),
+        city: city.trim(),
+        province: province.trim(),
+        country: country.trim(),
+      }
+      const saved = formId === null
+        ? await routesApi.createRestStop(payload)
+        : await routesApi.updateRestStop(formId, payload)
+      setStops(current => formId === null
+        ? [...current, saved].sort((a, b) => a.locationName.localeCompare(b.locationName, 'vi'))
+        : current.map(stop => stop.id === saved.id ? saved : stop))
+      toast(formId === null ? 'Đã thêm trạm dừng' : 'Đã cập nhật trạm dừng')
+      setFormId(undefined)
+      onChanged()
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Không lưu được trạm dừng', 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const remove = async (stop: BackendLocationResponse) => {
+    if (!window.confirm(`Bạn có chắc muốn xóa trạm dừng "${stop.locationName}"?`)) return
+    setBusy(true)
+    try {
+      await routesApi.deleteRestStop(stop.id)
+      setStops(current => current.filter(item => item.id !== stop.id))
+      toast('Đã xóa trạm dừng')
+      onChanged()
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Không xóa được trạm dừng', 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <Modal
+      wide
+      onClose={onClose}
+      title={isEditing ? (formId === null ? 'Thêm trạm dừng' : 'Cập nhật trạm dừng') : 'Quản lý trạm dừng'}
+      subtitle={isEditing ? 'Các trạm được tạo tại đây có thể gán vào tuyến đường.' : 'Chỉ quản lý địa điểm loại RestStop.'}
+      footer={isEditing ? (
+        <>
+          <button type="button" className="btn btn-outline" onClick={() => setFormId(undefined)} disabled={busy}>
+            Hủy
+          </button>
+          <button type="button" className="btn btn-primary" onClick={save} disabled={busy}>
+            {busy ? 'Đang lưu…' : formId === null ? 'Thêm trạm' : 'Lưu thay đổi'}
+          </button>
+        </>
+      ) : (
+        <button type="button" className="btn btn-outline" onClick={onClose}>Đóng</button>
+      )}
+    >
+      {!isEditing ? (
+        <>
+          <div className={s.stopManagerHead}>
+            <span>{stops.length} trạm dừng</span>
+            <button type="button" className="btn btn-primary btn-sm" onClick={openCreateForm}>
+              <i className="fa-solid fa-plus" /> Thêm trạm dừng
+            </button>
+          </div>
+          {stops.length === 0 ? (
+            <div className={s.notice}>Chưa có trạm dừng nào.</div>
+          ) : (
+            <div className={s.managedStops}>
+              {stops.map(stop => (
+                <div key={stop.id} className={s.managedStop}>
+                  <div>
+                    <b>{stop.locationName}</b>
+                    <small>{stop.address} · {stop.city}, {stop.province}, {stop.country}</small>
+                  </div>
+                  <div className={s.rowActions}>
+                    <button type="button" className="btn btn-outline btn-sm" onClick={() => openEditForm(stop)} disabled={busy}>
+                      <i className="fa-solid fa-pen-to-square" /> Sửa
+                    </button>
+                    <button type="button" className="btn btn-danger btn-sm" onClick={() => remove(stop)} disabled={busy}>
+                      <i className="fa-solid fa-trash" /> Xóa
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      ) : (
+        <div className={s.form}>
+          <div className={`form-group ${s.full}`}>
+            <label htmlFor="rest-stop-name" className="required">Tên trạm dừng</label>
+            <input id="rest-stop-name" className="form-control" value={locationName} onChange={e => setLocationName(e.target.value)} maxLength={255} required />
+          </div>
+          <div className={`form-group ${s.full}`}>
+            <label htmlFor="rest-stop-address" className="required">Địa chỉ</label>
+            <input id="rest-stop-address" className="form-control" value={address} onChange={e => setAddress(e.target.value)} maxLength={255} required />
+          </div>
+          <div className="form-group">
+            <label htmlFor="rest-stop-city" className="required">Thành phố</label>
+            <input id="rest-stop-city" className="form-control" value={city} onChange={e => setCity(e.target.value)} maxLength={100} required />
+          </div>
+          <div className="form-group">
+            <label htmlFor="rest-stop-province" className="required">Tỉnh/thành</label>
+            <input id="rest-stop-province" className="form-control" value={province} onChange={e => setProvince(e.target.value)} maxLength={100} required />
+          </div>
+          <div className="form-group">
+            <label htmlFor="rest-stop-country" className="required">Quốc gia</label>
+            <input id="rest-stop-country" className="form-control" value={country} onChange={e => setCountry(e.target.value)} maxLength={100} required />
+          </div>
+        </div>
+      )}
+    </Modal>
+  )
+}
+
 export default function AdminRoutesPage() {
   const toast = useToast()
   const [tab, setTab] = useState<Tab>('all')
-  const [modal, setModal] = useState<{ kind: 'edit'; route: BackendRouteResponse | null } | { kind: 'stops'; route: BackendRouteResponse } | null>(null)
+  const [modal, setModal] = useState<
+    | { kind: 'edit'; route: BackendRouteResponse | null }
+    | { kind: 'stops'; route: BackendRouteResponse }
+    | { kind: 'rest-stops' }
+    | null
+  >(null)
 
   const { routes = [], locations = [], reload } = usePageData<typeof adminRoutesLoader>()
 
@@ -598,12 +767,17 @@ export default function AdminRoutesPage() {
         searchPlaceholder="Tìm theo tên tuyến, mô tả..."
         countLabel="tuyến"
         actions={
-          <button
-            className="btn btn-primary"
-            onClick={() => setModal({ kind: 'edit', route: null })}
-          >
-            <i className="fa-solid fa-plus" /> Thêm Tuyến Cố Định Mới
-          </button>
+          <>
+            <button className="btn btn-outline" onClick={() => setModal({ kind: 'rest-stops' })}>
+              <i className="fa-solid fa-map-pin" /> Quản lý trạm dừng
+            </button>
+            <button
+              className="btn btn-primary"
+              onClick={() => setModal({ kind: 'edit', route: null })}
+            >
+              <i className="fa-solid fa-plus" /> Thêm Tuyến Cố Định Mới
+            </button>
+          </>
         }
       />
 
@@ -621,6 +795,10 @@ export default function AdminRoutesPage() {
 
       {modal?.kind === 'stops' && (
         <StopsViewModal route={modal.route} onClose={() => setModal(null)} />
+      )}
+
+      {modal?.kind === 'rest-stops' && (
+        <RestStopsModal locations={locations} onClose={() => setModal(null)} onChanged={reload} />
       )}
     </>
   )
