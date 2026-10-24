@@ -148,6 +148,7 @@ public class PaymentServiceImpl implements PaymentService {
         paymentMap.put("refundAmount", refundAmount);
         paymentMap.put("penaltyAmount", penaltyAmount);
         paymentMap.put("cancelReason", reason);
+        paymentMap.put("cancelledAt", now.toEpochMilli()); // khách xem lại thời điểm hủy trong lịch sử đơn
         payload.setPayment(paymentMap);
 
         appendHistory(payload, actor, policyMsg + " Lý do: " + reason);

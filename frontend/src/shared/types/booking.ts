@@ -198,7 +198,7 @@ export interface PlanConfirmed { at: number; by: string; note: string }
 // Nhà xe từ chối đơn: Manager (lúc tiếp nhận) hoặc Coordinator (không duyệt phương án xe, lộ trình)
 export interface Rejection { at: number; by: string; role: 'manager' | 'coordinator'; reason: string }
 
-export interface Cancellation { at: number; reason: string; by: 'customer' | 'manager'; refund: number } // refund: số tiền trả lại khách
+export interface Cancellation { at?: number; reason: string; by: 'customer' | 'manager'; refund: number } // refund: số tiền trả lại khách; at: chưa có ở đơn hủy trước khi backend ghi thời điểm
 
 export interface Payment { paidAt: number; amount: number; reference: string }
 

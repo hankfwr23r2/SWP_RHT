@@ -25,6 +25,13 @@ describe('chuyển đơn từ backend sang frontend', () => {
     const b = toBooking({ ...base, status: 'handover_timeout', statusLabel: 'Quá hạn bàn giao, ngựa đang lưu chuồng gần điểm giao', customerStatusLabel: 'Quá giờ nhận ngựa, ngựa đang được lưu chuồng' })
     expect(b).toMatchObject({ status: 'handover_timeout', statusLabel: 'Quá hạn bàn giao, ngựa đang lưu chuồng gần điểm giao', customerStatusLabel: 'Quá giờ nhận ngựa, ngựa đang được lưu chuồng' })
   })
+  it('đơn khách hủy sau cọc: lấy thời điểm, lý do và số tiền hoàn từ backend', () => {
+    const b = toBooking({ ...base, status: 'cancelled', payment: { paidAt: 2_000, amount: 3_000_000, cancelled: true, cancelledAt: 9_000, cancelReason: 'Đổi lịch', refundAmount: 0, penaltyAmount: 3_000_000 } })
+    expect(b.cancellation).toEqual({ at: 9_000, reason: 'Đổi lịch', by: 'customer', refund: 0 })
+  })
+  it('đơn chưa hủy thì không có thông tin hủy', () => {
+    expect(toBooking({ ...base, payment: { paidAt: 2_000, amount: 3_000_000 } }).cancellation).toBeUndefined()
+  })
   it('giữ CCCD và địa chỉ người gửi, người nhận backend trả về', () => {
     const b = toBooking({
       ...base,
