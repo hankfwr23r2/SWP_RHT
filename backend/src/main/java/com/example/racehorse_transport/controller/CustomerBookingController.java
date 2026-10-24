@@ -51,14 +51,21 @@ public class CustomerBookingController {
                 .body(ApiResponse.success(response, "Gửi yêu cầu đặt đơn thành công"));
     }
 
-    // 2. API Khách hàng lấy danh sách đơn của mình
+    // 2. API Khách hàng lấy danh sách đơn của mình (hỗ trợ phân trang tùy chọn)
     @GetMapping
-    public ResponseEntity<ApiResponse<List<BookingResponse>>> getMyBookings(
-            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
+    public ResponseEntity<ApiResponse<?>> getMyBookings(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "size", required = false, defaultValue = "20") Integer size) {
         String username = extractUsername(authHeader);
         if (username == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("Vui lòng đăng nhập để xem đơn hàng!"));
+        }
+
+        if (page != null) {
+            com.example.racehorse_transport.dto.common.PagedResponse<BookingResponse> paged = bookingService.getCustomerBookingsPaged(username, page, size);
+            return ResponseEntity.ok(ApiResponse.success(paged, "Lấy danh sách đơn hàng thành công"));
         }
 
         List<BookingResponse> bookings = bookingService.getCustomerBookings(username);

@@ -897,4 +897,38 @@ class BookingServiceImplTest {
         assertThat(duringClearance.getCanCancel()).isTrue();
         assertThat(duringClearance.getCanPayBalance()).isFalse();
     }
+
+    @Test
+    void getCustomerBookingsPaged_returnsPagedResponse() {
+        User user = new User();
+        user.setId(10);
+        user.setUsername("phuc");
+        when(userRepository.findByUsernameOrEmail("phuc", "phuc")).thenReturn(Optional.of(user));
+
+        Booking booking = bookingOwnedByCustomer();
+        org.springframework.data.domain.Page<Booking> page = new org.springframework.data.domain.PageImpl<>(
+                List.of(booking), org.springframework.data.domain.PageRequest.of(0, 10), 1);
+        when(bookingRepository.findByCustomerID_IdOrderByBookingDateDesc(any(Integer.class), any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(page);
+
+        com.example.racehorse_transport.dto.common.PagedResponse<BookingResponse> result = service.getCustomerBookingsPaged("phuc", 0, 10);
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getPage()).isEqualTo(0);
+        assertThat(result.getTotalPages()).isEqualTo(1);
+        assertThat(result.isLast()).isTrue();
+    }
+
+    @Test
+    void getBookingsPaged_returnsAllPagedWhenStatusAll() {
+        Booking booking = bookingOwnedByCustomer();
+        org.springframework.data.domain.Page<Booking> page = new org.springframework.data.domain.PageImpl<>(
+                List.of(booking), org.springframework.data.domain.PageRequest.of(0, 20), 1);
+        when(bookingRepository.findAllByOrderByBookingDateDesc(any(org.springframework.data.domain.Pageable.class)))
+                .thenReturn(page);
+
+        com.example.racehorse_transport.dto.common.PagedResponse<BookingResponse> result = service.getBookingsPaged("ALL", 0, 20);
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getTotalElements()).isEqualTo(1);
+    }
 }

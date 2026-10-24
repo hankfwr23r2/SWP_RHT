@@ -1,10 +1,11 @@
 // Lịch sử đơn của khách: các đơn đã kết thúc (hoàn thành, đã hủy, hết hạn báo giá, bị từ chối), có tìm kiếm và lọc.
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { orderTabOf } from '@shared/lib/booking'
 import { formatDate, formatDateTime, formatVND } from '@shared/lib/format'
 import { usePageData } from '@shared/routing/pageData'
 import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
+import { usePagination } from '@shared/ui/usePagination'
 import type { ordersLoader } from './loaders'
 import s from './OrdersList.module.css'
 
@@ -20,6 +21,8 @@ export default function HistoryPage() {
   const keyword = text.trim().toLowerCase()
   const fits = finished.filter(b => !keyword || [b.id, b.origin.name, b.dest.name, ...b.horses.map(h => h.name)].some(v => v.toLowerCase().includes(keyword)))
   const rows = fits.filter(b => tab === 'all' || orderTabOf(b) === tab).sort((a, z) => z.departAt - a.departAt)
+  const pager = usePagination(rows, 15)
+  useEffect(() => { pager.reset() }, [tab, keyword])
   const count = (t: Tab) => fits.filter(b => t === 'all' || orderTabOf(b) === t).length
   // Kết quả tài chính của đơn: hoàn tất thì tổng đã trả, đã hủy thì số tiền được hoàn
   const money = (b: (typeof finished)[number]) => b.status === 'cancelled' ? (b.cancellation?.refund ? `Hoàn ${formatVND(b.cancellation.refund)}` : b.payment ? `Mất cọc ${formatVND(b.payment.amount)}` : 'Không phát sinh') : b.quote ? formatVND(b.quote.total + (b.settlement?.total ?? 0)) : '-'
@@ -44,7 +47,7 @@ export default function HistoryPage() {
           <table className="data-table">
             <thead><tr><th>Mã đơn</th><th>Tuyến</th><th>Khởi hành</th><th>Ngựa</th><th>Kết thúc</th><th>Kết quả</th><th>Đánh giá</th><th /></tr></thead>
             <tbody>
-              {rows.map(b => (
+              {pager.rows.map(b => (
                 <tr key={b.id}>
                   <td><b>{b.id}</b><div className="sub-text">{b.type === 'international' ? 'Quốc tế' : 'Trong nước'}</div></td>
                   <td>{placeName(b.origin.name)} → {placeName(b.dest.name)}</td>
@@ -60,7 +63,7 @@ export default function HistoryPage() {
           </table>
           {orders && !rows.length && <div className={s.empty}><i className="fa-solid fa-clock-rotate-left" /><h3>Chưa có đơn nào trong lịch sử</h3><p>Đơn đã hoàn thành hoặc đã đóng sẽ hiện ở đây.</p></div>}
         </div>
-        {orders && <p className={s.count}>Hiển thị {rows.length} đơn</p>}
+        {orders && rows.length > 0 && <div className={s.paginationWrap}>{pager.bar}</div>}
       </div>
     </div>
   )

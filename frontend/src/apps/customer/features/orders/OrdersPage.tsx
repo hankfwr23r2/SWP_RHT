@@ -1,5 +1,5 @@
 // Đơn hàng của tôi: lọc theo trạng thái, tìm kiếm, lọc ngày khởi hành, mỗi đơn một thẻ có tiến độ và nút việc cần làm.
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { BOOKING_STEPS, stepOf, statusRank } from '@shared/config/booking-rules'
 import { arrivalOf, orderTabOf, type OrderTab } from '@shared/lib/booking'
@@ -8,6 +8,7 @@ import { useStaggerIn } from '@shared/motion/motion'
 import { usePageData } from '@shared/routing/pageData'
 import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
 import { useNow } from '@shared/ui/useNow'
+import { usePagination } from '@shared/ui/usePagination'
 import { nextStep } from './nextStep'
 import type { ordersLoader } from './loaders'
 import s from './OrdersList.module.css'
@@ -42,7 +43,9 @@ export default function OrdersPage() {
     (!from || b.departAt >= day(from)) && (!to || b.departAt <= day(to, true))
   const filtered = all.filter(fits)
   const list = filtered.filter(x => tab === 'all' || x.tab === tab).sort((a, z) => statusRank(a.b.status) - statusRank(z.b.status) || a.b.departAt - z.b.departAt)
-  const ref = useStaggerIn('[data-row]', [tab, all.length])
+  const pager = usePagination(list, 10)
+  useEffect(() => { pager.reset() }, [tab, keyword, from, to])
+  const ref = useStaggerIn('[data-row]', [tab, all.length, pager.rows.length])
   const filtering = !!(keyword || from || to)
   const fresh = all.find(x => x.b.id === newId)
 
@@ -81,7 +84,7 @@ export default function OrdersPage() {
           <div className={s.empty}><i className="fa-solid fa-box-open" /><h3>{filtering ? 'Không có đơn nào khớp bộ lọc' : 'Chưa có đơn hàng nào ở mục này'}</h3><p>{filtering ? 'Thử đổi từ khóa hoặc khoảng ngày.' : 'Chọn trạng thái khác hoặc đặt chuyến mới.'}</p></div>
         ) : (
           <div ref={ref} className={s.list}>
-            {list.map(({ b, next }) => {
+            {pager.rows.map(({ b, next }) => {
               const at = stepOf(b.status)
               const stopped = b.status === 'quote_expired' || b.status === 'rejected' || b.status === 'cancelled'
               return (
@@ -123,7 +126,7 @@ export default function OrdersPage() {
             })}
           </div>
         )}
-        {orders && <p className={s.count}>Hiển thị {list.length} đơn hàng</p>}
+        {orders && list.length > 0 && <div className={s.paginationWrap}>{pager.bar}</div>}
       </div>
     </div>
   )
