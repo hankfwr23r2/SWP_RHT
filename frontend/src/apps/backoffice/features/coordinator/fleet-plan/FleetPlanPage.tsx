@@ -190,7 +190,14 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
     }
   }, [])
 
-  const stationsOnRoute = rests.flatMap(r => TRANSIT_STATIONS.filter(x => x.name === r.name))
+  const stationsOnRoute = rests.map(r => {
+    const st = TRANSIT_STATIONS.find(x => x.name === r.name)
+    if (st) return st
+    if (r.lat != null && r.lng != null) {
+      return { name: r.name, lat: r.lat, lng: r.lng, area: 'Trạm cố định' }
+    }
+    return undefined
+  }).filter((x): x is NonNullable<typeof x> => !!x)
 
   const roadPath = origin && dest ? routeOutline(origin, gateGeo, dest, stationsOnRoute).path : undefined
   const {
@@ -230,6 +237,8 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
             afterLeg: idx + 1,
             name: matchedStation ? matchedStation.name : (s.locationName || `Trạm ${idx + 1}`),
             minutes: 45,
+            lat: s.latitude ?? matchedStation?.lat,
+            lng: s.longitude ?? matchedStation?.lng,
           })
         })
       if (newRests.length > 0) {
@@ -287,6 +296,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
     setWorking(true)
     try {
       await bookingsApi.confirmPlan(b.id, session!.name, {
+        routeId: selectedCorridorId ? Number(selectedCorridorId) : undefined,
         trips,
         route,
         gate: international ? gate : undefined,

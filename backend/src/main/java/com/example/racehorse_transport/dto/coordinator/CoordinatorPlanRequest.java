@@ -11,6 +11,7 @@ import java.util.List;
 @AllArgsConstructor
 public class CoordinatorPlanRequest {
     private String by;
+    private Integer routeId;
     private List<VehicleTripDto> trips;
     private Object route;
     private String gate;

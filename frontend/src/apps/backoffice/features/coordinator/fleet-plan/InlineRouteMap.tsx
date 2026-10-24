@@ -46,9 +46,19 @@ export function InlineRouteMap({ origin, dest, gate, departAt, rests, activeRoad
   const map = useRef<L.Map | null>(null)
   const layer = useRef<L.LayerGroup | null>(null)
 
+  const allStations = useMemo(() => {
+    const list = [...TRANSIT_STATIONS]
+    rests.forEach(r => {
+      if (r.lat != null && r.lng != null && !list.some(s => s.name === r.name)) {
+        list.push({ name: r.name, lat: r.lat, lng: r.lng, area: 'Hành lang an toàn', country: 'VN' })
+      }
+    })
+    return list
+  }, [rests])
+
   const chosen = useMemo(
-    () => TRANSIT_STATIONS.filter(s => rests.some(r => r.name === s.name)),
-    [rests]
+    () => allStations.filter(s => rests.some(r => r.name === s.name)),
+    [allStations, rests]
   )
   const outline = useMemo(
     () => routeOutline(origin, gate, dest, chosen),
@@ -107,7 +117,7 @@ export function InlineRouteMap({ origin, dest, gate, departAt, rests, activeRoad
     }).addTo(g)
 
     // Các trạm dừng trên hệ thống
-    TRANSIT_STATIONS.forEach(s => {
+    allStations.forEach(s => {
       const n = order(s.name)
       const rest = rests.find(r => r.name === s.name)
       const isSelected = n > 0

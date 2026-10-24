@@ -15,6 +15,7 @@ import com.example.racehorse_transport.dto.admin.SystemConfigResponse;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.User;
 import com.example.racehorse_transport.entity.Vehicle;
+import com.example.racehorse_transport.entity.Route;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.BookingAssignmentRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
@@ -74,6 +75,7 @@ class BookingServiceImplTest {
     private final LocationRepository locationRepository = mock(LocationRepository.class);
     private final TripDocumentRepository tripDocumentRepository = mock(TripDocumentRepository.class);
     private final SystemConfigService systemConfigService = mock(SystemConfigService.class);
+    private final com.example.racehorse_transport.repository.RouteRepository routeRepository = mock(com.example.racehorse_transport.repository.RouteRepository.class);
 
     private BookingServiceImpl service;
     private Customer customer;
@@ -97,7 +99,8 @@ class BookingServiceImplTest {
                 regulationRepository,
                 locationRepository,
                 systemConfigService,
-                tripDocumentRepository);
+                tripDocumentRepository,
+                routeRepository);
 
         when(systemConfigService.getConfig("MIN_LEAD_DAYS")).thenReturn(config("MIN_LEAD_DAYS", "20"));
         when(systemConfigService.getConfig("DEPOSIT_RATE")).thenReturn(config("DEPOSIT_RATE", "0.30"));
@@ -484,6 +487,40 @@ class BookingServiceImplTest {
                     .hasMessageContaining("chặng");
         }
         verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
+    void confirmCoordinatorPlan_setsRouteIdWhenProvided() {
+        Booking booking = bookingOwnedByCustomer();
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Vehicle vehicle = new Vehicle();
+        vehicle.setId(1);
+        vehicle.setCapacity(4);
+        vehicle.setVehicleCode("VH-001");
+        when(fleetService.findVehicleByIdOrCode("VH-001")).thenReturn(vehicle);
+
+        Route route = new Route();
+        route.setId(5);
+        route.setRouteName("Tuyến test");
+        when(routeRepository.findById(5)).thenReturn(Optional.of(route));
+
+        var trip = new com.example.racehorse_transport.dto.coordinator.VehicleTripDto();
+        trip.setVehicleId("VH-001");
+        trip.setHorseIds(List.of("H-001"));
+
+        var planRequest = com.example.racehorse_transport.dto.coordinator.CoordinatorPlanRequest.builder()
+                .routeId(5)
+                .trips(List.of(trip))
+                .route(Map.of("legs", List.of(Map.of("from", "A", "to", "B"))))
+                .build();
+
+        BookingResponse res = service.confirmCoordinatorPlan("BK-042", planRequest);
+
+        assertThat(res.getRouteId()).isEqualTo(5);
+        assertThat(booking.getRouteID()).isEqualTo(route);
+        verify(routeRepository).findById(5);
     }
 
     @Test

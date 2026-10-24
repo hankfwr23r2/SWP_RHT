@@ -276,8 +276,8 @@ export const bookingsApi = {
     toBooking(await specialistApi.approveMedical(id, { specialistName: by })),
   requestResubmission: async (id: string, by: string, reason: string, items: { horseId: string; doc: 'passport' | 'vaccine' | 'lab' }[]): Promise<Booking> =>
     toBooking(await specialistApi.requestResubmission(id, { specialistName: by, reason: reason.trim(), items })),
-  confirmPlan: async (id: string, by: string, input: { trips: Pick<VehicleTrip, 'vehicleId' | 'horseIds'>[]; route: Pick<RoutePlan, 'legs' | 'rests' | 'borderEta'>; gate?: string; note?: string }): Promise<Booking> =>
-    toBooking(await backendBookingApi.confirmFleetPlan(id, { by, trips: input.trips, route: input.route, gate: input.gate, note: input.note })),
+  confirmPlan: async (id: string, by: string, input: { routeId?: number; trips: Pick<VehicleTrip, 'vehicleId' | 'horseIds'>[]; route: Pick<RoutePlan, 'legs' | 'rests' | 'borderEta'>; gate?: string; note?: string }): Promise<Booking> =>
+    toBooking(await backendBookingApi.confirmFleetPlan(id, { by, routeId: input.routeId, trips: input.trips, route: input.route, gate: input.gate, note: input.note })),
   sendBack: async (id: string, by: string, to: 'specialist' | 'coordinator' | 'both', reason: string): Promise<Booking> =>
     toBooking(await backendBookingApi.sendBack(id, { by, to, reason: reason.trim() })),
   assignCrew: async (id: string, by: string, picks: { tripId: string; driverId: string; escortId: string }[]): Promise<Booking> =>
