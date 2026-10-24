@@ -1,6 +1,10 @@
 /* Trang Điều phối (gốc: Fleet And Route/OPS-*.css, fleet_route_sidebar.css) */
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
 .gridWide { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.routeLayout { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 36px; align-items: start; }
+.routeMain { display: grid; gap: 16px; min-width: 0; }
+.routeMain > * { min-width: 0; max-width: 100%; }
+.routeSide { min-width: 0; }
 .formRow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .selected td { background: var(--orange-soft); }
@@ -28,7 +32,7 @@
 .progress { height: 6px; border-radius: 999px; background: var(--bg-soft); overflow: hidden; margin-top: 4px; min-width: 80px; }
 .progress div { height: 100%; background: var(--green); }
 
-@media (max-width: 960px) {
-  .grid2, .gridWide, .legGrid { grid-template-columns: 1fr; }
+@media (max-width: 1200px) {
+  .grid2, .gridWide, .routeLayout, .legGrid { grid-template-columns: minmax(0, 1fr); }
   .formRow { grid-template-columns: 1fr; }
 }
