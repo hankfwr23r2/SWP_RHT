@@ -13,6 +13,8 @@ export interface RoadRoute {
   km: number
   hours: number // thời gian lái, chưa gồm thời gian nghỉ ở trạm
   legs?: RoadLeg[] // từng chặng giữa các điểm dừng nối tiếp
+  name?: string
+  summary?: string
   source: 'osrm' | 'offline'
   traffic: boolean
 }
@@ -103,6 +105,43 @@ export const clearRoadCache = () => { cache.clear(); alternatives.clear() }
 
 // Các đường thay thế giữa hai điểm (cho sự cố tắc nghẽn)
 const alternatives = new Map<string, RoadRoute[]>()
+
+async function viaOsrmWithAlternatives(points: GeoPoint[], signal?: AbortSignal): Promise<RoadRoute[]> {
+  const coords = points.map(p => `${p.lng},${p.lat}`).join(';')
+  const res = await fetch(`${OSRM_URL}/${coords}?overview=full&geometries=geojson&alternatives=true`, { signal })
+  if (!res.ok) return []
+  const routes = (await res.json()).routes ?? []
+  return routes.filter((r: any) => r?.geometry?.coordinates).map((r: any, idx: number) => {
+    const legs: RoadLeg[] = Array.isArray(r.legs)
+      ? r.legs.map((l: { distance: number; duration: number }) => ({
+          km: Math.round(l.distance / 1000),
+          hours: parseFloat((l.duration / 3600).toFixed(2)),
+        }))
+      : []
+    return {
+      path: (r.geometry.coordinates as [number, number][]).map(([lng, lat]) => [lat, lng] as [number, number]),
+      km: Math.round(r.distance / 1000),
+      hours: parseFloat((r.duration / 3600).toFixed(1)),
+      legs,
+      name: idx === 0 ? 'Tuyến tối ưu OSRM' : `Tuyến thay thế ${idx}`,
+      source: 'osrm' as const,
+      traffic: false,
+    }
+  })
+}
+
+export async function roadRoutesWithAlternatives(points: GeoPoint[], _departAt?: number, opts: RoadOptions = {}): Promise<RoadRoute[]> {
+  if (points.length < 2) return []
+  const k = 'alts:' + keyOf(points)
+  const hit = alternatives.get(k)
+  if (hit) return hit
+  const attempt = async (fn: () => Promise<RoadRoute[]>) => { try { return await fn() } catch { return [] } }
+  const osrmRoutes = await attempt(() => viaOsrmWithAlternatives(points, opts.signal))
+  const out = osrmRoutes.length > 0 ? osrmRoutes : [viaOffline(points)]
+  if (out.length) alternatives.set(k, out)
+  return out
+}
+
 export async function roadAlternatives(from: GeoPoint, to: GeoPoint, _departAt?: number, opts: RoadOptions = {}): Promise<RoadRoute[]> {
   const k = keyOf([from, to])
   const hit = alternatives.get(k)
