@@ -33,5 +33,11 @@ public class LocationRoute {
     @Column(name = "departureTime")
     private LocalTime departureTime;
 
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
 
 }

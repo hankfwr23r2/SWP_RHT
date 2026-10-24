@@ -15,8 +15,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class RouteServiceImpl implements RouteService {
@@ -77,17 +79,15 @@ public class RouteServiceImpl implements RouteService {
         if (request == null || request.getRouteName() == null || request.getRouteName().trim().isEmpty()) {
             throw new IllegalArgumentException("Tên tuyến đường không được để trống!");
         }
+        validateStops(request.getStops());
 
         Route route = new Route();
-        Integer maxId = routeRepository.findAll().stream().mapToInt(Route::getId).max().orElse(0);
-        route.setId(maxId + 1);
+        route.setId(routeRepository.findMaxId() + 1);
         route.setRouteName(request.getRouteName().trim());
         route.setDescription(request.getDescription());
         route.setEstimatedTime(request.getEstimatedTime());
         route.setDistance(request.getDistance());
-        route.setStatus(request.getStatus() != null && !request.getStatus().isBlank()
-                ? request.getStatus().trim().toUpperCase()
-                : "ACTIVE");
+        route.setStatus(normalizeStatus(request.getStatus()));
 
         Route savedRoute = routeRepository.save(route);
         saveRouteStops(savedRoute, request.getStops());
@@ -97,9 +97,18 @@ public class RouteServiceImpl implements RouteService {
     @Override
     @Transactional
     public Route updateRoute(Integer id, CreateRouteRequest request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Thông tin tuyến đường không được để trống!");
+        }
         Route route = routeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tuyến đường có ID: " + id));
+        if (request.getStops() != null) {
+            validateStops(request.getStops());
+        }
 
+        if (request.getRouteName() != null && request.getRouteName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Tên tuyến đường không được để trống!");
+        }
         if (request.getRouteName() != null && !request.getRouteName().trim().isEmpty()) {
             route.setRouteName(request.getRouteName().trim());
         }
@@ -113,7 +122,7 @@ public class RouteServiceImpl implements RouteService {
             route.setDistance(request.getDistance());
         }
         if (request.getStatus() != null && !request.getStatus().isBlank()) {
-            route.setStatus(request.getStatus().trim().toUpperCase());
+            route.setStatus(normalizeStatus(request.getStatus()));
         }
 
         Route savedRoute = routeRepository.save(route);
@@ -141,10 +150,8 @@ public class RouteServiceImpl implements RouteService {
         List<LocationRoute> newStops = new ArrayList<>();
         for (int i = 0; i < stops.size(); i++) {
             CreateRouteRequest.RouteStopItem stopItem = stops.get(i);
-            if (stopItem.getLocationId() == null) continue;
-
             Location location = locationRepository.findById(stopItem.getLocationId())
-                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy điểm dừng ID: " + stopItem.getLocationId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy điểm dừng ID: " + stopItem.getLocationId()));
 
             LocationRoute lr = new LocationRoute();
             LocationRouteId lrId = new LocationRouteId();
@@ -154,8 +161,42 @@ public class RouteServiceImpl implements RouteService {
             lr.setRouteID(route);
             lr.setLocationID(location);
             lr.setStopOrder(stopItem.getStopOrder() != null ? stopItem.getStopOrder() : (i + 1));
+            lr.setLatitude(stopItem.getLatitude());
+            lr.setLongitude(stopItem.getLongitude());
             newStops.add(lr);
         }
         locationRouteRepository.saveAll(newStops);
+    }
+
+    private void validateStops(List<CreateRouteRequest.RouteStopItem> stops) {
+        if (stops == null || stops.size() < 2) {
+            throw new IllegalArgumentException("Tuyến đường phải có ít nhất điểm xuất phát và điểm đến.");
+        }
+
+        Set<Integer> locationIds = new HashSet<>();
+        for (CreateRouteRequest.RouteStopItem stop : stops) {
+            if (stop.getLocationId() == null) {
+                throw new IllegalArgumentException("Mã địa điểm trên tuyến không được để trống.");
+            }
+            if (!locationIds.add(stop.getLocationId())) {
+                throw new IllegalArgumentException("Một địa điểm không thể xuất hiện nhiều lần trên cùng tuyến.");
+            }
+            if ((stop.getLatitude() == null) != (stop.getLongitude() == null)) {
+                throw new IllegalArgumentException("Vĩ độ và kinh độ của điểm tuyến phải được cung cấp cùng nhau.");
+            }
+            if (stop.getLatitude() != null
+                    && (stop.getLatitude() < -90 || stop.getLatitude() > 90
+                    || stop.getLongitude() < -180 || stop.getLongitude() > 180)) {
+                throw new IllegalArgumentException("Tọa độ điểm tuyến không hợp lệ.");
+            }
+        }
+    }
+
+    private String normalizeStatus(String status) {
+        String normalized = status == null || status.isBlank() ? "ACTIVE" : status.trim().toUpperCase();
+        if (!List.of("ACTIVE", "MAINTENANCE", "INACTIVE").contains(normalized)) {
+            throw new IllegalArgumentException("Trạng thái tuyến phải là ACTIVE, MAINTENANCE hoặc INACTIVE.");
+        }
+        return normalized;
     }
 }

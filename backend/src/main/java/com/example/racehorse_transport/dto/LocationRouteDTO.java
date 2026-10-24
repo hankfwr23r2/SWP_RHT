@@ -25,5 +25,6 @@ public class LocationRouteDTO implements Serializable {
     private String address;
     private String province;
     private String country;
+    private Double latitude;
+    private Double longitude;
 }
-
