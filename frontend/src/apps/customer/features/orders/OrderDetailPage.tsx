@@ -1,5 +1,5 @@
 // Chi tiết đơn phía khách: tiến độ, bước tiếp theo, bổ sung hồ sơ, báo giá, đặt cọc, tiến độ giấy tờ, xe và ngựa, trả số dư.
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { BOOKING_STEPS, DEPOSIT_RATE, HORSE_DOC, stepOf } from '@shared/config/booking-rules'
@@ -15,9 +15,10 @@ import { Modal } from '@shared/ui/Modal'
 import { PolicyLink } from '@shared/ui/PolicyLink'
 import { QuoteSheet } from '@shared/ui/QuoteSheet'
 import { TripTimeline } from '@shared/ui/TripTimeline'
-import { TripTrackMap } from '@shared/ui/TripTrackMap'
 import { useToast } from '@shared/ui/toast'
 import { useNow } from '@shared/ui/useNow'
+
+const TripTrackMap = lazy(() => import('@shared/ui/TripTrackMap').then(m => ({ default: m.TripTrackMap })))
 import { HorseFormModal } from '../horses/HorseFormModal'
 import { IncidentsCard, SettlementCard } from './SettlementCard'
 import { ClearanceProgressCard } from './ClearanceProgressCard'
@@ -332,7 +333,9 @@ export default function OrderDetailPage() {
               {trips.length > 0 && b.route && (ROUTE_VISIBLE.includes(b.status) || trips.some(t => t.run)) && (
                 <div className="card">
                   <div className="card-header"><h3><i className="fa-solid fa-map-location-dot" /> Theo dõi trên bản đồ</h3></div>
-                  <TripTrackMap b={b} trips={trips} />
+                  <Suspense fallback={<div style={{ padding: 32, textAlign: 'center', color: 'var(--muted)' }}><i className="fa-solid fa-spinner fa-spin" /> Đang tải bản đồ lộ trình…</div>}>
+                    <TripTrackMap b={b} trips={trips} />
+                  </Suspense>
                 </div>
               )}
               <IncidentsCard b={b} />
