@@ -83,13 +83,12 @@ public class VnpayServiceImpl implements VnpayService {
                     throw new IllegalStateException("Đơn hàng không ở bước chờ thanh toán đặt cọc!");
                 }
                 if (hasCompleted(payments, "DEPOSIT")) {
-                    throw new IllegalStateException("Đơn hàng này đã đặt cọc 30%!");
+                    throw new IllegalStateException("Đơn hàng này đã thanh toán tiền đặt cọc!");
                 }
                 Quotation quotation = latestQuotation(booking);
                 if (quotation.getExpiresAt() != null) {
                     if (now.isAfter(quotation.getExpiresAt())) {
-                        throw new IllegalStateException("Báo giá đã hết hạn " + BookingServiceImpl.QUOTE_VALID_HOURS
-                                + " giờ, không thể đặt cọc!");
+                        throw new IllegalStateException("Báo giá đã hết hạn, không thể đặt cọc!");
                     }
                     // Link thanh toán không sống lâu hơn báo giá
                     if (quotation.getExpiresAt().isBefore(expiresAt)) {
@@ -103,7 +102,7 @@ public class VnpayServiceImpl implements VnpayService {
             case "BALANCE" -> {
                 ensureOpen(booking);
                 if (!hasCompleted(payments, "DEPOSIT") && booking.getWaybillNo() == null) {
-                    throw new IllegalStateException("Đơn hàng chưa thanh toán tiền cọc 30%! Vui lòng cọc trước khi thanh toán số dư.");
+                    throw new IllegalStateException("Đơn hàng chưa thanh toán tiền đặt cọc! Vui lòng cọc trước khi thanh toán số dư.");
                 }
                 if (hasCompleted(payments, "BALANCE")) {
                     throw new IllegalStateException("Đơn hàng này đã thanh toán đủ 70% còn lại!");

@@ -6,7 +6,6 @@ import { paymentApi, vnpayParamsFrom, type VnpayResultDto } from '@shared/api/pa
 import { formatVND } from '@shared/lib/format'
 
 const PAYMENT_LABEL: Record<string, string> = {
-  DEPOSIT: 'Đặt cọc 30%',
   BALANCE: 'Thanh toán 70% còn lại',
   SETTLEMENT: 'Thanh toán quyết toán',
 }
@@ -54,7 +53,7 @@ export default function VnpayReturnPage() {
               <p className="text-muted">{failure || result?.message}</p>
               {result?.amount !== undefined && (
                 <div style={{ textAlign: 'left', margin: '16px 0', display: 'grid', gap: 6 }}>
-                  {result.paymentType && <div><span className="text-muted">Khoản thanh toán: </span><b>{PAYMENT_LABEL[result.paymentType] ?? result.paymentType}</b></div>}
+                  {result.paymentType && <div><span className="text-muted">Khoản thanh toán: </span><b>{result.paymentType === 'DEPOSIT' ? 'Đặt cọc' : PAYMENT_LABEL[result.paymentType] ?? result.paymentType}</b></div>}
                   <div><span className="text-muted">Số tiền: </span><b>{formatVND(result.amount)}</b></div>
                   {result.bookingCode && <div><span className="text-muted">Đơn hàng: </span><b>{result.bookingCode}</b></div>}
                   {result.gatewayTransactionNo && <div><span className="text-muted">Mã giao dịch VNPAY: </span><b>{result.gatewayTransactionNo}</b></div>}

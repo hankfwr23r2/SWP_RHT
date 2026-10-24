@@ -1,7 +1,7 @@
 // Việc của Hộ tống theo từng mốc (Flow 4, PRD mục 5): quét microchip tại điểm đón, nhật ký an sinh tại trạm nghỉ và điểm giao.
 import { useState } from 'react'
 import { useAuth } from '@shared/auth/AuthContext'
-import { WELFARE_CONDITION, type WelfareCondition } from '@shared/config/booking-rules'
+import { VITAL_CHECK_INTERVAL_HOURS, WELFARE_CONDITION, type WelfareCondition } from '@shared/config/booking-rules'
 import { openIncidentOf, currentCheckpoint } from '@shared/lib/booking'
 import { formatDateTime } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
@@ -283,6 +283,11 @@ export function EscortJob({ b, t, reload }: { b: Booking; t: VehicleTrip; reload
   if (inc) return <IncidentPanel b={b} inc={inc} role="escort" run={run} />
   return (
     <>
+      {t.run?.startedAt && !t.run.deliveredAt && (
+        <Panel title="Theo dõi sinh hiệu" icon="fa-heart-pulse" tone="warn">
+          <p>Kiểm tra sinh hiệu của ngựa tối đa mỗi {VITAL_CHECK_INTERVAL_HOURS} giờ và ghi nhận tại mốc dừng tiếp theo.</p>
+        </Panel>
+      )}
       <EscortSteps b={b} t={t} run={run} />
       {(b.status === 'in_transit' || (t.run?.startedAt && !t.run.deliveredAt)) && <SosPanel b={b} t={t} run={run} />}
     </>

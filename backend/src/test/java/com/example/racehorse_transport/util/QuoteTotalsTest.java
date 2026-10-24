@@ -45,6 +45,14 @@ class QuoteTotalsTest {
     }
 
     @Test
+    void depositUsesTheConfiguredRate() {
+        QuoteTotals totals = QuoteTotals.of(List.of(line(10_000_000)), List.of(), new BigDecimal("0.25"));
+
+        assertThat(totals.deposit()).isEqualByComparingTo("2500000");
+        assertThat(totals.balance()).isEqualByComparingTo("7500000");
+    }
+
+    @Test
     void discountsCannotTakeTheTotalBelowZero() {
         QuoteTotals t = QuoteTotals.of(List.of(line(1_000_000)), List.of(adjustment(-2_000_000)));
 

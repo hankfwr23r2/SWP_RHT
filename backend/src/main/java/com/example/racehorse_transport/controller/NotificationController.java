@@ -151,7 +151,7 @@ public class NotificationController {
             seeds.add(Notification.builder()
                     .recipientRole("customer")
                     .title("Báo giá vận chuyển đã được phát hành")
-                    .message("Nhà xe đã gửi báo giá chính thức cho đơn của bạn. Vui lòng kiểm tra và đặt cọc trong 24h.")
+                    .message("Nhà xe đã gửi báo giá chính thức cho đơn của bạn. Vui lòng kiểm tra và đặt cọc trước khi báo giá hết hạn.")
                     .link("/orders")
                     .bookingId("BK-1")
                     .isRead(false)

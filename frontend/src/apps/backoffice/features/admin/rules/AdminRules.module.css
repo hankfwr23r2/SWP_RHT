@@ -1,0 +1,33 @@
+.wrap { max-width: 1120px; }
+.header { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 20px; }
+.header h1 { margin: 0; color: var(--navy); }
+.header p { margin: 6px 0 0; color: var(--muted); }
+.groups { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 12px; }
+.groupTab { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 8px; background: white; padding: 10px 14px; color: var(--text); white-space: nowrap; cursor: pointer; }
+.groupTabActive { color: var(--orange); border-color: var(--orange); background: var(--orange-soft); }
+.groupCount { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; border-radius: 50%; background: var(--bg-page); font-size: 0.75rem; }
+.panel { overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: white; box-shadow: var(--shadow-sm, 0 2px 8px rgba(15, 23, 42, 0.05)); }
+.panelHeader { padding: 18px 20px 12px; }
+.panelHeader h2 { margin: 0; font-size: 1.1rem; color: var(--navy); }
+.panelHeader p { margin: 4px 0 0; color: var(--muted); font-size: 0.85rem; }
+.rules { display: grid; }
+.rule { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 16px 20px; border-top: 1px solid var(--line); }
+.ruleInfo { min-width: 0; }
+.ruleTitle { color: var(--navy); font-weight: 650; }
+.ruleInfo p { margin: 4px 0 6px; color: var(--muted); font-size: 0.84rem; }
+.ruleInfo small { color: var(--muted); font-size: 0.78rem; }
+.ruleInfo small b { color: var(--text); }
+.editor { display: flex; align-items: center; gap: 8px; flex: 0 0 300px; }
+.valueField { display: flex; align-items: center; gap: 8px; width: 100%; }
+.valueField input { min-width: 0; }
+.valueField > span:last-child { min-width: max-content; color: var(--muted); font-size: 0.78rem; }
+.srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.note { display: flex; gap: 8px; margin: 0; padding: 14px 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.82rem; }
+.note i { color: var(--blue); }
+.empty { padding: 30px; text-align: center; color: var(--muted); }
+
+@media (max-width: 720px) {
+  .header { align-items: flex-start; flex-direction: column; }
+  .rule { align-items: stretch; flex-direction: column; gap: 12px; }
+  .editor { flex-basis: auto; }
+}

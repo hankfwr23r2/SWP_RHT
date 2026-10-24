@@ -13,8 +13,12 @@ export const HOLIDAYS = ['2026-01-01', '2026-04-30', '2026-05-01', '2026-09-02',
 export const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
 
 // ===== Đặt đơn =====
-export const MIN_LEAD_DAYS = 20 // Đặt trước ngày khởi hành tối thiểu 20 ngày
+export let MIN_LEAD_DAYS = 20 // Đặt trước ngày khởi hành tối thiểu 20 ngày
 export const MAX_HORSES = 9 // 1 đơn = 1 xe; xe Heavy lớn nhất có 9 ngăn
+
+export function applyRuntimeBusinessRules(config: { minLeadDays: number }) {
+  MIN_LEAD_DAYS = config.minLeadDays
+}
 
 // ===== Thẩm định (cam kết với khách) =====
 // Hạn = mốc SỚM HƠN của (1) 17:00 ngày làm việc thứ APPRAISAL_WORKING_DAYS sau ngày gửi đơn
