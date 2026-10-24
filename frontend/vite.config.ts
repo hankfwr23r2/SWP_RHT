@@ -26,10 +26,30 @@ export default defineConfig({
     alias: { '@shared': resolve(import.meta.dirname, 'src/shared') },
   },
   build: {
+    chunkSizeWarningLimit: 1200,
     rollupOptions: {
       input: {
         customer: resolve(import.meta.dirname, 'index.html'),
         backoffice: resolve(import.meta.dirname, 'backoffice.html'),
+      },
+      output: {
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('@vietmap') || id.includes('leaflet')) {
+              return 'vendor-maps'
+            }
+            if (id.includes('gsap') || id.includes('@gsap')) {
+              return 'vendor-animation'
+            }
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) {
+              return 'vendor-react'
+            }
+            if (id.includes('axios')) {
+              return 'vendor-network'
+            }
+            return 'vendor'
+          }
+        },
       },
     },
   },

@@ -1,6 +1,6 @@
 // Coordinator: chốt xe và lộ trình một đơn trong một trang (PRD mục 2.4, nhánh B).
 // Coordinator tự chọn xe (đơn đông ngựa thì nhiều xe), chia ngựa lên xe, lập lộ trình rồi xác nhận.
-import { Fragment, useEffect, useMemo, useState } from 'react'
+import { Fragment, lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { MAX_CONTINUOUS_HOURS, VEHICLE_CLASS } from '@shared/config/booking-rules'
@@ -37,7 +37,7 @@ import { History, ReviewChips } from '../../../shared/BookingParts'
 import s from '../../../shared/booking.module.css'
 import { FormSelect } from '@shared/ui/FormSelect'
 import { ResourcePicker } from '../../../shared/ResourcePicker'
-import { RouteMapPicker } from './RouteMapPicker'
+const RouteMapPicker = lazy(() => import('./RouteMapPicker').then(m => ({ default: m.RouteMapPicker })))
 import { InlineRouteMap } from './InlineRouteMap'
 import { roadNote } from '@shared/services/routing'
 import { useRoadRouteWithAlternatives } from '@shared/services/useRoadRoute'
@@ -980,18 +980,20 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
       </div>
 
       {mapOpen && origin && dest && (
-        <RouteMapPicker
-          origin={{ ...origin, name: b.origin.name }}
-          dest={{ ...dest, name: b.dest.name }}
-          gate={gateGeo ? { ...gateGeo, name: gateGeo.name } : undefined}
-          departAt={Number.isNaN(etdT) ? undefined : etdT}
-          value={rests}
-          onApply={picked => {
-            setRests(picked)
-            setBorderTouched(false)
-          }}
-          onClose={() => setMapOpen(false)}
-        />
+        <Suspense fallback={null}>
+          <RouteMapPicker
+            origin={{ ...origin, name: b.origin.name }}
+            dest={{ ...dest, name: b.dest.name }}
+            gate={gateGeo ? { ...gateGeo, name: gateGeo.name } : undefined}
+            departAt={Number.isNaN(etdT) ? undefined : etdT}
+            value={rests}
+            onApply={picked => {
+              setRests(picked)
+              setBorderTouched(false)
+            }}
+            onClose={() => setMapOpen(false)}
+          />
+        </Suspense>
       )}
       {picking !== null && trips[picking] && (
         <ResourcePicker
