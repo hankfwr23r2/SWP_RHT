@@ -47,6 +47,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import com.example.racehorse_transport.repository.RouteRepository;
+import com.example.racehorse_transport.entity.Route;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -72,6 +75,7 @@ public class BookingServiceImpl implements BookingService {
     private final LocationRepository locationRepository;
     private final SystemConfigService systemConfigService;
     private final TripDocumentRepository tripDocumentRepository;
+    private final RouteRepository routeRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // =========================================================================
@@ -720,6 +724,11 @@ public class BookingServiceImpl implements BookingService {
         } else {
             booking.setStatus("under_review");
             appendHistory(payload, "Hệ thống", "Điều phối viên đã chốt xe và lộ trình. Đang chờ Chuyên viên kiểm dịch thẩm định hồ sơ ngựa.");
+        }
+
+        if (request.getRouteId() != null) {
+            Route corridor = routeRepository.findById(request.getRouteId()).orElse(null);
+            booking.setRouteID(corridor);
         }
 
         try {
@@ -1637,6 +1646,7 @@ public class BookingServiceImpl implements BookingService {
                 .horses(horseDtos)
                 .waybillNo(b.getWaybillNo())
                 .trips(payload != null ? payload.getTrips() : null)
+                .routeId(b.getRouteID() != null ? b.getRouteID().getId() : null)
                 .route(payload != null ? payload.getRoute() : null)
                 .gate(payload != null ? payload.getGate() : null)
                 .plan(payload != null ? payload.getPlan() : null)

@@ -503,8 +503,11 @@ const placeName = (n: string) => n.split(' — ')[0]
 const MIN = 60_000
 
 // Tính khoảng cách từng chặng dựa trên vị trí thực tế của các điểm
-export function computeLegDistances(fromName: string, toName: string, rests: Pick<RestStop, 'name'>[], gate?: string): number[] {
-  const findPt = (name: string): GeoPoint | undefined => {
+export function computeLegDistances(fromName: string, toName: string, rests: Array<Pick<RestStop, 'name'> & { lat?: number; lng?: number }>, gate?: string): number[] {
+  const findPt = (name: string, fallbackCoord?: { lat?: number; lng?: number }): GeoPoint | undefined => {
+    if (fallbackCoord?.lat != null && fallbackCoord?.lng != null) {
+      return { lat: fallbackCoord.lat, lng: fallbackCoord.lng }
+    }
     const clean = placeName(name).trim()
     const loc = findLocation(clean) || findLocation(name)
     if (loc) return loc
@@ -517,7 +520,7 @@ export function computeLegDistances(fromName: string, toName: string, rests: Pic
 
   const pFrom = findPt(fromName)
   const pTo = findPt(toName)
-  const pRests = rests.map(r => findPt(r.name))
+  const pRests = rests.map(r => findPt(r.name, r))
 
   const n = rests.length + 1
   if (!pFrom || !pTo || pRests.some(p => !p)) return []

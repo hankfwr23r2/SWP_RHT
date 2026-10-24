@@ -12,7 +12,7 @@ import { Modal } from '@shared/ui/Modal'
 import { addVietmapBaseLayer, VIETMAP_MAP_OPTIONS } from '@shared/ui/vietmapLeaflet'
 import './RouteMapPicker.css'
 
-type Point = GeoPoint & { name: string }
+type Point = GeoPoint & { name: string; area?: string }
 const MINUTES = [MIN_REST_MINUTES, 45, 60, 90, 120]
 const DEFAULT_MINUTES = 45
 const short = (name: string) => name.split(' — ')[0]
@@ -26,6 +26,8 @@ const haversine = (a: GeoPoint, b: GeoPoint) => {
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) ** 2
   return 12742 * Math.asin(Math.sqrt(h))
 }
+
+import { routesApi } from '@shared/api/routes'
 
 interface Props {
   origin: Point
@@ -41,11 +43,46 @@ export function RouteMapPicker({ origin, dest, gate, departAt, value, onApply, o
   const box = useRef<HTMLDivElement>(null)
   const map = useRef<L.Map | null>(null)
   const layer = useRef<L.LayerGroup | null>(null)
+  const [stations, setStations] = useState<Point[]>(TRANSIT_STATIONS)
+
+  // Nạp thêm các trạm nghỉ động do Admin tạo từ backend
+  useEffect(() => {
+    let cancelled = false
+    routesApi.listLocations({ type: 'RestStop' }).then(locs => {
+      if (cancelled || !locs?.length) return
+      setStations(prev => {
+        const merged = [...prev]
+        locs.forEach(loc => {
+          if (!merged.some(s => s.name.toLowerCase() === loc.locationName.toLowerCase())) {
+            // Nếu có trạm mới từ DB nhưng không có tọa độ cố định, tìm từ các trạm được chọn trước đó
+            const existingVal = value.find(v => v.name === loc.locationName)
+            if (existingVal?.lat != null && existingVal?.lng != null) {
+              merged.push({ name: loc.locationName, lat: existingVal.lat, lng: existingVal.lng, area: loc.province || loc.city })
+            }
+          }
+        })
+        return merged
+      })
+    }).catch(() => {})
+    return () => { cancelled = true }
+  }, [value])
+
+  // Giữ lại các trạm đã có trong value (kể cả trạm từ corridor)
+  const allAvailableStations = useMemo(() => {
+    const list = [...stations]
+    value.forEach(v => {
+      if (v.lat != null && v.lng != null && !list.some(s => s.name === v.name)) {
+        list.push({ name: v.name, lat: v.lat, lng: v.lng, area: 'Hành lang chuẩn' })
+      }
+    })
+    return list
+  }, [stations, value])
+
   // Các trạm đang chọn và số phút nghỉ của từng trạm
-  const [picked, setPicked] = useState<Map<string, number>>(() => new Map(value.filter(r => TRANSIT_STATIONS.some(s => s.name === r.name)).map(r => [r.name, r.minutes])))
+  const [picked, setPicked] = useState<Map<string, number>>(() => new Map(value.map(r => [r.name, r.minutes])))
   const [active, setActive] = useState<string | null>(null)
 
-  const chosen = useMemo(() => TRANSIT_STATIONS.filter(s => picked.has(s.name)), [picked])
+  const chosen = useMemo(() => allAvailableStations.filter(s => picked.has(s.name)), [allAvailableStations, picked])
   const outline = useMemo(() => routeOutline(origin, gate, dest, chosen), [origin, gate, dest, chosen])
   const straightKm = outline.path.slice(1).reduce((t, p, i) => t + haversine(outline.path[i], p), 0)
   // Đường bộ thật qua các điểm đã chọn: vẽ theo đường này, chưa lấy được thì vẽ nét thẳng
@@ -85,7 +122,7 @@ export function RouteMapPicker({ origin, dest, gate, departAt, value, onApply, o
     // Có trạm đã chọn: đường cam chuyển động; chưa chọn: đường xám nhạt điểm đón → điểm trả
     L.polyline(line, { color: chosenAny ? '#ea580c' : '#64748b', weight: 12, opacity: 0.18, interactive: false }).addTo(g)
     L.polyline(line, { color: chosenAny ? '#ea580c' : '#64748b', weight: 5, opacity: 0.95, className: chosenAny ? 'rm-route' : '', dashArray: road ? undefined : '6 8', interactive: false }).addTo(g)
-    TRANSIT_STATIONS.forEach(s => {
+    allAvailableStations.forEach(s => {
       const n = order(s.name)
       L.marker([s.lat, s.lng], { icon: stationIcon(n, s.name === active), zIndexOffset: n ? 500 : 0, title: s.name })
         .bindTooltip(`${s.name}${picked.has(s.name) ? ` · nghỉ ${picked.get(s.name)} phút` : ''}`, { direction: 'top', offset: [0, -12] })
@@ -94,10 +131,21 @@ export function RouteMapPicker({ origin, dest, gate, departAt, value, onApply, o
     L.marker([origin.lat, origin.lng], { icon: pin('rm-a', 'A'), zIndexOffset: 900 }).bindTooltip(`Điểm đón: ${short(origin.name)}`, { direction: 'top', offset: [0, -14] }).addTo(g)
     L.marker([dest.lat, dest.lng], { icon: pin('rm-b', 'B'), zIndexOffset: 900 }).bindTooltip(`Điểm trả: ${short(dest.name)}`, { direction: 'top', offset: [0, -14] }).addTo(g)
     if (gate) L.marker([gate.lat, gate.lng], { icon: pin('rm-g', '⚑'), zIndexOffset: 900 }).bindTooltip(`Cửa khẩu ${gate.name}`, { direction: 'top', offset: [0, -14] }).addTo(g)
-  }, [outline, picked, active, road]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [allAvailableStations, outline, picked, active, road]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const apply = () => { onApply(outline.stations.map((s, i) => ({ afterLeg: i + 1, name: s.name, minutes: picked.get(s.name) ?? DEFAULT_MINUTES }))); onClose() }
-  const act = active ? TRANSIT_STATIONS.find(s => s.name === active) : undefined
+  const apply = () => {
+    onApply(
+      outline.stations.map((s, i) => ({
+        afterLeg: i + 1,
+        name: s.name,
+        minutes: picked.get(s.name) ?? DEFAULT_MINUTES,
+        lat: s.lat,
+        lng: s.lng,
+      }))
+    )
+    onClose()
+  }
+  const act = active ? allAvailableStations.find(s => s.name === active) : undefined
   const total = [...picked.values()].reduce((t, x) => t + x, 0)
 
   return (

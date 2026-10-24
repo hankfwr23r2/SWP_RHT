@@ -138,6 +138,7 @@ export function toBooking(r: BackendBookingResponse, customer?: string): Booking
     history,
   }
   if (r.gate) b.gate = r.gate
+  if (r.routeId != null) b.routeId = r.routeId
   if (r.intake) b.intake = r.intake as Booking['intake']
   if (r.medical) {
     const med = r.medical as any

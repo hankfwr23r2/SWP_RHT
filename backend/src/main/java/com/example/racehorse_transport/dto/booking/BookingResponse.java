@@ -33,6 +33,7 @@ public class BookingResponse {
     private String waybillNo;
 
     private List<com.example.racehorse_transport.dto.coordinator.VehicleTripDto> trips;
+    private Integer routeId;
     private Object route;
     private String gate;
     private Object plan;
