@@ -29,6 +29,14 @@ describe('chuyển đơn từ backend sang frontend', () => {
     const b = toBooking({ ...base, status: 'cancelled', payment: { paidAt: 2_000, amount: 3_000_000, cancelled: true, cancelledAt: 9_000, cancelReason: 'Đổi lịch', refundAmount: 0, penaltyAmount: 3_000_000 } })
     expect(b.cancellation).toEqual({ at: 9_000, reason: 'Đổi lịch', by: 'customer', refund: 0 })
   })
+  it('giữ lộ trình có danh sách chặng', () => {
+    const route = { legs: [{ no: 1, from: 'A', to: 'B', departAt: 6_000, arriveAt: 7_000 }], rests: [] }
+    expect(toBooking({ ...base, route }).route).toEqual(route)
+  })
+  it('bỏ qua lộ trình sai dạng thay vì làm sập trang', () => {
+    expect(toBooking({ ...base, route: 'Hà Nội → Lạng Sơn' }).route).toBeUndefined()
+    expect(toBooking({ ...base, route: { rests: [] } }).route).toBeUndefined()
+  })
   it('đơn chưa hủy thì không có thông tin hủy', () => {
     expect(toBooking({ ...base, payment: { paidAt: 2_000, amount: 3_000_000 } }).cancellation).toBeUndefined()
   })

@@ -148,7 +148,8 @@ export function toBooking(r: BackendBookingResponse, customer?: string): Booking
   }
   if (r.trips?.length) b.trips = r.trips.map(tripOf)
   if (r.plan) b.plan = r.plan as Booking['plan']
-  if (r.route) b.route = r.route as RoutePlan
+  // Lộ trình thiếu danh sách chặng thì coi như chưa có, để các trang đọc legs[0] không sập
+  if (Array.isArray((r.route as Partial<RoutePlan> | undefined)?.legs)) b.route = r.route as RoutePlan
   if (r.quote) b.quote = r.quote as Quote
   const payment = paymentOf(r.payment)
   if (payment) b.payment = payment
