@@ -52,6 +52,29 @@ describe('dự phòng ngoại tuyến khi OSRM lỗi hoặc mất mạng', () =>
     await roadRoute([A, B], FUTURE + 60_000)
     expect(f).toHaveBeenCalledTimes(1)
   })
+
+  it('lưu tuyến vào sessionStorage để không gọi lại mạng khi chuyển trang', async () => {
+    const store = new Map<string, string>()
+    const fakeSession = {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => store.set(k, v),
+      removeItem: (k: string) => store.delete(k),
+    }
+    vi.stubGlobal('window', { sessionStorage: fakeSession })
+
+    const f = stub(() => json(osrmBody))
+    const r1 = await roadRoute([A, B], FUTURE)
+    expect(r1).not.toBeNull()
+    expect(f).toHaveBeenCalledTimes(1)
+
+    const k = `${A.lat.toFixed(4)},${A.lng.toFixed(4)};${B.lat.toFixed(4)},${B.lng.toFixed(4)}`
+    expect(fakeSession.getItem('RHT_ROAD_' + k)).not.toBeNull()
+
+    // Lần gọi tiếp theo tái sử dụng session cache
+    const r2 = await roadRoute([A, B], FUTURE)
+    expect(r2!.km).toBe(280)
+    expect(f).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('ghi chú nguồn thời gian lái', () => {

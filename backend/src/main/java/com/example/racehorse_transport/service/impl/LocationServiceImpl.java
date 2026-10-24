@@ -8,6 +8,8 @@ import com.example.racehorse_transport.repository.LocationRouteRepository;
 import com.example.racehorse_transport.repository.RegulationRepository;
 import com.example.racehorse_transport.service.LocationService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +27,7 @@ public class LocationServiceImpl implements LocationService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = "locations", key = "(#type == null ? '' : #type) + '_' + (#country == null ? '' : #country)")
     public List<Location> findLocations(String type, String country) {
         return locationRepository.findAll().stream()
                 .filter(location -> type == null || type.isBlank()
@@ -36,6 +39,7 @@ public class LocationServiceImpl implements LocationService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "locations", allEntries = true)
     public Location createRestStop(CreateRestStopRequest request) {
         validateRequest(request);
         Location location = new Location();
@@ -47,6 +51,7 @@ public class LocationServiceImpl implements LocationService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "locations", allEntries = true)
     public Location updateRestStop(Integer id, CreateRestStopRequest request) {
         validateRequest(request);
         Location location = findRestStop(id);
@@ -56,6 +61,7 @@ public class LocationServiceImpl implements LocationService {
 
     @Override
     @Transactional
+    @CacheEvict(value = "locations", allEntries = true)
     public void deleteRestStop(Integer id) {
         Location location = findRestStop(id);
         if (locationRouteRepository.existsByLocationID_Id(id)) {
