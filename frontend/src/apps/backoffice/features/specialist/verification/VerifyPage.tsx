@@ -257,7 +257,7 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
       )}
 
       {b.medical?.status === 'approved' && (
-        <div className="alert alert-success"><i className="fa-solid fa-circle-check" /><div><b>Đã duyệt hồ sơ ngựa</b> lúc {b.medical.at && formatDateTime(b.medical.at)}.{!b.plan && ' Đang chờ Điều phối viên chốt xe và lộ trình để chuyển Quản lý duyệt báo giá.'}</div></div>
+        <div className="alert alert-success"><i className="fa-solid fa-circle-check" /><div><b>Đã duyệt hồ sơ ngựa</b>{b.medical.at && ` lúc ${formatDateTime(b.medical.at)}`}</div></div>
       )}
     </>
   )
