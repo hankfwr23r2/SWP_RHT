@@ -13,10 +13,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class SpecialistServiceImplTest {
@@ -56,6 +61,77 @@ class SpecialistServiceImplTest {
 
         assertThat(bookings).extracting(BookingResponse::getId)
                 .containsExactly("BK-001", "BK-003");
+    }
+
+    @Test
+    void getBookingDetailHidesLegacyInternationalDocumentsForDomesticBooking() {
+        Booking domestic = booking(4, "clearance_in_progress", "approved");
+        domestic.setBookingType("domestic");
+        domestic.setDetailsJson("""
+                {
+                  "intake": { "specialist": { "id": "SP-01" } },
+                  "clearance": {
+                    "items": [
+                      { "type": "health_cert" },
+                      { "type": "import_permit" },
+                      { "type": "customs_declaration" }
+                    ]
+                  }
+                }
+                """);
+        when(bookingRepository.findById(4)).thenReturn(Optional.of(domestic));
+
+        BookingResponse response = service.getBookingDetail("BK-004", "specialist");
+
+        Map<?, ?> clearance = (Map<?, ?>) response.getClearance();
+        List<?> items = (List<?>) clearance.get("items");
+        assertThat(items).hasSize(1);
+        assertThat(((Map<?, ?>) items.get(0)).get("type")).isEqualTo("health_cert");
+    }
+
+    @Test
+    void acceptWaybillUsesDomesticFallbackDocumentsWhenNoRegulationsExist() {
+        Booking domestic = booking(5, "waybill_issued", "approved");
+        domestic.setBookingType("domestic");
+        domestic.setDetailsJson("""
+                {
+                  "intake": { "specialist": { "id": "SP-01" } }
+                }
+                """);
+        when(bookingRepository.findById(5)).thenReturn(Optional.of(domestic));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        BookingResponse response = service.acceptWaybill("BK-005", "specialist");
+
+        Map<?, ?> clearance = (Map<?, ?>) response.getClearance();
+        List<?> items = (List<?>) clearance.get("items");
+        assertThat(items).hasSize(2);
+        assertThat(((Map<?, ?>) items.get(0)).get("type")).isEqualTo("health_cert");
+        assertThat(((Map<?, ?>) items.get(1)).get("type")).isEqualTo("poa");
+    }
+
+    @Test
+    void updateClearanceItemRejectsInternationalDocumentTypesOnDomesticBooking() {
+        Booking domestic = booking(6, "clearance_in_progress", "approved");
+        domestic.setBookingType("domestic");
+        domestic.setDetailsJson("""
+                {
+                  "intake": { "specialist": { "id": "SP-01" } },
+                  "clearance": { "items": [{ "type": "health_cert" }] }
+                }
+                """);
+        when(bookingRepository.findById(6)).thenReturn(Optional.of(domestic));
+
+        assertThatThrownBy(() -> service.updateClearanceItem(
+                "BK-006",
+                com.example.racehorse_transport.dto.specialist.UpdateClearanceItemRequest.builder()
+                        .type("import_permit")
+                        .build(),
+                "specialist"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("không áp dụng cho đơn trong nước");
+
+        verify(bookingRepository, never()).save(any(Booking.class));
     }
 
     private Booking booking(int id, String status, String medicalStatus) {

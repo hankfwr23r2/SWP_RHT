@@ -339,6 +339,10 @@ public class ReferenceDataSeeder implements CommandLineRunner {
             String country = r[5];
 
             Location location = locId != null ? locationRepository.findById(locId).orElse(null) : null;
+            if (locId != null && location == null) {
+                log.warn("Regulation not seeded because its border location is missing: name={}, locationId={}", name, locId);
+                continue;
+            }
 
             Regulation g = regulationRepository.findAll().stream()
                     .filter(reg -> name.equalsIgnoreCase(reg.getRegulationName()) ||
