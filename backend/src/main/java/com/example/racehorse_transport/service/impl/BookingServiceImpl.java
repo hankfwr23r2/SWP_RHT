@@ -365,6 +365,11 @@ public class BookingServiceImpl implements BookingService {
             "delivered_pending_settlement"
     );
 
+    // Đã giao xong và sang quyết toán: kíp xe vẫn thấy chuyến cho tới khi bấm "Đã về trụ sở"
+    private static final Set<String> AFTER_DELIVERY_STATUSES = Set.of(
+            "expenses_submitted", "settlement_issued", "payment_overdue", "completed"
+    );
+
     @Override
     @Transactional(readOnly = true)
     public List<BookingResponse> getMyFieldBookings(String username, String role) {
@@ -389,9 +394,12 @@ public class BookingServiceImpl implements BookingService {
         }
 
         boolean isEscort = "ESCORT".equalsIgnoreCase(role);
-        return bookingRepository.findByStatusInOrderByBookingDateDesc(FIELD_STATUSES).stream()
+        Set<String> statuses = new HashSet<>(FIELD_STATUSES);
+        statuses.addAll(AFTER_DELIVERY_STATUSES);
+        return bookingRepository.findByStatusInOrderByBookingDateDesc(statuses).stream()
                 .filter(b -> {
-                    if (assignedBookingIds.contains(b.getId())) {
+                    boolean afterDelivery = AFTER_DELIVERY_STATUSES.contains(b.getStatus());
+                    if (!afterDelivery && assignedBookingIds.contains(b.getId())) {
                         return true;
                     }
                     if (b.getDetailsJson() == null) return false;
@@ -401,6 +409,7 @@ public class BookingServiceImpl implements BookingService {
                         return payload.getTrips().stream().anyMatch(t -> {
                             String assigned = isEscort ? t.getEscortId() : t.getDriverId();
                             if (assigned == null || assigned.isBlank()) return false;
+                            if (afterDelivery && (t.getHomeReturn() == null || t.getHomeReturn().get("backAt") != null)) return false;
                             return matchesStaffIdentifier(assigned, myCode, myId, username, myName, role);
                         });
                     } catch (Exception e) {

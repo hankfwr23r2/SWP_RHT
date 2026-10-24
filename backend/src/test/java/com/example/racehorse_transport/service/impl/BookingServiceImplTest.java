@@ -337,6 +337,31 @@ class BookingServiceImplTest {
     }
 
     @Test
+    void fieldCrewKeepsTripAfterSettlementStartsUntilBackAtHq() {
+        Staff driver = staff("driver02", "0900000002");
+        driver.setId(5);
+        driver.setStaffCode("DR-002");
+        when(staffRepository.findByUser_Username("driver02")).thenReturn(Optional.of(driver));
+        Booking returning = bookingOwnedByCustomer();
+        returning.setStatus("expenses_submitted");
+        returning.setDetailsJson("{\"trips\":[{\"tripId\":\"TRP-042-1\",\"driverId\":\"DR-002\","
+                + "\"homeReturn\":{\"fromPlace\":\"Tokyo\",\"eta\":1}}]}");
+        Booking backHome = bookingOwnedByCustomer();
+        backHome.setId(43);
+        backHome.setStatus("completed");
+        backHome.setDetailsJson("{\"trips\":[{\"tripId\":\"TRP-043-1\",\"driverId\":\"DR-002\","
+                + "\"homeReturn\":{\"fromPlace\":\"Tokyo\",\"eta\":1,\"backAt\":2}}]}");
+        when(bookingRepository.findByStatusInOrderByBookingDateDesc(any())).thenAnswer(invocation -> {
+            java.util.Collection<String> statuses = invocation.getArgument(0);
+            return java.util.stream.Stream.of(returning, backHome).filter(b -> statuses.contains(b.getStatus())).toList();
+        });
+
+        List<BookingResponse> responses = service.getMyFieldBookings("driver02", "DRIVER");
+
+        assertThat(responses).extracting(BookingResponse::getNumericId).containsExactly(42);
+    }
+
+    @Test
     void getBookingById_rejectsUnknownBooking() {
         when(bookingRepository.findById(404)).thenReturn(Optional.empty());
 
