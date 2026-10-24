@@ -26,6 +26,11 @@ export async function adminRoutesLoader() {
   return loadAll({ routes: routesApi.listRoutes(), locations: routesApi.listLocations() })
 }
 
+export async function adminServicesLoader() {
+  const { adminServicesApi } = await import('@shared/api/adminServices')
+  return loadAll({ services: adminServicesApi.listServices(), categories: adminServicesApi.listCategories() })
+}
+
 // Giám sát vận chuyển: đơn và kíp xe
 export async function monitoringLoader() {
   const [{ bookingsApi }, { crewApi }] = await Promise.all([bookings(), import('@shared/services/fleet')])

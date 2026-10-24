@@ -5,6 +5,7 @@ export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: 
   // Quản trị viên chỉ có một mục; lọc và sort được thực hiện inline trên trang
   admin: [
     ['/admin/routes', 'Tuyến đường cố định', { icon: 'fa-road' }],
+    ['/admin/services', 'Dịch vụ & Biểu phí', { icon: 'fa-bell-concierge' }],
     ['/admin/accounts', 'Tất cả tài khoản', { icon: 'fa-users-gear' }],
   ],
   manager: [
