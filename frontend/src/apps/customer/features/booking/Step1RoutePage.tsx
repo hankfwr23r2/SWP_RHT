@@ -13,6 +13,7 @@ import { COUNTRIES, type CountryCode } from '@shared/config/network'
 import { earliestDeparture, fromIsoDay, isDepartureAllowed } from '@shared/lib/booking'
 import { formatDate } from '@shared/lib/format'
 import { isValidContactName, isValidPhoneForCountry, PHONE_CALLING_CODES, toInternationalPhone } from '@shared/lib/contactValidation'
+import { isValidLocationDetail, removeLocationDetailSpecialCharacters } from '@shared/lib/locationValidation'
 import type { Party, TransportType } from '@shared/types/booking'
 import { Flag } from '@shared/ui/Flag'
 import { FormSelect } from '@shared/ui/FormSelect'
@@ -155,7 +156,7 @@ function LocationPicker({ country, address, onChange, errors }: LocationPickerPr
   const handleDetailChange = (detail: string) => {
     onChange({
       ...address,
-      detail,
+      detail: removeLocationDetailSpecialCharacters(detail),
     })
   }
 
@@ -366,14 +367,22 @@ export default function Step1RoutePage() {
     consignorId: routeReady && !consignor.idNumber?.trim() ? 'Nhập CCCD / MST / Hộ chiếu người gửi.' : '',
     pickupProv: routeReady && !pickupAddr.provinceCode ? 'Chọn tỉnh/thành điểm đón.' : '',
     pickupWard: routeReady && !pickupAddr.wardName ? 'Chọn xã/phường điểm đón.' : '',
-    pickupDetail: routeReady && !pickupAddr.detail.trim() ? 'Nhập tên trang trại / địa chỉ đón cụ thể.' : '',
+    pickupDetail: routeReady && !pickupAddr.detail.trim()
+      ? 'Nhập tên trang trại / địa chỉ đón cụ thể.'
+      : routeReady && !isValidLocationDetail(pickupAddr.detail)
+        ? 'Tên trang trại / địa chỉ chỉ được chứa chữ cái, số và khoảng trắng.'
+        : '',
     // Người nhận
     consigneeName: routeReady && !isValidContactName(consignee.name) ? 'Nhập tên hợp lệ (2–100 ký tự, cần có chữ cái). Có thể nhập tên cá nhân hoặc trang trại.' : '',
     consigneePhone: routeReady && !isValidPhoneForCountry(consigneePhoneCountry, consignee.phone) ? 'Nhập số hợp lệ theo mã quốc gia đã chọn.' : '',
     consigneeId: routeReady && !consignee.idNumber?.trim() ? 'Nhập CCCD / MST / Hộ chiếu người nhận.' : '',
     dropoffProv: routeReady && !dropoffAddr.provinceCode ? 'Chọn tỉnh/thành điểm giao.' : '',
     dropoffWard: routeReady && !dropoffAddr.wardName ? 'Chọn xã/phường điểm giao.' : '',
-    dropoffDetail: routeReady && !dropoffAddr.detail.trim() ? 'Nhập tên trang trại / địa chỉ giao cụ thể.' : '',
+    dropoffDetail: routeReady && !dropoffAddr.detail.trim()
+      ? 'Nhập tên trang trại / địa chỉ giao cụ thể.'
+      : routeReady && !isValidLocationDetail(dropoffAddr.detail)
+        ? 'Tên trang trại / địa chỉ chỉ được chứa chữ cái, số và khoảng trắng.'
+        : '',
   }
 
   const valid = !Object.values(errors).some(Boolean)
