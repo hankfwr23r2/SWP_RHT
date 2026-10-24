@@ -57,7 +57,7 @@ export function OrderDetailModal({ b, all = [], onClose, onDone }: { b: Booking;
   )
   return (
     <>
-      <SideTabsModal
+      {!intakeOpen && <SideTabsModal
         onClose={onClose} title={b.id} subtitle={`${b.customer} · ${b.type === 'international' ? `Quốc tế${b.gate ? ` · ${b.gate}` : ''}` : 'Trong nước'}`}
         tabs={[
           { id: 'summary', label: 'Tổng quan', icon: 'fa-chart-pie', content: summary },
@@ -80,9 +80,9 @@ export function OrderDetailModal({ b, all = [], onClose, onDone }: { b: Booking;
             <button className="btn btn-primary" onClick={() => setIncidentOpen(true)}><i className="fa-solid fa-triangle-exclamation" /> Duyệt phương án sự cố</button>
           ) : null}
         </>}
-      />
+      />}
       {audit && <AuditModal b={b} onClose={() => setAudit(false)} onDone={() => { setAudit(false); onDone() }} />}
-      {intakeOpen && <IntakeModal b={b} onClose={() => setIntakeOpen(false)} onDone={() => { setIntakeOpen(false); onDone() }} />}
+      {intakeOpen && <IntakeModal b={b} onClose={onClose} onDone={onDone} />}
       {quoteOpen && <QuoteModal b={b} all={all} onClose={() => setQuoteOpen(false)} onDone={() => { setQuoteOpen(false); onDone() }} />}
       {incidentOpen && pendingIncident && (
         <ApproveModal item={{ b, i: pendingIncident }} onClose={() => setIncidentOpen(false)} onDone={() => { setIncidentOpen(false); onDone() }} />
