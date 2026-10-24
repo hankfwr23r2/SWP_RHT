@@ -162,6 +162,8 @@ export interface Checkpoint {
   handoverPhoto?: string // pickup, delivery: ảnh biên bản có chữ ký hai bên
   stampPhotos?: string[] // customs: ảnh mộc đỏ Health Cert, ATA Carnet
   returnedOriginals?: boolean // delivery: đã trả hồ sơ gốc
+  returnedOriginalsAt?: number // delivery: thời điểm xác nhận trả hồ sơ gốc
+  returnedOriginalsBy?: string // delivery: người xác nhận trả hồ sơ gốc
 }
 export interface WelfareLog {
   id: string

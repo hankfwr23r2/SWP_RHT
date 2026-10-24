@@ -169,8 +169,9 @@ function TimeoutModal({ b, onClose, run }: { b: Booking; onClose: () => void; ru
 function DeliveryStep({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Checkpoint; run: Run }) {
   const { session } = useAuth()
   const [photo, setPhoto] = useState<string | undefined>(cp.handoverPhoto)
-  const [returned, setReturned] = useState(false)
+  const [savingReturned, setSavingReturned] = useState(false)
   const [showTimeout, setShowTimeout] = useState(false)
+  const returned = !!cp.returnedOriginals
   const welfare = t.run!.welfare.some(w => w.checkpointId === cp.id)
   const ready = welfare && returned && !!cp.handoverPhoto
   return (
@@ -179,7 +180,18 @@ function DeliveryStep({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Check
         <p>{welfare ? 'Hộ tống đã kiểm tra thể trạng ngựa và ghi nhật ký.' : 'Hộ tống đang hạ ngựa và kiểm tra thể trạng lần cuối. Chờ hộ tống ghi nhật ký.'}</p>
       </Panel>
       <Panel title="Trả chứng từ gốc và ký biên bản" icon="fa-file-signature">
-        <label className={s.checklist} style={{ display: 'flex', gap: 12, alignItems: 'center', minHeight: 48 }}><input type="checkbox" checked={returned} onChange={e => setReturned(e.target.checked)} style={{ width: 22, height: 22, accentColor: 'var(--orange)' }} /><span>Đã trả toàn bộ chứng từ gốc cho người nhận</span></label>
+        <label className={s.checklist} style={{ display: 'flex', gap: 12, alignItems: 'center', minHeight: 48 }}><input type="checkbox" checked={returned} disabled={savingReturned} onChange={async e => {
+          const next = e.target.checked
+          setSavingReturned(true)
+          try {
+            await run(
+              () => bookingsApi.setOriginalsReturned(b.id, t.tripId, session!.name, cp.id, next),
+              next ? 'Đã lưu xác nhận trả chứng từ gốc' : 'Đã hủy xác nhận trả chứng từ gốc',
+            )
+          } finally {
+            setSavingReturned(false)
+          }
+        }} style={{ width: 22, height: 22, accentColor: 'var(--orange)' }} /><span>Đã trả toàn bộ chứng từ gốc cho người nhận</span></label>
         <ReadMore text={'Dùng 02 bản in “Biên bản Bàn giao & Hoàn tất Chuyến đi”. Người nhận xác nhận đủ ngựa, thể trạng an toàn, đủ hồ sơ gốc. Hai bên ký, mỗi bên giữ 01 bản.'} />
         <CaptureField label="Ảnh biên bản có đủ chữ ký" required value={photo} onChange={setPhoto} />
       <button className="btn btn-outline" disabled={!photo || photo === cp.handoverPhoto} onClick={() => run(() => bookingsApi.uploadHandover(b.id, t.tripId, session!.name, cp.id, photo!), 'Đã tải ảnh biên bản')}><i className="fa-solid fa-upload" /> Tải ảnh biên bản</button>
