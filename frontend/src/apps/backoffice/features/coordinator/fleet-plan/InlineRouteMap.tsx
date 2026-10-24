@@ -29,16 +29,19 @@ const stationIcon = (order: number) =>
       : '<span class="rm-st" style="opacity:0.45;transform:scale(0.85)"></span>',
   })
 
+import type { RoadRoute } from '@shared/services/routing'
+
 interface InlineRouteMapProps {
   origin: Point
   dest: Point
   gate?: Point
   departAt?: number
   rests: RestStop[]
+  activeRoad?: RoadRoute | null
   onOpenPicker?: () => void
 }
 
-export function InlineRouteMap({ origin, dest, gate, departAt, rests, onOpenPicker }: InlineRouteMapProps) {
+export function InlineRouteMap({ origin, dest, gate, departAt, rests, activeRoad, onOpenPicker }: InlineRouteMapProps) {
   const box = useRef<HTMLDivElement>(null)
   const map = useRef<L.Map | null>(null)
   const layer = useRef<L.LayerGroup | null>(null)
@@ -51,7 +54,8 @@ export function InlineRouteMap({ origin, dest, gate, departAt, rests, onOpenPick
     () => routeOutline(origin, gate, dest, chosen),
     [origin, gate, dest, chosen]
   )
-  const { route: road, loading: roadLoading } = useRoadRoute(outline.path, departAt)
+  const { route: fallbackRoad, loading: roadLoading } = useRoadRoute(outline.path, departAt)
+  const road = activeRoad ?? fallbackRoad
   const order = (name: string) => outline.stations.findIndex(s => s.name === name) + 1
 
   useEffect(() => {

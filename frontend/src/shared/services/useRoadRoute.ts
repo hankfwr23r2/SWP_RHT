@@ -1,7 +1,7 @@
 // Lấy đường bộ cho một dãy điểm: chờ 0,4 giây sau lần đổi cuối rồi gọi; trong lúc tính vẫn giữ kết quả cũ để giao diện không nhấp nháy.
 import { useEffect, useState } from 'react'
 import type { GeoPoint } from '../config/network'
-import { roadAlternatives, roadRoute, type RoadRoute } from './routing'
+import { roadAlternatives, roadRoute, roadRoutesWithAlternatives, type RoadRoute } from './routing'
 
 export function useRoadRoute(points: GeoPoint[] | undefined, departAt?: number) {
   const key = points && points.length > 1 ? `${departAt === undefined ? '' : Math.floor(departAt / 3_600_000)}|${points.map(p => `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`).join(';')}` : ''
@@ -13,6 +13,38 @@ export function useRoadRoute(points: GeoPoint[] | undefined, departAt?: number) 
     return () => { clearTimeout(timer); ctl.abort() }
   }, [key]) // eslint-disable-line react-hooks/exhaustive-deps
   return { route: state.key === key ? state.route : null, loading: !!key && state.key !== key }
+}
+
+// Lấy các phương án đường bộ (tuyến chính + các tuyến thay thế) cho một dãy điểm
+export function useRoadRouteWithAlternatives(points: GeoPoint[] | undefined, departAt?: number) {
+  const key = points && points.length > 1 ? `${departAt === undefined ? '' : Math.floor(departAt / 3_600_000)}|${points.map(p => `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`).join(';')}` : ''
+  const [state, setState] = useState<{ key: string; routes: RoadRoute[] }>({ key: '', routes: [] })
+  const [selectedIndex, setSelectedIndex] = useState<number>(0)
+
+  useEffect(() => {
+    if (!key || !points) return
+    const ctl = new AbortController()
+    const timer = setTimeout(() => {
+      roadRoutesWithAlternatives(points, departAt, { signal: ctl.signal }).then(routes => {
+        if (!ctl.signal.aborted) {
+          setState({ key, routes })
+          setSelectedIndex(0)
+        }
+      })
+    }, 400)
+    return () => { clearTimeout(timer); ctl.abort() }
+  }, [key]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const currentRoutes = state.key === key ? state.routes : []
+  const activeRoute = currentRoutes[selectedIndex] ?? currentRoutes[0] ?? null
+
+  return {
+    routes: currentRoutes,
+    activeRoute,
+    selectedIndex,
+    setSelectedIndex,
+    loading: !!key && state.key !== key,
+  }
 }
 
 // Các đường thay thế giữa hai điểm (sự cố tắc nghẽn)

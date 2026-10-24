@@ -40,7 +40,7 @@ import { ResourcePicker } from '../../../shared/ResourcePicker'
 import { RouteMapPicker } from './RouteMapPicker'
 import { InlineRouteMap } from './InlineRouteMap'
 import { roadNote } from '@shared/services/routing'
-import { useRoadRoute } from '@shared/services/useRoadRoute'
+import { useRoadRouteWithAlternatives } from '@shared/services/useRoadRoute'
 import { routesApi, type BackendRouteResponse } from '@shared/api/routes'
 import { usePageData } from '@shared/routing/pageData'
 import type { fleetPlanLoader } from '../../../shared/loaders'
@@ -175,6 +175,8 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
   const [etd] = useState(toLocal(initial.legs[0]?.departAt ?? defaultEtdTime))
   const [rests, setRests] = useState<RestStop[]>(initial.rests)
   const [corridors, setCorridors] = useState<BackendRouteResponse[]>([])
+  const [selectedCorridorId, setSelectedCorridorId] = useState<number | ''>('')
+  const [applyingCorridor, setApplyingCorridor] = useState(false)
   const [borderText, setBorderText] = useState(initial.borderEta ? toLocal(initial.borderEta) : '')
   const [borderTouched, setBorderTouched] = useState(!!b.route?.borderEta)
   const etdT = fromLocal(etd)
@@ -191,8 +193,57 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
   const stationsOnRoute = rests.flatMap(r => TRANSIT_STATIONS.filter(x => x.name === r.name))
 
   const roadPath = origin && dest ? routeOutline(origin, gateGeo, dest, stationsOnRoute).path : undefined
-  const { route: road, loading: roadLoading } = useRoadRoute(roadPath, Number.isNaN(etdT) ? undefined : etdT)
+  const {
+    routes: roadAlternativesList,
+    activeRoute: road,
+    selectedIndex: routeIdx,
+    setSelectedIndex: setRouteIdx,
+    loading: roadLoading,
+  } = useRoadRouteWithAlternatives(roadPath, Number.isNaN(etdT) ? undefined : etdT)
   const driveHours = road?.hours ?? estHours
+
+  const cleanOrigin = b.origin.name.toLowerCase()
+  const cleanDest = b.dest.name.toLowerCase()
+  const matchedCorridors = useMemo(() => {
+    return corridors.map(c => {
+      const origMatch = c.originName && cleanOrigin.includes(c.originName.toLowerCase())
+      const destMatch = c.destinationName && cleanDest.includes(c.destinationName.toLowerCase())
+      const isRelevant = !!(origMatch || destMatch || (c.routeName && (cleanOrigin.includes(c.routeName.toLowerCase()) || cleanDest.includes(c.routeName.toLowerCase()))))
+      return { corridor: c, isRelevant }
+    })
+  }, [corridors, cleanOrigin, cleanDest])
+
+  const selectedCorridor = useMemo(() => {
+    return corridors.find(c => c.id === selectedCorridorId)
+  }, [corridors, selectedCorridorId])
+
+  const applyCorridorStops = async (corridorId: number) => {
+    setApplyingCorridor(true)
+    try {
+      const stops = await routesApi.getRouteStops(corridorId)
+      const newRests: RestStop[] = []
+      stops
+        .filter(s => s.locationType === 'RestStop' || TRANSIT_STATIONS.some(ts => ts.name.toLowerCase().includes(s.locationName?.toLowerCase() || '')))
+        .forEach((s, idx) => {
+          const matchedStation = TRANSIT_STATIONS.find(ts => ts.name.toLowerCase().includes(s.locationName?.toLowerCase() || ''))
+          newRests.push({
+            afterLeg: idx + 1,
+            name: matchedStation ? matchedStation.name : (s.locationName || `Trạm ${idx + 1}`),
+            minutes: 45,
+          })
+        })
+      if (newRests.length > 0) {
+        setRests(newRests)
+        toast(`Đã áp dụng ${newRests.length} trạm dừng an toàn từ hành lang chuẩn.`)
+      } else {
+        toast('Hành lang này chưa có trạm nghỉ trung gian. Hệ thống giữ nguyên trạm hiện tại.', 'info')
+      }
+    } catch {
+      toast('Không thể tải trạm dừng của hành lang này', 'error')
+    } finally {
+      setApplyingCorridor(false)
+    }
+  }
 
   const resuggest = (g?: string) => {
     const chosenGate = g ?? gate
@@ -536,17 +587,94 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
         </div>
 
         {corridors.length > 0 && (
-          <div style={{ marginBottom: 14, padding: '10px 14px', background: 'var(--surface-soft, #f8fafc)', border: '1px solid var(--line, #e2e8f0)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <i className="fa-solid fa-road" style={{ color: 'var(--orange, #ea580c)' }} />
-              <span style={{ fontSize: '0.88rem' }}>
-                Hành lang an toàn: <b>{corridors[0].routeName}</b>
-                {corridors[0].distance && <span style={{ color: 'var(--muted)', marginLeft: 6 }}>({corridors[0].distance} km)</span>}
+          <div style={{ marginBottom: 14, padding: '12px 14px', background: 'var(--surface-soft, #f8fafc)', border: '1px solid var(--line, #e2e8f0)', borderRadius: 8, display: 'grid', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <i className="fa-solid fa-road" style={{ color: 'var(--orange, #ea580c)', fontSize: '1rem' }} />
+                <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>
+                  Hành lang an toàn cố định (Admin phê duyệt)
+                </span>
+              </div>
+              <span style={{ fontSize: '0.75rem', background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: 6, fontWeight: 600 }}>
+                <i className="fa-solid fa-shield-check" /> Tuyến chuẩn an sinh
               </span>
             </div>
-            <span style={{ fontSize: '0.78rem', background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: 6, fontWeight: 600 }}>
-              <i className="fa-solid fa-shield-check" /> Trục cố định an toàn
+            
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ flex: '1 1 260px' }}>
+                <FormSelect
+                  className="form-control"
+                  style={{ fontSize: '0.85rem', height: 38 }}
+                  value={selectedCorridorId}
+                  onChange={e => setSelectedCorridorId(e.target.value ? Number(e.target.value) : '')}
+                >
+                  <option value="">-- Lộ trình linh hoạt (Tự động đề xuất OSRM) --</option>
+                  {matchedCorridors.map(({ corridor: c, isRelevant }) => (
+                    <option key={c.id} value={c.id}>
+                      {isRelevant ? '⭐ [Khớp đơn] ' : ''}{c.routeName}
+                      {c.distance ? ` · ${c.distance} km` : ''}
+                      {c.estimatedTime ? ` (~${c.estimatedTime}h)` : ''}
+                    </option>
+                  ))}
+                </FormSelect>
+              </div>
+
+              {selectedCorridor && (
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm font-semibold"
+                  style={{ height: 38, whiteSpace: 'nowrap' }}
+                  disabled={applyingCorridor}
+                  onClick={() => applyCorridorStops(selectedCorridor.id)}
+                  title="Tự động nạp các trạm dừng an toàn đã thiết lập sẵn của hành lang này"
+                >
+                  {applyingCorridor ? (
+                    <><i className="fa-solid fa-spinner fa-spin" /> Đang áp dụng…</>
+                  ) : (
+                    <><i className="fa-solid fa-route" /> Áp dụng trạm dừng của hành lang</>
+                  )}
+                </button>
+              )}
+            </div>
+
+            {selectedCorridor && (
+              <div style={{ fontSize: '0.8rem', color: 'var(--muted)', background: '#fff', padding: '8px 12px', borderRadius: 6, border: '1px dashed var(--line)' }}>
+                <b>{selectedCorridor.routeName}</b>: {selectedCorridor.description || 'Hành lang vận tải chuyên dụng đã được kiểm định an toàn.'}
+                {selectedCorridor.distance && <span style={{ marginLeft: 8 }}>· Cự ly chuẩn: <b>{selectedCorridor.distance} km</b></span>}
+                {selectedCorridor.estimatedTime && <span style={{ marginLeft: 8 }}>· Thời gian tiêu chuẩn: <b>{selectedCorridor.estimatedTime} giờ</b></span>}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* THANH CHỌN TUYẾN ĐƯỜNG THAY THẾ (OSRM ALTERNATIVE ROUTES) */}
+        {roadAlternativesList.length > 1 && (
+          <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--muted)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <i className="fa-solid fa-signs-post" style={{ color: 'var(--orange)' }} /> Chọn hướng tuyến:
             </span>
+            <div style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>
+              {roadAlternativesList.map((alt, idx) => {
+                const isActive = idx === routeIdx
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setRouteIdx(idx)}
+                    className={`btn btn-sm ${isActive ? 'btn-primary' : 'btn-outline'}`}
+                    style={{
+                      fontSize: '0.8rem',
+                      padding: '4px 10px',
+                      borderRadius: 20,
+                      fontWeight: isActive ? 700 : 500,
+                    }}
+                  >
+                    {isActive && <i className="fa-solid fa-check" style={{ marginRight: 4 }} />}
+                    {alt.name || `Tuyến ${idx + 1}`} ({alt.km} km · {alt.hours.toFixed(1)}h)
+                  </button>
+                )
+              })}
+            </div>
           </div>
         )}
 
@@ -560,6 +688,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
               gate={gateGeo ? { ...gateGeo, name: gateGeo.name } : undefined}
               departAt={Number.isNaN(etdT) ? undefined : etdT}
               rests={rests}
+              activeRoad={road}
               onOpenPicker={() => setMapOpen(true)}
             />
           </div>
