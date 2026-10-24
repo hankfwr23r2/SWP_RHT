@@ -11,6 +11,7 @@ import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.Horse;
 import com.example.racehorse_transport.entity.Quotation;
+import com.example.racehorse_transport.dto.admin.SystemConfigResponse;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.User;
 import com.example.racehorse_transport.entity.Vehicle;
@@ -31,6 +32,7 @@ import com.example.racehorse_transport.repository.TripDocumentRepository;
 import com.example.racehorse_transport.repository.UserRepository;
 import com.example.racehorse_transport.repository.VehicleRepository;
 import com.example.racehorse_transport.service.FleetService;
+import com.example.racehorse_transport.service.SystemConfigService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -71,6 +73,7 @@ class BookingServiceImplTest {
     private final RegulationRepository regulationRepository = mock(RegulationRepository.class);
     private final LocationRepository locationRepository = mock(LocationRepository.class);
     private final TripDocumentRepository tripDocumentRepository = mock(TripDocumentRepository.class);
+    private final SystemConfigService systemConfigService = mock(SystemConfigService.class);
 
     private BookingServiceImpl service;
     private Customer customer;
@@ -93,7 +96,12 @@ class BookingServiceImplTest {
                 staffRepository,
                 regulationRepository,
                 locationRepository,
+                systemConfigService,
                 tripDocumentRepository);
+
+        when(systemConfigService.getConfig("MIN_LEAD_DAYS")).thenReturn(config("MIN_LEAD_DAYS", "20"));
+        when(systemConfigService.getConfig("DEPOSIT_RATE")).thenReturn(config("DEPOSIT_RATE", "0.30"));
+        when(systemConfigService.getConfig("QUOTE_VALID_HOURS")).thenReturn(config("QUOTE_VALID_HOURS", "24"));
 
         User user = new User();
         user.setId(7);
@@ -105,9 +113,14 @@ class BookingServiceImplTest {
         customer.setFullName("Phuc");
     }
 
+    private SystemConfigResponse config(String key, String value) {
+        return SystemConfigResponse.builder().configKey(key).configValue(value).build();
+    }
+
     @Test
     void createBooking_savesPendingBookingAndAuditLog() {
-        Instant departure = Instant.parse("2027-01-15T10:00:00Z");
+        Instant departure = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
+                .plusDays(25).atTime(10, 0).atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant();
         BookingHorseDto horseDto = BookingHorseDto.builder().horseId("HORSE-12").name("Lightning").build();
         CreateBookingRequest request = CreateBookingRequest.builder()
                 .type("INTERNATIONAL")
@@ -152,6 +165,24 @@ class BookingServiceImplTest {
         assertThat(savedBooking.getValue().getConsignorPhone()).isEqualTo("0900");
         assertThat(savedBooking.getValue().getDetailsJson()).contains("\"originCountry\":\"VN\"");
         verify(systemLogRepository).save(any());
+    }
+
+    @Test
+    void createBooking_rejectsDepartureBeforeConfiguredLeadTime() {
+        CreateBookingRequest request = CreateBookingRequest.builder()
+                .departAt(java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
+                        .plusDays(19).atTime(10, 0).atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
+                        .toInstant().toEpochMilli())
+                .build();
+        when(userRepository.findByUsernameOrEmail("phuc", "phuc")).thenReturn(Optional.of(customer.getUser()));
+        when(customerRepository.findById(7)).thenReturn(Optional.of(customer));
+        when(bookingRepository.findByCustomerID_IdOrderByBookingDateDesc(7)).thenReturn(List.of());
+
+        assertThatThrownBy(() -> service.createBooking("phuc", request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("tối thiểu 20 ngày");
+
+        verify(bookingRepository, never()).save(any(Booking.class));
     }
 
     @Test

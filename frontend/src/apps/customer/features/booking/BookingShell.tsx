@@ -1,7 +1,7 @@
 // Khung 4 bước đặt chuyến: thanh bước, tiêu đề, cột tóm tắt đơn cố định bên phải.
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
-import { QUOTE_VALID_HOURS, VEHICLE_CLASS } from '@shared/config/booking-rules'
+import { DEPOSIT_RATE, QUOTE_VALID_HOURS, VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { MIN_LEAD_DAYS } from '@shared/config/business-rules'
 import { COUNTRY_LOCATIONS } from '@shared/config/network'
 import { classForHorses, fromIsoDay } from '@shared/lib/booking'
@@ -45,7 +45,7 @@ function Summary() {
           <ul>
             <li>Quản lý tiếp nhận, Kiểm dịch viên và Điều phối viên thẩm định song song.</li>
             <li>Báo giá chính thức gửi cho bạn, có hiệu lực {QUOTE_VALID_HOURS} giờ.</li>
-            <li>Đặt cọc 30% để nhận vận đơn. Nhà xe làm giấy kiểm dịch và hải quan giúp bạn.</li>
+            <li>Đặt cọc {(DEPOSIT_RATE * 100).toLocaleString('vi-VN')}% để nhận vận đơn. Nhà xe làm giấy kiểm dịch và hải quan giúp bạn.</li>
           </ul>
         </div>
       </div>

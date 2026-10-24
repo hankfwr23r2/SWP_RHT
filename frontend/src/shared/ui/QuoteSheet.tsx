@@ -14,8 +14,11 @@ interface QuoteSheetProps {
   expiresAt?: number
 }
 
-// Phiếu báo giá (PRD mục 2.5): mọi khoản cố định, không phụ thu; cọc 30% và số dư 70% ngày bốc ngựa
+// Phiếu báo giá (PRD mục 2.5): mọi khoản cố định, không phụ thu; số cọc và số dư theo tỷ lệ cấu hình.
 export function QuoteSheet({ lines, adjustments = [], subtotal, total, deposit, balance, expiresAt }: QuoteSheetProps) {
+  const depositPercentage = total > 0
+    ? Number((deposit / total * 100).toFixed(2))
+    : DEPOSIT_RATE * 100
   return (
     <div className={s.sheet}>
       <table className={s.table}>
@@ -40,8 +43,8 @@ export function QuoteSheet({ lines, adjustments = [], subtotal, total, deposit, 
       <div className={s.totals}>
         <div className={s.total}><span>Tổng giá trị</span><b>{formatVND(total)}</b></div>
         <div className={s.note}>Chưa gồm VAT. Giá cố định, nhiên liệu và phí cầu đường đã nằm trong báo giá.</div>
-        <div className={s.deposit}><span>Đặt cọc để nhận vận đơn ({DEPOSIT_RATE * 100}%)</span><b>{formatVND(deposit)}</b></div>
-        <div className={s.deposit}><span>Thanh toán còn lại vào ngày bốc ngựa ({100 - DEPOSIT_RATE * 100}%)</span><b>{formatVND(balance)}</b></div>
+        <div className={s.deposit}><span>Đặt cọc để nhận vận đơn ({depositPercentage.toLocaleString('vi-VN')}%)</span><b>{formatVND(deposit)}</b></div>
+        <div className={s.deposit}><span>Thanh toán còn lại vào ngày bốc ngựa ({(100 - depositPercentage).toLocaleString('vi-VN')}%)</span><b>{formatVND(balance)}</b></div>
       </div>
 
       <div className={s.after}>
