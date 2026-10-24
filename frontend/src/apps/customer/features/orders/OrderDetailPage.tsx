@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
-import { BOOKING_STEPS, HORSE_DOC, stepOf, VEHICLE_CLASS } from '@shared/config/booking-rules'
+import { BOOKING_STEPS, DEPOSIT_RATE, HORSE_DOC, stepOf, VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { COUNTRIES } from '@shared/config/network'
 import { arrivalOf, insuranceFee, vehicleClassOf } from '@shared/lib/booking'
 import { formatClock, formatDate, formatDateTime, formatVND } from '@shared/lib/format'
@@ -101,7 +101,7 @@ function PayCard({ b, owner, onDone }: { b: CustomerBookingView; owner: string; 
   return (
     <div className={`card ${s.pay}`}>
       <div className="card-header"><h3><i className="fa-solid fa-credit-card" /> Đặt cọc giữ xe</h3></div>
-      <div className={s.payAmount}><span>Số tiền cần đặt cọc (30%)</span><strong>{formatVND(b.quote!.deposit)}</strong></div>
+      <div className={s.payAmount}><span>Số tiền cần đặt cọc ({(b.quote!.total > 0 ? Number((b.quote!.deposit / b.quote!.total * 100).toFixed(2)) : DEPOSIT_RATE * 100).toLocaleString('vi-VN')}%)</span><strong>{formatVND(b.quote!.deposit)}</strong></div>
       {arrivalOf(b.route) && (
         <div className={s.eta} aria-label="Lịch trình dự kiến">
           <i className="fa-solid fa-flag-checkered" aria-hidden="true" />
@@ -156,7 +156,7 @@ function BalanceCard({ b, showAction = true }: { b: CustomerBookingView; showAct
     <div className="card">
       <div className="card-header"><h3><i className="fa-solid fa-wallet" /> Thanh toán</h3></div>
       <div className={s.bank}>
-        <div><span>Đặt cọc 30%</span><b>{formatVND(b.payment?.amount ?? b.quote.deposit)} · đã trả</b></div>
+        <div><span>Đặt cọc ({(b.quote.total > 0 ? Number((b.quote.deposit / b.quote.total * 100).toFixed(2)) : DEPOSIT_RATE * 100).toLocaleString('vi-VN')}%)</span><b>{formatVND(b.payment?.amount ?? b.quote.deposit)} · đã trả</b></div>
         <div><span>Còn lại 70% (ngày bốc ngựa)</span><b>{formatVND(b.quote.balance)}{b.balance ? ' · đã trả' : ''}</b></div>
       </div>
       {canPay && showAction && <button className="btn btn-primary btn-lg btn-full" style={{ marginTop: 12 }} disabled={busy} onClick={pay}>{busy ? 'Đang chuyển sang VNPAY…' : `Thanh toán ${formatVND(b.quote.balance)} qua VNPAY`}</button>}

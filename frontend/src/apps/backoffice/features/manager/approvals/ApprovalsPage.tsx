@@ -2,8 +2,7 @@
 // Manager nhìn số xe Điều phối viên đã chọn để chọn tài xế và hộ tống cho từng xe. Báo giá do hệ thống tính; Manager chỉ điều chỉnh phụ phí và chiết khấu thương mại rồi gửi cho khách.
 import { useEffect, useState } from 'react'
 import { useAuth } from '@shared/auth/AuthContext'
-import { QUOTE_VALID_HOURS } from '@shared/config/booking-rules'
-import { VEHICLE_CLASS } from '@shared/config/booking-rules'
+import { DEPOSIT_RATE, QUOTE_VALID_HOURS, VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { finalizeQuote, sameVehicleId, schedulesOf, vehicleClassOf, crewClashOf, findCrewBooked } from '@shared/lib/booking'
 import { formatDate, formatDateTime, formatVND } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
@@ -257,7 +256,7 @@ export default function ApprovalsPage() {
   ]
   return (
     <>
-      <ListPage title="Duyệt báo giá" subtitle={`Duyệt để gửi khách, khách có ${QUOTE_VALID_HOURS} giờ đặt cọc 30%.`} tabs={[['todo', 'Chờ duyệt báo giá', todo.length], ['sent', 'Đã gửi báo giá', sent.length]]} tab={tab} onTab={setTab} hot={['todo']}
+      <ListPage title="Duyệt báo giá" subtitle={`Duyệt để gửi khách, khách có ${QUOTE_VALID_HOURS} giờ đặt cọc ${(DEPOSIT_RATE * 100).toLocaleString('vi-VN')}%.`} tabs={[['todo', 'Chờ duyệt báo giá', todo.length], ['sent', 'Đã gửi báo giá', sent.length]]} tab={tab} onTab={setTab} hot={['todo']}
         rows={tab === 'todo' ? todo : sent} rowKey={b => b.id} columns={columns} haystack={b => [b.id, b.customer, b.origin.name, b.dest.name]} dateOf={b => b.departAt} loaded={!!all}
         emptyText={tab === 'todo' ? 'Không có đơn nào chờ duyệt báo giá.' : 'Chưa gửi báo giá nào.'}
         summary={r => (tab === 'sent' ? <>Tổng báo giá: <b>{formatVND(r.reduce((n, b) => n + (b.quote?.total ?? 0), 0))}</b></> : null)} />

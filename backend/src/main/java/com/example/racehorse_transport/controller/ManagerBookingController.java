@@ -43,7 +43,7 @@ public class ManagerBookingController {
         return ResponseEntity.ok(ApiResponse.success(response, "Phân công kíp xe thành công"));
     }
 
-    // 4. API Manager duyệt và phát hành báo giá (hiệu lực 24h)
+    // 4. API Manager duyệt và phát hành báo giá.
     @PostMapping("/{id}/send-quote")
     public ResponseEntity<ApiResponse<BookingResponse>> sendQuote(
             @PathVariable("id") String id,
@@ -52,7 +52,7 @@ public class ManagerBookingController {
         // Người phát hành báo giá lấy từ token, không tin body
         request.setBy(authentication.getName());
         BookingResponse response = bookingService.sendQuote(id, request);
-        return ResponseEntity.ok(ApiResponse.success(response, "Phát hành báo giá thành công (hiệu lực 24 giờ)"));
+        return ResponseEntity.ok(ApiResponse.success(response, "Phát hành báo giá thành công."));
     }
 
     // 5. API Manager trả đơn về Specialist hoặc Coordinator

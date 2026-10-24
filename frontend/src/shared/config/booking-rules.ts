@@ -3,8 +3,8 @@
 import { BIG_TRUCK_FACTOR } from './public-pricing'
 
 // ===== Cọc, báo giá =====
-export const DEPOSIT_RATE = 0.3 // cọc 30% để nhận Vận đơn; 70% còn lại trả ngày D (PRD mục 2.6, 11.1)
-export const QUOTE_VALID_HOURS = 24 // hạn giữ báo giá; quá hạn thì đơn hết hiệu lực
+export let DEPOSIT_RATE = 0.3 // Tỷ lệ cọc mặc định; cấu hình được nạp từ backend khi khởi động app.
+export let QUOTE_VALID_HOURS = 24 // hạn giữ báo giá; quá hạn thì đơn hết hiệu lực
 export const DOCS_CUTOFF_HOUR = 18 // 18:00 ngày D-1: mốc cảnh báo nội bộ giấy tờ (PRD mục 3.4)
 
 // ===== Hạng xe (PRD mục 10) =====
@@ -176,7 +176,7 @@ export const CLEARANCE_FEE = { domestic: 0, international: 300_000 } // phí th�
 export const FUEL_BOT_PER_KM = 9_000 // nhiên liệu + BOT ước tính mỗi km (số mẫu)
 export const FUEL_BUFFER_RATE = 0.05 // dự phòng trên nhiên liệu và BOT
 export const MARGIN_RATE = 0.05 // biên lợi nhuận, gộp vào đơn giá, không hiện thành dòng riêng
-export const DEMURRAGE_PER_HOUR = 400_000 // phí lưu xe chờ, chỉ khi lỗi phía khách (PRD mục 11.3: 300.000 – 500.000 đ/giờ)
+export let DEMURRAGE_PER_HOUR = 400_000 // phí lưu xe chờ, chỉ khi lỗi phía khách (PRD mục 11.3: 300.000 – 500.000 đ/giờ)
 export const INSURANCE_RATE_BOOKING = 0.02 // trên giá trị bảo hiểm của giống ngựa
 // Giá trị bảo hiểm theo giống (VNĐ). Khách không tự khai; số mẫu, chờ bảng giá thật của nhà bảo hiểm.
 export const BREED_INSURED_VALUE: Record<string, number> = {
@@ -207,10 +207,31 @@ export const BREED_INSURED_VALUE: Record<string, number> = {
 }
 
 // ===== Lộ trình: trạm nghỉ và Lệnh điều xe (Flow 1, 3, PRD mục 4.2) =====
-export const MAX_CONTINUOUS_HOURS = 4 // quy chuẩn an sinh: ngựa không đi liên tục quá 4 giờ
+export let MAX_CONTINUOUS_HOURS = 4 // quy chuẩn an sinh: ngựa không đi liên tục quá 4 giờ
 export const TARGET_LEG_HOURS = 3.2 // mục tiêu lý tưởng 2.5–3.5 giờ mỗi chặng
-export const MIN_REST_MINUTES = 30
+export let MIN_REST_MINUTES = 30
+export let VITAL_CHECK_INTERVAL_HOURS = 2
 export const BORDER_WINDOW = { open: 7 * 60 + 30, close: 16 * 60 + 30 } // ETA cửa khẩu nên rơi vào 07:30–16:30
+
+export function applyRuntimeBookingRules(config: {
+  depositRate: number
+  quoteValidHours: number
+  demurragePerHour: number
+  maxContinuousHours: number
+  minRestMinutes: number
+  vitalCheckIntervalHours: number
+  borderOpenMinutes: number
+  borderCloseMinutes: number
+}) {
+  DEPOSIT_RATE = config.depositRate
+  QUOTE_VALID_HOURS = config.quoteValidHours
+  DEMURRAGE_PER_HOUR = config.demurragePerHour
+  MAX_CONTINUOUS_HOURS = config.maxContinuousHours
+  MIN_REST_MINUTES = config.minRestMinutes
+  VITAL_CHECK_INTERVAL_HOURS = config.vitalCheckIntervalHours
+  BORDER_WINDOW.open = config.borderOpenMinutes
+  BORDER_WINDOW.close = config.borderCloseMinutes
+}
 
 // ===== Hành trình và nhật ký (Flow 4, PRD mục 5) =====
 export const DELAY_ALERT_MINUTES = 30 // trễ mốc 30–45 phút thì cờ vàng Delayed Check-in

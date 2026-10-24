@@ -9,6 +9,7 @@ import com.example.racehorse_transport.dto.booking.PartyContactDto;
 import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.repository.*;
 import com.example.racehorse_transport.service.BookingService;
+import com.example.racehorse_transport.service.SystemConfigService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,6 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -62,6 +65,7 @@ public class BookingServiceImpl implements BookingService {
     private final StaffRepository staffRepository;
     private final RegulationRepository regulationRepository;
     private final LocationRepository locationRepository;
+    private final SystemConfigService systemConfigService;
     private final TripDocumentRepository tripDocumentRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -99,9 +103,16 @@ public class BookingServiceImpl implements BookingService {
         }
 
         // 3. Chuyển đổi timestamp ngày khởi hành
+        int minimumLeadDays = Integer.parseInt(systemConfigService.getConfig("MIN_LEAD_DAYS").getConfigValue());
+        ZoneId vietnamZone = ZoneId.of("Asia/Ho_Chi_Minh");
+        LocalDate earliestDeparture = LocalDate.now(vietnamZone).plusDays(minimumLeadDays);
         Instant departureInstant = request.getDepartAt() != null
                 ? Instant.ofEpochMilli(request.getDepartAt())
-                : Instant.now().plusSeconds(86400 * 3);
+                : earliestDeparture.atTime(9, 0).atZone(vietnamZone).toInstant();
+        if (departureInstant.atZone(vietnamZone).toLocalDate().isBefore(earliestDeparture)) {
+            throw new IllegalArgumentException("Ngày khởi hành phải cách ngày đặt đơn tối thiểu "
+                    + minimumLeadDays + " ngày.");
+        }
 
         // 4. Serialize cấu hình chi tiết ngựa và khởi tạo payload vào detailsJson
         String detailsJson = null;
@@ -834,13 +845,15 @@ public class BookingServiceImpl implements BookingService {
         }
 
         // Tổng, cọc, số dư do backend tính từ các dòng và khoản điều chỉnh; bỏ qua các con số tổng client gửi
-        QuoteTotals totals = QuoteTotals.of(request.getLines(), request.getAdjustments());
+        BigDecimal depositRate = new BigDecimal(systemConfigService.getConfig("DEPOSIT_RATE").getConfigValue());
+        int quoteValidHours = Integer.parseInt(systemConfigService.getConfig("QUOTE_VALID_HOURS").getConfigValue());
+        QuoteTotals totals = QuoteTotals.of(request.getLines(), request.getAdjustments(), depositRate);
         BigDecimal total = totals.total();
         BigDecimal deposit = totals.deposit();
         BigDecimal balance = totals.balance();
 
         Instant now = Instant.now();
-        Instant expiresAt = now.plus(QUOTE_VALID_HOURS, ChronoUnit.HOURS);
+        Instant expiresAt = now.plus(quoteValidHours, ChronoUnit.HOURS);
 
         User sentByUser = null;
         if (request.getBy() != null && !request.getBy().isBlank()) {
@@ -888,7 +901,9 @@ public class BookingServiceImpl implements BookingService {
         payload.setQuote(quoteMap);
 
         appendHistory(payload, request.getBy() != null ? request.getBy() : "Quản lý",
-                "Duyệt và phát hành báo giá: Tổng " + total + " VND, Đặt cọc 30%: " + deposit + " VND (Hiệu lực " + QUOTE_VALID_HOURS + " giờ)");
+                "Duyệt và phát hành báo giá: Tổng " + total + " VND, Đặt cọc "
+                        + depositRate.multiply(BigDecimal.valueOf(100)).stripTrailingZeros().toPlainString()
+                        + "%: " + deposit + " VND (Hiệu lực " + quoteValidHours + " giờ)");
         savePayload(booking, payload);
 
         booking.setStatus("awaiting_payment");
@@ -1008,7 +1023,7 @@ public class BookingServiceImpl implements BookingService {
         return mapToResponse(updated);
     }
 
-    // Áp hiệu ứng sau khi đã nhận đủ tiền cọc 30% (luồng VNPAY): chốt báo giá, cấp Vận đơn
+    // Áp hiệu ứng sau khi đã nhận đủ tiền cọc (luồng VNPAY): chốt báo giá, cấp Vận đơn
     @Override
     @Transactional
     public Booking confirmDepositPaid(Payment payment, String actor) {
@@ -1036,12 +1051,12 @@ public class BookingServiceImpl implements BookingService {
         initClearanceRegulationsForBooking(booking, payload);
 
         appendHistory(payload, actor != null ? actor : "Khách hàng",
-                "Đặt cọc 30% (" + payment.getAmount() + " VND) qua " + payment.getPaymentMethod() + ", cấp Vận đơn " + waybillNo);
+                "Đặt cọc (" + payment.getAmount() + " VND) qua " + payment.getPaymentMethod() + ", cấp Vận đơn " + waybillNo);
         savePayload(booking, payload);
         Booking updated = bookingRepository.save(booking);
 
         logAction("PAY_DEPOSIT", updated.getId(),
-                "Khách hàng thanh toán cọc 30% (" + payment.getAmount() + " VND) qua " + payment.getPaymentMethod()
+                "Khách hàng thanh toán tiền cọc (" + payment.getAmount() + " VND) qua " + payment.getPaymentMethod()
                         + ", mã GD " + payment.getTransactionCode() + ", cấp Vận đơn " + waybillNo);
         log.info("Deposit confirmed for booking ID={}, waybill={}", updated.getId(), waybillNo);
         return updated;
@@ -1212,13 +1227,14 @@ public class BookingServiceImpl implements BookingService {
 
                     booking.setStatus("quote_expired");
                     BookingDetailsPayload payload = extractPayload(booking);
-                    appendHistory(payload, "Hệ thống", "Báo giá hết hạn " + QUOTE_VALID_HOURS + " giờ, tự động giải phóng xe và kíp xe.");
+                    appendHistory(payload, "Hệ thống",
+                            "Báo giá đã hết hạn theo thời hạn ghi trên báo giá, tự động giải phóng xe và kíp xe.");
                     savePayload(booking, payload);
                     bookingRepository.save(booking);
 
                     logAction("QUOTE_AUTO_EXPIRED_RELEASE_FLEET", booking.getId(),
                             "Báo giá đơn BK-" + booking.getId()
-                                    + " hết hạn " + QUOTE_VALID_HOURS + " giờ. Đã tự động giải phóng xe và kíp xe.");
+                                    + " đã hết hạn. Đã tự động giải phóng xe và kíp xe.");
                     count++;
                 }
             }

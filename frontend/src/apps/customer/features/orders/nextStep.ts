@@ -1,6 +1,6 @@
 // "Bước tiếp theo" của đơn phía khách: mỗi trạng thái nói rõ khách đang chờ ai, hoặc cần làm gì.
 import { HOUR } from '@shared/config/business-rules'
-import { QUOTE_VALID_HOURS, type Tone } from '@shared/config/booking-rules'
+import { DEPOSIT_RATE, type Tone } from '@shared/config/booking-rules'
 import { arrivalOf, clearanceProgress, currentCheckpoint, orderGroupOf } from '@shared/lib/booking'
 import { formatDateTime, formatVND, timeLeftText } from '@shared/lib/format'
 import type { CustomerBookingView } from '@shared/services/bookings'
@@ -36,10 +36,13 @@ function baseStep(b: CustomerBookingView, now: number): NextStep {
       return { tone: 'orange', icon: 'fa-file-invoice-dollar', title: 'Đang lập báo giá', text: 'Thẩm định đã xong. Quản lý đang duyệt báo giá chính thức để gửi cho bạn.', actionNeeded: false }
     case 'awaiting_payment': {
       const ms = b.quote!.expiresAt - now
-      return { tone: ms < 12 * HOUR ? 'danger' : 'warning', icon: 'fa-credit-card', title: `Đặt cọc 30% trong ${timeLeftText(b.quote!.expiresAt, now)}`, text: `Báo giá có hiệu lực đến ${formatDateTime(b.quote!.expiresAt)}. Quá hạn, xe và nhân sự được nhả cho đơn khác.${arrivalOf(b.route) ? ` Dự kiến đến nơi ${formatDateTime(arrivalOf(b.route)!)}.` : ''}`, actionNeeded: true }
+      const depositPercentage = b.quote!.total > 0
+        ? Number((b.quote!.deposit / b.quote!.total * 100).toFixed(2))
+        : DEPOSIT_RATE * 100
+      return { tone: ms < 12 * HOUR ? 'danger' : 'warning', icon: 'fa-credit-card', title: `Đặt cọc ${depositPercentage.toLocaleString('vi-VN')}% trong ${timeLeftText(b.quote!.expiresAt, now)}`, text: `Báo giá có hiệu lực đến ${formatDateTime(b.quote!.expiresAt)}. Quá hạn, xe và nhân sự được nhả cho đơn khác.${arrivalOf(b.route) ? ` Dự kiến đến nơi ${formatDateTime(arrivalOf(b.route)!)}.` : ''}`, actionNeeded: true }
     }
     case 'quote_expired':
-      return { tone: 'muted', icon: 'fa-hourglass-end', title: 'Báo giá đã hết hạn', text: `Quá ${QUOTE_VALID_HOURS} giờ chưa đặt cọc nên xe và nhân sự đã được nhả. Bạn có thể tạo đơn mới.`, actionNeeded: false }
+      return { tone: 'muted', icon: 'fa-hourglass-end', title: 'Báo giá đã hết hạn', text: 'Bạn chưa đặt cọc trước hạn báo giá nên xe và nhân sự đã được nhả. Bạn có thể tạo đơn mới.', actionNeeded: false }
     case 'waybill_issued':
       return { tone: 'success', icon: 'fa-file-contract', title: `Đã có vận đơn ${b.waybill?.no ?? ''}`, text: 'Nhà xe bắt đầu làm giấy kiểm dịch và hải quan cho bạn. Bạn không cần làm gì thêm, tiến độ sẽ hiện ở đây.', actionNeeded: false }
     case 'clearance_in_progress': {
@@ -99,7 +102,12 @@ export const isAcceptance = (b: CustomerBookingView) => orderGroupOf(b) === 'set
 function ctaOf(b: CustomerBookingView): string {
   switch (b.status) {
     case 'under_review': return 'Bổ sung hồ sơ'
-    case 'awaiting_payment': return 'Đặt cọc 30%'
+    case 'awaiting_payment': {
+      const depositPercentage = b.quote?.total
+        ? Number((b.quote.deposit / b.quote.total * 100).toFixed(2))
+        : DEPOSIT_RATE * 100
+      return `Đặt cọc ${depositPercentage.toLocaleString('vi-VN')}%`
+    }
     case 'ready_for_pickup': case 'en_route_to_pickup': return 'Thanh toán 70%'
     case 'settlement_issued': case 'payment_overdue': return b.settlement?.total ? 'Thanh toán quyết toán' : 'Đánh giá chuyến đi'
     default: return 'Xử lý ngay'
