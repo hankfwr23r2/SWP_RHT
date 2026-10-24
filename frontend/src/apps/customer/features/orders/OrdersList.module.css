@@ -46,6 +46,7 @@
 .empty { text-align: center; padding: 56px 20px; background: white; border: 1px dashed #cbd5e1; border-radius: var(--radius); color: var(--muted); }
 .empty i { font-size: 2.4rem; color: var(--icon-accent); display: block; margin-bottom: 10px; }
 .count { margin-top: 12px; font-size: 0.84rem; color: var(--muted); }
+.paginationWrap { margin-top: 16px; padding: 10px 16px; background: white; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
 
 @media (max-width: 760px) {
   .statusFilter { flex: 1 1 100%; }

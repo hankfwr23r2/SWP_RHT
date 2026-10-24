@@ -27,9 +27,15 @@ public class ManagerBookingController {
         return ResponseEntity.ok(ApiResponse.success(bookings, "Lấy danh sách đơn chờ tiếp nhận thành công"));
     }
 
-    // 2. API Manager xem toàn bộ đơn
+    // 2. API Manager xem toàn bộ đơn (hỗ trợ phân trang tùy chọn)
     @GetMapping
-    public ResponseEntity<ApiResponse<List<BookingResponse>>> getAllBookings() {
+    public ResponseEntity<ApiResponse<?>> getAllBookings(
+            @RequestParam(value = "page", required = false) Integer page,
+            @RequestParam(value = "size", required = false, defaultValue = "20") Integer size) {
+        if (page != null) {
+            com.example.racehorse_transport.dto.common.PagedResponse<BookingResponse> paged = bookingService.getBookingsPaged("ALL", page, size);
+            return ResponseEntity.ok(ApiResponse.success(paged, "Lấy danh sách toàn bộ đơn hàng thành công"));
+        }
         List<BookingResponse> bookings = bookingService.getBookingsByStatus("ALL");
         return ResponseEntity.ok(ApiResponse.success(bookings, "Lấy danh sách toàn bộ đơn hàng thành công"));
     }

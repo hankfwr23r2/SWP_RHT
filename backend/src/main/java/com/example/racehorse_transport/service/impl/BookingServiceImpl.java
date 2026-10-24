@@ -6,8 +6,12 @@ import com.example.racehorse_transport.dto.booking.CreateBookingRequest;
 import com.example.racehorse_transport.dto.booking.CustomerTripTeamResponse;
 import com.example.racehorse_transport.dto.booking.PublicTrackingResponse;
 import com.example.racehorse_transport.dto.booking.PartyContactDto;
+import com.example.racehorse_transport.dto.common.PagedResponse;
 import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.repository.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import com.example.racehorse_transport.service.BookingService;
 import com.example.racehorse_transport.service.SystemConfigService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -254,6 +258,29 @@ public class BookingServiceImpl implements BookingService {
     }
 
     @Override
+    public PagedResponse<BookingResponse> getCustomerBookingsPaged(String customerUsername, int page, int size) {
+        User user = userRepository.findByUsernameOrEmail(customerUsername, customerUsername)
+                .orElseThrow(
+                        () -> new ResourceNotFoundException("Không tìm thấy thông tin người dùng: " + customerUsername));
+
+        int safePage = Math.max(0, page);
+        int safeSize = size > 0 ? Math.min(size, 100) : 20;
+        Pageable pageable = PageRequest.of(safePage, safeSize);
+
+        Page<Booking> pageResult = bookingRepository.findByCustomerID_IdOrderByBookingDateDesc(user.getId(), pageable);
+        List<BookingResponse> content = pageResult.getContent().stream().map(this::mapToResponse).toList();
+
+        return PagedResponse.<BookingResponse>builder()
+                .content(content)
+                .page(pageResult.getNumber())
+                .size(pageResult.getSize())
+                .totalElements(pageResult.getTotalElements())
+                .totalPages(pageResult.getTotalPages())
+                .last(pageResult.isLast())
+                .build();
+    }
+
+    @Override
     public BookingResponse getBookingById(Integer id, String customerUsername) {
         Booking booking = bookingRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng có ID: " + id));
@@ -365,6 +392,31 @@ public class BookingServiceImpl implements BookingService {
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
+    }
+
+    @Override
+    public PagedResponse<BookingResponse> getBookingsPaged(String status, int page, int size) {
+        int safePage = Math.max(0, page);
+        int safeSize = size > 0 ? Math.min(size, 100) : 20;
+        Pageable pageable = PageRequest.of(safePage, safeSize);
+
+        Page<Booking> pageResult;
+        if (status == null || status.trim().isEmpty() || "ALL".equalsIgnoreCase(status)) {
+            pageResult = bookingRepository.findAllByOrderByBookingDateDesc(pageable);
+        } else {
+            pageResult = bookingRepository.findByStatusOrderByBookingDateDesc(status, pageable);
+        }
+
+        List<BookingResponse> content = pageResult.getContent().stream().map(this::mapToResponse).toList();
+
+        return PagedResponse.<BookingResponse>builder()
+                .content(content)
+                .page(pageResult.getNumber())
+                .size(pageResult.getSize())
+                .totalElements(pageResult.getTotalElements())
+                .totalPages(pageResult.getTotalPages())
+                .last(pageResult.isLast())
+                .build();
     }
 
     private static final Set<String> FIELD_STATUSES = Set.of(

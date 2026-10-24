@@ -14,6 +14,7 @@ public interface BookingService {
 
     // Nghiệp vụ Flow 1: Khách hàng xem danh sách đơn của mình
     List<BookingResponse> getCustomerBookings(String customerUsername);
+    com.example.racehorse_transport.dto.common.PagedResponse<BookingResponse> getCustomerBookingsPaged(String customerUsername, int page, int size);
 
     // Nghiệp vụ Flow 1: Xem chi tiết đơn
     BookingResponse getBookingById(Integer id, String customerUsername);
@@ -25,6 +26,7 @@ public interface BookingService {
 
     // Nghiệp vụ Flow 1: Manager xem đơn theo trạng thái (chờ tiếp nhận)
     List<BookingResponse> getBookingsByStatus(String status);
+    com.example.racehorse_transport.dto.common.PagedResponse<BookingResponse> getBookingsPaged(String status, int page, int size);
 
     List<BookingResponse> getAssignedBookings(String username);
 
