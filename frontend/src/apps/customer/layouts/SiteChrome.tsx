@@ -1,8 +1,10 @@
 // Khung trang CÔNG KHAI (giới thiệu): topbar, header marketing, footer, nút nổi. Chuyển từ index.html + home.css.
 // Trang khách đã đăng nhập dùng khung gọn: CustomerLayout.tsx.
 import { useEffect, useState, type ReactNode } from 'react'
-import { Link, NavLink } from 'react-router'
+import { Link, NavLink, useLocation } from 'react-router'
+import { useAuth } from '@shared/auth/AuthContext'
 import { TranslateToggle } from '@shared/ui/TranslateToggle'
+import { CustomerLayout } from './CustomerLayout'
 import s from './SiteChrome.module.css'
 
 const cx = (...c: (string | false | undefined)[]) => c.filter(Boolean).join(' ')
@@ -75,9 +77,14 @@ function Footer() {
 }
 
 export function PublicLayout({ children }: { children: ReactNode }) {
+  const { session } = useAuth()
+  const { pathname } = useLocation()
   const scrolled = useScrolled(10)
   const showTop = useScrolled(600)
   const [menuOpen, setMenuOpen] = useState(false)
+  if (pathname === '/terms' && session?.role === 'customer') {
+    return <CustomerLayout>{children}</CustomerLayout>
+  }
   return (
     <>
       <div className={s.topbar}>
@@ -101,4 +108,3 @@ export function PublicLayout({ children }: { children: ReactNode }) {
     </>
   )
 }
-

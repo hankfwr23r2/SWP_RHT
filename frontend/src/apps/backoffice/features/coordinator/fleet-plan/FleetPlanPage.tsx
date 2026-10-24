@@ -35,6 +35,7 @@ import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
 import { useToast } from '@shared/ui/toast'
 import { History, ReviewChips } from '../../../shared/BookingParts'
 import s from '../../../shared/booking.module.css'
+import layoutStyles from '../Coordinator.module.css'
 import { FormSelect } from '@shared/ui/FormSelect'
 import { ResourcePicker } from '../../../shared/ResourcePicker'
 const RouteMapPicker = lazy(() => import('./RouteMapPicker').then(m => ({ default: m.RouteMapPicker })))
@@ -1146,8 +1147,8 @@ export default function FleetPlanPage() {
           )}
         </div>
 
-        <div className={s.layout}>
-          <div className={s.main}>
+        <div className={layoutStyles.routeLayout}>
+          <div className={layoutStyles.routeMain}>
             {b.status === 'under_review' ? (
               <Plan b={b} vehicles={vehicles} all={all} onDone={reload} />
             ) : b.plan ? (
@@ -1171,7 +1172,7 @@ export default function FleetPlanPage() {
               </div>
             )}
           </div>
-          <aside className={s.side}>
+          <aside className={layoutStyles.routeSide}>
             <div className="card">
               <div className="card-header">
                 <h3>
