@@ -2,15 +2,14 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
-import { BOOKING_STEPS, HORSE_DOC, stepOf, VEHICLE_CLASS } from '@shared/config/booking-rules'
-import { COUNTRIES } from '@shared/config/network'
-import { arrivalOf, insuranceFee, vehicleClassOf } from '@shared/lib/booking'
+import { BOOKING_STEPS, HORSE_DOC, stepOf } from '@shared/config/booking-rules'
+import { arrivalOf } from '@shared/lib/booking'
 import { formatClock, formatDate, formatDateTime, formatVND } from '@shared/lib/format'
 import { usePageData } from '@shared/routing/pageData'
 import { customerBookingsApi, type CustomerBookingView, type TripTeam } from '@shared/services/bookings'
 import { horsesApi } from '@shared/services/horses'
 import { useLoad } from '@shared/services/useLoad'
-import { SEX_LABEL, type HorseProfile } from '@shared/types/booking'
+import type { HorseProfile } from '@shared/types/booking'
 import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
 import { Modal } from '@shared/ui/Modal'
 import { PolicyLink } from '@shared/ui/PolicyLink'
@@ -22,6 +21,7 @@ import { useNow } from '@shared/ui/useNow'
 import { HorseFormModal } from '../horses/HorseFormModal'
 import { IncidentsCard, SettlementCard } from './SettlementCard'
 import { ClearanceProgressCard } from './ClearanceProgressCard'
+import { OrderFacts, QuoteFacts } from './OrderFacts'
 import type { orderDetailLoader } from './loaders'
 import { POST_PAYMENT, ROUTE_STAGE, ROUTE_VISIBLE, nextStep } from './nextStep'
 import s from './OrderDetail.module.css'
@@ -241,8 +241,6 @@ export default function OrderDetailPage() {
   // Tab mặc định theo giai đoạn: đang đi đường thì Hành trình, đang làm giấy thì Giấy tờ, còn lại Thanh toán / Thông tin
   const auto: Tab = ROUTE_STAGE.includes(b.status) ? 'journey' : POST_PAYMENT.includes(b.status) ? 'docs' : b.quote ? 'pay' : 'info'
   const tab = picked && tabs.includes(picked) ? picked : tabs.includes(auto) ? auto : 'info'
-  // Hạng của từng xe khi đã chốt (đơn nhiều xe liệt kê hết), chưa chốt thì theo số ngựa
-  const clsLabel = (team.length ? team.map(t => t.vehicle.stalls) : [Math.max(b.horses.length, 1)]).map(n => VEHICLE_CLASS[vehicleClassOf(n)].label).join(' + ')
   const events = [
     { time: b.createdAt, text: 'Bạn đã gửi đơn' },
     ...(b.medical?.status === 'approved' && b.medical.at ? [{ time: b.medical.at, text: 'Duyệt hồ sơ ngựa đạt' }] : []),
@@ -352,6 +350,7 @@ export default function OrderDetailPage() {
               {b.quote && (
                 <div className="card">
                   <div className="card-header"><h3><i className="fa-solid fa-file-invoice-dollar" /> Báo giá</h3></div>
+                  <QuoteFacts b={b} team={team} />
                   <QuoteSheet {...b.quote} expiresAt={b.status === 'awaiting_payment' ? b.quote.expiresAt : undefined} />
                 </div>
               )}
@@ -372,28 +371,7 @@ export default function OrderDetailPage() {
 
           {tab === 'info' && (
             <>
-              <div className="card">
-                <div className="card-header"><h3><i className="fa-solid fa-route" /> Chuyến đi</h3></div>
-                <dl className={s.grid}>
-                  <div><dt>Loại chuyến</dt><dd>{b.type === 'international' ? `Quốc tế (${COUNTRIES[b.origin.country].name} → ${COUNTRIES[b.dest.country].name})` : 'Trong nước'}</dd></div>
-                  <div><dt>Ngày khởi hành</dt><dd>{formatDate(b.departAt)}</dd></div>
-                  <div><dt>Điểm đón</dt><dd>{placeName(b.origin.name)}</dd></div>
-                  <div><dt>Điểm giao</dt><dd>{placeName(b.dest.name)}</dd></div>
-                  {b.gate && <div><dt>Cửa khẩu (đã khóa)</dt><dd>{b.gate}</dd></div>}
-                  <div><dt>Người gửi</dt><dd>{b.consignor.name}</dd></div>
-                  <div><dt>Người nhận</dt><dd>{b.consignee.name}</dd></div>
-                </dl>
-              </div>
-              <div className="card">
-                <div className="card-header"><h3><i className="fa-solid fa-horse-head" /> {b.horses.length} ngựa · xe {clsLabel}</h3></div>
-                {b.horses.map(h => (
-                  <div key={h.horseId} className={s.horseRow}>
-                    <div><b>{h.name}</b> <small>Chip {h.microchip} · {h.breed} · {SEX_LABEL[h.sex]}</small></div>
-                    <div style={{ textAlign: 'right' }}>{h.stall === 'single' ? 'Khoang đơn' : 'Khoang tiêu chuẩn'}</div>
-                    <small>{h.insurance.opted ? `Mua bảo hiểm, phí ${formatVND(insuranceFee(h.breed))}` : 'Từ chối bảo hiểm (trách nhiệm hạn chế)'}</small>
-                  </div>
-                ))}
-              </div>
+              <OrderFacts b={b} team={team} />
               {b.canCancel && (
                 <div className="card">
                   <div className="card-header">
