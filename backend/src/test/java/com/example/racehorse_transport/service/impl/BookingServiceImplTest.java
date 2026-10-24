@@ -362,6 +362,23 @@ class BookingServiceImplTest {
     }
 
     @Test
+    void confirmCoordinatorPlan_rejectsRouteWithoutLegs() {
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(bookingOwnedByCustomer()));
+        var trip = new com.example.racehorse_transport.dto.coordinator.VehicleTripDto();
+        trip.setVehicleId("VH-001");
+        trip.setHorseIds(List.of("H-001"));
+
+        for (Object route : List.of("Hà Nội → Lạng Sơn", Map.of("rests", List.of()))) {
+            var request = com.example.racehorse_transport.dto.coordinator.CoordinatorPlanRequest.builder()
+                    .trips(List.of(trip)).route(route).build();
+            assertThatThrownBy(() -> service.confirmCoordinatorPlan("BK-042", request))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("chặng");
+        }
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
     void getBookingById_rejectsUnknownBooking() {
         when(bookingRepository.findById(404)).thenReturn(Optional.empty());
 

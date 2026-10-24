@@ -569,6 +569,10 @@ public class BookingServiceImpl implements BookingService {
         if (request.getTrips() == null || request.getTrips().isEmpty()) {
             throw new IllegalArgumentException("Phương án điều phối phải có ít nhất 1 chuyến xe!");
         }
+        if (request.getRoute() != null
+                && !(request.getRoute() instanceof Map<?, ?> route && route.get("legs") instanceof List<?>)) {
+            throw new IllegalArgumentException("Lộ trình phải có danh sách chặng!");
+        }
 
         // 3. Kiểm tra tính khả dụng & tải trọng của từng xe
         Instant departDate = booking.getDepartureDate() != null ? booking.getDepartureDate() : Instant.now();
