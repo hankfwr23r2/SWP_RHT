@@ -7,6 +7,10 @@ export interface BackendRouteResponse {
   estimatedTime?: number // giờ
   distance?: number // km
   status: 'ACTIVE' | 'INACTIVE' | string
+  originId?: number
+  originName?: string
+  destinationId?: number
+  destinationName?: string
 }
 
 export interface BackendLocationRouteResponse {
@@ -21,6 +25,8 @@ export interface BackendLocationRouteResponse {
   address?: string
   province?: string
   country?: string
+  latitude?: number
+  longitude?: number
 }
 
 export interface BackendLocationResponse {
@@ -42,6 +48,8 @@ export interface CreateRoutePayload {
   stops?: Array<{
     locationId: number
     stopOrder?: number
+    latitude?: number
+    longitude?: number
   }>
 }
 

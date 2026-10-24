@@ -35,7 +35,7 @@ public class RouteController {
     public ResponseEntity<ApiResponse<List<RouteDTO>>> getAllRoutes() {
         List<Route> routes = routeService.findAll();
         List<RouteDTO> dtos = routes.stream()
-                .map(r -> modelMapper.map(r, RouteDTO.class))
+                .map(this::toRouteDTO)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(ApiResponse.success(dtos, "Lấy danh sách lộ trình thành công"));
     }
@@ -45,7 +45,7 @@ public class RouteController {
     public ResponseEntity<ApiResponse<RouteDTO>> getRouteById(@PathVariable Integer id) {
         Optional<Route> routeOpt = routeService.findById(id);
         if (routeOpt.isPresent()) {
-            RouteDTO dto = modelMapper.map(routeOpt.get(), RouteDTO.class);
+            RouteDTO dto = toRouteDTO(routeOpt.get());
             return ResponseEntity.ok(ApiResponse.success(dto, "Lấy thông tin lộ trình thành công"));
         } else {
             return ResponseEntity.status(404).body(ApiResponse.error("Không tìm thấy lộ trình ID: " + id));
@@ -67,7 +67,7 @@ public class RouteController {
     @PostMapping
     public ResponseEntity<ApiResponse<RouteDTO>> createRoute(@Valid @RequestBody com.example.racehorse_transport.dto.route.CreateRouteRequest request) {
         Route created = routeService.createRoute(request);
-        RouteDTO dto = modelMapper.map(created, RouteDTO.class);
+        RouteDTO dto = toRouteDTO(created);
         return ResponseEntity.ok(ApiResponse.success(dto, "Tạo tuyến đường cố định thành công"));
     }
 
@@ -78,7 +78,7 @@ public class RouteController {
             @PathVariable Integer id,
             @Valid @RequestBody com.example.racehorse_transport.dto.route.CreateRouteRequest request) {
         Route updated = routeService.updateRoute(id, request);
-        RouteDTO dto = modelMapper.map(updated, RouteDTO.class);
+        RouteDTO dto = toRouteDTO(updated);
         return ResponseEntity.ok(ApiResponse.success(dto, "Cập nhật tuyến đường thành công"));
     }
 
@@ -102,6 +102,22 @@ public class RouteController {
             dto.setAddress(entity.getLocationID().getAddress());
             dto.setProvince(entity.getLocationID().getProvince());
             dto.setCountry(entity.getLocationID().getCountry());
+        }
+        dto.setLatitude(entity.getLatitude());
+        dto.setLongitude(entity.getLongitude());
+        return dto;
+    }
+
+    private RouteDTO toRouteDTO(Route route) {
+        RouteDTO dto = modelMapper.map(route, RouteDTO.class);
+        List<LocationRoute> stops = routeService.getStopsByRouteId(route.getId());
+        if (!stops.isEmpty()) {
+            LocationRoute origin = stops.get(0);
+            LocationRoute destination = stops.get(stops.size() - 1);
+            dto.setOriginId(origin.getLocationID().getId());
+            dto.setOriginName(origin.getLocationID().getLocationName());
+            dto.setDestinationId(destination.getLocationID().getId());
+            dto.setDestinationName(destination.getLocationID().getLocationName());
         }
         return dto;
     }

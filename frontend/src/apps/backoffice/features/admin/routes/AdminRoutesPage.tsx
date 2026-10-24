@@ -1,5 +1,7 @@
 // Quản trị viên: Quản lý Tuyến đường cố định & Các nút giao, trạm nghỉ an toàn (Mô hình Trục xương sống & Nút giao tiếp cận)
-import { useState } from 'react'
+import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
+import { useEffect, useRef, useState } from 'react'
 import {
   routesApi,
   type BackendRouteResponse,
@@ -13,8 +15,96 @@ import { ListPage, type Column, type TabDef } from '../../../shared/ListPage'
 import s from './AdminRoutes.module.css'
 import { usePageData } from '@shared/routing/pageData'
 import type { adminRoutesLoader } from '../../../shared/loaders'
+import { addVietmapBaseLayer, VIETMAP_MAP_OPTIONS } from '@shared/ui/vietmapLeaflet'
 
-type Tab = 'all' | 'ACTIVE' | 'INACTIVE'
+type Tab = 'all' | 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE'
+
+interface RoutePoint {
+  id: number
+  name: string
+  latitude?: number
+  longitude?: number
+}
+
+function RouteMapPreview({
+  points,
+  activeLocationId,
+  onPlace,
+}: {
+  points: RoutePoint[]
+  activeLocationId?: number
+  onPlace: (locationId: number, latitude: number, longitude: number) => void
+}) {
+  const box = useRef<HTMLDivElement>(null)
+  const map = useRef<L.Map | null>(null)
+  const layer = useRef<L.LayerGroup | null>(null)
+  const activeId = useRef(activeLocationId)
+  const place = useRef(onPlace)
+
+  useEffect(() => {
+    activeId.current = activeLocationId
+    place.current = onPlace
+  }, [activeLocationId, onPlace])
+
+  useEffect(() => {
+    if (!box.current) return
+    const instance = L.map(box.current, { ...VIETMAP_MAP_OPTIONS, zoomControl: false })
+    instance.setView([15.8, 105.5], 5)
+    L.control.zoom({ position: 'topright' }).addTo(instance)
+    addVietmapBaseLayer(instance)
+    layer.current = L.layerGroup().addTo(instance)
+    const handleClick = (event: L.LeafletMouseEvent) => {
+      if (activeId.current !== undefined) {
+        place.current(activeId.current, event.latlng.lat, event.latlng.lng)
+      }
+    }
+    instance.on('click', handleClick)
+    map.current = instance
+    const timer = window.setTimeout(() => instance.invalidateSize(), 100)
+    return () => {
+      window.clearTimeout(timer)
+      instance.off('click', handleClick)
+      instance.remove()
+      map.current = null
+      layer.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    const group = layer.current
+    if (!group) return
+    group.clearLayers()
+    const located = points.flatMap((point, routeIndex) => {
+      const { latitude, longitude } = point
+      if (latitude === undefined || longitude === undefined) return []
+      return [{ ...point, latitude, longitude, routeIndex }]
+    })
+
+    if (located.length > 1) {
+      L.polyline(located.map(point => [point.latitude, point.longitude]), {
+        color: '#ea580c',
+        weight: 4,
+        dashArray: '7 6',
+      }).addTo(group)
+    }
+
+    located.forEach(point => {
+      const isEndpoint = point.routeIndex === 0 || point.routeIndex === points.length - 1
+      const marker = L.circleMarker([point.latitude, point.longitude], {
+        radius: 8,
+        color: '#fff',
+        weight: 2,
+        fillColor: isEndpoint ? '#ea580c' : '#2563eb',
+        fillOpacity: 1,
+      }).addTo(group)
+      const label = document.createElement('span')
+      label.textContent = `${point.routeIndex === 0 ? 'Xuất phát · ' : point.routeIndex === points.length - 1 ? 'Điểm đến · ' : `Điểm ${point.routeIndex + 1} · `}${point.name}`
+      marker.bindTooltip(label)
+    })
+  }, [points])
+
+  return <div ref={box} className={s.mapPreview} role="application" aria-label="Bản đồ xem trước tuyến đường" />
+}
 
 interface RouteModalProps {
   route: BackendRouteResponse | null // null = tạo mới
@@ -31,15 +121,42 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
   const [estimatedTime, setEstimatedTime] = useState(route?.estimatedTime ? String(route.estimatedTime) : '')
   const [status, setStatus] = useState(route?.status ?? 'ACTIVE')
   const [busy, setBusy] = useState(false)
+  const [activeMapLocationId, setActiveMapLocationId] = useState<number>()
+  const [coordinateOverrides, setCoordinateOverrides] = useState<Record<number, { latitude: number; longitude: number }>>({})
 
   // Điểm dừng đã lưu của tuyến đang sửa. Lỗi tải sẽ hiện thông báo (useLoad), không bị bỏ qua.
-  const { data: savedStopIds, loaded: stopsLoaded } = useLoad(
-    async () => (route ? (await routesApi.getRouteStops(route.id)).map(stop => stop.locationID) : []),
+  const { data: savedStops, loaded: stopsLoaded } = useLoad(
+    async () => (route ? routesApi.getRouteStops(route.id) : []),
     [route],
   )
+  const savedStopIds = savedStops?.map(stop => stop.locationID)
+  const savedCoordinates = (savedStops ?? []).reduce<Record<number, { latitude: number; longitude: number }>>(
+    (result, stop) => {
+      if (stop.latitude !== undefined && stop.longitude !== undefined) {
+        result[stop.locationID] = { latitude: stop.latitude, longitude: stop.longitude }
+      }
+      return result
+    },
+    {},
+  )
+  const coordinates = { ...savedCoordinates, ...coordinateOverrides }
   // undefined = admin chưa chỉnh danh sách, dùng danh sách đã lưu
   const [pickedIds, setPickedIds] = useState<number[]>()
   const selectedLocationIds = pickedIds ?? savedStopIds ?? []
+  const mapTargetId = selectedLocationIds.includes(activeMapLocationId ?? -1)
+    ? activeMapLocationId
+    : selectedLocationIds[0]
+  const mapPoints = selectedLocationIds.flatMap(locationId => {
+    const location = locations.find(item => item.id === locationId)
+    if (!location) return []
+    const point = coordinates[locationId]
+    return [{
+      id: locationId,
+      name: location.locationName,
+      latitude: point?.latitude,
+      longitude: point?.longitude,
+    }]
+  })
   const editStops = (change: (ids: number[]) => number[]) => setPickedIds(prev => change(prev ?? savedStopIds ?? []))
 
   const toggleLocation = (locId: number) => {
@@ -65,6 +182,10 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
       toast('Tên tuyến đường không được để trống', 'error')
       return
     }
+    if (selectedLocationIds.length < 2) {
+      toast('Tuyến đường cần ít nhất điểm xuất phát và điểm đến', 'error')
+      return
+    }
     setBusy(true)
     try {
       const payload: CreateRoutePayload = {
@@ -78,6 +199,8 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
         stops: route && !pickedIds && !savedStopIds ? undefined : selectedLocationIds.map((locId, idx) => ({
           locationId: locId,
           stopOrder: idx + 1,
+          latitude: coordinates[locId]?.latitude,
+          longitude: coordinates[locId]?.longitude,
         })),
       }
 
@@ -108,7 +231,7 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
           </button>
           <button
             className="btn btn-primary"
-            disabled={busy || !name.trim() || (!!route && !stopsLoaded)}
+            disabled={busy || !name.trim() || selectedLocationIds.length < 2 || (!!route && !stopsLoaded)}
             onClick={save}
           >
             <i className="fa-solid fa-floppy-disk" /> {route ? 'Lưu thay đổi' : 'Tạo tuyến đường'}
@@ -127,6 +250,7 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
             placeholder="VD: Tuyến Cao tốc Bắc - Nam (Trục QL1A ven biển)"
             value={name}
             onChange={e => setName(e.target.value)}
+            maxLength={255}
             required
           />
         </div>
@@ -136,6 +260,8 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
           <input
             id="rt-dist"
             type="number"
+            min="0"
+            step="0.01"
             className="form-control"
             placeholder="VD: 1700"
             value={distance}
@@ -148,6 +274,8 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
           <input
             id="rt-time"
             type="number"
+            min="1"
+            step="1"
             className="form-control"
             placeholder="VD: 32"
             value={estimatedTime}
@@ -175,8 +303,9 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
             value={status}
             onChange={e => setStatus(e.target.value)}
           >
-            <option value="ACTIVE">Khai thác (ACTIVE)</option>
-            <option value="INACTIVE">Tạm dừng (INACTIVE)</option>
+            <option value="ACTIVE">Đang khai thác</option>
+            <option value="MAINTENANCE">Bảo trì</option>
+            <option value="INACTIVE">Ngừng khai thác</option>
           </select>
         </div>
       </div>
@@ -185,7 +314,7 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
         <span>
           <i className="fa-solid fa-map-pin" /> Nút giao & Trạm dừng trên tuyến ({selectedLocationIds.length} điểm)
         </span>
-        <small>Tích chọn và điều chỉnh thứ tự di chuyển từ điểm đi đến điểm đến</small>
+        <small>Điểm đầu là xuất phát, điểm cuối là điểm đến; các điểm ở giữa là trạm dừng.</small>
       </h4>
 
       {/* Danh sách các điểm đã chọn theo thứ tự */}
@@ -200,10 +329,23 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
                 <div className={s.pickedName}>
                   <span className={s.order}>{idx + 1}</span>
                   <span>
-                    <b>{loc.locationName}</b> ({loc.locationType} · {loc.province || loc.city})
+                    <b>{loc.locationName}</b> ({idx === 0 ? 'Xuất phát' : idx === selectedLocationIds.length - 1 ? 'Điểm đến' : `Trạm dừng · ${loc.locationType}`})
+                    <small className={s.coordinateText}>
+                      {coordinates[locId]
+                        ? `${coordinates[locId].latitude.toFixed(5)}, ${coordinates[locId].longitude.toFixed(5)}`
+                        : `${loc.province || loc.city} · Chưa đặt tọa độ`}
+                    </small>
                   </span>
                 </div>
                 <div className={s.rowActions}>
+                  <button
+                    type="button"
+                    className={`btn btn-outline btn-sm ${mapTargetId === locId ? s.mapTargetActive : ''}`}
+                    onClick={() => setActiveMapLocationId(locId)}
+                    title="Chọn điểm này rồi nhấn lên bản đồ để đặt tọa độ"
+                  >
+                    <i className="fa-solid fa-location-crosshairs" />
+                  </button>
                   <button
                     type="button"
                     className="btn btn-outline btn-sm"
@@ -254,6 +396,25 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
           )
         })}
       </div>
+
+      <div className={s.mapHeading}>
+        <div>
+          <h4><i className="fa-solid fa-map-location-dot" /> Xem trước tuyến trên Vietmap</h4>
+          <p>
+            {mapTargetId
+              ? `Đang đặt vị trí cho ${locations.find(location => location.id === mapTargetId)?.locationName ?? 'điểm đã chọn'} — nhấn lên bản đồ.`
+              : 'Chọn một điểm trên danh sách tuyến để đặt tọa độ.'}
+          </p>
+        </div>
+        <span className={s.mapProgress}>{mapPoints.filter(point => point.latitude !== undefined).length}/{mapPoints.length} điểm có tọa độ</span>
+      </div>
+      <RouteMapPreview
+        points={mapPoints}
+        activeLocationId={mapTargetId}
+        onPlace={(locationId, latitude, longitude) => {
+          setCoordinateOverrides(current => ({ ...current, [locationId]: { latitude, longitude } }))
+        }}
+      />
     </Modal>
   )
 }
@@ -290,9 +451,10 @@ function StopsViewModal({
             <div key={st.locationID} className={s.stop}>
               <span className={`${s.order} ${s.orderLg}`}>{idx + 1}</span>
               <div>
-                <b>{st.locationName || `Địa điểm #${st.locationID}`}</b>
+                <b>{st.locationName || `Địa điểm #${st.locationID}`} {idx === 0 ? '(Xuất phát)' : idx === stops.length - 1 ? '(Điểm đến)' : ''}</b>
                 <small>
                   Loại: <b>{st.locationType || 'Nút giao / Trạm'}</b> · {st.address || st.province || st.country}
+                  {st.latitude !== undefined && st.longitude !== undefined && ` · ${st.latitude.toFixed(5)}, ${st.longitude.toFixed(5)}`}
                 </small>
               </div>
             </div>
@@ -315,7 +477,8 @@ export default function AdminRoutesPage() {
   const tabs: TabDef<Tab>[] = [
     ['all', 'Tất cả tuyến', routes.length],
     ['ACTIVE', 'Đang khai thác', routes.filter(r => r.status === 'ACTIVE').length],
-    ['INACTIVE', 'Tạm dừng', routes.filter(r => r.status === 'INACTIVE').length],
+    ['MAINTENANCE', 'Bảo trì', routes.filter(r => r.status === 'MAINTENANCE').length],
+    ['INACTIVE', 'Ngừng khai thác', routes.filter(r => r.status === 'INACTIVE').length],
   ]
 
   const columns: Column<BackendRouteResponse>[] = [
@@ -327,6 +490,11 @@ export default function AdminRoutesPage() {
             <span>#{r.id}</span>
             {r.routeName}
           </b>
+          {(r.originName || r.destinationName) && (
+            <small className={s.routeEndpoints}>
+              <i className="fa-solid fa-location-dot" /> {r.originName || 'Chưa đặt điểm xuất phát'} → {r.destinationName || 'Chưa đặt điểm đến'}
+            </small>
+          )}
           {r.description && <small>{r.description}</small>}
         </div>
       ),
@@ -344,8 +512,8 @@ export default function AdminRoutesPage() {
     {
       head: 'Trạng thái',
       cell: r => (
-        <span className={`badge ${r.status === 'ACTIVE' ? 'badge-success' : 'badge-muted'}`}>
-          {r.status === 'ACTIVE' ? 'Đang khai thác' : 'Tạm dừng'}
+        <span className={`badge ${r.status === 'ACTIVE' ? 'badge-success' : r.status === 'MAINTENANCE' ? 'badge-warning' : 'badge-muted'}`}>
+          {r.status === 'ACTIVE' ? 'Đang khai thác' : r.status === 'MAINTENANCE' ? 'Bảo trì' : 'Ngừng khai thác'}
         </span>
       ),
       nowrap: true,
@@ -424,7 +592,7 @@ export default function AdminRoutesPage() {
         rows={rows}
         rowKey={r => String(r.id)}
         columns={columns}
-        haystack={r => [r.routeName, r.description ?? '', String(r.id)]}
+        haystack={r => [r.routeName, r.originName ?? '', r.destinationName ?? '', r.description ?? '', String(r.id)]}
         loaded
         emptyText="Chưa có tuyến đường nào phù hợp."
         searchPlaceholder="Tìm theo tên tuyến, mô tả..."

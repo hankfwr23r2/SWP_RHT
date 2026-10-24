@@ -18,4 +18,8 @@ public class RouteDTO implements Serializable {
     private Integer estimatedTime;
     private BigDecimal distance;
     private String status;
+    private Integer originId;
+    private String originName;
+    private Integer destinationId;
+    private String destinationName;
 }

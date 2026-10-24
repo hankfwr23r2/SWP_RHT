@@ -36,5 +36,15 @@
 .actions { display: flex; justify-content: flex-end; gap: 6px; }
 .pause { color: var(--red); }
 .resume { color: var(--green); }
+.routeEndpoints { color: var(--muted); }
+.routeEndpoints i { color: var(--orange); margin-right: 4px; }
+.coordinateText { display: block; color: var(--muted); font-size: 0.75rem; }
+.mapTargetActive { color: var(--orange); border-color: var(--orange); }
+.mapHeading { display: flex; justify-content: space-between; align-items: end; gap: 12px; margin: 18px 0 8px; }
+.mapHeading h4 { margin: 0 0 4px; }
+.mapHeading h4 i { color: var(--orange); margin-right: 6px; }
+.mapHeading p { margin: 0; color: var(--muted); font-size: 0.82rem; }
+.mapProgress { color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
+.mapPreview { width: 100%; min-height: 260px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg-page); overflow: hidden; }
 
 @media (max-width: 700px) { .form { grid-template-columns: 1fr; } }
