@@ -250,6 +250,16 @@ describe('lộ trình chi tiết (Flow 3)', () => {
     expect(legs[0].arriveAt - legs[0].departAt).toBe(3 * 3_600_000)
     expect(legs[1].departAt - legs[0].arriveAt).toBe(45 * 60_000)
   })
+  it('dùng trực tiếp legMetrics từ OSRM để tính giờ và km từng chặng chính xác', () => {
+    const legMetrics = [{ km: 80, hours: 1.5 }, { km: 160, hours: 2.8 }]
+    const legs = layoutLegs('Kho Đồng Nai', 'Kho Phnom Penh', etd, [{ name: 'Trảng Bàng', minutes: 45 }], 4.3, undefined, true, legMetrics)
+    expect(legs[0].km).toBe(80)
+    expect(legs[0].hours).toBe(1.5)
+    expect(legs[0].arriveAt - legs[0].departAt).toBe(Math.round(1.5 * 3_600_000))
+    expect(legs[1].km).toBe(160)
+    expect(legs[1].hours).toBe(2.8)
+    expect(legs[1].arriveAt - legs[1].departAt).toBe(Math.round(2.8 * 3_600_000))
+  })
   it('phương án mặc định hợp lệ: không chặng nào quá 3 giờ, có trạm thú y', () => {
     const origin = { id: 'KHO-DN', name: 'Kho Đồng Nai', country: 'VN' as const }
     const dest = { id: 'KHO-VTE', name: 'Kho Viêng Chăn', country: 'LA' as const }

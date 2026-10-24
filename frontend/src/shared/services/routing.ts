@@ -3,10 +3,16 @@
 // Có cơ chế tự động dự phòng ngoại tuyến (Offline Geometry Fallback) khi mất mạng hoặc OSRM phản hồi chậm.
 import type { GeoPoint } from '../config/network'
 
+export interface RoadLeg {
+  km: number
+  hours: number
+}
+
 export interface RoadRoute {
   path: [lat: number, lng: number][] // các điểm để vẽ đường
   km: number
   hours: number // thời gian lái, chưa gồm thời gian nghỉ ở trạm
+  legs?: RoadLeg[] // từng chặng giữa các điểm dừng nối tiếp
   source: 'osrm' | 'offline'
   traffic: boolean
 }
@@ -36,13 +42,18 @@ const haversineKm = (a: GeoPoint, b: GeoPoint) => {
 
 function viaOffline(points: GeoPoint[]): RoadRoute {
   let straightKm = 0
+  const legs: RoadLeg[] = []
   for (let i = 0; i < points.length - 1; i++) {
-    straightKm += haversineKm(points[i], points[i + 1])
+    const d = haversineKm(points[i], points[i + 1])
+    straightKm += d
+    const legKm = Math.round(d * 1.25)
+    const legHours = parseFloat((legKm / AVG_SPEED_KMH).toFixed(2))
+    legs.push({ km: legKm, hours: legHours })
   }
   const km = Math.round(straightKm * 1.25) // Hệ số uốn lượn đường bộ thực tế
   const hours = parseFloat((km / AVG_SPEED_KMH).toFixed(1))
   const path: [number, number][] = points.map(p => [p.lat, p.lng])
-  return { path, km, hours, source: 'offline', traffic: false }
+  return { path, km, hours, legs, source: 'offline', traffic: false }
 }
 
 async function viaOsrm(points: GeoPoint[], signal?: AbortSignal): Promise<RoadRoute | null> {
@@ -51,10 +62,17 @@ async function viaOsrm(points: GeoPoint[], signal?: AbortSignal): Promise<RoadRo
   if (!res.ok) return null
   const r = (await res.json()).routes?.[0]
   if (!r?.geometry?.coordinates) return null
+  const legs: RoadLeg[] = Array.isArray(r.legs)
+    ? r.legs.map((l: { distance: number; duration: number }) => ({
+        km: Math.round(l.distance / 1000),
+        hours: parseFloat((l.duration / 3600).toFixed(2)),
+      }))
+    : []
   return {
     path: (r.geometry.coordinates as [number, number][]).map(([lng, lat]) => [lat, lng] as [number, number]),
     km: Math.round(r.distance / 1000),
     hours: parseFloat((r.duration / 3600).toFixed(1)),
+    legs,
     source: 'osrm',
     traffic: false,
   }

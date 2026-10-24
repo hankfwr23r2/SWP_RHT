@@ -133,7 +133,7 @@ export interface Clearance {
 }
 
 // ===== Lộ trình chi tiết và Trip Manifest (Flow 3) =====
-export interface RouteLeg { no: number; from: string; to: string; departAt: number; arriveAt: number }
+export interface RouteLeg { no: number; from: string; to: string; departAt: number; arriveAt: number; km?: number; hours?: number }
 // Trạm nghỉ (checkpoint dọc tuyến): ngựa dừng tối thiểu 30 phút, Escort ghi nhật ký an sinh
 export interface RestStop { afterLeg: number; name: string; minutes: number }
 export interface RoutePlan {

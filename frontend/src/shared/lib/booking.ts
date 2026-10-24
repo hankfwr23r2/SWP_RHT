@@ -505,14 +505,12 @@ const MIN = 60_000
 // Tính khoảng cách từng chặng dựa trên vị trí thực tế của các điểm
 export function computeLegDistances(fromName: string, toName: string, rests: Pick<RestStop, 'name'>[], gate?: string): number[] {
   const findPt = (name: string): GeoPoint | undefined => {
-    const clean = placeName(name).trim().toLowerCase()
-    const st = TRANSIT_STATIONS.find(s => s.name.toLowerCase() === clean || s.name.toLowerCase().includes(clean) || clean.includes(s.name.toLowerCase().replace(/^trạm nghỉ /, '')))
-    if (st) return st
-    const loc = Object.values(COUNTRY_LOCATIONS).flat().find(l => l.name.toLowerCase().includes(clean) || clean.includes(l.name.toLowerCase().split(' — ')[0]))
+    const clean = placeName(name).trim()
+    const loc = findLocation(clean) || findLocation(name)
     if (loc) return loc
-    const pl = PLACES.find(p => p.name.toLowerCase().includes(clean) || clean.includes(p.name.toLowerCase()))
-    if (pl) return pl
-    const g = GATES.find(x => x.name.toLowerCase().includes(clean) || clean.includes(x.name.toLowerCase()))
+    const st = TRANSIT_STATIONS.find(s => s.name.toLowerCase() === clean.toLowerCase() || s.name.toLowerCase().includes(clean.toLowerCase()) || clean.toLowerCase().includes(s.name.toLowerCase().replace(/^trạm nghỉ /, '')))
+    if (st) return st
+    const g = GATES.find(x => x.name.toLowerCase().includes(clean.toLowerCase()) || clean.toLowerCase().includes(x.name.toLowerCase()))
     if (g) return g
     return undefined
   }
@@ -552,7 +550,12 @@ export function computeLegDistances(fromName: string, toName: string, rests: Pic
   return dists
 }
 
-// Chia chặng theo tỷ lệ khoảng cách thực tế giữa các trạm nghỉ (khi bật useRealDistances) hoặc chia đều (mặc định)
+export interface LegMetric {
+  km: number
+  hours: number
+}
+
+// Chia chặng theo dữ liệu đường bộ thực tế (OSRM road legs) hoặc tỷ lệ cự ly thực tế giữa các trạm dừng
 export function layoutLegs(
   from: string,
   to: string,
@@ -560,20 +563,54 @@ export function layoutLegs(
   rests: Pick<RestStop, 'name' | 'minutes'>[],
   driveHours: number,
   gate?: string,
-  useRealDistances = false
+  useRealDistances = false,
+  legMetrics?: LegMetric[]
 ): RouteLeg[] {
   const n = rests.length + 1
-  const dists = useRealDistances ? computeLegDistances(from, to, rests, gate) : []
-  const totalDist = dists.reduce((sum, d) => sum + d, 0)
   const names = [placeName(from), ...rests.map(r => r.name || `Trạm nghỉ ${rests.indexOf(r) + 1}`), placeName(to)]
   const legs: RouteLeg[] = []
   let t = etd
+
+  // Ưu tiên 1: Dùng trực tiếp metrics từng chặng từ OSRM (đường bộ thực tế)
+  if (legMetrics && legMetrics.length === n) {
+    for (let i = 0; i < n; i++) {
+      const metric = legMetrics[i]
+      const legMs = Math.round(metric.hours * 60 * MIN)
+      legs.push({
+        no: i + 1,
+        from: names[i],
+        to: names[i + 1],
+        departAt: Math.round(t),
+        arriveAt: Math.round(t + legMs),
+        km: metric.km,
+        hours: metric.hours,
+      })
+      t += legMs + (rests[i]?.minutes ?? 0) * MIN
+    }
+    return legs
+  }
+
+  // Ưu tiên 2: Tính tỷ lệ theo cự ly thực tế (khi bật useRealDistances)
+  const dists = useRealDistances ? computeLegDistances(from, to, rests, gate) : []
+  const totalDist = dists.reduce((sum, d) => sum + d, 0)
+
   for (let i = 0; i < n; i++) {
     const ratio = useRealDistances && totalDist > 0 && dists.length === n
-      ? 0.45 * (dists[i] / totalDist) + 0.55 * (1 / n)
+      ? (dists[i] / totalDist)
       : (1 / n)
     const legMs = ratio * driveHours * 60 * MIN
-    legs.push({ no: i + 1, from: names[i], to: names[i + 1], departAt: Math.round(t), arriveAt: Math.round(t + legMs) })
+    const legKm = dists.length === n ? dists[i] : undefined
+    const legHours = parseFloat((legMs / (60 * MIN)).toFixed(2))
+
+    legs.push({
+      no: i + 1,
+      from: names[i],
+      to: names[i + 1],
+      departAt: Math.round(t),
+      arriveAt: Math.round(t + legMs),
+      km: legKm,
+      hours: legHours,
+    })
     t += legMs + (rests[i]?.minutes ?? 0) * MIN
   }
   return legs
