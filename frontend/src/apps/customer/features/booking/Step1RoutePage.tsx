@@ -12,7 +12,7 @@ import { MIN_LEAD_DAYS } from '@shared/config/business-rules'
 import { COUNTRIES, type CountryCode } from '@shared/config/network'
 import { earliestDeparture, fromIsoDay, isDepartureAllowed } from '@shared/lib/booking'
 import { formatDate } from '@shared/lib/format'
-import { isValidContactName, isValidRegionalPhone } from '@shared/lib/contactValidation'
+import { isValidContactName, isValidPhoneForCountry, PHONE_CALLING_CODES, toInternationalPhone } from '@shared/lib/contactValidation'
 import type { Party, TransportType } from '@shared/types/booking'
 import { Flag } from '@shared/ui/Flag'
 import { FormSelect } from '@shared/ui/FormSelect'
@@ -35,6 +35,68 @@ const countryOption = (code: CountryCode) => (
     <Flag code={code} size={18} /> {COUNTRIES[code].name}
   </span>
 )
+function parsePhoneDraft(value: string, fallbackCountry: CountryCode): { country: CountryCode; phone: string } {
+  const digits = value.replace(/\D/g, '')
+  const matchingCountry = PARTNER_COUNTRIES
+    .map(country => ({ country, callingCode: PHONE_CALLING_CODES[country] }))
+    .sort((first, second) => second.callingCode.length - first.callingCode.length)
+    .find(({ callingCode }) => digits.startsWith(callingCode.slice(1)))
+
+  if (matchingCountry) {
+    const nationalNumber = digits.slice(matchingCountry.callingCode.length - 1)
+    return {
+      country: matchingCountry.country,
+      phone: nationalNumber ? `0${nationalNumber}` : '',
+    }
+  }
+
+  return { country: fallbackCountry, phone: value }
+}
+
+interface PhoneFieldProps {
+  id: string
+  label: string
+  country: CountryCode
+  phone: string
+  invalid: boolean
+  error: string
+  onCountryChange: (country: CountryCode) => void
+  onPhoneChange: (phone: string) => void
+}
+
+function PhoneField({ id, label, country, phone, invalid, error, onCountryChange, onPhoneChange }: PhoneFieldProps) {
+  return (
+    <div className="form-group">
+      <label htmlFor={`${id}-number`} className="required">{label}</label>
+      <div className={s.phoneField}>
+        <select
+          id={`${id}-country`}
+          className="form-control"
+          aria-label={`Mã quốc gia điện thoại ${label.toLowerCase()}`}
+          value={country}
+          onChange={event => {
+            const selectedCountry = PARTNER_COUNTRIES.find(code => code === event.target.value)
+            if (selectedCountry) onCountryChange(selectedCountry)
+          }}
+        >
+          {PARTNER_COUNTRIES.map(code => (
+            <option key={code} value={code}>{COUNTRIES[code].name} ({PHONE_CALLING_CODES[code]})</option>
+          ))}
+        </select>
+        <input
+          id={`${id}-number`}
+          className={`form-control ${invalid ? 'invalid' : ''}`}
+          value={phone}
+          placeholder="Nhập số điện thoại"
+          type="tel"
+          autoComplete="tel-national"
+          onChange={event => onPhoneChange(event.target.value)}
+        />
+      </div>
+      {error && <div className="form-error">{error}</div>}
+    </div>
+  )
+}
 
 interface AddressState {
   provinceCode: string
@@ -174,10 +236,14 @@ export default function Step1RoutePage() {
   const { draft, save } = useBookingDraft()
 
   const initialCountries = countriesOf(draft)
+  const initialConsignorPhone = parsePhoneDraft(draft.consignor.phone, initialCountries?.origin ?? 'VN')
+  const initialConsigneePhone = parsePhoneDraft(draft.consignee.phone, initialCountries?.dest ?? 'VN')
   const [type, setType] = useState(draft.type)
   const [originCountry, setOriginCountry] = useState<CountryCode>(initialCountries?.origin ?? 'VN')
   const [destCountry, setDestCountry] = useState<CountryCode | ''>(initialCountries?.dest ?? '')
   const [date, setDate] = useState(draft.departDate)
+  const [consignorPhoneCountry, setConsignorPhoneCountry] = useState<CountryCode>(initialConsignorPhone.country)
+  const [consigneePhoneCountry, setConsigneePhoneCountry] = useState<CountryCode>(initialConsigneePhone.country)
 
   const partner: Partner | '' = type === 'international'
     ? originCountry !== 'VN'
@@ -205,9 +271,14 @@ export default function Step1RoutePage() {
   )
 
   const [consignor, setConsignor] = useState<Party>(() =>
-    draft.consignor.name ? draft.consignor : { ...draft.consignor, name: session?.name ?? '' }
+    draft.consignor.name
+      ? { ...draft.consignor, phone: initialConsignorPhone.phone }
+      : { ...draft.consignor, phone: initialConsignorPhone.phone, name: session?.name ?? '' }
   )
-  const [consignee, setConsignee] = useState<Party>(draft.consignee)
+  const [consignee, setConsignee] = useState<Party>(() => ({
+    ...draft.consignee,
+    phone: initialConsigneePhone.phone,
+  }))
   const [submitted, setSubmitted] = useState(false)
 
   // Tính chuỗi địa chỉ đầy đủ
@@ -230,10 +301,10 @@ export default function Step1RoutePage() {
       originId: fullPickup,
       destId: fullDropoff,
       departDate: date,
-      consignor: { ...consignor, address: fullPickup },
-      consignee: { ...consignee, address: fullDropoff },
+      consignor: { ...consignor, phone: toInternationalPhone(consignorPhoneCountry, consignor.phone), address: fullPickup },
+      consignee: { ...consignee, phone: toInternationalPhone(consigneePhoneCountry, consignee.phone), address: fullDropoff },
     })
-  }, [type, partner, direction, fullPickup, fullDropoff, date, consignor, consignee, save])
+  }, [type, partner, direction, fullPickup, fullDropoff, date, consignor, consignee, consignorPhoneCountry, consigneePhoneCountry, save])
 
   const min = earliestDeparture()
   const reset = () => {
@@ -270,6 +341,7 @@ export default function Step1RoutePage() {
   // Điền nhanh thông tin tài khoản vào Người gửi
   const fillMe = () => {
     if (!session) return
+    if (!consignor.phone) setConsignorPhoneCountry('VN')
     setConsignor(prev => ({
       ...prev,
       name: session.name || prev.name,
@@ -290,14 +362,14 @@ export default function Step1RoutePage() {
     date: dateError,
     // Người gửi
     consignorName: routeReady && !isValidContactName(consignor.name) ? 'Nhập tên hợp lệ (2–100 ký tự, cần có chữ cái). Có thể nhập tên cá nhân hoặc trang trại.' : '',
-    consignorPhone: routeReady && !isValidRegionalPhone(consignor.phone) ? 'Nhập số hợp lệ của Việt Nam, Campuchia hoặc Lào.' : '',
+    consignorPhone: routeReady && !isValidPhoneForCountry(consignorPhoneCountry, consignor.phone) ? 'Nhập số hợp lệ theo mã quốc gia đã chọn.' : '',
     consignorId: routeReady && !consignor.idNumber?.trim() ? 'Nhập CCCD / MST / Hộ chiếu người gửi.' : '',
     pickupProv: routeReady && !pickupAddr.provinceCode ? 'Chọn tỉnh/thành điểm đón.' : '',
     pickupWard: routeReady && !pickupAddr.wardName ? 'Chọn xã/phường điểm đón.' : '',
     pickupDetail: routeReady && !pickupAddr.detail.trim() ? 'Nhập tên trang trại / địa chỉ đón cụ thể.' : '',
     // Người nhận
     consigneeName: routeReady && !isValidContactName(consignee.name) ? 'Nhập tên hợp lệ (2–100 ký tự, cần có chữ cái). Có thể nhập tên cá nhân hoặc trang trại.' : '',
-    consigneePhone: routeReady && !isValidRegionalPhone(consignee.phone) ? 'Nhập số hợp lệ của Việt Nam, Campuchia hoặc Lào.' : '',
+    consigneePhone: routeReady && !isValidPhoneForCountry(consigneePhoneCountry, consignee.phone) ? 'Nhập số hợp lệ theo mã quốc gia đã chọn.' : '',
     consigneeId: routeReady && !consignee.idNumber?.trim() ? 'Nhập CCCD / MST / Hộ chiếu người nhận.' : '',
     dropoffProv: routeReady && !dropoffAddr.provinceCode ? 'Chọn tỉnh/thành điểm giao.' : '',
     dropoffWard: routeReady && !dropoffAddr.wardName ? 'Chọn xã/phường điểm giao.' : '',
@@ -322,8 +394,8 @@ export default function Step1RoutePage() {
       originId: fullPickup,
       destId: fullDropoff,
       departDate: date,
-      consignor: { ...consignor, address: fullPickup },
-      consignee: { ...consignee, address: fullDropoff },
+      consignor: { ...consignor, phone: toInternationalPhone(consignorPhoneCountry, consignor.phone), address: fullPickup },
+      consignee: { ...consignee, phone: toInternationalPhone(consigneePhoneCountry, consignee.phone), address: fullDropoff },
     })
     navigate('/booking/horses')
   }
@@ -483,21 +555,16 @@ export default function Step1RoutePage() {
                 {show(errors.consignorName)}
               </div>
 
-              <div className="form-group">
-                <label htmlFor="consignor-phone" className="required">
-                  Số điện thoại người gửi
-                </label>
-                <input
-                  id="consignor-phone"
-                  className={`form-control ${submitted && errors.consignorPhone ? 'invalid' : ''}`}
-                  value={consignor.phone}
-                  placeholder="Ví dụ: 0901 234 567"
-                  type="tel"
-                  autoComplete="tel"
-                  onChange={e => setConsignor({ ...consignor, phone: e.target.value })}
-                />
-                {show(errors.consignorPhone)}
-              </div>
+              <PhoneField
+                id="consignor-phone"
+                label="Số điện thoại người gửi"
+                country={consignorPhoneCountry}
+                phone={consignor.phone}
+                invalid={submitted && !!errors.consignorPhone}
+                error={submitted ? errors.consignorPhone : ''}
+                onCountryChange={setConsignorPhoneCountry}
+                onPhoneChange={phone => setConsignor({ ...consignor, phone })}
+              />
             </div>
 
             {/* BỘ CHỌN ĐỊA CHỈ 2 CẤP ĐIỂM ĐÓN */}
@@ -560,21 +627,16 @@ export default function Step1RoutePage() {
                 {show(errors.consigneeName)}
               </div>
 
-              <div className="form-group">
-                <label htmlFor="consignee-phone" className="required">
-                  Số điện thoại người nhận
-                </label>
-                <input
-                  id="consignee-phone"
-                  className={`form-control ${submitted && errors.consigneePhone ? 'invalid' : ''}`}
-                  value={consignee.phone}
-                  placeholder="Ví dụ: 0912 345 678"
-                  type="tel"
-                  autoComplete="tel"
-                  onChange={e => setConsignee({ ...consignee, phone: e.target.value })}
-                />
-                {show(errors.consigneePhone)}
-              </div>
+              <PhoneField
+                id="consignee-phone"
+                label="Số điện thoại người nhận"
+                country={consigneePhoneCountry}
+                phone={consignee.phone}
+                invalid={submitted && !!errors.consigneePhone}
+                error={submitted ? errors.consigneePhone : ''}
+                onCountryChange={setConsigneePhoneCountry}
+                onPhoneChange={phone => setConsignee({ ...consignee, phone })}
+              />
             </div>
 
             {/* BỘ CHỌN ĐỊA CHỈ 2 CẤP ĐIỂM GIAO */}

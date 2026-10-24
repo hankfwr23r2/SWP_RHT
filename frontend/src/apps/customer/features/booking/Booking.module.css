@@ -46,6 +46,8 @@
 .typeOn .typeRoute { color: #ffedd5; }
 
 .countryOption { display: inline-flex; align-items: center; gap: 8px; }
+.phoneField { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 8px; }
+.phoneField > * { min-width: 0; }
 :global(.card-header) h3 svg { flex: none; width: 20px; height: 20px; color: var(--icon-accent); }
 
 .routeSetup { display: grid; gap: 14px; }
