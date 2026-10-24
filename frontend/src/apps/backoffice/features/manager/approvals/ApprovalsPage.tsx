@@ -1,5 +1,5 @@
 // Manager: duyệt báo giá cuối sau khi Kiểm dịch viên và Điều phối viên đều đạt (PRD mục 2.5).
-// Manager nhìn số xe Điều phối viên đã chọn để chọn tài xế và hộ tống cho từng xe. Báo giá do hệ thống tính; Manager chỉ điều chỉnh phụ phí và chiết khấu thương mại rồi gửi cho khách.
+// Manager nhìn số xe Điều phối viên đã chọn để chọn tài xế và hộ tống cho từng xe. Báo giá do hệ thống tính và gửi cho khách.
 import { useEffect, useState } from 'react'
 import { useAuth } from '@shared/auth/AuthContext'
 import { DEPOSIT_RATE, QUOTE_VALID_HOURS, VEHICLE_CLASS } from '@shared/config/booking-rules'
@@ -18,13 +18,10 @@ import { ResourcePicker } from '../../../shared/ResourcePicker'
 import { ListPage, idCell, routeCell, statusCell, type Column } from '../../../shared/ListPage'
 import { placeShort } from '../../../shared/place'
 import s from '../../../shared/booking.module.css'
-import { FormSelect } from '@shared/ui/FormSelect'
 import { usePageData } from '@shared/routing/pageData'
 import type { bookingListLoader } from '../../../shared/loaders'
 
 type Tab = 'todo' | 'sent'
-interface AdjRow { kind: 'surcharge' | 'discount'; label: string; amount: string }
-const digits = (v: string) => Number(v.replace(/\D/g, '')) || 0
 
 type Pick2 = { driverId: string; escortId: string }
 export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booking[]; onClose: () => void; onDone: () => void }) {
@@ -80,11 +77,8 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
     if (e && ec) out.push(`Hộ tống ${e.name} ${why(ec)}.`)
     return out
   })
-  const [rows, setRows] = useState<AdjRow[]>([])
   const [busy, setBusy] = useState(false)
-  const adjustments = rows.filter(r => r.label.trim() && digits(r.amount) > 0).map(r => ({ label: r.label.trim(), amount: r.kind === 'discount' ? -digits(r.amount) : digits(r.amount) }))
-  const preview = draft && finalizeQuote(draft.lines, adjustments, Date.now(), session!.name)
-  const set = (i: number, patch: Partial<AdjRow>) => setRows(r => r.map((x, j) => (j === i ? { ...x, ...patch } : x)))
+  const preview = draft && finalizeQuote(draft.lines, [], Date.now(), session!.name)
 
   const sendBack = async () => {
     setBusy(true)
@@ -100,7 +94,7 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
   }
   const send = async () => {
     setBusy(true)
-    try { await bookingsApi.assignCrew(b.id, session!.name, trips.map(t => ({ tripId: t.tripId, ...picks[t.tripId] }))); await bookingsApi.sendQuote(b.id, session!.name, adjustments); toast(`Đã gửi báo giá ${b.id} cho khách, hiệu lực ${QUOTE_VALID_HOURS} giờ`); onDone() }
+    try { await bookingsApi.assignCrew(b.id, session!.name, trips.map(t => ({ tripId: t.tripId, ...picks[t.tripId] }))); await bookingsApi.sendQuote(b.id, session!.name, []); toast(`Đã gửi báo giá ${b.id} cho khách, hiệu lực ${QUOTE_VALID_HOURS} giờ`); onDone() }
     catch (e) { toast(e instanceof Error ? e.message : 'Không gửi được', 'error'); setBusy(false) }
   }
 
@@ -135,19 +129,7 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
   )
   const quoteTab = (
     <>
-      <div className="alert alert-info" style={{ marginBottom: 16 }}><i className="fa-solid fa-eye" /><div><b>Giấy tờ ở các mục bên trái chỉ để Quản lý xem.</b> Khi bấm “Duyệt và gửi báo giá”, khách chỉ nhận chi tiết đơn và bảng giá, không kèm giấy tờ nào.</div></div>
-      <h4 style={{ margin: '0 0 10px' }}>Điều chỉnh báo giá (không bắt buộc)</h4>
-      {rows.map((r, i) => (
-        <div key={i} className={s.adj}>
-          <input className="form-control" aria-label="Nội dung điều chỉnh" placeholder={r.kind === 'discount' ? 'VD: Khách hàng thân thiết' : 'VD: Phụ phí chuyến gấp'} value={r.label} onChange={e => set(i, { label: e.target.value })} />
-          <FormSelect className="form-control" aria-label="Loại điều chỉnh" value={r.kind} onChange={e => set(i, { kind: e.target.value as AdjRow['kind'] })}><option value="surcharge">Phụ phí</option><option value="discount">Chiết khấu</option></FormSelect>
-          <input className="form-control" aria-label="Số tiền" inputMode="numeric" placeholder="Số tiền" value={r.amount ? digits(r.amount).toLocaleString('en-US') : ''} onChange={e => set(i, { amount: String(digits(e.target.value) || '') })} />
-          <button className={s.iconBtn} aria-label="Xóa dòng" onClick={() => setRows(x => x.filter((_, j) => j !== i))}><i className="fa-solid fa-trash" /></button>
-        </div>
-      ))}
-      <button className="btn btn-outline btn-sm" onClick={() => setRows(r => [...r, { kind: 'surcharge', label: '', amount: '' }])}><i className="fa-solid fa-plus" /> Thêm dòng điều chỉnh</button>
-
-      <h4 style={{ margin: '18px 0 10px' }}>Báo giá gửi khách</h4>
+      <h4 style={{ margin: '0 0 10px' }}>Báo giá gửi khách</h4>
       {preview ? <QuoteSheet {...preview} /> : <p className="text-muted">Đang tính…</p>}
     </>
   )
