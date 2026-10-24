@@ -134,6 +134,12 @@ export const backendIncidentApi = {
     return res.data.data
   },
 
+  // 7. Tài xế / hộ tống lấy sự cố của mọi chuyến được giao -> GET /api/v1/field/bookings/mine/incidents
+  getMyFieldIncidents: async (): Promise<BackendIncidentResponse[]> => {
+    const res = await apiClient.get<ApiResponse<BackendIncidentResponse[]>>('/field/bookings/mine/incidents')
+    return res.data.data
+  },
+
   // 7. Khách lấy sự cố của mọi đơn của mình -> GET /api/v1/customer/incidents
   getMine: async (): Promise<BackendIncidentResponse[]> => {
     const res = await apiClient.get<ApiResponse<BackendIncidentResponse[]>>('/customer/incidents')

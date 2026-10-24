@@ -1,8 +1,10 @@
 package com.example.racehorse_transport.controller;
 
 import com.example.racehorse_transport.dto.booking.BookingResponse;
+import com.example.racehorse_transport.dto.incident.IncidentResponse;
 import com.example.racehorse_transport.response.ApiResponse;
 import com.example.racehorse_transport.service.BookingService;
+import com.example.racehorse_transport.service.IncidentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,6 +21,7 @@ import java.util.List;
 public class FieldBookingController {
 
     private final BookingService bookingService;
+    private final IncidentService incidentService;
 
     // 1. Kíp xe (Tài xế / Hộ tống) lấy danh sách các đơn vận chuyển (tất cả — dành cho MANAGER/ADMIN)
     @GetMapping
@@ -32,14 +35,26 @@ public class FieldBookingController {
     @GetMapping("/mine")
     @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'ADMIN')")
     public ResponseEntity<ApiResponse<List<BookingResponse>>> getMyFieldBookings(Authentication auth) {
-        String username = auth.getName();
-        String role = auth.getAuthorities().stream()
+        List<BookingResponse> bookings = bookingService.getMyFieldBookings(auth.getName(), roleOf(auth));
+        return ResponseEntity.ok(ApiResponse.success(bookings, "Lấy danh sách chuyến của bạn thành công"));
+    }
+
+    // 1c. Sự cố của mọi chuyến được phân công cho mình, một lần gọi thay cho từng đơn
+    @GetMapping("/mine/incidents")
+    @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'ADMIN')")
+    public ResponseEntity<ApiResponse<List<IncidentResponse>>> getMyFieldIncidents(Authentication auth) {
+        List<Integer> bookingIds = bookingService.getMyFieldBookings(auth.getName(), roleOf(auth)).stream()
+                .map(BookingResponse::getNumericId)
+                .toList();
+        return ResponseEntity.ok(ApiResponse.success(incidentService.getIncidentsForBookings(bookingIds), "Lấy sự cố các chuyến của bạn thành công"));
+    }
+
+    private String roleOf(Authentication auth) {
+        return auth.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .filter(a -> a.startsWith("ROLE_"))
                 .map(a -> a.substring(5))
                 .findFirst().orElse("DRIVER");
-        List<BookingResponse> bookings = bookingService.getMyFieldBookings(username, role);
-        return ResponseEntity.ok(ApiResponse.success(bookings, "Lấy danh sách chuyến của bạn thành công"));
     }
 
     // 2. Kíp xe xem chi tiết một đơn

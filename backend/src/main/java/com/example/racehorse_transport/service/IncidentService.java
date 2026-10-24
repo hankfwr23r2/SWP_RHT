@@ -27,4 +27,7 @@ public interface IncidentService {
     List<IncidentResponse> getCustomerIncidents(String customerUsername);
 
     List<IncidentResponse> getAllIncidents(String status);
+
+    // Sự cố của nhiều đơn trong một truy vấn (đơn đã được kiểm tra quyền ở nơi gọi)
+    List<IncidentResponse> getIncidentsForBookings(java.util.Collection<Integer> bookingIds);
 }
