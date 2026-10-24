@@ -13,6 +13,7 @@ import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.*;
 import com.example.racehorse_transport.service.SettlementService;
 import com.example.racehorse_transport.util.BookingDetailsJson;
+import com.example.racehorse_transport.util.ClearanceDocumentPolicy;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -472,6 +473,8 @@ public class SettlementServiceImpl implements SettlementService {
 
     private BookingResponse mapToBookingResponse(Booking b) {
         BookingDetailsPayload payload = extractPayload(b);
+        Object clearance = ClearanceDocumentPolicy.forBooking(
+                payload.getClearance(), "international".equalsIgnoreCase(b.getBookingType()));
         String customerFullName = (b.getCustomerID() != null && b.getCustomerID().getUser() != null)
                 ? b.getCustomerID().getUser().getUsername()
                 : "Khách hàng";
@@ -501,7 +504,7 @@ public class SettlementServiceImpl implements SettlementService {
                 .quote(payload.getQuote())
                 .payment(payload.getPayment())
                 .medical(payload.getMedical())
-                .clearance(payload.getClearance())
+                .clearance(clearance)
                 .settlement(payload.getSettlement())
                 .rating(payload.getRating())
                 .intake(payload.getIntake())

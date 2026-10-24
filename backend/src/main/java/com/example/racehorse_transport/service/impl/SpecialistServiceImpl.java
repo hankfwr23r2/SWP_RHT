@@ -9,6 +9,7 @@ import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.repository.*;
 import com.example.racehorse_transport.service.SpecialistService;
 import com.example.racehorse_transport.util.BookingDetailsJson;
+import com.example.racehorse_transport.util.ClearanceDocumentPolicy;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -197,6 +198,7 @@ public class SpecialistServiceImpl implements SpecialistService {
         List<Map<String, Object>> items = getClearanceItemsList(clearanceMap);
 
         String type = request.getType();
+        requireApplicableClearanceType(booking, type);
         Map<String, Object> targetItem = items.stream()
                 .filter(i -> type.equalsIgnoreCase((String) i.get("type")))
                 .findFirst()
@@ -242,6 +244,7 @@ public class SpecialistServiceImpl implements SpecialistService {
         List<Map<String, Object>> items = getClearanceItemsList(clearanceMap);
 
         String type = request.getType();
+        requireApplicableClearanceType(booking, type);
         boolean exists = items.stream().anyMatch(i -> type.equalsIgnoreCase((String) i.get("type")));
         if (!exists) {
             Map<String, Object> newItem = new HashMap<>();
@@ -538,7 +541,18 @@ public class SpecialistServiceImpl implements SpecialistService {
         if (payload.getClearance() instanceof Map) {
             Map<String, Object> existing = (Map<String, Object>) payload.getClearance();
             if (existing.get("items") instanceof List && !((List<?>) existing.get("items")).isEmpty()) {
-                return existing;
+                Object filtered = ClearanceDocumentPolicy.forBooking(
+                        existing, "international".equalsIgnoreCase(booking.getBookingType()));
+                if (filtered instanceof Map<?, ?> filteredMap) {
+                    Map<String, Object> normalized = new HashMap<>();
+                    filteredMap.forEach((key, value) -> {
+                        if (key instanceof String stringKey) normalized.put(stringKey, value);
+                    });
+                    if (filtered != existing) payload.setClearance(normalized);
+                    if (normalized.get("items") instanceof List<?> items && !items.isEmpty()) {
+                        return normalized;
+                    }
+                }
             }
         }
         Map<String, Object> clearanceMap = (payload.getClearance() instanceof Map)
@@ -578,6 +592,9 @@ public class SpecialistServiceImpl implements SpecialistService {
                         .toList());
             }
         }
+        applicableRegs = applicableRegs.stream()
+                .filter(regulation -> ClearanceDocumentPolicy.isApplicable(regulation, isInternational))
+                .toList();
 
         List<Map<String, Object>> items = new ArrayList<>();
         for (Regulation reg : applicableRegs) {
@@ -606,6 +623,13 @@ public class SpecialistServiceImpl implements SpecialistService {
             healthCert.put("photos", new ArrayList<String>());
             items.add(healthCert);
 
+            Map<String, Object> poa = new HashMap<>();
+            poa.put("type", "poa");
+            poa.put("label", "Giấy ủy quyền áp tải (PoA)");
+            poa.put("status", "todo");
+            poa.put("photos", new ArrayList<String>());
+            items.add(poa);
+
             if (isInternational) {
                 Map<String, Object> customs = new HashMap<>();
                 customs.put("type", "customs_declaration");
@@ -620,13 +644,6 @@ public class SpecialistServiceImpl implements SpecialistService {
                 importPermit.put("status", "todo");
                 importPermit.put("photos", new ArrayList<String>());
                 items.add(importPermit);
-
-                Map<String, Object> poa = new HashMap<>();
-                poa.put("type", "poa");
-                poa.put("label", "Giấy ủy quyền áp tải (PoA)");
-                poa.put("status", "todo");
-                poa.put("photos", new ArrayList<String>());
-                items.add(poa);
             }
         }
 
@@ -643,6 +660,13 @@ public class SpecialistServiceImpl implements SpecialistService {
 
         payload.setClearance(clearanceMap);
         return clearanceMap;
+    }
+
+    private void requireApplicableClearanceType(Booking booking, String type) {
+        if (!"international".equalsIgnoreCase(booking.getBookingType())
+                && ClearanceDocumentPolicy.isInternationalOnlyType(type)) {
+            throw new IllegalArgumentException("Loại giấy tờ quốc tế này không áp dụng cho đơn trong nước.");
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -681,6 +705,8 @@ public class SpecialistServiceImpl implements SpecialistService {
 
     private BookingResponse mapToBookingResponse(Booking b) {
         BookingDetailsPayload payload = extractPayload(b);
+        Object clearance = ClearanceDocumentPolicy.forBooking(
+                payload.getClearance(), "international".equalsIgnoreCase(b.getBookingType()));
         String customerFullName = (b.getCustomerID() != null && b.getCustomerID().getUser() != null)
                 ? b.getCustomerID().getUser().getUsername()
                 : "Khách hàng";
@@ -710,7 +736,7 @@ public class SpecialistServiceImpl implements SpecialistService {
                 .quote(payload.getQuote())
                 .payment(payload.getPayment())
                 .medical(payload.getMedical())
-                .clearance(payload.getClearance())
+                .clearance(clearance)
                 .intake(payload.getIntake())
                 .rejection(payload.getRejection())
                 .history(payload.getHistory())

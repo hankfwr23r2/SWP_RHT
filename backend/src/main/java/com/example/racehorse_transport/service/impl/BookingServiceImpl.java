@@ -32,6 +32,7 @@ import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.dto.manager.*;
 import com.example.racehorse_transport.service.FleetService;
 import com.example.racehorse_transport.util.BookingDetailsJson;
+import com.example.racehorse_transport.util.ClearanceDocumentPolicy;
 import com.example.racehorse_transport.util.QuoteTotals;
 import com.example.racehorse_transport.util.CustomerBookingRules;
 
@@ -1101,6 +1102,9 @@ public class BookingServiceImpl implements BookingService {
                         .toList());
             }
         }
+        applicableRegs = applicableRegs.stream()
+                .filter(regulation -> ClearanceDocumentPolicy.isApplicable(regulation, isInternational))
+                .toList();
 
         // 3. Khởi tạo clearance.items
         List<Map<String, Object>> items = new ArrayList<>();
@@ -1557,6 +1561,9 @@ public class BookingServiceImpl implements BookingService {
         Map<?, ?> paymentMap = payload != null && payload.getPayment() instanceof Map<?, ?> m ? m : Map.of();
         boolean balancePaid = Boolean.TRUE.equals(paymentMap.get("balancePaid"));
         boolean canCancel = CustomerBookingRules.canCancel(b.getStatus(), balancePaid);
+        Object clearance = payload != null
+                ? ClearanceDocumentPolicy.forBooking(payload.getClearance(), "international".equalsIgnoreCase(b.getBookingType()))
+                : null;
 
         return BookingResponse.builder()
                 .id(formattedId)
@@ -1588,7 +1595,7 @@ public class BookingServiceImpl implements BookingService {
                 .cancelPenalty(canCancel && paymentMap.get("amount") != null
                         ? new BigDecimal(paymentMap.get("amount").toString()) : null)
                 .medical(medical)
-                .clearance(payload != null ? payload.getClearance() : null)
+                .clearance(clearance)
                 .settlement(payload != null ? payload.getSettlement() : null)
                 .rating(payload != null ? payload.getRating() : null)
                 .intake(payload != null ? payload.getIntake() : null)
