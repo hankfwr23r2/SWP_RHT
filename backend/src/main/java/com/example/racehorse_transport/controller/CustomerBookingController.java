@@ -2,6 +2,7 @@ package com.example.racehorse_transport.controller;
 
 import com.example.racehorse_transport.dto.booking.BookingResponse;
 import com.example.racehorse_transport.dto.booking.CreateBookingRequest;
+import com.example.racehorse_transport.dto.booking.CustomerTripTeamResponse;
 import com.example.racehorse_transport.response.ApiResponse;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.service.BookingService;
@@ -77,6 +78,21 @@ public class CustomerBookingController {
 
         BookingResponse response = bookingService.getBookingById(id, username);
         return ResponseEntity.ok(ApiResponse.success(response, "Lấy chi tiết đơn hàng thành công"));
+    }
+
+    // 4. API Xe và kíp xe của từng chuyến trong đơn (khách không gọi được /fleet nội bộ)
+    @GetMapping("/{id}/team")
+    public ResponseEntity<ApiResponse<List<CustomerTripTeamResponse>>> getTripTeam(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+            @PathVariable Integer id) {
+        String username = extractUsername(authHeader);
+        if (username == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Vui lòng đăng nhập để xem chi tiết đơn!"));
+        }
+
+        List<CustomerTripTeamResponse> team = bookingService.getCustomerTripTeam(id, username);
+        return ResponseEntity.ok(ApiResponse.success(team, "Lấy thông tin xe và kíp xe thành công"));
     }
 
     // 5. API Khách hàng từ chối báo giá (giải phóng xe và kíp xe)

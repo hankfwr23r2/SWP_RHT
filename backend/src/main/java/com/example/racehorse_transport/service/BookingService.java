@@ -18,6 +18,8 @@ public interface BookingService {
     // Nghiệp vụ Flow 1: Xem chi tiết đơn
     BookingResponse getBookingById(Integer id, String customerUsername);
 
+    List<com.example.racehorse_transport.dto.booking.CustomerTripTeamResponse> getCustomerTripTeam(Integer id, String customerUsername);
+
     // Khách gửi lại hồ sơ sau khi bổ sung theo yêu cầu thẩm định.
     BookingResponse resubmitBooking(String bookingIdentifier, String customerUsername);
 

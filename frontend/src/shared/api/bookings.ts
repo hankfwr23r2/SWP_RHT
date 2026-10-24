@@ -89,6 +89,14 @@ export function toNumericBookingId(identifier: number | string): number {
   return numericId
 }
 
+export interface BackendTripTeam {
+  tripId: string
+  horseNames: string[]
+  vehicle: { plate: string; kind: string; stalls: number }
+  driver: { name: string; phone: string }
+  escort: { name: string; phone: string }
+}
+
 export const backendBookingApi = {
   // 1. Khách hàng tạo đơn vận chuyển mới (POST /api/v1/customer/bookings)
   create: async (payload: CreateBookingPayload): Promise<BackendBookingResponse> => {
@@ -106,6 +114,12 @@ export const backendBookingApi = {
   getCustomerBookingById: async (id: number | string): Promise<BackendBookingResponse> => {
     const numericId = toNumericBookingId(id)
     const res = await apiClient.get<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${numericId}`)
+    return res.data.data
+  },
+
+  // Xe và kíp xe từng chuyến của đơn, phần khách được xem (GET /api/v1/customer/bookings/{id}/team)
+  getCustomerTripTeam: async (id: number | string): Promise<BackendTripTeam[]> => {
+    const res = await apiClient.get<ApiResponse<BackendTripTeam[]>>(`/customer/bookings/${toNumericBookingId(id)}/team`)
     return res.data.data
   },
 
