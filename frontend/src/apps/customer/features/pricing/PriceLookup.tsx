@@ -1,9 +1,10 @@
 // Bảng giá: dùng chung cho trang chủ công khai và trang khách đã đăng nhập. Dùng đúng công thức báo giá thật (PRD mục 11).
-import { FEED_PACKAGE, FEED_PACKAGE_IDS, WATER_PLAN, WATER_PLAN_IDS, CLASS_FACTOR, CLEARANCE_FEE, CREW_FEE_PER_DAY, DEMURRAGE_PER_HOUR, DEPOSIT_RATE, FUEL_BOT_PER_KM, FUEL_BUFFER_RATE, HORSE_BREEDS, MARGIN_RATE, QUOTE_VALID_HOURS, SINGLE_STALL_FEE, VEHICLE_CLASS, type VehicleClass } from '@shared/config/booking-rules'
+import { CLASS_FACTOR, CLEARANCE_FEE, CREW_FEE_PER_DAY, DEMURRAGE_PER_HOUR, DEPOSIT_RATE, FUEL_BOT_PER_KM, FUEL_BUFFER_RATE, MARGIN_RATE, QUOTE_VALID_HOURS, VEHICLE_CLASS, type VehicleClass } from '@shared/config/booking-rules'
 import { MIN_LEAD_DAYS } from '@shared/config/business-rules'
-import { insuranceFee } from '@shared/lib/booking'
 import { formatVND } from '@shared/lib/format'
 import { truckCost } from '@shared/lib/pricing'
+import { serviceCatalogApi } from '@shared/api/serviceCatalog'
+import { useLoad } from '@shared/services/useLoad'
 import s from '../home/HomePage.module.css'
 
 const cx = (...c: (string | false | undefined)[]) => c.filter(Boolean).join(' ')
@@ -13,6 +14,7 @@ const roundK = (n: number) => Math.round(n / 1000) * 1000
 const CLASSES = Object.keys(VEHICLE_CLASS) as VehicleClass[]
 const PRICE_TIER_KM = [50, 150, 300, 600, 1000, 1500]
 export function PriceTable() {
+  const { data: services, loaded, reload } = useLoad(serviceCatalogApi.listActive)
   return (
     <>
       <div className={s.priceGrid}>
@@ -51,12 +53,20 @@ export function PriceTable() {
             <tbody>
               <tr><td className={s.colText}>Nhân sự (01 tài xế + 01 hộ tống), mỗi xe</td><td className={s.colNum}>{formatVND(roundK(CREW_FEE_PER_DAY * (1 + MARGIN_RATE)))}/ngày</td></tr>
               <tr><td className={s.colText}>Nhiên liệu và phí cầu đường, mỗi xe</td><td className={s.colNum}>{formatVND(roundK(100 * FUEL_BOT_PER_KM * (1 + FUEL_BUFFER_RATE) * (1 + MARGIN_RATE)))}/100 km</td></tr>
-              <tr><td className={s.colText}>Khoang đơn mở rộng</td><td className={s.colNum}>{formatVND(SINGLE_STALL_FEE)}/ngựa</td></tr>
-              {FEED_PACKAGE_IDS.filter(id => FEED_PACKAGE[id].fee > 0).map(id => <tr key={id}><td className={s.colText}>Thức ăn · {FEED_PACKAGE[id].label}</td><td className={s.colNum}>{formatVND(FEED_PACKAGE[id].fee)}/ngựa</td></tr>)}
-              {WATER_PLAN_IDS.filter(id => WATER_PLAN[id].fee > 0).map(id => <tr key={id}><td className={s.colText}>Cữ nước · {WATER_PLAN[id].label}</td><td className={s.colNum}>{formatVND(WATER_PLAN[id].fee)}/ngựa</td></tr>)}
+              {!loaded
+                ? <tr><td className={s.colText} colSpan={2}>Đang tải bảng giá dịch vụ…</td></tr>
+                : !services
+                  ? <tr><td className={s.colText} colSpan={2}>Không tải được bảng giá dịch vụ. <button type="button" className="btn btn-ghost btn-sm" onClick={reload}>Thử lại</button></td></tr>
+                  : services.length
+                    ? services.map(service => (
+                        <tr key={service.id}>
+                          <td className={s.colText}>{service.categoryName} · {service.serviceName}</td>
+                          <td className={s.colNum}>{service.price > 0 ? `${formatVND(service.price)}/ngựa` : 'Miễn phí / Đã gồm'}</td>
+                        </tr>
+                      ))
+                    : <tr><td className={s.colText} colSpan={2}>Chưa có dịch vụ đang áp dụng.</td></tr>}
               <tr><td className={s.colText}>Thủ tục kiểm dịch (nội địa)</td><td className={s.colNum}>{CLEARANCE_FEE.domestic ? formatVND(CLEARANCE_FEE.domestic) : 'Đã gồm trong cước'}</td></tr>
               <tr><td className={s.colText}>Thủ tục kiểm dịch và hải quan (quốc tế)</td><td className={s.colNum}>{formatVND(CLEARANCE_FEE.international)}/chuyến</td></tr>
-              {HORSE_BREEDS.map(b => <tr key={b}><td className={s.colText}>Bảo hiểm Động vật Sống · {b}</td><td className={s.colNum}>{formatVND(insuranceFee(b))}/ngựa</td></tr>)}
             </tbody>
           </table>
         </div>

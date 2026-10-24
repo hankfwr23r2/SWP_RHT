@@ -36,6 +36,15 @@ public class AdminServiceServiceImpl implements AdminServiceService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<ServiceResponse> getActiveServices() {
+        return serviceRepository.findByStatusIgnoreCaseOrderByIdAsc("ACTIVE")
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<CategoryResponse> getAllCategories() {
         return categoryRepository.findAll(Sort.by(Sort.Direction.ASC, "id"))
                 .stream()

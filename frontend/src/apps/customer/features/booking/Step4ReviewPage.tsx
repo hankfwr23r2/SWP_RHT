@@ -2,18 +2,18 @@
 import { useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
-import { FEED_PACKAGE, VEHICLE_CLASS, WATER_PLAN } from '@shared/config/booking-rules'
+import { VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { COUNTRIES } from '@shared/config/network'
-import { classForHorses, findLocation, fromIsoDay, insuranceFee } from '@shared/lib/booking'
+import { classForHorses, findLocation, fromIsoDay } from '@shared/lib/booking'
 import { formatDate, formatVND } from '@shared/lib/format'
 import { usePageData } from '@shared/routing/pageData'
 import { customerBookingsApi } from '@shared/services/bookings'
-import { SEX_LABEL, type PlaceRef } from '@shared/types/booking'
+import { SEX_LABEL, type BookingServiceCategory, type BookingServiceSnapshot, type PlaceRef } from '@shared/types/booking'
 import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
 import { BookingShell } from './BookingShell'
 import type { horseListLoader } from '../horses/loaders'
-import { countriesOf, useBookingDraft } from './draft'
+import { countriesOf, isDeclinedInsurance, serviceOptionFor, useBookingDraft } from './draft'
 import s from './Booking.module.css'
 
 
@@ -23,7 +23,7 @@ export default function Step4ReviewPage() {
   const { session } = useAuth()
   const owner = session!.name
   const { draft, clear } = useBookingDraft()
-  const { horses } = usePageData<typeof horseListLoader>()
+  const { horses, services = [] } = usePageData<typeof horseListLoader>()
   const [busy, setBusy] = useState(false)
   const [sent, setSent] = useState(false) // đã gửi: bản nháp bị xóa, không chuyển ngược về bước 1
 
@@ -52,6 +52,16 @@ export default function Step4ReviewPage() {
 
   const international = draft.type === 'international'
   const rows = draft.horseIds.map(id => horses?.find(h => h.id === id)).filter(Boolean) as NonNullable<typeof horses>
+  const serviceSelections = (horseId: string): Record<BookingServiceCategory, ReturnType<typeof serviceOptionFor>> => {
+    const config = draft.config[horseId]
+    return Object.fromEntries((['stall', 'feed', 'water', 'insurance'] as BookingServiceCategory[]).map(category => [
+      category,
+      serviceOptionFor(services, config, category),
+    ])) as Record<BookingServiceCategory, ReturnType<typeof serviceOptionFor>>
+  }
+  const serviceSelectionsValid = rows.length > 0
+    && rows.length === draft.horseIds.length
+    && rows.every(h => Object.values(serviceSelections(h.id)).every(Boolean))
   const place = (id: string, country: PlaceRef['country']): PlaceRef => ({ id, name: findLocation(id)?.name ?? id, country })
   const origin = place(draft.originId, countries.origin)
   const dest = place(draft.destId, countries.dest)
@@ -59,6 +69,10 @@ export default function Step4ReviewPage() {
 
   const submit = async () => {
     if (busy) return
+    if (!serviceSelectionsValid) {
+      toast('Một dịch vụ đã tạm ngưng hoặc không còn áp dụng. Vui lòng quay lại chọn lại dịch vụ.', 'error')
+      return
+    }
     if (!draft.consignor.name?.trim() || !draft.consignor.phone?.trim() || !draft.consignor.idNumber?.trim()) {
       toast('Thông tin người gửi chưa đầy đủ (Họ tên, SĐT, CCCD/Hộ chiếu). Vui lòng bấm "Sửa" để quay lại Bước 1 bổ sung.', 'error')
       return
@@ -74,7 +88,14 @@ export default function Step4ReviewPage() {
         departAt: fromIsoDay(draft.departDate), consignor: draft.consignor, consignee: draft.consignee,
         horses: rows.map(h => {
           const c = draft.config[h.id]
-          return { horseId: h.id, name: h.name, microchip: h.microchip, breed: h.breed, sex: h.sex, stall: c.stall, feedPackage: c.feedPackage, waterPlan: c.waterPlan, insurance: { opted: c.insurance === 'buy' } }
+          const selectedServices = serviceSelections(h.id)
+          const insurance = selectedServices.insurance
+          return {
+            horseId: h.id, name: h.name, microchip: h.microchip, breed: h.breed, sex: h.sex,
+            stall: c.stall, feedPackage: c.feedPackage, waterPlan: c.waterPlan,
+            insurance: { opted: !isDeclinedInsurance(insurance) },
+            selectedServices: Object.fromEntries(Object.entries(selectedServices).map(([key, service]) => [key, service ? { ...service } : undefined])) as Partial<Record<BookingServiceCategory, BookingServiceSnapshot>>,
+          }
         }),
       })
       setPlaced({ id: order.id, route: `${origin.name.split(' — ')[0]} → ${dest.name.split(' — ')[0]}`, date: formatDate(fromIsoDay(draft.departDate)), horses: rows.length })
@@ -118,9 +139,7 @@ export default function Step4ReviewPage() {
       <div className="card" data-card>
         <div className="card-header"><h3><i className="fa-solid fa-horse-head" /> {rows.length} ngựa · xe {cls.label} <span className={s.subNote}>({cls.stalls})</span></h3><Link to="/booking/services" className={s.editLink}>Sửa</Link></div>
         {rows.map(h => {
-          const c = draft.config[h.id] ?? {}
-          const feed = FEED_PACKAGE[c.feedPackage] ?? FEED_PACKAGE.basic
-          const water = WATER_PLAN[c.waterPlan] ?? WATER_PLAN.every_3h
+          const selected = serviceSelections(h.id)
           return (
             <div key={h.id} className={s.reviewHorseItem}>
               <div className={s.reviewHorseHead}>
@@ -132,26 +151,30 @@ export default function Step4ReviewPage() {
               <div className={s.reviewServicesGrid}>
                 <div className={s.reviewServiceCol}>
                   <span className={s.reviewServiceLabel}><i className="fa-solid fa-border-all" /> Khoang xe</span>
-                  <span className={s.reviewServiceVal}>{c.stall === 'single' ? 'Khoang đơn mở rộng' : 'Khoang tiêu chuẩn'}</span>
-                  <span className={s.reviewServiceSub}>{c.stall === 'single' ? 'Phụ thu khoang riêng' : 'Đã gồm trong cước'}</span>
+                  <span className={s.reviewServiceVal}>{selected.stall?.serviceName ?? 'Không còn áp dụng'}</span>
+                  <span className={s.reviewServiceSub}>{selected.stall ? (selected.stall.price > 0 ? formatVND(selected.stall.price) : 'Miễn phí / Đã gồm') : 'Vui lòng quay lại chọn dịch vụ'}</span>
                 </div>
                 <div className={s.reviewServiceCol}>
                   <span className={s.reviewServiceLabel}><i className="fa-solid fa-wheat-awn" /> Gói thức ăn</span>
-                  <span className={s.reviewServiceVal}>{feed.label}</span>
-                  <span className={s.reviewServiceSub}>{feed.items.join(', ')}{feed.fee ? ` (+${formatVND(feed.fee)})` : ''}</span>
+                  <span className={s.reviewServiceVal}>{selected.feed?.serviceName ?? 'Không còn áp dụng'}</span>
+                  <span className={s.reviewServiceSub}>{selected.feed ? (selected.feed.price > 0 ? formatVND(selected.feed.price) : 'Miễn phí / Đã gồm') : 'Vui lòng quay lại chọn dịch vụ'}</span>
                 </div>
                 <div className={s.reviewServiceCol}>
                   <span className={s.reviewServiceLabel}><i className="fa-solid fa-faucet-droplet" /> Cữ uống nước</span>
-                  <span className={s.reviewServiceVal}>{water.label}</span>
-                  <span className={s.reviewServiceSub}>{water.hint}{water.fee ? ` (+${formatVND(water.fee)})` : ''}</span>
+                  <span className={s.reviewServiceVal}>{selected.water?.serviceName ?? 'Không còn áp dụng'}</span>
+                  <span className={s.reviewServiceSub}>{selected.water ? (selected.water.price > 0 ? formatVND(selected.water.price) : 'Miễn phí / Đã gồm') : 'Vui lòng quay lại chọn dịch vụ'}</span>
                 </div>
                 <div className={s.reviewServiceCol}>
                   <span className={s.reviewServiceLabel}><i className="fa-solid fa-shield-halved" /> Bảo hiểm chuyến đi</span>
-                  <span className={s.reviewServiceVal} style={{ color: c.insurance === 'buy' ? 'var(--orange)' : 'var(--text)' }}>
-                    {c.insurance === 'buy' ? 'Mua bảo hiểm chuyến đi' : 'Từ chối bảo hiểm'}
+                  <span className={s.reviewServiceVal} style={{ color: isDeclinedInsurance(selected.insurance) ? 'var(--text)' : 'var(--orange)' }}>
+                    {selected.insurance?.serviceName ?? 'Không còn áp dụng'}
                   </span>
                   <span className={s.reviewServiceSub}>
-                    {c.insurance === 'buy' ? `Phí ${formatVND(insuranceFee(h.breed))}` : 'Trách nhiệm hạn chế của nhà xe'}
+                    {selected.insurance
+                      ? isDeclinedInsurance(selected.insurance)
+                        ? 'Trách nhiệm hạn chế của nhà xe'
+                        : selected.insurance.price > 0 ? formatVND(selected.insurance.price) : 'Miễn phí / Đã gồm'
+                      : 'Vui lòng quay lại chọn dịch vụ'}
                   </span>
                 </div>
               </div>
@@ -163,7 +186,8 @@ export default function Step4ReviewPage() {
 
       <div className={s.actions}>
         <Link to="/booking/services" className="btn btn-ghost"><i className="fa-solid fa-arrow-left" /> Dịch vụ và bảo hiểm</Link>
-        <button type="button" className="btn btn-primary btn-lg" onClick={submit} disabled={busy}><i className="fa-solid fa-paper-plane" /> {busy ? 'Đang gửi…' : 'Gửi yêu cầu đặt đơn'}</button>
+        {!serviceSelectionsValid && <span className="form-error">Dịch vụ đã thay đổi hoặc không tải được. Hãy quay lại chọn lại dịch vụ.</span>}
+        <button type="button" className="btn btn-primary btn-lg" onClick={submit} disabled={busy || !serviceSelectionsValid}><i className="fa-solid fa-paper-plane" /> {busy ? 'Đang gửi…' : 'Gửi yêu cầu đặt đơn'}</button>
       </div>
     </BookingShell>
   )

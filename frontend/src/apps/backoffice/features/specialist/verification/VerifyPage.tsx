@@ -171,7 +171,7 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
                   )
                 })}
               </div>
-              {bh && <div className={s.config}><span>Thức ăn: <b>{FEED_PACKAGE[bh.feedPackage].label}</b></span><span>Cữ nước: <b>{WATER_PLAN[bh.waterPlan].label}</b></span></div>}
+              {bh && <div className={s.config}><span>Thức ăn: <b>{bh.selectedServices?.feed?.serviceName ?? FEED_PACKAGE[bh.feedPackage].label}</b></span><span>Cữ nước: <b>{bh.selectedServices?.water?.serviceName ?? WATER_PLAN[bh.waterPlan].label}</b></span></div>}
               {(b.medical?.status ?? 'pending') === 'pending' && (
                 <label className={s.check}>
                   <input type="checkbox" checked={checked.includes(cur.id)}

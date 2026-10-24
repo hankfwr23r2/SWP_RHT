@@ -8,6 +8,7 @@ import java.util.List;
 
 public interface AdminServiceService {
     List<ServiceResponse> getAllServices();
+    List<ServiceResponse> getActiveServices();
     List<CategoryResponse> getAllCategories();
     ServiceResponse getServiceById(Integer id);
     ServiceResponse createService(CreateServiceRequest request);

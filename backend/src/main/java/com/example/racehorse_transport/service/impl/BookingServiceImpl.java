@@ -2,6 +2,7 @@ package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.booking.BookingHorseDto;
 import com.example.racehorse_transport.dto.booking.BookingResponse;
+import com.example.racehorse_transport.dto.booking.BookingServiceSelectionDto;
 import com.example.racehorse_transport.dto.booking.CreateBookingRequest;
 import com.example.racehorse_transport.dto.booking.CustomerTripTeamResponse;
 import com.example.racehorse_transport.dto.booking.PublicTrackingResponse;
@@ -44,10 +45,13 @@ import java.math.BigDecimal;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
 import com.example.racehorse_transport.repository.RouteRepository;
+import com.example.racehorse_transport.repository.ServiceRepository;
 import com.example.racehorse_transport.entity.Route;
 
 @Slf4j
@@ -76,6 +80,7 @@ public class BookingServiceImpl implements BookingService {
     private final SystemConfigService systemConfigService;
     private final TripDocumentRepository tripDocumentRepository;
     private final RouteRepository routeRepository;
+    private final ServiceRepository serviceRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // =========================================================================
@@ -123,7 +128,10 @@ public class BookingServiceImpl implements BookingService {
                     + minimumLeadDays + " ngày.");
         }
 
-        // 4. Serialize cấu hình chi tiết ngựa và khởi tạo payload vào detailsJson
+        // 4. Resolve selected services against active catalog data before persisting a price snapshot.
+        snapshotSelectedServices(request.getHorses());
+
+        // 5. Serialize cấu hình chi tiết ngựa và khởi tạo payload vào detailsJson
         String detailsJson = null;
         try {
             BookingDetailsPayload initialPayload = new BookingDetailsPayload();
@@ -145,7 +153,7 @@ public class BookingServiceImpl implements BookingService {
             throw new IllegalStateException("Không thể lưu chi tiết đơn vận chuyển.", e);
         }
 
-        // 5. Xác nhận các ngựa được chọn:
+        // 6. Xác nhận các ngựa được chọn:
         // - Phải thuộc tài khoản của khách hàng này
         // - Không được mang trạng thái IN_TRANSIT
         // - Không được đang nằm trong bất kỳ đơn hàng nào chưa hoàn tất (khác completed, cancelled, rejected, quote_expired)
@@ -207,7 +215,7 @@ public class BookingServiceImpl implements BookingService {
             }
         }
 
-        // 6. Tạo đơn hàng Booking mới
+        // 7. Tạo đơn hàng Booking mới
         Booking booking = Booking.builder()
                 .customerID(customer)
                 .bookingDate(Instant.now())
@@ -230,7 +238,7 @@ public class BookingServiceImpl implements BookingService {
 
         Booking savedBooking = bookingRepository.save(booking);
 
-        // 7. Ghi Audit Log vào SYSTEM_LOG
+        // 8. Ghi Audit Log vào SYSTEM_LOG
         try {
             SystemLog sysLog = SystemLog.builder()
                     .actionbyUserid(user)
@@ -1341,6 +1349,60 @@ public class BookingServiceImpl implements BookingService {
             log.info("Marked {} bookings as payment_overdue", count);
         }
         return count;
+    }
+
+    private void snapshotSelectedServices(List<BookingHorseDto> horses) {
+        if (horses == null) {
+            return;
+        }
+
+        Map<String, Integer> categoryIds = Map.of(
+                "stall", 1,
+                "feed", 2,
+                "water", 3,
+                "insurance", 4);
+
+        for (BookingHorseDto horse : horses) {
+            Map<String, BookingServiceSelectionDto> requested = horse.getSelectedServices();
+            if (requested == null) {
+                continue;
+            }
+
+            Map<String, BookingServiceSelectionDto> resolved = new LinkedHashMap<>();
+            for (Map.Entry<String, Integer> category : categoryIds.entrySet()) {
+                BookingServiceSelectionDto selection = requested.get(category.getKey());
+                if (selection == null || selection.getId() == null) {
+                    throw new IllegalArgumentException("Mỗi ngựa phải chọn đủ khoang, thức ăn, cữ nước và bảo hiểm.");
+                }
+
+                com.example.racehorse_transport.entity.Service service = serviceRepository.findById(selection.getId())
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                "Không tìm thấy dịch vụ ID: " + selection.getId()));
+                if (!"ACTIVE".equalsIgnoreCase(service.getStatus())) {
+                    throw new IllegalArgumentException(
+                            "Dịch vụ \"" + service.getServiceName() + "\" vừa được tạm ngưng. Vui lòng chọn lại.");
+                }
+                if (service.getCategoryID() == null
+                        || !category.getValue().equals(service.getCategoryID().getId())) {
+                    throw new IllegalArgumentException(
+                            "Dịch vụ \"" + service.getServiceName() + "\" không thuộc đúng nhóm lựa chọn.");
+                }
+
+                resolved.put(category.getKey(), BookingServiceSelectionDto.builder()
+                        .id(service.getId())
+                        .serviceName(service.getServiceName())
+                        .categoryId(service.getCategoryID().getId())
+                        .categoryName(service.getCategoryID().getCategoryName())
+                        .price(service.getPrice())
+                        .build());
+            }
+
+            horse.setSelectedServices(resolved);
+            BookingServiceSelectionDto insurance = resolved.get("insurance");
+            boolean declinedInsurance = insurance.getId() == 10
+                    || insurance.getServiceName().toLowerCase(Locale.ROOT).contains("từ chối");
+            horse.setInsuranceOpted(!declinedInsurance);
+        }
     }
 
     private Integer parseBookingId(String bookingIdentifier) {
