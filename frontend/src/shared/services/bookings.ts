@@ -347,6 +347,8 @@ export const bookingsApi = {
     toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'COLLECT_ORIGINALS', actor: by, payload: { items } })),
   uploadHandover: async (id: string, tripId: string, by: string, checkpointId: string, photo: string): Promise<Booking> =>
     toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'UPLOAD_HANDOVER', actor: by, payload: { checkpointId, photo } })),
+  setOriginalsReturned: async (id: string, tripId: string, by: string, checkpointId: string, returnedOriginals: boolean): Promise<Booking> =>
+    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'RETURN_ORIGINALS', actor: by, payload: { checkpointId, returnedOriginals } })),
   startJourney: async (id: string, tripId: string, by: string): Promise<Booking> =>
     toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'START_JOURNEY', actor: by })),
   arriveCheckpoint: async (id: string, tripId: string, by: string, checkpointId: string, photo: string): Promise<Booking> =>
@@ -358,7 +360,7 @@ export const bookingsApi = {
   customsCleared: async (id: string, tripId: string, by: string, stampPhotos: string[]): Promise<Booking> =>
     toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'CUSTOMS_CLEARED', actor: by, payload: { stampPhotos } })),
   completeDelivery: async (id: string, tripId: string, by: string): Promise<Booking> =>
-    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'COMPLETE_DELIVERY', actor: by, payload: { returnedOriginals: true } })),
+    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'COMPLETE_DELIVERY', actor: by })),
   confirmHome: async (id: string, tripId: string, by: string, photo: string): Promise<Booking> =>
     toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'CONFIRM_HOME', actor: by, payload: { photo } })),
 

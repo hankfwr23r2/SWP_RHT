@@ -2077,6 +2077,37 @@ public class BookingServiceImpl implements BookingService {
                 appendHistory(payload, actor, "Đã hoàn tất thủ tục thông quan tại cửa khẩu");
                 break;
             }
+            case "RETURN_ORIGINALS": {
+                Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
+                if (run.get("startedAt") == null) throw new IllegalStateException("Journey has not started.");
+                String checkpointId = String.valueOf(reqPayload.getOrDefault("checkpointId", "delivery"));
+                List<Map<String, Object>> checkpoints = checkpointMaps(run.get("checkpoints"));
+                Map<String, Object> delivery = checkpoints.stream()
+                        .filter(cp -> "delivery".equals(cp.get("type")) && checkpointId.equals(String.valueOf(cp.get("id"))))
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalStateException("Trip is missing its delivery checkpoint."));
+                if (delivery.get("arrivedAt") == null) {
+                    throw new IllegalStateException("Check in at the delivery point before confirming returned documents.");
+                }
+                if (delivery.get("doneAt") != null) {
+                    throw new IllegalStateException("Delivery is already complete.");
+                }
+                boolean returned = Boolean.TRUE.equals(reqPayload.get("returnedOriginals"));
+                delivery.put("returnedOriginals", returned);
+                if (returned) {
+                    delivery.put("returnedOriginalsAt", now);
+                    delivery.put("returnedOriginalsBy", actor);
+                } else {
+                    delivery.remove("returnedOriginalsAt");
+                    delivery.remove("returnedOriginalsBy");
+                }
+                run.put("checkpoints", checkpoints);
+                targetTrip.setRun(run);
+                appendHistory(payload, actor, returned
+                        ? "Đã xác nhận trả chứng từ gốc cho người nhận"
+                        : "Đã hủy xác nhận trả chứng từ gốc");
+                break;
+            }
             case "COMPLETE_DELIVERY": {
                 Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
                 if (run.get("startedAt") == null) throw new IllegalStateException("Journey has not started.");
@@ -2096,7 +2127,7 @@ public class BookingServiceImpl implements BookingService {
                 if (isBlank(delivery.get("handoverPhoto"))) {
                     throw new IllegalStateException("Upload the signed delivery handover record before completing delivery.");
                 }
-                if (!Boolean.TRUE.equals(reqPayload.get("returnedOriginals"))) {
+                if (!Boolean.TRUE.equals(delivery.get("returnedOriginals"))) {
                     throw new IllegalStateException("Confirm that the original documents were returned before completing delivery.");
                 }
                 List<Map<String, Object>> deliveryWelfare = mapList(run.get("welfare"));

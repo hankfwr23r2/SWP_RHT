@@ -346,6 +346,83 @@ class BookingServiceImplTest {
     }
 
     @Test
+    void updateTripProgressPersistsOriginalsReturnedOnDeliveryCheckpoint() {
+        Booking booking = deliveryBooking("""
+                {
+                  "startedAt": 100,
+                  "checkpoints": [
+                    { "id": "pickup", "type": "pickup", "arrivedAt": 100, "doneAt": 101 },
+                    { "id": "delivery", "type": "delivery", "arrivedAt": 200, "photo": "arrival.jpg", "handoverPhoto": "signed.jpg" }
+                  ],
+                  "welfare": []
+                }
+                """);
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var request = new com.example.racehorse_transport.dto.field.TripUpdateRequest();
+        request.setTripId("TRP-042-1");
+        request.setAction("RETURN_ORIGINALS");
+        request.setActor("driver02");
+        request.setPayload(Map.of("checkpointId", "delivery", "returnedOriginals", true));
+
+        service.updateTripProgress("BK-042", request);
+
+        ArgumentCaptor<Booking> saved = ArgumentCaptor.forClass(Booking.class);
+        verify(bookingRepository).save(saved.capture());
+        assertThat(saved.getValue().getDetailsJson())
+                .contains("\"returnedOriginals\":true")
+                .contains("\"returnedOriginalsBy\":\"driver02\"")
+                .contains("\"returnedOriginalsAt\"");
+    }
+
+    @Test
+    void completeDeliveryRejectsClientConfirmationWhenOriginalsWereNotSaved() {
+        Booking booking = deliveryBooking("""
+                {
+                  "startedAt": 100,
+                  "checkpoints": [
+                    { "id": "pickup", "type": "pickup", "arrivedAt": 100, "doneAt": 101 },
+                    { "id": "delivery", "type": "delivery", "arrivedAt": 200, "photo": "arrival.jpg", "handoverPhoto": "signed.jpg" }
+                  ],
+                  "welfare": [{ "checkpointId": "delivery" }]
+                }
+                """);
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+
+        var request = new com.example.racehorse_transport.dto.field.TripUpdateRequest();
+        request.setTripId("TRP-042-1");
+        request.setAction("COMPLETE_DELIVERY");
+        request.setActor("driver02");
+        request.setPayload(Map.of("returnedOriginals", true));
+
+        assertThatThrownBy(() -> service.updateTripProgress("BK-042", request))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("original documents were returned");
+
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    private Booking deliveryBooking(String runJson) {
+        return Booking.builder()
+                .id(42)
+                .status("in_transit")
+                .bookingType("domestic")
+                .pickupAddress("Điểm đón")
+                .dropoffAddress("Điểm giao")
+                .detailsJson("""
+                        {
+                          "trips": [{
+                            "tripId": "TRP-042-1",
+                            "horseIds": [],
+                            "run": %s
+                          }]
+                        }
+                        """.formatted(runJson))
+                .build();
+    }
+
+    @Test
     void getBookingById_rejectsAnotherCustomer() {
         when(bookingRepository.findById(42)).thenReturn(Optional.of(bookingOwnedByCustomer()));
 
