@@ -76,11 +76,11 @@ export function orderFacts(b: CustomerBookingView, team: TripTeam[]): FactGroup[
   ]
 
   return [
-    { key: 'who' as const, title: 'Ai', rows: who },
-    { key: 'what' as const, title: 'Vận chuyển gì', rows: what },
-    { key: 'where' as const, title: 'Ở đâu', rows: where },
-    { key: 'when' as const, title: 'Khi nào', rows: when },
-    { key: 'why' as const, title: 'Tại sao', rows: why },
+    { key: 'who' as const, title: 'Thông tin liên hệ', rows: who },
+    { key: 'what' as const, title: 'Ngựa và dịch vụ', rows: what },
+    { key: 'where' as const, title: 'Điểm đón và điểm giao', rows: where },
+    { key: 'when' as const, title: 'Lịch trình', rows: when },
+    { key: 'why' as const, title: 'Ghi chú về đơn', rows: why },
   ].filter(g => g.rows.length)
 }
 

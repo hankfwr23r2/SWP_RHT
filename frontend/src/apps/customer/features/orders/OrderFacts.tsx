@@ -3,14 +3,14 @@ import type { CustomerBookingView, TripTeam } from '@shared/services/bookings'
 import { orderFacts, quoteFacts, type FactGroup } from './orderFacts'
 import s from './OrderDetail.module.css'
 
-const ICON: Record<FactGroup['key'], string> = { who: 'fa-users', what: 'fa-horse-head', where: 'fa-location-dot', when: 'fa-calendar-days', why: 'fa-circle-question' }
+const ICON: Record<FactGroup['key'], string> = { who: 'fa-users', what: 'fa-horse-head', where: 'fa-location-dot', when: 'fa-calendar-days', why: 'fa-note-sticky' }
 
 export function OrderFacts({ b, team }: { b: CustomerBookingView; team: TripTeam[] }) {
   return (
     <>
       {orderFacts(b, team).map(g => (
         <div key={g.key} className="card">
-          <div className="card-header"><h3><i className={`fa-solid ${ICON[g.key]}`} /> {g.title}</h3>{(g.key === 'when' || g.key === 'why') && <span className="badge badge-muted">Thông tin thêm</span>}</div>
+          <div className="card-header"><h3><i className={`fa-solid ${ICON[g.key]}`} /> {g.title}</h3></div>
           <dl className={s.grid}>
             {g.rows.map((r, i) => (
               <div key={`${r.label}-${i}`}>
