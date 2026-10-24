@@ -25,6 +25,14 @@ describe('chuyển đơn từ backend sang frontend', () => {
     const b = toBooking({ ...base, status: 'handover_timeout', statusLabel: 'Quá hạn bàn giao, ngựa đang lưu chuồng gần điểm giao', customerStatusLabel: 'Quá giờ nhận ngựa, ngựa đang được lưu chuồng' })
     expect(b).toMatchObject({ status: 'handover_timeout', statusLabel: 'Quá hạn bàn giao, ngựa đang lưu chuồng gần điểm giao', customerStatusLabel: 'Quá giờ nhận ngựa, ngựa đang được lưu chuồng' })
   })
+  it('ánh xạ thời điểm duyệt hồ sơ backend sang trường thời gian frontend', () => {
+    const b = toBooking({ ...base, medical: { status: 'approved', reviewedAt: 1_700_000_000_000 } })
+    expect(b.medical).toMatchObject({ status: 'approved', at: 1_700_000_000_000 })
+  })
+  it('ưu tiên thời điểm duyệt đã chuẩn hóa nếu cả hai trường thời gian tồn tại', () => {
+    const b = toBooking({ ...base, medical: { status: 'approved', at: 2_000, reviewedAt: 1_000 } })
+    expect(b.medical?.at).toBe(2_000)
+  })
   it('đơn khách hủy sau cọc: lấy thời điểm, lý do và số tiền hoàn từ backend', () => {
     const b = toBooking({ ...base, status: 'cancelled', payment: { paidAt: 2_000, amount: 3_000_000, cancelled: true, cancelledAt: 9_000, cancelReason: 'Đổi lịch', refundAmount: 0, penaltyAmount: 3_000_000 } })
     expect(b.cancellation).toEqual({ at: 9_000, reason: 'Đổi lịch', by: 'customer', refund: 0 })

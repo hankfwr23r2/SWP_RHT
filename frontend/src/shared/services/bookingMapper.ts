@@ -141,9 +141,11 @@ export function toBooking(r: BackendBookingResponse, customer?: string): Booking
   if (r.routeId != null) b.routeId = r.routeId
   if (r.intake) b.intake = r.intake as Booking['intake']
   if (r.medical) {
-    const med = r.medical as any
+    const med = r.medical as Record<string, unknown>
+    const medicalAt = num(med.at) ?? num(med.reviewedAt)
     b.medical = {
       ...med,
+      ...(medicalAt !== undefined ? { at: medicalAt } : {}),
       status: med.status === 'resubmission_requested' ? 'resubmit' : med.status,
     } as MedicalReview
   }
