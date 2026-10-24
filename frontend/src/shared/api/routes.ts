@@ -53,6 +53,14 @@ export interface CreateRoutePayload {
   }>
 }
 
+export interface CreateRestStopPayload {
+  locationName: string
+  address: string
+  city: string
+  province: string
+  country: string
+}
+
 export const routesApi = {
   // Lấy danh sách tất cả các tuyến cố định
   listRoutes: async (): Promise<BackendRouteResponse[]> => {
@@ -93,5 +101,19 @@ export const routesApi = {
   listLocations: async (params?: { type?: string; country?: string }): Promise<BackendLocationResponse[]> => {
     const res = await apiClient.get<ApiResponse<BackendLocationResponse[]>>('/locations', { params })
     return res.data?.data || []
+  },
+
+  createRestStop: async (payload: CreateRestStopPayload): Promise<BackendLocationResponse> => {
+    const res = await apiClient.post<ApiResponse<BackendLocationResponse>>('/locations/rest-stops', payload)
+    return res.data.data
+  },
+
+  updateRestStop: async (id: number, payload: CreateRestStopPayload): Promise<BackendLocationResponse> => {
+    const res = await apiClient.put<ApiResponse<BackendLocationResponse>>(`/locations/rest-stops/${id}`, payload)
+    return res.data.data
+  },
+
+  deleteRestStop: async (id: number): Promise<void> => {
+    await apiClient.delete<ApiResponse<void>>(`/locations/rest-stops/${id}`)
   },
 }

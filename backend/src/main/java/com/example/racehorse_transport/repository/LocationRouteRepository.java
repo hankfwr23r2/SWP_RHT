@@ -16,6 +16,8 @@ public interface LocationRouteRepository extends JpaRepository<LocationRoute, Lo
     @Query("SELECT lr FROM LocationRoute lr WHERE lr.id.routeID = :routeId ORDER BY lr.stopOrder ASC")
     List<LocationRoute> findByRouteId(@Param("routeId") Integer routeId);
 
+    boolean existsByLocationID_Id(Integer locationId);
+
     @Modifying
     @Transactional
     @Query("DELETE FROM LocationRoute lr WHERE lr.id.routeID = :routeId")

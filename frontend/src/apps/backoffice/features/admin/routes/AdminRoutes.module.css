@@ -28,6 +28,12 @@
 .stop { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bg-page); border: 1px solid var(--line); border-radius: 8px; }
 .stop > div > b { display: block; font-size: 0.95rem; }
 .stop small { display: block; font-size: 0.82rem; color: var(--muted); }
+.stopManagerHead { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; font-weight: 600; }
+.managedStops { display: grid; gap: 8px; }
+.managedStop { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px; background: var(--bg-page); border: 1px solid var(--line); border-radius: 8px; }
+.managedStop > div:first-child { min-width: 0; }
+.managedStop > div:first-child > b { display: block; color: var(--navy); }
+.managedStop small { display: block; margin-top: 3px; color: var(--muted); font-size: 0.82rem; }
 .stop small b { color: var(--text); }
 
 .name b { color: var(--navy); }
@@ -47,4 +53,7 @@
 .mapProgress { color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
 .mapPreview { width: 100%; min-height: 260px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg-page); overflow: hidden; }
 
-@media (max-width: 700px) { .form { grid-template-columns: 1fr; } }
+@media (max-width: 700px) {
+  .form { grid-template-columns: 1fr; }
+  .managedStop { align-items: flex-start; flex-direction: column; }
+}

@@ -11,6 +11,7 @@ import java.util.Optional;
 @Repository
 public interface RegulationRepository extends JpaRepository<Regulation, Integer> {
     List<Regulation> findByStatus(String status);
+    boolean existsByLocationID_Id(Integer locationId);
     List<Regulation> findByLocationID_IdAndStatus(Integer locationId, String status);
     List<Regulation> findByLocationIDIsNullAndStatus(String status);
     List<Regulation> findByCountryAndStatus(String country, String status);
