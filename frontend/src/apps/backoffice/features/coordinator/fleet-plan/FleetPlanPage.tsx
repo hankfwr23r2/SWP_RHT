@@ -214,8 +214,8 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
     () =>
       Number.isNaN(etdT)
         ? initial.legs
-        : layoutLegs(b.origin.name, b.dest.name, etdT, rests, driveHours, gate, true),
-    [etdT, rests, b, driveHours, gate, initial.legs]
+        : layoutLegs(b.origin.name, b.dest.name, etdT, rests, driveHours, gate, true, road?.legs),
+    [etdT, rests, b, driveHours, gate, initial.legs, road?.legs]
   )
   const borderEta = international
     ? borderTouched
@@ -681,6 +681,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
               <tr>
                 <th>Chặng</th>
                 <th>Hành trình</th>
+                <th className="text-right">Cự ly</th>
                 <th>Khởi hành</th>
                 <th>Đến</th>
                 <th className="text-right">Lái liên tục</th>
@@ -701,6 +702,13 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
                       <td className="font-semibold">{l.no}</td>
                       <td>
                         {l.from} → {l.to}
+                      </td>
+                      <td className="text-right nowrap">
+                        {l.km !== undefined ? (
+                          <span style={{ fontWeight: 600, color: 'var(--navy)' }}>{l.km} km</span>
+                        ) : (
+                          <span style={{ color: 'var(--muted)' }}>—</span>
+                        )}
                       </td>
                       <td className="nowrap">{formatDateTime(l.departAt)}</td>
                       <td className="nowrap">
@@ -740,7 +748,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
                           <i className="fa-solid fa-mug-hot" style={{ marginRight: 6 }} />
                           <b>Dừng nghỉ: {restStop.name}</b>
                         </td>
-                        <td colSpan={3} style={{ padding: '7px 14px', color: 'var(--muted)' }}>
+                        <td colSpan={4} style={{ padding: '7px 14px', color: 'var(--muted)' }}>
                           Nghỉ <b>{restStop.minutes} phút</b> ({formatClock(l.arriveAt)} → {formatClock(legs[idx + 1].departAt)}) · Kiểm tra an sinh & cho uống nước
                         </td>
                       </tr>
