@@ -1,7 +1,7 @@
 // Service đơn đặt chuyến (Flow 1–6): kết nối trực tiếp API Spring Boot, không giữ dữ liệu ở máy khách.
 import { CLEARANCE_DOC, INCIDENT_KIND, type ClearanceDocType, type IncidentKind, type Payer } from '../config/booking-rules'
 import { crewAssigned, defaultPayer, finalizeQuote, incidentLocation, quoteLines, sameVehicleId } from '../lib/booking'
-import type { Adjustment, Booking, Incident, IncidentExpense, IncidentPlan, Rating, RoutePlan, StaffRef, VehicleTrip } from '../types/booking'
+import type { Adjustment, Booking, BookingHorse, Incident, IncidentExpense, IncidentPlan, Rating, RoutePlan, StaffRef, VehicleTrip } from '../types/booking'
 import { backendBookingApi, type BackendBookingResponse } from '../api/bookings'
 import { backendIncidentApi, type BackendIncidentResponse } from '../api/incidents'
 import { backendSettlementApi } from '../api/settlements'
@@ -114,7 +114,8 @@ export interface NewBookingInput {
   departAt: number
   consignor: Booking['consignor']
   consignee: Booking['consignee']
-  horses: Booking['horses']
+  horses: Array<Omit<BookingHorse, 'stall' | 'feedPackage' | 'waterPlan'>
+    & Partial<Pick<BookingHorse, 'stall' | 'feedPackage' | 'waterPlan'>>>
 }
 
 
@@ -189,6 +190,7 @@ export const customerBookingsApi = {
         waterPlan: h.waterPlan,
         insuranceOpted: h.insurance?.opted,
         selectedServices: h.selectedServices,
+        selectedServiceCodes: h.selectedServiceCodes,
       })),
     })
     return toCustomerView(toBooking(created, customer))

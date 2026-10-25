@@ -35,6 +35,21 @@ public class Service {
     @Column(name = "ServiceName", nullable = false, length = 255)
     private String serviceName;
 
+    @NotBlank
+    @Size(max = 100)
+    @Pattern(regexp = "^[A-Z][A-Z0-9_]{1,99}$")
+    @Column(name = "service_code", length = 100, unique = true)
+    private String serviceCode;
+
+    @NotBlank
+    @Pattern(regexp = "PER_TRIP|PER_HORSE|PER_HORSE_DAY")
+    @Column(name = "billing_unit", length = 30)
+    private String billingUnit;
+
+    @Size(max = 1000)
+    @Column(name = "description", length = 1000)
+    private String description;
+
     @NotNull
     @DecimalMin(value = "0.00", inclusive = true)
     @Column(name = "price", nullable = false, precision = 18, scale = 2)

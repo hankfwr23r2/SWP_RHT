@@ -19,6 +19,7 @@ public class BookingHorseDto {
     private String feedPackage;
     private String waterPlan;
     private Boolean insuranceOpted;
+    private Map<String, String> selectedServiceCodes;
     private Map<String, BookingServiceSelectionDto> selectedServices;
     private String status; // ELIGIBLE, UNFIT
     private Map<String, Object> unfitInfo;

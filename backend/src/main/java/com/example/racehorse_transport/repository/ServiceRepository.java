@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ServiceRepository extends JpaRepository<Service, Integer> {
@@ -14,4 +15,8 @@ public interface ServiceRepository extends JpaRepository<Service, Integer> {
     Integer findMaxId();
 
     List<Service> findByStatusIgnoreCaseOrderByIdAsc(String status);
+
+    Optional<Service> findByServiceCodeIgnoreCase(String serviceCode);
+
+    boolean existsByServiceCodeIgnoreCase(String serviceCode);
 }

@@ -4,11 +4,12 @@ import { Link, Navigate, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { COUNTRIES } from '@shared/config/network'
-import { classForHorses, findLocation, fromIsoDay } from '@shared/lib/booking'
+import { classForHorses, findLocation, fromIsoDay, insuranceFee } from '@shared/lib/booking'
 import { formatDate, formatVND } from '@shared/lib/format'
 import { usePageData } from '@shared/routing/pageData'
 import { customerBookingsApi } from '@shared/services/bookings'
-import { SEX_LABEL, type BookingServiceCategory, type BookingServiceSnapshot, type PlaceRef } from '@shared/types/booking'
+import { SEX_LABEL, type BookingRequiredServiceCategory, type PlaceRef } from '@shared/types/booking'
+import { SERVICE_BILLING_UNIT_LABEL } from '@shared/api/serviceCatalog'
 import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
 import { BookingShell } from './BookingShell'
@@ -52,12 +53,12 @@ export default function Step4ReviewPage() {
 
   const international = draft.type === 'international'
   const rows = draft.horseIds.map(id => horses?.find(h => h.id === id)).filter(Boolean) as NonNullable<typeof horses>
-  const serviceSelections = (horseId: string): Record<BookingServiceCategory, ReturnType<typeof serviceOptionFor>> => {
+  const serviceSelections = (horseId: string): Record<BookingRequiredServiceCategory, ReturnType<typeof serviceOptionFor>> => {
     const config = draft.config[horseId]
-    return Object.fromEntries((['stall', 'feed', 'water', 'insurance'] as BookingServiceCategory[]).map(category => [
+    return Object.fromEntries((['stall', 'feed', 'insurance'] as BookingRequiredServiceCategory[]).map(category => [
       category,
       serviceOptionFor(services, config, category),
-    ])) as Record<BookingServiceCategory, ReturnType<typeof serviceOptionFor>>
+    ])) as Record<BookingRequiredServiceCategory, ReturnType<typeof serviceOptionFor>>
   }
   const serviceSelectionsValid = rows.length > 0
     && rows.length === draft.horseIds.length
@@ -87,14 +88,12 @@ export default function Step4ReviewPage() {
         type: draft.type as 'domestic' | 'international', origin, dest,
         departAt: fromIsoDay(draft.departDate), consignor: draft.consignor, consignee: draft.consignee,
         horses: rows.map(h => {
-          const c = draft.config[h.id]
           const selectedServices = serviceSelections(h.id)
           const insurance = selectedServices.insurance
           return {
             horseId: h.id, name: h.name, microchip: h.microchip, breed: h.breed, sex: h.sex,
-            stall: c.stall, feedPackage: c.feedPackage, waterPlan: c.waterPlan,
             insurance: { opted: !isDeclinedInsurance(insurance) },
-            selectedServices: Object.fromEntries(Object.entries(selectedServices).map(([key, service]) => [key, service ? { ...service } : undefined])) as Partial<Record<BookingServiceCategory, BookingServiceSnapshot>>,
+            selectedServiceCodes: Object.fromEntries(Object.entries(selectedServices).map(([key, service]) => [key, service?.serviceCode])) as Partial<Record<BookingRequiredServiceCategory, string>>,
           }
         }),
       })
@@ -152,17 +151,16 @@ export default function Step4ReviewPage() {
                 <div className={s.reviewServiceCol}>
                   <span className={s.reviewServiceLabel}><i className="fa-solid fa-border-all" /> Khoang xe</span>
                   <span className={s.reviewServiceVal}>{selected.stall?.serviceName ?? 'Không còn áp dụng'}</span>
-                  <span className={s.reviewServiceSub}>{selected.stall ? (selected.stall.price > 0 ? formatVND(selected.stall.price) : 'Miễn phí / Đã gồm') : 'Vui lòng quay lại chọn dịch vụ'}</span>
+                  <span className={s.reviewServiceSub}>{selected.stall ? (selected.stall.price > 0
+                    ? `${formatVND(selected.stall.price)} / ${SERVICE_BILLING_UNIT_LABEL[selected.stall.billingUnit]}`
+                    : 'Miễn phí / Đã gồm') : 'Vui lòng quay lại chọn dịch vụ'}</span>
                 </div>
                 <div className={s.reviewServiceCol}>
                   <span className={s.reviewServiceLabel}><i className="fa-solid fa-wheat-awn" /> Gói thức ăn</span>
                   <span className={s.reviewServiceVal}>{selected.feed?.serviceName ?? 'Không còn áp dụng'}</span>
-                  <span className={s.reviewServiceSub}>{selected.feed ? (selected.feed.price > 0 ? formatVND(selected.feed.price) : 'Miễn phí / Đã gồm') : 'Vui lòng quay lại chọn dịch vụ'}</span>
-                </div>
-                <div className={s.reviewServiceCol}>
-                  <span className={s.reviewServiceLabel}><i className="fa-solid fa-faucet-droplet" /> Cữ uống nước</span>
-                  <span className={s.reviewServiceVal}>{selected.water?.serviceName ?? 'Không còn áp dụng'}</span>
-                  <span className={s.reviewServiceSub}>{selected.water ? (selected.water.price > 0 ? formatVND(selected.water.price) : 'Miễn phí / Đã gồm') : 'Vui lòng quay lại chọn dịch vụ'}</span>
+                  <span className={s.reviewServiceSub}>{selected.feed ? (selected.feed.price > 0
+                    ? `${formatVND(selected.feed.price)} / ${SERVICE_BILLING_UNIT_LABEL[selected.feed.billingUnit]}`
+                    : 'Miễn phí / Đã gồm') : 'Vui lòng quay lại chọn dịch vụ'}</span>
                 </div>
                 <div className={s.reviewServiceCol}>
                   <span className={s.reviewServiceLabel}><i className="fa-solid fa-shield-halved" /> Bảo hiểm chuyến đi</span>
@@ -173,7 +171,7 @@ export default function Step4ReviewPage() {
                     {selected.insurance
                       ? isDeclinedInsurance(selected.insurance)
                         ? 'Trách nhiệm hạn chế của nhà xe'
-                        : selected.insurance.price > 0 ? formatVND(selected.insurance.price) : 'Miễn phí / Đã gồm'
+                        : `${formatVND(insuranceFee(h.breed))} / ngựa (2% giá trị bảo hiểm theo giống)`
                       : 'Vui lòng quay lại chọn dịch vụ'}
                   </span>
                 </div>

@@ -1,6 +1,6 @@
 import { useCallback, useSyncExternalStore } from 'react'
 import type { FeedPackageId, WaterPlanId } from '@shared/config/booking-rules'
-import type { BookingServiceCategory } from '@shared/types/booking'
+import type { BookingRequiredServiceCategory, BookingServiceCategory } from '@shared/types/booking'
 import type { ServiceCatalogItem } from '@shared/api/serviceCatalog'
 import type { Party, StallType, TransportType } from '@shared/types/booking'
 
@@ -9,6 +9,7 @@ export interface HorseConfig {
   feedPackage: FeedPackageId
   waterPlan: WaterPlanId
   selectedServices?: Partial<Record<BookingServiceCategory, number>>
+  selectedServiceCodes?: Partial<Record<BookingRequiredServiceCategory, string>>
   insurance: 'buy' | 'decline' | '' // phải chọn rõ cho từng ngựa
 }
 
@@ -36,38 +37,48 @@ export const emptyDraft = (): BookingDraft => ({
 
 export const defaultConfig = (): HorseConfig => ({
   stall: 'standard', feedPackage: 'basic', waterPlan: 'every_3h', insurance: '',
-  selectedServices: {},
+  selectedServices: {}, selectedServiceCodes: {},
 })
 
-const CATEGORY_IDS: Record<BookingServiceCategory, number> = {
-  stall: 1,
-  feed: 2,
-  water: 3,
-  insurance: 4,
+const SERVICE_CODE_PREFIXES: Record<BookingServiceCategory, string> = {
+  stall: 'STALL_',
+  feed: 'FEED_',
+  water: 'WATER_',
+  insurance: 'INSURANCE_',
 }
 
-const LEGACY_SERVICE_IDS = {
-  stall: (config: HorseConfig) => config.stall === 'single' ? 2 : 1,
-  feed: (config: HorseConfig) => ({ basic: 3, advanced: 4, sport: 5 })[config.feedPackage],
-  water: (config: HorseConfig) => ({ every_3h: 6, every_2h: 7, every_1h: 8 })[config.waterPlan],
-  insurance: (config: HorseConfig) => config.insurance === 'decline' ? 10 : 9,
-} satisfies Record<BookingServiceCategory, (config: HorseConfig) => number>
+const DEFAULT_SERVICE_CODES: Partial<Record<BookingServiceCategory, string>> = {
+  stall: 'STALL_STANDARD',
+  feed: 'FEED_BASIC',
+  insurance: 'INSURANCE_BUY',
+}
+
+function legacyServiceCodeFor(category: BookingServiceCategory, config: HorseConfig): string | undefined {
+  if (category === 'stall' && config.stall === 'single') return 'STALL_SINGLE_EXTENDED'
+  if (category === 'feed') return `FEED_${config.feedPackage.toUpperCase()}`
+  if (category === 'insurance' && config.insurance === 'decline') return 'INSURANCE_DECLINED'
+  return DEFAULT_SERVICE_CODES[category]
+}
 
 export function serviceOptionFor(
   services: ServiceCatalogItem[],
   config: HorseConfig,
   category: BookingServiceCategory,
 ): ServiceCatalogItem | undefined {
-  const options = services.filter(service => service.categoryId === CATEGORY_IDS[category])
+  if (category === 'water') return undefined
+  const options = services.filter(service => service.serviceCode.startsWith(SERVICE_CODE_PREFIXES[category]))
+  const selectedCode = config.selectedServiceCodes?.[category as BookingRequiredServiceCategory]
+  if (selectedCode) return options.find(service => service.serviceCode === selectedCode)
   const selectedId = config.selectedServices?.[category]
-  const preferredId = LEGACY_SERVICE_IDS[category](config)
   if (selectedId !== undefined) return options.find(service => service.id === selectedId)
-  return options.find(service => service.id === preferredId)
-    ?? options[0]
+  const preferredCode = legacyServiceCodeFor(category, config)
+  return options.find(service => service.serviceCode === preferredCode) ?? options[0]
 }
 
 export function isDeclinedInsurance(service: ServiceCatalogItem | undefined): boolean {
-  return !!service && (service.id === 10 || service.serviceName.trim().toLocaleLowerCase().includes('từ chối'))
+  return !!service && (service.serviceCode === 'INSURANCE_DECLINED'
+    || service.id === 10
+    || service.serviceName.trim().toLocaleLowerCase().includes('từ chối'))
 }
 
 // Bản nháp là một kho dùng chung: cột tóm tắt và các bước cùng đọc, nên khách gõ tới đâu tóm tắt cập nhật tới đó.

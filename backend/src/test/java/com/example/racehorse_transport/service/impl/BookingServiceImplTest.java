@@ -132,11 +132,10 @@ class BookingServiceImplTest {
         BookingHorseDto horseDto = BookingHorseDto.builder()
                 .horseId("HORSE-12")
                 .name("Lightning")
-                .selectedServices(Map.of(
-                        "stall", serviceSelection(1),
-                        "feed", serviceSelection(3),
-                        "water", serviceSelection(6),
-                        "insurance", serviceSelection(10)))
+                .selectedServiceCodes(Map.of(
+                        "stall", "STALL_STANDARD",
+                        "feed", "FEED_BASIC",
+                        "insurance", "INSURANCE_DECLINED"))
                 .build();
         CreateBookingRequest request = CreateBookingRequest.builder()
                 .type("INTERNATIONAL")
@@ -155,10 +154,12 @@ class BookingServiceImplTest {
         when(customerRepository.findById(7)).thenReturn(Optional.of(customer));
         when(bookingRepository.findByCustomerID_IdOrderByBookingDateDesc(7)).thenReturn(List.of());
         when(horseRepository.findById(12)).thenReturn(Optional.of(horse));
-        when(serviceRepository.findById(1)).thenReturn(Optional.of(service(1, "Khoang tiêu chuẩn", 1, "1", "ACTIVE")));
-        when(serviceRepository.findById(3)).thenReturn(Optional.of(service(3, "Gói cơ bản", 2, "0", "ACTIVE")));
-        when(serviceRepository.findById(6)).thenReturn(Optional.of(service(6, "Mỗi 3 giờ", 3, "0", "ACTIVE")));
-        when(serviceRepository.findById(10)).thenReturn(Optional.of(service(10, "Từ chối", 4, "0", "ACTIVE")));
+        when(serviceRepository.findByServiceCodeIgnoreCase("STALL_STANDARD"))
+                .thenReturn(Optional.of(service(1, "Khoang tiêu chuẩn", 1, "1", "ACTIVE")));
+        when(serviceRepository.findByServiceCodeIgnoreCase("FEED_BASIC"))
+                .thenReturn(Optional.of(service(3, "Gói cơ bản", 2, "0", "ACTIVE")));
+        when(serviceRepository.findByServiceCodeIgnoreCase("INSURANCE_DECLINED"))
+                .thenReturn(Optional.of(service(10, "Từ chối", 4, "0", "ACTIVE")));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> {
             Booking saved = invocation.getArgument(0);
             saved.setId(42);
@@ -180,6 +181,9 @@ class BookingServiceImplTest {
         assertThat(response.getHorses().get(0).getName()).isEqualTo("Lightning");
         assertThat(response.getHorses().get(0).getSelectedServices().get("stall").getPrice())
                 .isEqualByComparingTo("1");
+        assertThat(response.getHorses().get(0).getSelectedServiceCodes().get("feed")).isEqualTo("FEED_BASIC");
+        assertThat(response.getHorses().get(0).getSelectedServices().get("feed").getBillingUnit())
+                .isEqualTo("PER_HORSE_DAY");
         assertThat(response.getHorses().get(0).getInsuranceOpted()).isFalse();
 
         ArgumentCaptor<Booking> savedBooking = ArgumentCaptor.forClass(Booking.class);
@@ -235,6 +239,14 @@ class BookingServiceImplTest {
         com.example.racehorse_transport.entity.Service item = new com.example.racehorse_transport.entity.Service();
         item.setId(id);
         item.setServiceName(name);
+        item.setServiceCode(switch (id) {
+            case 1 -> "STALL_STANDARD";
+            case 3 -> "FEED_BASIC";
+            case 6 -> "WATER_EVERY_3H";
+            case 10 -> "INSURANCE_DECLINED";
+            default -> "SERVICE_" + id;
+        });
+        item.setBillingUnit(categoryId == 2 ? "PER_HORSE_DAY" : "PER_HORSE");
         item.setCategoryID(category);
         item.setPrice(new java.math.BigDecimal(price));
         item.setStatus(status);

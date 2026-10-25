@@ -1,6 +1,6 @@
 import apiClient, { type ApiResponse } from './client'
 import type { BackendIncidentResponse } from './incidents'
-import type { BookingServiceCategory, BookingServiceSnapshot } from '../types/booking'
+import type { BookingRequiredServiceCategory, BookingServiceCategory, BookingServiceSnapshot } from '../types/booking'
 
 export interface BookingPartyDto {
   name: string
@@ -22,6 +22,7 @@ export interface BookingHorseDto {
   waterPlan?: string
   insuranceOpted?: boolean
   selectedServices?: Partial<Record<BookingServiceCategory, BookingServiceSnapshot>>
+  selectedServiceCodes?: Partial<Record<BookingRequiredServiceCategory, string>>
   status?: string
   unfitInfo?: Record<string, unknown>
 }

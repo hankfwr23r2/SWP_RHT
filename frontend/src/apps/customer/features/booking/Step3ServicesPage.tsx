@@ -2,8 +2,9 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { formatVND } from '@shared/lib/format'
+import { insuranceFee } from '@shared/lib/booking'
 import { usePageData } from '@shared/routing/pageData'
-import { SEX_LABEL, type BookingServiceCategory } from '@shared/types/booking'
+import { SEX_LABEL, type BookingRequiredServiceCategory } from '@shared/types/booking'
 import { PolicyLink } from '@shared/ui/PolicyLink'
 import type { ServiceCatalogItem } from '@shared/api/serviceCatalog'
 import { BookingShell } from './BookingShell'
@@ -11,17 +12,19 @@ import type { horseListLoader } from '../horses/loaders'
 import { defaultConfig, isDeclinedInsurance, serviceOptionFor, useBookingDraft, type HorseConfig } from './draft'
 import s from './Booking.module.css'
 
-const SERVICE_GROUPS: { key: BookingServiceCategory; categoryId: number; label: string; icon: string }[] = [
-  { key: 'stall', categoryId: 1, label: 'Khoang trên xe', icon: 'fa-border-all' },
-  { key: 'feed', categoryId: 2, label: 'Gói thức ăn', icon: 'fa-wheat-awn' },
-  { key: 'water', categoryId: 3, label: 'Cữ nước', icon: 'fa-faucet-droplet' },
-  { key: 'insurance', categoryId: 4, label: 'Bảo hiểm chuyến đi', icon: 'fa-shield-halved' },
+const SERVICE_GROUPS: { key: BookingRequiredServiceCategory; label: string; icon: string }[] = [
+  { key: 'stall', label: 'Khoang trên xe', icon: 'fa-border-all' },
+  { key: 'feed', label: 'Gói thức ăn', icon: 'fa-wheat-awn' },
+  { key: 'insurance', label: 'Bảo hiểm chuyến đi', icon: 'fa-shield-halved' },
 ]
 
-function legacySelection(category: BookingServiceCategory, service: ServiceCatalogItem): Partial<HorseConfig> {
-  if (category === 'stall') return { stall: service.id === 2 ? 'single' : 'standard' }
-  if (category === 'feed') return { feedPackage: service.id === 4 ? 'advanced' : service.id === 5 ? 'sport' : 'basic' }
-  if (category === 'water') return { waterPlan: service.id === 7 ? 'every_2h' : service.id === 8 ? 'every_1h' : 'every_3h' }
+function legacySelection(category: BookingRequiredServiceCategory, service: ServiceCatalogItem): Partial<HorseConfig> {
+  if (category === 'stall') return { stall: service.serviceCode === 'STALL_SINGLE_EXTENDED' ? 'single' : 'standard' }
+  if (category === 'feed') {
+    const feedPackage = service.serviceCode === 'FEED_ADVANCED' ? 'advanced'
+      : service.serviceCode === 'FEED_SPORT' ? 'sport' : 'basic'
+    return { feedPackage }
+  }
   return { insurance: isDeclinedInsurance(service) ? 'decline' : 'buy' }
 }
 
@@ -51,7 +54,8 @@ export default function Step3ServicesPage() {
     : rows.flatMap(h => SERVICE_GROUPS
       .filter(group => !serviceOptionFor(services, config[h.id], group.key))
       .map(group => `${h.name}: hiện không có dịch vụ ${group.label.toLocaleLowerCase()} đang áp dụng`))
-  problems.push(...rows.filter(h => !config[h.id].insurance && !config[h.id].selectedServices?.insurance)
+  problems.push(...rows.filter(h => !config[h.id].insurance && !config[h.id].selectedServiceCodes?.insurance
+    && !config[h.id].selectedServices?.insurance)
     .map(h => `${h.name}: chọn dịch vụ bảo hiểm chuyến đi`))
   if (declined.length && !ack) problems.push('Xác nhận Điều khoản Trách nhiệm Hạn chế')
 
@@ -60,17 +64,18 @@ export default function Step3ServicesPage() {
     if (problems.length) {
       if (rows.length === 0 || rows.length !== draft.horseIds.length) return
       const firstMissing = rows.findIndex(h => SERVICE_GROUPS.some(group => !serviceOptionFor(services, config[h.id], group.key))
-        || (!config[h.id].insurance && !config[h.id].selectedServices?.insurance))
+        || (!config[h.id].insurance && !config[h.id].selectedServiceCodes?.insurance
+          && !config[h.id].selectedServices?.insurance))
       if (firstMissing >= 0) setActiveIndex(firstMissing)
       return
     }
     const selectedConfig = Object.fromEntries(rows.map(h => {
       const current = config[h.id]
-      const selectedServices = Object.fromEntries(SERVICE_GROUPS.map(group => [
+      const selectedServiceCodes = Object.fromEntries(SERVICE_GROUPS.map(group => [
         group.key,
-        current.selectedServices?.[group.key] ?? serviceOptionFor(services, current, group.key)?.id,
-      ])) as Partial<Record<BookingServiceCategory, number>>
-      return [h.id, { ...current, selectedServices }]
+        current.selectedServiceCodes?.[group.key] ?? serviceOptionFor(services, current, group.key)?.serviceCode,
+      ])) as Partial<Record<BookingRequiredServiceCategory, string>>
+      return [h.id, { ...current, selectedServiceCodes }]
     }))
     save({ config: selectedConfig })
     navigate('/booking/review')
@@ -99,7 +104,8 @@ export default function Step3ServicesPage() {
                 </div>
 
                 {SERVICE_GROUPS.map(group => {
-                  const options = services.filter(service => service.categoryId === group.categoryId)
+                  const prefix = `${group.key.toUpperCase()}_`
+                  const options = services.filter(service => service.serviceCode.startsWith(prefix))
                   const chosen = serviceOptionFor(services, current, group.key)
                   return (
                     <div className={s.serviceSection} key={group.key}>
@@ -107,22 +113,35 @@ export default function Step3ServicesPage() {
                         <i className={`fa-solid ${group.icon}`} aria-hidden="true" /> {group.label}
                       </div>
                       <div className={s.optRow} role="radiogroup" aria-labelledby={`${group.key}-${horse.id}`}
-                        {...(submitted && (!chosen || (group.key === 'insurance' && !current.insurance && !current.selectedServices?.insurance)) ? { 'data-problem': true } : {})}>
-                        {options.length ? options.map(service => (
+                        {...(submitted && (!chosen || (group.key === 'insurance' && !current.insurance
+                          && !current.selectedServiceCodes?.insurance && !current.selectedServices?.insurance))
+                          ? { 'data-problem': true } : {})}>
+                        {options.length ? options.map(service => {
+                          const declinedInsurance = group.key === 'insurance' && isDeclinedInsurance(service)
+                          const price = group.key === 'insurance'
+                            ? declinedInsurance ? 0 : insuranceFee(horse.breed)
+                            : service.price
+                          return (
                           <label key={service.id} className={s.opt}>
                             <input
                               type="radio"
                               name={`${group.key}-${horse.id}`}
                               checked={chosen?.id === service.id}
                               onChange={() => set(horse.id, {
-                                selectedServices: { ...current.selectedServices, [group.key]: service.id },
+                                selectedServiceCodes: { ...current.selectedServiceCodes, [group.key]: service.serviceCode },
                                 ...legacySelection(group.key, service),
                               })}
                             />
                             <b>{service.serviceName}</b>
-                            <span>{service.price > 0 ? `+${formatVND(service.price)} / ngựa` : 'Miễn phí / Đã gồm'}</span>
+                            <span>{declinedInsurance
+                              ? 'Không mua bảo hiểm'
+                              : price > 0
+                                ? `+${formatVND(price)} / ${group.key === 'insurance' ? 'ngựa' : service.billingUnit === 'PER_HORSE_DAY' ? 'ngựa × ngày' : service.billingUnit === 'PER_HORSE' ? 'ngựa' : 'chuyến'}`
+                                : 'Miễn phí / Đã gồm'}</span>
+                            {service.description && <small>{service.description}</small>}
                           </label>
-                        )) : <span>Hiện chưa có lựa chọn đang áp dụng.</span>}
+                          )
+                        }) : <span>Hiện chưa có lựa chọn đang áp dụng.</span>}
                       </div>
                     </div>
                   )

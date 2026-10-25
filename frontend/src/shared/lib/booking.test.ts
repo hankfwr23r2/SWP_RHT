@@ -66,16 +66,16 @@ describe('báo giá', () => {
   const labels = (vs: { capacity: number }[], h = base.horses) => quoteLines({ ...base, horses: h }, vs).lines.map(l => l.label)
   it('có dòng khoang đơn và bảo hiểm khi khách chọn, không có khi không chọn', () => {
     expect(labels([{ capacity: 2 }])).toContain('Khoang đơn mở rộng')
-    expect(labels([{ capacity: 2 }])).toContain('Bảo hiểm Động vật Sống')
+    expect(labels([{ capacity: 2 }])).toContain('Bảo hiểm chuyến đi')
     const plain = labels([{ capacity: 2 }], [bh(), bh()])
     expect(plain).not.toContain('Khoang đơn mở rộng')
-    expect(plain).not.toContain('Bảo hiểm Động vật Sống')
+    expect(plain).not.toContain('Bảo hiểm chuyến đi')
   })
   it('phí bảo hiểm tính theo giống, giống lạ lấy mức "Khác"', () => {
     expect(insuranceFee('Thoroughbred')).toBe(20_000_000)
     expect(insuranceFee('Arabian')).toBe(16_000_000)
     expect(insuranceFee('Giống chưa có trong bảng')).toBe(insuranceFee('Khác'))
-    const ins = quoteLines(base, [{ capacity: 2 }]).lines.find(l => l.label === 'Bảo hiểm Động vật Sống')
+    const ins = quoteLines(base, [{ capacity: 2 }]).lines.find(l => l.label === 'Bảo hiểm chuyến đi')
     expect(ins?.amount).toBe(insuranceFee('Thoroughbred'))
   })
   it('dùng tên và đơn giá dịch vụ đã chụp từ catalog khi lập báo giá', () => {
@@ -88,7 +88,7 @@ describe('báo giá', () => {
           stall: service(1, 'Khoang tiêu chuẩn', 1, 1_000_000),
           feed: service(4, 'Gói cao cấp', 2, 300_000),
           water: service(7, 'Mỗi 2 giờ', 3, 50_000),
-          insurance: service(9, 'Mua bảo hiểm', 4, 20_000_000),
+          insurance: service(9, 'Mua bảo hiểm', 4, 99_000_000),
         },
       }),
       bh({
@@ -105,8 +105,49 @@ describe('báo giá', () => {
 
     expect(amount('Khoang trên xe')).toBe(3_000_000)
     expect(amount('Gói thức ăn')).toBe(800_000)
-    expect(amount('Cữ nước')).toBe(150_000)
+    expect(amount('Cữ nước')).toBeUndefined()
     expect(amount('Bảo hiểm chuyến đi')).toBe(20_000_000)
+  })
+  it('nhân phí dịch vụ theo ngựa × ngày và chỉ tính dịch vụ theo chuyến một lần', () => {
+    const horses = [
+      bh({
+        selectedServices: {
+          stall: {
+            id: 50, serviceCode: 'STALL_TRIP', serviceName: 'Khoang dịch vụ chuyến', categoryId: 1,
+            categoryName: 'Khoang xe', price: 250_000, billingUnit: 'PER_TRIP',
+          },
+          feed: {
+            id: 31, serviceCode: 'FEED_SPORT', serviceName: 'Gói thể thao', categoryId: 2,
+            categoryName: 'Gói thức ăn', price: 100_000, billingUnit: 'PER_HORSE_DAY',
+          },
+          insurance: {
+            id: 41, serviceCode: 'INSURANCE_BUY', serviceName: 'Mua bảo hiểm', categoryId: 4,
+            categoryName: 'Bảo hiểm', price: 250_000, billingUnit: 'PER_TRIP',
+          },
+        },
+      }),
+      bh({
+        selectedServices: {
+          stall: {
+            id: 50, serviceCode: 'STALL_TRIP', serviceName: 'Khoang dịch vụ chuyến', categoryId: 1,
+            categoryName: 'Khoang xe', price: 250_000, billingUnit: 'PER_TRIP',
+          },
+          feed: {
+            id: 31, serviceCode: 'FEED_SPORT', serviceName: 'Gói thể thao', categoryId: 2,
+            categoryName: 'Gói thức ăn', price: 100_000, billingUnit: 'PER_HORSE_DAY',
+          },
+          insurance: {
+            id: 41, serviceCode: 'INSURANCE_BUY', serviceName: 'Mua bảo hiểm', categoryId: 4,
+            categoryName: 'Bảo hiểm', price: 250_000, billingUnit: 'PER_TRIP',
+          },
+        },
+      }),
+    ]
+    const { lines, days } = quoteLines({ ...base, horses }, [{ capacity: 4 }])
+
+    expect(lines.find(line => line.label === 'Gói thức ăn')?.amount).toBe(200_000 * days)
+    expect(lines.find(line => line.label === 'Khoang trên xe')?.amount).toBe(250_000)
+    expect(lines.find(line => line.label === 'Bảo hiểm chuyến đi')?.amount).toBe(40_000_000)
   })
   it('mỗi xe có cước, nhân sự, nhiên liệu và BOT; không có phí lưu xe hay Carrier Info Sheet', () => {
     const { lines } = quoteLines(base, [{ capacity: 2 }, { capacity: 4 }])
