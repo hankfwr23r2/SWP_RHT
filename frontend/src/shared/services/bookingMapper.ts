@@ -130,8 +130,8 @@ export function toBooking(r: BackendBookingResponse, customer?: string): Booking
     origin: placeOf(r.originName, r.originCountry),
     dest: placeOf(r.destName, r.destCountry),
     departAt: r.departAt,
-    consignor: { name: r.consignor?.name ?? '', phone: r.consignor?.phone ?? '', idNumber: r.consignor?.idNumber ?? '', address: r.consignor?.address ?? '' },
-    consignee: { name: r.consignee?.name ?? '', phone: r.consignee?.phone ?? '', idNumber: r.consignee?.idNumber ?? '', address: r.consignee?.address ?? '' },
+    consignor: { name: r.consignor?.name ?? '', phone: r.consignor?.phone ?? '', idNumber: r.consignor?.idNumber ?? '', address: r.consignor?.address ?? '', idCountry: r.consignor?.idCountry as Booking['consignor']['idCountry'], idType: r.consignor?.idType as Booking['consignor']['idType'] },
+    consignee: { name: r.consignee?.name ?? '', phone: r.consignee?.phone ?? '', idNumber: r.consignee?.idNumber ?? '', address: r.consignee?.address ?? '', idCountry: r.consignee?.idCountry as Booking['consignee']['idCountry'], idType: r.consignee?.idType as Booking['consignee']['idType'] },
     horses: (r.horses ?? []).map(horseOf),
     status: (r.status === 'resubmission_requested' ? 'under_review' : r.status) as BookingStatus,
     statusLabel: r.statusLabel,
@@ -139,6 +139,8 @@ export function toBooking(r: BackendBookingResponse, customer?: string): Booking
     history,
   }
   if (r.gate) b.gate = r.gate
+  if (r.vehicleCount !== undefined) b.vehicleCount = r.vehicleCount
+  else if (r.trips) b.vehicleCount = r.trips.length
   if (r.routeId != null) b.routeId = r.routeId
   if (r.intake) b.intake = r.intake as Booking['intake']
   if (r.medical) {

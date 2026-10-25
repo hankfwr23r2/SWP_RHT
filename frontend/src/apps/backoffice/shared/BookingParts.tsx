@@ -43,13 +43,13 @@ export function TripSummary({ b, placeLabel = place => placeShort(place.name) }:
 
 // Tab "Khách hàng": chỉ thông tin người (khách, người gửi, người nhận)
 export function PartiesInfo({ b }: { b: Booking }) {
-  const party = (title: string, icon: string, p: { name: string; phone: string; idNumber: string; address: string }) => (
+  const party = (title: string, icon: string, p: Booking['consignor']) => (
     <div className={s.horse}>
       <div className={s.horseName}><i className={`fa-solid ${icon}`} aria-hidden="true" style={{ color: 'var(--orange)', marginRight: 8 }} />{title}</div>
       <dl className={s.grid}>
         <div><dt>Họ tên</dt><dd>{p.name}</dd></div>
         <div><dt>Số điện thoại</dt><dd>{p.phone}</dd></div>
-        <div><dt>CCCD / MST / Hộ chiếu</dt><dd>{p.idNumber || '-'}</dd></div>
+        <div><dt>{p.idType === 'passport' ? 'Hộ chiếu' : p.idType === 'tax_id' ? 'Mã số thuế' : p.idType === 'national_id' ? 'Giấy tờ tùy thân' : 'CCCD / MST / Hộ chiếu'}{p.idCountry ? ` (${COUNTRIES[p.idCountry].name})` : ''}</dt><dd>{p.idNumber || '-'}</dd></div>
         <div><dt>Địa chỉ</dt><dd>{p.address || '-'}</dd></div>
       </dl>
     </div>

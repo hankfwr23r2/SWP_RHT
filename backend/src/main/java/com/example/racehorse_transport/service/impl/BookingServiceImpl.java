@@ -227,8 +227,12 @@ public class BookingServiceImpl implements BookingService {
                 .consigneeName(request.getConsignee() != null ? request.getConsignee().getName().trim() : "")
                 .consigneePhone(request.getConsignee() != null ? request.getConsignee().getPhone().trim() : "")
                 .consignorIdNumber(request.getConsignor() != null ? trimToNull(request.getConsignor().getIdNumber()) : null)
+                .consignorIdCountry(request.getConsignor() != null ? trimToNull(request.getConsignor().getIdCountry()) : null)
+                .consignorIdType(request.getConsignor() != null ? trimToNull(request.getConsignor().getIdType()) : null)
                 .consignorAddress(request.getConsignor() != null ? trimToNull(request.getConsignor().getAddress()) : null)
                 .consigneeIdNumber(request.getConsignee() != null ? trimToNull(request.getConsignee().getIdNumber()) : null)
+                .consigneeIdCountry(request.getConsignee() != null ? trimToNull(request.getConsignee().getIdCountry()) : null)
+                .consigneeIdType(request.getConsignee() != null ? trimToNull(request.getConsignee().getIdType()) : null)
                 .consigneeAddress(request.getConsignee() != null ? trimToNull(request.getConsignee().getAddress()) : null)
                 .pickupAddress(request.getOriginName() != null ? request.getOriginName().trim() : "")
                 .dropoffAddress(request.getDestName() != null ? request.getDestName().trim() : "")
@@ -1687,6 +1691,10 @@ public class BookingServiceImpl implements BookingService {
         Object clearance = payload != null
                 ? ClearanceDocumentPolicy.forBooking(payload.getClearance(), "international".equalsIgnoreCase(b.getBookingType()))
                 : null;
+        int storedTripCount = payload != null && payload.getTrips() != null ? payload.getTrips().size() : 0;
+        int linkedVehicleCount = storedTripCount == 0 && b.getId() != null
+                ? Math.toIntExact(bookingVehicleRepository.countByBookingID_Id(b.getId()))
+                : 0;
 
         return BookingResponse.builder()
                 .id(formattedId)
@@ -1705,6 +1713,7 @@ public class BookingServiceImpl implements BookingService {
                 .consignor(PartyContactDto.consignorOf(b))
                 .consignee(PartyContactDto.consigneeOf(b))
                 .totalHorses(b.getTotalHorses() != null ? b.getTotalHorses() : 1)
+                .vehicleCount(Math.max(storedTripCount, linkedVehicleCount))
                 .horses(horseDtos)
                 .waybillNo(b.getWaybillNo())
                 .trips(payload != null ? payload.getTrips() : null)

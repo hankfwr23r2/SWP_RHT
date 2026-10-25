@@ -4,9 +4,12 @@
 .table td { padding: 10px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
 .table tfoot td { border-bottom: none; color: var(--muted); font-size: 0.84rem; }
 .label { font-weight: 600; }
-.detail { font-size: 0.8rem; color: var(--muted); margin-top: 2px; }
+.detail { font-size: 0.84rem; color: var(--muted); margin-top: 3px; }
+.calculation { margin-top: 5px; padding: 6px 8px; border-left: 2px solid var(--orange); border-radius: 0 6px 6px 0; background: var(--bg-page); color: var(--text); font-size: 0.82rem; line-height: 1.45; }
+.calculation b { color: var(--navy); }
 .amount { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 600; padding-left: 16px; }
 .discount .amount { color: var(--green); }
+.subtotal td { padding-top: 13px; border-bottom: none; font-weight: 700; color: var(--navy); }
 
 .totals { display: grid; gap: 8px; padding: 14px 16px; border-radius: var(--radius-sm); background: var(--bg-page); border: 1px solid var(--line); }
 .total, .deposit { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }

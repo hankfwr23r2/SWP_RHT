@@ -54,13 +54,14 @@
 .empty h3 { color: var(--navy); margin-bottom: 4px; }
 
 /* Biểu mẫu */
-.form { display: grid; gap: 18px; }
+.form { display: grid; gap: 18px; min-width: 0; }
+.modalContent { width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; overflow-x: hidden; }
 .fieldset { border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px 16px; display: grid; gap: 12px; min-width: 0; }
 .fieldset legend { padding: 0 8px; font-weight: 700; font-size: 0.9rem; color: var(--navy); }
 .legendHint { font-weight: 400; font-size: 0.78rem; color: var(--muted); margin-left: 6px; }
-.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
-.docs { display: grid; gap: 16px; }
-.docRow { display: grid; grid-template-columns: 1fr 240px; gap: 16px; align-items: start; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; min-width: 0; }
+.docs { display: grid; gap: 16px; min-width: 0; }
+.docRow { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; min-width: 0; }
 .subNote { font-weight: 400; color: var(--muted); font-size: 0.84em; }
 
 @media (max-width: 1024px) {
@@ -79,12 +80,16 @@
 /* Tabs trong modal thêm / sửa ngựa */
 .tabBar {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   border-bottom: 2px solid var(--line);
   margin-bottom: 6px;
+  min-width: 0;
 }
 .tabBtn {
   display: flex;
+  flex: 1 1 220px;
+  min-width: 0;
   align-items: center;
   gap: 8px;
   padding: 10px 16px;

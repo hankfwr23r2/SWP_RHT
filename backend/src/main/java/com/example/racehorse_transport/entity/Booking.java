@@ -70,6 +70,12 @@ public class Booking {
     @Column(name = "ConsignorIdNumber", length = 50)
     private String consignorIdNumber;
 
+    @Column(name = "ConsignorIdCountry", length = 2)
+    private String consignorIdCountry;
+
+    @Column(name = "ConsignorIdType", length = 20)
+    private String consignorIdType;
+
     @Size(max = 255)
     @Nationalized
     @Column(name = "ConsignorAddress")
@@ -78,6 +84,12 @@ public class Booking {
     @Size(max = 50)
     @Column(name = "ConsigneeIdNumber", length = 50)
     private String consigneeIdNumber;
+
+    @Column(name = "ConsigneeIdCountry", length = 2)
+    private String consigneeIdCountry;
+
+    @Column(name = "ConsigneeIdType", length = 20)
+    private String consigneeIdType;
 
     @Size(max = 255)
     @Nationalized

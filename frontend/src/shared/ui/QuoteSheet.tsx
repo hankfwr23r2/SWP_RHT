@@ -12,10 +12,20 @@ interface QuoteSheetProps {
   deposit: number
   balance: number
   expiresAt?: number
+  showCalculation?: boolean
 }
 
 // Phiếu báo giá (PRD mục 2.5): mọi khoản cố định, không phụ thu; số cọc và số dư theo tỷ lệ cấu hình.
-export function QuoteSheet({ lines, adjustments = [], subtotal, total, deposit, balance, expiresAt }: QuoteSheetProps) {
+function calculationOf(line: QuoteLine) {
+  if (line.calculation) return line.calculation
+  if (line.label.startsWith('Cước vận chuyển')) return 'Tính theo quãng đường và hạng xe nêu trên.'
+  if (line.label.startsWith('Nhân sự kỹ thuật')) return `Dựa trên thời gian chuyến đi (${line.detail}), gồm 1 tài xế và 1 hộ tống.`
+  if (line.label.startsWith('Nhiên liệu và BOT')) return `Ước tính theo lộ trình; ${line.detail.toLowerCase()}.`
+  if (line.label.includes('kiểm dịch') || line.label.includes('hải quan')) return 'Phí thủ tục theo loại tuyến.'
+  return undefined
+}
+
+export function QuoteSheet({ lines, adjustments = [], subtotal, total, deposit, balance, expiresAt, showCalculation = false }: QuoteSheetProps) {
   const depositPercentage = total > 0
     ? Number((deposit / total * 100).toFixed(2))
     : DEPOSIT_RATE * 100
@@ -26,10 +36,15 @@ export function QuoteSheet({ lines, adjustments = [], subtotal, total, deposit, 
         <tbody>
           {lines.map(l => (
             <tr key={l.label}>
-              <td><div className={s.label}>{l.label}</div>{l.detail && <div className={s.detail}>{l.detail}</div>}</td>
+              <td>
+                <div className={s.label}>{l.label}</div>
+                {l.detail && <div className={s.detail}>{l.detail}</div>}
+                {showCalculation && calculationOf(l) && <div className={s.calculation}><b>Cách tính:</b> {calculationOf(l)}</div>}
+              </td>
               <td className={s.amount}>{l.amount ? formatVND(l.amount) : 'Đã gồm'}</td>
             </tr>
           ))}
+          <tr className={s.subtotal}><td>Cộng các khoản</td><td className={s.amount}>{formatVND(subtotal)}</td></tr>
           {adjustments.map(a => (
             <tr key={a.label} className={a.amount < 0 ? s.discount : ''}>
               <td><div className={s.label}>{a.label}</div><div className={s.detail}>{a.amount < 0 ? 'Chiết khấu thương mại' : 'Phụ phí'}</div></td>
@@ -37,7 +52,6 @@ export function QuoteSheet({ lines, adjustments = [], subtotal, total, deposit, 
             </tr>
           ))}
         </tbody>
-        {adjustments.length > 0 && <tfoot><tr><td>Cộng trước điều chỉnh</td><td className={s.amount}>{formatVND(subtotal)}</td></tr></tfoot>}
       </table>
 
       <div className={s.totals}>

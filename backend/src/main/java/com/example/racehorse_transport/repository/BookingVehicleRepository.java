@@ -10,6 +10,7 @@ import java.util.List;
 @Repository
 public interface BookingVehicleRepository extends JpaRepository<BookingVehicle, BookingVehicleId> {
     List<BookingVehicle> findByBookingID_Id(Integer bookingId);
+    long countByBookingID_Id(Integer bookingId);
     List<BookingVehicle> findByVehicleID_Id(Integer vehicleId);
     void deleteByBookingID_Id(Integer bookingId);
 }

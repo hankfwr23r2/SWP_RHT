@@ -115,13 +115,21 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
 
   const setTrip = (i: number, patch: Partial<Draft>) =>
     setTrips(ts => ts.map((t, j) => (j === i ? { ...t, ...patch } : t)))
-  const moveHorse = (horseId: string, to: number) =>
+  const moveHorse = (horseId: string, to: number) => {
+    const target = trips[to]
+    if (!target || target.horseIds.includes(horseId)) return
+    const vehicle = vehicles.find(v => v.id === target.vehicleId)
+    if (vehicle && target.horseIds.length >= vehicle.capacity) {
+      toast(`Xe ${to + 1} đã đủ ${vehicle.capacity} ngăn, không thể chuyển thêm ngựa vào.`, 'error')
+      return
+    }
     setTrips(ts =>
       ts.map((t, j) => ({
         ...t,
-        horseIds: j === to ? [...t.horseIds.filter(x => x !== horseId), horseId] : t.horseIds.filter(x => x !== horseId),
+        horseIds: j === to ? [...t.horseIds, horseId] : t.horseIds.filter(x => x !== horseId),
       }))
     )
+  }
   const usedVehicles = new Set(trips.map(t => t.vehicleId))
 
   const tripErrors = trips.flatMap((t, i) => {
@@ -487,11 +495,14 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
                           value={i}
                           onChange={e => moveHorse(hid, Number(e.target.value))}
                         >
-                          {trips.map((_, j) => (
-                            <option key={j} value={j}>
+                          {trips.map((trip, j) => {
+                            const targetVehicle = vehicles.find(vehicle => vehicle.id === trip.vehicleId)
+                            const isFull = j !== i && !!targetVehicle && trip.horseIds.length >= targetVehicle.capacity
+                            return <option key={j} value={j} disabled={isFull}>
                               Chuyển sang Xe {j + 1}
+                              {isFull ? ' (đã đầy)' : ''}
                             </option>
-                          ))}
+                          })}
                         </FormSelect>
                       )}
                     </li>

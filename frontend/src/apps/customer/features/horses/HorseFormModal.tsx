@@ -126,6 +126,7 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
         <button type="submit" form="horse-form" className="btn btn-primary" disabled={busy || !horseTypes?.length}>{busy ? 'Đang lưu…' : editing ? 'Lưu thay đổi' : 'Lưu vào hồ sơ'}</button>
       </>}
     >
+      <div className={s.modalContent}>
       <div className={s.tabBar} role="tablist">
         <button
           type="button"
@@ -225,6 +226,7 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
           </>
         )}
       </form>
+      </div>
     </Modal>
   )
 }

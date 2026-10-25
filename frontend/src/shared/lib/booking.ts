@@ -197,9 +197,9 @@ export function quoteLines(b: QuoteInput, vehicles: Pick<Vehicle, 'capacity'>[])
     const cls = vehicleClassOf(v.capacity)
     const tag = many ? ` (xe ${i + 1}/${vehicles.length})` : ''
     lines.push(
-      { label: `Cước vận chuyển nguyên chuyến${tag}`, detail: `Xe ${VEHICLE_CLASS[cls].label} (${VEHICLE_CLASS[cls].stalls}) · ${km} km`, amount: roundK(truckCost(km, false) * CLASS_FACTOR[cls] * m) },
-      { label: `Nhân sự kỹ thuật, 01 tài xế + 01 hộ tống${tag}`, detail: `${days} ngày`, amount: roundK(days * CREW_FEE_PER_DAY * m) },
-      { label: `Nhiên liệu và BOT${tag}`, detail: `Ước tính theo lộ trình ${km} km, đã gồm dự phòng`, amount: roundK(km * FUEL_BOT_PER_KM * (1 + FUEL_BUFFER_RATE) * m) },
+      { label: `Cước vận chuyển nguyên chuyến${tag}`, detail: `Xe ${VEHICLE_CLASS[cls].label} (${VEHICLE_CLASS[cls].stalls}) · ${km} km`, calculation: `Tính theo quãng đường ${km} km và hạng xe ${VEHICLE_CLASS[cls].label}.`, amount: roundK(truckCost(km, false) * CLASS_FACTOR[cls] * m) },
+      { label: `Nhân sự kỹ thuật, 01 tài xế + 01 hộ tống${tag}`, detail: `${days} ngày`, calculation: `${days} ngày × chi phí cho 1 tài xế và 1 hộ tống mỗi ngày.`, amount: roundK(days * CREW_FEE_PER_DAY * m) },
+      { label: `Nhiên liệu và BOT${tag}`, detail: `Ước tính theo lộ trình ${km} km, đã gồm dự phòng`, calculation: `${km} km × chi phí nhiên liệu và BOT ước tính mỗi km; đã gồm dự phòng 5%.`, amount: roundK(km * FUEL_BOT_PER_KM * (1 + FUEL_BUFFER_RATE) * m) },
     )
   })
   const addServiceLine = (
@@ -218,33 +218,33 @@ export function quoteLines(b: QuoteInput, vehicles: Pick<Vehicle, 'capacity'>[])
     const detail = names.length
       ? `${pricedHorses} ngựa · ${names.join(', ')}`
       : `${pricedHorses} ngựa`
-    lines.push({ label, detail, amount })
+    lines.push({ label, detail, calculation: 'Cộng phí dịch vụ đã chọn cho từng ngựa.', amount })
   }
 
   if (b.horses.some(horse => horse.selectedServices?.stall)) {
     addServiceLine('stall', 'Khoang trên xe', horse => horse.stall === 'single' ? SINGLE_STALL_FEE : 0)
   } else {
     const singles = b.horses.filter(horse => horse.stall === 'single').length
-    if (singles) lines.push({ label: 'Khoang đơn mở rộng', detail: `${singles} ngựa`, amount: singles * SINGLE_STALL_FEE })
+    if (singles) lines.push({ label: 'Khoang đơn mở rộng', detail: `${singles} ngựa`, calculation: `${singles} ngựa × phí khoang đơn cho mỗi ngựa.`, amount: singles * SINGLE_STALL_FEE })
   }
   if (b.horses.some(horse => horse.selectedServices?.feed)) {
     addServiceLine('feed', 'Gói thức ăn', horse => FEED_PACKAGE[horse.feedPackage].fee)
   } else {
     const feed = b.horses.filter(horse => FEED_PACKAGE[horse.feedPackage].fee > 0)
-    if (feed.length) lines.push({ label: 'Gói thức ăn', detail: `${feed.length} ngựa chọn gói trả phí`, amount: feed.reduce((total, horse) => total + FEED_PACKAGE[horse.feedPackage].fee, 0) })
+    if (feed.length) lines.push({ label: 'Gói thức ăn', detail: `${feed.length} ngựa chọn gói trả phí`, calculation: 'Cộng phí gói thức ăn đã chọn cho từng ngựa.', amount: feed.reduce((total, horse) => total + FEED_PACKAGE[horse.feedPackage].fee, 0) })
   }
   if (b.horses.some(horse => horse.selectedServices?.water)) {
     addServiceLine('water', 'Cữ nước', horse => WATER_PLAN[horse.waterPlan].fee)
   } else {
     const water = b.horses.filter(horse => WATER_PLAN[horse.waterPlan].fee > 0)
-    if (water.length) lines.push({ label: 'Cữ nước tăng cường', detail: `${water.length} ngựa chọn cữ dày hơn mặc định`, amount: water.reduce((total, horse) => total + WATER_PLAN[horse.waterPlan].fee, 0) })
+    if (water.length) lines.push({ label: 'Cữ nước tăng cường', detail: `${water.length} ngựa chọn cữ dày hơn mặc định`, calculation: 'Cộng phí cữ nước đã chọn cho từng ngựa.', amount: water.reduce((total, horse) => total + WATER_PLAN[horse.waterPlan].fee, 0) })
   }
-  lines.push({ label: 'Thủ tục kiểm dịch và hải quan', detail: international ? 'Nhà xe làm trọn gói' : 'Nhà xe làm giấy kiểm dịch trong nước', amount: international ? CLEARANCE_FEE.international : CLEARANCE_FEE.domestic })
+  lines.push({ label: 'Thủ tục kiểm dịch và hải quan', detail: international ? 'Nhà xe làm trọn gói' : 'Nhà xe làm giấy kiểm dịch trong nước', calculation: 'Phí thủ tục trọn gói theo loại tuyến.', amount: international ? CLEARANCE_FEE.international : CLEARANCE_FEE.domestic })
   if (b.horses.some(horse => horse.selectedServices?.insurance)) {
     addServiceLine('insurance', 'Bảo hiểm chuyến đi', horse => horse.insurance.opted ? insuranceFee(horse.breed) : 0)
   } else {
     const insured = b.horses.filter(horse => horse.insurance.opted)
-    if (insured.length) lines.push({ label: 'Bảo hiểm Động vật Sống', detail: `${insured.length} ngựa mua bảo hiểm`, amount: insured.reduce((total, horse) => total + insuranceFee(horse.breed), 0) })
+    if (insured.length) lines.push({ label: 'Bảo hiểm Động vật Sống', detail: `${insured.length} ngựa mua bảo hiểm`, calculation: 'Cộng phí bảo hiểm theo giống của từng ngựa được chọn bảo hiểm.', amount: insured.reduce((total, horse) => total + insuranceFee(horse.breed), 0) })
   }
   return { lines, km, days }
 }

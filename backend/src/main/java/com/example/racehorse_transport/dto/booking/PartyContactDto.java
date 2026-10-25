@@ -26,6 +26,12 @@ public class PartyContactDto {
     @Size(max = 50, message = "CCCD / MST / Hộ chiếu tối đa 50 ký tự")
     private String idNumber; // CCCD / MST / Hộ chiếu
 
+    @Size(max = 2)
+    private String idCountry;
+
+    @Size(max = 20)
+    private String idType;
+
     @Size(max = 255, message = "Địa chỉ tối đa 255 ký tự")
     private String address; // không bắt buộc
 
@@ -34,6 +40,8 @@ public class PartyContactDto {
                 .name(b.getConsignorName())
                 .phone(b.getConsignorPhone())
                 .idNumber(b.getConsignorIdNumber())
+                .idCountry(b.getConsignorIdCountry())
+                .idType(b.getConsignorIdType())
                 .address(b.getConsignorAddress())
                 .build();
     }
@@ -43,6 +51,8 @@ public class PartyContactDto {
                 .name(b.getConsigneeName())
                 .phone(b.getConsigneePhone())
                 .idNumber(b.getConsigneeIdNumber())
+                .idCountry(b.getConsigneeIdCountry())
+                .idType(b.getConsigneeIdType())
                 .address(b.getConsigneeAddress())
                 .build();
     }

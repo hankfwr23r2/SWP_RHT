@@ -26,7 +26,7 @@ export default function FleetPlanListPage() {
     { head: 'Khách hàng', cell: b => b.customer, nowrap: true },
     { head: 'Tuyến', cell: b => routeCell(placeShort(b.origin.name), placeShort(b.dest.name)) },
     { head: 'Khởi hành', cell: b => formatDate(b.departAt), nowrap: true },
-    { head: 'Ngựa / xe', cell: b => `${b.horses.length} con · ${b.trips?.length ?? 0} xe${b.plan ? ' · đã chốt' : ''}`, nowrap: true },
+    { head: 'Ngựa / xe', cell: b => `${b.horses.length} con · ${b.vehicleCount ?? b.trips?.length ?? 0} xe${b.plan ? ' · đã chốt' : ''}`, nowrap: true },
     { head: tab === 'done' ? 'Chốt lúc' : 'Giao lúc', cell: b => formatDateTime(tab === 'done' ? b.plan?.at ?? b.createdAt : b.intake?.at ?? b.createdAt), nowrap: true },
     { head: 'Thao tác', cell: b => <Link to={`/coordinator/fleet-plan/${b.id}`} className={`btn btn-sm ${tab === 'todo' ? 'btn-primary' : 'btn-ghost'}`}>{tab === 'todo' ? 'Xem và xác nhận' : 'Xem'}</Link>, right: true },
   ]

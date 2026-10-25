@@ -47,7 +47,7 @@ export interface HorseProfile {
 // ===== Đơn =====
 export type TransportType = 'domestic' | 'international'
 export interface PlaceRef { id: string; name: string; country: CountryCode }
-export interface Party { name: string; phone: string; idNumber: string; address: string }
+export interface Party { name: string; phone: string; idNumber: string; address: string; idCountry?: CountryCode; idType?: 'national_id' | 'passport' | 'tax_id' }
 export type StallType = 'standard' | 'single'
 
 export interface HorseUnfitInfo {
@@ -98,7 +98,7 @@ export interface MedicalReview {
   resubmittedAt?: number
 }
 
-export interface QuoteLine { label: string; detail: string; amount: number }
+export interface QuoteLine { label: string; detail: string; amount: number; calculation?: string }
 export interface Adjustment { label: string; amount: number } // dương: phụ phí; âm: chiết khấu
 export interface Quote {
   lines: QuoteLine[]
@@ -267,6 +267,7 @@ export interface Booking {
   consignor: Party
   consignee: Party
   horses: BookingHorse[]
+  vehicleCount?: number
   status: BookingStatus
   statusLabel?: string // nhãn backend trả (nhân viên)
   customerStatusLabel?: string // nhãn backend trả (khách)

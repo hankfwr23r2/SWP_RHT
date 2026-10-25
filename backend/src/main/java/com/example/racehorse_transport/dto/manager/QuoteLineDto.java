@@ -12,5 +12,6 @@ import java.math.BigDecimal;
 public class QuoteLineDto {
     private String label;
     private String detail;
+    private String calculation;
     private BigDecimal amount;
 }

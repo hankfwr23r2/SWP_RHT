@@ -245,7 +245,7 @@ export default function OrderDetailPage() {
   const events = [
     { time: b.createdAt, text: 'Bạn đã gửi đơn' },
     ...(b.medical?.status === 'approved' && b.medical.at ? [{ time: b.medical.at, text: 'Duyệt hồ sơ ngựa đạt' }] : []),
-    ...(b.route?.completedAt ? [{ time: b.route.completedAt, text: `Phương án ${b.trips?.length ?? 1} xe và lộ trình đã chốt` }] : []),
+    ...(b.route?.completedAt ? [{ time: b.route.completedAt, text: `Phương án ${b.vehicleCount ?? b.trips?.length ?? 1} xe và lộ trình đã chốt` }] : []),
     ...(b.quote ? [{ time: b.quote.sentAt, text: 'Báo giá được gửi cho bạn' }] : []),
     ...(b.payment ? [{ time: b.payment.paidAt, text: `Đặt cọc ${formatVND(b.payment.amount)}, cấp vận đơn ${b.waybill?.no ?? ''}` }] : []),
     ...(b.clearance?.doneAt ? [{ time: b.clearance.doneAt, text: 'Giấy kiểm dịch và hải quan đã xong' }] : []),
@@ -354,7 +354,7 @@ export default function OrderDetailPage() {
                 <div className="card">
                   <div className="card-header"><h3><i className="fa-solid fa-file-invoice-dollar" /> Báo giá</h3></div>
                   <QuoteFacts b={b} team={team} />
-                  <QuoteSheet {...b.quote} expiresAt={b.status === 'awaiting_payment' ? b.quote.expiresAt : undefined} />
+                  <QuoteSheet {...b.quote} expiresAt={b.status === 'awaiting_payment' ? b.quote.expiresAt : undefined} showCalculation />
                 </div>
               )}
               <IncidentPolicy />

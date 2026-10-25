@@ -36,6 +36,8 @@ function backofficeRole(): string | null {
 // Người gửi / nhận gửi lên API: CCCD bắt buộc; địa chỉ để trống thì bỏ qua
 const partyDto = (p: Booking['consignor']) => ({
   name: p.name, phone: p.phone, idNumber: p.idNumber.trim(),
+  ...(p.idCountry ? { idCountry: p.idCountry } : {}),
+  ...(p.idType ? { idType: p.idType } : {}),
   ...(p.address.trim() ? { address: p.address.trim() } : {}),
 })
 

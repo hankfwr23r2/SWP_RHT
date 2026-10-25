@@ -69,7 +69,8 @@ export function ResourcePicker({ kind, vehicles, people, schedules, departAt, us
   const keyword = text.trim().toLowerCase()
   const shown = rows.filter(r => {
     const hay = r.vehicle ? [r.vehicle.plate, r.id] : [r.person!.name, r.id, r.person!.phone]
-    return (!keyword || hay.some(x => x.toLowerCase().includes(keyword))) && (!onlyOk || !r.reason)
+    const currentlyFree = kind === 'vehicle' || r.booked.length === 0
+    return (!keyword || hay.some(x => x.toLowerCase().includes(keyword))) && (!onlyOk || (!r.reason && currentlyFree))
   })
   useEffect(() => { if (!shake) return; const h = setTimeout(() => setShake(null), 480); return () => clearTimeout(h) }, [shake])
 

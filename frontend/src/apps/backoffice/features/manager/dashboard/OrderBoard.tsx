@@ -36,7 +36,7 @@ function Card({ b, onOpen }: { b: Booking; onOpen: (b: Booking) => void }) {
       <div className={s.progress}><span>Tiến độ: {pct}%</span><i><u style={{ width: `${pct}%` }} /></i></div>
       <div className={s.cardFoot}>
         <span className={s.avatars}>{b.intake ? [b.intake.specialist.name, b.intake.coordinator.name].map(n => <span key={n} className={s.avatar} title={n}>{initials(n)}</span>) : <span className={s.noOwner}>Chưa giao</span>}</span>
-        <span className={s.counts}><span title="Ngựa"><i className="fa-solid fa-horse-head" /> {b.horses.length}</span><span title="Xe"><i className="fa-solid fa-truck" /> {b.trips?.length ?? 0}</span></span>
+        <span className={s.counts}><span title="Ngựa"><i className="fa-solid fa-horse-head" /> {b.horses.length}</span><span title="Xe"><i className="fa-solid fa-truck" /> {b.vehicleCount ?? b.trips?.length ?? 0}</span></span>
       </div>
     </button>
   )

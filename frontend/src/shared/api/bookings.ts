@@ -6,6 +6,8 @@ export interface BookingPartyDto {
   name: string
   phone: string
   idNumber?: string // CCCD / MST / Hộ chiếu
+  idCountry?: string
+  idType?: string
   address?: string
 }
 
@@ -54,6 +56,7 @@ export interface BackendBookingResponse {
   consignor: BookingPartyDto
   consignee: BookingPartyDto
   totalHorses: number
+  vehicleCount?: number
   horses: BookingHorseDto[]
   waybillNo?: string
   // Kết quả từng bước: backend lưu dạng JSON theo đúng hình dạng của frontend

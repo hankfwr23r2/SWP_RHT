@@ -29,6 +29,7 @@ public class BookingResponse {
     private PartyContactDto consignee;
 
     private Integer totalHorses;
+    private Integer vehicleCount;
     private List<BookingHorseDto> horses;
     private String waybillNo;
 

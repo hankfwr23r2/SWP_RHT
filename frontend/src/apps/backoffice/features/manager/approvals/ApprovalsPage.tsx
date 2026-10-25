@@ -231,7 +231,7 @@ export default function ApprovalsPage() {
     { head: 'Khách hàng', cell: b => b.customer, nowrap: true },
     { head: 'Tuyến', cell: b => routeCell(placeShort(b.origin.name), placeShort(b.dest.name)) },
     { head: 'Khởi hành', cell: b => formatDate(b.departAt), nowrap: true },
-    { head: 'Ngựa / xe', cell: b => `${b.horses.length} con · ${b.trips?.length ?? 0} xe`, nowrap: true },
+    { head: 'Ngựa / xe', cell: b => `${b.horses.length} con · ${b.vehicleCount ?? b.trips?.length ?? 0} xe`, nowrap: true },
     { head: 'Trạng thái', cell: b => statusCell(b.status) },
     ...(tab === 'sent' ? [{ head: 'Gửi lúc', cell: (b: Booking) => (b.quote ? formatDateTime(b.quote.sentAt) : '-'), nowrap: true }, { head: 'Báo giá', cell: (b: Booking) => (b.quote ? <>{formatVND(b.quote.total)}<div className="sub-text">Cọc {formatVND(b.quote.deposit)}</div></> : '-'), right: true }] : []),
     { head: 'Thao tác', cell: b => (tab === 'todo' ? <button className="btn btn-primary btn-sm" onClick={() => setOpen(b)}>Duyệt báo giá</button> : null), right: true },
