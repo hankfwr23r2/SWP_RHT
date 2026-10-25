@@ -4,7 +4,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { MIN_REST_MINUTES } from '@shared/config/booking-rules'
-import { TRANSIT_STATIONS, type GeoPoint } from '@shared/config/network'
+import type { GeoPoint } from '@shared/config/network'
 import { routeOutline } from '@shared/lib/booking'
 import { useRoadRoute } from '@shared/services/useRoadRoute'
 import type { RestStop } from '@shared/types/booking'
@@ -43,29 +43,24 @@ export function RouteMapPicker({ origin, dest, gate, departAt, value, onApply, o
   const box = useRef<HTMLDivElement>(null)
   const map = useRef<L.Map | null>(null)
   const layer = useRef<L.LayerGroup | null>(null)
-  const [stations, setStations] = useState<Point[]>(TRANSIT_STATIONS)
+  const [stations, setStations] = useState<Point[]>([])
+  const [locationsError, setLocationsError] = useState<string>()
 
-  // Nạp thêm các trạm nghỉ động do Admin tạo từ backend
+  // Trạm nghỉ do Admin quản lý, có tọa độ trong danh mục địa điểm.
   useEffect(() => {
     let cancelled = false
     routesApi.listLocations({ type: 'RestStop' }).then(locs => {
-      if (cancelled || !locs?.length) return
-      setStations(prev => {
-        const merged = [...prev]
-        locs.forEach(loc => {
-          if (!merged.some(s => s.name.toLowerCase() === loc.locationName.toLowerCase())) {
-            // Nếu có trạm mới từ DB nhưng không có tọa độ cố định, tìm từ các trạm được chọn trước đó
-            const existingVal = value.find(v => v.name === loc.locationName)
-            if (existingVal?.lat != null && existingVal?.lng != null) {
-              merged.push({ name: loc.locationName, lat: existingVal.lat, lng: existingVal.lng, area: loc.province || loc.city })
-            }
-          }
-        })
-        return merged
-      })
-    }).catch(() => {})
+      if (cancelled) return
+      setStations(locs.flatMap(loc => loc.status === 'ACTIVE' && loc.latitude != null && loc.longitude != null
+        ? [{ name: loc.locationName, lat: loc.latitude, lng: loc.longitude, area: loc.province || loc.city }]
+        : []))
+      setLocationsError(undefined)
+    }).catch((error: unknown) => {
+      if (cancelled) return
+      setLocationsError(error instanceof Error ? error.message : 'Không tải được danh sách trạm nghỉ.')
+    })
     return () => { cancelled = true }
-  }, [value])
+  }, [])
 
   // Giữ lại các trạm đã có trong value (kể cả trạm từ corridor)
   const allAvailableStations = useMemo(() => {
@@ -168,6 +163,8 @@ export function RouteMapPicker({ origin, dest, gate, departAt, value, onApply, o
               : road ? <><span><b>{Math.round(road.km)}</b> km · lái <b>{road.hours.toFixed(1)}</b> giờ</span><small>{road.traffic ? 'Theo Google, có giao thông theo giờ khởi hành' : 'Theo đường bộ, chưa tính giao thông'}</small></>
               : <><span>≈ <b>{Math.round(straightKm)}</b> km đường chim bay</span><small>Chưa lấy được đường bộ, đang vẽ nét thẳng</small></>}
           </div>
+          {locationsError && <p role="alert">{locationsError}</p>}
+          {!locationsError && stations.length === 0 && <p>Chưa có trạm nghỉ đang hoạt động có tọa độ.</p>}
         </div>
         <div className="rm-legend"><span><i className="rm-pin rm-a">A</i> Điểm đón</span><span><i className="rm-pin rm-b">B</i> Điểm trả</span>{gate && <span><i className="rm-pin rm-g">⚑</i> Cửa khẩu</span>}<span><i className="rm-st" /> Trạm</span></div>
       </div>

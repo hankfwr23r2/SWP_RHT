@@ -6,11 +6,13 @@ import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.SystemConfigRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.Sort;
 
 import java.util.List;
-import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyIterable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -37,14 +39,20 @@ class SystemConfigServiceImplTest {
     }
 
     @Test
-    void updateRejectsBorderOpeningAfterClosing() {
-        when(repository.findById("BORDER_CLOSE_MINUTES"))
-                .thenReturn(Optional.of(config("BORDER_CLOSE_MINUTES", "990")));
-
+    void globalBorderHoursAreNoLongerEditable() {
         assertThatThrownBy(() -> service.updateConfig("BORDER_OPEN_MINUTES",
-                UpdateSystemConfigRequest.builder().configValue("1000").build(), "admin"))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("sớm hơn giờ đóng cửa");
+                UpdateSystemConfigRequest.builder().configValue("480").build(), "admin"))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void getAllHidesLegacyGlobalBorderHours() {
+        when(repository.findAll(any(Sort.class))).thenReturn(List.of(
+                config("BORDER_OPEN_MINUTES", "450"),
+                config("BORDER_CLOSE_MINUTES", "990"),
+                config("DEPOSIT_RATE", "0.30")));
+
+        assertThat(service.getAllConfigs()).extracting("configKey").containsExactly("DEPOSIT_RATE");
     }
 
     @Test

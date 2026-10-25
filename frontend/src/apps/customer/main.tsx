@@ -4,6 +4,7 @@ import { RouterProvider } from 'react-router'
 import '@shared/styles/base.css'
 import { AuthProvider } from '@shared/auth/AuthContext'
 import { BusinessConfigGate } from '@shared/config/BusinessConfigGate'
+import { LocationCatalogGate } from '@shared/config/LocationCatalogGate'
 import { buildRouter } from '@shared/routing/buildRouter'
 import { ToastProvider } from '@shared/ui/toast'
 import { CustomerLayout } from './layouts/CustomerLayout'
@@ -17,7 +18,9 @@ createRoot(document.getElementById('root')!).render(
     <AuthProvider app="customer">
       <ToastProvider>
         <BusinessConfigGate>
-          <RouterProvider router={router} />
+          <LocationCatalogGate>
+            <RouterProvider router={router} />
+          </LocationCatalogGate>
         </BusinessConfigGate>
       </ToastProvider>
     </AuthProvider>

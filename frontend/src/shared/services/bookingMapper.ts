@@ -5,7 +5,7 @@ import type { BackendIncidentResponse } from '../api/incidents'
 import type { BookingStatus, IncidentKind } from '../config/booking-rules'
 import type { CountryCode } from '../config/network'
 import type { Booking, BookingHorse, Cancellation, Clearance, HistoryEntry, Incident, IncidentExpense, MedicalReview, Payment, PlaceRef, Quote, Rating, Rejection, RoutePlan, Settlement, VehicleTrip } from '../types/booking'
-import { COUNTRY_LOCATIONS, PLACES } from '../config/network'
+import { COUNTRY_LOCATIONS, findCatalogPlace, PLACES } from '../config/network'
 
 const allPlaces = (): { id: string; name: string; country: CountryCode }[] => [
   ...(Object.entries(COUNTRY_LOCATIONS) as [CountryCode, { id: string; name: string }[]][]).flatMap(([country, list]) => list.map(l => ({ id: l.id, name: l.name, country }))),
@@ -16,6 +16,8 @@ const allPlaces = (): { id: string; name: string; country: CountryCode }[] => [
 export function placeOf(name: string, country?: string): PlaceRef {
   const hit = allPlaces().find(p => p.name === name)
   if (hit) return { id: hit.id, name: hit.name, country: hit.country }
+  const catalogPlace = findCatalogPlace(name)
+  if (catalogPlace) return { id: catalogPlace.id, name: catalogPlace.name, country: catalogPlace.country }
   return { id: name, name, country: (country as CountryCode) || 'VN' }
 }
 

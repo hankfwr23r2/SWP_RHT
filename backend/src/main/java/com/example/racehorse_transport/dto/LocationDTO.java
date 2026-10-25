@@ -15,10 +15,18 @@ import java.io.Serializable;
 @AllArgsConstructor
 public class LocationDTO implements Serializable {
     private Integer id;
+    private String locationCode;
     private String locationType;
     private String locationName;
     private String address;
     private String city;
     private String province;
     private String country;
+    private Double latitude;
+    private Double longitude;
+    private String status;
+    private Integer openingMinutes;
+    private Integer closingMinutes;
+    private String contactPhone;
+    private String destinationCountry;
 }

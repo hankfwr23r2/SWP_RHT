@@ -20,10 +20,13 @@ public class Location {
     @Column(name = "LocationID", nullable = false)
     private Integer id;
 
+    @Column(name = "locationCode", unique = true, length = 50)
+    private String locationCode;
+
     @NotNull
     @Size(max = 20)
     @Column(name = "LocationType", nullable = false, length = 20)
-    @Pattern(regexp = "Warehouse|RidingClub|RaceTrack|Stable|RestStop|BorderGate")
+    @Pattern(regexp = "Warehouse|RidingClub|RaceTrack|Stable|RestStop|BorderGate|RescuePoint|City")
     private String locationType;
 
     @NotNull
@@ -56,4 +59,24 @@ public class Location {
     @Column(name = "country", length = 100)
     private String country;
 
+    @Column(name = "latitude")
+    private Double latitude;
+
+    @Column(name = "longitude")
+    private Double longitude;
+
+    @Column(name = "status", length = 20)
+    private String status = "ACTIVE";
+
+    @Column(name = "openingMinutes")
+    private Integer openingMinutes;
+
+    @Column(name = "closingMinutes")
+    private Integer closingMinutes;
+
+    @Column(name = "contactPhone", length = 100)
+    private String contactPhone;
+
+    @Column(name = "destinationCountry", length = 2)
+    private String destinationCountry;
 }

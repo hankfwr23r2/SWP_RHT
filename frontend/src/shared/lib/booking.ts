@@ -1,10 +1,10 @@
 // Hàm thuần của luồng đặt đơn → duyệt báo giá → đặt cọc (Flow 1). Khớp docs/PRD.md mục 2, 10, 11.
 import {
-  BORDER_WINDOW, CLEARANCE_DOC, CLEARANCE_FEE, CLASS_FACTOR, CREW_FEE_PER_DAY, DEPOSIT_RATE, DOCS_CUTOFF_HOUR, FUEL_BOT_PER_KM, FUEL_BUFFER_RATE, HORSE_DOC_TYPES, MARGIN_RATE,
+  CLEARANCE_DOC, CLEARANCE_FEE, CLASS_FACTOR, CREW_FEE_PER_DAY, DEPOSIT_RATE, DOCS_CUTOFF_HOUR, FUEL_BOT_PER_KM, FUEL_BUFFER_RATE, HORSE_DOC_TYPES, MARGIN_RATE,
   BREED_INSURED_VALUE, INSURANCE_RATE_BOOKING, DELAY_ALERT_MINUTES, HOME_BASE, RETURN_EARLIEST_RATIO, MAX_CONTINUOUS_HOURS, MIN_REST_MINUTES, QUOTE_VALID_HOURS, TARGET_LEG_HOURS, SINGLE_STALL_FEE, FEED_PACKAGE, VEHICLE_CLASS, EXPENSE_CATEGORY, type BookingStatus, type ClearanceDocType, type ExpenseCategory, type IncidentAction, type IncidentKind, type Payer, type HorseDocType, type VehicleClass,
 } from '../config/booking-rules'
 import { DAY, HOUR, MIN_LEAD_DAYS } from '../config/business-rules'
-import { COUNTRIES, COUNTRY_LOCATIONS, GATES, PLACES, TRANSIT_STATIONS, type GeoPoint, type Gate, type CountryCode } from '../config/network'
+import { COUNTRIES, COUNTRY_LOCATIONS, findCatalogPlace, findGate, findTransitStation, GATES, PLACES, TRANSIT_STATIONS, type GeoPoint, type Gate, type CountryCode } from '../config/network'
 import { FAMOUS_HORSE_VENUES, PROVINCES_DATA } from '../config/administrative'
 import { AVG_SPEED_KMH, BORDER_HOURS, DRIVE_HOURS_PER_DAY } from '../config/public-pricing'
 import type { Vehicle } from '../types/fleet'
@@ -46,6 +46,8 @@ export const findLocation = (id: string, country?: string) => {
   const all = [...Object.values(COUNTRY_LOCATIONS).flat(), ...PLACES]
   const exact = all.find(l => l.id === id)
   if (exact) return exact
+  const archived = findCatalogPlace(id)
+  if (archived) return archived
   const clean = id.toLowerCase().trim()
   const matched = all.find(l => l.name.toLowerCase().includes(clean) || clean.includes(l.name.toLowerCase().split(' — ')[0].trim()))
   if (matched) return matched
@@ -78,7 +80,7 @@ export function routeKm(origin: PlaceRef, dest: PlaceRef, gate?: string) {
   const a = findLocation(origin.id, origin.country)
   const b = findLocation(dest.id, dest.country)
   if (!a || !b) return 0
-  const g = gate ? GATES.find(x => x.name === gate) : undefined
+  const g = findGate(gate)
   return roadKm(g ? haversineKm(a, g) + haversineKm(g, b) : haversineKm(a, b))
 }
 // Cửa khẩu Coordinator được chọn: của nước đến (hoặc nước đi nếu chiều về Việt Nam). Tuyến nội địa không có.
@@ -108,7 +110,7 @@ export function suggestGateWithSavings(origin: PlaceRef, dest: PlaceRef): { gate
 export function suggestTransitStations(origin: PlaceRef, dest: PlaceRef, gate: string | undefined, count: number): string[] {
   const a = findLocation(origin.id, origin.country), b = findLocation(dest.id, dest.country)
   if (!a || !b || count <= 0) return []
-  const g = gate ? GATES.find(x => x.name === gate) : undefined
+  const g = findGate(gate)
   const pts = g ? [a, g, b] : [a, b]
   const seg = pts.slice(1).map((p, i) => haversineKm(pts[i], p))
   const total = seg.reduce((t, x) => t + x, 0)
@@ -573,9 +575,9 @@ export function computeLegDistances(fromName: string, toName: string, rests: Arr
     const clean = placeName(name).trim()
     const loc = findLocation(clean) || findLocation(name)
     if (loc) return loc
-    const st = TRANSIT_STATIONS.find(s => s.name.toLowerCase() === clean.toLowerCase() || s.name.toLowerCase().includes(clean.toLowerCase()) || clean.toLowerCase().includes(s.name.toLowerCase().replace(/^trạm nghỉ /, '')))
+    const st = findTransitStation(clean)
     if (st) return st
-    const g = GATES.find(x => x.name.toLowerCase().includes(clean.toLowerCase()) || clean.toLowerCase().includes(x.name.toLowerCase()))
+    const g = findGate(clean)
     if (g) return g
     return undefined
   }
@@ -587,7 +589,7 @@ export function computeLegDistances(fromName: string, toName: string, rests: Arr
   const n = rests.length + 1
   if (!pFrom || !pTo || pRests.some(p => !p)) return []
 
-  const gPt = gate ? GATES.find(g => g.name === gate) : undefined
+  const gPt = findGate(gate)
   const pts: GeoPoint[] = [pFrom, ...(pRests as GeoPoint[]), pTo]
   const dists: number[] = []
 
@@ -730,10 +732,16 @@ export function buildRoutePlan(b: Pick<Booking, 'type' | 'origin' | 'dest' | 'ga
 }
 
 const minutesOfDay = (t: number) => new Date(t).getHours() * 60 + new Date(t).getMinutes()
-export const borderOutsideWindow = (t: number) => minutesOfDay(t) < BORDER_WINDOW.open || minutesOfDay(t) > BORDER_WINDOW.close
+const formatMinutes = (minutes: number) => `${Math.floor(minutes / 60).toString().padStart(2, '0')}:${(minutes % 60).toString().padStart(2, '0')}`
+export const borderOutsideWindow = (t: number, gateName?: string) => {
+  const gate = findGate(gateName)
+  const open = gate?.openingMinutes ?? 450
+  const close = gate?.closingMinutes ?? 990
+  return minutesOfDay(t) < open || minutesOfDay(t) > close
+}
 
 // Kiểm tra quy tắc chia chặng: lỗi chặn hoàn tất; cảnh báo chuyển cho Manager xem như đề nghị ngoại lệ
-export function validateRoutePlan(plan: Pick<RoutePlan, 'legs' | 'rests' | 'borderEta'>, international: boolean) {
+export function validateRoutePlan(plan: Pick<RoutePlan, 'legs' | 'rests' | 'borderEta'>, international: boolean, gateName?: string) {
   const errors: string[] = []
   const warnings: string[] = []
   plan.legs.forEach(l => {
@@ -746,7 +754,12 @@ export function validateRoutePlan(plan: Pick<RoutePlan, 'legs' | 'rests' | 'bord
   })
   if (international) {
     if (!plan.borderEta) errors.push('Chưa có giờ dự kiến tới cửa khẩu.')
-    else if (borderOutsideWindow(plan.borderEta)) warnings.push('Giờ tới cửa khẩu ngoài khung 07:30–16:30, cần quản lý phê duyệt ngoại lệ.')
+    else if (borderOutsideWindow(plan.borderEta, gateName)) {
+      const gate = findGate(gateName)
+      const open = gate?.openingMinutes ?? 450
+      const close = gate?.closingMinutes ?? 990
+      warnings.push(`Giờ tới cửa khẩu ngoài khung ${formatMinutes(open)}–${formatMinutes(close)}, cần quản lý phê duyệt ngoại lệ.`)
+    }
   }
   return { errors, warnings }
 }
@@ -819,8 +832,8 @@ export function spotLabel(t: { run?: TripRun; departedAt?: number }): string {
 export function checkpointPoint(b: Pick<Booking, 'origin' | 'dest'>, cp: Checkpoint): GeoPoint | undefined {
   if (cp.type === 'pickup') return findLocation(b.origin.id)
   if (cp.type === 'delivery') return findLocation(b.dest.id)
-  if (cp.type === 'rest') return TRANSIT_STATIONS.find(s => s.name === cp.place)
-  return GATES.find(g => g.name === cp.place)
+  if (cp.type === 'rest') return findTransitStation(cp.place)
+  return findGate(cp.place)
 }
 // Vị trí xe để vẽ: dừng tại mốc thì đúng chỗ đó, đang đi thì ở giữa hai mốc
 export function vehiclePoint(b: Pick<Booking, 'origin' | 'dest'>, t: { run?: TripRun }): GeoPoint | undefined {
@@ -891,8 +904,11 @@ export function pointAlong(path: GeoPoint[], f: number): GeoPoint {
 export function bookingPath(b: Pick<Booking, 'origin' | 'dest' | 'gate' | 'route'>): GeoPoint[] {
   const a = findLocation(b.origin.id), z = findLocation(b.dest.id)
   if (!a || !z) return []
-  const gate = b.gate ? GATES.find(g => g.name === b.gate) : undefined
-  const stations = (b.route?.rests ?? []).flatMap(r => TRANSIT_STATIONS.filter(s => s.name === r.name))
+  const gate = findGate(b.gate)
+  const stations = (b.route?.rests ?? []).flatMap(r => {
+    const station = findTransitStation(r.name)
+    return station ? [station] : []
+  })
   return routeOutline(a, gate, z, stations).path
 }
 // Vị trí xe lúc báo sự cố (bản thử, mô phỏng): giữa mốc vừa qua và mốc kế tiếp của hành trình. Có app thật thì lấy từ GPS.

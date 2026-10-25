@@ -4,7 +4,7 @@ import { Fragment, lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { MAX_CONTINUOUS_HOURS, VEHICLE_CLASS } from '@shared/config/booking-rules'
-import { GATES, TRANSIT_STATIONS } from '@shared/config/network'
+import { findGate, findTransitStation, TRANSIT_STATIONS } from '@shared/config/network'
 import { AVG_SPEED_KMH } from '@shared/config/public-pricing'
 import {
   borderOutsideWindow,
@@ -167,7 +167,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
   const [gate, setGate] = useState(b.gate ?? suggested ?? (gates[0]?.name ?? ''))
   const origin = findLocation(b.origin.id),
     dest = findLocation(b.dest.id)
-  const gateGeo = gate ? GATES.find(g => g.name === gate) : undefined
+  const gateGeo = findGate(gate)
   const estHours = routeKm(b.origin, b.dest, gate || undefined) / AVG_SPEED_KMH
 
   const defaultEtdTime = useMemo(() => {
@@ -200,7 +200,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
   }, [])
 
   const stationsOnRoute = rests.map(r => {
-    const st = TRANSIT_STATIONS.find(x => x.name === r.name)
+    const st = findTransitStation(r.name)
     if (st) return st
     if (r.lat != null && r.lng != null) {
       return { name: r.name, lat: r.lat, lng: r.lng, area: 'Trạm cố định' }
@@ -296,7 +296,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
     rests: rests.map((r, i) => ({ ...r, afterLeg: i + 1 })),
     borderEta: borderEta && !Number.isNaN(borderEta) ? borderEta : undefined,
   }
-  const { errors: routeErrors, warnings } = validateRoutePlan(route, international)
+  const { errors: routeErrors, warnings } = validateRoutePlan(route, international, gate)
   if (Number.isNaN(etdT)) routeErrors.unshift('Nhập giờ khởi hành hợp lệ.')
   if (international && !gates.some(g => g.name === gate)) routeErrors.unshift('Chọn cửa khẩu cho tuyến này.')
   const errors = [...tripErrors, ...routeErrors]
@@ -576,12 +576,12 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
               </div>
               <div
                 className="form-hint"
-                style={borderEta && borderOutsideWindow(borderEta) ? { color: 'var(--amber)' } : undefined}
+                style={borderEta && borderOutsideWindow(borderEta, gate) ? { color: 'var(--amber)' } : undefined}
               >
-                {borderEta && borderOutsideWindow(borderEta) ? (
-                  <span>⚠️ Giờ tới cửa khẩu ngoài khung 07:30–16:30. Hãy bấm giờ xuất phát tối ưu bên dưới!</span>
+                {borderEta && borderOutsideWindow(borderEta, gate) ? (
+                  <span>⚠️ {warnings.find(warning => warning.includes('khung')) ?? 'Giờ tới cửa khẩu ngoài giờ hoạt động.'} Hãy bấm giờ xuất phát tối ưu bên dưới!</span>
                 ) : (
-                  <span>✓ Khung giờ thông quan lý tưởng (07:30–16:30).</span>
+                  <span>✓ ETA nằm trong giờ hoạt động của cửa khẩu đã chọn.</span>
                 )}
               </div>
             </div>
@@ -730,7 +730,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
                   <span className={s.stopNum}>{i + 1}</span>
                   <span className={s.stopName}>
                     <b>{r.name}</b>
-                    <small>{TRANSIT_STATIONS.find(x => x.name === r.name)?.area ?? 'Trạm ngoài danh mục'}</small>
+                    <small>{findTransitStation(r.name)?.area ?? 'Trạm ngoài danh mục'}</small>
                   </span>
                   <span className={s.stopMin}>
                     <i className="fa-regular fa-clock" /> Nghỉ {r.minutes} phút

@@ -27,11 +27,13 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
- * Nạp dữ liệu danh mục và tài khoản mẫu từ tài liệu nhóm (tab Data). Chỉ chạy khi bật APP_SEED_REFERENCE_DATA=true
- * (docker-compose bật sẵn). Mỗi bảng chỉ nạp khi còn trống, nên chạy lại nhiều lần không nhân đôi dữ liệu.
+ * Đồng bộ metadata mạng lưới địa điểm mỗi lần khởi động; dữ liệu mẫu chỉ nạp khi bật
+ * APP_SEED_REFERENCE_DATA=true (docker-compose bật sẵn).
  */
 @Slf4j
 @Component
@@ -199,6 +201,138 @@ public class ReferenceDataSeeder implements CommandLineRunner {
             new String[] { "54", "RestStop", "Điểm dừng nghỉ Pakse", "Quốc lộ 13 (Lào)", "Pakse", "Champasak", "Lào" }
     };
 
+    private record Coordinates(double latitude, double longitude) {}
+
+    private static final Map<Integer, Coordinates> LEGACY_LOCATION_COORDINATES = Map.ofEntries(
+            Map.entry(1, new Coordinates(10.78, 107.0)), Map.entry(2, new Coordinates(10.88, 106.4)),
+            Map.entry(3, new Coordinates(11.0, 106.65)), Map.entry(4, new Coordinates(10.79, 106.74)),
+            Map.entry(5, new Coordinates(11.56, 104.92)), Map.entry(6, new Coordinates(13.36, 103.86)),
+            Map.entry(7, new Coordinates(11.55, 104.9)), Map.entry(8, new Coordinates(17.97, 102.6)),
+            Map.entry(9, new Coordinates(17.98, 102.62)), Map.entry(10, new Coordinates(11.0, 106.65)),
+            Map.entry(11, new Coordinates(10.86, 106.83)), Map.entry(12, new Coordinates(11.58, 104.88)),
+            Map.entry(13, new Coordinates(13.36, 103.86)), Map.entry(14, new Coordinates(17.97, 102.6)),
+            Map.entry(15, new Coordinates(19.89, 102.13)),
+            Map.entry(16, new Coordinates(11.07, 106.2)), Map.entry(18, new Coordinates(10.6, 104.95)),
+            Map.entry(24, new Coordinates(16.62, 106.6)), Map.entry(25, new Coordinates(18.38, 105.13)),
+            Map.entry(26, new Coordinates(21.23, 102.95)),
+            Map.entry(33, new Coordinates(11.03, 106.37)), Map.entry(37, new Coordinates(10.93, 108.1)),
+            Map.entry(38, new Coordinates(12.24, 109.2)), Map.entry(39, new Coordinates(13.1, 109.3)),
+            Map.entry(40, new Coordinates(15.12, 108.8)), Map.entry(41, new Coordinates(16.05, 108.2)),
+            Map.entry(42, new Coordinates(16.46, 107.6)), Map.entry(43, new Coordinates(16.82, 107.1)),
+            Map.entry(45, new Coordinates(11.08, 106.15)),
+            Map.entry(46, new Coordinates(11.09, 105.8)), Map.entry(47, new Coordinates(11.26, 105.28)),
+            Map.entry(48, new Coordinates(12.0, 105.46)), Map.entry(49, new Coordinates(12.71, 104.88)),
+            Map.entry(51, new Coordinates(16.57, 104.75)),
+            Map.entry(52, new Coordinates(17.4, 104.8)), Map.entry(53, new Coordinates(18.38, 103.65)),
+            Map.entry(54, new Coordinates(15.12, 105.8)));
+
+    private static final Map<Integer, String> LEGACY_LOCATION_CODES = Map.ofEntries(
+            Map.entry(1, "KHO-DN"), Map.entry(2, "KHO-LA"), Map.entry(3, "KHO-BD"),
+            Map.entry(4, "CLB-SG"), Map.entry(5, "KHO-PNH"), Map.entry(6, "KHO-SR"),
+            Map.entry(7, "SAI-PNH"), Map.entry(8, "KHO-VTE"), Map.entry(9, "CLB-VTE"),
+            Map.entry(16, "GATE-MOC-BAI"), Map.entry(18, "GATE-TINH-BIEN"),
+            Map.entry(24, "GATE-LAO-BAO"), Map.entry(25, "GATE-CAU-TREO"),
+            Map.entry(26, "GATE-TAY-TRANG"), Map.entry(33, "REST-TRANG-BANG"),
+            Map.entry(37, "REST-PHAN-THIET"), Map.entry(38, "REST-NHA-TRANG"),
+            Map.entry(39, "REST-TUY-HOA"), Map.entry(40, "REST-QUANG-NGAI"),
+            Map.entry(41, "REST-DA-NANG"), Map.entry(42, "REST-HUE"),
+            Map.entry(43, "REST-DONG-HA"), Map.entry(44, "REST-LAO-BAO"),
+            Map.entry(45, "REST-BAVET"), Map.entry(46, "REST-SVAY-RIENG"),
+            Map.entry(47, "REST-NEAK-LOEUNG"), Map.entry(48, "REST-KAMPONG-CHAM"),
+            Map.entry(49, "REST-KAMPONG-THOM"), Map.entry(50, "REST-SEPON"),
+            Map.entry(51, "REST-SAVANNAKHET"), Map.entry(52, "REST-THAKHEK"),
+            Map.entry(53, "REST-PAKSAN"), Map.entry(54, "REST-PAKSE"));
+
+    // {code, name, area, country, lat, lng}
+    private static final String[][] NETWORK_STATIONS = {
+            { "REST-LONG-THANH", "Trạm nghỉ Long Thành", "Đồng Nai", "Việt Nam", "10.78", "107.0" },
+            { "REST-BIEN-HOA", "Trạm nghỉ Biên Hòa", "Đồng Nai", "Việt Nam", "10.95", "106.82" },
+            { "REST-DUC-HOA", "Trạm nghỉ Đức Hòa", "Long An", "Việt Nam", "10.88", "106.4" },
+            { "REST-CU-CHI", "Trạm nghỉ Củ Chi", "TP.HCM", "Việt Nam", "10.97", "106.5" },
+            { "REST-TRANG-BANG", "Trạm nghỉ Trảng Bàng", "Tây Ninh", "Việt Nam", "11.03", "106.37" },
+            { "REST-MOC-BAI", "Trạm nghỉ Mộc Bài", "Tây Ninh", "Việt Nam", "11.07", "106.2" },
+            { "REST-TIEN-GIANG", "Trạm nghỉ Tiền Giang", "Tiền Giang", "Việt Nam", "10.38", "106.35" },
+            { "REST-CAN-THO", "Trạm nghỉ Cần Thơ", "Cần Thơ", "Việt Nam", "10.04", "105.74" },
+            { "REST-TINH-BIEN", "Trạm nghỉ Tịnh Biên", "An Giang", "Việt Nam", "10.6", "104.95" },
+            { "REST-HA-TIEN", "Trạm nghỉ Hà Tiên", "Kiên Giang", "Việt Nam", "10.38", "104.48" },
+            { "REST-PHAN-THIET", "Trạm nghỉ Phan Thiết", "Bình Thuận", "Việt Nam", "10.93", "108.1" },
+            { "REST-PHAN-RANG", "Trạm nghỉ Phan Rang", "Ninh Thuận", "Việt Nam", "11.56", "108.99" },
+            { "REST-NHA-TRANG", "Trạm nghỉ Nha Trang", "Khánh Hòa", "Việt Nam", "12.24", "109.2" },
+            { "REST-TUY-HOA", "Trạm nghỉ Tuy Hòa", "Phú Yên", "Việt Nam", "13.1", "109.3" },
+            { "REST-QUY-NHON", "Trạm nghỉ Quy Nhơn", "Bình Định", "Việt Nam", "13.78", "109.22" },
+            { "REST-QUANG-NGAI", "Trạm nghỉ Quảng Ngãi", "Quảng Ngãi", "Việt Nam", "15.12", "108.8" },
+            { "REST-DA-NANG", "Trạm nghỉ Đà Nẵng", "Đà Nẵng", "Việt Nam", "16.05", "108.2" },
+            { "REST-HUE", "Trạm nghỉ Huế", "Thừa Thiên Huế", "Việt Nam", "16.46", "107.6" },
+            { "REST-DONG-HA", "Trạm nghỉ Đông Hà", "Quảng Trị", "Việt Nam", "16.82", "107.1" },
+            { "REST-LAO-BAO", "Trạm nghỉ Lao Bảo", "Quảng Trị", "Việt Nam", "16.62", "106.6" },
+            { "REST-DONG-HOI", "Trạm nghỉ Đồng Hới", "Quảng Bình", "Việt Nam", "17.47", "106.6" },
+            { "REST-HA-TINH", "Trạm nghỉ Hà Tĩnh", "Hà Tĩnh", "Việt Nam", "18.34", "105.9" },
+            { "REST-CAU-TREO", "Trạm nghỉ Cầu Treo", "Hà Tĩnh", "Việt Nam", "18.38", "105.13" },
+            { "REST-VINH", "Trạm nghỉ Vinh", "Nghệ An", "Việt Nam", "18.67", "105.68" },
+            { "REST-THANH-HOA", "Trạm nghỉ Thanh Hóa", "Thanh Hóa", "Việt Nam", "19.8", "105.78" },
+            { "REST-NINH-BINH", "Trạm nghỉ Ninh Bình", "Ninh Bình", "Việt Nam", "20.25", "105.97" },
+            { "REST-HA-NOI", "Trạm nghỉ Hà Nội", "Hà Nội", "Việt Nam", "21.03", "105.85" },
+            { "REST-DA-LAT", "Trạm nghỉ Đà Lạt", "Lâm Đồng", "Việt Nam", "11.94", "108.44" },
+            { "REST-BUON-MA-THUOT", "Trạm nghỉ Buôn Ma Thuột", "Đắk Lắk", "Việt Nam", "12.67", "108.04" },
+            { "REST-PLEIKU", "Trạm nghỉ Pleiku", "Gia Lai", "Việt Nam", "13.98", "108.0" },
+            { "REST-KON-TUM", "Trạm nghỉ Kon Tum", "Kon Tum", "Việt Nam", "14.35", "108.0" },
+            { "REST-SAVANNAKHET", "Trạm nghỉ Savannakhet", "Savannakhet", "Lào", "16.57", "104.75" },
+            { "REST-THAKHEK", "Trạm nghỉ Thakhek", "Thakhek", "Lào", "17.4", "104.8" },
+            { "REST-PAKSAN", "Trạm nghỉ Paksan", "Paksan", "Lào", "18.38", "103.65" },
+            { "REST-VIENTIANE", "Trạm nghỉ Viêng Chăn", "Viêng Chăn", "Lào", "17.97", "102.6" },
+            { "REST-VANG-VIENG", "Trạm nghỉ Vang Vieng", "Vang Vieng", "Lào", "18.92", "102.45" },
+            { "REST-PAKSE", "Trạm nghỉ Pakse", "Pakse", "Lào", "15.12", "105.8" },
+            { "REST-LUANG-PRABANG", "Trạm nghỉ Luang Prabang", "Luang Prabang", "Lào", "19.89", "102.13" },
+            { "REST-BAVET", "Trạm nghỉ Bavet", "Bavet", "Campuchia", "11.08", "106.15" },
+            { "REST-SVAY-RIENG", "Trạm nghỉ Svay Rieng", "Svay Rieng", "Campuchia", "11.09", "105.8" },
+            { "REST-NEAK-LOEUNG", "Trạm nghỉ Neak Loeung", "Neak Loeung", "Campuchia", "11.26", "105.28" },
+            { "REST-PHNOM-PENH", "Trạm nghỉ Phnom Penh", "Phnom Penh", "Campuchia", "11.56", "104.92" },
+            { "REST-KAMPONG-CHAM", "Trạm nghỉ Kampong Cham", "Kampong Cham", "Campuchia", "12.0", "105.46" },
+            { "REST-KAMPONG-THOM", "Trạm nghỉ Kampong Thom", "Kampong Thom", "Campuchia", "12.71", "104.88" },
+            { "REST-PURSAT", "Trạm nghỉ Pursat", "Pursat", "Campuchia", "12.53", "103.92" },
+            { "REST-BATTAMBANG", "Trạm nghỉ Battambang", "Battambang", "Campuchia", "13.1", "103.2" },
+            { "REST-SIEM-REAP", "Trạm nghỉ Siem Reap", "Siem Reap", "Campuchia", "13.36", "103.86" }
+    };
+
+    // {code, name, country, lat, lng}
+    private static final String[][] PRICING_CITIES = {
+            { "hn", "Hà Nội", "Việt Nam", "21.03", "105.85" },
+            { "dn", "Đà Nẵng", "Việt Nam", "16.05", "108.2" },
+            { "qn", "Quy Nhơn (Bình Định)", "Việt Nam", "13.78", "109.22" },
+            { "hcm", "TP. Hồ Chí Minh", "Việt Nam", "10.77", "106.66" },
+            { "dni", "Đồng Nai", "Việt Nam", "10.78", "106.95" },
+            { "bd", "Bình Dương", "Việt Nam", "11.0", "106.65" },
+            { "tn", "Tây Ninh", "Việt Nam", "11.31", "106.1" },
+            { "ct", "Cần Thơ", "Việt Nam", "10.03", "105.78" },
+            { "vte", "Vientiane", "Lào", "17.97", "102.6" },
+            { "svk", "Savannakhet", "Lào", "16.57", "104.75" },
+            { "lpb", "Luang Prabang", "Lào", "19.89", "102.13" },
+            { "pks", "Pakse", "Lào", "15.12", "105.8" },
+            { "pnh", "Phnom Penh", "Campuchia", "11.56", "104.92" },
+            { "rep", "Siem Reap", "Campuchia", "13.36", "103.86" },
+            { "btb", "Battambang", "Campuchia", "13.1", "103.2" },
+            { "kos", "Sihanoukville", "Campuchia", "10.63", "103.5" }
+    };
+
+    // {code, name, area, country, phone, lat, lng}
+    private static final String[][] RESCUE_LOCATIONS = {
+            { "RESCUE-LONG-THANH", "Cứu hộ Long Thành", "Đồng Nai", "Việt Nam", "0901 100 001", "10.8", "106.98" },
+            { "RESCUE-LONG-KHANH", "Cứu hộ Long Khánh", "Đồng Nai", "Việt Nam", "0901 100 002", "10.93", "107.25" },
+            { "RESCUE-BIEN-HOA", "Cứu hộ Biên Hòa", "Đồng Nai", "Việt Nam", "0901 100 003", "10.94", "106.84" },
+            { "RESCUE-THU-DAU-MOT", "Cứu hộ Thủ Dầu Một", "Bình Dương", "Việt Nam", "0901 100 004", "10.99", "106.66" },
+            { "RESCUE-DUC-HOA", "Cứu hộ Đức Hòa", "Long An", "Việt Nam", "0901 100 005", "10.9", "106.42" },
+            { "RESCUE-CU-CHI", "Cứu hộ Củ Chi", "TP.HCM", "Việt Nam", "0901 100 006", "10.98", "106.48" },
+            { "RESCUE-TRANG-BANG", "Cứu hộ Trảng Bàng", "Tây Ninh", "Việt Nam", "0901 100 007", "11.04", "106.35" },
+            { "RESCUE-MOC-BAI", "Cứu hộ Mộc Bài", "Tây Ninh", "Việt Nam", "0901 100 008", "11.08", "106.18" },
+            { "RESCUE-PHAN-THIET", "Cứu hộ Phan Thiết", "Bình Thuận", "Việt Nam", "0901 100 009", "10.95", "108.1" },
+            { "RESCUE-TINH-BIEN", "Cứu hộ Tịnh Biên", "An Giang", "Việt Nam", "0901 100 010", "10.59", "104.94" },
+            { "RESCUE-SVAY-RIENG", "Cứu hộ Svay Rieng", "Svay Rieng", "Campuchia", "+855 12 100 011", "11.1", "105.8" },
+            { "RESCUE-NEAK-LOEUNG", "Cứu hộ Neak Loeung", "Neak Loeung", "Campuchia", "+855 12 100 012", "11.27", "105.27" },
+            { "RESCUE-PHNOM-PENH", "Cứu hộ Phnom Penh", "Phnom Penh", "Campuchia", "+855 12 100 013", "11.55", "104.9" },
+            { "RESCUE-LAO-BAO", "Cứu hộ Lao Bảo", "Quảng Trị", "Việt Nam", "0901 100 014", "16.63", "106.6" },
+            { "RESCUE-VIENTIANE", "Cứu hộ Viêng Chăn", "Viêng Chăn", "Lào", "+856 20 100 015", "17.97", "102.62" }
+    };
+
     // {Loại xe, Biển số, Sức chứa (ngăn), Trạng thái}
     private static final String[][] VEHICLES = {
             new String[] { "Xe 2 ngăn", "29H-12345", "2", "AVAILABLE" },
@@ -235,16 +369,20 @@ public class ReferenceDataSeeder implements CommandLineRunner {
     @Override
     public void run(String... args) {
         migrateServiceMetadata();
+        if (enabled) {
+            step("accounts", this::seedUsers);
+            step("categories", this::seedCategories);
+            step("services", this::seedServices);
+            step("horse types", this::seedHorseTypes);
+            step("locations", this::seedLocations);
+        }
+        migrateLocationMetadata();
+        seedNetworkLocations();
         if (!enabled) {
             log.info("Reference data seeding skipped (app.seed-reference-data=false).");
             return;
         }
         // Mỗi bảng nạp riêng: một bảng lỗi (ví dụ schema cũ) không làm hỏng các bảng khác và không làm dừng ứng dụng
-        step("accounts", this::seedUsers);
-        step("categories", this::seedCategories);
-        step("services", this::seedServices);
-        step("horse types", this::seedHorseTypes);
-        step("locations", this::seedLocations);
         step("vehicles", this::seedVehicles);
         step("regulations", this::seedRegulations);
     }
@@ -365,18 +503,141 @@ public class ReferenceDataSeeder implements CommandLineRunner {
     }
 
     private void seedLocations() {
-        if (locationRepository.count() > 0) return;
         for (String[] r : LOCATIONS) {
+            Integer locationId = Integer.valueOf(r[0]);
+            if (locationRepository.existsById(locationId)) continue;
             Location l = new Location();
-            l.setId(Integer.valueOf(r[0]));
+            l.setId(locationId);
             l.setLocationType(r[1]);
             l.setLocationName(r[2]);
             l.setAddress(r[3]);
             l.setCity(r[4]);
             l.setProvince(r[5]);
             l.setCountry(r[6]);
+            applyLegacyLocationMetadata(l);
             locationRepository.save(l);
         }
+    }
+
+    private void migrateLocationMetadata() {
+        for (Location location : locationRepository.findAll()) {
+            if (applyLegacyLocationMetadata(location)) {
+                locationRepository.save(location);
+            }
+        }
+    }
+
+    private boolean applyLegacyLocationMetadata(Location location) {
+        boolean changed = false;
+        String code = LEGACY_LOCATION_CODES.getOrDefault(location.getId(), "LOC-" + location.getId());
+        if (location.getLocationCode() == null || location.getLocationCode().isBlank()) {
+            location.setLocationCode(code);
+            changed = true;
+        }
+        Coordinates coordinates = LEGACY_LOCATION_COORDINATES.get(location.getId());
+        if (coordinates != null && location.getLatitude() == null && location.getLongitude() == null) {
+            location.setLatitude(coordinates.latitude());
+            location.setLongitude(coordinates.longitude());
+            changed = true;
+        }
+        if (location.getStatus() == null || location.getStatus().isBlank()) {
+            location.setStatus("ACTIVE");
+            changed = true;
+        }
+        if ("BorderGate".equals(location.getLocationType())) {
+            if (location.getOpeningMinutes() == null) {
+                location.setOpeningMinutes(450);
+                changed = true;
+            }
+            if (location.getClosingMinutes() == null) {
+                location.setClosingMinutes(990);
+                changed = true;
+            }
+            if (location.getDestinationCountry() == null) {
+                location.setDestinationCountry(inferDestinationCountry(location.getLocationName()));
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    private void seedNetworkLocations() {
+        for (String[] row : NETWORK_STATIONS) {
+            upsertNetworkLocation(row[0], "RestStop", row[1], row[2], row[3],
+                    row[4], row[5], null);
+        }
+        for (String[] row : PRICING_CITIES) {
+            upsertNetworkLocation(row[0], "City", row[1], row[1], row[2],
+                    row[3], row[4], null);
+        }
+        for (String[] row : RESCUE_LOCATIONS) {
+            upsertNetworkLocation(row[0], "RescuePoint", row[1], row[2], row[3],
+                    row[5], row[6], row[4]);
+        }
+    }
+
+    private void upsertNetworkLocation(String code, String type, String name, String area,
+            String country, String latitude, String longitude, String phone) {
+        Location location = locationRepository.findByLocationCodeIgnoreCase(code).orElseGet(() ->
+                locationRepository.findAll().stream()
+                        .filter(item -> type.equals(item.getLocationType()))
+                        .filter(item -> country.equals(item.getCountry()))
+                        .filter(item -> normalizedName(item.getLocationName()).contains(normalizedName(name))
+                                || normalizedName(name).contains(normalizedName(item.getLocationName())))
+                        .findFirst()
+                        .orElse(null));
+        boolean isNew = location == null;
+        if (isNew) {
+            location = new Location();
+            location.setId(Math.max(locationRepository.findMaxId(), 54) + 1);
+            location.setLocationType(type);
+            location.setLocationName(name);
+            location.setAddress(area);
+            location.setCity(area);
+            location.setProvince(area);
+            location.setCountry(country);
+        }
+        boolean changed = false;
+        if (location.getLocationCode() == null || location.getLocationCode().startsWith("LOC-")) {
+            location.setLocationCode(code);
+            changed = true;
+        }
+        if (location.getLatitude() == null || location.getLongitude() == null) {
+            location.setLatitude(Double.valueOf(latitude));
+            location.setLongitude(Double.valueOf(longitude));
+            changed = true;
+        }
+        if (location.getStatus() == null || location.getStatus().isBlank()) {
+            location.setStatus("ACTIVE");
+            changed = true;
+        }
+        if (phone != null && (location.getContactPhone() == null || location.getContactPhone().isBlank())) {
+            location.setContactPhone(phone);
+            changed = true;
+        }
+        if ("BorderGate".equals(type) && location.getDestinationCountry() == null) {
+            location.setDestinationCountry(inferDestinationCountry(name));
+            changed = true;
+        }
+        if (isNew || changed) {
+            locationRepository.save(location);
+        }
+    }
+
+    private String normalizedName(String value) {
+        if (value == null) return "";
+        return value.toLowerCase(Locale.ROOT)
+                .replace("điểm dừng nghỉ", "")
+                .replace("trạm nghỉ", "")
+                .replace("cứu hộ", "")
+                .trim();
+    }
+
+    private String inferDestinationCountry(String gateName) {
+        String name = gateName == null ? "" : gateName.toLowerCase(Locale.ROOT);
+        return name.contains("densavanh") || name.contains("nam phao") || name.contains("sop hun")
+                || name.contains("na phao") || name.contains("nong haet") || name.contains("nam xoi")
+                || name.contains("la lay") ? "LA" : "KH";
     }
 
     // Capacity is encoded in vehicle_type because the vehicle table stores only its core fields.

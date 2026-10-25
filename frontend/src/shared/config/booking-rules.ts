@@ -211,7 +211,6 @@ export let MAX_CONTINUOUS_HOURS = 4 // quy chuẩn an sinh: ngựa không đi li
 export const TARGET_LEG_HOURS = 3.2 // mục tiêu lý tưởng 2.5–3.5 giờ mỗi chặng
 export let MIN_REST_MINUTES = 30
 export let VITAL_CHECK_INTERVAL_HOURS = 2
-export const BORDER_WINDOW = { open: 7 * 60 + 30, close: 16 * 60 + 30 } // ETA cửa khẩu nên rơi vào 07:30–16:30
 
 export function applyRuntimeBookingRules(config: {
   depositRate: number
@@ -220,8 +219,6 @@ export function applyRuntimeBookingRules(config: {
   maxContinuousHours: number
   minRestMinutes: number
   vitalCheckIntervalHours: number
-  borderOpenMinutes: number
-  borderCloseMinutes: number
 }) {
   DEPOSIT_RATE = config.depositRate
   QUOTE_VALID_HOURS = config.quoteValidHours
@@ -229,8 +226,6 @@ export function applyRuntimeBookingRules(config: {
   MAX_CONTINUOUS_HOURS = config.maxContinuousHours
   MIN_REST_MINUTES = config.minRestMinutes
   VITAL_CHECK_INTERVAL_HOURS = config.vitalCheckIntervalHours
-  BORDER_WINDOW.open = config.borderOpenMinutes
-  BORDER_WINDOW.close = config.borderCloseMinutes
 }
 
 // ===== Hành trình và nhật ký (Flow 4, PRD mục 5) =====

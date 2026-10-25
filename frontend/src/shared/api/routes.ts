@@ -31,12 +31,20 @@ export interface BackendLocationRouteResponse {
 
 export interface BackendLocationResponse {
   id: number
+  locationCode?: string
   locationType: string // Warehouse, RidingClub, RaceTrack, Stable, RestStop, BorderGate
   locationName: string
   address: string
   city: string
   province: string
   country: string
+  latitude?: number | null
+  longitude?: number | null
+  status: 'ACTIVE' | 'INACTIVE' | string
+  openingMinutes?: number | null
+  closingMinutes?: number | null
+  contactPhone?: string | null
+  destinationCountry?: string | null
 }
 
 export interface CreateRoutePayload {
@@ -53,12 +61,20 @@ export interface CreateRoutePayload {
   }>
 }
 
-export interface CreateRestStopPayload {
+export interface LocationPayload {
+  locationType: string
   locationName: string
   address: string
   city: string
   province: string
   country: string
+  latitude: number
+  longitude: number
+  status: 'ACTIVE' | 'INACTIVE'
+  openingMinutes?: number
+  closingMinutes?: number
+  contactPhone?: string
+  destinationCountry?: 'LA' | 'KH'
 }
 
 const LOCATIONS_TTL = 3 * 60 * 1000 // 3 phút
@@ -104,7 +120,7 @@ export const routesApi = {
     await apiClient.delete<ApiResponse<void>>(`/routes/${id}`)
   },
 
-  // Lấy danh mục các Hub, trạm nghỉ, cửa khẩu, nút giao (có TTL cache)
+  // Lấy toàn bộ danh mục địa điểm để lựa chọn điểm đang hoạt động và hiển thị đơn cũ.
   listLocations: async (params?: { type?: string; country?: string }): Promise<BackendLocationResponse[]> => {
     const key = `${params?.type ?? ''}_${params?.country ?? ''}`
     const now = Date.now()
@@ -117,20 +133,26 @@ export const routesApi = {
     return data
   },
 
-  createRestStop: async (payload: CreateRestStopPayload): Promise<BackendLocationResponse> => {
+  listAdminLocations: async (): Promise<BackendLocationResponse[]> => {
+    const res = await apiClient.get<ApiResponse<BackendLocationResponse[]>>('/locations/admin')
+    return res.data?.data || []
+  },
+
+  createLocation: async (payload: LocationPayload): Promise<BackendLocationResponse> => {
     invalidateLocationsCache()
-    const res = await apiClient.post<ApiResponse<BackendLocationResponse>>('/locations/rest-stops', payload)
+    const res = await apiClient.post<ApiResponse<BackendLocationResponse>>('/locations', payload)
     return res.data.data
   },
 
-  updateRestStop: async (id: number, payload: CreateRestStopPayload): Promise<BackendLocationResponse> => {
+  updateLocation: async (id: number, payload: LocationPayload): Promise<BackendLocationResponse> => {
     invalidateLocationsCache()
-    const res = await apiClient.put<ApiResponse<BackendLocationResponse>>(`/locations/rest-stops/${id}`, payload)
+    const res = await apiClient.put<ApiResponse<BackendLocationResponse>>(`/locations/${id}`, payload)
     return res.data.data
   },
 
-  deleteRestStop: async (id: number): Promise<void> => {
+  changeLocationStatus: async (id: number, status: 'ACTIVE' | 'INACTIVE'): Promise<BackendLocationResponse> => {
     invalidateLocationsCache()
-    await apiClient.delete<ApiResponse<void>>(`/locations/rest-stops/${id}`)
+    const res = await apiClient.patch<ApiResponse<BackendLocationResponse>>(`/locations/${id}/status`, { status })
+    return res.data.data
   },
 }

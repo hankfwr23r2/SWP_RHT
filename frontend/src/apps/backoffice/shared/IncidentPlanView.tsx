@@ -1,5 +1,5 @@
 // Xem lại phương án sự cố trên bản đồ (chỉ đọc): Quản lý duyệt, Tài xế và Hộ tống làm theo
-import { GATES, TRANSIT_STATIONS } from '@shared/config/network'
+import { findGate, findTransitStation } from '@shared/config/network'
 import { INCIDENT_ACTION } from '@shared/config/booking-rules'
 import { findLocation } from '@shared/lib/booking'
 import type { Booking, Incident } from '@shared/types/booking'
@@ -9,8 +9,8 @@ export function IncidentPlanView({ b, i, height = 340 }: { b: Booking; i: Incide
   const plan = i.plan
   const origin = findLocation(b.origin.id), dest = findLocation(b.dest.id)
   if (!plan || !origin || !dest) return null
-  const gate = b.gate ? GATES.find(g => g.name === b.gate) : undefined
-  const station = plan.station ? TRANSIT_STATIONS.filter(x => x.name === plan.station) : []
+  const gate = findGate(b.gate)
+  const station = plan.station ? [findTransitStation(plan.station)].filter(s => s !== undefined) : []
   const lines: MapLine[] = [
     ...(plan.rescueLine ? [{ path: plan.rescueLine.path, color: '#059669', flow: true, label: `Cứu hộ tới chỗ xe: ${plan.rescueLine.km} km` }] : []),
     ...(plan.toStation ? [{ path: plan.toStation.path, color: '#ea580c', flow: true, weight: 6, label: `Đưa ngựa tới ${plan.station}: ${plan.toStation.km} km` }] : []),

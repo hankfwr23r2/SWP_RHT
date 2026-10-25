@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import type { BackendBookingResponse } from '../api/bookings'
 import type { BackendIncidentResponse } from '../api/incidents'
+import { setNetworkLocations, type CatalogLocation } from '../config/network'
 import { incidentOf, placeOf, toBooking } from './bookingMapper'
+
+const locations: CatalogLocation[] = [
+  { id: 1, locationCode: 'KHO-DN', locationType: 'Warehouse', locationName: 'Kho Đồng Nai — Trang trại Đua ngựa Long Thành', city: 'Long Thành', province: 'Đồng Nai', country: 'Việt Nam', lat: 10.78, lng: 107 },
+  { id: 5, locationCode: 'KHO-PNH', locationType: 'Warehouse', locationName: 'Kho Phnom Penh', city: 'Phnom Penh', province: 'Phnom Penh', country: 'Campuchia', lat: 11.56, lng: 104.92 },
+]
+setNetworkLocations(locations)
 
 const base: BackendBookingResponse = {
   id: 'BK-007', numericId: 7, type: 'international', customer: 'khach01', customerName: 'Nguyễn Văn A', status: 'waybill_issued',
