@@ -11,8 +11,11 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 public class BookingServiceSelectionDto {
     private Integer id;
+    private String serviceCode;
     private String serviceName;
     private Integer categoryId;
     private String categoryName;
     private BigDecimal price;
+    private String billingUnit;
+    private String description;
 }

@@ -9,6 +9,7 @@ import {
 import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
 import { formatVND } from '@shared/lib/format'
+import { SERVICE_BILLING_UNIT_LABEL, type ServiceBillingUnit } from '@shared/api/serviceCatalog'
 import { ListPage, type Column, type TabDef } from '../../../shared/ListPage'
 import s from './AdminServices.module.css'
 import { usePageData } from '@shared/routing/pageData'
@@ -25,15 +26,22 @@ interface ServiceModalProps {
 
 function ServiceModal({ service, categories, onClose, onDone }: ServiceModalProps) {
   const toast = useToast()
+  const [serviceCode, setServiceCode] = useState(service?.serviceCode ?? '')
   const [serviceName, setServiceName] = useState(service?.serviceName ?? '')
   const [categoryId, setCategoryId] = useState<number>(service?.categoryId ?? (categories[0]?.id || 1))
   const [price, setPrice] = useState(service?.price !== undefined ? String(service.price) : '0')
+  const [billingUnit, setBillingUnit] = useState<ServiceBillingUnit>(service?.billingUnit ?? 'PER_HORSE')
+  const [description, setDescription] = useState(service?.description ?? '')
   const [status, setStatus] = useState(service?.status ?? 'ACTIVE')
   const [busy, setBusy] = useState(false)
 
   const save = async () => {
     if (!serviceName.trim()) {
       toast('Tên dịch vụ không được để trống', 'error')
+      return
+    }
+    if (!/^[A-Z][A-Z0-9_]{1,99}$/.test(serviceCode.trim())) {
+      toast('Mã dịch vụ viết hoa, bắt đầu bằng chữ và chỉ gồm chữ, số, dấu gạch dưới.', 'error')
       return
     }
     const numPrice = Number(price)
@@ -44,9 +52,12 @@ function ServiceModal({ service, categories, onClose, onDone }: ServiceModalProp
     setBusy(true)
     try {
       const payload: CreateServicePayload = {
+        serviceCode: serviceCode.trim(),
         serviceName: serviceName.trim(),
         categoryId,
         price: numPrice,
+        billingUnit,
+        description: description.trim(),
         status,
       }
       if (service) {
@@ -81,6 +92,21 @@ function ServiceModal({ service, categories, onClose, onDone }: ServiceModalProp
       }
     >
       <div className={s.form}>
+        <div className="form-group">
+          <label htmlFor="svc-code" className="required">Mã ổn định</label>
+          <input
+            id="svc-code"
+            className="form-control"
+            placeholder="VD: FEED_SPORT"
+            value={serviceCode}
+            onChange={e => setServiceCode(e.target.value.toUpperCase())}
+            disabled={!!service}
+            maxLength={100}
+            required
+          />
+          <small className="form-hint">Dùng mã này trong cấu hình và đơn mới; không thể đổi sau khi tạo.</small>
+        </div>
+
         <div className={`form-group ${s.full}`}>
           <label htmlFor="svc-name" className="required">
             Tên dịch vụ / gói cước
@@ -88,7 +114,7 @@ function ServiceModal({ service, categories, onClose, onDone }: ServiceModalProp
           <input
             id="svc-name"
             className="form-control"
-            placeholder="VD: Cữ nước tăng cường (Mỗi 2 giờ)"
+            placeholder="VD: Gói thức ăn thể thao"
             value={serviceName}
             onChange={e => setServiceName(e.target.value)}
             required
@@ -114,8 +140,22 @@ function ServiceModal({ service, categories, onClose, onDone }: ServiceModalProp
         </div>
 
         <div className="form-group">
+          <label htmlFor="svc-unit" className="required">Đơn vị tính</label>
+          <select
+            id="svc-unit"
+            className="form-control"
+            value={billingUnit}
+            onChange={e => setBillingUnit(e.target.value as ServiceBillingUnit)}
+          >
+            {Object.entries(SERVICE_BILLING_UNIT_LABEL).map(([unit, label]) => (
+              <option key={unit} value={unit}>{label}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-group">
           <label htmlFor="svc-price" className="required">
-            Đơn giá (VNĐ)
+            {categoryId === 4 ? 'Giá tham chiếu (không dùng tính phí bảo hiểm)' : `Đơn giá (VNĐ / ${SERVICE_BILLING_UNIT_LABEL[billingUnit]})`}
           </label>
           <input
             id="svc-price"
@@ -127,6 +167,20 @@ function ServiceModal({ service, categories, onClose, onDone }: ServiceModalProp
             value={price}
             onChange={e => setPrice(e.target.value)}
             required
+          />
+          {categoryId === 4 && <small className="form-hint">Phí bảo hiểm đang được tính bằng 2% giá trị bảo hiểm theo giống ngựa.</small>}
+        </div>
+
+        <div className={`form-group ${s.full}`}>
+          <label htmlFor="svc-description">Mô tả dịch vụ</label>
+          <textarea
+            id="svc-description"
+            className="form-control"
+            placeholder="Thành phần, số bữa mỗi ngày (nếu là gói thức ăn), lưu ý áp dụng…"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            rows={3}
+            maxLength={1000}
           />
         </div>
 
@@ -171,9 +225,10 @@ export default function AdminServicesPage() {
       cell: item => (
         <div className={s.name}>
           <b>
-            <span>#{item.id}</span>
+            <span>{item.serviceCode}</span>
             {item.serviceName}
           </b>
+          {item.description && <small>{item.description}</small>}
         </div>
       ),
     },
@@ -190,7 +245,11 @@ export default function AdminServicesPage() {
       head: 'Đơn giá',
       cell: item => (
         <span className={s.price}>
-          {item.price > 0 ? formatVND(item.price) : 'Miễn phí / Đã gồm'}
+          {item.categoryId === 4
+            ? 'Phí tính theo giá trị bảo hiểm của giống'
+            : item.price > 0
+              ? `${formatVND(item.price)} / ${SERVICE_BILLING_UNIT_LABEL[item.billingUnit]}`
+              : 'Miễn phí / Đã gồm'}
         </span>
       ),
       nowrap: true,
@@ -213,6 +272,7 @@ export default function AdminServicesPage() {
             className="btn btn-outline btn-sm"
             onClick={() => setModal({ service: item })}
             title="Chỉnh sửa dịch vụ"
+            disabled={item.serviceCode.startsWith('WATER_')}
           >
             <i className="fa-solid fa-pen-to-square" /> Sửa
           </button>
@@ -233,6 +293,7 @@ export default function AdminServicesPage() {
                 }
               }}
               title="Tạm ngưng cung cấp"
+              disabled={item.serviceCode.startsWith('WATER_')}
             >
               <i className="fa-solid fa-pause" /> Tạm dừng
             </button>
@@ -251,6 +312,7 @@ export default function AdminServicesPage() {
                 }
               }}
               title="Kích hoạt lại"
+              disabled={item.serviceCode.startsWith('WATER_')}
             >
               <i className="fa-solid fa-play" /> Mở lại
             </button>
@@ -265,12 +327,12 @@ export default function AdminServicesPage() {
     <>
       <ListPage<BackendServiceItem, Tab>
         title="Quản lý Dịch vụ & Biểu phí"
-        subtitle="Cấu hình các gói khoang xe, chế độ dinh dưỡng, cữ cấp nước và bảo hiểm chuyến đi phục vụ tính báo giá tự động."
+        subtitle="Cấu hình mã, mô tả, đơn vị tính và đơn giá dịch vụ dùng cho các đơn mới."
         tabs={tabs}
         tab={tab}
         onTab={setTab}
         searchPlaceholder="Tìm theo tên dịch vụ hoặc phân loại…"
-        haystack={(item: BackendServiceItem) => [item.serviceName, item.categoryName ?? '', String(item.id)]}
+        haystack={(item: BackendServiceItem) => [item.serviceCode, item.serviceName, item.categoryName ?? '', String(item.id)]}
         rows={rows}
         columns={columns}
         rowKey={(item: BackendServiceItem) => String(item.id)}

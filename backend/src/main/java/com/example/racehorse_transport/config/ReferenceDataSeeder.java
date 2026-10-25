@@ -27,6 +27,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Map;
 
 /**
  * Nạp dữ liệu danh mục và tài khoản mẫu từ tài liệu nhóm (tab Data). Chỉ chạy khi bật APP_SEED_REFERENCE_DATA=true
@@ -59,19 +60,37 @@ public class ReferenceDataSeeder implements CommandLineRunner {
             new String[] { "4", "Bảo hiểm chuyến đi", "Các lựa chọn bảo hiểm cho chuyến vận chuyển ngựa" }
     };
 
-    // {ServiceID, ServiceName, CategoryID, price, status}
+    // {ServiceID, ServiceName, CategoryID, price, status, serviceCode, billingUnit, description}
     private static final String[][] SERVICES = {
-            new String[] { "1", "Khoang tiêu chuẩn", "1", "1000000", "ACTIVE" },
-            new String[] { "2", "Khoang đơn mở rộng", "1", "2000000", "ACTIVE" },
-            new String[] { "3", "Gói cơ bản", "2", "0", "ACTIVE" },
-            new String[] { "4", "Gói nâng cao", "2", "300000", "ACTIVE" },
-            new String[] { "5", "Gói thể thao", "2", "500000", "ACTIVE" },
-            new String[] { "6", "Mỗi 3 giờ", "3", "0", "ACTIVE" },
-            new String[] { "7", "Mỗi 2 giờ", "3", "50000", "ACTIVE" },
-            new String[] { "8", "Mỗi giờ", "3", "100000", "ACTIVE" },
-            new String[] { "9", "Mua bảo hiểm", "4", "20000000", "ACTIVE" },
-            new String[] { "10", "Từ chối", "4", "0", "ACTIVE" }
+            new String[] { "1", "Khoang tiêu chuẩn", "1", "1000000", "ACTIVE", "STALL_STANDARD", "PER_HORSE", "" },
+            new String[] { "2", "Khoang đơn mở rộng", "1", "2000000", "ACTIVE", "STALL_SINGLE_EXTENDED", "PER_HORSE", "" },
+            new String[] { "3", "Gói cơ bản", "2", "0", "ACTIVE", "FEED_BASIC", "PER_HORSE_DAY", "" },
+            new String[] { "4", "Gói nâng cao", "2", "300000", "ACTIVE", "FEED_ADVANCED", "PER_HORSE_DAY", "" },
+            new String[] { "5", "Gói thể thao", "2", "500000", "ACTIVE", "FEED_SPORT", "PER_HORSE_DAY", "" },
+            new String[] { "6", "Mỗi 3 giờ", "3", "0", "INACTIVE", "WATER_EVERY_3H", "PER_HORSE", "" },
+            new String[] { "7", "Mỗi 2 giờ", "3", "50000", "INACTIVE", "WATER_EVERY_2H", "PER_HORSE", "" },
+            new String[] { "8", "Mỗi giờ", "3", "100000", "INACTIVE", "WATER_EVERY_1H", "PER_HORSE", "" },
+            new String[] { "9", "Mua bảo hiểm", "4", "20000000", "ACTIVE", "INSURANCE_BUY", "PER_HORSE", "" },
+            new String[] { "10", "Từ chối", "4", "0", "ACTIVE", "INSURANCE_DECLINED", "PER_HORSE", "" }
     };
+
+    private static final Map<Integer, String> LEGACY_SERVICE_CODES = Map.of(
+            1, "STALL_STANDARD",
+            2, "STALL_SINGLE_EXTENDED",
+            3, "FEED_BASIC",
+            4, "FEED_ADVANCED",
+            5, "FEED_SPORT",
+            6, "WATER_EVERY_3H",
+            7, "WATER_EVERY_2H",
+            8, "WATER_EVERY_1H",
+            9, "INSURANCE_BUY",
+            10, "INSURANCE_DECLINED");
+
+    private static final Map<Integer, String> LEGACY_BILLING_UNITS = Map.of(
+            1, "PER_HORSE",
+            2, "PER_HORSE_DAY",
+            3, "PER_HORSE",
+            4, "PER_HORSE");
 
     // {RegulationName, Description, Status, LocationID, DocumentType, Country}
     private static final String[][] REGULATIONS = {
@@ -215,6 +234,7 @@ public class ReferenceDataSeeder implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
+        migrateServiceMetadata();
         if (!enabled) {
             log.info("Reference data seeding skipped (app.seed-reference-data=false).");
             return;
@@ -283,8 +303,54 @@ public class ReferenceDataSeeder implements CommandLineRunner {
             s.setCategoryID(categoryRepository.findById(Integer.valueOf(r[2])).orElseThrow());
             s.setPrice(new BigDecimal(r[3]));
             s.setStatus(r[4]);
+            s.setServiceCode(r[5]);
+            s.setBillingUnit(r[6]);
+            s.setDescription(r[7].isBlank() ? null : r[7]);
             serviceRepository.save(s);
         }
+    }
+
+    private void migrateServiceMetadata() {
+        for (Service service : serviceRepository.findAll()) {
+            boolean changed = false;
+            Integer categoryId = service.getCategoryID() == null ? null : service.getCategoryID().getId();
+            if (service.getServiceCode() == null || service.getServiceCode().isBlank()) {
+                String code = LEGACY_SERVICE_CODES.get(service.getId());
+                if (code == null && categoryId != null) {
+                    String prefix = switch (categoryId) {
+                        case 1 -> "STALL";
+                        case 2 -> "FEED";
+                        case 3 -> "WATER";
+                        case 4 -> "INSURANCE";
+                        default -> throw new IllegalStateException(
+                                "Không thể gán mã cho dịch vụ " + service.getId() + " thuộc danh mục " + categoryId);
+                    };
+                    code = prefix + "_LEGACY_" + service.getId();
+                }
+                if (code == null) {
+                    throw new IllegalStateException("Dịch vụ " + service.getId() + " không có danh mục để gán mã.");
+                }
+                service.setServiceCode(code);
+                changed = true;
+            }
+            if (service.getBillingUnit() == null || service.getBillingUnit().isBlank()) {
+                String unit = LEGACY_BILLING_UNITS.get(categoryId);
+                if (unit == null) {
+                    throw new IllegalStateException(
+                            "Không thể gán đơn vị tính cho dịch vụ " + service.getId() + " thuộc danh mục " + categoryId);
+                }
+                service.setBillingUnit(unit);
+                changed = true;
+            }
+            if (Integer.valueOf(3).equals(categoryId) && "ACTIVE".equalsIgnoreCase(service.getStatus())) {
+                service.setStatus("INACTIVE");
+                changed = true;
+            }
+            if (changed) {
+                serviceRepository.save(service);
+            }
+        }
+        log.info("Service metadata migration completed.");
     }
 
     private void seedHorseTypes() {

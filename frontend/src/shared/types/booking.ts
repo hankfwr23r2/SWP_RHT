@@ -1,6 +1,7 @@
 // Đơn đặt chuyến theo quy trình mới (Flow 1). Khớp docs/PRD.md mục 2, 13. Các luồng 2–6 sẽ thêm trạng thái và trường vào đây.
 import type { BookingStatus, FeedPackageId, WaterPlanId, ClearanceDocType, ExpenseCategory, HorseDocType, IncidentAction, IncidentKind, IncidentStatus, Payer, WelfareCondition } from '../config/booking-rules'
 import type { CountryCode, GeoPoint } from '../config/network'
+import type { ServiceBillingUnit } from '../api/serviceCatalog'
 
 export type Sex = 'stallion' | 'mare' | 'gelding'
 export const SEX_LABEL: Record<Sex, string> = { stallion: 'Đực', mare: 'Cái', gelding: 'Thiến' }
@@ -67,22 +68,27 @@ export interface BookingHorse {
   breed: string
   sex: Sex
   stall: StallType
-  feedPackage: FeedPackageId // gói thức ăn
-  waterPlan: WaterPlanId // cữ nước
+  feedPackage?: FeedPackageId // legacy
+  waterPlan?: WaterPlanId // legacy
   selectedServices?: Partial<Record<BookingServiceCategory, BookingServiceSnapshot>>
+  selectedServiceCodes?: Partial<Record<BookingRequiredServiceCategory, string>>
   insurance: { opted: boolean }
   status?: 'eligible' | 'unfit'
   unfitInfo?: HorseUnfitInfo
 }
 
 export type BookingServiceCategory = 'stall' | 'feed' | 'water' | 'insurance'
+export type BookingRequiredServiceCategory = Exclude<BookingServiceCategory, 'water'>
 
 export interface BookingServiceSnapshot {
   id: number
+  serviceCode?: string
   serviceName: string
   categoryId: number
   categoryName: string
   price: number
+  billingUnit?: ServiceBillingUnit
+  description?: string
 }
 
 export interface StaffRef { id: string; name: string }

@@ -99,10 +99,12 @@ export function HorseConfigList({ b }: { b: Booking }) {
           </div>
           <div className={s.config}>
             <span>Khoang: <b>{h.selectedServices?.stall?.serviceName ?? (h.stall === 'single' ? 'đơn mở rộng' : 'tiêu chuẩn')}</b></span>
-            <span>Thức ăn: <b>{h.selectedServices?.feed?.serviceName ?? FEED_PACKAGE[h.feedPackage].label}</b>
-              {!h.selectedServices?.feed && <small> ({FEED_PACKAGE[h.feedPackage].items.join(', ')})</small>}
+            <span>Thức ăn: <b>{h.selectedServices?.feed?.serviceName ?? FEED_PACKAGE[h.feedPackage ?? 'basic'].label}</b>
+              {!h.selectedServices?.feed && <small> ({FEED_PACKAGE[h.feedPackage ?? 'basic'].items.join(', ')})</small>}
             </span>
-            <span>Cữ nước: <b>{h.selectedServices?.water?.serviceName ?? WATER_PLAN[h.waterPlan].label}</b></span>
+            {(h.selectedServices?.water || h.waterPlan) && (
+              <span>Cữ nước: <b>{h.selectedServices?.water?.serviceName ?? WATER_PLAN[h.waterPlan ?? 'every_3h'].label}</b></span>
+            )}
             <span>Bảo hiểm: <b>{h.selectedServices?.insurance?.serviceName ?? (h.insurance.opted ? `mua, phí ${formatVND(insuranceFee(h.breed))}` : 'từ chối')}</b>
               {h.selectedServices?.insurance && h.selectedServices.insurance.price > 0 && <small> ({formatVND(h.selectedServices.insurance.price)})</small>}
             </span>

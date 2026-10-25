@@ -1363,28 +1363,39 @@ public class BookingServiceImpl implements BookingService {
         Map<String, Integer> categoryIds = Map.of(
                 "stall", 1,
                 "feed", 2,
-                "water", 3,
                 "insurance", 4);
 
         for (BookingHorseDto horse : horses) {
-            Map<String, BookingServiceSelectionDto> requested = horse.getSelectedServices();
-            if (requested == null) {
+            Map<String, String> requestedCodes = horse.getSelectedServiceCodes();
+            Map<String, BookingServiceSelectionDto> legacySelections = horse.getSelectedServices();
+            if (requestedCodes == null && legacySelections == null) {
                 continue;
             }
 
             Map<String, BookingServiceSelectionDto> resolved = new LinkedHashMap<>();
             for (Map.Entry<String, Integer> category : categoryIds.entrySet()) {
-                BookingServiceSelectionDto selection = requested.get(category.getKey());
-                if (selection == null || selection.getId() == null) {
-                    throw new IllegalArgumentException("Mỗi ngựa phải chọn đủ khoang, thức ăn, cữ nước và bảo hiểm.");
+                String serviceCode = requestedCodes != null ? requestedCodes.get(category.getKey()) : null;
+                BookingServiceSelectionDto legacySelection = legacySelections != null
+                        ? legacySelections.get(category.getKey())
+                        : null;
+                if ((serviceCode == null || serviceCode.isBlank()) && legacySelection == null) {
+                    throw new IllegalArgumentException("Mỗi ngựa phải chọn đủ khoang, thức ăn và bảo hiểm.");
                 }
 
-                com.example.racehorse_transport.entity.Service service = serviceRepository.findById(selection.getId())
-                        .orElseThrow(() -> new IllegalArgumentException(
-                                "Không tìm thấy dịch vụ ID: " + selection.getId()));
+                com.example.racehorse_transport.entity.Service service = serviceCode != null && !serviceCode.isBlank()
+                        ? serviceRepository.findByServiceCodeIgnoreCase(serviceCode)
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                        "Không tìm thấy dịch vụ mã: " + serviceCode))
+                        : serviceRepository.findById(legacySelection.getId())
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                        "Không tìm thấy dịch vụ ID: " + legacySelection.getId()));
                 if (!"ACTIVE".equalsIgnoreCase(service.getStatus())) {
                     throw new IllegalArgumentException(
                             "Dịch vụ \"" + service.getServiceName() + "\" vừa được tạm ngưng. Vui lòng chọn lại.");
+                }
+                if (service.getServiceCode() == null || service.getBillingUnit() == null) {
+                    throw new IllegalStateException(
+                            "Dịch vụ \"" + service.getServiceName() + "\" chưa được cấu hình mã và đơn vị tính.");
                 }
                 if (service.getCategoryID() == null
                         || !category.getValue().equals(service.getCategoryID().getId())) {
@@ -1394,16 +1405,24 @@ public class BookingServiceImpl implements BookingService {
 
                 resolved.put(category.getKey(), BookingServiceSelectionDto.builder()
                         .id(service.getId())
+                        .serviceCode(service.getServiceCode())
                         .serviceName(service.getServiceName())
                         .categoryId(service.getCategoryID().getId())
                         .categoryName(service.getCategoryID().getCategoryName())
                         .price(service.getPrice())
+                        .billingUnit(service.getBillingUnit())
+                        .description(service.getDescription())
                         .build());
             }
 
             horse.setSelectedServices(resolved);
+            horse.setSelectedServiceCodes(resolved.entrySet().stream().collect(
+                    LinkedHashMap::new,
+                    (codes, entry) -> codes.put(entry.getKey(), entry.getValue().getServiceCode()),
+                    LinkedHashMap::putAll));
             BookingServiceSelectionDto insurance = resolved.get("insurance");
-            boolean declinedInsurance = insurance.getId() == 10
+            boolean declinedInsurance = "INSURANCE_DECLINED".equals(insurance.getServiceCode())
+                    || insurance.getId() == 10
                     || insurance.getServiceName().toLowerCase(Locale.ROOT).contains("từ chối");
             horse.setInsuranceOpted(!declinedInsurance);
         }

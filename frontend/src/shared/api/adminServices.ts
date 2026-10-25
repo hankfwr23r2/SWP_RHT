@@ -1,11 +1,15 @@
 import apiClient, { type ApiResponse } from './client'
+import type { ServiceBillingUnit } from './serviceCatalog'
 
 export interface BackendServiceItem {
   id: number
+  serviceCode: string
   serviceName: string
   categoryId: number
   categoryName: string
   price: number
+  billingUnit: ServiceBillingUnit
+  description?: string
   status: 'ACTIVE' | 'INACTIVE' | string
 }
 
@@ -16,9 +20,12 @@ export interface BackendCategoryItem {
 }
 
 export interface CreateServicePayload {
+  serviceCode: string
   serviceName: string
   categoryId: number
   price: number
+  billingUnit: ServiceBillingUnit
+  description?: string
   status?: string
 }
 

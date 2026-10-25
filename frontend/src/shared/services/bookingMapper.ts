@@ -46,6 +46,7 @@ function horseOf(h: BackendBookingResponse['horses'][number]): BookingHorse {
     sex: h.sex as BookingHorse['sex'], stall: h.stall as BookingHorse['stall'],
     feedPackage: h.feedPackage as BookingHorse['feedPackage'], waterPlan: h.waterPlan as BookingHorse['waterPlan'],
     selectedServices: h.selectedServices,
+    selectedServiceCodes: h.selectedServiceCodes,
     insurance: { opted: !!h.insuranceOpted },
     status: (h.status?.toLowerCase() === 'unfit' ? 'unfit' : 'eligible'),
     unfitInfo: h.unfitInfo as BookingHorse['unfitInfo'],

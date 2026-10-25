@@ -3,7 +3,7 @@ import { CLASS_FACTOR, CLEARANCE_FEE, CREW_FEE_PER_DAY, DEMURRAGE_PER_HOUR, DEPO
 import { MIN_LEAD_DAYS } from '@shared/config/business-rules'
 import { formatVND } from '@shared/lib/format'
 import { truckCost } from '@shared/lib/pricing'
-import { serviceCatalogApi } from '@shared/api/serviceCatalog'
+import { SERVICE_BILLING_UNIT_LABEL, serviceCatalogApi } from '@shared/api/serviceCatalog'
 import { useLoad } from '@shared/services/useLoad'
 import s from '../home/HomePage.module.css'
 
@@ -61,7 +61,9 @@ export function PriceTable() {
                     ? services.map(service => (
                         <tr key={service.id}>
                           <td className={s.colText}>{service.categoryName} · {service.serviceName}</td>
-                          <td className={s.colNum}>{service.price > 0 ? `${formatVND(service.price)}/ngựa` : 'Miễn phí / Đã gồm'}</td>
+                          <td className={s.colNum}>{service.price > 0
+                            ? `${formatVND(service.price)} / ${SERVICE_BILLING_UNIT_LABEL[service.billingUnit]}`
+                            : 'Miễn phí / Đã gồm'}</td>
                         </tr>
                       ))
                     : <tr><td className={s.colText} colSpan={2}>Chưa có dịch vụ đang áp dụng.</td></tr>}
