@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -45,12 +46,10 @@ public class SystemConfigServiceImpl implements SystemConfigService {
             new Definition("DEMURRAGE_PER_HOUR", "Phí lưu xe chờ khách", "400000", "VNĐ/giờ", "PAYMENT",
                     "Phí lưu xe mỗi giờ khi bàn giao bị chậm do phía khách hàng.", BigDecimal.ZERO, BigDecimal.valueOf(100_000_000)),
             new Definition("MIN_LEAD_DAYS", "Số ngày đặt trước tối thiểu", "20", "ngày", "OPERATIONS",
-                    "Số ngày tối thiểu giữa ngày tạo đơn và ngày khởi hành.", BigDecimal.ZERO, BigDecimal.valueOf(365)),
-            new Definition("BORDER_OPEN_MINUTES", "Giờ mở cửa khẩu", "450", "giờ địa phương", "BORDER",
-                    "Giờ mở cửa khẩu theo giờ địa phương (07:30 tương ứng 450 phút từ 00:00).", BigDecimal.ZERO, BigDecimal.valueOf(1439)),
-            new Definition("BORDER_CLOSE_MINUTES", "Giờ đóng cửa khẩu", "990", "giờ địa phương", "BORDER",
-                    "Giờ đóng cửa khẩu theo giờ địa phương (16:30 tương ứng 990 phút từ 00:00).", BigDecimal.ONE, BigDecimal.valueOf(1439))
+                    "Số ngày tối thiểu giữa ngày tạo đơn và ngày khởi hành.", BigDecimal.ZERO, BigDecimal.valueOf(365))
     );
+
+    private static final Set<String> LEGACY_BORDER_KEYS = Set.of("BORDER_OPEN_MINUTES", "BORDER_CLOSE_MINUTES");
 
     private static final Map<String, Definition> DEFINITIONS_BY_KEY = DEFINITIONS.stream()
             .collect(LinkedHashMap::new, (map, definition) -> map.put(definition.key(), definition), LinkedHashMap::putAll);
@@ -62,7 +61,10 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     public List<SystemConfigResponse> getAllConfigs() {
         ensureDefaults();
         return repository.findAll(Sort.by(Sort.Order.asc("configGroup"), Sort.Order.asc("configKey")))
-                .stream().map(this::toResponse).toList();
+                .stream()
+                .filter(config -> !LEGACY_BORDER_KEYS.contains(config.getConfigKey()))
+                .map(this::toResponse)
+                .toList();
     }
 
     @Override
@@ -106,18 +108,6 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         if (isIntegerRule(key) && numericValue.stripTrailingZeros().scale() > 0) {
             throw new IllegalArgumentException("Giá trị " + definition.name() + " phải là số nguyên.");
         }
-        if ("BORDER_OPEN_MINUTES".equals(key)) {
-            BigDecimal close = new BigDecimal(repository.findById("BORDER_CLOSE_MINUTES").orElseThrow().getConfigValue());
-            if (numericValue.compareTo(close) >= 0) {
-                throw new IllegalArgumentException("Giờ mở cửa khẩu phải sớm hơn giờ đóng cửa.");
-            }
-        } else if ("BORDER_CLOSE_MINUTES".equals(key)) {
-            BigDecimal open = new BigDecimal(repository.findById("BORDER_OPEN_MINUTES").orElseThrow().getConfigValue());
-            if (numericValue.compareTo(open) <= 0) {
-                throw new IllegalArgumentException("Giờ đóng cửa khẩu phải muộn hơn giờ mở cửa.");
-            }
-        }
-
         SystemConfig config = repository.findById(key)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy cấu hình: " + key));
         config.setConfigValue(value);

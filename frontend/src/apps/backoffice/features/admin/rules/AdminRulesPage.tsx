@@ -9,7 +9,6 @@ import s from './AdminRules.module.css'
 const GROUPS: Array<{ id: SystemConfigGroup; label: string; icon: string }> = [
   { id: 'WELFARE', label: 'An sinh & Vận chuyển', icon: 'fa-horse' },
   { id: 'PAYMENT', label: 'Tài chính & Đặt cọc', icon: 'fa-credit-card' },
-  { id: 'BORDER', label: 'Cửa khẩu & Thủ tục', icon: 'fa-passport' },
   { id: 'OPERATIONS', label: 'Vận hành', icon: 'fa-gears' },
 ]
 
@@ -21,8 +20,6 @@ const INPUTS: Record<string, { min: number; max: number; step: number }> = {
   QUOTE_VALID_HOURS: { min: 1, max: 168, step: 1 },
   DEMURRAGE_PER_HOUR: { min: 0, max: 100000000, step: 1000 },
   MIN_LEAD_DAYS: { min: 0, max: 365, step: 1 },
-  BORDER_OPEN_MINUTES: { min: 0, max: 1439, step: 1 },
-  BORDER_CLOSE_MINUTES: { min: 1, max: 1440, step: 1 },
 }
 
 function formatConfigValue(config: SystemConfigItem) {

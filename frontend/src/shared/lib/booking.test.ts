@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { DAY, HOUR } from '../config/business-rules'
 import { BOOKING_STATUS, BOOKING_STEPS, stepOf, statusRank, type BookingStatus } from '../config/booking-rules'
 import type { Incident, IncidentExpense } from '../types/booking'
-import { COUNTRY_LOCATIONS, PLACES, TRANSIT_STATIONS } from '../config/network'
+import { COUNTRY_LOCATIONS, findGate, PLACES, setNetworkLocations, TRANSIT_STATIONS, type CatalogLocation } from '../config/network'
 import type { StaffMember } from '../types/staff'
 import type { Vehicle } from '../types/fleet'
 import type { Booking, BookingHorse, HorseProfile, VehicleTrip, Checkpoint, TripRun } from '../types/booking'
@@ -14,6 +14,31 @@ import {
 
 
 const NOW = new Date(2026, 9, 1, 10, 0).getTime() // 01/10/2026 10:00
+
+const locationFixture: CatalogLocation[] = [
+  { id: 1, locationCode: 'KHO-DN', locationType: 'Warehouse', locationName: 'Kho Đồng Nai', city: 'Long Thành', province: 'Đồng Nai', country: 'Việt Nam', lat: 10.78, lng: 107 },
+  { id: 2, locationCode: 'KHO-LA', locationType: 'Warehouse', locationName: 'Kho Long An', city: 'Đức Hòa', province: 'Long An', country: 'Việt Nam', lat: 10.88, lng: 106.4 },
+  { id: 4, locationCode: 'CLB-SG', locationType: 'RidingClub', locationName: 'CLB Sài Gòn', city: 'TP. Thủ Đức', province: 'TP.HCM', country: 'Việt Nam', lat: 10.79, lng: 106.74 },
+  { id: 5, locationCode: 'KHO-PNH', locationType: 'Warehouse', locationName: 'Kho Phnom Penh', city: 'Phnom Penh', province: 'Phnom Penh', country: 'Campuchia', lat: 11.56, lng: 104.92 },
+  { id: 8, locationCode: 'KHO-VTE', locationType: 'Warehouse', locationName: 'Kho Viêng Chăn', city: 'Viêng Chăn', province: 'Vientiane Capital', country: 'Lào', lat: 17.97, lng: 102.6 },
+  { id: 16, locationCode: 'GATE-MOC-BAI', locationType: 'BorderGate', locationName: 'Mộc Bài – Bavet', city: 'Bến Cầu', province: 'Tây Ninh', country: 'Việt Nam', destinationCountry: 'KH', openingMinutes: 450, closingMinutes: 990, lat: 11.07, lng: 106.2 },
+  { id: 18, locationCode: 'GATE-TINH-BIEN', locationType: 'BorderGate', locationName: 'Tịnh Biên – Phnom Den', city: 'Tịnh Biên', province: 'An Giang', country: 'Việt Nam', destinationCountry: 'KH', openingMinutes: 480, closingMinutes: 960, lat: 10.6, lng: 104.95 },
+  { id: 24, locationCode: 'GATE-LAO-BAO', locationType: 'BorderGate', locationName: 'Lao Bảo – Densavanh', city: 'Hướng Hóa', province: 'Quảng Trị', country: 'Việt Nam', destinationCountry: 'LA', openingMinutes: 450, closingMinutes: 990, lat: 16.62, lng: 106.6 },
+  { id: 25, locationCode: 'GATE-CAU-TREO', locationType: 'BorderGate', locationName: 'Cầu Treo – Nam Phao', city: 'Hương Sơn', province: 'Hà Tĩnh', country: 'Việt Nam', destinationCountry: 'LA', openingMinutes: 480, closingMinutes: 1020, lat: 18.38, lng: 105.13 },
+  { id: 60, locationCode: 'REST-LONG-THANH', locationType: 'RestStop', locationName: 'Trạm nghỉ Long Thành', city: 'Long Thành', province: 'Đồng Nai', country: 'Việt Nam', lat: 10.78, lng: 107 },
+  { id: 61, locationCode: 'REST-CU-CHI', locationType: 'RestStop', locationName: 'Trạm nghỉ Củ Chi', city: 'Củ Chi', province: 'TP.HCM', country: 'Việt Nam', lat: 10.97, lng: 106.5 },
+  { id: 62, locationCode: 'REST-MOC-BAI', locationType: 'RestStop', locationName: 'Trạm nghỉ Mộc Bài', city: 'Bến Cầu', province: 'Tây Ninh', country: 'Việt Nam', lat: 11.07, lng: 106.2 },
+  { id: 63, locationCode: 'REST-TRANG-BANG', locationType: 'RestStop', locationName: 'Trạm nghỉ Trảng Bàng', city: 'Trảng Bàng', province: 'Tây Ninh', country: 'Việt Nam', lat: 11.03, lng: 106.37 },
+  { id: 64, locationCode: 'REST-BAVET', locationType: 'RestStop', locationName: 'Trạm nghỉ Bavet', city: 'Bavet', province: 'Svay Rieng', country: 'Campuchia', lat: 11.08, lng: 106.15 },
+  { id: 65, locationCode: 'REST-SVAY-RIENG', locationType: 'RestStop', locationName: 'Trạm nghỉ Svay Rieng', city: 'Svay Rieng', province: 'Svay Rieng', country: 'Campuchia', lat: 11.09, lng: 105.8 },
+  { id: 66, locationCode: 'REST-SAVANNAKHET', locationType: 'RestStop', locationName: 'Trạm nghỉ Savannakhet', city: 'Savannakhet', province: 'Savannakhet', country: 'Lào', lat: 16.57, lng: 104.75 },
+  { id: 67, locationCode: 'REST-VIENTIANE', locationType: 'RestStop', locationName: 'Trạm nghỉ Viêng Chăn', city: 'Viêng Chăn', province: 'Vientiane Capital', country: 'Lào', lat: 17.97, lng: 102.6 },
+  { id: 70, locationCode: 'dni', locationType: 'City', locationName: 'Đồng Nai', city: 'Đồng Nai', province: 'Đồng Nai', country: 'Việt Nam', lat: 10.78, lng: 106.95 },
+  { id: 71, locationCode: 'pnh', locationType: 'City', locationName: 'Phnom Penh', city: 'Phnom Penh', province: 'Phnom Penh', country: 'Campuchia', lat: 11.56, lng: 104.92 },
+  { id: 72, locationCode: 'hcm', locationType: 'City', locationName: 'TP. Hồ Chí Minh', city: 'TP. Hồ Chí Minh', province: 'TP.HCM', country: 'Việt Nam', lat: 10.77, lng: 106.66 },
+  { id: 73, locationCode: 'dn', locationType: 'City', locationName: 'Đà Nẵng', city: 'Đà Nẵng', province: 'Đà Nẵng', country: 'Việt Nam', lat: 16.05, lng: 108.2 },
+]
+setNetworkLocations(locationFixture)
 
 const horse = (docs: HorseProfile['docs']): HorseProfile => ({ id: 'H1', owner: 'x', name: 'A', microchip: 'VN-1', breed: 'Thoroughbred', sex: 'mare', color: 'Nâu', birthYear: 2020, marks: '', docs, completedTrips: 0, createdAt: NOW })
 const doc = () => ({ fileName: 'f.pdf', uploadedAt: NOW })
@@ -355,6 +380,14 @@ describe('lộ trình chi tiết (Flow 3)', () => {
     expect(validateRoutePlan({ ...base, borderEta: new Date(2026, 10, 20, 9, 0).getTime() }, true).warnings).toEqual([])
     expect(validateRoutePlan({ ...base }, true).errors.length).toBe(1)
   })
+  it('áp dụng giờ mở cửa riêng của cửa khẩu được chọn', () => {
+    const legs = layoutLegs('A', 'B', etd, [{ name: 'X', minutes: 45 }], 6)
+    const plan = { legs, rests: [{ afterLeg: 1, name: 'X', minutes: 45 }], borderEta: new Date(2026, 10, 20, 7, 45).getTime() }
+    expect(validateRoutePlan(plan, true, 'Tịnh Biên – Phnom Den').warnings)
+      .toEqual([expect.stringContaining('08:00–16:00')])
+    expect(validateRoutePlan({ ...plan, borderEta: new Date(2026, 10, 20, 8, 30).getTime() }, true, 'Tịnh Biên – Phnom Den').warnings)
+      .toEqual([])
+  })
   it('chứng từ gốc khách giao: hộ chiếu, sổ tiêm, xét nghiệm; bộ giấy nhà xe quốc tế dài hơn nội địa', () => {
     const none = manifestDocuments({ type: 'domestic' })
     const intl = manifestDocuments({ type: 'international' })
@@ -385,6 +418,19 @@ describe('cửa khẩu và trạm nghỉ do Coordinator lập', () => {
     expect(gatesFor(pnh, dn).every(g => g.country === 'KH')).toBe(true)
     expect(gatesFor(dn, sg)).toEqual([])
     expect(suggestGate(dn, sg)).toBeUndefined()
+  })
+  it('khớp tên cửa khẩu cũ với tên đang lưu trong danh mục', () => {
+    expect(findGate('Cửa khẩu quốc tế Mộc Bài - Bavet')?.name).toBe('Mộc Bài – Bavet')
+  })
+  it('giữ tọa độ điểm đã ngừng dùng cho dữ liệu cũ nhưng không cho chọn đơn mới', () => {
+    const inactive = { ...locationFixture[0], id: 99, locationCode: 'KHO-OLD', locationName: 'Kho cũ', status: 'INACTIVE' }
+    setNetworkLocations([...locationFixture, inactive])
+    try {
+      expect(COUNTRY_LOCATIONS.VN.some(location => location.id === 'KHO-OLD')).toBe(false)
+      expect(findLocation('KHO-OLD')).toMatchObject({ lat: 10.78, lng: 107 })
+    } finally {
+      setNetworkLocations(locationFixture)
+    }
   })
   it('gợi ý cửa khẩu có tổng quãng đường ngắn nhất', () => {
     for (const [o, d] of [[dn, pnh], [dn, vte], [pnh, dn]] as const) {

@@ -3,7 +3,7 @@
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useEffect, useMemo, useRef } from 'react'
-import { GATES, TRANSIT_STATIONS, type GeoPoint } from '../config/network'
+import { findGate, findTransitStation, type GeoPoint } from '../config/network'
 import { bookingPath, findLocation, projectOnPath, spotLabel, vehiclePoint } from '../lib/booking'
 import { useRoadRoute } from '../services/useRoadRoute'
 import type { Booking, VehicleTrip } from '../types/booking'
@@ -63,10 +63,10 @@ export function TripTrackMap({ b, trips = [], height = 360, plain }: Props) {
     const a = findLocation(b.origin.id), z = findLocation(b.dest.id)
     if (a) L.marker(ll(a), { icon: pin('tt-a', 'A') }).bindTooltip(`Điểm đón: ${b.origin.name.split(' — ')[0]}`, { direction: 'top', offset: [0, -12] }).addTo(g)
     if (z) L.marker(ll(z), { icon: pin('tt-b', 'B') }).bindTooltip(`Điểm giao: ${b.dest.name.split(' — ')[0]}`, { direction: 'top', offset: [0, -12] }).addTo(g)
-    const gate = b.gate ? GATES.find(x => x.name === b.gate) : undefined
+    const gate = findGate(b.gate)
     if (gate) L.marker(ll(gate), { icon: pin('tt-g', '⚑') }).bindTooltip(`Cửa khẩu ${gate.name}`, { direction: 'top', offset: [0, -12] }).addTo(g)
     ;(b.route?.rests ?? []).forEach(r => {
-      const s = TRANSIT_STATIONS.find(x => x.name === r.name)
+      const s = findTransitStation(r.name)
       if (!s) return
       L.marker(ll(s), { icon: L.divIcon({ className: 'tt-icon', html: `<span class="tt-st ${passed.has(r.name) ? 'tt-done' : ''}"></span>`, iconSize: [34, 34], iconAnchor: [17, 17] }) }).bindTooltip(`${r.name} · nghỉ ${r.minutes} phút${passed.has(r.name) ? ' (đã qua)' : ''}`, { direction: 'top', offset: [0, -12] }).addTo(g)
     })

@@ -1,5 +1,3 @@
-// Mạng lưới vận chuyển: 3 nước, điểm nhận/giao, cửa khẩu, trạm nghỉ. Khớp docs/PRD.md mục 1.
-
 export type CountryCode = 'VN' | 'LA' | 'KH'
 
 export const COUNTRIES: Record<CountryCode, { name: string; meta: string }> = {
@@ -9,135 +7,158 @@ export const COUNTRIES: Record<CountryCode, { name: string; meta: string }> = {
 }
 
 export interface GeoPoint { lat: number; lng: number }
-
-// Điểm dùng cho tra cước ở trang chủ (tọa độ để ước tính km)
 export interface Place extends GeoPoint { id: string; name: string; country: CountryCode }
-export const PLACES: Place[] = [
-  { id: 'hn', name: 'Hà Nội', country: 'VN', lat: 21.03, lng: 105.85 },
-  { id: 'dn', name: 'Đà Nẵng', country: 'VN', lat: 16.05, lng: 108.2 },
-  { id: 'qn', name: 'Quy Nhơn (Bình Định)', country: 'VN', lat: 13.78, lng: 109.22 },
-  { id: 'hcm', name: 'TP. Hồ Chí Minh', country: 'VN', lat: 10.77, lng: 106.66 },
-  { id: 'dni', name: 'Đồng Nai', country: 'VN', lat: 10.78, lng: 106.95 },
-  { id: 'bd', name: 'Bình Dương', country: 'VN', lat: 11.0, lng: 106.65 },
-  { id: 'tn', name: 'Tây Ninh', country: 'VN', lat: 11.31, lng: 106.1 },
-  { id: 'ct', name: 'Cần Thơ', country: 'VN', lat: 10.03, lng: 105.78 },
-  { id: 'vte', name: 'Vientiane', country: 'LA', lat: 17.97, lng: 102.6 },
-  { id: 'svk', name: 'Savannakhet', country: 'LA', lat: 16.57, lng: 104.75 },
-  { id: 'lpb', name: 'Luang Prabang', country: 'LA', lat: 19.89, lng: 102.13 },
-  { id: 'pks', name: 'Pakse', country: 'LA', lat: 15.12, lng: 105.8 },
-  { id: 'pnh', name: 'Phnom Penh', country: 'KH', lat: 11.56, lng: 104.92 },
-  { id: 'rep', name: 'Siem Reap', country: 'KH', lat: 13.36, lng: 103.86 },
-  { id: 'btb', name: 'Battambang', country: 'KH', lat: 13.1, lng: 103.2 },
-  { id: 'kos', name: 'Sihanoukville', country: 'KH', lat: 10.63, lng: 103.5 },
-]
+export interface Gate extends GeoPoint {
+  id?: string
+  name: string
+  country: Exclude<CountryCode, 'VN'>
+  openingMinutes?: number
+  closingMinutes?: number
+}
+export interface BookingLocation extends GeoPoint {
+  id: string
+  name: string
+  type: 'farm' | 'club'
+}
+export interface TransitStation extends GeoPoint { id?: string; name: string; area: string; country: CountryCode }
+export interface RescuePoint extends GeoPoint { id?: string; name: string; area: string; phone: string }
 
-// Cửa khẩu đường bộ: tọa độ phía Việt Nam
-export interface Gate extends GeoPoint { name: string; country: Exclude<CountryCode, 'VN'> }
-export const GATES: Gate[] = [
-  { name: 'Mộc Bài – Bavet', country: 'KH', lat: 11.07, lng: 106.2 },
-  { name: 'Tịnh Biên – Phnom Den', country: 'KH', lat: 10.6, lng: 104.95 },
-  { name: 'Lao Bảo – Densavanh', country: 'LA', lat: 16.62, lng: 106.6 },
-  { name: 'Cầu Treo – Nam Phao', country: 'LA', lat: 18.38, lng: 105.13 },
-  { name: 'Tây Trang – Sop Hun', country: 'LA', lat: 21.23, lng: 102.95 },
-]
-
-// Kho / điểm nhận giao dùng khi đặt đơn (trang Tạo yêu cầu, bước 1)
-export interface BookingLocation extends GeoPoint { id: string; name: string; type: 'farm' | 'club' }
-export const COUNTRY_LOCATIONS: Record<CountryCode, BookingLocation[]> = {
-  VN: [
-    { id: 'KHO-DN', lat: 10.78, lng: 107.0, name: 'Kho Đồng Nai — Trang trại Đua ngựa Long Thành', type: 'farm' },
-    { id: 'KHO-LA', lat: 10.88, lng: 106.4, name: 'Kho Long An — Trang trại Huấn luyện Mỹ Quỳnh (Đức Hòa)', type: 'farm' },
-    { id: 'KHO-BD', lat: 11.0, lng: 106.65, name: 'Kho Bình Dương — Trung tâm Cưỡi ngựa Đức Hòa', type: 'farm' },
-    { id: 'CLB-SG', lat: 10.79, lng: 106.74, name: 'CLB Cưỡi ngựa Sài Gòn (Saigon Pony Club - Q.2, TP.HCM)', type: 'club' },
-  ],
-  KH: [
-    { id: 'KHO-PNH', lat: 11.56, lng: 104.92, name: 'Kho Phnom Penh — Trung tâm Kiểm dịch Động vật Phnom Penh', type: 'farm' },
-    { id: 'KHO-SR', lat: 13.36, lng: 103.86, name: 'Kho Siem Reap — Trại Ngựa & Vật nuôi Angkor', type: 'farm' },
-    { id: 'SAI-PNH', lat: 11.55, lng: 104.9, name: 'CLB Cưỡi ngựa Hoàng gia Phnom Penh (Phnom Penh Equestrian Club)', type: 'club' },
-  ],
-  LA: [
-    { id: 'KHO-VTE', lat: 17.97, lng: 102.6, name: 'Kho Viêng Chăn — Trang trại Chăn nuôi & Kiểm dịch Vientiane', type: 'farm' },
-    { id: 'CLB-VTE', lat: 17.98, lng: 102.62, name: 'CLB Mã cầu & Cưỡi ngựa Viêng Chăn (Vientiane Equestrian Club)', type: 'club' },
-  ],
+export interface CatalogLocation {
+  id: number
+  locationCode?: string
+  locationType: string
+  locationName: string
+  city: string
+  province: string
+  country: string
+  lat?: number
+  lng?: number
+  latitude?: number | null
+  longitude?: number | null
+  status?: string
+  destinationCountry?: string | null
+  openingMinutes?: number | null
+  closingMinutes?: number | null
+  contactPhone?: string | null
 }
 
-// Danh mục trạm nghỉ (checkpoint dọc tuyến, số mẫu để chạy thử). Hệ thống gợi ý các trạm gần đường đi nhất theo cửa khẩu đã chọn.
-export interface TransitStation extends GeoPoint { name: string; area: string; country: CountryCode }
-export const TRANSIT_STATIONS: TransitStation[] = [
-  // Việt Nam - Miền Nam & Tây Nam Bộ
-  { name: 'Trạm nghỉ Long Thành', area: 'Đồng Nai', country: 'VN', lat: 10.78, lng: 107.0 },
-  { name: 'Trạm nghỉ Biên Hòa', area: 'Đồng Nai', country: 'VN', lat: 10.95, lng: 106.82 },
-  { name: 'Trạm nghỉ Đức Hòa', area: 'Long An', country: 'VN', lat: 10.88, lng: 106.4 },
-  { name: 'Trạm nghỉ Củ Chi', area: 'TP.HCM', country: 'VN', lat: 10.97, lng: 106.5 },
-  { name: 'Trạm nghỉ Trảng Bàng', area: 'Tây Ninh', country: 'VN', lat: 11.03, lng: 106.37 },
-  { name: 'Trạm nghỉ Mộc Bài', area: 'Tây Ninh', country: 'VN', lat: 11.07, lng: 106.2 },
-  { name: 'Trạm nghỉ Tiền Giang', area: 'Tiền Giang', country: 'VN', lat: 10.38, lng: 106.35 },
-  { name: 'Trạm nghỉ Cần Thơ', area: 'Cần Thơ', country: 'VN', lat: 10.04, lng: 105.74 },
-  { name: 'Trạm nghỉ Tịnh Biên', area: 'An Giang', country: 'VN', lat: 10.6, lng: 104.95 },
-  { name: 'Trạm nghỉ Hà Tiên', area: 'Kiên Giang', country: 'VN', lat: 10.38, lng: 104.48 },
+export let PLACES: Place[] = []
+export let GATES: Gate[] = []
+export let COUNTRY_LOCATIONS: Record<CountryCode, BookingLocation[]> = { VN: [], LA: [], KH: [] }
+export let TRANSIT_STATIONS: TransitStation[] = []
+export let RESCUE_POINTS: RescuePoint[] = []
+let catalogGates: Gate[] = []
+let catalogStations: TransitStation[] = []
+let catalogPlaces: Place[] = []
 
-  // Việt Nam - Trục Duyên hải & Miền Trung (Bắc Nam)
-  { name: 'Trạm nghỉ Phan Thiết', area: 'Bình Thuận', country: 'VN', lat: 10.93, lng: 108.1 },
-  { name: 'Trạm nghỉ Phan Rang', area: 'Ninh Thuận', country: 'VN', lat: 11.56, lng: 108.99 },
-  { name: 'Trạm nghỉ Nha Trang', area: 'Khánh Hòa', country: 'VN', lat: 12.24, lng: 109.2 },
-  { name: 'Trạm nghỉ Tuy Hòa', area: 'Phú Yên', country: 'VN', lat: 13.1, lng: 109.3 },
-  { name: 'Trạm nghỉ Quy Nhơn', area: 'Bình Định', country: 'VN', lat: 13.78, lng: 109.22 },
-  { name: 'Trạm nghỉ Quảng Ngãi', area: 'Quảng Ngãi', country: 'VN', lat: 15.12, lng: 108.8 },
-  { name: 'Trạm nghỉ Đà Nẵng', area: 'Đà Nẵng', country: 'VN', lat: 16.05, lng: 108.2 },
-  { name: 'Trạm nghỉ Huế', area: 'Thừa Thiên Huế', country: 'VN', lat: 16.46, lng: 107.6 },
-  { name: 'Trạm nghỉ Đông Hà', area: 'Quảng Trị', country: 'VN', lat: 16.82, lng: 107.1 },
-  { name: 'Trạm nghỉ Lao Bảo', area: 'Quảng Trị', country: 'VN', lat: 16.62, lng: 106.6 },
-  { name: 'Trạm nghỉ Đồng Hới', area: 'Quảng Bình', country: 'VN', lat: 17.47, lng: 106.6 },
-  { name: 'Trạm nghỉ Hà Tĩnh', area: 'Hà Tĩnh', country: 'VN', lat: 18.34, lng: 105.9 },
-  { name: 'Trạm nghỉ Cầu Treo', area: 'Hà Tĩnh', country: 'VN', lat: 18.38, lng: 105.13 },
-  { name: 'Trạm nghỉ Vinh', area: 'Nghệ An', country: 'VN', lat: 18.67, lng: 105.68 },
-  { name: 'Trạm nghỉ Thanh Hóa', area: 'Thanh Hóa', country: 'VN', lat: 19.8, lng: 105.78 },
-  { name: 'Trạm nghỉ Ninh Bình', area: 'Ninh Bình', country: 'VN', lat: 20.25, lng: 105.97 },
-  { name: 'Trạm nghỉ Hà Nội', area: 'Hà Nội', country: 'VN', lat: 21.03, lng: 105.85 },
+export function findGate(name: string | undefined): Gate | undefined {
+  if (!name) return undefined
+  const normalize = (value: string) => value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase()
+    .replace(/^cua khau (quoc te )?/, '')
+    .replace(/[^a-z0-9]/g, '')
+  const target = normalize(name)
+  if (!target) return undefined
+  return catalogGates.find(gate => normalize(gate.name) === target
+    || normalize(gate.name).includes(target)
+    || target.includes(normalize(gate.name)))
+}
 
-  // Việt Nam - Tây Nguyên
-  { name: 'Trạm nghỉ Đà Lạt', area: 'Lâm Đồng', country: 'VN', lat: 11.94, lng: 108.44 },
-  { name: 'Trạm nghỉ Buôn Ma Thuột', area: 'Đắk Lắk', country: 'VN', lat: 12.67, lng: 108.04 },
-  { name: 'Trạm nghỉ Pleiku', area: 'Gia Lai', country: 'VN', lat: 13.98, lng: 108.0 },
-  { name: 'Trạm nghỉ Kon Tum', area: 'Kon Tum', country: 'VN', lat: 14.35, lng: 108.0 },
+export function findTransitStation(name: string): TransitStation | undefined {
+  const target = name.trim().toLocaleLowerCase()
+  if (!target) return undefined
+  return catalogStations.find(station => station.name.toLocaleLowerCase() === target)
+    ?? catalogStations.find(station => station.name.toLocaleLowerCase().includes(target)
+      || target.includes(station.name.toLocaleLowerCase()))
+}
 
-  // Lào
-  { name: 'Trạm nghỉ Savannakhet', area: 'Lào', country: 'LA', lat: 16.57, lng: 104.75 },
-  { name: 'Trạm nghỉ Thakhek', area: 'Lào', country: 'LA', lat: 17.4, lng: 104.8 },
-  { name: 'Trạm nghỉ Paksan', area: 'Lào', country: 'LA', lat: 18.38, lng: 103.65 },
-  { name: 'Trạm nghỉ Viêng Chăn', area: 'Lào', country: 'LA', lat: 17.97, lng: 102.6 },
-  { name: 'Trạm nghỉ Vang Vieng', area: 'Lào', country: 'LA', lat: 18.92, lng: 102.45 },
-  { name: 'Trạm nghỉ Pakse', area: 'Lào', country: 'LA', lat: 15.12, lng: 105.8 },
-  { name: 'Trạm nghỉ Luang Prabang', area: 'Lào', country: 'LA', lat: 19.89, lng: 102.13 },
+export function findCatalogPlace(value: string): Place | undefined {
+  const target = value.trim().toLocaleLowerCase()
+  if (!target) return undefined
+  return catalogPlaces.find(place => place.id.toLocaleLowerCase() === target)
+    ?? catalogPlaces.find(place => place.name.toLocaleLowerCase() === target)
+    ?? catalogPlaces.find(place => place.name.toLocaleLowerCase().includes(target)
+      || target.includes(place.name.toLocaleLowerCase()))
+}
 
-  // Campuchia
-  { name: 'Trạm nghỉ Bavet', area: 'Campuchia', country: 'KH', lat: 11.08, lng: 106.15 },
-  { name: 'Trạm nghỉ Svay Rieng', area: 'Campuchia', country: 'KH', lat: 11.09, lng: 105.8 },
-  { name: 'Trạm nghỉ Neak Loeung', area: 'Campuchia', country: 'KH', lat: 11.26, lng: 105.28 },
-  { name: 'Trạm nghỉ Phnom Penh', area: 'Campuchia', country: 'KH', lat: 11.56, lng: 104.92 },
-  { name: 'Trạm nghỉ Kampong Cham', area: 'Campuchia', country: 'KH', lat: 12.0, lng: 105.46 },
-  { name: 'Trạm nghỉ Kampong Thom', area: 'Campuchia', country: 'KH', lat: 12.71, lng: 104.88 },
-  { name: 'Trạm nghỉ Pursat', area: 'Campuchia', country: 'KH', lat: 12.53, lng: 103.92 },
-  { name: 'Trạm nghỉ Battambang', area: 'Campuchia', country: 'KH', lat: 13.1, lng: 103.2 },
-  { name: 'Trạm nghỉ Siem Reap', area: 'Campuchia', country: 'KH', lat: 13.36, lng: 103.86 },
-]
+function countryCode(value: string): CountryCode {
+  const country = value.toLocaleLowerCase()
+  if (country.includes('campuchia') || country.includes('cambodia')) return 'KH'
+  if (country.includes('lào') || country.includes('laos')) return 'LA'
+  return 'VN'
+}
 
-// Điểm cứu hộ giao thông và sửa xe dọc tuyến (số mẫu để chạy thử): Coordinator gọi điểm gần chỗ xe gặp sự cố nhất
-export interface RescuePoint extends GeoPoint { name: string; area: string; phone: string }
-export const RESCUE_POINTS: RescuePoint[] = [
-  { name: 'Cứu hộ Long Thành', area: 'Đồng Nai', phone: '0901 100 001', lat: 10.8, lng: 106.98 },
-  { name: 'Cứu hộ Long Khánh', area: 'Đồng Nai', phone: '0901 100 002', lat: 10.93, lng: 107.25 },
-  { name: 'Cứu hộ Biên Hòa', area: 'Đồng Nai', phone: '0901 100 003', lat: 10.94, lng: 106.84 },
-  { name: 'Cứu hộ Thủ Dầu Một', area: 'Bình Dương', phone: '0901 100 004', lat: 10.99, lng: 106.66 },
-  { name: 'Cứu hộ Đức Hòa', area: 'Long An', phone: '0901 100 005', lat: 10.9, lng: 106.42 },
-  { name: 'Cứu hộ Củ Chi', area: 'TP.HCM', phone: '0901 100 006', lat: 10.98, lng: 106.48 },
-  { name: 'Cứu hộ Trảng Bàng', area: 'Tây Ninh', phone: '0901 100 007', lat: 11.04, lng: 106.35 },
-  { name: 'Cứu hộ Mộc Bài', area: 'Tây Ninh', phone: '0901 100 008', lat: 11.08, lng: 106.18 },
-  { name: 'Cứu hộ Phan Thiết', area: 'Bình Thuận', phone: '0901 100 009', lat: 10.95, lng: 108.1 },
-  { name: 'Cứu hộ Tịnh Biên', area: 'An Giang', phone: '0901 100 010', lat: 10.59, lng: 104.94 },
-  { name: 'Cứu hộ Svay Rieng', area: 'Campuchia', phone: '+855 12 100 011', lat: 11.1, lng: 105.8 },
-  { name: 'Cứu hộ Neak Loeung', area: 'Campuchia', phone: '+855 12 100 012', lat: 11.27, lng: 105.27 },
-  { name: 'Cứu hộ Phnom Penh', area: 'Campuchia', phone: '+855 12 100 013', lat: 11.55, lng: 104.9 },
-  { name: 'Cứu hộ Lao Bảo', area: 'Quảng Trị', phone: '0901 100 014', lat: 16.63, lng: 106.6 },
-  { name: 'Cứu hộ Viêng Chăn', area: 'Lào', phone: '+856 20 100 015', lat: 17.97, lng: 102.62 },
-]
+function pointOf(location: CatalogLocation): GeoPoint | undefined {
+  const lat = location.latitude ?? location.lat
+  const lng = location.longitude ?? location.lng
+  if (typeof lat !== 'number' || typeof lng !== 'number') return undefined
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return undefined
+  return { lat, lng }
+}
+
+export function setNetworkLocations(locations: CatalogLocation[]) {
+  const withCoordinates = locations.flatMap(location => {
+    const point = pointOf(location)
+    return point ? [{ location, point }] : []
+  })
+  const codeOf = (location: CatalogLocation) => location.locationCode || String(location.id)
+  const active = withCoordinates.filter(({ location }) => location.status !== 'INACTIVE')
+
+  catalogPlaces = withCoordinates.map(({ location, point }) => ({
+    ...point,
+    id: codeOf(location),
+    name: location.locationName,
+    country: countryCode(location.country),
+  }))
+  PLACES = catalogPlaces.filter(place => active.some(({ location }) => codeOf(location) === place.id)
+    && withCoordinates.some(({ location }) => codeOf(location) === place.id && location.locationType === 'City'))
+
+  catalogGates = withCoordinates
+    .filter(({ location }) => location.locationType === 'BorderGate' && (location.destinationCountry === 'LA' || location.destinationCountry === 'KH'))
+    .map(({ location, point }) => ({
+      ...point,
+      id: codeOf(location),
+      name: location.locationName,
+      country: location.destinationCountry as Exclude<CountryCode, 'VN'>,
+      openingMinutes: location.openingMinutes ?? undefined,
+      closingMinutes: location.closingMinutes ?? undefined,
+    }))
+  GATES = catalogGates.filter(gate => active.some(({ location }) => codeOf(location) === gate.id))
+
+  COUNTRY_LOCATIONS = { VN: [], LA: [], KH: [] }
+  active
+    .filter(({ location }) => ['Warehouse', 'RidingClub', 'RaceTrack', 'Stable'].includes(location.locationType))
+    .forEach(({ location, point }) => {
+      const country = countryCode(location.country)
+      COUNTRY_LOCATIONS[country].push({
+        ...point,
+        id: codeOf(location),
+        name: location.locationName,
+        type: ['Warehouse', 'Stable'].includes(location.locationType) ? 'farm' : 'club',
+      })
+    })
+
+  catalogStations = withCoordinates
+    .filter(({ location }) => location.locationType === 'RestStop')
+    .map(({ location, point }) => ({
+      ...point,
+      id: codeOf(location),
+      name: location.locationName,
+      area: location.province || location.city,
+      country: countryCode(location.country),
+    }))
+  TRANSIT_STATIONS = catalogStations.filter(station => active.some(({ location }) => codeOf(location) === station.id))
+
+  const catalogRescuePoints = withCoordinates
+    .filter(({ location }) => location.locationType === 'RescuePoint')
+    .map(({ location, point }) => ({
+      ...point,
+      id: codeOf(location),
+      name: location.locationName,
+      area: location.province || location.city,
+      phone: location.contactPhone ?? '',
+    }))
+  RESCUE_POINTS = catalogRescuePoints.filter(point => active.some(({ location }) => codeOf(location) === point.id))
+}

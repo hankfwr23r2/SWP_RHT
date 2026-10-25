@@ -23,7 +23,7 @@ export async function accountsLoader() {
 
 export async function adminRoutesLoader() {
   const { routesApi } = await import('@shared/api/routes')
-  return loadAll({ routes: routesApi.listRoutes(), locations: routesApi.listLocations() })
+  return loadAll({ routes: routesApi.listRoutes(), locations: routesApi.listAdminLocations() })
 }
 
 export async function adminServicesLoader() {

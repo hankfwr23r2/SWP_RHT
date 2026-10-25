@@ -7,7 +7,7 @@ import {
   type BackendRouteResponse,
   type BackendLocationResponse,
   type CreateRoutePayload,
-  type CreateRestStopPayload,
+  type LocationPayload,
 } from '@shared/api/routes'
 import { useLoad } from '@shared/services/useLoad'
 import { Modal } from '@shared/ui/Modal'
@@ -17,6 +17,7 @@ import s from './AdminRoutes.module.css'
 import { usePageData } from '@shared/routing/pageData'
 import type { adminRoutesLoader } from '../../../shared/loaders'
 import { addVietmapBaseLayer, VIETMAP_MAP_OPTIONS } from '@shared/ui/vietmapLeaflet'
+import { setNetworkLocations } from '@shared/config/network'
 
 type Tab = 'all' | 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE'
 
@@ -151,11 +152,13 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
     const location = locations.find(item => item.id === locationId)
     if (!location) return []
     const point = coordinates[locationId]
+    const latitude = point?.latitude ?? location.latitude ?? undefined
+    const longitude = point?.longitude ?? location.longitude ?? undefined
     return [{
       id: locationId,
       name: location.locationName,
-      latitude: point?.latitude,
-      longitude: point?.longitude,
+      latitude,
+      longitude,
     }]
   })
   const editStops = (change: (ids: number[]) => number[]) => setPickedIds(prev => change(prev ?? savedStopIds ?? []))
@@ -382,7 +385,7 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
 
       {/* Danh mục các điểm khả dụng để chọn */}
       <div className={s.choices}>
-        {locations.map(loc => {
+        {locations.filter(loc => loc.status === 'ACTIVE' || selectedLocationIds.includes(loc.id)).map(loc => {
           const checked = selectedLocationIds.includes(loc.id)
           return (
             <label key={loc.id} className={`${s.choice} ${checked ? s.choiceOn : ''}`}>
@@ -466,7 +469,7 @@ function StopsViewModal({
   )
 }
 
-function RestStopsModal({
+function LocationsModal({
   locations,
   onClose,
   onChanged,
@@ -476,76 +479,131 @@ function RestStopsModal({
   onChanged: () => void
 }) {
   const toast = useToast()
-  const [stops, setStops] = useState(() => locations.filter(location => location.locationType === 'RestStop'))
+  const [locationList, setLocationList] = useState(locations)
   const [formId, setFormId] = useState<number | null>()
+  const [typeFilter, setTypeFilter] = useState('all')
+  const [locationType, setLocationType] = useState('RestStop')
   const [locationName, setLocationName] = useState('')
   const [address, setAddress] = useState('')
   const [city, setCity] = useState('')
   const [province, setProvince] = useState('')
   const [country, setCountry] = useState('')
+  const [latitude, setLatitude] = useState('')
+  const [longitude, setLongitude] = useState('')
+  const [openingMinutes, setOpeningMinutes] = useState('')
+  const [closingMinutes, setClosingMinutes] = useState('')
+  const [contactPhone, setContactPhone] = useState('')
+  const [destinationCountry, setDestinationCountry] = useState<'LA' | 'KH'>('KH')
+  const [status, setStatus] = useState<'ACTIVE' | 'INACTIVE'>('ACTIVE')
   const [busy, setBusy] = useState(false)
   const isEditing = formId !== undefined
+  const filteredLocations = locationList
+    .filter(location => typeFilter === 'all' || location.locationType === typeFilter)
+    .sort((a, b) => a.locationName.localeCompare(b.locationName, 'vi'))
 
   const openCreateForm = () => {
     setFormId(null)
+    setLocationType('RestStop')
     setLocationName('')
     setAddress('')
     setCity('')
     setProvince('')
     setCountry('')
+    setLatitude('')
+    setLongitude('')
+    setOpeningMinutes('')
+    setClosingMinutes('')
+    setContactPhone('')
+    setDestinationCountry('KH')
+    setStatus('ACTIVE')
   }
 
-  const openEditForm = (stop: BackendLocationResponse) => {
-    setFormId(stop.id)
-    setLocationName(stop.locationName)
-    setAddress(stop.address)
-    setCity(stop.city)
-    setProvince(stop.province)
-    setCountry(stop.country)
+  const openEditForm = (location: BackendLocationResponse) => {
+    setFormId(location.id)
+    setLocationType(location.locationType)
+    setLocationName(location.locationName)
+    setAddress(location.address)
+    setCity(location.city)
+    setProvince(location.province)
+    setCountry(location.country)
+    setLatitude(location.latitude == null ? '' : String(location.latitude))
+    setLongitude(location.longitude == null ? '' : String(location.longitude))
+    setOpeningMinutes(location.openingMinutes == null ? '' : String(location.openingMinutes))
+    setClosingMinutes(location.closingMinutes == null ? '' : String(location.closingMinutes))
+    setContactPhone(location.contactPhone ?? '')
+    setDestinationCountry(location.destinationCountry === 'LA' ? 'LA' : 'KH')
+    setStatus(location.status === 'INACTIVE' ? 'INACTIVE' : 'ACTIVE')
   }
 
   const save = async () => {
     if (formId === undefined) return
-    const values = [locationName, address, city, province, country]
+    const values = [locationName, address, city, province, country, latitude, longitude]
     if (values.some(value => !value.trim())) {
-      toast('Vui lòng nhập đầy đủ tên trạm, địa chỉ, thành phố, tỉnh/thành và quốc gia', 'error')
+      toast('Vui lòng nhập đủ tên, địa chỉ, thành phố, tỉnh/thành, quốc gia và tọa độ.', 'error')
+      return
+    }
+    const lat = Number(latitude)
+    const lng = Number(longitude)
+    if (!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lng) || lng < -180 || lng > 180) {
+      toast('Tọa độ phải nằm trong giới hạn vĩ độ -90..90 và kinh độ -180..180.', 'error')
+      return
+    }
+    const open = openingMinutes ? Number(openingMinutes) : undefined
+    const close = closingMinutes ? Number(closingMinutes) : undefined
+    if (locationType === 'BorderGate' && (open === undefined || close === undefined || open >= close)) {
+      toast('Cửa khẩu cần giờ mở và giờ đóng hợp lệ; giờ mở phải sớm hơn giờ đóng.', 'error')
+      return
+    }
+    if (locationType === 'RescuePoint' && !contactPhone.trim()) {
+      toast('Vui lòng nhập số điện thoại liên hệ của điểm cứu hộ.', 'error')
       return
     }
     setBusy(true)
     try {
-      const payload: CreateRestStopPayload = {
+      const payload: LocationPayload = {
+        locationType,
         locationName: locationName.trim(),
         address: address.trim(),
         city: city.trim(),
         province: province.trim(),
         country: country.trim(),
+        latitude: lat,
+        longitude: lng,
+        status,
+        ...(locationType === 'BorderGate' ? { openingMinutes: open, closingMinutes: close, destinationCountry } : {}),
+        ...(locationType === 'RescuePoint' ? { contactPhone: contactPhone.trim() } : {}),
       }
       const saved = formId === null
-        ? await routesApi.createRestStop(payload)
-        : await routesApi.updateRestStop(formId, payload)
-      setStops(current => formId === null
-        ? [...current, saved].sort((a, b) => a.locationName.localeCompare(b.locationName, 'vi'))
-        : current.map(stop => stop.id === saved.id ? saved : stop))
-      toast(formId === null ? 'Đã thêm trạm dừng' : 'Đã cập nhật trạm dừng')
+        ? await routesApi.createLocation(payload)
+        : await routesApi.updateLocation(formId, payload)
+      const updatedLocations = formId === null
+        ? [...locationList, saved]
+        : locationList.map(item => item.id === saved.id ? saved : item)
+      setLocationList(updatedLocations)
+      setNetworkLocations(updatedLocations)
+      toast(formId === null ? 'Đã thêm địa điểm' : 'Đã cập nhật địa điểm')
       setFormId(undefined)
       onChanged()
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Không lưu được trạm dừng', 'error')
+      toast(e instanceof Error ? e.message : 'Không lưu được địa điểm', 'error')
     } finally {
       setBusy(false)
     }
   }
 
-  const remove = async (stop: BackendLocationResponse) => {
-    if (!window.confirm(`Bạn có chắc muốn xóa trạm dừng "${stop.locationName}"?`)) return
+  const toggleStatus = async (location: BackendLocationResponse) => {
+    const nextStatus = location.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
+    if (nextStatus === 'INACTIVE' && !window.confirm(`Ngừng sử dụng địa điểm "${location.locationName}"?`)) return
     setBusy(true)
     try {
-      await routesApi.deleteRestStop(stop.id)
-      setStops(current => current.filter(item => item.id !== stop.id))
-      toast('Đã xóa trạm dừng')
+      const updated = await routesApi.changeLocationStatus(location.id, nextStatus)
+      const updatedLocations = locationList.map(item => item.id === updated.id ? updated : item)
+      setLocationList(updatedLocations)
+      setNetworkLocations(updatedLocations)
+      toast(nextStatus === 'INACTIVE' ? 'Đã ngừng sử dụng địa điểm' : 'Đã kích hoạt địa điểm')
       onChanged()
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Không xóa được trạm dừng', 'error')
+      toast(e instanceof Error ? e.message : 'Không đổi được trạng thái địa điểm', 'error')
     } finally {
       setBusy(false)
     }
@@ -555,15 +613,15 @@ function RestStopsModal({
     <Modal
       wide
       onClose={onClose}
-      title={isEditing ? (formId === null ? 'Thêm trạm dừng' : 'Cập nhật trạm dừng') : 'Quản lý trạm dừng'}
-      subtitle={isEditing ? 'Các trạm được tạo tại đây có thể gán vào tuyến đường.' : 'Chỉ quản lý địa điểm loại RestStop.'}
+      title={isEditing ? (formId === null ? 'Thêm địa điểm' : 'Cập nhật địa điểm') : 'Quản lý địa điểm'}
+      subtitle={isEditing ? 'Địa điểm có tọa độ được dùng trong tuyến đường, báo giá và bản đồ.' : 'Có thể ngừng sử dụng thay vì xóa dữ liệu địa điểm.'}
       footer={isEditing ? (
         <>
           <button type="button" className="btn btn-outline" onClick={() => setFormId(undefined)} disabled={busy}>
             Hủy
           </button>
           <button type="button" className="btn btn-primary" onClick={save} disabled={busy}>
-            {busy ? 'Đang lưu…' : formId === null ? 'Thêm trạm' : 'Lưu thay đổi'}
+            {busy ? 'Đang lưu…' : formId === null ? 'Thêm địa điểm' : 'Lưu thay đổi'}
           </button>
         </>
       ) : (
@@ -573,27 +631,31 @@ function RestStopsModal({
       {!isEditing ? (
         <>
           <div className={s.stopManagerHead}>
-            <span>{stops.length} trạm dừng</span>
+            <select className="form-control" value={typeFilter} onChange={e => setTypeFilter(e.target.value)}>
+              <option value="all">Tất cả loại địa điểm</option>
+              {['Warehouse', 'RidingClub', 'RaceTrack', 'Stable', 'City', 'RestStop', 'BorderGate', 'RescuePoint'].map(type => <option key={type} value={type}>{type}</option>)}
+            </select>
+            <span>{filteredLocations.length} địa điểm</span>
             <button type="button" className="btn btn-primary btn-sm" onClick={openCreateForm}>
-              <i className="fa-solid fa-plus" /> Thêm trạm dừng
+              <i className="fa-solid fa-plus" /> Thêm địa điểm
             </button>
           </div>
-          {stops.length === 0 ? (
-            <div className={s.notice}>Chưa có trạm dừng nào.</div>
+          {filteredLocations.length === 0 ? (
+            <div className={s.notice}>Chưa có địa điểm nào phù hợp.</div>
           ) : (
             <div className={s.managedStops}>
-              {stops.map(stop => (
-                <div key={stop.id} className={s.managedStop}>
+              {filteredLocations.map(location => (
+                <div key={location.id} className={s.managedStop}>
                   <div>
-                    <b>{stop.locationName}</b>
-                    <small>{stop.address} · {stop.city}, {stop.province}, {stop.country}</small>
+                    <b>{location.locationName} <span className={`badge ${location.status === 'ACTIVE' ? 'badge-success' : 'badge-muted'}`}>{location.status === 'ACTIVE' ? 'Đang dùng' : 'Ngừng dùng'}</span></b>
+                    <small>{location.locationType} · {location.address} · {location.city}, {location.province}, {location.country} · {location.latitude ?? '—'}, {location.longitude ?? '—'}{location.locationType === 'BorderGate' && ` · ${location.openingMinutes ?? '—'}–${location.closingMinutes ?? '—'} phút`}</small>
                   </div>
                   <div className={s.rowActions}>
-                    <button type="button" className="btn btn-outline btn-sm" onClick={() => openEditForm(stop)} disabled={busy}>
+                    <button type="button" className="btn btn-outline btn-sm" onClick={() => openEditForm(location)} disabled={busy}>
                       <i className="fa-solid fa-pen-to-square" /> Sửa
                     </button>
-                    <button type="button" className="btn btn-danger btn-sm" onClick={() => remove(stop)} disabled={busy}>
-                      <i className="fa-solid fa-trash" /> Xóa
+                    <button type="button" className="btn btn-outline btn-sm" onClick={() => toggleStatus(location)} disabled={busy}>
+                      <i className={`fa-solid ${location.status === 'ACTIVE' ? 'fa-pause' : 'fa-play'}`} /> {location.status === 'ACTIVE' ? 'Ngừng dùng' : 'Kích hoạt'}
                     </button>
                   </div>
                 </div>
@@ -603,26 +665,76 @@ function RestStopsModal({
         </>
       ) : (
         <div className={s.form}>
+          <div className="form-group">
+            <label htmlFor="location-type" className="required">Loại địa điểm</label>
+            <select id="location-type" className="form-control" value={locationType} onChange={e => setLocationType(e.target.value)}>
+              {['Warehouse', 'RidingClub', 'RaceTrack', 'Stable', 'City', 'RestStop', 'BorderGate', 'RescuePoint'].map(type => <option key={type} value={type}>{type}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
+            <label htmlFor="location-status" className="required">Trạng thái</label>
+            <select id="location-status" className="form-control" value={status} onChange={e => setStatus(e.target.value as 'ACTIVE' | 'INACTIVE')}>
+              <option value="ACTIVE">Đang dùng</option><option value="INACTIVE">Ngừng dùng</option>
+            </select>
+          </div>
           <div className={`form-group ${s.full}`}>
-            <label htmlFor="rest-stop-name" className="required">Tên trạm dừng</label>
-            <input id="rest-stop-name" className="form-control" value={locationName} onChange={e => setLocationName(e.target.value)} maxLength={255} required />
+            <label htmlFor="location-name" className="required">Tên địa điểm</label>
+            <input id="location-name" className="form-control" value={locationName} onChange={e => setLocationName(e.target.value)} maxLength={255} required />
           </div>
           <div className={`form-group ${s.full}`}>
-            <label htmlFor="rest-stop-address" className="required">Địa chỉ</label>
-            <input id="rest-stop-address" className="form-control" value={address} onChange={e => setAddress(e.target.value)} maxLength={255} required />
+            <label htmlFor="location-address" className="required">Địa chỉ</label>
+            <input id="location-address" className="form-control" value={address} onChange={e => setAddress(e.target.value)} maxLength={255} required />
           </div>
           <div className="form-group">
-            <label htmlFor="rest-stop-city" className="required">Thành phố</label>
-            <input id="rest-stop-city" className="form-control" value={city} onChange={e => setCity(e.target.value)} maxLength={100} required />
+            <label htmlFor="location-city" className="required">Thành phố</label>
+            <input id="location-city" className="form-control" value={city} onChange={e => setCity(e.target.value)} maxLength={100} required />
           </div>
           <div className="form-group">
-            <label htmlFor="rest-stop-province" className="required">Tỉnh/thành</label>
-            <input id="rest-stop-province" className="form-control" value={province} onChange={e => setProvince(e.target.value)} maxLength={100} required />
+            <label htmlFor="location-province" className="required">Tỉnh/thành</label>
+            <input id="location-province" className="form-control" value={province} onChange={e => setProvince(e.target.value)} maxLength={100} required />
           </div>
           <div className="form-group">
-            <label htmlFor="rest-stop-country" className="required">Quốc gia</label>
-            <input id="rest-stop-country" className="form-control" value={country} onChange={e => setCountry(e.target.value)} maxLength={100} required />
+            <label htmlFor="location-country" className="required">Quốc gia</label>
+            <input id="location-country" className="form-control" value={country} onChange={e => setCountry(e.target.value)} maxLength={100} required />
           </div>
+          <div className="form-group">
+            <label htmlFor="location-latitude" className="required">Vĩ độ</label>
+            <input id="location-latitude" type="number" className="form-control" min={-90} max={90} step="any" value={latitude} onChange={e => setLatitude(e.target.value)} required />
+          </div>
+          <div className="form-group">
+            <label htmlFor="location-longitude" className="required">Kinh độ</label>
+            <input id="location-longitude" type="number" className="form-control" min={-180} max={180} step="any" value={longitude} onChange={e => setLongitude(e.target.value)} required />
+          </div>
+          {locationType === 'BorderGate' && (
+            <>
+              <div className="form-group">
+                <label htmlFor="gate-open" className="required">Giờ mở cửa (phút từ 00:00)</label>
+                <input id="gate-open" type="number" className="form-control" min={0} max={1439} value={openingMinutes} onChange={e => setOpeningMinutes(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label htmlFor="gate-close" className="required">Giờ đóng cửa (phút từ 00:00)</label>
+                <input id="gate-close" type="number" className="form-control" min={1} max={1440} value={closingMinutes} onChange={e => setClosingMinutes(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label htmlFor="gate-destination" className="required">Quốc gia đối tác</label>
+                <select id="gate-destination" className="form-control" value={destinationCountry} onChange={e => setDestinationCountry(e.target.value as 'LA' | 'KH')}>
+                  <option value="KH">Campuchia</option><option value="LA">Lào</option>
+                </select>
+              </div>
+            </>
+          )}
+          {locationType === 'RescuePoint' && (
+            <div className="form-group">
+              <label htmlFor="rescue-phone" className="required">Số điện thoại cứu hộ</label>
+              <input id="rescue-phone" type="tel" className="form-control" value={contactPhone} onChange={e => setContactPhone(e.target.value)} maxLength={100} required />
+            </div>
+          )}
+          {locationType === 'BorderGate' && (
+            <div className="form-hint">Giờ lưu dạng số phút từ 00:00 (07:30 là 450; 16:30 là 990).</div>
+          )}
+          {locationType !== 'RescuePoint' && locationType !== 'BorderGate' && (
+            <div className={`form-hint ${s.full}`}>Mã ổn định được hệ thống tự gán khi tạo mới; không thay đổi sau khi lưu.</div>
+          )}
         </div>
       )}
     </Modal>
@@ -635,7 +747,7 @@ export default function AdminRoutesPage() {
   const [modal, setModal] = useState<
     | { kind: 'edit'; route: BackendRouteResponse | null }
     | { kind: 'stops'; route: BackendRouteResponse }
-    | { kind: 'rest-stops' }
+    | { kind: 'locations' }
     | null
   >(null)
 
@@ -768,8 +880,8 @@ export default function AdminRoutesPage() {
         countLabel="tuyến"
         actions={
           <>
-            <button className="btn btn-outline" onClick={() => setModal({ kind: 'rest-stops' })}>
-              <i className="fa-solid fa-map-pin" /> Quản lý trạm dừng
+            <button className="btn btn-outline" onClick={() => setModal({ kind: 'locations' })}>
+              <i className="fa-solid fa-map-pin" /> Quản lý địa điểm
             </button>
             <button
               className="btn btn-primary"
@@ -797,8 +909,8 @@ export default function AdminRoutesPage() {
         <StopsViewModal route={modal.route} onClose={() => setModal(null)} />
       )}
 
-      {modal?.kind === 'rest-stops' && (
-        <RestStopsModal locations={locations} onClose={() => setModal(null)} onChanged={reload} />
+      {modal?.kind === 'locations' && (
+        <LocationsModal locations={locations} onClose={() => setModal(null)} onChanged={reload} />
       )}
     </>
   )

@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { useAuth } from '@shared/auth/AuthContext'
 import { INCIDENT_ACTION, INCIDENT_KIND, MIN_REST_MINUTES } from '@shared/config/booking-rules'
 import { AVG_SPEED_KMH } from '@shared/config/public-pricing'
-import { GATES, RESCUE_POINTS, TRANSIT_STATIONS, type GeoPoint } from '@shared/config/network'
+import { findGate, RESCUE_POINTS, TRANSIT_STATIONS, type GeoPoint } from '@shared/config/network'
 import { arrivalOf, bookingPath, findLocation, incidentActionsFor, nearestTo, pointsAhead } from '@shared/lib/booking'
 import { formatDateTime } from '@shared/lib/format'
 import { haversineKm } from '@shared/lib/pricing'
@@ -35,7 +35,7 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
   const loc = i.location
   const [now] = useState(() => Date.now())
   const origin = findLocation(b.origin.id)!, dest = findLocation(b.dest.id)!
-  const gate = b.gate ? GATES.find(g => g.name === b.gate) : undefined
+  const gate = findGate(b.gate)
 
   // Điểm xe còn phải đi qua và các trạm / điểm cứu hộ xếp theo khoảng cách tới chỗ xe
   const path = useMemo(() => bookingPath(b), [b])
@@ -44,8 +44,8 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
   const stations = useMemo(() => nearestTo(loc, TRANSIT_STATIONS), [loc])
   const rescues = useMemo(() => nearestTo(loc, RESCUE_POINTS), [loc])
 
-  const [stationName, setStationName] = useState(i.plan?.station ?? stations[0].name)
-  const [rescueName, setRescueName] = useState(i.plan?.rescue?.name ?? rescues[0].name)
+  const [stationName, setStationName] = useState(i.plan?.station ?? stations[0]?.name ?? '')
+  const [rescueName, setRescueName] = useState(i.plan?.rescue?.name ?? rescues[0]?.name ?? '')
   const [rest, setRest] = useState(i.plan?.restMinutes ?? 60)
   const [altIdx, setAltIdx] = useState(0)
   const [note, setNote] = useState(i.plan?.note ?? '')
@@ -53,22 +53,24 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
   const [etaText, setEtaText] = useState<string | null>(null) // null = dùng giờ hệ thống gợi ý
   const [busy, setBusy] = useState(false)
 
-  const stationPt = TRANSIT_STATIONS.find(x => x.name === stationName)!
-  const rescuePt = RESCUE_POINTS.find(x => x.name === rescueName)!
+  const stationPt = TRANSIT_STATIONS.find(x => x.name === stationName)
+  const rescuePt = RESCUE_POINTS.find(x => x.name === rescueName)
+  const stationPoint = stationPt ?? loc
+  const rescuePoint = rescuePt ?? loc
   const horses = kind !== 'traffic_jam'
 
   // Đường bộ thật: xe → trạm, cứu hộ → xe, các đường thay thế tới điểm kế tiếp, và đường đi tiếp sau đó
-  const toStation = useRoadRoute(horses ? [loc, stationPt] : undefined, now)
-  const rescueRoad = useRoadRoute(kind === 'vehicle_breakdown' ? [rescuePt, loc] : undefined, now)
+  const toStation = useRoadRoute(horses && stationPt ? [loc, stationPoint] : undefined, now)
+  const rescueRoad = useRoadRoute(kind === 'vehicle_breakdown' && rescuePt ? [rescuePoint, loc] : undefined, now)
   const alts = useRoadAlternatives(kind === 'traffic_jam' ? loc : undefined, kind === 'traffic_jam' ? next : undefined, now)
-  const afterPts = horses ? [stationPt, ...ahead] : ahead
+  const afterPts = horses ? [stationPoint, ...ahead] : ahead
   const afterRoad = useRoadRoute(afterPts.length > 1 ? afterPts : undefined, now)
   const loading = toStation.loading || rescueRoad.loading || alts.loading || afterRoad.loading
 
   const altList: RoadRoute[] = alts.routes
   const altChosen = altList[Math.min(altIdx, Math.max(0, altList.length - 1))] as RoadRoute | undefined
-  const toStationLine = horses ? lineOf(toStation.route, loc, stationPt) : undefined
-  const rescueLine = kind === 'vehicle_breakdown' ? lineOf(rescueRoad.route, rescuePt, loc) : undefined
+  const toStationLine = horses && stationPt ? lineOf(toStation.route, loc, stationPoint) : undefined
+  const rescueLine = kind === 'vehicle_breakdown' && rescuePt ? lineOf(rescueRoad.route, rescuePoint, loc) : undefined
   const detour = kind === 'traffic_jam' ? lineOf(altChosen, loc, next) : undefined
   const afterHours = afterRoad.route?.hours ?? chainHours(afterPts)
 
@@ -91,12 +93,16 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
   ]
 
   const send = async () => {
+    if ((horses && !stationPt) || (kind === 'vehicle_breakdown' && !rescuePt)) {
+      toast('Danh mục địa điểm chưa có trạm nghỉ hoặc điểm cứu hộ phù hợp.', 'error')
+      return
+    }
     setBusy(true)
     try {
       await bookingsApi.planIncident(b.id, i.id, session!.name, {
         action, note, newEta,
         ...(horses ? { station: stationName, restMinutes: rest, toStation: toStationLine } : {}),
-        ...(kind === 'vehicle_breakdown' ? { rescue: { name: rescuePt.name, phone: rescuePt.phone, lat: rescuePt.lat, lng: rescuePt.lng }, rescueLine } : {}),
+        ...(kind === 'vehicle_breakdown' && rescuePt ? { rescue: { name: rescuePt.name, phone: rescuePt.phone, lat: rescuePt.lat, lng: rescuePt.lng }, rescueLine } : {}),
         ...(kind === 'traffic_jam' ? { detour } : {}),
       })
       toast(`Đã trình phương án ${i.id} lên Quản lý`)
@@ -117,6 +123,7 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
             <b>{idx < NEAR && <span className="im-rank">{idx + 1}</span>}{x.name}</b><small>{x.area} · cách xe {x.km.toFixed(0)} km (đường chim bay)</small>{idx === 0 && <span className="im-tag">Gần nhất</span>}
           </button>
         ))}
+        {shownStations.length === 0 && <p className="im-note">Chưa có trạm nghỉ hoạt động trong danh mục.</p>}
         {!allStations && stationName && !shownStations.some(x => x.name === stationName) && (
           <button type="button" className="im-opt on"><b>{stationName}</b><small>Trạm đang chọn, ngoài {NEAR} trạm gần nhất</small></button>
         )}
@@ -149,9 +156,10 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
             <div className="im-list" style={{ marginTop: 6 }}>
               {top(rescues, rescueName).map((x, idx) => (
                 <button key={x.name} type="button" className={`im-opt ${x.name === rescueName ? 'on' : ''}`} onClick={() => setRescueName(x.name)}>
-                  <b>{x.name}</b><small>{x.phone} · cách xe {x.km.toFixed(0)} km</small>{idx === 0 && x.name === rescues[0].name && <span className="im-tag">Gần nhất</span>}
+                  <b>{x.name}</b><small>{x.phone} · cách xe {x.km.toFixed(0)} km</small>{idx === 0 && x.name === rescues[0]?.name && <span className="im-tag">Gần nhất</span>}
                 </button>
               ))}
+              {rescues.length === 0 && <p className="im-note">Chưa có điểm cứu hộ hoạt động trong danh mục.</p>}
             </div>
             {rescueLine && <div className="im-road"><span>Cứu hộ tới chỗ xe: <b>{rescueLine.km} km · {hm(rescueLine.hours)}</b></span></div>}
           </div>
