@@ -1,53 +1,46 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { systemConfigApi } from '@shared/api/systemConfig'
 import { applyRuntimeBusinessConfig } from './runtimeBusinessRules'
 
-type LoadState = { status: 'loading' } | { status: 'ready' } | { status: 'error'; message: string }
+const CACHE_KEY = 'cached_public_system_configs'
+
+// Nạp cache từ localStorage ngay khi khởi động để áp dụng tức thì trước lần render đầu tiên
+function initCachedConfig() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw) as Record<string, string>
+      applyRuntimeBusinessConfig(parsed)
+    }
+  } catch {
+    // Bỏ qua lỗi đọc cache, dùng giá trị mặc định có sẵn trong file rules
+  }
+}
+
+initCachedConfig()
 
 export function BusinessConfigGate({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<LoadState>({ status: 'loading' })
-  const [attempt, setAttempt] = useState(0)
-
   useEffect(() => {
     let active = true
+    // Tải cấu hình mới nhất từ backend dưới nền (non-blocking)
     systemConfigApi.listPublicConfigs()
       .then(configs => {
-        applyRuntimeBusinessConfig(Object.fromEntries(configs.map(config => [config.configKey, config.configValue])))
-        if (active) setState({ status: 'ready' })
-      })
-      .catch(error => {
-        if (active) {
-          setState({
-            status: 'error',
-            message: error instanceof Error ? error.message : 'Không thể tải tham số nghiệp vụ.',
-          })
+        if (!active) return
+        const map = Object.fromEntries(configs.map(c => [c.configKey, c.configValue]))
+        try {
+          applyRuntimeBusinessConfig(map)
+          localStorage.setItem(CACHE_KEY, JSON.stringify(map))
+        } catch (e) {
+          console.warn('Lỗi áp dụng cấu hình nghiệp vụ mới từ backend:', e)
         }
       })
+      .catch(error => {
+        // Backend đang cold start hoặc offline: không chặn giao diện, tiếp tục dùng cache/fallback mặc định
+        console.warn('Không thể làm mới cấu hình nghiệp vụ từ backend, sử dụng cấu hình hiện tại:', error)
+      })
     return () => { active = false }
-  }, [attempt])
+  }, [])
 
-  if (state.status === 'loading') {
-    return <main className="page"><div className="wrap"><p>Đang tải tham số nghiệp vụ…</p></div></main>
-  }
-  if (state.status === 'error') {
-    return (
-      <main className="page">
-        <div className="wrap">
-          <div className="alert alert-danger" role="alert">
-            <b>Không thể tải cấu hình hệ thống.</b> {state.message}
-            <button
-              className="btn btn-outline"
-              onClick={() => {
-                setState({ status: 'loading' })
-                setAttempt(value => value + 1)
-              }}
-            >
-              Thử lại
-            </button>
-          </div>
-        </div>
-      </main>
-    )
-  }
-  return children
+  return <>{children}</>
 }
+
