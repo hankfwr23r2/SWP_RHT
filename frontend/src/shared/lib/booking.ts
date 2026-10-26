@@ -30,10 +30,8 @@ export const docsDueAt = (departAt: number) => atHour(new Date(departAt - DAY), 
 // ===== Hồ sơ ngựa =====
 // Sẵn sàng khi có đủ giấy tờ được cấu hình cho chuyến và quốc gia.
 export function horseReadiness(h: HorseProfile, tripType?: 'domestic' | 'international', country?: string) {
-  const missing: HorseDocType[] = requiredHorseDocumentTypes(tripType, country).filter(t => {
-    const document = h.docs[t]
-    return !document || (!!document.status && document.status.toUpperCase() !== 'APPROVED')
-  })
+  // Giấy đã tải lên là tính đã nộp; Chuyên viên thẩm định sau, trong từng đơn
+  const missing: HorseDocType[] = requiredHorseDocumentTypes(tripType, country).filter(t => !h.docs[t])
   return { ok: !missing.length, missing }
 }
 

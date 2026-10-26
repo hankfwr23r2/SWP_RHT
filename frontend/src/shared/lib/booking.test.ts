@@ -70,6 +70,10 @@ describe('hồ sơ ngựa', () => {
     expect(r.ok).toBe(false)
     expect(r.missing).toEqual(['lab'])
   })
+  it('giấy vừa tải lên, chưa ai duyệt, vẫn tính là đã nộp: đặt chuyến được', () => {
+    const submitted = { ...doc(), status: 'PENDING' }
+    expect(horseReadiness(horse({ passport: submitted, vaccine: submitted, lab: submitted })).ok).toBe(true)
+  })
   it('áp dụng yêu cầu giấy ngựa theo loại chuyến và quốc gia', () => {
     const requirement = (id: number, documentGroup: DocumentRequirement['documentGroup'], documentType: DocumentRequirement['documentType'], tripType: DocumentRequirement['tripType'], country: DocumentRequirement['country']): DocumentRequirement => ({
       id, documentGroup, documentType, documentName: documentType, tripType, country,
