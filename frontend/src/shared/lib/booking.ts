@@ -357,7 +357,7 @@ export interface Booked {
   order: string; departAt: number; route: string; trip: string
   countries: string // "Việt Nam → Lào": chiều của đơn, để biết người đang làm việc ở nước nào
   active?: boolean // đơn đang thực tế lăn bánh ngoài đường
-  returning?: { from: string; eta: number; late: boolean } // đã giao ngựa ở nước ngoài, đang về trụ sở
+  returning?: { from: string; eta?: number; late: boolean } // đã giao ngựa ở nước ngoài, đang về trụ sở
 }
 export interface Schedules { vehicles: Map<string, Booked[]>; drivers: Map<string, Booked[]>; escorts: Map<string, Booked[]> }
 export function schedulesOf(all: Booking[], exceptId: string, now = Date.now()): Schedules {
@@ -368,7 +368,11 @@ export function schedulesOf(all: Booking[], exceptId: string, now = Date.now()):
     order: o.id, departAt: o.departAt, route: `${o.origin.name.split(' — ')[0]} → ${o.dest.name.split(' — ')[0]}`, trip: t.tripId,
     countries: `${COUNTRIES[o.origin.country].name} → ${COUNTRIES[o.dest.country].name}`,
     active: activeStatuses.includes(o.status),
-    returning: t.homeReturn && !t.homeReturn.backAt ? { from: t.homeReturn.fromPlace, eta: t.homeReturn.eta, late: returnLate(t, now) } : undefined,
+    returning: t.homeReturn && !t.homeReturn.backAt ? {
+      from: typeof t.homeReturn.fromPlace === 'string' && t.homeReturn.fromPlace.trim() ? t.homeReturn.fromPlace : 'điểm giao',
+      eta: Number.isFinite(Number(t.homeReturn.eta)) && Number(t.homeReturn.eta) > 0 ? Number(t.homeReturn.eta) : undefined,
+      late: returnLate(t, now),
+    } : undefined,
   })
   all.filter(o => o.id !== exceptId && HOLDING.includes(o.status)).forEach(o => (o.trips ?? []).forEach(t => {
     const x = bookedOf(o, t)
