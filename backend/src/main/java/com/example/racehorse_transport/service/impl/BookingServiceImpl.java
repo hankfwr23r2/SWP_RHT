@@ -228,6 +228,13 @@ public class BookingServiceImpl implements BookingService {
                 if (horse.getCustomerID() == null || !customer.getId().equals(horse.getCustomerID().getId())) {
                     throw new IllegalArgumentException("Hồ sơ ngựa " + hDto.getHorseId() + " không thuộc tài khoản của bạn.");
                 }
+                String currentCountry = normalizeCountryCode(horse.getCurrentCountry());
+                String originCountry = normalizeCountryCode(request.getOriginCountry());
+                if (currentCountry != null && originCountry != null && !currentCountry.equals(originCountry)) {
+                    throw new IllegalStateException("Ngựa \"" + (horse.getHorseName() != null ? horse.getHorseName() : hDto.getHorseId())
+                            + "\" hiện ở " + horse.getCurrentCountry() + " nhưng điểm đón ở " + request.getOriginCountry()
+                            + ", không thể chọn vào đơn này.");
+                }
                 List<HorseDocument> horseDocuments = horseDocumentRepository.findByHorseID_Id(horseId);
                 // Khách đã tải giấy tờ lên là đủ để đặt; Chuyên viên thẩm định hồ sơ ngựa sau, trong từng đơn
                 for (DocumentRequirement requirement : requiredHorseDocuments) {
@@ -1729,6 +1736,20 @@ public class BookingServiceImpl implements BookingService {
 
     private static String trimToNull(String value) {
         return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private static String normalizeCountryCode(String country) {
+        String normalized = trimToNull(country);
+        if (normalized == null) {
+            return null;
+        }
+        normalized = normalized.toUpperCase(Locale.ROOT);
+        return switch (normalized) {
+            case "CAMBODIA", "CAMPUCHIA" -> "KH";
+            case "LAOS", "LAO", "LÀO" -> "LA";
+            case "VIETNAM", "VIỆT NAM" -> "VN";
+            default -> normalized;
+        };
     }
 
     private void logAction(String actionType, Integer targetRecordId, String newData) {
