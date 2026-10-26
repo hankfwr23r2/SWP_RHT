@@ -524,11 +524,6 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
             <h3>
               <i className="fa-solid fa-flag" /> Cửa khẩu thông quan quốc tế
             </h3>
-            {suggestedInfo?.savingsKm && (
-              <span className="badge badge-success">
-                <i className="fa-solid fa-wand-magic-sparkles" /> Tiết kiệm {suggestedInfo.savingsKm} km
-              </span>
-            )}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16 }}>
             <div className="form-group" style={{ margin: 0 }}>
@@ -545,13 +540,10 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
                   </option>
                 ))}
               </FormSelect>
-              <div className="form-hint">Hệ thống tự động tính khoảng cách và đề xuất cửa khẩu ngắn nhất.</div>
             </div>
 
             <div className="form-group" style={{ margin: 0 }}>
-              <label htmlFor="border">
-                Giờ dự kiến tới cửa khẩu ({gate})
-              </label>
+              <label htmlFor="border">Giờ dự kiến tới cửa khẩu</label>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                 <input
                   id="border"
