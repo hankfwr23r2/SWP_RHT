@@ -58,7 +58,7 @@ export function CalendarModal({ orders, onOpen, onClose }: { orders: Booking[]; 
             return (
               <button key={key(d)} className={`${s.cell} ${d.getMonth() !== cursor.getMonth() ? s.out : ''}`} onClick={() => goDay(d)} aria-label={`${formatDate(d)}: ${list.length} chuyến`}>
                 <span className={`${s.num} ${isToday(d) ? s.today : ''}`}>{d.getDate()}</span>
-                {list.slice(0, MAX_CHIPS).map(b => <span key={b.id} className={s.chip}><b>{b.id.slice(-4)}</b> {placeShort(b.dest.name)}</span>)}
+                {list.slice(0, MAX_CHIPS).map(b => <span key={b.id} className={s.chip}><b>{b.id}</b> {placeShort(b.dest.name)}</span>)}
                 {list.length > MAX_CHIPS && <span className={s.more}>+{list.length - MAX_CHIPS} chuyến</span>}
               </button>
             )

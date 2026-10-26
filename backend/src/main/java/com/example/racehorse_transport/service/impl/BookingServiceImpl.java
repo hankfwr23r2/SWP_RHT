@@ -72,6 +72,7 @@ public class BookingServiceImpl implements BookingService {
     private final BookingVehicleRepository bookingVehicleRepository;
     private final BookingAssignmentRepository bookingAssignmentRepository;
     private final QuotationRepository quotationRepository;
+    private final NotificationRepository notificationRepository;
     private final PaymentRepository paymentRepository;
     private final FleetService fleetService;
     private final LogRepository logRepository;
@@ -1021,6 +1022,18 @@ public class BookingServiceImpl implements BookingService {
 
         booking.setStatus("awaiting_payment");
         Booking updated = bookingRepository.save(booking);
+
+        String bookingCode = "BK-" + updated.getId();
+        notificationRepository.save(Notification.builder()
+                .recipientRole("customer")
+                .recipientUsername(updated.getCustomerID().getUser().getUsername())
+                .title("Báo giá đơn hàng " + bookingCode + " đã sẵn sàng")
+                .message("Đơn hàng " + bookingCode + " đã có báo giá. Vui lòng xem chi tiết và đặt cọc trong thời hạn hiệu lực.")
+                .link("/orders/" + bookingCode)
+                .bookingId(bookingCode)
+                .isRead(false)
+                .createdAt(now)
+                .build());
 
         logAction("SEND_QUOTATION", updated.getId(), "Phát hành báo giá đơn BK-" + updated.getId()
                 + " (Tổng: " + total + ", Cọc: " + deposit + ", Hết hạn: " + expiresAt + ")");

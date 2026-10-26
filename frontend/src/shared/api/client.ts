@@ -7,6 +7,44 @@ export interface ApiResponse<T = unknown> {
   data: T
 }
 
+const refreshBeforeExpirationMs = 60_000
+let refreshTimer: ReturnType<typeof setTimeout> | undefined
+let refreshPromise: Promise<string> | null = null
+
+function getTokenExpiration(token: string): number | null {
+  try {
+    const payload = token.split('.')[1]
+    if (!payload) return null
+
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const binary = atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '='))
+    const bytes = Uint8Array.from(binary, character => character.charCodeAt(0))
+    const decoded = new TextDecoder().decode(bytes)
+    const claims = JSON.parse(decoded) as { exp?: unknown }
+    return typeof claims.exp === 'number' ? claims.exp * 1000 : null
+  } catch (error) {
+    console.warn('Không thể đọc thời hạn Access Token; sẽ refresh khi API trả về 401.', error)
+    return null
+  }
+}
+
+function scheduleTokenRefresh(token: string): void {
+  if (refreshTimer) clearTimeout(refreshTimer)
+  refreshTimer = undefined
+
+  if (typeof window === 'undefined') return
+
+  const expirationTime = getTokenExpiration(token)
+  if (expirationTime === null) return
+
+  const delay = Math.max(0, expirationTime - Date.now() - refreshBeforeExpirationMs)
+  refreshTimer = setTimeout(() => {
+    void refreshAccessToken().catch(error => {
+      console.warn('Không thể tự làm mới Access Token; sẽ thử lại khi API cần xác thực.', error)
+    })
+  }, delay)
+}
+
 // 2. Quản lý lưu trữ Access Token (ưu tiên an toàn và tiện lợi khi gọi API)
 // App khách và app nội bộ chạy chung một trình duyệt: mỗi app giữ token riêng, nếu không đăng nhập Manager sẽ ghi đè token của khách
 const tokenKey = () => `SWP_ACCESS_TOKEN_${typeof window !== 'undefined' && window.location.pathname.startsWith('/backoffice') ? 'backoffice' : 'customer'}`
@@ -15,10 +53,18 @@ export const tokenStorage = {
   get: (): string | null => (typeof localStorage !== 'undefined' ? localStorage.getItem(tokenKey()) : null),
   set: (token: string): void => {
     if (typeof localStorage !== 'undefined') localStorage.setItem(tokenKey(), token)
+    scheduleTokenRefresh(token)
   },
   remove: (): void => {
     if (typeof localStorage !== 'undefined') localStorage.removeItem(tokenKey())
+    if (refreshTimer) clearTimeout(refreshTimer)
+    refreshTimer = undefined
+    clearDefaultAuthorization()
   },
+}
+
+function clearDefaultAuthorization(): void {
+  delete apiClient.defaults.headers.common.Authorization
 }
 
 // 3. Khởi tạo Axios Instance
@@ -46,23 +92,26 @@ apiClient.interceptors.request.use(
   }
 )
 
-interface RetryQueueItem {
-  resolve: (token: string) => void
-  reject: (err: unknown) => void
-}
+function refreshAccessToken(): Promise<string> {
+  if (!refreshPromise) {
+    refreshPromise = axios.post<ApiResponse<{ accessToken: string }>>(
+      `${apiClient.defaults.baseURL}/auth/refresh-token`,
+      {},
+      { withCredentials: true }
+    ).then(refreshRes => {
+      const newAccessToken = refreshRes.data?.data?.accessToken
+      if (!newAccessToken) {
+        throw new Error('Không nhận được Access Token mới từ máy chủ.')
+      }
 
-let isRefreshing = false
-let failedQueue: RetryQueueItem[] = []
-
-const processQueue = (error: unknown, token: string | null = null) => {
-  failedQueue.forEach(prom => {
-    if (error) {
-      prom.reject(error)
-    } else if (token) {
-      prom.resolve(token)
-    }
-  })
-  failedQueue = []
+      tokenStorage.set(newAccessToken)
+      apiClient.defaults.headers.common.Authorization = `Bearer ${newAccessToken}`
+      return newAccessToken
+    }).finally(() => {
+      refreshPromise = null
+    })
+  }
+  return refreshPromise
 }
 
 // 5. Response Interceptor: Xử lý dữ liệu trả về, Silent Refresh và bắt lỗi tập trung
@@ -87,54 +136,20 @@ apiClient.interceptors.response.use(
 
       // Nếu gặp lỗi 401 Unauthorized và chưa từng thử retry: Tự động refresh token ngầm
       if (status === 401 && !isAuthRequest && originalRequest && !originalRequest._retry) {
-        if (isRefreshing) {
-          // Nếu đã có 1 request khác đang kích hoạt refresh, đưa request này vào hàng đợi chờ token mới
-          try {
-            const token = await new Promise<string>((resolve, reject) => {
-              failedQueue.push({ resolve, reject })
-            })
-            originalRequest.headers.Authorization = `Bearer ${token}`
-            return apiClient(originalRequest)
-          } catch (err) {
-            return Promise.reject(err)
-          }
-        }
-
         originalRequest._retry = true
-        isRefreshing = true
 
         try {
-          // Gọi API làm mới access token từ HttpOnly Cookie
-          const refreshRes = await axios.post<ApiResponse<{ accessToken: string }>>(
-            `${apiClient.defaults.baseURL}/auth/refresh-token`,
-            {},
-            { withCredentials: true }
-          )
-
-          const newAccessToken = refreshRes.data?.data?.accessToken
-          if (!newAccessToken) {
-            throw new Error('Không nhận được Access Token mới từ máy chủ.')
-          }
-
-          // Cập nhật token mới vào storage và header mặc định
-          tokenStorage.set(newAccessToken)
-          apiClient.defaults.headers.common.Authorization = `Bearer ${newAccessToken}`
+          const newAccessToken = await refreshAccessToken()
           originalRequest.headers.Authorization = `Bearer ${newAccessToken}`
-
-          // Giải phóng toàn bộ các request đang chờ trong hàng đợi
-          processQueue(null, newAccessToken)
 
           // Thực hiện lại request ban đầu với token mới
           return apiClient(originalRequest)
-        } catch (refreshErr) {
-          processQueue(refreshErr, null)
+        } catch {
           tokenStorage.remove()
           if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
             console.warn('Phiên đăng nhập đã hết hạn hoàn toàn. Vui lòng đăng nhập lại.')
           }
           return Promise.reject(new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'))
-        } finally {
-          isRefreshing = false
         }
       }
 
@@ -164,5 +179,7 @@ apiClient.interceptors.response.use(
   }
 )
 
-export default apiClient
+const storedAccessToken = tokenStorage.get()
+if (storedAccessToken) scheduleTokenRefresh(storedAccessToken)
 
+export default apiClient

@@ -10,6 +10,7 @@ import type { ServiceCatalogItem } from '@shared/api/serviceCatalog'
 import { BookingShell } from './BookingShell'
 import type { horseListLoader } from '../horses/loaders'
 import { defaultConfig, isDeclinedInsurance, serviceOptionFor, useBookingDraft, type HorseConfig } from './draft'
+import { isBookingRouteReady } from './routeValidation'
 import s from './Booking.module.css'
 
 const SERVICE_GROUPS: { key: BookingRequiredServiceCategory; label: string; icon: string }[] = [
@@ -28,6 +29,13 @@ function legacySelection(category: BookingRequiredServiceCategory, service: Serv
   return { insurance: isDeclinedInsurance(service) ? 'decline' : 'buy' }
 }
 
+function hasExplicitServiceSelection(config: HorseConfig, category: BookingRequiredServiceCategory): boolean {
+  if (config.selectedServiceCodes?.[category] || config.selectedServices?.[category] !== undefined) return true
+  if (category === 'stall') return config.stall !== 'standard'
+  if (category === 'feed') return config.feedPackage !== 'basic'
+  return config.insurance !== ''
+}
+
 export default function Step3ServicesPage() {
   const navigate = useNavigate()
   const { draft, save } = useBookingDraft()
@@ -42,7 +50,7 @@ export default function Step3ServicesPage() {
     if (submitted) document.querySelector('[data-problem]')?.scrollIntoView({ block: 'center', behavior: 'smooth' })
   }, [activeIndex, submitted])
 
-  if (!draft.type || !draft.departDate) return <Navigate to="/booking/route" replace />
+  if (!isBookingRouteReady(draft)) return <Navigate to="/booking/route" replace />
   if (!draft.horseIds.length) return <Navigate to="/booking/horses" replace />
 
   const rows = draft.horseIds.map(id => horses?.find(h => h.id === id)).filter(Boolean) as NonNullable<typeof horses>
@@ -50,10 +58,13 @@ export default function Step3ServicesPage() {
   const set = (id: string, patch: Partial<HorseConfig>) => setConfig(current => ({ ...current, [id]: { ...current[id], ...patch } }))
   const declined = rows.filter(h => isDeclinedInsurance(serviceOptionFor(services, config[h.id], 'insurance')))
   const problems = rows.length === 0 || rows.length !== draft.horseIds.length
-    ? ['Không tải được đủ hồ sơ ngựa hoặc danh mục dịch vụ. Vui lòng tải lại trang.']
+    ? ['Không tải đủ hồ sơ ngựa cho các mã đã chọn. Vui lòng quay lại “Chọn ngựa” và chọn lại danh sách.']
     : rows.flatMap(h => SERVICE_GROUPS
       .filter(group => !serviceOptionFor(services, config[h.id], group.key))
       .map(group => `${h.name}: hiện không có dịch vụ ${group.label.toLocaleLowerCase()} đang áp dụng`))
+  problems.push(...rows.flatMap(h => SERVICE_GROUPS
+    .filter(group => group.key !== 'insurance' && !hasExplicitServiceSelection(config[h.id], group.key))
+    .map(group => `${h.name}: chọn dịch vụ ${group.label.toLocaleLowerCase()}`)))
   problems.push(...rows.filter(h => !config[h.id].insurance && !config[h.id].selectedServiceCodes?.insurance
     && !config[h.id].selectedServices?.insurance)
     .map(h => `${h.name}: chọn dịch vụ bảo hiểm chuyến đi`))
@@ -63,9 +74,9 @@ export default function Step3ServicesPage() {
     setSubmitted(true)
     if (problems.length) {
       if (rows.length === 0 || rows.length !== draft.horseIds.length) return
-      const firstMissing = rows.findIndex(h => SERVICE_GROUPS.some(group => !serviceOptionFor(services, config[h.id], group.key))
-        || (!config[h.id].insurance && !config[h.id].selectedServiceCodes?.insurance
-          && !config[h.id].selectedServices?.insurance))
+      const firstMissing = rows.findIndex(h => SERVICE_GROUPS.some(group =>
+        !serviceOptionFor(services, config[h.id], group.key)
+        || !hasExplicitServiceSelection(config[h.id], group.key)))
       if (firstMissing >= 0) setActiveIndex(firstMissing)
       return
     }
@@ -106,7 +117,8 @@ export default function Step3ServicesPage() {
                 {SERVICE_GROUPS.map(group => {
                   const prefix = `${group.key.toUpperCase()}_`
                   const options = services.filter(service => service.serviceCode.startsWith(prefix))
-                  const chosen = serviceOptionFor(services, current, group.key)
+                  const resolved = serviceOptionFor(services, current, group.key)
+                  const chosen = hasExplicitServiceSelection(current, group.key) ? resolved : undefined
                   return (
                     <div className={s.serviceSection} key={group.key}>
                       <div className={`${s.fieldLabel} ${group.key === 'insurance' ? 'required' : ''}`} id={`${group.key}-${horse.id}`}>

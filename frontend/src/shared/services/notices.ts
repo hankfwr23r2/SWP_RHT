@@ -16,14 +16,10 @@ export interface Notice {
 
 export const noticesApi = {
   list: async (role: Role, name?: string): Promise<Notice[]> => {
-    try {
-      const res = await apiClient.get<ApiResponse<Notice[]>>('/notifications', {
-        params: { role, name },
-      })
-      return res.data.data ?? []
-    } catch {
-      return []
-    }
+    const res = await apiClient.get<ApiResponse<Notice[]>>('/notifications', {
+      params: { role, name },
+    })
+    return res.data.data ?? []
   },
   markRead: async (id: string): Promise<void> => {
     try {
