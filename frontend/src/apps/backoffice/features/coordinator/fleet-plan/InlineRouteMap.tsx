@@ -5,7 +5,7 @@ import { TRANSIT_STATIONS, type GeoPoint } from '@shared/config/network'
 import { routeOutline } from '@shared/lib/booking'
 import { useRoadRoute } from '@shared/services/useRoadRoute'
 import type { RestStop } from '@shared/types/booking'
-import { addVietmapBaseLayer, VIETMAP_MAP_OPTIONS } from '@shared/ui/vietmapLeaflet'
+import { addBaseLayer, BASE_MAP_OPTIONS } from '@shared/ui/baseMap'
 import './RouteMapPicker.css'
 
 type Point = GeoPoint & { name: string }
@@ -70,9 +70,9 @@ export function InlineRouteMap({ origin, dest, gate, departAt, rests, activeRoad
 
   useEffect(() => {
     if (!box.current) return
-    const m = L.map(box.current, { ...VIETMAP_MAP_OPTIONS, zoomControl: false, attributionControl: true })
+    const m = L.map(box.current, { ...BASE_MAP_OPTIONS, zoomControl: false, attributionControl: true })
     L.control.zoom({ position: 'topright' }).addTo(m)
-    addVietmapBaseLayer(m)
+    addBaseLayer(m)
 
     const route = [origin, dest, ...(gate ? [gate] : [])]
     m.fitBounds(
