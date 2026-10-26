@@ -72,6 +72,9 @@ public class SpecialistServiceImpl implements SpecialistService {
     public BookingResponse approveMedical(String bookingIdentifier, ApproveMedicalRequest request, String username) {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
         requireAssignment(username, booking);
+        if (!"under_review".equalsIgnoreCase(booking.getStatus())) {
+            throw new IllegalStateException("Chỉ duyệt hồ sơ ngựa khi đơn đang ở bước thẩm định.");
+        }
         BookingDetailsPayload payload = extractPayload(booking);
 
         String specialist = (request != null && request.getSpecialistName() != null && !request.getSpecialistName().isBlank())
@@ -109,6 +112,9 @@ public class SpecialistServiceImpl implements SpecialistService {
     public BookingResponse requestResubmission(String bookingIdentifier, RequestResubmissionRequest request, String username) {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
         requireAssignment(username, booking);
+        if (!"under_review".equalsIgnoreCase(booking.getStatus())) {
+            throw new IllegalStateException("Chỉ yêu cầu bổ sung hồ sơ ngựa khi đơn đang ở bước thẩm định.");
+        }
         BookingDetailsPayload payload = extractPayload(booking);
 
         String specialist = (request != null && request.getSpecialistName() != null && !request.getSpecialistName().isBlank())
