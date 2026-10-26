@@ -10,6 +10,7 @@ const GROUPS: Array<{ id: SystemConfigGroup; label: string; icon: string }> = [
   { id: 'WELFARE', label: 'An sinh & Vận chuyển', icon: 'fa-horse' },
   { id: 'PAYMENT', label: 'Tài chính & Đặt cọc', icon: 'fa-credit-card' },
   { id: 'OPERATIONS', label: 'Vận hành', icon: 'fa-gears' },
+  { id: 'JOURNEY', label: 'Lộ trình & Giờ lái', icon: 'fa-route' },
 ]
 
 const INPUTS: Record<string, { min: number; max: number; step: number }> = {
@@ -20,6 +21,10 @@ const INPUTS: Record<string, { min: number; max: number; step: number }> = {
   QUOTE_VALID_HOURS: { min: 1, max: 168, step: 1 },
   DEMURRAGE_PER_HOUR: { min: 0, max: 100000000, step: 1000 },
   MIN_LEAD_DAYS: { min: 0, max: 365, step: 1 },
+  MAX_DRIVE_HOURS_PER_DAY: { min: 1, max: 24, step: 1 },
+  OVERNIGHT_REST_HOURS: { min: 1, max: 24, step: 1 },
+  BORDER_PROCESSING_HOURS: { min: 0, max: 24, step: 1 },
+  TRUCK_TOP_SPEED_KMH: { min: 30, max: 120, step: 1 },
 }
 
 function formatNumberWithDots(val: string | number) {

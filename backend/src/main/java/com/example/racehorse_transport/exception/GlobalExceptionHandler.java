@@ -4,6 +4,7 @@ import com.example.racehorse_transport.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
@@ -105,6 +106,18 @@ public class GlobalExceptionHandler {
                 .build();
 
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    // Dịch vụ chỉ đường không trả lời được: lỗi tạm thời, điều phối thử lại sau
+    @ExceptionHandler(RoutingUnavailableException.class)
+    public ResponseEntity<ApiResponse<Object>> handleRoutingUnavailable(RoutingUnavailableException ex) {
+        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
+    // Không có đường cho xe tải giữa các điểm: điều phối đổi cửa khẩu hoặc xe
+    @ExceptionHandler(NoTruckRouteException.class)
+    public ResponseEntity<ApiResponse<Object>> handleNoTruckRoute(NoTruckRouteException ex) {
+        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatusCode.valueOf(422));
     }
 
     // Bắt các lỗi chung chưa được xử lý cụ thể

@@ -46,7 +46,15 @@ public class SystemConfigServiceImpl implements SystemConfigService {
             new Definition("DEMURRAGE_PER_HOUR", "Phí lưu xe chờ khách", "400000", "VNĐ/giờ", "PAYMENT",
                     "Phí lưu xe mỗi giờ khi bàn giao bị chậm do phía khách hàng.", BigDecimal.ZERO, BigDecimal.valueOf(100_000_000)),
             new Definition("MIN_LEAD_DAYS", "Số ngày đặt trước tối thiểu", "20", "ngày", "OPERATIONS",
-                    "Số ngày tối thiểu giữa ngày tạo đơn và ngày khởi hành.", BigDecimal.ZERO, BigDecimal.valueOf(365))
+                    "Số ngày tối thiểu giữa ngày tạo đơn và ngày khởi hành.", BigDecimal.ZERO, BigDecimal.valueOf(365)),
+            new Definition("MAX_DRIVE_HOURS_PER_DAY", "Giờ lái tối đa mỗi ngày", "10", "giờ", "JOURNEY",
+                    "Tổng giờ lái trong một ngày; quá thì xe nghỉ đêm.", BigDecimal.ONE, BigDecimal.valueOf(24)),
+            new Definition("OVERNIGHT_REST_HOURS", "Thời gian nghỉ đêm", "10", "giờ", "JOURNEY",
+                    "Thời gian nghỉ khi đã lái đủ giờ trong ngày.", BigDecimal.ONE, BigDecimal.valueOf(24)),
+            new Definition("BORDER_PROCESSING_HOURS", "Thời gian làm thủ tục cửa khẩu", "3", "giờ", "JOURNEY",
+                    "Thời gian dự kiến làm thủ tục kiểm dịch và hải quan tại cửa khẩu.", BigDecimal.ZERO, BigDecimal.valueOf(24)),
+            new Definition("TRUCK_TOP_SPEED_KMH", "Tốc độ tối đa của xe tải", "80", "km/h", "JOURNEY",
+                    "Tốc độ tối đa dùng để tính thời gian lái theo đường xe tải.", BigDecimal.valueOf(30), BigDecimal.valueOf(120))
     );
 
     private static final Set<String> LEGACY_BORDER_KEYS = Set.of("BORDER_OPEN_MINUTES", "BORDER_CLOSE_MINUTES");
