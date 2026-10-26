@@ -7,7 +7,6 @@ import { formatDateTime } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
 import type { Booking, Checkpoint, VehicleTrip } from '@shared/types/booking'
 import { CaptureField } from '@shared/ui/CaptureField'
-import { useToast } from '@shared/ui/toast'
 import { HorseDocsModal } from '../../shared/HorseDocsModal'
 import { Checklist, Panel } from '../../shared/field'
 import { HomeReturnPanel } from '../../shared/HomeReturnPanel'
@@ -220,11 +219,7 @@ function CustomsStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
   )
 }
 
-export function DriverJob({ b, t, reload }: { b: Booking; t: VehicleTrip; reload: () => void }) {
-  const toast = useToast()
-  const run: Run = async (fn, msg) => {
-    try { await fn(); toast(msg); reload() } catch (e) { toast(e instanceof Error ? e.message : 'Không thực hiện được', 'error') }
-  }
+export function DriverJob({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
   const inc = openIncidentOf(b, t.tripId)
   if (inc) return <IncidentPanel b={b} inc={inc} role="driver" run={run} />
   return (

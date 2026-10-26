@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useAuth } from '@shared/auth/AuthContext'
 import { formatDateTime } from '@shared/lib/format'
+import { useAutoRefresh } from '@shared/services/useLoad'
 import { bookingsApi } from '@shared/services/bookings'
 import { TripTimeline } from '@shared/ui/TripTimeline'
 import { useNow } from '@shared/ui/useNow'
@@ -9,7 +10,7 @@ import { useToast } from '@shared/ui/toast'
 import { crewStep } from '../../shared/crewStep'
 import { Checklist, Empty, Panel, Segmented, TripHeader, TripPicker } from '../../shared/field'
 import { ManifestView } from '../../shared/ManifestView'
-import { useFieldTrips } from '../../shared/useFieldTrips'
+import { isFieldBookingUpdate, useFieldTrips } from '../../shared/useFieldTrips'
 import s from '../../shared/field.module.css'
 import { EscortJob } from './EscortJob'
 
@@ -27,10 +28,11 @@ export default function EscortPage() {
   const { session } = useAuth()
   const toast = useToast()
   const now = useNow()
-  const { ready, trips, trip, setSelected, reload, vehicle, driver, escort } = useFieldTrips('escort')
+  const { ready, trips, trip, setSelected, reload, applyBooking, vehicle, driver, escort } = useFieldTrips('escort')
   const [tab, setTab] = useState<Tab>('job')
   const [checked, setChecked] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
+  useAutoRefresh(reload)
 
   if (!ready) return <p className="text-muted">Đang tải…</p>
   if (!trip) return <Empty text="Bạn chưa có chuyến nào cần xử lý." />
@@ -40,8 +42,17 @@ export default function EscortPage() {
   const step = crewStep(b, t, 'escort')
   const run = async (fn: () => Promise<unknown>, msg: string) => {
     setBusy(true)
-    try { await fn(); toast(msg); setChecked([]); reload() } catch (e) { toast(e instanceof Error ? e.message : 'Không thực hiện được', 'error') }
-    setBusy(false)
+    try {
+      const result = await fn()
+      if (isFieldBookingUpdate(result)) applyBooking(result)
+      toast(msg)
+      setChecked([])
+      await reload()
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Không thực hiện được', 'error')
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -78,7 +89,7 @@ export default function EscortPage() {
               <p>Giấy tờ đã xong. Đang chờ tài xế nhận lệnh.</p>
             </Panel>
           )}
-          <EscortJob key={t.tripId} b={b} t={t} reload={reload} />
+          <EscortJob key={t.tripId} b={b} t={t} run={run} />
         </>
       )}
     </>
