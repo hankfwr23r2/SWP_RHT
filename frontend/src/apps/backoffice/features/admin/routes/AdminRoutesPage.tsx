@@ -866,7 +866,6 @@ export default function AdminRoutesPage() {
     <>
       <ListPage
         title="Quản lý Tuyến đường Cố định"
-        subtitle="Mô hình Trục xương sống & Nút giao tiếp cận: Thiết lập các hành lang an toàn và thứ tự mốc dừng được kiểm định cho xe chuyên dụng."
         tabs={tabs}
         tab={tab}
         onTab={setTab}

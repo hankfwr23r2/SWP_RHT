@@ -34,7 +34,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     private static final List<Definition> DEFINITIONS = List.of(
             new Definition("MAX_CONTINUOUS_HOURS", "Thời gian di chuyển liên tục tối đa", "4", "giờ", "WELFARE",
-                    "Giới hạn thời gian ngựa di chuyển liên tục trước khi cần nghỉ.", BigDecimal.ONE, BigDecimal.valueOf(12)),
+                    "Giới hạn thời gian ngựa di chuyển liên tục trước khi cần nghỉ.", new BigDecimal("0.25"), BigDecimal.valueOf(12)),
             new Definition("MIN_REST_MINUTES", "Thời gian nghỉ tối thiểu", "30", "phút", "WELFARE",
                     "Thời gian nghỉ tối thiểu tại mỗi trạm dừng.", BigDecimal.valueOf(15), BigDecimal.valueOf(240)),
             new Definition("VITAL_CHECK_INTERVAL_HOURS", "Tần suất đo sinh hiệu", "2", "giờ", "WELFARE",
@@ -139,7 +139,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     }
 
     private boolean isIntegerRule(String key) {
-        return !"DEPOSIT_RATE".equals(key);
+        return !"DEPOSIT_RATE".equals(key) && !"MAX_CONTINUOUS_HOURS".equals(key);
     }
 
     private SystemConfig toEntity(Definition definition) {
