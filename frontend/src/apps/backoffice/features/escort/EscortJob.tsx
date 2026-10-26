@@ -229,15 +229,15 @@ function WelfareForm({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Checkp
   const { session } = useAuth()
   const final = cp.type === 'delivery'
   const [condition, setCondition] = useState<WelfareCondition>('normal')
-  const [water, setWater] = useState('8')
+  const [water, setWater] = useState(true)
   const [hay, setHay] = useState(true)
   const [photo, setPhoto] = useState<string>()
   const [note, setNote] = useState('')
-  const valid = !!photo && water !== ''
+  const valid = !!photo
 
   const submit = async () => {
     // Ghi nhận nhật ký an sinh của chuyến đi
-    await bookingsApi.submitWelfare(b.id, t.tripId, session!.name, { checkpointId: cp.id, condition, waterLiters: Number(water), hay, photo: photo!, note: note.trim() })
+    await bookingsApi.submitWelfare(b.id, t.tripId, session!.name, { checkpointId: cp.id, condition, waterLiters: water ? 1 : 0, hay, photo: photo!, note: note.trim() })
 
     // Ghi nhận nhật ký sức khỏe từng cá thể ngựa vào bảng horse_health_logs (POST /api/v1/horse-health-logs)
     const tripHorses = b.horses.filter(h => t.horseIds.includes(h.horseId))
@@ -249,7 +249,7 @@ function WelfareForm({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Checkp
         horseId: hId,
         bookingId: bookingNumId,
         healthStatus: condition.toUpperCase(),
-        symptoms: note.trim() || `Cấp nước ${water}L, cỏ: ${hay ? 'đủ' : 'chưa'}`,
+        symptoms: note.trim() || `Nước: ${water ? 'đã cấp' : 'chưa'}, cỏ: ${hay ? 'đủ' : 'chưa'}`,
       }).catch(() => null)
     }))
   }
@@ -264,7 +264,7 @@ function WelfareForm({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Checkp
           </label>
         ))}
       </div>
-      <div className="form-group" style={{ margin: 0 }}><label htmlFor="water">Nước đã cấp (lít, ước tính)</label><input id="water" inputMode="decimal" className="form-control" style={{ minHeight: 48 }} value={water} onChange={e => setWater(e.target.value.replace(/[^\d.]/g, ''))} /></div>
+      <label style={{ display: 'flex', gap: 12, alignItems: 'center', minHeight: 48 }}><input type="checkbox" checked={water} onChange={e => setWater(e.target.checked)} style={{ width: 22, height: 22, accentColor: 'var(--orange)' }} />Đã cấp nước sạch</label>
       <label style={{ display: 'flex', gap: 12, alignItems: 'center', minHeight: 48 }}><input type="checkbox" checked={hay} onChange={e => setHay(e.target.checked)} style={{ width: 22, height: 22, accentColor: 'var(--orange)' }} />Đã bổ sung cỏ khô</label>
       <CaptureField label="Ảnh ngựa trong khoang" required value={photo} onChange={setPhoto} />
       <div className="form-group" style={{ margin: 0 }}><label htmlFor="wnote">Ghi chú</label><input id="wnote" className="form-control" style={{ minHeight: 48 }} value={note} onChange={e => setNote(e.target.value)} placeholder="VD: ngựa đổ mồ hôi nhẹ, đã xịt nước" /></div>
