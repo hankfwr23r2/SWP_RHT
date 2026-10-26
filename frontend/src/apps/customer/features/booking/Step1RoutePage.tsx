@@ -167,7 +167,14 @@ function LocationPicker({ country, address, onChange, errors }: LocationPickerPr
   const handleDetailChange = (detail: string) => {
     onChange({
       ...address,
-      detail: removeLocationDetailSpecialCharacters(detail),
+      detail,
+    })
+  }
+
+  const handleDetailBlur = () => {
+    onChange({
+      ...address,
+      detail: removeLocationDetailSpecialCharacters(address.detail),
     })
   }
 
@@ -224,6 +231,7 @@ function LocationPicker({ country, address, onChange, errors }: LocationPickerPr
             placeholder="Số nhà, tên trang trại, thôn/ấp, tên đường đón/trả ngựa..."
             value={address.detail}
             onChange={e => handleDetailChange(e.target.value)}
+            onBlur={handleDetailBlur}
           />
           {errors?.detail && <div className="form-error">{errors.detail}</div>}
         </div>
