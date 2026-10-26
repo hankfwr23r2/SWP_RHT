@@ -502,7 +502,7 @@ class BookingServiceImplTest {
         request.setActor("escort01");
         request.setPayload(Map.of("horseId", "H-001", "discountAmount", "năm triệu"));
 
-        assertThatThrownBy(() -> service.updateTripProgress("BK-042", request))
+        assertThatThrownBy(() -> service.updateTripProgress("BK-042", request, "manager", "MANAGER"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("giảm trừ");
         verify(bookingRepository, never()).save(any(Booking.class));
@@ -529,13 +529,13 @@ class BookingServiceImplTest {
         request.setActor("driver02");
         request.setPayload(Map.of("checkpointId", "delivery", "returnedOriginals", true));
 
-        service.updateTripProgress("BK-042", request);
+        service.updateTripProgress("BK-042", request, "manager", "MANAGER");
 
         ArgumentCaptor<Booking> saved = ArgumentCaptor.forClass(Booking.class);
         verify(bookingRepository).save(saved.capture());
         assertThat(saved.getValue().getDetailsJson())
                 .contains("\"returnedOriginals\":true")
-                .contains("\"returnedOriginalsBy\":\"driver02\"")
+                .contains("\"returnedOriginalsBy\":\"manager\"")
                 .contains("\"returnedOriginalsAt\"");
     }
 
@@ -559,11 +559,66 @@ class BookingServiceImplTest {
         request.setActor("driver02");
         request.setPayload(Map.of("returnedOriginals", true));
 
-        assertThatThrownBy(() -> service.updateTripProgress("BK-042", request))
+        assertThatThrownBy(() -> service.updateTripProgress("BK-042", request, "manager", "MANAGER"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("original documents were returned");
 
         verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
+    void driverCannotStartTripAssignedToAnotherDriver() {
+        Booking booking = fieldTripBooking(42, "ready_for_pickup", "\"driverId\":\"DR-02\"");
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        when(staffRepository.findByUser_Username("driver01")).thenReturn(Optional.of(fieldDriver()));
+
+        var request = new com.example.racehorse_transport.dto.field.TripUpdateRequest();
+        request.setTripId("TRP-042-1");
+        request.setAction("DEPART_TO_PICKUP");
+
+        assertThatThrownBy(() -> service.updateTripProgress("BK-042", request, "driver01", "DRIVER"))
+                .isInstanceOf(AccessDeniedException.class)
+                .hasMessageContaining("không được phân công");
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
+    void driverCannotCheckInAnotherTripWhileAssignedTripIsStillActive() {
+        Booking target = fieldTripBooking(42, "ready_for_pickup", "\"driverId\":\"DR-01\"");
+        Booking active = fieldTripBooking(43, "in_transit", "\"driverId\":\"DR-01\",\"departedAt\":100");
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(target));
+        when(bookingRepository.findAll()).thenReturn(List.of(target, active));
+        when(staffRepository.findByUser_Username("driver01")).thenReturn(Optional.of(fieldDriver()));
+
+        var request = new com.example.racehorse_transport.dto.field.TripUpdateRequest();
+        request.setTripId("TRP-042-1");
+        request.setAction("ARRIVE_PICKUP");
+
+        assertThatThrownBy(() -> service.updateTripProgress("BK-042", request, "driver01", "DRIVER"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("BK-043")
+                .hasMessageContaining("chưa xác nhận về trụ sở");
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    private Booking fieldTripBooking(Integer id, String status, String tripFields) {
+        String tripId = String.format("TRP-%03d-1", id);
+        return Booking.builder()
+                .id(id)
+                .status(status)
+                .detailsJson("{\"trips\":[{\"tripId\":\"" + tripId + "\"," + tripFields + "}]}")
+                .build();
+    }
+
+    private Staff fieldDriver() {
+        User user = new User();
+        user.setUsername("driver01");
+        Staff staff = new Staff();
+        staff.setId(1);
+        staff.setUser(user);
+        staff.setRole("DRIVER");
+        staff.setStaffCode("DR-01");
+        return staff;
     }
 
     private Booking deliveryBooking(String runJson) {

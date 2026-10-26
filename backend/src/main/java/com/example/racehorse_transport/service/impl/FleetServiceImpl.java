@@ -6,6 +6,10 @@ import com.example.racehorse_transport.dto.fleet.VehicleRequest;
 import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.repository.*;
 import com.example.racehorse_transport.service.FleetService;
+import com.example.racehorse_transport.dto.booking.BookingDetailsPayload;
+import com.example.racehorse_transport.dto.coordinator.VehicleTripDto;
+import com.example.racehorse_transport.util.BookingDetailsJson;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -25,6 +29,7 @@ public class FleetServiceImpl implements FleetService {
     private final BookingVehicleRepository bookingVehicleRepository;
     private final BookingAssignmentRepository bookingAssignmentRepository;
     private final UserRepository userRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     // Danh sách các trạng thái đơn hàng đang chiếm dụng tài nguyên xe và nhân sự
     private static final Set<String> HOLDING_STATUSES = Set.of(
@@ -214,12 +219,29 @@ public class FleetServiceImpl implements FleetService {
                 ? staffRepository.findByRoleIgnoreCase(role)
                 : staffRepository.findAll();
 
-        List<Booking> holdingBookings = getHoldingBookings();
+        List<Booking> bookings = bookingRepository.findAll();
 
         // Bản đồ: Staff UserID -> Lý do bận
         Map<Integer, String> busyMap = new HashMap<>();
 
-        for (Booking booking : holdingBookings) {
+        for (Booking booking : bookings) {
+            String status = booking.getStatus() != null ? booking.getStatus().toLowerCase(Locale.ROOT) : "";
+            boolean holding = HOLDING_STATUSES.contains(status);
+            boolean activeRoadStatus = isActiveRoadStatus(status);
+            List<BookingAssignment> assignments = holding || activeRoadStatus
+                    ? bookingAssignmentRepository.findByBookingID_Id(booking.getId())
+                    : List.of();
+
+            for (Staff staff : staffList) {
+                boolean unreturned = isAssignedToUnreturnedTrip(booking, staff);
+                boolean assigned = unreturned || isStaffAssignedToBooking(booking, staff);
+                if (assigned && (activeRoadStatus || unreturned)) {
+                    busyMap.put(staff.getId(), "Đang thực hiện hoặc chưa xác nhận về trụ sở từ đơn BK-"
+                            + String.format("%03d", booking.getId()));
+                }
+            }
+
+            if (!holding) continue;
             Instant bookingDepart = booking.getDepartureDate() != null ? booking.getDepartureDate()
                     : booking.getBookingDate();
             if (bookingDepart == null)
@@ -235,7 +257,6 @@ public class FleetServiceImpl implements FleetService {
 
             // Kiểm tra hai khoảng thời gian có giao nhau hay không
             if (!newEnd.isBefore(busyStart) && !newStart.isAfter(busyEnd)) {
-                List<BookingAssignment> assignments = bookingAssignmentRepository.findByBookingID_Id(booking.getId());
                 for (BookingAssignment ba : assignments) {
                     if (ba.getStaffID() != null) {
                         String tripTag = existingIsInter ? "quốc tế" : "nội địa";
@@ -372,8 +393,8 @@ public class FleetServiceImpl implements FleetService {
         Instant newStart = newDepart.minus(newDaysBefore, ChronoUnit.DAYS);
         Instant newEnd = newDepart.plus(newDaysAfter, ChronoUnit.DAYS);
 
-        List<Booking> holdingBookings = getHoldingBookings();
-        for (Booking b : holdingBookings) {
+        List<Booking> bookings = bookingRepository.findAll();
+        for (Booking b : bookings) {
             if (excludeBookingId != null && excludeBookingId.equals(b.getId())) {
                 continue;
             }
@@ -471,36 +492,25 @@ public class FleetServiceImpl implements FleetService {
         Instant newStart = newDepart.minus(newDaysBefore, ChronoUnit.DAYS);
         Instant newEnd = newDepart.plus(newDaysAfter, ChronoUnit.DAYS);
 
-        List<Booking> holdingBookings = getHoldingBookings();
-        for (Booking b : holdingBookings) {
+        List<Booking> bookings = bookingRepository.findAll();
+        for (Booking b : bookings) {
             if (excludeBookingId != null && excludeBookingId.equals(b.getId())) {
                 continue;
             }
 
-            boolean isAssigned = isStaffAssignedToBooking(b, staffId, staff.getStaffCode());
+            boolean isAssigned = isStaffAssignedToBooking(b, staff);
             if (!isAssigned) {
                 continue;
             }
 
-            // 1. Kiểm tra nếu đơn đang thực tế lăn bánh ngoài đường hoặc đang trên đường về trụ sở
             String status = b.getStatus() != null ? b.getStatus().toLowerCase(Locale.ROOT) : "";
-            boolean isActiveOnRoad = Set.of(
-                    "en_route_to_pickup", "ready_for_pickup", "in_transit",
-                    "incident_reported", "pending_emergency_approval", "emergency_plan_active",
-                    "delivered_pending_settlement").contains(status);
-
-            boolean isReturning = b.getDetailsJson() != null
-                    && b.getDetailsJson().contains("\"homeReturn\"")
-                    && !b.getDetailsJson().contains("\"backAt\"");
-
-            if (isActiveOnRoad || isReturning) {
-                Instant twoDaysFromNow = Instant.now().plus(2, ChronoUnit.DAYS);
-                if (newDepart.isBefore(twoDaysFromNow)) {
-                    throw new IllegalStateException("Nhân sự " + staff.getStaffCode() + " (" + staff.getRole()
-                            + ") hiện đang thực hiện chuyến đi ngoài đường (đơn BK-"
-                            + String.format("%03d", b.getId()) + ") chưa về trụ sở!");
-                }
+            boolean holding = HOLDING_STATUSES.contains(status);
+            if (isActiveRoadStatus(status) || isAssignedToUnreturnedTrip(b, staff)) {
+                throw new IllegalStateException("Nhân sự " + staff.getStaffCode() + " (" + staff.getRole()
+                        + ") hiện đang thực hiện chuyến đi ngoài đường (đơn BK-"
+                        + String.format("%03d", b.getId()) + ") chưa về trụ sở!");
             }
+            if (!holding) continue;
 
             // 2. Kiểm tra xung đột lịch trình theo khoảng ngày an toàn
             Instant bookingDepart = b.getDepartureDate() != null ? b.getDepartureDate() : b.getBookingDate();
@@ -526,22 +536,46 @@ public class FleetServiceImpl implements FleetService {
         }
     }
 
-    private boolean isStaffAssignedToBooking(Booking b, Integer staffId, String staffCode) {
+    private boolean isStaffAssignedToBooking(Booking b, Staff staff) {
         List<BookingAssignment> assignments = bookingAssignmentRepository.findByBookingID_Id(b.getId());
         for (BookingAssignment ba : assignments) {
-            if (ba.getStaffID() != null && ba.getStaffID().getId().equals(staffId)) {
+            if (ba.getStaffID() != null && Objects.equals(ba.getStaffID().getId(), staff.getId())) {
                 return true;
             }
         }
-        if (b.getDetailsJson() != null) {
-            String json = b.getDetailsJson();
-            if (staffCode != null && !staffCode.isBlank() && json.contains("\"" + staffCode + "\"")) {
-                return true;
-            }
-            if (json.contains("\"driverId\":\"" + staffId + "\"") || json.contains("\"escortId\":\"" + staffId + "\"")) {
-                return true;
-            }
-        }
-        return false;
+        BookingDetailsPayload payload = BookingDetailsJson.read(objectMapper, b);
+        return payload.getTrips() != null && payload.getTrips().stream().anyMatch(trip -> isStaffAssignedToTrip(trip, staff));
+    }
+
+    private boolean isAssignedToUnreturnedTrip(Booking booking, Staff staff) {
+        BookingDetailsPayload payload = BookingDetailsJson.read(objectMapper, booking);
+        if (payload.getTrips() == null) return false;
+        return payload.getTrips().stream().anyMatch(trip -> isStaffAssignedToTrip(trip, staff)
+                && trip.getHomeReturn() != null && trip.getHomeReturn().get("backAt") == null);
+    }
+
+    private boolean isStaffAssignedToTrip(VehicleTripDto trip, Staff staff) {
+        String role = staff.getRole() == null ? "" : staff.getRole().toUpperCase(Locale.ROOT);
+        String assignedId = "DRIVER".equals(role) ? trip.getDriverId()
+                : "ESCORT".equals(role) ? trip.getEscortId() : null;
+        if (assignedId == null) return false;
+        String staffCode = staff.getStaffCode() != null ? staff.getStaffCode() : fallbackStaffCode(staff);
+        return sameStaffIdentifier(assignedId, staffCode)
+                || (staff.getId() != null && sameStaffIdentifier(assignedId, staff.getId().toString()));
+    }
+
+    private boolean sameStaffIdentifier(String first, String second) {
+        String normalizedValue = first.toUpperCase(Locale.ROOT);
+        String normalizedExpected = second.toUpperCase(Locale.ROOT);
+        if (normalizedValue.equals(normalizedExpected)) return true;
+        String normalizedFirst = normalizedValue.replaceFirst("^(TX|DR|NV|ES|HT)-", "").replaceAll("\\D", "");
+        String normalizedSecond = normalizedExpected.replaceFirst("^(TX|DR|NV|ES|HT)-", "").replaceAll("\\D", "");
+        return !normalizedFirst.isEmpty() && normalizedFirst.equals(normalizedSecond);
+    }
+
+    private boolean isActiveRoadStatus(String status) {
+        return Set.of("en_route_to_pickup", "in_transit", "incident_reported",
+                "pending_emergency_approval", "emergency_plan_active", "arrived", "handover_timeout",
+                "returning_to_hq", "delivered_pending_settlement").contains(status);
     }
 }

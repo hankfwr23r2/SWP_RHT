@@ -1847,7 +1847,8 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional
-    public BookingResponse updateTripProgress(String bookingIdentifier, com.example.racehorse_transport.dto.field.TripUpdateRequest request) {
+    public BookingResponse updateTripProgress(String bookingIdentifier, com.example.racehorse_transport.dto.field.TripUpdateRequest request,
+            String username, String role) {
         Integer bookingId = parseBookingId(bookingIdentifier);
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
@@ -1863,14 +1864,15 @@ public class BookingServiceImpl implements BookingService {
                 .filter(t -> t.getTripId() != null && t.getTripId().equalsIgnoreCase(tripId))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Unknown trip: " + tripId));
+        String action = request.getAction() != null ? request.getAction() : "";
+        validateTripUpdateActor(booking, targetTrip, action, username, role);
         Map<String, Object> activeRun = targetTrip.getRun();
         if (activeRun != null && activeRun.get("startedAt") != null) {
             activeRun.put("checkpoints", ensureRouteCheckpoints(booking, payload, targetTrip));
             targetTrip.setRun(activeRun);
         }
 
-        String action = request.getAction() != null ? request.getAction() : "";
-        String actor = request.getActor() != null ? request.getActor() : "Kíp xe";
+        String actor = username;
         Map<String, Object> reqPayload = request.getPayload() != null ? request.getPayload() : new HashMap<>();
         long now = System.currentTimeMillis();
 
@@ -2457,6 +2459,55 @@ public class BookingServiceImpl implements BookingService {
         Booking updated = bookingRepository.save(booking);
         logAction("TRIP_UPDATE_" + action, updated.getId(), actor + " thực hiện " + action + " cho chuyến " + tripId);
         return mapToResponse(updated);
+    }
+
+    private void validateTripUpdateActor(Booking targetBooking, VehicleTripDto targetTrip,
+            String action, String username, String role) {
+        if (!"DRIVER".equalsIgnoreCase(role) && !"ESCORT".equalsIgnoreCase(role)) return;
+
+        Staff staff = staffRepository.findByUser_Username(username)
+                .orElseThrow(() -> new org.springframework.security.access.AccessDeniedException(
+                        "Không tìm thấy hồ sơ nhân sự của tài khoản đăng nhập."));
+        if (staff.getRole() == null || !staff.getRole().equalsIgnoreCase(role)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Vai trò của tài khoản không khớp với hồ sơ nhân sự.");
+        }
+        String staffCode = staff.getStaffCode() != null ? staff.getStaffCode() : "";
+        String staffId = staff.getId() != null ? staff.getId().toString() : "";
+        String staffName = staff.getUser() != null && staff.getUser().getUsername() != null
+                ? staff.getUser().getUsername() : "";
+        String assigned = "DRIVER".equalsIgnoreCase(role) ? targetTrip.getDriverId() : targetTrip.getEscortId();
+        if (assigned == null || !matchesStaffIdentifier(assigned, staffCode, staffId, username, staffName, role)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Bạn không được phân công cho chuyến xe này.");
+        }
+
+        String normalizedAction = action.toUpperCase(java.util.Locale.ROOT);
+        if (!"DEPART_TO_PICKUP".equals(normalizedAction) && !"ARRIVE_PICKUP".equals(normalizedAction)) return;
+        if (!"DRIVER".equalsIgnoreCase(role)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Chỉ tài xế được phép xuất phát hoặc xác nhận đến điểm đón.");
+        }
+
+        for (Booking booking : bookingRepository.findAll()) {
+            BookingDetailsPayload payload = extractPayload(booking);
+            if (payload.getTrips() == null) continue;
+            String status = booking.getStatus() == null ? "" : booking.getStatus().toLowerCase(java.util.Locale.ROOT);
+            for (VehicleTripDto trip : payload.getTrips()) {
+                if (booking.getId().equals(targetBooking.getId())
+                        && java.util.Objects.equals(trip.getTripId(), targetTrip.getTripId())) continue;
+                if (!matchesStaffIdentifier(trip.getDriverId(), staffCode, staffId, username, staffName, role)) continue;
+                boolean returning = trip.getHomeReturn() != null && trip.getHomeReturn().get("backAt") == null;
+                boolean active = Set.of("en_route_to_pickup", "in_transit",
+                        "incident_reported", "pending_emergency_approval", "emergency_plan_active",
+                        "arrived", "handover_timeout", "returning_to_hq", "delivered_pending_settlement").contains(status);
+                if (returning || active) {
+                    throw new IllegalStateException("Bạn đang thực hiện chuyến BK-"
+                            + String.format("%03d", booking.getId())
+                            + " và chưa xác nhận về trụ sở, không thể thao tác chuyến khác.");
+                }
+            }
+        }
     }
 
     @Override
