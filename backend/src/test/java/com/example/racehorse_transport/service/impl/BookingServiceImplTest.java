@@ -13,6 +13,7 @@ import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.Category;
 import com.example.racehorse_transport.entity.Horse;
 import com.example.racehorse_transport.entity.DocumentRequirement;
+import com.example.racehorse_transport.entity.Notification;
 import com.example.racehorse_transport.entity.Quotation;
 import com.example.racehorse_transport.dto.admin.SystemConfigResponse;
 import com.example.racehorse_transport.entity.Staff;
@@ -29,6 +30,7 @@ import com.example.racehorse_transport.repository.HorseDocumentRepository;
 import com.example.racehorse_transport.repository.DocumentRequirementRepository;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.repository.LogRepository;
+import com.example.racehorse_transport.repository.NotificationRepository;
 import com.example.racehorse_transport.repository.PaymentRepository;
 import com.example.racehorse_transport.repository.QuotationRepository;
 import com.example.racehorse_transport.repository.RegulationRepository;
@@ -72,6 +74,7 @@ class BookingServiceImplTest {
     private final BookingVehicleRepository bookingVehicleRepository = mock(BookingVehicleRepository.class);
     private final BookingAssignmentRepository bookingAssignmentRepository = mock(BookingAssignmentRepository.class);
     private final QuotationRepository quotationRepository = mock(QuotationRepository.class);
+    private final NotificationRepository notificationRepository = mock(NotificationRepository.class);
     private final PaymentRepository paymentRepository = mock(PaymentRepository.class);
     private final FleetService fleetService = mock(FleetService.class);
     private final LogRepository logRepository = mock(LogRepository.class);
@@ -100,6 +103,7 @@ class BookingServiceImplTest {
                 bookingVehicleRepository,
                 bookingAssignmentRepository,
                 quotationRepository,
+                notificationRepository,
                 paymentRepository,
                 fleetService,
                 logRepository,
@@ -936,6 +940,15 @@ class BookingServiceImplTest {
         assertThat(saved.getValue().getDepositAmount()).isEqualByComparingTo("3000000");
         assertThat(saved.getValue().getBalanceAmount()).isEqualByComparingTo("7000000");
         assertThat(booking.getDetailsJson()).contains("\"total\":10000000").contains("\"deposit\":3000000");
+
+        ArgumentCaptor<Notification> notice = ArgumentCaptor.forClass(Notification.class);
+        verify(notificationRepository).save(notice.capture());
+        assertThat(notice.getValue().getRecipientRole()).isEqualTo("customer");
+        assertThat(notice.getValue().getRecipientUsername()).isEqualTo("phuc");
+        assertThat(notice.getValue().getTitle()).contains("BK-42");
+        assertThat(notice.getValue().getBookingId()).isEqualTo("BK-42");
+        assertThat(notice.getValue().getLink()).isEqualTo("/orders/BK-42");
+        assertThat(notice.getValue().getIsRead()).isFalse();
     }
 
     @Test

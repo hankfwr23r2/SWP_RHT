@@ -14,6 +14,7 @@ export function NoticeBell() {
   const toast = useToast()
   const [open, setOpen] = useState(false)
   const [items, setItems] = useState<Notice[]>([])
+  const [loadError, setLoadError] = useState('')
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deletingAll, setDeletingAll] = useState(false)
   const box = useRef<HTMLDivElement>(null)
@@ -24,8 +25,16 @@ export function NoticeBell() {
   const load = useCallback(() => {
     if (!role) return
     const request = ++listRequest.current
+    setLoadError('')
     noticesApi.list(role).then(nextItems => {
-      if (request === listRequest.current) setItems(nextItems)
+      if (request === listRequest.current) {
+        setItems(nextItems)
+        setLoadError('')
+      }
+    }).catch(error => {
+      if (request === listRequest.current) {
+        setLoadError(error instanceof Error ? error.message : 'Không thể tải thông báo.')
+      }
     })
   }, [role])
   // Cập nhật định kỳ để thấy tin mới do vai trò khác vừa gửi: 15 giây một lần và khi quay lại tab, bỏ qua lúc tab bị ẩn
@@ -95,7 +104,9 @@ export function NoticeBell() {
               </button>
             </div>
           </div>
-          {!items.length && <p className={s.empty}><i className="fa-regular fa-bell-slash" aria-hidden="true" /> Chưa có thông báo nào.</p>}
+          {!items.length && loadError
+            ? <p className={s.empty} role="alert">{loadError} <button className={s.readAll} onClick={load}>Thử lại</button></p>
+            : !items.length && <p className={s.empty}><i className="fa-regular fa-bell-slash" aria-hidden="true" /> Chưa có thông báo nào.</p>}
           <ul className={s.list}>
             {items.map(n => (
               <li key={n.id}>
