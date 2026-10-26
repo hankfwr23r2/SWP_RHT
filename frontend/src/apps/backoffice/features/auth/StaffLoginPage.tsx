@@ -77,6 +77,7 @@ export function StaffLoginPage() {
   return (
     <AuthShell title="Đăng nhập Nội bộ" subtitle="Vui lòng đăng nhập bằng email được cấp" heading="Hệ thống Nội bộ" tagline="Cổng đăng nhập dành cho nhân viên. Quản lý, tài xế, hộ tống và vận hành." homeHref="/" homeExternal back={<a href="/"><i className="fa-solid fa-arrow-left" /> Về Trang chủ</a>}>
       <LoginForm managerOnly={false} />
+      <a href="/login" className="btn btn-outline btn-full" style={{ marginTop: 12 }}><i className="fa-solid fa-arrow-left" /> Quay lại đăng nhập khách hàng</a>
     </AuthShell>
   )
 }
@@ -85,6 +86,7 @@ export function ManagerLoginPage() {
   return (
     <AuthShell title="Cổng Quản lý" subtitle="Vui lòng đăng nhập với tài khoản cấp quản lý" heading="Hệ thống Quản lý Vận hành" tagline="Nền tảng kiểm soát và điều phối toàn diện lộ trình vận chuyển ngựa đua an toàn, tiêu chuẩn." homeHref="/" homeExternal back={<a href="/"><i className="fa-solid fa-arrow-left" /> Về Trang chủ</a>}>
       <LoginForm managerOnly />
+      <a href="/login" className="btn btn-outline btn-full" style={{ marginTop: 12 }}><i className="fa-solid fa-arrow-left" /> Quay lại đăng nhập khách hàng</a>
     </AuthShell>
   )
 }
