@@ -64,24 +64,19 @@ class DepartToPickupTest {
 
     private final HttpClient http = HttpClient.newHttpClient();
     private final ObjectMapper json = new ObjectMapper();
+    private String driverCode;
     private String driverToken;
+    private String secondDriverCode;
+    private String secondDriverToken;
     private Customer customer;
 
     @BeforeEach
-    void driverAndCustomer() throws Exception {
+    void driversAndCustomer() throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
-        User driverUser = new User();
-        driverUser.setUsername("taixe" + suffix);
-        driverUser.setEmail("taixe" + suffix + "@example.com");
-        driverUser.setPasswordHash(passwordEncoder.encode("Test@123"));
-        driverUser = users.save(driverUser);
-        Staff driver = new Staff();
-        driver.setUser(driverUser);
-        driver.setRole("DRIVER");
-        driver.setStaffCode("DR-" + suffix);
-        driver.setEmploymentStatus("ACTIVE");
-        driver.setHireDate(LocalDate.now());
-        staff.save(driver);
+        driverCode = "DR-" + suffix;
+        driverToken = driverLogin("taixe" + suffix, driverCode);
+        secondDriverCode = "DR-2" + suffix;
+        secondDriverToken = driverLogin("taixe2" + suffix, secondDriverCode);
 
         User customerUser = new User();
         customerUser.setUsername("khach" + suffix);
@@ -92,11 +87,26 @@ class DepartToPickupTest {
         customer.setUser(customerUser);
         customer.setFullName("Khach Test");
         customer = customers.save(customer);
+    }
 
+    // Tài xế được phân công vào chuyến (driverId của chuyến là mã nhân sự của tài xế)
+    private String driverLogin(String username, String code) throws Exception {
+        User user = new User();
+        user.setUsername(username);
+        user.setEmail(username + "@example.com");
+        user.setPasswordHash(passwordEncoder.encode("Test@123"));
+        user = users.save(user);
+        Staff driver = new Staff();
+        driver.setUser(user);
+        driver.setRole("DRIVER");
+        driver.setStaffCode(code);
+        driver.setEmploymentStatus("ACTIVE");
+        driver.setHireDate(LocalDate.now());
+        staff.save(driver);
         HttpResponse<String> login = post("/auth/staff/login", null,
-                "{\"username\":\"%s\",\"password\":\"Test@123\"}".formatted(driverUser.getEmail()));
+                "{\"username\":\"%s\",\"password\":\"Test@123\"}".formatted(user.getEmail()));
         assertThat(login.statusCode()).as(login.body()).isEqualTo(200);
-        driverToken = json.readTree(login.body()).path("data").path("accessToken").asText();
+        return json.readTree(login.body()).path("data").path("accessToken").asText();
     }
 
     @Test
@@ -106,6 +116,7 @@ class DepartToPickupTest {
         HttpResponse<String> response = depart(booking);
 
         assertThat(response.statusCode()).as(response.body()).isBetween(400, 499);
+        assertThat(messageOf(response)).contains("chưa sẵn sàng đón ngựa");
         assertUnchanged(booking, "clearance_in_progress");
     }
 
@@ -116,6 +127,7 @@ class DepartToPickupTest {
         HttpResponse<String> response = depart(booking);
 
         assertThat(response.statusCode()).as(response.body()).isBetween(400, 499);
+        assertThat(messageOf(response)).contains("chưa sẵn sàng đón ngựa");
         assertUnchanged(booking, "pending_intake");
     }
 
@@ -135,7 +147,7 @@ class DepartToPickupTest {
     void secondVehicleDepartsAfterTheFirstOneLeft() throws Exception {
         Booking booking = twoTripBooking("en_route_to_pickup", "\"departedAt\":%d".formatted(Instant.now().toEpochMilli()));
 
-        HttpResponse<String> response = depart(booking, "TRP-2");
+        HttpResponse<String> response = depart(booking, "TRP-2", secondDriverToken);
 
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
         Booking saved = bookings.findById(booking.getId()).orElseThrow();
@@ -148,7 +160,7 @@ class DepartToPickupTest {
         long now = Instant.now().toEpochMilli();
         Booking booking = twoTripBooking("in_transit", "\"departedAt\":%d,\"run\":{\"startedAt\":%d}".formatted(now, now));
 
-        HttpResponse<String> response = depart(booking, "TRP-2");
+        HttpResponse<String> response = depart(booking, "TRP-2", secondDriverToken);
 
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
         assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus()).isEqualTo("in_transit");
@@ -163,8 +175,9 @@ class DepartToPickupTest {
                 .departureDate(Instant.now())
                 .pickupAddress("Kho Đồng Nai")
                 .dropoffAddress("Hà Nội")
-                .detailsJson(("{\"trips\":[{\"tripId\":\"TRP-1\",\"vehicleId\":\"VH-001\",\"horseIds\":[\"H-1\"],%s},"
-                        + "{\"tripId\":\"TRP-2\",\"vehicleId\":\"VH-002\",\"horseIds\":[\"H-2\"]}]}").formatted(firstTripState))
+                .detailsJson(("{\"trips\":[{\"tripId\":\"TRP-1\",\"vehicleId\":\"VH-001\",\"horseIds\":[\"H-1\"],\"driverId\":\"%s\",%s},"
+                        + "{\"tripId\":\"TRP-2\",\"vehicleId\":\"VH-002\",\"horseIds\":[\"H-2\"],\"driverId\":\"%s\"}]}")
+                        .formatted(driverCode, firstTripState, secondDriverCode))
                 .build());
     }
 
@@ -183,17 +196,21 @@ class DepartToPickupTest {
                 .departureDate(Instant.now().plus(1, ChronoUnit.DAYS))
                 .pickupAddress("Kho Đồng Nai")
                 .dropoffAddress("Hà Nội")
-                .detailsJson("{\"trips\":[{\"tripId\":\"TRP-1\",\"vehicleId\":\"VH-001\",\"horseIds\":[\"H-1\"]}]}")
+                .detailsJson("{\"trips\":[{\"tripId\":\"TRP-1\",\"vehicleId\":\"VH-001\",\"horseIds\":[\"H-1\"],\"driverId\":\"%s\"}]}".formatted(driverCode))
                 .build());
     }
 
     private HttpResponse<String> depart(Booking booking) throws Exception {
-        return depart(booking, "TRP-1");
+        return depart(booking, "TRP-1", driverToken);
     }
 
-    private HttpResponse<String> depart(Booking booking, String tripId) throws Exception {
-        return post("/field/bookings/" + booking.getId() + "/trip-update", driverToken,
+    private HttpResponse<String> depart(Booking booking, String tripId, String token) throws Exception {
+        return post("/field/bookings/" + booking.getId() + "/trip-update", token,
                 "{\"tripId\":\"%s\",\"action\":\"DEPART_TO_PICKUP\",\"actor\":\"Tài xế\",\"payload\":{}}".formatted(tripId));
+    }
+
+    private String messageOf(HttpResponse<String> response) throws Exception {
+        return json.readTree(response.body()).path("message").asText();
     }
 
     private HttpResponse<String> post(String path, String token, String body) throws Exception {

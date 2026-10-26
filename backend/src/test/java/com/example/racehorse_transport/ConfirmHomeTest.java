@@ -66,6 +66,7 @@ class ConfirmHomeTest {
 
     private final HttpClient http = HttpClient.newHttpClient();
     private final ObjectMapper json = new ObjectMapper();
+    private String driverCode;
     private String driverToken;
     private Customer customer;
 
@@ -80,7 +81,8 @@ class ConfirmHomeTest {
         Staff driver = new Staff();
         driver.setUser(driverUser);
         driver.setRole("DRIVER");
-        driver.setStaffCode("DR-" + suffix);
+        driverCode = "DR-" + suffix;
+        driver.setStaffCode(driverCode);
         driver.setEmploymentStatus("ACTIVE");
         driver.setHireDate(LocalDate.now());
         staff.save(driver);
@@ -108,6 +110,7 @@ class ConfirmHomeTest {
         HttpResponse<String> response = confirmHome(booking, PHOTO);
 
         assertThat(response.statusCode()).as(response.body()).isBetween(400, 499);
+        assertThat(messageOf(response)).contains("Chưa giao ngựa xong");
         assertThat(homeReturnOf(booking).path("backAt").isMissingNode()).isTrue();
     }
 
@@ -118,6 +121,7 @@ class ConfirmHomeTest {
         HttpResponse<String> response = confirmHome(booking, PHOTO);
 
         assertThat(response.statusCode()).as(response.body()).isBetween(400, 499);
+        assertThat(messageOf(response)).contains("Chưa tới thời điểm");
         assertThat(homeReturnOf(booking).path("backAt").isMissingNode()).isTrue();
     }
 
@@ -128,6 +132,7 @@ class ConfirmHomeTest {
         HttpResponse<String> response = confirmHome(booking, null);
 
         assertThat(response.statusCode()).as(response.body()).isBetween(400, 499);
+        assertThat(messageOf(response)).contains("Cần ảnh");
         assertThat(homeReturnOf(booking).path("backAt").isMissingNode()).isTrue();
     }
 
@@ -161,7 +166,8 @@ class ConfirmHomeTest {
                 .departureDate(Instant.now().minus(1, ChronoUnit.DAYS))
                 .pickupAddress("Kho Đồng Nai")
                 .dropoffAddress("Hà Nội")
-                .detailsJson("{\"trips\":[{\"tripId\":\"TRP-1\",\"vehicleId\":\"VH-001\",\"horseIds\":[\"H-1\"],%s}]}".formatted(tripState))
+                .detailsJson("{\"trips\":[{\"tripId\":\"TRP-1\",\"vehicleId\":\"VH-001\",\"horseIds\":[\"H-1\"],\"driverId\":\"%s\",%s}]}"
+                        .formatted(driverCode, tripState))
                 .build();
         return bookings.save(booking);
     }
@@ -175,6 +181,10 @@ class ConfirmHomeTest {
         String payload = photo == null ? "{}" : "{\"photo\":\"%s\"}".formatted(photo);
         return post("/field/bookings/" + booking.getId() + "/trip-update", driverToken,
                 "{\"tripId\":\"TRP-1\",\"action\":\"CONFIRM_HOME\",\"actor\":\"Tài xế\",\"payload\":%s}".formatted(payload));
+    }
+
+    private String messageOf(HttpResponse<String> response) throws Exception {
+        return json.readTree(response.body()).path("message").asText();
     }
 
     private HttpResponse<String> post(String path, String token, String body) throws Exception {
