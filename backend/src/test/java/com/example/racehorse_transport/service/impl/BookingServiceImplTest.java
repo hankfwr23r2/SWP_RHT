@@ -12,6 +12,7 @@ import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.Category;
 import com.example.racehorse_transport.entity.Horse;
+import com.example.racehorse_transport.entity.DocumentRequirement;
 import com.example.racehorse_transport.entity.Quotation;
 import com.example.racehorse_transport.dto.admin.SystemConfigResponse;
 import com.example.racehorse_transport.entity.Staff;
@@ -24,6 +25,8 @@ import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.BookingVehicleRepository;
 import com.example.racehorse_transport.repository.CustomerRepository;
 import com.example.racehorse_transport.repository.HorseRepository;
+import com.example.racehorse_transport.repository.HorseDocumentRepository;
+import com.example.racehorse_transport.repository.DocumentRequirementRepository;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.repository.LogRepository;
 import com.example.racehorse_transport.repository.PaymentRepository;
@@ -80,6 +83,8 @@ class BookingServiceImplTest {
     private final SystemConfigService systemConfigService = mock(SystemConfigService.class);
     private final com.example.racehorse_transport.repository.RouteRepository routeRepository = mock(com.example.racehorse_transport.repository.RouteRepository.class);
     private final ServiceRepository serviceRepository = mock(ServiceRepository.class);
+    private final HorseDocumentRepository horseDocumentRepository = mock(HorseDocumentRepository.class);
+    private final DocumentRequirementRepository documentRequirementRepository = mock(DocumentRequirementRepository.class);
 
     private BookingServiceImpl service;
     private Customer customer;
@@ -105,7 +110,15 @@ class BookingServiceImplTest {
                 systemConfigService,
                 tripDocumentRepository,
                 routeRepository,
-                serviceRepository);
+                serviceRepository,
+                horseDocumentRepository,
+                documentRequirementRepository);
+
+        when(documentRequirementRepository.findByDocumentGroupAndStatusOrderByDocumentNameAsc(any(), any()))
+                .thenReturn(List.of());
+        when(documentRequirementRepository.findByStatusOrderByDocumentGroupAscDocumentNameAsc(any()))
+                .thenReturn(List.of());
+        when(horseDocumentRepository.findByHorseID_Id(any())).thenReturn(List.of());
 
         when(systemConfigService.getConfig("MIN_LEAD_DAYS")).thenReturn(config("MIN_LEAD_DAYS", "20"));
         when(systemConfigService.getConfig("DEPOSIT_RATE")).thenReturn(config("DEPOSIT_RATE", "0.30"));
@@ -160,6 +173,16 @@ class BookingServiceImplTest {
                 .thenReturn(Optional.of(service(3, "Gói cơ bản", 2, "0", "ACTIVE")));
         when(serviceRepository.findByServiceCodeIgnoreCase("INSURANCE_DECLINED"))
                 .thenReturn(Optional.of(service(10, "Từ chối", 4, "0", "ACTIVE")));
+        DocumentRequirement clearanceRequirement = new DocumentRequirement();
+        clearanceRequirement.setDocumentGroup("CLEARANCE");
+        clearanceRequirement.setDocumentType("poa");
+        clearanceRequirement.setDocumentName("Giấy ủy quyền vận chuyển");
+        clearanceRequirement.setTripType("ALL");
+        clearanceRequirement.setCountry("ALL");
+        clearanceRequirement.setRequired(true);
+        clearanceRequirement.setStatus("ACTIVE");
+        when(documentRequirementRepository.findByStatusOrderByDocumentGroupAscDocumentNameAsc("ACTIVE"))
+                .thenReturn(List.of(clearanceRequirement));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> {
             Booking saved = invocation.getArgument(0);
             saved.setId(42);
@@ -192,6 +215,7 @@ class BookingServiceImplTest {
         assertThat(savedBooking.getValue().getConsignorPhone()).isEqualTo("0900");
         assertThat(savedBooking.getValue().getDetailsJson()).contains("\"originCountry\":\"VN\"");
         assertThat(savedBooking.getValue().getDetailsJson()).contains("\"serviceName\":\"Khoang tiêu chuẩn\"");
+        assertThat(savedBooking.getValue().getDetailsJson()).contains("\"documentType\":\"poa\"");
         verify(systemLogRepository).save(any());
     }
 
@@ -224,6 +248,55 @@ class BookingServiceImplTest {
         assertThatThrownBy(() -> service.createBooking("phuc", request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("vừa được tạm ngưng");
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
+    void createBooking_rejectsHorseWithoutApprovedRequiredDocument() {
+        Instant departure = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
+                .plusDays(25).atTime(10, 0).atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant();
+        BookingHorseDto horseDto = BookingHorseDto.builder()
+                .horseId("HORSE-12")
+                .name("Lightning")
+                .selectedServiceCodes(Map.of(
+                        "stall", "STALL_STANDARD",
+                        "feed", "FEED_BASIC",
+                        "insurance", "INSURANCE_DECLINED"))
+                .build();
+        CreateBookingRequest request = CreateBookingRequest.builder()
+                .type("DOMESTIC")
+                .originCountry("VN")
+                .destCountry("VN")
+                .departAt(departure.toEpochMilli())
+                .horses(List.of(horseDto))
+                .build();
+        Horse horse = Horse.builder().id(12).customerID(customer).horseName("Lightning").build();
+        DocumentRequirement requirement = new DocumentRequirement();
+        requirement.setDocumentGroup("HORSE");
+        requirement.setDocumentType("passport");
+        requirement.setDocumentName("Hộ chiếu ngựa");
+        requirement.setTripType("ALL");
+        requirement.setCountry("ALL");
+        requirement.setRequired(true);
+        requirement.setStatus("ACTIVE");
+
+        when(userRepository.findByUsernameOrEmail("phuc", "phuc")).thenReturn(Optional.of(customer.getUser()));
+        when(customerRepository.findById(7)).thenReturn(Optional.of(customer));
+        when(bookingRepository.findByCustomerID_IdOrderByBookingDateDesc(7)).thenReturn(List.of());
+        when(horseRepository.findById(12)).thenReturn(Optional.of(horse));
+        when(serviceRepository.findByServiceCodeIgnoreCase("STALL_STANDARD"))
+                .thenReturn(Optional.of(service(1, "Khoang tiêu chuẩn", 1, "1", "ACTIVE")));
+        when(serviceRepository.findByServiceCodeIgnoreCase("FEED_BASIC"))
+                .thenReturn(Optional.of(service(3, "Gói cơ bản", 2, "0", "ACTIVE")));
+        when(serviceRepository.findByServiceCodeIgnoreCase("INSURANCE_DECLINED"))
+                .thenReturn(Optional.of(service(10, "Từ chối", 4, "0", "ACTIVE")));
+        when(documentRequirementRepository.findByStatusOrderByDocumentGroupAscDocumentNameAsc("ACTIVE"))
+                .thenReturn(List.of(requirement));
+        when(horseDocumentRepository.findByHorseID_Id(12)).thenReturn(List.of());
+
+        assertThatThrownBy(() -> service.createBooking("phuc", request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Hộ chiếu ngựa");
         verify(bookingRepository, never()).save(any(Booking.class));
     }
 

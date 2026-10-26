@@ -5,6 +5,7 @@ import '@shared/styles/base.css'
 import { AuthProvider } from '@shared/auth/AuthContext'
 import { BusinessConfigGate } from '@shared/config/BusinessConfigGate'
 import { LocationCatalogGate } from '@shared/config/LocationCatalogGate'
+import { DocumentRequirementsGate } from '@shared/config/DocumentRequirementsGate'
 import { buildRouter } from '@shared/routing/buildRouter'
 import { ToastProvider } from '@shared/ui/toast'
 import { CustomerLayout } from './layouts/CustomerLayout'
@@ -19,7 +20,9 @@ createRoot(document.getElementById('root')!).render(
       <ToastProvider>
         <BusinessConfigGate>
           <LocationCatalogGate>
-            <RouterProvider router={router} />
+            <DocumentRequirementsGate>
+              <RouterProvider router={router} />
+            </DocumentRequirementsGate>
           </LocationCatalogGate>
         </BusinessConfigGate>
       </ToastProvider>

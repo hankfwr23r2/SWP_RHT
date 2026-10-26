@@ -30,6 +30,19 @@ public final class ClearanceDocumentPolicy {
                 || Set.of("vn", "vietnam", "việt nam").contains(country.trim().toLowerCase(Locale.ROOT));
     }
 
+    public static boolean isForDestinationCountry(Regulation regulation, String country) {
+        if (regulation.getLocationID() == null || country == null || country.isBlank()) {
+            return true;
+        }
+        String destination = regulation.getLocationID().getDestinationCountry();
+        if (destination == null || destination.isBlank()) {
+            destination = regulation.getCountry();
+        }
+        return destination == null || destination.isBlank()
+                || DocumentRequirementPolicy.normalizeCountry(destination)
+                        .equals(DocumentRequirementPolicy.normalizeCountry(country));
+    }
+
     public static boolean isInternationalOnlyType(Object type) {
         return type != null && INTERNATIONAL_ONLY_TYPES.contains(type.toString().trim().toLowerCase(Locale.ROOT));
     }

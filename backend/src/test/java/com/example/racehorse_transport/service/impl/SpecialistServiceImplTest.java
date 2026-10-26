@@ -146,4 +146,5 @@ class SpecialistServiceImplTest {
                         """.formatted(medicalStatus))
                 .build();
     }
+
 }

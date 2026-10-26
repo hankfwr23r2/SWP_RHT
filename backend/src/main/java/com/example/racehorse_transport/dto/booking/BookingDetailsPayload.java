@@ -17,6 +17,7 @@ public class BookingDetailsPayload {
     private String originCountry;
     private String destCountry;
     private List<BookingHorseDto> horses;
+    private List<DocumentRequirementSnapshot> documentRequirements;
     private List<VehicleTripDto> trips;
     private Object route;
     private Object plan;
