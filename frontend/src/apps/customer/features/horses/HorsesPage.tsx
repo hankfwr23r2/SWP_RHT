@@ -308,7 +308,6 @@ export default function HorsesPage() {
         <HorseJourneyModal
           horse={journeyHorse}
           onClose={() => setJourneyHorse(null)}
-          onOpenRelocate={() => setRelocateHorse(journeyHorse)}
         />
       )}
 
