@@ -26,7 +26,7 @@ function Kpi({ label, value, icon, children }: { label: string; value: string; i
 }
 
 export default function ReportsPage() {
-  const { all } = usePageData<typeof bookingListLoader>()
+  const { all, errors, reload } = usePageData<typeof bookingListLoader>()
   const toast = useToast()
   const [days, setDays] = useState<(typeof PERIODS)[number][0]>(30)
   const [now] = useState(() => Date.now())
@@ -35,6 +35,13 @@ export default function ReportsPage() {
   const prev = useMemo(() => summarize(all ?? [], from - days * DAY, from), [all, from, days])
   const pts = useMemo(() => series(all ?? [], from, to), [all, from, to])
   const recent = useMemo(() => (all ?? []).map(orderFinance).filter(f => f && f.at >= from && f.at < to).sort((a, z) => z!.at - a!.at).slice(0, 8), [all, from, to])
+
+  if (!all) return (
+    <div className="page"><div className="wrap"><div className={s.empty} role="alert">
+      <p>{errors.length ? 'Không tải được dữ liệu doanh thu. Vui lòng thử lại.' : 'Đang tải dữ liệu doanh thu…'}</p>
+      <button className="btn btn-primary" onClick={reload}>Tải lại</button>
+    </div></div></div>
+  )
 
   const exportCsv = () => {
     const rows = [['Mã đơn', 'Khách hàng', 'Ngày đặt cọc', 'Doanh thu', 'Chi phí vận hành', 'Lợi nhuận', 'Đã thu', 'Trạng thái'],

@@ -35,5 +35,8 @@ public class Route {
     @Column(name = "status", length = 50)
     private String status;
 
+    @Column(name = "seedKey", unique = true, length = 50)
+    private String seedKey;
+
 
 }

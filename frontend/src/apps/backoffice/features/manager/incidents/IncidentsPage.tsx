@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useAuth } from '@shared/auth/AuthContext'
 import { INCIDENT_ACTION, INCIDENT_KIND } from '@shared/config/booking-rules'
 import { formatDateTime, formatVND } from '@shared/lib/format'
-import { bookingsApi } from '@shared/services/bookings'
+import { bookingsApi, invalidateBookingsListCache } from '@shared/services/bookings'
 import type { Booking, Incident } from '@shared/types/booking'
 import { ImageThumb } from '@shared/ui/ImageThumb'
 import { Modal } from '@shared/ui/Modal'
@@ -77,7 +77,7 @@ export default function IncidentsPage() {
     returned: inc(incidents.filter(x => x.i.status === 'reported')),
     done: ord(list.filter(b => b.status === 'completed')),
   }
-  const done = () => { setApprove(null); reload() }
+  const done = () => { invalidateBookingsListCache(); setApprove(null); reload() }
   const expenses = (b: Booking) => (b.incidents ?? []).flatMap(i => i.expenses).reduce((n, e) => n + e.amount, 0)
 
   const columns: Column<Row>[] = [

@@ -4,7 +4,7 @@ import { Fragment, lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { MAX_CONTINUOUS_HOURS, VEHICLE_CLASS } from '@shared/config/booking-rules'
-import { findGate, findTransitStation, TRANSIT_STATIONS } from '@shared/config/network'
+import { findGate, findTransitStation } from '@shared/config/network'
 import { AVG_SPEED_KMH } from '@shared/config/public-pricing'
 import {
   borderOutsideWindow,
@@ -26,7 +26,9 @@ import {
 } from '@shared/lib/booking'
 import { atHour } from '@shared/lib/dates'
 import { formatClock, formatDate, formatDateTime } from '@shared/lib/format'
+import { matchFixedRoute, MAX_FIXED_ROUTE_ACCESS_KM, MAX_FIXED_ROUTE_DETOUR_RATIO, type FixedRouteMatch } from '@shared/lib/fixedRouteMatch'
 import { bookingsApi } from '@shared/services/bookings'
+import { roadRoute } from '@shared/services/routing'
 import { type Vehicle } from '@shared/services/fleet'
 import { useAutoRefresh, useLoad } from '@shared/services/useLoad'
 import { isCoordinatorTask } from '../../../shared/staffWork'
@@ -54,6 +56,12 @@ const toLocal = (t: number) => {
 const fromLocal = (v: string) => (v ? new Date(v).getTime() : NaN)
 
 type Draft = Pick<VehicleTrip, 'vehicleId' | 'horseIds'>
+type CorridorSuggestion = {
+  corridor: BackendRouteResponse
+  match: FixedRouteMatch
+  totalKm: number
+  detourKm: number
+}
 
 function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; all: Booking[]; onDone: () => void }) {
   const toast = useToast()
@@ -168,6 +176,9 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
   const origin = findLocation(b.origin.id),
     dest = findLocation(b.dest.id)
   const gateGeo = findGate(gate)
+  const originPoint = useMemo(() => origin && ({ lat: origin.lat, lng: origin.lng }), [origin?.lat, origin?.lng]) // eslint-disable-line react-hooks/exhaustive-deps
+  const destPoint = useMemo(() => dest && ({ lat: dest.lat, lng: dest.lng }), [dest?.lat, dest?.lng]) // eslint-disable-line react-hooks/exhaustive-deps
+  const gatePoint = useMemo(() => gateGeo && ({ lat: gateGeo.lat, lng: gateGeo.lng }), [gateGeo?.lat, gateGeo?.lng]) // eslint-disable-line react-hooks/exhaustive-deps
   const estHours = routeKm(b.origin, b.dest, gate || undefined) / AVG_SPEED_KMH
 
   const defaultEtdTime = useMemo(() => {
@@ -185,6 +196,8 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
   const [rests, setRests] = useState<RestStop[]>(initial.rests)
   const [corridors, setCorridors] = useState<BackendRouteResponse[]>([])
   const [selectedCorridorId, setSelectedCorridorId] = useState<number | ''>('')
+  const [corridorSuggestions, setCorridorSuggestions] = useState<CorridorSuggestion[]>([])
+  const [suggestingCorridors, setSuggestingCorridors] = useState(false)
   const [applyingCorridor, setApplyingCorridor] = useState(false)
   const [borderText, setBorderText] = useState(initial.borderEta ? toLocal(initial.borderEta) : '')
   const [borderTouched, setBorderTouched] = useState(!!b.route?.borderEta)
@@ -208,7 +221,75 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
     return undefined
   }).filter((x): x is NonNullable<typeof x> => !!x)
 
-  const roadPath = origin && dest ? routeOutline(origin, gateGeo, dest, stationsOnRoute).path : undefined
+  useEffect(() => {
+    if (!originPoint || !destPoint || corridors.length === 0) {
+      setCorridorSuggestions([])
+      setSuggestingCorridors(false)
+      return
+    }
+    let cancelled = false
+    const controller = new AbortController()
+    setSuggestingCorridors(true)
+
+    void (async () => {
+      try {
+        const direct = await roadRoute(
+          international && gatePoint ? [originPoint, gatePoint, destPoint] : [originPoint, destPoint],
+          etdT,
+          { signal: controller.signal }
+        )
+        if (cancelled) return
+        if (!direct) {
+          setCorridorSuggestions([])
+          setSelectedCorridorId('')
+          return
+        }
+
+        const candidates = await Promise.all(corridors.map(async corridor => {
+          try {
+            const stops = await routesApi.getRouteStops(corridor.id)
+            const match = matchFixedRoute(stops, originPoint, destPoint, international ? gatePoint : undefined)
+            if (!match || match.pickupAccessKm > MAX_FIXED_ROUTE_ACCESS_KM || match.deliveryAccessKm > MAX_FIXED_ROUTE_ACCESS_KM) return null
+            const route = await roadRoute(match.points, etdT, { signal: controller.signal })
+            if (!route || route.km > direct.km * MAX_FIXED_ROUTE_DETOUR_RATIO) return null
+            return {
+              corridor,
+              match,
+              totalKm: route.km,
+              detourKm: Math.max(0, route.km - direct.km),
+            } satisfies CorridorSuggestion
+          } catch {
+            return null
+          }
+        }))
+        if (cancelled) return
+        const ranked = candidates.filter((candidate): candidate is CorridorSuggestion => candidate !== null)
+          .sort((a, b) => a.totalKm - b.totalKm || a.match.pickupAccessKm + a.match.deliveryAccessKm - b.match.pickupAccessKm - b.match.deliveryAccessKm)
+        setCorridorSuggestions(ranked)
+        setSelectedCorridorId(current => ranked.some(item => item.corridor.id === current) ? current : ranked[0]?.corridor.id || '')
+      } catch {
+        if (!cancelled) {
+          setCorridorSuggestions([])
+          setSelectedCorridorId('')
+        }
+      } finally {
+        if (!cancelled) setSuggestingCorridors(false)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+      controller.abort()
+    }
+  }, [corridors, originPoint, destPoint, gatePoint, international, etdT])
+
+  const selectedSuggestion = corridorSuggestions.find(item => item.corridor.id === selectedCorridorId)
+  useEffect(() => {
+    if (selectedSuggestion) setRests(selectedSuggestion.match.restStops)
+  }, [selectedSuggestion])
+
+  const roadPath = selectedSuggestion?.match.points
+    ?? (origin && dest ? routeOutline(origin, gateGeo, dest, stationsOnRoute).path : undefined)
   const {
     routes: roadAlternativesList,
     activeRoute: road,
@@ -216,18 +297,13 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
     setSelectedIndex: setRouteIdx,
     loading: roadLoading,
   } = useRoadRouteWithAlternatives(roadPath, Number.isNaN(etdT) ? undefined : etdT)
-  const driveHours = road?.hours ?? estHours
-
-  const cleanOrigin = b.origin.name.toLowerCase()
-  const cleanDest = b.dest.name.toLowerCase()
-  const matchedCorridors = useMemo(() => {
-    return corridors.map(c => {
-      const origMatch = c.originName && cleanOrigin.includes(c.originName.toLowerCase())
-      const destMatch = c.destinationName && cleanDest.includes(c.destinationName.toLowerCase())
-      const isRelevant = !!(origMatch || destMatch || (c.routeName && (cleanOrigin.includes(c.routeName.toLowerCase()) || cleanDest.includes(c.routeName.toLowerCase()))))
-      return { corridor: c, isRelevant }
-    })
-  }, [corridors, cleanOrigin, cleanDest])
+  // OSRM fournit une durée adaptée à un véhicule léger. Pour planifier un
+  // transport de chevaux, convertir le km routier avec la vitesse métier.
+  const driveHours = road ? road.km / AVG_SPEED_KMH : estHours
+  const plannedLegMetrics = useMemo(
+    () => road?.legs?.map(leg => ({ km: leg.km, hours: leg.km / AVG_SPEED_KMH })),
+    [road]
+  )
 
   const selectedCorridor = useMemo(() => {
     return corridors.find(c => c.id === selectedCorridorId)
@@ -236,26 +312,13 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
   const applyCorridorStops = async (corridorId: number) => {
     setApplyingCorridor(true)
     try {
-      const stops = await routesApi.getRouteStops(corridorId)
-      const newRests: RestStop[] = []
-      stops
-        .filter(s => s.locationType === 'RestStop' || TRANSIT_STATIONS.some(ts => ts.name.toLowerCase().includes(s.locationName?.toLowerCase() || '')))
-        .forEach((s, idx) => {
-          const matchedStation = TRANSIT_STATIONS.find(ts => ts.name.toLowerCase().includes(s.locationName?.toLowerCase() || ''))
-          newRests.push({
-            afterLeg: idx + 1,
-            name: matchedStation ? matchedStation.name : (s.locationName || `Trạm ${idx + 1}`),
-            minutes: 45,
-            lat: s.latitude ?? matchedStation?.lat,
-            lng: s.longitude ?? matchedStation?.lng,
-          })
-        })
-      if (newRests.length > 0) {
-        setRests(newRests)
-        toast(`Đã áp dụng ${newRests.length} trạm dừng an toàn từ hành lang chuẩn.`)
-      } else {
-        toast('Hành lang này chưa có trạm nghỉ trung gian. Hệ thống giữ nguyên trạm hiện tại.', 'info')
+      const suggestion = corridorSuggestions.find(item => item.corridor.id === corridorId)
+      if (!suggestion) {
+        toast('Tuyến này chưa khớp với vị trí đón/trả của đơn.', 'info')
+        return
       }
+      setRests(suggestion.match.restStops)
+      toast(`Đã áp dụng ${suggestion.match.restStops.length} trạm nghỉ trên đoạn tuyến phù hợp.`)
     } catch {
       toast('Không thể tải trạm dừng của hành lang này', 'error')
     } finally {
@@ -283,8 +346,8 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
     () =>
       Number.isNaN(etdT)
         ? initial.legs
-        : layoutLegs(b.origin.name, b.dest.name, etdT, rests, driveHours, gate, true, road?.legs),
-    [etdT, rests, b, driveHours, gate, initial.legs, road?.legs]
+        : layoutLegs(b.origin.name, b.dest.name, etdT, rests, driveHours, gate, true, plannedLegMetrics),
+    [etdT, rests, b, driveHours, gate, initial.legs, plannedLegMetrics]
   )
   const borderEta = international
     ? borderTouched
@@ -623,11 +686,10 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
                   onChange={e => setSelectedCorridorId(e.target.value ? Number(e.target.value) : '')}
                 >
                   <option value="">-- Lộ trình linh hoạt (Tự động đề xuất OSRM) --</option>
-                  {matchedCorridors.map(({ corridor: c, isRelevant }) => (
+                  {suggestingCorridors && <option disabled>Đang đối chiếu tọa độ điểm đón/trả…</option>}
+                  {corridorSuggestions.map(({ corridor: c, totalKm, detourKm, match }, idx) => (
                     <option key={c.id} value={c.id}>
-                      {isRelevant ? '⭐ [Khớp đơn] ' : ''}{c.routeName}
-                      {c.distance ? ` · ${c.distance} km` : ''}
-                      {c.estimatedTime ? ` (~${c.estimatedTime}h)` : ''}
+                      {idx === 0 ? '⭐ Gợi ý tốt nhất · ' : ''}{c.routeName} · {Math.round(totalKm)} km · {match.direction === 'reverse' ? 'chiều ngược' : 'chiều xuôi'}{detourKm > 0 ? ` · vòng thêm ${Math.round(detourKm)} km` : ''}
                     </option>
                   ))}
                 </FormSelect>
@@ -651,11 +713,16 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
               )}
             </div>
 
+            {!suggestingCorridors && corridorSuggestions.length === 0 && (
+              <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
+                Không có tuyến cố định phù hợp với tọa độ và cửa khẩu của đơn; đang dùng tuyến đường trực tiếp OSRM.
+              </div>
+            )}
+
             {selectedCorridor && (
               <div style={{ fontSize: '0.8rem', color: 'var(--muted)', background: '#fff', padding: '8px 12px', borderRadius: 6, border: '1px dashed var(--line)' }}>
-                <b>{selectedCorridor.routeName}</b>: {selectedCorridor.description || 'Hành lang vận tải chuyên dụng đã được kiểm định an toàn.'}
-                {selectedCorridor.distance && <span style={{ marginLeft: 8 }}>· Cự ly chuẩn: <b>{selectedCorridor.distance} km</b></span>}
-                {selectedCorridor.estimatedTime && <span style={{ marginLeft: 8 }}>· Thời gian tiêu chuẩn: <b>{selectedCorridor.estimatedTime} giờ</b></span>}
+                <b>{selectedCorridor.routeName}</b>: {selectedCorridor.description || 'Tuyến tham khảo được Admin cấu hình.'}
+                {selectedSuggestion && <span style={{ marginLeft: 8 }}>· {selectedSuggestion.match.direction === 'reverse' ? 'Chiều ngược' : 'Chiều xuôi'} · {Math.round(selectedSuggestion.totalKm)} km dự kiến{selectedSuggestion.detourKm > 0 ? ` · vòng thêm ${Math.round(selectedSuggestion.detourKm)} km` : ''}</span>}
               </div>
             )}
           </div>
@@ -684,7 +751,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
                     }}
                   >
                     {isActive && <i className="fa-solid fa-check" style={{ marginRight: 4 }} />}
-                    {alt.name || `Tuyến ${idx + 1}`} ({alt.km} km · {alt.hours.toFixed(1)}h)
+                    {alt.name || `Tuyến ${idx + 1}`} ({alt.km} km · {(alt.km / AVG_SPEED_KMH).toFixed(1)}h)
                   </button>
                 )
               })}
@@ -757,7 +824,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
             <i className="fa-solid fa-clock" /> Lịch trình từng chặng
           </h3>
           <span className="sub-text">
-            Tổng lái ≈ {driveHours.toFixed(1)}h ({roadNote(road, roadLoading)}) · {legs.length} chặng
+            Tổng lái ≈ {driveHours.toFixed(1)}h (ước tính {AVG_SPEED_KMH} km/h · {roadNote(road, roadLoading)}) · {legs.length} chặng
           </span>
         </div>
 

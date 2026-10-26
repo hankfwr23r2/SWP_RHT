@@ -265,6 +265,34 @@ async function listForRole() {
   return []
 }
 
+const BOOKING_LIST_CACHE_MS = 60_000
+let bookingListCache: { role: string | null; expiresAt: number; value: Booking[] } | undefined
+let bookingListPending: { role: string | null; promise: Promise<Booking[]> } | undefined
+let bookingListVersion = 0
+
+export function invalidateBookingsListCache() {
+  bookingListVersion++
+  bookingListCache = undefined
+  bookingListPending = undefined
+}
+
+async function listBookingsCached(): Promise<Booking[]> {
+  const role = backofficeRole()
+  if (bookingListCache?.role === role && bookingListCache.expiresAt > Date.now()) return bookingListCache.value
+  if (bookingListPending?.role === role) return bookingListPending.promise
+
+  const version = bookingListVersion
+  const promise = listForRole().then(rows => rows.map(row => toBooking(row)).sort((a, b) => b.createdAt - a.createdAt))
+  bookingListPending = { role, promise }
+  try {
+    const value = await promise
+    if (version === bookingListVersion && backofficeRole() === role) bookingListCache = { role, value, expiresAt: Date.now() + BOOKING_LIST_CACHE_MS }
+    return value
+  } finally {
+    if (bookingListPending?.promise === promise) bookingListPending = undefined
+  }
+}
+
 // Một đơn theo vai trò đang đăng nhập: gọi endpoint chi tiết của đơn đó thay vì tải cả danh sách rồi lọc
 async function getForRole(id: string) {
   const role = backofficeRole()
@@ -279,7 +307,7 @@ const byId = async (id: string): Promise<Booking> => toBooking(await getForRole(
 
 // Dành cho app nội bộ
 export const bookingsApi = {
-  list: async (): Promise<Booking[]> => (await listForRole()).map(r => toBooking(r)).sort((a, b) => b.createdAt - a.createdAt),
+  list: listBookingsCached,
   get: async (id: string): Promise<Booking | undefined> => byId(id),
 
   // ===== Flow 1 =====

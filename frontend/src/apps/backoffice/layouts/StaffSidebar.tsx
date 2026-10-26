@@ -1,7 +1,7 @@
 // Thanh bên của Manager: tài khoản, nút tiếp nhận đơn, menu (có số đơn chờ), danh sách đơn cần xử lý gấp. Thu gọn được thành cột biểu tượng.
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { NavLink, useLocation } from 'react-router'
-import { bookingsApi } from '@shared/services/bookings'
+import { bookingsApi, invalidateBookingsListCache } from '@shared/services/bookings'
 import { useAutoRefresh, useLoad } from '@shared/services/useLoad'
 import { accountsApi } from '@shared/services/accounts'
 import { workOf } from '../shared/staffWork'
@@ -12,6 +12,16 @@ import s from './StaffSidebar.module.css'
 
 const KEY = 'SWP_MANAGER_SIDEBAR_COLLAPSED'
 const readCollapsed = () => { try { return localStorage.getItem(KEY) === '1' } catch { return false } }
+const prefetchManagerPage = (path: string) => {
+  const load = path === '/manager/intake'
+    ? () => import('../features/manager/intake/IntakePage')
+    : path === '/manager/approvals'
+      ? () => import('../features/manager/approvals/ApprovalsPage')
+      : path === '/manager/reports'
+        ? () => import('../features/manager/reports/ReportsPage')
+        : undefined
+  if (load) void load().catch(() => {})
+}
 
 export function StaffSidebar() {
   const { session } = useAuth()
@@ -20,7 +30,8 @@ export function StaffSidebar() {
   const [collapsed, setCollapsed] = useState(readCollapsed)
   // Tải lại mỗi lần đổi trang để duyệt xong là số giảm ngay
   const { data: all, reload } = useLoad(bookingsApi.list, [pathname])
-  useAutoRefresh(reload)
+  const refresh = useCallback(() => { invalidateBookingsListCache(); reload() }, [reload])
+  useAutoRefresh(refresh)
   const { data: accounts } = useLoad(role === 'admin' ? accountsApi.list : async () => [], [pathname, role])
   const { counts: workCounts } = workOf(role, all ?? [], session!.name, session!.username)
   // Quản trị viên: tổng số tài khoản ở mục duy nhất; các vai trò khác: số việc đang chờ
@@ -38,7 +49,7 @@ export function StaffSidebar() {
 
       <nav className={s.menu}>
         {STAFF_MENUS[role].map(([to, label, opt]) => (
-          <NavLink key={to} to={to} end title={label} className={({ isActive }) => `${s.item} ${isActive ? s.on : ''}`}>
+          <NavLink key={to} to={to} end title={label} onPointerEnter={() => prefetchManagerPage(to)} onFocus={() => prefetchManagerPage(to)} className={({ isActive }) => `${s.item} ${isActive ? s.on : ''}`}>
             <i className={`fa-solid ${opt?.icon}`} aria-hidden="true" />
             <span>{label}</span>
             {!!count[to] && <b className={`${s.count} ${to.endsWith('/locked') && count[to] ? s.countHot : ''}`} aria-label={role === 'admin' ? `${count[to]} tài khoản` : `${count[to]} đơn chờ`}>{count[to]}</b>}
