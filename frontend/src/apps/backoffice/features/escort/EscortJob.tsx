@@ -7,7 +7,6 @@ import { formatDateTime } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
 import type { Booking, BookingHorse, Checkpoint, VehicleTrip } from '@shared/types/booking'
 import { CaptureField } from '@shared/ui/CaptureField'
-import { useToast } from '@shared/ui/toast'
 import { Panel } from '../../shared/field'
 import { HomeReturnPanel } from '../../shared/HomeReturnPanel'
 import { IncidentPanel, SosPanel } from '../../shared/IncidentField'
@@ -274,11 +273,7 @@ function WelfareForm({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Checkp
   )
 }
 
-export function EscortJob({ b, t, reload }: { b: Booking; t: VehicleTrip; reload: () => void }) {
-  const toast = useToast()
-  const run: Run = async (fn, msg) => {
-    try { await fn(); toast(msg); reload() } catch (e) { toast(e instanceof Error ? e.message : 'Không thực hiện được', 'error') }
-  }
+export function EscortJob({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
   const inc = openIncidentOf(b, t.tripId)
   if (inc) return <IncidentPanel b={b} inc={inc} role="escort" run={run} />
   return (

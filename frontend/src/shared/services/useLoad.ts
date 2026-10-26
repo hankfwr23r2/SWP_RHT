@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useToast } from '../ui/toast'
 
 // Gọi một hàm service bất đồng bộ và giữ kết quả. reload() để tải lại sau khi cập nhật.
@@ -7,22 +7,30 @@ import { useToast } from '../ui/toast'
 export function useLoad<T>(fn: () => Promise<T>, deps: unknown[] = []) {
   const [data, setData] = useState<T | undefined>(undefined)
   const [loaded, setLoaded] = useState(false)
+  const requestId = useRef(0)
   const toast = useToast()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const run = useCallback(fn, deps)
-  const load = useCallback((silent: boolean) => {
+  const load = useCallback(async (silent: boolean) => {
+    const currentRequest = ++requestId.current
     if (!silent) setLoaded(false)
-    run().then(value => {
+    try {
+      const value = await run()
+      if (currentRequest !== requestId.current) return
       setData(value)
       setLoaded(true)
-    }).catch(error => {
+    } catch (error) {
+      if (currentRequest !== requestId.current) return
       setLoaded(true)
       toast(error instanceof Error ? error.message : 'Không thể tải dữ liệu.', 'error')
-    })
+    }
   }, [run, toast])
   useEffect(() => { load(false) }, [load])
   const reload = useCallback(() => load(true), [load])
-  return { data, loaded, reload }
+  const updateData = useCallback((updater: (current: T | undefined) => T | undefined) => {
+    setData(updater)
+  }, [])
+  return { data, loaded, reload, updateData }
 }
 
 /** Refresh role work queues after updates made from another staff session. */
