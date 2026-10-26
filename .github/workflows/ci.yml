@@ -61,9 +61,14 @@ jobs:
 
   # Test E2E bằng trình duyệt thật. Không có backend: thử các trang khi backend chưa trả lời.
   # Test cần backend và tài khoản (E2E_BACKEND_URL…) tự bỏ qua ở đây, chạy tay trên máy có backend.
+  # Chạy trong image chính thức của Playwright: có sẵn trình duyệt và thư viện hệ thống, không phải cài mỗi lần.
+  # Tag phải trùng phiên bản @playwright/test trong frontend/package.json.
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      options: --ipc=host
     defaults:
       run:
         working-directory: frontend
@@ -75,7 +80,6 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
       - uses: actions/upload-artifact@v4
         if: always()
