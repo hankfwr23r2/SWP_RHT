@@ -1926,8 +1926,14 @@ public class BookingServiceImpl implements BookingService {
                 break;
             }
             case "DEPART_TO_PICKUP": {
+                if (targetTrip.getDepartedAt() != null) throw new IllegalStateException("Xe của chuyến này đã xuất phát.");
+                // Chỉ xuất phát khi giấy tờ đã xong (Sẵn sàng đón ngựa) hoặc một xe khác của đơn đã xuất phát
+                boolean ready = "ready_for_pickup".equalsIgnoreCase(booking.getStatus());
+                if (!ready && trips.stream().noneMatch(t -> t.getDepartedAt() != null)) {
+                    throw new IllegalStateException("Đơn chưa sẵn sàng đón ngựa, chưa thể xuất phát.");
+                }
                 targetTrip.setDepartedAt(now);
-                booking.setStatus("en_route_to_pickup");
+                if (ready) booking.setStatus("en_route_to_pickup");
                 appendHistory(payload, actor, "Xe bắt đầu xuất phát đến điểm đón ngựa");
                 break;
             }
