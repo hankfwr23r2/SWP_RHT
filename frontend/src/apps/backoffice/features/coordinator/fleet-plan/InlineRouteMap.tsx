@@ -2,6 +2,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useEffect, useMemo, useRef } from 'react'
 import { TRANSIT_STATIONS, type GeoPoint } from '@shared/config/network'
+import { AVG_SPEED_KMH } from '@shared/config/public-pricing'
 import { routeOutline } from '@shared/lib/booking'
 import { useRoadRoute } from '@shared/services/useRoadRoute'
 import type { RestStop } from '@shared/types/booking'
@@ -186,7 +187,7 @@ export function InlineRouteMap({ origin, dest, gate, departAt, rests, activeRoad
           {roadLoading ? (
             'Đang tải tuyến đường OSRM…'
           ) : road ? (
-            <b>{Math.round(road.km)} km · {road.hours.toFixed(1)}h lái xe</b>
+            <b>{Math.round(road.km)} km · {(road.km / AVG_SPEED_KMH).toFixed(1)}h lái xe (ước tính {AVG_SPEED_KMH} km/h)</b>
           ) : (
             'Đang tính toán…'
           )}

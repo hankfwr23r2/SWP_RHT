@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@shared/auth/AuthContext'
 import { formatDate, formatDateTime } from '@shared/lib/format'
 import { activeStaff } from '@shared/lib/booking'
-import { bookingsApi } from '@shared/services/bookings'
+import { bookingsApi, invalidateBookingsListCache } from '@shared/services/bookings'
 import { staffApi } from '@shared/services/staff'
 import { useLoad } from '@shared/services/useLoad'
 import type { Booking } from '@shared/types/booking'
@@ -140,7 +140,7 @@ export default function IntakePage() {
       <ListPage title="Tiếp nhận đơn hàng" subtitle="Giao Kiểm dịch viên và Điều phối viên thẩm định song song." tabs={[['new', 'Chờ tiếp nhận', fresh.length], ['running', 'Đang thẩm định', running.length]]} tab={tab} onTab={setTab} hot={['new']}
         rows={tab === 'new' ? fresh : running} rowKey={b => b.id} columns={columns} haystack={b => [b.id, b.customer, b.origin.name, b.dest.name]} dateOf={b => b.departAt} loaded={!!all}
         emptyText={tab === 'new' ? 'Không có đơn nào chờ tiếp nhận.' : 'Không có đơn nào đang thẩm định.'} />
-      {open && <IntakeModal b={open} onClose={() => setOpen(null)} onDone={() => { setOpen(null); reload() }} />}
+      {open && <IntakeModal b={open} onClose={() => setOpen(null)} onDone={() => { invalidateBookingsListCache(); setOpen(null); reload() }} />}
     </>
   )
 }

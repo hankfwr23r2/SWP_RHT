@@ -222,11 +222,12 @@ function CustomsStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
 export function DriverJob({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
   const inc = openIncidentOf(b, t.tripId)
   if (inc) return <IncidentPanel b={b} inc={inc} role="driver" run={run} />
+  const atDelivery = !!t.run?.checkpoints.some(cp => cp.type === 'delivery' && cp.arrivedAt)
   return (
     <>
       {t.run?.startedAt && !t.run.deliveredAt && <div className="alert alert-info" style={{ marginBottom: 12 }}><i className="fa-solid fa-truck-fast" /><div><b>{spotLabel(t)}</b></div></div>}
       <DriverSteps b={b} t={t} run={run} />
-      {(b.status === 'in_transit' || (t.run?.startedAt && !t.run.deliveredAt)) && <SosPanel b={b} t={t} run={run} />}
+      {!atDelivery && !t.run?.deliveredAt && (b.status === 'in_transit' || t.run?.startedAt) && <SosPanel b={b} t={t} run={run} />}
       {b.status === 'delivered_pending_settlement' && <SubmitExpensesPanel b={b} run={run} />}
     </>
   )

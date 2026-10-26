@@ -9,6 +9,7 @@ import { ScheduleStrip } from './ScheduleStrip'
 import bd from './Board.module.css'
 import s from './Dashboard.module.css'
 import { usePageData } from '@shared/routing/pageData'
+import { invalidateBookingsListCache } from '@shared/services/bookings'
 import type { bookingListLoader } from '../../../shared/loaders'
 
 export default function DashboardPage() {
@@ -48,7 +49,7 @@ export default function DashboardPage() {
         <OrderBoard orders={orders} sortBy={sort} onOpen={setOpen} />
       </div>
       {calendar && <CalendarModal orders={all ?? []} onClose={() => setCalendar(false)} onOpen={b => { setCalendar(false); setOpen(b) }} />}
-      {opened && <OrderDetailModal b={opened} all={all ?? []} onClose={() => setOpenId(null)} onDone={() => { setOpenId(null); reload() }} />}
+      {opened && <OrderDetailModal b={opened} all={all ?? []} onClose={() => setOpenId(null)} onDone={() => { invalidateBookingsListCache(); setOpenId(null); reload() }} />}
     </div>
   )
 }
