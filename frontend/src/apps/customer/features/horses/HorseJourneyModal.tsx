@@ -8,10 +8,9 @@ import s from './Horses.module.css'
 interface Props {
   horse: HorseProfile
   onClose: () => void
-  onOpenRelocate?: () => void
 }
 
-export function HorseJourneyModal({ horse, onClose, onOpenRelocate }: Props) {
+export function HorseJourneyModal({ horse, onClose }: Props) {
   const [logs, setLogs] = useState<HorseJourneyLog[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string>('')
@@ -67,19 +66,6 @@ export function HorseJourneyModal({ horse, onClose, onOpenRelocate }: Props) {
               <span className="badge badge-success" style={{ fontSize: '0.86rem', padding: '6px 12px' }}>
                 <i className="fa-solid fa-warehouse" /> Đang ở chuồng (Sẵn sàng)
               </span>
-            )}
-            {onOpenRelocate && (
-              <button
-                type="button"
-                className="btn btn-sm btn-ghost"
-                style={{ color: 'white', borderColor: 'rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.1)' }}
-                onClick={() => {
-                  onClose()
-                  onOpenRelocate()
-                }}
-              >
-                <i className="fa-solid fa-map-pin" /> Dời chuồng
-              </button>
             )}
           </div>
         </div>
