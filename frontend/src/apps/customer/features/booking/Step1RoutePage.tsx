@@ -36,17 +36,6 @@ const countryOption = (code: CountryCode) => (
     <Flag code={code} size={18} /> {COUNTRIES[code].name}
   </span>
 )
-const documentChoices: Record<CountryCode, { national_id: string; passport: string; tax_id: string }> = {
-  VN: { national_id: 'CCCD / Thẻ căn cước', passport: 'Hộ chiếu', tax_id: 'Mã số thuế' },
-  KH: { national_id: 'National ID (Campuchia)', passport: 'Hộ chiếu', tax_id: 'Mã số thuế' },
-  LA: { national_id: 'National ID (Lào)', passport: 'Hộ chiếu', tax_id: 'Mã số thuế' },
-}
-const identityCountryOptions = (country: CountryCode) => [
-  { value: 'national_id', label: documentChoices[country].national_id },
-  { value: 'passport', label: documentChoices[country].passport },
-  { value: 'tax_id', label: documentChoices[country].tax_id },
-] as const
-
 function parsePhoneDraft(value: string, fallbackCountry: CountryCode): { country: CountryCode; phone: string } {
   const digits = value.replace(/\D/g, '')
   const matchingCountry = PARTNER_COUNTRIES
@@ -299,8 +288,6 @@ export default function Step1RoutePage() {
     ...draft.consignee,
     phone: initialConsigneePhone.phone,
   }))
-  const consignorIdCountry = consignor.idCountry ?? originC
-  const consigneeIdCountry = consignee.idCountry ?? destC
   const [submitted, setSubmitted] = useState(false)
 
   // Tính chuỗi địa chỉ đầy đủ
@@ -323,8 +310,8 @@ export default function Step1RoutePage() {
       originId: fullPickup,
       destId: fullDropoff,
       departDate: date,
-      consignor: { ...consignor, idCountry: consignor.idCountry ?? originC, idType: consignor.idType ?? 'national_id', phone: toInternationalPhone(consignorPhoneCountry, consignor.phone), address: fullPickup },
-      consignee: { ...consignee, idCountry: consignee.idCountry ?? destC, idType: consignee.idType ?? 'national_id', phone: toInternationalPhone(consigneePhoneCountry, consignee.phone), address: fullDropoff },
+      consignor: { ...consignor, idCountry: originC, idType: 'national_id', phone: toInternationalPhone(consignorPhoneCountry, consignor.phone), address: fullPickup },
+      consignee: { ...consignee, idCountry: destC, idType: 'national_id', phone: toInternationalPhone(consigneePhoneCountry, consignee.phone), address: fullDropoff },
     })
   }, [type, partner, direction, fullPickup, fullDropoff, date, consignor, consignee, consignorPhoneCountry, consigneePhoneCountry, originC, destC, save])
 
@@ -385,7 +372,7 @@ export default function Step1RoutePage() {
     // Người gửi
     consignorName: routeReady && !isValidContactName(consignor.name) ? 'Nhập tên hợp lệ (2–100 ký tự, cần có chữ cái). Có thể nhập tên cá nhân hoặc trang trại.' : '',
     consignorPhone: routeReady && !isValidPhoneForCountry(consignorPhoneCountry, consignor.phone) ? 'Nhập số hợp lệ theo mã quốc gia đã chọn.' : '',
-    consignorId: routeReady && !consignor.idNumber?.trim() ? 'Nhập CCCD / MST / Hộ chiếu người gửi.' : '',
+    consignorId: routeReady && !consignor.idNumber?.trim() ? 'Nhập số CCCD / Thẻ căn cước người gửi.' : '',
     pickupProv: routeReady && !pickupAddr.provinceCode ? 'Chọn tỉnh/thành điểm đón.' : '',
     pickupWard: routeReady && !pickupAddr.wardName ? 'Chọn xã/phường điểm đón.' : '',
     pickupDetail: routeReady && !pickupAddr.detail.trim()
@@ -396,7 +383,7 @@ export default function Step1RoutePage() {
     // Người nhận
     consigneeName: routeReady && !isValidContactName(consignee.name) ? 'Nhập tên hợp lệ (2–100 ký tự, cần có chữ cái). Có thể nhập tên cá nhân hoặc trang trại.' : '',
     consigneePhone: routeReady && !isValidPhoneForCountry(consigneePhoneCountry, consignee.phone) ? 'Nhập số hợp lệ theo mã quốc gia đã chọn.' : '',
-    consigneeId: routeReady && !consignee.idNumber?.trim() ? 'Nhập CCCD / MST / Hộ chiếu người nhận.' : '',
+    consigneeId: routeReady && !consignee.idNumber?.trim() ? 'Nhập số CCCD / Thẻ căn cước người nhận.' : '',
     dropoffProv: routeReady && !dropoffAddr.provinceCode ? 'Chọn tỉnh/thành điểm giao.' : '',
     dropoffWard: routeReady && !dropoffAddr.wardName ? 'Chọn xã/phường điểm giao.' : '',
     dropoffDetail: routeReady && !dropoffAddr.detail.trim()
@@ -424,8 +411,8 @@ export default function Step1RoutePage() {
       originId: fullPickup,
       destId: fullDropoff,
       departDate: date,
-      consignor: { ...consignor, idCountry: consignor.idCountry ?? originC, idType: consignor.idType ?? 'national_id', phone: toInternationalPhone(consignorPhoneCountry, consignor.phone), address: fullPickup },
-      consignee: { ...consignee, idCountry: consignee.idCountry ?? destC, idType: consignee.idType ?? 'national_id', phone: toInternationalPhone(consigneePhoneCountry, consignee.phone), address: fullDropoff },
+      consignor: { ...consignor, idCountry: originC, idType: 'national_id', phone: toInternationalPhone(consignorPhoneCountry, consignor.phone), address: fullPickup },
+      consignee: { ...consignee, idCountry: destC, idType: 'national_id', phone: toInternationalPhone(consigneePhoneCountry, consignee.phone), address: fullDropoff },
     })
     navigate('/booking/horses')
   }
@@ -613,27 +600,17 @@ export default function Step1RoutePage() {
               }
             />
 
-            {/* CCCD / MST / HỘ CHIẾU NGƯỜI GỬI */}
+            {/* CCCD / THẺ CĂN CƯỚC NGƯỜI GỬI */}
             <div className="form-group" style={{ marginTop: 12, maxWidth: 360 }}>
-              <label htmlFor="consignor-idCountry">Quốc gia cấp giấy tờ</label>
-              <select id="consignor-idCountry" className="form-control" value={consignorIdCountry}
-                onChange={e => setConsignor({ ...consignor, idCountry: e.target.value as CountryCode })}>
-                {PARTNER_COUNTRIES.map(code => <option key={code} value={code}>{COUNTRIES[code].name}</option>)}
-              </select>
-              <label htmlFor="consignor-idType" style={{ marginTop: 8 }}>Loại giấy tờ</label>
-              <select id="consignor-idType" className="form-control" value={consignor.idType ?? 'national_id'}
-                onChange={e => setConsignor({ ...consignor, idType: e.target.value as Party['idType'] })}>
-                {identityCountryOptions(consignorIdCountry).map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
-              <label htmlFor="consignor-idNumber" className="required" style={{ marginTop: 8 }}>
-                Số {documentChoices[consignorIdCountry][consignor.idType ?? 'national_id']}
+              <label htmlFor="consignor-idNumber" className="required">
+                Số CCCD / Thẻ căn cước người gửi
               </label>
               <input
                 id="consignor-idNumber"
                 className={`form-control ${submitted && errors.consignorId ? 'invalid' : ''}`}
                 value={consignor.idNumber}
                 maxLength={50}
-                placeholder={`Nhập ${documentChoices[consignorIdCountry][consignor.idType ?? 'national_id']} người gửi`}
+                placeholder="Nhập số CCCD / Thẻ căn cước người gửi"
                 onChange={e => setConsignor({ ...consignor, idNumber: e.target.value })}
               />
               {show(errors.consignorId)}
@@ -695,27 +672,17 @@ export default function Step1RoutePage() {
               }
             />
 
-            {/* CCCD / MST / HỘ CHIẾU NGƯỜI NHẬN */}
+            {/* CCCD / THẺ CĂN CƯỚC NGƯỜI NHẬN */}
             <div className="form-group" style={{ marginTop: 12, maxWidth: 360 }}>
-              <label htmlFor="consignee-idCountry">Quốc gia cấp giấy tờ</label>
-              <select id="consignee-idCountry" className="form-control" value={consigneeIdCountry}
-                onChange={e => setConsignee({ ...consignee, idCountry: e.target.value as CountryCode })}>
-                {PARTNER_COUNTRIES.map(code => <option key={code} value={code}>{COUNTRIES[code].name}</option>)}
-              </select>
-              <label htmlFor="consignee-idType" style={{ marginTop: 8 }}>Loại giấy tờ</label>
-              <select id="consignee-idType" className="form-control" value={consignee.idType ?? 'national_id'}
-                onChange={e => setConsignee({ ...consignee, idType: e.target.value as Party['idType'] })}>
-                {identityCountryOptions(consigneeIdCountry).map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-              </select>
-              <label htmlFor="consignee-idNumber" className="required" style={{ marginTop: 8 }}>
-                Số {documentChoices[consigneeIdCountry][consignee.idType ?? 'national_id']}
+              <label htmlFor="consignee-idNumber" className="required">
+                Số CCCD / Thẻ căn cước người nhận
               </label>
               <input
                 id="consignee-idNumber"
                 className={`form-control ${submitted && errors.consigneeId ? 'invalid' : ''}`}
                 value={consignee.idNumber}
                 maxLength={50}
-                placeholder={`Nhập ${documentChoices[consigneeIdCountry][consignee.idType ?? 'national_id']} người nhận`}
+                placeholder="Nhập số CCCD / Thẻ căn cước người nhận"
                 onChange={e => setConsignee({ ...consignee, idNumber: e.target.value })}
               />
               {show(errors.consigneeId)}
