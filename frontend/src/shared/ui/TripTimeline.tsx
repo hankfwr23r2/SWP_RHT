@@ -34,7 +34,7 @@ export function TripTimeline({ trip, now, staff }: Props) {
               )}
               {welfare.map(w => (
                 <div key={w.id} className={`${s.welfare} ${w.condition !== 'normal' ? s.welfareWarn : ''}`}>
-                  <i className="fa-solid fa-heart-pulse" aria-hidden="true" /> {WELFARE_CONDITION[w.condition].label} · nước {w.waterLiters} lít{w.hay ? ' · đã cho ăn' : ''}{staff && w.note ? ` · ${w.note}` : ''}
+                  <i className="fa-solid fa-heart-pulse" aria-hidden="true" /> {WELFARE_CONDITION[w.condition].label}{w.waterLiters ? ' · đã cấp nước' : ''}{w.hay ? ' · đã cho ăn' : ''}{staff && w.note ? ` · ${w.note}` : ''}
                   <ImageThumb name={w.photo} size={36} />
                 </div>
               ))}
