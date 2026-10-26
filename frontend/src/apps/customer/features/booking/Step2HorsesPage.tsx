@@ -11,6 +11,7 @@ import { usePagination } from '@shared/ui/usePagination'
 import { BookingShell } from './BookingShell'
 import type { horsesLoader } from '../horses/loaders'
 import { defaultConfig, useBookingDraft } from './draft'
+import { isBookingRouteReady } from './routeValidation'
 import s from './Booking.module.css'
 
 const FINISHED_STATUSES = new Set(['completed', 'cancelled', 'rejected', 'quote_expired'])
@@ -54,7 +55,7 @@ export default function Step2HorsesPage() {
     setSelected(prev => {
       const valid = prev.filter(id => {
         const h = horses.find(item => item.id === id)
-        if (!h) return true
+        if (!h) return false
         const numId = Number(h.id.replace(/\D/g, ''))
         const isBusy = h.transitStatus === 'IN_TRANSIT' || activeHorseBookingMap.has(numId)
         return !isBusy
@@ -72,7 +73,8 @@ export default function Step2HorsesPage() {
   const originName = originLoc ? originLoc.name : (draft.originId || 'Điểm đón đã chọn')
 
   const isLocationMatch = (h: HorseProfile) => {
-    if (!h.currentLocationName) return false
+    const hasLocationHistory = !!h.locationSource && h.locationSource !== 'INITIAL_REGISTRATION'
+    if (!h.currentLocationName || !hasLocationHistory) return true
     const normCur = h.currentLocationName.toLowerCase().replace(/đ/g, 'd')
     const normOrig = originName.toLowerCase().replace(/đ/g, 'd')
     return normCur.includes(normOrig) || normOrig.includes(normCur)
@@ -105,7 +107,7 @@ export default function Step2HorsesPage() {
     pager.reset()
   }, [search]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!draft.type || !draft.departDate) return <Navigate to="/booking/route" replace />
+  if (!isBookingRouteReady(draft)) return <Navigate to="/booking/route" replace />
 
   const full = selected.length >= MAX_HORSES
 

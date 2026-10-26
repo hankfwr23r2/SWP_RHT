@@ -25,7 +25,10 @@ export interface OrderFinance {
 export function orderFinance(b: Booking): OrderFinance | undefined {
   if (!b.payment) return undefined // chưa cọc thì chưa có doanh thu
   const paid = b.payment.amount + (b.balance?.amount ?? 0)
-  const carrierExpenses = (b.incidents ?? []).flatMap(i => i.expenses).filter(e => e.payer === 'carrier').reduce((t, e) => t + e.amount, 0)
+  const carrierExpenses = (b.incidents ?? [])
+    .flatMap(i => i.expenses ?? [])
+    .filter(e => e?.payer === 'carrier')
+    .reduce((t, e) => t + (e?.amount ?? 0), 0)
   const extras = b.settlement?.total ?? 0
   const base = { id: b.id, customer: b.customer, at: b.payment.paidAt, status: b.status }
   if (b.status === 'cancelled') {
@@ -33,8 +36,9 @@ export function orderFinance(b: Booking): OrderFinance | undefined {
     return { ...base, revenue: kept, cost: carrierExpenses, profit: kept - carrierExpenses, collected: kept }
   }
   if (!b.quote) return undefined
-  const cogs = b.quote.lines.reduce((t, l) => t + (MARGINED.test(l.label) ? l.amount / (1 + MARGIN_RATE) : l.amount), 0)
-  const revenue = b.quote.total + extras
+  const lines = Array.isArray(b.quote.lines) ? b.quote.lines : []
+  const cogs = lines.reduce((t, l) => t + (MARGINED.test(l.label) ? l.amount / (1 + MARGIN_RATE) : l.amount), 0)
+  const revenue = (b.quote.total ?? 0) + extras
   const cost = Math.round(cogs) + carrierExpenses
   return { ...base, revenue, cost, profit: revenue - cost, collected: paid + (b.settlement?.paid?.amount ?? 0) }
 }

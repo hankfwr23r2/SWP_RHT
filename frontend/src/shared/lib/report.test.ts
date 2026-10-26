@@ -91,4 +91,15 @@ describe('tổng hợp báo cáo', () => {
     expect(f.revenue).toBe(b.payment!.amount + (b.balance?.amount ?? 0) - 1_000_000)
     expect(f.cost).toBe(0)
   })
+
+  it('xử lý an toàn khi quote.lines hoặc incident expenses bị undefined, không sập với lỗi reduce', () => {
+    const badQuote = quoted({
+      quote: { lines: undefined as any, adjustments: [], subtotal: 5_000_000, total: 5_000_000, deposit: 1_500_000, balance: 3_500_000, sentAt: 1, expiresAt: 2, sentBy: 'x' },
+      incidents: [{ id: 'I', tripId: 'T', kind: 'vehicle_breakdown', reportedBy: 'x', reportedAt: 1, location: { lat: 1, lng: 1 }, photo: 'a', note: '', status: 'resolved', expenses: undefined as any }],
+    })
+    expect(() => orderFinance(badQuote)).not.toThrow()
+    const f = orderFinance(badQuote)!
+    expect(f.revenue).toBe(5_000_000)
+    expect(f.cost).toBe(0)
+  })
 })

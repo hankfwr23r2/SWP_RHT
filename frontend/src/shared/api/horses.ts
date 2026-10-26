@@ -134,6 +134,11 @@ export const backendHorseApi = {
     return res.data.data
   },
 
+  // Xóa một giấy tờ ngựa theo ID tài liệu
+  deleteDocument: async (documentId: number): Promise<void> => {
+    await apiClient.delete(`/horse-documents/${documentId}`)
+  },
+
   // Cập nhật vị trí chuồng hiện tại của ngựa (Dời chuồng ngoài hệ thống / cập nhật thủ công)
   updateLocation: async (id: number, payload: { locationName: string; country?: string; reason?: string; notes?: string }): Promise<BackendHorseDto> => {
     const res = await apiClient.patch<ApiResponse<BackendHorseDto>>(`/horses/${id}/location`, payload)

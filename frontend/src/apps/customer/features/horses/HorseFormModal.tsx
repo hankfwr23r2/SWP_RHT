@@ -30,6 +30,8 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
   const [tab, setTab] = useState<'info' | 'docs'>('info')
   const [docs, setDocs] = useState<Partial<Record<HorseDocType, HorseDoc>>>(horse?.docs ?? {})
   const [files, setFiles] = useState<Partial<Record<HorseDocType, File>>>({})
+  // Danh sách documentId của các giấy tờ đã có trên server nhưng bị user xóa: sẽ gọi DELETE khi submit
+  const [deletedDocIds, setDeletedDocIds] = useState<number[]>([])
   const [errors, setErrors] = useState<Errors>({})
   const [busy, setBusy] = useState(false)
   const [formError, setFormError] = useState('')
@@ -48,6 +50,9 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
     setDocs(d => {
       const next = { ...d }
       if (!patch) {
+        // Nếu giấy tờ này đã có trên server (có documentId), đánh dấu để gọi DELETE khi submit
+        const existingId = d[t]?.documentId
+        if (existingId) setDeletedDocIds(prev => prev.includes(existingId) ? prev : [...prev, existingId])
         delete next[t]
       } else {
         next[t] = { fileName: '', uploadedAt: Date.now(), ...d[t], ...patch }
@@ -83,12 +88,15 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
     const data: NewHorse = { name: name.trim(), microchip, breed: selectedBreed, horseTypeId: type?.id ?? (selectedBreed === 'Khác' ? undefined : horse?.horseTypeId), sex, color: color.trim(), birthYear: Number(birthYear), marks: marks.trim(), docs }
     try {
       const saved = editing ? await horsesApi.update(owner, horse.id, data) : await horsesApi.create(owner, data)
-      for (const t of HORSE_DOC_TYPES) {
-        const file = files[t]
-        if (file) {
-          await horsesApi.uploadDocument(saved.id, t, file)
-        }
+      // Xóa các giấy tờ đã bị user xóa khỏi form (gọi DELETE backend)
+      for (const docId of deletedDocIds) {
+        await horsesApi.deleteDocument(docId)
       }
+      // Upload các file mới được chọn song song để tránh cộng dồn thời gian chờ.
+      await Promise.all(HORSE_DOC_TYPES.flatMap(t => {
+        const file = files[t]
+        return file ? [horsesApi.uploadDocument(saved.id, t, file)] : []
+      }))
       const refreshed = (await horsesApi.get(owner, saved.id)) ?? saved
       onSaved(refreshed)
     } catch (err) {
