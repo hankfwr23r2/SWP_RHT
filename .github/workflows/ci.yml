@@ -58,3 +58,30 @@ jobs:
       # npm run build gồm cả oxlint và tsc -b
       - name: Lint, type-check and build
         run: npm run build
+
+  # Test E2E bằng trình duyệt thật. Không có backend: thử các trang khi backend chưa trả lời.
+  # Test cần backend và tài khoản (E2E_BACKEND_URL…) tự bỏ qua ở đây, chạy tay trên máy có backend.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report
+            frontend/test-results
+          retention-days: 7

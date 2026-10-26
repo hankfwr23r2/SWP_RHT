@@ -26,10 +26,6 @@ export interface DocumentRequirement {
 export type DocumentRequirementPayload = Omit<DocumentRequirement, 'id' | 'updatedBy' | 'updatedAt'>
 
 export const documentRequirementsApi = {
-  listPublic: async (): Promise<DocumentRequirement[]> => {
-    const response = await apiClient.get<ApiResponse<DocumentRequirement[]>>('/public/document-requirements')
-    return response.data.data
-  },
   listAdmin: async (): Promise<DocumentRequirement[]> => {
     const response = await apiClient.get<ApiResponse<DocumentRequirement[]>>('/admin/document-requirements')
     return response.data.data

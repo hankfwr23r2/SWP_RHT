@@ -35,3 +35,7 @@ backend/application-secret.properties
 # Ghi chú cục bộ cho Claude / agent
 CLAUDE.md
 AGENTS.md
+
+# Playwright
+test-results/
+playwright-report/
