@@ -92,13 +92,11 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
       for (const docId of deletedDocIds) {
         await horsesApi.deleteDocument(docId)
       }
-      // Upload các file mới được chọn
-      for (const t of HORSE_DOC_TYPES) {
+      // Upload các file mới được chọn song song để tránh cộng dồn thời gian chờ.
+      await Promise.all(HORSE_DOC_TYPES.flatMap(t => {
         const file = files[t]
-        if (file) {
-          await horsesApi.uploadDocument(saved.id, t, file)
-        }
-      }
+        return file ? [horsesApi.uploadDocument(saved.id, t, file)] : []
+      }))
       const refreshed = (await horsesApi.get(owner, saved.id)) ?? saved
       onSaved(refreshed)
     } catch (err) {
