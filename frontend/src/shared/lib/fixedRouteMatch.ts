@@ -8,8 +8,8 @@ export interface FixedRoutePoint {
   locationName?: string
   locationType?: string
   stopOrder: number
-  latitude?: number
-  longitude?: number
+  latitude?: number | null
+  longitude?: number | null
 }
 
 export interface FixedRouteMatch {
@@ -30,7 +30,7 @@ export const haversineKm = (a: GeoPoint, b: GeoPoint) => {
 
 const pointOf = (stop: FixedRoutePoint): GeoPoint | undefined => {
   const { latitude, longitude } = stop
-  if (latitude === undefined || longitude === undefined) return undefined
+  if (latitude == null || longitude == null) return undefined
   if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return undefined
   return { lat: latitude, lng: longitude }
 }
