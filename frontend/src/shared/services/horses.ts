@@ -91,6 +91,10 @@ export const horsesApi = {
     return backendHorseApi.uploadDocument(id, HORSE_DOC_BACKEND_TYPE[type], file)
   },
 
+  deleteDocument: async (documentId: number): Promise<void> => {
+    await backendHorseApi.deleteDocument(documentId)
+  },
+
   // Microchip là khóa định danh: không sửa sau khi lưu lần đầu
   update: async (owner: string, id: string, patch: Partial<NewHorse>): Promise<HorseProfile> => {
     const n = numericId(id)
