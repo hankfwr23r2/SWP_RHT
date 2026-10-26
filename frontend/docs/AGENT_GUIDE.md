@@ -85,7 +85,7 @@ npm run build
 ### 3.1. Xác Thực & Quản Lý Token (JWT & Refresh Token)
 - **Access Token**:
   - Lưu trữ tạm thời ở Client, tự động đính kèm qua Axios Interceptor: `Authorization: Bearer <token>`.
-  - Khi API trả về mã lỗi `401 Unauthorized`, interceptor tự động xóa token và chuyển hướng về trang đăng nhập.
+  - Frontend chủ động làm mới Access Token trước hạn 60 giây (kể cả khi người dùng đang idle); nếu API vẫn trả `401 Unauthorized`, interceptor thử refresh và gửi lại request một lần.
 - **Refresh Token**:
   - Phải được truyền qua **`HttpOnly Cookie`** từ Backend để chống tấn công XSS.
   - Phía Client Axios bắt buộc phải bật cấu hình `withCredentials: true`.
