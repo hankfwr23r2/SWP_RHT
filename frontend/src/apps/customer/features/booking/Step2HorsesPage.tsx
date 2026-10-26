@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { MAX_HORSES } from '@shared/config/business-rules'
 import { COUNTRIES, COUNTRY_LOCATIONS } from '@shared/config/network'
-import { ageOf, classForHorses, horseCountryMatchesOrigin, horseReadiness } from '@shared/lib/booking'
+import { ageOf, classForHorses, horseCountryMatchesOrigin, horseHasUnverifiedLocationCountry, horseReadiness } from '@shared/lib/booking'
 import { usePageData } from '@shared/routing/pageData'
 import { SEX_LABEL, type HorseProfile } from '@shared/types/booking'
 import { HorseDocChips } from '@shared/ui/HorseDocChips'
@@ -37,8 +37,11 @@ export default function Step2HorsesPage() {
     if (normalized === 'VN' || normalized === 'KH' || normalized === 'LA') return COUNTRIES[normalized].name
     return country || 'chưa xác định'
   }
-  const isCountryMismatch = (horse: HorseProfile) =>
-    !horseCountryMatchesOrigin(horse.currentCountry, originCountry)
+  const hasUnverifiedLocationCountry = useCallback((horse: HorseProfile) =>
+    horseHasUnverifiedLocationCountry(horse.currentLocationName, horse.currentCountry), [])
+  const isCountryMismatch = useCallback((horse: HorseProfile) =>
+    !hasUnverifiedLocationCountry(horse) && !horseCountryMatchesOrigin(horse.currentCountry, originCountry),
+  [hasUnverifiedLocationCountry, originCountry])
 
   // Map từ numeric ID của ngựa -> thông tin đơn hàng chưa hoàn tất
   const activeHorseBookingMap = useMemo(() => {
@@ -71,11 +74,11 @@ export default function Step2HorsesPage() {
         if (!h) return false
         const numId = Number(h.id.replace(/\D/g, ''))
         const isBusy = h.transitStatus === 'IN_TRANSIT' || activeHorseBookingMap.has(numId)
-        return !isBusy && !isCountryMismatch(h)
+        return !isBusy && !isCountryMismatch(h) && !hasUnverifiedLocationCountry(h)
       })
       return valid.length === prev.length ? prev : valid
     })
-  }, [horses, activeHorseBookingMap, originCountry])
+  }, [horses, activeHorseBookingMap, hasUnverifiedLocationCountry, isCountryMismatch])
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { save({ horseIds: selected }) }, [selected])
@@ -152,6 +155,14 @@ export default function Step2HorsesPage() {
       return
     }
 
+    const countryUnverifiedSelected = selectedHorses.filter(hasUnverifiedLocationCountry)
+    if (countryUnverifiedSelected.length > 0) {
+      setRelocationError(
+        `Chưa xác định quốc gia vị trí chuồng của ngựa ${countryUnverifiedSelected.map(h => h.name).join(', ')}. Vui lòng cập nhật vị trí và quốc gia trong Hồ sơ ngựa trước khi tiếp tục.`
+      )
+      return
+    }
+
     if (hasDifferentLocation && !confirmedRelocation) {
       setRelocationError('Vui lòng đánh dấu xác nhận vị trí chuồng thực tế của ngựa trước khi tiếp tục.')
       return
@@ -209,7 +220,8 @@ export default function Step2HorsesPage() {
             const activeBookingCode = activeHorseBookingMap.get(numId)
             const isBusy = inTransit || Boolean(activeBookingCode)
             const countryMismatch = isCountryMismatch(h)
-            const blocked = (!on && full) || isBusy || countryMismatch
+            const countryUnverified = hasUnverifiedLocationCountry(h)
+            const blocked = (!on && full) || isBusy || countryMismatch || countryUnverified
             const matchLoc = isLocationMatch(h)
 
             return (
@@ -217,14 +229,14 @@ export default function Step2HorsesPage() {
                 key={h.id}
                 className={`${s.pick} ${on ? s.pickOn : ''}`}
                 style={blocked ? { opacity: 0.65, background: '#f8fafc', cursor: 'not-allowed' } : undefined}
-                onClick={e => { if (!blocked && !(e.target as HTMLElement).closest('button, input')) toggle(h.id, isBusy || countryMismatch) }}
+                onClick={e => { if (!blocked && !(e.target as HTMLElement).closest('a, button, input')) toggle(h.id, isBusy || countryMismatch || countryUnverified) }}
               >
                 <input
                   type="checkbox"
                   id={`pick-${h.id}`}
                   checked={on}
                   disabled={blocked}
-                  onChange={() => toggle(h.id, isBusy)}
+                  onChange={() => toggle(h.id, isBusy || countryMismatch || countryUnverified)}
                   aria-describedby={`pick-meta-${h.id}`}
                 />
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -244,6 +256,10 @@ export default function Step2HorsesPage() {
                       ) : countryMismatch ? (
                         <span className="badge badge-warning" style={{ fontSize: '0.74rem' }}>
                           <i className="fa-solid fa-triangle-exclamation" /> Khác quốc gia điểm đón
+                        </span>
+                      ) : countryUnverified ? (
+                        <span className="badge badge-warning" style={{ fontSize: '0.74rem' }}>
+                          <i className="fa-solid fa-triangle-exclamation" /> Chưa xác định quốc gia chuồng
                         </span>
                       ) : matchLoc ? (
                         <span className="badge badge-success" style={{ fontSize: '0.74rem' }}>
@@ -267,6 +283,11 @@ export default function Step2HorsesPage() {
                   {countryMismatch && (
                     <div style={{ fontSize: '0.8rem', color: '#b45309', marginTop: 4 }}>
                       Hiện ở {countryName(h.currentCountry)}; chuyến này cần đón tại {countryName(originCountry)}.
+                    </div>
+                  )}
+                  {countryUnverified && (
+                    <div style={{ fontSize: '0.8rem', color: '#b45309', marginTop: 4 }}>
+                      Chưa xác định quốc gia của vị trí chuồng. Vui lòng <Link to="/horses">cập nhật quốc gia trong Hồ sơ ngựa</Link> trước khi đặt chuyến.
                     </div>
                   )}
                   <HorseDocChips horse={h} tripType={draft.type || undefined} country={destinationCountry} />

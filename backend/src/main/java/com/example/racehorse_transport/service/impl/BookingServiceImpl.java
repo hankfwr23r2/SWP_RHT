@@ -230,6 +230,11 @@ public class BookingServiceImpl implements BookingService {
                 }
                 String currentCountry = normalizeCountryCode(horse.getCurrentCountry());
                 String originCountry = normalizeCountryCode(request.getOriginCountry());
+                if (trimToNull(horse.getCurrentLocationName()) != null
+                        && (currentCountry == null || !Set.of("VN", "KH", "LA").contains(currentCountry))) {
+                    throw new IllegalStateException("Ngựa \"" + (horse.getHorseName() != null ? horse.getHorseName() : hDto.getHorseId())
+                            + "\" chưa xác định quốc gia của vị trí chuồng. Vui lòng cập nhật hồ sơ ngựa trước khi tạo đơn.");
+                }
                 if (currentCountry != null && originCountry != null && !currentCountry.equals(originCountry)) {
                     throw new IllegalStateException("Ngựa \"" + (horse.getHorseName() != null ? horse.getHorseName() : hDto.getHorseId())
                             + "\" hiện ở " + horse.getCurrentCountry() + " nhưng điểm đón ở " + request.getOriginCountry()
