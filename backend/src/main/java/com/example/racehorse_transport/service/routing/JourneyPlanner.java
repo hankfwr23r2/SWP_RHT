@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 // Từ thời gian lái thật của từng chặng → lịch trình thực tế: nghỉ bắt buộc, nghỉ đêm, chờ cửa khẩu mở và làm thủ tục.
-// Có trạm nghỉ ứng viên trên chặng thì nghỉ ở trạm xa nhất trong khoảng (giới hạn − nửa giờ lái liên tục tối đa, giới hạn];
+// Có trạm nghỉ ứng viên trên chặng thì nghỉ ở trạm xa nhất trong khoảng [giới hạn − nửa giờ lái liên tục tối đa, giới hạn];
 // không có thì nghỉ dọc đường đúng mốc giới hạn. Hàm thuần, không đọc DB: tham số quy định truyền vào qua Rules.
 public final class JourneyPlanner {
 
@@ -134,7 +134,7 @@ public final class JourneyPlanner {
         return new Journey(List.copyOf(events), t, borderArrival, crewDays);
     }
 
-    // Trạm xa nhất trong khoảng (driven + allowed − minGap, driven + allowed], và phải nằm sau vị trí hiện tại
+    // Trạm xa nhất trong khoảng [driven + allowed − minGap, driven + allowed], và phải nằm sau vị trí hiện tại
     private static Station pick(List<Station> candidates, long driven, long allowed, long minGap) {
         long latest = driven + allowed;
         long earliest = latest - minGap;

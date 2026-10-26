@@ -1,13 +1,24 @@
 import type { RoutePreviewResponse } from '../api/routes'
+import type { TransitStation } from '../config/network'
 import type { RoadRoute } from '../services/routing'
 import type { RestStop, RouteLeg, RoutePlan } from '../types/booking'
 
 const STOPS = new Set(['REST', 'ROADSIDE_REST', 'OVERNIGHT'])
+const ROADSIDE = 'Nghỉ dọc đường'
+
+// Backend đặt tên chỗ nghỉ dọc đường theo trạm gần nhất trong 20 km, nhưng xe không dừng ở trạm đó
+const restName = (type: string, place: string) =>
+  type === 'ROADSIDE_REST' && !place.startsWith(ROADSIDE) ? `${ROADSIDE} gần ${place}` : place
+
+// Đơn nội địa chỉ chọn trạm ở Việt Nam; đơn quốc tế chọn được mọi trạm
+export function stationsForBooking(stations: TransitStation[], international: boolean): TransitStation[] {
+  return international ? stations : stations.filter(s => s.country === 'VN')
+}
 
 // Lịch trình backend → dạng RoutePlan cũ: mỗi chỗ nghỉ (trạm, nghỉ dọc đường, nghỉ đêm) chia chặng, rests[i] ở cuối legs[i];
 // chờ và làm thủ tục cửa khẩu nằm trong chặng (giờ tới cửa khẩu ở borderEta) và tính là nghỉ:
-// hours của chặng = đoạn lái liên tục dài nhất trong chặng.
-export function routePlanFromPreview(preview: RoutePreviewResponse, originName: string, destName: string): Pick<RoutePlan, 'legs' | 'rests' | 'borderEta'> {
+// hours của chặng = đoạn lái liên tục dài nhất trong chặng. manualNames: tên các trạm do điều phối viên chọn tay (đánh dấu manual).
+export function routePlanFromPreview(preview: RoutePreviewResponse, originName: string, destName: string, manualNames: string[] = []): Pick<RoutePlan, 'legs' | 'rests' | 'borderEta'> {
   const legs: RouteLeg[] = []
   const rests: RestStop[] = []
   let from = originName
@@ -34,12 +45,14 @@ export function routePlanFromPreview(preview: RoutePreviewResponse, originName: 
     } else if (e.type === 'BORDER_WAIT' || e.type === 'BORDER_PROCESSING') {
       stretch = 0
     } else if (STOPS.has(e.type)) {
-      close(e.place)
+      const name = restName(e.type, e.place)
+      close(name)
       rests.push({
         afterLeg: legs.length,
-        name: e.place,
+        name,
         minutes: Math.round((e.endAt - e.startAt) / 60000),
         ...(e.lat != null && e.lng != null ? { lat: e.lat, lng: e.lng } : {}),
+        ...(manualNames.includes(name) ? { manual: true } : {}),
       })
       arriveAt = e.endAt
     }

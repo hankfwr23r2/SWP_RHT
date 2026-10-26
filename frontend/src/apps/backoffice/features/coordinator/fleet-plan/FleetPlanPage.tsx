@@ -188,7 +188,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
   const [etd] = useState(toLocal(b.route?.legs[0]?.departAt ?? defaultEtdTime))
   // Trạm điều phối chọn tay; nghỉ dọc đường và trạm còn lại do backend tự chọn trên đường xe tải
   const [manualStops, setManualStops] = useState<RestStop[]>(
-    () => (b.route?.rests ?? []).filter(r => findTransitStation(r.name)?.locationId != null)
+    () => (b.route?.rests ?? []).filter(r => r.manual === true && findTransitStation(r.name)?.locationId != null)
   )
   const [corridors, setCorridors] = useState<BackendRouteResponse[]>([])
   const [selectedCorridorId, setSelectedCorridorId] = useState<number | ''>('')
@@ -350,8 +350,8 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
   }, [previewKey])
 
   const plan = useMemo(
-    () => (preview ? routePlanFromPreview(preview, b.origin.name, b.dest.name) : undefined),
-    [preview, b.origin.name, b.dest.name]
+    () => (preview ? routePlanFromPreview(preview, b.origin.name, b.dest.name, manualStops.map(r => r.name)) : undefined),
+    [preview, b.origin.name, b.dest.name, manualStops]
   )
   const route = plan ?? NO_ROUTE
   const previewRoad = useMemo(() => (preview ? roadFromPreview(preview) : null), [preview])
@@ -1033,13 +1033,13 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
             </div>
           </div>
         )}
-        {warnings.length > 0 && (
+        {routeWarnings.length > 0 && (
           <div className="alert alert-warning" style={{ marginBottom: 12 }}>
             <i className="fa-solid fa-triangle-exclamation" />
             <div>
               <b>Lưu ý điều phối:</b>
               <ul style={{ margin: '4px 0 0', paddingLeft: 18 }}>
-                {warnings.map(e => (
+                {routeWarnings.map(e => (
                   <li key={e}>{e}</li>
                 ))}
               </ul>
@@ -1102,7 +1102,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
             origin={{ ...origin, name: b.origin.name }}
             dest={{ ...dest, name: b.dest.name }}
             gate={gateGeo ? { ...gateGeo, name: gateGeo.name } : undefined}
-            departAt={Number.isNaN(etdT) ? undefined : etdT}
+            international={international}
             value={manualStops}
             onApply={setManualStops}
             onClose={() => setMapOpen(false)}
