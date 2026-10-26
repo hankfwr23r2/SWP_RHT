@@ -7,6 +7,7 @@ import { bookingsApi } from '@shared/services/bookings'
 import { TripTimeline } from '@shared/ui/TripTimeline'
 import { useNow } from '@shared/ui/useNow'
 import { useToast } from '@shared/ui/toast'
+import { crewStep } from '../../shared/crewStep'
 import { Checklist, Empty, Panel, Segmented, TripHeader, TripPicker } from '../../shared/field'
 import { ManifestView } from '../../shared/ManifestView'
 import { useFieldTrips } from '../../shared/useFieldTrips'
@@ -30,7 +31,7 @@ export default function DriverPage() {
   const { b, t } = trip
   const items = [...(t.driverPack?.items ?? manifestDocuments(b).system), 'Xe đã kiểm tra: dầu, lốp, điều hòa thùng, máy phát điện phụ']
   const acked = t.acks?.driver
-  const cleared = !!b.clearance?.doneAt
+  const step = crewStep(b, t, 'driver')
   const run = async (fn: () => Promise<unknown>, msg: string) => {
     setBusy(true)
     try { await fn(); toast(msg); setChecked([]); reload() } catch (e) { toast(e instanceof Error ? e.message : 'Không thực hiện được', 'error') }
@@ -47,7 +48,7 @@ export default function DriverPage() {
       {tab === 'journey' && <Panel title="Các mốc hành trình" icon="fa-route"><TripTimeline trip={t} now={now} staff /></Panel>}
       {tab === 'job' && (
         <>
-          {!t.departedAt && (cleared || b.status === 'ready_for_pickup') && (
+          {step === 'ready' && (
             <Panel title="Sẵn sàng đón ngựa" icon="fa-truck-fast" tone="ok">
               <p>Giấy tờ kiểm dịch & hải quan đã hoàn tất, đơn hàng sẵn sàng thực hiện. Giờ đón dự kiến: {b.route && formatDateTime(b.route.legs[0].departAt)}. Khi xuất phát từ bãi xe, bấm bên dưới để bắt đầu chuyến đi.</p>
               <button className={`btn btn-primary ${s.big}`} disabled={busy} onClick={() => run(() => bookingsApi.departToPickup(b.id, t.tripId, session!.name), 'Đã bắt đầu đến điểm đón')}>
@@ -55,7 +56,7 @@ export default function DriverPage() {
               </button>
             </Panel>
           )}
-          {!t.departedAt && !cleared && b.status !== 'ready_for_pickup' && !acked && (
+          {step === 'acknowledge' && (
             <Panel title="Nhận lệnh và chuẩn bị xe" icon="fa-clipboard-check">
               <p>Lệnh điều xe đã phát. Tick từng mục khi đã kiểm tra xe, rồi xác nhận.</p>
               <Checklist items={items} checked={checked} onChange={setChecked} />
@@ -64,9 +65,14 @@ export default function DriverPage() {
               </button>
             </Panel>
           )}
-          {!t.departedAt && !cleared && b.status !== 'ready_for_pickup' && acked && (
+          {step === 'waiting_documents' && acked && (
             <Panel title="Đã nhận lệnh, chờ hoàn tất giấy tờ" icon="fa-clock">
               <p>Bạn đã xác nhận lúc {formatDateTime(acked)}. Chuyên viên kiểm dịch đang hoàn tất thủ tục giấy tờ pháp lý cho đơn hàng.</p>
+            </Panel>
+          )}
+          {step === 'waiting_crew' && (
+            <Panel title="Đã nhận lệnh, chờ hộ tống" icon="fa-clock">
+              <p>Giấy tờ đã xong. Đang chờ hộ tống nhận lệnh.</p>
             </Panel>
           )}
           <DriverJob key={t.tripId} b={b} t={t} reload={reload} />
