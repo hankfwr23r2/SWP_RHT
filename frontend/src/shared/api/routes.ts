@@ -25,8 +25,8 @@ export interface BackendLocationRouteResponse {
   address?: string
   province?: string
   country?: string
-  latitude?: number
-  longitude?: number
+  latitude?: number | null
+  longitude?: number | null
 }
 
 export interface BackendLocationResponse {
