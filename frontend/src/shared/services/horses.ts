@@ -63,8 +63,15 @@ export const horsesApi = {
     return horses.map(h => profileOf(h, owner, docsOf(docs.filter(d => d.horseId === h.id))))
   },
 
-  get: async (owner: string, id: string): Promise<HorseProfile | undefined> =>
-    (await horsesApi.list(owner)).find(h => h.id === id),
+  get: async (owner: string, id: string): Promise<HorseProfile | undefined> => {
+    const n = numericId(id)
+    if (!n) return undefined
+    const [horse, docs] = await Promise.all([
+      backendHorseApi.getById(n),
+      backendHorseApi.getDocuments(n),
+    ])
+    return profileOf(horse, owner, docsOf(docs))
+  },
 
   // Nhân viên (Specialist) xem hồ sơ ngựa của khách bất kỳ theo mã ngựa trong đơn
   byId: async (id: string): Promise<HorseProfile | undefined> => {
