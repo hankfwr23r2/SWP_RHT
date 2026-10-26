@@ -9,7 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 // Từ thời gian lái thật của từng chặng → lịch trình thực tế: nghỉ bắt buộc, nghỉ đêm, chờ cửa khẩu mở và làm thủ tục.
-// Hàm thuần, không đọc DB: tham số quy định truyền vào qua Rules.
+// Có trạm nghỉ ứng viên trên chặng thì nghỉ ở trạm xa nhất trong khoảng (giới hạn − nửa giờ lái liên tục tối đa, giới hạn];
+// không có thì nghỉ dọc đường đúng mốc giới hạn. Hàm thuần, không đọc DB: tham số quy định truyền vào qua Rules.
 public final class JourneyPlanner {
 
     public enum StopKind { PICKUP, VIA, GATE, DROPOFF }
@@ -23,6 +24,9 @@ public final class JourneyPlanner {
 
     public record Leg(double km, long driveSeconds) {}
 
+    // Trạm nghỉ nằm trên chặng, cách đầu chặng offsetSeconds giây lái (km tính từ đầu chặng)
+    public record Station(String name, long offsetSeconds, double km) {}
+
     // place == null: nghỉ dọc đường, vị trí là legIndex + kmIntoLeg (nơi gọi đặt tên theo trạm nghỉ gần nhất)
     public record Event(EventType type, String place, Instant startAt, Instant endAt, int legIndex, double kmIntoLeg) {}
 
@@ -31,8 +35,16 @@ public final class JourneyPlanner {
     private JourneyPlanner() {}
 
     public static Journey plan(Instant departAt, List<Stop> stops, List<Leg> legs, Rules rules, ZoneId zone) {
+        return plan(departAt, stops, legs, List.of(), rules, zone);
+    }
+
+    public static Journey plan(Instant departAt, List<Stop> stops, List<Leg> legs, List<List<Station>> stations,
+                               Rules rules, ZoneId zone) {
         if (stops.size() != legs.size() + 1) {
             throw new IllegalArgumentException("Số điểm dừng phải bằng số chặng cộng một.");
+        }
+        if (!stations.isEmpty() && stations.size() != legs.size()) {
+            throw new IllegalArgumentException("Danh sách trạm ứng viên phải có một phần tử cho mỗi chặng.");
         }
         long maxContinuous = Math.round(rules.maxContinuousHours() * 3600);
         long maxPerDay = Math.round(rules.maxDriveHoursPerDay() * 3600);
@@ -47,6 +59,7 @@ public final class JourneyPlanner {
         long today = 0;
         for (int i = 0; i < legs.size(); i++) {
             Leg leg = legs.get(i);
+            List<Station> candidates = stations.isEmpty() ? List.of() : stations.get(i);
             long remaining = leg.driveSeconds();
             long driven = 0;
             while (remaining > 0) {
@@ -65,7 +78,31 @@ public final class JourneyPlanner {
                     continuous = 0;
                     continue;
                 }
-                long chunk = Math.min(remaining, Math.min(maxContinuous - continuous, maxPerDay - today));
+                long allowed = Math.min(maxContinuous - continuous, maxPerDay - today);
+                if (remaining > allowed) {
+                    Station station = pick(candidates, driven, allowed, maxContinuous / 2);
+                    if (station != null) {
+                        boolean night = maxPerDay - today <= maxContinuous - continuous;
+                        long chunk = station.offsetSeconds() - driven;
+                        events.add(new Event(EventType.DRIVE, null, t, t.plusSeconds(chunk), i, km));
+                        t = t.plusSeconds(chunk);
+                        remaining -= chunk;
+                        driven += chunk;
+                        double stationKm = kmAt(leg, driven);
+                        if (night) {
+                            events.add(new Event(EventType.OVERNIGHT, station.name(), t, t.plusSeconds(overnight), i, stationKm));
+                            t = t.plusSeconds(overnight);
+                            today = 0;
+                        } else {
+                            events.add(new Event(EventType.REST, station.name(), t, t.plusSeconds(rest), i, stationKm));
+                            t = t.plusSeconds(rest);
+                            today += chunk;
+                        }
+                        continuous = 0;
+                        continue;
+                    }
+                }
+                long chunk = Math.min(remaining, allowed);
                 events.add(new Event(EventType.DRIVE, null, t, t.plusSeconds(chunk), i, km));
                 t = t.plusSeconds(chunk);
                 remaining -= chunk;
@@ -95,6 +132,21 @@ public final class JourneyPlanner {
         }
         int crewDays = (int) ChronoUnit.DAYS.between(departAt.atZone(zone).toLocalDate(), t.atZone(zone).toLocalDate()) + 1;
         return new Journey(List.copyOf(events), t, borderArrival, crewDays);
+    }
+
+    // Trạm xa nhất trong khoảng (driven + allowed − minGap, driven + allowed], và phải nằm sau vị trí hiện tại
+    private static Station pick(List<Station> candidates, long driven, long allowed, long minGap) {
+        long latest = driven + allowed;
+        long earliest = latest - minGap;
+        Station best = null;
+        for (Station station : candidates) {
+            long offset = station.offsetSeconds();
+            if (offset > driven && offset >= earliest && offset <= latest
+                    && (best == null || offset > best.offsetSeconds())) {
+                best = station;
+            }
+        }
+        return best;
     }
 
     private static double kmAt(Leg leg, long drivenSeconds) {
