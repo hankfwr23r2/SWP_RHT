@@ -31,6 +31,9 @@ public class ValhallaClient {
     // 442: không có đường đi; 171: không có đường xe tải nào gần điểm
     private static final Set<Integer> NO_PATH_CODES = Set.of(442, 171);
 
+    // Máy chủ công khai yêu cầu User-Agent nêu tên ứng dụng
+    static final String USER_AGENT = "racehorse-transport/1.0 (+https://github.com/hankfwr23r2/SWP_RHT)";
+
     private final String baseUrl;
     private final ObjectMapper json;
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
@@ -54,6 +57,7 @@ public class ValhallaClient {
             HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + "/route"))
                     .timeout(Duration.ofSeconds(30))
                     .header("Content-Type", "application/json")
+                    .header("User-Agent", USER_AGENT)
                     .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body)))
                     .build();
             response = http.send(request, HttpResponse.BodyHandlers.ofString());
