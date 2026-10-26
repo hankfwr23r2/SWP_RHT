@@ -1,6 +1,5 @@
 // Manager: tiếp nhận đơn mới và kích hoạt thẩm định song song (PRD mục 2.3).
 // Manager chọn Kiểm dịch viên và Điều phối viên đang hoạt động để giao việc (không xem số đơn họ đang làm).
-import { ReadMore } from '@shared/ui/ReadMore'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@shared/auth/AuthContext'
 import { formatDate, formatDateTime } from '@shared/lib/format'
@@ -91,7 +90,6 @@ export function IntakeModal({ b, onClose, onDone }: { b: Booking; onClose: () =>
           <PickButton icon="fa-route" person={coId ? coordinators.find(x => x.id === coId) : undefined} onClick={() => setPick('coordinator')} />
         </div>
       </div>
-      <ReadMore className={s.hint} text={'Chọn người đang hoạt động; người đang nghỉ bị khóa. Tiếp nhận xong, Điều phối viên chọn xe (chia ngựa lên nhiều xe nếu cần) và lập lộ trình, rồi bạn chọn tài xế và hộ tống cho từng xe khi duyệt báo giá.'} />
     </>
   )
 
