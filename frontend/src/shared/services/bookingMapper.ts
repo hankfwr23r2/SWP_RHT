@@ -159,7 +159,14 @@ export function toBooking(r: BackendBookingResponse, customer?: string): Booking
   if (r.plan) b.plan = r.plan as Booking['plan']
   // Lộ trình thiếu danh sách chặng thì coi như chưa có, để các trang đọc legs[0] không sập
   if (Array.isArray((r.route as Partial<RoutePlan> | undefined)?.legs)) b.route = r.route as RoutePlan
-  if (r.quote) b.quote = r.quote as Quote
+  if (r.quote && typeof r.quote === 'object') {
+    const rawQuote = r.quote as Record<string, unknown>
+    b.quote = {
+      ...rawQuote,
+      lines: Array.isArray(rawQuote.lines) ? rawQuote.lines : [],
+      adjustments: Array.isArray(rawQuote.adjustments) ? rawQuote.adjustments : [],
+    } as unknown as Quote
+  }
   const payment = paymentOf(r.payment)
   if (payment) b.payment = payment
   const balance = balanceOf(r.payment)
