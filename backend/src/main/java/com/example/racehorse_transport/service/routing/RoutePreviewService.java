@@ -42,6 +42,9 @@ public class RoutePreviewService {
     public RoutePreviewResponse preview(RoutePreviewRequest request) {
         List<Location> middle = stopsOf(request.stopLocationIds());
         Location gate = middle.stream().filter(RoutePreviewService::isGate).findFirst().orElse(null);
+        if (!request.pickup().country().equalsIgnoreCase(request.dropoff().country()) && gate == null) {
+            throw new IllegalArgumentException("Tuyến đi nước ngoài cần chọn một cửa khẩu.");
+        }
         Vehicle vehicle = fleetService.findVehicleByIdOrCode(request.vehicleId());
         int capacityKg = capacityKg(vehicle.getCapacity());
         int topSpeed = (int) number("TRUCK_TOP_SPEED_KMH");

@@ -10,7 +10,7 @@ import java.util.List;
 public record RoutePreviewRequest(
         @NotNull @Valid RoutePlace pickup,
         @NotNull @Valid RoutePlace dropoff,
-        List<Integer> stopLocationIds,
+        List<@NotNull Integer> stopLocationIds,
         @NotBlank String vehicleId,
         @NotNull Long departAt) {
 }
