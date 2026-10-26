@@ -60,7 +60,7 @@ public class FleetServiceImpl implements FleetService {
 
     @Override
     public List<VehicleResponse> getAllVehicles() {
-        List<Booking> bookings = bookingRepository.findAll();
+        List<Booking> holdingBookings = getHoldingBookings();
         Set<Integer> busyVehicleIds = new HashSet<>();
         for (Booking b : holdingBookings) {
             List<BookingVehicle> bvs = bookingVehicleRepository.findByBookingID_Id(b.getId());
