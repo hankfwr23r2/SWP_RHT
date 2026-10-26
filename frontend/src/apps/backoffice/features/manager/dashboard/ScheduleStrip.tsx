@@ -36,7 +36,7 @@ export function ScheduleStrip({ orders, onOpen, onCalendar }: { orders: Booking[
             <div key={d} className={`${s.day} ${d === today ? s.dayToday : ''}`}>
               <b>{label(d)}</b>
               {(wide === d ? events : events.slice(0, MAX_EVENTS)).map(b => (
-                <button key={b.id} className={s.event} onClick={() => onOpen(b)} title={`${b.id} · ${b.customer}`}><b>{b.id.slice(-4)}</b> {placeShort(b.dest.name)}</button>
+                <button key={b.id} className={s.event} onClick={() => onOpen(b)} title={`${b.id} · ${b.customer}`}><b>{b.id}</b> {placeShort(b.dest.name)}</button>
               ))}
               {events.length > MAX_EVENTS && <button className={s.moreEvents} onClick={() => setWide(wide === d ? null : d)}>{wide === d ? 'Thu gọn' : `+${events.length - MAX_EVENTS} chuyến nữa`}</button>}
               {!events.length && <span className={s.noEvent}>Không có chuyến</span>}
