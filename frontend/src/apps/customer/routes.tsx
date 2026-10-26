@@ -21,10 +21,10 @@ const ProfilePage = lazy(() => import('./features/profile/ProfilePage'))
 const C = ['customer'] as AppRoute['roles']
 
 export const routes: AppRoute[] = [
-  { path: '/', page: HomePage, roles: [], title: 'Trang chủ', layout: 'public' },
-  { path: '/login', page: LoginPage, roles: [], title: 'Đăng nhập', layout: 'bare' },
-  { path: '/forgot-password', page: CustomerForgotPasswordPage, roles: [], title: 'Quên mật khẩu', layout: 'bare' },
-  { path: '/register', page: RegisterPage, roles: [], title: 'Đăng ký', layout: 'bare' },
+  { path: '/', page: HomePage, roles: [], title: 'Trang chủ', layout: 'public', catalog: false },
+  { path: '/login', page: LoginPage, roles: [], title: 'Đăng nhập', layout: 'bare', catalog: false },
+  { path: '/forgot-password', page: CustomerForgotPasswordPage, roles: [], title: 'Quên mật khẩu', layout: 'bare', catalog: false },
+  { path: '/register', page: RegisterPage, roles: [], title: 'Đăng ký', layout: 'bare', catalog: false },
   { path: '/portal', lazyPage: () => import('./features/portal/PortalPage'), loader: portalLoader, roles: C, title: 'Trang chủ', layout: 'customer' },
   { path: '/profile', page: ProfilePage, roles: C, title: 'Hồ sơ cá nhân', layout: 'customer' },
   { path: '/horses', lazyPage: () => import('./features/horses/HorsesPage'), loader: horsesLoader, roles: C, title: 'Hồ sơ ngựa', layout: 'customer' },
@@ -34,9 +34,9 @@ export const routes: AppRoute[] = [
   { path: '/booking/review', lazyPage: () => import('./features/booking/Step4ReviewPage'), loader: horseListLoader, roles: C, title: 'Đặt chuyến · Xác nhận & gửi', layout: 'customer' },
   { path: '/orders', lazyPage: () => import('./features/orders/OrdersPage'), loader: ordersLoader, roles: C, title: 'Đơn của tôi', layout: 'customer' },
   { path: '/history', lazyPage: () => import('./features/orders/HistoryPage'), loader: ordersLoader, roles: C, title: 'Lịch sử đơn', layout: 'customer' },
-  { path: '/terms', page: PolicyPage, roles: [], title: 'Điều khoản và chính sách', layout: 'public' },
+  { path: '/terms', page: PolicyPage, roles: [], title: 'Điều khoản và chính sách', layout: 'public', catalog: false },
   { path: '/orders/:id', lazyPage: () => import('./features/orders/OrderDetailPage'), loader: orderDetailLoader, roles: C, title: 'Chi tiết đơn', layout: 'customer' },
   { path: '/payment/vnpay-return', page: VnpayReturnPage, roles: [], title: 'Kết quả thanh toán', layout: 'public' },
 ]
 
-routes.push({ path: '/sitemap', page: () => <SitemapPage app="customer" />, roles: [], title: 'Sitemap', layout: 'public' })
+routes.push({ path: '/sitemap', page: () => <SitemapPage app="customer" />, roles: [], title: 'Sitemap', layout: 'public', catalog: false })

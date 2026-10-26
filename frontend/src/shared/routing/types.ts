@@ -12,4 +12,6 @@ export interface AppRoute {
   roles: Role[]
   title: string
   layout?: 'public' | 'customer' | 'staff' | 'mobile' | 'bare'
+  // false: trang không dùng danh mục địa điểm, giấy tờ (trang chủ, đăng nhập…), hiện ngay không chờ dữ liệu khởi động
+  catalog?: false
 }

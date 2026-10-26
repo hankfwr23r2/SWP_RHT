@@ -26,9 +26,4 @@ export const systemConfigApi = {
     )
     return response.data.data
   },
-
-  listPublicConfigs: async (): Promise<SystemConfigItem[]> => {
-    const response = await apiClient.get<ApiResponse<SystemConfigItem[]>>('/public/configs')
-    return response.data.data
-  },
 }

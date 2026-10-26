@@ -60,7 +60,8 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api/v1': {
-        target: 'http://localhost:8080',
+        // Test E2E đặt API_PROXY_TARGET để trỏ tới backend riêng (hoặc cổng không có backend)
+        target: process.env.API_PROXY_TARGET ?? 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
       },
