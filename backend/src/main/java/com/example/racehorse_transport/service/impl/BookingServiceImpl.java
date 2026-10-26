@@ -2408,9 +2408,12 @@ public class BookingServiceImpl implements BookingService {
                 break;
             }
             case "CONFIRM_HOME": {
-                Map<String, Object> hr = targetTrip.getHomeReturn() != null ? targetTrip.getHomeReturn() : new HashMap<>();
+                Map<String, Object> hr = targetTrip.getHomeReturn();
+                if (hr == null) throw new IllegalStateException("Chưa giao ngựa xong nên chưa thể xác nhận về trụ sở.");
+                if (number(hr.get("earliestAt"), 0) > now) throw new IllegalStateException("Chưa tới thời điểm sớm nhất có thể về trụ sở.");
+                if (isBlank(reqPayload.get("photo"))) throw new IllegalArgumentException("Cần ảnh chụp tại trụ sở.");
                 hr.put("backAt", now);
-                targetTrip.setHomeReturn(hr);
+                hr.put("photo", reqPayload.get("photo"));
 
                 if (targetTrip.getVehicleId() != null) {
                     try {
