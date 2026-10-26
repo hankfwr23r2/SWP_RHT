@@ -65,6 +65,7 @@ class DepartToPickupTest {
     private final HttpClient http = HttpClient.newHttpClient();
     private final ObjectMapper json = new ObjectMapper();
     private String driverToken;
+    private String driverCode;
     private Customer customer;
 
     @BeforeEach
@@ -78,7 +79,8 @@ class DepartToPickupTest {
         Staff driver = new Staff();
         driver.setUser(driverUser);
         driver.setRole("DRIVER");
-        driver.setStaffCode("DR-" + suffix);
+        driverCode = "DR-" + suffix;
+        driver.setStaffCode(driverCode);
         driver.setEmploymentStatus("ACTIVE");
         driver.setHireDate(LocalDate.now());
         staff.save(driver);
@@ -155,6 +157,9 @@ class DepartToPickupTest {
     }
 
     private Booking twoTripBooking(String status, String firstTripState) {
+        String details = ("{\"trips\":[{\"tripId\":\"TRP-1\",\"vehicleId\":\"VH-001\",\"horseIds\":[\"H-1\"],%s},"
+                + "{\"tripId\":\"TRP-2\",\"vehicleId\":\"VH-002\",\"horseIds\":[\"H-2\"],\"driverId\":\"%s\"}]}"
+                ).formatted(firstTripState, driverCode);
         return bookings.save(Booking.builder()
                 .customerID(customer)
                 .status(status)
@@ -163,8 +168,7 @@ class DepartToPickupTest {
                 .departureDate(Instant.now())
                 .pickupAddress("Kho Đồng Nai")
                 .dropoffAddress("Hà Nội")
-                .detailsJson(("{\"trips\":[{\"tripId\":\"TRP-1\",\"vehicleId\":\"VH-001\",\"horseIds\":[\"H-1\"],%s},"
-                        + "{\"tripId\":\"TRP-2\",\"vehicleId\":\"VH-002\",\"horseIds\":[\"H-2\"]}]}").formatted(firstTripState))
+                .detailsJson(details)
                 .build());
     }
 
@@ -183,7 +187,7 @@ class DepartToPickupTest {
                 .departureDate(Instant.now().plus(1, ChronoUnit.DAYS))
                 .pickupAddress("Kho Đồng Nai")
                 .dropoffAddress("Hà Nội")
-                .detailsJson("{\"trips\":[{\"tripId\":\"TRP-1\",\"vehicleId\":\"VH-001\",\"horseIds\":[\"H-1\"]}]}")
+                .detailsJson("{\"trips\":[{\"tripId\":\"TRP-1\",\"vehicleId\":\"VH-001\",\"horseIds\":[\"H-1\"],\"driverId\":\"%s\"}]}".formatted(driverCode))
                 .build());
     }
 
