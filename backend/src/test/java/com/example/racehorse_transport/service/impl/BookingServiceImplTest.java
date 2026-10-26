@@ -272,6 +272,54 @@ class BookingServiceImplTest {
     }
 
     @Test
+    void createBooking_rejectsHorseWithLocationButUnknownCountry() {
+        Instant departure = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
+                .plusDays(25).atTime(10, 0).atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant();
+        BookingHorseDto horseDto = BookingHorseDto.builder()
+                .horseId("HORSE-12")
+                .name("Lightning")
+                .selectedServiceCodes(Map.of(
+                        "stall", "STALL_STANDARD",
+                        "feed", "FEED_BASIC",
+                        "insurance", "INSURANCE_DECLINED"))
+                .build();
+        CreateBookingRequest request = CreateBookingRequest.builder()
+                .type("INTERNATIONAL")
+                .originName("Trang trại tại Việt Nam")
+                .originCountry("VN")
+                .destName("Điểm giao tại Lào")
+                .destCountry("LA")
+                .departAt(departure.toEpochMilli())
+                .consignor(PartyContactDto.builder().name("Sender").phone("0900").build())
+                .consignee(PartyContactDto.builder().name("Receiver").phone("0901").build())
+                .horses(List.of(horseDto))
+                .build();
+        Horse horse = Horse.builder()
+                .id(12)
+                .customerID(customer)
+                .horseName("Lightning")
+                .currentLocationName("Phnom Penh")
+                .build();
+
+        when(userRepository.findByUsernameOrEmail("phuc", "phuc")).thenReturn(Optional.of(customer.getUser()));
+        when(customerRepository.findById(7)).thenReturn(Optional.of(customer));
+        when(bookingRepository.findByCustomerID_IdOrderByBookingDateDesc(7)).thenReturn(List.of());
+        when(horseRepository.findById(12)).thenReturn(Optional.of(horse));
+        when(serviceRepository.findByServiceCodeIgnoreCase("STALL_STANDARD"))
+                .thenReturn(Optional.of(service(1, "Khoang tiêu chuẩn", 1, "1", "ACTIVE")));
+        when(serviceRepository.findByServiceCodeIgnoreCase("FEED_BASIC"))
+                .thenReturn(Optional.of(service(3, "Gói cơ bản", 2, "0", "ACTIVE")));
+        when(serviceRepository.findByServiceCodeIgnoreCase("INSURANCE_DECLINED"))
+                .thenReturn(Optional.of(service(10, "Từ chối", 4, "0", "ACTIVE")));
+
+        assertThatThrownBy(() -> service.createBooking("phuc", request))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("chưa xác định quốc gia")
+                .hasMessageContaining("vị trí chuồng");
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
     void createBooking_rejectsServiceThatWasPausedAfterCatalogLoad() {
         Instant departure = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
                 .plusDays(25).atTime(10, 0).atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant();

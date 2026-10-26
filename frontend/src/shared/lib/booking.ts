@@ -41,6 +41,11 @@ export function horseCountryMatchesOrigin(currentCountry?: string, originCountry
   return !current || !origin || current === origin
 }
 
+export function horseHasUnverifiedLocationCountry(locationName?: string, currentCountry?: string) {
+  if (!locationName?.trim()) return false
+  return !['VN', 'KH', 'LA'].includes(normalizeCountry(currentCountry) ?? '')
+}
+
 export const ageOf = (h: Pick<HorseProfile, 'birthYear'>, now = Date.now()) => new Date(now).getFullYear() - h.birthYear
 
 // ===== Hạng xe =====

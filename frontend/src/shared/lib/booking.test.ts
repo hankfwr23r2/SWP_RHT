@@ -11,7 +11,7 @@ import type { DocumentRequirement } from '../api/documentRequirements'
 import {
   schedulesOf, clashOf, crewClashOf, planHomeReturn, returnLate, returningTrips, vehicleSpot, vehiclePoint, pendingDeparture, spotLabel, nearestTo, projectOnPath, pointsAhead, pointAlong, bookingPath, incidentLocation, needsFitCheck, transitProgress, defaultPayer, incidentActionsFor, settlementOf, approvedSubOf, APPROVED_SUBS, orderGroupOf, ORDER_GROUPS, capacitiesFor, estimateQuote, busyResources, buildRoutePlan, gatesFor, suggestGate, suggestTransitStations, canCompleteClearance, classForHorses, defaultClearanceItems, deriveStatus, docsDueAt, earliestDeparture, finalizeQuote, horseReadiness,
   insuranceFee, isClearanceOverdue, isDepartureAllowed, isQuoteExpired, layoutLegs, manifestDocuments, nextBookingId, quoteLines, reviewDone, routeKm, activeStaff,
-  findLocation, arrivalOf, routeOutline, managerBoardOf, managerCounts, orderTabOf, tripIdFor, validateRoutePlan, vehicleClassOf, autoPackFleet, horseCountryMatchesOrigin,
+  findLocation, arrivalOf, routeOutline, managerBoardOf, managerCounts, orderTabOf, tripIdFor, validateRoutePlan, vehicleClassOf, autoPackFleet, horseCountryMatchesOrigin, horseHasUnverifiedLocationCountry,
 } from './booking'
 
 
@@ -67,6 +67,13 @@ describe('hồ sơ ngựa', () => {
     expect(horseCountryMatchesOrigin('Campuchia', 'VN')).toBe(false)
     expect(horseCountryMatchesOrigin('VN', 'Việt Nam')).toBe(true)
     expect(horseCountryMatchesOrigin(undefined, 'VN')).toBe(true)
+  })
+
+  it('requires a valid country when the horse has a declared stable location', () => {
+    expect(horseHasUnverifiedLocationCountry('Phnom Penh', undefined)).toBe(true)
+    expect(horseHasUnverifiedLocationCountry('Phnom Penh', 'unknown')).toBe(true)
+    expect(horseHasUnverifiedLocationCountry('Phnom Penh', 'KH')).toBe(false)
+    expect(horseHasUnverifiedLocationCountry(undefined, undefined)).toBe(false)
   })
 
   it('đủ 3 giấy đã nộp là sẵn sàng đặt', () => {
