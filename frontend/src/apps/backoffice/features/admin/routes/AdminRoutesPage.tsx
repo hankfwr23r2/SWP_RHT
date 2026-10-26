@@ -18,6 +18,7 @@ import { usePageData } from '@shared/routing/pageData'
 import type { adminRoutesLoader } from '../../../shared/loaders'
 import { addBaseLayer, BASE_MAP_OPTIONS } from '@shared/ui/baseMap'
 import { setNetworkLocations } from '@shared/config/network'
+import { savedStopCoordinates } from './routeCoordinates'
 
 type Tab = 'all' | 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE'
 
@@ -132,15 +133,7 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
     [route],
   )
   const savedStopIds = savedStops?.map(stop => stop.locationID)
-  const savedCoordinates = (savedStops ?? []).reduce<Record<number, { latitude: number; longitude: number }>>(
-    (result, stop) => {
-      if (stop.latitude !== undefined && stop.longitude !== undefined) {
-        result[stop.locationID] = { latitude: stop.latitude, longitude: stop.longitude }
-      }
-      return result
-    },
-    {},
-  )
+  const savedCoordinates = savedStopCoordinates(savedStops ?? [])
   const coordinates = { ...savedCoordinates, ...coordinateOverrides }
   // undefined = admin chưa chỉnh danh sách, dùng danh sách đã lưu
   const [pickedIds, setPickedIds] = useState<number[]>()
@@ -458,7 +451,7 @@ function StopsViewModal({
                 <b>{st.locationName || `Địa điểm #${st.locationID}`} {idx === 0 ? '(Xuất phát)' : idx === stops.length - 1 ? '(Điểm đến)' : ''}</b>
                 <small>
                   Loại: <b>{st.locationType || 'Nút giao / Trạm'}</b> · {st.address || st.province || st.country}
-                  {st.latitude !== undefined && st.longitude !== undefined && ` · ${st.latitude.toFixed(5)}, ${st.longitude.toFixed(5)}`}
+                  {st.latitude != null && st.longitude != null &&` · ${st.latitude.toFixed(5)}, ${st.longitude.toFixed(5)}`}
                 </small>
               </div>
             </div>
