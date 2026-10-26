@@ -67,6 +67,7 @@ class ConfirmHomeTest {
     private final HttpClient http = HttpClient.newHttpClient();
     private final ObjectMapper json = new ObjectMapper();
     private String driverToken;
+    private String driverCode;
     private Customer customer;
 
     @BeforeEach
@@ -80,7 +81,8 @@ class ConfirmHomeTest {
         Staff driver = new Staff();
         driver.setUser(driverUser);
         driver.setRole("DRIVER");
-        driver.setStaffCode("DR-" + suffix);
+        driverCode = "DR-" + suffix;
+        driver.setStaffCode(driverCode);
         driver.setEmploymentStatus("ACTIVE");
         driver.setHireDate(LocalDate.now());
         staff.save(driver);
@@ -161,7 +163,7 @@ class ConfirmHomeTest {
                 .departureDate(Instant.now().minus(1, ChronoUnit.DAYS))
                 .pickupAddress("Kho Đồng Nai")
                 .dropoffAddress("Hà Nội")
-                .detailsJson("{\"trips\":[{\"tripId\":\"TRP-1\",\"vehicleId\":\"VH-001\",\"horseIds\":[\"H-1\"],%s}]}".formatted(tripState))
+                .detailsJson("{\"trips\":[{\"tripId\":\"TRP-1\",\"vehicleId\":\"VH-001\",\"horseIds\":[\"H-1\"],\"driverId\":\"%s\",%s}]}".formatted(driverCode, tripState))
                 .build();
         return bookings.save(booking);
     }

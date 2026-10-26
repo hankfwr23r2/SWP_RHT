@@ -67,7 +67,9 @@ class CrewAcknowledgementTest {
     private String specialistToken;
     private String specialistCode;
     private String driverToken;
+    private String driverCode;
     private String escortToken;
+    private String escortCode;
     private Customer customer;
 
     @BeforeEach
@@ -75,8 +77,10 @@ class CrewAcknowledgementTest {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         specialistCode = "SP-" + suffix;
         specialistToken = staffToken("chuyenvien" + suffix, "SPECIALIST", specialistCode);
-        driverToken = staffToken("taixe" + suffix, "DRIVER", "DR-" + suffix);
-        escortToken = staffToken("hotong" + suffix, "ESCORT", "ES-" + suffix);
+        driverCode = "DR-" + suffix;
+        escortCode = "ES-" + suffix;
+        driverToken = staffToken("taixe" + suffix, "DRIVER", driverCode);
+        escortToken = staffToken("hotong" + suffix, "ESCORT", escortCode);
 
         User customerUser = new User();
         customerUser.setUsername("khach" + suffix);
@@ -148,8 +152,8 @@ class CrewAcknowledgementTest {
         String details = ("{\"intake\":{\"at\":1,\"by\":\"Quản lý\",\"specialist\":{\"id\":\"%s\",\"name\":\"Chuyên viên\"},"
                 + "\"coordinator\":{\"id\":\"CO-1\",\"name\":\"Điều phối\"}},"
                 + "\"clearance\":{\"items\":[{\"type\":\"health_cert\",\"status\":\"done\"},{\"type\":\"poa\",\"status\":\"done\"}]},"
-                + "\"trips\":[{\"tripId\":\"TRP-1\",\"vehicleId\":\"VH-001\",\"horseIds\":[\"H-1\"],\"driverId\":\"DR-1\",\"escortId\":\"ES-1\"%s}]}")
-                .formatted(specialistCode, tripAcks);
+                + "\"trips\":[{\"tripId\":\"TRP-1\",\"vehicleId\":\"VH-001\",\"horseIds\":[\"H-1\"],\"driverId\":\"%s\",\"escortId\":\"%s\"%s}]}")
+                .formatted(specialistCode, driverCode, escortCode, tripAcks);
         return bookings.save(Booking.builder()
                 .customerID(customer)
                 .status("clearance_in_progress")
