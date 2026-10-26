@@ -354,6 +354,14 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
   )
   const route = plan ?? NO_ROUTE
   const previewRoad = useMemo(() => (preview ? roadFromPreview(preview) : null), [preview])
+  // Chưa có kết quả backend (đang tải hoặc lỗi): bản đồ vẫn hiện trạm điều phối đã chọn
+  const manualOnMap = useMemo(
+    () => manualStops.map(r => {
+      const st = findTransitStation(r.name)
+      return r.lat == null && st ? { ...r, lat: st.lat, lng: st.lng } : r
+    }),
+    [manualStops]
+  )
   const { legs } = route
   const borderEta = route.borderEta
   const systemStops = route.rests
@@ -365,7 +373,13 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
     : { errors: [] as string[], warnings: [] as string[] }
   const warnings = [...(preview?.warnings ?? []), ...routeWarnings]
   if (previewError) routeErrors.unshift(previewError)
-  else if (!preview) routeErrors.unshift(previewVehicle ? 'Đang tính lộ trình…' : 'Chọn xe để tính lộ trình.')
+  else if (previewLoading) routeErrors.unshift('Đang tính lộ trình…')
+  else if (!previewRequest) {
+    // Nói rõ vì sao chưa gọi được backend
+    if (!origin || !dest) routeErrors.unshift('Điểm đón hoặc điểm giao chưa có tọa độ, chưa tính được lộ trình.')
+    else if (international && gate && gateGeo?.locationId == null) routeErrors.unshift(`Cửa khẩu ${gate} chưa có trong danh mục địa điểm, chưa tính được lộ trình.`)
+    else if (!previewVehicle) routeErrors.unshift('Chọn xe để tính lộ trình.')
+  }
   if (Number.isNaN(etdT)) routeErrors.unshift('Nhập giờ khởi hành hợp lệ.')
   if (international && !gates.some(g => g.name === gate)) routeErrors.unshift('Chọn cửa khẩu cho tuyến này.')
   const errors = [...tripErrors, ...routeErrors]
@@ -671,7 +685,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
                   value={selectedCorridorId}
                   onChange={e => setSelectedCorridorId(e.target.value ? Number(e.target.value) : '')}
                 >
-                  <option value="">-- Lộ trình linh hoạt (Tự động đề xuất OSRM) --</option>
+                  <option value="">-- Lộ trình linh hoạt (Tự động đề xuất) --</option>
                   {suggestingCorridors && <option disabled>Đang đối chiếu tọa độ điểm đón/trả…</option>}
                   {corridorSuggestions.map(({ corridor: c, totalKm, detourKm, match }, idx) => (
                     <option key={c.id} value={c.id}>
@@ -701,7 +715,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
 
             {!suggestingCorridors && corridorSuggestions.length === 0 && (
               <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
-                Không có tuyến cố định phù hợp với tọa độ và cửa khẩu của đơn; đang dùng tuyến đường trực tiếp OSRM.
+                Không có tuyến cố định phù hợp với tọa độ và cửa khẩu của đơn; đang dùng tuyến đường xe tải trực tiếp.
               </div>
             )}
 
@@ -722,7 +736,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
               origin={{ ...origin, name: b.origin.name }}
               dest={{ ...dest, name: b.dest.name }}
               gate={gateGeo ? { ...gateGeo, name: gateGeo.name } : undefined}
-              rests={route.rests}
+              rests={preview ? route.rests : manualOnMap}
               activeRoad={previewRoad}
               loading={previewLoading}
               onOpenPicker={() => setMapOpen(true)}
@@ -742,7 +756,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
                     type="button"
                     className={s.stopItem}
                     onClick={() => setMapOpen(true)}
-                    title="Mở bản đồ để đổi trạm hoặc thời gian nghỉ"
+                    title="Mở bản đồ để đổi trạm"
                   >
                     <span className={s.stopNum}>{n || '–'}</span>
                     <span className={s.stopName}>

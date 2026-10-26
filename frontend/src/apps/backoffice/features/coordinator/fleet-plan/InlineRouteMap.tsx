@@ -171,7 +171,7 @@ export function InlineRouteMap({ origin, dest, gate, rests, activeRoad: road, lo
           ) : road ? (
             <b>{Math.round(road.km)} km · {road.hours.toFixed(1)}h lái xe tải</b>
           ) : (
-            'Đang tính toán…'
+            'Chưa có tuyến đường'
           )}
         </span>
         <span style={{ color: 'var(--muted)' }}>|</span>
