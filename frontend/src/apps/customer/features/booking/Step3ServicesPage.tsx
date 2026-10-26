@@ -50,7 +50,7 @@ export default function Step3ServicesPage() {
   const set = (id: string, patch: Partial<HorseConfig>) => setConfig(current => ({ ...current, [id]: { ...current[id], ...patch } }))
   const declined = rows.filter(h => isDeclinedInsurance(serviceOptionFor(services, config[h.id], 'insurance')))
   const problems = rows.length === 0 || rows.length !== draft.horseIds.length
-    ? ['Không tải được đủ hồ sơ ngựa hoặc danh mục dịch vụ. Vui lòng tải lại trang.']
+    ? ['Không tải đủ hồ sơ ngựa cho các mã đã chọn. Vui lòng quay lại “Chọn ngựa” và chọn lại danh sách.']
     : rows.flatMap(h => SERVICE_GROUPS
       .filter(group => !serviceOptionFor(services, config[h.id], group.key))
       .map(group => `${h.name}: hiện không có dịch vụ ${group.label.toLocaleLowerCase()} đang áp dụng`))
@@ -106,7 +106,12 @@ export default function Step3ServicesPage() {
                 {SERVICE_GROUPS.map(group => {
                   const prefix = `${group.key.toUpperCase()}_`
                   const options = services.filter(service => service.serviceCode.startsWith(prefix))
-                  const chosen = serviceOptionFor(services, current, group.key)
+                  const resolved = serviceOptionFor(services, current, group.key)
+                  const insuranceNotConfirmed = group.key === 'insurance'
+                    && !current.insurance
+                    && !current.selectedServiceCodes?.insurance
+                    && !current.selectedServices?.insurance
+                  const chosen = insuranceNotConfirmed ? undefined : resolved
                   return (
                     <div className={s.serviceSection} key={group.key}>
                       <div className={`${s.fieldLabel} ${group.key === 'insurance' ? 'required' : ''}`} id={`${group.key}-${horse.id}`}>
