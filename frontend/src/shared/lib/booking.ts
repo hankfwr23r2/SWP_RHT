@@ -12,7 +12,7 @@ import type { StaffMember } from '../types/staff'
 import type { Adjustment, Booking, BookingHorse, Checkpoint, Clearance, ClearanceItem, HorseProfile, PlaceRef, Quote, QuoteLine, SettlementItem, RestStop, HomeReturn, RouteLeg, RoutePlan, TripRun, VehicleTrip, WelfareLog } from '../types/booking'
 import { atHour, dayKey, startOfDay } from './dates'
 import { haversineKm, roadKm, truckCost } from './pricing'
-import { requiredClearanceDocumentTypes, requiredHorseDocumentTypes } from '../config/runtimeDocumentRequirements'
+import { normalizeCountry, requiredClearanceDocumentTypes, requiredHorseDocumentTypes } from '../config/runtimeDocumentRequirements'
 
 // ===== Ngày khởi hành =====
 // Ngày sớm nhất được chọn: hôm nay + 30 ngày (00:00)
@@ -33,6 +33,12 @@ export function horseReadiness(h: HorseProfile, tripType?: 'domestic' | 'interna
   // Giấy đã tải lên là tính đã nộp; Chuyên viên thẩm định sau, trong từng đơn
   const missing: HorseDocType[] = requiredHorseDocumentTypes(tripType, country).filter(t => !h.docs[t])
   return { ok: !missing.length, missing }
+}
+
+export function horseCountryMatchesOrigin(currentCountry?: string, originCountry?: string) {
+  const current = normalizeCountry(currentCountry)
+  const origin = normalizeCountry(originCountry)
+  return !current || !origin || current === origin
 }
 
 export const ageOf = (h: Pick<HorseProfile, 'birthYear'>, now = Date.now()) => new Date(now).getFullYear() - h.birthYear
