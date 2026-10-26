@@ -272,7 +272,6 @@ export default function AdminServicesPage() {
             className="btn btn-outline btn-sm"
             onClick={() => setModal({ service: item })}
             title="Chỉnh sửa dịch vụ"
-            disabled={item.serviceCode.startsWith('WATER_')}
           >
             <i className="fa-solid fa-pen-to-square" /> Sửa
           </button>
@@ -293,7 +292,6 @@ export default function AdminServicesPage() {
                 }
               }}
               title="Tạm ngưng cung cấp"
-              disabled={item.serviceCode.startsWith('WATER_')}
             >
               <i className="fa-solid fa-pause" /> Tạm dừng
             </button>
@@ -312,7 +310,6 @@ export default function AdminServicesPage() {
                 }
               }}
               title="Kích hoạt lại"
-              disabled={item.serviceCode.startsWith('WATER_')}
             >
               <i className="fa-solid fa-play" /> Mở lại
             </button>

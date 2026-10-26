@@ -148,15 +148,6 @@ public class NotificationController {
                     .createdAt(now.minusSeconds(7200))
                     .build());
 
-            seeds.add(Notification.builder()
-                    .recipientRole("customer")
-                    .title("Báo giá vận chuyển đã được phát hành")
-                    .message("Nhà xe đã gửi báo giá chính thức cho đơn của bạn. Vui lòng kiểm tra và đặt cọc trước khi báo giá hết hạn.")
-                    .link("/orders")
-                    .bookingId("BK-1")
-                    .isRead(false)
-                    .createdAt(now.minusSeconds(3600))
-                    .build());
 
             seeds.add(Notification.builder()
                     .recipientRole("coordinator")

@@ -405,7 +405,7 @@ export default function Step1RoutePage() {
     e.preventDefault()
     setSubmitted(true)
     if (!valid) {
-      toast('Vui lòng hoàn thành các thông tin bắt buộc (CCCD / Hộ chiếu, SĐT, địa chỉ) trước khi tiếp tục.', 'error')
+      toast('Vui lòng hoàn thành các thông tin bắt buộc trước khi tiếp tục.', 'error')
       document.querySelector('.invalid, .form-error')?.scrollIntoView({ block: 'center', behavior: 'smooth' })
       return
     }
