@@ -14,19 +14,19 @@ public interface NotificationRepository extends JpaRepository<Notification, Inte
 
     @Query("SELECT n FROM Notification n WHERE " +
            "(:role IS NULL OR n.recipientRole IS NULL OR LOWER(n.recipientRole) = LOWER(:role)) AND " +
-           "(:username IS NULL OR n.recipientUsername IS NULL OR LOWER(n.recipientUsername) = LOWER(:username)) " +
+           "(:username IS NULL OR (LOWER(COALESCE(n.recipientRole, '')) != 'customer' AND n.recipientUsername IS NULL) OR LOWER(n.recipientUsername) = LOWER(:username)) " +
            "ORDER BY n.createdAt DESC")
     List<Notification> findForUser(@Param("role") String role, @Param("username") String username);
 
     @Modifying
     @Query("UPDATE Notification n SET n.isRead = true WHERE " +
            "(:role IS NULL OR n.recipientRole IS NULL OR LOWER(n.recipientRole) = LOWER(:role)) AND " +
-           "(:username IS NULL OR n.recipientUsername IS NULL OR LOWER(n.recipientUsername) = LOWER(:username))")
+           "(:username IS NULL OR (LOWER(COALESCE(n.recipientRole, '')) != 'customer' AND n.recipientUsername IS NULL) OR LOWER(n.recipientUsername) = LOWER(:username))")
     int markAllAsRead(@Param("role") String role, @Param("username") String username);
 
     @Modifying
     @Query("DELETE FROM Notification n WHERE " +
            "(:role IS NULL OR n.recipientRole IS NULL OR LOWER(n.recipientRole) = LOWER(:role)) AND " +
-           "(:username IS NULL OR n.recipientUsername IS NULL OR LOWER(n.recipientUsername) = LOWER(:username))")
+           "(:username IS NULL OR (LOWER(COALESCE(n.recipientRole, '')) != 'customer' AND n.recipientUsername IS NULL) OR LOWER(n.recipientUsername) = LOWER(:username))")
     int deleteForUser(@Param("role") String role, @Param("username") String username);
 }

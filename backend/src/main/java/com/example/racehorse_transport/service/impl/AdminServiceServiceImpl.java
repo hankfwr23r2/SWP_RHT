@@ -38,6 +38,7 @@ public class AdminServiceServiceImpl implements AdminServiceService {
     public List<ServiceResponse> getAllServices() {
         return serviceRepository.findAll(Sort.by(Sort.Direction.ASC, "id"))
                 .stream()
+                .filter(service -> service.getCategoryID() == null || !RETIRED_WATER_CATEGORY_ID.equals(service.getCategoryID().getId()))
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
@@ -47,6 +48,7 @@ public class AdminServiceServiceImpl implements AdminServiceService {
     public List<ServiceResponse> getActiveServices() {
         return serviceRepository.findByStatusIgnoreCaseOrderByIdAsc("ACTIVE")
                 .stream()
+                .filter(service -> service.getCategoryID() == null || !RETIRED_WATER_CATEGORY_ID.equals(service.getCategoryID().getId()))
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
