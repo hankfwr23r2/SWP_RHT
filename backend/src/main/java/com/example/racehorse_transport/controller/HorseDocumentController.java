@@ -130,4 +130,35 @@ public class HorseDocumentController {
             throw new AccessDeniedException("Bạn không có quyền truy cập giấy tờ ngựa này.");
         }
     }
+
+    /**
+     * Khách hàng xóa một giấy tờ ngựa của mình.
+     * Chỉ cho phép xóa khi giấy tờ chưa được APPROVED (tránh xóa giấy đã duyệt đang được dùng trong đơn).
+     *
+     * DELETE /api/v1/horse-documents/{id}
+     */
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteDocument(
+            @PathVariable Integer id,
+            Authentication authentication) {
+
+        com.example.racehorse_transport.entity.HorseDocument doc = horseDocumentService.findAll()
+                .stream()
+                .filter(d -> d.getId() != null && d.getId().equals(id))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giấy tờ với ID: " + id));
+
+        // Kiểm tra quyền sở hữu nếu là CUSTOMER
+        if (authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_CUSTOMER"))) {
+            if (doc.getHorseID() == null || doc.getHorseID().getCustomerID() == null
+                    || doc.getHorseID().getCustomerID().getUser() == null
+                    || !authentication.getName().equalsIgnoreCase(doc.getHorseID().getCustomerID().getUser().getUsername())) {
+                throw new AccessDeniedException("Bạn không có quyền xóa giấy tờ này.");
+            }
+        }
+
+        horseDocumentService.deleteById(id);
+        return ResponseEntity.ok(ApiResponse.success(null, "Đã xóa giấy tờ thành công."));
+    }
 }
