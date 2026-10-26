@@ -326,20 +326,34 @@ public class SpecialistServiceImpl implements SpecialistService {
             }
         }
 
+        // Đơn chỉ sẵn sàng đón ngựa khi tài xế và hộ tống của mọi xe đã nhận lệnh
+        List<com.example.racehorse_transport.dto.coordinator.VehicleTripDto> trips = payload.getTrips();
+        boolean crewAcked = trips != null && !trips.isEmpty() && trips.stream().allMatch(t -> {
+            Map<String, Object> acks = t.getAcks();
+            return acks != null && acks.get("driver") != null && acks.get("escort") != null;
+        });
+
         long now = System.currentTimeMillis();
         clearanceMap.put("doneAt", now);
         clearanceMap.put("doneBy", username != null ? username : "Chuyên viên");
-        clearanceMap.put("handedOverToCrewAt", now);
-        clearanceMap.put("crewAckedAt", now);
+        if (crewAcked) {
+            clearanceMap.put("handedOverToCrewAt", now);
+            clearanceMap.putIfAbsent("crewAckedAt", now);
+        }
         clearanceMap.put("quarantineStatus", "APPROVED");
         clearanceMap.put("quarantineApprovedAt", now);
         clearanceMap.put("quarantineApprovedBy", username != null ? username : "Chuyên viên");
         payload.setClearance(clearanceMap);
 
-        // Chuyển thẳng sang Sẵn sàng đón ngựa (Phương án 1: Tuyến tính hóa luồng)
-        booking.setStatus("ready_for_pickup");
-        appendHistory(payload, username != null ? username : "Chuyên viên",
-                "Hoàn tất toàn bộ hồ sơ kiểm dịch & hải quan. Đã bàn giao hồ sơ cho kíp xe, đơn hàng sẵn sàng đón ngựa!");
+        if (crewAcked) {
+            booking.setStatus("ready_for_pickup");
+            appendHistory(payload, username != null ? username : "Chuyên viên",
+                    "Hoàn tất toàn bộ hồ sơ kiểm dịch & hải quan. Kíp xe đã nhận lệnh, đơn hàng sẵn sàng đón ngựa!");
+        } else {
+            booking.setStatus("clearance_done");
+            appendHistory(payload, username != null ? username : "Chuyên viên",
+                    "Hoàn tất toàn bộ hồ sơ kiểm dịch & hải quan. Đang chờ kíp xe (Tài xế & Hộ tống) nhận lệnh.");
+        }
 
         savePayload(booking, payload);
         Booking saved = bookingRepository.save(booking);
