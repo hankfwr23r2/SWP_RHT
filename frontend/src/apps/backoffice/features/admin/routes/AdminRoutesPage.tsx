@@ -16,7 +16,7 @@ import { ListPage, type Column, type TabDef } from '../../../shared/ListPage'
 import s from './AdminRoutes.module.css'
 import { usePageData } from '@shared/routing/pageData'
 import type { adminRoutesLoader } from '../../../shared/loaders'
-import { addVietmapBaseLayer, VIETMAP_MAP_OPTIONS } from '@shared/ui/vietmapLeaflet'
+import { addBaseLayer, BASE_MAP_OPTIONS } from '@shared/ui/baseMap'
 import { setNetworkLocations } from '@shared/config/network'
 
 type Tab = 'all' | 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE'
@@ -50,10 +50,10 @@ function RouteMapPreview({
 
   useEffect(() => {
     if (!box.current) return
-    const instance = L.map(box.current, { ...VIETMAP_MAP_OPTIONS, zoomControl: false })
+    const instance = L.map(box.current, { ...BASE_MAP_OPTIONS, zoomControl: false })
     instance.setView([15.8, 105.5], 5)
     L.control.zoom({ position: 'topright' }).addTo(instance)
-    addVietmapBaseLayer(instance)
+    addBaseLayer(instance)
     layer.current = L.layerGroup().addTo(instance)
     const handleClick = (event: L.LeafletMouseEvent) => {
       if (activeId.current !== undefined) {
@@ -403,7 +403,7 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
 
       <div className={s.mapHeading}>
         <div>
-          <h4><i className="fa-solid fa-map-location-dot" /> Xem trước tuyến trên Vietmap</h4>
+          <h4><i className="fa-solid fa-map-location-dot" /> Xem trước tuyến trên bản đồ</h4>
           <p>
             {mapTargetId
               ? `Đang đặt vị trí cho ${locations.find(location => location.id === mapTargetId)?.locationName ?? 'điểm đã chọn'} — nhấn lên bản đồ.`

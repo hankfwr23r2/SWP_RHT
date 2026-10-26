@@ -114,5 +114,5 @@ docker compose up -d postgres pgadmin
 - Customer App: `http://localhost:5173/`
 - Backoffice / Admin App: `http://localhost:5173/backoffice`
 - Vite đã cấu hình proxy tự động chuyển tiếp `/api/v1` sang `http://localhost:8080/api/v1`.
-- Bản đồ Vietmap cần key: tạo `frontend/.env` (đã được gitignore) theo mẫu `frontend/.env.example`
-  và điền `VITE_VIETMAP_API_KEY`. Thiếu key thì bản đồ để trống, các chức năng khác vẫn chạy.
+- Bản đồ nền lấy từ OpenFreeMap (dữ liệu OpenStreetMap), không cần key. Nhãn và ranh giới của OSM
+  ở vùng Hoàng Sa, Trường Sa được ẩn và thay bằng nhãn riêng (`frontend/src/shared/lib/baseMapStyle.ts`).
