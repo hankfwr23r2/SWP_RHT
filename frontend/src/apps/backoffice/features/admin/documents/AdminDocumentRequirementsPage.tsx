@@ -216,7 +216,6 @@ export default function AdminDocumentRequirementsPage() {
         <header className={s.header}>
           <div>
             <h1>Giấy tờ bắt buộc</h1>
-            <p>Cấu hình hồ sơ ngựa và giấy tờ thông quan theo loại chuyến, quốc gia. Cấu hình chỉ áp dụng cho đơn mới.</p>
           </div>
           <button type="button" className="btn btn-primary" onClick={() => setCreating(true)}>
             <i className="fa-solid fa-plus" /> Thêm giấy tờ

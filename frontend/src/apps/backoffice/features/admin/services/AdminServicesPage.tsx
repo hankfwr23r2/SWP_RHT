@@ -327,7 +327,6 @@ export default function AdminServicesPage() {
     <>
       <ListPage<BackendServiceItem, Tab>
         title="Quản lý Dịch vụ & Biểu phí"
-        subtitle="Cấu hình mã, mô tả, đơn vị tính và đơn giá dịch vụ dùng cho các đơn mới."
         tabs={tabs}
         tab={tab}
         onTab={setTab}

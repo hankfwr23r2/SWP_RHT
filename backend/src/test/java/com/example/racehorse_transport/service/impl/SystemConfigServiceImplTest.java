@@ -56,6 +56,18 @@ class SystemConfigServiceImplTest {
     }
 
     @Test
+    void updateAcceptsDecimalForMaxContinuousHours() {
+        SystemConfig current = config("MAX_CONTINUOUS_HOURS", "4");
+        when(repository.findById("MAX_CONTINUOUS_HOURS")).thenReturn(java.util.Optional.of(current));
+        when(repository.save(any(SystemConfig.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        com.example.racehorse_transport.dto.admin.SystemConfigResponse response = service.updateConfig("MAX_CONTINUOUS_HOURS",
+                UpdateSystemConfigRequest.builder().configValue("3.5").build(), "admin");
+
+        assertThat(response.getConfigValue()).isEqualTo("3.5");
+    }
+
+    @Test
     void updateRejectsUnknownConfigurationKeys() {
         assertThatThrownBy(() -> service.updateConfig("UNSUPPORTED_RULE",
                 UpdateSystemConfigRequest.builder().configValue("1").build(), "admin"))
