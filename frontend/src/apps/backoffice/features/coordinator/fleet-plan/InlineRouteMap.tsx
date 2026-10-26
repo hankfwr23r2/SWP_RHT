@@ -2,9 +2,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useEffect, useMemo, useRef } from 'react'
 import { TRANSIT_STATIONS, type GeoPoint } from '@shared/config/network'
-import { AVG_SPEED_KMH } from '@shared/config/public-pricing'
 import { routeOutline } from '@shared/lib/booking'
-import { useRoadRoute } from '@shared/services/useRoadRoute'
 import type { RestStop } from '@shared/types/booking'
 import { addBaseLayer, BASE_MAP_OPTIONS } from '@shared/ui/baseMap'
 import './RouteMapPicker.css'
@@ -36,38 +34,26 @@ interface InlineRouteMapProps {
   origin: Point
   dest: Point
   gate?: Point
-  departAt?: number
   rests: RestStop[]
   activeRoad?: RoadRoute | null
+  loading?: boolean
   onOpenPicker?: () => void
 }
 
-export function InlineRouteMap({ origin, dest, gate, departAt, rests, activeRoad, onOpenPicker }: InlineRouteMapProps) {
+export function InlineRouteMap({ origin, dest, gate, rests, activeRoad: road, loading, onOpenPicker }: InlineRouteMapProps) {
   const box = useRef<HTMLDivElement>(null)
   const map = useRef<L.Map | null>(null)
   const layer = useRef<L.LayerGroup | null>(null)
 
-  const allStations = useMemo(() => {
-    const list = [...TRANSIT_STATIONS]
-    rests.forEach(r => {
-      if (r.lat != null && r.lng != null && !list.some(s => s.name === r.name)) {
-        list.push({ name: r.name, lat: r.lat, lng: r.lng, area: 'Hành lang an toàn', country: 'VN' })
-      }
-    })
-    return list
-  }, [rests])
-
-  const chosen = useMemo(
-    () => allStations.filter(s => rests.some(r => r.name === s.name)),
-    [allStations, rests]
+  // Điểm nghỉ theo lịch trình backend (trạm và nghỉ dọc đường), đánh số theo thứ tự rests
+  const restPoints = useMemo(
+    () => rests.flatMap((r, i) => (r.lat != null && r.lng != null ? [{ ...r, lat: r.lat, lng: r.lng, n: i + 1 }] : [])),
+    [rests]
   )
   const outline = useMemo(
-    () => routeOutline(origin, gate, dest, chosen),
-    [origin, gate, dest, chosen]
+    () => routeOutline(origin, gate, dest, restPoints),
+    [origin, gate, dest, restPoints]
   )
-  const { route: fallbackRoad, loading: roadLoading } = useRoadRoute(outline.path, departAt)
-  const road = activeRoad ?? fallbackRoad
-  const order = (name: string) => outline.stations.findIndex(s => s.name === name) + 1
 
   useEffect(() => {
     if (!box.current) return
@@ -98,7 +84,7 @@ export function InlineRouteMap({ origin, dest, gate, departAt, rests, activeRoad
     g.clearLayers()
 
     const line = road?.path ?? outline.path.map(p => [p.lat, p.lng] as [number, number])
-    const chosenAny = outline.stations.length > 0
+    const chosenAny = restPoints.length > 0
 
     // Đường viền tỏa sáng và đường chính
     L.polyline(line, {
@@ -117,24 +103,20 @@ export function InlineRouteMap({ origin, dest, gate, departAt, rests, activeRoad
       interactive: false,
     }).addTo(g)
 
-    // Các trạm dừng trên hệ thống
-    allStations.forEach(s => {
-      const n = order(s.name)
-      const rest = rests.find(r => r.name === s.name)
-      const isSelected = n > 0
+    // Các trạm dừng trên hệ thống chưa nằm trong lịch trình
+    TRANSIT_STATIONS.filter(s => !rests.some(r => r.name === s.name)).forEach(s => {
+      const marker = L.marker([s.lat, s.lng], { icon: stationIcon(0), zIndexOffset: 50, title: s.name })
+      marker.bindTooltip(`${s.name} (Bấm để chọn trạm)`, { direction: 'top', offset: [0, -12] })
+      if (onOpenPicker) {
+        marker.on('click', onOpenPicker)
+      }
+      marker.addTo(g)
+    })
 
-      // Chỉ hiển thị các trạm đã chọn hoặc các trạm lân cận cung đường để tránh rối mắt
-      const marker = L.marker([s.lat, s.lng], {
-        icon: stationIcon(n),
-        zIndexOffset: isSelected ? 600 : 50,
-        title: s.name,
-      })
-
-      marker.bindTooltip(
-        `${s.name}${rest ? ` · Nghỉ ${rest.minutes} phút` : ' (Bấm để chọn trạm)'}`,
-        { direction: 'top', offset: [0, -12] }
-      )
-
+    // Điểm nghỉ của lịch trình
+    restPoints.forEach(r => {
+      const marker = L.marker([r.lat, r.lng], { icon: stationIcon(r.n), zIndexOffset: 600, title: r.name })
+      marker.bindTooltip(`${r.name} · Nghỉ ${r.minutes} phút`, { direction: 'top', offset: [0, -12] })
       if (onOpenPicker) {
         marker.on('click', onOpenPicker)
       }
@@ -155,7 +137,7 @@ export function InlineRouteMap({ origin, dest, gate, departAt, rests, activeRoad
         .bindTooltip(`Cửa khẩu: ${gate.name}`, { direction: 'top', offset: [0, -14] })
         .addTo(g)
     }
-  }, [outline, rests, road, origin, dest, gate, onOpenPicker])
+  }, [outline, restPoints, rests, road, origin, dest, gate, onOpenPicker])
 
   return (
     <div style={{ position: 'relative', isolation: 'isolate', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--line)' }}>
@@ -184,10 +166,10 @@ export function InlineRouteMap({ origin, dest, gate, departAt, rests, activeRoad
       >
         <span>
           <i className="fa-solid fa-route" style={{ color: 'var(--orange)', marginRight: 5 }} />
-          {roadLoading ? (
-            'Đang tải tuyến đường OSRM…'
+          {loading ? (
+            'Đang tính lộ trình xe tải…'
           ) : road ? (
-            <b>{Math.round(road.km)} km · {(road.km / AVG_SPEED_KMH).toFixed(1)}h lái xe (ước tính {AVG_SPEED_KMH} km/h)</b>
+            <b>{Math.round(road.km)} km · {road.hours.toFixed(1)}h lái xe tải</b>
           ) : (
             'Đang tính toán…'
           )}

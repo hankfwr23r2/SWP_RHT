@@ -4,16 +4,13 @@ import { Fragment, lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { MAX_CONTINUOUS_HOURS, VEHICLE_CLASS } from '@shared/config/booking-rules'
-import { findGate, findTransitStation } from '@shared/config/network'
+import { countryCodeOf, findGate, findTransitStation, type GeoPoint, type TransitStation } from '@shared/config/network'
 import { AVG_SPEED_KMH } from '@shared/config/public-pricing'
 import {
   borderOutsideWindow,
-  buildRoutePlan,
   clashOf,
-  estimateBorderEta,
   findLocation,
   gatesFor,
-  layoutLegs,
   routeKm,
   suggestGate,
   suggestGateWithSavings,
@@ -25,14 +22,14 @@ import {
   autoPackFleet,
 } from '@shared/lib/booking'
 import { atHour } from '@shared/lib/dates'
-import { formatClock, formatDate, formatDateTime } from '@shared/lib/format'
+import { formatClock, formatDate, formatDateTime, formatVND } from '@shared/lib/format'
 import { matchFixedRoute, MAX_FIXED_ROUTE_ACCESS_KM, MAX_FIXED_ROUTE_DETOUR_RATIO, type FixedRouteMatch } from '@shared/lib/fixedRouteMatch'
 import { bookingsApi } from '@shared/services/bookings'
 import { roadRoute } from '@shared/services/routing'
 import { type Vehicle } from '@shared/services/fleet'
 import { useAutoRefresh, useLoad } from '@shared/services/useLoad'
 import { isCoordinatorTask } from '../../../shared/staffWork'
-import type { Booking, RestStop, VehicleTrip } from '@shared/types/booking'
+import type { Booking, RestStop, RoutePlan, VehicleTrip } from '@shared/types/booking'
 import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
 import { useToast } from '@shared/ui/toast'
 import { History, ReviewChips } from '../../../shared/BookingParts'
@@ -42,9 +39,8 @@ import { FormSelect } from '@shared/ui/FormSelect'
 import { ResourcePicker } from '../../../shared/ResourcePicker'
 const RouteMapPicker = lazy(() => import('./RouteMapPicker').then(m => ({ default: m.RouteMapPicker })))
 import { InlineRouteMap } from './InlineRouteMap'
-import { roadNote } from '@shared/services/routing'
-import { useRoadRouteWithAlternatives } from '@shared/services/useRoadRoute'
-import { routesApi, type BackendRouteResponse } from '@shared/api/routes'
+import { routesApi, type BackendRouteResponse, type RoutePreviewRequest, type RoutePreviewResponse } from '@shared/api/routes'
+import { roadFromPreview, routePlanFromPreview } from '@shared/lib/routePreview'
 import { usePageData } from '@shared/routing/pageData'
 import type { fleetPlanLoader } from '../../../shared/loaders'
 
@@ -56,6 +52,7 @@ const toLocal = (t: number) => {
 const fromLocal = (v: string) => (v ? new Date(v).getTime() : NaN)
 
 type Draft = Pick<VehicleTrip, 'vehicleId' | 'horseIds'>
+const NO_ROUTE: Pick<RoutePlan, 'legs' | 'rests' | 'borderEta'> = { legs: [], rests: [], borderEta: undefined }
 type CorridorSuggestion = {
   corridor: BackendRouteResponse
   match: FixedRouteMatch
@@ -188,19 +185,16 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
     return atHour(new Date(b.departAt), 5)
   }, [international, b.departAt, estHours])
 
-  const initial = useMemo(
-    () => b.route ?? buildRoutePlan({ ...b, gate: gate || undefined }, defaultEtdTime),
-    [b, gate, defaultEtdTime]
+  const [etd] = useState(toLocal(b.route?.legs[0]?.departAt ?? defaultEtdTime))
+  // Trạm điều phối chọn tay; nghỉ dọc đường và trạm còn lại do backend tự chọn trên đường xe tải
+  const [manualStops, setManualStops] = useState<RestStop[]>(
+    () => (b.route?.rests ?? []).filter(r => findTransitStation(r.name)?.locationId != null)
   )
-  const [etd] = useState(toLocal(initial.legs[0]?.departAt ?? defaultEtdTime))
-  const [rests, setRests] = useState<RestStop[]>(initial.rests)
   const [corridors, setCorridors] = useState<BackendRouteResponse[]>([])
   const [selectedCorridorId, setSelectedCorridorId] = useState<number | ''>('')
   const [corridorSuggestions, setCorridorSuggestions] = useState<CorridorSuggestion[]>([])
   const [suggestingCorridors, setSuggestingCorridors] = useState(false)
   const [applyingCorridor, setApplyingCorridor] = useState(false)
-  const [borderText, setBorderText] = useState(initial.borderEta ? toLocal(initial.borderEta) : '')
-  const [borderTouched, setBorderTouched] = useState(!!b.route?.borderEta)
   const etdT = fromLocal(etd)
 
   useLoad(async () => {
@@ -211,15 +205,6 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
       // Bỏ qua lỗi nạp corridors
     }
   }, [])
-
-  const stationsOnRoute = rests.map(r => {
-    const st = findTransitStation(r.name)
-    if (st) return st
-    if (r.lat != null && r.lng != null) {
-      return { name: r.name, lat: r.lat, lng: r.lng, area: 'Trạm cố định' }
-    }
-    return undefined
-  }).filter((x): x is NonNullable<typeof x> => !!x)
 
   useEffect(() => {
     if (!originPoint || !destPoint || corridors.length === 0) {
@@ -285,25 +270,8 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
 
   const selectedSuggestion = corridorSuggestions.find(item => item.corridor.id === selectedCorridorId)
   useEffect(() => {
-    if (selectedSuggestion) setRests(selectedSuggestion.match.restStops)
+    if (selectedSuggestion) setManualStops(selectedSuggestion.match.restStops)
   }, [selectedSuggestion])
-
-  const roadPath = selectedSuggestion?.match.points
-    ?? (origin && dest ? routeOutline(origin, gateGeo, dest, stationsOnRoute).path : undefined)
-  const {
-    routes: roadAlternativesList,
-    activeRoute: road,
-    selectedIndex: routeIdx,
-    setSelectedIndex: setRouteIdx,
-    loading: roadLoading,
-  } = useRoadRouteWithAlternatives(roadPath, Number.isNaN(etdT) ? undefined : etdT)
-  // OSRM fournit une durée adaptée à un véhicule léger. Pour planifier un
-  // transport de chevaux, convertir le km routier avec la vitesse métier.
-  const driveHours = road ? road.km / AVG_SPEED_KMH : estHours
-  const plannedLegMetrics = useMemo(
-    () => road?.legs?.map(leg => ({ km: leg.km, hours: leg.km / AVG_SPEED_KMH })),
-    [road]
-  )
 
   const selectedCorridor = useMemo(() => {
     return corridors.find(c => c.id === selectedCorridorId)
@@ -317,7 +285,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
         toast('Tuyến này chưa khớp với vị trí đón/trả của đơn.', 'info')
         return
       }
-      setRests(suggestion.match.restStops)
+      setManualStops(suggestion.match.restStops)
       toast(`Đã áp dụng ${suggestion.match.restStops.length} trạm nghỉ trên đoạn tuyến phù hợp.`)
     } catch {
       toast('Không thể tải trạm dừng của hành lang này', 'error')
@@ -326,40 +294,78 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
     }
   }
 
-  const resuggest = (g?: string) => {
-    const chosenGate = g ?? gate
-    const plan = buildRoutePlan(
-      { ...b, gate: chosenGate || undefined },
-      Number.isNaN(etdT) ? defaultEtdTime : etdT
-    )
-    setRests(plan.rests)
-    setBorderTouched(false)
-    toast('Đã tự động tính toán các trạm dừng nghỉ theo chuẩn an sinh (≤ 4 giờ / trạm).')
-  }
+  // Trạm chọn tay chỉ gửi được khi có mã địa điểm trong danh mục
+  const usableStops = manualStops
+    .map(r => findTransitStation(r.name))
+    .filter((st): st is TransitStation & { locationId: number } => st?.locationId != null)
+  const unusableStops = manualStops.filter(r => findTransitStation(r.name)?.locationId == null)
 
-  const pickGate = (g: string) => {
-    setGate(g)
-    resuggest(g)
-  }
+  // Xe có nhiều ngăn nhất trong các xe đã chọn
+  const previewVehicle = trips
+    .map(t => vehicles.find(v => v.id === t.vehicleId))
+    .reduce<Vehicle | undefined>((best, v) => (v && (!best || v.capacity > best.capacity) ? v : best), undefined)
 
-  const legs = useMemo(
-    () =>
-      Number.isNaN(etdT)
-        ? initial.legs
-        : layoutLegs(b.origin.name, b.dest.name, etdT, rests, driveHours, gate, true, plannedLegMetrics),
-    [etdT, rests, b, driveHours, gate, initial.legs, plannedLegMetrics]
+  let previewRequest: RoutePreviewRequest | undefined
+  if (origin && dest && previewVehicle && !Number.isNaN(etdT) && (!international || gateGeo?.locationId != null)) {
+    const gateStop = international && gateGeo?.locationId != null
+      ? { lat: gateGeo.lat, lng: gateGeo.lng, locationId: gateGeo.locationId }
+      : undefined
+    // Xếp trạm và cửa khẩu theo thứ tự đi rồi đổi sang mã địa điểm
+    const stops = routeOutline(origin, gateStop, dest, usableStops).path.slice(1, -1) as (GeoPoint & { locationId: number })[]
+    previewRequest = {
+      pickup: { name: b.origin.name, lat: origin.lat, lng: origin.lng, country: countryCodeOf(b.origin.country) },
+      dropoff: { name: b.dest.name, lat: dest.lat, lng: dest.lng, country: countryCodeOf(b.dest.country) },
+      stopLocationIds: stops.map(p => p.locationId),
+      vehicleId: previewVehicle.id,
+      departAt: etdT,
+    }
+  }
+  const [previewAttempt, setPreviewAttempt] = useState(0)
+  // Mỗi lần thử lại cũng là một yêu cầu mới
+  const previewKey = previewRequest ? `${previewAttempt}|${JSON.stringify(previewRequest)}` : ''
+  const [previewResult, setPreviewResult] = useState<{ key: string; preview?: RoutePreviewResponse; error?: string }>()
+  const current = previewKey && previewResult?.key === previewKey ? previewResult : undefined
+  const preview = current?.preview
+  const previewError = current?.error
+  const previewLoading = !!previewKey && !current
+
+  // Gọi backend tính tuyến xe tải sau 500 ms không đổi; request cũ bị hủy
+  useEffect(() => {
+    if (!previewKey) return
+    const controller = new AbortController()
+    const timer = setTimeout(() => {
+      routesApi.routePreview(JSON.parse(previewKey.slice(previewKey.indexOf('|') + 1)) as RoutePreviewRequest, controller.signal)
+        .then(result => {
+          if (!controller.signal.aborted) setPreviewResult({ key: previewKey, preview: result })
+        })
+        .catch(e => {
+          if (!controller.signal.aborted) setPreviewResult({ key: previewKey, error: e instanceof Error ? e.message : String(e) })
+        })
+    }, 500)
+    return () => {
+      clearTimeout(timer)
+      controller.abort()
+    }
+  }, [previewKey])
+
+  const plan = useMemo(
+    () => (preview ? routePlanFromPreview(preview, b.origin.name, b.dest.name) : undefined),
+    [preview, b.origin.name, b.dest.name]
   )
-  const borderEta = international
-    ? borderTouched
-      ? fromLocal(borderText)
-      : estimateBorderEta(legs, rests, gate)
-    : undefined
-  const route = {
-    legs,
-    rests: rests.map((r, i) => ({ ...r, afterLeg: i + 1 })),
-    borderEta: borderEta && !Number.isNaN(borderEta) ? borderEta : undefined,
-  }
-  const { errors: routeErrors, warnings } = validateRoutePlan(route, international, gate)
+  const route = plan ?? NO_ROUTE
+  const previewRoad = useMemo(() => (preview ? roadFromPreview(preview) : null), [preview])
+  const { legs } = route
+  const borderEta = route.borderEta
+  const systemStops = route.rests
+    .map((r, i) => ({ r, n: i + 1 }))
+    .filter(({ r }) => !manualStops.some(m => m.name === r.name))
+
+  const { errors: routeErrors, warnings: routeWarnings } = plan
+    ? validateRoutePlan(route, international, gate)
+    : { errors: [] as string[], warnings: [] as string[] }
+  const warnings = [...(preview?.warnings ?? []), ...routeWarnings]
+  if (previewError) routeErrors.unshift(previewError)
+  else if (!preview) routeErrors.unshift(previewVehicle ? 'Đang tính lộ trình…' : 'Chọn xe để tính lộ trình.')
   if (Number.isNaN(etdT)) routeErrors.unshift('Nhập giờ khởi hành hợp lệ.')
   if (international && !gates.some(g => g.name === gate)) routeErrors.unshift('Chọn cửa khẩu cho tuyến này.')
   const errors = [...tripErrors, ...routeErrors]
@@ -593,7 +599,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
               <label htmlFor="gate" className="required">
                 Cửa khẩu xuất/nhập cảnh
               </label>
-              <FormSelect id="gate" className="form-control" value={gate} onChange={e => pickGate(e.target.value)}>
+              <FormSelect id="gate" className="form-control" value={gate} onChange={e => setGate(e.target.value)}>
                 {gates.map(g => (
                   <option key={g.name} value={g.name}>
                     {g.name}
@@ -606,39 +612,22 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
             </div>
 
             <div className="form-group" style={{ margin: 0 }}>
-              <label htmlFor="border">Giờ dự kiến tới cửa khẩu</label>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <input
-                  id="border"
-                  type="datetime-local"
-                  className="form-control"
-                  value={borderTouched ? borderText : borderEta ? toLocal(borderEta) : ''}
-                  onChange={e => {
-                    setBorderTouched(true)
-                    setBorderText(e.target.value)
-                  }}
-                />
-                {borderTouched && (
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm"
-                    onClick={() => setBorderTouched(false)}
-                    title="Tính lại tự động theo lộ trình"
-                  >
-                    <i className="fa-solid fa-rotate" /> Tự động
-                  </button>
-                )}
+              <label>Giờ dự kiến tới cửa khẩu</label>
+              <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--navy)', padding: '6px 0' }}>
+                {borderEta ? formatDateTime(borderEta) : previewLoading ? 'Đang tính lộ trình xe tải…' : '—'}
               </div>
-              <div
-                className="form-hint"
-                style={borderEta && borderOutsideWindow(borderEta, gate) ? { color: 'var(--amber)' } : undefined}
-              >
-                {borderEta && borderOutsideWindow(borderEta, gate) ? (
-                  <span>⚠️ {warnings.find(warning => warning.includes('khung')) ?? 'Giờ tới cửa khẩu ngoài giờ hoạt động.'} Hãy bấm giờ xuất phát tối ưu bên dưới!</span>
-                ) : (
-                  <span>✓ ETA nằm trong giờ hoạt động của cửa khẩu đã chọn.</span>
-                )}
-              </div>
+              {borderEta && (
+                <div
+                  className="form-hint"
+                  style={borderOutsideWindow(borderEta, gate) ? { color: 'var(--amber)' } : undefined}
+                >
+                  {borderOutsideWindow(borderEta, gate) ? (
+                    <span>⚠️ {warnings.find(warning => warning.includes('khung')) ?? 'Giờ tới cửa khẩu ngoài giờ hoạt động.'} Hãy bấm giờ xuất phát tối ưu bên dưới!</span>
+                  ) : (
+                    <span>✓ ETA nằm trong giờ hoạt động của cửa khẩu đã chọn.</span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -653,9 +642,6 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
           <span style={{ display: 'flex', gap: 8 }}>
             <button className="btn btn-primary btn-sm" onClick={() => setMapOpen(true)}>
               <i className="fa-solid fa-up-right-and-down-left-from-center" /> Chọn trạm trên bản đồ
-            </button>
-            <button className="btn btn-outline btn-sm" onClick={() => resuggest(gate)}>
-              <i className="fa-solid fa-wand-magic-sparkles" /> Gợi ý chuẩn ≤ 4h
             </button>
           </span>
         </div>
@@ -728,37 +714,6 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
           </div>
         )}
 
-        {/* THANH CHỌN TUYẾN ĐƯỜNG THAY THẾ (OSRM ALTERNATIVE ROUTES) */}
-        {roadAlternativesList.length > 1 && (
-          <div style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--muted)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-              <i className="fa-solid fa-signs-post" style={{ color: 'var(--orange)' }} /> Chọn hướng tuyến:
-            </span>
-            <div style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>
-              {roadAlternativesList.map((alt, idx) => {
-                const isActive = idx === routeIdx
-                return (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => setRouteIdx(idx)}
-                    className={`btn btn-sm ${isActive ? 'btn-primary' : 'btn-outline'}`}
-                    style={{
-                      fontSize: '0.8rem',
-                      padding: '4px 10px',
-                      borderRadius: 20,
-                      fontWeight: isActive ? 700 : 500,
-                    }}
-                  >
-                    {isActive && <i className="fa-solid fa-check" style={{ marginRight: 4 }} />}
-                    {alt.name || `Tuyến ${idx + 1}`} ({alt.km} km · {(alt.km / AVG_SPEED_KMH).toFixed(1)}h)
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
         {/* BẢN ĐỒ INLINE TRỰC TIẾP TRÊN TRANG */}
 
         {origin && dest && (
@@ -767,53 +722,80 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
               origin={{ ...origin, name: b.origin.name }}
               dest={{ ...dest, name: b.dest.name }}
               gate={gateGeo ? { ...gateGeo, name: gateGeo.name } : undefined}
-              departAt={Number.isNaN(etdT) ? undefined : etdT}
-              rests={rests}
-              activeRoad={road}
+              rests={route.rests}
+              activeRoad={previewRoad}
+              loading={previewLoading}
               onOpenPicker={() => setMapOpen(true)}
             />
           </div>
         )}
 
-        {/* DANH SÁCH CÁC TRẠM NGHỈ */}
-        {rests.length ? (
+        {/* TRẠM ĐIỀU PHỐI CHỌN TAY */}
+        <h4 style={{ margin: '0 0 8px', fontSize: '0.88rem', color: 'var(--navy)' }}>Trạm điều phối chọn tay</h4>
+        {manualStops.length ? (
           <ol className={s.stopList}>
-            {rests.map((r, i) => (
-              <li key={r.name + i}>
-                <button
-                  type="button"
-                  className={s.stopItem}
-                  onClick={() => setMapOpen(true)}
-                  title="Mở bản đồ để đổi trạm hoặc thời gian nghỉ"
-                >
-                  <span className={s.stopNum}>{i + 1}</span>
-                  <span className={s.stopName}>
-                    <b>{r.name}</b>
-                    <small>{findTransitStation(r.name)?.area ?? 'Trạm ngoài danh mục'}</small>
-                  </span>
-                  <span className={s.stopMin}>
-                    <i className="fa-regular fa-clock" /> Nghỉ {r.minutes} phút
-                  </span>
-                </button>
-                <button
-                  className={s.iconBtn}
-                  aria-label={`Bỏ trạm ${r.name}`}
-                  onClick={() =>
-                    setRests(x => x.filter((_, j) => j !== i).map((y, j) => ({ ...y, afterLeg: j + 1 })))
-                  }
-                >
-                  <i className="fa-solid fa-xmark" />
-                </button>
-              </li>
-            ))}
+            {manualStops.map((r, i) => {
+              const n = route.rests.findIndex(x => x.name === r.name) + 1
+              return (
+                <li key={r.name + i}>
+                  <button
+                    type="button"
+                    className={s.stopItem}
+                    onClick={() => setMapOpen(true)}
+                    title="Mở bản đồ để đổi trạm hoặc thời gian nghỉ"
+                  >
+                    <span className={s.stopNum}>{n || '–'}</span>
+                    <span className={s.stopName}>
+                      <b>{r.name}</b>
+                      <small>{findTransitStation(r.name)?.area ?? 'Trạm ngoài danh mục'}</small>
+                    </span>
+                    <span className={s.stopMin}>
+                      <i className="fa-regular fa-clock" /> Nghỉ {route.rests[n - 1]?.minutes ?? r.minutes} phút
+                    </span>
+                  </button>
+                  <button
+                    className={s.iconBtn}
+                    aria-label={`Bỏ trạm ${r.name}`}
+                    onClick={() => setManualStops(x => x.filter((_, j) => j !== i))}
+                  >
+                    <i className="fa-solid fa-xmark" />
+                  </button>
+                </li>
+              )
+            })}
           </ol>
         ) : (
           <div className={s.stopEmpty}>
-            <i className="fa-solid fa-mug-hot" /> Chưa có trạm dừng nghỉ nào.{' '}
-            <button type="button" className="btn btn-outline btn-sm" onClick={() => resuggest(gate)} style={{ marginLeft: 8 }}>
-              Tự động phân bổ trạm chuẩn ≤ 4h
-            </button>
+            <i className="fa-solid fa-mug-hot" /> Chưa có trạm dừng nghỉ nào.
           </div>
+        )}
+        {unusableStops.map(r => (
+          <div key={r.name} className="form-hint" style={{ color: 'var(--amber)', marginTop: 6 }}>
+            Trạm {r.name} chưa có trong danh mục địa điểm, không dùng được.
+          </div>
+        ))}
+
+        {/* TRẠM HỆ THỐNG TỰ CHỌN (CHỈ ĐỌC) */}
+        {systemStops.length > 0 && (
+          <>
+            <h4 style={{ margin: '16px 0 8px', fontSize: '0.88rem', color: 'var(--navy)' }}>Trạm hệ thống tự chọn trên đường</h4>
+            <ol className={s.stopList}>
+              {systemStops.map(({ r, n }) => (
+                <li key={n}>
+                  <div className={s.stopItem} style={{ cursor: 'default' }}>
+                    <span className={s.stopNum}>{n}</span>
+                    <span className={s.stopName}>
+                      <b>{r.name}</b>
+                      <small>{findTransitStation(r.name)?.area ?? 'Trạm ngoài danh mục'}</small>
+                    </span>
+                    <span className={s.stopMin}>
+                      <i className="fa-regular fa-clock" /> Nghỉ {r.minutes} phút
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </>
         )}
       </div>
 
@@ -824,9 +806,33 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
             <i className="fa-solid fa-clock" /> Lịch trình từng chặng
           </h3>
           <span className="sub-text">
-            Tổng lái ≈ {driveHours.toFixed(1)}h (ước tính {AVG_SPEED_KMH} km/h · {roadNote(road, roadLoading)}) · {legs.length} chặng
+            {preview
+              ? `Tổng lái ≈ ${preview.driveHours}h · ${preview.km} km · ${legs.length} chặng · theo đường xe tải (Valhalla)`
+              : previewLoading && 'Đang tính lộ trình xe tải…'}
           </span>
         </div>
+
+        {previewError && (
+          <div className="alert alert-danger" style={{ marginBottom: 12 }}>
+            <i className="fa-solid fa-circle-exclamation" />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flex: 1, flexWrap: 'wrap' }}>
+              <span>{previewError}</span>
+              <button type="button" className="btn btn-outline btn-sm" onClick={() => setPreviewAttempt(n => n + 1)}>
+                <i className="fa-solid fa-rotate" /> Thử lại
+              </button>
+            </div>
+          </div>
+        )}
+        {preview && preview.warnings.length > 0 && (
+          <div className="alert alert-warning" style={{ marginBottom: 12 }}>
+            <i className="fa-solid fa-triangle-exclamation" />
+            <ul style={{ margin: 0, paddingLeft: 18 }}>
+              {preview.warnings.map(w => (
+                <li key={w}>{w}</li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* THÔNG TIN THỜI GIAN HÀNH TRÌNH TỰ ĐỊNH */}
         <div
@@ -876,12 +882,27 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
               Quy chuẩn an sinh
             </div>
             <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--navy)' }}>
-              {rests.length} trạm dừng nghỉ
+              {route.rests.length} trạm dừng nghỉ
             </div>
             <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: 2 }}>
               Nghỉ 30–45 phút / trạm (tối đa 4.0h lái liên tục)
             </div>
           </div>
+
+          {preview && (
+            <div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+                <i className="fa-solid fa-users" style={{ color: 'var(--orange)', marginRight: 6 }} />
+                Số ngày kíp xe
+              </div>
+              <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--navy)' }}>
+                {preview.crewDays} ngày
+              </div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: 2 }}>
+                Phí cầu đường: <b>{preview.toll.amountVnd != null ? formatVND(preview.toll.amountVnd) : 'Chưa lấy được'}</b>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* BẢNG CÁC CHẶNG LÁI & ĐIỂM DỪNG NGHỈ */}
@@ -899,9 +920,9 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
             </thead>
             <tbody>
               {legs.map((l, idx) => {
-                const h = (l.arriveAt - l.departAt) / 3_600_000
+                const h = l.hours ?? (l.arriveAt - l.departAt) / 3_600_000
                 const isOverWelfare = h > MAX_CONTINUOUS_HOURS
-                const restStop = rests[idx]
+                const restStop = route.rests[idx]
                 const departDay = new Date(l.departAt).toDateString()
                 const arriveDay = new Date(l.arriveAt).toDateString()
                 const isNextDay = departDay !== arriveDay
@@ -956,7 +977,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
                       <tr style={{ background: '#f8fafc', fontSize: '0.82rem' }}>
                         <td colSpan={2} style={{ padding: '7px 14px', color: '#047857' }}>
                           <i className="fa-solid fa-mug-hot" style={{ marginRight: 6 }} />
-                          <b>Dừng nghỉ: {restStop.name}</b>
+                          <b>{restStop.minutes >= 300 ? 'Nghỉ đêm' : 'Dừng nghỉ'}: {restStop.name}</b>
                         </td>
                         <td colSpan={4} style={{ padding: '7px 14px', color: 'var(--muted)' }}>
                           Nghỉ <b>{restStop.minutes} phút</b> ({formatClock(l.arriveAt)} → {formatClock(legs[idx + 1].departAt)}) · Kiểm tra an sinh & cho uống nước
@@ -1067,11 +1088,8 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
             dest={{ ...dest, name: b.dest.name }}
             gate={gateGeo ? { ...gateGeo, name: gateGeo.name } : undefined}
             departAt={Number.isNaN(etdT) ? undefined : etdT}
-            value={rests}
-            onApply={picked => {
-              setRests(picked)
-              setBorderTouched(false)
-            }}
+            value={manualStops}
+            onApply={setManualStops}
             onClose={() => setMapOpen(false)}
           />
         </Suspense>
