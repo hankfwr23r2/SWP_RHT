@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.booking.BookingHorseDto;
+import com.example.racehorse_transport.dto.booking.DocumentRequirementSnapshot;
 import com.example.racehorse_transport.dto.booking.BookingResponse;
 import com.example.racehorse_transport.dto.booking.BookingServiceSelectionDto;
 import com.example.racehorse_transport.dto.booking.CreateBookingRequest;
@@ -40,6 +41,7 @@ import com.example.racehorse_transport.util.BookingDetailsJson;
 import com.example.racehorse_transport.util.ClearanceDocumentPolicy;
 import com.example.racehorse_transport.util.QuoteTotals;
 import com.example.racehorse_transport.util.CustomerBookingRules;
+import com.example.racehorse_transport.util.DocumentRequirementPolicy;
 
 import java.math.BigDecimal;
 import java.time.temporal.ChronoUnit;
@@ -81,6 +83,8 @@ public class BookingServiceImpl implements BookingService {
     private final TripDocumentRepository tripDocumentRepository;
     private final RouteRepository routeRepository;
     private final ServiceRepository serviceRepository;
+    private final HorseDocumentRepository horseDocumentRepository;
+    private final DocumentRequirementRepository documentRequirementRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // =========================================================================
@@ -130,6 +134,17 @@ public class BookingServiceImpl implements BookingService {
 
         // 4. Resolve selected services against active catalog data before persisting a price snapshot.
         snapshotSelectedServices(request.getHorses());
+        boolean internationalBooking = "INTERNATIONAL".equalsIgnoreCase(request.getType());
+        List<DocumentRequirement> bookingDocumentRequirements = documentRequirementRepository
+                .findByStatusOrderByDocumentGroupAscDocumentNameAsc("ACTIVE")
+                .stream()
+                .filter(DocumentRequirement::isRequired)
+                .filter(requirement -> DocumentRequirementPolicy.applies(
+                        requirement, request.getType(), request.getDestCountry()))
+                .filter(requirement -> internationalBooking
+                        || !"CLEARANCE".equals(requirement.getDocumentGroup())
+                        || !ClearanceDocumentPolicy.isInternationalOnlyType(requirement.getDocumentType()))
+                .toList();
 
         // 5. Serialize cấu hình chi tiết ngựa và khởi tạo payload vào detailsJson
         String detailsJson = null;
@@ -138,6 +153,14 @@ public class BookingServiceImpl implements BookingService {
             initialPayload.setOriginCountry(request.getOriginCountry());
             initialPayload.setDestCountry(request.getDestCountry());
             initialPayload.setHorses(request.getHorses() != null ? request.getHorses() : new ArrayList<>());
+            initialPayload.setDocumentRequirements(bookingDocumentRequirements.stream()
+                    .map(requirement -> DocumentRequirementSnapshot.builder()
+                            .documentGroup(requirement.getDocumentGroup())
+                            .documentType(requirement.getDocumentType())
+                            .documentName(requirement.getDocumentName())
+                            .description(requirement.getDescription())
+                            .build())
+                    .toList());
             Map<String, Object> initialMedical = new HashMap<>();
             initialMedical.put("status", "pending");
             initialPayload.setMedical(initialMedical);
@@ -160,6 +183,9 @@ public class BookingServiceImpl implements BookingService {
         if (request.getHorses() != null && !request.getHorses().isEmpty()) {
             Set<String> finishedStatuses = Set.of("completed", "cancelled", "rejected", "quote_expired");
             Map<Integer, String> horseToActiveBookingMap = new HashMap<>();
+            List<DocumentRequirement> requiredHorseDocuments = bookingDocumentRequirements.stream()
+                    .filter(requirement -> "HORSE".equals(requirement.getDocumentGroup()))
+                    .toList();
 
             if (customerBookings != null) {
                 for (Booking cb : customerBookings) {
@@ -200,6 +226,19 @@ public class BookingServiceImpl implements BookingService {
                         .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy hồ sơ ngựa " + hDto.getHorseId()));
                 if (horse.getCustomerID() == null || !customer.getId().equals(horse.getCustomerID().getId())) {
                     throw new IllegalArgumentException("Hồ sơ ngựa " + hDto.getHorseId() + " không thuộc tài khoản của bạn.");
+                }
+                List<HorseDocument> horseDocuments = horseDocumentRepository.findByHorseID_Id(horseId);
+                for (DocumentRequirement requirement : requiredHorseDocuments) {
+                    boolean approved = horseDocuments.stream()
+                            .anyMatch(document -> "APPROVED".equalsIgnoreCase(document.getStatus())
+                                    && DocumentRequirementPolicy.matchesHorseDocument(
+                                            requirement.getDocumentType(), document.getDocumentType()));
+                    if (!approved) {
+                        throw new IllegalArgumentException("Ngựa \""
+                                + (horse.getHorseName() != null ? horse.getHorseName() : hDto.getHorseId())
+                                + "\" còn thiếu giấy tờ bắt buộc đã được duyệt: "
+                                + requirement.getDocumentName() + ".");
+                    }
                 }
 
                 if ("IN_TRANSIT".equalsIgnoreCase(horse.getTransitStatus())) {
@@ -1175,8 +1214,26 @@ public class BookingServiceImpl implements BookingService {
                         .toList());
             }
         }
+        boolean hasRequirementSnapshot = payload.getDocumentRequirements() != null;
+        List<DocumentRequirementSnapshot> requiredClearanceDocuments = hasRequirementSnapshot
+                ? payload.getDocumentRequirements().stream()
+                        .filter(requirement -> "CLEARANCE".equals(requirement.getDocumentGroup()))
+                        .toList()
+                : List.of();
+        String configuredDestinationCountry = payload.getDestCountry() != null ? payload.getDestCountry()
+                : borderGate != null ? borderGate.getDestinationCountry() : null;
+        Set<String> requiredClearanceTypes = requiredClearanceDocuments.stream()
+                .map(DocumentRequirementSnapshot::getDocumentType)
+                .collect(java.util.stream.Collectors.toSet());
+        Map<String, DocumentRequirementSnapshot> requirementByType = requiredClearanceDocuments.stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        DocumentRequirementSnapshot::getDocumentType, requirement -> requirement, (first, ignored) -> first));
         applicableRegs = applicableRegs.stream()
                 .filter(regulation -> ClearanceDocumentPolicy.isApplicable(regulation, isInternational))
+                .filter(regulation -> !hasRequirementSnapshot
+                        || ClearanceDocumentPolicy.isForDestinationCountry(regulation, configuredDestinationCountry))
+                .filter(regulation -> !hasRequirementSnapshot
+                        || requiredClearanceTypes.contains(regulation.getDocumentType()))
                 .toList();
 
         // 3. Khởi tạo clearance.items
@@ -1185,8 +1242,10 @@ public class BookingServiceImpl implements BookingService {
             Map<String, Object> item = new HashMap<>();
             String type = reg.getDocumentType() != null ? reg.getDocumentType() : ("doc_" + reg.getId());
             item.put("type", type);
-            item.put("label", reg.getRegulationName());
-            item.put("hint", reg.getDescription());
+            DocumentRequirementSnapshot requirement = requirementByType.get(reg.getDocumentType());
+            item.put("label", requirement != null ? requirement.getDocumentName() : reg.getRegulationName());
+            item.put("hint", requirement != null && requirement.getDescription() != null
+                    ? requirement.getDescription() : reg.getDescription());
             item.put("note", "");
             item.put("status", "todo");
             item.put("photos", new ArrayList<String>());
@@ -1196,6 +1255,23 @@ public class BookingServiceImpl implements BookingService {
                 item.put("gateLocationId", reg.getLocationID().getId());
             }
             items.add(item);
+        }
+        Set<String> configuredTypesPresent = items.stream()
+                .map(item -> String.valueOf(item.get("type")))
+                .collect(java.util.stream.Collectors.toSet());
+        if (hasRequirementSnapshot) {
+            for (DocumentRequirementSnapshot requirement : requiredClearanceDocuments) {
+                if (configuredTypesPresent.add(requirement.getDocumentType())) {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("type", requirement.getDocumentType());
+                    item.put("label", requirement.getDocumentName());
+                    item.put("hint", requirement.getDescription());
+                    item.put("note", "");
+                    item.put("status", "todo");
+                    item.put("photos", new ArrayList<String>());
+                    items.add(item);
+                }
+            }
         }
 
         Map<String, Object> clearanceMap = new HashMap<>();

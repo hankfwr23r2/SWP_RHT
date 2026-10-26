@@ -18,11 +18,14 @@ function docsOf(list: BackendHorseDocResponse[]): Partial<Record<HorseDocType, H
     const key = DOC_KEY[d.documentType?.toUpperCase()]
     if (!key) continue
     const url = d.documentUrl ?? d.fileUrl
+    const current = out[key]
+    if (current?.status?.toUpperCase() === 'APPROVED' && d.status?.toUpperCase() !== 'APPROVED') continue
     out[key] = {
       documentId: d.id,
       fileName: url ? url.split('/').pop() || url : `${key}.pdf`,
       fileUrl: url,
       uploadedAt: new Date(d.uploadedAt ?? d.uploadDate ?? Date.now()).getTime(),
+      status: d.status,
     }
   }
   return out

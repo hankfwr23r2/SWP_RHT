@@ -1,6 +1,6 @@
 // Hàm thuần của luồng đặt đơn → duyệt báo giá → đặt cọc (Flow 1). Khớp docs/PRD.md mục 2, 10, 11.
 import {
-  CLEARANCE_DOC, CLEARANCE_FEE, CLASS_FACTOR, CREW_FEE_PER_DAY, DEPOSIT_RATE, DOCS_CUTOFF_HOUR, FUEL_BOT_PER_KM, FUEL_BUFFER_RATE, HORSE_DOC_TYPES, MARGIN_RATE,
+  CLEARANCE_DOC, CLEARANCE_FEE, CLASS_FACTOR, CREW_FEE_PER_DAY, DEPOSIT_RATE, DOCS_CUTOFF_HOUR, FUEL_BOT_PER_KM, FUEL_BUFFER_RATE, MARGIN_RATE,
   BREED_INSURED_VALUE, INSURANCE_RATE_BOOKING, DELAY_ALERT_MINUTES, HOME_BASE, RETURN_EARLIEST_RATIO, MAX_CONTINUOUS_HOURS, MIN_REST_MINUTES, QUOTE_VALID_HOURS, TARGET_LEG_HOURS, SINGLE_STALL_FEE, FEED_PACKAGE, VEHICLE_CLASS, EXPENSE_CATEGORY, type BookingStatus, type ClearanceDocType, type ExpenseCategory, type IncidentAction, type IncidentKind, type Payer, type HorseDocType, type VehicleClass,
 } from '../config/booking-rules'
 import { DAY, HOUR, MIN_LEAD_DAYS } from '../config/business-rules'
@@ -12,6 +12,7 @@ import type { StaffMember } from '../types/staff'
 import type { Adjustment, Booking, BookingHorse, Checkpoint, Clearance, ClearanceItem, HorseProfile, PlaceRef, Quote, QuoteLine, SettlementItem, RestStop, HomeReturn, RouteLeg, RoutePlan, TripRun, VehicleTrip, WelfareLog } from '../types/booking'
 import { atHour, dayKey, startOfDay } from './dates'
 import { haversineKm, roadKm, truckCost } from './pricing'
+import { requiredClearanceDocumentTypes, requiredHorseDocumentTypes } from '../config/runtimeDocumentRequirements'
 
 // ===== Ngày khởi hành =====
 // Ngày sớm nhất được chọn: hôm nay + 30 ngày (00:00)
@@ -27,9 +28,12 @@ export const isDepartureAllowed = (departAt: number, now = Date.now()) => depart
 export const docsDueAt = (departAt: number) => atHour(new Date(departAt - DAY), DOCS_CUTOFF_HOUR)
 
 // ===== Hồ sơ ngựa =====
-// Sẵn sàng khi đã có đủ 3 giấy tờ ngựa.
-export function horseReadiness(h: HorseProfile) {
-  const missing: HorseDocType[] = HORSE_DOC_TYPES.filter(t => !h.docs[t])
+// Sẵn sàng khi có đủ giấy tờ được cấu hình cho chuyến và quốc gia.
+export function horseReadiness(h: HorseProfile, tripType?: 'domestic' | 'international', country?: string) {
+  const missing: HorseDocType[] = requiredHorseDocumentTypes(tripType, country).filter(t => {
+    const document = h.docs[t]
+    return !document || (!!document.status && document.status.toUpperCase() !== 'APPROVED')
+  })
   return { ok: !missing.length, missing }
 }
 
@@ -441,10 +445,14 @@ export function nextBookingId(all: Pick<Booking, 'id'>[], year = new Date().getF
 }
 
 // ===== Giấy tờ do Specialist làm (Flow 2, PRD mục 3) =====
-export const defaultClearanceItems = (type: Booking['type']): ClearanceItem[] =>
-  (Object.keys(CLEARANCE_DOC) as ClearanceDocType[])
-    .filter(t => CLEARANCE_DOC[t].base && (type === 'international' || !CLEARANCE_DOC[t].international))
-    .map(t => ({ type: t, status: 'todo', note: '', photos: [] }))
+export const defaultClearanceItems = (type: Booking['type'], country?: string): ClearanceItem[] => {
+  const configuredTypes = requiredClearanceDocumentTypes(type, country)
+  const types = configuredTypes
+    ? configuredTypes.filter((docType): docType is ClearanceDocType => docType in CLEARANCE_DOC)
+    : (Object.keys(CLEARANCE_DOC) as ClearanceDocType[])
+      .filter(docType => CLEARANCE_DOC[docType].base && (type === 'international' || !CLEARANCE_DOC[docType].international))
+  return types.map(docType => ({ type: docType, status: 'todo', note: '', photos: [] }))
+}
 export const clearanceProgress = (c: Clearance) => ({ done: c.items.filter(i => i.status === 'done').length, total: c.items.length })
 
 // Lý do chưa hoàn tất được (null = được)

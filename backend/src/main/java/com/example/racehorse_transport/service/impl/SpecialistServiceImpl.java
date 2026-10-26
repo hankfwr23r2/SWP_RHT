@@ -2,6 +2,7 @@ package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.booking.BookingDetailsPayload;
 import com.example.racehorse_transport.dto.booking.BookingResponse;
+import com.example.racehorse_transport.dto.booking.DocumentRequirementSnapshot;
 import com.example.racehorse_transport.dto.booking.PartyContactDto;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.dto.specialist.*;
@@ -592,17 +593,34 @@ public class SpecialistServiceImpl implements SpecialistService {
                         .toList());
             }
         }
+        boolean hasRequirementSnapshot = payload.getDocumentRequirements() != null;
+        List<DocumentRequirementSnapshot> requiredClearanceDocuments = hasRequirementSnapshot
+                ? payload.getDocumentRequirements().stream()
+                        .filter(requirement -> "CLEARANCE".equals(requirement.getDocumentGroup()))
+                        .toList()
+                : List.of();
+        String configuredDestinationCountry = payload.getDestCountry() != null ? payload.getDestCountry()
+                : borderGate != null ? borderGate.getDestinationCountry() : null;
         applicableRegs = applicableRegs.stream()
                 .filter(regulation -> ClearanceDocumentPolicy.isApplicable(regulation, isInternational))
+                .filter(regulation -> !hasRequirementSnapshot
+                        || ClearanceDocumentPolicy.isForDestinationCountry(regulation, configuredDestinationCountry))
+                .filter(regulation -> !hasRequirementSnapshot || requiredClearanceDocuments.stream()
+                        .anyMatch(requirement -> requirement.getDocumentType().equals(regulation.getDocumentType())))
                 .toList();
+        Map<String, DocumentRequirementSnapshot> requirementByType = requiredClearanceDocuments.stream()
+                .collect(Collectors.toMap(
+                        DocumentRequirementSnapshot::getDocumentType, requirement -> requirement, (first, ignored) -> first));
 
         List<Map<String, Object>> items = new ArrayList<>();
         for (Regulation reg : applicableRegs) {
             Map<String, Object> item = new HashMap<>();
             String type = reg.getDocumentType() != null ? reg.getDocumentType() : ("doc_" + reg.getId());
+            DocumentRequirementSnapshot requirement = requirementByType.get(type);
             item.put("type", type);
-            item.put("label", reg.getRegulationName());
-            item.put("hint", reg.getDescription());
+            item.put("label", requirement != null ? requirement.getDocumentName() : reg.getRegulationName());
+            item.put("hint", requirement != null && requirement.getDescription() != null
+                    ? requirement.getDescription() : reg.getDescription());
             item.put("note", "");
             item.put("status", "todo");
             item.put("photos", new ArrayList<String>());
@@ -614,37 +632,26 @@ public class SpecialistServiceImpl implements SpecialistService {
             items.add(item);
         }
 
-        // Fallback tối thiểu nếu bảng Regulation chưa có data
-        if (items.isEmpty()) {
-            Map<String, Object> healthCert = new HashMap<>();
-            healthCert.put("type", "health_cert");
-            healthCert.put("label", "Giấy chứng nhận kiểm dịch động vật");
-            healthCert.put("status", "todo");
-            healthCert.put("photos", new ArrayList<String>());
-            items.add(healthCert);
-
-            Map<String, Object> poa = new HashMap<>();
-            poa.put("type", "poa");
-            poa.put("label", "Giấy ủy quyền áp tải (PoA)");
-            poa.put("status", "todo");
-            poa.put("photos", new ArrayList<String>());
-            items.add(poa);
-
-            if (isInternational) {
-                Map<String, Object> customs = new HashMap<>();
-                customs.put("type", "customs_declaration");
-                customs.put("label", "Tờ khai hải quan điện tử");
-                customs.put("status", "todo");
-                customs.put("photos", new ArrayList<String>());
-                items.add(customs);
-
-                Map<String, Object> importPermit = new HashMap<>();
-                importPermit.put("type", "import_permit");
-                importPermit.put("label", "Giấy phép nhập khẩu (Import Permit)");
-                importPermit.put("status", "todo");
-                importPermit.put("photos", new ArrayList<String>());
-                items.add(importPermit);
+        Set<String> presentTypes = items.stream()
+                .map(item -> Objects.toString(item.get("type"), ""))
+                .collect(Collectors.toSet());
+        if (hasRequirementSnapshot) {
+            for (DocumentRequirementSnapshot requirement : requiredClearanceDocuments) {
+                if (presentTypes.add(requirement.getDocumentType())) {
+                    Map<String, Object> item = new HashMap<>();
+                    item.put("type", requirement.getDocumentType());
+                    item.put("label", requirement.getDocumentName());
+                    item.put("hint", requirement.getDescription());
+                    item.put("note", "");
+                    item.put("status", "todo");
+                    item.put("photos", new ArrayList<String>());
+                    items.add(item);
+                }
             }
+        }
+
+        if (items.isEmpty() && !hasRequirementSnapshot) {
+            addLegacyFallbackItems(items, isInternational);
         }
 
         clearanceMap.put("items", items);
@@ -660,6 +667,24 @@ public class SpecialistServiceImpl implements SpecialistService {
 
         payload.setClearance(clearanceMap);
         return clearanceMap;
+    }
+
+    private void addLegacyFallbackItems(List<Map<String, Object>> items, boolean isInternational) {
+        addLegacyFallbackItem(items, "health_cert", "Giấy chứng nhận kiểm dịch động vật");
+        addLegacyFallbackItem(items, "poa", "Giấy ủy quyền áp tải (PoA)");
+        if (isInternational) {
+            addLegacyFallbackItem(items, "customs_declaration", "Tờ khai hải quan điện tử");
+            addLegacyFallbackItem(items, "import_permit", "Giấy phép nhập khẩu (Import Permit)");
+        }
+    }
+
+    private void addLegacyFallbackItem(List<Map<String, Object>> items, String type, String label) {
+        Map<String, Object> item = new HashMap<>();
+        item.put("type", type);
+        item.put("label", label);
+        item.put("status", "todo");
+        item.put("photos", new ArrayList<String>());
+        items.add(item);
     }
 
     private void requireApplicableClearanceType(Booking booking, String type) {

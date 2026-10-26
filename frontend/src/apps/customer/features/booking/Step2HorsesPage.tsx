@@ -24,6 +24,7 @@ export default function Step2HorsesPage() {
   const [submitted, setSubmitted] = useState(false)
   const [confirmedRelocation, setConfirmedRelocation] = useState(false)
   const [relocationError, setRelocationError] = useState('')
+  const destinationCountry = draft.type === 'domestic' ? 'VN' : draft.direction === 'in' ? 'VN' : draft.partner
 
   // Map từ numeric ID của ngựa -> thông tin đơn hàng chưa hoàn tất
   const activeHorseBookingMap = useMemo(() => {
@@ -80,12 +81,12 @@ export default function Step2HorsesPage() {
   // Chỉ hiển thị ngựa đã nộp đủ giấy tờ và không đang trong chuyến/đơn khác.
   const readyList = useMemo(
     () => (horses ?? []).filter(h => {
-      if (!horseReadiness(h).ok) return false
+      if (!horseReadiness(h, draft.type || undefined, destinationCountry).ok) return false
       const numId = Number(h.id.replace(/\D/g, ''))
       const isBusy = h.transitStatus === 'IN_TRANSIT' || activeHorseBookingMap.has(numId)
       return !isBusy
     }),
-    [horses, activeHorseBookingMap]
+    [horses, activeHorseBookingMap, draft.type, destinationCountry]
   )
 
   const query = search.trim().toLowerCase()
@@ -240,7 +241,7 @@ export default function Step2HorsesPage() {
                       </span>
                     )}
                   </div>
-                  <HorseDocChips horse={h} />
+                  <HorseDocChips horse={h} tripType={draft.type || undefined} country={destinationCountry} />
                   {inTransit && (
                     <div style={{ fontSize: '0.8rem', color: '#b45309', marginTop: 4 }}>
                       ⚠️ Cá thể ngựa này đang trong một chuyến vận chuyển khác và chưa hoàn tất bàn giao về chuồng.

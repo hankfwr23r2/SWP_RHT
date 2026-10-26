@@ -6,6 +6,8 @@ import { COUNTRY_LOCATIONS, findGate, PLACES, setNetworkLocations, TRANSIT_STATI
 import type { StaffMember } from '../types/staff'
 import type { Vehicle } from '../types/fleet'
 import type { Booking, BookingHorse, HorseProfile, VehicleTrip, Checkpoint, TripRun } from '../types/booking'
+import { applyDocumentRequirements } from '../config/runtimeDocumentRequirements'
+import type { DocumentRequirement } from '../api/documentRequirements'
 import {
   schedulesOf, clashOf, planHomeReturn, returnLate, returningTrips, vehicleSpot, vehiclePoint, pendingDeparture, spotLabel, nearestTo, projectOnPath, pointsAhead, pointAlong, bookingPath, incidentLocation, needsFitCheck, transitProgress, defaultPayer, incidentActionsFor, settlementOf, approvedSubOf, APPROVED_SUBS, orderGroupOf, ORDER_GROUPS, capacitiesFor, estimateQuote, busyResources, buildRoutePlan, gatesFor, suggestGate, suggestTransitStations, canCompleteClearance, classForHorses, defaultClearanceItems, deriveStatus, docsDueAt, earliestDeparture, finalizeQuote, horseReadiness,
   insuranceFee, isClearanceOverdue, isDepartureAllowed, isQuoteExpired, layoutLegs, manifestDocuments, nextBookingId, quoteLines, reviewDone, routeKm, activeStaff,
@@ -67,6 +69,34 @@ describe('hồ sơ ngựa', () => {
     const r = horseReadiness(horse({ passport: doc(), vaccine: doc() }))
     expect(r.ok).toBe(false)
     expect(r.missing).toEqual(['lab'])
+  })
+  it('áp dụng yêu cầu giấy ngựa theo loại chuyến và quốc gia', () => {
+    const requirement = (id: number, documentGroup: DocumentRequirement['documentGroup'], documentType: DocumentRequirement['documentType'], tripType: DocumentRequirement['tripType'], country: DocumentRequirement['country']): DocumentRequirement => ({
+      id, documentGroup, documentType, documentName: documentType, tripType, country,
+      required: true, status: 'ACTIVE',
+    })
+    applyDocumentRequirements([
+      requirement(1, 'HORSE', 'passport', 'ALL', 'ALL'),
+      requirement(2, 'HORSE', 'lab', 'INTERNATIONAL', 'KH'),
+    ])
+
+    const profile = horse({ passport: doc() })
+    expect(horseReadiness(profile, 'domestic', 'VN').ok).toBe(true)
+    expect(horseReadiness(profile, 'international', 'KH').missing).toEqual(['lab'])
+
+    applyDocumentRequirements([
+      requirement(1, 'HORSE', 'passport', 'ALL', 'ALL'),
+      requirement(2, 'HORSE', 'vaccine', 'ALL', 'ALL'),
+      requirement(3, 'HORSE', 'lab', 'ALL', 'ALL'),
+      requirement(4, 'CLEARANCE', 'health_cert', 'ALL', 'ALL'),
+      requirement(5, 'CLEARANCE', 'poa', 'ALL', 'ALL'),
+      requirement(6, 'CLEARANCE', 'customs_declaration', 'INTERNATIONAL', 'KH'),
+      requirement(7, 'CLEARANCE', 'import_permit', 'INTERNATIONAL', 'KH'),
+      requirement(8, 'CLEARANCE', 'quarantine_cert', 'INTERNATIONAL', 'KH'),
+      requirement(9, 'CLEARANCE', 'customs_declaration', 'INTERNATIONAL', 'LA'),
+      requirement(10, 'CLEARANCE', 'import_permit', 'INTERNATIONAL', 'LA'),
+      requirement(11, 'CLEARANCE', 'ata_carnet', 'INTERNATIONAL', 'LA'),
+    ])
   })
 })
 
@@ -295,7 +325,9 @@ describe('lịch bận của xe, tài xế, hộ tống (PRD mục 10.2)', () =>
 describe('giấy tờ do Specialist làm (Flow 2)', () => {
   it('nội địa chỉ có giấy kiểm dịch và giấy ủy quyền; quốc tế thêm tờ khai và giấy phép nhập khẩu', () => {
     expect(defaultClearanceItems('domestic').map(i => i.type)).toEqual(['health_cert', 'poa'])
-    expect(defaultClearanceItems('international').map(i => i.type)).toEqual(['health_cert', 'poa', 'customs_declaration', 'import_permit'])
+    expect(defaultClearanceItems('international').map(i => i.type)).toEqual([
+      'health_cert', 'poa', 'customs_declaration', 'import_permit', 'quarantine_cert', 'ata_carnet',
+    ])
   })
   it('chưa xong hạng mục giấy tờ thì chưa hoàn tất được, xong đủ giấy tờ thì hoàn tất', () => {
     const items = defaultClearanceItems('international')

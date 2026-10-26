@@ -36,6 +36,11 @@ export async function systemConfigLoader() {
   return loadAll({ configs: systemConfigApi.listAdminConfigs() })
 }
 
+export async function documentRequirementsLoader() {
+  const { documentRequirementsApi } = await import('@shared/api/documentRequirements')
+  return loadAll({ requirements: documentRequirementsApi.listAdmin() })
+}
+
 // Giám sát vận chuyển: đơn và kíp xe
 export async function monitoringLoader() {
   const [{ bookingsApi }, { crewApi }] = await Promise.all([bookings(), import('@shared/services/fleet')])

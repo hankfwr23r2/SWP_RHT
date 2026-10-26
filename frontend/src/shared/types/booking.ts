@@ -7,7 +7,7 @@ export type Sex = 'stallion' | 'mare' | 'gelding'
 export const SEX_LABEL: Record<Sex, string> = { stallion: 'Đực', mare: 'Cái', gelding: 'Thiến' }
 
 // ===== Hồ sơ ngựa =====
-export interface HorseDoc { fileName: string; fileUrl?: string; uploadedAt: number; documentId?: number }
+export interface HorseDoc { fileName: string; fileUrl?: string; uploadedAt: number; documentId?: number; status?: string }
 export interface HorseJourneyLog {
   id: number
   horseId: number
