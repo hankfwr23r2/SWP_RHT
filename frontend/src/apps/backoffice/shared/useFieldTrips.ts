@@ -35,12 +35,31 @@ export function mergeFieldBooking(bookings: Booking[] | undefined, updated: Book
     : booking)
 }
 
+function fieldTripSelectionKey(role: 'driver' | 'escort', username: string) {
+  return `RHT_FIELD_TRIP_${role}_${username}`
+}
+
+export function readFieldTripSelection(role: 'driver' | 'escort', username: string) {
+  if (typeof window === 'undefined') return ''
+  return window.sessionStorage.getItem(fieldTripSelectionKey(role, username)) ?? ''
+}
+
+export function saveFieldTripSelection(role: 'driver' | 'escort', username: string, tripId: string) {
+  if (typeof window === 'undefined') return
+  window.sessionStorage.setItem(fieldTripSelectionKey(role, username), tripId)
+}
+
 export function useFieldTrips(role: 'driver' | 'escort') {
   const { session } = useAuth()
   const { data: all, reload, updateData } = useLoad(bookingsApi.list)
   const { data: crew } = useLoad(crewApi.list)
   const { data: vehicles } = useLoad(vehiclesApi.list)
-  const [selected, setSelected] = useState('')
+  const username = session?.username ?? ''
+  const [selected, setSelected] = useState(() => readFieldTripSelection(role, username))
+  const selectTrip = useCallback((tripId: string) => {
+    saveFieldTripSelection(role, username, tripId)
+    setSelected(tripId)
+  }, [role, username])
   const me = crew?.find(c => c.role === role && (c.name === session?.name || c.id === session?.username || c.name === session?.username))
   const key = role === 'driver' ? 'driverId' : 'escortId'
   const applyBooking = useCallback((updated: Booking) => {
@@ -54,7 +73,7 @@ export function useFieldTrips(role: 'driver' | 'escort') {
     .sort((x, y) => x.b.departAt - y.b.departAt || x.t.tripId.localeCompare(y.t.tripId))
   const trip = trips.find(x => x.t.tripId === selected) ?? trips[0]
   return {
-    ready: !!(all && crew && vehicles), me, crew: crew ?? [], vehicles: vehicles ?? [], trips, trip, setSelected, reload, applyBooking,
+    ready: !!(all && crew && vehicles), me, crew: crew ?? [], vehicles: vehicles ?? [], trips, trip, setSelected: selectTrip, reload, applyBooking,
     driver: crew?.find(c => c.id === trip?.t.driverId), escort: crew?.find(c => c.id === trip?.t.escortId), vehicle: vehicles?.find(v => v.id === trip?.t.vehicleId),
   }
 }
