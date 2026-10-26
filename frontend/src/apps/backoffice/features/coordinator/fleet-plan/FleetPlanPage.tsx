@@ -23,7 +23,7 @@ import {
 } from '@shared/lib/booking'
 import { atHour } from '@shared/lib/dates'
 import { formatClock, formatDate, formatDateTime, formatVND } from '@shared/lib/format'
-import { matchFixedRoute, MAX_FIXED_ROUTE_ACCESS_KM, MAX_FIXED_ROUTE_DETOUR_RATIO, type FixedRouteMatch } from '@shared/lib/fixedRouteMatch'
+import { corridorFitsBooking, matchFixedRoute, MAX_FIXED_ROUTE_ACCESS_KM, MAX_FIXED_ROUTE_DETOUR_RATIO, type FixedRouteMatch } from '@shared/lib/fixedRouteMatch'
 import { bookingsApi } from '@shared/services/bookings'
 import { roadRoute } from '@shared/services/routing'
 import { type Vehicle } from '@shared/services/fleet'
@@ -233,6 +233,7 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
         const candidates = await Promise.all(corridors.map(async corridor => {
           try {
             const stops = await routesApi.getRouteStops(corridor.id)
+            if (!corridorFitsBooking(stops, international)) return null
             const match = matchFixedRoute(stops, originPoint, destPoint, international ? gatePoint : undefined)
             if (!match || match.pickupAccessKm > MAX_FIXED_ROUTE_ACCESS_KM || match.deliveryAccessKm > MAX_FIXED_ROUTE_ACCESS_KM) return null
             const route = await roadRoute(match.points, etdT, { signal: controller.signal })

@@ -1,4 +1,4 @@
-import type { GeoPoint } from '../config/network'
+import { countryCodeOf, type GeoPoint } from '../config/network'
 
 export const MAX_FIXED_ROUTE_ACCESS_KM = 80
 export const MAX_FIXED_ROUTE_DETOUR_RATIO = 1.5
@@ -10,6 +10,7 @@ export interface FixedRoutePoint {
   stopOrder: number
   latitude?: number | null
   longitude?: number | null
+  country?: string
 }
 
 export interface FixedRouteMatch {
@@ -37,6 +38,11 @@ const pointOf = (stop: FixedRoutePoint): GeoPoint | undefined => {
 
 const nearestIndex = (points: GeoPoint[], target: GeoPoint) =>
   points.reduce((best, point, index) => haversineKm(point, target) < haversineKm(points[best], target) ? index : best, 0)
+
+// Đơn nội địa chỉ dùng hành lang có mọi điểm dừng ở Việt Nam; đơn quốc tế dùng được hành lang qua biên giới
+export function corridorFitsBooking(stops: Pick<FixedRoutePoint, 'country'>[], international: boolean): boolean {
+  return international || stops.every(stop => countryCodeOf(stop.country) === 'VN')
+}
 
 /** Selects the ordered subsection of a fixed route nearest to the booking endpoints. */
 export function matchFixedRoute(
