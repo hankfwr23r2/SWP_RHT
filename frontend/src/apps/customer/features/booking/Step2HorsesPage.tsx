@@ -11,6 +11,7 @@ import { usePagination } from '@shared/ui/usePagination'
 import { BookingShell } from './BookingShell'
 import type { horsesLoader } from '../horses/loaders'
 import { defaultConfig, useBookingDraft } from './draft'
+import { isBookingRouteReady } from './routeValidation'
 import s from './Booking.module.css'
 
 const FINISHED_STATUSES = new Set(['completed', 'cancelled', 'rejected', 'quote_expired'])
@@ -106,7 +107,7 @@ export default function Step2HorsesPage() {
     pager.reset()
   }, [search]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!draft.type || !draft.departDate) return <Navigate to="/booking/route" replace />
+  if (!isBookingRouteReady(draft)) return <Navigate to="/booking/route" replace />
 
   const full = selected.length >= MAX_HORSES
 
