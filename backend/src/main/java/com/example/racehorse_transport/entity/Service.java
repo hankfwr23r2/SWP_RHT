@@ -35,13 +35,13 @@ public class Service {
     @Column(name = "ServiceName", nullable = false, length = 255)
     private String serviceName;
 
-    @NotBlank
+    // Hai cột này thêm sau khi bảng đã có dữ liệu: để cột cho phép rỗng thì Hibernate mới thêm được cột,
+    // ReferenceDataSeeder điền mã và đơn vị tính cho các dòng cũ; dữ liệu mới được kiểm tra ở CreateServiceRequest.
     @Size(max = 100)
     @Pattern(regexp = "^[A-Z][A-Z0-9_]{1,99}$")
     @Column(name = "service_code", length = 100, unique = true)
     private String serviceCode;
 
-    @NotBlank
     @Pattern(regexp = "PER_TRIP|PER_HORSE|PER_HORSE_DAY")
     @Column(name = "billing_unit", length = 30)
     private String billingUnit;
