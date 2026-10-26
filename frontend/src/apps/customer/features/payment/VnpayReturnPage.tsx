@@ -50,7 +50,6 @@ export default function VnpayReturnPage() {
             <>
               <i className={`fa-solid ${ok ? 'fa-circle-check text-green' : 'fa-circle-xmark text-red'}`} style={{ fontSize: 48 }} aria-hidden="true" />
               <h2 style={{ marginTop: 12 }}>{ok ? 'Thanh toán thành công' : 'Thanh toán chưa thành công'}</h2>
-              <p className="text-muted">{failure || result?.message}</p>
               {result?.amount !== undefined && (
                 <div style={{ textAlign: 'left', margin: '16px 0', display: 'grid', gap: 6 }}>
                   {result.paymentType && <div><span className="text-muted">Khoản thanh toán: </span><b>{result.paymentType === 'DEPOSIT' ? 'Đặt cọc' : PAYMENT_LABEL[result.paymentType] ?? result.paymentType}</b></div>}
