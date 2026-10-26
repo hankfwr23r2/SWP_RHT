@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { formatDate } from '@shared/lib/format'
 import type { Booking } from '@shared/types/booking'
+import { invalidateBookingsListCache } from '@shared/services/bookings'
 import { OrderDetailModal } from '../dashboard/OrderDetailModal'
 import { ListPage, idCell, routeCell, statusCell, type Column } from '../../../shared/ListPage'
 import { placeShort } from '../../../shared/place'
@@ -34,7 +35,7 @@ export default function CancelledOrdersPage() {
         loaded={!!all}
         emptyText="Chưa có đơn nào bị hủy."
       />
-      {open && <OrderDetailModal b={open} all={all ?? []} onClose={() => setOpen(null)} onDone={() => { setOpen(null); reload() }} />}
+      {open && <OrderDetailModal b={open} all={all ?? []} onClose={() => setOpen(null)} onDone={() => { invalidateBookingsListCache(); setOpen(null); reload() }} />}
     </>
   )
 }

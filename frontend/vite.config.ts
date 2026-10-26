@@ -35,7 +35,7 @@ export default defineConfig({
       output: {
         manualChunks: (id) => {
           if (id.includes('node_modules')) {
-            if (id.includes('@vietmap') || id.includes('leaflet')) {
+            if (id.includes('maplibre') || id.includes('leaflet')) {
               return 'vendor-maps'
             }
             if (id.includes('gsap') || id.includes('@gsap')) {

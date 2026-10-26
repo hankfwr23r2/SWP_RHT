@@ -7,7 +7,7 @@ import { findGate, findTransitStation, type GeoPoint } from '../config/network'
 import { bookingPath, findLocation, projectOnPath, spotLabel, vehiclePoint } from '../lib/booking'
 import { useRoadRoute } from '../services/useRoadRoute'
 import type { Booking, VehicleTrip } from '../types/booking'
-import { addVietmapBaseLayer, VIETMAP_MAP_OPTIONS } from './vietmapLeaflet'
+import { addBaseLayer, BASE_MAP_OPTIONS } from './baseMap'
 import './TripTrackMap.css'
 
 type Props = { b: Pick<Booking, 'origin' | 'dest' | 'gate' | 'route'>; trips: Pick<VehicleTrip, 'tripId' | 'run' | 'departedAt'>[]; height?: number; plain?: boolean } // plain: chỉ vẽ lộ trình đã lập, không có xe
@@ -37,9 +37,9 @@ export function TripTrackMap({ b, trips = [], height = 360, plain }: Props) {
 
   useEffect(() => {
     if (!box.current) return
-    const m = L.map(box.current, { ...VIETMAP_MAP_OPTIONS, zoomControl: false })
+    const m = L.map(box.current, { ...BASE_MAP_OPTIONS, zoomControl: false })
     L.control.zoom({ position: 'topright' }).addTo(m)
-    addVietmapBaseLayer(m)
+    addBaseLayer(m)
     m.setView([10.8, 106.7], 9)
     layer.current = L.layerGroup().addTo(m)
     map.current = m

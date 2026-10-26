@@ -46,7 +46,7 @@ const CLEARANCE_TYPE_SET = {
 } as const
 type ClearanceType = keyof typeof CLEARANCE_TYPE_SET
 
-function normalizeCountry(country?: string) {
+export function normalizeCountry(country?: string) {
   const value = country?.trim().toUpperCase()
   if (value === 'CAMBODIA' || value === 'CAMPUCHIA') return 'KH'
   if (value === 'LAOS' || value === 'LAO' || value === 'LÀO') return 'LA'

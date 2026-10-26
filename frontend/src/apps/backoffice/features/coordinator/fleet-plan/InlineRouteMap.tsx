@@ -2,10 +2,11 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useEffect, useMemo, useRef } from 'react'
 import { TRANSIT_STATIONS, type GeoPoint } from '@shared/config/network'
+import { AVG_SPEED_KMH } from '@shared/config/public-pricing'
 import { routeOutline } from '@shared/lib/booking'
 import { useRoadRoute } from '@shared/services/useRoadRoute'
 import type { RestStop } from '@shared/types/booking'
-import { addVietmapBaseLayer, VIETMAP_MAP_OPTIONS } from '@shared/ui/vietmapLeaflet'
+import { addBaseLayer, BASE_MAP_OPTIONS } from '@shared/ui/baseMap'
 import './RouteMapPicker.css'
 
 type Point = GeoPoint & { name: string }
@@ -70,9 +71,9 @@ export function InlineRouteMap({ origin, dest, gate, departAt, rests, activeRoad
 
   useEffect(() => {
     if (!box.current) return
-    const m = L.map(box.current, { ...VIETMAP_MAP_OPTIONS, zoomControl: false, attributionControl: true })
+    const m = L.map(box.current, { ...BASE_MAP_OPTIONS, zoomControl: false, attributionControl: true })
     L.control.zoom({ position: 'topright' }).addTo(m)
-    addVietmapBaseLayer(m)
+    addBaseLayer(m)
 
     const route = [origin, dest, ...(gate ? [gate] : [])]
     m.fitBounds(
@@ -186,7 +187,7 @@ export function InlineRouteMap({ origin, dest, gate, departAt, rests, activeRoad
           {roadLoading ? (
             'Đang tải tuyến đường OSRM…'
           ) : road ? (
-            <b>{Math.round(road.km)} km · {road.hours.toFixed(1)}h lái xe</b>
+            <b>{Math.round(road.km)} km · {(road.km / AVG_SPEED_KMH).toFixed(1)}h lái xe (ước tính {AVG_SPEED_KMH} km/h)</b>
           ) : (
             'Đang tính toán…'
           )}

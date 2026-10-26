@@ -4,12 +4,13 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { MIN_REST_MINUTES } from '@shared/config/booking-rules'
+import { AVG_SPEED_KMH } from '@shared/config/public-pricing'
 import type { GeoPoint } from '@shared/config/network'
 import { routeOutline } from '@shared/lib/booking'
 import { useRoadRoute } from '@shared/services/useRoadRoute'
 import type { RestStop } from '@shared/types/booking'
 import { Modal } from '@shared/ui/Modal'
-import { addVietmapBaseLayer, VIETMAP_MAP_OPTIONS } from '@shared/ui/vietmapLeaflet'
+import { addBaseLayer, BASE_MAP_OPTIONS } from '@shared/ui/baseMap'
 import './RouteMapPicker.css'
 
 type Point = GeoPoint & { name: string; area?: string }
@@ -94,9 +95,9 @@ export function RouteMapPicker({ origin, dest, gate, departAt, value, onApply, o
   // Dựng bản đồ một lần
   useEffect(() => {
     if (!box.current) return
-    const m = L.map(box.current, { ...VIETMAP_MAP_OPTIONS, zoomControl: false, attributionControl: true })
+    const m = L.map(box.current, { ...BASE_MAP_OPTIONS, zoomControl: false, attributionControl: true })
     L.control.zoom({ position: 'topright' }).addTo(m)
-    addVietmapBaseLayer(m)
+    addBaseLayer(m)
     // Mở ra đã zoom vào tuyến (điểm đón, điểm trả, cửa khẩu); các trạm xa hơn thì kéo bản đồ để thấy
     const route = [origin, dest, ...(gate ? [gate] : [])]
     m.fitBounds(L.latLngBounds(route.map(p => [p.lat, p.lng] as [number, number])), { padding: [90, 90], maxZoom: 11 })
@@ -160,7 +161,7 @@ export function RouteMapPicker({ origin, dest, gate, departAt, value, onApply, o
           <div className="rm-sum"><span><b>{outline.stations.length}</b> trạm</span><span>nghỉ <b>{total}</b> phút</span></div>
           <div className="rm-road" aria-live="polite">
             {roadLoading ? <span className="rm-loading"><i className="fa-solid fa-spinner fa-spin" /> Đang tính đường đi…</span>
-              : road ? <><span><b>{Math.round(road.km)}</b> km · lái <b>{road.hours.toFixed(1)}</b> giờ</span><small>{road.traffic ? 'Theo Google, có giao thông theo giờ khởi hành' : 'Theo đường bộ, chưa tính giao thông'}</small></>
+              : road ? <><span><b>{Math.round(road.km)}</b> km · lái <b>{(road.km / AVG_SPEED_KMH).toFixed(1)}</b> giờ</span><small>Ước tính {AVG_SPEED_KMH} km/h · {road.traffic ? 'Theo Google, có giao thông theo giờ khởi hành' : 'Theo đường bộ, chưa tính giao thông'}</small></>
               : <><span>≈ <b>{Math.round(straightKm)}</b> km đường chim bay</span><small>Chưa lấy được đường bộ, đang vẽ nét thẳng</small></>}
           </div>
           {locationsError && <p role="alert">{locationsError}</p>}

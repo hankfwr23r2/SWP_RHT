@@ -5,7 +5,7 @@ import { useAuth } from '@shared/auth/AuthContext'
 import { DEPOSIT_RATE, QUOTE_VALID_HOURS, VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { finalizeQuote, sameVehicleId, schedulesOf, vehicleClassOf, crewClashOf, findCrewBooked } from '@shared/lib/booking'
 import { formatDate, formatDateTime, formatVND } from '@shared/lib/format'
-import { bookingsApi } from '@shared/services/bookings'
+import { bookingsApi, invalidateBookingsListCache } from '@shared/services/bookings'
 import { crewApi, vehiclesApi } from '@shared/services/fleet'
 import { useLoad } from '@shared/services/useLoad'
 import type { Booking } from '@shared/types/booking'
@@ -242,7 +242,7 @@ export default function ApprovalsPage() {
         rows={tab === 'todo' ? todo : sent} rowKey={b => b.id} columns={columns} haystack={b => [b.id, b.customer, b.origin.name, b.dest.name]} dateOf={b => b.departAt} loaded={!!all}
         emptyText={tab === 'todo' ? 'Không có đơn nào chờ duyệt báo giá.' : 'Chưa gửi báo giá nào.'}
         summary={r => (tab === 'sent' ? <>Tổng báo giá: <b>{formatVND(r.reduce((n, b) => n + (b.quote?.total ?? 0), 0))}</b></> : null)} />
-      {open && <QuoteModal b={open} all={list} onClose={() => setOpen(null)} onDone={() => { setOpen(null); reload() }} />}
+      {open && <QuoteModal b={open} all={list} onClose={() => setOpen(null)} onDone={() => { invalidateBookingsListCache(); setOpen(null); reload() }} />}
     </>
   )
 }

@@ -2,15 +2,15 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { MAX_HORSES } from '@shared/config/business-rules'
-import { COUNTRY_LOCATIONS } from '@shared/config/network'
-import { ageOf, classForHorses, horseReadiness } from '@shared/lib/booking'
+import { COUNTRIES, COUNTRY_LOCATIONS } from '@shared/config/network'
+import { ageOf, classForHorses, horseCountryMatchesOrigin, horseReadiness } from '@shared/lib/booking'
 import { usePageData } from '@shared/routing/pageData'
 import { SEX_LABEL, type HorseProfile } from '@shared/types/booking'
 import { HorseDocChips } from '@shared/ui/HorseDocChips'
 import { usePagination } from '@shared/ui/usePagination'
 import { BookingShell } from './BookingShell'
 import type { horsesLoader } from '../horses/loaders'
-import { defaultConfig, useBookingDraft } from './draft'
+import { countriesOf, defaultConfig, useBookingDraft } from './draft'
 import { isBookingRouteReady } from './routeValidation'
 import s from './Booking.module.css'
 
@@ -26,6 +26,19 @@ export default function Step2HorsesPage() {
   const [confirmedRelocation, setConfirmedRelocation] = useState(false)
   const [relocationError, setRelocationError] = useState('')
   const destinationCountry = draft.type === 'domestic' ? 'VN' : draft.direction === 'in' ? 'VN' : draft.partner
+
+  // Điểm đón được chọn ở bước 1
+  const allLocations = Object.values(COUNTRY_LOCATIONS).flat()
+  const originLoc = allLocations.find(l => l.id === draft.originId)
+  const originCountry = countriesOf(draft)?.origin
+  const originName = originLoc ? originLoc.name : (draft.originId || 'Điểm đón đã chọn')
+  const countryName = (country?: string) => {
+    const normalized = country?.trim().toUpperCase()
+    if (normalized === 'VN' || normalized === 'KH' || normalized === 'LA') return COUNTRIES[normalized].name
+    return country || 'chưa xác định'
+  }
+  const isCountryMismatch = (horse: HorseProfile) =>
+    !horseCountryMatchesOrigin(horse.currentCountry, originCountry)
 
   // Map từ numeric ID của ngựa -> thông tin đơn hàng chưa hoàn tất
   const activeHorseBookingMap = useMemo(() => {
@@ -49,7 +62,7 @@ export default function Step2HorsesPage() {
     return map
   }, [customerBookings])
 
-  // Tự động loại bỏ khỏi selected những ngựa đang bận/đang vận chuyển nếu có lưu trong draft cũ
+  // Tự động loại bỏ ngựa không còn hợp lệ nếu được lưu trong bản nháp cũ.
   useEffect(() => {
     if (!horses) return
     setSelected(prev => {
@@ -58,19 +71,14 @@ export default function Step2HorsesPage() {
         if (!h) return false
         const numId = Number(h.id.replace(/\D/g, ''))
         const isBusy = h.transitStatus === 'IN_TRANSIT' || activeHorseBookingMap.has(numId)
-        return !isBusy
+        return !isBusy && !isCountryMismatch(h)
       })
       return valid.length === prev.length ? prev : valid
     })
-  }, [horses, activeHorseBookingMap])
+  }, [horses, activeHorseBookingMap, originCountry])
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { save({ horseIds: selected }) }, [selected])
-
-  // Điểm đón được chọn ở bước 1
-  const allLocations = Object.values(COUNTRY_LOCATIONS).flat()
-  const originLoc = allLocations.find(l => l.id === draft.originId)
-  const originName = originLoc ? originLoc.name : (draft.originId || 'Điểm đón đã chọn')
 
   const isLocationMatch = (h: HorseProfile) => {
     const hasLocationHistory = !!h.locationSource && h.locationSource !== 'INITIAL_REGISTRATION'
@@ -111,8 +119,8 @@ export default function Step2HorsesPage() {
 
   const full = selected.length >= MAX_HORSES
 
-  const toggle = (id: string, busy?: boolean) => {
-    if (busy) return
+  const toggle = (id: string, unavailable?: boolean) => {
+    if (unavailable) return
     setSelected(sel => (sel.includes(id) ? sel.filter(x => x !== id) : sel.length >= MAX_HORSES ? sel : [...sel, id]))
   }
 
@@ -133,6 +141,14 @@ export default function Step2HorsesPage() {
     })
     if (busySelected.length > 0) {
       setRelocationError(`Ngựa ${busySelected.map(h => h.name).join(', ')} hiện đang trong đơn hàng khác chưa hoàn tất, không thể tiếp tục.`)
+      return
+    }
+
+    const countryMismatchedSelected = selectedHorses.filter(isCountryMismatch)
+    if (countryMismatchedSelected.length > 0) {
+      setRelocationError(
+        `Ngựa ${countryMismatchedSelected.map(h => h.name).join(', ')} đang ở quốc gia khác với điểm đón (${countryName(originCountry)}), không thể tiếp tục.`
+      )
       return
     }
 
@@ -192,15 +208,16 @@ export default function Step2HorsesPage() {
             const numId = Number(h.id.replace(/\D/g, ''))
             const activeBookingCode = activeHorseBookingMap.get(numId)
             const isBusy = inTransit || Boolean(activeBookingCode)
-            const blocked = (!on && full) || isBusy
+            const countryMismatch = isCountryMismatch(h)
+            const blocked = (!on && full) || isBusy || countryMismatch
             const matchLoc = isLocationMatch(h)
 
             return (
               <div
                 key={h.id}
                 className={`${s.pick} ${on ? s.pickOn : ''}`}
-                style={isBusy ? { opacity: 0.65, background: '#f8fafc', cursor: 'not-allowed' } : undefined}
-                onClick={e => { if (!blocked && !(e.target as HTMLElement).closest('button, input')) toggle(h.id, isBusy) }}
+                style={blocked ? { opacity: 0.65, background: '#f8fafc', cursor: 'not-allowed' } : undefined}
+                onClick={e => { if (!blocked && !(e.target as HTMLElement).closest('button, input')) toggle(h.id, isBusy || countryMismatch) }}
               >
                 <input
                   type="checkbox"
@@ -212,7 +229,7 @@ export default function Step2HorsesPage() {
                 />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
-                    <label htmlFor={`pick-${h.id}`} className={s.pickName} style={{ cursor: isBusy ? 'not-allowed' : 'pointer' }}>
+                    <label htmlFor={`pick-${h.id}`} className={s.pickName} style={{ cursor: blocked ? 'not-allowed' : 'pointer' }}>
                       {h.name}
                     </label>
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
@@ -223,6 +240,10 @@ export default function Step2HorsesPage() {
                       ) : activeBookingCode ? (
                         <span className="badge badge-warning" style={{ fontSize: '0.74rem' }} title={`Đã được đặt trong đơn ${activeBookingCode}`}>
                           <i className="fa-solid fa-clock-rotate-left" /> Đã đặt trong {activeBookingCode}
+                        </span>
+                      ) : countryMismatch ? (
+                        <span className="badge badge-warning" style={{ fontSize: '0.74rem' }}>
+                          <i className="fa-solid fa-triangle-exclamation" /> Khác quốc gia điểm đón
                         </span>
                       ) : matchLoc ? (
                         <span className="badge badge-success" style={{ fontSize: '0.74rem' }}>
@@ -243,6 +264,11 @@ export default function Step2HorsesPage() {
                       </span>
                     )}
                   </div>
+                  {countryMismatch && (
+                    <div style={{ fontSize: '0.8rem', color: '#b45309', marginTop: 4 }}>
+                      Hiện ở {countryName(h.currentCountry)}; chuyến này cần đón tại {countryName(originCountry)}.
+                    </div>
+                  )}
                   <HorseDocChips horse={h} tripType={draft.type || undefined} country={destinationCountry} />
                   {inTransit && (
                     <div style={{ fontSize: '0.8rem', color: '#b45309', marginTop: 4 }}>
@@ -289,13 +315,14 @@ export default function Step2HorsesPage() {
                     <span>Tôi xác nhận ngựa đã/sẽ được di chuyển tới điểm đón trên trước giờ kíp xe đến tiếp nhận.</span>
                   </label>
                 </div>
-                {relocationError && (
-                  <div style={{ color: '#dc2626', fontWeight: 600, marginTop: 4 }}>
-                    <i className="fa-solid fa-triangle-exclamation" /> {relocationError}
-                  </div>
-                )}
               </div>
             </div>
+          </div>
+        )}
+
+        {relocationError && (
+          <div className="form-error" role="alert" style={{ marginTop: 10 }}>
+            <i className="fa-solid fa-triangle-exclamation" /> {relocationError}
           </div>
         )}
 
