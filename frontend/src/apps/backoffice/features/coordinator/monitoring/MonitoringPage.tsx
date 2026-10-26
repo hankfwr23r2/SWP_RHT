@@ -35,7 +35,7 @@ function CrewDuty({ all, crew, now }: { all: Booking[]; crew: CrewMember[]; now:
             <td>{c.role === 'driver' ? 'Tài xế' : 'Hộ tống'}</td>
             <td>{job!.returning ? <span className={`badge ${job!.returning.late ? 'badge-warning' : 'badge-info'}`}>{job!.returning.late ? 'Về trễ' : 'Đang về'}</span> : <span className="badge badge-success">Đang đi đơn</span>}</td>
             <td>{job!.order}<div className={s.sub}>{job!.returning ? `Đã giao ở ${job!.returning.from}` : job!.countries}</div></td>
-            <td>{job!.returning ? formatDateTime(job!.returning.eta) : '—'}</td>
+            <td>{job!.returning?.eta ? formatDateTime(job!.returning.eta!) : job!.returning ? 'Chưa có giờ dự kiến' : '—'}</td>
           </tr>
         ))}</tbody>
       </table></div>

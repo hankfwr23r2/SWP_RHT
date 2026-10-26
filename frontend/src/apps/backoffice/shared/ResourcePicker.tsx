@@ -60,7 +60,7 @@ export function ResourcePicker({ kind, vehicles, people, schedules, departAt, us
       : r.vehicle && isVehicleBusy(r.vehicle.status) && r.id !== selected
         ? 'Xe đang được gán cho chuyến khác'
         : clash
-          ? (clash.returning ? `Đang về trụ sở từ ${clash.returning.from}, dự kiến ${formatDateTime(clash.returning.eta)}` : clash.active ? `Đang đi đơn ${clash.order} (${clash.countries})` : `Trùng lịch với đơn ${clash.order} (${formatDate(clash.departAt)})`)
+          ? (clash.returning ? `Đang về trụ sở từ ${clash.returning.from}${clash.returning.eta ? `, dự kiến ${formatDateTime(clash.returning.eta)}` : ''}` : clash.active ? `Đang đi đơn ${clash.order} (${clash.countries})` : `Trùng lịch với đơn ${clash.order} (${formatDate(clash.departAt)})`)
           : usedHere.has(r.id) && r.id !== selected
             ? 'Đã chọn ở chuyến khác của đơn này'
             : ''
@@ -149,7 +149,7 @@ export function ResourcePicker({ kind, vehicles, people, schedules, departAt, us
               <div className={p.sched}>
                 <span className={p.schedHead}><i className="fa-regular fa-calendar" /> Đang làm việc</span>
                 {r.booked.length ? r.booked.map(x => {
-                  return <div key={x.order + x.trip} className={p.job}><b>{x.order}</b><small>{x.returning ? `đã giao ở ${x.returning.from} · về tới trụ sở dự kiến ${formatDateTime(x.returning.eta)}${x.returning.late ? ' · về trễ' : ''}` : `khởi hành ${formatDate(x.departAt)} · ${x.countries}`}</small></div>
+                  return <div key={x.order + x.trip} className={p.job}><b>{x.order}</b><small>{x.returning ? `đã giao ở ${x.returning.from}${x.returning.eta ? ` · về tới trụ sở dự kiến ${formatDateTime(x.returning.eta)}` : ' · chưa có giờ về dự kiến'}${x.returning.late ? ' · về trễ' : ''}` : `khởi hành ${formatDate(x.departAt)} · ${x.countries}`}</small></div>
                 }) : <span className={p.free}>Sẵn sàng tại trụ sở Việt Nam</span>}
               </div>
               )}
