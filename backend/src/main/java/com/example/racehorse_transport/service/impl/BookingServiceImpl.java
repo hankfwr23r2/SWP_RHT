@@ -72,6 +72,7 @@ public class BookingServiceImpl implements BookingService {
     private final BookingVehicleRepository bookingVehicleRepository;
     private final BookingAssignmentRepository bookingAssignmentRepository;
     private final QuotationRepository quotationRepository;
+    private final NotificationRepository notificationRepository;
     private final PaymentRepository paymentRepository;
     private final FleetService fleetService;
     private final LogRepository logRepository;
@@ -1022,6 +1023,18 @@ public class BookingServiceImpl implements BookingService {
         booking.setStatus("awaiting_payment");
         Booking updated = bookingRepository.save(booking);
 
+        String bookingCode = "BK-" + updated.getId();
+        notificationRepository.save(Notification.builder()
+                .recipientRole("customer")
+                .recipientUsername(updated.getCustomerID().getUser().getUsername())
+                .title("Báo giá đơn hàng " + bookingCode + " đã sẵn sàng")
+                .message("Đơn hàng " + bookingCode + " đã có báo giá. Vui lòng xem chi tiết và đặt cọc trong thời hạn hiệu lực.")
+                .link("/orders/" + bookingCode)
+                .bookingId(bookingCode)
+                .isRead(false)
+                .createdAt(now)
+                .build());
+
         logAction("SEND_QUOTATION", updated.getId(), "Phát hành báo giá đơn BK-" + updated.getId()
                 + " (Tổng: " + total + ", Cọc: " + deposit + ", Hết hạn: " + expiresAt + ")");
 
@@ -1913,8 +1926,14 @@ public class BookingServiceImpl implements BookingService {
                 break;
             }
             case "DEPART_TO_PICKUP": {
+                if (targetTrip.getDepartedAt() != null) throw new IllegalStateException("Xe của chuyến này đã xuất phát.");
+                // Chỉ xuất phát khi giấy tờ đã xong (Sẵn sàng đón ngựa) hoặc một xe khác của đơn đã xuất phát
+                boolean ready = "ready_for_pickup".equalsIgnoreCase(booking.getStatus());
+                if (!ready && trips.stream().noneMatch(t -> t.getDepartedAt() != null)) {
+                    throw new IllegalStateException("Đơn chưa sẵn sàng đón ngựa, chưa thể xuất phát.");
+                }
                 targetTrip.setDepartedAt(now);
-                booking.setStatus("en_route_to_pickup");
+                if (ready) booking.setStatus("en_route_to_pickup");
                 appendHistory(payload, actor, "Xe bắt đầu xuất phát đến điểm đón ngựa");
                 break;
             }
@@ -2408,9 +2427,12 @@ public class BookingServiceImpl implements BookingService {
                 break;
             }
             case "CONFIRM_HOME": {
-                Map<String, Object> hr = targetTrip.getHomeReturn() != null ? targetTrip.getHomeReturn() : new HashMap<>();
+                Map<String, Object> hr = targetTrip.getHomeReturn();
+                if (hr == null) throw new IllegalStateException("Chưa giao ngựa xong nên chưa thể xác nhận về trụ sở.");
+                if (number(hr.get("earliestAt"), 0) > now) throw new IllegalStateException("Chưa tới thời điểm sớm nhất có thể về trụ sở.");
+                if (isBlank(reqPayload.get("photo"))) throw new IllegalArgumentException("Cần ảnh chụp tại trụ sở.");
                 hr.put("backAt", now);
-                targetTrip.setHomeReturn(hr);
+                hr.put("photo", reqPayload.get("photo"));
 
                 if (targetTrip.getVehicleId() != null) {
                     try {

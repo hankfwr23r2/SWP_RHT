@@ -6,7 +6,7 @@ import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
 import { usePagination } from '@shared/ui/usePagination'
 import s from './ListPage.module.css'
 
-export interface Column<T> { head: ReactNode; cell: (row: T) => ReactNode; right?: boolean; center?: boolean; nowrap?: boolean; minWidth?: number }
+export interface Column<T> { head: ReactNode; cell: (row: T) => ReactNode; right?: boolean; center?: boolean; nowrap?: boolean; stickyRight?: boolean; minWidth?: number }
 export type TabDef<K extends string> = [key: K, label: string, count: number, hint?: string]
 
 interface Props<T, K extends string> {
@@ -71,11 +71,11 @@ export function ListPage<T, K extends string>({ title, subtitle, tabs, tab, onTa
           </div>
           <div className={s.tableWrap}>
             <table className={s.table}>
-              <thead><tr>{columns.map((c, i) => <th key={i} className={c.right ? s.right : c.center ? s.center : undefined} style={c.minWidth ? { minWidth: c.minWidth } : undefined}>{c.head}</th>)}</tr></thead>
+              <thead><tr>{columns.map((c, i) => <th key={i} className={`${c.right ? s.right : c.center ? s.center : ''} ${c.stickyRight ? s.stickyRight : ''}`} style={c.minWidth ? { minWidth: c.minWidth } : undefined}>{c.head}</th>)}</tr></thead>
               <tbody>
                 {pager.rows.map(r => (
                   <tr key={rowKey(r)} className={hotRow?.(r) ? s.hotRow : undefined}>
-                    {columns.map((c, i) => <td key={i} className={`${c.right ? s.right : c.center ? s.center : ''} ${c.nowrap ? s.nowrap : ''}`} style={c.minWidth ? { minWidth: c.minWidth } : undefined}>{c.cell(r)}</td>)}
+                    {columns.map((c, i) => <td key={i} className={`${c.right ? s.right : c.center ? s.center : ''} ${c.nowrap ? s.nowrap : ''} ${c.stickyRight ? s.stickyRight : ''}`} style={c.minWidth ? { minWidth: c.minWidth } : undefined}>{c.cell(r)}</td>)}
                   </tr>
                 ))}
               </tbody>

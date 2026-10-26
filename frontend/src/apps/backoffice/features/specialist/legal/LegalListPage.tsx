@@ -41,7 +41,7 @@ export default function LegalListPage() {
       const late = isClearanceOverdue(b, now)
       return late ? <span style={{ color: 'var(--red)', fontSize: '0.82rem' }}>Quá {formatDateTime(docsDueAt(b.departAt))} mà giấy chưa xong.</span> : '-'
     } },
-    { head: 'Thao tác', cell: b => <Link to={`/specialist/legal/${b.id}`} className={`btn btn-sm ${tab === 'done' ? 'btn-ghost' : 'btn-primary'}`}>{tab === 'done' ? 'Xem' : b.status === 'waybill_issued' ? 'Xem chi tiết' : 'Làm giấy tờ'}</Link>, center: true },
+    { head: 'Thao tác', cell: b => <Link to={`/specialist/legal/${b.id}`} className={`btn btn-sm ${tab === 'done' ? 'btn-ghost' : 'btn-primary'}`}>{tab === 'done' ? 'Xem' : b.status === 'waybill_issued' ? 'Xem chi tiết' : 'Làm giấy tờ'}</Link>, center: true, stickyRight: true },
   ]
   return (
     <ListPage title="Giấy tờ chuyến đi" subtitle="Tiếp nhận Vận đơn, làm giấy kiểm dịch và hải quan, cập nhật từng hạng mục kèm ảnh để khách và quản lý theo dõi."
