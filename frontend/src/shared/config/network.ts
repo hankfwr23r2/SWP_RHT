@@ -10,6 +10,7 @@ export interface GeoPoint { lat: number; lng: number }
 export interface Place extends GeoPoint { id: string; name: string; country: CountryCode }
 export interface Gate extends GeoPoint {
   id?: string
+  locationId?: number
   name: string
   country: Exclude<CountryCode, 'VN'>
   openingMinutes?: number
@@ -20,7 +21,7 @@ export interface BookingLocation extends GeoPoint {
   name: string
   type: 'farm' | 'club'
 }
-export interface TransitStation extends GeoPoint { id?: string; name: string; area: string; country: CountryCode }
+export interface TransitStation extends GeoPoint { id?: string; locationId?: number; name: string; area: string; country: CountryCode }
 export interface RescuePoint extends GeoPoint { id?: string; name: string; area: string; phone: string }
 
 export interface CatalogLocation {
@@ -90,6 +91,13 @@ function countryCode(value: string): CountryCode {
   return 'VN'
 }
 
+// Mã nước gửi cho backend: giữ nguyên mã VN/KH/LA, đổi tên nước ("Việt Nam", "Campuchia", "Lào") sang mã
+export function countryCodeOf(value?: string | null): CountryCode {
+  const code = value?.trim().toUpperCase()
+  if (code === 'VN' || code === 'KH' || code === 'LA') return code
+  return value ? countryCode(value) : 'VN'
+}
+
 function pointOf(location: CatalogLocation): GeoPoint | undefined {
   const lat = location.latitude ?? location.lat
   const lng = location.longitude ?? location.lng
@@ -120,6 +128,7 @@ export function setNetworkLocations(locations: CatalogLocation[]) {
     .map(({ location, point }) => ({
       ...point,
       id: codeOf(location),
+      locationId: location.id,
       name: location.locationName,
       country: location.destinationCountry as Exclude<CountryCode, 'VN'>,
       openingMinutes: location.openingMinutes ?? undefined,
@@ -145,6 +154,7 @@ export function setNetworkLocations(locations: CatalogLocation[]) {
     .map(({ location, point }) => ({
       ...point,
       id: codeOf(location),
+      locationId: location.id,
       name: location.locationName,
       area: location.province || location.city,
       country: countryCode(location.country),

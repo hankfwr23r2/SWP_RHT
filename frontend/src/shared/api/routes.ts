@@ -84,6 +84,49 @@ export const invalidateLocationsCache = () => {
   locationsCache = null
 }
 
+export type CountryCodeVnKhLa = 'VN' | 'KH' | 'LA'
+
+export interface RoutePreviewPlace {
+  name: string
+  lat: number
+  lng: number
+  country: CountryCodeVnKhLa
+}
+
+export interface RoutePreviewRequest {
+  pickup: RoutePreviewPlace
+  dropoff: RoutePreviewPlace
+  stopLocationIds: number[]
+  vehicleId: string
+  departAt: number
+}
+
+export type RoutePreviewEventType = 'DRIVE' | 'REST' | 'ROADSIDE_REST' | 'OVERNIGHT' | 'BORDER_WAIT' | 'BORDER_PROCESSING'
+
+export interface RoutePreviewEvent {
+  type: RoutePreviewEventType
+  place: string
+  startAt: number
+  endAt: number
+  km: number
+  lat: number | null
+  lng: number | null
+}
+
+export interface RoutePreviewResponse {
+  source: string
+  km: number
+  driveHours: number
+  legs: { from: string; to: string; km: number; driveHours: number }[]
+  path: [number, number][]
+  toll: { amountVnd: number | null; source: string | null }
+  schedule: RoutePreviewEvent[]
+  arrivalAt: number
+  borderArrivalAt: number | null
+  crewDays: number
+  warnings: string[]
+}
+
 export const routesApi = {
   // Lấy danh sách tất cả các tuyến cố định
   listRoutes: async (): Promise<BackendRouteResponse[]> => {
@@ -153,6 +196,11 @@ export const routesApi = {
   changeLocationStatus: async (id: number, status: 'ACTIVE' | 'INACTIVE'): Promise<BackendLocationResponse> => {
     invalidateLocationsCache()
     const res = await apiClient.patch<ApiResponse<BackendLocationResponse>>(`/locations/${id}/status`, { status })
+    return res.data.data
+  },
+  // Xem trước lộ trình xe tải (Valhalla) + lịch trình + phí cầu đường, do backend tính
+  routePreview: async (payload: RoutePreviewRequest, signal?: AbortSignal): Promise<RoutePreviewResponse> => {
+    const res = await apiClient.post<ApiResponse<RoutePreviewResponse>>('/coordinator/route-preview', payload, { signal })
     return res.data.data
   },
 }
