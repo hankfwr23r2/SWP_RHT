@@ -29,6 +29,7 @@ export function SettlementCard({ b, owner, onDone }: { b: CustomerBookingView; o
   const [comment, setComment] = useState('')
   const st = b.settlement
   if (!st) return null
+  const hasExpenses = st.items.length > 0
   const open = b.status === 'settlement_issued' || b.status === 'payment_overdue'
   const submit = async () => {
     setBusy(true)
@@ -49,11 +50,13 @@ export function SettlementCard({ b, owner, onDone }: { b: CustomerBookingView; o
   }
   return (
     <div className="card">
-      <div className="card-header"><h3><i className="fa-solid fa-file-invoice-dollar" /> Bảng quyết toán</h3>{b.status === 'payment_overdue' && <span className="badge badge-danger">Quá hạn</span>}{b.status === 'completed' && <span className="badge badge-success">Đã hoàn tất</span>}</div>
-      <p className="form-hint">Giá chuyến đã cố định từ lúc báo giá, nhiên liệu và cầu đường không tính thêm. Dưới đây là các khoản phát sinh do ngựa mà bạn chịu theo <PolicyLink doc="incident_cost">chính sách chi phí sự cố</PolicyLink>.</p>
-      {st.items.length ? (
-        <div className={s.bank}>{st.items.map((it, i) => <div key={i}><span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{it.photo && <ImageThumb name={it.photo} size={32} />}{it.label}</span><b>{formatVND(it.amount)}</b></div>)}<div><span>Tổng phải trả</span><b>{formatVND(st.total)}</b></div></div>
-      ) : <p>Không có khoản nào phải trả thêm.</p>}
+      {hasExpenses && (
+        <>
+          <div className="card-header"><h3><i className="fa-solid fa-file-invoice-dollar" /> Bảng quyết toán</h3>{b.status === 'payment_overdue' && <span className="badge badge-danger">Quá hạn</span>}{b.status === 'completed' && <span className="badge badge-success">Đã hoàn tất</span>}</div>
+          <p className="form-hint">Giá chuyến đã cố định từ lúc báo giá, nhiên liệu và cầu đường không tính thêm. Dưới đây là các khoản phát sinh do ngựa mà bạn chịu theo <PolicyLink doc="incident_cost">chính sách chi phí sự cố</PolicyLink>.</p>
+          <div className={s.bank}>{st.items.map((it, i) => <div key={i}><span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{it.photo && <ImageThumb name={it.photo} size={32} />}{it.label}</span><b>{formatVND(it.amount)}</b></div>)}<div><span>Tổng phải trả</span><b>{formatVND(st.total)}</b></div></div>
+        </>
+      )}
       {open && st.total > 0 && <p className="form-hint" style={{ marginTop: 8 }}>Hạn thanh toán: {formatDateTime(st.dueAt)}. Quá hạn, tài khoản bị khóa đặt đơn mới.</p>}
       {open && (
         <>
