@@ -250,9 +250,15 @@ export default function HorsesPage() {
                   <div className={s.horseFoot}>
                     <span className={s.trips}><i className="fa-solid fa-route" /> {h.completedTrips} chuyến</span>
                     <div className={s.horseActions} aria-label={`Thao tác với ${h.name}`}>
-                      <button className={`btn btn-sm btn-primary ${s.primaryAction}`} onClick={() => setModal({ horse: h })}>
-                        <i className={`fa-solid ${r.ok ? 'fa-pen-to-square' : 'fa-file-circle-plus'}`} aria-hidden="true" />
-                        {r.ok ? 'Chỉnh sửa hồ sơ' : 'Bổ sung giấy tờ'}
+                      <button
+                        className={`btn btn-sm ${isBusy ? 'btn-ghost' : 'btn-primary'} ${s.primaryAction}`}
+                        onClick={() => !isBusy && setModal({ horse: h })}
+                        disabled={isBusy}
+                        title={isBusy ? 'Ngựa đang trong chuyến vận chuyển, không thể chỉnh sửa hồ sơ lúc này.' : undefined}
+                        aria-disabled={isBusy}
+                      >
+                        <i className={`fa-solid ${isBusy ? 'fa-lock' : r.ok ? 'fa-pen-to-square' : 'fa-file-circle-plus'}`} aria-hidden="true" />
+                        {isBusy ? 'Đang trong chuyến' : r.ok ? 'Chỉnh sửa hồ sơ' : 'Bổ sung giấy tờ'}
                       </button>
                       <button className={`btn btn-sm btn-ghost ${s.secondaryAction}`} title="Xem sổ hành trình điện tử" onClick={() => setJourneyHorse(h)}>
                         <i className="fa-solid fa-passport" /> Sổ hành trình
