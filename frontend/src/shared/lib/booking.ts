@@ -357,7 +357,7 @@ export interface Schedules { vehicles: Map<string, Booked[]>; drivers: Map<strin
 export function schedulesOf(all: Booking[], exceptId: string, now = Date.now()): Schedules {
   const out: Schedules = { vehicles: new Map(), drivers: new Map(), escorts: new Map() }
   const put = (m: Map<string, Booked[]>, id: string, x: Booked) => { if (id) m.set(id, [...(m.get(id) ?? []), x]) }
-  const activeStatuses: Booking['status'][] = ['en_route_to_pickup', 'ready_for_pickup', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active']
+  const activeStatuses: Booking['status'][] = ['en_route_to_pickup', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement']
   const bookedOf = (o: Booking, t: VehicleTrip): Booked => ({
     order: o.id, departAt: o.departAt, route: `${o.origin.name.split(' — ')[0]} → ${o.dest.name.split(' — ')[0]}`, trip: t.tripId,
     countries: `${COUNTRIES[o.origin.country].name} → ${COUNTRIES[o.dest.country].name}`,
@@ -367,6 +367,10 @@ export function schedulesOf(all: Booking[], exceptId: string, now = Date.now()):
   all.filter(o => o.id !== exceptId && HOLDING.includes(o.status)).forEach(o => (o.trips ?? []).forEach(t => {
     const x = bookedOf(o, t)
     put(out.vehicles, t.vehicleId, x); put(out.drivers, t.driverId, x); put(out.escorts, t.escortId, x)
+  }))
+  all.filter(o => o.id !== exceptId && ['arrived', 'handover_timeout', 'returning_to_hq'].includes(o.status)).forEach(o => (o.trips ?? []).forEach(t => {
+    const x = bookedOf(o, t)
+    put(out.drivers, t.driverId, x); put(out.escorts, t.escortId, x)
   }))
   // Đơn đã giao xong (không còn giữ xe) nhưng Driver và Escort chưa về trụ sở: vẫn bị giữ, xe thì không
   returningTrips(all.filter(o => o.id !== exceptId && !HOLDING.includes(o.status))).forEach(({ b, t }) => {
@@ -411,16 +415,11 @@ export function findCrewBooked(schedules: Map<string, Booked[]>, id?: string, na
   return []
 }
 
-// Trùng lịch của nhân sự:
-// 1. Nếu đang trên đường về trụ sở mà giờ về sau giờ đơn mới khởi hành -> Xung đột
-// 2. Nếu đơn đang chạy thực tế trên đường và đơn mới khởi hành trong 2 ngày tới -> Xung đột
-// 3. Nếu trùng lịch theo khoảng thời gian chuyến đi (quốc tế 5 ngày, nội địa 3 ngày) -> Xung đột
-// 4. Nếu đơn mới cách xa hơn nhiều ngày -> RẢNH!
-export function crewClashOf(booked: Booked[] | undefined, departAt: number, now = Date.now()): Booked | undefined {
+// Nhân sự đang chạy chuyến hoặc chưa xác nhận về trụ sở luôn bị khóa.
+export function crewClashOf(booked: Booked[] | undefined, departAt: number): Booked | undefined {
   if (!booked?.length) return undefined
   return booked.find(x => {
-    if (x.returning && x.returning.eta && departAt <= x.returning.eta + 12 * HOUR) return true
-    if (x.active && departAt <= now + 2 * DAY) return true
+    if (x.returning || x.active) return true
     const isInter = x.countries.includes('Campuchia') || x.countries.includes('Lào')
     const days = isInter ? 5 * DAY : 3 * DAY
     return Math.abs(x.departAt - departAt) < days

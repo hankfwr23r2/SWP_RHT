@@ -4,6 +4,7 @@ import com.example.racehorse_transport.dto.fleet.VehicleRequest;
 import com.example.racehorse_transport.dto.fleet.VehicleResponse;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.BookingVehicle;
+import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.Vehicle;
 import com.example.racehorse_transport.repository.BookingAssignmentRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Optional;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -101,6 +103,65 @@ class FleetServiceImplTest {
         assertThat(response.getStatus()).isEqualTo("MAINTENANCE");
         assertThat(vehicle.getVehicleType()).isEqualTo("Xe chuyên dụng 6 ngăn");
         verify(vehicleRepository).save(vehicle);
+    }
+
+    @Test
+    void validateCrewAvailability_rejectsUnreturnedCompletedTripEvenForFarDeparture() {
+        Staff driver = driver();
+        Booking completed = unreturnedBooking("completed", "\"homeReturn\":{\"eta\":1000}");
+        when(staffRepository.findById(1)).thenReturn(Optional.of(driver));
+        when(bookingRepository.findAll()).thenReturn(List.of(completed));
+
+        assertThatThrownBy(() -> service.validateCrewAvailability(1, Instant.now().plusSeconds(30L * 86400),
+                "international", null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("BK-043")
+                .hasMessageContaining("chưa về trụ sở");
+    }
+
+    @Test
+    void getAvailableCrew_marksDriverBusyUntilReturnIsConfirmed() {
+        Staff driver = driver();
+        when(staffRepository.findByRoleIgnoreCase("DRIVER")).thenReturn(List.of(driver));
+        when(bookingRepository.findAll()).thenReturn(List.of(
+                unreturnedBooking("completed", "\"homeReturn\":{\"eta\":1000}")));
+        when(bookingAssignmentRepository.findByBookingID_Id(43)).thenReturn(List.of());
+
+        var crew = service.getAvailableCrew(Instant.now().plusSeconds(30L * 86400), "DRIVER");
+
+        assertThat(crew).hasSize(1);
+        assertThat(crew.get(0).isAvailable()).isFalse();
+        assertThat(crew.get(0).getBusyReason()).contains("BK-043");
+    }
+
+    @Test
+    void validateCrewAvailability_rejectsActiveTripRegardlessOfNewDepartureDate() {
+        Staff driver = driver();
+        when(staffRepository.findById(1)).thenReturn(Optional.of(driver));
+        when(bookingRepository.findAll()).thenReturn(List.of(unreturnedBooking("in_transit", "\"departedAt\":100")));
+
+        assertThatThrownBy(() -> service.validateCrewAvailability(1, Instant.now().plusSeconds(30L * 86400),
+                "international", null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("BK-043");
+    }
+
+    private Staff driver() {
+        Staff staff = new Staff();
+        staff.setId(1);
+        staff.setRole("DRIVER");
+        staff.setStaffCode("DR-01");
+        staff.setEmploymentStatus("ACTIVE");
+        return staff;
+    }
+
+    private Booking unreturnedBooking(String status, String tripFields) {
+        return Booking.builder()
+                .id(43)
+                .status(status)
+                .detailsJson("{\"trips\":[{\"tripId\":\"TRP-043-1\",\"driverId\":\"DR-01\","
+                        + tripFields + "}]}")
+                .build();
     }
 
     private Vehicle vehicle(int id, String status) {

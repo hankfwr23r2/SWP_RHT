@@ -9,7 +9,7 @@ import type { Booking, BookingHorse, HorseProfile, VehicleTrip, Checkpoint, Trip
 import { applyDocumentRequirements } from '../config/runtimeDocumentRequirements'
 import type { DocumentRequirement } from '../api/documentRequirements'
 import {
-  schedulesOf, clashOf, planHomeReturn, returnLate, returningTrips, vehicleSpot, vehiclePoint, pendingDeparture, spotLabel, nearestTo, projectOnPath, pointsAhead, pointAlong, bookingPath, incidentLocation, needsFitCheck, transitProgress, defaultPayer, incidentActionsFor, settlementOf, approvedSubOf, APPROVED_SUBS, orderGroupOf, ORDER_GROUPS, capacitiesFor, estimateQuote, busyResources, buildRoutePlan, gatesFor, suggestGate, suggestTransitStations, canCompleteClearance, classForHorses, defaultClearanceItems, deriveStatus, docsDueAt, earliestDeparture, finalizeQuote, horseReadiness,
+  schedulesOf, clashOf, crewClashOf, planHomeReturn, returnLate, returningTrips, vehicleSpot, vehiclePoint, pendingDeparture, spotLabel, nearestTo, projectOnPath, pointsAhead, pointAlong, bookingPath, incidentLocation, needsFitCheck, transitProgress, defaultPayer, incidentActionsFor, settlementOf, approvedSubOf, APPROVED_SUBS, orderGroupOf, ORDER_GROUPS, capacitiesFor, estimateQuote, busyResources, buildRoutePlan, gatesFor, suggestGate, suggestTransitStations, canCompleteClearance, classForHorses, defaultClearanceItems, deriveStatus, docsDueAt, earliestDeparture, finalizeQuote, horseReadiness,
   insuranceFee, isClearanceOverdue, isDepartureAllowed, isQuoteExpired, layoutLegs, manifestDocuments, nextBookingId, quoteLines, reviewDone, routeKm, activeStaff,
   findLocation, arrivalOf, routeOutline, managerBoardOf, managerCounts, orderTabOf, tripIdFor, validateRoutePlan, vehicleClassOf, autoPackFleet,
 } from './booking'
@@ -803,6 +803,16 @@ describe('Driver và Escort về trụ sở sau khi giao ngựa ở nước ngo�
     const busy = busyResources([o], NOW0 + 30 * 86_400_000)
     expect(busy.crew.has('D9') && busy.crew.has('E9')).toBe(true)
     expect(busy.vehicles.has('V9')).toBe(false)
+  })
+  it('chặn phân công Driver đang chờ xác nhận về trụ sở dù đơn mới khởi hành xa hơn nhiều ngày', () => {
+    const booking = abroad('completed', {})
+    const scheduled = schedulesOf([booking], 'ORD-new').drivers.get('D9')
+    expect(crewClashOf(scheduled, NOW0 + 30 * DAY)).toBeDefined()
+  })
+  it('chặn tài xế đang chạy chuyến dù đơn mới khởi hành xa hơn nhiều ngày', () => {
+    const booking = abroad('in_transit')
+    const scheduled = schedulesOf([booking], 'ORD-new').drivers.get('D9')
+    expect(crewClashOf(scheduled, NOW0 + 30 * DAY)).toBeDefined()
   })
   it('đã xác nhận về trụ sở thì mở lại', () => {
     const o = abroad('delivered_pending_settlement', { backAt: NOW0 + 7 * H })

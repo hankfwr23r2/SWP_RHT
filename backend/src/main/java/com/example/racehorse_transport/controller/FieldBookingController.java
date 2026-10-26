@@ -78,8 +78,9 @@ public class FieldBookingController {
     @PostMapping("/{id}/trip-update")
     public ResponseEntity<ApiResponse<BookingResponse>> updateTripProgress(
             @PathVariable("id") String id,
-            @RequestBody com.example.racehorse_transport.dto.field.TripUpdateRequest request) {
-        BookingResponse response = bookingService.updateTripProgress(id, request);
+            @RequestBody com.example.racehorse_transport.dto.field.TripUpdateRequest request,
+            Authentication auth) {
+        BookingResponse response = bookingService.updateTripProgress(id, request, auth.getName(), roleOf(auth));
         return ResponseEntity.ok(ApiResponse.success(response, "Cập nhật tiến độ chuyến xe thành công"));
     }
 }
