@@ -66,10 +66,10 @@ class CrewAcknowledgementTest {
     private final ObjectMapper json = new ObjectMapper();
     private String specialistToken;
     private String specialistCode;
-    private String driverToken;
     private String driverCode;
-    private String escortToken;
     private String escortCode;
+    private String driverToken;
+    private String escortToken;
     private Customer customer;
 
     @BeforeEach
@@ -147,7 +147,7 @@ class CrewAcknowledgementTest {
         return json.readTree(login.body()).path("data").path("accessToken").asText();
     }
 
-    // Đơn trong nước, giấy tờ đã nộp đủ (chờ Chuyên viên bấm hoàn tất), một xe có tài xế và hộ tống
+    // Đơn trong nước, giấy tờ đã nộp đủ (chờ Chuyên viên bấm hoàn tất), một xe phân công cho đúng tài xế và hộ tống đăng nhập
     private Booking booking(String tripAcks) {
         String details = ("{\"intake\":{\"at\":1,\"by\":\"Quản lý\",\"specialist\":{\"id\":\"%s\",\"name\":\"Chuyên viên\"},"
                 + "\"coordinator\":{\"id\":\"CO-1\",\"name\":\"Điều phối\"}},"
