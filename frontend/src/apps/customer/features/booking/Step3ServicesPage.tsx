@@ -10,6 +10,7 @@ import type { ServiceCatalogItem } from '@shared/api/serviceCatalog'
 import { BookingShell } from './BookingShell'
 import type { horseListLoader } from '../horses/loaders'
 import { defaultConfig, isDeclinedInsurance, serviceOptionFor, useBookingDraft, type HorseConfig } from './draft'
+import { isBookingRouteReady } from './routeValidation'
 import s from './Booking.module.css'
 
 const SERVICE_GROUPS: { key: BookingRequiredServiceCategory; label: string; icon: string }[] = [
@@ -49,7 +50,7 @@ export default function Step3ServicesPage() {
     if (submitted) document.querySelector('[data-problem]')?.scrollIntoView({ block: 'center', behavior: 'smooth' })
   }, [activeIndex, submitted])
 
-  if (!draft.type || !draft.departDate) return <Navigate to="/booking/route" replace />
+  if (!isBookingRouteReady(draft)) return <Navigate to="/booking/route" replace />
   if (!draft.horseIds.length) return <Navigate to="/booking/horses" replace />
 
   const rows = draft.horseIds.map(id => horses?.find(h => h.id === id)).filter(Boolean) as NonNullable<typeof horses>

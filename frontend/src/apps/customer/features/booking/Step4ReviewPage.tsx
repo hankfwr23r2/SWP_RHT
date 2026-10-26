@@ -15,6 +15,7 @@ import { useToast } from '@shared/ui/toast'
 import { BookingShell } from './BookingShell'
 import type { horseListLoader } from '../horses/loaders'
 import { countriesOf, isDeclinedInsurance, serviceOptionFor, useBookingDraft } from './draft'
+import { isBookingRouteReady } from './routeValidation'
 import s from './Booking.module.css'
 
 
@@ -46,6 +47,7 @@ export default function Step4ReviewPage() {
       </Modal>
     )
   }
+  if (!isBookingRouteReady(draft)) return <Navigate to="/booking/route" replace />
   const countries = countriesOf(draft)
   if (!countries || !draft.departDate) return <Navigate to="/booking/route" replace />
   if (!draft.horseIds.length) return <Navigate to="/booking/horses" replace />
