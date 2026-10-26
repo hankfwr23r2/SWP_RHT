@@ -28,20 +28,12 @@ export function HorseDocChips({
           const required = requiredTypes.includes(t)
           const isMissing = missing.includes(t)
           const state = isMissing ? 'missing' : 'ok'
-          const text = doc?.status?.toUpperCase() === 'REJECTED'
-            ? 'Bị từ chối'
-            : doc?.status && doc.status.toUpperCase() !== 'APPROVED'
-            ? 'Chờ duyệt'
-            : doc ? 'Đã duyệt' : 'Thiếu'
+          const text = doc?.status?.toUpperCase() === 'REJECTED' ? 'Bị từ chối' : doc ? 'Đã nộp' : 'Thiếu'
 
           if (doc) {
             const fileName = doc.fileUrl || doc.fileName || `${HORSE_DOC[t].short}.pdf`
             const documentStatus = doc.status?.toUpperCase()
-            const icon = documentStatus === 'REJECTED'
-              ? 'fa-circle-xmark'
-              : documentStatus && documentStatus !== 'APPROVED'
-              ? 'fa-clock'
-              : 'fa-circle-check'
+            const icon = documentStatus === 'REJECTED' ? 'fa-circle-xmark' : 'fa-circle-check'
             return (
               <li key={t}>
                 <button

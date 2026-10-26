@@ -228,15 +228,15 @@ public class BookingServiceImpl implements BookingService {
                     throw new IllegalArgumentException("Hồ sơ ngựa " + hDto.getHorseId() + " không thuộc tài khoản của bạn.");
                 }
                 List<HorseDocument> horseDocuments = horseDocumentRepository.findByHorseID_Id(horseId);
+                // Khách đã tải giấy tờ lên là đủ để đặt; Chuyên viên thẩm định hồ sơ ngựa sau, trong từng đơn
                 for (DocumentRequirement requirement : requiredHorseDocuments) {
-                    boolean approved = horseDocuments.stream()
-                            .anyMatch(document -> "APPROVED".equalsIgnoreCase(document.getStatus())
-                                    && DocumentRequirementPolicy.matchesHorseDocument(
-                                            requirement.getDocumentType(), document.getDocumentType()));
-                    if (!approved) {
+                    boolean submitted = horseDocuments.stream()
+                            .anyMatch(document -> DocumentRequirementPolicy.matchesHorseDocument(
+                                    requirement.getDocumentType(), document.getDocumentType()));
+                    if (!submitted) {
                         throw new IllegalArgumentException("Ngựa \""
                                 + (horse.getHorseName() != null ? horse.getHorseName() : hDto.getHorseId())
-                                + "\" còn thiếu giấy tờ bắt buộc đã được duyệt: "
+                                + "\" còn thiếu giấy tờ bắt buộc: "
                                 + requirement.getDocumentName() + ".");
                     }
                 }
