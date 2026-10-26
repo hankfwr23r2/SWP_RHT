@@ -162,12 +162,12 @@
 /* Quy trình */
 .process { background: var(--bg-soft); padding: 72px 0; }
 .steps { list-style: none; display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-top: 40px; counter-reset: step; }
-.step { position: relative; background: white; border-radius: var(--radius); padding: 22px 16px; text-align: center; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05); transition: transform 0.3s, box-shadow 0.3s; }
+.step { position: relative; background: white; border-radius: var(--radius); padding: 22px 16px; text-align: center; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05); transition: transform 0.3s, box-shadow 0.3s; display: flex; flex-direction: column; align-items: center; }
 .step:hover { transform: translateY(-6px); box-shadow: 0 14px 28px rgba(15, 23, 42, 0.1); }
-.step-num { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 999px; background: var(--orange-soft); color: var(--orange); font-size: 1.2rem; margin-bottom: 12px; }
-.step h3 { font-size: 0.92rem; color: var(--navy); margin-bottom: 6px; }
-.step p { font-size: 0.8rem; color: var(--muted); }
-.step small { display: block; margin-top: 8px; font-size: 0.72rem; font-weight: 700; color: var(--orange); }
+.step-num { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 999px; background: var(--orange-soft); color: var(--orange); font-size: 1.2rem; margin-bottom: 12px; flex-shrink: 0; }
+.step h3 { font-size: 0.92rem; color: var(--navy); margin-bottom: 8px; min-height: 2.6em; display: flex; align-items: center; justify-content: center; line-height: 1.3; }
+.step p { font-size: 0.8rem; color: var(--muted); line-height: 1.5; flex: 1 1 auto; margin: 0; }
+.step small { display: flex; align-items: center; justify-content: center; margin-top: 14px; font-size: 0.74rem; font-weight: 700; color: var(--orange); min-height: 34px; line-height: 1.35; width: 100%; text-align: center; }
 
 /* Kêu gọi đặt chuyến */
 .cta { position: relative; padding: 88px 0; color: white; text-align: center; background-image: linear-gradient(90deg, rgba(194, 65, 12, 0.93), rgba(15, 23, 42, 0.85)), var(--bg); background-size: cover; background-position: center; background-attachment: fixed; }
