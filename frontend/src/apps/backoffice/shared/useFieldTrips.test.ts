@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Booking } from '@shared/types/booking'
-import { isFieldBookingUpdate, mergeFieldBooking } from './useFieldTrips'
+import { isFieldBookingUpdate, mergeFieldBooking, readFieldTripSelection, saveFieldTripSelection } from './useFieldTrips'
 
 const booking = (overrides: Partial<Booking> = {}) => ({
   id: 'BK-026',
@@ -35,5 +35,28 @@ describe('field booking updates', () => {
 
     expect(result?.[0].status).toBe('arrived')
     expect(result?.[1]).toBe(other)
+  })
+})
+
+describe('field trip selection', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('persists the selected trip separately for each role and user', () => {
+    const values = new Map<string, string>()
+    vi.stubGlobal('window', {
+      sessionStorage: {
+        getItem: (key: string) => values.get(key) ?? null,
+        setItem: (key: string, value: string) => values.set(key, value),
+      },
+    })
+
+    saveFieldTripSelection('driver', 'driver01', 'TRP-002')
+    saveFieldTripSelection('escort', 'escort01', 'TRP-003')
+    saveFieldTripSelection('driver', 'driver02', 'TRP-004')
+
+    expect(readFieldTripSelection('driver', 'driver01')).toBe('TRP-002')
+    expect(readFieldTripSelection('escort', 'escort01')).toBe('TRP-003')
+    expect(readFieldTripSelection('driver', 'driver02')).toBe('TRP-004')
+    expect(readFieldTripSelection('escort', 'driver01')).toBe('')
   })
 })
