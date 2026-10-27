@@ -14,11 +14,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.OptionalLong;
 
 // Phí cầu đường (VND) của xe tải trên phần đường trong Việt Nam, lấy từ Vietmap Route v4 (chỉ phủ Việt Nam).
+// Không gửi giờ đi: phí không đổi theo giờ, còn giờ ban ngày làm Vietmap từ chối điểm trong vùng cấm xe tải.
 // URL chứa key nên không bao giờ ghi URL ra log.
 @Slf4j
 @Component
@@ -37,7 +36,7 @@ public class VietmapTollClient {
         this.json = json;
     }
 
-    public OptionalLong truckToll(GeoPoint from, GeoPoint to, int capacityKg, Instant departAt) {
+    public OptionalLong truckToll(GeoPoint from, GeoPoint to, int capacityKg) {
         if (apiKey == null || apiKey.isBlank()) {
             log.warn("Chưa cấu hình VIETMAP_API_KEY, bỏ qua phí cầu đường.");
             return OptionalLong.empty();
@@ -46,8 +45,7 @@ public class VietmapTollClient {
                 + "&point=" + encode(from.lat() + "," + from.lng())
                 + "&point=" + encode(to.lat() + "," + to.lng())
                 + "&vehicle=truck&capacity=" + capacityKg
-                + "&annotations=toll"
-                + "&time=" + encode(departAt.truncatedTo(ChronoUnit.SECONDS).toString());
+                + "&annotations=toll";
         try {
             HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + "/route/v4?" + query))
                     .timeout(Duration.ofSeconds(20))

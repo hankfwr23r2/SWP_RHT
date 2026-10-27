@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.OptionalLong;
@@ -37,7 +36,7 @@ class RoutingLiveTest {
     @EnabledIfEnvironmentVariable(named = "VIETMAP_API_KEY", matches = ".+")
     void vietmapReturnsATruckTollInsideVietnam() {
         OptionalLong toll = new VietmapTollClient("https://maps.vietmap.vn/api", System.getenv("VIETMAP_API_KEY"), json)
-                .truckToll(HCM, MOC_BAI, 8000, Instant.now().plusSeconds(86_400));
+                .truckToll(HCM, MOC_BAI, 8000);
 
         assertThat(toll).isPresent();
         assertThat(toll.getAsLong()).isNotNegative();

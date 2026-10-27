@@ -109,7 +109,7 @@ public class RoutePreviewService {
                 stations, rules(), ZONE);
 
         List<String> warnings = new ArrayList<>();
-        RoutePreviewResponse.Toll toll = toll(request, gate, capacityKg, departAt, warnings);
+        RoutePreviewResponse.Toll toll = toll(request, gate, capacityKg, warnings);
         long roadside = journey.events().stream()
                 .filter(e -> e.place() == null && e.type() != JourneyPlanner.EventType.DRIVE)
                 .count();
@@ -213,7 +213,7 @@ public class RoutePreviewService {
     }
 
     // Phí cầu đường chỉ có ở phần đường trong Việt Nam (Vietmap chỉ phủ Việt Nam)
-    private RoutePreviewResponse.Toll toll(RoutePreviewRequest request, Location gate, int capacityKg, Instant departAt,
+    private RoutePreviewResponse.Toll toll(RoutePreviewRequest request, Location gate, int capacityKg,
                                            List<String> warnings) {
         GeoPoint pickup = geo(request.pickup());
         GeoPoint dropoff = geo(request.dropoff());
@@ -244,7 +244,7 @@ public class RoutePreviewService {
         if (cached != null) {
             return new RoutePreviewResponse.Toll(cached, "vietmap");
         }
-        OptionalLong fresh = vietmap.truckToll(from, to, capacityKg, departAt);
+        OptionalLong fresh = vietmap.truckToll(from, to, capacityKg);
         if (fresh.isEmpty()) {
             warnings.add("Chưa lấy được phí cầu đường (Vietmap).");
             return new RoutePreviewResponse.Toll(null, "vietmap");
