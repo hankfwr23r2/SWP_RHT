@@ -120,6 +120,12 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatusCode.valueOf(422));
     }
 
+    // Tuyến nội địa đi ra nước ngoài: điều phối bỏ hoặc đổi trạm
+    @ExceptionHandler(DomesticRouteAbroadException.class)
+    public ResponseEntity<ApiResponse<Object>> handleDomesticRouteAbroad(DomesticRouteAbroadException ex) {
+        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatusCode.valueOf(422));
+    }
+
     // Bắt các lỗi chung chưa được xử lý cụ thể
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleGeneralException(Exception ex) {
