@@ -4,10 +4,9 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { MIN_REST_MINUTES } from '@shared/config/booking-rules'
-import { AVG_SPEED_KMH } from '@shared/config/public-pricing'
-import type { GeoPoint } from '@shared/config/network'
+import { countryCodeOf, type GeoPoint, type TransitStation } from '@shared/config/network'
 import { routeOutline } from '@shared/lib/booking'
-import { useRoadRoute } from '@shared/services/useRoadRoute'
+import { stationsForBooking } from '@shared/lib/routePreview'
 import type { RestStop } from '@shared/types/booking'
 import { Modal } from '@shared/ui/Modal'
 import { addBaseLayer, BASE_MAP_OPTIONS } from '@shared/ui/baseMap'
@@ -34,17 +33,17 @@ interface Props {
   origin: Point
   dest: Point
   gate?: Point
-  departAt?: number // giờ khởi hành, để Google tính giao thông theo giờ đó
+  international: boolean // đơn nội địa chỉ thấy trạm ở Việt Nam
   value: RestStop[]
   onApply: (rests: RestStop[]) => void
   onClose: () => void
 }
 
-export function RouteMapPicker({ origin, dest, gate, departAt, value, onApply, onClose }: Props) {
+export function RouteMapPicker({ origin, dest, gate, international, value, onApply, onClose }: Props) {
   const box = useRef<HTMLDivElement>(null)
   const map = useRef<L.Map | null>(null)
   const layer = useRef<L.LayerGroup | null>(null)
-  const [stations, setStations] = useState<Point[]>([])
+  const [catalog, setCatalog] = useState<TransitStation[]>([])
   const [locationsError, setLocationsError] = useState<string>()
 
   // Trạm nghỉ do Admin quản lý, có tọa độ trong danh mục địa điểm.
@@ -52,8 +51,8 @@ export function RouteMapPicker({ origin, dest, gate, departAt, value, onApply, o
     let cancelled = false
     routesApi.listLocations({ type: 'RestStop' }).then(locs => {
       if (cancelled) return
-      setStations(locs.flatMap(loc => loc.status === 'ACTIVE' && loc.latitude != null && loc.longitude != null
-        ? [{ name: loc.locationName, lat: loc.latitude, lng: loc.longitude, area: loc.province || loc.city }]
+      setCatalog(locs.flatMap(loc => loc.status === 'ACTIVE' && loc.latitude != null && loc.longitude != null
+        ? [{ name: loc.locationName, lat: loc.latitude, lng: loc.longitude, area: loc.province || loc.city, country: countryCodeOf(loc.country) }]
         : []))
       setLocationsError(undefined)
     }).catch((error: unknown) => {
@@ -63,9 +62,11 @@ export function RouteMapPicker({ origin, dest, gate, departAt, value, onApply, o
     return () => { cancelled = true }
   }, [])
 
+  const stations = useMemo(() => stationsForBooking(catalog, international), [catalog, international])
+
   // Giữ lại các trạm đã có trong value (kể cả trạm từ corridor)
   const allAvailableStations = useMemo(() => {
-    const list = [...stations]
+    const list: Point[] = [...stations]
     value.forEach(v => {
       if (v.lat != null && v.lng != null && !list.some(s => s.name === v.name)) {
         list.push({ name: v.name, lat: v.lat, lng: v.lng, area: 'Hành lang chuẩn' })
@@ -81,8 +82,6 @@ export function RouteMapPicker({ origin, dest, gate, departAt, value, onApply, o
   const chosen = useMemo(() => allAvailableStations.filter(s => picked.has(s.name)), [allAvailableStations, picked])
   const outline = useMemo(() => routeOutline(origin, gate, dest, chosen), [origin, gate, dest, chosen])
   const straightKm = outline.path.slice(1).reduce((t, p, i) => t + haversine(outline.path[i], p), 0)
-  // Đường bộ thật qua các điểm đã chọn: vẽ theo đường này, chưa lấy được thì vẽ nét thẳng
-  const { route: road, loading: roadLoading } = useRoadRoute(outline.path, departAt)
   const order = (name: string) => outline.stations.findIndex(s => s.name === name) + 1
 
   const choose = (name: string) => {
@@ -113,11 +112,11 @@ export function RouteMapPicker({ origin, dest, gate, departAt, value, onApply, o
     const g = layer.current
     if (!g) return
     g.clearLayers()
-    const line = road?.path ?? outline.path.map(p => [p.lat, p.lng] as [number, number])
+    const line = outline.path.map(p => [p.lat, p.lng] as [number, number])
     const chosenAny = outline.stations.length > 0
     // Có trạm đã chọn: đường cam chuyển động; chưa chọn: đường xám nhạt điểm đón → điểm trả
     L.polyline(line, { color: chosenAny ? '#ea580c' : '#64748b', weight: 12, opacity: 0.18, interactive: false }).addTo(g)
-    L.polyline(line, { color: chosenAny ? '#ea580c' : '#64748b', weight: 5, opacity: 0.95, className: chosenAny ? 'rm-route' : '', dashArray: road ? undefined : '6 8', interactive: false }).addTo(g)
+    L.polyline(line, { color: chosenAny ? '#ea580c' : '#64748b', weight: 5, opacity: 0.95, className: chosenAny ? 'rm-route' : '', dashArray: '6 8', interactive: false }).addTo(g)
     allAvailableStations.forEach(s => {
       const n = order(s.name)
       L.marker([s.lat, s.lng], { icon: stationIcon(n, s.name === active), zIndexOffset: n ? 500 : 0, title: s.name })
@@ -127,7 +126,7 @@ export function RouteMapPicker({ origin, dest, gate, departAt, value, onApply, o
     L.marker([origin.lat, origin.lng], { icon: pin('rm-a', 'A'), zIndexOffset: 900 }).bindTooltip(`Điểm đón: ${short(origin.name)}`, { direction: 'top', offset: [0, -14] }).addTo(g)
     L.marker([dest.lat, dest.lng], { icon: pin('rm-b', 'B'), zIndexOffset: 900 }).bindTooltip(`Điểm trả: ${short(dest.name)}`, { direction: 'top', offset: [0, -14] }).addTo(g)
     if (gate) L.marker([gate.lat, gate.lng], { icon: pin('rm-g', '⚑'), zIndexOffset: 900 }).bindTooltip(`Cửa khẩu ${gate.name}`, { direction: 'top', offset: [0, -14] }).addTo(g)
-  }, [allAvailableStations, outline, picked, active, road]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [allAvailableStations, outline, picked, active]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const apply = () => {
     onApply(
@@ -160,9 +159,7 @@ export function RouteMapPicker({ origin, dest, gate, departAt, value, onApply, o
           ) : <p className="rm-hint"><i className="fa-solid fa-hand-pointer" /> Bấm vào một trạm (chấm trắng viền xanh) để chọn và đặt thời gian nghỉ.</p>}
           <div className="rm-sum"><span><b>{outline.stations.length}</b> trạm</span><span>nghỉ <b>{total}</b> phút</span></div>
           <div className="rm-road" aria-live="polite">
-            {roadLoading ? <span className="rm-loading"><i className="fa-solid fa-spinner fa-spin" /> Đang tính đường đi…</span>
-              : road ? <><span><b>{Math.round(road.km)}</b> km · lái <b>{(road.km / AVG_SPEED_KMH).toFixed(1)}</b> giờ</span><small>Ước tính {AVG_SPEED_KMH} km/h · {road.traffic ? 'Theo Google, có giao thông theo giờ khởi hành' : 'Theo đường bộ, chưa tính giao thông'}</small></>
-              : <><span>≈ <b>{Math.round(straightKm)}</b> km đường chim bay</span><small>Chưa lấy được đường bộ, đang vẽ nét thẳng</small></>}
+            <span>≈ <b>{Math.round(straightKm)}</b> km đường chim bay</span><small>Nét đứt chỉ nối các điểm đã chọn; đường đi thật cho xe tải sẽ hiện ở trang lập kế hoạch.</small>
           </div>
           {locationsError && <p role="alert">{locationsError}</p>}
           {!locationsError && stations.length === 0 && <p>Chưa có trạm nghỉ đang hoạt động có tọa độ.</p>}

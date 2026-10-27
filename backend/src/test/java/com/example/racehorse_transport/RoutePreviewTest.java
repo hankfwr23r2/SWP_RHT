@@ -94,6 +94,14 @@ class RoutePreviewTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        // Trạm nghỉ mẫu (nạp sẵn khi khởi động) tắt đi để mỗi kịch bản chỉ dùng trạm do chính test tạo
+        locations.findAll().stream()
+                .filter(l -> "RestStop".equals(l.getLocationType())
+                        && (l.getLocationName() == null || !l.getLocationName().endsWith("(test)")))
+                .forEach(l -> {
+                    l.setStatus("INACTIVE");
+                    locations.save(l);
+                });
         routeCache.deleteAll();
         STUB.clearRequests();
         STUB.reply("/route", 200, "valhalla-truck-hcm-mocbai-phnompenh.json");

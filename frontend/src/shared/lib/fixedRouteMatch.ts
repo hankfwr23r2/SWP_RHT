@@ -1,4 +1,4 @@
-import type { GeoPoint } from '../config/network'
+import { countryCodeOf, type GeoPoint } from '../config/network'
 
 export const MAX_FIXED_ROUTE_ACCESS_KM = 80
 export const MAX_FIXED_ROUTE_DETOUR_RATIO = 1.5
@@ -10,6 +10,7 @@ export interface FixedRoutePoint {
   stopOrder: number
   latitude?: number | null
   longitude?: number | null
+  country?: string
 }
 
 export interface FixedRouteMatch {
@@ -37,6 +38,11 @@ const pointOf = (stop: FixedRoutePoint): GeoPoint | undefined => {
 
 const nearestIndex = (points: GeoPoint[], target: GeoPoint) =>
   points.reduce((best, point, index) => haversineKm(point, target) < haversineKm(points[best], target) ? index : best, 0)
+
+// Đơn nội địa chỉ dùng hành lang có mọi điểm dừng ở Việt Nam; đơn quốc tế dùng được hành lang qua biên giới
+export function corridorFitsBooking(stops: Pick<FixedRoutePoint, 'country'>[], international: boolean): boolean {
+  return international || stops.every(stop => countryCodeOf(stop.country) === 'VN')
+}
 
 /** Selects the ordered subsection of a fixed route nearest to the booking endpoints. */
 export function matchFixedRoute(
@@ -90,4 +96,32 @@ export function matchFixedRoute(
     pickupAccessKm: haversineKm(pickup, section[0].point),
     deliveryAccessKm: haversineKm(section[section.length - 1].point, delivery),
   }
+}
+
+// Độ dài đường gấp khúc nối thẳng các điểm (km): chỉ dùng để so các hành lang với nhau
+const pathKm = (points: GeoPoint[]) => points.slice(1).reduce((sum, point, index) => sum + haversineKm(points[index], point), 0)
+
+/**
+ * Xếp hạng hành lang cố định theo vị trí các điểm dừng, không gọi dịch vụ chỉ đường:
+ * bỏ hành lang không hợp đơn, xa điểm đón/giao hoặc vòng quá xa; đường ngắn hơn lên trước.
+ * Quãng đường thật của tuyến đã chọn do backend tính (route-preview).
+ */
+export function rankFixedRoutes<T>(
+  candidates: { corridor: T; stops: FixedRoutePoint[] }[],
+  pickup: GeoPoint,
+  delivery: GeoPoint,
+  gate: GeoPoint | undefined,
+  international: boolean
+): { corridor: T; match: FixedRouteMatch }[] {
+  const directKm = pathKm(international && gate ? [pickup, gate, delivery] : [pickup, delivery])
+  return candidates
+    .flatMap(({ corridor, stops }) => {
+      if (!corridorFitsBooking(stops, international)) return []
+      const match = matchFixedRoute(stops, pickup, delivery, international ? gate : undefined)
+      if (!match || match.pickupAccessKm > MAX_FIXED_ROUTE_ACCESS_KM || match.deliveryAccessKm > MAX_FIXED_ROUTE_ACCESS_KM) return []
+      const km = pathKm(match.points)
+      return km > directKm * MAX_FIXED_ROUTE_DETOUR_RATIO ? [] : [{ corridor, match, km }]
+    })
+    .sort((a, b) => a.km - b.km || a.match.pickupAccessKm + a.match.deliveryAccessKm - b.match.pickupAccessKm - b.match.deliveryAccessKm)
+    .map(({ corridor, match }) => ({ corridor, match }))
 }

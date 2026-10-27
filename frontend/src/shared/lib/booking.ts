@@ -765,7 +765,7 @@ export function validateRoutePlan(plan: Pick<RoutePlan, 'legs' | 'rests' | 'bord
   const errors: string[] = []
   const warnings: string[] = []
   plan.legs.forEach(l => {
-    const h = (l.arriveAt - l.departAt) / (60 * MIN)
+    const h = l.hours ?? (l.arriveAt - l.departAt) / (60 * MIN)
     if (h > MAX_CONTINUOUS_HOURS) errors.push(`Chặng ${l.no} đi liên tục ${h.toFixed(1)} giờ, vượt ${MAX_CONTINUOUS_HOURS} giờ. Thêm trạm nghỉ.`)
   })
   plan.rests.forEach((r, i) => {

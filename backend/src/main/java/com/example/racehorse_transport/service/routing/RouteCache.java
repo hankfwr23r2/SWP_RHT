@@ -1,6 +1,5 @@
 package com.example.racehorse_transport.service.routing;
 
-import com.example.racehorse_transport.entity.RouteCacheEntry;
 import com.example.racehorse_transport.repository.RouteCacheRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -34,15 +33,13 @@ public class RouteCache {
     }
 
     public void put(String key, Object value) {
-        RouteCacheEntry entry = new RouteCacheEntry();
-        entry.setCacheKey(hash(key));
+        String payload;
         try {
-            entry.setPayload(json.writeValueAsString(value));
+            payload = json.writeValueAsString(value);
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Không ghi được kết quả lộ trình vào bộ đệm", e);
         }
-        entry.setCreatedAt(Instant.now());
-        repository.save(entry);
+        repository.upsert(hash(key), payload, Instant.now());
     }
 
     static String hash(String key) {

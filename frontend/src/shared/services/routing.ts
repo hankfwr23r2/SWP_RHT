@@ -15,7 +15,7 @@ export interface RoadRoute {
   legs?: RoadLeg[] // từng chặng giữa các điểm dừng nối tiếp
   name?: string
   summary?: string
-  source: 'osrm' | 'offline'
+  source: 'osrm' | 'offline' | 'valhalla'
   traffic: boolean
 }
 export interface RoadOptions { signal?: AbortSignal }

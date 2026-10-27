@@ -20,5 +20,6 @@ public record RoutePreviewResponse(
     // amountVnd null: chưa lấy được phí; source null: tuyến không đi qua Việt Nam
     public record Toll(Long amountVnd, String source) {}
 
-    public record Event(String type, String place, long startAt, long endAt) {}
+    // km: quãng đường lái (chỉ với DRIVE); lat/lng: vị trí của sự kiện dừng (null với DRIVE)
+    public record Event(String type, String place, long startAt, long endAt, double km, Double lat, Double lng) {}
 }
