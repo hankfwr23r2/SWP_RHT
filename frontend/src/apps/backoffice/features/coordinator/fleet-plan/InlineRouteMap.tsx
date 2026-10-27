@@ -97,8 +97,9 @@ export function InlineRouteMap({ origin, dest, gate, departAt, rests, activeRoad
     if (!g) return
     g.clearLayers()
 
-    const line = road?.path ?? outline.path.map(p => [p.lat, p.lng] as [number, number])
-    const chosenAny = outline.stations.length > 0
+    const rawLine = (road?.path && road.path.length > 0) ? road.path : outline.path.map(p => [p.lat, p.lng] as [number, number])
+    const line = rawLine.map(p => (p[0] > 90 ? [p[1], p[0]] : p) as [number, number])
+    const chosenAny = restPoints.length > 0
 
     // Đường viền tỏa sáng và đường chính
     L.polyline(line, {
@@ -177,8 +178,11 @@ export function InlineRouteMap({ origin, dest, gate, departAt, rests, activeRoad
           boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
           fontSize: '0.8rem',
           display: 'flex',
+          flexWrap: 'wrap',
           gap: 12,
           alignItems: 'center',
+          maxWidth: 'calc(100% - 20px)',
+          boxSizing: 'border-box',
           backdropFilter: 'blur(4px)',
         }}
       >

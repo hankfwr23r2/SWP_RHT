@@ -313,12 +313,23 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
     setApplyingCorridor(true)
     try {
       const suggestion = corridorSuggestions.find(item => item.corridor.id === corridorId)
-      if (!suggestion) {
-        toast('Tuyến này chưa khớp với vị trí đón/trả của đơn.', 'info')
+      let stops = suggestion?.match.restStops
+      if (!stops || stops.length === 0) {
+        const rawStops = await routesApi.getRouteStops(corridorId)
+        stops = rawStops.map((s, idx) => ({
+          afterLeg: idx + 1,
+          name: s.locationName || s.address || `Trạm ${s.stopOrder}`,
+          minutes: 45,
+          lat: s.latitude ?? undefined,
+          lng: s.longitude ?? undefined,
+        }))
+      }
+      if (!stops || stops.length === 0) {
+        toast('Tuyến này chưa có trạm dừng được thiết lập.', 'info')
         return
       }
-      setRests(suggestion.match.restStops)
-      toast(`Đã áp dụng ${suggestion.match.restStops.length} trạm nghỉ trên đoạn tuyến phù hợp.`)
+      setManualStops(stops)
+      toast(`Đã áp dụng ${stops.length} trạm nghỉ của hành lang.`)
     } catch {
       toast('Không thể tải trạm dừng của hành lang này', 'error')
     } finally {
@@ -377,6 +388,11 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
       toast(`Đã xác nhận ${trips.length} xe và lộ trình ${b.id}`)
       onDone()
       navigate('/coordinator/fleet-plan')
+      setTimeout(() => {
+        if (window.location.pathname.includes('/fleet-plan/')) {
+          window.location.href = '/backoffice/coordinator/fleet-plan'
+        }
+      }, 350)
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Không xác nhận được', 'error')
       setWorking(false)
@@ -390,6 +406,11 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
       toast(`Đã từ chối ${b.id}, khách nhận được lý do`)
       onDone()
       navigate('/coordinator/fleet-plan')
+      setTimeout(() => {
+        if (window.location.pathname.includes('/fleet-plan/')) {
+          window.location.href = '/backoffice/coordinator/fleet-plan'
+        }
+      }, 350)
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Không từ chối được', 'error')
       setWorking(false)
@@ -690,6 +711,11 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
                   {corridorSuggestions.map(({ corridor: c, totalKm, detourKm, match }, idx) => (
                     <option key={c.id} value={c.id}>
                       {idx === 0 ? '⭐ Gợi ý tốt nhất · ' : ''}{c.routeName} · {Math.round(totalKm)} km · {match.direction === 'reverse' ? 'chiều ngược' : 'chiều xuôi'}{detourKm > 0 ? ` · vòng thêm ${Math.round(detourKm)} km` : ''}
+                    </option>
+                  ))}
+                  {corridors.filter(c => !corridorSuggestions.some(s => s.corridor.id === c.id)).map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.routeName} (Tuyến chuẩn an sinh)
                     </option>
                   ))}
                 </FormSelect>

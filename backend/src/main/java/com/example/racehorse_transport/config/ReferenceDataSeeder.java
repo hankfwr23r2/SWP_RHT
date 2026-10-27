@@ -215,7 +215,10 @@ public class ReferenceDataSeeder implements CommandLineRunner {
             Map.entry(16, new Coordinates(11.07, 106.2)), Map.entry(18, new Coordinates(10.6, 104.95)),
             Map.entry(24, new Coordinates(16.62, 106.6)), Map.entry(25, new Coordinates(18.38, 105.13)),
             Map.entry(26, new Coordinates(21.23, 102.95)),
-            Map.entry(33, new Coordinates(11.03, 106.37)), Map.entry(37, new Coordinates(10.93, 108.1)),
+            Map.entry(31, new Coordinates(10.7486, 107.0125)), Map.entry(32, new Coordinates(10.92, 107.15)),
+            Map.entry(33, new Coordinates(11.03, 106.37)), Map.entry(34, new Coordinates(11.15, 106.27)),
+            Map.entry(35, new Coordinates(10.53, 106.41)), Map.entry(36, new Coordinates(10.70, 105.12)),
+            Map.entry(37, new Coordinates(10.93, 108.1)),
             Map.entry(38, new Coordinates(12.24, 109.2)), Map.entry(39, new Coordinates(13.1, 109.3)),
             Map.entry(40, new Coordinates(15.12, 108.8)), Map.entry(41, new Coordinates(16.05, 108.2)),
             Map.entry(42, new Coordinates(16.46, 107.6)), Map.entry(43, new Coordinates(16.82, 107.1)),
@@ -535,7 +538,7 @@ public class ReferenceDataSeeder implements CommandLineRunner {
             changed = true;
         }
         Coordinates coordinates = LEGACY_LOCATION_COORDINATES.get(location.getId());
-        if (coordinates != null && location.getLatitude() == null && location.getLongitude() == null) {
+        if (coordinates != null && (location.getLatitude() == null || location.getLatitude() == 0.0 || location.getLongitude() == null || location.getLongitude() == 0.0)) {
             location.setLatitude(coordinates.latitude());
             location.setLongitude(coordinates.longitude());
             changed = true;

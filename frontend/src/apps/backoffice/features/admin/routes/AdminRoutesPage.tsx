@@ -1,7 +1,7 @@
 // Quản trị viên: Quản lý Tuyến đường cố định & Các nút giao, trạm nghỉ an toàn (Mô hình Trục xương sống & Nút giao tiếp cận)
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   routesApi,
   type BackendRouteResponse,
@@ -18,6 +18,8 @@ import { usePageData } from '@shared/routing/pageData'
 import type { adminRoutesLoader } from '../../../shared/loaders'
 import { addBaseLayer, BASE_MAP_OPTIONS } from '@shared/ui/baseMap'
 import { setNetworkLocations } from '@shared/config/network'
+import { savedStopCoordinates } from './routeCoordinates'
+import { useRoadRoute } from '@shared/services/useRoadRoute'
 
 type Tab = 'all' | 'ACTIVE' | 'MAINTENANCE' | 'INACTIVE'
 
@@ -42,6 +44,14 @@ function RouteMapPreview({
   const layer = useRef<L.LayerGroup | null>(null)
   const activeId = useRef(activeLocationId)
   const place = useRef(onPlace)
+  const located = useMemo(() => points.flatMap((point, routeIndex) => {
+    const { latitude, longitude } = point
+    if (latitude === undefined || longitude === undefined) return []
+    return [{ ...point, latitude, longitude, routeIndex }]
+  }), [points])
+  const routingPoints = useMemo(() => located.map(point => ({ lat: point.latitude, lng: point.longitude })), [located])
+  const { route, loading } = useRoadRoute(routingPoints)
+  const roadPath = route?.source === 'osrm' ? route.path : undefined
 
   useEffect(() => {
     activeId.current = activeLocationId
@@ -73,20 +83,31 @@ function RouteMapPreview({
   }, [])
 
   useEffect(() => {
+    const instance = map.current
+    if (!instance || located.length === 0) return
+    const bounds = L.latLngBounds(located.map(point => [point.latitude, point.longitude] as [number, number]))
+    if (bounds.isValid()) instance.fitBounds(bounds, { padding: [45, 45], maxZoom: 10 })
+  }, [located])
+
+  useEffect(() => {
     const group = layer.current
     if (!group) return
     group.clearLayers()
-    const located = points.flatMap((point, routeIndex) => {
-      const { latitude, longitude } = point
-      if (latitude === undefined || longitude === undefined) return []
-      return [{ ...point, latitude, longitude, routeIndex }]
-    })
-
     if (located.length > 1) {
-      L.polyline(located.map(point => [point.latitude, point.longitude]), {
+      const fallbackPath = located.map(point => [point.latitude, point.longitude] as [number, number])
+      const line = roadPath ?? fallbackPath
+      L.polyline(line, {
+        color: '#ea580c',
+        weight: 10,
+        opacity: 0.2,
+        interactive: false,
+      }).addTo(group)
+      L.polyline(line, {
         color: '#ea580c',
         weight: 4,
-        dashArray: '7 6',
+        opacity: 0.95,
+        dashArray: roadPath ? undefined : '7 6',
+        interactive: false,
       }).addTo(group)
     }
 
@@ -103,9 +124,23 @@ function RouteMapPreview({
       label.textContent = `${point.routeIndex === 0 ? 'Xuất phát · ' : point.routeIndex === points.length - 1 ? 'Điểm đến · ' : `Điểm ${point.routeIndex + 1} · `}${point.name}`
       marker.bindTooltip(label)
     })
-  }, [points])
+  }, [located, points.length, roadPath])
 
-  return <div ref={box} className={s.mapPreview} role="application" aria-label="Bản đồ xem trước tuyến đường" />
+  let routeStatus = 'Cần ít nhất 2 điểm có tọa độ để vẽ tuyến.'
+  if (located.length > 1) {
+    routeStatus = loading
+      ? 'Đang tính đường bộ OSRM…'
+      : route?.source === 'osrm'
+        ? `Tuyến theo đường bộ · ${Math.round(route.km)} km`
+        : 'Không lấy được OSRM · đang hiển thị đường nối dự phòng'
+  }
+
+  return (
+    <>
+      <div ref={box} className={s.mapPreview} role="application" aria-label="Bản đồ xem trước tuyến đường" />
+      <div className={s.routeMapStatus} aria-live="polite">{routeStatus}</div>
+    </>
+  )
 }
 
 interface RouteModalProps {
@@ -328,6 +363,11 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
           {selectedLocationIds.map((locId, idx) => {
             const loc = locations.find(l => l.id === locId)
             if (!loc) return null
+            const pointCoordinates = coordinates[locId] ?? (
+              loc.latitude != null && loc.longitude != null
+                ? { latitude: loc.latitude, longitude: loc.longitude }
+                : undefined
+            )
             return (
               <div key={locId} className={s.pickedRow}>
                 <div className={s.pickedName}>
@@ -335,8 +375,8 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
                   <span>
                     <b>{loc.locationName}</b> ({idx === 0 ? 'Xuất phát' : idx === selectedLocationIds.length - 1 ? 'Điểm đến' : `Trạm dừng · ${loc.locationType}`})
                     <small className={s.coordinateText}>
-                      {coordinates[locId]
-                        ? `${coordinates[locId].latitude.toFixed(5)}, ${coordinates[locId].longitude.toFixed(5)}`
+                      {pointCoordinates
+                        ? `${pointCoordinates.latitude.toFixed(5)}, ${pointCoordinates.longitude.toFixed(5)}`
                         : `${loc.province || loc.city} · Chưa đặt tọa độ`}
                     </small>
                   </span>
@@ -410,7 +450,7 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
               : 'Chọn một điểm trên danh sách tuyến để đặt tọa độ.'}
           </p>
         </div>
-        <span className={s.mapProgress}>{mapPoints.filter(point => point.latitude !== undefined).length}/{mapPoints.length} điểm có tọa độ</span>
+        <span className={s.mapProgress}>{mapPoints.filter(point => point.latitude !== undefined && point.longitude !== undefined).length}/{mapPoints.length} điểm có tọa độ</span>
       </div>
       <RouteMapPreview
         points={mapPoints}

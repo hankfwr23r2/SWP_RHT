@@ -23,21 +23,21 @@ import java.util.List;
 @RequiredArgsConstructor
 public class FixedRouteSeeder implements CommandLineRunner {
 
-    private record RouteSeed(String seedKey, String name, String description, List<String> locationCodes) {}
+    private record RouteSeed(String seedKey, String legacyName, String name, String description, List<String> locationCodes) {}
 
     private static final List<RouteSeed> ROUTES = List.of(
-            new RouteSeed("starter-vn-central", 
-                    "Mẫu nội địa: TP.HCM – Đà Nẵng",
+            new RouteSeed("starter-vn-central", "Mẫu nội địa: TP.HCM – Đà Nẵng",
+                    "Tuyến nội địa: TP.HCM – Đà Nẵng",
                     "Tuyến tham khảo qua các điểm dừng ven biển; cần kiểm tra bản đồ trước khi vận hành.",
                     List.of("hcm", "REST-LONG-THANH", "REST-PHAN-THIET", "REST-PHAN-RANG",
                             "REST-NHA-TRANG", "REST-TUY-HOA", "REST-QUY-NHON", "REST-QUANG-NGAI", "dn")),
-            new RouteSeed("starter-vn-cambodia-mocbai",
-                    "Mẫu quốc tế: TP.HCM – Phnom Penh qua Mộc Bài",
+            new RouteSeed("starter-vn-cambodia-mocbai", "Mẫu quốc tế: TP.HCM – Phnom Penh qua Mộc Bài",
+                    "Tuyến quốc tế: TP.HCM – Phnom Penh qua Mộc Bài",
                     "Tuyến tham khảo qua cửa khẩu Mộc Bài; cần kiểm tra bản đồ và điều kiện thông quan trước khi vận hành.",
                     List.of("hcm", "REST-TRANG-BANG", "GATE-MOC-BAI", "REST-BAVET",
                             "REST-SVAY-RIENG", "REST-NEAK-LOEUNG", "pnh")),
-            new RouteSeed("starter-vn-laos-laobao",
-                    "Mẫu quốc tế: TP.HCM – Viêng Chăn qua Lao Bảo",
+            new RouteSeed("starter-vn-laos-laobao", "Mẫu quốc tế: TP.HCM – Viêng Chăn qua Lao Bảo",
+                    "Tuyến quốc tế: TP.HCM – Viêng Chăn qua Lao Bảo",
                     "Tuyến tham khảo qua cửa khẩu Lao Bảo; cần kiểm tra bản đồ và điều kiện thông quan trước khi vận hành.",
                     List.of("hcm", "REST-QUANG-NGAI", "REST-DA-NANG", "REST-HUE", "REST-DONG-HA",
                             "GATE-LAO-BAO", "REST-SAVANNAKHET", "REST-THAKHEK", "REST-PAKSAN", "vte"))
@@ -53,8 +53,18 @@ public class FixedRouteSeeder implements CommandLineRunner {
         ensureGate("GATE-MOC-BAI", "Cửa khẩu quốc tế Mộc Bài - Bavet", "Bến Cầu", "Tây Ninh", "Việt Nam", 11.07, 106.2, "KH");
         ensureGate("GATE-LAO-BAO", "Cửa khẩu quốc tế Lao Bảo - Densavanh", "Hướng Hóa", "Quảng Trị", "Việt Nam", 16.62, 106.6, "LA");
         for (RouteSeed seed : ROUTES) {
-            if (routeRepository.findBySeedKey(seed.seedKey()).isPresent()
-                    || routeRepository.findByRouteNameIgnoreCase(seed.name()).isPresent()) {
+            Route existing = routeRepository.findBySeedKey(seed.seedKey())
+                    .or(() -> routeRepository.findByRouteNameIgnoreCase(seed.legacyName()))
+                    .orElse(null);
+            if (existing != null) {
+                if (seed.legacyName().equals(existing.getRouteName())) {
+                    existing.setRouteName(seed.name());
+                    routeRepository.save(existing);
+                    log.info("Renamed starter route '{}' to '{}'", seed.legacyName(), seed.name());
+                }
+                continue; // preserve Admin edits and make repeated startups safe
+            }
+            if (routeRepository.findByRouteNameIgnoreCase(seed.name()).isPresent()) {
                 continue; // preserve Admin edits and make repeated startups safe
             }
 

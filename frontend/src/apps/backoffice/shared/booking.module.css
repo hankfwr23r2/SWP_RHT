@@ -121,6 +121,15 @@
 .stopEmpty { padding: 22px; border: 1px dashed #d5d9e0; border-radius: 12px; text-align: center; color: var(--muted); }
 .stopEmpty i { margin-right: 8px; color: var(--orange); }
 
+@media (max-width: 600px) {
+  .stopList li { align-items: stretch; }
+  .stopItem { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 6px 10px; padding: 10px 12px; }
+  .stopNum { grid-row: span 2; }
+  .stopName { grid-column: 2; }
+  .stopName b { overflow-wrap: anywhere; }
+  .stopMin { grid-column: 2; justify-self: start; white-space: nowrap; }
+}
+
 /* Giấy tờ ngựa khách đã nộp (Specialist bấm ảnh để xem lớn) */
 .docFiles { display: grid; gap: 8px; margin: 10px 0; }
 .docFile { display: flex; align-items: center; gap: 12px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }

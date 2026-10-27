@@ -5,7 +5,7 @@ services:
     container_name: racehorse-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: horse_transport_db
+      POSTGRES_DB: horse_transport_aiven_demo
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: RaceHorse@2026
     ports:
@@ -13,7 +13,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres -d horse_transport_db" ]
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d horse_transport_aiven_demo" ]
       interval: 5s
       timeout: 5s
       retries: 5

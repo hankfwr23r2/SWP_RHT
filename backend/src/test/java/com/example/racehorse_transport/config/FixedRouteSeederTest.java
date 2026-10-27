@@ -75,6 +75,7 @@ class FixedRouteSeederTest {
 
         verify(routeRepository, times(3)).save(any(Route.class));
         assertThat(routes).hasSize(3);
+        assertThat(routesBySeedKey.values()).extracting(Route::getRouteName).contains("Admin renamed route");
         assertThat(savedStops).hasSize(3);
         ArgumentCaptor<List<LocationRoute>> captor = ArgumentCaptor.forClass(List.class);
         verify(locationRouteRepository, times(3)).saveAll(captor.capture());
@@ -82,5 +83,40 @@ class FixedRouteSeederTest {
                 .containsExactly(1, 2, 3, 4, 5, 6, 7, 8, 9);
         assertThat(captor.getAllValues().get(1)).extracting(LocationRoute::getStopOrder)
                 .containsExactly(1, 2, 3, 4, 5, 6, 7);
+    }
+
+    @Test
+    void renamesExistingSeedRoutesOnlyWhenTheirNamesStillMatchTheOldDefaults() {
+        RouteRepository routeRepository = mock(RouteRepository.class);
+        LocationRepository locationRepository = mock(LocationRepository.class);
+        LocationRouteRepository locationRouteRepository = mock(LocationRouteRepository.class);
+        Map<String, Route> routesBySeedKey = new HashMap<>();
+        routesBySeedKey.put("starter-vn-central", route("starter-vn-central", "Mẫu nội địa: TP.HCM – Đà Nẵng"));
+        routesBySeedKey.put("starter-vn-cambodia-mocbai", route("starter-vn-cambodia-mocbai", "Mẫu quốc tế: TP.HCM – Phnom Penh qua Mộc Bài"));
+        routesBySeedKey.put("starter-vn-laos-laobao", route("starter-vn-laos-laobao", "Mẫu quốc tế: TP.HCM – Viêng Chăn qua Lao Bảo"));
+
+        when(routeRepository.findBySeedKey(anyString())).thenAnswer(invocation ->
+                Optional.ofNullable(routesBySeedKey.get(invocation.getArgument(0))));
+        when(locationRepository.findByLocationCodeIgnoreCase(anyString())).thenReturn(Optional.empty());
+        when(locationRepository.findMaxId()).thenReturn(100);
+        when(locationRepository.save(any(Location.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(routeRepository.save(any(Route.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        FixedRouteSeeder seeder = new FixedRouteSeeder(routeRepository, locationRepository, locationRouteRepository);
+        seeder.run();
+
+        assertThat(routesBySeedKey.values()).extracting(Route::getRouteName).containsExactlyInAnyOrder(
+                "Tuyến nội địa: TP.HCM – Đà Nẵng",
+                "Tuyến quốc tế: TP.HCM – Phnom Penh qua Mộc Bài",
+                "Tuyến quốc tế: TP.HCM – Viêng Chăn qua Lao Bảo");
+        verify(routeRepository, times(3)).save(any(Route.class));
+        verify(locationRouteRepository, org.mockito.Mockito.never()).saveAll(any());
+    }
+
+    private static Route route(String seedKey, String routeName) {
+        Route route = new Route();
+        route.setSeedKey(seedKey);
+        route.setRouteName(routeName);
+        return route;
     }
 }
