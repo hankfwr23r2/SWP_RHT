@@ -32,9 +32,9 @@ export function guardLoader(loader: PageLoader, roles: Role[], app: string) {
 }
 
 // Chỉ đổi query trên cùng trang (?group=..., ?tab=...) thì không tải lại: loader không đọc query, trang tự lọc tại chỗ.
-// reload() (cùng URL) và chuyển sang trang khác vẫn tải lại như mặc định.
-export const keepOnQueryChange: ShouldRevalidateFunction = ({ currentUrl, nextUrl, defaultShouldRevalidate }) =>
-  currentUrl.pathname === nextUrl.pathname && currentUrl.search !== nextUrl.search ? false : defaultShouldRevalidate
+// Chuyển sang trang khác (pathname thay đổi) luôn tải lại để đảm bảo dữ liệu mới nhất.
+export const keepOnQueryChange: ShouldRevalidateFunction = ({ currentUrl, nextUrl }) =>
+  currentUrl.pathname === nextUrl.pathname && currentUrl.search !== nextUrl.search ? false : true
 
 // Đọc dữ liệu loader của trang. Lỗi tải báo bằng toast như useLoad; reload() tải lại ngầm (giữ dữ liệu cũ tới khi có dữ liệu mới).
 export function usePageData<L extends PageLoader>() {

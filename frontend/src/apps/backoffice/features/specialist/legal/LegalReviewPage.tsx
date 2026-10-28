@@ -6,6 +6,7 @@ import { CLEARANCE_DOC, type ClearanceDocType } from '@shared/config/booking-rul
 import { canCompleteClearance, clearanceProgress, docsDueAt, isClearanceOverdue } from '@shared/lib/booking'
 import { isAssignedTo } from '@shared/lib/staffAssignment'
 import { formatDateTime } from '@shared/lib/format'
+import { fileApi } from '@shared/api/files'
 import { bookingsApi } from '@shared/services/bookings'
 import type { Booking, ClearanceItem, ClearanceStatus } from '@shared/types/booking'
 import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
@@ -55,7 +56,21 @@ function ItemRow({ b, item, editable, run }: { b: Booking; item: ClearanceItem; 
           ))}
         </ul>
       )}
-      {editable && <FileField key={item.photos.length} label="Thêm ảnh chụp giấy" accept=".jpg,.jpeg,.png,.pdf" onChange={f => { if (f) patch({ photos: [...item.photos, f] }, 'Đã thêm ảnh') }} />}
+      {editable && (
+        <FileField
+          key={item.photos.length}
+          label="Thêm ảnh chụp giấy"
+          accept=".jpg,.jpeg,.png,.pdf"
+          onChange={(_, file) => {
+            if (!file) return
+            // Upload ảnh lên Cloudinary trước, lưu URL để xem lại được sau khi reload
+            run(async () => {
+              const { url } = await fileApi.upload(file, 'clearance')
+              await bookingsApi.updateClearanceItem(b.id, session!.name, item.type, { photos: [...item.photos, url] })
+            }, 'Đã thêm ảnh')
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -73,7 +88,9 @@ function Work({ b, onDone }: { b: Booking; onDone: () => void }) {
 
   const run = async (fn: () => Promise<unknown>, msg: string, after?: () => void) => {
     setBusy(true)
-    try { await fn(); toast(msg); onDone(); after?.() } catch (e) { toast(e instanceof Error ? e.message : 'Không thực hiện được', 'error') } finally { setBusy(false) }
+    // Khi có after (navigate sang trang khác): chỉ gọi after, không gọi onDone() để tránh
+    // race condition với React Router loader của trang đích (trang đích tự load lại dữ liệu).
+    try { await fn(); toast(msg); after ? after() : onDone() } catch (e) { toast(e instanceof Error ? e.message : 'Không thực hiện được', 'error') } finally { setBusy(false) }
   }
 
   const assignedGate = b.gate || c.gateName

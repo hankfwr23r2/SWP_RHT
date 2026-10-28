@@ -33,9 +33,11 @@ function backofficeRole(): string | null {
   }
 }
 
-// Người gửi / nhận gửi lên API: CCCD bắt buộc; địa chỉ để trống thì bỏ qua
+// Người gửi / nhận gửi lên API: chuẩn hóa khoảng trắng thừa, CCCD bắt buộc; địa chỉ để trống thì bỏ qua
+const sanitizeContactName = (name: string) => name.trim().replace(/\s+/g, ' ')
+
 const partyDto = (p: Booking['consignor']) => ({
-  name: p.name, phone: p.phone, idNumber: p.idNumber.trim(),
+  name: sanitizeContactName(p.name), phone: p.phone.trim(), idNumber: p.idNumber.trim(),
   ...(p.idCountry ? { idCountry: p.idCountry } : {}),
   ...(p.idType ? { idType: p.idType } : {}),
   ...(p.address.trim() ? { address: p.address.trim() } : {}),

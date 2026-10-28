@@ -310,8 +310,8 @@ export default function Step1RoutePage() {
       originId: fullPickup,
       destId: fullDropoff,
       departDate: date,
-      consignor: { ...consignor, idCountry: originC, idType: 'national_id', phone: toInternationalPhone(consignorPhoneCountry, consignor.phone), address: fullPickup },
-      consignee: { ...consignee, idCountry: destC, idType: 'national_id', phone: toInternationalPhone(consigneePhoneCountry, consignee.phone), address: fullDropoff },
+      consignor: { ...consignor, name: consignor.name.trim().replace(/\s+/g, ' '), idCountry: originC, idType: 'national_id', phone: toInternationalPhone(consignorPhoneCountry, consignor.phone), address: fullPickup },
+      consignee: { ...consignee, name: consignee.name.trim().replace(/\s+/g, ' '), idCountry: destC, idType: 'national_id', phone: toInternationalPhone(consigneePhoneCountry, consignee.phone), address: fullDropoff },
     })
   }, [type, partner, direction, fullPickup, fullDropoff, date, consignor, consignee, consignorPhoneCountry, consigneePhoneCountry, originC, destC, save])
 
@@ -422,8 +422,8 @@ export default function Step1RoutePage() {
       originId: fullPickup,
       destId: fullDropoff,
       departDate: date,
-      consignor: { ...consignor, idCountry: originC, idType: 'national_id', phone: toInternationalPhone(consignorPhoneCountry, consignor.phone), address: fullPickup },
-      consignee: { ...consignee, idCountry: destC, idType: 'national_id', phone: toInternationalPhone(consigneePhoneCountry, consignee.phone), address: fullDropoff },
+      consignor: { ...consignor, name: consignor.name.trim().replace(/\s+/g, ' '), idCountry: originC, idType: 'national_id', phone: toInternationalPhone(consignorPhoneCountry, consignor.phone), address: fullPickup },
+      consignee: { ...consignee, name: consignee.name.trim().replace(/\s+/g, ' '), idCountry: destC, idType: 'national_id', phone: toInternationalPhone(consigneePhoneCountry, consignee.phone), address: fullDropoff },
     })
     navigate('/booking/horses')
   }
