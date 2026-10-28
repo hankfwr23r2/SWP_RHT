@@ -36,6 +36,7 @@ import s from '../../../shared/booking.module.css'
 import layoutStyles from '../Coordinator.module.css'
 import { FormSelect } from '@shared/ui/FormSelect'
 import { ResourcePicker } from '../../../shared/ResourcePicker'
+import { HorseDocsModal } from '../../../shared/HorseDocsModal'
 const RouteMapPicker = lazy(() => import('./RouteMapPicker').then(m => ({ default: m.RouteMapPicker })))
 import { InlineRouteMap } from './InlineRouteMap'
 import { routesApi, type BackendRouteResponse, type RoutePreviewRequest, type RoutePreviewResponse } from '@shared/api/routes'
@@ -1104,6 +1105,7 @@ export default function FleetPlanPage() {
   const { b, all, vehicles, reload } = usePageData<typeof fleetPlanLoader>()
   useAutoRefresh(reload)
   const [showOrderDetails, setShowOrderDetails] = useState(false)
+  const [showDocs, setShowDocs] = useState(false)
 
   if (!b || !all || !vehicles)
     return (
@@ -1207,9 +1209,19 @@ export default function FleetPlanPage() {
                 </div>
               </div>
               <div>
-                <h4 style={{ margin: '0 0 6px', fontSize: '0.88rem', color: 'var(--navy)' }}>
-                  <i className="fa-solid fa-horse-head" /> Danh sách ngựa ({b.horses.length} con)
-                </h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0 0 6px', flexWrap: 'wrap', gap: 6 }}>
+                  <h4 style={{ margin: 0, fontSize: '0.88rem', color: 'var(--navy)' }}>
+                    <i className="fa-solid fa-horse-head" /> Danh sách ngựa ({b.horses.length} con)
+                  </h4>
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-xs"
+                    onClick={() => setShowDocs(true)}
+                    title="Xem hồ sơ giấy tờ điện tử của các cá thể ngựa"
+                  >
+                    <i className="fa-solid fa-file-shield" /> Xem hồ sơ điện tử
+                  </button>
+                </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {b.horses.map(h => (
                     <span key={h.horseId} className="badge badge-neutral" style={{ fontSize: '0.78rem' }}>
@@ -1259,6 +1271,7 @@ export default function FleetPlanPage() {
           </aside>
         </div>
       </div>
+      {showDocs && <HorseDocsModal horses={b.horses} onClose={() => setShowDocs(false)} />}
     </div>
   )
 }
