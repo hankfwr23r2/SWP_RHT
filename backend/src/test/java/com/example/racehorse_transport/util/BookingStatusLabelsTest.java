@@ -19,7 +19,7 @@ class BookingStatusLabelsTest {
     void bookingResponseCarriesTheLabelsOfItsStatus() {
         BookingResponse response = BookingResponse.builder().status("waybill_issued").build();
 
-        assertThat(response.getStatusLabel()).isEqualTo("Đã có Vận đơn, chờ kiểm dịch viên tiếp nhận");
+        assertThat(response.getStatusLabel()).isEqualTo("Đã có vận đơn");
         assertThat(response.getCustomerStatusLabel()).isEqualTo("Đã có vận đơn");
     }
 

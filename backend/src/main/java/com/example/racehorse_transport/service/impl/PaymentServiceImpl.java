@@ -97,7 +97,7 @@ public class PaymentServiceImpl implements PaymentService {
         if (depositOpt.isEmpty()) {
             booking.setStatus("cancelled");
             BookingDetailsPayload payload = extractPayload(booking);
-            appendHistory(payload, actor, "Hủy đơn trước khi đặt cọc (Lý do: " + reason + ")");
+            appendHistory(payload, actor, "Hủy đơn");
             savePayload(booking, payload);
             bookingRepository.save(booking);
 
@@ -151,7 +151,7 @@ public class PaymentServiceImpl implements PaymentService {
         paymentMap.put("cancelledAt", now.toEpochMilli()); // khách xem lại thời điểm hủy trong lịch sử đơn
         payload.setPayment(paymentMap);
 
-        appendHistory(payload, actor, policyMsg + " Lý do: " + reason);
+        appendHistory(payload, actor, "Hủy đơn sau khi đặt cọc");
         savePayload(booking, payload);
         bookingRepository.save(booking);
 

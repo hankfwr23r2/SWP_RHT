@@ -89,16 +89,16 @@ public class SpecialistServiceImpl implements SpecialistService {
         medicalMap.put("note", request != null && request.getNote() != null ? request.getNote() : "Hồ sơ đầy đủ, hợp lệ.");
         payload.setMedical(medicalMap);
 
-        appendHistory(payload, specialist, "Duyệt hồ sơ ngựa ĐẠT: Đầy đủ Hộ chiếu, Sổ tiêm phòng và Xét nghiệm máu hợp lệ.");
+        appendHistory(payload, specialist, "Duyệt hồ sơ ngựa ĐẠT");
 
         // Kiểm tra xem Coordinator đã chốt xe và lộ trình chưa
         boolean planConfirmed = payload.getTrips() != null && !payload.getTrips().isEmpty() && payload.getPlan() != null;
         if (planConfirmed) {
             booking.setStatus("pending_commercial");
-            appendHistory(payload, "Hệ thống", "Hồ sơ ngựa và phương án xe đều đã duyệt xong -> Chuyển Quản lý duyệt báo giá.");
+            appendHistory(payload, "Hệ thống", "Hồ sơ ngựa và phương án xe đã duyệt xong");
         } else {
             booking.setStatus("under_review");
-            appendHistory(payload, specialist, "Đã duyệt hồ sơ ngựa ĐẠT. Đang chờ Điều phối viên chốt phương án xe và lộ trình.");
+            appendHistory(payload, specialist, "Đã duyệt hồ sơ ngựa ĐẠT");
         }
 
         savePayload(booking, payload);
@@ -140,7 +140,7 @@ public class SpecialistServiceImpl implements SpecialistService {
 
         booking.setStatus("under_review");
 
-        appendHistory(payload, specialist, "Yêu cầu khách hàng bổ sung lại hồ sơ ngựa. Lý do: " + reason);
+        appendHistory(payload, specialist, "Yêu cầu bổ sung hồ sơ ngựa");
 
         savePayload(booking, payload);
         Booking saved = bookingRepository.save(booking);
@@ -186,8 +186,7 @@ public class SpecialistServiceImpl implements SpecialistService {
         payload.setClearance(clearanceMap);
 
         appendHistory(payload, username != null ? username : "Chuyên viên",
-                "Tiếp nhận Vận đơn " + (booking.getWaybillNo() != null ? booking.getWaybillNo() : "") + ". Bắt đầu tiến hành thủ tục kiểm dịch & hải quan.");
-
+                "Tiếp nhận Vận đơn");
         savePayload(booking, payload);
         Booking saved = bookingRepository.save(booking);
         log.info("Specialist accepted waybill for booking ID={}", saved.getId());
@@ -231,7 +230,7 @@ public class SpecialistServiceImpl implements SpecialistService {
         targetItem.put("updatedBy", username != null ? username : "Chuyên viên");
 
         appendHistory(payload, username != null ? username : "Chuyên viên",
-                "Cập nhật giấy tờ [" + type + "]: " + ("done".equals(newStatus) ? "ĐÃ NỘP (kèm ảnh)" : "CHƯA NỘP"));
+                "Cập nhật giấy tờ kiểm dịch");
 
         payload.setClearance(clearanceMap);
         savePayload(booking, payload);
@@ -262,7 +261,7 @@ public class SpecialistServiceImpl implements SpecialistService {
             newItem.put("photos", Collections.emptyList());
             items.add(newItem);
 
-            appendHistory(payload, username != null ? username : "Chuyên viên", "Bổ sung thêm hạng mục giấy tờ: " + type);
+            appendHistory(payload, username != null ? username : "Chuyên viên", "Bổ sung hạng mục giấy tờ");
         }
 
         payload.setClearance(clearanceMap);
@@ -292,7 +291,7 @@ public class SpecialistServiceImpl implements SpecialistService {
         clearanceMap.put("horsesCleared", horsesCleared);
 
         appendHistory(payload, username != null ? username : "Chuyên viên",
-                "Ngựa ID [" + horseId + "]: " + (request.isCleared() ? "Đã có giấy thông quan" : "Hủy ghi nhận thông quan"));
+                (request.isCleared() ? "Ghi nhận thông quan ngựa" : "Hủy ghi nhận thông quan ngựa"));
 
         payload.setClearance(clearanceMap);
         savePayload(booking, payload);
@@ -348,11 +347,11 @@ public class SpecialistServiceImpl implements SpecialistService {
         if (crewAcked) {
             booking.setStatus("ready_for_pickup");
             appendHistory(payload, username != null ? username : "Chuyên viên",
-                    "Hoàn tất toàn bộ hồ sơ kiểm dịch & hải quan. Kíp xe đã nhận lệnh, đơn hàng sẵn sàng đón ngựa!");
+                    "Hoàn tất hồ sơ kiểm dịch & hải quan");
         } else {
             booking.setStatus("clearance_done");
             appendHistory(payload, username != null ? username : "Chuyên viên",
-                    "Hoàn tất toàn bộ hồ sơ kiểm dịch & hải quan. Đang chờ kíp xe (Tài xế & Hộ tống) nhận lệnh.");
+                    "Hoàn tất hồ sơ kiểm dịch & hải quan");
         }
 
         savePayload(booking, payload);

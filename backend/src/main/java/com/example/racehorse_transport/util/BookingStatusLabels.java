@@ -9,32 +9,32 @@ public final class BookingStatusLabels {
     private record Label(String staff, String customer) {}
 
     private static final Map<String, Label> LABELS = Map.ofEntries(
-            Map.entry("pending_intake", new Label("Chờ quản lý tiếp nhận", "Đã gửi, chờ tiếp nhận")),
-            Map.entry("under_review", new Label("Đang thẩm định nội bộ", "Đang thẩm định")),
+            Map.entry("pending_intake", new Label("Chờ tiếp nhận", "Chờ tiếp nhận")),
+            Map.entry("under_review", new Label("Đang thẩm định", "Đang thẩm định")),
             // Mã cũ còn trong dữ liệu: đơn đang thẩm định, chờ khách bổ sung hồ sơ
-            Map.entry("resubmission_requested", new Label("Đang thẩm định nội bộ", "Đang thẩm định")),
-            Map.entry("pending_commercial", new Label("Chờ quản lý duyệt báo giá", "Đang lập báo giá")),
-            Map.entry("awaiting_payment", new Label("Chờ khách đặt cọc", "Chờ đặt cọc")),
+            Map.entry("resubmission_requested", new Label("Đang thẩm định", "Đang thẩm định")),
+            Map.entry("pending_commercial", new Label("Chờ duyệt báo giá", "Đang lập báo giá")),
+            Map.entry("awaiting_payment", new Label("Chờ đặt cọc", "Chờ đặt cọc")),
             Map.entry("quote_expired", new Label("Báo giá hết hạn", "Báo giá hết hạn")),
-            Map.entry("waybill_issued", new Label("Đã có Vận đơn, chờ kiểm dịch viên tiếp nhận", "Đã có vận đơn")),
-            Map.entry("clearance_in_progress", new Label("Kiểm dịch viên đang làm thủ tục giấy tờ", "Đang làm thủ tục giấy tờ")),
-            Map.entry("clearance_done", new Label("Giấy tờ xong, chờ tài xế và hộ tống nhận lệnh", "Giấy tờ đã xong")),
+            Map.entry("waybill_issued", new Label("Đã có vận đơn", "Đã có vận đơn")),
+            Map.entry("clearance_in_progress", new Label("Làm thủ tục giấy tờ", "Làm thủ tục giấy tờ")),
+            Map.entry("clearance_done", new Label("Giấy tờ đã xong", "Giấy tờ đã xong")),
             Map.entry("ready_for_pickup", new Label("Sẵn sàng đón ngựa", "Sẵn sàng đón ngựa")),
-            Map.entry("en_route_to_pickup", new Label("Xe đang đến điểm đón", "Xe đang đến điểm đón")),
+            Map.entry("en_route_to_pickup", new Label("Đến điểm đón", "Đến điểm đón")),
             Map.entry("in_transit", new Label("Đang vận chuyển", "Đang vận chuyển")),
-            Map.entry("incident_reported", new Label("Có sự cố, chờ điều phối lập phương án", "Xe gặp sự cố, đang xử lý")),
-            Map.entry("pending_emergency_approval", new Label("Chờ quản lý duyệt phương án khẩn cấp", "Xe gặp sự cố, đang xử lý")),
-            Map.entry("emergency_plan_active", new Label("Đang thực hiện phương án khẩn cấp", "Đang xử lý sự cố, ngựa được chăm sóc")),
-            Map.entry("arrived", new Label("Xe đã tới điểm giao, chờ bàn giao", "Xe đã tới điểm giao")),
-            Map.entry("handover_timeout", new Label("Quá hạn bàn giao, ngựa đang lưu chuồng gần điểm giao", "Quá giờ nhận ngựa, ngựa đang được lưu chuồng")),
-            Map.entry("returning_to_hq", new Label("Quá hạn bàn giao, xe chở ngựa về trụ sở", "Ngựa đang được chở về trụ sở")),
-            Map.entry("delivered_pending_settlement", new Label("Đã giao, chờ tài xế gửi chi phí", "Đã giao ngựa")),
-            Map.entry("expenses_submitted", new Label("Chờ quản lý đối soát chi phí", "Đã giao, đang quyết toán")),
-            Map.entry("settlement_issued", new Label("Đã phát hành quyết toán, chờ khách trả", "Chờ thanh toán quyết toán")),
-            Map.entry("payment_overdue", new Label("Khách quá hạn thanh toán quyết toán", "Quá hạn thanh toán")),
+            Map.entry("incident_reported", new Label("Báo sự cố", "Đang xử lý sự cố")),
+            Map.entry("pending_emergency_approval", new Label("Chờ duyệt xử lý sự cố", "Đang xử lý sự cố")),
+            Map.entry("emergency_plan_active", new Label("Đang xử lý sự cố", "Đang xử lý sự cố")),
+            Map.entry("arrived", new Label("Tới điểm giao", "Tới điểm giao")),
+            Map.entry("handover_timeout", new Label("Quá hạn bàn giao", "Quá giờ nhận ngựa")),
+            Map.entry("returning_to_hq", new Label("Chở về trụ sở", "Chở về trụ sở")),
+            Map.entry("delivered_pending_settlement", new Label("Đã giao ngựa", "Đã giao ngựa")),
+            Map.entry("expenses_submitted", new Label("Chờ đối soát chi phí", "Đang quyết toán")),
+            Map.entry("settlement_issued", new Label("Chờ thanh toán quyết toán", "Chờ thanh toán quyết toán")),
+            Map.entry("payment_overdue", new Label("Quá hạn thanh toán", "Quá hạn thanh toán")),
             Map.entry("completed", new Label("Đã hoàn tất", "Đã hoàn tất")),
-            Map.entry("cancelled", new Label("Khách từ chối báo giá", "Đã hủy")),
-            Map.entry("rejected", new Label("Nhà xe đã từ chối đơn", "Đơn bị từ chối")));
+            Map.entry("cancelled", new Label("Đã hủy", "Đã hủy")),
+            Map.entry("rejected", new Label("Bị từ chối", "Bị từ chối")));
 
     private BookingStatusLabels() {}
 

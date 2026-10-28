@@ -975,7 +975,7 @@ class BookingServiceImplTest {
         assertThat(response.getHistory()).hasSize(1);
         assertThat(response.getHistory().get(0))
                 .containsEntry("actor", "phuc")
-                .containsEntry("text", "Khách đã bổ sung hồ sơ và gửi lại Kiểm dịch viên thẩm định");
+                .containsEntry("text", "Bổ sung hồ sơ và gửi lại thẩm định");
         verify(bookingRepository).save(booking);
     }
 
@@ -1023,7 +1023,7 @@ class BookingServiceImplTest {
         assertThat(response.getHistory()).hasSize(1);
         assertThat(response.getHistory().get(0))
                 .containsEntry("actor", "phuc")
-                .containsEntry("text", "Từ chối báo giá: Giá vượt ngân sách. Đơn đã hủy, giải phóng xe và kíp xe.");
+                .containsEntry("text", "Từ chối báo giá");
         verify(quotationRepository).save(quotation);
         verify(bookingVehicleRepository).deleteByBookingID_Id(42);
         verify(bookingAssignmentRepository).deleteByBookingID_Id(42);
@@ -1043,7 +1043,7 @@ class BookingServiceImplTest {
 
         assertThat(response.getStatus()).isEqualTo("cancelled");
         assertThat(response.getHistory().get(0).get("text"))
-                .isEqualTo("Từ chối báo giá: Khách hàng không đồng ý báo giá. Đơn đã hủy, giải phóng xe và kíp xe.");
+                .isEqualTo("Từ chối báo giá");
         verify(quotationRepository, never()).save(any(Quotation.class));
         verify(bookingVehicleRepository).deleteByBookingID_Id(42);
         verify(bookingAssignmentRepository).deleteByBookingID_Id(42);
@@ -1128,7 +1128,7 @@ class BookingServiceImplTest {
         assertThat(response.getHistory()).hasSize(1);
         assertThat(response.getHistory().get(0))
                 .containsEntry("actor", "manager1")
-                .containsEntry("text", "Từ chối đơn: Hồ sơ không đầy đủ");
+                .containsEntry("text", "Từ chối đơn");
         verify(bookingRepository).save(booking);
         verify(systemLogRepository).save(any());
     }

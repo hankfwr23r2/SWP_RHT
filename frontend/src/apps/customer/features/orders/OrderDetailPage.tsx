@@ -243,15 +243,15 @@ export default function OrderDetailPage() {
   const auto: Tab = ROUTE_STAGE.includes(b.status) ? 'journey' : POST_PAYMENT.includes(b.status) ? 'docs' : b.quote ? 'pay' : 'info'
   const tab = picked && tabs.includes(picked) ? picked : tabs.includes(auto) ? auto : 'info'
   const events = [
-    { time: b.createdAt, text: 'Bạn đã gửi đơn' },
+    { time: b.createdAt, text: 'Gửi yêu cầu đặt đơn' },
     ...(b.medical?.status === 'approved' && b.medical.at ? [{ time: b.medical.at, text: 'Duyệt hồ sơ ngựa đạt' }] : []),
-    ...(b.route?.completedAt ? [{ time: b.route.completedAt, text: `Phương án ${b.vehicleCount ?? b.trips?.length ?? 1} xe và lộ trình đã chốt` }] : []),
+    ...(b.route?.completedAt ? [{ time: b.route.completedAt, text: 'Xác nhận xe và lộ trình' }] : []),
     ...(b.quote ? [{ time: b.quote.sentAt, text: 'Báo giá được gửi cho bạn' }] : []),
-    ...(b.payment ? [{ time: b.payment.paidAt, text: `Đặt cọc ${formatVND(b.payment.amount)}, cấp vận đơn ${b.waybill?.no ?? ''}` }] : []),
-    ...(b.clearance?.doneAt ? [{ time: b.clearance.doneAt, text: 'Giấy kiểm dịch và hải quan đã xong' }] : []),
-    ...(b.balance ? [{ time: b.balance.paidAt, text: `Thanh toán 70% còn lại ${formatVND(b.balance.amount)}` }] : []),
-    ...(b.settlement ? [{ time: b.settlement.issuedAt, text: 'Nhà xe phát hành bảng quyết toán' }] : []),
-    ...(b.settlement?.paid ? [{ time: b.settlement.paid.paidAt, text: 'Hoàn tất quyết toán và đánh giá, đóng đơn' }] : []),
+    ...(b.payment ? [{ time: b.payment.paidAt, text: 'Đặt cọc' }] : []),
+    ...(b.clearance?.doneAt ? [{ time: b.clearance.doneAt, text: 'Hoàn tất giấy kiểm dịch và hải quan' }] : []),
+    ...(b.balance ? [{ time: b.balance.paidAt, text: 'Thanh toán phần còn lại' }] : []),
+    ...(b.settlement ? [{ time: b.settlement.issuedAt, text: 'Phát hành bảng quyết toán' }] : []),
+    ...(b.settlement?.paid ? [{ time: b.settlement.paid.paidAt, text: 'Hoàn tất quyết toán' }] : []),
   ].sort((x, y) => x.time - y.time)
   const route = `${placeName(b.origin.name)} → ${placeName(b.dest.name)}`
   const payOpen = b.status === 'settlement_issued' || b.status === 'payment_overdue'
