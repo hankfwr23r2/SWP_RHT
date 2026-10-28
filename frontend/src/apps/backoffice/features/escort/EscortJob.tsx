@@ -94,7 +94,7 @@ function UnfitHorseModal({
       <div style={{ display: 'grid', gap: 14 }}>
         <div style={{ padding: '10px 12px', background: 'var(--orange-soft, #fff7ed)', borderRadius: 'var(--radius)', border: '1px solid var(--orange)' }}>
           <p style={{ margin: 0, fontSize: '0.9rem', color: '#9a3412', fontWeight: 600 }}>
-            <i className="fa-solid fa-triangle-exclamation" /> Luồng ngoại lệ an sinh (PRD mục 5): Cước xe giữ nguyên. Chi phí chăm sóc, khoang đơn, dinh dưỡng và kiểm dịch của cá thể này ({formatVND(discount)}) sẽ được khấu trừ vào số dư của khách hàng.
+            <i className="fa-solid fa-triangle-exclamation" /> Quy trình ngoại lệ an sinh: Cước xe giữ nguyên. Chi phí chăm sóc, khoang đơn, dinh dưỡng và kiểm dịch của cá thể này ({formatVND(discount)}) sẽ được khấu trừ vào số dư của khách hàng.
           </p>
         </div>
 

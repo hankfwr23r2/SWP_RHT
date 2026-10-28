@@ -14,8 +14,8 @@ const TEXT: Record<Task, { title: string; sub: string; search: string }> = {
 const initials = (name: string) => name.split(' ').filter(Boolean).slice(-2).map(w => w[0]).join('').toUpperCase()
 const hue = (id: string) => [...id].reduce((n, c) => n + c.charCodeAt(0) * 7, 0) % 360
 
-export function StaffPicker({ task, staff, selected, onPick, onClose }: {
-  task: Task; staff: StaffMember[]; selected: string; onPick: (id: string) => void; onClose: () => void
+export function StaffPicker({ task, staff, workloadMap, selected, onPick, onClose }: {
+  task: Task; staff: StaffMember[]; workloadMap?: Record<string, number>; selected: string; onPick: (id: string) => void; onClose: () => void
 }) {
   const [text, setText] = useState('')
   const [shake, setShake] = useState<string | null>(null)
@@ -39,6 +39,7 @@ export function StaffPicker({ task, staff, selected, onPick, onClose }: {
       <div className={p.grid}>
         {shown.map(({ s, off }, i) => {
           const tone = off ? '#dc2626' : '#059669'
+          const load = workloadMap?.[s.id] ?? 0
           return (
             <button key={s.id} type="button" aria-disabled={off} aria-pressed={s.id === selected} aria-label={`${s.name}${off ? ', đang nghỉ' : ', đang hoạt động'}`}
               className={`${p.card} ${off ? p.off : ''} ${s.id === selected ? p.picked : ''} ${shake === s.id ? p.shake : ''}`}
@@ -48,7 +49,31 @@ export function StaffPicker({ task, staff, selected, onPick, onClose }: {
                 <span className={p.status}><span className={`${p.dot} ${off ? '' : p.live}`} />{off ? 'Đang nghỉ' : 'Đang hoạt động'}</span>
               </div>
               <span className={p.avatar} style={{ ['--h' as string]: hue(s.id) }}>{initials(s.name)}</span>
-              <div className={p.name}>{s.name}<small>{s.phone}</small></div>
+              <div className={p.name}>
+                {s.name}
+                <small>{s.phone}</small>
+              </div>
+              {!off && (
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                    fontSize: '0.78rem',
+                    color: 'var(--navy, #0f172a)',
+                    background: '#f1f5f9',
+                    border: '1px solid var(--line, #cbd5e1)',
+                    borderRadius: 6,
+                    padding: '3px 8px',
+                    margin: '2px auto 0',
+                    width: 'fit-content',
+                  }}
+                >
+                  <i className="fa-solid fa-briefcase" style={{ color: '#ea580c', fontSize: '0.72rem' }} />
+                  <span>Khối lượng công việc: <b>{load} đơn</b></span>
+                </div>
+              )}
               {off && <span className={p.lock}><i className="fa-solid fa-lock" />{s.offReason ?? 'Đang nghỉ'}{s.offTo ? ` đến ${formatDate(s.offTo)}` : ''}</span>}
               {s.id === selected && <span className={p.tick}><i className="fa-solid fa-circle-check" /> Đang chọn</span>}
             </button>
