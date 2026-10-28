@@ -36,6 +36,17 @@ export async function systemConfigLoader() {
   return loadAll({ configs: systemConfigApi.listAdminConfigs() })
 }
 
+export async function adminPricingLoader() {
+  const [{ systemConfigApi }, { backendHorseApi }] = await Promise.all([
+    import('@shared/api/systemConfig'),
+    import('@shared/api/horses'),
+  ])
+  return loadAll({
+    configs: systemConfigApi.listAdminConfigs(),
+    horseTypes: backendHorseApi.listTypes(),
+  })
+}
+
 export async function documentRequirementsLoader() {
   const { documentRequirementsApi } = await import('@shared/api/documentRequirements')
   return loadAll({ requirements: documentRequirementsApi.listAdmin() })

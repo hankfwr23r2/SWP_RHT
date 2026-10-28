@@ -1,23 +1,539 @@
-.sheet { display: grid; gap: 14px; }
-.table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-.caption { text-align: left; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); padding-bottom: 8px; }
-.table td { padding: 10px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
-.table tfoot td { border-bottom: none; color: var(--muted); font-size: 0.84rem; }
-.label { font-weight: 600; }
-.detail { font-size: 0.84rem; color: var(--muted); margin-top: 3px; }
-.calculation { margin-top: 5px; padding: 6px 8px; border-left: 2px solid var(--orange); border-radius: 0 6px 6px 0; background: var(--bg-page); color: var(--text); font-size: 0.82rem; line-height: 1.45; }
-.calculation b { color: var(--navy); }
-.amount { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 600; padding-left: 16px; }
-.discount .amount { color: var(--green); }
-.subtotal td { padding-top: 13px; border-bottom: none; font-weight: 700; color: var(--navy); }
+.invoiceWrap {
+  background: white;
+  border: 1px solid var(--line, #cbd5e1);
+  border-radius: 12px;
+  padding: 32px;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+  font-family: inherit;
+  color: var(--text, #1e293b);
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  position: relative;
+}
 
-.totals { display: grid; gap: 8px; padding: 14px 16px; border-radius: var(--radius-sm); background: var(--bg-page); border: 1px solid var(--line); }
-.total, .deposit { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-.total b { font-size: 1.25rem; color: var(--navy); font-variant-numeric: tabular-nums; }
-.note { font-size: 0.78rem; color: var(--muted); }
-.deposit { padding-top: 10px; border-top: 1px dashed #cbd5e1; font-weight: 600; }
-.deposit b { font-size: 1.15rem; color: var(--orange); font-variant-numeric: tabular-nums; }
+/* Print Toolbar */
+.topToolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  border-bottom: 1px dashed var(--line, #cbd5e1);
+}
 
-.after { display: grid; gap: 8px; font-size: 0.84rem; color: var(--muted); }
-.after i { width: 18px; color: var(--orange); }
-.after b { color: var(--text); }
+.docBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(234, 88, 12, 0.1);
+  color: var(--orange, #ea580c);
+  border: 1px solid rgba(234, 88, 12, 0.25);
+}
+
+
+/* Header Section */
+.header {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 20px;
+  align-items: start;
+}
+
+.companyInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.companyLogoTitle {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.brandLogo {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 8px;
+}
+
+.companyTitleCol {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.companyName {
+  font-size: clamp(0.85rem, 1.25vw, 1.05rem);
+  font-weight: 800;
+  color: var(--navy, #0f172a);
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.companyMeta {
+  font-size: 0.84rem;
+  color: var(--muted, #64748b);
+  line-height: 1.5;
+}
+
+.taxCode {
+  font-weight: 700;
+  color: var(--navy, #0f172a);
+  font-family: var(--font-numeric, monospace);
+  letter-spacing: 0.05em;
+}
+
+.invoiceMetaBox {
+  border: 1px solid var(--line, #cbd5e1);
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.invoiceTitle {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--orange, #ea580c);
+  text-transform: uppercase;
+  text-align: center;
+  margin: 0 0 4px;
+  letter-spacing: 0.03em;
+}
+
+.metaRow {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: var(--muted, #475569);
+}
+
+.metaRow b {
+  color: var(--navy, #0f172a);
+  font-family: var(--font-numeric, inherit);
+}
+
+/* Parties Box */
+.partiesGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.partyCard {
+  border: 1px solid var(--line, #cbd5e1);
+  border-radius: 8px;
+  padding: 14px 18px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.partyHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line, #f1f5f9);
+  margin-bottom: 4px;
+}
+
+.partyRole {
+  font-size: 0.78rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--orange, #ea580c);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.partyName {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--navy, #0f172a);
+}
+
+.partyDetail {
+  font-size: 0.84rem;
+  color: var(--muted, #64748b);
+  line-height: 1.45;
+}
+
+/* Route Snippet */
+.routeSnippet {
+  background: #f1f5f9;
+  border-left: 3px solid var(--orange, #ea580c);
+  border-radius: 0 6px 6px 0;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: var(--navy, #0f172a);
+  flex-wrap: wrap;
+}
+
+.routeSnippet b {
+  font-weight: 650;
+}
+
+/* Main Invoice Table */
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--line, #cbd5e1);
+  border-radius: 8px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.table th {
+  background: #f1f5f9;
+  color: var(--navy, #0f172a);
+  font-weight: 700;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line, #cbd5e1);
+  border-right: 1px solid var(--line, #cbd5e1);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  text-align: left;
+}
+
+.table th:last-child {
+  border-right: none;
+}
+
+.table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--line, #e2e8f0);
+  border-right: 1px solid var(--line, #e2e8f0);
+  vertical-align: top;
+}
+
+.table td:last-child {
+  border-right: none;
+}
+
+.colCenter {
+  text-align: center;
+}
+
+.colRight {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.numCol {
+  font-family: var(--font-numeric, inherit);
+  font-weight: 600;
+}
+
+.itemName {
+  font-weight: 650;
+  color: var(--navy, #0f172a);
+}
+
+.itemDetail {
+  font-size: 0.8rem;
+  color: var(--muted, #64748b);
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+/* Master Freight Package Line */
+.bundleRow {
+  background: #fafaf9;
+}
+
+.bundleRow td {
+  background: #fcfbf9;
+  border-bottom: 1px solid var(--line, #e2e8f0);
+}
+
+.bundleTitle {
+  font-weight: 750;
+  color: #0f172a;
+  font-size: 0.92rem;
+}
+
+.bundleDesc {
+  margin-top: 5px;
+  font-size: 0.82rem;
+  color: var(--muted, #64748b);
+  line-height: 1.5;
+  font-style: italic;
+}
+
+.calculation {
+  margin-top: 4px;
+  padding: 4px 8px;
+  border-left: 2px solid var(--orange, #ea580c);
+  background: #f1f5f9;
+  font-size: 0.78rem;
+  color: var(--muted, #475569);
+  line-height: 1.4;
+}
+
+/* Summary Rows */
+.summaryBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.summaryTable {
+  margin-left: auto;
+  width: 440px;
+  max-width: 100%;
+  border-collapse: collapse;
+}
+
+.summaryTable td {
+  padding: 6px 12px;
+  font-size: 0.9rem;
+}
+
+.summaryLabel {
+  color: var(--muted, #475569);
+  font-weight: 500;
+  text-align: right;
+}
+
+.summaryVal {
+  text-align: right;
+  font-weight: 650;
+  color: var(--navy, #0f172a);
+  font-family: var(--font-numeric, inherit);
+  white-space: nowrap;
+}
+
+.discountRow .summaryVal {
+  color: #16a34a;
+}
+
+.totalRow td {
+  padding-top: 10px;
+  border-top: 2px solid var(--navy, #0f172a);
+  font-size: 1.05rem;
+}
+
+.totalRow .summaryLabel {
+  font-weight: 750;
+  color: var(--navy, #0f172a);
+  text-transform: uppercase;
+}
+
+.totalRow .summaryVal {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--orange, #ea580c);
+}
+
+/* Words */
+.wordsBox {
+  background: #f8fafc;
+  border: 1px solid var(--line, #e2e8f0);
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 0.88rem;
+  color: var(--navy, #0f172a);
+  line-height: 1.4;
+}
+
+.wordsBox span {
+  font-style: italic;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* Payment Stages Grid */
+.paymentStages {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.paymentCard {
+  border: 1px solid var(--line, #cbd5e1);
+  border-radius: 8px;
+  padding: 14px 16px;
+  background: #fcfcfd;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.paymentCardTitle {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--muted, #64748b);
+  display: flex;
+  justify-content: space-between;
+}
+
+.paymentAmount {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--navy, #0f172a);
+  font-family: var(--font-numeric, inherit);
+}
+
+.depositCard .paymentAmount {
+  color: var(--orange, #ea580c);
+}
+
+.paymentNote {
+  font-size: 0.78rem;
+  color: var(--muted, #64748b);
+  line-height: 1.35;
+}
+
+/* Signatures Section */
+.signaturesGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-top: 10px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line, #cbd5e1);
+}
+
+.signatureCol {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 140px;
+}
+
+.sigTitle {
+  font-size: 0.85rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  color: var(--navy, #0f172a);
+  margin-bottom: 2px;
+}
+
+.sigSub {
+  font-size: 0.78rem;
+  font-style: italic;
+  color: var(--muted, #64748b);
+  margin-bottom: 12px;
+}
+
+.digitalSignBadge {
+  margin-top: auto;
+  border: 2px solid #059669;
+  background: rgba(5, 150, 105, 0.05);
+  border-radius: 8px;
+  padding: 8px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: center;
+  max-width: 260px;
+}
+
+.digitalSignBadge i {
+  color: #059669;
+  font-size: 1.2rem;
+  margin-bottom: 2px;
+}
+
+.digitalSignText {
+  font-size: 0.75rem;
+  font-weight: 750;
+  color: #065f46;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.digitalSignOrg {
+  font-size: 0.7rem;
+  color: #047857;
+  font-weight: 600;
+}
+
+.digitalSignTime {
+  font-size: 0.68rem;
+  color: #059669;
+}
+
+.buyerSignPlaceholder {
+  margin-top: auto;
+  padding-top: 40px;
+  font-size: 0.85rem;
+  color: var(--muted, #94a3b8);
+  font-weight: 500;
+}
+
+/* Policy Footer */
+.policyFooter {
+  padding-top: 12px;
+  border-top: 1px dashed var(--line, #cbd5e1);
+  font-size: 0.8rem;
+  color: var(--muted, #64748b);
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.policyFooter i {
+  color: var(--orange, #ea580c);
+  margin-right: 5px;
+}
+
+/* Print Media Styles */
+@media print {
+  .topToolbar {
+    display: none !important;
+  }
+  .invoiceWrap {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .header {
+    grid-template-columns: 1fr;
+  }
+  .partiesGrid {
+    grid-template-columns: 1fr;
+  }
+  .paymentStages {
+    grid-template-columns: 1fr;
+  }
+  .signaturesGrid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .summaryTable {
+    width: 100%;
+  }
+}

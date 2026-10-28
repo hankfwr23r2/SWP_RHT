@@ -130,7 +130,21 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
   const quoteTab = (
     <>
       <h4 style={{ margin: '0 0 10px' }}>Báo giá gửi khách</h4>
-      {preview ? <QuoteSheet {...preview} /> : <p className="text-muted">Đang tính…</p>}
+      {preview ? (
+        <QuoteSheet
+          {...preview}
+          bookingCode={b.id}
+          consignor={b.consignor}
+          consignee={b.consignee}
+          routeDetails={{
+            originName: b.origin.name,
+            destName: b.dest.name,
+            departAt: b.departAt,
+          }}
+        />
+      ) : (
+        <p className="text-muted">Đang tính…</p>
+      )}
     </>
   )
   return (

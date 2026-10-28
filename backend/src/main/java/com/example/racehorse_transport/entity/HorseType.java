@@ -23,5 +23,6 @@ public class HorseType {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-
+    @Column(name = "insured_value", precision = 18, scale = 2)
+    private java.math.BigDecimal insuredValue;
 }

@@ -7,4 +7,6 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface HorseTypeRepository extends JpaRepository<HorseType, Integer> {
+    boolean existsByTypeNameIgnoreCase(String typeName);
+    boolean existsByTypeNameIgnoreCaseAndIdNot(String typeName, Integer id);
 }

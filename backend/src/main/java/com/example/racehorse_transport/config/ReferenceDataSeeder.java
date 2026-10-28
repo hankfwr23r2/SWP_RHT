@@ -366,9 +366,34 @@ public class ReferenceDataSeeder implements CommandLineRunner {
             new String[] { "phanlong795@gmail.com", "phanlong795@gmail.com", "$2a$10$/GgrtSBJ8bctpBfi4Heac..YwzNB17.LjdOFmFy8R7CrKIe6sRGVG", "CUSTOMER", "" }
     };
 
+    private static final Map<String, BigDecimal> DEFAULT_BREED_INSURED_VALUES = Map.ofEntries(
+            Map.entry("Thoroughbred", new BigDecimal("1000000000")),
+            Map.entry("Arabian", new BigDecimal("800000000")),
+            Map.entry("American Quarter Horse", new BigDecimal("600000000")),
+            Map.entry("Friesian", new BigDecimal("850000000")),
+            Map.entry("Andalusian", new BigDecimal("800000000")),
+            Map.entry("Lusitano", new BigDecimal("800000000")),
+            Map.entry("Appaloosa", new BigDecimal("500000000")),
+            Map.entry("American Paint Horse", new BigDecimal("550000000")),
+            Map.entry("Morgan", new BigDecimal("550000000")),
+            Map.entry("Tennessee Walking Horse", new BigDecimal("550000000")),
+            Map.entry("Standardbred", new BigDecimal("700000000")),
+            Map.entry("Hanoverian", new BigDecimal("900000000")),
+            Map.entry("Akhal-Teke", new BigDecimal("950000000")),
+            Map.entry("Mustang", new BigDecimal("500000000")),
+            Map.entry("Clydesdale", new BigDecimal("600000000")),
+            Map.entry("Shire", new BigDecimal("600000000")),
+            Map.entry("Belgian Draft", new BigDecimal("500000000")),
+            Map.entry("Percheron", new BigDecimal("550000000")),
+            Map.entry("Haflinger", new BigDecimal("450000000")),
+            Map.entry("Shetland Pony", new BigDecimal("350000000"))
+    );
+    private static final BigDecimal DEFAULT_INSURED_VALUE = new BigDecimal("400000000");
+
     @Override
     public void run(String... args) {
         migrateServiceMetadata();
+        migrateHorseTypeInsuredValues();
         if (enabled) {
             step("accounts", this::seedUsers);
             step("categories", this::seedCategories);
@@ -491,6 +516,17 @@ public class ReferenceDataSeeder implements CommandLineRunner {
         log.info("Service metadata migration completed.");
     }
 
+    private void migrateHorseTypeInsuredValues() {
+        for (HorseType t : horseTypeRepository.findAll()) {
+            if (t.getInsuredValue() == null) {
+                BigDecimal value = DEFAULT_BREED_INSURED_VALUES.getOrDefault(t.getTypeName(), DEFAULT_INSURED_VALUE);
+                t.setInsuredValue(value);
+                horseTypeRepository.save(t);
+            }
+        }
+        log.info("HorseType insuredValue migration completed.");
+    }
+
     private void seedHorseTypes() {
         if (horseTypeRepository.count() > 0) return;
         for (String[] r : HORSE_TYPES) {
@@ -498,6 +534,7 @@ public class ReferenceDataSeeder implements CommandLineRunner {
             t.setId(Integer.valueOf(r[0]));
             t.setTypeName(r[1]);
             t.setDescription(r[2]);
+            t.setInsuredValue(DEFAULT_BREED_INSURED_VALUES.getOrDefault(r[1], DEFAULT_INSURED_VALUE));
             horseTypeRepository.save(t);
         }
     }

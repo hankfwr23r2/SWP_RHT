@@ -10,4 +10,5 @@ public interface HorseRepository extends JpaRepository<Horse, Integer> {
     java.util.List<Horse> findByCustomerID_Id(Integer customerId);
     boolean existsByMicrochipIDIgnoreCase(String microchipID);
     boolean existsByMicrochipIDIgnoreCaseAndIdNot(String microchipID, Integer id);
+    boolean existsByHorseTypeID_Id(Integer horseTypeId);
 }
