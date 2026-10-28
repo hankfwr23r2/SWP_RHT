@@ -364,16 +364,31 @@ export const bookingsApi = {
   transferQuarantine: async (id: string): Promise<Booking> => toBooking(await specialistApi.transferQuarantine(id)),
   approveQuarantine: async (id: string, _by: string, note?: string): Promise<Booking> => toBooking(await specialistApi.approveQuarantine(id, note)),
 
-  setDriverPack: async (id: string, tripId: string, by: string, items: string[]): Promise<Booking> =>
-    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'SET_DRIVER_PACK', actor: by, payload: { items } })),
-  acknowledgeTrip: async (id: string, tripId: string, who: 'driver' | 'escort', by: string): Promise<Booking> =>
-    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'ACKNOWLEDGE', actor: by, payload: { who } })),
-  departToPickup: async (id: string, tripId: string, by: string): Promise<Booking> =>
-    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'DEPART_TO_PICKUP', actor: by })),
-  arriveAtPickup: async (id: string, tripId: string, by: string, photo: string): Promise<Booking> =>
-    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'ARRIVE_PICKUP', actor: by, payload: { photo } })),
-  scanChip: async (id: string, tripId: string, by: string, chip: string): Promise<Booking> =>
-    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'SCAN_CHIP', actor: by, payload: { chip } })),
+  setDriverPack: async (id: string, tripId: string, by: string, items: string[]): Promise<Booking> => {
+    const res = await backendBookingApi.updateTripProgress(id, { tripId, action: 'SET_DRIVER_PACK', actor: by, payload: { items } })
+    invalidateBookingsListCache()
+    return toBooking(res)
+  },
+  acknowledgeTrip: async (id: string, tripId: string, who: 'driver' | 'escort', by: string): Promise<Booking> => {
+    const res = await backendBookingApi.updateTripProgress(id, { tripId, action: 'ACKNOWLEDGE', actor: by, payload: { who } })
+    invalidateBookingsListCache()
+    return toBooking(res)
+  },
+  departToPickup: async (id: string, tripId: string, by: string): Promise<Booking> => {
+    const res = await backendBookingApi.updateTripProgress(id, { tripId, action: 'DEPART_TO_PICKUP', actor: by })
+    invalidateBookingsListCache()
+    return toBooking(res)
+  },
+  arriveAtPickup: async (id: string, tripId: string, by: string, photo: string): Promise<Booking> => {
+    const res = await backendBookingApi.updateTripProgress(id, { tripId, action: 'ARRIVE_PICKUP', actor: by, payload: { photo } })
+    invalidateBookingsListCache()
+    return toBooking(res)
+  },
+  scanChip: async (id: string, tripId: string, by: string, chip: string): Promise<Booking> => {
+    const res = await backendBookingApi.updateTripProgress(id, { tripId, action: 'SCAN_CHIP', actor: by, payload: { chip } })
+    invalidateBookingsListCache()
+    return toBooking(res)
+  },
   excludeUnfitHorse: async (
     id: string,
     tripId: string,
@@ -386,28 +401,61 @@ export const bookingsApi = {
       temperature?: number
       discountAmount: number
     }
-  ): Promise<Booking> =>
-    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'EXCLUDE_UNFIT_HORSE', actor: by, payload })),
-  collectOriginals: async (id: string, tripId: string, by: string, items: string[]): Promise<Booking> =>
-    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'COLLECT_ORIGINALS', actor: by, payload: { items } })),
-  uploadHandover: async (id: string, tripId: string, by: string, checkpointId: string, photo: string): Promise<Booking> =>
-    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'UPLOAD_HANDOVER', actor: by, payload: { checkpointId, photo } })),
-  setOriginalsReturned: async (id: string, tripId: string, by: string, checkpointId: string, returnedOriginals: boolean): Promise<Booking> =>
-    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'RETURN_ORIGINALS', actor: by, payload: { checkpointId, returnedOriginals } })),
-  startJourney: async (id: string, tripId: string, by: string): Promise<Booking> =>
-    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'START_JOURNEY', actor: by })),
-  arriveCheckpoint: async (id: string, tripId: string, by: string, checkpointId: string, photo: string): Promise<Booking> =>
-    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'ARRIVE_CHECKPOINT', actor: by, payload: { checkpointId, photo } })),
-  submitWelfare: async (id: string, tripId: string, by: string, data: { checkpointId: string; condition: string; waterLiters: number; hay: boolean; photo: string; note: string }): Promise<Booking> =>
-    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'SUBMIT_WELFARE', actor: by, payload: data })),
-  continueJourney: async (id: string, tripId: string, by: string): Promise<Booking> =>
-    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'CONTINUE_JOURNEY', actor: by })),
-  customsCleared: async (id: string, tripId: string, by: string, stampPhotos: string[]): Promise<Booking> =>
-    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'CUSTOMS_CLEARED', actor: by, payload: { stampPhotos } })),
-  completeDelivery: async (id: string, tripId: string, by: string): Promise<Booking> =>
-    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'COMPLETE_DELIVERY', actor: by })),
-  confirmHome: async (id: string, tripId: string, by: string, photo: string): Promise<Booking> =>
-    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'CONFIRM_HOME', actor: by, payload: { photo } })),
+  ): Promise<Booking> => {
+    const res = await backendBookingApi.updateTripProgress(id, { tripId, action: 'EXCLUDE_UNFIT_HORSE', actor: by, payload })
+    invalidateBookingsListCache()
+    return toBooking(res)
+  },
+  collectOriginals: async (id: string, tripId: string, by: string, items: string[]): Promise<Booking> => {
+    const res = await backendBookingApi.updateTripProgress(id, { tripId, action: 'COLLECT_ORIGINALS', actor: by, payload: { items } })
+    invalidateBookingsListCache()
+    return toBooking(res)
+  },
+  uploadHandover: async (id: string, tripId: string, by: string, checkpointId: string, photo: string): Promise<Booking> => {
+    const res = await backendBookingApi.updateTripProgress(id, { tripId, action: 'UPLOAD_HANDOVER', actor: by, payload: { checkpointId, photo } })
+    invalidateBookingsListCache()
+    return toBooking(res)
+  },
+  setOriginalsReturned: async (id: string, tripId: string, by: string, checkpointId: string, returnedOriginals: boolean): Promise<Booking> => {
+    const res = await backendBookingApi.updateTripProgress(id, { tripId, action: 'RETURN_ORIGINALS', actor: by, payload: { checkpointId, returnedOriginals } })
+    invalidateBookingsListCache()
+    return toBooking(res)
+  },
+  startJourney: async (id: string, tripId: string, by: string): Promise<Booking> => {
+    const res = await backendBookingApi.updateTripProgress(id, { tripId, action: 'START_JOURNEY', actor: by })
+    invalidateBookingsListCache()
+    return toBooking(res)
+  },
+  arriveCheckpoint: async (id: string, tripId: string, by: string, checkpointId: string, photo: string): Promise<Booking> => {
+    const res = await backendBookingApi.updateTripProgress(id, { tripId, action: 'ARRIVE_CHECKPOINT', actor: by, payload: { checkpointId, photo } })
+    invalidateBookingsListCache()
+    return toBooking(res)
+  },
+  submitWelfare: async (id: string, tripId: string, by: string, data: { checkpointId: string; condition: string; waterLiters: number; hay: boolean; photo: string; note: string }): Promise<Booking> => {
+    const res = await backendBookingApi.updateTripProgress(id, { tripId, action: 'SUBMIT_WELFARE', actor: by, payload: data })
+    invalidateBookingsListCache()
+    return toBooking(res)
+  },
+  continueJourney: async (id: string, tripId: string, by: string): Promise<Booking> => {
+    const res = await backendBookingApi.updateTripProgress(id, { tripId, action: 'CONTINUE_JOURNEY', actor: by })
+    invalidateBookingsListCache()
+    return toBooking(res)
+  },
+  customsCleared: async (id: string, tripId: string, by: string, stampPhotos: string[]): Promise<Booking> => {
+    const res = await backendBookingApi.updateTripProgress(id, { tripId, action: 'CUSTOMS_CLEARED', actor: by, payload: { stampPhotos } })
+    invalidateBookingsListCache()
+    return toBooking(res)
+  },
+  completeDelivery: async (id: string, tripId: string, by: string): Promise<Booking> => {
+    const res = await backendBookingApi.updateTripProgress(id, { tripId, action: 'COMPLETE_DELIVERY', actor: by })
+    invalidateBookingsListCache()
+    return toBooking(res)
+  },
+  confirmHome: async (id: string, tripId: string, by: string, photo: string): Promise<Booking> => {
+    const res = await backendBookingApi.updateTripProgress(id, { tripId, action: 'CONFIRM_HOME', actor: by, payload: { photo } })
+    invalidateBookingsListCache()
+    return toBooking(res)
+  },
 
   // ===== Flow 5: sự cố khẩn cấp =====
   reportIncident: async (id: string, tripId: string, _by: string, kind: IncidentKind, photo: string, note: string, booking: Booking, trip: VehicleTrip) => {

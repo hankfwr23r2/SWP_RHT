@@ -1,7 +1,7 @@
 // Chuyến của tài xế / hộ tống đang đăng nhập (app di động). Một chuyến = một xe của một đơn.
 import { useCallback, useState } from 'react'
 import { useAuth } from '@shared/auth/AuthContext'
-import { bookingsApi } from '@shared/services/bookings'
+import { bookingsApi, invalidateBookingsListCache } from '@shared/services/bookings'
 import { crewApi, vehiclesApi } from '@shared/services/fleet'
 import { useLoad } from '@shared/services/useLoad'
 import type { Booking } from '@shared/types/booking'
@@ -51,7 +51,11 @@ export function saveFieldTripSelection(role: 'driver' | 'escort', username: stri
 
 export function useFieldTrips(role: 'driver' | 'escort') {
   const { session } = useAuth()
-  const { data: all, reload, updateData } = useLoad(bookingsApi.list)
+  const { data: all, reload: reloadLoad, updateData } = useLoad(bookingsApi.list)
+  const reload = useCallback(async () => {
+    invalidateBookingsListCache()
+    return reloadLoad()
+  }, [reloadLoad])
   const { data: crew } = useLoad(crewApi.list)
   const { data: vehicles } = useLoad(vehiclesApi.list)
   const username = session?.username ?? ''

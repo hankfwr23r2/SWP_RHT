@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useAuth } from '@shared/auth/AuthContext'
 import { formatDateTime } from '@shared/lib/format'
 import { useAutoRefresh } from '@shared/services/useLoad'
-import { bookingsApi } from '@shared/services/bookings'
+import { bookingsApi, invalidateBookingsListCache } from '@shared/services/bookings'
 import { TripTimeline } from '@shared/ui/TripTimeline'
 import { useNow } from '@shared/ui/useNow'
 import { useToast } from '@shared/ui/toast'
@@ -44,6 +44,7 @@ export default function EscortPage() {
     setBusy(true)
     try {
       const result = await fn()
+      invalidateBookingsListCache()
       if (isFieldBookingUpdate(result)) applyBooking(result)
       toast(msg)
       setChecked([])
