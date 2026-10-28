@@ -153,9 +153,9 @@ export const CLEARANCE_DOC: Record<ClearanceDocType, { label: string; short: str
   commercial_invoice: { label: 'Hóa đơn thương mại', short: 'Hóa đơn thương mại', hint: 'Chỉ khi người gửi bán ngựa cho người nhận.', international: true, base: false },
 }
 
-// ===== Đơn giá mẫu (PRD chưa có biểu giá chính thức) =====
-export const CLASS_FACTOR: Record<VehicleClass, number> = { light: 1, medium: BIG_TRUCK_FACTOR, heavy: 1.9 }
-export const CREW_FEE_PER_DAY = 1_800_000 // 01 Driver + 01 Escort, mỗi ngày
+// ===== Đơn giá nghiệp vụ (Có thể cấu hình bởi Admin qua SystemConfig) =====
+export let CLASS_FACTOR: Record<VehicleClass, number> = { light: 1, medium: BIG_TRUCK_FACTOR, heavy: 1.9 }
+export let CREW_FEE_PER_DAY = 1_800_000 // 01 Driver + 01 Escort, mỗi ngày
 export const SINGLE_STALL_FEE = 1_500_000 // khoang đơn mở rộng, mỗi ngựa
 // Dinh dưỡng và cữ nước khách chọn riêng cho từng ngựa (PRD mục 2.2). Gói cơ bản và cữ 3 giờ đã gồm trong cước; phí mỗi ngựa là số mẫu.
 export const FEED_PACKAGE = {
@@ -172,13 +172,13 @@ export const WATER_PLAN = {
 } as const satisfies Record<string, { label: string; fee: number; hint: string }>
 export type WaterPlanId = keyof typeof WATER_PLAN
 export const WATER_PLAN_IDS = Object.keys(WATER_PLAN) as WaterPlanId[]
-export const CLEARANCE_FEE = { domestic: 0, international: 300_000 } // phí thủ tục kiểm dịch & hải quan, cố định (PRD mục 11.2)
+export let CLEARANCE_FEE = { domestic: 0, international: 300_000 } // phí thủ tục kiểm dịch & hải quan, cố định (PRD mục 11.2)
 export const FUEL_BOT_PER_KM = 9_000 // nhiên liệu + BOT ước tính mỗi km (số mẫu)
 export const FUEL_BUFFER_RATE = 0.05 // dự phòng trên nhiên liệu và BOT
-export const MARGIN_RATE = 0.05 // biên lợi nhuận, gộp vào đơn giá, không hiện thành dòng riêng
+export let MARGIN_RATE = 0.05 // biên lợi nhuận, gộp vào đơn giá, không hiện thành dòng riêng
 export let DEMURRAGE_PER_HOUR = 400_000 // phí lưu xe chờ, chỉ khi lỗi phía khách (PRD mục 11.3: 300.000 – 500.000 đ/giờ)
-export const INSURANCE_RATE_BOOKING = 0.02 // trên giá trị bảo hiểm của giống ngựa
-// Giá trị bảo hiểm theo giống (VNĐ). Khách không tự khai; số mẫu, chờ bảng giá thật của nhà bảo hiểm.
+export let INSURANCE_RATE_BOOKING = 0.02 // trên giá trị bảo hiểm của giống ngựa
+// Giá trị bảo hiểm theo giống (VNĐ). Cấu hình từ CSDL HorseType hoặc mặc định theo chuẩn ngành.
 export const BREED_INSURED_VALUE: Record<string, number> = {
   Thoroughbred: 1_000_000_000,
   Arabian: 800_000_000,
@@ -226,6 +226,46 @@ export function applyRuntimeBookingRules(config: {
   MAX_CONTINUOUS_HOURS = config.maxContinuousHours
   MIN_REST_MINUTES = config.minRestMinutes
   VITAL_CHECK_INTERVAL_HOURS = config.vitalCheckIntervalHours
+}
+
+export function applyRuntimePricingRules(config: {
+  classFactorLight?: number
+  classFactorMedium?: number
+  classFactorHeavy?: number
+  crewFeePerDay?: number
+  marginRate?: number
+  clearanceFeeInternational?: number
+  insuranceRate?: number
+}) {
+  if (config.classFactorLight != null && Number.isFinite(config.classFactorLight)) {
+    CLASS_FACTOR.light = config.classFactorLight
+  }
+  if (config.classFactorMedium != null && Number.isFinite(config.classFactorMedium)) {
+    CLASS_FACTOR.medium = config.classFactorMedium
+  }
+  if (config.classFactorHeavy != null && Number.isFinite(config.classFactorHeavy)) {
+    CLASS_FACTOR.heavy = config.classFactorHeavy
+  }
+  if (config.crewFeePerDay != null && Number.isFinite(config.crewFeePerDay)) {
+    CREW_FEE_PER_DAY = config.crewFeePerDay
+  }
+  if (config.marginRate != null && Number.isFinite(config.marginRate)) {
+    MARGIN_RATE = config.marginRate
+  }
+  if (config.clearanceFeeInternational != null && Number.isFinite(config.clearanceFeeInternational)) {
+    CLEARANCE_FEE.international = config.clearanceFeeInternational
+  }
+  if (config.insuranceRate != null && Number.isFinite(config.insuranceRate)) {
+    INSURANCE_RATE_BOOKING = config.insuranceRate
+  }
+}
+
+export function applyRuntimeHorseTypes(types: { typeName: string; insuredValue?: number }[]) {
+  for (const t of types) {
+    if (t.insuredValue != null && Number.isFinite(t.insuredValue)) {
+      BREED_INSURED_VALUE[t.typeName] = t.insuredValue
+    }
+  }
 }
 
 // ===== Hành trình và nhật ký (Flow 4, PRD mục 5) =====

@@ -22,7 +22,7 @@ const TripTrackMap = lazy(() => import('@shared/ui/TripTrackMap').then(m => ({ d
 import { HorseFormModal } from '../horses/HorseFormModal'
 import { IncidentsCard, SettlementCard } from './SettlementCard'
 import { ClearanceProgressCard } from './ClearanceProgressCard'
-import { OrderFacts, QuoteFacts } from './OrderFacts.tsx'
+import { OrderFacts } from './OrderFacts.tsx'
 import type { orderDetailLoader } from './loaders'
 import { POST_PAYMENT, ROUTE_STAGE, ROUTE_VISIBLE, nextStep } from './nextStep'
 import s from './OrderDetail.module.css'
@@ -353,8 +353,22 @@ export default function OrderDetailPage() {
               {b.quote && (
                 <div className="card">
                   <div className="card-header"><h3><i className="fa-solid fa-file-invoice-dollar" /> Báo giá</h3></div>
-                  <QuoteFacts b={b} team={team} />
-                  <QuoteSheet {...b.quote} expiresAt={b.status === 'awaiting_payment' ? b.quote.expiresAt : undefined} showCalculation />
+                  <QuoteSheet
+                    {...b.quote}
+                    bookingCode={b.id}
+                    waybillNo={b.waybill?.no}
+                    paymentRef={b.payment?.reference}
+                    consignor={b.consignor}
+                    consignee={b.consignee}
+                    routeDetails={{
+                      originName: b.origin.name,
+                      destName: b.dest.name,
+                      departAt: b.departAt,
+                    }}
+                    invoiceDate={b.quote.sentAt || b.createdAt}
+                    expiresAt={b.status === 'awaiting_payment' ? b.quote.expiresAt : undefined}
+                    showCalculation
+                  />
                 </div>
               )}
               <IncidentPolicy />

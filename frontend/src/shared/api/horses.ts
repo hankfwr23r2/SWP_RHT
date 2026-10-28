@@ -26,6 +26,7 @@ export interface BackendHorseTypeDto {
   id: number
   typeName: string
   description?: string
+  insuredValue?: number
 }
 
 export interface BackendHorseJourneyLogDto {
@@ -65,9 +66,34 @@ export const HORSE_DOC_BACKEND_TYPE = {
   lab: 'BLOOD_TEST',
 } as const
 
+export interface CreateHorseTypePayload {
+  typeName: string
+  description?: string
+  insuredValue: number
+}
+
 export const backendHorseApi = {
   listTypes: async (): Promise<BackendHorseTypeDto[]> => {
     const res = await apiClient.get<ApiResponse<BackendHorseTypeDto[]>>('/horse-types')
+    return res.data.data
+  },
+
+  createType: async (payload: CreateHorseTypePayload): Promise<BackendHorseTypeDto> => {
+    const res = await apiClient.post<ApiResponse<BackendHorseTypeDto>>('/horse-types', payload)
+    return res.data.data
+  },
+
+  updateType: async (id: number, payload: CreateHorseTypePayload): Promise<BackendHorseTypeDto> => {
+    const res = await apiClient.put<ApiResponse<BackendHorseTypeDto>>(`/horse-types/${id}`, payload)
+    return res.data.data
+  },
+
+  deleteType: async (id: number): Promise<void> => {
+    await apiClient.delete(`/horse-types/${id}`)
+  },
+
+  updateInsuredValue: async (id: number, insuredValue: number): Promise<BackendHorseTypeDto> => {
+    const res = await apiClient.put<ApiResponse<BackendHorseTypeDto>>(`/horse-types/${id}/insured-value`, { insuredValue })
     return res.data.data
   },
 

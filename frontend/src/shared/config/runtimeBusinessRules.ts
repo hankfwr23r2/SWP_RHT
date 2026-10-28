@@ -1,5 +1,6 @@
-import { applyRuntimeBookingRules } from './booking-rules'
+import { applyRuntimeBookingRules, applyRuntimePricingRules } from './booking-rules'
 import { applyRuntimeBusinessRules } from './business-rules'
+import { applyRuntimePublicPricingConfig } from './public-pricing'
 
 const REQUIRED_CONFIG_KEYS = [
   'DEPOSIT_RATE',
@@ -10,6 +11,13 @@ const REQUIRED_CONFIG_KEYS = [
   'VITAL_CHECK_INTERVAL_HOURS',
   'MIN_LEAD_DAYS',
 ] as const
+
+function readOptionalNumber(configs: Record<string, string>, key: string): number | undefined {
+  const raw = configs[key]
+  if (raw === undefined || raw.trim() === '') return undefined
+  const value = Number(raw)
+  return Number.isFinite(value) ? value : undefined
+}
 
 export function applyRuntimeBusinessConfig(configs: Record<string, string>) {
   const readNumber = (key: (typeof REQUIRED_CONFIG_KEYS)[number]) => {
@@ -45,4 +53,25 @@ export function applyRuntimeBusinessConfig(configs: Record<string, string>) {
     vitalCheckIntervalHours: values.VITAL_CHECK_INTERVAL_HOURS,
   })
   applyRuntimeBusinessRules({ minLeadDays: values.MIN_LEAD_DAYS })
+
+  // Cấu hình biểu giá động
+  applyRuntimePublicPricingConfig({
+    tripOpenFee: readOptionalNumber(configs, 'TRIP_OPEN_FEE'),
+    kmTier1Limit: readOptionalNumber(configs, 'KM_TIER_1_LIMIT'),
+    kmTier1Rate: readOptionalNumber(configs, 'KM_TIER_1_RATE'),
+    kmTier2Limit: readOptionalNumber(configs, 'KM_TIER_2_LIMIT'),
+    kmTier2Rate: readOptionalNumber(configs, 'KM_TIER_2_RATE'),
+    kmTier3Rate: readOptionalNumber(configs, 'KM_TIER_3_RATE'),
+    bigTruckFactor: readOptionalNumber(configs, 'CLASS_FACTOR_MEDIUM'),
+  })
+
+  applyRuntimePricingRules({
+    classFactorLight: readOptionalNumber(configs, 'CLASS_FACTOR_LIGHT'),
+    classFactorMedium: readOptionalNumber(configs, 'CLASS_FACTOR_MEDIUM'),
+    classFactorHeavy: readOptionalNumber(configs, 'CLASS_FACTOR_HEAVY'),
+    crewFeePerDay: readOptionalNumber(configs, 'CREW_FEE_PER_DAY'),
+    marginRate: readOptionalNumber(configs, 'MARGIN_RATE'),
+    clearanceFeeInternational: readOptionalNumber(configs, 'CLEARANCE_FEE_INTERNATIONAL'),
+    insuranceRate: readOptionalNumber(configs, 'INSURANCE_RATE'),
+  })
 }

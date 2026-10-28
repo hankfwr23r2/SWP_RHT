@@ -1,6 +1,7 @@
 // Ảnh thu nhỏ bấm để phóng to trong popup (giống xem ảnh đơn hàng trên sàn thương mại).
 // Hỗ trợ cả file ảnh (.jpg, .png) và file tài liệu PDF (.pdf).
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { previewOf } from '../lib/previews'
 import s from './ImageThumb.module.css'
 
@@ -33,7 +34,7 @@ export function ImageLightbox({ name, title, onClose, toolbarVariant = 'default'
   const isPdf = name.toLowerCase().endsWith('.pdf') || (src ? src.toLowerCase().includes('.pdf') : false)
   const displayName = name.split('/').pop()?.split('?')[0] || name
 
-  return (
+  const content = (
     <div className={s.backdrop} role="dialog" aria-modal="true" aria-label={`Xem tài liệu ${title || name}`} onClick={e => e.target === e.currentTarget && onClose()}>
       <button className={s.close} onClick={onClose} aria-label="Đóng"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
 
@@ -110,6 +111,9 @@ export function ImageLightbox({ name, title, onClose, toolbarVariant = 'default'
       )}
     </div>
   )
+
+  if (typeof document === 'undefined') return content
+  return createPortal(content, document.body)
 }
 
 export function ImageThumb({ name, size = 56, toolbarVariant = 'default', title }: { name: string; size?: number; toolbarVariant?: ToolbarVariant; title?: string }) {

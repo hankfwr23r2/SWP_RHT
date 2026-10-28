@@ -1,6 +1,6 @@
 import apiClient, { type ApiResponse } from './client'
 
-export type SystemConfigGroup = 'WELFARE' | 'PAYMENT' | 'BORDER' | 'OPERATIONS' | 'JOURNEY'
+export type SystemConfigGroup = 'WELFARE' | 'PAYMENT' | 'BORDER' | 'OPERATIONS' | 'JOURNEY' | 'PRICING'
 
 export interface SystemConfigItem {
   configKey: string
