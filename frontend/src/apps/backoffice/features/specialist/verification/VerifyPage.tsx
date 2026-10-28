@@ -10,7 +10,7 @@ import { bookingsApi } from '@shared/services/bookings'
 import type { Booking, HorseProfile } from '@shared/types/booking'
 import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
 import { HorseDocChips } from '@shared/ui/HorseDocChips'
-import { ImageThumb } from '@shared/ui/ImageThumb'
+import { ImageLightbox, ImageThumb } from '@shared/ui/ImageThumb'
 import { useToast } from '@shared/ui/toast'
 import { History, ReviewChips, TripSummary } from '../../../shared/BookingParts'
 import s from '../../../shared/booking.module.css'
@@ -47,6 +47,7 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
   const [reason, setReason] = useState('')
   const [items, setItems] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
+  const [viewingDoc, setViewingDoc] = useState<{ name: string; title: string } | null>(null)
   // Phân trang từng ngựa
   const [pageIdx, setPageIdx] = useState(0)
   const idx = Math.min(pageIdx, horses.length - 1)
@@ -144,19 +145,21 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
                 {HORSE_DOC_TYPES.map(d => {
                   const f = cur.docs[d]
                   const isResubmitted = lastResubmitted.some(item => item.horseId === cur.id && item.doc === d)
+                  const title = `${HORSE_DOC[d].label} · ${cur.name} (${cur.microchip})`
+                  const fileName = f ? (f.fileUrl || f.fileName) : ''
                   return (
                     <div key={d} className={`${s.docFile} ${isResubmitted ? s.docResubmitted : ''}`}>
                       {f ? (
                         <ImageThumb
-                          name={f.fileUrl || f.fileName}
+                          name={fileName}
                           size={64}
                           toolbarVariant="balanced"
-                          title={`${HORSE_DOC[d].label} · ${cur.name} (${cur.microchip})`}
+                          title={title}
                         />
                       ) : (
                         <span className={s.docEmpty}><i className="fa-regular fa-file" aria-hidden="true" /></span>
                       )}
-                      <div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                           <b>{renderDocLabel(HORSE_DOC[d].label)}</b>
                           {isResubmitted && (
@@ -167,6 +170,17 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
                         </div>
                         <small>{f ? `${f.fileName} · nộp ${formatDateTime(f.uploadedAt)}` : 'Khách chưa nộp'}</small>
                       </div>
+                      {f && (
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm"
+                          style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 }}
+                          onClick={() => setViewingDoc({ name: fileName, title })}
+                          title={`Xem trước ${title}`}
+                        >
+                          <i className="fa-regular fa-eye" /> Xem trước
+                        </button>
+                      )}
                     </div>
                   )
                 })}
@@ -261,6 +275,15 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
 
       {b.medical?.status === 'approved' && (
         <div className="alert alert-success"><i className="fa-solid fa-circle-check" /><div><b>Đã duyệt hồ sơ ngựa</b>{b.medical.at && ` lúc ${formatDateTime(b.medical.at)}`}</div></div>
+      )}
+
+      {viewingDoc && (
+        <ImageLightbox
+          name={viewingDoc.name}
+          title={viewingDoc.title}
+          onClose={() => setViewingDoc(null)}
+          toolbarVariant="balanced"
+        />
       )}
     </>
   )
