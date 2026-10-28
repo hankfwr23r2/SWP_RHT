@@ -17,6 +17,7 @@
 .main { display: grid; gap: 16px; min-width: 0; }
 .main > :global(.card) + :global(.card), .side > :global(.card) + :global(.card) { margin-top: 0; }
 .side { display: grid; gap: 16px; position: sticky; top: 88px; min-width: 0; }
+.sideScroll { display: grid; gap: 16px; position: sticky; top: 88px; min-width: 0; max-height: calc(100vh - 108px); overflow-y: auto; padding-right: 2px; }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px 20px; }
 .grid dt { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); font-weight: 600; }
@@ -73,6 +74,7 @@
 @media (max-width: 960px) {
   .layout { grid-template-columns: 1fr; }
   .side { position: static; }
+  .sideScroll { position: static; max-height: none; overflow-y: visible; }
   .form2 { grid-template-columns: 1fr; }
   .stopRow, .adj { grid-template-columns: 1fr 100px 40px; }
 }
