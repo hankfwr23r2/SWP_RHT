@@ -78,7 +78,7 @@ public class SettlementServiceImpl implements SettlementService {
             payload.setSettlement(settlementMap);
 
             booking.setStatus("settlement_issued");
-            appendHistory(payload, "Hệ thống", "Không có chi phí phát sinh: Hệ thống tự động phát hành Bảng quyết toán 0 đồng.");
+            appendHistory(payload, "Hệ thống", "Phát hành bảng quyết toán");
         } else {
             // Có chi phí phát sinh -> Ghi nhận và chuyển sang chờ quản lý đối soát
             Map<String, Object> settlementDraft = new HashMap<>();
@@ -88,7 +88,7 @@ public class SettlementServiceImpl implements SettlementService {
             payload.setSettlement(settlementDraft);
 
             booking.setStatus("expenses_submitted");
-            appendHistory(payload, actor, "Kê khai " + expenses.size() + " khoản chi phí phát sinh thực tế (kèm ảnh chứng từ). Chờ Quản lý đối soát.");
+            appendHistory(payload, actor, "Kê khai chi phí phát sinh");
         }
 
         savePayload(booking, payload);
@@ -171,8 +171,7 @@ public class SettlementServiceImpl implements SettlementService {
 
         booking.setStatus("settlement_issued");
 
-        appendHistory(payload, managerName, "Đối soát chứng từ chi phí và phát hành Bảng quyết toán phát sinh: "
-                + customerTotal + " VND (Hạn thanh toán 24 giờ).");
+        appendHistory(payload, managerName, "Phát hành bảng quyết toán");
 
         savePayload(booking, payload);
         Booking saved = bookingRepository.save(booking);
@@ -215,7 +214,7 @@ public class SettlementServiceImpl implements SettlementService {
         }
 
         Booking saved = closeBooking(booking, payload, username != null ? username : "Khách hàng",
-                "Xác nhận bảng quyết toán 0 đồng và gửi đánh giá chuyến đi. Đóng đơn hàng (Completed).");
+                "Hoàn tất quyết toán và đánh giá");
         return mapToBookingResponse(saved);
     }
 
@@ -279,8 +278,7 @@ public class SettlementServiceImpl implements SettlementService {
         payload.setSettlement(settlementMap);
 
         return closeBooking(booking, payload, actor != null ? actor : "Khách hàng",
-                "Thanh toán quyết toán phát sinh " + payment.getAmount() + " VND qua " + payment.getPaymentMethod()
-                        + " và gửi đánh giá chuyến đi. Đóng đơn hàng (Completed).");
+                "Hoàn tất quyết toán và đánh giá");
     }
 
     /**

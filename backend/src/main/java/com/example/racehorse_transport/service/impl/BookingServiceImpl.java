@@ -1102,7 +1102,7 @@ public class BookingServiceImpl implements BookingService {
 
         booking.setStatus("under_review");
         appendHistory(payload, request.getBy() != null ? request.getBy() : "Quản lý",
-                "Trả lại " + label);
+                "Trả lại thẩm định");
         savePayload(booking, payload);
 
         Booking updated = bookingRepository.save(booking);
@@ -1959,7 +1959,7 @@ public class BookingServiceImpl implements BookingService {
                 }
                 targetTrip.setDepartedAt(now);
                 if (ready) booking.setStatus("en_route_to_pickup");
-                appendHistory(payload, actor, "Xe bắt đầu xuất phát đến điểm đón ngựa");
+                appendHistory(payload, actor, "Xe xuất phát đến điểm đón");
                 break;
             }
             case "ARRIVE_PICKUP": {
@@ -2023,7 +2023,7 @@ public class BookingServiceImpl implements BookingService {
                     chips.add(chip);
                 }
                 targetTrip.setRun(run);
-                appendHistory(payload, actor, "Hộ tống quét microchip: " + chip);
+                appendHistory(payload, actor, "Quét mã microchip");
                 break;
             }
             case "EXCLUDE_UNFIT_HORSE": {
@@ -2144,9 +2144,7 @@ public class BookingServiceImpl implements BookingService {
                 logRepository.save(emergencyLog);
 
                 // 5. Ghi lịch sử đơn hàng
-                appendHistory(payload, actor, "Hộ tống từ chối tiếp nhận ngựa [" + horseName + "] do " + reason
-                        + (temp != null ? " (Thân nhiệt: " + temp + "°C)" : "")
-                        + (discountAmount.compareTo(BigDecimal.ZERO) > 0 ? ". Đã giảm trừ " + discountAmount + " VND cho khách hàng" : ""));
+                appendHistory(payload, actor, "Từ chối tiếp nhận ngựa");
                 break;
             }
             case "COLLECT_ORIGINALS": {
@@ -2206,7 +2204,7 @@ public class BookingServiceImpl implements BookingService {
                 run.put("startedAt", now);
                 run.put("checkpoints", checkpoints);
                 targetTrip.setRun(run);
-                appendHistory(payload, actor, "Xe bắt đầu hành trình vận chuyển ngựa");
+                appendHistory(payload, actor, "Bắt đầu vận chuyển");
 
                 // Cập nhật trạng thái ngựa sang IN_TRANSIT
                 if (payload.getHorses() != null) {
@@ -2259,7 +2257,7 @@ public class BookingServiceImpl implements BookingService {
                 arrivedCheckpoint.put("photo", photo);
                 if ("border".equals(arrivedCheckpoint.get("type"))) arrivedCheckpoint.put("doneAt", now);
                 targetTrip.setRun(run);
-                appendHistory(payload, actor, "Xe tới trạm dừng / mốc: " + cpId);
+                appendHistory(payload, actor, "Xe tới trạm dừng");
                 break;
             }
             case "SUBMIT_WELFARE": {
@@ -2346,7 +2344,7 @@ public class BookingServiceImpl implements BookingService {
                 customs.putIfAbsent("arrivedAt", now);
                 customs.put("doneAt", now);
                 targetTrip.setRun(customsRun);
-                appendHistory(payload, actor, "Đã hoàn tất thủ tục thông quan tại cửa khẩu");
+                appendHistory(payload, actor, "Hoàn tất thông quan");
                 break;
             }
             case "RETURN_ORIGINALS": {
@@ -2376,8 +2374,8 @@ public class BookingServiceImpl implements BookingService {
                 run.put("checkpoints", checkpoints);
                 targetTrip.setRun(run);
                 appendHistory(payload, actor, returned
-                        ? "Đã xác nhận trả chứng từ gốc cho người nhận"
-                        : "Đã hủy xác nhận trả chứng từ gốc");
+                        ? "Xác nhận trả chứng từ gốc"
+                        : "Hủy xác nhận trả chứng từ gốc");
                 break;
             }
             case "COMPLETE_DELIVERY": {
@@ -2425,7 +2423,7 @@ public class BookingServiceImpl implements BookingService {
                 targetTrip.setHomeReturn(hr);
 
                 booking.setStatus("delivered_pending_settlement");
-                appendHistory(payload, actor, "Hoàn tất bàn giao ngựa, đơn chuyển sang chờ đối soát chi phí");
+                appendHistory(payload, actor, "Hoàn tất bàn giao ngựa");
 
                 // Cập nhật trạng thái ngựa sang STABLE_IDLE khi giao xong
                 if (payload.getHorses() != null) {
@@ -2470,7 +2468,7 @@ public class BookingServiceImpl implements BookingService {
                         log.warn("Không nhả được xe {} khi về trụ sở: mã xe không hợp lệ", targetTrip.getVehicleId());
                     }
                 }
-                appendHistory(payload, actor, "Xe và kíp xe đã về tới Trụ sở chính Việt Nam, sẵn sàng nhận chuyến mới");
+                appendHistory(payload, actor, "Xe về tới trụ sở chính");
                 break;
             }
             default: {

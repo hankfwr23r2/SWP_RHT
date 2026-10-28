@@ -261,7 +261,7 @@ public class SpecialistServiceImpl implements SpecialistService {
             newItem.put("photos", Collections.emptyList());
             items.add(newItem);
 
-            appendHistory(payload, username != null ? username : "Chuyên viên", "Bổ sung thêm hạng mục giấy tờ: " + type);
+            appendHistory(payload, username != null ? username : "Chuyên viên", "Bổ sung hạng mục giấy tờ");
         }
 
         payload.setClearance(clearanceMap);

@@ -184,7 +184,7 @@ public class DeliveryServiceImpl implements DeliveryService {
         } else {
             booking.setStatus("handover_timeout");
             appendHistory(payload, request.getDriverUsername() != null ? request.getDriverUsername() : "Kíp xe",
-                    "Quá giờ bàn giao, đưa ngựa vào chuồng lưu trú tạm");
+                    "Quá hạn bàn giao: Lưu chuồng tạm");
         }
 
         savePayload(booking, payload);
