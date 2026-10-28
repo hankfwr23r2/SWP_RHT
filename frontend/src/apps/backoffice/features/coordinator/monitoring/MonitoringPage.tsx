@@ -100,7 +100,7 @@ export default function MonitoringPage() {
                 </div>
               )}
             </div>
-            <aside className={s.side}>
+            <aside className={s.sideScroll}>
               <FilterNav<Tab> value={tab} onChange={setTab} tabs={[['not_started', 'Chuyến chưa chạy', notStarted.length], ['running', 'Chuyến đang chạy', active.length]]} />
               {shown.map(({ b, t }) => {
                 const cps = t.run?.checkpoints ?? []
