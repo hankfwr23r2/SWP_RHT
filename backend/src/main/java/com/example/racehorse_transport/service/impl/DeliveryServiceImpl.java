@@ -51,7 +51,7 @@ public class DeliveryServiceImpl implements DeliveryService {
 
         payload.setArrival(arrivalMap);
         appendHistory(payload, request != null && request.getDriverUsername() != null ? request.getDriverUsername() : "Tài xế",
-                "Đã tới điểm giao đích. Bắt đầu đếm thời gian chờ bàn giao (tối đa 2 giờ miễn phí).");
+                "Xe tới điểm giao đích");
         booking.setStatus("arrived");
         savePayload(booking, payload);
 
@@ -129,14 +129,12 @@ public class DeliveryServiceImpl implements DeliveryService {
             // Chuyển sang chờ quyết toán phát sinh (Flow 6 - Nhánh có phát sinh)
             booking.setStatus("delivered_pending_settlement");
             appendHistory(payload, request.getDriverUsername() != null ? request.getDriverUsername() : "Kíp xe",
-                    "Đã hoàn tất bàn giao ngựa cho " + request.getRecipientName()
-                            + ". Đơn chuyển sang chờ quyết toán chi phí phát sinh (hóa đơn thú y/chuồng đệm đội ngoài).");
+                    "Hoàn tất bàn giao ngựa");
         } else {
             // Không có chi phí phát sinh: Đóng đơn ngay lập tức (COMPLETED), giải phóng xe về AVAILABLE
             booking.setStatus("completed");
             appendHistory(payload, request.getDriverUsername() != null ? request.getDriverUsername() : "Kíp xe",
-                    "Đã hoàn tất bàn giao ngựa cho " + request.getRecipientName()
-                            + ". Không phát sinh chi phí, đóng đơn hoàn tất.");
+                    "Hoàn tất bàn giao ngựa");
 
             // Giải phóng xe về AVAILABLE tại Trụ sở chính VN
             releaseVehiclesToAvailable(booking.getId());
@@ -182,13 +180,11 @@ public class DeliveryServiceImpl implements DeliveryService {
         if ("RETURN_TO_HQ".equalsIgnoreCase(action)) {
             booking.setStatus("returning_to_hq");
             appendHistory(payload, request.getDriverUsername() != null ? request.getDriverUsername() : "Kíp xe",
-                    "Người nhận từ chối/quá hạn nhận ngựa. Kíp xe kích hoạt phương án chở ngựa quay về Trụ sở chính Việt Nam.");
+                    "Chở ngựa về trụ sở");
         } else {
             booking.setStatus("handover_timeout");
             appendHistory(payload, request.getDriverUsername() != null ? request.getDriverUsername() : "Kíp xe",
-                    "Quá 2 giờ chưa bàn giao được. Kíp xe đã đưa ngựa vào chuồng lưu trú khẩn cấp tại: "
-                            + (request.getPartnerName() != null ? request.getPartnerName() : "Trang trại đối tác gần nhất")
-                            + " để bảo đảm an sinh. Phát sinh phí lưu chuồng & lưu ca xe tính vào quyết toán.");
+                    "Quá giờ bàn giao, đưa ngựa vào chuồng lưu trú tạm");
         }
 
         savePayload(booking, payload);

@@ -443,7 +443,7 @@ public class BookingServiceImpl implements BookingService {
         medical.remove("requestedBy");
         payload.setMedical(medical);
         booking.setStatus("under_review");
-        appendHistory(payload, customerUsername, "Khách đã bổ sung hồ sơ và gửi lại Kiểm dịch viên thẩm định");
+        appendHistory(payload, customerUsername, "Bổ sung hồ sơ và gửi lại thẩm định");
         savePayload(booking, payload);
 
         return mapToResponse(bookingRepository.save(booking));
@@ -620,7 +620,7 @@ public class BookingServiceImpl implements BookingService {
                 ? String.valueOf(request.getCoordinator().get("name")) : "Điều phối viên";
 
         appendHistory(payload, request != null && request.getBy() != null ? request.getBy() : "Quản lý",
-                "Tiếp nhận đơn. Giao " + spName + " (kiểm dịch) và " + coName + " (điều phối)");
+                "Tiếp nhận đơn");
 
         booking.setStatus("under_review");
         savePayload(booking, payload);
@@ -659,7 +659,7 @@ public class BookingServiceImpl implements BookingService {
             payload.setHistory(new ArrayList<>());
         }
         appendHistory(payload, request != null && request.getBy() != null ? request.getBy() : "Quản lý",
-                "Từ chối đơn: " + reason);
+                "Từ chối đơn");
 
         payload.setRejection(rejectionMap);
         booking.setStatus("rejected");
@@ -784,10 +784,10 @@ public class BookingServiceImpl implements BookingService {
 
         if (medicalApproved) {
             booking.setStatus("pending_commercial");
-            appendHistory(payload, "Hệ thống", "Hồ sơ ngựa và phương án xe đều đã duyệt xong -> Chuyển Quản lý duyệt báo giá.");
+            appendHistory(payload, "Hệ thống", "Hồ sơ ngựa và phương án xe đã duyệt xong");
         } else {
             booking.setStatus("under_review");
-            appendHistory(payload, "Hệ thống", "Điều phối viên đã chốt xe và lộ trình. Đang chờ Chuyên viên kiểm dịch thẩm định hồ sơ ngựa.");
+            appendHistory(payload, "Hệ thống", "Xác nhận xe và lộ trình di chuyển");
         }
 
         if (request.getRouteId() != null) {
@@ -927,7 +927,7 @@ public class BookingServiceImpl implements BookingService {
 
         payload.setTrips(trips);
         appendHistory(payload, request.getBy() != null ? request.getBy() : "Quản lý",
-                "Chọn tài xế và hộ tống cho " + trips.size() + " xe");
+                "Chọn tài xế và hộ tống");
         savePayload(booking, payload);
 
         Booking updated = bookingRepository.save(booking);
@@ -1027,9 +1027,7 @@ public class BookingServiceImpl implements BookingService {
         payload.setQuote(quoteMap);
 
         appendHistory(payload, request.getBy() != null ? request.getBy() : "Quản lý",
-                "Duyệt và phát hành báo giá: Tổng " + total + " VND, Đặt cọc "
-                        + depositRate.multiply(BigDecimal.valueOf(100)).stripTrailingZeros().toPlainString()
-                        + "%: " + deposit + " VND (Hiệu lực " + quoteValidHours + " giờ)");
+                "Duyệt và phát hành báo giá");
         savePayload(booking, payload);
 
         booking.setStatus("awaiting_payment");
@@ -1104,7 +1102,7 @@ public class BookingServiceImpl implements BookingService {
 
         booking.setStatus("under_review");
         appendHistory(payload, request.getBy() != null ? request.getBy() : "Quản lý",
-                "Trả lại " + label + ": " + request.getReason().trim());
+                "Trả lại " + label);
         savePayload(booking, payload);
 
         Booking updated = bookingRepository.save(booking);
@@ -1151,7 +1149,7 @@ public class BookingServiceImpl implements BookingService {
         booking.setStatus("under_review");
 
         appendHistory(payload, customerUsername != null ? customerUsername : "Khách hàng",
-                "Đã bổ sung hồ sơ, gửi lại Kiểm dịch viên");
+                "Bổ sung hồ sơ");
         savePayload(booking, payload);
 
         Booking updated = bookingRepository.save(booking);
@@ -1189,7 +1187,7 @@ public class BookingServiceImpl implements BookingService {
         initClearanceRegulationsForBooking(booking, payload);
 
         appendHistory(payload, actor != null ? actor : "Khách hàng",
-                "Đặt cọc (" + payment.getAmount() + " VND) qua " + payment.getPaymentMethod() + ", cấp Vận đơn " + waybillNo);
+                "Đặt cọc");
         savePayload(booking, payload);
         Booking updated = bookingRepository.save(booking);
 
@@ -1336,8 +1334,7 @@ public class BookingServiceImpl implements BookingService {
         payload.setPayment(paymentMap);
 
         appendHistory(payload, actor != null ? actor : "Khách hàng",
-                "Thanh toán 70% còn lại (" + payment.getAmount() + " VND) qua " + payment.getPaymentMethod()
-                        + ". Đã đủ điều kiện để xe bắt đầu hành trình.");
+                "Thanh toán phần còn lại");
         savePayload(booking, payload);
         Booking updated = bookingRepository.save(booking);
 
@@ -1375,7 +1372,7 @@ public class BookingServiceImpl implements BookingService {
         String reason = request != null && request.getReason() != null ? request.getReason().trim()
                 : "Khách hàng không đồng ý báo giá";
         appendHistory(payload, customerUsername != null ? customerUsername : "Khách hàng",
-                "Từ chối báo giá: " + reason + ". Đơn đã hủy, giải phóng xe và kíp xe.");
+                "Từ chối báo giá");
         savePayload(booking, payload);
 
         Booking updated = bookingRepository.save(booking);
@@ -1406,7 +1403,7 @@ public class BookingServiceImpl implements BookingService {
                     booking.setStatus("quote_expired");
                     BookingDetailsPayload payload = extractPayload(booking);
                     appendHistory(payload, "Hệ thống",
-                            "Báo giá đã hết hạn theo thời hạn ghi trên báo giá, tự động giải phóng xe và kíp xe.");
+                            "Báo giá hết hạn");
                     savePayload(booking, payload);
                     bookingRepository.save(booking);
 
@@ -1441,7 +1438,7 @@ public class BookingServiceImpl implements BookingService {
                     long dueAt = ((Number) dueAtObj).longValue();
                     if (now > dueAt) {
                         booking.setStatus("payment_overdue");
-                        appendHistory(payload, "Hệ thống", "Bảng quyết toán quá hạn 24 giờ. Trạng thái chuyển sang payment_overdue (Khóa quyền tạo đơn mới).");
+                        appendHistory(payload, "Hệ thống", "Bảng quyết toán quá hạn");
                         savePayload(booking, payload);
                         bookingRepository.save(booking);
                         logAction("SETTLEMENT_OVERDUE", booking.getId(), "Đơn BK-" + booking.getId() + " quá hạn thanh toán quyết toán 24h.");
@@ -1909,7 +1906,7 @@ public class BookingServiceImpl implements BookingService {
                 Map<String, Object> acks = targetTrip.getAcks() != null ? targetTrip.getAcks() : new HashMap<>();
                 acks.put(who, now);
                 targetTrip.setAcks(acks);
-                appendHistory(payload, actor, actor + " (" + ("driver".equalsIgnoreCase(who) ? "Tài xế" : "Hộ tống") + ") đã nhận Lệnh điều xe");
+                appendHistory(payload, actor, ("driver".equalsIgnoreCase(who) ? "Tài xế" : "Hộ tống") + " nhận lệnh điều xe");
 
                 // Nếu đơn đã sẵn sàng hoặc đang di chuyển thì chỉ ghi nhận ack
                 String currentStatus = booking.getStatus() != null ? booking.getStatus().toLowerCase() : "";
@@ -1933,7 +1930,7 @@ public class BookingServiceImpl implements BookingService {
 
                     if (clearanceMap.get("doneAt") != null) {
                         booking.setStatus("ready_for_pickup");
-                        appendHistory(payload, "Hệ thống", "Kíp xe (Tài xế & Hộ tống) đã nhận lệnh điều xe. Giấy tờ đã hoàn tất trước đó, đơn hàng chuyển sang trạng thái Sẵn sàng đón ngựa!");
+                        appendHistory(payload, "Hệ thống", "Sẵn sàng đón ngựa");
                         log.info("Booking ID={} advanced to ready_for_pickup because clearance was already done", booking.getId());
                     }
                     payload.setClearance(clearanceMap);
@@ -1950,7 +1947,7 @@ public class BookingServiceImpl implements BookingService {
                 pack.put("at", now);
                 pack.put("by", actor);
                 targetTrip.setDriverPack(pack);
-                appendHistory(payload, actor, "Điều phối viên (" + actor + ") đã lập bộ " + items.size() + " giấy tờ bàn giao cho tài xế");
+                appendHistory(payload, actor, "Lập bộ giấy tờ bàn giao cho tài xế");
                 break;
             }
             case "DEPART_TO_PICKUP": {
