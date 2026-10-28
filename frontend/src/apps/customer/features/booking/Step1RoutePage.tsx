@@ -358,6 +358,17 @@ export default function Step1RoutePage() {
     }))
   }
 
+  // Copy thông tin Người gửi → Người nhận (không copy địa chỉ)
+  const fillConsigneeFromConsignor = () => {
+    setConsigneePhoneCountry(consignorPhoneCountry)
+    setConsignee(prev => ({
+      ...prev,
+      name: consignor.name,
+      phone: consignor.phone,
+      idNumber: consignor.idNumber,
+    }))
+  }
+
   const dateError = !date
     ? 'Chọn ngày khởi hành.'
     : !isDepartureAllowed(fromIsoDay(date))
@@ -622,10 +633,17 @@ export default function Step1RoutePage() {
         {routeReady && (
           <div className="card" data-card>
             <div className="card-header">
-              <h3>
-                <PinIcon />
-                Người nhận &amp; Điểm giao ngựa <span className={s.subNote}>({COUNTRIES[destC].name})</span>
-              </h3>
+              <div className={s.partyHeader} style={{ width: '100%', marginBottom: 0 }}>
+                <h3 style={{ margin: 0 }}>
+                  <PinIcon />
+                  Người nhận &amp; Điểm giao ngựa <span className={s.subNote}>({COUNTRIES[destC].name})</span>
+                </h3>
+                {consignor.name && (
+                  <button type="button" className={s.quickMeBtn} onClick={fillConsigneeFromConsignor}>
+                    <UserIcon /> Người gửi là người nhận
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className={s.grid2}>
