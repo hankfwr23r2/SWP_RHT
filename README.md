@@ -21,6 +21,10 @@ docker compose up -d --build
 - Tự động bật Frontend tại: `http://localhost:5173`
 - Để dừng hệ thống: `docker compose down`
 
+Key VNPay, Cloudinary, Vietmap không nằm trong repo. Chép `.env.example` thành `.env` ở thư mục gốc,
+điền key xin trong nhóm (docker compose tự đọc `.env`). Chạy backend bằng `./mvnw` thì ghi key vào
+`backend/application-local.properties`. Cả hai file đều đã bị git bỏ qua, không commit key thật.
+
 Để tạo tài khoản quản trị đầu tiên, cấu hình `APP_BOOTSTRAP_ADMIN_USERNAME`,
 `APP_BOOTSTRAP_ADMIN_EMAIL` và `APP_BOOTSTRAP_ADMIN_PASSWORD` trong môi trường
 chạy Docker Compose trước khi khởi động. Ví dụ trong PowerShell:
