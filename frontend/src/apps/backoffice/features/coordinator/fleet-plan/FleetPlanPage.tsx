@@ -58,7 +58,7 @@ type CorridorSuggestion = {
   match: FixedRouteMatch
 }
 
-function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; all: Booking[]; onDone: () => void }) {
+function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Booking[] }) {
   const toast = useToast()
   const navigate = useNavigate()
   const { session } = useAuth()
@@ -174,6 +174,9 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
   const originPoint = useMemo(() => origin && ({ lat: origin.lat, lng: origin.lng }), [origin?.lat, origin?.lng]) // eslint-disable-line react-hooks/exhaustive-deps
   const destPoint = useMemo(() => dest && ({ lat: dest.lat, lng: dest.lng }), [dest?.lat, dest?.lng]) // eslint-disable-line react-hooks/exhaustive-deps
   const gatePoint = useMemo(() => gateGeo && ({ lat: gateGeo.lat, lng: gateGeo.lng }), [gateGeo?.lat, gateGeo?.lng]) // eslint-disable-line react-hooks/exhaustive-deps
+  const inlineOrigin = useMemo(() => origin ? { ...origin, name: b.origin.name } : undefined, [origin?.id, origin?.lat, origin?.lng, b.origin.name])
+  const inlineDest = useMemo(() => dest ? { ...dest, name: b.dest.name } : undefined, [dest?.id, dest?.lat, dest?.lng, b.dest.name])
+  const inlineGate = useMemo(() => gateGeo ? { ...gateGeo, name: gateGeo.name } : undefined, [gateGeo?.name, gateGeo?.lat, gateGeo?.lng])
   const estHours = routeKm(b.origin, b.dest, gate || undefined) / AVG_SPEED_KMH
 
   const defaultEtdTime = useMemo(() => {
@@ -369,7 +372,6 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
         note: note.trim(),
       })
       toast(`Đã xác nhận ${trips.length} xe và lộ trình ${b.id}`)
-      onDone()
       navigate('/coordinator/fleet-plan')
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Không xác nhận được', 'error')
@@ -382,7 +384,6 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
     try {
       await bookingsApi.rejectOrder(b.id, session!.name, 'coordinator', reason ?? '')
       toast(`Đã từ chối ${b.id}, khách nhận được lý do`)
-      onDone()
       navigate('/coordinator/fleet-plan')
     } catch (e) {
       toast(e instanceof Error ? e.message : 'Không từ chối được', 'error')
@@ -704,12 +705,12 @@ function Plan({ b, vehicles, all, onDone }: { b: Booking; vehicles: Vehicle[]; a
 
         {/* BẢN ĐỒ INLINE TRỰC TIẾP TRÊN TRANG */}
 
-        {origin && dest && (
+        {inlineOrigin && inlineDest && (
           <div style={{ marginBottom: 16 }}>
             <InlineRouteMap
-              origin={{ ...origin, name: b.origin.name }}
-              dest={{ ...dest, name: b.dest.name }}
-              gate={gateGeo ? { ...gateGeo, name: gateGeo.name } : undefined}
+              origin={inlineOrigin}
+              dest={inlineDest}
+              gate={inlineGate}
               rests={preview ? route.rests : manualOnMap}
               activeRoad={previewRoad}
               loading={previewLoading}
@@ -1237,7 +1238,7 @@ export default function FleetPlanPage() {
         <div className={layoutStyles.routeLayout}>
           <div className={layoutStyles.routeMain}>
             {b.status === 'under_review' ? (
-              <Plan b={b} vehicles={vehicles} all={all} onDone={reload} />
+              <Plan b={b} vehicles={vehicles} all={all} />
             ) : b.plan ? (
               <div className="alert alert-success">
                 <i className="fa-solid fa-circle-check" />

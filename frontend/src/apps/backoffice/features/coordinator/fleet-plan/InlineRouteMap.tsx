@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { TRANSIT_STATIONS, type GeoPoint } from '@shared/config/network'
 import { routeOutline } from '@shared/lib/booking'
 import type { RestStop } from '@shared/types/booking'
+import type { RoadRoute } from '@shared/services/routing'
 import { addBaseLayer, BASE_MAP_OPTIONS } from '@shared/ui/baseMap'
 import './RouteMapPicker.css'
 
@@ -28,8 +29,6 @@ const stationIcon = (order: number) =>
       : '<span class="rm-st" style="opacity:0.45;transform:scale(0.85)"></span>',
   })
 
-import type { RoadRoute } from '@shared/services/routing'
-
 interface InlineRouteMapProps {
   origin: Point
   dest: Point
@@ -44,6 +43,11 @@ export function InlineRouteMap({ origin, dest, gate, rests, activeRoad: road, lo
   const box = useRef<HTMLDivElement>(null)
   const map = useRef<L.Map | null>(null)
   const layer = useRef<L.LayerGroup | null>(null)
+  // Giữ lại road cũ khi đang loading để bản đồ không bị reset về đường thẳng
+  const lastRoad = useRef<RoadRoute | null | undefined>(road)
+  if (road != null) lastRoad.current = road
+  // Dùng road mới nhất có dữ liệu; nếu đang loading thì giữ road cũ tránh bản đồ reset
+  const displayRoad = road ?? (loading ? lastRoad.current : null)
 
   // Điểm nghỉ theo lịch trình backend (trạm và nghỉ dọc đường), đánh số theo thứ tự rests
   const restPoints = useMemo(
@@ -54,12 +58,25 @@ export function InlineRouteMap({ origin, dest, gate, rests, activeRoad: road, lo
     () => routeOutline(origin, gate, dest, restPoints),
     [origin, gate, dest, restPoints]
   )
+  // Chỉ fit bounds khi đã có đường thực (road) thay vì reset về A-B mỗi lần tải lại
+  const fittedRef = useRef(false)
+  const userPannedRef = useRef(false)
+
+  const routeKey = `${origin.lat.toFixed(5)},${origin.lng.toFixed(5)}_${dest.lat.toFixed(5)},${dest.lng.toFixed(5)}_${gate?.lat?.toFixed(5)},${gate?.lng?.toFixed(5)}`
 
   useEffect(() => {
     if (!box.current) return
+    fittedRef.current = false // reset khi toạ độ origin/dest/gate thực sự đổi
+    userPannedRef.current = false
     const m = L.map(box.current, { ...BASE_MAP_OPTIONS, zoomControl: false, attributionControl: true })
     L.control.zoom({ position: 'topright' }).addTo(m)
     addBaseLayer(m)
+
+    const onUserInteract = () => {
+      userPannedRef.current = true
+    }
+    m.on('dragstart', onUserInteract)
+    m.on('zoomstart', onUserInteract)
 
     const route = [origin, dest, ...(gate ? [gate] : [])]
     m.fitBounds(
@@ -72,18 +89,20 @@ export function InlineRouteMap({ origin, dest, gate, rests, activeRoad: road, lo
     const timers = [60, 250, 600].map(ms => setTimeout(() => m.invalidateSize(), ms))
     return () => {
       timers.forEach(clearTimeout)
+      m.off('dragstart', onUserInteract)
+      m.off('zoomstart', onUserInteract)
       m.remove()
       map.current = null
       layer.current = null
     }
-  }, [origin, dest, gate])
+  }, [routeKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const g = layer.current
     if (!g) return
     g.clearLayers()
 
-    const line = road?.path ?? outline.path.map(p => [p.lat, p.lng] as [number, number])
+    const line = displayRoad?.path ?? outline.path.map(p => [p.lat, p.lng] as [number, number])
     const chosenAny = restPoints.length > 0
 
     // Đường viền tỏa sáng và đường chính
@@ -99,7 +118,7 @@ export function InlineRouteMap({ origin, dest, gate, rests, activeRoad: road, lo
       weight: 4,
       opacity: 0.95,
       className: chosenAny ? 'rm-route' : '',
-      dashArray: road ? undefined : '6 8',
+      dashArray: displayRoad ? undefined : '6 8',
       interactive: false,
     }).addTo(g)
 
@@ -137,7 +156,15 @@ export function InlineRouteMap({ origin, dest, gate, rests, activeRoad: road, lo
         .bindTooltip(`Cửa khẩu: ${gate.name}`, { direction: 'top', offset: [0, -14] })
         .addTo(g)
     }
-  }, [outline, restPoints, rests, road, origin, dest, gate, onOpenPicker])
+
+    // Khi có đường thực lần đầu và người dùng chưa tự kéo bản đồ: zoom sát vào lộ trình thực tế
+    const m = map.current
+    if (m && displayRoad && !fittedRef.current && !userPannedRef.current) {
+      fittedRef.current = true
+      const bounds = L.latLngBounds(line)
+      if (bounds.isValid()) m.fitBounds(bounds, { padding: [40, 40], maxZoom: 11 })
+    }
+  }, [outline, restPoints, rests, displayRoad, origin, dest, gate, onOpenPicker]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div style={{ position: 'relative', isolation: 'isolate', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--line)' }}>

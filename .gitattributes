@@ -2,3 +2,4 @@
 # cùng sửa một file. Git tự nhận file nhị phân (ảnh, font...) và không đụng tới chúng.
 # backend/.gitattributes giữ riêng mvnw (LF) và *.cmd (CRLF).
 * text=auto eol=lf
+graphify-out/graph.json merge=graphify
