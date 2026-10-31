@@ -2,6 +2,7 @@ package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.AuthResponse;
 import com.example.racehorse_transport.dto.LoginRequest;
+import com.example.racehorse_transport.dto.RegisterRequest;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.User;
 import com.example.racehorse_transport.repository.CustomerRepository;
@@ -16,7 +17,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AuthServiceImplTest {
@@ -68,5 +73,18 @@ class AuthServiceImplTest {
 
         assertThat(response.getFullName()).isEqualTo("Trần Dân");
         assertThat(response.getStaffCode()).isEqualTo("CO-02");
+    }
+
+    @Test
+    void register_rejectsEmailThatAlreadyHasAnAccountAsConflict() {
+        when(userRepository.existsByEmail("da.co@gmail.com")).thenReturn(true);
+
+        // IllegalStateException được GlobalExceptionHandler trả 409, form gắn lỗi vào ô Email
+        assertThatThrownBy(() -> service.register(RegisterRequest.builder()
+                .username("da.co@gmail.com").email("da.co@gmail.com").password("matkhau1")
+                .fullName("Nguyễn Văn An").phone("0912345678").build()))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Email này đã có tài khoản. Hãy đăng nhập hoặc dùng email khác.");
+        verify(userRepository, never()).save(any());
     }
 }

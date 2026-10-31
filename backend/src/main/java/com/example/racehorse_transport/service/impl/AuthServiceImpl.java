@@ -40,14 +40,9 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public void register(RegisterRequest request) {
-        // 1. Kiểm tra username đã tồn tại chưa
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new IllegalArgumentException("Username đã được sử dụng!");
-        }
-
-        // 2. Kiểm tra email đã tồn tại chưa
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email đã được sử dụng!");
+        // 1-2. Username hoặc email đã có tài khoản: trả 409 để form gắn lỗi vào ô Email (username đang chính là email)
+        if (userRepository.existsByUsername(request.getUsername()) || userRepository.existsByEmail(request.getEmail())) {
+            throw new IllegalStateException("Email này đã có tài khoản. Hãy đăng nhập hoặc dùng email khác.");
         }
 
         // 3. Tạo tài khoản User mới với mật khẩu mã hóa BCrypt
@@ -79,11 +74,11 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse loginCustomer(LoginRequest request) {
         // Tìm User theo username HOẶC email
         User user = userRepository.findByUsernameOrEmail(request.getUsername(), request.getUsername())
-                .orElseThrow(() -> new IllegalArgumentException("Tên đăng nhập/email hoặc mật khẩu không chính xác!"));
+                .orElseThrow(() -> new IllegalArgumentException("Email hoặc mật khẩu không đúng."));
 
         // So khớp mật khẩu đã hash
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-            throw new IllegalArgumentException("Tên đăng nhập/email hoặc mật khẩu không chính xác!");
+            throw new IllegalArgumentException("Email hoặc mật khẩu không đúng.");
         }
 
         // KIỂM TRA BẢO MẬT: Bắt buộc phải có trong bảng Customer
