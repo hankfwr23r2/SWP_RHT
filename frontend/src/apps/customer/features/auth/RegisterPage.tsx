@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { authApi } from '@shared/api/auth'
 import { AuthShell, authStyles as s } from '@shared/ui/AuthShell'
-import { isValidEmail, isValidPersonName, isValidRegionalPhone } from '@shared/lib/contactValidation'
+import { isValidGmail, isValidPersonName, isValidRegionalPhone } from '@shared/lib/contactValidation'
 
 export default function RegisterPage() {
   const navigate = useNavigate()
@@ -26,8 +26,8 @@ export default function RegisterPage() {
       setLoading(false)
       return
     }
-    if (!isValidEmail(email)) {
-      setError('Email không đúng định dạng. Ví dụ: ten@example.com.')
+    if (!isValidGmail(email)) {
+      setError('Chỉ nhận địa chỉ Gmail. Ví dụ: ten@gmail.com.')
       setLoading(false)
       return
     }
@@ -49,8 +49,8 @@ export default function RegisterPage() {
         phone,
         address,
       })
-      alert('Đăng ký tài khoản thành công! Vui lòng đăng nhập.')
-      navigate('/login')
+      // Máy chủ đã gửi OTP về email, nhập đúng mã thì đăng nhập luôn
+      navigate('/verify-email', { state: { email } })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Đăng ký thất bại. Vui lòng thử lại.')
     } finally {
@@ -72,7 +72,7 @@ export default function RegisterPage() {
           <input className="form-control" id="fullname" name="fullname" type="text" placeholder="Nhập họ và tên" autoComplete="name" required minLength={2} maxLength={100} onChange={() => setError('')} />
         </div>
         <div className="form-group">
-          <label htmlFor="email">Email (dùng làm tên đăng nhập)</label>
+          <label htmlFor="email">Gmail (dùng làm tên đăng nhập)</label>
           <input className="form-control" id="email" name="email" type="email" placeholder="example@gmail.com" autoComplete="email" required onChange={() => setError('')} />
         </div>
         <div className="form-group">

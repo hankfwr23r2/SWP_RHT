@@ -1,12 +1,11 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
-import { useAuth } from '@shared/auth/AuthContext'
 import { authApi } from '@shared/api/auth'
-import { tokenStorage } from '@shared/api/client'
 import { AuthShell, authStyles as s } from '@shared/ui/AuthShell'
+import { useCustomerSignIn } from './useCustomerSignIn'
 
 export default function LoginPage() {
-  const { login } = useAuth()
+  const signIn = useCustomerSignIn()
   const navigate = useNavigate()
   const from = (useLocation().state as { from?: string } | null)?.from
   const [error, setError] = useState('')
@@ -29,14 +28,9 @@ export default function LoginPage() {
     if (!from) void import('../portal/PortalPage')
     try {
       const res = await authApi.loginCustomer({ username: email, password })
-      tokenStorage.set(res.accessToken)
-      login({
-        role: 'customer',
-        name: res.fullName || res.username,
-        username: res.email || res.username,
-      })
-      // Chờ router tải xong trang đích (kể cả dữ liệu) rồi mới thôi trạng thái đang đăng nhập
-      await navigate(from ?? '/portal')
+      // Email chưa xác thực: máy chủ đã gửi OTP, sang trang nhập mã
+      if (res.emailVerificationRequired) await navigate('/verify-email', { state: { email: res.email, from } })
+      else await signIn(res, from)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Đăng nhập thất bại. Vui lòng kiểm tra lại.')
     } finally {

@@ -26,6 +26,8 @@ export interface AuthResponseData {
   role: string
   fullName?: string
   staffCode?: string
+  // Khách chưa xác thực email: không có accessToken, đã gửi OTP về email
+  emailVerificationRequired?: boolean
 }
 
 // DTO gửi lên để Đổi mật khẩu cá nhân
@@ -80,6 +82,16 @@ export const authApi = {
   requestPasswordResetOtp: async (email: string): Promise<string> => {
     const res = await apiClient.post<ApiResponse<void>>('/auth/password-reset/request-otp', { email })
     return res.data.message
+  },
+
+  resendEmailOtp: async (email: string): Promise<string> => {
+    const res = await apiClient.post<ApiResponse<void>>('/auth/email-verification/resend', { email })
+    return res.data.message
+  },
+
+  confirmEmail: async (email: string, otp: string): Promise<AuthResponseData> => {
+    const res = await apiClient.post<ApiResponse<AuthResponseData>>('/auth/email-verification/confirm', { email, otp })
+    return res.data.data
   },
 
   resetPasswordWithOtp: async (payload: ResetPasswordWithOtpPayload): Promise<string> => {

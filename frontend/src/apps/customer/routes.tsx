@@ -13,6 +13,7 @@ import { portalLoader } from './features/portal/portalLoader'
 const SitemapPage = lazy(() => import('../sitemap/SitemapPage').then(m => ({ default: m.SitemapPage })))
 const CustomerForgotPasswordPage = lazy(() => import('@shared/auth/ForgotPasswordPage').then(m => ({ default: m.CustomerForgotPasswordPage })))
 const RegisterPage = lazy(() => import('./features/auth/RegisterPage'))
+const VerifyEmailPage = lazy(() => import('./features/auth/VerifyEmailPage'))
 const Step1RoutePage = lazy(() => import('./features/booking/Step1RoutePage'))
 const PolicyPage = lazy(() => import('./features/policies/PolicyPage'))
 const VnpayReturnPage = lazy(() => import('./features/payment/VnpayReturnPage'))
@@ -25,6 +26,7 @@ export const routes: AppRoute[] = [
   { path: '/login', page: LoginPage, roles: [], title: 'Đăng nhập', layout: 'bare', catalog: false },
   { path: '/forgot-password', page: CustomerForgotPasswordPage, roles: [], title: 'Quên mật khẩu', layout: 'bare', catalog: false },
   { path: '/register', page: RegisterPage, roles: [], title: 'Đăng ký', layout: 'bare', catalog: false },
+  { path: '/verify-email', page: VerifyEmailPage, roles: [], title: 'Xác thực email', layout: 'bare', catalog: false },
   { path: '/portal', lazyPage: () => import('./features/portal/PortalPage'), loader: portalLoader, roles: C, title: 'Trang chủ', layout: 'customer' },
   { path: '/profile', page: ProfilePage, roles: C, title: 'Hồ sơ cá nhân', layout: 'customer' },
   { path: '/horses', lazyPage: () => import('./features/horses/HorsesPage'), loader: horsesLoader, roles: C, title: 'Hồ sơ ngựa', layout: 'customer' },
