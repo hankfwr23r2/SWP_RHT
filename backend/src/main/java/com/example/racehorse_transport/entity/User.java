@@ -32,5 +32,7 @@ public class User {
     @Column(name = "PasswordHash")
     private String passwordHash;
 
-
+    // null: tài khoản tạo trước khi có xác thực email, coi như chưa xác thực
+    @Column(name = "EmailVerified")
+    private Boolean emailVerified;
 }

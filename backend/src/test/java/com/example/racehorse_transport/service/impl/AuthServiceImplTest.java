@@ -39,7 +39,8 @@ class AuthServiceImplTest {
                 staffRepository,
                 passwordEncoder,
                 jwtUtils,
-                systemLogRepository);
+                systemLogRepository,
+                null);
 
         user = new User();
         user.setId(42);

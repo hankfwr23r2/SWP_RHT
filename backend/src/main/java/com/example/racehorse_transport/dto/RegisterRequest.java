@@ -22,7 +22,7 @@ public class RegisterRequest {
 
     @NotBlank(message = "Email không được để trống")
     @Email(message = "Email không đúng định dạng")
-    @Pattern(regexp = ContactPatterns.EMAIL_WITH_DOMAIN, message = "Email cần có tên miền hợp lệ, ví dụ ten@example.com")
+    @Pattern(regexp = ContactPatterns.GMAIL, message = "Chỉ nhận địa chỉ Gmail, ví dụ ten@gmail.com")
     private String email;
 
     @NotBlank(message = "Password không được để trống")

@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.controller;
 
 import com.example.racehorse_transport.dto.AuthResponse;
+import com.example.racehorse_transport.dto.EmailVerificationRequest;
 import com.example.racehorse_transport.dto.LoginRequest;
 import com.example.racehorse_transport.dto.RegisterRequest;
 import com.example.racehorse_transport.dto.PasswordResetOtpRequest;
@@ -49,18 +50,37 @@ public class AuthController {
     public ResponseEntity<ApiResponse<String>> register(@Valid @RequestBody RegisterRequest request) {
         authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Đăng ký tài khoản thành công!", "Đăng ký thành công"));
+                .body(ApiResponse.success("Đăng ký tài khoản thành công!", "Đăng ký thành công. Hãy nhập mã OTP đã gửi về email."));
+    }
+
+    // API Gửi lại OTP xác thực email
+    @PostMapping("/email-verification/resend")
+    public ResponseEntity<ApiResponse<Void>> resendEmailOtp(@Valid @RequestBody EmailVerificationRequest request) {
+        authService.resendEmailOtp(request.getEmail());
+        return ResponseEntity.ok(ApiResponse.success(null, "Nếu email có tài khoản, mã OTP mới sẽ được gửi đến hộp thư của bạn."));
+    }
+
+    // API Nhập OTP xác thực email, đúng thì đăng nhập luôn
+    @PostMapping("/email-verification/confirm")
+    public ResponseEntity<ApiResponse<AuthResponse>> confirmEmail(@Valid @RequestBody EmailVerificationRequest request) {
+        return withRefreshCookie(authService.confirmEmail(request.getEmail(), request.getOtp()), "Xác thực email thành công");
     }
 
     // API Đăng nhập Khách hàng
     @PostMapping("/customer/login")
     public ResponseEntity<ApiResponse<AuthResponse>> loginCustomer(@Valid @RequestBody LoginRequest request) {
         AuthResponse authResponse = authService.loginCustomer(request);
-        ResponseCookie refreshCookie = jwtUtils.generateRefreshCookie(authResponse.getUsername());
+        if (authResponse.isEmailVerificationRequired()) {
+            return ResponseEntity.ok(ApiResponse.success(authResponse, "Hãy nhập mã OTP đã gửi về email để xác thực tài khoản."));
+        }
+        return withRefreshCookie(authResponse, "Đăng nhập Khách hàng thành công");
+    }
 
+    private ResponseEntity<ApiResponse<AuthResponse>> withRefreshCookie(AuthResponse authResponse, String message) {
+        ResponseCookie refreshCookie = jwtUtils.generateRefreshCookie(authResponse.getUsername());
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, refreshCookie.toString())
-                .body(ApiResponse.success(authResponse, "Đăng nhập Khách hàng thành công"));
+                .body(ApiResponse.success(authResponse, message));
     }
 
     // API Đăng nhập Nhân viên nội bộ
