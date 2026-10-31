@@ -64,6 +64,11 @@ ul {
   transform: translateY(-2px);
 }
 
+.btn:focus-visible {
+  outline: 2px solid var(--navy);
+  outline-offset: 2px;
+}
+
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -71,19 +76,19 @@ ul {
 
 .btn-solid,
 .btn-primary {
-  background: var(--orange);
+  background: var(--orange-dark);
   color: white;
 }
 
 .btn-solid:hover:not(:disabled),
 .btn-primary:hover:not(:disabled) {
-  background: var(--orange-dark);
+  background: var(--orange-deep);
   box-shadow: 0 8px 18px rgba(234, 88, 12, 0.3);
 }
 
 .btn-outline {
-  border-color: var(--orange);
-  color: var(--orange);
+  border-color: var(--orange-dark);
+  color: var(--orange-dark);
   background: white;
 }
 
@@ -118,7 +123,7 @@ ul {
 
 .btn-white {
   background: white;
-  color: var(--orange);
+  color: var(--orange-dark);
 }
 
 .btn-lg {
@@ -141,7 +146,7 @@ ul {
 }
 
 .text-orange {
-  color: var(--orange);
+  color: var(--orange-dark);
 }
 
 .text-green {
@@ -208,7 +213,7 @@ ul {
 }
 
 .breadcrumb a:hover {
-  color: var(--orange);
+  color: var(--orange-dark);
 }
 
 .section-title {
@@ -301,7 +306,7 @@ ul {
 
 .badge-orange {
   background: var(--orange-soft);
-  color: var(--orange);
+  color: var(--orange-dark);
 }
 
 .badge-muted {
@@ -454,11 +459,11 @@ ul {
 }
 
 .tab:hover {
-  color: var(--orange);
+  color: var(--orange-dark);
 }
 
 .tab.active {
-  color: var(--orange);
+  color: var(--orange-dark);
   border-bottom-color: var(--orange);
 }
 
@@ -677,8 +682,8 @@ ul {
 }
 
 .pagination-buttons button.active {
-  background: var(--orange);
-  border-color: var(--orange);
+  background: var(--orange-dark);
+  border-color: var(--orange-dark);
   color: white;
 }
 
