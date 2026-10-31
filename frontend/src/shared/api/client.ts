@@ -168,11 +168,12 @@ apiClient.interceptors.response.use(
           serverMessage = `${serverMessage}: ${details.join('; ')}`
         }
       }
-      return Promise.reject(new Error(serverMessage))
+      // Kèm mã HTTP để form phân biệt lỗi (vd. 409: email đã có tài khoản)
+      return Promise.reject(Object.assign(new Error(serverMessage), { status }))
     }
 
     if (error.request) {
-      return Promise.reject(new Error('Không thể kết nối đến máy chủ Backend (Network Error).'))
+      return Promise.reject(new Error('Không kết nối được máy chủ. Vui lòng kiểm tra mạng rồi thử lại.'))
     }
 
     return Promise.reject(error)

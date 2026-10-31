@@ -19,12 +19,17 @@ export default function VerifyEmailPage() {
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
-    if (otp.length !== 6) { setError('Mã OTP gồm 6 chữ số.'); return }
+    if (otp.length !== 6) {
+      setError('Mã OTP gồm 6 chữ số.')
+      document.getElementById('email-otp')?.focus()
+      return
+    }
     setLoading(true)
     try {
       await signIn(await authApi.confirmEmail(email, otp), state?.from)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Xác thực thất bại. Vui lòng thử lại.')
+      setError(err instanceof Error ? err.message : 'Xác thực không thành công. Vui lòng thử lại.')
+      document.getElementById('email-otp')?.focus()
     } finally {
       setLoading(false)
     }
@@ -43,18 +48,18 @@ export default function VerifyEmailPage() {
   }
 
   return (
-    <AuthShell title="Xác thực email" subtitle={`Nhập mã 6 chữ số đã gửi tới ${email}. Mã có hiệu lực 10 phút.`} back={<Link to="/login"><i className="fa-solid fa-arrow-left" /> Quay lại đăng nhập</Link>}>
+    <AuthShell title="Xác thực email" subtitle={`Nhập mã 6 chữ số vừa gửi tới ${email}. Mã có hiệu lực 10 phút; không thấy thì xem thêm mục Spam.`} back={<Link to="/login"><i className="fa-solid fa-arrow-left" /> Quay lại đăng nhập</Link>}>
       <form onSubmit={submit} noValidate>
-        {error && <div className={`alert alert-danger ${s.error}`} role="alert"><i className="fa-solid fa-circle-exclamation" /><div>{error}</div></div>}
-        {message && !error && <div className="alert alert-success" role="status">{message}</div>}
+        {error && <div id="email-otp-error" className={`alert alert-danger ${s.error}`} role="alert"><i className="fa-solid fa-circle-exclamation" /><div>{error}</div></div>}
+        {message && !error && <div className={`alert alert-success ${s.error}`} role="status"><i className="fa-solid fa-circle-check" /><div>{message}</div></div>}
         <div className="form-group">
           <label htmlFor="email-otp">Mã OTP</label>
-          <input id="email-otp" className="form-control" inputMode="numeric" autoComplete="one-time-code" maxLength={6} autoFocus value={otp} onChange={e => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 6)); setError('') }} placeholder="Nhập mã 6 chữ số" />
+          <input id="email-otp" className={`form-control${error ? ' invalid' : ''}`} aria-invalid={!!error || undefined} aria-describedby={error ? 'email-otp-error' : undefined} inputMode="numeric" autoComplete="one-time-code" maxLength={6} autoFocus value={otp} onChange={e => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 6)); setError('') }} placeholder="Nhập mã 6 chữ số" />
         </div>
         <button type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading}>
           {loading ? 'Đang xác thực...' : 'Xác thực'}
         </button>
-        <button type="button" className="btn btn-ghost btn-full" disabled={loading} onClick={() => void resend()} style={{ marginTop: 10 }}>
+        <button type="button" className="btn btn-ghost btn-full btn-lg" disabled={loading} onClick={() => void resend()} style={{ marginTop: 10 }}>
           Gửi lại mã OTP
         </button>
       </form>
