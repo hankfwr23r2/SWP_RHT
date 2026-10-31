@@ -32,6 +32,7 @@ public class AdminServiceServiceImpl implements AdminServiceService {
             3, "WATER_",
             4, "INSURANCE_");
     private static final Integer RETIRED_WATER_CATEGORY_ID = 3;
+    private static final Integer INSURANCE_CATEGORY_ID = 4;
 
     @Override
     @Transactional(readOnly = true)
@@ -84,6 +85,7 @@ public class AdminServiceServiceImpl implements AdminServiceService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục ID: " + request.getCategoryId()));
 
+        ensureInsuranceCategoryReadOnly(category);
         validateServiceMetadata(request, category, null);
         int nextId = serviceRepository.findMaxId() + 1;
 
@@ -113,6 +115,8 @@ public class AdminServiceServiceImpl implements AdminServiceService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục ID: " + request.getCategoryId()));
 
+        ensureInsuranceCategoryReadOnly(service.getCategoryID());
+        ensureInsuranceCategoryReadOnly(category);
         validateServiceMetadata(request, category, service);
         service.setServiceName(request.getServiceName().trim());
         service.setBillingUnit(request.getBillingUnit().trim());
@@ -134,6 +138,7 @@ public class AdminServiceServiceImpl implements AdminServiceService {
         Service service = serviceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy dịch vụ ID: " + id));
 
+        ensureInsuranceCategoryReadOnly(service.getCategoryID());
         String newStatus = "ACTIVE".equalsIgnoreCase(service.getStatus()) ? "INACTIVE" : "ACTIVE";
         if ("ACTIVE".equals(newStatus) && service.getCategoryID() != null
                 && RETIRED_WATER_CATEGORY_ID.equals(service.getCategoryID().getId())) {
@@ -172,6 +177,13 @@ public class AdminServiceServiceImpl implements AdminServiceService {
         }
         if (RETIRED_WATER_CATEGORY_ID.equals(category.getId())) {
             throw new IllegalArgumentException("Danh mục Cữ nước đã ngừng cung cấp.");
+        }
+    }
+
+    private void ensureInsuranceCategoryReadOnly(Category category) {
+        if (category != null && INSURANCE_CATEGORY_ID.equals(category.getId())) {
+            throw new IllegalArgumentException(
+                    "Dịch vụ bảo hiểm chỉ có hai lựa chọn Mua/Từ chối và không thể thêm, sửa hoặc thay đổi trạng thái.");
         }
     }
 
