@@ -34,6 +34,11 @@ export function isValidPhoneForCountry(country: CountryCode, value: string): boo
   return isValidRegionalPhone(toInternationalPhone(country, value))
 }
 
+// Đăng ký khách chỉ nhận Gmail (khớp ContactPatterns.GMAIL ở backend)
+export function isValidGmail(value: string): boolean {
+  return /^[A-Za-z0-9.+_-]+@gmail\.com$/i.test(value.trim())
+}
+
 export function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value.trim())
 }

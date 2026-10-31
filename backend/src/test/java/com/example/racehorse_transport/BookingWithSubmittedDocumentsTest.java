@@ -73,11 +73,17 @@ class BookingWithSubmittedDocumentsTest {
 
     private String registerAndLogin() throws Exception {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
-        String email = "khach" + suffix + "@example.com";
+        String email = "khach" + suffix + "@gmail.com";
         HttpResponse<String> register = post("/auth/register", null, """
                 {"username":"khach%s","email":"%s","password":"Test@123","fullName":"Khach Test",
                  "phone":"0900000098","address":"Ha Noi"}""".formatted(suffix, email));
         assertThat(register.statusCode()).as(register.body()).isBetween(200, 201);
+        // Test này không kiểm luồng OTP email (đã có CustomerSignInVerificationTest): đánh dấu email đã xác thực
+        try (Connection connection = DriverManager.getConnection(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
+             PreparedStatement verify = connection.prepareStatement("UPDATE users SET email_verified = true WHERE email = ?")) {
+            verify.setString(1, email);
+            assertThat(verify.executeUpdate()).isEqualTo(1);
+        }
         HttpResponse<String> login = post("/auth/customer/login", null,
                 "{\"username\":\"%s\",\"password\":\"Test@123\"}".formatted(email));
         assertThat(login.statusCode()).as(login.body()).isEqualTo(200);

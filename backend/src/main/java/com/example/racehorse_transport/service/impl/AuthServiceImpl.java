@@ -11,6 +11,7 @@ import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.UserRepository;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.service.AuthService;
+import com.example.racehorse_transport.service.EmailVerificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.example.racehorse_transport.entity.SystemLog;
@@ -34,18 +35,14 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final SystemLogRepository systemLogRepository;
+    private final EmailVerificationService emailVerificationService;
 
     @Override
     @Transactional
     public void register(RegisterRequest request) {
-        // 1. Kiểm tra username đã tồn tại chưa
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new IllegalArgumentException("Username đã được sử dụng!");
-        }
-
-        // 2. Kiểm tra email đã tồn tại chưa
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new IllegalArgumentException("Email đã được sử dụng!");
+        // 1-2. Username hoặc email đã có tài khoản: trả 409 để form gắn lỗi vào ô Email (username đang chính là email)
+        if (userRepository.existsByUsername(request.getUsername()) || userRepository.existsByEmail(request.getEmail())) {
+            throw new IllegalStateException("Email này đã có tài khoản. Hãy đăng nhập hoặc dùng email khác.");
         }
 
         // 3. Tạo tài khoản User mới với mật khẩu mã hóa BCrypt
@@ -53,6 +50,7 @@ public class AuthServiceImpl implements AuthService {
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        user.setEmailVerified(false);
         User savedUser = userRepository.save(user);
 
         // 4. Mặc định tạo thông tin hồ sơ Customer tương ứng
@@ -64,6 +62,9 @@ public class AuthServiceImpl implements AuthService {
         customer.setPhone(request.getPhone());
         customer.setAddress(request.getAddress());
         customerRepository.save(customer);
+
+        // 5. Gửi OTP xác thực email; chưa nhập OTP thì chưa đăng nhập được
+        emailVerificationService.sendOtp(savedUser.getEmail());
     }
 
         // ==========================================
@@ -73,17 +74,48 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse loginCustomer(LoginRequest request) {
         // Tìm User theo username HOẶC email
         User user = userRepository.findByUsernameOrEmail(request.getUsername(), request.getUsername())
-                .orElseThrow(() -> new IllegalArgumentException("Tên đăng nhập/email hoặc mật khẩu không chính xác!"));
+                .orElseThrow(() -> new IllegalArgumentException("Email hoặc mật khẩu không đúng."));
 
         // So khớp mật khẩu đã hash
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-            throw new IllegalArgumentException("Tên đăng nhập/email hoặc mật khẩu không chính xác!");
+            throw new IllegalArgumentException("Email hoặc mật khẩu không đúng.");
         }
 
         // KIỂM TRA BẢO MẬT: Bắt buộc phải có trong bảng Customer
         Customer customer = customerRepository.findById(user.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Tài khoản này không phải là tài khoản khách hàng!"));
 
+        // Email chưa xác thực (đăng ký mới hoặc tài khoản cũ): gửi OTP, chưa cấp token
+        if (!Boolean.TRUE.equals(user.getEmailVerified())) {
+            emailVerificationService.sendOtp(user.getEmail());
+            return AuthResponse.builder()
+                    .userId(user.getId())
+                    .username(user.getUsername())
+                    .email(user.getEmail())
+                    .role("CUSTOMER")
+                    .emailVerificationRequired(true)
+                    .build();
+        }
+
+        return customerAuth(user, customer);
+    }
+
+    @Override
+    public void resendEmailOtp(String email) {
+        userRepository.findByEmailIgnoreCase(email == null ? "" : email.trim())
+                .filter(user -> customerRepository.existsById(user.getId()))
+                .ifPresent(user -> emailVerificationService.sendOtp(user.getEmail()));
+    }
+
+    @Override
+    public AuthResponse confirmEmail(String email, String otp) {
+        User user = emailVerificationService.confirm(email, otp);
+        Customer customer = customerRepository.findById(user.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Tài khoản này không phải là tài khoản khách hàng!"));
+        return customerAuth(user, customer);
+    }
+
+    private AuthResponse customerAuth(User user, Customer customer) {
         // Sinh JWT Token với Role là CUSTOMER
         String token = jwtUtils.generateToken(user.getUsername(), "CUSTOMER");
 

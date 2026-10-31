@@ -22,4 +22,7 @@ public class AuthResponse {
     private String role;
     private String fullName;
     private String staffCode;
+
+    // Khách chưa xác thực email: không có token, đã gửi OTP về email
+    private boolean emailVerificationRequired;
 }
