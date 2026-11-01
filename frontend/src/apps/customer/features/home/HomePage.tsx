@@ -438,13 +438,16 @@ const SERVICES: [string, string, string, string][] = [
   ['/?tab=price#tra-cuu', PHOTOS.stable.src, 'Chăm sóc và bảo hiểm', 'Hộ tống đi kèm, khoang đơn mở rộng, hỗ trợ bảo hiểm động vật sống từ bên thứ ba.'],
 ]
 
+// Tên bước dùng chung với phần tra cứu đơn (PUBLIC_STEPS), thêm bước cuối sau khi giao ngựa.
+// Số tiền và tỉ lệ đã nằm trong thẻ báo giá mẫu nên không nhắc lại ở đây.
+const [STEP_SEND, STEP_REVIEW, STEP_DEPOSIT, STEP_PREPARE, STEP_TRANSPORT] = PUBLIC_STEPS
 const PROCESS: [string, string, string, string][] = [
-  ['fa-paper-plane', 'Gửi đơn', 'Chọn điểm đón, điểm giao trên bản đồ, chọn ngựa từ Hồ sơ ngựa, dịch vụ và bảo hiểm.', `Trước ngày đi ≥ ${MIN_LEAD_DAYS} ngày`],
-  ['fa-magnifying-glass', 'Thẩm định', 'Quản lý tiếp nhận. Chuyên viên duyệt hồ sơ ngựa. Điều phối viên chọn xe, tài xế, hộ tống và lập lộ trình.', 'Song song, trước khi báo giá'],
-  ['fa-credit-card', 'Báo giá & đặt cọc', `Báo giá cố định có hiệu lực ${QUOTE_VALID_HOURS} giờ. Đặt cọc ${DEPOSIT_RATE * 100}% để nhận Vận đơn.`, `Trong ${QUOTE_VALID_HOURS} giờ`],
-  ['fa-folder-open', 'Làm giấy tờ', 'Nhà xe làm giấy kiểm dịch (và hải quan nếu đi quốc tế), bạn chỉ cần xem tiến độ từng giấy đã nộp.', 'Trước ngày đi'],
-  ['fa-truck-moving', 'Vận chuyển', `Khi xe sẵn sàng đón ngựa, bạn trả ${100 - DEPOSIT_RATE * 100}% còn lại; xe chỉ xuất phát khi đã trả đủ. Tài xế check-in từng mốc, hộ tống ghi nhật ký sức khỏe, bạn xem xe trên bản đồ.`, 'Theo lộ trình'],
-  ['fa-clipboard-check', 'Bàn giao & quyết toán', 'Ký biên bản giao nhận. Quản lý gửi quyết toán, chỉ có khoản phát sinh khi có sự cố liên quan đến ngựa và luôn kèm chứng từ. Bạn thanh toán rồi đánh giá chuyến đi.', 'Thanh toán quyết toán trong 24 giờ'],
+  ['fa-paper-plane', STEP_SEND, 'Chọn điểm đón, điểm giao, ngựa, dịch vụ và bảo hiểm; tải hồ sơ ngựa.', `Trước ngày đi ≥ ${MIN_LEAD_DAYS} ngày`],
+  ['fa-magnifying-glass', STEP_REVIEW, 'Quản lý tiếp nhận. Chuyên viên duyệt hồ sơ ngựa, điều phối viên chọn xe, kíp xe và lập lộ trình cùng lúc.', 'Trước khi báo giá'],
+  ['fa-credit-card', STEP_DEPOSIT, 'Quản lý duyệt và gửi báo giá. Bạn đặt cọc để nhận số vận đơn.', `Báo giá giữ ${QUOTE_VALID_HOURS} giờ`],
+  ['fa-folder-open', STEP_PREPARE, 'Chuyên viên làm giấy kiểm dịch, thêm hải quan nếu đi quốc tế. Bạn trả phần còn lại khi xe sẵn sàng đón ngựa.', 'Trước giờ xuất phát'],
+  ['fa-truck-moving', STEP_TRANSPORT, 'Tài xế check-in từng mốc, hộ tống ghi nhật ký sức khỏe ngựa, bạn xem xe trên bản đồ.', 'Theo lộ trình'],
+  ['fa-clipboard-check', 'Bàn giao và quyết toán', 'Ký biên bản giao nhận. Quản lý gửi quyết toán, bạn thanh toán rồi đánh giá chuyến đi.', 'Quyết toán trong 24 giờ'],
 ]
 
 function useStepsLine() {
