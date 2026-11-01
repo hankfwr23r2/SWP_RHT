@@ -393,7 +393,9 @@ public class FleetServiceImpl implements FleetService {
         Instant newStart = newDepart.minus(newDaysBefore, ChronoUnit.DAYS);
         Instant newEnd = newDepart.plus(newDaysAfter, ChronoUnit.DAYS);
 
-        List<Booking> bookings = bookingRepository.findAll();
+        // Chỉ kiểm tra xung đột với các đơn đang "giữ xe" (HOLDING_STATUSES).
+        // Đơn đã hoàn thành / huỷ / giao xong không được tính vào conflict.
+        List<Booking> bookings = getHoldingBookings();
         for (Booking b : bookings) {
             if (excludeBookingId != null && excludeBookingId.equals(b.getId())) {
                 continue;

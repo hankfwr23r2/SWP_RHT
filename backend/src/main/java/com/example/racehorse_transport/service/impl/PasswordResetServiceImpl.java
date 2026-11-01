@@ -101,6 +101,8 @@ public class PasswordResetServiceImpl implements PasswordResetService {
             throw new IllegalArgumentException("Mật khẩu mới phải khác mật khẩu hiện tại.");
         }
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        // Nhận được OTP qua email cũng là đã xác thực email
+        user.setEmailVerified(true);
         userRepository.save(user);
         otpRepository.delete(otp);
     }

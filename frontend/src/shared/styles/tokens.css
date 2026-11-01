@@ -1,7 +1,8 @@
 /* Bộ màu, font, bo góc lấy từ trang chủ (home.css). Mọi trang dùng chung. */
 :root {
   --orange: #ea580c;
-  --orange-dark: #c2410c;
+  --orange-dark: #c2410c; /* chữ cam và nền nút có chữ trắng: đạt tương phản 4.5:1 trên nền trắng */
+  --orange-deep: #9a3412;
   --orange-soft: #fff7ed;
   --navy: #0f172a;
   --navy-2: #1e293b;

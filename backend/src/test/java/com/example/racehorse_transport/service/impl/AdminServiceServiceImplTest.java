@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -77,6 +78,24 @@ class AdminServiceServiceImplTest {
     }
 
     @Test
+    void createService_rejectsInsuranceCategory() {
+        Category insurance = category(4, "Bảo hiểm chuyến đi");
+        when(categoryRepository.findById(4)).thenReturn(Optional.of(insurance));
+
+        assertThatThrownBy(() -> service.createService(CreateServiceRequest.builder()
+                .serviceName("Bảo hiểm bổ sung")
+                .serviceCode("INSURANCE_EXTRA")
+                .billingUnit("PER_HORSE")
+                .categoryId(4)
+                .price(new BigDecimal("100000"))
+                .build()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Mua/Từ chối");
+
+        verify(serviceRepository, never()).save(any(Service.class));
+    }
+
+    @Test
     void updateService_persistsEditedNameAndPrice() {
         Service existing = service(3, "Old name", "100000", "ACTIVE");
         when(serviceRepository.findById(3)).thenReturn(Optional.of(existing));
@@ -114,6 +133,48 @@ class AdminServiceServiceImplTest {
     }
 
     @Test
+    void updateService_rejectsEditingExistingInsuranceService() {
+        Category insurance = category(4, "Bảo hiểm chuyến đi");
+        Service existing = service(9, "Mua bảo hiểm", "20000000", "ACTIVE");
+        existing.setServiceCode("INSURANCE_BUY");
+        existing.setCategoryID(insurance);
+        when(serviceRepository.findById(9)).thenReturn(Optional.of(existing));
+        when(categoryRepository.findById(2)).thenReturn(Optional.of(category));
+
+        assertThatThrownBy(() -> service.updateService(9, CreateServiceRequest.builder()
+                .serviceName("Mua bảo hiểm mới")
+                .serviceCode("INSURANCE_BUY")
+                .billingUnit("PER_HORSE")
+                .categoryId(2)
+                .price(new BigDecimal("25000000"))
+                .build()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Mua/Từ chối");
+
+        verify(serviceRepository, never()).save(any(Service.class));
+    }
+
+    @Test
+    void updateService_rejectsMovingServiceIntoInsuranceCategory() {
+        Category insurance = category(4, "Bảo hiểm chuyến đi");
+        Service existing = service(3, "Gói cơ bản", "100000", "ACTIVE");
+        when(serviceRepository.findById(3)).thenReturn(Optional.of(existing));
+        when(categoryRepository.findById(4)).thenReturn(Optional.of(insurance));
+
+        assertThatThrownBy(() -> service.updateService(3, CreateServiceRequest.builder()
+                .serviceName("Gói cơ bản")
+                .serviceCode("FEED_BASIC")
+                .billingUnit("PER_HORSE_DAY")
+                .categoryId(4)
+                .price(new BigDecimal("100000"))
+                .build()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Mua/Từ chối");
+
+        verify(serviceRepository, never()).save(any(Service.class));
+    }
+
+    @Test
     void toggleServiceStatus_persistsTheNewStatus() {
         Service existing = service(3, "Gói cơ bản", "0", "ACTIVE");
         when(serviceRepository.findById(3)).thenReturn(Optional.of(existing));
@@ -136,6 +197,28 @@ class AdminServiceServiceImplTest {
         assertThatThrownBy(() -> service.toggleServiceStatus(6))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("đã ngừng cung cấp");
+    }
+
+    @Test
+    void toggleServiceStatus_rejectsInsuranceService() {
+        Category insurance = category(4, "Bảo hiểm chuyến đi");
+        Service existing = service(9, "Mua bảo hiểm", "20000000", "ACTIVE");
+        existing.setServiceCode("INSURANCE_BUY");
+        existing.setCategoryID(insurance);
+        when(serviceRepository.findById(9)).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> service.toggleServiceStatus(9))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Mua/Từ chối");
+
+        verify(serviceRepository, never()).save(any(Service.class));
+    }
+
+    private Category category(int id, String name) {
+        Category result = new Category();
+        result.setId(id);
+        result.setCategoryName(name);
+        return result;
     }
 
     private Service service(int id, String name, String price, String status) {

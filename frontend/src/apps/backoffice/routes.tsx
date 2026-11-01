@@ -21,7 +21,7 @@ export const routes: AppRoute[] = [
   { path: '/forgot-password', page: StaffForgotPasswordPage, roles: [], title: 'Khôi phục mật khẩu', layout: 'bare', catalog: false },
   { path: '/profile', page: StaffProfilePage, roles: ['admin', 'manager', 'specialist', 'coordinator', 'driver', 'escort'], title: 'Hồ sơ nhân viên', layout: 'staff' },
   { path: '/login', page: StaffLoginPage, roles: [], title: 'Đăng nhập nội bộ', layout: 'bare', catalog: false },
-  { path: '/manager/login', page: ManagerLoginPage, roles: [], title: 'Đăng nhập Quản lý', layout: 'bare', catalog: false },
+  { path: '/manager/login', page: ManagerLoginPage, roles: [], title: 'Đăng nhập quản lý', layout: 'bare', catalog: false },
 
   { path: '/admin/pricing', lazyPage: () => import('./features/admin/pricing/AdminPricingPage'), loader: adminPricingLoader, roles: A, title: 'Biểu giá & Công thức', layout: 'staff' },
   { path: '/admin/routes', lazyPage: () => import('./features/admin/routes/AdminRoutesPage'), loader: adminRoutesLoader, roles: A, title: 'Tuyến đường cố định', layout: 'staff' },

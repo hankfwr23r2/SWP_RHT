@@ -12,6 +12,12 @@ public interface AuthService {
     // 1. Đăng nhập cho Khách hàng
     AuthResponse loginCustomer(LoginRequest request);
 
+    // Gửi lại OTP xác thực email cho khách
+    void resendEmailOtp(String email);
+
+    // Nhập đúng OTP email thì đăng nhập luôn
+    AuthResponse confirmEmail(String email, String otp);
+
     // 2. Đăng nhập cho Nhân viên nội bộ
     AuthResponse loginStaff(LoginRequest request);
 

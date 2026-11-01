@@ -16,6 +16,7 @@ import { usePageData } from '@shared/routing/pageData'
 import type { adminServicesLoader } from '../../../shared/loaders'
 
 type Tab = 'all' | 'ACTIVE' | 'INACTIVE'
+const INSURANCE_CATEGORY_ID = 4
 
 interface ServiceModalProps {
   service: BackendServiceItem | null // null = tạo mới
@@ -155,7 +156,7 @@ function ServiceModal({ service, categories, onClose, onDone }: ServiceModalProp
 
         <div className="form-group">
           <label htmlFor="svc-price" className="required">
-            {categoryId === 4 ? 'Giá tham chiếu (không dùng tính phí bảo hiểm)' : `Đơn giá (VNĐ / ${SERVICE_BILLING_UNIT_LABEL[billingUnit]})`}
+            {categoryId === INSURANCE_CATEGORY_ID ? 'Giá tham chiếu (không dùng tính phí bảo hiểm)' : `Đơn giá (VNĐ / ${SERVICE_BILLING_UNIT_LABEL[billingUnit]})`}
           </label>
           <input
             id="svc-price"
@@ -168,7 +169,7 @@ function ServiceModal({ service, categories, onClose, onDone }: ServiceModalProp
             onChange={e => setPrice(e.target.value)}
             required
           />
-          {categoryId === 4 && <small className="form-hint">Bảo hiểm do bên thứ ba báo theo chuyến; danh mục cũ chỉ dùng để đọc dữ liệu lịch sử.</small>}
+          {categoryId === INSURANCE_CATEGORY_ID && <small className="form-hint">Bảo hiểm do bên thứ ba báo theo chuyến; danh mục cũ chỉ dùng để đọc dữ liệu lịch sử.</small>}
         </div>
 
         <div className={`form-group ${s.full}`}>
@@ -208,8 +209,8 @@ export default function AdminServicesPage() {
   const [modal, setModal] = useState<{ service: BackendServiceItem | null } | null>(null)
 
   const { services: catalogServices = [], categories: catalogCategories = [], reload } = usePageData<typeof adminServicesLoader>()
-  const services = catalogServices.filter(service => service.categoryId !== 4)
-  const categories = catalogCategories.filter(category => category.id !== 4)
+  const services = catalogServices.filter(service => service.categoryId !== INSURANCE_CATEGORY_ID)
+  const categories = catalogCategories.filter(category => category.id !== INSURANCE_CATEGORY_ID)
 
   const rows = services
     .filter(s => (tab === 'all' ? true : s.status === tab))
@@ -247,7 +248,7 @@ export default function AdminServicesPage() {
       head: 'Đơn giá',
       cell: item => (
         <span className={s.price}>
-          {item.categoryId === 4
+          {item.categoryId === INSURANCE_CATEGORY_ID
             ? 'Báo giá bên thứ ba / dữ liệu cũ'
             : item.price > 0
               ? `${formatVND(item.price)} / ${SERVICE_BILLING_UNIT_LABEL[item.billingUnit]}`
@@ -269,52 +270,58 @@ export default function AdminServicesPage() {
       head: 'Thao tác',
       cell: item => (
         <div className={s.actions}>
-          <button
-            type="button"
-            className="btn btn-outline btn-sm"
-            onClick={() => setModal({ service: item })}
-            title="Chỉnh sửa dịch vụ"
-          >
-            <i className="fa-solid fa-pen-to-square" /> Sửa
-          </button>
-          {item.status === 'ACTIVE' ? (
-            <button
-              type="button"
-              className={`btn btn-ghost btn-sm ${s.pause}`}
-              onClick={async () => {
-                if (window.confirm(`Bạn có chắc muốn tạm ngưng áp dụng dịch vụ "${item.serviceName}"?`)) {
-                  try {
-                    await adminServicesApi.toggleStatus(item.id)
-                    toast(`Đã tạm ngưng dịch vụ ${item.serviceName}`, 'info')
-                    await reload()
-                  } catch (e: unknown) {
-                    const err = e as { message?: string }
-                    toast(err.message || 'Lỗi chuyển trạng thái', 'error')
-                  }
-                }
-              }}
-              title="Tạm ngưng cung cấp"
-            >
-              <i className="fa-solid fa-pause" /> Tạm dừng
-            </button>
+          {item.categoryId === INSURANCE_CATEGORY_ID ? (
+            <span className="badge badge-muted">Mua / Từ chối (cố định)</span>
           ) : (
-            <button
-              type="button"
-              className={`btn btn-ghost btn-sm ${s.resume}`}
-              onClick={async () => {
-                try {
-                  await adminServicesApi.toggleStatus(item.id)
-                  toast(`Đã kích hoạt lại dịch vụ ${item.serviceName}`, 'success')
-                  await reload()
-                } catch (e: unknown) {
-                  const err = e as { message?: string }
-                  toast(err.message || 'Lỗi kích hoạt lại', 'error')
-                }
-              }}
-              title="Kích hoạt lại"
-            >
-              <i className="fa-solid fa-play" /> Mở lại
-            </button>
+            <>
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                onClick={() => setModal({ service: item })}
+                title="Chỉnh sửa dịch vụ"
+              >
+                <i className="fa-solid fa-pen-to-square" /> Sửa
+              </button>
+              {item.status === 'ACTIVE' ? (
+                <button
+                  type="button"
+                  className={`btn btn-ghost btn-sm ${s.pause}`}
+                  onClick={async () => {
+                    if (window.confirm(`Bạn có chắc muốn tạm ngưng áp dụng dịch vụ "${item.serviceName}"?`)) {
+                      try {
+                        await adminServicesApi.toggleStatus(item.id)
+                        toast(`Đã tạm ngưng dịch vụ ${item.serviceName}`, 'info')
+                        await reload()
+                      } catch (e: unknown) {
+                        const err = e as { message?: string }
+                        toast(err.message || 'Lỗi chuyển trạng thái', 'error')
+                      }
+                    }
+                  }}
+                  title="Tạm ngưng cung cấp"
+                >
+                  <i className="fa-solid fa-pause" /> Tạm dừng
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className={`btn btn-ghost btn-sm ${s.resume}`}
+                  onClick={async () => {
+                    try {
+                      await adminServicesApi.toggleStatus(item.id)
+                      toast(`Đã kích hoạt lại dịch vụ ${item.serviceName}`, 'success')
+                      await reload()
+                    } catch (e: unknown) {
+                      const err = e as { message?: string }
+                      toast(err.message || 'Lỗi kích hoạt lại', 'error')
+                    }
+                  }}
+                  title="Kích hoạt lại"
+                >
+                  <i className="fa-solid fa-play" /> Mở lại
+                </button>
+              )}
+            </>
           )}
         </div>
       ),
@@ -371,7 +378,7 @@ export default function AdminServicesPage() {
       {modal && (
         <ServiceModal
           service={modal.service}
-          categories={categories}
+          categories={categories.filter(category => category.id !== INSURANCE_CATEGORY_ID)}
           onClose={() => setModal(null)}
           onDone={async () => {
             setModal(null)
