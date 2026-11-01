@@ -3,7 +3,7 @@ import { gsap } from 'gsap'
 import { MotionPathPlugin } from 'gsap/MotionPathPlugin'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useGSAP } from '@gsap/react'
-import { CountUp, reducedMotion, useScrollReveal } from '@shared/motion/motion'
+import { reducedMotion, useScrollReveal } from '@shared/motion/motion'
 import { Link, useLocation } from 'react-router'
 import { PUBLIC_STEPS, QUOTE_VALID_HOURS, VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { MIN_LEAD_DAYS } from '@shared/config/business-rules'
@@ -21,11 +21,6 @@ gsap.registerPlugin(MotionPathPlugin)
 const cx = (...c: (string | false | undefined)[]) => c.filter(Boolean).join(' ')
 const MAX_TRACK_CODES = 5
 const STEPS = PUBLIC_STEPS
-const PUBLIC_BENEFITS: [string, string, string][] = [
-  ['fa-truck-fast', 'Xe chuyên dụng', 'Xe nguyên chuyến với khoang phù hợp số ngựa của bạn.'],
-  ['fa-file-circle-check', 'Hỗ trợ giấy tờ', 'Đội ngũ phụ trách kiểm dịch và thủ tục cho chuyến đi.'],
-  ['fa-map-location-dot', 'Theo dõi hành trình', 'Cập nhật tiến độ đơn và hành trình vận chuyển trên hệ thống.'],
-]
 
 // ===== Banner trượt =====
 const SLIDES = [
@@ -329,18 +324,11 @@ export function Network() {
   )
 }
 
-const FEATURES: [string, React.ReactNode, string][] = [
-  ['fa-earth-asia', <><CountUp to={3} /> quốc gia</>, 'Việt Nam, Lào, Campuchia'],
-  ['fa-truck', 'Xe nguyên chuyến', `${Object.values(VEHICLE_CLASS).map(c => c.label).join(', ')}: từ 2 đến 9 ngăn. Không ghép ngựa của đơn khác`],
-  ['fa-user-doctor', 'Chuyên viên riêng', 'Duyệt hồ sơ ngựa, làm giấy kiểm dịch, hải quan và báo tiến độ từng giấy cho bạn'],
-  ['fa-flag', 'Cửa khẩu quốc tế', 'Các tuyến đường bộ nối Việt Nam với Lào và Campuchia'],
-]
-
-const SERVICES: [string, string, string, string, string][] = [
-  ['/?tab=price#tra-cuu', PHOTOS.transport.src, 'NỘI ĐỊA', 'Vận chuyển nội địa', 'Giữa các kho và câu lạc bộ trong nước, có trạm nghỉ cho ngựa'],
-  ['/#mang-luoi', PHOTOS.trailers.src, 'XUYÊN BIÊN GIỚI', 'Vận chuyển xuyên biên giới', 'Việt Nam – Lào, Việt Nam – Campuchia, nhà xe làm thủ tục cửa khẩu'],
-  ['/#quy-trinh', PHOTOS.checkup.src, 'KIỂM DỊCH', 'Kiểm dịch & thủ tục', 'Giấy kiểm dịch, tờ khai hải quan do nhà xe làm trọn gói'],
-  ['/?tab=price#tra-cuu', PHOTOS.stable.src, 'CHĂM SÓC', 'Chăm sóc & bảo hiểm', 'Hộ tống đi kèm, khoang đơn mở rộng, hỗ trợ bảo hiểm động vật sống từ bên thứ ba'],
+const SERVICES: [string, string, string, string][] = [
+  ['/?tab=price#tra-cuu', PHOTOS.transport.src, 'Xe nguyên chuyến', `${Object.values(VEHICLE_CLASS).map(c => c.label).join(', ')}: từ 2 đến 9 ngăn. Không ghép ngựa của đơn khác.`],
+  ['/#quy-trinh', PHOTOS.checkup.src, 'Giấy tờ và cửa khẩu', 'Chuyên viên thẩm định hồ sơ ngựa, nhà xe làm giấy kiểm dịch và hải quan. Bạn xem tiến độ từng giấy.'],
+  ['/?tab=order#tra-cuu', PHOTOS.trailers.src, 'Theo dõi chuyến đi', 'Tài xế check-in từng mốc, bạn xem xe đang ở đâu trên bản đồ.'],
+  ['/?tab=price#tra-cuu', PHOTOS.stable.src, 'Chăm sóc và bảo hiểm', 'Hộ tống đi kèm, khoang đơn mở rộng, hỗ trợ bảo hiểm động vật sống từ bên thứ ba.'],
 ]
 
 const PROCESS: [string, string, string, string][] = [
@@ -361,36 +349,16 @@ function useStepsLine() {
   return ref
 }
 
-export function About({ link = same }: { link?: LinkMap }) {
-  return (
-      <section className={s.about}>
-        <div className={cx(s.aboutLeft, s.reveal)}>
-          <div className={s.aboutLeftInner}>
-            <h2>Về chúng tôi</h2>
-            <p>Chúng tôi chuyên vận chuyển ngựa đua bằng đường bộ. Mỗi đơn có chuyên viên xác minh hồ sơ thú y, điều phối viên chọn xe, tài xế, hộ tống và lập lộ trình riêng, quản lý duyệt báo giá trước khi bạn đặt cọc. Có sự cố, quản lý duyệt phương án xử lý và trực tiếp liên hệ bạn.</p>
-            <Link to={link('/#quy-trinh')} className={s.linkArrow}>Xem quy trình <i className="fa-solid fa-arrow-right-long" /></Link>
-          </div>
-        </div>
-        <div className={s.aboutRight}>
-          {FEATURES.map(([icon, title, text], i) => (
-            <div key={text} className={cx(s.feature, s.reveal)} data-delay={i * 120}>
-              <span className={s.featureIcon}><i className={`fa-solid ${icon}`} /></span><h3>{title}</h3><p>{text}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-  )
-}
-
 export function Services({ link = same }: { link?: LinkMap }) {
   return (
       <section className={s.services} id="dich-vu">
         <div className="wrap">
           <h2 className={cx('section-title', s.reveal)}>Dịch vụ</h2>
+          <p className={cx('section-sub', s.reveal)}>Mỗi đơn có người phụ trách từng khâu, từ hồ sơ ngựa, xe và lộ trình đến báo giá. Có sự cố, quản lý duyệt phương án xử lý và liên hệ trực tiếp với bạn.</p>
           <div className={s.serviceGrid}>
-            {SERVICES.map(([to, photo, tile, title, text], i) => (
+            {SERVICES.map(([to, photo, title, text], i) => (
               <Link key={title} to={link(to)} className={cx(s.service, s.reveal)} data-delay={i * 120}>
-                <span className={s.serviceTile} style={{ '--photo': `url('${photo}')` } as CSSProperties}><b>{tile}</b></span><h3>{title}</h3><p>{text}</p>
+                <span className={s.serviceTile} style={{ '--photo': `url('${photo}')` } as CSSProperties} /><h3>{title}</h3><p>{text}</p>
               </Link>
             ))}
           </div>
@@ -409,19 +377,7 @@ export default function HomePage() {
     <div ref={scope}>
       <Hero />
       <Lookup />
-      <section className={s.publicBenefits} aria-label="Lợi ích dịch vụ">
-        <div className={cx('wrap', s.publicBenefitGrid)}>
-          {PUBLIC_BENEFITS.map(([icon, title, text]) => (
-            <article key={title} className={s.publicBenefit}>
-              <span className={s.publicBenefitIcon}><i className={`fa-solid ${icon}`} aria-hidden="true" /></span>
-              <div><h2>{title}</h2><p>{text}</p></div>
-            </article>
-          ))}
-        </div>
-      </section>
       <Network />
-
-      <About />
       <Services />
 
       <section className={s.process} id="quy-trinh">

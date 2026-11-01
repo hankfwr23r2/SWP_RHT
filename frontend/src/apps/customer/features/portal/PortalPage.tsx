@@ -8,7 +8,7 @@ import { useStaggerIn } from '@shared/motion/motion'
 import { usePageData } from '@shared/routing/pageData'
 import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
 import { useNow } from '@shared/ui/useNow'
-import { About, Hero, Network, Services, portalLinks, useLandingReveal } from '../home/HomePage'
+import { Hero, Network, Services, portalLinks, useLandingReveal } from '../home/HomePage'
 import { nextStep } from '../orders/nextStep'
 import { PriceLookup } from '../pricing/PriceLookup'
 import type { portalLoader } from './portalLoader'
@@ -87,7 +87,6 @@ export default function PortalPage() {
 
       <div id="tra-cuu" style={{ padding: '8px 0 40px' }}><PriceLookup /></div>
       <Network />
-      <About link={portalLinks} />
       <Services link={portalLinks} />
     </div>
   )
