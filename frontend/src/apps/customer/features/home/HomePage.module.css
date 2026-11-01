@@ -128,7 +128,7 @@
 
 /* Mạng lưới */
 .network { padding: 72px 0 64px; }
-.network :global(.section-sub) { max-width: 62ch; }
+.network :global(.section-sub) { max-width: 62ch; text-wrap: pretty; }
 .flags { display: flex; justify-content: center; gap: clamp(28px, 8vw, 96px); margin-top: 40px; }
 .flag { display: flex; flex-direction: column; align-items: center; gap: 12px; background: none; border: none; cursor: pointer; }
 .flag-img { width: 96px; height: 96px; border-radius: 999px; overflow: hidden; box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18); border: 4px solid white; outline: 2px solid transparent; transition: transform 0.3s, outline-color 0.3s; }
@@ -247,6 +247,3 @@
 
 
 
-.credits { padding: 18px 0 26px; background: #0f172a; color: #94a3b8; font-size: 0.74rem; line-height: 1.6; }
-.credits b { color: #cbd5e1; }
-.credits a { color: #fdba74; text-decoration: underline; }

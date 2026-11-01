@@ -28,7 +28,7 @@
 
 
 .footer { background: #f1f5f9; padding: 48px 0 20px; font-size: 0.9rem; color: #475569; }
-.footerGrid { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1.2fr; gap: 32px; }
+.footerGrid { display: grid; grid-template-columns: 1.6fr 1fr 1fr; gap: 32px; }
 .footer h4 { color: var(--navy); margin-bottom: 12px; font-size: 0.95rem; }
 .footer a:not(.brand) { display: block; padding: 3px 0; transition: color 0.2s; }
 .footer a:not(.brand):hover { color: var(--orange-dark); }
