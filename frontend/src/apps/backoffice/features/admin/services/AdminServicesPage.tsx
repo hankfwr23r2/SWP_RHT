@@ -105,7 +105,7 @@ function ServiceModal({ service, categories, onClose, onDone }: ServiceModalProp
             maxLength={100}
             required
           />
-          <small className="form-hint">Dùng mã này trong cấu hình và đơn mới; không thể đổi sau khi tạo.</small>
+          <small className="form-hint">Dùng mã này trong cấu hình và đơn mới. Không thể đổi sau khi tạo.</small>
         </div>
 
         <div className={`form-group ${s.full}`}>
@@ -169,7 +169,7 @@ function ServiceModal({ service, categories, onClose, onDone }: ServiceModalProp
             onChange={e => setPrice(e.target.value)}
             required
           />
-          {categoryId === INSURANCE_CATEGORY_ID && <small className="form-hint">Bảo hiểm do bên thứ ba báo theo chuyến; danh mục cũ chỉ dùng để đọc dữ liệu lịch sử.</small>}
+          {categoryId === INSURANCE_CATEGORY_ID && <small className="form-hint">Bảo hiểm do bên thứ ba báo theo chuyến. Danh mục cũ chỉ dùng để đọc dữ liệu lịch sử.</small>}
         </div>
 
         <div className={`form-group ${s.full}`}>
@@ -345,13 +345,12 @@ export default function AdminServicesPage() {
         emptyText="Chưa có dịch vụ nào phù hợp."
         countLabel="dịch vụ"
         filters={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+          <div className={s.categoryFilterGroup}>
+            <span className={s.categoryFilterLabel}>
               Nhóm phân loại:
             </span>
             <select
-              className="form-control"
-              style={{ minWidth: 180, height: 36, fontSize: '0.85rem' }}
+              className={`form-control ${s.categoryFilter}`}
               value={categoryFilter}
               onChange={e => setCategoryFilter(e.target.value)}
             >

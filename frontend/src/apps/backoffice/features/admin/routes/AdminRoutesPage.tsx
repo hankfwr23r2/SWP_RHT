@@ -337,7 +337,7 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
         <span>
           <i className="fa-solid fa-map-pin" /> Nút giao & Trạm dừng trên tuyến ({selectedLocationIds.length} điểm)
         </span>
-        <small>Điểm đầu là xuất phát, điểm cuối là điểm đến; các điểm ở giữa là trạm dừng.</small>
+        <small>Điểm đầu là xuất phát, điểm cuối là điểm đến. Các điểm ở giữa là trạm dừng.</small>
       </h4>
 
       {/* Danh sách các điểm đã chọn theo thứ tự */}
@@ -636,7 +636,7 @@ function LocationsModal({
     const open = openingMinutes ? Number(openingMinutes) : undefined
     const close = closingMinutes ? Number(closingMinutes) : undefined
     if (locationType === 'BorderGate' && (open === undefined || close === undefined || open >= close)) {
-      toast('Cửa khẩu cần giờ mở và giờ đóng hợp lệ; giờ mở phải sớm hơn giờ đóng.', 'error')
+      toast('Cửa khẩu cần giờ mở và giờ đóng hợp lệ. Giờ mở phải sớm hơn giờ đóng.', 'error')
       return
     }
     if (locationType === 'RescuePoint' && !contactPhone.trim()) {
@@ -815,10 +815,10 @@ function LocationsModal({
             </div>
           )}
           {locationType === 'BorderGate' && (
-            <div className="form-hint">Giờ lưu dạng số phút từ 00:00 (07:30 là 450; 16:30 là 990).</div>
+            <div className="form-hint">Giờ lưu dạng số phút từ 00:00 (07:30 là 450, 16:30 là 990).</div>
           )}
           {locationType !== 'RescuePoint' && locationType !== 'BorderGate' && (
-            <div className={`form-hint ${s.full}`}>Mã ổn định được hệ thống tự gán khi tạo mới; không thay đổi sau khi lưu.</div>
+            <div className={`form-hint ${s.full}`}>Mã ổn định được hệ thống tự gán khi tạo mới. Mã này không thay đổi sau khi lưu.</div>
           )}
         </div>
       )}
