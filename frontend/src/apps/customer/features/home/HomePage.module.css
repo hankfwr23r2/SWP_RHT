@@ -104,6 +104,20 @@
 .price-notes div { background: #f8fafc; border-radius: 8px; padding: 12px 14px; font-size: 0.83rem; color: var(--muted); }
 .price-notes i { color: var(--orange); margin-right: 6px; }
 
+/* Báo giá mẫu: một tờ vận đơn, dòng nhãn–giá trị và dải mốc thanh toán */
+.quote { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 56px; align-items: center; padding: 72px 0 24px; }
+.quote-intro h2 { font-size: clamp(1.5rem, 3vw, 2rem); font-weight: 800; line-height: 1.2; color: var(--navy); margin-bottom: 14px; text-wrap: balance; }
+.quote-intro p { color: var(--navy-2); max-width: 46ch; margin-bottom: 24px; }
+.quote-sheet { background: white; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08); overflow: hidden; }
+.quote-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 24px; border-bottom: 1px solid var(--line); color: var(--navy); }
+.quote-rows { padding: 8px 24px 16px; }
+.quote-rows :global(.value) { color: var(--navy); }
+.quote-pay { list-style: none; display: grid; grid-template-columns: repeat(3, 1fr); background: var(--navy); color: white; }
+.quote-pay li { padding: 18px 24px 20px; display: flex; flex-direction: column; gap: 4px; }
+.quote-pay li + li { border-left: 1px solid rgba(255, 255, 255, 0.12); }
+.quote-pay strong { font-size: 1.6rem; font-weight: 800; line-height: 1.1; color: #fdba74; font-variant-numeric: tabular-nums; }
+.quote-pay span { font-size: 0.8rem; line-height: 1.4; color: #cbd5e1; }
+
 /* Mạng lưới */
 .network { padding: 72px 0 64px; }
 .flags { display: flex; justify-content: center; gap: clamp(28px, 8vw, 96px); margin-top: 40px; }
@@ -187,6 +201,12 @@
     .field-phone { width: 100%; }
     .lookup-row :global(.btn) { padding: 12px; }
     .fee-result, .price-grid, .network-cols { grid-template-columns: 1fr; }
+    .quote { grid-template-columns: 1fr; gap: 28px; padding-top: 48px; }
+    .quote-pay { grid-template-columns: 1fr; }
+    .quote-pay li { flex-direction: row; align-items: baseline; gap: 14px; padding: 14px 20px; }
+    .quote-pay li + li { border-left: none; border-top: 1px solid rgba(255, 255, 255, 0.12); }
+    .quote-pay strong { flex: 0 0 4.4rem; font-size: 1.3rem; }
+    .quote-head, .quote-rows { padding-left: 20px; padding-right: 20px; }
     .price-notes { grid-template-columns: 1fr; }
     .service-grid { grid-template-columns: 1fr 1fr; }
     .steps { grid-template-columns: 1fr 1fr; }

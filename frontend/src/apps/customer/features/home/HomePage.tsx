@@ -203,6 +203,46 @@ function Lookup() {
   )
 }
 
+// ===== Báo giá mẫu: các khoản và mốc thanh toán, không tự tính số tiền =====
+const QUOTE_ITEMS: [string, string][] = [
+  ['Cước xe', 'Theo hạng xe và quãng đường'],
+  ['Tài xế và hộ tống', 'Theo số ngày đi'],
+  ['Nhiên liệu, cầu đường', 'Theo km'],
+  ['Kiểm dịch, hải quan', 'Tuyến quốc tế'],
+  ['Dịch vụ, bảo hiểm', 'Theo lựa chọn của bạn'],
+]
+
+function QuoteSample() {
+  const milestones: [string, string][] = [
+    [`${DEPOSIT_RATE * 100}%`, 'Đặt cọc khi chấp nhận báo giá, nhận số vận đơn'],
+    [`${100 - DEPOSIT_RATE * 100}%`, 'Trả nốt trước giờ xe xuất phát'],
+    ['24 giờ', 'Hạn thanh toán quyết toán sau chuyến'],
+  ]
+  return (
+    <section className={cx('wrap', s.quote)} id="bao-gia">
+      <div className={cx(s.quoteIntro, s.reveal)}>
+        <h2>Biết trước từng khoản tiền</h2>
+        <p>Quản lý duyệt báo giá trước khi gửi cho bạn. Giá đã chốt thì không phụ thu ngoài phiếu; quyết toán chỉ có khoản phát sinh khi có sự cố liên quan đến ngựa, luôn kèm chứng từ.</p>
+        <Link to="/?tab=price#tra-cuu" className="btn btn-outline">Xem bảng giá</Link>
+      </div>
+      <div className={cx(s.quoteSheet, s.reveal)}>
+        <div className={s.quoteHead}>
+          <b>Báo giá mẫu</b>
+          <span className="badge badge-warning">Hiệu lực {QUOTE_VALID_HOURS} giờ</span>
+        </div>
+        <div className={s.quoteRows}>
+          {QUOTE_ITEMS.map(([label, value]) => (
+            <div key={label} className="info-row"><span className="label">{label}</span><span className="value">{value}</span></div>
+          ))}
+        </div>
+        <ol className={s.quotePay}>
+          {milestones.map(([big, text]) => <li key={text}><strong>{big}</strong><span>{text}</span></li>)}
+        </ol>
+      </div>
+    </section>
+  )
+}
+
 // ===== Mạng lưới vận chuyển =====
 // Sơ đồ minh họa phạm vi tuyến, không đại diện cho một lộ trình vận hành cụ thể.
 type Stop = { x: number; y: number; name: string; sub: string }
@@ -377,6 +417,7 @@ export default function HomePage() {
     <div ref={scope}>
       <Hero />
       <Lookup />
+      <QuoteSample />
       <Network />
       <Services />
 
