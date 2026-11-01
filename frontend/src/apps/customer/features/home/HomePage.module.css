@@ -42,7 +42,8 @@
 .field-grow { flex: 1; }
 .field-phone { width: 230px; }
 .lookup-row :global(.btn) { padding: 0 32px; }
-.lookup-hint { margin-top: 10px; font-size: 0.8rem; color: var(--muted); }
+.lookup-hint { margin-top: 10px; font-size: 0.82rem; color: var(--muted); }
+.hint-link { padding: 0; border: none; background: none; font: inherit; font-weight: 600; color: var(--orange-dark); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .input-error { border-color: #dc2626 !important; box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12) !important; }
 .form-error { margin-top: 10px; color: #dc2626; font-size: 0.85rem; }
 
@@ -123,6 +124,7 @@
 .quote-pay li + li { border-left: 1px solid rgba(255, 255, 255, 0.12); }
 .quote-pay strong { font-size: 1.6rem; font-weight: 800; line-height: 1.1; color: #fdba74; font-variant-numeric: tabular-nums; }
 .quote-pay span { font-size: 0.8rem; line-height: 1.4; color: #cbd5e1; }
+.quote-note { padding: 12px 24px 14px; font-size: 0.82rem; color: #475569; background: var(--bg-page); }
 
 /* Mạng lưới */
 .network { padding: 72px 0 64px; }
@@ -137,7 +139,7 @@
 .flag-meta { font-size: 0.8rem; color: var(--muted); margin-top: -8px; }
 .network-detail { margin: 36px auto 0; max-width: 900px; border: 1px solid var(--line); border-radius: var(--radius); padding: 22px 24px; }
 .network-detail h3 { font-size: 1.05rem; margin-bottom: 12px; }
-.network-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; animation: dropUp 0.35s ease; }
+.network-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; animation: dropUp 0.35s ease; }
 .network-cols h4 { font-size: 0.78rem; text-transform: uppercase; color: var(--muted); letter-spacing: 0.03em; margin-bottom: 8px; }
 .network-cols ul { list-style: none; display: grid; gap: 6px; font-size: 0.9rem; }
 .network-cols li i { color: var(--orange); width: 18px; }

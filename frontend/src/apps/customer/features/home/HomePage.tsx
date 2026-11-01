@@ -7,7 +7,10 @@ import { reducedMotion, useScrollReveal } from '@shared/motion/motion'
 import { Link, useLocation } from 'react-router'
 import { PUBLIC_STEPS, QUOTE_VALID_HOURS, VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { MIN_LEAD_DAYS } from '@shared/config/business-rules'
-import { COUNTRIES, type CountryCode } from '@shared/config/network'
+import { COUNTRIES, GATES, type CountryCode } from '@shared/config/network'
+import { loadBootstrap } from '@shared/config/bootstrap'
+import { ACTIVE_DOCUMENT_REQUIREMENTS } from '@shared/config/runtimeDocumentRequirements'
+import type { DocumentGroup } from '@shared/api/documentRequirements'
 import { DEPOSIT_RATE } from '@shared/config/booking-rules'
 import { formatDate, formatDateTime } from '@shared/lib/format'
 import { trackOrder, type PublicTracking } from '@shared/services/tracking'
@@ -89,7 +92,7 @@ export function Hero({ link = same }: { link?: LinkMap }) {
 // ===== Tra cứu đơn hàng =====
 type TrackRow = { code: string; result: PublicTracking | null }
 
-function OrderLookup() {
+function OrderLookup({ onShowPrice }: { onShowPrice: () => void }) {
   const [codesText, setCodesText] = useState('')
   const [phone, setPhone] = useState('')
   const [error, setError] = useState<{ field: 'codes' | 'phone'; message: string } | null>(null)
@@ -147,6 +150,10 @@ function OrderLookup() {
           {loading ? 'Đang tìm…' : 'Tìm kiếm'}
         </button>
       </form>
+      <p className={s.lookupHint}>
+        Nhập mã đơn (BK-…) hoặc số vận đơn (VD-…), nhiều mã cách nhau bằng dấu phẩy. Chưa có đơn?{' '}
+        <button type="button" className={s.hintLink} onClick={onShowPrice}>Xem bảng giá</button>
+      </p>
       {error && <p id="lookup-error" className={s.formError} role="alert"><i className="fa-solid fa-circle-exclamation" aria-hidden="true" /> {error.message}</p>}
       <div aria-live="polite">
       {!error && rows.length > 0 && (
@@ -234,7 +241,7 @@ function Lookup() {
       </div>
       <div className={s.lookupCard}>
         <div className={cx(s.lookupPanel, s.active)} key={tab} id="tra-cuu-panel" role="tabpanel" aria-labelledby={`tab-${tab}`}>
-          {tab === 'order' ? <OrderLookup /> : <PriceTable />}
+          {tab === 'order' ? <OrderLookup onShowPrice={() => setTab('price')} /> : <PriceTable />}
         </div>
       </div>
     </section>
@@ -276,6 +283,7 @@ function QuoteSample() {
         <ol className={s.quotePay}>
           {milestones.map(([big, text]) => <li key={text}><strong>{big}</strong><span>{text}</span></li>)}
         </ol>
+        <p className={s.quoteNote}>Hủy trước khi đặt cọc: không mất phí. Hủy sau khi đặt cọc: mất toàn bộ tiền cọc.</p>
       </div>
     </section>
   )
@@ -365,15 +373,29 @@ function Journey({ country }: { country: CountryCode }) {
         {stops.map(p => <li key={p.name}><b>{p.name}</b><span>{p.sub}</span></li>)}
       </ol>
       <div className={s.journeyLegend}>
-        <span><i className={s.legendGate} /> Cửa khẩu</span>
-        <span><i className={s.legendStation} /> Trạm nghỉ</span>
+        {mid === 'gate'
+          ? <span><i className={s.legendGate} /> Cửa khẩu</span>
+          : <span><i className={s.legendStation} /> Trạm nghỉ</span>}
       </div>
     </div>
   )
 }
 
+// Giấy tờ bắt buộc admin cấu hình cho từng nước (tuyến trong nước hoặc quốc tế)
+const docsFor = (group: DocumentGroup, code: CountryCode) => [...new Set(ACTIVE_DOCUMENT_REQUIREMENTS
+  .filter(r => r.documentGroup === group && r.required && r.status === 'ACTIVE')
+  .filter(r => r.tripType === 'ALL' || r.tripType === (code === 'VN' ? 'DOMESTIC' : 'INTERNATIONAL'))
+  .filter(r => r.country === 'ALL' || r.country === code)
+  .map(r => r.documentName))]
+
 export function Network() {
   const [active, setActive] = useState<CountryCode>('VN')
+  // Cửa khẩu và giấy tờ lấy từ /public/bootstrap; lỗi thì chỉ hiện phần mô tả chung
+  const [catalog, setCatalog] = useState<'loading' | 'ready' | 'failed'>('loading')
+  useEffect(() => { loadBootstrap().then(() => setCatalog('ready'), () => setCatalog('failed')) }, [])
+  const gates = active === 'VN' ? [] : GATES.filter(g => g.country === active).map(g => g.name.replace(/^Cửa khẩu (quốc tế )?/, ''))
+  const horseDocs = docsFor('HORSE', active)
+  const tripDocs = docsFor('CLEARANCE', active)
   const flagsRef = useRef<HTMLDivElement>(null)
   useGSAP(() => {
     if (reducedMotion()) return
@@ -382,11 +404,11 @@ export function Network() {
   return (
     <section className={s.network} id="mang-luoi">
       <div className="wrap">
-        <h2 className={cx('section-title', s.reveal)}>Mạng lưới phủ sóng 3 nước</h2>
+        <h2 className={cx('section-title', s.reveal)}>Mạng lưới 3 nước</h2>
         <p className={cx('section-sub', s.reveal)}>Tuyến nội địa Việt Nam và tuyến xuyên biên giới Việt Nam – Lào, Việt Nam – Campuchia qua các cửa khẩu đường bộ quốc tế. Bạn chọn điểm đón và điểm giao trên bản đồ, nhà xe chọn cửa khẩu và các trạm nghỉ dọc đường.</p>
         <div ref={flagsRef} className={s.flags}>
           {(Object.keys(COUNTRIES) as CountryCode[]).map(code => (
-            <button key={code} className={cx(s.flag, code === active && s.active)} onClick={() => setActive(code)}>
+            <button key={code} type="button" aria-pressed={code === active} className={cx(s.flag, code === active && s.active)} onClick={() => setActive(code)}>
               <span className={s.flagImg} dangerouslySetInnerHTML={{ __html: FLAG_SVG[code] }} />
               <span className={s.flagName}>{COUNTRIES[code].name}</span>
               <span className={s.flagMeta}>{COUNTRIES[code].meta}</span>
@@ -395,10 +417,13 @@ export function Network() {
         </div>
         <Journey country={active} />
         <div className={cx(s.networkDetail, s.reveal)}>
-          <h3>Phạm vi mạng lưới</h3>
+          <h3>{active === 'VN' ? 'Tuyến trong nước' : `Tuyến Việt Nam – ${COUNTRIES[active].name}`}</h3>
           <div className={s.networkCols} key={active}>
-            <div><h4>Điểm phục vụ</h4><p><i className="fa-solid fa-location-dot" /> Kho, trại ngựa, câu lạc bộ, trường đua ở cả ba nước, hoặc điểm bạn chọn trên bản đồ.</p></div>
-            <div><h4>Tuyến quốc tế</h4><p><i className="fa-solid fa-flag" /> Qua các cửa khẩu đường bộ quốc tế với Lào và Campuchia.</p></div>
+            {active === 'VN'
+              ? <div><h4>Điểm đón và giao</h4><p><i className="fa-solid fa-location-dot" aria-hidden="true" /> Kho, trại ngựa, câu lạc bộ, trường đua, hoặc điểm bạn chọn trên bản đồ. Đường dài có trạm nghỉ cho ngựa.</p></div>
+              : <div><h4>Cửa khẩu</h4><p><i className="fa-solid fa-flag" aria-hidden="true" /> {catalog === 'ready' && gates.length ? `${gates.join(', ')}. Nhà xe chọn cửa khẩu theo lộ trình.` : 'Qua cửa khẩu đường bộ quốc tế, nhà xe chọn theo lộ trình.'}</p></div>}
+            {catalog === 'ready' && horseDocs.length > 0 && <div><h4>Hồ sơ ngựa bạn nộp</h4><p><i className="fa-solid fa-horse-head" aria-hidden="true" /> {horseDocs.join(', ')}.</p></div>}
+            {catalog === 'ready' && tripDocs.length > 0 && <div><h4>Giấy tờ chuyến đi</h4><p><i className="fa-solid fa-file-circle-check" aria-hidden="true" /> {tripDocs.join(', ')}. Bạn xem tiến độ từng giấy trong đơn.</p></div>}
           </div>
         </div>
       </div>
@@ -484,7 +509,7 @@ export default function HomePage() {
       <section className={s.cta} style={{ '--bg': `url('${PHOTOS.race.src}')` } as CSSProperties}>
         <div className={cx('wrap', s.reveal)}>
           <h2>Đặt chuyến vận chuyển ngựa đua</h2>
-          <p>Gửi đơn trước ngày đi tối thiểu {MIN_LEAD_DAYS} ngày để kịp thẩm định và làm giấy tờ.</p>
+          <p>Tạo tài khoản và nhận báo giá miễn phí, bạn chỉ trả tiền khi chấp nhận báo giá. Gửi đơn trước ngày đi tối thiểu {MIN_LEAD_DAYS} ngày để kịp thẩm định và làm giấy tờ.</p>
           <Link to="/login" className="btn btn-white btn-lg">Đặt chuyến ngay</Link>
         </div>
       </section>
