@@ -158,13 +158,19 @@
 /* Quy trình */
 .process { background: var(--bg-soft); padding: 72px 0; }
 .process :global(.section-sub) { color: #475569; }
-.steps { list-style: none; display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-top: 40px; counter-reset: step; }
-.step { position: relative; background: white; border-radius: var(--radius); padding: 22px 16px; text-align: center; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05); transition: transform 0.3s, box-shadow 0.3s; display: flex; flex-direction: column; align-items: center; }
-.step:hover { transform: translateY(-6px); box-shadow: 0 14px 28px rgba(15, 23, 42, 0.1); }
-.step-num { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 999px; background: var(--orange-soft); color: var(--orange); font-size: 1.2rem; margin-bottom: 12px; flex-shrink: 0; }
-.step h3 { font-size: 0.92rem; color: var(--navy); margin-bottom: 8px; min-height: 2.6em; display: flex; align-items: center; justify-content: center; line-height: 1.3; }
-.step p { font-size: 0.8rem; color: var(--muted); line-height: 1.5; flex: 1 1 auto; margin: 0; }
-.step small { display: flex; align-items: center; justify-content: center; margin-top: 14px; font-size: 0.8rem; font-weight: 700; color: var(--orange-dark); min-height: 34px; line-height: 1.35; width: 100%; text-align: center; }
+/* Quy trình dạng vận đơn: mỗi bước một dòng, cột thời hạn căn phải */
+.timeline { max-width: 1080px; margin: 40px auto 0; background: white; border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05); overflow: hidden; }
+.timeline ol { list-style: none; }
+.timeline-head, .timeline-row { display: grid; grid-template-columns: 32px minmax(140px, 1fr) minmax(150px, 1.1fr) 2.4fr minmax(150px, 1fr); gap: 20px; align-items: baseline; padding: 0 24px; }
+.timeline-head { padding-top: 10px; padding-bottom: 10px; background: var(--bg-page); border-bottom: 1px solid var(--line); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.timeline-head span:last-child, .timeline-time { text-align: right; }
+.timeline-row { padding-top: 16px; padding-bottom: 16px; }
+.timeline-row + .timeline-row { border-top: 1px dashed var(--line); }
+.timeline-num { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 999px; background: var(--navy); color: white; font-size: 0.8rem; font-weight: 700; font-variant-numeric: tabular-nums; align-self: start; }
+.timeline-row h3 { font-size: 0.95rem; font-weight: 700; color: var(--navy); }
+.timeline-who { font-size: 0.85rem; color: #475569; }
+.timeline-row p { font-size: 0.9rem; line-height: 1.5; color: var(--navy-2); }
+.timeline-time { font-size: 0.85rem; font-weight: 700; color: var(--orange-dark); font-variant-numeric: tabular-nums; }
 
 /* Kêu gọi đặt chuyến */
 .cta { position: relative; padding: 88px 0; color: white; text-align: center; background-image: linear-gradient(90deg, rgba(194, 65, 12, 0.93), rgba(15, 23, 42, 0.85)), var(--bg); background-size: cover; background-position: center; background-attachment: fixed; }
@@ -194,14 +200,10 @@
 .legendGate { width: 10px; height: 10px; border-radius: 3px; background: var(--navy); }
 .legendStation { width: 10px; height: 10px; border-radius: 50%; background: var(--orange-soft); border: 2px solid var(--navy); }
 
-/* Đường nối các bước quy trình, vẽ dần theo cuộn */
-.stepsWrap { position: relative; }
-.stepsLine { position: absolute; top: 85px; z-index: 0; left: 8%; right: 8%; height: 3px; background: linear-gradient(90deg, var(--orange), #fb923c); transform-origin: left center; border-radius: 2px; }
 
 
 /* Màn hình nhỏ */
 @media (max-width: 1080px) {
-    .steps { grid-template-columns: repeat(3, 1fr); }
     .fee-form { grid-template-columns: 1fr 1fr; }
     .fee-form :global(.btn) { grid-column: 1 / -1; }
 }
@@ -221,6 +223,11 @@
     .journeyStops li:last-child { text-align: right; }
     .journeyStops b { color: var(--navy); }
     .journeyStops span { color: #475569; }
+    .timeline-head { display: none; }
+    .timeline-row { grid-template-columns: 28px 1fr; gap: 4px 14px; padding: 14px 18px; }
+    .timeline-row > :not(.timeline-num) { grid-column: 2; }
+    .timeline-num { grid-row: 1 / span 4; }
+    .timeline-time { text-align: left; margin-top: 4px; }
     .quote { grid-template-columns: 1fr; gap: 28px; padding-top: 48px; }
     .quote-pay { grid-template-columns: 1fr; }
     .quote-pay li { flex-direction: row; align-items: baseline; gap: 14px; padding: 14px 20px; }
@@ -229,7 +236,6 @@
     .quote-head, .quote-rows { padding-left: 20px; padding-right: 20px; }
     .price-notes { grid-template-columns: 1fr; }
     .service-grid { grid-template-columns: 1fr 1fr; }
-    .steps { grid-template-columns: 1fr 1fr; }
     .cta { background-attachment: scroll; }
 }
 
@@ -240,7 +246,6 @@
 }
 
 
-@media (max-width: 1080px) { .stepsLine { display: none; } }
 
 .credits { padding: 18px 0 26px; background: #0f172a; color: #94a3b8; font-size: 0.74rem; line-height: 1.6; }
 .credits b { color: #cbd5e1; }

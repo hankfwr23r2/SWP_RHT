@@ -442,22 +442,13 @@ const SERVICES: [string, string, string, string][] = [
 // Số tiền và tỉ lệ đã nằm trong thẻ báo giá mẫu nên không nhắc lại ở đây.
 const [STEP_SEND, STEP_REVIEW, STEP_DEPOSIT, STEP_PREPARE, STEP_TRANSPORT] = PUBLIC_STEPS
 const PROCESS: [string, string, string, string][] = [
-  ['fa-paper-plane', STEP_SEND, 'Chọn điểm đón, điểm giao, ngựa, dịch vụ và bảo hiểm; tải hồ sơ ngựa.', `Trước ngày đi ≥ ${MIN_LEAD_DAYS} ngày`],
-  ['fa-magnifying-glass', STEP_REVIEW, 'Quản lý tiếp nhận. Chuyên viên duyệt hồ sơ ngựa, điều phối viên chọn xe, kíp xe và lập lộ trình cùng lúc.', 'Trước khi báo giá'],
-  ['fa-credit-card', STEP_DEPOSIT, 'Quản lý duyệt và gửi báo giá. Bạn đặt cọc để nhận số vận đơn.', `Báo giá giữ ${QUOTE_VALID_HOURS} giờ`],
-  ['fa-folder-open', STEP_PREPARE, 'Chuyên viên làm giấy kiểm dịch, thêm hải quan nếu đi quốc tế. Bạn trả phần còn lại khi xe sẵn sàng đón ngựa.', 'Trước giờ xuất phát'],
-  ['fa-truck-moving', STEP_TRANSPORT, 'Tài xế check-in từng mốc, hộ tống ghi nhật ký sức khỏe ngựa, bạn xem xe trên bản đồ.', 'Theo lộ trình'],
-  ['fa-clipboard-check', 'Bàn giao và quyết toán', 'Ký biên bản giao nhận. Quản lý gửi quyết toán, bạn thanh toán rồi đánh giá chuyến đi.', 'Quyết toán trong 24 giờ'],
+  [STEP_SEND, 'Bạn', 'Chọn điểm đón, điểm giao, ngựa, dịch vụ và bảo hiểm; tải hồ sơ ngựa.', `Trước ngày đi ≥ ${MIN_LEAD_DAYS} ngày`],
+  [STEP_REVIEW, 'Quản lý, chuyên viên, điều phối viên', 'Tiếp nhận đơn; duyệt hồ sơ ngựa, chọn xe, kíp xe và lập lộ trình cùng lúc.', 'Trước khi báo giá'],
+  [STEP_DEPOSIT, 'Quản lý, bạn', 'Duyệt và gửi báo giá. Bạn đặt cọc để nhận số vận đơn.', `Báo giá giữ ${QUOTE_VALID_HOURS} giờ`],
+  [STEP_PREPARE, 'Chuyên viên, bạn', 'Làm giấy kiểm dịch, thêm hải quan nếu đi quốc tế. Bạn trả phần còn lại khi xe sẵn sàng đón ngựa.', 'Trước giờ xuất phát'],
+  [STEP_TRANSPORT, 'Tài xế, hộ tống', 'Check-in từng mốc, ghi nhật ký sức khỏe ngựa; bạn xem xe trên bản đồ.', 'Theo lộ trình'],
+  ['Bàn giao và quyết toán', 'Tài xế, quản lý, bạn', 'Ký biên bản giao nhận, quản lý gửi quyết toán; bạn thanh toán rồi đánh giá chuyến đi.', 'Quyết toán trong 24 giờ'],
 ]
-
-function useStepsLine() {
-  const ref = useRef<HTMLDivElement>(null)
-  useGSAP(() => {
-    if (reducedMotion()) return
-    gsap.fromTo(`.${s.stepsLine}`, { scaleX: 0 }, { scaleX: 1, ease: 'none', scrollTrigger: { trigger: ref.current, start: 'top 75%', end: 'bottom 60%', scrub: 0.6 } })
-  }, { scope: ref })
-  return ref
-}
 
 export function Services({ link = same }: { link?: LinkMap }) {
   return (
@@ -482,7 +473,6 @@ export const useLandingReveal = () => useScrollReveal(`.${s.reveal}`)
 
 export default function HomePage() {
   const scope = useScrollReveal(`.${s.reveal}`)
-  const stepsRef = useStepsLine()
   return (
     <div ref={scope}>
       <Hero />
@@ -495,16 +485,19 @@ export default function HomePage() {
         <div className="wrap">
           <h2 className={cx('section-title', s.reveal)}>Quy trình vận chuyển</h2>
           <p className={cx('section-sub', s.reveal)}>Từ lúc gửi đơn đến khi ngựa được bàn giao tại điểm đến.</p>
-          <div ref={stepsRef} className={s.stepsWrap}>
-          <span className={s.stepsLine} />
-          <ol className={s.steps}>
-            {PROCESS.map(([icon, title, text, time], i) => (
-              <li key={title} className={cx(s.step, s.reveal)} data-delay={i * 100}>
-                <span className={s.stepNum}><i className={`fa-solid ${icon}`} /></span>
-                <h3>{i + 1}. {title}</h3><p>{text}</p><small>{time}</small>
-              </li>
-            ))}
-          </ol>
+          <div className={cx(s.timeline, s.reveal)}>
+            <div className={s.timelineHead} aria-hidden="true"><span /><span>Bước</span><span>Phụ trách</span><span>Việc</span><span>Thời hạn</span></div>
+            <ol>
+              {PROCESS.map(([title, who, text, time], i) => (
+                <li key={title} className={s.timelineRow}>
+                  <span className={s.timelineNum}>{i + 1}</span>
+                  <h3>{title}</h3>
+                  <span className={s.timelineWho}>{who}</span>
+                  <p>{text}</p>
+                  <span className={s.timelineTime}>{time}</span>
+                </li>
+              ))}
+            </ol>
           </div>
         </div>
       </section>
