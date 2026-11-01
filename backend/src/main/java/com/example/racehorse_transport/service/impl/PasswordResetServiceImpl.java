@@ -5,13 +5,11 @@ import com.example.racehorse_transport.entity.PasswordResetOtp;
 import com.example.racehorse_transport.entity.User;
 import com.example.racehorse_transport.repository.PasswordResetOtpRepository;
 import com.example.racehorse_transport.repository.UserRepository;
+import com.example.racehorse_transport.service.OtpMailSender;
 import com.example.racehorse_transport.service.PasswordResetService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,11 +30,9 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private final UserRepository userRepository;
     private final PasswordResetOtpRepository otpRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JavaMailSender mailSender;
+    private final OtpMailSender mailSender;
     private final SecureRandom secureRandom = new SecureRandom();
 
-    @Value("${app.password-reset.from:${spring.mail.username:}}")
-    private String fromAddress;
 
     @Override
     @Transactional
@@ -51,16 +47,12 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
         String code = String.format("%06d", secureRandom.nextInt(1_000_000));
         try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            if (fromAddress != null && !fromAddress.isBlank()) message.setFrom(fromAddress);
-            message.setTo(user.get().getEmail());
-            message.setSubject("Mã OTP đặt lại mật khẩu - Vận chuyển Ngựa");
-            message.setText("Mã OTP đặt lại mật khẩu của bạn là: " + code
+            mailSender.send(user.get().getEmail(), "Mã OTP đặt lại mật khẩu - Vận chuyển Ngựa",
+                    "Mã OTP đặt lại mật khẩu của bạn là: " + code
                     + "\nMã có hiệu lực trong 10 phút. Không chia sẻ mã này với bất kỳ ai."
                     + "\nNếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.");
-            mailSender.send(message);
         } catch (MailException ex) {
-            log.error("Unable to send password-reset OTP email");
+            log.error("Unable to send password-reset OTP email: {}", ex.getMessage());
             return;
         }
 

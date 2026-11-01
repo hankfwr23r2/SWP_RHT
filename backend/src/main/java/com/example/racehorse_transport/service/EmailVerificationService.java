@@ -6,10 +6,7 @@ import com.example.racehorse_transport.repository.EmailVerificationOtpRepository
 import com.example.racehorse_transport.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,14 +28,8 @@ public class EmailVerificationService {
     private final UserRepository userRepository;
     private final EmailVerificationOtpRepository otpRepository;
     private final PasswordEncoder passwordEncoder;
-    private final JavaMailSender mailSender;
+    private final OtpMailSender mailSender;
     private final SecureRandom secureRandom = new SecureRandom();
-
-    @Value("${app.password-reset.from:}")
-    private String fromAddress;
-
-    @Value("${spring.mail.host:}")
-    private String mailHost;
 
     @Transactional
     public void sendOtp(String email) {
@@ -48,20 +39,16 @@ public class EmailVerificationService {
         if (otp.getLastSentAt() != null && otp.getLastSentAt().isAfter(now.minus(RESEND_COOLDOWN))) return;
 
         String code = String.format("%06d", secureRandom.nextInt(1_000_000));
-        if (mailHost == null || mailHost.isBlank()) {
+        if (!mailSender.isConfigured()) {
             // Máy local chưa cấu hình mail: in mã ra log để vẫn thử được luồng đăng ký
             log.warn("Chưa cấu hình mail, OTP xác thực email {} là {}", normalizedEmail, code);
         } else {
             try {
-                SimpleMailMessage message = new SimpleMailMessage();
-                if (fromAddress != null && !fromAddress.isBlank()) message.setFrom(fromAddress);
-                message.setTo(normalizedEmail);
-                message.setSubject("Mã xác thực email - Vận chuyển Ngựa");
-                message.setText("Mã xác thực email của bạn là: " + code
+                mailSender.send(normalizedEmail, "Mã xác thực email - Vận chuyển Ngựa",
+                        "Mã xác thực email của bạn là: " + code
                         + "\nMã có hiệu lực trong 10 phút. Không chia sẻ mã này với bất kỳ ai.");
-                mailSender.send(message);
             } catch (MailException ex) {
-                log.error("Unable to send email-verification OTP");
+                log.error("Unable to send email-verification OTP: {}", ex.getMessage());
                 return;
             }
         }
