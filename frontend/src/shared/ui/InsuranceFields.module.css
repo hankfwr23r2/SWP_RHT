@@ -43,6 +43,69 @@
   pointer-events: none;
 }
 
+.uploadField {
+  display: grid;
+  gap: 6px;
+}
+
+.uploadLabel {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.uploadInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+
+.uploadDrop {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 14px 16px;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: var(--radius-sm);
+  background: var(--bg-page);
+  color: var(--muted);
+  font-size: 0.86rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.uploadDrop i {
+  color: var(--orange);
+  font-size: 1.25rem;
+}
+
+.uploadDrop b {
+  color: var(--orange);
+}
+
+.uploadDrop:hover,
+.uploadInput:focus-visible + .uploadDrop {
+  border-color: var(--orange);
+  background: var(--orange-soft);
+}
+
+.uploadDisabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.uploadHint {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
 @media (max-width: 720px) {
   .insuranceOptions {
     grid-template-columns: 1fr;
