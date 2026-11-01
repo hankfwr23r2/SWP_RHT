@@ -8,6 +8,15 @@ export interface FileUploadResponse {
 }
 
 export const fileApi = {
+  capture: async (file: File, context: import('../types/capture').CaptureContext & { purpose: import('../types/capture').CapturePurpose; target: string; capturedAt: number }): Promise<import('../types/capture').CaptureEvidence> => {
+    const data = new FormData()
+    data.append('file', file)
+    data.append('bookingId', context.bookingId.replace(/^BK-/i, ''))
+    data.append('tripId', context.tripId); data.append('purpose', context.purpose)
+    data.append('target', context.target); data.append('capturedAt', String(context.capturedAt))
+    const response = await apiClient.post<ApiResponse<import('../types/capture').CaptureEvidence>>('/files/captures', data, { headers: { 'Content-Type': 'multipart/form-data' } })
+    return response.data.data
+  },
   /**
    * Tải một tệp lên hệ thống lưu trữ.
    * @param file File ảnh hoặc PDF

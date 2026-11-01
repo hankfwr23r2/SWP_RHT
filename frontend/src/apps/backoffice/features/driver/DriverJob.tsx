@@ -7,6 +7,7 @@ import { openIncidentOf, currentCheckpoint, manifestDocuments, pendingDeparture,
 import { formatDateTime } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
 import type { Booking, Checkpoint, VehicleTrip } from '@shared/types/booking'
+import { CaptureScope } from '@shared/ui/CaptureScope'
 import { CaptureField } from '@shared/ui/CaptureField'
 import { HorseDocsModal } from '../../shared/HorseDocsModal'
 import { Checklist, Panel } from '../../shared/field'
@@ -17,12 +18,12 @@ import s from '../../shared/field.module.css'
 type Run = (fn: () => Promise<unknown>, msg: string) => Promise<void>
 
 // Chụp ảnh rồi xác nhận một mốc
-function ArriveStep({ title, icon, button, hint, run, action }: { title: string; icon: string; button: string; hint: string; run: Run; action: (photo: string) => Promise<unknown> }) {
+function ArriveStep({ title, icon, button, hint, run, action, purpose, target }: { purpose: 'ARRIVE_PICKUP' | 'ARRIVE_CHECKPOINT'; target: string; title: string; icon: string; button: string; hint: string; run: Run; action: (photo: string) => Promise<unknown> }) {
   const [photo, setPhoto] = useState<string>()
   return (
     <Panel title={title} icon={icon} tone="warn">
       <p>{hint}</p>
-      <CaptureField label="Ảnh chụp tại chỗ" required value={photo} onChange={setPhoto} />
+      <CaptureField purpose={purpose} target={target} label="Ảnh chụp tại chỗ" required value={photo} onChange={setPhoto} />
       <button className={`btn btn-primary ${s.big}`} disabled={!photo} onClick={() => run(() => action(photo!), 'Đã xác nhận có mặt, khách và điều phối thấy ngay')}><i className="fa-solid fa-location-dot" /> {button}</button>
     </Panel>
   )
@@ -85,7 +86,7 @@ function PickupStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
       </Panel>
       {showDocs && <HorseDocsModal horses={horses} onClose={() => setShowDocs(false)} />}
       <Panel title="Ký biên bản giao nhận" icon="fa-file-signature">
-        <CaptureField label="Ảnh biên bản có đủ chữ ký" required value={photo} onChange={setPhoto} />
+        <CaptureField purpose="UPLOAD_HANDOVER" target="pickup" label="Ảnh biên bản có đủ chữ ký" required value={photo} onChange={setPhoto} />
         <button className="btn btn-outline" disabled={!photo || photo === pickup.handoverPhoto} onClick={() => run(() => bookingsApi.uploadHandover(b.id, t.tripId, session!.name, pickup.id, photo!), 'Đã tải ảnh biên bản')}><i className="fa-solid fa-upload" /> Tải ảnh biên bản</button>
       </Panel>
       <Panel title="Bắt đầu hành trình" icon="fa-truck-fast" tone={ready ? 'ok' : undefined}>
@@ -196,7 +197,7 @@ function DeliveryStep({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Check
           }
         }} style={{ width: 22, height: 22, accentColor: 'var(--orange)' }} /><span>Đã trả toàn bộ chứng từ gốc cho người nhận</span></label>
         <ReadMore text={'Dùng 02 bản in “Biên bản Bàn giao & Hoàn tất Chuyến đi”. Người nhận xác nhận đủ ngựa, thể trạng an toàn, đủ hồ sơ gốc. Hai bên ký, mỗi bên giữ 01 bản.'} />
-        <CaptureField label="Ảnh biên bản có đủ chữ ký" required value={photo} onChange={setPhoto} />
+        <CaptureField purpose="UPLOAD_HANDOVER" target={cp.id} label="Ảnh biên bản có đủ chữ ký" required value={photo} onChange={setPhoto} />
       <button className="btn btn-outline" disabled={!photo || photo === cp.handoverPhoto} onClick={() => run(() => bookingsApi.uploadHandover(b.id, t.tripId, session!.name, cp.id, photo!), 'Đã tải ảnh biên bản')}><i className="fa-solid fa-upload" /> Tải ảnh biên bản</button>
       </Panel>
       <button className={`btn btn-primary ${s.big}`} disabled={!ready} onClick={() => run(() => bookingsApi.completeDelivery(b.id, t.tripId, session!.name), 'Đã giao ngựa. Khách nhận thông báo')}><i className="fa-solid fa-flag-checkered" /> Hoàn tất giao ngựa</button>
@@ -216,14 +217,18 @@ function CustomsStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
   return (
     <Panel title="Hoàn tất thông quan" icon="fa-stamp" tone="warn">
       <p>Sau khi Thú y và Hải quan đóng dấu, chụp trang mộc đỏ để làm bằng chứng.</p>
-      <CaptureField label="Ảnh trang mộc đỏ kiểm dịch trên Health Cert" required value={hc} onChange={setHc} />
-      {needAta && <CaptureField label="Ảnh cuống sổ ATA Carnet có dấu Hải quan" required value={ata} onChange={setAta} />}
+      <CaptureField purpose="CUSTOMS_CLEARED" target="health_cert" label="Ảnh trang mộc đỏ kiểm dịch trên Health Cert" required value={hc} onChange={setHc} />
+      {needAta && <CaptureField purpose="CUSTOMS_CLEARED" target="ata_carnet" label="Ảnh cuống sổ ATA Carnet có dấu Hải quan" required value={ata} onChange={setAta} />}
       <button className={`btn btn-primary ${s.big}`} disabled={!hc || (needAta && !ata)} onClick={() => run(() => bookingsApi.customsCleared(b.id, t.tripId, session!.name, photos.filter(p => p !== 'n/a')), 'Đã thông quan. Khách nhận thông báo')}><i className="fa-solid fa-circle-check" /> Đã thông quan thành công</button>
     </Panel>
   )
 }
 
 export function DriverJob({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
+  return <CaptureScope bookingId={b.id} tripId={t.tripId}><DriverJobContent b={b} t={t} run={run} /></CaptureScope>
+}
+
+function DriverJobContent({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
   const inc = openIncidentOf(b, t.tripId)
   if (inc) return <IncidentPanel b={b} inc={inc} role="driver" run={run} />
   const atDelivery = !!t.run?.checkpoints.some(cp => cp.type === 'delivery' && cp.arrivedAt)
@@ -250,7 +255,7 @@ function DriverSteps({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
   )
 
   if (t.departedAt && !t.run?.startedAt) {
-    if (!pickup?.arrivedAt) return <ArriveStep key="pickup" title="Xác nhận có mặt tại điểm đón" icon="fa-location-dot" button="Đã tới điểm đón" hint={`Khi tới trang trại, chụp ảnh cổng hoặc khu chuồng. Dự kiến ${b.route ? formatDateTime(b.route.legs[0].departAt) : 'đúng hẹn'}.`} run={run} action={photo => bookingsApi.arriveAtPickup(b.id, t.tripId, session!.name, photo)} />
+    if (!pickup?.arrivedAt) return <ArriveStep purpose="ARRIVE_PICKUP" target="pickup" key="pickup" title="Xác nhận có mặt tại điểm đón" icon="fa-location-dot" button="Đã tới điểm đón" hint={`Khi tới trang trại, chụp ảnh cổng hoặc khu chuồng. Dự kiến ${b.route ? formatDateTime(b.route.legs[0].departAt) : 'đúng hẹn'}.`} run={run} action={photo => bookingsApi.arriveAtPickup(b.id, t.tripId, session!.name, photo)} />
     return <PickupStep b={b} t={t} run={run} />
   }
 
@@ -262,7 +267,7 @@ function DriverSteps({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
   )
 
   if (t.run?.startedAt && cp) {
-    const arrive = (title: string, button: string, hint: string, icon: string) => <ArriveStep key={cp.id} title={title} icon={icon} button={button} hint={hint} run={run} action={photo => bookingsApi.arriveCheckpoint(b.id, t.tripId, session!.name, cp.id, photo)} />
+    const arrive = (title: string, button: string, hint: string, icon: string) => <ArriveStep purpose="ARRIVE_CHECKPOINT" target={cp.id} key={cp.id} title={title} icon={icon} button={button} hint={hint} run={run} action={photo => bookingsApi.arriveCheckpoint(b.id, t.tripId, session!.name, cp.id, photo)} />
     if (cp.type === 'rest') {
       if (!cp.arrivedAt) return arrive(`Tới ${cp.place}`, 'Xác nhận đã tới trạm nghỉ', 'Chụp rõ biển hiệu trạm nghỉ hoặc cây xăng. Hệ thống tự gắn giờ vào ảnh.', 'fa-location-dot')
       const ok = t.run.welfare.some(w => w.checkpointId === cp.id)

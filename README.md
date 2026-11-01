@@ -120,3 +120,7 @@ docker compose up -d postgres pgadmin
 - Vite đã cấu hình proxy tự động chuyển tiếp `/api/v1` sang `http://localhost:8080/api/v1`.
 - Bản đồ nền lấy từ OpenFreeMap (dữ liệu OpenStreetMap), không cần key. Nhãn và ranh giới của OSM
   ở vùng Hoàng Sa, Trường Sa được ẩn và thay bằng nhãn riêng (`frontend/src/shared/lib/baseMapStyle.ts`).
+
+### Chụp chứng từ bằng camera thật
+
+Driver/escort mở công việc tại `http://localhost:5173/backoffice`, cấp quyền webcam và chọn **Chụp ảnh → Chụp → Dùng ảnh này**. Backend cần cấu hình Cloudinary để lưu ảnh; khi upload lỗi, ảnh không được coi là chứng từ đã lưu.

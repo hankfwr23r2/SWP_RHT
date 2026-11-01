@@ -1,5 +1,6 @@
 // Chuyển đơn từ backend (BookingResponse) sang kiểu Booking của frontend.
 // Không điền giá trị mặc định giả: trường backend chưa trả thì để trống hoặc không có.
+import { registerCaptureEvidence } from '../lib/capture'
 import type { BackendBookingResponse } from '../api/bookings'
 import type { BackendIncidentResponse } from '../api/incidents'
 import type { BookingStatus, IncidentKind } from '../config/booking-rules'
@@ -133,10 +134,12 @@ export function incidentOf(response: BackendIncidentResponse): Incident | undefi
 }
 
 export function toBooking(r: BackendBookingResponse, customer?: string): Booking {
+  registerCaptureEvidence(r.photoEvidence)
   const history: HistoryEntry[] = r.history ?? []
   const waybillAt = num(r.payment?.paidAt) ?? r.createdAt
   const b: Booking = {
     id: r.id,
+    photoEvidence: r.photoEvidence,
     customer: customer ?? r.customerName ?? r.customer,
     createdAt: r.createdAt,
     type: r.type as Booking['type'],

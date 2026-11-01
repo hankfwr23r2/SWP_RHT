@@ -822,6 +822,7 @@ public class SpecialistServiceImpl implements SpecialistService {
                 .route(payload.getRoute())
                 .gate(payload.getGate())
                 .plan(payload.getPlan())
+                .photoEvidence(com.example.racehorse_transport.service.CaptureService.visibleEvidence(payload))
                 .quote(payload.getQuote())
                 .payment(payload.getPayment())
                 .medical(payload.getMedical())

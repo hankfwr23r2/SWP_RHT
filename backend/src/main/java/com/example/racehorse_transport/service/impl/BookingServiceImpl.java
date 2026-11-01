@@ -67,6 +67,7 @@ public class BookingServiceImpl implements BookingService {
     // Hạn giữ báo giá: quá hạn chưa đặt cọc thì nhả xe và kíp xe
     public static final int QUOTE_VALID_HOURS = 24;
 
+    private final com.example.racehorse_transport.service.CaptureService captureService;
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final CustomerRepository customerRepository;
@@ -1888,6 +1889,7 @@ public class BookingServiceImpl implements BookingService {
                 .route(payload != null ? payload.getRoute() : null)
                 .gate(payload != null ? payload.getGate() : null)
                 .plan(payload != null ? payload.getPlan() : null)
+                .photoEvidence(com.example.racehorse_transport.service.CaptureService.visibleEvidence(payload))
                 .quote(payload != null ? payload.getQuote() : null)
                 .payment(payload != null ? payload.getPayment() : null)
                 .canCancel(canCancel)
@@ -2514,6 +2516,7 @@ public class BookingServiceImpl implements BookingService {
             }
         }
 
+        captureService.attachTripPhotos(payload, bookingId, tripId, action, reqPayload, username);
         savePayload(booking, payload);
         Booking updated = bookingRepository.save(booking);
         logAction("TRIP_UPDATE_" + action, updated.getId(), actor + " thực hiện " + action + " cho chuyến " + tripId);

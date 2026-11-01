@@ -66,6 +66,9 @@ class ConfirmHomeTest {
 
     private final HttpClient http = HttpClient.newHttpClient();
     private final ObjectMapper json = new ObjectMapper();
+    @Autowired
+    private com.example.racehorse_transport.repository.CaptureAssetRepository captures;
+    private String driverUsername;
     private String driverCode;
     private String driverToken;
     private Customer customer;
@@ -100,6 +103,7 @@ class ConfirmHomeTest {
         HttpResponse<String> login = post("/auth/staff/login", null,
                 "{\"username\":\"%s\",\"password\":\"Test@123\"}".formatted(driverUser.getEmail()));
         assertThat(login.statusCode()).as(login.body()).isEqualTo(200);
+        driverUsername = driverUser.getUsername();
         driverToken = json.readTree(login.body()).path("data").path("accessToken").asText();
     }
 
@@ -140,6 +144,8 @@ class ConfirmHomeTest {
     void recordedWithThePhotoOnceDeliveredAndBackInTime() throws Exception {
         Booking booking = bookingWithTrip("delivered_pending_settlement", homeReturn(epoch(-1)));
 
+        captures.save(com.example.racehorse_transport.entity.CaptureAsset.builder().url(PHOTO).bookingId(booking.getId()).tripId("TRP-1")
+                .purpose("CONFIRM_HOME").target("").capturedBy(driverUsername).capturedAt(Instant.now()).recordedAt(Instant.now()).build());
         HttpResponse<String> response = confirmHome(booking, PHOTO);
 
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);

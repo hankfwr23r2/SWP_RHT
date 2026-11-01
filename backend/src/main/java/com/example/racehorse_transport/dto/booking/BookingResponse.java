@@ -36,6 +36,7 @@ public class BookingResponse {
     private List<com.example.racehorse_transport.dto.coordinator.VehicleTripDto> trips;
     private Integer routeId;
     private Object route;
+    private java.util.Map<String, com.example.racehorse_transport.dto.file.CaptureEvidenceDto> photoEvidence;
     private String gate;
     private Object plan;
     private Object quote;

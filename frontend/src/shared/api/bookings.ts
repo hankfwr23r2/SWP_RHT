@@ -41,6 +41,7 @@ export interface CreateBookingPayload {
 }
 
 export interface BackendBookingResponse {
+  photoEvidence?: Record<string, import('../types/capture').CaptureEvidence>
   id: string
   numericId: number
   type: string

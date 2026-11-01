@@ -13,6 +13,7 @@ import com.example.racehorse_transport.repository.IncidentRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.SystemLogRepository;
 import com.example.racehorse_transport.service.IncidentService;
+import com.example.racehorse_transport.util.BookingDetailsJson;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class IncidentServiceImpl implements IncidentService {
 
+    private final com.example.racehorse_transport.service.CaptureService captureService;
     private final IncidentRepository incidentRepository;
     private final BookingRepository bookingRepository;
     private final BookingAssignmentRepository bookingAssignmentRepository;
@@ -52,6 +54,9 @@ public class IncidentServiceImpl implements IncidentService {
         }
         ensureTripBelongsToBooking(booking, request.getTripId());
 
+        BookingDetailsPayload photoPayload = BookingDetailsJson.read(objectMapper, booking);
+        captureService.attach(photoPayload, booking.getId(), request.getTripId(), "SOS", "", request.getPhotoUrl(), actor);
+        booking.setDetailsJson(writeJson(photoPayload));
         Incident incident = Incident.builder()
                 .bookingID(booking)
                 .staffID(reporter)
@@ -222,6 +227,10 @@ public class IncidentServiceImpl implements IncidentService {
         if (!List.of("customer", "carrier").contains(request.getPayer().toLowerCase(Locale.ROOT))) {
             throw new IllegalArgumentException("Bên chịu chi phí không hợp lệ.");
         }
+        BookingDetailsPayload photoPayload = BookingDetailsJson.read(objectMapper, incident.getBookingID());
+        captureService.attach(photoPayload, incident.getBookingID().getId(), incident.getTripId(), "EXPENSE", "", request.getPhoto(), actor);
+        incident.getBookingID().setDetailsJson(writeJson(photoPayload));
+        bookingRepository.save(incident.getBookingID());
         List<Map<String, Object>> expenses = readExpenses(incident.getExpensesJson());
         Map<String, Object> expense = new LinkedHashMap<>();
         expense.put("id", UUID.randomUUID().toString());

@@ -2,6 +2,7 @@
 // Hỗ trợ cả file ảnh (.jpg, .png) và file tài liệu PDF (.pdf).
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { CaptureEvidenceInfo } from './CaptureEvidenceInfo'
 import { previewOf } from '../lib/previews'
 import s from './ImageThumb.module.css'
 
@@ -36,6 +37,7 @@ export function ImageLightbox({ name, title, onClose, toolbarVariant = 'default'
 
   const content = (
     <div className={s.backdrop} role="dialog" aria-modal="true" aria-label={`Xem tài liệu ${title || name}`} onClick={e => e.target === e.currentTarget && onClose()}>
+      {!isPdf && <div style={{ position: 'absolute', bottom: 12, left: 12, background: 'rgba(0,0,0,.8)', color: 'white', padding: 10, borderRadius: 8, zIndex: 2 }}><CaptureEvidenceInfo url={name} /></div>}
       <button className={s.close} onClick={onClose} aria-label="Đóng"><i className="fa-solid fa-xmark" aria-hidden="true" /></button>
 
       {/* Header thông tin tài liệu */}
