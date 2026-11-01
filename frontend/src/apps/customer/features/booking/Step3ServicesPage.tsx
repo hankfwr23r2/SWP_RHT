@@ -9,30 +9,32 @@ import { PolicyLink } from '@shared/ui/PolicyLink'
 import type { ServiceCatalogItem } from '@shared/api/serviceCatalog'
 import { BookingShell } from './BookingShell'
 import type { horseListLoader } from '../horses/loaders'
-import { defaultConfig, isDeclinedInsurance, serviceOptionFor, useBookingDraft, type HorseConfig } from './draft'
+import { defaultConfig, serviceOptionFor, useBookingDraft, type HorseConfig } from './draft'
 import { isBookingRouteReady } from './routeValidation'
 import s from './Booking.module.css'
 
-const SERVICE_GROUPS: { key: BookingRequiredServiceCategory; label: string; icon: string }[] = [
+type CatalogCategory = Exclude<BookingRequiredServiceCategory, 'insurance'>
+
+const SERVICE_GROUPS: { key: CatalogCategory; label: string; icon: string }[] = [
   { key: 'stall', label: 'Khoang trên xe', icon: 'fa-border-all' },
   { key: 'feed', label: 'Gói thức ăn', icon: 'fa-wheat-awn' },
 ]
 
-function legacySelection(category: BookingRequiredServiceCategory, service: ServiceCatalogItem): Partial<HorseConfig> {
+function legacySelection(category: CatalogCategory, service: ServiceCatalogItem): Partial<HorseConfig> {
   if (category === 'stall') return { stall: service.serviceCode === 'STALL_SINGLE_EXTENDED' ? 'single' : 'standard' }
   if (category === 'feed') {
     const feedPackage = service.serviceCode === 'FEED_ADVANCED' ? 'advanced'
       : service.serviceCode === 'FEED_SPORT' ? 'sport' : 'basic'
     return { feedPackage }
   }
-  return { insurance: isDeclinedInsurance(service) ? 'decline' : 'buy' }
+  return {}
 }
 
-function hasExplicitServiceSelection(config: HorseConfig, category: BookingRequiredServiceCategory): boolean {
+function hasExplicitServiceSelection(config: HorseConfig, category: CatalogCategory): boolean {
   if (config.selectedServiceCodes?.[category] || config.selectedServices?.[category] !== undefined) return true
   if (category === 'stall') return config.stall !== 'standard'
   if (category === 'feed') return config.feedPackage !== 'basic'
-  return config.insurance !== ''
+  return false
 }
 
 export default function Step3ServicesPage() {
@@ -63,7 +65,7 @@ export default function Step3ServicesPage() {
       .filter(group => !serviceOptionFor(services, config[h.id], group.key))
       .map(group => `${h.name}: hiện không có dịch vụ ${group.label.toLocaleLowerCase()} đang áp dụng`))
   problems.push(...rows.flatMap(h => SERVICE_GROUPS
-    .filter(group => group.key !== 'insurance' && !hasExplicitServiceSelection(config[h.id], group.key))
+    .filter(group => !hasExplicitServiceSelection(config[h.id], group.key))
     .map(group => `${h.name}: chọn dịch vụ ${group.label.toLocaleLowerCase()}`)))
   problems.push(...rows.filter(h => !['personal', 'assistance', 'none'].includes(config[h.id].insurance))
     .map(h => `${h.name}: chọn bảo hiểm chuyến đi`))
@@ -97,7 +99,7 @@ export default function Step3ServicesPage() {
   }
 
   return (
-    <BookingShell step={3} title="Dịch vụ và bảo hiểm" subtitle="Các lựa chọn và đơn giá được cập nhật theo danh mục dịch vụ đang áp dụng.">
+    <BookingShell step={3} title="Dịch vụ và bảo hiểm" subtitle="Chọn khoang, thức ăn và nhu cầu bảo hiểm cho từng ngựa. Phí bảo hiểm bên thứ ba được gửi cùng báo giá vận chuyển.">
       {activeHorse && (
         <>
           <div className={s.horseNavigator} aria-label="Chọn ngựa để thiết lập dịch vụ">
@@ -125,15 +127,13 @@ export default function Step3ServicesPage() {
                   const chosen = hasExplicitServiceSelection(current, group.key) ? resolved : undefined
                   return (
                     <div className={s.serviceSection} key={group.key}>
-                      <div className={`${s.fieldLabel} ${group.key === 'insurance' ? 'required' : ''}`} id={`${group.key}-${horse.id}`}>
+                      <div className={s.fieldLabel} id={`${group.key}-${horse.id}`}>
                         <i className={`fa-solid ${group.icon}`} aria-hidden="true" /> {group.label}
                       </div>
                       <div className={s.optRow} role="radiogroup" aria-labelledby={`${group.key}-${horse.id}`}
-                        {...(submitted && (!chosen || (group.key === 'insurance' && !current.insurance
-                          && !current.selectedServiceCodes?.insurance && !current.selectedServices?.insurance))
+                        {...(submitted && !chosen
                           ? { 'data-problem': true } : {})}>
                         {options.length ? options.map(service => {
-                          const declinedInsurance = group.key === 'insurance' && isDeclinedInsurance(service)
                           const price = service.price
                           return (
                           <label key={service.id} className={s.opt}>
@@ -147,10 +147,8 @@ export default function Step3ServicesPage() {
                               })}
                             />
                             <b>{service.serviceName}</b>
-                            <span>{declinedInsurance
-                              ? 'Không mua bảo hiểm'
-                              : price > 0
-                                ? `+${formatVND(price)} / ${group.key === 'insurance' ? 'ngựa' : service.billingUnit === 'PER_HORSE_DAY' ? 'ngựa × ngày' : service.billingUnit === 'PER_HORSE' ? 'ngựa' : 'chuyến'}`
+                            <span>{price > 0
+                                ? `+${formatVND(price)} / ${service.billingUnit === 'PER_HORSE_DAY' ? 'ngựa × ngày' : service.billingUnit === 'PER_HORSE' ? 'ngựa' : 'chuyến'}`
                                 : 'Miễn phí / Đã gồm'}</span>
                             {service.description && <small>{service.description}</small>}
                           </label>

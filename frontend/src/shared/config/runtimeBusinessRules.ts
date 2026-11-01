@@ -72,6 +72,5 @@ export function applyRuntimeBusinessConfig(configs: Record<string, string>) {
     crewFeePerDay: readOptionalNumber(configs, 'CREW_FEE_PER_DAY'),
     marginRate: readOptionalNumber(configs, 'MARGIN_RATE'),
     clearanceFeeInternational: readOptionalNumber(configs, 'CLEARANCE_FEE_INTERNATIONAL'),
-    insuranceRate: readOptionalNumber(configs, 'INSURANCE_RATE'),
   })
 }

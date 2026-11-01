@@ -78,12 +78,10 @@ public class SystemConfigServiceImpl implements SystemConfigService {
             new Definition("MARGIN_RATE", "Biên lợi nhuận gộp", "0.05", "tỷ lệ", "PRICING",
                     "Tỷ lệ lợi nhuận định mức gộp vào đơn giá.", BigDecimal.ZERO, BigDecimal.ONE),
             new Definition("CLEARANCE_FEE_INTERNATIONAL", "Phí thủ tục hải quan quốc tế", "300000", "VNĐ/chuyến", "PRICING",
-                    "Phí làm thủ tục xuất nhập cảnh biên giới cho chuyến quốc tế.", BigDecimal.ZERO, BigDecimal.valueOf(50_000_000)),
-            new Definition("INSURANCE_RATE", "Tỷ lệ phí bảo hiểm chuyến đi", "0.02", "tỷ lệ", "PRICING",
-                    "Tỷ lệ phí bảo hiểm tính trên giá trị định giá của giống ngựa.", BigDecimal.ZERO, BigDecimal.ONE)
+                    "Phí làm thủ tục xuất nhập cảnh biên giới cho chuyến quốc tế.", BigDecimal.ZERO, BigDecimal.valueOf(50_000_000))
     );
 
-    private static final Set<String> LEGACY_BORDER_KEYS = Set.of("BORDER_OPEN_MINUTES", "BORDER_CLOSE_MINUTES");
+    private static final Set<String> RETIRED_CONFIG_KEYS = Set.of("BORDER_OPEN_MINUTES", "BORDER_CLOSE_MINUTES", "INSURANCE_RATE");
 
     private static final Map<String, Definition> DEFINITIONS_BY_KEY = DEFINITIONS.stream()
             .collect(LinkedHashMap::new, (map, definition) -> map.put(definition.key(), definition), LinkedHashMap::putAll);
@@ -96,7 +94,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         ensureDefaults();
         return repository.findAll(Sort.by(Sort.Order.asc("configGroup"), Sort.Order.asc("configKey")))
                 .stream()
-                .filter(config -> !LEGACY_BORDER_KEYS.contains(config.getConfigKey()))
+                .filter(config -> !RETIRED_CONFIG_KEYS.contains(config.getConfigKey()))
                 .map(this::toResponse)
                 .toList();
     }

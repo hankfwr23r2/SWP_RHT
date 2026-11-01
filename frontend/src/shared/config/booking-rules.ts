@@ -177,8 +177,7 @@ export const FUEL_BOT_PER_KM = 9_000 // nhiên liệu + BOT ước tính mỗi k
 export const FUEL_BUFFER_RATE = 0.05 // dự phòng trên nhiên liệu và BOT
 export let MARGIN_RATE = 0.05 // biên lợi nhuận, gộp vào đơn giá, không hiện thành dòng riêng
 export let DEMURRAGE_PER_HOUR = 400_000 // phí lưu xe chờ, chỉ khi lỗi phía khách (PRD mục 11.3: 300.000 – 500.000 đ/giờ)
-export let INSURANCE_RATE_BOOKING = 0.02 // trên giá trị bảo hiểm của giống ngựa
-// Giá trị bảo hiểm theo giống (VNĐ). Cấu hình từ CSDL HorseType hoặc mặc định theo chuẩn ngành.
+// Giá trị tham khảo của giống ngựa (VNĐ), không dùng để tính phí bảo hiểm bên thứ ba.
 export const BREED_INSURED_VALUE: Record<string, number> = {
   Thoroughbred: 1_000_000_000,
   Arabian: 800_000_000,
@@ -235,7 +234,6 @@ export function applyRuntimePricingRules(config: {
   crewFeePerDay?: number
   marginRate?: number
   clearanceFeeInternational?: number
-  insuranceRate?: number
 }) {
   if (config.classFactorLight != null && Number.isFinite(config.classFactorLight)) {
     CLASS_FACTOR.light = config.classFactorLight
@@ -254,9 +252,6 @@ export function applyRuntimePricingRules(config: {
   }
   if (config.clearanceFeeInternational != null && Number.isFinite(config.clearanceFeeInternational)) {
     CLEARANCE_FEE.international = config.clearanceFeeInternational
-  }
-  if (config.insuranceRate != null && Number.isFinite(config.insuranceRate)) {
-    INSURANCE_RATE_BOOKING = config.insuranceRate
   }
 }
 

@@ -27,6 +27,7 @@ class SystemConfigServiceImplTest {
         when(repository.findAllById(anyIterable())).thenReturn(List.of(
                 config("BORDER_OPEN_MINUTES", "450"),
                 config("BORDER_CLOSE_MINUTES", "990"),
+                config("INSURANCE_RATE", "0.02"),
                 config("DEPOSIT_RATE", "0.30")));
     }
 
@@ -46,13 +47,21 @@ class SystemConfigServiceImplTest {
     }
 
     @Test
-    void getAllHidesLegacyGlobalBorderHours() {
+    void getAllHidesRetiredRulesIncludingInsuranceRate() {
         when(repository.findAll(any(Sort.class))).thenReturn(List.of(
                 config("BORDER_OPEN_MINUTES", "450"),
                 config("BORDER_CLOSE_MINUTES", "990"),
+                config("INSURANCE_RATE", "0.02"),
                 config("DEPOSIT_RATE", "0.30")));
 
         assertThat(service.getAllConfigs()).extracting("configKey").containsExactly("DEPOSIT_RATE");
+    }
+
+    @Test
+    void legacyInsuranceRateIsNoLongerEditable() {
+        assertThatThrownBy(() -> service.updateConfig("INSURANCE_RATE",
+                UpdateSystemConfigRequest.builder().configValue("0.05").build(), "admin"))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test

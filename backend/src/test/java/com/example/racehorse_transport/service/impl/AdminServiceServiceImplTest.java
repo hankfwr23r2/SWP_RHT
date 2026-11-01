@@ -53,6 +53,18 @@ class AdminServiceServiceImplTest {
     }
 
     @Test
+    void publicCatalogExcludesLegacyInsuranceButAdminCanReadIt() {
+        Service insurance = service(9, "Mua bảo hiểm", "20000000", "ACTIVE");
+        insurance.setCategoryID(category(4, "Bảo hiểm chuyến đi"));
+        Service feed = service(3, "Gói cơ bản", "0", "ACTIVE");
+        when(serviceRepository.findByStatusIgnoreCaseOrderByIdAsc("ACTIVE")).thenReturn(List.of(feed, insurance));
+        assertThat(service.getActiveServices()).extracting(r -> r.getId()).containsExactly(3);
+        when(serviceRepository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "id")))
+                .thenReturn(List.of(feed, insurance));
+        assertThat(service.getAllServices()).extracting(r -> r.getId()).containsExactly(3, 9);
+    }
+
+    @Test
     void createService_persistsTheNewCatalogEntry() {
         when(categoryRepository.findById(2)).thenReturn(Optional.of(category));
         when(serviceRepository.findMaxId()).thenReturn(10);
@@ -90,7 +102,7 @@ class AdminServiceServiceImplTest {
                 .price(new BigDecimal("100000"))
                 .build()))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Mua/Từ chối");
+                .hasMessageContaining("bên thứ ba");
 
         verify(serviceRepository, never()).save(any(Service.class));
     }
@@ -149,7 +161,7 @@ class AdminServiceServiceImplTest {
                 .price(new BigDecimal("25000000"))
                 .build()))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Mua/Từ chối");
+                .hasMessageContaining("bên thứ ba");
 
         verify(serviceRepository, never()).save(any(Service.class));
     }
@@ -169,7 +181,7 @@ class AdminServiceServiceImplTest {
                 .price(new BigDecimal("100000"))
                 .build()))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Mua/Từ chối");
+                .hasMessageContaining("bên thứ ba");
 
         verify(serviceRepository, never()).save(any(Service.class));
     }
@@ -209,7 +221,7 @@ class AdminServiceServiceImplTest {
 
         assertThatThrownBy(() -> service.toggleServiceStatus(9))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Mua/Từ chối");
+                .hasMessageContaining("bên thứ ba");
 
         verify(serviceRepository, never()).save(any(Service.class));
     }

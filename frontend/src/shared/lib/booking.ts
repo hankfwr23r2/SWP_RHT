@@ -1,7 +1,7 @@
 // Hàm thuần của luồng đặt đơn → duyệt báo giá → đặt cọc (Flow 1). Khớp docs/PRD.md mục 2, 10, 11.
 import {
   CLEARANCE_DOC, CLEARANCE_FEE, CLASS_FACTOR, CREW_FEE_PER_DAY, DEPOSIT_RATE, DOCS_CUTOFF_HOUR, FUEL_BOT_PER_KM, FUEL_BUFFER_RATE, MARGIN_RATE,
-  BREED_INSURED_VALUE, INSURANCE_RATE_BOOKING, DELAY_ALERT_MINUTES, HOME_BASE, RETURN_EARLIEST_RATIO, MAX_CONTINUOUS_HOURS, MIN_REST_MINUTES, QUOTE_VALID_HOURS, TARGET_LEG_HOURS, SINGLE_STALL_FEE, FEED_PACKAGE, VEHICLE_CLASS, EXPENSE_CATEGORY, type BookingStatus, type ClearanceDocType, type ExpenseCategory, type IncidentAction, type IncidentKind, type Payer, type HorseDocType, type VehicleClass,
+  DELAY_ALERT_MINUTES, HOME_BASE, RETURN_EARLIEST_RATIO, MAX_CONTINUOUS_HOURS, MIN_REST_MINUTES, QUOTE_VALID_HOURS, TARGET_LEG_HOURS, SINGLE_STALL_FEE, FEED_PACKAGE, VEHICLE_CLASS, EXPENSE_CATEGORY, type BookingStatus, type ClearanceDocType, type ExpenseCategory, type IncidentAction, type IncidentKind, type Payer, type HorseDocType, type VehicleClass,
 } from '../config/booking-rules'
 import { DAY, HOUR, MIN_LEAD_DAYS } from '../config/business-rules'
 import { COUNTRIES, COUNTRY_LOCATIONS, findCatalogPlace, findGate, findTransitStation, GATES, PLACES, TRANSIT_STATIONS, type GeoPoint, type Gate, type CountryCode } from '../config/network'
@@ -196,8 +196,6 @@ export const tripDays = (km: number, international: boolean) => Math.max(1, Math
 
 // ===== Báo giá (PRD mục 2.5) =====
 const roundK = (n: number) => Math.round(n / 1000) * 1000
-const insuredValue = (breed: string) => BREED_INSURED_VALUE[breed] ?? BREED_INSURED_VALUE['Khác']
-export const insuranceFee = (breed: string) => roundK(insuredValue(breed) * INSURANCE_RATE_BOOKING)
 
 type QuoteInput = Pick<Booking, 'type' | 'origin' | 'dest' | 'gate' | 'horses'>
 
@@ -218,7 +216,7 @@ export function quoteLines(b: QuoteInput, vehicles: Pick<Vehicle, 'capacity'>[])
     )
   })
   const addServiceLine = (
-    category: 'stall' | 'feed' | 'water' | 'insurance',
+    category: 'stall' | 'feed' | 'water',
     label: string,
     legacyFee: (horse: BookingHorse) => number,
   ) => {
@@ -272,23 +270,8 @@ export function quoteLines(b: QuoteInput, vehicles: Pick<Vehicle, 'capacity'>[])
     if (feed.length) lines.push({ label: 'Gói thức ăn', detail: `${feed.length} ngựa chọn gói trả phí`, calculation: 'Cộng phí gói thức ăn đã chọn cho từng ngựa.', amount: feed.reduce((total, horse) => total + FEED_PACKAGE[horse.feedPackage ?? 'basic'].fee, 0) })
   }
   lines.push({ label: 'Thủ tục kiểm dịch và hải quan', detail: international ? 'Nhà xe làm trọn gói' : 'Nhà xe làm giấy kiểm dịch trong nước', calculation: 'Phí thủ tục trọn gói theo loại tuyến.', amount: international ? CLEARANCE_FEE.international : CLEARANCE_FEE.domestic })
-  const insured = b.horses.filter(horse => {
-    if (horse.insurance.option) return false
-    const selection = horse.selectedServices?.insurance
-    if (!selection) return horse.insurance.opted
-    const declined = selection.serviceCode === 'INSURANCE_DECLINED'
-      || selection.id === 10
-      || selection.serviceName.toLocaleLowerCase().includes('từ chối')
-    return !declined
-  })
-  if (insured.length) {
-    lines.push({
-      label: 'Bảo hiểm chuyến đi',
-      detail: `${insured.length} ngựa mua bảo hiểm`,
-      calculation: 'Cộng phí bảo hiểm theo giống của từng ngựa được chọn bảo hiểm.',
-      amount: insured.reduce((total, horse) => total + insuranceFee(horse.breed), 0),
-    })
-  }
+  // Phí bảo hiểm chỉ lấy từ báo giá bên thứ ba đã được chuyên viên xác nhận.
+  // Đơn cũ xem các dòng báo giá đã lưu, không tính lại theo giống ngựa.
   for (const horse of b.horses) {
     if (horse.insurance.option === 'assistance' && horse.insurance.reviewed && horse.insurance.premium != null) {
       lines.push({ label: 'Thu hộ bảo hiểm bên thứ ba', detail: `${horse.horseId} · ${horse.name} · ${horse.insurance.provider ?? ''}`, calculation: 'Phí bên thứ ba báo; công ty thu hộ.', amount: horse.insurance.premium })
