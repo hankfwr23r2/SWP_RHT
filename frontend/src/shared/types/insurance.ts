@@ -7,6 +7,9 @@ export interface HorseInsurance {
   premium?: number
   note?: string
   documents?: string[]
+  policyDocuments?: string[]
+  documentNames?: Record<string, string>
+  quoteValidUntil?: string
   reviewed?: boolean
   arranged?: boolean
 }
@@ -28,6 +31,7 @@ export function insuranceReviewProblem(i: Partial<HorseInsurance>, departureDay:
   if (i.option === 'assistance') {
     if (!Number.isInteger(i.premium) || (i.premium ?? 0) <= 0 || (i.premium ?? 0) > 1_000_000_000_000)
       return 'Nhập phí bên thứ ba báo: số nguyên VNĐ lớn hơn 0, tối đa 1.000 tỷ'
+    if (i.quoteValidUntil && i.quoteValidUntil < new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' })) return 'Báo giá bên thứ ba đã hết hạn'
     return undefined
   }
   if (!i.policyNumber?.trim()) return 'Nhập số hợp đồng cá nhân'
@@ -36,4 +40,14 @@ export function insuranceReviewProblem(i: Partial<HorseInsurance>, departureDay:
   if (i.validFrom > departureDay || i.validUntil < departureDay)
     return 'Bảo hiểm cá nhân phải bao phủ ngày khởi hành'
   return undefined
+}
+
+export const insuranceBeforeQuote = (status: string) => ['under_review', 'pending_commercial', 'resubmission_requested'].includes(status)
+export const insuranceAfterDeposit = (status: string) => ['waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup', 'en_route_to_pickup'].includes(status)
+export type InsuranceStage = 'quote' | 'waiting' | 'policy' | 'done'
+export function insuranceStage(status: string, horses: { insurance: Partial<HorseInsurance> }[]): InsuranceStage {
+  if (['completed', 'cancelled', 'rejected', 'quote_expired'].includes(status)) return 'done'
+  if (insuranceBeforeQuote(status)) return horses.some(h => !h.insurance.option || (h.insurance.option !== 'none' && !h.insurance.reviewed) || (h.insurance.option === 'assistance' && !!h.insurance.quoteValidUntil && h.insurance.quoteValidUntil < new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }))) ? 'quote' : 'waiting'
+  if (insuranceAfterDeposit(status)) return horses.some(h => h.insurance.option === 'assistance' && !h.insurance.arranged) ? 'policy' : 'done'
+  return status === 'awaiting_payment' ? 'waiting' : 'done'
 }

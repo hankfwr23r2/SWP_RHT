@@ -166,6 +166,48 @@ class SpecialistServiceImplTest {
         verify(bookingRepository, never()).save(any(Booking.class));
     }
 
+    @Test
+    void beforeQuoteStoresDraftWithoutContractOrReviewAndAllowsPartialPersonalDraft() {
+        Booking order = booking(1, "under_review", "pending");
+        order.setDetailsJson("{\"intake\":{\"specialist\":{\"id\":\"SP-01\"}},\"horses\":[{\"horseId\":\"H1\",\"insurance\":{\"option\":\"assistance\"}}]}");
+        when(bookingRepository.findByIdForUpdate(1)).thenReturn(Optional.of(order));
+        var request = com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("assistance")
+            .policyNumber("SHOULD-NOT-BE-SAVED").policyDocuments(List.of("https://example.test/policy.pdf")).reviewed(false).build();
+        var result = service.updateInsurance("BK-1", "H1", request, "specialist").getHorses().getFirst().getInsurance();
+        assertThat(result.getPolicyNumber()).isNull();
+        assertThat(result.getPolicyDocuments()).isNull();
+        assertThat(result.getReviewed()).isFalse();
+        order.setDetailsJson(order.getDetailsJson().replace("assistance", "personal"));
+        request.setOption("personal");
+        assertThat(service.updateInsurance("BK-1", "H1", request, "specialist").getHorses().getFirst().getInsurance().getReviewed()).isFalse();
+    }
+
+    @Test
+    void afterDepositPreservesQuoteFilesAndAcceptsSeparatePolicyDocuments() {
+        Booking order = booking(1, "clearance_in_progress", "approved");
+        order.setDetailsJson("""
+          {"intake":{"specialist":{"id":"SP-01"}},"horses":[{"horseId":"H1","insurance":{"option":"assistance","provider":"Provider","premium":1250000,"reviewed":true,"documents":["https://example.test/quote.pdf"],"note":"Quoted terms","quoteValidUntil":"2026-12-31"}}]}
+          """);
+        when(bookingRepository.findByIdForUpdate(1)).thenReturn(Optional.of(order));
+        var request = com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("assistance")
+            .documents(List.of("https://example.test/tampered.pdf")).note("Edited terms").quoteValidUntil("2027-01-01")
+            .policyDocuments(List.of("https://example.test/policy.pdf")).build();
+        var result = service.updateInsurance("BK-1", "H1", request, "specialist").getHorses().getFirst().getInsurance();
+        assertThat(result.getDocuments()).containsExactly("https://example.test/quote.pdf");
+        assertThat(result.getPolicyDocuments()).containsExactly("https://example.test/policy.pdf");
+        assertThat(result.getQuoteValidUntil()).isEqualTo("2026-12-31");
+        assertThat(result.getNote()).isEqualTo("Quoted terms");
+    }
+
+    @Test
+    void insuranceListContainsAllAssignedPhasesButExcludesOtherSpecialists() {
+        Booking assigned = booking(1, "completed", "approved");
+        Booking other = booking(2, "under_review", "pending");
+        other.setDetailsJson(other.getDetailsJson().replace("SP-01", "SP-99"));
+        when(bookingRepository.findAllByOrderByBookingDateDesc()).thenReturn(List.of(assigned, other));
+        assertThat(service.getInsuranceBookings("specialist")).extracting(r -> r.getNumericId()).containsExactly(1);
+    }
+
     private Booking booking(int id, String status, String medicalStatus) {
         return Booking.builder()
                 .id(id)

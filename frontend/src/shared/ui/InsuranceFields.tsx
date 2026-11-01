@@ -1,55 +1,60 @@
-import { useId, useState } from 'react'
+import { useState } from 'react'
 import type { HorseInsurance } from '../types/insurance'
 import { insuranceLabels } from '../types/insurance'
-import { fileApi } from '../api/files'
 import { formatVND } from '../lib/format'
+import { formatInsuranceMoney, parseInsuranceMoney } from '../lib/insuranceMoney'
+import { InsuranceDocuments } from './InsuranceDocuments'
 import s from './InsuranceFields.module.css'
 
-export function InsuranceSummary({ insurance }: { insurance?: Partial<HorseInsurance> }) {
-  if (!insurance?.option) return <span>Bảo hiểm theo dữ liệu đơn cũ; xem thông tin trong báo giá đã phát hành</span>
-  return <div><b>{insuranceLabels[insurance.option]}</b>
-    {insurance.provider && <div>Đơn vị: {insurance.provider}</div>}
-    {insurance.policyNumber && <div>Hợp đồng: {insurance.policyNumber}</div>}
-    {insurance.validFrom && <div>Thời hạn: {insurance.validFrom} – {insurance.validUntil}</div>}
-    {insurance.option === 'assistance' && <div>{insurance.reviewed && insurance.premium != null ? `Phí thu hộ: ${formatVND(insurance.premium)}` : 'Chờ báo giá bên thứ ba'}</div>}
-    {insurance.option === 'assistance' && <div>{insurance.arranged ? 'Đã xác nhận thu xếp hợp đồng' : 'Chưa xác nhận hợp đồng có hiệu lực'}</div>}
-    {insurance.note && <p>{insurance.note}</p>}
-    {insurance.documents?.map((url, index) => <div key={url}><a href={url} target="_blank" rel="noreferrer">Chứng từ {index + 1}</a></div>)}
+export function InsuranceSummary({ insurance, phase = 'all' }: { insurance?: Partial<HorseInsurance>; phase?: 'quote' | 'policy' | 'all' }) {
+  if (!insurance?.option) return <p className="text-muted">Bảo hiểm theo dữ liệu đơn cũ; xem báo giá đã phát hành.</p>
+  const i = insurance
+  if (i.option === 'none') return <p>Khách chọn không bảo hiểm.</p>
+  const showPolicy = i.option === 'personal' || phase !== 'quote'
+  return <div className={s.summary}>
+    <b>{insuranceLabels[i.option!]}</b>
+    {i.provider && <div>Đơn vị bảo hiểm: {i.provider}</div>}
+    {i.option === 'assistance' && <>
+      <div>{i.reviewed && i.premium != null ? `Phí thu hộ: ${formatVND(i.premium)}` : 'Chờ báo giá bên thứ ba'}</div>
+      {i.quoteValidUntil && <div>Hạn báo giá bảo hiểm: {i.quoteValidUntil}</div>}
+    </>}
+    {showPolicy && <>
+      {i.option === 'assistance' && <div>{i.arranged ? 'Đã xác nhận thu xếp hợp đồng' : 'Chờ thu xếp hợp đồng sau đặt cọc'}</div>}
+      {i.policyNumber && <div>Số hợp đồng / Giấy chứng nhận: {i.policyNumber}</div>}
+      {i.validFrom && <div>Hiệu lực: {i.validFrom} – {i.validUntil}</div>}
+    </>}
+    {i.note && <p>{i.note}</p>}
+    <InsuranceDocuments urls={i.documents} names={i.documentNames} label={i.option === 'personal' ? 'Chứng từ bảo hiểm cá nhân' : 'Chứng từ báo giá'} />
+    {showPolicy && i.option === 'assistance' && !!i.policyDocuments?.length && <InsuranceDocuments urls={i.policyDocuments} names={i.documentNames} label="Chứng từ hợp đồng" />}
   </div>
 }
 
 export function InsuranceInputs({ value, onChange, premium = false, disabled = false, freezeQuote = false, onBusyChange }: { value: HorseInsurance; onChange: (v: HorseInsurance) => void; premium?: boolean; disabled?: boolean; freezeQuote?: boolean; onBusyChange?: (busy: boolean) => void }) {
-  const uploadId = useId()
   const [uploading, setUploading] = useState(false)
-  const [error, setError] = useState('')
-  const field = (key: 'provider' | 'policyNumber' | 'validFrom' | 'validUntil' | 'note', label: string, type = 'text') => <label className="form-group">{label}<input className="form-control" type={type} value={value[key] ?? ''} disabled={disabled || (freezeQuote && key === 'provider')} onChange={e => onChange({ ...value, [key]: e.target.value })} /></label>
-  const uploadDisabled = uploading || disabled || (value.documents?.length ?? 0) >= 10
-  return <div>
-    {field('provider', 'Đơn vị bảo hiểm')}
-    {premium && <label className="form-group">Phí thu hộ (VNĐ)<input className="form-control" type="number" min="1" step="1" value={value.premium ?? ''} disabled={disabled} onChange={e => onChange({ ...value, premium: e.target.value === '' ? undefined : Number(e.target.value) })} /></label>}
-    {field('policyNumber', 'Số hợp đồng (bổ sung sau khi thu xếp nếu đang chờ báo giá)')}
-    {field('validFrom', 'Hiệu lực từ', 'date')}{field('validUntil', 'Hiệu lực đến', 'date')}
-    {field('note', 'Ghi chú')}
-    <div className={`form-group ${s.uploadField}`}>
-      <label className={s.uploadLabel} htmlFor={uploadId}>Chứng từ (ảnh/PDF, tối đa 10 tệp)</label>
-      <input id={uploadId} className={s.uploadInput} type="file" accept="image/*,application/pdf" disabled={uploadDisabled} aria-label="Chọn chứng từ bảo hiểm" onChange={async e => {
-        const file = e.currentTarget.files?.[0]
-        e.currentTarget.value = ''
-        if (!file) return
-        setUploading(true); onBusyChange?.(true); setError('')
-        try { const uploaded = await fileApi.upload(file, 'insurance'); onChange({ ...value, documents: [...(value.documents ?? []), uploaded.url] }) }
-        catch (err) { setError(err instanceof Error ? err.message : 'Không tải được chứng từ') }
-        finally { setUploading(false); onBusyChange?.(false) }
-      }} />
-      <label htmlFor={uploadId} className={`${s.uploadDrop} ${uploadDisabled ? s.uploadDisabled : ''}`}>
-        <i className={`fa-solid ${uploading ? 'fa-spinner' : 'fa-cloud-arrow-up'} ${uploading ? 'fa-spin' : ''}`} aria-hidden="true" />
-        <span><b>{uploading ? 'Đang tải lên' : 'Chọn tệp từ máy'}</b> {!uploading && '(Ảnh hoặc PDF)'}</span>
-      </label>
-      <span className={s.uploadHint}>{value.documents?.length ?? 0}/10 chứng từ đã tải lên</span>
+  const quoteOnly = value.option === 'assistance' && !freezeQuote
+  const policyOnly = value.option === 'assistance' && freezeQuote
+  const field = (key: 'provider' | 'policyNumber' | 'validFrom' | 'validUntil' | 'quoteValidUntil', label: string, type = 'text') => <label className="form-group">{label}<input className="form-control" type={type} disabled={freezeQuote && key === 'provider'} value={value[key] ?? ''} onChange={e => onChange({ ...value, [key]: e.target.value || undefined })} /></label>
+  return <fieldset className={s.fields} disabled={disabled || uploading}>
+    <div className={s.formGrid}>
+      {!policyOnly && field('provider', 'Đơn vị bảo hiểm')}
+      {premium && <label className="form-group">Phí thu hộ (VNĐ)<input className="form-control" inputMode="numeric" autoComplete="off" value={formatInsuranceMoney(value.premium)} onChange={e => {
+        const el = e.currentTarget
+        const digitsBefore = el.value.slice(0, el.selectionStart ?? el.value.length).replace(/[^0-9]/g, '').length
+        const next = parseInsuranceMoney(el.value); onChange({ ...value, premium: next })
+        requestAnimationFrame(() => { let digits = 0; let pos = 0; while (pos < el.value.length && digits < digitsBefore) { if (/[0-9]/.test(el.value[pos])) digits++; pos++ } el.setSelectionRange(pos, pos) })
+      }} /><small>Phí bên bảo hiểm báo; công ty thu hộ.</small></label>}
+      {quoteOnly && field('quoteValidUntil', 'Báo giá bên thứ ba có hiệu lực đến (nếu có)', 'date')}
+      {!quoteOnly && <>
+        {field('policyNumber', 'Số hợp đồng / Giấy chứng nhận bảo hiểm')}
+        {field('validFrom', 'Hiệu lực từ', 'date')}{field('validUntil', 'Hiệu lực đến', 'date')}
+      </>}
     </div>
-    {uploading && <p>Đang tải chứng từ…</p>}{error && <p className="form-error">{error}</p>}
-    {value.documents?.map((url, index) => <div key={url}><a href={url} target="_blank" rel="noreferrer">Chứng từ {index + 1}</a>{!disabled && <button type="button" className="btn btn-ghost" onClick={() => onChange({ ...value, documents: value.documents?.filter(u => u !== url) })}>Gỡ</button>}</div>)}
-  </div>
+    {!policyOnly && <label className="form-group">Ghi chú<textarea className="form-control" rows={3} value={value.note ?? ''} onChange={e => onChange({ ...value, note: e.target.value })} /></label>}
+    <InsuranceDocuments label={policyOnly ? 'Chứng từ hợp đồng' : quoteOnly ? 'Chứng từ báo giá' : 'Chứng từ bảo hiểm cá nhân'} urls={policyOnly ? value.policyDocuments : value.documents} names={value.documentNames} disabled={disabled}
+      onBusyChange={busy => { setUploading(busy); onBusyChange?.(busy) }}
+      onChange={(urls, names) => onChange({ ...value, [policyOnly ? 'policyDocuments' : 'documents']: urls, documentNames: names })} />
+    <small className="text-muted">Thay đổi và gỡ chứng từ có hiệu lực với hồ sơ khi lưu.</small>
+  </fieldset>
 }
 export function CustomerInsuranceFields({ value, option, onChange, onBusyChange }: { value?: HorseInsurance; option: string; onChange: (v: HorseInsurance) => void; onBusyChange?: (busy: boolean) => void }) {
   const [uploading, setUploading] = useState(false)

@@ -148,7 +148,7 @@ class BookingServiceImplTest {
         Instant departure = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
                 .plusDays(25).atTime(10, 0).atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant();
         BookingHorseDto horseDto = BookingHorseDto.builder()
-                .insurance(com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("none").build())
+                .insurance(com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("none").quoteValidUntil("2027-01-01").policyDocuments(List.of("https://example.test/forged.pdf")).build())
                 .horseId("HORSE-12")
                 .name("Lightning")
                 .selectedServiceCodes(Map.of(
@@ -212,6 +212,8 @@ class BookingServiceImplTest {
         assertThat(response.getHorses().get(0).getSelectedServices().get("feed").getBillingUnit())
                 .isEqualTo("PER_HORSE_DAY");
         assertThat(response.getHorses().get(0).getInsuranceOpted()).isFalse();
+        assertThat(response.getHorses().get(0).getInsurance().getPolicyDocuments()).isNull();
+        assertThat(response.getHorses().get(0).getInsurance().getQuoteValidUntil()).isNull();
 
         ArgumentCaptor<Booking> savedBooking = ArgumentCaptor.forClass(Booking.class);
         verify(bookingRepository).save(savedBooking.capture());
@@ -1067,6 +1069,28 @@ class BookingServiceImplTest {
     }
 
     @Test
+    void insuranceDeadlineCapsQuoteAndExpiredInsuranceBlocksIssuing() {
+        Booking booking = bookingOwnedByCustomer();
+        booking.setStatus("pending_commercial");
+        String today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toString();
+        String details = """
+            {"horses":[{"horseId":"H1","insurance":{"option":"assistance","provider":"Provider","premium":1250000,"reviewed":true,"quoteValidUntil":"%s"}}],"medical":{"status":"approved"},"plan":{"at":1},"trips":[{"tripId":"T1","driverId":"D1","escortId":"E1"}]}
+            """.formatted(today);
+        booking.setDetailsJson(details);
+        when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(i -> i.getArgument(0));
+        var line = com.example.racehorse_transport.dto.manager.QuoteLineDto.builder().label("Cước").amount(new java.math.BigDecimal("1000000")).build();
+        var request = com.example.racehorse_transport.dto.manager.SendQuoteRequest.builder().lines(List.of(line)).adjustments(List.of()).build();
+        service.sendQuote("BK-42", request);
+        ArgumentCaptor<Quotation> quote = ArgumentCaptor.forClass(Quotation.class);
+        verify(quotationRepository).save(quote.capture());
+        assertThat(quote.getValue().getExpiresAt()).isEqualTo(java.time.LocalDate.parse(today).plusDays(1).atStartOfDay(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant().minusMillis(1));
+        booking.setStatus("pending_commercial");
+        booking.setDetailsJson(details.replace(today, "2020-01-01"));
+        assertThatThrownBy(() -> service.sendQuote("BK-42", request)).hasMessageContaining("hết hạn");
+    }
+
+    @Test
     void sendQuoteUsesSpecialistPremiumAndSnapshotsInsuranceInsteadOfClientAmount() {
         Booking booking = bookingOwnedByCustomer();
         booking.setStatus("pending_commercial");
@@ -1271,6 +1295,26 @@ class BookingServiceImplTest {
         } finally {
             org.springframework.security.core.context.SecurityContextHolder.clearContext();
         }
+    }
+
+    @Test
+    void customerSeesFrozenQuoteButNotDraftPolicy() {
+        Booking order = bookingOwnedByCustomer();
+        order.setStatus("clearance_in_progress");
+        order.setDetailsJson("""
+          {"horses":[{"horseId":"H1","insurance":{"option":"assistance","provider":"Changed","premium":999,"policyNumber":"DRAFT","policyDocuments":["https://example.test/draft.pdf"],"arranged":false}}],"quote":{"insuranceSnapshot":[{"horseId":"H1","insurance":{"option":"assistance","provider":"Quoted","premium":1250000,"documents":["https://example.test/quote.pdf"],"reviewed":true}}]}}
+          """);
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(order));
+        var context = org.springframework.security.core.context.SecurityContextHolder.getContext();
+        context.setAuthentication(new org.springframework.security.authentication.TestingAuthenticationToken("phuc", null, "ROLE_CUSTOMER"));
+        try {
+            var insurance = service.getBookingById(42, "phuc").getHorses().getFirst().getInsurance();
+            assertThat(insurance.getProvider()).isEqualTo("Quoted");
+            assertThat(insurance.getPremium()).isEqualByComparingTo("1250000");
+            assertThat(insurance.getDocuments()).containsExactly("https://example.test/quote.pdf");
+            assertThat(insurance.getPolicyNumber()).isNull();
+            assertThat(insurance.getPolicyDocuments()).isNull();
+        } finally { org.springframework.security.core.context.SecurityContextHolder.clearContext(); }
     }
 
     @Test

@@ -1,7 +1,7 @@
 // Dữ liệu các trang nội bộ, router tải song song với file trang (xem shared/routing/pageData).
 // Service nạp động để mỗi vai trò chỉ tải phần mình dùng.
 import { loadAll, type PageLoaderContext } from '@shared/routing/pageData'
-import type { HorseProfile } from '@shared/types/booking'
+import type { Booking, HorseProfile } from '@shared/types/booking'
 
 const bookings = () => import('@shared/services/bookings')
 
@@ -77,4 +77,10 @@ export async function verifyLoader({ params }: PageLoaderContext) {
     .then(list => list.filter((h): h is HorseProfile => !!h))
   const more = await loadAll({ horses })
   return { b, horses: more.horses, errors: [...errors, ...more.errors] }
+}
+
+export async function insuranceListLoader() {
+  const [{ specialistApi }, { toBooking }] = await Promise.all([import('@shared/api/specialist'), import('@shared/services/bookingMapper')])
+  const all: Promise<Booking[]> = specialistApi.getInsuranceBookings().then(rows => rows.map(row => toBooking(row)))
+  return loadAll<{ all: Promise<Booking[]> }>({ all })
 }

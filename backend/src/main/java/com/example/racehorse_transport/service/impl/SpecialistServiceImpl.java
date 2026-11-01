@@ -49,17 +49,31 @@ public class SpecialistServiceImpl implements SpecialistService {
         boolean beforeQuote = Set.of("under_review", "pending_commercial", "resubmission_requested").contains(status);
         boolean afterDeposit = Set.of("waybill_issued", "clearance_in_progress", "clearance_done", "ready_for_pickup", "en_route_to_pickup").contains(status);
         if (!beforeQuote && !afterDeposit) throw new IllegalStateException("Không thể sửa bảo hiểm ở trạng thái hiện tại.");
-        if (existing == null && !beforeQuote) throw new IllegalStateException("Không thay đổi bảo hiểm của báo giá cũ.");
-        if (existing != null) request.setOption(existing.getOption());
+        if ((existing == null || existing.getOption() == null) && !beforeQuote) throw new IllegalStateException("Không thay đổi bảo hiểm của báo giá cũ.");
+        if (existing != null && existing.getOption() != null) request.setOption(existing.getOption());
         if (!beforeQuote) {
             // Phí, đơn vị và chứng từ báo giá đã chốt; chỉ bổ sung thông tin hợp đồng.
             request.setProvider(existing.getProvider()); request.setPremium(existing.getPremium());
             request.setReviewed(existing.getReviewed());
+            if ("assistance".equals(existing.getOption())) {
+                request.setDocuments(existing.getDocuments());
+                request.setQuoteValidUntil(existing.getQuoteValidUntil());
+                request.setNote(existing.getNote());
+            }
         }
-        HorseInsurancePolicy.validateDeclaration(request);
+        if (beforeQuote && "assistance".equals(request.getOption())) {
+            request.setPolicyNumber(null); request.setValidFrom(null); request.setValidUntil(null);
+            request.setPolicyDocuments(null);
+        }
+        if (beforeQuote && !Boolean.TRUE.equals(request.getReviewed())) HorseInsurancePolicy.validateDraft(request);
+        else HorseInsurancePolicy.validateDeclaration(request);
         if (Boolean.TRUE.equals(request.getReviewed()) && "assistance".equals(request.getOption())
                 && (HorseInsurancePolicy.blank(request.getProvider()) || request.getPremium() == null || request.getPremium().signum() <= 0))
             throw new IllegalArgumentException("Nhập đơn vị cung cấp và phí bảo hiểm lớn hơn 0.");
+        if (beforeQuote && Boolean.TRUE.equals(request.getReviewed()) && "assistance".equals(request.getOption())
+                && !HorseInsurancePolicy.blank(request.getQuoteValidUntil())
+                && java.time.LocalDate.parse(request.getQuoteValidUntil()).isBefore(java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))))
+            throw new IllegalArgumentException("Báo giá bảo hiểm đã hết hạn.");
         if ("personal".equals(request.getOption()) && Boolean.TRUE.equals(request.getReviewed()) && booking.getDepartureDate() != null) {
             var date = booking.getDepartureDate().atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDate();
             if (date.isBefore(java.time.LocalDate.parse(request.getValidFrom())) || date.isAfter(java.time.LocalDate.parse(request.getValidUntil())))
@@ -69,6 +83,11 @@ public class SpecialistServiceImpl implements SpecialistService {
             if (!afterDeposit || HorseInsurancePolicy.blank(request.getPolicyNumber()))
                 throw new IllegalArgumentException("Chỉ xác nhận hợp đồng sau đặt cọc, cần số hợp đồng.");
             HorseInsurancePolicy.validateDates(request);
+            if (booking.getDepartureDate() != null) {
+                var day = booking.getDepartureDate().atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDate();
+                if (day.isBefore(java.time.LocalDate.parse(request.getValidFrom())) || day.isAfter(java.time.LocalDate.parse(request.getValidUntil())))
+                    throw new IllegalArgumentException("Hợp đồng phải bao phủ ngày khởi hành.");
+            }
         }
         if (beforeQuote) request.setArranged(false);
         appendHistory(payload, username, "Cập nhật hồ sơ bảo hiểm cho " + horse.getName());
@@ -81,6 +100,15 @@ public class SpecialistServiceImpl implements SpecialistService {
     // =========================================================================
     // FLOW 1: DUYỆT HỒ SƠ NGỰA (VERIFICATION)
     // =========================================================================
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<BookingResponse> getInsuranceBookings(String username) {
+        Staff actor = findStaff(username);
+        return bookingRepository.findAllByOrderByBookingDateDesc().stream()
+            .filter(b -> isPrivileged(actor) || isAssignedToSpecialist(actor, b))
+            .map(this::mapToBookingResponse).toList();
+    }
 
     @Override
     @Transactional(readOnly = true)

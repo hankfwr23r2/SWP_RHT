@@ -1,6 +1,6 @@
 // Specialist: duyệt hồ sơ ngựa một đơn. Đạt thì xác nhận; sai sót thì yêu cầu khách bổ sung (bắt buộc ghi lý do).
 import { useState } from 'react'
-import { InsurancePanel } from '../../../shared/InsurancePanel'
+import { InsuranceLink } from '../../../shared/InsurancePanel'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { FEED_PACKAGE, WATER_PLAN, HORSE_DOC, HORSE_DOC_TYPES, type HorseDocType } from '@shared/config/booking-rules'
@@ -329,7 +329,7 @@ export default function VerifyPage() {
           <div className={s.main}>
             {b.sentBack?.to === 'specialist' && <div className="alert alert-warning"><i className="fa-solid fa-rotate-left" /><div><b>Quản lý trả lại đơn này:</b> {b.sentBack.reason} <span className="sub-text">({b.sentBack.by}, {formatDateTime(b.sentBack.at)})</span></div></div>}
             <div className="card"><div className="card-header"><h3><i className="fa-solid fa-route" /> Chuyến đi</h3></div><TripSummary b={b} placeLabel={vietnamesePlaceName} /></div>
-            <InsurancePanel b={b} onDone={reload} />
+            <InsuranceLink b={b} />
             <Review key={b.medical?.status} b={b} horses={horses} onDone={reload} />
           </div>
           <aside className={s.side}>

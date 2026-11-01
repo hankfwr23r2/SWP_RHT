@@ -14,6 +14,9 @@ public class HorseInsuranceDto {
     private BigDecimal premium;
     private String note;
     private List<String> documents;
+    private java.util.Map<String, String> documentNames;
+    private List<String> policyDocuments;
+    private String quoteValidUntil;
     private Boolean reviewed;
     private Boolean arranged;
 }

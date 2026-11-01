@@ -1,3 +1,4 @@
+import { insuranceReviewProblem } from '@shared/types/insurance'
 // Manager: duyệt báo giá cuối sau khi Chuyên viên và Điều phối viên đều đạt (PRD mục 2.5).
 // Manager nhìn số xe Điều phối viên đã chọn để chọn tài xế và hộ tống cho từng xe. Báo giá do hệ thống tính và gửi cho khách.
 import { useEffect, useState } from 'react'
@@ -78,7 +79,10 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
     if (e && ec) out.push(`Hộ tống ${e.name} ${why(ec)}.`)
     return out
   })
-  const insuranceErrors = b.horses.filter(h => !h.insurance.option || (h.insurance.option !== 'none' && !h.insurance.reviewed)).map(h => `Chưa hoàn tất bảo hiểm: ${h.name}`)
+  const insuranceErrors = b.horses.flatMap(h => {
+    const problem = insuranceReviewProblem(h.insurance, new Date(b.departAt).toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }))
+    return problem || (h.insurance.option !== 'none' && !h.insurance.reviewed) ? [`${h.name}: ${problem ?? 'Chưa xác nhận bảo hiểm'}`] : []
+  })
   crewErrors.push(...insuranceErrors)
   const [busy, setBusy] = useState(false)
   const preview = draft && finalizeQuote(draft.lines, [], Date.now(), session!.name)
@@ -97,7 +101,7 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
   }
   const send = async () => {
     setBusy(true)
-    try { await bookingsApi.assignCrew(b.id, session!.name, trips.map(t => ({ tripId: t.tripId, ...picks[t.tripId] }))); await bookingsApi.sendQuote(b.id, session!.name, []); toast(`Đã gửi báo giá ${b.id} cho khách, hiệu lực ${QUOTE_VALID_HOURS} giờ`); onDone() }
+    try { await bookingsApi.assignCrew(b.id, session!.name, trips.map(t => ({ tripId: t.tripId, ...picks[t.tripId] }))); await bookingsApi.sendQuote(b.id, session!.name, []); toast(`Đã gửi báo giá ${b.id} cho khách, hạn đặt cọc được ghi trên báo giá`); onDone() }
     catch (e) { toast(e instanceof Error ? e.message : 'Không gửi được', 'error'); setBusy(false) }
   }
 
@@ -256,7 +260,7 @@ export default function ApprovalsPage() {
   ]
   return (
     <>
-      <ListPage title="Duyệt báo giá" subtitle={`Duyệt để gửi khách, khách có ${QUOTE_VALID_HOURS} giờ đặt cọc ${(DEPOSIT_RATE * 100).toLocaleString('vi-VN')}%.`} tabs={[['todo', 'Chờ duyệt báo giá', todo.length], ['sent', 'Đã gửi báo giá', sent.length]]} tab={tab} onTab={setTab} hot={['todo']}
+      <ListPage title="Duyệt báo giá" subtitle={`Duyệt để gửi khách, hạn đặt cọc tối đa ${QUOTE_VALID_HOURS} giờ, giới hạn theo báo giá bảo hiểm; cọc ${(DEPOSIT_RATE * 100).toLocaleString('vi-VN')}%.`} tabs={[['todo', 'Chờ duyệt báo giá', todo.length], ['sent', 'Đã gửi báo giá', sent.length]]} tab={tab} onTab={setTab} hot={['todo']}
         rows={tab === 'todo' ? todo : sent} rowKey={b => b.id} columns={columns} haystack={b => [b.id, b.customer, b.origin.name, b.dest.name]} dateOf={b => b.departAt} loaded={!!all}
         emptyText={tab === 'todo' ? 'Không có đơn nào chờ duyệt báo giá.' : 'Chưa gửi báo giá nào.'}
         summary={r => (tab === 'sent' ? <>Tổng báo giá: <b>{formatVND(r.reduce((n, b) => n + (b.quote?.total ?? 0), 0))}</b></> : null)} />
