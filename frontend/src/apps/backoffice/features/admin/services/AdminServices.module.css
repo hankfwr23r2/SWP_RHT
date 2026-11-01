@@ -40,6 +40,28 @@
   font-weight: 500;
 }
 
+.categoryFilterGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.categoryFilterLabel {
+  flex: none;
+  font-size: 0.85rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.categoryFilter {
+  flex: 0 1 240px;
+  width: 240px;
+  min-width: 220px;
+  height: 36px;
+  font-size: 0.85rem;
+}
+
 .price {
   font-weight: 600;
   color: var(--navy);
@@ -62,5 +84,11 @@
 @media (max-width: 700px) {
   .form {
     grid-template-columns: 1fr;
+  }
+
+  .categoryFilter {
+    flex: 1 1 180px;
+    width: auto;
+    min-width: 0;
   }
 }

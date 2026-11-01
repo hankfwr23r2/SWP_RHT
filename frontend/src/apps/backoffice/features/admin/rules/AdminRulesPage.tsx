@@ -318,7 +318,7 @@ export default function AdminRulesPage() {
           )}
           <p className={s.note}>
             <i className="fa-solid fa-circle-info" />
-            Thay đổi quy tắc chỉ tác động đến các nghiệp vụ mới; báo giá đã phát hành giữ nguyên hạn và số tiền đã ghi nhận.
+            Thay đổi quy tắc chỉ tác động đến các nghiệp vụ mới. Báo giá đã phát hành giữ nguyên hạn và số tiền đã ghi nhận.
           </p>
         </section>
       </div>

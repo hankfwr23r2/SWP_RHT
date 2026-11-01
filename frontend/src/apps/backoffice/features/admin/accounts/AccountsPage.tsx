@@ -195,7 +195,7 @@ export default function AccountsPage() {
     <>
       <ListPage
         title="Tất cả tài khoản"
-        subtitle="Tạo tài khoản nhân viên, khóa hoặc mở khóa, đặt lại mật khẩu. Khách hàng tự đăng ký; bạn chỉ khóa hoặc mở khóa được."
+        subtitle="Tạo tài khoản nhân viên, khóa hoặc mở khóa, đặt lại mật khẩu. Khách hàng tự đăng ký. Bạn chỉ khóa hoặc mở khóa được."
         rows={rows} rowKey={a => a.id} columns={columns}
         haystack={a => [a.id, a.name, a.email, a.phone, ROLE_LABEL[a.role]]}
         loaded={!!all} emptyText="Không có tài khoản nào khớp bộ lọc."
