@@ -3,6 +3,7 @@ import type { HorseInsurance } from '../types/insurance'
 import { insuranceLabels } from '../types/insurance'
 import { fileApi } from '../api/files'
 import { formatVND } from '../lib/format'
+import s from './InsuranceFields.module.css'
 
 export function InsuranceSummary({ insurance }: { insurance?: Partial<HorseInsurance> }) {
   if (!insurance?.option) return <span>Bảo hiểm theo dữ liệu đơn cũ; xem thông tin trong báo giá đã phát hành</span>
@@ -40,8 +41,17 @@ export function InsuranceInputs({ value, onChange, premium = false, disabled = f
 }
 export function CustomerInsuranceFields({ value, option, onChange, onBusyChange }: { value?: HorseInsurance; option: string; onChange: (v: HorseInsurance) => void; onBusyChange?: (busy: boolean) => void }) {
   const [uploading, setUploading] = useState(false)
-  return <section><h4>Bảo hiểm chuyến đi</h4><p>Công ty hỗ trợ liên hệ và thu hộ phí bảo hiểm do bên thứ ba cung cấp.</p>
-    {Object.entries(insuranceLabels).map(([key, label]) => <label key={key} style={{ display: 'block', marginBottom: 12 }}><input type="radio" name="insurance-option" disabled={uploading} checked={option === key} onChange={() => onChange({ option: key as HorseInsurance['option'] })} /> {label}</label>)}
+  return <section className={s.customerInsurance}>
+    <h4 id="insurance-option-heading">Bảo hiểm chuyến đi</h4>
+    <p>Công ty hỗ trợ liên hệ và thu hộ phí bảo hiểm do bên thứ ba cung cấp.</p>
+    <div className={s.insuranceOptions} role="radiogroup" aria-labelledby="insurance-option-heading">
+      {Object.entries(insuranceLabels).map(([key, label]) => (
+        <label key={key} className={s.insuranceOption}>
+          <input type="radio" name="insurance-option" disabled={uploading} checked={option === key} onChange={() => onChange({ option: key as HorseInsurance['option'] })} />
+          <span>{label}</span>
+        </label>
+      ))}
+    </div>
     {option === 'personal' && value && <InsuranceInputs value={value} onChange={onChange} onBusyChange={busy => { setUploading(busy); onBusyChange?.(busy) }} />}
     {option === 'assistance' && <p>Phí và chứng từ được gửi cùng báo giá vận chuyển. Chưa có mức phí tại bước này.</p>}
   </section>
