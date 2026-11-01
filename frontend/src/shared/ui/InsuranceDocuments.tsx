@@ -4,22 +4,15 @@ import { fileApi } from '../api/files'
 import { ImageLightbox, ImageThumb } from './ImageThumb'
 import s from './InsuranceFields.module.css'
 
-export function InsuranceDocuments({ urls: suppliedUrls, names: suppliedNames, label, disabled = false, onChange, onBusyChange }: {
-  urls?: string[] | null; names?: Record<string, string> | null; label: string; disabled?: boolean
+export function InsuranceDocuments({ urls = [], names = {}, label, disabled = false, onChange, onBusyChange }: {
+  urls?: string[]; names?: Record<string, string>; label: string; disabled?: boolean
   onChange?: (urls: string[], names: Record<string, string>) => void; onBusyChange?: (busy: boolean) => void
 }) {
-  // API JSON có thể trả null cho các trường chưa được khai báo trong đơn cũ.
-  const urls = suppliedUrls ?? []
-  const names = suppliedNames ?? {}
   const id = useId()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [viewing, setViewing] = useState<string>()
-  const nameOf = (url: string) => {
-    if (names[url]) return names[url]
-    const fallback = url.split('/').pop()?.split('?')[0] || 'Chứng từ'
-    try { return decodeURIComponent(fallback) } catch { return fallback }
-  }
+  const nameOf = (url: string) => names[url] || decodeURIComponent(url.split('/').pop()?.split('?')[0] || 'Chứng từ')
   return <div className={s.documents}>
     <div className={s.sectionTitle}><label className={s.uploadLabel} htmlFor={onChange ? id : undefined}>{label}</label> <small>({urls.length}/10)</small></div>
     {onChange && <>

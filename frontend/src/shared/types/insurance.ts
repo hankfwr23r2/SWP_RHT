@@ -6,9 +6,9 @@ export interface HorseInsurance {
   validUntil?: string
   premium?: number
   note?: string
-  documents?: string[] | null
-  policyDocuments?: string[] | null
-  documentNames?: Record<string, string> | null
+  documents?: string[]
+  policyDocuments?: string[]
+  documentNames?: Record<string, string>
   quoteValidUntil?: string
   reviewed?: boolean
   arranged?: boolean
