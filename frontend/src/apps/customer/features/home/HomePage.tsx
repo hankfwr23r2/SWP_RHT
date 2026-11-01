@@ -341,7 +341,7 @@ function Journey({ country }: { country: CountryCode }) {
 
   const [a, b, c] = stops
   return (
-    <div ref={root} className={s.journey} aria-label={`Tuyến mẫu ${a.name} – ${b.name} – ${c.name}`}>
+    <div ref={root} className={s.journey} role="group" aria-label={`Tuyến mẫu ${a.name} – ${b.name} – ${c.name}`}>
       <p className={s.journeySummary}>{summary}</p>
       <svg viewBox="0 0 900 200" aria-hidden="true">
         <path className={s.journeyTrack} d={d} />
