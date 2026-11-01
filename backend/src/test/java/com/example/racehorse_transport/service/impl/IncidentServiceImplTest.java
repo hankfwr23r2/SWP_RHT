@@ -23,6 +23,7 @@ class IncidentServiceImplTest {
     private final IncidentRepository incidentRepository = mock(IncidentRepository.class);
 
     private final IncidentServiceImpl service = new IncidentServiceImpl(
+            mock(com.example.racehorse_transport.service.CaptureService.class),
             incidentRepository,
             mock(BookingRepository.class),
             mock(BookingAssignmentRepository.class),

@@ -263,6 +263,7 @@ export interface Rating { stars: number; comment?: string; at: number; trip?: nu
 export interface HistoryEntry { time: number; actor: string; text: string }
 
 export interface Booking {
+  photoEvidence?: Record<string, import('./capture').CaptureEvidence>
   id: string // ORD-2026-NNNN
   customer: string
   createdAt: number

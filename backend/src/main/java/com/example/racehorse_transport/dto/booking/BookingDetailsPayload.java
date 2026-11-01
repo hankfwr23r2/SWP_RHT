@@ -21,6 +21,7 @@ public class BookingDetailsPayload {
     private List<VehicleTripDto> trips;
     private Object route;
     private Object plan;
+    private java.util.Map<String, com.example.racehorse_transport.dto.file.CaptureEvidenceDto> photoEvidence;
     private String gate;
     private Object quote;
     private Object payment;

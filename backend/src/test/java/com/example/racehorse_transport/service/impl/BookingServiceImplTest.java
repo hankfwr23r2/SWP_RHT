@@ -95,6 +95,7 @@ class BookingServiceImplTest {
     @BeforeEach
     void setUp() {
         service = new BookingServiceImpl(
+                mock(com.example.racehorse_transport.service.CaptureService.class),
                 bookingRepository,
                 userRepository,
                 customerRepository,

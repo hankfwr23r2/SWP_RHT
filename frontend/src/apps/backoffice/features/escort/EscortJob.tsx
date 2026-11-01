@@ -6,6 +6,7 @@ import { openIncidentOf, currentCheckpoint } from '@shared/lib/booking'
 import { formatDateTime } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
 import type { Booking, BookingHorse, Checkpoint, VehicleTrip } from '@shared/types/booking'
+import { CaptureScope } from '@shared/ui/CaptureScope'
 import { CaptureField } from '@shared/ui/CaptureField'
 import { Panel } from '../../shared/field'
 import { HomeReturnPanel } from '../../shared/HomeReturnPanel'
@@ -139,7 +140,7 @@ function UnfitHorseModal({
           />
         </div>
 
-        <CaptureField label="Ảnh chụp thể trạng cá thể ngựa tại chỗ" required value={photo} onChange={setPhoto} />
+        <CaptureField purpose="EXCLUDE_UNFIT_HORSE" target={horse.horseId} label="Ảnh chụp thể trạng cá thể ngựa tại chỗ" required value={photo} onChange={setPhoto} />
       </div>
     </Modal>
   )
@@ -266,7 +267,7 @@ function WelfareForm({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Checkp
       </div>
       <label style={{ display: 'flex', gap: 12, alignItems: 'center', minHeight: 48 }}><input type="checkbox" checked={water} onChange={e => setWater(e.target.checked)} style={{ width: 22, height: 22, accentColor: 'var(--orange)' }} />Đã cấp nước sạch</label>
       <label style={{ display: 'flex', gap: 12, alignItems: 'center', minHeight: 48 }}><input type="checkbox" checked={hay} onChange={e => setHay(e.target.checked)} style={{ width: 22, height: 22, accentColor: 'var(--orange)' }} />Đã bổ sung cỏ khô</label>
-      <CaptureField label="Ảnh ngựa trong khoang" required value={photo} onChange={setPhoto} />
+      <CaptureField purpose="SUBMIT_WELFARE" target={cp.id} label="Ảnh ngựa trong khoang" required value={photo} onChange={setPhoto} />
       <div className="form-group" style={{ margin: 0 }}><label htmlFor="wnote">Ghi chú</label><input id="wnote" className="form-control" style={{ minHeight: 48 }} value={note} onChange={e => setNote(e.target.value)} placeholder="VD: ngựa đổ mồ hôi nhẹ, đã xịt nước" /></div>
       <button className={`btn btn-primary ${s.big}`} disabled={!valid} onClick={() => run(submit, 'Đã gửi nhật ký an sinh')}><i className="fa-solid fa-paper-plane" /> Gửi nhật ký an sinh</button>
     </Panel>
@@ -274,6 +275,10 @@ function WelfareForm({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Checkp
 }
 
 export function EscortJob({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
+  return <CaptureScope bookingId={b.id} tripId={t.tripId}><EscortJobContent b={b} t={t} run={run} /></CaptureScope>
+}
+
+function EscortJobContent({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
   const inc = openIncidentOf(b, t.tripId)
   if (inc) return <IncidentPanel b={b} inc={inc} role="escort" run={run} />
   return (

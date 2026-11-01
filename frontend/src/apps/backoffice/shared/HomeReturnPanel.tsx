@@ -30,7 +30,7 @@ export function HomeReturnPanel({ b, t, role, run }: { b: Booking; t: VehicleTri
       {late && <div className="alert alert-warning" style={{ marginBottom: 12 }}><i className="fa-solid fa-triangle-exclamation" /><div><b>Về trễ so với giờ dự kiến.</b> Điều phối viên và Quản lý đang thấy cờ này.</div></div>}
       {role === 'driver' ? (
         <>
-          <CaptureField label="Ảnh chụp tại trụ sở" required value={photo} onChange={setPhoto} />
+          <CaptureField purpose="CONFIRM_HOME" label="Ảnh chụp tại trụ sở" required value={photo} onChange={setPhoto} />
           <button className={`btn btn-primary ${s.big}`} disabled={!photo || wait > 0} onClick={() => run(() => bookingsApi.confirmHome(b.id, t.tripId, session!.name, photo!), 'Đã xác nhận về trụ sở, bạn sẵn sàng nhận chuyến mới')}><i className="fa-solid fa-house-circle-check" /> Đã về trụ sở</button>
           {wait > 0 && <p className={s.hint ?? ''} style={{ marginTop: 8, fontSize: '0.85rem' }}>Nút mở sau {formatDateTime(h.earliestAt)} (còn {left}).</p>}
         </>

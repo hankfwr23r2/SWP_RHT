@@ -1,69 +1,34 @@
 import { useId, useState } from 'react'
 import { fileApi } from '../api/files'
-import { captureName, captureTime } from '../lib/capture'
-import { rememberPreview } from '../lib/previews'
+import { registerCaptureEvidence } from '../lib/capture'
 import { ImageLightbox, ImageThumb } from './ImageThumb'
-import { formatClock } from '../lib/format'
+import { CaptureEvidenceInfo } from './CaptureEvidenceInfo'
+import { CameraCapture } from './CameraCapture'
+import { useCaptureScope } from '../lib/captureScope'
+import type { CapturePurpose } from '../types/capture'
 import s from './CaptureField.module.css'
 
-interface Props { label: string; value?: string; onChange: (name: string | undefined) => void; hint?: string; required?: boolean; invalid?: boolean; disabled?: boolean }
-
-// Chụp ảnh trực tiếp bằng camera hoặc chọn ảnh gửi lên hệ thống.
-export function CaptureField({ label, value, onChange, hint, required, invalid, disabled }: Props) {
+interface Props { label: string; purpose: CapturePurpose; target?: string; value?: string; onChange: (name: string | undefined) => void; hint?: string; required?: boolean; invalid?: boolean; disabled?: boolean }
+export function CaptureField({ label, purpose, target = '', value, onChange, hint, required, invalid, disabled }: Props) {
   const id = useId()
-  const [uploading, setUploading] = useState(false)
+  const scope = useCaptureScope()
+  const [camera, setCamera] = useState(false)
   const [viewing, setViewing] = useState(false)
-  const at = captureTime(value)
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0]
-    if (!f) return
-    e.target.value = ''
-    setUploading(true)
-    try {
-      const res = await fileApi.upload(f, 'documents')
-      if (res?.url) {
-        rememberPreview(res.url, f)
-        onChange(res.url)
-      } else {
-        throw new Error('Không nhận được URL ảnh từ server.')
-      }
-    } catch {
-      // Fallback khi offline hoặc môi trường dev chưa kết nối được máy chủ lưu trữ.
-      const n = captureName()
-      rememberPreview(n, f)
-      onChange(n)
-    } finally {
-      setUploading(false)
-    }
-  }
-
-  return (
-    <div className={s.field}>
-      <div className={`${s.label} ${required ? s.required : ''}`} id={`${id}-l`}>{label}</div>
-      <input id={id} className={s.input} type="file" accept="image/*" capture="environment" disabled={disabled || uploading} aria-labelledby={`${id}-l`}
-        onChange={handleFileChange} />
-      {uploading ? (
-        <div className={s.shot} style={{ cursor: 'wait', opacity: 0.8 }}>
-          <i className="fa-solid fa-spinner fa-spin" aria-hidden="true" /> Đang lưu ảnh…
-        </div>
-      ) : value ? (
-        <div className={s.done}>
-          <ImageThumb name={value} size={40} title={label} />
-          <span className={s.text}>{at ? <>Đã chụp lúc <b>{formatClock(at)}</b></> : 'Đã tải ảnh lên hệ thống'}</span>
-          <button type="button" className={s.viewBtn} onClick={() => setViewing(true)} title={`Xem lại ${label}`} aria-label={`Xem lại ${label}`}>
-            <i className="fa-regular fa-eye" aria-hidden="true" /> Xem lại
-          </button>
-          {!disabled && <label htmlFor={id} className={s.retake}>Chụp lại</label>}
-          {viewing && <ImageLightbox name={value} title={label} onClose={() => setViewing(false)} />}
-        </div>
-      ) : (
-        <label htmlFor={id} className={`${s.shot} ${invalid ? s.invalid : ''} ${disabled ? s.off : ''}`}>
-          <i className="fa-solid fa-camera" aria-hidden="true" /> Chụp ảnh
-        </label>
-      )}
-      {hint && <div className="form-hint">{hint}</div>}
-    </div>
-  )
+  const open = () => { if (!disabled && scope) { scope.setBusy(true); setCamera(true) } }
+  const close = () => { scope?.setBusy(false); setCamera(false) }
+  return <div className={s.field}>
+    <div className={`${s.label} ${required ? s.required : ''}`} id={`${id}-l`}>{label}</div>
+    {value ? <div className={s.done}>
+      <ImageThumb name={value} size={40} title={label} /><div className={s.text}><CaptureEvidenceInfo url={value} /></div>
+      <button type="button" className={s.viewBtn} onClick={() => setViewing(true)}>Xem lại</button>
+      {!disabled && <button type="button" className={s.retake} onClick={open} disabled={!scope}>Chụp lại</button>}
+    </div> : <button type="button" aria-labelledby={`${id}-l`} className={`${s.shot} ${invalid ? s.invalid : ''}`} disabled={disabled || !scope} onClick={open}><i className="fa-solid fa-camera" aria-hidden="true" /> Chụp ảnh</button>}
+    {viewing && value && <ImageLightbox name={value} title={label} onClose={() => setViewing(false)} />}
+    {camera && scope && <CameraCapture label={label} onClose={close} onUse={async (file, capturedAt) => {
+      const saved = await fileApi.capture(file, { bookingId: scope.bookingId, tripId: scope.tripId, purpose, target, capturedAt })
+      if (!saved.url) throw new Error('Máy chủ chưa lưu ảnh. Vui lòng thử lại.')
+      registerCaptureEvidence({ [saved.url]: saved }); onChange(saved.url)
+    }} />}
+    {hint && <div className="form-hint">{hint}</div>}
+  </div>
 }
-
