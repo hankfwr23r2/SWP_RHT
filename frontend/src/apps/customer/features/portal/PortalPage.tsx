@@ -16,7 +16,7 @@ import s from './PortalPage.module.css'
 
 const STEP_TEXT = [
   'Chọn ngựa từ Hồ sơ ngựa, khai tuyến đường và dịch vụ.',
-  'Kiểm dịch viên và Điều phối viên thẩm định song song.',
+  'Chuyên viên và Điều phối viên thẩm định song song.',
   `Nhận báo giá chính thức, có hiệu lực ${QUOTE_VALID_HOURS} giờ.`,
   `Đặt cọc ${DEPOSIT_RATE * 100}% để nhận vận đơn. Nhà xe làm giấy kiểm dịch và hải quan, bạn theo dõi tiến độ.`,
   'Ngày bốc ngựa: trả số dư còn lại, giao bản gốc hồ sơ ngựa cho tài xế.',

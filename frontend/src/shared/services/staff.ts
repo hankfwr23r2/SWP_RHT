@@ -1,4 +1,4 @@
-// Service nhân sự nội bộ (kiểm dịch viên, điều phối viên), gọi Backend Spring Boot (/fleet/crew). Không giữ dữ liệu ở máy khách.
+// Service nhân sự nội bộ (chuyên viên, điều phối viên), gọi Backend Spring Boot (/fleet/crew). Không giữ dữ liệu ở máy khách.
 import { backendFleetApi } from '../api/fleet'
 import type { StaffMember } from '../types/staff'
 

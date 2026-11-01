@@ -1,4 +1,4 @@
-// Manager chọn Kiểm dịch viên / Điều phối viên giao việc: popup dạng thẻ giống chọn xe, tài xế của Điều phối viên.
+// Manager chọn Chuyên viên / Điều phối viên giao việc: popup dạng thẻ giống chọn xe, tài xế của Điều phối viên.
 // Chỉ cho biết người đó đang hoạt động hay đang nghỉ (nghỉ thì khóa kèm lý do), không hiện số đơn họ đang làm.
 import { useState } from 'react'
 import { formatDate } from '@shared/lib/format'
@@ -8,7 +8,7 @@ import p from './ResourcePicker.module.css'
 
 type Task = 'specialist' | 'coordinator'
 const TEXT: Record<Task, { title: string; sub: string; search: string }> = {
-  specialist: { title: 'Chọn Kiểm dịch viên', sub: 'Phụ trách thẩm định hồ sơ ngựa và làm giấy kiểm dịch, hải quan.', search: 'Tìm tên, mã, số điện thoại' },
+  specialist: { title: 'Chọn Chuyên viên', sub: 'Phụ trách thẩm định hồ sơ ngựa và làm giấy kiểm dịch, hải quan.', search: 'Tìm tên, mã, số điện thoại' },
   coordinator: { title: 'Chọn Điều phối viên', sub: 'Phụ trách chọn xe và lập lộ trình.', search: 'Tìm tên, mã, số điện thoại' },
 }
 const initials = (name: string) => name.split(' ').filter(Boolean).slice(-2).map(w => w[0]).join('').toUpperCase()

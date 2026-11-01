@@ -1101,7 +1101,7 @@ public class BookingServiceImpl implements BookingService {
 
         String label;
         if (toSpecialist && toCoordinator) {
-            label = "cả Kiểm dịch viên (duyệt lại hồ sơ) và Điều phối viên (làm lại xe & lộ trình)";
+            label = "cả Chuyên viên (duyệt lại hồ sơ) và Điều phối viên (làm lại xe & lộ trình)";
             if (payload.getMedical() instanceof Map) {
                 ((Map<String, Object>) payload.getMedical()).put("status", "pending");
             }
@@ -1112,7 +1112,7 @@ public class BookingServiceImpl implements BookingService {
             payload.setPlan(null);
             payload.setGate(null);
         } else if (toSpecialist) {
-            label = "Kiểm dịch viên duyệt lại hồ sơ ngựa";
+            label = "Chuyên viên duyệt lại hồ sơ ngựa";
             if (payload.getMedical() instanceof Map) {
                 ((Map<String, Object>) payload.getMedical()).put("status", "pending");
             }

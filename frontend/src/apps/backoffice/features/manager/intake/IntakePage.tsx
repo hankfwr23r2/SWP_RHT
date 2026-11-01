@@ -181,7 +181,7 @@ export function IntakeModal({ b, allBookings, onClose, onDone }: { b: Booking; a
     setBusy(true)
     try {
       await bookingsApi.activate(b.id, session!.name, { id: a.id, name: a.name }, { id: c.id, name: c.name })
-      toast(`Đã tiếp nhận ${b.id}, đã giao Kiểm dịch viên và Điều phối viên`)
+      toast(`Đã tiếp nhận ${b.id}, đã giao Chuyên viên và Điều phối viên`)
       onDone()
     } catch (e) { toast(e instanceof Error ? e.message : 'Không tiếp nhận được', 'error'); setBusy(false) }
   }
@@ -262,7 +262,7 @@ export function IntakeModal({ b, allBookings, onClose, onDone }: { b: Booking; a
       </h4>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14 }}>
         <StaffAssignCard
-          roleTitle="Kiểm dịch viên"
+          roleTitle="Chuyên viên"
           roleDesc="Duyệt hồ sơ thú y, hộ chiếu & xét nghiệm ngựa"
           icon="fa-user-doctor"
           person={spId ? specialists.find(x => x.id === spId) : undefined}
@@ -416,7 +416,7 @@ export default function IntakePage() {
   ]
   return (
     <>
-      <ListPage title="Tiếp nhận đơn hàng" subtitle="Giao Kiểm dịch viên và Điều phối viên thẩm định song song." tabs={[['new', 'Chờ tiếp nhận', fresh.length], ['running', 'Đang thẩm định', running.length]]} tab={tab} onTab={setTab} hot={['new']}
+      <ListPage title="Tiếp nhận đơn hàng" subtitle="Giao Chuyên viên và Điều phối viên thẩm định song song." tabs={[['new', 'Chờ tiếp nhận', fresh.length], ['running', 'Đang thẩm định', running.length]]} tab={tab} onTab={setTab} hot={['new']}
         rows={tab === 'new' ? fresh : running} rowKey={b => b.id} columns={columns} haystack={b => [b.id, b.customer, b.origin.name, b.dest.name]} dateOf={b => b.departAt} loaded={!!all}
         emptyText={tab === 'new' ? 'Không có đơn nào chờ tiếp nhận.' : 'Không có đơn nào đang thẩm định.'} />
       {open && (

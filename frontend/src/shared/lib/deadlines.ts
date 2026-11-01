@@ -26,7 +26,7 @@ export const handoverDue = (departAt: number) => atHour(departAt - HANDOVER_DUE_
 
 export const acceptanceDeadline = (deliveredAt: number) => deliveredAt + ACCEPTANCE_HOURS * HOUR
 
-// ===== Hạn xử lý nội bộ (kiểm dịch viên, điều phối viên) =====
+// ===== Hạn xử lý nội bộ (chuyên viên, điều phối viên) =====
 export type TaskStep = keyof typeof SLA_WORKING_DAYS // 'inspector' | 'coordinator'
 
 export interface TaskTiming {

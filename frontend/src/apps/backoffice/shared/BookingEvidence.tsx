@@ -23,10 +23,10 @@ export function HorseDocsSection({ b, reviewed = true }: { b: Booking; reviewed?
 
   return (
     <>
-      <h4 style={{ margin: '18px 0 10px' }}>{reviewed ? 'Giấy ngựa Kiểm dịch viên đã duyệt' : 'Giấy ngựa Kiểm dịch viên sẽ duyệt'}</h4>
+      <h4 style={{ margin: '18px 0 10px' }}>{reviewed ? 'Giấy ngựa Chuyên viên đã duyệt' : 'Giấy ngựa Chuyên viên sẽ duyệt'}</h4>
       {reviewed
         ? <p className={s.hint} style={{ marginTop: -4 }}>Kết luận: <b>{b.medical?.status === 'approved' ? 'Đạt' : 'Chưa đạt'}</b>{b.medical?.by ? ` · ${b.medical.by}` : ''}{b.medical?.at ? ` · ${formatDateTime(b.medical.at)}` : ''}. Bấm ảnh hoặc nút Xem trước để mở xem lớn.</p>
-        : <p className={s.hint} style={{ marginTop: -4 }}>Kết luận: <b>Chưa duyệt</b>. Kiểm dịch viên sẽ đối chiếu sau khi bạn tiếp nhận. Bấm ảnh hoặc nút Xem trước để mở xem lớn.</p>}
+        : <p className={s.hint} style={{ marginTop: -4 }}>Kết luận: <b>Chưa duyệt</b>. Chuyên viên sẽ đối chiếu sau khi bạn tiếp nhận. Bấm ảnh hoặc nút Xem trước để mở xem lớn.</p>}
       {(horses ?? []).map(h => h && (
         <div key={h.id} className={s.horse}>
           <div className={s.horseTop}><div><div className={s.horseName}>{h.name}</div><div className={s.horseMeta}>Chip {h.microchip} · {h.breed}</div></div></div>
@@ -120,7 +120,7 @@ export function ClearanceSection({ b, quiet }: { b: Booking; quiet?: boolean }) 
   const p = clearanceProgress(c)
   return (
     <>
-      <h4 style={{ margin: '18px 0 10px' }}>Giấy kiểm dịch và hải quan do Kiểm dịch viên làm</h4>
+      <h4 style={{ margin: '18px 0 10px' }}>Giấy kiểm dịch và hải quan do Chuyên viên làm</h4>
       <p className={s.hint} style={{ marginTop: -4 }}>
         {p.done}/{p.total} hạng mục đã nộp{c.acceptedBy ? ` · ${c.acceptedBy} tiếp nhận` : ''}{c.doneAt ? ` · hoàn tất ${formatDateTime(c.doneAt)}` : ''}.
         {b.type === 'international' ? ` Thông quan từng ngựa: ${c.horsesCleared.length}/${b.horses.length}.` : ''}

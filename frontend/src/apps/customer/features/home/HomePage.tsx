@@ -30,7 +30,7 @@ const PUBLIC_BENEFITS: [string, string, string][] = [
 // ===== Banner trượt =====
 const SLIDES = [
   { bg: PHOTOS.transport.src, tag: 'Xe chuyên dụng 2 – 9 ngăn', title: 'Vận chuyển ngựa đua', hl: 'Việt Nam · Lào · Campuchia', text: 'Xe nguyên chuyến chỉ chở ngựa của bạn, mỗi xe có tài xế và nhân viên chăm sóc riêng. Bạn theo dõi xe đang ở đâu trên bản đồ.', cta: ['Đặt chuyến ngay', '/login'] },
-  { bg: PHOTOS.checkup.src, tag: 'Kiểm dịch & thủ tục trọn gói', title: 'Hồ sơ thú y được', hl: 'kiểm dịch viên xác minh', text: 'Bạn chỉ nộp hồ sơ ngựa. Giấy kiểm dịch, hải quan và giấy chuyến đi do chúng tôi làm, bạn xem tiến độ từng giấy trên hệ thống.', cta: ['Xem quy trình', '/#quy-trinh'] },
+  { bg: PHOTOS.checkup.src, tag: 'Kiểm dịch & thủ tục trọn gói', title: 'Hồ sơ thú y được', hl: 'chuyên viên xác minh', text: 'Bạn chỉ nộp hồ sơ ngựa. Giấy kiểm dịch, hải quan và giấy chuyến đi do chúng tôi làm, bạn xem tiến độ từng giấy trên hệ thống.', cta: ['Xem quy trình', '/#quy-trinh'] },
   { bg: PHOTOS.race.src, tag: 'Báo giá cố định', title: 'Biết trước chi phí', hl: 'trước khi đặt chuyến', text: 'Xem bảng giá cước theo hạng xe và quãng đường. Báo giá chính thức đã gồm nhiên liệu, cầu đường, không phụ thu ngoài phiếu.', cta: ['Xem bảng giá', '/?tab=price#tra-cuu'] },
 ]
 
@@ -330,7 +330,7 @@ export function Network() {
 const FEATURES: [string, React.ReactNode, string][] = [
   ['fa-earth-asia', <><CountUp to={3} /> quốc gia</>, 'Việt Nam, Lào, Campuchia'],
   ['fa-truck', 'Xe nguyên chuyến', `${Object.values(VEHICLE_CLASS).map(c => c.label).join(', ')}: từ 2 đến 9 ngăn. Không ghép ngựa của đơn khác`],
-  ['fa-user-doctor', 'Kiểm dịch viên riêng', 'Duyệt hồ sơ ngựa, làm giấy kiểm dịch, hải quan và báo tiến độ từng giấy cho bạn'],
+  ['fa-user-doctor', 'Chuyên viên riêng', 'Duyệt hồ sơ ngựa, làm giấy kiểm dịch, hải quan và báo tiến độ từng giấy cho bạn'],
   ['fa-flag', <>10+ cửa khẩu</>, 'Các tuyến kết nối Việt Nam với Lào và Campuchia'],
 ]
 
@@ -343,7 +343,7 @@ const SERVICES: [string, string, string, string, string][] = [
 
 const PROCESS: [string, string, string, string][] = [
   ['fa-paper-plane', 'Gửi đơn', 'Chọn điểm đón, điểm giao trên bản đồ, chọn ngựa từ Hồ sơ ngựa, dịch vụ và bảo hiểm.', `Trước ngày đi ≥ ${MIN_LEAD_DAYS} ngày`],
-  ['fa-magnifying-glass', 'Thẩm định', 'Quản lý tiếp nhận. Kiểm dịch viên duyệt hồ sơ ngựa. Điều phối viên chọn xe, tài xế, hộ tống và lập lộ trình.', 'Song song, trước khi báo giá'],
+  ['fa-magnifying-glass', 'Thẩm định', 'Quản lý tiếp nhận. Chuyên viên duyệt hồ sơ ngựa. Điều phối viên chọn xe, tài xế, hộ tống và lập lộ trình.', 'Song song, trước khi báo giá'],
   ['fa-credit-card', 'Báo giá & đặt cọc', `Báo giá cố định có hiệu lực ${QUOTE_VALID_HOURS} giờ. Đặt cọc ${DEPOSIT_RATE * 100}% để nhận Vận đơn.`, `Trong ${QUOTE_VALID_HOURS} giờ`],
   ['fa-folder-open', 'Làm giấy tờ', 'Nhà xe làm giấy kiểm dịch (và hải quan nếu đi quốc tế), bạn chỉ cần xem tiến độ từng giấy đã nộp.', 'Trước ngày đi'],
   ['fa-truck-moving', 'Vận chuyển', `Ngày bốc ngựa bạn trả ${100 - DEPOSIT_RATE * 100}% còn lại. Tài xế check-in từng mốc, hộ tống ghi nhật ký sức khỏe, bạn xem xe trên bản đồ.`, 'Theo lộ trình'],
@@ -365,7 +365,7 @@ export function About({ link = same }: { link?: LinkMap }) {
         <div className={cx(s.aboutLeft, s.reveal)}>
           <div className={s.aboutLeftInner}>
             <h2>Về chúng tôi</h2>
-            <p>Chúng tôi chuyên vận chuyển ngựa đua bằng đường bộ. Mỗi đơn có kiểm dịch viên xác minh hồ sơ thú y, điều phối viên chọn xe, tài xế, hộ tống và lập lộ trình riêng, quản lý duyệt báo giá trước khi bạn đặt cọc. Có sự cố, quản lý duyệt phương án xử lý và trực tiếp liên hệ bạn.</p>
+            <p>Chúng tôi chuyên vận chuyển ngựa đua bằng đường bộ. Mỗi đơn có chuyên viên xác minh hồ sơ thú y, điều phối viên chọn xe, tài xế, hộ tống và lập lộ trình riêng, quản lý duyệt báo giá trước khi bạn đặt cọc. Có sự cố, quản lý duyệt phương án xử lý và trực tiếp liên hệ bạn.</p>
             <Link to={link('/#quy-trinh')} className={s.linkArrow}>Xem quy trình <i className="fa-solid fa-arrow-right-long" /></Link>
           </div>
         </div>

@@ -61,7 +61,7 @@ function Resubmit({ b, owner, onDone }: { b: CustomerBookingView; owner: string;
   const items = b.medical?.resubmit?.items ?? []
   const send = async () => {
     setBusy(true)
-    try { await customerBookingsApi.resubmit(owner, b.id); toast('Đã gửi lại cho Kiểm dịch viên'); onDone() } catch (e) { toast(e instanceof Error ? e.message : 'Không gửi được', 'error'); setBusy(false) }
+    try { await customerBookingsApi.resubmit(owner, b.id); toast('Đã gửi lại cho Chuyên viên'); onDone() } catch (e) { toast(e instanceof Error ? e.message : 'Không gửi được', 'error'); setBusy(false) }
   }
   return (
     <div className="card">
@@ -77,7 +77,7 @@ function Resubmit({ b, owner, onDone }: { b: CustomerBookingView; owner: string;
           )
         })}
       </div>
-      <p className="form-hint" style={{ margin: '12px 0' }}>Cập nhật xong các giấy trên, bấm gửi lại để Kiểm dịch viên kiểm tra tiếp.</p>
+      <p className="form-hint" style={{ margin: '12px 0' }}>Cập nhật xong các giấy trên, bấm gửi lại để Chuyên viên kiểm tra tiếp.</p>
       <button className="btn btn-primary" disabled={busy} onClick={send}><i className="fa-solid fa-paper-plane" /> {busy ? 'Đang gửi…' : 'Đã bổ sung, gửi lại'}</button>
       {edit && <HorseFormModal owner={owner} horse={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); reload(); toast('Đã cập nhật giấy') }} />}
     </div>

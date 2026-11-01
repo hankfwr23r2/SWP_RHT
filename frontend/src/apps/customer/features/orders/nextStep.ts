@@ -27,11 +27,11 @@ const activeTrip = (b: CustomerBookingView) => b.trips?.find(t => t.run?.started
 function baseStep(b: CustomerBookingView, now: number): NextStep {
   switch (b.status) {
     case 'pending_intake':
-      return { tone: 'info', icon: 'fa-inbox', title: 'Đang chờ Quản lý tiếp nhận', text: 'Quản lý sẽ giao Kiểm dịch viên và Điều phối viên thẩm định đơn của bạn.', actionNeeded: false }
+      return { tone: 'info', icon: 'fa-inbox', title: 'Đang chờ Quản lý tiếp nhận', text: 'Quản lý sẽ giao Chuyên viên và Điều phối viên thẩm định đơn của bạn.', actionNeeded: false }
     case 'under_review':
       return b.medical?.status === 'resubmit'
-        ? { tone: 'danger', icon: 'fa-file-circle-exclamation', title: 'Cần bạn bổ sung hồ sơ ngựa', text: b.medical.resubmit?.reason ?? 'Kiểm dịch viên yêu cầu bổ sung giấy tờ.', actionNeeded: true }
-        : { tone: 'info', icon: 'fa-magnifying-glass', title: 'Đang thẩm định', text: 'Kiểm dịch viên kiểm tra hồ sơ ngựa, Điều phối viên chốt xe và lộ trình. Hai việc chạy song song.', actionNeeded: false }
+        ? { tone: 'danger', icon: 'fa-file-circle-exclamation', title: 'Cần bạn bổ sung hồ sơ ngựa', text: b.medical.resubmit?.reason ?? 'Chuyên viên yêu cầu bổ sung giấy tờ.', actionNeeded: true }
+        : { tone: 'info', icon: 'fa-magnifying-glass', title: 'Đang thẩm định', text: 'Chuyên viên kiểm tra hồ sơ ngựa, Điều phối viên chốt xe và lộ trình. Hai việc chạy song song.', actionNeeded: false }
     case 'pending_commercial':
       return { tone: 'orange', icon: 'fa-file-invoice-dollar', title: 'Đang lập báo giá', text: 'Thẩm định đã xong. Quản lý đang duyệt báo giá chính thức để gửi cho bạn.', actionNeeded: false }
     case 'awaiting_payment': {

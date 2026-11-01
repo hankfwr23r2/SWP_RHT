@@ -35,7 +35,7 @@ describe('dữ liệu trang do router tải', () => {
   })
 
   it('đúng vai trò thì gọi loader với tham số URL và phiên đang đăng nhập', async () => {
-    const session = { role: 'specialist', name: 'Kiểm dịch viên', username: 'sp01' }
+    const session = { role: 'specialist', name: 'Chuyên viên', username: 'sp01' }
     signIn('backoffice', session)
     const loader = vi.fn().mockResolvedValue({ errors: [] })
     await guardLoader(loader, ['specialist'], 'backoffice')({ params: { id: 'BK-001' } })
