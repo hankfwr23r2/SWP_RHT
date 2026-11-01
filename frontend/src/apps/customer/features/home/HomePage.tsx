@@ -101,7 +101,7 @@ function OrderLookup() {
       const results = await Promise.all(codes.map(async code => ({ code, result: await trackOrder(code, phone.trim()) })))
       setRows(results)
     } catch (err) {
-      setError({ field: 'codes', message: err instanceof Error ? err.message : 'Không tra cứu được.' })
+      setError({ field: 'codes', message: err instanceof Error ? err.message : 'Chưa tra cứu được. Thử lại sau ít phút.' })
     } finally {
       setLoading(false)
     }
@@ -116,7 +116,8 @@ function OrderLookup() {
             className={cx(error?.field === 'codes' && s.inputError)}
             value={codesText}
             onChange={e => { setCodesText(e.target.value); setError(null) }}
-            placeholder="Nhập mã đơn cần tra cứu (ví dụ: BK-1 hoặc VD-..., cách nhau bởi dấu phẩy)"
+            aria-label="Mã đơn hoặc số vận đơn, nhiều mã cách nhau bằng dấu phẩy"
+            placeholder="Mã đơn: BK-001 hoặc VD-2026-0001"
           />
         </div>
         <div className={cx(s.field, s.fieldPhone)}>
@@ -127,6 +128,7 @@ function OrderLookup() {
             onChange={e => { setPhone(e.target.value); setError(null) }}
             inputMode="numeric"
             maxLength={4}
+            aria-label="4 số cuối số điện thoại người đặt"
             placeholder="4 số cuối SĐT người đặt"
           />
         </div>
@@ -318,8 +320,8 @@ export function Network() {
         <div className={cx(s.networkDetail, s.reveal)}>
           <h3>Phạm vi mạng lưới</h3>
           <div className={s.networkCols} key={active}>
-            <div><h4>Điểm phục vụ</h4><p><i className="fa-solid fa-location-dot" /> 10+ điểm nhận, giao và đối tác trong mạng lưới.</p></div>
-            <div><h4>Tuyến quốc tế</h4><p><i className="fa-solid fa-flag" /> 10+ cửa khẩu kết nối các tuyến trong khu vực.</p></div>
+            <div><h4>Điểm phục vụ</h4><p><i className="fa-solid fa-location-dot" /> Kho, trại ngựa, câu lạc bộ, trường đua ở cả ba nước, hoặc điểm bạn chọn trên bản đồ.</p></div>
+            <div><h4>Tuyến quốc tế</h4><p><i className="fa-solid fa-flag" /> Qua các cửa khẩu đường bộ quốc tế với Lào và Campuchia.</p></div>
           </div>
         </div>
       </div>
@@ -331,7 +333,7 @@ const FEATURES: [string, React.ReactNode, string][] = [
   ['fa-earth-asia', <><CountUp to={3} /> quốc gia</>, 'Việt Nam, Lào, Campuchia'],
   ['fa-truck', 'Xe nguyên chuyến', `${Object.values(VEHICLE_CLASS).map(c => c.label).join(', ')}: từ 2 đến 9 ngăn. Không ghép ngựa của đơn khác`],
   ['fa-user-doctor', 'Chuyên viên riêng', 'Duyệt hồ sơ ngựa, làm giấy kiểm dịch, hải quan và báo tiến độ từng giấy cho bạn'],
-  ['fa-flag', <>10+ cửa khẩu</>, 'Các tuyến kết nối Việt Nam với Lào và Campuchia'],
+  ['fa-flag', 'Cửa khẩu quốc tế', 'Các tuyến đường bộ nối Việt Nam với Lào và Campuchia'],
 ]
 
 const SERVICES: [string, string, string, string, string][] = [
@@ -346,8 +348,8 @@ const PROCESS: [string, string, string, string][] = [
   ['fa-magnifying-glass', 'Thẩm định', 'Quản lý tiếp nhận. Chuyên viên duyệt hồ sơ ngựa. Điều phối viên chọn xe, tài xế, hộ tống và lập lộ trình.', 'Song song, trước khi báo giá'],
   ['fa-credit-card', 'Báo giá & đặt cọc', `Báo giá cố định có hiệu lực ${QUOTE_VALID_HOURS} giờ. Đặt cọc ${DEPOSIT_RATE * 100}% để nhận Vận đơn.`, `Trong ${QUOTE_VALID_HOURS} giờ`],
   ['fa-folder-open', 'Làm giấy tờ', 'Nhà xe làm giấy kiểm dịch (và hải quan nếu đi quốc tế), bạn chỉ cần xem tiến độ từng giấy đã nộp.', 'Trước ngày đi'],
-  ['fa-truck-moving', 'Vận chuyển', `Ngày bốc ngựa bạn trả ${100 - DEPOSIT_RATE * 100}% còn lại. Tài xế check-in từng mốc, hộ tống ghi nhật ký sức khỏe, bạn xem xe trên bản đồ.`, 'Theo lộ trình'],
-  ['fa-clipboard-check', 'Bàn giao & quyết toán', 'Ký biên bản giao nhận. Chỉ khi có sự cố liên quan đến ngựa mới có khoản phát sinh có chứng từ, sau đó bạn đánh giá chuyến đi.', 'Trong 24 giờ sau khi có quyết toán'],
+  ['fa-truck-moving', 'Vận chuyển', `Khi xe sẵn sàng đón ngựa, bạn trả ${100 - DEPOSIT_RATE * 100}% còn lại; xe chỉ xuất phát khi đã trả đủ. Tài xế check-in từng mốc, hộ tống ghi nhật ký sức khỏe, bạn xem xe trên bản đồ.`, 'Theo lộ trình'],
+  ['fa-clipboard-check', 'Bàn giao & quyết toán', 'Ký biên bản giao nhận. Quản lý gửi quyết toán, chỉ có khoản phát sinh khi có sự cố liên quan đến ngựa và luôn kèm chứng từ. Bạn thanh toán rồi đánh giá chuyến đi.', 'Thanh toán quyết toán trong 24 giờ'],
 ]
 
 function useStepsLine() {
@@ -425,7 +427,7 @@ export default function HomePage() {
       <section className={s.process} id="quy-trinh">
         <div className="wrap">
           <h2 className={cx('section-title', s.reveal)}>Quy trình vận chuyển</h2>
-          <p className={cx('section-sub', s.reveal)}>Từ lúc gửi đơn đến khi bạn nghiệm thu ngựa tại điểm đến.</p>
+          <p className={cx('section-sub', s.reveal)}>Từ lúc gửi đơn đến khi ngựa được bàn giao tại điểm đến.</p>
           <div ref={stepsRef} className={s.stepsWrap}>
           <span className={s.stepsLine} />
           <ol className={s.steps}>
