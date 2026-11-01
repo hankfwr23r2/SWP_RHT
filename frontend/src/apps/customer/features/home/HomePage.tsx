@@ -335,7 +335,7 @@ function Journey({ country }: { country: CountryCode }) {
   return (
     <div ref={root} className={s.journey} aria-label={`Tuyến mẫu ${a.name} – ${b.name} – ${c.name}`}>
       <p className={s.journeySummary}>{summary}</p>
-      <svg viewBox="0 0 900 200">
+      <svg viewBox="0 0 900 200" aria-hidden="true">
         <path className={s.journeyTrack} d={d} />
         <path className={s.journeyPath} d={d} />
         <circle className={s.journeyStop} cx={a.x} cy={a.y} r="10" />
@@ -360,6 +360,10 @@ function Journey({ country }: { country: CountryCode }) {
           <circle cx="-9" cy="7" r="3.5" /><circle cx="10" cy="7" r="3.5" />
         </g>
       </svg>
+      {/* Màn hẹp: nhãn trong SVG bị thu quá nhỏ nên hiện danh sách điểm dừng bằng chữ thường */}
+      <ol className={s.journeyStops}>
+        {stops.map(p => <li key={p.name}><b>{p.name}</b><span>{p.sub}</span></li>)}
+      </ol>
       <div className={s.journeyLegend}>
         <span><i className={s.legendGate} /> Cửa khẩu</span>
         <span><i className={s.legendStation} /> Trạm nghỉ</span>
@@ -480,7 +484,7 @@ export default function HomePage() {
       <section className={s.cta} style={{ '--bg': `url('${PHOTOS.race.src}')` } as CSSProperties}>
         <div className={cx('wrap', s.reveal)}>
           <h2>Đặt chuyến vận chuyển ngựa đua</h2>
-          <p>Đặt trước tối thiểu {MIN_LEAD_DAYS} ngày. Báo giá cố định, hiệu lực {QUOTE_VALID_HOURS} giờ. Đặt cọc {DEPOSIT_RATE * 100}% để nhận Vận đơn.</p>
+          <p>Gửi đơn trước ngày đi tối thiểu {MIN_LEAD_DAYS} ngày để kịp thẩm định và làm giấy tờ.</p>
           <Link to="/login" className="btn btn-white btn-lg">Đặt chuyến ngay</Link>
         </div>
       </section>

@@ -42,8 +42,8 @@ function PublicNav() {
       <Link to="/#dich-vu" className={s.navLink}>Dịch vụ</Link>
       <Link to="/#quy-trinh" className={s.navLink}>Quy trình</Link>
       <div className={s.actions}>
-        <Link to="/login" className="btn btn-outline">Đặt chuyến</Link>
-        <Link to="/login" className="btn btn-solid">Đăng nhập / Đăng ký</Link>
+        <Link to="/login" className="btn btn-outline">Đăng nhập / Đăng ký</Link>
+        <Link to="/login" className="btn btn-solid">Đặt chuyến</Link>
       </div>
     </>
   )
