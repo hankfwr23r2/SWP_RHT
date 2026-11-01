@@ -19,7 +19,7 @@ class RejectBookingControllerTest {
     void managerRejectionUsesTheSignedInManagerNotTheBody() {
         RejectBookingRequest body = RejectBookingRequest.builder().by("someone else").role("coordinator").reason("Không đủ xe").build();
 
-        new ManagerBookingController(bookingService).rejectBooking("BK-001", body, new TestingAuthenticationToken("manager01", null, "ROLE_MANAGER"));
+        new ManagerBookingController(bookingService, mock(com.example.racehorse_transport.service.PaymentService.class)).rejectBooking("BK-001", body, new TestingAuthenticationToken("manager01", null, "ROLE_MANAGER"));
 
         ArgumentCaptor<RejectBookingRequest> sent = ArgumentCaptor.forClass(RejectBookingRequest.class);
         verify(bookingService).rejectBooking(eq("BK-001"), sent.capture());

@@ -1,11 +1,14 @@
 package com.example.racehorse_transport.service;
 
+import com.example.racehorse_transport.dto.booking.HorseInsuranceDto;
 import com.example.racehorse_transport.dto.booking.BookingResponse;
 import com.example.racehorse_transport.dto.specialist.*;
 
 import java.util.List;
 
 public interface SpecialistService {
+    BookingResponse updateInsurance(String id, String horseId, HorseInsuranceDto request, String username);
+
 
     // =========================================================================
     // FLOW 1: DUYỆT HỒ SƠ NGỰA (VERIFICATION)

@@ -21,6 +21,7 @@ export default function PolicyPage() {
             <button key={k} role="tab" aria-selected={k === id} className={`btn btn-sm ${k === id ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setParams({ doc: k }, { replace: true })}>{POLICY_DOCS[k].title}</button>
           ))}
         </div>
+        <div className="card"><h3>Bảo hiểm bên thứ ba</h3><p>Khách chọn bảo hiểm cá nhân, yêu cầu hỗ trợ hoặc không bảo hiểm cho từng ngựa. Công ty liên hệ bên thứ ba và thu hộ phí được công bố cùng báo giá vận chuyển. Báo giá không phải xác nhận hợp đồng đã có hiệu lực.</p><p>Khi hủy đơn, phần cọc vận chuyển áp dụng phí hủy; phần thu hộ được đối soát riêng dựa trên số đã chuyển đối tác và số đối tác hoàn lại.</p></div>
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           {pdf
             ? <iframe src={doc.file} title={doc.title} style={{ width: '100%', height: '80vh', border: 0 }} />

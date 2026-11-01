@@ -1,5 +1,6 @@
 // Specialist: làm giấy tờ kiểm dịch và hải quan một đơn (PRD mục 3). Cập nhật từng hạng mục kèm ảnh; tuyến quốc tế ghi nhận thông quan từng ngựa.
 import { useState } from 'react'
+import { InsurancePanel } from '../../../shared/InsurancePanel'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { CLEARANCE_DOC, type ClearanceDocType } from '@shared/config/booking-rules'
@@ -193,6 +194,7 @@ export default function LegalReviewPage() {
       <div className="wrap">
         <div className="breadcrumb"><Link to="/specialist/legal">Giấy tờ chuyến đi</Link> / <span className="text-orange font-semibold">{b.id}</span></div>
         <div className="page-header" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}><h1>Đơn {b.id}</h1><BookingStatusBadge status={b.status} labels={b} audience="staff" /></div>
+            <InsurancePanel b={b} onDone={reload} />
         <div className={s.layout}>
           <div className={s.main}>
             <div className="card"><div className="card-header"><h3><i className="fa-solid fa-route" /> Chuyến đi</h3></div><TripSummary b={b} /></div>

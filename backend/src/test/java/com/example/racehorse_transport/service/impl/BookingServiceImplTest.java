@@ -147,6 +147,7 @@ class BookingServiceImplTest {
         Instant departure = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
                 .plusDays(25).atTime(10, 0).atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant();
         BookingHorseDto horseDto = BookingHorseDto.builder()
+                .insurance(com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("none").build())
                 .horseId("HORSE-12")
                 .name("Lightning")
                 .selectedServiceCodes(Map.of(
@@ -175,8 +176,6 @@ class BookingServiceImplTest {
                 .thenReturn(Optional.of(service(1, "Khoang tiêu chuẩn", 1, "1", "ACTIVE")));
         when(serviceRepository.findByServiceCodeIgnoreCase("FEED_BASIC"))
                 .thenReturn(Optional.of(service(3, "Gói cơ bản", 2, "0", "ACTIVE")));
-        when(serviceRepository.findByServiceCodeIgnoreCase("INSURANCE_DECLINED"))
-                .thenReturn(Optional.of(service(10, "Từ chối", 4, "0", "ACTIVE")));
         DocumentRequirement clearanceRequirement = new DocumentRequirement();
         clearanceRequirement.setDocumentGroup("CLEARANCE");
         clearanceRequirement.setDocumentType("poa");
@@ -228,6 +227,7 @@ class BookingServiceImplTest {
         Instant departure = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
                 .plusDays(25).atTime(10, 0).atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant();
         BookingHorseDto horseDto = BookingHorseDto.builder()
+                .insurance(com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("none").build())
                 .horseId("HORSE-12")
                 .name("Lightning")
                 .selectedServiceCodes(Map.of(
@@ -261,8 +261,6 @@ class BookingServiceImplTest {
                 .thenReturn(Optional.of(service(1, "Khoang tiêu chuẩn", 1, "1", "ACTIVE")));
         when(serviceRepository.findByServiceCodeIgnoreCase("FEED_BASIC"))
                 .thenReturn(Optional.of(service(3, "Gói cơ bản", 2, "0", "ACTIVE")));
-        when(serviceRepository.findByServiceCodeIgnoreCase("INSURANCE_DECLINED"))
-                .thenReturn(Optional.of(service(10, "Từ chối", 4, "0", "ACTIVE")));
 
         assertThatThrownBy(() -> service.createBooking("phuc", request))
                 .isInstanceOf(IllegalStateException.class)
@@ -276,6 +274,7 @@ class BookingServiceImplTest {
         Instant departure = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
                 .plusDays(25).atTime(10, 0).atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant();
         BookingHorseDto horseDto = BookingHorseDto.builder()
+                .insurance(com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("none").build())
                 .horseId("HORSE-12")
                 .name("Lightning")
                 .selectedServiceCodes(Map.of(
@@ -309,8 +308,6 @@ class BookingServiceImplTest {
                 .thenReturn(Optional.of(service(1, "Khoang tiêu chuẩn", 1, "1", "ACTIVE")));
         when(serviceRepository.findByServiceCodeIgnoreCase("FEED_BASIC"))
                 .thenReturn(Optional.of(service(3, "Gói cơ bản", 2, "0", "ACTIVE")));
-        when(serviceRepository.findByServiceCodeIgnoreCase("INSURANCE_DECLINED"))
-                .thenReturn(Optional.of(service(10, "Từ chối", 4, "0", "ACTIVE")));
 
         assertThatThrownBy(() -> service.createBooking("phuc", request))
                 .isInstanceOf(IllegalStateException.class)
@@ -324,6 +321,7 @@ class BookingServiceImplTest {
         Instant departure = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
                 .plusDays(25).atTime(10, 0).atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant();
         BookingHorseDto horseDto = BookingHorseDto.builder()
+                .insurance(com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("none").build())
                 .horseId("HORSE-12")
                 .name("Lightning")
                 .selectedServices(Map.of(
@@ -356,6 +354,7 @@ class BookingServiceImplTest {
         Instant departure = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
                 .plusDays(25).atTime(10, 0).atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant();
         BookingHorseDto horseDto = BookingHorseDto.builder()
+                .insurance(com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("none").build())
                 .horseId("HORSE-12")
                 .name("Lightning")
                 .selectedServiceCodes(Map.of(
@@ -388,8 +387,6 @@ class BookingServiceImplTest {
                 .thenReturn(Optional.of(service(1, "Khoang tiêu chuẩn", 1, "1", "ACTIVE")));
         when(serviceRepository.findByServiceCodeIgnoreCase("FEED_BASIC"))
                 .thenReturn(Optional.of(service(3, "Gói cơ bản", 2, "0", "ACTIVE")));
-        when(serviceRepository.findByServiceCodeIgnoreCase("INSURANCE_DECLINED"))
-                .thenReturn(Optional.of(service(10, "Từ chối", 4, "0", "ACTIVE")));
         when(documentRequirementRepository.findByStatusOrderByDocumentGroupAscDocumentNameAsc("ACTIVE"))
                 .thenReturn(List.of(requirement));
         when(horseDocumentRepository.findByHorseID_Id(12)).thenReturn(List.of());
@@ -466,7 +463,8 @@ class BookingServiceImplTest {
 
     @Test
     void createBooking_rejectsHorseInTransit() {
-        BookingHorseDto horseDto = BookingHorseDto.builder().horseId("HORSE-12").name("Lightning").build();
+        BookingHorseDto horseDto = BookingHorseDto.builder()
+                .insurance(com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("none").build()).horseId("HORSE-12").name("Lightning").build();
         CreateBookingRequest request = CreateBookingRequest.builder()
                 .horses(List.of(horseDto))
                 .consignor(PartyContactDto.builder().name("Sender").phone("0900").build())
@@ -492,7 +490,8 @@ class BookingServiceImplTest {
 
     @Test
     void createBooking_rejectsHorseInUncompletedBooking() {
-        BookingHorseDto horseDto = BookingHorseDto.builder().horseId("HORSE-12").name("Lightning").build();
+        BookingHorseDto horseDto = BookingHorseDto.builder()
+                .insurance(com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("none").build()).horseId("HORSE-12").name("Lightning").build();
         CreateBookingRequest request = CreateBookingRequest.builder()
                 .horses(List.of(horseDto))
                 .consignor(PartyContactDto.builder().name("Sender").phone("0900").build())
@@ -1067,12 +1066,33 @@ class BookingServiceImplTest {
     }
 
     @Test
+    void sendQuoteUsesSpecialistPremiumAndSnapshotsInsuranceInsteadOfClientAmount() {
+        Booking booking = bookingOwnedByCustomer();
+        booking.setStatus("pending_commercial");
+        booking.setDetailsJson("""
+            {"horses":[{"horseId":"H1","name":"Storm","insurance":{"option":"assistance","provider":"Provider","premium":1250000,"reviewed":true,"documents":["https://example.com/quote.pdf"]}}],
+             "medical":{"status":"approved"},"plan":{"at":1},"trips":[{"tripId":"T1","driverId":"D1","escortId":"E1","horseIds":["H1"]}]}
+            """);
+        when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        var transport = com.example.racehorse_transport.dto.manager.QuoteLineDto.builder().label("Cước vận chuyển").amount(new java.math.BigDecimal("10000000")).build();
+        var tampered = com.example.racehorse_transport.dto.manager.QuoteLineDto.builder().label("Thu hộ bảo hiểm bên thứ ba").amount(java.math.BigDecimal.ONE).build();
+        var request = com.example.racehorse_transport.dto.manager.SendQuoteRequest.builder().by("manager01").lines(List.of(transport, tampered)).adjustments(List.of()).build();
+        service.sendQuote("BK-42", request);
+        ArgumentCaptor<Quotation> saved = ArgumentCaptor.forClass(Quotation.class);
+        verify(quotationRepository).save(saved.capture());
+        assertThat(saved.getValue().getTotalAmount()).isEqualByComparingTo("11250000");
+        assertThat(saved.getValue().getQuoteLinesJson()).contains("insuranceSnapshot", "quote.pdf");
+        assertThat(booking.getDetailsJson()).contains("insuranceSnapshot");
+    }
+
+    @Test
     void sendQuote_computesTheTotalsItselfAndIgnoresTheOnesSent() {
         Booking booking = bookingOwnedByCustomer();
         booking.setStatus("pending_commercial");
-        booking.setDetailsJson("{\"medical\":{\"status\":\"approved\"},\"plan\":{\"at\":1},"
+        booking.setDetailsJson("{\"horses\":[{\"horseId\":\"H1\",\"insurance\":{\"option\":\"none\"}}],\"medical\":{\"status\":\"approved\"},\"plan\":{\"at\":1},"
                 + "\"trips\":[{\"tripId\":\"TRP-042-1\",\"vehicleId\":\"VH-001\",\"driverId\":\"DR-01\",\"escortId\":\"ES-01\",\"horseIds\":[]}]}");
-        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
         var line = new com.example.racehorse_transport.dto.manager.QuoteLineDto();
         line.setLabel("Cước vận chuyển");
@@ -1227,8 +1247,29 @@ class BookingServiceImplTest {
                 .departAt(Instant.parse("2027-01-15T10:00:00Z").toEpochMilli())
                 .consignor(PartyContactDto.builder().name("Sender").phone("0900").build())
                 .consignee(PartyContactDto.builder().name("Receiver").phone("0901").build())
-                .horses(List.of(BookingHorseDto.builder().horseId(horseId).build()))
+                .horses(List.of(BookingHorseDto.builder().insurance(com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("none").build()).horseId(horseId).build()))
                 .build();
+    }
+
+    @Test
+    void customerCannotReadDraftThirdPartyPremiumOrDocumentsBeforeQuotation() {
+        Booking booking = bookingOwnedByCustomer();
+        booking.setStatus("pending_commercial");
+        booking.setDetailsJson("""
+            {"horses":[{"horseId":"H1","insurance":{"option":"assistance","provider":"Internal provider","premium":1250000,"reviewed":true,"documents":["https://example.com/draft.pdf"]}}]}
+            """);
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        var context = org.springframework.security.core.context.SecurityContextHolder.getContext();
+        context.setAuthentication(new org.springframework.security.authentication.TestingAuthenticationToken("phuc", null, "ROLE_CUSTOMER"));
+        try {
+            var insurance = service.getBookingById(42, "phuc").getHorses().getFirst().getInsurance();
+            assertThat(insurance.getOption()).isEqualTo("assistance");
+            assertThat(insurance.getPremium()).isNull();
+            assertThat(insurance.getProvider()).isNull();
+            assertThat(insurance.getDocuments()).isNull();
+        } finally {
+            org.springframework.security.core.context.SecurityContextHolder.clearContext();
+        }
     }
 
     @Test

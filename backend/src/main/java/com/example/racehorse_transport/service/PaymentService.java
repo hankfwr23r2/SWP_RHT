@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface PaymentService {
+    void reconcileInsurance(String identifier, ReconcileInsuranceRequest request, String actor);
     // CRUD cơ bản
     List<Payment> findAll();
     Optional<Payment> findById(Integer id);

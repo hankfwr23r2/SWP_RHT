@@ -1,3 +1,4 @@
+import { InsuranceSummary } from '@shared/ui/InsuranceFields'
 // Chi tiết đơn phía khách: tiến độ, bước tiếp theo, bổ sung hồ sơ, báo giá, đặt cọc, tiến độ giấy tờ, xe và ngựa, trả số dư.
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
@@ -186,10 +187,10 @@ function CancelModal({ b, owner, onClose, onDone }: { b: CustomerBookingView; ow
     try { await customerBookingsApi.cancel(owner, b.id, reason); toast('Đã hủy đơn'); onDone() } catch (e) { toast(e instanceof Error ? e.message : 'Không hủy được', 'error'); setBusy(false) }
   }
   return (
-    <Modal onClose={onClose} title={`Hủy đơn ${b.id}`} subtitle="Bạn đã đặt cọc nên sẽ mất tiền cọc."
+    <Modal onClose={onClose} title={`Hủy đơn ${b.id}`} subtitle="Phần cọc vận chuyển áp dụng phí hủy; bảo hiểm thu hộ được đối soát riêng."
       footer={<><button className="btn btn-ghost" onClick={onClose}>Giữ đơn</button><button className="btn btn-danger" disabled={busy || !reason.trim()} onClick={send}>Xác nhận hủy đơn</button></>}>
       <div className={s.refundBox}>
-        <div><span>Tiền cọc đã đặt (không hoàn)</span><b className="text-red">{formatVND(penalty)}</b></div>
+        <div><span>Phí hủy phần cọc vận chuyển</span><b className="text-red">{formatVND(penalty)}</b></div>
       </div>
       <div className="form-group" style={{ margin: '14px 0 0' }}><label htmlFor="cr" className="required">Lý do hủy</label><textarea id="cr" className="form-control" rows={3} value={reason} onChange={e => setReason(e.target.value)} /></div>
     </Modal>
@@ -266,6 +267,7 @@ export default function OrderDetailPage() {
 
         <div className={s.main}>
           <Progress b={b} />
+          {b.cancellation?.insuranceCollected ? <div className="alert alert-info">Bảo hiểm thu hộ: {formatVND(b.cancellation.insuranceCollected)}. {b.cancellation.insuranceReconciliationPending ? 'Đang chờ quản lý đối soát riêng với bên thứ ba.' : `Đã đối soát, hoàn khách ${formatVND(b.cancellation.refund)}.`}</div> : null}
 
           {/* Việc của bạn bây giờ: thẻ nổi + form hành động ngay bên dưới */}
           <div className={`${s.next} ${TONE[next.tone]}`} role="status">
@@ -344,7 +346,7 @@ export default function OrderDetailPage() {
             </>
           )}
 
-          {tab === 'docs' && <ClearanceProgressCard b={b} />}
+          {tab === 'docs' && <><ClearanceProgressCard b={b} /><div className="card"><h3>Bảo hiểm</h3>{b.horses.map(h => <div key={h.horseId}><h4>{h.name}</h4><InsuranceSummary insurance={h.insurance} /></div>)}</div></>}
 
           {tab === 'pay' && (
             <>
@@ -353,6 +355,7 @@ export default function OrderDetailPage() {
               {b.quote && (
                 <div className="card">
                   <div className="card-header"><h3><i className="fa-solid fa-file-invoice-dollar" /> Báo giá</h3></div>
+                  {b.quote.insuranceSnapshot?.map(h => <div key={h.horseId}><b>{h.name}</b><InsuranceSummary insurance={h.insurance} /></div>)}
                   <QuoteSheet
                     {...b.quote}
                     bookingCode={b.id}
@@ -397,7 +400,7 @@ export default function OrderDetailPage() {
                       <i className="fa-solid fa-ban" /> Hủy đơn này
                     </button>
                   </div>
-                  <p className="form-hint">Lưu ý: Quý khách tự ý hủy đơn sau khi đặt cọc sẽ mất 100% tiền cọc đã đóng theo quy định. Khi đã thanh toán 70% còn lại, chuyến đi được chốt và không tự hủy được nữa; cần hỗ trợ vui lòng gọi hotline.</p>
+                  <p className="form-hint">Lưu ý: Quý khách tự ý hủy đơn sau khi đặt cọc sẽ mất phần cọc vận chuyển theo quy định; phần bảo hiểm thu hộ được đối soát riêng theo khoản đã chuyển và số bên thứ ba hoàn lại. Khi đã thanh toán 70% còn lại, chuyến đi được chốt và không tự hủy được nữa; cần hỗ trợ vui lòng gọi hotline.</p>
                 </div>
               )}
             </>

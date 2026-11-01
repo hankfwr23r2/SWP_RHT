@@ -58,7 +58,7 @@ export function PriceTable() {
                 : !services
                   ? <tr><td className={s.colText} colSpan={2}>Không tải được bảng giá dịch vụ. <button type="button" className="btn btn-ghost btn-sm" onClick={reload}>Thử lại</button></td></tr>
                   : services.length
-                    ? services.map(service => (
+                    ? services.filter(service => service.categoryId !== 4).map(service => (
                         <tr key={service.id}>
                           <td className={s.colText}>{service.categoryName} · {service.serviceName}</td>
                           <td className={s.colNum}>{service.price > 0
@@ -67,6 +67,7 @@ export function PriceTable() {
                         </tr>
                       ))
                     : <tr><td className={s.colText} colSpan={2}>Chưa có dịch vụ đang áp dụng.</td></tr>}
+              <tr><td className={s.colText}>Bảo hiểm bên thứ ba (công ty thu hộ)</td><td className={s.colNum}>Báo giá theo yêu cầu từng ngựa</td></tr>
               <tr><td className={s.colText}>Thủ tục kiểm dịch (nội địa)</td><td className={s.colNum}>{CLEARANCE_FEE.domestic ? formatVND(CLEARANCE_FEE.domestic) : 'Đã gồm trong cước'}</td></tr>
               <tr><td className={s.colText}>Thủ tục kiểm dịch và hải quan (quốc tế)</td><td className={s.colNum}>{formatVND(CLEARANCE_FEE.international)}/chuyến</td></tr>
             </tbody>

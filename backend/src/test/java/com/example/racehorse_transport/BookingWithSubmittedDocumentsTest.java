@@ -113,7 +113,7 @@ class BookingWithSubmittedDocumentsTest {
                  "consignor":{"name":"Nguoi Gui","phone":"0900000091","idNumber":"079200000091","address":"Dong Nai"},
                  "consignee":{"name":"Nguoi Nhan","phone":"0900000097","idNumber":"079200000097","address":"Ha Noi"},
                  "horses":[{"horseId":"H-%d","name":"Storm","breed":"Arabian","sex":"mare","stall":"standard",
-                            "feedPackage":"basic","waterPlan":"every_3h","insuranceOpted":false}]}""".formatted(departAt, horseId));
+                            "feedPackage":"basic","waterPlan":"every_3h","insuranceOpted":false,"insurance":{"option":"none"}}]}""".formatted(departAt, horseId));
     }
 
     private HttpResponse<String> post(String path, String token, String body) throws Exception {

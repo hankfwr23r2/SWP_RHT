@@ -21,6 +21,7 @@ export interface BookingHorseDto {
   feedPackage?: string
   waterPlan?: string
   insuranceOpted?: boolean
+  insurance?: import('../types/insurance').HorseInsurance
   selectedServices?: Partial<Record<BookingServiceCategory, BookingServiceSnapshot>>
   selectedServiceCodes?: Partial<Record<BookingRequiredServiceCategory, string>>
   status?: string

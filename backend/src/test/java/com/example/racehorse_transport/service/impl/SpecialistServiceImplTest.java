@@ -51,6 +51,38 @@ class SpecialistServiceImplTest {
     }
 
     @Test
+    void insuranceCannotBeChangedWhileCustomerIsConsideringIssuedQuote() {
+        Booking order = booking(1, "awaiting_payment", "approved");
+        order.setDetailsJson("""
+            {"intake":{"specialist":{"id":"SP-01"}},"horses":[{"horseId":"H1","insurance":{"option":"assistance","provider":"Provider","premium":1250000,"reviewed":true}}]}
+            """);
+        when(bookingRepository.findById(1)).thenReturn(Optional.of(order));
+        when(bookingRepository.findByIdForUpdate(1)).thenReturn(Optional.of(order));
+        var request = com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("assistance").provider("Other").premium(java.math.BigDecimal.ONE).reviewed(true).build();
+        assertThatThrownBy(() -> service.updateInsurance("BK-1", "H1", request, "specialist")).isInstanceOf(IllegalStateException.class);
+        verify(bookingRepository, never()).save(any());
+    }
+
+    @Test
+    void afterDepositCanAttachEffectivePolicyWithoutChangingQuotedPremiumOrProvider() {
+        Booking order = booking(1, "clearance_in_progress", "approved");
+        order.setDetailsJson("""
+            {"intake":{"specialist":{"id":"SP-01"}},"horses":[{"horseId":"H1","insurance":{"option":"assistance","provider":"Provider","premium":1250000,"reviewed":true}}],"quote":{"insuranceSnapshot":[{"horseId":"H1","insurance":{"premium":1250000}}]}}
+            """);
+        when(bookingRepository.findById(1)).thenReturn(Optional.of(order));
+        when(bookingRepository.findByIdForUpdate(1)).thenReturn(Optional.of(order));
+        var request = com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("none").provider("Other").premium(java.math.BigDecimal.ONE)
+            .policyNumber("POLICY-1").validFrom("2026-01-01").validUntil("2027-12-31").arranged(true).build();
+        var response = service.updateInsurance("BK-1", "H1", request, "specialist");
+        var insurance = response.getHorses().getFirst().getInsurance();
+        assertThat(insurance.getPremium()).isEqualByComparingTo("1250000");
+        assertThat(insurance.getProvider()).isEqualTo("Provider");
+        assertThat(insurance.getOption()).isEqualTo("assistance");
+        assertThat(insurance.getArranged()).isTrue();
+        assertThat(((Map<?, ?>) response.getQuote()).get("insuranceSnapshot")).isNotNull();
+    }
+
+    @Test
     void getVerificationBookings_keepsApprovedBookingsUntilQuotationIsIssued() {
         when(bookingRepository.findAllByOrderByBookingDateDesc()).thenReturn(List.of(
                 booking(1, "pending_commercial", "approved"),

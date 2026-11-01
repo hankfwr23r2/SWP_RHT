@@ -1,5 +1,7 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.dto.booking.HorseInsuranceDto;
+import com.example.racehorse_transport.util.HorseInsurancePolicy;
 import com.example.racehorse_transport.dto.booking.BookingDetailsPayload;
 import com.example.racehorse_transport.dto.booking.BookingResponse;
 import com.example.racehorse_transport.dto.booking.DocumentRequirementSnapshot;
@@ -32,6 +34,49 @@ public class SpecialistServiceImpl implements SpecialistService {
     private final RegulationRepository regulationRepository;
     private final LocationRepository locationRepository;
     private final ObjectMapper objectMapper;
+
+    @Override
+    @Transactional
+    public BookingResponse updateInsurance(String id, String horseId, HorseInsuranceDto request, String username) {
+        Booking booking = bookingRepository.findByIdForUpdate(parseBookingId(id)).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
+        requireAssignment(username, booking);
+        BookingDetailsPayload payload = extractPayload(booking);
+        var horse = payload.getHorses().stream().filter(h -> horseId.equals(h.getHorseId())).findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy ngựa trong đơn."));
+        var existing = horse.getInsurance();
+
+        String status = Objects.toString(booking.getStatus(), "");
+        boolean beforeQuote = Set.of("under_review", "pending_commercial", "resubmission_requested").contains(status);
+        boolean afterDeposit = Set.of("waybill_issued", "clearance_in_progress", "clearance_done", "ready_for_pickup", "en_route_to_pickup").contains(status);
+        if (!beforeQuote && !afterDeposit) throw new IllegalStateException("Không thể sửa bảo hiểm ở trạng thái hiện tại.");
+        if (existing == null && !beforeQuote) throw new IllegalStateException("Không thay đổi bảo hiểm của báo giá cũ.");
+        if (existing != null) request.setOption(existing.getOption());
+        if (!beforeQuote) {
+            // Phí, đơn vị và chứng từ báo giá đã chốt; chỉ bổ sung thông tin hợp đồng.
+            request.setProvider(existing.getProvider()); request.setPremium(existing.getPremium());
+            request.setReviewed(existing.getReviewed());
+        }
+        HorseInsurancePolicy.validateDeclaration(request);
+        if (Boolean.TRUE.equals(request.getReviewed()) && "assistance".equals(request.getOption())
+                && (HorseInsurancePolicy.blank(request.getProvider()) || request.getPremium() == null || request.getPremium().signum() <= 0))
+            throw new IllegalArgumentException("Nhập đơn vị cung cấp và phí bảo hiểm lớn hơn 0.");
+        if ("personal".equals(request.getOption()) && Boolean.TRUE.equals(request.getReviewed()) && booking.getDepartureDate() != null) {
+            var date = booking.getDepartureDate().atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDate();
+            if (date.isBefore(java.time.LocalDate.parse(request.getValidFrom())) || date.isAfter(java.time.LocalDate.parse(request.getValidUntil())))
+                throw new IllegalArgumentException("Bảo hiểm cá nhân không bao phủ ngày khởi hành dự kiến.");
+        }
+        if (Boolean.TRUE.equals(request.getArranged())) {
+            if (!afterDeposit || HorseInsurancePolicy.blank(request.getPolicyNumber()))
+                throw new IllegalArgumentException("Chỉ xác nhận hợp đồng sau đặt cọc, cần số hợp đồng.");
+            HorseInsurancePolicy.validateDates(request);
+        }
+        if (beforeQuote) request.setArranged(false);
+        appendHistory(payload, username, "Cập nhật hồ sơ bảo hiểm cho " + horse.getName());
+        horse.setInsurance(request);
+        savePayload(booking, payload);
+        bookingRepository.save(booking);
+        return mapToBookingResponse(booking);
+    }
 
     // =========================================================================
     // FLOW 1: DUYỆT HỒ SƠ NGỰA (VERIFICATION)

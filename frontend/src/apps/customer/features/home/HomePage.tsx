@@ -338,7 +338,7 @@ const SERVICES: [string, string, string, string, string][] = [
   ['/?tab=price#tra-cuu', PHOTOS.transport.src, 'NỘI ĐỊA', 'Vận chuyển nội địa', 'Giữa các kho và câu lạc bộ trong nước, có trạm nghỉ cho ngựa'],
   ['/#mang-luoi', PHOTOS.trailers.src, 'XUYÊN BIÊN GIỚI', 'Vận chuyển xuyên biên giới', 'Việt Nam – Lào, Việt Nam – Campuchia, nhà xe làm thủ tục cửa khẩu'],
   ['/#quy-trinh', PHOTOS.checkup.src, 'KIỂM DỊCH', 'Kiểm dịch & thủ tục', 'Giấy kiểm dịch, tờ khai hải quan do nhà xe làm trọn gói'],
-  ['/?tab=price#tra-cuu', PHOTOS.stable.src, 'CHĂM SÓC', 'Chăm sóc & bảo hiểm', 'Hộ tống đi kèm, khoang đơn mở rộng, bảo hiểm động vật sống theo giống'],
+  ['/?tab=price#tra-cuu', PHOTOS.stable.src, 'CHĂM SÓC', 'Chăm sóc & bảo hiểm', 'Hộ tống đi kèm, khoang đơn mở rộng, hỗ trợ bảo hiểm động vật sống từ bên thứ ba'],
 ]
 
 const PROCESS: [string, string, string, string][] = [

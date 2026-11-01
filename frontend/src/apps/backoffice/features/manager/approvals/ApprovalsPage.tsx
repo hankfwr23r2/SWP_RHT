@@ -9,6 +9,7 @@ import { bookingsApi, invalidateBookingsListCache } from '@shared/services/booki
 import { crewApi, vehiclesApi } from '@shared/services/fleet'
 import { useLoad } from '@shared/services/useLoad'
 import type { Booking } from '@shared/types/booking'
+import { InsuranceSummary } from '@shared/ui/InsuranceFields'
 import { QuoteSheet } from '@shared/ui/QuoteSheet'
 import { useToast } from '@shared/ui/toast'
 import { FleetRouteSection, HorseDocsSection } from '../../../shared/BookingEvidence'
@@ -77,6 +78,8 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
     if (e && ec) out.push(`Hộ tống ${e.name} ${why(ec)}.`)
     return out
   })
+  const insuranceErrors = b.horses.filter(h => !h.insurance.option || (h.insurance.option !== 'none' && !h.insurance.reviewed)).map(h => `Chưa hoàn tất bảo hiểm: ${h.name}`)
+  crewErrors.push(...insuranceErrors)
   const [busy, setBusy] = useState(false)
   const preview = draft && finalizeQuote(draft.lines, [], Date.now(), session!.name)
 
@@ -130,6 +133,7 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
   const quoteTab = (
     <>
       <h4 style={{ margin: '0 0 10px' }}>Báo giá gửi khách</h4>
+      {b.horses.map(h => <div key={h.horseId}><b>{h.name}</b><InsuranceSummary insurance={h.insurance} /></div>)}
       {preview ? (
         <QuoteSheet
           {...preview}

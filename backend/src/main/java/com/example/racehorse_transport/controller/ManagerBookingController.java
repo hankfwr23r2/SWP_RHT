@@ -1,5 +1,7 @@
 package com.example.racehorse_transport.controller;
 
+import com.example.racehorse_transport.dto.payment.ReconcileInsuranceRequest;
+import com.example.racehorse_transport.service.PaymentService;
 import com.example.racehorse_transport.dto.booking.BookingResponse;
 import com.example.racehorse_transport.response.ApiResponse;
 import com.example.racehorse_transport.service.BookingService;
@@ -18,6 +20,16 @@ import java.util.List;
 public class ManagerBookingController {
 
     private final BookingService bookingService;
+    private final PaymentService paymentService;
+
+    @PostMapping("/{id}/insurance-reconciliation")
+    public ResponseEntity<ApiResponse<String>> reconcileInsurance(@PathVariable String id,
+            @jakarta.validation.Valid @RequestBody ReconcileInsuranceRequest request,
+            Authentication authentication) {
+        paymentService.reconcileInsurance(id, request, authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success("OK", "Đã ghi nhận đối soát bảo hiểm"));
+    }
+
 
     // 1. API Manager lấy danh sách đơn chờ tiếp nhận (hoặc lọc theo status)
     @GetMapping("/intake")

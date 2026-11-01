@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.util.HorseInsurancePolicy;
 import com.example.racehorse_transport.dto.booking.BookingDetailsPayload;
 import com.example.racehorse_transport.dto.payment.*;
 import com.example.racehorse_transport.entity.Booking;
@@ -35,6 +36,40 @@ public class PaymentServiceImpl implements PaymentService {
     private final BookingRepository bookingRepository;
     private final QuotationRepository quotationRepository;
     private final ObjectMapper objectMapper;
+
+    @Override
+    @Transactional
+    public void reconcileInsurance(String identifier, ReconcileInsuranceRequest request, String actor) {
+        Booking booking = bookingRepository.findByIdForUpdate(parseBookingId(identifier)).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
+        if (!"cancelled".equals(booking.getStatus())) throw new IllegalStateException("Chỉ đối soát đơn đã hủy.");
+        BookingDetailsPayload payload = extractPayload(booking);
+        Map<String, Object> payment = getOrCreatePaymentMap(payload);
+        if (!Boolean.TRUE.equals(payment.get("insuranceReconciliationPending"))) throw new IllegalStateException("Đơn không có khoản bảo hiểm chờ đối soát hoặc đã đối soát.");
+        BigDecimal collected = new BigDecimal(payment.get("insuranceCollected").toString());
+        BigDecimal premium = BigDecimal.ZERO;
+        if (payload.getQuote() instanceof Map<?, ?> quote && quote.get("lines") instanceof List<?> lines) {
+            for (Object row : lines) if (row instanceof Map<?, ?> line && HorseInsurancePolicy.LABEL.equals(line.get("label"))) premium = premium.add(new BigDecimal(line.get("amount").toString()));
+        }
+        if (request.getTransferredAmount().compareTo(premium) > 0 || request.getProviderRefundAmount().compareTo(request.getTransferredAmount()) > 0)
+            throw new IllegalArgumentException("Số chuyển đối tác hoặc số đối tác hoàn không hợp lệ.");
+        BigDecimal recoverable = collected.subtract(request.getTransferredAmount()).add(request.getProviderRefundAmount()).max(BigDecimal.ZERO).min(collected);
+        if (request.getCustomerRefundAmount().compareTo(recoverable) != 0)
+            throw new IllegalArgumentException("Tiền hoàn khách phải bằng số thu hộ trừ số chuyển đối tác cộng số đối tác hoàn (giới hạn trong số đã thu).");
+        // Ghi nhận chuyển tiền hoàn thực hiện bên ngoài, không tự gọi cổng thanh toán.
+        if (request.getCustomerRefundAmount().signum() > 0) paymentRepository.save(Payment.builder().bookingID(booking)
+            .amount(request.getCustomerRefundAmount()).paymentDate(Instant.now()).paymentType("REFUND").paymentMethod("MANUAL")
+            .transactionCode(request.getReference()).status("COMPLETED").note("Hoàn bảo hiểm thu hộ: " + request.getNote()).build());
+        payment.put("refundAmount", request.getCustomerRefundAmount());
+        payment.put("insuranceTransferred", request.getTransferredAmount());
+        payment.put("insuranceProviderRefund", request.getProviderRefundAmount());
+        payment.put("insuranceReconciliationPending", false);
+        payment.put("insuranceReconciliationReference", request.getReference());
+        payment.put("insuranceReconciliationNote", request.getNote());
+        payload.setPayment(payment);
+        appendHistory(payload, actor, "Đối soát bảo hiểm thu hộ; hoàn khách " + request.getCustomerRefundAmount());
+        savePayload(booking, payload);
+        bookingRepository.save(booking);
+    }
 
     // =========================================================================
     // CRUD CƠ BẢN
@@ -123,9 +158,12 @@ public class PaymentServiceImpl implements PaymentService {
 
         int refundPercentage = 0;
         BigDecimal refundAmount = BigDecimal.ZERO;
-        BigDecimal penaltyAmount = depositPaid;
+        BookingDetailsPayload cancellationPayload = extractPayload(booking);
+        BigDecimal insuranceCollected = HorseInsurancePolicy.insuranceDeposit(cancellationPayload.getQuote(), depositPaid);
+        BigDecimal penaltyAmount = depositPaid.subtract(insuranceCollected);
         String policyMsg = "Khách hàng tự ý hủy đơn sau khi đặt cọc. Không áp dụng hoàn cọc. Toàn bộ tiền cọc (" + penaltyAmount + " VND) tính vào phí phạt giữ chỗ và chuẩn bị phương tiện.";
 
+        if (insuranceCollected.signum() > 0) policyMsg = "Phạt phần cọc vận chuyển: " + penaltyAmount + " VND. Phần bảo hiểm thu hộ " + insuranceCollected + " VND đang chờ quản lý đối soát riêng.";
         Payment refundPayment = null;
 
         // Ghi nhận phí phạt hủy (PENALTY): khấu trừ 100% tiền cọc
@@ -137,13 +175,15 @@ public class PaymentServiceImpl implements PaymentService {
                 .paymentMethod("DEDUCTION")
                 .transactionCode("PEN-" + booking.getId() + "-" + System.currentTimeMillis())
                 .status("COMPLETED")
-                .note("Phí phạt hủy đơn (mất 100% tiền cọc): " + penaltyAmount + " VND")
+                .note("Phí phạt hủy phần cọc vận chuyển: " + penaltyAmount + " VND")
                 .build();
         paymentRepository.save(penaltyPayment);
 
         booking.setStatus("cancelled");
         BookingDetailsPayload payload = extractPayload(booking);
         Map<String, Object> paymentMap = getOrCreatePaymentMap(payload);
+        paymentMap.put("insuranceCollected", insuranceCollected);
+        paymentMap.put("insuranceReconciliationPending", insuranceCollected.signum() > 0);
         paymentMap.put("cancelled", true);
         paymentMap.put("refundAmount", refundAmount);
         paymentMap.put("penaltyAmount", penaltyAmount);
@@ -208,6 +248,8 @@ public class PaymentServiceImpl implements PaymentService {
                 } else if ("BALANCE".equalsIgnoreCase(p.getPaymentType())) {
                     balancePaid = true;
                     totalPaid = totalPaid.add(p.getAmount());
+                } else if ("REFUND".equalsIgnoreCase(p.getPaymentType())) {
+                    totalPaid = totalPaid.subtract(p.getAmount());
                 } else if ("SETTLEMENT".equalsIgnoreCase(p.getPaymentType())) {
                     totalPaid = totalPaid.add(p.getAmount());
                 }
@@ -219,6 +261,7 @@ public class PaymentServiceImpl implements PaymentService {
             remainingBalance = BigDecimal.ZERO;
         }
 
+        if ("cancelled".equalsIgnoreCase(booking.getStatus())) remainingBalance = BigDecimal.ZERO;
         boolean fullyPaid = depositPaid && balancePaid;
 
         return PaymentSummaryResponse.builder()

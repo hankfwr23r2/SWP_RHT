@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Modal } from '@shared/ui/Modal'
+import { InsuranceReconciliation } from '../../../shared/InsuranceReconciliation'
 import { formatDate } from '@shared/lib/format'
 import type { Booking } from '@shared/types/booking'
 import { invalidateBookingsListCache } from '@shared/services/bookings'
@@ -11,6 +13,7 @@ import type { bookingListLoader } from '../../../shared/loaders'
 export default function CancelledOrdersPage() {
   const { all, reload } = usePageData<typeof bookingListLoader>()
   const [open, setOpen] = useState<Booking | null>(null)
+  const [reconciling, setReconciling] = useState<Booking | null>(null)
   const orders = (all ?? []).filter(b => b.status === 'cancelled')
   const columns: Column<Booking>[] = [
     { head: 'Mã đơn', cell: b => idCell(b) },
@@ -19,7 +22,8 @@ export default function CancelledOrdersPage() {
     { head: 'Khởi hành', cell: b => formatDate(b.departAt), nowrap: true },
     { head: 'Ngựa', cell: b => `${b.horses.length} con`, nowrap: true },
     { head: 'Trạng thái', cell: b => statusCell(b.status) },
-    { head: 'Thao tác', cell: b => <button className="btn btn-ghost btn-sm" onClick={() => setOpen(b)}>Chi tiết</button>, right: true },
+    { head: 'Bảo hiểm', cell: b => b.cancellation?.insuranceReconciliationPending ? 'Chờ đối soát thu hộ' : '—' },
+    { head: 'Thao tác', cell: b => <div><button className="btn btn-ghost btn-sm" onClick={() => setOpen(b)}>Chi tiết</button>{!!b.cancellation?.insuranceCollected && <button className="btn btn-outline btn-sm" onClick={() => setReconciling(b)}>Đối soát BH</button>}</div>, right: true },
   ]
 
   return (
@@ -35,6 +39,7 @@ export default function CancelledOrdersPage() {
         loaded={!!all}
         emptyText="Chưa có đơn nào bị hủy."
       />
+      {reconciling && <Modal title={`Đối soát bảo hiểm ${reconciling.id}`} onClose={() => setReconciling(null)}><InsuranceReconciliation b={reconciling} onDone={() => { invalidateBookingsListCache(); setReconciling(null); reload() }} /></Modal>}
       {open && <OrderDetailModal b={open} all={all ?? []} onClose={() => setOpen(null)} onDone={() => { invalidateBookingsListCache(); setOpen(null); reload() }} />}
     </>
   )

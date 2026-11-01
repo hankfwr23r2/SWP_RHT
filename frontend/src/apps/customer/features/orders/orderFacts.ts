@@ -5,6 +5,7 @@ import { COUNTRIES } from '@shared/config/network'
 import { arrivalOf, insuranceFee, vehicleClassOf } from '@shared/lib/booking'
 import { formatDate, formatDateTime, formatVND } from '@shared/lib/format'
 import type { CustomerBookingView, TripTeam } from '@shared/services/bookings'
+import { insuranceLabels } from '@shared/types/insurance'
 import { SEX_LABEL, type Party } from '@shared/types/booking'
 
 export interface FactRow { label: string; value: string; sub?: string }
@@ -41,7 +42,7 @@ export function orderFacts(b: CustomerBookingView, team: TripTeam[]): FactGroup[
       sub: joined(`Chip ${h.microchip}`, h.breed, SEX_LABEL[h.sex], h.selectedServices?.stall?.serviceName ?? (h.stall === 'single' ? 'Khoang đơn' : 'Khoang tiêu chuẩn'),
         `Thức ăn: ${h.selectedServices?.feed?.serviceName ?? FEED_PACKAGE[h.feedPackage ?? 'basic'].label}`,
         (h.selectedServices?.water || h.waterPlan) ? `Nước: ${h.selectedServices?.water?.serviceName ?? WATER_PLAN[h.waterPlan ?? 'every_3h'].label}` : undefined,
-        h.selectedServices?.insurance
+        h.insurance.option ? `${insuranceLabels[h.insurance.option]}${h.insurance.option === 'assistance' ? h.insurance.reviewed && h.insurance.premium != null ? `, thu hộ ${formatVND(h.insurance.premium)}` : ', chờ báo giá bên thứ ba' : ''}` : h.selectedServices?.insurance
           ? h.insurance.opted
             ? `${h.selectedServices.insurance.serviceName}, phí ${formatVND(h.selectedServices.insurance.price)}`
             : `${h.selectedServices.insurance.serviceName} (trách nhiệm hạn chế)`

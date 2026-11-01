@@ -59,6 +59,33 @@ class PaymentServiceImplTest {
     }
 
     @Test
+    void cancellationSeparatesInsuranceFromTransportPenaltyAndReconcilesOnlyOnce() {
+        booking.setDetailsJson("""
+            {"quote":{"total":10000000,"lines":[{"label":"Thu hộ bảo hiểm bên thứ ba","amount":2000000}]}}
+            """);
+        var result = service.cancelWithRefundPolicy("BK-42", CancelBookingRequest.builder().reason("Đổi lịch").build(), "phuc");
+        assertThat(result.getPenaltyAmount()).isEqualByComparingTo("2400000");
+        assertThat(booking.getDetailsJson()).contains("\"insuranceCollected\":600000", "\"insuranceReconciliationPending\":true");
+        when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
+        var request = new com.example.racehorse_transport.dto.payment.ReconcileInsuranceRequest(BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("600000"), "REF-42", "Chưa chuyển đối tác; đã hoàn khách");
+        service.reconcileInsurance("BK-42", request, "manager");
+        assertThat(booking.getDetailsJson()).contains("\"insuranceReconciliationPending\":false", "\"refundAmount\":600000");
+        assertThatThrownBy(() -> service.reconcileInsurance("BK-42", request, "manager")).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void insuranceReconciliationRejectsInflatedRefundWithoutRecordingPayment() {
+        booking.setStatus("cancelled");
+        booking.setDetailsJson("""
+            {"payment":{"insuranceCollected":600000,"insuranceReconciliationPending":true},"quote":{"total":10000000,"lines":[{"label":"Thu hộ bảo hiểm bên thứ ba","amount":2000000}]}}
+            """);
+        when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
+        var request = new com.example.racehorse_transport.dto.payment.ReconcileInsuranceRequest(new BigDecimal("500000"), BigDecimal.ZERO, new BigDecimal("600000"), "REF-42", "Đối soát");
+        assertThatThrownBy(() -> service.reconcileInsurance("BK-42", request, "manager")).isInstanceOf(IllegalArgumentException.class);
+        verify(paymentRepository, never()).save(any());
+    }
+
+    @Test
     void cancel_byAnotherCustomer_isDenied() {
         assertThatThrownBy(() -> service.cancelWithRefundPolicy("BK-42", CancelBookingRequest.builder().reason("Đổi lịch").build(), "khac"))
                 .isInstanceOf(AccessDeniedException.class);

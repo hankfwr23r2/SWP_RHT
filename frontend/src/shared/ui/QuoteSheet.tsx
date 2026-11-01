@@ -40,7 +40,7 @@ function calculationOf(line: QuoteLine) {
   if (l.includes('nhân sự')) return `Dựa trên số ngày hành trình (${line.detail}), kíp xe gồm 01 tài xế chuyên tuyến và 01 hộ tống chăm sóc an sinh ngựa.`
   if (l.includes('nhiên liệu')) return `Ước tính tiêu hao nhiên liệu theo km thực tế và phí cao tốc/BOT; ${line.detail.toLowerCase()}.`
   if (l.includes('kiểm dịch') || l.includes('hải quan')) return 'Trọn gói hồ sơ kiểm dịch thú y liên tỉnh / thông quan xuất nhập cảnh tại cửa khẩu quốc tế.'
-  if (l.includes('bảo hiểm')) return 'Phí bảo hiểm chuyến đi tính theo tỷ lệ phí 2% trên định mức giá trị của giống ngựa áp tải.'
+  if (l.includes('bảo hiểm')) return 'Phí bảo hiểm theo báo giá đã chốt; khoản thu hộ bên thứ ba được thể hiện riêng.'
   return undefined
 }
 

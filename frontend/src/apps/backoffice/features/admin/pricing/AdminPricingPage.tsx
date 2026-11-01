@@ -121,15 +121,7 @@ const PARAMETER_DEFS: ParameterDef[] = [
     desc: 'Phí dịch vụ trọn gói hồ sơ kiểm dịch thú y & thông quan cửa khẩu quốc tế',
     defaultValue: '300000',
   },
-  {
-    key: 'INSURANCE_RATE',
-    name: 'Tỷ lệ phí bảo hiểm chuyến đi',
-    group: 'OPERATIONS',
-    unit: '%',
-    desc: 'Tỷ lệ tính phí bảo hiểm trên tổng giá trị định giá của từng giống ngựa',
-    defaultValue: '0.02',
-    isPercent: true,
-  },
+
 ]
 
 function formatVND(val: number) {
@@ -188,7 +180,7 @@ export default function AdminPricingPage() {
   const [simBreedId, setSimBreedId] = useState<number>(horseTypesList[0]?.id ?? 1)
   const [simStallType, setSimStallType] = useState<'standard' | 'single'>('standard')
   const [simFeed, setSimFeed] = useState<'basic' | 'advanced' | 'sport'>('basic')
-  const [simHasInsurance, setSimHasInsurance] = useState(true)
+  const [simInsurancePremium, setSimInsurancePremium] = useState(0)
 
   // Save all system configs
   const handleSaveAllConfigs = async () => {
@@ -338,7 +330,6 @@ export default function AdminPricingPage() {
     const crewDaily = Number(draftValues['CREW_FEE_PER_DAY'] ?? 1800000)
     const margin = Number(draftValues['MARGIN_RATE'] ?? 0.05)
     const clearanceIntl = Number(draftValues['CLEARANCE_FEE_INTERNATIONAL'] ?? 300000)
-    const insRate = Number(draftValues['INSURANCE_RATE'] ?? 0.02)
 
     const m = 1 + margin
 
@@ -369,7 +360,7 @@ export default function AdminPricingPage() {
 
     const selectedBreedObj = horseTypesList.find(h => h.id === simBreedId)
     const breedVal = selectedBreedObj?.insuredValue ?? 400000000
-    const insuranceCost = simHasInsurance ? Math.round((breedVal * insRate * m) / 1000) * 1000 : 0
+    const insuranceCost = Math.max(0, simInsurancePremium)
 
     const total = truckCostLine + crewCostLine + fuelBotLine + stallCost + feedCost + clearanceCost + insuranceCost
 
@@ -417,7 +408,7 @@ export default function AdminPricingPage() {
           ? [
               {
                 label: `Bảo hiểm chuyến đi (${selectedBreedObj?.typeName ?? 'Ngựa'})`,
-                detail: `Định mức ${formatVND(breedVal)} × ${insRate * 100}% tỷ lệ phí`,
+                detail: 'Phí thu hộ do bên thứ ba báo (nhập để mô phỏng)',
                 amount: insuranceCost,
               },
             ]
@@ -426,7 +417,7 @@ export default function AdminPricingPage() {
       total,
       breedVal,
     }
-  }, [draftValues, simKm, simVehicleClass, simDays, simIsIntl, simBreedId, simStallType, simFeed, simHasInsurance, horseTypesList])
+  }, [draftValues, simKm, simVehicleClass, simDays, simIsIntl, simBreedId, simStallType, simFeed, simInsurancePremium, horseTypesList])
 
   return (
     <div className={s.wrap}>
@@ -436,7 +427,7 @@ export default function AdminPricingPage() {
           <h1>
             <i className="fa-solid fa-calculator" /> Biểu Giá & Công Thức Tính Cước
           </h1>
-          <p>Quản trị công thức tính cước vận chuyển, các hệ số cấu thành báo giá và giá trị bảo hiểm theo 20 giống ngựa.</p>
+          <p>Quản trị cước vận chuyển và danh mục giống ngựa. Phí bảo hiểm do bên thứ ba báo theo chuyến.</p>
         </div>
         <div className={s.headerActions}>
           {hasChanges && (
@@ -504,7 +495,7 @@ export default function AdminPricingPage() {
           className={`${s.tabBtn} ${activeTab === 'breeds' ? s.tabBtnActive : ''}`}
           onClick={() => setActiveTab('breeds')}
         >
-          <i className="fa-solid fa-horse-head" /> 20 Giống Ngựa & Bảo Hiểm
+          <i className="fa-solid fa-horse-head" /> Danh mục giống ngựa
           <span className={s.tabBadge}>{horseTypesList.length}</span>
         </button>
         <button
@@ -677,15 +668,13 @@ export default function AdminPricingPage() {
                 <th>Giống Ngựa</th>
                 <th>Mô Tả Tiêu Chuẩn</th>
                 <th style={{ width: '220px', textAlign: 'right' }}>Giá Trị Định Mức (VND)</th>
-                <th style={{ width: '180px', textAlign: 'right' }}>Phí Bảo Hiểm Ước Tính (2%)</th>
+                <th style={{ width: '180px', textAlign: 'right' }}>Phí bảo hiểm bên thứ ba</th>
                 <th style={{ width: '160px', textAlign: 'center' }}>Thao Tác</th>
               </tr>
             </thead>
             <tbody>
               {filteredBreeds.map(b => {
                 const val = b.insuredValue ?? 400000000
-                const currentInsRate = Number(draftValues['INSURANCE_RATE'] ?? 0.02)
-                const prem = Math.round(val * currentInsRate)
                 return (
                   <tr key={b.id}>
                     <td>
@@ -701,7 +690,7 @@ export default function AdminPricingPage() {
                       <span className={s.insuredValueCell}>{formatVND(val)}</span>
                     </td>
                     <td style={{ textAlign: 'right' }}>
-                      <span className={s.insurancePremiumCell}>{formatVND(prem)}</span>
+                      <span className={s.insurancePremiumCell}>Báo giá theo chuyến</span>
                     </td>
                     <td style={{ textAlign: 'center' }}>
                       <div className={s.rowActions}>
@@ -837,17 +826,7 @@ export default function AdminPricingPage() {
               </select>
             </div>
 
-            <div className={s.simField}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  style={{ width: 'auto' }}
-                  checked={simHasInsurance}
-                  onChange={e => setSimHasInsurance(e.target.checked)}
-                />
-                Mua bảo hiểm chuyến đi theo định mức giống
-              </label>
-            </div>
+            <div className={s.simField}><label>Phí bảo hiểm thu hộ (VNĐ, nhập theo báo giá bên thứ ba)</label><input className="form-control" type="number" min="0" value={simInsurancePremium} onChange={e => setSimInsurancePremium(Math.max(0, Number(e.target.value)))} /></div>
           </div>
 
           {/* Results Preview */}
@@ -923,7 +902,7 @@ export default function AdminPricingPage() {
                 />
               </div>
               <div className={s.modalField}>
-                <label>Giá trị định mức bảo hiểm quy chuẩn (VNĐ) <span style={{ color: '#ef4444' }}>*</span></label>
+                <label>Giá trị tham chiếu của giống (VNĐ) <span style={{ color: '#ef4444' }}>*</span></label>
                 <input
                   type="text"
                   value={formatNumber(editInsuredValStr)}
@@ -948,7 +927,7 @@ export default function AdminPricingPage() {
                 </div>
               </div>
               <p style={{ margin: '10px 0 0', fontSize: '0.82rem', color: 'var(--muted)' }}>
-                Lưu ý: Mức giá trị này sẽ dùng làm cơ sở tính phí bảo hiểm chuyến đi ({Number(draftValues['INSURANCE_RATE'] ?? 0.02) * 100}%) cho mọi cá thể ngựa thuộc giống này khi khách chọn mua bảo hiểm.
+                Giá trị này chỉ để tham khảo; không dùng để tính phí bảo hiểm cho đơn mới.
               </p>
             </div>
             <div className={s.modalFooter}>

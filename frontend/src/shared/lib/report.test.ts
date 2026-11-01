@@ -103,3 +103,20 @@ describe('tổng hợp báo cáo', () => {
     expect(f.cost).toBe(0)
   })
 })
+
+
+describe('bảo hiểm thu hộ', () => {
+  it('loại phí thu hộ khỏi doanh thu và giá vốn nhưng giữ tổng tiền đã thu', () => {
+    const b = quoted()
+    const base = orderFinance(b)!
+    const premium = 2_000_000
+    const financed = orderFinance({ ...b, quote: { ...b.quote!, total: b.quote!.total + premium, lines: [...b.quote!.lines, { label: 'Thu hộ bảo hiểm bên thứ ba', detail: 'H1', amount: premium }] }, balance: { paidAt: NOW, amount: (b.balance?.amount ?? 0) + premium, reference: 'TEST' } })!
+    expect(financed.revenue).toBe(base.revenue)
+    expect(financed.cost).toBe(base.cost)
+    expect(financed.collected).toBe(base.collected + premium)
+  })
+  it('đơn hủy chỉ ghi nhận phí phạt vận chuyển dù phần thu hộ chưa được hoàn', () => {
+    const b = quoted({ status: 'cancelled', payment: { paidAt: NOW, amount: 3_000_000, reference: 'TEST' }, balance: undefined, cancellation: { by: 'customer', reason: '', refund: 0, penalty: 2_400_000, insuranceCollected: 600_000, insuranceReconciliationPending: true } })
+    expect(orderFinance(b)).toMatchObject({ revenue: 2_400_000, collected: 3_000_000 })
+  })
+})

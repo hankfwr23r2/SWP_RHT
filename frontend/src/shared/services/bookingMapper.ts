@@ -32,7 +32,17 @@ function paymentOf(p: Record<string, unknown> | undefined): Payment | undefined 
 // Đơn cũ hủy trước khi có cancelledAt thì chưa biết thời điểm hủy.
 function cancellationOf(p: Record<string, unknown> | undefined): Cancellation | undefined {
   if (!p?.cancelled) return undefined
-  return { at: num(p.cancelledAt), reason: String(p.cancelReason ?? ''), by: 'customer', refund: num(p.refundAmount) ?? 0 }
+  return {
+    at: num(p.cancelledAt), reason: String(p.cancelReason ?? ''), by: 'customer', refund: num(p.refundAmount) ?? 0,
+    ...(num(p.insuranceCollected) !== undefined ? {
+      insuranceCollected: num(p.insuranceCollected),
+      insuranceReconciliationPending: p.insuranceReconciliationPending === true,
+      penalty: num(p.penaltyAmount),
+      insuranceTransferred: num(p.insuranceTransferred),
+      insuranceProviderRefund: num(p.insuranceProviderRefund),
+      insuranceReconciliationNote: typeof p.insuranceReconciliationNote === 'string' ? p.insuranceReconciliationNote : undefined,
+    } : {}),
+  }
 }
 
 // Tiền 70% ngày D: backend ghi cùng bản ghi thanh toán với tiền cọc, khác khóa
@@ -49,7 +59,7 @@ function horseOf(h: BackendBookingResponse['horses'][number]): BookingHorse {
     feedPackage: h.feedPackage as BookingHorse['feedPackage'], waterPlan: h.waterPlan as BookingHorse['waterPlan'],
     selectedServices: h.selectedServices,
     selectedServiceCodes: h.selectedServiceCodes,
-    insurance: { opted: !!h.insuranceOpted },
+    insurance: { opted: !!h.insuranceOpted, ...h.insurance },
     status: (h.status?.toLowerCase() === 'unfit' ? 'unfit' : 'eligible'),
     unfitInfo: h.unfitInfo as BookingHorse['unfitInfo'],
   }

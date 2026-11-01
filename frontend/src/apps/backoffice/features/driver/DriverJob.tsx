@@ -1,6 +1,7 @@
 // Việc của Tài xế theo từng mốc hành trình (Flow 4, PRD mục 5): check-in kèm ảnh chụp trực tiếp, thu và trả bản gốc, ký biên bản.
 import { ReadMore } from '@shared/ui/ReadMore'
 import { useState } from 'react'
+import { insuranceDepartureProblem } from '@shared/types/insurance'
 import { useAuth } from '@shared/auth/AuthContext'
 import { openIncidentOf, currentCheckpoint, manifestDocuments, pendingDeparture, spotLabel } from '@shared/lib/booking'
 import { formatDateTime } from '@shared/lib/format'
@@ -38,7 +39,9 @@ function PickupStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
   const scanned = pickup.chips?.length ?? 0
   const paid = !!b.balance
   const horsesOk = horses.length === 0 || scanned >= horses.length
-  const ready = paid && horsesOk && (pickup.originals?.length ?? 0) >= originalsAll.length && !!pickup.handoverPhoto
+  const departureDay = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+  const insuranceProblems = horses.flatMap(h => { const problem = insuranceDepartureProblem(h.insurance, departureDay); return problem ? [`${h.name}: ${problem}`] : [] })
+  const ready = insuranceProblems.length === 0 && paid && horsesOk && (pickup.originals?.length ?? 0) >= originalsAll.length && !!pickup.handoverPhoto
   return (
     <>
       <Panel title="Hộ tống quét microchip" icon="fa-wave-square" tone={horsesOk ? 'ok' : undefined}>
@@ -87,6 +90,7 @@ function PickupStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
       </Panel>
       <Panel title="Bắt đầu hành trình" icon="fa-truck-fast" tone={ready ? 'ok' : undefined}>
         <p>{ready ? 'Đủ điều kiện xuất phát. Khách sẽ thấy ngựa đã được tiếp nhận.' : !paid ? 'Khách chưa thanh toán 70% còn lại nên xe chưa được bắt đầu hành trình. Nhà xe đã nhắc khách.' : 'Cần quét đủ microchip, thu đủ chứng từ gốc và tải ảnh biên bản có chữ ký.'}</p>
+        {insuranceProblems.map(problem => <p className="form-error" key={problem}>{problem}. Liên hệ chuyên viên.</p>)}
         <button className={`btn btn-primary ${s.big}`} disabled={!ready} onClick={() => run(() => bookingsApi.startJourney(b.id, t.tripId, session!.name), 'Hành trình bắt đầu')}><i className="fa-solid fa-play" /> Bắt đầu hành trình</button>
       </Panel>
     </>
