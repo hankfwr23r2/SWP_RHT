@@ -1,8 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
-async function open(page: Page, policy = false) {
+async function open(page: Page, policy = false, extra = '') {
   await page.route('**/insurance-test*', route => route.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body><div id="root"></div><script type="module">import R from '/@react-refresh';R.injectIntoGlobalHook(window);window.$RefreshReg$=()=>{};window.$RefreshSig$=()=>t=>t;window.__vite_plugin_react_preamble_installed__=true;</script><script type="module" src="/e2e/fixtures/insuranceHarness.tsx"></script></body></html>` }))
   await page.route('https://example.test/**', route => route.fulfill({ body: '%PDF-1.4', contentType: 'application/pdf' }))
-  await page.goto(`/insurance-test${policy ? '?policy=1' : ''}`)
+  await page.goto(`/insurance-test?${policy ? 'policy=1&' : ''}${extra}`)
 }
 test('báo giá chỉ nhập phí, định dạng tiền và gửi số nguyên đã xác nhận', async ({ page }) => {
   let sent: Record<string, unknown> = {}
@@ -58,4 +58,20 @@ test('giao diện điện thoại không tràn ngang và có nút tải tệp đ
   await expect(page.getByText('Chọn chứng từ', { exact: true })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   await page.screenshot({ path: '/tmp/rht-insurance-mobile.png', fullPage: true })
+})
+
+test('dữ liệu API có tên chứng từ null vẫn xem PDF và gỡ tệp được', async ({ page }) => {
+  await open(page, false, 'legacy=1')
+  await expect(page.getByText('quote.pdf', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Xem', exact: true }).click()
+  await expect(page.locator('iframe')).toBeVisible()
+  await page.keyboard.press('Escape')
+  await page.getByRole('button', { name: 'Gỡ quote.pdf' }).click()
+  await expect(page.getByText('quote.pdf', { exact: true })).toHaveCount(0)
+})
+test('danh sách chứng từ null vẫn mở form và tải tệp được', async ({ page }) => {
+  await open(page, false, 'legacy=1&empty=1')
+  await expect(page.getByLabel('Đơn vị bảo hiểm', { exact: true })).toBeVisible()
+  await expect(page.getByLabel('Chọn chứng từ bảo hiểm')).toBeEnabled()
+  await expect(page.getByText('0/10 chứng từ đã tải lên')).toBeVisible()
 })
