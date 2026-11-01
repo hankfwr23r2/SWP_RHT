@@ -2,7 +2,7 @@
 // Khi nào, Tại sao là thông tin bổ sung, chỉ hiện dòng có dữ liệu.
 import { FEED_PACKAGE, VEHICLE_CLASS, WATER_PLAN } from '@shared/config/booking-rules'
 import { COUNTRIES } from '@shared/config/network'
-import { arrivalOf, insuranceFee, vehicleClassOf } from '@shared/lib/booking'
+import { arrivalOf, vehicleClassOf } from '@shared/lib/booking'
 import { formatDate, formatDateTime, formatVND } from '@shared/lib/format'
 import type { CustomerBookingView, TripTeam } from '@shared/services/bookings'
 import { insuranceLabels } from '@shared/types/insurance'
@@ -42,11 +42,7 @@ export function orderFacts(b: CustomerBookingView, team: TripTeam[]): FactGroup[
       sub: joined(`Chip ${h.microchip}`, h.breed, SEX_LABEL[h.sex], h.selectedServices?.stall?.serviceName ?? (h.stall === 'single' ? 'Khoang đơn' : 'Khoang tiêu chuẩn'),
         `Thức ăn: ${h.selectedServices?.feed?.serviceName ?? FEED_PACKAGE[h.feedPackage ?? 'basic'].label}`,
         (h.selectedServices?.water || h.waterPlan) ? `Nước: ${h.selectedServices?.water?.serviceName ?? WATER_PLAN[h.waterPlan ?? 'every_3h'].label}` : undefined,
-        h.insurance.option ? `${insuranceLabels[h.insurance.option]}${h.insurance.option === 'assistance' ? h.insurance.reviewed && h.insurance.premium != null ? `, thu hộ ${formatVND(h.insurance.premium)}` : ', chờ báo giá bên thứ ba' : ''}` : h.selectedServices?.insurance
-          ? h.insurance.opted
-            ? `${h.selectedServices.insurance.serviceName}, phí ${formatVND(h.selectedServices.insurance.price)}`
-            : `${h.selectedServices.insurance.serviceName} (trách nhiệm hạn chế)`
-          : h.insurance.opted ? `Mua bảo hiểm, phí ${formatVND(insuranceFee(h.breed))}` : 'Từ chối bảo hiểm (trách nhiệm hạn chế)'),
+        h.insurance.option ? `${insuranceLabels[h.insurance.option]}${h.insurance.option === 'assistance' ? h.insurance.reviewed && h.insurance.premium != null ? `, thu hộ ${formatVND(h.insurance.premium)}` : ', chờ báo giá bên thứ ba' : ''}` : 'Bảo hiểm theo dữ liệu đơn cũ; xem thông tin trong báo giá đã phát hành'),
     })),
   ]
 

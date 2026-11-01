@@ -49,7 +49,8 @@ public class AdminServiceServiceImpl implements AdminServiceService {
     public List<ServiceResponse> getActiveServices() {
         return serviceRepository.findByStatusIgnoreCaseOrderByIdAsc("ACTIVE")
                 .stream()
-                .filter(service -> service.getCategoryID() == null || !RETIRED_WATER_CATEGORY_ID.equals(service.getCategoryID().getId()))
+                .filter(service -> service.getCategoryID() == null || (!RETIRED_WATER_CATEGORY_ID.equals(service.getCategoryID().getId())
+                        && !INSURANCE_CATEGORY_ID.equals(service.getCategoryID().getId())))
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
@@ -183,7 +184,7 @@ public class AdminServiceServiceImpl implements AdminServiceService {
     private void ensureInsuranceCategoryReadOnly(Category category) {
         if (category != null && INSURANCE_CATEGORY_ID.equals(category.getId())) {
             throw new IllegalArgumentException(
-                    "Dịch vụ bảo hiểm chỉ có hai lựa chọn Mua/Từ chối và không thể thêm, sửa hoặc thay đổi trạng thái.");
+                    "Bảo hiểm do bên thứ ba cung cấp, phí do chuyên viên nhập theo báo giá; danh mục bảo hiểm cũ chỉ dùng cho lịch sử.");
         }
     }
 

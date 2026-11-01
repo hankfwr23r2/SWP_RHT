@@ -5,7 +5,7 @@ import { fileApi } from '../api/files'
 import { formatVND } from '../lib/format'
 
 export function InsuranceSummary({ insurance }: { insurance?: Partial<HorseInsurance> }) {
-  if (!insurance?.option) return <span>Bảo hiểm theo dữ liệu đơn cũ</span>
+  if (!insurance?.option) return <span>Bảo hiểm theo dữ liệu đơn cũ; xem thông tin trong báo giá đã phát hành</span>
   return <div><b>{insuranceLabels[insurance.option]}</b>
     {insurance.provider && <div>Đơn vị: {insurance.provider}</div>}
     {insurance.policyNumber && <div>Hợp đồng: {insurance.policyNumber}</div>}

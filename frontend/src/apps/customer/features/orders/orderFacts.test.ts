@@ -28,6 +28,8 @@ describe('thông tin đơn theo 5W', () => {
     expect(text(group(g, 'what'))).toContain('Cấp sau khi đặt cọc')
     expect(text(group(g, 'what'))).toContain('Gói thể thao')
     expect(text(group(g, 'what'))).toContain('Mỗi 2 giờ')
+    expect(text(group(g, 'what'))).toContain('Bảo hiểm theo dữ liệu đơn cũ')
+    expect(text(group(g, 'what'))).not.toContain('16.000.000')
     expect(text(group(g, 'where'))).toContain('Kho Đồng Nai — Trang trại Long Thành')
     expect(text(group(g, 'where'))).toContain('Nhà xe chọn khi chốt lộ trình')
   })

@@ -10,7 +10,7 @@ import { applyDocumentRequirements } from '../config/runtimeDocumentRequirements
 import type { DocumentRequirement } from '../api/documentRequirements'
 import {
   schedulesOf, clashOf, crewClashOf, planHomeReturn, returnLate, returningTrips, vehicleSpot, vehiclePoint, pendingDeparture, spotLabel, nearestTo, projectOnPath, pointsAhead, pointAlong, bookingPath, incidentLocation, needsFitCheck, transitProgress, defaultPayer, incidentActionsFor, settlementOf, approvedSubOf, APPROVED_SUBS, orderGroupOf, ORDER_GROUPS, capacitiesFor, estimateQuote, busyResources, buildRoutePlan, gatesFor, suggestGate, suggestTransitStations, canCompleteClearance, classForHorses, defaultClearanceItems, deriveStatus, docsDueAt, earliestDeparture, finalizeQuote, horseReadiness,
-  insuranceFee, isClearanceOverdue, isDepartureAllowed, isQuoteExpired, layoutLegs, manifestDocuments, nextBookingId, quoteLines, reviewDone, routeKm, activeStaff,
+  isClearanceOverdue, isDepartureAllowed, isQuoteExpired, layoutLegs, manifestDocuments, nextBookingId, quoteLines, reviewDone, routeKm, activeStaff,
   findLocation, arrivalOf, routeOutline, managerBoardOf, managerCounts, orderTabOf, tripIdFor, validateRoutePlan, vehicleClassOf, autoPackFleet, horseCountryMatchesOrigin, horseHasUnverifiedLocationCountry,
 } from './booking'
 
@@ -137,19 +137,12 @@ describe('báo giá', () => {
     expect(routeKm(origin, dest, 'Tịnh Biên – Phnom Den')).not.toBe(routeKm(origin, dest, 'Mộc Bài – Bavet'))
   })
   const labels = (vs: { capacity: number }[], h = base.horses) => quoteLines({ ...base, horses: h }, vs).lines.map(l => l.label)
-  it('có dòng khoang đơn và bảo hiểm khi khách chọn, không có khi không chọn', () => {
+  it('có phí khoang đơn nhưng không tính lại bảo hiểm cũ khi lập báo giá', () => {
     expect(labels([{ capacity: 2 }])).toContain('Khoang đơn mở rộng')
-    expect(labels([{ capacity: 2 }])).toContain('Bảo hiểm chuyến đi')
+    expect(labels([{ capacity: 2 }])).not.toContain('Bảo hiểm chuyến đi')
     const plain = labels([{ capacity: 2 }], [bh(), bh()])
     expect(plain).not.toContain('Khoang đơn mở rộng')
     expect(plain).not.toContain('Bảo hiểm chuyến đi')
-  })
-  it('phí bảo hiểm tính theo giống, giống lạ lấy mức "Khác"', () => {
-    expect(insuranceFee('Thoroughbred')).toBe(20_000_000)
-    expect(insuranceFee('Arabian')).toBe(16_000_000)
-    expect(insuranceFee('Giống chưa có trong bảng')).toBe(insuranceFee('Khác'))
-    const ins = quoteLines(base, [{ capacity: 2 }]).lines.find(l => l.label === 'Bảo hiểm chuyến đi')
-    expect(ins?.amount).toBe(insuranceFee('Thoroughbred'))
   })
   it('dùng tên và đơn giá dịch vụ đã chụp từ catalog khi lập báo giá', () => {
     const service = (id: number, serviceName: string, categoryId: number, price: number) => ({
@@ -179,7 +172,7 @@ describe('báo giá', () => {
     expect(amount('Khoang trên xe')).toBe(3_000_000)
     expect(amount('Gói thức ăn')).toBe(800_000)
     expect(amount('Cữ nước')).toBeUndefined()
-    expect(amount('Bảo hiểm chuyến đi')).toBe(20_000_000)
+    expect(amount('Bảo hiểm chuyến đi')).toBeUndefined()
   })
   it('nhân phí dịch vụ theo ngựa × ngày và chỉ tính dịch vụ theo chuyến một lần', () => {
     const horses = [
@@ -220,7 +213,7 @@ describe('báo giá', () => {
 
     expect(lines.find(line => line.label === 'Gói thức ăn')?.amount).toBe(200_000 * days)
     expect(lines.find(line => line.label === 'Khoang trên xe')?.amount).toBe(250_000)
-    expect(lines.find(line => line.label === 'Bảo hiểm chuyến đi')?.amount).toBe(40_000_000)
+    expect(lines.find(line => line.label === 'Bảo hiểm chuyến đi')).toBeUndefined()
   })
   it('mỗi xe có cước, nhân sự, nhiên liệu và BOT; không có phí lưu xe hay Carrier Info Sheet', () => {
     const { lines } = quoteLines(base, [{ capacity: 2 }, { capacity: 4 }])
@@ -534,7 +527,7 @@ describe('ước tính chi phí cho khách (bảng giá) dùng công thức báo
     expect(b.gate).toBeUndefined()
     expect(b.km).toBeGreaterThan(500)
   })
-  it('nhiều ngựa thì nhiều xe, đắt hơn; thêm khoang đơn và bảo hiểm thì đắt hơn', () => {
+  it('nhiều ngựa thì nhiều xe, đắt hơn; thêm khoang đơn thì đắt hơn', () => {
     const base = estimateQuote({ origin: city('dni'), dest: city('pnh'), horses: Array.from({ length: 3 }, () => horse()) })
     const many = estimateQuote({ origin: city('dni'), dest: city('pnh'), horses: Array.from({ length: 10 }, () => horse()) })
     expect(many.vehicles).toEqual([9, 2])
