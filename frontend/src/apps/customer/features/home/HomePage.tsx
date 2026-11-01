@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent } from 'react'
 import { gsap } from 'gsap'
 import { MotionPathPlugin } from 'gsap/MotionPathPlugin'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
@@ -38,7 +38,8 @@ const Words = ({ text }: { text: string }) => <>{text.split(' ').map((w, i) => <
 
 export function Hero({ link = same }: { link?: LinkMap }) {
   const [index, setIndex] = useState(0)
-  const [paused, setPaused] = useState(false)
+  const [hold, setHold] = useState(false) // chuột hoặc focus bàn phím đang ở trong banner
+  const [stopped, setStopped] = useState(reducedMotion) // người xem bấm dừng; giảm chuyển động thì không tự chạy
   const root = useRef<HTMLElement>(null)
   // Mỗi lần đổi banner: từng từ của tiêu đề trượt lên, rồi tới nhãn, mô tả và nút
   useGSAP(() => {
@@ -51,14 +52,22 @@ export function Hero({ link = same }: { link?: LinkMap }) {
       .fromTo(q('p, a'), { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.12, ease: 'power3.out' }, '-=0.5')
   }, { dependencies: [index], scope: root })
   useEffect(() => {
-    if (paused) return
+    if (hold || stopped) return
     const t = setInterval(() => setIndex(i => (i + 1) % SLIDES.length), 6000)
     return () => clearInterval(t)
-  }, [paused, index])
+  }, [hold, stopped, index])
   return (
-    <section ref={root} className={s.hero} aria-label="Giới thiệu" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+    <section
+      ref={root}
+      className={s.hero}
+      aria-label="Giới thiệu"
+      onMouseEnter={() => setHold(true)}
+      onMouseLeave={() => setHold(false)}
+      onFocus={() => setHold(true)}
+      onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setHold(false) }}
+    >
       {SLIDES.map((sl, i) => (
-        <div key={i} className={cx(s.heroSlide, !sl.bg && s.heroSlidePlain, i === index && s.active)} style={sl.bg ? { '--bg': `url('${sl.bg}')` } as CSSProperties : undefined}>
+        <div key={i} className={cx(s.heroSlide, !sl.bg && s.heroSlidePlain, i === index && s.active)} aria-hidden={i !== index} style={sl.bg ? { '--bg': `url('${sl.bg}')` } as CSSProperties : undefined}>
           <div className={cx('wrap', s.heroContent)}>
             <span className={s.heroTag}>{sl.tag}</span>
             <h1><span className={s.line}><Words text={sl.title} /></span><span className={s.line}><span className={s.hl}><Words text={sl.hl} /></span></span></h1>
@@ -68,7 +77,10 @@ export function Hero({ link = same }: { link?: LinkMap }) {
         </div>
       ))}
       <div className={s.heroDots}>
-        {SLIDES.map((_, i) => <button key={i} className={cx(s.heroDot, i === index && s.active)} aria-label={`Chuyển tới banner ${i + 1}`} onClick={() => setIndex(i)} />)}
+        <button type="button" className={s.heroPause} aria-label={stopped ? 'Chạy banner' : 'Dừng banner'} onClick={() => setStopped(v => !v)}>
+          <i className={`fa-solid ${stopped ? 'fa-play' : 'fa-pause'}`} aria-hidden="true" />
+        </button>
+        {SLIDES.map((_, i) => <button key={i} type="button" className={cx(s.heroDot, i === index && s.active)} aria-label={`Banner ${i + 1}`} aria-current={i === index} onClick={() => setIndex(i)} />)}
       </div>
     </section>
   )
@@ -109,6 +121,8 @@ function OrderLookup() {
           <i className="fa-solid fa-magnifying-glass" />
           <input
             className={cx(error?.field === 'codes' && s.inputError)}
+            aria-invalid={error?.field === 'codes'}
+            aria-describedby={error?.field === 'codes' ? 'lookup-error' : undefined}
             value={codesText}
             onChange={e => { setCodesText(e.target.value); setError(null) }}
             aria-label="Mã đơn hoặc số vận đơn, nhiều mã cách nhau bằng dấu phẩy"
@@ -119,6 +133,8 @@ function OrderLookup() {
           <i className="fa-solid fa-phone" />
           <input
             className={cx(error?.field === 'phone' && s.inputError)}
+            aria-invalid={error?.field === 'phone'}
+            aria-describedby={error?.field === 'phone' ? 'lookup-error' : undefined}
             value={phone}
             onChange={e => { setPhone(e.target.value); setError(null) }}
             inputMode="numeric"
@@ -131,7 +147,8 @@ function OrderLookup() {
           {loading ? 'Đang tìm…' : 'Tìm kiếm'}
         </button>
       </form>
-      {error && <p className={s.formError}><i className="fa-solid fa-circle-exclamation" /> {error.message}</p>}
+      {error && <p id="lookup-error" className={s.formError} role="alert"><i className="fa-solid fa-circle-exclamation" aria-hidden="true" /> {error.message}</p>}
+      <div aria-live="polite">
       {!error && rows.length > 0 && (
         <div className={s.trackList}>
           {rows.map(({ code, result: o }, i) => o ? (
@@ -173,6 +190,7 @@ function OrderLookup() {
           ))}
         </div>
       )}
+      </div>
     </>
   )
 }
@@ -189,13 +207,33 @@ function Lookup() {
     if (fromUrl) setTab(fromUrl)
     if (hash) document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: 'smooth' })
   }, [fromUrl, hash])
+  // Mũi tên trái/phải chuyển tab như tablist chuẩn
+  const moveTab = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+    const i = TABS.findIndex(([key]) => key === tab)
+    const next = TABS[(i + (e.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length][0]
+    setTab(next)
+    document.getElementById(`tab-${next}`)?.focus()
+  }
   return (
     <section className={cx('wrap', s.lookup)} id="tra-cuu">
-      <div className={s.lookupTabs} role="tablist">
-        {TABS.map(([key, label]) => <button key={key} className={cx(s.lookupTab, tab === key && s.active)} onClick={() => setTab(key)}>{label}</button>)}
+      <div className={s.lookupTabs} role="tablist" aria-label="Tra cứu" onKeyDown={moveTab}>
+        {TABS.map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            id={`tab-${key}`}
+            aria-selected={tab === key}
+            aria-controls="tra-cuu-panel"
+            tabIndex={tab === key ? 0 : -1}
+            className={cx(s.lookupTab, tab === key && s.active)}
+            onClick={() => setTab(key)}
+          >{label}</button>
+        ))}
       </div>
       <div className={s.lookupCard}>
-        <div className={cx(s.lookupPanel, s.active)} key={tab}>
+        <div className={cx(s.lookupPanel, s.active)} key={tab} id="tra-cuu-panel" role="tabpanel" aria-labelledby={`tab-${tab}`}>
           {tab === 'order' ? <OrderLookup /> : <PriceTable />}
         </div>
       </div>
