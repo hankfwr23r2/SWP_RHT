@@ -31,7 +31,7 @@ function PublicNav() {
     <>
       <NavLink to="/" end className={navClass}>Trang chủ</NavLink>
       <div className={s.drop}>
-        <button className={s.dropBtn}>Tra cứu <i className="fa-solid fa-chevron-down" /></button>
+        <button type="button" className={s.dropBtn}>Tra cứu <i className="fa-solid fa-chevron-down" aria-hidden="true" /></button>
         <div className={s.dropMenu}>
           <Link to="/?tab=order#tra-cuu">Tra cứu đơn hàng</Link>
           
@@ -42,8 +42,8 @@ function PublicNav() {
       <Link to="/#dich-vu" className={s.navLink}>Dịch vụ</Link>
       <Link to="/#quy-trinh" className={s.navLink}>Quy trình</Link>
       <div className={s.actions}>
-        <Link to="/login" className="btn btn-outline">Đặt chuyến</Link>
-        <Link to="/login" className="btn btn-solid">Đăng nhập / Đăng ký</Link>
+        <Link to="/login" className="btn btn-outline">Đăng nhập / Đăng ký</Link>
+        <Link to="/login" className="btn btn-solid">Đặt chuyến</Link>
       </div>
     </>
   )
@@ -95,8 +95,15 @@ export function PublicLayout({ children }: { children: ReactNode }) {
       <header className={cx(s.header, scrolled && s.scrolled)}>
         <div className={cx('wrap', s.headerInner)}>
           <Brand to="/" />
-          <button className={s.menuToggle} aria-label="Mở menu" onClick={() => setMenuOpen(o => !o)}><i className="fa-solid fa-bars" /></button>
-          <nav className={cx(s.nav, menuOpen && s.open)} aria-label="Menu chính" onClick={() => setMenuOpen(false)}>
+          <button
+            type="button"
+            className={s.menuToggle}
+            aria-label={menuOpen ? 'Đóng menu' : 'Mở menu'}
+            aria-expanded={menuOpen}
+            aria-controls="menu-chinh"
+            onClick={() => setMenuOpen(o => !o)}
+          ><i className={`fa-solid ${menuOpen ? 'fa-xmark' : 'fa-bars'}`} aria-hidden="true" /></button>
+          <nav id="menu-chinh" className={cx(s.nav, menuOpen && s.open)} aria-label="Menu chính" onClick={() => setMenuOpen(false)}>
             <PublicNav />
           </nav>
         </div>

@@ -406,7 +406,7 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
         <div className="alert alert-info">
           <i className="fa-solid fa-circle-check" />
           <div>
-            <b>Bạn đã xác nhận xe và lộ trình</b> lúc {formatDateTime(b.plan.at)}. Đang chờ Kiểm dịch viên duyệt hồ sơ
+            <b>Bạn đã xác nhận xe và lộ trình</b> lúc {formatDateTime(b.plan.at)}. Đang chờ Chuyên viên duyệt hồ sơ
             ngựa để chuyển Quản lý duyệt báo giá.
           </div>
         </div>
@@ -1025,7 +1025,7 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
           <div className={s.hint}>
             {errors.length
               ? 'Khắc phục các điểm lỗi màu đỏ ở trên để mở khóa xác nhận.'
-              : 'Xác nhận để chuyển Quản lý duyệt giá và chọn kíp xe (khi Kiểm dịch viên cũng đã duyệt y tế).'}
+              : 'Xác nhận để chuyển Quản lý duyệt giá và chọn kíp xe (khi Chuyên viên cũng đã duyệt y tế).'}
           </div>
           <span style={{ display: 'flex', gap: 8 }}>
             <button

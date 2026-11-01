@@ -8,7 +8,7 @@ import { useStaggerIn } from '@shared/motion/motion'
 import { usePageData } from '@shared/routing/pageData'
 import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
 import { useNow } from '@shared/ui/useNow'
-import { About, Hero, Network, Services, portalLinks, useLandingReveal } from '../home/HomePage'
+import { Hero, Network, Services, portalLinks, useLandingReveal } from '../home/HomePage'
 import { nextStep } from '../orders/nextStep'
 import { PriceLookup } from '../pricing/PriceLookup'
 import type { portalLoader } from './portalLoader'
@@ -16,7 +16,7 @@ import s from './PortalPage.module.css'
 
 const STEP_TEXT = [
   'Chọn ngựa từ Hồ sơ ngựa, khai tuyến đường và dịch vụ.',
-  'Kiểm dịch viên và Điều phối viên thẩm định song song.',
+  'Chuyên viên và Điều phối viên thẩm định song song.',
   `Nhận báo giá chính thức, có hiệu lực ${QUOTE_VALID_HOURS} giờ.`,
   `Đặt cọc ${DEPOSIT_RATE * 100}% để nhận vận đơn. Nhà xe làm giấy kiểm dịch và hải quan, bạn theo dõi tiến độ.`,
   'Ngày bốc ngựa: trả số dư còn lại, giao bản gốc hồ sơ ngựa cho tài xế.',
@@ -87,7 +87,6 @@ export default function PortalPage() {
 
       <div id="tra-cuu" style={{ padding: '8px 0 40px' }}><PriceLookup /></div>
       <Network />
-      <About link={portalLinks} />
       <Services link={portalLinks} />
     </div>
   )

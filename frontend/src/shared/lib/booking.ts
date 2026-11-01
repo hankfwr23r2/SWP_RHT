@@ -492,7 +492,7 @@ export type OrderGroup = 'new' | 'approved' | 'supplement' | 'moving' | 'settle'
 export const ORDER_GROUPS: Record<OrderGroup, { label: string; icon: string; hint: string }> = {
   new: { label: 'Vừa đặt', icon: 'fa-paper-plane', hint: 'Đã gửi, đang chờ tiếp nhận, thẩm định và lập báo giá' },
   approved: { label: 'Đã duyệt', icon: 'fa-circle-check', hint: 'Đã có báo giá, đặt cọc, làm giấy tờ, chờ xe đón ngựa' },
-  supplement: { label: 'Yêu cầu bổ sung', icon: 'fa-file-circle-exclamation', hint: 'Kiểm dịch viên cần bạn bổ sung hồ sơ ngựa' },
+  supplement: { label: 'Yêu cầu bổ sung', icon: 'fa-file-circle-exclamation', hint: 'Chuyên viên cần bạn bổ sung hồ sơ ngựa' },
   moving: { label: 'Đang di chuyển', icon: 'fa-truck-fast', hint: 'Xe đang đến điểm đón hoặc đang chở ngựa' },
   settle: { label: 'Chờ quyết toán', icon: 'fa-receipt', hint: 'Ngựa đã giao, đang đối soát chi phí hoặc chờ bạn thanh toán và đánh giá' },
   closed: { label: 'Hết hạn / hủy / từ chối', icon: 'fa-ban', hint: 'Báo giá hết hạn, đơn đã hủy hoặc nhà xe từ chối đơn' },

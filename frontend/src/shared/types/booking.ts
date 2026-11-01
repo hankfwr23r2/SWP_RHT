@@ -93,7 +93,7 @@ export interface BookingServiceSnapshot {
 
 export interface StaffRef { id: string; name: string }
 
-// Manager trả đơn về Kiểm dịch viên (duyệt lại hồ sơ ngựa) hoặc Điều phối viên (làm lại xe và lộ trình)
+// Manager trả đơn về Chuyên viên (duyệt lại hồ sơ ngựa) hoặc Điều phối viên (làm lại xe và lộ trình)
 export interface SentBack { to: 'specialist' | 'coordinator'; reason: string; at: number; by: string }
 export interface MedicalReview {
   status: 'pending' | 'approved' | 'resubmit'

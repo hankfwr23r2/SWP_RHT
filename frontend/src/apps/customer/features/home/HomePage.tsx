@@ -1,13 +1,16 @@
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent } from 'react'
 import { gsap } from 'gsap'
 import { MotionPathPlugin } from 'gsap/MotionPathPlugin'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useGSAP } from '@gsap/react'
-import { CountUp, reducedMotion, useScrollReveal } from '@shared/motion/motion'
+import { reducedMotion, useScrollReveal } from '@shared/motion/motion'
 import { Link, useLocation } from 'react-router'
 import { PUBLIC_STEPS, QUOTE_VALID_HOURS, VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { MIN_LEAD_DAYS } from '@shared/config/business-rules'
-import { COUNTRIES, type CountryCode } from '@shared/config/network'
+import { COUNTRIES, GATES, type CountryCode } from '@shared/config/network'
+import { loadBootstrap } from '@shared/config/bootstrap'
+import { ACTIVE_DOCUMENT_REQUIREMENTS } from '@shared/config/runtimeDocumentRequirements'
+import type { DocumentGroup } from '@shared/api/documentRequirements'
 import { DEPOSIT_RATE } from '@shared/config/booking-rules'
 import { formatDate, formatDateTime } from '@shared/lib/format'
 import { trackOrder, type PublicTracking } from '@shared/services/tracking'
@@ -21,16 +24,11 @@ gsap.registerPlugin(MotionPathPlugin)
 const cx = (...c: (string | false | undefined)[]) => c.filter(Boolean).join(' ')
 const MAX_TRACK_CODES = 5
 const STEPS = PUBLIC_STEPS
-const PUBLIC_BENEFITS: [string, string, string][] = [
-  ['fa-truck-fast', 'Xe chuyên dụng', 'Xe nguyên chuyến với khoang phù hợp số ngựa của bạn.'],
-  ['fa-file-circle-check', 'Hỗ trợ giấy tờ', 'Đội ngũ phụ trách kiểm dịch và thủ tục cho chuyến đi.'],
-  ['fa-map-location-dot', 'Theo dõi hành trình', 'Cập nhật tiến độ đơn và hành trình vận chuyển trên hệ thống.'],
-]
 
 // ===== Banner trượt =====
 const SLIDES = [
   { bg: PHOTOS.transport.src, tag: 'Xe chuyên dụng 2 – 9 ngăn', title: 'Vận chuyển ngựa đua', hl: 'Việt Nam · Lào · Campuchia', text: 'Xe nguyên chuyến chỉ chở ngựa của bạn, mỗi xe có tài xế và nhân viên chăm sóc riêng. Bạn theo dõi xe đang ở đâu trên bản đồ.', cta: ['Đặt chuyến ngay', '/login'] },
-  { bg: PHOTOS.checkup.src, tag: 'Kiểm dịch & thủ tục trọn gói', title: 'Hồ sơ thú y được', hl: 'kiểm dịch viên xác minh', text: 'Bạn chỉ nộp hồ sơ ngựa. Giấy kiểm dịch, hải quan và giấy chuyến đi do chúng tôi làm, bạn xem tiến độ từng giấy trên hệ thống.', cta: ['Xem quy trình', '/#quy-trinh'] },
+  { bg: PHOTOS.checkup.src, tag: 'Kiểm dịch & thủ tục trọn gói', title: 'Hồ sơ thú y được', hl: 'chuyên viên xác minh', text: 'Bạn chỉ nộp hồ sơ ngựa. Giấy kiểm dịch, hải quan và giấy chuyến đi do chúng tôi làm, bạn xem tiến độ từng giấy trên hệ thống.', cta: ['Xem quy trình', '/#quy-trinh'] },
   { bg: PHOTOS.race.src, tag: 'Báo giá cố định', title: 'Biết trước chi phí', hl: 'trước khi đặt chuyến', text: 'Xem bảng giá cước theo hạng xe và quãng đường. Báo giá chính thức đã gồm nhiên liệu, cầu đường, không phụ thu ngoài phiếu.', cta: ['Xem bảng giá', '/?tab=price#tra-cuu'] },
 ]
 
@@ -43,7 +41,8 @@ const Words = ({ text }: { text: string }) => <>{text.split(' ').map((w, i) => <
 
 export function Hero({ link = same }: { link?: LinkMap }) {
   const [index, setIndex] = useState(0)
-  const [paused, setPaused] = useState(false)
+  const [hold, setHold] = useState(false) // chuột hoặc focus bàn phím đang ở trong banner
+  const [stopped, setStopped] = useState(reducedMotion) // người xem bấm dừng; giảm chuyển động thì không tự chạy
   const root = useRef<HTMLElement>(null)
   // Mỗi lần đổi banner: từng từ của tiêu đề trượt lên, rồi tới nhãn, mô tả và nút
   useGSAP(() => {
@@ -56,14 +55,22 @@ export function Hero({ link = same }: { link?: LinkMap }) {
       .fromTo(q('p, a'), { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.12, ease: 'power3.out' }, '-=0.5')
   }, { dependencies: [index], scope: root })
   useEffect(() => {
-    if (paused) return
+    if (hold || stopped) return
     const t = setInterval(() => setIndex(i => (i + 1) % SLIDES.length), 6000)
     return () => clearInterval(t)
-  }, [paused, index])
+  }, [hold, stopped, index])
   return (
-    <section ref={root} className={s.hero} aria-label="Giới thiệu" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)}>
+    <section
+      ref={root}
+      className={s.hero}
+      aria-label="Giới thiệu"
+      onMouseEnter={() => setHold(true)}
+      onMouseLeave={() => setHold(false)}
+      onFocus={() => setHold(true)}
+      onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setHold(false) }}
+    >
       {SLIDES.map((sl, i) => (
-        <div key={i} className={cx(s.heroSlide, !sl.bg && s.heroSlidePlain, i === index && s.active)} style={sl.bg ? { '--bg': `url('${sl.bg}')` } as CSSProperties : undefined}>
+        <div key={i} className={cx(s.heroSlide, !sl.bg && s.heroSlidePlain, i === index && s.active)} aria-hidden={i !== index} style={sl.bg ? { '--bg': `url('${sl.bg}')` } as CSSProperties : undefined}>
           <div className={cx('wrap', s.heroContent)}>
             <span className={s.heroTag}>{sl.tag}</span>
             <h1><span className={s.line}><Words text={sl.title} /></span><span className={s.line}><span className={s.hl}><Words text={sl.hl} /></span></span></h1>
@@ -73,7 +80,10 @@ export function Hero({ link = same }: { link?: LinkMap }) {
         </div>
       ))}
       <div className={s.heroDots}>
-        {SLIDES.map((_, i) => <button key={i} className={cx(s.heroDot, i === index && s.active)} aria-label={`Chuyển tới banner ${i + 1}`} onClick={() => setIndex(i)} />)}
+        <button type="button" className={s.heroPause} aria-label={stopped ? 'Chạy banner' : 'Dừng banner'} onClick={() => setStopped(v => !v)}>
+          <i className={`fa-solid ${stopped ? 'fa-play' : 'fa-pause'}`} aria-hidden="true" />
+        </button>
+        {SLIDES.map((_, i) => <button key={i} type="button" className={cx(s.heroDot, i === index && s.active)} aria-label={`Banner ${i + 1}`} aria-current={i === index} onClick={() => setIndex(i)} />)}
       </div>
     </section>
   )
@@ -82,7 +92,7 @@ export function Hero({ link = same }: { link?: LinkMap }) {
 // ===== Tra cứu đơn hàng =====
 type TrackRow = { code: string; result: PublicTracking | null }
 
-function OrderLookup() {
+function OrderLookup({ onShowPrice }: { onShowPrice: () => void }) {
   const [codesText, setCodesText] = useState('')
   const [phone, setPhone] = useState('')
   const [error, setError] = useState<{ field: 'codes' | 'phone'; message: string } | null>(null)
@@ -101,7 +111,7 @@ function OrderLookup() {
       const results = await Promise.all(codes.map(async code => ({ code, result: await trackOrder(code, phone.trim()) })))
       setRows(results)
     } catch (err) {
-      setError({ field: 'codes', message: err instanceof Error ? err.message : 'Không tra cứu được.' })
+      setError({ field: 'codes', message: err instanceof Error ? err.message : 'Chưa tra cứu được. Thử lại sau ít phút.' })
     } finally {
       setLoading(false)
     }
@@ -114,19 +124,25 @@ function OrderLookup() {
           <i className="fa-solid fa-magnifying-glass" />
           <input
             className={cx(error?.field === 'codes' && s.inputError)}
+            aria-invalid={error?.field === 'codes'}
+            aria-describedby={error?.field === 'codes' ? 'lookup-error' : undefined}
             value={codesText}
             onChange={e => { setCodesText(e.target.value); setError(null) }}
-            placeholder="Nhập mã đơn cần tra cứu (ví dụ: BK-1 hoặc VD-..., cách nhau bởi dấu phẩy)"
+            aria-label="Mã đơn hoặc số vận đơn, nhiều mã cách nhau bằng dấu phẩy"
+            placeholder="Mã đơn: BK-001 hoặc VD-2026-0001"
           />
         </div>
         <div className={cx(s.field, s.fieldPhone)}>
           <i className="fa-solid fa-phone" />
           <input
             className={cx(error?.field === 'phone' && s.inputError)}
+            aria-invalid={error?.field === 'phone'}
+            aria-describedby={error?.field === 'phone' ? 'lookup-error' : undefined}
             value={phone}
             onChange={e => { setPhone(e.target.value); setError(null) }}
             inputMode="numeric"
             maxLength={4}
+            aria-label="4 số cuối số điện thoại người đặt"
             placeholder="4 số cuối SĐT người đặt"
           />
         </div>
@@ -134,7 +150,12 @@ function OrderLookup() {
           {loading ? 'Đang tìm…' : 'Tìm kiếm'}
         </button>
       </form>
-      {error && <p className={s.formError}><i className="fa-solid fa-circle-exclamation" /> {error.message}</p>}
+      <p className={s.lookupHint}>
+        Nhập mã đơn (BK-…) hoặc số vận đơn (VD-…), nhiều mã cách nhau bằng dấu phẩy. Chưa có đơn?{' '}
+        <button type="button" className={s.hintLink} onClick={onShowPrice}>Xem bảng giá</button>
+      </p>
+      {error && <p id="lookup-error" className={s.formError} role="alert"><i className="fa-solid fa-circle-exclamation" aria-hidden="true" /> {error.message}</p>}
+      <div aria-live="polite">
       {!error && rows.length > 0 && (
         <div className={s.trackList}>
           {rows.map(({ code, result: o }, i) => o ? (
@@ -176,6 +197,7 @@ function OrderLookup() {
           ))}
         </div>
       )}
+      </div>
     </>
   )
 }
@@ -192,15 +214,76 @@ function Lookup() {
     if (fromUrl) setTab(fromUrl)
     if (hash) document.getElementById(hash.slice(1))?.scrollIntoView({ behavior: 'smooth' })
   }, [fromUrl, hash])
+  // Mũi tên trái/phải chuyển tab như tablist chuẩn
+  const moveTab = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
+    const i = TABS.findIndex(([key]) => key === tab)
+    const next = TABS[(i + (e.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length][0]
+    setTab(next)
+    document.getElementById(`tab-${next}`)?.focus()
+  }
   return (
     <section className={cx('wrap', s.lookup)} id="tra-cuu">
-      <div className={s.lookupTabs} role="tablist">
-        {TABS.map(([key, label]) => <button key={key} className={cx(s.lookupTab, tab === key && s.active)} onClick={() => setTab(key)}>{label}</button>)}
+      <div className={s.lookupTabs} role="tablist" aria-label="Tra cứu" onKeyDown={moveTab}>
+        {TABS.map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            id={`tab-${key}`}
+            aria-selected={tab === key}
+            aria-controls="tra-cuu-panel"
+            tabIndex={tab === key ? 0 : -1}
+            className={cx(s.lookupTab, tab === key && s.active)}
+            onClick={() => setTab(key)}
+          >{label}</button>
+        ))}
       </div>
       <div className={s.lookupCard}>
-        <div className={cx(s.lookupPanel, s.active)} key={tab}>
-          {tab === 'order' ? <OrderLookup /> : <PriceTable />}
+        <div className={cx(s.lookupPanel, s.active)} key={tab} id="tra-cuu-panel" role="tabpanel" aria-labelledby={`tab-${tab}`}>
+          {tab === 'order' ? <OrderLookup onShowPrice={() => setTab('price')} /> : <PriceTable />}
         </div>
+      </div>
+    </section>
+  )
+}
+
+// ===== Báo giá mẫu: các khoản và mốc thanh toán, không tự tính số tiền =====
+const QUOTE_ITEMS: [string, string][] = [
+  ['Cước xe', 'Theo hạng xe và quãng đường'],
+  ['Tài xế và hộ tống', 'Theo số ngày đi'],
+  ['Nhiên liệu, cầu đường', 'Theo km'],
+  ['Kiểm dịch, hải quan', 'Tuyến quốc tế'],
+  ['Dịch vụ, bảo hiểm', 'Theo lựa chọn của bạn'],
+]
+
+function QuoteSample() {
+  const milestones: [string, string][] = [
+    [`${DEPOSIT_RATE * 100}%`, 'Đặt cọc khi chấp nhận báo giá, nhận số vận đơn'],
+    [`${100 - DEPOSIT_RATE * 100}%`, 'Trả nốt trước giờ xe xuất phát'],
+    ['24 giờ', 'Hạn thanh toán quyết toán sau chuyến'],
+  ]
+  return (
+    <section className={cx('wrap', s.quote)} id="bao-gia">
+      <div className={cx(s.quoteIntro, s.reveal)}>
+        <h2>Biết trước từng khoản tiền</h2>
+        <p>Quản lý duyệt báo giá trước khi gửi cho bạn. Giá đã chốt thì không phụ thu ngoài phiếu; quyết toán chỉ có khoản phát sinh khi có sự cố liên quan đến ngựa, luôn kèm chứng từ.</p>
+        <Link to="/?tab=price#tra-cuu" className="btn btn-outline">Xem bảng giá</Link>
+      </div>
+      <div className={cx(s.quoteSheet, s.reveal)}>
+        <div className={s.quoteHead}>
+          <b>Báo giá mẫu</b>
+          <span className="badge badge-warning">Hiệu lực {QUOTE_VALID_HOURS} giờ</span>
+        </div>
+        <div className={s.quoteRows}>
+          {QUOTE_ITEMS.map(([label, value]) => (
+            <div key={label} className="info-row"><span className="label">{label}</span><span className="value">{value}</span></div>
+          ))}
+        </div>
+        <ol className={s.quotePay}>
+          {milestones.map(([big, text]) => <li key={text}><strong>{big}</strong><span>{text}</span></li>)}
+        </ol>
+        <p className={s.quoteNote}>Hủy trước khi đặt cọc: không mất phí. Hủy sau khi đặt cọc: mất toàn bộ tiền cọc.</p>
       </div>
     </section>
   )
@@ -258,9 +341,9 @@ function Journey({ country }: { country: CountryCode }) {
 
   const [a, b, c] = stops
   return (
-    <div ref={root} className={s.journey} aria-label={`Tuyến mẫu ${a.name} – ${b.name} – ${c.name}`}>
+    <div ref={root} className={s.journey} role="group" aria-label={`Tuyến mẫu ${a.name} – ${b.name} – ${c.name}`}>
       <p className={s.journeySummary}>{summary}</p>
-      <svg viewBox="0 0 900 200">
+      <svg viewBox="0 0 900 200" aria-hidden="true">
         <path className={s.journeyTrack} d={d} />
         <path className={s.journeyPath} d={d} />
         <circle className={s.journeyStop} cx={a.x} cy={a.y} r="10" />
@@ -285,16 +368,34 @@ function Journey({ country }: { country: CountryCode }) {
           <circle cx="-9" cy="7" r="3.5" /><circle cx="10" cy="7" r="3.5" />
         </g>
       </svg>
+      {/* Màn hẹp: nhãn trong SVG bị thu quá nhỏ nên hiện danh sách điểm dừng bằng chữ thường */}
+      <ol className={s.journeyStops}>
+        {stops.map(p => <li key={p.name}><b>{p.name}</b><span>{p.sub}</span></li>)}
+      </ol>
       <div className={s.journeyLegend}>
-        <span><i className={s.legendGate} /> Cửa khẩu</span>
-        <span><i className={s.legendStation} /> Trạm nghỉ</span>
+        {mid === 'gate'
+          ? <span><i className={s.legendGate} /> Cửa khẩu</span>
+          : <span><i className={s.legendStation} /> Trạm nghỉ</span>}
       </div>
     </div>
   )
 }
 
+// Giấy tờ bắt buộc admin cấu hình cho từng nước (tuyến trong nước hoặc quốc tế)
+const docsFor = (group: DocumentGroup, code: CountryCode) => [...new Set(ACTIVE_DOCUMENT_REQUIREMENTS
+  .filter(r => r.documentGroup === group && r.required && r.status === 'ACTIVE')
+  .filter(r => r.tripType === 'ALL' || r.tripType === (code === 'VN' ? 'DOMESTIC' : 'INTERNATIONAL'))
+  .filter(r => r.country === 'ALL' || r.country === code)
+  .map(r => r.documentName))]
+
 export function Network() {
   const [active, setActive] = useState<CountryCode>('VN')
+  // Cửa khẩu và giấy tờ lấy từ /public/bootstrap; lỗi thì chỉ hiện phần mô tả chung
+  const [catalog, setCatalog] = useState<'loading' | 'ready' | 'failed'>('loading')
+  useEffect(() => { loadBootstrap().then(() => setCatalog('ready'), () => setCatalog('failed')) }, [])
+  const gates = active === 'VN' ? [] : GATES.filter(g => g.country === active).map(g => g.name.replace(/^Cửa khẩu (quốc tế )?/, ''))
+  const horseDocs = docsFor('HORSE', active)
+  const tripDocs = docsFor('CLEARANCE', active)
   const flagsRef = useRef<HTMLDivElement>(null)
   useGSAP(() => {
     if (reducedMotion()) return
@@ -303,11 +404,11 @@ export function Network() {
   return (
     <section className={s.network} id="mang-luoi">
       <div className="wrap">
-        <h2 className={cx('section-title', s.reveal)}>Mạng lưới phủ sóng 3 nước</h2>
+        <h2 className={cx('section-title', s.reveal)}>Mạng lưới 3 nước</h2>
         <p className={cx('section-sub', s.reveal)}>Tuyến nội địa Việt Nam và tuyến xuyên biên giới Việt Nam – Lào, Việt Nam – Campuchia qua các cửa khẩu đường bộ quốc tế. Bạn chọn điểm đón và điểm giao trên bản đồ, nhà xe chọn cửa khẩu và các trạm nghỉ dọc đường.</p>
         <div ref={flagsRef} className={s.flags}>
           {(Object.keys(COUNTRIES) as CountryCode[]).map(code => (
-            <button key={code} className={cx(s.flag, code === active && s.active)} onClick={() => setActive(code)}>
+            <button key={code} type="button" aria-pressed={code === active} className={cx(s.flag, code === active && s.active)} onClick={() => setActive(code)}>
               <span className={s.flagImg} dangerouslySetInnerHTML={{ __html: FLAG_SVG[code] }} />
               <span className={s.flagName}>{COUNTRIES[code].name}</span>
               <span className={s.flagMeta}>{COUNTRIES[code].meta}</span>
@@ -316,10 +417,13 @@ export function Network() {
         </div>
         <Journey country={active} />
         <div className={cx(s.networkDetail, s.reveal)}>
-          <h3>Phạm vi mạng lưới</h3>
+          <h3>{active === 'VN' ? 'Tuyến trong nước' : `Tuyến Việt Nam – ${COUNTRIES[active].name}`}</h3>
           <div className={s.networkCols} key={active}>
-            <div><h4>Điểm phục vụ</h4><p><i className="fa-solid fa-location-dot" /> 10+ điểm nhận, giao và đối tác trong mạng lưới.</p></div>
-            <div><h4>Tuyến quốc tế</h4><p><i className="fa-solid fa-flag" /> 10+ cửa khẩu kết nối các tuyến trong khu vực.</p></div>
+            {active === 'VN'
+              ? <div><h4>Điểm đón và giao</h4><p><i className="fa-solid fa-location-dot" aria-hidden="true" /> Kho, trại ngựa, câu lạc bộ, trường đua, hoặc điểm bạn chọn trên bản đồ. Đường dài có trạm nghỉ cho ngựa.</p></div>
+              : <div><h4>Cửa khẩu</h4><p><i className="fa-solid fa-flag" aria-hidden="true" /> {catalog === 'ready' && gates.length ? `${gates.join(', ')}. Nhà xe chọn cửa khẩu theo lộ trình.` : 'Qua cửa khẩu đường bộ quốc tế, nhà xe chọn theo lộ trình.'}</p></div>}
+            {catalog === 'ready' && horseDocs.length > 0 && <div><h4>Hồ sơ ngựa bạn nộp</h4><p><i className="fa-solid fa-horse-head" aria-hidden="true" /> {horseDocs.join(', ')}.</p></div>}
+            {catalog === 'ready' && tripDocs.length > 0 && <div><h4>Giấy tờ chuyến đi</h4><p><i className="fa-solid fa-file-circle-check" aria-hidden="true" /> {tripDocs.join(', ')}. Bạn xem tiến độ từng giấy trong đơn.</p></div>}
           </div>
         </div>
       </div>
@@ -327,68 +431,35 @@ export function Network() {
   )
 }
 
-const FEATURES: [string, React.ReactNode, string][] = [
-  ['fa-earth-asia', <><CountUp to={3} /> quốc gia</>, 'Việt Nam, Lào, Campuchia'],
-  ['fa-truck', 'Xe nguyên chuyến', `${Object.values(VEHICLE_CLASS).map(c => c.label).join(', ')}: từ 2 đến 9 ngăn. Không ghép ngựa của đơn khác`],
-  ['fa-user-doctor', 'Kiểm dịch viên riêng', 'Duyệt hồ sơ ngựa, làm giấy kiểm dịch, hải quan và báo tiến độ từng giấy cho bạn'],
-  ['fa-flag', <>10+ cửa khẩu</>, 'Các tuyến kết nối Việt Nam với Lào và Campuchia'],
+const SERVICES: [string, string, string, string][] = [
+  ['/?tab=price#tra-cuu', PHOTOS.transport.src, 'Xe nguyên chuyến', `${Object.values(VEHICLE_CLASS).map(c => c.label).join(', ')}: từ 2 đến 9 ngăn. Không ghép ngựa của đơn khác.`],
+  ['/#quy-trinh', PHOTOS.checkup.src, 'Giấy tờ và cửa khẩu', 'Chuyên viên thẩm định hồ sơ ngựa, nhà xe làm giấy kiểm dịch và hải quan. Bạn xem tiến độ từng giấy.'],
+  ['/?tab=order#tra-cuu', PHOTOS.trailers.src, 'Theo dõi chuyến đi', 'Tài xế check-in từng mốc, bạn xem xe đang ở đâu trên bản đồ.'],
+  ['/?tab=price#tra-cuu', PHOTOS.stable.src, 'Chăm sóc và bảo hiểm', 'Hộ tống đi kèm, khoang đơn mở rộng, hỗ trợ bảo hiểm động vật sống từ bên thứ ba.'],
 ]
 
-const SERVICES: [string, string, string, string, string][] = [
-  ['/?tab=price#tra-cuu', PHOTOS.transport.src, 'NỘI ĐỊA', 'Vận chuyển nội địa', 'Giữa các kho và câu lạc bộ trong nước, có trạm nghỉ cho ngựa'],
-  ['/#mang-luoi', PHOTOS.trailers.src, 'XUYÊN BIÊN GIỚI', 'Vận chuyển xuyên biên giới', 'Việt Nam – Lào, Việt Nam – Campuchia, nhà xe làm thủ tục cửa khẩu'],
-  ['/#quy-trinh', PHOTOS.checkup.src, 'KIỂM DỊCH', 'Kiểm dịch & thủ tục', 'Giấy kiểm dịch, tờ khai hải quan do nhà xe làm trọn gói'],
-  ['/?tab=price#tra-cuu', PHOTOS.stable.src, 'CHĂM SÓC', 'Chăm sóc & bảo hiểm', 'Hộ tống đi kèm, khoang đơn mở rộng, hỗ trợ bảo hiểm động vật sống từ bên thứ ba'],
-]
-
+// Tên bước dùng chung với phần tra cứu đơn (PUBLIC_STEPS), thêm bước cuối sau khi giao ngựa.
+// Số tiền và tỉ lệ đã nằm trong thẻ báo giá mẫu nên không nhắc lại ở đây.
+const [STEP_SEND, STEP_REVIEW, STEP_DEPOSIT, STEP_PREPARE, STEP_TRANSPORT] = PUBLIC_STEPS
 const PROCESS: [string, string, string, string][] = [
-  ['fa-paper-plane', 'Gửi đơn', 'Chọn điểm đón, điểm giao trên bản đồ, chọn ngựa từ Hồ sơ ngựa, dịch vụ và bảo hiểm.', `Trước ngày đi ≥ ${MIN_LEAD_DAYS} ngày`],
-  ['fa-magnifying-glass', 'Thẩm định', 'Quản lý tiếp nhận. Kiểm dịch viên duyệt hồ sơ ngựa. Điều phối viên chọn xe, tài xế, hộ tống và lập lộ trình.', 'Song song, trước khi báo giá'],
-  ['fa-credit-card', 'Báo giá & đặt cọc', `Báo giá cố định có hiệu lực ${QUOTE_VALID_HOURS} giờ. Đặt cọc ${DEPOSIT_RATE * 100}% để nhận Vận đơn.`, `Trong ${QUOTE_VALID_HOURS} giờ`],
-  ['fa-folder-open', 'Làm giấy tờ', 'Nhà xe làm giấy kiểm dịch (và hải quan nếu đi quốc tế), bạn chỉ cần xem tiến độ từng giấy đã nộp.', 'Trước ngày đi'],
-  ['fa-truck-moving', 'Vận chuyển', `Ngày bốc ngựa bạn trả ${100 - DEPOSIT_RATE * 100}% còn lại. Tài xế check-in từng mốc, hộ tống ghi nhật ký sức khỏe, bạn xem xe trên bản đồ.`, 'Theo lộ trình'],
-  ['fa-clipboard-check', 'Bàn giao & quyết toán', 'Ký biên bản giao nhận. Chỉ khi có sự cố liên quan đến ngựa mới có khoản phát sinh có chứng từ, sau đó bạn đánh giá chuyến đi.', 'Trong 24 giờ sau khi có quyết toán'],
+  [STEP_SEND, 'Bạn', 'Chọn điểm đón, điểm giao, ngựa, dịch vụ và bảo hiểm; tải hồ sơ ngựa.', `Trước ngày đi ≥ ${MIN_LEAD_DAYS} ngày`],
+  [STEP_REVIEW, 'Quản lý, chuyên viên, điều phối viên', 'Tiếp nhận đơn; duyệt hồ sơ ngựa, chọn xe, kíp xe và lập lộ trình cùng lúc.', 'Trước khi báo giá'],
+  [STEP_DEPOSIT, 'Quản lý, bạn', 'Duyệt và gửi báo giá. Bạn đặt cọc để nhận số vận đơn.', `Báo giá giữ ${QUOTE_VALID_HOURS} giờ`],
+  [STEP_PREPARE, 'Chuyên viên, bạn', 'Làm giấy kiểm dịch, thêm hải quan nếu đi quốc tế. Bạn trả phần còn lại khi xe sẵn sàng đón ngựa.', 'Trước giờ xuất phát'],
+  [STEP_TRANSPORT, 'Tài xế, hộ tống', 'Check-in từng mốc, ghi nhật ký sức khỏe ngựa; bạn xem xe trên bản đồ.', 'Theo lộ trình'],
+  ['Bàn giao và quyết toán', 'Tài xế, quản lý, bạn', 'Ký biên bản giao nhận, quản lý gửi quyết toán; bạn thanh toán rồi đánh giá chuyến đi.', 'Quyết toán trong 24 giờ'],
 ]
-
-function useStepsLine() {
-  const ref = useRef<HTMLDivElement>(null)
-  useGSAP(() => {
-    if (reducedMotion()) return
-    gsap.fromTo(`.${s.stepsLine}`, { scaleX: 0 }, { scaleX: 1, ease: 'none', scrollTrigger: { trigger: ref.current, start: 'top 75%', end: 'bottom 60%', scrub: 0.6 } })
-  }, { scope: ref })
-  return ref
-}
-
-export function About({ link = same }: { link?: LinkMap }) {
-  return (
-      <section className={s.about}>
-        <div className={cx(s.aboutLeft, s.reveal)}>
-          <div className={s.aboutLeftInner}>
-            <h2>Về chúng tôi</h2>
-            <p>Chúng tôi chuyên vận chuyển ngựa đua bằng đường bộ. Mỗi đơn có kiểm dịch viên xác minh hồ sơ thú y, điều phối viên chọn xe, tài xế, hộ tống và lập lộ trình riêng, quản lý duyệt báo giá trước khi bạn đặt cọc. Có sự cố, quản lý duyệt phương án xử lý và trực tiếp liên hệ bạn.</p>
-            <Link to={link('/#quy-trinh')} className={s.linkArrow}>Xem quy trình <i className="fa-solid fa-arrow-right-long" /></Link>
-          </div>
-        </div>
-        <div className={s.aboutRight}>
-          {FEATURES.map(([icon, title, text], i) => (
-            <div key={text} className={cx(s.feature, s.reveal)} data-delay={i * 120}>
-              <span className={s.featureIcon}><i className={`fa-solid ${icon}`} /></span><h3>{title}</h3><p>{text}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-  )
-}
 
 export function Services({ link = same }: { link?: LinkMap }) {
   return (
       <section className={s.services} id="dich-vu">
         <div className="wrap">
           <h2 className={cx('section-title', s.reveal)}>Dịch vụ</h2>
+          <p className={cx('section-sub', s.reveal)}>Mỗi đơn có người phụ trách từng khâu, từ hồ sơ ngựa, xe và lộ trình đến báo giá. Có sự cố, quản lý duyệt phương án xử lý và liên hệ trực tiếp với bạn.</p>
           <div className={s.serviceGrid}>
-            {SERVICES.map(([to, photo, tile, title, text], i) => (
+            {SERVICES.map(([to, photo, title, text], i) => (
               <Link key={title} to={link(to)} className={cx(s.service, s.reveal)} data-delay={i * 120}>
-                <span className={s.serviceTile} style={{ '--photo': `url('${photo}')` } as CSSProperties}><b>{tile}</b></span><h3>{title}</h3><p>{text}</p>
+                <span className={s.serviceTile} style={{ '--photo': `url('${photo}')` } as CSSProperties} /><h3>{title}</h3><p>{text}</p>
               </Link>
             ))}
           </div>
@@ -402,40 +473,31 @@ export const useLandingReveal = () => useScrollReveal(`.${s.reveal}`)
 
 export default function HomePage() {
   const scope = useScrollReveal(`.${s.reveal}`)
-  const stepsRef = useStepsLine()
   return (
     <div ref={scope}>
       <Hero />
       <Lookup />
-      <section className={s.publicBenefits} aria-label="Lợi ích dịch vụ">
-        <div className={cx('wrap', s.publicBenefitGrid)}>
-          {PUBLIC_BENEFITS.map(([icon, title, text]) => (
-            <article key={title} className={s.publicBenefit}>
-              <span className={s.publicBenefitIcon}><i className={`fa-solid ${icon}`} aria-hidden="true" /></span>
-              <div><h2>{title}</h2><p>{text}</p></div>
-            </article>
-          ))}
-        </div>
-      </section>
+      <QuoteSample />
       <Network />
-
-      <About />
       <Services />
 
       <section className={s.process} id="quy-trinh">
         <div className="wrap">
           <h2 className={cx('section-title', s.reveal)}>Quy trình vận chuyển</h2>
-          <p className={cx('section-sub', s.reveal)}>Từ lúc gửi đơn đến khi bạn nghiệm thu ngựa tại điểm đến.</p>
-          <div ref={stepsRef} className={s.stepsWrap}>
-          <span className={s.stepsLine} />
-          <ol className={s.steps}>
-            {PROCESS.map(([icon, title, text, time], i) => (
-              <li key={title} className={cx(s.step, s.reveal)} data-delay={i * 100}>
-                <span className={s.stepNum}><i className={`fa-solid ${icon}`} /></span>
-                <h3>{i + 1}. {title}</h3><p>{text}</p><small>{time}</small>
-              </li>
-            ))}
-          </ol>
+          <p className={cx('section-sub', s.reveal)}>Từ lúc gửi đơn đến khi ngựa được bàn giao tại điểm đến.</p>
+          <div className={cx(s.timeline, s.reveal)}>
+            <div className={s.timelineHead} aria-hidden="true"><span /><span>Bước</span><span>Phụ trách</span><span>Việc</span><span>Thời hạn</span></div>
+            <ol>
+              {PROCESS.map(([title, who, text, time], i) => (
+                <li key={title} className={s.timelineRow}>
+                  <span className={s.timelineNum}>{i + 1}</span>
+                  <h3>{title}</h3>
+                  <span className={s.timelineWho}>{who}</span>
+                  <p>{text}</p>
+                  <span className={s.timelineTime}>{time}</span>
+                </li>
+              ))}
+            </ol>
           </div>
         </div>
       </section>
@@ -443,7 +505,7 @@ export default function HomePage() {
       <section className={s.cta} style={{ '--bg': `url('${PHOTOS.race.src}')` } as CSSProperties}>
         <div className={cx('wrap', s.reveal)}>
           <h2>Đặt chuyến vận chuyển ngựa đua</h2>
-          <p>Đặt trước tối thiểu {MIN_LEAD_DAYS} ngày. Báo giá cố định, hiệu lực {QUOTE_VALID_HOURS} giờ. Đặt cọc {DEPOSIT_RATE * 100}% để nhận Vận đơn.</p>
+          <p>Tạo tài khoản và nhận báo giá miễn phí, bạn chỉ trả tiền khi chấp nhận báo giá. Gửi đơn trước ngày đi tối thiểu {MIN_LEAD_DAYS} ngày để kịp thẩm định và làm giấy tờ.</p>
           <Link to="/login" className="btn btn-white btn-lg">Đặt chuyến ngay</Link>
         </div>
       </section>

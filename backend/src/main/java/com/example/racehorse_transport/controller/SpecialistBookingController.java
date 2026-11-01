@@ -199,7 +199,7 @@ public class SpecialistBookingController {
 
         String username = extractUsername(authHeader);
         BookingResponse response = specialistService.transferForQuarantine(id, username);
-        return ResponseEntity.ok(ApiResponse.success(response, "Đã chuyển đơn sang Kiểm dịch viên để duyệt xác nhận dịch tễ"));
+        return ResponseEntity.ok(ApiResponse.success(response, "Đã chuyển đơn sang Chuyên viên để duyệt xác nhận dịch tễ"));
     }
 
     /**

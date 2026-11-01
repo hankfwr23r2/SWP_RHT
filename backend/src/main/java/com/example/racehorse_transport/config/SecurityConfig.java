@@ -72,7 +72,7 @@ public class SecurityConfig {
                         // Phân quyền API Điều phối viên: Coordinator, Manager, Admin
                         .requestMatchers("/coordinator/**").hasAnyRole("COORDINATOR", "MANAGER", "ADMIN")
 
-                        // Phân quyền API Kiểm dịch viên: Specialist, Inspector, Manager, Admin
+                        // Phân quyền API Chuyên viên: Specialist, Inspector, Manager, Admin
                         .requestMatchers("/specialist/**").hasAnyRole("SPECIALIST", "INSPECTOR", "MANAGER", "ADMIN")
 
                         // Phân quyền API Khách hàng: Chỉ Khách hàng (ROLE_CUSTOMER)

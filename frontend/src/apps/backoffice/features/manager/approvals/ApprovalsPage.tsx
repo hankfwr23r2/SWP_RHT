@@ -1,4 +1,4 @@
-// Manager: duyệt báo giá cuối sau khi Kiểm dịch viên và Điều phối viên đều đạt (PRD mục 2.5).
+// Manager: duyệt báo giá cuối sau khi Chuyên viên và Điều phối viên đều đạt (PRD mục 2.5).
 // Manager nhìn số xe Điều phối viên đã chọn để chọn tài xế và hộ tống cho từng xe. Báo giá do hệ thống tính và gửi cho khách.
 import { useEffect, useState } from 'react'
 import { useAuth } from '@shared/auth/AuthContext'
@@ -85,7 +85,7 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
 
   const sendBack = async () => {
     setBusy(true)
-    const targetLabel = back!.to === 'specialist' ? 'Kiểm dịch viên' : back!.to === 'coordinator' ? 'Điều phối viên' : 'cả hai bên'
+    const targetLabel = back!.to === 'specialist' ? 'Chuyên viên' : back!.to === 'coordinator' ? 'Điều phối viên' : 'cả hai bên'
     try {
       await bookingsApi.sendBack(b.id, session!.name, back!.to, back!.reason)
       toast(`Đã trả ${b.id} về ${targetLabel}`)
@@ -165,7 +165,7 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
                   className={`btn btn-sm ${back.to === 'specialist' ? 'btn-primary' : 'btn-outline'}`}
                   onClick={() => setBack({ ...back, to: 'specialist' })}
                 >
-                  Kiểm dịch viên
+                  Chuyên viên
                 </button>
                 <button
                   type="button"
@@ -184,7 +184,7 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
               </div>
               <label htmlFor="sb" className="required">
                 {back.to === 'specialist'
-                  ? 'Lý do trả lại Kiểm dịch viên (duyệt lại hồ sơ ngựa)'
+                  ? 'Lý do trả lại Chuyên viên (duyệt lại hồ sơ ngựa)'
                   : back.to === 'coordinator'
                   ? 'Lý do trả lại Điều phối viên (làm lại xe và lộ trình)'
                   : 'Lý do trả lại cả hai bên (làm lại cả hồ sơ ngựa, xe và lộ trình)'}
@@ -192,10 +192,10 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
               <textarea id="sb" className="form-control" rows={3} value={back.reason} onChange={e => setBack({ ...back, reason: e.target.value })} />
               <div className="form-hint">
                 {back.to === 'specialist'
-                  ? 'Đơn quay về Kiểm dịch viên để duyệt lại hồ sơ ngựa, xe và lộ trình của Điều phối viên được giữ nguyên.'
+                  ? 'Đơn quay về Chuyên viên để duyệt lại hồ sơ ngựa, xe và lộ trình của Điều phối viên được giữ nguyên.'
                   : back.to === 'coordinator'
                   ? 'Đơn quay về Điều phối viên để chọn lại xe và lập lại lộ trình, Driver và Escort bạn đã chọn sẽ bị bỏ và chọn lại sau.'
-                  : 'Đơn quay về trạng thái thẩm định song song để cả Kiểm dịch viên và Điều phối viên thực hiện lại từ đầu.'}
+                  : 'Đơn quay về trạng thái thẩm định song song để cả Chuyên viên và Điều phối viên thực hiện lại từ đầu.'}
               </div>
             </div>
           )
@@ -215,7 +215,7 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
             </>
           : <>
               <button className="btn btn-ghost" onClick={onClose}>Đóng</button>
-              <button className="btn btn-ghost" onClick={() => setBack({ to: 'specialist', reason: '' })}>Trả lại Kiểm dịch viên</button>
+              <button className="btn btn-ghost" onClick={() => setBack({ to: 'specialist', reason: '' })}>Trả lại Chuyên viên</button>
               <button className="btn btn-ghost" onClick={() => setBack({ to: 'coordinator', reason: '' })}>Trả lại Điều phối viên</button>
               <button className="btn btn-ghost" onClick={() => setBack({ to: 'both', reason: '' })}>Trả lại cả hai bên</button>
               <button className="btn btn-primary" disabled={busy || !preview || !!crewErrors.length} onClick={send}><i className="fa-solid fa-paper-plane" /> Duyệt và gửi báo giá</button>

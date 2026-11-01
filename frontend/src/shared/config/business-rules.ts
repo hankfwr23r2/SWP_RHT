@@ -46,7 +46,7 @@ export const URGENT_HOURS = 12 // còn ít hơn số giờ này thì cảnh báo
 // ===== Giấy tờ chuyến đi (đơn đã thanh toán) =====
 export const ORIGINALS_DUE_DAYS = 3 // khách gửi bản gốc trước 17:00 ngày D − 3
 export const ORIGINALS_DUE_HOUR = 17
-export const HANDOVER_DUE_DAYS = 2 // kiểm dịch viên bàn giao điều phối trước 12:00 ngày D − 2
+export const HANDOVER_DUE_DAYS = 2 // chuyên viên bàn giao điều phối trước 12:00 ngày D − 2
 export const HANDOVER_DUE_HOUR = 12
 
 // ===== Nghiệm thu =====

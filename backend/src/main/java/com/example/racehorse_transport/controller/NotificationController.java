@@ -152,7 +152,7 @@ public class NotificationController {
             seeds.add(Notification.builder()
                     .recipientRole("coordinator")
                     .title("Hồ sơ kiểm dịch đã duyệt")
-                    .message("Kiểm dịch viên đã duyệt đạt hồ sơ thú y. Vui lòng xếp xe và lập lộ trình vận chuyển.")
+                    .message("Chuyên viên đã duyệt đạt hồ sơ thú y. Vui lòng xếp xe và lập lộ trình vận chuyển.")
                     .link("/coordinator/fleet-plan")
                     .bookingId("BK-1")
                     .isRead(false)

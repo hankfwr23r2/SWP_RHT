@@ -5,7 +5,7 @@ export const ROLE_LABEL: Record<Role, string> = {
   customer: 'Khách hàng',
   admin: 'Quản trị viên',
   manager: 'Quản lý',
-  specialist: 'Kiểm dịch viên',
+  specialist: 'Chuyên viên',
   coordinator: 'Điều phối viên',
   driver: 'Tài xế',
   escort: 'Hộ tống',

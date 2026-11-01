@@ -43,7 +43,7 @@ function Summary() {
         <div>
           <b>Sau khi gửi đơn</b>
           <ul>
-            <li>Quản lý tiếp nhận, Kiểm dịch viên và Điều phối viên thẩm định song song.</li>
+            <li>Quản lý tiếp nhận, Chuyên viên và Điều phối viên thẩm định song song.</li>
             <li>Báo giá chính thức gửi cho bạn, có hiệu lực {QUOTE_VALID_HOURS} giờ.</li>
             <li>Đặt cọc {(DEPOSIT_RATE * 100).toLocaleString('vi-VN')}% để nhận vận đơn. Nhà xe làm giấy kiểm dịch và hải quan giúp bạn.</li>
           </ul>

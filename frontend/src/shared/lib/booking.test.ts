@@ -558,7 +558,7 @@ describe('phân nhóm đơn cho khách (Đơn của tôi)', () => {
     expect(['incident_reported', 'pending_emergency_approval', 'emergency_plan_active'].map(x => g(x as BookingStatus))).toEqual(Array(3).fill('moving'))
     expect(['quote_expired', 'cancelled'].map(x => g(x as BookingStatus))).toEqual(['closed', 'closed'])
   })
-  it('đơn đang thẩm định mà Kiểm dịch viên yêu cầu bổ sung hồ sơ thì thuộc nhóm yêu cầu bổ sung', () => {
+  it('đơn đang thẩm định mà Chuyên viên yêu cầu bổ sung hồ sơ thì thuộc nhóm yêu cầu bổ sung', () => {
     expect(orderGroupOf({ status: 'under_review', medical: { status: 'resubmit' } })).toBe('supplement')
     expect(orderGroupOf({ status: 'under_review', medical: { status: 'pending' } })).toBe('new')
   })

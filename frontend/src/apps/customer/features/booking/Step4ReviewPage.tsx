@@ -44,7 +44,7 @@ export default function Step4ReviewPage() {
           <div><dt>Ngày khởi hành</dt><dd>{placed.date}</dd></div>
           <div><dt>Số ngựa</dt><dd>{placed.horses} con</dd></div>
         </dl>
-        <p className="form-hint" style={{ marginTop: 14 }}>Đơn nằm ở <b>Đơn hàng của tôi › Chờ xác nhận</b>, đang ở <b>bước 1/8: Gửi đơn</b>, chờ quản lý tiếp nhận. Quản lý sẽ tiếp nhận, Kiểm dịch viên và Điều phối viên thẩm định, rồi gửi báo giá cho bạn. Bạn theo dõi từng bước ở đó.</p>
+        <p className="form-hint" style={{ marginTop: 14 }}>Đơn nằm ở <b>Đơn hàng của tôi › Chờ xác nhận</b>, đang ở <b>bước 1/8: Gửi đơn</b>, chờ quản lý tiếp nhận. Quản lý sẽ tiếp nhận, Chuyên viên và Điều phối viên thẩm định, rồi gửi báo giá cho bạn. Bạn theo dõi từng bước ở đó.</p>
       </Modal>
     )
   }
