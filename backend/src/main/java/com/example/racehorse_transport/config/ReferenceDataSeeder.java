@@ -363,7 +363,6 @@ public class ReferenceDataSeeder implements CommandLineRunner {
             new String[] { "escort01", "escort01@gmail.com", "$2a$10$1qLVpCjGZqVCxBW8M/50ZOjGT1Ax/vGfcPz2dHBqwxipdK8TLOO4K", "ESCORT", "ES-01" },
             new String[] { "escort02", "escort02@gmail.com", "$2a$10$DSFOE.KOZZ/09HcOlWlk2ON.JefUicNnEdagL31Rhim2pySMDriK2", "ESCORT", "ES-02" },
             new String[] { "escort03", "escort03@gmail.com", "$2a$10$iTet6pr/GugLxBk755TcxuTy4BVmcyoE1coaqXMN2v5zC2g3xmRui", "ESCORT", "ES-03" },
-            new String[] { "phanlong795@gmail.com", "phanlong795@gmail.com", "$2a$10$/GgrtSBJ8bctpBfi4Heac..YwzNB17.LjdOFmFy8R7CrKIe6sRGVG", "CUSTOMER", "" }
     };
 
     private static final Map<String, BigDecimal> DEFAULT_BREED_INSURED_VALUES = Map.ofEntries(
