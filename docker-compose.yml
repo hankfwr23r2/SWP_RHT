@@ -66,6 +66,7 @@ services:
       - MAIL_HOST=${MAIL_HOST:-}
       - MAIL_USERNAME=${MAIL_USERNAME:-}
       - MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - BREVO_API_KEY=${BREVO_API_KEY:-}
     ports:
       - "8080:8080"
 
