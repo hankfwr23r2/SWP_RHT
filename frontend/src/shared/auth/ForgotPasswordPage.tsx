@@ -78,7 +78,7 @@ function ForgotPasswordFlow({ staffMode }: { staffMode: boolean }) {
   }
 
   return (
-    <AuthShell title={title} subtitle="Nhận mã OTP qua email để tạo mật khẩu mới." heading="Khôi phục tài khoản" points={staffMode ? [] : undefined} back={back} homeExternal={staffMode}>
+    <AuthShell title={title} subtitle="Nhận mã OTP qua email để tạo mật khẩu mới." heading="Khôi phục tài khoản" back={back} homeExternal={staffMode}>
       {error && <div id="reset-error" className={`alert alert-danger ${s.error}`} role="alert"><i className="fa-solid fa-circle-exclamation" /><div>{error}</div></div>}
       {message && !error && <div className={`alert alert-success ${s.error}`} role="status"><i className="fa-solid fa-circle-check" /><div>{message}</div></div>}
 

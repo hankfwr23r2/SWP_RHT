@@ -86,7 +86,7 @@ function LoginForm({ managerOnly }: { managerOnly: boolean }) {
 
 export function StaffLoginPage() {
   return (
-    <AuthShell title="Đăng nhập nội bộ" subtitle="Đăng nhập bằng tài khoản được cấp." heading="Hệ thống nội bộ" tagline="Dành cho quản lý, chuyên viên, điều phối viên, tài xế và hộ tống." points={[]} homeHref="/" homeExternal back={<a href="/"><i className="fa-solid fa-arrow-left" /> Về Trang chủ</a>}>
+    <AuthShell title="Đăng nhập nội bộ" subtitle="Đăng nhập bằng tài khoản được cấp." heading="Hệ thống nội bộ" tagline="Dành cho quản lý, chuyên viên, điều phối viên, tài xế và hộ tống." homeHref="/" homeExternal back={<a href="/"><i className="fa-solid fa-arrow-left" /> Về Trang chủ</a>}>
       <LoginForm managerOnly={false} />
       <div className={s.extra}>Bạn là khách hàng? <a href="/login">Đăng nhập khách hàng</a></div>
     </AuthShell>
@@ -95,7 +95,7 @@ export function StaffLoginPage() {
 
 export function ManagerLoginPage() {
   return (
-    <AuthShell title="Cổng quản lý" subtitle="Đăng nhập bằng tài khoản quản lý." heading="Hệ thống quản lý vận hành" tagline="Tiếp nhận đơn, duyệt báo giá và xử lý sự cố." points={[]} homeHref="/" homeExternal back={<a href="/"><i className="fa-solid fa-arrow-left" /> Về Trang chủ</a>}>
+    <AuthShell title="Cổng quản lý" subtitle="Đăng nhập bằng tài khoản quản lý." heading="Hệ thống quản lý vận hành" tagline="Tiếp nhận đơn, duyệt báo giá và xử lý sự cố." homeHref="/" homeExternal back={<a href="/"><i className="fa-solid fa-arrow-left" /> Về Trang chủ</a>}>
       <LoginForm managerOnly />
       <div className={s.extra}>Bạn là khách hàng? <a href="/login">Đăng nhập khách hàng</a></div>
     </AuthShell>
