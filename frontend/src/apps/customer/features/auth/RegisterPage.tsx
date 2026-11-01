@@ -111,14 +111,14 @@ export default function RegisterPage() {
           <Note id="fullname" error={fieldErrors.fullname} />
         </div>
         <div className="form-group">
-          <label htmlFor="email" className="required">Gmail</label>
+          <label htmlFor="email" className="required">Email</label>
           <input {...field('email')} type="email" placeholder="ten@gmail.com" autoComplete="email" />
           <Note id="email" error={fieldErrors.email} hint="Dùng để đăng nhập. Chúng tôi gửi mã xác thực tới Gmail này." />
         </div>
         <div className="form-group">
           <label htmlFor="password" className="required">Mật khẩu</label>
           <div className={s.pwdWrap}>
-            <input {...field('password')} type={showPwd ? 'text' : 'password'} autoComplete="new-password" maxLength={100} />
+            <input {...field('password')} type={showPwd ? 'text' : 'password'} placeholder="Nhập mật khẩu" autoComplete="new-password" maxLength={100} />
             <button type="button" className={s.pwdToggle} onClick={() => setShowPwd(v => !v)} aria-label={showPwd ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}>
               <i className={`fa-solid ${showPwd ? 'fa-eye-slash' : 'fa-eye'}`} />
             </button>
