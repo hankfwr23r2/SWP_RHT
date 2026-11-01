@@ -111,3 +111,13 @@
     grid-template-columns: 1fr;
   }
 }
+
+.fields { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 16px; }
+.formGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.summary, .documents { display: grid; gap: 10px; }
+.sectionTitle { font-weight: 600; color: var(--navy); }
+.document { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); }
+.fileName { flex: 1; min-width: 100px; overflow-wrap: anywhere; }
+@media (max-width: 720px) { .formGrid { grid-template-columns: 1fr; } }
+
+.uploadDisabled:hover { border-color: #cbd5e1; background: var(--bg-page); }

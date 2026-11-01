@@ -7,6 +7,7 @@ import com.example.racehorse_transport.dto.specialist.*;
 import java.util.List;
 
 public interface SpecialistService {
+    List<BookingResponse> getInsuranceBookings(String username);
     BookingResponse updateInsurance(String id, String horseId, HorseInsuranceDto request, String username);
 
 

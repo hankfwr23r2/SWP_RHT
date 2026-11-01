@@ -144,9 +144,11 @@ public class BookingServiceImpl implements BookingService {
             insurance.setReviewed(false);
             insurance.setArranged(false);
             insurance.setPremium(null);
+            insurance.setPolicyDocuments(null);
+            insurance.setQuoteValidUntil(null);
             horse.setInsuranceOpted("assistance".equals(insurance.getOption()));
             if (!"personal".equals(insurance.getOption())) {
-                insurance.setProvider(null); insurance.setPolicyNumber(null);
+                insurance.setProvider(null); insurance.setPolicyNumber(null); insurance.setDocumentNames(null);
                 insurance.setValidFrom(null); insurance.setValidUntil(null); insurance.setDocuments(null);
             }
         }
@@ -1004,6 +1006,14 @@ public class BookingServiceImpl implements BookingService {
 
         Instant now = Instant.now();
         Instant expiresAt = now.plus(quoteValidHours, ChronoUnit.HOURS);
+        for (var horse : payload.getHorses()) {
+            var insurance = horse.getInsurance();
+            if (insurance != null && "assistance".equals(insurance.getOption()) && !HorseInsurancePolicy.blank(insurance.getQuoteValidUntil())) {
+                Instant limit = java.time.LocalDate.parse(insurance.getQuoteValidUntil()).plusDays(1)
+                    .atStartOfDay(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant().minusMillis(1);
+                if (limit.isBefore(expiresAt)) expiresAt = limit;
+            }
+        }
 
         User sentByUser = null;
         if (request.getBy() != null && !request.getBy().isBlank()) {
@@ -1862,6 +1872,23 @@ public class BookingServiceImpl implements BookingService {
                 var i = horse.getInsurance();
                 if (i != null && "assistance".equals(i.getOption()))
                     horse.setInsurance(HorseInsuranceDto.builder().option("assistance").build());
+            }
+        }
+        if (customerView && payload != null && payload.getQuote() instanceof Map<?, ?> quoteMap) {
+            for (var horse : horseDtos) {
+                var live = horse.getInsurance();
+                if (live == null || !"assistance".equals(live.getOption())) continue;
+                if (quoteMap.get("insuranceSnapshot") instanceof List<?> snapshots) {
+                    for (Object row : snapshots) if (row instanceof Map<?, ?> snap && java.util.Objects.equals(horse.getHorseId(), snap.get("horseId")) && snap.get("insurance") != null) {
+                        var quoted = objectMapper.convertValue(snap.get("insurance"), HorseInsuranceDto.class);
+                        live.setProvider(quoted.getProvider()); live.setPremium(quoted.getPremium());
+                        live.setDocuments(quoted.getDocuments()); live.setNote(quoted.getNote());
+                        live.setQuoteValidUntil(quoted.getQuoteValidUntil()); live.setReviewed(quoted.getReviewed());
+                    }
+                }
+                if (!Boolean.TRUE.equals(live.getArranged())) {
+                    live.setPolicyNumber(null); live.setValidFrom(null); live.setValidUntil(null); live.setPolicyDocuments(null);
+                }
             }
         }
         return BookingResponse.builder()

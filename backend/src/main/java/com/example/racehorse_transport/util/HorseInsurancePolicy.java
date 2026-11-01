@@ -12,14 +12,24 @@ public final class HorseInsurancePolicy {
     public static void validateDeclaration(HorseInsuranceDto i) {
         if (i == null || !Set.of("personal", "assistance", "none").contains(Objects.toString(i.getOption(), "")))
             throw new IllegalArgumentException("Chọn bảo hiểm cho từng ngựa.");
+        validateDraft(i);
         if ("personal".equals(i.getOption())) {
             if (blank(i.getProvider()) || blank(i.getPolicyNumber()))
                 throw new IllegalArgumentException("Nhập đơn vị bảo hiểm và số hợp đồng cá nhân.");
             validateDates(i);
         }
+    }
+    public static void validateDraft(HorseInsuranceDto i) {
+        if (i == null || !Set.of("personal", "assistance", "none").contains(Objects.toString(i.getOption(), "")))
+            throw new IllegalArgumentException("Chọn bảo hiểm cho từng ngựa.");
         if (i.getPremium() != null && (i.getPremium().signum() < 0 || i.getPremium().stripTrailingZeros().scale() > 0 || i.getPremium().compareTo(new BigDecimal("1000000000000")) > 0))
             throw new IllegalArgumentException("Phí bảo hiểm phải là số nguyên VNĐ, từ 0 đến 1.000 tỷ.");
-        if (i.getDocuments() != null && (i.getDocuments().size() > 10 || i.getDocuments().stream().anyMatch(u -> u == null || !u.startsWith("https://"))))
+        if (i.getQuoteValidUntil() != null && !i.getQuoteValidUntil().isBlank()) {
+            try { LocalDate.parse(i.getQuoteValidUntil()); }
+            catch (Exception ex) { throw new IllegalArgumentException("Hạn báo giá bảo hiểm không hợp lệ."); }
+        }
+        if (java.util.stream.Stream.of(i.getDocuments(), i.getPolicyDocuments()).filter(Objects::nonNull)
+            .anyMatch(docs -> docs.size() > 10 || docs.stream().anyMatch(u -> u == null || !u.startsWith("https://"))))
             throw new IllegalArgumentException("Chứng từ phải là liên kết HTTPS, tối đa 10 tệp.");
     }
     public static void validateDates(HorseInsuranceDto i) {
@@ -32,6 +42,9 @@ public final class HorseInsurancePolicy {
         for (BookingHorseDto h : horses) {
             HorseInsuranceDto i = h.getInsurance();
             validateDeclaration(i);
+            if ("assistance".equals(i.getOption()) && !blank(i.getQuoteValidUntil())
+                    && LocalDate.parse(i.getQuoteValidUntil()).isBefore(LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))))
+                throw new IllegalStateException("Báo giá bảo hiểm đã hết hạn cho " + h.getName());
             if (!"none".equals(i.getOption()) && !Boolean.TRUE.equals(i.getReviewed()))
                 throw new IllegalStateException("Chưa hoàn tất bảo hiểm cho " + h.getName());
             if ("assistance".equals(i.getOption()) && (blank(i.getProvider()) || i.getPremium() == null || i.getPremium().signum() <= 0))

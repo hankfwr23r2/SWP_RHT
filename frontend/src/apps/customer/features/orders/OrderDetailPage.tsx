@@ -218,8 +218,8 @@ function RouteCard({ b }: { b: CustomerBookingView }) {
   )
 }
 
-type Tab = 'journey' | 'docs' | 'pay' | 'history' | 'info'
-const TAB_LABEL: Record<Tab, string> = { journey: 'Hành trình', docs: 'Giấy tờ', pay: 'Thanh toán', history: 'Lịch sử', info: 'Thông tin đơn' }
+type Tab = 'journey' | 'docs' | 'insurance' | 'pay' | 'history' | 'info'
+const TAB_LABEL: Record<Tab, string> = { journey: 'Hành trình', docs: 'Giấy tờ', insurance: 'Bảo hiểm', pay: 'Thanh toán', history: 'Lịch sử', info: 'Thông tin đơn' }
 
 export default function OrderDetailPage() {
   const { id = '' } = useParams()
@@ -239,7 +239,7 @@ export default function OrderDetailPage() {
   const trips = b.trips ?? []
   const next = nextStep(b, now)
   const hasJourney = trips.some(t => t.run) || (ROUTE_VISIBLE.includes(b.status) && !!b.route)
-  const tabs: Tab[] = [...(hasJourney ? ['journey' as const] : []), ...(POST_PAYMENT.includes(b.status) ? ['docs' as const] : []), ...(b.quote ? ['pay' as const] : []), 'history', 'info']
+  const tabs: Tab[] = [...(hasJourney ? ['journey' as const] : []), ...(POST_PAYMENT.includes(b.status) ? ['docs' as const] : []), ...(b.quote ? ['pay' as const] : []), 'insurance', 'history', 'info']
   // Tab mặc định theo giai đoạn: đang đi đường thì Hành trình, đang làm giấy thì Giấy tờ, còn lại Thanh toán / Thông tin
   const auto: Tab = ROUTE_STAGE.includes(b.status) ? 'journey' : POST_PAYMENT.includes(b.status) ? 'docs' : b.quote ? 'pay' : 'info'
   const tab = picked && tabs.includes(picked) ? picked : tabs.includes(auto) ? auto : 'info'
@@ -346,7 +346,8 @@ export default function OrderDetailPage() {
             </>
           )}
 
-          {tab === 'docs' && <><ClearanceProgressCard b={b} /><div className="card"><h3>Bảo hiểm</h3>{b.horses.map(h => <div key={h.horseId}><h4>{h.name}</h4><InsuranceSummary insurance={h.insurance} /></div>)}</div></>}
+          {tab === 'docs' && <ClearanceProgressCard b={b} />}
+          {tab === 'insurance' && <div className="card"><div className="card-header"><h3>{b.payment ? 'Thông tin bảo hiểm và hợp đồng' : 'Lựa chọn và báo giá bảo hiểm'}</h3></div>{b.horses.map(h => <section key={h.horseId} style={{ padding: 20 }}><h4>{h.name}</h4><InsuranceSummary insurance={h.insurance} phase={b.payment ? 'all' : 'quote'} /></section>)}</div>}
 
           {tab === 'pay' && (
             <>
@@ -355,7 +356,7 @@ export default function OrderDetailPage() {
               {b.quote && (
                 <div className="card">
                   <div className="card-header"><h3><i className="fa-solid fa-file-invoice-dollar" /> Báo giá</h3></div>
-                  {b.quote.insuranceSnapshot?.map(h => <div key={h.horseId}><b>{h.name}</b><InsuranceSummary insurance={h.insurance} /></div>)}
+                  {b.quote.insuranceSnapshot?.map(h => <div key={h.horseId}><b>{h.name}</b><InsuranceSummary insurance={h.insurance} phase="quote" /></div>)}
                   <QuoteSheet
                     {...b.quote}
                     bookingCode={b.id}

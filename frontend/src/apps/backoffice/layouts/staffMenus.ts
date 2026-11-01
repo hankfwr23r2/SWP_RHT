@@ -23,6 +23,7 @@ export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: 
   specialist: [
     ['/specialist/verification', 'Duyệt hồ sơ ngựa', { icon: 'fa-file-medical' }],
     ['/specialist/legal', 'Giấy tờ chuyến đi', { icon: 'fa-file-signature' }],
+    ['/specialist/insurance', 'Bảo hiểm', { icon: 'fa-shield-halved' }],
   ],
   coordinator: [
     ['/coordinator/fleet-plan', 'Xe và lộ trình', { icon: 'fa-route' }],

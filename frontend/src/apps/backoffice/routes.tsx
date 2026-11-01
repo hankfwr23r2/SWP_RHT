@@ -1,3 +1,4 @@
+import { insuranceListLoader } from './shared/loaders'
 // Danh sách trang của app nội bộ: URL → trang → vai trò.
 import { lazy } from 'react'
 import type { AppRoute } from '@shared/routing/types'
@@ -41,6 +42,8 @@ export const routes: AppRoute[] = [
 
   { path: '/specialist/verification', lazyPage: () => import('./features/specialist/verification/VerificationListPage'), loader: bookingListLoader, roles: SP, title: 'Duyệt hồ sơ ngựa', layout: 'staff' },
   { path: '/specialist/verification/:id', lazyPage: () => import('./features/specialist/verification/VerifyPage'), loader: verifyLoader, roles: SP, title: 'Duyệt hồ sơ ngựa một đơn', layout: 'staff' },
+  { path: '/specialist/insurance', lazyPage: () => import('./features/specialist/insurance/InsuranceListPage'), loader: insuranceListLoader, roles: SP, title: 'Bảo hiểm', layout: 'staff' },
+  { path: '/specialist/insurance/:id', lazyPage: () => import('./features/specialist/insurance/InsuranceDetailPage'), loader: bookingLoader, roles: SP, title: 'Bảo hiểm theo đơn', layout: 'staff' },
   { path: '/specialist/legal', lazyPage: () => import('./features/specialist/legal/LegalListPage'), loader: bookingListLoader, roles: SP, title: 'Giấy tờ chuyến đi', layout: 'staff' },
   { path: '/specialist/legal/:id', lazyPage: () => import('./features/specialist/legal/LegalReviewPage'), loader: bookingLoader, roles: SP, title: 'Làm giấy tờ một đơn', layout: 'staff' },
 

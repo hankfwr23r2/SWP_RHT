@@ -23,12 +23,10 @@ export default function VerificationListPage() {
     (isAssignedTo(b.intake.specialist, session?.name) || isAssignedTo(b.intake.specialist, session?.username))
   const mine = (all ?? []).filter(b => isMyTask(b) && (b.status === 'under_review' || b.medical))
   const medicalStatus = (b: Booking) => b.medical?.status ?? 'pending'
-  const insurancePending = (b: Booking) => b.status === 'pending_commercial'
-    && b.horses.some(h => !h.insurance.option || (h.insurance.option !== 'none' && !h.insurance.reviewed))
   const groups: Record<Tab, Booking[]> = {
-    todo: mine.filter(b => medicalStatus(b) === 'pending' || insurancePending(b)),
+    todo: mine.filter(b => medicalStatus(b) === 'pending'),
     waiting: mine.filter(b => medicalStatus(b) === 'resubmit'),
-    done: mine.filter(b => medicalStatus(b) === 'approved' && !insurancePending(b)),
+    done: mine.filter(b => medicalStatus(b) === 'approved'),
   }
   const columns: Column<Booking>[] = [
     { head: 'Mã đơn', cell: b => idCell(b) },

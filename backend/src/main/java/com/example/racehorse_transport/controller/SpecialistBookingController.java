@@ -24,6 +24,12 @@ public class SpecialistBookingController {
     private final SpecialistService specialistService;
     private final JwtUtils jwtUtils;
 
+    @GetMapping("/insurance")
+    public ResponseEntity<ApiResponse<List<BookingResponse>>> getInsuranceBookings(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
+        return ResponseEntity.ok(ApiResponse.success(specialistService.getInsuranceBookings(extractUsername(authHeader)), "Danh sách bảo hiểm được phân công"));
+    }
+
     @PutMapping("/{id}/horses/{horseId}/insurance")
     public ResponseEntity<ApiResponse<BookingResponse>> updateInsurance(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
