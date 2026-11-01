@@ -273,6 +273,7 @@ export function quoteLines(b: QuoteInput, vehicles: Pick<Vehicle, 'capacity'>[])
   }
   lines.push({ label: 'Thủ tục kiểm dịch và hải quan', detail: international ? 'Nhà xe làm trọn gói' : 'Nhà xe làm giấy kiểm dịch trong nước', calculation: 'Phí thủ tục trọn gói theo loại tuyến.', amount: international ? CLEARANCE_FEE.international : CLEARANCE_FEE.domestic })
   const insured = b.horses.filter(horse => {
+    if (horse.insurance.option) return false
     const selection = horse.selectedServices?.insurance
     if (!selection) return horse.insurance.opted
     const declined = selection.serviceCode === 'INSURANCE_DECLINED'
@@ -287,6 +288,11 @@ export function quoteLines(b: QuoteInput, vehicles: Pick<Vehicle, 'capacity'>[])
       calculation: 'Cộng phí bảo hiểm theo giống của từng ngựa được chọn bảo hiểm.',
       amount: insured.reduce((total, horse) => total + insuranceFee(horse.breed), 0),
     })
+  }
+  for (const horse of b.horses) {
+    if (horse.insurance.option === 'assistance' && horse.insurance.reviewed && horse.insurance.premium != null) {
+      lines.push({ label: 'Thu hộ bảo hiểm bên thứ ba', detail: `${horse.horseId} · ${horse.name} · ${horse.insurance.provider ?? ''}`, calculation: 'Phí bên thứ ba báo; công ty thu hộ.', amount: horse.insurance.premium })
+    }
   }
   return { lines, km, days }
 }

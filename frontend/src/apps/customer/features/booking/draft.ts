@@ -10,7 +10,8 @@ export interface HorseConfig {
   waterPlan: WaterPlanId
   selectedServices?: Partial<Record<BookingServiceCategory, number>>
   selectedServiceCodes?: Partial<Record<BookingRequiredServiceCategory, string>>
-  insurance: 'buy' | 'decline' | '' // phải chọn rõ cho từng ngựa
+  insurance: 'buy' | 'decline' | 'personal' | 'assistance' | 'none' | ''
+  insuranceDetails?: import('@shared/types/insurance').HorseInsurance // phải chọn rõ cho từng ngựa
 }
 
 export interface BookingDraft {
@@ -93,7 +94,12 @@ function getSnapshot(): BookingDraft {
   const raw = readRaw()
   if (raw !== lastRaw) {
     lastRaw = raw
-    try { cache = raw ? { ...emptyDraft(), ...JSON.parse(raw) } : emptyDraft() } catch { cache = emptyDraft() }
+    try {
+      cache = raw ? { ...emptyDraft(), ...JSON.parse(raw) } : emptyDraft()
+      for (const config of Object.values(cache.config)) {
+        if (config.insurance === 'buy' || config.insurance === 'decline') config.insurance = ''
+      }
+    } catch { cache = emptyDraft() }
   }
   return cache
 }

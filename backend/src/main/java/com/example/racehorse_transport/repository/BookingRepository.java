@@ -12,6 +12,10 @@ import java.util.List;
 
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Integer> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @org.springframework.data.jpa.repository.Query("select b from Booking b where b.id = :id")
+    java.util.Optional<Booking> findByIdForUpdate(@org.springframework.data.repository.query.Param("id") Integer id);
+
     // Các danh sách đều đọc tên và tài khoản khách của từng đơn: nạp kèm trong cùng câu truy vấn để không tốn 2 câu SQL mỗi đơn
     @EntityGraph(attributePaths = {"customerID", "customerID.user"})
     List<Booking> findByCustomerID_IdOrderByBookingDateDesc(Integer customerId);

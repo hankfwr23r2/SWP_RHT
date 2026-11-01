@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { formatVND } from '@shared/lib/format'
-import { insuranceFee } from '@shared/lib/booking'
+import { CustomerInsuranceFields } from '@shared/ui/InsuranceFields'
 import { usePageData } from '@shared/routing/pageData'
 import { SEX_LABEL, type BookingRequiredServiceCategory } from '@shared/types/booking'
 import { PolicyLink } from '@shared/ui/PolicyLink'
@@ -16,7 +16,6 @@ import s from './Booking.module.css'
 const SERVICE_GROUPS: { key: BookingRequiredServiceCategory; label: string; icon: string }[] = [
   { key: 'stall', label: 'Khoang trên xe', icon: 'fa-border-all' },
   { key: 'feed', label: 'Gói thức ăn', icon: 'fa-wheat-awn' },
-  { key: 'insurance', label: 'Bảo hiểm chuyến đi', icon: 'fa-shield-halved' },
 ]
 
 function legacySelection(category: BookingRequiredServiceCategory, service: ServiceCatalogItem): Partial<HorseConfig> {
@@ -44,6 +43,7 @@ export default function Step3ServicesPage() {
     Object.fromEntries(draft.horseIds.map(id => [id, { ...defaultConfig(), ...draft.config[id] }])))
   const [activeIndex, setActiveIndex] = useState(0)
   const [ack, setAck] = useState(false)
+  const [uploading, setUploading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
   useEffect(() => {
@@ -56,7 +56,7 @@ export default function Step3ServicesPage() {
   const rows = draft.horseIds.map(id => horses?.find(h => h.id === id)).filter(Boolean) as NonNullable<typeof horses>
   const activeHorse = rows[activeIndex]
   const set = (id: string, patch: Partial<HorseConfig>) => setConfig(current => ({ ...current, [id]: { ...current[id], ...patch } }))
-  const declined = rows.filter(h => isDeclinedInsurance(serviceOptionFor(services, config[h.id], 'insurance')))
+  const declined = rows.filter(h => config[h.id].insurance === 'none')
   const problems = rows.length === 0 || rows.length !== draft.horseIds.length
     ? ['Không tải đủ hồ sơ ngựa cho các mã đã chọn. Vui lòng quay lại “Chọn ngựa” và chọn lại danh sách.']
     : rows.flatMap(h => SERVICE_GROUPS
@@ -65,12 +65,16 @@ export default function Step3ServicesPage() {
   problems.push(...rows.flatMap(h => SERVICE_GROUPS
     .filter(group => group.key !== 'insurance' && !hasExplicitServiceSelection(config[h.id], group.key))
     .map(group => `${h.name}: chọn dịch vụ ${group.label.toLocaleLowerCase()}`)))
-  problems.push(...rows.filter(h => !config[h.id].insurance && !config[h.id].selectedServiceCodes?.insurance
-    && !config[h.id].selectedServices?.insurance)
-    .map(h => `${h.name}: chọn dịch vụ bảo hiểm chuyến đi`))
+  problems.push(...rows.filter(h => !['personal', 'assistance', 'none'].includes(config[h.id].insurance))
+    .map(h => `${h.name}: chọn bảo hiểm chuyến đi`))
+  for (const h of rows) {
+    const i = config[h.id].insuranceDetails
+    if (config[h.id].insurance === 'personal' && (!i?.provider?.trim() || !i.policyNumber?.trim() || !i.validFrom || !i.validUntil || i.validUntil < i.validFrom)) problems.push(`${h.name}: điền đầy đủ thông tin bảo hiểm cá nhân và thời hạn hợp lệ`)
+  }
   if (declined.length && !ack) problems.push('Xác nhận Điều khoản Trách nhiệm Hạn chế')
 
   const next = () => {
+    if (uploading) return
     setSubmitted(true)
     if (problems.length) {
       if (rows.length === 0 || rows.length !== draft.horseIds.length) return
@@ -99,7 +103,7 @@ export default function Step3ServicesPage() {
           <div className={s.horseNavigator} aria-label="Chọn ngựa để thiết lập dịch vụ">
             <label className={s.horseSelectLabel}>
               <span>Ngựa {activeIndex + 1}/{rows.length}</span>
-              <select className="form-control" value={activeHorse.id} onChange={e => setActiveIndex(rows.findIndex(h => h.id === e.target.value))}>
+              <select className="form-control" value={activeHorse.id} disabled={uploading} onChange={e => setActiveIndex(rows.findIndex(h => h.id === e.target.value))}>
                 {rows.map((horse, index) => <option key={horse.id} value={horse.id}>{index + 1}. {horse.name}</option>)}
               </select>
             </label>
@@ -130,9 +134,7 @@ export default function Step3ServicesPage() {
                           ? { 'data-problem': true } : {})}>
                         {options.length ? options.map(service => {
                           const declinedInsurance = group.key === 'insurance' && isDeclinedInsurance(service)
-                          const price = group.key === 'insurance'
-                            ? declinedInsurance ? 0 : insuranceFee(horse.breed)
-                            : service.price
+                          const price = service.price
                           return (
                           <label key={service.id} className={s.opt}>
                             <input
@@ -158,6 +160,8 @@ export default function Step3ServicesPage() {
                     </div>
                   )
                 })}
+                <CustomerInsuranceFields onBusyChange={setUploading} value={current.insuranceDetails} option={current.insurance}
+                  onChange={insuranceDetails => set(horse.id, { insurance: insuranceDetails.option, insuranceDetails })} />
               </section>
             )
           })()}
@@ -178,7 +182,7 @@ export default function Step3ServicesPage() {
 
       <div className={s.actions}>
         <Link to="/booking/horses" className="btn btn-ghost"><i className="fa-solid fa-arrow-left" /> Chọn ngựa</Link>
-        <button type="button" className="btn btn-primary" onClick={next}>Tiếp tục: Xác nhận <i className="fa-solid fa-arrow-right" /></button>
+        <button type="button" className="btn btn-primary" onClick={next} disabled={uploading}>Tiếp tục: Xác nhận <i className="fa-solid fa-arrow-right" /></button>
       </div>
     </BookingShell>
   )

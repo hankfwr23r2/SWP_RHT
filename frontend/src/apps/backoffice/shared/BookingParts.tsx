@@ -1,5 +1,6 @@
 // Thành phần dùng chung cho các trang nội bộ của Flow 1: tóm tắt đơn, tiến độ hai nhánh, nhật ký.
 import { COUNTRIES } from '@shared/config/network'
+import { InsuranceSummary } from '@shared/ui/InsuranceFields'
 import { insuranceFee } from '@shared/lib/booking'
 import { formatDate, formatDateTime } from '@shared/lib/format'
 import { FEED_PACKAGE, WATER_PLAN } from '@shared/config/booking-rules'
@@ -105,9 +106,9 @@ export function HorseConfigList({ b }: { b: Booking }) {
             {(h.selectedServices?.water || h.waterPlan) && (
               <span>Cữ nước: <b>{h.selectedServices?.water?.serviceName ?? WATER_PLAN[h.waterPlan ?? 'every_3h'].label}</b></span>
             )}
-            <span>Bảo hiểm: <b>{h.selectedServices?.insurance?.serviceName ?? (h.insurance.opted ? `mua, phí ${formatVND(insuranceFee(h.breed))}` : 'từ chối')}</b>
+            {h.insurance.option ? <InsuranceSummary insurance={h.insurance} /> : <span>Bảo hiểm: <b>{h.selectedServices?.insurance?.serviceName ?? (h.insurance.opted ? `mua, phí ${formatVND(insuranceFee(h.breed))}` : 'từ chối')}</b>
               {h.selectedServices?.insurance && h.selectedServices.insurance.price > 0 && <small> ({formatVND(h.selectedServices.insurance.price)})</small>}
-            </span>
+            </span>}
           </div>
         </div>
       ))}

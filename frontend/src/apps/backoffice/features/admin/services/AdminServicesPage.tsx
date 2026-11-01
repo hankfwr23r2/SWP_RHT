@@ -169,7 +169,7 @@ function ServiceModal({ service, categories, onClose, onDone }: ServiceModalProp
             onChange={e => setPrice(e.target.value)}
             required
           />
-          {categoryId === INSURANCE_CATEGORY_ID && <small className="form-hint">Phí bảo hiểm đang được tính bằng 2% giá trị bảo hiểm theo giống ngựa.</small>}
+          {categoryId === INSURANCE_CATEGORY_ID && <small className="form-hint">Bảo hiểm do bên thứ ba báo theo chuyến; danh mục cũ chỉ dùng để đọc dữ liệu lịch sử.</small>}
         </div>
 
         <div className={`form-group ${s.full}`}>
@@ -208,7 +208,9 @@ export default function AdminServicesPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [modal, setModal] = useState<{ service: BackendServiceItem | null } | null>(null)
 
-  const { services = [], categories = [], reload } = usePageData<typeof adminServicesLoader>()
+  const { services: catalogServices = [], categories: catalogCategories = [], reload } = usePageData<typeof adminServicesLoader>()
+  const services = catalogServices.filter(service => service.categoryId !== INSURANCE_CATEGORY_ID)
+  const categories = catalogCategories.filter(category => category.id !== INSURANCE_CATEGORY_ID)
 
   const rows = services
     .filter(s => (tab === 'all' ? true : s.status === tab))
@@ -247,7 +249,7 @@ export default function AdminServicesPage() {
       cell: item => (
         <span className={s.price}>
           {item.categoryId === INSURANCE_CATEGORY_ID
-            ? 'Phí tính theo giá trị bảo hiểm của giống'
+            ? 'Báo giá bên thứ ba / dữ liệu cũ'
             : item.price > 0
               ? `${formatVND(item.price)} / ${SERVICE_BILLING_UNIT_LABEL[item.billingUnit]}`
               : 'Miễn phí / Đã gồm'}

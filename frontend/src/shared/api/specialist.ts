@@ -38,6 +38,10 @@ export interface MarkHorseClearedPayload {
 }
 
 export const specialistApi = {
+  updateInsurance: async (id: string, horseId: string, payload: import('../types/insurance').HorseInsurance): Promise<BackendBookingResponse> => {
+    const res = await apiClient.put<ApiResponse<BackendBookingResponse>>(`/specialist/bookings/${id}/horses/${horseId}/insurance`, payload)
+    return res.data.data
+  },
   // Flow 1: Duyệt hồ sơ ngựa
   getVerificationBookings: async (): Promise<BackendBookingResponse[]> => {
     const res = await apiClient.get<ApiResponse<BackendBookingResponse[]>>('/specialist/bookings/verification')

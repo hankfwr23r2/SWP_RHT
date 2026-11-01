@@ -25,7 +25,7 @@ export default function HistoryPage() {
   useEffect(() => { pager.reset() }, [tab, keyword])
   const count = (t: Tab) => fits.filter(b => t === 'all' || orderTabOf(b) === t).length
   // Kết quả tài chính của đơn: hoàn tất thì tổng đã trả, đã hủy thì số tiền được hoàn
-  const money = (b: (typeof finished)[number]) => b.status === 'cancelled' ? (b.cancellation?.refund ? `Hoàn ${formatVND(b.cancellation.refund)}` : b.payment ? `Mất cọc ${formatVND(b.payment.amount)}` : 'Không phát sinh') : b.quote ? formatVND(b.quote.total + (b.settlement?.total ?? 0)) : '-'
+  const money = (b: (typeof finished)[number]) => b.status === 'cancelled' ? (b.cancellation?.refund ? `Hoàn ${formatVND(b.cancellation.refund)}` : b.payment ? b.cancellation?.insuranceReconciliationPending ? 'Chờ đối soát bảo hiểm' : `Phí hủy ${formatVND(b.cancellation?.penalty ?? b.payment.amount)}` : 'Không phát sinh') : b.quote ? formatVND(b.quote.total + (b.settlement?.total ?? 0)) : '-'
 
   return (
     <div className="page">

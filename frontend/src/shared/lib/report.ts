@@ -15,6 +15,7 @@ export function bookingStatusLabel(status: string | undefined): string {
 
 export interface OrderFinance {
   id: string; customer: string; at: number // at = ngày đặt cọc (đơn có hiệu lực)
+  insuranceCollection: number // phí thu hộ trong báo giá, đơn hủy dùng số đã thu
   revenue: number // doanh thu ghi nhận: giá trị đơn + phát sinh khách chịu; đơn hủy thì phần cọc không hoàn
   cost: number // chi phí vận hành: giá vốn theo báo giá + chi phí sự cố nhà xe chịu
   profit: number
@@ -33,14 +34,16 @@ export function orderFinance(b: Booking): OrderFinance | undefined {
   const base = { id: b.id, customer: b.customer, at: b.payment.paidAt, status: b.status }
   if (b.status === 'cancelled') {
     const kept = paid - (b.cancellation?.refund ?? 0)
-    return { ...base, revenue: kept, cost: carrierExpenses, profit: kept - carrierExpenses, collected: kept }
+    const revenue = b.cancellation?.penalty ?? (kept - (b.cancellation?.insuranceCollected ?? 0))
+    return { ...base, revenue, insuranceCollection: b.cancellation?.insuranceCollected ?? 0, cost: carrierExpenses, profit: revenue - carrierExpenses, collected: kept }
   }
   if (!b.quote) return undefined
   const lines = Array.isArray(b.quote.lines) ? b.quote.lines : []
-  const cogs = lines.reduce((t, l) => t + (MARGINED.test(l.label) ? l.amount / (1 + MARGIN_RATE) : l.amount), 0)
-  const revenue = (b.quote.total ?? 0) + extras
+  const insuranceCollection = lines.filter(l => l.label === 'Thu hộ bảo hiểm bên thứ ba').reduce((total, line) => total + line.amount, 0)
+  const cogs = lines.filter(l => l.label !== 'Thu hộ bảo hiểm bên thứ ba').reduce((t, l) => t + (MARGINED.test(l.label) ? l.amount / (1 + MARGIN_RATE) : l.amount), 0)
+  const revenue = (b.quote.total ?? 0) - insuranceCollection + extras
   const cost = Math.round(cogs) + carrierExpenses
-  return { ...base, revenue, cost, profit: revenue - cost, collected: paid + (b.settlement?.paid?.amount ?? 0) }
+  return { ...base, revenue, insuranceCollection, cost, profit: revenue - cost, collected: paid + (b.settlement?.paid?.amount ?? 0) }
 }
 
 export interface TripPerf { orderId: string; tripId: string; startedAt: number; deliveredAt?: number; onTime?: boolean; hours?: number; hadIncident: boolean }

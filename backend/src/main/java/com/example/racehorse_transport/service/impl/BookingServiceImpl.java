@@ -1,5 +1,8 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.dto.manager.QuoteLineDto;
+import com.example.racehorse_transport.dto.booking.HorseInsuranceDto;
+import com.example.racehorse_transport.util.HorseInsurancePolicy;
 import com.example.racehorse_transport.dto.booking.BookingHorseDto;
 import com.example.racehorse_transport.dto.booking.DocumentRequirementSnapshot;
 import com.example.racehorse_transport.dto.booking.BookingResponse;
@@ -134,6 +137,18 @@ public class BookingServiceImpl implements BookingService {
         }
 
         // 4. Resolve selected services against active catalog data before persisting a price snapshot.
+        for (BookingHorseDto horse : request.getHorses()) {
+            HorseInsurancePolicy.validateDeclaration(horse.getInsurance());
+            var insurance = horse.getInsurance();
+            insurance.setReviewed(false);
+            insurance.setArranged(false);
+            insurance.setPremium(null);
+            horse.setInsuranceOpted("assistance".equals(insurance.getOption()));
+            if (!"personal".equals(insurance.getOption())) {
+                insurance.setProvider(null); insurance.setPolicyNumber(null);
+                insurance.setValidFrom(null); insurance.setValidUntil(null); insurance.setDocuments(null);
+            }
+        }
         snapshotSelectedServices(request.getHorses());
         boolean internationalBooking = "INTERNATIONAL".equalsIgnoreCase(request.getType());
         List<DocumentRequirement> bookingDocumentRequirements = documentRequirementRepository
@@ -943,7 +958,7 @@ public class BookingServiceImpl implements BookingService {
     @Transactional
     public BookingResponse sendQuote(String bookingIdentifier, SendQuoteRequest request) {
         Integer bookingId = parseBookingId(bookingIdentifier);
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findByIdForUpdate(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
 
         if (!"pending_commercial".equalsIgnoreCase(booking.getStatus())) {
@@ -970,10 +985,18 @@ public class BookingServiceImpl implements BookingService {
             }
         }
 
+        HorseInsurancePolicy.requireQuoteReady(payload.getHorses());
+        List<QuoteLineDto> canonicalLines = new ArrayList<>(request.getLines() != null ? request.getLines() : List.of());
+        canonicalLines.removeIf(line -> line.getLabel() != null && line.getLabel().toLowerCase(Locale.ROOT).contains("bảo hiểm"));
+        canonicalLines.addAll(HorseInsurancePolicy.quoteLines(payload.getHorses()));
+        request.setLines(canonicalLines);
         // Tổng, cọc, số dư do backend tính từ các dòng và khoản điều chỉnh; bỏ qua các con số tổng client gửi
         BigDecimal depositRate = new BigDecimal(systemConfigService.getConfig("DEPOSIT_RATE").getConfigValue());
         int quoteValidHours = Integer.parseInt(systemConfigService.getConfig("QUOTE_VALID_HOURS").getConfigValue());
         QuoteTotals totals = QuoteTotals.of(request.getLines(), request.getAdjustments(), depositRate);
+        BigDecimal insuranceTotal = HorseInsurancePolicy.quoteLines(payload.getHorses()).stream()
+            .map(QuoteLineDto::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (totals.total().compareTo(insuranceTotal) < 0) throw new IllegalArgumentException("Điều chỉnh vận chuyển không được giảm vào phí thu hộ bảo hiểm.");
         BigDecimal total = totals.total();
         BigDecimal deposit = totals.deposit();
         BigDecimal balance = totals.balance();
@@ -989,6 +1012,7 @@ public class BookingServiceImpl implements BookingService {
         String linesJson = null;
         try {
             Map<String, Object> quoteContent = new HashMap<>();
+            quoteContent.put("insuranceSnapshot", payload.getHorses());
             quoteContent.put("lines", request.getLines());
             quoteContent.put("adjustments", request.getAdjustments());
             linesJson = objectMapper.writeValueAsString(quoteContent);
@@ -1015,6 +1039,7 @@ public class BookingServiceImpl implements BookingService {
         quotationRepository.save(quotation);
 
         Map<String, Object> quoteMap = new HashMap<>();
+        quoteMap.put("insuranceSnapshot", objectMapper.convertValue(payload.getHorses(), List.class));
         quoteMap.put("lines", request.getLines());
         quoteMap.put("adjustments", request.getAdjustments());
         quoteMap.put("subtotal", totals.subtotal());
@@ -1472,6 +1497,7 @@ public class BookingServiceImpl implements BookingService {
 
             Map<String, BookingServiceSelectionDto> resolved = new LinkedHashMap<>();
             for (Map.Entry<String, Integer> category : categoryIds.entrySet()) {
+                if ("insurance".equals(category.getKey()) && horse.getInsurance() != null) continue;
                 String serviceCode = requestedCodes != null ? requestedCodes.get(category.getKey()) : null;
                 BookingServiceSelectionDto legacySelection = legacySelections != null
                         ? legacySelections.get(category.getKey())
@@ -1519,6 +1545,7 @@ public class BookingServiceImpl implements BookingService {
                     (codes, entry) -> codes.put(entry.getKey(), entry.getValue().getServiceCode()),
                     LinkedHashMap::putAll));
             BookingServiceSelectionDto insurance = resolved.get("insurance");
+            if (insurance == null) continue;
             boolean declinedInsurance = "INSURANCE_DECLINED".equals(insurance.getServiceCode())
                     || insurance.getId() == 10
                     || insurance.getServiceName().toLowerCase(Locale.ROOT).contains("từ chối");
@@ -1827,6 +1854,15 @@ public class BookingServiceImpl implements BookingService {
                 ? Math.toIntExact(bookingVehicleRepository.countByBookingID_Id(b.getId()))
                 : 0;
 
+        var authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        boolean customerView = authentication != null && authentication.getAuthorities().stream().anyMatch(a -> "ROLE_CUSTOMER".equals(a.getAuthority()));
+        if (customerView && payload != null && payload.getQuote() == null) {
+            for (BookingHorseDto horse : horseDtos) {
+                var i = horse.getInsurance();
+                if (i != null && "assistance".equals(i.getOption()))
+                    horse.setInsurance(HorseInsuranceDto.builder().option("assistance").build());
+            }
+        }
         return BookingResponse.builder()
                 .id(formattedId)
                 .numericId(b.getId())
@@ -1857,7 +1893,8 @@ public class BookingServiceImpl implements BookingService {
                 .canCancel(canCancel)
                 .canPayBalance(CustomerBookingRules.canPayBalance(b.getStatus(), balancePaid))
                 .cancelPenalty(canCancel && paymentMap.get("amount") != null
-                        ? new BigDecimal(paymentMap.get("amount").toString()) : null)
+                        ? new BigDecimal(paymentMap.get("amount").toString()).subtract(
+                            HorseInsurancePolicy.insuranceDeposit(payload != null ? payload.getQuote() : null, new BigDecimal(paymentMap.get("amount").toString()))) : null)
                 .medical(medical)
                 .clearance(clearance)
                 .settlement(payload != null ? payload.getSettlement() : null)
@@ -2193,6 +2230,7 @@ public class BookingServiceImpl implements BookingService {
                 break;
             }
             case "START_JOURNEY": {
+                HorseInsurancePolicy.requireDepartureReady(payload.getHorses(), targetTrip.getHorseIds(), java.time.Instant.now());
                 validateJourneyStart(booking, payload, targetTrip);
                 booking.setStatus("in_transit");
                 Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();

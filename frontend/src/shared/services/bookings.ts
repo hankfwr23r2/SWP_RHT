@@ -191,6 +191,7 @@ export const customerBookingsApi = {
         feedPackage: h.feedPackage,
         waterPlan: h.waterPlan,
         insuranceOpted: h.insurance?.opted,
+        insurance: h.insurance?.option ? { ...h.insurance, option: h.insurance.option } : undefined,
         selectedServices: h.selectedServices,
         selectedServiceCodes: h.selectedServiceCodes,
       })),

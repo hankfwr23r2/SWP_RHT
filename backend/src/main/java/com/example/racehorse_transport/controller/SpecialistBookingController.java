@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.controller;
 
+import com.example.racehorse_transport.dto.booking.HorseInsuranceDto;
 import com.example.racehorse_transport.dto.booking.BookingResponse;
 import com.example.racehorse_transport.dto.specialist.*;
 import com.example.racehorse_transport.response.ApiResponse;
@@ -22,6 +23,15 @@ public class SpecialistBookingController {
 
     private final SpecialistService specialistService;
     private final JwtUtils jwtUtils;
+
+    @PutMapping("/{id}/horses/{horseId}/insurance")
+    public ResponseEntity<ApiResponse<BookingResponse>> updateInsurance(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+            @PathVariable String id, @PathVariable String horseId,
+            @RequestBody HorseInsuranceDto request) {
+        return ResponseEntity.ok(ApiResponse.success(specialistService.updateInsurance(id, horseId, request, extractUsername(authHeader)), "Đã lưu bảo hiểm"));
+    }
+
 
     private String extractUsername(String authHeader) {
         if (authHeader != null && authHeader.startsWith("Bearer ")) {

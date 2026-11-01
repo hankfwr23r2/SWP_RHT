@@ -72,7 +72,7 @@ export interface BookingHorse {
   waterPlan?: WaterPlanId // legacy
   selectedServices?: Partial<Record<BookingServiceCategory, BookingServiceSnapshot>>
   selectedServiceCodes?: Partial<Record<BookingRequiredServiceCategory, string>>
-  insurance: { opted: boolean }
+  insurance: { opted: boolean } & Partial<import('./insurance').HorseInsurance>
   status?: 'eligible' | 'unfit'
   unfitInfo?: HorseUnfitInfo
 }
@@ -107,6 +107,7 @@ export interface MedicalReview {
 export interface QuoteLine { label: string; detail: string; amount: number; calculation?: string }
 export interface Adjustment { label: string; amount: number } // dương: phụ phí; âm: chiết khấu
 export interface Quote {
+  insuranceSnapshot?: { horseId: string; name: string; insurance?: import('./insurance').HorseInsurance }[]
   lines: QuoteLine[]
   adjustments: Adjustment[]
   subtotal: number
@@ -217,7 +218,7 @@ export interface PlanConfirmed { at: number; by: string; note: string }
 // Nhà xe từ chối đơn: Manager (lúc tiếp nhận) hoặc Coordinator (không duyệt phương án xe, lộ trình)
 export interface Rejection { at: number; by: string; role: 'manager' | 'coordinator'; reason: string }
 
-export interface Cancellation { at?: number; reason: string; by: 'customer' | 'manager'; refund: number } // refund: số tiền trả lại khách; at: chưa có ở đơn hủy trước khi backend ghi thời điểm
+export interface Cancellation { insuranceCollected?: number; insuranceReconciliationPending?: boolean; penalty?: number; insuranceTransferred?: number; insuranceProviderRefund?: number; insuranceReconciliationNote?: string; at?: number; reason: string; by: 'customer' | 'manager'; refund: number } // refund: số tiền trả lại khách; at: chưa có ở đơn hủy trước khi backend ghi thời điểm
 
 export interface Payment { paidAt: number; amount: number; reference: string }
 

@@ -4,7 +4,7 @@ import { Link, Navigate, useNavigate } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { COUNTRIES } from '@shared/config/network'
-import { classForHorses, findLocation, fromIsoDay, insuranceFee } from '@shared/lib/booking'
+import { classForHorses, findLocation, fromIsoDay } from '@shared/lib/booking'
 import { formatDate, formatVND } from '@shared/lib/format'
 import { usePageData } from '@shared/routing/pageData'
 import { customerBookingsApi } from '@shared/services/bookings'
@@ -13,8 +13,9 @@ import { SERVICE_BILLING_UNIT_LABEL } from '@shared/api/serviceCatalog'
 import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
 import { BookingShell } from './BookingShell'
+import { InsuranceSummary } from '@shared/ui/InsuranceFields'
 import type { horseListLoader } from '../horses/loaders'
-import { countriesOf, isDeclinedInsurance, serviceOptionFor, useBookingDraft } from './draft'
+import { countriesOf, serviceOptionFor, useBookingDraft } from './draft'
 import { isBookingRouteReady } from './routeValidation'
 import s from './Booking.module.css'
 
@@ -51,13 +52,13 @@ export default function Step4ReviewPage() {
   const countries = countriesOf(draft)
   if (!countries || !draft.departDate) return <Navigate to="/booking/route" replace />
   if (!draft.horseIds.length) return <Navigate to="/booking/horses" replace />
-  if (draft.horseIds.some(id => !draft.config[id]?.insurance)) return <Navigate to="/booking/services" replace />
+  if (draft.horseIds.some(id => !draft.config[id]?.insuranceDetails?.option)) return <Navigate to="/booking/services" replace />
 
   const international = draft.type === 'international'
   const rows = draft.horseIds.map(id => horses?.find(h => h.id === id)).filter(Boolean) as NonNullable<typeof horses>
   const serviceSelections = (horseId: string): Record<BookingRequiredServiceCategory, ReturnType<typeof serviceOptionFor>> => {
     const config = draft.config[horseId]
-    return Object.fromEntries((['stall', 'feed', 'insurance'] as BookingRequiredServiceCategory[]).map(category => [
+    return Object.fromEntries((['stall', 'feed'] as BookingRequiredServiceCategory[]).map(category => [
       category,
       serviceOptionFor(services, config, category),
     ])) as Record<BookingRequiredServiceCategory, ReturnType<typeof serviceOptionFor>>
@@ -91,10 +92,10 @@ export default function Step4ReviewPage() {
         departAt: fromIsoDay(draft.departDate), consignor: draft.consignor, consignee: draft.consignee,
         horses: rows.map(h => {
           const selectedServices = serviceSelections(h.id)
-          const insurance = selectedServices.insurance
+          const insurance = draft.config[h.id].insuranceDetails!
           return {
             horseId: h.id, name: h.name, microchip: h.microchip, breed: h.breed, sex: h.sex,
-            insurance: { opted: !isDeclinedInsurance(insurance) },
+            insurance: { ...insurance, opted: insurance.option === 'assistance' },
             selectedServiceCodes: Object.fromEntries(Object.entries(selectedServices).map(([key, service]) => [key, service?.serviceCode])) as Partial<Record<BookingRequiredServiceCategory, string>>,
           }
         }),
@@ -166,16 +167,7 @@ export default function Step4ReviewPage() {
                 </div>
                 <div className={s.reviewServiceCol}>
                   <span className={s.reviewServiceLabel}><i className="fa-solid fa-shield-halved" /> Bảo hiểm chuyến đi</span>
-                  <span className={s.reviewServiceVal} style={{ color: isDeclinedInsurance(selected.insurance) ? 'var(--text)' : 'var(--orange)' }}>
-                    {selected.insurance?.serviceName ?? 'Không còn áp dụng'}
-                  </span>
-                  <span className={s.reviewServiceSub}>
-                    {selected.insurance
-                      ? isDeclinedInsurance(selected.insurance)
-                        ? 'Trách nhiệm hạn chế của nhà xe'
-                        : `${formatVND(insuranceFee(h.breed))} / ngựa (2% giá trị bảo hiểm theo giống)`
-                      : 'Vui lòng quay lại chọn dịch vụ'}
-                  </span>
+                  <InsuranceSummary insurance={draft.config[h.id].insuranceDetails} />
                 </div>
               </div>
             </div>
