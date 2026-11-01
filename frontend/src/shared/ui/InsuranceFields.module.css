@@ -1,0 +1,50 @@
+.customerInsurance {
+  display: grid;
+  gap: 8px;
+}
+
+.customerInsurance h4,
+.customerInsurance p {
+  margin: 0;
+}
+
+.insuranceOptions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  margin: 2px 0 4px;
+}
+
+.insuranceOption {
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: white;
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--navy);
+}
+
+.insuranceOption:has(input:checked) {
+  border-color: var(--orange);
+  background: var(--orange-soft);
+}
+
+.insuranceOption:has(input:focus-visible) {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+
+.insuranceOption input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+@media (max-width: 720px) {
+  .insuranceOptions {
+    grid-template-columns: 1fr;
+  }
+}
