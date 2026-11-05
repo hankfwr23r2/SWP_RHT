@@ -161,7 +161,6 @@ export default function ProfilePage() {
           <div className={s.nameBlock}>
             <h1>{profile?.fullName || session?.name || t('profile.customerRole')}</h1>
             <div className={s.metaRow}>
-              <span><i className="fa-regular fa-user" /> @{profile?.username || session?.username}</span>
               <span><i className="fa-regular fa-envelope" /> {profile?.email}</span>
               <span className={s.roleBadge}>{t('profile.customerRole')}</span>
             </div>
@@ -208,12 +207,6 @@ export default function ProfilePage() {
 
           <form onSubmit={handleUpdateInfo}>
             <div className={s.formGrid}>
-              <div className={s.field}>
-                <label>{i18n.language === 'en' ? 'Username' : 'Tên đăng nhập (Username)'}</label>
-                <input type="text" value={profile?.username || ''} disabled />
-                <span className={s.fieldHint}>{i18n.language === 'en' ? 'Fixed account identifier' : 'Tên đăng nhập cố định của tài khoản'}</span>
-              </div>
-
               <div className={s.field}>
                 <label>{i18n.language === 'en' ? 'Registered Email' : 'Email đăng ký'}</label>
                 <input type="email" value={profile?.email || ''} disabled />
