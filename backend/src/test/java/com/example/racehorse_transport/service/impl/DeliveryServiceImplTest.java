@@ -5,8 +5,6 @@ import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.repository.BookingAssignmentRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.BookingVehicleRepository;
-import com.example.racehorse_transport.repository.HorseJourneyLogRepository;
-import com.example.racehorse_transport.repository.HorseRepository;
 import com.example.racehorse_transport.repository.IncidentRepository;
 import com.example.racehorse_transport.repository.PaymentRepository;
 import com.example.racehorse_transport.repository.SystemLogRepository;
@@ -35,8 +33,7 @@ class DeliveryServiceImplTest {
             mock(IncidentRepository.class),
             mock(PaymentRepository.class),
             mock(SystemLogRepository.class),
-            mock(HorseRepository.class),
-            mock(HorseJourneyLogRepository.class));
+            mock(com.example.racehorse_transport.service.HorseDeliveryLocationService.class));
 
     @Test
     void unreadableDetailsAreNotOverwrittenWhenTheCrewArrives() {

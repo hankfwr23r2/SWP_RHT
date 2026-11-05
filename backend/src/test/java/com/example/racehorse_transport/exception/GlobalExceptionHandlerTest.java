@@ -18,6 +18,14 @@ class GlobalExceptionHandlerTest {
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
 
     @Test
+    void oversizedUploadReturns413WithUsefulMessage() {
+        var response = handler.handleUploadTooLarge(
+                new org.springframework.web.multipart.MaxUploadSizeExceededException(5 * 1024 * 1024));
+        assertThat(response.getStatusCode().value()).isEqualTo(413);
+        assertThat(response.getBody().getMessage()).contains("5MB").doesNotContain("Exception");
+    }
+
+    @Test
     void missingResourceIs404() {
         var response = handler.handleResourceNotFound(new ResourceNotFoundException("Không tìm thấy đơn hàng: BK-404"));
 

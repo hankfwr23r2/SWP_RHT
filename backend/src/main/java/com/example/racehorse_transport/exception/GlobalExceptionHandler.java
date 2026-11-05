@@ -24,6 +24,16 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @org.springframework.beans.factory.annotation.Value("${spring.servlet.multipart.max-file-size:5MB}")
+    private String maxUploadFileSize = "5MB";
+
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<Object>> handleUploadTooLarge(
+            org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
+        return ResponseEntity.status(413).body(ApiResponse.error(
+                "Tệp tải lên vượt giới hạn cho phép. Mỗi tệp tối đa " + maxUploadFileSize + "."));
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Object>> handleAccessDeniedException(AccessDeniedException ex) {
         ApiResponse<Object> response = ApiResponse.error(ex.getMessage());

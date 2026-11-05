@@ -90,6 +90,7 @@ public class BookingServiceImpl implements BookingService {
     private final ServiceRepository serviceRepository;
     private final HorseDocumentRepository horseDocumentRepository;
     private final DocumentRequirementRepository documentRequirementRepository;
+    private final com.example.racehorse_transport.service.HorseDeliveryLocationService horseDeliveryLocationService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // =========================================================================
@@ -2489,31 +2490,14 @@ public class BookingServiceImpl implements BookingService {
                 hr.put("eta", now + 7200000L);
                 targetTrip.setHomeReturn(hr);
 
-                booking.setStatus("delivered_pending_settlement");
+                if (payload.getTrips().stream().allMatch(trip -> trip.getRun() != null
+                        && trip.getRun().get("deliveredAt") != null)) {
+                    booking.setStatus("delivered_pending_settlement");
+                }
                 appendHistory(payload, actor, "Hoàn tất bàn giao ngựa");
 
-                // Cập nhật trạng thái ngựa sang STABLE_IDLE khi giao xong
-                if (payload.getHorses() != null) {
-                    for (BookingHorseDto hDto : payload.getHorses()) {
-                        if (hDto.getHorseId() != null && !hDto.getHorseId().isBlank()) {
-                            try {
-                                String numId = hDto.getHorseId().replaceAll("\\D", "");
-                                if (!numId.isEmpty()) {
-                                    Integer hId = Integer.parseInt(numId);
-                                    horseRepository.findById(hId).ifPresent(h -> {
-                                        h.setTransitStatus("STABLE_IDLE");
-                                        if (booking.getDropoffAddress() != null && !booking.getDropoffAddress().isBlank()) {
-                                            h.setCurrentLocationName(booking.getDropoffAddress());
-                                        }
-                                        horseRepository.save(h);
-                                    });
-                                }
-                            } catch (Exception ex) {
-                                log.warn("Không thể cập nhật transitStatus cho ngựa {}: {}", hDto.getHorseId(), ex.getMessage());
-                            }
-                        }
-                    }
-                }
+                horseDeliveryLocationService.recordTripDelivery(booking, payload, targetTrip,
+                        actor, String.valueOf(delivery.get("handoverPhoto")), now);
                 break;
             }
             case "CONFIRM_HOME": {

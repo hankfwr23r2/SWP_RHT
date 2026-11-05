@@ -43,7 +43,7 @@ export interface HorseProfile {
   currentLocationName?: string
   currentCountry?: string
   locationUpdatedAt?: number
-  locationSource?: 'SYSTEM_DELIVERY' | 'OWNER_RELOCATION' | 'INITIAL_REGISTRATION'
+  locationSource?: 'SYSTEM_DELIVERY' | 'OWNER_RELOCATION' | 'OWNER_DECLARED' | 'INITIAL_REGISTRATION'
   transitStatus?: 'STABLE_IDLE' | 'IN_TRANSIT'
 }
 

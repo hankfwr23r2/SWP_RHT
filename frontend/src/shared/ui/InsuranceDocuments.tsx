@@ -4,14 +4,16 @@ import { fileApi } from '../api/files'
 import { ImageLightbox, ImageThumb } from './ImageThumb'
 import s from './InsuranceFields.module.css'
 
-export function InsuranceDocuments({ urls = [], names, label, disabled = false, onChange, onBusyChange }: {
-  urls?: string[]; names?: Record<string, string> | null; label: string; disabled?: boolean
+export function InsuranceDocuments({ urls: rawUrls, names, label, disabled = false, onChange, onBusyChange }: {
+  urls?: string[] | null; names?: Record<string, string> | null; label: string; disabled?: boolean
   onChange?: (urls: string[], names: Record<string, string>) => void; onBusyChange?: (busy: boolean) => void
 }) {
   const id = useId()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [viewing, setViewing] = useState<string>()
+  // Pending orders explicitly contain null, which a default parameter does not replace.
+  const urls = Array.isArray(rawUrls) ? rawUrls.filter(url => typeof url === 'string' && url.trim()) : []
   const safeNames = names ?? {}
   const nameOf = (url: string) => safeNames[url] || decodeURIComponent(url.split('/').pop()?.split('?')[0] || 'Chứng từ')
   return <div className={s.documents}>

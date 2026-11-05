@@ -1,4 +1,5 @@
 import apiClient, { type ApiResponse } from './client'
+import { documentUploadError } from '../lib/documentUpload'
 
 export interface BackendHorseDto {
   id?: number
@@ -139,6 +140,8 @@ export const backendHorseApi = {
 
   // Upload tài liệu ngựa
   uploadDocument: async (horseId: number, documentType: string, file: File): Promise<BackendHorseDocResponse> => {
+    const message = documentUploadError(file)
+    if (message) throw new Error(message)
     const formData = new FormData()
     formData.append('file', file)
     formData.append('horseId', String(horseId))

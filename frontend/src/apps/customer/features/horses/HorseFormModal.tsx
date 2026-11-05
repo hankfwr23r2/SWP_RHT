@@ -1,8 +1,9 @@
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { HORSE_DOC, HORSE_DOC_TYPES, type HorseDocType } from '@shared/config/booking-rules'
 import { horsesApi, type NewHorse } from '@shared/services/horses'
 import { useLoad } from '@shared/services/useLoad'
+import { documentUploadError } from '@shared/lib/documentUpload'
 import { SEX_LABEL, sexLabel, type HorseDoc, type HorseProfile, type Sex } from '@shared/types/booking'
 import { FileField } from '@shared/ui/FileField'
 import { Modal } from '@shared/ui/Modal'
@@ -21,7 +22,9 @@ interface Props {
 export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
   const { i18n } = useTranslation()
   const isEn = i18n.language.startsWith('en')
-  const editing = !!horse
+  const [persistedHorse, setPersistedHorse] = useState(horse)
+  const editing = !!persistedHorse
+  const saving = useRef(false)
   const { data: horseTypes, loaded: horseTypesLoaded, reload: reloadHorseTypes } = useLoad(() => horsesApi.listTypes(), [])
   const [name, setName] = useState(horse?.name ?? '')
   const [microchip, setMicrochip] = useState(horse?.microchip ?? '')
@@ -33,14 +36,17 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
   const [tab, setTab] = useState<'info' | 'docs'>('info')
   const [docs, setDocs] = useState<Partial<Record<HorseDocType, HorseDoc>>>(horse?.docs ?? {})
   const [files, setFiles] = useState<Partial<Record<HorseDocType, File>>>({})
+  const [fileErrors, setFileErrors] = useState<Partial<Record<HorseDocType, string>>>({})
   // Danh sách documentId của các giấy tờ đã có trên server nhưng bị user xóa: sẽ gọi DELETE khi submit
   const [deletedDocIds, setDeletedDocIds] = useState<number[]>([])
   const [errors, setErrors] = useState<Errors>({})
   const [busy, setBusy] = useState(false)
   const [formError, setFormError] = useState('')
 
-  const uploadedDocsCount = HORSE_DOC_TYPES.filter(t => !!docs[t] && (files[t] || docs[t]?.fileName)).length
-  const allDocsUploaded = uploadedDocsCount === HORSE_DOC_TYPES.length
+  const selectedDocsCount = HORSE_DOC_TYPES.filter(t => !!docs[t]?.fileName).length
+  const savedDocsCount = HORSE_DOC_TYPES.filter(t => !!docs[t]?.documentId && !files[t]).length
+  const allDocsUploaded = savedDocsCount === HORSE_DOC_TYPES.length
+  const hasFileError = Object.values(fileErrors).some(Boolean)
   const hasInfoError = !!(errors.name || errors.microchip || errors.breed || errors.color || errors.birthYear)
 
   const savedType = horse?.horseTypeId
@@ -64,7 +70,14 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
     })
 
   const validate = () => {
-    const e: Errors = {}
+    const e: Errors = { ...fileErrors }
+    for (const t of HORSE_DOC_TYPES) {
+      const file = files[t]
+      if (file) {
+        const message = documentUploadError(file)
+        if (message) e[t] = message
+      }
+    }
     if (!name.trim()) e.name = 'Nhập tên ngựa.'
     if (!microchip.trim()) e.microchip = 'Nhập mã microchip.'
     if (!selectedBreed) e.breed = 'Chọn giống ngựa.'
@@ -84,22 +97,53 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
 
   const submit = async (ev: FormEvent) => {
     ev.preventDefault()
-    if (!validate()) return
+    if (saving.current || !validate()) return
+    saving.current = true
     setBusy(true)
     setFormError('')
     const type = horseTypes?.find(option => option.typeName === selectedBreed)
     const data: NewHorse = { name: name.trim(), microchip, breed: selectedBreed, horseTypeId: type?.id ?? (selectedBreed === 'Khác' ? undefined : horse?.horseTypeId), sex, color: color.trim(), birthYear: Number(birthYear), marks: marks.trim(), docs }
+    let infoSaved = false
     try {
-      const saved = editing ? await horsesApi.update(owner, horse.id, data) : await horsesApi.create(owner, data)
+      const saved = persistedHorse ? await horsesApi.update(owner, persistedHorse.id, data) : await horsesApi.create(owner, data)
+      infoSaved = true
+      setPersistedHorse(saved)
+      const serverDocs = { ...saved.docs }
       // Xóa các giấy tờ đã bị user xóa khỏi form (gọi DELETE backend)
       for (const docId of deletedDocIds) {
         await horsesApi.deleteDocument(docId)
+        setDeletedDocIds(ids => ids.filter(id => id !== docId))
+        for (const t of HORSE_DOC_TYPES) {
+          if (serverDocs[t]?.documentId === docId) delete serverDocs[t]
+        }
       }
-      // Upload các file mới được chọn song song để tránh cộng dồn thời gian chờ.
-      await Promise.all(HORSE_DOC_TYPES.flatMap(t => {
-        const file = files[t]
-        return file ? [horsesApi.uploadDocument(saved.id, t, file)] : []
-      }))
+      // Wait for every upload before enabling retry, and remember individual successes.
+      const pending = HORSE_DOC_TYPES.flatMap(type => files[type] ? [{ type, file: files[type]! }] : [])
+      const results = await Promise.allSettled(pending.map(({ type, file }) => horsesApi.uploadDocument(saved.id, type, file)))
+      const uploadErrors: Errors = {}
+      results.forEach((result, index) => {
+        const { type, file } = pending[index]
+        if (result.status === 'rejected') {
+          uploadErrors[type] = result.reason instanceof Error ? result.reason.message : 'Không tải được giấy tờ. Vui lòng thử lại.'
+          return
+        }
+        const uploaded = result.value
+        const savedDoc: HorseDoc = {
+          documentId: uploaded.id, fileName: file.name,
+          fileUrl: uploaded.documentUrl ?? uploaded.fileUrl,
+          uploadedAt: Date.now(), status: uploaded.status,
+        }
+        serverDocs[type] = savedDoc
+        setDoc(type, savedDoc)
+        setFiles(current => { const next = { ...current }; if (next[type] === file) delete next[type]; return next })
+      })
+      setPersistedHorse({ ...saved, docs: serverDocs })
+      if (Object.keys(uploadErrors).length) {
+        setErrors(uploadErrors)
+        setFormError('Thông tin ngựa đã được lưu. Một số giấy tờ chưa tải lên được; hãy thử lại để gửi những giấy tờ còn thiếu, không cần tạo lại ngựa.')
+        setTab('docs')
+        return
+      }
       const refreshed = (await horsesApi.get(owner, saved.id)) ?? saved
       onSaved(refreshed)
     } catch (err) {
@@ -113,28 +157,37 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
         setErrors({ microchip: chipError })
         setTab('info')
         document.getElementById('h-chip')?.focus()
-      } else setFormError(message)
+      } else setFormError(infoSaved ? `Thông tin ngựa đã được lưu. ${message} Bạn có thể thử lại, không cần tạo lại ngựa.` : message)
+    } finally {
+      saving.current = false
       setBusy(false)
     }
   }
 
+  const close = () => {
+    if (saving.current) return
+    // Refresh the list even when the user closes a partially completed save.
+    if (persistedHorse && persistedHorse !== horse) onSaved(persistedHorse)
+    else onClose()
+  }
+
   return (
     <Modal
-      wide onClose={onClose}
-      title={editing ? `Sửa hồ sơ ${horse.name}` : 'Thêm ngựa vào Hồ sơ ngựa'}
+      wide onClose={close}
+      title={editing ? `Sửa hồ sơ ${persistedHorse!.name}` : 'Thêm ngựa vào Hồ sơ ngựa'}
       subtitle="Khai báo một lần, các lần đặt sau chỉ cần chọn ngựa."
       footer={<>
-        <button type="button" className="btn btn-ghost" onClick={onClose}>Hủy</button>
+        <button type="button" className="btn btn-ghost" onClick={close} disabled={busy}>Đóng</button>
         {tab === 'info' ? (
           <button type="button" className="btn btn-outline" onClick={() => setTab('docs')}>
-            Tiếp tục: Giấy tờ &amp; Kiểm dịch ({uploadedDocsCount}/3) <i className="fa-solid fa-arrow-right" />
+            Tiếp tục: Giấy tờ &amp; Kiểm dịch ({selectedDocsCount}/3 đã chọn) <i className="fa-solid fa-arrow-right" />
           </button>
         ) : (
           <button type="button" className="btn btn-ghost" onClick={() => setTab('info')}>
             <i className="fa-solid fa-arrow-left" /> Quay lại: Nhận dạng
           </button>
         )}
-        <button type="submit" form="horse-form" className="btn btn-primary" disabled={busy || !horseTypes?.length}>{busy ? 'Đang lưu…' : editing ? 'Lưu thay đổi' : 'Lưu vào hồ sơ'}</button>
+        <button type="submit" form="horse-form" className="btn btn-primary" disabled={busy || hasFileError || !horseTypes?.length}>{busy ? 'Đang lưu…' : editing ? 'Lưu thay đổi' : 'Lưu vào hồ sơ'}</button>
       </>}
     >
       <div className={s.modalContent}>
@@ -158,17 +211,17 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
         >
           <i className="fa-solid fa-file-medical" /> Giấy tờ & Kiểm dịch
           <span className={`${s.tabBadge} ${allDocsUploaded ? s.tabBadgeSuccess : ''}`}>
-            {uploadedDocsCount}/{HORSE_DOC_TYPES.length} giấy
+            {selectedDocsCount}/{HORSE_DOC_TYPES.length} đã chọn · {savedDocsCount}/{HORSE_DOC_TYPES.length} đã lưu
           </span>
         </button>
       </div>
 
       <form id="horse-form" onSubmit={submit} noValidate className={s.form}>
-        {formError && <div className="alert alert-danger"><i className="fa-solid fa-circle-exclamation" /><div>{formError}</div></div>}
+        {formError && <div className="alert alert-danger" role="alert"><i className="fa-solid fa-circle-exclamation" /><div>{formError}</div></div>}
 
         {tab === 'info' && (
           <>
-            <fieldset className={s.fieldset}>
+            <fieldset className={s.fieldset} disabled={busy}>
               <legend>Nhận dạng</legend>
               <div className={s.grid2}>
                 <div className="form-group">
@@ -223,12 +276,19 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
 
         {tab === 'docs' && (
           <>
-            <fieldset className={s.fieldset}>
+            <fieldset className={s.fieldset} disabled={busy}>
               <legend>Hồ sơ sức khỏe & kiểm dịch <span className={s.legendHint}>Cần đủ 3 giấy để ngựa ở trạng thái “Sẵn sàng đặt”.</span></legend>
               <div className={s.docs}>
                 {HORSE_DOC_TYPES.map(t => (
                   <div key={t} className={s.docRow}>
-                    <FileField label={HORSE_DOC[t].label} fileName={docs[t]?.fileName || undefined} fileUrl={docs[t]?.fileUrl} onChange={(f, file) => { setDoc(t, f ? { fileName: f, uploadedAt: Date.now() } : undefined); setFiles(current => { const next = { ...current }; if (file) next[t] = file; else delete next[t]; return next }) }} />
+                    <FileField label={HORSE_DOC[t].label} fileName={docs[t]?.fileName || undefined} fileUrl={files[t] ? undefined : docs[t]?.fileUrl}
+                      error={fileErrors[t] || errors[t]}
+                      onValidationError={message => setFileErrors(current => { const next = { ...current }; if (message) next[t] = message; else delete next[t]; return next })}
+                      onChange={(f, file) => {
+                        setErrors(current => { const next = { ...current }; delete next[t]; return next })
+                        setDoc(t, f ? { fileName: f, uploadedAt: Date.now() } : undefined)
+                        setFiles(current => { const next = { ...current }; if (file) next[t] = file; else delete next[t]; return next })
+                      }} />
                   </div>
                 ))}
               </div>

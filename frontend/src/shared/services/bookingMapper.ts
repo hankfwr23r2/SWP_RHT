@@ -60,7 +60,12 @@ function horseOf(h: BackendBookingResponse['horses'][number]): BookingHorse {
     feedPackage: h.feedPackage as BookingHorse['feedPackage'], waterPlan: h.waterPlan as BookingHorse['waterPlan'],
     selectedServices: h.selectedServices,
     selectedServiceCodes: h.selectedServiceCodes,
-    insurance: { opted: !!h.insuranceOpted, ...h.insurance },
+    insurance: {
+      opted: !!h.insuranceOpted, ...h.insurance,
+      documents: Array.isArray(h.insurance?.documents) ? h.insurance.documents : [],
+      policyDocuments: Array.isArray(h.insurance?.policyDocuments) ? h.insurance.policyDocuments : [],
+      documentNames: h.insurance?.documentNames ?? {},
+    },
     status: (h.status?.toLowerCase() === 'unfit' ? 'unfit' : 'eligible'),
     unfitInfo: h.unfitInfo as BookingHorse['unfitInfo'],
   }
