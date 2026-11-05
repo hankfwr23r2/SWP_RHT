@@ -32,8 +32,7 @@ public class DeliveryServiceImpl implements DeliveryService {
     private final IncidentRepository incidentRepository;
     private final PaymentRepository paymentRepository;
     private final SystemLogRepository systemLogRepository;
-    private final HorseRepository horseRepository;
-    private final HorseJourneyLogRepository horseJourneyLogRepository;
+    private final com.example.racehorse_transport.service.HorseDeliveryLocationService horseDeliveryLocationService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -79,46 +78,9 @@ public class DeliveryServiceImpl implements DeliveryService {
 
         payload.setHandover(handoverMap);
 
-        // Cập nhật vị trí đích thực tế & ghi nhận sổ hành trình cho từng ngựa trong đơn hàng
-        if (payload.getHorses() != null) {
-            String destination = booking.getDropoffAddress() != null && !booking.getDropoffAddress().isBlank()
-                    ? booking.getDropoffAddress()
-                    : "Điểm giao nhận đích";
-            for (BookingHorseDto hDto : payload.getHorses()) {
-                if (hDto.getHorseId() != null && !hDto.getHorseId().isBlank()) {
-                    try {
-                        String numId = hDto.getHorseId().replaceAll("\\D", "");
-                        if (!numId.isEmpty()) {
-                            Integer horseId = Integer.parseInt(numId);
-                            horseRepository.findById(horseId).ifPresent(horse -> {
-                                horse.setCurrentLocationName(destination);
-                                horse.setTransitStatus("STABLE_IDLE");
-                                horse.setLocationSource("SYSTEM_DELIVERY");
-                                horse.setLocationUpdatedAt(System.currentTimeMillis());
-                                horseRepository.save(horse);
-
-                                HorseJourneyLog jLog = HorseJourneyLog.builder()
-                                        .horse(horse)
-                                        .bookingId(booking.getId())
-                                        .tripCode("BK-" + booking.getId())
-                                        .fromLocation(booking.getPickupAddress())
-                                        .toLocation(destination)
-                                        .arrivedAt(System.currentTimeMillis())
-                                        .driverName(request.getDriverUsername() != null ? request.getDriverUsername() : "Kíp xe")
-                                        .proofImageUrl(request.getProofImageUrl())
-                                        .notes("Hoàn tất vận chuyển và bàn giao ngựa cho " + (request.getRecipientName() != null ? request.getRecipientName() : "người nhận"))
-                                        .source("SYSTEM_DELIVERY")
-                                        .createdAt(System.currentTimeMillis())
-                                        .build();
-                                horseJourneyLogRepository.save(jLog);
-                            });
-                        }
-                    } catch (Exception ex) {
-                        log.warn("Không thể cập nhật vị trí/sổ hành trình cho ngựa ID {}: {}", hDto.getHorseId(), ex.getMessage());
-                    }
-                }
-            }
-        }
+        horseDeliveryLocationService.recordBookingHandover(booking, payload,
+                request.getDriverUsername() != null ? request.getDriverUsername() : "Kíp xe",
+                request.getProofImageUrl(), System.currentTimeMillis());
 
         // Kiểm tra xem đơn hàng có sự cố nào có chi phí thuộc phần KHÁCH HÀNG CHỊU không
         List<Incident> customerIncidents = incidentRepository.findByBookingID_IdAndCostBearer(booking.getId(), "CUSTOMER");

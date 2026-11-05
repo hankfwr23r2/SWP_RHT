@@ -19,6 +19,26 @@ const base: BackendBookingResponse = {
 }
 
 describe('chuyển đơn từ backend sang frontend', () => {
+  it('normalizes null insurance document collections from a newly submitted order', () => {
+    const b = toBooking({ ...base, status: 'pending_intake', horses: [{ ...base.horses[0],
+      insurance: { option: 'assistance', documents: null, policyDocuments: null, documentNames: null },
+    }] })
+    expect(b.horses[0].insurance).toMatchObject({
+      option: 'assistance', documents: [], policyDocuments: [], documentNames: {},
+    })
+    expect(b.horses[0].insurance.reviewed).toBeUndefined()
+    expect(b.horses[0].insurance.premium).toBeUndefined()
+  })
+
+  it('preserves existing insurance document URLs and their displayed names', () => {
+    const insurance = { option: 'personal' as const, documents: ['https://example.test/quote.pdf'],
+      policyDocuments: ['https://example.test/policy.pdf'],
+      documentNames: { 'https://example.test/quote.pdf': 'Báo giá.pdf' },
+    }
+    expect(toBooking({ ...base, horses: [{ ...base.horses[0], insurance }] }).horses[0].insurance)
+      .toMatchObject(insurance)
+  })
+
   it('giữ nguyên dữ liệu backend trả, không điền giá trị mặc định giả', () => {
     const b = toBooking(base)
     expect(b).toMatchObject({ id: 'BK-007', customer: 'Nguyễn Văn A', type: 'international', status: 'waybill_issued', departAt: 5_000 })

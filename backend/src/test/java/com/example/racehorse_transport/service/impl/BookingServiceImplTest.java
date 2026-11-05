@@ -89,6 +89,10 @@ class BookingServiceImplTest {
     private final HorseDocumentRepository horseDocumentRepository = mock(HorseDocumentRepository.class);
     private final DocumentRequirementRepository documentRequirementRepository = mock(DocumentRequirementRepository.class);
 
+    private final com.example.racehorse_transport.repository.HorseJourneyLogRepository horseJourneyLogRepository =
+            mock(com.example.racehorse_transport.repository.HorseJourneyLogRepository.class);
+    private final com.example.racehorse_transport.service.HorseDeliveryLocationService horseDeliveryLocationService =
+            new com.example.racehorse_transport.service.HorseDeliveryLocationService(horseRepository, horseJourneyLogRepository);
     private BookingServiceImpl service;
     private Customer customer;
 
@@ -117,7 +121,8 @@ class BookingServiceImplTest {
                 routeRepository,
                 serviceRepository,
                 horseDocumentRepository,
-                documentRequirementRepository);
+                documentRequirementRepository,
+                horseDeliveryLocationService);
 
         when(documentRequirementRepository.findByDocumentGroupAndStatusOrderByDocumentNameAsc(any(), any()))
                 .thenReturn(List.of());
@@ -717,6 +722,92 @@ class BookingServiceImplTest {
         staff.setRole("DRIVER");
         staff.setStaffCode("DR-01");
         return staff;
+    }
+
+    @Test
+    void completeDeliverySavesDestinationAndCanBookHorseAgainAfterSettlement() throws Exception {
+        Booking booking = deliveredHorseBooking(false);
+        Horse horse = Horse.builder().id(12).customerID(customer).transitStatus("IN_TRANSIT").build();
+        when(horseRepository.findById(12)).thenReturn(Optional.of(horse));
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> {
+            Booking saved = invocation.getArgument(0);
+            if (saved.getId() == null) saved.setId(43);
+            return saved;
+        });
+        var delivery = new com.example.racehorse_transport.dto.field.TripUpdateRequest();
+        delivery.setTripId("TRP-042-1");
+        delivery.setAction("COMPLETE_DELIVERY");
+        service.updateTripProgress("BK-042", delivery, "manager", "MANAGER");
+
+        assertThat(horse.getCurrentCountry()).isEqualTo("VN");
+        assertThat(horse.getCurrentLocationName()).isEqualTo("Trang trại A, Hà Nội");
+        assertThat(horse.getLocationSource()).isEqualTo("SYSTEM_DELIVERY");
+        assertThat(booking.getStatus()).isEqualTo("delivered_pending_settlement");
+        verify(horseJourneyLogRepository).save(any());
+
+        // Settlement closes the old order; the saved location must allow another pickup in VN.
+        booking.setStatus("completed");
+        when(userRepository.findByUsernameOrEmail("phuc", "phuc")).thenReturn(Optional.of(customer.getUser()));
+        when(customerRepository.findById(7)).thenReturn(Optional.of(customer));
+        when(bookingRepository.findByCustomerID_IdOrderByBookingDateDesc(7)).thenReturn(List.of(booking));
+        var next = CreateBookingRequest.builder().type("domestic")
+                .originName("Trang trại A, Hà Nội").originCountry("VN")
+                .destName("Trang trại B, Đà Nẵng").destCountry("VN")
+                .departAt(Instant.now().plus(25, java.time.temporal.ChronoUnit.DAYS).toEpochMilli())
+                .consignor(PartyContactDto.builder().name("Sender").phone("0900000000").build())
+                .consignee(PartyContactDto.builder().name("Recipient").phone("0900000001").build())
+                .horses(List.of(BookingHorseDto.builder().horseId("H-012").name("Lightning")
+                        .insurance(com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder()
+                                .option("none").build()).build())).build();
+        assertThat(service.createBooking("phuc", next).getStatus()).isEqualTo("pending_intake");
+    }
+
+    @Test
+    void firstVehicleDeliveryDoesNotReleaseOtherHorsesOrStartSettlement() throws Exception {
+        Booking booking = deliveredHorseBooking(true);
+        Horse horse = Horse.builder().id(12).transitStatus("IN_TRANSIT").build();
+        when(horseRepository.findById(12)).thenReturn(Optional.of(horse));
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        var delivery = new com.example.racehorse_transport.dto.field.TripUpdateRequest();
+        delivery.setTripId("TRP-042-1");
+        delivery.setAction("COMPLETE_DELIVERY");
+        service.updateTripProgress("BK-042", delivery, "manager", "MANAGER");
+        verify(horseRepository).save(horse);
+        verify(horseRepository, never()).findById(13);
+        assertThat(booking.getStatus()).isEqualTo("in_transit");
+    }
+
+    private Booking deliveredHorseBooking(boolean multipleVehicles) throws Exception {
+        Booking booking = deliveryBooking("""
+                {"startedAt":100,"checkpoints":[
+                  {"id":"pickup","type":"pickup","doneAt":101},
+                  {"id":"delivery","type":"delivery","arrivedAt":200,"photo":"arrival.jpg",
+                   "handoverPhoto":"signed.jpg","returnedOriginals":true}],
+                 "welfare":[{"checkpointId":"delivery"}]}
+                """);
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        var payload = mapper.readValue(booking.getDetailsJson(),
+                com.example.racehorse_transport.dto.booking.BookingDetailsPayload.class);
+        payload.setDestCountry("VN");
+        payload.getTrips().getFirst().setHorseIds(List.of("H-012"));
+        var horses = new java.util.ArrayList<BookingHorseDto>();
+        horses.add(BookingHorseDto.builder().horseId("HORSE-12").build());
+        if (multipleVehicles) {
+            horses.add(BookingHorseDto.builder().horseId("H-013").build());
+            var trips = new java.util.ArrayList<>(payload.getTrips());
+            var second = new com.example.racehorse_transport.dto.coordinator.VehicleTripDto();
+            second.setTripId("TRP-042-2");
+            second.setHorseIds(List.of("H-013"));
+            second.setRun(new java.util.HashMap<>(Map.of("startedAt", 100)));
+            trips.add(second);
+            payload.setTrips(trips);
+        }
+        payload.setHorses(horses);
+        booking.setDropoffAddress("Trang trại A, Hà Nội");
+        booking.setDetailsJson(mapper.writeValueAsString(payload));
+        return booking;
     }
 
     private Booking deliveryBooking(String runJson) {

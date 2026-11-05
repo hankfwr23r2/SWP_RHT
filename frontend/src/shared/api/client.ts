@@ -161,6 +161,7 @@ apiClient.interceptors.response.use(
 
       // Lấy câu thông báo lỗi cụ thể từ Backend gửi lên nếu có
       let serverMessage = data?.message || i18n.t('auth.serverError') || 'Có lỗi xảy ra từ máy chủ.'
+      if (status === 413 && !data?.message) serverMessage = i18n.t('auth.uploadTooLarge')
       if (data?.data && typeof data.data === 'object' && !Array.isArray(data.data)) {
         const details = Object.entries(data.data)
           .map(([, val]) => (typeof val === 'string' ? val : JSON.stringify(val)))

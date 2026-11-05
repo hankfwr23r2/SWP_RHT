@@ -1100,11 +1100,11 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
         )}
       </div>
 
-      {mapOpen && origin && dest && (
+      {mapOpen && inlineOrigin && inlineDest && (
         <Suspense fallback={null}>
           <RouteMapPicker
-            origin={inlineOrigin ?? { ...origin, name: b.origin.name }}
-            dest={inlineDest ?? { ...dest, name: b.dest.name }}
+            origin={inlineOrigin}
+            dest={inlineDest}
             gate={inlineGate}
             international={international}
             value={manualStops}

@@ -1,6 +1,6 @@
-import axios, { AxiosHeaders } from 'axios'
+import axios, { AxiosError, AxiosHeaders } from 'axios'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { tokenStorage } from './client'
+import apiClient, { tokenStorage } from './client'
 
 function makeToken(expirationSeconds: number): string {
   const payload = btoa(JSON.stringify({ exp: expirationSeconds }))
@@ -9,6 +9,13 @@ function makeToken(expirationSeconds: number): string {
     .replace(/\//g, '_')
   return `header.${payload}.signature`
 }
+
+it('explains an HTML 413 response from the reverse proxy', async () => {
+  await expect(apiClient.get('/upload-test', { adapter: async config => {
+    const response = { data: '<h1>413 Request Entity Too Large</h1>', status: 413, statusText: 'Too Large', headers: new AxiosHeaders(), config }
+    throw new AxiosError('Request failed', 'ERR_BAD_REQUEST', config, {}, response)
+  } })).rejects.toMatchObject({ status: 413, message: expect.stringContaining('5 MB') })
+})
 
 describe('tokenStorage proactive refresh', () => {
   afterEach(() => {

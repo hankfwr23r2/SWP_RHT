@@ -21,7 +21,11 @@ export interface BookingHorseDto {
   feedPackage?: string
   waterPlan?: string
   insuranceOpted?: boolean
-  insurance?: import('../types/insurance').HorseInsurance
+  insurance?: Omit<import('../types/insurance').HorseInsurance, 'documents' | 'policyDocuments' | 'documentNames'> & {
+    documents?: string[] | null
+    policyDocuments?: string[] | null
+    documentNames?: Record<string, string> | null
+  }
   selectedServices?: Partial<Record<BookingServiceCategory, BookingServiceSnapshot>>
   selectedServiceCodes?: Partial<Record<BookingRequiredServiceCategory, string>>
   status?: string

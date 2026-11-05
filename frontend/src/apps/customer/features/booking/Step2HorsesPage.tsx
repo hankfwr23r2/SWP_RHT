@@ -5,6 +5,7 @@ import { VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { MAX_HORSES } from '@shared/config/business-rules'
 import { COUNTRIES, COUNTRY_LOCATIONS } from '@shared/config/network'
 import { ageOf, classForHorses, horseCountryMatchesOrigin, horseHasUnverifiedLocationCountry, horseReadiness } from '@shared/lib/booking'
+import { horsePickupLocationStatus } from '@shared/lib/horseLocation'
 import { usePageData } from '@shared/routing/pageData'
 import { SEX_LABEL, type HorseProfile } from '@shared/types/booking'
 import { HorseDocChips } from '@shared/ui/HorseDocChips'
@@ -85,13 +86,12 @@ export default function Step2HorsesPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { save({ horseIds: selected }) }, [selected])
 
-  const isLocationMatch = (h: HorseProfile) => {
-    const hasLocationHistory = !!h.locationSource && h.locationSource !== 'INITIAL_REGISTRATION'
-    if (!h.currentLocationName || !hasLocationHistory) return true
-    const normCur = h.currentLocationName.toLowerCase().replace(/đ/g, 'd')
-    const normOrig = originName.toLowerCase().replace(/đ/g, 'd')
-    return normCur.includes(normOrig) || normOrig.includes(normCur)
-  }
+  const locationStatus = (horse: HorseProfile) => horsePickupLocationStatus(horse, originName, originCountry)
+
+  useEffect(() => {
+    setConfirmedRelocation(false)
+    setRelocationError('')
+  }, [horses, originName, originCountry, selected])
 
   // Chỉ hiển thị ngựa đã nộp đủ giấy tờ và không đang trong chuyến/đơn khác.
   const readyList = useMemo(
@@ -132,7 +132,7 @@ export default function Step2HorsesPage() {
   const cls = selected.length ? VEHICLE_CLASS[classForHorses(selected.length)] : null
 
   const selectedHorses = readyList.filter(h => selected.includes(h.id))
-  const mismatchedHorses = selectedHorses.filter(h => !isLocationMatch(h))
+  const mismatchedHorses = selectedHorses.filter(h => locationStatus(h) !== 'match')
   const hasDifferentLocation = mismatchedHorses.length > 0
 
   const next = () => {
@@ -224,7 +224,8 @@ export default function Step2HorsesPage() {
             const countryMismatch = isCountryMismatch(h)
             const countryUnverified = hasUnverifiedLocationCountry(h)
             const blocked = (!on && full) || isBusy || countryMismatch || countryUnverified
-            const matchLoc = isLocationMatch(h)
+            const pickupStatus = locationStatus(h)
+            const matchLoc = pickupStatus === 'match'
 
             return (
               <div
@@ -262,6 +263,10 @@ export default function Step2HorsesPage() {
                       ) : countryUnverified ? (
                         <span className="badge badge-warning" style={{ fontSize: '0.74rem' }}>
                           <i className="fa-solid fa-triangle-exclamation" /> {t('bookingWizard.unverifiedCountry')}
+                        </span>
+                      ) : pickupStatus === 'unverified' ? (
+                        <span className="badge badge-neutral" style={{ fontSize: '0.74rem' }}>
+                          <i className="fa-solid fa-circle-question" /> {t('bookingWizard.pickupUnverified')}
                         </span>
                       ) : matchLoc ? (
                         <span className="badge badge-success" style={{ fontSize: '0.74rem' }}>
