@@ -12,6 +12,7 @@ export function IncidentPlanView({ b, i, height = 340 }: { b: Booking; i: Incide
   const gate = findGate(b.gate)
   const station = plan.station ? [findTransitStation(plan.station)].filter(s => s !== undefined) : []
   const lines: MapLine[] = [
+    ...(plan.onward ? [{ path: plan.onward.path, color: '#2563eb', flow: true, weight: 5, label: 'Đường đi tiếp từ trạm SOS' }] : []),
     ...(plan.rescueLine ? [{ path: plan.rescueLine.path, color: '#059669', flow: true, label: `Cứu hộ tới chỗ xe: ${plan.rescueLine.km} km` }] : []),
     ...(plan.toStation ? [{ path: plan.toStation.path, color: '#ea580c', flow: true, weight: 6, label: `Đưa ngựa tới ${plan.station}: ${plan.toStation.km} km` }] : []),
     ...(plan.detour ? [{ path: plan.detour.path, color: '#2563eb', flow: true, weight: 6, label: `Lộ trình mới: ${plan.detour.km} km` }] : []),

@@ -61,7 +61,7 @@ export function ManifestView({ b, trip, vehicle, driver, escort }: Props) {
 
       <section className={s.sec}>
         <h4><b>4</b> Lịch trình từng chặng</h4>
-        {trip.incidentRoute && <p className={s.note}><b>Đã duyệt điều chỉnh tuyến:</b> đến dự kiến {formatDateTime(trip.incidentRoute.newEta)}. {trip.incidentRoute.note}<br />Các chặng dưới đây là kế hoạch ban đầu; xem đường tránh trong thẻ lộ trình điều chỉnh.</p>}
+        {trip.incidentRoute && <p className={s.note}><b>Đã duyệt điều chỉnh tuyến:</b> đến dự kiến {formatDateTime(trip.incidentRoute.newEta)}. {trip.incidentRoute.note}<br />Các chặng dưới đây là kế hoạch ban đầu; xem tuyến SOS trong thẻ lộ trình điều chỉnh.</p>}
         {route ? (
           <ol className={s.legs}>
             {route.legs.map((l, i) => (

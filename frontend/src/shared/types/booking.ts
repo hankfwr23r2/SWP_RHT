@@ -173,6 +173,8 @@ export interface Checkpoint {
   label: string
   place: string
   plannedAt: number
+  incidentId?: number
+  restMinutes?: number
   arrivedAt?: number // Driver check-in tại mốc (kèm ảnh chụp trực tiếp)
   leftAt?: number // customs: Driver bấm tiếp tục hành trình, rời cửa khẩu
   doneAt?: number // mốc hoàn tất: xuất phát (pickup), tiếp tục hành trình (rest), thông quan, giao xong
@@ -199,7 +201,7 @@ export interface WelfareLog {
 }
 // Xe giao ngựa ở nước ngoài xong thì Driver và Escort chạy về trụ sở; Driver xác nhận có ảnh chụp tại trụ sở
 export interface HomeReturn { fromPlace: string; eta: number; earliestAt: number; backAt?: number; photo?: string; by?: string }
-export interface TripRun { checkpoints: Checkpoint[]; welfare: WelfareLog[]; startedAt?: number; deliveredAt?: number }
+export interface TripRun { supersededCheckpoints?: Checkpoint[]; checkpoints: Checkpoint[]; welfare: WelfareLog[]; startedAt?: number; deliveredAt?: number }
 
 // ===== Mỗi xe của đơn là một chuyến (PRD mục 1.4, 10.2) =====
 export interface DriverPack { items: string[]; at: number; by: string } // Coordinator nhập cho Driver mang theo
@@ -240,6 +242,9 @@ export interface IncidentPlan {
   restMinutes?: number // thời gian nghỉ ngựa tại trạm
   rescue?: { name: string; phone: string; lat: number; lng: number } // điểm cứu hộ được gọi (xe gặp sự cố)
   rescueLine?: PlanLine // đường cứu hộ chạy tới chỗ xe
+  onward?: PlanLine // từ trạm SOS qua các mốc còn lại tới điểm giao
+  replaceRestCheckpointId?: string
+  horseIds?: string[]
   toStation?: PlanLine // đường đưa ngựa từ chỗ xe tới trạm nghỉ
   waypoints?: { lat: number; lng: number }[]
   detour?: PlanLine // lộ trình mới đi tiếp (giao thông tắc nghẽn)
@@ -248,6 +253,7 @@ export interface Incident {
   id: string // INC-NNNN-i
   tripId: string
   kind: IncidentKind
+  horseIds?: string[]
   reportedBy: string
   reportedAt: number
   location: GeoPoint // vị trí xe lúc báo sự cố (bản thử: mô phỏng theo tiến độ hành trình; có app thật thì lấy GPS)

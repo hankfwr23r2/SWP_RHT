@@ -928,6 +928,24 @@ class BookingServiceImplTest {
     }
 
     @Test
+    void readingBookingPreservesApprovedSosCheckpointsInsteadOfRebuildingOriginalRoute() {
+        Booking booking = bookingOwnedByCustomer(); booking.setStatus("emergency_plan_active");
+        booking.setDetailsJson("""
+                {"route":{"legs":[{"arriveAt":100}],"rests":[{"name":"Mốc cũ đã thay"}]},
+                 "trips":[{"tripId":"T1","incidentRoute":{"incidentId":7,"action":"to_station","newEta":300},
+                   "run":{"startedAt":1,"checkpoints":[{"id":"pickup","type":"pickup","doneAt":2},
+                     {"id":"sos-7","type":"rest","incidentId":7,"place":"Trạm SOS","plannedAt":200},
+                     {"id":"delivery","type":"delivery","plannedAt":300}]}}]}
+                """);
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        BookingResponse response = service.getBookingById(42, null);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> checkpoints = (List<Map<String, Object>>) response.getTrips().get(0).getRun().get("checkpoints");
+        assertThat(checkpoints).extracting(cp -> cp.get("id")).containsExactly("pickup", "sos-7", "delivery");
+        assertThat(checkpoints.get(2).get("plannedAt")).isEqualTo(300);
+    }
+
+    @Test
     void getBookingById_rejectsUnknownBooking() {
         when(bookingRepository.findById(404)).thenReturn(Optional.empty());
 

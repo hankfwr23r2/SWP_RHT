@@ -36,6 +36,7 @@ public class IncidentServiceImpl implements IncidentService {
     private final BookingAssignmentRepository bookingAssignmentRepository;
     private final StaffRepository staffRepository;
     private final SystemLogRepository systemLogRepository;
+    private final com.example.racehorse_transport.service.HorseHealthLogService horseHealthLogService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -53,6 +54,9 @@ public class IncidentServiceImpl implements IncidentService {
             ensureAssignedToBooking(booking.getId(), reporter);
         }
         ensureTripBelongsToBooking(booking, request.getTripId());
+        if (incidentRepository.findByBookingID_Id(booking.getId()).stream().anyMatch(i ->
+                Objects.equals(i.getTripId(), request.getTripId()) && !"resolved".equalsIgnoreCase(i.getStatus())))
+            throw new IllegalArgumentException("Chuyến đang có SOS chưa giải quyết; hãy tiếp tục xử lý sự cố hiện tại.");
 
         BookingDetailsPayload photoPayload = BookingDetailsJson.read(objectMapper, booking);
         captureService.attach(photoPayload, booking.getId(), request.getTripId(), "SOS", "", request.getPhotoUrl(), actor);
@@ -71,6 +75,15 @@ public class IncidentServiceImpl implements IncidentService {
                 .createdAt(Instant.now())
                 .build();
 
+        if ("DRIVER".equals(role) || "ESCORT".equals(role)) ensureActorAssignedToBooking(incident, actor, role);
+        if ("HORSE_HEALTH".equalsIgnoreCase(request.getIncidentType())) {
+            var trip = incidentTrip(incident, photoPayload);
+            if (request.getHorseIds() == null || request.getHorseIds().isEmpty()
+                    || !new HashSet<>(trip.getHorseIds()).containsAll(request.getHorseIds())) {
+                throw new IllegalArgumentException("Chọn ngựa bị ảnh hưởng thuộc chuyến xe này.");
+            }
+            incident.setPlanJson(writeJson(Map.of("horseIds", request.getHorseIds().stream().distinct().toList())));
+        }
         Incident saved = incidentRepository.save(incident);
 
         appendBookingHistory(booking, actor,
@@ -91,7 +104,13 @@ public class IncidentServiceImpl implements IncidentService {
         Incident incident = incidentRepository.findById(incidentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố ID: " + incidentId));
 
-        requireStatus(incident, "reported", "open");
+        if ("active".equalsIgnoreCase(incident.getStatus()) && "HORSE_HEALTH".equalsIgnoreCase(incident.getIncidentType())) {
+            var trip = incidentTrip(incident, BookingDetailsJson.read(objectMapper, incident.getBookingID()));
+            if (tripCheckpoints(trip).stream().anyMatch(cp -> Objects.equals(cp.get("id"), "sos-" + incidentId)))
+                throw new IllegalArgumentException("Phương án đang thực hiện không thể lập lại.");
+        } else {
+            requireStatus(incident, "reported", "open");
+        }
         if (request.getResolutionType() != null
                 && !Set.of("REROUTE", "EXTERNAL_PARTNER", "FORCE_MAJEURE")
                         .contains(request.getResolutionType().toUpperCase(Locale.ROOT))) {
@@ -115,11 +134,16 @@ public class IncidentServiceImpl implements IncidentService {
                 ? request.getCostBearer().toUpperCase(Locale.ROOT)
                 : "COMPANY");
         incident.setStatus("proposed");
+        incident.setFitConfirmedAt(null);
+        incident.setFitConfirmedBy(null);
         incident.setRejectionReason(null);
         incident.setRejectionAt(null);
         incident.setRejectionBy(null);
         if (request.getPlan() != null) {
             Map<String, Object> plan = new LinkedHashMap<>(request.getPlan());
+            Map<String, Object> previous = readPlan(incident.getPlanJson());
+            if (previous != null && previous.get("horseIds") != null) plan.put("horseIds", previous.get("horseIds"));
+            if ("HORSE_HEALTH".equalsIgnoreCase(incident.getIncidentType())) validateStationPlan(plan);
             plan.put("at", Instant.now().toEpochMilli());
             plan.put("by", actor);
             incident.setPlanJson(writeJson(plan));
@@ -168,6 +192,9 @@ public class IncidentServiceImpl implements IncidentService {
             validateReroute(readPlan(incident.getPlanJson()));
             applyReroute(incident, actor);
         }
+        if ("HORSE_HEALTH".equalsIgnoreCase(incident.getIncidentType())) {
+            applyStationPlan(incident, actor);
+        }
         incident.setStatus("active");
         incident.setDirective(request.getDirective());
         incident.setApprovedAt(Instant.now());
@@ -179,6 +206,11 @@ public class IncidentServiceImpl implements IncidentService {
             incident.setCostBearer(request.getCostBearer().toUpperCase(Locale.ROOT));
         }
 
+        if ("HORSE_HEALTH".equalsIgnoreCase(incident.getIncidentType())) {
+            Map<String, Object> approvedPlan = new LinkedHashMap<>(readPlan(incident.getPlanJson()));
+            approvedPlan.put("approvedCostBearer", incident.getCostBearer());
+            incident.setPlanJson(writeJson(approvedPlan));
+        }
         Incident saved = incidentRepository.save(incident);
 
         Booking booking = incident.getBookingID();
@@ -245,7 +277,14 @@ public class IncidentServiceImpl implements IncidentService {
         expense.put("label", request.getLabel().trim());
         expense.put("photo", request.getPhoto());
         expense.put("amount", request.getAmount());
-        expense.put("payer", request.getPayer().toLowerCase(Locale.ROOT));
+        String payer = request.getPayer().toLowerCase(Locale.ROOT);
+        if ("HORSE_HEALTH".equalsIgnoreCase(incident.getIncidentType())) {
+            Map<String, Object> plan = readPlan(incident.getPlanJson());
+            String bearer = plan != null && plan.get("approvedCostBearer") != null
+                    ? String.valueOf(plan.get("approvedCostBearer")) : incident.getCostBearer();
+            payer = "CUSTOMER".equalsIgnoreCase(bearer) ? "customer" : "carrier";
+        }
+        expense.put("payer", payer);
         expense.put("at", Instant.now().toEpochMilli());
         expense.put("by", actor);
         expenses.add(expense);
@@ -268,7 +307,7 @@ public class IncidentServiceImpl implements IncidentService {
 
     @Override
     @Transactional
-    public IncidentResponse confirmFit(Integer incidentId, String actor, String role) {
+    public IncidentResponse confirmFit(Integer incidentId, ConfirmIncidentFitRequest request, String actor, String role) {
         Incident incident = incidentRepository.findById(incidentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố ID: " + incidentId));
         requireStatus(incident, "active");
@@ -279,6 +318,40 @@ public class IncidentServiceImpl implements IncidentService {
         }
         if (incident.getFitConfirmedAt() != null) {
             throw new IllegalArgumentException("Sức khỏe ngựa đã được xác nhận.");
+        }
+        if (!"ADMIN".equals(role) && !"ESCORT".equals(role)) throw new AccessDeniedException("Chỉ hộ tống được xác nhận sức khỏe.");
+        if ("HORSE_HEALTH".equalsIgnoreCase(incident.getIncidentType())) {
+            BookingDetailsPayload payload = BookingDetailsJson.read(objectMapper, incident.getBookingID());
+            Map<String, Object> checkpoint = stationCheckpoint(incident, payload);
+            if (checkpoint.get("arrivedAt") == null) throw new IllegalArgumentException("Cần xác nhận tới trạm SOS trước khi khám.");
+            if (request == null || request.getHorses() == null || request.getHorses().isEmpty())
+                throw new IllegalArgumentException("Cần ghi kết quả chăm sóc từng ngựa bị ảnh hưởng.");
+            var expected = affectedHorseIds(incident);
+            var actual = request.getHorses().stream().map(ConfirmIncidentFitRequest.CareRecord::getHorseId).toList();
+            if (actual.size() != new HashSet<>(actual).size() || !new HashSet<>(actual).equals(new HashSet<>(expected)))
+                throw new IllegalArgumentException("Cần ghi đủ và đúng các ngựa bị ảnh hưởng.");
+            Staff escort = staffRepository.findByUser_Username(actor).orElseThrow(() -> new AccessDeniedException("Không tìm thấy hộ tống."));
+            for (var care : request.getHorses()) {
+                if (care.getCareNote() == null || care.getCareNote().isBlank()) throw new IllegalArgumentException("Cần mô tả kết quả chăm sóc.");
+                Integer horseId = Integer.valueOf(care.getHorseId().replaceAll("[^0-9]", ""));
+                horseHealthLogService.updateHorseHealthStatusByEscort(horseId, incident.getBookingID().getId(),
+                        "ĐỦ SỨC ĐI TIẾP SAU SOS", care.getTemperature(), null,
+                        "INC-" + incidentId + ": " + care.getCareNote().trim(), escort.getId());
+            }
+            if (request.getPhoto() == null || request.getPhoto().isBlank()) throw new IllegalArgumentException("Cần ảnh kết quả chăm sóc.");
+            captureService.attach(payload, incident.getBookingID().getId(), incident.getTripId(), "SUBMIT_WELFARE",
+                    "sos-" + incidentId, request.getPhoto(), actor);
+            var trip = incidentTrip(incident, payload);
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> welfare = (List<Map<String, Object>>) trip.getRun().computeIfAbsent("welfare", k -> new ArrayList<>());
+            welfare.add(new LinkedHashMap<>(Map.of("id", "sos-care-" + incidentId, "checkpointId", "sos-" + incidentId,
+                    "condition", "normal", "waterLiters", Objects.requireNonNullElse(request.getWaterLiters(), BigDecimal.ZERO), "hay", request.isHay(), "photo", request.getPhoto(), "at", Instant.now().toEpochMilli(), "by", actor,
+                    "note", "Đã chăm sóc và xác nhận đủ sức đi tiếp")));
+            incident.getBookingID().setDetailsJson(writeJson(payload));
+            bookingRepository.save(incident.getBookingID());
+            Map<String, Object> plan = new LinkedHashMap<>(readPlan(incident.getPlanJson()));
+            plan.put("careRecords", request.getHorses());
+            incident.setPlanJson(writeJson(plan));
         }
         incident.setFitConfirmedAt(Instant.now());
         incident.setFitConfirmedBy(actor);
@@ -297,6 +370,7 @@ public class IncidentServiceImpl implements IncidentService {
                 && incident.getFitConfirmedAt() == null) {
             throw new IllegalArgumentException("Cần xác nhận ngựa đủ sức đi tiếp trước khi tiếp tục hành trình.");
         }
+        if ("HORSE_HEALTH".equalsIgnoreCase(incident.getIncidentType())) finishStation(incident);
         incident.setStatus("resolved");
         incident.setResolvedAt(Instant.now());
         Incident saved = incidentRepository.save(incident);
@@ -319,6 +393,8 @@ public class IncidentServiceImpl implements IncidentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố ID: " + incidentId));
 
         requireStatus(incident, "active");
+        if ("HORSE_HEALTH".equalsIgnoreCase(incident.getIncidentType()))
+            throw new IllegalArgumentException("SOS sức khỏe phải được hộ tống xác nhận và tài xế rời trạm qua luồng tiếp tục hành trình.");
         if (request.getActualCost() != null && request.getActualCost().compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Chi phí thực tế không được âm.");
         }
@@ -397,6 +473,119 @@ public class IncidentServiceImpl implements IncidentService {
         return list.stream().map(this::mapToResponse).toList();
     }
 
+    private com.example.racehorse_transport.dto.coordinator.VehicleTripDto incidentTrip(Incident incident, BookingDetailsPayload payload) {
+        if (payload.getTrips() == null) throw new IllegalArgumentException("Đơn chưa có chuyến xe.");
+        return payload.getTrips().stream().filter(t -> Objects.equals(t.getTripId(), incident.getTripId())).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chuyến xe của sự cố."));
+    }
+
+    private List<String> affectedHorseIds(Incident incident) {
+        Map<String, Object> plan = readPlan(incident.getPlanJson());
+        if (plan != null && plan.get("horseIds") instanceof List<?> ids)
+            return ids.stream().map(String::valueOf).toList();
+        if (!"HORSE_HEALTH".equalsIgnoreCase(incident.getIncidentType()) || incident.getBookingID() == null) return List.of();
+        var trip = incidentTrip(incident, BookingDetailsJson.read(objectMapper, incident.getBookingID()));
+        return trip.getHorseIds() == null ? List.of() : trip.getHorseIds();
+    }
+
+    private void validateStationPlan(Map<String, Object> plan) {
+        if (plan == null || !"to_station".equals(plan.get("action"))
+                || !(plan.get("station") instanceof String station) || station.isBlank()
+                || !(plan.get("restMinutes") instanceof Number minutes) || minutes.intValue() < 30 || minutes.intValue() > 1440
+                || !(plan.get("newEta") instanceof Number eta) || eta.longValue() <= 0) {
+            throw new IllegalArgumentException("Phương án chăm sóc phải có trạm, giờ đến và thời gian nghỉ ít nhất 30 phút.");
+        }
+        for (String field : List.of("toStation", "onward")) {
+            Map<String, Object> check = new HashMap<>();
+            check.put("action", "reroute"); check.put("newEta", plan.get("newEta")); check.put("detour", plan.get(field));
+            validateReroute(check);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> tripCheckpoints(com.example.racehorse_transport.dto.coordinator.VehicleTripDto trip) {
+        if (trip.getRun() == null || !(trip.getRun().get("checkpoints") instanceof List<?>))
+            throw new IllegalArgumentException("Chuyến chưa có các mốc hành trình.");
+        return (List<Map<String, Object>>) trip.getRun().get("checkpoints");
+    }
+
+    private Map<String, Object> stationCheckpoint(Incident incident, BookingDetailsPayload payload) {
+        return tripCheckpoints(incidentTrip(incident, payload)).stream()
+                .filter(cp -> Objects.equals("sos-" + incident.getId(), cp.get("id"))).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Phương án SOS cũ chưa có mốc trạm; cần điều phối lập lại phương án."));
+    }
+
+    private void applyStationPlan(Incident incident, String actor) {
+        Map<String, Object> plan = new LinkedHashMap<>(readPlan(incident.getPlanJson()) == null ? Map.of() : readPlan(incident.getPlanJson()));
+        validateStationPlan(plan);
+        Booking booking = incident.getBookingID();
+        BookingDetailsPayload payload = BookingDetailsJson.read(objectMapper, booking);
+        var trip = incidentTrip(incident, payload);
+        var checkpoints = tripCheckpoints(trip);
+        Map<String, Object> next = checkpoints.stream().filter(cp -> cp.get("doneAt") == null).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Chuyến không còn mốc để điều chỉnh."));
+        int index = checkpoints.indexOf(next);
+        String replacement = Objects.toString(plan.get("replaceRestCheckpointId"), "");
+        if (replacement.isBlank() && "rest".equals(next.get("type")) && next.get("arrivedAt") == null
+                && Objects.toString(plan.get("station"), "").equalsIgnoreCase(Objects.toString(next.get("place"), ""))) {
+            replacement = String.valueOf(next.get("id"));
+            plan.put("replaceRestCheckpointId", replacement);
+        }
+        if (!replacement.isBlank()) {
+            if (!replacement.equals(next.get("id")) || !"rest".equals(next.get("type")) || next.get("arrivedAt") != null)
+                throw new IllegalArgumentException("Chỉ thay thế mốc nghỉ kế tiếp chưa check-in, không được bỏ cửa khẩu hoặc điểm giao.");
+            next.put("supersededByIncidentId", incident.getId());
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> archived = (List<Map<String, Object>>) trip.getRun().computeIfAbsent("supersededCheckpoints", k -> new ArrayList<>());
+            archived.add(next);
+            checkpoints.remove(index);
+        } else if ("rest".equals(next.get("type")) && next.get("arrivedAt") != null) {
+            next.put("interruptedByIncidentId", incident.getId());
+        }
+        Map<String, Object> checkpoint = new LinkedHashMap<>();
+        checkpoint.put("id", "sos-" + incident.getId()); checkpoint.put("type", "rest");
+        checkpoint.put("label", "Trạm chăm sóc SOS"); checkpoint.put("place", plan.get("station"));
+        checkpoint.put("incidentId", incident.getId()); checkpoint.put("restMinutes", plan.get("restMinutes"));
+        Map<?, ?> line = (Map<?, ?>) plan.get("toStation");
+        Number hours = line.get("hours") instanceof Number n ? n : 0;
+        checkpoint.put("plannedAt", Instant.now().toEpochMilli() + (long) (hours.doubleValue() * 3600000));
+        // Dời lịch các mốc chưa tới theo độ trễ của ETA mới; giữ nguyên thời gian thực tế đã ghi nhận.
+        Long originalEta = checkpoints.stream().filter(cp -> "delivery".equals(cp.get("type")))
+                .map(cp -> cp.get("plannedAt")).filter(Number.class::isInstance).map(Number.class::cast)
+                .map(Number::longValue).findFirst().orElse(null);
+        if (originalEta != null) {
+            long delay = ((Number) plan.get("newEta")).longValue() - originalEta;
+            for (var cp : checkpoints) if (cp.get("doneAt") == null && cp.get("arrivedAt") == null && cp.get("plannedAt") instanceof Number at)
+                cp.put("plannedAt", at.longValue() + delay);
+        }
+        checkpoints.add(index, checkpoint);
+        for (var cp : checkpoints) if ("delivery".equals(cp.get("type")) && cp.get("arrivedAt") == null && cp.get("doneAt") == null)
+            cp.put("plannedAt", plan.get("newEta"));
+        plan.put("horseIds", affectedHorseIds(incident));
+        plan.put("incidentId", incident.getId()); plan.put("approvedAt", Instant.now().toEpochMilli()); plan.put("approvedBy", actor);
+        trip.setIncidentRoute(plan);
+        incident.setPlanJson(writeJson(plan));
+        booking.setDetailsJson(writeJson(payload));
+    }
+
+    private void finishStation(Incident incident) {
+        Booking booking = incident.getBookingID();
+        BookingDetailsPayload payload = BookingDetailsJson.read(objectMapper, booking);
+        var trip = incidentTrip(incident, payload);
+        Map<String, Object> checkpoint = stationCheckpoint(incident, payload);
+        if (!(checkpoint.get("arrivedAt") instanceof Number arrival) || incident.getFitConfirmedAt() == null)
+            throw new IllegalArgumentException("Cần tới trạm và được hộ tống xác nhận đủ sức trước khi rời trạm.");
+        Number minutes = (Number) checkpoint.get("restMinutes");
+        long now = Instant.now().toEpochMilli();
+        if (now < arrival.longValue() + minutes.longValue() * 60000)
+            throw new IllegalArgumentException("Chưa đủ thời gian nghỉ đã duyệt tại trạm SOS.");
+        checkpoint.put("doneAt", now); checkpoint.put("leftAt", now);
+        for (var cp : tripCheckpoints(trip)) if (Objects.equals(cp.get("interruptedByIncidentId"), incident.getId()) && cp.get("doneAt") == null) {
+            cp.put("doneAt", now); cp.put("leftAt", now); cp.put("completionReason", "Đã hoàn tất chăm sóc tại trạm SOS");
+        }
+        booking.setDetailsJson(writeJson(payload));
+    }
+
     private void validateReroute(Map<String, Object> plan) {
         if (plan == null || !"reroute".equals(plan.get("action"))
                 || !(plan.get("newEta") instanceof Number eta) || eta.longValue() <= 0
@@ -467,6 +656,10 @@ public class IncidentServiceImpl implements IncidentService {
             throw new IllegalArgumentException("Sự cố không liên kết với đơn hàng.");
         }
         ensureAssignedToBooking(incident.getBookingID().getId(), staff);
+        var trip = incidentTrip(incident, BookingDetailsJson.read(objectMapper, incident.getBookingID()));
+        String assigned = "ESCORT".equals(role) ? trip.getEscortId() : trip.getDriverId();
+        if (!Objects.equals(assigned, staff.getStaffCode()) && !Objects.equals(assigned, String.valueOf(staff.getId())))
+            throw new AccessDeniedException("Bạn không thuộc kíp xe của sự cố này.");
     }
 
     private void ensureTripBelongsToBooking(Booking booking, String tripId) {
@@ -604,6 +797,7 @@ public class IncidentServiceImpl implements IncidentService {
                 .bookingCode(bookingCode)
                 .reporter(reporter)
                 .tripId(inc.getTripId())
+                .horseIds(affectedHorseIds(inc))
                 .location(inc.getLocationLat() != null && inc.getLocationLng() != null
                         ? Map.of("lat", inc.getLocationLat(), "lng", inc.getLocationLng()) : null)
                 .photoUrl(inc.getPhotoUrl())

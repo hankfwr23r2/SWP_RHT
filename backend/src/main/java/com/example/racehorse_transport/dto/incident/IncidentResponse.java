@@ -18,6 +18,7 @@ public class IncidentResponse {
     private String bookingCode; // BK-003
     private String reporter;
     private String tripId;
+    private java.util.List<String> horseIds;
     private Map<String, Double> location;
     private String photoUrl;
     private String incidentName;

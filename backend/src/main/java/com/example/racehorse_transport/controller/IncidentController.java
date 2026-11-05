@@ -77,8 +77,9 @@ public class IncidentController {
     @PostMapping("/{id}/confirm-fit")
     public ResponseEntity<ApiResponse<IncidentResponse>> confirmFit(
             Authentication authentication,
-            @PathVariable("id") Integer id) {
-        IncidentResponse response = incidentService.confirmFit(id, authentication.getName(), role(authentication));
+            @PathVariable("id") Integer id,
+            @Valid @RequestBody(required = false) ConfirmIncidentFitRequest request) {
+        IncidentResponse response = incidentService.confirmFit(id, request, authentication.getName(), role(authentication));
         return ResponseEntity.ok(ApiResponse.success(response, "Đã xác nhận ngựa đủ sức đi tiếp"));
     }
 

@@ -217,7 +217,7 @@ function RouteCard({ b }: { b: CustomerBookingView }) {
     <div className="card">
       <div className="card-header"><h3><i className="fa-solid fa-map-location-dot" /> Lộ trình</h3></div>
       {adjusted.map(trip => <p key={trip.tripId}><b>Chuyến {trip.tripId} đã đổi tuyến:</b> dự kiến đến {formatDateTime(trip.incidentRoute!.newEta)}.</p>)}
-      {adjusted.length > 0 && <p className="form-hint">Các chặng dưới đây là kế hoạch ban đầu. Đường tránh đã duyệt được đánh dấu trên bản đồ theo từng chuyến.</p>}
+      {adjusted.length > 0 && <p className="form-hint">Các chặng dưới đây là kế hoạch ban đầu. Tuyến SOS đã duyệt được đánh dấu trên bản đồ theo từng chuyến.</p>}
       <ol className={s.legList}>
         {r.legs.map((l, i) => (
           <li key={l.no}>

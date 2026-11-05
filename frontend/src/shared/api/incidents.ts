@@ -6,6 +6,7 @@ export interface BackendIncidentResponse {
   formattedId: string // INC-001
   bookingId: number
   bookingCode: string // BK-003
+  horseIds?: string[]
   reporter?: string
   tripId?: string
   location?: { lat: number; lng: number }
@@ -40,6 +41,7 @@ export interface ReportIncidentPayload {
   incidentType: string
   description: string
   photoUrl: string
+  horseIds?: string[]
   latitude: number
   longitude: number
 }
@@ -104,8 +106,8 @@ export const backendIncidentApi = {
     return res.data.data
   },
 
-  confirmFit: async (id: number): Promise<BackendIncidentResponse> => {
-    const res = await apiClient.post<ApiResponse<BackendIncidentResponse>>(`/incidents/${id}/confirm-fit`)
+  confirmFit: async (id: number, data?: { photo: string; waterLiters?: number; hay?: boolean; horses: { horseId: string; careNote: string; temperature?: number }[] }): Promise<BackendIncidentResponse> => {
+    const res = await apiClient.post<ApiResponse<BackendIncidentResponse>>(`/incidents/${id}/confirm-fit`, data)
     return res.data.data
   },
 

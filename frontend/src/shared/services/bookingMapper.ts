@@ -122,6 +122,7 @@ export function incidentOf(response: BackendIncidentResponse): Incident | undefi
     id: response.formattedId,
     tripId: response.tripId,
     kind,
+    horseIds: response.horseIds,
     reportedBy: response.reporter ?? '',
     reportedAt: response.createdAt,
     location: response.location,
