@@ -230,6 +230,20 @@ class VnpayServiceImplTest {
         verify(settlementService, times(1)).confirmSettlementPaid(payment, "khach1");
     }
 
+    @Test
+    void settlement_rejectsAmountBeyondSupportedPaymentRangeBeforeSaving() {
+        booking.setStatus("settlement_issued");
+        when(settlementService.holdForVnpay(booking, null))
+                .thenReturn(new BigDecimal("111111111111111100"));
+
+        assertThatThrownBy(() -> service.createPaymentUrl(
+                VnpayCreateRequest.builder().bookingId("12").paymentType("SETTLEMENT").build(),
+                "khach1", "1.2.3.4"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("vượt quá giới hạn");
+        verify(paymentRepository, never()).save(any());
+    }
+
     private Payment completedDeposit() {
         return Payment.builder().id(2).bookingID(booking).amount(new BigDecimal("3000000"))
                 .paymentType("DEPOSIT").paymentMethod("VNPAY").status("COMPLETED").build();

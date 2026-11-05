@@ -5,6 +5,7 @@ import com.example.racehorse_transport.dto.booking.BookingHorseDto;
 import com.example.racehorse_transport.entity.Booking;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.List;
@@ -25,7 +26,9 @@ public final class BookingDetailsJson {
                 payload.setHorses(objectMapper.readValue(json, new TypeReference<List<BookingHorseDto>>() {}));
                 return payload;
             }
-            return objectMapper.readValue(json, BookingDetailsPayload.class);
+            return objectMapper.readerFor(BookingDetailsPayload.class)
+                    .with(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
+                    .readValue(json);
         } catch (JsonProcessingException ex) {
             throw new IllegalStateException("Không thể đọc chi tiết đơn " + booking.getId() + ".", ex);
         }

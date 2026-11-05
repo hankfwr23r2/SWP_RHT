@@ -4,6 +4,9 @@ import com.example.racehorse_transport.entity.Booking;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
+import java.util.Map;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -23,6 +26,15 @@ class BookingDetailsJsonTest {
         var payload = BookingDetailsJson.read(objectMapper, booking("{\"gate\":\"Mộc Bài\",\"history\":[]}"));
 
         assertThat(payload.getGate()).isEqualTo("Mộc Bài");
+    }
+
+    @Test
+    void readsUntypedDecimalAmountsWithoutLosingPrecision() {
+        var payload = BookingDetailsJson.read(objectMapper,
+                booking("{\"settlement\":{\"total\":9007199254740993.25}}"));
+
+        Object total = ((Map<?, ?>) payload.getSettlement()).get("total");
+        assertThat(total).isEqualTo(new BigDecimal("9007199254740993.25"));
     }
 
     @Test
