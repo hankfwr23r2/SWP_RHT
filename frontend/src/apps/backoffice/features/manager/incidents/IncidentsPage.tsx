@@ -1,5 +1,6 @@
+import { useAutoRefresh } from '@shared/services/useLoad'
 // Manager: duyệt phương án sự cố và theo dõi sự cố đang xử lý (Flow 5, PRD mục 6.6).
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { INCIDENT_ACTION, INCIDENT_KIND } from '@shared/config/booking-rules'
@@ -57,7 +58,7 @@ export function ApproveModal({ item, onClose, onDone }: { item: Item; onClose: (
         <label htmlFor="rs">Lý do trả về (chỉ cần khi bấm nút Trả về)</label>
         <input id="rs" className="form-control" placeholder="Nhập lý do nếu cần ĐPV lập lại phương án..." value={reason} onChange={e => setReason(e.target.value)} />
       </div>
-      <ReadMore className={s.hint} text={'Chỉ Quản lý được duyệt thay đổi phương án di chuyển và trực tiếp làm việc với khách khi có sự cố. Duyệt xong, khách và tài xế, hộ tống nhận thông báo.'} />
+      <ReadMore className={s.hint} text={'Chỉ Quản lý được duyệt thay đổi phương án di chuyển và trực tiếp làm việc với khách khi có sự cố. Sau khi duyệt, phương án được cập nhật trên màn hình của kíp xe; khách xem được trạng thái xử lý và giờ đến dự kiến mới.'} />
     </Modal>
   )
 }
@@ -67,6 +68,8 @@ type Row = { key: string; b: Booking; i?: Incident }
 export default function IncidentsPage() {
   const { t } = useTranslation()
   const { all, reload } = usePageData<typeof bookingListLoader>()
+  const refresh = useCallback(() => { invalidateBookingsListCache(); reload() }, [reload])
+  useAutoRefresh(refresh)
   const [tab, setTab] = useState<Tab>('approve')
   const [approve, setApprove] = useState<Item | null>(null)
   const list = all ?? []
@@ -79,7 +82,7 @@ export default function IncidentsPage() {
     returned: inc(incidents.filter(x => x.i.status === 'reported')),
     done: ord(list.filter(b => b.status === 'completed')),
   }
-  const done = () => { invalidateBookingsListCache(); setApprove(null); reload() }
+  const done = () => { setApprove(null); refresh() }
   const expenses = (b: Booking) => (b.incidents ?? []).flatMap(i => i.expenses).reduce((n, e) => n + e.amount, 0)
 
   const columns: Column<Row>[] = [

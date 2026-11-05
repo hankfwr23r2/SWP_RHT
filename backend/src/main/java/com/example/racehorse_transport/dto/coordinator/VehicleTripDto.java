@@ -23,4 +23,5 @@ public class VehicleTripDto {
     private Map<String, Object> driverPack;
     private Map<String, Object> run;
     private Map<String, Object> homeReturn;
+    private Map<String, Object> incidentRoute;
 }

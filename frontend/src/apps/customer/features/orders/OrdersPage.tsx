@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { stepOf, statusRank } from '@shared/config/booking-rules'
-import { arrivalOf, orderTabOf, type OrderTab } from '@shared/lib/booking'
+import { effectiveArrivalOf, orderTabOf, type OrderTab } from '@shared/lib/booking'
 import { formatDate, formatVND } from '@shared/lib/format'
 import { useStaggerIn } from '@shared/motion/motion'
 import { usePageData } from '@shared/routing/pageData'
@@ -119,7 +119,7 @@ export default function OrdersPage() {
                       <div className={s.meta}>
                         <span><i className="fa-solid fa-calendar-day" />{t('orderDetail.departAtLabel', { date: formatDate(b.departAt) })}</span>
                         <span><i className="fa-solid fa-horse-head" />{b.horses.length} {t('booking.horsesUnit')}</span>
-                        {arrivalOf(b.route) && !stopped && <span><i className="fa-solid fa-flag-checkered" />{t('orderDetail.arriveEstLabel', { date: formatDate(arrivalOf(b.route)!) })}</span>}
+                        {effectiveArrivalOf(b) && !stopped && <span><i className="fa-solid fa-flag-checkered" />{t('orderDetail.arriveEstLabel', { date: formatDate(effectiveArrivalOf(b)!) })}</span>}
                         {b.gate && <span><i className="fa-solid fa-flag" />{b.gate}</span>}
                       </div>
                       <div className={`${s.meta} ${s.horses}`}>{b.horses.map(h => h.name).join(', ')}</div>

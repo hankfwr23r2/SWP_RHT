@@ -85,7 +85,8 @@ export function FleetRouteSection({ b }: { b: Booking }) {
             {b.route.legs.length} chặng, {b.route.rests.length} trạm nghỉ{b.gate ? `, cửa khẩu ${b.gate}` : ''}. Khởi hành {formatDateTime(b.route.legs[0].departAt)}, đến {formatDateTime(b.route.legs[b.route.legs.length - 1].arriveAt)}.
             {b.route.by ? ` Lập bởi ${b.route.by}.` : ''}
           </p>
-          <TripTrackMap b={b} trips={[]} plain height={300} />
+          {trips.filter(t => t.incidentRoute).map(t => <p key={t.tripId}>Chuyến {t.tripId} đã điều chỉnh: đến dự kiến {formatDateTime(t.incidentRoute!.newEta)}.</p>)}
+          <TripTrackMap b={b} trips={trips} plain height={300} />
         </>
       )}
       {!b.route && !trips.length && <p className={s.hint}>Điều phối viên chưa chọn xe và lập lộ trình.</p>}

@@ -37,7 +37,7 @@ const cache = new Map<string, RoadRoute>()
 const alternatives = new Map<string, RoadRoute[]>()
 const keyOf = (points: GeoPoint[]) => points.map(p => `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`).join(';')
 
-const SESSION_PREFIX = 'RHT_ROAD_'
+const SESSION_PREFIX = 'RHT_ROAD_TRUCK_V1_'
 
 function loadSession<T>(key: string): T | null {
   if (typeof window === 'undefined' || typeof window.sessionStorage === 'undefined') return null

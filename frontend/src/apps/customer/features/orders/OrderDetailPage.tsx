@@ -5,7 +5,7 @@ import { Link, useParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { DEPOSIT_RATE, HORSE_DOC, INCIDENT_KIND, stepOf } from '@shared/config/booking-rules'
-import { arrivalOf } from '@shared/lib/booking'
+import { effectiveArrivalOf } from '@shared/lib/booking'
 import { formatClock, formatDate, formatDateTime, formatVND } from '@shared/lib/format'
 import { usePageData } from '@shared/routing/pageData'
 import { customerBookingsApi, type CustomerBookingView, type TripTeam } from '@shared/services/bookings'
@@ -115,11 +115,11 @@ function PayCard({ b, owner, onDone }: { b: CustomerBookingView; owner: string; 
     <div className={`card ${s.pay}`}>
       <div className="card-header"><h3><i className="fa-solid fa-credit-card" /> Đặt cọc giữ xe</h3></div>
       <div className={s.payAmount}><span>Số tiền cần đặt cọc ({(b.quote!.total > 0 ? Number((b.quote!.deposit / b.quote!.total * 100).toFixed(2)) : DEPOSIT_RATE * 100).toLocaleString('vi-VN')}%)</span><strong>{formatVND(b.quote!.deposit)}</strong></div>
-      {arrivalOf(b.route) && (
+      {effectiveArrivalOf(b) && (
         <div className={s.eta} aria-label="Lịch trình dự kiến">
           <i className="fa-solid fa-flag-checkered" aria-hidden="true" />
           <div><span>Dự kiến khởi hành</span><b>{formatDateTime(b.route!.legs[0].departAt)}</b></div>
-          <div><span>Dự kiến đến nơi</span><b>{formatDateTime(arrivalOf(b.route)!)}</b></div>
+          <div><span>Dự kiến đến nơi</span><b>{formatDateTime(effectiveArrivalOf(b)!)}</b></div>
           <small>Thời gian dự kiến theo lộ trình đã duyệt, có thể thay đổi nếu gặp sự cố trên đường.</small>
         </div>
       )}
@@ -212,9 +212,12 @@ function CancelModal({ b, owner, onClose, onDone }: { b: CustomerBookingView; ow
 // Lộ trình đã được Manager duyệt (Flow 3): các chặng, trạm nghỉ, cửa khẩu và nhắc chuẩn bị bản gốc
 function RouteCard({ b }: { b: CustomerBookingView }) {
   const r = b.route!
+  const adjusted = (b.trips ?? []).filter(trip => trip.incidentRoute)
   return (
     <div className="card">
       <div className="card-header"><h3><i className="fa-solid fa-map-location-dot" /> Lộ trình</h3></div>
+      {adjusted.map(trip => <p key={trip.tripId}><b>Chuyến {trip.tripId} đã đổi tuyến:</b> dự kiến đến {formatDateTime(trip.incidentRoute!.newEta)}.</p>)}
+      {adjusted.length > 0 && <p className="form-hint">Các chặng dưới đây là kế hoạch ban đầu. Đường tránh đã duyệt được đánh dấu trên bản đồ theo từng chuyến.</p>}
       <ol className={s.legList}>
         {r.legs.map((l, i) => (
           <li key={l.no}>

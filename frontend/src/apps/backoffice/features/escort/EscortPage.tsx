@@ -1,3 +1,4 @@
+import { ApprovedIncidentRoute } from '../../shared/IncidentField'
 // App Hộ tống (Escort): nhận Lệnh điều xe, chuẩn bị tủ thuốc (Flow 3), rồi quét chip và ghi nhật ký an sinh (Flow 4, PRD mục 4.4, 5). Mỗi xe một chuyến riêng.
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -62,6 +63,7 @@ export default function EscortPage() {
     <>
       <TripPicker trips={trips} value={tr.tripId} onChange={id => { setSelected(id); setChecked([]) }} />
       <TripHeader b={b} t={tr} />
+      <ApprovedIncidentRoute b={b} t={tr} />
       <Segmented<Tab> value={tab} onChange={setTab} tabs={[['job', t('fieldCrew.tabJob', 'Việc'), 'fa-list-check'], ['journey', t('fieldCrew.tabJourney', 'Hành trình'), 'fa-route'], ['manifest', t('fieldCrew.tabManifest', 'Lệnh'), 'fa-clipboard-list']]} />
 
       {tab === 'manifest' && <ManifestView b={b} trip={tr} vehicle={vehicle} driver={driver} escort={escort} />}

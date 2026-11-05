@@ -75,6 +75,52 @@ class IncidentServiceImplTest {
     }
 
     @Test
+    void approvingRerouteUpdatesOnlyAffectedTripAndPreservesCommercialPlan() throws Exception {
+        Booking booking = new Booking();
+        booking.setId(3);
+        booking.setStatus("pending_emergency_approval");
+        booking.setDetailsJson("""
+                {"quote":{"total":1000000},"route":{"legs":[{"arriveAt":100}]},
+                 "trips":[{"tripId":"T1","vehicleId":"V1","driverId":"D1","escortId":"E1",
+                   "run":{"checkpoints":[{"type":"delivery","plannedAt":100}]}},
+                   {"tripId":"T2","vehicleId":"V2","driverId":"D2"}]}
+                """);
+        Incident incident = Incident.builder().id(7).bookingID(booking).tripId("T1")
+                .incidentType("TRAFFIC_JAM").resolutionType("REROUTE").status("proposed")
+                .planJson("{\"action\":\"reroute\",\"newEta\":200,\"detour\":{\"path\":[[11,104],[12,105]]}}")
+                .build();
+        when(incidentRepository.findById(7)).thenReturn(java.util.Optional.of(incident));
+        when(incidentRepository.save(incident)).thenReturn(incident);
+        when(incidentRepository.findByBookingID_Id(3)).thenReturn(List.of(incident));
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        com.fasterxml.jackson.databind.JsonNode before = mapper.valueToTree(mapper.readValue(booking.getDetailsJson(),
+                com.example.racehorse_transport.dto.booking.BookingDetailsPayload.class));
+
+        service.approveIncidentPlan(7, new com.example.racehorse_transport.dto.incident.ApproveIncidentPlanRequest(), "manager");
+
+        var after = mapper.readTree(booking.getDetailsJson());
+        assertThat(after.path("quote")).isEqualTo(before.path("quote"));
+        assertThat(after.path("route")).isEqualTo(before.path("route"));
+        assertThat(after.path("trips").get(1)).isEqualTo(before.path("trips").get(1));
+        var trip = after.path("trips").get(0);
+        assertThat(trip.path("vehicleId").asText()).isEqualTo("V1");
+        assertThat(trip.path("driverId").asText()).isEqualTo("D1");
+        assertThat(trip.path("escortId").asText()).isEqualTo("E1");
+        assertThat(trip.path("incidentRoute").path("newEta").asLong()).isEqualTo(200);
+        assertThat(trip.path("run").path("checkpoints").get(0).path("plannedAt").asLong()).isEqualTo(200);
+    }
+
+    @Test
+    void cannotApproveRerouteWithoutRoadGeometry() {
+        Incident incident = Incident.builder().id(7).resolutionType("REROUTE").status("proposed").build();
+        when(incidentRepository.findById(7)).thenReturn(java.util.Optional.of(incident));
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.approveIncidentPlan(7,
+                new com.example.racehorse_transport.dto.incident.ApproveIncidentPlanRequest(), "manager"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("đường đi");
+        assertThat(incident.getStatus()).isEqualTo("proposed");
+    }
+
+    @Test
     void noBookingsMeansNoQuery() {
         assertThat(service.getIncidentsForBookings(List.of())).isEmpty();
         verifyNoInteractions(incidentRepository);

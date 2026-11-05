@@ -101,6 +101,9 @@ public class IncidentServiceImpl implements IncidentService {
                 && !Set.of("COMPANY", "CUSTOMER").contains(request.getCostBearer().toUpperCase(Locale.ROOT))) {
             throw new IllegalArgumentException("Bên chịu chi phí không hợp lệ.");
         }
+        if ("REROUTE".equalsIgnoreCase(request.getResolutionType())) {
+            validateReroute(request.getPlan());
+        }
         incident.setResolutionType(request.getResolutionType() != null
                 ? request.getResolutionType().toUpperCase(Locale.ROOT)
                 : "EXTERNAL_PARTNER");
@@ -160,6 +163,10 @@ public class IncidentServiceImpl implements IncidentService {
         if (request.getCostBearer() != null
                 && !Set.of("COMPANY", "CUSTOMER").contains(request.getCostBearer().toUpperCase(Locale.ROOT))) {
             throw new IllegalArgumentException("Bên chịu chi phí không hợp lệ.");
+        }
+        if ("REROUTE".equalsIgnoreCase(incident.getResolutionType())) {
+            validateReroute(readPlan(incident.getPlanJson()));
+            applyReroute(incident, actor);
         }
         incident.setStatus("active");
         incident.setDirective(request.getDirective());
@@ -388,6 +395,49 @@ public class IncidentServiceImpl implements IncidentService {
                 ? incidentRepository.findByStatus(status.toLowerCase())
                 : incidentRepository.findAll();
         return list.stream().map(this::mapToResponse).toList();
+    }
+
+    private void validateReroute(Map<String, Object> plan) {
+        if (plan == null || !"reroute".equals(plan.get("action"))
+                || !(plan.get("newEta") instanceof Number eta) || eta.longValue() <= 0
+                || !(plan.get("detour") instanceof Map<?, ?> detour)
+                || !(detour.get("path") instanceof List<?> path) || path.size() < 2) {
+            throw new IllegalArgumentException("Phương án đổi tuyến phải có đường đi và giờ đến mới hợp lệ.");
+        }
+        for (Object item : path) {
+            if (!(item instanceof List<?> point) || point.size() != 2
+                    || !(point.get(0) instanceof Number lat) || !(point.get(1) instanceof Number lng)
+                    || !Double.isFinite(lat.doubleValue()) || !Double.isFinite(lng.doubleValue())
+                    || Math.abs(lat.doubleValue()) > 90 || Math.abs(lng.doubleValue()) > 180) {
+                throw new IllegalArgumentException("Tọa độ đường tránh không hợp lệ.");
+            }
+        }
+    }
+
+    private void applyReroute(Incident incident, String actor) {
+        Booking booking = incident.getBookingID();
+        if (booking == null) throw new IllegalArgumentException("Sự cố không liên kết với đơn hàng.");
+        BookingDetailsPayload payload = BookingDetailsJson.read(objectMapper, booking);
+        var trip = payload.getTrips() == null ? null : payload.getTrips().stream()
+                .filter(item -> Objects.equals(item.getTripId(), incident.getTripId())).findFirst().orElse(null);
+        if (trip == null) throw new IllegalArgumentException("Không tìm thấy chuyến xe cần đổi tuyến.");
+        Map<String, Object> route = new LinkedHashMap<>(readPlan(incident.getPlanJson()));
+        route.put("incidentId", incident.getId());
+        route.put("approvedAt", Instant.now().toEpochMilli());
+        route.put("approvedBy", actor);
+        trip.setIncidentRoute(route);
+        // Chỉ cập nhật mốc giao hàng chưa hoàn tất của chuyến gặp sự cố.
+        if (trip.getRun() != null && trip.getRun().get("checkpoints") instanceof List<?> checkpoints) {
+            for (Object item : checkpoints) {
+                if (item instanceof Map<?, ?> checkpoint && "delivery".equals(checkpoint.get("type"))
+                        && checkpoint.get("arrivedAt") == null && checkpoint.get("doneAt") == null) {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> mutable = (Map<String, Object>) checkpoint;
+                    mutable.put("plannedAt", route.get("newEta"));
+                }
+            }
+        }
+        booking.setDetailsJson(writeJson(payload));
     }
 
     private void ensureIncidentBookingStatus(Booking booking) {

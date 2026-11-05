@@ -54,7 +54,7 @@ const SHOW_TEAM: Booking['status'][] = QUOTED.filter(s => s !== 'quote_expired')
 const toCustomerView = (b: Booking): CustomerBookingView => {
   const { intake: _intake, history: _history, plan: _plan, trips, incidents, ...view } = structuredClone(b)
   const out: CustomerBookingView = view
-  if (incidents?.length) out.incidents = incidents.map(i => ({ id: i.id, tripId: i.tripId, kind: i.kind, status: i.status, reportedAt: i.reportedAt, resolvedAt: i.resolvedAt, newEta: i.plan && i.status === 'active' ? i.plan.newEta : undefined }))
+  if (incidents?.length) out.incidents = incidents.map(i => ({ id: i.id, tripId: i.tripId, kind: i.kind, status: i.status, reportedAt: i.reportedAt, resolvedAt: i.resolvedAt, newEta: i.plan && (i.status === 'active' || i.status === 'resolved') ? i.plan.newEta : undefined }))
   if (SHOW_TEAM.includes(b.status)) out.trips = trips?.map(({ driverPack: _p, acks: _a, ...t }) => t)
   else delete out.route
   if (!SHOW_TEAM.includes(b.status)) delete out.route
@@ -71,7 +71,7 @@ function customerIncidentOf(response: BackendIncidentResponse): CustomerIncident
     status: incidentStatusOf(response.status),
     reportedAt: response.createdAt,
     ...(response.resolvedAt !== undefined ? { resolvedAt: response.resolvedAt } : {}),
-    ...(incidentStatusOf(response.status) === 'active' && response.newEta !== undefined
+    ...(['active', 'resolved'].includes(incidentStatusOf(response.status)) && response.newEta !== undefined
       ? { newEta: response.newEta }
       : {}),
   }

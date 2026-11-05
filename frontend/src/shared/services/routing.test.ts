@@ -1,7 +1,8 @@
+import { routesApi } from '../api/routes'
 // Đường xe tải cho phương án sự cố: giải mã đường vẽ, điều kiện đầu vào và ghi chú nguồn.
 // Phần tính đường (Valhalla, giữ tuyến trong Việt Nam) được kiểm ở backend: RoutePreviewStationsTest.
-import { describe, expect, it } from 'vitest'
-import { decodePolyline, roadNote, roadRoute, type RoadRoute } from './routing'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { clearRoadCache, decodePolyline, roadNote, roadRoute, type RoadRoute } from './routing'
 
 const A = { lat: 10.78, lng: 107.0 }
 
@@ -25,4 +26,19 @@ describe('ghi chú nguồn thời gian lái', () => {
     expect(roadNote(truck, false)).toMatch(/xe tải/)
     expect(roadNote(null, false)).toMatch(/ước lượng/)
   })
+})
+
+
+beforeEach(() => clearRoadCache())
+afterEach(() => vi.restoreAllMocks())
+
+it('thử lại đường xe tải sau lỗi, không giữ kết quả thất bại trong cache', async () => {
+  const request = vi.spyOn(routesApi, 'roadRoute')
+    .mockRejectedValueOnce(new Error('Mất mạng'))
+    .mockResolvedValueOnce({ routes: [{ path: [[10.78, 107], [11, 107]], km: 30, driveHours: 1 }], warnings: [] })
+  const points = [A, { lat: 11, lng: 107 }]
+  expect(await roadRoute(points)).toBeNull()
+  expect(await roadRoute(points)).toMatchObject({ source: 'valhalla', km: 30 })
+  await roadRoute(points)
+  expect(request).toHaveBeenCalledTimes(2)
 })

@@ -2,7 +2,7 @@
 // Điều phối viên lập phương án (bấm chọn trạm, cứu hộ); Quản lý, tài xế, hộ tống xem lại (chỉ đọc).
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { GeoPoint, RescuePoint, TransitStation } from '@shared/config/network'
 import { addBaseLayer, BASE_MAP_OPTIONS } from '@shared/ui/baseMap'
 import '../features/coordinator/fleet-plan/RouteMapPicker.css'
@@ -25,6 +25,8 @@ interface Props {
   lines?: MapLine[]
   onStation?: (name: string) => void
   onRescue?: (name: string) => void
+  onPoint?: (point: GeoPoint) => void
+  waypoints?: GeoPoint[]
   children?: ReactNode // bảng điều khiển ở góc trên bên trái
 }
 
@@ -32,11 +34,12 @@ const short = (name: string) => name.split(' — ')[0]
 const pin = (cls: string, label: string, size = 30) => L.divIcon({ className: 'rm-icon', html: `<span class="rm-pin ${cls}">${label}</span>`, iconSize: [size, size], iconAnchor: [size / 2, size / 2] })
 const dot = (on: boolean, rank = 0) => L.divIcon({ className: 'rm-icon', iconSize: [34, 34], iconAnchor: [17, 17], html: on ? '<span class="rm-st rm-on rm-active">✓</span>' : rank ? `<span class="rm-st rm-on">${rank}</span>` : '<span class="rm-st"></span>' })
 
-export function IncidentMap({ height = 460, location, origin, dest, gate, stations = [], rescues = [], selectedStation, nearest = 0, selectedRescue, lines = [], onStation, onRescue, children }: Props) {
+export function IncidentMap({ height = 460, location, origin, dest, gate, stations = [], rescues = [], selectedStation, nearest = 0, selectedRescue, lines = [], onStation, onRescue, onPoint, waypoints = [], children }: Props) {
   const box = useRef<HTMLDivElement>(null)
   const map = useRef<L.Map | null>(null)
   const layer = useRef<L.LayerGroup | null>(null)
   const fitted = useRef(false)
+  const [panelOpen, setPanelOpen] = useState(true)
 
   useEffect(() => {
     if (!box.current) return
@@ -50,11 +53,19 @@ export function IncidentMap({ height = 460, location, origin, dest, gate, statio
     return () => { timers.forEach(clearTimeout); m.remove(); map.current = null; layer.current = null; fitted.current = false }
   }, [location.lat, location.lng])
 
+  useEffect(() => {
+    const m = map.current
+    if (!m || !onPoint) return
+    const click = (event: L.LeafletMouseEvent) => onPoint({ lat: event.latlng.lat, lng: event.latlng.lng })
+    m.on('click', click)
+    return () => { m.off('click', click) }
+  }, [onPoint, location.lat, location.lng])
+
   // Vẽ lại mỗi khi đổi lựa chọn hoặc đường
   // Trang cha dựng lại mảng và object mỗi lần render (gõ ghi chú, đổi giờ…): chỉ vẽ lại khi nội dung bản đồ thật sự đổi
   const sig = JSON.stringify([
-    lines.map(l => [l.path.length, l.path[0], l.path[l.path.length - 1], l.color, l.weight, l.dashed, l.flow, l.faded, l.label]),
-    stations.map(s => s.name), rescues.map(r => r.name), selectedStation, nearest, selectedRescue,
+    lines.map(l => [l.path, l.color, l.weight, l.dashed, l.flow, l.faded, l.label]),
+    stations.map(s => [s.name, s.lat, s.lng]), rescues.map(r => [r.name, r.lat, r.lng]), waypoints, selectedStation, nearest, selectedRescue,
     [origin.lat, origin.lng, origin.name], [dest.lat, dest.lng, dest.name], gate && [gate.lat, gate.lng, gate.name], [location.lat, location.lng],
   ])
   useEffect(() => {
@@ -67,6 +78,9 @@ export function IncidentMap({ height = 460, location, origin, dest, gate, statio
       const line = L.polyline(l.path, { ...opts, weight: l.weight ?? 5, opacity: l.faded ? 0.55 : 0.95, dashArray: l.dashed ? '6 8' : undefined, className: l.flow ? 'rm-route' : '' }).addTo(g)
       if (l.label) line.bindTooltip(l.label, { sticky: true })
       if (l.onClick) line.on('click', l.onClick)
+    })
+    waypoints.forEach((p, idx) => {
+      L.marker([p.lat, p.lng], { icon: pin('rm-g', String(idx + 1)), interactive: false }).addTo(g)
     })
     stations.forEach((s, idx) => {
       const on = s.name === selectedStation
@@ -94,7 +108,7 @@ export function IncidentMap({ height = 460, location, origin, dest, gate, statio
   return (
     <div className="im-wrap" style={{ height }}>
       <div ref={box} className="rm-map im-map" role="application" aria-label="Bản đồ sự cố" />
-      {children && <div className="im-panel">{children}</div>}
+      {children && <div className="im-panel"><button type="button" className="btn btn-ghost btn-sm" aria-expanded={panelOpen} onClick={() => setPanelOpen(open => !open)}>{panelOpen ? 'Thu gọn để xem bản đồ' : 'Mở bảng phương án'}</button>{panelOpen && children}</div>}
       <div className="rm-legend">
         <span><i className="rm-pin rm-sos">!</i> Vị trí xe</span>
         <span><i className="rm-st" /> Trạm nghỉ</span>
