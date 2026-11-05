@@ -136,7 +136,10 @@ class RoutePreviewStationsTest {
         assertThat(roadside.path("type").asText()).isEqualTo("ROADSIDE_REST");
         assertThat(roadside.path("startAt").asLong()).isCloseTo(epoch("2026-11-02T13:18:39"), within(60_000L));
         assertThat(roadside.path("lat").isNumber()).isTrue();
-        assertThat(json.readTree(response.body()).path("data").path("warnings").toString()).contains("nghỉ dọc đường");
+        // Cảnh báo nói rõ xe dừng ở đâu và điều phối có thể làm gì
+        assertThat(json.readTree(response.body()).path("data").path("warnings").toString())
+                .contains("xe phải nghỉ dọc đường 5 lần (km 533; km 683; km 956; km 1229; km 1366)")
+                .contains("Có thể chọn thêm trạm nghỉ trên bản đồ.");
     }
 
     @Test

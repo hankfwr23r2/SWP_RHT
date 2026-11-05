@@ -4,7 +4,14 @@ import type { RoadRoute } from '../services/routing'
 import type { RestStop, RouteLeg, RoutePlan } from '../types/booking'
 
 const STOPS = new Set(['REST', 'ROADSIDE_REST', 'OVERNIGHT'])
-const ROADSIDE = 'Nghỉ dọc đường'
+export const ROADSIDE = 'Nghỉ dọc đường'
+
+// Tên điểm đón/trả gửi backend để hiện trong lịch trình và thông báo: bỏ phần số nhà/đường khách tự gõ
+// ("Stanford123123, Phường Châu Phú B (Châu Đốc), An Giang" → "Phường Châu Phú B (Châu Đốc), An Giang")
+export const routePlaceName = (name: string) => {
+  const parts = name.split(', ')
+  return parts.length > 2 ? parts.slice(1).join(', ') : name
+}
 
 // Backend đặt tên chỗ nghỉ dọc đường theo trạm gần nhất trong 20 km, nhưng xe không dừng ở trạm đó
 const restName = (type: string, place: string) =>

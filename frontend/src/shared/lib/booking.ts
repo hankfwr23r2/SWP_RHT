@@ -209,7 +209,7 @@ export function quoteLines(b: QuoteInput, vehicles: Pick<Vehicle, 'capacity'>[])
   const international = b.type === 'international'
   // Đã chốt lộ trình xe tải thì tính theo đúng quãng đường và số ngày của lộ trình đó; chưa chốt thì ước tính chim bay
   const legs = b.route?.legs ?? []
-  const km = legs.length ? Math.round(legs.reduce((t, l) => t + l.km, 0)) : routeKm(b.origin, b.dest, b.gate)
+  const km = legs.length ? Math.round(legs.reduce((t, l) => t + (l.km ?? 0), 0)) : routeKm(b.origin, b.dest, b.gate)
   const days = legs.length ? calendarDays(legs[0].departAt, legs[legs.length - 1].arriveAt) : tripDays(km, international)
   const m = 1 + MARGIN_RATE
   const many = vehicles.length > 1

@@ -36,13 +36,16 @@ interface InlineRouteMapProps {
   rests: RestStop[]
   activeRoad?: RoadRoute | null
   loading?: boolean
+  manualCount?: number // số trạm điều phối chọn tay trong rests (còn lại do hệ thống thêm)
   onOpenPicker?: () => void
 }
 
-export function InlineRouteMap({ origin, dest, gate, rests, activeRoad: road, loading, onOpenPicker }: InlineRouteMapProps) {
+export function InlineRouteMap({ origin, dest, gate, rests, activeRoad: road, loading, manualCount, onOpenPicker }: InlineRouteMapProps) {
   const box = useRef<HTMLDivElement>(null)
   const map = useRef<L.Map | null>(null)
   const layer = useRef<L.LayerGroup | null>(null)
+  // Các trạm chưa chọn gần như không đổi: để lớp riêng, chỉ vẽ lại khi danh sách trạm trong lịch trình đổi
+  const stationLayer = useRef<L.LayerGroup | null>(null)
   // Giữ lại road cũ khi đang loading để bản đồ không bị reset về đường thẳng
   const lastRoad = useRef<RoadRoute | null | undefined>(road)
   if (road != null) lastRoad.current = road
@@ -83,6 +86,7 @@ export function InlineRouteMap({ origin, dest, gate, rests, activeRoad: road, lo
       L.latLngBounds(route.map(p => [p.lat, p.lng] as [number, number])),
       { padding: [50, 50], maxZoom: 11 }
     )
+    stationLayer.current = L.layerGroup().addTo(m)
     layer.current = L.layerGroup().addTo(m)
     map.current = m
 
@@ -94,8 +98,23 @@ export function InlineRouteMap({ origin, dest, gate, rests, activeRoad: road, lo
       m.remove()
       map.current = null
       layer.current = null
+      stationLayer.current = null
     }
   }, [routeKey]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const restNamesKey = rests.map(r => r.name).join('|')
+  useEffect(() => {
+    const g = stationLayer.current
+    if (!g) return
+    g.clearLayers()
+    const inPlan = new Set(restNamesKey.split('|'))
+    TRANSIT_STATIONS.filter(s => !inPlan.has(s.name)).forEach(s => {
+      const marker = L.marker([s.lat, s.lng], { icon: stationIcon(0), zIndexOffset: 50, title: s.name })
+      marker.bindTooltip(`${s.name} (Bấm để chọn trạm)`, { direction: 'top', offset: [0, -12] })
+      if (onOpenPicker) marker.on('click', onOpenPicker)
+      marker.addTo(g)
+    })
+  }, [restNamesKey, onOpenPicker, routeKey])
 
   useEffect(() => {
     const g = layer.current
@@ -117,20 +136,9 @@ export function InlineRouteMap({ origin, dest, gate, rests, activeRoad: road, lo
       color: chosenAny ? '#ea580c' : '#3b82f6',
       weight: 4,
       opacity: 0.95,
-      className: chosenAny ? 'rm-route' : '',
       dashArray: displayRoad ? undefined : '6 8',
       interactive: false,
     }).addTo(g)
-
-    // Các trạm dừng trên hệ thống chưa nằm trong lịch trình
-    TRANSIT_STATIONS.filter(s => !rests.some(r => r.name === s.name)).forEach(s => {
-      const marker = L.marker([s.lat, s.lng], { icon: stationIcon(0), zIndexOffset: 50, title: s.name })
-      marker.bindTooltip(`${s.name} (Bấm để chọn trạm)`, { direction: 'top', offset: [0, -12] })
-      if (onOpenPicker) {
-        marker.on('click', onOpenPicker)
-      }
-      marker.addTo(g)
-    })
 
     // Điểm nghỉ của lịch trình
     restPoints.forEach(r => {
@@ -164,7 +172,7 @@ export function InlineRouteMap({ origin, dest, gate, rests, activeRoad: road, lo
       const bounds = L.latLngBounds(line)
       if (bounds.isValid()) m.fitBounds(bounds, { padding: [40, 40], maxZoom: 11 })
     }
-  }, [outline, restPoints, rests, displayRoad, origin, dest, gate, onOpenPicker]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [outline, restPoints, displayRoad, origin, dest, gate, onOpenPicker])
 
   return (
     <div style={{ position: 'relative', isolation: 'isolate', borderRadius: 12, overflow: 'hidden', border: '1px solid var(--line)' }}>
@@ -204,7 +212,11 @@ export function InlineRouteMap({ origin, dest, gate, rests, activeRoad: road, lo
         <span style={{ color: 'var(--muted)' }}>|</span>
         <span>
           <i className="fa-solid fa-mug-hot" style={{ color: '#059669', marginRight: 5 }} />
-          <b>{rests.length}</b> trạm dừng nghỉ
+          {manualCount != null && rests.length > manualCount ? (
+            <><b>{manualCount}</b> chọn tay · <b>{rests.length - manualCount}</b> hệ thống thêm</>
+          ) : (
+            <><b>{rests.length}</b> trạm dừng nghỉ</>
+          )}
         </span>
       </div>
       <div

@@ -116,12 +116,6 @@ public class RoutePreviewService {
 
         List<String> warnings = new ArrayList<>();
         RoutePreviewResponse.Toll toll = toll(request, gate, capacityKg, warnings);
-        long roadside = journey.events().stream()
-                .filter(e -> e.place() == null && e.type() != JourneyPlanner.EventType.DRIVE)
-                .count();
-        if (roadside > 0) {
-            warnings.add("Không có trạm nghỉ phù hợp trên đường, xe phải nghỉ dọc đường " + roadside + " lần.");
-        }
 
         List<RoutePreviewResponse.Leg> legs = IntStream.range(0, road.legs().size())
                 .mapToObj(i -> new RoutePreviewResponse.Leg(names.get(i), names.get(i + 1),
@@ -137,6 +131,16 @@ public class RoutePreviewService {
         List<RoutePreviewResponse.Event> schedule = journey.events().stream()
                 .map(event -> toEvent(event, names, road, kmBeforeLeg, namerPlaces, knownPlaces))
                 .toList();
+        // Nghỉ dọc đường: nói rõ xe dừng ở đâu để điều phối quyết định có chọn thêm trạm hay không
+        List<String> roadside = IntStream.range(0, journey.events().size())
+                .filter(i -> journey.events().get(i).place() == null && journey.events().get(i).type() != JourneyPlanner.EventType.DRIVE)
+                .mapToObj(i -> schedule.get(i).place())
+                .map(place -> place.startsWith("Nghỉ dọc đường") ? place.replaceAll("^Nghỉ dọc đường \\((.*)\\)$", "$1") : "gần " + place)
+                .toList();
+        if (!roadside.isEmpty()) {
+            warnings.add("Không có trạm nghỉ ở đoạn xe cần nghỉ, xe phải nghỉ dọc đường " + roadside.size() + " lần ("
+                    + String.join("; ", roadside) + "). Có thể chọn thêm trạm nghỉ trên bản đồ.");
+        }
 
         return new RoutePreviewResponse("valhalla", round1(road.km()), hours(road.driveSeconds()), legs,
                 path(road), toll, schedule, journey.arrivalAt().toEpochMilli(),

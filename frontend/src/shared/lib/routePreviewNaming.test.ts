@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { RoutePreviewResponse } from '../api/routes'
 import type { TransitStation } from '../config/network'
-import { routePlanFromPreview, stationsForBooking } from './routePreview'
+import { routePlaceName, routePlanFromPreview, stationsForBooking } from './routePreview'
 
 const VN = (local: string) => new Date(`${local}:00+07:00`).getTime()
 
@@ -68,5 +68,16 @@ describe('trạm nghỉ cho phép chọn trên bản đồ', () => {
 
   it('đơn quốc tế thấy tất cả trạm', () => {
     expect(stationsForBooking(stations, true)).toEqual(stations)
+  })
+})
+
+// Thông báo lộ trình không in phần số nhà/đường khách tự gõ (vd. "Stanford123123"), chỉ giữ phường và tỉnh
+describe('tên điểm đón/trả gửi backend', () => {
+  it('bỏ phần chi tiết khách tự gõ khi địa chỉ có đủ chi tiết, phường, tỉnh', () => {
+    expect(routePlaceName('Stanford123123, Phường Châu Phú B (Châu Đốc), An Giang')).toBe('Phường Châu Phú B (Châu Đốc), An Giang')
+  })
+  it('giữ nguyên tên ngắn', () => {
+    expect(routePlaceName('Kho Đồng Nai')).toBe('Kho Đồng Nai')
+    expect(routePlaceName('Phường 1, TP.HCM')).toBe('Phường 1, TP.HCM')
   })
 })
