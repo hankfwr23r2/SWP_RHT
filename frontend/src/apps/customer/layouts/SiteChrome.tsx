@@ -50,6 +50,7 @@ function PublicNav() {
       <Link to="/#mang-luoi" className={s.navLink}>{t('nav.network')}</Link>
       <Link to="/#dich-vu" className={s.navLink}>{t('nav.services')}</Link>
       <Link to="/#quy-trinh" className={s.navLink}>{t('nav.process')}</Link>
+      <NavLink to="/terms" className={navClass}>{t('nav.terms')}</NavLink>
       <div className={s.actions}>
         <Link to="/login" className="btn btn-outline">{t('common.loginOrRegister')}</Link>
         <Link to="/login" className="btn btn-solid">{t('common.bookTrip')}</Link>

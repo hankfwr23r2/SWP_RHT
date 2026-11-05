@@ -47,7 +47,7 @@ export const vi = {
     services: 'Dịch vụ',
     process: 'Quy trình',
     customer: 'Khách hàng',
-    terms: 'Điều khoản dịch vụ',
+    terms: 'Điều khoản và chính sách',
   },
   status: {
     pending_intake: 'Chờ tiếp nhận',
