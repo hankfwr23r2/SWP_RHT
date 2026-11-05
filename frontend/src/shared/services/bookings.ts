@@ -47,14 +47,14 @@ const partyDto = (p: Booking['consignor']) => ({
 const QUOTED: Booking['status'][] = ['awaiting_payment', 'quote_expired', 'waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed']
 export type CustomerTrip = Omit<VehicleTrip, 'driverPack' | 'acks'>
 // Khách chỉ thấy diễn biến sự cố (nhóm, bước xử lý, ETA mới); chi phí chỉ hiện trong bảng quyết toán
-export type CustomerIncident = Pick<Incident, 'id' | 'kind' | 'status' | 'reportedAt' | 'resolvedAt'> & { newEta?: number }
+export type CustomerIncident = Pick<Incident, 'id' | 'tripId' | 'kind' | 'status' | 'reportedAt' | 'resolvedAt'> & { newEta?: number }
 export type CustomerBookingView = Omit<Booking, 'intake' | 'history' | 'plan' | 'trips' | 'incidents'> & { trips?: CustomerTrip[]; incidents?: CustomerIncident[] }
 // Báo giá hết hạn / đơn hủy: xe và nhân sự đã nhả, khách không còn thấy thông tin xe, tài xế
 const SHOW_TEAM: Booking['status'][] = QUOTED.filter(s => s !== 'quote_expired')
 const toCustomerView = (b: Booking): CustomerBookingView => {
   const { intake: _intake, history: _history, plan: _plan, trips, incidents, ...view } = structuredClone(b)
   const out: CustomerBookingView = view
-  if (incidents?.length) out.incidents = incidents.map(i => ({ id: i.id, kind: i.kind, status: i.status, reportedAt: i.reportedAt, resolvedAt: i.resolvedAt, newEta: i.plan && (i.status === 'active' || i.status === 'resolved') ? i.plan.newEta : undefined }))
+  if (incidents?.length) out.incidents = incidents.map(i => ({ id: i.id, tripId: i.tripId, kind: i.kind, status: i.status, reportedAt: i.reportedAt, resolvedAt: i.resolvedAt, newEta: i.plan && (i.status === 'active' || i.status === 'resolved') ? i.plan.newEta : undefined }))
   if (SHOW_TEAM.includes(b.status)) out.trips = trips?.map(({ driverPack: _p, acks: _a, ...t }) => t)
   else delete out.route
   if (!SHOW_TEAM.includes(b.status)) delete out.route
@@ -66,6 +66,7 @@ function customerIncidentOf(response: BackendIncidentResponse): CustomerIncident
   if (!kind || response.createdAt === undefined) return undefined
   return {
     id: response.formattedId,
+    tripId: response.tripId ?? '',
     kind,
     status: incidentStatusOf(response.status),
     reportedAt: response.createdAt,

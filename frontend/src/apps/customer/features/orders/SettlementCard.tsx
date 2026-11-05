@@ -11,9 +11,9 @@ import { FormSelect } from '@shared/ui/FormSelect'
 import { PolicyLink } from '@shared/ui/PolicyLink'
 
 // Diễn biến sự cố của xe (PRD mục 6.7): khách thấy nhóm, bước xử lý và ETA mới
-export function IncidentsCard({ b }: { b: CustomerBookingView }) {
+export function IncidentsCard({ incidents }: { incidents: NonNullable<CustomerBookingView['incidents']> }) {
   const { t, i18n } = useTranslation()
-  if (!b.incidents?.length) return null
+  if (!incidents.length) return null
   const step = (i: NonNullable<CustomerBookingView['incidents']>[number]) => i.status === 'resolved'
     ? (i18n.language === 'en' ? `Resolved at ${formatDateTime(i.resolvedAt!)}, transporter resumes route${i.newEta ? `, updated ETA ${formatDateTime(i.newEta)}` : ''}` : `Đã xử lý xong lúc ${formatDateTime(i.resolvedAt!)}, xe tiếp tục hành trình${i.newEta ? `, dự kiến đến ${formatDateTime(i.newEta)}` : ''}`)
     : i.status === 'active'
@@ -22,7 +22,7 @@ export function IncidentsCard({ b }: { b: CustomerBookingView }) {
   return (
     <div className="card">
       <div className="card-header"><h3><i className="fa-solid fa-triangle-exclamation" /> {t('settlement.incidentsTitle')}</h3></div>
-      {b.incidents.map(i => <p key={i.id} style={{ margin: '8px 0' }}><b>{INCIDENT_KIND[i.kind].label}</b> · {i18n.language === 'en' ? 'reported at ' : 'báo lúc '}{formatDateTime(i.reportedAt)}<br /><span className="text-muted">{step(i)}. {t('settlement.escortCareNote')}</span></p>)}
+      {incidents.map(i => <p key={i.id} style={{ margin: '8px 0' }}><b>{INCIDENT_KIND[i.kind].label}</b> · {i18n.language === 'en' ? 'reported at ' : 'báo lúc '}{formatDateTime(i.reportedAt)}<br /><span className="text-muted">{step(i)}. {t('settlement.escortCareNote')}</span></p>)}
     </div>
   )
 }

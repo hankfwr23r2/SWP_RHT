@@ -4,7 +4,7 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
-import { DEPOSIT_RATE, HORSE_DOC, stepOf } from '@shared/config/booking-rules'
+import { DEPOSIT_RATE, HORSE_DOC, INCIDENT_KIND, stepOf } from '@shared/config/booking-rules'
 import { effectiveArrivalOf } from '@shared/lib/booking'
 import { formatClock, formatDate, formatDateTime, formatVND } from '@shared/lib/format'
 import { usePageData } from '@shared/routing/pageData'
@@ -16,7 +16,7 @@ import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
 import { Modal } from '@shared/ui/Modal'
 import { PolicyLink } from '@shared/ui/PolicyLink'
 import { QuoteSheet } from '@shared/ui/QuoteSheet'
-import { TripTimeline } from '@shared/ui/TripTimeline'
+import { TripTimeline, type JourneyTimelineIncident } from '@shared/ui/TripTimeline'
 import { useToast } from '@shared/ui/toast'
 import { useNow } from '@shared/ui/useNow'
 
@@ -236,7 +236,7 @@ function RouteCard({ b }: { b: CustomerBookingView }) {
 type Tab = 'journey' | 'docs' | 'insurance' | 'pay' | 'history' | 'info'
 
 export default function OrderDetailPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const tabLabel: Record<Tab, string> = {
     journey: t('orderDetail.tabs.plan'),
     docs: t('orderDetail.tabs.docs'),
@@ -261,7 +261,7 @@ export default function OrderDetailPage() {
   if (b === undefined) return <div className="page"><div className="wrap"><p className="text-muted">{t('common.loading')}</p></div></div>
   const trips = b.trips ?? []
   const next = nextStep(b, now)
-  const hasJourney = trips.some(t => t.run) || (ROUTE_VISIBLE.includes(b.status) && !!b.route)
+  const hasJourney = trips.some(t => t.run) || (ROUTE_VISIBLE.includes(b.status) && !!b.route) || !!b.incidents?.length
   const tabs: Tab[] = [...(hasJourney ? ['journey' as const] : []), ...(POST_PAYMENT.includes(b.status) ? ['docs' as const] : []), ...(b.quote ? ['pay' as const] : []), 'insurance', 'history', 'info']
   // Tab mặc định theo giai đoạn: đang đi đường thì Hành trình, đang làm giấy thì Giấy tờ, còn lại Thanh toán / Thông tin
   const auto: Tab = ROUTE_STAGE.includes(b.status) ? 'journey' : POST_PAYMENT.includes(b.status) ? 'docs' : b.quote ? 'pay' : 'info'
@@ -281,6 +281,28 @@ export default function OrderDetailPage() {
   const payOpen = b.status === 'settlement_issued' || b.status === 'payment_overdue'
   const canPayBalance = b.canPayBalance === true
   const needResubmit = b.status === 'under_review' && b.medical?.status === 'resubmit'
+  const journeyIncidents: JourneyTimelineIncident[] = (b.incidents ?? []).map(incident => ({
+    id: incident.id,
+    tripId: incident.tripId,
+    reportedAt: incident.reportedAt,
+    title: INCIDENT_KIND[incident.kind].label,
+    detail: incident.status === 'resolved'
+      ? (i18n.language === 'en'
+        ? `Resolved at ${formatDateTime(incident.resolvedAt ?? incident.reportedAt)}, transporter resumes route`
+        : `Đã xử lý xong lúc ${formatDateTime(incident.resolvedAt ?? incident.reportedAt)}, xe tiếp tục hành trình`)
+      : incident.status === 'active'
+        ? (i18n.language === 'en'
+          ? `Active emergency plan in progress${incident.newEta ? `, updated ETA ${formatDateTime(incident.newEta)}` : ''}`
+          : `Đang xử lý theo phương án đã duyệt${incident.newEta ? `, thời gian dự kiến mới ${formatDateTime(incident.newEta)}` : ''}`)
+        : (i18n.language === 'en'
+          ? 'Management is formulating a plan. The manager will call you.'
+          : 'Nhà xe đang lập và duyệt phương án, Quản lý sẽ gọi điện cho bạn'),
+  }))
+  const runningTrips = trips.filter(trip => trip.run)
+  const assignedIncidentIds = new Set(runningTrips.flatMap(trip => journeyIncidents
+    .filter(incident => incident.tripId === trip.tripId || (!incident.tripId && runningTrips.length === 1))
+    .map(incident => incident.id)))
+  const unassignedIncidents = (b.incidents ?? []).filter(incident => !assignedIncidentIds.has(incident.id))
 
   return (
     <div className="page">
@@ -343,14 +365,18 @@ export default function OrderDetailPage() {
 
           {tab === 'journey' && (
             <>
-              {trips.some(t => t.run) && (
+              {runningTrips.length > 0 && (
                 <div className="card">
                   <div className="card-header"><h3><i className="fa-solid fa-location-dot" /> Hành trình</h3>{b.status === 'in_transit' && <span className="badge badge-info">Đang chạy</span>}</div>
-                  {trips.filter(t => t.run).map((t, i) => (
+                  {runningTrips.map((t, i) => (
                     <div key={t.tripId}>
                       {trips.length > 1 && <p className="form-hint" style={{ margin: '8px 0' }}><b>Xe {trips.indexOf(t) + 1}</b> · {t.tripId}</p>}
-                      <TripTimeline trip={t} now={now} />
-                      {i < trips.filter(x => x.run).length - 1 && <hr style={{ margin: '14px 0' }} />}
+                      <TripTimeline
+                        trip={t}
+                        now={now}
+                        incidents={journeyIncidents.filter(incident => incident.tripId === t.tripId || (!incident.tripId && runningTrips.length === 1))}
+                      />
+                      {i < runningTrips.length - 1 && <hr style={{ margin: '14px 0' }} />}
                     </div>
                   ))}
                 </div>
@@ -363,7 +389,7 @@ export default function OrderDetailPage() {
                   </Suspense>
                 </div>
               )}
-              <IncidentsCard b={b} />
+              <IncidentsCard incidents={unassignedIncidents} />
               {ROUTE_VISIBLE.includes(b.status) && b.route && <RouteCard b={b} />}
               <TripsCard team={team} />
             </>
