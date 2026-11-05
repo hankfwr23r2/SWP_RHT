@@ -92,7 +92,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
   const scrolled = useScrolled(10)
   const showTop = useScrolled(600)
   const [menuOpen, setMenuOpen] = useState(false)
-  if (pathname === '/terms' && session?.role === 'customer') {
+  if ((pathname === '/terms' || pathname === '/payment/vnpay-return') && session?.role === 'customer') {
     return <CustomerLayout>{children}</CustomerLayout>
   }
   return (
