@@ -10,7 +10,7 @@ import java.util.List;
 
 // Từ thời gian lái thật của từng chặng → lịch trình thực tế: nghỉ bắt buộc, nghỉ đêm, chờ cửa khẩu mở và làm thủ tục.
 // Có trạm nghỉ ứng viên trên chặng thì nghỉ ở trạm xa nhất trong khoảng [giới hạn − nửa giờ lái liên tục tối đa, giới hạn];
-// không có thì nghỉ dọc đường đúng mốc giới hạn. Hàm thuần, không đọc DB: tham số quy định truyền vào qua Rules.
+// không có thì nhận trạm sớm hơn (từ giờ lái thứ nhất) nếu nghỉ ở đó là đủ tới cuối chặng; còn lại nghỉ dọc đường đúng mốc giới hạn. Hàm thuần, không đọc DB: tham số quy định truyền vào qua Rules.
 public final class JourneyPlanner {
 
     public enum StopKind { PICKUP, VIA, GATE, DROPOFF }
@@ -31,6 +31,9 @@ public final class JourneyPlanner {
     public record Event(EventType type, String place, Instant startAt, Instant endAt, int legIndex, double kmIntoLeg) {}
 
     public record Journey(List<Event> events, Instant arrivalAt, Instant borderArrivalAt, int crewDays) {}
+
+    // Nghỉ khi mới lái chưa tới 1 giờ thì không có ích cho ngựa
+    private static final long EARLIEST_REST_SECONDS = 3600;
 
     private JourneyPlanner() {}
 
@@ -81,6 +84,9 @@ public final class JourneyPlanner {
                 long allowed = Math.min(maxContinuous - continuous, maxPerDay - today);
                 if (remaining > allowed) {
                     Station station = pick(candidates, driven, allowed, maxContinuous / 2);
+                    if (station == null && allowed <= maxContinuous - continuous) {
+                        station = earlyStationCoveringRest(candidates, driven, allowed, remaining, maxContinuous);
+                    }
                     if (station != null) {
                         boolean night = maxPerDay - today <= maxContinuous - continuous;
                         long chunk = station.offsetSeconds() - driven;
@@ -143,6 +149,20 @@ public final class JourneyPlanner {
             long offset = station.offsetSeconds();
             if (offset > driven && offset >= earliest && offset <= latest
                     && (best == null || offset > best.offsetSeconds())) {
+                best = station;
+            }
+        }
+        return best;
+    }
+
+    // Trạm sớm (sau ít nhất 1 giờ lái) mà nghỉ ở đó thì phần còn lại của chặng không phải dừng thêm
+    private static Station earlyStationCoveringRest(List<Station> candidates, long driven, long allowed, long remaining,
+                                                    long maxContinuous) {
+        Station best = null;
+        for (Station station : candidates) {
+            long chunk = station.offsetSeconds() - driven;
+            if (chunk >= EARLIEST_REST_SECONDS && chunk <= allowed && remaining - chunk <= maxContinuous
+                    && (best == null || station.offsetSeconds() > best.offsetSeconds())) {
                 best = station;
             }
         }

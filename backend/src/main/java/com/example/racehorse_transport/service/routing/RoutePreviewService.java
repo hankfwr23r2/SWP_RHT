@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -41,6 +42,9 @@ public class RoutePreviewService {
     private static final double STATION_MAX_OFF_ROUTE_KM = 5;
     // Ranh giới Natural Earth thô: chỉ tính là ra nước ngoài khi sâu hơn 5 km
     private static final double FOREIGN_DEPTH_KM = 5;
+    // Tuyến nội địa lọt ra nước ngoài: thử ép đi qua tối đa 4 trạm nghỉ trong nước, không vòng quá 1,6 lần đường thẳng
+    private static final int MAX_DETOUR_TRIES = 4;
+    private static final double MAX_DETOUR_RATIO = 1.6;
 
     private final ValhallaClient valhalla;
     private final VietmapTollClient vietmap;
@@ -71,6 +75,7 @@ public class RoutePreviewService {
         int capacityKg = capacityKg(vehicle.getCapacity());
         int topSpeed = (int) number("TRUCK_TOP_SPEED_KMH");
         Instant departAt = Instant.ofEpochMilli(request.departAt());
+        middle = orderAlongRoad(request, middle, gate, capacityKg, topSpeed, departAt);
 
         List<GeoPoint> points = new ArrayList<>();
         List<Stop> stops = new ArrayList<>();
@@ -91,12 +96,11 @@ public class RoutePreviewService {
         knownPlaces.put(request.dropoff().name(), geo(request.dropoff()));
         List<String> names = stops.stream().map(Stop::name).toList();
 
-        RoadRoute road = truckRoute(points, capacityKg, topSpeed, departAt);
-        if (domestic) {
-            rejectIfAbroad(road, stops);
-        }
-
         List<Location> restStopLocations = restStopLocations();
+        RoadRoute road = domestic
+                ? routeInsideVietnam(points, stops, middle, restStopLocations, capacityKg, topSpeed, departAt)
+                : truckRoute(points.stream().map(ValhallaClient.Waypoint::stop).toList(), capacityKg, topSpeed, departAt);
+
         restStopLocations.forEach(l -> knownPlaces.putIfAbsent(l.getLocationName(), new GeoPoint(l.getLatitude(), l.getLongitude())));
         int gateIndex = gate == null ? -1 : middle.indexOf(gate) + 1;
         List<List<Station>> stations = IntStream.range(0, road.legs().size())
@@ -183,30 +187,118 @@ public class RoutePreviewService {
         return result;
     }
 
-    // Tuyến nội địa đi sâu vào lãnh thổ nước khác → báo chặng và trạm điều phối tự thêm ở chặng đó
-    private void rejectIfAbroad(RoadRoute road, List<Stop> stops) {
+    // Trạm điều phối chọn được xếp theo vị trí trên đường xe tải thật từ điểm đón tới điểm trả (qua cửa khẩu nếu có),
+    // không theo thứ tự bấm hay đường chim bay: tuyến cong (Châu Đốc → Cao Lãnh → Bình Dương) vẫn ghé đúng thứ tự.
+    private List<Location> orderAlongRoad(RoutePreviewRequest request, List<Location> middle, Location gate,
+                                          int capacityKg, int topSpeed, Instant departAt) {
+        if (middle.stream().filter(l -> !isGate(l)).count() < 2) {
+            return middle;
+        }
+        List<ValhallaClient.Waypoint> base = new ArrayList<>();
+        base.add(ValhallaClient.Waypoint.stop(geo(request.pickup())));
+        if (gate != null) {
+            base.add(ValhallaClient.Waypoint.stop(new GeoPoint(gate.getLatitude(), gate.getLongitude())));
+        }
+        base.add(ValhallaClient.Waypoint.stop(geo(request.dropoff())));
+        List<GeoPoint> shape = truckRoute(base, capacityKg, topSpeed, departAt).legs().stream()
+                .flatMap(leg -> leg.shape().stream()).toList();
+        if (shape.isEmpty()) {
+            return middle;
+        }
+        return middle.stream()
+                .sorted(Comparator.comparingDouble((Location l) ->
+                        RouteGeometry.project(shape, new GeoPoint(l.getLatitude(), l.getLongitude())).kmAlongShape()))
+                .toList();
+    }
+
+    private record Abroad(int legIndex, String country) {}
+
+    // Đơn nội địa: đường xe tải ngắn nhất có thể cắt qua Campuchia/Lào (vd. Châu Đốc → Bình Dương qua Svay Rieng).
+    // Chặng nào lọt ra nước ngoài thì ép xe đi qua một trạm nghỉ trong nước (điểm đi qua, không dừng), thử trạm vòng ít
+    // nhất trước; không trạm nào giúp được thì báo chặng và việc điều phối cần làm.
+    private RoadRoute routeInsideVietnam(List<GeoPoint> points, List<Stop> stops, List<Location> middle,
+                                         List<Location> restStops, int capacityKg, int topSpeed, Instant departAt) {
+        List<ValhallaClient.Waypoint> waypoints = new ArrayList<>(points.stream().map(ValhallaClient.Waypoint::stop).toList());
+        RoadRoute road = truckRoute(waypoints, capacityKg, topSpeed, departAt);
+        Abroad abroad = abroad(road);
+        while (abroad != null) {
+            int leg = abroad.legIndex();
+            GeoPoint from = points.get(leg);
+            GeoPoint to = points.get(leg + 1);
+            List<GeoPoint> candidates = detourCandidates(from, to, middle, restStops);
+            boolean fixed = false;
+            for (GeoPoint candidate : candidates) {
+                List<ValhallaClient.Waypoint> trial = new ArrayList<>(waypoints);
+                trial.add(stopIndex(waypoints, leg + 1), new ValhallaClient.Waypoint(candidate, true));
+                RoadRoute retry = truckRoute(trial, capacityKg, topSpeed, departAt);
+                Abroad still = abroad(retry);
+                if (still == null || still.legIndex() > leg) {
+                    waypoints = trial;
+                    road = retry;
+                    abroad = still;
+                    fixed = true;
+                    break;
+                }
+            }
+            if (!fixed) {
+                throw abroadException(abroad, stops);
+            }
+        }
+        return road;
+    }
+
+    // Trạm nghỉ trong nước chưa có trong tuyến, xếp theo quãng vòng thêm so với đi thẳng
+    private static List<GeoPoint> detourCandidates(GeoPoint from, GeoPoint to, List<Location> middle, List<Location> restStops) {
+        double direct = Math.max(GeoPoint.distanceKm(from, to), 1);
+        return restStops.stream()
+                .filter(l -> "VN".equals(countryCode(l.getCountry())))
+                .filter(l -> middle.stream().noneMatch(m -> m.getId().equals(l.getId())))
+                .map(l -> new GeoPoint(l.getLatitude(), l.getLongitude()))
+                .filter(p -> GeoPoint.distanceKm(from, p) + GeoPoint.distanceKm(p, to) <= direct * MAX_DETOUR_RATIO)
+                .sorted(Comparator.comparingDouble(p -> GeoPoint.distanceKm(from, p) + GeoPoint.distanceKm(p, to)))
+                .limit(MAX_DETOUR_TRIES)
+                .toList();
+    }
+
+    // Vị trí trong danh sách điểm của điểm dừng thứ stopNumber (bỏ qua các điểm đi qua đã chèn)
+    private static int stopIndex(List<ValhallaClient.Waypoint> waypoints, int stopNumber) {
+        int seen = -1;
+        for (int i = 0; i < waypoints.size(); i++) {
+            if (!waypoints.get(i).through() && ++seen == stopNumber) {
+                return i;
+            }
+        }
+        return waypoints.size();
+    }
+
+    private Abroad abroad(RoadRoute road) {
         for (int i = 0; i < road.legs().size(); i++) {
             for (GeoPoint point : road.legs().get(i).shape()) {
                 String country = foreignTerritory.countryDeeperThan(point, FOREIGN_DEPTH_KM);
-                if (country == null) {
-                    continue;
+                if (country != null) {
+                    return new Abroad(i, country);
                 }
-                Stop from = stops.get(i);
-                Stop to = stops.get(i + 1);
-                String via = to.kind() == StopKind.VIA ? to.name() : from.kind() == StopKind.VIA ? from.name() : null;
-                throw new DomesticRouteAbroadException("Tuyến nội địa đi qua lãnh thổ " + country + " ở chặng "
-                        + from.name() + " → " + to.name() + "."
-                        + (via == null ? "" : " Hãy bỏ hoặc đổi trạm " + via + "."));
             }
         }
+        return null;
     }
 
-    private RoadRoute truckRoute(List<GeoPoint> points, int capacityKg, int topSpeed, Instant departAt) {
+    private static DomesticRouteAbroadException abroadException(Abroad abroad, List<Stop> stops) {
+        Stop from = stops.get(abroad.legIndex());
+        Stop to = stops.get(abroad.legIndex() + 1);
+        String via = to.kind() == StopKind.VIA ? to.name() : from.kind() == StopKind.VIA ? from.name() : null;
+        return new DomesticRouteAbroadException("Tuyến nội địa đi qua lãnh thổ " + abroad.country() + " ở chặng "
+                + from.name() + " → " + to.name() + "."
+                + (via == null ? " Hãy chọn thêm một trạm nghỉ ở Việt Nam trên chặng này." : " Hãy bỏ hoặc đổi trạm " + via + "."));
+    }
+
+    private RoadRoute truckRoute(List<ValhallaClient.Waypoint> waypoints, int capacityKg, int topSpeed, Instant departAt) {
         // Không gồm giờ xuất phát trong khóa: cùng tuyến cùng xe thì lộ trình và báo giá dùng cùng số liệu
-        String key = "valhalla-truck|" + points.stream().map(GeoPoint::key).collect(Collectors.joining(";"))
+        String key = "valhalla-truck|" + waypoints.stream()
+                .map(w -> (w.through() ? "~" : "") + w.point().key()).collect(Collectors.joining(";"))
                 + "|" + capacityKg + "|" + topSpeed;
         return cache.find(key, RoadRoute.class).orElseGet(() -> {
-            RoadRoute fresh = valhalla.truckRoute(points, capacityKg / 1000.0, topSpeed, LocalDateTime.ofInstant(departAt, ZONE));
+            RoadRoute fresh = valhalla.truckRouteVia(waypoints, capacityKg / 1000.0, topSpeed, LocalDateTime.ofInstant(departAt, ZONE));
             cache.put(key, fresh);
             return fresh;
         });
