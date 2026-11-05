@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { DEPOSIT_RATE } from '../config/booking-rules'
 import { formatDate, formatDateTime, formatVND, formatVNDWords } from '../lib/format'
 import { PolicyLink } from './PolicyLink'
@@ -83,11 +84,16 @@ export function QuoteSheet({
   invoiceDate,
   title,
 }: QuoteSheetProps) {
+  const { t, i18n } = useTranslation()
+  const isEn = i18n.language.startsWith('en')
 
   const depositPercentage =
     total > 0
       ? Number(((deposit / total) * 100).toFixed(2))
       : DEPOSIT_RATE * 100
+  const localeStr = isEn ? 'en-US' : 'vi-VN'
+  const depositPercentStr = depositPercentage.toLocaleString(localeStr)
+  const balancePercentStr = (100 - depositPercentage).toLocaleString(localeStr)
 
   // Bóc tách cước xe + nhân sự + nhiên liệu để gộp vào "Cước dịch vụ vận chuyển ngựa trọn gói"
   const freightLines = lines.filter(l => isFreightLine(l.label))
@@ -104,7 +110,7 @@ export function QuoteSheet({
       {/* Top action toolbar */}
       <div className={s.topToolbar}>
         <div className={s.docBadge}>
-          <i className="fa-solid fa-file-invoice" /> Phiếu Báo Giá Kiêm Dự Thảo Hóa Đơn Điện Tử
+          <i className="fa-solid fa-file-invoice" /> {t('orders.quote.docBadge')}
         </div>
       </div>
 
@@ -317,24 +323,24 @@ export function QuoteSheet({
       <div className={s.paymentStages}>
         <div className={`${s.paymentCard} ${s.depositCard}`}>
           <div className={s.paymentCardTitle}>
-            <span>Đợt 1: Đặt cọc ({depositPercentage.toLocaleString('vi-VN')}%)</span>
+            <span>{t('orders.quote.stage1', { percent: depositPercentStr })}</span>
             <i className="fa-solid fa-lock" />
           </div>
           <div className={s.paymentAmount}>{formatVND(deposit)}</div>
           <div className={s.paymentNote}>
-            Thanh toán để xác nhận đơn vận chuyển, xuất Vận đơn điện tử và khóa lịch kíp xe chuyên dụng.
-            {expiresAt && <div><b>Hạn thanh toán cọc:</b> {formatDateTime(expiresAt)}</div>}
+            {t('orders.quote.stage1Note')}
+            {expiresAt && <div><b>{t('orders.quote.depositDue')}:</b> {formatDateTime(expiresAt)}</div>}
           </div>
         </div>
 
         <div className={s.paymentCard}>
           <div className={s.paymentCardTitle}>
-            <span>Đợt 2: Còn lại ({(100 - depositPercentage).toLocaleString('vi-VN')}%)</span>
+            <span>{t('orders.quote.stage2', { percent: balancePercentStr })}</span>
             <i className="fa-solid fa-hand-holding-dollar" />
           </div>
           <div className={s.paymentAmount}>{formatVND(balance)}</div>
           <div className={s.paymentNote}>
-            Thanh toán vào ngày khởi hành (D) khi Driver và Hộ tống hoàn tất thủ tục bàn giao và bốc ngựa lên xe.
+            {t('orders.quote.stage2Note')}
           </div>
         </div>
       </div>

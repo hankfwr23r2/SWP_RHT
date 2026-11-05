@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { formatDateTime } from '@shared/lib/format'
 import { horsesApi } from '@shared/services/horses'
 import type { HorseJourneyLog, HorseProfile } from '@shared/types/booking'
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export function HorseJourneyModal({ horse, onClose }: Props) {
+  const { i18n } = useTranslation()
   const [logs, setLogs] = useState<HorseJourneyLog[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string>('')
@@ -38,10 +40,10 @@ export function HorseJourneyModal({ horse, onClose }: Props) {
       title={
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <i className="fa-solid fa-passport" style={{ color: 'var(--icon-accent)' }} />
-          <span>Sổ Hành Trình Số (FEI Passport) — {horse.name}</span>
+          <span>{i18n.language === 'en' ? `Digital Journey Passport (FEI Passport) — ${horse.name}` : `Sổ Hành Trình Số (FEI Passport) — ${horse.name}`}</span>
         </div>
       }
-      subtitle={`Chip: ${horse.microchip} • Giống: ${horse.breed} • Đã tích lũy ${horse.completedTrips} chuyến đi`}
+      subtitle={i18n.language === 'en' ? `Chip: ${horse.microchip} • Breed: ${horse.breed} • Accumulated ${horse.completedTrips} shipments` : `Chip: ${horse.microchip} • Giống: ${horse.breed} • Đã tích lũy ${horse.completedTrips} chuyến đi`}
       wide
       onClose={onClose}
     >
@@ -50,21 +52,21 @@ export function HorseJourneyModal({ horse, onClose }: Props) {
         <div style={{ background: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)', color: 'white', padding: '16px 20px', borderRadius: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           <div>
             <div style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#94a3b8' }}>
-              Vị trí chuồng hiện tại
+              {i18n.language === 'en' ? 'Current Stable Location' : 'Vị trí chuồng hiện tại'}
             </div>
             <div style={{ fontSize: '1.15rem', fontWeight: 800, marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }}>
               <i className="fa-solid fa-location-dot" style={{ color: '#f97316' }} />
-              <span>{horse.currentLocationName || 'Chưa xác định chuồng lưu trú'}</span>
+              <span>{horse.currentLocationName || (i18n.language === 'en' ? 'Unassigned stable' : 'Chưa xác định chuồng lưu trú')}</span>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {horse.transitStatus === 'IN_TRANSIT' ? (
               <span className="badge badge-warning" style={{ fontSize: '0.86rem', padding: '6px 12px' }}>
-                <i className="fa-solid fa-truck-fast" /> Đang trên đường vận chuyển
+                <i className="fa-solid fa-truck-fast" /> {i18n.language === 'en' ? 'In Transit' : 'Đang trên đường vận chuyển'}
               </span>
             ) : (
               <span className="badge badge-success" style={{ fontSize: '0.86rem', padding: '6px 12px' }}>
-                <i className="fa-solid fa-warehouse" /> Đang ở chuồng (Sẵn sàng)
+                <i className="fa-solid fa-warehouse" /> {i18n.language === 'en' ? 'In Stable (Ready)' : 'Đang ở chuồng (Sẵn sàng)'}
               </span>
             )}
           </div>

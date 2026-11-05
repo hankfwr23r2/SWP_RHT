@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import type { HorseInsurance } from '../types/insurance'
 import { insuranceLabels } from '../types/insurance'
 import { formatVND } from '../lib/format'
@@ -6,26 +7,34 @@ import { formatInsuranceMoney, parseInsuranceMoney } from '../lib/insuranceMoney
 import { InsuranceDocuments } from './InsuranceDocuments'
 import s from './InsuranceFields.module.css'
 
+const insuranceLabelsEn: Record<string, string> = {
+  personal: 'Personal Transit Insurance',
+  assistance: 'Request Assistance (3rd-party)',
+  none: 'No Transit Insurance',
+}
+
 export function InsuranceSummary({ insurance, phase = 'all' }: { insurance?: Partial<HorseInsurance>; phase?: 'quote' | 'policy' | 'all' }) {
-  if (!insurance?.option) return <p className="text-muted">Bảo hiểm theo dữ liệu đơn cũ; xem báo giá đã phát hành.</p>
+  const { i18n } = useTranslation()
+  const labels = i18n.language === 'en' ? insuranceLabelsEn : insuranceLabels
+  if (!insurance?.option) return <p className="text-muted">{i18n.language === 'en' ? 'Insurance from prior order; see issued quotation.' : 'Bảo hiểm theo dữ liệu đơn cũ; xem báo giá đã phát hành.'}</p>
   const i = insurance
-  if (i.option === 'none') return <p>Khách chọn không bảo hiểm.</p>
+  if (i.option === 'none') return <p>{i18n.language === 'en' ? 'Customer opted out of transit insurance.' : 'Khách chọn không bảo hiểm.'}</p>
   const showPolicy = i.option === 'personal' || phase !== 'quote'
   return <div className={s.summary}>
-    <b>{insuranceLabels[i.option!]}</b>
-    {i.provider && <div>Đơn vị bảo hiểm: {i.provider}</div>}
+    <b>{labels[i.option!] ?? i.option}</b>
+    {i.provider && <div>{i18n.language === 'en' ? 'Insurance Provider: ' : 'Đơn vị bảo hiểm: '}{i.provider}</div>}
     {i.option === 'assistance' && <>
-      <div>{i.reviewed && i.premium != null ? `Phí thu hộ: ${formatVND(i.premium)}` : 'Chờ báo giá bên thứ ba'}</div>
-      {i.quoteValidUntil && <div>Hạn báo giá bảo hiểm: {i.quoteValidUntil}</div>}
+      <div>{i.reviewed && i.premium != null ? `${i18n.language === 'en' ? 'Brokerage fee: ' : 'Phí thu hộ: '}${formatVND(i.premium)}` : (i18n.language === 'en' ? 'Awaiting 3rd-party quote' : 'Chờ báo giá bên thứ ba')}</div>
+      {i.quoteValidUntil && <div>{i18n.language === 'en' ? 'Insurance quote valid until: ' : 'Hạn báo giá bảo hiểm: '}{i.quoteValidUntil}</div>}
     </>}
     {showPolicy && <>
-      {i.option === 'assistance' && <div>{i.arranged ? 'Đã xác nhận thu xếp hợp đồng' : 'Chờ thu xếp hợp đồng sau đặt cọc'}</div>}
-      {i.policyNumber && <div>Số hợp đồng / Giấy chứng nhận: {i.policyNumber}</div>}
-      {i.validFrom && <div>Hiệu lực: {i.validFrom} – {i.validUntil}</div>}
+      {i.option === 'assistance' && <div>{i.arranged ? (i18n.language === 'en' ? 'Insurance contract confirmed' : 'Đã xác nhận thu xếp hợp đồng') : (i18n.language === 'en' ? 'Awaiting policy arrangement after deposit' : 'Chờ thu xếp hợp đồng sau đặt cọc')}</div>}
+      {i.policyNumber && <div>{i18n.language === 'en' ? 'Policy / Certificate No.: ' : 'Số hợp đồng / Giấy chứng nhận: '}{i.policyNumber}</div>}
+      {i.validFrom && <div>{i18n.language === 'en' ? 'Validity: ' : 'Hiệu lực: '}{i.validFrom} – {i.validUntil}</div>}
     </>}
     {i.note && <p>{i.note}</p>}
-    <InsuranceDocuments urls={i.documents} names={i.documentNames} label={i.option === 'personal' ? 'Chứng từ bảo hiểm cá nhân' : 'Chứng từ báo giá'} />
-    {showPolicy && i.option === 'assistance' && !!i.policyDocuments?.length && <InsuranceDocuments urls={i.policyDocuments} names={i.documentNames} label="Chứng từ hợp đồng" />}
+    <InsuranceDocuments urls={i.documents} names={i.documentNames} label={i.option === 'personal' ? (i18n.language === 'en' ? 'Personal Insurance Docs' : 'Chứng từ bảo hiểm cá nhân') : (i18n.language === 'en' ? 'Quotation Documents' : 'Chứng từ báo giá')} />
+    {showPolicy && i.option === 'assistance' && !!i.policyDocuments?.length && <InsuranceDocuments urls={i.policyDocuments} names={i.documentNames} label={i18n.language === 'en' ? 'Policy Contract Docs' : 'Chứng từ hợp đồng'} />}
   </div>
 }
 
@@ -57,12 +66,14 @@ export function InsuranceInputs({ value, onChange, premium = false, disabled = f
   </fieldset>
 }
 export function CustomerInsuranceFields({ value, option, onChange, onBusyChange }: { value?: HorseInsurance; option: string; onChange: (v: HorseInsurance) => void; onBusyChange?: (busy: boolean) => void }) {
+  const { i18n } = useTranslation()
   const [uploading, setUploading] = useState(false)
+  const labels = i18n.language === 'en' ? insuranceLabelsEn : insuranceLabels
   return <section className={s.customerInsurance}>
-    <h4 id="insurance-option-heading">Bảo hiểm chuyến đi</h4>
-    <p>Công ty hỗ trợ liên hệ và thu hộ phí bảo hiểm do bên thứ ba cung cấp.</p>
+    <h4 id="insurance-option-heading">{i18n.language === 'en' ? 'Transit Insurance' : 'Bảo hiểm chuyến đi'}</h4>
+    <p>{i18n.language === 'en' ? 'We assist in coordinating and collecting 3rd-party transit insurance on your behalf.' : 'Công ty hỗ trợ liên hệ và thu hộ phí bảo hiểm do bên thứ ba cung cấp.'}</p>
     <div className={s.insuranceOptions} role="radiogroup" aria-labelledby="insurance-option-heading">
-      {Object.entries(insuranceLabels).map(([key, label]) => (
+      {Object.entries(labels).map(([key, label]) => (
         <label key={key} className={s.insuranceOption}>
           <input type="radio" name="insurance-option" disabled={uploading} checked={option === key} onChange={() => onChange({ option: key as HorseInsurance['option'] })} />
           <span>{label}</span>
@@ -70,6 +81,6 @@ export function CustomerInsuranceFields({ value, option, onChange, onBusyChange 
       ))}
     </div>
     {option === 'personal' && value && <InsuranceInputs value={value} onChange={onChange} onBusyChange={busy => { setUploading(busy); onBusyChange?.(busy) }} />}
-    {option === 'assistance' && <p>Phí và chứng từ được gửi cùng báo giá vận chuyển. Chưa có mức phí tại bước này.</p>}
+    {option === 'assistance' && <p>{i18n.language === 'en' ? 'Insurance premium and documents will be included in your official quotation. No upfront fee at this stage.' : 'Phí và chứng từ được gửi cùng báo giá vận chuyển. Chưa có mức phí tại bước này.'}</p>}
   </section>
 }

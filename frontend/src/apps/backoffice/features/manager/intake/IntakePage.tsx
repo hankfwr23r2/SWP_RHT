@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { formatDate, formatDateTime } from '@shared/lib/format'
 import { activeStaff } from '@shared/lib/booking'
@@ -47,6 +48,7 @@ function StaffAssignCard({
   workload?: number
   onPick: () => void
 }) {
+  const { t } = useTranslation()
   const isPicked = !!person
   return (
     <div
@@ -74,11 +76,11 @@ function StaffAssignCard({
         </span>
         {isPicked ? (
           <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#065f46', background: '#d1fae5', padding: '2px 8px', borderRadius: 999, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-            <i className="fa-solid fa-circle-check" /> Đã chỉ định
+            <i className="fa-solid fa-circle-check" /> {t('intakePage.assigned', 'Đã chỉ định')}
           </span>
         ) : (
           <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#c2410c', background: '#ffedd5', padding: '2px 8px', borderRadius: 999 }}>
-            Chưa chọn
+            {t('intakePage.unassigned', 'Chưa chọn')}
           </span>
         )}
       </div>
@@ -102,7 +104,7 @@ function StaffAssignCard({
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
           <div style={{ fontSize: '0.95rem', fontWeight: 750, color: 'var(--navy, #0f172a)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {person ? person.name : `Chưa chọn ${roleTitle.toLowerCase()}`}
+            {person ? person.name : t('intakePage.notChosen', 'Chưa chọn {{role}}', { role: roleTitle.toLowerCase() })}
           </div>
           <div style={{ fontSize: '0.76rem', color: 'var(--muted, #64748b)', marginTop: 1 }}>
             {roleDesc}
@@ -111,7 +113,7 @@ function StaffAssignCard({
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.76rem', color: 'var(--navy, #0f172a)', marginTop: 4 }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '2px 8px', borderRadius: 6, background: '#f1f5f9', border: '1px solid #cbd5e1', fontWeight: 650 }}>
                 <i className="fa-solid fa-briefcase" style={{ color: '#ea580c', fontSize: '0.7rem' }} />
-                Khối lượng công việc: <b>{workload ?? 0} đơn</b>
+                {t('intakePage.workload', 'Khối lượng công việc: {{count}} đơn', { count: workload ?? 0 })}
               </span>
             </div>
           )}
@@ -120,10 +122,10 @@ function StaffAssignCard({
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--line, #f1f5f9)', paddingTop: 8, marginTop: 2 }}>
         <span style={{ fontSize: '0.75rem', color: 'var(--muted, #64748b)' }}>
-          {isPicked ? `Mã nhân sự: ${person.id}` : 'Bấm để chọn từ danh sách'}
+          {isPicked ? t('intakePage.staffId', 'Mã nhân sự: {{id}}', { id: person.id }) : t('intakePage.clickToPick', 'Bấm để chọn từ danh sách')}
         </span>
         <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#ea580c', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-          {isPicked ? 'Thay đổi' : 'Chọn người'} <i className="fa-solid fa-angle-right" style={{ fontSize: '0.72rem' }} />
+          {isPicked ? t('intakePage.change', 'Thay đổi') : t('intakePage.pickPerson', 'Chọn người')} <i className="fa-solid fa-angle-right" style={{ fontSize: '0.72rem' }} />
         </span>
       </div>
     </div>
@@ -131,6 +133,7 @@ function StaffAssignCard({
 }
 
 export function IntakeModal({ b, allBookings, onClose, onDone }: { b: Booking; allBookings?: Booking[]; onClose: () => void; onDone: () => void }) {
+  const { t } = useTranslation()
   const toast = useToast()
   const { session } = useAuth()
   const { data: staff } = useLoad(staffApi.list)
@@ -181,7 +184,7 @@ export function IntakeModal({ b, allBookings, onClose, onDone }: { b: Booking; a
     setBusy(true)
     try {
       await bookingsApi.activate(b.id, session!.name, { id: a.id, name: a.name }, { id: c.id, name: c.name })
-      toast(`Đã tiếp nhận ${b.id}, đã giao Chuyên viên và Điều phối viên`)
+      toast(t('intakePage.receiveSuccess', 'Đã tiếp nhận {{id}}, đã giao Chuyên viên và Điều phối viên', { id: b.id }))
       onDone()
     } catch (e) { toast(e instanceof Error ? e.message : 'Không tiếp nhận được', 'error'); setBusy(false) }
   }
@@ -190,7 +193,7 @@ export function IntakeModal({ b, allBookings, onClose, onDone }: { b: Booking; a
     setBusy(true)
     try {
       await bookingsApi.rejectOrder(b.id, session!.name, 'manager', reason ?? '')
-      toast(`Đã từ chối ${b.id}, khách nhận được lý do`)
+      toast(t('intakePage.rejectSuccess', 'Đã từ chối {{id}}, khách nhận được lý do', { id: b.id }))
       onDone()
     } catch (e) { toast(e instanceof Error ? e.message : 'Không từ chối được', 'error'); setBusy(false) }
   }
@@ -223,11 +226,11 @@ export function IntakeModal({ b, allBookings, onClose, onDone }: { b: Booking; a
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '2px 8px', borderRadius: 6, background: b.type === 'international' ? '#eff6ff' : '#f1f5f9', color: b.type === 'international' ? '#1d4ed8' : '#475569', border: '1px solid var(--line, #cbd5e1)' }}>
-              {b.type === 'international' ? `Quốc tế (${COUNTRIES[b.origin.country]?.name || b.origin.country} → ${COUNTRIES[b.dest.country]?.name || b.dest.country})` : 'Trong nước'}
+              {b.type === 'international' ? `Quốc tế (${COUNTRIES[b.origin.country]?.name || b.origin.country} → ${COUNTRIES[b.dest.country]?.name || b.dest.country})` : t('managerBoard.domestic', 'Trong nước')}
             </span>
             {waitHours >= 24 && (
               <span style={{ fontSize: '0.72rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a' }}>
-                <i className="fa-regular fa-clock" /> Đã chờ {waitHours}h
+                <i className="fa-regular fa-clock" /> {t('intakePage.waitedHours', 'Chờ {{hours}}h', { hours: waitHours })}
               </span>
             )}
           </div>
@@ -235,43 +238,43 @@ export function IntakeModal({ b, allBookings, onClose, onDone }: { b: Booking; a
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, fontSize: '0.82rem', color: 'var(--muted, #64748b)' }}>
           <div>
-            <b>Khởi hành:</b> <span style={{ color: 'var(--navy, #0f172a)' }}>{formatDate(b.departAt)}</span>
+            <b>{t('intakePage.departure', 'Khởi hành')}:</b> <span style={{ color: 'var(--navy, #0f172a)' }}>{formatDate(b.departAt)}</span>
           </div>
           <div>
-            <b>Hạn thẩm định (SLA):</b> <span style={{ color: '#059669', fontWeight: 700 }}>{formatDate(slaDeadline)} (17:00)</span>
+            <b>{t('intakePage.slaDeadline', 'Hạn thẩm định (SLA)')}:</b> <span style={{ color: '#059669', fontWeight: 700 }}>{formatDate(slaDeadline)} (17:00)</span>
           </div>
           <div>
-            <b>Số lượng ngựa:</b> <span style={{ color: 'var(--navy, #0f172a)', fontWeight: 700 }}>{b.horses.length} con</span> ({b.horses.map(h => h.name).join(', ')})
+            <b>{t('intakePage.horsesCount', 'Số lượng ngựa')}:</b> <span style={{ color: 'var(--navy, #0f172a)', fontWeight: 700 }}>{t('intakePage.horsesUnit', '{{count}} con', { count: b.horses.length })}</span> ({b.horses.map(h => h.name).join(', ')})
           </div>
           {b.gate && (
             <div>
-              <b>Cửa khẩu:</b> <span style={{ color: 'var(--navy, #0f172a)' }}>{b.gate}</span>
+              <b>{t('intakePage.borderGate', 'Cửa khẩu')}:</b> <span style={{ color: 'var(--navy, #0f172a)' }}>{b.gate}</span>
             </div>
           )}
           <div>
-            <b>Khách đặt đơn:</b> <span style={{ color: 'var(--navy, #0f172a)' }}>{b.customer}</span>
+            <b>{t('intakePage.bookedBy', 'Khách đặt đơn')}:</b> <span style={{ color: 'var(--navy, #0f172a)' }}>{b.customer}</span>
           </div>
           <div>
-            <b>Gửi lúc:</b> <span style={{ color: 'var(--navy, #0f172a)' }}>{formatDateTime(b.createdAt)}</span>
+            <b>{t('intakePage.submittedAt', 'Gửi lúc')}:</b> <span style={{ color: 'var(--navy, #0f172a)' }}>{formatDateTime(b.createdAt)}</span>
           </div>
         </div>
       </div>
 
       <h4 style={{ margin: '0 0 10px', fontSize: '0.98rem', fontWeight: 750, color: 'var(--navy, #0f172a)' }}>
-        Giao việc thẩm định song song
+        {t('intakePage.parallelAssignTitle', 'Giao việc thẩm định song song')}
       </h4>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14 }}>
         <StaffAssignCard
-          roleTitle="Chuyên viên"
-          roleDesc="Duyệt hồ sơ thú y, hộ chiếu & xét nghiệm ngựa"
+          roleTitle={t('intakePage.specialistRole', 'Chuyên viên')}
+          roleDesc={t('intakePage.specialistDesc', 'Duyệt hồ sơ thú y, hộ chiếu & xét nghiệm ngựa')}
           icon="fa-user-doctor"
           person={spId ? specialists.find(x => x.id === spId) : undefined}
           workload={spId ? (workloadMap[spId] ?? 0) : undefined}
           onPick={() => setPick('specialist')}
         />
         <StaffAssignCard
-          roleTitle="Điều phối viên"
-          roleDesc="Bố trí xe, tài xế, hộ tống & lập lộ trình di chuyển"
+          roleTitle={t('intakePage.coordinatorRole', 'Điều phối viên')}
+          roleDesc={t('intakePage.coordinatorDesc', 'Bố trí xe, tài xế, hộ tống & lập lộ trình di chuyển')}
           icon="fa-route"
           person={coId ? coordinators.find(x => x.id === coId) : undefined}
           workload={coId ? (workloadMap[coId] ?? 0) : undefined}
@@ -287,19 +290,19 @@ export function IntakeModal({ b, allBookings, onClose, onDone }: { b: Booking; a
         onClose={onClose} title={`Tiếp nhận ${b.id}`} subtitle={`${b.customer} · gửi lúc ${formatDateTime(b.createdAt)}`}
         top={reason !== null && (
           <div className="form-group">
-            <label htmlFor="rj" className="required">Lý do từ chối <span style={{ color: 'var(--text-muted, #64748b)', fontWeight: 400, fontSize: '0.85em' }}>(khách sẽ thấy)</span></label>
+            <label htmlFor="rj" className="required">{t('intakePage.rejectReason', 'Lý do từ chối')} <span style={{ color: 'var(--text-muted, #64748b)', fontWeight: 400, fontSize: '0.85em' }}>{t('intakePage.clientWillSee', '(khách sẽ thấy)')}</span></label>
             <textarea id="rj" className="form-control" rows={3} value={reason} onChange={e => setReason(e.target.value)} />
           </div>
         )}
         tabs={[
-          { id: 'assign', label: 'Tổng quan & Giao việc', icon: 'fa-user-check', state: spId && coId ? 'ok' : 'warn', content: overviewAndAssign },
-          { id: 'docs', label: `Hồ sơ ngựa (${b.horses.length})`, icon: 'fa-file-medical', content: <HorseDocsSection b={b} reviewed={false} /> },
-          { id: 'order', label: 'Thông tin chuyến đi', icon: 'fa-clipboard-list', content: <OrderInfo b={b} /> },
-          { id: 'customer', label: 'Bên gửi & Bên nhận', icon: 'fa-users', content: <PartiesInfo b={b} /> },
+          { id: 'assign', label: t('intakePage.tabAssign', 'Tổng quan & Giao việc'), icon: 'fa-user-check', state: spId && coId ? 'ok' : 'warn', content: overviewAndAssign },
+          { id: 'docs', label: `${t('intakePage.tabHorseDocs', 'Hồ sơ ngựa ({{count}})', { count: b.horses.length })}`, icon: 'fa-file-medical', content: <HorseDocsSection b={b} reviewed={false} /> },
+          { id: 'order', label: t('intakePage.tabTripInfo', 'Thông tin chuyến đi'), icon: 'fa-clipboard-list', content: <OrderInfo b={b} /> },
+          { id: 'customer', label: t('intakePage.tabParties', 'Bên gửi & Bên nhận'), icon: 'fa-users', content: <PartiesInfo b={b} /> },
         ]}
         footer={reason === null
-          ? <><button className="btn btn-ghost" onClick={onClose}>Đóng</button><button className="btn btn-ghost" onClick={() => setReason('')}><i className="fa-solid fa-ban" /> Từ chối đơn</button><button className="btn btn-primary" disabled={busy || !spId || !coId} onClick={activate}><i className="fa-solid fa-play" /> Tiếp nhận và kích hoạt thẩm định</button></>
-          : <><button className="btn btn-ghost" onClick={() => setReason(null)}>Quay lại</button><button className="btn btn-danger" disabled={busy || !reason.trim()} onClick={reject}><i className="fa-solid fa-ban" /> Xác nhận từ chối</button></>}
+          ? <><button className="btn btn-ghost" onClick={onClose}>{t('intakePage.closeBtn', 'Đóng')}</button><button className="btn btn-ghost" onClick={() => setReason('')}><i className="fa-solid fa-ban" /> {t('intakePage.rejectOrderBtn', 'Từ chối đơn')}</button><button className="btn btn-primary" disabled={busy || !spId || !coId} onClick={activate}><i className="fa-solid fa-play" /> {t('intakePage.activateIntakeBtn', 'Tiếp nhận và kích hoạt thẩm định')}</button></>
+          : <><button className="btn btn-ghost" onClick={() => setReason(null)}>{t('intakePage.backBtn', 'Quay lại')}</button><button className="btn btn-danger" disabled={busy || !reason.trim()} onClick={reject}><i className="fa-solid fa-ban" /> {t('intakePage.confirmRejectBtn', 'Xác nhận từ chối')}</button></>}
       />
       {pick && staff && (
         <StaffPicker
@@ -316,6 +319,7 @@ export function IntakeModal({ b, allBookings, onClose, onDone }: { b: Booking; a
 }
 
 export default function IntakePage() {
+  const { t } = useTranslation()
   const { all, reload } = usePageData<typeof bookingListLoader>()
   const [tab, setTab] = useState<Tab>('new')
   const [open, setOpen] = useState<Booking | null>(null)
@@ -323,10 +327,10 @@ export default function IntakePage() {
   const fresh = list.filter(b => b.status === 'pending_intake')
   const running = list.filter(b => b.status === 'under_review')
   const columns: Column<Booking>[] = [
-    { head: 'Mã đơn', cell: b => idCell(b) },
-    { head: 'Khách hàng', cell: b => b.customer, nowrap: true },
+    { head: t('intakePage.colOrderId', 'Mã đơn'), cell: b => idCell(b) },
+    { head: t('intakePage.colCustomer', 'Khách hàng'), cell: b => b.customer, nowrap: true },
     {
-      head: 'Tuyến',
+      head: t('intakePage.colRoute', 'Tuyến'),
       cell: b => (
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           {routeCell(placeShort(b.origin.name), placeShort(b.dest.name))}
@@ -344,17 +348,17 @@ export default function IntakePage() {
               }}
               title="Chuyến vận chuyển quốc tế"
             >
-              Quốc tế
+              {t('managerBoard.international', 'Quốc tế')}
             </span>
           )}
         </div>
       ),
     },
-    { head: 'Khởi hành', cell: b => formatDate(b.departAt), nowrap: true },
-    { head: 'Ngựa', cell: b => `${b.horses.length} con`, nowrap: true },
+    { head: t('intakePage.colDeparture', 'Khởi hành'), cell: b => formatDate(b.departAt), nowrap: true },
+    { head: t('intakePage.colHorses', 'Ngựa'), cell: b => t('intakePage.horsesUnit', '{{count}} con', { count: b.horses.length }), nowrap: true },
     tab === 'new'
       ? {
-          head: 'Gửi lúc',
+          head: t('intakePage.colSubmitted', 'Gửi lúc'),
           cell: b => {
             const waitHours = Math.max(0, Math.round((Date.now() - b.createdAt) / (1000 * 3600)))
             const isWaitingLong = waitHours >= 24
@@ -375,7 +379,7 @@ export default function IntakePage() {
                     }}
                     title={`Đơn đã chờ tiếp nhận ${waitHours} giờ`}
                   >
-                    <i className="fa-regular fa-clock" /> Chờ {waitHours}h
+                    <i className="fa-regular fa-clock" /> {t('intakePage.waitedHours', 'Chờ {{hours}}h', { hours: waitHours })}
                   </span>
                 )}
               </div>
@@ -384,7 +388,7 @@ export default function IntakePage() {
           nowrap: true,
         }
       : {
-          head: 'Thẩm định & Hạn SLA',
+          head: t('intakePage.colAppraisal', 'Thẩm định & Hạn SLA'),
           cell: b => {
             const deadline = appraisalDeadline(b.createdAt, b.departAt)
             const msLeft = deadline - Date.now()
@@ -405,20 +409,20 @@ export default function IntakePage() {
                   title={`Hạn chót thẩm định toàn bộ đơn: ${formatDateTime(deadline)}`}
                 >
                   <i className={`fa-regular ${isOverdue ? 'fa-circle-exclamation' : 'fa-hourglass-half'}`} style={{ color: isOverdue ? '#dc2626' : '#ea580c' }} />
-                  {isOverdue ? `Quá hạn SLA (${formatDate(deadline)})` : `Hạn SLA: ${formatDate(deadline)} (${daysLeft} ngày)`}
+                  {isOverdue ? t('intakePage.slaOverdue', 'Quá hạn SLA ({{date}})', { date: formatDate(deadline) }) : t('intakePage.slaDueIn', 'Hạn SLA: {{date}} ({{days}} ngày)', { date: formatDate(deadline), days: daysLeft })}
                 </span>
               </div>
             )
           },
         },
-    { head: 'Trạng thái', cell: b => statusCell(b.status) },
-    { head: 'Thao tác', cell: b => (tab === 'new' ? <button className="btn btn-primary btn-sm" onClick={() => setOpen(b)}>Tiếp nhận</button> : null), right: true },
+    { head: t('intakePage.colStatus', 'Trạng thái'), cell: b => statusCell(b.status) },
+    { head: t('intakePage.colAction', 'Thao tác'), cell: b => (tab === 'new' ? <button className="btn btn-primary btn-sm" onClick={() => setOpen(b)}>{t('intakePage.intakeAction', 'Tiếp nhận')}</button> : null), right: true },
   ]
   return (
     <>
-      <ListPage title="Tiếp nhận đơn hàng" subtitle="Giao Chuyên viên và Điều phối viên thẩm định song song." tabs={[['new', 'Chờ tiếp nhận', fresh.length], ['running', 'Đang thẩm định', running.length]]} tab={tab} onTab={setTab} hot={['new']}
+      <ListPage title={t('intakePage.title', 'Tiếp nhận đơn hàng')} subtitle={t('intakePage.subtitle', 'Giao Chuyên viên và Điều phối viên thẩm định song song.')} tabs={[['new', t('intakePage.tabNew', 'Chờ tiếp nhận'), fresh.length], ['running', t('intakePage.tabRunning', 'Đang thẩm định'), running.length]]} tab={tab} onTab={setTab} hot={['new']}
         rows={tab === 'new' ? fresh : running} rowKey={b => b.id} columns={columns} haystack={b => [b.id, b.customer, b.origin.name, b.dest.name]} dateOf={b => b.departAt} loaded={!!all}
-        emptyText={tab === 'new' ? 'Không có đơn nào chờ tiếp nhận.' : 'Không có đơn nào đang thẩm định.'} />
+        emptyText={tab === 'new' ? t('intakePage.emptyNew', 'Không có đơn nào chờ tiếp nhận.') : t('intakePage.emptyRunning', 'Không có đơn nào đang thẩm định.')} />
       {open && (
         <IntakeModal
           b={open}

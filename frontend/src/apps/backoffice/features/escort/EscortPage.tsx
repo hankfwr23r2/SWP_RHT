@@ -1,5 +1,6 @@
 // App Hộ tống (Escort): nhận Lệnh điều xe, chuẩn bị tủ thuốc (Flow 3), rồi quét chip và ghi nhật ký an sinh (Flow 4, PRD mục 4.4, 5). Mỗi xe một chuyến riêng.
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { formatDateTime } from '@shared/lib/format'
 import { useAutoRefresh } from '@shared/services/useLoad'
@@ -25,6 +26,7 @@ const KIT = [
 ]
 
 export default function EscortPage() {
+  const { t } = useTranslation()
   const { session } = useAuth()
   const toast = useToast()
   const now = useNow()
@@ -34,12 +36,12 @@ export default function EscortPage() {
   const [busy, setBusy] = useState(false)
   useAutoRefresh(reload)
 
-  if (!ready) return <p className="text-muted">Đang tải…</p>
-  if (!trip) return <Empty text="Bạn chưa có chuyến nào cần xử lý." />
+  if (!ready) return <p className="text-muted">{t('common.loading', 'Đang tải...')}</p>
+  if (!trip) return <Empty text={t('fieldCrew.noTrips', 'Bạn chưa có chuyến nào cần xử lý.')} />
 
-  const { b, t } = trip
-  const acked = t.acks?.escort
-  const step = crewStep(b, t, 'escort')
+  const { b, t: tr } = trip
+  const acked = tr.acks?.escort
+  const step = crewStep(b, tr, 'escort')
   const run = async (fn: () => Promise<unknown>, msg: string) => {
     setBusy(true)
     try {
@@ -58,12 +60,12 @@ export default function EscortPage() {
 
   return (
     <>
-      <TripPicker trips={trips} value={t.tripId} onChange={id => { setSelected(id); setChecked([]) }} />
-      <TripHeader b={b} t={t} />
-      <Segmented<Tab> value={tab} onChange={setTab} tabs={[['job', 'Việc', 'fa-list-check'], ['journey', 'Hành trình', 'fa-route'], ['manifest', 'Lệnh', 'fa-clipboard-list']]} />
+      <TripPicker trips={trips} value={tr.tripId} onChange={id => { setSelected(id); setChecked([]) }} />
+      <TripHeader b={b} t={tr} />
+      <Segmented<Tab> value={tab} onChange={setTab} tabs={[['job', t('fieldCrew.tabJob', 'Việc'), 'fa-list-check'], ['journey', t('fieldCrew.tabJourney', 'Hành trình'), 'fa-route'], ['manifest', t('fieldCrew.tabManifest', 'Lệnh'), 'fa-clipboard-list']]} />
 
-      {tab === 'manifest' && <ManifestView b={b} trip={t} vehicle={vehicle} driver={driver} escort={escort} />}
-      {tab === 'journey' && <Panel title="Các mốc hành trình" icon="fa-route"><TripTimeline trip={t} now={now} staff /></Panel>}
+      {tab === 'manifest' && <ManifestView b={b} trip={tr} vehicle={vehicle} driver={driver} escort={escort} />}
+      {tab === 'journey' && <Panel title={t('fieldCrew.journeyMilestones', 'Các mốc hành trình')} icon="fa-route"><TripTimeline trip={tr} now={now} staff /></Panel>}
       {tab === 'job' && (
         <>
           {step === 'ready' && (
@@ -75,7 +77,7 @@ export default function EscortPage() {
             <Panel title="Nhận lệnh và chuẩn bị" icon="fa-clipboard-check">
               <p>Lệnh điều xe đã phát. Tick từng mục khi đã chuẩn bị, rồi xác nhận nhận lệnh.</p>
               <Checklist items={KIT} checked={checked} onChange={setChecked} />
-              <button className={`btn btn-primary ${s.big}`} disabled={checked.length < KIT.length || busy} onClick={() => run(() => bookingsApi.acknowledgeTrip(b.id, t.tripId, 'escort', session!.name), 'Đã xác nhận nhận Lệnh điều xe')}>
+              <button className={`btn btn-primary ${s.big}`} disabled={checked.length < KIT.length || busy} onClick={() => run(() => bookingsApi.acknowledgeTrip(b.id, tr.tripId, 'escort', session!.name), 'Đã xác nhận nhận Lệnh điều xe')}>
                 <i className="fa-solid fa-check" /> Tôi đã nhận lệnh ({checked.length}/{KIT.length})
               </button>
             </Panel>
@@ -90,7 +92,7 @@ export default function EscortPage() {
               <p>Giấy tờ đã xong. Đang chờ tài xế nhận lệnh.</p>
             </Panel>
           )}
-          <EscortJob key={t.tripId} b={b} t={t} run={run} />
+          <EscortJob key={tr.tripId} b={b} t={tr} run={run} />
         </>
       )}
     </>

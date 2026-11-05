@@ -1,6 +1,7 @@
 // Bước 3: chọn dịch vụ đang được áp dụng cho từng ngựa.
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { formatVND } from '@shared/lib/format'
 import { CustomerInsuranceFields } from '@shared/ui/InsuranceFields'
 import { usePageData } from '@shared/routing/pageData'
@@ -38,6 +39,7 @@ function hasExplicitServiceSelection(config: HorseConfig, category: CatalogCateg
 }
 
 export default function Step3ServicesPage() {
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const { draft, save } = useBookingDraft()
   const { horses, services = [] } = usePageData<typeof horseListLoader>()
@@ -47,6 +49,11 @@ export default function Step3ServicesPage() {
   const [ack, setAck] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+
+  const serviceGroups = [
+    { key: 'stall' as CatalogCategory, label: i18n.language === 'en' ? 'Transporter Stall' : 'Khoang trên xe', icon: 'fa-border-all' },
+    { key: 'feed' as CatalogCategory, label: i18n.language === 'en' ? 'Feeding Program' : 'Gói thức ăn', icon: 'fa-wheat-awn' },
+  ]
 
   useEffect(() => {
     if (submitted) document.querySelector('[data-problem]')?.scrollIntoView({ block: 'center', behavior: 'smooth' })
@@ -99,12 +106,12 @@ export default function Step3ServicesPage() {
   }
 
   return (
-    <BookingShell step={3} title="Dịch vụ và bảo hiểm" subtitle="Chọn khoang, thức ăn và nhu cầu bảo hiểm cho từng ngựa. Phí bảo hiểm bên thứ ba được gửi cùng báo giá vận chuyển.">
+    <BookingShell step={3} title={t('bookingWizard.step3Title')} subtitle={t('bookingWizard.step3Subtitle')}>
       {activeHorse && (
         <>
           <div className={s.horseNavigator} aria-label="Chọn ngựa để thiết lập dịch vụ">
             <label className={s.horseSelectLabel}>
-              <span>Ngựa {activeIndex + 1}/{rows.length}</span>
+              <span>{t('bookingWizard.horseNav', { current: activeIndex + 1, total: rows.length })}</span>
               <select className="form-control" value={activeHorse.id} disabled={uploading} onChange={e => setActiveIndex(rows.findIndex(h => h.id === e.target.value))}>
                 {rows.map((horse, index) => <option key={horse.id} value={horse.id}>{index + 1}. {horse.name}</option>)}
               </select>
@@ -120,7 +127,7 @@ export default function Step3ServicesPage() {
                   <div><div id={`h-${horse.id}`} className={s.horseName}>{horse.name}</div><div className={s.horseChip}>Chip {horse.microchip} · {horse.breed} · {SEX_LABEL[horse.sex]}</div></div>
                 </div>
 
-                {SERVICE_GROUPS.map(group => {
+                {serviceGroups.map(group => {
                   const prefix = `${group.key.toUpperCase()}_`
                   const options = services.filter(service => service.serviceCode.startsWith(prefix))
                   const resolved = serviceOptionFor(services, current, group.key)
@@ -135,6 +142,11 @@ export default function Step3ServicesPage() {
                           ? { 'data-problem': true } : {})}>
                         {options.length ? options.map(service => {
                           const price = service.price
+                          const billingLabel = service.billingUnit === 'PER_HORSE_DAY'
+                            ? (i18n.language === 'en' ? 'horse × day' : 'ngựa × ngày')
+                            : service.billingUnit === 'PER_HORSE'
+                              ? (i18n.language === 'en' ? 'horse' : 'ngựa')
+                              : (i18n.language === 'en' ? 'trip' : 'chuyến')
                           return (
                           <label key={service.id} className={s.opt}>
                             <input
@@ -148,12 +160,12 @@ export default function Step3ServicesPage() {
                             />
                             <b>{service.serviceName}</b>
                             <span>{price > 0
-                                ? `+${formatVND(price)} / ${service.billingUnit === 'PER_HORSE_DAY' ? 'ngựa × ngày' : service.billingUnit === 'PER_HORSE' ? 'ngựa' : 'chuyến'}`
-                                : 'Miễn phí / Đã gồm'}</span>
+                                ? `+${formatVND(price)} / ${billingLabel}`
+                                : t('bookingWizard.freeIncluded')}</span>
                             {service.description && <small>{service.description}</small>}
                           </label>
                           )
-                        }) : <span>Hiện chưa có lựa chọn đang áp dụng.</span>}
+                        }) : <span>{t('bookingWizard.noOptions')}</span>}
                       </div>
                     </div>
                   )
@@ -170,17 +182,17 @@ export default function Step3ServicesPage() {
         <div className="card" data-card {...(submitted && !ack ? { 'data-problem': true } : {})}>
           <label className={s.ack}>
             <input type="checkbox" checked={ack} onChange={e => setAck(e.target.checked)} />
-            <span>Tôi hiểu và đồng ý <PolicyLink doc="liability">Điều khoản Trách nhiệm Hạn chế</PolicyLink> của nhà xe cho {declined.map(h => h.name).join(', ')}, những ngựa tôi không mua bảo hiểm.</span>
+            <span>{i18n.language === 'en' ? <>I understand and agree to the transporter <PolicyLink doc="liability">Limited Liability Terms</PolicyLink> for {declined.map(h => h.name).join(', ')}, whose transit insurance was declined.</> : <>Tôi hiểu và đồng ý <PolicyLink doc="liability">Điều khoản Trách nhiệm Hạn chế</PolicyLink> của nhà xe cho {declined.map(h => h.name).join(', ')}, những ngựa tôi không mua bảo hiểm.</>}</span>
           </label>
-          {submitted && !ack && <div className="form-error">Cần xác nhận để tiếp tục.</div>}
+          {submitted && !ack && <div className="form-error">{t('bookingWizard.ackRequired')}</div>}
         </div>
       )}
 
       {submitted && problems.length > 0 && <div className="form-error">{problems[0]}</div>}
 
       <div className={s.actions}>
-        <Link to="/booking/horses" className="btn btn-ghost"><i className="fa-solid fa-arrow-left" /> Chọn ngựa</Link>
-        <button type="button" className="btn btn-primary" onClick={next} disabled={uploading}>Tiếp tục: Xác nhận <i className="fa-solid fa-arrow-right" /></button>
+        <Link to="/booking/horses" className="btn btn-ghost"><i className="fa-solid fa-arrow-left" /> {t('bookingWizard.btnBackHorses')}</Link>
+        <button type="button" className="btn btn-primary" onClick={next} disabled={uploading}>{t('bookingWizard.btnNextReview')} <i className="fa-solid fa-arrow-right" /></button>
       </div>
     </BookingShell>
   )

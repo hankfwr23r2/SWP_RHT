@@ -1,6 +1,7 @@
 // Trang danh sách của Manager kiểu hệ thống quản lý đơn: thanh tab trạng thái có số đơn, ô tìm kiếm, lọc ngày, bảng, chân bảng và phân trang.
 import { useState, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { STATUS_SHORT, type BookingStatus } from '@shared/config/booking-rules'
 import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
 import { usePagination } from '@shared/ui/usePagination'
@@ -37,6 +38,7 @@ interface Props<T, K extends string> {
 const day = (v: string, end = false) => (v ? new Date(`${v}T${end ? '23:59:59' : '00:00:00'}`).getTime() : 0)
 
 export function ListPage<T, K extends string>({ title, subtitle, tabs, tab, onTab, hot = [], rows, rowKey, columns, haystack, dateOf, dateLabel = 'Khởi hành', loaded, emptyText, summary, hotRow, actions, filters, searchPlaceholder = 'Tìm theo mã đơn, khách hàng, tuyến…', hideTabs, hideCount, countLabel = 'đơn hàng' }: Props<T, K>) {
+  const { t } = useTranslation()
   const [params] = useSearchParams()
   const [text, setText] = useState(params.get('q') ?? '') // tìm từ ô tìm kiếm trên thanh trên
   const [from, setFrom] = useState('')
@@ -55,7 +57,7 @@ export function ListPage<T, K extends string>({ title, subtitle, tabs, tab, onTa
         <div className={s.titleRow}><div className={s.title}><h1>{title}</h1>{subtitle && <p>{subtitle}</p>}</div>{actions}</div>
         <section className={s.panel}>
           {tabs && onTab && !hideTabs && (
-            <div className={s.tabs} role="tablist" aria-label="Trạng thái">
+            <div className={s.tabs} role="tablist" aria-label={t('listPage.status', 'Trạng thái')}>
             {tabs.map(([k, label, n, hint]) => (
               <button key={k} role="tab" aria-selected={tab === k} title={hint} className={`${s.tab} ${tab === k ? s.tabOn : ''} ${n === 0 && k !== tabs[0][0] ? s.tabZero : ''}`} onClick={() => change(() => onTab(k))}>
                 {label}<span className={`${s.num} ${hot.includes(k) && n ? s.numHot : ''}`}>{n}</span>
@@ -65,9 +67,9 @@ export function ListPage<T, K extends string>({ title, subtitle, tabs, tab, onTa
           )}
           <div className={s.filters}>
             {filters}
-            <label className={s.search}><i className="fa-solid fa-magnifying-glass" aria-hidden="true" /><input className="form-control" placeholder={searchPlaceholder} value={text} onChange={e => change(() => setText(e.target.value))} /></label>
-            {dateOf && <div className={s.dates}>{dateLabel}<input type="date" className="form-control" aria-label={`${dateLabel} từ ngày`} value={from} onChange={e => change(() => setFrom(e.target.value))} />→<input type="date" className="form-control" aria-label={`${dateLabel} đến ngày`} value={to} onChange={e => change(() => setTo(e.target.value))} /></div>}
-            {filtering && <button className="btn btn-ghost btn-sm" onClick={() => change(() => { setText(''); setFrom(''); setTo('') })}>Xóa lọc</button>}
+            <label className={s.search}><i className="fa-solid fa-magnifying-glass" aria-hidden="true" /><input className="form-control" placeholder={searchPlaceholder === 'Tìm theo mã đơn, khách hàng, tuyến…' ? t('listPage.searchDefault', searchPlaceholder) : searchPlaceholder} value={text} onChange={e => change(() => setText(e.target.value))} /></label>
+            {dateOf && <div className={s.dates}>{dateLabel}<input type="date" className="form-control" aria-label={t('listPage.dateFrom', '{{label}} từ ngày', { label: dateLabel })} value={from} onChange={e => change(() => setFrom(e.target.value))} />→<input type="date" className="form-control" aria-label={t('listPage.dateTo', '{{label}} đến ngày', { label: dateLabel })} value={to} onChange={e => change(() => setTo(e.target.value))} /></div>}
+            {filtering && <button className="btn btn-ghost btn-sm" onClick={() => change(() => { setText(''); setFrom(''); setTo('') })}>{t('listPage.clearFilter', 'Xóa lọc')}</button>}
           </div>
           <div className={s.tableWrap}>
             <table className={s.table}>
@@ -80,10 +82,10 @@ export function ListPage<T, K extends string>({ title, subtitle, tabs, tab, onTa
                 ))}
               </tbody>
             </table>
-            {loaded && !shown.length && <div className={s.empty}><i className="fa-solid fa-box-open" /><p>{filtering ? 'Không có đơn nào khớp bộ lọc.' : emptyText}</p></div>}
+            {loaded && !shown.length && <div className={s.empty}><i className="fa-solid fa-box-open" /><p>{filtering ? t('listPage.noMatch', 'Không có đơn nào khớp bộ lọc.') : emptyText}</p></div>}
           </div>
           {(!hideCount || summary) && <div className={s.foot}>
-            {!hideCount && <span>Hiển thị <b>{shown.length}</b> {countLabel}</span>}
+            {!hideCount && <span>{t('listPage.showingCount', 'Hiển thị {{count}} {{label}}', { count: shown.length, label: countLabel === 'đơn hàng' ? t('listPage.orderUnit', 'đơn hàng') : countLabel })}</span>}
             {summary && <span>{summary(shown)}</span>}
           </div>}
           {shown.length > 20 && pager.bar}
@@ -93,9 +95,14 @@ export function ListPage<T, K extends string>({ title, subtitle, tabs, tab, onTa
   )
 }
 
+function IdCellInternal({ b }: { b: { id: string; type: string; gate?: string } }) {
+  const { t } = useTranslation()
+  return (
+    <><b className={s.idText}>{b.id}</b><div className={s.sub}>{b.type === 'international' ? `${t('managerBoard.international', 'Quốc tế')}${b.gate ? ` · ${b.gate}` : ''}` : t('managerBoard.domestic', 'Trong nước')}</div></>
+  )
+}
+
 // Ô dùng chung: mã đơn kèm loại tuyến, và tuyến rút gọn
-export const idCell = (b: { id: string; type: string; gate?: string }) => (
-  <><b className={s.idText}>{b.id}</b><div className={s.sub}>{b.type === 'international' ? `Quốc tế${b.gate ? ` · ${b.gate}` : ''}` : 'Trong nước'}</div></>
-)
+export const idCell = (b: { id: string; type: string; gate?: string }) => <IdCellInternal b={b} />
 export const routeCell = (from: string, to: string) => <span className={s.route} title={`${from} → ${to}`}>{from} → {to}</span>
 export const statusCell = (status: BookingStatus) => <BookingStatusBadge status={status} audience="staff" text={STATUS_SHORT[status]} />

@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { COUNTRIES, COUNTRY_LOCATIONS, type CountryCode } from '@shared/config/network'
 import { horsesApi } from '@shared/services/horses'
 import type { HorseProfile } from '@shared/types/booking'
@@ -20,6 +21,7 @@ const RELOCATION_REASONS = [
 ]
 
 export function RelocateHorseModal({ horse, onClose, onSaved }: Props) {
+  const { t, i18n } = useTranslation()
   const [country, setCountry] = useState<CountryCode>((horse.currentCountry as CountryCode) || 'VN')
   const [selectedPreset, setSelectedPreset] = useState<string>('')
   const [customLocation, setCustomLocation] = useState<string>(horse.currentLocationName || '')
@@ -69,10 +71,10 @@ export function RelocateHorseModal({ horse, onClose, onSaved }: Props) {
       title={
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <i className="fa-solid fa-map-location-dot" style={{ color: 'var(--icon-accent)' }} />
-          <span>Cập nhật vị trí chuồng — {horse.name}</span>
+          <span>{i18n.language === 'en' ? `Update Stable Location — ${horse.name}` : `Cập nhật vị trí chuồng — ${horse.name}`}</span>
         </div>
       }
-      subtitle={`Mã hồ sơ: ${horse.id} • Chip: ${horse.microchip}`}
+      subtitle={i18n.language === 'en' ? `Profile ID: ${horse.id} • Chip: ${horse.microchip}` : `Mã hồ sơ: ${horse.id} • Chip: ${horse.microchip}`}
       onClose={onClose}
     >
       <form onSubmit={handleSubmit} className={s.form}>
@@ -182,10 +184,10 @@ export function RelocateHorseModal({ horse, onClose, onSaved }: Props) {
 
         <div className={s.tabActions} style={{ gap: 8 }}>
           <button type="button" className="btn btn-ghost" onClick={onClose} disabled={loading}>
-            Hủy
+            {t('common.cancel')}
           </button>
           <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? <><i className="fa-solid fa-spinner fa-spin" /> Đang cập nhật...</> : <><i className="fa-solid fa-check" /> Xác nhận dời chuồng</>}
+            {loading ? <><i className="fa-solid fa-spinner fa-spin" /> {t('common.loading')}</> : <><i className="fa-solid fa-check" /> {i18n.language === 'en' ? 'Confirm Relocation' : 'Xác nhận dời chuồng'}</>}
           </button>
         </div>
       </form>

@@ -2,8 +2,9 @@ import { InsuranceSummary } from '@shared/ui/InsuranceFields'
 // Chi tiết đơn phía khách: tiến độ, bước tiếp theo, bổ sung hồ sơ, báo giá, đặt cọc, tiến độ giấy tờ, xe và ngựa, trả số dư.
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
-import { BOOKING_STEPS, DEPOSIT_RATE, HORSE_DOC, stepOf } from '@shared/config/booking-rules'
+import { DEPOSIT_RATE, HORSE_DOC, stepOf } from '@shared/config/booking-rules'
 import { arrivalOf } from '@shared/lib/booking'
 import { formatClock, formatDate, formatDateTime, formatVND } from '@shared/lib/format'
 import { usePageData } from '@shared/routing/pageData'
@@ -32,13 +33,22 @@ const TONE: Record<string, string> = { info: s.nextInfo, orange: s.nextOrange, w
 const placeName = (n: string) => n.split(' — ')[0]
 
 function Progress({ b }: { b: CustomerBookingView }) {
+  const { t } = useTranslation()
   const at = stepOf(b.status)
   const expired = b.status === 'quote_expired' || b.status === 'rejected'
+  const stepNames = [
+    t('bookingSteps.step1'),
+    t('bookingSteps.step2'),
+    t('bookingSteps.step3'),
+    t('bookingSteps.step4'),
+    t('bookingSteps.step5'),
+    t('bookingSteps.step6'),
+  ]
   return (
     <>
-      <p className={s.stepNow2}>{at >= BOOKING_STEPS.length ? 'Đơn đã hoàn tất' : `Bước ${at + 1}/${BOOKING_STEPS.length}: ${BOOKING_STEPS[at]}`}</p>
-      <ol className={s.progress} aria-label="Tiến độ đơn">
-        {BOOKING_STEPS.map((label, i) => {
+      <p className={s.stepNow2}>{at >= stepNames.length ? t('bookingSteps.completed') : t('bookingSteps.stepNow', { step: at + 1, total: stepNames.length, name: stepNames[at] })}</p>
+      <ol className={s.progress} aria-label={t('bookingSteps.ariaLabel')}>
+        {stepNames.map((label, i) => {
           const done = i < at
           const state = done ? s.stepDone : i === at ? (expired ? s.stepStop : s.stepNow) : ''
           return (
@@ -54,6 +64,7 @@ function Progress({ b }: { b: CustomerBookingView }) {
 }
 
 function Resubmit({ b, owner, onDone }: { b: CustomerBookingView; owner: string; onDone: () => void }) {
+  const { t } = useTranslation()
   const toast = useToast()
   const { data: horses, reload } = useLoad(() => horsesApi.list(owner), [owner])
   const [edit, setEdit] = useState<HorseProfile | null>(null)
@@ -61,25 +72,25 @@ function Resubmit({ b, owner, onDone }: { b: CustomerBookingView; owner: string;
   const items = b.medical?.resubmit?.items ?? []
   const send = async () => {
     setBusy(true)
-    try { await customerBookingsApi.resubmit(owner, b.id); toast('Đã gửi lại cho Chuyên viên'); onDone() } catch (e) { toast(e instanceof Error ? e.message : 'Không gửi được', 'error'); setBusy(false) }
+    try { await customerBookingsApi.resubmit(owner, b.id); toast(t('orderDetail.resubmitSuccess')); onDone() } catch (e) { toast(e instanceof Error ? e.message : 'Không gửi được', 'error'); setBusy(false) }
   }
   return (
     <div className="card">
-      <div className="card-header"><h3><i className="fa-solid fa-file-circle-exclamation" /> Hồ sơ cần bổ sung</h3></div>
+      <div className="card-header"><h3><i className="fa-solid fa-file-circle-exclamation" /> {t('orderDetail.resubmitTitle')}</h3></div>
       <div className={s.fix}>
         {items.map(it => {
           const h = horses?.find(x => x.id === it.horseId)
           return (
             <div key={it.horseId + it.doc} className={s.fixItem}>
               <span><b>{h?.name ?? it.horseId}</b>: {HORSE_DOC[it.doc].label}</span>
-              {h && <button className="btn btn-primary btn-sm" onClick={() => setEdit(h)}>Cập nhật giấy</button>}
+              {h && <button className="btn btn-primary btn-sm" onClick={() => setEdit(h)}>{t('orderDetail.updateDoc')}</button>}
             </div>
           )
         })}
       </div>
-      <p className="form-hint" style={{ margin: '12px 0' }}>Cập nhật xong các giấy trên, bấm gửi lại để Chuyên viên kiểm tra tiếp.</p>
-      <button className="btn btn-primary" disabled={busy} onClick={send}><i className="fa-solid fa-paper-plane" /> {busy ? 'Đang gửi…' : 'Đã bổ sung, gửi lại'}</button>
-      {edit && <HorseFormModal owner={owner} horse={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); reload(); toast('Đã cập nhật giấy') }} />}
+      <p className="form-hint" style={{ margin: '12px 0' }}>{t('orderDetail.resubmitHint')}</p>
+      <button className="btn btn-primary" disabled={busy} onClick={send}><i className="fa-solid fa-paper-plane" /> {busy ? t('orderDetail.resubmitSending') : t('orderDetail.resubmitBtn')}</button>
+      {edit && <HorseFormModal owner={owner} horse={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); reload(); toast(t('orderDetail.updateDoc')) }} />}
     </div>
   )
 }
@@ -178,6 +189,7 @@ function IncidentPolicy() {
 
 // Hủy đơn (chỉ sau cọc, trước khi trả 70%): mất cọc. Backend quyết định được hủy hay không và số tiền mất.
 function CancelModal({ b, owner, onClose, onDone }: { b: CustomerBookingView; owner: string; onClose: () => void; onDone: () => void }) {
+  const { t } = useTranslation()
   const toast = useToast()
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
@@ -187,12 +199,12 @@ function CancelModal({ b, owner, onClose, onDone }: { b: CustomerBookingView; ow
     try { await customerBookingsApi.cancel(owner, b.id, reason); toast('Đã hủy đơn'); onDone() } catch (e) { toast(e instanceof Error ? e.message : 'Không hủy được', 'error'); setBusy(false) }
   }
   return (
-    <Modal onClose={onClose} title={`Hủy đơn ${b.id}`} subtitle="Phần cọc vận chuyển áp dụng phí hủy; bảo hiểm thu hộ được đối soát riêng."
-      footer={<><button className="btn btn-ghost" onClick={onClose}>Giữ đơn</button><button className="btn btn-danger" disabled={busy || !reason.trim()} onClick={send}>Xác nhận hủy đơn</button></>}>
+    <Modal onClose={onClose} title={t('orderDetail.cancelModalTitle', { id: b.id })} subtitle={t('orderDetail.cancelModalDesc')}
+      footer={<><button className="btn btn-ghost" onClick={onClose}>{t('common.cancel')}</button><button className="btn btn-danger" disabled={busy || !reason.trim()} onClick={send}>{busy ? t('orderDetail.cancelling') : t('orderDetail.confirmCancelBtn')}</button></>}>
       <div className={s.refundBox}>
         <div><span>Phí hủy phần cọc vận chuyển</span><b className="text-red">{formatVND(penalty)}</b></div>
       </div>
-      <div className="form-group" style={{ margin: '14px 0 0' }}><label htmlFor="cr" className="required">Lý do hủy</label><textarea id="cr" className="form-control" rows={3} value={reason} onChange={e => setReason(e.target.value)} /></div>
+      <div className="form-group" style={{ margin: '14px 0 0' }}><label htmlFor="cr" className="required">Lý do hủy</label><textarea id="cr" className="form-control" rows={3} placeholder={t('orderDetail.cancelReasonPlaceholder')} value={reason} onChange={e => setReason(e.target.value)} /></div>
     </Modal>
   )
 }
@@ -219,9 +231,17 @@ function RouteCard({ b }: { b: CustomerBookingView }) {
 }
 
 type Tab = 'journey' | 'docs' | 'insurance' | 'pay' | 'history' | 'info'
-const TAB_LABEL: Record<Tab, string> = { journey: 'Hành trình', docs: 'Giấy tờ', insurance: 'Bảo hiểm', pay: 'Thanh toán', history: 'Lịch sử', info: 'Thông tin đơn' }
 
 export default function OrderDetailPage() {
+  const { t } = useTranslation()
+  const tabLabel: Record<Tab, string> = {
+    journey: t('orderDetail.tabs.plan'),
+    docs: t('orderDetail.tabs.docs'),
+    insurance: t('orderDetail.tabs.insurance'),
+    pay: t('orderDetail.tabs.pay'),
+    history: t('orderDetail.tabs.history'),
+    info: t('orderDetail.tabs.info'),
+  }
   const { id = '' } = useParams()
   const { session } = useAuth()
   const owner = session!.name
@@ -235,7 +255,7 @@ export default function OrderDetailPage() {
   const running = ['en_route_to_pickup', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active'].includes(b?.status ?? '')
   useEffect(() => { if (running) reload() }, [now, running, reload])
 
-  if (b === undefined) return <div className="page"><div className="wrap"><p className="text-muted">Đang tải…</p></div></div>
+  if (b === undefined) return <div className="page"><div className="wrap"><p className="text-muted">{t('common.loading')}</p></div></div>
   const trips = b.trips ?? []
   const next = nextStep(b, now)
   const hasJourney = trips.some(t => t.run) || (ROUTE_VISIBLE.includes(b.status) && !!b.route)
@@ -262,8 +282,8 @@ export default function OrderDetailPage() {
   return (
     <div className="page">
       <div className="wrap">
-        <div className="breadcrumb"><Link to="/portal">Trang chủ</Link> / <Link to="/orders">Đơn của tôi</Link> / <span className="text-orange font-semibold">{b.id}</span></div>
-        <div className={`page-header ${s.titleRow}`}><div><h1>Đơn {b.id}</h1><p>{route} · khởi hành {formatDate(b.departAt)} · {b.horses.length} ngựa</p></div><BookingStatusBadge status={b.status} labels={b} /></div>
+        <div className="breadcrumb"><Link to="/portal">{t('nav.home')}</Link> / <Link to="/orders">{t('orders.title')}</Link> / <span className="text-orange font-semibold">{b.id}</span></div>
+        <div className={`page-header ${s.titleRow}`}><div><h1>{t('orders.orderId')}: {b.id}</h1><p>{route} · {t('orderDetail.departAtLabel', { date: formatDate(b.departAt) })} · {b.horses.length} {t('booking.horsesUnit')}</p></div><BookingStatusBadge status={b.status} labels={b} /></div>
 
         <div className={s.main}>
           <Progress b={b} />
@@ -314,8 +334,8 @@ export default function OrderDetailPage() {
             </div>
           )}
 
-          <div className={s.tabs} role="tablist" aria-label="Chi tiết đơn">
-            {tabs.map(k => <button key={k} role="tab" aria-selected={tab === k} className={`${s.tab} ${tab === k ? s.tabOn : ''}`} onClick={() => setPicked(k)}>{TAB_LABEL[k]}</button>)}
+          <div className={s.tabs} role="tablist" aria-label={t('orderDetail.tabs.info')}>
+            {tabs.map(k => <button key={k} role="tab" aria-selected={tab === k} className={`${s.tab} ${tab === k ? s.tabOn : ''}`} onClick={() => setPicked(k)}>{tabLabel[k]}</button>)}
           </div>
 
           {tab === 'journey' && (
@@ -334,8 +354,8 @@ export default function OrderDetailPage() {
               )}
               {trips.length > 0 && b.route && (ROUTE_VISIBLE.includes(b.status) || trips.some(t => t.run)) && (
                 <div className="card">
-                  <div className="card-header"><h3><i className="fa-solid fa-map-location-dot" /> Theo dõi trên bản đồ</h3></div>
-                  <Suspense fallback={<div style={{ padding: 32, textAlign: 'center', color: 'var(--muted)' }}><i className="fa-solid fa-spinner fa-spin" /> Đang tải bản đồ lộ trình…</div>}>
+                  <div className="card-header"><h3><i className="fa-solid fa-map-location-dot" /> {t('orderDetail.trackingMap')}</h3></div>
+                  <Suspense fallback={<div style={{ padding: 32, textAlign: 'center', color: 'var(--muted)' }}><i className="fa-solid fa-spinner fa-spin" /> {t('orderDetail.mapLoading')}</div>}>
                     <TripTrackMap b={b} trips={trips} />
                   </Suspense>
                 </div>
@@ -396,12 +416,12 @@ export default function OrderDetailPage() {
               {b.canCancel && (
                 <div className="card">
                   <div className="card-header">
-                    <h3><i className="fa-solid fa-circle-info" /> Hủy hoặc thay đổi lịch trình</h3>
+                    <h3><i className="fa-solid fa-circle-info" /> {t('orderDetail.cancelCardTitle')}</h3>
                     <button className="btn btn-danger btn-sm" onClick={() => setCancelling(true)}>
-                      <i className="fa-solid fa-ban" /> Hủy đơn này
+                      <i className="fa-solid fa-ban" /> {t('orderDetail.cancelBtn')}
                     </button>
                   </div>
-                  <p className="form-hint">Lưu ý: Quý khách tự ý hủy đơn sau khi đặt cọc sẽ mất phần cọc vận chuyển theo quy định; phần bảo hiểm thu hộ được đối soát riêng theo khoản đã chuyển và số bên thứ ba hoàn lại. Khi đã thanh toán 70% còn lại, chuyến đi được chốt và không tự hủy được nữa; cần hỗ trợ vui lòng gọi hotline.</p>
+                  <p className="form-hint">{t('orderDetail.cancelNotice')}</p>
                 </div>
               )}
             </>

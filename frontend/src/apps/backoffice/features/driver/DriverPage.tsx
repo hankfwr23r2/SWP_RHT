@@ -1,5 +1,6 @@
 // App Tài xế: nhận Lệnh điều xe (Flow 3), rồi check-in từng mốc hành trình (Flow 4, PRD mục 4.4, 5). Mỗi xe một chuyến riêng.
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { manifestDocuments } from '@shared/lib/booking'
 import { formatDateTime } from '@shared/lib/format'
@@ -18,6 +19,7 @@ import { DriverJob } from './DriverJob'
 type Tab = 'job' | 'journey' | 'manifest'
 
 export default function DriverPage() {
+  const { t } = useTranslation()
   const { session } = useAuth()
   const toast = useToast()
   const now = useNow()
@@ -27,13 +29,13 @@ export default function DriverPage() {
   const [busy, setBusy] = useState(false)
   useAutoRefresh(reload)
 
-  if (!ready) return <p className="text-muted">Đang tải…</p>
-  if (!trip) return <Empty text="Bạn chưa có chuyến nào cần xử lý." />
+  if (!ready) return <p className="text-muted">{t('common.loading', 'Đang tải...')}</p>
+  if (!trip) return <Empty text={t('fieldCrew.noTrips', 'Bạn chưa có chuyến nào cần xử lý.')} />
 
-  const { b, t } = trip
-  const items = [...(t.driverPack?.items ?? manifestDocuments(b).system), 'Xe đã kiểm tra: dầu, lốp, điều hòa thùng, máy phát điện phụ']
-  const acked = t.acks?.driver
-  const step = crewStep(b, t, 'driver')
+  const { b, t: tr } = trip
+  const items = [...(tr.driverPack?.items ?? manifestDocuments(b).system), t('fieldCrew.driverVehicleCheck', 'Xe đã kiểm tra: dầu, lốp, điều hòa thùng, máy phát điện phụ')]
+  const acked = tr.acks?.driver
+  const step = crewStep(b, tr, 'driver')
   const run = async (fn: () => Promise<unknown>, msg: string) => {
     setBusy(true)
     try {
@@ -52,18 +54,18 @@ export default function DriverPage() {
 
   return (
     <>
-      <TripPicker trips={trips} value={t.tripId} onChange={id => { setSelected(id); setChecked([]) }} />
-      <TripHeader b={b} t={t} />
-      <Segmented<Tab> value={tab} onChange={setTab} tabs={[['job', 'Việc', 'fa-list-check'], ['journey', 'Hành trình', 'fa-route'], ['manifest', 'Lệnh', 'fa-clipboard-list']]} />
+      <TripPicker trips={trips} value={tr.tripId} onChange={id => { setSelected(id); setChecked([]) }} />
+      <TripHeader b={b} t={tr} />
+      <Segmented<Tab> value={tab} onChange={setTab} tabs={[['job', t('fieldCrew.tabJob', 'Việc'), 'fa-list-check'], ['journey', t('fieldCrew.tabJourney', 'Hành trình'), 'fa-route'], ['manifest', t('fieldCrew.tabManifest', 'Lệnh'), 'fa-clipboard-list']]} />
 
-      {tab === 'manifest' && <ManifestView b={b} trip={t} vehicle={vehicle} driver={driver} escort={escort} />}
-      {tab === 'journey' && <Panel title="Các mốc hành trình" icon="fa-route"><TripTimeline trip={t} now={now} staff /></Panel>}
+      {tab === 'manifest' && <ManifestView b={b} trip={tr} vehicle={vehicle} driver={driver} escort={escort} />}
+      {tab === 'journey' && <Panel title={t('fieldCrew.journeyMilestones', 'Các mốc hành trình')} icon="fa-route"><TripTimeline trip={tr} now={now} staff /></Panel>}
       {tab === 'job' && (
         <>
           {step === 'ready' && (
             <Panel title="Sẵn sàng đón ngựa" icon="fa-truck-fast" tone="ok">
               <p>Giấy tờ kiểm dịch & hải quan đã hoàn tất, đơn hàng sẵn sàng thực hiện. Giờ đón dự kiến: {b.route && formatDateTime(b.route.legs[0].departAt)}. Khi xuất phát từ bãi xe, bấm bên dưới để bắt đầu chuyến đi.</p>
-              <button className={`btn btn-primary ${s.big}`} disabled={busy} onClick={() => run(() => bookingsApi.departToPickup(b.id, t.tripId, session!.name), 'Đã bắt đầu đến điểm đón')}>
+              <button className={`btn btn-primary ${s.big}`} disabled={busy} onClick={() => run(() => bookingsApi.departToPickup(b.id, tr.tripId, session!.name), 'Đã bắt đầu đến điểm đón')}>
                 <i className="fa-solid fa-truck-moving" /> Xuất phát đến điểm đón ngựa
               </button>
             </Panel>
@@ -72,7 +74,7 @@ export default function DriverPage() {
             <Panel title="Nhận lệnh và chuẩn bị xe" icon="fa-clipboard-check">
               <p>Lệnh điều xe đã phát. Tick từng mục khi đã kiểm tra xe, rồi xác nhận.</p>
               <Checklist items={items} checked={checked} onChange={setChecked} />
-              <button className={`btn btn-primary ${s.big}`} disabled={checked.length < items.length || busy} onClick={() => run(() => bookingsApi.acknowledgeTrip(b.id, t.tripId, 'driver', session!.name), 'Đã xác nhận nhận Lệnh điều xe')}>
+              <button className={`btn btn-primary ${s.big}`} disabled={checked.length < items.length || busy} onClick={() => run(() => bookingsApi.acknowledgeTrip(b.id, tr.tripId, 'driver', session!.name), 'Đã xác nhận nhận Lệnh điều xe')}>
                 <i className="fa-solid fa-check" /> Tôi đã nhận lệnh ({checked.length}/{items.length})
               </button>
             </Panel>
@@ -87,7 +89,7 @@ export default function DriverPage() {
               <p>Giấy tờ đã xong. Đang chờ hộ tống nhận lệnh.</p>
             </Panel>
           )}
-          <DriverJob key={t.tripId} b={b} t={t} run={run} />
+          <DriverJob key={tr.tripId} b={b} t={tr} run={run} />
         </>
       )}
     </>

@@ -1,6 +1,7 @@
 // Khung trang đăng nhập / đăng ký dùng chung cho khách và nhân viên.
 import type { ReactNode } from 'react'
 import { Link } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import s from './AuthShell.module.css'
 
 interface AuthShellProps {
@@ -14,18 +15,22 @@ interface AuthShellProps {
   children: ReactNode
 }
 
-export function AuthShell({ title, subtitle, heading = 'Vận chuyển Ngựa', tagline = 'Đặt chuyến, theo dõi đơn và thanh toán mọi nơi.', homeHref = '/', homeExternal, back, children }: AuthShellProps) {
+export function AuthShell({ title, subtitle, heading, tagline, homeHref = '/', homeExternal, back, children }: AuthShellProps) {
+  const { t } = useTranslation()
+  const displayHeading = heading ?? t('common.brandName')
+  const displayTagline = tagline ?? t('auth.tagline')
+
   return (
     <div className={s.layout}>
       <div className={s.left}>
         {homeExternal
-          ? <a href={homeHref} className={s.brand}><img src="/logo.png" alt="" className={s.brandMark} />Vận chuyển Ngựa đua</a>
-          : <Link to={homeHref} className={s.brand}><img src="/logo.png" alt="" className={s.brandMark} />Vận chuyển Ngựa đua</Link>}
+          ? <a href={homeHref} className={s.brand}><img src="/logo.png" alt="" className={s.brandMark} />{t('common.brandName')}</a>
+          : <Link to={homeHref} className={s.brand}><img src="/logo.png" alt="" className={s.brandMark} />{t('common.brandName')}</Link>}
         <div className={s.content}>
-          <p className={s.heading}>{heading}</p>
-          <p className={s.tagline}>{tagline}</p>
+          <p className={s.heading}>{displayHeading}</p>
+          <p className={s.tagline}>{displayTagline}</p>
         </div>
-        <div className={s.footer}>Hệ thống vận chuyển ngựa</div>
+        <div className={s.footer}>{t('common.footerSub')}</div>
       </div>
       <div className={s.right}>
         <div className={s.box}>

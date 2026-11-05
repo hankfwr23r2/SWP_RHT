@@ -5,7 +5,8 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { useGSAP } from '@gsap/react'
 import { reducedMotion, useScrollReveal } from '@shared/motion/motion'
 import { Link, useLocation } from 'react-router'
-import { PUBLIC_STEPS, QUOTE_VALID_HOURS, VEHICLE_CLASS } from '@shared/config/booking-rules'
+import { useTranslation } from 'react-i18next'
+import { QUOTE_VALID_HOURS } from '@shared/config/booking-rules'
 import { MIN_LEAD_DAYS } from '@shared/config/business-rules'
 import { COUNTRIES, GATES, type CountryCode } from '@shared/config/network'
 import { loadBootstrap } from '@shared/config/bootstrap'
@@ -23,14 +24,6 @@ gsap.registerPlugin(MotionPathPlugin)
 
 const cx = (...c: (string | false | undefined)[]) => c.filter(Boolean).join(' ')
 const MAX_TRACK_CODES = 5
-const STEPS = PUBLIC_STEPS
-
-// ===== Banner trượt =====
-const SLIDES = [
-  { bg: PHOTOS.transport.src, tag: 'Xe chuyên dụng 2 – 9 ngăn', title: 'Vận chuyển ngựa đua', hl: 'Việt Nam · Lào · Campuchia', text: 'Xe nguyên chuyến chỉ chở ngựa của bạn, mỗi xe có tài xế và nhân viên chăm sóc riêng. Bạn theo dõi xe đang ở đâu trên bản đồ.', cta: ['Đặt chuyến ngay', '/login'] },
-  { bg: PHOTOS.checkup.src, tag: 'Kiểm dịch & thủ tục trọn gói', title: 'Hồ sơ thú y được', hl: 'chuyên viên xác minh', text: 'Bạn chỉ nộp hồ sơ ngựa. Giấy kiểm dịch, hải quan và giấy chuyến đi do chúng tôi làm, bạn xem tiến độ từng giấy trên hệ thống.', cta: ['Xem quy trình', '/#quy-trinh'] },
-  { bg: PHOTOS.race.src, tag: 'Báo giá cố định', title: 'Biết trước chi phí', hl: 'trước khi đặt chuyến', text: 'Xem bảng giá cước theo hạng xe và quãng đường. Báo giá chính thức đã gồm nhiên liệu, cầu đường, không phụ thu ngoài phiếu.', cta: ['Xem bảng giá', '/?tab=price#tra-cuu'] },
-]
 
 // Trang khách đã đăng nhập dùng lại các khối này: đổi liên kết sang trang trong app khách
 export type LinkMap = (to: string) => string
@@ -40,6 +33,13 @@ const same: LinkMap = to => to
 const Words = ({ text }: { text: string }) => <>{text.split(' ').map((w, i) => <span key={i} className={s.word}>{w}&nbsp;</span>)}</>
 
 export function Hero({ link = same }: { link?: LinkMap }) {
+  const { t } = useTranslation()
+  const slides = [
+    { bg: PHOTOS.transport.src, tag: t('home.hero.slide1.tag'), title: t('home.hero.slide1.title'), hl: t('home.hero.slide1.hl'), text: t('home.hero.slide1.text'), cta: [t('home.hero.slide1.cta'), '/login'] as [string, string] },
+    { bg: PHOTOS.checkup.src, tag: t('home.hero.slide2.tag'), title: t('home.hero.slide2.title'), hl: t('home.hero.slide2.hl'), text: t('home.hero.slide2.text'), cta: [t('home.hero.slide2.cta'), '/#quy-trinh'] as [string, string] },
+    { bg: PHOTOS.race.src, tag: t('home.hero.slide3.tag'), title: t('home.hero.slide3.title'), hl: t('home.hero.slide3.hl'), text: t('home.hero.slide3.text'), cta: [t('home.hero.slide3.cta'), '/?tab=price#tra-cuu'] as [string, string] },
+  ]
+
   const [index, setIndex] = useState(0)
   const [hold, setHold] = useState(false) // chuột hoặc focus bàn phím đang ở trong banner
   const [stopped, setStopped] = useState(reducedMotion) // người xem bấm dừng; giảm chuyển động thì không tự chạy
@@ -56,20 +56,20 @@ export function Hero({ link = same }: { link?: LinkMap }) {
   }, { dependencies: [index], scope: root })
   useEffect(() => {
     if (hold || stopped) return
-    const t = setInterval(() => setIndex(i => (i + 1) % SLIDES.length), 6000)
+    const t = setInterval(() => setIndex(i => (i + 1) % slides.length), 6000)
     return () => clearInterval(t)
-  }, [hold, stopped, index])
+  }, [hold, stopped, index, slides.length])
   return (
     <section
       ref={root}
       className={s.hero}
-      aria-label="Giới thiệu"
+      aria-label={t('home.hero.intro')}
       onMouseEnter={() => setHold(true)}
       onMouseLeave={() => setHold(false)}
       onFocus={() => setHold(true)}
       onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setHold(false) }}
     >
-      {SLIDES.map((sl, i) => (
+      {slides.map((sl, i) => (
         <div key={i} className={cx(s.heroSlide, !sl.bg && s.heroSlidePlain, i === index && s.active)} aria-hidden={i !== index} style={sl.bg ? { '--bg': `url('${sl.bg}')` } as CSSProperties : undefined}>
           <div className={cx('wrap', s.heroContent)}>
             <span className={s.heroTag}>{sl.tag}</span>
@@ -80,10 +80,10 @@ export function Hero({ link = same }: { link?: LinkMap }) {
         </div>
       ))}
       <div className={s.heroDots}>
-        <button type="button" className={s.heroPause} aria-label={stopped ? 'Chạy banner' : 'Dừng banner'} onClick={() => setStopped(v => !v)}>
+        <button type="button" className={s.heroPause} aria-label={stopped ? t('home.hero.playBanner') : t('home.hero.pauseBanner')} onClick={() => setStopped(v => !v)}>
           <i className={`fa-solid ${stopped ? 'fa-play' : 'fa-pause'}`} aria-hidden="true" />
         </button>
-        {SLIDES.map((_, i) => <button key={i} type="button" className={cx(s.heroDot, i === index && s.active)} aria-label={`Banner ${i + 1}`} aria-current={i === index} onClick={() => setIndex(i)} />)}
+        {slides.map((_, i) => <button key={i} type="button" className={cx(s.heroDot, i === index && s.active)} aria-label={t('home.hero.bannerIndex', { index: i + 1 })} aria-current={i === index} onClick={() => setIndex(i)} />)}
       </div>
     </section>
   )
@@ -93,6 +93,7 @@ export function Hero({ link = same }: { link?: LinkMap }) {
 type TrackRow = { code: string; result: PublicTracking | null }
 
 function OrderLookup({ onShowPrice }: { onShowPrice: () => void }) {
+  const { t } = useTranslation()
   const [codesText, setCodesText] = useState('')
   const [phone, setPhone] = useState('')
   const [error, setError] = useState<{ field: 'codes' | 'phone'; message: string } | null>(null)
@@ -102,16 +103,16 @@ function OrderLookup({ onShowPrice }: { onShowPrice: () => void }) {
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     const codes = [...new Set(codesText.split(',').map(c => c.trim().toUpperCase()).filter(Boolean))]
-    if (!codes.length) return setError({ field: 'codes', message: 'Nhập ít nhất 1 mã đơn.' })
-    if (codes.length > MAX_TRACK_CODES) return setError({ field: 'codes', message: `Tối đa ${MAX_TRACK_CODES} mã đơn mỗi lần tra cứu.` })
-    if (!/^\d{4}$/.test(phone.trim())) return setError({ field: 'phone', message: 'Nhập đúng 4 số cuối số điện thoại người đặt.' })
+    if (!codes.length) return setError({ field: 'codes', message: t('home.lookup.errMinCode') })
+    if (codes.length > MAX_TRACK_CODES) return setError({ field: 'codes', message: t('home.lookup.errMaxCode', { max: MAX_TRACK_CODES }) })
+    if (!/^\d{4}$/.test(phone.trim())) return setError({ field: 'phone', message: t('home.lookup.errPhone') })
     setError(null)
     setLoading(true)
     try {
       const results = await Promise.all(codes.map(async code => ({ code, result: await trackOrder(code, phone.trim()) })))
       setRows(results)
     } catch (err) {
-      setError({ field: 'codes', message: err instanceof Error ? err.message : 'Chưa tra cứu được. Thử lại sau ít phút.' })
+      setError({ field: 'codes', message: err instanceof Error ? err.message : t('home.lookup.notFound') })
     } finally {
       setLoading(false)
     }
@@ -128,8 +129,8 @@ function OrderLookup({ onShowPrice }: { onShowPrice: () => void }) {
             aria-describedby={error?.field === 'codes' ? 'lookup-error' : undefined}
             value={codesText}
             onChange={e => { setCodesText(e.target.value); setError(null) }}
-            aria-label="Mã đơn hoặc số vận đơn, nhiều mã cách nhau bằng dấu phẩy"
-            placeholder="Mã đơn: BK-001 hoặc VD-2026-0001"
+            aria-label={t('home.lookup.codePlaceholder')}
+            placeholder={t('home.lookup.codePlaceholder')}
           />
         </div>
         <div className={cx(s.field, s.fieldPhone)}>
@@ -142,17 +143,17 @@ function OrderLookup({ onShowPrice }: { onShowPrice: () => void }) {
             onChange={e => { setPhone(e.target.value); setError(null) }}
             inputMode="numeric"
             maxLength={4}
-            aria-label="4 số cuối số điện thoại người đặt"
-            placeholder="4 số cuối SĐT người đặt"
+            aria-label={t('home.lookup.phonePlaceholder')}
+            placeholder={t('home.lookup.phonePlaceholder')}
           />
         </div>
         <button className="btn btn-solid" type="submit" disabled={loading}>
-          {loading ? 'Đang tìm…' : 'Tìm kiếm'}
+          {loading ? t('home.lookup.searching') : t('home.lookup.searchBtn')}
         </button>
       </form>
       <p className={s.lookupHint}>
-        Nhập mã đơn (BK-…) hoặc số vận đơn (VD-…), nhiều mã cách nhau bằng dấu phẩy. Chưa có đơn?{' '}
-        <button type="button" className={s.hintLink} onClick={onShowPrice}>Xem bảng giá</button>
+        {t('home.lookup.hint')}{' '}
+        <button type="button" className={s.hintLink} onClick={onShowPrice}>{t('home.lookup.seePricing')}</button>
       </p>
       {error && <p id="lookup-error" className={s.formError} role="alert"><i className="fa-solid fa-circle-exclamation" aria-hidden="true" /> {error.message}</p>}
       <div aria-live="polite">
@@ -165,10 +166,10 @@ function OrderLookup({ onShowPrice }: { onShowPrice: () => void }) {
                 <span className={cx(s.trackStatus, o.tone && s[o.tone])}>{o.status}</span>
               </div>
               <div className={s.trackMeta}>
-                <i className="fa-solid fa-route" /> {o.route} · Khởi hành {o.depart ? formatDate(o.depart) : 'Chưa định ngày'}
+                <i className="fa-solid fa-route" /> {o.route} · {t('home.lookup.departure')} {o.depart ? formatDate(o.depart) : t('home.lookup.undeterminedDate')}
               </div>
               <div className={s.trackSteps}>
-                {STEPS.map((label, k) => {
+                {[t('home.process.step1Title'), t('home.process.step2Title'), t('home.process.step3Title'), t('home.process.step4Title'), t('home.process.step5Title')].map((label, k) => {
                   const state = o.done || k < (o.step ?? 0) ? 'done' : k === o.step ? 'current' : ''
                   return (
                     <div key={label} className={cx(s.trackStep, state && s[state])}>
@@ -181,7 +182,7 @@ function OrderLookup({ onShowPrice }: { onShowPrice: () => void }) {
               {o.now && (
                 <div className={s.trackNow}>
                   <i className="fa-solid fa-location-dot" /> <b>{o.now.place}</b><br />
-                  Cập nhật lúc {formatDateTime(o.now.at)} · Dự kiến giao {formatDateTime(o.now.eta)}
+                  {t('home.lookup.updatedAt')} {formatDateTime(o.now.at)} · {t('home.lookup.estimatedDelivery')} {formatDateTime(o.now.eta)}
                 </div>
               )}
               {o.note && (
@@ -192,7 +193,7 @@ function OrderLookup({ onShowPrice }: { onShowPrice: () => void }) {
             </div>
           ) : (
             <div key={code} className={cx(s.trackItem, s.trackMiss)} style={{ animationDelay: `${i * 80}ms` }}>
-              <b>{code}</b>: không tìm thấy đơn, hoặc 4 số cuối điện thoại không khớp.
+              <b>{code}</b>: {t('home.lookup.notFound')}
             </div>
           ))}
         </div>
@@ -204,9 +205,10 @@ function OrderLookup({ onShowPrice }: { onShowPrice: () => void }) {
 
 
 type Tab = 'order' | 'price'
-const TABS: [Tab, string][] = [['order', 'Tra cứu đơn hàng'], ['price', 'Bảng giá']]
 
 function Lookup() {
+  const { t } = useTranslation()
+  const tabs: [Tab, string][] = [['order', t('home.lookup.orderTab')], ['price', t('home.lookup.priceTab')]]
   const { search, hash } = useLocation()
   const fromUrl = new URLSearchParams(search).get('tab') as Tab | null
   const [tab, setTab] = useState<Tab>(fromUrl ?? 'order')
@@ -217,15 +219,15 @@ function Lookup() {
   // Mũi tên trái/phải chuyển tab như tablist chuẩn
   const moveTab = (e: KeyboardEvent<HTMLDivElement>) => {
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
-    const i = TABS.findIndex(([key]) => key === tab)
-    const next = TABS[(i + (e.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length][0]
+    const i = tabs.findIndex(([key]) => key === tab)
+    const next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length][0]
     setTab(next)
     document.getElementById(`tab-${next}`)?.focus()
   }
   return (
     <section className={cx('wrap', s.lookup)} id="tra-cuu">
-      <div className={s.lookupTabs} role="tablist" aria-label="Tra cứu" onKeyDown={moveTab}>
-        {TABS.map(([key, label]) => (
+      <div className={s.lookupTabs} role="tablist" aria-label={t('home.lookup.lookupAria')} onKeyDown={moveTab}>
+        {tabs.map(([key, label]) => (
           <button
             key={key}
             type="button"
@@ -249,41 +251,42 @@ function Lookup() {
 }
 
 // ===== Báo giá mẫu: các khoản và mốc thanh toán, không tự tính số tiền =====
-const QUOTE_ITEMS: [string, string][] = [
-  ['Cước xe', 'Theo hạng xe và quãng đường'],
-  ['Tài xế và hộ tống', 'Theo số ngày đi'],
-  ['Nhiên liệu, cầu đường', 'Theo km'],
-  ['Kiểm dịch, hải quan', 'Tuyến quốc tế'],
-  ['Dịch vụ, bảo hiểm', 'Theo lựa chọn của bạn'],
-]
-
 function QuoteSample() {
+  const { t } = useTranslation()
+  const quoteItems: [string, string][] = [
+    [t('home.quoteSample.freight'), t('home.quoteSample.freightSub')],
+    [t('home.quoteSample.crew'), t('home.quoteSample.crewSub')],
+    [t('home.quoteSample.fuel'), t('home.quoteSample.fuelSub')],
+    [t('home.quoteSample.clearance'), t('home.quoteSample.clearanceSub')],
+    [t('home.quoteSample.services'), t('home.quoteSample.servicesSub')],
+  ]
+
   const milestones: [string, string][] = [
-    [`${DEPOSIT_RATE * 100}%`, 'Đặt cọc khi chấp nhận báo giá, nhận số vận đơn'],
-    [`${100 - DEPOSIT_RATE * 100}%`, 'Trả nốt trước giờ xe xuất phát'],
-    ['24 giờ', 'Hạn thanh toán quyết toán sau chuyến'],
+    [`${DEPOSIT_RATE * 100}%`, t('home.quoteSample.depositStage')],
+    [`${100 - DEPOSIT_RATE * 100}%`, t('home.quoteSample.balanceStage')],
+    [t('home.quoteSample.settleHours'), t('home.quoteSample.settleStage')],
   ]
   return (
     <section className={cx('wrap', s.quote)} id="bao-gia">
       <div className={cx(s.quoteIntro, s.reveal)}>
-        <h2>Biết trước từng khoản tiền</h2>
-        <p>Quản lý duyệt báo giá trước khi gửi cho bạn. Giá đã chốt thì không phụ thu ngoài phiếu; quyết toán chỉ có khoản phát sinh khi có sự cố liên quan đến ngựa, luôn kèm chứng từ.</p>
-        <Link to="/?tab=price#tra-cuu" className="btn btn-outline">Xem bảng giá</Link>
+        <h2>{t('home.quoteSample.title')}</h2>
+        <p>{t('home.quoteSample.desc')}</p>
+        <Link to="/?tab=price#tra-cuu" className="btn btn-outline">{t('home.quoteSample.viewPricing')}</Link>
       </div>
       <div className={cx(s.quoteSheet, s.reveal)}>
         <div className={s.quoteHead}>
-          <b>Báo giá mẫu</b>
-          <span className="badge badge-warning">Hiệu lực {QUOTE_VALID_HOURS} giờ</span>
+          <b>{t('home.quoteSample.badge')}</b>
+          <span className="badge badge-warning">{t('home.quoteSample.validity', { hours: QUOTE_VALID_HOURS })}</span>
         </div>
         <div className={s.quoteRows}>
-          {QUOTE_ITEMS.map(([label, value]) => (
+          {quoteItems.map(([label, value]) => (
             <div key={label} className="info-row"><span className="label">{label}</span><span className="value">{value}</span></div>
           ))}
         </div>
         <ol className={s.quotePay}>
           {milestones.map(([big, text]) => <li key={text}><strong>{big}</strong><span>{text}</span></li>)}
         </ol>
-        <p className={s.quoteNote}>Hủy trước khi đặt cọc: không mất phí. Hủy sau khi đặt cọc: mất toàn bộ tiền cọc.</p>
+        <p className={s.quoteNote}>{t('home.quoteSample.cancelNote')}</p>
       </div>
     </section>
   )
@@ -291,31 +294,36 @@ function QuoteSample() {
 
 // ===== Mạng lưới vận chuyển =====
 // Sơ đồ minh họa phạm vi tuyến, không đại diện cho một lộ trình vận hành cụ thể.
-type Stop = { x: number; y: number; name: string; sub: string }
-const JOURNEYS: Record<CountryCode, { stops: [Stop, Stop, Stop]; mid: 'gate' | 'station'; summary: string }> = {
-  VN: { mid: 'station', summary: 'Tuyến vận chuyển nội địa, kết nối các điểm phục vụ trên toàn quốc.', stops: [
-    { x: 40, y: 70, name: 'Điểm nhận', sub: 'Đón ngựa' },
-    { x: 450, y: 140, name: 'Trạm nghỉ', sub: 'Chăm sóc trên đường' },
-    { x: 860, y: 60, name: 'Điểm giao', sub: 'Bàn giao ngựa' }] },
-  LA: { mid: 'gate', summary: 'Tuyến xuyên biên giới kết nối Việt Nam và Lào.', stops: [
-    { x: 40, y: 140, name: 'Điểm nhận', sub: 'Đón ngựa' },
-    { x: 450, y: 60, name: 'Cửa khẩu', sub: 'Hỗ trợ thủ tục' },
-    { x: 860, y: 130, name: 'Điểm giao', sub: 'Bàn giao ngựa' }] },
-  KH: { mid: 'gate', summary: 'Tuyến xuyên biên giới kết nối Việt Nam và Campuchia.', stops: [
-    { x: 40, y: 120, name: 'Điểm nhận', sub: 'Đón ngựa' },
-    { x: 450, y: 90, name: 'Cửa khẩu', sub: 'Hỗ trợ thủ tục' },
-    { x: 860, y: 70, name: 'Điểm giao', sub: 'Bàn giao ngựa' }] },
+type StopCoord = { x: number; y: number }
+const JOURNEY_COORDS: Record<CountryCode, { mid: 'gate' | 'station'; points: [StopCoord, StopCoord, StopCoord] }> = {
+  VN: { mid: 'station', points: [{ x: 40, y: 70 }, { x: 450, y: 140 }, { x: 860, y: 60 }] },
+  LA: { mid: 'gate', points: [{ x: 40, y: 140 }, { x: 450, y: 60 }, { x: 860, y: 130 }] },
+  KH: { mid: 'gate', points: [{ x: 40, y: 120 }, { x: 450, y: 90 }, { x: 860, y: 70 }] },
 }
-const pathOf = ([a, b, c]: Stop[]) =>
+const pathOf = ([a, b, c]: [StopCoord, StopCoord, StopCoord]) =>
   `M ${a.x} ${a.y} C ${a.x + 170} ${a.y - 90}, ${b.x - 170} ${b.y - 60}, ${b.x} ${b.y} S ${c.x - 170} ${c.y + 90}, ${c.x} ${c.y}`
 
 // Khi đổi nước: vẽ lại tuyến, xe chạy tới điểm giữa, dừng một nhịp rồi chạy tiếp tới đích.
 // Lần đầu chỉ chạy khi cuộn tới khung tuyến đường.
 function Journey({ country }: { country: CountryCode }) {
+  const { t } = useTranslation()
   const root = useRef<HTMLDivElement>(null)
   const seen = useRef(false)
-  const { stops, mid, summary } = JOURNEYS[country]
-  const d = pathOf(stops)
+  const config = JOURNEY_COORDS[country]
+  const mid = config.mid
+  const summary = country === 'VN'
+    ? t('home.network.vnSummary')
+    : country === 'LA'
+      ? t('home.network.laSummary')
+      : t('home.network.khSummary')
+  const midName = mid === 'gate' ? t('home.network.gateName') : t('home.network.restStopName')
+  const midSub = mid === 'gate' ? t('home.network.gateSub') : t('home.network.restStopSub')
+  const stops = [
+    { ...config.points[0], name: t('home.network.pickupName'), sub: t('home.network.pickupSub') },
+    { ...config.points[1], name: midName, sub: midSub },
+    { ...config.points[2], name: t('home.network.dropoffName'), sub: t('home.network.dropoffSub') },
+  ]
+  const d = pathOf(config.points)
 
   useGSAP(() => {
     const q = gsap.utils.selector(root)
@@ -341,7 +349,7 @@ function Journey({ country }: { country: CountryCode }) {
 
   const [a, b, c] = stops
   return (
-    <div ref={root} className={s.journey} role="group" aria-label={`Tuyến mẫu ${a.name} – ${b.name} – ${c.name}`}>
+    <div ref={root} className={s.journey} role="group" aria-label={t('home.network.journeyAria', { from: a.name, mid: b.name, to: c.name })}>
       <p className={s.journeySummary}>{summary}</p>
       <svg viewBox="0 0 900 200" aria-hidden="true">
         <path className={s.journeyTrack} d={d} />
@@ -355,7 +363,7 @@ function Journey({ country }: { country: CountryCode }) {
           {stops.map((p, i) => {
             const below = i === 1 || p.y < 100 // điểm giữa: nhãn luôn ở dưới; hai đầu: dưới nếu điểm nằm cao
             return (
-              <g key={p.name}>
+              <g key={i}>
                 <text className={s.journeyLabel} x={p.x} y={below ? p.y + 34 : p.y - 36} textAnchor="middle">{p.name}</text>
                 <text className={s.journeySub} x={p.x} y={below ? p.y + 50 : p.y - 20} textAnchor="middle">{p.sub}</text>
               </g>
@@ -370,12 +378,12 @@ function Journey({ country }: { country: CountryCode }) {
       </svg>
       {/* Màn hẹp: nhãn trong SVG bị thu quá nhỏ nên hiện danh sách điểm dừng bằng chữ thường */}
       <ol className={s.journeyStops}>
-        {stops.map(p => <li key={p.name}><b>{p.name}</b><span>{p.sub}</span></li>)}
+        {stops.map((p, i) => <li key={i}><b>{p.name}</b><span>{p.sub}</span></li>)}
       </ol>
       <div className={s.journeyLegend}>
         {mid === 'gate'
-          ? <span><i className={s.legendGate} /> Cửa khẩu</span>
-          : <span><i className={s.legendStation} /> Trạm nghỉ</span>}
+          ? <span><i className={s.legendGate} /> {t('home.network.legendGate')}</span>
+          : <span><i className={s.legendStation} /> {t('home.network.legendStation')}</span>}
       </div>
     </div>
   )
@@ -389,6 +397,7 @@ const docsFor = (group: DocumentGroup, code: CountryCode) => [...new Set(ACTIVE_
   .map(r => r.documentName))]
 
 export function Network() {
+  const { t } = useTranslation()
   const [active, setActive] = useState<CountryCode>('VN')
   // Cửa khẩu và giấy tờ lấy từ /public/bootstrap; lỗi thì chỉ hiện phần mô tả chung
   const [catalog, setCatalog] = useState<'loading' | 'ready' | 'failed'>('loading')
@@ -404,26 +413,26 @@ export function Network() {
   return (
     <section className={s.network} id="mang-luoi">
       <div className="wrap">
-        <h2 className={cx('section-title', s.reveal)}>Mạng lưới 3 nước</h2>
-        <p className={cx('section-sub', s.reveal)}>Tuyến nội địa Việt Nam và tuyến xuyên biên giới Việt Nam – Lào, Việt Nam – Campuchia qua các cửa khẩu đường bộ quốc tế. Bạn chọn điểm đón và điểm giao trên bản đồ, nhà xe chọn cửa khẩu và các trạm nghỉ dọc đường.</p>
+        <h2 className={cx('section-title', s.reveal)}>{t('home.network.title')}</h2>
+        <p className={cx('section-sub', s.reveal)}>{t('home.network.desc')}</p>
         <div ref={flagsRef} className={s.flags}>
           {(Object.keys(COUNTRIES) as CountryCode[]).map(code => (
             <button key={code} type="button" aria-pressed={code === active} className={cx(s.flag, code === active && s.active)} onClick={() => setActive(code)}>
               <span className={s.flagImg} dangerouslySetInnerHTML={{ __html: FLAG_SVG[code] }} />
-              <span className={s.flagName}>{COUNTRIES[code].name}</span>
-              <span className={s.flagMeta}>{COUNTRIES[code].meta}</span>
+              <span className={s.flagName}>{t(`home.network.countryNames.${code}`)}</span>
+              <span className={s.flagMeta}>{t(`home.network.countryMetas.${code}`)}</span>
             </button>
           ))}
         </div>
         <Journey country={active} />
         <div className={cx(s.networkDetail, s.reveal)}>
-          <h3>{active === 'VN' ? 'Tuyến trong nước' : `Tuyến Việt Nam – ${COUNTRIES[active].name}`}</h3>
+          <h3>{active === 'VN' ? t('home.network.domesticRoute') : t('home.network.intlRoute', { country: t(`home.network.countryNames.${active}`) })}</h3>
           <div className={s.networkCols} key={active}>
             {active === 'VN'
-              ? <div><h4>Điểm đón và giao</h4><p><i className="fa-solid fa-location-dot" aria-hidden="true" /> Kho, trại ngựa, câu lạc bộ, trường đua, hoặc điểm bạn chọn trên bản đồ. Đường dài có trạm nghỉ cho ngựa.</p></div>
-              : <div><h4>Cửa khẩu</h4><p><i className="fa-solid fa-flag" aria-hidden="true" /> {catalog === 'ready' && gates.length ? `${gates.join(', ')}. Nhà xe chọn cửa khẩu theo lộ trình.` : 'Qua cửa khẩu đường bộ quốc tế, nhà xe chọn theo lộ trình.'}</p></div>}
-            {catalog === 'ready' && horseDocs.length > 0 && <div><h4>Hồ sơ ngựa bạn nộp</h4><p><i className="fa-solid fa-horse-head" aria-hidden="true" /> {horseDocs.join(', ')}.</p></div>}
-            {catalog === 'ready' && tripDocs.length > 0 && <div><h4>Giấy tờ chuyến đi</h4><p><i className="fa-solid fa-file-circle-check" aria-hidden="true" /> {tripDocs.join(', ')}. Bạn xem tiến độ từng giấy trong đơn.</p></div>}
+              ? <div><h4>{t('home.network.pickupDrop')}</h4><p><i className="fa-solid fa-location-dot" aria-hidden="true" /> {t('home.network.pickupDesc')}</p></div>
+              : <div><h4>{t('home.network.borderGate')}</h4><p><i className="fa-solid fa-flag" aria-hidden="true" /> {catalog === 'ready' && gates.length ? t('home.network.borderDescReady', { gates: gates.join(', ') }) : t('home.network.borderDesc')}</p></div>}
+            {catalog === 'ready' && horseDocs.length > 0 && <div><h4>{t('home.network.horseDocsTitle')}</h4><p><i className="fa-solid fa-horse-head" aria-hidden="true" /> {horseDocs.join(', ')}.</p></div>}
+            {catalog === 'ready' && tripDocs.length > 0 && <div><h4>{t('home.network.tripDocsTitle')}</h4><p><i className="fa-solid fa-file-circle-check" aria-hidden="true" /> {tripDocs.join(', ')}. {t('home.network.tripDocsDesc')}</p></div>}
           </div>
         </div>
       </div>
@@ -431,33 +440,21 @@ export function Network() {
   )
 }
 
-const SERVICES: [string, string, string, string][] = [
-  ['/?tab=price#tra-cuu', PHOTOS.transport.src, 'Xe nguyên chuyến', `${Object.values(VEHICLE_CLASS).map(c => c.label).join(', ')}: từ 2 đến 9 ngăn. Không ghép ngựa của đơn khác.`],
-  ['/#quy-trinh', PHOTOS.checkup.src, 'Giấy tờ và cửa khẩu', 'Chuyên viên thẩm định hồ sơ ngựa, nhà xe làm giấy kiểm dịch và hải quan. Bạn xem tiến độ từng giấy.'],
-  ['/?tab=order#tra-cuu', PHOTOS.trailers.src, 'Theo dõi chuyến đi', 'Tài xế check-in từng mốc, bạn xem xe đang ở đâu trên bản đồ.'],
-  ['/?tab=price#tra-cuu', PHOTOS.stable.src, 'Chăm sóc và bảo hiểm', 'Hộ tống đi kèm, khoang đơn mở rộng, hỗ trợ bảo hiểm động vật sống từ bên thứ ba.'],
-]
-
-// Tên bước dùng chung với phần tra cứu đơn (PUBLIC_STEPS), thêm bước cuối sau khi giao ngựa.
-// Số tiền và tỉ lệ đã nằm trong thẻ báo giá mẫu nên không nhắc lại ở đây.
-const [STEP_SEND, STEP_REVIEW, STEP_DEPOSIT, STEP_PREPARE, STEP_TRANSPORT] = PUBLIC_STEPS
-const PROCESS: [string, string, string, string][] = [
-  [STEP_SEND, 'Bạn', 'Chọn điểm đón, điểm giao, ngựa, dịch vụ và bảo hiểm; tải hồ sơ ngựa.', `Trước ngày đi ≥ ${MIN_LEAD_DAYS} ngày`],
-  [STEP_REVIEW, 'Quản lý, chuyên viên, điều phối viên', 'Tiếp nhận đơn; duyệt hồ sơ ngựa, chọn xe, kíp xe và lập lộ trình cùng lúc.', 'Trước khi báo giá'],
-  [STEP_DEPOSIT, 'Quản lý, bạn', 'Duyệt và gửi báo giá. Bạn đặt cọc để nhận số vận đơn.', `Báo giá giữ ${QUOTE_VALID_HOURS} giờ`],
-  [STEP_PREPARE, 'Chuyên viên, bạn', 'Làm giấy kiểm dịch, thêm hải quan nếu đi quốc tế. Bạn trả phần còn lại khi xe sẵn sàng đón ngựa.', 'Trước giờ xuất phát'],
-  [STEP_TRANSPORT, 'Tài xế, hộ tống', 'Check-in từng mốc, ghi nhật ký sức khỏe ngựa; bạn xem xe trên bản đồ.', 'Theo lộ trình'],
-  ['Bàn giao và quyết toán', 'Tài xế, quản lý, bạn', 'Ký biên bản giao nhận, quản lý gửi quyết toán; bạn thanh toán rồi đánh giá chuyến đi.', 'Quyết toán trong 24 giờ'],
-]
-
 export function Services({ link = same }: { link?: LinkMap }) {
+  const { t } = useTranslation()
+  const services: [string, string, string, string][] = [
+    ['/?tab=price#tra-cuu', PHOTOS.transport.src, t('home.services.privateTruck'), t('home.services.privateTruckDesc')],
+    ['/#quy-trinh', PHOTOS.checkup.src, t('home.services.docsBorder'), t('home.services.docsBorderDesc')],
+    ['/?tab=order#tra-cuu', PHOTOS.trailers.src, t('home.services.liveTracking'), t('home.services.liveTrackingDesc')],
+    ['/?tab=price#tra-cuu', PHOTOS.stable.src, t('home.services.careInsurance'), t('home.services.careInsuranceDesc')],
+  ]
   return (
       <section className={s.services} id="dich-vu">
         <div className="wrap">
-          <h2 className={cx('section-title', s.reveal)}>Dịch vụ</h2>
-          <p className={cx('section-sub', s.reveal)}>Mỗi đơn có người phụ trách từng khâu, từ hồ sơ ngựa, xe và lộ trình đến báo giá. Có sự cố, quản lý duyệt phương án xử lý và liên hệ trực tiếp với bạn.</p>
+          <h2 className={cx('section-title', s.reveal)}>{t('home.services.title')}</h2>
+          <p className={cx('section-sub', s.reveal)}>{t('home.services.desc')}</p>
           <div className={s.serviceGrid}>
-            {SERVICES.map(([to, photo, title, text], i) => (
+            {services.map(([to, photo, title, text], i) => (
               <Link key={title} to={link(to)} className={cx(s.service, s.reveal)} data-delay={i * 120}>
                 <span className={s.serviceTile} style={{ '--photo': `url('${photo}')` } as CSSProperties} /><h3>{title}</h3><p>{text}</p>
               </Link>
@@ -472,7 +469,17 @@ export function Services({ link = same }: { link?: LinkMap }) {
 export const useLandingReveal = () => useScrollReveal(`.${s.reveal}`)
 
 export default function HomePage() {
+  const { t } = useTranslation()
   const scope = useScrollReveal(`.${s.reveal}`)
+  const processSteps: [string, string, string, string][] = [
+    [t('home.process.step1Title'), t('home.process.step1Who'), t('home.process.step1Desc'), t('home.process.step1Time', { days: MIN_LEAD_DAYS })],
+    [t('home.process.step2Title'), t('home.process.step2Who'), t('home.process.step2Desc'), t('home.process.step2Time')],
+    [t('home.process.step3Title'), t('home.process.step3Who'), t('home.process.step3Desc'), t('home.process.step3Time', { hours: QUOTE_VALID_HOURS })],
+    [t('home.process.step4Title'), t('home.process.step4Who'), t('home.process.step4Desc'), t('home.process.step4Time')],
+    [t('home.process.step5Title'), t('home.process.step5Who'), t('home.process.step5Desc'), t('home.process.step5Time')],
+    [t('home.process.step6Title'), t('home.process.step6Who'), t('home.process.step6Desc'), t('home.process.step6Time')],
+  ]
+
   return (
     <div ref={scope}>
       <Hero />
@@ -483,12 +490,18 @@ export default function HomePage() {
 
       <section className={s.process} id="quy-trinh">
         <div className="wrap">
-          <h2 className={cx('section-title', s.reveal)}>Quy trình vận chuyển</h2>
-          <p className={cx('section-sub', s.reveal)}>Từ lúc gửi đơn đến khi ngựa được bàn giao tại điểm đến.</p>
+          <h2 className={cx('section-title', s.reveal)}>{t('home.process.title')}</h2>
+          <p className={cx('section-sub', s.reveal)}>{t('home.process.desc')}</p>
           <div className={cx(s.timeline, s.reveal)}>
-            <div className={s.timelineHead} aria-hidden="true"><span /><span>Bước</span><span>Phụ trách</span><span>Việc</span><span>Thời hạn</span></div>
+            <div className={s.timelineHead} aria-hidden="true">
+              <span />
+              <span>{t('home.process.stepHeader')}</span>
+              <span>{t('home.process.whoHeader')}</span>
+              <span>{t('home.process.actionHeader')}</span>
+              <span>{t('home.process.deadlineHeader')}</span>
+            </div>
             <ol>
-              {PROCESS.map(([title, who, text, time], i) => (
+              {processSteps.map(([title, who, text, time], i) => (
                 <li key={title} className={s.timelineRow}>
                   <span className={s.timelineNum}>{i + 1}</span>
                   <h3>{title}</h3>
@@ -504,13 +517,11 @@ export default function HomePage() {
 
       <section className={s.cta} style={{ '--bg': `url('${PHOTOS.race.src}')` } as CSSProperties}>
         <div className={cx('wrap', s.reveal)}>
-          <h2>Đặt chuyến vận chuyển ngựa đua</h2>
-          <p>Tạo tài khoản và nhận báo giá miễn phí, bạn chỉ trả tiền khi chấp nhận báo giá. Gửi đơn trước ngày đi tối thiểu {MIN_LEAD_DAYS} ngày để kịp thẩm định và làm giấy tờ.</p>
-          <Link to="/login" className="btn btn-white btn-lg">Đặt chuyến ngay</Link>
+          <h2>{t('home.cta.title')}</h2>
+          <p>{t('home.cta.desc', { days: MIN_LEAD_DAYS })}</p>
+          <Link to="/login" className="btn btn-white btn-lg">{t('home.cta.btn')}</Link>
         </div>
       </section>
-
-
     </div>
   )
 }

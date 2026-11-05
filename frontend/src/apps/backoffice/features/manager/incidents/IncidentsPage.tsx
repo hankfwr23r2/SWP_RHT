@@ -1,5 +1,6 @@
 // Manager: duyệt phương án sự cố và theo dõi sự cố đang xử lý (Flow 5, PRD mục 6.6).
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { INCIDENT_ACTION, INCIDENT_KIND } from '@shared/config/booking-rules'
 import { formatDateTime, formatVND } from '@shared/lib/format'
@@ -64,6 +65,7 @@ export function ApproveModal({ item, onClose, onDone }: { item: Item; onClose: (
 type Row = { key: string; b: Booking; i?: Incident }
 
 export default function IncidentsPage() {
+  const { t } = useTranslation()
   const { all, reload } = usePageData<typeof bookingListLoader>()
   const [tab, setTab] = useState<Tab>('approve')
   const [approve, setApprove] = useState<Item | null>(null)
@@ -81,21 +83,21 @@ export default function IncidentsPage() {
   const expenses = (b: Booking) => (b.incidents ?? []).flatMap(i => i.expenses).reduce((n, e) => n + e.amount, 0)
 
   const columns: Column<Row>[] = [
-    { head: 'Mã đơn', cell: r => idCell(r.b) },
-    { head: 'Khách hàng', cell: r => r.b.customer, nowrap: true },
-    { head: 'Tuyến', cell: r => routeCell(placeShort(r.b.origin.name), placeShort(r.b.dest.name)) },
-    { head: 'Nội dung', minWidth: 220, cell: r => (r.i ? <><b>{INCIDENT_KIND[r.i.kind].label}</b> · xe {r.i.tripId}<div className="sub-text">{r.i.plan ? `${INCIDENT_ACTION[r.i.plan.action]}, ETA mới ${formatDateTime(r.i.plan.newEta)}` : r.i.rejection ? <span style={{ color: 'var(--red)' }}>Đã trả về: {r.i.rejection.reason}</span> : r.i.note || 'Chưa có ghi chú'}</div></> : <>Chi phí sự cố <b>{formatVND(expenses(r.b))}</b></>) },
-    { head: 'Thời gian', cell: r => (r.i ? `Báo ${formatDateTime(r.i.reportedAt)}` : r.b.settlement ? `${r.b.settlement.paid ? 'Đã trả' : 'Hạn trả'} ${formatDateTime(r.b.settlement.paid?.paidAt ?? r.b.settlement.dueAt)}` : '-'), minWidth: 110 },
-    { head: 'Trạng thái', cell: r => statusCell(r.b.status) },
-    { head: 'Giá trị', cell: r => (r.i ? '-' : r.b.settlement ? formatVND(r.b.settlement.total) : '-'), right: true },
-    { head: 'Thao tác', cell: r => (tab === 'approve' && r.i ? <button className="btn btn-primary btn-sm" onClick={() => setApprove({ b: r.b, i: r.i! })}>Xem và duyệt</button> : null), right: true },
+    { head: t('intakePage.colOrderId', 'Mã đơn'), cell: r => idCell(r.b) },
+    { head: t('intakePage.colCustomer', 'Khách hàng'), cell: r => r.b.customer, nowrap: true },
+    { head: t('intakePage.colRoute', 'Tuyến'), cell: r => routeCell(placeShort(r.b.origin.name), placeShort(r.b.dest.name)) },
+    { head: t('incidentsPage.colDetails', 'Nội dung'), minWidth: 220, cell: r => (r.i ? <><b>{INCIDENT_KIND[r.i.kind].label}</b> · xe {r.i.tripId}<div className="sub-text">{r.i.plan ? `${INCIDENT_ACTION[r.i.plan.action]}, ETA mới ${formatDateTime(r.i.plan.newEta)}` : r.i.rejection ? <span style={{ color: 'var(--red)' }}>Đã trả về: {r.i.rejection.reason}</span> : r.i.note || 'Chưa có ghi chú'}</div></> : <>Chi phí sự cố <b>{formatVND(expenses(r.b))}</b></>) },
+    { head: t('incidentsPage.colTime', 'Thời gian'), cell: r => (r.i ? `Báo ${formatDateTime(r.i.reportedAt)}` : r.b.settlement ? `${r.b.settlement.paid ? 'Đã trả' : 'Hạn trả'} ${formatDateTime(r.b.settlement.paid?.paidAt ?? r.b.settlement.dueAt)}` : '-'), minWidth: 110 },
+    { head: t('intakePage.colStatus', 'Trạng thái'), cell: r => statusCell(r.b.status) },
+    { head: t('incidentsPage.colValue', 'Giá trị'), cell: r => (r.i ? '-' : r.b.settlement ? formatVND(r.b.settlement.total) : '-'), right: true },
+    { head: t('intakePage.colAction', 'Thao tác'), cell: r => (tab === 'approve' && r.i ? <button className="btn btn-primary btn-sm" onClick={() => setApprove({ b: r.b, i: r.i! })}>{t('incidentsPage.viewAndApprove', 'Xem và duyệt')}</button> : null), right: true },
   ]
   return (
     <>
-      <ListPage title="Sự cố" subtitle="Duyệt phương án sự cố và theo dõi sự cố đang xử lý." tab={tab} onTab={setTab} hot={['approve']}
-        tabs={[['approve', 'Chờ duyệt phương án', groups.approve.length], ['active', 'Sự cố đang xử lý', groups.active.length], ['returned', 'Chờ ĐPV lập lại', groups.returned.length], ['done', 'Đã hoàn tất', groups.done.length]]}
+      <ListPage title={t('staffMenus./manager/incidents', 'Sự cố')} subtitle={t('incidentsPage.subtitle', 'Duyệt phương án sự cố và theo dõi sự cố đang xử lý.')} tab={tab} onTab={setTab} hot={['approve']}
+        tabs={[['approve', t('incidentsPage.tabApprove', 'Chờ duyệt phương án'), groups.approve.length], ['active', t('incidentsPage.tabActive', 'Sự cố đang xử lý'), groups.active.length], ['returned', t('incidentsPage.tabReturned', 'Chờ ĐPV lập lại'), groups.returned.length], ['done', t('incidentsPage.tabDone', 'Đã hoàn tất'), groups.done.length]]}
         rows={groups[tab]} rowKey={r => r.key} columns={columns} haystack={r => [r.b.id, r.b.customer, r.b.origin.name, r.b.dest.name]} dateOf={r => r.b.departAt} loaded={!!all}
-        emptyText="Không có đơn nào ở mục này." hotRow={r => tab === 'approve' || r.b.status === 'payment_overdue'} />
+        emptyText={t('incidentsPage.empty', 'Không có đơn nào ở mục này.')} hotRow={r => tab === 'approve' || r.b.status === 'payment_overdue'} />
       {approve && <ApproveModal item={approve} onClose={() => setApprove(null)} onDone={done} />}
     </>
   )

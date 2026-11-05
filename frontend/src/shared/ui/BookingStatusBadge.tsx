@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { BOOKING_STATUS, type BookingStatus, type Tone } from '../config/booking-rules'
 
 const ICON: Record<BookingStatus, string> = {
@@ -31,13 +32,19 @@ const CLASS: Record<Tone, string> = { info: 'badge-info', warning: 'badge-warnin
 type Labels = { statusLabel?: string; customerStatusLabel?: string }
 
 // Nhãn trạng thái đơn. Khách thấy nhãn dễ hiểu; nội bộ thấy nhãn nghiệp vụ, mã gốc theo PRD nằm ở tooltip.
-// Có `labels` (đơn nhận từ backend) thì hiện nhãn backend trả; bảng ở frontend chỉ dùng khi thiếu.
+// Khi ngôn ngữ là tiếng Anh, hiển thị nhãn tiếng Anh chuẩn hóa.
 export function BookingStatusBadge({ status, audience = 'customer', text, labels }: { status: BookingStatus; audience?: 'customer' | 'staff'; text?: string; labels?: Labels }) {
+  const { t, i18n } = useTranslation()
+  const isEn = i18n.language.startsWith('en')
   // Trạng thái backend mới thêm mà frontend chưa biết: hiện nguyên mã thay vì làm trắng cả trang
   const s = BOOKING_STATUS[status] ?? { code: status, label: status, customerLabel: status, tone: 'muted' as Tone }
+  const displayLabel = isEn
+    ? t(`status.${status}`, s.code)
+    : (audience === 'customer' ? labels?.customerStatusLabel ?? s.customerLabel : labels?.statusLabel ?? s.label)
+
   return (
     <span className={`badge ${CLASS[s.tone]}`} title={text ? `${s.label} (${s.code})` : s.code}>
-      <i className={`fa-solid ${ICON[status] ?? 'fa-circle-info'}`} aria-hidden="true" /> {text ?? (audience === 'customer' ? labels?.customerStatusLabel ?? s.customerLabel : labels?.statusLabel ?? s.label)}
+      <i className={`fa-solid ${ICON[status] ?? 'fa-circle-info'}`} aria-hidden="true" /> {text ?? displayLabel}
     </span>
   )
 }

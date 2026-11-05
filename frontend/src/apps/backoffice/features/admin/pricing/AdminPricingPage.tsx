@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { usePageData } from '@shared/routing/pageData'
 import { systemConfigApi, type SystemConfigItem } from '@shared/api/systemConfig'
 import { backendHorseApi, type BackendHorseTypeDto } from '@shared/api/horses'
@@ -134,6 +135,7 @@ function formatNumber(val: number | string) {
 }
 
 export default function AdminPricingPage() {
+  const { t } = useTranslation()
   const initialData = usePageData<typeof adminPricingLoader>()
   const toast = useToast()
 
@@ -425,9 +427,9 @@ export default function AdminPricingPage() {
       <div className={s.header}>
         <div>
           <h1>
-            Biểu Giá & Công Thức Tính Cước
+            {t('adminPricing.title', 'Cấu hình Biểu phí & Báo giá')}
           </h1>
-          <p>Quản trị cước vận chuyển và danh mục giống ngựa. Phí bảo hiểm do bên thứ ba báo theo chuyến.</p>
+          <p>{t('adminPricing.subtitle', 'Điều chỉnh công thức cước cự ly, phụ phí loại xe, hệ số giống ngựa và mô phỏng giá.')}</p>
         </div>
         <div className={s.headerActions}>
           {hasChanges && (
@@ -436,7 +438,7 @@ export default function AdminPricingPage() {
             </button>
           )}
           <button className="btn btn-primary" onClick={handleSaveAllConfigs} disabled={isSaving}>
-            <i className="fa-solid fa-floppy-disk" /> {isSaving ? 'Đang lưu...' : 'Lưu tất cả thay đổi'}
+            <i className="fa-solid fa-floppy-disk" /> {isSaving ? 'Đang lưu...' : t('adminPricing.saveChanges', 'Lưu cấu hình')}
           </button>
         </div>
       </div>
@@ -488,21 +490,21 @@ export default function AdminPricingPage() {
           className={`${s.tabBtn} ${activeTab === 'parameters' ? s.tabBtnActive : ''}`}
           onClick={() => setActiveTab('parameters')}
         >
-          <i className="fa-solid fa-sliders" /> Tham Số Biểu Giá
+          <i className="fa-solid fa-sliders" /> {t('adminPricing.tabParams', 'Thông số & Biểu phí')}
           <span className={s.tabBadge}>{PARAMETER_DEFS.length}</span>
         </button>
         <button
           className={`${s.tabBtn} ${activeTab === 'breeds' ? s.tabBtnActive : ''}`}
           onClick={() => setActiveTab('breeds')}
         >
-          <i className="fa-solid fa-horse-head" /> Danh mục giống ngựa
+          <i className="fa-solid fa-horse-head" /> {t('adminPricing.tabBreeds', 'Hệ số giống ngựa')}
           <span className={s.tabBadge}>{horseTypesList.length}</span>
         </button>
         <button
           className={`${s.tabBtn} ${activeTab === 'simulator' ? s.tabBtnActive : ''}`}
           onClick={() => setActiveTab('simulator')}
         >
-          <i className="fa-solid fa-wand-magic-sparkles" /> Bộ Thử Nghiệm Tính Cước (Simulator)
+          <i className="fa-solid fa-wand-magic-sparkles" /> {t('adminPricing.tabSimulator', 'Mô phỏng báo giá')}
         </button>
       </div>
 

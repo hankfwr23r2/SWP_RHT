@@ -1,6 +1,8 @@
 // Báo cáo chuyến đi & nhật ký. Chuyển từ Manager/manager_trip_reports.html + manager_trip_reports.js.
 // Bản cũ chỉ có 1 báo cáo chi tiết viết cứng; nay bấm dòng nào xem báo cáo dòng đó. Xuất PDF dùng hộp thoại in của trình duyệt.
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import type { TFunction } from 'i18next'
 import { formatDate } from '@shared/lib/format'
 import { type TripReport } from '@shared/services/reports'
 import { Modal } from '@shared/ui/Modal'
@@ -11,27 +13,28 @@ import { usePageData } from '@shared/routing/pageData'
 import type { tripReportsLoader } from '../../../shared/loaders'
 
 const toMin = (hhmm: string) => { const [h, mi] = hhmm.split(':').map(Number); return h * 60 + mi }
-function legStatus(planned: string, actual: string) {
+function legStatus(planned: string, actual: string, t: TFunction) {
   let d = toMin(actual) - toMin(planned)
   if (d < -12 * 60) d += 24 * 60 // qua nửa đêm
-  if (d === 0) return <span className={`${s.status} ${s.onTime}`}><i className="fa-solid fa-check-circle" /> Đúng giờ</span>
+  if (d === 0) return <span className={`${s.status} ${s.onTime}`}><i className="fa-solid fa-check-circle" /> {t('tripReportsPage.onTime', 'Đúng giờ')}</span>
   return d < 0
-    ? <span className={`${s.status} ${s.early}`}><i className="fa-solid fa-bolt" /> Sớm {-d}p</span>
-    : <span className={`${s.status} ${s.late}`}><i className="fa-solid fa-clock" /> Trễ {d}p</span>
+    ? <span className={`${s.status} ${s.early}`}><i className="fa-solid fa-bolt" /> {t('tripReportsPage.early', 'Sớm {{min}}p', { min: -d })}</span>
+    : <span className={`${s.status} ${s.late}`}><i className="fa-solid fa-clock" /> {t('tripReportsPage.late', 'Trễ {{min}}p', { min: d })}</span>
 }
 
 function ReportDetail({ r, onExport }: { r: TripReport; onExport: () => void }) {
+  const { t } = useTranslation()
   return (
     <div id="report-detail" className={`card ${s.detail}`}>
-      <div className="card-header"><h2>Báo cáo Chi tiết: {r.id}</h2><button className="btn btn-ghost btn-sm" onClick={onExport}><i className="fa-solid fa-download" /> Xuất PDF</button></div>
+      <div className="card-header"><h2>{t('tripReportsPage.detailTitle', 'Báo cáo Chi tiết: {{id}}', { id: r.id })}</h2><button className="btn btn-ghost btn-sm" onClick={onExport}><i className="fa-solid fa-download" /> {t('tripReportsPage.exportPdf', 'Xuất PDF')}</button></div>
       <div className={m.infoGrid}>
-        <div className={m.infoItem}><span className={m.infoLabel}>Khách hàng</span><span className={m.infoValue}>{r.customer}</span></div>
-        <div className={m.infoItem}><span className={m.infoLabel}>Loại hình Vận chuyển</span><span className={m.infoValue}>{r.type}</span></div>
-        <div className={m.infoItem}><span className={m.infoLabel}>Chi tiết Ngựa</span><span className={m.infoValue}>{r.horses}</span></div>
-        <div className={m.infoItem}><span className={m.infoLabel}>Nhân viên Đi kèm</span><span className={m.infoValue}>{r.escort} (NV chăm sóc)</span></div>
+        <div className={m.infoItem}><span className={m.infoLabel}>{t('tripReportsPage.client', 'Khách hàng')}</span><span className={m.infoValue}>{r.customer}</span></div>
+        <div className={m.infoItem}><span className={m.infoLabel}>{t('tripReportsPage.transportType', 'Loại hình Vận chuyển')}</span><span className={m.infoValue}>{r.type}</span></div>
+        <div className={m.infoItem}><span className={m.infoLabel}>{t('tripReportsPage.horsesDetail', 'Chi tiết Ngựa')}</span><span className={m.infoValue}>{r.horses}</span></div>
+        <div className={m.infoItem}><span className={m.infoLabel}>{t('tripReportsPage.escortStaff', 'Nhân viên Đi kèm')}</span><span className={m.infoValue}>{r.escort}</span></div>
       </div>
 
-      <h3 className={s.h3}><i className="fa-solid fa-map-location-dot" /> Hành trình Vận chuyển (Đa chặng)</h3>
+      <h3 className={s.h3}><i className="fa-solid fa-map-location-dot" /> {t('tripReportsPage.journeyTitle', 'Hành trình Vận chuyển (Đa chặng)')}</h3>
       <div className="sub-text" style={{ marginBottom: 12 }}>{r.route} · Tổng thời gian ước tính: <b>{r.totalTime}</b></div>
       <div className={s.timeline}>
         {r.legs.map(l => (
@@ -44,19 +47,19 @@ function ReportDetail({ r, onExport }: { r: TripReport; onExport: () => void }) 
             <div className={s.times}>
               <span>Dự kiến: <b className="text-muted">{l.planned.join(' - ')}</b></span>
               <span>Thực tế: <b>{l.actual.join(' - ')}</b></span>
-              {legStatus(l.planned[1], l.actual[1])}
+              {legStatus(l.planned[1], l.actual[1], t)}
             </div>
           </div>
         ))}
       </div>
 
-      <h3 className={s.h3}><i className="fa-solid fa-heart-pulse" /> Nhật ký Sinh tồn</h3>
-      <div className={s.log}>{r.health.map(([t, e, ok]) => <div key={t} className={s.logItem}><span className="text-muted">{t}</span><span>{e}</span><span className={ok ? 'text-green font-semibold' : 'text-red font-semibold'}>{ok ? 'Bình thường' : 'Bất thường'}</span></div>)}</div>
+      <h3 className={s.h3}><i className="fa-solid fa-heart-pulse" /> {t('tripReportsPage.healthLogTitle', 'Nhật ký Sinh tồn')}</h3>
+      <div className={s.log}>{r.health.map(([tStamp, e, ok]) => <div key={tStamp} className={s.logItem}><span className="text-muted">{tStamp}</span><span>{e}</span><span className={ok ? 'text-green font-semibold' : 'text-red font-semibold'}>{ok ? t('tripReportsPage.normal', 'Bình thường') : t('tripReportsPage.abnormal', 'Bất thường')}</span></div>)}</div>
 
-      <h3 className={s.h3}><i className="fa-solid fa-clipboard-list" /> Sự kiện Vận chuyển</h3>
-      <div className={s.log}>{r.events.map(([t, e, ok]) => <div key={t} className={s.logItem}><span className="text-muted">{t}</span><span>{e}</span><span className={ok ? 'text-green font-semibold' : 'text-orange font-semibold'}>{ok ? 'Tốt' : 'Ghi nhận'}</span></div>)}</div>
+      <h3 className={s.h3}><i className="fa-solid fa-clipboard-list" /> {t('tripReportsPage.eventsTitle', 'Sự kiện Vận chuyển')}</h3>
+      <div className={s.log}>{r.events.map(([tStamp, e, ok]) => <div key={tStamp} className={s.logItem}><span className="text-muted">{tStamp}</span><span>{e}</span><span className={ok ? 'text-green font-semibold' : 'text-orange font-semibold'}>{ok ? t('tripReportsPage.good', 'Tốt') : t('tripReportsPage.noted', 'Ghi nhận')}</span></div>)}</div>
 
-      <h3 className={s.h3}><i className="fa-solid fa-star" /> Đánh giá &amp; Phản hồi từ Khách hàng</h3>
+      <h3 className={s.h3}><i className="fa-solid fa-star" /> {t('tripReportsPage.feedbackTitle', 'Đánh giá & Phản hồi từ Khách hàng')}</h3>
       <div className={s.stars} aria-label={`${r.rating} trên 5 sao`}>{Array.from({ length: 5 }, (_, i) => <i key={i} className={`fa-solid fa-star ${i < r.rating ? s.on : ''}`} />)}</div>
       <blockquote className={s.feedback}>"{r.feedback}"</blockquote>
     </div>

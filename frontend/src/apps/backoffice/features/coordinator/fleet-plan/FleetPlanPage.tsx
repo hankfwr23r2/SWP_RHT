@@ -2,6 +2,7 @@
 // Coordinator tự chọn xe (đơn đông ngựa thì nhiều xe), chia ngựa lên xe, lập lộ trình rồi xác nhận.
 import { Fragment, lazy, Suspense, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { MAX_CONTINUOUS_HOURS, VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { countryCodeOf, findGate, findTransitStation, type GeoPoint, type TransitStation } from '@shared/config/network'
@@ -1102,6 +1103,7 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
 }
 
 export default function FleetPlanPage() {
+  const { t } = useTranslation()
   const { session } = useAuth()
   const { b, all, vehicles, reload } = usePageData<typeof fleetPlanLoader>()
   useAutoRefresh(reload)
@@ -1112,7 +1114,7 @@ export default function FleetPlanPage() {
     return (
       <div className="page">
         <div className="wrap">
-          <p className="text-muted">Đang tải dữ liệu…</p>
+          <p className="text-muted">{t('common.loading', 'Đang tải...')}</p>
         </div>
       </div>
     )
@@ -1128,7 +1130,7 @@ export default function FleetPlanPage() {
             <div>
               Đơn {b.id} hiện được giao cho {b.intake?.coordinator.name || 'điều phối viên khác'}.{' '}
               <Link to="/coordinator/fleet-plan" className="text-orange font-semibold">
-                Về danh sách
+                {t('common.back', 'Quay lại')}
               </Link>
             </div>
           </div>
@@ -1142,12 +1144,12 @@ export default function FleetPlanPage() {
     <div className="page">
       <div className="wrap">
         <div className="breadcrumb">
-          <Link to="/coordinator/fleet-plan">Điều phối đội xe</Link> /{' '}
+          <Link to="/coordinator/fleet-plan">{t('coordinatorFleetPlan.listTitle', 'Xe và lộ trình')}</Link> /{' '}
           <span className="text-orange font-semibold">{b.id}</span>
         </div>
 
         <div className="page-header" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <h1>Đơn {b.id}</h1>
+          <h1>{t('specialistVerify.pageTitle', 'Đơn {{id}}', { id: b.id })}</h1>
           <BookingStatusBadge status={b.status} labels={b} audience="staff" />
           <ReviewChips b={b} />
         </div>
