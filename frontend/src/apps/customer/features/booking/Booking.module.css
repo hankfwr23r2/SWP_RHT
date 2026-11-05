@@ -237,28 +237,36 @@
 }
 
 .quickMeBtn {
-  font-size: 0.78rem;
-  padding: 5px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--line, #e2e8f0);
-  background: #fff;
-  color: var(--navy);
+  font-size: 0.82rem;
+  padding: 8px 13px;
+  border-radius: 8px;
+  border: 1px solid var(--orange, #ea580c);
+  background: var(--orange, #ea580c);
+  color: #fff;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-weight: 600;
-  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+  gap: 7px;
+  font-weight: 700;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.14);
+  transition: background-color 0.15s, border-color 0.15s, box-shadow 0.15s, transform 0.15s;
 }
 
 .quickMeBtn:hover {
-  border-color: var(--orange, #f97316);
-  background: #fff7ed;
+  border-color: #c2410c;
+  background: #c2410c;
+  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.2);
+  transform: translateY(-1px);
 }
 
 .quickMeBtn:focus-visible {
-  outline: 2px solid var(--orange, #f97316);
+  outline: 3px solid rgba(234, 88, 12, 0.35);
   outline-offset: 2px;
+}
+
+.quickMeBtn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.16);
 }
 
 .venueChips {

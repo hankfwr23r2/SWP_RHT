@@ -640,7 +640,7 @@ export default function Step1RoutePage() {
                 </h3>
                 {consignor.name && (
                   <button type="button" className={s.quickMeBtn} onClick={fillConsigneeFromConsignor}>
-                    <UserIcon /> Người gửi là người nhận
+                    <UserIcon /> Tôi là người nhận
                   </button>
                 )}
               </div>
