@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { MAX_CONTINUOUS_HOURS, MIN_REST_MINUTES } from '@shared/config/booking-rules'
 import { countryCodeOf, type GeoPoint, type TransitStation } from '@shared/config/network'
 import { routeOutline } from '@shared/lib/booking'
-import { ROADSIDE, stationsForBooking } from '@shared/lib/routePreview'
+import { MAX_ROUTE_STOPS, ROADSIDE, restTitle, stationsForBooking } from '@shared/lib/routePreview'
 import type { RestStop } from '@shared/types/booking'
 import { Modal } from '@shared/ui/Modal'
 import { addBaseLayer, BASE_MAP_OPTIONS } from '@shared/ui/baseMap'
@@ -107,8 +107,11 @@ export function RouteMapPicker({ origin, dest, gate, international, value, estim
   // Chỗ nghỉ hệ thống sẽ thêm (ngoài các trạm đang chọn) để không lái quá giờ liên tục
   const added = (roadNow?.preview?.schedule ?? [])
     .filter(e => STOP_EVENTS.has(e.type) && (e.type === 'ROADSIDE_REST' || !picked.has(e.place)))
-    .map(e => (e.type === 'ROADSIDE_REST' && !e.place.startsWith(ROADSIDE) ? `${ROADSIDE} gần ${e.place}` : e.place))
+    .map(e => restTitle(e.type === 'ROADSIDE_REST' && !e.place.startsWith(ROADSIDE) ? `${ROADSIDE} gần ${e.place}` : e.place))
 
+  // Cửa khẩu chiếm một chỗ trong giới hạn điểm của máy tính đường
+  const maxStations = gate ? MAX_ROUTE_STOPS - 1 : MAX_ROUTE_STOPS
+  const full = picked.size >= maxStations
   // Khi bấm vào trạm trên bản đồ: CHỈ mở thông tin trạm để xem, KHÔNG tự ý thêm trạm mới
   const choose = (name: string) => {
     setActive(name)
@@ -138,7 +141,6 @@ export function RouteMapPicker({ origin, dest, gate, international, value, estim
         try {
           map.current.stop()
           map.current.closePopup()
-          map.current.closeTooltip()
           if (layer.current) {
             layer.current.eachLayer(l => {
               try { (l as L.Marker).unbindTooltip?.() } catch {}
@@ -227,14 +229,16 @@ export function RouteMapPicker({ origin, dest, gate, international, value, estim
                 <button
                   type="button"
                   className="rm-add-btn"
+                  disabled={full}
                   onClick={() => addStation(act.name, pendingMinutes.get(act.name) ?? DEFAULT_MINUTES)}
                 >
                   <i className="fa-solid fa-plus" /> Thêm trạm này vào lộ trình
                 </button>
+                {full && <p role="alert" className="rm-limit">Tối đa {maxStations} trạm cho một chuyến.</p>}
               </>
             )
           ) : <p className="rm-hint"><i className="fa-solid fa-hand-pointer" /> Bấm vào một trạm (chấm trắng viền xanh) để xem thông tin và chọn thêm vào lộ trình.</p>}
-          <div className="rm-sum"><span><b>{outline.stations.length}</b> trạm</span><span>nghỉ <b>{total}</b> phút</span></div>
+          <div className="rm-sum"><span><b>{outline.stations.length}</b>/{maxStations} trạm</span><span>nghỉ <b>{total}</b> phút</span></div>
           <div className="rm-road" aria-live="polite">
             {roadNow?.preview ? (
               <>

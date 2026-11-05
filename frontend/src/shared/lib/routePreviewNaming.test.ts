@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { RoutePreviewResponse } from '../api/routes'
 import type { TransitStation } from '../config/network'
-import { routePlaceName, routePlanFromPreview, stationsForBooking } from './routePreview'
+import { isRoadsideRest, restLabel, restTitle, routePlaceName, routePlanFromPreview, stationsForBooking } from './routePreview'
 
 const VN = (local: string) => new Date(`${local}:00+07:00`).getTime()
 
@@ -79,5 +79,42 @@ describe('tên điểm đón/trả gửi backend', () => {
   it('giữ nguyên tên ngắn', () => {
     expect(routePlaceName('Kho Đồng Nai')).toBe('Kho Đồng Nai')
     expect(routePlaceName('Phường 1, TP.HCM')).toBe('Phường 1, TP.HCM')
+  })
+})
+
+// Danh sách chỗ nghỉ cho nhân viên: chữ ngắn, nói đúng chuyện đang xảy ra.
+// Trước đây nghỉ đêm 10 giờ bên lề hiện "Nghỉ dọc đường (km 686) · Trạm ngoài danh mục · Nghỉ 600 phút".
+describe('chữ hiển thị chỗ nghỉ cho nhân viên', () => {
+  const overnightPreview: RoutePreviewResponse = {
+    source: 'valhalla', km: 1344, driveHours: 19.5,
+    legs: [{ from: 'TP.HCM', to: 'Vinh', km: 1344, driveHours: 19.5 }],
+    path: [[10.7769, 106.7009], [18.68, 105.68]],
+    toll: { amountVnd: null, source: 'vietmap' },
+    schedule: [
+      { type: 'DRIVE', place: 'TP.HCM → Vinh', startAt: VN('2027-01-18T05:00'), endAt: VN('2027-01-18T16:00'), km: 690, lat: null, lng: null },
+      { type: 'OVERNIGHT', place: 'Nghỉ dọc đường (km 686)', startAt: VN('2027-01-18T16:00'), endAt: VN('2027-01-19T02:00'), km: 0, lat: 14.5, lng: 109 },
+      { type: 'DRIVE', place: 'TP.HCM → Vinh', startAt: VN('2027-01-19T02:00'), endAt: VN('2027-01-19T12:27'), km: 654, lat: null, lng: null },
+    ],
+    arrivalAt: VN('2027-01-19T12:27'), borderArrivalAt: null, crewDays: 2, warnings: [],
+  }
+
+  it('nghỉ đêm được đánh dấu và ghi "Nghỉ đêm 10 giờ" thay cho "Nghỉ 600 phút"', () => {
+    const rest = routePlanFromPreview(overnightPreview, 'TP.HCM', 'Vinh').rests[0]
+    expect(rest.overnight).toBe(true)
+    expect(restLabel(rest)).toBe('Nghỉ đêm 10 giờ')
+  })
+
+  it('nghỉ ngắn ghi theo phút hoặc giờ', () => {
+    expect(restLabel({ minutes: 30 })).toBe('Nghỉ 30 phút')
+    expect(restLabel({ minutes: 90 })).toBe('Nghỉ 1 giờ 30 phút')
+    expect(restLabel({ minutes: 120 })).toBe('Nghỉ 2 giờ')
+  })
+
+  it('chỗ nghỉ bên lề ghi "Bên đường", không gọi là trạm', () => {
+    expect(restTitle('Nghỉ dọc đường (km 686)')).toBe('Bên đường, km 686')
+    expect(restTitle('Nghỉ dọc đường gần Trạm nghỉ Phan Rang')).toBe('Bên đường, gần Trạm nghỉ Phan Rang')
+    expect(restTitle('Điểm dừng nghỉ Tuy Hòa')).toBe('Điểm dừng nghỉ Tuy Hòa')
+    expect(isRoadsideRest('Nghỉ dọc đường (km 686)')).toBe(true)
+    expect(isRoadsideRest('Điểm dừng nghỉ Tuy Hòa')).toBe(false)
   })
 })

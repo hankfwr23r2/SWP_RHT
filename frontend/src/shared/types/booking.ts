@@ -155,7 +155,7 @@ export interface Clearance {
 // ===== Lộ trình chi tiết và Trip Manifest (Flow 3) =====
 export interface RouteLeg { no: number; from: string; to: string; departAt: number; arriveAt: number; km?: number; hours?: number }
 // Trạm nghỉ (checkpoint dọc tuyến): ngựa dừng tối thiểu 30 phút, Escort ghi nhật ký an sinh
-export interface RestStop { afterLeg: number; name: string; minutes: number; lat?: number; lng?: number; manual?: boolean } // manual: trạm do điều phối viên chọn tay
+export interface RestStop { afterLeg: number; name: string; minutes: number; lat?: number; lng?: number; manual?: boolean; overnight?: boolean } // manual: trạm do điều phối viên chọn tay; overnight: nghỉ đêm (hết giờ lái trong ngày)
 export interface RoutePlan {
   legs: RouteLeg[]
   rests: RestStop[]

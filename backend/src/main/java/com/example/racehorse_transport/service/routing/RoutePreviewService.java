@@ -46,6 +46,8 @@ public class RoutePreviewService {
     private static final double FOREIGN_DEPTH_KM = 5;
     // Tuyến nội địa lọt ra nước ngoài: thử ép đi qua tối đa 4 trạm nghỉ trong nước, không vòng quá 1,6 lần đường thẳng
     private static final int MAX_DETOUR_TRIES = 4;
+    // Máy chủ Valhalla công khai nhận tối đa 10 điểm mỗi lần tính: điểm đón + điểm trả + 8 điểm giữa (trạm, cửa khẩu, điểm đi qua)
+    static final int MAX_ROUTE_POINTS = 10;
     private static final double MAX_DETOUR_RATIO = 1.6;
 
     private final ValhallaClient valhalla;
@@ -58,6 +60,10 @@ public class RoutePreviewService {
 
     public RoutePreviewResponse preview(RoutePreviewRequest request) {
         List<Location> middle = stopsOf(request.stopLocationIds());
+        if (middle.size() > MAX_ROUTE_POINTS - 2) {
+            throw new IllegalArgumentException("Chọn tối đa " + (MAX_ROUTE_POINTS - 2) + " trạm (tính cả cửa khẩu), đang có "
+                    + middle.size() + ". Hãy bỏ bớt trạm.");
+        }
         Location gate = middle.stream().filter(RoutePreviewService::isGate).findFirst().orElse(null);
         if (!request.pickup().country().equalsIgnoreCase(request.dropoff().country()) && gate == null) {
             throw new IllegalArgumentException("Tuyến đi nước ngoài cần chọn một cửa khẩu.");
@@ -240,6 +246,9 @@ public class RoutePreviewService {
         RoadRoute road = truckRoute(waypoints, capacityKg, topSpeed, departAt);
         Abroad abroad = abroad(road);
         while (abroad != null) {
+            if (waypoints.size() >= MAX_ROUTE_POINTS) {
+                return new Inside(road, abroad);
+            }
             int leg = abroad.legIndex();
             GeoPoint from = points.get(leg);
             GeoPoint to = points.get(leg + 1);
@@ -268,7 +277,7 @@ public class RoutePreviewService {
     // Đường xe tải cho phương án sự cố. Điểm nào cũng ở Việt Nam thì giữ đường trong nước như lúc lập kế hoạch;
     // không giữ được thì vẫn trả đường (sự cố cần xử lý ngay) kèm cảnh báo.
     public RoadRouteResponse roadRoute(RoadRouteRequest request) {
-        List<GeoPoint> points = request.points().stream().map(p -> new GeoPoint(p.lat(), p.lng())).toList();
+        List<GeoPoint> points = withinRouteLimit(request.points().stream().map(p -> new GeoPoint(p.lat(), p.lng())).toList());
         int capacityKg = capacityKg(4);
         int topSpeed = (int) number("TRUCK_TOP_SPEED_KMH");
         Instant now = Instant.now();
@@ -321,6 +330,15 @@ public class RoutePreviewService {
             }
         }
         return result;
+    }
+
+    // Đường cho phương án sự cố đi qua nhiều mốc còn lại: giữ điểm đầu, điểm cuối và rải đều các mốc giữa cho vừa giới hạn
+    private static List<GeoPoint> withinRouteLimit(List<GeoPoint> points) {
+        if (points.size() <= MAX_ROUTE_POINTS) {
+            return points;
+        }
+        double step = (points.size() - 1) / (double) (MAX_ROUTE_POINTS - 1);
+        return IntStream.range(0, MAX_ROUTE_POINTS).mapToObj(i -> points.get((int) Math.round(i * step))).toList();
     }
 
     private static RoadRouteResponse.Route roadRouteOf(RoadRoute road) {
