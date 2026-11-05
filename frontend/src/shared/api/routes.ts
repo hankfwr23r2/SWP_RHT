@@ -113,6 +113,17 @@ export interface RoutePreviewEvent {
   lng: number | null
 }
 
+export interface RoadRouteRequest {
+  points: { lat: number; lng: number }[]
+  alternatives: boolean
+}
+
+// routes[0]: đường chính; các phần tử sau: đường tránh
+export interface RoadRouteResponse {
+  routes: { km: number; driveHours: number; path: [number, number][] }[]
+  warnings: string[]
+}
+
 export interface RoutePreviewResponse {
   source: string
   km: number
@@ -201,6 +212,11 @@ export const routesApi = {
   // Xem trước lộ trình xe tải (Valhalla) + lịch trình + phí cầu đường, do backend tính
   routePreview: async (payload: RoutePreviewRequest, signal?: AbortSignal): Promise<RoutePreviewResponse> => {
     const res = await apiClient.post<ApiResponse<RoutePreviewResponse>>('/coordinator/route-preview', payload, { signal })
+    return res.data.data
+  },
+  // Đường xe tải qua một dãy điểm cho phương án sự cố; alternatives: thêm đường tránh kẹt xe
+  roadRoute: async (payload: RoadRouteRequest, signal?: AbortSignal): Promise<RoadRouteResponse> => {
+    const res = await apiClient.post<ApiResponse<RoadRouteResponse>>('/coordinator/road-route', payload, { signal })
     return res.data.data
   },
 }

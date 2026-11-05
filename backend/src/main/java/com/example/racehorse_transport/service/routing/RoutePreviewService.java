@@ -1,5 +1,7 @@
 package com.example.racehorse_transport.service.routing;
 
+import com.example.racehorse_transport.dto.routing.RoadRouteRequest;
+import com.example.racehorse_transport.dto.routing.RoadRouteResponse;
 import com.example.racehorse_transport.dto.routing.RoutePlace;
 import com.example.racehorse_transport.dto.routing.RoutePreviewRequest;
 import com.example.racehorse_transport.dto.routing.RoutePreviewResponse;
@@ -218,6 +220,18 @@ public class RoutePreviewService {
     // nhất trước; không trạm nào giúp được thì báo chặng và việc điều phối cần làm.
     private RoadRoute routeInsideVietnam(List<GeoPoint> points, List<Stop> stops, List<Location> middle,
                                          List<Location> restStops, int capacityKg, int topSpeed, Instant departAt) {
+        Inside inside = insideVietnam(points, middle, restStops, capacityKg, topSpeed, departAt);
+        if (inside.abroad() != null) {
+            throw abroadException(inside.abroad(), stops);
+        }
+        return inside.road();
+    }
+
+    // abroad != null: không tìm được đường trong nước cho chặng đó, road là đường tốt nhất đã có
+    private record Inside(RoadRoute road, Abroad abroad) {}
+
+    private Inside insideVietnam(List<GeoPoint> points, List<Location> middle, List<Location> restStops,
+                                 int capacityKg, int topSpeed, Instant departAt) {
         List<ValhallaClient.Waypoint> waypoints = new ArrayList<>(points.stream().map(ValhallaClient.Waypoint::stop).toList());
         RoadRoute road = truckRoute(waypoints, capacityKg, topSpeed, departAt);
         Abroad abroad = abroad(road);
@@ -241,10 +255,72 @@ public class RoutePreviewService {
                 }
             }
             if (!fixed) {
-                throw abroadException(abroad, stops);
+                return new Inside(road, abroad);
             }
         }
-        return road;
+        return new Inside(road, null);
+    }
+
+    // Đường xe tải cho phương án sự cố. Điểm nào cũng ở Việt Nam thì giữ đường trong nước như lúc lập kế hoạch;
+    // không giữ được thì vẫn trả đường (sự cố cần xử lý ngay) kèm cảnh báo.
+    public RoadRouteResponse roadRoute(RoadRouteRequest request) {
+        List<GeoPoint> points = request.points().stream().map(p -> new GeoPoint(p.lat(), p.lng())).toList();
+        int capacityKg = capacityKg(4);
+        int topSpeed = (int) number("TRUCK_TOP_SPEED_KMH");
+        Instant now = Instant.now();
+        List<Location> restStops = restStopLocations();
+        boolean domestic = points.stream().allMatch(p -> foreignTerritory.countryDeeperThan(p, FOREIGN_DEPTH_KM) == null);
+        List<String> warnings = new ArrayList<>();
+        RoadRoute main;
+        if (domestic) {
+            Inside inside = insideVietnam(points, List.of(), restStops, capacityKg, topSpeed, now);
+            main = inside.road();
+            if (inside.abroad() != null) {
+                warnings.add("Đường xe tải đi qua lãnh thổ " + inside.abroad().country()
+                        + ", chưa tìm được đường khác trong Việt Nam.");
+            }
+        } else {
+            main = truckRoute(points.stream().map(ValhallaClient.Waypoint::stop).toList(), capacityKg, topSpeed, now);
+        }
+        List<RoadRouteResponse.Route> routes = new ArrayList<>();
+        routes.add(roadRouteOf(main));
+        if (request.alternatives() && points.size() == 2) {
+            routes.addAll(detours(points.get(0), points.get(1), main, restStops, domestic, capacityKg, topSpeed, now));
+        }
+        return new RoadRouteResponse(routes, warnings);
+    }
+
+    // Đường tránh: ép đi qua trạm nghỉ nằm ngoài đường chính (cách hơn 5 km), vòng ít nhất trước, tối đa 2 đường.
+    // Máy chủ Valhalla công khai không trả tuyến thay thế (alternates) nên dựng bằng điểm đi qua.
+    private List<RoadRouteResponse.Route> detours(GeoPoint from, GeoPoint to, RoadRoute main, List<Location> restStops,
+                                                  boolean domestic, int capacityKg, int topSpeed, Instant departAt) {
+        List<GeoPoint> mainShape = main.legs().stream().flatMap(leg -> leg.shape().stream()).toList();
+        double direct = Math.max(GeoPoint.distanceKm(from, to), 1);
+        List<GeoPoint> candidates = restStops.stream()
+                .filter(l -> !domestic || "VN".equals(countryCode(l.getCountry())))
+                .map(l -> new GeoPoint(l.getLatitude(), l.getLongitude()))
+                .filter(p -> mainShape.isEmpty() || RouteGeometry.project(mainShape, p).distanceKm() > STATION_MAX_OFF_ROUTE_KM)
+                .filter(p -> GeoPoint.distanceKm(from, p) + GeoPoint.distanceKm(p, to) <= direct * MAX_DETOUR_RATIO)
+                .sorted(Comparator.comparingDouble(p -> GeoPoint.distanceKm(from, p) + GeoPoint.distanceKm(p, to)))
+                .limit(MAX_DETOUR_TRIES)
+                .toList();
+        List<RoadRouteResponse.Route> result = new ArrayList<>();
+        for (GeoPoint candidate : candidates) {
+            RoadRoute detour = truckRoute(List.of(ValhallaClient.Waypoint.stop(from), new ValhallaClient.Waypoint(candidate, true),
+                    ValhallaClient.Waypoint.stop(to)), capacityKg, topSpeed, departAt);
+            if (domestic && abroad(detour) != null) {
+                continue;
+            }
+            result.add(roadRouteOf(detour));
+            if (result.size() == 2) {
+                break;
+            }
+        }
+        return result;
+    }
+
+    private static RoadRouteResponse.Route roadRouteOf(RoadRoute road) {
+        return new RoadRouteResponse.Route(round1(road.km()), hours(road.driveSeconds()), path(road));
     }
 
     // Trạm nghỉ trong nước chưa có trong tuyến, xếp theo quãng vòng thêm so với đi thẳng

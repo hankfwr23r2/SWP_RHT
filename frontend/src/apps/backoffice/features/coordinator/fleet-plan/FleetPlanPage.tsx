@@ -42,6 +42,7 @@ const RouteMapPicker = lazy(() => import('./RouteMapPicker').then(m => ({ defaul
 import { InlineRouteMap } from './InlineRouteMap'
 import { routesApi, type BackendRouteResponse, type RoutePreviewRequest, type RoutePreviewResponse } from '@shared/api/routes'
 import { roadFromPreview, routePlanFromPreview } from '@shared/lib/routePreview'
+import { thinPath } from '@shared/services/routing'
 import { usePageData } from '@shared/routing/pageData'
 import type { fleetPlanLoader } from '../../../shared/loaders'
 
@@ -368,7 +369,8 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
       await bookingsApi.confirmPlan(b.id, session!.name, {
         routeId: selectedCorridorId ? Number(selectedCorridorId) : undefined,
         trips,
-        route,
+        // Lưu kèm đường xe tải đã tính để bản đồ theo dõi của khách và nhân viên vẽ đúng đường này
+        route: preview ? { ...route, path: thinPath(preview.path, 300) } : route,
         gate: international ? gate : undefined,
         note: note.trim(),
       })
