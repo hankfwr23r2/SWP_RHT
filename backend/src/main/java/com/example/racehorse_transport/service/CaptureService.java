@@ -35,10 +35,14 @@ public class CaptureService {
                 || ("ESCORT".equals(role) && ESCORT_PURPOSES.contains(purpose))))
             throw new AccessDeniedException("Vai trò không được chụp loại chứng từ này.");
         Booking booking = bookings.findById(bookingId).orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn."));
-        if (Set.of("cancelled", "rejected", "quote_expired", "completed").contains(Objects.toString(booking.getStatus(), "")))
-            throw new IllegalStateException("Đơn đã đóng, không thể chụp chứng từ mới.");
         var payload = BookingDetailsJson.read(objectMapper, booking);
         var trip = payload.getTrips() == null ? null : payload.getTrips().stream().filter(t -> tripId.equals(t.getTripId())).findFirst().orElse(null);
+        // Khách có thể trả quyết toán (đơn hoàn tất) khi kíp xe còn đang chạy về: vẫn cho chụp ảnh tại trụ sở để xác nhận về
+        boolean crewStillDrivingBack = "CONFIRM_HOME".equals(purpose) && trip != null && trip.getHomeReturn() != null
+                && trip.getHomeReturn().get("backAt") == null;
+        if (Set.of("cancelled", "rejected", "quote_expired", "completed").contains(Objects.toString(booking.getStatus(), ""))
+                && !crewStillDrivingBack)
+            throw new IllegalStateException("Đơn đã đóng, không thể chụp chứng từ mới.");
         Staff actor = staff.findByUser_Username(username).orElseThrow(() -> new AccessDeniedException("Không tìm thấy nhân sự."));
         if (trip == null || !role.equalsIgnoreCase(actor.getRole())) throw new AccessDeniedException("Chuyến hoặc vai trò không hợp lệ.");
         String assigned = "DRIVER".equals(role) ? trip.getDriverId() : trip.getEscortId();

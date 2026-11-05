@@ -47,6 +47,9 @@ public interface BookingService {
     // Áp hiệu ứng nghiệp vụ sau khi cổng thanh toán xác nhận đã nhận tiền
     Booking confirmDepositPaid(Payment payment, String actor);
     Booking confirmBalancePaid(Payment payment, String actor);
+
+    // Kíp xe đã nhận xong ngựa ở điểm đón (chip khớp, bản gốc, biên bản): lúc này khách mới thanh toán 70% còn lại
+    boolean isPickupComplete(Booking booking);
     BookingResponse rejectQuote(String bookingIdentifier, String customerUsername, com.example.racehorse_transport.dto.booking.RejectQuoteRequest request);
     int releaseExpiredQuotations();
     int markOverdueSettlements();

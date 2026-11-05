@@ -6,7 +6,7 @@ import { useAuth } from '@shared/auth/AuthContext'
 import { openIncidentOf, currentCheckpoint, manifestDocuments, pendingDeparture, spotLabel } from '@shared/lib/booking'
 import { formatDateTime } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
-import type { Booking, Checkpoint, VehicleTrip } from '@shared/types/booking'
+import type { Booking, BookingHorse, Checkpoint, VehicleTrip } from '@shared/types/booking'
 import { CaptureScope } from '@shared/ui/CaptureScope'
 import { CaptureField } from '@shared/ui/CaptureField'
 import { HorseDocsModal } from '../../shared/HorseDocsModal'
@@ -29,30 +29,75 @@ function ArriveStep({ title, icon, button, hint, run, action, purpose, target }:
   )
 }
 
+// Tài xế báo ngựa ở điểm đón không đúng hồ sơ (hộ tống đã quét mà chip không khớp): con đó rời chuyến, không giảm trừ tiền
+function ChipMismatchModal({ b, t, horse, onClose, run }: { b: Booking; t: VehicleTrip; horse: BookingHorse; onClose: () => void; run: Run }) {
+  const { session } = useAuth()
+  const [chipRead, setChipRead] = useState('')
+  const [note, setNote] = useState('')
+  const valid = chipRead.trim().length > 0
+  const submit = () => run(() => bookingsApi.reportChipMismatch(b.id, t.tripId, session!.name, { horseId: horse.horseId, chipRead: chipRead.trim(), note: note.trim() }), `Đã báo chip không khớp: ${horse.name}`).then(onClose)
+  return (
+    <Modal title={`Chip không khớp hồ sơ · ${horse.name}`} onClose={onClose} footer={<>
+      <button className="btn btn-outline" onClick={onClose}>Hủy</button>
+      <button className="btn btn-danger" disabled={!valid} onClick={submit}><i className="fa-solid fa-ban" /> Loại ngựa khỏi chuyến</button>
+    </>}>
+      <p style={{ marginTop: 0 }}>Hồ sơ ghi chip <b>{horse.microchip}</b>. Chỉ báo khi hộ tống đã quét lại mà vẫn không khớp. Con ngựa này sẽ không lên xe và khách không được giảm trừ tiền.</p>
+      <div className="form-group">
+        <label htmlFor="chip-read" className="required">Số chip đọc được trên máy quét</label>
+        <input id="chip-read" className="form-control" value={chipRead} onChange={e => setChipRead(e.target.value)} placeholder="VD: VN-985211" autoComplete="off" />
+      </div>
+      <div className="form-group" style={{ margin: 0 }}>
+        <label htmlFor="chip-note">Ghi chú</label>
+        <input id="chip-note" className="form-control" value={note} onChange={e => setNote(e.target.value)} placeholder="VD: Người gửi đưa nhầm ngựa, không có ngựa đúng hồ sơ" />
+      </div>
+    </Modal>
+  )
+}
+
 function PickupStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
   const { session } = useAuth()
   const pickup = t.run!.checkpoints[0]
-  const horses = b.horses.filter(h => t.horseIds.includes(h.horseId) && h.status !== 'unfit')
+  const horses = b.horses.filter(h => t.horseIds.includes(h.horseId) && h.status !== 'unfit' && h.status !== 'chip_mismatch')
   const unfitHorses = b.horses.filter(h => h.status === 'unfit')
+  const mismatchHorses = b.horses.filter(h => h.status === 'chip_mismatch')
   const originalsAll = manifestDocuments(b).originals
   const [photo, setPhoto] = useState<string | undefined>(pickup.handoverPhoto)
   const [showDocs, setShowDocs] = useState(false)
-  const scanned = pickup.chips?.length ?? 0
+  const [mismatchTarget, setMismatchTarget] = useState<BookingHorse | null>(null)
+  const isMatched = (h: BookingHorse) => !!pickup.chips?.includes(h.microchip.toUpperCase())
+  const scanned = horses.filter(isMatched).length
   const paid = !!b.balance
-  const horsesOk = horses.length === 0 || scanned >= horses.length
+  // Xe không chạy rỗng: phải còn ít nhất một con và mọi con đều đã quét đúng chip
+  const horsesOk = horses.length > 0 && scanned >= horses.length
+  const pickupDone = horsesOk && (pickup.originals?.length ?? 0) >= originalsAll.length && !!pickup.handoverPhoto
   const departureDay = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
   const insuranceProblems = horses.flatMap(h => { const problem = insuranceDepartureProblem(h.insurance, departureDay); return problem ? [`${h.name}: ${problem}`] : [] })
-  const ready = insuranceProblems.length === 0 && paid && horsesOk && (pickup.originals?.length ?? 0) >= originalsAll.length && !!pickup.handoverPhoto
+  const ready = insuranceProblems.length === 0 && paid && pickupDone
   return (
     <>
       <Panel title="Hộ tống quét microchip" icon="fa-wave-square" tone={horsesOk ? 'ok' : undefined}>
         <p>Hộ tống quét từng con trên xe này và đối soát với hộ chiếu ngựa. Đã quét <b>{scanned}/{horses.length}</b> ngựa.</p>
-        <ul className={s.checklist}>{horses.map(h => <li key={h.horseId} style={{ padding: '6px 0', fontSize: '0.9rem' }}><i className={`fa-solid ${pickup.chips?.includes(h.microchip.toUpperCase()) ? 'fa-circle-check' : 'fa-circle'}`} style={{ color: pickup.chips?.includes(h.microchip.toUpperCase()) ? 'var(--green)' : 'var(--line)', marginRight: 8 }} />{h.name} · {h.microchip}</li>)}</ul>
+        <ul className={s.checklist}>{horses.map(h => (
+          <li key={h.horseId} style={{ padding: '6px 0', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <span><i className={`fa-solid ${isMatched(h) ? 'fa-circle-check' : 'fa-circle'}`} style={{ color: isMatched(h) ? 'var(--green)' : 'var(--line)', marginRight: 8 }} />{h.name} · {h.microchip}</span>
+            {!isMatched(h) && !t.run?.startedAt && (
+              <button type="button" className="btn btn-outline btn-sm" style={{ color: 'var(--red, #dc2626)', borderColor: 'var(--red, #dc2626)', padding: '3px 8px', fontSize: '0.82rem' }} onClick={() => setMismatchTarget(h)}>
+                <i className="fa-solid fa-ban" /> Chip không khớp hồ sơ
+              </button>
+            )}
+          </li>
+        ))}</ul>
         {unfitHorses.length > 0 && (
           <div style={{ marginTop: 10, padding: '8px 12px', background: 'var(--danger-soft, #fee2e2)', borderRadius: 'var(--radius)', fontSize: '0.88rem', color: 'var(--red)' }}>
             <i className="fa-solid fa-ban" /> Đã loại bỏ {unfitHorses.length} cá thể ngựa do ốm/sốt ({unfitHorses.map(h => h.name).join(', ')}). Chi phí đã được giảm trừ cho khách.
           </div>
         )}
+        {mismatchHorses.length > 0 && (
+          <div style={{ marginTop: 10, padding: '8px 12px', background: 'var(--danger-soft, #fee2e2)', borderRadius: 'var(--radius)', fontSize: '0.88rem', color: 'var(--red)' }}>
+            <i className="fa-solid fa-ban" /> Không nhận {mismatchHorses.length} con vì chip không khớp hồ sơ ({mismatchHorses.map(h => `${h.name}: đọc được ${h.unfitInfo?.chipRead ?? '?'}`).join(', ')}).
+          </div>
+        )}
+        {mismatchTarget && <ChipMismatchModal b={b} t={t} horse={mismatchTarget} onClose={() => setMismatchTarget(null)} run={run} />}
       </Panel>
       <Panel title="Thu chứng từ gốc" icon="fa-folder-open">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
@@ -90,7 +135,10 @@ function PickupStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
         <button className="btn btn-outline" disabled={!photo || photo === pickup.handoverPhoto} onClick={() => run(() => bookingsApi.uploadHandover(b.id, t.tripId, session!.name, pickup.id, photo!), 'Đã tải ảnh biên bản')}><i className="fa-solid fa-upload" /> Tải ảnh biên bản</button>
       </Panel>
       <Panel title="Bắt đầu hành trình" icon="fa-truck-fast" tone={ready ? 'ok' : undefined}>
-        <p>{ready ? 'Đủ điều kiện xuất phát. Khách sẽ thấy ngựa đã được tiếp nhận.' : !paid ? 'Khách chưa thanh toán 70% còn lại nên xe chưa được bắt đầu hành trình. Nhà xe đã nhắc khách.' : 'Cần quét đủ microchip, thu đủ chứng từ gốc và tải ảnh biên bản có chữ ký.'}</p>
+        <p>{ready ? 'Đủ điều kiện xuất phát. Khách sẽ thấy ngựa đã được tiếp nhận.'
+          : horses.length === 0 ? 'Không còn ngựa nào trên xe. Quản lý đang xử lý đơn, chờ hướng dẫn.'
+          : !pickupDone ? 'Cần quét đủ microchip, thu đủ chứng từ gốc và tải ảnh biên bản có chữ ký. Xong bước này khách mới thanh toán 70% còn lại.'
+          : 'Đã nhận ngựa xong. Đang chờ khách thanh toán 70% còn lại, khách đã được nhắc.'}</p>
         {insuranceProblems.map(problem => <p className="form-error" key={problem}>{problem}. Liên hệ chuyên viên.</p>)}
         <button className={`btn btn-primary ${s.big}`} disabled={!ready} onClick={() => run(() => bookingsApi.startJourney(b.id, t.tripId, session!.name), 'Hành trình bắt đầu')}><i className="fa-solid fa-play" /> Bắt đầu hành trình</button>
       </Panel>

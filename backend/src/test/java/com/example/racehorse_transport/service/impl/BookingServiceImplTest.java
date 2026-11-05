@@ -1435,8 +1435,18 @@ class BookingServiceImplTest {
 
         BookingResponse beforeBalance = service.getBookingById(42, "phuc");
         assertThat(beforeBalance.getCanCancel()).isTrue();
-        assertThat(beforeBalance.getCanPayBalance()).isTrue();
+        // 70% còn lại chỉ trả được sau khi kíp xe nhận xong ngựa ở điểm đón
+        assertThat(beforeBalance.getCanPayBalance()).isFalse();
         assertThat(beforeBalance.getCancelPenalty()).isEqualByComparingTo("3000000");
+
+        booking.setStatus("en_route_to_pickup");
+        booking.setDetailsJson("{\"payment\":{\"amount\":3000000},"
+                + "\"horses\":[{\"horseId\":\"H-1\",\"microchip\":\"VN-1\",\"status\":\"ELIGIBLE\"}],"
+                + "\"trips\":[{\"tripId\":\"TRP-1\",\"horseIds\":[\"H-1\"],\"departedAt\":1,\"run\":{\"checkpoints\":[{\"id\":\"pickup\","
+                + "\"type\":\"pickup\",\"arrivedAt\":1,\"photo\":\"p.jpg\",\"chips\":[\"VN-1\"],\"handoverPhoto\":\"h.jpg\","
+                + "\"originals\":[\"Hộ chiếu ngựa bản gốc (FEI / National Passport)\",\"Sổ tiêm phòng\","
+                + "\"Phiếu xét nghiệm EIA/EVA, bản gốc kèm 02 bản sao công chứng\"]}]}}]}");
+        assertThat(service.getBookingById(42, "phuc").getCanPayBalance()).isTrue();
 
         booking.setDetailsJson("{\"payment\":{\"amount\":3000000,\"balancePaid\":true}}");
         BookingResponse afterBalance = service.getBookingById(42, "phuc");

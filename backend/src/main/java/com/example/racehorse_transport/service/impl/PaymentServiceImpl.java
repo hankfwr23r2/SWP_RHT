@@ -124,7 +124,6 @@ public class PaymentServiceImpl implements PaymentService {
                 .filter(p -> "DEPOSIT".equalsIgnoreCase(p.getPaymentType()) && "COMPLETED".equalsIgnoreCase(p.getStatus()))
                 .findFirst();
 
-        Instant now = Instant.now();
         String reason = (request != null && request.getReason() != null) ? request.getReason() : "Khách hàng hủy đơn";
         String actor = username;
 
@@ -150,7 +149,41 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         // Trường hợp 2: Đã cọc -> Khách tự ý hủy đơn: Mất 100% tiền cọc (không hoàn tiền)
-        BigDecimal depositPaid = depositOpt.get().getAmount();
+        return forfeitDeposit(booking, depositOpt.get(), reason, actor, "Hủy đơn sau khi đặt cọc",
+                "Khách hàng tự ý hủy đơn sau khi đặt cọc.");
+    }
+
+    /**
+     * Quản lý hủy đơn "Không nhận được ngựa" (pickup_failed): kíp xe đã tới điểm đón nhưng không còn ngựa nào khớp hồ sơ.
+     * Khách chưa trả 70% còn lại (chỉ trả sau khi nhận ngựa xong) nên mất phần cọc vận chuyển, không có khoản nào phải hoàn.
+     */
+    @Override
+    @Transactional
+    public CancelWithRefundResponse cancelPickupFailed(String bookingIdentifier, String reason, String username) {
+        Integer bookingId = parseBookingId(bookingIdentifier);
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+        if (!"pickup_failed".equalsIgnoreCase(booking.getStatus())) {
+            throw new IllegalStateException("Chỉ hủy được đơn đang ở trạng thái Không nhận được ngựa.");
+        }
+        List<Payment> existingPayments = paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(booking.getId());
+        if (existingPayments.stream().anyMatch(p -> "BALANCE".equalsIgnoreCase(p.getPaymentType()) && "COMPLETED".equalsIgnoreCase(p.getStatus()))) {
+            throw new IllegalStateException("Đơn đã thu 70% còn lại, cần hoàn tiền cho khách trước khi hủy.");
+        }
+        Payment deposit = existingPayments.stream()
+                .filter(p -> "DEPOSIT".equalsIgnoreCase(p.getPaymentType()) && "COMPLETED".equalsIgnoreCase(p.getStatus()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Đơn chưa có tiền cọc đã thanh toán."));
+        String why = reason != null && !reason.isBlank() ? reason.trim() : "Không nhận được ngựa ở điểm đón";
+        return forfeitDeposit(booking, deposit, why, username, "Hủy đơn vì không nhận được ngựa: " + why,
+                "Không nhận được ngựa ở điểm đón (" + why + ").");
+    }
+
+    // Hủy đơn đã đặt cọc mà chưa trả 70%: khách mất phần cọc vận chuyển, phần bảo hiểm thu hộ chờ quản lý đối soát riêng
+    private CancelWithRefundResponse forfeitDeposit(Booking booking, Payment deposit, String reason, String actor,
+            String historyText, String lead) {
+        BigDecimal depositPaid = deposit.getAmount();
+        Instant now = Instant.now();
         long daysToDeparture = 0;
         if (booking.getDepartureDate() != null) {
             daysToDeparture = ChronoUnit.DAYS.between(now, booking.getDepartureDate());
@@ -161,7 +194,7 @@ public class PaymentServiceImpl implements PaymentService {
         BookingDetailsPayload cancellationPayload = extractPayload(booking);
         BigDecimal insuranceCollected = HorseInsurancePolicy.insuranceDeposit(cancellationPayload.getQuote(), depositPaid);
         BigDecimal penaltyAmount = depositPaid.subtract(insuranceCollected);
-        String policyMsg = "Khách hàng tự ý hủy đơn sau khi đặt cọc. Không áp dụng hoàn cọc. Toàn bộ tiền cọc (" + penaltyAmount + " VND) tính vào phí phạt giữ chỗ và chuẩn bị phương tiện.";
+        String policyMsg = lead + " Không áp dụng hoàn cọc. Toàn bộ tiền cọc (" + penaltyAmount + " VND) tính vào phí phạt giữ chỗ và chuẩn bị phương tiện.";
 
         if (insuranceCollected.signum() > 0) policyMsg = "Phạt phần cọc vận chuyển: " + penaltyAmount + " VND. Phần bảo hiểm thu hộ " + insuranceCollected + " VND đang chờ quản lý đối soát riêng.";
         Payment refundPayment = null;
@@ -191,7 +224,7 @@ public class PaymentServiceImpl implements PaymentService {
         paymentMap.put("cancelledAt", now.toEpochMilli()); // khách xem lại thời điểm hủy trong lịch sử đơn
         payload.setPayment(paymentMap);
 
-        appendHistory(payload, actor, "Hủy đơn sau khi đặt cọc");
+        appendHistory(payload, actor, historyText);
         savePayload(booking, payload);
         bookingRepository.save(booking);
 

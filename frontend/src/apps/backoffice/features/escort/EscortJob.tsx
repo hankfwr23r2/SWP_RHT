@@ -152,14 +152,16 @@ function ScanStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
   const [unfitTarget, setUnfitTarget] = useState<BookingHorse | null>(null)
   const pickup = t.run!.checkpoints[0]
   const scanned = pickup.chips ?? []
-  const activeHorses = b.horses.filter(h => t.horseIds.includes(h.horseId) && h.status !== 'unfit')
-  const unfitHorses = b.horses.filter(h => h.status === 'unfit')
-  const all = activeHorses.length > 0 && scanned.length >= activeHorses.length
+  const activeHorses = b.horses.filter(h => t.horseIds.includes(h.horseId) && h.status !== 'unfit' && h.status !== 'chip_mismatch')
+  const unfitHorses = b.horses.filter(h => h.status === 'unfit' || h.status === 'chip_mismatch')
+  // Chỉ đếm chip khớp với ngựa còn trên chuyến
+  const matched = activeHorses.filter(h => scanned.includes(h.microchip.toUpperCase())).length
+  const all = activeHorses.length > 0 && matched >= activeHorses.length
 
   return (
     <>
       <Panel title="Quét microchip" icon="fa-wave-square" tone={all ? 'ok' : 'warn'}>
-        <p>Quét máy cầm tay vào cổ từng con, nhập số hiển thị và đối soát với Hộ chiếu, Health Cert. Đã quét <b>{scanned.length}/{activeHorses.length}</b>.</p>
+        <p>Quét máy cầm tay vào cổ từng con, nhập số hiển thị và đối soát với Hộ chiếu, Health Cert. Đã quét <b>{matched}/{activeHorses.length}</b>.</p>
         <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
           {activeHorses.map(h => {
             const ok = scanned.includes(h.microchip.toUpperCase())
@@ -187,12 +189,13 @@ function ScanStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
         {unfitHorses.length > 0 && (
           <div style={{ marginTop: 12, padding: '10px 12px', background: 'var(--danger-soft, #fee2e2)', borderRadius: 'var(--radius)', border: '1px solid var(--red, #dc2626)' }}>
             <p style={{ margin: '0 0 6px', fontWeight: 600, color: 'var(--red, #dc2626)', fontSize: '0.88rem' }}>
-              <i className="fa-solid fa-ban" /> Ngựa không đủ điều kiện (đã loại khỏi chuyến):
+              <i className="fa-solid fa-ban" /> Ngựa đã loại khỏi chuyến:
             </p>
             <ul style={{ margin: 0, paddingLeft: 18, fontSize: '0.85rem', color: '#991b1b' }}>
               {unfitHorses.map(h => (
                 <li key={h.horseId}>
                   <b>{h.name}</b> ({h.microchip}): {h.unfitInfo?.reason ?? 'Ốm/Sốt'}
+                  {h.unfitInfo?.chipRead ? ` · đọc được ${h.unfitInfo.chipRead}` : ''}
                   {h.unfitInfo?.temperature ? ` · ${h.unfitInfo.temperature}°C` : ''}
                   {h.unfitInfo?.discountAmount ? ` · Giảm trừ: ${formatVND(h.unfitInfo.discountAmount)}` : ''}
                 </li>

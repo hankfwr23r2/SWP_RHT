@@ -105,6 +105,16 @@ public class ManagerBookingController {
         return ResponseEntity.ok(ApiResponse.success(response, "Đã từ chối đơn hàng thành công"));
     }
 
+    // Hủy đơn "Không nhận được ngựa" (kíp xe đã tới điểm đón nhưng không còn ngựa nào khớp hồ sơ): khách mất phần cọc
+    @PostMapping("/{id}/cancel-pickup-failed")
+    public ResponseEntity<ApiResponse<com.example.racehorse_transport.dto.payment.CancelWithRefundResponse>> cancelPickupFailed(
+            @PathVariable("id") String id,
+            @RequestBody(required = false) com.example.racehorse_transport.dto.payment.CancelBookingRequest request,
+            Authentication authentication) {
+        var response = paymentService.cancelPickupFailed(id, request != null ? request.getReason() : null, authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success(response, response.getMessage()));
+    }
+
     // 8. API Kích hoạt quét & giải phóng xe/kíp xe quá hạn 24h (Dành cho Quản lý / Batch Job)
     @PostMapping("/maintenance/release-expired")
     public ResponseEntity<ApiResponse<Integer>> releaseExpired() {

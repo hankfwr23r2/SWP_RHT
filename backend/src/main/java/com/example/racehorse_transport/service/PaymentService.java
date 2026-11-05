@@ -23,6 +23,9 @@ public interface PaymentService {
      */
     CancelWithRefundResponse cancelWithRefundPolicy(String bookingIdentifier, CancelBookingRequest request, String username);
 
+    // Quản lý hủy đơn "Không nhận được ngựa": khách mất phần cọc vận chuyển
+    CancelWithRefundResponse cancelPickupFailed(String bookingIdentifier, String reason, String username);
+
     /**
      * Xem tóm tắt tài chính (tổng tiền, đã cọc, còn thiếu, trạng thái đã thanh toán đủ chưa)
      */
