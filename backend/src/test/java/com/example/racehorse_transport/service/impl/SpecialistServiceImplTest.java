@@ -64,6 +64,96 @@ class SpecialistServiceImplTest {
     }
 
     @Test
+    void repeatedQuoteConfirmationDoesNotSaveOrAppendHistory() {
+        Booking order = confirmedInsuranceBooking("under_review", false);
+        String original = order.getDetailsJson();
+        var request = confirmedInsuranceRequest(false);
+        // Frontend normalizes JSON null collections; PostgreSQL money may contain a decimal scale.
+        request.setDocuments(List.of());
+        request.setPolicyDocuments(List.of());
+        request.setDocumentNames(Map.of());
+        request.setPremium(new java.math.BigDecimal("1250000.00"));
+        service.updateInsurance("BK-1", "H1", request, "specialist");
+        service.updateInsurance("BK-1", "H1", request, "specialist");
+        verify(bookingRepository, never()).save(any());
+        assertThat(order.getDetailsJson()).isEqualTo(original);
+    }
+
+    @Test
+    void unchangedDraftCannotUndoConfirmedQuote() {
+        Booking order = confirmedInsuranceBooking("pending_commercial", false);
+        String original = order.getDetailsJson();
+        var request = confirmedInsuranceRequest(false);
+        request.setReviewed(false);
+        assertThatThrownBy(() -> service.updateInsurance("BK-1", "H1", request, "specialist"))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("đã được xác nhận");
+        verify(bookingRepository, never()).save(any());
+        assertThat(order.getDetailsJson()).isEqualTo(original);
+    }
+
+    @Test
+    void changedQuoteCanBeSavedAsDraftBeforeIssueAndNeedsConfirmationAgain() {
+        Booking order = confirmedInsuranceBooking("under_review", false);
+        var draft = confirmedInsuranceRequest(false);
+        draft.setPremium(new java.math.BigDecimal("2250000"));
+        draft.setReviewed(false);
+        var saved = service.updateInsurance("BK-1", "H1", draft, "specialist");
+        assertThat(saved.getHorses().getFirst().getInsurance().getReviewed()).isFalse();
+        assertThat(saved.getHorses().getFirst().getInsurance().getPremium()).isEqualByComparingTo("2250000");
+        var confirmed = confirmedInsuranceRequest(false);
+        confirmed.setPremium(new java.math.BigDecimal("2250000"));
+        var reviewed = service.updateInsurance("BK-1", "H1", confirmed, "specialist");
+        assertThat(reviewed.getHorses().getFirst().getInsurance().getReviewed()).isTrue();
+        assertThat(order.getDetailsJson()).contains("2250000");
+    }
+
+    @Test
+    void repeatedActivePolicyConfirmationDoesNotSaveAgain() {
+        Booking order = confirmedInsuranceBooking("clearance_in_progress", true);
+        String original = order.getDetailsJson();
+        var request = confirmedInsuranceRequest(true);
+        service.updateInsurance("BK-1", "H1", request, "specialist");
+        verify(bookingRepository, never()).save(any());
+        assertThat(order.getDetailsJson()).isEqualTo(original);
+    }
+
+    @Test
+    void activePolicyCannotBeChangedOrRevertedToDraft() {
+        Booking order = confirmedInsuranceBooking("clearance_in_progress", true);
+        String original = order.getDetailsJson();
+        var request = confirmedInsuranceRequest(true);
+        request.setArranged(false);
+        assertThatThrownBy(() -> service.updateInsurance("BK-1", "H1", request, "specialist"))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("có hiệu lực");
+        request.setArranged(true);
+        request.setPolicyNumber("CHANGED");
+        assertThatThrownBy(() -> service.updateInsurance("BK-1", "H1", request, "specialist"))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("có hiệu lực");
+        verify(bookingRepository, never()).save(any());
+        assertThat(order.getDetailsJson()).isEqualTo(original);
+    }
+
+    private Booking confirmedInsuranceBooking(String status, boolean policyActive) {
+        Booking order = booking(1, status, "approved");
+        order.setDetailsJson("""
+            {"intake":{"specialist":{"id":"SP-01"}},"horses":[{"horseId":"H1","name":"Storm",
+             "insurance":{"option":"assistance","provider":"Provider","premium":1250000,"reviewed":true,
+             "arranged":%s,"policyNumber":%s,"validFrom":%s,"validUntil":%s}}],
+             "history":[{"time":1,"actor":"specialist","text":"Confirmed"}]}
+            """.formatted(policyActive, policyActive ? "\"POLICY-1\"" : "null",
+                    policyActive ? "\"2026-01-01\"" : "null", policyActive ? "\"2027-12-31\"" : "null"));
+        when(bookingRepository.findByIdForUpdate(1)).thenReturn(Optional.of(order));
+        return order;
+    }
+
+    private com.example.racehorse_transport.dto.booking.HorseInsuranceDto confirmedInsuranceRequest(boolean policyActive) {
+        return com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder()
+                .option("assistance").provider("Provider").premium(new java.math.BigDecimal("1250000"))
+                .reviewed(true).arranged(policyActive).policyNumber(policyActive ? "POLICY-1" : null)
+                .validFrom(policyActive ? "2026-01-01" : null).validUntil(policyActive ? "2027-12-31" : null).build();
+    }
+
+    @Test
     void afterDepositCanAttachEffectivePolicyWithoutChangingQuotedPremiumOrProvider() {
         Booking order = booking(1, "clearance_in_progress", "approved");
         order.setDetailsJson("""

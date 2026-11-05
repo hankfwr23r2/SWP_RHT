@@ -9,6 +9,34 @@ import java.util.*;
 public final class HorseInsurancePolicy {
     private HorseInsurancePolicy() {}
     public static final String LABEL = "Thu hộ bảo hiểm bên thứ ba";
+
+    public static boolean sameContent(HorseInsuranceDto left, HorseInsuranceDto right) {
+        return left != null && right != null && contentOf(left).equals(contentOf(right));
+    }
+
+    public static boolean sameDeclaration(HorseInsuranceDto left, HorseInsuranceDto right) {
+        return sameContent(left, right)
+                && Boolean.TRUE.equals(left.getReviewed()) == Boolean.TRUE.equals(right.getReviewed())
+                && Boolean.TRUE.equals(left.getArranged()) == Boolean.TRUE.equals(right.getArranged());
+    }
+
+    private static List<Object> contentOf(HorseInsuranceDto insurance) {
+        // JSON null and empty collections represent the same absent documents.
+        // Currency scale (1250000 vs 1250000.00) must not turn a retry into an edit.
+        return Arrays.asList(
+                Objects.toString(insurance.getOption(), "").trim(),
+                Objects.toString(insurance.getProvider(), "").trim(),
+                Objects.toString(insurance.getPolicyNumber(), "").trim(),
+                Objects.toString(insurance.getValidFrom(), "").trim(),
+                Objects.toString(insurance.getValidUntil(), "").trim(),
+                insurance.getPremium() == null ? null : insurance.getPremium().stripTrailingZeros(),
+                Objects.toString(insurance.getNote(), "").trim(),
+                Objects.toString(insurance.getQuoteValidUntil(), "").trim(),
+                insurance.getDocuments() == null ? List.of() : insurance.getDocuments(),
+                insurance.getPolicyDocuments() == null ? List.of() : insurance.getPolicyDocuments(),
+                insurance.getDocumentNames() == null ? Map.of() : insurance.getDocumentNames());
+    }
+
     public static void validateDeclaration(HorseInsuranceDto i) {
         if (i == null || !Set.of("personal", "assistance", "none").contains(Objects.toString(i.getOption(), "")))
             throw new IllegalArgumentException("Chọn bảo hiểm cho từng ngựa.");

@@ -65,6 +65,18 @@ public class SpecialistServiceImpl implements SpecialistService {
             request.setPolicyNumber(null); request.setValidFrom(null); request.setValidUntil(null);
             request.setPolicyDocuments(null);
         }
+        if (beforeQuote) request.setArranged(false);
+        // The booking row is locked above: concurrent retries see the latest saved declaration.
+        boolean alreadyConfirmed = existing != null && (beforeQuote
+                ? Boolean.TRUE.equals(existing.getReviewed()) : Boolean.TRUE.equals(existing.getArranged()));
+        if (alreadyConfirmed && HorseInsurancePolicy.sameDeclaration(existing, request)) return mapToBookingResponse(booking);
+        if (afterDeposit && existing != null && Boolean.TRUE.equals(existing.getArranged())) {
+            throw new IllegalStateException("Hợp đồng bảo hiểm đã được xác nhận có hiệu lực, không thể chỉnh sửa tại bước này.");
+        }
+        if (beforeQuote && existing != null && Boolean.TRUE.equals(existing.getReviewed())
+                && !Boolean.TRUE.equals(request.getReviewed()) && HorseInsurancePolicy.sameContent(existing, request)) {
+            throw new IllegalStateException("Báo giá bảo hiểm đã được xác nhận. Chỉ lưu nháp khi có thay đổi thông tin báo giá.");
+        }
         if (beforeQuote && !Boolean.TRUE.equals(request.getReviewed())) HorseInsurancePolicy.validateDraft(request);
         else HorseInsurancePolicy.validateDeclaration(request);
         if (Boolean.TRUE.equals(request.getReviewed()) && "assistance".equals(request.getOption())
@@ -89,7 +101,6 @@ public class SpecialistServiceImpl implements SpecialistService {
                     throw new IllegalArgumentException("Hợp đồng phải bao phủ ngày khởi hành.");
             }
         }
-        if (beforeQuote) request.setArranged(false);
         appendHistory(payload, username, "Cập nhật hồ sơ bảo hiểm cho " + horse.getName());
         horse.setInsurance(request);
         savePayload(booking, payload);
