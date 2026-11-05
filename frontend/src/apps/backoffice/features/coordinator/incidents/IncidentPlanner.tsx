@@ -82,7 +82,7 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
   const oldEta = arrivalOf(b.route)
 
   const lines: MapLine[] = [
-    { path: path.map(lngLat), color: '#94a3b8', dashed: true, weight: 3, faded: true, label: 'Lộ trình đã lập' },
+    { path: b.route?.path?.length ? b.route.path : path.map(lngLat), color: '#94a3b8', dashed: true, weight: 3, faded: true, label: 'Lộ trình đã lập' },
     ...(rescueLine ? [{ path: rescueLine.path, color: '#059669', flow: true, label: `Cứu hộ tới chỗ xe: ${rescueLine.km} km` }] : []),
     ...(toStationLine ? [{ path: toStationLine.path, color: '#ea580c', flow: true, weight: 6, label: `Đưa ngựa tới ${stationName}: ${toStationLine.km} km` }] : []),
     ...(kind === 'traffic_jam'

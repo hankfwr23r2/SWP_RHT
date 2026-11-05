@@ -3,10 +3,10 @@
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { MIN_REST_MINUTES } from '@shared/config/booking-rules'
+import { MAX_CONTINUOUS_HOURS, MIN_REST_MINUTES } from '@shared/config/booking-rules'
 import { countryCodeOf, type GeoPoint, type TransitStation } from '@shared/config/network'
 import { routeOutline } from '@shared/lib/booking'
-import { stationsForBooking } from '@shared/lib/routePreview'
+import { ROADSIDE, stationsForBooking } from '@shared/lib/routePreview'
 import type { RestStop } from '@shared/types/booking'
 import { Modal } from '@shared/ui/Modal'
 import { addBaseLayer, BASE_MAP_OPTIONS } from '@shared/ui/baseMap'
@@ -21,13 +21,9 @@ const stationIcon = (order: number, active: boolean) => L.divIcon({
   className: 'rm-icon', iconSize: [34, 34], iconAnchor: [17, 17],
   html: order ? `<span class="rm-st rm-on${active ? ' rm-active' : ''}">${order}</span>` : '<span class="rm-st"></span>',
 })
-const haversine = (a: GeoPoint, b: GeoPoint) => {
-  const r = Math.PI / 180, dLat = (b.lat - a.lat) * r, dLng = (b.lng - a.lng) * r
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) ** 2
-  return 12742 * Math.asin(Math.sqrt(h))
-}
+import { routesApi, type RoutePreviewResponse } from '@shared/api/routes'
 
-import { routesApi } from '@shared/api/routes'
+const STOP_EVENTS = new Set(['REST', 'ROADSIDE_REST', 'OVERNIGHT'])
 
 interface Props {
   origin: Point
@@ -35,11 +31,13 @@ interface Props {
   gate?: Point
   international: boolean // đơn nội địa chỉ thấy trạm ở Việt Nam
   value: RestStop[]
+  // Tính lộ trình xe tải thật cho các trạm đang chọn (cùng cách tính với trang lập kế hoạch)
+  estimate?: (stations: RestStop[], signal: AbortSignal) => Promise<RoutePreviewResponse>
   onApply: (rests: RestStop[]) => void
   onClose: () => void
 }
 
-export function RouteMapPicker({ origin, dest, gate, international, value, onApply, onClose }: Props) {
+export function RouteMapPicker({ origin, dest, gate, international, value, estimate, onApply, onClose }: Props) {
   const box = useRef<HTMLDivElement>(null)
   const map = useRef<L.Map | null>(null)
   const layer = useRef<L.LayerGroup | null>(null)
@@ -81,8 +79,31 @@ export function RouteMapPicker({ origin, dest, gate, international, value, onApp
 
   const chosen = useMemo(() => allAvailableStations.filter(s => picked.has(s.name)), [allAvailableStations, picked])
   const outline = useMemo(() => routeOutline(origin, gate, dest, chosen), [origin, gate, dest, chosen])
-  const straightKm = outline.path.slice(1).reduce((t, p, i) => t + haversine(outline.path[i], p), 0)
   const order = (name: string) => outline.stations.findIndex(s => s.name === name) + 1
+  const chosenRests = useMemo<RestStop[]>(
+    () => outline.stations.map((s, i) => ({ afterLeg: i + 1, name: s.name, minutes: picked.get(s.name) ?? DEFAULT_MINUTES, lat: s.lat, lng: s.lng })),
+    [outline, picked]
+  )
+
+  // Đường xe tải thật cho các trạm đang chọn: chờ 0,6 giây sau lần bấm cuối rồi tính
+  const estimateKey = chosenRests.map(r => r.name).join('|')
+  const [road, setRoad] = useState<{ key: string; preview?: RoutePreviewResponse; error?: string }>()
+  useEffect(() => {
+    if (!estimate) return
+    const controller = new AbortController()
+    const timer = setTimeout(() => {
+      estimate(chosenRests, controller.signal)
+        .then(preview => { if (!controller.signal.aborted) setRoad({ key: estimateKey, preview }) })
+        .catch(e => { if (!controller.signal.aborted) setRoad({ key: estimateKey, error: e instanceof Error ? e.message : String(e) }) })
+    }, 600)
+    return () => { clearTimeout(timer); controller.abort() }
+  }, [estimateKey]) // eslint-disable-line react-hooks/exhaustive-deps
+  const roadNow = road?.key === estimateKey ? road : undefined
+  const roadLoading = !!estimate && !roadNow
+  // Chỗ nghỉ hệ thống sẽ thêm (ngoài các trạm đang chọn) để không lái quá giờ liên tục
+  const added = (roadNow?.preview?.schedule ?? [])
+    .filter(e => STOP_EVENTS.has(e.type) && (e.type === 'ROADSIDE_REST' || !picked.has(e.place)))
+    .map(e => (e.type === 'ROADSIDE_REST' && !e.place.startsWith(ROADSIDE) ? `${ROADSIDE} gần ${e.place}` : e.place))
 
   const choose = (name: string) => {
     setPicked(m => (m.has(name) ? m : new Map(m).set(name, DEFAULT_MINUTES)))
@@ -112,11 +133,12 @@ export function RouteMapPicker({ origin, dest, gate, international, value, onApp
     const g = layer.current
     if (!g) return
     g.clearLayers()
-    const line = outline.path.map(p => [p.lat, p.lng] as [number, number])
+    // Có đường xe tải thật thì vẽ nét liền; đang tính thì nối thẳng nét đứt các điểm đã chọn
+    const truckPath = roadNow?.preview?.path
+    const line = truckPath?.length ? truckPath : outline.path.map(p => [p.lat, p.lng] as [number, number])
     const chosenAny = outline.stations.length > 0
-    // Có trạm đã chọn: đường cam chuyển động; chưa chọn: đường xám nhạt điểm đón → điểm trả
     L.polyline(line, { color: chosenAny ? '#ea580c' : '#64748b', weight: 12, opacity: 0.18, interactive: false }).addTo(g)
-    L.polyline(line, { color: chosenAny ? '#ea580c' : '#64748b', weight: 5, opacity: 0.95, className: chosenAny ? 'rm-route' : '', dashArray: '6 8', interactive: false }).addTo(g)
+    L.polyline(line, { color: chosenAny ? '#ea580c' : '#64748b', weight: 5, opacity: 0.95, dashArray: truckPath?.length ? undefined : '6 8', interactive: false }).addTo(g)
     allAvailableStations.forEach(s => {
       const n = order(s.name)
       L.marker([s.lat, s.lng], { icon: stationIcon(n, s.name === active), zIndexOffset: n ? 500 : 0, title: s.name })
@@ -126,18 +148,10 @@ export function RouteMapPicker({ origin, dest, gate, international, value, onApp
     L.marker([origin.lat, origin.lng], { icon: pin('rm-a', 'A'), zIndexOffset: 900 }).bindTooltip(`Điểm đón: ${short(origin.name)}`, { direction: 'top', offset: [0, -14] }).addTo(g)
     L.marker([dest.lat, dest.lng], { icon: pin('rm-b', 'B'), zIndexOffset: 900 }).bindTooltip(`Điểm trả: ${short(dest.name)}`, { direction: 'top', offset: [0, -14] }).addTo(g)
     if (gate) L.marker([gate.lat, gate.lng], { icon: pin('rm-g', '⚑'), zIndexOffset: 900 }).bindTooltip(`Cửa khẩu ${gate.name}`, { direction: 'top', offset: [0, -14] }).addTo(g)
-  }, [allAvailableStations, outline, picked, active]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [allAvailableStations, outline, picked, active, roadNow]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const apply = () => {
-    onApply(
-      outline.stations.map((s, i) => ({
-        afterLeg: i + 1,
-        name: s.name,
-        minutes: picked.get(s.name) ?? DEFAULT_MINUTES,
-        lat: s.lat,
-        lng: s.lng,
-      }))
-    )
+    onApply(chosenRests)
     onClose()
   }
   const act = active ? allAvailableStations.find(s => s.name === active) : undefined
@@ -145,7 +159,7 @@ export function RouteMapPicker({ origin, dest, gate, international, value, onApp
 
   return (
     <Modal wide onClose={onClose} title="Chọn trạm nghỉ" subtitle="Bấm vào các chấm trạm trên bản đồ; hệ thống tự xếp thứ tự và vẽ đường đi qua các điểm."
-      footer={<><button className="btn btn-ghost" onClick={onClose}>Hủy</button><button className="btn btn-primary" onClick={apply}><i className="fa-solid fa-check" /> Áp dụng {outline.stations.length} trạm</button></>}>
+      footer={<><button className="btn btn-ghost" onClick={onClose}>Hủy</button><button className="btn btn-primary" onClick={apply}><i className="fa-solid fa-check" /> Áp dụng {outline.stations.length} trạm{added.length ? ` (+${added.length} nghỉ theo quy định)` : ''}</button></>}>
       <div className="rm-wrap">
         <div ref={box} className="rm-map" role="application" aria-label="Bản đồ chọn trạm nghỉ" />
         <div className="rm-panel">
@@ -159,7 +173,21 @@ export function RouteMapPicker({ origin, dest, gate, international, value, onApp
           ) : <p className="rm-hint"><i className="fa-solid fa-hand-pointer" /> Bấm vào một trạm (chấm trắng viền xanh) để chọn và đặt thời gian nghỉ.</p>}
           <div className="rm-sum"><span><b>{outline.stations.length}</b> trạm</span><span>nghỉ <b>{total}</b> phút</span></div>
           <div className="rm-road" aria-live="polite">
-            <span>≈ <b>{Math.round(straightKm)}</b> km đường chim bay</span><small>Nét đứt chỉ nối các điểm đã chọn; đường đi thật cho xe tải sẽ hiện ở trang lập kế hoạch.</small>
+            {roadNow?.preview ? (
+              <>
+                <span><b>{Math.round(roadNow.preview.km)}</b> km · <b>{roadNow.preview.driveHours.toFixed(1)}</b> giờ lái xe tải</span>
+                {added.length > 0 && (
+                  <small>
+                    Hệ thống sẽ thêm {added.length} chỗ nghỉ để không lái quá {MAX_CONTINUOUS_HOURS} giờ liên tục:{' '}
+                    {added.join('; ')}.
+                  </small>
+                )}
+              </>
+            ) : roadNow?.error ? (
+              <small role="alert">{roadNow.error}</small>
+            ) : (
+              <small>{roadLoading ? 'Đang tính đường xe tải…' : 'Nét đứt chỉ nối các điểm đã chọn.'}</small>
+            )}
           </div>
           {locationsError && <p role="alert">{locationsError}</p>}
           {!locationsError && stations.length === 0 && <p>Chưa có trạm nghỉ đang hoạt động có tọa độ.</p>}

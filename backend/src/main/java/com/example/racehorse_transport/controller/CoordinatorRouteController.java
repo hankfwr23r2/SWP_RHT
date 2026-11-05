@@ -1,5 +1,7 @@
 package com.example.racehorse_transport.controller;
 
+import com.example.racehorse_transport.dto.routing.RoadRouteRequest;
+import com.example.racehorse_transport.dto.routing.RoadRouteResponse;
 import com.example.racehorse_transport.dto.routing.RoutePreviewRequest;
 import com.example.racehorse_transport.dto.routing.RoutePreviewResponse;
 import com.example.racehorse_transport.response.ApiResponse;
@@ -25,5 +27,11 @@ public class CoordinatorRouteController {
     @PostMapping("/route-preview")
     public ResponseEntity<ApiResponse<RoutePreviewResponse>> preview(@Valid @RequestBody RoutePreviewRequest request) {
         return ResponseEntity.ok(ApiResponse.success(routePreviewService.preview(request), "Đã tính lộ trình xe tải"));
+    }
+
+    // Đường xe tải cho phương án sự cố: tới trạm gần nhất, cứu hộ tới xe, đường tránh kẹt xe, phần đường còn lại
+    @PostMapping("/road-route")
+    public ResponseEntity<ApiResponse<RoadRouteResponse>> roadRoute(@Valid @RequestBody RoadRouteRequest request) {
+        return ResponseEntity.ok(ApiResponse.success(routePreviewService.roadRoute(request), "Đã tính đường xe tải"));
     }
 }

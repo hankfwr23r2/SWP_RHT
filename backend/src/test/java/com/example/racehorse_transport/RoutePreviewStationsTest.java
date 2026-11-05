@@ -49,6 +49,7 @@ class RoutePreviewStationsTest {
     private static final String HANOI = "{\"name\":\"Hà Nội\",\"lat\":21.0278,\"lng\":105.8342,\"country\":\"VN\"}";
     private static final String CHAU_DOC = "{\"name\":\"Kho Châu Đốc\",\"lat\":10.705,\"lng\":105.115,\"country\":\"VN\"}";
     private static final String HCM_DROPOFF = "{\"name\":\"Kho TP.HCM\",\"lat\":10.79,\"lng\":106.70,\"country\":\"VN\"}";
+    private static final String BINH_DUONG = "{\"name\":\"Kho Bình Dương\",\"lat\":10.98,\"lng\":106.65,\"country\":\"VN\"}";
     private static final String MOC_BAI_YARD = "{\"name\":\"Bãi xe Mộc Bài\",\"lat\":11.07,\"lng\":106.2,\"country\":\"VN\"}";
     private static final String PHNOM_PENH = "{\"name\":\"Phnom Penh\",\"lat\":11.5564,\"lng\":104.9282,\"country\":\"KH\"}";
 
@@ -101,6 +102,7 @@ class RoutePreviewStationsTest {
                     locations.save(l);
                 });
         STUB.clearRequests();
+        STUB.clearConditionalReplies();
         STUB.reply("/route", 200, "valhalla-truck-hcm-hanoi.json");
         STUB.reply("/route/v4", 200, "vietmap-v4-hcm-hanoi-toll.json");
         coordinatorToken = loginAsCoordinator();
@@ -134,7 +136,10 @@ class RoutePreviewStationsTest {
         assertThat(roadside.path("type").asText()).isEqualTo("ROADSIDE_REST");
         assertThat(roadside.path("startAt").asLong()).isCloseTo(epoch("2026-11-02T13:18:39"), within(60_000L));
         assertThat(roadside.path("lat").isNumber()).isTrue();
-        assertThat(json.readTree(response.body()).path("data").path("warnings").toString()).contains("nghỉ dọc đường");
+        // Cảnh báo nói rõ xe dừng ở đâu và điều phối có thể làm gì
+        assertThat(json.readTree(response.body()).path("data").path("warnings").toString())
+                .contains("xe phải nghỉ dọc đường 5 lần (km 533; km 683; km 956; km 1229; km 1366)")
+                .contains("Có thể chọn thêm trạm nghỉ trên bản đồ.");
     }
 
     @Test
@@ -182,6 +187,103 @@ class RoutePreviewStationsTest {
         assertThat(message(response)).isEqualTo(
                 "Tuyến nội địa đi qua lãnh thổ Campuchia ở chặng Kho Châu Đốc → Trạm nghỉ Mộc Bài (test). "
                         + "Hãy bỏ hoặc đổi trạm Trạm nghỉ Mộc Bài (test).");
+    }
+
+    // Điều phối mở đơn Châu Đốc → Bình Dương, chưa chọn trạm: đường xe tải ngắn nhất cắt qua Svay Rieng (Campuchia).
+    // Hệ thống phải tự tìm đường trong Việt Nam: thử ép xe đi qua trạm nghỉ trong nước ít vòng nhất trước (Mộc Bài, vẫn lọt
+    // sang Campuchia), rồi trạm kế tiếp (Cao Lãnh, đi trọn trong nước). Điều phối nhận được lộ trình, không thấy lỗi.
+    @Test
+    void domesticRouteCuttingThroughCambodiaIsKeptInsideVietnamAutomatically() throws Exception {
+        STUB.reply("/route", 200, "valhalla-truck-chaudoc-binhduong.json");
+        STUB.replyWhenBodyContains("/route", List.of("\"through\"", "\"lat\":11.07"), 200, "valhalla-truck-chaudoc-binhduong-through-mocbai.json");
+        STUB.replyWhenBodyContains("/route", List.of("\"through\"", "\"lat\":10.46"), 200, "valhalla-truck-chaudoc-binhduong-through-caolanh.json");
+        location("RestStop", "Trạm nghỉ Mộc Bài (test)", "Việt Nam", 11.07, 106.2);
+        location("RestStop", "Trạm nghỉ Cao Lãnh (test)", "Việt Nam", 10.46, 105.63);
+
+        HttpResponse<String> response = preview(CHAU_DOC, BINH_DUONG, List.of());
+
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
+        JsonNode data = json.readTree(response.body()).path("data");
+        assertThat(data.path("km").asDouble()).isCloseTo(236.6, within(0.5));
+        assertThat(data.path("legs")).hasSize(1);
+        assertThat(data.path("legs").get(0).path("from").asText()).isEqualTo("Kho Châu Đốc");
+        assertThat(data.path("legs").get(0).path("to").asText()).isEqualTo("Kho Bình Dương");
+        List<RoutingStubServer.Recorded> calls = STUB.requests("/route");
+        assertThat(calls).hasSize(3);
+        assertThat(calls.get(1).body()).contains("\"lat\":11.07");
+        assertThat(calls.get(2).body()).contains("\"lat\":10.46").contains("\"type\":\"through\"");
+    }
+
+    // Điều phối bấm chọn Củ Chi trước rồi mới tới Cao Lãnh. Xe phải ghé theo thứ tự trên đường thật
+    // (Châu Đốc → Cao Lãnh → Củ Chi → Bình Dương), không chạy theo thứ tự bấm hay theo đường chim bay.
+    @Test
+    void stationsAreVisitedInTheOrderTheyLieOnTheRoad() throws Exception {
+        STUB.reply("/route", 200, "valhalla-truck-chaudoc-binhduong.json");
+        STUB.replyWhenBodyContains("/route", List.of("\"lat\":10.46", "\"lat\":10.97"), 200, "valhalla-truck-chaudoc-caolanh-cuchi-binhduong.json");
+        Location cuChi = location("RestStop", "Trạm nghỉ Củ Chi (test)", "Việt Nam", 10.97, 106.5);
+        Location caoLanh = location("RestStop", "Trạm nghỉ Cao Lãnh (test)", "Việt Nam", 10.46, 105.63);
+
+        HttpResponse<String> response = preview(CHAU_DOC, BINH_DUONG, List.of(cuChi.getId(), caoLanh.getId()));
+
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
+        List<String> legs = new ArrayList<>();
+        json.readTree(response.body()).path("data").path("legs").forEach(l -> legs.add(l.path("to").asText()));
+        assertThat(legs).containsExactly("Trạm nghỉ Cao Lãnh (test)", "Trạm nghỉ Củ Chi (test)", "Kho Bình Dương");
+        String lastCall = STUB.requests("/route").getLast().body();
+        assertThat(lastCall.indexOf("\"lat\":10.46")).isLessThan(lastCall.indexOf("\"lat\":10.97"));
+    }
+
+    // Không còn trạm trong nước nào giúp xe tránh được Campuchia: báo đúng chặng và việc điều phối cần làm.
+    @Test
+    void domesticRouteThatCannotAvoidCambodiaTellsTheCoordinatorWhatToDo() throws Exception {
+        STUB.reply("/route", 200, "valhalla-truck-chaudoc-binhduong.json");
+        STUB.replyWhenBodyContains("/route", List.of("\"through\"", "\"lat\":11.07"), 200, "valhalla-truck-chaudoc-binhduong-through-mocbai.json");
+        location("RestStop", "Trạm nghỉ Mộc Bài (test)", "Việt Nam", 11.07, 106.2);
+
+        HttpResponse<String> response = preview(CHAU_DOC, BINH_DUONG, List.of());
+
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(422);
+        assertThat(message(response)).isEqualTo(
+                "Tuyến nội địa đi qua lãnh thổ Campuchia ở chặng Kho Châu Đốc → Kho Bình Dương. "
+                        + "Hãy chọn thêm một trạm nghỉ ở Việt Nam trên chặng này.");
+    }
+
+    // Sự cố trên đường (Flow 5): điều phối cần đường xe tải từ chỗ xe tới điểm kế tiếp. Dùng cùng máy tính đường xe tải
+    // và cùng cách giữ tuyến nội địa trong Việt Nam như lúc lập kế hoạch, không dùng đường xe con.
+    @Test
+    void incidentRoadRouteIsTheTruckRouteKeptInsideVietnam() throws Exception {
+        STUB.reply("/route", 200, "valhalla-truck-chaudoc-binhduong.json");
+        STUB.replyWhenBodyContains("/route", List.of("\"through\"", "\"lat\":11.07"), 200, "valhalla-truck-chaudoc-binhduong-through-mocbai.json");
+        STUB.replyWhenBodyContains("/route", List.of("\"through\"", "\"lat\":10.46"), 200, "valhalla-truck-chaudoc-binhduong-through-caolanh.json");
+        location("RestStop", "Trạm nghỉ Mộc Bài (test)", "Việt Nam", 11.07, 106.2);
+        location("RestStop", "Trạm nghỉ Cao Lãnh (test)", "Việt Nam", 10.46, 105.63);
+
+        HttpResponse<String> response = post("/coordinator/road-route", coordinatorToken,
+                "{\"points\":[{\"lat\":10.705,\"lng\":105.115},{\"lat\":10.98,\"lng\":106.65}],\"alternatives\":false}");
+
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
+        JsonNode routes = json.readTree(response.body()).path("data").path("routes");
+        assertThat(routes).hasSize(1);
+        assertThat(routes.get(0).path("km").asDouble()).isCloseTo(236.6, within(0.5));
+        assertThat(routes.get(0).path("path").size()).isGreaterThan(10);
+        assertThat(STUB.requests("/route").getLast().body()).contains("\"truck\"");
+    }
+
+    // Kẹt xe: ngoài đường chính, điều phối thấy thêm đường tránh đi qua một trạm nằm ngoài đường chính (Đức Hòa cách QL22 ~13 km).
+    @Test
+    void trafficJamGetsADetourThroughAStationOffTheMainRoad() throws Exception {
+        STUB.reply("/route", 200, "valhalla-truck-hcm-mocbai.json");
+        STUB.replyWhenBodyContains("/route", List.of("\"through\"", "\"lat\":10.88"), 200, "valhalla-truck-hcm-through-duchoa-mocbai.json");
+        location("RestStop", "Trạm nghỉ Đức Hòa (test)", "Việt Nam", 10.88, 106.4);
+
+        HttpResponse<String> response = post("/coordinator/road-route", coordinatorToken,
+                "{\"points\":[{\"lat\":10.7769,\"lng\":106.7009},{\"lat\":11.07,\"lng\":106.2}],\"alternatives\":true}");
+
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
+        JsonNode routes = json.readTree(response.body()).path("data").path("routes");
+        assertThat(routes).hasSize(2);
+        assertThat(routes.get(0).path("km").asDouble()).isCloseTo(72.2, within(0.5));
+        assertThat(routes.get(1).path("km").asDouble()).isCloseTo(83.1, within(0.5));
     }
 
     @Test

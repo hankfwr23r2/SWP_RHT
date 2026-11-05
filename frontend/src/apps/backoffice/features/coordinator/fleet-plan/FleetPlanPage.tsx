@@ -1,6 +1,6 @@
 // Coordinator: chốt xe và lộ trình một đơn trong một trang (PRD mục 2.4, nhánh B).
 // Coordinator tự chọn xe (đơn đông ngựa thì nhiều xe), chia ngựa lên xe, lập lộ trình rồi xác nhận.
-import { Fragment, lazy, Suspense, useEffect, useMemo, useState } from 'react'
+import { Fragment, lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
@@ -41,7 +41,8 @@ import { HorseDocsModal } from '../../../shared/HorseDocsModal'
 const RouteMapPicker = lazy(() => import('./RouteMapPicker').then(m => ({ default: m.RouteMapPicker })))
 import { InlineRouteMap } from './InlineRouteMap'
 import { routesApi, type BackendRouteResponse, type RoutePreviewRequest, type RoutePreviewResponse } from '@shared/api/routes'
-import { roadFromPreview, routePlanFromPreview } from '@shared/lib/routePreview'
+import { ROADSIDE, roadFromPreview, routePlaceName, routePlanFromPreview } from '@shared/lib/routePreview'
+import { thinPath } from '@shared/services/routing'
 import { usePageData } from '@shared/routing/pageData'
 import type { fleetPlanLoader } from '../../../shared/loaders'
 
@@ -115,6 +116,7 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
   const [working, setWorking] = useState(false)
   const [reason, setReason] = useState<string | null>(null)
   const [mapOpen, setMapOpen] = useState(false)
+  const openPicker = useCallback(() => setMapOpen(true), [])
   const [picking, setPicking] = useState<number | null>(null)
 
   const setTrip = (i: number, patch: Partial<Draft>) =>
@@ -273,7 +275,7 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
   }
 
   // Trạm chọn tay chỉ gửi được khi có mã địa điểm trong danh mục
-  const usableStops = manualStops
+  const usableOf = (stations: RestStop[]) => stations
     .map(r => findTransitStation(r.name))
     .filter((st): st is TransitStation & { locationId: number } => st?.locationId != null)
   const unusableStops = manualStops.filter(r => findTransitStation(r.name)?.locationId == null)
@@ -283,28 +285,36 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
     .map(t => vehicles.find(v => v.id === t.vehicleId))
     .reduce<Vehicle | undefined>((best, v) => (v && (!best || v.capacity > best.capacity) ? v : best), undefined)
 
-  let previewRequest: RoutePreviewRequest | undefined
-  if (origin && dest && previewVehicle && !Number.isNaN(etdT) && (!international || gateGeo?.locationId != null)) {
+  // Yêu cầu xem trước lộ trình cho một danh sách trạm (trang lập kế hoạch và hộp chọn trạm dùng chung)
+  const requestFor = (stations: RestStop[]): RoutePreviewRequest | undefined => {
+    if (!origin || !dest || !previewVehicle || Number.isNaN(etdT) || (international && gateGeo?.locationId == null)) return undefined
     const gateStop = international && gateGeo?.locationId != null
       ? { lat: gateGeo.lat, lng: gateGeo.lng, locationId: gateGeo.locationId }
       : undefined
-    // Xếp trạm và cửa khẩu theo thứ tự đi rồi đổi sang mã địa điểm
-    const stops = routeOutline(origin, gateStop, dest, usableStops).path.slice(1, -1) as (GeoPoint & { locationId: number })[]
-    previewRequest = {
-      pickup: { name: b.origin.name, lat: origin.lat, lng: origin.lng, country: countryCodeOf(b.origin.country) },
-      dropoff: { name: b.dest.name, lat: dest.lat, lng: dest.lng, country: countryCodeOf(b.dest.country) },
+    // Xếp trạm và cửa khẩu theo thứ tự đi rồi đổi sang mã địa điểm (backend xếp lại theo đường xe tải thật)
+    const stops = routeOutline(origin, gateStop, dest, usableOf(stations)).path.slice(1, -1) as (GeoPoint & { locationId: number })[]
+    return {
+      pickup: { name: routePlaceName(b.origin.name), lat: origin.lat, lng: origin.lng, country: countryCodeOf(b.origin.country) },
+      dropoff: { name: routePlaceName(b.dest.name), lat: dest.lat, lng: dest.lng, country: countryCodeOf(b.dest.country) },
       stopLocationIds: stops.map(p => p.locationId),
       vehicleId: previewVehicle.id,
       departAt: etdT,
     }
   }
+  const previewRequest = requestFor(manualStops)
+  const estimateStations = (stations: RestStop[], signal: AbortSignal) => {
+    const request = requestFor(stations)
+    return request ? routesApi.routePreview(request, signal) : Promise.reject(new Error('Chọn xe và giờ khởi hành để tính đường xe tải.'))
+  }
   const [previewAttempt, setPreviewAttempt] = useState(0)
   // Mỗi lần thử lại cũng là một yêu cầu mới
   const previewKey = previewRequest ? `${previewAttempt}|${JSON.stringify(previewRequest)}` : ''
-  const [previewResult, setPreviewResult] = useState<{ key: string; preview?: RoutePreviewResponse; error?: string }>()
+  const [previewResult, setPreviewResult] = useState<{ key: string; preview?: RoutePreviewResponse; error?: string; status?: number }>()
   const current = previewKey && previewResult?.key === previewKey ? previewResult : undefined
   const preview = current?.preview
   const previewError = current?.error
+  // Lỗi 4xx (tuyến qua nước ngoài, trạm không hợp lệ…) thì thử lại cũng ra y hệt: điều phối cần đổi trạm
+  const previewNeedsStations = !!previewError && current?.status != null && current.status >= 400 && current.status < 500
   const previewLoading = !!previewKey && !current
 
   // Gọi backend tính tuyến xe tải sau 500 ms không đổi; request cũ bị hủy
@@ -317,7 +327,7 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
           if (!controller.signal.aborted) setPreviewResult({ key: previewKey, preview: result })
         })
         .catch(e => {
-          if (!controller.signal.aborted) setPreviewResult({ key: previewKey, error: e instanceof Error ? e.message : String(e) })
+          if (!controller.signal.aborted) setPreviewResult({ key: previewKey, error: e instanceof Error ? e.message : String(e), status: (e as { status?: number }).status })
         })
     }, 500)
     return () => {
@@ -350,7 +360,7 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
     ? validateRoutePlan(route, international, gate)
     : { errors: [] as string[], warnings: [] as string[] }
   const warnings = [...(preview?.warnings ?? []), ...routeWarnings]
-  if (previewError) routeErrors.unshift(previewError)
+  if (previewError) routeErrors.unshift('Chưa tính được lộ trình, xem mục Lịch trình từng chặng.')
   else if (previewLoading) routeErrors.unshift('Đang tính lộ trình…')
   else if (!previewRequest) {
     // Nói rõ vì sao chưa gọi được backend
@@ -368,7 +378,8 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
       await bookingsApi.confirmPlan(b.id, session!.name, {
         routeId: selectedCorridorId ? Number(selectedCorridorId) : undefined,
         trips,
-        route,
+        // Lưu kèm đường xe tải đã tính để bản đồ theo dõi của khách và nhân viên vẽ đúng đường này
+        route: preview ? { ...route, path: thinPath(preview.path, 300) } : route,
         gate: international ? gate : undefined,
         note: note.trim(),
       })
@@ -715,7 +726,8 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
               rests={preview ? route.rests : manualOnMap}
               activeRoad={previewRoad}
               loading={previewLoading}
-              onOpenPicker={() => setMapOpen(true)}
+              manualCount={preview ? route.rests.filter(r => r.manual).length : manualOnMap.length}
+              onOpenPicker={openPicker}
             />
           </div>
         )}
@@ -776,7 +788,11 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
                     <span className={s.stopNum}>{n}</span>
                     <span className={s.stopName}>
                       <b>{r.name}</b>
-                      <small>{findTransitStation(r.name)?.area ?? 'Trạm ngoài danh mục'}</small>
+                      <small>
+                        {r.name.startsWith(ROADSIDE)
+                          ? `Không có trạm nghỉ trên đoạn này, xe dừng nghỉ bên đường để không lái quá ${MAX_CONTINUOUS_HOURS} giờ liên tục`
+                          : `Hệ thống thêm để không lái quá ${MAX_CONTINUOUS_HOURS} giờ liên tục`}
+                      </small>
                     </span>
                     <span className={s.stopMin}>
                       <i className="fa-regular fa-clock" /> Nghỉ {r.minutes} phút
@@ -807,20 +823,33 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
             <i className="fa-solid fa-circle-exclamation" />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flex: 1, flexWrap: 'wrap' }}>
               <span>{previewError}</span>
-              <button type="button" className="btn btn-outline btn-sm" onClick={() => setPreviewAttempt(n => n + 1)}>
-                <i className="fa-solid fa-rotate" /> Thử lại
-              </button>
+              {previewNeedsStations ? (
+                <button type="button" className="btn btn-outline btn-sm" onClick={() => setMapOpen(true)}>
+                  <i className="fa-solid fa-map-location-dot" /> Chọn trạm trên bản đồ
+                </button>
+              ) : (
+                <button type="button" className="btn btn-outline btn-sm" onClick={() => setPreviewAttempt(n => n + 1)}>
+                  <i className="fa-solid fa-rotate" /> Thử lại
+                </button>
+              )}
             </div>
           </div>
         )}
         {preview && preview.warnings.length > 0 && (
           <div className="alert alert-warning" style={{ marginBottom: 12 }}>
             <i className="fa-solid fa-triangle-exclamation" />
-            <ul style={{ margin: 0, paddingLeft: 18 }}>
-              {preview.warnings.map(w => (
-                <li key={w}>{w}</li>
-              ))}
-            </ul>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flex: 1, flexWrap: 'wrap' }}>
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                {preview.warnings.map(w => (
+                  <li key={w}>{w}</li>
+                ))}
+              </ul>
+              {route.rests.some(r => r.name.startsWith(ROADSIDE)) && (
+                <button type="button" className="btn btn-outline btn-sm" onClick={() => setMapOpen(true)}>
+                  <i className="fa-solid fa-map-location-dot" /> Chọn trạm trên bản đồ
+                </button>
+              )}
+            </div>
           </div>
         )}
 
@@ -1074,11 +1103,12 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
       {mapOpen && origin && dest && (
         <Suspense fallback={null}>
           <RouteMapPicker
-            origin={{ ...origin, name: b.origin.name }}
-            dest={{ ...dest, name: b.dest.name }}
-            gate={gateGeo ? { ...gateGeo, name: gateGeo.name } : undefined}
+            origin={inlineOrigin ?? { ...origin, name: b.origin.name }}
+            dest={inlineDest ?? { ...dest, name: b.dest.name }}
+            gate={inlineGate}
             international={international}
             value={manualStops}
+            estimate={estimateStations}
             onApply={setManualStops}
             onClose={() => setMapOpen(false)}
           />

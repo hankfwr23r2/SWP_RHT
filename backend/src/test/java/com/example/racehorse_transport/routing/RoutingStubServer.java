@@ -34,8 +34,12 @@ public final class RoutingStubServer implements AutoCloseable {
 
     private record Reply(int status, String body) {}
 
+    // Trả mẫu riêng khi thân request chứa đủ các đoạn chữ cho trước (xét theo thứ tự thêm vào)
+    private record ConditionalReply(String path, List<String> bodyContains, Reply reply) {}
+
     private final HttpServer server;
     private final Map<String, Reply> replies = new ConcurrentHashMap<>();
+    private final List<ConditionalReply> conditional = new CopyOnWriteArrayList<>();
     private final List<Recorded> requests = new CopyOnWriteArrayList<>();
 
     public RoutingStubServer() {
@@ -48,7 +52,11 @@ public final class RoutingStubServer implements AutoCloseable {
             String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
             String path = exchange.getRequestURI().getPath();
             requests.add(new Recorded(exchange.getRequestMethod(), path, exchange.getRequestURI().getRawQuery(), body));
-            Reply reply = replies.getOrDefault(path, new Reply(404, "{}"));
+            Reply reply = conditional.stream()
+                    .filter(c -> c.path().equals(path) && c.bodyContains().stream().allMatch(body::contains))
+                    .map(ConditionalReply::reply)
+                    .findFirst()
+                    .orElseGet(() -> replies.getOrDefault(path, new Reply(404, "{}")));
             byte[] bytes = reply.body().getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().add("Content-Type", "application/json");
             exchange.sendResponseHeaders(reply.status(), bytes.length);
@@ -68,6 +76,14 @@ public final class RoutingStubServer implements AutoCloseable {
 
     public void replyRaw(String path, int status, String body) {
         replies.put(path, new Reply(status, body));
+    }
+
+    public void replyWhenBodyContains(String path, List<String> bodyContains, int status, String resource) {
+        conditional.add(new ConditionalReply(path, List.copyOf(bodyContains), new Reply(status, fixture(resource))));
+    }
+
+    public void clearConditionalReplies() {
+        conditional.clear();
     }
 
     public List<Recorded> requests(String path) {
