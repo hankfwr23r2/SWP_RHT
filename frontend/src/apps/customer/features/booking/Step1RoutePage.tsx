@@ -14,6 +14,7 @@ import { earliestDeparture, fromIsoDay, isDepartureAllowed } from '@shared/lib/b
 import { formatDate } from '@shared/lib/format'
 import { isValidContactName, isValidPhoneForCountry, PHONE_CALLING_CODES, toInternationalPhone } from '@shared/lib/contactValidation'
 import { isValidLocationDetail, removeLocationDetailSpecialCharacters } from '@shared/lib/locationValidation'
+import { customerProfileApi } from '@shared/api/customerProfile'
 import type { Party, TransportType } from '@shared/types/booking'
 import { Flag } from '@shared/ui/Flag'
 import { FormSelect } from '@shared/ui/FormSelect'
@@ -347,26 +348,34 @@ export default function Step1RoutePage() {
     reset()
   }
 
-  // Điền nhanh thông tin tài khoản vào Người gửi
-  const fillMe = () => {
+  const fillFromProfile = async (target: 'consignor' | 'consignee') => {
     if (!session) return
-    if (!consignor.phone) setConsignorPhoneCountry('VN')
-    setConsignor(prev => ({
-      ...prev,
-      name: session.name || prev.name,
-      phone: prev.phone || '0901234567',
-    }))
-  }
+    try {
+      const profile = await customerProfileApi.getProfile()
+      const profilePhone = profile.phone?.trim()
+      const fallbackCountry = target === 'consignor' ? consignorPhoneCountry : consigneePhoneCountry
+      const parsedPhone = profilePhone ? parsePhoneDraft(profilePhone, fallbackCountry) : null
+      const updateParty = (party: Party): Party => ({
+        ...party,
+        name: profile.fullName || session.name || party.name,
+        ...(parsedPhone ? { phone: parsedPhone.phone } : {}),
+      })
 
-  // Copy thông tin Người gửi → Người nhận (không copy địa chỉ)
-  const fillConsigneeFromConsignor = () => {
-    setConsigneePhoneCountry(consignorPhoneCountry)
-    setConsignee(prev => ({
-      ...prev,
-      name: consignor.name,
-      phone: consignor.phone,
-      idNumber: consignor.idNumber,
-    }))
+      if (target === 'consignor') {
+        setConsignor(updateParty)
+        if (parsedPhone) setConsignorPhoneCountry(parsedPhone.country)
+      } else {
+        setConsignee(updateParty)
+        if (parsedPhone) setConsigneePhoneCountry(parsedPhone.country)
+      }
+
+      if (!profilePhone) {
+        toast('Hồ sơ tài khoản chưa có số điện thoại. Vui lòng nhập số điện thoại.', 'info')
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Không thể tải thông tin hồ sơ.'
+      toast(message, 'error')
+    }
   }
 
   const dateError = !date
@@ -560,7 +569,7 @@ export default function Step1RoutePage() {
                   Người gửi &amp; Điểm đón ngựa <span className={s.subNote}>({COUNTRIES[originC].name})</span>
                 </h3>
                 {session?.name && (
-                  <button type="button" className={s.quickMeBtn} onClick={fillMe}>
+                  <button type="button" className={s.quickMeBtn} onClick={() => void fillFromProfile('consignor')}>
                     <UserIcon /> Tôi là người gửi
                   </button>
                 )}
@@ -638,8 +647,8 @@ export default function Step1RoutePage() {
                   <PinIcon />
                   Người nhận &amp; Điểm giao ngựa <span className={s.subNote}>({COUNTRIES[destC].name})</span>
                 </h3>
-                {consignor.name && (
-                  <button type="button" className={s.quickMeBtn} onClick={fillConsigneeFromConsignor}>
+                {session?.name && (
+                  <button type="button" className={s.quickMeBtn} onClick={() => void fillFromProfile('consignee')}>
                     <UserIcon /> Tôi là người nhận
                   </button>
                 )}
