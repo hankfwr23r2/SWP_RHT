@@ -142,4 +142,35 @@ class JourneyPlannerStationTest {
         assertThat(journey.events().get(3).startAt()).isEqualTo(at("2026-11-02T11:30"));
         assertThat(journey.arrivalAt()).isEqualTo(at("2026-11-02T15:00"));
     }
+    // Điều phối chọn trạm X làm điểm dừng. Máy tính đường đặt điểm dừng lên mép đường nên tọa độ trạm X còn "nằm gần"
+    // chặng kế tiếp; không được tính X thêm một lần nữa là trạm nghỉ giữa chặng sau (lỗi "Tuy Hòa → Tuy Hòa 20 km").
+    @Test
+    void stopStationIsNotCountedAgainOnTheNextLeg() {
+        Stop via = new Stop("Trạm X", StopKind.VIA, null, null);
+        Journey journey = JourneyPlanner.plan(at("2026-11-02T05:00"), List.of(PICKUP, via, DROPOFF),
+                List.of(new Leg(180, hours(3)), new Leg(360, hours(6))),
+                List.of(List.of(), List.of(station("Trạm X", 2.5, 60))), RULES, VN);
+
+        assertThat(journey.events().stream().filter(e -> "Trạm X".equals(e.place())).count()).isEqualTo(1);
+        assertThat(types(journey)).containsExactly(DRIVE, REST, DRIVE, ROADSIDE_REST, DRIVE);
+    }
+
+    // Xe tới trạm điều phối chọn khi giờ lái trong ngày chỉ còn 6 phút: nghỉ đêm luôn tại trạm đó,
+    // không nghỉ 30 phút, chạy thêm vài km rồi nghỉ đêm bên đường (lỗi ở Đông Hà của đơn TP.HCM → Vinh).
+    @Test
+    void overnightAtTheStopWhenTheDrivingDayIsAlmostUsedUp() {
+        Stop s1 = new Stop("S1", StopKind.VIA, null, null);
+        Stop s2 = new Stop("S2", StopKind.VIA, null, null);
+        Stop dongHa = new Stop("Đông Hà", StopKind.VIA, null, null);
+        Journey journey = JourneyPlanner.plan(at("2026-11-02T05:00"), List.of(PICKUP, s1, s2, dongHa, DROPOFF),
+                List.of(new Leg(210, hours(3.5)), new Leg(210, hours(3.5)), new Leg(174, hours(2.9)), new Leg(240, hours(4))),
+                RULES, VN);
+
+        assertThat(types(journey)).containsExactly(DRIVE, REST, DRIVE, REST, DRIVE, OVERNIGHT, DRIVE);
+        Event night = journey.events().get(5);
+        assertThat(night.place()).isEqualTo("Đông Hà");
+        assertThat(night.startAt()).isEqualTo(at("2026-11-02T15:54"));
+        assertThat(night.endAt()).isEqualTo(at("2026-11-03T01:54"));
+        assertThat(journey.arrivalAt()).isEqualTo(at("2026-11-03T05:54"));
+    }
 }

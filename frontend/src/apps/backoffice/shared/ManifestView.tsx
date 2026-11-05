@@ -67,7 +67,7 @@ export function ManifestView({ b, trip, vehicle, driver, escort }: Props) {
           <ol className={s.legs}>
             {route.legs.map((l, i) => (
               <li key={l.no}>
-                <div><b>Chặng {l.no}:</b> {l.from} → {l.to}</div>
+                <div><b>Chặng {l.no}:</b> {restTitle(l.from)} → {restTitle(l.to)}</div>
                 <div className={s.sub}>Khởi hành {formatDateTime(l.departAt)} · đến {formatClock(l.arriveAt)}</div>
                 {route.rests[i] && <div className={s.rest}><i className="fa-solid fa-location-dot" aria-hidden="true" /> <b>{restTitle(route.rests[i].name)}</b>: {restLabel(route.rests[i])}</div>}
               </li>

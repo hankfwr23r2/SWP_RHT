@@ -34,6 +34,8 @@ public final class JourneyPlanner {
 
     // Nghỉ khi mới lái chưa tới 1 giờ thì không có ích cho ngựa
     private static final long EARLIEST_REST_SECONDS = 3600;
+    // Còn ít hơn 1 giờ lái trong ngày khi tới trạm thì nghỉ đêm luôn tại trạm
+    private static final long LAST_DRIVING_HOUR_SECONDS = 3600;
 
     private JourneyPlanner() {}
 
@@ -62,7 +64,13 @@ public final class JourneyPlanner {
         long today = 0;
         for (int i = 0; i < legs.size(); i++) {
             Leg leg = legs.get(i);
-            List<Station> candidates = stations.isEmpty() ? List.of() : stations.get(i);
+            // Trạm đầu/cuối chặng (điểm điều phối chọn) không tính lại là trạm nghỉ giữa chặng: điểm dừng nằm trên mép đường
+            // nên tọa độ trạm vẫn "gần" chặng, dễ thành nghỉ hai lần cùng một trạm
+            String fromName = stops.get(i).name();
+            String toName = stops.get(i + 1).name();
+            List<Station> candidates = (stations.isEmpty() ? List.<Station>of() : stations.get(i)).stream()
+                    .filter(st -> !st.name().equals(fromName) && !st.name().equals(toName))
+                    .toList();
             long remaining = leg.driveSeconds();
             long driven = 0;
             while (remaining > 0) {
@@ -118,8 +126,17 @@ public final class JourneyPlanner {
             }
             Stop next = stops.get(i + 1);
             if (next.kind() == StopKind.VIA) {
-                events.add(new Event(EventType.REST, next.name(), t, t.plusSeconds(rest), i, leg.km()));
-                t = t.plusSeconds(rest);
+                // Tới trạm khi giờ lái trong ngày còn chưa tới 1 giờ và không kịp chạy hết chặng sau: nghỉ đêm luôn tại trạm
+                boolean dayAlmostOver = i + 1 < legs.size() && maxPerDay - today < LAST_DRIVING_HOUR_SECONDS
+                        && legs.get(i + 1).driveSeconds() > maxPerDay - today;
+                if (dayAlmostOver) {
+                    events.add(new Event(EventType.OVERNIGHT, next.name(), t, t.plusSeconds(overnight), i, leg.km()));
+                    t = t.plusSeconds(overnight);
+                    today = 0;
+                } else {
+                    events.add(new Event(EventType.REST, next.name(), t, t.plusSeconds(rest), i, leg.km()));
+                    t = t.plusSeconds(rest);
+                }
                 continuous = 0;
             } else if (next.kind() == StopKind.GATE) {
                 borderArrival = t;

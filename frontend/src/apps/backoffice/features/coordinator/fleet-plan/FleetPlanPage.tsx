@@ -947,7 +947,7 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
                     <tr style={isOverWelfare ? { background: 'rgba(239, 68, 68, 0.08)' } : undefined}>
                       <td className="font-semibold">{l.no}</td>
                       <td>
-                        {l.from} → {l.to}
+                        {restTitle(l.from)} → {restTitle(l.to)}
                       </td>
                       <td className="text-right nowrap">
                         {l.km !== undefined ? (
