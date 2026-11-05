@@ -40,7 +40,7 @@ export default function CoordinatorIncidentsPage() {
     { head: t('coordinatorIncidents.colIncident', 'Sự cố'), minWidth: 130, cell: ({ i }) => <><b>{INCIDENT_KIND[i.kind].label}</b><div className="sub-text">{t('coordinatorIncidents.tripPrefix', 'xe {{tripId}}', { tripId: i.tripId })}</div></> },
     { head: t('coordinatorIncidents.colReportedAt', 'Báo lúc'), cell: ({ i }) => formatDateTime(i.reportedAt), nowrap: true },
     { head: t('coordinatorIncidents.colNote', 'Ghi chú'), minWidth: 180, cell: ({ i }) => <span style={{ display: 'inline-block', maxWidth: 200, color: i.rejection ? 'var(--red)' : undefined }}>{i.rejection ? t('coordinatorIncidents.managerRejected', 'Quản lý trả về: {{reason}}', { reason: i.rejection.reason }) : i.note || '-'}</span> },
-    { head: t('coordinatorIncidents.colAction', 'Thao tác'), cell: ({ b, i }) => (i.status === 'reported' ? <button className="btn btn-primary btn-sm" onClick={() => setOpen({ b, i })}>{i.rejection ? t('coordinatorIncidents.btnReplan', 'Lập lại phương án') : t('coordinatorIncidents.btnPlan', 'Lập phương án')}</button> : null), right: true },
+    { head: t('coordinatorIncidents.colAction', 'Thao tác'), cell: ({ b, i }) => (i.status === 'reported' || (i.status === 'active' && i.kind === 'horse_health' && !b.trips?.find(t => t.tripId === i.tripId)?.run?.checkpoints.some(cp => cp.id === `sos-${Number(i.id.replace('INC-', ''))}`)) ? <button className="btn btn-primary btn-sm" onClick={() => setOpen({ b, i })}>{i.rejection ? t('coordinatorIncidents.btnReplan', 'Lập lại phương án') : t('coordinatorIncidents.btnPlan', 'Lập phương án')}</button> : null), right: true },
   ]
   return (
     <>

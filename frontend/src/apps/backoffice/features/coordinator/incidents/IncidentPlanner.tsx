@@ -4,8 +4,8 @@ import { useMemo, useState } from 'react'
 import { useAuth } from '@shared/auth/AuthContext'
 import { INCIDENT_ACTION, INCIDENT_KIND, MIN_REST_MINUTES } from '@shared/config/booking-rules'
 import { AVG_SPEED_KMH } from '@shared/config/public-pricing'
-import { findGate, RESCUE_POINTS, TRANSIT_STATIONS, type GeoPoint } from '@shared/config/network'
-import { effectiveArrivalOf, bookingPath, findLocation, incidentActionsFor, nearestTo, pointsAhead } from '@shared/lib/booking'
+import { findGate, findTransitStation, RESCUE_POINTS, TRANSIT_STATIONS, type GeoPoint } from '@shared/config/network'
+import { effectiveArrivalOf, checkpointPoint, bookingPath, findLocation, incidentActionsFor, nearestTo, pointsAhead } from '@shared/lib/booking'
 import { formatDateTime } from '@shared/lib/format'
 import { haversineKm } from '@shared/lib/pricing'
 import { bookingsApi } from '@shared/services/bookings'
@@ -39,13 +39,25 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
 
   // Điểm xe còn phải đi qua và các trạm / điểm cứu hộ xếp theo khoảng cách tới chỗ xe
   const path = useMemo(() => bookingPath(b), [b])
-  const ahead = useMemo(() => pointsAhead(path, loc), [path, loc])
+  const ahead = useMemo(() => {
+    const checkpoints = b.trips?.find(t => t.tripId === i.tripId)?.run?.checkpoints.filter(cp => !cp.doneAt) ?? []
+    const remaining = checkpoints.flatMap(cp => {
+      const point = checkpointPoint(b, cp)
+      if (point) return [point]
+      const stop = b.route?.rests.find(r => r.name === cp.place)
+      return stop?.lat != null && stop.lng != null ? [{ lat: stop.lat, lng: stop.lng }] : []
+    }).filter((p, index, points) => index === 0 || p.lat !== points[index - 1].lat || p.lng !== points[index - 1].lng)
+    return remaining.length ? remaining : pointsAhead(path, loc)
+  }, [b, i.tripId, path, loc])
   const next: GeoPoint = ahead[0] ?? dest
   const stations = useMemo(() => nearestTo(loc, TRANSIT_STATIONS), [loc])
   const rescues = useMemo(() => nearestTo(loc, RESCUE_POINTS), [loc])
 
   const [stationName, setStationName] = useState(i.plan?.station ?? stations[0]?.name ?? '')
   const [rescueName, setRescueName] = useState(i.plan?.rescue?.name ?? rescues[0]?.name ?? '')
+  const nextCheckpoint = b.trips?.find(t => t.tripId === i.tripId)?.run?.checkpoints.find(cp => !cp.doneAt)
+  const replaceableRest = nextCheckpoint?.type === 'rest' && !nextCheckpoint.arrivedAt ? nextCheckpoint : undefined
+  const [replaceRest, setReplaceRest] = useState(!!i.plan?.replaceRestCheckpointId)
   const [rest, setRest] = useState(i.plan?.restMinutes ?? 60)
   const [altIdx, setAltIdx] = useState(0)
   const [routeAttempt, setRouteAttempt] = useState(0)
@@ -57,16 +69,20 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
 
   const stationPt = TRANSIT_STATIONS.find(x => x.name === stationName)
   const rescuePt = RESCUE_POINTS.find(x => x.name === rescueName)
+  const sameStationRest = !!replaceableRest && replaceableRest.place === stationName
+  const replaceRestApplied = replaceRest || sameStationRest
   const stationPoint = stationPt ?? loc
   const rescuePoint = rescuePt ?? loc
   const horses = kind !== 'traffic_jam'
 
   // Đường bộ thật: xe → trạm, cứu hộ → xe, các đường thay thế tới điểm kế tiếp, và đường đi tiếp sau đó
-  const toStation = useRoadRoute(horses && stationPt ? [loc, stationPoint] : undefined, now)
-  const rescueRoad = useRoadRoute(kind === 'vehicle_breakdown' && rescuePt ? [rescuePoint, loc] : undefined, now)
+  const toStation = useRoadRoute(horses && stationPt ? [loc, stationPoint] : undefined, now, routeAttempt)
+  const rescueRoad = useRoadRoute(kind === 'vehicle_breakdown' && rescuePt ? [rescuePoint, loc] : undefined, now, routeAttempt)
   const alts = useRoadAlternatives(kind === 'traffic_jam' ? loc : undefined, kind === 'traffic_jam' ? next : undefined, now, routeAttempt)
-  const afterPts = horses ? [stationPoint, ...ahead] : ahead
-  const afterRoad = useRoadRoute(afterPts.length > 1 ? afterPts : undefined, now)
+  const replacedPoint = replaceRestApplied && replaceableRest ? findTransitStation(replaceableRest.place) : undefined
+  const remaining = replacedPoint ? ahead.filter(p => Math.abs(p.lat - replacedPoint.lat) > 0.0001 || Math.abs(p.lng - replacedPoint.lng) > 0.0001) : ahead
+  const afterPts = horses ? [stationPoint, ...remaining] : ahead
+  const afterRoad = useRoadRoute(afterPts.length > 1 ? afterPts : undefined, now, routeAttempt)
   const customRoad = useRoadRoute(kind === 'traffic_jam' && waypoints.length ? [loc, ...waypoints, next] : undefined, now, routeAttempt)
   const loading = customRoad.loading || toStation.loading || rescueRoad.loading || alts.loading || afterRoad.loading
 
@@ -74,6 +90,7 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
   const suggestedAlt = altList[Math.min(altIdx, Math.max(0, altList.length - 1))] as RoadRoute | undefined
   const altChosen = waypoints.length ? customRoad.route ?? undefined : suggestedAlt
   const rerouteUnchanged = !!i.rejection && !!i.plan?.detour && !!altChosen && JSON.stringify(thinPath(altChosen.path)) === JSON.stringify(i.plan.detour.path)
+  const stationReady = kind !== 'horse_health' || (!loading && !!toStation.route && !!afterRoad.route)
   const rerouteReady = kind !== 'traffic_jam' || (!loading && !!altChosen && !rerouteUnchanged)
   const toStationLine = horses && stationPt ? lineOf(toStation.route, loc, stationPoint) : undefined
   const rescueLine = kind === 'vehicle_breakdown' && rescuePt ? lineOf(rescueRoad.route, rescuePoint, loc) : undefined
@@ -107,7 +124,7 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
       toast('Giờ đến mới phải sau thời điểm lập phương án.', 'error')
       return
     }
-    if (!rerouteReady) {
+    if (!rerouteReady || !stationReady) {
       toast('Cần tính được đường bộ trước khi trình phương án đổi tuyến.', 'error')
       return
     }
@@ -115,7 +132,10 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
     try {
       await bookingsApi.planIncident(b.id, i.id, session!.name, {
         action, note, newEta,
-        ...(horses ? { station: stationName, restMinutes: rest, toStation: toStationLine } : {}),
+        ...(horses ? { station: stationName, restMinutes: rest, toStation: toStationLine,
+          onward: afterRoad.route ? lineOf(afterRoad.route, stationPoint, dest) : undefined,
+          ...(kind === 'horse_health' && replaceRestApplied && replaceableRest ? { replaceRestCheckpointId: replaceableRest.id } : {}),
+        } : {}),
         ...(kind === 'vehicle_breakdown' && rescuePt ? { rescue: { name: rescuePt.name, phone: rescuePt.phone, lat: rescuePt.lat, lng: rescuePt.lng }, rescueLine } : {}),
         ...(kind === 'traffic_jam' ? { detour, waypoints } : {}),
       })
@@ -153,7 +173,7 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
 
   return (
     <Modal wide onClose={onClose} title={`Lập phương án ${i.id}`} subtitle={`${b.id} · ${INCIDENT_KIND[kind].label} · xe ${i.tripId}`}
-      footer={<><button className="btn btn-ghost" onClick={onClose}>Đóng</button><button className="btn btn-primary" disabled={busy || !Number.isFinite(newEta) || newEta <= now || !rerouteReady} onClick={send}><i className="fa-solid fa-paper-plane" /> Trình Quản lý duyệt</button></>}>
+      footer={<><button className="btn btn-ghost" onClick={onClose}>Đóng</button><button className="btn btn-primary" disabled={busy || !Number.isFinite(newEta) || newEta <= now || !rerouteReady || !stationReady} onClick={send}><i className="fa-solid fa-paper-plane" /> Trình Quản lý duyệt</button></>}>
       {i.rejection && <div className="alert alert-danger" style={{ marginBottom: 10 }}><i className="fa-solid fa-rotate-left" /><div><b>Quản lý trả về:</b> {i.rejection.reason}</div></div>}
       <IncidentMap
         height="min(64vh, 600px)" location={loc} origin={{ ...origin, name: b.origin.name }} dest={{ ...dest, name: b.dest.name }} gate={gate ? { ...gate } : undefined}
@@ -184,6 +204,9 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
           <>
             <div><h4>{kind === 'vehicle_breakdown' ? '2. Chọn trạm nghỉ gần chỗ xe để đưa ngựa tới' : 'Chọn trạm nghỉ gần chỗ xe'}</h4><div style={{ marginTop: 6 }}>{stationOptions}</div></div>
             {toStationLine && <div className="im-road"><span>Đưa ngựa tới trạm: <b>{toStationLine.km} km · {hm(toStationLine.hours)}</b></span><small>{toStation.route ? (toStation.route.traffic ? 'Theo Google, có giao thông' : 'Theo đường bộ') : 'Đường nối thẳng, chưa lấy được đường bộ'}</small></div>}
+            {kind === 'horse_health' && replaceableRest && <label className="im-note"><input type="checkbox" checked={replaceRestApplied} disabled={sameStationRest} onChange={e => setReplaceRest(e.target.checked)} /> Trạm SOS thay thế mốc nghỉ kế tiếp: {replaceableRest.place}</label>}
+            {kind === 'horse_health' && <button type="button" className="btn btn-ghost btn-sm" disabled={loading} onClick={() => { clearRoadCache(); setRouteAttempt(attempt => attempt + 1) }}>Tìm lại đường tới trạm và đi tiếp</button>}
+            {kind === 'horse_health' && !stationReady && !loading && <p role="alert" className="im-note">Cần tính được cả đường tới trạm và đường đi tiếp trước khi trình duyệt.</p>}
             {restChips}
           </>
         )}

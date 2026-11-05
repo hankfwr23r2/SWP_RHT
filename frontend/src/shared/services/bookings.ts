@@ -460,11 +460,12 @@ export const bookingsApi = {
   },
 
   // ===== Flow 5: sự cố khẩn cấp =====
-  reportIncident: async (id: string, tripId: string, _by: string, kind: IncidentKind, photo: string, note: string, booking: Booking, trip: VehicleTrip) => {
+  reportIncident: async (id: string, tripId: string, _by: string, kind: IncidentKind, photo: string, note: string, booking: Booking, trip: VehicleTrip, horseIds?: string[]) => {
     const location = incidentLocation(booking, trip)
     return backendIncidentApi.report({
       bookingId: numericId(id, 'BK'),
       tripId,
+      horseIds,
       incidentName: INCIDENT_KIND[kind].label,
       incidentType: kind.toUpperCase(),
       description: note.trim(),
@@ -503,8 +504,8 @@ export const bookingsApi = {
       label: input.label.trim() || input.category,
       payer: defaultPayer(incident.kind, input.category),
     }),
-  confirmFit: async (_id: string, incidentId: string, _by: string) =>
-    backendIncidentApi.confirmFit(numericId(incidentId, 'INC')),
+  confirmFit: async (_id: string, incidentId: string, _by: string, data?: { photo: string; waterLiters?: number; hay?: boolean; horses: { horseId: string; careNote: string; temperature?: number }[] }) =>
+    backendIncidentApi.confirmFit(numericId(incidentId, 'INC'), data),
   resumeJourney: async (_id: string, incidentId: string, _by: string) =>
     backendIncidentApi.resumeJourney(numericId(incidentId, 'INC')),
 

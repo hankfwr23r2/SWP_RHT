@@ -33,7 +33,12 @@ export function TripTrackMap({ b, trips = [], height, plain }: Props) {
   const lineKey = line.map(([lat, lng]) => `${lat.toFixed(4)},${lng.toFixed(4)}`).join(';')
   const carKey = cars.map(c => `${c.at.lat.toFixed(4)},${c.at.lng.toFixed(4)}`).join('|')
   const restsKey = (b.route?.rests ?? []).map(r => `${r.name}:${r.minutes}`).join('|')
-  const detours = trips.flatMap(t => t.incidentRoute?.detour ? [{ tripId: t.tripId, eta: t.incidentRoute.newEta, path: t.incidentRoute.detour.path.filter(validLatLng) }] : [])
+  const detours = trips.flatMap(t => {
+    const route = t.incidentRoute
+    if (!route) return []
+    const paths = route.detour ? [route.detour] : [route.toStation, route.onward].filter(p => p != null)
+    return paths.map(p => ({ tripId: t.tripId, eta: route.newEta, path: p.path.filter(validLatLng) }))
+  })
   const detourKey = JSON.stringify(detours)
   const sig = `${lineKey}#${carKey}#${[...passed].join(',')}#${b.gate ?? ''}#${restsKey}#${detourKey}`
 
@@ -60,7 +65,7 @@ export function TripTrackMap({ b, trips = [], height, plain }: Props) {
     detours.forEach((detour, index) => {
       if (detour.path.length < 2) return
       L.polyline(detour.path, { color: ['#2563eb', '#7c3aed', '#059669'][index % 3], weight: 6 })
-        .bindTooltip(`${detour.tripId}: đường tránh đã duyệt · đến ${formatDateTime(detour.eta)}`, { sticky: true }).addTo(g)
+        .bindTooltip(`${detour.tripId}: tuyến SOS đã duyệt · đến ${formatDateTime(detour.eta)}`, { sticky: true }).addTo(g)
     })
     // Đoạn đã đi: từ điểm đón tới xe đi xa nhất
     const far = line.length > 1
@@ -98,7 +103,7 @@ export function TripTrackMap({ b, trips = [], height, plain }: Props) {
     <div>
       <div className="tt-wrap" style={height !== undefined ? { height } : undefined}>
         <div ref={box} className="tt-map" role="application" aria-label="Bản đồ theo dõi xe" />
-        <div className="tt-legend">{!plain && <span><i className="fa-solid fa-truck" style={{ color: '#ea580c' }} /> Xe</span>}<span>● Trạm đã qua / chưa qua</span>{detours.length > 0 && <span>━━ Đường tránh đã duyệt</span>}<span>⚑ Cửa khẩu</span></div>
+        <div className="tt-legend">{!plain && <span><i className="fa-solid fa-truck" style={{ color: '#ea580c' }} /> Xe</span>}<span>● Trạm đã qua / chưa qua</span>{detours.length > 0 && <span>━━ Tuyến SOS đã duyệt</span>}<span>⚑ Cửa khẩu</span></div>
       </div>
       {!plain && <div className="tt-spots">
         {trips.map((t, i) => <div key={t.tripId}><i className="fa-solid fa-location-crosshairs" /><span>{trips.length > 1 ? `Xe ${i + 1}: ` : ''}<b>{spotLabel(t)}</b></span></div>)}

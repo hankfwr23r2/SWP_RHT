@@ -22,13 +22,18 @@ class IncidentServiceImplTest {
 
     private final IncidentRepository incidentRepository = mock(IncidentRepository.class);
 
+    private final BookingRepository bookingRepository = mock(BookingRepository.class);
+    private final StaffRepository staffRepository = mock(StaffRepository.class);
+    private final com.example.racehorse_transport.service.HorseHealthLogService healthService = mock(com.example.racehorse_transport.service.HorseHealthLogService.class);
+
     private final IncidentServiceImpl service = new IncidentServiceImpl(
             mock(com.example.racehorse_transport.service.CaptureService.class),
             incidentRepository,
-            mock(BookingRepository.class),
+            bookingRepository,
             mock(BookingAssignmentRepository.class),
-            mock(StaffRepository.class),
-            mock(SystemLogRepository.class));
+            staffRepository,
+            mock(SystemLogRepository.class),
+            healthService);
 
     @Test
     void customerIncidentsAreLoadedForTheSignedInCustomerInOneQueryWithoutInternalFields() {
@@ -118,6 +123,149 @@ class IncidentServiceImplTest {
                 new com.example.racehorse_transport.dto.incident.ApproveIncidentPlanRequest(), "manager"))
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("đường đi");
         assertThat(incident.getStatus()).isEqualTo("proposed");
+    }
+
+    private Incident healthIncident(boolean arrived) {
+        Booking booking = new Booking(); booking.setId(3); booking.setStatus("emergency_plan_active");
+        long arrival = System.currentTimeMillis() - 1000;
+        booking.setDetailsJson("{\"quote\":{\"total\":1000000},\"trips\":[{\"tripId\":\"T1\",\"horseIds\":[\"H-1\"],"
+                + "\"run\":{\"startedAt\":1,\"checkpoints\":[{\"id\":\"pickup\",\"doneAt\":2},{\"id\":\"sos-7\",\"type\":\"rest\",\"incidentId\":7,\"restMinutes\":30"
+                + (arrived ? ",\"arrivedAt\":" + arrival : "") + "},{\"id\":\"delivery\",\"type\":\"delivery\",\"plannedAt\":100}]}}]}");
+        Incident incident = Incident.builder().id(7).bookingID(booking).tripId("T1").status("active")
+                .incidentType("HORSE_HEALTH").resolutionType("EXTERNAL_PARTNER")
+                .planJson("{\"action\":\"to_station\",\"horseIds\":[\"H-1\"],\"station\":\"Trạm A\",\"restMinutes\":30,\"newEta\":200,"
+                        + "\"toStation\":{\"path\":[[11,104],[12,105]],\"hours\":1},\"onward\":{\"path\":[[12,105],[13,106]],\"hours\":2}}")
+                .build();
+        when(incidentRepository.findById(7)).thenReturn(java.util.Optional.of(incident));
+        when(incidentRepository.save(incident)).thenReturn(incident);
+        when(incidentRepository.findByBookingID_Id(3)).thenReturn(List.of(incident));
+        return incident;
+    }
+
+    @Test
+    void healthApprovalAddsStationBeforePendingCheckpointAndKeepsCompletedHistory() throws Exception {
+        Incident incident = healthIncident(false); incident.setStatus("proposed");
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        var payload = mapper.readValue(incident.getBookingID().getDetailsJson(), com.example.racehorse_transport.dto.booking.BookingDetailsPayload.class);
+        @SuppressWarnings("unchecked")
+        var checkpoints = (List<java.util.Map<String, Object>>) payload.getTrips().get(0).getRun().get("checkpoints");
+        checkpoints.remove(1);
+        incident.getBookingID().setDetailsJson(mapper.writeValueAsString(payload));
+        service.approveIncidentPlan(7, new com.example.racehorse_transport.dto.incident.ApproveIncidentPlanRequest(), "manager");
+        var after = mapper.readTree(incident.getBookingID().getDetailsJson());
+        var trip = after.path("trips").get(0);
+        assertThat(trip.path("run").path("checkpoints").get(0).path("doneAt").asLong()).isEqualTo(2);
+        assertThat(trip.path("run").path("checkpoints").get(1).path("id").asText()).isEqualTo("sos-7");
+        assertThat(trip.path("run").path("checkpoints").get(2).path("plannedAt").asLong()).isEqualTo(200);
+        assertThat(trip.path("incidentRoute").path("onward").path("path").size()).isEqualTo(2);
+        assertThat(after.path("quote").path("total").asLong()).isEqualTo(1000000);
+    }
+
+    @Test
+    void cannotConfirmHorseFitBeforeCheckingInAtSosStation() {
+        healthIncident(false);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.confirmFit(7, null, "escort", "ADMIN"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("tới trạm");
+        verifyNoInteractions(healthService);
+    }
+
+    @Test
+    void cannotLeaveSosStationBeforeApprovedRestTime() {
+        Incident incident = healthIncident(true); incident.setFitConfirmedAt(java.time.Instant.now());
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.resumeJourney(7, "driver", "ADMIN"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("thời gian nghỉ");
+        assertThat(incident.getStatus()).isEqualTo("active");
+    }
+
+    @Test
+    void recordingCareWritesHorseHealthLogAndJourneyWelfareTogether() throws Exception {
+        Incident incident = healthIncident(true);
+        var escort = new com.example.racehorse_transport.entity.Staff(); escort.setId(9);
+        when(staffRepository.findByUser_Username("escort")).thenReturn(java.util.Optional.of(escort));
+        var request = new com.example.racehorse_transport.dto.incident.ConfirmIncidentFitRequest();
+        request.setPhoto("care.jpg");
+        var care = new com.example.racehorse_transport.dto.incident.ConfirmIncidentFitRequest.CareRecord();
+        care.setHorseId("H-1"); care.setCareNote("Đã chăm sóc, ổn định và đủ sức đi tiếp");
+        request.setHorses(List.of(care));
+        service.confirmFit(7, request, "escort", "ADMIN");
+        org.mockito.Mockito.verify(healthService).updateHorseHealthStatusByEscort(1, 3,
+                "ĐỦ SỨC ĐI TIẾP SAU SOS", null, null, "INC-7: " + care.getCareNote(), 9);
+        assertThat(incident.getFitConfirmedAt()).isNotNull();
+        var payload = new com.fasterxml.jackson.databind.ObjectMapper().readTree(incident.getBookingID().getDetailsJson());
+        assertThat(payload.path("trips").get(0).path("run").path("welfare").get(0).path("checkpointId").asText()).isEqualTo("sos-7");
+    }
+
+    @Test
+    void leavingStationCompletesSosCheckpointAndKeepsDeliveryPending() throws Exception {
+        Incident incident = healthIncident(true); incident.setFitConfirmedAt(java.time.Instant.now());
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        var payload = mapper.readValue(incident.getBookingID().getDetailsJson(), com.example.racehorse_transport.dto.booking.BookingDetailsPayload.class);
+        @SuppressWarnings("unchecked")
+        var checkpoints = (List<java.util.Map<String, Object>>) payload.getTrips().get(0).getRun().get("checkpoints");
+        checkpoints.get(1).put("arrivedAt", System.currentTimeMillis() - 31 * 60000L);
+        incident.getBookingID().setDetailsJson(mapper.writeValueAsString(payload));
+        service.resumeJourney(7, "driver", "ADMIN");
+        var after = mapper.readTree(incident.getBookingID().getDetailsJson()).path("trips").get(0).path("run").path("checkpoints");
+        assertThat(after.get(1).path("doneAt").asLong()).isPositive();
+        assertThat(after.get(2).hasNonNull("doneAt")).isFalse();
+        assertThat(incident.getStatus()).isEqualTo("resolved");
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(booleans = {false, true})
+    void stationCanReplaceOnlyPendingNextRestAndArchivesTheOriginal(boolean explicitReplacement) throws Exception {
+        Incident incident = healthIncident(false); incident.setStatus("proposed");
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        var payload = mapper.readValue(incident.getBookingID().getDetailsJson(), com.example.racehorse_transport.dto.booking.BookingDetailsPayload.class);
+        @SuppressWarnings("unchecked")
+        var checkpoints = (List<java.util.Map<String, Object>>) payload.getTrips().get(0).getRun().get("checkpoints");
+        checkpoints.get(1).put("id", "rest-old"); checkpoints.get(1).remove("incidentId");
+        var plan = mapper.readValue(incident.getPlanJson(), new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {});
+        if (explicitReplacement) plan.put("replaceRestCheckpointId", "rest-old");
+        else checkpoints.get(1).put("place", "Trạm A");
+        incident.setPlanJson(mapper.writeValueAsString(plan));
+        incident.getBookingID().setDetailsJson(mapper.writeValueAsString(payload));
+        service.approveIncidentPlan(7, new com.example.racehorse_transport.dto.incident.ApproveIncidentPlanRequest(), "manager");
+        var run = mapper.readTree(incident.getBookingID().getDetailsJson()).path("trips").get(0).path("run");
+        assertThat(run.path("checkpoints").size()).isEqualTo(3);
+        assertThat(run.path("checkpoints").get(1).path("id").asText()).isEqualTo("sos-7");
+        assertThat(run.path("supersededCheckpoints").get(0).path("id").asText()).isEqualTo("rest-old");
+    }
+
+    @Test
+    void stationReplacementCannotSkipBorderCheckpoint() throws Exception {
+        Incident incident = healthIncident(false); incident.setStatus("proposed");
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        var payload = mapper.readValue(incident.getBookingID().getDetailsJson(), com.example.racehorse_transport.dto.booking.BookingDetailsPayload.class);
+        @SuppressWarnings("unchecked")
+        var checkpoints = (List<java.util.Map<String, Object>>) payload.getTrips().get(0).getRun().get("checkpoints");
+        checkpoints.get(1).put("type", "border"); checkpoints.get(1).put("id", "border");
+        var plan = mapper.readValue(incident.getPlanJson(), new com.fasterxml.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {});
+        plan.put("replaceRestCheckpointId", "border"); incident.setPlanJson(mapper.writeValueAsString(plan));
+        incident.getBookingID().setDetailsJson(mapper.writeValueAsString(payload));
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.approveIncidentPlan(7,
+                new com.example.racehorse_transport.dto.incident.ApproveIncidentPlanRequest(), "manager"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("cửa khẩu");
+        assertThat(incident.getStatus()).isEqualTo("proposed");
+    }
+
+    @Test
+    void horseHealthExpensesRespectManagerApprovedPayer() {
+        Incident incident = healthIncident(true); incident.setCostBearer("COMPANY");
+        var expense = new com.example.racehorse_transport.dto.incident.IncidentExpenseRequest();
+        expense.setCategory("vet_fee"); expense.setLabel("Khám tại trạm"); expense.setPhoto("invoice.jpg");
+        expense.setAmount(new BigDecimal("100000")); expense.setPayer("customer");
+        IncidentResponse result = service.addExpense(7, expense, "admin", "ADMIN");
+        assertThat(result.getExpenses().get(0).get("payer")).isEqualTo("carrier");
+        assertThat(result.getActualCost()).isEqualByComparingTo(BigDecimal.ZERO);
+    }
+
+    @Test
+    void genericCompletionCannotBypassHorseHealthWorkflow() {
+        healthIncident(true);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.completeResolution(7,
+                new com.example.racehorse_transport.dto.incident.ResolveIncidentRequest(), "coordinator"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("hộ tống");
     }
 
     @Test

@@ -8,6 +8,7 @@ import { formatDateTime, formatVND } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
 import type { Booking, Incident, VehicleTrip } from '@shared/types/booking'
 import { CaptureField } from '@shared/ui/CaptureField'
+import { useNow } from '@shared/ui/useNow'
 import { ImageThumb } from '@shared/ui/ImageThumb'
 import { Panel } from './field'
 import s from './field.module.css'
@@ -22,6 +23,7 @@ export function SosPanel({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }
   const [kind, setKind] = useState<IncidentKind>('horse_health')
   const [photo, setPhoto] = useState<string>()
   const [note, setNote] = useState('')
+  const [horseIds, setHorseIds] = useState<string[]>([])
   if (!open) return <button className={`btn btn-outline ${s.big}`} style={{ color: 'var(--red)', borderColor: 'var(--red)' }} onClick={() => setOpen(true)}><i className="fa-solid fa-triangle-exclamation" /> Báo sự cố khẩn cấp (SOS)</button>
   return (
     <Panel title="Báo sự cố khẩn cấp" icon="fa-triangle-exclamation" tone="warn">
@@ -33,11 +35,12 @@ export function SosPanel({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }
           </label>
         ))}
       </div>
+      {kind === 'horse_health' && <fieldset><legend>Ngựa bị ảnh hưởng</legend>{b.horses.filter(h => t.horseIds.includes(h.horseId)).map(h => <label key={h.horseId} style={{ display: 'block', padding: 6 }}><input type="checkbox" checked={horseIds.includes(h.horseId)} onChange={e => setHorseIds(ids => e.target.checked ? [...ids, h.horseId] : ids.filter(id => id !== h.horseId))} /> {h.name} · chip {h.microchip}</label>)}</fieldset>}
       <CaptureField purpose="SOS" label="Ảnh hiện trường" required value={photo} onChange={setPhoto} />
       <div className="form-group" style={{ margin: 0 }}><label htmlFor="sos-note">Ghi chú ngắn</label><input id="sos-note" className="form-control" style={{ minHeight: 48 }} value={note} onChange={e => setNote(e.target.value)} /></div>
       <div style={{ display: 'flex', gap: 8 }}>
         <button className="btn btn-ghost" onClick={() => setOpen(false)}>Hủy</button>
-        <button className={`btn btn-primary ${s.big}`} disabled={!photo} onClick={() => run(() => bookingsApi.reportIncident(b.id, t.tripId, session!.name, kind, photo!, note, b, t), 'Đã gửi SOS vào danh sách xử lý của Điều phối viên và Quản lý')}>Gửi báo động khẩn cấp</button>
+        <button className={`btn btn-primary ${s.big}`} disabled={!photo || (kind === 'horse_health' && !horseIds.length)} onClick={() => run(() => bookingsApi.reportIncident(b.id, t.tripId, session!.name, kind, photo!, note, b, t, horseIds), 'Đã gửi SOS vào danh sách xử lý của Điều phối viên và Quản lý')}>Gửi báo động khẩn cấp</button>
       </div>
     </Panel>
   )
@@ -62,15 +65,45 @@ function ExpenseForm({ b, inc, run }: { b: Booking; inc: Incident; run: Run }) {
   )
 }
 
+function HealthCareForm({ b, inc, run }: { b: Booking; inc: Incident; run: Run }) {
+  const { session } = useAuth()
+  const [photo, setPhoto] = useState<string>()
+  const [water, setWater] = useState('0')
+  const [hay, setHay] = useState(false)
+  const [records, setRecords] = useState<Record<string, { note: string; temperature: string }>>({})
+  const trip = b.trips?.find(t => t.tripId === inc.tripId)
+  const horses = b.horses.filter(h => (inc.horseIds?.length ? inc.horseIds : trip?.horseIds ?? []).includes(h.horseId))
+  const ready = !!photo && Number.isFinite(Number(water || 0)) && Number(water || 0) >= 0 && horses.length > 0 && horses.every(h => records[h.horseId]?.note.trim())
+  return <>
+    {horses.map(h => <div key={h.horseId} className="form-group"><label htmlFor={`care-${h.horseId}`}>{h.name} · chip {h.microchip}: kết quả chăm sóc</label>
+      <textarea id={`care-${h.horseId}`} className="form-control" value={records[h.horseId]?.note ?? ''} onChange={e => setRecords(r => ({ ...r, [h.horseId]: { temperature: r[h.horseId]?.temperature ?? '', note: e.target.value } }))} />
+      <label htmlFor={`temp-${h.horseId}`}>Thân nhiệt (°C, nếu đo)</label><input id={`temp-${h.horseId}`} type="number" min="0" max="60" step="0.1" className="form-control" value={records[h.horseId]?.temperature ?? ''} onChange={e => setRecords(r => ({ ...r, [h.horseId]: { note: r[h.horseId]?.note ?? '', temperature: e.target.value } }))} />
+    </div>)}
+    <div className="form-group"><label htmlFor="sos-water">Nước đã cấp (lít)</label><input id="sos-water" type="number" min="0" step="0.1" className="form-control" value={water} onChange={e => setWater(e.target.value)} /><label><input type="checkbox" checked={hay} onChange={e => setHay(e.target.checked)} /> Đã cấp cỏ</label></div>
+    <CaptureField purpose="SUBMIT_WELFARE" target={`sos-${Number(inc.id.replace('INC-', ''))}`} label="Ảnh kết quả chăm sóc tại trạm SOS" required value={photo} onChange={setPhoto} />
+    <button className={`btn btn-primary ${s.big}`} disabled={!ready} onClick={() => run(() => bookingsApi.confirmFit(b.id, inc.id, session!.name, {
+      photo: photo!, waterLiters: Number(water || 0), hay, horses: horses.map(h => ({ horseId: h.horseId, careNote: records[h.horseId].note.trim(), ...(records[h.horseId].temperature ? { temperature: Number(records[h.horseId].temperature) } : {}) })),
+    }), 'Đã lưu nhật ký sức khỏe và xác nhận đủ sức đi tiếp')}>Lưu kết quả chăm sóc và xác nhận đủ sức</button>
+  </>
+}
+
 // Thẻ sự cố đang mở của xe: thay cho các bước hành trình cho đến khi xử lý xong
 export function IncidentPanel({ b, inc, role, run }: { b: Booking; inc: Incident; role: 'driver' | 'escort'; run: Run }) {
   const { session } = useAuth()
   const spent = inc.expenses.reduce((n, e) => n + e.amount, 0)
   const needFit = needsFitCheck(inc.kind)
+  const now = useNow(1000)
+  const [arrivalPhoto, setArrivalPhoto] = useState<string>()
+  const health = inc.kind === 'horse_health'
+  const checkpointId = `sos-${Number(inc.id.replace('INC-', ''))}`
+  const checkpoint = b.trips?.find(t => t.tripId === inc.tripId)?.run?.checkpoints.find(cp => cp.id === checkpointId)
+  const atStation = !health || !!checkpoint?.arrivedAt
+  const leaveAt = checkpoint?.arrivedAt ? checkpoint.arrivedAt + (inc.plan?.restMinutes ?? 30) * 60_000 : undefined
+  const restReady = !health || (leaveAt != null && now >= leaveAt)
   return (
     <>
       <Panel title={`Sự cố: ${INCIDENT_KIND[inc.kind].label}`} icon="fa-triangle-exclamation" tone="warn">
-        <p>Báo lúc {formatDateTime(inc.reportedAt)}{inc.note ? `: ${inc.note}` : ''}. Giữ nguyên vị trí, không tự đổi cửa khẩu hay xe.</p>
+        <p>Báo lúc {formatDateTime(inc.reportedAt)}{inc.note ? `: ${inc.note}` : ''}. {inc.status === 'active' ? 'Thực hiện phương án đã duyệt, giữ nguyên xe và cửa khẩu.' : 'Chờ phương án được duyệt; không tự đổi cửa khẩu hay xe.'}</p>
         {inc.status === 'reported' && <p>{inc.rejection ? <><b>Quản lý trả phương án về:</b> {inc.rejection.reason}. Điều phối viên đang lập lại.</> : 'Điều phối viên đang lập phương án.'}</p>}
         {inc.status === 'pending_approval' && <p>Phương án đã gửi, chờ Quản lý duyệt.</p>}
         {inc.status === 'active' && inc.plan && inc.approval && (
@@ -81,7 +114,13 @@ export function IncidentPanel({ b, inc, role, run }: { b: Booking; inc: Incident
           </>
         )}
       </Panel>
-      {inc.status === 'active' && (
+      {inc.status === 'active' && health && !atStation && <Panel title="Tới trạm chăm sóc SOS" icon="fa-location-dot" tone="warn">
+        {!checkpoint ? <p>Phương án cũ chưa có mốc trạm SOS. Điều phối viên cần lập lại phương án để quản lý duyệt.</p> : <>
+          <p>Đi tới {inc.plan?.station}. Xác nhận tới trạm trước khi ghi kết quả chăm sóc.</p>
+          {role === 'driver' ? <><CaptureField purpose="ARRIVE_CHECKPOINT" target={checkpointId} label="Ảnh đã tới trạm SOS" required value={arrivalPhoto} onChange={setArrivalPhoto} /><button className={`btn btn-primary ${s.big}`} disabled={!arrivalPhoto} onClick={() => run(() => bookingsApi.arriveCheckpoint(b.id, inc.tripId, session!.name, checkpointId, arrivalPhoto!), 'Đã tới trạm SOS')}>Xác nhận đã tới trạm SOS</button></> : <p>Chờ tài xế xác nhận đã tới trạm.</p>}
+        </>}
+      </Panel>}
+      {inc.status === 'active' && atStation && (
         <>
           <Panel title="Chi phí tại chỗ" icon="fa-receipt">
             <p>Đã chi {formatVND(spent)}. Chụp hóa đơn trước, số tiền mở khóa sau.</p>
@@ -91,11 +130,13 @@ export function IncidentPanel({ b, inc, role, run }: { b: Booking; inc: Incident
           {needFit && (
             <Panel title="Ngựa đủ sức đi tiếp" icon="fa-heart-pulse" tone={inc.fitConfirmedAt ? 'ok' : 'warn'}>
               <p>{inc.fitConfirmedAt ? 'Hộ tống đã xác nhận ngựa đủ sức đi tiếp.' : role === 'escort' ? 'Chỉ hộ tống khám và xác nhận được. Bấm khi ngựa đã ổn định.' : 'Chờ hộ tống khám và xác nhận ngựa đủ sức.'}</p>
-              {role === 'escort' && !inc.fitConfirmedAt && <button className={`btn btn-primary ${s.big}`} onClick={() => run(() => bookingsApi.confirmFit(b.id, inc.id, session!.name), 'Đã xác nhận ngựa đủ sức')}>Xác nhận ngựa đủ sức đi tiếp</button>}
+              {role === 'escort' && !inc.fitConfirmedAt && health && <HealthCareForm b={b} inc={inc} run={run} />}
+              {role === 'escort' && !inc.fitConfirmedAt && !health && <button className={`btn btn-primary ${s.big}`} onClick={() => run(() => bookingsApi.confirmFit(b.id, inc.id, session!.name), 'Đã xác nhận ngựa đủ sức')}>Xác nhận ngựa đủ sức đi tiếp</button>}
             </Panel>
           )}
+          {health && leaveAt && !restReady && <p role="status">Nghỉ tại trạm SOS đến {formatDateTime(leaveAt)}; còn {Math.ceil((leaveAt - now) / 60000)} phút.</p>}
           {role === 'driver' && (
-            <button className={`btn btn-primary ${s.big}`} disabled={needFit && !inc.fitConfirmedAt} onClick={() => run(() => bookingsApi.resumeJourney(b.id, inc.id, session!.name), 'Tiếp tục theo phương án đã duyệt')}><i className="fa-solid fa-truck-fast" /> Tiếp tục theo phương án đã duyệt</button>
+            <button className={`btn btn-primary ${s.big}`} disabled={(needFit && !inc.fitConfirmedAt) || !restReady} onClick={() => run(() => bookingsApi.resumeJourney(b.id, inc.id, session!.name), 'Tiếp tục theo phương án đã duyệt')}><i className="fa-solid fa-truck-fast" /> Tiếp tục theo phương án đã duyệt</button>
           )}
         </>
       )}

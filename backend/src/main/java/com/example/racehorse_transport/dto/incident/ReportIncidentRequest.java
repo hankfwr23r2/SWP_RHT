@@ -42,5 +42,7 @@ public class ReportIncidentRequest {
     @DecimalMax("180.0")
     private Double longitude;
 
+    private java.util.List<String> horseIds;
+
     private String reporterUsername;
 }

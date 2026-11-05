@@ -1663,6 +1663,12 @@ public class BookingServiceImpl implements BookingService {
     private List<Map<String, Object>> ensureRouteCheckpoints(Booking booking, BookingDetailsPayload payload, VehicleTripDto trip) {
         Map<String, Object> run = trip.getRun() != null ? trip.getRun() : new HashMap<>();
         List<Map<String, Object>> existing = checkpointMaps(run.get("checkpoints"));
+        // Sau khi SOS được duyệt, danh sách mốc của chuyến là kế hoạch đang có hiệu lực.
+        // Không dựng lại từ tuyến gốc vì sẽ mất mốc SOS và khôi phục mốc đã được thay thế.
+        if (trip.getIncidentRoute() != null && run.get("startedAt") != null
+                && existing.stream().anyMatch(cp -> "delivery".equals(cp.get("type")))) {
+            return existing;
+        }
         Map<String, Map<String, Object>> byId = new HashMap<>();
         for (Map<String, Object> cp : existing) {
             if (cp.get("id") != null) byId.put(String.valueOf(cp.get("id")), cp);
@@ -2337,6 +2343,8 @@ public class BookingServiceImpl implements BookingService {
                 Map<String, Object> checkpoint = checkpointMaps(run.get("checkpoints")).stream()
                         .filter(cp -> checkpointId.equals(String.valueOf(cp.get("id"))))
                         .findFirst().orElseThrow(() -> new IllegalArgumentException("Unknown welfare checkpoint: " + checkpointId));
+                if (checkpoint.get("incidentId") != null)
+                    throw new IllegalStateException("Ghi kết quả chăm sóc và xác nhận sức khỏe trong thẻ SOS.");
                 if (!"rest".equals(checkpoint.get("type")) && !"delivery".equals(checkpoint.get("type"))) {
                     throw new IllegalStateException("Welfare logs are only accepted at rest stops and delivery.");
                 }
@@ -2380,6 +2388,8 @@ public class BookingServiceImpl implements BookingService {
                             .filter(cp -> cp.get("doneAt") == null)
                             .findFirst().orElse(null);
                     if (currentStop != restStop) throw new IllegalStateException("Continue from the current route checkpoint.");
+                    if (restStop.get("incidentId") != null)
+                        throw new IllegalStateException("Rời trạm SOS bằng chức năng tiếp tục phương án sự cố sau khi hộ tống xác nhận sức khỏe.");
                     String restId = String.valueOf(restStop.get("id"));
                     List<Map<String, Object>> welfare = mapList(journeyRun.get("welfare"));
                     if (welfare.stream().noneMatch(item -> restId.equals(String.valueOf(item.get("checkpointId"))))) {
