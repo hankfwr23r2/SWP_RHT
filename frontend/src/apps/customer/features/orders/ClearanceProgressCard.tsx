@@ -1,4 +1,5 @@
 // Tiến độ giấy tờ phía khách (Flow 2, PRD mục 3.4): nhà xe làm hết, khách chỉ xem.
+import { useTranslation } from 'react-i18next'
 import { CLEARANCE_DOC } from '@shared/config/booking-rules'
 import { clearanceProgress } from '@shared/lib/booking'
 import { formatDateTime } from '@shared/lib/format'
@@ -7,20 +8,21 @@ import type { ClearanceStatus } from '@shared/types/booking'
 import { ImageThumb } from '@shared/ui/ImageThumb'
 import s from './OrderDetail.module.css'
 
-const STATUS: Record<ClearanceStatus, { label: string; cls: string; icon: string }> = {
-  todo: { label: 'Chưa nộp', cls: 'badge-muted', icon: 'fa-circle' },
-  done: { label: 'Đã nộp', cls: 'badge-success', icon: 'fa-circle-check' },
-}
-
 export function ClearanceProgressCard({ b }: { b: CustomerBookingView }) {
+  const { t } = useTranslation()
   const c = b.clearance
   if (!c) return null
   const { done, total } = clearanceProgress(c)
 
+  const statusMap: Record<ClearanceStatus, { label: string; cls: string; icon: string }> = {
+    todo: { label: t('clearance.statusTodo'), cls: 'badge-muted', icon: 'fa-circle' },
+    done: { label: t('clearance.statusDone'), cls: 'badge-success', icon: 'fa-circle-check' },
+  }
+
   return (
     <div className="card">
-      <div className="card-header"><h3><i className="fa-solid fa-file-signature" /> Giấy tờ kiểm dịch và hải quan</h3><span className={`badge ${done === total ? 'badge-success' : 'badge-info'}`}>{done}/{total} hạng mục</span></div>
-      <p className="form-hint" style={{ marginBottom: 12 }}>Nhà xe làm trọn gói các giấy tờ này cho bạn.</p>
+      <div className="card-header"><h3><i className="fa-solid fa-file-signature" /> {t('clearance.title')}</h3><span className={`badge ${done === total ? 'badge-success' : 'badge-info'}`}>{t('clearance.itemsCount', { done, total })}</span></div>
+      <p className="form-hint" style={{ marginBottom: 12 }}>{t('clearance.desc')}</p>
       <ul className={s.fix}>
         {c.items.map(i => {
           const label = i.label || CLEARANCE_DOC[i.type]?.short || CLEARANCE_DOC[i.type]?.label || i.type
@@ -38,13 +40,13 @@ export function ClearanceProgressCard({ b }: { b: CustomerBookingView }) {
                   </span>
                 )}
               </span>
-              <span className={`badge ${STATUS[i.status].cls}`}><i className={`fa-solid ${STATUS[i.status].icon}`} aria-hidden="true" /> {STATUS[i.status].label}</span>
+              <span className={`badge ${statusMap[i.status].cls}`}><i className={`fa-solid ${statusMap[i.status].icon}`} aria-hidden="true" /> {statusMap[i.status].label}</span>
             </li>
           )
         })}
       </ul>
       {b.type === 'international' && (
-        <p className="form-hint" style={{ marginTop: 10 }}>Giấy thông quan: {c.horsesCleared.length}/{b.horses.length} ngựa đã được ghi nhận.</p>
+        <p className="form-hint" style={{ marginTop: 10 }}>{t('clearance.customsCleared', { cleared: c.horsesCleared.length, total: b.horses.length })}</p>
       )}
     </div>
   )

@@ -1,6 +1,7 @@
 // Khung chung của app nội bộ: header gọn (dùng chung với app khách) + menu theo vai trò.
 import { useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { PageTransition } from '@shared/motion/motion'
 import { ROLE_LABEL, type StaffRole } from '@shared/types/role'
@@ -15,6 +16,7 @@ import { StaffTopbar } from './StaffTopbar'
 import { StaffProfileModal } from './StaffProfileModal'
 
 function Header() {
+  const { t } = useTranslation()
   const { session, logout } = useAuth()
   const navigate = useNavigate()
   const [showProfile, setShowProfile] = useState(false)
@@ -22,8 +24,8 @@ function Header() {
   return (
     <>
     <AppHeader
-      homeHref={role ? HOME_OF[role] : '/login'} badge={role && ROLE_LABEL[role]}
-      links={role ? STAFF_MENUS[role].map(([to, label]): [string, string] => [to, label]) : []} userName={session?.name} onProfile={() => setShowProfile(true)}
+      homeHref={role ? HOME_OF[role] : '/login'} badge={role && t(`roles.${role}`, ROLE_LABEL[role])}
+      links={role ? STAFF_MENUS[role].map(([to, label]): [string, string] => [to, t(`staffMenus.${to}`, label)]) : []} userName={session?.name} onProfile={() => setShowProfile(true)}
       onLogout={() => { logout(); navigate('/login') }}
     />
     {showProfile && session && <StaffProfileModal session={session} onClose={() => setShowProfile(false)} />}
@@ -32,6 +34,7 @@ function Header() {
 }
 
 export function StaffLayout({ children }: { children: ReactNode }) {
+  const { t } = useTranslation()
   const { session } = useAuth()
   if (session?.role === 'admin' || session?.role === 'manager' || session?.role === 'specialist' || session?.role === 'coordinator') {
     return (
@@ -49,7 +52,7 @@ export function StaffLayout({ children }: { children: ReactNode }) {
     <>
       <Header />
       <main><PageTransition>{children}</PageTransition></main>
-      <footer className={h.footer}>Hệ thống vận chuyển ngựa đua chuyên nghiệp</footer>
+      <footer className={h.footer}>{t('common.footerSub', 'Hệ thống vận chuyển ngựa đua chuyên nghiệp')}</footer>
       <TranslateToggle />
     </>
   )

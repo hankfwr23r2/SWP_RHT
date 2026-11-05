@@ -2,6 +2,7 @@
 // Gạch chân mục menu đang chọn trượt theo trang (GSAP).
 import { useRef, useState, useEffect, type ReactNode } from 'react'
 import { Link, NavLink, useLocation } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { gsap } from 'gsap'
 import { useGSAP } from '@gsap/react'
 import s from './AppHeader.module.css'
@@ -22,6 +23,7 @@ export interface AppHeaderProps {
 const initialsOf = (name = '') => name.split(' ').filter(Boolean).slice(-2).map(w => w[0]).join('').toUpperCase()
 
 export function AppHeader({ homeHref, badge, links, isActive, userName, profileHref, onProfile, onLogout, extra, contained }: AppHeaderProps) {
+  const { t } = useTranslation()
   const { pathname } = useLocation()
   const nav = useRef<HTMLElement>(null)
   const bar = useRef<HTMLSpanElement>(null)
@@ -48,7 +50,7 @@ export function AppHeader({ homeHref, badge, links, isActive, userName, profileH
       <div className={`${s.inner} ${contained ? s.contained : ''}`}>
         <Link to={homeHref} className={s.brand}>
           <img src="/logo.png" alt="" className={s.brandMark} />
-          <span className={s.brandText}>Vận chuyển Ngựa</span>
+          <span className={s.brandText}>{t('common.brandName')}</span>
           {badge && <span className={s.badge}>{badge}</span>}
         </Link>
         <nav ref={nav} className={s.nav} aria-label="Menu">
@@ -75,7 +77,7 @@ export function AppHeader({ homeHref, badge, links, isActive, userName, profileH
               <span className={s.userName}>{userName}</span>
             </>
           )}
-          <button className={s.logout} onClick={onLogout}><i className="fa-solid fa-arrow-right-from-bracket" /> Đăng xuất</button>
+          <button className={s.logout} onClick={onLogout}><i className="fa-solid fa-arrow-right-from-bracket" /> {t('common.logout')}</button>
         </div>
       </div>
     </header>

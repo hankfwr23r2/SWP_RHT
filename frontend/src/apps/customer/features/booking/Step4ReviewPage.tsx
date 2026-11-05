@@ -1,6 +1,7 @@
 // Bước 4: xác nhận và gửi đơn. Đơn gửi đi ở trạng thái "Chờ Manager tiếp nhận".
 import { useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { COUNTRIES } from '@shared/config/network'
@@ -21,6 +22,7 @@ import s from './Booking.module.css'
 
 
 export default function Step4ReviewPage() {
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const toast = useToast()
   const { session } = useAuth()
@@ -37,14 +39,14 @@ export default function Step4ReviewPage() {
     if (!placed) return null
     const toList = () => navigate(`/orders?group=confirm&new=${placed.id}`)
     return (
-      <Modal onClose={toList} title={<><i className="fa-solid fa-circle-check" style={{ color: 'var(--green)' }} /> Đã gửi đơn {placed.id}</>} subtitle="Đơn của bạn đã được ghi nhận"
-        footer={<button className="btn btn-primary" onClick={toList}>Đến trang Đơn của tôi</button>}>
+      <Modal onClose={toList} title={<><i className="fa-solid fa-circle-check" style={{ color: 'var(--green)' }} /> {t('bookingWizard.orderPlacedTitle', { id: placed.id })}</>} subtitle={t('bookingWizard.orderPlacedSubtitle')}
+        footer={<button className="btn btn-primary" onClick={toList}>{t('bookingWizard.toMyOrders')}</button>}>
         <dl className={s.reviewGrid}>
-          <div><dt>Tuyến</dt><dd>{placed.route}</dd></div>
-          <div><dt>Ngày khởi hành</dt><dd>{placed.date}</dd></div>
-          <div><dt>Số ngựa</dt><dd>{placed.horses} con</dd></div>
+          <div><dt>{t('booking.summary')}</dt><dd>{placed.route}</dd></div>
+          <div><dt>{t('bookingWizard.departureDate')}</dt><dd>{placed.date}</dd></div>
+          <div><dt>{t('booking.horsesCount')}</dt><dd>{placed.horses} {t('booking.horsesUnit')}</dd></div>
         </dl>
-        <p className="form-hint" style={{ marginTop: 14 }}>Đơn nằm ở <b>Đơn hàng của tôi › Chờ xác nhận</b>, đang ở <b>bước 1/8: Gửi đơn</b>, chờ quản lý tiếp nhận. Quản lý sẽ tiếp nhận, Chuyên viên và Điều phối viên thẩm định, rồi gửi báo giá cho bạn. Bạn theo dõi từng bước ở đó.</p>
+        <p className="form-hint" style={{ marginTop: 14 }}>{t('bookingWizard.orderPlacedHint')}</p>
       </Modal>
     )
   }
@@ -111,35 +113,35 @@ export default function Step4ReviewPage() {
   }
 
   return (
-    <BookingShell step={4} title="Xác nhận và gửi đơn" subtitle="Kiểm tra lại thông tin. Sau khi gửi, Quản lý sẽ tiếp nhận và bắt đầu thẩm định.">
+    <BookingShell step={4} title={t('bookingWizard.step4Title')} subtitle={t('bookingWizard.step4Subtitle')}>
       <div className={`card ${s.review}`} data-card>
-        <div className="card-header"><h3><i className="fa-solid fa-route" /> Chuyến đi</h3><Link to="/booking/route" className={s.editLink}>Sửa</Link></div>
+        <div className="card-header"><h3><i className="fa-solid fa-route" /> {t('booking.step1')}</h3><Link to="/booking/route" className={s.editLink}>{t('common.edit')}</Link></div>
         <dl className={s.reviewGrid}>
-          <div><dt>Loại chuyến</dt><dd>{international ? <>Quốc tế <span className={s.subNote}>({COUNTRIES[countries.origin].name} → {COUNTRIES[countries.dest].name})</span></> : 'Trong nước'}</dd></div>
-          <div><dt>Ngày khởi hành</dt><dd>{formatDate(fromIsoDay(draft.departDate))}</dd></div>
-          <div><dt>Điểm đón</dt><dd>{origin.name}</dd></div>
-          <div><dt>Điểm giao</dt><dd>{dest.name}</dd></div>
+          <div><dt>{t('bookingWizard.tripType')}</dt><dd>{international ? <>{t('bookingWizard.international')} <span className={s.subNote}>({COUNTRIES[countries.origin].name} → {COUNTRIES[countries.dest].name})</span></> : t('bookingWizard.domestic')}</dd></div>
+          <div><dt>{t('bookingWizard.departureDate')}</dt><dd>{formatDate(fromIsoDay(draft.departDate))}</dd></div>
+          <div><dt>{t('booking.origin')}</dt><dd>{origin.name}</dd></div>
+          <div><dt>{t('booking.destination')}</dt><dd>{dest.name}</dd></div>
           <div>
-            <dt>Người gửi</dt>
+            <dt>{t('booking.sender')}</dt>
             <dd>
               {draft.consignor.name}
               <br /><small className="text-muted">{draft.consignor.phone}</small>
-              {draft.consignor.idNumber ? <><br /><small className="text-muted">CCCD/HC: {draft.consignor.idNumber}</small></> : <><br /><small className="text-danger font-semibold">Thiếu CCCD/Hộ chiếu</small></>}
+              {draft.consignor.idNumber ? <><br /><small className="text-muted">ID: {draft.consignor.idNumber}</small></> : <><br /><small className="text-danger font-semibold">{i18n.language === 'en' ? 'Missing ID/Passport' : 'Thiếu CCCD/Hộ chiếu'}</small></>}
             </dd>
           </div>
           <div>
-            <dt>Người nhận</dt>
+            <dt>{t('booking.receiver')}</dt>
             <dd>
               {draft.consignee.name}
               <br /><small className="text-muted">{draft.consignee.phone}</small>
-              {draft.consignee.idNumber ? <><br /><small className="text-muted">CCCD/HC: {draft.consignee.idNumber}</small></> : <><br /><small className="text-danger font-semibold">Thiếu CCCD/Hộ chiếu</small></>}
+              {draft.consignee.idNumber ? <><br /><small className="text-muted">ID: {draft.consignee.idNumber}</small></> : <><br /><small className="text-danger font-semibold">{i18n.language === 'en' ? 'Missing ID/Passport' : 'Thiếu CCCD/Hộ chiếu'}</small></>}
             </dd>
           </div>
         </dl>
       </div>
 
       <div className="card" data-card>
-        <div className="card-header"><h3><i className="fa-solid fa-horse-head" /> {rows.length} ngựa · xe {cls.label} <span className={s.subNote}>({cls.stalls})</span></h3><Link to="/booking/services" className={s.editLink}>Sửa</Link></div>
+        <div className="card-header"><h3><i className="fa-solid fa-horse-head" /> {rows.length} {t('booking.horsesUnit')} · {cls.label} <span className={s.subNote}>({cls.stalls})</span></h3><Link to="/booking/services" className={s.editLink}>{t('common.edit')}</Link></div>
         {rows.map(h => {
           const selected = serviceSelections(h.id)
           return (
@@ -152,21 +154,21 @@ export default function Step4ReviewPage() {
               </div>
               <div className={s.reviewServicesGrid}>
                 <div className={s.reviewServiceCol}>
-                  <span className={s.reviewServiceLabel}><i className="fa-solid fa-border-all" /> Khoang xe</span>
-                  <span className={s.reviewServiceVal}>{selected.stall?.serviceName ?? 'Không còn áp dụng'}</span>
+                  <span className={s.reviewServiceLabel}><i className="fa-solid fa-border-all" /> {i18n.language === 'en' ? 'Transporter Stall' : 'Khoang xe'}</span>
+                  <span className={s.reviewServiceVal}>{selected.stall?.serviceName ?? (i18n.language === 'en' ? 'Unavailable' : 'Không còn áp dụng')}</span>
                   <span className={s.reviewServiceSub}>{selected.stall ? (selected.stall.price > 0
                     ? `${formatVND(selected.stall.price)} / ${SERVICE_BILLING_UNIT_LABEL[selected.stall.billingUnit]}`
-                    : 'Miễn phí / Đã gồm') : 'Vui lòng quay lại chọn dịch vụ'}</span>
+                    : t('bookingWizard.freeIncluded')) : (i18n.language === 'en' ? 'Please return to select service' : 'Vui lòng quay lại chọn dịch vụ')}</span>
                 </div>
                 <div className={s.reviewServiceCol}>
-                  <span className={s.reviewServiceLabel}><i className="fa-solid fa-wheat-awn" /> Gói thức ăn</span>
-                  <span className={s.reviewServiceVal}>{selected.feed?.serviceName ?? 'Không còn áp dụng'}</span>
+                  <span className={s.reviewServiceLabel}><i className="fa-solid fa-wheat-awn" /> {i18n.language === 'en' ? 'Feeding Program' : 'Gói thức ăn'}</span>
+                  <span className={s.reviewServiceVal}>{selected.feed?.serviceName ?? (i18n.language === 'en' ? 'Unavailable' : 'Không còn áp dụng')}</span>
                   <span className={s.reviewServiceSub}>{selected.feed ? (selected.feed.price > 0
                     ? `${formatVND(selected.feed.price)} / ${SERVICE_BILLING_UNIT_LABEL[selected.feed.billingUnit]}`
-                    : 'Miễn phí / Đã gồm') : 'Vui lòng quay lại chọn dịch vụ'}</span>
+                    : t('bookingWizard.freeIncluded')) : (i18n.language === 'en' ? 'Please return to select service' : 'Vui lòng quay lại chọn dịch vụ')}</span>
                 </div>
                 <div className={s.reviewServiceCol}>
-                  <span className={s.reviewServiceLabel}><i className="fa-solid fa-shield-halved" /> Bảo hiểm chuyến đi</span>
+                  <span className={s.reviewServiceLabel}><i className="fa-solid fa-shield-halved" /> {i18n.language === 'en' ? 'Transit Insurance' : 'Bảo hiểm chuyến đi'}</span>
                   <InsuranceSummary insurance={draft.config[h.id].insuranceDetails} />
                 </div>
               </div>
@@ -177,9 +179,9 @@ export default function Step4ReviewPage() {
 
 
       <div className={s.actions}>
-        <Link to="/booking/services" className="btn btn-ghost"><i className="fa-solid fa-arrow-left" /> Dịch vụ và bảo hiểm</Link>
-        {!serviceSelectionsValid && <span className="form-error">Dịch vụ đã thay đổi hoặc không tải được. Hãy quay lại chọn lại dịch vụ.</span>}
-        <button type="button" className="btn btn-primary btn-lg" onClick={submit} disabled={busy || !serviceSelectionsValid}><i className="fa-solid fa-paper-plane" /> {busy ? 'Đang gửi…' : 'Gửi yêu cầu đặt đơn'}</button>
+        <Link to="/booking/services" className="btn btn-ghost"><i className="fa-solid fa-arrow-left" /> {t('bookingWizard.step3Title')}</Link>
+        {!serviceSelectionsValid && <span className="form-error">{i18n.language === 'en' ? 'Services have changed or failed to load. Please return and select again.' : 'Dịch vụ đã thay đổi hoặc không tải được. Hãy quay lại chọn lại dịch vụ.'}</span>}
+        <button type="button" className="btn btn-primary btn-lg" onClick={submit} disabled={busy || !serviceSelectionsValid}><i className="fa-solid fa-paper-plane" /> {busy ? t('bookingWizard.sending') : t('bookingWizard.btnSendOrder')}</button>
       </div>
     </BookingShell>
   )

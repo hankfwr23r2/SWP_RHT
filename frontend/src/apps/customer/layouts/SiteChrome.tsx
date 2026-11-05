@@ -2,6 +2,7 @@
 // Trang khách đã đăng nhập dùng khung gọn: CustomerLayout.tsx.
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link, NavLink, useLocation } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { TranslateToggle } from '@shared/ui/TranslateToggle'
 import { CustomerLayout } from './CustomerLayout'
@@ -21,62 +22,71 @@ function useScrolled(y: number) {
 }
 
 function Brand({ to }: { to: string }) {
-  return <Link to={to} className={s.brand}><img src="/logo.png" alt="" className={s.brandMark} /><span>Vận chuyển Ngựa</span></Link>
+  const { t } = useTranslation()
+  return (
+    <Link to={to} className={s.brand}>
+      <img src="/logo.png" alt="" className={s.brandMark} />
+      <span>{t('common.brandName')}</span>
+    </Link>
+  )
 }
 
 const navClass = ({ isActive }: { isActive: boolean }) => cx(s.navLink, isActive && s.active)
 
 function PublicNav() {
+  const { t } = useTranslation()
   return (
     <>
-      <NavLink to="/" end className={navClass}>Trang chủ</NavLink>
+      <NavLink to="/" end className={navClass}>{t('nav.home')}</NavLink>
       <div className={s.drop}>
-        <button type="button" className={s.dropBtn}>Tra cứu <i className="fa-solid fa-chevron-down" aria-hidden="true" /></button>
+        <button type="button" className={s.dropBtn}>
+          {t('nav.lookup')} <i className="fa-solid fa-chevron-down" aria-hidden="true" />
+        </button>
         <div className={s.dropMenu}>
-          <Link to="/?tab=order#tra-cuu">Tra cứu đơn hàng</Link>
-          
-          <Link to="/?tab=price#tra-cuu">Bảng giá</Link>
+          <Link to="/?tab=order#tra-cuu">{t('nav.lookupOrder')}</Link>
+          <Link to="/?tab=price#tra-cuu">{t('nav.pricing')}</Link>
         </div>
       </div>
-      <Link to="/#mang-luoi" className={s.navLink}>Mạng lưới</Link>
-      <Link to="/#dich-vu" className={s.navLink}>Dịch vụ</Link>
-      <Link to="/#quy-trinh" className={s.navLink}>Quy trình</Link>
+      <Link to="/#mang-luoi" className={s.navLink}>{t('nav.network')}</Link>
+      <Link to="/#dich-vu" className={s.navLink}>{t('nav.services')}</Link>
+      <Link to="/#quy-trinh" className={s.navLink}>{t('nav.process')}</Link>
       <div className={s.actions}>
-        <Link to="/login" className="btn btn-outline">Đăng nhập / Đăng ký</Link>
-        <Link to="/login" className="btn btn-solid">Đặt chuyến</Link>
+        <Link to="/login" className="btn btn-outline">{t('common.loginOrRegister')}</Link>
+        <Link to="/login" className="btn btn-solid">{t('common.bookTrip')}</Link>
       </div>
     </>
   )
 }
 
 function Footer() {
+  const { t } = useTranslation()
   return (
     <footer className={s.footer}>
       <div className={cx('wrap', s.footerGrid)}>
         <div>
           <Brand to="/" />
-          <p>Vận chuyển ngựa đua đường bộ trong Việt Nam và giữa Việt Nam với Lào, Campuchia.</p>
+          <p>{t('common.footerDesc')}</p>
         </div>
         <div>
-          <h4>Tra cứu</h4>
-          <Link to="/?tab=order#tra-cuu">Tra cứu đơn hàng</Link>
-          
-          <Link to="/?tab=price#tra-cuu">Bảng giá</Link>
-          <Link to="/#mang-luoi">Mạng lưới</Link>
+          <h4>{t('nav.lookup')}</h4>
+          <Link to="/?tab=order#tra-cuu">{t('nav.lookupOrder')}</Link>
+          <Link to="/?tab=price#tra-cuu">{t('nav.pricing')}</Link>
+          <Link to="/#mang-luoi">{t('nav.network')}</Link>
         </div>
         <div>
-          <h4>Khách hàng</h4>
-          <Link to="/login">Đăng nhập</Link>
-          <Link to="/register">Đăng ký</Link>
-          <Link to="/login">Đặt chuyến</Link>
+          <h4>{t('nav.customer')}</h4>
+          <Link to="/login">{t('common.login')}</Link>
+          <Link to="/register">{t('common.register')}</Link>
+          <Link to="/login">{t('common.bookTrip')}</Link>
         </div>
       </div>
-      <div className={cx('wrap', s.copyright)}>Hệ thống vận chuyển ngựa đua chuyên nghiệp</div>
+      <div className={cx('wrap', s.copyright)}>{t('common.footerSub')}</div>
     </footer>
   )
 }
 
 export function PublicLayout({ children }: { children: ReactNode }) {
+  const { t } = useTranslation()
   const { session } = useAuth()
   const { pathname } = useLocation()
   const scrolled = useScrolled(10)
@@ -89,7 +99,7 @@ export function PublicLayout({ children }: { children: ReactNode }) {
     <>
       <div className={s.topbar}>
         <div className={cx('wrap', s.topbarInner)}>
-          <span>Vận chuyển ngựa đua đường bộ · Việt Nam · Lào · Campuchia</span>
+          <span>{t('common.brandTagline')}</span>
         </div>
       </div>
       <header className={cx(s.header, scrolled && s.scrolled)}>

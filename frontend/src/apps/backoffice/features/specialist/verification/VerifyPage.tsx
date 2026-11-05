@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { InsuranceLink } from '../../../shared/InsurancePanel'
 import { Link, Navigate, useNavigate } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { FEED_PACKAGE, WATER_PLAN, HORSE_DOC, HORSE_DOC_TYPES, type HorseDocType } from '@shared/config/booking-rules'
 import { horseReadiness } from '@shared/lib/booking'
@@ -40,6 +41,7 @@ const COMMON_REASONS = [
 ]
 
 function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onDone: () => void }) {
+  const { t } = useTranslation()
   const toast = useToast()
   const navigate = useNavigate()
   const { session } = useAuth()
@@ -61,13 +63,13 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
 
   const run = async (fn: () => Promise<unknown>, ok: string) => {
     setBusy(true)
-    try { await fn(); toast(ok); onDone() } catch (e) { toast(e instanceof Error ? e.message : 'Không thực hiện được', 'error'); setBusy(false) }
+    try { await fn(); toast(ok); onDone() } catch (e) { toast(e instanceof Error ? e.message : t('specialistVerify.actionFailed', 'Không thực hiện được'), 'error'); setBusy(false) }
   }
-  const approve = () => run(() => bookingsApi.approveMedical(b.id, session!.name), `Đã duyệt hồ sơ ngựa ${b.id}`)
+  const approve = () => run(() => bookingsApi.approveMedical(b.id, session!.name), t('specialistVerify.approvedSuccessToast', 'Đã duyệt hồ sơ ngựa {{id}}', { id: b.id }))
   const requestFix = () => run(async () => {
     await bookingsApi.requestResubmission(b.id, session!.name, reason, items.map(i => { const [horseId, doc] = i.split(':'); return { horseId, doc: doc as HorseDocType } }))
     navigate('/specialist/verification')
-  }, 'Đã yêu cầu khách bổ sung hồ sơ')
+  }, t('specialistVerify.requestFixSuccessToast', 'Đã yêu cầu khách bổ sung hồ sơ'))
   const startFix = () => { setFixing(true); setItems(problems.map(key)) }
 
   return (
@@ -76,11 +78,11 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
         <div className="alert alert-info" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <i className="fa-solid fa-rotate-right" style={{ color: 'var(--orange)', fontSize: '1.25rem' }} />
           <div>
-            <b>Khách hàng đã nộp lại hồ sơ bổ sung</b>
-            {b.medical?.resubmittedAt ? ` lúc ${formatDateTime(b.medical.resubmittedAt)}` : ''}
+            <b>{t('specialistVerify.resubmitInfoTitle', 'Khách hàng đã nộp lại hồ sơ bổ sung')}</b>
+            {b.medical?.resubmittedAt ? t('specialistVerify.resubmitInfoAt', ' lúc {{at}}', { at: formatDateTime(b.medical.resubmittedAt) }) : ''}
             {b.medical?.lastResubmit?.reason ? `: "${b.medical.lastResubmit.reason}"` : ''}.
             <div style={{ fontSize: '0.84rem', marginTop: 2, color: 'var(--text-muted, #64748b)' }}>
-              Các giấy tờ khách vừa nộp lại đã được đánh dấu nhãn cam <b>[Khách vừa nộp lại]</b> để đối soát nhanh.
+              {t('specialistVerify.resubmitInfoDesc', 'Các giấy tờ khách vừa nộp lại đã được đánh dấu nhãn cam [Khách vừa nộp lại] để đối soát nhanh.')}
             </div>
           </div>
         </div>
@@ -89,28 +91,28 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
       <div className="card">
         {/* Header + nút < > */}
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-          <h3><i className="fa-solid fa-horse-head" /> Đối chiếu hồ sơ {horses.length} ngựa</h3>
+          <h3><i className="fa-solid fa-horse-head" /> {t('specialistVerify.compareTitle', 'Đối chiếu hồ sơ {{count}} ngựa', { count: horses.length })}</h3>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             {(b.medical?.status ?? 'pending') === 'pending' && !allChecked && (
               <button
                 type="button"
                 className="btn btn-outline btn-sm"
                 onClick={() => setChecked(horses.map(h => h.id))}
-                title="Đánh dấu tất cả ngựa đã đối chiếu xong"
+                title={t('specialistVerify.allCheckedQuick', 'Đánh dấu tất cả ngựa đã đối chiếu xong')}
               >
-                <i className="fa-solid fa-check-double" /> Chọn nhanh tất cả ({horses.length} ngựa)
+                <i className="fa-solid fa-check-double" /> {t('specialistVerify.quickSelectAll', 'Chọn nhanh tất cả ({{count}} ngựa)', { count: horses.length })}
               </button>
             )}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <button type="button" className="btn btn-outline btn-sm" style={{ padding: '4px 10px', minWidth: 32 }}
-                onClick={() => setPageIdx(i => Math.max(0, i - 1))} disabled={idx === 0} title="Ngựa trước">
+                onClick={() => setPageIdx(i => Math.max(0, i - 1))} disabled={idx === 0} title={t('specialistVerify.prevHorse', 'Ngựa trước')}>
                 <i className="fa-solid fa-chevron-left" />
               </button>
               <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--navy)', whiteSpace: 'nowrap', minWidth: 56, textAlign: 'center' }}>
                 {idx + 1} / {horses.length}
               </span>
               <button type="button" className="btn btn-outline btn-sm" style={{ padding: '4px 10px', minWidth: 32 }}
-                onClick={() => setPageIdx(i => Math.min(horses.length - 1, i + 1))} disabled={idx === horses.length - 1} title="Ngựa tiếp theo">
+                onClick={() => setPageIdx(i => Math.min(horses.length - 1, i + 1))} disabled={idx === horses.length - 1} title={t('specialistVerify.nextHorse', 'Ngựa tiếp theo')}>
                 <i className="fa-solid fa-chevron-right" />
               </button>
             </div>
@@ -138,11 +140,11 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
           return (
             <div key={cur.id} className={s.horse} style={{ border: 'none', borderRadius: 0, padding: '12px 16px 16px' }}>
               <div className={s.horseTop}>
-                <div><div className={s.horseName}>{cur.name}</div><div className={s.horseMeta}>Chip {cur.microchip} · {cur.breed} · sinh {cur.birthYear}</div></div>
-                {r.ok ? <span className="badge badge-success">Đã nộp đủ giấy</span> : <span className="badge badge-danger">Thiếu giấy tờ</span>}
+                <div><div className={s.horseName}>{cur.name}</div><div className={s.horseMeta}>{t('specialistVerify.chipLabel', 'Chip {{chip}} · {{breed}} · sinh {{year}}', { chip: cur.microchip, breed: cur.breed, year: cur.birthYear })}</div></div>
+                {r.ok ? <span className="badge badge-success">{t('specialistVerify.docComplete', 'Đã nộp đủ giấy')}</span> : <span className="badge badge-danger">{t('specialistVerify.docMissing', 'Thiếu giấy tờ')}</span>}
               </div>
               <HorseDocChips horse={cur} />
-              <div className={s.docFiles} aria-label="Giấy khách đã nộp">
+              <div className={s.docFiles} aria-label={t('specialistVerify.docSubmitted', 'Giấy khách đã nộp')}>
                 {HORSE_DOC_TYPES.map(d => {
                   const f = cur.docs[d]
                   const isResubmitted = lastResubmitted.some(item => item.horseId === cur.id && item.doc === d)
@@ -165,11 +167,11 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
                           <b>{renderDocLabel(HORSE_DOC[d].label)}</b>
                           {isResubmitted && (
                             <span className="badge badge-warning" style={{ fontSize: '0.72rem', padding: '2px 6px', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                              <i className="fa-solid fa-rotate-right" /> Khách vừa nộp lại
+                              <i className="fa-solid fa-rotate-right" /> {t('specialistVerify.justResubmitted', 'Khách vừa nộp lại')}
                             </span>
                           )}
                         </div>
-                        <small>{f ? `${f.fileName} · nộp ${formatDateTime(f.uploadedAt)}` : 'Khách chưa nộp'}</small>
+                        <small>{f ? t('specialistVerify.submittedAt', '{{name}} · nộp {{at}}', { name: f.fileName, at: formatDateTime(f.uploadedAt) }) : t('specialistVerify.notSubmittedYet', 'Khách chưa nộp')}</small>
                       </div>
                       {f && (
                         <button
@@ -177,9 +179,9 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
                           className="btn btn-outline btn-sm"
                           style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 6, flexShrink: 0 }}
                           onClick={() => setViewingDoc({ name: fileName, title })}
-                          title={`Xem trước ${title}`}
+                          title={t('specialistVerify.previewTitle', 'Xem trước {{title}}', { title })}
                         >
-                          <i className="fa-regular fa-eye" /> Xem trước
+                          <i className="fa-regular fa-eye" /> {t('specialistVerify.preview', 'Xem trước')}
                         </button>
                       )}
                     </div>
@@ -187,14 +189,14 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
                 })}
               </div>
               {bh && <div className={s.config}>
-                <span>Thức ăn: <b>{bh.selectedServices?.feed?.serviceName ?? FEED_PACKAGE[bh.feedPackage ?? 'basic'].label}</b></span>
-                {(bh.selectedServices?.water || bh.waterPlan) && <span>Cữ nước: <b>{bh.selectedServices?.water?.serviceName ?? WATER_PLAN[bh.waterPlan ?? 'every_3h'].label}</b></span>}
+                <span>{t('specialistVerify.feedConfig', 'Thức ăn: ')}<b>{bh.selectedServices?.feed?.serviceName ?? FEED_PACKAGE[bh.feedPackage ?? 'basic'].label}</b></span>
+                {(bh.selectedServices?.water || bh.waterPlan) && <span>{t('specialistVerify.waterConfig', 'Cữ nước: ')}<b>{bh.selectedServices?.water?.serviceName ?? WATER_PLAN[bh.waterPlan ?? 'every_3h'].label}</b></span>}
               </div>}
               {(b.medical?.status ?? 'pending') === 'pending' && (
                 <label className={s.check}>
                   <input type="checkbox" checked={checked.includes(cur.id)}
                     onChange={e => { const on = e.target.checked; setChecked(c => on ? [...c, cur.id] : c.filter(x => x !== cur.id)) }} />
-                  Đã đối chiếu hộ chiếu, microchip {cur.microchip} và giấy xét nghiệm EIA/EVA
+                  {t('specialistVerify.checkPassedLabel', 'Đã đối chiếu hộ chiếu, microchip {{chip}} và giấy xét nghiệm EIA/EVA', { chip: cur.microchip })}
                 </label>
               )}
             </div>
@@ -207,7 +209,7 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
               onClick={() => setPageIdx(i => Math.max(0, i - 1))} disabled={idx === 0}>
               <i className="fa-solid fa-chevron-left" /> {idx > 0 ? horses[idx - 1].name : ''}
             </button>
-            <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{checked.length}/{horses.length} ngựa đã đối chiếu</span>
+            <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{t('specialistVerify.counterReviewed', '{{checked}}/{{total}} ngựa đã đối chiếu', { checked: checked.length, total: horses.length })}</span>
             <button type="button" className="btn btn-outline btn-sm"
               onClick={() => setPageIdx(i => Math.min(horses.length - 1, i + 1))} disabled={idx === horses.length - 1}>
               {idx < horses.length - 1 ? horses[idx + 1].name : ''} <i className="fa-solid fa-chevron-right" />
@@ -221,32 +223,32 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
           <div className="card">
             <div className={s.actionBar}>
               <div>
-                <b>{canApprove ? 'Sẵn sàng duyệt hồ sơ ngựa' : 'Chưa thể xác nhận đạt'}</b>
-                <div className={s.hint}>{!allChecked ? `Cần tick đối chiếu cả ${horses.length} ngựa. ` : ''}{problems.length ? 'Có giấy thiếu hoặc hết hạn trên hệ thống. Nếu hồ sơ thực tế đạt, hãy tick đối chiếu để duyệt. Nếu không đạt, hãy bấm Yêu cầu bổ sung. ' : ''}</div>
+                <b>{canApprove ? t('specialistVerify.readyToApprove', 'Sẵn sàng duyệt hồ sơ ngựa') : t('specialistVerify.cannotApproveYet', 'Chưa thể xác nhận đạt')}</b>
+                <div className={s.hint}>{!allChecked ? t('specialistVerify.hintCheckAll', 'Cần tick đối chiếu cả {{count}} ngựa. ', { count: horses.length }) : ''}{problems.length ? t('specialistVerify.hintProblems', 'Có giấy thiếu hoặc hết hạn trên hệ thống. Nếu hồ sơ thực tế đạt, hãy tick đối chiếu để duyệt. Nếu không đạt, hãy bấm Yêu cầu bổ sung. ') : ''}</div>
               </div>
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
                 {!allChecked && (
                   <button type="button" className="btn btn-outline" onClick={() => setChecked(horses.map(h => h.id))}>
-                    <i className="fa-solid fa-check-double" /> Chọn tất cả đạt
+                    <i className="fa-solid fa-check-double" /> {t('specialistVerify.selectAllPassed', 'Chọn tất cả đạt')}
                   </button>
                 )}
-                <button className="btn btn-ghost" onClick={startFix} disabled={busy}><i className="fa-solid fa-rotate-left" /> Yêu cầu bổ sung</button>
-                <button className="btn btn-primary" onClick={approve} disabled={!canApprove || busy}><i className="fa-solid fa-circle-check" /> Duyệt hồ sơ ngựa</button>
+                <button className="btn btn-ghost" onClick={startFix} disabled={busy}><i className="fa-solid fa-rotate-left" /> {t('specialistVerify.requestFixBtn', 'Yêu cầu bổ sung')}</button>
+                <button className="btn btn-primary" onClick={approve} disabled={!canApprove || busy}><i className="fa-solid fa-circle-check" /> {t('specialistVerify.approveBtn', 'Duyệt hồ sơ ngựa')}</button>
               </div>
             </div>
             {fixing && (
               <div className={`${s.actionBox} ${s.actionDanger}`} style={{ marginTop: 14 }}>
-                <b>Yêu cầu khách bổ sung hồ sơ</b>
+                <b>{t('specialistVerify.requestFixTitle', 'Yêu cầu khách bổ sung hồ sơ')}</b>
                 <div className={s.reasonList} role="group" aria-label="Giấy cần bổ sung">
                   {horses.flatMap(h => HORSE_DOC_TYPES.map(doc => ({ h, doc }))).map(({ h, doc }) => (
                     <label key={h.id + doc}><input type="checkbox" checked={items.includes(key({ horseId: h.id, doc }))} onChange={e => { const on = e.target.checked; const k = key({ horseId: h.id, doc }); setItems(x => (on ? [...x, k] : x.filter(i => i !== k))) }} />{h.name}: {HORSE_DOC[doc].label}</label>
                   ))}
                 </div>
                 <div className="form-group" style={{ margin: 0 }}>
-                  <label htmlFor="reason" className="required">Lý do (khách sẽ thấy)</label>
-                  <textarea id="reason" className="form-control" rows={3} value={reason} onChange={e => setReason(e.target.value)} placeholder="VD: Phiếu xét nghiệm EIA bị mờ, không đọc được ngày lấy mẫu." />
+                  <label htmlFor="reason" className="required">{t('specialistVerify.reasonLabel', 'Lý do (khách sẽ thấy)')}</label>
+                  <textarea id="reason" className="form-control" rows={3} value={reason} onChange={e => setReason(e.target.value)} placeholder={t('specialistVerify.reasonPlaceholder', 'VD: Phiếu xét nghiệm EIA bị mờ, không đọc được ngày lấy mẫu.')} />
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--muted)', alignSelf: 'center' }}>Gợi ý nhanh:</span>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--muted)', alignSelf: 'center' }}>{t('specialistVerify.quickSuggestions', 'Gợi ý nhanh:')}</span>
                     {COMMON_REASONS.map(r => (
                       <button
                         key={r}
@@ -262,7 +264,7 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
                 </div>
                 <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 10 }}>
                   <button className="btn btn-ghost" onClick={() => setFixing(false)}>Hủy</button>
-                  <button className="btn btn-danger" onClick={requestFix} disabled={busy || !reason.trim() || !items.length}>Gửi yêu cầu bổ sung</button>
+                  <button className="btn btn-danger" onClick={requestFix} disabled={busy || !reason.trim() || !items.length}>{t('specialistVerify.sendRequestFix', 'Gửi yêu cầu bổ sung')}</button>
                 </div>
               </div>
             )}
@@ -271,11 +273,11 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
       )}
 
       {b.medical?.status === 'resubmit' && (
-        <div className="alert alert-warning"><i className="fa-solid fa-hourglass-half" /><div><b>Đang chờ khách bổ sung.</b> {b.medical.resubmit?.reason} Khi khách gửi lại, đơn sẽ quay về mục “Cần thẩm định”.</div></div>
+        <div className="alert alert-warning"><i className="fa-solid fa-hourglass-half" /><div>{t('specialistVerify.waitingCustomerAlert', 'Đang chờ khách bổ sung. {{reason}} Khi khách gửi lại, đơn sẽ quay về mục “Cần thẩm định”.', { reason: b.medical.resubmit?.reason ?? '' })}</div></div>
       )}
 
       {b.medical?.status === 'approved' && (
-        <div className="alert alert-success"><i className="fa-solid fa-circle-check" /><div><b>Đã duyệt hồ sơ ngựa</b>{b.medical.at && ` lúc ${formatDateTime(b.medical.at)}`}</div></div>
+        <div className="alert alert-success"><i className="fa-solid fa-circle-check" /><div>{t('specialistVerify.approvedAlert', 'Đã duyệt hồ sơ ngựa lúc {{at}}', { at: formatDateTime(b.medical.at ?? 0) })}</div></div>
       )}
 
       {viewingDoc && (
@@ -291,6 +293,7 @@ function Review({ b, horses, onDone }: { b: Booking; horses: HorseProfile[]; onD
 }
 
 export default function VerifyPage() {
+  const { t } = useTranslation()
   const { session } = useAuth()
   const { b, horses, reload } = usePageData<typeof verifyLoader>()
 
@@ -304,13 +307,13 @@ export default function VerifyPage() {
       <div className="wrap">
         <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-            <h1>Đơn {b.id}</h1>
+            <h1>{t('specialistVerify.pageTitle', 'Đơn {{id}}', { id: b.id })}</h1>
             <BookingStatusBadge status={b.status} labels={b} audience="staff" />
             <ReviewChips b={b} />
           </div>
           {(['waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup'].includes(b.status) || !!b.waybill || !!b.clearance) && (
             <Link to={`/specialist/legal/${b.id}`} className="btn btn-outline btn-sm">
-              <i className="fa-solid fa-file-signature" /> Xem Giấy tờ chuyến đi ➔
+              <i className="fa-solid fa-file-signature" /> {t('specialistVerify.viewClearance', 'Xem Giấy tờ chuyến đi ➔')}
             </Link>
           )}
         </div>
@@ -318,22 +321,22 @@ export default function VerifyPage() {
           <div className="alert alert-info" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <i className="fa-solid fa-file-signature" />
-              <span>Đơn này đã có Vận đơn và đang ở bước làm giấy tờ kiểm dịch & thông quan.</span>
+              <span>{t('specialistVerify.waybillClearanceAlert', 'Đơn này đã có Vận đơn và đang ở bước làm giấy tờ kiểm dịch & thông quan.')}</span>
             </div>
             <Link to={`/specialist/legal/${b.id}`} className="btn btn-primary btn-sm">
-              Mở Giấy tờ chuyến đi
+              {t('specialistVerify.openClearance', 'Mở Giấy tờ chuyến đi')}
             </Link>
           </div>
         )}
         <div className={s.layout}>
           <div className={s.main}>
-            {b.sentBack?.to === 'specialist' && <div className="alert alert-warning"><i className="fa-solid fa-rotate-left" /><div><b>Quản lý trả lại đơn này:</b> {b.sentBack.reason} <span className="sub-text">({b.sentBack.by}, {formatDateTime(b.sentBack.at)})</span></div></div>}
-            <div className="card"><div className="card-header"><h3><i className="fa-solid fa-route" /> Chuyến đi</h3></div><TripSummary b={b} placeLabel={vietnamesePlaceName} /></div>
+            {b.sentBack?.to === 'specialist' && <div className="alert alert-warning"><i className="fa-solid fa-rotate-left" /><div><b>{t('specialistVerify.managerReturnedAlert', 'Quản lý trả lại đơn này: {{reason}} ({{by}}, {{at}})', { reason: b.sentBack.reason, by: b.sentBack.by, at: formatDateTime(b.sentBack.at) })}</b></div></div>}
+            <div className="card"><div className="card-header"><h3><i className="fa-solid fa-route" /> {t('specialistVerify.tripTitle', 'Chuyến đi')}</h3></div><TripSummary b={b} placeLabel={vietnamesePlaceName} /></div>
             <InsuranceLink b={b} />
             <Review key={b.medical?.status} b={b} horses={horses} onDone={reload} />
           </div>
           <aside className={s.side}>
-            <div className="card"><div className="card-header"><h3><i className="fa-solid fa-clock-rotate-left" /> Nhật ký đơn</h3></div><History b={b} /></div>
+            <div className="card"><div className="card-header"><h3><i className="fa-solid fa-clock-rotate-left" /> {t('specialistVerify.historyTitle', 'Nhật ký đơn')}</h3></div><History b={b} /></div>
           </aside>
         </div>
       </div>

@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { fromIsoDay, toIsoDay } from '@shared/lib/booking'
 import { formatDate } from '@shared/lib/format'
 import { CalendarIcon, ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from './BookingIcons'
 import s from './Booking.module.css'
 
-const WEEK = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
+const WEEK_VI = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN']
+const WEEK_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const pad = (n: number) => String(n).padStart(2, '0')
 const dayKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 const firstOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1)
@@ -45,6 +47,8 @@ interface Props {
 }
 
 export function DepartureDatePicker({ value, min, onChange, invalid }: Props) {
+  const { i18n } = useTranslation()
+  const week = i18n.language === 'en' ? WEEK_EN : WEEK_VI
   const selected = value ? fromIsoDay(value) : null
   const [open, setOpen] = useState(false)
   const [text, setText] = useState(() => (value ? formatDate(fromIsoDay(value)) : ''))
@@ -163,23 +167,23 @@ export function DepartureDatePicker({ value, min, onChange, invalid }: Props) {
               className={s.dateNav}
               onClick={() => setCursor(new Date(year, month - 1, 1))}
               disabled={!canPrev}
-              aria-label="Tháng trước"
+              aria-label={i18n.language === 'en' ? 'Previous Month' : 'Tháng trước'}
             >
               <ChevronLeftIcon />
             </button>
-            <b>Tháng {month + 1} / {year}</b>
+            <b>{i18n.language === 'en' ? `${cursor.toLocaleString('en-US', { month: 'short' })} ${year}` : `Tháng ${month + 1} / ${year}`}</b>
             <button
               type="button"
               className={s.dateNav}
               onClick={() => setCursor(new Date(year, month + 1, 1))}
-              aria-label="Tháng sau"
+              aria-label={i18n.language === 'en' ? 'Next Month' : 'Tháng sau'}
             >
               <ChevronRightIcon />
             </button>
           </div>
 
           <div className={s.dateWeek} aria-hidden="true">
-            {WEEK.map(d => <span key={d}>{d}</span>)}
+            {week.map(d => <span key={d}>{d}</span>)}
           </div>
 
           <div className={s.dateGrid}>

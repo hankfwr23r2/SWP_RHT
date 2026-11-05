@@ -1,6 +1,7 @@
 // Quản trị viên: quản lý tài khoản hệ thống. Mặc định sắp xếp mới nhất lên đầu.
 // Lọc thêm theo vai trò và trạng thái, tìm kiếm tên / email / SĐT.
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { formatDateTime } from '@shared/lib/format'
 import { accountsApi, isOpsRole } from '@shared/services/accounts'
@@ -20,6 +21,7 @@ const CREATABLE: Role[] = ['admin', 'manager', 'specialist', 'coordinator', 'dri
 const initials = (name: string) => name.split(' ').filter(Boolean).slice(-2).map(w => w[0]).join('').toUpperCase()
 
 type SortKey = 'newest' | 'oldest' | 'name_asc' | 'name_desc' | 'last_login'
+
 const SORT_OPTIONS: [SortKey, string][] = [
   ['newest', 'Mới nhất trước'],
   ['oldest', 'Cũ nhất trước'],
@@ -35,6 +37,7 @@ type Dialog =
   | { kind: 'secret'; title: string; who: string; email: string; password: string }
 
 function AccountModal({ account, actor, defaultRole, onClose, onDone }: { account: Account | null; actor: string; defaultRole: Role; onClose: () => void; onDone: (result?: { account: Account; password: string }) => void }) {
+  const { t } = useTranslation()
   const toast = useToast()
   const [name, setName] = useState(account?.name ?? '')
   const [email, setEmail] = useState(account?.email ?? '')
@@ -49,14 +52,14 @@ function AccountModal({ account, actor, defaultRole, onClose, onDone }: { accoun
     } catch (e) { toast(e instanceof Error ? e.message : 'Không lưu được', 'error'); setBusy(false) }
   }
   return (
-    <Modal wide onClose={onClose} title={account ? `Tài khoản ${account.id}` : 'Tạo tài khoản'} subtitle={account ? ROLE_LABEL[account.role] : 'Mật khẩu tạm được tạo tự động và chỉ hiện một lần sau khi tạo.'}
-      footer={<><button className="btn btn-ghost" onClick={onClose}>Hủy</button><button className="btn btn-primary" disabled={busy || !name.trim() || !email.trim() || (!account && !phone.trim())} onClick={save}><i className="fa-solid fa-floppy-disk" /> {account ? 'Lưu thay đổi' : 'Tạo tài khoản'}</button></>}>
+    <Modal wide onClose={onClose} title={account ? t('adminAccounts.modalEditTitle', 'Tài khoản {{id}}', { id: account.id }) : t('adminAccounts.modalCreateTitle', 'Tạo tài khoản')} subtitle={account ? ROLE_LABEL[account.role] : t('adminAccounts.modalCreateSubtitle', 'Mật khẩu tạm được tạo tự động và chỉ hiện một lần sau khi tạo.')}
+      footer={<><button className="btn btn-ghost" onClick={onClose}>{t('common.cancel', 'Hủy')}</button><button className="btn btn-primary" disabled={busy || !name.trim() || !email.trim() || (!account && !phone.trim())} onClick={save}><i className="fa-solid fa-floppy-disk" /> {account ? t('adminAccounts.saveChanges', 'Lưu thay đổi') : t('adminAccounts.btnCreate', 'Tạo tài khoản')}</button></>}>
       <div className={s.form}>
-        <div className="form-group"><label htmlFor="ac-name" className="required">Họ tên</label><input id="ac-name" className="form-control" value={name} disabled={nameLocked} onChange={e => setName(e.target.value)} />{nameLocked && <div className="form-hint">Họ tên gắn với đơn và lịch phân công nên không đổi được.</div>}</div>
-        <div className="form-group"><label htmlFor="ac-mail" className="required">Email đăng nhập</label><input id="ac-mail" type="email" autoComplete="email" className="form-control" value={email} onChange={e => setEmail(e.target.value)} required /></div>
-        <div className="form-group"><label htmlFor="ac-phone" className={!account ? 'required' : undefined}>Số điện thoại</label><input id="ac-phone" type="tel" autoComplete="tel" placeholder="+84, +855 hoặc +856" className="form-control" value={phone} onChange={e => setPhone(e.target.value)} required={!account} />{!account && <div className="form-hint">Nhập số hợp lệ của Việt Nam, Campuchia hoặc Lào.</div>}</div>
+        <div className="form-group"><label htmlFor="ac-name" className="required">{t('adminAccounts.fullName', 'Họ tên')}</label><input id="ac-name" className="form-control" value={name} disabled={nameLocked} onChange={e => setName(e.target.value)} />{nameLocked && <div className="form-hint">{t('adminAccounts.nameLockedHint', 'Họ tên gắn với đơn và lịch phân công nên không đổi được.')}</div>}</div>
+        <div className="form-group"><label htmlFor="ac-mail" className="required">{t('adminAccounts.email', 'Email đăng nhập')}</label><input id="ac-mail" type="email" autoComplete="email" className="form-control" value={email} onChange={e => setEmail(e.target.value)} required /></div>
+        <div className="form-group"><label htmlFor="ac-phone" className={!account ? 'required' : undefined}>{t('adminAccounts.phone', 'Số điện thoại')}</label><input id="ac-phone" type="tel" autoComplete="tel" placeholder="+84, +855 hoặc +856" className="form-control" value={phone} onChange={e => setPhone(e.target.value)} required={!account} />{!account && <div className="form-hint">{t('adminAccounts.phoneHint', 'Nhập số hợp lệ của Việt Nam, Campuchia hoặc Lào.')}</div>}</div>
         <div className="form-group">
-          <label htmlFor="ac-role">Vai trò</label>
+          <label htmlFor="ac-role">{t('adminAccounts.role', 'Vai trò')}</label>
           {account ? <input id="ac-role" className="form-control" value={ROLE_LABEL[account.role]} disabled /> : (
             <FormSelect id="ac-role" className="form-control" value={role} onChange={e => setRole(e.target.value as Role)}>{CREATABLE.map(r => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}</FormSelect>
           )}

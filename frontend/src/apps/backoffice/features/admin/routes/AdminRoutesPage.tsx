@@ -2,6 +2,7 @@
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   routesApi,
   type BackendRouteResponse,
@@ -827,6 +828,7 @@ function LocationsModal({
 }
 
 export default function AdminRoutesPage() {
+  const { t } = useTranslation()
   const toast = useToast()
   const [tab, setTab] = useState<Tab>('all')
   const [modal, setModal] = useState<
@@ -842,15 +844,15 @@ export default function AdminRoutesPage() {
   const rows = routes.filter(r => (tab === 'all' ? true : r.status === tab))
 
   const tabs: TabDef<Tab>[] = [
-    ['all', 'Tất cả tuyến', routes.length],
-    ['ACTIVE', 'Đang khai thác', routes.filter(r => r.status === 'ACTIVE').length],
-    ['MAINTENANCE', 'Bảo trì', routes.filter(r => r.status === 'MAINTENANCE').length],
-    ['INACTIVE', 'Ngừng khai thác', routes.filter(r => r.status === 'INACTIVE').length],
+    ['all', t('adminRoutes.tabAll', 'Tất cả tuyến'), routes.length],
+    ['ACTIVE', t('adminRoutes.tabActive', 'Đang khai thác'), routes.filter(r => r.status === 'ACTIVE').length],
+    ['MAINTENANCE', t('adminRoutes.tabMaintenance', 'Bảo trì'), routes.filter(r => r.status === 'MAINTENANCE').length],
+    ['INACTIVE', t('adminRoutes.tabInactive', 'Ngừng khai thác'), routes.filter(r => r.status === 'INACTIVE').length],
   ]
 
   const columns: Column<BackendRouteResponse>[] = [
     {
-      head: 'Mã & Tên tuyến hành lang',
+      head: t('adminRoutes.colCodeName', 'Mã & Tên tuyến hành lang'),
       cell: r => (
         <div className={s.name}>
           <b>
@@ -867,26 +869,26 @@ export default function AdminRoutesPage() {
       ),
     },
     {
-      head: 'Cự ly chuẩn',
+      head: t('adminRoutes.colDistance', 'Cự ly chuẩn'),
       cell: r => (r.distance ? `${r.distance} km` : '—'),
       nowrap: true,
     },
     {
-      head: 'Thời gian lái',
+      head: t('adminRoutes.colDuration', 'Thời gian dự kiến'),
       cell: r => (r.estimatedTime ? `${r.estimatedTime} giờ` : '—'),
       nowrap: true,
     },
     {
-      head: 'Trạng thái',
+      head: t('adminRoutes.colStatus', 'Trạng thái'),
       cell: r => (
         <span className={`badge ${r.status === 'ACTIVE' ? 'badge-success' : r.status === 'MAINTENANCE' ? 'badge-warning' : 'badge-muted'}`}>
-          {r.status === 'ACTIVE' ? 'Đang khai thác' : r.status === 'MAINTENANCE' ? 'Bảo trì' : 'Ngừng khai thác'}
+          {r.status === 'ACTIVE' ? t('adminRoutes.tabActive', 'Đang khai thác') : r.status === 'MAINTENANCE' ? t('adminRoutes.tabMaintenance', 'Bảo trì') : t('adminRoutes.tabInactive', 'Ngừng khai thác')}
         </span>
       ),
       nowrap: true,
     },
     {
-      head: 'Thao tác',
+      head: t('adminRoutes.colAction', 'Thao tác'),
       cell: r => (
         <div className={s.actions}>
           <button
@@ -959,7 +961,8 @@ export default function AdminRoutesPage() {
   return (
     <>
       <ListPage
-        title="Quản lý Tuyến đường Cố định"
+        title={t('adminRoutes.title', 'Tuyến đường cố định')}
+        subtitle={t('adminRoutes.subtitle', 'Quản lý các hành lang vận chuyển liên tỉnh và xuyên biên giới, trạm dừng và cửa khẩu.')}
         tabs={tabs}
         tab={tab}
         onTab={setTab}
@@ -980,7 +983,7 @@ export default function AdminRoutesPage() {
               className="btn btn-primary"
               onClick={() => setModal({ kind: 'edit', route: null })}
             >
-              <i className="fa-solid fa-plus" /> Thêm Tuyến Cố Định Mới
+              <i className="fa-solid fa-plus" /> {t('adminRoutes.btnAddRoute', 'Thêm tuyến mới')}
             </button>
           </>
         }

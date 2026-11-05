@@ -1,4 +1,5 @@
 // Thành phần dùng chung cho các trang nội bộ của Flow 1: tóm tắt đơn, tiến độ hai nhánh, nhật ký.
+import { useTranslation } from 'react-i18next'
 import { COUNTRIES } from '@shared/config/network'
 import { InsuranceSummary } from '@shared/ui/InsuranceFields'
 import { formatDate, formatDateTime } from '@shared/lib/format'
@@ -9,79 +10,83 @@ import s from './booking.module.css'
 
 // Hai việc thẩm định chạy song song: duyệt hồ sơ ngựa (Specialist) và phương án xe (Coordinator)
 export function ReviewChips({ b }: { b: Booking }) {
+  const { t } = useTranslation()
   const med = b.medical?.status
   return (
     <div className={s.chips}>
       <span className={`${s.chip} ${med === 'approved' ? s.chipOk : med === 'resubmit' ? s.chipWarn : s.chipWait}`}>
         <i className={`fa-solid ${med === 'approved' ? 'fa-circle-check' : med === 'resubmit' ? 'fa-file-circle-exclamation' : 'fa-hourglass-half'}`} aria-hidden="true" />
-        Hồ sơ ngựa: {med === 'approved' ? 'đạt' : med === 'resubmit' ? 'chờ khách bổ sung' : 'chờ thẩm định'}
+        {t('bookingParts.horseDocs', 'Hồ sơ ngựa')}: {med === 'approved' ? t('bookingParts.docsApproved', 'đạt') : med === 'resubmit' ? t('bookingParts.docsResubmit', 'chờ khách bổ sung') : t('bookingParts.docsWaiting', 'chờ thẩm định')}
       </span>
       <span className={`${s.chip} ${b.plan ? s.chipOk : s.chipWait}`}>
         <i className={`fa-solid ${b.plan ? 'fa-circle-check' : 'fa-hourglass-half'}`} aria-hidden="true" />
-        Xe & lộ trình: {b.plan ? 'đã chốt' : 'chờ lập'}
+        {t('bookingParts.fleetRoute', 'Xe & lộ trình')}: {b.plan ? t('bookingParts.planFinalized', 'đã chốt') : t('bookingParts.planPending', 'chờ lập')}
       </span>
     </div>
   )
 }
 
 export function TripSummary({ b, placeLabel = place => placeShort(place.name) }: { b: Booking; placeLabel?: (place: PlaceRef) => string }) {
+  const { t } = useTranslation()
   return (
     <dl className={s.grid}>
-      <div><dt>Khách hàng</dt><dd>{b.customer}</dd></div>
-      <div><dt>Loại chuyến</dt><dd>{b.type === 'international' ? `Quốc tế (${COUNTRIES[b.origin.country].name} → ${COUNTRIES[b.dest.country].name})` : 'Trong nước'}</dd></div>
-      <div><dt>Ngày khởi hành</dt><dd>{formatDate(b.departAt)}</dd></div>
-      <div><dt>Điểm đón</dt><dd>{placeLabel(b.origin)}</dd></div>
-      <div><dt>Điểm giao</dt><dd>{placeLabel(b.dest)}</dd></div>
-      {b.gate && <div><dt>Cửa khẩu (đã khóa)</dt><dd>{b.gate}</dd></div>}
-      <div><dt>Người gửi</dt><dd>{b.consignor.name}<div className={s.sub}>{b.consignor.phone}</div></dd></div>
-      <div><dt>Người nhận</dt><dd>{b.consignee.name}<div className={s.sub}>{b.consignee.phone}</div></dd></div>
-      <div><dt>Số ngựa</dt><dd>{b.horses.length} con</dd></div>
+      <div><dt>{t('intakePage.colCustomer', 'Khách hàng')}</dt><dd>{b.customer}</dd></div>
+      <div><dt>{t('manifestView.routeType', 'Loại chuyến')}</dt><dd>{b.type === 'international' ? `Quốc tế (${COUNTRIES[b.origin.country].name} → ${COUNTRIES[b.dest.country].name})` : t('managerBoard.domestic', 'Trong nước')}</dd></div>
+      <div><dt>{t('intakePage.departure', 'Ngày khởi hành')}</dt><dd>{formatDate(b.departAt)}</dd></div>
+      <div><dt>{t('bookingStep1.originTitle', 'Điểm đón')}</dt><dd>{placeLabel(b.origin)}</dd></div>
+      <div><dt>{t('bookingStep1.destTitle', 'Điểm giao')}</dt><dd>{placeLabel(b.dest)}</dd></div>
+      {b.gate && <div><dt>{t('intakePage.borderGate', 'Cửa khẩu')} ({t('bookingParts.planFinalized', 'đã khóa')})</dt><dd>{b.gate}</dd></div>}
+      <div><dt>{t('bookingParts.consignor', 'Người gửi')}</dt><dd>{b.consignor.name}<div className={s.sub}>{b.consignor.phone}</div></dd></div>
+      <div><dt>{t('bookingParts.consignee', 'Người nhận')}</dt><dd>{b.consignee.name}<div className={s.sub}>{b.consignee.phone}</div></dd></div>
+      <div><dt>{t('intakePage.horsesCount', 'Số ngựa')}</dt><dd>{t('intakePage.horsesUnit', '{{count}} con', { count: b.horses.length })}</dd></div>
     </dl>
   )
 }
 
 // Tab "Khách hàng": chỉ thông tin người (khách, người gửi, người nhận)
 export function PartiesInfo({ b }: { b: Booking }) {
+  const { t } = useTranslation()
   const party = (title: string, icon: string, p: Booking['consignor']) => (
     <div className={s.horse}>
       <div className={s.horseName}><i className={`fa-solid ${icon}`} aria-hidden="true" style={{ color: 'var(--orange)', marginRight: 8 }} />{title}</div>
       <dl className={s.grid}>
-        <div><dt>Họ tên</dt><dd>{p.name}</dd></div>
-        <div><dt>Số điện thoại</dt><dd>{p.phone}</dd></div>
-        <div><dt>{p.idType === 'passport' ? 'Hộ chiếu' : p.idType === 'tax_id' ? 'Mã số thuế' : p.idType === 'national_id' ? 'Giấy tờ tùy thân' : 'CCCD / MST / Hộ chiếu'}{p.idCountry ? ` (${COUNTRIES[p.idCountry].name})` : ''}</dt><dd>{p.idNumber || '-'}</dd></div>
-        <div><dt>Địa chỉ</dt><dd>{p.address || '-'}</dd></div>
+        <div><dt>{t('bookingParts.fullName', 'Họ tên')}</dt><dd>{p.name}</dd></div>
+        <div><dt>{t('bookingParts.phone', 'Số điện thoại')}</dt><dd>{p.phone}</dd></div>
+        <div><dt>{p.idType === 'passport' ? t('bookingParts.passport', 'Hộ chiếu') : p.idType === 'tax_id' ? t('bookingParts.taxId', 'Mã số thuế') : p.idType === 'national_id' ? t('bookingParts.nationalId', 'Giấy tờ tùy thân') : t('bookingParts.idGeneral', 'CCCD / MST / Hộ chiếu')}{p.idCountry ? ` (${COUNTRIES[p.idCountry].name})` : ''}</dt><dd>{p.idNumber || '-'}</dd></div>
+        <div><dt>{t('bookingParts.address', 'Địa chỉ')}</dt><dd>{p.address || '-'}</dd></div>
       </dl>
     </div>
   )
   return (
     <div style={{ display: 'grid', gap: 12 }}>
       <div className={s.horse}>
-        <div className={s.horseName}><i className="fa-solid fa-circle-user" aria-hidden="true" style={{ color: 'var(--orange)', marginRight: 8 }} />Khách đặt đơn</div>
+        <div className={s.horseName}><i className="fa-solid fa-circle-user" aria-hidden="true" style={{ color: 'var(--orange)', marginRight: 8 }} />{t('bookingParts.booker', 'Khách đặt đơn')}</div>
         <dl className={s.grid}>
-          <div><dt>Tài khoản</dt><dd>{b.customer}</dd></div>
-          <div><dt>Gửi đơn lúc</dt><dd>{formatDateTime(b.createdAt)}</dd></div>
+          <div><dt>{t('bookingParts.account', 'Tài khoản')}</dt><dd>{b.customer}</dd></div>
+          <div><dt>{t('bookingParts.submittedAt', 'Gửi đơn lúc')}</dt><dd>{formatDateTime(b.createdAt)}</dd></div>
         </dl>
       </div>
-      {party('Người gửi', 'fa-box', b.consignor)}
-      {party('Người nhận', 'fa-location-dot', b.consignee)}
+      {party(t('bookingParts.consignor', 'Người gửi'), 'fa-box', b.consignor)}
+      {party(t('bookingParts.consignee', 'Người nhận'), 'fa-location-dot', b.consignee)}
     </div>
   )
 }
 
 // Tab "Thông tin đơn": chuyến đi và các lựa chọn của khách cho từng ngựa
 export function OrderInfo({ b }: { b: Booking }) {
+  const { t } = useTranslation()
   return (
     <>
-      <h4 style={{ margin: '0 0 10px' }}>Chuyến đi</h4>
+      <h4 style={{ margin: '0 0 10px' }}>{t('bookingParts.tripTitle', 'Chuyến đi')}</h4>
       <dl className={s.grid}>
-        <div><dt>Loại chuyến</dt><dd>{b.type === 'international' ? `Quốc tế (${COUNTRIES[b.origin.country].name} → ${COUNTRIES[b.dest.country].name})` : 'Trong nước'}</dd></div>
-        <div><dt>Ngày khởi hành</dt><dd>{formatDate(b.departAt)}</dd></div>
-        <div><dt>Số ngựa</dt><dd>{b.horses.length} con</dd></div>
-        <div><dt>Điểm đón</dt><dd>{placeShort(b.origin.name)}</dd></div>
-        <div><dt>Điểm giao</dt><dd>{placeShort(b.dest.name)}</dd></div>
-        {b.gate && <div><dt>Cửa khẩu (đã khóa)</dt><dd>{b.gate}</dd></div>}
+        <div><dt>{t('manifestView.routeType', 'Loại chuyến')}</dt><dd>{b.type === 'international' ? `Quốc tế (${COUNTRIES[b.origin.country].name} → ${COUNTRIES[b.dest.country].name})` : t('managerBoard.domestic', 'Trong nước')}</dd></div>
+        <div><dt>{t('intakePage.departure', 'Ngày khởi hành')}</dt><dd>{formatDate(b.departAt)}</dd></div>
+        <div><dt>{t('intakePage.horsesCount', 'Số ngựa')}</dt><dd>{t('intakePage.horsesUnit', '{{count}} con', { count: b.horses.length })}</dd></div>
+        <div><dt>{t('bookingStep1.originTitle', 'Điểm đón')}</dt><dd>{placeShort(b.origin.name)}</dd></div>
+        <div><dt>{t('bookingStep1.destTitle', 'Điểm giao')}</dt><dd>{placeShort(b.dest.name)}</dd></div>
+        {b.gate && <div><dt>{t('intakePage.borderGate', 'Cửa khẩu')} ({t('bookingParts.planFinalized', 'đã khóa')})</dt><dd>{b.gate}</dd></div>}
       </dl>
-      <h4 style={{ margin: '18px 0 10px' }}>Khách chọn cho từng ngựa</h4>
+      <h4 style={{ margin: '18px 0 10px' }}>{t('bookingParts.customerSelections', 'Khách chọn cho từng ngựa')}</h4>
       <HorseConfigList b={b} />
     </>
   )
@@ -89,20 +94,21 @@ export function OrderInfo({ b }: { b: Booking }) {
 
 // Cấu hình dịch vụ từng ngựa khách đã chọn (chỉ đọc)
 export function HorseConfigList({ b }: { b: Booking }) {
+  const { t } = useTranslation()
   return (
     <div style={{ display: 'grid', gap: 10 }}>
       {b.horses.map(h => (
         <div key={h.horseId} className={s.horse}>
           <div className={s.horseTop}>
-            <div><div className={s.horseName}>{h.name}</div><div className={s.horseMeta}>Chip {h.microchip} · {h.breed} · {SEX_LABEL[h.sex]}</div></div>
+            <div><div className={s.horseName}>{h.name}</div><div className={s.horseMeta}>Chip {h.microchip} · {h.breed} · {t(`bookingStep2.${h.sex}`, SEX_LABEL[h.sex])}</div></div>
           </div>
           <div className={s.config}>
-            <span>Khoang: <b>{h.selectedServices?.stall?.serviceName ?? (h.stall === 'single' ? 'đơn mở rộng' : 'tiêu chuẩn')}</b></span>
-            <span>Thức ăn: <b>{h.selectedServices?.feed?.serviceName ?? FEED_PACKAGE[h.feedPackage ?? 'basic'].label}</b>
+            <span>{t('bookingParts.stall', 'Khoang')}: <b>{h.selectedServices?.stall?.serviceName ?? (h.stall === 'single' ? t('bookingParts.singleStallExpanded', 'đơn mở rộng') : t('bookingParts.standardStall', 'tiêu chuẩn'))}</b></span>
+            <span>{t('bookingParts.feed', 'Thức ăn')}: <b>{h.selectedServices?.feed?.serviceName ?? FEED_PACKAGE[h.feedPackage ?? 'basic'].label}</b>
               {!h.selectedServices?.feed && <small> ({FEED_PACKAGE[h.feedPackage ?? 'basic'].items.join(', ')})</small>}
             </span>
             {(h.selectedServices?.water || h.waterPlan) && (
-              <span>Cữ nước: <b>{h.selectedServices?.water?.serviceName ?? WATER_PLAN[h.waterPlan ?? 'every_3h'].label}</b></span>
+              <span>{t('bookingParts.water', 'Cữ nước')}: <b>{h.selectedServices?.water?.serviceName ?? WATER_PLAN[h.waterPlan ?? 'every_3h'].label}</b></span>
             )}
             <InsuranceSummary insurance={h.insurance} />
           </div>
@@ -127,9 +133,10 @@ export function History({ b }: { b: Booking }) {
 
 // Bộ lọc dọc bên trái (thay cho nút ngang): mỗi mục có số đơn
 export function FilterNav<T extends string>({ tabs, value, onChange }: { tabs: [T, string, number][]; value: T; onChange: (v: T) => void }) {
+  const { t } = useTranslation()
   return (
-    <nav className={s.filterNav} aria-label="Lọc đơn">
-      <h2>Bộ lọc</h2>
+    <nav className={s.filterNav} aria-label={t('bookingParts.filterNavAria', 'Lọc đơn')}>
+      <h2>{t('bookingParts.filterNavTitle', 'Bộ lọc')}</h2>
       {tabs.map(([k, label, n]) => (
         <button key={k} className={`${s.filterItem} ${value === k ? s.filterItemOn : ''}`} aria-pressed={value === k} onClick={() => onChange(k)}><span>{label}</span><span className={s.count}>{n}</span></button>
       ))}

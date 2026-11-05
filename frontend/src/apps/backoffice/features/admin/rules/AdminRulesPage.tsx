@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { systemConfigApi, type SystemConfigGroup, type SystemConfigItem } from '@shared/api/systemConfig'
 import { applyRuntimeBusinessConfig } from '@shared/config/runtimeBusinessRules'
 import { useToast } from '@shared/ui/toast'
@@ -262,6 +263,7 @@ function ConfigEditor({
 }
 
 export default function AdminRulesPage() {
+  const { t } = useTranslation()
   const [group, setGroup] = useState<SystemConfigGroup>('WELFARE')
   const { configs: loadedConfigs = [] } = usePageData<typeof systemConfigLoader>()
   const [configs, setConfigs] = useState<SystemConfigItem[]>(loadedConfigs)
@@ -279,7 +281,7 @@ export default function AdminRulesPage() {
       <div className={`wrap ${s.wrap}`}>
         <header className={s.header}>
           <div>
-            <h1>Quy định & Tham số hệ thống</h1>
+            <h1>{t('adminRules.title', 'Quy chuẩn An sinh & Vận hành')}</h1>
           </div>
         </header>
 

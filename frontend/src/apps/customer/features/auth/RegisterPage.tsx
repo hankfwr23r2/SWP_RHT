@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { authApi } from '@shared/api/auth'
 import { AuthShell, authStyles as s } from '@shared/ui/AuthShell'
 import { isValidGmail, isValidPersonName, isValidRegionalPhone } from '@shared/lib/contactValidation'
@@ -28,6 +29,7 @@ function Note({ id, error, hint }: { id: string; error?: string; hint?: string }
 }
 
 export default function RegisterPage() {
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const from = (useLocation().state as { from?: string } | null)?.from
   const [error, setError] = useState('')
@@ -97,7 +99,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <AuthShell title="Tạo tài khoản" subtitle="Tạo tài khoản để đặt chuyến và theo dõi đơn của bạn." back={<Link to="/"><i className="fa-solid fa-arrow-left" /> Về Trang chủ</Link>}>
+    <AuthShell title={t('authPages.registerTitle')} subtitle={t('authPages.registerSubtitle')} back={<Link to="/"><i className="fa-solid fa-arrow-left" /> {t('auth.backToHome')}</Link>}>
       <form onSubmit={submit} noValidate>
         {error && (
           <div className={`alert alert-danger ${s.error}`} role="alert">
@@ -106,40 +108,40 @@ export default function RegisterPage() {
           </div>
         )}
         <div className="form-group">
-          <label htmlFor="fullname" className="required">Họ và tên</label>
-          <input {...field('fullname', false)} type="text" placeholder="Nhập họ và tên" autoComplete="name" maxLength={100} />
+          <label htmlFor="fullname" className="required">{t('auth.fullName')}</label>
+          <input {...field('fullname', false)} type="text" placeholder={i18n.language === 'en' ? 'Enter full name' : 'Nhập họ và tên'} autoComplete="name" maxLength={100} />
           <Note id="fullname" error={fieldErrors.fullname} />
         </div>
         <div className="form-group">
-          <label htmlFor="email" className="required">Email</label>
-          <input {...field('email')} type="email" placeholder="ten@gmail.com" autoComplete="email" />
-          <Note id="email" error={fieldErrors.email} hint="Dùng để đăng nhập. Chúng tôi gửi mã xác thực tới Gmail này." />
+          <label htmlFor="email" className="required">{t('auth.email')}</label>
+          <input {...field('email')} type="email" placeholder="user@gmail.com" autoComplete="email" />
+          <Note id="email" error={fieldErrors.email} hint={i18n.language === 'en' ? 'Used for signing in. We send verification code to this Gmail.' : 'Dùng để đăng nhập. Chúng tôi gửi mã xác thực tới Gmail này.'} />
         </div>
         <div className="form-group">
-          <label htmlFor="password" className="required">Mật khẩu</label>
+          <label htmlFor="password" className="required">{t('auth.password')}</label>
           <div className={s.pwdWrap}>
-            <input {...field('password')} type={showPwd ? 'text' : 'password'} placeholder="Nhập mật khẩu" autoComplete="new-password" maxLength={100} />
-            <button type="button" className={s.pwdToggle} onClick={() => setShowPwd(v => !v)} aria-label={showPwd ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}>
+            <input {...field('password')} type={showPwd ? 'text' : 'password'} placeholder={i18n.language === 'en' ? 'Enter password' : 'Nhập mật khẩu'} autoComplete="new-password" maxLength={100} />
+            <button type="button" className={s.pwdToggle} onClick={() => setShowPwd(v => !v)} aria-label={showPwd ? (i18n.language === 'en' ? 'Hide password' : 'Ẩn mật khẩu') : (i18n.language === 'en' ? 'Show password' : 'Hiện mật khẩu')}>
               <i className={`fa-solid ${showPwd ? 'fa-eye-slash' : 'fa-eye'}`} />
             </button>
           </div>
-          <Note id="password" error={fieldErrors.password} hint="Tối thiểu 6 ký tự." />
+          <Note id="password" error={fieldErrors.password} hint={i18n.language === 'en' ? 'Minimum 6 characters.' : 'Tối thiểu 6 ký tự.'} />
         </div>
         <div className="form-group">
-          <label htmlFor="phone" className="required">Số điện thoại</label>
+          <label htmlFor="phone" className="required">{t('auth.phone')}</label>
           <input {...field('phone')} type="tel" placeholder="0912 345 678" autoComplete="tel" />
-          <Note id="phone" error={fieldErrors.phone} hint="Số Việt Nam, Campuchia hoặc Lào." />
+          <Note id="phone" error={fieldErrors.phone} hint={i18n.language === 'en' ? 'Vietnam, Cambodia, or Laos phone number.' : 'Số Việt Nam, Campuchia hoặc Lào.'} />
         </div>
         <div className="form-group">
-          <label htmlFor="address">Địa chỉ / Trang trại <span className="text-muted">(không bắt buộc)</span></label>
-          <input className="form-control" id="address" name="address" type="text" placeholder="Địa chỉ trang trại hoặc nơi ở" autoComplete="street-address" />
+          <label htmlFor="address">{t('authPages.addressLabel')} <span className="text-muted">{t('authPages.addressOptional')}</span></label>
+          <input className="form-control" id="address" name="address" type="text" placeholder={t('authPages.addressPlaceholder')} autoComplete="street-address" />
         </div>
 
         <button type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading}>
-          {loading ? 'Đang tạo tài khoản...' : 'Đăng ký'}
+          {loading ? t('authPages.creatingAccount') : t('common.register')}
         </button>
       </form>
-      <div className={s.switch}>Đã có tài khoản? <Link to="/login" state={{ from }}>Đăng nhập</Link></div>
+      <div className={s.switch}>{t('auth.haveAccount')} <Link to="/login" state={{ from }}>{t('auth.signIn')}</Link></div>
     </AuthShell>
   )
 }

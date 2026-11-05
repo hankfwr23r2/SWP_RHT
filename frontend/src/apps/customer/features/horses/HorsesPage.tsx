@@ -1,6 +1,7 @@
 // Hồ sơ ngựa (PRD mục 2.1): khách khai báo một lần, các lần đặt sau chỉ cần chọn ngựa.
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { ageOf, horseReadiness } from '@shared/lib/booking'
 import { useStaggerIn } from '@shared/motion/motion'
@@ -22,20 +23,22 @@ const FINISHED_STATUSES = new Set(['completed', 'cancelled', 'rejected', 'quote_
 type Filter = 'all' | 'ready' | 'transit' | 'missing'
 
 function HorseStatusBadge({ horse, isBusy, bookingCode }: { horse: HorseProfile; isBusy: boolean; bookingCode?: string }) {
+  const { t } = useTranslation()
   if (isBusy) {
     return (
-      <span className="badge badge-warning" title={bookingCode ? `Đang trong đơn ${bookingCode}` : 'Đang vận chuyển'}>
-        <i className="fa-solid fa-truck-fast" aria-hidden="true" /> Đang trong chuyến
+      <span className="badge badge-warning" title={bookingCode ? `Đang trong đơn ${bookingCode}` : t('horses.inTransit')}>
+        <i className="fa-solid fa-truck-fast" aria-hidden="true" /> {t('horses.inTransit')}
       </span>
     )
   }
   const ok = horseReadiness(horse).ok
   return ok
-    ? <span className="badge badge-success"><i className="fa-solid fa-circle-check" aria-hidden="true" /> Sẵn sàng đặt</span>
-    : <span className="badge badge-warning"><i className="fa-solid fa-triangle-exclamation" aria-hidden="true" /> Thiếu giấy tờ</span>
+    ? <span className="badge badge-success"><i className="fa-solid fa-circle-check" aria-hidden="true" /> {t('horses.readyToBook')}</span>
+    : <span className="badge badge-warning"><i className="fa-solid fa-triangle-exclamation" aria-hidden="true" /> {t('horses.missingDocs')}</span>
 }
 
 export default function HorsesPage() {
+  const { t } = useTranslation()
   const { session } = useAuth()
   const owner = session!.name
   const toast = useToast()
@@ -126,25 +129,25 @@ export default function HorsesPage() {
   return (
     <div className="page">
       <div className="wrap">
-        <div className="breadcrumb"><Link to="/portal">Trang chủ</Link> / <span className="text-orange font-semibold">Hồ sơ ngựa</span></div>
+        <div className="breadcrumb"><Link to="/portal">{t('nav.home')}</Link> / <span className="text-orange font-semibold">{t('nav.horses')}</span></div>
         <div className={s.head}>
           <div className="page-header" style={{ margin: 0 }}>
-            <h1>Hồ sơ ngựa</h1>
-            <p>Khai báo một lần. Theo dõi vị trí chuồng, sổ hành trình điện tử và kiểm tra tính sẵn sàng trước khi đặt chuyến.</p>
+            <h1>{t('horses.title')}</h1>
+            <p>{t('horses.subtitle')}</p>
           </div>
-          <button className="btn btn-primary" onClick={() => setModal({})}><i className="fa-solid fa-plus" /> Thêm ngựa</button>
+          <button className="btn btn-primary" onClick={() => setModal({})}><i className="fa-solid fa-plus" /> {t('horses.addBtn')}</button>
         </div>
 
         <div className={s.summary}>
-          <div className={s.sumCard}><i className={`fa-solid fa-horse-head ${s.iconAll}`} /><div><div className={s.num}>{list.length}</div><div className={s.lbl}>Ngựa trong hồ sơ</div></div></div>
-          <div className={s.sumCard}><i className={`fa-solid fa-circle-check ${s.iconReady}`} /><div><div className={s.num}>{readyHorses.length}</div><div className={s.lbl}>Sẵn sàng đặt</div></div></div>
-          <div className={s.sumCard}><i className={`fa-solid fa-truck-fast ${s.iconTransit}`} /><div><div className={s.num}>{busyHorses.length}</div><div className={s.lbl}>Đang trong chuyến</div></div></div>
-          <div className={s.sumCard}><i className={`fa-solid fa-file-circle-exclamation ${s.iconMissing}`} /><div><div className={s.num}>{missingHorses.length}</div><div className={s.lbl}>Cần bổ sung giấy tờ</div></div></div>
+          <div className={s.sumCard}><i className={`fa-solid fa-horse-head ${s.iconAll}`} /><div><div className={s.num}>{list.length}</div><div className={s.lbl}>{t('horses.totalHorses')}</div></div></div>
+          <div className={s.sumCard}><i className={`fa-solid fa-circle-check ${s.iconReady}`} /><div><div className={s.num}>{readyHorses.length}</div><div className={s.lbl}>{t('horses.readyToBook')}</div></div></div>
+          <div className={s.sumCard}><i className={`fa-solid fa-truck-fast ${s.iconTransit}`} /><div><div className={s.num}>{busyHorses.length}</div><div className={s.lbl}>{t('horses.inTransit')}</div></div></div>
+          <div className={s.sumCard}><i className={`fa-solid fa-file-circle-exclamation ${s.iconMissing}`} /><div><div className={s.num}>{missingHorses.length}</div><div className={s.lbl}>{t('horses.needDocs')}</div></div></div>
         </div>
 
         <div className={s.toolbar}>
-          <div className={s.filters} role="group" aria-label="Lọc ngựa">
-            {([['all', 'Tất cả'], ['ready', 'Sẵn sàng đặt'], ['transit', 'Đang trong chuyến'], ['missing', 'Thiếu giấy tờ']] as [Filter, string][]).map(([k, label]) => (
+          <div className={s.filters} role="group" aria-label={t('horses.filterHorsesAria')}>
+            {([['all', t('common.all')], ['ready', t('horses.readyToBook')], ['transit', t('horses.inTransit')], ['missing', t('horses.missingDocs')]] as [Filter, string][]).map(([k, label]) => (
               <button key={k} className={`${s.pill} ${filter === k ? s.pillOn : ''}`} aria-pressed={filter === k} onClick={() => setFilter(k)}>{label}</button>
             ))}
           </div>
@@ -153,10 +156,10 @@ export default function HorsesPage() {
             <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
             <input
               type="text"
-              placeholder="Tìm theo tên ngựa hoặc mã chip…"
+              placeholder={t('horses.searchPlaceholder')}
               value={search}
               onChange={e => setSearch(e.target.value)}
-              aria-label="Tìm kiếm ngựa trong hồ sơ"
+              aria-label={t('horses.searchPlaceholder')}
             />
             {search && (
               <button
@@ -227,15 +230,15 @@ export default function HorsesPage() {
                       </div>
                       <div>
                         {inTransit ? (
-                          <span className="badge badge-warning">Đang vận chuyển</span>
+                          <span className="badge badge-warning">{t('horses.inTransit')}</span>
                         ) : activeBookingCode ? (
-                          <span className="badge badge-warning" title={`Đã được đặt trong đơn ${activeBookingCode}`}>
-                            Đã đặt {activeBookingCode}
+                          <span className="badge badge-warning" title={t('horses.bookedInOrderBadge', { code: activeBookingCode })}>
+                            {t('horses.bookedInOrder', { code: activeBookingCode })}
                           </span>
                         ) : h.locationSource === 'SYSTEM_DELIVERY' ? (
-                          <span className="badge badge-success" title="Xác thực tự động từ chuyến giao gần nhất">Đã xác thực</span>
+                          <span className="badge badge-success" title={t('horses.verifiedDeliveryTooltip')}>{t('horses.verifiedDelivery')}</span>
                         ) : (
-                          <span className="badge badge-neutral" title="Vị trí do chủ nuôi tự cập nhật">Chủ nuôi cập nhật</span>
+                          <span className="badge badge-neutral" title={t('horses.ownerUpdatedTooltip')}>{t('horses.ownerUpdated')}</span>
                         )}
                       </div>
                     </div>
@@ -243,31 +246,31 @@ export default function HorsesPage() {
                   <HorseDocChips horse={h} />
                   {!r.ok && (
                     <div className={s.warn}>
-                      Bổ sung giấy tờ còn thiếu để đặt chuyến.
+                      {t('horses.missingDocsNotice')}
                     </div>
                   )}
 
                   <div className={s.horseFoot}>
-                    <span className={s.trips}><i className="fa-solid fa-route" /> {h.completedTrips} chuyến</span>
-                    <div className={s.horseActions} aria-label={`Thao tác với ${h.name}`}>
+                    <span className={s.trips}><i className="fa-solid fa-route" /> {t('horses.tripsCount', { count: h.completedTrips })}</span>
+                    <div className={s.horseActions} aria-label={t('horses.actionsAria', { name: h.name })}>
                       <button
                         className={`btn btn-sm ${isBusy ? 'btn-ghost' : 'btn-primary'} ${s.primaryAction}`}
                         onClick={() => !isBusy && setModal({ horse: h })}
                         disabled={isBusy}
-                        title={isBusy ? 'Ngựa đang trong chuyến vận chuyển, không thể chỉnh sửa hồ sơ lúc này.' : undefined}
+                        title={isBusy ? t('horses.inTripBusyTooltip') : undefined}
                         aria-disabled={isBusy}
                       >
                         <i className={`fa-solid ${isBusy ? 'fa-lock' : r.ok ? 'fa-pen-to-square' : 'fa-file-circle-plus'}`} aria-hidden="true" />
-                        {isBusy ? 'Đang trong chuyến' : r.ok ? 'Chỉnh sửa hồ sơ' : 'Bổ sung giấy tờ'}
+                        {isBusy ? t('horses.inTripBadge') : r.ok ? t('horses.editProfile') : t('horses.addMissingDocs')}
                       </button>
-                      <button className={`btn btn-sm btn-ghost ${s.secondaryAction}`} title="Xem sổ hành trình điện tử" onClick={() => setJourneyHorse(h)}>
-                        <i className="fa-solid fa-passport" /> Sổ hành trình
+                      <button className={`btn btn-sm btn-ghost ${s.secondaryAction}`} title={t('horses.journeyBookTooltip')} onClick={() => setJourneyHorse(h)}>
+                        <i className="fa-solid fa-passport" /> {t('horses.journeyBook')}
                       </button>
-                      <button className={`btn btn-sm btn-ghost ${s.secondaryAction}`} title="Cập nhật vị trí chuồng" onClick={() => setRelocateHorse(h)}>
-                        <i className="fa-solid fa-map-pin" /> Cập nhật vị trí
+                      <button className={`btn btn-sm btn-ghost ${s.secondaryAction}`} title={t('horses.updateLocationTooltip')} onClick={() => setRelocateHorse(h)}>
+                        <i className="fa-solid fa-map-pin" /> {t('horses.updateLocation')}
                       </button>
                       <button className={`btn btn-sm ${s.deleteAction}`} onClick={() => setDeleteHorse(h)}>
-                        <i className="fa-regular fa-trash-can" aria-hidden="true" /> Xóa hồ sơ
+                        <i className="fa-regular fa-trash-can" aria-hidden="true" /> {t('horses.deleteProfile')}
                       </button>
                     </div>
                   </div>
@@ -313,19 +316,19 @@ export default function HorsesPage() {
 
       {deleteHorse && (
         <Modal
-          title={`Xóa hồ sơ ${deleteHorse.name}?`}
-          subtitle="Hành động này không thể hoàn tác."
+          title={t('horses.deleteModalTitle', { name: deleteHorse.name })}
+          subtitle={t('horses.deleteModalSubtitle')}
           onClose={() => { if (!deleting) setDeleteHorse(null) }}
           footer={
             <>
-              <button className="btn btn-ghost" disabled={deleting} onClick={() => setDeleteHorse(null)}>Hủy</button>
+              <button className="btn btn-ghost" disabled={deleting} onClick={() => setDeleteHorse(null)}>{t('common.cancel')}</button>
               <button className="btn btn-danger" disabled={deleting} onClick={removeHorse}>
-                <i className="fa-solid fa-trash" aria-hidden="true" /> {deleting ? 'Đang xóa…' : 'Xác nhận xóa'}
+                <i className="fa-solid fa-trash" aria-hidden="true" /> {deleting ? t('horses.deleting') : t('horses.confirmDelete')}
               </button>
             </>
           }
         >
-          <p>Hồ sơ ngựa và giấy tờ liên quan sẽ bị xóa. Hồ sơ đã được dùng trong đơn vận chuyển hoặc có lịch sử chăm sóc, hành trình sẽ không thể xóa.</p>
+          <p>{t('horses.deleteModalDesc')}</p>
         </Modal>
       )}
     </div>

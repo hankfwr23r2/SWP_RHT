@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { usePageData } from '@shared/routing/pageData'
 import type { DocumentGroup, DocumentRequirement, DocumentRequirementPayload, DocumentType } from '@shared/api/documentRequirements'
 import { documentRequirementsApi } from '@shared/api/documentRequirements'
@@ -177,6 +178,7 @@ function RequirementEditor({
 }
 
 export default function AdminDocumentRequirementsPage() {
+  const { t } = useTranslation()
   const { requirements: loaded = [] } = usePageData<typeof documentRequirementsLoader>()
   const [requirements, setRequirements] = useState(loaded)
   const [editing, setEditing] = useState<DocumentRequirement | null>(null)
@@ -215,10 +217,10 @@ export default function AdminDocumentRequirementsPage() {
       <div className={`wrap ${s.wrap}`}>
         <header className={s.header}>
           <div>
-            <h1>Giấy tờ bắt buộc</h1>
+            <h1>{t('adminDocReqs.title', 'Quy định Giấy tờ theo Tuyến')}</h1>
           </div>
           <button type="button" className="btn btn-primary" onClick={() => setCreating(true)}>
-            <i className="fa-solid fa-plus" /> Thêm giấy tờ
+            <i className="fa-solid fa-plus" /> {t('adminDocReqs.btnAddReq', 'Thêm quy định giấy tờ')}
           </button>
         </header>
         <div className={s.tableWrap}>

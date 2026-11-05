@@ -1,6 +1,7 @@
 // Thanh bên của Manager: tài khoản, nút tiếp nhận đơn, menu (có số đơn chờ), danh sách đơn cần xử lý gấp. Thu gọn được thành cột biểu tượng.
 import { useCallback, useState } from 'react'
 import { NavLink, useLocation } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { bookingsApi, invalidateBookingsListCache } from '@shared/services/bookings'
 import { useAutoRefresh, useLoad } from '@shared/services/useLoad'
 import { accountsApi } from '@shared/services/accounts'
@@ -24,6 +25,7 @@ const prefetchManagerPage = (path: string) => {
 }
 
 export function StaffSidebar() {
+  const { t } = useTranslation()
   const { session } = useAuth()
   const role = session!.role as StaffRole
   const { pathname } = useLocation()
@@ -41,20 +43,23 @@ export function StaffSidebar() {
   const toggle = () => setCollapsed(c => { try { localStorage.setItem(KEY, c ? '0' : '1') } catch { /* không lưu được thì thôi */ } return !c })
 
   return (
-    <aside className={`${s.side} ${collapsed ? s.collapsed : ''}`} aria-label="Menu">
+    <aside className={`${s.side} ${collapsed ? s.collapsed : ''}`} aria-label={t('staffSidebar.title', 'Menu')}>
       <div className={s.head}>
-        <span>Menu</span>
-        <button className={s.toggle} onClick={toggle} aria-label={collapsed ? 'Mở rộng menu' : 'Thu gọn menu'} title={collapsed ? 'Mở rộng menu' : 'Thu gọn menu'}><i className="fa-regular fa-window-maximize" style={{ transform: 'rotate(90deg)' }} /></button>
+        <span>{t('staffSidebar.title', 'Menu')}</span>
+        <button className={s.toggle} onClick={toggle} aria-label={collapsed ? t('staffSidebar.expand', 'Mở rộng menu') : t('staffSidebar.collapse', 'Thu gọn menu')} title={collapsed ? t('staffSidebar.expand', 'Mở rộng menu') : t('staffSidebar.collapse', 'Thu gọn menu')}><i className="fa-regular fa-window-maximize" style={{ transform: 'rotate(90deg)' }} /></button>
       </div>
 
       <nav className={s.menu}>
-        {STAFF_MENUS[role].map(([to, label, opt]) => (
-          <NavLink key={to} to={to} end title={label} onPointerEnter={() => prefetchManagerPage(to)} onFocus={() => prefetchManagerPage(to)} className={({ isActive }) => `${s.item} ${isActive ? s.on : ''}`}>
-            <i className={`fa-solid ${opt?.icon}`} aria-hidden="true" />
-            <span>{label}</span>
-            {!!count[to] && <b className={`${s.count} ${to.endsWith('/locked') && count[to] ? s.countHot : ''}`} aria-label={role === 'admin' ? `${count[to]} tài khoản` : `${count[to]} đơn chờ`}>{count[to]}</b>}
-          </NavLink>
-        ))}
+        {STAFF_MENUS[role].map(([to, label, opt]) => {
+          const itemLabel = t(`staffMenus.${to}`, label)
+          return (
+            <NavLink key={to} to={to} end title={itemLabel} onPointerEnter={() => prefetchManagerPage(to)} onFocus={() => prefetchManagerPage(to)} className={({ isActive }) => `${s.item} ${isActive ? s.on : ''}`}>
+              <i className={`fa-solid ${opt?.icon}`} aria-hidden="true" />
+              <span>{itemLabel}</span>
+              {!!count[to] && <b className={`${s.count} ${to.endsWith('/locked') && count[to] ? s.countHot : ''}`} aria-label={role === 'admin' ? t('staffSidebar.accountsCount', { count: count[to] }) : t('staffSidebar.pendingCount', { count: count[to] })}>{count[to]}</b>}
+            </NavLink>
+          )
+        })}
       </nav>
     </aside>
   )

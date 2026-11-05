@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Modal } from './Modal'
 import { useToast } from './toast'
 import { authApi } from '../api/auth'
@@ -8,6 +9,7 @@ interface ChangePasswordModalProps {
 }
 
 export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
+  const { t } = useTranslation()
   const toast = useToast()
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -25,23 +27,23 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
     setError(null)
 
     if (!currentPassword) {
-      setError('Vui lòng nhập mật khẩu hiện tại')
+      setError(t('changePassword.errorCurrentRequired', 'Vui lòng nhập mật khẩu hiện tại'))
       return
     }
     if (!newPassword) {
-      setError('Vui lòng nhập mật khẩu mới')
+      setError(t('changePassword.errorNewRequired', 'Vui lòng nhập mật khẩu mới'))
       return
     }
     if (newPassword.length < 6) {
-      setError('Mật khẩu mới phải có tối thiểu 6 ký tự')
+      setError(t('changePassword.errorMinLength', 'Mật khẩu mới phải có tối thiểu 6 ký tự'))
       return
     }
     if (newPassword === currentPassword) {
-      setError('Mật khẩu mới không được trùng với mật khẩu hiện tại')
+      setError(t('changePassword.errorSameAsCurrent', 'Mật khẩu mới không được trùng với mật khẩu hiện tại'))
       return
     }
     if (newPassword !== confirmPassword) {
-      setError('Xác nhận mật khẩu mới không trùng khớp')
+      setError(t('changePassword.errorConfirmMismatch', 'Xác nhận mật khẩu mới không trùng khớp'))
       return
     }
 
@@ -52,10 +54,10 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
         newPassword,
         confirmPassword,
       })
-      toast('Đổi mật khẩu thành công!', 'success')
+      toast(t('changePassword.successToast', 'Đổi mật khẩu thành công!'), 'success')
       onClose()
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Có lỗi xảy ra khi đổi mật khẩu'
+      const msg = err instanceof Error ? err.message : t('changePassword.defaultError', 'Có lỗi xảy ra khi đổi mật khẩu')
       setError(msg)
       toast(msg, 'error')
     } finally {
@@ -65,22 +67,22 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
 
   return (
     <Modal
-      title="Đổi mật khẩu tài khoản"
-      subtitle="Cập nhật mật khẩu bảo mật mới cho tài khoản của bạn"
+      title={t('changePassword.modalTitle', 'Đổi mật khẩu tài khoản')}
+      subtitle={t('changePassword.modalSubtitle', 'Cập nhật mật khẩu bảo mật mới cho tài khoản của bạn')}
       onClose={onClose}
       footer={
         <>
           <button type="button" className="btn btn-ghost" onClick={onClose} disabled={loading}>
-            Hủy
+            {t('changePassword.cancel', 'Hủy')}
           </button>
           <button type="button" className="btn btn-primary" onClick={handleSubmit} disabled={loading}>
             {loading ? (
               <>
-                <i className="fa-solid fa-spinner fa-spin" /> Đang cập nhật...
+                <i className="fa-solid fa-spinner fa-spin" /> {t('changePassword.updating', 'Đang cập nhật...')}
               </>
             ) : (
               <>
-                <i className="fa-solid fa-check" /> Lưu mật khẩu
+                <i className="fa-solid fa-check" /> {t('changePassword.save', 'Lưu mật khẩu')}
               </>
             )}
           </button>
@@ -108,7 +110,7 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
         )}
 
         <div className="form-group" style={{ margin: 0 }}>
-          <label htmlFor="cp-current">Mật khẩu hiện tại *</label>
+          <label htmlFor="cp-current">{t('changePassword.currentPassword', 'Mật khẩu hiện tại *')}</label>
           <div style={{ position: 'relative' }}>
             <input
               id="cp-current"
@@ -116,7 +118,7 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
               className="form-control"
               value={currentPassword}
               onChange={e => setCurrentPassword(e.target.value)}
-              placeholder="Nhập mật khẩu đang dùng"
+              placeholder={t('changePassword.currentPasswordPlaceholder', 'Nhập mật khẩu đang dùng')}
               autoComplete="current-password"
               disabled={loading}
               style={{ paddingRight: 40 }}
@@ -143,7 +145,7 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
         </div>
 
         <div className="form-group" style={{ margin: 0 }}>
-          <label htmlFor="cp-new">Mật khẩu mới *</label>
+          <label htmlFor="cp-new">{t('changePassword.newPassword', 'Mật khẩu mới *')}</label>
           <div style={{ position: 'relative' }}>
             <input
               id="cp-new"
@@ -151,7 +153,7 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
               className="form-control"
               value={newPassword}
               onChange={e => setNewPassword(e.target.value)}
-              placeholder="Ít nhất 6 ký tự"
+              placeholder={t('changePassword.newPasswordPlaceholder', 'Ít nhất 6 ký tự')}
               autoComplete="new-password"
               disabled={loading}
               style={{ paddingRight: 40 }}
@@ -178,7 +180,7 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
         </div>
 
         <div className="form-group" style={{ margin: 0 }}>
-          <label htmlFor="cp-confirm">Xác nhận mật khẩu mới *</label>
+          <label htmlFor="cp-confirm">{t('changePassword.confirmPassword', 'Xác nhận mật khẩu mới *')}</label>
           <div style={{ position: 'relative' }}>
             <input
               id="cp-confirm"
@@ -186,7 +188,7 @@ export function ChangePasswordModal({ onClose }: ChangePasswordModalProps) {
               className="form-control"
               value={confirmPassword}
               onChange={e => setConfirmPassword(e.target.value)}
-              placeholder="Nhập lại mật khẩu mới"
+              placeholder={t('changePassword.confirmPasswordPlaceholder', 'Nhập lại mật khẩu mới')}
               autoComplete="new-password"
               disabled={loading}
               style={{ paddingRight: 40 }}

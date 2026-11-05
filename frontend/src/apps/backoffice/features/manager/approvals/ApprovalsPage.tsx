@@ -2,6 +2,7 @@ import { insuranceReviewProblem } from '@shared/types/insurance'
 // Manager: duyệt báo giá cuối sau khi Chuyên viên và Điều phối viên đều đạt (PRD mục 2.5).
 // Manager nhìn số xe Điều phối viên đã chọn để chọn tài xế và hộ tống cho từng xe. Báo giá do hệ thống tính và gửi cho khách.
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { DEPOSIT_RATE, QUOTE_VALID_HOURS, VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { finalizeQuote, sameVehicleId, schedulesOf, vehicleClassOf, crewClashOf, findCrewBooked } from '@shared/lib/booking'
@@ -242,6 +243,7 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
 }
 
 export default function ApprovalsPage() {
+  const { t, i18n } = useTranslation()
   const { all, reload } = usePageData<typeof bookingListLoader>()
   const [tab, setTab] = useState<Tab>('todo')
   const [open, setOpen] = useState<Booking | null>(null)
@@ -249,20 +251,20 @@ export default function ApprovalsPage() {
   const todo = list.filter(b => b.status === 'pending_commercial')
   const sent = list.filter(b => b.quote)
   const columns: Column<Booking>[] = [
-    { head: 'Mã đơn', cell: b => idCell(b) },
-    { head: 'Khách hàng', cell: b => b.customer, nowrap: true },
-    { head: 'Tuyến', cell: b => routeCell(placeShort(b.origin.name), placeShort(b.dest.name)) },
-    { head: 'Khởi hành', cell: b => formatDate(b.departAt), nowrap: true },
-    { head: 'Ngựa / xe', cell: b => `${b.horses.length} con · ${b.vehicleCount ?? b.trips?.length ?? 0} xe`, nowrap: true },
-    { head: 'Trạng thái', cell: b => statusCell(b.status) },
-    ...(tab === 'sent' ? [{ head: 'Gửi lúc', cell: (b: Booking) => (b.quote ? formatDateTime(b.quote.sentAt) : '-'), nowrap: true }, { head: 'Báo giá', cell: (b: Booking) => (b.quote ? <>{formatVND(b.quote.total)}<div className="sub-text">Cọc {formatVND(b.quote.deposit)}</div></> : '-'), right: true }] : []),
-    { head: 'Thao tác', cell: b => (tab === 'todo' ? <button className="btn btn-primary btn-sm" onClick={() => setOpen(b)}>Duyệt báo giá</button> : null), right: true },
+    { head: t('intakePage.colOrderId', 'Mã đơn'), cell: b => idCell(b) },
+    { head: t('intakePage.colCustomer', 'Khách hàng'), cell: b => b.customer, nowrap: true },
+    { head: t('intakePage.colRoute', 'Tuyến'), cell: b => routeCell(placeShort(b.origin.name), placeShort(b.dest.name)) },
+    { head: t('intakePage.colDeparture', 'Khởi hành'), cell: b => formatDate(b.departAt), nowrap: true },
+    { head: t('approvalsPage.horsesVehicles', 'Ngựa / xe'), cell: b => `${b.horses.length} ${t('approvalsPage.horses', 'con')} · ${b.vehicleCount ?? b.trips?.length ?? 0} ${t('approvalsPage.vehicles', 'xe')}`, nowrap: true },
+    { head: t('intakePage.colStatus', 'Trạng thái'), cell: b => statusCell(b.status) },
+    ...(tab === 'sent' ? [{ head: t('intakePage.colSubmitted', 'Gửi lúc'), cell: (b: Booking) => (b.quote ? formatDateTime(b.quote.sentAt) : '-'), nowrap: true }, { head: t('approvalsPage.colQuote', 'Báo giá'), cell: (b: Booking) => (b.quote ? <>{formatVND(b.quote.total)}<div className="sub-text">Cọc {formatVND(b.quote.deposit)}</div></> : '-'), right: true }] : []),
+    { head: t('intakePage.colAction', 'Thao tác'), cell: b => (tab === 'todo' ? <button className="btn btn-primary btn-sm" onClick={() => setOpen(b)}>{t('approvalsPage.actionApprove', 'Duyệt báo giá')}</button> : null), right: true },
   ]
   return (
     <>
-      <ListPage title="Duyệt báo giá" subtitle={`Duyệt để gửi khách, hạn đặt cọc tối đa ${QUOTE_VALID_HOURS} giờ, giới hạn theo báo giá bảo hiểm; cọc ${(DEPOSIT_RATE * 100).toLocaleString('vi-VN')}%.`} tabs={[['todo', 'Chờ duyệt báo giá', todo.length], ['sent', 'Đã gửi báo giá', sent.length]]} tab={tab} onTab={setTab} hot={['todo']}
+      <ListPage title={t('staffMenus./manager/approvals', 'Duyệt giá')} subtitle={t('approvalsPage.subtitle', 'Duyệt để gửi khách, hạn đặt cọc tối đa {{hours}} giờ, giới hạn theo báo giá bảo hiểm; cọc {{depositRate}}%.', { hours: QUOTE_VALID_HOURS, depositRate: (DEPOSIT_RATE * 100).toLocaleString(i18n.language === 'en' ? 'en-US' : 'vi-VN') })} tabs={[['todo', t('approvalsPage.tabTodo', 'Chờ duyệt báo giá'), todo.length], ['sent', t('approvalsPage.tabSent', 'Đã gửi báo giá'), sent.length]]} tab={tab} onTab={setTab} hot={['todo']}
         rows={tab === 'todo' ? todo : sent} rowKey={b => b.id} columns={columns} haystack={b => [b.id, b.customer, b.origin.name, b.dest.name]} dateOf={b => b.departAt} loaded={!!all}
-        emptyText={tab === 'todo' ? 'Không có đơn nào chờ duyệt báo giá.' : 'Chưa gửi báo giá nào.'}
+        emptyText={tab === 'todo' ? t('approvalsPage.emptyTodo', 'Không có đơn nào chờ duyệt báo giá.') : t('approvalsPage.emptySent', 'Chưa gửi báo giá nào.')}
         summary={r => (tab === 'sent' ? <>Tổng báo giá: <b>{formatVND(r.reduce((n, b) => n + (b.quote?.total ?? 0), 0))}</b></> : null)} />
       {open && <QuoteModal b={open} all={list} onClose={() => setOpen(null)} onDone={() => { invalidateBookingsListCache(); setOpen(null); reload() }} />}
     </>

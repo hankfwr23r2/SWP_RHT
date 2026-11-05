@@ -1,4 +1,5 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
+import i18n from '../i18n'
 
 // 1. Cấu trúc Response chuẩn từ Spring Boot (com.example.racehorse_transport.response.ApiResponse)
 export interface ApiResponse<T = unknown> {
@@ -149,7 +150,7 @@ apiClient.interceptors.response.use(
           if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
             console.warn('Phiên đăng nhập đã hết hạn hoàn toàn. Vui lòng đăng nhập lại.')
           }
-          return Promise.reject(new Error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'))
+          return Promise.reject(new Error(i18n.t('auth.sessionExpired') || 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'))
         }
       }
 
@@ -159,7 +160,7 @@ apiClient.interceptors.response.use(
       }
 
       // Lấy câu thông báo lỗi cụ thể từ Backend gửi lên nếu có
-      let serverMessage = data?.message || 'Có lỗi xảy ra từ máy chủ.'
+      let serverMessage = data?.message || i18n.t('auth.serverError') || 'Có lỗi xảy ra từ máy chủ.'
       if (data?.data && typeof data.data === 'object' && !Array.isArray(data.data)) {
         const details = Object.entries(data.data)
           .map(([, val]) => (typeof val === 'string' ? val : JSON.stringify(val)))
@@ -173,7 +174,7 @@ apiClient.interceptors.response.use(
     }
 
     if (error.request) {
-      return Promise.reject(new Error('Không kết nối được máy chủ. Vui lòng kiểm tra mạng rồi thử lại.'))
+      return Promise.reject(new Error(i18n.t('auth.networkError') || 'Không kết nối được máy chủ. Vui lòng kiểm tra mạng rồi thử lại.'))
     }
 
     return Promise.reject(error)

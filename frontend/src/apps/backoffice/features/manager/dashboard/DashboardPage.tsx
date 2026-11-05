@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useStaggerIn } from '@shared/motion/motion'
 import type { Booking } from '@shared/types/booking'
 import { FormSelect } from '@shared/ui/FormSelect'
@@ -13,6 +14,7 @@ import { invalidateBookingsListCache } from '@shared/services/bookings'
 import type { bookingListLoader } from '../../../shared/loaders'
 
 export default function DashboardPage() {
+  const { t } = useTranslation()
   const { all, reload } = usePageData<typeof bookingListLoader>()
   const [open, setOpenId] = useState<string | null>(null)
   const [calendar, setCalendar] = useState(false)
@@ -27,22 +29,22 @@ export default function DashboardPage() {
   return (
     <div className="page">
       <div ref={ref} className={`wrap ${s.wrap}`}>
-        <div className="page-header"><h1>Tổng quan</h1></div>
+        <div className="page-header"><h1>{t('managerDashboard.title', 'Tổng quan')}</h1></div>
         <ScheduleStrip orders={orders} onOpen={setOpen} onCalendar={() => setCalendar(true)} />
         <div className={bd.boardHead}>
-          <h2 className={s.sectionTitle} style={{ margin: 0 }}>Tất cả đơn</h2>
+          <h2 className={s.sectionTitle} style={{ margin: 0 }}>{t('managerDashboard.allOrders', 'Tất cả đơn')}</h2>
           <div className={bd.boardTools}>
-            <label className={bd.search}><i className="fa-solid fa-magnifying-glass" aria-hidden="true" /><input className="form-control" placeholder="Tìm theo mã đơn, khách hàng, tuyến…" value={text} onChange={e => setText(e.target.value)} /></label>
+            <label className={bd.search}><i className="fa-solid fa-magnifying-glass" aria-hidden="true" /><input className="form-control" placeholder={t('managerDashboard.searchPlaceholder', 'Tìm theo mã đơn, khách hàng, tuyến…')} value={text} onChange={e => setText(e.target.value)} /></label>
             <FormSelect
               style={{ width: 'auto', minWidth: 165 }}
               value={sort}
               onChange={e => setSort(e.target.value as SortOption)}
-              aria-label="Sắp xếp danh sách đơn hàng"
+              aria-label={t('managerDashboard.sortAria', 'Sắp xếp danh sách đơn hàng')}
             >
-              <option value="newest">Mới nhất trước</option>
-              <option value="urgent">Cần xử lý trước</option>
-              <option value="depart">Khởi hành sớm nhất</option>
-              <option value="oldest">Cũ nhất trước</option>
+              <option value="newest">{t('managerDashboard.sortNewest', 'Mới nhất trước')}</option>
+              <option value="urgent">{t('managerDashboard.sortUrgent', 'Cần xử lý trước')}</option>
+              <option value="depart">{t('managerDashboard.sortDepart', 'Khởi hành sớm nhất')}</option>
+              <option value="oldest">{t('managerDashboard.sortOldest', 'Cũ nhất trước')}</option>
             </FormSelect>
           </div>
         </div>
