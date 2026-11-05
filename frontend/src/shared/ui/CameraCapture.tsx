@@ -71,6 +71,6 @@ export function CameraCapture({ label, onClose, onUse }: Props) {
     {shot ? <><img className={s.cameraPreview} src={shot.url} alt="Ảnh vừa chụp" /><p>Chụp theo thiết bị: {captureTimestamp(shot.at)}</p></> : <video className={s.cameraPreview} ref={video} autoPlay muted playsInline onLoadedData={() => setReady(true)} onError={() => { setReady(false); setError('Không phát được hình ảnh camera. Vui lòng thử lại.') }} />}
     {!shot && !ready && !error && <p role="status">Đang mở camera, vui lòng cho phép truy cập…</p>}
     {error && <p className="form-error" role="alert">{error}</p>}
-    <p className="form-hint">Thời gian chụp lấy từ đồng hồ thiết bị; thời gian hệ thống ghi nhận được lưu độc lập sau khi upload thành công.</p>
+    <p className="form-hint">Thời gian chụp lấy từ đồng hồ thiết bị. Thời gian hệ thống ghi nhận được lưu độc lập sau khi upload thành công.</p>
   </Modal>, document.body)
 }

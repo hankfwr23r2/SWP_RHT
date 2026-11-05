@@ -691,7 +691,7 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
 
             {!suggestingCorridors && corridorSuggestions.length === 0 && (
               <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
-                Không có tuyến cố định phù hợp với tọa độ và cửa khẩu của đơn; đang dùng tuyến đường xe tải trực tiếp.
+                Không có tuyến cố định phù hợp với tọa độ và cửa khẩu của đơn. Đang dùng tuyến đường xe tải trực tiếp.
               </div>
             )}
 
@@ -1249,7 +1249,7 @@ export default function FleetPlanPage() {
                   {(b.trips ?? []).map(
                     (t, i) =>
                       `xe ${vehicles.find(v => v.id === t.vehicleId)?.plate} (${t.horseIds.length} ngựa)${
-                        i < (b.trips?.length ?? 0) - 1 ? '; ' : ''
+                        i < (b.trips?.length ?? 0) - 1 ? ', ' : ''
                       }`
                   )}
                   . {b.route && `Khởi hành ${formatDateTime(b.route.legs[0].departAt)}.`}

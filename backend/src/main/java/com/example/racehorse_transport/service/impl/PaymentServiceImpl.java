@@ -66,7 +66,7 @@ public class PaymentServiceImpl implements PaymentService {
         payment.put("insuranceReconciliationReference", request.getReference());
         payment.put("insuranceReconciliationNote", request.getNote());
         payload.setPayment(payment);
-        appendHistory(payload, actor, "Đối soát bảo hiểm thu hộ; hoàn khách " + request.getCustomerRefundAmount());
+        appendHistory(payload, actor, "Đối soát bảo hiểm thu hộ, hoàn khách " + request.getCustomerRefundAmount());
         savePayload(booking, payload);
         bookingRepository.save(booking);
     }

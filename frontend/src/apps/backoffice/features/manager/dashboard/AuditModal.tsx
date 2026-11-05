@@ -44,7 +44,7 @@ export function AuditModal({ b, onClose, onDone }: { b: Booking; onClose: () => 
         ))}</tbody>
       </table></div>
       <p style={{ marginTop: 14 }}>{t('auditModal.summaryCustomer', 'Khách phải trả thêm:')} <b>{formatVND(customerTotal)}</b> · {t('auditModal.summaryCarrier', 'Nhà xe chịu:')} <b>{formatVND(carrierTotal)}</b></p>
-      <ReadMore className={s.hint} text={t('auditModal.policyNote', 'Chính sách: chi phí về ngựa (thú y, thuốc, chuồng đệm) khách chịu; chi phí về vận chuyển (cứu hộ, sửa xe) nhà xe chịu; tắc cửa khẩu nhà xe chịu. Giá chuyến đã cố định nên nhiên liệu và cầu đường không tính thêm. Bảng quyết toán chỉ gồm khoản khách chịu, khách có 24 giờ để thanh toán.')} />
+      <ReadMore className={s.hint} text={t('auditModal.policyNote', 'Chính sách: chi phí về ngựa (thú y, thuốc, chuồng đệm) khách chịu. Chi phí về vận chuyển (cứu hộ, sửa xe) nhà xe chịu. Tắc cửa khẩu nhà xe chịu. Giá chuyến đã cố định nên nhiên liệu và cầu đường không tính thêm. Bảng quyết toán chỉ gồm khoản khách chịu, khách có 24 giờ để thanh toán.')} />
     </Modal>
   )
 }

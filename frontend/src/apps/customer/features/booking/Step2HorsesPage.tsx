@@ -284,7 +284,7 @@ export default function Step2HorsesPage() {
                   </div>
                   {countryMismatch && (
                     <div style={{ fontSize: '0.8rem', color: '#b45309', marginTop: 4 }}>
-                      {i18n.language === 'en' ? `Currently in ${countryName(h.currentCountry)}; this trip requires pickup in ${countryName(originCountry)}.` : `Hiện ở ${countryName(h.currentCountry)}; chuyến này cần đón tại ${countryName(originCountry)}.`}
+                      {i18n.language === 'en' ? `Currently in ${countryName(h.currentCountry)}. This trip requires pickup in ${countryName(originCountry)}.` : `Hiện ở ${countryName(h.currentCountry)}. Chuyến này cần đón tại ${countryName(originCountry)}.`}
                     </div>
                   )}
                   {countryUnverified && (

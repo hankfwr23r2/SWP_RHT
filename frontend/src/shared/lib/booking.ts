@@ -212,7 +212,7 @@ export function quoteLines(b: QuoteInput, vehicles: Pick<Vehicle, 'capacity'>[])
     lines.push(
       { label: `Cước vận chuyển nguyên chuyến${tag}`, detail: `Xe ${VEHICLE_CLASS[cls].label} (${VEHICLE_CLASS[cls].stalls}) · ${km} km`, calculation: `Tính theo quãng đường ${km} km và hạng xe ${VEHICLE_CLASS[cls].label}.`, amount: roundK(truckCost(km, false) * CLASS_FACTOR[cls] * m) },
       { label: `Nhân sự kỹ thuật, 01 tài xế + 01 hộ tống${tag}`, detail: `${days} ngày`, calculation: `${days} ngày × chi phí cho 1 tài xế và 1 hộ tống mỗi ngày.`, amount: roundK(days * CREW_FEE_PER_DAY * m) },
-      { label: `Nhiên liệu và BOT${tag}`, detail: `Ước tính theo lộ trình ${km} km, đã gồm dự phòng`, calculation: `${km} km × chi phí nhiên liệu và BOT ước tính mỗi km; đã gồm dự phòng 5%.`, amount: roundK(km * FUEL_BOT_PER_KM * (1 + FUEL_BUFFER_RATE) * m) },
+      { label: `Nhiên liệu và BOT${tag}`, detail: `Ước tính theo lộ trình ${km} km, đã gồm dự phòng`, calculation: `${km} km × chi phí nhiên liệu và BOT ước tính mỗi km, đã gồm dự phòng 5%.`, amount: roundK(km * FUEL_BOT_PER_KM * (1 + FUEL_BUFFER_RATE) * m) },
     )
   })
   const addServiceLine = (
@@ -251,7 +251,7 @@ export function quoteLines(b: QuoteInput, vehicles: Pick<Vehicle, 'capacity'>[])
       label,
       detail,
       calculation: hasDailyUnit
-        ? `Cộng phí theo đơn vị đã khai báo; gói tính theo ngày nhân ${days} ngày vận chuyển.`
+        ? `Cộng phí theo đơn vị đã khai báo. Gói tính theo ngày nhân ${days} ngày vận chuyển.`
         : 'Cộng phí dịch vụ đã chọn theo đơn vị tính đã khai báo.',
       amount,
     })
@@ -274,7 +274,7 @@ export function quoteLines(b: QuoteInput, vehicles: Pick<Vehicle, 'capacity'>[])
   // Đơn cũ xem các dòng báo giá đã lưu, không tính lại theo giống ngựa.
   for (const horse of b.horses) {
     if (horse.insurance.option === 'assistance' && horse.insurance.reviewed && horse.insurance.premium != null) {
-      lines.push({ label: 'Thu hộ bảo hiểm bên thứ ba', detail: `${horse.horseId} · ${horse.name} · ${horse.insurance.provider ?? ''}`, calculation: 'Phí bên thứ ba báo; công ty thu hộ.', amount: horse.insurance.premium })
+      lines.push({ label: 'Thu hộ bảo hiểm bên thứ ba', detail: `${horse.horseId} · ${horse.name} · ${horse.insurance.provider ?? ''}`, calculation: 'Phí do bên thứ ba báo. Công ty thu hộ.', amount: horse.insurance.premium })
     }
   }
   return { lines, km, days }

@@ -16,7 +16,7 @@ const insuranceLabelsEn: Record<string, string> = {
 export function InsuranceSummary({ insurance, phase = 'all' }: { insurance?: Partial<HorseInsurance>; phase?: 'quote' | 'policy' | 'all' }) {
   const { i18n } = useTranslation()
   const labels = i18n.language === 'en' ? insuranceLabelsEn : insuranceLabels
-  if (!insurance?.option) return <p className="text-muted">{i18n.language === 'en' ? 'Insurance from prior order; see issued quotation.' : 'Bảo hiểm theo dữ liệu đơn cũ; xem báo giá đã phát hành.'}</p>
+  if (!insurance?.option) return <p className="text-muted">{i18n.language === 'en' ? 'Insurance from prior order. See the issued quotation.' : 'Bảo hiểm theo dữ liệu đơn cũ. Xem báo giá đã phát hành.'}</p>
   const i = insurance
   if (i.option === 'none') return <p>{i18n.language === 'en' ? 'Customer opted out of transit insurance.' : 'Khách chọn không bảo hiểm.'}</p>
   const showPolicy = i.option === 'personal' || phase !== 'quote'
