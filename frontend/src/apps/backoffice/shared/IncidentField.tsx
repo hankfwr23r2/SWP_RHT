@@ -13,6 +13,7 @@ import { ImageThumb } from '@shared/ui/ImageThumb'
 import { Panel } from './field'
 import s from './field.module.css'
 import { FormSelect } from '@shared/ui/FormSelect'
+import { Modal } from '@shared/ui/Modal'
 
 export type Run = (fn: () => Promise<unknown>, msg: string) => Promise<void>
 
@@ -88,12 +89,31 @@ function HealthCareForm({ b, inc, run }: { b: Booking; inc: Incident; run: Run }
 }
 
 // Thẻ sự cố đang mở của xe: thay cho các bước hành trình cho đến khi xử lý xong
+// Rời trạm SOS trước giờ nghỉ đã duyệt: không bắt kíp xe chờ, nhưng hỏi lại bằng form và lưu ghi chú
+function EarlyLeaveModal({ rested, planned, onClose, onConfirm }: { rested: number; planned: number; onClose: () => void; onConfirm: (note: string) => Promise<void> }) {
+  const [note, setNote] = useState('')
+  const [busy, setBusy] = useState(false)
+  return (
+    <Modal title="Rời trạm SOS sớm?" onClose={onClose} footer={<>
+      <button className="btn btn-ghost" onClick={onClose} disabled={busy}>Ở lại nghỉ tiếp</button>
+      <button className="btn btn-primary" disabled={busy} onClick={async () => { setBusy(true); await onConfirm(note.trim()); setBusy(false) }}><i className="fa-solid fa-truck-fast" /> Xác nhận rời trạm</button>
+    </>}>
+      <p style={{ marginTop: 0 }}>Ngựa mới nghỉ <b>{rested} phút</b>, phương án đã duyệt là <b>{planned} phút</b>. Hộ tống đã xác nhận ngựa đủ sức. Quản lý và khách sẽ thấy xe rời trạm sớm.</p>
+      <div className="form-group" style={{ margin: 0 }}>
+        <label htmlFor="early-note">Ghi chú</label>
+        <textarea id="early-note" className="form-control" rows={3} value={note} onChange={e => setNote(e.target.value)} placeholder="VD: Ngựa đã ổn định, hộ tống đồng ý đi tiếp" />
+      </div>
+    </Modal>
+  )
+}
+
 export function IncidentPanel({ b, inc, role, run }: { b: Booking; inc: Incident; role: 'driver' | 'escort'; run: Run }) {
   const { session } = useAuth()
   const spent = inc.expenses.reduce((n, e) => n + e.amount, 0)
   const needFit = needsFitCheck(inc.kind)
   const now = useNow(1000)
   const [arrivalPhoto, setArrivalPhoto] = useState<string>()
+  const [askEarly, setAskEarly] = useState(false)
   const health = inc.kind === 'horse_health'
   const checkpointId = `sos-${Number(inc.id.replace('INC-', ''))}`
   const checkpoint = b.trips?.find(t => t.tripId === inc.tripId)?.run?.checkpoints.find(cp => cp.id === checkpointId)
@@ -136,7 +156,11 @@ export function IncidentPanel({ b, inc, role, run }: { b: Booking; inc: Incident
           )}
           {health && leaveAt && !restReady && <p role="status">Nghỉ tại trạm SOS đến {formatDateTime(leaveAt)}; còn {Math.ceil((leaveAt - now) / 60000)} phút.</p>}
           {role === 'driver' && (
-            <button className={`btn btn-primary ${s.big}`} disabled={(needFit && !inc.fitConfirmedAt) || !restReady} onClick={() => run(() => bookingsApi.resumeJourney(b.id, inc.id, session!.name), 'Tiếp tục theo phương án đã duyệt')}><i className="fa-solid fa-truck-fast" /> Tiếp tục theo phương án đã duyệt</button>
+            <button className={`btn btn-primary ${s.big}`} disabled={needFit && !inc.fitConfirmedAt} onClick={() => restReady ? run(() => bookingsApi.resumeJourney(b.id, inc.id, session!.name), 'Tiếp tục theo phương án đã duyệt') : setAskEarly(true)}><i className="fa-solid fa-truck-fast" /> Tiếp tục theo phương án đã duyệt</button>
+          )}
+          {askEarly && checkpoint?.arrivedAt && (
+            <EarlyLeaveModal rested={Math.max(0, Math.floor((now - checkpoint.arrivedAt) / 60000))} planned={inc.plan?.restMinutes ?? 30} onClose={() => setAskEarly(false)}
+              onConfirm={note => run(() => bookingsApi.resumeJourney(b.id, inc.id, session!.name, { note }), 'Đã rời trạm SOS sớm, tiếp tục hành trình').then(() => setAskEarly(false))} />
           )}
         </>
       )}

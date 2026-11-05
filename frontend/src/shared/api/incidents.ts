@@ -111,8 +111,9 @@ export const backendIncidentApi = {
     return res.data.data
   },
 
-  resumeJourney: async (id: number): Promise<BackendIncidentResponse> => {
-    const res = await apiClient.post<ApiResponse<BackendIncidentResponse>>(`/incidents/${id}/resume`)
+  // confirmEarlyLeave: kíp xe đã xác nhận rời trạm SOS trước giờ nghỉ đã duyệt
+  resumeJourney: async (id: number, body?: { confirmEarlyLeave: boolean; note?: string }): Promise<BackendIncidentResponse> => {
+    const res = await apiClient.post<ApiResponse<BackendIncidentResponse>>(`/incidents/${id}/resume`, body ?? {})
     return res.data.data
   },
 

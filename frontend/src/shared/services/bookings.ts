@@ -518,8 +518,8 @@ export const bookingsApi = {
     }),
   confirmFit: async (_id: string, incidentId: string, _by: string, data?: { photo: string; waterLiters?: number; hay?: boolean; horses: { horseId: string; careNote: string; temperature?: number }[] }) =>
     backendIncidentApi.confirmFit(numericId(incidentId, 'INC'), data),
-  resumeJourney: async (_id: string, incidentId: string, _by: string) =>
-    backendIncidentApi.resumeJourney(numericId(incidentId, 'INC')),
+  resumeJourney: async (_id: string, incidentId: string, _by: string, earlyLeave?: { note: string }) =>
+    backendIncidentApi.resumeJourney(numericId(incidentId, 'INC'), earlyLeave ? { confirmEarlyLeave: true, note: earlyLeave.note } : undefined),
 
   // ===== Flow 6: quyết toán =====
   submitExpenses: async (id: string, _by: string): Promise<Booking> => {

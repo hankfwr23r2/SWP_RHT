@@ -1,7 +1,7 @@
 // "Bước tiếp theo" của đơn phía khách: mỗi trạng thái nói rõ khách đang chờ ai, hoặc cần làm gì.
 import { HOUR } from '@shared/config/business-rules'
 import { DEPOSIT_RATE, type Tone } from '@shared/config/booking-rules'
-import { effectiveArrivalOf, clearanceProgress, currentCheckpoint, orderGroupOf } from '@shared/lib/booking'
+import { effectiveArrivalOf, clearanceProgress, currentCheckpoint, orderGroupOf, pickupFailReason } from '@shared/lib/booking'
 import { formatDateTime, formatVND, timeLeftText } from '@shared/lib/format'
 import type { CustomerBookingView } from '@shared/services/bookings'
 
@@ -65,7 +65,7 @@ function baseStep(b: CustomerBookingView, now: number): NextStep {
         ? { tone: 'info', icon: 'fa-truck-moving', title: 'Xe đang đến điểm đón ngựa', text: 'Vui lòng chuẩn bị bản gốc hồ sơ và có mặt tại điểm đón để ký biên bản giao nhận. Kíp xe nhận ngựa xong thì bạn thanh toán 70% còn lại để xe xuất bến.', actionNeeded: false }
         : { tone: 'danger', icon: 'fa-credit-card', title: `Thanh toán 70% còn lại: ${formatVND(b.quote!.balance)}`, text: 'Kíp xe đã nhận ngựa và ký biên bản giao nhận. Bạn thanh toán xong thì xe mới bắt đầu hành trình.', actionNeeded: true }
     case 'pickup_failed':
-      return { tone: 'danger', icon: 'fa-ban', title: 'Không nhận được ngựa', text: 'Ngựa ở điểm đón không khớp hồ sơ nên kíp xe không nhận. Quản lý sẽ liên hệ với bạn để xử lý đơn.', actionNeeded: false }
+      return { tone: 'danger', icon: 'fa-ban', title: 'Không nhận được ngựa', text: `${pickupFailReason(b)} nên kíp xe không nhận. Quản lý sẽ liên hệ với bạn để xử lý đơn.`, actionNeeded: false }
     case 'in_transit': {
       const t = activeTrip(b)
       const cp = t && currentCheckpoint(t)

@@ -1031,3 +1031,12 @@ export function autoPackFleet(
 
   return results
 }
+
+// Vì sao kíp xe không nhận được ngựa (đơn pickup_failed): chip không khớp hồ sơ, ngựa ốm/sốt, hoặc cả hai
+export function pickupFailReason(b: Pick<Booking, 'horses'>): string {
+  const mismatch = b.horses.some(h => h.status === 'chip_mismatch')
+  const unfit = b.horses.some(h => h.status === 'unfit')
+  if (mismatch && unfit) return 'Ngựa ở điểm đón không khớp hồ sơ hoặc không đủ sức khỏe'
+  if (unfit) return 'Ngựa ốm/sốt ở điểm đón, không đủ điều kiện vận chuyển'
+  return 'Ngựa ở điểm đón không khớp hồ sơ'
+}

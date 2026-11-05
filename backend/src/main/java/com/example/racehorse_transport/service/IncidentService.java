@@ -20,6 +20,9 @@ public interface IncidentService {
 
     IncidentResponse resumeJourney(Integer incidentId, String actor, String role);
 
+    // Rời trạm SOS trước giờ nghỉ đã duyệt chỉ được khi kíp xe xác nhận (confirmEarlyLeave), kèm ghi chú nếu có
+    IncidentResponse resumeJourney(Integer incidentId, String actor, String role, boolean confirmEarlyLeave, String note);
+
     IncidentResponse completeResolution(Integer incidentId, ResolveIncidentRequest request, String actor);
 
     List<IncidentResponse> getIncidentsByBooking(Integer bookingId, String requester, String role);
