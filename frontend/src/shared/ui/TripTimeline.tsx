@@ -7,17 +7,50 @@ import s from './TripTimeline.module.css'
 
 const ICON: Record<Checkpoint['type'], string> = { pickup: 'fa-horse-head', rest: 'fa-location-dot', border: 'fa-flag', customs: 'fa-stamp', delivery: 'fa-flag-checkered' }
 
-interface Props { trip: { run?: TripRun }; now: number; staff?: boolean }
+export interface JourneyTimelineIncident {
+  id: string
+  tripId?: string
+  reportedAt: number
+  title: string
+  detail: string
+}
+
+interface Props { trip: { tripId?: string; run?: TripRun }; now: number; staff?: boolean; incidents?: JourneyTimelineIncident[] }
 
 // Các mốc hành trình: xám (chưa tới), cam (đang chờ), xanh (xong, có ảnh và giờ thực). Quá giờ 30 phút thì cờ vàng Delayed Check-in.
-export function TripTimeline({ trip, now, staff }: Props) {
-  const cps = trip.run?.checkpoints
-  if (!cps?.length) return <p className={s.none}>Chưa có hành trình. Mốc sẽ hiện khi xe nhận ngựa.</p>
+export function TripTimeline({ trip, now, staff, incidents = [] }: Props) {
+  const cps = trip.run?.checkpoints ?? []
+  if (!cps.length && !incidents.length) return <p className={s.none}>Chưa có hành trình. Mốc sẽ hiện khi xe nhận ngựa.</p>
   const current = currentCheckpoint(trip)
   const late = delayedCheckpoint(trip, now)
+  const events = [
+    ...cps.map(checkpoint => ({
+      type: 'checkpoint' as const,
+      checkpoint,
+      at: checkpoint.arrivedAt ?? checkpoint.plannedAt,
+    })),
+    ...incidents.map(incident => ({
+      type: 'incident' as const,
+      incident,
+      at: incident.reportedAt,
+    })),
+  ].sort((a, b) => a.at - b.at)
   return (
     <ol className={s.list}>
-      {cps.map(cp => {
+      {events.map(event => {
+        if (event.type === 'incident') {
+          return (
+            <li key={`incident-${event.incident.id}`} className={`${s.item} ${s.incident}`}>
+              <span className={s.dot} aria-hidden="true"><i className="fa-solid fa-triangle-exclamation" /></span>
+              <div className={s.body}>
+                <div className={s.top}><b>{event.incident.title}</b><span className="badge badge-warning">Sự cố</span></div>
+                <div className={s.time}>Báo lúc {formatDateTime(event.incident.reportedAt)}</div>
+                <div className={s.place}>{event.incident.detail}</div>
+              </div>
+            </li>
+          )
+        }
+        const cp = event.checkpoint
         const state = checkpointState(cp, current)
         const welfare = (trip.run?.welfare ?? []).filter(w => w.checkpointId === cp.id)
         return (
