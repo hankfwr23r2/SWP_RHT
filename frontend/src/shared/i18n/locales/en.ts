@@ -47,7 +47,7 @@ export const en = {
     services: 'Services',
     process: 'Process',
     customer: 'Customer',
-    terms: 'Terms of Service',
+    terms: 'Terms and Policies',
   },
   status: {
     pending_intake: 'Pending Intake',

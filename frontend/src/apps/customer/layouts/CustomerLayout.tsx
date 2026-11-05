@@ -24,6 +24,7 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
     ['/booking/route', t('common.bookNewTrip')],
     ['/orders', t('nav.myOrders')],
     ['/history', t('nav.orderHistory')],
+    ['/terms', t('nav.terms')],
   ]
 
   return (
