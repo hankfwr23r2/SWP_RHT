@@ -186,6 +186,8 @@ export function ApprovedIncidentRoute({ b, t }: { b: Booking; t: VehicleTrip }) 
   const route = t.incidentRoute
   if (!route) return null
   const incident = b.incidents?.find(i => Number(i.id.replace('INC-', '')) === route.incidentId)
+  // Sự cố còn đang xử lý thì panel sự cố đã vẽ phương án này, không vẽ lặp bản đồ thứ hai
+  if (incident && incident.status !== 'resolved') return null
   return <Panel title="Lộ trình điều chỉnh đã duyệt" icon="fa-route">
     <p>Giờ đến đích mới: {formatDateTime(route.newEta)}. {route.note}</p>
     {incident && <IncidentPlanView b={b} i={{ ...incident, plan: route }} height={300} />}
