@@ -62,6 +62,12 @@ export function IncidentMap({ height = 460, location, origin, dest, gate, statio
   }, [onPoint, location.lat, location.lng])
 
   // Vẽ lại mỗi khi đổi lựa chọn hoặc đường
+  // Trang cha dựng lại mảng và object mỗi lần render (gõ ghi chú, đổi giờ…): chỉ vẽ lại khi nội dung bản đồ thật sự đổi
+  const sig = JSON.stringify([
+    lines.map(l => [l.path, l.color, l.weight, l.dashed, l.flow, l.faded, l.label]),
+    stations.map(s => [s.name, s.lat, s.lng]), rescues.map(r => [r.name, r.lat, r.lng]), waypoints, selectedStation, nearest, selectedRescue,
+    [origin.lat, origin.lng, origin.name], [dest.lat, dest.lng, dest.name], gate && [gate.lat, gate.lng, gate.name], [location.lat, location.lng],
+  ])
   useEffect(() => {
     const g = layer.current, m = map.current
     if (!g || !m) return
@@ -97,7 +103,7 @@ export function IncidentMap({ height = 460, location, origin, dest, gate, statio
       if (pts.length > 1) m.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [320, 50], paddingBottomRight: [50, 50], maxZoom: 11 })
       fitted.current = true
     }
-  }, [lines, stations, rescues, selectedStation, nearest, selectedRescue, origin, dest, gate, location, onStation, onRescue, waypoints])
+  }, [sig]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="im-wrap" style={{ height }}>

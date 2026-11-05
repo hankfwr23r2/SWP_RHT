@@ -70,11 +70,11 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
   const customRoad = useRoadRoute(kind === 'traffic_jam' && waypoints.length ? [loc, ...waypoints, next] : undefined, now, routeAttempt)
   const loading = customRoad.loading || toStation.loading || rescueRoad.loading || alts.loading || afterRoad.loading
 
-  const altList: RoadRoute[] = alts.routes.filter(route => route.source !== 'offline')
+  const altList: RoadRoute[] = alts.routes
   const suggestedAlt = altList[Math.min(altIdx, Math.max(0, altList.length - 1))] as RoadRoute | undefined
   const altChosen = waypoints.length ? customRoad.route ?? undefined : suggestedAlt
   const rerouteUnchanged = !!i.rejection && !!i.plan?.detour && !!altChosen && JSON.stringify(thinPath(altChosen.path)) === JSON.stringify(i.plan.detour.path)
-  const rerouteReady = kind !== 'traffic_jam' || (!loading && !!altChosen && altChosen.source !== 'offline' && !rerouteUnchanged)
+  const rerouteReady = kind !== 'traffic_jam' || (!loading && !!altChosen && !rerouteUnchanged)
   const toStationLine = horses && stationPt ? lineOf(toStation.route, loc, stationPoint) : undefined
   const rescueLine = kind === 'vehicle_breakdown' && rescuePt ? lineOf(rescueRoad.route, rescuePoint, loc) : undefined
   const detour = kind === 'traffic_jam' ? lineOf(altChosen, loc, next) : undefined
@@ -88,7 +88,7 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
   const oldEta = effectiveArrivalOf({ route: b.route, trips: b.trips?.filter(trip => trip.tripId === i.tripId) })
 
   const lines: MapLine[] = [
-    { path: path.map(lngLat), color: '#94a3b8', dashed: true, weight: 3, faded: true, label: 'Lộ trình đã lập' },
+    { path: b.route?.path?.length ? b.route.path : path.map(lngLat), color: '#94a3b8', dashed: true, weight: 3, faded: true, label: 'Lộ trình đã lập' },
     ...(rescueLine ? [{ path: rescueLine.path, color: '#059669', flow: true, label: `Cứu hộ tới chỗ xe: ${rescueLine.km} km` }] : []),
     ...(toStationLine ? [{ path: toStationLine.path, color: '#ea580c', flow: true, weight: 6, label: `Đưa ngựa tới ${stationName}: ${toStationLine.km} km` }] : []),
     ...(kind === 'traffic_jam'
@@ -193,7 +193,7 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
             {waypoints.length > 0 && <div><p>Đã chọn {waypoints.length} điểm đi qua.</p><button type="button" className="btn btn-ghost btn-sm" onClick={() => setWaypoints(points => points.slice(0, -1))}>Bỏ điểm cuối</button><button type="button" className="btn btn-ghost btn-sm" onClick={() => setWaypoints([])}>Xóa các điểm</button></div>}
             <button type="button" className="btn btn-ghost btn-sm" disabled={loading} onClick={() => { clearRoadCache(); setRouteAttempt(attempt => attempt + 1) }}>Tìm lại đường bộ</button>
             {rerouteUnchanged && <p role="alert" className="im-note">Đường đang chọn trùng phương án bị trả về. Hãy chọn đường khác hoặc thêm điểm đi qua.</p>}
-            {!loading && (!altChosen || altChosen.source === 'offline') && <p role="alert" className="im-note">Chưa kết nối được dịch vụ đường bộ hoặc không tìm thấy tuyến. Đường thẳng chỉ để tham khảo; chưa thể trình duyệt.</p>}
+            {!loading && !altChosen && <p role="alert" className="im-note">Chưa kết nối được dịch vụ đường bộ hoặc không tìm thấy tuyến. Đường thẳng chỉ để tham khảo; chưa thể trình duyệt.</p>}
             <h4>Lộ trình thay thế tới {ahead[0] ? 'điểm kế tiếp' : 'điểm trả'}</h4>
             <div className="im-list" style={{ marginTop: 6 }}>
               {altList.length ? altList.map((r, idx) => (

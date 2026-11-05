@@ -5,7 +5,6 @@ import 'leaflet/dist/leaflet.css'
 import { useEffect, useMemo, useRef } from 'react'
 import { findGate, findTransitStation, type GeoPoint } from '../config/network'
 import { bookingPath, findLocation, projectOnPath, spotLabel, vehiclePoint } from '../lib/booking'
-import { useRoadRoute } from '../services/useRoadRoute'
 import type { Booking, VehicleTrip } from '../types/booking'
 import { formatDateTime } from '../lib/format'
 import { addBaseLayer, BASE_MAP_OPTIONS } from './baseMap'
@@ -23,8 +22,8 @@ export function TripTrackMap({ b, trips = [], height, plain }: Props) {
   const layer = useRef<L.LayerGroup | null>(null)
   const fitted = useRef('')
   const pts = useMemo(() => bookingPath(b), [b])
-  const road = useRoadRoute(pts.length > 1 ? pts : undefined)
-  const line = (road.route?.path ?? pts.map(ll)).filter(validLatLng)
+  // Đường xe tải đã lưu lúc điều phối chốt; đơn chốt trước khi có lưu đường thì nối thẳng các mốc
+  const line = (b.route?.path?.length ? b.route.path : pts.map(ll)).filter(validLatLng)
   const cars = plain ? [] : trips.flatMap(t => {
     const at = vehiclePoint(b, t)
     return at && validPoint(at) ? [{ t, at }] : []

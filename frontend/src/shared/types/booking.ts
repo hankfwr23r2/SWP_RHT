@@ -159,6 +159,7 @@ export interface RestStop { afterLeg: number; name: string; minutes: number; lat
 export interface RoutePlan {
   legs: RouteLeg[]
   rests: RestStop[]
+  path?: [lat: number, lng: number][] // đường xe tải backend tính lúc chốt; bản đồ theo dõi vẽ đúng đường này
   borderEta?: number // quốc tế: giờ tới cửa khẩu
   completedAt?: number
   by?: string

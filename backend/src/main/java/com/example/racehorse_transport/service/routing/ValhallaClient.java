@@ -43,10 +43,22 @@ public class ValhallaClient {
         this.json = json;
     }
 
+    // Điểm đi qua (through) chỉ ép đường đi qua đó, không tách chặng và không dừng
+    public record Waypoint(GeoPoint point, boolean through) {
+        public static Waypoint stop(GeoPoint point) {
+            return new Waypoint(point, false);
+        }
+    }
+
     public RoadRoute truckRoute(List<GeoPoint> points, double weightTons, int topSpeedKmh, LocalDateTime departLocal) {
+        return truckRouteVia(points.stream().map(Waypoint::stop).toList(), weightTons, topSpeedKmh, departLocal);
+    }
+
+    public RoadRoute truckRouteVia(List<Waypoint> waypoints, double weightTons, int topSpeedKmh, LocalDateTime departLocal) {
         ObjectNode body = json.createObjectNode();
         ArrayNode locations = body.putArray("locations");
-        points.forEach(p -> locations.addObject().put("lat", p.lat()).put("lon", p.lng()).put("type", "break"));
+        waypoints.forEach(w -> locations.addObject().put("lat", w.point().lat()).put("lon", w.point().lng())
+                .put("type", w.through() ? "through" : "break"));
         body.put("costing", "truck");
         body.putObject("costing_options").putObject("truck").put("weight", weightTons).put("top_speed", topSpeedKmh);
         body.put("units", "kilometers");
@@ -86,8 +98,9 @@ public class ValhallaClient {
                     Math.round(leg.path("summary").path("time").asDouble()),
                     Polyline.decode(leg.path("shape").asText(), 6)));
         }
-        if (legs.size() != points.size() - 1) {
-            log.warn("Valhalla trả {} chặng cho {} điểm", legs.size(), points.size());
+        long stops = waypoints.stream().filter(w -> !w.through()).count();
+        if (legs.size() != stops - 1) {
+            log.warn("Valhalla trả {} chặng cho {} điểm dừng", legs.size(), stops);
             throw new RoutingUnavailableException();
         }
         return new RoadRoute(trip.path("summary").path("length").asDouble(),

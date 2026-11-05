@@ -71,6 +71,30 @@ class JourneyPlannerStationTest {
         assertThat(journey.events().get(1).startAt()).isEqualTo(at("2026-11-02T09:00"));
     }
 
+    // Chặng 5 giờ, chỉ có trạm ở giờ thứ 1,5: nghỉ ở trạm đó thì phần còn lại (3,5 giờ) không cần dừng nữa,
+    // nên xe nghỉ ở trạm thật thay vì dừng dọc đường ở mốc 4 giờ. Số lần nghỉ không tăng.
+    @Test
+    void earlyStationIsUsedWhenItRemovesTheRoadsideRest() {
+        Journey journey = JourneyPlanner.plan(at("2026-11-02T05:00"), List.of(PICKUP, DROPOFF),
+                List.of(new Leg(300, hours(5))),
+                List.of(List.of(station("Trạm sớm", 1.5, 60))), RULES, VN);
+
+        assertThat(types(journey)).containsExactly(DRIVE, REST, DRIVE);
+        assertThat(journey.events().get(1).place()).isEqualTo("Trạm sớm");
+        assertThat(journey.events().get(1).startAt()).isEqualTo(at("2026-11-02T06:30"));
+        assertThat(journey.arrivalAt()).isEqualTo(at("2026-11-02T10:30"));
+    }
+
+    // Trạm quá gần điểm xuất phát (dưới 1 giờ) thì nghỉ ở đó chẳng giúp gì cho ngựa: vẫn không dùng.
+    @Test
+    void stationWithinTheFirstHourIsStillIgnored() {
+        Journey journey = JourneyPlanner.plan(at("2026-11-02T05:00"), List.of(PICKUP, DROPOFF),
+                List.of(new Leg(300, hours(5))),
+                List.of(List.of(station("Trạm sát kho", 0.5, 60))), RULES, VN);
+
+        assertThat(types(journey)).containsExactly(DRIVE, ROADSIDE_REST, DRIVE);
+    }
+
     @Test
     void stationExactlyAtFourHoursIsUsed() {
         Journey journey = JourneyPlanner.plan(at("2026-11-02T05:00"), List.of(PICKUP, DROPOFF),

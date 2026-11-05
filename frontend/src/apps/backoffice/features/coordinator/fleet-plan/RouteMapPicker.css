@@ -7,9 +7,10 @@
 .rm-st { display: block; width: 16px; height: 16px; margin: 9px; border-radius: 50%; background: white; border: 3px solid #1d4ed8; box-shadow: 0 1px 4px rgba(15, 23, 42, 0.4); transition: transform 0.15s; cursor: pointer; box-sizing: border-box; }
 .rm-icon:hover .rm-st { transform: scale(1.35); }
 .rm-st.rm-on { display: grid; place-items: center; width: 30px; height: 30px; margin: 2px; border: 3px solid white; background: #ea580c; color: white; font-weight: 800; font-size: 0.85rem; box-shadow: 0 3px 10px rgba(234, 88, 12, 0.55); animation: rmPop 0.3s cubic-bezier(0.3, 1.6, 0.5, 1); }
-.rm-st.rm-active { animation: rmPulse 1.4s ease-out infinite; }
+.rm-st.rm-active { animation: rmPulse 1.4s ease-out 2; }
 @keyframes rmPop { from { transform: scale(0.4); } }
 @keyframes rmPulse { 0% { box-shadow: 0 0 0 0 rgba(234, 88, 12, 0.6); } 100% { box-shadow: 0 0 0 14px rgba(234, 88, 12, 0); } }
+/* Đường chạy chỉ dùng ở bản đồ sự cố (đường cứu hộ ngắn); bản đồ lập kế hoạch vẽ nét tĩnh cho mượt */
 .rm-route { stroke-dasharray: 12 10; animation: rmFlow 1s linear infinite; }
 @keyframes rmFlow { to { stroke-dashoffset: -22; } }
 

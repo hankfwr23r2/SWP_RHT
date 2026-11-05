@@ -137,6 +137,25 @@ describe('báo giá', () => {
     expect(routeKm(origin, dest, 'Tịnh Biên – Phnom Den')).not.toBe(routeKm(origin, dest, 'Mộc Bài – Bavet'))
   })
   const labels = (vs: { capacity: number }[], h = base.horses) => quoteLines({ ...base, horses: h }, vs).lines.map(l => l.label)
+  // Điều phối đã chốt lộ trình xe tải (256,2 km, xuất phát 05:00 ngày 02/11, tới nơi 20:30 ngày 03/11 sau nghỉ đêm):
+  // báo giá tính theo đúng quãng đường và số ngày của lộ trình đó, không theo đường chim bay.
+  it('đơn đã chốt lộ trình thì báo giá theo km và số ngày của lộ trình xe tải', () => {
+    const at = (d: number, h: number, m = 0) => new Date(2026, 10, d, h, m).getTime()
+    const route = {
+      legs: [
+        { no: 1, from: 'Kho Đồng Nai', to: 'Cửa khẩu Mộc Bài', departAt: at(2, 5), arriveAt: at(2, 8), km: 120.4, hours: 3 },
+        { no: 2, from: 'Cửa khẩu Mộc Bài', to: 'Kho Phnom Penh', departAt: at(3, 7), arriveAt: at(3, 20, 30), km: 135.8, hours: 3.5 },
+      ],
+      rests: [],
+    }
+    const { km, days, lines } = quoteLines({ ...base, route }, [{ capacity: 2 }])
+    expect(km).toBe(256)
+    expect(days).toBe(2)
+    expect(lines.find(l => l.label.startsWith('Cước vận chuyển'))?.detail).toContain('256 km')
+  })
+  it('đơn chưa chốt lộ trình thì vẫn ước tính theo đường chim bay', () => {
+    expect(quoteLines(base, [{ capacity: 2 }]).km).toBe(routeKm(origin, dest, 'Mộc Bài – Bavet'))
+  })
   it('có phí khoang đơn nhưng không tính lại bảo hiểm cũ khi lập báo giá', () => {
     expect(labels([{ capacity: 2 }])).toContain('Khoang đơn mở rộng')
     expect(labels([{ capacity: 2 }])).not.toContain('Bảo hiểm chuyến đi')
