@@ -141,7 +141,6 @@ export function RouteMapPicker({ origin, dest, gate, international, value, estim
         try {
           map.current.stop()
           map.current.closePopup()
-          map.current.closeTooltip()
           if (layer.current) {
             layer.current.eachLayer(l => {
               try { (l as L.Marker).unbindTooltip?.() } catch {}
