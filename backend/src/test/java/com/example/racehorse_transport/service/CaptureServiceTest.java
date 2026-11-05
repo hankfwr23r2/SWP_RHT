@@ -51,6 +51,29 @@ class CaptureServiceTest {
         assertThat(result.recordedAt()).isGreaterThan(result.capturedAt());
         assertThat(result.capturedBy()).isEqualTo("driver");
     }
+    // Khách trả quyết toán xong thì đơn hoàn tất, nhưng kíp xe có thể vẫn đang chạy về trụ sở:
+    // vẫn phải chụp được ảnh tại trụ sở để bấm "Đã về trụ sở", còn các chứng từ khác thì không.
+    @Test void completedBookingStillAcceptsTheHqPhotoWhileTheCrewIsDrivingBack() throws Exception {
+        when(bookings.findById(1)).thenReturn(Optional.of(Booking.builder().id(1).status("completed").detailsJson("""
+            {"trips":[{"tripId":"T1","driverId":"DR-01","escortId":"ES-01","homeReturn":{"earliestAt":1,"eta":2}}]}
+            """).build()));
+        when(storage.uploadFile(any(), eq("captures"))).thenReturn(url);
+        when(assets.save(any())).thenAnswer(call -> { CaptureAsset a = call.getArgument(0); a.setId(1L); return a; });
+
+        var result = service.upload(image(), 1, "T1", "CONFIRM_HOME", "", System.currentTimeMillis(), "driver", "DRIVER");
+
+        assertThat(result.capturedBy()).isEqualTo("driver");
+        assertThatThrownBy(() -> service.upload(image(), 1, "T1", "ARRIVE_CHECKPOINT", "rest-1", System.currentTimeMillis(), "driver", "DRIVER"))
+            .hasMessageContaining("Đơn đã đóng");
+    }
+    @Test void completedBookingRejectsTheHqPhotoOnceTheCrewIsBack() {
+        when(bookings.findById(1)).thenReturn(Optional.of(Booking.builder().id(1).status("completed").detailsJson("""
+            {"trips":[{"tripId":"T1","driverId":"DR-01","escortId":"ES-01","homeReturn":{"earliestAt":1,"eta":2,"backAt":3}}]}
+            """).build()));
+
+        assertThatThrownBy(() -> service.upload(image(), 1, "T1", "CONFIRM_HOME", "", System.currentTimeMillis(), "driver", "DRIVER"))
+            .hasMessageContaining("Đơn đã đóng");
+    }
     @Test void rejectsWrongTripRoleAndFakeImageBeforeStorage() throws Exception {
         assertThatThrownBy(() -> service.upload(image(), 1, "T2", "ARRIVE_PICKUP", "pickup", System.currentTimeMillis(), "driver", "DRIVER")).isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> service.upload(image(), 1, "T1", "SUBMIT_WELFARE", "rest-1", System.currentTimeMillis(), "driver", "DRIVER")).isInstanceOf(AccessDeniedException.class);

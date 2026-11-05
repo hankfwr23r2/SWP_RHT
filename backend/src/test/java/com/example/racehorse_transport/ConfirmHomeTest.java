@@ -154,6 +154,21 @@ class ConfirmHomeTest {
         assertThat(homeReturn.path("photo").asText()).isEqualTo(PHOTO);
     }
 
+    // Khách đã trả quyết toán (đơn hoàn tất) trước khi kíp xe về tới trụ sở: vẫn xác nhận về được
+    @Test
+    void recordedEvenAfterTheCustomerHasAlreadyPaidAndTheBookingIsCompleted() throws Exception {
+        Booking booking = bookingWithTrip("completed", homeReturn(epoch(-1)));
+        String photo = "https://example.com/tru-so-" + booking.getId() + ".jpg";
+
+        captures.save(com.example.racehorse_transport.entity.CaptureAsset.builder().url(photo).bookingId(booking.getId()).tripId("TRP-1")
+                .purpose("CONFIRM_HOME").target("").capturedBy(driverUsername).capturedAt(Instant.now()).recordedAt(Instant.now()).build());
+        HttpResponse<String> response = confirmHome(booking, photo);
+
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
+        assertThat(homeReturnOf(booking).path("backAt").asLong()).isPositive();
+        assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus()).isEqualTo("completed");
+    }
+
     private static long epoch(long hoursFromNow) {
         return Instant.now().plus(hoursFromNow, ChronoUnit.HOURS).toEpochMilli();
     }
