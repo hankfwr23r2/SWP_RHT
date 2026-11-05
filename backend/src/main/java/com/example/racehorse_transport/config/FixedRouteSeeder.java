@@ -28,17 +28,17 @@ public class FixedRouteSeeder implements CommandLineRunner {
     private static final List<RouteSeed> ROUTES = List.of(
             new RouteSeed("starter-vn-central", 
                     "Mẫu nội địa: TP.HCM – Đà Nẵng",
-                    "Tuyến tham khảo qua các điểm dừng ven biển; cần kiểm tra bản đồ trước khi vận hành.",
+                    "Tuyến tham khảo qua các điểm dừng ven biển. Cần kiểm tra bản đồ trước khi vận hành.",
                     List.of("hcm", "REST-LONG-THANH", "REST-PHAN-THIET", "REST-PHAN-RANG",
                             "REST-NHA-TRANG", "REST-TUY-HOA", "REST-QUY-NHON", "REST-QUANG-NGAI", "dn")),
             new RouteSeed("starter-vn-cambodia-mocbai",
                     "Mẫu quốc tế: TP.HCM – Phnom Penh qua Mộc Bài",
-                    "Tuyến tham khảo qua cửa khẩu Mộc Bài; cần kiểm tra bản đồ và điều kiện thông quan trước khi vận hành.",
+                    "Tuyến tham khảo qua cửa khẩu Mộc Bài. Cần kiểm tra bản đồ và điều kiện thông quan trước khi vận hành.",
                     List.of("hcm", "REST-TRANG-BANG", "GATE-MOC-BAI", "REST-BAVET",
                             "REST-SVAY-RIENG", "REST-NEAK-LOEUNG", "pnh")),
             new RouteSeed("starter-vn-laos-laobao",
                     "Mẫu quốc tế: TP.HCM – Viêng Chăn qua Lao Bảo",
-                    "Tuyến tham khảo qua cửa khẩu Lao Bảo; cần kiểm tra bản đồ và điều kiện thông quan trước khi vận hành.",
+                    "Tuyến tham khảo qua cửa khẩu Lao Bảo. Cần kiểm tra bản đồ và điều kiện thông quan trước khi vận hành.",
                     List.of("hcm", "REST-QUANG-NGAI", "REST-DA-NANG", "REST-HUE", "REST-DONG-HA",
                             "GATE-LAO-BAO", "REST-SAVANNAKHET", "REST-THAKHEK", "REST-PAKSAN", "vte"))
     );

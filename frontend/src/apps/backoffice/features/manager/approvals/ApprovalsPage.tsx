@@ -262,7 +262,7 @@ export default function ApprovalsPage() {
   ]
   return (
     <>
-      <ListPage title={t('staffMenus./manager/approvals', 'Duyệt giá')} subtitle={t('approvalsPage.subtitle', 'Duyệt để gửi khách, hạn đặt cọc tối đa {{hours}} giờ, giới hạn theo báo giá bảo hiểm; cọc {{depositRate}}%.', { hours: QUOTE_VALID_HOURS, depositRate: (DEPOSIT_RATE * 100).toLocaleString(i18n.language === 'en' ? 'en-US' : 'vi-VN') })} tabs={[['todo', t('approvalsPage.tabTodo', 'Chờ duyệt báo giá'), todo.length], ['sent', t('approvalsPage.tabSent', 'Đã gửi báo giá'), sent.length]]} tab={tab} onTab={setTab} hot={['todo']}
+      <ListPage title={t('staffMenus./manager/approvals', 'Duyệt giá')} subtitle={t('approvalsPage.subtitle', 'Duyệt để gửi khách, hạn đặt cọc tối đa {{hours}} giờ, giới hạn theo báo giá bảo hiểm. Cọc {{depositRate}}%.', { hours: QUOTE_VALID_HOURS, depositRate: (DEPOSIT_RATE * 100).toLocaleString(i18n.language === 'en' ? 'en-US' : 'vi-VN') })} tabs={[['todo', t('approvalsPage.tabTodo', 'Chờ duyệt báo giá'), todo.length], ['sent', t('approvalsPage.tabSent', 'Đã gửi báo giá'), sent.length]]} tab={tab} onTab={setTab} hot={['todo']}
         rows={tab === 'todo' ? todo : sent} rowKey={b => b.id} columns={columns} haystack={b => [b.id, b.customer, b.origin.name, b.dest.name]} dateOf={b => b.departAt} loaded={!!all}
         emptyText={tab === 'todo' ? t('approvalsPage.emptyTodo', 'Không có đơn nào chờ duyệt báo giá.') : t('approvalsPage.emptySent', 'Chưa gửi báo giá nào.')}
         summary={r => (tab === 'sent' ? <>Tổng báo giá: <b>{formatVND(r.reduce((n, b) => n + (b.quote?.total ?? 0), 0))}</b></> : null)} />

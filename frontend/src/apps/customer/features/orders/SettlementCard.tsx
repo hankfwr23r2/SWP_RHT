@@ -18,7 +18,7 @@ export function IncidentsCard({ b }: { b: CustomerBookingView }) {
     ? (i18n.language === 'en' ? `Resolved at ${formatDateTime(i.resolvedAt!)}, transporter resumes route` : `Đã xử lý xong lúc ${formatDateTime(i.resolvedAt!)}, xe tiếp tục hành trình`)
     : i.status === 'active'
       ? (i18n.language === 'en' ? `Active emergency plan in progress${i.newEta ? `, updated ETA ${formatDateTime(i.newEta)}` : ''}` : `Đang xử lý theo phương án đã duyệt${i.newEta ? `, thời gian dự kiến mới ${formatDateTime(i.newEta)}` : ''}`)
-      : (i18n.language === 'en' ? 'Management formulating plan; manager will call you' : 'Nhà xe đang lập và duyệt phương án, Quản lý sẽ gọi điện cho bạn')
+      : (i18n.language === 'en' ? 'Management is formulating a plan. The manager will call you.' : 'Nhà xe đang lập và duyệt phương án, Quản lý sẽ gọi điện cho bạn')
   return (
     <div className="card">
       <div className="card-header"><h3><i className="fa-solid fa-triangle-exclamation" /> {t('settlement.incidentsTitle')}</h3></div>
@@ -60,7 +60,7 @@ export function SettlementCard({ b, owner, onDone }: { b: CustomerBookingView; o
       {hasExpenses && (
         <>
           <div className="card-header"><h3><i className="fa-solid fa-file-invoice-dollar" /> {t('settlement.invoiceTitle')}</h3>{b.status === 'payment_overdue' && <span className="badge badge-danger">{t('settlement.overdue')}</span>}{b.status === 'completed' && <span className="badge badge-success">{t('settlement.completed')}</span>}</div>
-          <p className="form-hint">{i18n.language === 'en' ? <>Transport freight was fixed upon quote acceptance; fuel and toll charges are fully inclusive. Below are horse-specific incidental expenses per the <PolicyLink doc="incident_cost">Incident Cost Policy</PolicyLink>.</> : <>Giá chuyến đã cố định từ lúc báo giá, nhiên liệu và cầu đường không tính thêm. Dưới đây là các khoản phát sinh do ngựa mà bạn chịu theo <PolicyLink doc="incident_cost">chính sách chi phí sự cố</PolicyLink>.</>}</p>
+          <p className="form-hint">{i18n.language === 'en' ? <>Transport freight was fixed upon quote acceptance. Fuel and toll charges are fully inclusive. Below are horse-specific incidental expenses per the <PolicyLink doc="incident_cost">Incident Cost Policy</PolicyLink>.</> : <>Giá chuyến đã cố định từ lúc báo giá, nhiên liệu và cầu đường không tính thêm. Dưới đây là các khoản phát sinh do ngựa mà bạn chịu theo <PolicyLink doc="incident_cost">chính sách chi phí sự cố</PolicyLink>.</>}</p>
           <div className={s.bank}>{st.items.map((it, i) => <div key={i}><span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>{it.photo && <ImageThumb name={it.photo} size={32} />}{it.label}</span><b>{formatVND(it.amount)}</b></div>)}<div><span>{t('settlement.totalPayable')}</span><b>{formatVND(st.total)}</b></div></div>
         </>
       )}

@@ -166,7 +166,7 @@ apiClient.interceptors.response.use(
           .map(([, val]) => (typeof val === 'string' ? val : JSON.stringify(val)))
           .filter(Boolean)
         if (details.length > 0) {
-          serverMessage = `${serverMessage}: ${details.join('; ')}`
+          serverMessage = `${serverMessage}: ${details.join(', ')}`
         }
       }
       // Kèm mã HTTP để form phân biệt lỗi (vd. 409: email đã có tài khoản)
