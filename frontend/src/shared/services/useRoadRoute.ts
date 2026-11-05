@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react'
 import type { GeoPoint } from '../config/network'
 import { roadAlternatives, roadRoute, roadRoutesWithAlternatives, type RoadRoute } from './routing'
 
-export function useRoadRoute(points: GeoPoint[] | undefined, departAt?: number) {
-  const key = points && points.length > 1 ? `${departAt === undefined ? '' : Math.floor(departAt / 3_600_000)}|${points.map(p => `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`).join(';')}` : ''
+export function useRoadRoute(points: GeoPoint[] | undefined, departAt?: number, retry = 0) {
+  const key = points && points.length > 1 ? `${retry}|${departAt === undefined ? '' : Math.floor(departAt / 3_600_000)}|${points.map(p => `${p.lat.toFixed(4)},${p.lng.toFixed(4)}`).join(';')}` : ''
   const [state, setState] = useState<{ key: string; route: RoadRoute | null }>({ key: '', route: null })
   useEffect(() => {
     if (!key || !points) return
@@ -48,8 +48,8 @@ export function useRoadRouteWithAlternatives(points: GeoPoint[] | undefined, dep
 }
 
 // Các đường thay thế giữa hai điểm (sự cố tắc nghẽn)
-export function useRoadAlternatives(from: GeoPoint | undefined, to: GeoPoint | undefined, departAt?: number) {
-  const key = from && to ? `${departAt === undefined ? '' : Math.floor(departAt / 3_600_000)}|${from.lat.toFixed(4)},${from.lng.toFixed(4)}|${to.lat.toFixed(4)},${to.lng.toFixed(4)}` : ''
+export function useRoadAlternatives(from: GeoPoint | undefined, to: GeoPoint | undefined, departAt?: number, retry = 0) {
+  const key = from && to ? `${retry}|${departAt === undefined ? '' : Math.floor(departAt / 3_600_000)}|${from.lat.toFixed(4)},${from.lng.toFixed(4)}|${to.lat.toFixed(4)},${to.lng.toFixed(4)}` : ''
   const [state, setState] = useState<{ key: string; routes: RoadRoute[] }>({ key: '', routes: [] })
   useEffect(() => {
     if (!key || !from || !to) return
@@ -57,5 +57,5 @@ export function useRoadAlternatives(from: GeoPoint | undefined, to: GeoPoint | u
     roadAlternatives(from, to, departAt, { signal: ctl.signal }).then(routes => { if (!ctl.signal.aborted) setState({ key, routes }) })
     return () => ctl.abort()
   }, [key]) // eslint-disable-line react-hooks/exhaustive-deps
-  return { routes: state.routes, loading: !!key && state.key !== key }
+  return { routes: state.key === key ? state.routes : [], loading: !!key && state.key !== key }
 }

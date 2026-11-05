@@ -15,7 +15,7 @@ export function IncidentsCard({ b }: { b: CustomerBookingView }) {
   const { t, i18n } = useTranslation()
   if (!b.incidents?.length) return null
   const step = (i: NonNullable<CustomerBookingView['incidents']>[number]) => i.status === 'resolved'
-    ? (i18n.language === 'en' ? `Resolved at ${formatDateTime(i.resolvedAt!)}, transporter resumes route` : `Đã xử lý xong lúc ${formatDateTime(i.resolvedAt!)}, xe tiếp tục hành trình`)
+    ? (i18n.language === 'en' ? `Resolved at ${formatDateTime(i.resolvedAt!)}, transporter resumes route${i.newEta ? `, updated ETA ${formatDateTime(i.newEta)}` : ''}` : `Đã xử lý xong lúc ${formatDateTime(i.resolvedAt!)}, xe tiếp tục hành trình${i.newEta ? `, dự kiến đến ${formatDateTime(i.newEta)}` : ''}`)
     : i.status === 'active'
       ? (i18n.language === 'en' ? `Active emergency plan in progress${i.newEta ? `, updated ETA ${formatDateTime(i.newEta)}` : ''}` : `Đang xử lý theo phương án đã duyệt${i.newEta ? `, thời gian dự kiến mới ${formatDateTime(i.newEta)}` : ''}`)
       : (i18n.language === 'en' ? 'Management is formulating a plan. The manager will call you.' : 'Nhà xe đang lập và duyệt phương án, Quản lý sẽ gọi điện cho bạn')

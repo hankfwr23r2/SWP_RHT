@@ -212,6 +212,7 @@ export interface VehicleTrip {
   driverPack?: DriverPack
   departedAt?: number // Driver bấm bắt đầu đến điểm đón
   run?: TripRun
+  incidentRoute?: IncidentPlan & { incidentId: number; approvedAt: number; approvedBy: string }
   homeReturn?: HomeReturn
 }
 export interface Waybill { no: string; issuedAt: number }
@@ -239,6 +240,7 @@ export interface IncidentPlan {
   rescue?: { name: string; phone: string; lat: number; lng: number } // điểm cứu hộ được gọi (xe gặp sự cố)
   rescueLine?: PlanLine // đường cứu hộ chạy tới chỗ xe
   toStation?: PlanLine // đường đưa ngựa từ chỗ xe tới trạm nghỉ
+  waypoints?: { lat: number; lng: number }[]
   detour?: PlanLine // lộ trình mới đi tiếp (giao thông tắc nghẽn)
 }
 export interface Incident {

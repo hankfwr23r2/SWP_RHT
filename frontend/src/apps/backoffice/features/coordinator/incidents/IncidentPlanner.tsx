@@ -5,11 +5,11 @@ import { useAuth } from '@shared/auth/AuthContext'
 import { INCIDENT_ACTION, INCIDENT_KIND, MIN_REST_MINUTES } from '@shared/config/booking-rules'
 import { AVG_SPEED_KMH } from '@shared/config/public-pricing'
 import { findGate, RESCUE_POINTS, TRANSIT_STATIONS, type GeoPoint } from '@shared/config/network'
-import { arrivalOf, bookingPath, findLocation, incidentActionsFor, nearestTo, pointsAhead } from '@shared/lib/booking'
+import { effectiveArrivalOf, bookingPath, findLocation, incidentActionsFor, nearestTo, pointsAhead } from '@shared/lib/booking'
 import { formatDateTime } from '@shared/lib/format'
 import { haversineKm } from '@shared/lib/pricing'
 import { bookingsApi } from '@shared/services/bookings'
-import { thinPath, type RoadRoute } from '@shared/services/routing'
+import { clearRoadCache, thinPath, type RoadRoute } from '@shared/services/routing'
 import { useRoadAlternatives, useRoadRoute } from '@shared/services/useRoadRoute'
 import type { Booking, Incident, PlanLine } from '@shared/types/booking'
 import { Modal } from '@shared/ui/Modal'
@@ -48,6 +48,8 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
   const [rescueName, setRescueName] = useState(i.plan?.rescue?.name ?? rescues[0]?.name ?? '')
   const [rest, setRest] = useState(i.plan?.restMinutes ?? 60)
   const [altIdx, setAltIdx] = useState(0)
+  const [routeAttempt, setRouteAttempt] = useState(0)
+  const [waypoints, setWaypoints] = useState<GeoPoint[]>(i.plan?.waypoints ?? [])
   const [note, setNote] = useState(i.plan?.note ?? '')
   const [allStations, setAllStations] = useState(false) // xem mọi trạm, không chỉ các trạm gần xe nhất
   const [etaText, setEtaText] = useState<string | null>(null) // null = dùng giờ hệ thống gợi ý
@@ -62,13 +64,17 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
   // Đường bộ thật: xe → trạm, cứu hộ → xe, các đường thay thế tới điểm kế tiếp, và đường đi tiếp sau đó
   const toStation = useRoadRoute(horses && stationPt ? [loc, stationPoint] : undefined, now)
   const rescueRoad = useRoadRoute(kind === 'vehicle_breakdown' && rescuePt ? [rescuePoint, loc] : undefined, now)
-  const alts = useRoadAlternatives(kind === 'traffic_jam' ? loc : undefined, kind === 'traffic_jam' ? next : undefined, now)
+  const alts = useRoadAlternatives(kind === 'traffic_jam' ? loc : undefined, kind === 'traffic_jam' ? next : undefined, now, routeAttempt)
   const afterPts = horses ? [stationPoint, ...ahead] : ahead
   const afterRoad = useRoadRoute(afterPts.length > 1 ? afterPts : undefined, now)
-  const loading = toStation.loading || rescueRoad.loading || alts.loading || afterRoad.loading
+  const customRoad = useRoadRoute(kind === 'traffic_jam' && waypoints.length ? [loc, ...waypoints, next] : undefined, now, routeAttempt)
+  const loading = customRoad.loading || toStation.loading || rescueRoad.loading || alts.loading || afterRoad.loading
 
-  const altList: RoadRoute[] = alts.routes
-  const altChosen = altList[Math.min(altIdx, Math.max(0, altList.length - 1))] as RoadRoute | undefined
+  const altList: RoadRoute[] = alts.routes.filter(route => route.source !== 'offline')
+  const suggestedAlt = altList[Math.min(altIdx, Math.max(0, altList.length - 1))] as RoadRoute | undefined
+  const altChosen = waypoints.length ? customRoad.route ?? undefined : suggestedAlt
+  const rerouteUnchanged = !!i.rejection && !!i.plan?.detour && !!altChosen && JSON.stringify(thinPath(altChosen.path)) === JSON.stringify(i.plan.detour.path)
+  const rerouteReady = kind !== 'traffic_jam' || (!loading && !!altChosen && altChosen.source !== 'offline' && !rerouteUnchanged)
   const toStationLine = horses && stationPt ? lineOf(toStation.route, loc, stationPoint) : undefined
   const rescueLine = kind === 'vehicle_breakdown' && rescuePt ? lineOf(rescueRoad.route, rescuePoint, loc) : undefined
   const detour = kind === 'traffic_jam' ? lineOf(altChosen, loc, next) : undefined
@@ -79,14 +85,14 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
   const suggested = Math.ceil((now + hours * 3_600_000) / 300_000) * 300_000
   const etaValue = etaText ?? toLocal(suggested)
   const newEta = new Date(etaValue).getTime()
-  const oldEta = arrivalOf(b.route)
+  const oldEta = effectiveArrivalOf({ route: b.route, trips: b.trips?.filter(trip => trip.tripId === i.tripId) })
 
   const lines: MapLine[] = [
     { path: path.map(lngLat), color: '#94a3b8', dashed: true, weight: 3, faded: true, label: 'Lộ trình đã lập' },
     ...(rescueLine ? [{ path: rescueLine.path, color: '#059669', flow: true, label: `Cứu hộ tới chỗ xe: ${rescueLine.km} km` }] : []),
     ...(toStationLine ? [{ path: toStationLine.path, color: '#ea580c', flow: true, weight: 6, label: `Đưa ngựa tới ${stationName}: ${toStationLine.km} km` }] : []),
     ...(kind === 'traffic_jam'
-      ? (altList.length ? altList.map((r, idx): MapLine => ({ path: r.path, color: idx === altIdx ? '#2563eb' : '#64748b', weight: idx === altIdx ? 6 : 4, flow: idx === altIdx, faded: idx !== altIdx, label: `Đường ${idx + 1}: ${Math.round(r.km)} km · ${hm(r.hours)}`, onClick: () => setAltIdx(idx) }))
+      ? (waypoints.length && detour ? [{ path: detour.path, color: '#2563eb', weight: 6, flow: true, label: 'Đường tránh qua các điểm đã chọn' }] : altList.length ? altList.map((r, idx): MapLine => ({ path: r.path, color: idx === altIdx ? '#2563eb' : '#64748b', weight: idx === altIdx ? 6 : 4, flow: idx === altIdx, faded: idx !== altIdx, label: `Đường ${idx + 1}: ${Math.round(r.km)} km · ${hm(r.hours)}`, onClick: () => { setWaypoints([]); setAltIdx(idx) } }))
         : detour ? [{ path: detour.path, color: '#2563eb', weight: 5, dashed: true, label: 'Đường nối thẳng (chưa lấy được đường thay thế)' }] : [])
       : []),
     ...(afterRoad.route ? [{ path: afterRoad.route.path, color: '#2563eb', dashed: true, weight: 3, faded: true, label: 'Đường đi tiếp tới điểm trả' }] : []),
@@ -97,13 +103,21 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
       toast('Danh mục địa điểm chưa có trạm nghỉ hoặc điểm cứu hộ phù hợp.', 'error')
       return
     }
+    if (!Number.isFinite(newEta) || newEta <= now) {
+      toast('Giờ đến mới phải sau thời điểm lập phương án.', 'error')
+      return
+    }
+    if (!rerouteReady) {
+      toast('Cần tính được đường bộ trước khi trình phương án đổi tuyến.', 'error')
+      return
+    }
     setBusy(true)
     try {
       await bookingsApi.planIncident(b.id, i.id, session!.name, {
         action, note, newEta,
         ...(horses ? { station: stationName, restMinutes: rest, toStation: toStationLine } : {}),
         ...(kind === 'vehicle_breakdown' && rescuePt ? { rescue: { name: rescuePt.name, phone: rescuePt.phone, lat: rescuePt.lat, lng: rescuePt.lng }, rescueLine } : {}),
-        ...(kind === 'traffic_jam' ? { detour } : {}),
+        ...(kind === 'traffic_jam' ? { detour, waypoints } : {}),
       })
       toast(`Đã trình phương án ${i.id} lên Quản lý`)
       onDone()
@@ -139,12 +153,14 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
 
   return (
     <Modal wide onClose={onClose} title={`Lập phương án ${i.id}`} subtitle={`${b.id} · ${INCIDENT_KIND[kind].label} · xe ${i.tripId}`}
-      footer={<><button className="btn btn-ghost" onClick={onClose}>Đóng</button><button className="btn btn-primary" disabled={busy || Number.isNaN(newEta)} onClick={send}><i className="fa-solid fa-paper-plane" /> Trình Quản lý duyệt</button></>}>
+      footer={<><button className="btn btn-ghost" onClick={onClose}>Đóng</button><button className="btn btn-primary" disabled={busy || !Number.isFinite(newEta) || newEta <= now || !rerouteReady} onClick={send}><i className="fa-solid fa-paper-plane" /> Trình Quản lý duyệt</button></>}>
       {i.rejection && <div className="alert alert-danger" style={{ marginBottom: 10 }}><i className="fa-solid fa-rotate-left" /><div><b>Quản lý trả về:</b> {i.rejection.reason}</div></div>}
       <IncidentMap
         height="min(64vh, 600px)" location={loc} origin={{ ...origin, name: b.origin.name }} dest={{ ...dest, name: b.dest.name }} gate={gate ? { ...gate } : undefined}
         stations={horses ? stations : []} nearest={NEAR} rescues={kind === 'vehicle_breakdown' ? RESCUE_POINTS : []}
         selectedStation={horses ? stationName : undefined} selectedRescue={kind === 'vehicle_breakdown' ? rescueName : undefined}
+        waypoints={waypoints}
+        onPoint={kind === 'traffic_jam' ? point => setWaypoints(points => [...points, point]) : undefined}
         onStation={setStationName} onRescue={setRescueName} lines={lines}
       >
         <div className="im-head"><span className="im-icon"><i className={`fa-solid ${INCIDENT_KIND[kind].icon}`} /></span><div><b>{INCIDENT_KIND[kind].label}</b><small>Xe {i.tripId} · báo {formatDateTime(i.reportedAt)}</small></div></div>
@@ -173,13 +189,18 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
         )}
         {kind === 'traffic_jam' && (
           <div>
+            <p className="im-note">Bấm trên bản đồ để thêm các điểm đi qua theo thứ tự, dẫn xe tránh đoạn bị tắc.</p>
+            {waypoints.length > 0 && <div><p>Đã chọn {waypoints.length} điểm đi qua.</p><button type="button" className="btn btn-ghost btn-sm" onClick={() => setWaypoints(points => points.slice(0, -1))}>Bỏ điểm cuối</button><button type="button" className="btn btn-ghost btn-sm" onClick={() => setWaypoints([])}>Xóa các điểm</button></div>}
+            <button type="button" className="btn btn-ghost btn-sm" disabled={loading} onClick={() => { clearRoadCache(); setRouteAttempt(attempt => attempt + 1) }}>Tìm lại đường bộ</button>
+            {rerouteUnchanged && <p role="alert" className="im-note">Đường đang chọn trùng phương án bị trả về. Hãy chọn đường khác hoặc thêm điểm đi qua.</p>}
+            {!loading && (!altChosen || altChosen.source === 'offline') && <p role="alert" className="im-note">Chưa kết nối được dịch vụ đường bộ hoặc không tìm thấy tuyến. Đường thẳng chỉ để tham khảo; chưa thể trình duyệt.</p>}
             <h4>Lộ trình thay thế tới {ahead[0] ? 'điểm kế tiếp' : 'điểm trả'}</h4>
             <div className="im-list" style={{ marginTop: 6 }}>
               {altList.length ? altList.map((r, idx) => (
-                <button key={idx} type="button" className={`im-opt ${idx === altIdx ? 'on' : ''}`} onClick={() => setAltIdx(idx)}>
+                <button key={idx} type="button" className={`im-opt ${!waypoints.length && idx === altIdx ? 'on' : ''}`} onClick={() => { setWaypoints([]); setAltIdx(idx) }}>
                   <b>Đường {idx + 1}: {Math.round(r.km)} km · {hm(r.hours)}</b><small>{r.traffic ? 'Theo Google, có giao thông' : 'Theo đường bộ, chưa tính giao thông'}</small>{idx === 0 && <span className="im-tag">Nhanh nhất</span>}
                 </button>
-              )) : <p className="im-note">{alts.loading ? 'Đang tìm đường thay thế…' : 'Chưa lấy được đường thay thế, đang dùng đường nối thẳng.'}</p>}
+              )) : <p className="im-note">{alts.loading ? 'Đang tìm đường thay thế…' : 'Chưa lấy được đường bộ. Chọn điểm đi qua để tìm lại đường tránh.'}</p>}
             </div>
             <p className="im-note" style={{ marginTop: 6 }}>Giữ nguyên cửa khẩu đã chốt{gate ? ` (${gate.name})` : ''}, chỉ đổi đường đi tới điểm kế tiếp.</p>
           </div>

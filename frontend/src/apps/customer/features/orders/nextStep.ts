@@ -1,7 +1,7 @@
 // "Bước tiếp theo" của đơn phía khách: mỗi trạng thái nói rõ khách đang chờ ai, hoặc cần làm gì.
 import { HOUR } from '@shared/config/business-rules'
 import { DEPOSIT_RATE, type Tone } from '@shared/config/booking-rules'
-import { arrivalOf, clearanceProgress, currentCheckpoint, orderGroupOf } from '@shared/lib/booking'
+import { effectiveArrivalOf, clearanceProgress, currentCheckpoint, orderGroupOf } from '@shared/lib/booking'
 import { formatDateTime, formatVND, timeLeftText } from '@shared/lib/format'
 import type { CustomerBookingView } from '@shared/services/bookings'
 
@@ -39,7 +39,7 @@ function baseStep(b: CustomerBookingView, now: number): NextStep {
       const depositPercentage = b.quote!.total > 0
         ? Number((b.quote!.deposit / b.quote!.total * 100).toFixed(2))
         : DEPOSIT_RATE * 100
-      return { tone: ms < 12 * HOUR ? 'danger' : 'warning', icon: 'fa-credit-card', title: `Đặt cọc ${depositPercentage.toLocaleString('vi-VN')}% trong ${timeLeftText(b.quote!.expiresAt, now)}`, text: `Báo giá có hiệu lực đến ${formatDateTime(b.quote!.expiresAt)}. Quá hạn, xe và nhân sự được nhả cho đơn khác.${arrivalOf(b.route) ? ` Dự kiến đến nơi ${formatDateTime(arrivalOf(b.route)!)}.` : ''}`, actionNeeded: true }
+      return { tone: ms < 12 * HOUR ? 'danger' : 'warning', icon: 'fa-credit-card', title: `Đặt cọc ${depositPercentage.toLocaleString('vi-VN')}% trong ${timeLeftText(b.quote!.expiresAt, now)}`, text: `Báo giá có hiệu lực đến ${formatDateTime(b.quote!.expiresAt)}. Quá hạn, xe và nhân sự được nhả cho đơn khác.${effectiveArrivalOf(b) ? ` Dự kiến đến nơi ${formatDateTime(effectiveArrivalOf(b)!)}.` : ''}`, actionNeeded: true }
     }
     case 'quote_expired':
       return { tone: 'muted', icon: 'fa-hourglass-end', title: 'Báo giá đã hết hạn', text: 'Bạn chưa đặt cọc trước hạn báo giá nên xe và nhân sự đã được nhả. Bạn có thể tạo đơn mới.', actionNeeded: false }

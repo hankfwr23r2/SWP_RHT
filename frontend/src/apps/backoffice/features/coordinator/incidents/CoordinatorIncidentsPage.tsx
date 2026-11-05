@@ -1,5 +1,7 @@
+import { useAutoRefresh } from '@shared/services/useLoad'
+import { invalidateBookingsListCache } from '@shared/services/bookings'
 // Điều phối viên: lập phương án xử lý sự cố, trình Manager duyệt (Flow 5, PRD mục 6.5).
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { INCIDENT_KIND } from '@shared/config/booking-rules'
 import { isAssignedTo } from '@shared/lib/staffAssignment'
@@ -19,6 +21,8 @@ export default function CoordinatorIncidentsPage() {
   const { t } = useTranslation()
   const { session } = useAuth()
   const { all, reload } = usePageData<typeof bookingListLoader>()
+  const refresh = useCallback(() => { invalidateBookingsListCache(); reload() }, [reload])
+  useAutoRefresh(refresh)
   const [tab, setTab] = useState<Tab>('todo')
   const [open, setOpen] = useState<Item | null>(null)
   const mine = (all ?? []).filter(b => isAssignedTo(b.intake?.coordinator, session?.name)).flatMap(b => (b.incidents ?? []).map(i => ({ b, i })))
@@ -49,7 +53,7 @@ export default function CoordinatorIncidentsPage() {
         ]} tab={tab} onTab={setTab} hot={['todo']}
         rows={shown} rowKey={x => x.i.id} columns={columns} haystack={x => [x.b.id, x.b.customer, x.b.origin.name, x.b.dest.name, x.i.tripId]} dateOf={x => x.i.reportedAt} dateLabel={t('coordinatorIncidents.colReportedAt', 'Báo lúc')} loaded={!!all}
         emptyText={t('coordinatorIncidents.empty', 'Không có sự cố nào ở mục này.')} hotRow={x => x.i.status === 'reported'} />
-      {open && <IncidentPlanner item={open} onClose={() => setOpen(null)} onDone={() => { setOpen(null); reload() }} />}
+      {open && <IncidentPlanner item={open} onClose={() => setOpen(null)} onDone={() => { setOpen(null); refresh() }} />}
     </>
   )
 }

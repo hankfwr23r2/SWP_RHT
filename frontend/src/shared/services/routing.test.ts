@@ -42,6 +42,15 @@ describe('dự phòng ngoại tuyến khi OSRM lỗi hoặc mất mạng', () =>
     expect(r!.hours).toBeGreaterThan(0)
   })
 
+  it('thử lại dịch vụ khi lần trước chỉ có đường thẳng ước lượng', async () => {
+    let available = false
+    const f = stub(() => available ? json(osrmBody) : json({}, false))
+    expect((await roadRoute([A, B], FUTURE))?.source).toBe('offline')
+    available = true
+    expect((await roadRoute([A, B], FUTURE))?.source).toBe('osrm')
+    expect(f).toHaveBeenCalledTimes(2)
+  })
+
   it('dưới 2 điểm thì trả về null', async () => {
     expect(await roadRoute([A], FUTURE)).toBeNull()
   })

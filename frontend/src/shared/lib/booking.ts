@@ -533,6 +533,18 @@ export function managerBoardOf(s: BookingStatus): BoardCol | undefined {
 // Ngày giờ đến nơi dự kiến = giờ đến của chặng cuối; chưa có lộ trình thì chưa biết
 export const arrivalOf = (route?: Pick<RoutePlan, 'legs'>) => route?.legs.length ? route.legs[route.legs.length - 1].arriveAt : undefined
 
+// ETA của đơn là giờ đến muộn nhất trong các chuyến; mỗi chuyến dùng lần điều chỉnh đã duyệt.
+export function effectiveArrivalOf(b: { route?: Pick<RoutePlan, 'legs'>; trips?: Pick<VehicleTrip, 'incidentRoute'>[] }) {
+  const original = arrivalOf(b.route)
+  if (!b.trips?.length) return original
+  const etas = b.trips.flatMap(trip => {
+    const adjusted = trip.incidentRoute?.newEta
+    const eta = adjusted != null && Number.isFinite(adjusted) && adjusted > 0 ? adjusted : original
+    return eta != null && Number.isFinite(eta) && eta > 0 ? [eta] : []
+  })
+  return etas.length ? Math.max(...etas) : original
+}
+
 // Số đơn đang chờ Manager (menu và trang Tổng quan). `moving` chỉ để theo dõi, không phải việc cần xử lý.
 export const managerCounts = (list: Pick<Booking, 'status' | 'incidents' | 'medical'>[]) => ({
   intake: list.filter(b => b.status === 'pending_intake').length,

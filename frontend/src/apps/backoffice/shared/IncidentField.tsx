@@ -37,7 +37,7 @@ export function SosPanel({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }
       <div className="form-group" style={{ margin: 0 }}><label htmlFor="sos-note">Ghi chú ngắn</label><input id="sos-note" className="form-control" style={{ minHeight: 48 }} value={note} onChange={e => setNote(e.target.value)} /></div>
       <div style={{ display: 'flex', gap: 8 }}>
         <button className="btn btn-ghost" onClick={() => setOpen(false)}>Hủy</button>
-        <button className={`btn btn-primary ${s.big}`} disabled={!photo} onClick={() => run(() => bookingsApi.reportIncident(b.id, t.tripId, session!.name, kind, photo!, note, b, t), 'Đã gửi báo động. Quản lý và Điều phối viên nhận ngay')}>Gửi báo động khẩn cấp</button>
+        <button className={`btn btn-primary ${s.big}`} disabled={!photo} onClick={() => run(() => bookingsApi.reportIncident(b.id, t.tripId, session!.name, kind, photo!, note, b, t), 'Đã gửi SOS vào danh sách xử lý của Điều phối viên và Quản lý')}>Gửi báo động khẩn cấp</button>
       </div>
     </Panel>
   )
@@ -95,7 +95,7 @@ export function IncidentPanel({ b, inc, role, run }: { b: Booking; inc: Incident
             </Panel>
           )}
           {role === 'driver' && (
-            <button className={`btn btn-primary ${s.big}`} disabled={needFit && !inc.fitConfirmedAt} onClick={() => run(() => bookingsApi.resumeJourney(b.id, inc.id, session!.name), 'Tiếp tục hành trình chính')}><i className="fa-solid fa-truck-fast" /> Tiếp tục hành trình chính</button>
+            <button className={`btn btn-primary ${s.big}`} disabled={needFit && !inc.fitConfirmedAt} onClick={() => run(() => bookingsApi.resumeJourney(b.id, inc.id, session!.name), 'Tiếp tục theo phương án đã duyệt')}><i className="fa-solid fa-truck-fast" /> Tiếp tục theo phương án đã duyệt</button>
           )}
         </>
       )}
@@ -114,4 +114,15 @@ export function SubmitExpensesPanel({ b, run }: { b: Booking; run: Run }) {
       <button className={`btn btn-primary ${s.big}`} onClick={() => run(() => bookingsApi.submitExpenses(b.id, session!.name), 'Đã gửi bảng kê chi phí')}>Gửi bảng kê chi phí</button>
     </Panel>
   )
+}
+
+// Tuyến được duyệt tiếp tục có hiệu lực sau khi đóng SOS.
+export function ApprovedIncidentRoute({ b, t }: { b: Booking; t: VehicleTrip }) {
+  const route = t.incidentRoute
+  if (!route) return null
+  const incident = b.incidents?.find(i => Number(i.id.replace('INC-', '')) === route.incidentId)
+  return <Panel title="Lộ trình điều chỉnh đã duyệt" icon="fa-route">
+    <p>Giờ đến đích mới: {formatDateTime(route.newEta)}. {route.note}</p>
+    {incident && <IncidentPlanView b={b} i={{ ...incident, plan: route }} height={300} />}
+  </Panel>
 }

@@ -109,13 +109,13 @@ export async function roadRoute(points: GeoPoint[], _departAt?: number, opts: Ro
   if (points.length < 2) return null
   const k = keyOf(points)
   const hit = cache.get(k) ?? loadSession<RoadRoute>(k)
-  if (hit) {
+  if (hit && hit.source !== 'offline') {
     if (!cache.has(k)) cache.set(k, hit)
     return hit
   }
   const attempt = async (fn: () => Promise<RoadRoute | null>) => { try { return await fn() } catch { return null } }
   const out = (await attempt(() => viaOsrm(points, opts.signal))) ?? viaOffline(points)
-  if (out) {
+  if (out.source !== 'offline') {
     cache.set(k, out)
     saveSession(k, out)
   }

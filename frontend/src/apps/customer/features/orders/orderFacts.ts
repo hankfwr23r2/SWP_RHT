@@ -2,7 +2,7 @@
 // Khi nào, Tại sao là thông tin bổ sung, chỉ hiện dòng có dữ liệu.
 import { FEED_PACKAGE, VEHICLE_CLASS, WATER_PLAN } from '@shared/config/booking-rules'
 import { COUNTRIES } from '@shared/config/network'
-import { arrivalOf, vehicleClassOf } from '@shared/lib/booking'
+import { effectiveArrivalOf, vehicleClassOf } from '@shared/lib/booking'
 import { formatDate, formatDateTime, formatVND } from '@shared/lib/format'
 import type { CustomerBookingView, TripTeam } from '@shared/services/bookings'
 import { insuranceLabels } from '@shared/types/insurance'
@@ -53,7 +53,7 @@ export function orderFacts(b: CustomerBookingView, team: TripTeam[]): FactGroup[
   ]
 
   const pickupAt = b.route?.legs[0]?.departAt
-  const arriveAt = arrivalOf(b.route)
+  const arriveAt = effectiveArrivalOf(b)
   const when: FactRow[] = [
     pickupAt ? { label: 'Giờ đón dự kiến', value: formatDateTime(pickupAt) } : { label: 'Ngày khởi hành', value: formatDate(b.departAt) },
     ...(arriveAt ? [{ label: 'Dự kiến đến nơi', value: formatDateTime(arriveAt) }] : []),

@@ -7,10 +7,11 @@ import { findGate, findTransitStation, type GeoPoint } from '../config/network'
 import { bookingPath, findLocation, projectOnPath, spotLabel, vehiclePoint } from '../lib/booking'
 import { useRoadRoute } from '../services/useRoadRoute'
 import type { Booking, VehicleTrip } from '../types/booking'
+import { formatDateTime } from '../lib/format'
 import { addBaseLayer, BASE_MAP_OPTIONS } from './baseMap'
 import './TripTrackMap.css'
 
-type Props = { b: Pick<Booking, 'origin' | 'dest' | 'gate' | 'route'>; trips: Pick<VehicleTrip, 'tripId' | 'run' | 'departedAt'>[]; height?: number; plain?: boolean } // plain: chỉ vẽ lộ trình đã lập, không có xe
+type Props = { b: Pick<Booking, 'origin' | 'dest' | 'gate' | 'route'>; trips: Pick<VehicleTrip, 'tripId' | 'run' | 'departedAt' | 'incidentRoute'>[]; height?: number; plain?: boolean } // plain: chỉ vẽ lộ trình đã lập, không có xe
 const pin = (cls: string, text: string) => L.divIcon({ className: 'tt-icon', html: `<span class="tt-pin ${cls}">${text}</span>`, iconSize: [24, 24], iconAnchor: [12, 12] })
 const ll = (p: GeoPoint): [number, number] => [p.lat, p.lng]
 const validPoint = (point: GeoPoint) => Number.isFinite(point.lat) && Number.isFinite(point.lng) && Math.abs(point.lat) <= 90 && Math.abs(point.lng) <= 180
@@ -24,7 +25,7 @@ export function TripTrackMap({ b, trips = [], height, plain }: Props) {
   const pts = useMemo(() => bookingPath(b), [b])
   const road = useRoadRoute(pts.length > 1 ? pts : undefined)
   const line = (road.route?.path ?? pts.map(ll)).filter(validLatLng)
-  const cars = trips.flatMap(t => {
+  const cars = plain ? [] : trips.flatMap(t => {
     const at = vehiclePoint(b, t)
     return at && validPoint(at) ? [{ t, at }] : []
   })
@@ -33,7 +34,9 @@ export function TripTrackMap({ b, trips = [], height, plain }: Props) {
   const lineKey = line.map(([lat, lng]) => `${lat.toFixed(4)},${lng.toFixed(4)}`).join(';')
   const carKey = cars.map(c => `${c.at.lat.toFixed(4)},${c.at.lng.toFixed(4)}`).join('|')
   const restsKey = (b.route?.rests ?? []).map(r => `${r.name}:${r.minutes}`).join('|')
-  const sig = `${lineKey}#${carKey}#${[...passed].join(',')}#${b.gate ?? ''}#${restsKey}`
+  const detours = trips.flatMap(t => t.incidentRoute?.detour ? [{ tripId: t.tripId, eta: t.incidentRoute.newEta, path: t.incidentRoute.detour.path.filter(validLatLng) }] : [])
+  const detourKey = JSON.stringify(detours)
+  const sig = `${lineKey}#${carKey}#${[...passed].join(',')}#${b.gate ?? ''}#${restsKey}#${detourKey}`
 
   useEffect(() => {
     if (!box.current) return
@@ -55,6 +58,11 @@ export function TripTrackMap({ b, trips = [], height, plain }: Props) {
       L.polyline(line, { color: '#fff', weight: 9, opacity: 0.9 }).addTo(g)
       L.polyline(line, { color: '#475569', weight: 4, opacity: 0.95, dashArray: '9 8' }).addTo(g)
     }
+    detours.forEach((detour, index) => {
+      if (detour.path.length < 2) return
+      L.polyline(detour.path, { color: ['#2563eb', '#7c3aed', '#059669'][index % 3], weight: 6 })
+        .bindTooltip(`${detour.tripId}: đường tránh đã duyệt · đến ${formatDateTime(detour.eta)}`, { sticky: true }).addTo(g)
+    })
     // Đoạn đã đi: từ điểm đón tới xe đi xa nhất
     const far = line.length > 1
       ? cars.map(c => ({ c, at: projectOnPath(line.map(([lat, lng]) => ({ lat, lng })), c.at).segment })).sort((x, z) => z.at - x.at)[0]
@@ -73,8 +81,8 @@ export function TripTrackMap({ b, trips = [], height, plain }: Props) {
     cars.forEach(({ t, at }) => {
       L.marker(ll(at), { zIndexOffset: 1000, icon: L.divIcon({ className: 'tt-icon', html: '<span class="tt-truck"><i class="fa-solid fa-truck"></i></span>', iconSize: [40, 40], iconAnchor: [20, 20] }) }).bindTooltip(`${t.tripId}: ${spotLabel(t)}`, { direction: 'top', offset: [0, -20] }).addTo(g)
     })
-    const focusPoints = [...line, ...cars.map(({ at }) => ll(at))]
-    const boundsKey = `${lineKey}#${carKey}`
+    const focusPoints = [...line, ...detours.flatMap(d => d.path), ...cars.map(({ at }) => ll(at))]
+    const boundsKey = `${lineKey}#${carKey}#${detourKey}`
     if (boundsKey !== fitted.current) {
       m.invalidateSize()
       if (focusPoints.length > 1) {
@@ -91,7 +99,7 @@ export function TripTrackMap({ b, trips = [], height, plain }: Props) {
     <div>
       <div className="tt-wrap" style={height !== undefined ? { height } : undefined}>
         <div ref={box} className="tt-map" role="application" aria-label="Bản đồ theo dõi xe" />
-        <div className="tt-legend">{!plain && <span><i className="fa-solid fa-truck" style={{ color: '#ea580c' }} /> Xe</span>}<span>● Trạm đã qua / chưa qua</span><span>⚑ Cửa khẩu</span></div>
+        <div className="tt-legend">{!plain && <span><i className="fa-solid fa-truck" style={{ color: '#ea580c' }} /> Xe</span>}<span>● Trạm đã qua / chưa qua</span>{detours.length > 0 && <span>━━ Đường tránh đã duyệt</span>}<span>⚑ Cửa khẩu</span></div>
       </div>
       {!plain && <div className="tt-spots">
         {trips.map((t, i) => <div key={t.tripId}><i className="fa-solid fa-location-crosshairs" /><span>{trips.length > 1 ? `Xe ${i + 1}: ` : ''}<b>{spotLabel(t)}</b></span></div>)}
