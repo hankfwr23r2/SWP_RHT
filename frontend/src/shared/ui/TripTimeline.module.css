@@ -9,6 +9,7 @@
 .done::before { background: var(--green); }
 .current .dot { background: var(--orange); border-color: var(--orange); color: white; box-shadow: 0 0 0 5px rgba(234, 88, 12, 0.16); }
 .locked .dot { border-style: dashed; }
+.incident .dot { background: var(--amber-soft); border-color: var(--amber); color: var(--amber); }
 .top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .locked .top { color: var(--muted); }
 .place { font-size: 0.86rem; color: var(--muted); }
