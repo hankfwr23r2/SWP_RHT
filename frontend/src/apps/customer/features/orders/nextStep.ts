@@ -6,9 +6,9 @@ import { formatDateTime, formatVND, timeLeftText } from '@shared/lib/format'
 import type { CustomerBookingView } from '@shared/services/bookings'
 
 // Đã đặt cọc: có Vận đơn, nhà xe làm giấy tờ
-export const POST_PAYMENT: CustomerBookingView['status'][] = ['waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed']
+export const POST_PAYMENT: CustomerBookingView['status'][] = ['waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'pickup_failed', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed']
 // Từ lúc giấy tờ xong trở đi: hành trình quan trọng hơn giấy tờ
-export const ROUTE_STAGE: CustomerBookingView['status'][] = ['clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed']
+export const ROUTE_STAGE: CustomerBookingView['status'][] = ['clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'pickup_failed', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed']
 // Đã có lộ trình: khách xem được tóm tắt hành trình (lộ trình lập từ trước báo giá)
 export const ROUTE_VISIBLE: CustomerBookingView['status'][] = ['awaiting_payment', 'quote_expired', ...POST_PAYMENT]
 
@@ -57,8 +57,10 @@ function baseStep(b: CustomerBookingView, now: number): NextStep {
         : { tone: 'warning', icon: 'fa-credit-card', title: `Thanh toán 70% còn lại: ${formatVND(b.quote!.balance)}`, text: 'Xe đã sẵn sàng. Bạn thanh toán số dư vào ngày bốc ngựa để xe được xuất bến. Thanh toán xong là chốt chuyến, không tự hủy được nữa. Hãy chuẩn bị bản gốc hồ sơ ngựa để bàn giao.', actionNeeded: true }
     case 'en_route_to_pickup':
       return !b.canPayBalance
-        ? { tone: 'info', icon: 'fa-truck-moving', title: 'Xe đang đến điểm đón ngựa', text: 'Vui lòng chuẩn bị bản gốc hồ sơ và có mặt tại điểm đón để ký biên bản giao nhận.', actionNeeded: false }
-        : { tone: 'danger', icon: 'fa-credit-card', title: `Thanh toán 70% còn lại: ${formatVND(b.quote!.balance)}`, text: 'Xe đang đến điểm đón. Chưa thanh toán đủ thì xe chưa được bắt đầu hành trình.', actionNeeded: true }
+        ? { tone: 'info', icon: 'fa-truck-moving', title: 'Xe đang đến điểm đón ngựa', text: 'Vui lòng chuẩn bị bản gốc hồ sơ và có mặt tại điểm đón để ký biên bản giao nhận. Kíp xe nhận ngựa xong thì bạn thanh toán 70% còn lại để xe xuất bến.', actionNeeded: false }
+        : { tone: 'danger', icon: 'fa-credit-card', title: `Thanh toán 70% còn lại: ${formatVND(b.quote!.balance)}`, text: 'Kíp xe đã nhận ngựa và ký biên bản giao nhận. Bạn thanh toán xong thì xe mới bắt đầu hành trình.', actionNeeded: true }
+    case 'pickup_failed':
+      return { tone: 'danger', icon: 'fa-ban', title: 'Không nhận được ngựa', text: 'Ngựa ở điểm đón không khớp hồ sơ nên kíp xe không nhận. Quản lý sẽ liên hệ với bạn để xử lý đơn.', actionNeeded: false }
     case 'in_transit': {
       const t = activeTrip(b)
       const cp = t && currentCheckpoint(t)

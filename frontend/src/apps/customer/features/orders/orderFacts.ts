@@ -66,7 +66,7 @@ export function orderFacts(b: CustomerBookingView, team: TripTeam[]): FactGroup[
     ...(b.rejection ? [{ label: 'Nhà xe từ chối đơn', value: b.rejection.reason }] : []),
     ...(b.cancellation ? [{ label: 'Lý do hủy', value: b.cancellation.reason, sub: b.cancellation.refund ? `Hoàn lại ${formatVND(b.cancellation.refund)}` : undefined }] : []),
     ...(resubmit ? [{ label: 'Cần bổ sung hồ sơ ngựa', value: resubmit.reason }] : []),
-    ...b.horses.filter(h => h.status === 'unfit').map(h => ({
+    ...b.horses.filter(h => h.status === 'unfit' || h.status === 'chip_mismatch').map(h => ({
       label: `${h.name} không khởi hành`,
       value: h.unfitInfo?.reason ?? 'Không đủ sức khỏe',
       sub: h.unfitInfo?.discountAmount ? `Giảm trừ ${formatVND(h.unfitInfo.discountAmount)}` : undefined,

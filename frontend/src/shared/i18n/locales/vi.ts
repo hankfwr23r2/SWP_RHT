@@ -60,6 +60,7 @@ export const vi = {
     clearance_done: 'Giấy tờ đã xong',
     ready_for_pickup: 'Sẵn sàng đón ngựa',
     en_route_to_pickup: 'Đến điểm đón',
+    pickup_failed: 'Không nhận được ngựa',
     in_transit: 'Đang vận chuyển',
     incident_reported: 'Có sự cố',
     pending_emergency_approval: 'Chờ duyệt xử lý sự cố',

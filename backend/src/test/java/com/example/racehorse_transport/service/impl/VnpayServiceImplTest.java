@@ -261,8 +261,22 @@ class VnpayServiceImplTest {
     }
 
     @Test
-    void createBalance_onceTheVehicleIsReady_savesPendingPayment() {
-        booking.setStatus("ready_for_pickup");
+    void createBalance_beforeTheCrewHasTakenTheHorses_isRejected() {
+        booking.setStatus("en_route_to_pickup");
+        when(paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(anyInt())).thenReturn(List.of(completedDeposit()));
+        when(bookingService.isPickupComplete(booking)).thenReturn(false);
+
+        assertThatThrownBy(() -> service.createPaymentUrl(
+                VnpayCreateRequest.builder().bookingId("12").paymentType("BALANCE").build(), "khach1", "1.2.3.4"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("kíp xe đã nhận ngựa");
+        verify(paymentRepository, never()).save(any());
+    }
+
+    @Test
+    void createBalance_onceTheCrewHasTakenTheHorses_savesPendingPayment() {
+        booking.setStatus("en_route_to_pickup");
+        when(bookingService.isPickupComplete(booking)).thenReturn(true);
         when(paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(anyInt())).thenReturn(List.of(completedDeposit()));
         when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(12))
                 .thenReturn(Optional.of(quotation(Instant.now().plus(10, ChronoUnit.HOURS))));

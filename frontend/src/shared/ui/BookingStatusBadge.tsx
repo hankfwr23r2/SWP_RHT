@@ -12,6 +12,7 @@ const ICON: Record<BookingStatus, string> = {
   clearance_done: 'fa-stamp',
   ready_for_pickup: 'fa-circle-check',
   en_route_to_pickup: 'fa-truck-moving',
+  pickup_failed: 'fa-ban',
   in_transit: 'fa-truck-fast',
   incident_reported: 'fa-triangle-exclamation',
   pending_emergency_approval: 'fa-hourglass-half',

@@ -44,7 +44,7 @@ const partyDto = (p: Booking['consignor']) => ({
 })
 
 // Bỏ trường nội bộ trước khi đưa sang app khách; xe, lộ trình chỉ hiện khi báo giá đã gửi
-const QUOTED: Booking['status'][] = ['awaiting_payment', 'quote_expired', 'waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed']
+const QUOTED: Booking['status'][] = ['awaiting_payment', 'quote_expired', 'waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'pickup_failed', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed']
 export type CustomerTrip = Omit<VehicleTrip, 'driverPack' | 'acks'>
 // Khách chỉ thấy diễn biến sự cố (nhóm, bước xử lý, ETA mới); chi phí chỉ hiện trong bảng quyết toán
 export type CustomerIncident = Pick<Incident, 'id' | 'tripId' | 'kind' | 'status' | 'reportedAt' | 'resolvedAt'> & { newEta?: number }
@@ -327,6 +327,12 @@ export const bookingsApi = {
     toBooking(await backendBookingApi.confirmFleetPlan(id, { by, routeId: input.routeId, trips: input.trips, route: input.route, gate: input.gate, note: input.note })),
   sendBack: async (id: string, by: string, to: 'specialist' | 'coordinator' | 'both', reason: string): Promise<Booking> =>
     toBooking(await backendBookingApi.sendBack(id, { by, to, reason: reason.trim() })),
+  // Hủy đơn "Không nhận được ngựa": khách mất phần cọc vận chuyển, xe và kíp được nhả
+  cancelPickupFailed: async (id: string, reason: string): Promise<string> => {
+    const res = await apiClient.post<ApiResponse<{ message?: string }>>(`/manager/bookings/${id}/cancel-pickup-failed`, { reason: reason.trim() })
+    invalidateBookingsListCache()
+    return res.data.data?.message ?? res.data.message ?? 'Đã hủy đơn'
+  },
   assignCrew: async (id: string, by: string, picks: { tripId: string; driverId: string; escortId: string }[]): Promise<Booking> =>
     toBooking(await backendBookingApi.assignCrew(id, { by, picks })),
   quoteDraft: async (id: string) => {
@@ -405,6 +411,12 @@ export const bookingsApi = {
     }
   ): Promise<Booking> => {
     const res = await backendBookingApi.updateTripProgress(id, { tripId, action: 'EXCLUDE_UNFIT_HORSE', actor: by, payload })
+    invalidateBookingsListCache()
+    return toBooking(res)
+  },
+  // Tài xế báo ngựa ở điểm đón không đúng hồ sơ: con đó rời chuyến, không giảm trừ tiền
+  reportChipMismatch: async (id: string, tripId: string, by: string, payload: { horseId: string; chipRead: string; note: string }): Promise<Booking> => {
+    const res = await backendBookingApi.updateTripProgress(id, { tripId, action: 'CHIP_MISMATCH', actor: by, payload })
     invalidateBookingsListCache()
     return toBooking(res)
   },

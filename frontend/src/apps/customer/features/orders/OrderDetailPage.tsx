@@ -334,7 +334,7 @@ export default function OrderDetailPage() {
             </div>
           )}
 
-          {b.horses.some(h => h.status === 'unfit') && (
+          {b.horses.some(h => h.status === 'unfit' || h.status === 'chip_mismatch') && (
             <div className="card" style={{ borderLeft: '4px solid var(--red, #dc2626)', background: '#fff5f5' }}>
               <div className="card-header">
                 <h3 style={{ color: 'var(--red, #dc2626)', margin: 0, fontSize: '1.05rem' }}>
@@ -342,10 +342,11 @@ export default function OrderDetailPage() {
                 </h3>
               </div>
               <div style={{ display: 'grid', gap: 8, marginTop: 8 }}>
-                {b.horses.filter(h => h.status === 'unfit').map(h => (
+                {b.horses.filter(h => h.status === 'unfit' || h.status === 'chip_mismatch').map(h => (
                   <div key={h.horseId} style={{ fontSize: '0.92rem', padding: '6px 0', borderBottom: '1px dashed var(--line, #e2e8f0)' }}>
                     <p style={{ margin: '0 0 4px', fontWeight: 600 }}>
                       Cá thể <b>{h.name}</b> (Microchip: {h.microchip}) không thể khởi hành do: <span style={{ color: 'var(--red, #dc2626)' }}>{h.unfitInfo?.reason ?? 'Sốt/Ốm'}</span>
+                      {h.unfitInfo?.chipRead ? ` (chip đọc được: ${h.unfitInfo.chipRead})` : ''}
                       {h.unfitInfo?.temperature ? ` (Thân nhiệt: ${h.unfitInfo.temperature}°C)` : ''}
                     </p>
                     {h.unfitInfo?.symptoms && <p className="sub-text" style={{ margin: '0 0 4px' }}>Triệu chứng: {h.unfitInfo.symptoms}</p>}

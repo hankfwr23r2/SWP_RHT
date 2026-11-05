@@ -509,7 +509,7 @@ public class BookingServiceImpl implements BookingService {
 
     private static final Set<String> FIELD_STATUSES = Set.of(
             "waybill_issued", "clearance_in_progress", "clearance_done", "ready_for_pickup",
-            "en_route_to_pickup", "in_transit", "incident_reported",
+            "en_route_to_pickup", "pickup_failed", "in_transit", "incident_reported",
             "pending_emergency_approval", "emergency_plan_active",
             // Tới điểm giao và quá hạn bàn giao: kíp xe vẫn đang giữ ngựa nên vẫn phải thấy chuyến
             "arrived", "handover_timeout", "returning_to_hq",
@@ -1621,43 +1621,133 @@ public class BookingServiceImpl implements BookingService {
         if (run != null && run.get("startedAt") != null) {
             throw new IllegalStateException("Hành trình của chuyến xe đã bắt đầu.");
         }
-        List<Map<String, Object>> checkpoints = run == null ? List.of() : checkpointMaps(run.get("checkpoints"));
-        Map<String, Object> pickup = checkpoints.stream()
-                .filter(cp -> "pickup".equals(cp.get("type")) || "pickup".equals(cp.get("id")))
-                .findFirst()
-                .orElseThrow(() -> new IllegalStateException("Tài xế cần xác nhận đã đến điểm đón trước khi xuất phát."));
-        if (pickup.get("arrivedAt") == null || isBlank(pickup.get("photo"))) {
-            throw new IllegalStateException("Cần xác nhận điểm đón kèm ảnh trước khi xuất phát.");
-        }
+        String missing = missingPickupStep(payload, trip);
+        if (missing != null) throw new IllegalStateException(missing);
 
         Map<?, ?> payment = payload.getPayment() instanceof Map<?, ?> p ? p : Map.of();
         if (!Boolean.TRUE.equals(payment.get("balancePaid"))) {
             throw new IllegalStateException("Khách hàng cần thanh toán đủ 70% còn lại trước khi xe xuất phát.");
         }
-        if (isBlank(pickup.get("handoverPhoto"))) {
-            throw new IllegalStateException("Cần ảnh biên bản giao nhận đã ký trước khi xuất phát.");
-        }
+    }
 
+    // Ngựa bị loại ở điểm đón: ốm/sốt, hoặc chip không khớp hồ sơ
+    private static final Set<String> EXCLUDED_HORSE_STATUSES = Set.of("UNFIT", "CHIP_MISMATCH");
+
+    // Ngựa còn đi trên chuyến (đã bỏ các con bị loại ở điểm đón)
+    private List<BookingHorseDto> horsesOnTrip(BookingDetailsPayload payload, VehicleTripDto trip) {
+        Set<String> tripHorseIds = new HashSet<>(trip.getHorseIds() != null ? trip.getHorseIds() : List.of());
+        if (payload.getHorses() == null) return List.of();
+        return payload.getHorses().stream()
+                .filter(h -> h.getHorseId() != null && tripHorseIds.contains(h.getHorseId()))
+                .filter(h -> h.getStatus() == null || !EXCLUDED_HORSE_STATUSES.contains(h.getStatus().toUpperCase(java.util.Locale.ROOT)))
+                .toList();
+    }
+
+    private Map<String, Object> pickupCheckpoint(VehicleTripDto trip) {
+        Map<String, Object> run = trip.getRun();
+        List<Map<String, Object>> checkpoints = run == null ? List.of() : checkpointMaps(run.get("checkpoints"));
+        return checkpoints.stream()
+                .filter(cp -> "pickup".equals(cp.get("type")) || "pickup".equals(cp.get("id")))
+                .findFirst()
+                .orElse(null);
+    }
+
+    // Việc còn thiếu để nhận ngựa ở điểm đón (null là đã xong). Xong hết mới thu 70% còn lại và cho xe xuất phát.
+    private String missingPickupStep(BookingDetailsPayload payload, VehicleTripDto trip) {
+        if (trip.getDepartedAt() == null) return "Xe cần xuất phát đến điểm đón trước khi bắt đầu vận chuyển.";
+        Map<String, Object> pickup = pickupCheckpoint(trip);
+        if (pickup == null) return "Tài xế cần xác nhận đã đến điểm đón trước khi xuất phát.";
+        if (pickup.get("arrivedAt") == null || isBlank(pickup.get("photo"))) {
+            return "Cần xác nhận điểm đón kèm ảnh trước khi xuất phát.";
+        }
+        List<BookingHorseDto> horses = horsesOnTrip(payload, trip);
+        if (horses.isEmpty()) return "Chuyến không còn ngựa nào để chở, không thể xuất phát.";
+        Set<String> scanned = new HashSet<>();
+        for (String chip : stringList(pickup.get("chips"))) scanned.add(chip.toUpperCase());
+        for (BookingHorseDto horse : horses) {
+            if (isBlank(horse.getMicrochip()) || !scanned.contains(horse.getMicrochip().toUpperCase())) {
+                return "Cần quét microchip của tất cả ngựa đủ điều kiện trên chuyến trước khi xuất phát.";
+            }
+        }
         List<String> originals = stringList(pickup.get("originals"));
         if (!originals.containsAll(List.of(
                 "Hộ chiếu ngựa bản gốc (FEI / National Passport)",
                 "Sổ tiêm phòng",
                 "Phiếu xét nghiệm EIA/EVA, bản gốc kèm 02 bản sao công chứng"))) {
-            throw new IllegalStateException("Cần xác nhận đã nhận đủ hồ sơ gốc của ngựa trước khi xuất phát.");
+            return "Cần xác nhận đã nhận đủ hồ sơ gốc của ngựa trước khi xuất phát.";
         }
+        if (isBlank(pickup.get("handoverPhoto"))) return "Cần ảnh biên bản giao nhận đã ký trước khi xuất phát.";
+        return null;
+    }
 
-        Set<String> tripHorseIds = new HashSet<>(trip.getHorseIds() != null ? trip.getHorseIds() : List.of());
-        Set<String> scanned = new HashSet<>();
-        for (String chip : stringList(pickup.get("chips"))) scanned.add(chip.toUpperCase());
-        if (payload.getHorses() != null) {
-            for (BookingHorseDto horse : payload.getHorses()) {
-                if (horse.getHorseId() == null || !tripHorseIds.contains(horse.getHorseId())
-                        || "UNFIT".equalsIgnoreCase(horse.getStatus())) continue;
-                if (isBlank(horse.getMicrochip()) || !scanned.contains(horse.getMicrochip().toUpperCase())) {
-                    throw new IllegalStateException("Cần quét microchip của tất cả ngựa đủ điều kiện trên chuyến trước khi xuất phát.");
-                }
-            }
+    // Mọi xe còn chở ngựa đã làm xong thủ tục nhận ngựa: lúc này khách mới thanh toán 70% còn lại
+    private boolean pickupComplete(BookingDetailsPayload payload) {
+        if (payload.getTrips() == null) return false;
+        List<VehicleTripDto> withHorses = payload.getTrips().stream()
+                .filter(t -> !horsesOnTrip(payload, t).isEmpty())
+                .toList();
+        return !withHorses.isEmpty() && withHorses.stream().allMatch(t -> missingPickupStep(payload, t) == null);
+    }
+
+    // Loại hết ngựa ở điểm đón thì xe không có gì để chở: đơn sang "Không nhận được ngựa" chờ quản lý hủy
+    private void markPickupFailedIfNoHorseLeft(Booking booking, BookingDetailsPayload payload, String actor, String reason) {
+        if (payload.getTrips() == null || payload.getTrips().stream().anyMatch(t -> !horsesOnTrip(payload, t).isEmpty())) return;
+        booking.setStatus("pickup_failed");
+        appendHistory(payload, "Hệ thống", "Không nhận được ngựa: " + reason + ". Chờ quản lý hủy đơn");
+        String bookingCode = "BK-" + String.format("%03d", booking.getId());
+        Instant now = Instant.now();
+        notificationRepository.save(Notification.builder()
+                .recipientRole("manager")
+                .title("Không nhận được ngựa · " + bookingCode)
+                .message(actor + " báo: " + reason + " ở điểm đón. Xe và kíp đang chờ quản lý hủy đơn.")
+                .link("/manager/incidents")
+                .bookingId(bookingCode)
+                .isRead(false)
+                .createdAt(now)
+                .build());
+        if (booking.getCustomerID() != null && booking.getCustomerID().getUser() != null) {
+            notificationRepository.save(Notification.builder()
+                    .recipientRole("customer")
+                    .recipientUsername(booking.getCustomerID().getUser().getUsername())
+                    .title("Không nhận được ngựa · " + bookingCode)
+                    .message("Kíp xe không nhận được ngựa của đơn " + bookingCode + ": " + reason
+                            + ". Quản lý sẽ liên hệ với bạn để xử lý đơn.")
+                    .link("/orders/" + bookingCode)
+                    .bookingId(bookingCode)
+                    .isRead(false)
+                    .createdAt(now)
+                    .build());
         }
+    }
+
+    // Kíp xe vừa nhận xong ngựa: nhắc khách thanh toán 70% còn lại (một lần) để xe được xuất phát
+    private void notifyBalanceDueOnce(Booking booking, BookingDetailsPayload payload) {
+        if (!"en_route_to_pickup".equalsIgnoreCase(booking.getStatus()) || !pickupComplete(payload)) return;
+        @SuppressWarnings("unchecked")
+        Map<String, Object> payment = payload.getPayment() instanceof Map<?, ?> m
+                ? new HashMap<>((Map<String, Object>) m) : new HashMap<>();
+        if (Boolean.TRUE.equals(payment.get("balancePaid")) || payment.get("balanceRequestedAt") != null) return;
+        Instant now = Instant.now();
+        payment.put("balanceRequestedAt", now.toEpochMilli());
+        payload.setPayment(payment);
+        appendHistory(payload, "Hệ thống", "Kíp xe đã nhận ngựa, chờ khách thanh toán 70% còn lại");
+        if (booking.getCustomerID() == null || booking.getCustomerID().getUser() == null) return;
+        String bookingCode = "BK-" + String.format("%03d", booking.getId());
+        notificationRepository.save(Notification.builder()
+                .recipientRole("customer")
+                .recipientUsername(booking.getCustomerID().getUser().getUsername())
+                .title("Thanh toán 70% còn lại · " + bookingCode)
+                .message("Kíp xe đã nhận ngựa và ký biên bản giao nhận. Bạn thanh toán 70% còn lại để xe bắt đầu hành trình.")
+                .link("/orders/" + bookingCode)
+                .bookingId(bookingCode)
+                .isRead(false)
+                .createdAt(now)
+                .build());
+    }
+
+    @Override
+    public boolean isPickupComplete(Booking booking) {
+        return pickupComplete(extractPayload(booking));
     }
 
     private List<Map<String, Object>> ensureRouteCheckpoints(Booking booking, BookingDetailsPayload payload, VehicleTripDto trip) {
@@ -1927,7 +2017,7 @@ public class BookingServiceImpl implements BookingService {
                 .quote(payload != null ? payload.getQuote() : null)
                 .payment(payload != null ? payload.getPayment() : null)
                 .canCancel(canCancel)
-                .canPayBalance(CustomerBookingRules.canPayBalance(b.getStatus(), balancePaid))
+                .canPayBalance(CustomerBookingRules.canPayBalance(b.getStatus(), balancePaid) && payload != null && pickupComplete(payload))
                 .cancelPenalty(canCancel && paymentMap.get("amount") != null
                         ? new BigDecimal(paymentMap.get("amount").toString()).subtract(
                             HorseInsurancePolicy.insuranceDeposit(payload != null ? payload.getQuote() : null, new BigDecimal(paymentMap.get("amount").toString()))) : null)
@@ -2070,6 +2160,14 @@ public class BookingServiceImpl implements BookingService {
             }
             case "SCAN_CHIP": {
                 String chip = String.valueOf(reqPayload.getOrDefault("chip", "")).toUpperCase().trim();
+                if (chip.isEmpty()) throw new IllegalArgumentException("Chưa nhập số microchip.");
+                // Chỉ ghi nhận chip của ngựa đang đi trên chuyến này; số khác là quét nhầm hoặc ngựa không đúng hồ sơ
+                boolean onTrip = horsesOnTrip(payload, targetTrip).stream()
+                        .anyMatch(h -> h.getMicrochip() != null && chip.equalsIgnoreCase(h.getMicrochip().trim()));
+                if (!onTrip) {
+                    throw new IllegalArgumentException("Chip " + chip + " không khớp ngựa nào trên chuyến này. "
+                            + "Quét lại; nếu vẫn sai, tài xế báo \"Chip không khớp hồ sơ\" cho con ngựa đó.");
+                }
                 Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> checkpoints = (List<Map<String, Object>>) run.computeIfAbsent("checkpoints", k -> new ArrayList<>());
@@ -2218,6 +2316,45 @@ public class BookingServiceImpl implements BookingService {
 
                 // 5. Ghi lịch sử đơn hàng
                 appendHistory(payload, actor, "Từ chối tiếp nhận ngựa");
+                markPickupFailedIfNoHorseLeft(booking, payload, actor, "Ngựa không đủ điều kiện sức khỏe");
+                break;
+            }
+            case "CHIP_MISMATCH": {
+                // Tài xế báo ngựa ở điểm đón không đúng hồ sơ: loại con đó khỏi chuyến, không giảm trừ tiền (lỗi phía khách)
+                if (targetTrip.getRun() != null && targetTrip.getRun().get("startedAt") != null) {
+                    throw new IllegalStateException("Hành trình đã bắt đầu, không báo chip không khớp được nữa.");
+                }
+                Map<String, Object> pickup = pickupCheckpoint(targetTrip);
+                if (pickup == null || pickup.get("arrivedAt") == null) {
+                    throw new IllegalStateException("Tài xế cần xác nhận đã đến điểm đón trước khi báo chip không khớp.");
+                }
+                String horseId = String.valueOf(reqPayload.getOrDefault("horseId", "")).trim();
+                String chipRead = String.valueOf(reqPayload.getOrDefault("chipRead", "")).toUpperCase().trim();
+                String note = String.valueOf(reqPayload.getOrDefault("note", "")).trim();
+                if (chipRead.isEmpty()) throw new IllegalArgumentException("Nhập số chip đọc được trên máy quét.");
+                BookingHorseDto horse = horsesOnTrip(payload, targetTrip).stream()
+                        .filter(h -> horseId.equalsIgnoreCase(h.getHorseId()))
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalArgumentException("Ngựa này không còn trên chuyến."));
+                if (horse.getMicrochip() != null && chipRead.equalsIgnoreCase(horse.getMicrochip().trim())) {
+                    throw new IllegalArgumentException("Chip " + chipRead + " khớp hồ sơ của " + horse.getName() + ". Hộ tống quét lại để ghi nhận.");
+                }
+                horse.setStatus("CHIP_MISMATCH");
+                Map<String, Object> info = new HashMap<>();
+                info.put("reason", "Chip không khớp hồ sơ");
+                info.put("chipExpected", horse.getMicrochip());
+                info.put("chipRead", chipRead);
+                info.put("note", note);
+                info.put("at", now);
+                info.put("by", actor);
+                horse.setUnfitInfo(info);
+                targetTrip.getHorseIds().removeIf(id -> id.equalsIgnoreCase(horseId));
+                if (horse.getMicrochip() != null && pickup.get("chips") instanceof List<?> chips) {
+                    chips.remove(horse.getMicrochip().toUpperCase());
+                }
+                appendHistory(payload, actor, "Báo chip không khớp hồ sơ: " + horse.getName()
+                        + " (hồ sơ " + horse.getMicrochip() + ", đọc được " + chipRead + ")");
+                markPickupFailedIfNoHorseLeft(booking, payload, actor, "Chip ngựa không khớp hồ sơ");
                 break;
             }
             case "COLLECT_ORIGINALS": {
@@ -2537,6 +2674,7 @@ public class BookingServiceImpl implements BookingService {
             }
         }
 
+        notifyBalanceDueOnce(booking, payload);
         captureService.attachTripPhotos(payload, bookingId, tripId, action, reqPayload, username);
         savePayload(booking, payload);
         Booking updated = bookingRepository.save(booking);
@@ -2566,6 +2704,10 @@ public class BookingServiceImpl implements BookingService {
         }
 
         String normalizedAction = action.toUpperCase(java.util.Locale.ROOT);
+        if ("CHIP_MISMATCH".equals(normalizedAction) && !"DRIVER".equalsIgnoreCase(role)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Chỉ tài xế được báo chip không khớp hồ sơ.");
+        }
         if (!"DEPART_TO_PICKUP".equals(normalizedAction) && !"ARRIVE_PICKUP".equals(normalizedAction)) return;
         if (!"DRIVER".equalsIgnoreCase(role)) {
             throw new org.springframework.security.access.AccessDeniedException(
@@ -2581,7 +2723,7 @@ public class BookingServiceImpl implements BookingService {
                         && java.util.Objects.equals(trip.getTripId(), targetTrip.getTripId())) continue;
                 if (!matchesStaffIdentifier(trip.getDriverId(), staffCode, staffId, username, staffName, role)) continue;
                 boolean returning = trip.getHomeReturn() != null && trip.getHomeReturn().get("backAt") == null;
-                boolean active = Set.of("en_route_to_pickup", "in_transit",
+                boolean active = Set.of("en_route_to_pickup", "pickup_failed", "in_transit",
                         "incident_reported", "pending_emergency_approval", "emergency_plan_active",
                         "arrived", "handover_timeout", "returning_to_hq", "delivered_pending_settlement").contains(status);
                 if (returning || active) {
@@ -2703,7 +2845,7 @@ public class BookingServiceImpl implements BookingService {
             case "pending_intake", "cancelled", "rejected" -> 0;
             case "under_review", "pending_commercial" -> 1;
             case "awaiting_payment", "quote_expired" -> 2;
-            case "waybill_issued", "clearance_in_progress", "clearance_done", "ready_for_pickup", "en_route_to_pickup" -> 3;
+            case "waybill_issued", "clearance_in_progress", "clearance_done", "ready_for_pickup", "en_route_to_pickup", "pickup_failed" -> 3;
             case "in_transit", "incident_reported", "pending_emergency_approval", "emergency_plan_active",
                  "delivered_pending_settlement", "expenses_submitted", "settlement_issued", "payment_overdue", "completed" -> 4;
             default -> 0;
@@ -2723,6 +2865,7 @@ public class BookingServiceImpl implements BookingService {
             case "clearance_done" -> "Giấy tờ đã xong";
             case "ready_for_pickup" -> "Sẵn sàng đón ngựa";
             case "en_route_to_pickup" -> "Xe đang đến điểm đón";
+            case "pickup_failed" -> "Không nhận được ngựa, chờ xử lý";
             case "in_transit" -> "Đang vận chuyển";
             case "incident_reported", "pending_emergency_approval" -> "Xe gặp sự cố, đang xử lý";
             case "emergency_plan_active" -> "Đang xử lý sự cố, ngựa được chăm sóc";

@@ -14,6 +14,7 @@ import './manager-theme.css'
 import { StaffSidebar } from './StaffSidebar'
 import { StaffTopbar } from './StaffTopbar'
 import { StaffProfileModal } from './StaffProfileModal'
+import { ManagerUrgentBanner } from '../shared/ManagerUrgentBanner'
 
 function Header() {
   const { t } = useTranslation()
@@ -42,7 +43,7 @@ export function StaffLayout({ children }: { children: ReactNode }) {
         <StaffTopbar />
         <div className={m.body}>
           <StaffSidebar />
-          <main className={m.main}><PageTransition>{children}</PageTransition></main>
+          <main className={m.main}>{session.role === 'manager' && <ManagerUrgentBanner />}<PageTransition>{children}</PageTransition></main>
         </div>
         <TranslateToggle />
       </div>

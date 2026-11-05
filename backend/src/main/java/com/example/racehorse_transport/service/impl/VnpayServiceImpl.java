@@ -108,8 +108,8 @@ public class VnpayServiceImpl implements VnpayService {
                 if (hasCompleted(payments, "BALANCE")) {
                     throw new IllegalStateException("Đơn hàng này đã thanh toán đủ 70% còn lại!");
                 }
-                if (!CustomerBookingRules.canPayBalance(booking.getStatus(), false)) {
-                    throw new IllegalStateException("Chỉ thanh toán 70% còn lại khi xe đã sẵn sàng đón ngựa.");
+                if (!CustomerBookingRules.canPayBalance(booking.getStatus(), false) || !bookingService.isPickupComplete(booking)) {
+                    throw new IllegalStateException("Chỉ thanh toán 70% còn lại khi kíp xe đã nhận ngựa và ký biên bản giao nhận ở điểm đón.");
                 }
                 Quotation quotation = latestQuotation(booking);
                 amount = quotation.getBalanceAmount() != null

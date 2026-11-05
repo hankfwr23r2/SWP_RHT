@@ -61,6 +61,10 @@ export interface HorseUnfitInfo {
   at: number
   by: string
   discountAmount?: number
+  // Chip không khớp hồ sơ: số chip trong hồ sơ và số tài xế đọc được trên máy quét
+  chipExpected?: string
+  chipRead?: string
+  note?: string
 }
 
 export interface BookingHorse {
@@ -75,7 +79,7 @@ export interface BookingHorse {
   selectedServices?: Partial<Record<BookingServiceCategory, BookingServiceSnapshot>>
   selectedServiceCodes?: Partial<Record<BookingRequiredServiceCategory, string>>
   insurance: { opted: boolean } & Partial<import('./insurance').HorseInsurance>
-  status?: 'eligible' | 'unfit'
+  status?: 'eligible' | 'unfit' | 'chip_mismatch'
   unfitInfo?: HorseUnfitInfo
 }
 
