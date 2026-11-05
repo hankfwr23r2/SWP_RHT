@@ -43,3 +43,4 @@
 .rm-legend .rm-st { width: 12px; height: 12px; margin: 0; border-width: 2px; display: inline-block; }
 @media (max-width: 700px) { .rm-panel { width: 200px; } .rm-legend { display: none; } }
 @media (prefers-reduced-motion: reduce) { .rm-st.rm-active, .rm-route, .rm-panel, .rm-st.rm-on { animation: none; } }
+.rm-limit { margin: 0; font-size: 0.8rem; font-weight: 600; color: #b91c1c; }

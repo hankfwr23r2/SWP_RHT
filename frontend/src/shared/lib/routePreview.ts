@@ -5,6 +5,8 @@ import type { RestStop, RouteLeg, RoutePlan } from '../types/booking'
 
 const STOPS = new Set(['REST', 'ROADSIDE_REST', 'OVERNIGHT'])
 export const ROADSIDE = 'Nghỉ dọc đường'
+// Máy tính đường (Valhalla công khai) nhận tối đa 10 điểm: điểm đón + điểm trả + 8 điểm giữa (trạm, cửa khẩu)
+export const MAX_ROUTE_STOPS = 8
 
 // Tên điểm đón/trả gửi backend để hiện trong lịch trình và thông báo: bỏ phần số nhà/đường khách tự gõ
 // ("Stanford123123, Phường Châu Phú B (Châu Đốc), An Giang" → "Phường Châu Phú B (Châu Đốc), An Giang")

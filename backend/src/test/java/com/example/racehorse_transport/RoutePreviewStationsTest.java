@@ -286,6 +286,22 @@ class RoutePreviewStationsTest {
         assertThat(routes.get(1).path("km").asDouble()).isCloseTo(83.1, within(0.5));
     }
 
+    // Máy tính đường công khai chỉ nhận tối đa 10 điểm (điểm đón + điểm trả + 8 điểm giữa). Điều phối chọn 9 trạm:
+    // báo ngay phải bỏ bớt trạm, không gọi máy tính đường rồi trả câu "thử lại sau" (thử lại vẫn hỏng y như vậy).
+    @Test
+    void moreThanEightStopsIsRejectedWithWhatToDo() throws Exception {
+        List<Integer> ids = new ArrayList<>();
+        for (int i = 0; i < 9; i++) {
+            ids.add(location("RestStop", "Trạm nghỉ " + i + " (test)", "Việt Nam", 11 + i * 0.8, 108.5).getId());
+        }
+
+        HttpResponse<String> response = preview(HCM, HANOI, ids);
+
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(400);
+        assertThat(message(response)).isEqualTo("Chọn tối đa 8 trạm (tính cả cửa khẩu), đang có 9. Hãy bỏ bớt trạm.");
+        assertThat(STUB.requests("/route")).isEmpty();
+    }
+
     @Test
     void domesticRouteRunningAlongTheBorderIsAccepted() throws Exception {
         STUB.reply("/route", 200, "valhalla-truck-hcm-mocbai.json");

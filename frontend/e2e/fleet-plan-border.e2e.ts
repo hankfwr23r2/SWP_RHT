@@ -6,6 +6,7 @@ import { expect, test } from '@playwright/test'
 // 2. Mở hộp chọn trạm, phóng to bản đồ; trang tự tải lại dữ liệu (mỗi 15 giây hoặc khi quay lại cửa sổ)
 //    thì bản đồ trong hộp vẫn giữ nguyên, không bị dựng lại về mức zoom ban đầu.
 // 3. Chọn trạm thì hộp hiện số km và giờ lái xe tải thật (không còn "đường chim bay").
+// 4. Chọn tối đa 8 trạm (giới hạn của máy tính đường), không cho thêm trạm thứ 9.
 test('đơn nội địa sát biên giới: lộ trình tự giữ trong Việt Nam, hộp chọn trạm không giật', async ({ page }) => {
   const email = process.env.E2E_COORDINATOR_EMAIL
   const password = process.env.E2E_COORDINATOR_PASSWORD
@@ -50,9 +51,23 @@ test('đơn nội địa sát biên giới: lộ trình tự giữ trong Việt 
   })
   expect(samePane, 'bản đồ trong hộp chọn trạm bị dựng lại khi trang tải lại dữ liệu').toBe(true)
 
-  // 3. Chọn một trạm: hộp hiện số liệu xe tải thật
+  // 3. Chọn một trạm (bấm trạm để xem, rồi bấm "Thêm trạm này vào lộ trình"): hộp hiện số liệu xe tải thật
+  const addButton = page.getByRole('button', { name: 'Thêm trạm này vào lộ trình' })
   await pickerMap.locator('.rm-st:not(.rm-on)').first().click({ force: true })
+  await addButton.click()
   await expect(page.getByText('giờ lái xe tải')).toBeVisible({ timeout: 60_000 })
   await expect(page.getByText('đường chim bay')).toHaveCount(0)
   await page.screenshot({ path: test.info().outputPath('fleet-plan-border.png') })
+
+  // 4. Máy tính đường nhận tối đa 8 điểm giữa đường: đủ 8 trạm thì trạm thứ 9 không thêm được và hộp báo đã đủ
+  // Trạm có thể nằm ngoài khung nhìn của bản đồ: gửi thẳng sự kiện click vào marker như khi người dùng kéo tới và bấm
+  for (let i = 0; i < 7; i++) {
+    await pickerMap.locator('.rm-st:not(.rm-on)').first().dispatchEvent('click')
+    await addButton.click()
+  }
+  await expect(pickerMap.locator('.rm-st.rm-on')).toHaveCount(8)
+  await expect(page.getByText('8/8 trạm')).toBeVisible()
+  await pickerMap.locator('.rm-st:not(.rm-on)').first().dispatchEvent('click')
+  await expect(addButton).toBeDisabled()
+  await expect(page.getByRole('alert').filter({ hasText: 'Tối đa 8 trạm' })).toBeVisible()
 })
