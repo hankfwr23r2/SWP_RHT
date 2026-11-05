@@ -197,12 +197,20 @@ export const tripDays = (km: number, international: boolean) => Math.max(1, Math
 // ===== Báo giá (PRD mục 2.5) =====
 const roundK = (n: number) => Math.round(n / 1000) * 1000
 
-type QuoteInput = Pick<Booking, 'type' | 'origin' | 'dest' | 'gate' | 'horses'>
+type QuoteInput = Pick<Booking, 'type' | 'origin' | 'dest' | 'gate' | 'horses'> & Partial<Pick<Booking, 'route'>>
+
+// Số ngày theo lịch (tính cả ngày đi và ngày tới)
+const calendarDays = (from: number, to: number) => {
+  const day = (t: number) => { const d = new Date(t); return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime() }
+  return Math.max(1, Math.round((day(to) - day(from)) / 86_400_000) + 1)
+}
 
 export function quoteLines(b: QuoteInput, vehicles: Pick<Vehicle, 'capacity'>[]) {
   const international = b.type === 'international'
-  const km = routeKm(b.origin, b.dest, b.gate)
-  const days = tripDays(km, international)
+  // Đã chốt lộ trình xe tải thì tính theo đúng quãng đường và số ngày của lộ trình đó; chưa chốt thì ước tính chim bay
+  const legs = b.route?.legs ?? []
+  const km = legs.length ? Math.round(legs.reduce((t, l) => t + l.km, 0)) : routeKm(b.origin, b.dest, b.gate)
+  const days = legs.length ? calendarDays(legs[0].departAt, legs[legs.length - 1].arriveAt) : tripDays(km, international)
   const m = 1 + MARGIN_RATE
   const many = vehicles.length > 1
   const lines: QuoteLine[] = []
