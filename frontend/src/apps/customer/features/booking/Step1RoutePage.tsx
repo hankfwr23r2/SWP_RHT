@@ -2,6 +2,7 @@
 // Áp dụng mô hình hành chính 2 cấp (Tỉnh/Thành → Xã/Phường) và gợi ý trại ngựa quen thuộc.
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import {
   PROVINCES_DATA,
@@ -14,6 +15,7 @@ import { earliestDeparture, fromIsoDay, isDepartureAllowed } from '@shared/lib/b
 import { formatDate } from '@shared/lib/format'
 import { isValidContactName, isValidPhoneForCountry, PHONE_CALLING_CODES, toInternationalPhone } from '@shared/lib/contactValidation'
 import { isValidLocationDetail, removeLocationDetailSpecialCharacters } from '@shared/lib/locationValidation'
+import { customerProfileApi } from '@shared/api/customerProfile'
 import type { Party, TransportType } from '@shared/types/booking'
 import { Flag } from '@shared/ui/Flag'
 import { FormSelect } from '@shared/ui/FormSelect'
@@ -26,10 +28,6 @@ import s from './Booking.module.css'
 
 type Partner = Exclude<CountryCode, 'VN'>
 const PARTNER_COUNTRIES: CountryCode[] = ['VN', 'KH', 'LA']
-const TYPES: [TransportType, string, string][] = [
-  ['domestic', 'Trong nước', 'Việt Nam → Việt Nam'],
-  ['international', 'Quốc tế', 'Việt Nam ↔ Lào / Campuchia'],
-]
 
 const countryOption = (code: CountryCode) => (
   <span className={s.countryOption}>
@@ -66,6 +64,7 @@ interface PhoneFieldProps {
 }
 
 function PhoneField({ id, label, country, phone, invalid, error, onCountryChange, onPhoneChange }: PhoneFieldProps) {
+  const { i18n } = useTranslation()
   return (
     <div className="form-group">
       <label htmlFor={`${id}-number`} className="required">{label}</label>
@@ -73,7 +72,7 @@ function PhoneField({ id, label, country, phone, invalid, error, onCountryChange
         <select
           id={`${id}-country`}
           className="form-control"
-          aria-label={`Mã quốc gia điện thoại ${label.toLowerCase()}`}
+          aria-label={i18n.language === 'en' ? `Phone country code for ${label.toLowerCase()}` : `Mã quốc gia điện thoại ${label.toLowerCase()}`}
           value={country}
           onChange={event => {
             const selectedCountry = PARTNER_COUNTRIES.find(code => code === event.target.value)
@@ -88,7 +87,7 @@ function PhoneField({ id, label, country, phone, invalid, error, onCountryChange
           id={`${id}-number`}
           className={`form-control ${invalid ? 'invalid' : ''}`}
           value={phone}
-          placeholder="Nhập số điện thoại"
+          placeholder={i18n.language === 'en' ? 'Enter phone number' : 'Nhập số điện thoại'}
           type="tel"
           autoComplete="tel-national"
           onChange={event => onPhoneChange(event.target.value)}
@@ -134,6 +133,7 @@ interface LocationPickerProps {
 }
 
 function LocationPicker({ country, address, onChange, errors }: LocationPickerProps) {
+  const { t } = useTranslation()
   const provinces = useMemo(() => PROVINCES_DATA.filter(p => p.country === country), [country])
 
   const selectedProv: ProvinceInfo | undefined = provinces.find(p => p.code === address.provinceCode)
@@ -174,14 +174,14 @@ function LocationPicker({ country, address, onChange, errors }: LocationPickerPr
       <div className={s.grid2}>
         <div className="form-group">
           <label className="required">
-            Tỉnh / Thành phố <span className={s.subNote}>({COUNTRIES[country].name})</span>
+            {t('bookingWizard.provinceCity')} <span className={s.subNote}>({COUNTRIES[country].name})</span>
           </label>
           <select
             className={`form-control ${errors?.province ? 'invalid' : ''}`}
             value={address.provinceCode}
             onChange={e => handleProvChange(e.target.value)}
           >
-            <option value="">-- Chọn Tỉnh / Thành phố --</option>
+            <option value="">{t('bookingWizard.selectProvince')}</option>
             {provinces.map(p => (
               <option key={p.code} value={p.code}>
                 {p.name}
@@ -193,7 +193,7 @@ function LocationPicker({ country, address, onChange, errors }: LocationPickerPr
 
         <div className="form-group">
           <label className="required">
-            Xã / Phường / Khu vực
+            {t('bookingWizard.wardDistrict')}
           </label>
           <select
             className={`form-control ${errors?.ward ? 'invalid' : ''}`}
@@ -201,23 +201,23 @@ function LocationPicker({ country, address, onChange, errors }: LocationPickerPr
             disabled={!selectedProv}
             onChange={e => handleWardChange(e.target.value)}
           >
-            <option value="">-- {selectedProv ? 'Chọn Xã / Phường' : 'Vui lòng chọn Tỉnh/Thành trước'} --</option>
+            <option value="">-- {selectedProv ? t('bookingWizard.selectWard') : t('bookingWizard.selectProvinceFirst')} --</option>
             {selectedProv?.wards.map(w => (
               <option key={w.name} value={w.name}>
                 {w.name}
               </option>
             ))}
-            {selectedProv && <option value="Khác">Khu vực khác / Chưa có trong danh sách</option>}
+            {selectedProv && <option value="Khác">{t('bookingWizard.otherWard')}</option>}
           </select>
           {errors?.ward && <div className="form-error">{errors.ward}</div>}
         </div>
 
         <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-          <label className="required">Tên trang trại / Địa chỉ cụ thể</label>
+          <label className="required">{t('bookingWizard.farmAddress')}</label>
           <input
             type="text"
             className={`form-control ${errors?.detail ? 'invalid' : ''}`}
-            placeholder="Số nhà, tên trang trại, thôn/ấp, tên đường đón/trả ngựa..."
+            placeholder={t('bookingWizard.farmAddressPlaceholder')}
             value={address.detail}
             onChange={e => handleDetailChange(e.target.value)}
             onBlur={handleDetailBlur}
@@ -229,7 +229,7 @@ function LocationPicker({ country, address, onChange, errors }: LocationPickerPr
           <div className={s.addressPreview}>
             <PinIcon />
             <span>
-              <b>Địa chỉ định vị:</b> {fullAddr}
+              <b>{t('bookingWizard.geoAddress')}</b> {fullAddr}
             </span>
           </div>
         )}
@@ -239,10 +239,16 @@ function LocationPicker({ country, address, onChange, errors }: LocationPickerPr
 }
 
 export default function Step1RoutePage() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const toast = useToast()
   const { session } = useAuth()
   const { draft, save } = useBookingDraft()
+
+  const types: [TransportType, string, string][] = [
+    ['domestic', t('bookingWizard.domestic'), t('bookingWizard.domesticRoute')],
+    ['international', t('bookingWizard.international'), t('bookingWizard.internationalRoute')],
+  ]
 
   const initialCountries = countriesOf(draft)
   const initialConsignorPhone = parsePhoneDraft(draft.consignor.phone, initialCountries?.origin ?? 'VN')
@@ -347,26 +353,34 @@ export default function Step1RoutePage() {
     reset()
   }
 
-  // Điền nhanh thông tin tài khoản vào Người gửi
-  const fillMe = () => {
+  const fillFromProfile = async (target: 'consignor' | 'consignee') => {
     if (!session) return
-    if (!consignor.phone) setConsignorPhoneCountry('VN')
-    setConsignor(prev => ({
-      ...prev,
-      name: session.name || prev.name,
-      phone: prev.phone || '0901234567',
-    }))
-  }
+    try {
+      const profile = await customerProfileApi.getProfile()
+      const profilePhone = profile.phone?.trim()
+      const fallbackCountry = target === 'consignor' ? consignorPhoneCountry : consigneePhoneCountry
+      const parsedPhone = profilePhone ? parsePhoneDraft(profilePhone, fallbackCountry) : null
+      const updateParty = (party: Party): Party => ({
+        ...party,
+        name: profile.fullName || session.name || party.name,
+        ...(parsedPhone ? { phone: parsedPhone.phone } : {}),
+      })
 
-  // Copy thông tin Người gửi → Người nhận (không copy địa chỉ)
-  const fillConsigneeFromConsignor = () => {
-    setConsigneePhoneCountry(consignorPhoneCountry)
-    setConsignee(prev => ({
-      ...prev,
-      name: consignor.name,
-      phone: consignor.phone,
-      idNumber: consignor.idNumber,
-    }))
+      if (target === 'consignor') {
+        setConsignor(updateParty)
+        if (parsedPhone) setConsignorPhoneCountry(parsedPhone.country)
+      } else {
+        setConsignee(updateParty)
+        if (parsedPhone) setConsigneePhoneCountry(parsedPhone.country)
+      }
+
+      if (!profilePhone) {
+        toast('Hồ sơ tài khoản chưa có số điện thoại. Vui lòng nhập số điện thoại.', 'info')
+      }
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Không thể tải thông tin hồ sơ.'
+      toast(message, 'error')
+    }
   }
 
   const dateError = !date
@@ -431,17 +445,17 @@ export default function Step1RoutePage() {
   return (
     <BookingShell
       step={1}
-      title="Tạo yêu cầu vận chuyển"
-      subtitle="Thiết lập tuyến đường, ngày đi và thông tin giao nhận ngựa theo mô hình 2 cấp (Tỉnh/Thành → Xã/Phường)."
+      title={t('bookingWizard.step1Title')}
+      subtitle={t('bookingWizard.step1Subtitle')}
     >
       <form onSubmit={submit} noValidate>
         {/* KHỐI 1: LOẠI CHUYẾN */}
         <div className="card" data-card>
           <div className="card-header">
-            <h3><RouteIcon /> Loại chuyến</h3>
+            <h3><RouteIcon /> {t('bookingWizard.tripType')}</h3>
           </div>
-          <div className={s.typeGrid} role="radiogroup" aria-label="Loại chuyến">
-            {TYPES.map(([value, title, route]) => (
+          <div className={s.typeGrid} role="radiogroup" aria-label={t('bookingWizard.tripType')}>
+            {types.map(([value, title, route]) => (
               <button
                 key={value}
                 type="button"
@@ -468,14 +482,14 @@ export default function Step1RoutePage() {
         {type && (
           <div className="card" data-card>
             <div className="card-header">
-              <h3><RouteIcon /> Hành trình &amp; ngày đi</h3>
+              <h3><RouteIcon /> {t('booking.step1')} &amp; {t('bookingWizard.departureDate')}</h3>
             </div>
 
             <div className={s.routeSetup}>
               {type === 'international' && (
                 <div className={s.routePicker}>
                   <div className="form-group">
-                    <label className="required" htmlFor="origin-country">Nước khởi hành</label>
+                    <label className="required" htmlFor="origin-country">{t('bookingWizard.originCountry')}</label>
                     <FormSelect
                       id="origin-country"
                       value={originCountry}
@@ -491,14 +505,14 @@ export default function Step1RoutePage() {
                     className={s.swapBtn}
                     onClick={swapCountries}
                     disabled={!destCountry}
-                    aria-label="Đổi chiều vận chuyển"
-                    title="Đổi chiều"
+                    aria-label={t('bookingWizard.swapDirection')}
+                    title={t('bookingWizard.swapDirection')}
                   >
                     <SwapIcon />
                   </button>
 
                   <div className="form-group">
-                    <label className="required" htmlFor="dest-country">Nước đến</label>
+                    <label className="required" htmlFor="dest-country">{t('bookingWizard.destCountry')}</label>
                     <FormSelect
                       id="dest-country"
                       value={destCountry}
@@ -508,7 +522,7 @@ export default function Step1RoutePage() {
                     >
                       {originCountry === 'VN' ? (
                         <>
-                          <option value="">Chọn quốc gia đến</option>
+                          <option value="">{t('bookingWizard.selectDestCountry')}</option>
                           <option value="KH">{countryOption('KH')}</option>
                           <option value="LA">{countryOption('LA')}</option>
                         </>
@@ -523,14 +537,14 @@ export default function Step1RoutePage() {
                   <div className={s.routeEnds}>
                     <div className={s.routeEnd}>
                       <Flag code={originC} size={24} />
-                      <span className={s.routeText}><small>Khởi hành</small><b>{COUNTRIES[originC].name}</b></span>
+                      <span className={s.routeText}><small>{t('booking.origin')}</small><b>{COUNTRIES[originC].name}</b></span>
                     </div>
                     <span className={s.routeArrow}><span /><ArrowRightIcon /><span /></span>
                     <div className={s.routeEnd}>
                       {partner
                         ? <Flag code={destC} size={24} />
                         : <span className={s.routeFlagEmpty}><GlobeIcon /></span>}
-                      <span className={s.routeText}><small>Điểm đến</small><b>{partner ? COUNTRIES[destC].name : 'Chọn quốc gia'}</b></span>
+                      <span className={s.routeText}><small>{t('booking.destination')}</small><b>{partner ? COUNTRIES[destC].name : t('bookingWizard.selectDestCountry')}</b></span>
                     </div>
                   </div>
                 </div>
@@ -540,8 +554,8 @@ export default function Step1RoutePage() {
 
               <div className={s.dateBlock}>
                 <div className={s.dateBlockHead}>
-                  <h4><CalendarIcon /> Ngày khởi hành</h4>
-                  <span className={s.dateMin}>Sớm nhất {formatDate(min)}</span>
+                  <h4><CalendarIcon /> {t('bookingWizard.departureDate')}</h4>
+                  <span className={s.dateMin}>{t('bookingWizard.earliestDeparture', { date: formatDate(min) })}</span>
                 </div>
                 <DepartureDatePicker value={date} min={min} onChange={setDate} invalid={submitted && !!errors.date} />
                 {show(errors.date)}
@@ -557,11 +571,11 @@ export default function Step1RoutePage() {
               <div className={s.partyHeader} style={{ width: '100%', marginBottom: 0 }}>
                 <h3 style={{ margin: 0 }}>
                   <SenderIcon />
-                  Người gửi &amp; Điểm đón ngựa <span className={s.subNote}>({COUNTRIES[originC].name})</span>
+                  {t('bookingWizard.senderAndPickup')} <span className={s.subNote}>({COUNTRIES[originC].name})</span>
                 </h3>
                 {session?.name && (
-                  <button type="button" className={s.quickMeBtn} onClick={fillMe}>
-                    <UserIcon /> Tôi là người gửi
+                  <button type="button" className={s.quickMeBtn} onClick={() => void fillFromProfile('consignor')}>
+                    <UserIcon /> {t('bookingWizard.iAmSender')}
                   </button>
                 )}
               </div>
@@ -570,14 +584,14 @@ export default function Step1RoutePage() {
             <div className={s.grid2}>
               <div className="form-group">
                 <label htmlFor="consignor-name" className="required">
-                  Họ tên người gửi / Tên đơn vị
+                  {t('bookingWizard.senderName')}
                 </label>
                 <input
                   id="consignor-name"
                   className={`form-control ${submitted && errors.consignorName ? 'invalid' : ''}`}
                   value={consignor.name}
                   maxLength={100}
-                  placeholder="Ví dụ: Nguyễn Văn A hoặc Trại ngựa Long Thành"
+                  placeholder={t('bookingWizard.senderNamePlaceholder')}
                   onChange={e => setConsignor({ ...consignor, name: e.target.value })}
                 />
                 {show(errors.consignorName)}
@@ -585,7 +599,7 @@ export default function Step1RoutePage() {
 
               <PhoneField
                 id="consignor-phone"
-                label="Số điện thoại người gửi"
+                label={t('bookingWizard.senderPhone')}
                 country={consignorPhoneCountry}
                 phone={consignor.phone}
                 invalid={submitted && !!errors.consignorPhone}
@@ -614,14 +628,14 @@ export default function Step1RoutePage() {
             {/* CCCD / THẺ CĂN CƯỚC NGƯỜI GỬI */}
             <div className="form-group" style={{ marginTop: 12, maxWidth: 360 }}>
               <label htmlFor="consignor-idNumber" className="required">
-                Số CCCD / Thẻ căn cước người gửi
+                {t('bookingWizard.senderId')}
               </label>
               <input
                 id="consignor-idNumber"
                 className={`form-control ${submitted && errors.consignorId ? 'invalid' : ''}`}
                 value={consignor.idNumber}
                 maxLength={50}
-                placeholder="Nhập số CCCD / Thẻ căn cước người gửi"
+                placeholder={t('bookingWizard.senderId')}
                 onChange={e => setConsignor({ ...consignor, idNumber: e.target.value })}
               />
               {show(errors.consignorId)}
@@ -636,11 +650,11 @@ export default function Step1RoutePage() {
               <div className={s.partyHeader} style={{ width: '100%', marginBottom: 0 }}>
                 <h3 style={{ margin: 0 }}>
                   <PinIcon />
-                  Người nhận &amp; Điểm giao ngựa <span className={s.subNote}>({COUNTRIES[destC].name})</span>
+                  {t('bookingWizard.receiverAndDropoff')} <span className={s.subNote}>({COUNTRIES[destC].name})</span>
                 </h3>
-                {consignor.name && (
-                  <button type="button" className={s.quickMeBtn} onClick={fillConsigneeFromConsignor}>
-                    <UserIcon /> Người gửi là người nhận
+                {session?.name && (
+                  <button type="button" className={s.quickMeBtn} onClick={() => void fillFromProfile('consignee')}>
+                    <UserIcon /> {t('bookingWizard.iAmReceiver')}
                   </button>
                 )}
               </div>
@@ -649,14 +663,14 @@ export default function Step1RoutePage() {
             <div className={s.grid2}>
               <div className="form-group">
                 <label htmlFor="consignee-name" className="required">
-                  Họ tên người nhận / Tên trại đích
+                  {t('bookingWizard.receiverName')}
                 </label>
                 <input
                   id="consignee-name"
                   className={`form-control ${submitted && errors.consigneeName ? 'invalid' : ''}`}
                   value={consignee.name}
                   maxLength={100}
-                  placeholder="Ví dụ: Trần Văn B hoặc CLB Cưỡi ngựa..."
+                  placeholder={t('bookingWizard.receiverNamePlaceholder')}
                   onChange={e => setConsignee({ ...consignee, name: e.target.value })}
                 />
                 {show(errors.consigneeName)}
@@ -664,7 +678,7 @@ export default function Step1RoutePage() {
 
               <PhoneField
                 id="consignee-phone"
-                label="Số điện thoại người nhận"
+                label={t('bookingWizard.receiverPhone')}
                 country={consigneePhoneCountry}
                 phone={consignee.phone}
                 invalid={submitted && !!errors.consigneePhone}
@@ -693,14 +707,14 @@ export default function Step1RoutePage() {
             {/* CCCD / THẺ CĂN CƯỚC NGƯỜI NHẬN */}
             <div className="form-group" style={{ marginTop: 12, maxWidth: 360 }}>
               <label htmlFor="consignee-idNumber" className="required">
-                Số CCCD / Thẻ căn cước người nhận
+                {t('bookingWizard.receiverId')}
               </label>
               <input
                 id="consignee-idNumber"
                 className={`form-control ${submitted && errors.consigneeId ? 'invalid' : ''}`}
                 value={consignee.idNumber}
                 maxLength={50}
-                placeholder="Nhập số CCCD / Thẻ căn cước người nhận"
+                placeholder={t('bookingWizard.receiverId')}
                 onChange={e => setConsignee({ ...consignee, idNumber: e.target.value })}
               />
               {show(errors.consigneeId)}
@@ -714,21 +728,18 @@ export default function Step1RoutePage() {
               <i className="fa-solid fa-shield-halved" />
             </span>
             <div>
-              <b>Bảo trợ Hành lang An toàn (Mô hình Nút giao tiếp cận):</b>
-              <p>
-                Xe chuyên dụng sẽ đón tận nơi tại trang trại của bạn, sau đó nhập vào nút giao cao tốc gần nhất để di chuyển trên hành lang an toàn đã được kiểm định thú y.
-              </p>
+              <b>{t('bookingWizard.corridorTitle')}</b>
+              <p>{t('bookingWizard.corridorDesc')}</p>
             </div>
           </div>
         )}
 
         <div className={s.actions}>
-
           <Link to="/portal" className="btn btn-ghost">
-            Hủy
+            {t('bookingWizard.btnCancel')}
           </Link>
           <button type="submit" className="btn btn-primary" disabled={!type}>
-            Tiếp tục: Chọn ngựa <ArrowRightIcon />
+            {t('bookingWizard.btnNextHorses')} <ArrowRightIcon />
           </button>
         </div>
       </form>

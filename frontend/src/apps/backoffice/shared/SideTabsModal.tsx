@@ -1,5 +1,6 @@
 // Popup có dải tab dọc bên trái (hình mũi tên) và nội dung của tab đang chọn bên phải; nút hành động cố định ở chân.
 import { useState, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import s from './SideTabsModal.module.css'
 
 export interface SideTab {
@@ -24,22 +25,23 @@ interface Props {
 }
 
 export function SideTabsModal({ title, subtitle, tabs, top, footer, onClose }: Props) {
+  const { t } = useTranslation()
   const [at, setAt] = useState(tabs[0].id)
-  const cur = tabs.find(t => t.id === at) ?? tabs[0]
+  const cur = tabs.find(item => item.id === at) ?? tabs[0]
   return (
     <div className="modal-backdrop" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className={`modal ${s.modal}`} role="dialog" aria-modal="true">
         <div className="modal-head">
           <div><h3>{title}</h3>{subtitle && <div className="sub-text">{subtitle}</div>}</div>
-          <button className="modal-close" onClick={onClose} aria-label="Đóng"><i className="fa-solid fa-xmark" /></button>
+          <button className="modal-close" onClick={onClose} aria-label={t('common.close', 'Đóng')}><i className="fa-solid fa-xmark" /></button>
         </div>
         <div className={s.body}>
-          <nav className={s.tabs} role="tablist" aria-orientation="vertical" aria-label="Mục của đơn">
-            {tabs.map(t => (
-              <button key={t.id} type="button" role="tab" aria-selected={t.id === cur.id} className={`${s.tab} ${t.id === cur.id ? s.on : ''}`} onClick={() => setAt(t.id)}>
-                <i className={`fa-solid ${t.icon}`} aria-hidden="true" />
-                <span>{t.label}</span>
-                {t.count ? <em className={s.count}>{t.count}</em> : t.state && <i className={`fa-solid ${t.state === 'ok' ? 'fa-circle-check' : 'fa-circle-exclamation'} ${s.dot} ${t.state === 'ok' ? s.ok : s.warn}`} aria-label={t.state === 'ok' ? 'Đã đủ' : 'Còn thiếu'} />}
+          <nav className={s.tabs} role="tablist" aria-orientation="vertical" aria-label={t('sideTabsModal.orderSections', 'Mục của đơn')}>
+            {tabs.map(item => (
+              <button key={item.id} type="button" role="tab" aria-selected={item.id === cur.id} className={`${s.tab} ${item.id === cur.id ? s.on : ''}`} onClick={() => setAt(item.id)}>
+                <i className={`fa-solid ${item.icon}`} aria-hidden="true" />
+                <span>{item.label}</span>
+                {item.count ? <em className={s.count}>{item.count}</em> : item.state && <i className={`fa-solid ${item.state === 'ok' ? 'fa-circle-check' : 'fa-circle-exclamation'} ${s.dot} ${item.state === 'ok' ? s.ok : s.warn}`} aria-label={item.state === 'ok' ? t('sideTabsModal.complete', 'Đã đủ') : t('sideTabsModal.incomplete', 'Còn thiếu')} />}
               </button>
             ))}
           </nav>

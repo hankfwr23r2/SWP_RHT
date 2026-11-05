@@ -14,6 +14,7 @@ import com.example.racehorse_transport.repository.*;
 import com.example.racehorse_transport.service.SettlementService;
 import com.example.racehorse_transport.util.BookingDetailsJson;
 import com.example.racehorse_transport.util.ClearanceDocumentPolicy;
+import com.example.racehorse_transport.util.PaymentAmountLimits;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -149,6 +150,9 @@ public class SettlementServiceImpl implements SettlementService {
             if (customerTotal.compareTo(BigDecimal.ZERO) < 0) {
                 customerTotal = BigDecimal.ZERO;
             }
+        }
+        if (PaymentAmountLimits.exceedsMaximum(customerTotal)) {
+            throw new IllegalArgumentException("Tổng quyết toán vượt quá giới hạn thanh toán được hỗ trợ.");
         }
 
         String managerName = (request != null && request.getManagerName() != null && !request.getManagerName().isBlank())
@@ -298,10 +302,11 @@ public class SettlementServiceImpl implements SettlementService {
     // =========================================================================
 
     private BigDecimal settlementTotal(Map<String, Object> settlementMap) {
-        Object totalObj = settlementMap.get("total");
-        return totalObj instanceof Number
-                ? BigDecimal.valueOf(((Number) totalObj).doubleValue())
-                : BigDecimal.ZERO;
+        return toBigDecimal(settlementMap.get("total"));
+    }
+
+    private BigDecimal toBigDecimal(Object value) {
+        return value instanceof Number number ? new BigDecimal(number.toString()) : BigDecimal.ZERO;
     }
 
     private Map<String, Object> toRatingMap(RatingDto rating, Instant now) {
@@ -364,11 +369,7 @@ public class SettlementServiceImpl implements SettlementService {
         BigDecimal totalBasePaid = quotation != null && quotation.getTotalAmount() != null
                 ? quotation.getTotalAmount() : BigDecimal.ZERO;
 
-        BigDecimal extraTotal = BigDecimal.ZERO;
-        Object totalObj = settlementMap.get("total");
-        if (totalObj instanceof Number) {
-            extraTotal = BigDecimal.valueOf(((Number) totalObj).doubleValue());
-        }
+        BigDecimal extraTotal = toBigDecimal(settlementMap.get("total"));
 
         List<ExpenseItemDto> items = new ArrayList<>();
         Object itemsObj = settlementMap.get("items");

@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from 'react'
+import { useTranslation } from 'react-i18next'
 import { HORSE_DOC, HORSE_DOC_TYPES, type HorseDocType } from '@shared/config/booking-rules'
 import { horsesApi, type NewHorse } from '@shared/services/horses'
 import { useLoad } from '@shared/services/useLoad'
-import { SEX_LABEL, type HorseDoc, type HorseProfile, type Sex } from '@shared/types/booking'
+import { SEX_LABEL, sexLabel, type HorseDoc, type HorseProfile, type Sex } from '@shared/types/booking'
 import { FileField } from '@shared/ui/FileField'
 import { Modal } from '@shared/ui/Modal'
 import s from './Horses.module.css'
@@ -18,6 +19,8 @@ interface Props {
 }
 
 export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
+  const { i18n } = useTranslation()
+  const isEn = i18n.language.startsWith('en')
   const editing = !!horse
   const { data: horseTypes, loaded: horseTypesLoaded, reload: reloadHorseTypes } = useLoad(() => horsesApi.listTypes(), [])
   const [name, setName] = useState(horse?.name ?? '')
@@ -196,7 +199,7 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
                 </div>
                 <div className="form-group">
                   <label htmlFor="h-sex">Giới tính</label>
-                  <FormSelect id="h-sex" className="form-control" value={sex} onChange={e => setSex(e.target.value as Sex)}>{(Object.keys(SEX_LABEL) as Sex[]).map(k => <option key={k} value={k}>{SEX_LABEL[k]}</option>)}</FormSelect>
+                  <FormSelect id="h-sex" className="form-control" value={sex} onChange={e => setSex(e.target.value as Sex)}>{(Object.keys(SEX_LABEL) as Sex[]).map(k => <option key={k} value={k}>{sexLabel(k, isEn)}</option>)}</FormSelect>
                 </div>
                 <div className="form-group">
                   <label htmlFor="h-color" className="required">Màu lông</label>

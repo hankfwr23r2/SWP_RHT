@@ -1,5 +1,6 @@
 // Manager: báo cáo doanh thu, chi phí vận hành và hiệu suất hoàn thành chuyến (PRD mục 15). Chỉ xem.
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { DAY } from '@shared/config/business-rules'
 import { formatDate, formatVND } from '@shared/lib/format'
 import { bookingStatusLabel, changePct, orderFinance, series, summarize } from '@shared/lib/report'
@@ -26,6 +27,7 @@ function Kpi({ label, value, icon, children }: { label: string; value: string; i
 }
 
 export default function ReportsPage() {
+  const { t } = useTranslation()
   const { all, errors, reload } = usePageData<typeof bookingListLoader>()
   const toast = useToast()
   const [days, setDays] = useState<(typeof PERIODS)[number][0]>(30)
@@ -56,47 +58,47 @@ export default function ReportsPage() {
     <div className="page">
       <div className="wrap">
         <div className={s.head}>
-          <div><h1>Báo cáo doanh thu</h1><p>Doanh thu, chi phí vận hành và hiệu suất hoàn thành chuyến · {formatDate(from)} – {formatDate(now)}</p></div>
+          <div><h1>{t('staffMenus./manager/reports', 'Doanh thu')}</h1><p>{t('reportsPage.subtitle', 'Doanh thu, chi phí vận hành và hiệu suất hoàn thành chuyến · {{from}} – {{to}}', { from: formatDate(from), to: formatDate(now) })}</p></div>
           <div className={s.tools}>
             <div className={s.seg} role="group" aria-label="Khoảng thời gian">{PERIODS.map(([d, l]) => <button key={d} type="button" className={days === d ? s.on : ''} aria-pressed={days === d} onClick={() => setDays(d)}>{l}</button>)}</div>
-            <button className="btn btn-ghost" onClick={exportCsv} disabled={!all}><i className="fa-solid fa-download" /> Xuất CSV</button>
+            <button className="btn btn-ghost" onClick={exportCsv} disabled={!all}><i className="fa-solid fa-download" /> {t('reportsPage.exportCsv', 'Xuất CSV')}</button>
           </div>
         </div>
 
-        <h2 className={s.title}>Tài chính</h2>
+        <h2 className={s.title}>{t('reportsPage.secFinance', 'Tài chính')}</h2>
         <div className={s.kpis}>
-          <Kpi label="Doanh thu" value={money(cur.revenue)} icon="fa-sack-dollar"><Delta now={cur.revenue} before={prev.revenue} /></Kpi>
-          <Kpi label="Chi phí vận hành" value={money(cur.cost)} icon="fa-receipt"><Delta now={cur.cost} before={prev.cost} good="down" /></Kpi>
-          <Kpi label="Lợi nhuận" value={money(cur.profit)} icon="fa-chart-line"><Delta now={cur.profit} before={prev.profit} /></Kpi>
-          <Kpi label="Biên lợi nhuận" value={`${num1(cur.margin)}%`} icon="fa-percent"><Delta now={cur.margin} before={prev.margin} unit="pt" /></Kpi>
+          <Kpi label={t('reportsPage.revenue', 'Doanh thu')} value={money(cur.revenue)} icon="fa-sack-dollar"><Delta now={cur.revenue} before={prev.revenue} /></Kpi>
+          <Kpi label={t('reportsPage.operatingCost', 'Chi phí vận hành')} value={money(cur.cost)} icon="fa-receipt"><Delta now={cur.cost} before={prev.cost} good="down" /></Kpi>
+          <Kpi label={t('reportsPage.profit', 'Lợi nhuận')} value={money(cur.profit)} icon="fa-chart-line"><Delta now={cur.profit} before={prev.profit} /></Kpi>
+          <Kpi label={t('reportsPage.margin', 'Biên lợi nhuận')} value={`${num1(cur.margin)}%`} icon="fa-percent"><Delta now={cur.margin} before={prev.margin} unit="pt" /></Kpi>
         </div>
 
         <div className={s.charts}>
           <div className={s.card}>
-            <h3>Doanh thu và chi phí</h3>
-            <div className={s.legend}><span><i style={{ background: '#1d5fa8' }} />Doanh thu</span><span><i style={{ background: '#eb6834' }} />Chi phí vận hành</span><span>{days > 31 ? 'Theo tuần' : 'Theo ngày đặt cọc'}</span></div>
+            <h3>{t('reportsPage.revenueAndCosts', 'Doanh thu và chi phí')}</h3>
+            <div className={s.legend}><span><i style={{ background: '#1d5fa8' }} />{t('reportsPage.revenue', 'Doanh thu')}</span><span><i style={{ background: '#eb6834' }} />{t('reportsPage.operatingCost', 'Chi phí vận hành')}</span><span>{days > 31 ? t('reportsPage.byWeek', 'Theo tuần') : t('reportsPage.byDepositDate', 'Theo ngày đặt cọc')}</span></div>
             <MoneyChart pts={pts} />
           </div>
           <div className={s.card}>
-            <h3>Chuyến hoàn thành</h3>
+            <h3>{t('reportsPage.completedTrips', 'Chuyến hoàn thành')}</h3>
             <div className={s.legend}><span>Số chuyến giao xong mỗi {days > 31 ? 'tuần' : 'ngày'}</span></div>
             <TripsChart pts={pts} />
           </div>
         </div>
 
-        <h2 className={s.title}>Hiệu suất hoàn thành chuyến</h2>
+        <h2 className={s.title}>{t('reportsPage.secPerformance', 'Hiệu suất hoàn thành chuyến')}</h2>
         <div className={s.perf}>
-          <Kpi label="Tỷ lệ hoàn thành" value={`${num1(cur.completionRate)}%`} icon="fa-flag-checkered">
+          <Kpi label={t('reportsPage.completionRate', 'Tỷ lệ hoàn thành')} value={`${num1(cur.completionRate)}%`} icon="fa-flag-checkered">
             <small style={{ textTransform: 'none', letterSpacing: 0 }}>{cur.delivered}/{cur.trips} chuyến đã xuất phát đã giao xong</small>
             <div className={s.bar}><span style={{ width: `${cur.completionRate}%` }} /></div>
             <Delta now={cur.completionRate} before={prev.trips ? prev.completionRate : NaN} unit="pt" />
           </Kpi>
-          <Kpi label="Giao đúng giờ" value={`${num1(cur.onTimeRate)}%`} icon="fa-stopwatch">
+          <Kpi label={t('reportsPage.onTimeRate', 'Giao đúng giờ')} value={`${num1(cur.onTimeRate)}%`} icon="fa-stopwatch">
             <small style={{ textTransform: 'none', letterSpacing: 0 }}>Tới điểm giao không trễ quá 30 phút</small>
             <div className={s.bar}><span style={{ width: `${cur.onTimeRate}%` }} /></div>
             <Delta now={cur.onTimeRate} before={prev.trips ? prev.onTimeRate : NaN} unit="pt" />
           </Kpi>
-          <Kpi label="Chuyến có sự cố" value={`${num1(cur.incidentRate)}%`} icon="fa-triangle-exclamation">
+          <Kpi label={t('reportsPage.incidentRate', 'Chuyến có sự cố')} value={`${num1(cur.incidentRate)}%`} icon="fa-triangle-exclamation">
             <small style={{ textTransform: 'none', letterSpacing: 0 }}>Trên số chuyến đã xuất phát</small>
             <div className={s.bar}><span style={{ width: `${cur.incidentRate}%`, background: '#eb6834' }} /></div>
             <Delta now={cur.incidentRate} before={prev.trips ? prev.incidentRate : NaN} good="down" unit="pt" />

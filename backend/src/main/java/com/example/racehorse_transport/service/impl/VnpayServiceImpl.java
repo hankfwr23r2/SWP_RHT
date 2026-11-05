@@ -16,6 +16,7 @@ import com.example.racehorse_transport.service.BookingService;
 import com.example.racehorse_transport.service.SettlementService;
 import com.example.racehorse_transport.service.VnpayService;
 import com.example.racehorse_transport.util.CustomerBookingRules;
+import com.example.racehorse_transport.util.PaymentAmountLimits;
 import com.example.racehorse_transport.util.VnpayUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -131,6 +132,9 @@ public class VnpayServiceImpl implements VnpayService {
         amount = amount == null ? BigDecimal.ZERO : amount.setScale(0, RoundingMode.HALF_UP);
         if (amount.signum() <= 0) {
             throw new IllegalStateException("Số tiền cần thanh toán không hợp lệ!");
+        }
+        if (PaymentAmountLimits.exceedsMaximum(amount)) {
+            throw new IllegalStateException("Số tiền cần thanh toán vượt quá giới hạn được hỗ trợ.");
         }
 
         // Dọn dẹp các giao dịch PENDING trước đó của cùng loại để không bị kẹt transaction dở dang

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { MAX_HORSES } from '@shared/config/business-rules'
 import { COUNTRIES, COUNTRY_LOCATIONS } from '@shared/config/network'
@@ -17,6 +18,7 @@ import s from './Booking.module.css'
 const FINISHED_STATUSES = new Set(['completed', 'cancelled', 'rejected', 'quote_expired'])
 
 export default function Step2HorsesPage() {
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const { draft, save } = useBookingDraft()
   const { horses, customerBookings } = usePageData<typeof horsesLoader>()
@@ -31,11 +33,11 @@ export default function Step2HorsesPage() {
   const allLocations = Object.values(COUNTRY_LOCATIONS).flat()
   const originLoc = allLocations.find(l => l.id === draft.originId)
   const originCountry = countriesOf(draft)?.origin
-  const originName = originLoc ? originLoc.name : (draft.originId || 'Điểm đón đã chọn')
+  const originName = originLoc ? originLoc.name : (draft.originId || (i18n.language === 'en' ? 'Selected pickup location' : 'Điểm đón đã chọn'))
   const countryName = (country?: string) => {
     const normalized = country?.trim().toUpperCase()
     if (normalized === 'VN' || normalized === 'KH' || normalized === 'LA') return COUNTRIES[normalized].name
-    return country || 'chưa xác định'
+    return country || (i18n.language === 'en' ? 'unspecified' : 'chưa xác định')
   }
   const hasUnverifiedLocationCountry = useCallback((horse: HorseProfile) =>
     horseHasUnverifiedLocationCountry(horse.currentLocationName, horse.currentCountry), [])
@@ -175,42 +177,42 @@ export default function Step2HorsesPage() {
   }
 
   return (
-    <BookingShell step={2} title="Chọn ngựa vận chuyển" subtitle={`Chọn từ Hồ sơ ngựa của bạn. Tối đa ${MAX_HORSES} ngựa mỗi chuyến vì mỗi đơn đi riêng một xe.`}>
+    <BookingShell step={2} title={t('bookingWizard.step2Title')} subtitle={t('bookingWizard.step2Subtitle', { max: MAX_HORSES })}>
       <div className="card" data-card>
         <div className="card-header">
-          <h3><i className="fa-solid fa-horse-head" /> Ngựa trong hồ sơ</h3>
+          <h3><i className="fa-solid fa-horse-head" /> {t('bookingWizard.horsesInProfile')}</h3>
         </div>
-        <p className={s.limit}>Đã chọn <b>{selected.length}</b> / {MAX_HORSES} ngựa{cls && <> · xe dự kiến <b>{cls.label}</b> <span className={s.subNote}>({cls.stalls})</span></>}</p>
+        <p className={s.limit}>{t('bookingWizard.selectedHorsesCount', { count: selected.length, max: MAX_HORSES })}{cls && <>{t('bookingWizard.expectedVehicle', { label: cls.label, stalls: cls.stalls })}</>}</p>
 
         {/* Thanh tìm kiếm ngựa */}
         <div className={s.searchBox}>
           <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
           <input
             type="text"
-            placeholder="Tìm theo tên ngựa, mã chip, giống…"
+            placeholder={t('bookingWizard.searchHorsePlaceholder')}
             value={search}
             onChange={e => { setSearch(e.target.value); pager.reset() }}
             aria-label="Tìm kiếm ngựa"
           />
           {search && (
-            <button type="button" className={s.searchClear} onClick={() => { setSearch(''); pager.reset() }} title="Xóa tìm kiếm" aria-label="Xóa tìm kiếm">
+            <button type="button" className={s.searchClear} onClick={() => { setSearch(''); pager.reset() }} title={t('bookingWizard.resetSearch')} aria-label={t('bookingWizard.resetSearch')}>
               <i className="fa-solid fa-xmark" style={{ position: 'static', transform: 'none' }} />
             </button>
           )}
         </div>
 
         <div className={s.pickList} role="group" aria-label="Danh sách ngựa">
-          {!horses && <p className="text-muted">Đang tải…</p>}
+          {!horses && <p className="text-muted">{t('common.loading')}</p>}
           {horses && !readyList.length && (
             <p className="text-muted">
-              Không có ngựa nào đủ điều kiện cho chuyến này.{' '}
-              <Link to="/horses">Vào Hồ sơ ngựa</Link> để bổ sung giấy tờ còn thiếu hoặc hết hạn.
+              {t('bookingWizard.noEligibleHorses')}{' '}
+              <Link to="/horses">{t('bookingWizard.goToHorses')}</Link> {t('bookingWizard.toAddDocs')}
             </p>
           )}
           {horses && readyList.length > 0 && !filteredList.length && (
             <p className="text-muted">
-              Không tìm thấy ngựa nào khớp với từ khóa &ldquo;{search}&rdquo;.{' '}
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setSearch(''); pager.reset() }}>Đặt lại tìm kiếm</button>
+              {t('bookingWizard.noMatchSearch', { query: search })}{' '}
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setSearch(''); pager.reset() }}>{t('bookingWizard.resetSearch')}</button>
             </p>
           )}
           {pager.rows.map(h => {
@@ -247,58 +249,58 @@ export default function Step2HorsesPage() {
                     <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                       {inTransit ? (
                         <span className="badge badge-warning" style={{ fontSize: '0.74rem' }}>
-                          <i className="fa-solid fa-truck-fast" /> Đang vận chuyển ở chuyến khác
+                          <i className="fa-solid fa-truck-fast" /> {t('bookingWizard.inTransitOther')}
                         </span>
                       ) : activeBookingCode ? (
                         <span className="badge badge-warning" style={{ fontSize: '0.74rem' }} title={`Đã được đặt trong đơn ${activeBookingCode}`}>
-                          <i className="fa-solid fa-clock-rotate-left" /> Đã đặt trong {activeBookingCode}
+                          <i className="fa-solid fa-clock-rotate-left" /> {t('bookingWizard.bookedInOrder', { code: activeBookingCode })}
                         </span>
                       ) : countryMismatch ? (
                         <span className="badge badge-warning" style={{ fontSize: '0.74rem' }}>
-                          <i className="fa-solid fa-triangle-exclamation" /> Khác quốc gia điểm đón
+                          <i className="fa-solid fa-triangle-exclamation" /> {t('bookingWizard.diffCountry')}
                         </span>
                       ) : countryUnverified ? (
                         <span className="badge badge-warning" style={{ fontSize: '0.74rem' }}>
-                          <i className="fa-solid fa-triangle-exclamation" /> Chưa xác định quốc gia chuồng
+                          <i className="fa-solid fa-triangle-exclamation" /> {t('bookingWizard.unverifiedCountry')}
                         </span>
                       ) : matchLoc ? (
                         <span className="badge badge-success" style={{ fontSize: '0.74rem' }}>
-                          <i className="fa-solid fa-circle-check" /> Trùng điểm đón
+                          <i className="fa-solid fa-circle-check" /> {t('bookingWizard.matchPickup')}
                         </span>
                       ) : (
                         <span className="badge badge-neutral" style={{ fontSize: '0.74rem' }} title={`Hiện ở: ${h.currentLocationName || 'Chưa cập nhật'}`}>
-                          <i className="fa-solid fa-location-dot" /> Khác điểm đón
+                          <i className="fa-solid fa-location-dot" /> {t('bookingWizard.diffPickup')}
                         </span>
                       )}
                     </div>
                   </div>
                   <div id={`pick-meta-${h.id}`} className={s.pickMeta}>
-                    Chip {h.microchip} · {h.breed} · {SEX_LABEL[h.sex]} · {ageOf(h)} tuổi
+                    Chip {h.microchip} · {h.breed} · {SEX_LABEL[h.sex]} · {ageOf(h)} {i18n.language === 'en' ? 'yrs' : 'tuổi'}
                     {h.currentLocationName && (
                       <span style={{ marginLeft: 8, color: matchLoc ? '#16a34a' : 'var(--muted)' }}>
-                        • Vị trí chuồng: <strong>{h.currentLocationName}</strong>
+                        • {t('bookingWizard.stableLocation')} <strong>{h.currentLocationName}</strong>
                       </span>
                     )}
                   </div>
                   {countryMismatch && (
                     <div style={{ fontSize: '0.8rem', color: '#b45309', marginTop: 4 }}>
-                      Hiện ở {countryName(h.currentCountry)}; chuyến này cần đón tại {countryName(originCountry)}.
+                      {i18n.language === 'en' ? `Currently in ${countryName(h.currentCountry)}. This trip requires pickup in ${countryName(originCountry)}.` : `Hiện ở ${countryName(h.currentCountry)}. Chuyến này cần đón tại ${countryName(originCountry)}.`}
                     </div>
                   )}
                   {countryUnverified && (
                     <div style={{ fontSize: '0.8rem', color: '#b45309', marginTop: 4 }}>
-                      Chưa xác định quốc gia của vị trí chuồng. Vui lòng <Link to="/horses">cập nhật quốc gia trong Hồ sơ ngựa</Link> trước khi đặt chuyến.
+                      {i18n.language === 'en' ? <>Stable location country unverified. Please <Link to="/horses">update country in Horse Profiles</Link> before booking.</> : <>Chưa xác định quốc gia của vị trí chuồng. Vui lòng <Link to="/horses">cập nhật quốc gia trong Hồ sơ ngựa</Link> trước khi đặt chuyến.</>}
                     </div>
                   )}
                   <HorseDocChips horse={h} tripType={draft.type || undefined} country={destinationCountry} />
                   {inTransit && (
                     <div style={{ fontSize: '0.8rem', color: '#b45309', marginTop: 4 }}>
-                      ⚠️ Cá thể ngựa này đang trong một chuyến vận chuyển khác và chưa hoàn tất bàn giao về chuồng.
+                      ⚠️ {i18n.language === 'en' ? 'This horse is currently on another shipment and has not been handed over back to stable.' : 'Cá thể ngựa này đang trong một chuyến vận chuyển khác và chưa hoàn tất bàn giao về chuồng.'}
                     </div>
                   )}
                   {!inTransit && activeBookingCode && (
                     <div style={{ fontSize: '0.8rem', color: '#b45309', marginTop: 4 }}>
-                      ⚠️ Cá thể ngựa này đã được đặt trong đơn {activeBookingCode} đang trong quá trình xử lý chưa hoàn tất.
+                      ⚠️ {i18n.language === 'en' ? `This horse has been reserved in active booking ${activeBookingCode}.` : `Cá thể ngựa này đã được đặt trong đơn ${activeBookingCode} đang trong quá trình xử lý chưa hoàn tất.`}
                     </div>
                   )}
                 </div>
@@ -321,7 +323,7 @@ export default function Step2HorsesPage() {
               <i className="fa-solid fa-circle-info" style={{ color: '#d97706', fontSize: '1.1rem', marginTop: 2 }} />
               <div style={{ fontSize: '0.86rem', color: '#92400e', flex: 1 }}>
                 <div>
-                  <strong>Lưu ý về vị trí chuồng hiện tại:</strong> Có <strong>{mismatchedHorses.length}</strong> cá thể ngựa bạn chọn ({mismatchedHorses.map(m => m.name).join(', ')}) hiện được ghi nhận ở địa chỉ khác với điểm đón <em>({originName})</em>.
+                  <strong>{t('bookingWizard.relocationNotice')}</strong> {t('bookingWizard.relocationDesc', { count: mismatchedHorses.length, horses: mismatchedHorses.map(m => m.name).join(', '), origin: originName })}
                 </div>
                 <div style={{ marginTop: 8 }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 600, color: '#78350f' }}>
@@ -333,7 +335,7 @@ export default function Step2HorsesPage() {
                         if (e.target.checked) setRelocationError('')
                       }}
                     />
-                    <span>Tôi xác nhận ngựa đã/sẽ được di chuyển tới điểm đón trên trước giờ kíp xe đến tiếp nhận.</span>
+                    <span>{t('bookingWizard.confirmRelocation')}</span>
                   </label>
                 </div>
               </div>
@@ -347,12 +349,12 @@ export default function Step2HorsesPage() {
           </div>
         )}
 
-        {submitted && !selected.length && <div className="form-error" role="alert" style={{ marginTop: 10 }}>Chọn ít nhất một con ngựa.</div>}
+        {submitted && !selected.length && <div className="form-error" role="alert" style={{ marginTop: 10 }}>{t('bookingWizard.selectAtLeastOneHorse')}</div>}
       </div>
 
       <div className={s.actions}>
-        <Link to="/booking/route" className="btn btn-ghost"><i className="fa-solid fa-arrow-left" /> Chuyến đi</Link>
-        <button type="button" className="btn btn-primary" onClick={next}>Tiếp tục: Dịch vụ và bảo hiểm <i className="fa-solid fa-arrow-right" /></button>
+        <Link to="/booking/route" className="btn btn-ghost"><i className="fa-solid fa-arrow-left" /> {t('bookingWizard.btnBackRoute')}</Link>
+        <button type="button" className="btn btn-primary" onClick={next}>{t('bookingWizard.btnNextServices')} <i className="fa-solid fa-arrow-right" /></button>
       </div>
     </BookingShell>
   )

@@ -48,7 +48,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
             new Definition("MIN_LEAD_DAYS", "Số ngày đặt trước tối thiểu", "20", "ngày", "OPERATIONS",
                     "Số ngày tối thiểu giữa ngày tạo đơn và ngày khởi hành.", BigDecimal.ZERO, BigDecimal.valueOf(365)),
             new Definition("MAX_DRIVE_HOURS_PER_DAY", "Giờ lái tối đa mỗi ngày", "10", "giờ", "JOURNEY",
-                    "Tổng giờ lái trong một ngày; quá thì xe nghỉ đêm.", BigDecimal.ONE, BigDecimal.valueOf(24)),
+                    "Tổng giờ lái trong một ngày. Quá thì xe nghỉ đêm.", BigDecimal.ONE, BigDecimal.valueOf(24)),
             new Definition("OVERNIGHT_REST_HOURS", "Thời gian nghỉ đêm", "10", "giờ", "JOURNEY",
                     "Thời gian nghỉ khi đã lái đủ giờ trong ngày.", BigDecimal.ONE, BigDecimal.valueOf(24)),
             new Definition("BORDER_PROCESSING_HOURS", "Thời gian làm thủ tục cửa khẩu", "3", "giờ", "JOURNEY",

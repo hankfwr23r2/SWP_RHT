@@ -12,7 +12,10 @@ function hasValidAddress(address: string, country: 'VN' | 'KH' | 'LA'): boolean 
   const province = PROVINCES_DATA.find(item =>
     item.country === country && item.name.toLocaleLowerCase() === provinceName.toLocaleLowerCase(),
   )
-  return !!province && province.wards.some(ward => ward.name.toLocaleLowerCase() === wardName.toLocaleLowerCase())
+  return !!province && (
+    wardName.toLocaleLowerCase() === 'khác'
+    || province.wards.some(ward => ward.name.toLocaleLowerCase() === wardName.toLocaleLowerCase())
+  )
 }
 
 /** Validates the persisted form of step 1 before later booking steps can be opened. */

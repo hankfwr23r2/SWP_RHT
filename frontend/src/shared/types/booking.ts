@@ -5,6 +5,8 @@ import type { ServiceBillingUnit } from '../api/serviceCatalog'
 
 export type Sex = 'stallion' | 'mare' | 'gelding'
 export const SEX_LABEL: Record<Sex, string> = { stallion: 'Đực', mare: 'Cái', gelding: 'Thiến' }
+export const SEX_LABEL_EN: Record<Sex, string> = { stallion: 'Stallion', mare: 'Mare', gelding: 'Gelding' }
+export const sexLabel = (sex: Sex, isEn = false) => (isEn ? SEX_LABEL_EN[sex] : SEX_LABEL[sex]) ?? sex
 
 // ===== Hồ sơ ngựa =====
 export interface HorseDoc { fileName: string; fileUrl?: string; uploadedAt: number; documentId?: number; status?: string }

@@ -52,6 +52,12 @@
 .mapHeading p { margin: 0; color: var(--muted); font-size: 0.82rem; }
 .mapProgress { color: var(--muted); font-size: 0.8rem; white-space: nowrap; }
 .mapPreview { width: 100%; min-height: 260px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg-page); overflow: hidden; }
+.mapPreviewLarge { min-height: 360px; }
+.routeMarkerIcon { background: transparent; border: 0; }
+.routeMarkerEndpoint, .routeMarkerStop { display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border: 2px solid white; border-radius: 50%; color: white; font-size: 0.8rem; font-weight: 700; box-shadow: 0 1px 5px #0005; }
+.routeMarkerEndpoint { background: var(--orange); }
+.routeMarkerStop { background: #2563eb; }
+.mapNotice { margin: 8px 0 14px; color: var(--muted); font-size: 0.82rem; }
 
 @media (max-width: 700px) {
   .form { grid-template-columns: 1fr; }

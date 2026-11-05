@@ -1,5 +1,6 @@
 // Quản trị viên: Quản lý Danh mục Dịch vụ & Gói cước (Chăm sóc trên xe, Dinh dưỡng, Cữ nước, Bảo hiểm...)
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   adminServicesApi,
   type BackendServiceItem,
@@ -105,7 +106,7 @@ function ServiceModal({ service, categories, onClose, onDone }: ServiceModalProp
             maxLength={100}
             required
           />
-          <small className="form-hint">Dùng mã này trong cấu hình và đơn mới; không thể đổi sau khi tạo.</small>
+          <small className="form-hint">Dùng mã này trong cấu hình và đơn mới. Không thể đổi sau khi tạo.</small>
         </div>
 
         <div className={`form-group ${s.full}`}>
@@ -169,7 +170,7 @@ function ServiceModal({ service, categories, onClose, onDone }: ServiceModalProp
             onChange={e => setPrice(e.target.value)}
             required
           />
-          {categoryId === INSURANCE_CATEGORY_ID && <small className="form-hint">Bảo hiểm do bên thứ ba báo theo chuyến; danh mục cũ chỉ dùng để đọc dữ liệu lịch sử.</small>}
+          {categoryId === INSURANCE_CATEGORY_ID && <small className="form-hint">Bảo hiểm do bên thứ ba báo theo chuyến. Danh mục cũ chỉ dùng để đọc dữ liệu lịch sử.</small>}
         </div>
 
         <div className={`form-group ${s.full}`}>
@@ -203,6 +204,7 @@ function ServiceModal({ service, categories, onClose, onDone }: ServiceModalProp
 }
 
 export default function AdminServicesPage() {
+  const { t } = useTranslation()
   const toast = useToast()
   const [tab, setTab] = useState<Tab>('all')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
@@ -217,14 +219,14 @@ export default function AdminServicesPage() {
     .filter(s => (categoryFilter === 'all' ? true : String(s.categoryId) === categoryFilter))
 
   const tabs: TabDef<Tab>[] = [
-    ['all', 'Tất cả dịch vụ', services.length],
-    ['ACTIVE', 'Đang áp dụng', services.filter(s => s.status === 'ACTIVE').length],
-    ['INACTIVE', 'Tạm ngưng', services.filter(s => s.status === 'INACTIVE').length],
+    ['all', t('adminServices.tabAll', 'Tất cả'), services.length],
+    ['ACTIVE', t('adminServices.tabActive', 'Đang cung cấp'), services.filter(s => s.status === 'ACTIVE').length],
+    ['INACTIVE', t('adminServices.tabInactive', 'Tạm ngưng'), services.filter(s => s.status === 'INACTIVE').length],
   ]
 
   const columns: Column<BackendServiceItem>[] = [
     {
-      head: 'Mã & Tên dịch vụ',
+      head: t('adminServices.colName', 'Tên dịch vụ'),
       cell: item => (
         <div className={s.name}>
           <b>
@@ -236,7 +238,7 @@ export default function AdminServicesPage() {
       ),
     },
     {
-      head: 'Phân loại',
+      head: t('adminServices.colCategory', 'Nhóm dịch vụ'),
       cell: item => (
         <span className={s.categoryTag}>
           <i className="fa-solid fa-tag" />
@@ -245,7 +247,7 @@ export default function AdminServicesPage() {
       ),
     },
     {
-      head: 'Đơn giá',
+      head: t('adminServices.colPrice', 'Đơn giá'),
       cell: item => (
         <span className={s.price}>
           {item.categoryId === INSURANCE_CATEGORY_ID
@@ -258,16 +260,16 @@ export default function AdminServicesPage() {
       nowrap: true,
     },
     {
-      head: 'Trạng thái',
+      head: t('adminServices.colStatus', 'Trạng thái'),
       cell: item => (
         <span className={`badge ${item.status === 'ACTIVE' ? 'badge-success' : 'badge-muted'}`}>
-          {item.status === 'ACTIVE' ? 'Đang áp dụng' : 'Tạm ngưng'}
+          {item.status === 'ACTIVE' ? t('adminServices.tabActive', 'Đang cung cấp') : t('adminServices.tabInactive', 'Tạm ngưng')}
         </span>
       ),
       nowrap: true,
     },
     {
-      head: 'Thao tác',
+      head: t('adminServices.colAction', 'Thao tác'),
       cell: item => (
         <div className={s.actions}>
           {item.categoryId === INSURANCE_CATEGORY_ID ? (
@@ -332,7 +334,8 @@ export default function AdminServicesPage() {
   return (
     <>
       <ListPage<BackendServiceItem, Tab>
-        title="Quản lý Dịch vụ & Biểu phí"
+        title={t('adminServices.title', 'Dịch vụ & Gói cước')}
+        subtitle={t('adminServices.subtitle', 'Danh mục dịch vụ dinh dưỡng, chăm sóc thú y, cữ nước và gói bảo hiểm bổ sung.')}
         tabs={tabs}
         tab={tab}
         onTab={setTab}
@@ -345,13 +348,12 @@ export default function AdminServicesPage() {
         emptyText="Chưa có dịch vụ nào phù hợp."
         countLabel="dịch vụ"
         filters={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: '0.85rem', color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+          <div className={s.categoryFilterGroup}>
+            <span className={s.categoryFilterLabel}>
               Nhóm phân loại:
             </span>
             <select
-              className="form-control"
-              style={{ minWidth: 180, height: 36, fontSize: '0.85rem' }}
+              className={`form-control ${s.categoryFilter}`}
               value={categoryFilter}
               onChange={e => setCategoryFilter(e.target.value)}
             >
@@ -370,7 +372,7 @@ export default function AdminServicesPage() {
             className="btn btn-primary"
             onClick={() => setModal({ service: null })}
           >
-            <i className="fa-solid fa-plus" /> Thêm dịch vụ
+            <i className="fa-solid fa-plus" /> {t('adminServices.btnAddService', 'Thêm dịch vụ')}
           </button>
         }
       />

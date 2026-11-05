@@ -54,7 +54,7 @@ public final class HorseInsurancePolicy {
     public static List<QuoteLineDto> quoteLines(List<BookingHorseDto> horses) {
         return horses.stream().filter(h -> h.getInsurance() != null && "assistance".equals(h.getInsurance().getOption()))
             .map(h -> QuoteLineDto.builder().label(LABEL).detail(h.getHorseId() + " · " + h.getName() + " · " + h.getInsurance().getProvider())
-                .calculation("Phí do bên thứ ba báo; công ty thu hộ, không áp dụng tỷ lệ theo giống.")
+                .calculation("Phí do bên thứ ba báo. Công ty thu hộ, không áp dụng tỷ lệ theo giống.")
                 .amount(h.getInsurance().getPremium()).build()).toList();
     }
     public static void requireDepartureReady(List<BookingHorseDto> horses, List<String> horseIds, java.time.Instant departure) {

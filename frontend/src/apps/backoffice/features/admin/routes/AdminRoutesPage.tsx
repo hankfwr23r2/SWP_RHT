@@ -2,6 +2,7 @@
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   routesApi,
   type BackendRouteResponse,
@@ -33,10 +34,12 @@ function RouteMapPreview({
   points,
   activeLocationId,
   onPlace,
+  fitToPoints = false,
 }: {
   points: RoutePoint[]
   activeLocationId?: number
-  onPlace: (locationId: number, latitude: number, longitude: number) => void
+  onPlace?: (locationId: number, latitude: number, longitude: number) => void
+  fitToPoints?: boolean
 }) {
   const box = useRef<HTMLDivElement>(null)
   const map = useRef<L.Map | null>(null)
@@ -57,7 +60,7 @@ function RouteMapPreview({
     addBaseLayer(instance)
     layer.current = L.layerGroup().addTo(instance)
     const handleClick = (event: L.LeafletMouseEvent) => {
-      if (activeId.current !== undefined) {
+      if (activeId.current !== undefined && place.current) {
         place.current(activeId.current, event.latlng.lat, event.latlng.lng)
       }
     }
@@ -93,20 +96,44 @@ function RouteMapPreview({
 
     located.forEach(point => {
       const isEndpoint = point.routeIndex === 0 || point.routeIndex === points.length - 1
-      const marker = L.circleMarker([point.latitude, point.longitude], {
-        radius: 8,
-        color: '#fff',
-        weight: 2,
-        fillColor: isEndpoint ? '#ea580c' : '#2563eb',
-        fillOpacity: 1,
-      }).addTo(group)
+      const marker = fitToPoints
+        ? L.marker([point.latitude, point.longitude], {
+          icon: L.divIcon({
+            className: s.routeMarkerIcon,
+            html: `<span class="${isEndpoint ? s.routeMarkerEndpoint : s.routeMarkerStop}">${point.routeIndex + 1}</span>`,
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+          }),
+        }).addTo(group)
+        : L.circleMarker([point.latitude, point.longitude], {
+          radius: 8,
+          color: '#fff',
+          weight: 2,
+          fillColor: isEndpoint ? '#ea580c' : '#2563eb',
+          fillOpacity: 1,
+        }).addTo(group)
       const label = document.createElement('span')
       label.textContent = `${point.routeIndex === 0 ? 'Xuất phát · ' : point.routeIndex === points.length - 1 ? 'Điểm đến · ' : `Điểm ${point.routeIndex + 1} · `}${point.name}`
       marker.bindTooltip(label)
     })
-  }, [points])
+    if (fitToPoints && located.length > 0) {
+      const bounds = L.latLngBounds(located.map(point => [point.latitude, point.longitude]))
+      if (located.length === 1) {
+        map.current?.setView(bounds.getCenter(), 10)
+      } else if (bounds.isValid()) {
+        map.current?.fitBounds(bounds, { padding: [40, 40], maxZoom: 11 })
+      }
+    }
+  }, [fitToPoints, points])
 
-  return <div ref={box} className={s.mapPreview} role="application" aria-label="Bản đồ xem trước tuyến đường" />
+  return (
+    <div
+      ref={box}
+      className={`${s.mapPreview} ${fitToPoints ? s.mapPreviewLarge : ''}`}
+      role="application"
+      aria-label="Bản đồ xem trước tuyến đường"
+    />
+  )
 }
 
 interface RouteModalProps {
@@ -311,7 +338,7 @@ function RouteModal({ route, locations, onClose, onDone }: RouteModalProps) {
         <span>
           <i className="fa-solid fa-map-pin" /> Nút giao & Trạm dừng trên tuyến ({selectedLocationIds.length} điểm)
         </span>
-        <small>Điểm đầu là xuất phát, điểm cuối là điểm đến; các điểm ở giữa là trạm dừng.</small>
+        <small>Điểm đầu là xuất phát, điểm cuối là điểm đến. Các điểm ở giữa là trạm dừng.</small>
       </h4>
 
       {/* Danh sách các điểm đã chọn theo thứ tự */}
@@ -462,6 +489,72 @@ function StopsViewModal({
   )
 }
 
+function RouteMapModal({
+  route,
+  onClose,
+}: {
+  route: BackendRouteResponse
+  onClose: () => void
+}) {
+  const { data: stops, loaded } = useLoad(() => routesApi.getRouteStops(route.id), [route])
+  const points = (stops ?? []).map(stop => ({
+    id: stop.locationID,
+    name: stop.locationName || `Địa điểm #${stop.locationID}`,
+    latitude: stop.latitude ?? undefined,
+    longitude: stop.longitude ?? undefined,
+  }))
+  const locatedCount = points.filter(point => point.latitude !== undefined && point.longitude !== undefined).length
+
+  return (
+    <Modal
+      wide
+      onClose={onClose}
+      title={`Bản đồ tuyến: ${route.routeName}`}
+      subtitle={`${points.length} điểm dừng · ${route.distance ? `${route.distance} km` : 'chưa có cự ly'}`}
+      footer={<button className="btn btn-primary" onClick={onClose}>Đóng</button>}
+    >
+      {!loaded ? (
+        <div className={s.notice}>Đang tải dữ liệu tuyến...</div>
+      ) : !stops ? (
+        <div className={s.notice}>Không tải được dữ liệu tuyến để hiển thị bản đồ.</div>
+      ) : stops.length === 0 ? (
+        <div className={s.notice}>Tuyến đường này chưa được gán mốc dừng/nút giao nào.</div>
+      ) : (
+        <>
+          {locatedCount > 0 ? (
+            <RouteMapPreview points={points} fitToPoints />
+          ) : (
+            <div className={s.notice}>Các điểm dừng chưa có tọa độ để hiển thị trên bản đồ.</div>
+          )}
+          {locatedCount < points.length && (
+            <p className={s.mapNotice}>
+              {points.length - locatedCount} điểm chưa có tọa độ nên không xuất hiện trên bản đồ.
+            </p>
+          )}
+          <div className={s.stopList}>
+            {points.map((point, index) => (
+              <div key={`${point.id}-${index}`} className={s.stop}>
+                <span className={`${s.order} ${s.orderLg}`}>{index + 1}</span>
+                <div>
+                  <b>
+                    {point.name}{' '}
+                    {index === 0 ? '(Xuất phát)' : index === points.length - 1 ? '(Điểm đến)' : ''}
+                  </b>
+                  <small>
+                    {point.latitude !== undefined && point.longitude !== undefined
+                      ? `${point.latitude.toFixed(5)}, ${point.longitude.toFixed(5)}`
+                      : 'Chưa thiết lập tọa độ'}
+                  </small>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </Modal>
+  )
+}
+
 function LocationsModal({
   locations,
   onClose,
@@ -544,7 +637,7 @@ function LocationsModal({
     const open = openingMinutes ? Number(openingMinutes) : undefined
     const close = closingMinutes ? Number(closingMinutes) : undefined
     if (locationType === 'BorderGate' && (open === undefined || close === undefined || open >= close)) {
-      toast('Cửa khẩu cần giờ mở và giờ đóng hợp lệ; giờ mở phải sớm hơn giờ đóng.', 'error')
+      toast('Cửa khẩu cần giờ mở và giờ đóng hợp lệ. Giờ mở phải sớm hơn giờ đóng.', 'error')
       return
     }
     if (locationType === 'RescuePoint' && !contactPhone.trim()) {
@@ -723,10 +816,10 @@ function LocationsModal({
             </div>
           )}
           {locationType === 'BorderGate' && (
-            <div className="form-hint">Giờ lưu dạng số phút từ 00:00 (07:30 là 450; 16:30 là 990).</div>
+            <div className="form-hint">Giờ lưu dạng số phút từ 00:00 (07:30 là 450, 16:30 là 990).</div>
           )}
           {locationType !== 'RescuePoint' && locationType !== 'BorderGate' && (
-            <div className={`form-hint ${s.full}`}>Mã ổn định được hệ thống tự gán khi tạo mới; không thay đổi sau khi lưu.</div>
+            <div className={`form-hint ${s.full}`}>Mã ổn định được hệ thống tự gán khi tạo mới. Mã này không thay đổi sau khi lưu.</div>
           )}
         </div>
       )}
@@ -735,11 +828,13 @@ function LocationsModal({
 }
 
 export default function AdminRoutesPage() {
+  const { t } = useTranslation()
   const toast = useToast()
   const [tab, setTab] = useState<Tab>('all')
   const [modal, setModal] = useState<
     | { kind: 'edit'; route: BackendRouteResponse | null }
     | { kind: 'stops'; route: BackendRouteResponse }
+    | { kind: 'map'; route: BackendRouteResponse }
     | { kind: 'locations' }
     | null
   >(null)
@@ -749,15 +844,15 @@ export default function AdminRoutesPage() {
   const rows = routes.filter(r => (tab === 'all' ? true : r.status === tab))
 
   const tabs: TabDef<Tab>[] = [
-    ['all', 'Tất cả tuyến', routes.length],
-    ['ACTIVE', 'Đang khai thác', routes.filter(r => r.status === 'ACTIVE').length],
-    ['MAINTENANCE', 'Bảo trì', routes.filter(r => r.status === 'MAINTENANCE').length],
-    ['INACTIVE', 'Ngừng khai thác', routes.filter(r => r.status === 'INACTIVE').length],
+    ['all', t('adminRoutes.tabAll', 'Tất cả tuyến'), routes.length],
+    ['ACTIVE', t('adminRoutes.tabActive', 'Đang khai thác'), routes.filter(r => r.status === 'ACTIVE').length],
+    ['MAINTENANCE', t('adminRoutes.tabMaintenance', 'Bảo trì'), routes.filter(r => r.status === 'MAINTENANCE').length],
+    ['INACTIVE', t('adminRoutes.tabInactive', 'Ngừng khai thác'), routes.filter(r => r.status === 'INACTIVE').length],
   ]
 
   const columns: Column<BackendRouteResponse>[] = [
     {
-      head: 'Mã & Tên tuyến hành lang',
+      head: t('adminRoutes.colCodeName', 'Mã & Tên tuyến hành lang'),
       cell: r => (
         <div className={s.name}>
           <b>
@@ -774,28 +869,36 @@ export default function AdminRoutesPage() {
       ),
     },
     {
-      head: 'Cự ly chuẩn',
+      head: t('adminRoutes.colDistance', 'Cự ly chuẩn'),
       cell: r => (r.distance ? `${r.distance} km` : '—'),
       nowrap: true,
     },
     {
-      head: 'Thời gian lái',
+      head: t('adminRoutes.colDuration', 'Thời gian dự kiến'),
       cell: r => (r.estimatedTime ? `${r.estimatedTime} giờ` : '—'),
       nowrap: true,
     },
     {
-      head: 'Trạng thái',
+      head: t('adminRoutes.colStatus', 'Trạng thái'),
       cell: r => (
         <span className={`badge ${r.status === 'ACTIVE' ? 'badge-success' : r.status === 'MAINTENANCE' ? 'badge-warning' : 'badge-muted'}`}>
-          {r.status === 'ACTIVE' ? 'Đang khai thác' : r.status === 'MAINTENANCE' ? 'Bảo trì' : 'Ngừng khai thác'}
+          {r.status === 'ACTIVE' ? t('adminRoutes.tabActive', 'Đang khai thác') : r.status === 'MAINTENANCE' ? t('adminRoutes.tabMaintenance', 'Bảo trì') : t('adminRoutes.tabInactive', 'Ngừng khai thác')}
         </span>
       ),
       nowrap: true,
     },
     {
-      head: 'Thao tác',
+      head: t('adminRoutes.colAction', 'Thao tác'),
       cell: r => (
         <div className={s.actions}>
+          <button
+            type="button"
+            className="btn btn-outline btn-sm"
+            onClick={() => setModal({ kind: 'map', route: r })}
+            title="Xem tuyến trên bản đồ"
+          >
+            <i className="fa-solid fa-map-location-dot" /> Bản đồ
+          </button>
           <button
             type="button"
             className="btn btn-outline btn-sm"
@@ -858,7 +961,8 @@ export default function AdminRoutesPage() {
   return (
     <>
       <ListPage
-        title="Quản lý Tuyến đường Cố định"
+        title={t('adminRoutes.title', 'Tuyến đường cố định')}
+        subtitle={t('adminRoutes.subtitle', 'Quản lý các hành lang vận chuyển liên tỉnh và xuyên biên giới, trạm dừng và cửa khẩu.')}
         tabs={tabs}
         tab={tab}
         onTab={setTab}
@@ -879,7 +983,7 @@ export default function AdminRoutesPage() {
               className="btn btn-primary"
               onClick={() => setModal({ kind: 'edit', route: null })}
             >
-              <i className="fa-solid fa-plus" /> Thêm Tuyến Cố Định Mới
+              <i className="fa-solid fa-plus" /> {t('adminRoutes.btnAddRoute', 'Thêm tuyến mới')}
             </button>
           </>
         }
@@ -899,6 +1003,10 @@ export default function AdminRoutesPage() {
 
       {modal?.kind === 'stops' && (
         <StopsViewModal route={modal.route} onClose={() => setModal(null)} />
+      )}
+
+      {modal?.kind === 'map' && (
+        <RouteMapModal route={modal.route} onClose={() => setModal(null)} />
       )}
 
       {modal?.kind === 'locations' && (

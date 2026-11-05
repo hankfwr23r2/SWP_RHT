@@ -16,7 +16,7 @@ const ll = (p: GeoPoint): [number, number] => [p.lat, p.lng]
 const validPoint = (point: GeoPoint) => Number.isFinite(point.lat) && Number.isFinite(point.lng) && Math.abs(point.lat) <= 90 && Math.abs(point.lng) <= 180
 const validLatLng = ([lat, lng]: [number, number]) => Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180
 
-export function TripTrackMap({ b, trips = [], height = 360, plain }: Props) {
+export function TripTrackMap({ b, trips = [], height, plain }: Props) {
   const box = useRef<HTMLDivElement>(null)
   const map = useRef<L.Map | null>(null)
   const layer = useRef<L.LayerGroup | null>(null)
@@ -89,7 +89,7 @@ export function TripTrackMap({ b, trips = [], height = 360, plain }: Props) {
 
   return (
     <div>
-      <div className="tt-wrap" style={{ height }}>
+      <div className="tt-wrap" style={height !== undefined ? { height } : undefined}>
         <div ref={box} className="tt-map" role="application" aria-label="Bản đồ theo dõi xe" />
         <div className="tt-legend">{!plain && <span><i className="fa-solid fa-truck" style={{ color: '#ea580c' }} /> Xe</span>}<span>● Trạm đã qua / chưa qua</span><span>⚑ Cửa khẩu</span></div>
       </div>

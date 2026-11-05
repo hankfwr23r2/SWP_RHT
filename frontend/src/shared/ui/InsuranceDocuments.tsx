@@ -4,15 +4,16 @@ import { fileApi } from '../api/files'
 import { ImageLightbox, ImageThumb } from './ImageThumb'
 import s from './InsuranceFields.module.css'
 
-export function InsuranceDocuments({ urls = [], names = {}, label, disabled = false, onChange, onBusyChange }: {
-  urls?: string[]; names?: Record<string, string>; label: string; disabled?: boolean
+export function InsuranceDocuments({ urls = [], names, label, disabled = false, onChange, onBusyChange }: {
+  urls?: string[]; names?: Record<string, string> | null; label: string; disabled?: boolean
   onChange?: (urls: string[], names: Record<string, string>) => void; onBusyChange?: (busy: boolean) => void
 }) {
   const id = useId()
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [viewing, setViewing] = useState<string>()
-  const nameOf = (url: string) => names[url] || decodeURIComponent(url.split('/').pop()?.split('?')[0] || 'Chứng từ')
+  const safeNames = names ?? {}
+  const nameOf = (url: string) => safeNames[url] || decodeURIComponent(url.split('/').pop()?.split('?')[0] || 'Chứng từ')
   return <div className={s.documents}>
     <div className={s.sectionTitle}><label className={s.uploadLabel} htmlFor={onChange ? id : undefined}>{label}</label> <small>({urls.length}/10)</small></div>
     {onChange && <>
@@ -23,7 +24,7 @@ export function InsuranceDocuments({ urls = [], names = {}, label, disabled = fa
           setError('Chọn ảnh JPG/PNG hoặc PDF không quá 5 MB.'); return
         }
         setBusy(true); onBusyChange?.(true)
-        try { const saved = await fileApi.upload(file, 'insurance'); onChange([...urls, saved.url], { ...names, [saved.url]: saved.originalFilename || file.name }) }
+        try { const saved = await fileApi.upload(file, 'insurance'); onChange([...urls, saved.url], { ...safeNames, [saved.url]: saved.originalFilename || file.name }) }
         catch (err) { setError(err instanceof Error ? err.message : 'Không tải được tệp. Vui lòng thử lại.') }
         finally { setBusy(false); onBusyChange?.(false) }
       }} />
@@ -38,7 +39,7 @@ export function InsuranceDocuments({ urls = [], names = {}, label, disabled = fa
       <ImageThumb name={url} size={44} /><span className={s.fileName}>{nameOf(url)}</span>
       <button type="button" className="btn btn-ghost btn-sm" onClick={() => setViewing(url)}><i className="fa-regular fa-eye" /> Xem</button>
       <a className="btn btn-ghost btn-sm" href={url} download={nameOf(url)} target="_blank" rel="noreferrer">Tải xuống</a>
-      {onChange && <button type="button" className="btn btn-ghost btn-sm" disabled={disabled || busy} onClick={() => onChange(urls.filter(u => u !== url), names)} aria-label={`Gỡ ${nameOf(url)}`}>Gỡ</button>}
+      {onChange && <button type="button" className="btn btn-ghost btn-sm" disabled={disabled || busy} onClick={() => onChange(urls.filter(u => u !== url), safeNames)} aria-label={`Gỡ ${nameOf(url)}`}>Gỡ</button>}
     </div>)}
     {viewing && createPortal(<ImageLightbox name={viewing} title={nameOf(viewing)} onClose={() => setViewing(undefined)} />, document.body)}
   </div>

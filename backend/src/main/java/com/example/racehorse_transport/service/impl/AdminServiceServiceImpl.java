@@ -184,7 +184,7 @@ public class AdminServiceServiceImpl implements AdminServiceService {
     private void ensureInsuranceCategoryReadOnly(Category category) {
         if (category != null && INSURANCE_CATEGORY_ID.equals(category.getId())) {
             throw new IllegalArgumentException(
-                    "Bảo hiểm do bên thứ ba cung cấp, phí do chuyên viên nhập theo báo giá; danh mục bảo hiểm cũ chỉ dùng cho lịch sử.");
+                    "Bảo hiểm do bên thứ ba cung cấp, phí do chuyên viên nhập theo báo giá. Danh mục bảo hiểm cũ chỉ dùng cho lịch sử.");
         }
     }
 

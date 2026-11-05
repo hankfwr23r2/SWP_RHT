@@ -42,7 +42,7 @@ export function orderFacts(b: CustomerBookingView, team: TripTeam[]): FactGroup[
       sub: joined(`Chip ${h.microchip}`, h.breed, SEX_LABEL[h.sex], h.selectedServices?.stall?.serviceName ?? (h.stall === 'single' ? 'Khoang đơn' : 'Khoang tiêu chuẩn'),
         `Thức ăn: ${h.selectedServices?.feed?.serviceName ?? FEED_PACKAGE[h.feedPackage ?? 'basic'].label}`,
         (h.selectedServices?.water || h.waterPlan) ? `Nước: ${h.selectedServices?.water?.serviceName ?? WATER_PLAN[h.waterPlan ?? 'every_3h'].label}` : undefined,
-        h.insurance.option ? `${insuranceLabels[h.insurance.option]}${h.insurance.option === 'assistance' ? h.insurance.reviewed && h.insurance.premium != null ? `, thu hộ ${formatVND(h.insurance.premium)}` : ', chờ báo giá bên thứ ba' : ''}` : 'Bảo hiểm theo dữ liệu đơn cũ; xem thông tin trong báo giá đã phát hành'),
+        h.insurance.option ? `${insuranceLabels[h.insurance.option]}${h.insurance.option === 'assistance' ? h.insurance.reviewed && h.insurance.premium != null ? `, thu hộ ${formatVND(h.insurance.premium)}` : ', chờ báo giá bên thứ ba' : ''}` : 'Bảo hiểm theo dữ liệu đơn cũ. Xem thông tin trong báo giá đã phát hành'),
     })),
   ]
 

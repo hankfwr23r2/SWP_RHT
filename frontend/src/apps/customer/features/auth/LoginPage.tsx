@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { authApi } from '@shared/api/auth'
 import { AuthShell, authStyles as s } from '@shared/ui/AuthShell'
 import { isValidEmail } from '@shared/lib/contactValidation'
 import { useCustomerSignIn } from './useCustomerSignIn'
 
 export default function LoginPage() {
+  const { t } = useTranslation()
   const signIn = useCustomerSignIn()
   const navigate = useNavigate()
   const from = (useLocation().state as { from?: string } | null)?.from
@@ -28,9 +30,9 @@ export default function LoginPage() {
       setErrorField(field)
       ;(form.elements.namedItem(field) as HTMLInputElement).focus()
     }
-    if (!email) return fail('Vui lòng nhập email.', 'email')
-    if (!isValidEmail(email)) return fail('Email không đúng định dạng. Ví dụ: ten@example.com.', 'email')
-    if (!password) return fail('Vui lòng nhập mật khẩu.', 'password')
+    if (!email) return fail(t('auth.emailRequired'), 'email')
+    if (!isValidEmail(email)) return fail(t('auth.emailInvalid'), 'email')
+    if (!password) return fail(t('auth.passwordRequired'), 'password')
 
     setLoading(true)
     // Tải trước trang chủ khách song song với request đăng nhập, để vào trang là gọi dữ liệu ngay
@@ -41,36 +43,36 @@ export default function LoginPage() {
       if (res.emailVerificationRequired) await navigate('/verify-email', { state: { email: res.email, from } })
       else await signIn(res, from)
     } catch (err) {
-      fail(err instanceof Error ? err.message : 'Đăng nhập không thành công. Vui lòng thử lại.', 'password')
+      fail(err instanceof Error ? err.message : t('auth.loginFailed'), 'password')
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <AuthShell title="Đăng nhập vào tài khoản" subtitle="Đăng nhập để đặt chuyến và theo dõi đơn của bạn." back={<Link to="/"><i className="fa-solid fa-arrow-left" /> Về Trang chủ</Link>}>
+    <AuthShell title={t('auth.loginToAccount')} subtitle={t('auth.loginSubtitle')} back={<Link to="/"><i className="fa-solid fa-arrow-left" /> {t('auth.backToHome')}</Link>}>
       <form onSubmit={submit} noValidate>
         {error && <div id="login-error" className={`alert alert-danger ${s.error}`} role="alert"><i className="fa-solid fa-circle-exclamation" /><div>{error}</div></div>}
         <div className="form-group">
-          <label htmlFor="email">Email</label>
+          <label htmlFor="email">{t('auth.email')}</label>
           <input className={`form-control${errorField === 'email' ? ' invalid' : ''}`} type="email" id="email" name="email" placeholder="ten@example.com" autoComplete="email" aria-invalid={errorField === 'email' || undefined} aria-describedby={errorField === 'email' ? 'login-error' : undefined} onChange={() => { setError(''); setErrorField(null) }} />
         </div>
         <div className="form-group">
-          <label htmlFor="password">Mật khẩu</label>
+          <label htmlFor="password">{t('auth.password')}</label>
           <div className={s.pwdWrap}>
             <input className={`form-control${errorField === 'password' ? ' invalid' : ''}`} type={showPwd ? 'text' : 'password'} id="password" name="password" autoComplete="current-password" aria-invalid={errorField === 'password' || undefined} aria-describedby={errorField === 'password' ? 'login-error' : undefined} onChange={() => { setError(''); setErrorField(null) }} />
-            <button type="button" className={s.pwdToggle} onClick={() => setShowPwd(v => !v)} aria-label={showPwd ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}>
+            <button type="button" className={s.pwdToggle} onClick={() => setShowPwd(v => !v)} aria-label={showPwd ? t('auth.hidePassword') : t('auth.showPassword')}>
               <i className={`fa-solid ${showPwd ? 'fa-eye-slash' : 'fa-eye'}`} />
             </button>
           </div>
         </div>
-        <p className="text-right small" style={{ marginBottom: 16 }}><Link to="/forgot-password" className="text-orange">Quên mật khẩu?</Link></p>
+        <p className="text-right small" style={{ marginBottom: 16 }}><Link to="/forgot-password" className="text-orange">{t('auth.forgotPassword')}</Link></p>
         <button type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading}>
-          {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
+          {loading ? t('auth.loggingIn') : t('auth.signIn')}
         </button>
       </form>
-      <div className={s.switch}>Chưa có tài khoản? <Link to="/register" state={{ from }}>Đăng ký</Link></div>
-      <div className={s.extra}>Bạn là nhân viên? <a href="/backoffice/login">Đăng nhập nội bộ</a></div>
+      <div className={s.switch}>{t('auth.noAccount')} <Link to="/register" state={{ from }}>{t('auth.signUp')}</Link></div>
+      <div className={s.extra}>{t('auth.staffPrompt')} <a href="/backoffice/login">{t('auth.staffLogin')}</a></div>
     </AuthShell>
   )
 }

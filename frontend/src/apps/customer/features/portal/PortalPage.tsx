@@ -1,5 +1,6 @@
 // Trang chủ của khách sau đăng nhập: giao diện như trang chủ công khai (banner, tra cứu cước, mạng lưới, dịch vụ), giữ nguyên phần việc của khách (số liệu nhanh, việc cần làm, các bước của một đơn).
 import { Link } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { BOOKING_STEPS, DEPOSIT_RATE, QUOTE_VALID_HOURS } from '@shared/config/booking-rules'
 import { horseReadiness } from '@shared/lib/booking'
@@ -14,21 +15,33 @@ import { PriceLookup } from '../pricing/PriceLookup'
 import type { portalLoader } from './portalLoader'
 import s from './PortalPage.module.css'
 
-const STEP_TEXT = [
-  'Chọn ngựa từ Hồ sơ ngựa, khai tuyến đường và dịch vụ.',
-  'Chuyên viên và Điều phối viên thẩm định song song.',
-  `Nhận báo giá chính thức, có hiệu lực ${QUOTE_VALID_HOURS} giờ.`,
-  `Đặt cọc ${DEPOSIT_RATE * 100}% để nhận vận đơn. Nhà xe làm giấy kiểm dịch và hải quan, bạn theo dõi tiến độ.`,
-  'Ngày bốc ngựa: trả số dư còn lại, giao bản gốc hồ sơ ngựa cho tài xế.',
-  'Xe, tài xế và hộ tống chuẩn bị sẵn sàng tại điểm đón để tiếp nhận ngựa.',
-  'Theo dõi hành trình di chuyển và tình trạng chăm sóc ngựa theo thời gian thực.',
-  'Bàn giao ngựa tại điểm đến, nghiệm thu và đối soát các chi phí phát sinh (nếu có).',
-]
-
 export default function PortalPage() {
+  const { t, i18n } = useTranslation()
   const { session } = useAuth()
   const owner = session!.name
   const now = useNow()
+
+  const stepTexts = [
+    t('portal.step1'),
+    t('portal.step2'),
+    t('portal.step3', { hours: QUOTE_VALID_HOURS }),
+    t('portal.step4', { rate: DEPOSIT_RATE * 100 }),
+    t('portal.step5'),
+    t('portal.step6'),
+    t('portal.step7'),
+    t('portal.step8'),
+  ]
+
+  const bookingSteps = i18n.language === 'en' ? [
+    'Submit Booking',
+    'Specialist & Route Assessment',
+    'Quote Issuance',
+    'Deposit & Waybill Issued',
+    'Balance Payment & Departure',
+    'Pickup & Equine Inspection',
+    'Safe Corridor Transit',
+    'Destination Handover & Reconciliation',
+  ] : BOOKING_STEPS
   // Đơn và ngựa do router tải sẵn (portalLoader) trước khi trang hiện
   const { orders, horses } = usePageData<typeof portalLoader>()
   // Chỉ chạy hiệu ứng một lần lúc vào trang (trang sẽ giật nếu chạy lại)
@@ -48,38 +61,38 @@ export default function PortalPage() {
       <div ref={ref} className="page">
       <div className="wrap">
         <section className={s.greet} data-card>
-          <span className={s.hello}><i className="fa-solid fa-hand" /> Xin chào, {owner}</span>
+          <span className={s.hello}><i className="fa-solid fa-hand" /> {t('portal.hello', { name: owner })}</span>
           <div className={s.heroActions}>
-            <Link to="/booking/route" className="btn btn-primary"><i className="fa-solid fa-plus" /> Đặt chuyến mới</Link>
-            <Link to="/horses" className="btn btn-ghost"><i className="fa-solid fa-horse-head" /> Hồ sơ ngựa</Link>
+            <Link to="/booking/route" className="btn btn-primary"><i className="fa-solid fa-plus" /> {t('portal.bookNew')}</Link>
+            <Link to="/horses" className="btn btn-ghost"><i className="fa-solid fa-horse-head" /> {t('portal.horseProfiles')}</Link>
           </div>
         </section>
 
         <section className={s.stats} data-card aria-label="Số liệu nhanh">
-          <Link to="/orders" className={s.stat}><b>{todo.length}</b><span>Việc cần bạn làm</span></Link>
-          <Link to="/orders" className={s.stat}><b>{inProgress}</b><span>Đơn đang thẩm định</span></Link>
-          <Link to="/horses" className={s.stat}><b>{ready}</b><span>Ngựa sẵn sàng đặt</span></Link>
-          <Link to="/horses" className={`${s.stat} ${needDocs ? s.statWarn : ''}`}><b>{needDocs}</b><span>Ngựa cần bổ sung giấy</span></Link>
+          <Link to="/orders" className={s.stat}><b>{todo.length}</b><span>{t('portal.todoAction')}</span></Link>
+          <Link to="/orders" className={s.stat}><b>{inProgress}</b><span>{t('portal.reviewing')}</span></Link>
+          <Link to="/horses" className={s.stat}><b>{ready}</b><span>{t('portal.readyToBook')}</span></Link>
+          <Link to="/horses" className={`${s.stat} ${needDocs ? s.statWarn : ''}`}><b>{needDocs}</b><span>{t('portal.needDocs')}</span></Link>
         </section>
 
         <section className="card" data-card>
-          <div className="card-header"><h3><i className="fa-solid fa-bell" /> Việc cần làm</h3>{orders && <Link to="/orders" className={s.more}>Tất cả đơn</Link>}</div>
-          {orders && !todo.length && <p className={s.none}><i className="fa-solid fa-circle-check" /> Bạn không có việc nào đang chờ. Đơn của bạn đang được xử lý.</p>}
+          <div className="card-header"><h3><i className="fa-solid fa-bell" /> {t('portal.todoTitle')}</h3>{orders && <Link to="/orders" className={s.more}>{t('portal.allOrders')}</Link>}</div>
+          {orders && !todo.length && <p className={s.none}><i className="fa-solid fa-circle-check" /> {t('portal.noTodo')}</p>}
           <div className={s.todoList}>
             {todo.map(({ b, next }) => (
               <Link key={b.id} to={`/orders/${b.id}`} className={`${s.todo} ${next.tone === 'danger' ? s.todoDanger : s.todoWarn}`}>
                 <i className={`fa-solid ${next.icon}`} aria-hidden="true" />
-                <div><b>{b.id}</b> <BookingStatusBadge status={b.status} labels={b} /><div className={s.todoTitle}>{next.title}</div><div className={s.todoSub}>Khởi hành {formatDate(b.departAt)} · {b.horses.length} ngựa</div></div>
-                <span className="btn btn-primary btn-sm">{next.cta?.startsWith('Đặt cọc') || next.cta?.startsWith('Thanh toán') ? 'Thanh toán' : next.cta ?? 'Xem đơn'}</span>
+                <div><b>{b.id}</b> <BookingStatusBadge status={b.status} labels={b} /><div className={s.todoTitle}>{next.title}</div><div className={s.todoSub}>{i18n.language === 'en' ? 'Depart ' : 'Khởi hành '}{formatDate(b.departAt)} · {b.horses.length} {t('booking.horsesUnit')}</div></div>
+                <span className="btn btn-primary btn-sm">{next.cta?.startsWith('Đặt cọc') || next.cta?.startsWith('Thanh toán') || next.cta?.toLowerCase().includes('pay') ? t('portal.payBtn') : next.cta ?? t('portal.viewOrderBtn')}</span>
               </Link>
             ))}
           </div>
         </section>
 
         <section className="card" data-card id="quy-trinh">
-          <div className="card-header"><h3><i className="fa-solid fa-list-ol" /> Một đơn đi qua những bước nào</h3></div>
+          <div className="card-header"><h3><i className="fa-solid fa-list-ol" /> {t('portal.workflowTitle')}</h3></div>
           <ol className={s.steps}>
-            {BOOKING_STEPS.map((label, i) => <li key={label}><span className={s.stepNum}>{i + 1}</span><div><b>{label}</b><p>{STEP_TEXT[i]}</p></div></li>)}
+            {bookingSteps.map((label, i) => <li key={label}><span className={s.stepNum}>{i + 1}</span><div><b>{label}</b><p>{stepTexts[i]}</p></div></li>)}
           </ol>
         </section>
       </div>

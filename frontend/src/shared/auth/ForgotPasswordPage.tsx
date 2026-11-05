@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import { authApi } from '@shared/api/auth'
 import { AuthShell, authStyles as s } from '@shared/ui/AuthShell'
 import { isValidEmail } from '@shared/lib/contactValidation'
 
 function ForgotPasswordFlow({ staffMode }: { staffMode: boolean }) {
+  const { t } = useTranslation()
   const [email, setEmail] = useState('')
   const [otp, setOtp] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -37,7 +39,7 @@ function ForgotPasswordFlow({ staffMode }: { staffMode: boolean }) {
       setMessage(await authApi.requestPasswordResetOtp(email.trim()))
       setRequested(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Không gửi được mã OTP. Vui lòng thử lại.')
+      setError(err instanceof Error ? err.message : t('authPages.cantSendOtp'))
     } finally {
       setLoading(false)
     }
@@ -45,31 +47,31 @@ function ForgotPasswordFlow({ staffMode }: { staffMode: boolean }) {
 
   const requestOtp = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!email.trim()) return fail('Vui lòng nhập email.', 'reset-email')
-    if (!isValidEmail(email)) return fail('Email không đúng định dạng. Ví dụ: ten@example.com.', 'reset-email')
+    if (!email.trim()) return fail(t('auth.emailRequired'), 'reset-email')
+    if (!isValidEmail(email)) return fail(t('auth.emailInvalid'), 'reset-email')
     void sendOtp()
   }
 
   const resetPassword = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     clearError()
-    if (otp.length !== 6) return fail('Mã OTP gồm 6 chữ số.', 'reset-otp')
-    if (newPassword.length < 6) return fail('Mật khẩu mới cần có ít nhất 6 ký tự.', 'new-password')
-    if (newPassword !== confirmPassword) return fail('Mật khẩu xác nhận không khớp.', 'confirm-password')
+    if (otp.length !== 6) return fail(t('authPages.otpDigits'), 'reset-otp')
+    if (newPassword.length < 6) return fail(t('authPages.minPasswordLength'), 'new-password')
+    if (newPassword !== confirmPassword) return fail(t('authPages.passwordMismatch'), 'confirm-password')
 
     setLoading(true)
     try {
       setMessage(await authApi.resetPasswordWithOtp({ email: email.trim(), otp: otp.trim(), newPassword, confirmPassword }))
       setCompleted(true)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Không đặt lại được mật khẩu. Vui lòng thử lại.')
+      setError(err instanceof Error ? err.message : t('authPages.cantResetPassword'))
     } finally {
       setLoading(false)
     }
   }
 
-  const title = staffMode ? 'Khôi phục mật khẩu nhân viên' : 'Quên mật khẩu'
-  const back = <Link to="/login"><i className="fa-solid fa-arrow-left" /> Quay lại đăng nhập</Link>
+  const title = staffMode ? t('authPages.forgotPasswordStaffTitle') : t('authPages.forgotPasswordTitle')
+  const back = <Link to="/login"><i className="fa-solid fa-arrow-left" /> {t('authPages.backToLogin')}</Link>
   const useOtherEmail = () => {
     setRequested(false)
     setOtp('')
@@ -78,18 +80,18 @@ function ForgotPasswordFlow({ staffMode }: { staffMode: boolean }) {
   }
 
   return (
-    <AuthShell title={title} subtitle="Nhận mã OTP qua email để tạo mật khẩu mới." heading="Khôi phục tài khoản" back={back} homeExternal={staffMode}>
+    <AuthShell title={title} subtitle={t('authPages.forgotPasswordSubtitle')} heading={t('authPages.recoveryHeading')} back={back} homeExternal={staffMode}>
       {error && <div id="reset-error" className={`alert alert-danger ${s.error}`} role="alert"><i className="fa-solid fa-circle-exclamation" /><div>{error}</div></div>}
       {message && !error && <div className={`alert alert-success ${s.error}`} role="status"><i className="fa-solid fa-circle-check" /><div>{message}</div></div>}
 
       {!requested && (
         <form onSubmit={requestOtp} noValidate>
           <div className="form-group">
-            <label htmlFor="reset-email">Email tài khoản</label>
+            <label htmlFor="reset-email">{t('authPages.accountEmail')}</label>
             <input id="reset-email" {...fieldState('reset-email')} type="email" autoComplete="email" value={email} onChange={e => { setEmail(e.target.value); clearError() }} placeholder="ten@example.com" />
           </div>
           <button className="btn btn-primary btn-full btn-lg" type="submit" disabled={loading}>
-            {loading ? 'Đang gửi mã...' : 'Gửi mã OTP'}
+            {loading ? t('authPages.sendingOtp') : t('authPages.sendOtpBtn')}
           </button>
         </form>
       )}
@@ -97,38 +99,38 @@ function ForgotPasswordFlow({ staffMode }: { staffMode: boolean }) {
       {requested && !completed && (
         <form onSubmit={resetPassword} noValidate>
           <div className="form-group">
-            <label htmlFor="reset-email-display">Email tài khoản</label>
+            <label htmlFor="reset-email-display">{t('authPages.accountEmail')}</label>
             <input id="reset-email-display" className="form-control" type="email" value={email} readOnly />
-            <p className="form-hint"><button type="button" className={s.linkButton} onClick={useOtherEmail}>Dùng email khác</button></p>
+            <p className="form-hint"><button type="button" className={s.linkButton} onClick={useOtherEmail}>{t('authPages.useOtherEmail')}</button></p>
           </div>
           <div className="form-group">
-            <label htmlFor="reset-otp">Mã OTP</label>
-            <input id="reset-otp" {...fieldState('reset-otp')} inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={e => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 6)); clearError() }} placeholder="Nhập mã 6 chữ số" />
+            <label htmlFor="reset-otp">{t('authPages.otpLabel')}</label>
+            <input id="reset-otp" {...fieldState('reset-otp')} inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={otp} onChange={e => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 6)); clearError() }} placeholder={t('authPages.otpPlaceholder')} />
           </div>
           <div className="form-group">
-            <label htmlFor="new-password">Mật khẩu mới</label>
+            <label htmlFor="new-password">{t('auth.password')}</label>
             <div className={s.pwdWrap}>
               <input id="new-password" {...fieldState('new-password')} type={showPwd ? 'text' : 'password'} autoComplete="new-password" maxLength={100} value={newPassword} onChange={e => { setNewPassword(e.target.value); clearError() }} />
-              <button type="button" className={s.pwdToggle} onClick={() => setShowPwd(v => !v)} aria-label={showPwd ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}>
+              <button type="button" className={s.pwdToggle} onClick={() => setShowPwd(v => !v)} aria-label={showPwd ? t('auth.hidePassword') : t('auth.showPassword')}>
                 <i className={`fa-solid ${showPwd ? 'fa-eye-slash' : 'fa-eye'}`} />
               </button>
             </div>
-            <p className="form-hint">Tối thiểu 6 ký tự, khác mật khẩu hiện tại.</p>
+            <p className="form-hint">{t('authPages.newPasswordHint')}</p>
           </div>
           <div className="form-group">
-            <label htmlFor="confirm-password">Nhập lại mật khẩu mới</label>
+            <label htmlFor="confirm-password">{t('authPages.confirmNewPassword')}</label>
             <input id="confirm-password" {...fieldState('confirm-password')} type={showPwd ? 'text' : 'password'} autoComplete="new-password" maxLength={100} value={confirmPassword} onChange={e => { setConfirmPassword(e.target.value); clearError() }} />
           </div>
           <button className="btn btn-primary btn-full btn-lg" type="submit" disabled={loading}>
-            {loading ? 'Đang cập nhật...' : 'Xác nhận mật khẩu mới'}
+            {loading ? t('authPages.updatingPassword') : t('authPages.confirmNewPasswordBtn')}
           </button>
           <button className="btn btn-ghost btn-full btn-lg" type="button" disabled={loading} onClick={() => void sendOtp()} style={{ marginTop: 10 }}>
-            Gửi lại mã OTP
+            {t('authPages.resendOtp')}
           </button>
         </form>
       )}
 
-      {completed && <Link className="btn btn-primary btn-full btn-lg" to="/login">Đến trang đăng nhập</Link>}
+      {completed && <Link className="btn btn-primary btn-full btn-lg" to="/login">{t('authPages.goToLogin')}</Link>}
     </AuthShell>
   )
 }
