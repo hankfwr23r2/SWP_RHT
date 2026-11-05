@@ -5,6 +5,7 @@ import 'leaflet/dist/leaflet.css'
 import { useEffect, useMemo, useRef } from 'react'
 import { findGate, findTransitStation, type GeoPoint } from '../config/network'
 import { bookingPath, findLocation, projectOnPath, spotLabel, vehiclePoint } from '../lib/booking'
+import { restLabel } from '../lib/routePreview'
 import type { Booking, VehicleTrip } from '../types/booking'
 import { formatDateTime } from '../lib/format'
 import { addBaseLayer, BASE_MAP_OPTIONS } from './baseMap'
@@ -80,7 +81,7 @@ export function TripTrackMap({ b, trips = [], height, plain }: Props) {
     ;(b.route?.rests ?? []).forEach(r => {
       const s = findTransitStation(r.name)
       if (!s) return
-      L.marker(ll(s), { icon: L.divIcon({ className: 'tt-icon', html: `<span class="tt-st ${passed.has(r.name) ? 'tt-done' : ''}"></span>`, iconSize: [34, 34], iconAnchor: [17, 17] }) }).bindTooltip(`${r.name} · nghỉ ${r.minutes} phút${passed.has(r.name) ? ' (đã qua)' : ''}`, { direction: 'top', offset: [0, -12] }).addTo(g)
+      L.marker(ll(s), { icon: L.divIcon({ className: 'tt-icon', html: `<span class="tt-st ${passed.has(r.name) ? 'tt-done' : ''}"></span>`, iconSize: [34, 34], iconAnchor: [17, 17] }) }).bindTooltip(`${r.name} · ${restLabel(r)}${passed.has(r.name) ? ' (đã qua)' : ''}`, { direction: 'top', offset: [0, -12] }).addTo(g)
     })
     cars.forEach(({ t, at }) => {
       L.marker(ll(at), { zIndexOffset: 1000, icon: L.divIcon({ className: 'tt-icon', html: '<span class="tt-truck"><i class="fa-solid fa-truck"></i></span>', iconSize: [40, 40], iconAnchor: [20, 20] }) }).bindTooltip(`${t.tripId}: ${spotLabel(t)}`, { direction: 'top', offset: [0, -20] }).addTo(g)

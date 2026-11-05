@@ -3,6 +3,7 @@ import 'leaflet/dist/leaflet.css'
 import { useEffect, useMemo, useRef } from 'react'
 import { TRANSIT_STATIONS, type GeoPoint } from '@shared/config/network'
 import { routeOutline } from '@shared/lib/booking'
+import { restLabel, restTitle } from '@shared/lib/routePreview'
 import type { RestStop } from '@shared/types/booking'
 import type { RoadRoute } from '@shared/services/routing'
 import { addBaseLayer, BASE_MAP_OPTIONS } from '@shared/ui/baseMap'
@@ -143,7 +144,7 @@ export function InlineRouteMap({ origin, dest, gate, rests, activeRoad: road, lo
     // Điểm nghỉ của lịch trình
     restPoints.forEach(r => {
       const marker = L.marker([r.lat, r.lng], { icon: stationIcon(r.n), zIndexOffset: 600, title: r.name })
-      marker.bindTooltip(`${r.name} · Nghỉ ${r.minutes} phút`, { direction: 'top', offset: [0, -12] })
+      marker.bindTooltip(`${restTitle(r.name)} · ${restLabel(r)}`, { direction: 'top', offset: [0, -12] })
       if (onOpenPicker) {
         marker.on('click', onOpenPicker)
       }

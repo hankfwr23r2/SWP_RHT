@@ -8,6 +8,23 @@ export const ROADSIDE = 'Nghỉ dọc đường'
 
 // Tên điểm đón/trả gửi backend để hiện trong lịch trình và thông báo: bỏ phần số nhà/đường khách tự gõ
 // ("Stanford123123, Phường Châu Phú B (Châu Đốc), An Giang" → "Phường Châu Phú B (Châu Đốc), An Giang")
+// Chữ hiển thị chỗ nghỉ cho nhân viên: "Bên đường, km 686" thay cho "Nghỉ dọc đường (km 686)" (không phải trạm),
+// "Nghỉ đêm 10 giờ" thay cho "Nghỉ 600 phút". Tên lưu trong lộ trình giữ nguyên, chỉ đổi lúc hiển thị.
+export const isRoadsideRest = (name: string) => name.startsWith(ROADSIDE)
+export const restTitle = (name: string) =>
+  isRoadsideRest(name)
+    ? name.replace(/^Nghỉ dọc đường \(km (\d+)\)$/, 'Bên đường, km $1').replace(/^Nghỉ dọc đường gần /, 'Bên đường, gần ')
+    : name
+// Đơn chốt trước khi có cờ overnight: nghỉ từ 5 giờ trở lên coi là nghỉ đêm
+export const isOvernightRest = (r: Pick<RestStop, 'minutes' | 'overnight'>) => r.overnight === true || r.minutes >= 300
+const duration = (minutes: number) => {
+  if (minutes < 60) return `${minutes} phút`
+  const h = Math.floor(minutes / 60), m = minutes % 60
+  return m ? `${h} giờ ${m} phút` : `${h} giờ`
+}
+export const restLabel = (r: Pick<RestStop, 'minutes' | 'overnight'>) =>
+  `${isOvernightRest(r) ? 'Nghỉ đêm' : 'Nghỉ'} ${duration(r.minutes)}`
+
 export const routePlaceName = (name: string) => {
   const parts = name.split(', ')
   return parts.length > 2 ? parts.slice(1).join(', ') : name
@@ -60,6 +77,7 @@ export function routePlanFromPreview(preview: RoutePreviewResponse, originName: 
         minutes: Math.round((e.endAt - e.startAt) / 60000),
         ...(e.lat != null && e.lng != null ? { lat: e.lat, lng: e.lng } : {}),
         ...(manualNames.includes(name) ? { manual: true } : {}),
+        ...(e.type === 'OVERNIGHT' ? { overnight: true } : {}),
       })
       arriveAt = e.endAt
     }

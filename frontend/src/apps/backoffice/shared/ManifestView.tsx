@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { manifestDocuments, vehicleClassOf } from '@shared/lib/booking'
+import { restLabel, restTitle } from '@shared/lib/routePreview'
 import { formatClock, formatDateTime } from '@shared/lib/format'
 import type { CrewMember, Vehicle } from '@shared/services/fleet'
 import { SEX_LABEL, type Booking, type VehicleTrip } from '@shared/types/booking'
@@ -68,7 +69,7 @@ export function ManifestView({ b, trip, vehicle, driver, escort }: Props) {
               <li key={l.no}>
                 <div><b>Chặng {l.no}:</b> {l.from} → {l.to}</div>
                 <div className={s.sub}>Khởi hành {formatDateTime(l.departAt)} · đến {formatClock(l.arriveAt)}</div>
-                {route.rests[i] && <div className={s.rest}><i className="fa-solid fa-location-dot" aria-hidden="true" /> Trạm nghỉ <b>{route.rests[i].name}</b>: dừng {route.rests[i].minutes} phút</div>}
+                {route.rests[i] && <div className={s.rest}><i className="fa-solid fa-location-dot" aria-hidden="true" /> <b>{restTitle(route.rests[i].name)}</b>: {restLabel(route.rests[i])}</div>}
               </li>
             ))}
           </ol>

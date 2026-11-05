@@ -41,7 +41,7 @@ import { HorseDocsModal } from '../../../shared/HorseDocsModal'
 const RouteMapPicker = lazy(() => import('./RouteMapPicker').then(m => ({ default: m.RouteMapPicker })))
 import { InlineRouteMap } from './InlineRouteMap'
 import { routesApi, type BackendRouteResponse, type RoutePreviewRequest, type RoutePreviewResponse } from '@shared/api/routes'
-import { ROADSIDE, roadFromPreview, routePlaceName, routePlanFromPreview } from '@shared/lib/routePreview'
+import { isRoadsideRest, restLabel, restTitle, roadFromPreview, routePlaceName, routePlanFromPreview } from '@shared/lib/routePreview'
 import { thinPath } from '@shared/services/routing'
 import { usePageData } from '@shared/routing/pageData'
 import type { fleetPlanLoader } from '../../../shared/loaders'
@@ -752,7 +752,7 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
                       <small>{findTransitStation(r.name)?.area ?? 'Trạm ngoài danh mục'}</small>
                     </span>
                     <span className={s.stopMin}>
-                      <i className="fa-regular fa-clock" /> Nghỉ {route.rests[n - 1]?.minutes ?? r.minutes} phút
+                      <i className="fa-regular fa-clock" /> {restLabel(route.rests[n - 1] ?? r)}
                     </span>
                   </button>
                   <button
@@ -780,22 +780,18 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
         {/* TRẠM HỆ THỐNG TỰ CHỌN (CHỈ ĐỌC) */}
         {systemStops.length > 0 && (
           <>
-            <h4 style={{ margin: '16px 0 8px', fontSize: '0.88rem', color: 'var(--navy)' }}>Trạm hệ thống tự chọn trên đường</h4>
+            <h4 style={{ margin: '16px 0 8px', fontSize: '0.88rem', color: 'var(--navy)' }}>Chỗ nghỉ hệ thống tự thêm</h4>
             <ol className={s.stopList}>
               {systemStops.map(({ r, n }) => (
                 <li key={n}>
                   <div className={s.stopItem} style={{ cursor: 'default' }}>
                     <span className={s.stopNum}>{n}</span>
                     <span className={s.stopName}>
-                      <b>{r.name}</b>
-                      <small>
-                        {r.name.startsWith(ROADSIDE)
-                          ? `Không có trạm nghỉ trên đoạn này, xe dừng nghỉ bên đường để không lái quá ${MAX_CONTINUOUS_HOURS} giờ liên tục`
-                          : `Hệ thống thêm để không lái quá ${MAX_CONTINUOUS_HOURS} giờ liên tục`}
-                      </small>
+                      <b>{restTitle(r.name)}</b>
+                      <small>{isRoadsideRest(r.name) ? 'Không có trạm gần' : findTransitStation(r.name)?.area ?? 'Trạm ngoài danh mục'}</small>
                     </span>
                     <span className={s.stopMin}>
-                      <i className="fa-regular fa-clock" /> Nghỉ {r.minutes} phút
+                      <i className="fa-regular fa-clock" /> {restLabel(r)}
                     </span>
                   </div>
                 </li>
@@ -844,7 +840,7 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
                   <li key={w}>{w}</li>
                 ))}
               </ul>
-              {route.rests.some(r => r.name.startsWith(ROADSIDE)) && (
+              {route.rests.some(r => isRoadsideRest(r.name)) && (
                 <button type="button" className="btn btn-outline btn-sm" onClick={() => setMapOpen(true)}>
                   <i className="fa-solid fa-map-location-dot" /> Chọn trạm trên bản đồ
                 </button>
@@ -996,10 +992,10 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
                       <tr style={{ background: '#f8fafc', fontSize: '0.82rem' }}>
                         <td colSpan={2} style={{ padding: '7px 14px', color: '#047857' }}>
                           <i className="fa-solid fa-mug-hot" style={{ marginRight: 6 }} />
-                          <b>{restStop.minutes >= 300 ? 'Nghỉ đêm' : 'Dừng nghỉ'}: {restStop.name}</b>
+                          <b>{restTitle(restStop.name)}</b>
                         </td>
                         <td colSpan={4} style={{ padding: '7px 14px', color: 'var(--muted)' }}>
-                          Nghỉ <b>{restStop.minutes} phút</b> ({formatClock(l.arriveAt)} → {formatClock(legs[idx + 1].departAt)}) · Kiểm tra an sinh & cho uống nước
+                          <b>{restLabel(restStop)}</b> ({formatClock(l.arriveAt)} → {formatClock(legs[idx + 1].departAt)}) · Kiểm tra an sinh & cho uống nước
                         </td>
                       </tr>
                     )}

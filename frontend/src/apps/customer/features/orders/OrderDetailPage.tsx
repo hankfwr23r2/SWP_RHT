@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { DEPOSIT_RATE, HORSE_DOC, INCIDENT_KIND, stepOf } from '@shared/config/booking-rules'
 import { effectiveArrivalOf } from '@shared/lib/booking'
+import { restLabel, restTitle } from '@shared/lib/routePreview'
 import { formatClock, formatDate, formatDateTime, formatVND } from '@shared/lib/format'
 import { usePageData } from '@shared/routing/pageData'
 import { customerBookingsApi, type CustomerBookingView, type TripTeam } from '@shared/services/bookings'
@@ -223,7 +224,7 @@ function RouteCard({ b }: { b: CustomerBookingView }) {
           <li key={l.no}>
             <div><b>Chặng {l.no}:</b> {l.from} → {l.to}</div>
             <div className="sub-text">Khởi hành {formatDateTime(l.departAt)} · đến khoảng {formatClock(l.arriveAt)}</div>
-            {r.rests[i] && <div className="sub-text"><i className="fa-solid fa-location-dot" /> Trạm nghỉ {r.rests[i].name}: dừng {r.rests[i].minutes} phút</div>}
+            {r.rests[i] && <div className="sub-text"><i className="fa-solid fa-location-dot" /> {restTitle(r.rests[i].name)}: {restLabel(r.rests[i])}</div>}
           </li>
         ))}
       </ol>

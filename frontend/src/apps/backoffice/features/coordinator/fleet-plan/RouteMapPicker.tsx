@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { MAX_CONTINUOUS_HOURS, MIN_REST_MINUTES } from '@shared/config/booking-rules'
 import { countryCodeOf, type GeoPoint, type TransitStation } from '@shared/config/network'
 import { routeOutline } from '@shared/lib/booking'
-import { ROADSIDE, stationsForBooking } from '@shared/lib/routePreview'
+import { ROADSIDE, restTitle, stationsForBooking } from '@shared/lib/routePreview'
 import type { RestStop } from '@shared/types/booking'
 import { Modal } from '@shared/ui/Modal'
 import { addBaseLayer, BASE_MAP_OPTIONS } from '@shared/ui/baseMap'
@@ -107,7 +107,7 @@ export function RouteMapPicker({ origin, dest, gate, international, value, estim
   // Chỗ nghỉ hệ thống sẽ thêm (ngoài các trạm đang chọn) để không lái quá giờ liên tục
   const added = (roadNow?.preview?.schedule ?? [])
     .filter(e => STOP_EVENTS.has(e.type) && (e.type === 'ROADSIDE_REST' || !picked.has(e.place)))
-    .map(e => (e.type === 'ROADSIDE_REST' && !e.place.startsWith(ROADSIDE) ? `${ROADSIDE} gần ${e.place}` : e.place))
+    .map(e => restTitle(e.type === 'ROADSIDE_REST' && !e.place.startsWith(ROADSIDE) ? `${ROADSIDE} gần ${e.place}` : e.place))
 
   // Khi bấm vào trạm trên bản đồ: CHỈ mở thông tin trạm để xem, KHÔNG tự ý thêm trạm mới
   const choose = (name: string) => {
