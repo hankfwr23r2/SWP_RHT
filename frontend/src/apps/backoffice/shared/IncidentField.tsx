@@ -177,7 +177,7 @@ export function IncidentPanel({ b, inc, role, run }: { b: Booking; inc: Incident
           )}
           {askEarly && checkpoint?.arrivedAt && (() => { const rest = sosRest(b, inc, now); return (
             <EarlyConfirmModal title="Rời trạm SOS sớm?" withNote confirmLabel="Xác nhận rời trạm" onClose={() => setAskEarly(false)}
-              message={<>Ngựa mới nghỉ <b>{rest.rested} phút</b>, phương án đã duyệt là <b>{rest.planned} phút</b>. Hộ tống đã xác nhận ngựa đủ sức. Quản lý và khách sẽ thấy xe rời trạm sớm.</>}
+              message={<>Ngựa mới nghỉ <b>{rest.rested} phút</b>, phương án đã duyệt là <b>{rest.planned} phút</b>. Hộ tống đã xác nhận ngựa đủ sức. Hệ thống ghi lại số phút đã nghỉ và ghi chú của bạn.</>}
               onConfirm={note => run(() => bookingsApi.resumeJourney(b.id, inc.id, session!.name, { note }), 'Đã rời trạm SOS sớm, tiếp tục hành trình').then(() => setAskEarly(false))} />
           ) })()}
         </>
