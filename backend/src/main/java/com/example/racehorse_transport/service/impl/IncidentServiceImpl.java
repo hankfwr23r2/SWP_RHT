@@ -324,6 +324,12 @@ public class IncidentServiceImpl implements IncidentService {
             BookingDetailsPayload payload = BookingDetailsJson.read(objectMapper, incident.getBookingID());
             Map<String, Object> checkpoint = stationCheckpoint(incident, payload);
             if (checkpoint.get("arrivedAt") == null) throw new IllegalArgumentException("Cần xác nhận tới trạm SOS trước khi khám.");
+            long arrival = ((Number) checkpoint.get("arrivedAt")).longValue();
+            long restMinutes = checkpoint.get("restMinutes") instanceof Number m ? m.longValue() : 0;
+            long restedMinutes = (Instant.now().toEpochMilli() - arrival) / 60000;
+            if (restedMinutes < restMinutes && (request == null || !request.isConfirmEarly()))
+                throw new IllegalArgumentException("Ngựa mới nghỉ " + restedMinutes + "/" + restMinutes
+                        + " phút tại trạm SOS. Cần xác nhận đủ sức sớm.");
             if (request == null || request.getHorses() == null || request.getHorses().isEmpty())
                 throw new IllegalArgumentException("Cần ghi kết quả chăm sóc từng ngựa bị ảnh hưởng.");
             var expected = affectedHorseIds(incident);

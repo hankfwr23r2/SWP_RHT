@@ -96,6 +96,7 @@ export function incidentKindOf(value: string): IncidentKind | undefined {
     case 'VEHICLE_BREAKDOWN': return 'vehicle_breakdown'
     case 'TRAFFIC_JAM':
     case 'TRAFFIC_DELAY': return 'traffic_jam'
+    case 'HANDOVER_TIMEOUT': return 'handover_timeout'
     default: return undefined
   }
 }

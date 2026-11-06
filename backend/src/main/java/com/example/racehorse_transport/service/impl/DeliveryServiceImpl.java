@@ -33,6 +33,7 @@ public class DeliveryServiceImpl implements DeliveryService {
     private final PaymentRepository paymentRepository;
     private final SystemLogRepository systemLogRepository;
     private final com.example.racehorse_transport.service.HorseDeliveryLocationService horseDeliveryLocationService;
+    private final com.example.racehorse_transport.repository.StaffRepository staffRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -114,9 +115,37 @@ public class DeliveryServiceImpl implements DeliveryService {
 
     @Override
     @Transactional
-    public BookingResponse reportDeliveryTimeout(Integer bookingId, DeliveryTimeoutRequest request) {
+    public BookingResponse reportDeliveryTimeout(Integer bookingId, DeliveryTimeoutRequest request, String username, String role) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng ID: " + bookingId));
+        request.setDriverUsername(username);
+        if (!java.util.Set.of("in_transit", "arrived").contains(String.valueOf(booking.getStatus()))) {
+            throw new IllegalStateException("Đơn không ở bước bàn giao nên không báo quá hạn được.");
+        }
+        BookingDetailsPayload tripPayload = extractPayload(booking);
+        var trip = tripPayload.getTrips() == null ? null : tripPayload.getTrips().stream()
+                .filter(t -> request.getTripId() == null || request.getTripId().equals(t.getTripId()))
+                .findFirst().orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chuyến của đơn."));
+        if (!"ADMIN".equalsIgnoreCase(role)) {
+            // Chỉ tài xế được phân công cho chuyến này mới báo quá hạn
+            var staff = staffRepository.findByUser_Username(username).orElse(null);
+            String assigned = Objects.toString(trip.getDriverId(), "");
+            boolean mine = "DRIVER".equalsIgnoreCase(role) && staff != null && (assigned.equalsIgnoreCase(Objects.toString(staff.getStaffCode(), ""))
+                    || assigned.equals(Objects.toString(staff.getId(), "")) || assigned.equalsIgnoreCase(username));
+            if (!mine) throw new org.springframework.security.access.AccessDeniedException("Chỉ tài xế của chuyến này được báo quá hạn bàn giao.");
+        }
+        Map<String, Object> deliveryPoint = trip.getRun() == null || !(trip.getRun().get("checkpoints") instanceof List<?> cps) ? null
+                : cps.stream().filter(cp -> cp instanceof Map<?, ?> m && "delivery".equals(m.get("type")))
+                        .map(cp -> { @SuppressWarnings("unchecked") Map<String, Object> m = (Map<String, Object>) cp; return m; })
+                        .findFirst().orElse(null);
+        if (deliveryPoint == null || !(deliveryPoint.get("arrivedAt") instanceof Number arrivedAt)) {
+            throw new IllegalArgumentException("Xe cần tới điểm giao trước khi báo quá hạn bàn giao.");
+        }
+        long waitedMinutes = (Instant.now().toEpochMilli() - arrivedAt.longValue()) / 60000;
+        if (waitedMinutes < 120 && !request.isConfirmEarly()) {
+            throw new IllegalArgumentException("Mới chờ " + waitedMinutes + "/120 phút ở điểm giao. Cần xác nhận báo quá hạn sớm.");
+        }
+        Double[] where = deliveryLocation(deliveryPoint, tripPayload);
 
         String action = request.getSelectedAction() != null ? request.getSelectedAction() : "STABLE_NEARBY";
         String reason = request.getTimeoutReason() != null ? request.getTimeoutReason() : "UNREACHABLE";
@@ -126,13 +155,18 @@ public class DeliveryServiceImpl implements DeliveryService {
                 .bookingID(booking)
                 .incidentType("HANDOVER_TIMEOUT")
                 .incidentName("Quá hạn 2 giờ: Người nhận chưa nhận được ngựa (" + reason + ")")
-                .description("Kích hoạt an sinh ngựa: " + ("STABLE_NEARBY".equalsIgnoreCase(action) ? "Thuê chuồng lưu trú khẩn cấp gần nhất" : "Chở ngựa quay về Trụ sở chính VN") + ". Ghi chú: " + request.getNote())
+                .description("Kích hoạt an sinh ngựa: " + ("STABLE_NEARBY".equalsIgnoreCase(action) ? "Thuê chuồng lưu trú khẩn cấp gần nhất" : "Chở ngựa quay về Trụ sở chính VN")
+                        + (waitedMinutes < 120 ? ". Tài xế báo sớm sau " + waitedMinutes + " phút chờ" : "") + ". Ghi chú: " + request.getNote())
                 .resolutionType("HANDOVER_TIMEOUT")
                 .partnerName(request.getPartnerName())
                 .partnerPhone(request.getPartnerPhone())
                 .estimatedCost(request.getEstimatedCost())
                 .actualCost(request.getEstimatedCost())
                 .costBearer("CUSTOMER") // Chi phí lưu ca xe và tiền chuồng do Khách hàng chịu theo hợp đồng
+                .tripId(trip.getTripId())
+                .locationLat(where[0])
+                .locationLng(where[1])
+                .staffID(staffRepository.findByUser_Username(username).orElse(null))
                 .status("active")
                 .createdAt(Instant.now())
                 .build();
@@ -189,6 +223,17 @@ public class DeliveryServiceImpl implements DeliveryService {
                 log.info("Released Vehicle ID={} to AVAILABLE at Central HQ", v.getId());
             }
         }
+    }
+
+    // Vị trí sự cố quá hạn: tọa độ mốc điểm giao nếu có, không thì điểm cuối của lộ trình đã chốt
+    private Double[] deliveryLocation(Map<String, Object> deliveryPoint, BookingDetailsPayload payload) {
+        if (deliveryPoint.get("lat") instanceof Number lat && deliveryPoint.get("lng") instanceof Number lng)
+            return new Double[]{lat.doubleValue(), lng.doubleValue()};
+        if (payload.getRoute() instanceof Map<?, ?> route && route.get("path") instanceof List<?> path && !path.isEmpty()
+                && path.get(path.size() - 1) instanceof List<?> last && last.size() == 2
+                && last.get(0) instanceof Number lat && last.get(1) instanceof Number lng)
+            return new Double[]{lat.doubleValue(), lng.doubleValue()};
+        return new Double[]{null, null};
     }
 
     private BookingDetailsPayload extractPayload(Booking b) {

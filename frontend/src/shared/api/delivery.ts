@@ -16,6 +16,8 @@ export interface HandoverCompletePayload {
 }
 
 export interface DeliveryTimeoutPayload {
+  tripId: string
+  confirmEarly?: boolean // báo trước khi chờ đủ 2 giờ: tài xế đã xác nhận
   timeoutReason: string // UNREACHABLE, DESTINATION_UNREADY, CONSIGNEE_REJECTED
   selectedAction: string // STABLE_NEARBY, RETURN_TO_HQ
   partnerName?: string

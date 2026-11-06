@@ -42,8 +42,11 @@ public class DeliveryController {
     @PostMapping("/{id}/timeout")
     public ResponseEntity<ApiResponse<BookingResponse>> reportDeliveryTimeout(
             @PathVariable("id") Integer id,
-            @RequestBody DeliveryTimeoutRequest request) {
-        BookingResponse response = deliveryService.reportDeliveryTimeout(id, request);
+            @RequestBody DeliveryTimeoutRequest request,
+            org.springframework.security.core.Authentication authentication) {
+        String role = authentication.getAuthorities().stream().map(a -> a.getAuthority().replace("ROLE_", ""))
+                .filter(r -> java.util.Set.of("DRIVER", "ESCORT", "ADMIN").contains(r)).findFirst().orElse("");
+        BookingResponse response = deliveryService.reportDeliveryTimeout(id, request, authentication.getName(), role);
         return ResponseEntity.ok(ApiResponse.success(response, "Đã ghi nhận ngoại lệ quá giờ bàn giao và kích hoạt an sinh ngựa"));
     }
 

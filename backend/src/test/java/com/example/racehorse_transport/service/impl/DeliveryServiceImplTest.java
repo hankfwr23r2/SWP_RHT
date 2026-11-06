@@ -33,7 +33,8 @@ class DeliveryServiceImplTest {
             mock(IncidentRepository.class),
             mock(PaymentRepository.class),
             mock(SystemLogRepository.class),
-            mock(com.example.racehorse_transport.service.HorseDeliveryLocationService.class));
+            mock(com.example.racehorse_transport.service.HorseDeliveryLocationService.class),
+            mock(com.example.racehorse_transport.repository.StaffRepository.class));
 
     @Test
     void unreadableDetailsAreNotOverwrittenWhenTheCrewArrives() {

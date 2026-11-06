@@ -516,7 +516,7 @@ export const bookingsApi = {
       label: input.label.trim() || input.category,
       payer: defaultPayer(incident.kind, input.category),
     }),
-  confirmFit: async (_id: string, incidentId: string, _by: string, data?: { photo: string; waterLiters?: number; hay?: boolean; horses: { horseId: string; careNote: string; temperature?: number }[] }) =>
+  confirmFit: async (_id: string, incidentId: string, _by: string, data?: { photo: string; waterLiters?: number; hay?: boolean; confirmEarly?: boolean; horses: { horseId: string; careNote: string; temperature?: number }[] }) =>
     backendIncidentApi.confirmFit(numericId(incidentId, 'INC'), data),
   resumeJourney: async (_id: string, incidentId: string, _by: string, earlyLeave?: { note: string }) =>
     backendIncidentApi.resumeJourney(numericId(incidentId, 'INC'), earlyLeave ? { confirmEarlyLeave: true, note: earlyLeave.note } : undefined),

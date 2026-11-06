@@ -888,7 +888,10 @@ export const needsAttention = (w?: WelfareLog) => !!w && w.condition !== 'normal
 
 
 // ===== Sự cố và quyết toán (Flow 5, 6; PRD mục 6, 7, 11.5) =====
-export const openIncidentOf = (b: Pick<Booking, 'incidents'>, tripId: string) => b.incidents?.find(i => i.tripId === tripId && i.status !== 'resolved')
+// Sự cố đang mở của chuyến (trừ quá hạn bàn giao: kíp xe vẫn ở bước giao ngựa, chờ người nhận tới)
+export const openIncidentOf = (b: Pick<Booking, 'incidents'>, tripId: string) => b.incidents?.find(i => i.tripId === tripId && i.status !== 'resolved' && i.kind !== 'handover_timeout')
+// Quá hạn bàn giao đang chờ người nhận của chuyến
+export const handoverTimeoutOf = (b: Pick<Booking, 'incidents'>, tripId: string) => b.incidents?.find(i => i.tripId === tripId && i.status !== 'resolved' && i.kind === 'handover_timeout')
 // Ngựa thì khách chịu, vận chuyển thì nhà xe chịu; chuồng đệm do tắc cửa khẩu nhà xe chịu. Manager sửa được lúc đối soát.
 export function defaultPayer(kind: IncidentKind, category: ExpenseCategory): Payer {
   if (kind === 'traffic_jam') return 'carrier' // tắc đường là việc vận chuyển: nhà xe chịu toàn bộ (PRD 11.5)
@@ -899,7 +902,7 @@ export function incidentActionsFor(kind: IncidentKind): IncidentAction[] {
   return kind === 'horse_health' ? ['to_station'] : kind === 'vehicle_breakdown' ? ['rescue_and_station'] : ['reroute']
 }
 // Sức khỏe ngựa và xe gặp sự cố đều đưa ngựa tới trạm nghỉ, nên Escort phải xác nhận ngựa đủ sức mới đi tiếp; tắc đường thì không
-export const needsFitCheck = (kind: IncidentKind) => kind !== 'traffic_jam'
+export const needsFitCheck = (kind: IncidentKind) => kind !== 'traffic_jam' && kind !== 'handover_timeout'
 
 // ----- Bản đồ sự cố: điểm gần nhất, đường đi còn lại, vị trí xe -----
 export function nearestTo<T extends GeoPoint>(from: GeoPoint, list: T[], n = list.length): (T & { km: number })[] {

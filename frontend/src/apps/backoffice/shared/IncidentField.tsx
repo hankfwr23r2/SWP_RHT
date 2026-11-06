@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useAuth } from '@shared/auth/AuthContext'
 import { IncidentPlanView } from './IncidentPlanView'
 import { needsFitCheck } from '@shared/lib/booking'
-import { EXPENSE_CATEGORY, INCIDENT_ACTION, INCIDENT_KIND, type ExpenseCategory, type IncidentKind } from '@shared/config/booking-rules'
+import { EXPENSE_CATEGORY, INCIDENT_ACTION, INCIDENT_KIND, SOS_KINDS, type ExpenseCategory, type IncidentKind } from '@shared/config/booking-rules'
 import { formatDateTime, formatVND } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
 import type { Booking, Incident, VehicleTrip } from '@shared/types/booking'
@@ -29,7 +29,7 @@ export function SosPanel({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }
   return (
     <Panel title="Báo sự cố khẩn cấp" icon="fa-triangle-exclamation" tone="warn">
       <div role="radiogroup" aria-label="Nhóm sự cố" style={{ display: 'grid', gap: 8 }}>
-        {(Object.keys(INCIDENT_KIND) as IncidentKind[]).map(k => (
+        {SOS_KINDS.map(k => (
           <label key={k} style={{ display: 'flex', gap: 12, alignItems: 'center', minHeight: 52, padding: '0 14px', border: `1.5px solid ${kind === k ? 'var(--orange)' : 'var(--line)'}`, borderRadius: 'var(--radius-sm)' }}>
             <input type="radio" name="kind" checked={kind === k} onChange={() => setKind(k)} style={{ width: 20, height: 20, accentColor: 'var(--orange)' }} />
             <span><b>{INCIDENT_KIND[k].label}</b><br /><small>{INCIDENT_KIND[k].hint}</small></span>
@@ -47,7 +47,7 @@ export function SosPanel({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }
   )
 }
 
-function ExpenseForm({ b, inc, run }: { b: Booking; inc: Incident; run: Run }) {
+export function ExpenseForm({ b, inc, run }: { b: Booking; inc: Incident; run: Run }) {
   const { session } = useAuth()
   const [category, setCategory] = useState<ExpenseCategory>('vet_fee')
   const [label, setLabel] = useState('')
@@ -68,12 +68,17 @@ function ExpenseForm({ b, inc, run }: { b: Booking; inc: Incident; run: Run }) {
 
 function HealthCareForm({ b, inc, run }: { b: Booking; inc: Incident; run: Run }) {
   const { session } = useAuth()
+  const now = useNow(1000)
+  const [askEarly, setAskEarly] = useState(false)
   const [photo, setPhoto] = useState<string>()
   const [water, setWater] = useState('0')
   const [hay, setHay] = useState(false)
   const [records, setRecords] = useState<Record<string, { note: string; temperature: string }>>({})
   const trip = b.trips?.find(t => t.tripId === inc.tripId)
   const horses = b.horses.filter(h => (inc.horseIds?.length ? inc.horseIds : trip?.horseIds ?? []).includes(h.horseId))
+  const save = (confirmEarly: boolean) => run(() => bookingsApi.confirmFit(b.id, inc.id, session!.name, {
+    photo: photo!, waterLiters: Number(water || 0), hay, confirmEarly, horses: horses.map(h => ({ horseId: h.horseId, careNote: records[h.horseId].note.trim(), ...(records[h.horseId].temperature ? { temperature: Number(records[h.horseId].temperature) } : {}) })),
+  }), 'Đã lưu nhật ký sức khỏe và xác nhận đủ sức đi tiếp')
   const ready = !!photo && Number.isFinite(Number(water || 0)) && Number(water || 0) >= 0 && horses.length > 0 && horses.every(h => records[h.horseId]?.note.trim())
   return <>
     {horses.map(h => <div key={h.horseId} className="form-group"><label htmlFor={`care-${h.horseId}`}>{h.name} · chip {h.microchip}: kết quả chăm sóc</label>
@@ -82,29 +87,41 @@ function HealthCareForm({ b, inc, run }: { b: Booking; inc: Incident; run: Run }
     </div>)}
     <div className="form-group"><label htmlFor="sos-water">Nước đã cấp (lít)</label><input id="sos-water" type="number" min="0" step="0.1" className="form-control" value={water} onChange={e => setWater(e.target.value)} /><label><input type="checkbox" checked={hay} onChange={e => setHay(e.target.checked)} /> Đã cấp cỏ</label></div>
     <CaptureField purpose="SUBMIT_WELFARE" target={`sos-${Number(inc.id.replace('INC-', ''))}`} label="Ảnh kết quả chăm sóc tại trạm SOS" required value={photo} onChange={setPhoto} />
-    <button className={`btn btn-primary ${s.big}`} disabled={!ready} onClick={() => run(() => bookingsApi.confirmFit(b.id, inc.id, session!.name, {
-      photo: photo!, waterLiters: Number(water || 0), hay, horses: horses.map(h => ({ horseId: h.horseId, careNote: records[h.horseId].note.trim(), ...(records[h.horseId].temperature ? { temperature: Number(records[h.horseId].temperature) } : {}) })),
-    }), 'Đã lưu nhật ký sức khỏe và xác nhận đủ sức đi tiếp')}>Lưu kết quả chăm sóc và xác nhận đủ sức</button>
+    <button className={`btn btn-primary ${s.big}`} disabled={!ready} onClick={() => sosRest(b, inc, now).done ? save(false) : setAskEarly(true)}>Lưu kết quả chăm sóc và xác nhận đủ sức</button>
+    {askEarly && (() => { const rest = sosRest(b, inc, now); return (
+      <EarlyConfirmModal title="Xác nhận ngựa đủ sức sớm?" confirmLabel="Xác nhận đủ sức" onClose={() => setAskEarly(false)}
+        message={<>Ngựa mới nghỉ <b>{rest.rested} phút</b> ở trạm SOS, phương án đã duyệt là <b>{rest.planned} phút</b>. Chỉ xác nhận khi ngựa đã thật sự ổn định.</>}
+        onConfirm={() => save(true).then(() => setAskEarly(false))} />
+    ) })()}
   </>
 }
 
 // Thẻ sự cố đang mở của xe: thay cho các bước hành trình cho đến khi xử lý xong
-// Rời trạm SOS trước giờ nghỉ đã duyệt: không bắt kíp xe chờ, nhưng hỏi lại bằng form và lưu ghi chú
-function EarlyLeaveModal({ rested, planned, onClose, onConfirm }: { rested: number; planned: number; onClose: () => void; onConfirm: (note: string) => Promise<void> }) {
+// Làm sớm hơn giờ đã duyệt (rời trạm, xác nhận đủ sức): không bắt kíp xe chờ, nhưng hỏi lại bằng form
+function EarlyConfirmModal({ title, message, confirmLabel, withNote, onClose, onConfirm }: { title: string; message: React.ReactNode; confirmLabel: string; withNote?: boolean; onClose: () => void; onConfirm: (note: string) => Promise<void> }) {
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   return (
-    <Modal title="Rời trạm SOS sớm?" onClose={onClose} footer={<>
+    <Modal title={title} onClose={onClose} footer={<>
       <button className="btn btn-ghost" onClick={onClose} disabled={busy}>Ở lại nghỉ tiếp</button>
-      <button className="btn btn-primary" disabled={busy} onClick={async () => { setBusy(true); await onConfirm(note.trim()); setBusy(false) }}><i className="fa-solid fa-truck-fast" /> Xác nhận rời trạm</button>
+      <button className="btn btn-primary" disabled={busy} onClick={async () => { setBusy(true); await onConfirm(note.trim()); setBusy(false) }}>{confirmLabel}</button>
     </>}>
-      <p style={{ marginTop: 0 }}>Ngựa mới nghỉ <b>{rested} phút</b>, phương án đã duyệt là <b>{planned} phút</b>. Hộ tống đã xác nhận ngựa đủ sức. Quản lý và khách sẽ thấy xe rời trạm sớm.</p>
-      <div className="form-group" style={{ margin: 0 }}>
+      <p style={{ marginTop: 0 }}>{message}</p>
+      {withNote && <div className="form-group" style={{ margin: 0 }}>
         <label htmlFor="early-note">Ghi chú</label>
         <textarea id="early-note" className="form-control" rows={3} value={note} onChange={e => setNote(e.target.value)} placeholder="VD: Ngựa đã ổn định, hộ tống đồng ý đi tiếp" />
-      </div>
+      </div>}
     </Modal>
   )
+}
+
+// Ngựa đã nghỉ bao nhiêu phút ở trạm SOS so với phương án đã duyệt
+function sosRest(b: Booking, inc: Incident, now: number) {
+  const checkpointId = `sos-${Number(inc.id.replace('INC-', ''))}`
+  const checkpoint = b.trips?.find(t => t.tripId === inc.tripId)?.run?.checkpoints.find(cp => cp.id === checkpointId)
+  const planned = inc.plan?.restMinutes ?? 30
+  const rested = checkpoint?.arrivedAt ? Math.max(0, Math.floor((now - checkpoint.arrivedAt) / 60000)) : 0
+  return { planned, rested, done: !!checkpoint?.arrivedAt && rested >= planned }
 }
 
 export function IncidentPanel({ b, inc, role, run }: { b: Booking; inc: Incident; role: 'driver' | 'escort'; run: Run }) {
@@ -158,10 +175,11 @@ export function IncidentPanel({ b, inc, role, run }: { b: Booking; inc: Incident
           {role === 'driver' && (
             <button className={`btn btn-primary ${s.big}`} disabled={needFit && !inc.fitConfirmedAt} onClick={() => restReady ? run(() => bookingsApi.resumeJourney(b.id, inc.id, session!.name), 'Tiếp tục theo phương án đã duyệt') : setAskEarly(true)}><i className="fa-solid fa-truck-fast" /> Tiếp tục theo phương án đã duyệt</button>
           )}
-          {askEarly && checkpoint?.arrivedAt && (
-            <EarlyLeaveModal rested={Math.max(0, Math.floor((now - checkpoint.arrivedAt) / 60000))} planned={inc.plan?.restMinutes ?? 30} onClose={() => setAskEarly(false)}
+          {askEarly && checkpoint?.arrivedAt && (() => { const rest = sosRest(b, inc, now); return (
+            <EarlyConfirmModal title="Rời trạm SOS sớm?" withNote confirmLabel="Xác nhận rời trạm" onClose={() => setAskEarly(false)}
+              message={<>Ngựa mới nghỉ <b>{rest.rested} phút</b>, phương án đã duyệt là <b>{rest.planned} phút</b>. Hộ tống đã xác nhận ngựa đủ sức. Quản lý và khách sẽ thấy xe rời trạm sớm.</>}
               onConfirm={note => run(() => bookingsApi.resumeJourney(b.id, inc.id, session!.name, { note }), 'Đã rời trạm SOS sớm, tiếp tục hành trình').then(() => setAskEarly(false))} />
-          )}
+          ) })()}
         </>
       )}
     </>

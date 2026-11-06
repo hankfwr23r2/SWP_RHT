@@ -130,7 +130,8 @@ class BookingServiceImplTest {
                 documentRequirementRepository,
                 horseDeliveryLocationService,
                 new VnpayProperties(),
-                clock);
+                clock,
+                mock(com.example.racehorse_transport.repository.IncidentRepository.class));
 
         when(documentRequirementRepository.findByDocumentGroupAndStatusOrderByDocumentNameAsc(any(), any()))
                 .thenReturn(List.of());
