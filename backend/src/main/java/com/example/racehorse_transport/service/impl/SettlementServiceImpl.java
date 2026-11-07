@@ -287,7 +287,7 @@ public class SettlementServiceImpl implements SettlementService {
         }
         payload.setSettlement(settlementMap);
 
-        billMailService.paymentReceived(booking, "Thanh toán quyết toán", payment.getAmount(), payment.getGatewayTransactionNo(), paidAt, null);
+        billMailService.paymentReceived(booking, com.example.racehorse_transport.service.BillMailService.Payment.SETTLEMENT, payment.getAmount(), payment.getGatewayTransactionNo(), paidAt, null);
         return closeBooking(booking, payload, actor != null ? actor : "Khách hàng",
                 "Hoàn tất quyết toán và đánh giá");
     }

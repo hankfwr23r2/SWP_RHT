@@ -1240,7 +1240,7 @@ public class BookingServiceImpl implements BookingService {
                 "Khách hàng thanh toán tiền cọc (" + payment.getAmount() + " VND) qua " + payment.getPaymentMethod()
                         + ", mã GD " + payment.getTransactionCode() + ", cấp Vận đơn " + waybillNo);
         log.info("Deposit confirmed for booking ID={}, waybill={}", updated.getId(), waybillNo);
-        billMailService.paymentReceived(updated, "Đặt cọc 30%", payment.getAmount(), payment.getGatewayTransactionNo(), paidAt, "Vận đơn: " + waybillNo);
+        billMailService.paymentReceived(updated, com.example.racehorse_transport.service.BillMailService.Payment.DEPOSIT, payment.getAmount(), payment.getGatewayTransactionNo(), paidAt, waybillNo);
         return updated;
     }
 
@@ -1388,7 +1388,7 @@ public class BookingServiceImpl implements BookingService {
                 "Khách hàng thanh toán 70% còn lại (" + payment.getAmount() + " VND) qua " + payment.getPaymentMethod()
                         + ", mã GD " + payment.getTransactionCode() + " cho đơn BK-" + updated.getId());
         log.info("Balance confirmed for booking ID={}", updated.getId());
-        billMailService.paymentReceived(updated, "Thanh toán 70% còn lại", payment.getAmount(), payment.getGatewayTransactionNo(), paidAt, null);
+        billMailService.paymentReceived(updated, com.example.racehorse_transport.service.BillMailService.Payment.BALANCE, payment.getAmount(), payment.getGatewayTransactionNo(), paidAt, null);
         return updated;
     }
 

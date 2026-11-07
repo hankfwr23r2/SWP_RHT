@@ -51,6 +51,7 @@ public class AuthServiceImpl implements AuthService {
         user.setEmail(request.getEmail());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setEmailVerified(false);
+        if ("vi".equals(request.getLanguage()) || "en".equals(request.getLanguage())) user.setPreferredLanguage(request.getLanguage());
         User savedUser = userRepository.save(user);
 
         // 4. Mặc định tạo thông tin hồ sơ Customer tương ứng

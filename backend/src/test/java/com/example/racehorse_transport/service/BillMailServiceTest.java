@@ -48,7 +48,12 @@ class BillMailServiceTest {
     private final BillMailService mail = new BillMailService(sender, "http://localhost:5173/payment/vnpay-return");
 
     private static Booking booking(String name, String email) {
+        return booking(name, email, null);
+    }
+
+    private static Booking booking(String name, String email, String language) {
         User user = new User();
+        user.setPreferredLanguage(language);
         user.setUsername("khach");
         user.setEmail(email);
         Customer customer = new Customer();
@@ -82,10 +87,34 @@ class BillMailServiceTest {
         assertThat(sent.text()).contains("15,420,000 ₫").contains("http://localhost:5173/orders/BK-033");
     }
 
+    // Khách chọn EN trên giao diện thì nhận mail tiếng Anh
+    @Test
+    void customerWhoChoseEnglishGetsTheQuoteInEnglish() {
+        mail.quoteIssued(booking("Customer Test", "khach@example.com", "en"), List.of(line("Transport", 14_420_000)),
+                new BigDecimal("15420000"), new BigDecimal("4626000"), new BigDecimal("10794000"), Instant.parse("2026-11-06T13:54:00Z"));
+
+        Sent sent = sender.sent.get(0);
+        assertThat(sent.subject()).isEqualTo("Quotation for order BK-033");
+        assertThat(sent.html()).contains("Hello Customer Test").contains("Deposit (30%)").contains("15,420,000 VND")
+                .contains("06/11/2026 20:54").contains("View order BK-033").doesNotContain("Báo giá").doesNotContain("₫");
+        assertThat(sent.text()).contains("Total: 15,420,000 VND");
+    }
+
+    @Test
+    void englishReceiptAndSettlementUseEnglishLabels() {
+        Booking english = booking("Customer Test", "khach@example.com", "en");
+        mail.paymentReceived(english, BillMailService.Payment.DEPOSIT, new BigDecimal("5256000"), "15727222", Instant.parse("2026-11-05T13:56:52Z"), "VD-2026-0033");
+        mail.settlementIssued(english, List.of(), BigDecimal.ZERO, Instant.parse("2026-11-07T06:43:00Z"));
+
+        assertThat(sender.sent.get(0).subject()).isEqualTo("Payment received: Deposit (30%) · order BK-033");
+        assertThat(sender.sent.get(0).html()).contains("Waybill: VD-2026-0033").contains("VNPAY transaction");
+        assertThat(sender.sent.get(1).html()).contains("no additional charges");
+    }
+
     @Test
     void paymentReceiptShowsWhatWasPaidTheAmountAndTheVnpayCode() {
-        mail.paymentReceived(booking("Customer Test", "khach@example.com"), "Đặt cọc 30%", new BigDecimal("5256000"),
-                "15727222", Instant.parse("2026-11-05T13:56:52Z"), "Vận đơn: VD-2026-0033");
+        mail.paymentReceived(booking("Customer Test", "khach@example.com"), BillMailService.Payment.DEPOSIT, new BigDecimal("5256000"),
+                "15727222", Instant.parse("2026-11-05T13:56:52Z"), "VD-2026-0033");
 
         Sent sent = sender.sent.get(0);
         assertThat(sent.subject()).contains("Đã nhận").contains("Đặt cọc 30%").contains("BK-033");
@@ -124,9 +153,9 @@ class BillMailServiceTest {
 
     @Test
     void nothingIsSentWithoutAnEmailOrWhenMailIsNotConfigured() {
-        mail.paymentReceived(booking("Customer Test", " "), "Đặt cọc 30%", BigDecimal.TEN, "1", Instant.now(), null);
+        mail.paymentReceived(booking("Customer Test", " "), BillMailService.Payment.DEPOSIT, BigDecimal.TEN, "1", Instant.now(), null);
         sender.configured = false;
-        mail.paymentReceived(booking("Customer Test", "khach@example.com"), "Đặt cọc 30%", BigDecimal.TEN, "1", Instant.now(), null);
+        mail.paymentReceived(booking("Customer Test", "khach@example.com"), BillMailService.Payment.DEPOSIT, BigDecimal.TEN, "1", Instant.now(), null);
 
         assertThat(sender.sent).isEmpty();
     }
@@ -135,7 +164,7 @@ class BillMailServiceTest {
     void aMailFailureNeverBreaksThePaymentOrQuote() {
         sender.fail = true;
 
-        assertThatCode(() -> mail.paymentReceived(booking("Customer Test", "khach@example.com"), "Thanh toán 70% còn lại",
+        assertThatCode(() -> mail.paymentReceived(booking("Customer Test", "khach@example.com"), BillMailService.Payment.BALANCE,
                 BigDecimal.TEN, "1", Instant.now(), null)).doesNotThrowAnyException();
     }
 }

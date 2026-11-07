@@ -34,6 +34,11 @@ export const customerProfileApi = {
     return res.data.data
   },
 
+  // Lưu lựa chọn VI/EN vào tài khoản để mail hóa đơn gửi đúng ngôn ngữ
+  setLanguage: async (language: 'vi' | 'en'): Promise<void> => {
+    await apiClient.put<ApiResponse<string>>('/customer/profile/language', { language })
+  },
+
   changePassword: async (payload: ChangePasswordPayload): Promise<void> => {
     await apiClient.post<ApiResponse<void>>('/auth/change-password', payload)
   },

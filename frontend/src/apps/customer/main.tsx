@@ -4,6 +4,7 @@ import { RouterProvider } from 'react-router'
 import '@shared/styles/base.css'
 import '@shared/i18n'
 import { AuthProvider } from '@shared/auth/AuthContext'
+import { CustomerLanguageSync } from '@shared/auth/CustomerLanguageSync'
 import { loadBootstrap } from '@shared/config/bootstrap'
 import { buildRouter } from '@shared/routing/buildRouter'
 import { ToastProvider } from '@shared/ui/toast'
@@ -20,6 +21,7 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider app="customer">
       <ToastProvider>
+        <CustomerLanguageSync />
         <RouterProvider router={router} />
       </ToastProvider>
     </AuthProvider>
