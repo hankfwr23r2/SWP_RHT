@@ -96,6 +96,8 @@ public class BookingServiceImpl implements BookingService {
     private final com.example.racehorse_transport.service.HorseDeliveryLocationService horseDeliveryLocationService;
     private final VnpayProperties vnpayProperties;
     private final Clock clock;
+    private final IncidentRepository incidentRepository;
+    private final com.example.racehorse_transport.service.BillMailService billMailService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // =========================================================================
@@ -1087,6 +1089,7 @@ public class BookingServiceImpl implements BookingService {
                 .createdAt(now)
                 .build());
 
+        billMailService.quoteIssued(updated, request.getLines(), total, deposit, balance, expiresAt);
         logAction("SEND_QUOTATION", updated.getId(), "Phát hành báo giá đơn BK-" + updated.getId()
                 + " (Tổng: " + total + ", Cọc: " + deposit + ", Hết hạn: " + expiresAt + ")");
 
@@ -1237,6 +1240,7 @@ public class BookingServiceImpl implements BookingService {
                 "Khách hàng thanh toán tiền cọc (" + payment.getAmount() + " VND) qua " + payment.getPaymentMethod()
                         + ", mã GD " + payment.getTransactionCode() + ", cấp Vận đơn " + waybillNo);
         log.info("Deposit confirmed for booking ID={}, waybill={}", updated.getId(), waybillNo);
+        billMailService.paymentReceived(updated, com.example.racehorse_transport.service.BillMailService.Payment.DEPOSIT, payment.getAmount(), payment.getGatewayTransactionNo(), paidAt, waybillNo);
         return updated;
     }
 
@@ -1384,6 +1388,7 @@ public class BookingServiceImpl implements BookingService {
                 "Khách hàng thanh toán 70% còn lại (" + payment.getAmount() + " VND) qua " + payment.getPaymentMethod()
                         + ", mã GD " + payment.getTransactionCode() + " cho đơn BK-" + updated.getId());
         log.info("Balance confirmed for booking ID={}", updated.getId());
+        billMailService.paymentReceived(updated, com.example.racehorse_transport.service.BillMailService.Payment.BALANCE, payment.getAmount(), payment.getGatewayTransactionNo(), paidAt, null);
         return updated;
     }
 
@@ -2658,6 +2663,15 @@ public class BookingServiceImpl implements BookingService {
                     throw new IllegalStateException("The escort must submit the final horse welfare log before delivery is complete.");
                 }
                 run.put("deliveredAt", now);
+                // Người nhận tới muộn và ngựa đã được giao: đóng sự cố quá hạn bàn giao của chuyến
+                for (Incident timeout : incidentRepository.findByBookingID_Id(booking.getId())) {
+                    if ("HANDOVER_TIMEOUT".equalsIgnoreCase(timeout.getIncidentType()) && "active".equalsIgnoreCase(timeout.getStatus())
+                            && (timeout.getTripId() == null || timeout.getTripId().equals(targetTrip.getTripId()))) {
+                        timeout.setStatus("resolved");
+                        timeout.setResolvedAt(Instant.ofEpochMilli(now));
+                        incidentRepository.save(timeout);
+                    }
+                }
                 Object deliveryCheckpoints = run.get("checkpoints");
                 if (deliveryCheckpoints instanceof List<?> list) {
                     for (Object item : list) {

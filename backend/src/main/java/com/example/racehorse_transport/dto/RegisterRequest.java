@@ -39,4 +39,7 @@ public class RegisterRequest {
     @Pattern(regexp = ContactPatterns.REGIONAL_PHONE, message = "Số điện thoại phải thuộc Việt Nam, Campuchia hoặc Lào")
     private String phone;
     private String address;
+
+    // Ngôn ngữ đang chọn trên giao diện lúc đăng ký ("vi" hoặc "en"); khác thì bỏ qua
+    private String language;
 }

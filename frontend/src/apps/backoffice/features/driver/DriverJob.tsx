@@ -3,16 +3,17 @@ import { ReadMore } from '@shared/ui/ReadMore'
 import { useState } from 'react'
 import { insuranceDepartureProblem } from '@shared/types/insurance'
 import { useAuth } from '@shared/auth/AuthContext'
-import { openIncidentOf, currentCheckpoint, manifestDocuments, pendingDeparture, spotLabel } from '@shared/lib/booking'
-import { formatDateTime } from '@shared/lib/format'
+import { openIncidentOf, handoverTimeoutOf, currentCheckpoint, manifestDocuments, pendingDeparture, spotLabel } from '@shared/lib/booking'
+import { formatDateTime, formatVND } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
 import type { Booking, BookingHorse, Checkpoint, VehicleTrip } from '@shared/types/booking'
 import { CaptureScope } from '@shared/ui/CaptureScope'
 import { CaptureField } from '@shared/ui/CaptureField'
+import { useNow } from '@shared/ui/useNow'
 import { HorseDocsModal } from '../../shared/HorseDocsModal'
 import { Checklist, Panel } from '../../shared/field'
 import { HomeReturnPanel } from '../../shared/HomeReturnPanel'
-import { IncidentPanel, SosPanel, SubmitExpensesPanel } from '../../shared/IncidentField'
+import { ExpenseForm, IncidentPanel, SosPanel, SubmitExpensesPanel } from '../../shared/IncidentField'
 import s from '../../shared/field.module.css'
 
 type Run = (fn: () => Promise<unknown>, msg: string) => Promise<void>
@@ -150,7 +151,9 @@ import { backendDeliveryApi } from '@shared/api/delivery'
 import { toNumericBookingId } from '@shared/api/bookings'
 import { Modal } from '@shared/ui/Modal'
 
-function TimeoutModal({ b, onClose, run }: { b: Booking; onClose: () => void; run: Run }) {
+function TimeoutModal({ b, t, waited, onClose, run }: { b: Booking; t: VehicleTrip; waited: number; onClose: () => void; run: Run }) {
+  // Chưa chờ đủ 2 giờ vẫn báo được (demo không bắt chờ), nhưng form ghi rõ và phải bấm xác nhận báo sớm
+  const early = waited < 120
   const [reason, setReason] = useState('UNREACHABLE')
   const [action, setAction] = useState('STABLE_NEARBY')
   const [partnerName, setPartnerName] = useState('')
@@ -163,6 +166,8 @@ function TimeoutModal({ b, onClose, run }: { b: Booking; onClose: () => void; ru
     setBusy(true)
     try {
       await run(() => backendDeliveryApi.reportTimeout(toNumericBookingId(b.id), {
+        tripId: t.tripId,
+        confirmEarly: early,
         timeoutReason: reason,
         selectedAction: action,
         partnerName: action === 'STABLE_NEARBY' ? partnerName.trim() || undefined : undefined,
@@ -178,7 +183,8 @@ function TimeoutModal({ b, onClose, run }: { b: Booking; onClose: () => void; ru
 
   return (
     <Modal onClose={onClose} title="Báo sự cố quá hạn 2h bàn giao" subtitle="Kích hoạt quy trình an sinh khẩn cấp khi người nhận không đến"
-      footer={<><button className="btn btn-ghost" onClick={onClose}>Hủy</button><button className="btn btn-danger" disabled={busy} onClick={submit}>Xác nhận kích hoạt an sinh</button></>}>
+      footer={<><button className="btn btn-ghost" onClick={onClose}>Hủy</button><button className="btn btn-danger" disabled={busy} onClick={submit}>{early ? 'Xác nhận báo quá hạn sớm' : 'Xác nhận kích hoạt an sinh'}</button></>}>
+      {early && <div className="alert alert-warning" role="status"><i className="fa-solid fa-clock" /><div>Mới chờ <b>{waited} phút</b> ở điểm giao, quy định là 120 phút. Bạn vẫn báo được, quản lý sẽ thấy đây là báo sớm.</div></div>}
       <div className="form-group">
         <label htmlFor="tr">Lý do quá hạn</label>
         <select id="tr" className="form-control" value={reason} onChange={e => setReason(e.target.value)}>
@@ -223,6 +229,8 @@ function DeliveryStep({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Check
   const [photo, setPhoto] = useState<string | undefined>(cp.handoverPhoto)
   const [savingReturned, setSavingReturned] = useState(false)
   const [showTimeout, setShowTimeout] = useState(false)
+  const timeout = handoverTimeoutOf(b, t.tripId)
+  const now = useNow(30_000)
   const returned = !!cp.returnedOriginals
   const welfare = t.run!.welfare.some(w => w.checkpointId === cp.id)
   const ready = welfare && returned && !!cp.handoverPhoto
@@ -249,8 +257,17 @@ function DeliveryStep({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Check
       <button className="btn btn-outline" disabled={!photo || photo === cp.handoverPhoto} onClick={() => run(() => bookingsApi.uploadHandover(b.id, t.tripId, session!.name, cp.id, photo!), 'Đã tải ảnh biên bản')}><i className="fa-solid fa-upload" /> Tải ảnh biên bản</button>
       </Panel>
       <button className={`btn btn-primary ${s.big}`} disabled={!ready} onClick={() => run(() => bookingsApi.completeDelivery(b.id, t.tripId, session!.name), 'Đã giao ngựa. Khách nhận thông báo')}><i className="fa-solid fa-flag-checkered" /> Hoàn tất giao ngựa</button>
-      <button type="button" className="btn btn-outline btn-full" style={{ marginTop: 10, borderColor: 'var(--orange)', color: 'var(--orange)' }} onClick={() => setShowTimeout(true)}><i className="fa-solid fa-clock-rotate-left" /> Quá hạn 2 giờ: Báo sự cố không nhận ngựa</button>
-      {showTimeout && <TimeoutModal b={b} onClose={() => setShowTimeout(false)} run={run} />}
+      {timeout ? (
+        <Panel title="Đã báo quá hạn bàn giao" icon="fa-clock" tone="warn">
+          <p>{timeout.note || 'Người nhận chưa tới nhận ngựa.'} Khi người nhận tới, làm các bước trên rồi bấm "Hoàn tất giao ngựa", sự cố tự đóng.</p>
+          <p>Đã ghi {formatVND(timeout.expenses.reduce((n, e) => n + e.amount, 0))} chi phí. Chụp hóa đơn lưu chuồng để tính vào quyết toán (khách chịu).</p>
+          <ul className={s.checklist}>{timeout.expenses.map(e => <li key={e.id} style={{ padding: '6px 0', fontSize: '0.9rem' }}>{e.label}: <b>{formatVND(e.amount)}</b></li>)}</ul>
+          <ExpenseForm b={b} inc={timeout} run={run} />
+        </Panel>
+      ) : (
+        <button type="button" className="btn btn-outline btn-full" style={{ marginTop: 10, borderColor: 'var(--orange)', color: 'var(--orange)' }} onClick={() => setShowTimeout(true)}><i className="fa-solid fa-clock-rotate-left" /> Quá hạn 2 giờ: Báo sự cố không nhận ngựa</button>
+      )}
+      {showTimeout && <TimeoutModal b={b} t={t} waited={cp.arrivedAt ? Math.max(0, Math.floor((now - cp.arrivedAt) / 60000)) : 0} onClose={() => setShowTimeout(false)} run={run} />}
     </>
   )
 }
