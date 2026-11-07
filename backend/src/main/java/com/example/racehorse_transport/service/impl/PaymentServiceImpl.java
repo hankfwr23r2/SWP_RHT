@@ -106,7 +106,7 @@ public class PaymentServiceImpl implements PaymentService {
     @Transactional
     public CancelWithRefundResponse cancelWithRefundPolicy(String bookingIdentifier, CancelBookingRequest request, String username) {
         Integer bookingId = parseBookingId(bookingIdentifier);
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findByIdForUpdate(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
 
         requireOwner(booking, username);
@@ -161,7 +161,7 @@ public class PaymentServiceImpl implements PaymentService {
     @Transactional
     public CancelWithRefundResponse cancelPickupFailed(String bookingIdentifier, String reason, String username) {
         Integer bookingId = parseBookingId(bookingIdentifier);
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findByIdForUpdate(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
         if (!"pickup_failed".equalsIgnoreCase(booking.getStatus())) {
             throw new IllegalStateException("Chỉ hủy được đơn đang ở trạng thái Không nhận được ngựa.");

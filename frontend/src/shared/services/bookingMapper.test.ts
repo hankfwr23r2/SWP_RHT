@@ -19,6 +19,13 @@ const base: BackendBookingResponse = {
 }
 
 describe('chuyển đơn từ backend sang frontend', () => {
+  it('giữ mốc chờ xác nhận từ backend, không thay đổi hạn thanh toán báo giá', () => {
+    const b = toBooking({ ...base, status: 'awaiting_payment', depositConfirmationUntil: 305_000,
+      quote: { expiresAt: 5_000 } })
+    expect(b.depositConfirmationUntil).toBe(305_000)
+    expect(b.quote?.expiresAt).toBe(5_000)
+    expect(toBooking({ ...base, depositConfirmationUntil: null }).depositConfirmationUntil).toBeUndefined()
+  })
   it('normalizes null insurance document collections from a newly submitted order', () => {
     const b = toBooking({ ...base, status: 'pending_intake', horses: [{ ...base.horses[0],
       insurance: { option: 'assistance', documents: null, policyDocuments: null, documentNames: null },

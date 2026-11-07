@@ -41,6 +41,7 @@ public class BookingResponse {
     private Object plan;
     private Object quote;
     private Object payment;
+    private Long depositConfirmationUntil; // mốc kết thúc giữ chỗ chờ kết quả cọc (timestamp ms), không gia hạn thanh toán
     // Việc khách được làm, do backend quyết định (CustomerBookingRules); frontend chỉ hiện nút theo các cờ này
     private Boolean canCancel;
     private Boolean canPayBalance;

@@ -74,6 +74,7 @@ export interface BackendBookingResponse {
   plan?: unknown
   quote?: unknown
   payment?: Record<string, unknown>
+  depositConfirmationUntil?: number | null
   canCancel?: boolean
   canPayBalance?: boolean
   cancelPenalty?: number

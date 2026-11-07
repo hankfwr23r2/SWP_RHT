@@ -48,6 +48,9 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.time.Instant;
+import java.time.Clock;
+import com.example.racehorse_transport.config.VnpayProperties;
+import com.example.racehorse_transport.entity.Payment;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -95,9 +98,12 @@ class BookingServiceImplTest {
             new com.example.racehorse_transport.service.HorseDeliveryLocationService(horseRepository, horseJourneyLogRepository);
     private BookingServiceImpl service;
     private Customer customer;
+    private final Clock clock = mock(Clock.class);
+    private static final Instant DEPOSIT_DEADLINE = Instant.parse("2026-11-07T03:00:00Z");
 
     @BeforeEach
     void setUp() {
+        when(clock.instant()).thenReturn(DEPOSIT_DEADLINE);
         service = new BookingServiceImpl(
                 mock(com.example.racehorse_transport.service.CaptureService.class),
                 bookingRepository,
@@ -122,7 +128,9 @@ class BookingServiceImplTest {
                 serviceRepository,
                 horseDocumentRepository,
                 documentRequirementRepository,
-                horseDeliveryLocationService);
+                horseDeliveryLocationService,
+                new VnpayProperties(),
+                clock);
 
         when(documentRequirementRepository.findByDocumentGroupAndStatusOrderByDocumentNameAsc(any(), any()))
                 .thenReturn(List.of());
@@ -1122,7 +1130,7 @@ class BookingServiceImplTest {
         booking.setStatus("awaiting_payment");
         booking.setDetailsJson("{\"history\":[]}");
         Quotation quotation = Quotation.builder().booking(booking).status("PENDING").build();
-        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
         when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(42)).thenReturn(Optional.of(quotation));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -1146,7 +1154,7 @@ class BookingServiceImplTest {
     void rejectQuote_usesDefaultReasonAndAllowsMissingQuotation() {
         Booking booking = bookingOwnedByCustomer();
         booking.setStatus("awaiting_payment");
-        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
         when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(42)).thenReturn(Optional.empty());
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -1164,7 +1172,7 @@ class BookingServiceImplTest {
     void rejectQuote_rejectsBookingNotWaitingForDeposit() {
         Booking booking = bookingOwnedByCustomer();
         booking.setStatus("under_review");
-        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
 
         assertThatThrownBy(() -> service.rejectQuote("42", "phuc", RejectQuoteRequest.builder().build()))
                 .isInstanceOf(IllegalStateException.class)
@@ -1479,6 +1487,104 @@ class BookingServiceImplTest {
         assertThat(result.getPage()).isEqualTo(0);
         assertThat(result.getTotalPages()).isEqualTo(1);
         assertThat(result.isLast()).isTrue();
+    }
+
+    private Booking prepareDepositExpiry(String paymentStatus, Instant now) {
+        Booking booking = bookingOwnedByCustomer();
+        booking.setStatus("awaiting_payment");
+        when(clock.instant()).thenReturn(now);
+        when(bookingRepository.findIdsByStatusOrderByBookingDateAsc("awaiting_payment")).thenReturn(List.of(42));
+        when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
+        when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(42)).thenReturn(Optional.of(Quotation.builder()
+                .booking(booking).sentAt(DEPOSIT_DEADLINE.minusSeconds(3600)).expiresAt(DEPOSIT_DEADLINE)
+                .status("PENDING").build()));
+        if (paymentStatus != null) {
+            when(paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(42)).thenReturn(List.of(Payment.builder()
+                    .bookingID(booking).paymentType("DEPOSIT").paymentMethod("VNPAY").status(paymentStatus)
+                    .paymentDate(DEPOSIT_DEADLINE.minusSeconds(60)).build()));
+        }
+        return booking;
+    }
+
+    @Test
+    void expiry_pendingDepositDuringGrace_keepsVehicleAndCrew() {
+        Booking booking = prepareDepositExpiry("PENDING", DEPOSIT_DEADLINE.plusSeconds(299));
+
+        assertThat(service.releaseExpiredQuotations()).isZero();
+        assertThat(booking.getStatus()).isEqualTo("awaiting_payment");
+        verify(bookingVehicleRepository, never()).deleteByBookingID_Id(42);
+        verify(bookingAssignmentRepository, never()).deleteByBookingID_Id(42);
+    }
+
+    @Test
+    void expiry_pendingDepositAtGraceCutoff_releasesAssignmentsWithoutAssumingFailure() {
+        Booking booking = prepareDepositExpiry("PENDING", DEPOSIT_DEADLINE.plusSeconds(300));
+
+        assertThat(service.releaseExpiredQuotations()).isEqualTo(1);
+        assertThat(booking.getStatus()).isEqualTo("quote_expired");
+        verify(bookingVehicleRepository).deleteByBookingID_Id(42);
+        verify(bookingAssignmentRepository).deleteByBookingID_Id(42);
+        var payment = ArgumentCaptor.forClass(Payment.class);
+        verify(paymentRepository).save(payment.capture());
+        assertThat(payment.getValue().getStatus()).isEqualTo("PENDING");
+        assertThat(payment.getValue().getNote()).contains("Chờ đối soát");
+    }
+
+    @Test
+    void expiry_failedDepositDoesNotExtendHold() {
+        prepareDepositExpiry("FAILED", DEPOSIT_DEADLINE.plusSeconds(1));
+        assertThat(service.releaseExpiredQuotations()).isEqualTo(1);
+        verify(bookingVehicleRepository).deleteByBookingID_Id(42);
+        verify(bookingAssignmentRepository).deleteByBookingID_Id(42);
+    }
+
+    @Test
+    void expiry_withoutPaymentDoesNotExtendHold() {
+        prepareDepositExpiry(null, DEPOSIT_DEADLINE);
+        assertThat(service.releaseExpiredQuotations()).isEqualTo(1);
+    }
+
+    @Test
+    void expiry_pendingSessionFromOlderQuotationDoesNotExtendHold() {
+        prepareDepositExpiry("PENDING", DEPOSIT_DEADLINE.plusSeconds(1));
+        when(paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(42)).thenReturn(List.of(Payment.builder()
+                .paymentType("DEPOSIT").paymentMethod("VNPAY").status("PENDING")
+                .paymentDate(DEPOSIT_DEADLINE.minusSeconds(7200)).build()));
+        assertThat(service.releaseExpiredQuotations()).isEqualTo(1);
+    }
+
+    @Test
+    void readingAwaitingDepositExposesConfirmationDeadlineWithoutExtendingQuote() {
+        Booking booking = prepareDepositExpiry("PENDING", DEPOSIT_DEADLINE.plusSeconds(120));
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        BookingResponse response = service.getBookingById(42, "phuc");
+        assertThat(response.getDepositConfirmationUntil()).isEqualTo(DEPOSIT_DEADLINE.plusSeconds(300).toEpochMilli());
+    }
+
+    @Test
+    void assignCrew_duringPaymentConfirmationCannotChangeExistingCrew() {
+        Booking booking = prepareDepositExpiry("PENDING", DEPOSIT_DEADLINE.plusSeconds(120));
+        assertThatThrownBy(() -> service.assignCrew("42", new com.example.racehorse_transport.dto.manager.AssignCrewRequest()))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("pending_commercial");
+        assertThat(booking.getStatus()).isEqualTo("awaiting_payment");
+        verify(bookingAssignmentRepository, never()).deleteByBookingID_Id(42);
+    }
+
+    @Test
+    void expiry_rechecksStatusAfterLockAndSkipsBookingAlreadyPaid() {
+        Booking booking = prepareDepositExpiry("PENDING", DEPOSIT_DEADLINE.plusSeconds(300));
+        booking.setStatus("waybill_issued");
+
+        assertThat(service.releaseExpiredQuotations()).isZero();
+        verify(quotationRepository, never()).findTopByBookingIdOrderBySentAtDesc(42);
+        verify(bookingAssignmentRepository, never()).deleteByBookingID_Id(42);
+    }
+
+    @Test
+    void expiry_neverReleasesCompletedDepositEvenWithInconsistentBookingStatus() {
+        prepareDepositExpiry("COMPLETED", DEPOSIT_DEADLINE.plusSeconds(300));
+        assertThat(service.releaseExpiredQuotations()).isZero();
+        verify(bookingVehicleRepository, never()).deleteByBookingID_Id(42);
     }
 
     @Test

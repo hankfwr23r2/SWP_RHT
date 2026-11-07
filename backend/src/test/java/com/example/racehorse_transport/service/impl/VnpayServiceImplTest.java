@@ -26,6 +26,9 @@ import java.math.BigDecimal;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.Clock;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
@@ -42,10 +45,16 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.inOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class VnpayServiceImplTest {
 
     private static final String SECRET = "TESTSECRET";
+    private static final Instant NOW = Instant.parse("2026-11-07T03:00:00Z");
+    private final Clock clock = mock(Clock.class);
 
     private final BookingRepository bookingRepository = mock(BookingRepository.class);
     private final QuotationRepository quotationRepository = mock(QuotationRepository.class);
@@ -63,14 +72,18 @@ class VnpayServiceImplTest {
         ReflectionTestUtils.setField(props, "payUrl", "https://pay.test/vpcpay.html");
         ReflectionTestUtils.setField(props, "returnUrl", "http://localhost:5173/payment/vnpay-return");
         ReflectionTestUtils.setField(props, "expireMinutes", 15);
-        service = new VnpayServiceImpl(props, bookingRepository, quotationRepository, paymentRepository, bookingService, settlementService);
+        when(clock.instant()).thenReturn(NOW);
+        service = new VnpayServiceImpl(props, bookingRepository, quotationRepository, paymentRepository, bookingService, settlementService, clock);
 
         User user = new User();
         user.setUsername("khach1");
         Customer customer = new Customer();
         customer.setUser(user);
         booking = Booking.builder().id(12).status("awaiting_payment").customerID(customer).build();
-        when(bookingRepository.findById(12)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByIdForUpdate(12)).thenReturn(Optional.of(booking));
+        when(paymentRepository.findBookingIdByTransactionCode("DEP00121")).thenReturn(Optional.of(12));
+        when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(12))
+                .thenReturn(Optional.of(quotation(NOW.plus(10, ChronoUnit.HOURS))));
         when(paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(anyInt())).thenReturn(List.of());
     }
 
@@ -79,12 +92,15 @@ class VnpayServiceImplTest {
                 .depositAmount(new BigDecimal("3000000.00"))
                 .balanceAmount(new BigDecimal("7000000.00"))
                 .totalAmount(new BigDecimal("10000000.00"))
+                .sentAt(NOW.minus(1, ChronoUnit.HOURS))
+                .status("PENDING")
                 .expiresAt(expiresAt)
                 .build();
     }
 
     private Payment pendingDeposit() {
         return Payment.builder().id(1).bookingID(booking).amount(new BigDecimal("3000000"))
+                .paymentDate(NOW.minusSeconds(60))
                 .paymentType("DEPOSIT").paymentMethod("VNPAY").transactionCode("DEP00121").status("PENDING").build();
     }
 
@@ -96,6 +112,8 @@ class VnpayServiceImplTest {
         params.put("vnp_TransactionStatus", responseCode);
         params.put("vnp_TransactionNo", "14512345");
         params.put("vnp_BankCode", "NCB");
+        params.put("vnp_PayDate", DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
+                .withZone(ZoneId.of("Asia/Ho_Chi_Minh")).format(NOW.minusSeconds(1)));
         params.put(VnpayUtil.SECURE_HASH, VnpayUtil.sign(params, SECRET));
         return params;
     }
@@ -103,7 +121,7 @@ class VnpayServiceImplTest {
     @Test
     void createDeposit_savesPendingPaymentAndSignsServerSideAmount() {
         when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(12))
-                .thenReturn(Optional.of(quotation(Instant.now().plus(10, ChronoUnit.HOURS))));
+                .thenReturn(Optional.of(quotation(NOW.plus(10, ChronoUnit.HOURS))));
 
         VnpayCreateResponse res = service.createPaymentUrl(
                 VnpayCreateRequest.builder().bookingId("BK-12").paymentType("deposit").build(), "khach1", "1.2.3.4");
@@ -128,7 +146,7 @@ class VnpayServiceImplTest {
 
     @Test
     void createDeposit_linkNeverOutlivesQuotation() {
-        Instant quoteEnds = Instant.now().plus(5, ChronoUnit.MINUTES);
+        Instant quoteEnds = NOW.plus(5, ChronoUnit.MINUTES);
         when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(12)).thenReturn(Optional.of(quotation(quoteEnds)));
 
         VnpayCreateResponse res = service.createPaymentUrl(
@@ -144,7 +162,7 @@ class VnpayServiceImplTest {
                 .isInstanceOf(AccessDeniedException.class);
 
         when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(12))
-                .thenReturn(Optional.of(quotation(Instant.now().minus(1, ChronoUnit.MINUTES))));
+                .thenReturn(Optional.of(quotation(NOW.minus(1, ChronoUnit.MINUTES))));
         assertThatThrownBy(() -> service.createPaymentUrl(
                 VnpayCreateRequest.builder().bookingId("12").paymentType("DEPOSIT").build(), "khach1", "1.2.3.4"))
                 .isInstanceOf(IllegalStateException.class);
@@ -241,6 +259,107 @@ class VnpayServiceImplTest {
                 "khach1", "1.2.3.4"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("vượt quá giới hạn");
+        verify(paymentRepository, never()).save(any());
+    }
+
+    private Map<String, String> callbackPaidAt(Instant paidAt) {
+        Map<String, String> params = signedCallback("300000000", "00");
+        params.remove(VnpayUtil.SECURE_HASH);
+        params.put("vnp_PayDate", DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
+                .withZone(ZoneId.of("Asia/Ho_Chi_Minh")).format(paidAt));
+        params.put(VnpayUtil.SECURE_HASH, VnpayUtil.sign(params, SECRET));
+        return params;
+    }
+
+    @Test
+    void confirm_paidOneSecondBeforeDeadlineAndNotifiedDuringGrace_keepsDeposit() {
+        Payment payment = pendingDeposit();
+        when(paymentRepository.findByTransactionCode("DEP00121")).thenReturn(Optional.of(payment));
+        when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(12)).thenReturn(Optional.of(quotation(NOW)));
+        when(clock.instant()).thenReturn(NOW.plusSeconds(120));
+
+        var result = service.confirm(callbackPaidAt(NOW.minusSeconds(1)));
+
+        assertThat(result.isSuccess()).isTrue();
+        assertThat(payment.getPaymentDate()).isEqualTo(NOW.minusSeconds(1));
+        assertThat(payment.getStatus()).isEqualTo("COMPLETED");
+        verify(bookingService).confirmDepositPaid(payment, "khach1");
+        var order = inOrder(paymentRepository, bookingRepository);
+        order.verify(paymentRepository).findBookingIdByTransactionCode("DEP00121");
+        order.verify(bookingRepository).findByIdForUpdate(12);
+        order.verify(paymentRepository).findByTransactionCode("DEP00121");
+    }
+
+    @Test
+    void confirm_paidBeforeDeadlineButReceivedAtGraceCutoff_needsReviewEvenBeforeExpiryScan() {
+        Payment payment = pendingDeposit();
+        when(paymentRepository.findByTransactionCode("DEP00121")).thenReturn(Optional.of(payment));
+        when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(12)).thenReturn(Optional.of(quotation(NOW)));
+        when(clock.instant()).thenReturn(NOW.plusSeconds(300));
+
+        var result = service.confirm(callbackPaidAt(NOW.minusSeconds(1)));
+
+        assertThat(result.getPaymentStatus()).isEqualTo("NEEDS_REVIEW");
+        assertThat(payment.getPaymentDate()).isEqualTo(NOW.minusSeconds(1));
+        verify(bookingService, never()).confirmDepositPaid(any(), anyString());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 1})
+    void confirm_paidAtOrAfterDeadline_doesNotUseGraceAsExtraTimeToPay(int secondsLate) {
+        Payment payment = pendingDeposit();
+        when(paymentRepository.findByTransactionCode("DEP00121")).thenReturn(Optional.of(payment));
+        when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(12)).thenReturn(Optional.of(quotation(NOW)));
+        when(clock.instant()).thenReturn(NOW.plusSeconds(30));
+
+        var result = service.confirm(callbackPaidAt(NOW.plusSeconds(secondsLate)));
+
+        assertThat(result.getPaymentStatus()).isEqualTo("NEEDS_REVIEW");
+        verify(bookingService, never()).confirmDepositPaid(any(), anyString());
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {"invalid", "20260230095959", "20261107096000"})
+    void confirm_successWithoutValidGatewayPaidDate_requiresReview(String payDate) {
+        Payment payment = pendingDeposit();
+        when(paymentRepository.findByTransactionCode("DEP00121")).thenReturn(Optional.of(payment));
+        Map<String, String> params = signedCallback("300000000", "00");
+        params.remove(VnpayUtil.SECURE_HASH);
+        if (payDate == null) params.remove("vnp_PayDate");
+        else params.put("vnp_PayDate", payDate);
+        params.put(VnpayUtil.SECURE_HASH, VnpayUtil.sign(params, SECRET));
+
+        assertThat(service.confirm(params).getPaymentStatus()).isEqualTo("NEEDS_REVIEW");
+        verify(bookingService, never()).confirmDepositPaid(any(), anyString());
+    }
+
+    @Test
+    void confirm_replacedSessionWithRealMoney_isRecordedForReview() {
+        Payment payment = pendingDeposit();
+        payment.setStatus("CANCELLED");
+        when(paymentRepository.findByTransactionCode("DEP00121")).thenReturn(Optional.of(payment));
+
+        assertThat(service.confirm(signedCallback("300000000", "00")).getPaymentStatus()).isEqualTo("NEEDS_REVIEW");
+        verify(bookingService, never()).confirmDepositPaid(any(), anyString());
+    }
+
+    @Test
+    void confirm_failureDuringGrace_isFailedAndNeverIssuesWaybill() {
+        Payment payment = pendingDeposit();
+        when(paymentRepository.findByTransactionCode("DEP00121")).thenReturn(Optional.of(payment));
+        when(clock.instant()).thenReturn(NOW.plusSeconds(120));
+
+        assertThat(service.confirm(signedCallback("300000000", "11")).getPaymentStatus()).isEqualTo("FAILED");
+        verify(bookingService, never()).confirmDepositPaid(any(), anyString());
+    }
+
+    @Test
+    void createDeposit_atDeadline_cannotCreateNewSessionDuringGrace() {
+        when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(12)).thenReturn(Optional.of(quotation(NOW)));
+        assertThatThrownBy(() -> service.createPaymentUrl(
+                VnpayCreateRequest.builder().bookingId("12").paymentType("DEPOSIT").build(), "khach1", "1.2.3.4"))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("hết hạn");
         verify(paymentRepository, never()).save(any());
     }
 

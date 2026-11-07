@@ -16,6 +16,7 @@ import com.example.racehorse_transport.service.BookingService;
 import com.example.racehorse_transport.service.SettlementService;
 import com.example.racehorse_transport.service.VnpayService;
 import com.example.racehorse_transport.util.CustomerBookingRules;
+import com.example.racehorse_transport.util.DepositPaymentWindow;
 import com.example.racehorse_transport.util.PaymentAmountLimits;
 import com.example.racehorse_transport.util.VnpayUtil;
 import lombok.RequiredArgsConstructor;
@@ -27,8 +28,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -44,6 +49,8 @@ public class VnpayServiceImpl implements VnpayService {
 
     private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final DateTimeFormatter VNP_DATE = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(VN_ZONE);
+    private static final DateTimeFormatter VNP_PAY_DATE = DateTimeFormatter.ofPattern("uuuuMMddHHmmss")
+            .withResolverStyle(ResolverStyle.STRICT);
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
     // Đơn đã đóng thì không nhận thanh toán nữa
     private static final Set<String> CLOSED_STATUSES = Set.of("cancelled", "completed", "quote_expired");
@@ -54,6 +61,7 @@ public class VnpayServiceImpl implements VnpayService {
     private final PaymentRepository paymentRepository;
     private final BookingService bookingService;
     private final SettlementService settlementService;
+    private final Clock clock;
 
     @Override
     @Transactional
@@ -73,7 +81,7 @@ public class VnpayServiceImpl implements VnpayService {
         Booking booking = findOwnedBooking(request.getBookingId(), username);
         List<Payment> payments = paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(booking.getId());
 
-        Instant now = Instant.now();
+        Instant now = clock.instant();
         Instant expiresAt = now.plus(props.getExpireMinutes(), ChronoUnit.MINUTES);
         BigDecimal amount;
         String orderInfo;
@@ -87,14 +95,16 @@ public class VnpayServiceImpl implements VnpayService {
                     throw new IllegalStateException("Đơn hàng này đã thanh toán tiền đặt cọc!");
                 }
                 Quotation quotation = latestQuotation(booking);
-                if (quotation.getExpiresAt() != null) {
-                    if (now.isAfter(quotation.getExpiresAt())) {
-                        throw new IllegalStateException("Báo giá đã hết hạn, không thể đặt cọc!");
-                    }
-                    // Link thanh toán không sống lâu hơn báo giá
-                    if (quotation.getExpiresAt().isBefore(expiresAt)) {
-                        expiresAt = quotation.getExpiresAt();
-                    }
+                if (quotation.getExpiresAt() == null) {
+                    throw new IllegalStateException("Báo giá thiếu thời hạn thanh toán, vui lòng liên hệ nhà xe.");
+                }
+                Instant quoteDeadline = DepositPaymentWindow.expiresAt(quotation);
+                if (!now.isBefore(quoteDeadline)) {
+                    throw new IllegalStateException("Báo giá đã hết hạn, không thể đặt cọc!");
+                }
+                // Link thanh toán không sống lâu hơn báo giá
+                if (quoteDeadline.isBefore(expiresAt)) {
+                    expiresAt = quoteDeadline;
                 }
                 amount = quotation.getDepositAmount();
                 orderInfo = "Thanh toan coc don BK-" + booking.getId();
@@ -192,13 +202,23 @@ public class VnpayServiceImpl implements VnpayService {
     @Override
     @Transactional
     public VnpayResultResponse confirm(Map<String, String> params) {
+        Instant receivedAt = clock.instant();
         if (!VnpayUtil.verify(params, props.getHashSecret())) {
             log.warn("VNPAY callback with invalid signature, txnRef={}", params.get("vnp_TxnRef"));
             return result(false, "97", "Chữ ký không hợp lệ, giao dịch không được ghi nhận.", null);
         }
 
         String txnRef = params.get("vnp_TxnRef");
-        Optional<Payment> found = txnRef == null ? Optional.empty() : paymentRepository.findByTransactionCode(txnRef);
+        Optional<Integer> bookingId = txnRef == null ? Optional.empty() : paymentRepository.findBookingIdByTransactionCode(txnRef);
+        if (bookingId.isEmpty()) {
+            return result(false, "01", "Không tìm thấy giao dịch " + txnRef + ".", null);
+        }
+        // Cùng khóa với tác vụ hết hạn. Không đọc entity booking/payment trước khi lấy khóa booking.
+        Booking booking = bookingRepository.findByIdForUpdate(bookingId.get()).orElse(null);
+        if (booking == null) {
+            return result(false, "01", "Không tìm thấy đơn hàng của giao dịch " + txnRef + ".", null);
+        }
+        Optional<Payment> found = paymentRepository.findByTransactionCode(txnRef);
         if (found.isEmpty() || !"VNPAY".equalsIgnoreCase(found.get().getPaymentMethod())) {
             return result(false, "01", "Không tìm thấy giao dịch " + txnRef + ".", null);
         }
@@ -210,15 +230,16 @@ public class VnpayServiceImpl implements VnpayService {
             return result(false, "04", "Số tiền giao dịch không khớp.", payment);
         }
 
-        // IPN và Return URL đều gọi vào đây: bản ghi đã xử lý thì chỉ trả lại kết quả cũ
-        if (!"PENDING".equalsIgnoreCase(payment.getStatus())) {
+        String responseCode = params.get("vnp_ResponseCode");
+        boolean paid = "00".equals(responseCode) && "00".equals(params.get("vnp_TransactionStatus"));
+        boolean replaced = "CANCELLED".equalsIgnoreCase(payment.getStatus());
+        // Phiên cũ bị thay thế vẫn có thể có tiền về: phải lưu đối soát thay vì bỏ qua tiền thực nhận.
+        if (!"PENDING".equalsIgnoreCase(payment.getStatus()) && !(replaced && paid)) {
             return result("COMPLETED".equalsIgnoreCase(payment.getStatus()), "02", describeStatus(payment), payment);
         }
 
         payment.setGatewayTransactionNo(params.get("vnp_TransactionNo"));
         payment.setBankCode(params.get("vnp_BankCode"));
-        String responseCode = params.get("vnp_ResponseCode");
-        boolean paid = "00".equals(responseCode) && "00".equals(params.get("vnp_TransactionStatus"));
 
         if (!paid) {
             payment.setStatus("FAILED");
@@ -227,17 +248,21 @@ public class VnpayServiceImpl implements VnpayService {
             return result(false, "00", describeResponseCode(responseCode), payment);
         }
 
-        payment.setPaymentDate(Instant.now());
-        Booking booking = payment.getBookingID();
+        Instant paidAt = gatewayPaidAt(params.get("vnp_PayDate"));
         List<Payment> others = paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(booking.getId());
-        if (!canApply(payment, booking, others)) {
-            // Đã trừ tiền nhưng đơn không còn ở bước này (hết hạn báo giá, đã hủy, đã trả trước đó) -> Quản lý hoàn tiền
-            payment.setStatus("NEEDS_REVIEW");
-            payment.setNote("Đã nhận tiền VNPAY nhưng đơn không còn ở bước thanh toán (trạng thái " + booking.getStatus()
-                    + "). Cần Quản lý kiểm tra và hoàn tiền.");
-            paymentRepository.save(payment);
-            log.warn("VNPAY payment txnRef={} needs review, booking ID={} status={}", txnRef, booking.getId(), booking.getStatus());
-            return result(false, "00", "Đã nhận tiền nhưng đơn không còn ở bước thanh toán. Nhà xe sẽ liên hệ để hoàn tiền.", payment);
+        boolean withinDepositWindow = true;
+        if ("DEPOSIT".equalsIgnoreCase(payment.getPaymentType())) {
+            Optional<Quotation> quote = quotationRepository.findTopByBookingIdOrderBySentAtDesc(booking.getId());
+            withinDepositWindow = quote.isPresent() && quote.get().getExpiresAt() != null
+                    && "PENDING".equalsIgnoreCase(quote.get().getStatus())
+                    && DepositPaymentWindow.canConfirm(quote.get(), payment, paidAt, receivedAt,
+                            props.getDepositConfirmationGraceMinutes());
+        }
+        payment.setPaymentDate(paidAt != null ? paidAt : receivedAt);
+        if (replaced || !canApply(payment, booking, others) || !withinDepositWindow) {
+            return needsReview(payment, !withinDepositWindow
+                    ? "Thanh toán ngoài hạn hoặc thiếu thời điểm thanh toán hợp lệ từ VNPAY."
+                    : "Đơn/phiên thanh toán không còn hợp lệ (" + booking.getStatus() + ").");
         }
 
         payment.setStatus("COMPLETED");
@@ -272,7 +297,7 @@ public class VnpayServiceImpl implements VnpayService {
 
     private Booking findOwnedBooking(String bookingIdentifier, String username) {
         Integer bookingId = parseBookingId(bookingIdentifier);
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findByIdForUpdate(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
         User owner = booking.getCustomerID() != null ? booking.getCustomerID().getUser() : null;
         boolean ownsBooking = owner != null && username != null
@@ -329,7 +354,7 @@ public class VnpayServiceImpl implements VnpayService {
     private String describeStatus(Payment payment) {
         return switch (payment.getStatus().toUpperCase()) {
             case "COMPLETED" -> "Thanh toán thành công.";
-            case "NEEDS_REVIEW" -> "Đã nhận tiền nhưng đơn không còn ở bước thanh toán. Nhà xe sẽ liên hệ để hoàn tiền.";
+            case "NEEDS_REVIEW" -> "Đã nhận tiền nhưng chưa thể xác nhận đơn. Nhà xe sẽ kiểm tra và liên hệ hoàn tiền.";
             default -> "Giao dịch không thành công.";
         };
     }
@@ -372,5 +397,22 @@ public class VnpayServiceImpl implements VnpayService {
                     .bankCode(payment.getBankCode());
         }
         return builder.build();
+    }
+
+    private Instant gatewayPaidAt(String value) {
+        if (value == null || !value.matches("[0-9]{14}")) return null;
+        try {
+            return LocalDateTime.parse(value, VNP_PAY_DATE).atZone(VN_ZONE).toInstant();
+        } catch (DateTimeParseException ex) {
+            return null;
+        }
+    }
+
+    private VnpayResultResponse needsReview(Payment payment, String reason) {
+        payment.setStatus("NEEDS_REVIEW");
+        payment.setNote("Đã nhận tiền VNPAY. " + reason + " Cần Quản lý kiểm tra và hoàn tiền.");
+        paymentRepository.save(payment);
+        log.warn("VNPAY payment txnRef={} needs review: {}", payment.getTransactionCode(), reason);
+        return result(false, "00", "Đã nhận tiền nhưng chưa thể xác nhận đơn. Nhà xe sẽ kiểm tra và liên hệ hoàn tiền.", payment);
     }
 }

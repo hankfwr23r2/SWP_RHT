@@ -102,6 +102,9 @@ function PayCard({ b, owner, onDone }: { b: CustomerBookingView; owner: string; 
   const [busy, setBusy] = useState(false)
   const [rejecting, setRejecting] = useState(false)
   const [why, setWhy] = useState('')
+  const now = useNow()
+  const expired = now >= b.quote!.expiresAt
+  const confirming = expired && !!b.depositConfirmationUntil && now < b.depositConfirmationUntil
   // Khách không đồng ý báo giá: đóng đơn (Cancelled), chưa cọc nên miễn phí
   const reject = async () => {
     setBusy(true)
@@ -114,7 +117,8 @@ function PayCard({ b, owner, onDone }: { b: CustomerBookingView; owner: string; 
   }
   return (
     <div className={`card ${s.pay}`}>
-      <div className="card-header"><h3><i className="fa-solid fa-credit-card" /> Đặt cọc giữ xe</h3></div>
+      <div className="card-header"><h3><i className="fa-solid fa-credit-card" /> {confirming ? 'Đang xác nhận thanh toán' : expired ? 'Đã hết hạn đặt cọc' : 'Đặt cọc giữ xe'}</h3></div>
+      {expired && <p role="status" className="form-hint">{confirming ? `Xe và kíp xe được giữ đến ${formatDateTime(b.depositConfirmationUntil!)} để chờ kết quả VNPAY. Không cần thanh toán lại.` : 'Không thể tạo phiên thanh toán mới. Nếu tài khoản đã bị trừ tiền, vui lòng liên hệ nhà xe để đối soát.'}</p>}
       <div className={s.payAmount}><span>Số tiền cần đặt cọc ({(b.quote!.total > 0 ? Number((b.quote!.deposit / b.quote!.total * 100).toFixed(2)) : DEPOSIT_RATE * 100).toLocaleString('vi-VN')}%)</span><strong>{formatVND(b.quote!.deposit)}</strong></div>
       {effectiveArrivalOf(b) && (
         <div className={s.eta} aria-label="Lịch trình dự kiến">
@@ -127,8 +131,8 @@ function PayCard({ b, owner, onDone }: { b: CustomerBookingView; owner: string; 
       <p className="form-hint"><i className="fa-solid fa-shield-halved" /> Thanh toán qua cổng VNPAY bằng thẻ ATM nội địa, Visa/Master hoặc quét QR. Vận đơn được cấp ngay khi VNPAY xác nhận.</p>
       <p className="form-hint"><PolicyLink doc="transport">Xem điều khoản vận chuyển</PolicyLink></p>
       <label className={s.ack}><input type="checkbox" checked={ok} onChange={e => setOk(e.target.checked)} /><span>Tôi đã đọc và đồng ý điều khoản vận chuyển, đồng ý đặt cọc {formatVND(b.quote!.deposit)}.</span></label>
-      <button className="btn btn-primary btn-lg btn-full" disabled={!ok || busy} onClick={pay}>{busy ? 'Đang chuyển sang VNPAY…' : 'Thanh toán cọc qua VNPAY'}</button>
-      <button className="btn btn-ghost btn-full" style={{ marginTop: 8 }} disabled={busy} onClick={() => setRejecting(true)}><i className="fa-solid fa-ban" /> Không đồng ý, từ chối báo giá</button>
+      <button className="btn btn-primary btn-lg btn-full" disabled={!ok || busy || expired} onClick={pay}>{busy ? 'Đang chuyển sang VNPAY…' : 'Thanh toán cọc qua VNPAY'}</button>
+      <button className="btn btn-ghost btn-full" style={{ marginTop: 8 }} disabled={busy || expired} onClick={() => setRejecting(true)}><i className="fa-solid fa-ban" /> Không đồng ý, từ chối báo giá</button>
       {rejecting && (
         <Modal onClose={() => setRejecting(false)} title="Từ chối báo giá?" subtitle="Bạn chưa đặt cọc nên không mất phí. Đơn sẽ đóng, xe và nhân sự được nhả cho đơn khác."
           footer={<><button className="btn btn-ghost" onClick={() => setRejecting(false)}>Xem lại báo giá</button><button className="btn btn-danger" disabled={busy} onClick={reject}>Xác nhận từ chối</button></>}>
@@ -256,7 +260,7 @@ export default function OrderDetailPage() {
   const { data: team = [] } = useLoad(() => customerBookingsApi.team(id), [id, b?.status])
   const reloadAll = () => reload()
   // Đang chạy: cập nhật định kỳ để thấy mốc check-in mới
-  const running = ['en_route_to_pickup', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active'].includes(b?.status ?? '')
+  const running = ['awaiting_payment', 'en_route_to_pickup', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active'].includes(b?.status ?? '')
   useEffect(() => { if (running) reload() }, [now, running, reload])
 
   if (b === undefined) return <div className="page"><div className="wrap"><p className="text-muted">{t('common.loading')}</p></div></div>

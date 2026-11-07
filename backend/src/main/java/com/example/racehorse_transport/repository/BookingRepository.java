@@ -23,6 +23,10 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
     Page<Booking> findByCustomerID_IdOrderByBookingDateDesc(Integer customerId, Pageable pageable);
 
     List<Booking> findByStatusOrderByBookingDateAsc(String status);
+
+    // Chỉ lấy ID để không nạp trạng thái cũ vào persistence context trước khi khóa từng đơn.
+    @org.springframework.data.jpa.repository.Query("select b.id from Booking b where b.status = :status order by b.bookingDate asc, b.id asc")
+    List<Integer> findIdsByStatusOrderByBookingDateAsc(@org.springframework.data.repository.query.Param("status") String status);
     @EntityGraph(attributePaths = {"customerID", "customerID.user"})
     List<Booking> findByStatusOrderByBookingDateDesc(String status);
     @EntityGraph(attributePaths = {"customerID", "customerID.user"})
