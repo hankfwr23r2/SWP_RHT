@@ -51,6 +51,7 @@ class PaymentServiceImplTest {
         booking.setCustomerID(customer);
         booking.setStatus("clearance_in_progress");
         when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
 
         Payment deposit = Payment.builder().id(1).bookingID(booking).amount(new BigDecimal("3000000"))
                 .paymentType("DEPOSIT").status("COMPLETED").build();

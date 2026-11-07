@@ -28,6 +28,10 @@ public class VnpayProperties {
     @Value("${vnpay.expire-minutes:15}")
     private int expireMinutes;
 
+    // Chờ kết quả cho phiên cọc đã tạo trước hạn; không gia hạn link VNPAY.
+    @Value("${vnpay.deposit-confirmation-grace-minutes:5}")
+    private int depositConfirmationGraceMinutes = 5;
+
     public boolean isConfigured() {
         return tmnCode != null && !tmnCode.isBlank() && hashSecret != null && !hashSecret.isBlank();
     }

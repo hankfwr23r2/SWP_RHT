@@ -45,6 +45,9 @@ import com.example.racehorse_transport.util.ClearanceDocumentPolicy;
 import com.example.racehorse_transport.util.QuoteTotals;
 import com.example.racehorse_transport.util.CustomerBookingRules;
 import com.example.racehorse_transport.util.DocumentRequirementPolicy;
+import com.example.racehorse_transport.util.DepositPaymentWindow;
+import com.example.racehorse_transport.config.VnpayProperties;
+import java.time.Clock;
 
 import java.math.BigDecimal;
 import java.time.temporal.ChronoUnit;
@@ -91,6 +94,8 @@ public class BookingServiceImpl implements BookingService {
     private final HorseDocumentRepository horseDocumentRepository;
     private final DocumentRequirementRepository documentRequirementRepository;
     private final com.example.racehorse_transport.service.HorseDeliveryLocationService horseDeliveryLocationService;
+    private final VnpayProperties vnpayProperties;
+    private final Clock clock;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // =========================================================================
@@ -852,7 +857,7 @@ public class BookingServiceImpl implements BookingService {
     @Transactional
     public BookingResponse assignCrew(String bookingIdentifier, AssignCrewRequest request) {
         Integer bookingId = parseBookingId(bookingIdentifier);
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findByIdForUpdate(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
 
         if (!"pending_commercial".equalsIgnoreCase(booking.getStatus())) {
@@ -1201,7 +1206,7 @@ public class BookingServiceImpl implements BookingService {
     @Transactional
     public Booking confirmDepositPaid(Payment payment, String actor) {
         Booking booking = payment.getBookingID();
-        Instant paidAt = payment.getPaymentDate() != null ? payment.getPaymentDate() : Instant.now();
+        Instant paidAt = payment.getPaymentDate() != null ? payment.getPaymentDate() : clock.instant();
 
         quotationRepository.findTopByBookingIdOrderBySentAtDesc(booking.getId()).ifPresent(quotation -> {
             quotation.setStatus("ACCEPTED");
@@ -1387,7 +1392,7 @@ public class BookingServiceImpl implements BookingService {
     public BookingResponse rejectQuote(String bookingIdentifier, String customerUsername,
             com.example.racehorse_transport.dto.booking.RejectQuoteRequest request) {
         Integer bookingId = parseBookingId(bookingIdentifier);
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findByIdForUpdate(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
 
         if (!"awaiting_payment".equalsIgnoreCase(booking.getStatus())) {
@@ -1422,15 +1427,35 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public int releaseExpiredQuotations() {
-        List<Booking> awaitingBookings = bookingRepository.findByStatusOrderByBookingDateAsc("awaiting_payment");
+        List<Integer> awaitingIds = bookingRepository.findIdsByStatusOrderByBookingDateAsc("awaiting_payment");
         int count = 0;
-        Instant now = Instant.now();
 
-        for (Booking booking : awaitingBookings) {
+        for (Integer bookingId : awaitingIds) {
+            Booking booking = bookingRepository.findByIdForUpdate(bookingId).orElse(null);
+            // Có thể đã nhận cọc trong lúc chờ khóa: luôn kiểm tra lại trạng thái vừa đọc.
+            if (booking == null || !"awaiting_payment".equalsIgnoreCase(booking.getStatus())) continue;
+            Instant now = clock.instant();
             Optional<Quotation> quoteOpt = quotationRepository.findTopByBookingIdOrderBySentAtDesc(booking.getId());
             if (quoteOpt.isPresent()) {
                 Quotation q = quoteOpt.get();
-                if (q.getExpiresAt() != null && now.isAfter(q.getExpiresAt())) {
+                if (q.getExpiresAt() != null && "PENDING".equalsIgnoreCase(q.getStatus())
+                        && !now.isBefore(DepositPaymentWindow.expiresAt(q))) {
+                    List<Payment> payments = paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(bookingId);
+                    if (payments.stream().anyMatch(p -> "DEPOSIT".equalsIgnoreCase(p.getPaymentType())
+                            && "COMPLETED".equalsIgnoreCase(p.getStatus()))) continue;
+                    boolean pending = DepositPaymentWindow.hasPendingDeposit(payments, q);
+                    if (pending && now.isBefore(DepositPaymentWindow.confirmationUntil(q,
+                            vnpayProperties.getDepositConfirmationGraceMinutes()))) continue;
+
+                    // Mất thông báo không đồng nghĩa thanh toán thất bại. Giữ PENDING để đối soát callback muộn.
+                    if (pending) {
+                        for (Payment p : payments) {
+                            if (DepositPaymentWindow.hasPendingDeposit(List.of(p), q)) {
+                                p.setNote("Hết thời gian giữ chỗ; chưa nhận kết quả VNPAY. Chờ đối soát, chưa xác định thanh toán thất bại.");
+                                paymentRepository.save(p);
+                            }
+                        }
+                    }
                     bookingVehicleRepository.deleteByBookingID_Id(booking.getId());
                     bookingAssignmentRepository.deleteByBookingID_Id(booking.getId());
 
@@ -1456,6 +1481,18 @@ public class BookingServiceImpl implements BookingService {
             log.info("Released {} expired bookings from awaiting_payment", count);
         }
         return count;
+    }
+
+    private Long depositConfirmationUntil(Booking booking) {
+        if (!"awaiting_payment".equalsIgnoreCase(booking.getStatus())) return null;
+        return quotationRepository.findTopByBookingIdOrderBySentAtDesc(booking.getId())
+                .filter(q -> q.getExpiresAt() != null && "PENDING".equalsIgnoreCase(q.getStatus()))
+                .filter(q -> clock.instant().isBefore(DepositPaymentWindow.confirmationUntil(q,
+                        vnpayProperties.getDepositConfirmationGraceMinutes())))
+                .filter(q -> DepositPaymentWindow.hasPendingDeposit(
+                        paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(booking.getId()), q))
+                .map(q -> DepositPaymentWindow.confirmationUntil(q,
+                        vnpayProperties.getDepositConfirmationGraceMinutes()).toEpochMilli()).orElse(null);
     }
 
     @Override
@@ -2016,6 +2053,7 @@ public class BookingServiceImpl implements BookingService {
                 .photoEvidence(com.example.racehorse_transport.service.CaptureService.visibleEvidence(payload))
                 .quote(payload != null ? payload.getQuote() : null)
                 .payment(payload != null ? payload.getPayment() : null)
+                .depositConfirmationUntil(depositConfirmationUntil(b))
                 .canCancel(canCancel)
                 .canPayBalance(CustomerBookingRules.canPayBalance(b.getStatus(), balancePaid) && payload != null && pickupComplete(payload))
                 .cancelPenalty(canCancel && paymentMap.get("amount") != null

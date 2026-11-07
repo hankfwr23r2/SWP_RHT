@@ -161,6 +161,7 @@ export function toBooking(r: BackendBookingResponse, customer?: string): Booking
     history,
   }
   if (r.gate) b.gate = r.gate
+  if (r.depositConfirmationUntil != null) b.depositConfirmationUntil = r.depositConfirmationUntil
   if (r.vehicleCount !== undefined) b.vehicleCount = r.vehicleCount
   else if (r.trips) b.vehicleCount = r.trips.length
   if (r.routeId != null) b.routeId = r.routeId

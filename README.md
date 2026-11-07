@@ -106,6 +106,8 @@ docker compose up -d postgres pgadmin
 - Tài khoản mẫu: `admin01`, `manager01`, `coordinator01`, `specialist01`, `driver01`–`driver03`,
   `escort01`–`escort03` (đăng nhập bằng email `<tên>@gmail.com`); mật khẩu xem tài liệu nhóm (tab Data).
 - Thanh toán VNPay về đúng trang local: đặt thêm `VNPAY_RETURN_URL=http://localhost:5173/payment/vnpay-return`.
+- Thanh toán cọc sát hạn: giữ phân công thêm tối đa 5 phút cho phiên VNPAY đang chờ kết quả,
+  không gia hạn thời gian được thanh toán. Xem [quy tắc xác nhận và đối soát](frontend/docs/DEPOSIT_PAYMENT_DEADLINE.md).
 - Cần xem câu SQL backend chạy: đặt thêm `SPRING_JPA_SHOW_SQL=true`.
 
 #### 2. Frontend (`frontend/`)

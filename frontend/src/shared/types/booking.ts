@@ -307,6 +307,7 @@ export interface Booking {
   routeId?: number
   route?: RoutePlan // một lộ trình dùng chung cho mọi xe
   quote?: Quote
+  depositConfirmationUntil?: number
   payment?: Payment // cọc 30%
   waybill?: Waybill
   clearance?: Clearance

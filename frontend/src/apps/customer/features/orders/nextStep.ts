@@ -36,13 +36,18 @@ function baseStep(b: CustomerBookingView, now: number): NextStep {
       return { tone: 'orange', icon: 'fa-file-invoice-dollar', title: 'Đang lập báo giá', text: 'Thẩm định đã xong. Quản lý đang duyệt báo giá chính thức để gửi cho bạn.', actionNeeded: false }
     case 'awaiting_payment': {
       const ms = b.quote!.expiresAt - now
+      if (ms <= 0) {
+        return b.depositConfirmationUntil && now < b.depositConfirmationUntil
+          ? { tone: 'warning', icon: 'fa-hourglass-half', title: 'Đang xác nhận thanh toán đặt cọc', text: `Xe và kíp xe được giữ đến ${formatDateTime(b.depositConfirmationUntil)} để chờ kết quả giao dịch đã thực hiện trước hạn. Bạn không cần thanh toán lại.`, actionNeeded: false }
+          : { tone: 'muted', icon: 'fa-hourglass-end', title: 'Đã hết hạn đặt cọc', text: 'Hệ thống đang cập nhật kết quả giữ chỗ. Nếu tài khoản đã bị trừ tiền, vui lòng chờ kết quả hoặc liên hệ nhà xe để đối soát.', actionNeeded: false }
+      }
       const depositPercentage = b.quote!.total > 0
         ? Number((b.quote!.deposit / b.quote!.total * 100).toFixed(2))
         : DEPOSIT_RATE * 100
       return { tone: ms < 12 * HOUR ? 'danger' : 'warning', icon: 'fa-credit-card', title: `Đặt cọc ${depositPercentage.toLocaleString('vi-VN')}% trong ${timeLeftText(b.quote!.expiresAt, now)}`, text: `Báo giá có hiệu lực đến ${formatDateTime(b.quote!.expiresAt)}. Quá hạn, xe và nhân sự được nhả cho đơn khác.${effectiveArrivalOf(b) ? ` Dự kiến đến nơi ${formatDateTime(effectiveArrivalOf(b)!)}.` : ''}`, actionNeeded: true }
     }
     case 'quote_expired':
-      return { tone: 'muted', icon: 'fa-hourglass-end', title: 'Báo giá đã hết hạn', text: 'Bạn chưa đặt cọc trước hạn báo giá nên xe và nhân sự đã được nhả. Bạn có thể tạo đơn mới.', actionNeeded: false }
+      return { tone: 'muted', icon: 'fa-hourglass-end', title: 'Báo giá đã hết hạn', text: 'Chỗ giữ xe và kíp xe đã được giải phóng. Nếu tài khoản đã bị trừ tiền, vui lòng liên hệ nhà xe để đối soát. Bạn có thể tạo đơn mới.', actionNeeded: false }
     case 'waybill_issued':
       return { tone: 'success', icon: 'fa-file-contract', title: `Đã có vận đơn ${b.waybill?.no ?? ''}`, text: 'Nhà xe bắt đầu làm giấy kiểm dịch và hải quan cho bạn. Bạn không cần làm gì thêm, tiến độ sẽ hiện ở đây.', actionNeeded: false }
     case 'clearance_in_progress': {

@@ -30,6 +30,7 @@ export default function VnpayReturnPage() {
 
   const failure = !params.vnp_TxnRef ? (i18n.language === 'en' ? 'No transaction data from VNPAY.' : 'Không có thông tin giao dịch từ VNPAY.') : error
   const ok = result?.success === true
+  const needsReview = result?.paymentStatus === 'NEEDS_REVIEW'
 
   const targetOrder = useMemo(() => {
     if (result?.bookingCode) return result.bookingCode
@@ -51,8 +52,9 @@ export default function VnpayReturnPage() {
           )}
           {(result || failure) && (
             <>
-              <i className={`fa-solid ${ok ? 'fa-circle-check text-green' : 'fa-circle-xmark text-red'}`} style={{ fontSize: 48 }} aria-hidden="true" />
-              <h2 style={{ marginTop: 12 }}>{ok ? t('vnpayReturn.success') : t('vnpayReturn.failed')}</h2>
+              <i className={`fa-solid ${ok ? 'fa-circle-check text-green' : needsReview ? 'fa-hourglass-half' : 'fa-circle-xmark text-red'}`} style={{ fontSize: 48 }} aria-hidden="true" />
+              <h2 style={{ marginTop: 12 }}>{ok ? t('vnpayReturn.success') : needsReview ? (i18n.language === 'en' ? 'Payment received — under review' : 'Đã nhận tiền, cần đối soát') : t('vnpayReturn.failed')}</h2>
+              {(result?.message || failure) && <p role="status">{result?.message || failure}</p>}
               {result?.amount !== undefined && (
                 <div style={{ textAlign: 'left', margin: '16px 0', display: 'grid', gap: 6 }}>
                   {result.paymentType && <div><span className="text-muted">{t('vnpayReturn.item')} </span><b>{paymentLabels[result.paymentType] ?? result.paymentType}</b></div>}
@@ -63,7 +65,7 @@ export default function VnpayReturnPage() {
               )}
               <div style={{ display: 'grid', gap: 8, marginTop: 16 }}>
                 <Link className="btn btn-primary btn-full" to={targetOrder ? `/orders/${targetOrder}` : '/orders'}>
-                  {ok ? (targetOrder ? (i18n.language === 'en' ? 'View Order' : 'Xem đơn hàng') : t('vnpayReturn.backToOrders')) : (targetOrder ? (i18n.language === 'en' ? 'Return to Order to Retry' : 'Quay lại đơn hàng để thanh toán lại') : t('vnpayReturn.backToOrders'))}
+                  {ok || needsReview ? (targetOrder ? (i18n.language === 'en' ? 'View Order' : 'Xem đơn hàng') : t('vnpayReturn.backToOrders')) : (targetOrder ? (i18n.language === 'en' ? 'Return to Order' : 'Quay lại đơn hàng') : t('vnpayReturn.backToOrders'))}
                 </Link>
                 {!ok && targetOrder && (
                   <Link className="btn btn-ghost btn-full" to="/orders">
