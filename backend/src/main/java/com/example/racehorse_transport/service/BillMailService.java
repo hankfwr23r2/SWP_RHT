@@ -50,7 +50,7 @@ public class BillMailService {
         text.append("Tổng cộng: ").append(money(total)).append('\n')
                 .append("Đặt cọc 30%: ").append(money(deposit)).append(" (hạn ").append(time(expiresAt)).append(")\n")
                 .append("Còn lại 70%: ").append(money(balance)).append(" (trả khi kíp xe nhận ngựa xong)\n");
-        String body = "<p>Nhà xe đã gửi báo giá cho đơn <b>" + code(booking) + "</b>.</p>"
+        String body = "<p>Hệ thống đã gửi báo giá cho đơn <b>" + code(booking) + "</b>.</p>"
                 + table(rows.toString())
                 + "<p>Đặt cọc 30%: <b>" + money(deposit) + "</b>, hạn đặt cọc <b>" + time(expiresAt) + "</b>.<br>"
                 + "Còn lại 70%: <b>" + money(balance) + "</b>, thanh toán khi kíp xe nhận ngựa và ký biên bản giao nhận.</p>";
@@ -64,7 +64,7 @@ public class BillMailService {
         String text = what + ": " + money(amount) + "\nMã giao dịch VNPAY: " + (transactionNo == null ? "-" : transactionNo)
                 + "\nThời gian: " + time(paidAt) + (extra == null || extra.isBlank() ? "" : "\n" + extra) + "\n";
         send(booking, "Đã nhận " + what + " · đơn " + code(booking), "Biên nhận thanh toán",
-                "<p>Nhà xe đã nhận khoản thanh toán của đơn <b>" + code(booking) + "</b>.</p>" + table(rows), text);
+                "<p>Hệ thống đã nhận khoản thanh toán của đơn <b>" + code(booking) + "</b>.</p>" + table(rows), text);
     }
 
     public void settlementIssued(Booking booking, List<ExpenseItemDto> customerItems, BigDecimal total, Instant dueAt) {
