@@ -2,8 +2,12 @@ package com.example.racehorse_transport.controller;
 
 import com.example.racehorse_transport.dto.booking.BookingResponse;
 import com.example.racehorse_transport.dto.booking.PublicTrackingResponse;
+import com.example.racehorse_transport.dto.booking.PublicTrackingLookupRequest;
+import com.example.racehorse_transport.dto.booking.PublicTrackingLookupResponse;
 import com.example.racehorse_transport.response.ApiResponse;
 import com.example.racehorse_transport.service.BookingService;
+import com.example.racehorse_transport.service.TurnstileVerifier;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -11,28 +15,47 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.ArrayList;
 
 @RestController
 @RequestMapping("/bookings")
 public class BookingController {
 
     private final BookingService bookingService;
+    private final TurnstileVerifier turnstileVerifier;
 
     @Autowired
-    public BookingController(BookingService bookingService) {
+    public BookingController(BookingService bookingService, TurnstileVerifier turnstileVerifier) {
         this.bookingService = bookingService;
+        this.turnstileVerifier = turnstileVerifier;
     }
 
     // Tra cứu đơn công khai theo mã đơn và 4 số cuối số điện thoại (không cần đăng nhập)
     @GetMapping("/public-track")
     public ResponseEntity<ApiResponse<PublicTrackingResponse>> getPublicTracking(
+            @RequestHeader(value = "X-Captcha-Token", required = false) String captchaToken,
             @RequestParam("code") String code,
             @RequestParam("phoneLast4") String phoneLast4) {
+        turnstileVerifier.verify(captchaToken, "public_tracking");
         PublicTrackingResponse response = bookingService.getPublicTracking(code, phoneLast4);
         if (response == null) {
             return ResponseEntity.status(404).body(ApiResponse.error("Không tìm thấy đơn hàng hoặc 4 số cuối điện thoại không khớp."));
         }
         return ResponseEntity.ok(ApiResponse.success(response, "Tra cứu tiến độ đơn hàng thành công"));
+    }
+
+    @PostMapping("/public-track/batch")
+    public ResponseEntity<ApiResponse<List<PublicTrackingLookupResponse>>> getPublicTrackingBatch(
+            @RequestHeader(value = "X-Captcha-Token", required = false) String captchaToken,
+            @Valid @RequestBody PublicTrackingLookupRequest request) {
+        turnstileVerifier.verify(captchaToken, "public_tracking");
+        List<PublicTrackingLookupResponse> results = new ArrayList<>();
+        for (String code : request.codes().stream().distinct().toList()) {
+            results.add(new PublicTrackingLookupResponse(
+                    code,
+                    bookingService.getPublicTracking(code, request.phoneLast4())));
+        }
+        return ResponseEntity.ok(ApiResponse.success(results, "Tra cứu tiến độ đơn hàng thành công"));
     }
 
     @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT')")

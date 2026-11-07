@@ -9,6 +9,7 @@ import com.example.racehorse_transport.dto.ResetPasswordWithOtpRequest;
 import com.example.racehorse_transport.response.ApiResponse;
 import com.example.racehorse_transport.service.AuthService;
 import com.example.racehorse_transport.service.PasswordResetService;
+import com.example.racehorse_transport.service.TurnstileVerifier;
 import com.example.racehorse_transport.security.JwtUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -31,23 +32,33 @@ public class AuthController {
     private final AuthService authService;
     private final PasswordResetService passwordResetService;
     private final JwtUtils jwtUtils;
+    private final TurnstileVerifier turnstileVerifier;
 
     @PostMapping("/password-reset/request-otp")
-    public ResponseEntity<ApiResponse<Void>> requestPasswordResetOtp(@Valid @RequestBody PasswordResetOtpRequest request) {
+    public ResponseEntity<ApiResponse<Void>> requestPasswordResetOtp(
+            @RequestHeader(value = "X-Captcha-Token", required = false) String captchaToken,
+            @Valid @RequestBody PasswordResetOtpRequest request) {
+        turnstileVerifier.verify(captchaToken, "password_reset");
         passwordResetService.requestOtp(request.getEmail());
         return ResponseEntity.ok(ApiResponse.success(null,
                 "Nếu email có tài khoản, mã OTP sẽ được gửi đến hộp thư của bạn."));
     }
 
     @PostMapping("/password-reset/complete")
-    public ResponseEntity<ApiResponse<Void>> resetPasswordWithOtp(@Valid @RequestBody ResetPasswordWithOtpRequest request) {
+    public ResponseEntity<ApiResponse<Void>> resetPasswordWithOtp(
+            @RequestHeader(value = "X-Captcha-Token", required = false) String captchaToken,
+            @Valid @RequestBody ResetPasswordWithOtpRequest request) {
+        turnstileVerifier.verify(captchaToken, "password_reset");
         passwordResetService.resetPassword(request);
         return ResponseEntity.ok(ApiResponse.success(null, "Đặt lại mật khẩu thành công. Bạn có thể đăng nhập."));
     }
 
     // API Đăng ký tài khoản
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<String>> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<ApiResponse<String>> register(
+            @RequestHeader(value = "X-Captcha-Token", required = false) String captchaToken,
+            @Valid @RequestBody RegisterRequest request) {
+        turnstileVerifier.verify(captchaToken, "register");
         authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("Đăng ký tài khoản thành công!", "Đăng ký thành công. Hãy nhập mã OTP đã gửi về email."));
@@ -55,20 +66,29 @@ public class AuthController {
 
     // API Gửi lại OTP xác thực email
     @PostMapping("/email-verification/resend")
-    public ResponseEntity<ApiResponse<Void>> resendEmailOtp(@Valid @RequestBody EmailVerificationRequest request) {
+    public ResponseEntity<ApiResponse<Void>> resendEmailOtp(
+            @RequestHeader(value = "X-Captcha-Token", required = false) String captchaToken,
+            @Valid @RequestBody EmailVerificationRequest request) {
+        turnstileVerifier.verify(captchaToken, "email_verification");
         authService.resendEmailOtp(request.getEmail());
         return ResponseEntity.ok(ApiResponse.success(null, "Nếu email có tài khoản, mã OTP mới sẽ được gửi đến hộp thư của bạn."));
     }
 
     // API Nhập OTP xác thực email, đúng thì đăng nhập luôn
     @PostMapping("/email-verification/confirm")
-    public ResponseEntity<ApiResponse<AuthResponse>> confirmEmail(@Valid @RequestBody EmailVerificationRequest request) {
+    public ResponseEntity<ApiResponse<AuthResponse>> confirmEmail(
+            @RequestHeader(value = "X-Captcha-Token", required = false) String captchaToken,
+            @Valid @RequestBody EmailVerificationRequest request) {
+        turnstileVerifier.verify(captchaToken, "email_verification");
         return withRefreshCookie(authService.confirmEmail(request.getEmail(), request.getOtp()), "Xác thực email thành công");
     }
 
     // API Đăng nhập Khách hàng
     @PostMapping("/customer/login")
-    public ResponseEntity<ApiResponse<AuthResponse>> loginCustomer(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<ApiResponse<AuthResponse>> loginCustomer(
+            @RequestHeader(value = "X-Captcha-Token", required = false) String captchaToken,
+            @Valid @RequestBody LoginRequest request) {
+        turnstileVerifier.verify(captchaToken, "customer_login");
         AuthResponse authResponse = authService.loginCustomer(request);
         if (authResponse.isEmailVerificationRequired()) {
             return ResponseEntity.ok(ApiResponse.success(authResponse, "Hãy nhập mã OTP đã gửi về email để xác thực tài khoản."));
@@ -85,7 +105,10 @@ public class AuthController {
 
     // API Đăng nhập Nhân viên nội bộ
     @PostMapping("/staff/login")
-    public ResponseEntity<ApiResponse<AuthResponse>> loginStaff(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<ApiResponse<AuthResponse>> loginStaff(
+            @RequestHeader(value = "X-Captcha-Token", required = false) String captchaToken,
+            @Valid @RequestBody LoginRequest request) {
+        turnstileVerifier.verify(captchaToken, "staff_login");
         AuthResponse authResponse = authService.loginStaff(request);
         ResponseCookie refreshCookie = jwtUtils.generateRefreshCookie(authResponse.getUsername());
 

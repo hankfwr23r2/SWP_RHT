@@ -2,4 +2,5 @@
 import { publicBookingsApi, type PublicTracking } from './bookings'
 
 export type { PublicTracking }
-export const trackOrder = (code: string, phoneLast4: string): Promise<PublicTracking | null> => publicBookingsApi.track(code, phoneLast4)
+export const trackOrders = (codes: string[], phoneLast4: string, captchaToken: string) =>
+  publicBookingsApi.trackMany(codes, phoneLast4, captchaToken)

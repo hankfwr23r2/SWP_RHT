@@ -6,6 +6,7 @@ import { authApi } from '@shared/api/auth'
 import { tokenStorage } from '@shared/api/client'
 import type { StaffRole } from '@shared/types/role'
 import { AuthShell, authStyles as s } from '@shared/ui/AuthShell'
+import { TurnstileWidget } from '@shared/ui/TurnstileWidget'
 import { HOME_OF } from '../../layouts/staffMenus'
 
 function LoginForm({ managerOnly }: { managerOnly: boolean }) {
@@ -16,6 +17,8 @@ function LoginForm({ managerOnly }: { managerOnly: boolean }) {
   const [errorField, setErrorField] = useState<'email' | 'password' | null>(null)
   const [loading, setLoading] = useState(false)
   const [showPwd, setShowPwd] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaGeneration, setCaptchaGeneration] = useState(0)
 
   const submit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -33,10 +36,14 @@ function LoginForm({ managerOnly }: { managerOnly: boolean }) {
     }
     if (!email) return fail(t('staffAuth.emailRequired', 'Vui lòng nhập email hoặc tên đăng nhập.'), 'email')
     if (!password) return fail(t('staffAuth.passwordRequired', 'Vui lòng nhập mật khẩu.'), 'password')
+    if (!captchaToken) {
+      setError(t('captcha.required'))
+      return
+    }
 
     setLoading(true)
     try {
-      const res = await authApi.loginStaff({ username: email, password })
+      const res = await authApi.loginStaff({ username: email, password }, captchaToken)
       const rawRole = (res.role || 'manager').toLowerCase()
       // Backend stores inspector staff as INSPECTOR; the backoffice route
       // configuration and menus use the product-facing role name specialist.
@@ -59,6 +66,8 @@ function LoginForm({ managerOnly }: { managerOnly: boolean }) {
       fail(err instanceof Error ? err.message : t('staffAuth.loginFailed', 'Đăng nhập không thành công. Vui lòng thử lại.'), 'password')
     } finally {
       setLoading(false)
+      setCaptchaToken(null)
+      setCaptchaGeneration(generation => generation + 1)
     }
   }
 
@@ -78,6 +87,7 @@ function LoginForm({ managerOnly }: { managerOnly: boolean }) {
           </button>
         </div>
       </div>
+      <TurnstileWidget key={captchaGeneration} action="staff_login" onTokenChange={setCaptchaToken} />
       <p className="text-right small" style={{ marginBottom: 16 }}><Link to="/forgot-password" className="text-orange">{t('staffAuth.forgotPassword', 'Quên mật khẩu?')}</Link></p>
       <button type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading}>
         {loading ? t('staffAuth.loggingIn', 'Đang đăng nhập...') : managerOnly ? t('staffAuth.loginManager', 'Đăng nhập quản lý') : t('staffAuth.loginStaff', 'Đăng nhập')}

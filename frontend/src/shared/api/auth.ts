@@ -45,22 +45,26 @@ export interface ResetPasswordWithOtpPayload {
   confirmPassword: string
 }
 
+const captchaConfig = (captchaToken: string) => ({
+  headers: { 'X-Captcha-Token': captchaToken },
+})
+
 export const authApi = {
   // 1. Đăng nhập Khách hàng -> POST /api/v1/auth/customer/login
-  loginCustomer: async (payload: LoginPayload): Promise<AuthResponseData> => {
-    const res = await apiClient.post<ApiResponse<AuthResponseData>>('/auth/customer/login', payload)
+  loginCustomer: async (payload: LoginPayload, captchaToken: string): Promise<AuthResponseData> => {
+    const res = await apiClient.post<ApiResponse<AuthResponseData>>('/auth/customer/login', payload, captchaConfig(captchaToken))
     return res.data.data
   },
 
   // 2. Đăng nhập Nhân viên nội bộ -> POST /api/v1/auth/staff/login
-  loginStaff: async (payload: LoginPayload): Promise<AuthResponseData> => {
-    const res = await apiClient.post<ApiResponse<AuthResponseData>>('/auth/staff/login', payload)
+  loginStaff: async (payload: LoginPayload, captchaToken: string): Promise<AuthResponseData> => {
+    const res = await apiClient.post<ApiResponse<AuthResponseData>>('/auth/staff/login', payload, captchaConfig(captchaToken))
     return res.data.data
   },
 
   // 3. Đăng ký Khách hàng -> POST /api/v1/auth/register
-  register: async (payload: RegisterPayload): Promise<string> => {
-    const res = await apiClient.post<ApiResponse<string>>('/auth/register', payload)
+  register: async (payload: RegisterPayload, captchaToken: string): Promise<string> => {
+    const res = await apiClient.post<ApiResponse<string>>('/auth/register', payload, captchaConfig(captchaToken))
     return res.data.data
   },
 
@@ -80,24 +84,23 @@ export const authApi = {
     await apiClient.post('/auth/change-password', payload)
   },
 
-  requestPasswordResetOtp: async (email: string): Promise<string> => {
-    const res = await apiClient.post<ApiResponse<void>>('/auth/password-reset/request-otp', { email })
+  requestPasswordResetOtp: async (email: string, captchaToken: string): Promise<string> => {
+    const res = await apiClient.post<ApiResponse<void>>('/auth/password-reset/request-otp', { email }, captchaConfig(captchaToken))
     return res.data.message
   },
 
-  resendEmailOtp: async (email: string): Promise<string> => {
-    const res = await apiClient.post<ApiResponse<void>>('/auth/email-verification/resend', { email })
+  resendEmailOtp: async (email: string, captchaToken: string): Promise<string> => {
+    const res = await apiClient.post<ApiResponse<void>>('/auth/email-verification/resend', { email }, captchaConfig(captchaToken))
     return res.data.message
   },
 
-  confirmEmail: async (email: string, otp: string): Promise<AuthResponseData> => {
-    const res = await apiClient.post<ApiResponse<AuthResponseData>>('/auth/email-verification/confirm', { email, otp })
+  confirmEmail: async (email: string, otp: string, captchaToken: string): Promise<AuthResponseData> => {
+    const res = await apiClient.post<ApiResponse<AuthResponseData>>('/auth/email-verification/confirm', { email, otp }, captchaConfig(captchaToken))
     return res.data.data
   },
 
-  resetPasswordWithOtp: async (payload: ResetPasswordWithOtpPayload): Promise<string> => {
-    const res = await apiClient.post<ApiResponse<void>>('/auth/password-reset/complete', payload)
+  resetPasswordWithOtp: async (payload: ResetPasswordWithOtpPayload, captchaToken: string): Promise<string> => {
+    const res = await apiClient.post<ApiResponse<void>>('/auth/password-reset/complete', payload, captchaConfig(captchaToken))
     return res.data.message
   },
 }
-
