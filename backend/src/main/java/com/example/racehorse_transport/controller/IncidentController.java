@@ -87,8 +87,11 @@ public class IncidentController {
     @PostMapping("/{id}/resume")
     public ResponseEntity<ApiResponse<IncidentResponse>> resumeJourney(
             Authentication authentication,
-            @PathVariable("id") Integer id) {
-        IncidentResponse response = incidentService.resumeJourney(id, authentication.getName(), role(authentication));
+            @PathVariable("id") Integer id,
+            @RequestBody(required = false) java.util.Map<String, Object> body) {
+        boolean confirmEarlyLeave = body != null && Boolean.TRUE.equals(body.get("confirmEarlyLeave"));
+        String note = body != null && body.get("note") != null ? String.valueOf(body.get("note")) : null;
+        IncidentResponse response = incidentService.resumeJourney(id, authentication.getName(), role(authentication), confirmEarlyLeave, note);
         return ResponseEntity.ok(ApiResponse.success(response, "Đã tiếp tục hành trình"));
     }
 

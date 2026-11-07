@@ -6,6 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { INCIDENT_ACTION, INCIDENT_KIND } from '@shared/config/booking-rules'
 import { formatDateTime, formatVND } from '@shared/lib/format'
+import { pickupFailReason } from '@shared/lib/booking'
 import { bookingsApi, invalidateBookingsListCache } from '@shared/services/bookings'
 import type { Booking, Incident } from '@shared/types/booking'
 import { ImageThumb } from '@shared/ui/ImageThumb'
@@ -72,7 +73,7 @@ const excludedHorses = (b: Booking) => b.horses.filter(h => h.status === 'chip_m
 // Đơn "Không nhận được ngựa": quản lý xem lý do rồi hủy đơn, khách mất phần cọc vận chuyển
 function PickupFailedModal({ b, onClose, onDone }: { b: Booking; onClose: () => void; onDone: () => void }) {
   const toast = useToast()
-  const [reason, setReason] = useState('Ngựa ở điểm đón không khớp hồ sơ')
+  const [reason, setReason] = useState(() => pickupFailReason(b))
   const [busy, setBusy] = useState(false)
   const cancel = async () => {
     setBusy(true)

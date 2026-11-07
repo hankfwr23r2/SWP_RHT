@@ -12,7 +12,7 @@ public interface DeliveryService {
     BookingResponse completeHandover(Integer bookingId, HandoverCompleteRequest request);
 
     // 3. Xử lý ngoại lệ: Người nhận không nhận được ngựa đúng hạn (quá 2 giờ)
-    BookingResponse reportDeliveryTimeout(Integer bookingId, DeliveryTimeoutRequest request);
+    BookingResponse reportDeliveryTimeout(Integer bookingId, DeliveryTimeoutRequest request, String username, String role);
 
     // Phát hành quyết toán và thanh toán số dư: xem SettlementService
 

@@ -163,7 +163,12 @@ describe('chuyển sự cố Flow 5 từ backend sang frontend', () => {
     })
   })
 
-  it('ignores incident categories outside Flow 5', () => {
-    expect(incidentOf({ ...incident, incidentType: 'HANDOVER_TIMEOUT' })).toBeUndefined()
+  it('ignores unknown incident categories', () => {
+    expect(incidentOf({ ...incident, incidentType: 'SOMETHING_ELSE' })).toBeUndefined()
+  })
+
+  // Quá hạn bàn giao phải hiện cho quản lý ở "Sự cố đang xử lý"
+  it('maps handover timeouts so managers can see them', () => {
+    expect(incidentOf({ ...incident, incidentType: 'HANDOVER_TIMEOUT' })?.kind).toBe('handover_timeout')
   })
 })

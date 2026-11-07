@@ -324,6 +324,12 @@ public class IncidentServiceImpl implements IncidentService {
             BookingDetailsPayload payload = BookingDetailsJson.read(objectMapper, incident.getBookingID());
             Map<String, Object> checkpoint = stationCheckpoint(incident, payload);
             if (checkpoint.get("arrivedAt") == null) throw new IllegalArgumentException("Cần xác nhận tới trạm SOS trước khi khám.");
+            long arrival = ((Number) checkpoint.get("arrivedAt")).longValue();
+            long restMinutes = checkpoint.get("restMinutes") instanceof Number m ? m.longValue() : 0;
+            long restedMinutes = (Instant.now().toEpochMilli() - arrival) / 60000;
+            if (restedMinutes < restMinutes && (request == null || !request.isConfirmEarly()))
+                throw new IllegalArgumentException("Ngựa mới nghỉ " + restedMinutes + "/" + restMinutes
+                        + " phút tại trạm SOS. Cần xác nhận đủ sức sớm.");
             if (request == null || request.getHorses() == null || request.getHorses().isEmpty())
                 throw new IllegalArgumentException("Cần ghi kết quả chăm sóc từng ngựa bị ảnh hưởng.");
             var expected = affectedHorseIds(incident);
@@ -361,6 +367,12 @@ public class IncidentServiceImpl implements IncidentService {
     @Override
     @Transactional
     public IncidentResponse resumeJourney(Integer incidentId, String actor, String role) {
+        return resumeJourney(incidentId, actor, role, false, null);
+    }
+
+    @Override
+    @Transactional
+    public IncidentResponse resumeJourney(Integer incidentId, String actor, String role, boolean confirmEarlyLeave, String note) {
         Incident incident = incidentRepository.findById(incidentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố ID: " + incidentId));
         requireStatus(incident, "active");
@@ -370,7 +382,7 @@ public class IncidentServiceImpl implements IncidentService {
                 && incident.getFitConfirmedAt() == null) {
             throw new IllegalArgumentException("Cần xác nhận ngựa đủ sức đi tiếp trước khi tiếp tục hành trình.");
         }
-        if ("HORSE_HEALTH".equalsIgnoreCase(incident.getIncidentType())) finishStation(incident);
+        if ("HORSE_HEALTH".equalsIgnoreCase(incident.getIncidentType())) finishStation(incident, actor, confirmEarlyLeave, note);
         incident.setStatus("resolved");
         incident.setResolvedAt(Instant.now());
         Incident saved = incidentRepository.save(incident);
@@ -568,7 +580,7 @@ public class IncidentServiceImpl implements IncidentService {
         booking.setDetailsJson(writeJson(payload));
     }
 
-    private void finishStation(Incident incident) {
+    private void finishStation(Incident incident, String actor, boolean confirmEarlyLeave, String note) {
         Booking booking = incident.getBookingID();
         BookingDetailsPayload payload = BookingDetailsJson.read(objectMapper, booking);
         var trip = incidentTrip(incident, payload);
@@ -577,8 +589,18 @@ public class IncidentServiceImpl implements IncidentService {
             throw new IllegalArgumentException("Cần tới trạm và được hộ tống xác nhận đủ sức trước khi rời trạm.");
         Number minutes = (Number) checkpoint.get("restMinutes");
         long now = Instant.now().toEpochMilli();
-        if (now < arrival.longValue() + minutes.longValue() * 60000)
-            throw new IllegalArgumentException("Chưa đủ thời gian nghỉ đã duyệt tại trạm SOS.");
+        long restedMinutes = (now - arrival.longValue()) / 60000;
+        if (now < arrival.longValue() + minutes.longValue() * 60000) {
+            // Không bắt kíp xe chờ: rời sớm được nhưng phải xác nhận, và lưu lại đã nghỉ bao lâu
+            if (!confirmEarlyLeave) throw new IllegalArgumentException("Ngựa mới nghỉ " + restedMinutes + "/" + minutes
+                    + " phút tại trạm SOS. Cần xác nhận rời trạm sớm.");
+            Map<String, Object> early = new HashMap<>();
+            early.put("restedMinutes", restedMinutes);
+            early.put("note", note == null ? "" : note.trim());
+            early.put("by", actor);
+            early.put("at", now);
+            checkpoint.put("earlyLeave", early);
+        }
         checkpoint.put("doneAt", now); checkpoint.put("leftAt", now);
         for (var cp : tripCheckpoints(trip)) if (Objects.equals(cp.get("interruptedByIncidentId"), incident.getId()) && cp.get("doneAt") == null) {
             cp.put("doneAt", now); cp.put("leftAt", now); cp.put("completionReason", "Đã hoàn tất chăm sóc tại trạm SOS");

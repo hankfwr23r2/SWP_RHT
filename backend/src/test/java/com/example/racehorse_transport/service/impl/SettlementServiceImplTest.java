@@ -32,13 +32,14 @@ class SettlementServiceImplTest {
     private final QuotationRepository quotationRepository = mock(QuotationRepository.class);
     private final VehicleRepository vehicleRepository = mock(VehicleRepository.class);
     private final StaffRepository staffRepository = mock(StaffRepository.class);
+    private final com.example.racehorse_transport.service.BillMailService billMailService = org.mockito.Mockito.mock(com.example.racehorse_transport.service.BillMailService.class);
     private SettlementServiceImpl service;
 
     @BeforeEach
     void setUp() {
         service = new SettlementServiceImpl(
                 bookingRepository, paymentRepository, quotationRepository,
-                vehicleRepository, staffRepository, new ObjectMapper());
+                vehicleRepository, staffRepository, new ObjectMapper(), billMailService);
     }
 
     @Test

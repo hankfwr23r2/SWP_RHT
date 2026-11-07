@@ -35,4 +35,9 @@ public class User {
     // null: tài khoản tạo trước khi có xác thực email, coi như chưa xác thực
     @Column(name = "EmailVerified")
     private Boolean emailVerified;
+
+    // Ngôn ngữ khách chọn trên giao diện ("vi" hoặc "en"), dùng cho mail hóa đơn; null là tiếng Việt
+    @Size(max = 5)
+    @Column(name = "PreferredLanguage")
+    private String preferredLanguage;
 }

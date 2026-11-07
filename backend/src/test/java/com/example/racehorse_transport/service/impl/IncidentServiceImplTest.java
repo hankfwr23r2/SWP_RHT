@@ -169,12 +169,41 @@ class IncidentServiceImplTest {
         verifyNoInteractions(healthService);
     }
 
+    // Bản demo không bắt kíp xe chờ: rời trạm SOS trước giờ nghỉ đã duyệt được, nhưng phải xác nhận rõ ràng
     @Test
-    void cannotLeaveSosStationBeforeApprovedRestTime() {
+    void leavingSosStationEarlyNeedsAnExplicitConfirmation() {
         Incident incident = healthIncident(true); incident.setFitConfirmedAt(java.time.Instant.now());
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.resumeJourney(7, "driver", "ADMIN"))
-                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("thời gian nghỉ");
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("xác nhận rời trạm sớm");
         assertThat(incident.getStatus()).isEqualTo("active");
+    }
+
+    @Test
+    void confirmedEarlyLeaveIsAllowedAndRecorded() throws Exception {
+        Incident incident = healthIncident(true); incident.setFitConfirmedAt(java.time.Instant.now());
+        service.resumeJourney(7, "driver", "ADMIN", true, "Ngựa đã ổn, đi tiếp cho kịp giờ");
+        assertThat(incident.getStatus()).isEqualTo("resolved");
+        var sos = new com.fasterxml.jackson.databind.ObjectMapper().readTree(incident.getBookingID().getDetailsJson())
+                .path("trips").get(0).path("run").path("checkpoints").get(1);
+        assertThat(sos.path("doneAt").asLong()).isPositive();
+        assertThat(sos.path("earlyLeave").path("note").asText()).isEqualTo("Ngựa đã ổn, đi tiếp cho kịp giờ");
+        assertThat(sos.path("earlyLeave").path("restedMinutes").asLong()).isLessThan(sos.path("restMinutes").asLong());
+        assertThat(sos.path("earlyLeave").path("by").asText()).isEqualTo("driver");
+    }
+
+    // Hộ tống xác nhận đủ sức trước khi hết giờ nghỉ đã duyệt: không chặn cứng, nhưng phải xác nhận rõ ràng
+    @Test
+    void confirmingFitBeforeTheRestEndsNeedsAnExplicitConfirmation() {
+        Incident incident = healthIncident(true);
+        var request = new com.example.racehorse_transport.dto.incident.ConfirmIncidentFitRequest();
+        request.setPhoto("care.jpg");
+        var care = new com.example.racehorse_transport.dto.incident.ConfirmIncidentFitRequest.CareRecord();
+        care.setHorseId("H-1"); care.setCareNote("Đã ổn định");
+        request.setHorses(List.of(care));
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.confirmFit(7, request, "escort", "ADMIN"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Cần xác nhận");
+        assertThat(incident.getFitConfirmedAt()).isNull();
+        verifyNoInteractions(healthService);
     }
 
     @Test
@@ -187,6 +216,7 @@ class IncidentServiceImplTest {
         var care = new com.example.racehorse_transport.dto.incident.ConfirmIncidentFitRequest.CareRecord();
         care.setHorseId("H-1"); care.setCareNote("Đã chăm sóc, ổn định và đủ sức đi tiếp");
         request.setHorses(List.of(care));
+        request.setConfirmEarly(true); // ngựa vừa tới trạm, chưa nghỉ đủ 30 phút
         service.confirmFit(7, request, "escort", "ADMIN");
         org.mockito.Mockito.verify(healthService).updateHorseHealthStatusByEscort(1, 3,
                 "ĐỦ SỨC ĐI TIẾP SAU SOS", null, null, "INC-7: " + care.getCareNote(), 9);

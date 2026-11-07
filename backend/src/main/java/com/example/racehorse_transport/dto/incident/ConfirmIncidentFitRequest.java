@@ -12,6 +12,8 @@ public class ConfirmIncidentFitRequest {
     @NotBlank private String photo;
     @DecimalMin("0.0") private BigDecimal waterLiters = BigDecimal.ZERO;
     private boolean hay;
+    // Hộ tống xác nhận đủ sức trước khi hết giờ nghỉ đã duyệt ở trạm SOS (demo không bắt chờ)
+    private boolean confirmEarly;
 
     @NotEmpty @Valid
     private List<CareRecord> horses;

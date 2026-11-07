@@ -120,12 +120,16 @@ export const PUBLIC_STEPS = ['Gửi đơn', 'Thẩm định', 'Đặt cọc', 'C
 export const publicStepOf = (s: BookingStatus): number => (s === 'pending_intake' || s === 'cancelled' || s === 'rejected' ? 0 : s === 'under_review' || s === 'pending_commercial' ? 1 : s === 'awaiting_payment' || s === 'quote_expired' ? 2 : ['in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed'].includes(s) ? 4 : 3)
 
 // ===== Sự cố và chi phí (Flow 5, PRD mục 6, 11.5) =====
-export type IncidentKind = 'horse_health' | 'vehicle_breakdown' | 'traffic_jam'
+// handover_timeout: người nhận không tới điểm giao (tài xế báo ở bước giao ngựa, không chọn trong form SOS)
+export type IncidentKind = 'horse_health' | 'vehicle_breakdown' | 'traffic_jam' | 'handover_timeout'
 export const INCIDENT_KIND: Record<IncidentKind, { label: string; icon: string; hint: string }> = {
   horse_health: { label: 'Sức khỏe ngựa', icon: 'fa-horse-head', hint: 'Đau bụng, sốt, mất nước, chấn thương' },
   vehicle_breakdown: { label: 'Xe gặp sự cố', icon: 'fa-screwdriver-wrench', hint: 'Hỏng điều hòa thùng, nổ lốp, sự cố động cơ, tai nạn' },
   traffic_jam: { label: 'Giao thông tắc nghẽn', icon: 'fa-traffic-light', hint: 'Kẹt xe, tắc đường, đường bị chặn' },
+  handover_timeout: { label: 'Quá hạn bàn giao', icon: 'fa-clock', hint: 'Người nhận không tới điểm giao, ngựa được lưu chuồng hoặc chở về' },
 }
+// Nhóm sự cố tài xế, hộ tống chọn khi bấm SOS
+export const SOS_KINDS: IncidentKind[] = ['horse_health', 'vehicle_breakdown', 'traffic_jam']
 // Phương án xử lý (lập trên bản đồ): mỗi nhóm sự cố có đúng một cách xử lý
 export type IncidentAction = 'to_station' | 'rescue_and_station' | 'reroute'
 export const INCIDENT_ACTION: Record<IncidentAction, string> = {

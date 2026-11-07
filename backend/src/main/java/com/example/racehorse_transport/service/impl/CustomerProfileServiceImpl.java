@@ -49,6 +49,18 @@ public class CustomerProfileServiceImpl implements CustomerProfileService {
 
     @Override
     @Transactional
+    public void updateLanguage(String username, String language) {
+        if (!"vi".equals(language) && !"en".equals(language)) {
+            throw new IllegalArgumentException("Ngôn ngữ chỉ nhận vi hoặc en.");
+        }
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy tài khoản."));
+        user.setPreferredLanguage(language);
+        userRepository.save(user);
+    }
+
+    @Override
+    @Transactional
     public CustomerProfileResponse updateProfile(String username, UpdateCustomerProfileRequest request) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy thông tin tài khoản: " + username));

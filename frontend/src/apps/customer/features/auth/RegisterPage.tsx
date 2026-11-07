@@ -88,6 +88,7 @@ export default function RegisterPage() {
         fullName: values.fullname,
         phone: values.phone,
         address,
+        language: i18n.language.startsWith('en') ? 'en' : 'vi',
       }, captchaToken)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Đăng ký thất bại. Vui lòng thử lại.'

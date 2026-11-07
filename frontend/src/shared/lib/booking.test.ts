@@ -11,7 +11,7 @@ import type { DocumentRequirement } from '../api/documentRequirements'
 import {
   schedulesOf, clashOf, crewClashOf, planHomeReturn, returnLate, returningTrips, vehicleSpot, vehiclePoint, pendingDeparture, spotLabel, nearestTo, projectOnPath, pointsAhead, pointAlong, bookingPath, incidentLocation, needsFitCheck, transitProgress, defaultPayer, incidentActionsFor, settlementOf, approvedSubOf, APPROVED_SUBS, orderGroupOf, ORDER_GROUPS, capacitiesFor, estimateQuote, busyResources, buildRoutePlan, gatesFor, suggestGate, suggestTransitStations, canCompleteClearance, classForHorses, defaultClearanceItems, deriveStatus, docsDueAt, earliestDeparture, finalizeQuote, horseReadiness,
   isClearanceOverdue, isDepartureAllowed, isQuoteExpired, layoutLegs, manifestDocuments, nextBookingId, quoteLines, reviewDone, routeKm, activeStaff,
-  findLocation, arrivalOf, routeOutline, managerBoardOf, managerCounts, orderTabOf, tripIdFor, validateRoutePlan, vehicleClassOf, autoPackFleet, horseCountryMatchesOrigin, horseHasUnverifiedLocationCountry,
+  findLocation, arrivalOf, routeOutline, managerBoardOf, managerCounts, orderTabOf, tripIdFor, validateRoutePlan, vehicleClassOf, autoPackFleet, horseCountryMatchesOrigin, horseHasUnverifiedLocationCountry, pickupFailReason,
 } from './booking'
 
 
@@ -898,5 +898,14 @@ describe('autoPackFleet - Tự động phân bổ xe thông minh', () => {
     const res = autoPackFleet(['H1'], [v1, v2], sched, NOW)
     expect(res).toHaveLength(1)
     expect(res[0].vehicleId).toBe('V2')
+  })
+})
+
+describe('pickupFailReason', () => {
+  const horse = (status: 'eligible' | 'unfit' | 'chip_mismatch') => ({ status }) as never
+  it('nói đúng lý do không nhận được ngựa', () => {
+    expect(pickupFailReason({ horses: [horse('chip_mismatch')] })).toBe('Ngựa ở điểm đón không khớp hồ sơ')
+    expect(pickupFailReason({ horses: [horse('unfit')] })).toBe('Ngựa ốm/sốt ở điểm đón, không đủ điều kiện vận chuyển')
+    expect(pickupFailReason({ horses: [horse('unfit'), horse('chip_mismatch')] })).toBe('Ngựa ở điểm đón không khớp hồ sơ hoặc không đủ sức khỏe')
   })
 })

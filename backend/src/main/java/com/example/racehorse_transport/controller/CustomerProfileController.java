@@ -56,4 +56,14 @@ public class CustomerProfileController {
         CustomerProfileResponse updated = profileService.updateProfile(username, request);
         return ResponseEntity.ok(ApiResponse.success(updated, "Cập nhật hồ sơ thành công"));
     }
+
+    // Khách đổi VI/EN trên giao diện: lưu lại để mail hóa đơn gửi đúng ngôn ngữ
+    @PutMapping("/language")
+    public ResponseEntity<ApiResponse<String>> updateLanguage(
+            org.springframework.security.core.Authentication authentication,
+            @RequestBody java.util.Map<String, String> body) {
+        String language = body == null ? null : body.get("language");
+        profileService.updateLanguage(authentication.getName(), language);
+        return ResponseEntity.ok(ApiResponse.success(language, "Đã lưu ngôn ngữ"));
+    }
 }
