@@ -96,6 +96,7 @@ class BookingServiceImplTest {
             mock(com.example.racehorse_transport.repository.HorseJourneyLogRepository.class);
     private final com.example.racehorse_transport.service.HorseDeliveryLocationService horseDeliveryLocationService =
             new com.example.racehorse_transport.service.HorseDeliveryLocationService(horseRepository, horseJourneyLogRepository);
+    private final com.example.racehorse_transport.service.BillMailService billMailService = mock(com.example.racehorse_transport.service.BillMailService.class);
     private BookingServiceImpl service;
     private Customer customer;
     private final Clock clock = mock(Clock.class);
@@ -131,7 +132,8 @@ class BookingServiceImplTest {
                 horseDeliveryLocationService,
                 new VnpayProperties(),
                 clock,
-                mock(com.example.racehorse_transport.repository.IncidentRepository.class));
+                mock(com.example.racehorse_transport.repository.IncidentRepository.class),
+                billMailService);
 
         when(documentRequirementRepository.findByDocumentGroupAndStatusOrderByDocumentNameAsc(any(), any()))
                 .thenReturn(List.of());
@@ -1254,6 +1256,12 @@ class BookingServiceImplTest {
         assertThat(saved.getValue().getDepositAmount()).isEqualByComparingTo("3000000");
         assertThat(saved.getValue().getBalanceAmount()).isEqualByComparingTo("7000000");
         assertThat(booking.getDetailsJson()).contains("\"total\":10000000").contains("\"deposit\":3000000");
+        // Khách nhận mail báo giá với đúng số tiền hệ thống tự tính
+        verify(billMailService).quoteIssued(org.mockito.ArgumentMatchers.eq(booking), org.mockito.ArgumentMatchers.eq(List.of(line)),
+                org.mockito.ArgumentMatchers.argThat(v -> v.compareTo(new java.math.BigDecimal("10000000")) == 0),
+                org.mockito.ArgumentMatchers.argThat(v -> v.compareTo(new java.math.BigDecimal("3000000")) == 0),
+                org.mockito.ArgumentMatchers.argThat(v -> v.compareTo(new java.math.BigDecimal("7000000")) == 0),
+                any());
 
         ArgumentCaptor<Notification> notice = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository).save(notice.capture());

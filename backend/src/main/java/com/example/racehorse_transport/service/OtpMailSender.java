@@ -16,7 +16,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
-// Gửi email OTP. Có BREVO_API_KEY thì gửi qua API HTTPS của Brevo (Render gói miễn phí chặn cổng SMTP 25/465/587);
+// Gửi email (OTP, hóa đơn). Có BREVO_API_KEY thì gửi qua API HTTPS của Brevo (Render gói miễn phí chặn cổng SMTP 25/465/587);
 // không có thì gửi qua SMTP (MAIL_HOST), như khi chạy local với Gmail. Lỗi gửi ném MailException kèm lý do.
 @Component
 public class OtpMailSender {
@@ -47,11 +47,17 @@ public class OtpMailSender {
     }
 
     public void send(String to, String subject, String text) {
-        if (!brevoApiKey.isEmpty()) sendWithBrevo(to, subject, text);
+        if (!brevoApiKey.isEmpty()) sendWithBrevo(to, subject, text, null);
         else sendWithSmtp(to, subject, text);
     }
 
-    private void sendWithBrevo(String to, String subject, String text) {
+    // Thư HTML kèm bản chữ thuần cho trình đọc thư không hiện HTML (dùng cho mail hóa đơn)
+    public void sendHtml(String to, String subject, String html, String text) {
+        if (!brevoApiKey.isEmpty()) sendWithBrevo(to, subject, text, html);
+        else sendHtmlWithSmtp(to, subject, html, text);
+    }
+
+    private void sendWithBrevo(String to, String subject, String text, String html) {
         if (fromAddress.isEmpty()) {
             throw new MailSendException("Brevo cần địa chỉ gửi đã xác minh: đặt PASSWORD_RESET_FROM hoặc MAIL_USERNAME");
         }
@@ -65,17 +71,38 @@ public class OtpMailSender {
                     .header("api-key", brevoApiKey)
                     .contentType(MediaType.APPLICATION_JSON)
                     .accept(MediaType.APPLICATION_JSON)
-                    .body(Map.of(
-                            "sender", Map.of("name", SENDER_NAME, "email", fromAddress),
-                            "to", List.of(Map.of("email", to)),
-                            "subject", subject,
-                            "textContent", text))
+                    .body(brevoBody(to, subject, text, html))
                     .retrieve()
                     .toBodilessEntity();
         } catch (RestClientResponseException ex) {
             throw new MailSendException("Brevo từ chối gửi (" + ex.getStatusCode().value() + "): " + ex.getResponseBodyAsString(), ex);
         } catch (RestClientException ex) {
             throw new MailSendException("Không gọi được Brevo: " + ex.getMessage(), ex);
+        }
+    }
+
+    private Map<String, Object> brevoBody(String to, String subject, String text, String html) {
+        Map<String, Object> body = new java.util.LinkedHashMap<>();
+        body.put("sender", Map.of("name", SENDER_NAME, "email", fromAddress));
+        body.put("to", List.of(Map.of("email", to)));
+        body.put("subject", subject);
+        body.put("textContent", text);
+        if (html != null) body.put("htmlContent", html);
+        return body;
+    }
+
+    private void sendHtmlWithSmtp(String to, String subject, String html, String text) {
+        try {
+            jakarta.mail.internet.MimeMessage message = smtp.createMimeMessage();
+            org.springframework.mail.javamail.MimeMessageHelper helper =
+                    new org.springframework.mail.javamail.MimeMessageHelper(message, true, "UTF-8");
+            if (!fromAddress.isEmpty()) helper.setFrom(fromAddress, SENDER_NAME);
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(text, html);
+            smtp.send(message);
+        } catch (jakarta.mail.MessagingException | java.io.UnsupportedEncodingException ex) {
+            throw new MailSendException("Không dựng được thư: " + ex.getMessage(), ex);
         }
     }
 

@@ -97,6 +97,7 @@ public class BookingServiceImpl implements BookingService {
     private final VnpayProperties vnpayProperties;
     private final Clock clock;
     private final IncidentRepository incidentRepository;
+    private final com.example.racehorse_transport.service.BillMailService billMailService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // =========================================================================
@@ -1088,6 +1089,7 @@ public class BookingServiceImpl implements BookingService {
                 .createdAt(now)
                 .build());
 
+        billMailService.quoteIssued(updated, request.getLines(), total, deposit, balance, expiresAt);
         logAction("SEND_QUOTATION", updated.getId(), "Phát hành báo giá đơn BK-" + updated.getId()
                 + " (Tổng: " + total + ", Cọc: " + deposit + ", Hết hạn: " + expiresAt + ")");
 
@@ -1238,6 +1240,7 @@ public class BookingServiceImpl implements BookingService {
                 "Khách hàng thanh toán tiền cọc (" + payment.getAmount() + " VND) qua " + payment.getPaymentMethod()
                         + ", mã GD " + payment.getTransactionCode() + ", cấp Vận đơn " + waybillNo);
         log.info("Deposit confirmed for booking ID={}, waybill={}", updated.getId(), waybillNo);
+        billMailService.paymentReceived(updated, "Đặt cọc 30%", payment.getAmount(), payment.getGatewayTransactionNo(), paidAt, "Vận đơn: " + waybillNo);
         return updated;
     }
 
@@ -1385,6 +1388,7 @@ public class BookingServiceImpl implements BookingService {
                 "Khách hàng thanh toán 70% còn lại (" + payment.getAmount() + " VND) qua " + payment.getPaymentMethod()
                         + ", mã GD " + payment.getTransactionCode() + " cho đơn BK-" + updated.getId());
         log.info("Balance confirmed for booking ID={}", updated.getId());
+        billMailService.paymentReceived(updated, "Thanh toán 70% còn lại", payment.getAmount(), payment.getGatewayTransactionNo(), paidAt, null);
         return updated;
     }
 

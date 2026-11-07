@@ -37,6 +37,7 @@ public class SettlementServiceImpl implements SettlementService {
     private final VehicleRepository vehicleRepository;
     private final StaffRepository staffRepository;
     private final ObjectMapper objectMapper;
+    private final com.example.racehorse_transport.service.BillMailService billMailService;
 
     /**
      * 1. Kê khai chi phí phát sinh thực tế có chứng từ (Evidence-First - Flow 6, bước 2)
@@ -95,6 +96,9 @@ public class SettlementServiceImpl implements SettlementService {
         savePayload(booking, payload);
         Booking saved = bookingRepository.save(booking);
         log.info("Submitted expenses for booking ID={}: status={}", saved.getId(), saved.getStatus());
+        if (expenses.isEmpty() && payload.getSettlement() instanceof Map<?, ?> issued && issued.get("dueAt") instanceof Number due) {
+            billMailService.settlementIssued(saved, List.of(), BigDecimal.ZERO, Instant.ofEpochMilli(due.longValue()));
+        }
         return mapToBookingResponse(saved);
     }
 
@@ -180,6 +184,8 @@ public class SettlementServiceImpl implements SettlementService {
         savePayload(booking, payload);
         Booking saved = bookingRepository.save(booking);
         log.info("Manager issued settlement for booking ID={}, total={}", saved.getId(), customerTotal);
+        billMailService.settlementIssued(saved, items.stream().filter(i -> "customer".equalsIgnoreCase(i.getPayer())).toList(),
+                customerTotal, Instant.ofEpochMilli(dueAt));
 
         return buildSettlementResponse(saved, payload, settlementMap);
     }
@@ -281,6 +287,7 @@ public class SettlementServiceImpl implements SettlementService {
         }
         payload.setSettlement(settlementMap);
 
+        billMailService.paymentReceived(booking, "Thanh toán quyết toán", payment.getAmount(), payment.getGatewayTransactionNo(), paidAt, null);
         return closeBooking(booking, payload, actor != null ? actor : "Khách hàng",
                 "Hoàn tất quyết toán và đánh giá");
     }
