@@ -36,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 // Điều phối xem trước lộ trình: nước phải là mã VN, KH hoặc LA (không nhận tên như "Việt Nam"); tuyến đi nước ngoài
 // bắt buộc chọn một cửa khẩu; mã trạm dừng không được rỗng. Dữ liệu sai bị từ chối (400) trước khi gọi Valhalla.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@MockTurnstileVerification
 class RoutePreviewValidationTest {
 
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16-alpine");

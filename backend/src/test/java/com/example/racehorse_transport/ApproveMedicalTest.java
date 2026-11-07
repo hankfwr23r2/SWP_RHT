@@ -34,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 // (đã báo giá, đã cọc…) hay chưa tới (chưa tiếp nhận) thì bị từ chối, trạng thái và hồ sơ giữ nguyên.
 // Yêu cầu khách bổ sung hồ sơ cũng chỉ làm được ở bước Thẩm định.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@MockTurnstileVerification
 class ApproveMedicalTest {
 
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16-alpine");

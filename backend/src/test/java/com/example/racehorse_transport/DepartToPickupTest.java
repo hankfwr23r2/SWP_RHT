@@ -34,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 // tức giấy tờ đã xong. Đơn ở bước khác (chưa tiếp nhận, đang làm giấy tờ…) bị từ chối và giữ nguyên trạng thái.
 // Đơn nhiều xe: xe đầu đã xuất phát thì các xe sau vẫn xuất phát được, và trạng thái đơn không bị kéo lùi.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@MockTurnstileVerification
 class DepartToPickupTest {
 
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16-alpine");

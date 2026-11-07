@@ -43,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 // lịch trình có nghỉ 30 phút sau mỗi 4 giờ lái, nghỉ đêm sau 10 giờ lái, chờ cửa khẩu mở (07:30–16:30) và 3 giờ thủ tục.
 // Valhalla và Vietmap là máy chủ giả trả ĐÚNG mẫu phản hồi thật đã lưu (chỗ giả lập duy nhất); DB là Postgres thật.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@MockTurnstileVerification
 class RoutePreviewTest {
 
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16-alpine");

@@ -38,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 // Đăng ký chỉ nhận @gmail.com và phải nhập OTP gửi về email; tài khoản khách cũ chưa xác thực cũng phải nhập OTP khi đăng nhập.
 // Tài khoản nội bộ đăng nhập như cũ. Email đi qua SMTP thật chạy trong test (GreenMail).
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@MockTurnstileVerification
 class CustomerSignInVerificationTest {
 
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16-alpine");
