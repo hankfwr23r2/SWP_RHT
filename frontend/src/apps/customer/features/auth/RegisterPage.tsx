@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { authApi } from '@shared/api/auth'
 import { AuthShell, authStyles as s } from '@shared/ui/AuthShell'
+import { TurnstileWidget } from '@shared/ui/TurnstileWidget'
 import { isValidGmail, isValidPersonName, isValidRegionalPhone } from '@shared/lib/contactValidation'
 
 type FieldName = 'fullname' | 'email' | 'password' | 'phone'
@@ -36,6 +37,8 @@ export default function RegisterPage() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [loading, setLoading] = useState(false)
   const [showPwd, setShowPwd] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaGeneration, setCaptchaGeneration] = useState(0)
 
   const field = (name: FieldName, hasNote = true) => ({
     id: name,
@@ -70,6 +73,10 @@ export default function RegisterPage() {
       (form.elements.namedItem(firstInvalid) as HTMLInputElement).focus()
       return
     }
+    if (!captchaToken) {
+      setError(t('captcha.required'))
+      return
+    }
 
     setLoading(true)
     try {
@@ -81,7 +88,7 @@ export default function RegisterPage() {
         fullName: values.fullname,
         phone: values.phone,
         address,
-      })
+      }, captchaToken)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Đăng ký thất bại. Vui lòng thử lại.'
       if ((err as { status?: number }).status === 409) {
@@ -90,8 +97,11 @@ export default function RegisterPage() {
       } else {
         setError(message)
       }
-      setLoading(false)
       return
+    } finally {
+      setLoading(false)
+      setCaptchaToken(null)
+      setCaptchaGeneration(generation => generation + 1)
     }
     // Tài khoản đã tạo, máy chủ đã gửi OTP về Gmail: nhập đúng mã thì đăng nhập luôn
     setLoading(false)
@@ -137,6 +147,7 @@ export default function RegisterPage() {
           <input className="form-control" id="address" name="address" type="text" placeholder={t('authPages.addressPlaceholder')} autoComplete="street-address" />
         </div>
 
+        <TurnstileWidget key={captchaGeneration} action="register" onTokenChange={setCaptchaToken} />
         <button type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading}>
           {loading ? t('authPages.creatingAccount') : t('common.register')}
         </button>

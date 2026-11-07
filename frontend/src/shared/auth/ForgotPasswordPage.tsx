@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { authApi } from '@shared/api/auth'
 import { AuthShell, authStyles as s } from '@shared/ui/AuthShell'
 import { isValidEmail } from '@shared/lib/contactValidation'
+import { TurnstileWidget } from '@shared/ui/TurnstileWidget'
 
 function ForgotPasswordFlow({ staffMode }: { staffMode: boolean }) {
   const { t } = useTranslation()
@@ -18,6 +19,8 @@ function ForgotPasswordFlow({ staffMode }: { staffMode: boolean }) {
   const [message, setMessage] = useState('')
   const [errorField, setErrorField] = useState<string | null>(null)
   const [showPwd, setShowPwd] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaGeneration, setCaptchaGeneration] = useState(0)
 
   // Báo lỗi gắn với một ô: viền đỏ, aria-invalid và đưa con trỏ về ô đó
   const fail = (message: string, fieldId: string) => {
@@ -33,15 +36,21 @@ function ForgotPasswordFlow({ staffMode }: { staffMode: boolean }) {
   const clearError = () => { setError(''); setErrorField(null) }
 
   const sendOtp = async () => {
+    if (!captchaToken) {
+      setError(t('captcha.required'))
+      return
+    }
     setLoading(true)
     setError('')
     try {
-      setMessage(await authApi.requestPasswordResetOtp(email.trim()))
+      setMessage(await authApi.requestPasswordResetOtp(email.trim(), captchaToken))
       setRequested(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : t('authPages.cantSendOtp'))
     } finally {
       setLoading(false)
+      setCaptchaToken(null)
+      setCaptchaGeneration(generation => generation + 1)
     }
   }
 
@@ -58,15 +67,21 @@ function ForgotPasswordFlow({ staffMode }: { staffMode: boolean }) {
     if (otp.length !== 6) return fail(t('authPages.otpDigits'), 'reset-otp')
     if (newPassword.length < 6) return fail(t('authPages.minPasswordLength'), 'new-password')
     if (newPassword !== confirmPassword) return fail(t('authPages.passwordMismatch'), 'confirm-password')
+    if (!captchaToken) {
+      setError(t('captcha.required'))
+      return
+    }
 
     setLoading(true)
     try {
-      setMessage(await authApi.resetPasswordWithOtp({ email: email.trim(), otp: otp.trim(), newPassword, confirmPassword }))
+      setMessage(await authApi.resetPasswordWithOtp({ email: email.trim(), otp: otp.trim(), newPassword, confirmPassword }, captchaToken))
       setCompleted(true)
     } catch (err) {
       setError(err instanceof Error ? err.message : t('authPages.cantResetPassword'))
     } finally {
       setLoading(false)
+      setCaptchaToken(null)
+      setCaptchaGeneration(generation => generation + 1)
     }
   }
 
@@ -90,6 +105,7 @@ function ForgotPasswordFlow({ staffMode }: { staffMode: boolean }) {
             <label htmlFor="reset-email">{t('authPages.accountEmail')}</label>
             <input id="reset-email" {...fieldState('reset-email')} type="email" autoComplete="email" value={email} onChange={e => { setEmail(e.target.value); clearError() }} placeholder="ten@example.com" />
           </div>
+          <TurnstileWidget key={captchaGeneration} action="password_reset" onTokenChange={setCaptchaToken} />
           <button className="btn btn-primary btn-full btn-lg" type="submit" disabled={loading}>
             {loading ? t('authPages.sendingOtp') : t('authPages.sendOtpBtn')}
           </button>
@@ -121,6 +137,7 @@ function ForgotPasswordFlow({ staffMode }: { staffMode: boolean }) {
             <label htmlFor="confirm-password">{t('authPages.confirmNewPassword')}</label>
             <input id="confirm-password" {...fieldState('confirm-password')} type={showPwd ? 'text' : 'password'} autoComplete="new-password" maxLength={100} value={confirmPassword} onChange={e => { setConfirmPassword(e.target.value); clearError() }} />
           </div>
+          <TurnstileWidget key={captchaGeneration} action="password_reset" onTokenChange={setCaptchaToken} />
           <button className="btn btn-primary btn-full btn-lg" type="submit" disabled={loading}>
             {loading ? t('authPages.updatingPassword') : t('authPages.confirmNewPasswordBtn')}
           </button>

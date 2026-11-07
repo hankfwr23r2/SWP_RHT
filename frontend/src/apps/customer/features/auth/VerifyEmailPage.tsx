@@ -4,6 +4,7 @@ import { Link, Navigate, useLocation } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { authApi } from '@shared/api/auth'
 import { AuthShell, authStyles as s } from '@shared/ui/AuthShell'
+import { TurnstileWidget } from '@shared/ui/TurnstileWidget'
 import { useCustomerSignIn } from './useCustomerSignIn'
 
 export default function VerifyEmailPage() {
@@ -15,6 +16,8 @@ export default function VerifyEmailPage() {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaGeneration, setCaptchaGeneration] = useState(0)
 
   if (!email) return <Navigate to="/login" replace />
 
@@ -26,26 +29,38 @@ export default function VerifyEmailPage() {
       document.getElementById('email-otp')?.focus()
       return
     }
+    if (!captchaToken) {
+      setError(t('captcha.required'))
+      return
+    }
     setLoading(true)
     try {
-      await signIn(await authApi.confirmEmail(email, otp), state?.from)
+      await signIn(await authApi.confirmEmail(email, otp, captchaToken), state?.from)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Xác thực không thành công. Vui lòng thử lại.')
       document.getElementById('email-otp')?.focus()
     } finally {
       setLoading(false)
+      setCaptchaToken(null)
+      setCaptchaGeneration(generation => generation + 1)
     }
   }
 
   const resend = async () => {
+    if (!captchaToken) {
+      setError(t('captcha.required'))
+      return
+    }
     setError('')
     setLoading(true)
     try {
-      setMessage(await authApi.resendEmailOtp(email))
+      setMessage(await authApi.resendEmailOtp(email, captchaToken))
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Không gửi lại được mã. Vui lòng thử lại.')
     } finally {
       setLoading(false)
+      setCaptchaToken(null)
+      setCaptchaGeneration(generation => generation + 1)
     }
   }
 
@@ -58,6 +73,7 @@ export default function VerifyEmailPage() {
           <label htmlFor="email-otp">{t('authPages.otpLabel')}</label>
           <input id="email-otp" className={`form-control${error ? ' invalid' : ''}`} aria-invalid={!!error || undefined} aria-describedby={error ? 'email-otp-error' : undefined} inputMode="numeric" autoComplete="one-time-code" maxLength={6} autoFocus value={otp} onChange={e => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 6)); setError('') }} placeholder={t('authPages.otpPlaceholder')} />
         </div>
+        <TurnstileWidget key={captchaGeneration} action="email_verification" onTokenChange={setCaptchaToken} />
         <button type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading}>
           {loading ? t('authPages.verifying') : t('authPages.verifyBtn')}
         </button>

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { authApi } from '@shared/api/auth'
 import { AuthShell, authStyles as s } from '@shared/ui/AuthShell'
+import { TurnstileWidget } from '@shared/ui/TurnstileWidget'
 import { isValidEmail } from '@shared/lib/contactValidation'
 import { useCustomerSignIn } from './useCustomerSignIn'
 
@@ -14,6 +15,8 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [errorField, setErrorField] = useState<'email' | 'password' | null>(null)
   const [loading, setLoading] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
+  const [captchaGeneration, setCaptchaGeneration] = useState(0)
   const [showPwd, setShowPwd] = useState(false)
 
   const submit = async (e: FormEvent<HTMLFormElement>) => {
@@ -33,12 +36,16 @@ export default function LoginPage() {
     if (!email) return fail(t('auth.emailRequired'), 'email')
     if (!isValidEmail(email)) return fail(t('auth.emailInvalid'), 'email')
     if (!password) return fail(t('auth.passwordRequired'), 'password')
+    if (!captchaToken) {
+      setError(t('captcha.required'))
+      return
+    }
 
     setLoading(true)
     // Tải trước trang chủ khách song song với request đăng nhập, để vào trang là gọi dữ liệu ngay
     if (!from) void import('../portal/PortalPage')
     try {
-      const res = await authApi.loginCustomer({ username: email, password })
+      const res = await authApi.loginCustomer({ username: email, password }, captchaToken)
       // Email chưa xác thực: máy chủ không cấp token mà gửi OTP, sang trang nhập mã
       if (res.emailVerificationRequired) await navigate('/verify-email', { state: { email: res.email, from } })
       else await signIn(res, from)
@@ -46,6 +53,8 @@ export default function LoginPage() {
       fail(err instanceof Error ? err.message : t('auth.loginFailed'), 'password')
     } finally {
       setLoading(false)
+      setCaptchaToken(null)
+      setCaptchaGeneration(generation => generation + 1)
     }
   }
 
@@ -66,6 +75,7 @@ export default function LoginPage() {
             </button>
           </div>
         </div>
+        <TurnstileWidget key={captchaGeneration} action="customer_login" onTokenChange={setCaptchaToken} />
         <p className="text-right small" style={{ marginBottom: 16 }}><Link to="/forgot-password" className="text-orange">{t('auth.forgotPassword')}</Link></p>
         <button type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading}>
           {loading ? t('auth.loggingIn') : t('auth.signIn')}

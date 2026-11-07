@@ -110,6 +110,11 @@ export interface PublicTracking {
   note?: string
 }
 
+export interface PublicTrackingLookup {
+  code: string
+  result: PublicTracking | null
+}
+
 export interface NewBookingInput {
   type: Booking['type']
   origin: Booking['origin']
@@ -124,15 +129,12 @@ export interface NewBookingInput {
 
 // Công khai: không cần đăng nhập. Tra cứu đơn theo mã đơn và 4 số cuối SĐT.
 export const publicBookingsApi = {
-  track: async (code: string, phoneLast4: string): Promise<PublicTracking | null> => {
-    try {
-      const res = await apiClient.get<ApiResponse<PublicTracking>>('/bookings/public-track', {
-        params: { code: code.trim(), phoneLast4: phoneLast4.trim() },
-      })
-      return res.data.data ?? null
-    } catch {
-      return null
-    }
+  trackMany: async (codes: string[], phoneLast4: string, captchaToken: string): Promise<PublicTrackingLookup[]> => {
+    const res = await apiClient.post<ApiResponse<PublicTrackingLookup[]>>('/bookings/public-track/batch', {
+      codes: codes.map(code => code.trim()),
+      phoneLast4: phoneLast4.trim(),
+    }, { headers: { 'X-Captcha-Token': captchaToken } })
+    return res.data.data
   },
 }
 

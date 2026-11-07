@@ -35,6 +35,11 @@ export const en = {
     all: 'All',
     empty: 'No data available',
   },
+  captcha: {
+    required: 'Please complete the CAPTCHA challenge before continuing.',
+    unavailable: 'CAPTCHA is not configured. Please contact the administrator.',
+    failed: 'Could not load CAPTCHA. Please reload the page or try again later.',
+  },
   nav: {
     home: 'Home',
     horses: 'Horse Profiles',

@@ -56,7 +56,7 @@ public class SecurityConfig {
                 // Cấu hình phân quyền truy cập URL
                 .authorizeHttpRequests(auth -> auth
                         // Cho phép truy cập tự do vào API Auth, các endpoint public, Swagger UI, tra cứu đơn và health check
-                        .requestMatchers("/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/bookings/public-track", "/public/**", "/health", "/health/**").permitAll()
+                        .requestMatchers("/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/bookings/public-track", "/bookings/public-track/**", "/public/**", "/health", "/health/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/locations").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
