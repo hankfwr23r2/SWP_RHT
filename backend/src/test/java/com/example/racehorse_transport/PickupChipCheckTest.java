@@ -43,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 //   Loại hết ngựa thì đơn sang "Không nhận được ngựa" (pickup_failed), xe không được chạy rỗng.
 // - Quản lý hủy đơn "Không nhận được ngựa": khách mất phần cọc vận chuyển, xe và kíp được nhả.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@MockTurnstileVerification
 class PickupChipCheckTest {
 
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16-alpine");

@@ -37,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 // - Chỉ tài xế được phân công, và xe phải đã tới điểm giao.
 // - Sự cố có mã chuyến và vị trí để quản lý thấy; giao ngựa xong thì sự cố tự đóng.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@MockTurnstileVerification
 class DeliveryTimeoutTest {
 
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16-alpine");

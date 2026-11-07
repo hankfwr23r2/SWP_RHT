@@ -1,6 +1,8 @@
 # Stage 1: Build ứng dụng React với Node.js
 FROM node:22-alpine AS builder
 WORKDIR /app
+ARG VITE_TURNSTILE_SITE_KEY
+ENV VITE_TURNSTILE_SITE_KEY=$VITE_TURNSTILE_SITE_KEY
 COPY package*.json ./
 RUN npm ci
 COPY . .

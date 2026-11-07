@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 // Khách tải giấy tờ ngựa lên là lên đơn được ngay; không có bước "chờ duyệt" trước khi đặt.
 // Chuyên viên thẩm định hồ sơ ngựa sau, trong từng đơn. Ngựa còn thiếu giấy tờ bắt buộc thì vẫn không đặt được.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@MockTurnstileVerification
 class BookingWithSubmittedDocumentsTest {
 
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16-alpine");

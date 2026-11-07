@@ -25,6 +25,13 @@ Key VNPay, Cloudinary, Vietmap không nằm trong repo. Chép `.env.example` th�
 điền key xin trong nhóm (docker compose tự đọc `.env`). Chạy backend bằng `./mvnw` thì ghi key vào
 `backend/application-local.properties`. Cả hai file đều đã bị git bỏ qua, không commit key thật.
 
+Các form dùng khi chưa đăng nhập được bảo vệ bằng Cloudflare Turnstile. Tạo site key và secret key tại
+Cloudflare Turnstile, đặt `VITE_TURNSTILE_SITE_KEY` (khóa công khai) và `TURNSTILE_SECRET_KEY` (khóa bí mật)
+trong `.env` ở thư mục gốc khi chạy Docker Compose. Khi chạy frontend/backend riêng, đặt site key trong
+`frontend/.env` và secret trong `backend/application-local.properties` hoặc biến môi trường backend.
+Trên Vercel cấu hình `VITE_TURNSTILE_SITE_KEY`; trên backend production cấu hình `TURNSTILE_SECRET_KEY`.
+Không dùng secret key trong frontend. Các endpoint công khai từ chối request nếu backend chưa được cấu hình secret.
+
 Để tạo tài khoản quản trị đầu tiên, cấu hình `APP_BOOTSTRAP_ADMIN_USERNAME`,
 `APP_BOOTSTRAP_ADMIN_EMAIL` và `APP_BOOTSTRAP_ADMIN_PASSWORD` trong môi trường
 chạy Docker Compose trước khi khởi động. Ví dụ trong PowerShell:

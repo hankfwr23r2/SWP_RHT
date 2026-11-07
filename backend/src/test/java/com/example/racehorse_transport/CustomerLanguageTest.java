@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 // Ngôn ngữ khách chọn trên giao diện (VI/EN) được lưu vào tài khoản để mail hóa đơn gửi đúng ngôn ngữ:
 // lúc đăng ký và mỗi lần khách đổi VI/EN. Chỉ nhận "vi" hoặc "en".
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@MockTurnstileVerification
 class CustomerLanguageTest {
 
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16-alpine");

@@ -35,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 // đã qua mốc sớm nhất có thể về tới nơi, và có ảnh chụp tại trụ sở; ảnh được lưu cùng mốc về.
 // Mọi trường hợp khác bị từ chối và đơn giữ nguyên.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@MockTurnstileVerification
 class ConfirmHomeTest {
 
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16-alpine");

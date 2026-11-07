@@ -67,6 +67,7 @@ services:
       - MAIL_USERNAME=${MAIL_USERNAME:-}
       - MAIL_PASSWORD=${MAIL_PASSWORD:-}
       - BREVO_API_KEY=${BREVO_API_KEY:-}
+      - TURNSTILE_SECRET_KEY=${TURNSTILE_SECRET_KEY:-}
     ports:
       - "8080:8080"
 
@@ -75,6 +76,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_TURNSTILE_SITE_KEY: ${VITE_TURNSTILE_SITE_KEY:-}
     container_name: racehorse-frontend
     restart: unless-stopped
     depends_on:
@@ -85,4 +88,3 @@ services:
 volumes:
   postgres_data:
   pgadmin_data:
-

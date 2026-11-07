@@ -35,6 +35,11 @@ export const vi = {
     all: 'Tất cả',
     empty: 'Không có dữ liệu',
   },
+  captcha: {
+    required: 'Vui lòng hoàn tất xác minh CAPTCHA trước khi tiếp tục.',
+    unavailable: 'CAPTCHA chưa được cấu hình. Vui lòng liên hệ quản trị viên.',
+    failed: 'Không tải được CAPTCHA. Vui lòng tải lại trang hoặc thử lại sau.',
+  },
   nav: {
     home: 'Trang chủ',
     horses: 'Hồ sơ ngựa',

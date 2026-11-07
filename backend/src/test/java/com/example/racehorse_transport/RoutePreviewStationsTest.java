@@ -40,6 +40,7 @@ import static org.assertj.core.api.Assertions.within;
 // chọn trạm xa nhất); đơn nội địa chỉ dừng ở trạm trong nước, không đi qua cửa khẩu, và tuyến không được đi sâu
 // vào lãnh thổ Campuchia/Lào. Valhalla/Vietmap là máy chủ giả trả mẫu phản hồi thật; DB là Postgres thật.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@MockTurnstileVerification
 class RoutePreviewStationsTest {
 
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16-alpine");

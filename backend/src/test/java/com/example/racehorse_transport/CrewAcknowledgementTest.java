@@ -34,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 // VÀ cả tài xế lẫn hộ tống của mọi xe đã bấm "Tôi đã nhận lệnh". Hoàn tất giấy tờ trước khi kíp xe nhận lệnh
 // thì đơn dừng ở "Giấy tờ đã xong" (clearance_done) và hệ thống không tự ghi là kíp đã nhận lệnh.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@MockTurnstileVerification
 class CrewAcknowledgementTest {
 
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16-alpine");

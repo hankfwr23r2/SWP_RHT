@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 // Admin chỉnh được các quy định dùng để tính lịch trình xe tải (nhóm "Lộ trình & Giờ lái"):
 // giờ lái tối đa mỗi ngày, giờ nghỉ đêm, giờ làm thủ tục cửa khẩu, tốc độ tối đa của xe tải gửi cho Valhalla.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@MockTurnstileVerification
 class JourneyConfigTest {
 
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16-alpine");
