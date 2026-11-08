@@ -7,7 +7,7 @@ import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.User;
 import com.example.racehorse_transport.repository.CustomerRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
-import com.example.racehorse_transport.repository.SystemLogRepository;
+import com.example.racehorse_transport.service.AdminAuditWriter;
 import com.example.racehorse_transport.repository.UserRepository;
 import com.example.racehorse_transport.security.JwtUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,7 +31,7 @@ class AuthServiceImplTest {
     private final StaffRepository staffRepository = mock(StaffRepository.class);
     private final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
     private final JwtUtils jwtUtils = mock(JwtUtils.class);
-    private final SystemLogRepository systemLogRepository = mock(SystemLogRepository.class);
+    private final AdminAuditWriter audit = mock(AdminAuditWriter.class);
 
     private AuthServiceImpl service;
     private User user;
@@ -44,7 +44,7 @@ class AuthServiceImplTest {
                 staffRepository,
                 passwordEncoder,
                 jwtUtils,
-                systemLogRepository,
+                audit,
                 null);
 
         user = new User();

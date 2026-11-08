@@ -12,7 +12,10 @@ import java.time.Instant;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "SYSTEM_LOG")
+@Table(name = "SYSTEM_LOG", indexes = {
+        @Index(name = "idx_system_log_target_time", columnList = "TargetTable,CreatedAt,SystemLogID"),
+        @Index(name = "idx_system_log_actor_time", columnList = "ActionBy_UserID,CreatedAt")
+})
 public class SystemLog {
 
     @Id
@@ -43,4 +46,26 @@ public class SystemLog {
 
     @Column(name = "CreatedAt")
     private Instant createdAt;
+
+    // Nullable additions preserve legacy records. New audit entries use structured JSON snapshots.
+    @Column(name = "Description", columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "ActorName", length = 255)
+    private String actorName;
+
+    @Column(name = "ActorEmail", length = 255)
+    private String actorEmail;
+
+    @Column(name = "ActorRole", length = 50)
+    private String actorRole;
+
+    @Column(name = "TargetKey", length = 255)
+    private String targetKey;
+
+    @Column(name = "TargetLabel", length = 255)
+    private String targetLabel;
+
+    @Column(name = "DataVersion")
+    private Integer dataVersion;
 }

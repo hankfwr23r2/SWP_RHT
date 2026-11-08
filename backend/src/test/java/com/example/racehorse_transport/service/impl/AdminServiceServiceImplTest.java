@@ -24,7 +24,7 @@ class AdminServiceServiceImplTest {
 
     private final ServiceRepository serviceRepository = mock(ServiceRepository.class);
     private final CategoryRepository categoryRepository = mock(CategoryRepository.class);
-    private final AdminServiceServiceImpl service = new AdminServiceServiceImpl(serviceRepository, categoryRepository);
+    private final AdminServiceServiceImpl service = new AdminServiceServiceImpl(org.mockito.Mockito.mock(com.example.racehorse_transport.service.AdminAuditWriter.class), serviceRepository, categoryRepository);
     private Category category;
 
     @BeforeEach

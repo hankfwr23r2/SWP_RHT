@@ -1,5 +1,7 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.service.AdminAuditWriter;
+import static com.example.racehorse_transport.service.AdminAuditWriter.values;
 import com.example.racehorse_transport.dto.DocumentRequirementRequest;
 import com.example.racehorse_transport.dto.DocumentRequirementResponse;
 import com.example.racehorse_transport.entity.DocumentRequirement;
@@ -15,12 +17,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class DocumentRequirementServiceImpl implements DocumentRequirementService {
+    private final AdminAuditWriter audit;
+
     private final DocumentRequirementRepository repository;
     private final DocumentRequirementChangeLogRepository changeLogRepository;
 
     public DocumentRequirementServiceImpl(
             DocumentRequirementRepository repository,
-            DocumentRequirementChangeLogRepository changeLogRepository) {
+            DocumentRequirementChangeLogRepository changeLogRepository, AdminAuditWriter audit) {
+        this.audit = audit;
         this.repository = repository;
         this.changeLogRepository = changeLogRepository;
     }
@@ -56,6 +61,8 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
         requirement.setUpdatedBy(actor);
         DocumentRequirement saved = repository.save(requirement);
         logAllFields(saved, actor);
+        audit.record("CREATE_DOCUMENT_REQUIREMENT", "DOCUMENT_REQUIREMENT", saved.getId(), saved.getDocumentName(),
+                "Tạo quy định giấy tờ", null, snapshot(saved));
         return toResponse(saved);
     }
 
@@ -66,12 +73,16 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
         DocumentRequirement requirement = repository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy cấu hình giấy tờ."));
         ensureUnique(request, id);
+        var before = snapshot(requirement);
         Instant changedAt = Instant.now();
         logChanges(requirement, request, actor, changedAt);
         copy(request, requirement);
         requirement.setUpdatedAt(changedAt);
         requirement.setUpdatedBy(actor);
-        return toResponse(repository.save(requirement));
+        DocumentRequirement saved = repository.save(requirement);
+        audit.record("UPDATE_DOCUMENT_REQUIREMENT", "DOCUMENT_REQUIREMENT", id, saved.getDocumentName(),
+                "Cập nhật quy định giấy tờ", before, snapshot(saved));
+        return toResponse(saved);
     }
 
     @Override
@@ -85,6 +96,8 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
         if (!Objects.equals(requirement.getStatus(), status)) {
             Instant changedAt = Instant.now();
             logChange(requirement.getId(), "status", requirement.getStatus(), status, actor, changedAt);
+            audit.record("CHANGE_DOCUMENT_REQUIREMENT_STATUS", "DOCUMENT_REQUIREMENT", id, requirement.getDocumentName(),
+                    "Đổi trạng thái quy định giấy tờ", values("status", requirement.getStatus()), values("status", status));
             requirement.setStatus(status);
             requirement.setUpdatedAt(changedAt);
             requirement.setUpdatedBy(actor);
@@ -171,6 +184,12 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
         entry.setChangedBy(actor);
         entry.setChangedAt(changedAt);
         changeLogRepository.save(entry);
+    }
+
+    private java.util.Map<String, Object> snapshot(DocumentRequirement r) {
+        return values("documentGroup", r.getDocumentGroup(), "documentType", r.getDocumentType(),
+                "documentName", r.getDocumentName(), "description", r.getDescription(), "tripType", r.getTripType(),
+                "country", r.getCountry(), "required", r.isRequired(), "status", r.getStatus());
     }
 
     private DocumentRequirementResponse toResponse(DocumentRequirement entity) {

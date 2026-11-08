@@ -7,6 +7,7 @@ import { accountsLoader, adminPricingLoader, adminRoutesLoader, adminServicesLoa
 // Trang đăng nhập tải ngay; các trang còn lại chỉ tải khi mở tới (lazy), mỗi vai trò chỉ tải phần mình dùng.
 // Trang có loader khai báo lazyPage: router tải file trang song song với dữ liệu rồi mới vẽ trang.
 const SitemapPage = lazy(() => import('../sitemap/SitemapPage').then(m => ({ default: m.SitemapPage })))
+const SystemLogsPage = lazy(() => import('./features/admin/system-logs/SystemLogsPage'))
 const FleetPage = lazy(() => import('./features/coordinator/fleet/FleetPage'))
 const DriverPage = lazy(() => import('./features/driver/DriverPage'))
 const EscortPage = lazy(() => import('./features/escort/EscortPage'))
@@ -29,6 +30,7 @@ export const routes: AppRoute[] = [
   { path: '/admin/services', lazyPage: () => import('./features/admin/services/AdminServicesPage'), loader: adminServicesLoader, roles: A, title: 'Dịch vụ & Biểu phí', layout: 'staff' },
   { path: '/admin/rules', lazyPage: () => import('./features/admin/rules/AdminRulesPage'), loader: systemConfigLoader, roles: A, title: 'Quy định & Tham số', layout: 'staff' },
   { path: '/admin/document-requirements', lazyPage: () => import('./features/admin/documents/AdminDocumentRequirementsPage'), loader: documentRequirementsLoader, roles: A, title: 'Giấy tờ bắt buộc', layout: 'staff' },
+  { path: '/admin/system-logs', page: SystemLogsPage, roles: A, title: 'Nhật ký hệ thống', layout: 'staff', catalog: false },
   { path: '/admin/accounts', lazyPage: () => import('./features/admin/accounts/AccountsPage'), loader: accountsLoader, roles: A, title: 'Tất cả tài khoản', layout: 'staff' },
   { path: '/admin/accounts/:role', lazyPage: () => import('./features/admin/accounts/AccountsPage'), loader: accountsLoader, roles: A, title: 'Tài khoản theo loại', layout: 'staff' },
 

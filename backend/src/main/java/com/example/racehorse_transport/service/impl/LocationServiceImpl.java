@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.service.AdminAuditWriter;
 import com.example.racehorse_transport.dto.LocationRequest;
 import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.LocationChangeLog;
@@ -21,6 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class LocationServiceImpl implements LocationService {
+    private final AdminAuditWriter audit;
+
     private static final String BORDER_GATE = "BorderGate";
 
     private final LocationRepository locationRepository;
@@ -50,6 +53,7 @@ public class LocationServiceImpl implements LocationService {
         apply(location, request);
         Location saved = locationRepository.save(location);
         logChanges(saved, Map.of(), values(saved), changedBy);
+        audit.record("CREATE_LOCATION", "LOCATION", saved.getId(), saved.getLocationName(), "Tạo địa điểm", null, values(saved));
         return saved;
     }
 
@@ -63,6 +67,7 @@ public class LocationServiceImpl implements LocationService {
         apply(location, request);
         Location saved = locationRepository.save(location);
         logChanges(saved, oldValues, values(saved), changedBy);
+        audit.record("UPDATE_LOCATION", "LOCATION", id, saved.getLocationName(), "Cập nhật địa điểm", oldValues, values(saved));
         return saved;
     }
 
@@ -82,6 +87,8 @@ public class LocationServiceImpl implements LocationService {
         Location saved = locationRepository.save(location);
         if (!Objects.equals(oldStatus, status)) {
             logChange(saved, "status", oldStatus, status, changedBy);
+            audit.record("CHANGE_LOCATION_STATUS", "LOCATION", id, saved.getLocationName(), "Đổi trạng thái địa điểm",
+                    AdminAuditWriter.values("status", oldStatus), AdminAuditWriter.values("status", status));
         }
         return saved;
     }

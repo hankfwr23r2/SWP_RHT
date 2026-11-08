@@ -1,5 +1,7 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.service.AdminAuditWriter;
+import static com.example.racehorse_transport.service.AdminAuditWriter.values;
 import com.example.racehorse_transport.dto.admin.CategoryResponse;
 import com.example.racehorse_transport.dto.admin.CreateServiceRequest;
 import com.example.racehorse_transport.dto.admin.ServiceResponse;
@@ -22,6 +24,8 @@ import java.util.stream.Collectors;
 @org.springframework.stereotype.Service
 @RequiredArgsConstructor
 public class AdminServiceServiceImpl implements AdminServiceService {
+    private final AdminAuditWriter audit;
+
 
     private final ServiceRepository serviceRepository;
     private final CategoryRepository categoryRepository;
@@ -103,6 +107,7 @@ public class AdminServiceServiceImpl implements AdminServiceService {
                 : "ACTIVE");
 
         Service saved = serviceRepository.save(service);
+        audit.record("CREATE_SERVICE", "SERVICE", saved.getId(), saved.getServiceName(), "Tạo dịch vụ", null, snapshot(saved));
         log.info("Admin created service: ID={}, Name={}", saved.getId(), saved.getServiceName());
         return toResponse(saved);
     }
@@ -116,6 +121,7 @@ public class AdminServiceServiceImpl implements AdminServiceService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục ID: " + request.getCategoryId()));
 
+        Map<String, Object> before = snapshot(service);
         ensureInsuranceCategoryReadOnly(service.getCategoryID());
         ensureInsuranceCategoryReadOnly(category);
         validateServiceMetadata(request, category, service);
@@ -129,6 +135,7 @@ public class AdminServiceServiceImpl implements AdminServiceService {
         }
 
         Service updated = serviceRepository.save(service);
+        audit.record("UPDATE_SERVICE", "SERVICE", id, updated.getServiceName(), "Cập nhật dịch vụ", before, snapshot(updated));
         log.info("Admin updated service: ID={}", updated.getId());
         return toResponse(updated);
     }
@@ -140,6 +147,7 @@ public class AdminServiceServiceImpl implements AdminServiceService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy dịch vụ ID: " + id));
 
         ensureInsuranceCategoryReadOnly(service.getCategoryID());
+        Map<String, Object> before = snapshot(service);
         String newStatus = "ACTIVE".equalsIgnoreCase(service.getStatus()) ? "INACTIVE" : "ACTIVE";
         if ("ACTIVE".equals(newStatus) && service.getCategoryID() != null
                 && RETIRED_WATER_CATEGORY_ID.equals(service.getCategoryID().getId())) {
@@ -147,7 +155,15 @@ public class AdminServiceServiceImpl implements AdminServiceService {
         }
         service.setStatus(newStatus);
         serviceRepository.save(service);
+        audit.record("CHANGE_SERVICE_STATUS", "SERVICE", id, service.getServiceName(), "Đổi trạng thái dịch vụ", before, snapshot(service));
         log.info("Admin toggled service ID={} status to {}", id, newStatus);
+    }
+
+    private Map<String, Object> snapshot(Service s) {
+        return values("serviceName", s.getServiceName(), "serviceCode", s.getServiceCode(),
+                "billingUnit", s.getBillingUnit(), "description", s.getDescription(),
+                "categoryId", s.getCategoryID() == null ? null : s.getCategoryID().getId(),
+                "price", s.getPrice(), "status", s.getStatus());
     }
 
     private ServiceResponse toResponse(Service s) {

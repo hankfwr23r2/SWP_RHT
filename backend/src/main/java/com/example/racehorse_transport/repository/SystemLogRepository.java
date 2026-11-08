@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface SystemLogRepository extends JpaRepository<SystemLog, Integer> {
+public interface SystemLogRepository extends JpaRepository<SystemLog, Integer>, org.springframework.data.jpa.repository.JpaSpecificationExecutor<SystemLog> {
     List<SystemLog> findByTargetTableAndTargetRecordIDOrderByCreatedAtDesc(String targetTable, Integer targetRecordID);
     List<SystemLog> findByTargetTableOrderByCreatedAtDesc(String targetTable);
 }

@@ -1,5 +1,7 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.service.AdminAuditWriter;
+import static com.example.racehorse_transport.service.AdminAuditWriter.values;
 import com.example.racehorse_transport.dto.admin.SystemConfigResponse;
 import com.example.racehorse_transport.dto.admin.UpdateSystemConfigRequest;
 import com.example.racehorse_transport.entity.SystemConfig;
@@ -21,6 +23,8 @@ import java.util.Set;
 @Service
 @RequiredArgsConstructor
 public class SystemConfigServiceImpl implements SystemConfigService {
+    private final AdminAuditWriter audit;
+
 
     private record Definition(
             String key,
@@ -142,10 +146,14 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         }
         SystemConfig config = repository.findById(key)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy cấu hình: " + key));
+        String oldValue = config.getConfigValue();
         config.setConfigValue(value);
         config.setUpdatedBy(updatedBy);
         config.setUpdatedAt(Instant.now());
-        return toResponse(repository.save(config));
+        SystemConfig saved = repository.save(config);
+        audit.record("UPDATE_CONFIG", "SYSTEM_CONFIG", key, config.getConfigName(), "Cập nhật tham số " + key,
+                values("value", oldValue), values("value", saved.getConfigValue()));
+        return toResponse(saved);
     }
 
     private void ensureDefaults() {

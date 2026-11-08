@@ -14,14 +14,12 @@ import com.example.racehorse_transport.service.AuthService;
 import com.example.racehorse_transport.service.EmailVerificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import com.example.racehorse_transport.entity.SystemLog;
+import com.example.racehorse_transport.service.AdminAuditWriter;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
-import com.example.racehorse_transport.repository.SystemLogRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.Optional;
 
 @Slf4j
@@ -34,7 +32,7 @@ public class AuthServiceImpl implements AuthService {
     private final StaffRepository staffRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
-    private final SystemLogRepository systemLogRepository;
+    private final AdminAuditWriter audit;
     private final EmailVerificationService emailVerificationService;
 
     @Override
@@ -221,6 +219,7 @@ public class AuthServiceImpl implements AuthService {
     // 4. ĐỔI MẬT KHẨU CÁ NHÂN CHO NGƯỜI DÙNG ĐANG ĐĂNG NHẬP
     // ==========================================
     @Override
+    @Transactional
     public void changePassword(String username, com.example.racehorse_transport.dto.ChangePasswordRequest request) {
         if (username == null || username.trim().isEmpty()) {
             throw new IllegalArgumentException("Thông tin xác thực không hợp lệ!");
@@ -249,20 +248,7 @@ public class AuthServiceImpl implements AuthService {
         user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
 
-        // 6. Ghi Audit Log vào SYSTEM_LOG
-        try {
-            SystemLog sysLog = SystemLog.builder()
-                    .actionbyUserid(user)
-                    .actionType("CHANGE_PASSWORD")
-                    .targetTable("USER")
-                    .targetRecordID(user.getId())
-                    .newData("Người dùng tự đổi mật khẩu cá nhân thành công")
-                    .createdAt(Instant.now())
-                    .build();
-            systemLogRepository.save(sysLog);
-        } catch (Exception ex) {
-            // Nhật ký lỗi không được làm hỏng thao tác chính, nhưng phải để lại dấu vết
-            log.warn("Không ghi được nhật ký hệ thống CHANGE_PASSWORD: {}", ex.getMessage());
-        }
+        audit.record("CHANGE_PASSWORD", "USER", user.getId(), user.getEmail(),
+                "Người dùng tự đổi mật khẩu", null, null);
     }
 }
