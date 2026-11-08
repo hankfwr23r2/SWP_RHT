@@ -20,7 +20,7 @@ import static org.mockito.Mockito.when;
 class SystemConfigServiceImplTest {
 
     private final SystemConfigRepository repository = mock(SystemConfigRepository.class);
-    private final SystemConfigServiceImpl service = new SystemConfigServiceImpl(repository);
+    private final SystemConfigServiceImpl service = new SystemConfigServiceImpl(org.mockito.Mockito.mock(com.example.racehorse_transport.service.AdminAuditWriter.class), repository);
 
     @BeforeEach
     void setUp() {

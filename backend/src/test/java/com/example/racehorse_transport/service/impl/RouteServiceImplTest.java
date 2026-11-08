@@ -29,7 +29,7 @@ class RouteServiceImplTest {
     private final LocationRouteRepository locationRouteRepository = mock(LocationRouteRepository.class);
     private final LocationRepository locationRepository = mock(LocationRepository.class);
     private final RouteServiceImpl service = new RouteServiceImpl(
-            routeRepository, locationRouteRepository, locationRepository);
+            routeRepository, locationRouteRepository, locationRepository, org.mockito.Mockito.mock(com.example.racehorse_transport.service.AdminAuditWriter.class));
 
     @BeforeEach
     void setUp() {

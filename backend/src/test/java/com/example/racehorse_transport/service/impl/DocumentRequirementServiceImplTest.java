@@ -31,7 +31,7 @@ class DocumentRequirementServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new DocumentRequirementServiceImpl(repository, changeLogRepository);
+        service = new DocumentRequirementServiceImpl(repository, changeLogRepository, org.mockito.Mockito.mock(com.example.racehorse_transport.service.AdminAuditWriter.class));
     }
 
     @Test

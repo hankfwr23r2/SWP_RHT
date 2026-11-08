@@ -36,7 +36,7 @@ class AdminAccountServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new AdminAccountServiceImpl(
+        service = new AdminAccountServiceImpl(org.mockito.Mockito.mock(com.example.racehorse_transport.service.AdminAuditWriter.class),
                 userRepository,
                 staffRepository,
                 customerRepository,

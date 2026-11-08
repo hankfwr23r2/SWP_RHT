@@ -1,5 +1,7 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.service.AdminAuditWriter;
+import static com.example.racehorse_transport.service.AdminAuditWriter.values;
 import com.example.racehorse_transport.dto.route.CreateRouteRequest;
 import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.LocationRoute;
@@ -22,6 +24,8 @@ import java.util.Set;
 
 @Service
 public class RouteServiceImpl implements RouteService {
+    private final AdminAuditWriter audit;
+
 
     private final RouteRepository routeRepository;
     private final LocationRouteRepository locationRouteRepository;
@@ -30,7 +34,8 @@ public class RouteServiceImpl implements RouteService {
     @Autowired
     public RouteServiceImpl(RouteRepository routeRepository,
                             LocationRouteRepository locationRouteRepository,
-                            LocationRepository locationRepository) {
+                            LocationRepository locationRepository, AdminAuditWriter audit) {
+        this.audit = audit;
         this.routeRepository = routeRepository;
         this.locationRouteRepository = locationRouteRepository;
         this.locationRepository = locationRepository;
@@ -91,6 +96,7 @@ public class RouteServiceImpl implements RouteService {
 
         Route savedRoute = routeRepository.save(route);
         saveRouteStops(savedRoute, request.getStops());
+        audit.record("CREATE_ROUTE", "ROUTE", savedRoute.getId(), savedRoute.getRouteName(), "Tạo tuyến đường", null, snapshot(savedRoute));
         return savedRoute;
     }
 
@@ -102,6 +108,7 @@ public class RouteServiceImpl implements RouteService {
         }
         Route route = routeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tuyến đường có ID: " + id));
+        var before = snapshot(route);
         if (request.getStops() != null) {
             validateStops(request.getStops());
         }
@@ -129,6 +136,7 @@ public class RouteServiceImpl implements RouteService {
         if (request.getStops() != null) {
             saveRouteStops(savedRoute, request.getStops());
         }
+        audit.record("UPDATE_ROUTE", "ROUTE", id, savedRoute.getRouteName(), "Cập nhật tuyến đường", before, snapshot(savedRoute));
         return savedRoute;
     }
 
@@ -137,8 +145,19 @@ public class RouteServiceImpl implements RouteService {
     public void deactivateRoute(Integer id) {
         Route route = routeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tuyến đường có ID: " + id));
+        var before = snapshot(route);
         route.setStatus("INACTIVE");
         routeRepository.save(route);
+        audit.record("DEACTIVATE_ROUTE", "ROUTE", id, route.getRouteName(), "Ngừng hoạt động tuyến đường", before, snapshot(route));
+    }
+
+    private java.util.Map<String, Object> snapshot(Route r) {
+        var stops = locationRouteRepository.findAuditStopsByRouteId(r.getId()).stream()
+                .map(stop -> values("locationCode", stop.locationId(), "name", stop.name(), "stopOrder", stop.stopOrder(),
+                        "latitude", stop.latitude(), "longitude", stop.longitude()))
+                .toList();
+        return values("routeName", r.getRouteName(), "description", r.getDescription(),
+                "estimatedTime", r.getEstimatedTime(), "distance", r.getDistance(), "status", r.getStatus(), "stops", stops);
     }
 
     private void saveRouteStops(Route route, List<CreateRouteRequest.RouteStopItem> stops) {

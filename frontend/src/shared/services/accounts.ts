@@ -13,7 +13,11 @@ const userIdOf = (id: string) => Number(id.replace(/\D/g, ''))
 
 const accountOf = (item: AccountApiItem): Account => ({
   id: item.id || `TK-${item.userId}`, name: item.name, email: item.email, phone: item.phone ?? '', role: item.role, status: item.status,
-  createdAt: item.hireDate ? new Date(item.hireDate).getTime() : 0, history: [],
+  createdAt: item.hireDate ? new Date(item.hireDate).getTime() : 0,
+  history: (item.history ?? []).map(log => ({
+    time: new Date(log.createdAt).getTime(), actor: log.actionByName || 'Không xác định',
+    text: log.description || log.actionType,
+  })),
 })
 
 export const accountsApi = {

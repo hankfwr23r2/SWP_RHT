@@ -19,7 +19,7 @@ import static org.mockito.Mockito.when;
 class LocationServiceImplTest {
     private final LocationRepository locationRepository = mock(LocationRepository.class);
     private final LocationChangeLogRepository changeLogRepository = mock(LocationChangeLogRepository.class);
-    private final LocationServiceImpl service = new LocationServiceImpl(locationRepository, changeLogRepository);
+    private final LocationServiceImpl service = new LocationServiceImpl(org.mockito.Mockito.mock(com.example.racehorse_transport.service.AdminAuditWriter.class), locationRepository, changeLogRepository);
 
     @Test
     void createLocationTrimsFieldsAndAuditsValues() {

@@ -2,7 +2,6 @@ import type { StaffRole } from '@shared/types/role'
 
 // Menu theo vai trò. Các mục của Flow 1 (tiếp nhận, duyệt báo giá, duyệt hồ sơ ngựa, phương án xe) theo quy trình mới.
 export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: { group?: string; icon?: string }][]> = {
-  // Quản trị viên chỉ có một mục; lọc và sort được thực hiện inline trên trang
   admin: [
     ['/admin/pricing', 'Biểu giá & Công thức', { icon: 'fa-calculator' }],
     ['/admin/routes', 'Tuyến đường cố định', { icon: 'fa-road' }],
@@ -10,6 +9,7 @@ export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: 
     ['/admin/rules', 'Quy định & Tham số', { icon: 'fa-scale-balanced' }],
     ['/admin/document-requirements', 'Giấy tờ bắt buộc', { icon: 'fa-file-circle-check' }],
     ['/admin/accounts', 'Tất cả tài khoản', { icon: 'fa-users-gear' }],
+    ['/admin/system-logs', 'Nhật ký hệ thống', { icon: 'fa-clock-rotate-left' }],
   ],
   manager: [
     ['/manager', 'Tổng quan', { group: 'Việc cần làm', icon: 'fa-chart-pie' }],

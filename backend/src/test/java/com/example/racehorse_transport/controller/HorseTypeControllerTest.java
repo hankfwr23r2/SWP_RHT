@@ -36,7 +36,7 @@ class HorseTypeControllerTest {
 
     @BeforeEach
     void setUp() {
-        controller = new HorseTypeController(horseTypeRepository, horseRepository);
+        controller = new HorseTypeController(horseTypeRepository, horseRepository, org.mockito.Mockito.mock(com.example.racehorse_transport.service.AdminAuditWriter.class));
     }
 
     @Test

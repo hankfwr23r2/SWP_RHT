@@ -1,5 +1,7 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.service.AdminAuditWriter;
+import static com.example.racehorse_transport.service.AdminAuditWriter.values;
 import com.example.racehorse_transport.dto.admin.AccountLogResponse;
 import com.example.racehorse_transport.dto.admin.AccountResponse;
 import com.example.racehorse_transport.dto.admin.CreateStaffRequest;
@@ -27,6 +29,8 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class AdminAccountServiceImpl implements AdminAccountService {
+    private final AdminAuditWriter audit;
+
 
     private final UserRepository userRepository;
     private final StaffRepository staffRepository;
@@ -35,6 +39,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
     private final PasswordEncoder passwordEncoder;
 
     @Override
+    @Transactional(readOnly = true)
     public List<AccountResponse> getAllAccounts() {
         List<AccountResponse> result = new ArrayList<>();
 
@@ -121,9 +126,9 @@ public class AdminAccountServiceImpl implements AdminAccountService {
         staffRepository.save(staff);
 
         // 6. Ghi Audit Log vào SYSTEM_LOG
-        recordSystemLog(actorUsername, "CREATE_ACCOUNT", savedUser.getId(), null, 
-                "Vai trò: " + rawRole.toUpperCase() + ", Mã NV: " + staffCode, 
-                "Tạo tài khoản " + staffCode + " (" + email + ")");
+        audit.record("CREATE_ACCOUNT", "USER", savedUser.getId(), email, "Tạo tài khoản " + staffCode,
+                null, values("name", savedUser.getUsername(), "email", email, "phone", staff.getPhone(),
+                        "role", staff.getRole(), "staffCode", staffCode, "status", "ACTIVE"));
 
         // 7. Trả về kết quả kèm mật khẩu tạm cho Admin
         return AccountResponse.builder()
@@ -150,11 +155,14 @@ public class AdminAccountServiceImpl implements AdminAccountService {
     @Override
     @Transactional
     public AccountResponse updateAccount(Integer userId, com.example.racehorse_transport.dto.admin.UpdateAccountRequest request, String actorUsername) {
+        var actor = audit.actor();
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng có ID: " + userId));
 
         String oldEmail = user.getEmail() != null ? user.getEmail() : "";
         String oldName = user.getUsername() != null ? user.getUsername() : "";
+        String oldPhone = staffRepository.findById(userId).map(Staff::getPhone)
+                .orElseGet(() -> customerRepository.findById(userId).map(Customer::getPhone).orElse(""));
         String newEmail = request.getEmail().trim().toLowerCase();
         String newName = request.getName().trim();
         String newPhone = request.getPhone() != null ? request.getPhone().trim() : "";
@@ -194,10 +202,9 @@ public class AdminAccountServiceImpl implements AdminAccountService {
             }
         }
 
-        recordSystemLog(actorUsername, "UPDATE_ACCOUNT", userId,
-                "Name: " + oldName + ", Email: " + oldEmail,
-                "Name: " + newName + ", Email: " + newEmail + ", Phone: " + newPhone,
-                "Cập nhật thông tin tài khoản ID: " + userId);
+        audit.recordAs(actor, "UPDATE_ACCOUNT", "USER", userId, newEmail, "Cập nhật thông tin tài khoản",
+                values("name", oldName, "email", oldEmail, "phone", oldPhone),
+                values("name", newName, "email", newEmail, "phone", newPhone));
 
         return AccountResponse.builder()
                 .id("TK-" + String.format("%03d", user.getId()))
@@ -234,6 +241,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
             }
         }
 
+        String oldStatus = staff.getEmploymentStatus();
         staff.setEmploymentStatus(lock ? "INACTIVE" : "ACTIVE");
         staffRepository.save(staff);
 
@@ -243,7 +251,8 @@ public class AdminAccountServiceImpl implements AdminAccountService {
                 ? (reason != null && !reason.trim().isEmpty() ? "Khóa tài khoản: " + reason.trim() : "Khóa tài khoản") 
                 : "Mở khóa tài khoản";
 
-        recordSystemLog(actorUsername, action, userId, lock ? "ACTIVE" : "INACTIVE", lock ? "INACTIVE" : "ACTIVE", description);
+        audit.record(action, "USER", userId, staff.getUser().getEmail(), description,
+                values("status", oldStatus), values("status", staff.getEmploymentStatus()));
     }
 
     @Override
@@ -263,7 +272,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
         userRepository.save(user);
 
         // Ghi Audit Log vào SYSTEM_LOG
-        recordSystemLog(actorUsername, "RESET_PASSWORD", userId, null, null, "Đặt lại mật khẩu tạm thời cho tài khoản " + user.getEmail());
+        audit.record("RESET_PASSWORD", "USER", userId, user.getEmail(), "Đặt lại mật khẩu tài khoản", null, null);
 
         return tempPassword;
     }
@@ -275,6 +284,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<AccountLogResponse> getAccountLogs(Integer userId) {
         return systemLogRepository.findByTargetTableAndTargetRecordIDOrderByCreatedAtDesc("USER", userId)
                 .stream()
@@ -283,6 +293,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<AccountLogResponse> getAllAccountLogs() {
         return systemLogRepository.findByTargetTableOrderByCreatedAtDesc("USER")
                 .stream()
@@ -290,34 +301,10 @@ public class AdminAccountServiceImpl implements AdminAccountService {
                 .toList();
     }
 
-    private void recordSystemLog(String actorUsername, String actionType, Integer targetUserId, String oldData, String newData, String description) {
-        try {
-            User actorUser = null;
-            if (actorUsername != null && !actorUsername.trim().isEmpty()) {
-                actorUser = userRepository.findByUsernameOrEmail(actorUsername, actorUsername).orElse(null);
-            }
-
-            SystemLog systemLog = SystemLog.builder()
-                    .actionbyUserid(actorUser)
-                    .actionType(actionType)
-                    .targetTable("USER")
-                    .targetRecordID(targetUserId)
-                    .oldData(oldData)
-                    .newData(description != null ? description : newData)
-                    .createdAt(Instant.now())
-                    .build();
-
-            systemLogRepository.save(systemLog);
-            log.info("Recorded SystemLog [{}]: targetUser={}, actor={}, desc={}", actionType, targetUserId, actorUsername, description);
-        } catch (Exception e) {
-            log.warn("Failed to record SystemLog: {}", e.getMessage());
-        }
-    }
-
     private AccountLogResponse mapToLogResponse(SystemLog log) {
-        String actorName = "Hệ thống";
-        String actorEmail = "";
-        if (log.getActionbyUserid() != null) {
+        String actorName = log.getActorName() != null ? log.getActorName() : "Không xác định";
+        String actorEmail = log.getActorEmail() != null ? log.getActorEmail() : "";
+        if (log.getDataVersion() == null && log.getActionbyUserid() != null) {
             User actor = log.getActionbyUserid();
             actorName = actor.getUsername() != null ? actor.getUsername() : actor.getEmail();
             actorEmail = actor.getEmail() != null ? actor.getEmail() : "";
@@ -331,7 +318,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
                 .targetUserId(log.getTargetRecordID())
                 .oldData(log.getOldData())
                 .newData(log.getNewData())
-                .description(log.getNewData())
+                .description(log.getDescription() != null ? log.getDescription() : log.getNewData())
                 .createdAt(log.getCreatedAt())
                 .build();
     }
