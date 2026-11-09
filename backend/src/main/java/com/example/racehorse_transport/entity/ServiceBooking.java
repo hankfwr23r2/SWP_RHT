@@ -16,7 +16,7 @@ import java.math.BigDecimal;
 @Table(name = "SERVICE_BOOKING")
 @Check(
         name = "CK_SERVICE_BOOKING_VALUES",
-        constraints = "quantity > 0 AND unit_price > 0 AND subtotal > 0"
+        constraints = "quantity > 0 AND unit_price >= 0 AND subtotal >= 0"
 )
 public class ServiceBooking {
 
@@ -44,12 +44,29 @@ public class ServiceBooking {
     private Integer quantity;
 
     @NotNull
-    @DecimalMin(value = "0.00", inclusive = false)
+    @DecimalMin(value = "0.00", inclusive = true)
     @Column(name = "unit_price", nullable = false, precision = 18, scale = 2)
     private BigDecimal unitPrice;
 
     @NotNull
-    @DecimalMin(value = "0.00", inclusive = false)
+    @DecimalMin(value = "0.00", inclusive = true)
     @Column(name = "subtotal", nullable = false, precision = 18, scale = 2)
     private BigDecimal subtotal;
+
+    @Column(name = "selection_category", length = 50)
+    private String selectionCategory;
+    @Column(name = "snapshot_service_code", length = 100)
+    private String snapshotServiceCode;
+    @Column(name = "snapshot_service_name", length = 255)
+    private String snapshotServiceName;
+    @Column(name = "snapshot_category_id")
+    private Integer snapshotCategoryId;
+    @Column(name = "snapshot_category_name", length = 255)
+    private String snapshotCategoryName;
+    @Column(name = "snapshot_billing_unit", length = 100)
+    private String snapshotBillingUnit;
+    @Column(name = "snapshot_description", columnDefinition = "TEXT")
+    private String snapshotDescription;
+    @Column(name = "snapshot_price", precision = 18, scale = 2)
+    private BigDecimal snapshotPrice;
 }

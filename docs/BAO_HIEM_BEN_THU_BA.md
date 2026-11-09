@@ -32,7 +32,13 @@ Khách có tab Bảo hiểm trong đơn. Báo giá đã phát hành lấy từ b
 
 ## Dữ liệu cũ
 
-Các trường mới lưu trong detailsJson, không cần tạo bảng mới. documents cũ vẫn hiển thị để đọc lịch sử; không tự phân loại lại tệp cũ. policyDocuments và documentNames bổ sung không làm mất URL cũ. Danh mục và tỷ lệ bảo hiểm cũ không dùng tính báo giá mới.
+Thông tin bảo hiểm đang xử lý lưu tại `booking_horse_insurance`, gắn duy nhất với cặp đơn/ngựa trong `booking_horse`. Khách sở hữu hồ sơ được xác định qua đơn và tài khoản khách hàng, tránh lưu lặp thông tin chủ sở hữu. Các mốc ngày dùng kiểu `DATE`, phí dùng kiểu số thập phân chính xác; các trường xác nhận và thông tin chưa hoàn tất được phép để trống khi lưu nháp.
+
+Chứng từ lưu tại `insurance_document`: nhóm `DECLARATION` giữ nguyên các URL trong `documents` (hồ sơ cá nhân hoặc báo giá), nhóm `POLICY` giữ các URL hợp đồng bổ sung. Tên tệp đi cùng từng URL; các tên cũ chưa còn trong danh sách URL vẫn được giữ bằng dòng `NAME_ONLY`. Các cờ hiện diện giữ khác biệt giữa danh sách/map chưa khai báo và danh sách/map rỗng. Cập nhật giữ ID của chứng từ còn được sử dụng; gỡ một dòng không xóa vật lý tệp trên kho lưu trữ.
+
+API tiếp tục trả `horses[].insurance` theo DTO hiện có. `insuranceSnapshot` của báo giá đã phát hành là lịch sử bất biến, được giữ riêng với bảo hiểm đang xử lý; thay đổi hoặc bổ sung hợp đồng không làm đổi bản chụp báo giá. Các trường người duyệt và thời điểm duyệt không được suy diễn từ cờ xác nhận của dữ liệu cũ.
+
+Migration phải bảo toàn khai báo và chứng từ cũ, đối chiếu ngựa với quan hệ trong đơn trước khi chuyển dữ liệu. Đơn chưa có khai báo bảo hiểm rõ ràng vẫn cần xác nhận với khách, không tự chuyển thành "không bảo hiểm". `documents` cũ tiếp tục hiển thị để đọc lịch sử, không tự phân loại lại thành hợp đồng. Danh mục và tỷ lệ bảo hiểm cũ không dùng tính báo giá mới.
 
 ## Kiểm tra
 

@@ -1,5 +1,9 @@
 package com.example.racehorse_transport.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 import lombok.*;
@@ -7,6 +11,13 @@ import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Getter
 @Setter
@@ -21,6 +32,12 @@ public class Incident {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "IncidentID", nullable = false)
     private Integer id;
+
+    @JsonIgnore
+    @Version
+    @Builder.Default
+    @Column(name = "version", nullable = false)
+    private Long version = 0L;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "BookingID")
@@ -53,6 +70,16 @@ public class Incident {
 
     @Column(name = "expenses_json", columnDefinition = "TEXT")
     private String expensesJson;
+
+    @JsonIgnore
+    @Column(name = "expenses_normalized", nullable = false)
+    private boolean expensesNormalized;
+
+    @JsonIgnore
+    @Builder.Default
+    @OneToMany(mappedBy = "incident", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("expensePosition ASC")
+    private List<IncidentExpense> expenseItems = new ArrayList<>();
 
     @Column(name = "rejection_reason", columnDefinition = "TEXT")
     private String rejectionReason;
@@ -134,4 +161,78 @@ public class Incident {
 
     @Column(name = "resolved_at")
     private Instant resolvedAt;
+
+    public String getExpensesJson() {
+        if (!expensesNormalized || expensesJson == null) return expensesJson;
+        ArrayNode array = FinancialJsonSupport.JSON.createArrayNode();
+        expenseItems.stream().sorted(Comparator.comparingInt(IncidentExpense::getExpensePosition))
+                .forEach(expense -> array.add(expense.toJson()));
+        try {
+            return FinancialJsonSupport.JSON.writeValueAsString(array);
+        } catch (JsonProcessingException ex) {
+            throw new IllegalStateException("Cannot reconstruct normalized incident expenses", ex);
+        }
+    }
+
+    public void setExpensesJson(String json) {
+        if (json == null) {
+            expenseItems.clear();
+            expensesJson = null;
+            expensesNormalized = true;
+            return;
+        }
+        try {
+            JsonNode root = FinancialJsonSupport.JSON.readTree(json);
+            if (!(root instanceof ArrayNode array)) {
+                throw new IllegalArgumentException("Expected an incident expenses array");
+            }
+            List<IncidentExpense> parsed = new ArrayList<>();
+            for (int position = 0; position < array.size(); position++) {
+                parsed.add(IncidentExpense.fromJson(array.get(position), position));
+            }
+            reconcileExpenses(parsed);
+            expensesJson = "[]";
+            expensesNormalized = true;
+        } catch (JsonProcessingException | IllegalArgumentException ex) {
+            expenseItems.clear();
+            expensesJson = json;
+            expensesNormalized = false;
+        }
+    }
+
+    @JsonIgnore
+    public String getStoredExpensesJson() {
+        return expensesJson;
+    }
+
+    @PrePersist
+    void normalizeBuilderExpenses() {
+        if (!expensesNormalized) setExpensesJson(expensesJson);
+    }
+
+    private void reconcileExpenses(List<IncidentExpense> parsed) {
+        Map<String, Deque<IncidentExpense>> existing = new HashMap<>();
+        for (IncidentExpense expense : expenseItems) {
+            existing.computeIfAbsent(expenseKey(expense), ignored -> new ArrayDeque<>()).add(expense);
+        }
+        List<IncidentExpense> retained = new ArrayList<>();
+        for (IncidentExpense source : parsed) {
+            Deque<IncidentExpense> matches = existing.get(expenseKey(source));
+            IncidentExpense target = matches == null || matches.isEmpty() ? null : matches.removeFirst();
+            if (target == null) {
+                target = source;
+                target.setIncident(this);
+                expenseItems.add(target);
+            } else {
+                target.copyValues(source);
+            }
+            retained.add(target);
+        }
+        expenseItems.removeIf(expense -> !retained.contains(expense));
+    }
+
+    private static String expenseKey(IncidentExpense expense) {
+        return expense.getExpenseId() == null
+                ? "position:" + expense.getExpensePosition() : "id:" + expense.getExpenseId();
+    }
 }

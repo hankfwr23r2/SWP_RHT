@@ -98,9 +98,12 @@ class BookingScheduleFlowTest {
         users.saveAndFlush(user);
         Customer customer = new Customer(); customer.setUser(user); customer.setFullName("Khách đổi lịch");
         customer = customers.saveAndFlush(customer);
-        return bookings.saveAndFlush(Booking.builder().customerID(customer).status("pending_intake")
+        Booking booking = Booking.builder().customerID(customer).status("pending_intake")
                 .bookingType("domestic").bookingDate(Instant.parse("2026-11-05T03:00:00Z"))
-                .departureDate(Instant.parse("2026-11-29T17:00:00Z")).detailsJson("{\"horses\":[]}").build());
+                .departureDate(Instant.parse("2026-11-29T17:00:00Z")).detailsJson("{\"horses\":[]}").build();
+        Booking saved = bookings.saveAndFlush(booking);
+        saved.setCustomerID(customer);
+        return saved;
     }
 
     private HttpResponse<String> post(String path, String body, String token) throws Exception {

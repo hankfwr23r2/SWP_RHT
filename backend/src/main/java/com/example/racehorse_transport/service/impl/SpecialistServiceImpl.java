@@ -39,7 +39,7 @@ public class SpecialistServiceImpl implements SpecialistService {
     @Transactional
     public BookingResponse updateInsurance(String id, String horseId, HorseInsuranceDto request, String username) {
         Booking booking = bookingRepository.findByIdForUpdate(parseBookingId(id)).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
-        requireAssignment(username, booking);
+        Staff actor = requireAssignment(username, booking);
         BookingDetailsPayload payload = extractPayload(booking);
         var horse = payload.getHorses().stream().filter(h -> horseId.equals(h.getHorseId())).findFirst()
             .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy ngựa trong đơn."));
@@ -104,6 +104,7 @@ public class SpecialistServiceImpl implements SpecialistService {
         appendHistory(payload, username, "Cập nhật hồ sơ bảo hiểm cho " + horse.getName());
         horse.setInsurance(request);
         savePayload(booking, payload);
+        stampInsuranceConfirmation(booking, horseId, existing, request, actor, beforeQuote);
         bookingRepository.save(booking);
         return mapToBookingResponse(booking);
     }
@@ -618,18 +619,44 @@ public class SpecialistServiceImpl implements SpecialistService {
         }
     }
 
-    private void requireAssignment(String username, Booking booking) {
+    private Staff requireAssignment(String username, Booking booking) {
         Staff actor = findStaff(username);
         if (!isPrivileged(actor) && !isAssignedToSpecialist(actor, booking)) {
             throw new AccessDeniedException("Đơn hàng chưa được phân công cho tài khoản này.");
+        }
+        return actor;
+    }
+
+    private void stampInsuranceConfirmation(Booking booking, String horseId, HorseInsuranceDto previous,
+                                            HorseInsuranceDto current, Staff actor, boolean beforeQuote) {
+        boolean reviewedNow = beforeQuote && Boolean.TRUE.equals(current.getReviewed())
+                && (previous == null || !Boolean.TRUE.equals(previous.getReviewed())
+                || !HorseInsurancePolicy.sameContent(previous, current));
+        boolean arrangedNow = !beforeQuote && Boolean.TRUE.equals(current.getArranged())
+                && (previous == null || !Boolean.TRUE.equals(previous.getArranged()));
+        if (!reviewedNow && !arrangedNow) return;
+
+        var policy = booking.getBookingHorses().stream()
+                .filter(row -> Objects.equals(horseId, row.getHorseReference()))
+                .map(BookingHorse::getInsurancePolicy).filter(Objects::nonNull).findFirst().orElse(null);
+        if (policy == null) return;
+        java.time.Instant confirmedAt = java.time.Instant.now();
+        User actorUser = actor == null ? null : actor.getUser();
+        if (reviewedNow) {
+            policy.setReviewedBy(actorUser);
+            policy.setReviewedAt(confirmedAt);
+        }
+        if (arrangedNow) {
+            policy.setArrangedBy(actorUser);
+            policy.setArrangedAt(confirmedAt);
         }
     }
 
     private void savePayload(Booking booking, BookingDetailsPayload payload) {
         try {
             booking.setDetailsJson(objectMapper.writeValueAsString(payload));
-        } catch (Exception ex) {
-            log.error("Could not serialize payload: {}", ex.getMessage());
+        } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
+            throw new IllegalStateException("Không thể lưu chi tiết đơn " + booking.getId() + ".", ex);
         }
     }
 

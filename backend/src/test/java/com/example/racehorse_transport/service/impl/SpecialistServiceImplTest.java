@@ -108,6 +108,102 @@ class SpecialistServiceImplTest {
     }
 
     @Test
+    void newInsuranceConfirmationRecordsActualActorAndKeepsStampOnRetry() throws Exception {
+        Booking order = confirmedInsuranceBooking("under_review", false);
+        normalizeInsuranceBooking(order);
+        var actor = staffRepository.findByUser_Username("specialist").orElseThrow();
+        var user = new com.example.racehorse_transport.entity.User();
+        user.setId(8);
+        user.setUsername("specialist");
+        actor.setUser(user);
+        var draft = confirmedInsuranceRequest(false);
+        draft.setPremium(new java.math.BigDecimal("2250000"));
+        draft.setReviewed(false);
+        service.updateInsurance("BK-1", "H1", draft, "specialist");
+        var confirmed = confirmedInsuranceRequest(false);
+        confirmed.setPremium(new java.math.BigDecimal("2250000"));
+
+        service.updateInsurance("BK-1", "H1", confirmed, "specialist");
+
+        var policy = order.getBookingHorses().getFirst().getInsurancePolicy();
+        assertThat(policy.getReviewedBy()).isSameAs(user);
+        assertThat(policy.getReviewedAt()).isNotNull();
+        var confirmedAt = policy.getReviewedAt();
+        service.updateInsurance("BK-1", "H1", confirmed, "specialist");
+        assertThat(policy.getReviewedAt()).isEqualTo(confirmedAt);
+        assertThat(policy.getArrangedAt()).isNull();
+    }
+
+    @Test
+    void unchangedLegacyConfirmationDoesNotInventReviewerOrTimestamp() throws Exception {
+        Booking order = confirmedInsuranceBooking("under_review", false);
+        normalizeInsuranceBooking(order);
+
+        service.updateInsurance("BK-1", "H1", confirmedInsuranceRequest(false), "specialist");
+
+        var policy = order.getBookingHorses().getFirst().getInsurancePolicy();
+        assertThat(policy.getReviewedBy()).isNull();
+        assertThat(policy.getReviewedAt()).isNull();
+        assertThat(policy.getArrangedAt()).isNull();
+    }
+
+    @Test
+    void arrangingPolicyRecordsActorWithoutInventingLegacyQuoteReviewMetadata() throws Exception {
+        Booking order = confirmedInsuranceBooking("clearance_in_progress", false);
+        normalizeInsuranceBooking(order);
+        var actor = staffRepository.findByUser_Username("specialist").orElseThrow();
+        var user = new com.example.racehorse_transport.entity.User();
+        user.setId(8);
+        actor.setUser(user);
+
+        service.updateInsurance("BK-1", "H1", confirmedInsuranceRequest(true), "specialist");
+
+        var policy = order.getBookingHorses().getFirst().getInsurancePolicy();
+        assertThat(policy.getArrangedBy()).isSameAs(user);
+        assertThat(policy.getArrangedAt()).isNotNull();
+        assertThat(policy.getReviewedBy()).isNull();
+        assertThat(policy.getReviewedAt()).isNull();
+        var arrangedAt = policy.getArrangedAt();
+        service.updateInsurance("BK-1", "H1", confirmedInsuranceRequest(true), "specialist");
+        assertThat(policy.getArrangedAt()).isEqualTo(arrangedAt);
+    }
+
+    @Test
+    void invalidDraftPolicyDateFailsBeforeSavingOrChangingNormalizedInsurance() throws Exception {
+        Booking order = confirmedInsuranceBooking("under_review", false);
+        var json = new ObjectMapper().readTree(order.getDetailsJson());
+        var insurance = (com.fasterxml.jackson.databind.node.ObjectNode) json.path("horses").get(0).path("insurance");
+        insurance.put("option", "personal").put("reviewed", false).put("policyNumber", "PERSONAL-1")
+                .put("validFrom", "2026-01-01").put("validUntil", "2027-12-31");
+        order.setDetailsJson(json.toString());
+        normalizeInsuranceBooking(order);
+        String original = order.getDetailsJson();
+        var request = com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder()
+                .option("personal").provider("Provider").policyNumber("PERSONAL-1")
+                .validFrom("invalid-date").validUntil("2027-12-31").reviewed(false).arranged(false).build();
+
+        assertThatThrownBy(() -> service.updateInsurance("BK-1", "H1", request, "specialist"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasRootCauseInstanceOf(java.time.format.DateTimeParseException.class);
+
+        verify(bookingRepository, never()).save(any());
+        assertThat(order.getDetailsJson()).isEqualTo(original);
+        assertThat(order.getBookingHorses().getFirst().getInsurancePolicy().getValidFrom())
+                .isEqualTo(java.time.LocalDate.of(2026, 1, 1));
+    }
+
+    private void normalizeInsuranceBooking(Booking order) throws Exception {
+        var json = new ObjectMapper().readTree(order.getDetailsJson());
+        var horse = (com.fasterxml.jackson.databind.node.ObjectNode) json.path("horses").get(0);
+        horse.set("selectedServices", new ObjectMapper().readTree("""
+                {"stall":{"id":1,"serviceCode":"STALL_STANDARD","price":0},
+                 "feed":{"id":2,"serviceCode":"FEED_BASIC","price":0},
+                 "water":{"id":3,"serviceCode":"WATER_EVERY_3H","price":0}}
+                """));
+        order.setDetailsJson(json.toString());
+    }
+
+    @Test
     void repeatedActivePolicyConfirmationDoesNotSaveAgain() {
         Booking order = confirmedInsuranceBooking("clearance_in_progress", true);
         String original = order.getDetailsJson();
