@@ -35,8 +35,10 @@ public class TurnstileVerifier {
     }
 
     public void verify(String token, String expectedAction) {
+        // Nếu secretKey chưa được cấu hình → bỏ qua verify (dev/no-captcha mode)
         if (secretKey.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "CAPTCHA verification is not configured.");
+            logger.warn("Turnstile secret key is not configured – skipping CAPTCHA verification.");
+            return;
         }
         if (token == null || token.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Please complete the CAPTCHA challenge.");
