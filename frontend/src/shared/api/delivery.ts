@@ -22,7 +22,7 @@ export interface DeliveryTimeoutPayload {
   selectedAction: string // STABLE_NEARBY, RETURN_TO_HQ
   partnerName?: string
   partnerPhone?: string
-  estimatedCost?: number
+  estimatedCost?: number | string
   note: string
 }
 

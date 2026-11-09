@@ -10,6 +10,7 @@ import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.repository.*;
 import com.example.racehorse_transport.service.DeliveryService;
 import com.example.racehorse_transport.util.BookingDetailsJson;
+import com.example.racehorse_transport.util.PaymentAmountLimits;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -122,6 +123,17 @@ public class DeliveryServiceImpl implements DeliveryService {
         if (!java.util.Set.of("in_transit", "arrived").contains(String.valueOf(booking.getStatus()))) {
             throw new IllegalStateException("Đơn không ở bước bàn giao nên không báo quá hạn được.");
         }
+        String action = request.getSelectedAction() != null ? request.getSelectedAction() : "STABLE_NEARBY";
+        if ("STABLE_NEARBY".equalsIgnoreCase(action)) {
+            BigDecimal estimatedCost = request.getEstimatedCost();
+            if (estimatedCost == null || estimatedCost.signum() <= 0
+                    || estimatedCost.stripTrailingZeros().scale() > 0) {
+                throw new IllegalArgumentException("Chi phí lưu chuồng phải là số nguyên lớn hơn 0.");
+            }
+            if (PaymentAmountLimits.exceedsMaximum(estimatedCost)) {
+                throw new IllegalArgumentException("Chi phí lưu chuồng vượt quá giới hạn thanh toán được hỗ trợ.");
+            }
+        }
         BookingDetailsPayload tripPayload = extractPayload(booking);
         var trip = tripPayload.getTrips() == null ? null : tripPayload.getTrips().stream()
                 .filter(t -> request.getTripId() == null || request.getTripId().equals(t.getTripId()))
@@ -147,7 +159,6 @@ public class DeliveryServiceImpl implements DeliveryService {
         }
         Double[] where = deliveryLocation(deliveryPoint, tripPayload);
 
-        String action = request.getSelectedAction() != null ? request.getSelectedAction() : "STABLE_NEARBY";
         String reason = request.getTimeoutReason() != null ? request.getTimeoutReason() : "UNREACHABLE";
 
         // Tạo bản ghi sự cố loại HANDOVER_TIMEOUT với bên chịu chi phí là CUSTOMER
