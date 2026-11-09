@@ -106,6 +106,11 @@ export const backendIncidentApi = {
     return res.data.data
   },
 
+  deleteExpense: async (id: number, expenseId: string): Promise<BackendIncidentResponse> => {
+    const res = await apiClient.delete<ApiResponse<BackendIncidentResponse>>(`/incidents/${id}/expenses/${encodeURIComponent(expenseId)}`)
+    return res.data.data
+  },
+
   confirmFit: async (id: number, data?: { photo: string; waterLiters?: number; hay?: boolean; confirmEarly?: boolean; horses: { horseId: string; careNote: string; temperature?: number }[] }): Promise<BackendIncidentResponse> => {
     const res = await apiClient.post<ApiResponse<BackendIncidentResponse>>(`/incidents/${id}/confirm-fit`, data)
     return res.data.data

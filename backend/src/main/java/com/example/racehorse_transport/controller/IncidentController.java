@@ -73,6 +73,16 @@ public class IncidentController {
         return ResponseEntity.ok(ApiResponse.success(response, "Đã ghi nhận chi phí sự cố"));
     }
 
+    @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT')")
+    @DeleteMapping("/{id}/expenses/{expenseId}")
+    public ResponseEntity<ApiResponse<IncidentResponse>> deleteExpense(
+            Authentication authentication,
+            @PathVariable("id") Integer id,
+            @PathVariable("expenseId") String expenseId) {
+        IncidentResponse response = incidentService.deleteExpense(id, expenseId, authentication.getName(), role(authentication));
+        return ResponseEntity.ok(ApiResponse.success(response, "Đã xóa khoản chi phí sự cố"));
+    }
+
     @PreAuthorize("hasAnyRole('ESCORT', 'ADMIN')")
     @PostMapping("/{id}/confirm-fit")
     public ResponseEntity<ApiResponse<IncidentResponse>> confirmFit(
