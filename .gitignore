@@ -21,11 +21,24 @@ backend/target/
 backend/.mvn/wrapper/maven-wrapper.jar
 
 # Frontend dependencies & build
+node_modules/
 frontend/node_modules/
 frontend/dist/
 frontend/dist-ssr/
 frontend/*.local
 frontend/.env
+
+# Test results & reporting artifacts (Playwright, Allure, Vitest)
+playwright-report/
+test-results/
+allure-results/
+allure-report/
+blob-report/
+frontend/playwright-report/
+frontend/test-results/
+frontend/allure-results/
+frontend/allure-report/
+frontend/blob-report/
 
 # Local properties & database dumps
 *application-local.properties
