@@ -54,6 +54,7 @@ export interface BackendBookingResponse {
   status: string
   statusLabel?: string // nhãn trạng thái cho nhân viên, backend trả theo bảng BookingStatusLabels
   customerStatusLabel?: string // nhãn trạng thái cho khách
+  scheduleChange?: { flaggedAt: number; previousStatus: string; supportRequestedAt?: number }
   createdAt: number
   departAt: number
   originName: string
@@ -112,6 +113,18 @@ export interface BackendTripTeam {
 }
 
 export const backendBookingApi = {
+  changeSchedule: async (id: string, departureDate: string): Promise<BackendBookingResponse> => {
+    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${toNumericBookingId(id)}/schedule-change`, { departureDate })
+    return res.data.data
+  },
+  cancelScheduleRequest: async (id: string, reason: string): Promise<BackendBookingResponse> => {
+    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${toNumericBookingId(id)}/schedule-change/cancel`, { reason })
+    return res.data.data
+  },
+  requestScheduleSupport: async (id: string): Promise<BackendBookingResponse> => {
+    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${toNumericBookingId(id)}/schedule-change/support`)
+    return res.data.data
+  },
   // 1. Khách hàng tạo đơn vận chuyển mới (POST /api/v1/customer/bookings)
   create: async (payload: CreateBookingPayload): Promise<BackendBookingResponse> => {
     const res = await apiClient.post<ApiResponse<BackendBookingResponse>>('/customer/bookings', payload)

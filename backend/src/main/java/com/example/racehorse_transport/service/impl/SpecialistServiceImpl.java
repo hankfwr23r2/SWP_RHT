@@ -156,6 +156,7 @@ public class SpecialistServiceImpl implements SpecialistService {
     public BookingResponse approveMedical(String bookingIdentifier, ApproveMedicalRequest request, String username) {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
         requireAssignment(username, booking);
+        com.example.racehorse_transport.util.BookingSchedulePolicy.requireCurrentSchedule(booking, java.time.Instant.now());
         if (!"under_review".equalsIgnoreCase(booking.getStatus())) {
             throw new IllegalStateException("Chỉ duyệt hồ sơ ngựa khi đơn đang ở bước thẩm định.");
         }

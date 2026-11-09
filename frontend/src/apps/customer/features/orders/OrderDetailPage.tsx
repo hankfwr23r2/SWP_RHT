@@ -25,6 +25,7 @@ const TripTrackMap = lazy(() => import('@shared/ui/TripTrackMap').then(m => ({ d
 import { HorseFormModal } from '../horses/HorseFormModal'
 import { IncidentsCard, SettlementCard } from './SettlementCard'
 import { ClearanceProgressCard } from './ClearanceProgressCard'
+import { ScheduleChangeCard } from './ScheduleChangeCard'
 import { OrderFacts } from './OrderFacts.tsx'
 import type { orderDetailLoader } from './loaders'
 import { POST_PAYMENT, ROUTE_STAGE, ROUTE_VISIBLE, nextStep } from './nextStep'
@@ -260,7 +261,7 @@ export default function OrderDetailPage() {
   const { data: team = [] } = useLoad(() => customerBookingsApi.team(id), [id, b?.status])
   const reloadAll = () => reload()
   // Đang chạy: cập nhật định kỳ để thấy mốc check-in mới
-  const running = ['awaiting_payment', 'en_route_to_pickup', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active'].includes(b?.status ?? '')
+  const running = ['pending_intake', 'under_review', 'pending_commercial', 'schedule_change_required', 'awaiting_payment', 'en_route_to_pickup', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active'].includes(b?.status ?? '')
   useEffect(() => { if (running) reload() }, [now, running, reload])
 
   if (b === undefined) return <div className="page"><div className="wrap"><p className="text-muted">{t('common.loading')}</p></div></div>
@@ -329,8 +330,9 @@ export default function OrderDetailPage() {
               {next.cta && <a href="#viec-cua-ban" className="btn btn-primary" onClick={e => { e.preventDefault(); document.getElementById('viec-cua-ban')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>{next.cta} <i className="fa-solid fa-arrow-down" /></a>}
             </div>
           </div>
-          {(needResubmit || b.status === 'awaiting_payment' || canPayBalance || payOpen) && (
+          {(needResubmit || b.status === 'schedule_change_required' || b.status === 'awaiting_payment' || canPayBalance || payOpen) && (
             <div id="viec-cua-ban" className={s.main}>
+              {b.status === 'schedule_change_required' && <ScheduleChangeCard b={b} onDone={reloadAll} />}
               {needResubmit && <Resubmit b={b} owner={owner} onDone={reloadAll} />}
               {b.status === 'awaiting_payment' && b.quote && <PayCard b={b} owner={owner} onDone={reloadAll} />}
               {canPayBalance && <BalanceCard b={b} />}

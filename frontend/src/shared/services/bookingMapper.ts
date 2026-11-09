@@ -159,6 +159,7 @@ export function toBooking(r: BackendBookingResponse, customer?: string): Booking
     status: (r.status === 'resubmission_requested' ? 'under_review' : r.status) as BookingStatus,
     statusLabel: r.statusLabel,
     customerStatusLabel: r.customerStatusLabel,
+    scheduleChange: r.scheduleChange,
     history,
   }
   if (r.gate) b.gate = r.gate

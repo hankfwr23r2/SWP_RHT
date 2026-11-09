@@ -119,6 +119,25 @@ class VnpayServiceImplTest {
     }
 
     @Test
+    void newDepositCannotBeCreatedAfterTheRequestedDepartureDay() {
+        booking.setDepartureDate(Instant.parse("2026-11-05T17:00:00Z"));
+        assertThatThrownBy(() -> service.createPaymentUrl(
+                VnpayCreateRequest.builder().bookingId("BK-12").paymentType("DEPOSIT").build(), "khach1", "1.2.3.4"))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("xác nhận lại lịch");
+        verify(paymentRepository, never()).save(any());
+    }
+
+    @Test
+    void lateMoneyOnALegacyQuoteGoesToReconciliationInsteadOfActivatingAnOverdueTrip() {
+        booking.setDepartureDate(Instant.parse("2026-11-05T17:00:00Z"));
+        Payment payment = pendingDeposit();
+        when(paymentRepository.findByTransactionCode("DEP00121")).thenReturn(Optional.of(payment));
+        service.confirm(signedCallback("300000000", "00"));
+        assertThat(payment.getStatus()).isEqualTo("NEEDS_REVIEW");
+        verify(bookingService, never()).confirmDepositPaid(any(), any());
+    }
+
+    @Test
     void createDeposit_savesPendingPaymentAndSignsServerSideAmount() {
         when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(12))
                 .thenReturn(Optional.of(quotation(NOW.plus(10, ChronoUnit.HOURS))));

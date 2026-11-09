@@ -26,6 +26,8 @@ const activeTrip = (b: CustomerBookingView) => b.trips?.find(t => t.run?.started
 
 function baseStep(b: CustomerBookingView, now: number): NextStep {
   switch (b.status) {
+    case 'schedule_change_required':
+      return { tone: 'warning', icon: 'fa-calendar-days', title: 'Cần xác nhận lại lịch', text: 'Ngày khởi hành dự kiến đã qua, nhưng đơn chưa hoàn tất chuẩn bị chuyến. Bạn có thể chọn ngày mới, hủy yêu cầu hoặc nhờ quản lý liên hệ hỗ trợ.', actionNeeded: true }
     case 'pending_intake':
       return { tone: 'info', icon: 'fa-inbox', title: 'Đang chờ Quản lý tiếp nhận', text: 'Quản lý sẽ giao Chuyên viên và Điều phối viên thẩm định đơn của bạn.', actionNeeded: false }
     case 'under_review':
@@ -108,6 +110,7 @@ export const isAcceptance = (b: CustomerBookingView) => orderGroupOf(b) === 'set
 // Tên nút theo việc khách cần làm, dùng ở danh sách đơn và chi tiết đơn
 function ctaOf(b: CustomerBookingView): string {
   switch (b.status) {
+    case 'schedule_change_required': return 'Chọn phương án'
     case 'under_review': return 'Bổ sung hồ sơ'
     case 'awaiting_payment': {
       const depositPercentage = b.quote?.total

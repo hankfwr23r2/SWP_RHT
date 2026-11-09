@@ -294,6 +294,7 @@ export interface Booking {
   status: BookingStatus
   statusLabel?: string // nhãn backend trả (nhân viên)
   customerStatusLabel?: string // nhãn backend trả (khách)
+  scheduleChange?: { flaggedAt: number; previousStatus: string; supportRequestedAt?: number }
 
   // ----- nội bộ (khách không thấy) -----
   intake?: { at: number; by: string; specialist: StaffRef; coordinator: StaffRef }

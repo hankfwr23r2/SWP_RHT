@@ -32,6 +32,7 @@ public class BookingDetailsPayload {
     private Object handover;
     private Object rating;
     private Object intake;
+    private Map<String, Object> scheduleChange;
     private Object rejection;
     private List<Map<String, Object>> history;
 }

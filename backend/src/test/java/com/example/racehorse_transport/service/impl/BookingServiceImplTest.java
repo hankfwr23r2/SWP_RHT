@@ -1190,6 +1190,7 @@ class BookingServiceImplTest {
 
     @Test
     void insuranceDeadlineCapsQuoteAndExpiredInsuranceBlocksIssuing() {
+        when(clock.instant()).thenReturn(Instant.now());
         Booking booking = bookingOwnedByCustomer();
         booking.setStatus("pending_commercial");
         String today = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toString();
@@ -1208,6 +1209,23 @@ class BookingServiceImplTest {
         booking.setStatus("pending_commercial");
         booking.setDetailsJson(details.replace(today, "2020-01-01"));
         assertThatThrownBy(() -> service.sendQuote("BK-42", request)).hasMessageContaining("hết hạn");
+    }
+
+    @Test
+    void lateIntakeAndQuoteAreBlockedEvenBeforeTheScheduleScannerRuns() {
+        Booking booking = bookingOwnedByCustomer();
+        booking.setDepartureDate(Instant.parse("2026-11-29T17:00:00Z"));
+        when(clock.instant()).thenReturn(Instant.parse("2026-11-30T17:00:00Z"));
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
+        booking.setStatus("pending_intake");
+        assertThatThrownBy(() -> service.activateBooking("BK-42", null))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("xác nhận lại lịch");
+        booking.setStatus("pending_commercial");
+        assertThatThrownBy(() -> service.sendQuote("BK-42", null))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("xác nhận lại lịch");
+        verify(quotationRepository, never()).save(any());
+        verify(bookingRepository, never()).save(any());
     }
 
     @Test
