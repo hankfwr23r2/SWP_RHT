@@ -30,13 +30,11 @@ public class BookingController {
         this.turnstileVerifier = turnstileVerifier;
     }
 
-    // Tra cứu đơn công khai theo mã đơn và 4 số cuối số điện thoại (không cần đăng nhập)
+    // Tra cứu đơn công khai theo mã đơn và 4 số cuối số điện thoại (không cần đăng nhập, không yêu cầu captcha)
     @GetMapping("/public-track")
     public ResponseEntity<ApiResponse<PublicTrackingResponse>> getPublicTracking(
-            @RequestHeader(value = "X-Captcha-Token", required = false) String captchaToken,
             @RequestParam("code") String code,
             @RequestParam("phoneLast4") String phoneLast4) {
-        turnstileVerifier.verify(captchaToken, "public_tracking");
         PublicTrackingResponse response = bookingService.getPublicTracking(code, phoneLast4);
         if (response == null) {
             return ResponseEntity.status(404).body(ApiResponse.error("Không tìm thấy đơn hàng hoặc 4 số cuối điện thoại không khớp."));
@@ -46,9 +44,7 @@ public class BookingController {
 
     @PostMapping("/public-track/batch")
     public ResponseEntity<ApiResponse<List<PublicTrackingLookupResponse>>> getPublicTrackingBatch(
-            @RequestHeader(value = "X-Captcha-Token", required = false) String captchaToken,
             @Valid @RequestBody PublicTrackingLookupRequest request) {
-        turnstileVerifier.verify(captchaToken, "public_tracking");
         List<PublicTrackingLookupResponse> results = new ArrayList<>();
         for (String code : request.codes().stream().distinct().toList()) {
             results.add(new PublicTrackingLookupResponse(
