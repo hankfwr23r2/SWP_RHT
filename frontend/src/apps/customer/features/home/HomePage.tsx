@@ -17,7 +17,6 @@ import { formatDate, formatDateTime } from '@shared/lib/format'
 import { trackOrders, type PublicTracking } from '@shared/services/tracking'
 import { FLAG_SVG } from '@shared/ui/flags'
 import { PHOTOS } from '@shared/config/photos'
-import { TurnstileWidget } from '@shared/ui/TurnstileWidget'
 import { PriceTable } from '../pricing/PriceLookup'
 import s from './HomePage.module.css'
 
@@ -100,26 +99,20 @@ function OrderLookup({ onShowPrice }: { onShowPrice: () => void }) {
   const [error, setError] = useState<{ field: 'codes' | 'phone'; message: string } | null>(null)
   const [rows, setRows] = useState<TrackRow[]>([])
   const [loading, setLoading] = useState(false)
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null)
-  const [captchaGeneration, setCaptchaGeneration] = useState(0)
-
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     const codes = [...new Set(codesText.split(',').map(c => c.trim().toUpperCase()).filter(Boolean))]
     if (!codes.length) return setError({ field: 'codes', message: t('home.lookup.errMinCode') })
     if (codes.length > MAX_TRACK_CODES) return setError({ field: 'codes', message: t('home.lookup.errMaxCode', { max: MAX_TRACK_CODES }) })
     if (!/^\d{4}$/.test(phone.trim())) return setError({ field: 'phone', message: t('home.lookup.errPhone') })
-    if (!captchaToken) return setError({ field: 'codes', message: t('captcha.required') })
     setError(null)
     setLoading(true)
     try {
-      setRows(await trackOrders(codes, phone.trim(), captchaToken))
+      setRows(await trackOrders(codes, phone.trim()))
     } catch (err) {
       setError({ field: 'codes', message: err instanceof Error ? err.message : t('home.lookup.notFound') })
     } finally {
       setLoading(false)
-      setCaptchaToken(null)
-      setCaptchaGeneration(generation => generation + 1)
     }
   }
 
@@ -151,9 +144,6 @@ function OrderLookup({ onShowPrice }: { onShowPrice: () => void }) {
             aria-label={t('home.lookup.phonePlaceholder')}
             placeholder={t('home.lookup.phonePlaceholder')}
           />
-        </div>
-        <div style={{ flexBasis: '100%' }}>
-          <TurnstileWidget key={captchaGeneration} action="public_tracking" onTokenChange={setCaptchaToken} />
         </div>
         <button className="btn btn-solid" type="submit" disabled={loading}>
           {loading ? t('home.lookup.searching') : t('home.lookup.searchBtn')}

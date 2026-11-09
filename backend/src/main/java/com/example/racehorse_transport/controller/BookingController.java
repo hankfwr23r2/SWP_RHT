@@ -6,7 +6,6 @@ import com.example.racehorse_transport.dto.booking.PublicTrackingLookupRequest;
 import com.example.racehorse_transport.dto.booking.PublicTrackingLookupResponse;
 import com.example.racehorse_transport.response.ApiResponse;
 import com.example.racehorse_transport.service.BookingService;
-import com.example.racehorse_transport.service.TurnstileVerifier;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -22,21 +21,17 @@ import java.util.ArrayList;
 public class BookingController {
 
     private final BookingService bookingService;
-    private final TurnstileVerifier turnstileVerifier;
 
     @Autowired
-    public BookingController(BookingService bookingService, TurnstileVerifier turnstileVerifier) {
+    public BookingController(BookingService bookingService) {
         this.bookingService = bookingService;
-        this.turnstileVerifier = turnstileVerifier;
     }
 
     // Tra cứu đơn công khai theo mã đơn và 4 số cuối số điện thoại (không cần đăng nhập)
     @GetMapping("/public-track")
     public ResponseEntity<ApiResponse<PublicTrackingResponse>> getPublicTracking(
-            @RequestHeader(value = "X-Captcha-Token", required = false) String captchaToken,
             @RequestParam("code") String code,
             @RequestParam("phoneLast4") String phoneLast4) {
-        turnstileVerifier.verify(captchaToken, "public_tracking");
         PublicTrackingResponse response = bookingService.getPublicTracking(code, phoneLast4);
         if (response == null) {
             return ResponseEntity.status(404).body(ApiResponse.error("Không tìm thấy đơn hàng hoặc 4 số cuối điện thoại không khớp."));
@@ -46,9 +41,7 @@ public class BookingController {
 
     @PostMapping("/public-track/batch")
     public ResponseEntity<ApiResponse<List<PublicTrackingLookupResponse>>> getPublicTrackingBatch(
-            @RequestHeader(value = "X-Captcha-Token", required = false) String captchaToken,
             @Valid @RequestBody PublicTrackingLookupRequest request) {
-        turnstileVerifier.verify(captchaToken, "public_tracking");
         List<PublicTrackingLookupResponse> results = new ArrayList<>();
         for (String code : request.codes().stream().distinct().toList()) {
             results.add(new PublicTrackingLookupResponse(
