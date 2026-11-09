@@ -34,6 +34,7 @@ public class SpecialistServiceImpl implements SpecialistService {
     private final RegulationRepository regulationRepository;
     private final LocationRepository locationRepository;
     private final ObjectMapper objectMapper;
+    private final com.example.racehorse_transport.service.StaffNotifier staffNotifier;
 
     @Override
     @Transactional
@@ -175,6 +176,7 @@ public class SpecialistServiceImpl implements SpecialistService {
         payload.setMedical(medicalMap);
 
         appendHistory(payload, specialist, "Duyệt hồ sơ ngựa ĐẠT");
+        if (payload.getSendBack() != null) payload.getSendBack().remove("specialist"); // đã duyệt lại theo lý do Quản lý trả
 
         // Kiểm tra xem Coordinator đã chốt xe và lộ trình chưa
         boolean planConfirmed = payload.getTrips() != null && !payload.getTrips().isEmpty() && payload.getPlan() != null;
@@ -188,6 +190,10 @@ public class SpecialistServiceImpl implements SpecialistService {
 
         savePayload(booking, payload);
         Booking saved = bookingRepository.save(booking);
+        if (planConfirmed) {
+            staffNotifier.toManagers(saved, "Đơn chờ duyệt báo giá · BK-" + saved.getId(),
+                    "Chuyên viên đã duyệt hồ sơ và Điều phối viên đã chốt xe, lộ trình. Chọn kíp xe và gửi báo giá.", "/manager/approvals");
+        }
         log.info("Specialist approved horse profiles for booking ID={}", saved.getId());
         return mapToBookingResponse(saved);
     }
@@ -441,6 +447,12 @@ public class SpecialistServiceImpl implements SpecialistService {
 
         savePayload(booking, payload);
         Booking saved = bookingRepository.save(booking);
+        staffNotifier.toCrew(saved, payload, "clearance_done".equals(saved.getStatus())
+                        ? "Giấy tờ chuyến đã xong, cần bạn xác nhận · BK-" + saved.getId()
+                        : "Sẵn sàng đón ngựa · BK-" + saved.getId(),
+                "clearance_done".equals(saved.getStatus())
+                        ? "Chuyên viên đã hoàn tất giấy tờ. Mở ứng dụng để nhận lệnh và xác nhận giấy tờ chuyến đi."
+                        : "Giấy tờ đã xong và kíp xe đã nhận lệnh. Chuẩn bị xuất phát đến điểm đón đúng giờ.");
         log.info("Clearance completed for booking ID={}, status={}", saved.getId(), saved.getStatus());
         return mapToBookingResponse(saved);
     }
@@ -858,7 +870,7 @@ public class SpecialistServiceImpl implements SpecialistService {
                 .totalHorses(b.getTotalHorses() != null ? b.getTotalHorses() : 1)
                 .horses(payload.getHorses())
                 .waybillNo(b.getWaybillNo())
-                .trips(payload.getTrips())
+                .trips(com.example.racehorse_transport.service.CaptureService.visibleTrips(payload))
                 .route(payload.getRoute())
                 .gate(payload.getGate())
                 .plan(payload.getPlan())
@@ -869,6 +881,7 @@ public class SpecialistServiceImpl implements SpecialistService {
                 .clearance(clearance)
                 .intake(payload.getIntake())
                 .rejection(payload.getRejection())
+                .sendBack(payload.getSendBack())
                 .history(payload.getHistory())
                 .build();
     }

@@ -12,7 +12,6 @@ import com.example.racehorse_transport.repository.SystemConfigRepository;
 import com.example.racehorse_transport.repository.UserRepository;
 import com.example.racehorse_transport.repository.VehicleRepository;
 import com.example.racehorse_transport.routing.RoutingStubServer;
-import com.example.racehorse_transport.routing.RoutingStubServer.Recorded;
 import com.example.racehorse_transport.service.SystemConfigService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,9 +38,10 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-// Điều phối xem trước lộ trình xe tải: đường thật của xe tải (Valhalla, cả 3 nước), phí cầu đường phần Việt Nam (Vietmap),
+// Điều phối xem trước lộ trình xe tải: đường thật của xe tải (Valhalla, cả 3 nước), không còn tự tính phí cầu đường
+// (tài xế ghi theo hóa đơn thực tế),
 // lịch trình có nghỉ 30 phút sau mỗi 4 giờ lái, nghỉ đêm sau 10 giờ lái, chờ cửa khẩu mở (07:30–16:30) và 3 giờ thủ tục.
-// Valhalla và Vietmap là máy chủ giả trả ĐÚNG mẫu phản hồi thật đã lưu (chỗ giả lập duy nhất); DB là Postgres thật.
+// Valhalla là máy chủ giả trả ĐÚNG mẫu phản hồi thật đã lưu (chỗ giả lập duy nhất); DB là Postgres thật.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @MockTurnstileVerification
 class RoutePreviewTest {
@@ -63,8 +63,6 @@ class RoutePreviewTest {
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
         registry.add("routing.valhalla.url", STUB::url);
-        registry.add("routing.vietmap.url", STUB::url);
-        registry.add("routing.vietmap.api-key", () -> "test-key");
     }
 
     @LocalServerPort
@@ -106,7 +104,6 @@ class RoutePreviewTest {
         routeCache.deleteAll();
         STUB.clearRequests();
         STUB.reply("/route", 200, "valhalla-truck-hcm-mocbai-phnompenh.json");
-        STUB.reply("/route/v4", 200, "vietmap-v4-hcm-hanoi-toll.json");
         coordinatorToken = loginAs("COORDINATOR");
         driverToken = loginAs("DRIVER");
         mocBai = location("BorderGate", "Cửa khẩu Mộc Bài (test)", 11.0796, 106.1572, 450, 990);
@@ -137,14 +134,13 @@ class RoutePreviewTest {
         assertThat(data.path("borderArrivalAt").asLong()).isEqualTo(epoch("2026-11-02T07:13:49"));
         assertThat(data.path("arrivalAt").asLong()).isEqualTo(epoch("2026-11-02T13:57:52"));
         assertThat(data.path("crewDays").asInt()).isEqualTo(1);
-        assertThat(data.path("toll").path("amountVnd").asLong()).isEqualTo(3_111_000L);
-        assertThat(data.path("toll").path("source").asText()).isEqualTo("vietmap");
+        assertThat(data.has("toll")).isFalse(); // phí cầu đường do tài xế ghi theo hóa đơn, không ước tính ở đây
         assertThat(data.path("warnings")).isEmpty();
         assertThat(data.path("path").size()).isBetween(2, 500);
     }
 
     @Test
-    void asksValhallaForTheVehicleWeightAndVietmapOnlyForTheVietnamesePart() throws Exception {
+    void asksValhallaForTheVehicleWeightAndNoTollService() throws Exception {
         preview(PICKUP_HCM, DROPOFF_PHNOM_PENH, List.of(mocBai.getId()));
 
         JsonNode sent = json.readTree(STUB.requests("/route").getFirst().body());
@@ -152,9 +148,7 @@ class RoutePreviewTest {
         assertThat(sent.path("costing_options").path("truck").path("weight").asDouble()).isEqualTo(8.0);
         assertThat(sent.path("costing_options").path("truck").path("top_speed").asInt()).isEqualTo(80);
         assertThat(sent.path("date_time").path("value").asText()).isEqualTo("2026-11-02T05:00");
-        Recorded toll = STUB.requests("/route/v4").getFirst();
-        assertThat(toll.params().get("point")).containsExactly("10.7769,106.7009", "11.0796,106.1572");
-        assertThat(toll.params().get("capacity")).containsExactly("8000");
+        assertThat(STUB.requests("/route/v4")).isEmpty();
     }
 
     @Test
@@ -198,8 +192,6 @@ class RoutePreviewTest {
         assertThat(data.path("arrivalAt").asLong()).isEqualTo(epoch("2026-11-04T02:54:54"));
         assertThat(data.path("crewDays").asInt()).isEqualTo(3);
         assertThat(data.path("borderArrivalAt").isNumber()).isFalse(); // tuyến nội địa không qua cửa khẩu
-        Recorded toll = STUB.requests("/route/v4").getFirst();
-        assertThat(toll.params().get("point")).containsExactly("10.7769,106.7009", "21.0278,105.8342");
     }
 
     @Test
@@ -208,9 +200,7 @@ class RoutePreviewTest {
         HttpResponse<String> again = preview(PICKUP_HCM, DROPOFF_PHNOM_PENH, List.of(mocBai.getId()));
 
         assertThat(again.statusCode()).isEqualTo(200);
-        assertThat(json.readTree(again.body()).path("data").path("toll").path("amountVnd").asLong()).isEqualTo(3_111_000L);
         assertThat(STUB.requests("/route")).hasSize(1);
-        assertThat(STUB.requests("/route/v4")).hasSize(1);
     }
 
     @Test
@@ -256,19 +246,6 @@ class RoutePreviewTest {
         STUB.reply("/route", 200, "valhalla-truck-hcm-mocbai-phnompenh.json");
         HttpResponse<String> back = preview(PICKUP_HCM, DROPOFF_PHNOM_PENH, List.of(mocBai.getId()));
         assertThat(back.statusCode()).as(back.body()).isEqualTo(200);
-    }
-
-    @Test
-    void vietmapDownStillGivesTheRouteWithAWarning() throws Exception {
-        STUB.replyRaw("/route/v4", 500, "<html>error</html>");
-
-        HttpResponse<String> response = preview(PICKUP_HCM, DROPOFF_PHNOM_PENH, List.of(mocBai.getId()));
-
-        assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
-        JsonNode data = json.readTree(response.body()).path("data");
-        assertThat(data.path("toll").path("amountVnd").isNumber()).isFalse(); // chưa có số tiền phí
-        assertThat(data.path("warnings").get(0).asText()).isEqualTo("Chưa lấy được phí cầu đường (Vietmap).");
-        assertThat(data.path("legs")).hasSize(2);
     }
 
     @Test

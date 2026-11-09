@@ -1,6 +1,6 @@
 // Coordinator: chốt xe và lộ trình một đơn trong một trang (PRD mục 2.4, nhánh B).
 // Coordinator tự chọn xe (đơn đông ngựa thì nhiều xe), chia ngựa lên xe, lập lộ trình rồi xác nhận.
-import { Fragment, lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react'
+import { Fragment, lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
@@ -23,7 +23,7 @@ import {
   autoPackFleet,
 } from '@shared/lib/booking'
 import { atHour } from '@shared/lib/dates'
-import { formatClock, formatDate, formatDateTime, formatVND } from '@shared/lib/format'
+import { formatClock, formatDate, formatDateTime } from '@shared/lib/format'
 import { rankFixedRoutes, type FixedRouteMatch } from '@shared/lib/fixedRouteMatch'
 import { bookingsApi } from '@shared/services/bookings'
 import { type Vehicle } from '@shared/services/fleet'
@@ -195,7 +195,9 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
     () => (b.route?.rests ?? []).filter(r => r.manual === true && findTransitStation(r.name)?.locationId != null)
   )
   const [corridors, setCorridors] = useState<BackendRouteResponse[]>([])
-  const [selectedCorridorId, setSelectedCorridorId] = useState<number | ''>('')
+  const [selectedCorridorId, setSelectedCorridorId] = useState<number | ''>(b.routeId ?? '')
+  // Mở lại phương án đã chốt: giữ tuyến và trạm dừng đã lưu, không tự thay bằng gợi ý cho tới khi điều phối tự đổi tuyến
+  const keepSavedPlan = useRef(!!b.plan)
   const [corridorSuggestions, setCorridorSuggestions] = useState<CorridorSuggestion[]>([])
   const [suggestingCorridors, setSuggestingCorridors] = useState(false)
   const [applyingCorridor, setApplyingCorridor] = useState(false)
@@ -232,7 +234,8 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
         if (cancelled) return
         const ranked: CorridorSuggestion[] = rankFixedRoutes(candidates.flat(), originPoint, destPoint, gatePoint, international)
         setCorridorSuggestions(ranked)
-        setSelectedCorridorId(current => ranked.some(item => item.corridor.id === current) ? current : ranked[0]?.corridor.id || '')
+        if (keepSavedPlan.current) setSelectedCorridorId(b.routeId ?? '')
+        else setSelectedCorridorId(current => ranked.some(item => item.corridor.id === current) ? current : ranked[0]?.corridor.id || '')
       } catch {
         if (!cancelled) {
           setCorridorSuggestions([])
@@ -246,11 +249,11 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
     return () => {
       cancelled = true
     }
-  }, [corridors, originPoint, destPoint, gatePoint, international])
+  }, [corridors, originPoint, destPoint, gatePoint, international, b.routeId])
 
   const selectedSuggestion = corridorSuggestions.find(item => item.corridor.id === selectedCorridorId)
   useEffect(() => {
-    if (selectedSuggestion) setManualStops(selectedSuggestion.match.restStops)
+    if (selectedSuggestion && !keepSavedPlan.current) setManualStops(selectedSuggestion.match.restStops)
   }, [selectedSuggestion])
 
   const selectedCorridor = useMemo(() => {
@@ -405,12 +408,12 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
 
   return (
     <>
-      {b.sentBack?.to === 'coordinator' && (
+      {b.sendBack?.coordinator && (
         <div className="alert alert-warning">
           <i className="fa-solid fa-rotate-left" />
           <div>
-            <b>Quản lý trả lại đơn này:</b> {b.sentBack.reason}{' '}
-            <span className="sub-text">({b.sentBack.by}, {formatDateTime(b.sentBack.at)})</span>
+            <b>Quản lý trả lại đơn này:</b> {b.sendBack.coordinator}{' '}
+            <span className="sub-text">({b.sendBack.by}, {formatDateTime(b.sendBack.at)})</span>
           </div>
         </div>
       )}
@@ -418,8 +421,8 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
         <div className="alert alert-info">
           <i className="fa-solid fa-circle-check" />
           <div>
-            <b>Bạn đã xác nhận xe và lộ trình</b> lúc {formatDateTime(b.plan.at)}. Đang chờ Chuyên viên duyệt hồ sơ
-            ngựa để chuyển Quản lý duyệt báo giá.
+            <b>Bạn đang sửa phương án đã chốt</b> lúc {formatDateTime(b.plan.at)}. Bấm xác nhận để lưu thay đổi; phương án cũ
+            được giữ nếu bạn hủy sửa.
           </div>
         </div>
       )}
@@ -670,7 +673,7 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
                   className="form-control"
                   style={{ fontSize: '0.85rem', height: 38 }}
                   value={selectedCorridorId}
-                  onChange={e => setSelectedCorridorId(e.target.value ? Number(e.target.value) : '')}
+                  onChange={e => { keepSavedPlan.current = false; setSelectedCorridorId(e.target.value ? Number(e.target.value) : '') }}
                 >
                   <option value="">-- Lộ trình linh hoạt (Tự động đề xuất) --</option>
                   {suggestingCorridors && <option disabled>Đang đối chiếu tọa độ điểm đón/trả…</option>}
@@ -913,9 +916,6 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
               <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--navy)' }}>
                 {preview.crewDays} ngày
               </div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: 2 }}>
-                Phí cầu đường: <b>{preview.toll.amountVnd != null ? formatVND(preview.toll.amountVnd) : 'Chưa lấy được'}</b>
-              </div>
             </div>
           )}
         </div>
@@ -1135,6 +1135,7 @@ export default function FleetPlanPage() {
   useAutoRefresh(reload)
   const [showOrderDetails, setShowOrderDetails] = useState(false)
   const [showDocs, setShowDocs] = useState(false)
+  const [editingPlan, setEditingPlan] = useState(false)
 
   if (!b || !all || !vehicles)
     return (
@@ -1265,12 +1266,19 @@ export default function FleetPlanPage() {
 
         <div className={layoutStyles.routeLayout}>
           <div className={layoutStyles.routeMain}>
-            {b.status === 'under_review' ? (
-              <Plan b={b} vehicles={vehicles} all={all} />
+            {(b.status === 'under_review' || b.status === 'pending_commercial') && (!b.plan || editingPlan) ? (
+              <>
+                {editingPlan && (
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditingPlan(false)}>Hủy sửa, giữ phương án đã chốt</button>
+                  </div>
+                )}
+                <Plan b={b} vehicles={vehicles} all={all} />
+              </>
             ) : b.plan ? (
-              <div className="alert alert-success">
+              <div className="alert alert-success" style={{ alignItems: 'center' }}>
                 <i className="fa-solid fa-circle-check" />
-                <div>
+                <div style={{ flex: 1 }}>
                   <b>Đã chốt phương án</b> lúc {formatDateTime(b.plan.at)}:{' '}
                   {(b.trips ?? []).map(
                     (t, i) =>
@@ -1279,7 +1287,13 @@ export default function FleetPlanPage() {
                       }`
                   )}
                   . {b.route && `Khởi hành ${formatDateTime(b.route.legs[0].departAt)}.`}
+                  {(b.status === 'under_review' || b.status === 'pending_commercial') && <div className="sub-text">Sửa được tới khi Quản lý gửi báo giá cho khách.</div>}
                 </div>
+                {(b.status === 'under_review' || b.status === 'pending_commercial') && (
+                  <button type="button" className="btn btn-outline btn-sm" onClick={() => setEditingPlan(true)}>
+                    <i className="fa-solid fa-pen" /> Sửa phương án
+                  </button>
+                )}
               </div>
             ) : (
               <div className="alert alert-info">

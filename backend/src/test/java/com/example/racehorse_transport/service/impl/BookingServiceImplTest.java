@@ -133,7 +133,7 @@ class BookingServiceImplTest {
                 new VnpayProperties(),
                 clock,
                 mock(com.example.racehorse_transport.repository.IncidentRepository.class),
-                billMailService);
+                billMailService, org.mockito.Mockito.mock(com.example.racehorse_transport.service.StaffNotifier.class));
 
         when(documentRequirementRepository.findByDocumentGroupAndStatusOrderByDocumentNameAsc(any(), any()))
                 .thenReturn(List.of());
@@ -889,7 +889,9 @@ class BookingServiceImplTest {
 
     @Test
     void confirmCoordinatorPlan_rejectsRouteWithoutLegs() {
-        when(bookingRepository.findById(42)).thenReturn(Optional.of(bookingOwnedByCustomer()));
+        Booking underReview = bookingOwnedByCustomer();
+        underReview.setStatus("under_review"); // điều phối chỉ chốt phương án ở bước thẩm định
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(underReview));
         var trip = new com.example.racehorse_transport.dto.coordinator.VehicleTripDto();
         trip.setVehicleId("VH-001");
         trip.setHorseIds(List.of("H-001"));
@@ -907,6 +909,7 @@ class BookingServiceImplTest {
     @Test
     void confirmCoordinatorPlan_setsRouteIdWhenProvided() {
         Booking booking = bookingOwnedByCustomer();
+        booking.setStatus("under_review"); // điều phối chỉ chốt phương án ở bước thẩm định
         when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 

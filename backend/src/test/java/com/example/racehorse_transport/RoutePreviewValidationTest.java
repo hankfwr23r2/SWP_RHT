@@ -56,8 +56,6 @@ class RoutePreviewValidationTest {
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
         registry.add("routing.valhalla.url", STUB::url);
-        registry.add("routing.vietmap.url", STUB::url);
-        registry.add("routing.vietmap.api-key", () -> "test-key");
     }
 
     @LocalServerPort
@@ -86,7 +84,6 @@ class RoutePreviewValidationTest {
         routeCache.deleteAll();
         STUB.clearRequests();
         STUB.reply("/route", 200, "valhalla-truck-hcm-mocbai-phnompenh.json");
-        STUB.reply("/route/v4", 200, "vietmap-v4-hcm-hanoi-toll.json");
         coordinatorToken = loginAs("COORDINATOR");
         mocBai = location("BorderGate", "Cửa khẩu Mộc Bài (test)", 11.0796, 106.1572, 450, 990);
         fourStallTruck = vehicles.save(Vehicle.builder()

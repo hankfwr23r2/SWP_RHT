@@ -5,8 +5,10 @@ import com.example.racehorse_transport.dto.coordinator.VehicleTripDto;
 import com.example.racehorse_transport.dto.report.ReportLegDto;
 import com.example.racehorse_transport.dto.report.TripReportResponse;
 import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.Incident;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.repository.BookingRepository;
+import com.example.racehorse_transport.repository.IncidentRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.response.ApiResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,124 +31,227 @@ public class ReportController {
 
     private final BookingRepository bookingRepository;
     private final StaffRepository staffRepository;
+    private final IncidentRepository incidentRepository;
     private final ObjectMapper objectMapper;
 
+    // Chuyến đã giao ngựa (kể cả đang quyết toán hoặc đã đóng đơn)
+    private static final Set<String> REPORTED_STATUSES = Set.of("delivered_pending_settlement", "expenses_submitted",
+            "settlement_issued", "payment_overdue", "completed");
+    private static final long ON_TIME_TOLERANCE_MS = 15 * 60_000L; // lệch trong 15 phút vẫn tính đúng giờ
+    private static final Map<String, String> CONDITION = Map.of(
+            "normal", "Bình thường", "stress", "Căng thẳng", "sweating", "Đổ mồ hôi nhiều");
+
+    // Báo cáo chỉ dựng từ dữ liệu thật của chuyến: mốc check-in, nhật ký an sinh, sự cố, phí cầu đường, điểm khách chấm.
+    // Trường nào chuyến chưa có thì để trống, không điền giá trị mẫu.
     @GetMapping
     public ResponseEntity<ApiResponse<List<TripReportResponse>>> getTripReports() {
-        List<Booking> allBookings = bookingRepository.findAllByOrderByBookingDateDesc();
         List<TripReportResponse> reports = new ArrayList<>();
+        for (Booking b : bookingRepository.findAllByOrderByBookingDateDesc()) {
+            String status = b.getStatus() != null ? b.getStatus().toLowerCase(Locale.ROOT) : "";
+            if (!REPORTED_STATUSES.contains(status)) continue;
+            reports.add(report(b, extractPayload(b)));
+        }
+        return ResponseEntity.ok(ApiResponse.success(reports, "Lấy danh sách báo cáo chuyến đi thành công"));
+    }
 
-        for (Booking b : allBookings) {
-            String status = b.getStatus() != null ? b.getStatus().toLowerCase() : "";
-            // Chỉ lấy các chuyến đã hoàn thành hoặc đã giao
-            if (!("completed".equals(status) || "delivered_pending_settlement".equals(status)
-                    || "expenses_submitted".equals(status) || "settlement_issued".equals(status))) {
-                continue;
-            }
+    private TripReportResponse report(Booking b, BookingDetailsPayload payload) {
+        List<VehicleTripDto> trips = payload.getTrips() != null ? payload.getTrips() : List.of();
+        boolean manyTrips = trips.size() > 1;
 
-            BookingDetailsPayload payload = extractPayload(b);
-            String customerName = "Khách hàng";
-            if (b.getCustomerID() != null) {
-                if (b.getCustomerID().getFullName() != null && !b.getCustomerID().getFullName().isBlank()) {
-                    customerName = b.getCustomerID().getFullName();
-                } else if (b.getCustomerID().getUser() != null && b.getCustomerID().getUser().getUsername() != null) {
-                    customerName = b.getCustomerID().getUser().getUsername();
+        List<ReportLegDto> legs = new ArrayList<>();
+        List<List<Object>> health = new ArrayList<>();
+        List<List<Object>> events = new ArrayList<>();
+        List<Map<String, Object>> tolls = new ArrayList<>();
+        Set<String> escorts = new LinkedHashSet<>();
+        long tollCost = 0;
+        Long startedAt = null, deliveredAt = null, plannedDelivery = null;
+
+        for (int t = 0; t < trips.size(); t++) {
+            VehicleTripDto trip = trips.get(t);
+            String prefix = manyTrips ? "Xe " + (t + 1) + " · " : "";
+            if (trip.getEscortId() != null) escorts.add(staffLabel(trip.getEscortId()));
+            if (trip.getTolls() != null) {
+                for (Map<String, Object> toll : trip.getTolls()) {
+                    tolls.add(toll);
+                    if (toll.get("amount") instanceof Number amount) tollCost += amount.longValue();
                 }
             }
+            Map<String, Object> run = trip.getRun();
+            if (run == null) continue;
+            Long started = num(run.get("startedAt"));
+            Long delivered = num(run.get("deliveredAt"));
+            startedAt = min(startedAt, started);
+            deliveredAt = max(deliveredAt, delivered);
+            if (started != null) events.add(List.of(started, prefix + "Bắt đầu hành trình", true));
 
-            String origin = b.getPickupAddress() != null && !b.getPickupAddress().isBlank()
-                    ? b.getPickupAddress().split(" — ")[0] : "Điểm đón";
-            String dest = b.getDropoffAddress() != null && !b.getDropoffAddress().isBlank()
-                    ? b.getDropoffAddress().split(" — ")[0] : "Điểm giao";
-            String route = origin + " — " + dest;
-            String type = "international".equalsIgnoreCase(b.getBookingType()) ? "Quốc tế" : "Nội địa";
-            String horses = b.getTotalHorses() != null ? (b.getTotalHorses() + " ngựa") : "1 ngựa";
-
-            long nowMs = System.currentTimeMillis();
-            long completedAt = b.getBookingDate() != null ? b.getBookingDate().toEpochMilli() + 86400000L : nowMs;
-            long plannedAt = completedAt;
-
-            String escortName = "Chuyên viên hộ tống";
-            String tripId = "CHUYEN-" + String.format("%02d", b.getId());
-
-            if (payload != null && payload.getTrips() != null && !payload.getTrips().isEmpty()) {
-                VehicleTripDto trip = payload.getTrips().get(0);
-                if (trip.getTripId() != null && !trip.getTripId().isBlank()) {
-                    tripId = trip.getTripId();
+            List<Map<String, Object>> checkpoints = maps(run.get("checkpoints"));
+            Map<String, String> labels = new HashMap<>();
+            for (int i = 0; i < checkpoints.size(); i++) {
+                Map<String, Object> cp = checkpoints.get(i);
+                String label = text(cp.get("label"), text(cp.get("place"), text(cp.get("id"), "Mốc " + (i + 1))));
+                labels.put(text(cp.get("id"), ""), label);
+                Long planned = num(cp.get("plannedAt"));
+                Long arrived = num(cp.get("arrivedAt"));
+                String type = text(cp.get("type"), "");
+                if ("delivery".equals(type)) plannedDelivery = max(plannedDelivery, planned);
+                if (arrived != null) {
+                    boolean onTime = planned == null || arrived <= planned + ON_TIME_TOLERANCE_MS;
+                    events.add(List.of(arrived, prefix + ("delivery".equals(type) ? "Giao ngựa tại " : "Tới ") + label, onTime));
                 }
-                if (trip.getEscortId() != null) {
-                    escortName = staffRepository.findById(parseId(trip.getEscortId()))
-                            .map(Staff::getStaffCode)
-                            .orElse(trip.getEscortId());
-                }
+                if (i == 0) continue;
+                Map<String, Object> prev = checkpoints.get(i - 1);
+                String prevLabel = text(prev.get("label"), text(prev.get("place"), "Mốc " + i));
+                Long leftPrev = firstNonNull(num(prev.get("leftAt")), num(prev.get("doneAt")), num(prev.get("arrivedAt")));
+                legs.add(ReportLegDto.builder()
+                        .title(prefix + "Chặng " + i)
+                        .kind("customs".equals(type) || "border".equals(type) ? "gate" : "ground")
+                        .meta(switch (type) {
+                            case "customs", "border" -> "Đến cửa khẩu";
+                            case "delivery" -> "Đến điểm giao";
+                            default -> "Đến trạm nghỉ";
+                        })
+                        .route(prevLabel + " → " + label)
+                        .plannedStart(num(prev.get("plannedAt")))
+                        .plannedEnd(planned)
+                        .actualStart(leftPrev)
+                        .actualEnd(arrived)
+                        .build());
             }
-
-            int ratingVal = 5;
-            String feedbackVal = "Chuyến đi an toàn, ngựa đua được chăm sóc chu đáo, đúng thời gian cam kết.";
-            if (payload != null && payload.getRating() instanceof Map<?, ?> rMap) {
-                Object starsObj = rMap.get("stars");
-                if (starsObj instanceof Number num) ratingVal = num.intValue();
-                Object commentObj = rMap.get("comment");
-                if (commentObj != null && !commentObj.toString().isBlank()) feedbackVal = commentObj.toString();
+            for (Map<String, Object> w : maps(run.get("welfare"))) {
+                Long at = num(w.get("at"));
+                if (at == null) continue;
+                String condition = text(w.get("condition"), "");
+                StringBuilder line = new StringBuilder(prefix)
+                        .append(labels.getOrDefault(text(w.get("checkpointId"), ""), "Trạm nghỉ")).append(": ")
+                        .append(CONDITION.getOrDefault(condition, condition.isEmpty() ? "Chưa ghi tình trạng" : condition));
+                if (w.get("waterLiters") instanceof Number water) line.append(", uống ").append(water).append(" lít nước");
+                if (Boolean.TRUE.equals(w.get("hay"))) line.append(", có cho ăn cỏ khô");
+                String note = text(w.get("note"), "");
+                if (!note.isEmpty()) line.append(". ").append(note);
+                health.add(List.of(at, line.toString(), "normal".equals(condition)));
             }
-
-            String timePlannedStart = "08:00";
-            String timePlannedEnd = "14:30";
-            String timeActualStart = "08:00";
-            String timeActualEnd = "14:20";
-
-            List<ReportLegDto> legs = new ArrayList<>();
-            legs.add(ReportLegDto.builder()
-                    .title("Chặng 1: Xuất phát đến trạm dừng")
-                    .kind("ground")
-                    .meta("Đường bộ · 180 km")
-                    .route(origin + " → Trạm nghỉ giữa tuyến")
-                    .planned(List.of(timePlannedStart, "11:00"))
-                    .actual(List.of(timeActualStart, "10:55"))
-                    .build());
-            legs.add(ReportLegDto.builder()
-                    .title("Chặng 2: Trạm dừng đến điểm giao")
-                    .kind("ground")
-                    .meta("Đường bộ · 150 km")
-                    .route("Trạm nghỉ giữa tuyến → " + dest)
-                    .planned(List.of("11:30", timePlannedEnd))
-                    .actual(List.of("11:30", timeActualEnd))
-                    .build());
-
-            List<List<Object>> healthLogs = new ArrayList<>();
-            healthLogs.add(List.of("08:15", "Kiểm tra trước khi khởi hành: Thân nhiệt bình thường, ngựa ổn định", true));
-            healthLogs.add(List.of("11:00", "Nghỉ giữa chặng: Cho uống nước điện giải, ăn cỏ tươi, kiểm tra chân móng", true));
-            healthLogs.add(List.of("14:20", "Bàn giao tại điểm đến: Thể trạng tốt, không có dấu hiệu mệt mỏi hay chấn thương", true));
-
-            List<List<Object>> events = new ArrayList<>();
-            events.add(List.of("08:00", "Xe bắt đầu lăn bánh từ điểm đón", true));
-            events.add(List.of("11:00", "Đến trạm nghỉ theo đúng kế hoạch", true));
-            events.add(List.of("14:20", "Giao nhận ngựa và hoàn tất thủ tục bàn giao", true));
-
-            reports.add(TripReportResponse.builder()
-                    .id("BK-" + b.getId())
-                    .tripId(tripId)
-                    .customer(customerName)
-                    .route(route)
-                    .type(type)
-                    .horses(horses)
-                    .escort(escortName)
-                    .completedAt(completedAt)
-                    .plannedAt(plannedAt)
-                    .otd("on_time")
-                    .otdMinutes(0)
-                    .incidentCost(0.0)
-                    .incidentNote("Không phát sinh sự cố")
-                    .totalTime("6 giờ 20 phút")
-                    .legs(legs)
-                    .health(healthLogs)
-                    .events(events)
-                    .rating(ratingVal)
-                    .feedback(feedbackVal)
-                    .build());
+            if (trip.getHomeReturn() != null && num(trip.getHomeReturn().get("backAt")) != null) {
+                events.add(List.of(num(trip.getHomeReturn().get("backAt")), prefix + "Xe và kíp về tới trụ sở", true));
+            }
         }
 
-        return ResponseEntity.ok(ApiResponse.success(reports, "Lấy danh sách báo cáo chuyến đi thành công"));
+        double incidentCost = 0;
+        List<String> incidentNames = new ArrayList<>();
+        for (Incident incident : incidentRepository.findByBookingID_Id(b.getId())) {
+            String name = text(incident.getIncidentName(), "Sự cố");
+            incidentNames.add(name);
+            if (incident.getCreatedAt() != null) events.add(List.of(incident.getCreatedAt().toEpochMilli(), "Sự cố: " + name, false));
+            double expenses = expenseTotal(incident.getExpensesJson());
+            if (expenses == 0 && incident.getActualCost() != null) expenses = incident.getActualCost().doubleValue();
+            incidentCost += expenses;
+        }
+        events.sort(Comparator.comparingLong(row -> ((Number) row.get(0)).longValue()));
+        health.sort(Comparator.comparingLong(row -> ((Number) row.get(0)).longValue()));
+
+        String otd = null;
+        Integer otdMinutes = null;
+        if (deliveredAt != null && plannedDelivery != null) {
+            long diff = deliveredAt - plannedDelivery;
+            otdMinutes = (int) Math.round(Math.abs(diff) / 60_000.0);
+            otd = Math.abs(diff) <= ON_TIME_TOLERANCE_MS ? "on_time" : diff < 0 ? "early" : "late";
+        }
+
+        Integer rating = null;
+        String feedback = null;
+        if (payload.getRating() instanceof Map<?, ?> r) {
+            if (r.get("stars") instanceof Number stars) rating = stars.intValue();
+            String comment = text(r.get("comment"), "");
+            if (!comment.isEmpty()) feedback = comment;
+        }
+
+        return TripReportResponse.builder()
+                .id("BK-" + b.getId())
+                .tripId(trips.stream().map(VehicleTripDto::getTripId).filter(Objects::nonNull).reduce((x, y) -> x + ", " + y).orElse(null))
+                .customer(customerName(b))
+                .route(placeName(b.getPickupAddress(), "Điểm đón") + " — " + placeName(b.getDropoffAddress(), "Điểm giao"))
+                .type("international".equalsIgnoreCase(b.getBookingType()) ? "Quốc tế" : "Nội địa")
+                .horses((b.getTotalHorses() != null ? b.getTotalHorses() : (payload.getHorses() != null ? payload.getHorses().size() : 0)) + " ngựa")
+                .escort(escorts.isEmpty() ? null : String.join(", ", escorts))
+                .completedAt(deliveredAt)
+                .plannedAt(plannedDelivery)
+                .otd(otd)
+                .otdMinutes(otdMinutes)
+                .incidentCost(incidentCost)
+                .tollCost(tollCost)
+                .tolls(tolls)
+                .incidentNote(incidentNames.isEmpty() ? "Không có sự cố" : String.join(", ", incidentNames))
+                .totalTime(startedAt != null && deliveredAt != null ? duration(deliveredAt - startedAt) : null)
+                .legs(legs)
+                .health(health)
+                .events(events)
+                .rating(rating)
+                .feedback(feedback)
+                .build();
+    }
+
+    private String customerName(Booking b) {
+        if (b.getCustomerID() == null) return null;
+        if (b.getCustomerID().getFullName() != null && !b.getCustomerID().getFullName().isBlank()) return b.getCustomerID().getFullName();
+        return b.getCustomerID().getUser() != null ? b.getCustomerID().getUser().getUsername() : null;
+    }
+
+    private static String placeName(String address, String fallback) {
+        return address != null && !address.isBlank() ? address.split(" — ")[0] : fallback;
+    }
+
+    // Hộ tống ghi trên chuyến bằng mã nhân sự hoặc mã số: hiện "tên đăng nhập (mã)"
+    private String staffLabel(String assigned) {
+        Optional<Staff> member = staffRepository.findByStaffCode(assigned);
+        if (member.isEmpty() && assigned.matches("\\d+")) member = staffRepository.findById(Integer.parseInt(assigned));
+        return member.map(s -> (s.getUser() != null ? s.getUser().getUsername() : assigned)
+                + (s.getStaffCode() != null ? " (" + s.getStaffCode() + ")" : "")).orElse(assigned);
+    }
+
+    private double expenseTotal(String expensesJson) {
+        if (expensesJson == null || expensesJson.isBlank()) return 0;
+        try {
+            double total = 0;
+            for (var node : objectMapper.readTree(expensesJson)) total += node.path("amount").asDouble(0);
+            return total;
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    private static String duration(long ms) {
+        long minutes = Math.round(ms / 60_000.0);
+        long h = minutes / 60, m = minutes % 60;
+        return h > 0 ? h + " giờ " + m + " phút" : m + " phút";
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> maps(Object value) {
+        if (!(value instanceof List<?> list)) return List.of();
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (Object item : list) if (item instanceof Map<?, ?> map) out.add((Map<String, Object>) map);
+        return out;
+    }
+
+    private static Long num(Object value) {
+        return value instanceof Number n ? n.longValue() : null;
+    }
+
+    private static String text(Object value, String fallback) {
+        return value != null && !value.toString().isBlank() ? value.toString() : fallback;
+    }
+
+    private static Long min(Long a, Long b) {
+        return a == null ? b : b == null ? a : Math.min(a, b);
+    }
+
+    private static Long max(Long a, Long b) {
+        return a == null ? b : b == null ? a : Math.max(a, b);
+    }
+
+    @SafeVarargs
+    private static <T> T firstNonNull(T... values) {
+        for (T v : values) if (v != null) return v;
+        return null;
     }
 
     private BookingDetailsPayload extractPayload(Booking booking) {
@@ -157,14 +262,6 @@ public class ReportController {
             return objectMapper.readValue(booking.getDetailsJson(), BookingDetailsPayload.class);
         } catch (Exception e) {
             return new BookingDetailsPayload();
-        }
-    }
-
-    private Integer parseId(String val) {
-        try {
-            return Integer.parseInt(val.replaceAll("\\D", ""));
-        } catch (Exception e) {
-            return 1;
         }
     }
 }

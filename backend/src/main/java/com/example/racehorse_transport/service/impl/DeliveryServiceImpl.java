@@ -35,6 +35,7 @@ public class DeliveryServiceImpl implements DeliveryService {
     private final SystemLogRepository systemLogRepository;
     private final com.example.racehorse_transport.service.HorseDeliveryLocationService horseDeliveryLocationService;
     private final com.example.racehorse_transport.repository.StaffRepository staffRepository;
+    private final com.example.racehorse_transport.service.StaffNotifier staffNotifier;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -200,6 +201,9 @@ public class DeliveryServiceImpl implements DeliveryService {
         logAction("DELIVERY_TIMEOUT", updated.getId(),
                 "Kích hoạt xử lý ngoại lệ bàn giao quá giờ: " + action + ", chi phí dự kiến: " + request.getEstimatedCost());
 
+        staffNotifier.toManagers(updated, "Quá hạn bàn giao · BK-" + updated.getId(),
+                ("RETURN_TO_HQ".equalsIgnoreCase(action) ? "Người nhận không tới, xe chở ngựa về trụ sở." : "Người nhận không tới quá 2 giờ, ngựa đưa vào chuồng lưu trú.")
+                        + " Liên hệ khách để hẹn lại.", "/manager/incidents");
         log.info("Delivery timeout reported for booking ID={}, action={}", updated.getId(), action);
         return mapToResponse(updated);
     }
@@ -319,7 +323,7 @@ public class DeliveryServiceImpl implements DeliveryService {
                 .totalHorses(b.getTotalHorses() != null ? b.getTotalHorses() : 1)
                 .horses(horseDtos)
                 .waybillNo(b.getWaybillNo())
-                .trips(payload.getTrips())
+                .trips(com.example.racehorse_transport.service.CaptureService.visibleTrips(payload))
                 .route(payload.getRoute())
                 .gate(payload.getGate())
                 .plan(payload.getPlan())
@@ -329,6 +333,7 @@ public class DeliveryServiceImpl implements DeliveryService {
                 .medical(payload.getMedical())
                 .intake(payload.getIntake())
                 .rejection(payload.getRejection())
+                .sendBack(payload.getSendBack())
                 .history(payload.getHistory())
                 .build();
     }

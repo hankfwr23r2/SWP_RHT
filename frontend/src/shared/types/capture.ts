@@ -1,4 +1,4 @@
-export type CapturePurpose = 'ARRIVE_PICKUP' | 'ARRIVE_CHECKPOINT' | 'UPLOAD_HANDOVER' | 'CUSTOMS_CLEARED' | 'CONFIRM_HOME' | 'EXCLUDE_UNFIT_HORSE' | 'SUBMIT_WELFARE' | 'SOS' | 'EXPENSE'
+export type CapturePurpose = 'ARRIVE_PICKUP' | 'ARRIVE_CHECKPOINT' | 'UPLOAD_HANDOVER' | 'CUSTOMS_CLEARED' | 'CONFIRM_HOME' | 'TOLL' | 'EXCLUDE_UNFIT_HORSE' | 'SUBMIT_WELFARE' | 'SOS' | 'EXPENSE'
 export interface CaptureEvidence {
   id: number
   url: string
