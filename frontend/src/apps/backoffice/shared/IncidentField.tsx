@@ -53,6 +53,8 @@ export function ExpenseForm({ b, inc, run }: { b: Booking; inc: Incident; run: R
   const [label, setLabel] = useState('')
   const [photo, setPhoto] = useState<string>()
   const [amount, setAmount] = useState('')
+  const formattedAmount = amount.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  const amountExceedsLimit = amount.length > 16
   const reset = () => { setPhoto(undefined); setAmount(''); setLabel('') }
   return (
     <>
@@ -60,8 +62,8 @@ export function ExpenseForm({ b, inc, run }: { b: Booking; inc: Incident; run: R
         <FormSelect id="ex-cat" className="form-control" style={{ minHeight: 48 }} value={category} onChange={e => setCategory(e.target.value as ExpenseCategory)}>{(Object.keys(EXPENSE_CATEGORY) as ExpenseCategory[]).map(k => <option key={k} value={k}>{EXPENSE_CATEGORY[k]}</option>)}</FormSelect></div>
       <CaptureField purpose="EXPENSE" label="Ảnh hóa đơn / biên lai (chụp trước)" required value={photo} onChange={setPhoto} />
       <div className="form-group" style={{ margin: 0 }}><label htmlFor="ex-label">Nội dung</label><input id="ex-label" className="form-control" style={{ minHeight: 48 }} value={label} onChange={e => setLabel(e.target.value)} /></div>
-      <div className="form-group" style={{ margin: 0 }}><label htmlFor="ex-amount">Số tiền trên hóa đơn (VNĐ){!photo && ' — chụp ảnh trước để mở khóa'}</label><input id="ex-amount" inputMode="numeric" className="form-control" style={{ minHeight: 48 }} disabled={!photo} value={amount} onChange={e => setAmount(e.target.value.replace(/\D/g, ''))} /></div>
-      <button className={`btn btn-outline ${s.big}`} disabled={!photo || !Number(amount)} onClick={() => run(async () => { await bookingsApi.addIncidentExpense(b.id, inc.id, session!.name, { category, label, photo: photo!, amount: Number(amount) }, inc); reset() }, 'Đã ghi chi phí kèm chứng từ')}>Thêm chi phí</button>
+      <div className="form-group" style={{ margin: 0 }}><label htmlFor="ex-amount">Số tiền trên hóa đơn (VNĐ){!photo && ' — chụp ảnh trước để mở khóa'}</label><input id="ex-amount" inputMode="numeric" className="form-control" style={{ minHeight: 48 }} disabled={!photo} value={formattedAmount} aria-invalid={amountExceedsLimit} onChange={e => setAmount(e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, ''))} />{amountExceedsLimit && <p className="form-error" role="alert">Số tiền vượt giới hạn thanh toán (9,999,999,999,999,999 VNĐ).</p>}</div>
+      <button className={`btn btn-outline ${s.big}`} disabled={!photo || !amount || amountExceedsLimit} onClick={() => run(async () => { await bookingsApi.addIncidentExpense(b.id, inc.id, session!.name, { category, label, photo: photo!, amount }, inc); reset() }, 'Đã ghi chi phí kèm chứng từ')}>Thêm chi phí</button>
     </>
   )
 }

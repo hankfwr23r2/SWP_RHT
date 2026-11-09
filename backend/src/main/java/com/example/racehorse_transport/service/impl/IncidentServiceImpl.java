@@ -14,6 +14,7 @@ import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.SystemLogRepository;
 import com.example.racehorse_transport.service.IncidentService;
 import com.example.racehorse_transport.util.BookingDetailsJson;
+import com.example.racehorse_transport.util.PaymentAmountLimits;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -265,6 +266,10 @@ public class IncidentServiceImpl implements IncidentService {
         }
         if (!List.of("customer", "carrier").contains(request.getPayer().toLowerCase(Locale.ROOT))) {
             throw new IllegalArgumentException("Bên chịu chi phí không hợp lệ.");
+        }
+        if (request.getAmount() != null
+                && request.getAmount().compareTo(PaymentAmountLimits.MAXIMUM_VND_AMOUNT) > 0) {
+            throw new IllegalArgumentException("Số tiền chi phí vượt quá giới hạn thanh toán được hỗ trợ.");
         }
         BookingDetailsPayload photoPayload = BookingDetailsJson.read(objectMapper, incident.getBookingID());
         captureService.attach(photoPayload, incident.getBookingID().getId(), incident.getTripId(), "EXPENSE", "", request.getPhoto(), actor);

@@ -291,6 +291,19 @@ class IncidentServiceImplTest {
     }
 
     @Test
+    void rejectsExpenseAboveSupportedPaymentLimitBeforeSaving() {
+        Incident incident = healthIncident(true);
+        var expense = new com.example.racehorse_transport.dto.incident.IncidentExpenseRequest();
+        expense.setCategory("vet_fee"); expense.setLabel("Khám tại trạm"); expense.setPhoto("invoice.jpg");
+        expense.setAmount(new BigDecimal("10000000000000000")); expense.setPayer("customer");
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.addExpense(7, expense, "admin", "ADMIN"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("giới hạn thanh toán");
+        assertThat(incident.getExpensesJson()).isNull();
+    }
+
+    @Test
     void genericCompletionCannotBypassHorseHealthWorkflow() {
         healthIncident(true);
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.completeResolution(7,
