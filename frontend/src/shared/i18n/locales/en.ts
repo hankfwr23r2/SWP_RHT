@@ -178,6 +178,7 @@ export const en = {
     terms: 'Terms and Policies',
   },
   status: {
+    schedule_change_required: 'New departure date needed',
     pending_intake: 'Pending Intake',
     under_review: 'Under Review',
     pending_commercial: 'Preparing Quotation',

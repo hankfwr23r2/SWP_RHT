@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useSearchParams } from 'react-router'
 import { useAuth } from '@shared/auth/AuthContext'
 import { formatDate, formatDateTime } from '@shared/lib/format'
 import { activeStaff } from '@shared/lib/booking'
@@ -11,6 +12,7 @@ import { useLoad } from '@shared/services/useLoad'
 import type { Booking, StaffRef } from '@shared/types/booking'
 import type { StaffMember } from '@shared/types/staff'
 import { useToast } from '@shared/ui/toast'
+import { Modal } from '@shared/ui/Modal'
 import { HorseDocsSection } from '../../../shared/BookingEvidence'
 import { OrderInfo, PartiesInfo, ReviewChips } from '../../../shared/BookingParts'
 import { SideTabsModal } from '../../../shared/SideTabsModal'
@@ -20,7 +22,7 @@ import { StaffPicker } from '../../../shared/StaffPicker'
 import { usePageData } from '@shared/routing/pageData'
 import type { bookingListLoader } from '../../../shared/loaders'
 
-type Tab = 'new' | 'running'
+type Tab = 'new' | 'running' | 'schedule'
 
 const initials = (name: string) => name.split(' ').filter(Boolean).slice(-2).map(w => w[0]).join('').toUpperCase()
 const hue = (id: string) => [...id].reduce((n, c) => n + c.charCodeAt(0) * 7, 0) % 360
@@ -321,10 +323,14 @@ export function IntakeModal({ b, allBookings, onClose, onDone }: { b: Booking; a
 export default function IntakePage() {
   const { t } = useTranslation()
   const { all, reload } = usePageData<typeof bookingListLoader>()
-  const [tab, setTab] = useState<Tab>('new')
+  const [params, setParams] = useSearchParams()
+  const group = params.get('group')
+  const tab: Tab = group === 'schedule' || group === 'running' ? group : 'new'
+  const setTab = (next: Tab) => setParams(next === 'new' ? {} : { group: next })
   const [open, setOpen] = useState<Booking | null>(null)
   const list = all ?? []
   const fresh = list.filter(b => b.status === 'pending_intake')
+  const schedule = list.filter(b => b.status === 'schedule_change_required')
   const running = list.filter(b => b.status === 'under_review')
   const columns: Column<Booking>[] = [
     { head: t('intakePage.colOrderId', 'Mã đơn'), cell: b => idCell(b) },
@@ -416,14 +422,20 @@ export default function IntakePage() {
           },
         },
     { head: t('intakePage.colStatus', 'Trạng thái'), cell: b => statusCell(b.status) },
-    { head: t('intakePage.colAction', 'Thao tác'), cell: b => (tab === 'new' ? <button className="btn btn-primary btn-sm" onClick={() => setOpen(b)}>{t('intakePage.intakeAction', 'Tiếp nhận')}</button> : null), right: true },
+    { head: t('intakePage.colAction', 'Thao tác'), cell: b => (tab !== 'running' ? <button className="btn btn-primary btn-sm" onClick={() => setOpen(b)}>{tab === 'schedule' ? 'Xem yêu cầu' : t('intakePage.intakeAction', 'Tiếp nhận')}</button> : null), right: true },
   ]
   return (
     <>
-      <ListPage title={t('intakePage.title', 'Tiếp nhận đơn hàng')} subtitle={t('intakePage.subtitle', 'Giao Chuyên viên và Điều phối viên thẩm định song song.')} tabs={[['new', t('intakePage.tabNew', 'Chờ tiếp nhận'), fresh.length], ['running', t('intakePage.tabRunning', 'Đang thẩm định'), running.length]]} tab={tab} onTab={setTab} hot={['new']}
-        rows={tab === 'new' ? fresh : running} rowKey={b => b.id} columns={columns} haystack={b => [b.id, b.customer, b.origin.name, b.dest.name]} dateOf={b => b.departAt} loaded={!!all}
-        emptyText={tab === 'new' ? t('intakePage.emptyNew', 'Không có đơn nào chờ tiếp nhận.') : t('intakePage.emptyRunning', 'Không có đơn nào đang thẩm định.')} />
-      {open && (
+      <ListPage title={t('intakePage.title', 'Tiếp nhận đơn hàng')} subtitle={t('intakePage.subtitle', 'Giao Chuyên viên và Điều phối viên thẩm định song song.')} tabs={[['new', t('intakePage.tabNew', 'Chờ tiếp nhận'), fresh.length], ['running', t('intakePage.tabRunning', 'Đang thẩm định'), running.length], ['schedule', 'Cần xác nhận lại lịch', schedule.length]]} tab={tab} onTab={setTab} hot={['new', 'schedule']}
+        rows={tab === 'schedule' ? schedule : tab === 'new' ? fresh : running} rowKey={b => b.id} columns={columns} haystack={b => [b.id, b.customer, b.origin.name, b.dest.name]} dateOf={b => b.departAt} loaded={!!all}
+        emptyText={tab === 'schedule' ? 'Không có đơn nào cần xác nhận lại lịch.' : tab === 'new' ? t('intakePage.emptyNew', 'Không có đơn nào chờ tiếp nhận.') : t('intakePage.emptyRunning', 'Không có đơn nào đang thẩm định.')} />
+      {open?.status === 'schedule_change_required' && <Modal title={`${open.id} · Cần xác nhận lại lịch`} onClose={() => setOpen(null)}>
+        <p>Ngày khởi hành cũ: <b>{formatDate(open.departAt)}</b>. Chờ khách chọn ngày mới, hủy yêu cầu hoặc nhờ hỗ trợ.</p>
+        <p>Người gửi: {open.consignor.name} · <a href={`tel:${open.consignor.phone}`}>{open.consignor.phone}</a></p>
+        {open.scheduleChange?.supportRequestedAt && <p className="alert alert-warning">Khách đã yêu cầu liên hệ hỗ trợ lúc {formatDateTime(open.scheduleChange.supportRequestedAt)}.</p>}
+        <p className="form-hint">Sau khi thống nhất, khách chọn ngày mới trong trang đơn hàng. Đơn sẽ quay về chờ tiếp nhận để kiểm tra lại hồ sơ, xe và kíp xe.</p>
+      </Modal>}
+      {open && open.status !== 'schedule_change_required' && (
         <IntakeModal
           b={open}
           allBookings={list}

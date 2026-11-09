@@ -70,6 +70,19 @@ class BillMailServiceTest {
     }
 
     @Test
+    void scheduleMailExplainsTheChoicesAndLinksToTheExistingOrderInBothLanguages() {
+        Booking vi = booking("Khách", "customer@example.com", "vi");
+        vi.setDepartureDate(Instant.parse("2026-11-29T17:00:00Z"));
+        mail.scheduleChangeRequired(vi);
+        Sent sent = sender.sent.getFirst();
+        assertThat(sent.text()).contains("30/11/2026", "chọn ngày mới", "hủy yêu cầu chưa thanh toán", "/orders/BK-033");
+        Booking en = booking("Customer", "customer@example.com", "en");
+        en.setDepartureDate(vi.getDepartureDate());
+        mail.scheduleChangeRequired(en);
+        assertThat(sender.sent.getLast().text()).contains("choose a new date", "cancel the unpaid request", "ask for support");
+    }
+
+    @Test
     void quoteMailListsTheLinesTotalsDeadlineAndLinkToTheOrder() {
         mail.quoteIssued(booking("Customer Test", "khach@example.com"),
                 List.of(line("Cước dịch vụ vận chuyển ngựa trọn gói", 14_420_000), line("Khoang tiêu chuẩn", 1_000_000)),

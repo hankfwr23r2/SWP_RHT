@@ -625,6 +625,8 @@ public class BookingServiceImpl implements BookingService {
             throw new IllegalStateException("Đơn hàng không ở bước chờ tiếp nhận (pending_intake)!");
         }
 
+        com.example.racehorse_transport.util.BookingSchedulePolicy.requireCurrentSchedule(booking, clock.instant());
+
         BookingDetailsPayload payload = extractPayload(booking);
 
         Map<String, Object> intakeMap = new HashMap<>();
@@ -727,6 +729,7 @@ public class BookingServiceImpl implements BookingService {
         if (request.getTrips() == null || request.getTrips().isEmpty()) {
             throw new IllegalArgumentException("Phương án điều phối phải có ít nhất 1 chuyến xe!");
         }
+        com.example.racehorse_transport.util.BookingSchedulePolicy.requireCurrentSchedule(booking, clock.instant());
         if (request.getRoute() != null
                 && !(request.getRoute() instanceof Map<?, ?> route && route.get("legs") instanceof List<?>)) {
             throw new IllegalArgumentException("Lộ trình phải có danh sách chặng!");
@@ -861,6 +864,7 @@ public class BookingServiceImpl implements BookingService {
         Integer bookingId = parseBookingId(bookingIdentifier);
         Booking booking = bookingRepository.findByIdForUpdate(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+        com.example.racehorse_transport.util.BookingSchedulePolicy.requireCurrentSchedule(booking, clock.instant());
 
         if (!"pending_commercial".equalsIgnoreCase(booking.getStatus())) {
             throw new IllegalStateException(
@@ -971,6 +975,7 @@ public class BookingServiceImpl implements BookingService {
         Integer bookingId = parseBookingId(bookingIdentifier);
         Booking booking = bookingRepository.findByIdForUpdate(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+        com.example.racehorse_transport.util.BookingSchedulePolicy.requireCurrentSchedule(booking, clock.instant());
 
         if (!"pending_commercial".equalsIgnoreCase(booking.getStatus())) {
             throw new IllegalStateException("Đơn hàng không ở bước duyệt báo giá (pending_commercial)!");
@@ -1012,8 +1017,10 @@ public class BookingServiceImpl implements BookingService {
         BigDecimal deposit = totals.deposit();
         BigDecimal balance = totals.balance();
 
-        Instant now = Instant.now();
+        Instant now = clock.instant();
         Instant expiresAt = now.plus(quoteValidHours, ChronoUnit.HOURS);
+        Instant scheduleDeadline = com.example.racehorse_transport.util.BookingSchedulePolicy.deadline(booking);
+        if (scheduleDeadline != null && scheduleDeadline.isBefore(expiresAt)) expiresAt = scheduleDeadline;
         for (var horse : payload.getHorses()) {
             var insurance = horse.getInsurance();
             if (insurance != null && "assistance".equals(insurance.getOption()) && !HorseInsurancePolicy.blank(insurance.getQuoteValidUntil())) {
@@ -2069,6 +2076,7 @@ public class BookingServiceImpl implements BookingService {
                 .settlement(payload != null ? payload.getSettlement() : null)
                 .rating(payload != null ? payload.getRating() : null)
                 .intake(payload != null ? payload.getIntake() : null)
+                .scheduleChange(payload != null ? payload.getScheduleChange() : null)
                 .rejection(payload != null ? payload.getRejection() : null)
                 .history(payload != null ? payload.getHistory() : null)
                 .build();
@@ -2908,6 +2916,7 @@ public class BookingServiceImpl implements BookingService {
         if (status == null) return "Đang xử lý";
         return switch (status.toLowerCase()) {
             case "pending_intake" -> "Đã gửi, chờ tiếp nhận";
+            case "schedule_change_required" -> "Cần xác nhận lại lịch";
             case "under_review" -> "Đang thẩm định";
             case "pending_commercial" -> "Đang lập báo giá";
             case "awaiting_payment" -> "Chờ đặt cọc";
@@ -2935,7 +2944,7 @@ public class BookingServiceImpl implements BookingService {
     private String resolvePublicTone(String status) {
         if (status == null) return null;
         return switch (status.toLowerCase()) {
-            case "awaiting_payment", "settlement_issued", "emergency_plan_active" -> "warn";
+            case "schedule_change_required", "awaiting_payment", "settlement_issued", "emergency_plan_active" -> "warn";
             case "incident_reported", "pending_emergency_approval", "payment_overdue", "rejected" -> "bad";
             case "completed", "waybill_issued", "clearance_done", "delivered_pending_settlement" -> "done";
             default -> null;

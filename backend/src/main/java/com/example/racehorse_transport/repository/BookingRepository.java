@@ -12,6 +12,10 @@ import java.util.List;
 
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Integer> {
+    @org.springframework.data.jpa.repository.Query("select b.id from Booking b where b.status in :statuses and b.departureDate < :today order by b.id")
+    List<Integer> findScheduleChangeCandidates(
+            @org.springframework.data.repository.query.Param("statuses") Collection<String> statuses,
+            @org.springframework.data.repository.query.Param("today") java.time.Instant today);
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @org.springframework.data.jpa.repository.Query("select b from Booking b where b.id = :id")
     java.util.Optional<Booking> findByIdForUpdate(@org.springframework.data.repository.query.Param("id") Integer id);

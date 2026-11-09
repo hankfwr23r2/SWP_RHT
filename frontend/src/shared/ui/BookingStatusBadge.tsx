@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { BOOKING_STATUS, type BookingStatus, type Tone } from '../config/booking-rules'
 
 const ICON: Record<BookingStatus, string> = {
+  schedule_change_required: 'fa-calendar-days',
   pending_intake: 'fa-inbox',
   under_review: 'fa-magnifying-glass',
   pending_commercial: 'fa-file-invoice-dollar',

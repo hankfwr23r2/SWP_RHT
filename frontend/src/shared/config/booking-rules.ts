@@ -51,6 +51,7 @@ export const HORSE_DOC_TYPES = Object.keys(HORSE_DOC) as HorseDocType[]
 
 // ===== Trạng thái đơn (PRD mục 13). Khách thấy nhãn tiếng Việt; nội bộ thấy thêm mã gốc. =====
 export type BookingStatus =
+  | 'schedule_change_required'
   | 'pending_intake' | 'under_review' | 'pending_commercial' | 'awaiting_payment' | 'quote_expired' // Flow 1
   | 'waybill_issued' | 'clearance_in_progress' | 'clearance_done' // Flow 2
   | 'ready_for_pickup' | 'en_route_to_pickup' | 'pickup_failed' // Flow 3; pickup_failed: tới điểm đón nhưng không còn ngựa nào nhận được
@@ -62,6 +63,7 @@ export type BookingStatus =
   | 'rejected' // nhà xe từ chối đơn: Manager lúc tiếp nhận hoặc Coordinator không duyệt lộ trình (PRD mục 2.3, 2.4)
 export type Tone = 'info' | 'warning' | 'success' | 'danger' | 'muted' | 'orange'
 export const BOOKING_STATUS: Record<BookingStatus, { code: string; label: string; customerLabel: string; tone: Tone }> = {
+  schedule_change_required: { code: 'Schedule Change Required', label: 'Cần xác nhận lại lịch', customerLabel: 'Cần xác nhận lại lịch', tone: 'warning' },
   pending_intake: { code: 'Pending Manager Intake', label: 'Chờ tiếp nhận', customerLabel: 'Chờ tiếp nhận', tone: 'info' },
   under_review: { code: 'Under Internal Review', label: 'Đang thẩm định', customerLabel: 'Đang thẩm định', tone: 'info' },
   pending_commercial: { code: 'Pending Final Commercial Approval', label: 'Chờ duyệt báo giá', customerLabel: 'Đang lập báo giá', tone: 'orange' },
@@ -91,6 +93,7 @@ export const BOOKING_STATUS: Record<BookingStatus, { code: string; label: string
 
 // Nhãn ngắn của trạng thái cho tab và bảng của nhân viên (nhãn đầy đủ nằm ở tooltip)
 export const STATUS_SHORT: Record<BookingStatus, string> = {
+  schedule_change_required: 'Cần đổi lịch',
   pending_intake: 'Chờ tiếp nhận', under_review: 'Thẩm định', pending_commercial: 'Chờ duyệt giá', awaiting_payment: 'Chờ đặt cọc', quote_expired: 'Hết hạn',
   waybill_issued: 'Có vận đơn', clearance_in_progress: 'Làm giấy tờ', clearance_done: 'Giấy tờ xong', ready_for_pickup: 'Sẵn sàng đón', en_route_to_pickup: 'Đến điểm đón', pickup_failed: 'Không nhận ngựa',
   in_transit: 'Vận chuyển', incident_reported: 'Báo sự cố', pending_emergency_approval: 'Chờ duyệt khẩn cấp', emergency_plan_active: 'Xử lý sự cố',
@@ -107,6 +110,7 @@ export const statusRank = (s: BookingStatus): number => (CLOSED.includes(s) ? MA
 // Các bước khách thấy trên thanh tiến độ của đơn (các luồng sau sẽ thêm bước vào cuối)
 export const BOOKING_STEPS = ['Gửi đơn', 'Thẩm định', 'Báo giá', 'Đặt cọc', 'Giấy tờ', 'Sẵn sàng', 'Vận chuyển', 'Quyết toán']
 export const stepOf = (s: BookingStatus): number => ({
+  schedule_change_required: 0,
   pending_intake: 0, under_review: 1, pending_commercial: 2, awaiting_payment: 3, quote_expired: 3,
   waybill_issued: 4, clearance_in_progress: 4,
   clearance_done: 5, ready_for_pickup: 5, en_route_to_pickup: 5, pickup_failed: 5,
@@ -117,7 +121,7 @@ export const stepOf = (s: BookingStatus): number => ({
 
 // Tra cứu công khai ở trang chủ chỉ cho thấy 5 bước gọn
 export const PUBLIC_STEPS = ['Gửi đơn', 'Thẩm định', 'Đặt cọc', 'Chuẩn bị chuyến', 'Vận chuyển']
-export const publicStepOf = (s: BookingStatus): number => (s === 'pending_intake' || s === 'cancelled' || s === 'rejected' ? 0 : s === 'under_review' || s === 'pending_commercial' ? 1 : s === 'awaiting_payment' || s === 'quote_expired' ? 2 : ['in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed'].includes(s) ? 4 : 3)
+export const publicStepOf = (s: BookingStatus): number => (s === 'schedule_change_required' || s === 'pending_intake' || s === 'cancelled' || s === 'rejected' ? 0 : s === 'under_review' || s === 'pending_commercial' ? 1 : s === 'awaiting_payment' || s === 'quote_expired' ? 2 : ['in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed'].includes(s) ? 4 : 3)
 
 // ===== Sự cố và chi phí (Flow 5, PRD mục 6, 11.5) =====
 // handover_timeout: người nhận không tới điểm giao (tài xế báo ở bước giao ngựa, không chọn trong form SOS)

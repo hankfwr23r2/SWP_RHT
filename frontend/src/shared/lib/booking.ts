@@ -492,6 +492,7 @@ export const ORDER_GROUPS: Record<OrderGroup, { label: string; icon: string; hin
 export function orderGroupOf(b: { status: BookingStatus; medical?: { status: string } }): OrderGroup {
   if (b.medical?.status === 'resubmit' && b.status === 'under_review') return 'supplement'
   switch (b.status) {
+    case 'schedule_change_required': return 'new'
     case 'pending_intake': case 'under_review': case 'pending_commercial': return 'new'
     case 'awaiting_payment': case 'waybill_issued': case 'clearance_in_progress': case 'clearance_done': case 'ready_for_pickup': return 'approved'
     case 'en_route_to_pickup': case 'pickup_failed': case 'in_transit': case 'incident_reported': case 'pending_emergency_approval': case 'emergency_plan_active':
@@ -506,6 +507,7 @@ export function orderGroupOf(b: { status: BookingStatus; medical?: { status: str
 export type OrderTab = 'confirm' | 'supplement' | 'pay' | 'prepare' | 'moving' | 'settle' | 'done' | 'closed'
 export function orderTabOf(b: Pick<Booking, 'status' | 'medical' | 'balance' | 'settlement'>): OrderTab {
   switch (b.status) {
+    case 'schedule_change_required': return 'confirm'
     case 'pending_intake': case 'under_review': return b.medical?.status === 'resubmit' && b.status === 'under_review' ? 'supplement' : 'confirm'
     case 'pending_commercial': return 'confirm'
     case 'awaiting_payment': return 'pay'
@@ -526,6 +528,7 @@ export function orderTabOf(b: Pick<Booking, 'status' | 'medical' | 'balance' | '
 export type BoardCol = 'intake' | 'review' | 'quote' | 'deposit' | 'prepare' | 'moving' | 'settle' | 'done'
 export function managerBoardOf(s: BookingStatus): BoardCol | undefined {
   switch (s) {
+    case 'schedule_change_required': return 'intake'
     case 'pending_intake': return 'intake'
     case 'under_review': return 'review'
     case 'pending_commercial': return 'quote'
@@ -556,7 +559,7 @@ export function effectiveArrivalOf(b: { route?: Pick<RoutePlan, 'legs'>; trips?:
 
 // Số đơn đang chờ Manager (menu và trang Tổng quan). `moving` chỉ để theo dõi, không phải việc cần xử lý.
 export const managerCounts = (list: Pick<Booking, 'status' | 'incidents' | 'medical'>[]) => ({
-  intake: list.filter(b => b.status === 'pending_intake').length,
+  intake: list.filter(b => b.status === 'pending_intake' || b.status === 'schedule_change_required').length,
   quote: list.filter(b => b.status === 'pending_commercial').length,
   // Sự cố chờ duyệt và đơn không nhận được ngựa chờ hủy: cả hai cần quản lý xử lý ngay
   incident: list.reduce((n, b) => n + (b.incidents ?? []).filter(i => i.status === 'pending_approval').length, 0)

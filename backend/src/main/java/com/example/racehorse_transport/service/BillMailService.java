@@ -53,6 +53,16 @@ public class BillMailService {
         }
     }
 
+    public void scheduleChangeRequired(Booking booking) {
+        boolean en = english(booking);
+        String day = DateTimeFormatter.ofPattern("dd/MM/yyyy").withZone(VN).format(booking.getDepartureDate());
+        String message = en
+                ? "The requested departure date " + day + " has passed before preparations were completed. Please choose a new date, cancel the unpaid request, or ask for support on the order page. The company will review and confirm your new schedule."
+                : "Ngày khởi hành dự kiến " + day + " đã qua, nhưng đơn chưa hoàn tất chuẩn bị chuyến. Vui lòng chọn ngày mới, hủy yêu cầu chưa thanh toán hoặc liên hệ hỗ trợ trong trang đơn hàng. Công ty sẽ kiểm tra và xác nhận lịch mới.";
+        send(booking, (en ? "Please confirm a new schedule: " : "Cần xác nhận lại lịch: ") + code(booking),
+                en ? "New departure date needed" : "Cần xác nhận lại lịch", "<p>" + esc(message) + "</p>", message);
+    }
+
     public void quoteIssued(Booking booking, List<QuoteLineDto> lines, BigDecimal total, BigDecimal deposit,
             BigDecimal balance, Instant expiresAt) {
         boolean en = english(booking);

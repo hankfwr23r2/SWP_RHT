@@ -218,6 +218,9 @@ export const customerBookingsApi = {
     await paymentApi.cancelWithRefund(id, reason)
     return toCustomerView(toBooking(await backendBookingApi.getCustomerBookingById(id), customer))
   },
+  changeSchedule: async (id: string, day: string): Promise<void> => { await backendBookingApi.changeSchedule(id, day) },
+  cancelScheduleRequest: async (id: string, reason: string): Promise<void> => { await backendBookingApi.cancelScheduleRequest(id, reason) },
+  requestScheduleSupport: async (id: string): Promise<void> => { await backendBookingApi.requestScheduleSupport(id) },
   resubmit: async (customer: string, id: string): Promise<CustomerBookingView> =>
     toCustomerView(toBooking(await backendBookingApi.resubmitDocuments(id), customer)),
   // Link sang cổng VNPAY cho cọc 30% / số dư 70%; đơn chỉ đổi trạng thái khi VNPAY xác nhận đã nhận tiền

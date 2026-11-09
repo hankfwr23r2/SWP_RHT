@@ -10,6 +10,7 @@ public final class BookingStatusLabels {
 
     private static final Map<String, Label> LABELS = Map.ofEntries(
             Map.entry("pending_intake", new Label("Chờ tiếp nhận", "Chờ tiếp nhận")),
+            Map.entry("schedule_change_required", new Label("Cần xác nhận lại lịch", "Cần xác nhận lại lịch")),
             Map.entry("under_review", new Label("Đang thẩm định", "Đang thẩm định")),
             // Mã cũ còn trong dữ liệu: đơn đang thẩm định, chờ khách bổ sung hồ sơ
             Map.entry("resubmission_requested", new Label("Đang thẩm định", "Đang thẩm định")),

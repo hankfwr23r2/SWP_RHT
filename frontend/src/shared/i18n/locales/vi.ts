@@ -178,6 +178,7 @@ export const vi = {
     terms: 'Điều khoản và chính sách',
   },
   status: {
+    schedule_change_required: 'Cần xác nhận lại lịch',
     pending_intake: 'Chờ tiếp nhận',
     under_review: 'Đang thẩm định',
     pending_commercial: 'Đang lập báo giá',

@@ -15,6 +15,10 @@ const booking: CustomerBookingView = {
 }
 
 describe('đặt cọc sát hạn', () => {
+  it('offers a schedule choice rather than a deposit for an overdue request', () => {
+    expect(nextStep({ ...booking, status: 'schedule_change_required' }, deadline))
+      .toMatchObject({ actionNeeded: true, title: 'Cần xác nhận lại lịch', cta: 'Chọn phương án' })
+  })
   it('còn hạn vẫn yêu cầu đặt cọc', () => {
     expect(nextStep(booking, deadline - 1000)).toMatchObject({ actionNeeded: true, cta: 'Đặt cọc 30%' })
   })

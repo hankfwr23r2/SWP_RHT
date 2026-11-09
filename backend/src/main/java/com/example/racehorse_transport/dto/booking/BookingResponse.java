@@ -51,6 +51,7 @@ public class BookingResponse {
     private Object settlement;
     private Object rating;
     private Object intake;
+    private java.util.Map<String, Object> scheduleChange;
     private Object rejection;
     private List<java.util.Map<String, Object>> history;
 

@@ -88,6 +88,7 @@ public class VnpayServiceImpl implements VnpayService {
         String prefix;
         switch (type) {
             case "DEPOSIT" -> {
+                com.example.racehorse_transport.util.BookingSchedulePolicy.requireCurrentSchedule(booking, now);
                 if (!"awaiting_payment".equalsIgnoreCase(booking.getStatus())) {
                     throw new IllegalStateException("Đơn hàng không ở bước chờ thanh toán đặt cọc!");
                 }
@@ -99,6 +100,8 @@ public class VnpayServiceImpl implements VnpayService {
                     throw new IllegalStateException("Báo giá thiếu thời hạn thanh toán, vui lòng liên hệ nhà xe.");
                 }
                 Instant quoteDeadline = DepositPaymentWindow.expiresAt(quotation);
+                Instant scheduleDeadline = com.example.racehorse_transport.util.BookingSchedulePolicy.deadline(booking);
+                if (scheduleDeadline != null && scheduleDeadline.isBefore(quoteDeadline)) quoteDeadline = scheduleDeadline;
                 if (!now.isBefore(quoteDeadline)) {
                     throw new IllegalStateException("Báo giá đã hết hạn, không thể đặt cọc!");
                 }
@@ -256,7 +259,8 @@ public class VnpayServiceImpl implements VnpayService {
             withinDepositWindow = quote.isPresent() && quote.get().getExpiresAt() != null
                     && "PENDING".equalsIgnoreCase(quote.get().getStatus())
                     && DepositPaymentWindow.canConfirm(quote.get(), payment, paidAt, receivedAt,
-                            props.getDepositConfirmationGraceMinutes());
+                            props.getDepositConfirmationGraceMinutes())
+                    && !com.example.racehorse_transport.util.BookingSchedulePolicy.overdue(booking, paidAt);
         }
         payment.setPaymentDate(paidAt != null ? paidAt : receivedAt);
         if (replaced || !canApply(payment, booking, others) || !withinDepositWindow) {
