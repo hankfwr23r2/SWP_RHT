@@ -1,7 +1,16 @@
 /// <reference types="vitest/config" />
 import react from '@vitejs/plugin-react'
 import { resolve } from 'node:path'
-import { defineConfig, type Connect, type Plugin } from 'vite'
+import { createLogger, defineConfig, type Connect, type Plugin } from 'vite'
+
+const logger = createLogger()
+const customLogger = {
+  ...logger,
+  error: (msg: string, options?: any) => {
+    if (typeof msg === 'string' && (msg.includes('http proxy error') || msg.includes('ECONNREFUSED'))) return
+    logger.error(msg, options)
+  },
+}
 
 // 2 app build riêng: customer (công khai + khách) ở "/", backoffice (nhân viên nội bộ) ở "/backoffice".
 // Gói customer không chứa code của backoffice.
@@ -20,6 +29,7 @@ const multiAppFallback: Plugin = {
 }
 
 export default defineConfig({
+  customLogger,
   plugins: [react(), multiAppFallback],
   css: { modules: { localsConvention: 'camelCase' } },
   resolve: {
@@ -64,6 +74,15 @@ export default defineConfig({
         target: process.env.API_PROXY_TARGET ?? 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
+        configure: (proxy) => {
+          proxy.removeAllListeners('error')
+          proxy.on('error', (_err, _req, res) => {
+            if (res && 'writeHead' in res && !res.headersSent) {
+              res.writeHead(503, { 'Content-Type': 'application/json' })
+              res.end(JSON.stringify({ status: 'error', message: 'Backend unavailable' }))
+            }
+          })
+        },
       },
     }
   }
