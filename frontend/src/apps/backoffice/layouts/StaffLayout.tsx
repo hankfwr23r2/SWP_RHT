@@ -6,6 +6,7 @@ import { useAuth } from '@shared/auth/AuthContext'
 import { PageTransition } from '@shared/motion/motion'
 import { ROLE_LABEL, type StaffRole } from '@shared/types/role'
 import { AppHeader, appHeaderStyles as h } from '@shared/ui/AppHeader'
+import { NoticeBell } from '@shared/ui/NoticeBell'
 import { TranslateToggle } from '@shared/ui/TranslateToggle'
 import { HOME_OF, STAFF_MENUS } from './staffMenus'
 import s from './StaffLayout.module.css'
@@ -28,6 +29,7 @@ function Header() {
       homeHref={role ? HOME_OF[role] : '/login'} badge={role && t(`roles.${role}`, ROLE_LABEL[role])}
       links={role ? STAFF_MENUS[role].map(([to, label]): [string, string] => [to, t(`staffMenus.${to}`, label)]) : []} userName={session?.name} onProfile={() => setShowProfile(true)}
       onLogout={() => { logout(); navigate('/login') }}
+      extra={role ? <NoticeBell /> : undefined}
     />
     {showProfile && session && <StaffProfileModal session={session} onClose={() => setShowProfile(false)} />}
     </>

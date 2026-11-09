@@ -38,6 +38,7 @@ public class SettlementServiceImpl implements SettlementService {
     private final StaffRepository staffRepository;
     private final ObjectMapper objectMapper;
     private final com.example.racehorse_transport.service.BillMailService billMailService;
+    private final com.example.racehorse_transport.service.StaffNotifier staffNotifier;
 
     /**
      * 1. Kê khai chi phí phát sinh thực tế có chứng từ (Evidence-First - Flow 6, bước 2)
@@ -95,6 +96,10 @@ public class SettlementServiceImpl implements SettlementService {
 
         savePayload(booking, payload);
         Booking saved = bookingRepository.save(booking);
+        if ("expenses_submitted".equals(saved.getStatus())) {
+            staffNotifier.toManagers(saved, "Tài xế đã nộp bảng kê · BK-" + saved.getId(),
+                    "Có " + expenses.size() + " khoản chi phát sinh cần đối soát trước khi phát hành quyết toán.", "/manager");
+        }
         log.info("Submitted expenses for booking ID={}: status={}", saved.getId(), saved.getStatus());
         if (expenses.isEmpty() && payload.getSettlement() instanceof Map<?, ?> issued && issued.get("dueAt") instanceof Number due) {
             billMailService.settlementIssued(saved, List.of(), BigDecimal.ZERO, Instant.ofEpochMilli(due.longValue()));
@@ -503,7 +508,7 @@ public class SettlementServiceImpl implements SettlementService {
                 .totalHorses(b.getTotalHorses() != null ? b.getTotalHorses() : 1)
                 .horses(payload.getHorses())
                 .waybillNo(b.getWaybillNo())
-                .trips(payload.getTrips())
+                .trips(com.example.racehorse_transport.service.CaptureService.visibleTrips(payload))
                 .route(payload.getRoute())
                 .gate(payload.getGate())
                 .plan(payload.getPlan())
@@ -516,6 +521,7 @@ public class SettlementServiceImpl implements SettlementService {
                 .rating(payload.getRating())
                 .intake(payload.getIntake())
                 .rejection(payload.getRejection())
+                .sendBack(payload.getSendBack())
                 .history(payload.getHistory())
                 .build();
     }

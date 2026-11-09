@@ -36,6 +36,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final BookingRepository bookingRepository;
     private final QuotationRepository quotationRepository;
     private final ObjectMapper objectMapper;
+    private final com.example.racehorse_transport.service.StaffNotifier staffNotifier;
 
     @Override
     @Transactional
@@ -134,6 +135,8 @@ public class PaymentServiceImpl implements PaymentService {
             appendHistory(payload, actor, "Hủy đơn");
             savePayload(booking, payload);
             bookingRepository.save(booking);
+            staffNotifier.toManagers(booking, "Khách hủy đơn · BK-" + booking.getId(),
+                    "Khách hủy đơn trước khi đặt cọc" + (reason == null || reason.isBlank() ? "." : ": " + reason), "/manager/cancelled-orders");
 
             return CancelWithRefundResponse.builder()
                     .bookingId(booking.getId())
@@ -149,8 +152,11 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         // Trường hợp 2: Đã cọc -> Khách tự ý hủy đơn: Mất 100% tiền cọc (không hoàn tiền)
-        return forfeitDeposit(booking, depositOpt.get(), reason, actor, "Hủy đơn sau khi đặt cọc",
+        CancelWithRefundResponse forfeited = forfeitDeposit(booking, depositOpt.get(), reason, actor, "Hủy đơn sau khi đặt cọc",
                 "Khách hàng tự ý hủy đơn sau khi đặt cọc.");
+        staffNotifier.toManagers(booking, "Khách hủy đơn đã cọc · BK-" + booking.getId(),
+                "Khách hủy sau khi đặt cọc, tiền cọc không hoàn. Kiểm tra khoản bảo hiểm thu hộ cần đối soát.", "/manager/cancelled-orders");
+        return forfeited;
     }
 
     /**

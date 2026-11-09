@@ -14,11 +14,15 @@ export function InsuranceLink({ b }: { b: Booking }) {
   const remaining = b.horses.filter(h => insuranceBeforeQuote(b.status)
     ? !h.insurance.option || (h.insurance.option !== 'none' && !h.insurance.reviewed)
     : h.insurance.option === 'assistance' && !h.insurance.arranged).length
+  // Bảo hiểm làm ở trang riêng: còn việc thì nói rõ việc đó chặn bước nào (báo giá hoặc xe xuất phát)
+  const blocks = insuranceBeforeQuote(b.status)
+    ? t('specialistInsurance.blocksQuote', 'Quản lý chưa gửi được báo giá cho tới khi bảo hiểm xong.')
+    : t('specialistInsurance.blocksDeparture', 'Tài xế chưa bắt đầu hành trình được cho tới khi hợp đồng bảo hiểm được xác nhận.')
   return (
-    <div className={`card ${s.link}`}>
+    <div className={`card ${s.link}`} role={remaining ? 'alert' : undefined} style={remaining ? { borderColor: 'var(--amber, #d97706)', background: 'var(--warning-soft, #fffbeb)' } : undefined}>
       <div>
-        <b>{t('specialistInsurance.title', 'Bảo hiểm')}</b>
-        <p>{remaining ? t('specialistInsurance.linkCardRemaining', '{{remaining}}/{{total}} ngựa còn cần xử lý bảo hiểm.', { remaining, total: b.horses.length }) : t('specialistInsurance.linkCardDone', 'Xem tiến độ báo giá và hợp đồng bảo hiểm.')}</p>
+        <b>{remaining ? <><i className="fa-solid fa-triangle-exclamation" /> </> : null}{t('specialistInsurance.title', 'Bảo hiểm')}</b>
+        <p>{remaining ? <>{t('specialistInsurance.linkCardRemaining', '{{remaining}}/{{total}} ngựa còn cần xử lý bảo hiểm.', { remaining, total: b.horses.length })} {blocks}</> : t('specialistInsurance.linkCardDone', 'Xem tiến độ báo giá và hợp đồng bảo hiểm.')}</p>
       </div>
       <Link className="btn btn-outline btn-sm" to={`/specialist/insurance/${b.id}`}>
         {t('specialistInsurance.openInsurance', 'Mở bảo hiểm')} <i className="fa-solid fa-arrow-right" />

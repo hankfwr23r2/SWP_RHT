@@ -24,11 +24,13 @@ public class TripReportResponse {
     private String otd;
     private Integer otdMinutes;
     private Double incidentCost;
+    private Long tollCost; // tổng phí cầu đường tài xế ghi theo hóa đơn (nhà xe chịu)
+    private List<java.util.Map<String, Object>> tolls;
     private String incidentNote;
     private String totalTime;
     private List<ReportLegDto> legs;
-    private List<List<Object>> health;
-    private List<List<Object>> events;
+    private List<List<Object>> health; // [thời điểm ms, nội dung, bình thường?]
+    private List<List<Object>> events; // [thời điểm ms, nội dung, đúng kế hoạch?]
     private Integer rating;
     private String feedback;
 }

@@ -9,7 +9,7 @@ import lombok.Setter;
 
 import java.time.Instant;
 
-// Kết quả đã lấy từ dịch vụ chỉ đường (tuyến Valhalla, phí Vietmap), khóa là sha256 của bộ tham số
+// Kết quả đã lấy từ dịch vụ chỉ đường (tuyến Valhalla), khóa là sha256 của bộ tham số
 @Getter
 @Setter
 @Entity

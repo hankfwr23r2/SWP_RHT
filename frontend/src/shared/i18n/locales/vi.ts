@@ -1234,6 +1234,8 @@ export const vi = {
     selectHorse: 'Chọn ngựa ({{count}})',
     selectHorseHint: 'Lưu hoặc hủy thay đổi trước khi chuyển ngựa.',
     linkCardRemaining: '{{remaining}}/{{total}} ngựa còn cần xử lý bảo hiểm.',
+    blocksQuote: 'Quản lý chưa gửi được báo giá cho tới khi bảo hiểm xong.',
+    blocksDeparture: 'Tài xế chưa bắt đầu hành trình được cho tới khi hợp đồng bảo hiểm được xác nhận.',
     linkCardDone: 'Xem tiến độ báo giá và hợp đồng bảo hiểm.',
     confirmedWithCustomer: 'Lựa chọn đã xác nhận với khách',
     selectAfterConfirm: 'Chọn sau khi xác nhận với khách',

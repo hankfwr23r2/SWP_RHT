@@ -100,7 +100,6 @@ export interface BookingServiceSnapshot {
 export interface StaffRef { id: string; name: string }
 
 // Manager trả đơn về Chuyên viên (duyệt lại hồ sơ ngựa) hoặc Điều phối viên (làm lại xe và lộ trình)
-export interface SentBack { to: 'specialist' | 'coordinator'; reason: string; at: number; by: string }
 export interface MedicalReview {
   status: 'pending' | 'approved' | 'resubmit'
   at?: number
@@ -221,7 +220,9 @@ export interface VehicleTrip {
   run?: TripRun
   incidentRoute?: IncidentPlan & { incidentId: number; approvedAt: number; approvedBy: string }
   homeReturn?: HomeReturn
+  tolls?: TollReceipt[] // phí cầu đường tài xế ghi theo hóa đơn, nhà xe chịu; khách không thấy
 }
+export interface TollReceipt { id: string; amount: number; station: string; photo: string; at: number; by: string }
 export interface Waybill { no: string; issuedAt: number }
 export interface PlanConfirmed { at: number; by: string; note: string }
 
@@ -304,7 +305,6 @@ export interface Booking {
   medical?: MedicalReview
   trips?: VehicleTrip[] // Coordinator chọn khi chốt phương án; chưa chốt thì chưa có
   plan?: PlanConfirmed // Coordinator đã xác nhận xe và lộ trình
-  sentBack?: SentBack // Manager trả lại để làm lại; xóa khi người đó làm xong
   routeId?: number
   route?: RoutePlan // một lộ trình dùng chung cho mọi xe
   quote?: Quote
@@ -323,4 +323,12 @@ export interface Booking {
   rating?: Rating
   cancellation?: Cancellation
   rejection?: Rejection
+  sendBack?: SendBack // lý do Quản lý trả lại từng bên; bên nào làm lại xong thì phần của bên đó mất
+}
+
+export interface SendBack {
+  at: number
+  by: string
+  specialist?: string
+  coordinator?: string
 }

@@ -22,7 +22,7 @@ public class CaptureService {
     private final StaffRepository staff;
     private final StorageService storage;
     private final ObjectMapper objectMapper;
-    private static final Set<String> DRIVER_PURPOSES = Set.of("ARRIVE_PICKUP", "ARRIVE_CHECKPOINT", "UPLOAD_HANDOVER", "CUSTOMS_CLEARED", "CONFIRM_HOME");
+    private static final Set<String> DRIVER_PURPOSES = Set.of("ARRIVE_PICKUP", "ARRIVE_CHECKPOINT", "UPLOAD_HANDOVER", "CUSTOMS_CLEARED", "CONFIRM_HOME", "TOLL");
     private static final Set<String> ESCORT_PURPOSES = Set.of("EXCLUDE_UNFIT_HORSE", "SUBMIT_WELFARE");
     private static final Set<String> BOTH_PURPOSES = Set.of("SOS", "EXPENSE");
 
@@ -72,9 +72,24 @@ public class CaptureService {
         }
         Map<String, CaptureEvidenceDto> visible = new LinkedHashMap<>();
         payload.getPhotoEvidence().forEach((url, evidence) -> {
+            // Hóa đơn phí cầu đường là chi phí nội bộ của nhà xe: khách không xem
+            if ("TOLL".equals(evidence.purpose())) return;
             if (!BOTH_PURPOSES.contains(evidence.purpose()) || publishedReceipts.contains(url)) visible.put(url, evidence);
         });
         return visible;
+    }
+
+    // Phí cầu đường trên từng chuyến là chi phí nội bộ của nhà xe: bỏ khỏi dữ liệu trả cho khách
+    public static List<com.example.racehorse_transport.dto.coordinator.VehicleTripDto> visibleTrips(BookingDetailsPayload payload) {
+        if (payload == null || payload.getTrips() == null) return null;
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getAuthorities().stream().noneMatch(a -> "ROLE_CUSTOMER".equals(a.getAuthority()))) return payload.getTrips();
+        return payload.getTrips().stream().map(trip -> {
+            var copy = new com.example.racehorse_transport.dto.coordinator.VehicleTripDto();
+            org.springframework.beans.BeanUtils.copyProperties(trip, copy);
+            copy.setTolls(null);
+            return copy;
+        }).toList();
     }
 
     private void validateImage(MultipartFile file) {

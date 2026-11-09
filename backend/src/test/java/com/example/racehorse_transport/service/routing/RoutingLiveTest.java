@@ -6,12 +6,11 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.OptionalLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 // Gọi dịch vụ thật để biết mẫu đã lưu còn đúng định dạng. Không chạy trên CI:
-// Valhalla chỉ chạy khi ROUTING_LIVE_TEST=1 (máy chủ công khai, giới hạn ~1 lần/giây); Vietmap chỉ chạy khi có VIETMAP_API_KEY.
+// Valhalla chỉ chạy khi ROUTING_LIVE_TEST=1 (máy chủ công khai, giới hạn ~1 lần/giây).
 class RoutingLiveTest {
 
     private static final GeoPoint HCM = new GeoPoint(10.7769, 106.7009);
@@ -30,15 +29,5 @@ class RoutingLiveTest {
         assertThat(route.legs().get(0).km()).isBetween(60.0, 100.0);
         assertThat(route.legs().get(1).km()).isBetween(140.0, 200.0);
         assertThat(route.legs().get(1).driveSeconds()).isPositive();
-    }
-
-    @Test
-    @EnabledIfEnvironmentVariable(named = "VIETMAP_API_KEY", matches = ".+")
-    void vietmapReturnsATruckTollInsideVietnam() {
-        OptionalLong toll = new VietmapTollClient("https://maps.vietmap.vn/api", System.getenv("VIETMAP_API_KEY"), json)
-                .truckToll(HCM, MOC_BAI, 8000);
-
-        assertThat(toll).isPresent();
-        assertThat(toll.getAsLong()).isNotNegative();
     }
 }

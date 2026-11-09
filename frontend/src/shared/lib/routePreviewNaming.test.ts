@@ -12,7 +12,6 @@ describe('tên chỗ nghỉ từ lịch trình backend', () => {
     source: 'valhalla', km: 300, driveHours: 5,
     legs: [{ from: 'Kho TP.HCM', to: 'Đà Lạt', km: 300, driveHours: 5 }],
     path: [[10.7769, 106.7009], [11.94, 108.44]],
-    toll: { amountVnd: null, source: 'vietmap' },
     schedule: [
       { type: 'DRIVE', place: 'Kho TP.HCM → Đà Lạt', startAt: VN('2026-11-02T05:00'), endAt: VN('2026-11-02T08:30'), km: 150, lat: null, lng: null },
       { type, place, startAt: VN('2026-11-02T08:30'), endAt: VN('2026-11-02T09:00'), km: 0, lat: 10.35, lng: 106.36 },
@@ -89,7 +88,6 @@ describe('chữ hiển thị chỗ nghỉ cho nhân viên', () => {
     source: 'valhalla', km: 1344, driveHours: 19.5,
     legs: [{ from: 'TP.HCM', to: 'Vinh', km: 1344, driveHours: 19.5 }],
     path: [[10.7769, 106.7009], [18.68, 105.68]],
-    toll: { amountVnd: null, source: 'vietmap' },
     schedule: [
       { type: 'DRIVE', place: 'TP.HCM → Vinh', startAt: VN('2027-01-18T05:00'), endAt: VN('2027-01-18T16:00'), km: 690, lat: null, lng: null },
       { type: 'OVERNIGHT', place: 'Nghỉ dọc đường (km 686)', startAt: VN('2027-01-18T16:00'), endAt: VN('2027-01-19T02:00'), km: 0, lat: 14.5, lng: 109 },

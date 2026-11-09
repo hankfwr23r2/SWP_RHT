@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
 
 @Data
 @Builder
@@ -16,6 +15,9 @@ public class ReportLegDto {
     private String kind;
     private String meta;
     private String route;
-    private List<String> planned;
-    private List<String> actual;
+    // Mốc thời gian (epoch ms): dự kiến theo lộ trình đã chốt, thực tế theo giờ check-in; chưa có thì null
+    private Long plannedStart;
+    private Long plannedEnd;
+    private Long actualStart;
+    private Long actualEnd;
 }

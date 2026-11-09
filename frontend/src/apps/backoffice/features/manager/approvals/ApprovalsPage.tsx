@@ -64,7 +64,7 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
   }, [crew, trips, sched, b.departAt])
 
   const [picking, setPicking] = useState<{ tripId: string; kind: 'driver' | 'escort' } | null>(null)
-  const [back, setBack] = useState<{ to: 'specialist' | 'coordinator' | 'both'; reason: string } | null>(null) // đang nhập lý do trả lại
+  const [back, setBack] = useState<{ to: 'specialist' | 'coordinator' | 'both'; specialist: string; coordinator: string } | null>(null) // đang nhập lý do trả lại, mỗi bên một lý do
   const used = (k: keyof Pick2) => new Set(Object.values(picks).map(p => p[k]).filter(Boolean))
   // Chưa chọn đủ, hoặc người đã giữ cho đơn khác có ngày đi gần ngày này: chưa gửi được báo giá
   const crewErrors = trips.flatMap((t, i) => {
@@ -84,7 +84,6 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
     const problem = insuranceReviewProblem(h.insurance, new Date(b.departAt).toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }))
     return problem || (h.insurance.option !== 'none' && !h.insurance.reviewed) ? [`${h.name}: ${problem ?? 'Chưa xác nhận bảo hiểm'}`] : []
   })
-  crewErrors.push(...insuranceErrors)
   const [busy, setBusy] = useState(false)
   const preview = draft && finalizeQuote(draft.lines, [], Date.now(), session!.name)
 
@@ -92,7 +91,10 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
     setBusy(true)
     const targetLabel = back!.to === 'specialist' ? 'Chuyên viên' : back!.to === 'coordinator' ? 'Điều phối viên' : 'cả hai bên'
     try {
-      await bookingsApi.sendBack(b.id, session!.name, back!.to, back!.reason)
+      await bookingsApi.sendBack(b.id, session!.name, back!.to, {
+        specialist: back!.to !== 'coordinator' ? back!.specialist : undefined,
+        coordinator: back!.to !== 'specialist' ? back!.coordinator : undefined,
+      })
       toast(`Đã trả ${b.id} về ${targetLabel}`)
       onDone()
     } catch (e) {
@@ -138,6 +140,7 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
   const quoteTab = (
     <>
       <h4 style={{ margin: '0 0 10px' }}>Báo giá gửi khách</h4>
+      {insuranceErrors.length > 0 && <div className="alert alert-warning"><i className="fa-solid fa-triangle-exclamation" /><div><b>Bảo hiểm chưa xong, chưa gửi được báo giá.</b> Chuyên viên cần hoàn tất ở mục Bảo hiểm, hoặc trả lại Chuyên viên kèm lý do.<ul>{insuranceErrors.map(x => <li key={x}>{x}</li>)}</ul></div></div>}
       {b.horses.map(h => <div key={h.horseId}><b>{h.name}</b><InsuranceSummary insurance={h.insurance} /></div>)}
       {preview ? (
         <QuoteSheet
@@ -187,14 +190,18 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
                   Cả hai bên
                 </button>
               </div>
-              <label htmlFor="sb" className="required">
-                {back.to === 'specialist'
-                  ? 'Lý do trả lại Chuyên viên (duyệt lại hồ sơ ngựa)'
-                  : back.to === 'coordinator'
-                  ? 'Lý do trả lại Điều phối viên (làm lại xe và lộ trình)'
-                  : 'Lý do trả lại cả hai bên (làm lại cả hồ sơ ngựa, xe và lộ trình)'}
-              </label>
-              <textarea id="sb" className="form-control" rows={3} value={back.reason} onChange={e => setBack({ ...back, reason: e.target.value })} />
+              {back.to !== 'coordinator' && (
+                <>
+                  <label htmlFor="sb-specialist" className="required">Lý do trả lại Chuyên viên (duyệt lại hồ sơ ngựa)</label>
+                  <textarea id="sb-specialist" className="form-control" rows={3} value={back.specialist} onChange={e => setBack({ ...back, specialist: e.target.value })} />
+                </>
+              )}
+              {back.to !== 'specialist' && (
+                <>
+                  <label htmlFor="sb-coordinator" className="required" style={back.to === 'both' ? { marginTop: 10 } : undefined}>Lý do trả lại Điều phối viên (làm lại xe và lộ trình)</label>
+                  <textarea id="sb-coordinator" className="form-control" rows={3} value={back.coordinator} onChange={e => setBack({ ...back, coordinator: e.target.value })} />
+                </>
+              )}
               <div className="form-hint">
                 {back.to === 'specialist'
                   ? 'Đơn quay về Chuyên viên để duyệt lại hồ sơ ngựa, xe và lộ trình của Điều phối viên được giữ nguyên.'
@@ -211,19 +218,19 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
           { id: 'order', label: 'Thông tin đơn', icon: 'fa-clipboard-list', content: <OrderInfo b={b} /> },
           { id: 'route', label: 'Xe và lộ trình', icon: 'fa-route', content: <FleetRouteSection b={b} /> },
           { id: 'crew', label: 'Tài xế, hộ tống', icon: 'fa-id-card', state: crewErrors.length ? 'warn' : 'ok', count: crewErrors.length || undefined, content: crewTab },
-          { id: 'quote', label: 'Báo giá', icon: 'fa-file-invoice-dollar', content: quoteTab },
+          { id: 'quote', label: 'Báo giá', icon: 'fa-file-invoice-dollar', state: insuranceErrors.length ? 'warn' : undefined, count: insuranceErrors.length || undefined, content: quoteTab },
         ]}
         footer={back
           ? <>
               <button className="btn btn-ghost" onClick={() => setBack(null)}>Quay lại</button>
-              <button className="btn btn-danger" disabled={busy || !back.reason.trim()} onClick={sendBack}>Xác nhận trả lại</button>
+              <button className="btn btn-danger" disabled={busy || (back.to !== 'coordinator' && !back.specialist.trim()) || (back.to !== 'specialist' && !back.coordinator.trim())} onClick={sendBack}>Xác nhận trả lại</button>
             </>
           : <>
               <button className="btn btn-ghost" onClick={onClose}>Đóng</button>
-              <button className="btn btn-ghost" onClick={() => setBack({ to: 'specialist', reason: '' })}>Trả lại Chuyên viên</button>
-              <button className="btn btn-ghost" onClick={() => setBack({ to: 'coordinator', reason: '' })}>Trả lại Điều phối viên</button>
-              <button className="btn btn-ghost" onClick={() => setBack({ to: 'both', reason: '' })}>Trả lại cả hai bên</button>
-              <button className="btn btn-primary" disabled={busy || !preview || !!crewErrors.length} onClick={send}><i className="fa-solid fa-paper-plane" /> Duyệt và gửi báo giá</button>
+              <button className="btn btn-ghost" onClick={() => setBack({ to: 'specialist', specialist: '', coordinator: '' })}>Trả lại Chuyên viên</button>
+              <button className="btn btn-ghost" onClick={() => setBack({ to: 'coordinator', specialist: '', coordinator: '' })}>Trả lại Điều phối viên</button>
+              <button className="btn btn-ghost" onClick={() => setBack({ to: 'both', specialist: '', coordinator: '' })}>Trả lại cả hai bên</button>
+              <button className="btn btn-primary" disabled={busy || !preview || !!crewErrors.length || !!insuranceErrors.length} onClick={send}><i className="fa-solid fa-paper-plane" /> Duyệt và gửi báo giá</button>
             </>}
       />
       {picking && vehicles && crew && (() => {

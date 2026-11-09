@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
-import { formatDate } from '@shared/lib/format'
+import { formatDate, formatDateTime, formatVND } from '@shared/lib/format'
+import { ImageThumb } from '@shared/ui/ImageThumb'
 import { type TripReport } from '@shared/services/reports'
 import { Modal } from '@shared/ui/Modal'
 import { usePagination } from '@shared/ui/usePagination'
@@ -12,11 +13,13 @@ import s from './TripReports.module.css'
 import { usePageData } from '@shared/routing/pageData'
 import type { tripReportsLoader } from '../../../shared/loaders'
 
-const toMin = (hhmm: string) => { const [h, mi] = hhmm.split(':').map(Number); return h * 60 + mi }
-function legStatus(planned: string, actual: string, t: TFunction) {
-  let d = toMin(actual) - toMin(planned)
-  if (d < -12 * 60) d += 24 * 60 // qua nửa đêm
-  if (d === 0) return <span className={`${s.status} ${s.onTime}`}><i className="fa-solid fa-check-circle" /> {t('tripReportsPage.onTime', 'Đúng giờ')}</span>
+const ON_TIME_MS = 15 * 60_000 // lệch trong 15 phút vẫn tính đúng giờ, cùng ngưỡng với backend
+const dash = '—'
+const clock = (at: number | null) => (at == null ? dash : formatDateTime(at))
+function legStatus(planned: number | null, actual: number | null, t: TFunction) {
+  if (planned == null || actual == null) return <span className={s.status}>{t('tripReportsPage.noCheckin', 'Chưa có giờ thực tế')}</span>
+  const d = Math.round((actual - planned) / 60_000)
+  if (Math.abs(actual - planned) <= ON_TIME_MS) return <span className={`${s.status} ${s.onTime}`}><i className="fa-solid fa-check-circle" /> {t('tripReportsPage.onTime', 'Đúng giờ')}</span>
   return d < 0
     ? <span className={`${s.status} ${s.early}`}><i className="fa-solid fa-bolt" /> {t('tripReportsPage.early', 'Sớm {{min}}p', { min: -d })}</span>
     : <span className={`${s.status} ${s.late}`}><i className="fa-solid fa-clock" /> {t('tripReportsPage.late', 'Trễ {{min}}p', { min: d })}</span>
@@ -31,11 +34,14 @@ function ReportDetail({ r, onExport }: { r: TripReport; onExport: () => void }) 
         <div className={m.infoItem}><span className={m.infoLabel}>{t('tripReportsPage.client', 'Khách hàng')}</span><span className={m.infoValue}>{r.customer}</span></div>
         <div className={m.infoItem}><span className={m.infoLabel}>{t('tripReportsPage.transportType', 'Loại hình Vận chuyển')}</span><span className={m.infoValue}>{r.type}</span></div>
         <div className={m.infoItem}><span className={m.infoLabel}>{t('tripReportsPage.horsesDetail', 'Chi tiết Ngựa')}</span><span className={m.infoValue}>{r.horses}</span></div>
-        <div className={m.infoItem}><span className={m.infoLabel}>{t('tripReportsPage.escortStaff', 'Nhân viên Đi kèm')}</span><span className={m.infoValue}>{r.escort}</span></div>
+        <div className={m.infoItem}><span className={m.infoLabel}>{t('tripReportsPage.escortStaff', 'Nhân viên Đi kèm')}</span><span className={m.infoValue}>{r.escort ?? dash}</span></div>
+        <div className={m.infoItem}><span className={m.infoLabel}>Giao ngựa</span><span className={m.infoValue}>{clock(r.completedAt)}{r.plannedAt != null && <span className="sub-text"> (dự kiến {formatDateTime(r.plannedAt)})</span>}</span></div>
+        <div className={m.infoItem}><span className={m.infoLabel}>Sự cố</span><span className={m.infoValue}>{r.incidentNote}{r.incidentCost > 0 && ` · ${formatVND(r.incidentCost)}`}</span></div>
       </div>
 
       <h3 className={s.h3}><i className="fa-solid fa-map-location-dot" /> {t('tripReportsPage.journeyTitle', 'Hành trình Vận chuyển (Đa chặng)')}</h3>
-      <div className="sub-text" style={{ marginBottom: 12 }}>{r.route} · Tổng thời gian ước tính: <b>{r.totalTime}</b></div>
+      <div className="sub-text" style={{ marginBottom: 12 }}>{r.route} · Thời gian chạy thực tế: <b>{r.totalTime ?? dash}</b>{r.otd && <> · {legStatus(r.plannedAt, r.completedAt, t)}</>}</div>
+      {!r.legs.length && <p className="sub-text">Chuyến chưa có mốc lộ trình nào.</p>}
       <div className={s.timeline}>
         {r.legs.map(l => (
           <div key={l.title} className={s.leg}>
@@ -45,23 +51,37 @@ function ReportDetail({ r, onExport }: { r: TripReport; onExport: () => void }) 
             </div>
             <div className="sub-text">{l.route}</div>
             <div className={s.times}>
-              <span>Dự kiến: <b className="text-muted">{l.planned.join(' - ')}</b></span>
-              <span>Thực tế: <b>{l.actual.join(' - ')}</b></span>
-              {legStatus(l.planned[1], l.actual[1], t)}
+              <span>Dự kiến: <b className="text-muted">{clock(l.plannedStart)} - {clock(l.plannedEnd)}</b></span>
+              <span>Thực tế: <b>{clock(l.actualStart)} - {clock(l.actualEnd)}</b></span>
+              {legStatus(l.plannedEnd, l.actualEnd, t)}
             </div>
           </div>
         ))}
       </div>
 
       <h3 className={s.h3}><i className="fa-solid fa-heart-pulse" /> {t('tripReportsPage.healthLogTitle', 'Nhật ký Sinh tồn')}</h3>
-      <div className={s.log}>{r.health.map(([tStamp, e, ok]) => <div key={tStamp} className={s.logItem}><span className="text-muted">{tStamp}</span><span>{e}</span><span className={ok ? 'text-green font-semibold' : 'text-red font-semibold'}>{ok ? t('tripReportsPage.normal', 'Bình thường') : t('tripReportsPage.abnormal', 'Bất thường')}</span></div>)}</div>
+      {!r.health.length && <p className="sub-text">Hộ tống chưa gửi nhật ký an sinh nào.</p>}
+      <div className={s.log}>{r.health.map(([at, e, ok]) => <div key={`${at}-${e}`} className={s.logItem}><span className="text-muted">{formatDateTime(at)}</span><span>{e}</span><span className={ok ? 'text-green font-semibold' : 'text-red font-semibold'}>{ok ? t('tripReportsPage.normal', 'Bình thường') : t('tripReportsPage.abnormal', 'Bất thường')}</span></div>)}</div>
 
       <h3 className={s.h3}><i className="fa-solid fa-clipboard-list" /> {t('tripReportsPage.eventsTitle', 'Sự kiện Vận chuyển')}</h3>
-      <div className={s.log}>{r.events.map(([tStamp, e, ok]) => <div key={tStamp} className={s.logItem}><span className="text-muted">{tStamp}</span><span>{e}</span><span className={ok ? 'text-green font-semibold' : 'text-orange font-semibold'}>{ok ? t('tripReportsPage.good', 'Tốt') : t('tripReportsPage.noted', 'Ghi nhận')}</span></div>)}</div>
+      {!r.events.length && <p className="sub-text">Chưa có sự kiện nào được ghi.</p>}
+      <div className={s.log}>{r.events.map(([at, e, ok]) => <div key={`${at}-${e}`} className={s.logItem}><span className="text-muted">{formatDateTime(at)}</span><span>{e}</span><span className={ok ? 'text-green font-semibold' : 'text-orange font-semibold'}>{ok ? t('tripReportsPage.good', 'Tốt') : t('tripReportsPage.noted', 'Ghi nhận')}</span></div>)}</div>
+
+      <h3 className={s.h3}><i className="fa-solid fa-road" /> Phí cầu đường (nhà xe chịu)</h3>
+      {r.tolls?.length
+        ? <div className={s.log}>
+            {r.tolls.map(x => <div key={x.id} className={s.logItem}><span className="text-muted">{formatDateTime(x.at)}</span><span style={{ display: 'flex', alignItems: 'center', gap: 8 }}><ImageThumb name={x.photo} size={36} />{x.station || 'Trạm thu phí'} · {x.by}</span><span className="font-semibold">{formatVND(x.amount)}</span></div>)}
+            <div className={s.logItem}><span /><b>Tổng phí cầu đường</b><b>{formatVND(r.tollCost ?? 0)}</b></div>
+          </div>
+        : <p className="sub-text">Tài xế chưa ghi hóa đơn phí cầu đường nào.</p>}
 
       <h3 className={s.h3}><i className="fa-solid fa-star" /> {t('tripReportsPage.feedbackTitle', 'Đánh giá & Phản hồi từ Khách hàng')}</h3>
-      <div className={s.stars} aria-label={`${r.rating} trên 5 sao`}>{Array.from({ length: 5 }, (_, i) => <i key={i} className={`fa-solid fa-star ${i < r.rating ? s.on : ''}`} />)}</div>
-      <blockquote className={s.feedback}>"{r.feedback}"</blockquote>
+      {r.rating == null
+        ? <p className="sub-text">Khách chưa chấm điểm chuyến này.</p>
+        : <>
+            <div className={s.stars} aria-label={`${r.rating} trên 5 sao`}>{Array.from({ length: 5 }, (_, i) => <i key={i} className={`fa-solid fa-star ${i < (r.rating ?? 0) ? s.on : ''}`} />)}</div>
+            {r.feedback && <blockquote className={s.feedback}>"{r.feedback}"</blockquote>}
+          </>}
     </div>
   )
 }
@@ -95,7 +115,7 @@ export default function TripReportsPage() {
               <b className={s.cardId}>{r.id}</b>
               <span className={s.cardRoute}>{r.route}</span>
               <span className="text-muted">{r.customer}</span>
-              <span className={s.cardFoot}><span className="text-muted"><i className="fa-solid fa-flag-checkered" aria-hidden="true" /> {formatDate(r.completedAt)}</span><span className={s.cardStars} aria-label={`${r.rating} trên 5 sao`}><i className="fa-solid fa-star" aria-hidden="true" /> {r.rating}/5</span></span>
+              <span className={s.cardFoot}><span className="text-muted"><i className="fa-solid fa-flag-checkered" aria-hidden="true" /> {r.completedAt != null ? formatDate(r.completedAt) : dash}</span>{r.rating != null ? <span className={s.cardStars} aria-label={`${r.rating} trên 5 sao`}><i className="fa-solid fa-star" aria-hidden="true" /> {r.rating}/5</span> : <span className="text-muted">Chưa chấm</span>}</span>
             </button>
           ))}
         </div>
