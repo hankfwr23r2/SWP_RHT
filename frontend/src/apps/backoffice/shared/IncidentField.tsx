@@ -163,7 +163,7 @@ export function IncidentPanel({ b, inc, role, run }: { b: Booking; inc: Incident
         <>
           <Panel title="Chi phí tại chỗ" icon="fa-receipt">
             <p>Đã chi {formatVND(spent)}. Chụp hóa đơn trước, số tiền mở khóa sau.</p>
-            <ul className={s.checklist}>{inc.expenses.map(e => <li key={e.id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '6px 0', fontSize: '0.9rem' }}><ImageThumb name={e.photo} size={40} /><span>{EXPENSE_CATEGORY[e.category]}: {e.label} — <b>{formatVND(e.amount)}</b></span></li>)}</ul>
+            <ul className={s.checklist}>{inc.expenses.map(e => <li key={e.id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '6px 0', fontSize: '0.9rem' }}><ImageThumb name={e.photo} size={40} /><span style={{ flex: 1 }}>{EXPENSE_CATEGORY[e.category]}: {e.label} — <b>{formatVND(e.amount)}</b></span><button type="button" className="btn btn-ghost" aria-label={`Xóa khoản chi ${e.label}`} onClick={() => run(() => bookingsApi.deleteIncidentExpense(b.id, inc.id, e.id), 'Đã xóa khoản chi phí')}>Xóa</button></li>)}</ul>
             <ExpenseForm b={b} inc={inc} run={run} />
           </Panel>
           {needFit && (

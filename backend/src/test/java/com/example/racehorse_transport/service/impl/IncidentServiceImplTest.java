@@ -304,6 +304,35 @@ class IncidentServiceImplTest {
     }
 
     @Test
+    void deletingIncidentExpenseRemovesItAndRecalculatesCustomerTotal() {
+        Incident incident = healthIncident(true);
+        incident.setExpensesJson("""
+                [{"id":"expense-1","label":"Thuốc","amount":300000,"payer":"customer"},
+                 {"id":"expense-2","label":"Vật tư","amount":200000,"payer":"carrier"}]
+                """);
+        incident.setActualCost(new BigDecimal("300000"));
+        incident.setCostBearer("CUSTOMER");
+
+        IncidentResponse response = service.deleteExpense(7, "expense-1", "admin", "ADMIN");
+
+        assertThat(response.getExpenses()).hasSize(1);
+        assertThat(response.getExpenses().get(0).get("id")).isEqualTo("expense-2");
+        assertThat(incident.getActualCost()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(incident.getCostBearer()).isEqualTo("COMPANY");
+    }
+
+    @Test
+    void deletingUnknownIncidentExpenseFails() {
+        Incident incident = healthIncident(true);
+        incident.setExpensesJson("[{\"id\":\"expense-1\",\"label\":\"Thuốc\",\"amount\":300000,\"payer\":\"customer\"}]");
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.deleteExpense(7, "missing", "admin", "ADMIN"))
+                .isInstanceOf(com.example.racehorse_transport.exception.ResourceNotFoundException.class)
+                .hasMessageContaining("Không tìm thấy khoản chi phí");
+        assertThat(incident.getExpensesJson()).contains("expense-1");
+    }
+
+    @Test
     void genericCompletionCannotBypassHorseHealthWorkflow() {
         healthIncident(true);
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.completeResolution(7,

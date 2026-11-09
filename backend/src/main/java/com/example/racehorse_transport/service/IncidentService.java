@@ -16,6 +16,8 @@ public interface IncidentService {
 
     IncidentResponse addExpense(Integer incidentId, IncidentExpenseRequest request, String actor, String role);
 
+    IncidentResponse deleteExpense(Integer incidentId, String expenseId, String actor, String role);
+
     IncidentResponse confirmFit(Integer incidentId, ConfirmIncidentFitRequest request, String actor, String role);
 
     IncidentResponse resumeJourney(Integer incidentId, String actor, String role);

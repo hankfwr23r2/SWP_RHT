@@ -312,6 +312,39 @@ public class IncidentServiceImpl implements IncidentService {
 
     @Override
     @Transactional
+    public IncidentResponse deleteExpense(Integer incidentId, String expenseId, String actor, String role) {
+        Incident incident = incidentRepository.findById(incidentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố ID: " + incidentId));
+        requireStatus(incident, "active");
+        ensureActorAssignedToBooking(incident, actor, role);
+
+        List<Map<String, Object>> expenses = readExpenses(incident.getExpensesJson());
+        Map<String, Object> removed = expenses.stream()
+                .filter(item -> expenseId.equals(String.valueOf(item.get("id"))))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy khoản chi phí cần xóa."));
+        expenses.remove(removed);
+        incident.setExpensesJson(writeJson(expenses));
+
+        BigDecimal customerTotal = expenses.stream()
+                .filter(item -> "customer".equalsIgnoreCase(String.valueOf(item.get("payer"))))
+                .map(item -> new BigDecimal(String.valueOf(item.get("amount"))))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        incident.setActualCost(customerTotal);
+        incident.setCostBearer(customerTotal.compareTo(BigDecimal.ZERO) > 0 ? "CUSTOMER" : "COMPANY");
+
+        Incident saved = incidentRepository.save(incident);
+        Booking booking = incident.getBookingID();
+        if (booking != null) {
+            appendBookingHistory(booking, actor, "Xóa khoản chi phí sự cố INC-" + incidentId + ": "
+                    + removed.get("label") + " (" + removed.get("amount") + " VND)");
+            bookingRepository.save(booking);
+        }
+        return mapToResponse(saved);
+    }
+
+    @Override
+    @Transactional
     public IncidentResponse confirmFit(Integer incidentId, ConfirmIncidentFitRequest request, String actor, String role) {
         Incident incident = incidentRepository.findById(incidentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố ID: " + incidentId));
