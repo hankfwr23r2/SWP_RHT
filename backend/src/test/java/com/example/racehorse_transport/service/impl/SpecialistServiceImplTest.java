@@ -39,7 +39,7 @@ class SpecialistServiceImplTest {
                 staffRepository,
                 regulationRepository,
                 locationRepository,
-                new ObjectMapper());
+                new ObjectMapper(), org.mockito.Mockito.mock(com.example.racehorse_transport.service.StaffNotifier.class));
 
         Staff specialist = new Staff();
         specialist.setRole("SPECIALIST");

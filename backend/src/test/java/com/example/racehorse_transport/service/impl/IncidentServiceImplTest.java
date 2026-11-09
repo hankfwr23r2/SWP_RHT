@@ -33,7 +33,7 @@ class IncidentServiceImplTest {
             mock(BookingAssignmentRepository.class),
             staffRepository,
             mock(SystemLogRepository.class),
-            healthService);
+            healthService, org.mockito.Mockito.mock(com.example.racehorse_transport.service.StaffNotifier.class));
 
     @Test
     void customerIncidentsAreLoadedForTheSignedInCustomerInOneQueryWithoutInternalFields() {

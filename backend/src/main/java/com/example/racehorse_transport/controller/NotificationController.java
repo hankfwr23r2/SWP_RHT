@@ -15,8 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
@@ -33,18 +31,11 @@ public class NotificationController {
             @RequestParam(value = "name", required = false) String name,
             Authentication authentication) {
 
-        String queryRole = role;
-        String queryUsername = name;
+        // Chỉ đọc thông báo của vai trò và tài khoản đang đăng nhập (thông báo nội bộ có lý do trả lại, chi phí…)
+        String queryUsername = requireRecipient(role, authentication);
 
-        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getName())) {
-            if (queryUsername == null || queryUsername.isBlank()) {
-                queryUsername = authentication.getName();
-            }
-        }
 
-        seedDefaultNoticesIfEmpty();
-
-        List<Notification> notices = notificationRepository.findForUser(queryRole, queryUsername);
+        List<Notification> notices = notificationRepository.findForUser(role, queryUsername);
         List<NoticeResponse> responses = notices.stream().map(this::mapToResponse).toList();
         return ResponseEntity.ok(ApiResponse.success(responses, "Lấy danh sách thông báo thành công"));
     }
@@ -63,8 +54,9 @@ public class NotificationController {
     @Transactional
     public ResponseEntity<ApiResponse<Void>> markAllAsRead(
             @RequestParam(value = "role", required = false) String role,
-            @RequestParam(value = "name", required = false) String name) {
-        notificationRepository.markAllAsRead(role, name);
+            @RequestParam(value = "name", required = false) String name,
+            Authentication authentication) {
+        notificationRepository.markAllAsRead(role, requireRecipient(role, authentication));
         return ResponseEntity.ok(ApiResponse.success(null, "Đã đánh dấu tất cả thông báo là đã đọc"));
     }
 
@@ -131,46 +123,5 @@ public class NotificationController {
 
     private boolean matches(String recipient, String requested) {
         return recipient == null || recipient.equalsIgnoreCase(requested);
-    }
-
-    private synchronized void seedDefaultNoticesIfEmpty() {
-        if (notificationRepository.count() == 0) {
-            Instant now = Instant.now();
-            List<Notification> seeds = new ArrayList<>();
-
-            seeds.add(Notification.builder()
-                    .recipientRole("manager")
-                    .title("Đơn hàng mới cần tiếp nhận")
-                    .message("Có đơn hàng mới gửi yêu cầu vận chuyển từ Đồng Nai đi Long An.")
-                    .link("/manager/intake")
-                    .bookingId("BK-1")
-                    .isRead(false)
-                    .createdAt(now.minusSeconds(7200))
-                    .build());
-
-
-            seeds.add(Notification.builder()
-                    .recipientRole("coordinator")
-                    .title("Hồ sơ kiểm dịch đã duyệt")
-                    .message("Chuyên viên đã duyệt đạt hồ sơ thú y. Vui lòng xếp xe và lập lộ trình vận chuyển.")
-                    .link("/coordinator/fleet-plan")
-                    .bookingId("BK-1")
-                    .isRead(false)
-                    .createdAt(now.minusSeconds(1800))
-                    .build());
-
-            seeds.add(Notification.builder()
-                    .recipientRole("driver")
-                    .title("Lệnh điều xe mới")
-                    .message("Bạn được phân công làm tài xế chính cho chuyến vận chuyển BK-1.")
-                    .link("/driver")
-                    .bookingId("BK-1")
-                    .isRead(false)
-                    .createdAt(now.minusSeconds(900))
-                    .build());
-
-            notificationRepository.saveAll(seeds);
-            log.info("Initialized default system notifications.");
-        }
     }
 }

@@ -34,5 +34,6 @@ public class BookingDetailsPayload {
     private Object intake;
     private Map<String, Object> scheduleChange;
     private Object rejection;
+    private Map<String, Object> sendBack; // lý do Quản lý trả lại từng bên, xóa phần của bên nào đã làm lại
     private List<Map<String, Object>> history;
 }

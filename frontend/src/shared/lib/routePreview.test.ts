@@ -16,7 +16,6 @@ describe('đổi lịch trình backend sang RoutePlan', () => {
       { from: 'Cửa khẩu Mộc Bài', to: 'Phnom Penh', km: 164.0, driveHours: 3.46 },
     ],
     path: [[10.7769, 106.7009], [11.0796, 106.1572], [11.5564, 104.9282]],
-    toll: { amountVnd: 3_111_000, source: 'vietmap' },
     schedule: [
       { type: 'DRIVE', place: 'Kho TP.HCM → Cửa khẩu Mộc Bài', startAt: VN('2026-11-02T05:00'), endAt: VN('2026-11-02T07:13'), km: 74.8, lat: null, lng: null },
       { type: 'BORDER_WAIT', place: 'Cửa khẩu Mộc Bài', startAt: VN('2026-11-02T07:13'), endAt: VN('2026-11-02T07:30'), km: 0, lat: 11.0796, lng: 106.1572 },
@@ -30,7 +29,6 @@ describe('đổi lịch trình backend sang RoutePlan', () => {
     source: 'valhalla', km: 600, driveHours: 9,
     legs: [{ from: 'Kho TP.HCM', to: 'Đà Lạt', km: 600, driveHours: 9 }],
     path: [[10.7769, 106.7009], [11.94, 108.44]],
-    toll: { amountVnd: null, source: 'vietmap' },
     schedule: [
       { type: 'DRIVE', place: 'Kho TP.HCM → Đà Lạt', startAt: VN('2026-11-02T05:00'), endAt: VN('2026-11-02T08:30'), km: 230, lat: null, lng: null },
       { type: 'REST', place: 'Trạm nghỉ B', startAt: VN('2026-11-02T08:30'), endAt: VN('2026-11-02T09:00'), km: 0, lat: 11.38, lng: 108.74 },

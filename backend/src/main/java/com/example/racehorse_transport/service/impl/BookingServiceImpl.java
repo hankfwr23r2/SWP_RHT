@@ -96,6 +96,7 @@ public class BookingServiceImpl implements BookingService {
     private final Clock clock;
     private final IncidentRepository incidentRepository;
     private final com.example.racehorse_transport.service.BillMailService billMailService;
+    private final com.example.racehorse_transport.service.StaffNotifier staffNotifier;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // =========================================================================
@@ -335,6 +336,9 @@ public class BookingServiceImpl implements BookingService {
         }
 
         log.info("Successfully created booking ID={} for user={}", savedBooking.getId(), customerUsername);
+        staffNotifier.toManagers(savedBooking, "Đơn mới chờ tiếp nhận · BK-" + savedBooking.getId(),
+                "Khách vừa gửi đơn " + savedBooking.getTotalHorses() + " ngựa: " + savedBooking.getPickupAddress() + " → " + savedBooking.getDropoffAddress() + ".",
+                "/manager/intake");
         return mapToResponse(savedBooking);
     }
 
@@ -653,6 +657,11 @@ public class BookingServiceImpl implements BookingService {
         Booking saved = bookingRepository.save(booking);
 
         logAction("MANAGER_ACTIVATE_BOOKING", saved.getId(), "Quản lý tiếp nhận đơn BK-" + saved.getId() + " và kích hoạt thẩm định song song");
+        String activatedCode = "BK-" + saved.getId();
+        staffNotifier.toAssignedSpecialist(saved, payload, "Đơn cần thẩm định · " + activatedCode,
+                "Quản lý giao bạn thẩm định hồ sơ ngựa của đơn " + activatedCode + ".", "/specialist/verification/" + activatedCode);
+        staffNotifier.toAssignedCoordinator(saved, payload, "Đơn cần chốt xe và lộ trình · " + activatedCode,
+                "Quản lý giao bạn chọn xe và lập lộ trình cho đơn " + activatedCode + ".", "/coordinator/fleet-plan/" + activatedCode);
         log.info("Manager activated booking ID={} -> status=under_review", saved.getId());
         return mapToResponse(saved);
     }
@@ -724,6 +733,11 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng ID: " + bookingIdentifier));
 
+        // Sửa được phương án tới khi Quản lý gửi báo giá; sau đó chốt lại sẽ kéo đơn ngược trạng thái
+        if (!"under_review".equalsIgnoreCase(booking.getStatus()) && !"pending_commercial".equalsIgnoreCase(booking.getStatus())) {
+            throw new IllegalStateException("Chỉ chốt hoặc sửa phương án xe khi đơn đang thẩm định hoặc chờ duyệt báo giá!");
+        }
+        boolean wasWaitingForQuote = "pending_commercial".equalsIgnoreCase(booking.getStatus());
         if (request.getTrips() == null || request.getTrips().isEmpty()) {
             throw new IllegalArgumentException("Phương án điều phối phải có ít nhất 1 chuyến xe!");
         }
@@ -795,6 +809,7 @@ public class BookingServiceImpl implements BookingService {
         planMap.put("by", request.getBy() != null ? request.getBy() : "Điều phối viên");
         planMap.put("note", request.getNote() != null ? request.getNote() : "");
         payload.setPlan(planMap);
+        if (payload.getSendBack() != null) payload.getSendBack().remove("coordinator"); // đã làm lại theo lý do Quản lý trả
 
         if (payload.getHistory() == null) {
             payload.setHistory(new ArrayList<>());
@@ -829,6 +844,10 @@ public class BookingServiceImpl implements BookingService {
         }
 
         Booking updatedBooking = bookingRepository.save(booking);
+        if ("pending_commercial".equals(updatedBooking.getStatus()) && !wasWaitingForQuote) {
+            staffNotifier.toManagers(updatedBooking, "Đơn chờ duyệt báo giá · BK-" + updatedBooking.getId(),
+                    "Chuyên viên đã duyệt hồ sơ và Điều phối viên đã chốt xe, lộ trình. Chọn kíp xe và gửi báo giá.", "/manager/approvals");
+        }
 
         // 7. Ghi nhật ký hệ thống SYSTEM_LOG
         try {
@@ -1114,14 +1133,26 @@ public class BookingServiceImpl implements BookingService {
             throw new IllegalStateException("Chỉ trả lại được đơn đang chờ duyệt báo giá!");
         }
 
-        if (request.getReason() == null || request.getReason().trim().isEmpty()) {
-            throw new IllegalArgumentException("Cần ghi lý do trả lại đơn!");
-        }
-
         BookingDetailsPayload payload = extractPayload(booking);
         String toTarget = request.getTo() != null ? request.getTo().trim().toLowerCase() : "both";
         boolean toSpecialist = "specialist".equals(toTarget) || "both".equals(toTarget);
         boolean toCoordinator = "coordinator".equals(toTarget) || "both".equals(toTarget);
+
+        // Mỗi bên nhận lý do riêng; "reason" chung chỉ dùng khi không ghi lý do riêng
+        String specialistReason = firstText(request.getSpecialistReason(), request.getReason());
+        String coordinatorReason = firstText(request.getCoordinatorReason(), request.getReason());
+        if (toSpecialist && specialistReason == null) {
+            throw new IllegalArgumentException("Cần ghi lý do trả lại cho Chuyên viên!");
+        }
+        if (toCoordinator && coordinatorReason == null) {
+            throw new IllegalArgumentException("Cần ghi lý do trả lại cho Điều phối viên!");
+        }
+        Map<String, Object> sendBackMap = new HashMap<>();
+        sendBackMap.put("at", clock.instant().toEpochMilli());
+        sendBackMap.put("by", request.getBy() != null ? request.getBy() : "Quản lý");
+        if (toSpecialist) sendBackMap.put("specialist", specialistReason);
+        if (toCoordinator) sendBackMap.put("coordinator", coordinatorReason);
+        payload.setSendBack(sendBackMap);
 
         String label;
         if (toSpecialist && toCoordinator) {
@@ -1156,10 +1187,24 @@ public class BookingServiceImpl implements BookingService {
         savePayload(booking, payload);
 
         Booking updated = bookingRepository.save(booking);
+        String sentBackCode = "BK-" + updated.getId();
+        if (toSpecialist) staffNotifier.toAssignedSpecialist(updated, payload, "Quản lý trả lại đơn · " + sentBackCode,
+                "Lý do: " + specialistReason, "/specialist/verification/" + sentBackCode);
+        if (toCoordinator) staffNotifier.toAssignedCoordinator(updated, payload, "Quản lý trả lại đơn · " + sentBackCode,
+                "Lý do: " + coordinatorReason, "/coordinator/fleet-plan/" + sentBackCode);
         logAction("SEND_BACK", updated.getId(),
-                "Quản lý trả đơn BK-" + updated.getId() + " về " + request.getTo() + ": " + request.getReason());
+                "Quản lý trả đơn BK-" + updated.getId() + " về " + toTarget
+                        + (toSpecialist ? " · Chuyên viên: " + specialistReason : "")
+                        + (toCoordinator ? " · Điều phối viên: " + coordinatorReason : ""));
         log.info("Booking ID={} sent back to {}", updated.getId(), request.getTo());
         return mapToResponse(updated);
+    }
+
+    private static String firstText(String... values) {
+        for (String value : values) {
+            if (value != null && !value.trim().isEmpty()) return value.trim();
+        }
+        return null;
     }
 
     @Override
@@ -1203,6 +1248,8 @@ public class BookingServiceImpl implements BookingService {
         savePayload(booking, payload);
 
         Booking updated = bookingRepository.save(booking);
+        staffNotifier.toAssignedSpecialist(updated, payload, "Khách đã bổ sung hồ sơ · BK-" + updated.getId(),
+                "Khách gửi lại hồ sơ ngựa theo yêu cầu. Vui lòng thẩm định lại.", "/specialist/verification/BK-" + updated.getId());
         logAction("RESUBMIT_DOCUMENTS", updated.getId(),
                 "Khách hàng (" + customerUsername + ") gửi lại hồ sơ cho Chuyên viên kiểm dịch duyệt lại");
         log.info("Booking ID={} resubmitted documents by {}", updated.getId(), customerUsername);
@@ -1245,6 +1292,12 @@ public class BookingServiceImpl implements BookingService {
                 "Khách hàng thanh toán tiền cọc (" + payment.getAmount() + " VND) qua " + payment.getPaymentMethod()
                         + ", mã GD " + payment.getTransactionCode() + ", cấp Vận đơn " + waybillNo);
         log.info("Deposit confirmed for booking ID={}, waybill={}", updated.getId(), waybillNo);
+        String depositCode = "BK-" + updated.getId();
+        staffNotifier.toManagers(updated, "Khách đã đặt cọc · " + depositCode, "Đơn " + depositCode + " đã có vận đơn " + waybillNo + ".", "/manager");
+        staffNotifier.toAssignedSpecialist(updated, payload, "Khách đã đặt cọc · " + depositCode,
+                "Xác nhận hợp đồng bảo hiểm (nếu khách nhờ mua) và làm giấy tờ chuyến đi.", "/specialist/legal/" + depositCode);
+        staffNotifier.toCrew(updated, payload, "Bạn được phân công chuyến · " + depositCode,
+                "Khách đã đặt cọc, chuyến " + depositCode + " được chốt. Theo dõi giấy tờ và lệnh điều xe trên ứng dụng.");
         billMailService.paymentReceived(updated, com.example.racehorse_transport.service.BillMailService.Payment.DEPOSIT, payment.getAmount(), payment.getGatewayTransactionNo(), paidAt, waybillNo);
         return updated;
     }
@@ -1389,6 +1442,8 @@ public class BookingServiceImpl implements BookingService {
         savePayload(booking, payload);
         Booking updated = bookingRepository.save(booking);
 
+        staffNotifier.toCrew(updated, payload, "Khách đã trả 70% · BK-" + updated.getId(),
+                "Khách đã thanh toán phần còn lại. Xe được bắt đầu hành trình khi đủ các bước ở điểm đón.");
         logAction("PAY_BALANCE", updated.getId(),
                 "Khách hàng thanh toán 70% còn lại (" + payment.getAmount() + " VND) qua " + payment.getPaymentMethod()
                         + ", mã GD " + payment.getTransactionCode() + " cho đơn BK-" + updated.getId());
@@ -2055,7 +2110,7 @@ public class BookingServiceImpl implements BookingService {
                 .vehicleCount(Math.max(storedTripCount, linkedVehicleCount))
                 .horses(horseDtos)
                 .waybillNo(b.getWaybillNo())
-                .trips(payload != null ? payload.getTrips() : null)
+                .trips(com.example.racehorse_transport.service.CaptureService.visibleTrips(payload))
                 .routeId(b.getRouteID() != null ? b.getRouteID().getId() : null)
                 .route(payload != null ? payload.getRoute() : null)
                 .gate(payload != null ? payload.getGate() : null)
@@ -2076,6 +2131,7 @@ public class BookingServiceImpl implements BookingService {
                 .intake(payload != null ? payload.getIntake() : null)
                 .scheduleChange(payload != null ? payload.getScheduleChange() : null)
                 .rejection(payload != null ? payload.getRejection() : null)
+                .sendBack(payload != null ? payload.getSendBack() : null)
                 .history(payload != null ? payload.getHistory() : null)
                 .build();
     }
@@ -2727,6 +2783,47 @@ public class BookingServiceImpl implements BookingService {
                 appendHistory(payload, actor, "Xe về tới trụ sở chính");
                 break;
             }
+            case "ADD_TOLL": {
+                requireTollWindow(targetTrip, role);
+                Object rawAmount = reqPayload.get("amount");
+                long amount;
+                try {
+                    amount = new java.math.BigDecimal(String.valueOf(rawAmount)).longValueExact();
+                } catch (RuntimeException ex) {
+                    throw new IllegalArgumentException("Số tiền phí cầu đường phải là số nguyên VNĐ.");
+                }
+                if (amount <= 0 || amount > MAX_TOLL_PER_RECEIPT) {
+                    throw new IllegalArgumentException("Số tiền phí cầu đường phải lớn hơn 0 và không quá 10.000.000đ mỗi hóa đơn.");
+                }
+                String photo = reqPayload.get("photo") == null ? "" : String.valueOf(reqPayload.get("photo"));
+                if (isBlank(photo)) throw new IllegalArgumentException("Cần ảnh chụp hóa đơn phí cầu đường.");
+                String station = reqPayload.get("station") == null ? "" : String.valueOf(reqPayload.get("station")).trim();
+                if (station.length() > 120) throw new IllegalArgumentException("Tên trạm thu phí tối đa 120 ký tự.");
+                captureService.attach(payload, bookingId, targetTrip.getTripId(), "TOLL", "toll", photo, username);
+                Map<String, Object> toll = new HashMap<>();
+                toll.put("id", "TOLL-" + java.util.UUID.randomUUID().toString().substring(0, 8));
+                toll.put("amount", amount);
+                toll.put("station", station);
+                toll.put("photo", photo);
+                toll.put("at", now);
+                toll.put("by", actor);
+                List<Map<String, Object>> tolls = targetTrip.getTolls() != null ? new ArrayList<>(targetTrip.getTolls()) : new ArrayList<>();
+                tolls.add(toll);
+                targetTrip.setTolls(tolls);
+                appendHistory(payload, actor, "Ghi phí cầu đường " + amount + "đ" + (station.isEmpty() ? "" : " · " + station));
+                break;
+            }
+            case "REMOVE_TOLL": {
+                requireTollWindow(targetTrip, role);
+                String tollId = String.valueOf(reqPayload.getOrDefault("tollId", ""));
+                List<Map<String, Object>> tolls = targetTrip.getTolls() != null ? new ArrayList<>(targetTrip.getTolls()) : new ArrayList<>();
+                if (!tolls.removeIf(t -> tollId.equals(String.valueOf(t.get("id"))))) {
+                    throw new IllegalArgumentException("Không tìm thấy khoản phí cầu đường cần xóa.");
+                }
+                targetTrip.setTolls(tolls);
+                appendHistory(payload, actor, "Xóa một khoản phí cầu đường đã ghi");
+                break;
+            }
             default: {
                 log.warn("Unknown trip action: {}", action);
             }
@@ -2738,6 +2835,21 @@ public class BookingServiceImpl implements BookingService {
         Booking updated = bookingRepository.save(booking);
         logAction("TRIP_UPDATE_" + action, updated.getId(), actor + " thực hiện " + action + " cho chuyến " + tripId);
         return mapToResponse(updated);
+    }
+
+    private static final long MAX_TOLL_PER_RECEIPT = 10_000_000L;
+
+    // Phí cầu đường (nhà xe chịu): tài xế ghi từ lúc xe rời trụ sở tới khi xác nhận về trụ sở
+    private void requireTollWindow(VehicleTripDto trip, String role) {
+        if (!"DRIVER".equalsIgnoreCase(role)) {
+            throw new org.springframework.security.access.AccessDeniedException("Chỉ tài xế được ghi phí cầu đường.");
+        }
+        if (trip.getDepartedAt() == null) {
+            throw new IllegalStateException("Xe chưa rời trụ sở nên chưa ghi phí cầu đường được.");
+        }
+        if (trip.getHomeReturn() != null && trip.getHomeReturn().get("backAt") != null) {
+            throw new IllegalStateException("Xe đã về trụ sở, không ghi thêm hoặc sửa phí cầu đường được nữa.");
+        }
     }
 
     private void validateTripUpdateActor(Booking targetBooking, VehicleTripDto targetTrip,

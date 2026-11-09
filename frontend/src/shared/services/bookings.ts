@@ -328,10 +328,16 @@ export const bookingsApi = {
     toBooking(await specialistApi.approveMedical(id, { specialistName: by })),
   requestResubmission: async (id: string, by: string, reason: string, items: { horseId: string; doc: 'passport' | 'vaccine' | 'lab' }[]): Promise<Booking> =>
     toBooking(await specialistApi.requestResubmission(id, { specialistName: by, reason: reason.trim(), items })),
-  confirmPlan: async (id: string, by: string, input: { routeId?: number; trips: Pick<VehicleTrip, 'vehicleId' | 'horseIds'>[]; route: Pick<RoutePlan, 'legs' | 'rests' | 'borderEta' | 'path'>; gate?: string; note?: string }): Promise<Booking> =>
-    toBooking(await backendBookingApi.confirmFleetPlan(id, { by, routeId: input.routeId, trips: input.trips, route: input.route, gate: input.gate, note: input.note })),
-  sendBack: async (id: string, by: string, to: 'specialist' | 'coordinator' | 'both', reason: string): Promise<Booking> =>
-    toBooking(await backendBookingApi.sendBack(id, { by, to, reason: reason.trim() })),
+  confirmPlan: async (id: string, by: string, input: { routeId?: number; trips: Pick<VehicleTrip, 'vehicleId' | 'horseIds'>[]; route: Pick<RoutePlan, 'legs' | 'rests' | 'borderEta' | 'path'>; gate?: string; note?: string }): Promise<Booking> => {
+    const saved = toBooking(await backendBookingApi.confirmFleetPlan(id, { by, routeId: input.routeId, trips: input.trips, route: input.route, gate: input.gate, note: input.note }))
+    invalidateBookingsListCache() // danh sách và lịch xe phải thấy ngay phương án mới, không đợi hết hạn bộ đệm
+    return saved
+  },
+  sendBack: async (id: string, by: string, to: 'specialist' | 'coordinator' | 'both', reasons: { specialist?: string; coordinator?: string }): Promise<Booking> => {
+    const saved = toBooking(await backendBookingApi.sendBack(id, { by, to, specialistReason: reasons.specialist?.trim(), coordinatorReason: reasons.coordinator?.trim() }))
+    invalidateBookingsListCache()
+    return saved
+  },
   // Hủy đơn "Không nhận được ngựa": khách mất phần cọc vận chuyển, xe và kíp được nhả
   cancelPickupFailed: async (id: string, reason: string): Promise<string> => {
     const res = await apiClient.post<ApiResponse<{ message?: string }>>(`/manager/bookings/${id}/cancel-pickup-failed`, { reason: reason.trim() })
@@ -430,6 +436,11 @@ export const bookingsApi = {
     invalidateBookingsListCache()
     return toBooking(res)
   },
+  // Phí cầu đường: tài xế chụp hóa đơn ở trạm thu phí và ghi số tiền (nhà xe chịu, không tính cho khách)
+  addToll: async (id: string, tripId: string, by: string, toll: { amount: number; station: string; photo: string }): Promise<Booking> =>
+    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'ADD_TOLL', actor: by, payload: toll })),
+  removeToll: async (id: string, tripId: string, by: string, tollId: string): Promise<Booking> =>
+    toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'REMOVE_TOLL', actor: by, payload: { tollId } })),
   uploadHandover: async (id: string, tripId: string, by: string, checkpointId: string, photo: string): Promise<Booking> => {
     const res = await backendBookingApi.updateTripProgress(id, { tripId, action: 'UPLOAD_HANDOVER', actor: by, payload: { checkpointId, photo } })
     invalidateBookingsListCache()

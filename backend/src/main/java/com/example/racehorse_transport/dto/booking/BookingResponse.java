@@ -53,6 +53,7 @@ public class BookingResponse {
     private Object intake;
     private java.util.Map<String, Object> scheduleChange;
     private Object rejection;
+    private java.util.Map<String, Object> sendBack;
     private List<java.util.Map<String, Object>> history;
 
     // Nhãn của trạng thái hiện tại, lấy từ BookingStatusLabels; mọi nơi dựng BookingResponse đều có sẵn
