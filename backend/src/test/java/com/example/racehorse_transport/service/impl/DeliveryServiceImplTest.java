@@ -11,6 +11,7 @@ import com.example.racehorse_transport.repository.SystemLogRepository;
 import com.example.racehorse_transport.repository.VehicleRepository;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,6 +51,30 @@ class DeliveryServiceImplTest {
 
         assertThat(booking.getDetailsJson()).isEqualTo(corrupt);
         assertThat(booking.getStatus()).isEqualTo("in_transit");
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
+    void rejectsMissingZeroFractionalAndOverLimitStableCosts() {
+        Booking booking = new Booking();
+        booking.setId(1);
+        booking.setStatus("in_transit");
+        when(bookingRepository.findById(1)).thenReturn(Optional.of(booking));
+
+        for (BigDecimal amount : new BigDecimal[] {
+                null,
+                BigDecimal.ZERO,
+                new BigDecimal("1.5"),
+                new BigDecimal("10000000000000000")
+        }) {
+            var request = new com.example.racehorse_transport.dto.field.DeliveryTimeoutRequest();
+            request.setSelectedAction("STABLE_NEARBY");
+            request.setEstimatedCost(amount);
+
+            assertThatThrownBy(() -> service.reportDeliveryTimeout(1, request, "driver", "DRIVER"))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
         verify(bookingRepository, never()).save(any(Booking.class));
     }
 }

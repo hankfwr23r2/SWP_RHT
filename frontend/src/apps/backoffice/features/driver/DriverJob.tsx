@@ -161,8 +161,11 @@ function TimeoutModal({ b, t, waited, onClose, run }: { b: Booking; t: VehicleTr
   const [cost, setCost] = useState('1500000')
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
+  const formattedCost = cost.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  const validCost = /^[1-9]\d{0,15}$/.test(cost)
 
   const submit = async () => {
+    if (action === 'STABLE_NEARBY' && !validCost) return
     setBusy(true)
     try {
       await run(() => backendDeliveryApi.reportTimeout(toNumericBookingId(b.id), {
@@ -172,7 +175,7 @@ function TimeoutModal({ b, t, waited, onClose, run }: { b: Booking; t: VehicleTr
         selectedAction: action,
         partnerName: action === 'STABLE_NEARBY' ? partnerName.trim() || undefined : undefined,
         partnerPhone: action === 'STABLE_NEARBY' ? partnerPhone.trim() || undefined : undefined,
-        estimatedCost: action === 'STABLE_NEARBY' ? Number(cost) || 0 : undefined,
+        estimatedCost: action === 'STABLE_NEARBY' ? cost : undefined,
         note: note.trim() || 'Quá hạn 2 giờ người nhận không tới nhận ngựa.',
       }), 'Đã ghi nhận ngoại lệ quá 2h và kích hoạt phương án an sinh')
       onClose()
@@ -183,7 +186,7 @@ function TimeoutModal({ b, t, waited, onClose, run }: { b: Booking; t: VehicleTr
 
   return (
     <Modal onClose={onClose} title="Báo sự cố quá hạn 2h bàn giao" subtitle="Kích hoạt quy trình an sinh khẩn cấp khi người nhận không đến"
-      footer={<><button className="btn btn-ghost" onClick={onClose}>Hủy</button><button className="btn btn-danger" disabled={busy} onClick={submit}>{early ? 'Xác nhận báo quá hạn sớm' : 'Xác nhận kích hoạt an sinh'}</button></>}>
+      footer={<><button className="btn btn-ghost" onClick={onClose}>Hủy</button><button className="btn btn-danger" disabled={busy || (action === 'STABLE_NEARBY' && !validCost)} onClick={submit}>{early ? 'Xác nhận báo quá hạn sớm' : 'Xác nhận kích hoạt an sinh'}</button></>}>
       {early && <div className="alert alert-warning" role="status"><i className="fa-solid fa-clock" /><div>Mới chờ <b>{waited} phút</b> ở điểm giao, quy định là 120 phút. Bạn vẫn báo được, quản lý sẽ thấy đây là báo sớm.</div></div>}
       <div className="form-group">
         <label htmlFor="tr">Lý do quá hạn</label>
@@ -212,7 +215,8 @@ function TimeoutModal({ b, t, waited, onClose, run }: { b: Booking; t: VehicleTr
           </div>
           <div className="form-group">
             <label htmlFor="pc">Chi phí lưu chuồng ước tính (VNĐ)</label>
-            <input id="pc" inputMode="numeric" className="form-control" value={cost} onChange={e => setCost(e.target.value.replace(/\D/g, ''))} />
+            <input id="pc" inputMode="numeric" className="form-control" value={formattedCost} aria-invalid={!validCost} onChange={e => setCost(e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, ''))} />
+            {!validCost && <p className="form-error" role="alert">Nhập chi phí lớn hơn 0 và không vượt quá 9,999,999,999,999,999 VNĐ.</p>}
           </div>
         </>
       )}
