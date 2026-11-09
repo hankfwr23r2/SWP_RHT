@@ -29,7 +29,6 @@ import com.example.racehorse_transport.repository.HorseRepository;
 import com.example.racehorse_transport.repository.HorseDocumentRepository;
 import com.example.racehorse_transport.repository.DocumentRequirementRepository;
 import com.example.racehorse_transport.repository.LocationRepository;
-import com.example.racehorse_transport.repository.LogRepository;
 import com.example.racehorse_transport.repository.NotificationRepository;
 import com.example.racehorse_transport.repository.PaymentRepository;
 import com.example.racehorse_transport.repository.QuotationRepository;
@@ -37,7 +36,6 @@ import com.example.racehorse_transport.repository.RegulationRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.ServiceRepository;
 import com.example.racehorse_transport.repository.SystemLogRepository;
-import com.example.racehorse_transport.repository.TripDocumentRepository;
 import com.example.racehorse_transport.repository.UserRepository;
 import com.example.racehorse_transport.repository.VehicleRepository;
 import com.example.racehorse_transport.service.FleetService;
@@ -80,12 +78,10 @@ class BookingServiceImplTest {
     private final NotificationRepository notificationRepository = mock(NotificationRepository.class);
     private final PaymentRepository paymentRepository = mock(PaymentRepository.class);
     private final FleetService fleetService = mock(FleetService.class);
-    private final LogRepository logRepository = mock(LogRepository.class);
     private final VehicleRepository vehicleRepository = mock(VehicleRepository.class);
     private final StaffRepository staffRepository = mock(StaffRepository.class);
     private final RegulationRepository regulationRepository = mock(RegulationRepository.class);
     private final LocationRepository locationRepository = mock(LocationRepository.class);
-    private final TripDocumentRepository tripDocumentRepository = mock(TripDocumentRepository.class);
     private final SystemConfigService systemConfigService = mock(SystemConfigService.class);
     private final com.example.racehorse_transport.repository.RouteRepository routeRepository = mock(com.example.racehorse_transport.repository.RouteRepository.class);
     private final ServiceRepository serviceRepository = mock(ServiceRepository.class);
@@ -118,13 +114,11 @@ class BookingServiceImplTest {
                 notificationRepository,
                 paymentRepository,
                 fleetService,
-                logRepository,
                 vehicleRepository,
                 staffRepository,
                 regulationRepository,
                 locationRepository,
                 systemConfigService,
-                tripDocumentRepository,
                 routeRepository,
                 serviceRepository,
                 horseDocumentRepository,

@@ -3,14 +3,14 @@ package com.example.racehorse_transport.service.impl;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Horse;
 import com.example.racehorse_transport.entity.HorseHealthLog;
-import com.example.racehorse_transport.entity.Log;
 import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.entity.SystemLog;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.HorseHealthLogRepository;
 import com.example.racehorse_transport.repository.HorseRepository;
-import com.example.racehorse_transport.repository.LogRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.repository.SystemLogRepository;
 import com.example.racehorse_transport.service.HorseHealthLogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,19 +28,19 @@ public class HorseHealthLogServiceImpl implements HorseHealthLogService {
     private final HorseRepository horseRepository;
     private final BookingRepository bookingRepository;
     private final StaffRepository staffRepository;
-    private final LogRepository logRepository;
+    private final SystemLogRepository systemLogRepository;
 
     @Autowired
     public HorseHealthLogServiceImpl(HorseHealthLogRepository horseHealthLogRepository,
                                      HorseRepository horseRepository,
                                      BookingRepository bookingRepository,
                                      StaffRepository staffRepository,
-                                     LogRepository logRepository) {
+                                     SystemLogRepository systemLogRepository) {
         this.horseHealthLogRepository = horseHealthLogRepository;
         this.horseRepository = horseRepository;
         this.bookingRepository = bookingRepository;
         this.staffRepository = staffRepository;
-        this.logRepository = logRepository;
+        this.systemLogRepository = systemLogRepository;
     }
 
     @Override
@@ -127,18 +127,17 @@ public class HorseHealthLogServiceImpl implements HorseHealthLogService {
                 || healthStatus.toLowerCase().contains("emergency")
                 || healthStatus.toLowerCase().contains("nguy kịch")
                 || healthStatus.toLowerCase().contains("sốt cao"))) {
-            Log emergencyLog = new Log();
-            emergencyLog.setId((int) (logRepository.count() + 1));
-            emergencyLog.setBookingID(booking);
-            emergencyLog.setStaffID(escort);
-            emergencyLog.setLogType("EMERGENCY_HEALTH_ALERT");
-            emergencyLog.setStatus("ALERT");
-            emergencyLog.setNote("CẢNH BÁO SỨC KHỎE NGỰA [Mã " + horseId + " - " + horse.getHorseName() + "]: " 
-                    + healthStatus
-                    + (temperature != null ? " | Thân nhiệt: " + temperature + "°C" : "")
-                    + (symptoms != null ? " | Triệu chứng: " + symptoms : ""));
-            emergencyLog.setCreatedAt(Instant.now());
-            logRepository.save(emergencyLog);
+            SystemLog emergencyLog = SystemLog.builder()
+                    .actionType("EMERGENCY_HEALTH_ALERT")
+                    .targetTable("BOOKING")
+                    .targetRecordID(booking != null ? booking.getId() : null)
+                    .description("CẢNH BÁO SỨC KHỎE NGỰA [Mã " + horseId + " - " + horse.getHorseName() + "]: "
+                            + healthStatus
+                            + (temperature != null ? " | Thân nhiệt: " + temperature + "°C" : "")
+                            + (symptoms != null ? " | Triệu chứng: " + symptoms : ""))
+                    .createdAt(Instant.now())
+                    .build();
+            systemLogRepository.save(emergencyLog);
         }
 
         return saved;

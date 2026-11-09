@@ -47,10 +47,6 @@ public class Incident {
     @JoinColumn(name = "StaffID")
     private Staff staffID;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "LogID")
-    private Log logID;
-
     @Size(max = 100)
     @Column(name = "trip_id", length = 100)
     private String tripId;

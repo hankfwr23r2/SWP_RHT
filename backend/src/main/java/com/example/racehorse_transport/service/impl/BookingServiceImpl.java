@@ -82,13 +82,11 @@ public class BookingServiceImpl implements BookingService {
     private final NotificationRepository notificationRepository;
     private final PaymentRepository paymentRepository;
     private final FleetService fleetService;
-    private final LogRepository logRepository;
     private final VehicleRepository vehicleRepository;
     private final StaffRepository staffRepository;
     private final RegulationRepository regulationRepository;
     private final LocationRepository locationRepository;
     private final SystemConfigService systemConfigService;
-    private final TripDocumentRepository tripDocumentRepository;
     private final RouteRepository routeRepository;
     private final ServiceRepository serviceRepository;
     private final HorseDocumentRepository horseDocumentRepository;
@@ -2352,18 +2350,18 @@ public class BookingServiceImpl implements BookingService {
                     });
                 }
 
-                // 4. Ghi log cảnh báo khẩn cấp an sinh
-                Log emergencyLog = new Log();
-                emergencyLog.setId((int) (logRepository.count() + 1));
-                emergencyLog.setBookingID(booking);
-                emergencyLog.setLogType("EMERGENCY_HEALTH_ALERT");
-                emergencyLog.setStatus("UNFIT_FOR_TRAVEL");
-                emergencyLog.setNote("TỪ CHỐI TIẾP NHẬN NGỰA TẠI ĐIỂM ĐÓN [" + horseName + "]: " + reason
-                        + (temp != null ? " | Thân nhiệt: " + temp + "°C" : "")
-                        + (!symptoms.isBlank() ? " | Triệu chứng: " + symptoms : "")
-                        + " | Giảm trừ chi phí khách: " + discountAmount + " VND");
-                emergencyLog.setCreatedAt(Instant.now());
-                logRepository.save(emergencyLog);
+                // 4. Ghi log cảnh báo khẩn cấp an sinh qua SystemLog
+                SystemLog emergencyLog = SystemLog.builder()
+                        .actionType("EMERGENCY_HEALTH_ALERT")
+                        .targetTable("BOOKING")
+                        .targetRecordID(booking.getId())
+                        .description("TỪ CHỐI TIẾP NHẬN NGỰA TẠI ĐIỂM ĐÓN [" + horseName + "]: " + reason
+                                + (temp != null ? " | Thân nhiệt: " + temp + "°C" : "")
+                                + (!symptoms.isBlank() ? " | Triệu chứng: " + symptoms : "")
+                                + " | Giảm trừ chi phí khách: " + discountAmount + " VND")
+                        .createdAt(Instant.now())
+                        .build();
+                systemLogRepository.save(emergencyLog);
 
                 // 5. Ghi lịch sử đơn hàng
                 appendHistory(payload, actor, "Từ chối tiếp nhận ngựa");

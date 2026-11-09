@@ -7,7 +7,6 @@ import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.repository.RegulationRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
-import com.example.racehorse_transport.repository.TripDocumentRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,7 +27,6 @@ class SpecialistServiceImplTest {
 
     private final BookingRepository bookingRepository = mock(BookingRepository.class);
     private final StaffRepository staffRepository = mock(StaffRepository.class);
-    private final TripDocumentRepository tripDocumentRepository = mock(TripDocumentRepository.class);
     private final RegulationRepository regulationRepository = mock(RegulationRepository.class);
     private final LocationRepository locationRepository = mock(LocationRepository.class);
 
@@ -39,7 +37,6 @@ class SpecialistServiceImplTest {
         service = new SpecialistServiceImpl(
                 bookingRepository,
                 staffRepository,
-                tripDocumentRepository,
                 regulationRepository,
                 locationRepository,
                 new ObjectMapper());

@@ -30,7 +30,6 @@ public class SpecialistServiceImpl implements SpecialistService {
 
     private final BookingRepository bookingRepository;
     private final StaffRepository staffRepository;
-    private final TripDocumentRepository tripDocumentRepository;
     private final RegulationRepository regulationRepository;
     private final LocationRepository locationRepository;
     private final ObjectMapper objectMapper;
