@@ -73,7 +73,7 @@ export interface AddIncidentExpensePayload {
   category: string
   label: string
   photo: string
-  amount: number
+  amount: number | string
   payer: string
 }
 

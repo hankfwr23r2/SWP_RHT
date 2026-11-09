@@ -512,7 +512,7 @@ export const bookingsApi = {
       approvedCost: options?.approvedCost,
       costBearer: options?.costBearer,
     }),
-  addIncidentExpense: async (_id: string, incidentId: string, _by: string, input: Pick<IncidentExpense, 'category' | 'label' | 'photo' | 'amount'>, incident: Incident) =>
+  addIncidentExpense: async (_id: string, incidentId: string, _by: string, input: Omit<Pick<IncidentExpense, 'category' | 'label' | 'photo' | 'amount'>, 'amount'> & { amount: number | string }, incident: Incident) =>
     backendIncidentApi.addExpense(numericId(incidentId, 'INC'), {
       ...input,
       label: input.label.trim() || input.category,
