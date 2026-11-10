@@ -38,7 +38,7 @@ import static org.assertj.core.api.Assertions.within;
 
 // Lộ trình xe tải tự nghỉ ở trạm nghỉ thật trên đường (cách đường không quá 5 km, trong khoảng 2–4 giờ lái liên tục,
 // chọn trạm xa nhất); đơn nội địa chỉ dừng ở trạm trong nước, không đi qua cửa khẩu, và tuyến không được đi sâu
-// vào lãnh thổ Campuchia/Lào. Valhalla/Vietmap là máy chủ giả trả mẫu phản hồi thật; DB là Postgres thật.
+// vào lãnh thổ Campuchia/Lào. Valhalla là máy chủ giả trả mẫu phản hồi thật; DB là Postgres thật.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @MockTurnstileVerification
 class RoutePreviewStationsTest {
@@ -64,8 +64,6 @@ class RoutePreviewStationsTest {
         registry.add("spring.datasource.username", POSTGRES::getUsername);
         registry.add("spring.datasource.password", POSTGRES::getPassword);
         registry.add("routing.valhalla.url", STUB::url);
-        registry.add("routing.vietmap.url", STUB::url);
-        registry.add("routing.vietmap.api-key", () -> "test-key");
     }
 
     @LocalServerPort
@@ -105,7 +103,6 @@ class RoutePreviewStationsTest {
         STUB.clearRequests();
         STUB.clearConditionalReplies();
         STUB.reply("/route", 200, "valhalla-truck-hcm-hanoi.json");
-        STUB.reply("/route/v4", 200, "vietmap-v4-hcm-hanoi-toll.json");
         coordinatorToken = loginAsCoordinator();
         truck = vehicles.save(Vehicle.builder()
                 .vehicleType("Xe chuyên dụng 4 ngăn")

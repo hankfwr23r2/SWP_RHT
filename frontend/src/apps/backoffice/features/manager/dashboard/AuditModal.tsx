@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { EXPENSE_CATEGORY, INCIDENT_KIND, type Payer } from '@shared/config/booking-rules'
-import { formatVND } from '@shared/lib/format'
+import { formatDateTime, formatVND } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
 import type { Booking } from '@shared/types/booking'
 import { FormSelect } from '@shared/ui/FormSelect'
@@ -25,6 +25,9 @@ export function AuditModal({ b, onClose, onDone }: { b: Booking; onClose: () => 
   const [busy, setBusy] = useState(false)
   const customerTotal = expenses.filter(e => payers[e.id] === 'customer').reduce((n, e) => n + e.amount, 0)
   const carrierTotal = expenses.filter(e => payers[e.id] === 'carrier').reduce((n, e) => n + e.amount, 0)
+  // Phí cầu đường tài xế ghi theo hóa đơn: nhà xe chịu, chỉ để đối chiếu, không vào bảng quyết toán của khách
+  const tolls = (b.trips ?? []).flatMap(trip => trip.tolls ?? [])
+  const tollTotal = tolls.reduce((n, x) => n + x.amount, 0)
   const issue = async () => {
     setBusy(true)
     try { await bookingsApi.issueSettlement(b.id, session!.name, payers); toast(t('auditModal.issuedSuccess', 'Đã phát hành bảng quyết toán {{id}}', { id: b.id })); onDone() } catch (e) { toast(e instanceof Error ? e.message : t('auditModal.issueFailed', 'Không phát hành được'), 'error'); setBusy(false) }
@@ -43,7 +46,14 @@ export function AuditModal({ b, onClose, onDone }: { b: Booking; onClose: () => 
           </tr>
         ))}</tbody>
       </table></div>
-      <p style={{ marginTop: 14 }}>{t('auditModal.summaryCustomer', 'Khách phải trả thêm:')} <b>{formatVND(customerTotal)}</b> · {t('auditModal.summaryCarrier', 'Nhà xe chịu:')} <b>{formatVND(carrierTotal)}</b></p>
+      <h4 style={{ margin: '16px 0 8px' }}><i className="fa-solid fa-road" /> Phí cầu đường (nhà xe chịu)</h4>
+      {tolls.length
+        ? <div className="table-wrap"><table className="data-table">
+            <thead><tr><th>Hóa đơn</th><th>Trạm thu phí</th><th>Số tiền</th></tr></thead>
+            <tbody>{tolls.map(x => <tr key={x.id}><td><ImageThumb name={x.photo} size={40} /></td><td>{x.station || 'Trạm thu phí'}<div className={s.sub}>{formatDateTime(x.at)} · {x.by}</div></td><td className="nowrap">{formatVND(x.amount)}</td></tr>)}</tbody>
+          </table></div>
+        : <p className={s.sub}>Tài xế chưa ghi hóa đơn phí cầu đường nào.</p>}
+      <p style={{ marginTop: 14 }}>{t('auditModal.summaryCustomer', 'Khách phải trả thêm:')} <b>{formatVND(customerTotal)}</b> · {t('auditModal.summaryCarrier', 'Nhà xe chịu:')} <b>{formatVND(carrierTotal)}</b>{tolls.length ? <> · Phí cầu đường: <b>{formatVND(tollTotal)}</b></> : null}</p>
       <ReadMore className={s.hint} text={t('auditModal.policyNote', 'Chính sách: chi phí về ngựa (thú y, thuốc, chuồng đệm) khách chịu. Chi phí về vận chuyển (cứu hộ, sửa xe) nhà xe chịu. Tắc cửa khẩu nhà xe chịu. Giá chuyến đã cố định nên nhiên liệu và cầu đường không tính thêm. Bảng quyết toán chỉ gồm khoản khách chịu, khách có 24 giờ để thanh toán.')} />
     </Modal>
   )

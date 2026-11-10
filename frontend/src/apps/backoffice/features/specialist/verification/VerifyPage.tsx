@@ -330,7 +330,7 @@ export default function VerifyPage() {
         )}
         <div className={s.layout}>
           <div className={s.main}>
-            {b.sentBack?.to === 'specialist' && <div className="alert alert-warning"><i className="fa-solid fa-rotate-left" /><div><b>{t('specialistVerify.managerReturnedAlert', 'Quản lý trả lại đơn này: {{reason}} ({{by}}, {{at}})', { reason: b.sentBack.reason, by: b.sentBack.by, at: formatDateTime(b.sentBack.at) })}</b></div></div>}
+            {b.sendBack?.specialist && <div className="alert alert-warning"><i className="fa-solid fa-rotate-left" /><div><b>{t('specialistVerify.managerReturnedAlert', 'Quản lý trả lại đơn này: {{reason}} ({{by}}, {{at}})', { reason: b.sendBack.specialist, by: b.sendBack.by, at: formatDateTime(b.sendBack.at) })}</b></div></div>}
             <div className="card"><div className="card-header"><h3><i className="fa-solid fa-route" /> {t('specialistVerify.tripTitle', 'Chuyến đi')}</h3></div><TripSummary b={b} placeLabel={vietnamesePlaceName} /></div>
             <InsuranceLink b={b} />
             <Review key={b.medical?.status} b={b} horses={horses} onDone={reload} />

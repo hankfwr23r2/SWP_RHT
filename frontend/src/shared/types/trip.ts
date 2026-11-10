@@ -17,33 +17,38 @@ export interface OpsTrip {
   activity: { time: number; text: string }[] // nhật ký hiện trường (ảnh chặng) ở trang Giám sát
 }
 
+// Báo cáo chuyến dựng từ dữ liệu thật; trường nào chuyến chưa có thì null
 export interface ReportLeg {
   title: string
   kind: 'ground' | 'gate'
   meta: string
   route: string
-  planned: [string, string]
-  actual: [string, string]
+  plannedStart: number | null // mốc thời gian ms
+  plannedEnd: number | null
+  actualStart: number | null
+  actualEnd: number | null
 }
 
 export interface TripReport {
   id: string // mã đơn
-  tripId: string
-  customer: string
+  tripId: string | null
+  customer: string | null
   route: string
   type: string
   horses: string
-  escort: string
-  completedAt: number
-  plannedAt: number
-  otd: 'on_time' | 'early' | 'late'
-  otdMinutes: number
+  escort: string | null
+  completedAt: number | null // giờ giao ngựa thực tế
+  plannedAt: number | null // giờ giao dự kiến
+  otd: 'on_time' | 'early' | 'late' | null
+  otdMinutes: number | null
   incidentCost: number
+  tollCost?: number // phí cầu đường theo hóa đơn tài xế ghi (nhà xe chịu)
+  tolls?: { id: string; amount: number; station: string; photo: string; at: number; by: string }[]
   incidentNote: string
-  totalTime: string
+  totalTime: string | null
   legs: ReportLeg[]
-  health: [time: string, event: string, ok: boolean][]
-  events: [time: string, event: string, ok: boolean][]
-  rating: number
-  feedback: string
+  health: [at: number, event: string, ok: boolean][]
+  events: [at: number, event: string, ok: boolean][]
+  rating: number | null // khách chưa chấm thì null
+  feedback: string | null
 }

@@ -130,7 +130,6 @@ export interface RoutePreviewResponse {
   driveHours: number
   legs: { from: string; to: string; km: number; driveHours: number }[]
   path: [number, number][]
-  toll: { amountVnd: number | null; source: string | null }
   schedule: RoutePreviewEvent[]
   arrivalAt: number
   borderArrivalAt: number | null

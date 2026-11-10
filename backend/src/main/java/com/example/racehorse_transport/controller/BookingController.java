@@ -6,7 +6,6 @@ import com.example.racehorse_transport.dto.booking.PublicTrackingLookupRequest;
 import com.example.racehorse_transport.dto.booking.PublicTrackingLookupResponse;
 import com.example.racehorse_transport.response.ApiResponse;
 import com.example.racehorse_transport.service.BookingService;
-import com.example.racehorse_transport.service.TurnstileVerifier;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -22,12 +21,10 @@ import java.util.ArrayList;
 public class BookingController {
 
     private final BookingService bookingService;
-    private final TurnstileVerifier turnstileVerifier;
 
     @Autowired
-    public BookingController(BookingService bookingService, TurnstileVerifier turnstileVerifier) {
+    public BookingController(BookingService bookingService) {
         this.bookingService = bookingService;
-        this.turnstileVerifier = turnstileVerifier;
     }
 
     // Tra cứu đơn công khai theo mã đơn và 4 số cuối số điện thoại (không cần đăng nhập, không yêu cầu captcha)

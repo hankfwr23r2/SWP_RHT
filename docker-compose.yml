@@ -61,7 +61,6 @@ services:
       - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME:-}
       - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY:-}
       - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET:-}
-      - VIETMAP_API_KEY=${VIETMAP_API_KEY:-}
       # Gửi email OTP (Gmail: smtp.gmail.com + App Password); bỏ trống thì OTP in ra log backend
       - MAIL_HOST=${MAIL_HOST:-}
       - MAIL_USERNAME=${MAIL_USERNAME:-}

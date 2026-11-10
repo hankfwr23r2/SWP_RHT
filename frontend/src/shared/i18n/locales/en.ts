@@ -1233,6 +1233,8 @@ export const en = {
     selectHorse: 'Select horse ({{count}})',
     selectHorseHint: 'Save or discard changes before switching horses.',
     linkCardRemaining: '{{remaining}}/{{total}} horses require insurance processing.',
+    blocksQuote: 'The manager cannot send the quote until insurance is complete.',
+    blocksDeparture: 'The driver cannot start the journey until the insurance policy is confirmed.',
     linkCardDone: 'View insurance quote and policy progress.',
     confirmedWithCustomer: 'Choice confirmed with client',
     selectAfterConfirm: 'Select after confirmation with customer',

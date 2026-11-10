@@ -39,7 +39,7 @@ class SettlementServiceImplTest {
     void setUp() {
         service = new SettlementServiceImpl(
                 bookingRepository, paymentRepository, quotationRepository,
-                vehicleRepository, staffRepository, new ObjectMapper(), billMailService);
+                vehicleRepository, staffRepository, new ObjectMapper(), billMailService, org.mockito.Mockito.mock(com.example.racehorse_transport.service.StaffNotifier.class));
     }
 
     @Test

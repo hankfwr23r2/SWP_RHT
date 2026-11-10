@@ -27,11 +27,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.OptionalLong;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-// Xem trước lộ trình xe tải cho điều phối: tuyến Valhalla + phí cầu đường Vietmap (phần Việt Nam)
+// Xem trước lộ trình xe tải cho điều phối: tuyến Valhalla. Phí cầu đường do tài xế ghi theo hóa đơn thực tế
 // + lịch trình JourneyPlanner (nghỉ ở trạm nghỉ thật trên đường khi có) + tên chỗ nghỉ dọc đường theo trạm gần nhất.
 // Đơn nội địa: chỉ dừng ở trạm trong nước, không qua cửa khẩu, tuyến không được đi sâu vào Campuchia/Lào.
 @Service
@@ -51,7 +50,6 @@ public class RoutePreviewService {
     private static final double MAX_DETOUR_RATIO = 1.6;
 
     private final ValhallaClient valhalla;
-    private final VietmapTollClient vietmap;
     private final RouteCache cache;
     private final LocationRepository locations;
     private final FleetService fleetService;
@@ -121,7 +119,6 @@ public class RoutePreviewService {
                 stations, rules(), ZONE);
 
         List<String> warnings = new ArrayList<>();
-        RoutePreviewResponse.Toll toll = toll(request, gate, capacityKg, warnings);
 
         List<RoutePreviewResponse.Leg> legs = IntStream.range(0, road.legs().size())
                 .mapToObj(i -> new RoutePreviewResponse.Leg(names.get(i), names.get(i + 1),
@@ -149,7 +146,7 @@ public class RoutePreviewService {
         }
 
         return new RoutePreviewResponse("valhalla", round1(road.km()), hours(road.driveSeconds()), legs,
-                path(road), toll, schedule, journey.arrivalAt().toEpochMilli(),
+                path(road), schedule, journey.arrivalAt().toEpochMilli(),
                 journey.borderArrivalAt() == null ? null : journey.borderArrivalAt().toEpochMilli(),
                 journey.crewDays(), warnings);
     }
@@ -400,47 +397,6 @@ public class RoutePreviewService {
             cache.put(key, fresh);
             return fresh;
         });
-    }
-
-    // Phí cầu đường chỉ có ở phần đường trong Việt Nam (Vietmap chỉ phủ Việt Nam)
-    private RoutePreviewResponse.Toll toll(RoutePreviewRequest request, Location gate, int capacityKg,
-                                           List<String> warnings) {
-        GeoPoint pickup = geo(request.pickup());
-        GeoPoint dropoff = geo(request.dropoff());
-        boolean pickupInVietnam = isVietnam(request.pickup().country());
-        boolean dropoffInVietnam = isVietnam(request.dropoff().country());
-        GeoPoint from = null;
-        GeoPoint to = null;
-        if (gate == null) {
-            if (pickupInVietnam && dropoffInVietnam) {
-                from = pickup;
-                to = dropoff;
-            }
-        } else {
-            GeoPoint gatePoint = new GeoPoint(gate.getLatitude(), gate.getLongitude());
-            if (pickupInVietnam) {
-                from = pickup;
-                to = gatePoint;
-            } else if (dropoffInVietnam) {
-                from = gatePoint;
-                to = dropoff;
-            }
-        }
-        if (from == null) {
-            return new RoutePreviewResponse.Toll(null, null);
-        }
-        String key = "vietmap-toll|" + from.key() + "|" + to.key() + "|" + capacityKg;
-        Long cached = cache.find(key, Long.class).orElse(null);
-        if (cached != null) {
-            return new RoutePreviewResponse.Toll(cached, "vietmap");
-        }
-        OptionalLong fresh = vietmap.truckToll(from, to, capacityKg);
-        if (fresh.isEmpty()) {
-            warnings.add("Chưa lấy được phí cầu đường (Vietmap).");
-            return new RoutePreviewResponse.Toll(null, "vietmap");
-        }
-        cache.put(key, fresh.getAsLong());
-        return new RoutePreviewResponse.Toll(fresh.getAsLong(), "vietmap");
     }
 
     private List<Location> stopsOf(List<Integer> ids) {

@@ -38,6 +38,7 @@ public class IncidentServiceImpl implements IncidentService {
     private final StaffRepository staffRepository;
     private final SystemLogRepository systemLogRepository;
     private final com.example.racehorse_transport.service.HorseHealthLogService horseHealthLogService;
+    private final com.example.racehorse_transport.service.StaffNotifier staffNotifier;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -95,6 +96,8 @@ public class IncidentServiceImpl implements IncidentService {
         logAction("INCIDENT_REPORTED", booking.getId(),
                 "Phát hiện sự cố INC-" + saved.getId() + " cho đơn BK-" + booking.getId() + ": " + request.getIncidentName());
 
+        staffNotifier.toAssignedCoordinator(booking, BookingDetailsJson.read(objectMapper, booking),
+                "SOS mới · BK-" + booking.getId(), request.getIncidentName() + ". Lập phương án xử lý trên bản đồ.", "/coordinator/incidents");
         log.info("Incident ID={} reported for Booking ID={}", saved.getId(), booking.getId());
         return mapToResponse(saved);
     }
@@ -169,6 +172,8 @@ public class IncidentServiceImpl implements IncidentService {
                     planDesc);
             refreshBookingIncidentStatus(booking, saved);
             bookingRepository.save(booking);
+            staffNotifier.toManagers(booking, "Phương án sự cố chờ duyệt · BK-" + booking.getId(),
+                    "Điều phối viên đề xuất " + partner + " (" + service + "). Duyệt phương án và chi phí.", "/manager/incidents");
 
             logAction("INCIDENT_PLAN_PROPOSED", booking.getId(),
                     "Điều phối viên đề xuất phương án đội ngoài cho sự cố INC-" + saved.getId() + ": " + planDesc);
@@ -226,6 +231,11 @@ public class IncidentServiceImpl implements IncidentService {
 
             logAction("INCIDENT_PLAN_APPROVED", booking.getId(),
                     "Quản lý duyệt phương án cho sự cố INC-" + saved.getId() + ": " + text);
+            var approvedTrip = BookingDetailsJson.read(objectMapper, booking).getTrips() == null ? null
+                    : BookingDetailsJson.read(objectMapper, booking).getTrips().stream()
+                            .filter(t -> Objects.equals(t.getTripId(), saved.getTripId())).findFirst().orElse(null);
+            staffNotifier.toTripCrew(booking, approvedTrip,
+                    "Phương án sự cố đã được duyệt · BK-" + booking.getId(), "Mở ứng dụng để đi theo phương án mới.");
         }
 
         log.info("Manager approved plan for Incident ID={}", saved.getId());
@@ -249,6 +259,8 @@ public class IncidentServiceImpl implements IncidentService {
                     "Trả phương án sự cố INC-" + incidentId + ": " + request.getReason().trim());
             refreshBookingIncidentStatus(booking, saved);
             bookingRepository.save(booking);
+            staffNotifier.toAssignedCoordinator(booking, BookingDetailsJson.read(objectMapper, booking),
+                    "Quản lý trả phương án sự cố · BK-" + booking.getId(), "Lý do: " + request.getReason().trim(), "/coordinator/incidents");
         }
         return mapToResponse(saved);
     }

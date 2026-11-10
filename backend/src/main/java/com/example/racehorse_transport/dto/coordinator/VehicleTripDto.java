@@ -24,4 +24,5 @@ public class VehicleTripDto {
     private Map<String, Object> run;
     private Map<String, Object> homeReturn;
     private Map<String, Object> incidentRoute;
+    private List<Map<String, Object>> tolls; // phí cầu đường tài xế ghi theo hóa đơn: id, amount, station, photo, at, by
 }

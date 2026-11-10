@@ -217,6 +217,7 @@ export function toBooking(r: BackendBookingResponse, customer?: string): Booking
   if (r.settlement) b.settlement = r.settlement as Settlement
   if (r.rating) b.rating = r.rating as Rating
   if (r.rejection) b.rejection = r.rejection as Rejection
+  if (r.sendBack) b.sendBack = r.sendBack
   const incidents = (r.incidents ?? []).map(incidentOf).filter((incident): incident is Incident => !!incident)
   if (incidents.length) b.incidents = incidents
   return b
