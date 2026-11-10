@@ -67,7 +67,8 @@ public class SwtManagerWorkflowTest {
                 paymentRepository,
                 bookingRepository,
                 quotationRepository,
-                objectMapper
+                objectMapper,
+                mock(com.example.racehorse_transport.service.StaffNotifier.class)
         );
 
         Booking booking = new Booking();
@@ -113,7 +114,8 @@ public class SwtManagerWorkflowTest {
                 paymentRepository,
                 bookingRepository,
                 quotationRepository,
-                objectMapper
+                objectMapper,
+                mock(com.example.racehorse_transport.service.StaffNotifier.class)
         );
 
         Booking booking = new Booking();

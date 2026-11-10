@@ -39,7 +39,8 @@ public class SwtSpecialistWorkflowTest {
                 staffRepository,
                 regulationRepository,
                 locationRepository,
-                objectMapper
+                objectMapper,
+                mock(com.example.racehorse_transport.service.StaffNotifier.class)
         );
 
         Staff specialistA = new Staff();
