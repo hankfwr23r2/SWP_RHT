@@ -69,18 +69,12 @@ export const findLocation = (id: string, country?: string) => {
   const venue = FAMOUS_HORSE_VENUES.find(v => v.id === id || v.name.toLowerCase().includes(clean) || clean.includes(v.name.toLowerCase()))
   if (venue) return { id, name: venue.name, lat: venue.lat, lng: venue.lng }
 
-  // Kiểm tra địa chỉ 2 cấp (Tỉnh / Thành và Xã / Phường)
+  // Địa chỉ chọn từ danh mục hiện hành: "chi tiết, Phường/Xã, Tỉnh/Thành", so khớp nguyên từng phần
+  const parts = clean.split(',').map(part => part.trim())
   for (const prov of PROVINCES_DATA) {
-    const provMatched = clean.includes(prov.name.toLowerCase()) || clean.includes(prov.code.toLowerCase())
-    if (provMatched) {
-      for (const w of prov.wards) {
-        const wClean = w.name.toLowerCase().replace(/^(xã|phường|sangkat|ban|krong)\s+/i, '').split('(')[0].trim()
-        if (clean.includes(wClean)) {
-          return { id, name: id, lat: w.lat, lng: w.lng }
-        }
-      }
-      return { id, name: id, lat: prov.lat, lng: prov.lng }
-    }
+    if (!parts.includes(prov.name.toLowerCase())) continue
+    const ward = prov.wards.find(w => parts.includes(w.name.toLowerCase()))
+    return { id, name: id, lat: (ward ?? prov).lat, lng: (ward ?? prov).lng }
   }
 
   if (country && COUNTRY_LOCATIONS[country as CountryCode]?.length) {
@@ -977,11 +971,18 @@ export const isVehicleReadyForDispatch = (v: Vehicle): boolean => {
   return s === 'AVAILABLE' || s === 'ACTIVE' || s === ''
 }
 
+// Số ngăn một con ngựa chiếm trên xe: khoang đơn mở rộng chiếm 2 ngăn, khoang tiêu chuẩn 1 ngăn
+export function stallUnitsOf(horse: Pick<BookingHorse, 'stall' | 'selectedServices'>): number {
+  const code = horse.selectedServices?.stall?.serviceCode
+  return code === 'STALL_SINGLE_EXTENDED' || horse.stall === 'single' ? 2 : 1
+}
+
 export function autoPackFleet(
   horseIds: string[],
   vehicles: Vehicle[],
   schedVehicles: Map<string, Booked[]>,
-  departAt: number
+  departAt: number,
+  stallsOf: (horseId: string) => number = () => 1
 ): AutoPackDraft[] {
   if (!horseIds.length) return [{ vehicleId: '', horseIds: [] }]
 
@@ -997,8 +998,9 @@ export function autoPackFleet(
 
   // Trường hợp 1: Tất cả ngựa có thể xếp vừa vào 1 xe duy nhất
   // Tìm xe có capacity >= horseIds.length nhỏ nhất (Best-Fit Single Vehicle)
+  const totalStalls = horseIds.reduce((sum, id) => sum + stallsOf(id), 0)
   const singleFits = available
-    .filter(v => v.capacity >= horseIds.length)
+    .filter(v => v.capacity >= totalStalls)
     .sort((a, b) => a.capacity - b.capacity)
 
   if (singleFits.length > 0) {
@@ -1016,9 +1018,14 @@ export function autoPackFleet(
     if (!remainingHorses.length) break
     if (usedVehicleIds.has(v.id)) continue
 
-    const takeCount = Math.min(v.capacity, remainingHorses.length)
-    const assigned = remainingHorses.slice(0, takeCount)
-    remainingHorses = remainingHorses.slice(takeCount)
+    let free = v.capacity
+    const assigned = remainingHorses.filter(id => {
+      if (stallsOf(id) > free) return false
+      free -= stallsOf(id)
+      return true
+    })
+    if (!assigned.length) continue
+    remainingHorses = remainingHorses.filter(id => !assigned.includes(id))
     usedVehicleIds.add(v.id)
 
     results.push({

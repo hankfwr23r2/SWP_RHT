@@ -71,4 +71,21 @@ class SettlementServiceImplTest {
                 .hasMessageContaining("vượt quá giới hạn");
         verify(bookingRepository, never()).save(any());
     }
+
+    @Test
+    void submittingExpensesTwiceIssuesSettlementAndMailsOnlyOnce() {
+        Booking booking = Booking.builder().id(12).status("delivered_pending_settlement").detailsJson("{}").build();
+        when(bookingRepository.findByIdForUpdate(12)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findById(12)).thenReturn(Optional.of(booking));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.submitExpenses("12", null, "driver01");
+        assertThat(booking.getStatus()).isEqualTo("settlement_issued");
+
+        assertThatThrownBy(() -> service.submitExpenses("12", null, "driver01"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("đã gửi");
+        verify(bookingRepository, org.mockito.Mockito.times(1)).save(any());
+        verify(billMailService, org.mockito.Mockito.times(1)).settlementIssued(any(), any(), any(), any());
+    }
 }

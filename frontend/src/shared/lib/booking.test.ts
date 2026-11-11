@@ -11,7 +11,7 @@ import type { DocumentRequirement } from '../api/documentRequirements'
 import {
   schedulesOf, clashOf, crewClashOf, planHomeReturn, returnLate, returningTrips, vehicleSpot, vehiclePoint, pendingDeparture, spotLabel, nearestTo, projectOnPath, pointsAhead, pointAlong, bookingPath, incidentLocation, needsFitCheck, transitProgress, defaultPayer, incidentActionsFor, settlementOf, approvedSubOf, APPROVED_SUBS, orderGroupOf, ORDER_GROUPS, capacitiesFor, estimateQuote, busyResources, buildRoutePlan, gatesFor, suggestGate, suggestTransitStations, canCompleteClearance, classForHorses, defaultClearanceItems, deriveStatus, docsDueAt, earliestDeparture, finalizeQuote, horseReadiness,
   isClearanceOverdue, isDepartureAllowed, isQuoteExpired, layoutLegs, manifestDocuments, nextBookingId, quoteLines, reviewDone, routeKm, activeStaff,
-  findLocation, arrivalOf, routeOutline, managerBoardOf, managerCounts, orderTabOf, tripIdFor, validateRoutePlan, vehicleClassOf, autoPackFleet, horseCountryMatchesOrigin, horseHasUnverifiedLocationCountry, pickupFailReason,
+  findLocation, arrivalOf, routeOutline, managerBoardOf, managerCounts, orderTabOf, tripIdFor, validateRoutePlan, vehicleClassOf, autoPackFleet, stallUnitsOf, horseCountryMatchesOrigin, horseHasUnverifiedLocationCountry, pickupFailReason,
 } from './booking'
 
 
@@ -898,6 +898,31 @@ describe('autoPackFleet - Tự động phân bổ xe thông minh', () => {
     const res = autoPackFleet(['H1'], [v1, v2], sched, NOW)
     expect(res).toHaveLength(1)
     expect(res[0].vehicleId).toBe('V2')
+  })
+
+  it('ngựa khoang đơn mở rộng chiếm 2 ngăn: 2 con không xếp vào xe 2 ngăn', () => {
+    const stalls = (id: string) => (id === 'H1' || id === 'H2' ? 2 : 1)
+    const res = autoPackFleet(['H1', 'H2'], [v1, v2], new Map(), NOW, stalls)
+    expect(res).toHaveLength(1)
+    expect(res[0].vehicleId).toBe('V2')
+    expect(res[0].horseIds).toEqual(['H1', 'H2'])
+  })
+
+  it('chia xe theo số ngăn khi có ngựa khoang mở rộng', () => {
+    // 3 ngựa mở rộng (6 ngăn) với xe 4 ngăn và xe 2 ngăn: xe 4 chở 2 con, xe 2 chở 1 con
+    const res = autoPackFleet(['H1', 'H2', 'H3'], [v1, v2], new Map(), NOW, () => 2)
+    expect(res).toEqual([
+      { vehicleId: 'V2', horseIds: ['H1', 'H2'] },
+      { vehicleId: 'V1', horseIds: ['H3'] },
+    ])
+  })
+})
+
+describe('stallUnitsOf', () => {
+  it('khoang đơn mở rộng tính 2 ngăn, khoang tiêu chuẩn 1 ngăn', () => {
+    expect(stallUnitsOf({ stall: 'single' })).toBe(2)
+    expect(stallUnitsOf({ stall: 'standard' })).toBe(1)
+    expect(stallUnitsOf({ stall: 'standard', selectedServices: { stall: { id: 2, serviceCode: 'STALL_SINGLE_EXTENDED', serviceName: 'Khoang đơn mở rộng', categoryId: 1, categoryName: 'Khoang trên xe', price: 2000000 } } })).toBe(2)
   })
 })
 

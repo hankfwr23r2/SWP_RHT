@@ -1,12 +1,13 @@
 // Bước 1: loại chuyến, ngày khởi hành, người gửi & điểm đón, người nhận & điểm giao.
 // Áp dụng mô hình hành chính 2 cấp (Tỉnh/Thành → Xã/Phường) và gợi ý trại ngựa quen thuộc.
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useId, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import {
   PROVINCES_DATA,
   buildFullAddress,
+  splitAddress,
   type ProvinceInfo,
 } from '@shared/config/administrative'
 import { MIN_LEAD_DAYS } from '@shared/config/business-rules'
@@ -17,6 +18,7 @@ import { isValidContactName, isValidPhoneForCountry, PHONE_CALLING_CODES, toInte
 import { isValidLocationDetail, removeLocationDetailSpecialCharacters } from '@shared/lib/locationValidation'
 import { customerProfileApi } from '@shared/api/customerProfile'
 import type { Party, TransportType } from '@shared/types/booking'
+import { AddressPicker } from '@shared/ui/AddressPicker'
 import { Flag } from '@shared/ui/Flag'
 import { FormSelect } from '@shared/ui/FormSelect'
 import { useToast } from '@shared/ui/toast'
@@ -104,27 +106,6 @@ interface AddressState {
   detail: string
 }
 
-// Tách địa chỉ có sẵn trong draft thành province, ward, detail (nếu có)
-function parseAddress(addr: string, country: CountryCode): AddressState {
-  if (!addr) return { provinceCode: '', wardName: '', detail: '' }
-  const provs = PROVINCES_DATA.filter(p => p.country === country)
-  const matchedProv = provs.find(
-    p => addr.toLowerCase().includes(p.name.toLowerCase()) || addr.toLowerCase().includes(p.code.toLowerCase())
-  )
-  if (!matchedProv) {
-    return { provinceCode: '', wardName: '', detail: addr }
-  }
-  const matchedWard = matchedProv.wards.find(w => {
-    const cleanW = w.name.toLowerCase().replace(/^(xã|phường|sangkat|ban)\s+/i, '').split('(')[0].trim()
-    return addr.toLowerCase().includes(cleanW)
-  })
-  return {
-    provinceCode: matchedProv.code,
-    wardName: matchedWard?.name ?? '',
-    detail: addr.split(',')[0]?.trim() ?? '',
-  }
-}
-
 interface LocationPickerProps {
   country: CountryCode
   address: AddressState
@@ -137,6 +118,7 @@ function LocationPicker({ country, address, onChange, errors }: LocationPickerPr
   const provinces = useMemo(() => PROVINCES_DATA.filter(p => p.country === country), [country])
   const presets = useMemo(() => COUNTRY_LOCATIONS[country] || [], [country])
   const [selectedPreset, setSelectedPreset] = useState<string>('')
+  const areaLabel = useId()
 
   useEffect(() => {
     setSelectedPreset('')
@@ -149,7 +131,7 @@ function LocationPicker({ country, address, onChange, errors }: LocationPickerPr
     if (!presetId) return
     const found = presets.find(p => p.id === presetId)
     if (!found) return
-    const parsed = parseAddress(found.name, country)
+    const parsed = splitAddress(found.name, country)
     onChange({
       provinceCode: parsed.provinceCode || address.provinceCode,
       wardName: parsed.wardName || address.wardName,
@@ -157,19 +139,8 @@ function LocationPicker({ country, address, onChange, errors }: LocationPickerPr
     })
   }
 
-  const handleProvChange = (code: string) => {
-    onChange({
-      provinceCode: code,
-      wardName: '',
-      detail: address.detail,
-    })
-  }
-
-  const handleWardChange = (ward: string) => {
-    onChange({
-      ...address,
-      wardName: ward,
-    })
+  const handleAreaChange = (area: { provinceCode: string; wardName: string }) => {
+    onChange({ ...address, ...area })
   }
 
   const handleDetailChange = (detail: string) => {
@@ -216,49 +187,10 @@ function LocationPicker({ country, address, onChange, errors }: LocationPickerPr
           </div>
         )}
 
-        <div className="form-group">
-          <label className="required">
-            {t('bookingWizard.provinceCity')} <span className={s.subNote}>({COUNTRIES[country].name})</span>
-          </label>
-          <select
-            className={`form-control ${errors?.province ? 'invalid' : ''}`}
-            value={address.provinceCode}
-            onChange={e => handleProvChange(e.target.value)}
-          >
-            <option value="">{t('bookingWizard.selectProvince')}</option>
-            {provinces.map(p => (
-              <option key={p.code} value={p.code}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-          {errors?.province && <div className="form-error">{errors.province}</div>}
-        </div>
-
-        <div className="form-group">
-          <label className="required">
-            {t('bookingWizard.wardDistrict')}
-          </label>
-          <select
-            className={`form-control ${errors?.ward ? 'invalid' : ''}`}
-            value={address.wardName}
-            disabled={!selectedProv}
-            onChange={e => handleWardChange(e.target.value)}
-          >
-            <option value="">-- {selectedProv ? t('bookingWizard.selectWard') : t('bookingWizard.selectProvinceFirst')} --</option>
-            {selectedProv?.wards.map(w => (
-              <option key={w.name} value={w.name}>
-                {w.name}
-              </option>
-            ))}
-            {selectedProv && <option value="Khác">{t('bookingWizard.otherWard')}</option>}
-          </select>
-          {errors?.ward && <div className="form-error">{errors.ward}</div>}
-        </div>
-
         <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-          <label className="required">{t('bookingWizard.farmAddress')}</label>
+          <label className="required" htmlFor={`${areaLabel}-detail`}>{t('bookingWizard.farmAddress')}</label>
           <input
+            id={`${areaLabel}-detail`}
             type="text"
             className={`form-control ${errors?.detail ? 'invalid' : ''}`}
             placeholder={t('bookingWizard.farmAddressPlaceholder')}
@@ -267,6 +199,21 @@ function LocationPicker({ country, address, onChange, errors }: LocationPickerPr
             onBlur={handleDetailBlur}
           />
           {errors?.detail && <div className="form-error">{errors.detail}</div>}
+        </div>
+
+        <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+          <label className="required" id={areaLabel}>
+            {country === 'VN' ? t('bookingWizard.addressArea') : t('bookingWizard.addressAreaDistrict')} <span className={s.subNote}>({COUNTRIES[country].name})</span>
+          </label>
+          <AddressPicker
+            country={country}
+            provinceCode={address.provinceCode}
+            wardName={address.wardName}
+            onChange={handleAreaChange}
+            invalid={!!(errors?.province || errors?.ward)}
+            labelledBy={areaLabel}
+          />
+          {(errors?.province || errors?.ward) && <div className="form-error">{errors.province || errors.ward}</div>}
         </div>
 
         {fullAddr && (
@@ -323,10 +270,10 @@ export default function Step1RoutePage() {
 
   // Khởi tạo trạng thái địa chỉ 2 cấp
   const [pickupAddr, setPickupAddr] = useState<AddressState>(() =>
-    parseAddress(draft.originId || draft.consignor.address, originC)
+    splitAddress(draft.originId || draft.consignor.address, originC)
   )
   const [dropoffAddr, setDropoffAddr] = useState<AddressState>(() =>
-    parseAddress(draft.destId || draft.consignee.address, destC)
+    splitAddress(draft.destId || draft.consignee.address, destC)
   )
 
   const [consignor, setConsignor] = useState<Party>(() =>
@@ -443,7 +390,7 @@ export default function Step1RoutePage() {
     consignorPhone: routeReady && !isValidPhoneForCountry(consignorPhoneCountry, consignor.phone) ? 'Nhập số hợp lệ theo mã quốc gia đã chọn.' : '',
     consignorId: routeReady && !consignor.idNumber?.trim() ? 'Nhập số CCCD / Thẻ căn cước người gửi.' : '',
     pickupProv: routeReady && !pickupAddr.provinceCode ? 'Chọn tỉnh/thành điểm đón.' : '',
-    pickupWard: routeReady && !pickupAddr.wardName ? 'Chọn xã/phường điểm đón.' : '',
+    pickupWard: routeReady && !pickupAddr.wardName ? (originC === 'VN' ? 'Chọn xã/phường điểm đón.' : 'Chọn quận/huyện điểm đón.') : '',
     pickupDetail: routeReady && !pickupAddr.detail.trim()
       ? 'Nhập tên trang trại / địa chỉ đón cụ thể.'
       : routeReady && !isValidLocationDetail(pickupAddr.detail)
@@ -454,7 +401,7 @@ export default function Step1RoutePage() {
     consigneePhone: routeReady && !isValidPhoneForCountry(consigneePhoneCountry, consignee.phone) ? 'Nhập số hợp lệ theo mã quốc gia đã chọn.' : '',
     consigneeId: routeReady && !consignee.idNumber?.trim() ? 'Nhập số CCCD / Thẻ căn cước người nhận.' : '',
     dropoffProv: routeReady && !dropoffAddr.provinceCode ? 'Chọn tỉnh/thành điểm giao.' : '',
-    dropoffWard: routeReady && !dropoffAddr.wardName ? 'Chọn xã/phường điểm giao.' : '',
+    dropoffWard: routeReady && !dropoffAddr.wardName ? (destC === 'VN' ? 'Chọn xã/phường điểm giao.' : 'Chọn quận/huyện điểm giao.') : '',
     dropoffDetail: routeReady && !dropoffAddr.detail.trim()
       ? 'Nhập tên trang trại / địa chỉ giao cụ thể.'
       : routeReady && !isValidLocationDetail(dropoffAddr.detail)

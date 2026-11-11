@@ -46,6 +46,7 @@ import com.example.racehorse_transport.util.QuoteTotals;
 import com.example.racehorse_transport.util.CustomerBookingRules;
 import com.example.racehorse_transport.util.DocumentRequirementPolicy;
 import com.example.racehorse_transport.util.DepositPaymentWindow;
+import com.example.racehorse_transport.util.MicrochipPolicy;
 import com.example.racehorse_transport.config.VnpayProperties;
 import java.time.Clock;
 
@@ -752,6 +753,7 @@ public class BookingServiceImpl implements BookingService {
         // 3. Kiểm tra tính khả dụng & tải trọng của từng xe
         Instant departDate = booking.getDepartureDate() != null ? booking.getDepartureDate() : Instant.now();
         List<BookingVehicle> newVehicles = new ArrayList<>();
+        List<BookingHorseDto> bookedHorses = BookingDetailsJson.read(objectMapper, booking).getHorses();
 
         for (int i = 0; i < request.getTrips().size(); i++) {
             VehicleTripDto trip = request.getTrips().get(i);
@@ -765,10 +767,12 @@ public class BookingServiceImpl implements BookingService {
             Vehicle vehicle = fleetService.findVehicleByIdOrCode(trip.getVehicleId());
 
             // Kiểm tra tải trọng ngăn xe
-            if (trip.getHorseIds().size() > vehicle.getCapacity()) {
+            int stallsNeeded = stallsNeeded(bookedHorses, trip.getHorseIds());
+            if (stallsNeeded > vehicle.getCapacity()) {
                 throw new IllegalArgumentException(
                         "Xe " + vehicle.getLicensePlate() + " chỉ có " + vehicle.getCapacity()
-                                + " ngăn, không thể chở " + trip.getHorseIds().size() + " con ngựa!");
+                                + " ngăn, không thể chở " + trip.getHorseIds().size() + " con ngựa cần "
+                                + stallsNeeded + " ngăn!");
             }
 
             // Kiểm tra lịch bận & khứ hồi về trụ sở VN
@@ -1734,6 +1738,24 @@ public class BookingServiceImpl implements BookingService {
         }
     }
 
+    // Số ngăn các ngựa trên chuyến cần: khoang đơn mở rộng chiếm 2 ngăn, khoang tiêu chuẩn 1 ngăn
+    private static int stallsNeeded(List<BookingHorseDto> horses, List<String> horseIds) {
+        Map<String, BookingHorseDto> byId = new HashMap<>();
+        if (horses != null) {
+            horses.stream().filter(h -> h.getHorseId() != null).forEach(h -> byId.putIfAbsent(h.getHorseId(), h));
+        }
+        return horseIds.stream().mapToInt(id -> {
+            BookingHorseDto horse = byId.get(id);
+            if (horse == null) return 1;
+            BookingServiceSelectionDto stall = horse.getSelectedServices() != null
+                    ? horse.getSelectedServices().get("stall")
+                    : null;
+            boolean extended = (stall != null && "STALL_SINGLE_EXTENDED".equalsIgnoreCase(stall.getServiceCode()))
+                    || "single".equalsIgnoreCase(horse.getStall());
+            return extended ? 2 : 1;
+        }).sum();
+    }
+
     // Ngựa bị loại ở điểm đón: ốm/sốt, hoặc chip không khớp hồ sơ
     private static final Set<String> EXCLUDED_HORSE_STATUSES = Set.of("UNFIT", "CHIP_MISMATCH");
 
@@ -2269,9 +2291,14 @@ public class BookingServiceImpl implements BookingService {
                 String chip = String.valueOf(reqPayload.getOrDefault("chip", "")).toUpperCase().trim();
                 if (chip.isEmpty()) throw new IllegalArgumentException("Chưa nhập số microchip.");
                 // Chỉ ghi nhận chip của ngựa đang đi trên chuyến này; số khác là quét nhầm hoặc ngựa không đúng hồ sơ
-                boolean onTrip = horsesOnTrip(payload, targetTrip).stream()
-                        .anyMatch(h -> h.getMicrochip() != null && chip.equalsIgnoreCase(h.getMicrochip().trim()));
-                if (!onTrip) {
+                // So sau khi bỏ dấu cách/gạch nối; ghi lại đúng mã trong hồ sơ để bước xuất phát đối chiếu
+                String scannedChip = MicrochipPolicy.normalize(chip);
+                String recordedChip = horsesOnTrip(payload, targetTrip).stream()
+                        .map(BookingHorseDto::getMicrochip)
+                        .filter(m -> m != null && scannedChip.equals(MicrochipPolicy.normalize(m)))
+                        .map(m -> m.trim().toUpperCase())
+                        .findFirst().orElse(null);
+                if (recordedChip == null) {
                     throw new IllegalArgumentException("Chip " + chip + " không khớp ngựa nào trên chuyến này. "
                             + "Quét lại; nếu vẫn sai, tài xế báo \"Chip không khớp hồ sơ\" cho con ngựa đó.");
                 }
@@ -2297,8 +2324,8 @@ public class BookingServiceImpl implements BookingService {
                 Map<String, Object> pickup = checkpoints.get(0);
                 @SuppressWarnings("unchecked")
                 List<String> chips = (List<String>) pickup.computeIfAbsent("chips", k -> new ArrayList<>());
-                if (!chips.contains(chip) && !chip.isEmpty()) {
-                    chips.add(chip);
+                if (!chips.contains(recordedChip)) {
+                    chips.add(recordedChip);
                 }
                 targetTrip.setRun(run);
                 appendHistory(payload, actor, "Quét mã microchip");

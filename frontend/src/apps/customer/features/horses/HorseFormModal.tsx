@@ -9,6 +9,7 @@ import { FileField } from '@shared/ui/FileField'
 import { Modal } from '@shared/ui/Modal'
 import s from './Horses.module.css'
 import { FormSelect } from '@shared/ui/FormSelect'
+import { isIsoMicrochip, normalizeMicrochip } from '@shared/lib/microchip'
 
 type Errors = Partial<Record<'name' | 'microchip' | 'breed' | 'color' | 'birthYear' | HorseDocType, string>>
 
@@ -80,6 +81,7 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
     }
     if (!name.trim()) e.name = 'Nhập tên ngựa.'
     if (!microchip.trim()) e.microchip = 'Nhập mã microchip.'
+    else if (!editing && !isIsoMicrochip(normalizeMicrochip(microchip))) e.microchip = 'Mã microchip phải gồm đúng 15 chữ số (chuẩn ISO 11784/11785).'
     if (!selectedBreed) e.breed = 'Chọn giống ngựa.'
     if (!color.trim()) e.color = 'Nhập màu lông.'
     const year = Number(birthYear)
@@ -231,9 +233,9 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
                 </div>
                 <div className="form-group">
                   <label htmlFor="h-chip" className="required">Mã microchip</label>
-                  <input id="h-chip" className={`form-control ${errors.microchip ? 'invalid' : ''}`} value={microchip} onChange={e => { setMicrochip(e.target.value); if (errors.microchip) setErrors(({ microchip: _m, ...rest }) => rest) }} placeholder="VD: VN-985211" disabled={editing} aria-describedby="h-chip-hint" style={{ fontVariantNumeric: 'tabular-nums' }} />
+                  <input id="h-chip" className={`form-control ${errors.microchip ? 'invalid' : ''}`} value={microchip} onChange={e => { setMicrochip(e.target.value); if (errors.microchip) setErrors(({ microchip: _m, ...rest }) => rest) }} placeholder="VD: 985112000123456" inputMode="numeric" disabled={editing} aria-describedby="h-chip-hint" style={{ fontVariantNumeric: 'tabular-nums' }} />
                   {errors.microchip && <div className="form-error">{errors.microchip}</div>}
-                  <div id="h-chip-hint" className="form-hint">{editing ? 'Mã microchip là khóa định danh, không sửa được sau khi lưu.' : 'Không sửa được sau khi lưu. Kiểm tra kỹ trước khi lưu.'}</div>
+                  <div id="h-chip-hint" className="form-hint">{editing ? 'Mã microchip là khóa định danh, không sửa được sau khi lưu.' : '15 chữ số in trên giấy chứng nhận chip (chuẩn ISO). Không sửa được sau khi lưu.'}</div>
                 </div>
                 <div className="form-group">
                   <label htmlFor="h-breed" className="required">Giống</label>

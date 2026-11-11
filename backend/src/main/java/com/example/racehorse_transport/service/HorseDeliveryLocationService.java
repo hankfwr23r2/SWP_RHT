@@ -79,6 +79,8 @@ public class HorseDeliveryLocationService {
             horse.setTransitStatus("STABLE_IDLE");
             horse.setLocationSource("SYSTEM_DELIVERY");
             horse.setLocationUpdatedAt(arrivedAt);
+            // Mỗi đơn chỉ cộng một lần nhờ bước kiểm tra nhật ký bàn giao ở trên
+            horse.setCompletedTrips((horse.getCompletedTrips() == null ? 0 : horse.getCompletedTrips()) + 1);
             horses.save(horse);
             journeys.save(HorseJourneyLog.builder()
                     .horse(horse).bookingId(booking.getId()).tripCode(tripCode)

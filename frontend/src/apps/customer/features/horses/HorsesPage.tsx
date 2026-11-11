@@ -266,7 +266,12 @@ export default function HorsesPage() {
                       <button className={`btn btn-sm btn-ghost ${s.secondaryAction}`} title={t('horses.journeyBookTooltip')} onClick={() => setJourneyHorse(h)}>
                         <i className="fa-solid fa-passport" /> {t('horses.journeyBook')}
                       </button>
-                      <button className={`btn btn-sm btn-ghost ${s.secondaryAction}`} title={t('horses.updateLocationTooltip')} onClick={() => setRelocateHorse(h)}>
+                      <button
+                        className={`btn btn-sm btn-ghost ${s.secondaryAction}`}
+                        title={isBusy ? t('horses.inTripBusyTooltip') : t('horses.updateLocationTooltip')}
+                        onClick={() => !isBusy && setRelocateHorse(h)}
+                        disabled={isBusy}
+                      >
                         <i className="fa-solid fa-map-pin" /> {t('horses.updateLocation')}
                       </button>
                       <button className={`btn btn-sm ${s.deleteAction}`} onClick={() => setDeleteHorse(h)}>
