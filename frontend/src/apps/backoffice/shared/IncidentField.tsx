@@ -1,5 +1,5 @@
 // Sự cố khẩn cấp và chi phí trên app Tài xế / Hộ tống (Flow 5, PRD mục 6; Flow 6, PRD mục 7.3).
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useAuth } from '@shared/auth/AuthContext'
 import { IncidentPlanView } from './IncidentPlanView'
 import { needsFitCheck } from '@shared/lib/booking'
@@ -193,10 +193,24 @@ export function SubmitExpensesPanel({ b, run }: { b: Booking; run: Run }) {
   const { session } = useAuth()
   const list = (b.incidents ?? []).flatMap(i => i.expenses)
   const total = list.reduce((n, e) => n + e.amount, 0)
+  // Mạng chậm bấm nhiều lần chỉ gửi một lần
+  const sendingRef = useRef(false)
+  const [sending, setSending] = useState(false)
+  const submit = async () => {
+    if (sendingRef.current) return
+    sendingRef.current = true
+    setSending(true)
+    try {
+      await run(() => bookingsApi.submitExpenses(b.id, session!.name), 'Đã gửi bảng kê chi phí')
+    } finally {
+      sendingRef.current = false
+      setSending(false)
+    }
+  }
   return (
     <Panel title="Gửi bảng kê chi phí" icon="fa-receipt" tone="warn">
       <p>{list.length ? `Có ${list.length} khoản chi do sự cố, tổng ${formatVND(total)}, đều có ảnh chứng từ.` : 'Chuyến không có chi phí sự cố. Giá đã cố định nên không cần hóa đơn nhiên liệu.'} Bấm gửi để Quản lý đối soát và phát hành quyết toán.</p>
-      <button className={`btn btn-primary ${s.big}`} onClick={() => run(() => bookingsApi.submitExpenses(b.id, session!.name), 'Đã gửi bảng kê chi phí')}>Gửi bảng kê chi phí</button>
+      <button className={`btn btn-primary ${s.big}`} disabled={sending} onClick={() => void submit()}>{sending ? 'Đang gửi…' : 'Gửi bảng kê chi phí'}</button>
     </Panel>
   )
 }

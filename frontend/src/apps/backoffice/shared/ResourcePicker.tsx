@@ -36,13 +36,14 @@ interface Props {
   usedHere: Set<string> // đã chọn ở chuyến khác của đơn này
   selected: string
   horses: number // số ngựa đang xếp trên chuyến này (để cảnh báo xe không đủ chỗ)
+  stalls?: number // số ngăn các ngựa đó cần (khoang mở rộng chiếm 2), mặc định bằng số ngựa
   onPick: (id: string) => void
   onClose: () => void
 }
 
 interface Row { id: string; vehicle?: Vehicle; person?: CrewMember; booked: Booked[]; reason: string; clash: boolean }
 
-export function ResourcePicker({ kind, vehicles, people, schedules, departAt, usedHere, selected, horses, onPick, onClose }: Props) {
+export function ResourcePicker({ kind, vehicles, people, schedules, departAt, usedHere, selected, horses, stalls = horses, onPick, onClose }: Props) {
   const [text, setText] = useState('')
   const [onlyOk, setOnlyOk] = useState(false) // chỉ hiện người / xe chọn được
   const [shake, setShake] = useState<string | null>(null) // thẻ khóa vừa bị bấm: rung và nêu lý do
@@ -134,7 +135,7 @@ export function ResourcePicker({ kind, vehicles, people, schedules, departAt, us
                 <>
                   <div className={p.art}><VehicleArt stalls={r.vehicle.capacity} color={tone} /></div>
                   <span className={p.plate}>{r.vehicle.plate}</span>
-                  <div className={p.name}>Xe chuyên dụng<small>{r.vehicle.capacity} ngăn{r.vehicle.capacity < horses ? ` · không đủ chỗ cho ${horses} ngựa` : ''}</small></div>
+                  <div className={p.name}>Xe chuyên dụng<small>{r.vehicle.capacity} ngăn{r.vehicle.capacity < stalls ? ` · không đủ chỗ cho ${horses} ngựa` : ''}</small></div>
                 </>
               ) : (
                 <>

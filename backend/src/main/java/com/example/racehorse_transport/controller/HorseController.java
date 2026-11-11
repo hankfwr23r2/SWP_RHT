@@ -3,11 +3,15 @@ package com.example.racehorse_transport.controller;
 import com.example.racehorse_transport.dto.HorseDTO;
 import com.example.racehorse_transport.dto.HorseJourneyLogDTO;
 import com.example.racehorse_transport.dto.UpdateHorseLocationRequest;
+import com.example.racehorse_transport.dto.booking.BookingDetailsPayload;
+import com.example.racehorse_transport.dto.booking.BookingHorseDto;
+import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.Horse;
 import com.example.racehorse_transport.entity.HorseJourneyLog;
 import com.example.racehorse_transport.entity.User;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
+import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.CustomerRepository;
 import com.example.racehorse_transport.repository.HorseTypeRepository;
 import com.example.racehorse_transport.repository.HorseJourneyLogRepository;
@@ -15,7 +19,10 @@ import com.example.racehorse_transport.repository.HorseRepository;
 import com.example.racehorse_transport.repository.UserRepository;
 import com.example.racehorse_transport.response.ApiResponse;
 import com.example.racehorse_transport.service.HorseService;
+import com.example.racehorse_transport.util.MicrochipPolicy;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,6 +31,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 import java.time.Instant;
 
 @RestController
@@ -37,12 +45,14 @@ public class HorseController {
     private final CustomerRepository customerRepository;
     private final UserRepository userRepository;
     private final HorseJourneyLogRepository horseJourneyLogRepository;
+    private final BookingRepository bookingRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'INSPECTOR', 'MANAGER', 'ADMIN', 'COORDINATOR')")
     @GetMapping
     public ResponseEntity<ApiResponse<List<HorseDTO>>> getAllHorses(Authentication authentication) {
         List<Horse> horses = isCustomer(authentication)
-                ? horseRepository.findByCustomerID_Id(currentUser(authentication).getId())
+                ? horseRepository.findByCustomerNewestFirst(currentUser(authentication).getId())
                 : horseService.findAll();
         return ResponseEntity.ok(ApiResponse.success(horses.stream().map(this::toDto).toList(), "Lấy danh sách hồ sơ ngựa thành công"));
     }
@@ -59,13 +69,17 @@ public class HorseController {
     @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'ADMIN')")
     @PostMapping
     public ResponseEntity<ApiResponse<HorseDTO>> createHorse(@RequestBody HorseDTO request, Authentication authentication) {
-        if (request.getMicrochipID() == null || request.getMicrochipID().isBlank()) {
+        String chip = MicrochipPolicy.normalize(request.getMicrochipID());
+        if (chip.isEmpty()) {
             throw new IllegalArgumentException("Mã microchip không được để trống.");
         }
-        String chip = request.getMicrochipID().trim().toUpperCase();
+        if (!MicrochipPolicy.isIso(chip)) {
+            throw new IllegalArgumentException("Mã microchip phải gồm đúng 15 chữ số (chuẩn ISO 11784/11785).");
+        }
         if (horseRepository.existsByMicrochipIDIgnoreCase(chip)) {
             throw new IllegalArgumentException("Mã microchip đã được sử dụng.");
         }
+        request.setMicrochipID(chip);
 
         Horse horse = new Horse();
         apply(request, horse);
@@ -75,7 +89,13 @@ public class HorseController {
             horse.setCustomerID(customerRepository.findById(request.getCustomerID())
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khách hàng.")));
         }
-        Horse saved = horseService.save(horse);
+        Horse saved;
+        try {
+            saved = horseService.save(horse);
+        } catch (DataIntegrityViolationException e) {
+            // Hai lần lưu cùng lúc vượt qua bước kiểm tra trùng ở trên: DB chặn bằng unique index
+            throw new IllegalArgumentException("Mã microchip đã được sử dụng.");
+        }
         return ResponseEntity.status(201).body(ApiResponse.success(toDto(saved), "Tạo hồ sơ ngựa thành công"));
     }
 
@@ -90,6 +110,7 @@ public class HorseController {
         }
         apply(request, horse);
         horse.setCustomerID(horse.getCustomerID());
+        horse.setUpdatedAt(Instant.now().toEpochMilli());
         return ResponseEntity.ok(ApiResponse.success(toDto(horseService.save(horse)), "Cập nhật hồ sơ ngựa thành công"));
     }
 
@@ -109,6 +130,20 @@ public class HorseController {
 
         String oldLocation = horse.getCurrentLocationName();
         String newLocation = request.getLocationName().trim();
+        String newCountry = request.getCountry() != null && !request.getCountry().isBlank()
+                ? request.getCountry().trim().toUpperCase() : horse.getCurrentCountry();
+        if (newLocation.equalsIgnoreCase(oldLocation != null ? oldLocation.trim() : null)
+                && (newCountry == null || newCountry.equalsIgnoreCase(horse.getCurrentCountry()))) {
+            throw new IllegalArgumentException("Địa chỉ chuồng mới trùng với vị trí hiện tại.");
+        }
+        if ("IN_TRANSIT".equalsIgnoreCase(horse.getTransitStatus())) {
+            throw new IllegalStateException("Ngựa đang trong hành trình vận chuyển, không thể tự cập nhật vị trí chuồng.");
+        }
+        String activeBooking = activeBookingOf(horse);
+        if (activeBooking != null) {
+            throw new IllegalStateException("Ngựa đang nằm trong đơn " + activeBooking
+                    + " chưa hoàn tất. Vị trí chuồng sẽ tự cập nhật khi chuyến đi kết thúc.");
+        }
 
         horse.setCurrentLocationName(newLocation);
         if (request.getCountry() != null && !request.getCountry().isBlank()) {
@@ -118,7 +153,6 @@ public class HorseController {
         }
         horse.setLocationUpdatedAt(System.currentTimeMillis());
         horse.setLocationSource("OWNER_DECLARED");
-        horse.setTransitStatus("STABLE_IDLE");
 
         Horse saved = horseService.save(horse);
 
@@ -130,7 +164,8 @@ public class HorseController {
                 .departAt(System.currentTimeMillis())
                 .arrivedAt(System.currentTimeMillis())
                 .driverName(authentication.getName() + " (Chủ ngựa)")
-                .notes(request.getReason() != null ? request.getReason() : "Chủ ngựa tự dời vị trí chuồng")
+                .notes(request.getNotes() != null && !request.getNotes().isBlank()
+                        ? request.getNotes().trim() : "Chủ ngựa cập nhật vị trí chuồng")
                 .source("OWNER_RELOCATION")
                 .createdAt(System.currentTimeMillis())
                 .build();
@@ -194,13 +229,32 @@ public class HorseController {
         } else if ("Khác".equalsIgnoreCase(request.getBreed())) {
             horse.setHorseTypeID(null);
         }
-        if (request.getCurrentLocationName() != null) horse.setCurrentLocationName(request.getCurrentLocationName().trim());
-        if (request.getCurrentCountry() != null) horse.setCurrentCountry(request.getCurrentCountry().trim());
-        if (request.getLocationUpdatedAt() != null) horse.setLocationUpdatedAt(request.getLocationUpdatedAt());
-        if (request.getLocationSource() != null) horse.setLocationSource(request.getLocationSource());
-        if (request.getTransitStatus() != null) horse.setTransitStatus(request.getTransitStatus());
+        // Sau khi tạo, vị trí chỉ đổi qua PATCH /location (có kiểm tra đơn đang chạy) hoặc khi giao ngựa xong
+        if (horse.getId() == null && request.getCurrentLocationName() != null) horse.setCurrentLocationName(request.getCurrentLocationName().trim());
+        if (horse.getId() == null && request.getCurrentCountry() != null) horse.setCurrentCountry(request.getCurrentCountry().trim());
         if (horse.getCompletedTrips() == null) horse.setCompletedTrips(request.getCompletedTrips() == null ? 0 : request.getCompletedTrips());
         if (horse.getCreatedAt() == null) horse.setCreatedAt(request.getCreatedAt() == null ? Instant.now().toEpochMilli() : request.getCreatedAt().toEpochMilli());
+    }
+
+    // Đơn chưa kết thúc có ngựa này (cùng tập trạng thái kết thúc với lúc tạo đơn); null nếu không có
+    private String activeBookingOf(Horse horse) {
+        if (horse.getCustomerID() == null) return null;
+        Set<String> finished = Set.of("completed", "cancelled", "rejected", "quote_expired");
+        for (Booking booking : bookingRepository.findByCustomerID_IdOrderByBookingDateDesc(horse.getCustomerID().getId())) {
+            String status = booking.getStatus() != null ? booking.getStatus().toLowerCase() : "";
+            if (finished.contains(status) || booking.getDetailsJson() == null || booking.getDetailsJson().isBlank()) continue;
+            try {
+                BookingDetailsPayload payload = objectMapper.readValue(booking.getDetailsJson(), BookingDetailsPayload.class);
+                if (payload.getHorses() == null) continue;
+                for (BookingHorseDto bookingHorse : payload.getHorses()) {
+                    String id = bookingHorse.getHorseId() != null ? bookingHorse.getHorseId().replaceAll("\\D", "") : "";
+                    if (id.equals(String.valueOf(horse.getId()))) return "#BK-" + booking.getId();
+                }
+            } catch (Exception e) {
+                throw new IllegalStateException("Không đọc được đơn #BK-" + booking.getId() + " để kiểm tra ngựa.");
+            }
+        }
+        return null;
     }
 
     private HorseDTO toDto(Horse horse) {

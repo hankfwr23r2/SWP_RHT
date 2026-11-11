@@ -130,6 +130,16 @@ class PickupChipCheckTest {
     }
 
     @Test
+    void chipScannedWithSpacesOrHyphensStillMatchesAndTheStoredChipIsRecorded() throws Exception {
+        Booking booking = booking(oneHorse(), pickup("\"chips\":[]"));
+
+        HttpResponse<String> response = tripUpdate(booking, escortToken, "SCAN_CHIP", "{\"chip\":\"vn 800 221\"}");
+
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
+        assertThat(pickupOf(booking).path("chips").toString()).isEqualTo("[\"VN-800221\"]");
+    }
+
+    @Test
     void balanceIsNotPayableWhileThePickupIsStillInProgress() throws Exception {
         Booking booking = booking(oneHorse(), pickup("\"chips\":[\"VN-800221\"]"));
 

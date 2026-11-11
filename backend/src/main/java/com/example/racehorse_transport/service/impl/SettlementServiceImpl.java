@@ -46,7 +46,13 @@ public class SettlementServiceImpl implements SettlementService {
     @Override
     @Transactional
     public BookingResponse submitExpenses(String bookingIdentifier, SubmitExpensesRequest request, String username) {
-        Booking booking = findBookingByIdentifier(bookingIdentifier);
+        // Khóa dòng đơn để các lần bấm gửi trùng nhau xử lý lần lượt; chỉ lần đầu được nhận
+        Integer bookingId = parseBookingId(bookingIdentifier == null ? "" : bookingIdentifier);
+        Booking booking = bookingRepository.findByIdForUpdate(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+        if (!"delivered_pending_settlement".equals(booking.getStatus())) {
+            throw new IllegalStateException("Bảng kê chi phí của đơn này đã gửi rồi.");
+        }
         BookingDetailsPayload payload = extractPayload(booking);
 
         List<ExpenseItemDto> expenses = (request != null && request.getExpenses() != null)

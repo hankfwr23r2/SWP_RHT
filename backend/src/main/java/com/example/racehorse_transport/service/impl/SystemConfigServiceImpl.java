@@ -178,8 +178,12 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         return definition;
     }
 
+    // Tham số được nhập số lẻ: tỷ lệ, hệ số xe và giờ lái liên tục; còn lại (tiền, km, giờ) là số nguyên
+    private static final Set<String> DECIMAL_CONFIG_KEYS = Set.of("DEPOSIT_RATE", "MAX_CONTINUOUS_HOURS",
+            "CLASS_FACTOR_LIGHT", "CLASS_FACTOR_MEDIUM", "CLASS_FACTOR_HEAVY", "MARGIN_RATE");
+
     private boolean isIntegerRule(String key) {
-        return !"DEPOSIT_RATE".equals(key) && !"MAX_CONTINUOUS_HOURS".equals(key);
+        return !DECIMAL_CONFIG_KEYS.contains(key);
     }
 
     private SystemConfig toEntity(Definition definition) {

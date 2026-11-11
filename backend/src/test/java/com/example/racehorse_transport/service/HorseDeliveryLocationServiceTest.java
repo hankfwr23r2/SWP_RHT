@@ -44,7 +44,7 @@ class HorseDeliveryLocationServiceTest {
         trip.setHorseIds(List.of("H12"));
         trip.setRun(Map.of("startedAt", 100L));
         payload.setTrips(List.of(trip));
-        horse = Horse.builder().id(12).transitStatus("IN_TRANSIT").build();
+        horse = Horse.builder().id(12).transitStatus("IN_TRANSIT").completedTrips(0).build();
         when(horses.findById(12)).thenReturn(Optional.of(horse));
     }
 
@@ -56,6 +56,7 @@ class HorseDeliveryLocationServiceTest {
         assertThat(horse.getTransitStatus()).isEqualTo("STABLE_IDLE");
         assertThat(horse.getLocationSource()).isEqualTo("SYSTEM_DELIVERY");
         assertThat(horse.getLocationUpdatedAt()).isEqualTo(200L);
+        assertThat(horse.getCompletedTrips()).isEqualTo(1);
         var saved = ArgumentCaptor.forClass(HorseJourneyLog.class);
         verify(journeys).save(saved.capture());
         assertThat(saved.getValue().getHorse()).isSameAs(horse);
@@ -139,6 +140,7 @@ class HorseDeliveryLocationServiceTest {
         when(journeys.existsByHorse_IdAndBookingIdAndSource(12, 42, "SYSTEM_DELIVERY")).thenReturn(true);
         service.recordTripDelivery(booking, payload, trip, "driver", null, 200L);
         assertThat(horse.getCurrentLocationName()).isEqualTo("Trang trại mới, Đà Nẵng");
+        assertThat(horse.getCompletedTrips()).isEqualTo(0);
         verify(horses, never()).save(any());
         verify(journeys, never()).save(any());
     }

@@ -10,6 +10,5 @@ import lombok.*;
 public class UpdateHorseLocationRequest {
     private String locationName;
     private String country;
-    private String reason;
     private String notes;
 }

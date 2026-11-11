@@ -907,6 +907,39 @@ class BookingServiceImplTest {
     }
 
     @Test
+    void confirmCoordinatorPlan_countsExtendedStallAsTwoCompartments() {
+        Booking booking = bookingOwnedByCustomer();
+        booking.setStatus("under_review");
+        booking.setDetailsJson("""
+                {"horses":[
+                  {"horseId":"H-001","stall":"single","selectedServices":{"stall":{"id":2,"serviceCode":"STALL_SINGLE_EXTENDED"}}},
+                  {"horseId":"H-002","stall":"single","selectedServices":{"stall":{"id":2,"serviceCode":"STALL_SINGLE_EXTENDED"}}}
+                ]}
+                """);
+        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        Vehicle vehicle = new Vehicle();
+        vehicle.setId(1);
+        vehicle.setCapacity(2);
+        vehicle.setVehicleCode("VH-001");
+        vehicle.setLicensePlate("29H-12345");
+        when(fleetService.findVehicleByIdOrCode("VH-001")).thenReturn(vehicle);
+
+        var trip = new com.example.racehorse_transport.dto.coordinator.VehicleTripDto();
+        trip.setVehicleId("VH-001");
+        trip.setHorseIds(List.of("H-001", "H-002"));
+        var request = com.example.racehorse_transport.dto.coordinator.CoordinatorPlanRequest.builder()
+                .trips(List.of(trip))
+                .route(Map.of("legs", List.of(Map.of("from", "A", "to", "B"))))
+                .build();
+
+        assertThatThrownBy(() -> service.confirmCoordinatorPlan("BK-042", request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("29H-12345")
+                .hasMessageContaining("4 ngăn");
+        verify(bookingRepository, never()).save(any(Booking.class));
+    }
+
+    @Test
     void confirmCoordinatorPlan_setsRouteIdWhenProvided() {
         Booking booking = bookingOwnedByCustomer();
         booking.setStatus("under_review"); // điều phối chỉ chốt phương án ở bước thẩm định

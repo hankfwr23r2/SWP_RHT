@@ -77,6 +77,27 @@ class SystemConfigServiceImplTest {
     }
 
     @Test
+    void updateAcceptsDecimalVehicleClassFactorsAndMargin() {
+        when(repository.save(any(SystemConfig.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        for (String[] pair : new String[][] {
+                { "CLASS_FACTOR_LIGHT", "1.1" }, { "CLASS_FACTOR_MEDIUM", "1.4" },
+                { "CLASS_FACTOR_HEAVY", "1.9" }, { "MARGIN_RATE", "0.05" } }) {
+            when(repository.findById(pair[0])).thenReturn(java.util.Optional.of(config(pair[0], "1")));
+            var response = service.updateConfig(pair[0],
+                    UpdateSystemConfigRequest.builder().configValue(pair[1]).build(), "admin");
+            assertThat(response.getConfigValue()).as(pair[0]).isEqualTo(pair[1]);
+        }
+    }
+
+    @Test
+    void updateStillRejectsDecimalMoneyAmounts() {
+        assertThatThrownBy(() -> service.updateConfig("KM_TIER_1_RATE",
+                UpdateSystemConfigRequest.builder().configValue("50000.5").build(), "admin"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("số nguyên");
+    }
+
+    @Test
     void updateRejectsUnknownConfigurationKeys() {
         assertThatThrownBy(() -> service.updateConfig("UNSUPPORTED_RULE",
                 UpdateSystemConfigRequest.builder().configValue("1").build(), "admin"))

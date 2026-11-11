@@ -21,6 +21,7 @@ import {
   validateRoutePlan,
   vehicleClassOf,
   autoPackFleet,
+  stallUnitsOf,
 } from '@shared/lib/booking'
 import { atHour } from '@shared/lib/dates'
 import { formatClock, formatDate, formatDateTime } from '@shared/lib/format'
@@ -66,6 +67,11 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
   const { session } = useAuth()
   const international = b.type === 'international'
   const sched = useMemo(() => schedulesOf(all, b.id), [all, b.id])
+  const stallsOf = useMemo(() => {
+    const units = new Map(b.horses.map(h => [h.horseId, stallUnitsOf(h)]))
+    return (horseId: string) => units.get(horseId) ?? 1
+  }, [b.horses])
+  const stallsUsed = (horseIds: string[]) => horseIds.reduce((sum, id) => sum + stallsOf(id), 0)
 
   // ----- xe, ngựa -----
   const initialTrips = useMemo<Draft[]>(() => {
@@ -77,11 +83,12 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
         b.horses.map(h => h.horseId),
         vehicles,
         sched.vehicles,
-        b.departAt
+        b.departAt,
+        stallsOf
       )
     }
     return [{ vehicleId: '', horseIds: b.horses.map(h => h.horseId) }]
-  }, [b.trips, b.horses, b.departAt, vehicles, sched.vehicles])
+  }, [b.trips, b.horses, b.departAt, vehicles, sched.vehicles, stallsOf])
 
   const [trips, setTrips] = useState<Draft[]>(initialTrips)
 
@@ -94,19 +101,21 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
           b.horses.map(h => h.horseId),
           vehicles,
           sched.vehicles,
-          b.departAt
+          b.departAt,
+          stallsOf
         )
       }
       return prev
     })
-  }, [vehicles, sched.vehicles, b.departAt, b.horses])
+  }, [vehicles, sched.vehicles, b.departAt, b.horses, stallsOf])
 
   const runAutoPack = () => {
     const packed = autoPackFleet(
       b.horses.map(h => h.horseId),
       vehicles,
       sched.vehicles,
-      b.departAt
+      b.departAt,
+      stallsOf
     )
     setTrips(packed)
     toast('Đã tự động tính toán và phân bổ xe tối ưu (Best-fit).')
@@ -125,8 +134,8 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
     const target = trips[to]
     if (!target || target.horseIds.includes(horseId)) return
     const vehicle = vehicles.find(v => v.id === target.vehicleId)
-    if (vehicle && target.horseIds.length >= vehicle.capacity) {
-      toast(`Xe ${to + 1} đã đủ ${vehicle.capacity} ngăn, không thể chuyển thêm ngựa vào.`, 'error')
+    if (vehicle && stallsUsed(target.horseIds) + stallsOf(horseId) > vehicle.capacity) {
+      toast(`Xe ${to + 1} chỉ có ${vehicle.capacity} ngăn, không còn đủ chỗ cho con ngựa này.`, 'error')
       return
     }
     setTrips(ts =>
@@ -144,8 +153,8 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
     if (!t.horseIds.length) out.push(`Xe ${i + 1} chưa có ngựa nào.`)
     if (!v) out.push(`Xe ${i + 1} chưa chọn xe.`)
     else {
-      if (t.horseIds.length > v.capacity)
-        out.push(`Xe ${i + 1} chỉ có ${v.capacity} ngăn, đang xếp ${t.horseIds.length} ngựa.`)
+      if (stallsUsed(t.horseIds) > v.capacity)
+        out.push(`Xe ${i + 1} chỉ có ${v.capacity} ngăn, đang xếp ${t.horseIds.length} ngựa cần ${stallsUsed(t.horseIds)} ngăn.`)
       const clash = clashOf(sched.vehicles.get(t.vehicleId), b.departAt)
       if (clash) out.push(`Xe ${v.plate} trùng lịch với ${clash.order} (khởi hành ${formatDate(clash.departAt)}).`)
     }
@@ -453,12 +462,13 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
           </span>
         </div>
         <div className="form-hint" style={{ marginBottom: 12 }}>
-          Ưu tiên xe đủ số ngăn cho ngựa. Phương tiện trùng lịch trong vòng 3 ngày sẽ tự động bị khóa và cảnh báo.
+          Ưu tiên xe đủ số ngăn cho ngựa; ngựa chọn khoang đơn mở rộng chiếm 2 ngăn. Phương tiện trùng lịch trong vòng 3 ngày sẽ tự động bị khóa và cảnh báo.
         </div>
 
         {trips.map((t, i) => {
           const v = vehicles.find(x => x.id === t.vehicleId)
-          const isOverloaded = v && t.horseIds.length > v.capacity
+          const used = stallsUsed(t.horseIds)
+          const isOverloaded = v && used > v.capacity
           const booked = v ? sched.vehicles.get(t.vehicleId) : undefined
           const hasClash = v && clashOf(booked, b.departAt)
           return (
@@ -488,16 +498,16 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
                 <div style={{ margin: '8px 0 10px', maxWidth: 420 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: 4 }}>
                     <span style={{ color: 'var(--muted)' }}>Tải trọng khoang:</span>
-                    <span style={{ fontWeight: 700, color: isOverloaded ? 'var(--red)' : t.horseIds.length === v.capacity ? 'var(--green)' : 'var(--text)' }}>
-                      {t.horseIds.length}/{v.capacity} ngăn ({v.capacity ? Math.round((t.horseIds.length / v.capacity) * 100) : 0}%)
+                    <span style={{ fontWeight: 700, color: isOverloaded ? 'var(--red)' : used === v.capacity ? 'var(--green)' : 'var(--text)' }}>
+                      {used}/{v.capacity} ngăn ({v.capacity ? Math.round((used / v.capacity) * 100) : 0}%)
                     </span>
                   </div>
                   <div style={{ height: 7, background: '#e2e8f0', borderRadius: 999, overflow: 'hidden' }}>
                     <div
                       style={{
-                        width: `${Math.min(100, v.capacity ? Math.round((t.horseIds.length / v.capacity) * 100) : 0)}%`,
+                        width: `${Math.min(100, v.capacity ? Math.round((used / v.capacity) * 100) : 0)}%`,
                         height: '100%',
-                        background: isOverloaded ? 'var(--red, #ef4444)' : t.horseIds.length === v.capacity ? 'var(--green, #16a34a)' : 'var(--orange, #f97316)',
+                        background: isOverloaded ? 'var(--red, #ef4444)' : used === v.capacity ? 'var(--green, #16a34a)' : 'var(--orange, #f97316)',
                         borderRadius: 999,
                         transition: 'width 0.3s ease',
                       }}
@@ -508,7 +518,7 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
 
               {isOverloaded && (
                 <div style={{ color: 'var(--red)', fontSize: '0.82rem', marginTop: 4, fontWeight: 600 }}>
-                  <i className="fa-solid fa-circle-exclamation" /> Xe chỉ có {v.capacity} ngăn nhưng đang xếp {t.horseIds.length} ngựa. Vui lòng thêm xe hoặc đổi xe lớn hơn!
+                  <i className="fa-solid fa-circle-exclamation" /> Xe chỉ có {v.capacity} ngăn nhưng {t.horseIds.length} ngựa đang xếp cần {used} ngăn. Vui lòng thêm xe hoặc đổi xe lớn hơn!
                 </div>
               )}
               {hasClash && (
@@ -570,7 +580,7 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
                         >
                           {trips.map((trip, j) => {
                             const targetVehicle = vehicles.find(vehicle => vehicle.id === trip.vehicleId)
-                            const isFull = j !== i && !!targetVehicle && trip.horseIds.length >= targetVehicle.capacity
+                            const isFull = j !== i && !!targetVehicle && stallsUsed(trip.horseIds) + stallsOf(hid) > targetVehicle.capacity
                             return <option key={j} value={j} disabled={isFull}>
                               Chuyển sang Xe {j + 1}
                               {isFull ? ' (đã đầy)' : ''}
@@ -1120,6 +1130,7 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
           usedHere={usedVehicles}
           selected={trips[picking].vehicleId}
           horses={trips[picking].horseIds.length}
+          stalls={stallsUsed(trips[picking].horseIds)}
           onPick={id => setTrip(picking, { vehicleId: id })}
           onClose={() => setPicking(null)}
         />
