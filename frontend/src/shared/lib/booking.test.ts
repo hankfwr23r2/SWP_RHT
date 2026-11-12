@@ -234,13 +234,30 @@ describe('báo giá', () => {
     expect(lines.find(line => line.label === 'Khoang trên xe')?.amount).toBe(250_000)
     expect(lines.find(line => line.label === 'Bảo hiểm chuyến đi')).toBeUndefined()
   })
-  it('mỗi xe có cước, nhân sự, nhiên liệu và BOT; không có phí lưu xe hay Carrier Info Sheet', () => {
+  it('mỗi xe chỉ có cước và nhiên liệu, BOT; không thu phí nhân sự', () => {
     const { lines } = quoteLines(base, [{ capacity: 2 }, { capacity: 4 }])
     expect(lines.filter(l => /^Cước/.test(l.label))).toHaveLength(2)
-    expect(lines.filter(l => /^Nhân sự/.test(l.label))).toHaveLength(2)
+    expect(lines.filter(l => /^Nhân sự/.test(l.label))).toHaveLength(0)
     expect(lines.filter(l => /^Nhiên liệu/.test(l.label))).toHaveLength(2)
     expect(lines.some(l => /lưu xe|Carrier/i.test(l.label))).toBe(false)
     expect(lines.some(l => /thủ tục/i.test(l.label))).toBe(true)
+  })
+  it('cùng quãng đường và dịch vụ theo chuyến thì kéo dài hành trình không tăng phí', () => {
+    const departAt = new Date(2026, 10, 2, 5).getTime()
+    const quote = (day: number) => quoteLines({
+      ...base,
+      route: {
+        legs: [{ no: 1, from: origin.name, to: dest.name, departAt,
+          arriveAt: new Date(2026, 10, day, 20).getTime(), km: 256, hours: 8 }],
+        rests: [],
+      },
+    }, [{ capacity: 2 }])
+    const short = quote(2)
+    const long = quote(4)
+    expect(short.days).toBe(1)
+    expect(long.days).toBe(3)
+    expect(long.lines).toEqual(short.lines)
+    expect(long.lines.reduce((total, line) => total + line.amount, 0)).toBe(14_479_000)
   })
   it('nhiên liệu và BOT cộng dự phòng 5% và lợi nhuận 5% trên km của lộ trình', () => {
     const { lines, km } = quoteLines(base, [{ capacity: 2 }])

@@ -1,0 +1,48 @@
+{
+  "source_kind": "deployed_app_browser_cache",
+  "origin": "https://swp-rht-1ksz.vercel.app",
+  "local_storage_key": "cached_public_system_configs",
+  "cache_timestamp": null,
+  "records": [
+    {
+      "browser": "Edge",
+      "sequence": 5728
+    },
+    {
+      "browser": "Brave",
+      "sequence": 19258
+    }
+  ],
+  "later_app_cache_records_checked": true,
+  "note": "Values match in two browsers. Sequence numbers are local to each browser, not timestamps. The cache may predate the last Aiven database changes.",
+  "not_recovered": [
+    "service.price",
+    "horse_type.insured_value",
+    "changes_after_the_cached_snapshot"
+  ],
+  "configs": {
+    "BORDER_PROCESSING_HOURS": "3",
+    "MAX_DRIVE_HOURS_PER_DAY": "10",
+    "OVERNIGHT_REST_HOURS": "10",
+    "TRUCK_TOP_SPEED_KMH": "80",
+    "MIN_LEAD_DAYS": "20",
+    "DEMURRAGE_PER_HOUR": "400000",
+    "DEPOSIT_RATE": "0.30",
+    "QUOTE_VALID_HOURS": "24",
+    "CLASS_FACTOR_HEAVY": "1.9",
+    "CLASS_FACTOR_LIGHT": "1.0",
+    "CLASS_FACTOR_MEDIUM": "1.4",
+    "CLEARANCE_FEE_INTERNATIONAL": "300000",
+    "CREW_FEE_PER_DAY": "1800000",
+    "KM_TIER_1_LIMIT": "300",
+    "KM_TIER_1_RATE": "26000",
+    "KM_TIER_2_LIMIT": "600",
+    "KM_TIER_2_RATE": "20000",
+    "KM_TIER_3_RATE": "15000",
+    "MARGIN_RATE": "0.05",
+    "TRIP_OPEN_FEE": "3000000",
+    "MAX_CONTINUOUS_HOURS": "4",
+    "MIN_REST_MINUTES": "30",
+    "VITAL_CHECK_INTERVAL_HOURS": "2"
+  }
+}

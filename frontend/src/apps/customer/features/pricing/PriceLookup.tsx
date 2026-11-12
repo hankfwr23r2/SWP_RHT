@@ -1,6 +1,6 @@
 // Bảng giá: dùng chung cho trang chủ công khai và trang khách đã đăng nhập. Dùng đúng công thức báo giá thật (PRD mục 11).
 import { useTranslation } from 'react-i18next'
-import { CLASS_FACTOR, CLEARANCE_FEE, CREW_FEE_PER_DAY, DEMURRAGE_PER_HOUR, DEPOSIT_RATE, FUEL_BOT_PER_KM, FUEL_BUFFER_RATE, MARGIN_RATE, QUOTE_VALID_HOURS, VEHICLE_CLASS, type VehicleClass } from '@shared/config/booking-rules'
+import { CLASS_FACTOR, CLEARANCE_FEE, DEMURRAGE_PER_HOUR, DEPOSIT_RATE, FUEL_BOT_PER_KM, FUEL_BUFFER_RATE, MARGIN_RATE, QUOTE_VALID_HOURS, VEHICLE_CLASS, type VehicleClass } from '@shared/config/booking-rules'
 import { MIN_LEAD_DAYS } from '@shared/config/business-rules'
 import { formatVND } from '@shared/lib/format'
 import { truckCost } from '@shared/lib/pricing'
@@ -53,7 +53,6 @@ export function PriceTable() {
               </tr>
             </thead>
             <tbody>
-              <tr><td className={s.colText}>{t('home.pricingTable.crewRow')}</td><td className={s.colNum}>{formatVND(roundK(CREW_FEE_PER_DAY * (1 + MARGIN_RATE)))}{t('home.pricingTable.crewUnit')}</td></tr>
               <tr><td className={s.colText}>{t('home.pricingTable.fuelRow')}</td><td className={s.colNum}>{formatVND(roundK(100 * FUEL_BOT_PER_KM * (1 + FUEL_BUFFER_RATE) * (1 + MARGIN_RATE)))}{t('home.pricingTable.fuelUnit')}</td></tr>
               {!loaded
                 ? <tr><td className={s.colText} colSpan={2}>Đang tải bảng giá dịch vụ…</td></tr>

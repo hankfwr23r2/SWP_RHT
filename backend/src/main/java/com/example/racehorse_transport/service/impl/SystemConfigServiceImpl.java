@@ -77,15 +77,13 @@ public class SystemConfigServiceImpl implements SystemConfigService {
                     "Hệ số cước áp dụng cho xe tải trung 4-6 ngăn.", new BigDecimal("0.1"), BigDecimal.valueOf(10)),
             new Definition("CLASS_FACTOR_HEAVY", "Hệ số xe Heavy (9 ngăn)", "1.9", "hệ số", "PRICING",
                     "Hệ số cước áp dụng cho xe tải nặng 9 ngăn.", new BigDecimal("0.1"), BigDecimal.valueOf(10)),
-            new Definition("CREW_FEE_PER_DAY", "Phí kíp xe mỗi ngày", "1800000", "VNĐ/ngày", "PRICING",
-                    "Chi phí nhân sự 01 tài xế và 01 hộ tống mỗi ngày cho mỗi xe.", BigDecimal.ZERO, BigDecimal.valueOf(100_000_000)),
             new Definition("MARGIN_RATE", "Biên lợi nhuận gộp", "0.05", "tỷ lệ", "PRICING",
                     "Tỷ lệ lợi nhuận định mức gộp vào đơn giá.", BigDecimal.ZERO, BigDecimal.ONE),
             new Definition("CLEARANCE_FEE_INTERNATIONAL", "Phí thủ tục hải quan quốc tế", "300000", "VNĐ/chuyến", "PRICING",
                     "Phí làm thủ tục xuất nhập cảnh biên giới cho chuyến quốc tế.", BigDecimal.ZERO, BigDecimal.valueOf(50_000_000))
     );
 
-    private static final Set<String> RETIRED_CONFIG_KEYS = Set.of("BORDER_OPEN_MINUTES", "BORDER_CLOSE_MINUTES", "INSURANCE_RATE");
+    private static final Set<String> RETIRED_CONFIG_KEYS = Set.of("BORDER_OPEN_MINUTES", "BORDER_CLOSE_MINUTES", "INSURANCE_RATE", "CREW_FEE_PER_DAY");
 
     private static final Map<String, Definition> DEFINITIONS_BY_KEY = DEFINITIONS.stream()
             .collect(LinkedHashMap::new, (map, definition) -> map.put(definition.key(), definition), LinkedHashMap::putAll);
