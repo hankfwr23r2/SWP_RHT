@@ -98,14 +98,6 @@ const PARAMETER_DEFS: ParameterDef[] = [
 
   // Chi phí & Quy định
   {
-    key: 'CREW_FEE_PER_DAY',
-    name: 'Phí kíp kỹ thuật / ngày',
-    group: 'OPERATIONS',
-    unit: '₫/ngày',
-    desc: 'Công tác phí tiêu chuẩn cho 01 tài xế chuyên tuyến + 01 hộ tống chăm sóc ngựa',
-    defaultValue: '1800000',
-  },
-  {
     key: 'MARGIN_RATE',
     name: 'Biên lợi nhuận gộp (Margin)',
     group: 'OPERATIONS',
@@ -124,6 +116,10 @@ const PARAMETER_DEFS: ParameterDef[] = [
   },
 
 ]
+
+function toDraftValue(def: ParameterDef, value: string) {
+  return def.isPercent ? String(Number((Number(value) * 100).toPrecision(15))) : value
+}
 
 function formatVND(val: number) {
   return val.toLocaleString('vi-VN') + ' ₫'
@@ -148,7 +144,7 @@ export default function AdminPricingPage() {
     const map: Record<string, string> = {}
     for (const def of PARAMETER_DEFS) {
       const found = (initialData.configs ?? []).find(c => c.configKey === def.key)
-      map[def.key] = found ? found.configValue : def.defaultValue
+      map[def.key] = toDraftValue(def, found ? found.configValue : def.defaultValue)
     }
     return map
   })
@@ -158,7 +154,7 @@ export default function AdminPricingPage() {
     for (const def of PARAMETER_DEFS) {
       const found = configsList.find(c => c.configKey === def.key)
       const current = found ? found.configValue : def.defaultValue
-      if (draftValues[def.key] !== current) return true
+      if (draftValues[def.key] !== toDraftValue(def, current)) return true
     }
     return false
   }, [draftValues, configsList])
@@ -177,7 +173,6 @@ export default function AdminPricingPage() {
   // Simulator inputs
   const [simKm, setSimKm] = useState(350)
   const [simVehicleClass, setSimVehicleClass] = useState<'light' | 'medium' | 'heavy'>('medium')
-  const [simDays, setSimDays] = useState(2)
   const [simIsIntl, setSimIsIntl] = useState(false)
   const [simBreedId, setSimBreedId] = useState<number>(horseTypesList[0]?.id ?? 1)
   const [simStallType, setSimStallType] = useState<'standard' | 'single'>('standard')
@@ -186,11 +181,23 @@ export default function AdminPricingPage() {
 
   // Save all system configs
   const handleSaveAllConfigs = async () => {
+    for (const def of PARAMETER_DEFS) {
+      const raw = draftValues[def.key] ?? toDraftValue(def, def.defaultValue)
+      const value = Number(raw)
+      if (!raw.trim() || !Number.isFinite(value) || value < 0
+        || (def.isPercent && value > 100)
+        || (def.group === 'VEHICLE' && (value < 0.1 || value > 10))
+        || (!def.isPercent && def.group !== 'VEHICLE' && !Number.isInteger(value))) {
+        toast(`Giá trị ${def.name} không hợp lệ.`, 'error')
+        return
+      }
+    }
     setIsSaving(true)
     try {
       const updatedList: SystemConfigItem[] = [...configsList]
       for (const def of PARAMETER_DEFS) {
-        const val = draftValues[def.key] ?? def.defaultValue
+        const draft = draftValues[def.key] ?? toDraftValue(def, def.defaultValue)
+        const val = def.isPercent ? String(Number(draft) / 100) : draft
         const res = await systemConfigApi.updateConfig(def.key, val)
         const idx = updatedList.findIndex(c => c.configKey === def.key)
         if (idx >= 0) updatedList[idx] = res
@@ -219,7 +226,7 @@ export default function AdminPricingPage() {
     const map: Record<string, string> = {}
     for (const def of PARAMETER_DEFS) {
       const found = configsList.find(c => c.configKey === def.key)
-      map[def.key] = found ? found.configValue : def.defaultValue
+      map[def.key] = toDraftValue(def, found ? found.configValue : def.defaultValue)
     }
     setDraftValues(map)
   }
@@ -329,8 +336,7 @@ export default function AdminPricingPage() {
           ? Number(draftValues['CLASS_FACTOR_MEDIUM'] ?? 1.4)
           : Number(draftValues['CLASS_FACTOR_LIGHT'] ?? 1.0)
 
-    const crewDaily = Number(draftValues['CREW_FEE_PER_DAY'] ?? 1800000)
-    const margin = Number(draftValues['MARGIN_RATE'] ?? 0.05)
+    const margin = Number(draftValues['MARGIN_RATE'] ?? 5) / 100
     const clearanceIntl = Number(draftValues['CLEARANCE_FEE_INTERNATIONAL'] ?? 300000)
 
     const m = 1 + margin
@@ -353,7 +359,6 @@ export default function AdminPricingPage() {
     }
 
     const truckCostLine = Math.round((tieredTruckCost * classFactor * m) / 1000) * 1000
-    const crewCostLine = Math.round((simDays * crewDaily * m) / 1000) * 1000
     const fuelBotLine = Math.round((simKm * 9000 * 1.05 * m) / 1000) * 1000
 
     const stallCost = simStallType === 'single' ? 1500000 : 0
@@ -364,7 +369,7 @@ export default function AdminPricingPage() {
     const breedVal = selectedBreedObj?.insuredValue ?? 400000000
     const insuranceCost = Math.max(0, simInsurancePremium)
 
-    const total = truckCostLine + crewCostLine + fuelBotLine + stallCost + feedCost + clearanceCost + insuranceCost
+    const total = truckCostLine + fuelBotLine + stallCost + feedCost + clearanceCost + insuranceCost
 
     return {
       lines: [
@@ -372,11 +377,6 @@ export default function AdminPricingPage() {
           label: 'Cước vận chuyển nguyên chuyến',
           detail: `Xe hạng ${simVehicleClass.toUpperCase()} · ${simKm} km · Phí mở chuyến + 3 bậc km`,
           amount: truckCostLine,
-        },
-        {
-          label: 'Nhân sự kỹ thuật (01 Tài xế + 01 Hộ tống)',
-          detail: `${simDays} ngày × ${formatVND(crewDaily)}/ngày (đã gồm Margin ${margin * 100}%)`,
-          amount: crewCostLine,
         },
         {
           label: 'Nhiên liệu & BOT ước tính',
@@ -419,7 +419,7 @@ export default function AdminPricingPage() {
       total,
       breedVal,
     }
-  }, [draftValues, simKm, simVehicleClass, simDays, simIsIntl, simBreedId, simStallType, simFeed, simInsurancePremium, horseTypesList])
+  }, [draftValues, simKm, simVehicleClass, simIsIntl, simBreedId, simStallType, simFeed, simInsurancePremium, horseTypesList])
 
   return (
     <div className={s.wrap}>
@@ -458,22 +458,17 @@ export default function AdminPricingPage() {
           </div>
           <span className={s.formulaOp}>+</span>
           <div className={s.formulaNode}>
-            <span className={s.formulaNodeLabel}>2. Nhân Sự Chuyên Môn</span>
-            <span className={s.formulaNodeDesc}>Số ngày × Phí kíp xe / ngày</span>
-          </div>
-          <span className={s.formulaOp}>+</span>
-          <div className={s.formulaNode}>
-            <span className={s.formulaNodeLabel}>3. Nhiên Liệu & BOT</span>
+            <span className={s.formulaNodeLabel}>2. Nhiên Liệu & BOT</span>
             <span className={s.formulaNodeDesc}>km × 9.000 ₫ × 1.05 (Dự phòng)</span>
           </div>
           <span className={s.formulaOp}>+</span>
           <div className={s.formulaNode}>
-            <span className={s.formulaNodeLabel}>4. Dịch Vụ Đi Kèm</span>
+            <span className={s.formulaNodeLabel}>3. Dịch Vụ Đi Kèm</span>
             <span className={s.formulaNodeDesc}>Khoang đơn + Dinh dưỡng</span>
           </div>
           <span className={s.formulaOp}>+</span>
           <div className={s.formulaNode}>
-            <span className={s.formulaNodeLabel}>5. Bảo Hiểm & Hải Quan</span>
+            <span className={s.formulaNodeLabel}>4. Bảo Hiểm & Hải Quan</span>
             <span className={s.formulaNodeDesc}>Giá trị giống × Tỷ lệ + Hồ sơ</span>
           </div>
           <span className={s.formulaEqual}>=</span>
@@ -561,9 +556,9 @@ export default function AdminPricingPage() {
                     <div className={s.configInputWrap}>
                       <input
                         type="number"
-                        step="0.1"
-                        min="0.5"
-                        max="5.0"
+                        step="any"
+                        min="0.1"
+                        max="10"
                         value={draftValues[def.key] ?? def.defaultValue}
                         onChange={e => {
                           setDraftValues(prev => ({ ...prev, [def.key]: e.target.value }))
@@ -595,10 +590,10 @@ export default function AdminPricingPage() {
                       {def.isPercent ? (
                         <input
                           type="number"
-                          step="0.01"
+                          step="any"
                           min="0"
-                          max="1"
-                          value={draftValues[def.key] ?? def.defaultValue}
+                          max="100"
+                          value={draftValues[def.key] ?? toDraftValue(def, def.defaultValue)}
                           onChange={e => {
                             setDraftValues(prev => ({ ...prev, [def.key]: e.target.value }))
                           }}
@@ -735,7 +730,6 @@ export default function AdminPricingPage() {
                   const km = Number(e.target.value)
                   if (km > 0) {
                     setSimKm(km)
-                    setSimDays(km > 1000 ? 3 : km > 500 ? 2 : 1)
                   }
                 }}
               >
@@ -770,17 +764,6 @@ export default function AdminPricingPage() {
                 <option value="medium">Medium (Xe tải trung / 4-6 ngăn - Hệ số ×{draftValues['CLASS_FACTOR_MEDIUM'] ?? '1.4'})</option>
                 <option value="heavy">Heavy (Xe tải lớn / 9 ngăn - Hệ số ×{draftValues['CLASS_FACTOR_HEAVY'] ?? '1.9'})</option>
               </select>
-            </div>
-
-            <div className={s.simField}>
-              <label>Thời gian hành trình dự kiến (ngày)</label>
-              <input
-                type="number"
-                min="1"
-                max="30"
-                value={simDays}
-                onChange={e => setSimDays(Math.max(1, Number(e.target.value)))}
-              />
             </div>
 
             <div className={s.simField}>

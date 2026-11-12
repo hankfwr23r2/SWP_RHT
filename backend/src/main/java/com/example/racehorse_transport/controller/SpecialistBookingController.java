@@ -139,6 +139,15 @@ public class SpecialistBookingController {
      * 7. Specialist cập nhật ghi chú hoặc ảnh chụp chứng từ cho từng hạng mục
      * POST /api/v1/specialist/bookings/{id}/clearance-items
      */
+    @PutMapping("/{id}/clearance-items")
+    public ResponseEntity<ApiResponse<BookingResponse>> updateClearanceItems(
+            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
+            @PathVariable("id") String id,
+            @Valid @RequestBody UpdateClearanceItemsRequest request) {
+        BookingResponse response = specialistService.updateClearanceItems(id, request, extractUsername(authHeader));
+        return ResponseEntity.ok(ApiResponse.success(response, "Đã lưu cập nhật giấy tờ"));
+    }
+
     @PostMapping("/{id}/clearance-items")
     public ResponseEntity<ApiResponse<BookingResponse>> updateClearanceItem(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,

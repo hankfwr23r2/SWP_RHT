@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.dto.specialist;
 
 import lombok.*;
+import jakarta.validation.constraints.NotBlank;
 
 import java.util.List;
 
@@ -10,6 +11,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UpdateClearanceItemRequest {
+    @NotBlank
     private String type; // health_cert, quarantine_cert, customs_declaration, import_permit, ata_carnet, poa...
     private String note;
     private List<String> photos; // Danh sách đường dẫn ảnh chứng từ đã tải lên.

@@ -1,0 +1,11 @@
+# Local automated testing only. Uses Cloudflare's public, always-pass test keys.
+# docker compose -f docker-compose.yml -f docker-compose.test.yml up -d --build backend frontend
+services:
+  backend:
+    environment:
+      SPRING_PROFILES_ACTIVE: local,local-turnstile-test
+      TURNSTILE_SECRET_KEY: 1x0000000000000000000000000000000AA
+  frontend:
+    build:
+      args:
+        VITE_TURNSTILE_SITE_KEY: 1x00000000000000000000AA

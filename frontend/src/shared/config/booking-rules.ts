@@ -119,6 +119,10 @@ export const stepOf = (s: BookingStatus): number => ({
   completed: BOOKING_STEPS.length, cancelled: 0, rejected: 1,
 }[s])
 
+// Customer portal combines quote/deposit and preparation into six displayed steps.
+export const customerStepOf = (status: BookingStatus): number =>
+  [0, 1, 2, 2, 3, 3, 4, 5, 6][stepOf(status)] ?? 0
+
 // Tra cứu công khai ở trang chủ chỉ cho thấy 5 bước gọn
 export const PUBLIC_STEPS = ['Gửi đơn', 'Thẩm định', 'Đặt cọc', 'Chuẩn bị chuyến', 'Vận chuyển']
 export const publicStepOf = (s: BookingStatus): number => (s === 'schedule_change_required' || s === 'pending_intake' || s === 'cancelled' || s === 'rejected' ? 0 : s === 'under_review' || s === 'pending_commercial' ? 1 : s === 'awaiting_payment' || s === 'quote_expired' ? 2 : ['in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed'].includes(s) ? 4 : 3)
@@ -164,7 +168,6 @@ export const CLEARANCE_DOC: Record<ClearanceDocType, { label: string; short: str
 
 // ===== Đơn giá nghiệp vụ (Có thể cấu hình bởi Admin qua SystemConfig) =====
 export let CLASS_FACTOR: Record<VehicleClass, number> = { light: 1, medium: BIG_TRUCK_FACTOR, heavy: 1.9 }
-export let CREW_FEE_PER_DAY = 1_800_000 // 01 Driver + 01 Escort, mỗi ngày
 export const SINGLE_STALL_FEE = 1_500_000 // khoang đơn mở rộng, mỗi ngựa
 // Dinh dưỡng và cữ nước khách chọn riêng cho từng ngựa (PRD mục 2.2). Gói cơ bản và cữ 3 giờ đã gồm trong cước; phí mỗi ngựa là số mẫu.
 export const FEED_PACKAGE = {
@@ -240,7 +243,6 @@ export function applyRuntimePricingRules(config: {
   classFactorLight?: number
   classFactorMedium?: number
   classFactorHeavy?: number
-  crewFeePerDay?: number
   marginRate?: number
   clearanceFeeInternational?: number
 }) {
@@ -252,9 +254,6 @@ export function applyRuntimePricingRules(config: {
   }
   if (config.classFactorHeavy != null && Number.isFinite(config.classFactorHeavy)) {
     CLASS_FACTOR.heavy = config.classFactorHeavy
-  }
-  if (config.crewFeePerDay != null && Number.isFinite(config.crewFeePerDay)) {
-    CREW_FEE_PER_DAY = config.crewFeePerDay
   }
   if (config.marginRate != null && Number.isFinite(config.marginRate)) {
     MARGIN_RATE = config.marginRate

@@ -164,6 +164,36 @@ class FleetServiceImplTest {
                 .build();
     }
 
+    @Test
+    void unreturnedVehicleStaysBusyAfterFinancialCompletionAcrossAllDepartureDates() {
+        Vehicle v = vehicle(1, "AVAILABLE");
+        when(vehicleRepository.findAll()).thenReturn(List.of(v));
+        when(vehicleRepository.findById(1)).thenReturn(Optional.of(v));
+        Booking b = Booking.builder().id(43).status("completed")
+                .detailsJson("{\"trips\":[{\"vehicleId\":\"VH-001\",\"homeReturn\":{\"eta\":1000}}]}").build();
+        when(bookingRepository.findAll()).thenReturn(List.of(b));
+        assertThat(service.getAllVehicles().getFirst().isAvailable()).isFalse();
+        assertThat(service.getAvailableVehicles(Instant.now().plusSeconds(90L * 86400), "domestic")
+                .getFirst().isAvailable()).isFalse();
+        assertThatThrownBy(() -> service.validateVehicleAvailability(1, Instant.now(), "domestic", null))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("BK-43");
+
+        b.setDetailsJson("{\"trips\":[{\"vehicleId\":\"VH-001\",\"homeReturn\":{\"backAt\":2000}}]}");
+        assertThat(service.getAllVehicles().getFirst().isAvailable()).isTrue();
+        assertThat(service.getAvailableVehicles(Instant.now(), "domestic").getFirst().isAvailable()).isTrue();
+        service.validateVehicleAvailability(1, Instant.now(), "domestic", null);
+    }
+
+    @Test
+    void onlyTheVehicleWithAnUnreturnedTripIsHeld() {
+        when(vehicleRepository.findAll()).thenReturn(List.of(vehicle(1, "AVAILABLE"), vehicle(2, "AVAILABLE")));
+        Booking b = Booking.builder().id(43).status("settlement_issued")
+                .detailsJson("{\"trips\":[{\"vehicleId\":\"1\",\"homeReturn\":{\"backAt\":2000}},"
+                        + "{\"vehicleId\":\"VH-002\",\"homeReturn\":{\"eta\":3000}}]}").build();
+        when(bookingRepository.findAll()).thenReturn(List.of(b));
+        assertThat(service.getAllVehicles()).extracting("available").containsExactly(true, false);
+    }
+
     private Vehicle vehicle(int id, String status) {
         return Vehicle.builder()
                 .id(id)

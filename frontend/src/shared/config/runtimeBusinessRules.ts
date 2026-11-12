@@ -69,7 +69,6 @@ export function applyRuntimeBusinessConfig(configs: Record<string, string>) {
     classFactorLight: readOptionalNumber(configs, 'CLASS_FACTOR_LIGHT'),
     classFactorMedium: readOptionalNumber(configs, 'CLASS_FACTOR_MEDIUM'),
     classFactorHeavy: readOptionalNumber(configs, 'CLASS_FACTOR_HEAVY'),
-    crewFeePerDay: readOptionalNumber(configs, 'CREW_FEE_PER_DAY'),
     marginRate: readOptionalNumber(configs, 'MARGIN_RATE'),
     clearanceFeeInternational: readOptionalNumber(configs, 'CLEARANCE_FEE_INTERNATIONAL'),
   })

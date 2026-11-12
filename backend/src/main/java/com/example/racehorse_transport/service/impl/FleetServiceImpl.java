@@ -62,7 +62,7 @@ public class FleetServiceImpl implements FleetService {
     @Override
     public List<VehicleResponse> getAllVehicles() {
         List<Booking> holdingBookings = getHoldingBookings();
-        Set<Integer> busyVehicleIds = new HashSet<>();
+        Set<Integer> busyVehicleIds = new HashSet<>(unreturnedVehicleBookings().keySet());
         for (Booking b : holdingBookings) {
             List<BookingVehicle> bvs = bookingVehicleRepository.findByBookingID_Id(b.getId());
             for (BookingVehicle bv : bvs) {
@@ -97,6 +97,8 @@ public class FleetServiceImpl implements FleetService {
 
         // Bản đồ: VehicleID -> Lý do bận
         Map<Integer, String> busyMap = new HashMap<>();
+        unreturnedVehicleBookings().forEach((vehicleId, bookingId) -> busyMap.put(vehicleId,
+                "Chưa xác nhận về trụ sở từ đơn BK-" + bookingId));
 
         for (Booking booking : holdingBookings) {
             Instant bookingDepart = booking.getDepartureDate() != null ? booking.getDepartureDate()
@@ -120,7 +122,7 @@ public class FleetServiceImpl implements FleetService {
                 for (BookingVehicle bv : bvs) {
                     if (bv.getVehicleID() != null) {
                         String tripTag = existingIsInter ? "quốc tế" : "nội địa";
-                        busyMap.put(bv.getVehicleID().getId(),
+                        busyMap.putIfAbsent(bv.getVehicleID().getId(),
                                 "Đang chạy đơn BK-" + String.format("%03d", booking.getId()) + " (" + tripTag
                                         + ", dự kiến về bãi: " + busyEnd + ")");
                     }
@@ -285,6 +287,29 @@ public class FleetServiceImpl implements FleetService {
         }).toList();
     }
 
+    // Financial completion never releases a vehicle that has not returned to HQ.
+    private Map<Integer, Integer> unreturnedVehicleBookings() {
+        Map<Integer, Integer> held = new HashMap<>();
+        for (Booking booking : bookingRepository.findAll()) {
+            BookingDetailsPayload payload = BookingDetailsJson.read(objectMapper, booking);
+            if (payload.getTrips() == null) continue;
+            for (VehicleTripDto trip : payload.getTrips()) {
+                if (trip.getHomeReturn() == null || trip.getHomeReturn().get("backAt") != null
+                        || trip.getVehicleId() == null) continue;
+                String identifier = trip.getVehicleId().trim();
+                if (identifier.matches("(?i)(?:VH-|XE-)?[0-9]+")) {
+                    try {
+                        held.put(Integer.valueOf(identifier.replaceFirst("(?i)^(VH|XE)-", "")), booking.getId());
+                    } catch (NumberFormatException ignored) { }
+                } else {
+                    vehicleRepository.findByLicensePlate(identifier)
+                            .ifPresent(vehicle -> held.put(vehicle.getId(), booking.getId()));
+                }
+            }
+        }
+        return held;
+    }
+
     private List<Booking> getHoldingBookings() {
         return bookingRepository.findAll().stream()
                 .filter(b -> b.getStatus() != null && HOLDING_STATUSES.contains(b.getStatus().toLowerCase()))
@@ -385,6 +410,11 @@ public class FleetServiceImpl implements FleetService {
         if (isBusyStatus(vehicle.getStatus())) {
             throw new IllegalStateException(
                     "Xe " + vehicle.getLicensePlate() + " (" + vehicle.getVehicleName() + ") đang bận chuyến đi khác!");
+        }
+
+        Integer unreturnedBooking = unreturnedVehicleBookings().get(vehicleId);
+        if (unreturnedBooking != null && !Objects.equals(unreturnedBooking, excludeBookingId)) {
+            throw new IllegalStateException("Xe chưa xác nhận về trụ sở từ đơn BK-" + unreturnedBooking);
         }
 
         Instant newDepart = departDate != null ? departDate : Instant.now();

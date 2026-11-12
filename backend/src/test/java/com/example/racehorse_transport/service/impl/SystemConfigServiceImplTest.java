@@ -47,11 +47,12 @@ class SystemConfigServiceImplTest {
     }
 
     @Test
-    void getAllHidesRetiredRulesIncludingInsuranceRate() {
+    void getAllHidesRetiredRulesIncludingInsuranceRateAndCrewFee() {
         when(repository.findAll(any(Sort.class))).thenReturn(List.of(
                 config("BORDER_OPEN_MINUTES", "450"),
                 config("BORDER_CLOSE_MINUTES", "990"),
                 config("INSURANCE_RATE", "0.02"),
+                config("CREW_FEE_PER_DAY", "1800000"),
                 config("DEPOSIT_RATE", "0.30")));
 
         assertThat(service.getAllConfigs()).extracting("configKey").containsExactly("DEPOSIT_RATE");
@@ -61,6 +62,13 @@ class SystemConfigServiceImplTest {
     void legacyInsuranceRateIsNoLongerEditable() {
         assertThatThrownBy(() -> service.updateConfig("INSURANCE_RATE",
                 UpdateSystemConfigRequest.builder().configValue("0.05").build(), "admin"))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void retiredCrewFeeIsNoLongerEditable() {
+        assertThatThrownBy(() -> service.updateConfig("CREW_FEE_PER_DAY",
+                UpdateSystemConfigRequest.builder().configValue("1800000").build(), "admin"))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 

@@ -4,7 +4,7 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
-import { DEPOSIT_RATE, HORSE_DOC, INCIDENT_KIND, stepOf } from '@shared/config/booking-rules'
+import { DEPOSIT_RATE, HORSE_DOC, INCIDENT_KIND, customerStepOf } from '@shared/config/booking-rules'
 import { effectiveArrivalOf } from '@shared/lib/booking'
 import { restLabel, restTitle } from '@shared/lib/routePreview'
 import { formatClock, formatDate, formatDateTime, formatVND } from '@shared/lib/format'
@@ -36,7 +36,7 @@ const placeName = (n: string) => n.split(' — ')[0]
 
 function Progress({ b }: { b: CustomerBookingView }) {
   const { t } = useTranslation()
-  const at = stepOf(b.status)
+  const at = customerStepOf(b.status)
   const expired = b.status === 'quote_expired' || b.status === 'rejected'
   const stepNames = [
     t('bookingSteps.step1'),
