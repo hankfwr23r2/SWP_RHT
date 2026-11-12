@@ -119,6 +119,10 @@ export const stepOf = (s: BookingStatus): number => ({
   completed: BOOKING_STEPS.length, cancelled: 0, rejected: 1,
 }[s])
 
+// Customer portal combines quote/deposit and preparation into six displayed steps.
+export const customerStepOf = (status: BookingStatus): number =>
+  [0, 1, 2, 2, 3, 3, 4, 5, 6][stepOf(status)] ?? 0
+
 // Tra cứu công khai ở trang chủ chỉ cho thấy 5 bước gọn
 export const PUBLIC_STEPS = ['Gửi đơn', 'Thẩm định', 'Đặt cọc', 'Chuẩn bị chuyến', 'Vận chuyển']
 export const publicStepOf = (s: BookingStatus): number => (s === 'schedule_change_required' || s === 'pending_intake' || s === 'cancelled' || s === 'rejected' ? 0 : s === 'under_review' || s === 'pending_commercial' ? 1 : s === 'awaiting_payment' || s === 'quote_expired' ? 2 : ['in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed'].includes(s) ? 4 : 3)

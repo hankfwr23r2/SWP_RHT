@@ -324,10 +324,16 @@ export const bookingsApi = {
     toBooking(await backendBookingApi.activate(id, { by, specialist, coordinator })),
   rejectOrder: async (id: string, by: string, role: 'manager' | 'coordinator', reason: string): Promise<Booking> =>
     toBooking(await backendBookingApi.reject(id, { by, role, reason: reason.trim() })),
-  approveMedical: async (id: string, by: string): Promise<Booking> =>
-    toBooking(await specialistApi.approveMedical(id, { specialistName: by })),
-  requestResubmission: async (id: string, by: string, reason: string, items: { horseId: string; doc: 'passport' | 'vaccine' | 'lab' }[]): Promise<Booking> =>
-    toBooking(await specialistApi.requestResubmission(id, { specialistName: by, reason: reason.trim(), items })),
+  approveMedical: async (id: string, by: string): Promise<Booking> => {
+    const saved = toBooking(await specialistApi.approveMedical(id, { specialistName: by }))
+    invalidateBookingsListCache()
+    return saved
+  },
+  requestResubmission: async (id: string, by: string, reason: string, items: { horseId: string; doc: 'passport' | 'vaccine' | 'lab' }[]): Promise<Booking> => {
+    const saved = toBooking(await specialistApi.requestResubmission(id, { specialistName: by, reason: reason.trim(), items }))
+    invalidateBookingsListCache()
+    return saved
+  },
   confirmPlan: async (id: string, by: string, input: { routeId?: number; trips: Pick<VehicleTrip, 'vehicleId' | 'horseIds'>[]; route: Pick<RoutePlan, 'legs' | 'rests' | 'borderEta' | 'path'>; gate?: string; note?: string }): Promise<Booking> => {
     const saved = toBooking(await backendBookingApi.confirmFleetPlan(id, { by, routeId: input.routeId, trips: input.trips, route: input.route, gate: input.gate, note: input.note }))
     invalidateBookingsListCache() // danh sách và lịch xe phải thấy ngay phương án mới, không đợi hết hạn bộ đệm
@@ -369,6 +375,11 @@ export const bookingsApi = {
   acceptWaybill: async (id: string, _by: string): Promise<Booking> => toBooking(await specialistApi.acceptWaybill(id)),
   updateClearanceItem: async (id: string, _by: string, type: ClearanceDocType, patch: { note?: string; photos?: string[] }): Promise<Booking> =>
     toBooking(await specialistApi.updateClearanceItem(id, { type, note: patch.note, photos: patch.photos, status: patch.photos?.length ? 'done' : 'todo' })),
+  updateClearanceItems: async (id: string, items: { type: ClearanceDocType; note?: string; photos?: string[] }[]): Promise<Booking> => {
+    const saved = toBooking(await specialistApi.updateClearanceItems(id, items))
+    invalidateBookingsListCache()
+    return saved
+  },
   addClearanceItem: async (id: string, _by: string, type: ClearanceDocType): Promise<Booking> =>
     toBooking(await specialistApi.addClearanceItem(id, { type, label: CLEARANCE_DOC[type]?.short })),
   // Giấy thông quan áp dụng chung cho cả lô (PRD sau PR #28): hoàn tất giấy tờ thì mọi ngựa của đơn quốc tế coi như đã có giấy.
@@ -378,7 +389,9 @@ export const bookingsApi = {
     if (b.type === 'international') {
       for (const h of b.horses) if (!b.clearance?.horsesCleared.includes(h.horseId)) await specialistApi.markHorseCleared(id, h.horseId, true)
     }
-    return toBooking(await specialistApi.completeClearance(id))
+    const saved = toBooking(await specialistApi.completeClearance(id))
+    invalidateBookingsListCache()
+    return saved
   },
   transferQuarantine: async (id: string): Promise<Booking> => toBooking(await specialistApi.transferQuarantine(id)),
   approveQuarantine: async (id: string, _by: string, note?: string): Promise<Booking> => toBooking(await specialistApi.approveQuarantine(id, note)),

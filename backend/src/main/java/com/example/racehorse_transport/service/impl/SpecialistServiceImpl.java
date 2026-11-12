@@ -287,47 +287,62 @@ public class SpecialistServiceImpl implements SpecialistService {
     @Override
     @Transactional
     public BookingResponse updateClearanceItem(String bookingIdentifier, UpdateClearanceItemRequest request, String username) {
+        return updateClearanceItems(bookingIdentifier,
+                UpdateClearanceItemsRequest.builder().items(List.of(request)).build(), username);
+    }
+
+    @Override
+    @Transactional
+    public BookingResponse updateClearanceItems(String bookingIdentifier, UpdateClearanceItemsRequest request, String username) {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
         requireAssignment(username, booking);
+        if (!Set.of("waybill_issued", "clearance_in_progress").contains(booking.getStatus())) {
+            throw new IllegalStateException("Giấy tờ chỉ được sửa trong giai đoạn chuẩn bị.");
+        }
+        if (request == null || request.getItems() == null || request.getItems().isEmpty()) {
+            throw new IllegalArgumentException("Danh sách cập nhật giấy tờ không được để trống.");
+        }
+        Set<String> types = new HashSet<>();
+        for (UpdateClearanceItemRequest patch : request.getItems()) {
+            if (patch == null || patch.getType() == null || patch.getType().isBlank()
+                    || !types.add(patch.getType().trim().toLowerCase(Locale.ROOT))) {
+                throw new IllegalArgumentException("Loại giấy tờ không hợp lệ hoặc bị lặp.");
+            }
+            requireApplicableClearanceType(booking, patch.getType());
+        }
         BookingDetailsPayload payload = extractPayload(booking);
-
         Map<String, Object> clearanceMap = getOrCreateClearanceMap(payload, booking);
         List<Map<String, Object>> items = getClearanceItemsList(clearanceMap);
-
-        String type = request.getType();
-        requireApplicableClearanceType(booking, type);
-        Map<String, Object> targetItem = items.stream()
-                .filter(i -> type.equalsIgnoreCase((String) i.get("type")))
-                .findFirst()
-                .orElse(null);
-
-        if (targetItem == null) {
-            targetItem = new HashMap<>();
-            targetItem.put("type", type);
-            items.add(targetItem);
+        boolean changed = false;
+        for (UpdateClearanceItemRequest patch : request.getItems()) {
+            String type = patch.getType().trim().toLowerCase(Locale.ROOT);
+            Map<String, Object> item = items.stream().filter(i -> type.equalsIgnoreCase((String) i.get("type")))
+                    .findFirst().orElse(null);
+            boolean itemChanged = item == null;
+            if (item == null) {
+                item = new HashMap<>(); item.put("type", type); item.put("note", "");
+                item.put("photos", List.of()); item.put("status", "todo"); items.add(item);
+            }
+            if (patch.getNote() != null && !Objects.equals(patch.getNote(), item.get("note"))) {
+                item.put("note", patch.getNote()); itemChanged = true;
+            }
+            // Omitted photos means keep existing attachments; an explicit [] removes them.
+            if (patch.getPhotos() != null && !Objects.equals(patch.getPhotos(), item.get("photos"))) {
+                item.put("photos", new ArrayList<>(patch.getPhotos())); itemChanged = true;
+            }
+            if (itemChanged) {
+                List<?> photos = item.get("photos") instanceof List<?> list ? list : List.of();
+                item.put("status", photos.isEmpty() ? "todo" : "done");
+                item.put("updatedAt", System.currentTimeMillis());
+                item.put("updatedBy", username);
+                changed = true;
+            }
         }
-
-        if (request.getNote() != null) {
-            targetItem.put("note", request.getNote());
-        }
-
-        List<String> photos = request.getPhotos() != null ? request.getPhotos() : Collections.emptyList();
-        targetItem.put("photos", photos);
-
-        // Quy tắc PRD 3.3: Tải ảnh lên -> tự chuyển 'done'; xóa hết ảnh -> về 'todo'
-        String newStatus = !photos.isEmpty() ? "done" : "todo";
-        targetItem.put("status", newStatus);
-        targetItem.put("updatedAt", System.currentTimeMillis());
-        targetItem.put("updatedBy", username != null ? username : "Chuyên viên");
-
-        appendHistory(payload, username != null ? username : "Chuyên viên",
-                "Cập nhật giấy tờ kiểm dịch");
-
+        if (!changed) return mapToBookingResponse(booking);
+        appendHistory(payload, username != null ? username : "Chuyên viên", "Cập nhật giấy tờ kiểm dịch");
         payload.setClearance(clearanceMap);
         savePayload(booking, payload);
-        Booking saved = bookingRepository.save(booking);
-        log.info("Updated clearance item [{}] for booking ID={}", type, saved.getId());
-        return mapToBookingResponse(saved);
+        return mapToBookingResponse(bookingRepository.save(booking));
     }
 
     @Override

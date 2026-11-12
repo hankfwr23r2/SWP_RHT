@@ -53,6 +53,7 @@ public interface SpecialistService {
      * Specialist cập nhật ghi chú hoặc ảnh chụp chứng từ cho từng hạng mục (tự động chuyển Đã nộp / Chưa nộp)
      */
     BookingResponse updateClearanceItem(String bookingIdentifier, UpdateClearanceItemRequest request, String username);
+    BookingResponse updateClearanceItems(String bookingIdentifier, UpdateClearanceItemsRequest request, String username);
 
     /**
      * Specialist bổ sung thêm một hạng mục giấy tờ cần làm cho chuyến đi

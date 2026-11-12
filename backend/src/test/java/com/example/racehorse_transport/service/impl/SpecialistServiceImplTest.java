@@ -298,6 +298,73 @@ class SpecialistServiceImplTest {
         assertThat(service.getInsuranceBookings("specialist")).extracting(r -> r.getNumericId()).containsExactly(1);
     }
 
+    @Test
+    void noteOnlyUpdatePreservesPhotosAndRepeatedSaveDoesNotAddHistory() {
+        Booking b = clearanceBooking();
+        var patch = com.example.racehorse_transport.dto.specialist.UpdateClearanceItemRequest.builder()
+                .type("health_cert").note("updated").build();
+        service.updateClearanceItem("BK-7", patch, "specialist");
+        service.updateClearanceItem("BK-7", patch, "specialist");
+        var payload = new ObjectMapper().valueToTree(service.getBookingDetail("BK-7", "specialist").getClearance());
+        assertThat(payload.path("items").get(0).path("photos").size()).isEqualTo(1);
+        assertThat(payload.path("items").get(0).path("status").asText()).isEqualTo("done");
+        verify(bookingRepository, org.mockito.Mockito.times(1)).save(b);
+    }
+
+    @Test
+    void explicitEmptyPhotosRemovesAttachments() {
+        clearanceBooking();
+        var response = service.updateClearanceItem("BK-7",
+                com.example.racehorse_transport.dto.specialist.UpdateClearanceItemRequest.builder()
+                        .type("health_cert").photos(List.of()).build(), "specialist");
+        var item = new ObjectMapper().valueToTree(response.getClearance()).path("items").get(0);
+        assertThat(item.path("photos").isEmpty()).isTrue();
+        assertThat(item.path("status").asText()).isEqualTo("todo");
+        assertThat(item.path("note").asText()).isEqualTo("before");
+    }
+
+    @Test
+    void batchSaveCreatesOneHistoryEntryForMultipleDocuments() {
+        clearanceBooking();
+        var response = service.updateClearanceItems("BK-7",
+                com.example.racehorse_transport.dto.specialist.UpdateClearanceItemsRequest.builder().items(List.of(
+                        com.example.racehorse_transport.dto.specialist.UpdateClearanceItemRequest.builder()
+                                .type("health_cert").note("updated").build(),
+                        com.example.racehorse_transport.dto.specialist.UpdateClearanceItemRequest.builder()
+                                .type("poa").note("signed").photos(List.of("https://example.test/poa.png")).build()
+                )).build(), "specialist");
+        assertThat(response.getHistory()).hasSize(1);
+        var items = new ObjectMapper().valueToTree(response.getClearance()).path("items");
+        assertThat(items.get(0).path("photos").size()).isEqualTo(1);
+        assertThat(items.get(1).path("status").asText()).isEqualTo("done");
+    }
+
+    @Test
+    void batchRejectsDuplicateTypesAndLockedBookingsWithoutSaving() {
+        Booking b = clearanceBooking();
+        var patch = com.example.racehorse_transport.dto.specialist.UpdateClearanceItemRequest.builder()
+                .type("health_cert").note("changed").build();
+        var duplicate = com.example.racehorse_transport.dto.specialist.UpdateClearanceItemsRequest.builder()
+                .items(List.of(patch, patch)).build();
+        assertThatThrownBy(() -> service.updateClearanceItems("BK-7", duplicate, "specialist"))
+                .isInstanceOf(IllegalArgumentException.class);
+        b.setStatus("completed");
+        assertThatThrownBy(() -> service.updateClearanceItem("BK-7", patch, "specialist"))
+                .isInstanceOf(IllegalStateException.class);
+        verify(bookingRepository, never()).save(any());
+    }
+
+    private Booking clearanceBooking() {
+        Booking b = booking(7, "clearance_in_progress", "approved");
+        b.setBookingType("domestic");
+        b.setDetailsJson("{\"intake\":{\"specialist\":{\"id\":\"SP-01\"}},\"history\":[],\"clearance\":{\"items\":["
+                + "{\"type\":\"health_cert\",\"note\":\"before\",\"photos\":[\"https://example.test/cert.png\"],\"status\":\"done\"},"
+                + "{\"type\":\"poa\",\"note\":\"\",\"photos\":[],\"status\":\"todo\"}]}}");
+        when(bookingRepository.findById(7)).thenReturn(Optional.of(b));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        return b;
+    }
+
     private Booking booking(int id, String status, String medicalStatus) {
         return Booking.builder()
                 .id(id)
