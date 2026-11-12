@@ -9,7 +9,6 @@ import { bookingsApi } from '@shared/services/bookings'
 import type { Booking, BookingHorse, Checkpoint, VehicleTrip } from '@shared/types/booking'
 import { CaptureScope } from '@shared/ui/CaptureScope'
 import { CaptureField } from '@shared/ui/CaptureField'
-import { ImageThumb } from '@shared/ui/ImageThumb'
 import { useNow } from '@shared/ui/useNow'
 import { HorseDocsModal } from '../../shared/HorseDocsModal'
 import { Checklist, Panel } from '../../shared/field'
@@ -294,50 +293,6 @@ function CustomsStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
   )
 }
 
-// Phí cầu đường: chụp hóa đơn ở trạm thu phí rồi ghi số tiền. Ghi từ lúc rời trụ sở tới khi về lại trụ sở (cả chiều về).
-// Nhà xe chịu khoản này, khách không thấy và không phải trả thêm.
-const MAX_TOLL = 10_000_000
-function TollPanel({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
-  const { session } = useAuth()
-  const [photo, setPhoto] = useState<string>()
-  const [station, setStation] = useState('')
-  const [amount, setAmount] = useState('')
-  const tolls = t.tolls ?? []
-  const total = tolls.reduce((n, x) => n + x.amount, 0)
-  const value = Number(amount || 0)
-  const tooMuch = value > MAX_TOLL
-  const reset = () => { setPhoto(undefined); setStation(''); setAmount('') }
-  return (
-    <Panel title="Phí cầu đường" icon="fa-road">
-      <p>Qua trạm thu phí thì chụp hóa đơn và ghi số tiền. Nhà xe chịu khoản này, khách không phải trả thêm.{tolls.length ? <> Đã ghi {tolls.length} hóa đơn, tổng <b>{formatVND(total)}</b>.</> : null}</p>
-      {tolls.length > 0 && (
-        <ul className={s.checklist}>{tolls.map(x => (
-          <li key={x.id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '6px 0', fontSize: '0.9rem' }}>
-            <ImageThumb name={x.photo} size={40} />
-            <span style={{ flex: 1 }}>{x.station || 'Trạm thu phí'} · {formatDateTime(x.at)} — <b>{formatVND(x.amount)}</b></span>
-            <button type="button" className="btn btn-ghost" aria-label={`Xóa hóa đơn ${x.station || ''} ${formatVND(x.amount)}`} onClick={() => run(() => bookingsApi.removeToll(b.id, t.tripId, session!.name, x.id), 'Đã xóa hóa đơn phí cầu đường')}>Xóa</button>
-          </li>
-        ))}</ul>
-      )}
-      <CaptureField purpose="TOLL" target="toll" label="Ảnh hóa đơn phí cầu đường (chụp trước)" required value={photo} onChange={setPhoto} />
-      <div className="form-group" style={{ margin: 0 }}>
-        <label htmlFor="toll-station">Trạm thu phí</label>
-        <input id="toll-station" className="form-control" style={{ minHeight: 48 }} maxLength={120} placeholder="VD: Trạm BOT Long Thành" value={station} onChange={e => setStation(e.target.value)} />
-      </div>
-      <div className="form-group" style={{ margin: 0 }}>
-        <label htmlFor="toll-amount">Số tiền trên hóa đơn (VNĐ){!photo && ' — chụp ảnh trước để mở khóa'}</label>
-        <input id="toll-amount" inputMode="numeric" className="form-control" style={{ minHeight: 48 }} disabled={!photo} aria-invalid={tooMuch}
-          value={amount.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} onChange={e => setAmount(e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '').slice(0, 9))} />
-        {tooMuch && <p className="form-error" role="alert">Mỗi hóa đơn tối đa {formatVND(MAX_TOLL)}.</p>}
-      </div>
-      <button className={`btn btn-outline ${s.big}`} disabled={!photo || value <= 0 || tooMuch}
-        onClick={() => run(async () => { await bookingsApi.addToll(b.id, t.tripId, session!.name, { amount: value, station: station.trim(), photo: photo! }); reset() }, 'Đã ghi phí cầu đường')}>
-        <i className="fa-solid fa-plus" /> Ghi phí cầu đường
-      </button>
-    </Panel>
-  )
-}
-
 export function DriverJob({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
   return <CaptureScope bookingId={b.id} tripId={t.tripId}><DriverJobContent b={b} t={t} run={run} /></CaptureScope>
 }
@@ -352,7 +307,6 @@ function DriverJobContent({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run 
       <DriverSteps b={b} t={t} run={run} />
       {!atDelivery && !t.run?.deliveredAt && (b.status === 'in_transit' || t.run?.startedAt) && <SosPanel b={b} t={t} run={run} />}
       {b.status === 'delivered_pending_settlement' && <SubmitExpensesPanel b={b} run={run} />}
-      {t.departedAt && !t.homeReturn?.backAt && <TollPanel b={b} t={t} run={run} />}
     </>
   )
 }
