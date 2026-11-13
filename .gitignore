@@ -1,4 +1,4 @@
-# IDE / OS
+# Editor and OS
 .idea/
 .vscode/
 .claude/
@@ -16,6 +16,15 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Local configuration and database dumps
+/.env
+frontend/.env
+frontend/*.local
+*application-local.properties
+*.sql
+# Keep the reviewed read-only audit script
+!backend/scripts/audit-horse-delivery-locations.sql
+
 # Backend build
 backend/target/
 backend/.mvn/wrapper/maven-wrapper.jar
@@ -24,20 +33,16 @@ backend/.mvn/wrapper/maven-wrapper.jar
 frontend/node_modules/
 frontend/dist/
 frontend/dist-ssr/
-frontend/*.local
-frontend/.env
 
-# Local properties & database dumps
-*application-local.properties
-*.sql
-# Reviewed read-only audit, not a database dump
-!backend/scripts/audit-horse-delivery-locations.sql
-/.env
-
-# Ảnh chụp và log do công cụ Playwright MCP sinh ra khi chạy thử giao diện
+# Playwright local screenshots, reports, traces and cache
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
 .playwright-mcp/
 
-# Graphify output & cache
+# Graphify local output, cache and agent instructions
 graphify-out/
 .graphify/
-
+.agents/rules/graphify.md
+.agents/workflows/graphify.md
