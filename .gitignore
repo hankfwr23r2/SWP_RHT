@@ -18,6 +18,7 @@ yarn-error.log*
 
 # Local configuration and database dumps
 /.env
+/aiven_cau_hinh_khoi_phuc_tu_cache.json
 frontend/.env
 frontend/*.local
 *application-local.properties
@@ -33,6 +34,10 @@ backend/.mvn/wrapper/maven-wrapper.jar
 frontend/node_modules/
 frontend/dist/
 frontend/dist-ssr/
+
+# Local browser test configuration and documentation
+/docker-compose.test.yml
+/docs/local-turnstile-test.md
 
 # Playwright local screenshots, reports, traces and cache
 test-results/
