@@ -253,7 +253,6 @@ function QuoteSample() {
   const { t } = useTranslation()
   const quoteItems: [string, string][] = [
     [t('home.quoteSample.freight'), t('home.quoteSample.freightSub')],
-    [t('home.quoteSample.crew'), t('home.quoteSample.crewSub')],
     [t('home.quoteSample.fuel'), t('home.quoteSample.fuelSub')],
     [t('home.quoteSample.clearance'), t('home.quoteSample.clearanceSub')],
     [t('home.quoteSample.services'), t('home.quoteSample.servicesSub')],

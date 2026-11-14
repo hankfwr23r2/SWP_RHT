@@ -105,6 +105,7 @@
 .price-table td { padding: 10px 8px; border-bottom: 1px solid var(--line); color: var(--text); vertical-align: middle; }
 .price-card:first-child .price-table td { padding: 14px 8px; }
 .price-table tbody tr:hover td { background: #f8fafc; }
+.priceFormulaNote { margin: 10px 0 0; color: var(--muted); font-size: 0.78rem; line-height: 1.45; }
 .col-text { text-align: left !important; }
 .col-num { text-align: right !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .price-notes { margin-top: 18px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }

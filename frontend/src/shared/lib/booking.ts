@@ -240,11 +240,14 @@ export function quoteLines(b: QuoteInput, vehicles: Pick<Vehicle, 'capacity'>[])
     const pricedHorses = b.horses.filter((horse, index) =>
       selected[index] ? selected[index]!.price > 0 : legacyFee(horse) > 0).length
     const hasTripUnit = pricedSelections.some(service => service?.billingUnit === 'PER_TRIP')
+    const hasHorseUnit = pricedSelections.some(service => service?.billingUnit === 'PER_HORSE')
     const hasDailyUnit = pricedSelections.some(service => service?.billingUnit === 'PER_HORSE_DAY')
     const detail = hasTripUnit
       ? `${names.join(', ')} · mỗi chuyến`
       : hasDailyUnit
         ? `${pricedHorses} ngựa × ${days} ngày · ${names.join(', ')}`
+        : hasHorseUnit
+          ? `${pricedHorses} ngựa/chuyến · ${names.join(', ')}`
         : names.length
       ? `${pricedHorses} ngựa · ${names.join(', ')}`
       : `${pricedHorses} ngựa`

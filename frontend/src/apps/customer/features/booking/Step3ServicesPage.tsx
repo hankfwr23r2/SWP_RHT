@@ -145,7 +145,7 @@ export default function Step3ServicesPage() {
                           const billingLabel = service.billingUnit === 'PER_HORSE_DAY'
                             ? (i18n.language === 'en' ? 'horse × day' : 'ngựa × ngày')
                             : service.billingUnit === 'PER_HORSE'
-                              ? (i18n.language === 'en' ? 'horse' : 'ngựa')
+                              ? (i18n.language === 'en' ? 'horse / trip' : 'ngựa / chuyến')
                               : (i18n.language === 'en' ? 'trip' : 'chuyến')
                           return (
                           <label key={service.id} className={s.opt}>
