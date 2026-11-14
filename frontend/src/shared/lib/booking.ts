@@ -212,8 +212,8 @@ export function quoteLines(b: QuoteInput, vehicles: Pick<Vehicle, 'capacity'>[])
     const cls = vehicleClassOf(v.capacity)
     const tag = many ? ` (xe ${i + 1}/${vehicles.length})` : ''
     lines.push(
-      { label: `Cước vận chuyển nguyên chuyến${tag}`, detail: `Xe ${VEHICLE_CLASS[cls].label} (${VEHICLE_CLASS[cls].stalls}) · ${km} km`, calculation: `Tính theo quãng đường ${km} km và hạng xe ${VEHICLE_CLASS[cls].label}.`, amount: roundK(truckCost(km, false) * CLASS_FACTOR[cls] * m) },
-      { label: `Nhiên liệu và BOT${tag}`, detail: `Ước tính theo lộ trình ${km} km, đã gồm dự phòng`, calculation: `${km} km × chi phí nhiên liệu và BOT ước tính mỗi km, đã gồm dự phòng 5%.`, amount: roundK(km * FUEL_BOT_PER_KM * (1 + FUEL_BUFFER_RATE) * m) },
+      { label: `Cước vận chuyển nguyên chuyến${tag}`, detail: `Xe ${VEHICLE_CLASS[cls].label} (${VEHICLE_CLASS[cls].stalls}) · ${km} km`, calculation: `Tính theo quãng đường ${km} km và hạng xe ${VEHICLE_CLASS[cls].label}.`, amount: roundK(truckCost(km, false) * CLASS_FACTOR[cls] * m), marginApplied: true },
+      { label: `Nhiên liệu và BOT${tag}`, detail: `Ước tính theo lộ trình ${km} km, đã gồm dự phòng`, calculation: `${km} km × chi phí nhiên liệu và BOT ước tính mỗi km, đã gồm dự phòng 5%.`, amount: roundK(km * FUEL_BOT_PER_KM * (1 + FUEL_BUFFER_RATE)), marginApplied: false },
     )
   })
   const addServiceLine = (

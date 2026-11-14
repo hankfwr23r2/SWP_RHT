@@ -3,7 +3,7 @@ import { BOOKING_STATUS, DELAY_ALERT_MINUTES, MARGIN_RATE, type BookingStatus } 
 import { DAY } from '../config/business-rules'
 import type { Booking, VehicleTrip } from '../types/booking'
 
-// Dòng báo giá đã gộp biên lợi nhuận 5% (cước, nhân sự, nhiên liệu và BOT): giá vốn = tiền / (1 + biên). Dòng còn lại tính nguyên.
+// marginApplied distinguishes new quote lines; missing values retain the legacy calculation.
 const MARGINED = /^(Cước vận chuyển|Nhân sự kỹ thuật|Nhiên liệu và BOT)/
 
 export function bookingStatusLabel(status: string | undefined): string {
@@ -40,7 +40,10 @@ export function orderFinance(b: Booking): OrderFinance | undefined {
   if (!b.quote) return undefined
   const lines = Array.isArray(b.quote.lines) ? b.quote.lines : []
   const insuranceCollection = lines.filter(l => l.label === 'Thu hộ bảo hiểm bên thứ ba').reduce((total, line) => total + line.amount, 0)
-  const cogs = lines.filter(l => l.label !== 'Thu hộ bảo hiểm bên thứ ba').reduce((t, l) => t + (MARGINED.test(l.label) ? l.amount / (1 + MARGIN_RATE) : l.amount), 0)
+  const cogs = lines.filter(l => l.label !== 'Thu hộ bảo hiểm bên thứ ba').reduce((t, l) => {
+    const marginApplied = l.marginApplied ?? MARGINED.test(l.label)
+    return t + (marginApplied ? l.amount / (1 + MARGIN_RATE) : l.amount)
+  }, 0)
   const revenue = (b.quote.total ?? 0) - insuranceCollection + extras
   const cost = Math.round(cogs) + carrierExpenses
   return { ...base, revenue, insuranceCollection, cost, profit: revenue - cost, collected: paid + (b.settlement?.paid?.amount ?? 0) }

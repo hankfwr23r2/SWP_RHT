@@ -109,7 +109,7 @@ export interface MedicalReview {
   resubmittedAt?: number
 }
 
-export interface QuoteLine { label: string; detail: string; amount: number; calculation?: string }
+export interface QuoteLine { label: string; detail: string; amount: number; calculation?: string; marginApplied?: boolean }
 export interface Adjustment { label: string; amount: number } // dương: phụ phí; âm: chiết khấu
 export interface Quote {
   insuranceSnapshot?: { horseId: string; name: string; insurance?: import('./insurance').HorseInsurance }[]

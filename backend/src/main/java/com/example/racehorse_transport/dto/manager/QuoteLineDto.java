@@ -14,4 +14,5 @@ public class QuoteLineDto {
     private String detail;
     private String calculation;
     private BigDecimal amount;
+    private Boolean marginApplied;
 }

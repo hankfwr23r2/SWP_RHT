@@ -32,7 +32,7 @@ describe('doanh thu và chi phí vận hành của một đơn', () => {
   it('đơn chưa cọc thì chưa có doanh thu', () => {
     expect(orderFinance(all.find(b => !b.payment)!)).toBeUndefined()
   })
-  it('giá vốn bỏ biên 5% khỏi cước, nhân sự, nhiên liệu; các dòng còn lại tính nguyên', () => {
+  it('đơn cũ không có cờ vẫn bỏ biên 5% khỏi cước, nhân sự, nhiên liệu', () => {
     const b = quoted()
     const f = orderFinance(b)!
     const raw = b.quote!.lines.reduce((t, l) => t + (/^(Cước vận chuyển|Nhân sự kỹ thuật|Nhiên liệu và BOT)/.test(l.label) ? l.amount / (1 + MARGIN_RATE) : l.amount), 0)
@@ -40,6 +40,16 @@ describe('doanh thu và chi phí vận hành của một đơn', () => {
     expect(f.cost).toBe(Math.round(raw))
     expect(f.profit).toBe(f.revenue - f.cost)
     expect(f.profit).toBeGreaterThan(0)
+  })
+  it('nhiên liệu của báo giá mới không bị bỏ Margin lần nữa khi tính giá vốn', () => {
+    const original = quoted()
+    const fuel = original.quote!.lines.find(line => line.label === 'Nhiên liệu và BOT')!
+    const lines = original.quote!.lines.map(line => line === fuel ? { ...line, marginApplied: false } : line)
+    const b = quoted({ quote: { ...original.quote!, lines } })
+    const finance = orderFinance(b)!
+    const legacyCost = orderFinance(original)!.cost
+
+    expect(finance.cost).toBe(legacyCost + Math.round(fuel.amount - fuel.amount / (1 + MARGIN_RATE)))
   })
   it('chi phí sự cố nhà xe chịu làm tăng chi phí; khoản khách chịu cộng vào doanh thu', () => {
     const base = orderFinance(quoted())!
