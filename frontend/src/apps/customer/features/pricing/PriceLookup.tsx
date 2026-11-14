@@ -53,7 +53,7 @@ export function PriceTable() {
               </tr>
             </thead>
             <tbody>
-              <tr><td className={s.colText}>{t('home.pricingTable.fuelRow')}</td><td className={s.colNum}>{formatVND(roundK(100 * FUEL_BOT_PER_KM * (1 + FUEL_BUFFER_RATE) * (1 + MARGIN_RATE)))}{t('home.pricingTable.fuelUnit')}</td></tr>
+              <tr><td className={s.colText}>{t('home.pricingTable.fuelRow')}</td><td className={s.colNum}>{formatVND(roundK(100 * FUEL_BOT_PER_KM * (1 + FUEL_BUFFER_RATE)))}{t('home.pricingTable.fuelUnit')}</td></tr>
               {!loaded
                 ? <tr><td className={s.colText} colSpan={2}>Đang tải bảng giá dịch vụ…</td></tr>
                 : !services

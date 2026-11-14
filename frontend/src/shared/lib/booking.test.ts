@@ -257,12 +257,13 @@ describe('báo giá', () => {
     expect(short.days).toBe(1)
     expect(long.days).toBe(3)
     expect(long.lines).toEqual(short.lines)
-    expect(long.lines.reduce((total, line) => total + line.amount, 0)).toBe(14_479_000)
+    expect(long.lines.reduce((total, line) => total + line.amount, 0)).toBe(14_358_000)
   })
-  it('nhiên liệu và BOT cộng dự phòng 5% và lợi nhuận 5% trên km của lộ trình', () => {
+  it('nhiên liệu và BOT cộng dự phòng 5% nhưng không cộng Margin', () => {
     const { lines, km } = quoteLines(base, [{ capacity: 2 }])
     const fuel = lines.find(l => /^Nhiên liệu/.test(l.label))!
-    expect(fuel.amount).toBe(Math.round((km * 9_000 * 1.05 * 1.05) / 1000) * 1000)
+    expect(fuel.amount).toBe(Math.round((km * 9_000 * 1.05) / 1000) * 1000)
+    expect(fuel.marginApplied).toBe(false)
   })
   it('đơn nội địa không thu phí thủ tục, quốc tế thu 300.000', () => {
     const fee = (q: Parameters<typeof quoteLines>[0]) => quoteLines(q, [{ capacity: 2 }]).lines.find(l => /thủ tục/i.test(l.label))!.amount

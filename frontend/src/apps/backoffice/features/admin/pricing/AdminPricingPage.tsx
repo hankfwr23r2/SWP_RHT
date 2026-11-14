@@ -102,7 +102,7 @@ const PARAMETER_DEFS: ParameterDef[] = [
     name: 'Biên lợi nhuận gộp (Margin)',
     group: 'OPERATIONS',
     unit: '%',
-    desc: 'Tỷ lệ biên lợi nhuận được gộp đều vào toàn bộ đơn giá báo giá',
+    desc: 'Tỷ lệ biên lợi nhuận được gộp',
     defaultValue: '0.05',
     isPercent: true,
   },
@@ -358,7 +358,7 @@ export default function AdminPricingPage() {
     }
 
     const truckCostLine = Math.round((tieredTruckCost * classFactor * m) / 1000) * 1000
-    const fuelBotLine = Math.round((simKm * 9000 * 1.05 * m) / 1000) * 1000
+    const fuelBotLine = Math.round((simKm * 9000 * 1.05) / 1000) * 1000
 
     const stallCost = simStallType === 'single' ? 1500000 : 0
     const feedCost = simFeed === 'sport' ? 500000 : simFeed === 'advanced' ? 300000 : 0
@@ -445,12 +445,11 @@ export default function AdminPricingPage() {
           <h3>
             <i className="fa-solid fa-network-wired" /> Công Thức Tính Tổng Báo Giá Vận Chuyển
           </h3>
-          <span className={s.formulaBadge}>Single Source of Truth</span>
         </div>
         <div className={s.formulaFlow}>
           <div className={s.formulaNode}>
             <span className={s.formulaNodeLabel}>1. Cước Quãng Đường</span>
-            <span className={s.formulaNodeDesc}>[Mở chuyến + Bậc km] × Hệ số xe</span>
+            <span className={s.formulaNodeDesc}>[Mở chuyến + Bậc km] × Hệ số xe x (1+Margin)</span>
           </div>
           <span className={s.formulaOp}>+</span>
           <div className={s.formulaNode}>
@@ -465,12 +464,12 @@ export default function AdminPricingPage() {
           <span className={s.formulaOp}>+</span>
           <div className={s.formulaNode}>
             <span className={s.formulaNodeLabel}>4. Bảo Hiểm & Hải Quan</span>
-            <span className={s.formulaNodeDesc}>Giá trị giống × Tỷ lệ + Hồ sơ</span>
+            <span className={s.formulaNodeDesc}>Tiền bảo hiểm và phí thủ tục kiểm dịch & hải quan (nếu có)</span>
           </div>
           <span className={s.formulaEqual}>=</span>
           <div className={s.formulaTotalNode}>
-            <span className={s.formulaNodeLabel}>Tổng Báo Giá Đơn Hàng</span>
-            <span className={s.formulaNodeDesc}>Cộng dồn × (1 + Margin)</span>
+            <span className={s.formulaNodeLabel}>Tổng Tiền</span>
+            <span className={s.formulaNodeDesc}>Tiền cộng dồn</span>
           </div>
         </div>
       </div>
