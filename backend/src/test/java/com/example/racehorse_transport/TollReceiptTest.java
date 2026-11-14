@@ -198,7 +198,7 @@ class TollReceiptTest {
 
         assertThat(submit.statusCode()).as(submit.body()).isEqualTo(200);
         Booking saved = bookings.findById(booking.getId()).orElseThrow();
-        assertThat(saved.getStatus()).isEqualTo("settlement_issued");
+        assertThat(saved.getStatus()).isEqualTo("expenses_submitted");
         assertThat(json.readTree(saved.getDetailsJson()).path("settlement").path("total").asLong()).isZero();
     }
 

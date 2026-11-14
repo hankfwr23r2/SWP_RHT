@@ -54,7 +54,7 @@ public class SettlementController {
     }
 
     /**
-     * 2. API Quản lý (Manager) đối soát chứng từ và phát hành Bảng quyết toán phát sinh (Flow 6, bước 3)
+     * 2. API Manager duyệt chứng từ nội bộ và hoàn tất đơn
      * POST /api/v1/settlements/{id}/issue
      */
     @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
@@ -66,38 +66,19 @@ public class SettlementController {
 
         String username = extractUsername(authHeader);
         SettlementResponse response = settlementService.issueSettlement(id, request, username);
-        return ResponseEntity.ok(ApiResponse.success(response, "Phát hành Bảng quyết toán phát sinh thành công (hiệu lực 24 giờ)"));
+        return ResponseEntity.ok(ApiResponse.success(response, "Đã duyệt chi phí nội bộ và hoàn tất đơn"));
     }
 
     /**
-     * 3. API Khách hàng thanh toán phát sinh (nếu có) + đánh giá 1-5 sao -> Hoàn tất đóng đơn (Flow 6, bước 4 & 5)
-     * POST /api/v1/settlements/{id}/pay-and-complete
-     */
-    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
-    @PostMapping("/{id}/pay-and-complete")
-    public ResponseEntity<ApiResponse<BookingResponse>> payAndComplete(
-            @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
-            @PathVariable("id") String id,
-            @Valid @RequestBody PaySettlementRequest request) {
-
-        String username = extractUsername(authHeader);
-        if (username == null) {
-            throw new AccessDeniedException("Yêu cầu xác thực tài khoản khách hàng để thanh toán quyết toán");
-        }
-        BookingResponse response = settlementService.payAndComplete(id, request, username);
-        return ResponseEntity.ok(ApiResponse.success(response, "Đã thanh toán quyết toán và đánh giá thành công! Đơn hàng đã đóng hoàn tất."));
-    }
-
-    /**
-     * 4. API Xem chi tiết Bảng quyết toán của một đơn hàng
+     * 4. API Xem chi tiết đối soát chi phí nội bộ
      * GET /api/v1/settlements/{id}
      */
-    @PreAuthorize("hasAnyRole('CUSTOMER', 'COORDINATOR', 'MANAGER', 'DRIVER', 'ESCORT', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER', 'DRIVER', 'ESCORT', 'ADMIN')")
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<SettlementResponse>> getSettlementDetail(
             @PathVariable("id") String id) {
 
         SettlementResponse response = settlementService.getSettlementDetail(id);
-        return ResponseEntity.ok(ApiResponse.success(response, "Lấy thông tin Bảng quyết toán thành công"));
+        return ResponseEntity.ok(ApiResponse.success(response, "Lấy thông tin đối soát nội bộ thành công"));
     }
 }

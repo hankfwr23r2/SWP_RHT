@@ -51,7 +51,7 @@ describe('doanh thu và chi phí vận hành của một đơn', () => {
 
     expect(finance.cost).toBe(legacyCost + Math.round(fuel.amount - fuel.amount / (1 + MARGIN_RATE)))
   })
-  it('chi phí sự cố nhà xe chịu làm tăng chi phí; khoản khách chịu cộng vào doanh thu', () => {
+  it('mọi thực chi sự cố trừ vào doanh thu công ty, không trừ lại trong giá vốn', () => {
     const base = orderFinance(quoted())!
     const withInc = orderFinance(quoted({
       incidents: [{ id: 'I', tripId: 'T', kind: 'vehicle_breakdown', reportedBy: 'x', reportedAt: 1, location: { lat: 1, lng: 1 }, photo: 'a', note: '', status: 'resolved', expenses: [
@@ -60,8 +60,11 @@ describe('doanh thu và chi phí vận hành của một đơn', () => {
       ] }],
       settlement: { items: [], total: 500_000, issuedAt: 1, dueAt: 2, by: 'x' },
     }))!
-    expect(withInc.cost - base.cost).toBe(800_000)
-    expect(withInc.revenue - base.revenue).toBe(500_000)
+    expect(withInc.cost).toBe(base.cost)
+    expect(withInc.incidentCost).toBe(1_300_000)
+    expect(withInc.grossRevenue).toBe(base.grossRevenue)
+    expect(withInc.profit).toBe(base.profit - 1_300_000)
+    expect(withInc.revenue - base.revenue).toBe(-1_300_000)
   })
 })
 

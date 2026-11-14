@@ -23,7 +23,7 @@ import { useNow } from '@shared/ui/useNow'
 
 const TripTrackMap = lazy(() => import('@shared/ui/TripTrackMap').then(m => ({ default: m.TripTrackMap })))
 import { HorseFormModal } from '../horses/HorseFormModal'
-import { IncidentsCard, SettlementCard } from './SettlementCard'
+import { IncidentsCard, RatingCard } from './TripFeedback'
 import { ClearanceProgressCard } from './ClearanceProgressCard'
 import { ScheduleChangeCard } from './ScheduleChangeCard'
 import { OrderFacts } from './OrderFacts.tsx'
@@ -188,7 +188,6 @@ function BalanceCard({ b, showAction = true }: { b: CustomerBookingView; showAct
 function IncidentPolicy() {
   return (
     <div className="card">
-      <p style={{ margin: 0 }}><i className="fa-solid fa-shield-halved text-orange" /> <PolicyLink doc="incident_cost">Ai chịu chi phí khi có sự cố? Xem chính sách</PolicyLink></p>
     </div>
   )
 }
@@ -280,11 +279,9 @@ export default function OrderDetailPage() {
     ...(b.payment ? [{ time: b.payment.paidAt, text: 'Đặt cọc' }] : []),
     ...(b.clearance?.doneAt ? [{ time: b.clearance.doneAt, text: 'Hoàn tất giấy kiểm dịch và hải quan' }] : []),
     ...(b.balance ? [{ time: b.balance.paidAt, text: 'Thanh toán phần còn lại' }] : []),
-    ...(b.settlement ? [{ time: b.settlement.issuedAt, text: 'Phát hành bảng quyết toán' }] : []),
-    ...(b.settlement?.paid ? [{ time: b.settlement.paid.paidAt, text: 'Hoàn tất quyết toán' }] : []),
   ].sort((x, y) => x.time - y.time)
   const route = `${placeName(b.origin.name)} → ${placeName(b.dest.name)}`
-  const payOpen = b.status === 'settlement_issued' || b.status === 'payment_overdue'
+  const feedbackOpen = b.status === 'completed'
   const canPayBalance = b.canPayBalance === true
   const needResubmit = b.status === 'under_review' && b.medical?.status === 'resubmit'
   const journeyIncidents: JourneyTimelineIncident[] = (b.incidents ?? []).map(incident => ({
@@ -330,13 +327,13 @@ export default function OrderDetailPage() {
               {next.cta && <a href="#viec-cua-ban" className="btn btn-primary" onClick={e => { e.preventDefault(); document.getElementById('viec-cua-ban')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}>{next.cta} <i className="fa-solid fa-arrow-down" /></a>}
             </div>
           </div>
-          {(needResubmit || b.status === 'schedule_change_required' || b.status === 'awaiting_payment' || canPayBalance || payOpen) && (
+          {(needResubmit || b.status === 'schedule_change_required' || b.status === 'awaiting_payment' || canPayBalance || feedbackOpen) && (
             <div id="viec-cua-ban" className={s.main}>
               {b.status === 'schedule_change_required' && <ScheduleChangeCard b={b} onDone={reloadAll} />}
               {needResubmit && <Resubmit b={b} owner={owner} onDone={reloadAll} />}
               {b.status === 'awaiting_payment' && b.quote && <PayCard b={b} owner={owner} onDone={reloadAll} />}
               {canPayBalance && <BalanceCard b={b} />}
-              {payOpen && <SettlementCard b={b} owner={owner} onDone={reloadAll} />}
+              {feedbackOpen && <RatingCard b={b} owner={owner} onDone={reloadAll} />}
             </div>
           )}
 
@@ -409,7 +406,7 @@ export default function OrderDetailPage() {
           {tab === 'pay' && (
             <>
               {POST_PAYMENT.includes(b.status) && <BalanceCard b={b} showAction={false} />}
-              {!payOpen && <SettlementCard b={b} owner={owner} onDone={reloadAll} />}
+
               {b.quote && (
                 <div className="card">
                   <div className="card-header"><h3><i className="fa-solid fa-file-invoice-dollar" /> Báo giá</h3></div>

@@ -660,12 +660,12 @@ describe('trạng thái đơn khi có sự cố (Flow 5)', () => {
 })
 
 describe('chi phí sự cố và quyết toán (PRD 11.5, Flow 6)', () => {
-  it('bên chịu mặc định: ngựa thì khách, vận chuyển thì nhà xe, tắc đường thì nhà xe chịu toàn bộ', () => {
-    expect(defaultPayer('horse_health', 'vet_fee')).toBe('customer')
-    expect(defaultPayer('horse_health', 'medicine')).toBe('customer')
+  it('công ty chịu mọi loại chi phí sự cố', () => {
+    expect(defaultPayer('horse_health', 'vet_fee')).toBe('carrier')
+    expect(defaultPayer('horse_health', 'medicine')).toBe('carrier')
     expect(defaultPayer('vehicle_breakdown', 'rescue')).toBe('carrier')
     expect(defaultPayer('vehicle_breakdown', 'repair')).toBe('carrier')
-    expect(defaultPayer('horse_health', 'holding_stable')).toBe('customer')
+    expect(defaultPayer('horse_health', 'holding_stable')).toBe('carrier')
     expect(defaultPayer('traffic_jam', 'holding_stable')).toBe('carrier')
     expect(defaultPayer('traffic_jam', 'medicine')).toBe('carrier') // tắc đường là việc vận chuyển: nhà xe chịu toàn bộ (PRD 11.5)
     expect(defaultPayer('vehicle_breakdown', 'other')).toBe('carrier')
@@ -676,11 +676,11 @@ describe('chi phí sự cố và quyết toán (PRD 11.5, Flow 6)', () => {
     expect(incidentActionsFor('traffic_jam')).toEqual(['reroute'])
     expect(needsFitCheck('horse_health') && needsFitCheck('vehicle_breakdown') && !needsFitCheck('traffic_jam')).toBe(true) // ngựa tới trạm nghỉ thì phải xác nhận đủ sức; tắc đường thì không
   })
-  it('bảng quyết toán chỉ gồm khoản khách chịu, tổng đúng; không có khoản nào thì 0 đồng', () => {
+  it('đối soát nội bộ gồm toàn bộ chi phí sự cố', () => {
     const b = { incidents: [inc('resolved', { expenses: [exp(1_000_000, 'customer'), exp(500_000, 'carrier'), exp(300_000, 'customer')] })] }
     const sheet = settlementOf(b)
-    expect(sheet.items.map(i => i.amount)).toEqual([1_000_000, 300_000])
-    expect(sheet.total).toBe(1_300_000)
+    expect(sheet.items.map(i => i.amount)).toEqual([1_000_000, 500_000, 300_000])
+    expect(sheet.total).toBe(1_800_000)
     expect(settlementOf({ incidents: [] }).total).toBe(0)
     expect(settlementOf({}).items).toEqual([])
   })
@@ -726,7 +726,7 @@ describe('orderTabOf', () => {
     expect(o('ready_for_pickup')).toBe('pay')
     expect(o('ready_for_pickup', { balance: {} })).toBe('prepare')
     expect(o('en_route_to_pickup', { balance: {} })).toBe('moving')
-    expect(o('settlement_issued', { settlement: { total: 500000 } })).toBe('pay')
+    expect(o('settlement_issued', { settlement: { total: 500000 } })).toBe('settle')
     expect(o('settlement_issued', { settlement: { total: 0 } })).toBe('settle')
     expect(o('rejected')).toBe('closed')
   })

@@ -66,6 +66,9 @@ public class VnpayServiceImpl implements VnpayService {
     @Override
     @Transactional
     public VnpayCreateResponse createPaymentUrl(VnpayCreateRequest request, String username, String clientIp) {
+        if ("SETTLEMENT".equalsIgnoreCase(request.getPaymentType())) {
+            throw new IllegalArgumentException("Chi phí sự cố do công ty chịu; khách hàng không thanh toán quyết toán.");
+        }
         if (!props.isConfigured()) {
             List<String> missingConfig = new ArrayList<>();
             if (props.getTmnCode() == null || props.getTmnCode().isBlank()) {
@@ -130,14 +133,6 @@ public class VnpayServiceImpl implements VnpayService {
                         : quotation.getTotalAmount().multiply(new BigDecimal("0.7"));
                 orderInfo = "Thanh toan con lai don BK-" + booking.getId();
                 prefix = "BAL";
-            }
-            case "SETTLEMENT" -> {
-                if (hasCompleted(payments, "SETTLEMENT")) {
-                    throw new IllegalStateException("Đơn hàng này đã thanh toán quyết toán!");
-                }
-                amount = settlementService.holdForVnpay(booking, request.getRating());
-                orderInfo = "Thanh toan quyet toan don BK-" + booking.getId();
-                prefix = "SET";
             }
             default -> throw new IllegalArgumentException("Loại thanh toán không hợp lệ: " + request.getPaymentType());
         }
@@ -293,8 +288,7 @@ public class VnpayServiceImpl implements VnpayService {
         return switch (payment.getPaymentType().toUpperCase()) {
             case "DEPOSIT" -> "awaiting_payment".equalsIgnoreCase(booking.getStatus()) && !hasCompleted(payments, "DEPOSIT");
             case "BALANCE" -> !isClosed(booking) && !hasCompleted(payments, "BALANCE");
-            case "SETTLEMENT" -> ("settlement_issued".equalsIgnoreCase(booking.getStatus())
-                    || "payment_overdue".equalsIgnoreCase(booking.getStatus())) && !hasCompleted(payments, "SETTLEMENT");
+            case "SETTLEMENT" -> false; // retired customer charge; incoming money requires reconciliation
             default -> false;
         };
     }

@@ -1,12 +1,12 @@
-// Manager: đối soát chi phí sự cố, chọn bên chịu từng khoản (mặc định theo chính sách 11.5), phát hành bảng quyết toán (Flow 6, PRD mục 7.4).
+import { incidentExpenseItems } from '@shared/lib/incidentCosts'
+// Manager approves internal company expenses and closes the order.
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
-import { EXPENSE_CATEGORY, INCIDENT_KIND, type Payer } from '@shared/config/booking-rules'
+import { EXPENSE_CATEGORY, INCIDENT_KIND } from '@shared/config/booking-rules'
 import { formatDateTime, formatVND } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
 import type { Booking } from '@shared/types/booking'
-import { FormSelect } from '@shared/ui/FormSelect'
 import { ImageThumb } from '@shared/ui/ImageThumb'
 import { Modal } from '@shared/ui/Modal'
 import { ReadMore } from '@shared/ui/ReadMore'
@@ -20,29 +20,27 @@ export function AuditModal({ b, onClose, onDone }: { b: Booking; onClose: () => 
   const { t } = useTranslation()
   const toast = useToast()
   const { session } = useAuth()
-  const expenses = (b.incidents ?? []).flatMap(i => i.expenses.map(e => ({ ...e, kind: i.kind })))
-  const [payers, setPayers] = useState<Record<string, Payer>>(() => Object.fromEntries(expenses.map(e => [e.id, e.payer])))
+  const expenses = incidentExpenseItems(b)
   const [busy, setBusy] = useState(false)
-  const customerTotal = expenses.filter(e => payers[e.id] === 'customer').reduce((n, e) => n + e.amount, 0)
-  const carrierTotal = expenses.filter(e => payers[e.id] === 'carrier').reduce((n, e) => n + e.amount, 0)
-  // Phí cầu đường tài xế ghi theo hóa đơn: nhà xe chịu, chỉ để đối chiếu, không vào bảng quyết toán của khách
+  const carrierTotal = expenses.reduce((n, e) => n + e.amount, 0)
+  // Toll receipts are internal operating records and are shown for reconciliation.
   const tolls = (b.trips ?? []).flatMap(trip => trip.tolls ?? [])
   const tollTotal = tolls.reduce((n, x) => n + x.amount, 0)
   const issue = async () => {
     setBusy(true)
-    try { await bookingsApi.issueSettlement(b.id, session!.name, payers); toast(t('auditModal.issuedSuccess', 'Đã phát hành bảng quyết toán {{id}}', { id: b.id })); onDone() } catch (e) { toast(e instanceof Error ? e.message : t('auditModal.issueFailed', 'Không phát hành được'), 'error'); setBusy(false) }
+    try { await bookingsApi.issueSettlement(b.id, session!.name); toast(t('auditModal.issuedSuccess', 'Đã duyệt chi phí nội bộ {{id}}', { id: b.id })); onDone() } catch (e) { toast(e instanceof Error ? e.message : t('auditModal.issueFailed', 'Không phát hành được'), 'error'); setBusy(false) }
   }
   return (
     <Modal wide onClose={onClose} title={t('auditModal.title', 'Đối soát chi phí {{id}}', { id: b.id })} subtitle={`${b.customer} · ${route(b)}`}
-      footer={<><button className="btn btn-ghost" onClick={onClose}>{t('common.close', 'Đóng')}</button><button className="btn btn-primary" disabled={busy} onClick={issue}><i className="fa-solid fa-file-invoice-dollar" /> {t('auditModal.issueSettlement', 'Phát hành bảng quyết toán')}</button></>}>
+      footer={<><button className="btn btn-ghost" onClick={onClose}>{t('common.close', 'Đóng')}</button><button className="btn btn-primary" disabled={busy} onClick={issue}><i className="fa-solid fa-file-invoice-dollar" /> {t('auditModal.issueSettlement', 'Duyệt chi phí và hoàn tất đơn')}</button></>}>
       <div className="table-wrap"><table className="data-table">
         <thead><tr><th>{t('auditModal.colDoc', 'Chứng từ')}</th><th>{t('auditModal.colItem', 'Khoản chi')}</th><th>{t('auditModal.colAmount', 'Số tiền')}</th><th>{t('auditModal.colPayer', 'Bên chịu')}</th></tr></thead>
         <tbody>{expenses.map(e => (
           <tr key={e.id}>
             <td><ImageThumb name={e.photo} size={40} /></td>
-            <td>{EXPENSE_CATEGORY[e.category]}: {e.label}<div className={s.sub}>{INCIDENT_KIND[e.kind].label}</div></td>
+            <td>{EXPENSE_CATEGORY[e.category]}: {e.label}<div className={s.sub}>{e.kind ? INCIDENT_KIND[e.kind].label : 'Chứng từ lưu trữ'}</div></td>
             <td className="nowrap">{formatVND(e.amount)}</td>
-            <td><FormSelect aria-label={`Bên chịu ${e.label}`} className="form-control" value={payers[e.id]} onChange={ev => setPayers({ ...payers, [e.id]: ev.target.value as Payer })}><option value="customer">{t('auditModal.payerCustomer', 'Khách chịu')}</option><option value="carrier">{t('auditModal.payerCarrier', 'Nhà xe chịu')}</option></FormSelect></td>
+            <td>Công ty chịu</td>
           </tr>
         ))}</tbody>
       </table></div>
@@ -53,8 +51,8 @@ export function AuditModal({ b, onClose, onDone }: { b: Booking; onClose: () => 
             <tbody>{tolls.map(x => <tr key={x.id}><td><ImageThumb name={x.photo} size={40} /></td><td>{x.station || 'Trạm thu phí'}<div className={s.sub}>{formatDateTime(x.at)} · {x.by}</div></td><td className="nowrap">{formatVND(x.amount)}</td></tr>)}</tbody>
           </table></div>
         : <p className={s.sub}>Tài xế chưa ghi hóa đơn phí cầu đường nào.</p>}
-      <p style={{ marginTop: 14 }}>{t('auditModal.summaryCustomer', 'Khách phải trả thêm:')} <b>{formatVND(customerTotal)}</b> · {t('auditModal.summaryCarrier', 'Nhà xe chịu:')} <b>{formatVND(carrierTotal)}</b>{tolls.length ? <> · Phí cầu đường: <b>{formatVND(tollTotal)}</b></> : null}</p>
-      <ReadMore className={s.hint} text={t('auditModal.policyNote', 'Chính sách: chi phí về ngựa (thú y, thuốc, chuồng đệm) khách chịu. Chi phí về vận chuyển (cứu hộ, sửa xe) nhà xe chịu. Tắc cửa khẩu nhà xe chịu. Giá chuyến đã cố định nên nhiên liệu và cầu đường không tính thêm. Bảng quyết toán chỉ gồm khoản khách chịu, khách có 24 giờ để thanh toán.')} />
+      <p style={{ marginTop: 14 }}>Chi phí sự cố công ty chịu: <b>{formatVND(carrierTotal)}</b>{tolls.length ? <> · Phí cầu đường: <b>{formatVND(tollTotal)}</b></> : null}</p>
+      <ReadMore className={s.hint} text="Toàn bộ chi phí sự cố, lưu chuồng và chờ bàn giao do công ty chịu. Duyệt chi phí sẽ hoàn tất đơn; xe và kíp xe cần xác nhận về trụ sở trước khi nhận chuyến mới." />
     </Modal>
   )
 }

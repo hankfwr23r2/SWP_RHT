@@ -2,5 +2,6 @@
   <rect width="800" height="1000" fill="#ffffff"/>
   <rect x="24" y="24" width="752" height="952" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-dasharray="10 8"/>
   <text x="400" y="440" text-anchor="middle" font-family="sans-serif" font-size="34" font-weight="700" fill="#0f172a">Chính sách chi phí khi có sự cố</text>
-  <text x="400" y="490" text-anchor="middle" font-family="sans-serif" font-size="22" fill="#64748b">Tài liệu mẫu. Thay tệp này bằng ảnh hoặc PDF thật.</text>
+  <text x="400" y="490" text-anchor="middle" font-family="sans-serif" font-size="22" fill="#64748b">Giá vận chuyển thực hiện theo báo giá đã chốt.</text>
+  <text x="400" y="540" text-anchor="middle" font-family="sans-serif" font-size="21" fill="#64748b">Không thu thêm phí sự cố hoặc phí chờ bàn giao.</text>
 </svg>

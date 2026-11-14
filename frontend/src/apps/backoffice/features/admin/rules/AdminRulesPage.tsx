@@ -20,7 +20,6 @@ const INPUTS: Record<string, { min: number; max: number; step: number }> = {
   VITAL_CHECK_INTERVAL_HOURS: { min: 1, max: 24, step: 1 },
   DEPOSIT_RATE: { min: 0.01, max: 0.99, step: 0.01 },
   QUOTE_VALID_HOURS: { min: 1, max: 168, step: 1 },
-  DEMURRAGE_PER_HOUR: { min: 0, max: 100000000, step: 1000 },
   MIN_LEAD_DAYS: { min: 0, max: 365, step: 1 },
   MAX_DRIVE_HOURS_PER_DAY: { min: 1, max: 24, step: 1 },
   OVERNIGHT_REST_HOURS: { min: 1, max: 24, step: 1 },

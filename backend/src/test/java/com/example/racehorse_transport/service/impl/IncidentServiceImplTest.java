@@ -280,14 +280,14 @@ class IncidentServiceImplTest {
     }
 
     @Test
-    void horseHealthExpensesRespectManagerApprovedPayer() {
+    void horseHealthExpensesAreEntirelyCompanyCosts() {
         Incident incident = healthIncident(true); incident.setCostBearer("COMPANY");
         var expense = new com.example.racehorse_transport.dto.incident.IncidentExpenseRequest();
         expense.setCategory("vet_fee"); expense.setLabel("Khám tại trạm"); expense.setPhoto("invoice.jpg");
-        expense.setAmount(new BigDecimal("100000")); expense.setPayer("customer");
+        expense.setAmount(new BigDecimal("100000")); expense.setPayer("carrier");
         IncidentResponse result = service.addExpense(7, expense, "admin", "ADMIN");
         assertThat(result.getExpenses().get(0).get("payer")).isEqualTo("carrier");
-        assertThat(result.getActualCost()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(result.getActualCost()).isEqualByComparingTo("100000");
     }
 
     @Test
@@ -295,7 +295,7 @@ class IncidentServiceImplTest {
         Incident incident = healthIncident(true);
         var expense = new com.example.racehorse_transport.dto.incident.IncidentExpenseRequest();
         expense.setCategory("vet_fee"); expense.setLabel("Khám tại trạm"); expense.setPhoto("invoice.jpg");
-        expense.setAmount(new BigDecimal("10000000000000000")); expense.setPayer("customer");
+        expense.setAmount(new BigDecimal("10000000000000000")); expense.setPayer("carrier");
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.addExpense(7, expense, "admin", "ADMIN"))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -317,7 +317,7 @@ class IncidentServiceImplTest {
 
         assertThat(response.getExpenses()).hasSize(1);
         assertThat(response.getExpenses().get(0).get("id")).isEqualTo("expense-2");
-        assertThat(incident.getActualCost()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(incident.getActualCost()).isEqualByComparingTo("200000");
         assertThat(incident.getCostBearer()).isEqualTo("COMPANY");
     }
 

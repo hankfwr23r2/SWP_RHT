@@ -118,6 +118,8 @@ class DeliveryTimeoutTest {
         assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus()).isEqualTo("handover_timeout");
         Incident incident = incidents.findByBookingID_Id(booking.getId()).get(0);
         assertThat(incident.getIncidentType()).isEqualTo("HANDOVER_TIMEOUT");
+        assertThat(incident.getCostBearer()).isEqualTo("COMPANY");
+        assertThat(incident.getActualCost()).isNull();
         assertThat(incident.getStatus()).isEqualTo("active");
         assertThat(incident.getTripId()).isEqualTo("TRP-1");
         assertThat(incident.getLocationLat()).isEqualTo(11.56);

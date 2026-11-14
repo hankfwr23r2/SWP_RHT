@@ -1,7 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { DEPOSIT_RATE } from '../config/booking-rules'
 import { formatDate, formatDateTime, formatVND, formatVNDWords } from '../lib/format'
-import { PolicyLink } from './PolicyLink'
 import type { Adjustment, Party, QuoteLine } from '../types/booking'
 import s from './QuoteSheet.module.css'
 
@@ -370,7 +369,7 @@ export function QuoteSheet({
       {/* Cam kết chính sách & ghi chú */}
       <div className={s.policyFooter}>
         <div>
-          <i className="fa-solid fa-shield-halved" /> <b>Cam kết giá trọn gói không phụ thu:</b> Mọi chi phí nhiên liệu, phí cầu đường cao tốc và công tác phí kíp xe đã được bao trọn trong báo giá. Phát sinh chỉ tính khi có dịch vụ bổ sung theo yêu cầu hoặc xử lý sự cố an sinh (xem <PolicyLink doc="incident_cost">chính sách chi phí sự cố</PolicyLink>).
+          <i className="fa-solid fa-shield-halved" /> <b>Cam kết giá trọn gói không phụ thu:</b> Mọi chi phí nhiên liệu, phí cầu đường cao tốc và công tác phí kíp xe đã được bao trọn trong báo giá. Giá vận chuyển thực hiện theo báo giá đã chốt.
         </div>
         <div>
           <i className="fa-solid fa-circle-info" /> Chứng từ này là Phiếu báo giá chính thức kiêm dự thảo hóa đơn dịch vụ vận chuyển điện tử theo chuẩn quy định hiện hành.

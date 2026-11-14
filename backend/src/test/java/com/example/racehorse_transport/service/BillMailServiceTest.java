@@ -121,7 +121,7 @@ class BillMailServiceTest {
 
         assertThat(sender.sent.get(0).subject()).isEqualTo("Payment received: Deposit (30%) · order BK-033");
         assertThat(sender.sent.get(0).html()).contains("Waybill: VD-2026-0033").contains("VNPAY transaction");
-        assertThat(sender.sent.get(1).html()).contains("no additional charges");
+        assertThat(sender.sent).hasSize(1);
     }
 
     @Test
@@ -135,24 +135,21 @@ class BillMailServiceTest {
     }
 
     @Test
-    void settlementMailListsTheCustomerItemsTotalAndDueDate() {
+    void internalCostsAreNeverEmailedToCustomers() {
         ExpenseItemDto vet = ExpenseItemDto.builder().description("Thú y Mộc Bài hạ sốt").amount(new BigDecimal("600000")).payer("customer").build();
         ExpenseItemDto stable = ExpenseItemDto.builder().description("Thuê chuồng tạm 1 đêm").amount(new BigDecimal("1500000")).payer("customer").build();
 
         mail.settlementIssued(booking("Customer Test", "khach@example.com"), List.of(vet, stable), new BigDecimal("2100000"),
                 Instant.parse("2026-11-07T06:43:00Z"));
 
-        Sent sent = sender.sent.get(0);
-        assertThat(sent.subject()).contains("quyết toán").contains("BK-033");
-        assertThat(sent.html()).contains("Thú y Mộc Bài hạ sốt").contains("600,000 ₫").contains("Thuê chuồng tạm 1 đêm")
-                .contains("2,100,000 ₫").contains("07/11/2026 13:43");
+        assertThat(sender.sent).isEmpty();
     }
 
     @Test
-    void zeroSettlementSaysThereIsNothingMoreToPay() {
+    void evenZeroInternalReviewDoesNotCreateACustomerSettlementMail() {
         mail.settlementIssued(booking("Customer Test", "khach@example.com"), List.of(), BigDecimal.ZERO, Instant.parse("2026-11-07T06:43:00Z"));
 
-        assertThat(sender.sent.get(0).html()).contains("không phát sinh khoản nào phải trả thêm");
+        assertThat(sender.sent).isEmpty();
     }
 
     @Test

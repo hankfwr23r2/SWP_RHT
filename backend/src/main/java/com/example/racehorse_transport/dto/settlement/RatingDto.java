@@ -12,8 +12,10 @@ import lombok.*;
 public class RatingDto {
     @Min(1)
     @Max(5)
+    @jakarta.validation.constraints.NotNull
     private Integer stars; // Đánh giá chung toàn chuyến 1 đến 5 sao
 
+    @jakarta.validation.constraints.Size(max = 2000)
     private String comment; // Nhận xét, góp ý của khách hàng
     private Long submittedAt; // Thời gian gửi đánh giá
 

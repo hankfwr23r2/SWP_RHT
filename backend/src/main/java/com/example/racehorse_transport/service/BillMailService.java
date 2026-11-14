@@ -108,35 +108,10 @@ public class BillMailService {
                         + code(booking) + "</b>.</p>" + table(rows), text);
     }
 
+    /** Retired: internal company expenses must never be mailed to customers. */
+    @Deprecated
     public void settlementIssued(Booking booking, List<ExpenseItemDto> customerItems, BigDecimal total, Instant dueAt) {
-        boolean en = english(booking);
-        boolean nothingToPay = total == null || total.signum() == 0;
-        StringBuilder rows = new StringBuilder();
-        StringBuilder text = new StringBuilder();
-        for (ExpenseItemDto item : customerItems == null ? List.<ExpenseItemDto>of() : customerItems) {
-            String label = item.getDescription() != null ? item.getDescription() : item.getLabel();
-            rows.append(row(label, money(item.getAmount(), en)));
-            text.append("- ").append(label).append(": ").append(money(item.getAmount(), en)).append('\n');
-        }
-        String body;
-        if (nothingToPay) {
-            String line = en ? "The trip for order " + code(booking) + " had no additional charges. Please open the order and rate the trip to close it."
-                    : "Chuyến đi của đơn " + code(booking) + " không phát sinh khoản nào phải trả thêm. Mời bạn vào đơn chấm điểm để đóng đơn.";
-            body = "<p>" + esc(line) + "</p>";
-            text.append(line).append('\n');
-        } else {
-            String totalLabel = en ? "Total due" : "Tổng phải trả";
-            rows.append(row("<b>" + totalLabel + "</b>", "<b>" + money(total, en) + "</b>", true));
-            body = (en ? "<p>The settlement for order <b>" + code(booking) + "</b> lists the extra costs you bear under our policy:</p>"
-                    : "<p>Bảng quyết toán đơn <b>" + code(booking) + "</b> gồm các khoản phát sinh bạn chịu theo chính sách:</p>")
-                    + table(rows.toString())
-                    + (en ? "<p>Payment due: <b>" + time(dueAt) + "</b>. Receipt photos for each item are on the order page.</p>"
-                    : "<p>Hạn thanh toán: <b>" + time(dueAt) + "</b>. Ảnh chứng từ từng khoản có trong trang đơn.</p>");
-            text.append(totalLabel).append(": ").append(money(total, en)).append(en ? "\nPayment due: " : "\nHạn thanh toán: ")
-                    .append(time(dueAt)).append('\n');
-        }
-        send(booking, en ? "Settlement for order " + code(booking) : "Bảng quyết toán đơn " + code(booking),
-                en ? "Trip settlement" : "Bảng quyết toán", body, text.toString());
+        // Kept for callers upgrading from the former customer settlement workflow.
     }
 
     // Ngôn ngữ khách chọn trên giao diện (lưu ở tài khoản); chưa chọn thì tiếng Việt

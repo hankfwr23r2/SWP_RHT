@@ -13,6 +13,7 @@ import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.service.IncidentService;
 import com.example.racehorse_transport.util.BookingDetailsJson;
 import com.example.racehorse_transport.util.PaymentAmountLimits;
+import com.example.racehorse_transport.util.IncidentCostPolicy;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -71,6 +72,7 @@ public class IncidentServiceImpl implements IncidentService {
                 .incidentType(request.getIncidentType())
                 .incidentName(request.getIncidentName())
                 .description(request.getDescription())
+                .costBearer("COMPANY")
                 .status("reported")
                 .createdAt(Instant.now())
                 .build();
@@ -118,10 +120,7 @@ public class IncidentServiceImpl implements IncidentService {
                         .contains(request.getResolutionType().toUpperCase(Locale.ROOT))) {
             throw new IllegalArgumentException("Loại phương án xử lý không hợp lệ.");
         }
-        if (request.getCostBearer() != null
-                && !Set.of("COMPANY", "CUSTOMER").contains(request.getCostBearer().toUpperCase(Locale.ROOT))) {
-            throw new IllegalArgumentException("Bên chịu chi phí không hợp lệ.");
-        }
+        IncidentCostPolicy.requireCompany(request.getCostBearer());
         if ("REROUTE".equalsIgnoreCase(request.getResolutionType())) {
             validateReroute(request.getPlan());
         }
@@ -132,9 +131,7 @@ public class IncidentServiceImpl implements IncidentService {
         incident.setPartnerService(request.getPartnerService());
         incident.setPartnerPhone(request.getPartnerPhone());
         incident.setEstimatedCost(request.getEstimatedCost());
-        incident.setCostBearer(request.getCostBearer() != null
-                ? request.getCostBearer().toUpperCase(Locale.ROOT)
-                : "COMPANY");
+        incident.setCostBearer("COMPANY");
         incident.setStatus("proposed");
         incident.setFitConfirmedAt(null);
         incident.setFitConfirmedBy(null);
@@ -188,10 +185,7 @@ public class IncidentServiceImpl implements IncidentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố ID: " + incidentId));
 
         requireStatus(incident, "proposed");
-        if (request.getCostBearer() != null
-                && !Set.of("COMPANY", "CUSTOMER").contains(request.getCostBearer().toUpperCase(Locale.ROOT))) {
-            throw new IllegalArgumentException("Bên chịu chi phí không hợp lệ.");
-        }
+        IncidentCostPolicy.requireCompany(request.getCostBearer());
         if ("REROUTE".equalsIgnoreCase(incident.getResolutionType())) {
             validateReroute(readPlan(incident.getPlanJson()));
             applyReroute(incident, actor);
@@ -206,9 +200,7 @@ public class IncidentServiceImpl implements IncidentService {
         if (request.getApprovedCost() != null) {
             incident.setEstimatedCost(request.getApprovedCost());
         }
-        if (request.getCostBearer() != null) {
-            incident.setCostBearer(request.getCostBearer().toUpperCase(Locale.ROOT));
-        }
+        incident.setCostBearer("COMPANY");
 
         if ("HORSE_HEALTH".equalsIgnoreCase(incident.getIncidentType())) {
             Map<String, Object> approvedPlan = new LinkedHashMap<>(readPlan(incident.getPlanJson()));
@@ -274,9 +266,7 @@ public class IncidentServiceImpl implements IncidentService {
                 .contains(request.getCategory().toLowerCase(Locale.ROOT))) {
             throw new IllegalArgumentException("Loại chi phí không hợp lệ.");
         }
-        if (!List.of("customer", "carrier").contains(request.getPayer().toLowerCase(Locale.ROOT))) {
-            throw new IllegalArgumentException("Bên chịu chi phí không hợp lệ.");
-        }
+        IncidentCostPolicy.requireCompany(request.getPayer());
         if (request.getAmount() != null
                 && request.getAmount().compareTo(PaymentAmountLimits.MAXIMUM_VND_AMOUNT) > 0) {
             throw new IllegalArgumentException("Số tiền chi phí vượt quá giới hạn thanh toán được hỗ trợ.");
@@ -292,24 +282,16 @@ public class IncidentServiceImpl implements IncidentService {
         expense.put("label", request.getLabel().trim());
         expense.put("photo", request.getPhoto());
         expense.put("amount", request.getAmount());
-        String payer = request.getPayer().toLowerCase(Locale.ROOT);
-        if ("HORSE_HEALTH".equalsIgnoreCase(incident.getIncidentType())) {
-            Map<String, Object> plan = readPlan(incident.getPlanJson());
-            String bearer = plan != null && plan.get("approvedCostBearer") != null
-                    ? String.valueOf(plan.get("approvedCostBearer")) : incident.getCostBearer();
-            payer = "CUSTOMER".equalsIgnoreCase(bearer) ? "customer" : "carrier";
-        }
-        expense.put("payer", payer);
+        expense.put("payer", "carrier");
         expense.put("at", Instant.now().toEpochMilli());
         expense.put("by", actor);
         expenses.add(expense);
         incident.setExpensesJson(writeJson(expenses));
-        BigDecimal customerTotal = expenses.stream()
-                .filter(item -> "customer".equalsIgnoreCase(String.valueOf(item.get("payer"))))
+        BigDecimal companyTotal = expenses.stream()
                 .map(item -> new BigDecimal(String.valueOf(item.get("amount"))))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        incident.setActualCost(customerTotal);
-        incident.setCostBearer(customerTotal.compareTo(BigDecimal.ZERO) > 0 ? "CUSTOMER" : "COMPANY");
+        incident.setActualCost(companyTotal);
+        incident.setCostBearer("COMPANY");
         Incident saved = incidentRepository.save(incident);
         Booking booking = incident.getBookingID();
         if (booking != null) {
@@ -336,12 +318,11 @@ public class IncidentServiceImpl implements IncidentService {
         expenses.remove(removed);
         incident.setExpensesJson(writeJson(expenses));
 
-        BigDecimal customerTotal = expenses.stream()
-                .filter(item -> "customer".equalsIgnoreCase(String.valueOf(item.get("payer"))))
+        BigDecimal companyTotal = expenses.stream()
                 .map(item -> new BigDecimal(String.valueOf(item.get("amount"))))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        incident.setActualCost(customerTotal);
-        incident.setCostBearer(customerTotal.compareTo(BigDecimal.ZERO) > 0 ? "CUSTOMER" : "COMPANY");
+        incident.setActualCost(companyTotal);
+        incident.setCostBearer("COMPANY");
 
         Incident saved = incidentRepository.save(incident);
         Booking booking = incident.getBookingID();
@@ -431,6 +412,7 @@ public class IncidentServiceImpl implements IncidentService {
             throw new IllegalArgumentException("Cần xác nhận ngựa đủ sức đi tiếp trước khi tiếp tục hành trình.");
         }
         if ("HORSE_HEALTH".equalsIgnoreCase(incident.getIncidentType())) finishStation(incident, actor, confirmEarlyLeave, note);
+        incident.setCostBearer("COMPANY");
         incident.setStatus("resolved");
         incident.setResolvedAt(Instant.now());
         Incident saved = incidentRepository.save(incident);
@@ -458,6 +440,7 @@ public class IncidentServiceImpl implements IncidentService {
         if (request.getActualCost() != null && request.getActualCost().compareTo(BigDecimal.ZERO) < 0) {
             throw new IllegalArgumentException("Chi phí thực tế không được âm.");
         }
+        incident.setCostBearer("COMPANY");
         incident.setStatus("resolved");
         incident.setResolvedAt(Instant.now());
         if (request.getActualCost() != null) {

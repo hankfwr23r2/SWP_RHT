@@ -209,7 +209,7 @@ export function SubmitExpensesPanel({ b, run }: { b: Booking; run: Run }) {
   }
   return (
     <Panel title="Gửi bảng kê chi phí" icon="fa-receipt" tone="warn">
-      <p>{list.length ? `Có ${list.length} khoản chi do sự cố, tổng ${formatVND(total)}, đều có ảnh chứng từ.` : 'Chuyến không có chi phí sự cố. Giá đã cố định nên không cần hóa đơn nhiên liệu.'} Bấm gửi để Quản lý đối soát và phát hành quyết toán.</p>
+      <p>{list.length ? `Có ${list.length} khoản chi do sự cố, tổng ${formatVND(total)}, đều có ảnh chứng từ.` : 'Chuyến không có chi phí sự cố. Giá đã cố định nên không cần hóa đơn nhiên liệu.'} Bấm gửi để Quản lý duyệt chi phí nội bộ và hoàn tất đơn.</p>
       <button className={`btn btn-primary ${s.big}`} disabled={sending} onClick={() => void submit()}>{sending ? 'Đang gửi…' : 'Gửi bảng kê chi phí'}</button>
     </Panel>
   )

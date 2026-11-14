@@ -187,7 +187,7 @@ class BookingServiceImplTest {
 
         when(userRepository.findByUsernameOrEmail("phuc", "phuc")).thenReturn(Optional.of(customer.getUser()));
         when(customerRepository.findById(7)).thenReturn(Optional.of(customer));
-        when(bookingRepository.findByCustomerID_IdOrderByBookingDateDesc(7)).thenReturn(List.of());
+        when(bookingRepository.findByCustomerID_IdOrderByBookingDateDesc(7)).thenReturn(List.of(Booking.builder().status("payment_overdue").detailsJson("{}").build()));
         when(horseRepository.findById(12)).thenReturn(Optional.of(horse));
         when(serviceRepository.findByServiceCodeIgnoreCase("STALL_STANDARD"))
                 .thenReturn(Optional.of(service(1, "Khoang tiêu chuẩn", 1, "1", "ACTIVE")));
@@ -461,23 +461,10 @@ class BookingServiceImplTest {
     }
 
     @Test
-    void createBooking_rejectsCustomerWithOverdueSettlement() {
-        CreateBookingRequest request = CreateBookingRequest.builder()
-                .consignor(PartyContactDto.builder().name("Sender").phone("0900").build())
-                .build();
-        Booking overdueBooking = Booking.builder().status("PAYMENT_OVERDUE").build();
-
-        when(userRepository.findByUsernameOrEmail("phuc", "phuc")).thenReturn(Optional.of(customer.getUser()));
-        when(customerRepository.findById(7)).thenReturn(Optional.of(customer));
-        when(bookingRepository.findByCustomerID_IdOrderByBookingDateDesc(7)).thenReturn(List.of(overdueBooking));
-
-        assertThatThrownBy(() -> service.createBooking("phuc", request))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("payment_overdue");
-
-        verify(bookingRepository, never()).save(any(Booking.class));
-        verify(operationalLog, never()).record(any(), any(), any(), any(), any());
-        verify(horseRepository, never()).findById(any(Integer.class));
+    void retiredSettlementDeadlinesNeverBlockCustomers() {
+        assertThat(service.markOverdueSettlements()).isZero();
+        verify(bookingRepository, never()).findByStatusOrderByBookingDateAsc("settlement_issued");
+        verify(bookingRepository, never()).save(any());
     }
 
     @Test

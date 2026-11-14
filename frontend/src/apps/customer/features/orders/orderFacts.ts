@@ -58,7 +58,7 @@ export function orderFacts(b: CustomerBookingView, team: TripTeam[]): FactGroup[
     pickupAt ? { label: 'Giờ đón dự kiến', value: formatDateTime(pickupAt) } : { label: 'Ngày khởi hành', value: formatDate(b.departAt) },
     ...(arriveAt ? [{ label: 'Dự kiến đến nơi', value: formatDateTime(arriveAt) }] : []),
     ...(b.status === 'awaiting_payment' && b.quote ? [{ label: 'Hạn đặt cọc', value: formatDateTime(b.quote.expiresAt) }] : []),
-    ...(b.settlement && !b.settlement.paid ? [{ label: 'Hạn quyết toán', value: formatDateTime(b.settlement.dueAt) }] : []),
+
   ]
 
   const resubmit = b.medical?.status === 'resubmit' ? b.medical.resubmit : undefined
