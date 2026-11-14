@@ -128,7 +128,7 @@ public class HorseHealthLogServiceImpl implements HorseHealthLogService {
                 || healthStatus.toLowerCase().contains("nguy kịch")
                 || healthStatus.toLowerCase().contains("sốt cao"))) {
             Log emergencyLog = new Log();
-            emergencyLog.setId((int) (logRepository.count() + 1));
+
             emergencyLog.setBookingID(booking);
             emergencyLog.setStaffID(escort);
             emergencyLog.setLogType("EMERGENCY_HEALTH_ALERT");

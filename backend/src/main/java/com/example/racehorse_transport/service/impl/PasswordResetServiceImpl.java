@@ -1,9 +1,11 @@
 package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.ResetPasswordWithOtpRequest;
-import com.example.racehorse_transport.entity.PasswordResetOtp;
+import com.example.racehorse_transport.entity.EmailOtp;
+import com.example.racehorse_transport.entity.OtpPurpose;
+import com.example.racehorse_transport.service.OtpStorageLock;
 import com.example.racehorse_transport.entity.User;
-import com.example.racehorse_transport.repository.PasswordResetOtpRepository;
+import com.example.racehorse_transport.repository.EmailOtpRepository;
 import com.example.racehorse_transport.repository.UserRepository;
 import com.example.racehorse_transport.service.OtpMailSender;
 import com.example.racehorse_transport.service.PasswordResetService;
@@ -28,7 +30,8 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private static final int MAX_ATTEMPTS = 5;
 
     private final UserRepository userRepository;
-    private final PasswordResetOtpRepository otpRepository;
+    private final EmailOtpRepository otpRepository;
+    private final OtpStorageLock otpLock;
     private final PasswordEncoder passwordEncoder;
     private final OtpMailSender mailSender;
     private final SecureRandom secureRandom = new SecureRandom();
@@ -38,11 +41,12 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     @Transactional
     public void requestOtp(String email) {
         String normalizedEmail = normalize(email);
+        otpLock.acquire(normalizedEmail);
         var user = userRepository.findByEmailIgnoreCase(normalizedEmail);
         if (user.isEmpty()) return;
 
         Instant now = Instant.now();
-        PasswordResetOtp otp = otpRepository.findByEmailIgnoreCase(normalizedEmail).orElseGet(PasswordResetOtp::new);
+        EmailOtp otp = otpRepository.findByEmailAndPurpose(normalizedEmail, OtpPurpose.RESET_PASSWORD).orElseGet(EmailOtp::new);
         if (otp.getLastSentAt() != null && otp.getLastSentAt().isAfter(now.minus(RESEND_COOLDOWN))) return;
 
         String code = String.format("%06d", secureRandom.nextInt(1_000_000));
@@ -57,6 +61,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         }
 
         otp.setEmail(normalizedEmail);
+        otp.setPurpose(OtpPurpose.RESET_PASSWORD);
         otp.setOtpHash(passwordEncoder.encode(code));
         otp.setExpiresAt(now.plus(OTP_TTL));
         otp.setLastSentAt(now);
@@ -68,7 +73,8 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     @Transactional(noRollbackFor = IllegalArgumentException.class)
     public void resetPassword(ResetPasswordWithOtpRequest request) {
         String normalizedEmail = normalize(request.getEmail());
-        PasswordResetOtp otp = otpRepository.findByEmailIgnoreCase(normalizedEmail)
+        otpLock.acquire(normalizedEmail);
+        EmailOtp otp = otpRepository.findByEmailAndPurpose(normalizedEmail, OtpPurpose.RESET_PASSWORD)
                 .orElseThrow(this::invalidOtp);
         Instant now = Instant.now();
         if (!otp.getExpiresAt().isAfter(now) || otp.getAttempts() >= MAX_ATTEMPTS) {

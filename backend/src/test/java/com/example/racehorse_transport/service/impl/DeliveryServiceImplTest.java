@@ -7,7 +7,7 @@ import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.BookingVehicleRepository;
 import com.example.racehorse_transport.repository.IncidentRepository;
 import com.example.racehorse_transport.repository.PaymentRepository;
-import com.example.racehorse_transport.repository.SystemLogRepository;
+import com.example.racehorse_transport.service.OperationalLogWriter;
 import com.example.racehorse_transport.repository.VehicleRepository;
 import org.junit.jupiter.api.Test;
 
@@ -33,7 +33,7 @@ class DeliveryServiceImplTest {
             mock(BookingAssignmentRepository.class),
             mock(IncidentRepository.class),
             mock(PaymentRepository.class),
-            mock(SystemLogRepository.class),
+            mock(OperationalLogWriter.class),
             mock(com.example.racehorse_transport.service.HorseDeliveryLocationService.class),
             mock(com.example.racehorse_transport.repository.StaffRepository.class), org.mockito.Mockito.mock(com.example.racehorse_transport.service.StaffNotifier.class));
 

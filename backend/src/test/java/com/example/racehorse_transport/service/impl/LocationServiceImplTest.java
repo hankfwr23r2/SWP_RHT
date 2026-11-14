@@ -2,7 +2,7 @@ package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.LocationRequest;
 import com.example.racehorse_transport.entity.Location;
-import com.example.racehorse_transport.repository.LocationChangeLogRepository;
+import com.example.racehorse_transport.service.AdminAuditWriter;
 import com.example.racehorse_transport.repository.LocationRepository;
 import java.util.List;
 import java.util.Optional;
@@ -18,8 +18,8 @@ import static org.mockito.Mockito.when;
 
 class LocationServiceImplTest {
     private final LocationRepository locationRepository = mock(LocationRepository.class);
-    private final LocationChangeLogRepository changeLogRepository = mock(LocationChangeLogRepository.class);
-    private final LocationServiceImpl service = new LocationServiceImpl(org.mockito.Mockito.mock(com.example.racehorse_transport.service.AdminAuditWriter.class), locationRepository, changeLogRepository);
+    private final AdminAuditWriter audit = mock(AdminAuditWriter.class);
+    private final LocationServiceImpl service = new LocationServiceImpl(audit, locationRepository);
 
     @Test
     void createLocationTrimsFieldsAndAuditsValues() {
@@ -33,7 +33,7 @@ class LocationServiceImplTest {
         assertThat(created.getLocationType()).isEqualTo("RestStop");
         assertThat(created.getLocationName()).isEqualTo("Trạm nghỉ");
         assertThat(created.getLatitude()).isEqualTo(10.75);
-        verify(changeLogRepository, org.mockito.Mockito.times(10)).save(any());
+        verify(audit).record(org.mockito.ArgumentMatchers.eq("CREATE_LOCATION"), any(), any(), any(), any(), org.mockito.ArgumentMatchers.isNull(), any());
     }
 
     @Test
@@ -61,11 +61,9 @@ class LocationServiceImplTest {
         Location updated = service.updateLocation(5, request("RestStop"), "admin");
 
         assertThat(updated.getLocationName()).isEqualTo("Trạm nghỉ");
-        verify(changeLogRepository).save(org.mockito.ArgumentMatchers.argThat(entry ->
-                "locationName".equals(entry.getFieldName())
-                        && "Trạm cũ".equals(entry.getOldValue())
-                        && "Trạm nghỉ".equals(entry.getNewValue())
-                        && "admin".equals(entry.getChangedBy())));
+        verify(audit).record(org.mockito.ArgumentMatchers.eq("UPDATE_LOCATION"), any(), any(), any(), any(),
+                org.mockito.ArgumentMatchers.argThat(before -> "Trạm cũ".equals(before.get("locationName"))),
+                org.mockito.ArgumentMatchers.argThat(after -> "Trạm nghỉ".equals(after.get("locationName"))));
     }
 
     @Test
@@ -78,10 +76,9 @@ class LocationServiceImplTest {
 
         assertThat(updated.getStatus()).isEqualTo("INACTIVE");
         verify(locationRepository, never()).delete(any(Location.class));
-        verify(changeLogRepository).save(org.mockito.ArgumentMatchers.argThat(entry ->
-                "status".equals(entry.getFieldName())
-                        && "ACTIVE".equals(entry.getOldValue())
-                        && "INACTIVE".equals(entry.getNewValue())));
+        verify(audit).record(org.mockito.ArgumentMatchers.eq("CHANGE_LOCATION_STATUS"), any(), any(), any(), any(),
+                org.mockito.ArgumentMatchers.argThat(before -> "ACTIVE".equals(before.get("status"))),
+                org.mockito.ArgumentMatchers.argThat(after -> "INACTIVE".equals(after.get("status"))));
     }
 
     @Test

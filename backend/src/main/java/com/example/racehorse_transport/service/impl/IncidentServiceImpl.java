@@ -5,13 +5,11 @@ import com.example.racehorse_transport.dto.incident.*;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Incident;
 import com.example.racehorse_transport.entity.Staff;
-import com.example.racehorse_transport.entity.SystemLog;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.BookingAssignmentRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.IncidentRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
-import com.example.racehorse_transport.repository.SystemLogRepository;
 import com.example.racehorse_transport.service.IncidentService;
 import com.example.racehorse_transport.util.BookingDetailsJson;
 import com.example.racehorse_transport.util.PaymentAmountLimits;
@@ -36,7 +34,7 @@ public class IncidentServiceImpl implements IncidentService {
     private final BookingRepository bookingRepository;
     private final BookingAssignmentRepository bookingAssignmentRepository;
     private final StaffRepository staffRepository;
-    private final SystemLogRepository systemLogRepository;
+    private final com.example.racehorse_transport.service.OperationalLogWriter operationalLog;
     private final com.example.racehorse_transport.service.HorseHealthLogService horseHealthLogService;
     private final com.example.racehorse_transport.service.StaffNotifier staffNotifier;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -842,14 +840,7 @@ public class IncidentServiceImpl implements IncidentService {
 
     private void logAction(String actionType, Integer bookingId, String newData) {
         try {
-            SystemLog sysLog = SystemLog.builder()
-                    .actionType(actionType)
-                    .targetTable("INCIDENT")
-                    .targetRecordID(bookingId)
-                    .newData(newData)
-                    .createdAt(Instant.now())
-                    .build();
-            systemLogRepository.save(sysLog);
+            operationalLog.record(actionType, "BOOKING", bookingId, newData, null);
         } catch (Exception ex) {
             // Nhật ký lỗi không được làm hỏng thao tác chính, nhưng phải để lại dấu vết
             log.warn("Không ghi được nhật ký hệ thống {}: {}", actionType, ex.getMessage());

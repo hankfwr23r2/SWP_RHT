@@ -76,7 +76,7 @@ public class BookingServiceImpl implements BookingService {
     private final UserRepository userRepository;
     private final CustomerRepository customerRepository;
     private final HorseRepository horseRepository;
-    private final SystemLogRepository systemLogRepository;
+    private final com.example.racehorse_transport.service.OperationalLogWriter operationalLog;
     private final BookingVehicleRepository bookingVehicleRepository;
     private final BookingAssignmentRepository bookingAssignmentRepository;
     private final QuotationRepository quotationRepository;
@@ -322,20 +322,12 @@ public class BookingServiceImpl implements BookingService {
 
         Booking savedBooking = bookingRepository.save(booking);
 
-        // 8. Ghi Audit Log vào SYSTEM_LOG
+        // 8. Ghi nhật ký vận hành vào bảng log của booking
         try {
-            SystemLog sysLog = SystemLog.builder()
-                    .actionbyUserid(user)
-                    .actionType("CREATE_BOOKING")
-                    .targetTable("BOOKING")
-                    .targetRecordID(savedBooking.getId())
-                    .newData("Tạo đơn vận chuyển " + savedBooking.getTotalHorses() + " con ngựa ("
-                            + savedBooking.getPickupAddress() + " -> " + savedBooking.getDropoffAddress() + ")")
-                    .createdAt(Instant.now())
-                    .build();
-            systemLogRepository.save(sysLog);
+            operationalLog.record("CREATE_BOOKING", "BOOKING", savedBooking.getId(), "Tạo đơn vận chuyển " + savedBooking.getTotalHorses() + " con ngựa ("
+                            + savedBooking.getPickupAddress() + " -> " + savedBooking.getDropoffAddress() + ")", user.getUsername());
         } catch (Exception ex) {
-            log.warn("Failed to write system log for CREATE_BOOKING: {}", ex.getMessage());
+            log.warn("Failed to write operational log for CREATE_BOOKING: {}", ex.getMessage());
         }
 
         log.info("Successfully created booking ID={} for user={}", savedBooking.getId(), customerUsername);
@@ -864,14 +856,7 @@ public class BookingServiceImpl implements BookingService {
                     : "Điều phối viên (" + (request.getBy() != null ? request.getBy() : "coordinator") + ") chốt "
                             + request.getTrips().size() + " xe và lộ trình đơn BK-" + updatedBooking.getId()
                             + ", đang chờ Chuyên viên kiểm dịch thẩm định hồ sơ ngựa.";
-            SystemLog sysLog = SystemLog.builder()
-                    .actionType("COORDINATOR_CONFIRM_PLAN")
-                    .targetTable("BOOKING")
-                    .targetRecordID(updatedBooking.getId())
-                    .newData(logDesc)
-                    .createdAt(Instant.now())
-                    .build();
-            systemLogRepository.save(sysLog);
+            operationalLog.record("COORDINATOR_CONFIRM_PLAN", "BOOKING", updatedBooking.getId(), logDesc, null);
         } catch (Exception ex) {
             // Nhật ký lỗi không được làm hỏng thao tác chính, nhưng phải để lại dấu vết
             log.warn("Không ghi được nhật ký hệ thống COORDINATOR_CONFIRM_PLAN: {}", ex.getMessage());
@@ -2027,16 +2012,9 @@ public class BookingServiceImpl implements BookingService {
 
     private void logAction(String actionType, Integer targetRecordId, String newData) {
         try {
-            SystemLog sysLog = SystemLog.builder()
-                    .actionType(actionType)
-                    .targetTable("BOOKING")
-                    .targetRecordID(targetRecordId)
-                    .newData(newData)
-                    .createdAt(Instant.now())
-                    .build();
-            systemLogRepository.save(sysLog);
+            operationalLog.record(actionType, "BOOKING", targetRecordId, newData, null);
         } catch (Exception ex) {
-            log.warn("Failed to write system log for action {}: {}", actionType, ex.getMessage());
+            log.warn("Failed to write operational log for action {}: {}", actionType, ex.getMessage());
         }
     }
 
@@ -2447,7 +2425,7 @@ public class BookingServiceImpl implements BookingService {
 
                 // 4. Ghi log cảnh báo khẩn cấp an sinh
                 Log emergencyLog = new Log();
-                emergencyLog.setId((int) (logRepository.count() + 1));
+
                 emergencyLog.setBookingID(booking);
                 emergencyLog.setLogType("EMERGENCY_HEALTH_ALERT");
                 emergencyLog.setStatus("UNFIT_FOR_TRAVEL");

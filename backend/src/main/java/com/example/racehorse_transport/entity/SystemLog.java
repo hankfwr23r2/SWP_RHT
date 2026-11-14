@@ -12,12 +12,16 @@ import java.time.Instant;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "SYSTEM_LOG", indexes = {
+@Table(name = "SYSTEM_LOG", uniqueConstraints = @UniqueConstraint(name = "uk_system_log_source", columnNames = {"source_table", "source_id"}), indexes = {
         @Index(name = "idx_system_log_target_time", columnList = "TargetTable,CreatedAt,SystemLogID"),
         @Index(name = "idx_system_log_actor_time", columnList = "ActionBy_UserID,CreatedAt")
 })
 public class SystemLog {
 
+    @Column(name = "source_table", length = 100)
+    private String sourceTable;
+    @Column(name = "source_id")
+    private Long sourceId;
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "SystemLogID", nullable = false)
