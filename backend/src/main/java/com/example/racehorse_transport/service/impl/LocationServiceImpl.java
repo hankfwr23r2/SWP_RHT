@@ -3,12 +3,9 @@ package com.example.racehorse_transport.service.impl;
 import com.example.racehorse_transport.service.AdminAuditWriter;
 import com.example.racehorse_transport.dto.LocationRequest;
 import com.example.racehorse_transport.entity.Location;
-import com.example.racehorse_transport.entity.LocationChangeLog;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
-import com.example.racehorse_transport.repository.LocationChangeLogRepository;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.service.LocationService;
-import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +24,6 @@ public class LocationServiceImpl implements LocationService {
     private static final String BORDER_GATE = "BorderGate";
 
     private final LocationRepository locationRepository;
-    private final LocationChangeLogRepository changeLogRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -52,7 +48,6 @@ public class LocationServiceImpl implements LocationService {
         location.setLocationCode("LOC-" + location.getId());
         apply(location, request);
         Location saved = locationRepository.save(location);
-        logChanges(saved, Map.of(), values(saved), changedBy);
         audit.record("CREATE_LOCATION", "LOCATION", saved.getId(), saved.getLocationName(), "Tạo địa điểm", null, values(saved));
         return saved;
     }
@@ -66,7 +61,6 @@ public class LocationServiceImpl implements LocationService {
         Map<String, String> oldValues = values(location);
         apply(location, request);
         Location saved = locationRepository.save(location);
-        logChanges(saved, oldValues, values(saved), changedBy);
         audit.record("UPDATE_LOCATION", "LOCATION", id, saved.getLocationName(), "Cập nhật địa điểm", oldValues, values(saved));
         return saved;
     }
@@ -86,7 +80,6 @@ public class LocationServiceImpl implements LocationService {
         location.setStatus(status);
         Location saved = locationRepository.save(location);
         if (!Objects.equals(oldStatus, status)) {
-            logChange(saved, "status", oldStatus, status, changedBy);
             audit.record("CHANGE_LOCATION_STATUS", "LOCATION", id, saved.getLocationName(), "Đổi trạng thái địa điểm",
                     AdminAuditWriter.values("status", oldStatus), AdminAuditWriter.values("status", status));
         }
@@ -157,25 +150,4 @@ public class LocationServiceImpl implements LocationService {
         return value == null ? null : value.toString();
     }
 
-    private void logChanges(Location location, Map<String, String> oldValues,
-            Map<String, String> newValues, String changedBy) {
-        newValues.forEach((field, newValue) -> {
-            String oldValue = oldValues.get(field);
-            if (!Objects.equals(oldValue, newValue)) {
-                logChange(location, field, oldValue, newValue, changedBy);
-            }
-        });
-    }
-
-    private void logChange(Location location, String field, String oldValue,
-            String newValue, String changedBy) {
-        LocationChangeLog entry = new LocationChangeLog();
-        entry.setLocationId(location.getId());
-        entry.setFieldName(field);
-        entry.setOldValue(oldValue);
-        entry.setNewValue(newValue);
-        entry.setChangedBy(changedBy);
-        entry.setChangedAt(Instant.now());
-        changeLogRepository.save(entry);
-    }
 }

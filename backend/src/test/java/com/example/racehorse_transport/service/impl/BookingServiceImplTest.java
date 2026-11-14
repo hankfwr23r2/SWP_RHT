@@ -36,7 +36,7 @@ import com.example.racehorse_transport.repository.QuotationRepository;
 import com.example.racehorse_transport.repository.RegulationRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.ServiceRepository;
-import com.example.racehorse_transport.repository.SystemLogRepository;
+import com.example.racehorse_transport.service.OperationalLogWriter;
 import com.example.racehorse_transport.repository.TripDocumentRepository;
 import com.example.racehorse_transport.repository.UserRepository;
 import com.example.racehorse_transport.repository.VehicleRepository;
@@ -73,7 +73,7 @@ class BookingServiceImplTest {
     private final UserRepository userRepository = mock(UserRepository.class);
     private final CustomerRepository customerRepository = mock(CustomerRepository.class);
     private final HorseRepository horseRepository = mock(HorseRepository.class);
-    private final SystemLogRepository systemLogRepository = mock(SystemLogRepository.class);
+    private final OperationalLogWriter operationalLog = mock(OperationalLogWriter.class);
     private final BookingVehicleRepository bookingVehicleRepository = mock(BookingVehicleRepository.class);
     private final BookingAssignmentRepository bookingAssignmentRepository = mock(BookingAssignmentRepository.class);
     private final QuotationRepository quotationRepository = mock(QuotationRepository.class);
@@ -111,7 +111,7 @@ class BookingServiceImplTest {
                 userRepository,
                 customerRepository,
                 horseRepository,
-                systemLogRepository,
+                operationalLog,
                 bookingVehicleRepository,
                 bookingAssignmentRepository,
                 quotationRepository,
@@ -238,7 +238,7 @@ class BookingServiceImplTest {
         assertThat(savedBooking.getValue().getDetailsJson()).contains("\"originCountry\":\"VN\"");
         assertThat(savedBooking.getValue().getDetailsJson()).contains("\"serviceName\":\"Khoang tiêu chuẩn\"");
         assertThat(savedBooking.getValue().getDetailsJson()).contains("\"documentType\":\"poa\"");
-        verify(systemLogRepository).save(any());
+        verify(operationalLog).record(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -476,7 +476,7 @@ class BookingServiceImplTest {
                 .hasMessageContaining("payment_overdue");
 
         verify(bookingRepository, never()).save(any(Booking.class));
-        verify(systemLogRepository, never()).save(any());
+        verify(operationalLog, never()).record(any(), any(), any(), any(), any());
         verify(horseRepository, never()).findById(any(Integer.class));
     }
 
@@ -549,7 +549,7 @@ class BookingServiceImplTest {
                 .hasMessageContaining("phải được chọn từ Hồ sơ ngựa");
 
         verify(horseRepository, never()).findById(any(Integer.class));
-        verify(systemLogRepository, never()).save(any());
+        verify(operationalLog, never()).record(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -561,7 +561,7 @@ class BookingServiceImplTest {
                 .hasMessageContaining("Mã hồ sơ ngựa không hợp lệ");
 
         verify(horseRepository, never()).findById(any(Integer.class));
-        verify(systemLogRepository, never()).save(any());
+        verify(operationalLog, never()).record(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -573,7 +573,7 @@ class BookingServiceImplTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Không tìm thấy hồ sơ ngựa HORSE-12");
 
-        verify(systemLogRepository, never()).save(any());
+        verify(operationalLog, never()).record(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -588,7 +588,7 @@ class BookingServiceImplTest {
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("không thuộc tài khoản của bạn");
 
-        verify(systemLogRepository, never()).save(any());
+        verify(operationalLog, never()).record(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -1186,7 +1186,7 @@ class BookingServiceImplTest {
         verify(bookingVehicleRepository).deleteByBookingID_Id(42);
         verify(bookingAssignmentRepository).deleteByBookingID_Id(42);
         verify(bookingRepository).save(booking);
-        verify(systemLogRepository).save(any());
+        verify(operationalLog).record(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -1221,7 +1221,7 @@ class BookingServiceImplTest {
         verify(bookingVehicleRepository, never()).deleteByBookingID_Id(42);
         verify(bookingAssignmentRepository, never()).deleteByBookingID_Id(42);
         verify(bookingRepository, never()).save(any(Booking.class));
-        verify(systemLogRepository, never()).save(any());
+        verify(operationalLog, never()).record(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -1355,7 +1355,7 @@ class BookingServiceImplTest {
                 .containsEntry("actor", "manager1")
                 .containsEntry("text", "Từ chối đơn");
         verify(bookingRepository).save(booking);
-        verify(systemLogRepository).save(any());
+        verify(operationalLog).record(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -1395,7 +1395,7 @@ class BookingServiceImplTest {
                 .hasMessageContaining("pending_intake");
 
         verify(bookingRepository, never()).save(any(Booking.class));
-        verify(systemLogRepository, never()).save(any());
+        verify(operationalLog, never()).record(any(), any(), any(), any(), any());
     }
 
     @Test
@@ -1411,7 +1411,7 @@ class BookingServiceImplTest {
                 .hasMessageContaining("under_review");
 
         verify(bookingRepository, never()).save(any(Booking.class));
-        verify(systemLogRepository, never()).save(any());
+        verify(operationalLog, never()).record(any(), any(), any(), any(), any());
     }
 
     private Staff staff(String username, String phone) {

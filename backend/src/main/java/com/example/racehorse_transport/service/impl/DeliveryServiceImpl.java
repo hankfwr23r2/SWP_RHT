@@ -32,7 +32,7 @@ public class DeliveryServiceImpl implements DeliveryService {
     private final BookingAssignmentRepository bookingAssignmentRepository;
     private final IncidentRepository incidentRepository;
     private final PaymentRepository paymentRepository;
-    private final SystemLogRepository systemLogRepository;
+    private final com.example.racehorse_transport.service.OperationalLogWriter operationalLog;
     private final com.example.racehorse_transport.service.HorseDeliveryLocationService horseDeliveryLocationService;
     private final com.example.racehorse_transport.repository.StaffRepository staffRepository;
     private final com.example.racehorse_transport.service.StaffNotifier staffNotifier;
@@ -222,8 +222,8 @@ public class DeliveryServiceImpl implements DeliveryService {
             }
             vehicleRepository.save(vehicle);
 
-            logAction("VEHICLE_RETURNED_HQ", vehicle.getId(),
-                    "Xe " + vehicle.getLicensePlate() + " đã về tới Trụ sở chính Việt Nam. Trạng thái: " + vehicle.getStatus());
+            operationalLog.record("VEHICLE_RETURNED_HQ", "VEHICLE", vehicle.getId(),
+                    "Xe " + vehicle.getLicensePlate() + " đã về tới Trụ sở chính Việt Nam. Trạng thái: " + vehicle.getStatus(), null);
             log.info("Vehicle ID={} returned to Central HQ, status={}", vehicle.getId(), vehicle.getStatus());
         }
     }
@@ -276,14 +276,7 @@ public class DeliveryServiceImpl implements DeliveryService {
 
     private void logAction(String actionType, Integer targetRecordId, String newData) {
         try {
-            SystemLog sysLog = SystemLog.builder()
-                    .actionType(actionType)
-                    .targetTable("BOOKING")
-                    .targetRecordID(targetRecordId)
-                    .newData(newData)
-                    .createdAt(Instant.now())
-                    .build();
-            systemLogRepository.save(sysLog);
+            operationalLog.record(actionType, "BOOKING", targetRecordId, newData, null);
         } catch (Exception ex) {
             // Nhật ký lỗi không được làm hỏng thao tác chính, nhưng phải để lại dấu vết
             log.warn("Không ghi được nhật ký hệ thống {}: {}", actionType, ex.getMessage());

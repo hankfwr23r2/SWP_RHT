@@ -25,6 +25,10 @@ frontend/*.local
 *.sql
 # Keep the reviewed read-only audit script
 !backend/scripts/audit-horse-delivery-locations.sql
+!backend/scripts/migrations/*.sql
+
+# Database migration backups stay local and must not be committed.
+/.local-db-backups/
 
 # Backend build
 backend/target/

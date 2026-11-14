@@ -16,14 +16,19 @@ import java.time.Instant;
 @Getter
 @Setter
 @Entity
-@Table(name = "password_reset_otps",
-        indexes = @Index(name = "idx_password_reset_otp_expiry", columnList = "ExpiresAt"),
-        uniqueConstraints = @UniqueConstraint(name = "uk_password_reset_otp_email", columnNames = "Email"))
-public class PasswordResetOtp {
+@org.hibernate.annotations.Check(constraints = "attempts >= 0 AND purpose IN ('VERIFY_EMAIL', 'RESET_PASSWORD')")
+@Table(name = "email_otp",
+        indexes = @Index(name = "idx_email_otp_expiry", columnList = "ExpiresAt"),
+        uniqueConstraints = @UniqueConstraint(name = "uk_email_otp_email_purpose", columnNames = {"Email", "purpose"}))
+public class EmailOtp {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "Id", nullable = false)
     private Long id;
+
+    @jakarta.persistence.Enumerated(jakarta.persistence.EnumType.STRING)
+    @Column(name = "purpose", nullable = false, length = 30)
+    private OtpPurpose purpose;
 
     @Column(name = "Email", nullable = false, length = 255)
     private String email;

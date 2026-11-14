@@ -2,15 +2,14 @@ package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.DocumentRequirementRequest;
 import com.example.racehorse_transport.entity.DocumentRequirement;
-import com.example.racehorse_transport.entity.DocumentRequirementChangeLog;
-import com.example.racehorse_transport.repository.DocumentRequirementChangeLogRepository;
+import com.example.racehorse_transport.service.AdminAuditWriter;
+
 import com.example.racehorse_transport.repository.DocumentRequirementRepository;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -25,13 +24,13 @@ class DocumentRequirementServiceImplTest {
     @Mock
     private DocumentRequirementRepository repository;
     @Mock
-    private DocumentRequirementChangeLogRepository changeLogRepository;
+    private AdminAuditWriter audit;
 
     private DocumentRequirementServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new DocumentRequirementServiceImpl(repository, changeLogRepository, org.mockito.Mockito.mock(com.example.racehorse_transport.service.AdminAuditWriter.class));
+        service = new DocumentRequirementServiceImpl(repository, audit);
     }
 
     @Test
@@ -46,12 +45,7 @@ class DocumentRequirementServiceImplTest {
 
         service.create(request, "admin");
 
-        ArgumentCaptor<DocumentRequirementChangeLog> log = ArgumentCaptor.forClass(DocumentRequirementChangeLog.class);
-        verify(changeLogRepository).save(log.capture());
-        assertThat(log.getValue().getRequirementId()).isEqualTo(12);
-        assertThat(log.getValue().getChangedBy()).isEqualTo("admin");
-        assertThat(log.getValue().getOldValue()).isNull();
-        assertThat(log.getValue().getNewValue()).contains("poa", "Giấy tờ poa");
+        verify(audit).record(org.mockito.ArgumentMatchers.eq("CREATE_DOCUMENT_REQUIREMENT"), any(), any(), any(), any(), org.mockito.ArgumentMatchers.isNull(), org.mockito.ArgumentMatchers.argThat(after -> "poa".equals(after.get("documentType"))));
     }
 
     @Test
@@ -73,11 +67,7 @@ class DocumentRequirementServiceImplTest {
 
         service.update(4, request, "admin");
 
-        ArgumentCaptor<DocumentRequirementChangeLog> log = ArgumentCaptor.forClass(DocumentRequirementChangeLog.class);
-        verify(changeLogRepository).save(log.capture());
-        assertThat(log.getValue().getFieldName()).isEqualTo("documentName");
-        assertThat(log.getValue().getOldValue()).isEqualTo("Tên cũ");
-        assertThat(log.getValue().getNewValue()).isEqualTo("Tên mới");
+        verify(audit).record(org.mockito.ArgumentMatchers.eq("UPDATE_DOCUMENT_REQUIREMENT"), any(), any(), any(), any(), org.mockito.ArgumentMatchers.argThat(before -> "Tên cũ".equals(before.get("documentName"))), org.mockito.ArgumentMatchers.argThat(after -> "Tên mới".equals(after.get("documentName"))));
     }
 
     @Test

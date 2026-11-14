@@ -1,8 +1,9 @@
 package com.example.racehorse_transport.service;
 
-import com.example.racehorse_transport.entity.EmailVerificationOtp;
+import com.example.racehorse_transport.entity.EmailOtp;
+import com.example.racehorse_transport.entity.OtpPurpose;
 import com.example.racehorse_transport.entity.User;
-import com.example.racehorse_transport.repository.EmailVerificationOtpRepository;
+import com.example.racehorse_transport.repository.EmailOtpRepository;
 import com.example.racehorse_transport.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +27,8 @@ public class EmailVerificationService {
     private static final int MAX_ATTEMPTS = 5;
 
     private final UserRepository userRepository;
-    private final EmailVerificationOtpRepository otpRepository;
+    private final EmailOtpRepository otpRepository;
+    private final OtpStorageLock otpLock;
     private final PasswordEncoder passwordEncoder;
     private final OtpMailSender mailSender;
     private final SecureRandom secureRandom = new SecureRandom();
@@ -34,8 +36,9 @@ public class EmailVerificationService {
     @Transactional
     public void sendOtp(String email) {
         String normalizedEmail = normalize(email);
+        otpLock.acquire(normalizedEmail);
         Instant now = Instant.now();
-        EmailVerificationOtp otp = otpRepository.findByEmailIgnoreCase(normalizedEmail).orElseGet(EmailVerificationOtp::new);
+        EmailOtp otp = otpRepository.findByEmailAndPurpose(normalizedEmail, OtpPurpose.VERIFY_EMAIL).orElseGet(EmailOtp::new);
         if (otp.getLastSentAt() != null && otp.getLastSentAt().isAfter(now.minus(RESEND_COOLDOWN))) return;
 
         String code = String.format("%06d", secureRandom.nextInt(1_000_000));
@@ -54,6 +57,7 @@ public class EmailVerificationService {
         }
 
         otp.setEmail(normalizedEmail);
+        otp.setPurpose(OtpPurpose.VERIFY_EMAIL);
         otp.setOtpHash(passwordEncoder.encode(code));
         otp.setExpiresAt(now.plus(OTP_TTL));
         otp.setLastSentAt(now);
@@ -65,7 +69,8 @@ public class EmailVerificationService {
     @Transactional(noRollbackFor = IllegalArgumentException.class)
     public User confirm(String email, String code) {
         String normalizedEmail = normalize(email);
-        EmailVerificationOtp otp = otpRepository.findByEmailIgnoreCase(normalizedEmail).orElseThrow(this::invalidOtp);
+        otpLock.acquire(normalizedEmail);
+        EmailOtp otp = otpRepository.findByEmailAndPurpose(normalizedEmail, OtpPurpose.VERIFY_EMAIL).orElseThrow(this::invalidOtp);
         if (!otp.getExpiresAt().isAfter(Instant.now()) || otp.getAttempts() >= MAX_ATTEMPTS) {
             otpRepository.delete(otp);
             throw invalidOtp();

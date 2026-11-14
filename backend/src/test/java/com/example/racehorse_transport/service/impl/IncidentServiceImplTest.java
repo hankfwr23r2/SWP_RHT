@@ -7,7 +7,7 @@ import com.example.racehorse_transport.repository.BookingAssignmentRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.IncidentRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
-import com.example.racehorse_transport.repository.SystemLogRepository;
+import com.example.racehorse_transport.service.OperationalLogWriter;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -32,7 +32,7 @@ class IncidentServiceImplTest {
             bookingRepository,
             mock(BookingAssignmentRepository.class),
             staffRepository,
-            mock(SystemLogRepository.class),
+            mock(OperationalLogWriter.class),
             healthService, org.mockito.Mockito.mock(com.example.racehorse_transport.service.StaffNotifier.class));
 
     @Test

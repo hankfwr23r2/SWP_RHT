@@ -13,9 +13,20 @@ import java.time.Instant;
 @Table(name = "LOG")
 public class Log {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "LogID", nullable = false)
     private Integer id;
 
+    @Column(name = "actor_username", length = 255)
+    private String actorUsername;
+    @Column(name = "target_table", length = 100)
+    private String targetTable;
+    @Column(name = "target_record_id")
+    private Integer targetRecordId;
+    @Column(name = "source_system_log_id", unique = true)
+    private Integer sourceSystemLogId;
+    @Column(name = "metadata_json", columnDefinition = "TEXT")
+    private String metadataJson;
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "BookingID")
     private Booking bookingID;
