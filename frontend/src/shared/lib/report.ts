@@ -1,3 +1,4 @@
+import { incidentExpenseItems } from './incidentCosts'
 // Báo cáo của Quản lý: tính toán tổng hợp doanh thu, chi phí vận hành và hiệu suất từ dữ liệu đơn hàng backend (PRD mục 15).
 import { BOOKING_STATUS, DELAY_ALERT_MINUTES, MARGIN_RATE, type BookingStatus } from '../config/booking-rules'
 import { DAY } from '../config/business-rules'
@@ -16,8 +17,10 @@ export function bookingStatusLabel(status: string | undefined): string {
 export interface OrderFinance {
   id: string; customer: string; at: number // at = ngày đặt cọc (đơn có hiệu lực)
   insuranceCollection: number // phí thu hộ trong báo giá, đơn hủy dùng số đã thu
-  revenue: number // doanh thu ghi nhận: giá trị đơn + phát sinh khách chịu; đơn hủy thì phần cọc không hoàn
-  cost: number // chi phí vận hành: giá vốn theo báo giá + chi phí sự cố nhà xe chịu
+  grossRevenue: number // doanh thu vận chuyển trước chi phí sự cố
+  incidentCost: number // thực chi sự cố, có chứng từ
+  revenue: number // doanh thu công ty sau chi phí sự cố
+  cost: number // giá vốn vận hành gốc; chi phí sự cố đã trừ khỏi revenue
   profit: number
   collected: number // tiền đã thu thực tế
   status: Booking['status']
@@ -26,16 +29,13 @@ export interface OrderFinance {
 export function orderFinance(b: Booking): OrderFinance | undefined {
   if (!b.payment) return undefined // chưa cọc thì chưa có doanh thu
   const paid = b.payment.amount + (b.balance?.amount ?? 0)
-  const carrierExpenses = (b.incidents ?? [])
-    .flatMap(i => i.expenses ?? [])
-    .filter(e => e?.payer === 'carrier')
-    .reduce((t, e) => t + (e?.amount ?? 0), 0)
-  const extras = b.settlement?.total ?? 0
+  const incidentCost = incidentExpenseItems(b).reduce((total, item) => total + item.amount, 0)
   const base = { id: b.id, customer: b.customer, at: b.payment.paidAt, status: b.status }
   if (b.status === 'cancelled') {
     const kept = paid - (b.cancellation?.refund ?? 0)
-    const revenue = b.cancellation?.penalty ?? (kept - (b.cancellation?.insuranceCollected ?? 0))
-    return { ...base, revenue, insuranceCollection: b.cancellation?.insuranceCollected ?? 0, cost: carrierExpenses, profit: revenue - carrierExpenses, collected: kept }
+    const grossRevenue = b.cancellation?.penalty ?? (kept - (b.cancellation?.insuranceCollected ?? 0))
+    const revenue = grossRevenue - incidentCost
+    return { ...base, grossRevenue, incidentCost, revenue, insuranceCollection: b.cancellation?.insuranceCollected ?? 0, cost: 0, profit: revenue, collected: kept }
   }
   if (!b.quote) return undefined
   const lines = Array.isArray(b.quote.lines) ? b.quote.lines : []
@@ -44,9 +44,10 @@ export function orderFinance(b: Booking): OrderFinance | undefined {
     const marginApplied = l.marginApplied ?? MARGINED.test(l.label)
     return t + (marginApplied ? l.amount / (1 + MARGIN_RATE) : l.amount)
   }, 0)
-  const revenue = (b.quote.total ?? 0) - insuranceCollection + extras
-  const cost = Math.round(cogs) + carrierExpenses
-  return { ...base, revenue, insuranceCollection, cost, profit: revenue - cost, collected: paid + (b.settlement?.paid?.amount ?? 0) }
+  const grossRevenue = (b.quote.total ?? 0) - insuranceCollection
+  const revenue = grossRevenue - incidentCost
+  const cost = Math.round(cogs)
+  return { ...base, grossRevenue, incidentCost, revenue, insuranceCollection, cost, profit: revenue - cost, collected: paid + (b.settlement?.paid?.amount ?? 0) }
 }
 
 export interface TripPerf { orderId: string; tripId: string; startedAt: number; deliveredAt?: number; onTime?: boolean; hours?: number; hadIncident: boolean }
@@ -64,7 +65,7 @@ export function tripPerformance(b: Booking, t: VehicleTrip): TripPerf | undefine
 }
 
 export interface ReportSummary {
-  revenue: number; cost: number; profit: number; margin: number; collected: number; orders: number
+  grossRevenue: number; incidentCost: number; revenue: number; cost: number; profit: number; margin: number; collected: number; orders: number
   trips: number; delivered: number; completionRate: number; onTimeRate: number; incidentRate: number; avgHours: number; avgRating: number
 }
 const sum = (a: number[]) => a.reduce((t, x) => t + x, 0)
@@ -80,7 +81,8 @@ export function summarize(bookings: Booking[], from: number, to: number): Report
     .map(b => b.rating!.stars ?? ((b.rating!.trip ?? 0) + (b.rating!.driver ?? 0) + (b.rating!.escort ?? 0)) / 3)
   const revenue = sum(fin.map(f => f.revenue)), cost = sum(fin.map(f => f.cost))
   return {
-    revenue, cost, profit: revenue - cost, margin: pct(revenue - cost, revenue), collected: sum(fin.map(f => f.collected)), orders: fin.length,
+    grossRevenue: sum(fin.map(f => f.grossRevenue)), incidentCost: sum(fin.map(f => f.incidentCost)),
+    revenue, cost, profit: revenue - cost, margin: revenue > 0 ? pct(revenue - cost, revenue) : 0, collected: sum(fin.map(f => f.collected)), orders: fin.length,
     trips: perf.length, delivered: done.length, completionRate: pct(done.length, perf.length),
     onTimeRate: pct(done.filter(p => p.onTime).length, done.length), incidentRate: pct(perf.filter(p => p.hadIncident).length, perf.length),
     avgHours: done.length ? sum(done.map(p => p.hours!)) / done.length : 0, avgRating: ratings.length ? sum(ratings) / ratings.length : 0,

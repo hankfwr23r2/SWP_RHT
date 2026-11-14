@@ -1,7 +1,7 @@
 // "Bước tiếp theo" của đơn phía khách: mỗi trạng thái nói rõ khách đang chờ ai, hoặc cần làm gì.
 import { HOUR } from '@shared/config/business-rules'
 import { DEPOSIT_RATE, type Tone } from '@shared/config/booking-rules'
-import { effectiveArrivalOf, clearanceProgress, currentCheckpoint, orderGroupOf, pickupFailReason } from '@shared/lib/booking'
+import { effectiveArrivalOf, clearanceProgress, currentCheckpoint, pickupFailReason } from '@shared/lib/booking'
 import { formatDateTime, formatVND, timeLeftText } from '@shared/lib/format'
 import type { CustomerBookingView } from '@shared/services/bookings'
 
@@ -75,16 +75,10 @@ function baseStep(b: CustomerBookingView, now: number): NextStep {
     }
     case 'incident_reported': case 'pending_emergency_approval': case 'emergency_plan_active':
       return { tone: b.status === 'emergency_plan_active' ? 'warning' : 'danger', icon: 'fa-triangle-exclamation', title: 'Xe đang gặp sự cố, nhà xe đang xử lý', text: b.status === 'emergency_plan_active' ? 'Quản lý đã duyệt phương án. Đội ngũ hộ tống đang túc trực chăm sóc ngựa, thời gian dự kiến sẽ được cập nhật.' : 'Nhà xe đang lập phương án. Quản lý sẽ gọi điện trực tiếp cho bạn để thông báo.', actionNeeded: false }
-    case 'expenses_submitted':
-      return { tone: 'orange', icon: 'fa-receipt', title: 'Đang đối soát chi phí', text: 'Nhà xe đang đối soát chứng từ chi phí phát sinh. Bạn sẽ nhận bảng quyết toán khi xong.', actionNeeded: false }
-    case 'settlement_issued': case 'payment_overdue': {
-      const total = b.settlement?.total ?? 0
-      return total
-        ? { tone: b.status === 'payment_overdue' ? 'danger' : 'warning', icon: 'fa-file-invoice-dollar', title: b.status === 'payment_overdue' ? `Quá hạn thanh toán ${formatVND(total)}` : `Thanh toán quyết toán ${formatVND(total)}`, text: b.status === 'payment_overdue' ? 'Tài khoản đang bị khóa đặt đơn mới cho đến khi bạn thanh toán.' : `Hạn thanh toán ${formatDateTime(b.settlement!.dueAt)}. Bạn xem được ảnh chứng từ từng khoản bên dưới.`, actionNeeded: true }
-        : { tone: 'success', icon: 'fa-star', title: 'Xác nhận quyết toán và đánh giá chuyến đi', text: 'Chuyến đi không phát sinh khoản nào phải trả thêm. Hãy chấm điểm để đóng đơn.', actionNeeded: true }
-    }
+    case 'expenses_submitted': case 'settlement_issued': case 'payment_overdue':
+      return { tone: 'success', icon: 'fa-flag-checkered', title: 'Đã giao ngựa an toàn', text: 'Nhà xe đang hoàn tất thủ tục nội bộ của chuyến đi.', actionNeeded: false }
     case 'completed':
-      return { tone: 'success', icon: 'fa-circle-check', title: 'Đơn đã hoàn tất', text: 'Cảm ơn bạn. Lịch sử chuyến đã được ghi vào hồ sơ ngựa.', actionNeeded: false }
+      return { tone: 'success', icon: 'fa-star', title: 'Chuyến đi đã hoàn tất', text: b.rating ? 'Cảm ơn bạn đã sử dụng dịch vụ.' : 'Bạn có thể gửi đánh giá trải nghiệm chuyến đi.', actionNeeded: !b.rating }
     case 'rejected':
       return { tone: 'danger', icon: 'fa-circle-xmark', title: 'Nhà xe không nhận đơn này', text: `${b.rejection?.role === 'coordinator' ? 'Điều phối viên không xếp được xe và lộ trình' : 'Quản lý không tiếp nhận đơn'}. Lý do: ${b.rejection?.reason ?? 'không nêu'}. Bạn có thể chỉnh lại và đặt chuyến mới.`, actionNeeded: false }
     case 'cancelled':
@@ -92,12 +86,12 @@ function baseStep(b: CustomerBookingView, now: number): NextStep {
     case 'arrived':
       return { tone: 'info', icon: 'fa-location-dot', title: 'Xe đã tới điểm giao', text: 'Xe đã tới điểm giao và đang chờ người nhận ra bàn giao ngựa.', actionNeeded: false }
     case 'handover_timeout':
-      return { tone: 'danger', icon: 'fa-clock', title: 'Quá giờ nhận ngựa', text: 'Người nhận chưa nhận ngựa trong 2 giờ chờ miễn phí. Ngựa đã được đưa vào chuồng lưu trú gần điểm giao để chăm sóc; phí lưu chuồng tính vào bảng quyết toán. Vui lòng liên hệ nhà xe để hẹn lại giờ nhận.', actionNeeded: false }
+      return { tone: 'danger', icon: 'fa-clock', title: 'Quá giờ nhận ngựa', text: 'Người nhận chưa nhận ngựa sau 2 giờ chờ. Ngựa được chăm sóc tại chuồng lưu trú gần điểm giao. Vui lòng liên hệ nhà xe để hẹn lại giờ nhận.', actionNeeded: false }
     case 'returning_to_hq':
-      return { tone: 'warning', icon: 'fa-rotate-left', title: 'Ngựa đang được chở về trụ sở', text: 'Người nhận không nhận ngựa trong 2 giờ chờ miễn phí nên xe đang chở ngựa về Trụ sở chính tại Việt Nam. Chi phí phát sinh tính vào bảng quyết toán. Vui lòng liên hệ nhà xe.', actionNeeded: false }
+      return { tone: 'warning', icon: 'fa-rotate-left', title: 'Ngựa đang được chở về trụ sở', text: 'Người nhận chưa nhận ngựa sau 2 giờ chờ nên xe đang chở ngựa về Trụ sở chính tại Việt Nam. Vui lòng liên hệ nhà xe để sắp xếp bàn giao.', actionNeeded: false }
     case 'delivered_pending_settlement': {
       const at = Math.max(0, ...(b.trips ?? []).map(t => t.run?.deliveredAt ?? 0))
-      return { tone: 'success', icon: 'fa-flag-checkered', title: 'Đã giao ngựa an toàn', text: `Ngựa đã được bàn giao cho người nhận${at ? ` lúc ${formatDateTime(at)}` : ''}. Giá đã cố định nên bạn không phải trả thêm, trừ khi có khoản phát sinh liên quan đến ngựa (nếu có, chúng tôi sẽ gửi bảng quyết toán).`, actionNeeded: false }
+      return { tone: 'success', icon: 'fa-flag-checkered', title: 'Đã giao ngựa an toàn', text: `Ngựa đã được bàn giao cho người nhận${at ? ` lúc ${formatDateTime(at)}` : ''}. Nhà xe đang hoàn tất chuyến đi.`, actionNeeded: false }
     }
     default:
       return { tone: 'info', icon: 'fa-clock', title: 'Đơn đang được xử lý', text: 'Nhà xe đang cập nhật tiến độ đơn. Vui lòng tải lại trang sau ít phút.', actionNeeded: false }
@@ -105,7 +99,7 @@ function baseStep(b: CustomerBookingView, now: number): NextStep {
 }
 
 // Đơn đã giao đang chờ nghiệm thu, hoặc đã nghiệm thu xong
-export const isAcceptance = (b: CustomerBookingView) => orderGroupOf(b) === 'settle' || (b.status === 'completed' && !!b.settlement)
+export const isAcceptance = (b: CustomerBookingView) => b.status === 'completed'
 
 // Tên nút theo việc khách cần làm, dùng ở danh sách đơn và chi tiết đơn
 function ctaOf(b: CustomerBookingView): string {
@@ -119,7 +113,7 @@ function ctaOf(b: CustomerBookingView): string {
       return `Đặt cọc ${depositPercentage.toLocaleString('vi-VN')}%`
     }
     case 'ready_for_pickup': case 'en_route_to_pickup': return 'Thanh toán 70%'
-    case 'settlement_issued': case 'payment_overdue': return b.settlement?.total ? 'Thanh toán quyết toán' : 'Đánh giá chuyến đi'
+    case 'completed': return 'Đánh giá chuyến đi'
     default: return 'Xử lý ngay'
   }
 }

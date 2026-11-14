@@ -114,6 +114,10 @@ export interface BackendTripTeam {
 }
 
 export const backendBookingApi = {
+  submitRating: async (id: string, rating: { stars: number; comment?: string }): Promise<BackendBookingResponse> => {
+    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${id}/rating`, rating)
+    return res.data.data
+  },
   changeSchedule: async (id: string, departureDate: string): Promise<BackendBookingResponse> => {
     const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${toNumericBookingId(id)}/schedule-change`, { departureDate })
     return res.data.data

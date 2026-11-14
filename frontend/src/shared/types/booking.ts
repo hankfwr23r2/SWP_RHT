@@ -271,10 +271,12 @@ export interface Incident {
   approval?: { at: number; by: string }
   fitConfirmedAt?: number // Escort xác nhận ngựa đủ sức đi tiếp (sự cố sức khỏe)
   resolvedAt?: number
+  actualCost?: number
+  invoiceUrl?: string
   expenses: IncidentExpense[]
 }
-export interface SettlementItem { label: string; amount: number; photo?: string }
-export interface Settlement { items: SettlementItem[]; total: number; issuedAt: number; dueAt: number; by: string; paid?: Payment }
+export interface SettlementItem { id?: string; category?: ExpenseCategory; label?: string; description?: string; amount: number; photo?: string }
+export interface Settlement { items: SettlementItem[]; total: number; internal?: boolean; reviewedAt?: number; reviewedBy?: string; submittedAt?: number; issuedAt?: number; dueAt?: number; by?: string; paid?: Payment }
 export interface Rating { stars: number; comment?: string; at: number; trip?: number; driver?: number; escort?: number }
 export interface HistoryEntry { time: number; actor: string; text: string }
 

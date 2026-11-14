@@ -17,12 +17,12 @@
 3. **Flow 3: Phê duyệt báo giá & Đặt cọc 30%**: Quản lý duyệt và phát hành báo giá hiệu lực 24 giờ. Khách thanh toán cọc 30% để hệ thống phát hành số Vận đơn điện tử (Waybill). Khách hủy đơn tại bước này sẽ bị áp dụng quy tắc khấu trừ cọc.
 4. **Flow 4: Vận hành chuyến & Đơn Trụ Sở (Single HQ)**: Tài xế và Hộ tống check-in từng mốc, quét chip, thu chứng từ gốc, nhận đủ 70% số dư trước khi xuất phát, bàn giao ngựa, báo quá hạn 2h nếu người nhận không đến. Xe và kíp xe sau khi giao ngựa **phải xác nhận trở về Trụ sở chính tại Việt Nam** mới chuyển sang trạng thái `AVAILABLE`.
 5. **Flow 5: Sự cố hành trình (SOS) & Đề xuất đối tác**: Tài xế/Hộ tống báo SOS, Điều phối viên lập phương án trên bản đồ (gọi cứu hộ, đưa ngựa vào trạm nghỉ, đổi lộ trình), Quản lý duyệt phương án & chi phí.
-6. **Flow 6: Quyết toán chi phí & Đóng đơn**: Tài xế nộp bảng kê chi phí phát sinh kèm hóa đơn, Quản lý đối soát và phát hành bảng quyết toán (hạn 24h), Khách thanh toán quyết toán và chấm điểm chuyến đi để hoàn tất đóng đơn.
+6. **Flow 6: Quyết toán chi phí & Đóng đơn**: Tài xế nộp bảng kê chi phí phát sinh kèm hóa đơn, Quản lý duyệt chi phí nội bộ công ty và hoàn tất đơn; khách đánh giá độc lập sau khi hoàn tất. Công ty chịu toàn bộ chi phí sự cố và chờ bàn giao, doanh thu công ty được trừ thực chi sự cố một lần.
 
 ### 1.3. Các Quy Tắc Nghiệp Vụ Bất Biến (Golden Rules)
 - **Mô hình Đơn Trụ Sở (Single HQ)**: Mọi phương tiện và nhân sự xuất phát từ Trụ sở chính (Việt Nam) và bắt buộc phải quay về Trụ sở chính mới được giải phóng nhận chuyến mới.
 - **Thanh toán 2 mốc 30% - 70%**: Cọc 30% để cấp Vận đơn; thanh toán 70% còn lại trước giờ xuất phát. Nếu khách chưa trả đủ 70%, hệ thống chặn không cho tài xế bắt đầu hành trình.
-- **Thời gian chờ bàn giao tối đa 2 giờ (Grace Period)**: Nếu quá 2 giờ người nhận không tới, tài xế kích hoạt quy trình an sinh khẩn cấp (thuê chuồng/lưu ca xe), chi phí phát sinh được tính vào quyết toán cho khách hàng chịu.
+- **Thời gian chờ bàn giao tối đa 2 giờ (Grace Period)**: Nếu quá 2 giờ người nhận không tới, tài xế kích hoạt quy trình an sinh khẩn cấp (thuê chuồng/lưu ca xe), công ty chịu toàn bộ thực chi, không thu phí chờ hay quyết toán khách hàng.
 - **Thẩm định song song (Parallel Review)**: Không làm tuần tự. Specialist và Coordinator làm việc đồng thời; Manager chỉ được duyệt báo giá khi cả hai bên đã hoàn tất.
 
 ---

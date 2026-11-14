@@ -47,8 +47,6 @@ public class SystemConfigServiceImpl implements SystemConfigService {
                     "Tỷ lệ đặt cọc trên tổng báo giá để phát hành vận đơn.", new BigDecimal("0.01"), new BigDecimal("0.99")),
             new Definition("QUOTE_VALID_HOURS", "Thời hạn hiệu lực báo giá", "24", "giờ", "PAYMENT",
                     "Số giờ khách có thể thanh toán đặt cọc sau khi báo giá được phát hành.", BigDecimal.ONE, BigDecimal.valueOf(168)),
-            new Definition("DEMURRAGE_PER_HOUR", "Phí lưu xe chờ khách", "400000", "VNĐ/giờ", "PAYMENT",
-                    "Phí lưu xe mỗi giờ khi bàn giao bị chậm do phía khách hàng.", BigDecimal.ZERO, BigDecimal.valueOf(100_000_000)),
             new Definition("MIN_LEAD_DAYS", "Số ngày đặt trước tối thiểu", "20", "ngày", "OPERATIONS",
                     "Số ngày tối thiểu giữa ngày tạo đơn và ngày khởi hành.", BigDecimal.ZERO, BigDecimal.valueOf(365)),
             new Definition("MAX_DRIVE_HOURS_PER_DAY", "Giờ lái tối đa mỗi ngày", "10", "giờ", "JOURNEY",
@@ -83,7 +81,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
                     "Phí làm thủ tục xuất nhập cảnh biên giới cho chuyến quốc tế.", BigDecimal.ZERO, BigDecimal.valueOf(50_000_000))
     );
 
-    private static final Set<String> RETIRED_CONFIG_KEYS = Set.of("BORDER_OPEN_MINUTES", "BORDER_CLOSE_MINUTES", "INSURANCE_RATE", "CREW_FEE_PER_DAY");
+    private static final Set<String> RETIRED_CONFIG_KEYS = Set.of("DEMURRAGE_PER_HOUR", "BORDER_OPEN_MINUTES", "BORDER_CLOSE_MINUTES", "INSURANCE_RATE", "CREW_FEE_PER_DAY");
 
     private static final Map<String, Definition> DEFINITIONS_BY_KEY = DEFINITIONS.stream()
             .collect(LinkedHashMap::new, (map, definition) -> map.put(definition.key(), definition), LinkedHashMap::putAll);

@@ -85,25 +85,9 @@ public class DeliveryServiceImpl implements DeliveryService {
                 request.getDriverUsername() != null ? request.getDriverUsername() : "Kíp xe",
                 request.getProofImageUrl(), System.currentTimeMillis());
 
-        // Kiểm tra xem đơn hàng có sự cố nào có chi phí thuộc phần KHÁCH HÀNG CHỊU không
-        List<Incident> customerIncidents = incidentRepository.findByBookingID_IdAndCostBearer(booking.getId(), "CUSTOMER");
-        boolean hasCustomerIncurredCosts = customerIncidents.stream()
-                .anyMatch(i -> i.getActualCost() != null && i.getActualCost().compareTo(BigDecimal.ZERO) > 0);
-
-        if (hasCustomerIncurredCosts) {
-            // Chuyển sang chờ quyết toán phát sinh (Flow 6 - Nhánh có phát sinh)
-            booking.setStatus("delivered_pending_settlement");
-            appendHistory(payload, request.getDriverUsername() != null ? request.getDriverUsername() : "Kíp xe",
-                    "Hoàn tất bàn giao ngựa");
-        } else {
-            // Không có chi phí phát sinh: Đóng đơn ngay lập tức (COMPLETED), giải phóng xe về AVAILABLE
-            booking.setStatus("completed");
-            appendHistory(payload, request.getDriverUsername() != null ? request.getDriverUsername() : "Kíp xe",
-                    "Hoàn tất bàn giao ngựa");
-
-            // Giải phóng xe về AVAILABLE tại Trụ sở chính VN
-            releaseVehiclesToAvailable(booking.getId());
-        }
+        booking.setStatus("delivered_pending_settlement");
+        appendHistory(payload, request.getDriverUsername() != null ? request.getDriverUsername() : "Kíp xe",
+                "Hoàn tất bàn giao ngựa, chờ đối soát nội bộ công ty");
 
         savePayload(booking, payload);
         Booking updated = bookingRepository.save(booking);
@@ -162,7 +146,7 @@ public class DeliveryServiceImpl implements DeliveryService {
 
         String reason = request.getTimeoutReason() != null ? request.getTimeoutReason() : "UNREACHABLE";
 
-        // Tạo bản ghi sự cố loại HANDOVER_TIMEOUT với bên chịu chi phí là CUSTOMER
+        // Quá hạn bàn giao chỉ tạo sự cố nội bộ, không thu thêm tiền khách
         Incident incident = Incident.builder()
                 .bookingID(booking)
                 .incidentType("HANDOVER_TIMEOUT")
@@ -173,8 +157,8 @@ public class DeliveryServiceImpl implements DeliveryService {
                 .partnerName(request.getPartnerName())
                 .partnerPhone(request.getPartnerPhone())
                 .estimatedCost(request.getEstimatedCost())
-                .actualCost(request.getEstimatedCost())
-                .costBearer("CUSTOMER") // Chi phí lưu ca xe và tiền chuồng do Khách hàng chịu theo hợp đồng
+                .actualCost(null)
+                .costBearer("COMPANY") // Công ty chịu toàn bộ chi phí chờ bàn giao và an sinh
                 .tripId(trip.getTripId())
                 .locationLat(where[0])
                 .locationLng(where[1])
@@ -211,33 +195,7 @@ public class DeliveryServiceImpl implements DeliveryService {
     @Override
     @Transactional
     public void returnToHq(ReturnToHqRequest request) {
-        if (request.getVehicleId() != null) {
-            Vehicle vehicle = vehicleRepository.findById(request.getVehicleId())
-                    .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy xe ID: " + request.getVehicleId()));
-
-            if ("NEEDS_MAINTENANCE".equalsIgnoreCase(request.getVehicleCondition())) {
-                vehicle.setStatus("INACTIVE"); // Xe cần bảo dưỡng đại tu
-            } else {
-                vehicle.setStatus("AVAILABLE"); // Xe sẵn sàng tại Trụ sở chính VN
-            }
-            vehicleRepository.save(vehicle);
-
-            operationalLog.record("VEHICLE_RETURNED_HQ", "VEHICLE", vehicle.getId(),
-                    "Xe " + vehicle.getLicensePlate() + " đã về tới Trụ sở chính Việt Nam. Trạng thái: " + vehicle.getStatus(), null);
-            log.info("Vehicle ID={} returned to Central HQ, status={}", vehicle.getId(), vehicle.getStatus());
-        }
-    }
-
-    private void releaseVehiclesToAvailable(Integer bookingId) {
-        List<BookingVehicle> bvs = bookingVehicleRepository.findByBookingID_Id(bookingId);
-        for (BookingVehicle bv : bvs) {
-            if (bv.getVehicleID() != null) {
-                Vehicle v = bv.getVehicleID();
-                v.setStatus("AVAILABLE");
-                vehicleRepository.save(v);
-                log.info("Released Vehicle ID={} to AVAILABLE at Central HQ", v.getId());
-            }
-        }
+        throw new IllegalStateException("Vui lòng xác nhận về trụ sở trên chuyến được phân công, kèm ảnh tại trụ sở.");
     }
 
     // Vị trí sự cố quá hạn: tọa độ mốc điểm giao nếu có, không thì điểm cuối của lộ trình đã chốt

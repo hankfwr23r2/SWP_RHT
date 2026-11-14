@@ -83,9 +83,9 @@ export const BOOKING_STATUS: Record<BookingStatus, { code: string; label: string
   handover_timeout: { code: 'Handover Timeout - Stabled', label: 'Quá hạn bàn giao', customerLabel: 'Quá giờ nhận ngựa', tone: 'danger' },
   returning_to_hq: { code: 'Handover Timeout - Returning to HQ', label: 'Chở về trụ sở', customerLabel: 'Chở về trụ sở', tone: 'warning' },
   delivered_pending_settlement: { code: 'Delivered - Pending Settlement', label: 'Đã giao ngựa', customerLabel: 'Đã giao ngựa', tone: 'success' },
-  expenses_submitted: { code: 'Expenses Submitted - Pending Audit', label: 'Chờ đối soát chi phí', customerLabel: 'Đang quyết toán', tone: 'orange' },
-  settlement_issued: { code: 'Settlement Issued - Awaiting Final Payment', label: 'Chờ thanh toán quyết toán', customerLabel: 'Chờ thanh toán quyết toán', tone: 'warning' },
-  payment_overdue: { code: 'Payment Overdue', label: 'Quá hạn thanh toán', customerLabel: 'Quá hạn thanh toán', tone: 'danger' },
+  expenses_submitted: { code: 'Expenses Submitted - Pending Audit', label: 'Chờ đối soát chi phí nội bộ', customerLabel: 'Đã giao ngựa', tone: 'orange' },
+  settlement_issued: { code: 'Internal Expense Review', label: 'Chờ đối soát chi phí nội bộ', customerLabel: 'Đã giao ngựa', tone: 'warning' },
+  payment_overdue: { code: 'Internal Expense Review - Legacy', label: 'Chờ đối soát chi phí nội bộ', customerLabel: 'Đã giao ngựa', tone: 'danger' },
   completed: { code: 'Order Completed', label: 'Đã hoàn tất', customerLabel: 'Đã hoàn tất', tone: 'success' },
   cancelled: { code: 'Cancelled', label: 'Đã hủy', customerLabel: 'Đã hủy', tone: 'muted' },
   rejected: { code: 'Order Rejected', label: 'Bị từ chối', customerLabel: 'Bị từ chối', tone: 'danger' },
@@ -98,7 +98,7 @@ export const STATUS_SHORT: Record<BookingStatus, string> = {
   waybill_issued: 'Có vận đơn', clearance_in_progress: 'Làm giấy tờ', clearance_done: 'Giấy tờ xong', ready_for_pickup: 'Sẵn sàng đón', en_route_to_pickup: 'Đến điểm đón', pickup_failed: 'Không nhận ngựa',
   in_transit: 'Vận chuyển', incident_reported: 'Báo sự cố', pending_emergency_approval: 'Chờ duyệt khẩn cấp', emergency_plan_active: 'Xử lý sự cố',
   arrived: 'Tới điểm giao', handover_timeout: 'Quá hạn giao', returning_to_hq: 'Về trụ sở',
-  delivered_pending_settlement: 'Đã giao', expenses_submitted: 'Chờ đối soát', settlement_issued: 'Chờ khách trả', payment_overdue: 'Quá hạn trả', completed: 'Hoàn tất',
+  delivered_pending_settlement: 'Đã giao', expenses_submitted: 'Chờ đối soát', settlement_issued: 'Chờ đối soát', payment_overdue: 'Chờ đối soát', completed: 'Hoàn tất',
   cancelled: 'Đã hủy', rejected: 'Bị từ chối',
 }
 
@@ -151,7 +151,6 @@ export const EXPENSE_CATEGORY: Record<ExpenseCategory, string> = {
 }
 export type IncidentStatus = 'reported' | 'pending_approval' | 'active' | 'resolved'
 export type Payer = 'customer' | 'carrier'
-export const SETTLEMENT_GRACE_HOURS = 24 // hạn trả bảng quyết toán; quá hạn là Payment Overdue (PRD mục 8.2)
 
 // ===== Giấy tờ pháp lý do Specialist làm (Flow 2, PRD mục 3.3, 12) =====
 export type ClearanceDocType = 'health_cert' | 'poa' | 'customs_declaration' | 'import_permit' | 'quarantine_cert' | 'ata_carnet' | 'commercial_invoice'
@@ -188,7 +187,6 @@ export let CLEARANCE_FEE = { domestic: 0, international: 300_000 } // phí thủ
 export const FUEL_BOT_PER_KM = 9_000 // nhiên liệu + BOT ước tính mỗi km (số mẫu)
 export const FUEL_BUFFER_RATE = 0.05 // dự phòng trên nhiên liệu và BOT
 export let MARGIN_RATE = 0.05 // biên lợi nhuận, gộp vào đơn giá, không hiện thành dòng riêng
-export let DEMURRAGE_PER_HOUR = 400_000 // phí lưu xe chờ, chỉ khi lỗi phía khách (PRD mục 11.3: 300.000 – 500.000 đ/giờ)
 
 // ===== Lộ trình: trạm nghỉ và Lệnh điều xe (Flow 1, 3, PRD mục 4.2) =====
 export let MAX_CONTINUOUS_HOURS = 4 // quy chuẩn an sinh: ngựa không đi liên tục quá 4 giờ
@@ -199,14 +197,12 @@ export let VITAL_CHECK_INTERVAL_HOURS = 2
 export function applyRuntimeBookingRules(config: {
   depositRate: number
   quoteValidHours: number
-  demurragePerHour: number
   maxContinuousHours: number
   minRestMinutes: number
   vitalCheckIntervalHours: number
 }) {
   DEPOSIT_RATE = config.depositRate
   QUOTE_VALID_HOURS = config.quoteValidHours
-  DEMURRAGE_PER_HOUR = config.demurragePerHour
   MAX_CONTINUOUS_HOURS = config.maxContinuousHours
   MIN_REST_MINUTES = config.minRestMinutes
   VITAL_CHECK_INTERVAL_HOURS = config.vitalCheckIntervalHours

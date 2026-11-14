@@ -125,15 +125,7 @@ public class BookingServiceImpl implements BookingService {
                     return customerRepository.save(c);
                 });
 
-        // 2b. Kiểm tra quy tắc PRD mục 8.2: Chặn tạo đơn mới nếu khách có đơn quá hạn thanh toán quyết toán (payment_overdue)
         List<Booking> customerBookings = bookingRepository.findByCustomerID_IdOrderByBookingDateDesc(customer.getId());
-        if (customerBookings != null) {
-            boolean hasOverdue = customerBookings.stream()
-                    .anyMatch(b -> "payment_overdue".equalsIgnoreCase(b.getStatus()));
-            if (hasOverdue) {
-                throw new IllegalStateException("Bạn có đơn hàng đang quá hạn thanh toán quyết toán (payment_overdue). Vui lòng thanh toán trước khi tạo đơn mới!");
-            }
-        }
 
         // 3. Chuyển đổi timestamp ngày khởi hành
         int minimumLeadDays = Integer.parseInt(systemConfigService.getConfig("MIN_LEAD_DAYS").getConfigValue());
@@ -1564,33 +1556,8 @@ public class BookingServiceImpl implements BookingService {
     @Override
     @Transactional
     public int markOverdueSettlements() {
-        List<Booking> issuedBookings = bookingRepository.findByStatusOrderByBookingDateAsc("settlement_issued");
-        int count = 0;
-        long now = System.currentTimeMillis();
-
-        for (Booking booking : issuedBookings) {
-            BookingDetailsPayload payload = extractPayload(booking);
-            if (payload != null && payload.getSettlement() instanceof Map) {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> settMap = (Map<String, Object>) payload.getSettlement();
-                Object dueAtObj = settMap.get("dueAt");
-                if (dueAtObj instanceof Number) {
-                    long dueAt = ((Number) dueAtObj).longValue();
-                    if (now > dueAt) {
-                        booking.setStatus("payment_overdue");
-                        appendHistory(payload, "Hệ thống", "Bảng quyết toán quá hạn");
-                        savePayload(booking, payload);
-                        bookingRepository.save(booking);
-                        logAction("SETTLEMENT_OVERDUE", booking.getId(), "Đơn BK-" + booking.getId() + " quá hạn thanh toán quyết toán 24h.");
-                        count++;
-                    }
-                }
-            }
-        }
-        if (count > 0) {
-            log.info("Marked {} bookings as payment_overdue", count);
-        }
-        return count;
+        // Company expenses never create customer payment deadlines.
+        return 0;
     }
 
     private void snapshotSelectedServices(List<BookingHorseDto> horses) {
@@ -2102,7 +2069,7 @@ public class BookingServiceImpl implements BookingService {
                 }
             }
         }
-        return BookingResponse.builder()
+        BookingResponse response = BookingResponse.builder()
                 .id(formattedId)
                 .numericId(b.getId())
                 .type(b.getBookingType() != null ? b.getBookingType() : "domestic")
@@ -2146,6 +2113,7 @@ public class BookingServiceImpl implements BookingService {
                 .sendBack(payload != null ? payload.getSendBack() : null)
                 .history(payload != null ? payload.getHistory() : null)
                 .build();
+        return customerView ? com.example.racehorse_transport.util.CustomerBookingPrivacy.apply(response) : response;
     }
 
     @Override
@@ -3058,9 +3026,9 @@ public class BookingServiceImpl implements BookingService {
             case "incident_reported", "pending_emergency_approval" -> "Xe gặp sự cố, đang xử lý";
             case "emergency_plan_active" -> "Đang xử lý sự cố, ngựa được chăm sóc";
             case "delivered_pending_settlement" -> "Đã giao ngựa";
-            case "expenses_submitted" -> "Đã giao, đang quyết toán";
-            case "settlement_issued" -> "Chờ thanh toán quyết toán";
-            case "payment_overdue" -> "Quá hạn thanh toán";
+            case "expenses_submitted" -> "Đã giao ngựa";
+            case "settlement_issued" -> "Đã giao ngựa";
+            case "payment_overdue" -> "Đã giao ngựa";
             case "completed" -> "Đã hoàn tất";
             case "cancelled" -> "Đã hủy";
             case "rejected" -> "Đơn bị từ chối";

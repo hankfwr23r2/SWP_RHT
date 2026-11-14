@@ -5,7 +5,6 @@ import com.example.racehorse_transport.dto.settlement.*;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Payment;
 
-import java.math.BigDecimal;
 
 public interface SettlementService {
 
@@ -15,27 +14,27 @@ public interface SettlementService {
     BookingResponse submitExpenses(String bookingIdentifier, SubmitExpensesRequest request, String username);
 
     /**
-     * 2. Quản lý (Manager) đối soát chứng từ và phát hành Bảng quyết toán phát sinh (Flow 6, bước 3)
+     * Manager approves the internal company expense review and closes the order.
      */
     SettlementResponse issueSettlement(String bookingIdentifier, IssueSettlementRequest request, String username);
 
     /**
-     * 3. Khách hàng thanh toán phát sinh (nếu có) + gửi đánh giá -> Đóng đơn hàng (Flow 6, bước 4 & 5)
+     * Customer feedback after internal closure; independent of all payments.
      */
-    BookingResponse payAndComplete(String bookingIdentifier, PaySettlementRequest request, String username);
+    BookingResponse submitRating(String bookingIdentifier, RatingDto request, String username);
 
     /**
-     * 4. Xem chi tiết Bảng quyết toán phát sinh của đơn hàng
+     * Staff-only company expense review detail.
      */
     SettlementResponse getSettlementDetail(String bookingIdentifier);
 
     /**
-     * Chuẩn bị thanh toán quyết toán qua VNPAY: giữ tạm đánh giá, trả về số tiền phát sinh phải trả
+     * Idempotently retire customer expense balances and normalize legacy cost ownership.
      */
-    BigDecimal holdForVnpay(Booking booking, RatingDto rating);
+    int migrateLegacySettlements();
 
     /**
-     * Áp hiệu ứng sau khi VNPAY xác nhận đã nhận tiền quyết toán: ghi đánh giá, đóng đơn, nhả xe
+     * Archive a legacy payment without issuing a new charge or releasing resources.
      */
     Booking confirmSettlementPaid(Payment payment, String actor);
 }

@@ -43,12 +43,7 @@ export interface CancelWithRefundDto {
   refundPayment?: PaymentDto
 }
 
-export type VnpayPaymentType = 'DEPOSIT' | 'BALANCE' | 'SETTLEMENT'
-
-export interface VnpayRatingPayload {
-  stars: number
-  comment?: string
-}
+export type VnpayPaymentType = 'DEPOSIT' | 'BALANCE'
 
 export interface VnpayCreateDto {
   paymentUrl: string
@@ -82,15 +77,14 @@ export function vnpayParamsFrom(search: string): Record<string, string> {
 
 export const paymentApi = {
   /**
-   * 1. Tạo link thanh toán VNPAY cho cọc 30% / số dư 70% / quyết toán (POST /api/v1/payments/vnpay/create).
-   * Số tiền do backend tự tính từ báo giá / bảng quyết toán, client chỉ gửi mã đơn và loại thanh toán.
-   * Quyết toán gửi kèm đánh giá; đánh giá chỉ được ghi khi VNPAY xác nhận đã nhận tiền.
+   * 1. Tạo link thanh toán VNPAY cho cọc 30% / số dư 70% (POST /api/v1/payments/vnpay/create).
+   * Số tiền do backend tự tính từ báo giá, client chỉ gửi mã đơn và loại thanh toán.
    */
-  createVnpay: async (bookingId: string | number, paymentType: VnpayPaymentType, rating?: VnpayRatingPayload): Promise<VnpayCreateDto> => {
+  createVnpay: async (bookingId: string | number, paymentType: VnpayPaymentType): Promise<VnpayCreateDto> => {
     const returnUrl = typeof window !== 'undefined' && window.location?.origin
       ? `${window.location.origin}/payment/vnpay-return`
       : undefined
-    const res = await apiClient.post<ApiResponse<VnpayCreateDto>>('/payments/vnpay/create', { bookingId: String(bookingId), paymentType, rating, returnUrl })
+    const res = await apiClient.post<ApiResponse<VnpayCreateDto>>('/payments/vnpay/create', { bookingId: String(bookingId), paymentType, returnUrl })
     return res.data.data
   },
 

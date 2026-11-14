@@ -31,9 +31,9 @@ public final class BookingStatusLabels {
             Map.entry("handover_timeout", new Label("Quá hạn bàn giao", "Quá giờ nhận ngựa")),
             Map.entry("returning_to_hq", new Label("Chở về trụ sở", "Chở về trụ sở")),
             Map.entry("delivered_pending_settlement", new Label("Đã giao ngựa", "Đã giao ngựa")),
-            Map.entry("expenses_submitted", new Label("Chờ đối soát chi phí", "Đang quyết toán")),
-            Map.entry("settlement_issued", new Label("Chờ thanh toán quyết toán", "Chờ thanh toán quyết toán")),
-            Map.entry("payment_overdue", new Label("Quá hạn thanh toán", "Quá hạn thanh toán")),
+            Map.entry("expenses_submitted", new Label("Chờ đối soát chi phí nội bộ", "Đã giao ngựa")),
+            Map.entry("settlement_issued", new Label("Chờ đối soát chi phí nội bộ", "Đã giao ngựa")),
+            Map.entry("payment_overdue", new Label("Chờ đối soát chi phí nội bộ", "Đã giao ngựa")),
             Map.entry("completed", new Label("Đã hoàn tất", "Đã hoàn tất")),
             Map.entry("cancelled", new Label("Đã hủy", "Đã hủy")),
             Map.entry("rejected", new Label("Bị từ chối", "Bị từ chối")));

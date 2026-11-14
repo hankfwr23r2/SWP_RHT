@@ -1,5 +1,5 @@
 // Service đơn đặt chuyến (Flow 1–6): kết nối trực tiếp API Spring Boot, không giữ dữ liệu ở máy khách.
-import { CLEARANCE_DOC, INCIDENT_KIND, type ClearanceDocType, type IncidentKind, type Payer } from '../config/booking-rules'
+import { CLEARANCE_DOC, INCIDENT_KIND, type ClearanceDocType, type IncidentKind } from '../config/booking-rules'
 import { crewAssigned, defaultPayer, finalizeQuote, incidentLocation, quoteLines, sameVehicleId } from '../lib/booking'
 import type { Adjustment, Booking, BookingHorse, Incident, IncidentExpense, IncidentPlan, Rating, RoutePlan, StaffRef, VehicleTrip } from '../types/booking'
 import { backendBookingApi, type BackendBookingResponse } from '../api/bookings'
@@ -45,17 +45,17 @@ const partyDto = (p: Booking['consignor']) => ({
 
 // Bỏ trường nội bộ trước khi đưa sang app khách; xe, lộ trình chỉ hiện khi báo giá đã gửi
 const QUOTED: Booking['status'][] = ['awaiting_payment', 'quote_expired', 'waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'pickup_failed', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed']
-export type CustomerTrip = Omit<VehicleTrip, 'driverPack' | 'acks'>
-// Khách chỉ thấy diễn biến sự cố (nhóm, bước xử lý, ETA mới); chi phí chỉ hiện trong bảng quyết toán
+export type CustomerTrip = Omit<VehicleTrip, 'driverPack' | 'acks' | 'tolls'>
+// Khách chỉ thấy diễn biến sự cố; chi phí và chứng từ thuộc nội bộ công ty.
 export type CustomerIncident = Pick<Incident, 'id' | 'tripId' | 'kind' | 'status' | 'reportedAt' | 'resolvedAt'> & { newEta?: number }
-export type CustomerBookingView = Omit<Booking, 'intake' | 'history' | 'plan' | 'trips' | 'incidents'> & { trips?: CustomerTrip[]; incidents?: CustomerIncident[] }
+export type CustomerBookingView = Omit<Booking, 'intake' | 'history' | 'plan' | 'trips' | 'incidents' | 'settlement' | 'expensesSubmittedAt'> & { trips?: CustomerTrip[]; incidents?: CustomerIncident[] }
 // Báo giá hết hạn / đơn hủy: xe và nhân sự đã nhả, khách không còn thấy thông tin xe, tài xế
 const SHOW_TEAM: Booking['status'][] = QUOTED.filter(s => s !== 'quote_expired')
 const toCustomerView = (b: Booking): CustomerBookingView => {
-  const { intake: _intake, history: _history, plan: _plan, trips, incidents, ...view } = structuredClone(b)
+  const { intake: _intake, history: _history, plan: _plan, trips, incidents, settlement: _settlement, expensesSubmittedAt: _expensesSubmittedAt, ...view } = structuredClone(b)
   const out: CustomerBookingView = view
   if (incidents?.length) out.incidents = incidents.map(i => ({ id: i.id, tripId: i.tripId, kind: i.kind, status: i.status, reportedAt: i.reportedAt, resolvedAt: i.resolvedAt, newEta: i.plan && (i.status === 'active' || i.status === 'resolved') ? i.plan.newEta : undefined }))
-  if (SHOW_TEAM.includes(b.status)) out.trips = trips?.map(({ driverPack: _p, acks: _a, ...t }) => t)
+  if (SHOW_TEAM.includes(b.status)) out.trips = trips?.map(({ driverPack: _p, acks: _a, tolls: _tolls, ...t }) => t)
   else delete out.route
   if (!SHOW_TEAM.includes(b.status)) delete out.route
   return out
@@ -153,11 +153,7 @@ export const customerBookingsApi = {
     return toCustomerBooking(booking, incidents, customer)
   },
   create: async (customer: string, input: NewBookingInput): Promise<CustomerBookingView> => {
-    // PRD mục 8.2: khách có đơn quá hạn thanh toán quyết toán thì chưa đặt được đơn mới
     const currentBookings = await backendBookingApi.getCustomerBookings()
-    if (currentBookings.some(b => b.status === 'payment_overdue')) {
-      throw new Error('Bạn có đơn quá hạn thanh toán quyết toán nên chưa đặt được đơn mới. Vui lòng thanh toán trước.')
-    }
 
     // Kiểm tra chặn nếu có ngựa đang nằm trong đơn hàng khác chưa hoàn tất
     const FINISHED = new Set(['completed', 'cancelled', 'rejected', 'quote_expired'])
@@ -224,25 +220,10 @@ export const customerBookingsApi = {
   resubmit: async (customer: string, id: string): Promise<CustomerBookingView> =>
     toCustomerView(toBooking(await backendBookingApi.resubmitDocuments(id), customer)),
   // Link sang cổng VNPAY cho cọc 30% / số dư 70%; đơn chỉ đổi trạng thái khi VNPAY xác nhận đã nhận tiền
-  vnpayUrl: async (id: string, type: Exclude<VnpayPaymentType, 'SETTLEMENT'>): Promise<string> =>
+  vnpayUrl: async (id: string, type: VnpayPaymentType): Promise<string> =>
     (await paymentApi.createVnpay(id, type)).paymentUrl,
-  // Quyết toán có khoản phải trả: đánh giá gửi kèm, đơn chỉ đóng khi VNPAY xác nhận đã nhận tiền
-  settlementVnpayUrl: async (id: string, rating: Omit<Rating, 'at'>): Promise<string> =>
-    (await paymentApi.createVnpay(id, 'SETTLEMENT', { stars: starsOf(rating), comment: rating.comment })).paymentUrl,
-  // Quyết toán 0 đồng: chỉ gửi đánh giá và đóng đơn
-  settle: async (customer: string, id: string, rating: Omit<Rating, 'at'>): Promise<CustomerBookingView> => {
-    const stars = starsOf(rating)
-    const out = await backendSettlementApi.payAndComplete(id, {
-      rating: {
-        stars,
-        comment: rating.comment,
-        trip: stars,
-        driver: stars,
-        escort: stars,
-      },
-    })
-    return toCustomerView(toBooking(out, customer))
-  },
+  rate: async (customer: string, id: string, rating: Omit<Rating, 'at'>): Promise<CustomerBookingView> =>
+    toCustomerView(toBooking(await backendBookingApi.submitRating(id, { stars: starsOf(rating), comment: rating.comment }), customer)),
 }
 
 // Danh sách đơn theo vai trò đang đăng nhập.
@@ -532,7 +513,7 @@ export const bookingsApi = {
     _id: string,
     incidentId: string,
     _by: string,
-    options?: { directive?: string; approvedCost?: number; costBearer?: 'COMPANY' | 'CUSTOMER' }
+    options?: { directive?: string; approvedCost?: number; costBearer?: 'COMPANY' }
   ) =>
     backendIncidentApi.approvePlan(numericId(incidentId, 'INC'), {
       directive: options?.directive?.trim() || undefined,
@@ -552,41 +533,11 @@ export const bookingsApi = {
   resumeJourney: async (_id: string, incidentId: string, _by: string, earlyLeave?: { note: string }) =>
     backendIncidentApi.resumeJourney(numericId(incidentId, 'INC'), earlyLeave ? { confirmEarlyLeave: true, note: earlyLeave.note } : undefined),
 
-  // ===== Flow 6: quyết toán =====
-  submitExpenses: async (id: string, _by: string): Promise<Booking> => {
-    const b = await byId(id).catch(() => null)
-    const incidentsFromApi = await backendIncidentApi.getByBooking(numericId(id, 'BK')).catch(() => [])
-    const incidents = incidentsFromApi.length ? incidentsFromApi : (b?.incidents ?? [])
-    const expenses = incidents.flatMap(incident => (incident.expenses ?? []).map(expense => ({
-      id: expense.id,
-      category: expense.category,
-      description: expense.label,
-      photo: expense.photo,
-      amount: expense.amount,
-      payer: expense.payer === 'customer' ? 'customer' as const : 'carrier' as const,
-    })))
-    return toBooking(await backendSettlementApi.submitExpenses(id, { expenses }))
-  },
-  issueSettlement: async (id: string, by: string, payers: Record<string, Payer> = {}): Promise<Booking> => {
-    const booking = await byId(id)
-    const items = (booking.incidents ?? []).flatMap(incident => incident.expenses.map(expense => ({
-      id: expense.id,
-      category: expense.category,
-      description: expense.label,
-      photo: expense.photo,
-      amount: expense.amount,
-      payer: payers[expense.id] ?? expense.payer,
-    })))
-    const payerMap: Record<string, 'customer' | 'carrier'> = {}
-    Object.entries(payers).forEach(([k, v]) => {
-      payerMap[k] = v === 'customer' ? 'customer' : 'carrier'
-    })
-    await backendSettlementApi.issue(id, {
-      managerName: by,
-      items,
-      payers: payerMap,
-      note: 'Quản lý đối soát và phát hành quyết toán',
-    })
+  // ===== Flow 6: đối soát chi phí nội bộ =====
+  submitExpenses: async (id: string, _by: string): Promise<Booking> =>
+    toBooking(await backendSettlementApi.submitExpenses(id, {})),
+  issueSettlement: async (id: string, by: string): Promise<Booking> => {
+    await backendSettlementApi.issue(id, { managerName: by, note: 'Duyệt chi phí nội bộ công ty' })
     return byId(id)
   },
 }

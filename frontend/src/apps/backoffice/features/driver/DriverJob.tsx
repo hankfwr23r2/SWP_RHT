@@ -214,7 +214,7 @@ function TimeoutModal({ b, t, waited, onClose, run }: { b: Booking; t: VehicleTr
             <input id="pp" className="form-control" placeholder="VD: 0901 234 567" value={partnerPhone} onChange={e => setPartnerPhone(e.target.value)} />
           </div>
           <div className="form-group">
-            <label htmlFor="pc">Chi phí lưu chuồng ước tính (VNĐ)</label>
+            <label htmlFor="pc">Chi phí lưu chuồng công ty dự kiến chi (VNĐ)</label>
             <input id="pc" inputMode="numeric" className="form-control" value={formattedCost} aria-invalid={!validCost} onChange={e => setCost(e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, ''))} />
             {!validCost && <p className="form-error" role="alert">Nhập chi phí lớn hơn 0 và không vượt quá 9,999,999,999,999,999 VNĐ.</p>}
           </div>
@@ -264,7 +264,7 @@ function DeliveryStep({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Check
       {timeout ? (
         <Panel title="Đã báo quá hạn bàn giao" icon="fa-clock" tone="warn">
           <p>{timeout.note || 'Người nhận chưa tới nhận ngựa.'} Khi người nhận tới, làm các bước trên rồi bấm "Hoàn tất giao ngựa", sự cố tự đóng.</p>
-          <p>Đã ghi {formatVND(timeout.expenses.reduce((n, e) => n + e.amount, 0))} chi phí. Chụp hóa đơn lưu chuồng để tính vào quyết toán (khách chịu).</p>
+          <p>Đã ghi {formatVND(timeout.expenses.reduce((n, e) => n + e.amount, 0))} chi phí. Chụp hóa đơn lưu chuồng để ghi nhận chi phí nội bộ công ty.</p>
           <ul className={s.checklist}>{timeout.expenses.map(e => <li key={e.id} style={{ padding: '6px 0', fontSize: '0.9rem' }}>{e.label}: <b>{formatVND(e.amount)}</b></li>)}</ul>
           <ExpenseForm b={b} inc={timeout} run={run} />
         </Panel>

@@ -481,7 +481,7 @@ export const ORDER_GROUPS: Record<OrderGroup, { label: string; icon: string; hin
   approved: { label: 'Đã duyệt', icon: 'fa-circle-check', hint: 'Đã có báo giá, đặt cọc, làm giấy tờ, chờ xe đón ngựa' },
   supplement: { label: 'Yêu cầu bổ sung', icon: 'fa-file-circle-exclamation', hint: 'Chuyên viên cần bạn bổ sung hồ sơ ngựa' },
   moving: { label: 'Đang di chuyển', icon: 'fa-truck-fast', hint: 'Xe đang đến điểm đón hoặc đang chở ngựa' },
-  settle: { label: 'Chờ quyết toán', icon: 'fa-receipt', hint: 'Ngựa đã giao, đang đối soát chi phí hoặc chờ bạn thanh toán và đánh giá' },
+  settle: { label: 'Hoàn tất chuyến', icon: 'fa-flag-checkered', hint: 'Ngựa đã giao, nhà xe đang hoàn tất thủ tục nội bộ' },
   closed: { label: 'Hết hạn / hủy / từ chối', icon: 'fa-ban', hint: 'Báo giá hết hạn, đơn đã hủy hoặc nhà xe từ chối đơn' },
   done: { label: 'Đã hoàn thành', icon: 'fa-flag-checkered', hint: 'Ngựa đã được giao' },
 }
@@ -514,7 +514,7 @@ export function orderTabOf(b: Pick<Booking, 'status' | 'medical' | 'balance' | '
     case 'in_transit': case 'incident_reported': case 'pending_emergency_approval': case 'emergency_plan_active':
     case 'arrived': case 'handover_timeout': case 'returning_to_hq': return 'moving'
     case 'delivered_pending_settlement': case 'expenses_submitted': return 'settle'
-    case 'settlement_issued': case 'payment_overdue': return b.settlement?.total ? 'pay' : 'settle'
+    case 'settlement_issued': case 'payment_overdue': return 'settle'
     case 'completed': return 'done'
     case 'quote_expired': case 'cancelled': case 'rejected': return 'closed'
   }
@@ -891,11 +891,8 @@ export const needsAttention = (w?: WelfareLog) => !!w && w.condition !== 'normal
 export const openIncidentOf = (b: Pick<Booking, 'incidents'>, tripId: string) => b.incidents?.find(i => i.tripId === tripId && i.status !== 'resolved' && i.kind !== 'handover_timeout')
 // Quá hạn bàn giao đang chờ người nhận của chuyến
 export const handoverTimeoutOf = (b: Pick<Booking, 'incidents'>, tripId: string) => b.incidents?.find(i => i.tripId === tripId && i.status !== 'resolved' && i.kind === 'handover_timeout')
-// Ngựa thì khách chịu, vận chuyển thì nhà xe chịu; chuồng đệm do tắc cửa khẩu nhà xe chịu. Manager sửa được lúc đối soát.
-export function defaultPayer(kind: IncidentKind, category: ExpenseCategory): Payer {
-  if (kind === 'traffic_jam') return 'carrier' // tắc đường là việc vận chuyển: nhà xe chịu toàn bộ (PRD 11.5)
-  return category === 'vet_fee' || category === 'medicine' || category === 'holding_stable' ? 'customer' : 'carrier'
-}
+// All incident and handover waiting expenses are internal company costs.
+export function defaultPayer(_kind: IncidentKind, _category: ExpenseCategory): Payer { return 'carrier' }
 // Mỗi nhóm sự cố có đúng một cách xử lý, lập trên bản đồ
 export function incidentActionsFor(kind: IncidentKind): IncidentAction[] {
   return kind === 'horse_health' ? ['to_station'] : kind === 'vehicle_breakdown' ? ['rescue_and_station'] : ['reroute']
@@ -953,9 +950,9 @@ export function incidentLocation(b: Pick<Booking, 'origin' | 'dest' | 'gate' | '
   const f = p && p.total ? (p.done + 0.5) / p.total : 0.5
   return pointAlong(path, Math.max(0.08, Math.min(0.92, f)))
 }
-// Chỉ các khoản khách chịu vào bảng quyết toán
+// Internal expense review includes every recorded company expense.
 export function settlementOf(b: Pick<Booking, 'incidents'>): { items: SettlementItem[]; total: number } {
-  const items = (b.incidents ?? []).flatMap(i => i.expenses).filter(e => e.payer === 'customer').map(e => ({ label: `${EXPENSE_CATEGORY[e.category]}: ${e.label}`, amount: e.amount, photo: e.photo }))
+  const items = (b.incidents ?? []).flatMap(i => i.expenses).map(e => ({ label: `${EXPENSE_CATEGORY[e.category]}: ${e.label}`, amount: e.amount, photo: e.photo }))
   return { items, total: items.reduce((n, i) => n + i.amount, 0) }
 }
 
