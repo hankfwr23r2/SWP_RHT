@@ -4,6 +4,7 @@ import { COUNTRIES } from '@shared/config/network'
 import { InsuranceSummary } from '@shared/ui/InsuranceFields'
 import { formatDate, formatDateTime } from '@shared/lib/format'
 import { FEED_PACKAGE, WATER_PLAN } from '@shared/config/booking-rules'
+import { feedingLines } from '@shared/lib/feeding'
 import { SEX_LABEL, type Booking, type PlaceRef } from '@shared/types/booking'
 import { placeShort } from './place'
 import s from './booking.module.css'
@@ -110,6 +111,7 @@ export function HorseConfigList({ b }: { b: Booking }) {
             {(h.selectedServices?.water || h.waterPlan) && (
               <span>{t('bookingParts.water', 'Cữ nước')}: <b>{h.selectedServices?.water?.serviceName ?? WATER_PLAN[h.waterPlan ?? 'every_3h'].label}</b></span>
             )}
+            {feedingLines(h.feeding).map(([label, text]) => <span key={label}>{label}: <b>{text}</b></span>)}
             <InsuranceSummary insurance={h.insurance} />
           </div>
         </div>

@@ -197,6 +197,7 @@ export const customerBookingsApi = {
         insurance: h.insurance?.option ? { ...h.insurance, option: h.insurance.option } : undefined,
         selectedServices: h.selectedServices,
         selectedServiceCodes: h.selectedServiceCodes,
+        feeding: h.feeding,
       })),
     })
     return toCustomerView(toBooking(created, customer))

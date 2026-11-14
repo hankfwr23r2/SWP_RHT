@@ -68,6 +68,7 @@ function horseOf(h: BackendBookingResponse['horses'][number]): BookingHorse {
     },
     status: h.status?.toLowerCase() === 'unfit' ? 'unfit' : h.status?.toLowerCase() === 'chip_mismatch' ? 'chip_mismatch' : 'eligible',
     unfitInfo: h.unfitInfo as BookingHorse['unfitInfo'],
+    ...(h.feeding ? { feeding: h.feeding } : {}),
   }
 }
 

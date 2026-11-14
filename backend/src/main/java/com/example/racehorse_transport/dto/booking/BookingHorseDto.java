@@ -24,4 +24,5 @@ public class BookingHorseDto {
     private Map<String, BookingServiceSelectionDto> selectedServices;
     private String status; // ELIGIBLE, UNFIT
     private Map<String, Object> unfitInfo;
+    private HorseFeedingDto feeding; // giờ ăn quen, khẩu phần, có gửi kèm thức ăn không (khách khai lúc đặt chuyến)
 }

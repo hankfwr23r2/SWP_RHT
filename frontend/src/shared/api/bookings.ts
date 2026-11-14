@@ -30,6 +30,7 @@ export interface BookingHorseDto {
   selectedServiceCodes?: Partial<Record<BookingRequiredServiceCategory, string>>
   status?: string
   unfitInfo?: Record<string, unknown>
+  feeding?: import('../types/booking').HorseFeeding | null
 }
 
 export interface CreateBookingPayload {

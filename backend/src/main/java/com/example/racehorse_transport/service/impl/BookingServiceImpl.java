@@ -149,6 +149,7 @@ public class BookingServiceImpl implements BookingService {
 
         // 4. Resolve selected services against active catalog data before persisting a price snapshot.
         for (BookingHorseDto horse : request.getHorses()) {
+            horse.setFeeding(com.example.racehorse_transport.util.HorseFeedingPolicy.normalize(horse.getFeeding()));
             HorseInsurancePolicy.validateDeclaration(horse.getInsurance());
             var insurance = horse.getInsurance();
             insurance.setReviewed(false);

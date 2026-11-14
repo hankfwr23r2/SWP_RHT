@@ -7,6 +7,7 @@ import { VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { COUNTRIES } from '@shared/config/network'
 import { classForHorses, findLocation, fromIsoDay } from '@shared/lib/booking'
 import { formatDate, formatVND } from '@shared/lib/format'
+import { cleanFeeding, feedingLines } from '@shared/lib/feeding'
 import { usePageData } from '@shared/routing/pageData'
 import { customerBookingsApi } from '@shared/services/bookings'
 import { SEX_LABEL, type BookingRequiredServiceCategory, type PlaceRef } from '@shared/types/booking'
@@ -98,6 +99,7 @@ export default function Step4ReviewPage() {
           return {
             horseId: h.id, name: h.name, microchip: h.microchip, breed: h.breed, sex: h.sex,
             insurance: { ...insurance, opted: insurance.option === 'assistance' },
+            feeding: cleanFeeding(draft.config[h.id].feeding),
             selectedServiceCodes: Object.fromEntries(Object.entries(selectedServices).map(([key, service]) => [key, service?.serviceCode])) as Partial<Record<BookingRequiredServiceCategory, string>>,
           }
         }),
@@ -166,6 +168,7 @@ export default function Step4ReviewPage() {
                   <span className={s.reviewServiceSub}>{selected.feed ? (selected.feed.price > 0
                     ? `${formatVND(selected.feed.price)} / ${SERVICE_BILLING_UNIT_LABEL[selected.feed.billingUnit]}`
                     : t('bookingWizard.freeIncluded')) : (i18n.language === 'en' ? 'Please return to select service' : 'Vui lòng quay lại chọn dịch vụ')}</span>
+                  {feedingLines(draft.config[h.id].feeding).map(([label, text]) => <span key={label} className={s.reviewServiceSub}>{label}: {text}</span>)}
                 </div>
                 <div className={s.reviewServiceCol}>
                   <span className={s.reviewServiceLabel}><i className="fa-solid fa-shield-halved" /> {i18n.language === 'en' ? 'Transit Insurance' : 'Bảo hiểm chuyến đi'}</span>

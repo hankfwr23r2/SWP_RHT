@@ -12,6 +12,7 @@ export interface HorseConfig {
   selectedServiceCodes?: Partial<Record<BookingRequiredServiceCategory, string>>
   insurance: 'buy' | 'decline' | 'personal' | 'assistance' | 'none' | ''
   insuranceDetails?: import('@shared/types/insurance').HorseInsurance // phải chọn rõ cho từng ngựa
+  feeding?: import('@shared/types/booking').HorseFeeding // giờ ăn quen, khẩu phần, gửi kèm thức ăn (không bắt buộc)
 }
 
 export interface BookingDraft {

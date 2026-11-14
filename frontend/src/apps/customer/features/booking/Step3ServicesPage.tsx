@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { formatVND } from '@shared/lib/format'
+import { FEEDING_RATION_MAX, FEEDING_USUAL_TIMES_MAX } from '@shared/lib/feeding'
 import { CustomerInsuranceFields } from '@shared/ui/InsuranceFields'
 import { usePageData } from '@shared/routing/pageData'
 import { SEX_LABEL } from '@shared/types/booking'
@@ -114,6 +115,32 @@ export default function Step3ServicesPage() {
                       </label>
                     )) : <span>{t('bookingWizard.noOptions')}</span>}
                   </div>
+                </div>
+                <div className={s.serviceSection}>
+                  <div className={s.fieldLabel}>
+                    <i className="fa-solid fa-wheat-awn" aria-hidden="true" /> {en ? 'Feeding notes (optional)' : 'Thông tin cho ăn (không bắt buộc)'}
+                  </div>
+                  <div className={s.grid2}>
+                    <div className="form-group">
+                      <label htmlFor={`feed-times-${horse.id}`}>{en ? 'Usual feeding times' : 'Giờ ăn quen'}</label>
+                      <input id={`feed-times-${horse.id}`} className="form-control" maxLength={FEEDING_USUAL_TIMES_MAX}
+                        placeholder={en ? 'e.g. 07:00, 12:00, 18:00' : 'VD: 07:00, 12:00, 18:00'}
+                        value={current.feeding?.usualTimes ?? ''}
+                        onChange={e => set(horse.id, { feeding: { ...current.feeding, usualTimes: e.target.value } })} />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor={`feed-ration-${horse.id}`}>{en ? 'Ration and notes' : 'Khẩu phần, ghi chú'}</label>
+                      <input id={`feed-ration-${horse.id}`} className="form-control" maxLength={FEEDING_RATION_MAX}
+                        placeholder={en ? 'e.g. 8 kg hay/day, 2 kg oats, no beans' : 'VD: 8 kg cỏ/ngày, 2 kg yến mạch, kiêng đậu'}
+                        value={current.feeding?.ration ?? ''}
+                        onChange={e => set(horse.id, { feeding: { ...current.feeding, ration: e.target.value } })} />
+                    </div>
+                  </div>
+                  <label className={s.ack}>
+                    <input type="checkbox" checked={current.feeding?.ownFeed === true}
+                      onChange={e => set(horse.id, { feeding: { ...current.feeding, ownFeed: e.target.checked } })} />
+                    <span>{en ? 'I will send my own feed with this horse' : 'Tôi gửi kèm thức ăn riêng cho ngựa này'}</span>
+                  </label>
                 </div>
                 <CustomerInsuranceFields onBusyChange={setUploading} value={current.insuranceDetails} option={current.insurance}
                   onChange={insuranceDetails => set(horse.id, { insurance: insuranceDetails.option, insuranceDetails })} />

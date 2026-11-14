@@ -67,6 +67,13 @@ export interface HorseUnfitInfo {
   note?: string
 }
 
+// Thông tin cho ăn khách khai lúc đặt chuyến; mọi trường đều không bắt buộc
+export interface HorseFeeding {
+  usualTimes?: string // giờ ăn quen, vd "07:00, 12:00, 18:00"
+  ration?: string // khẩu phần và ghi chú
+  ownFeed?: boolean // khách gửi kèm thức ăn riêng
+}
+
 export interface BookingHorse {
   horseId: string
   name: string
@@ -81,6 +88,7 @@ export interface BookingHorse {
   insurance: { opted: boolean } & Partial<import('./insurance').HorseInsurance>
   status?: 'eligible' | 'unfit' | 'chip_mismatch'
   unfitInfo?: HorseUnfitInfo
+  feeding?: HorseFeeding
 }
 
 export type BookingServiceCategory = 'stall' | 'feed' | 'water' | 'insurance'

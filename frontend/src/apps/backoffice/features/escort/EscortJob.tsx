@@ -4,6 +4,7 @@ import { useAuth } from '@shared/auth/AuthContext'
 import { VITAL_CHECK_INTERVAL_HOURS, WELFARE_CONDITION, type WelfareCondition } from '@shared/config/booking-rules'
 import { openIncidentOf, currentCheckpoint } from '@shared/lib/booking'
 import { formatDateTime } from '@shared/lib/format'
+import { feedingLines } from '@shared/lib/feeding'
 import { bookingsApi } from '@shared/services/bookings'
 import type { Booking, BookingHorse, Checkpoint, VehicleTrip } from '@shared/types/booking'
 import { CaptureScope } from '@shared/ui/CaptureScope'
@@ -238,6 +239,11 @@ function WelfareForm({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Checkp
   const [photo, setPhoto] = useState<string>()
   const [note, setNote] = useState('')
   const valid = !!photo
+  // Thông tin cho ăn khách khai cho các ngựa trên xe này: cho ăn bữa chính ở trạm gần giờ ăn quen nhất
+  const feedingNotes = b.horses
+    .filter(h => t.horseIds.includes(h.horseId) && h.status !== 'unfit' && h.status !== 'chip_mismatch')
+    .map(h => ({ h, lines: feedingLines(h.feeding) }))
+    .filter(x => x.lines.length > 0)
 
   const submit = async () => {
     // Ghi nhận nhật ký an sinh của chuyến đi
@@ -268,6 +274,14 @@ function WelfareForm({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Checkp
           </label>
         ))}
       </div>
+      {feedingNotes.length > 0 && (
+        <div style={{ display: 'grid', gap: 6, padding: '10px 14px', border: '1px solid var(--line)', borderRadius: 'var(--radius)', background: 'white', fontSize: '0.9rem' }}>
+          <b><i className="fa-solid fa-wheat-awn" aria-hidden="true" /> Thông tin cho ăn khách khai</b>
+          {feedingNotes.map(({ h, lines }) => (
+            <div key={h.horseId}><b>{h.name}</b>: {lines.map(([label, text]) => `${label}: ${text}`).join(' · ')}</div>
+          ))}
+        </div>
+      )}
       <label style={{ display: 'flex', gap: 12, alignItems: 'center', minHeight: 48 }}><input type="checkbox" checked={water} onChange={e => setWater(e.target.checked)} style={{ width: 22, height: 22, accentColor: 'var(--orange)' }} />Đã cấp nước sạch</label>
       <label style={{ display: 'flex', gap: 12, alignItems: 'center', minHeight: 48 }}><input type="checkbox" checked={hay} onChange={e => setHay(e.target.checked)} style={{ width: 22, height: 22, accentColor: 'var(--orange)' }} />Đã bổ sung cỏ khô</label>
       <CaptureField purpose="SUBMIT_WELFARE" target={cp.id} label="Ảnh ngựa trong khoang" required value={photo} onChange={setPhoto} />
