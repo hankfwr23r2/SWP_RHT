@@ -943,6 +943,7 @@ class BookingServiceImplTest {
     void confirmCoordinatorPlan_setsRouteIdWhenProvided() {
         Booking booking = bookingOwnedByCustomer();
         booking.setStatus("under_review"); // điều phối chỉ chốt phương án ở bước thẩm định
+        booking.setDetailsJson("{\"horses\":[{\"horseId\":\"H-001\",\"name\":\"Storm\"}]}"); // ngựa xếp xe phải thuộc đơn
         when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 

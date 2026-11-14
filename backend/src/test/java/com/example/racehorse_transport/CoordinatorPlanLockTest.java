@@ -139,9 +139,92 @@ class CoordinatorPlanLockTest {
         assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus()).isEqualTo("pending_commercial");
     }
 
+    // ===== Sức chứa và phân ngựa lên xe: backend tự kiểm tra lại, không tin phương án client gửi =====
+
+    @Test
+    void extendedStallHorsesTakeTwoStallsEach() throws Exception {
+        Booking booking = booking("under_review", horse("H-1", "Storm", "single") + "," + horse("H-2", "Blaze", "single"));
+        Vehicle small = truck("2 ngăn");
+
+        HttpResponse<String> response = confirmPlan(booking, trip(small, "H-1", "H-2"));
+
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(400);
+        assertThat(response.body()).contains("cần 4 ngăn");
+    }
+
+    @Test
+    void standardStallHorsesFillTheTruckExactly() throws Exception {
+        Booking booking = booking("under_review", horse("H-1", "Storm", "standard") + "," + horse("H-2", "Blaze", "standard"));
+        Vehicle small = truck("2 ngăn");
+
+        HttpResponse<String> response = confirmPlan(booking, trip(small, "H-1", "H-2"));
+
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
+    }
+
+    @Test
+    void everyHorseOfTheBookingMustBeOnATruck() throws Exception {
+        Booking booking = booking("under_review", horse("H-1", "Storm", "standard") + "," + horse("H-2", "Blaze", "standard"));
+
+        HttpResponse<String> response = confirmPlan(booking, trip(truck, "H-1"));
+
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(400);
+        assertThat(response.body()).contains("chưa được xếp xe").contains("Blaze");
+    }
+
+    @Test
+    void aHorseCannotBeOnTwoTrucks() throws Exception {
+        Booking booking = booking("under_review", horse("H-1", "Storm", "standard") + "," + horse("H-2", "Blaze", "standard"));
+
+        HttpResponse<String> response = confirmPlan(booking, trip(truck, "H-1", "H-2") + "," + trip(truck("2 ngăn"), "H-1"));
+
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(400);
+        assertThat(response.body()).contains("đang được xếp trên nhiều xe");
+    }
+
+    @Test
+    void horsesOutsideTheBookingAreRejected() throws Exception {
+        Booking booking = booking("under_review");
+
+        HttpResponse<String> response = confirmPlan(booking, trip(truck, "H-1", "H-9"));
+
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(400);
+        assertThat(response.body()).contains("H-9").contains("không thuộc đơn này");
+    }
+
+    @Test
+    void oneTruckCannotRunTwoTripsOfTheSameBooking() throws Exception {
+        Booking booking = booking("under_review", horse("H-1", "Storm", "standard") + "," + horse("H-2", "Blaze", "standard"));
+
+        HttpResponse<String> response = confirmPlan(booking, trip(truck, "H-1") + "," + trip(truck, "H-2"));
+
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(400);
+        assertThat(response.body()).contains("nhiều chuyến");
+    }
+
+    private static String horse(String id, String name, String stall) {
+        return "{\"horseId\":\"%s\",\"name\":\"%s\",\"stall\":\"%s\"}".formatted(id, name, stall);
+    }
+
+    private static String trip(Vehicle vehicle, String... horseIds) {
+        return "{\"vehicleId\":\"%d\",\"horseIds\":[\"%s\"]}".formatted(vehicle.getId(), String.join("\",\"", horseIds));
+    }
+
+    private Vehicle truck(String stalls) {
+        return vehicles.save(Vehicle.builder()
+                .vehicleType("Xe chuyên dụng " + stalls)
+                .licensePlate("51D-" + UUID.randomUUID().toString().substring(0, 5))
+                .status("ACTIVE")
+                .build());
+    }
+
     private Booking booking(String status) {
+        return booking(status, "{\"horseId\":\"H-1\",\"name\":\"Storm\"}");
+    }
+
+    private Booking booking(String status, String horsesJson) {
         String details = "{\"intake\":{\"at\":1,\"by\":\"Quản lý\"},\"medical\":{\"status\":\"approved\"},"
-                + "\"horses\":[{\"horseId\":\"H-1\",\"name\":\"Storm\"}],"
+                + "\"horses\":[" + horsesJson + "],"
                 + "\"trips\":[{\"tripId\":\"TRP-1\",\"vehicleId\":\"VH-999\",\"horseIds\":[\"H-1\"]}],"
                 + "\"plan\":{\"at\":1,\"by\":\"Điều phối\",\"note\":\"\"}}";
         return bookings.save(Booking.builder()
@@ -157,8 +240,11 @@ class CoordinatorPlanLockTest {
     }
 
     private HttpResponse<String> confirmPlan(Booking booking) throws Exception {
-        String body = "{\"by\":\"Điều phối\",\"trips\":[{\"vehicleId\":\"%d\",\"horseIds\":[\"H-1\"]}],\"note\":\"Đổi xe\"}"
-                .formatted(truck.getId());
+        return confirmPlan(booking, trip(truck, "H-1"));
+    }
+
+    private HttpResponse<String> confirmPlan(Booking booking, String tripsJson) throws Exception {
+        String body = "{\"by\":\"Điều phối\",\"trips\":[" + tripsJson + "],\"note\":\"Đổi xe\"}";
         return post("/coordinator/bookings/" + booking.getId() + "/fleet-plan", coordinatorToken, body);
     }
 

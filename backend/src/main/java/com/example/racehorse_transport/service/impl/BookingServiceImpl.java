@@ -754,6 +754,8 @@ public class BookingServiceImpl implements BookingService {
         Instant departDate = booking.getDepartureDate() != null ? booking.getDepartureDate() : Instant.now();
         List<BookingVehicle> newVehicles = new ArrayList<>();
         List<BookingHorseDto> bookedHorses = BookingDetailsJson.read(objectMapper, booking).getHorses();
+        requireEveryHorseOnExactlyOneTrip(bookedHorses, request.getTrips());
+        Set<Integer> usedVehicleIds = new HashSet<>();
 
         for (int i = 0; i < request.getTrips().size(); i++) {
             VehicleTripDto trip = request.getTrips().get(i);
@@ -765,6 +767,11 @@ public class BookingServiceImpl implements BookingService {
             }
 
             Vehicle vehicle = fleetService.findVehicleByIdOrCode(trip.getVehicleId());
+            // Mỗi xe chỉ chạy một chuyến trong đơn: bảng BOOKING_VEHICLE khóa theo (đơn, xe) nên trùng xe sẽ đè chuyến
+            if (!usedVehicleIds.add(vehicle.getId())) {
+                throw new IllegalArgumentException(
+                        "Xe " + vehicle.getLicensePlate() + " đang được chọn cho nhiều chuyến trong cùng một đơn!");
+            }
 
             // Kiểm tra tải trọng ngăn xe
             int stallsNeeded = stallsNeeded(bookedHorses, trip.getHorseIds());
@@ -1735,6 +1742,36 @@ public class BookingServiceImpl implements BookingService {
         Map<?, ?> payment = payload.getPayment() instanceof Map<?, ?> p ? p : Map.of();
         if (!Boolean.TRUE.equals(payment.get("balancePaid"))) {
             throw new IllegalStateException("Khách hàng cần thanh toán đủ 70% còn lại trước khi xe xuất phát.");
+        }
+    }
+
+    // Phương án xe phải xếp mỗi con ngựa của đơn lên đúng một xe: không có mã ngựa lạ, không xếp trùng, không bỏ sót.
+    // Giao diện đã chặn các trường hợp này; kiểm tra lại ở đây để gọi API trực tiếp cũng không lách được.
+    private static void requireEveryHorseOnExactlyOneTrip(List<BookingHorseDto> horses, List<VehicleTripDto> trips) {
+        Map<String, String> namesById = new LinkedHashMap<>();
+        if (horses != null) {
+            horses.stream().filter(h -> h.getHorseId() != null)
+                    .forEach(h -> namesById.putIfAbsent(h.getHorseId(), h.getName() != null ? h.getName() : h.getHorseId()));
+        }
+        Set<String> assigned = new HashSet<>();
+        for (VehicleTripDto trip : trips) {
+            if (trip.getHorseIds() == null) continue;
+            for (String horseId : trip.getHorseIds()) {
+                if (!namesById.containsKey(horseId)) {
+                    throw new IllegalArgumentException("Ngựa " + horseId + " không thuộc đơn này!");
+                }
+                if (!assigned.add(horseId)) {
+                    throw new IllegalArgumentException("Ngựa " + namesById.get(horseId) + " đang được xếp trên nhiều xe!");
+                }
+            }
+        }
+        List<String> missing = namesById.entrySet().stream()
+                .filter(entry -> !assigned.contains(entry.getKey()))
+                .map(Map.Entry::getValue)
+                .toList();
+        if (!missing.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Còn " + missing.size() + " ngựa chưa được xếp xe: " + String.join(", ", missing) + "!");
         }
     }
 
