@@ -193,7 +193,31 @@ describe('báo giá', () => {
     expect(amount('Cữ nước')).toBeUndefined()
     expect(amount('Bảo hiểm chuyến đi')).toBeUndefined()
   })
-  it('nhân phí dịch vụ theo ngựa × ngày và chỉ tính dịch vụ theo chuyến một lần', () => {
+  it('tính gói thức ăn theo từng ngựa cho mỗi chuyến, không nhân theo ngày', () => {
+    const service = {
+      id: 32, serviceCode: 'FEED_ADVANCED', serviceName: 'Gói nâng cao', categoryId: 2,
+      categoryName: 'Gói thức ăn', price: 300_000, billingUnit: 'PER_HORSE' as const,
+    }
+    const horses = [
+      bh({ selectedServices: { feed: service } }),
+      bh({ horseId: 'H2', selectedServices: { feed: service } }),
+    ]
+    const departAt = new Date(2026, 10, 2, 5).getTime()
+    const arriveAt = new Date(2026, 10, 4, 10).getTime()
+    const route = {
+      legs: [{ no: 1, from: 'A', to: 'B', departAt, arriveAt, km: 1200, hours: 30 }],
+      rests: [],
+    }
+    const { lines, days } = quoteLines({ ...base, route, horses }, [{ capacity: 4 }])
+    const feedLine = lines.find(line => line.label === 'Gói thức ăn')
+
+    expect(days).toBe(3)
+    expect(feedLine?.amount).toBe(600_000)
+    expect(feedLine?.detail).toContain('2 ngựa/chuyến')
+    expect(feedLine?.calculation).not.toContain('ngày')
+  })
+
+  it('giữ đơn vị ngày cho snapshot dịch vụ cũ và chỉ tính dịch vụ theo chuyến một lần', () => {
     const horses = [
       bh({
         selectedServices: {

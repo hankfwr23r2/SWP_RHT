@@ -1,22 +1,30 @@
 // Bảng giá: dùng chung cho trang chủ công khai và trang khách đã đăng nhập. Dùng đúng công thức báo giá thật (PRD mục 11).
 import { useTranslation } from 'react-i18next'
-import { CLASS_FACTOR, CLEARANCE_FEE, DEMURRAGE_PER_HOUR, DEPOSIT_RATE, FUEL_BOT_PER_KM, FUEL_BUFFER_RATE, MARGIN_RATE, QUOTE_VALID_HOURS, VEHICLE_CLASS, type VehicleClass } from '@shared/config/booking-rules'
-import { MIN_LEAD_DAYS } from '@shared/config/business-rules'
+import { CLASS_FACTOR, CLEARANCE_FEE, DEPOSIT_RATE, FUEL_BOT_PER_KM, FUEL_BUFFER_RATE, MARGIN_RATE, VEHICLE_CLASS, type VehicleClass } from '@shared/config/booking-rules'
 import { formatVND } from '@shared/lib/format'
-import { truckCost } from '@shared/lib/pricing'
-import { SERVICE_BILLING_UNIT_LABEL, serviceCatalogApi } from '@shared/api/serviceCatalog'
+import { serviceCatalogApi, type ServiceBillingUnit } from '@shared/api/serviceCatalog'
 import { useLoad } from '@shared/services/useLoad'
+import { KM_TIERS, TRIP_OPEN_FEE } from '@shared/config/public-pricing'
 import s from '../home/HomePage.module.css'
 
 const cx = (...c: (string | false | undefined)[]) => c.filter(Boolean).join(' ')
-const roundK = (n: number) => Math.round(n / 1000) * 1000
+const billingUnitLabelKey = {
+  PER_TRIP: 'home.pricingTable.perTripUnit',
+  PER_HORSE: 'home.pricingTable.perHorseTripUnit',
+  PER_HORSE_DAY: 'home.pricingTable.perHorseDayUnit',
+} as const satisfies Record<ServiceBillingUnit, string>
 
 // ===== Bảng giá (cùng công thức với báo giá) =====
 const CLASSES = Object.keys(VEHICLE_CLASS) as VehicleClass[]
-const PRICE_TIER_KM = [50, 150, 300, 600, 1000, 1500]
 export function PriceTable() {
   const { t } = useTranslation()
   const { data: services, loaded, reload } = useLoad(serviceCatalogApi.listActive)
+  const freightTiers = [
+    { label: t('home.pricingTable.firstKmTier', { limit: KM_TIERS[0][0] }), rate: KM_TIERS[0][1] },
+    { label: t('home.pricingTable.secondKmTier', { from: KM_TIERS[0][0] + 1, to: KM_TIERS[1][0] }), rate: KM_TIERS[1][1] },
+    { label: t('home.pricingTable.thirdKmTier', { limit: KM_TIERS[1][0] }), rate: KM_TIERS[2][1] },
+  ]
+
   return (
     <>
       <div className={s.priceGrid}>
@@ -25,17 +33,25 @@ export function PriceTable() {
           <table className={s.priceTable}>
             <thead>
               <tr>
-                <th className={s.colText}>{t('home.pricingTable.distance')}</th>
+                <th className={s.colText}>{t('home.pricingTable.freightTier')}</th>
                 {CLASSES.map(c => <th key={c} className={s.colNum}>{VEHICLE_CLASS[c].label} ({VEHICLE_CLASS[c].stalls})</th>)}
               </tr>
             </thead>
             <tbody>
-              {PRICE_TIER_KM.map(km => (
-                <tr key={km}>
-                  <td className={s.colText}><b>{km} km</b></td>
+              <tr>
+                <td className={s.colText}><b>{t('home.pricingTable.tripOpenFee')}</b></td>
+                {CLASSES.map(c => (
+                  <td key={c} className={s.colNum}>
+                    {formatVND(TRIP_OPEN_FEE * CLASS_FACTOR[c] * (1 + MARGIN_RATE))}
+                  </td>
+                ))}
+              </tr>
+              {freightTiers.map(tier => (
+                <tr key={tier.label}>
+                  <td className={s.colText}><b>{tier.label}</b></td>
                   {CLASSES.map(c => (
                     <td key={c} className={s.colNum}>
-                      {formatVND(roundK(truckCost(km, false) * CLASS_FACTOR[c] * (1 + MARGIN_RATE)))}
+                      {formatVND(tier.rate * CLASS_FACTOR[c] * (1 + MARGIN_RATE))}
                     </td>
                   ))}
                 </tr>
@@ -53,7 +69,7 @@ export function PriceTable() {
               </tr>
             </thead>
             <tbody>
-              <tr><td className={s.colText}>{t('home.pricingTable.fuelRow')}</td><td className={s.colNum}>{formatVND(roundK(100 * FUEL_BOT_PER_KM * (1 + FUEL_BUFFER_RATE)))}{t('home.pricingTable.fuelUnit')}</td></tr>
+              <tr><td className={s.colText}>{t('home.pricingTable.fuelRow')}</td><td className={s.colNum}>{formatVND(FUEL_BOT_PER_KM * (1 + FUEL_BUFFER_RATE))}{t('home.pricingTable.fuelUnit')}</td></tr>
               {!loaded
                 ? <tr><td className={s.colText} colSpan={2}>Đang tải bảng giá dịch vụ…</td></tr>
                 : !services
@@ -63,7 +79,7 @@ export function PriceTable() {
                         <tr key={service.id}>
                           <td className={s.colText}>{service.categoryName} · {service.serviceName}</td>
                           <td className={s.colNum}>{service.price > 0
-                            ? `${formatVND(service.price)} / ${SERVICE_BILLING_UNIT_LABEL[service.billingUnit]}`
+                              ? `${formatVND(service.price)} / ${t(billingUnitLabelKey[service.billingUnit])}`
                             : t('home.pricingTable.freeIncluded')}</td>
                         </tr>
                       ))
@@ -77,10 +93,7 @@ export function PriceTable() {
       </div>
       <div className={s.priceNotes}>
         <div><i className="fa-solid fa-wallet" />{t('home.pricingTable.depositNote', { rate: DEPOSIT_RATE * 100, balance: 100 - DEPOSIT_RATE * 100 })}</div>
-        <div><i className="fa-solid fa-calendar-check" />{t('home.pricingTable.leadNote', { days: MIN_LEAD_DAYS })}</div>
-        <div><i className="fa-solid fa-receipt" />{t('home.pricingTable.fixedNote', { hours: QUOTE_VALID_HOURS })}</div>
         <div><i className="fa-solid fa-kit-medical" />{t('home.pricingTable.incidentNote')}</div>
-        <div><i className="fa-solid fa-clock" />{t('home.pricingTable.demurrageNote', { fee: formatVND(DEMURRAGE_PER_HOUR) })}</div>
       </div>
     </>
   )

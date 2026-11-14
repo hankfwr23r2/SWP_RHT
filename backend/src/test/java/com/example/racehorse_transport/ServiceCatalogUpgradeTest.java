@@ -34,7 +34,7 @@ class ServiceCatalogUpgradeTest {
 
     static {
         POSTGRES.start();
-        createCatalogFromPreviousRelease();
+        createCatalogWithDailyFeedUnits();
     }
 
     @DynamicPropertySource
@@ -62,6 +62,8 @@ class ServiceCatalogUpgradeTest {
         assertThat(rows).extracting(r -> r[1]).contains("Khoang tiêu chuẩn", "Gói thể thao", "Mua bảo hiểm");
         assertThat(rows).filteredOn(r -> r[0].equals("5")).first()
                 .satisfies(r -> assertThat(new BigDecimal(r[2])).isEqualByComparingTo("500000"));
+        assertThat(rows).filteredOn(r -> List.of("3", "4", "5").contains(r[0]))
+                .allSatisfy(r -> assertThat(r[4]).isEqualTo("PER_HORSE"));
         assertThat(rows).allSatisfy(r -> {
             assertThat(r[3]).as("mã dịch vụ của %s", r[1]).isNotBlank();
             assertThat(r[4]).as("đơn vị tính của %s", r[1]).isIn("PER_TRIP", "PER_HORSE", "PER_HORSE_DAY");
@@ -84,8 +86,8 @@ class ServiceCatalogUpgradeTest {
         return DriverManager.getConnection(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
     }
 
-    // Cấu trúc và dữ liệu của hai bảng như trên DB đang chạy trước khi thêm service_code, billing_unit
-    private static void createCatalogFromPreviousRelease() {
+    // Existing catalog rows may still carry daily billing units for food packages.
+    private static void createCatalogWithDailyFeedUnits() {
         try (Connection connection = connect(); Statement statement = connection.createStatement()) {
             statement.execute("""
                     create table category (
@@ -99,7 +101,9 @@ class ServiceCatalogUpgradeTest {
                         service_name varchar(255) not null,
                         status varchar(50) not null,
                         categoryid integer not null references category(categoryid),
-                        description varchar(1000))""");
+                        description varchar(1000),
+                        service_code varchar(100),
+                        billing_unit varchar(30))""");
             statement.execute("""
                     insert into category values
                         (1, 'Khoang trên xe', 'Các lựa chọn khoang vận chuyển ngựa'),
@@ -107,17 +111,17 @@ class ServiceCatalogUpgradeTest {
                         (3, 'Cữ nước', 'Các lựa chọn tần suất cung cấp nước cho ngựa'),
                         (4, 'Bảo hiểm chuyến đi', 'Các lựa chọn bảo hiểm cho chuyến vận chuyển ngựa')""");
             statement.execute("""
-                    insert into service (serviceid, categoryid, service_name, price, status) values
-                        (1, 1, 'Khoang tiêu chuẩn', 1000000, 'ACTIVE'),
-                        (2, 1, 'Khoang đơn mở rộng', 2000000, 'ACTIVE'),
-                        (3, 2, 'Gói cơ bản', 0, 'ACTIVE'),
-                        (4, 2, 'Gói nâng cao', 300000, 'ACTIVE'),
-                        (5, 2, 'Gói thể thao', 500000, 'ACTIVE'),
-                        (6, 3, 'Mỗi 3 giờ', 0, 'ACTIVE'),
-                        (7, 3, 'Mỗi 2 giờ', 50000, 'ACTIVE'),
-                        (8, 3, 'Mỗi giờ', 100000, 'ACTIVE'),
-                        (9, 4, 'Mua bảo hiểm', 20000000, 'ACTIVE'),
-                        (10, 4, 'Từ chối', 0, 'ACTIVE')""");
+                    insert into service (serviceid, categoryid, service_name, price, status, billing_unit) values
+                        (1, 1, 'Khoang tiêu chuẩn', 1000000, 'ACTIVE', null),
+                        (2, 1, 'Khoang đơn mở rộng', 2000000, 'ACTIVE', null),
+                        (3, 2, 'Gói cơ bản', 0, 'ACTIVE', 'PER_HORSE_DAY'),
+                        (4, 2, 'Gói nâng cao', 300000, 'ACTIVE', 'PER_HORSE_DAY'),
+                        (5, 2, 'Gói thể thao', 500000, 'ACTIVE', 'PER_HORSE_DAY'),
+                        (6, 3, 'Mỗi 3 giờ', 0, 'ACTIVE', null),
+                        (7, 3, 'Mỗi 2 giờ', 50000, 'ACTIVE', null),
+                        (8, 3, 'Mỗi giờ', 100000, 'ACTIVE', null),
+                        (9, 4, 'Mua bảo hiểm', 20000000, 'ACTIVE', null),
+                        (10, 4, 'Từ chối', 0, 'ACTIVE', null)""");
         } catch (SQLException e) {
             throw new IllegalStateException("Không dựng được dữ liệu của bản cũ", e);
         }

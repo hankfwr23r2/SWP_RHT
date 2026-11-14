@@ -66,9 +66,9 @@ public class ReferenceDataSeeder implements CommandLineRunner {
     private static final String[][] SERVICES = {
             new String[] { "1", "Khoang tiêu chuẩn", "1", "1000000", "ACTIVE", "STALL_STANDARD", "PER_HORSE", "" },
             new String[] { "2", "Khoang đơn mở rộng", "1", "2000000", "ACTIVE", "STALL_SINGLE_EXTENDED", "PER_HORSE", "" },
-            new String[] { "3", "Gói cơ bản", "2", "0", "ACTIVE", "FEED_BASIC", "PER_HORSE_DAY", "" },
-            new String[] { "4", "Gói nâng cao", "2", "300000", "ACTIVE", "FEED_ADVANCED", "PER_HORSE_DAY", "" },
-            new String[] { "5", "Gói thể thao", "2", "500000", "ACTIVE", "FEED_SPORT", "PER_HORSE_DAY", "" },
+            new String[] { "3", "Gói cơ bản", "2", "0", "ACTIVE", "FEED_BASIC", "PER_HORSE", "" },
+            new String[] { "4", "Gói nâng cao", "2", "300000", "ACTIVE", "FEED_ADVANCED", "PER_HORSE", "" },
+            new String[] { "5", "Gói thể thao", "2", "500000", "ACTIVE", "FEED_SPORT", "PER_HORSE", "" },
             new String[] { "6", "Mỗi 3 giờ", "3", "0", "INACTIVE", "WATER_EVERY_3H", "PER_HORSE", "" },
             new String[] { "7", "Mỗi 2 giờ", "3", "50000", "INACTIVE", "WATER_EVERY_2H", "PER_HORSE", "" },
             new String[] { "8", "Mỗi giờ", "3", "100000", "INACTIVE", "WATER_EVERY_1H", "PER_HORSE", "" },
@@ -90,7 +90,7 @@ public class ReferenceDataSeeder implements CommandLineRunner {
 
     private static final Map<Integer, String> LEGACY_BILLING_UNITS = Map.of(
             1, "PER_HORSE",
-            2, "PER_HORSE_DAY",
+            2, "PER_HORSE",
             3, "PER_HORSE",
             4, "PER_HORSE");
 
@@ -502,6 +502,11 @@ public class ReferenceDataSeeder implements CommandLineRunner {
                             "Không thể gán đơn vị tính cho dịch vụ " + service.getId() + " thuộc danh mục " + categoryId);
                 }
                 service.setBillingUnit(unit);
+                changed = true;
+            }
+            if (Integer.valueOf(2).equals(categoryId)
+                    && "PER_HORSE_DAY".equalsIgnoreCase(service.getBillingUnit())) {
+                service.setBillingUnit("PER_HORSE");
                 changed = true;
             }
             if (Integer.valueOf(3).equals(categoryId) && "ACTIVE".equalsIgnoreCase(service.getStatus())) {
