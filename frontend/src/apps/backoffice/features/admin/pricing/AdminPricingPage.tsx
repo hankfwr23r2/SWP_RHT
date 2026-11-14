@@ -174,7 +174,6 @@ export default function AdminPricingPage() {
   const [simKm, setSimKm] = useState(350)
   const [simVehicleClass, setSimVehicleClass] = useState<'light' | 'medium' | 'heavy'>('medium')
   const [simIsIntl, setSimIsIntl] = useState(false)
-  const [simBreedId, setSimBreedId] = useState<number>(horseTypesList[0]?.id ?? 1)
   const [simStallType, setSimStallType] = useState<'standard' | 'single'>('standard')
   const [simFeed, setSimFeed] = useState<'basic' | 'advanced' | 'sport'>('basic')
   const [simInsurancePremium, setSimInsurancePremium] = useState(0)
@@ -365,8 +364,6 @@ export default function AdminPricingPage() {
     const feedCost = simFeed === 'sport' ? 500000 : simFeed === 'advanced' ? 300000 : 0
     const clearanceCost = simIsIntl ? clearanceIntl : 0
 
-    const selectedBreedObj = horseTypesList.find(h => h.id === simBreedId)
-    const breedVal = selectedBreedObj?.insuredValue ?? 400000000
     const insuranceCost = Math.max(0, simInsurancePremium)
 
     const total = truckCostLine + fuelBotLine + stallCost + feedCost + clearanceCost + insuranceCost
@@ -409,7 +406,7 @@ export default function AdminPricingPage() {
         ...(insuranceCost > 0
           ? [
               {
-                label: `Bảo hiểm chuyến đi (${selectedBreedObj?.typeName ?? 'Ngựa'})`,
+                label: 'Bảo hiểm chuyến đi',
                 detail: 'Phí thu hộ do bên thứ ba báo (nhập để mô phỏng)',
                 amount: insuranceCost,
               },
@@ -417,9 +414,8 @@ export default function AdminPricingPage() {
           : []),
       ],
       total,
-      breedVal,
     }
-  }, [draftValues, simKm, simVehicleClass, simIsIntl, simBreedId, simStallType, simFeed, simInsurancePremium, horseTypesList])
+  }, [draftValues, simKm, simVehicleClass, simIsIntl, simStallType, simFeed, simInsurancePremium])
 
   return (
     <div className={s.wrap}>
@@ -774,17 +770,6 @@ export default function AdminPricingPage() {
               >
                 <option value="domestic">Nội địa Việt Nam (Miễn phí thủ tục)</option>
                 <option value="intl">Quốc tế (Lào / Campuchia - Gồm phí hải quan)</option>
-              </select>
-            </div>
-
-            <div className={s.simField}>
-              <label>Giống ngựa áp tải</label>
-              <select value={simBreedId} onChange={e => setSimBreedId(Number(e.target.value))}>
-                {horseTypesList.map(h => (
-                  <option key={h.id} value={h.id}>
-                    {h.typeName} ({formatVND(h.insuredValue ?? 400000000)})
-                  </option>
-                ))}
               </select>
             </div>
 
