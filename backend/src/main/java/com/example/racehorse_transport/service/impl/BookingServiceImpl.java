@@ -1466,6 +1466,16 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = bookingRepository.findByIdForUpdate(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
 
+        if (customerUsername != null) {
+            User owner = booking.getCustomerID() != null ? booking.getCustomerID().getUser() : null;
+            boolean ownsBooking = owner != null
+                    && (customerUsername.equals(owner.getUsername()) || customerUsername.equals(owner.getEmail()));
+            if (!ownsBooking) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Bạn không có quyền thao tác trên đơn hàng này.");
+            }
+        }
+
         if (!"awaiting_payment".equalsIgnoreCase(booking.getStatus())) {
             throw new IllegalStateException("Chỉ từ chối báo giá khi đơn đang ở bước chờ đặt cọc!");
         }
