@@ -2,9 +2,7 @@ import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { usePageData } from '@shared/routing/pageData'
 import { systemConfigApi, type SystemConfigItem } from '@shared/api/systemConfig'
-import { backendHorseApi, type BackendHorseTypeDto } from '@shared/api/horses'
 import { applyRuntimeBusinessConfig } from '@shared/config/runtimeBusinessRules'
-import { applyRuntimeHorseTypes } from '@shared/config/booking-rules'
 import { useToast } from '@shared/ui/toast'
 import type { adminPricingLoader } from '../../../shared/loaders'
 import s from './AdminPricing.module.css'
@@ -135,9 +133,8 @@ export default function AdminPricingPage() {
   const initialData = usePageData<typeof adminPricingLoader>()
   const toast = useToast()
 
-  const [activeTab, setActiveTab] = useState<'parameters' | 'breeds' | 'simulator'>('parameters')
+  const [activeTab, setActiveTab] = useState<'parameters' | 'simulator'>('parameters')
   const [configsList, setConfigsList] = useState<SystemConfigItem[]>(initialData.configs ?? [])
-  const [horseTypesList, setHorseTypesList] = useState<BackendHorseTypeDto[]>(initialData.horseTypes ?? [])
 
   // Draft configurations dictionary
   const [draftValues, setDraftValues] = useState<Record<string, string>>(() => {
@@ -160,15 +157,6 @@ export default function AdminPricingPage() {
   }, [draftValues, configsList])
 
   const [isSaving, setIsSaving] = useState(false)
-
-  // Breeds search & modal CRUD
-  const [breedSearch, setBreedSearch] = useState('')
-  const [breedModalMode, setBreedModalMode] = useState<'create' | 'edit' | null>(null)
-  const [selectedBreedForEdit, setSelectedBreedForEdit] = useState<BackendHorseTypeDto | null>(null)
-  const [breedFormName, setBreedFormName] = useState('')
-  const [breedFormDesc, setBreedFormDesc] = useState('')
-  const [editInsuredValStr, setEditInsuredValStr] = useState('')
-  const [isUpdatingBreed, setIsUpdatingBreed] = useState(false)
 
   // Simulator inputs
   const [simKm, setSimKm] = useState(350)
@@ -229,95 +217,6 @@ export default function AdminPricingPage() {
     }
     setDraftValues(map)
   }
-
-  // Handle open create breed modal
-  const handleOpenCreateBreed = () => {
-    setSelectedBreedForEdit(null)
-    setBreedFormName('')
-    setBreedFormDesc('')
-    setEditInsuredValStr('400000000')
-    setBreedModalMode('create')
-  }
-
-  // Handle open edit breed modal
-  const handleOpenEditBreed = (breed: BackendHorseTypeDto) => {
-    setSelectedBreedForEdit(breed)
-    setBreedFormName(breed.typeName)
-    setBreedFormDesc(breed.description || '')
-    setEditInsuredValStr(String(breed.insuredValue ?? 400000000))
-    setBreedModalMode('edit')
-  }
-
-  // Handle save create / update breed
-  const handleSaveBreedModal = async () => {
-    if (!breedFormName.trim()) {
-      toast('Vui lòng nhập tên giống ngựa.', 'error')
-      return
-    }
-    const numericVal = Number(editInsuredValStr.replace(/\D/g, ''))
-    if (!Number.isFinite(numericVal) || numericVal < 0) {
-      toast('Giá trị bảo hiểm không hợp lệ.', 'error')
-      return
-    }
-
-    setIsUpdatingBreed(true)
-    try {
-      if (breedModalMode === 'create') {
-        const created = await backendHorseApi.createType({
-          typeName: breedFormName.trim(),
-          description: breedFormDesc.trim(),
-          insuredValue: numericVal,
-        })
-        const nextList = [...horseTypesList, created]
-        setHorseTypesList(nextList)
-        applyRuntimeHorseTypes(nextList)
-        toast(`Đã thêm thành công giống ngựa ${created.typeName}!`, 'success')
-      } else if (breedModalMode === 'edit' && selectedBreedForEdit) {
-        const updated = await backendHorseApi.updateType(selectedBreedForEdit.id, {
-          typeName: breedFormName.trim(),
-          description: breedFormDesc.trim(),
-          insuredValue: numericVal,
-        })
-        const nextList = horseTypesList.map(h => (h.id === updated.id ? updated : h))
-        setHorseTypesList(nextList)
-        applyRuntimeHorseTypes(nextList)
-        toast(`Đã cập nhật giống ngựa ${updated.typeName}!`, 'success')
-      }
-      setBreedModalMode(null)
-      setSelectedBreedForEdit(null)
-    } catch (e: any) {
-      toast(e?.message || 'Có lỗi xảy ra khi lưu giống ngựa.', 'error')
-    } finally {
-      setIsUpdatingBreed(false)
-    }
-  }
-
-  // Handle delete breed
-  const handleDeleteBreed = async (breed: BackendHorseTypeDto) => {
-    const ok = window.confirm(
-      `Bạn có chắc chắn muốn xóa giống ngựa "${breed.typeName}"?\n\nLưu ý: Hệ thống sẽ từ chối xóa nếu giống ngựa này đã có cá thể ngựa nào liên kết trong hồ sơ hoặc đơn vận chuyển.`
-    )
-    if (!ok) return
-
-    try {
-      await backendHorseApi.deleteType(breed.id)
-      const nextList = horseTypesList.filter(h => h.id !== breed.id)
-      setHorseTypesList(nextList)
-      applyRuntimeHorseTypes(nextList)
-      toast(`Đã xóa giống ngựa "${breed.typeName}" thành công!`, 'success')
-    } catch (e: any) {
-      toast(e?.message || 'Không thể xóa giống ngựa vì đang có cá thể ngựa liên kết.', 'error')
-    }
-  }
-
-  // Filtered breeds
-  const filteredBreeds = useMemo(() => {
-    if (!breedSearch.trim()) return horseTypesList
-    const q = breedSearch.toLowerCase()
-    return horseTypesList.filter(
-      b => b.typeName.toLowerCase().includes(q) || (b.description && b.description.toLowerCase().includes(q))
-    )
-  }, [horseTypesList, breedSearch])
 
   // Simulator Calculation Logic using Draft Values
   const simulatorQuote = useMemo(() => {
@@ -425,7 +324,7 @@ export default function AdminPricingPage() {
           <h1>
             {t('adminPricing.title', 'Cấu hình Biểu phí & Báo giá')}
           </h1>
-          <p>{t('adminPricing.subtitle', 'Điều chỉnh công thức cước cự ly, phụ phí loại xe, hệ số giống ngựa và mô phỏng giá.')}</p>
+          <p>{t('adminPricing.subtitle', 'Điều chỉnh công thức cước cự ly, phụ phí loại xe và mô phỏng giá.')}</p>
         </div>
         <div className={s.headerActions}>
           {hasChanges && (
@@ -482,13 +381,6 @@ export default function AdminPricingPage() {
         >
           <i className="fa-solid fa-sliders" /> {t('adminPricing.tabParams', 'Thông số & Biểu phí')}
           <span className={s.tabBadge}>{PARAMETER_DEFS.length}</span>
-        </button>
-        <button
-          className={`${s.tabBtn} ${activeTab === 'breeds' ? s.tabBtnActive : ''}`}
-          onClick={() => setActiveTab('breeds')}
-        >
-          <i className="fa-solid fa-horse-head" /> {t('adminPricing.tabBreeds', 'Hệ số giống ngựa')}
-          <span className={s.tabBadge}>{horseTypesList.length}</span>
         </button>
         <button
           className={`${s.tabBtn} ${activeTab === 'simulator' ? s.tabBtnActive : ''}`}
@@ -630,86 +522,7 @@ export default function AdminPricingPage() {
         </>
       )}
 
-      {/* TAB 2: BREEDS */}
-      {activeTab === 'breeds' && (
-        <div className={s.tableWrap}>
-          <div className={s.tableToolbar}>
-            <div className={s.searchBox}>
-              <i className="fa-solid fa-magnifying-glass" />
-              <input
-                type="text"
-                placeholder="Tìm giống ngựa theo tên..."
-                value={breedSearch}
-                onChange={e => setBreedSearch(e.target.value)}
-              />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div className={s.tableStats}>
-                Hiển thị <b>{filteredBreeds.length}</b> / {horseTypesList.length} giống ngựa
-              </div>
-              <button className={s.createBreedBtn} onClick={handleOpenCreateBreed}>
-                <i className="fa-solid fa-plus" /> Thêm giống ngựa mới
-              </button>
-            </div>
-          </div>
-
-          <table className={s.customTable}>
-            <thead>
-              <tr>
-                <th style={{ width: '60px' }}>ID</th>
-                <th>Giống Ngựa</th>
-                <th>Mô Tả Tiêu Chuẩn</th>
-                <th style={{ width: '220px', textAlign: 'right' }}>Giá Trị Định Mức (VND)</th>
-                <th style={{ width: '180px', textAlign: 'right' }}>Phí bảo hiểm bên thứ ba</th>
-                <th style={{ width: '160px', textAlign: 'center' }}>Thao Tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredBreeds.map(b => {
-                const val = b.insuredValue ?? 400000000
-                return (
-                  <tr key={b.id}>
-                    <td>
-                      <span className={s.configKey}>#{b.id}</span>
-                    </td>
-                    <td>
-                      <div className={s.breedBadge}>{b.typeName}</div>
-                    </td>
-                    <td>
-                      <div className={s.breedDesc}>{b.description || 'Chưa có mô tả chi tiết'}</div>
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <span className={s.insuredValueCell}>{formatVND(val)}</span>
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <span className={s.insurancePremiumCell}>Báo giá theo chuyến</span>
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <div className={s.rowActions}>
-                        <button className={s.rowActionBtn} onClick={() => handleOpenEditBreed(b)} title="Chỉnh sửa thông tin giống ngựa">
-                          <i className="fa-solid fa-pen-to-square" /> Sửa
-                        </button>
-                        <button className={s.rowActionBtnDelete} onClick={() => handleDeleteBreed(b)} title="Xóa giống ngựa khỏi danh mục">
-                          <i className="fa-solid fa-trash-can" /> Xóa
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-              {filteredBreeds.length === 0 && (
-                <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '30px', color: 'var(--muted)' }}>
-                    Không tìm thấy giống ngựa nào phù hợp với từ khóa "{breedSearch}".
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* TAB 3: SIMULATOR */}
+      {/* TAB 2: SIMULATOR */}
       {activeTab === 'simulator' && (
         <div className={s.simulatorGrid}>
           {/* Controls */}
@@ -837,87 +650,6 @@ export default function AdminPricingPage() {
         </div>
       )}
 
-      {/* Modal Create / Edit Breed */}
-      {breedModalMode !== null && (
-        <div className={s.modalBackdrop} onClick={() => setBreedModalMode(null)}>
-          <div className={s.modalCard} onClick={e => e.stopPropagation()}>
-            <div className={s.modalHeader}>
-              <h3>
-                <i className="fa-solid fa-horse-head" />{' '}
-                {breedModalMode === 'create' ? 'Thêm Giống Ngựa Mới' : 'Chỉnh Sửa Giống Ngựa & Bảo Hiểm'}
-              </h3>
-              <button className={s.closeBtn} onClick={() => setBreedModalMode(null)}>
-                <i className="fa-solid fa-xmark" />
-              </button>
-            </div>
-            <div className={s.modalBody}>
-              <div className={s.modalField}>
-                <label>Tên giống ngựa <span style={{ color: '#ef4444' }}>*</span></label>
-                <input
-                  type="text"
-                  placeholder="Ví dụ: Quarter Horse, Andalusian..."
-                  value={breedFormName}
-                  onChange={e => setBreedFormName(e.target.value)}
-                  autoFocus
-                />
-              </div>
-              <div className={s.modalField}>
-                <label>Mô tả tiêu chuẩn giống</label>
-                <input
-                  type="text"
-                  placeholder="Ví dụ: Giống ngựa chạy cự ly ngắn siêu tốc, thể hình cơ bắp..."
-                  value={breedFormDesc}
-                  onChange={e => setBreedFormDesc(e.target.value)}
-                />
-              </div>
-              <div className={s.modalField}>
-                <label>Giá trị tham chiếu của giống (VNĐ) <span style={{ color: '#ef4444' }}>*</span></label>
-                <input
-                  type="text"
-                  value={formatNumber(editInsuredValStr)}
-                  onChange={e => {
-                    const raw = e.target.value.replace(/\D/g, '')
-                    setEditInsuredValStr(raw)
-                  }}
-                />
-                <div className={s.quickPresets}>
-                  <button className={s.presetBtn} onClick={() => setEditInsuredValStr('400000000')}>
-                    400 Tr (Tiêu chuẩn)
-                  </button>
-                  <button className={s.presetBtn} onClick={() => setEditInsuredValStr('600000000')}>
-                    600 Tr (Trung bình)
-                  </button>
-                  <button className={s.presetBtn} onClick={() => setEditInsuredValStr('800000000')}>
-                    800 Tr (Cao cấp)
-                  </button>
-                  <button className={s.presetBtn} onClick={() => setEditInsuredValStr('1000000000')}>
-                    1 Tỷ (Thoroughbred)
-                  </button>
-                </div>
-              </div>
-              <p style={{ margin: '10px 0 0', fontSize: '0.82rem', color: 'var(--muted)' }}>
-                Giá trị này chỉ để tham khảo. Không dùng để tính phí bảo hiểm cho đơn mới.
-              </p>
-            </div>
-            <div className={s.modalFooter}>
-              <button
-                className="btn btn-secondary"
-                onClick={() => setBreedModalMode(null)}
-                disabled={isUpdatingBreed}
-              >
-                Hủy
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={handleSaveBreedModal}
-                disabled={isUpdatingBreed}
-              >
-                {isUpdatingBreed ? 'Đang lưu...' : breedModalMode === 'create' ? 'Tạo giống ngựa' : 'Lưu thay đổi'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
