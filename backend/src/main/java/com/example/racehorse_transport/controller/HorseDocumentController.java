@@ -2,16 +2,12 @@ package com.example.racehorse_transport.controller;
 
 import com.example.racehorse_transport.dto.document.HorseDocumentResponse;
 import com.example.racehorse_transport.dto.document.ReviewHorseDocumentRequest;
-import com.example.racehorse_transport.entity.Horse;
-import com.example.racehorse_transport.exception.ResourceNotFoundException;
-import com.example.racehorse_transport.repository.HorseRepository;
 import com.example.racehorse_transport.response.ApiResponse;
 import com.example.racehorse_transport.service.HorseDocumentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.bind.annotation.*;
@@ -36,7 +32,6 @@ import java.util.List;
 public class HorseDocumentController {
 
     private final HorseDocumentService horseDocumentService;
-    private final HorseRepository horseRepository;
 
     /**
      * Upload hồ sơ ngựa (Flow 2 - Bước 1).
@@ -122,13 +117,11 @@ public class HorseDocumentController {
     }
 
     private void assertHorseAccess(Integer horseId, Authentication authentication) {
-        if (authentication == null || !authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_CUSTOMER"))) return;
-        Horse horse = horseRepository.findById(horseId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngựa với ID: " + horseId));
-        if (horse.getCustomerID() == null || horse.getCustomerID().getUser() == null
-                || !authentication.getName().equalsIgnoreCase(horse.getCustomerID().getUser().getUsername())) {
-            throw new AccessDeniedException("Bạn không có quyền truy cập giấy tờ ngựa này.");
-        }
+        if (isCustomer(authentication)) horseDocumentService.assertCustomerOwnsHorse(horseId, authentication.getName());
+    }
+
+    private boolean isCustomer(Authentication authentication) {
+        return authentication != null && authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_CUSTOMER"));
     }
 
     /**
@@ -143,22 +136,7 @@ public class HorseDocumentController {
             @PathVariable Integer id,
             Authentication authentication) {
 
-        com.example.racehorse_transport.entity.HorseDocument doc = horseDocumentService.findAll()
-                .stream()
-                .filter(d -> d.getId() != null && d.getId().equals(id))
-                .findFirst()
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giấy tờ với ID: " + id));
-
-        // Kiểm tra quyền sở hữu nếu là CUSTOMER
-        if (authentication.getAuthorities().contains(new SimpleGrantedAuthority("ROLE_CUSTOMER"))) {
-            if (doc.getHorseID() == null || doc.getHorseID().getCustomerID() == null
-                    || doc.getHorseID().getCustomerID().getUser() == null
-                    || !authentication.getName().equalsIgnoreCase(doc.getHorseID().getCustomerID().getUser().getUsername())) {
-                throw new AccessDeniedException("Bạn không có quyền xóa giấy tờ này.");
-            }
-        }
-
-        horseDocumentService.deleteById(id);
+        horseDocumentService.deleteDocument(id, isCustomer(authentication) ? authentication.getName() : null);
         return ResponseEntity.ok(ApiResponse.success(null, "Đã xóa giấy tờ thành công."));
     }
 }

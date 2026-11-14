@@ -1,4 +1,4 @@
-package com.example.racehorse_transport.controller;
+package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.admin.CreateHorseTypeRequest;
 import com.example.racehorse_transport.dto.admin.UpdateHorseTypeInsuredValueRequest;
@@ -11,7 +11,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -24,7 +23,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class HorseTypeControllerTest {
+class HorseTypeServiceImplTest {
 
     @Mock
     private HorseTypeRepository horseTypeRepository;
@@ -32,11 +31,11 @@ class HorseTypeControllerTest {
     @Mock
     private HorseRepository horseRepository;
 
-    private HorseTypeController controller;
+    private HorseTypeServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        controller = new HorseTypeController(horseTypeRepository, horseRepository, org.mockito.Mockito.mock(com.example.racehorse_transport.service.AdminAuditWriter.class));
+        service = new HorseTypeServiceImpl(horseTypeRepository, horseRepository, org.mockito.Mockito.mock(com.example.racehorse_transport.service.AdminAuditWriter.class));
     }
 
     @Test
@@ -49,11 +48,9 @@ class HorseTypeControllerTest {
 
         when(horseTypeRepository.findAll(any(Sort.class))).thenReturn(List.of(type));
 
-        var response = controller.getAllHorseTypes();
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getData()).hasSize(1);
-        assertThat(response.getBody().getData().getFirst().insuredValue())
+        var response = service.findAll();
+        assertThat(response).hasSize(1);
+        assertThat(response.getFirst().insuredValue())
                 .isEqualByComparingTo("1000000000");
     }
 
@@ -72,11 +69,9 @@ class HorseTypeControllerTest {
                 .insuredValue(new BigDecimal("750000000"))
                 .build();
 
-        var response = controller.createHorseType(req);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getData().typeName()).isEqualTo("Marwari");
-        assertThat(response.getBody().getData().insuredValue()).isEqualByComparingTo("750000000");
+        var response = service.create(req);
+        assertThat(response.typeName()).isEqualTo("Marwari");
+        assertThat(response.insuredValue()).isEqualByComparingTo("750000000");
     }
 
     @Test
@@ -87,7 +82,7 @@ class HorseTypeControllerTest {
                 .insuredValue(new BigDecimal("1000000000"))
                 .build();
 
-        assertThatThrownBy(() -> controller.createHorseType(req))
+        assertThatThrownBy(() -> service.create(req))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("đã tồn tại");
     }
@@ -109,10 +104,9 @@ class HorseTypeControllerTest {
                 .insuredValue(new BigDecimal("1200000000"))
                 .build();
 
-        var response = controller.updateHorseType(1, req);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody().getData().typeName()).isEqualTo("Thoroughbred Elite");
-        assertThat(response.getBody().getData().insuredValue()).isEqualByComparingTo("1200000000");
+        var response = service.update(1, req);
+        assertThat(response.typeName()).isEqualTo("Thoroughbred Elite");
+        assertThat(response.insuredValue()).isEqualByComparingTo("1200000000");
     }
 
     @Test
@@ -124,8 +118,7 @@ class HorseTypeControllerTest {
         when(horseTypeRepository.findById(99)).thenReturn(Optional.of(existing));
         when(horseRepository.existsByHorseTypeID_Id(99)).thenReturn(false);
 
-        var response = controller.deleteHorseType(99);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        service.delete(99);
         verify(horseTypeRepository).delete(existing);
     }
 
@@ -138,7 +131,7 @@ class HorseTypeControllerTest {
         when(horseTypeRepository.findById(1)).thenReturn(Optional.of(existing));
         when(horseRepository.existsByHorseTypeID_Id(1)).thenReturn(true);
 
-        assertThatThrownBy(() -> controller.deleteHorseType(1))
+        assertThatThrownBy(() -> service.delete(1))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("đang có hồ sơ ngựa");
     }
@@ -154,11 +147,9 @@ class HorseTypeControllerTest {
         when(horseTypeRepository.save(any(HorseType.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         UpdateHorseTypeInsuredValueRequest req = new UpdateHorseTypeInsuredValueRequest(new BigDecimal("1200000000"));
-        var response = controller.updateInsuredValue(1, req);
+        var response = service.updateInsuredValue(1, req);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getData().insuredValue()).isEqualByComparingTo("1200000000");
+        assertThat(response.insuredValue()).isEqualByComparingTo("1200000000");
         verify(horseTypeRepository).save(type);
     }
 }

@@ -57,4 +57,20 @@ public interface HorseDocumentService {
      * @return Danh sách hồ sơ
      */
     List<HorseDocumentResponse> getCustomerDocuments(String customerUsername);
+
+    /**
+     * Chặn khách hàng truy cập giấy tờ của ngựa không thuộc về mình.
+     *
+     * @param horseId          ID con ngựa
+     * @param customerUsername Tài khoản khách hàng đang đăng nhập
+     */
+    void assertCustomerOwnsHorse(Integer horseId, String customerUsername);
+
+    /**
+     * Xóa giấy tờ ngựa; khách hàng chỉ được xóa giấy tờ của ngựa mình sở hữu.
+     *
+     * @param documentId       ID giấy tờ
+     * @param customerUsername Tài khoản khách hàng cần kiểm tra quyền sở hữu, null nếu người xóa không phải khách
+     */
+    void deleteDocument(Integer documentId, String customerUsername);
 }
