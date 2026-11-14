@@ -1,6 +1,6 @@
 // Service Hồ sơ ngựa của khách, gọi Backend Spring Boot (/horses, /horse-documents). Không giữ dữ liệu ở máy khách.
 import { backendHorseApi, HORSE_DOC_BACKEND_TYPE, type BackendHorseDto, type BackendHorseDocResponse } from '../api/horses'
-import { applyRuntimeHorseTypes, type HorseDocType } from '../config/booking-rules'
+import type { HorseDocType } from '../config/booking-rules'
 import type { HorseDoc, HorseProfile } from '../types/booking'
 import { normalizeMicrochip } from '@shared/lib/microchip'
 
@@ -56,9 +56,7 @@ const payloadOf = (data: Pick<NewHorse, 'name' | 'breed' | 'horseTypeId' | 'sex'
 
 export const horsesApi = {
   listTypes: async (): Promise<HorseTypeOption[]> => {
-    const types = await backendHorseApi.listTypes()
-    applyRuntimeHorseTypes(types)
-    return types
+    return backendHorseApi.listTypes()
   },
 
   // Ngựa và giấy tờ của mọi ngựa tải song song, mỗi loại một request

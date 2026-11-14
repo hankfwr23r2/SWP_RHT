@@ -189,33 +189,6 @@ export const FUEL_BOT_PER_KM = 9_000 // nhiên liệu + BOT ước tính mỗi k
 export const FUEL_BUFFER_RATE = 0.05 // dự phòng trên nhiên liệu và BOT
 export let MARGIN_RATE = 0.05 // biên lợi nhuận, gộp vào đơn giá, không hiện thành dòng riêng
 export let DEMURRAGE_PER_HOUR = 400_000 // phí lưu xe chờ, chỉ khi lỗi phía khách (PRD mục 11.3: 300.000 – 500.000 đ/giờ)
-// Giá trị tham khảo của giống ngựa (VNĐ), không dùng để tính phí bảo hiểm bên thứ ba.
-export const BREED_INSURED_VALUE: Record<string, number> = {
-  Thoroughbred: 1_000_000_000,
-  Arabian: 800_000_000,
-  'American Quarter Horse': 600_000_000,
-  Friesian: 850_000_000,
-  Andalusian: 800_000_000,
-  Lusitano: 800_000_000,
-  Appaloosa: 500_000_000,
-  'American Paint Horse': 550_000_000,
-  Morgan: 550_000_000,
-  'Tennessee Walking Horse': 550_000_000,
-  Standardbred: 700_000_000,
-  Hanoverian: 900_000_000,
-  'Akhal-Teke': 950_000_000,
-  Mustang: 500_000_000,
-  Clydesdale: 600_000_000,
-  Shire: 600_000_000,
-  'Belgian Draft': 500_000_000,
-  Percheron: 550_000_000,
-  Haflinger: 450_000_000,
-  'Shetland Pony': 350_000_000,
-  Khác: 400_000_000,
-  // Tương thích ngược dữ liệu cũ
-  'Quarter Horse': 600_000_000,
-  Warmblood: 900_000_000,
-}
 
 // ===== Lộ trình: trạm nghỉ và Lệnh điều xe (Flow 1, 3, PRD mục 4.2) =====
 export let MAX_CONTINUOUS_HOURS = 4 // quy chuẩn an sinh: ngựa không đi liên tục quá 4 giờ
@@ -260,14 +233,6 @@ export function applyRuntimePricingRules(config: {
   }
   if (config.clearanceFeeInternational != null && Number.isFinite(config.clearanceFeeInternational)) {
     CLEARANCE_FEE.international = config.clearanceFeeInternational
-  }
-}
-
-export function applyRuntimeHorseTypes(types: { typeName: string; insuredValue?: number }[]) {
-  for (const t of types) {
-    if (t.insuredValue != null && Number.isFinite(t.insuredValue)) {
-      BREED_INSURED_VALUE[t.typeName] = t.insuredValue
-    }
   }
 }
 
