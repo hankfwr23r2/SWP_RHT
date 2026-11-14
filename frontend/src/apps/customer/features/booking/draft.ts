@@ -76,6 +76,64 @@ export function serviceOptionFor(
   return options.find(service => service.serviceCode === preferredCode) ?? options[0]
 }
 
+// ===== Hạng dịch vụ (giống hạng vé): khách chọn một hạng cho mỗi ngựa thay vì chọn lẻ khoang và thức ăn =====
+// Mỗi hạng là một cặp dịch vụ khoang + thức ăn có sẵn trong danh mục. Giá lấy từ danh mục (Admin chỉnh),
+// nên báo giá, quy tắc 2 ngăn của khoang mở rộng và kiểm tra ở backend vẫn chạy trên đúng các mã dịch vụ cũ.
+export const SERVICE_TIERS = [
+  {
+    id: 'standard', stall: 'STALL_STANDARD', feed: 'FEED_BASIC',
+    label: { vi: 'Tiêu chuẩn', en: 'Standard' },
+    includes: {
+      vi: ['Khoang tiêu chuẩn (1 ngăn)', 'Cỏ khô thường', 'Nước sạch tại mỗi trạm dừng'],
+      en: ['Standard stall (1 bay)', 'Regular hay', 'Fresh water at every rest stop'],
+    },
+  },
+  {
+    id: 'premium', stall: 'STALL_STANDARD', feed: 'FEED_ADVANCED',
+    label: { vi: 'Nâng cao', en: 'Premium' },
+    includes: {
+      vi: ['Khoang tiêu chuẩn (1 ngăn)', 'Cỏ khô Timothy cao cấp, yến mạch', 'Nước sạch tại mỗi trạm dừng'],
+      en: ['Standard stall (1 bay)', 'Premium Timothy hay, oats', 'Fresh water at every rest stop'],
+    },
+  },
+  {
+    id: 'first', stall: 'STALL_SINGLE_EXTENDED', feed: 'FEED_SPORT',
+    label: { vi: 'Thượng hạng', en: 'First class' },
+    includes: {
+      vi: ['Khoang đơn mở rộng (chiếm 2 ngăn)', 'Cỏ khô Timothy cao cấp, yến mạch, vitamin và khoáng', 'Nước sạch tại mỗi trạm dừng'],
+      en: ['Extended single stall (takes 2 bays)', 'Premium Timothy hay, oats, vitamins and minerals', 'Fresh water at every rest stop'],
+    },
+  },
+] as const
+
+export type ServiceTier = (typeof SERVICE_TIERS)[number]
+export type ServiceTierId = ServiceTier['id']
+export interface ServiceTierOption { tier: ServiceTier; stall: ServiceCatalogItem; feed: ServiceCatalogItem }
+
+// Các hạng đang bán được: cả dịch vụ khoang và thức ăn của hạng đều còn trong danh mục đang áp dụng
+export function tierOptions(services: ServiceCatalogItem[]): ServiceTierOption[] {
+  const byCode = new Map(services.map(service => [service.serviceCode, service]))
+  return SERVICE_TIERS.flatMap(tier => {
+    const stall = byCode.get(tier.stall), feed = byCode.get(tier.feed)
+    return stall && feed ? [{ tier, stall, feed }] : []
+  })
+}
+
+// Hạng khách đã chọn rõ cho ngựa này; cặp khoang + thức ăn không khớp hạng nào (bản nháp cũ) thì coi như chưa chọn
+export function tierOf(config: Pick<HorseConfig, 'selectedServiceCodes'>): ServiceTierId | undefined {
+  const codes = config.selectedServiceCodes
+  return SERVICE_TIERS.find(tier => tier.stall === codes?.stall && tier.feed === codes?.feed)?.id
+}
+
+// Chọn một hạng: gán cả hai mã dịch vụ và các trường cũ (stall, feedPackage) để đơn hiển thị đúng ở mọi màn hình
+export function tierSelection(config: HorseConfig, tier: ServiceTier): Partial<HorseConfig> {
+  return {
+    selectedServiceCodes: { ...config.selectedServiceCodes, stall: tier.stall, feed: tier.feed },
+    stall: tier.stall === 'STALL_SINGLE_EXTENDED' ? 'single' : 'standard',
+    feedPackage: tier.feed === 'FEED_ADVANCED' ? 'advanced' : tier.feed === 'FEED_SPORT' ? 'sport' : 'basic',
+  }
+}
+
 export function isDeclinedInsurance(service: ServiceCatalogItem | undefined): boolean {
   return !!service && (service.serviceCode === 'INSURANCE_DECLINED'
     || service.id === 10

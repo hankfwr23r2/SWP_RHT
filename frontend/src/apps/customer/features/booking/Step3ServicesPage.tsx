@@ -1,42 +1,17 @@
-// Bước 3: chọn dịch vụ đang được áp dụng cho từng ngựa.
+// Bước 3: chọn hạng dịch vụ (giống hạng vé) và bảo hiểm cho từng ngựa.
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { formatVND } from '@shared/lib/format'
 import { CustomerInsuranceFields } from '@shared/ui/InsuranceFields'
 import { usePageData } from '@shared/routing/pageData'
-import { SEX_LABEL, type BookingRequiredServiceCategory } from '@shared/types/booking'
+import { SEX_LABEL } from '@shared/types/booking'
 import { PolicyLink } from '@shared/ui/PolicyLink'
-import type { ServiceCatalogItem } from '@shared/api/serviceCatalog'
 import { BookingShell } from './BookingShell'
 import type { horseListLoader } from '../horses/loaders'
-import { defaultConfig, serviceOptionFor, useBookingDraft, type HorseConfig } from './draft'
+import { defaultConfig, tierOf, tierOptions, tierSelection, useBookingDraft, type HorseConfig } from './draft'
 import { isBookingRouteReady } from './routeValidation'
 import s from './Booking.module.css'
-
-type CatalogCategory = Exclude<BookingRequiredServiceCategory, 'insurance'>
-
-const SERVICE_GROUPS: { key: CatalogCategory; label: string; icon: string }[] = [
-  { key: 'stall', label: 'Khoang trên xe', icon: 'fa-border-all' },
-  { key: 'feed', label: 'Gói thức ăn', icon: 'fa-wheat-awn' },
-]
-
-function legacySelection(category: CatalogCategory, service: ServiceCatalogItem): Partial<HorseConfig> {
-  if (category === 'stall') return { stall: service.serviceCode === 'STALL_SINGLE_EXTENDED' ? 'single' : 'standard' }
-  if (category === 'feed') {
-    const feedPackage = service.serviceCode === 'FEED_ADVANCED' ? 'advanced'
-      : service.serviceCode === 'FEED_SPORT' ? 'sport' : 'basic'
-    return { feedPackage }
-  }
-  return {}
-}
-
-function hasExplicitServiceSelection(config: HorseConfig, category: CatalogCategory): boolean {
-  if (config.selectedServiceCodes?.[category] || config.selectedServices?.[category] !== undefined) return true
-  if (category === 'stall') return config.stall !== 'standard'
-  if (category === 'feed') return config.feedPackage !== 'basic'
-  return false
-}
 
 export default function Step3ServicesPage() {
   const { t, i18n } = useTranslation()
@@ -50,10 +25,10 @@ export default function Step3ServicesPage() {
   const [uploading, setUploading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
-  const serviceGroups = [
-    { key: 'stall' as CatalogCategory, label: i18n.language === 'en' ? 'Transporter Stall' : 'Khoang trên xe', icon: 'fa-border-all' },
-    { key: 'feed' as CatalogCategory, label: i18n.language === 'en' ? 'Feeding Program' : 'Gói thức ăn', icon: 'fa-wheat-awn' },
-  ]
+  const en = i18n.language === 'en'
+  // Hạng đang bán được theo danh mục dịch vụ đang áp dụng; hạng thiếu dịch vụ khoang hoặc thức ăn thì không hiện
+  const tiers = tierOptions(services)
+  const chosenTier = (id: string) => tiers.find(option => option.tier.id === tierOf(config[id]))
 
   useEffect(() => {
     if (submitted) document.querySelector('[data-problem]')?.scrollIntoView({ block: 'center', behavior: 'smooth' })
@@ -68,12 +43,9 @@ export default function Step3ServicesPage() {
   const declined = rows.filter(h => config[h.id].insurance === 'none')
   const problems = rows.length === 0 || rows.length !== draft.horseIds.length
     ? ['Không tải đủ hồ sơ ngựa cho các mã đã chọn. Vui lòng quay lại “Chọn ngựa” và chọn lại danh sách.']
-    : rows.flatMap(h => SERVICE_GROUPS
-      .filter(group => !serviceOptionFor(services, config[h.id], group.key))
-      .map(group => `${h.name}: hiện không có dịch vụ ${group.label.toLocaleLowerCase()} đang áp dụng`))
-  problems.push(...rows.flatMap(h => SERVICE_GROUPS
-    .filter(group => !hasExplicitServiceSelection(config[h.id], group.key))
-    .map(group => `${h.name}: chọn dịch vụ ${group.label.toLocaleLowerCase()}`)))
+    : !tiers.length
+      ? ['Hiện không có hạng dịch vụ nào đang áp dụng. Vui lòng thử lại sau.']
+      : rows.filter(h => !chosenTier(h.id)).map(h => `${h.name}: chọn hạng dịch vụ`)
   problems.push(...rows.filter(h => !['personal', 'assistance', 'none'].includes(config[h.id].insurance))
     .map(h => `${h.name}: chọn bảo hiểm chuyến đi`))
   for (const h of rows) {
@@ -87,21 +59,11 @@ export default function Step3ServicesPage() {
     setSubmitted(true)
     if (problems.length) {
       if (rows.length === 0 || rows.length !== draft.horseIds.length) return
-      const firstMissing = rows.findIndex(h => SERVICE_GROUPS.some(group =>
-        !serviceOptionFor(services, config[h.id], group.key)
-        || !hasExplicitServiceSelection(config[h.id], group.key)))
+      const firstMissing = rows.findIndex(h => !chosenTier(h.id))
       if (firstMissing >= 0) setActiveIndex(firstMissing)
       return
     }
-    const selectedConfig = Object.fromEntries(rows.map(h => {
-      const current = config[h.id]
-      const selectedServiceCodes = Object.fromEntries(SERVICE_GROUPS.map(group => [
-        group.key,
-        current.selectedServiceCodes?.[group.key] ?? serviceOptionFor(services, current, group.key)?.serviceCode,
-      ])) as Partial<Record<BookingRequiredServiceCategory, string>>
-      return [h.id, { ...current, selectedServiceCodes }]
-    }))
-    save({ config: selectedConfig })
+    save({ config: Object.fromEntries(rows.map(h => [h.id, config[h.id]])) })
     navigate('/booking/review')
   }
 
@@ -127,49 +89,32 @@ export default function Step3ServicesPage() {
                   <div><div id={`h-${horse.id}`} className={s.horseName}>{horse.name}</div><div className={s.horseChip}>Chip {horse.microchip} · {horse.breed} · {SEX_LABEL[horse.sex]}</div></div>
                 </div>
 
-                {serviceGroups.map(group => {
-                  const prefix = `${group.key.toUpperCase()}_`
-                  const options = services.filter(service => service.serviceCode.startsWith(prefix))
-                  const resolved = serviceOptionFor(services, current, group.key)
-                  const chosen = hasExplicitServiceSelection(current, group.key) ? resolved : undefined
-                  return (
-                    <div className={s.serviceSection} key={group.key}>
-                      <div className={s.fieldLabel} id={`${group.key}-${horse.id}`}>
-                        <i className={`fa-solid ${group.icon}`} aria-hidden="true" /> {group.label}
-                      </div>
-                      <div className={s.optRow} role="radiogroup" aria-labelledby={`${group.key}-${horse.id}`}
-                        {...(submitted && !chosen
-                          ? { 'data-problem': true } : {})}>
-                        {options.length ? options.map(service => {
-                          const price = service.price
-                          const billingLabel = service.billingUnit === 'PER_HORSE_DAY'
-                            ? (i18n.language === 'en' ? 'horse × day' : 'ngựa × ngày')
-                            : service.billingUnit === 'PER_HORSE'
-                              ? (i18n.language === 'en' ? 'horse' : 'ngựa')
-                              : (i18n.language === 'en' ? 'trip' : 'chuyến')
-                          return (
-                          <label key={service.id} className={s.opt}>
-                            <input
-                              type="radio"
-                              name={`${group.key}-${horse.id}`}
-                              checked={chosen?.id === service.id}
-                              onChange={() => set(horse.id, {
-                                selectedServiceCodes: { ...current.selectedServiceCodes, [group.key]: service.serviceCode },
-                                ...legacySelection(group.key, service),
-                              })}
-                            />
-                            <b>{service.serviceName}</b>
-                            <span>{price > 0
-                                ? `+${formatVND(price)} / ${billingLabel}`
-                                : t('bookingWizard.freeIncluded')}</span>
-                            {service.description && <small>{service.description}</small>}
-                          </label>
-                          )
-                        }) : <span>{t('bookingWizard.noOptions')}</span>}
-                      </div>
-                    </div>
-                  )
-                })}
+                <div className={s.serviceSection}>
+                  <div className={s.fieldLabel} id={`tier-${horse.id}`}>
+                    <i className="fa-solid fa-ticket" aria-hidden="true" /> {en ? 'Service class' : 'Hạng dịch vụ'}
+                  </div>
+                  <div className={s.optRow} role="radiogroup" aria-labelledby={`tier-${horse.id}`}
+                    {...(submitted && !chosenTier(horse.id) ? { 'data-problem': true } : {})}>
+                    {tiers.length ? tiers.map(({ tier, stall, feed }) => (
+                      <label key={tier.id} className={s.opt}>
+                        <input
+                          type="radio"
+                          name={`tier-${horse.id}`}
+                          checked={chosenTier(horse.id)?.tier.id === tier.id}
+                          onChange={() => set(horse.id, tierSelection(current, tier))}
+                        />
+                        <b>{en ? tier.label.en : tier.label.vi}</b>
+                        <span>{en ? 'Stall' : 'Khoang'}: {stall.price > 0
+                          ? `${formatVND(stall.price)} / ${en ? 'horse' : 'ngựa'}`
+                          : t('bookingWizard.freeIncluded')}</span>
+                        <span>{en ? 'Feed' : 'Thức ăn'}: {feed.price > 0
+                          ? `+${formatVND(feed.price)} / ${en ? 'horse × day' : 'ngựa × ngày'}`
+                          : t('bookingWizard.freeIncluded')}</span>
+                        {(en ? tier.includes.en : tier.includes.vi).map(item => <small key={item}>• {item}</small>)}
+                      </label>
+                    )) : <span>{t('bookingWizard.noOptions')}</span>}
+                  </div>
+                </div>
                 <CustomerInsuranceFields onBusyChange={setUploading} value={current.insuranceDetails} option={current.insurance}
                   onChange={insuranceDetails => set(horse.id, { insurance: insuranceDetails.option, insuranceDetails })} />
               </section>
