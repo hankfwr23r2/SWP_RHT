@@ -51,3 +51,7 @@ graphify-out/
 .graphify/
 .agents/rules/graphify.md
 .agents/workflows/graphify.md
+
+# Claude Code
+CLAUDE.md
+*:Zone.Identifier
