@@ -112,8 +112,8 @@ class JourneyPlannerStationTest {
                 List.of(new Leg(900, hours(15))),
                 List.of(List.of(station("S1", 3.5, 60), station("S2", 7, 60), station("S3", 9.5, 60))), RULES, VN);
 
-        // S1 lúc 08:30 (nghỉ), S2 lúc 12:30 (nghỉ), còn 3 giờ lái trong ngày → nghỉ đêm ở S3 lúc 15:30–01:30,
-        // sau đó không còn trạm → nghỉ dọc đường lúc 05:30, tới nơi 07:30 ngày 03/11
+        // S1 lúc 08:30 (nghỉ), S2 lúc 12:30 (nghỉ), còn 3 giờ lái trong ngày → nghỉ đêm ở S3 từ 15:30, 05:00 mới chạy tiếp,
+        // sau đó không còn trạm → nghỉ dọc đường lúc 09:00, tới nơi 11:00 ngày 03/11
         assertThat(types(journey)).containsExactly(
                 DRIVE, REST, DRIVE, REST, DRIVE, OVERNIGHT, DRIVE, ROADSIDE_REST, DRIVE);
         assertThat(journey.events().get(1).place()).isEqualTo("S1");
@@ -121,9 +121,9 @@ class JourneyPlannerStationTest {
         Event night = journey.events().get(5);
         assertThat(night.place()).isEqualTo("S3");
         assertThat(night.startAt()).isEqualTo(at("2026-11-02T15:30"));
-        assertThat(night.endAt()).isEqualTo(at("2026-11-03T01:30"));
-        assertThat(journey.events().get(7).startAt()).isEqualTo(at("2026-11-03T05:30"));
-        assertThat(journey.arrivalAt()).isEqualTo(at("2026-11-03T07:30"));
+        assertThat(night.endAt()).isEqualTo(at("2026-11-03T05:00"));
+        assertThat(journey.events().get(7).startAt()).isEqualTo(at("2026-11-03T09:00"));
+        assertThat(journey.arrivalAt()).isEqualTo(at("2026-11-03T11:00"));
         assertThat(journey.crewDays()).isEqualTo(2);
     }
 
@@ -170,7 +170,7 @@ class JourneyPlannerStationTest {
         Event night = journey.events().get(5);
         assertThat(night.place()).isEqualTo("Đông Hà");
         assertThat(night.startAt()).isEqualTo(at("2026-11-02T15:54"));
-        assertThat(night.endAt()).isEqualTo(at("2026-11-03T01:54"));
-        assertThat(journey.arrivalAt()).isEqualTo(at("2026-11-03T05:54"));
+        assertThat(night.endAt()).isEqualTo(at("2026-11-03T05:00")); // nghỉ đủ 10 giờ là 01:54, chờ tới 05:00 mới chạy tiếp
+        assertThat(journey.arrivalAt()).isEqualTo(at("2026-11-03T09:00"));
     }
 }

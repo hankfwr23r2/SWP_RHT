@@ -74,15 +74,40 @@ class JourneyPlannerTest {
         Journey journey = JourneyPlanner.plan(at("2026-11-02T05:00"), List.of(pickup(), dropoff()),
                 List.of(new Leg(900, hours(15))), RULES, VN);
 
-        // 4 giờ, nghỉ, 4 giờ, nghỉ, 2 giờ (đủ 10 giờ) → nghỉ đêm 16:00–02:00 → 4 giờ, nghỉ, 1 giờ
+        // 4 giờ, nghỉ, 4 giờ, nghỉ, 2 giờ (đủ 10 giờ) → nghỉ đêm từ 16:00; nghỉ đủ 10 giờ là 02:00 nhưng chờ tới 05:00
+        // mới chạy tiếp → 4 giờ, nghỉ, 1 giờ
         assertThat(types(journey)).containsExactly(
                 DRIVE, ROADSIDE_REST, DRIVE, ROADSIDE_REST, DRIVE, OVERNIGHT, DRIVE, ROADSIDE_REST, DRIVE);
         Event night = journey.events().get(5);
         assertThat(night.startAt()).isEqualTo(at("2026-11-02T16:00"));
-        assertThat(night.endAt()).isEqualTo(at("2026-11-03T02:00"));
+        assertThat(night.endAt()).isEqualTo(at("2026-11-03T05:00"));
         assertThat(night.kmIntoLeg()).isEqualTo(600.0); // 10/15 của 900 km
-        assertThat(journey.arrivalAt()).isEqualTo(at("2026-11-03T07:30"));
+        assertThat(journey.arrivalAt()).isEqualTo(at("2026-11-03T10:30"));
         assertThat(journey.crewDays()).isEqualTo(2);
+    }
+
+    // Bắt đầu nghỉ đêm muộn (20:00): nghỉ đủ 10 giờ là 06:00, đã qua 05:00 nên chạy tiếp ngay lúc 06:00
+    @Test
+    void lateOvernightStillRestsTheFullHours() {
+        Journey journey = JourneyPlanner.plan(at("2026-11-02T09:00"), List.of(pickup(), dropoff()),
+                List.of(new Leg(720, hours(12))), RULES, VN);
+
+        Event night = journey.events().get(5);
+        assertThat(night.type()).isEqualTo(OVERNIGHT);
+        assertThat(night.startAt()).isEqualTo(at("2026-11-02T20:00"));
+        assertThat(night.endAt()).isEqualTo(at("2026-11-03T06:00"));
+        assertThat(journey.arrivalAt()).isEqualTo(at("2026-11-03T08:00"));
+        assertThat(journey.crewDays()).isEqualTo(1); // 23 giờ từ lúc đón tới lúc giao
+    }
+
+    // Số ngày tính theo mỗi 24 giờ từ lúc đón tới lúc giao, không theo số ngày lịch: 22:00 → 06:00 hôm sau là 1 ngày
+    @Test
+    void crewDaysCountTwentyFourHourBlocksNotCalendarDays() {
+        Journey journey = JourneyPlanner.plan(at("2026-11-02T22:00"), List.of(pickup(), dropoff()),
+                List.of(new Leg(450, hours(7.5))), RULES, VN);
+
+        assertThat(journey.arrivalAt()).isEqualTo(at("2026-11-03T06:00"));
+        assertThat(journey.crewDays()).isEqualTo(1);
     }
 
     @Test

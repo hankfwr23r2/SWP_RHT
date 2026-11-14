@@ -4,7 +4,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -36,6 +35,9 @@ public final class JourneyPlanner {
     private static final long EARLIEST_REST_SECONDS = 3600;
     // Còn ít hơn 1 giờ lái trong ngày khi tới trạm thì nghỉ đêm luôn tại trạm
     private static final long LAST_DRIVING_HOUR_SECONDS = 3600;
+    // Sau đêm nghỉ, xe không chạy tiếp trước 05:00 sáng (cùng giờ xuất phát mặc định của chuyến nội địa)
+    private static final int EARLIEST_MORNING_DEPARTURE_HOUR = 5;
+    private static final long SECONDS_PER_DAY = 86_400;
 
     private JourneyPlanner() {}
 
@@ -77,8 +79,9 @@ public final class JourneyPlanner {
                 double km = kmAt(leg, driven);
                 String here = driven == 0 ? stops.get(i).name() : null;
                 if (today >= maxPerDay) {
-                    events.add(new Event(EventType.OVERNIGHT, here, t, t.plusSeconds(overnight), i, km));
-                    t = t.plusSeconds(overnight);
+                    Instant resume = overnightEnd(t, overnight, zone);
+                    events.add(new Event(EventType.OVERNIGHT, here, t, resume, i, km));
+                    t = resume;
                     continuous = 0;
                     today = 0;
                     continue;
@@ -104,8 +107,9 @@ public final class JourneyPlanner {
                         driven += chunk;
                         double stationKm = kmAt(leg, driven);
                         if (night) {
-                            events.add(new Event(EventType.OVERNIGHT, station.name(), t, t.plusSeconds(overnight), i, stationKm));
-                            t = t.plusSeconds(overnight);
+                            Instant resume = overnightEnd(t, overnight, zone);
+                            events.add(new Event(EventType.OVERNIGHT, station.name(), t, resume, i, stationKm));
+                            t = resume;
                             today = 0;
                         } else {
                             events.add(new Event(EventType.REST, station.name(), t, t.plusSeconds(rest), i, stationKm));
@@ -130,8 +134,9 @@ public final class JourneyPlanner {
                 boolean dayAlmostOver = i + 1 < legs.size() && maxPerDay - today < LAST_DRIVING_HOUR_SECONDS
                         && legs.get(i + 1).driveSeconds() > maxPerDay - today;
                 if (dayAlmostOver) {
-                    events.add(new Event(EventType.OVERNIGHT, next.name(), t, t.plusSeconds(overnight), i, leg.km()));
-                    t = t.plusSeconds(overnight);
+                    Instant resume = overnightEnd(t, overnight, zone);
+                    events.add(new Event(EventType.OVERNIGHT, next.name(), t, resume, i, leg.km()));
+                    t = resume;
                     today = 0;
                 } else {
                     events.add(new Event(EventType.REST, next.name(), t, t.plusSeconds(rest), i, leg.km()));
@@ -153,8 +158,17 @@ public final class JourneyPlanner {
                 continuous = 0;
             }
         }
-        int crewDays = (int) ChronoUnit.DAYS.between(departAt.atZone(zone).toLocalDate(), t.atZone(zone).toLocalDate()) + 1;
+        // Số ngày của chuyến: mỗi 24 giờ từ lúc đón tới lúc giao là 1 ngày, tối thiểu 1 (cùng công thức với báo giá ở frontend)
+        long journeySeconds = Duration.between(departAt, t).getSeconds();
+        int crewDays = (int) Math.max(1, (journeySeconds + SECONDS_PER_DAY - 1) / SECONDS_PER_DAY);
         return new Journey(List.copyOf(events), t, borderArrival, crewDays);
+    }
+
+    // Nghỉ đêm đủ số giờ quy định; nếu nghỉ đủ mà chưa tới 05:00 sáng thì chờ tới 05:00 mới chạy tiếp
+    private static Instant overnightEnd(Instant start, long overnightSeconds, ZoneId zone) {
+        ZonedDateTime rested = start.plusSeconds(overnightSeconds).atZone(zone);
+        ZonedDateTime earliest = rested.toLocalDate().atStartOfDay(zone).plusHours(EARLIEST_MORNING_DEPARTURE_HOUR);
+        return (rested.isBefore(earliest) ? earliest : rested).toInstant();
     }
 
     // Trạm xa nhất trong khoảng [driven + allowed − minGap, driven + allowed], và phải nằm sau vị trí hiện tại

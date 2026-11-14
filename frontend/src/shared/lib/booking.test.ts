@@ -10,7 +10,7 @@ import { applyDocumentRequirements } from '../config/runtimeDocumentRequirements
 import type { DocumentRequirement } from '../api/documentRequirements'
 import {
   schedulesOf, clashOf, crewClashOf, planHomeReturn, returnLate, returningTrips, vehicleSpot, vehiclePoint, pendingDeparture, spotLabel, nearestTo, projectOnPath, pointsAhead, pointAlong, bookingPath, incidentLocation, needsFitCheck, transitProgress, defaultPayer, incidentActionsFor, settlementOf, approvedSubOf, APPROVED_SUBS, orderGroupOf, ORDER_GROUPS, capacitiesFor, estimateQuote, busyResources, buildRoutePlan, gatesFor, suggestGate, suggestTransitStations, canCompleteClearance, classForHorses, defaultClearanceItems, deriveStatus, docsDueAt, earliestDeparture, finalizeQuote, horseReadiness,
-  isClearanceOverdue, isDepartureAllowed, isQuoteExpired, layoutLegs, manifestDocuments, nextBookingId, quoteLines, reviewDone, routeKm, activeStaff,
+  isClearanceOverdue, isDepartureAllowed, isQuoteExpired, journeyDays, layoutLegs, manifestDocuments, nextBookingId, quoteLines, reviewDone, routeKm, activeStaff,
   findLocation, arrivalOf, routeOutline, managerBoardOf, managerCounts, orderTabOf, tripIdFor, validateRoutePlan, vehicleClassOf, autoPackFleet, stallUnitsOf, horseCountryMatchesOrigin, horseHasUnverifiedLocationCountry, pickupFailReason,
 } from './booking'
 
@@ -152,6 +152,19 @@ describe('báo giá', () => {
     expect(km).toBe(256)
     expect(days).toBe(2)
     expect(lines.find(l => l.label.startsWith('Cước vận chuyển'))?.detail).toContain('256 km')
+  })
+  // Số ngày tính theo mỗi 24 giờ từ lúc đón tới lúc giao, không theo ngày lịch: đi qua nửa đêm chưa đủ 24 giờ vẫn là 1 ngày
+  it('số ngày của chuyến tính theo mỗi 24 giờ từ lúc đón tới lúc giao', () => {
+    const at = (d: number, h: number) => new Date(2026, 10, d, h).getTime()
+    const daysOf = (departAt: number, arriveAt: number) => quoteLines({
+      ...base,
+      route: { legs: [{ no: 1, from: origin.name, to: dest.name, departAt, arriveAt, km: 256, hours: 8 }], rests: [] },
+    }, [{ capacity: 2 }]).days
+    expect(daysOf(at(2, 22), at(3, 6))).toBe(1) // 8 giờ, qua nửa đêm
+    expect(daysOf(at(2, 5), at(3, 5))).toBe(1) // đúng 24 giờ
+    expect(daysOf(at(2, 5), at(3, 7))).toBe(2) // 26 giờ
+    expect(daysOf(at(2, 5), at(3, 13))).toBe(2) // 32 giờ
+    expect(journeyDays(at(2, 5), at(2, 5))).toBe(1) // tối thiểu 1 ngày
   })
   it('đơn chưa chốt lộ trình thì vẫn ước tính theo đường chim bay', () => {
     expect(quoteLines(base, [{ capacity: 2 }]).km).toBe(routeKm(origin, dest, 'Mộc Bài – Bavet'))

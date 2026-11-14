@@ -187,9 +187,10 @@ class RoutePreviewTest {
         assertThat(firstRest.path("place").asText()).isEqualTo("Trạm nghỉ Phan Rang (test)");
         JsonNode firstNight = data.path("schedule").get(5);
         assertThat(firstNight.path("startAt").asLong()).isEqualTo(epoch("2026-11-02T16:00"));
-        assertThat(firstNight.path("endAt").asLong()).isEqualTo(epoch("2026-11-03T02:00"));
+        // Nghỉ đủ 10 giờ là 02:00 nhưng xe chờ tới 05:00 sáng mới chạy tiếp; đêm thứ hai cũng vậy (16:00 → 05:00 ngày 04/11)
+        assertThat(firstNight.path("endAt").asLong()).isEqualTo(epoch("2026-11-03T05:00"));
         assertThat(firstNight.path("place").asText()).isNotBlank();
-        assertThat(data.path("arrivalAt").asLong()).isEqualTo(epoch("2026-11-04T02:54:54"));
+        assertThat(data.path("arrivalAt").asLong()).isEqualTo(epoch("2026-11-04T08:54:54"));
         assertThat(data.path("crewDays").asInt()).isEqualTo(3);
         assertThat(data.path("borderArrivalAt").isNumber()).isFalse(); // tuyến nội địa không qua cửa khẩu
     }
