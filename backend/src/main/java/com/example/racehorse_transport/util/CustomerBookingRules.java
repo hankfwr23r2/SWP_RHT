@@ -18,10 +18,10 @@ public final class CustomerBookingRules {
     }
 
     public static boolean canCancel(String status, boolean balancePaid) {
-        return !balancePaid && CANCELLABLE_STATUSES.contains(status);
+        return !balancePaid && status != null && CANCELLABLE_STATUSES.contains(status);
     }
 
     public static boolean canPayBalance(String status, boolean balancePaid) {
-        return !balancePaid && BALANCE_PAYABLE_STATUSES.contains(status);
+        return !balancePaid && status != null && BALANCE_PAYABLE_STATUSES.contains(status);
     }
 }

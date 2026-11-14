@@ -57,18 +57,3 @@ export function useScrollReveal(selector: string, deps: unknown[] = []) {
   }, { scope, dependencies: deps })
   return scope
 }
-
-// Số đếm lên khi cuộn tới (dùng cho số liệu giới thiệu, không dùng cho tiền)
-export function CountUp({ to, suffix = '' }: { to: number; suffix?: string }) {
-  const ref = useRef<HTMLSpanElement>(null)
-  useGSAP(() => {
-    if (!ref.current || reducedMotion()) return
-    const obj = { v: 0 }
-    gsap.to(obj, {
-      v: to, duration: 1.4, ease: 'power2.out',
-      scrollTrigger: { trigger: ref.current, start: 'top bottom', once: true },
-      onUpdate: () => { if (ref.current) ref.current.textContent = `${Math.round(obj.v)}${suffix}` },
-    })
-  }, { dependencies: [to] })
-  return <span ref={ref}>{to}{suffix}</span>
-}
