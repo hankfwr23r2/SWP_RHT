@@ -13,7 +13,6 @@ export interface HorseDoc { fileName: string; fileUrl?: string; uploadedAt: numb
 export interface HorseJourneyLog {
   id: number
   horseId: number
-  bookingId?: number
   tripCode?: string
   fromLocation?: string
   toLocation?: string

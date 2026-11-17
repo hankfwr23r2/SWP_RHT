@@ -3,7 +3,7 @@ import apiClient, { type ApiResponse } from './client'
 export interface HorseHealthLogDto {
   id?: number
   horseId: number
-  bookingId?: number
+  bookingCode?: string
   escortStaffId?: number
   healthStatus: string
   temperature?: number
@@ -14,7 +14,7 @@ export interface HorseHealthLogDto {
 
 export interface CreateHealthLogPayload {
   horseId: number
-  bookingId?: number
+  bookingCode?: string
   escortStaffId?: number
   healthStatus: string
   temperature?: number
@@ -29,9 +29,9 @@ export const healthLogsApi = {
     return res.data.data
   },
 
-  // 2. Lấy danh sách nhật ký an sinh theo đơn hàng (GET /api/v1/horse-health-logs/booking/{bookingId})
-  getByBooking: async (bookingId: number): Promise<HorseHealthLogDto[]> => {
-    const res = await apiClient.get<ApiResponse<HorseHealthLogDto[]>>(`/horse-health-logs/booking/${bookingId}`)
+  // 2. Lấy danh sách nhật ký an sinh theo đơn hàng (GET /api/v1/horse-health-logs/booking/{bookingCode})
+  getByBooking: async (bookingCode: string): Promise<HorseHealthLogDto[]> => {
+    const res = await apiClient.get<ApiResponse<HorseHealthLogDto[]>>(`/horse-health-logs/booking/${bookingCode}`)
     return res.data.data
   },
 

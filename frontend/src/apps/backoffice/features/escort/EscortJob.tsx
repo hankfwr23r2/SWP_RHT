@@ -57,13 +57,12 @@ function UnfitHorseModal({
           }),
         `Đã ghi nhận ngựa ${horse.name} ốm/sốt, loại bỏ khỏi chuyến và giảm trừ ${formatVND(discount)} cho khách`
       )
-      const bookingNumId = toNumericBookingId(b.id)
       const hId = Number(horse.horseId.replace(/\D/g, ''))
       if (hId) {
         await healthLogsApi
           .create({
             horseId: hId,
-            bookingId: bookingNumId,
+            bookingCode: b.id,
             healthStatus: 'SỐT CAO / KHÔNG ĐỦ ĐIỀU KIỆN KHỞI HÀNH',
             temperature: temperature ? Number(temperature) : undefined,
             symptoms: `${reason}: ${symptoms.trim()}`,
@@ -227,7 +226,6 @@ function ScanStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
 }
 
 import { healthLogsApi } from '@shared/api/healthLogs'
-import { toNumericBookingId } from '@shared/api/bookings'
 
 function WelfareForm({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Checkpoint; run: Run }) {
   const { session } = useAuth()
@@ -245,13 +243,12 @@ function WelfareForm({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Checkp
 
     // Ghi nhận nhật ký sức khỏe từng cá thể ngựa vào bảng horse_health_logs (POST /api/v1/horse-health-logs)
     const tripHorses = b.horses.filter(h => t.horseIds.includes(h.horseId))
-    const bookingNumId = toNumericBookingId(b.id)
     await Promise.all(tripHorses.map(h => {
       const hId = Number(h.horseId.replace(/\D/g, ''))
       if (!hId) return Promise.resolve(null)
       return healthLogsApi.create({
         horseId: hId,
-        bookingId: bookingNumId,
+        bookingCode: b.id,
         healthStatus: condition.toUpperCase(),
         symptoms: note.trim() || `Nước: ${water ? 'đã cấp' : 'chưa'}, cỏ: ${hay ? 'đủ' : 'chưa'}`,
       }).catch(() => null)

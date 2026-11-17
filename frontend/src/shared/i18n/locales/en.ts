@@ -268,7 +268,7 @@ export const en = {
       lookupAria: 'Lookup',
       orderTab: 'Track Shipment',
       priceTab: 'Rate Card',
-      codePlaceholder: 'Order ID: BK-001 or WB-2026-0001',
+      codePlaceholder: 'Order ID: BK-7F3K9QXM or VD-2026-7F3K9QXM',
       phonePlaceholder: 'Last 4 digits of phone number',
       searchBtn: 'Search',
       searching: 'Searching…',

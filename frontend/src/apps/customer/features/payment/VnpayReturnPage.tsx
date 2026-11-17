@@ -32,16 +32,7 @@ export default function VnpayReturnPage() {
   const ok = result?.success === true
   const needsReview = result?.paymentStatus === 'NEEDS_REVIEW'
 
-  const targetOrder = useMemo(() => {
-    if (result?.bookingCode) return result.bookingCode
-    const txn = params.vnp_TxnRef
-    if (txn && txn.length >= 7) {
-      const numPart = txn.slice(3, 7)
-      const id = parseInt(numPart, 10)
-      if (!isNaN(id)) return `BK-${String(id).padStart(3, '0')}`
-    }
-    return null
-  }, [result?.bookingCode, params.vnp_TxnRef])
+  const targetOrder = result?.bookingCode ?? null
 
   return (
     <div className="page">

@@ -9,7 +9,7 @@ async function open(page: Page, options: { confirmed?: boolean; policy?: boolean
   const state = {
     requests: [] as Record<string, unknown>[],
     booking: {
-      id: 'BK-1', numericId: 1, type: 'domestic', customer: 'Customer', customerName: 'Customer',
+      id: 'BK-1', type: 'domestic', customer: 'Customer', customerName: 'Customer',
       status: options.issued ? 'awaiting_payment' : options.policy ? 'clearance_in_progress' : 'under_review',
       createdAt: 1, departAt: Date.parse('2027-06-01T00:00:00Z'),
       originName: 'Hà Nội', destName: 'Đà Nẵng', originCountry: 'VN', destCountry: 'VN',

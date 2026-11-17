@@ -2,7 +2,6 @@ import apiClient, { type ApiResponse } from './client'
 
 export interface PaymentDto {
   id: number
-  bookingId: number
   bookingCode: string
   waybillNo?: string
   amount: number
@@ -15,7 +14,6 @@ export interface PaymentDto {
 }
 
 export interface PaymentSummaryDto {
-  bookingId: number
   bookingCode: string
   waybillNo?: string
   bookingStatus: string
@@ -31,7 +29,6 @@ export interface PaymentSummaryDto {
 }
 
 export interface CancelWithRefundDto {
-  bookingId: number
   bookingCode: string
   bookingStatus: string
   depositPaid: number
@@ -56,7 +53,6 @@ export interface VnpayResultDto {
   success: boolean
   rspCode: string
   message: string
-  bookingId?: number
   bookingCode?: string
   paymentType?: string
   paymentStatus?: string
