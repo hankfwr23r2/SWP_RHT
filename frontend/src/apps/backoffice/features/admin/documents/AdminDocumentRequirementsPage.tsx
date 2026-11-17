@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { usePageData } from '@shared/routing/pageData'
 import type { DocumentGroup, DocumentRequirement, DocumentRequirementPayload, DocumentType } from '@shared/api/documentRequirements'
 import { documentRequirementsApi } from '@shared/api/documentRequirements'
+import type { BackendLocationResponse } from '@shared/api/routes'
 import { applyDocumentRequirements } from '@shared/config/runtimeDocumentRequirements'
 import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
@@ -33,16 +34,23 @@ const blankRequirement = (): DocumentRequirementPayload => ({
   description: '',
   tripType: 'ALL',
   country: 'ALL',
+  locationId: null,
   required: true,
   status: 'ACTIVE',
 })
 
+// Cửa khẩu dẫn tới quốc gia đã chọn (cửa khẩu chưa khai báo quốc gia đích thì luôn hiện)
+const gatesForCountry = (gates: BackendLocationResponse[], country: DocumentRequirementPayload['country']) =>
+  gates.filter(gate => country === 'ALL' || !gate.destinationCountry || gate.destinationCountry.toUpperCase() === country)
+
 function RequirementEditor({
   initial,
+  gates,
   onClose,
   onSaved,
 }: {
   initial: DocumentRequirement | null
+  gates: BackendLocationResponse[]
   onClose: () => void
   onSaved: (requirement: DocumentRequirement) => void
 }) {
@@ -54,6 +62,7 @@ function RequirementEditor({
     description: initial.description ?? '',
     tripType: initial.tripType,
     country: initial.country,
+    locationId: initial.locationId ?? null,
     required: initial.required,
     status: initial.status,
   } : blankRequirement())
@@ -71,8 +80,18 @@ function RequirementEditor({
       documentName: LABELS[type],
       tripType: 'ALL',
       country: 'ALL',
+      locationId: null,
     }))
   }
+
+  const changeCountry = (country: DocumentRequirementPayload['country']) =>
+    setForm(current => ({
+      ...current,
+      country,
+      locationId: gatesForCountry(gates, country).some(gate => gate.id === current.locationId) ? current.locationId : null,
+    }))
+
+  const canPickGate = form.documentGroup === 'CLEARANCE' && form.tripType === 'INTERNATIONAL'
 
   const save = async () => {
     if (!form.documentName.trim()) {
@@ -144,7 +163,10 @@ function RequirementEditor({
           <select
             className="form-control"
             value={form.tripType}
-            onChange={event => update('tripType', event.target.value as DocumentRequirementPayload['tripType'])}
+            onChange={event => {
+              const tripType = event.target.value as DocumentRequirementPayload['tripType']
+              setForm(current => ({ ...current, tripType, locationId: tripType === 'INTERNATIONAL' ? current.locationId : null }))
+            }}
           >
             <option value="ALL">Tất cả</option>
             <option value="DOMESTIC">Trong nước</option>
@@ -156,7 +178,7 @@ function RequirementEditor({
           <select
             className="form-control"
             value={form.country}
-            onChange={event => update('country', event.target.value as DocumentRequirementPayload['country'])}
+            onChange={event => changeCountry(event.target.value as DocumentRequirementPayload['country'])}
           >
             <option value="ALL">Tất cả</option>
             <option value="VN">Việt Nam</option>
@@ -164,6 +186,21 @@ function RequirementEditor({
             <option value="LA">Lào</option>
           </select>
         </label>
+        {canPickGate && (
+          <label className={s.full}>
+            Cửa khẩu
+            <select
+              className="form-control"
+              value={form.locationId ?? ''}
+              onChange={event => update('locationId', event.target.value ? Number(event.target.value) : null)}
+            >
+              <option value="">Tất cả cửa khẩu</option>
+              {gatesForCountry(gates, form.country).map(gate => (
+                <option key={gate.id} value={gate.id}>{gate.locationName}</option>
+              ))}
+            </select>
+          </label>
+        )}
         <label className={s.full}>
           Mô tả
           <textarea className="form-control" rows={3} maxLength={1000} value={form.description} onChange={event => update('description', event.target.value)} />
@@ -179,7 +216,8 @@ function RequirementEditor({
 
 export default function AdminDocumentRequirementsPage() {
   const { t } = useTranslation()
-  const { requirements: loaded = [] } = usePageData<typeof documentRequirementsLoader>()
+  const { requirements: loaded = [], gates: loadedGates } = usePageData<typeof documentRequirementsLoader>()
+  const gates: BackendLocationResponse[] = Array.isArray(loadedGates) ? loadedGates : []
   const [requirements, setRequirements] = useState(loaded)
   const [editing, setEditing] = useState<DocumentRequirement | null>(null)
   const [creating, setCreating] = useState(false)
@@ -241,7 +279,10 @@ export default function AdminDocumentRequirementsPage() {
                 <tr key={item.id}>
                   <td><b>{item.documentName}</b><small>{item.documentType}{item.description ? ` · ${item.description}` : ''}</small></td>
                   <td>{item.documentGroup === 'HORSE' ? 'Hồ sơ ngựa' : 'Thông quan'}</td>
-                  <td>{item.tripType === 'ALL' ? 'Tất cả chuyến' : item.tripType === 'DOMESTIC' ? 'Trong nước' : 'Quốc tế'} · {item.country}</td>
+                  <td>
+                    {item.tripType === 'ALL' ? 'Tất cả chuyến' : item.tripType === 'DOMESTIC' ? 'Trong nước' : 'Quốc tế'} · {item.country}
+                    {item.locationName && <small><i className="fa-solid fa-archway" /> {item.locationName}</small>}
+                  </td>
                   <td>{item.required ? 'Có' : 'Không'}</td>
                   <td><span className={`badge ${item.status === 'ACTIVE' ? 'badge-success' : 'badge-muted'}`}>{item.status === 'ACTIVE' ? 'Đang áp dụng' : 'Ngừng áp dụng'}</span></td>
                   <td>{item.updatedBy ?? '—'}{item.updatedAt ? <small>{new Date(item.updatedAt).toLocaleString('vi-VN')}</small> : null}</td>
@@ -259,7 +300,7 @@ export default function AdminDocumentRequirementsPage() {
         </div>
       </div>
       {(creating || editing) && (
-        <RequirementEditor initial={editing} onClose={() => { setCreating(false); setEditing(null) }} onSaved={saved} />
+        <RequirementEditor initial={editing} gates={gates} onClose={() => { setCreating(false); setEditing(null) }} onSaved={saved} />
       )}
     </div>
   )

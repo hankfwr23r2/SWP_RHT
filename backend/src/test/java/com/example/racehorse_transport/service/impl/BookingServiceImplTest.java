@@ -33,7 +33,6 @@ import com.example.racehorse_transport.repository.LogRepository;
 import com.example.racehorse_transport.repository.NotificationRepository;
 import com.example.racehorse_transport.repository.PaymentRepository;
 import com.example.racehorse_transport.repository.QuotationRepository;
-import com.example.racehorse_transport.repository.RegulationRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.ServiceRepository;
 import com.example.racehorse_transport.service.OperationalLogWriter;
@@ -83,7 +82,6 @@ class BookingServiceImplTest {
     private final LogRepository logRepository = mock(LogRepository.class);
     private final VehicleRepository vehicleRepository = mock(VehicleRepository.class);
     private final StaffRepository staffRepository = mock(StaffRepository.class);
-    private final RegulationRepository regulationRepository = mock(RegulationRepository.class);
     private final LocationRepository locationRepository = mock(LocationRepository.class);
     private final TripDocumentRepository tripDocumentRepository = mock(TripDocumentRepository.class);
     private final SystemConfigService systemConfigService = mock(SystemConfigService.class);
@@ -124,7 +122,6 @@ class BookingServiceImplTest {
                 logRepository,
                 vehicleRepository,
                 staffRepository,
-                regulationRepository,
                 locationRepository,
                 systemConfigService,
                 tripDocumentRepository,

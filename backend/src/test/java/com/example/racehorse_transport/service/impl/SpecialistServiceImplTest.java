@@ -5,7 +5,7 @@ import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.LocationRepository;
-import com.example.racehorse_transport.repository.RegulationRepository;
+import com.example.racehorse_transport.repository.DocumentRequirementRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.TripDocumentRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,7 +29,7 @@ class SpecialistServiceImplTest {
     private final BookingRepository bookingRepository = mock(BookingRepository.class);
     private final StaffRepository staffRepository = mock(StaffRepository.class);
     private final TripDocumentRepository tripDocumentRepository = mock(TripDocumentRepository.class);
-    private final RegulationRepository regulationRepository = mock(RegulationRepository.class);
+    private final DocumentRequirementRepository documentRequirementRepository = mock(DocumentRequirementRepository.class);
     private final LocationRepository locationRepository = mock(LocationRepository.class);
 
     private SpecialistServiceImpl service;
@@ -40,7 +40,7 @@ class SpecialistServiceImplTest {
                 bookingRepository,
                 staffRepository,
                 tripDocumentRepository,
-                regulationRepository,
+                documentRequirementRepository,
                 locationRepository,
                 new ObjectMapper(), org.mockito.Mockito.mock(com.example.racehorse_transport.service.StaffNotifier.class));
 

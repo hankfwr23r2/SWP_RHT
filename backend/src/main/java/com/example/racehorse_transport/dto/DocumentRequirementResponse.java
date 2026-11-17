@@ -14,6 +14,8 @@ public class DocumentRequirementResponse {
     String description;
     String tripType;
     String country;
+    Integer locationId;
+    String locationName;
     boolean required;
     String status;
     String updatedBy;
