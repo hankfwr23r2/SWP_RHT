@@ -53,4 +53,13 @@ test('điều phối viên lập kế hoạch đơn nội địa theo tuyến xe
 
   // Không có tuyến OSRM nào đi từ điểm đón của đơn (OSRM nhận tọa độ dạng "lng,lat")
   expect(osrmUrls.filter(url => url.includes(`${pickup.lng},${pickup.lat}`))).toEqual([])
+
+  const flexiblePreviewResponse = page.waitForResponse(
+    response => response.url().includes('/api/v1/coordinator/route-preview') && response.request().method() === 'POST',
+    { timeout: 60_000 }
+  )
+  await page.getByRole('button', { name: 'Lộ trình linh hoạt (Tự động đề xuất)' }).click()
+  const flexiblePreview = await flexiblePreviewResponse
+  expect(flexiblePreview.status()).toBe(200)
+  expect((flexiblePreview.request().postDataJSON() as { stopLocationIds: number[] }).stopLocationIds).toEqual([])
 })
