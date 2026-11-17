@@ -2434,22 +2434,20 @@ public class BookingServiceImpl implements BookingService {
                 targetTrip.setRun(run);
                 appendHistory(payload, actor, "Bắt đầu vận chuyển");
 
-                // Cập nhật trạng thái ngựa sang IN_TRANSIT
-                if (payload.getHorses() != null) {
-                    for (BookingHorseDto hDto : payload.getHorses()) {
-                        if (hDto.getHorseId() != null && !hDto.getHorseId().isBlank()) {
-                            try {
-                                String numId = hDto.getHorseId().replaceAll("\\D", "");
-                                if (!numId.isEmpty()) {
-                                    Integer hId = Integer.parseInt(numId);
-                                    horseRepository.findById(hId).ifPresent(h -> {
-                                        h.setTransitStatus("IN_TRANSIT");
-                                        horseRepository.save(h);
-                                    });
-                                }
-                            } catch (Exception ex) {
-                                log.warn("Không thể cập nhật transitStatus cho ngựa {}: {}", hDto.getHorseId(), ex.getMessage());
+                // Chỉ chuyển những ngựa còn được nhận lên chuyến này sang IN_TRANSIT.
+                for (BookingHorseDto hDto : horsesOnTrip(payload, targetTrip)) {
+                    if (hDto.getHorseId() != null && !hDto.getHorseId().isBlank()) {
+                        try {
+                            String numId = hDto.getHorseId().replaceAll("\\D", "");
+                            if (!numId.isEmpty()) {
+                                Integer hId = Integer.parseInt(numId);
+                                horseRepository.findById(hId).ifPresent(h -> {
+                                    h.setTransitStatus("IN_TRANSIT");
+                                    horseRepository.save(h);
+                                });
                             }
+                        } catch (Exception ex) {
+                            log.warn("Không thể cập nhật transitStatus cho ngựa {}: {}", hDto.getHorseId(), ex.getMessage());
                         }
                     }
                 }
