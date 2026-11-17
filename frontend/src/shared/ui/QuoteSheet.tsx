@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { DEPOSIT_RATE } from '../config/booking-rules'
+import { HOTLINE, OFFICE_ADDRESS } from '../config/business-rules'
 import { formatDate, formatDateTime, formatVND, formatVNDWords } from '../lib/format'
 import type { Adjustment, Party, QuoteLine } from '../types/booking'
 import s from './QuoteSheet.module.css'
@@ -122,8 +123,8 @@ export function QuoteSheet({
               <span className={s.companyName}>CÔNG TY CỔ PHẦN VẬN CHUYỂN NGỰA ĐUA RACEHORSE TRANSPORT</span>
               <div className={s.companyMeta}>
                 <div><b>Mã số thuế:</b> <span className={s.taxCode}>0102026391-DEMO</span></div>
-                <div><b>Trụ sở:</b> Khu Đua Ngựa & Trung Tâm Logistics Vận Tải Cao Cấp, TP. Hồ Chí Minh</div>
-                <div><b>Hotline:</b> 1900 6868 · <b>Email:</b> billing@racehorsetransport.vn</div>
+                <div><b>Trụ sở:</b> {OFFICE_ADDRESS}</div>
+                <div><b>Hotline:</b> {HOTLINE} · <b>Email:</b> billing@racehorsetransport.vn</div>
               </div>
             </div>
           </div>
