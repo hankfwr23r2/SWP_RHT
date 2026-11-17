@@ -994,6 +994,7 @@ public class BookingServiceImpl implements BookingService {
         }
 
         HorseInsurancePolicy.requireQuoteReady(payload.getHorses());
+        com.example.racehorse_transport.util.QuoteLinePolicy.requireValid(request.getLines(), payload.getHorses());
         List<QuoteLineDto> canonicalLines = new ArrayList<>(request.getLines() != null ? request.getLines() : List.of());
         canonicalLines.removeIf(line -> line.getLabel() != null && line.getLabel().toLowerCase(Locale.ROOT).contains("bảo hiểm"));
         canonicalLines.addAll(HorseInsurancePolicy.quoteLines(payload.getHorses()));
