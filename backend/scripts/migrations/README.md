@@ -14,6 +14,7 @@ Hai script dành cho schema PostgreSQL hiện có trước refactor. DB mới ho
 7. Khi backend vẫn dừng, chạy `003_add_user_staff_fk.sql` để gắn khóa ngoại người liên quan:
    - `email_otp.userid` → `users(userid)` (`ON DELETE CASCADE`), backfill theo email chuẩn hóa; OTP không khớp tài khoản nào bị xóa (chỉ sống 10 phút).
    - `document_requirement.updated_by_staffid` → `staff(userid)`, backfill từ username cũ; giá trị không phải nhân viên (vd `SYSTEM` của seeder) thành NULL, rồi bỏ cột chuỗi `updated_by`.
+   - `system_config.updated_by_staffid` → `staff(userid)`, cùng cách backfill và bỏ cột `updated_by`.
    Script chạy lại được. Nếu backend mới lỡ khởi động trước, Hibernate chỉ thêm cột/FK mới; chạy 003 sau đó vẫn backfill và dọn cột cũ.
 
 Không khởi động code cũ sau bước 5: Hibernate `ddl-auto=update` có thể tạo lại bảng cũ rỗng và code cũ sẽ ghi sai nơi. Các script không được đặt vào seeder hoặc chạy lại mỗi lần ứng dụng khởi động.

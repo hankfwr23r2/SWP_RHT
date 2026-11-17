@@ -75,6 +75,8 @@ class DatabaseConsolidationMigrationTest {
                     CREATE TABLE staff(userid integer PRIMARY KEY REFERENCES users,role varchar(100));
                     CREATE TABLE email_otp(id bigint PRIMARY KEY,email varchar(255) NOT NULL,purpose varchar(30) NOT NULL);
                     CREATE TABLE document_requirement(id integer PRIMARY KEY,updated_by varchar(100));
+                    CREATE TABLE system_config(config_key varchar(100) PRIMARY KEY,updated_by varchar(100));
+                    INSERT INTO system_config VALUES ('DEPOSIT_RATE','admin01'),('INSURANCE_RATE',null),('MARGIN_RATE','customer');
                     INSERT INTO users VALUES (1,'admin01',' Admin@Example.com '),(2,'customer','cus@example.com');
                     INSERT INTO staff VALUES (1,'ADMIN');
                     INSERT INTO email_otp VALUES (1,'admin@example.com','VERIFY_EMAIL'),(2,'cus@example.com','RESET_PASSWORD'),
@@ -90,7 +92,10 @@ class DatabaseConsolidationMigrationTest {
                 // 'SYSTEM' và khách hàng (không phải staff) không có staff tương ứng -> NULL
                 assertThat(number(connection, "SELECT count(*) FROM document_requirement WHERE updated_by_staffid IS NULL")).isEqualTo(3);
                 assertThat(number(connection, "SELECT count(*) FROM information_schema.columns WHERE table_name='document_requirement' AND column_name='updated_by'")).isZero();
-                assertThat(number(connection, "SELECT count(*) FROM pg_constraint WHERE conname IN ('fk_email_otp_user','fk_document_requirement_updated_by_staff')")).isEqualTo(2);
+                assertThat(number(connection, "SELECT count(*) FROM pg_constraint WHERE conname IN ('fk_email_otp_user','fk_document_requirement_updated_by_staff','fk_system_config_updated_by_staff')")).isEqualTo(3);
+                assertThat(number(connection, "SELECT updated_by_staffid FROM system_config WHERE config_key='DEPOSIT_RATE'")).isEqualTo(1);
+                assertThat(number(connection, "SELECT count(*) FROM system_config WHERE updated_by_staffid IS NULL")).isEqualTo(2);
+                assertThat(number(connection, "SELECT count(*) FROM information_schema.columns WHERE table_name='system_config' AND column_name='updated_by'")).isZero();
                 assertThatThrownBy(() -> execute(connection, "UPDATE document_requirement SET updated_by_staffid=2 WHERE id=4"))
                         .isInstanceOf(SQLException.class).hasMessageContaining("fk_document_requirement_updated_by_staff");
                 execute(connection, "DELETE FROM users WHERE userid=2");

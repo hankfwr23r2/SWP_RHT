@@ -3,6 +3,9 @@ package com.example.racehorse_transport.service.impl;
 import com.example.racehorse_transport.dto.admin.UpdateSystemConfigRequest;
 import com.example.racehorse_transport.entity.SystemConfig;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
+import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.entity.User;
+import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.SystemConfigRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,10 +23,16 @@ import static org.mockito.Mockito.when;
 class SystemConfigServiceImplTest {
 
     private final SystemConfigRepository repository = mock(SystemConfigRepository.class);
-    private final SystemConfigServiceImpl service = new SystemConfigServiceImpl(org.mockito.Mockito.mock(com.example.racehorse_transport.service.AdminAuditWriter.class), repository);
+    private final StaffRepository staffRepository = mock(StaffRepository.class);
+    private final SystemConfigServiceImpl service = new SystemConfigServiceImpl(org.mockito.Mockito.mock(com.example.racehorse_transport.service.AdminAuditWriter.class), repository, staffRepository);
 
     @BeforeEach
     void setUp() {
+        User user = new User();
+        user.setUsername("admin");
+        Staff admin = new Staff();
+        admin.setUser(user);
+        when(staffRepository.findByUser_Username("admin")).thenReturn(java.util.Optional.of(admin));
         when(repository.findAllById(anyIterable())).thenReturn(List.of(
                 config("BORDER_OPEN_MINUTES", "450"),
                 config("BORDER_CLOSE_MINUTES", "990"),
@@ -82,6 +91,7 @@ class SystemConfigServiceImplTest {
                 UpdateSystemConfigRequest.builder().configValue("3.5").build(), "admin");
 
         assertThat(response.getConfigValue()).isEqualTo("3.5");
+        assertThat(response.getUpdatedBy()).isEqualTo("admin");
     }
 
     @Test
