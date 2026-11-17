@@ -2,11 +2,13 @@ package com.example.racehorse_transport;
 
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Customer;
+import com.example.racehorse_transport.entity.Horse;
 import com.example.racehorse_transport.entity.Payment;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.User;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.CustomerRepository;
+import com.example.racehorse_transport.repository.HorseRepository;
 import com.example.racehorse_transport.repository.NotificationRepository;
 import com.example.racehorse_transport.repository.PaymentRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
@@ -72,6 +74,8 @@ class PickupChipCheckTest {
     private CustomerRepository customers;
     @Autowired
     private BookingRepository bookings;
+    @Autowired
+    private HorseRepository horses;
     @Autowired
     private PaymentRepository payments;
     @Autowired
@@ -191,6 +195,47 @@ class PickupChipCheckTest {
         assertThat(horse.path("status").asText()).isEqualTo("CHIP_MISMATCH");
         assertThat(horse.path("unfitInfo").path("chipRead").asText()).isEqualTo("VN-123456");
         assertThat(details.path("quote").path("total").asDouble()).isEqualTo(10_000_000d);
+    }
+
+    @Test
+    void mismatchedHorseIsNotMarkedInTransitWhenTheOtherHorseStartsTheJourney() throws Exception {
+        String rejectedChip = UUID.randomUUID().toString().replace("-", "").substring(0, 15);
+        String acceptedChip = UUID.randomUUID().toString().replace("-", "").substring(0, 15);
+        Horse rejectedHorse = horses.save(Horse.builder()
+                .horseName("test")
+                .microchipID(rejectedChip)
+                .transitStatus("STABLE_IDLE")
+                .completedTrips(0)
+                .build());
+        Horse acceptedHorse = horses.save(Horse.builder()
+                .horseName("Spiderman")
+                .microchipID(acceptedChip)
+                .transitStatus("STABLE_IDLE")
+                .completedTrips(0)
+                .build());
+        String rejectedId = "H-" + rejectedHorse.getId();
+        String acceptedId = "H-" + acceptedHorse.getId();
+        String horsesAndTrips = "\"horses\":["
+                + "{\"horseId\":\"" + rejectedId + "\",\"name\":\"test\",\"microchip\":\"" + rejectedChip + "\","
+                + "\"status\":\"ELIGIBLE\",\"insurance\":{\"option\":\"none\"}},"
+                + "{\"horseId\":\"" + acceptedId + "\",\"name\":\"Spiderman\",\"microchip\":\"" + acceptedChip + "\","
+                + "\"status\":\"ELIGIBLE\",\"insurance\":{\"option\":\"none\"}}],"
+                + "\"trips\":[{\"tripId\":\"TRP-1\",\"vehicleId\":\"VH-001\",\"horseIds\":[\"" + rejectedId
+                + "\",\"" + acceptedId + "\"],\"driverId\":\"%s\",\"escortId\":\"%s\",\"departedAt\":%d,"
+                + "\"run\":{\"checkpoints\":[%%s]}}]";
+        Booking booking = booking(horsesAndTrips,
+                pickup("\"chips\":[\"" + acceptedChip + "\"],\"originals\":" + ORIGINALS
+                        + ",\"handoverPhoto\":\"https://example.com/pickup.jpg\""),
+                true);
+
+        HttpResponse<String> mismatch = tripUpdate(booking, driverToken, "CHIP_MISMATCH",
+                "{\"horseId\":\"" + rejectedId + "\",\"chipRead\":\"VN-123456\",\"note\":\"Sai microchip\"}");
+        assertThat(mismatch.statusCode()).as(mismatch.body()).isEqualTo(200);
+
+        HttpResponse<String> start = tripUpdate(booking, driverToken, "START_JOURNEY", "{}");
+        assertThat(start.statusCode()).as(start.body()).isEqualTo(200);
+        assertThat(horses.findById(rejectedHorse.getId()).orElseThrow().getTransitStatus()).isEqualTo("STABLE_IDLE");
+        assertThat(horses.findById(acceptedHorse.getId()).orElseThrow().getTransitStatus()).isEqualTo("IN_TRANSIT");
     }
 
     @Test
