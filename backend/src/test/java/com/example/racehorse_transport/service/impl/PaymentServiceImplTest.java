@@ -31,6 +31,8 @@ class PaymentServiceImplTest {
     private final BookingRepository bookingRepository = mock(BookingRepository.class);
     private final QuotationRepository quotationRepository = mock(QuotationRepository.class);
 
+    private final com.example.racehorse_transport.service.StaffNotifier staffNotifier =
+            mock(com.example.racehorse_transport.service.StaffNotifier.class);
     private PaymentServiceImpl service;
     private Booking booking;
 
@@ -38,7 +40,7 @@ class PaymentServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new PaymentServiceImpl(paymentRepository, bookingRepository, quotationRepository, new ObjectMapper(), org.mockito.Mockito.mock(com.example.racehorse_transport.service.StaffNotifier.class));
+        service = new PaymentServiceImpl(paymentRepository, bookingRepository, quotationRepository, new ObjectMapper(), staffNotifier);
 
         User user = new User();
         user.setId(7);
@@ -127,6 +129,9 @@ class PaymentServiceImplTest {
                 .contains("\"cancelReason\":\"Đổi lịch\"")
                 .contains("\"refundAmount\":0")
                 .containsPattern("\"cancelledAt\":\\d{13}");
+        // Kíp xe và điều phối được báo hủy, không chỉ Quản lý
+        org.mockito.Mockito.verify(staffNotifier).bookingCancelled(org.mockito.ArgumentMatchers.eq(booking),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq("Đổi lịch"));
     }
 
     @Test

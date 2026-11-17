@@ -58,7 +58,7 @@ public class HorseDocumentController {
                 horseId, documentType, file);
 
         return ResponseEntity.ok(ApiResponse.success(response,
-                "Upload hồ sơ thành công! Hồ sơ đang chờ chuyên viên xét duyệt."));
+                "Tải giấy tờ thành công. Bạn có thể đặt đơn ngay; chuyên viên sẽ kiểm tra khi thẩm định đơn."));
     }
 
     /**

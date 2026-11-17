@@ -54,6 +54,18 @@ public class StaffNotifier {
         }
     }
 
+    // Đơn bị hủy: báo Tài xế, Hộ tống của mọi chuyến và Điều phối viên đã nhận đơn để không ai tiếp tục chạy chuyến.
+    // Chưa giao Điều phối viên thì không báo cả vai trò (Quản lý đã được báo riêng ở nơi hủy).
+    public void bookingCancelled(Booking booking, BookingDetailsPayload payload, String reason) {
+        String title = "Đơn đã hủy · " + booking.getCode();
+        String message = "Đơn " + booking.getCode() + " đã bị hủy"
+                + (reason == null || reason.isBlank() ? "" : " (" + reason.trim() + ")")
+                + ". Dừng mọi công việc của chuyến này.";
+        toCrew(booking, payload, title, message);
+        username("COORDINATOR", intakeId(payload, "coordinator"))
+                .ifPresent(coordinator -> save("coordinator", coordinator, booking, title, message, "/coordinator"));
+    }
+
     private void save(String role, String username, Booking booking, String title, String message, String link) {
         String code = booking != null && booking.getId() != null ? booking.getCode() : null;
         notifications.save(Notification.builder()

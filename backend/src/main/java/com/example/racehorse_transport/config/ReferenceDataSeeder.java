@@ -435,7 +435,7 @@ public class ReferenceDataSeeder implements CommandLineRunner {
                 Staff staff = new Staff();
                 staff.setUser(user);
                 staff.setRole(r[3]);
-                staff.setStaffCode(r[4]);
+                staff.setStaffCode(staffRepository.nextFreeStaffCode(r[4]));
                 staff.setEmploymentStatus("ACTIVE");
                 staff.setHireDate(LocalDate.now());
                 staffRepository.save(staff);

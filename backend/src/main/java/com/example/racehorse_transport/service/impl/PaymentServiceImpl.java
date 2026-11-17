@@ -137,6 +137,7 @@ public class PaymentServiceImpl implements PaymentService {
             bookingRepository.save(booking);
             staffNotifier.toManagers(booking, "Khách hủy đơn · " + booking.getCode(),
                     "Khách hủy đơn trước khi đặt cọc" + (reason == null || reason.isBlank() ? "." : ": " + reason), "/manager/cancelled-orders");
+            staffNotifier.bookingCancelled(booking, payload, reason);
 
             return CancelWithRefundResponse.builder()
                     .bookingCode(booking.getCode())
@@ -232,6 +233,7 @@ public class PaymentServiceImpl implements PaymentService {
         appendHistory(payload, actor, historyText);
         savePayload(booking, payload);
         bookingRepository.save(booking);
+        staffNotifier.bookingCancelled(booking, payload, reason);
 
         log.info("Cancelled booking ID={} with policy: refund={}, penalty={}", booking.getId(), refundAmount, penaltyAmount);
 

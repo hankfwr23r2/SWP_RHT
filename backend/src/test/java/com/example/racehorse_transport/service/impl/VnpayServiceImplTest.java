@@ -61,6 +61,7 @@ class VnpayServiceImplTest {
     private final PaymentRepository paymentRepository = mock(PaymentRepository.class);
     private final BookingService bookingService = mock(BookingService.class);
     private final SettlementService settlementService = mock(SettlementService.class);
+    private final com.example.racehorse_transport.service.StaffNotifier staffNotifier = mock(com.example.racehorse_transport.service.StaffNotifier.class);
     private VnpayServiceImpl service;
     private Booking booking;
 
@@ -75,7 +76,7 @@ class VnpayServiceImplTest {
         ReflectionTestUtils.setField(props, "returnUrl", "http://localhost:5173/payment/vnpay-return");
         ReflectionTestUtils.setField(props, "expireMinutes", 15);
         when(clock.instant()).thenReturn(NOW);
-        service = new VnpayServiceImpl(props, bookingRepository, quotationRepository, paymentRepository, bookingService, settlementService, clock);
+        service = new VnpayServiceImpl(props, bookingRepository, quotationRepository, paymentRepository, bookingService, settlementService, clock, staffNotifier);
 
         User user = new User();
         user.setUsername("khach1");
@@ -138,6 +139,8 @@ class VnpayServiceImplTest {
         service.confirm(signedCallback("300000000", "00"));
         assertThat(payment.getStatus()).isEqualTo("NEEDS_REVIEW");
         verify(bookingService, never()).confirmDepositPaid(any(), any());
+        verify(staffNotifier).toManagers(any(), org.mockito.ArgumentMatchers.contains("cần kiểm tra"),
+                org.mockito.ArgumentMatchers.contains("hoàn tiền"), any());
     }
 
     @Test
