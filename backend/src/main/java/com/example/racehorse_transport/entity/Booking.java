@@ -22,6 +22,10 @@ public class Booking {
     @Column(name = "BookingID", nullable = false)
     private Integer id;
 
+    // Mã đơn đưa ra ngoài (URL, API, thông báo); BookingID chỉ dùng nội bộ làm khóa.
+    @Column(name = "BookingCode", length = 11, unique = true)
+    private String code;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "CustomerID")
     private Customer customerID;
@@ -115,5 +119,11 @@ public class Booking {
 
     @Column(name = "DetailsJson", columnDefinition = "TEXT")
     private String detailsJson;
-    
+
+    @PrePersist
+    void assignCode() {
+        if (code == null) {
+            code = com.example.racehorse_transport.util.BookingCodes.newCode();
+        }
+    }
 }
