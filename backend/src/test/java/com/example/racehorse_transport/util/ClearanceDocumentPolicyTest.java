@@ -1,7 +1,8 @@
 package com.example.racehorse_transport.util;
 
 import com.example.racehorse_transport.entity.Location;
-import com.example.racehorse_transport.entity.Regulation;
+import com.example.racehorse_transport.dto.booking.DocumentRequirementSnapshot;
+import com.example.racehorse_transport.entity.DocumentRequirement;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -12,24 +13,63 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ClearanceDocumentPolicyTest {
 
     @Test
-    void domesticBookingExcludesInternationalTypesAndNonVietnamRegulations() {
-        Regulation healthCertificate = regulation("health_cert", null, "Việt Nam");
-        Regulation powerOfAttorney = regulation("poa", null, "Việt Nam");
-        Regulation mislabeledAsGeneral = regulation("import_permit", null, "Campuchia");
-        Regulation borderRule = regulation("doc_ata", location(16), "Campuchia");
-        Regulation countryRuleWithUnknownType = regulation("country_rule", null, "Lào");
+    void snapshotKeepsAgreedNamesAndAddsGateInfoOnlyForTheBookingGate() {
+        Location mocBai = gate(16, "Mộc Bài", "KH");
+        Location tinhBien = gate(18, "Tịnh Biên", "KH");
+        List<DocumentRequirement> active = List.of(
+                requirement("poa", "Giấy ủy quyền", null, "ALL", "ALL"),
+                requirement("customs_declaration", "Tờ khai hải quan", null, "INTERNATIONAL", "KH"),
+                requirement("customs_declaration", "Tờ khai Mộc Bài", mocBai, "INTERNATIONAL", "KH"),
+                requirement("customs_declaration", "Tờ khai Tịnh Biên", tinhBien, "INTERNATIONAL", "KH"));
+        List<DocumentRequirementSnapshot> snapshot = List.of(
+                snapshot("CLEARANCE", "customs_declaration", "Tờ khai hải quan"),
+                snapshot("CLEARANCE", "poa", "Giấy ủy quyền"),
+                snapshot("HORSE", "passport", "Hộ chiếu"));
 
-        assertThat(List.of(healthCertificate, powerOfAttorney, mislabeledAsGeneral, borderRule, countryRuleWithUnknownType)
-                .stream()
-                .filter(regulation -> ClearanceDocumentPolicy.isApplicable(regulation, false)))
-                .containsExactly(healthCertificate, powerOfAttorney);
+        List<Map<String, Object>> items = ClearanceDocumentPolicy.buildItems(active, true, mocBai, "KH", snapshot);
+
+        assertThat(items).extracting(item -> item.get("type")).containsExactly("customs_declaration", "poa");
+        assertThat(items.get(0)).containsEntry("label", "Tờ khai hải quan").containsEntry("gateName", "Mộc Bài")
+                .containsEntry("gateLocationId", 16);
+        assertThat(items.get(1)).doesNotContainKey("gateName");
     }
 
     @Test
-    void internationalBookingKeepsApplicableInternationalRegulations() {
-        Regulation importPermit = regulation("import_permit", location(16), "Campuchia");
+    void unknownGateListsEveryGateOfTheDestinationCountry() {
+        List<DocumentRequirement> active = List.of(
+                requirement("import_permit", "Giấy phép Mộc Bài", gate(16, "Mộc Bài", "KH"), "INTERNATIONAL", "KH"),
+                requirement("import_permit", "Giấy phép Lao Bảo", gate(24, "Lao Bảo", "LA"), "INTERNATIONAL", "LA"));
 
-        assertThat(ClearanceDocumentPolicy.isApplicable(importPermit, true)).isTrue();
+        List<Map<String, Object>> items = ClearanceDocumentPolicy.buildItems(active, true, null, "KH",
+                List.of(snapshot("CLEARANCE", "import_permit", "Giấy phép nhập khẩu")));
+
+        assertThat(items).extracting(item -> item.get("gateName")).containsExactly("Mộc Bài");
+    }
+
+    @Test
+    void legacyDomesticBookingWithoutSnapshotSkipsInternationalAndGateRows() {
+        List<DocumentRequirement> active = List.of(
+                requirement("health_cert", "Kiểm dịch", null, "ALL", "ALL"),
+                requirement("poa", "Ủy quyền", null, "ALL", "ALL"),
+                requirement("import_permit", "Giấy phép", null, "INTERNATIONAL", "KH"),
+                requirement("customs_declaration", "Tờ khai Mộc Bài", gate(16, "Mộc Bài", "KH"), "INTERNATIONAL", "KH"));
+
+        List<Map<String, Object>> items = ClearanceDocumentPolicy.buildItems(active, false, null, null, null);
+
+        assertThat(items).extracting(item -> item.get("type")).containsExactly("health_cert", "poa");
+    }
+
+    @Test
+    void legacyInternationalBookingWithoutSnapshotUsesGateRowNames() {
+        Location mocBai = gate(16, "Mộc Bài", "KH");
+        List<DocumentRequirement> active = List.of(
+                requirement("customs_declaration", "Tờ khai hải quan", null, "INTERNATIONAL", "KH"),
+                requirement("customs_declaration", "Tờ khai Mộc Bài", mocBai, "INTERNATIONAL", "KH"),
+                requirement("quarantine_cert", "Kiểm dịch Mộc Bài", mocBai, "INTERNATIONAL", "KH"));
+
+        List<Map<String, Object>> items = ClearanceDocumentPolicy.buildItems(active, true, mocBai, "KH", null);
+
+        assertThat(items).extracting(item -> item.get("label")).containsExactly("Tờ khai Mộc Bài", "Kiểm dịch Mộc Bài");
     }
 
     @Test
@@ -57,17 +97,29 @@ class ClearanceDocumentPolicyTest {
         assertThat(ClearanceDocumentPolicy.forBooking(clearance, true)).isSameAs(clearance);
     }
 
-    private Regulation regulation(String type, Location location, String country) {
-        Regulation regulation = new Regulation();
-        regulation.setDocumentType(type);
-        regulation.setLocationID(location);
-        regulation.setCountry(country);
-        return regulation;
+    private DocumentRequirement requirement(String type, String name, Location gate, String tripType, String country) {
+        DocumentRequirement requirement = new DocumentRequirement();
+        requirement.setDocumentGroup("CLEARANCE");
+        requirement.setDocumentType(type);
+        requirement.setDocumentName(name);
+        requirement.setLocation(gate);
+        requirement.setTripType(tripType);
+        requirement.setCountry(country);
+        requirement.setRequired(true);
+        requirement.setStatus("ACTIVE");
+        return requirement;
     }
 
-    private Location location(Integer id) {
+    private DocumentRequirementSnapshot snapshot(String group, String type, String name) {
+        return DocumentRequirementSnapshot.builder().documentGroup(group).documentType(type).documentName(name).build();
+    }
+
+    private Location gate(Integer id, String name, String destinationCountry) {
         Location location = new Location();
         location.setId(id);
+        location.setLocationName(name);
+        location.setLocationType("BorderGate");
+        location.setDestinationCountry(destinationCountry);
         return location;
     }
 }

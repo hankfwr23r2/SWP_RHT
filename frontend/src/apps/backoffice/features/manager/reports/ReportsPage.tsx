@@ -46,8 +46,8 @@ export default function ReportsPage() {
   )
 
   const exportCsv = () => {
-    const rows = [['Mã đơn', 'Khách hàng', 'Ngày đặt cọc', 'Doanh thu', 'Chi phí vận hành', 'Lợi nhuận', 'Đã thu', 'Phí bảo hiểm thu hộ', 'Trạng thái'],
-      ...(all ?? []).map(orderFinance).filter(f => f && f.at >= from && f.at < to).map(f => [f!.id, f!.customer, formatDate(f!.at), f!.revenue, f!.cost, f!.profit, f!.collected, f!.insuranceCollection, bookingStatusLabel(f!.status)])]
+    const rows = [['Mã đơn', 'Khách hàng', 'Ngày đặt cọc', 'Doanh thu vận chuyển', 'Chi phí sự cố', 'Doanh thu sau sự cố', 'Chi phí vận hành', 'Lợi nhuận', 'Đã thu', 'Phí bảo hiểm thu hộ', 'Trạng thái'],
+      ...(all ?? []).map(orderFinance).filter(f => f && f.at >= from && f.at < to).map(f => [f!.id, f!.customer, formatDate(f!.at), f!.grossRevenue, f!.incidentCost, f!.revenue, f!.cost, f!.profit, f!.collected, f!.insuranceCollection, bookingStatusLabel(f!.status)])]
     const csv = '﻿' + rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
     const a = document.createElement('a')
     a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = `bao-cao-${days}-ngay.csv`; a.click(); URL.revokeObjectURL(a.href)
@@ -67,10 +67,12 @@ export default function ReportsPage() {
 
         <h2 className={s.title}>{t('reportsPage.secFinance', 'Tài chính')}</h2>
         <div className={s.kpis}>
+          <Kpi label={t('reportsPage.grossRevenue', 'Doanh thu vận chuyển')} value={money(cur.grossRevenue)} icon="fa-truck"><Delta now={cur.grossRevenue} before={prev.grossRevenue} /></Kpi>
+          <Kpi label={t('reportsPage.incidentCost', 'Chi phí sự cố nội bộ')} value={money(cur.incidentCost)} icon="fa-triangle-exclamation"><Delta now={cur.incidentCost} before={prev.incidentCost} good="down" /></Kpi>
           <Kpi label={t('reportsPage.revenue', 'Doanh thu')} value={money(cur.revenue)} icon="fa-sack-dollar"><Delta now={cur.revenue} before={prev.revenue} /></Kpi>
           <Kpi label={t('reportsPage.operatingCost', 'Chi phí vận hành')} value={money(cur.cost)} icon="fa-receipt"><Delta now={cur.cost} before={prev.cost} good="down" /></Kpi>
           <Kpi label={t('reportsPage.profit', 'Lợi nhuận')} value={money(cur.profit)} icon="fa-chart-line"><Delta now={cur.profit} before={prev.profit} /></Kpi>
-          <Kpi label={t('reportsPage.margin', 'Biên lợi nhuận')} value={`${num1(cur.margin)}%`} icon="fa-percent"><Delta now={cur.margin} before={prev.margin} unit="pt" /></Kpi>
+          <Kpi label={t('reportsPage.margin', 'Biên lợi nhuận')} value={cur.revenue > 0 ? `${num1(cur.margin)}%` : '—'} icon="fa-percent"><Delta now={cur.margin} before={prev.revenue > 0 ? prev.margin : NaN} unit="pt" /></Kpi>
         </div>
 
         <div className={s.charts}>
@@ -113,17 +115,17 @@ export default function ReportsPage() {
           <div className={s.tableHead}><h3>Đơn đặt cọc gần đây</h3><small>Doanh thu và giá vốn không gồm khoản bảo hiểm thu hộ.</small><span className="text-muted small">{cur.orders} đơn · đã thu {money(cur.collected)}</span></div>
           <div className={s.wrapT}>
             <table>
-              <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Ngày đặt cọc</th><th className={s.r}>Doanh thu</th><th className={s.r}>Phí BH thu hộ</th><th className={s.r}>Chi phí</th><th className={s.r}>Lợi nhuận</th><th>Trạng thái</th></tr></thead>
+              <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Ngày đặt cọc</th><th className={s.r}>Doanh thu vận chuyển</th><th className={s.r}>Chi phí sự cố</th><th className={s.r}>Doanh thu sau sự cố</th><th className={s.r}>Phí BH thu hộ</th><th className={s.r}>Chi phí</th><th className={s.r}>Lợi nhuận</th><th>Trạng thái</th></tr></thead>
               <tbody>
                 {recent.map(f => f && (
-                  <tr key={f.id}><td><b>{f.id}</b></td><td>{f.customer}</td><td>{formatDate(f.at)}</td><td className={s.r}>{formatVND(f.revenue)}</td><td className={s.r}>{formatVND(f.insuranceCollection)}</td><td className={s.r}>{formatVND(f.cost)}</td><td className={`${s.r} ${f.profit >= 0 ? s.pos : s.neg}`}>{formatVND(f.profit)}</td><td>{bookingStatusLabel(f.status)}</td></tr>
+                  <tr key={f.id}><td><b>{f.id}</b></td><td>{f.customer}</td><td>{formatDate(f.at)}</td><td className={s.r}>{formatVND(f.grossRevenue)}</td><td className={s.r}>{formatVND(f.incidentCost)}</td><td className={s.r}>{formatVND(f.revenue)}</td><td className={s.r}>{formatVND(f.insuranceCollection)}</td><td className={s.r}>{formatVND(f.cost)}</td><td className={`${s.r} ${f.profit >= 0 ? s.pos : s.neg}`}>{formatVND(f.profit)}</td><td>{bookingStatusLabel(f.status)}</td></tr>
                 ))}
-                {!recent.length && <tr><td colSpan={8} className={s.empty}>Chưa có đơn đặt cọc trong khoảng này.</td></tr>}
+                {!recent.length && <tr><td colSpan={10} className={s.empty}>Chưa có đơn đặt cọc trong khoảng này.</td></tr>}
               </tbody>
             </table>
           </div>
         </div>
-        <p className={s.note}>Doanh thu = giá trị đơn đã đặt cọc (gồm khoản phát sinh khách chịu), chi phí vận hành = giá vốn theo báo giá (bỏ biên lợi nhuận 5% khỏi cước, nhân sự, nhiên liệu và BOT) + chi phí sự cố nhà xe chịu. Số mẫu theo biểu giá mẫu.</p>
+        <p className={s.note}>Doanh thu công ty sau sự cố = doanh thu vận chuyển (tách bảo hiểm thu hộ) − thực chi sự cố có chứng từ. Lợi nhuận = doanh thu sau sự cố − giá vốn vận hành gốc. Chi phí sự cố được tính một lần từ chứng từ; chi phí ước tính chưa được ghi nhận. Số mẫu theo biểu giá mẫu.</p>
       </div>
     </div>
   )

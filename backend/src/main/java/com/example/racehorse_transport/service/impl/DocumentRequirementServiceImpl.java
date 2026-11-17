@@ -5,10 +5,13 @@ import static com.example.racehorse_transport.service.AdminAuditWriter.values;
 import com.example.racehorse_transport.dto.DocumentRequirementRequest;
 import com.example.racehorse_transport.dto.DocumentRequirementResponse;
 import com.example.racehorse_transport.entity.DocumentRequirement;
-import com.example.racehorse_transport.entity.DocumentRequirementChangeLog;
-import com.example.racehorse_transport.repository.DocumentRequirementChangeLogRepository;
+import com.example.racehorse_transport.entity.Location;
+import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.repository.DocumentRequirementRepository;
+import com.example.racehorse_transport.repository.LocationRepository;
+import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.service.DocumentRequirementService;
+import com.example.racehorse_transport.util.DocumentRequirementPolicy;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
@@ -20,20 +23,24 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
     private final AdminAuditWriter audit;
 
     private final DocumentRequirementRepository repository;
-    private final DocumentRequirementChangeLogRepository changeLogRepository;
+    private final StaffRepository staffRepository;
+    private final LocationRepository locationRepository;
 
     public DocumentRequirementServiceImpl(
             DocumentRequirementRepository repository,
-            DocumentRequirementChangeLogRepository changeLogRepository, AdminAuditWriter audit) {
+            StaffRepository staffRepository,
+            LocationRepository locationRepository,
+            AdminAuditWriter audit) {
         this.audit = audit;
         this.repository = repository;
-        this.changeLogRepository = changeLogRepository;
+        this.staffRepository = staffRepository;
+        this.locationRepository = locationRepository;
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<DocumentRequirementResponse> listAll() {
-        return repository.findAll().stream()
+        return repository.findAllWithUpdatedBy().stream()
                 .sorted((a, b) -> {
                     int group = a.getDocumentGroup().compareTo(b.getDocumentGroup());
                     return group != 0 ? group : a.getDocumentName().compareToIgnoreCase(b.getDocumentName());
@@ -54,13 +61,14 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
     @Transactional
     public DocumentRequirementResponse create(DocumentRequirementRequest request, String actor) {
         validateScope(request);
+        Location gate = resolveGate(request);
         ensureUnique(request, null);
+        Staff staff = resolveStaff(actor);
         DocumentRequirement requirement = new DocumentRequirement();
-        copy(request, requirement);
+        copy(request, gate, requirement);
         requirement.setUpdatedAt(Instant.now());
-        requirement.setUpdatedBy(actor);
+        requirement.setUpdatedBy(staff);
         DocumentRequirement saved = repository.save(requirement);
-        logAllFields(saved, actor);
         audit.record("CREATE_DOCUMENT_REQUIREMENT", "DOCUMENT_REQUIREMENT", saved.getId(), saved.getDocumentName(),
                 "Tạo quy định giấy tờ", null, snapshot(saved));
         return toResponse(saved);
@@ -70,15 +78,16 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
     @Transactional
     public DocumentRequirementResponse update(Integer id, DocumentRequirementRequest request, String actor) {
         validateScope(request);
+        Location gate = resolveGate(request);
         DocumentRequirement requirement = repository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy cấu hình giấy tờ."));
         ensureUnique(request, id);
+        Staff staff = resolveStaff(actor);
         var before = snapshot(requirement);
         Instant changedAt = Instant.now();
-        logChanges(requirement, request, actor, changedAt);
-        copy(request, requirement);
+        copy(request, gate, requirement);
         requirement.setUpdatedAt(changedAt);
-        requirement.setUpdatedBy(actor);
+        requirement.setUpdatedBy(staff);
         DocumentRequirement saved = repository.save(requirement);
         audit.record("UPDATE_DOCUMENT_REQUIREMENT", "DOCUMENT_REQUIREMENT", id, saved.getDocumentName(),
                 "Cập nhật quy định giấy tờ", before, snapshot(saved));
@@ -94,16 +103,22 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
         DocumentRequirement requirement = repository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy cấu hình giấy tờ."));
         if (!Objects.equals(requirement.getStatus(), status)) {
+            Staff staff = resolveStaff(actor);
             Instant changedAt = Instant.now();
-            logChange(requirement.getId(), "status", requirement.getStatus(), status, actor, changedAt);
             audit.record("CHANGE_DOCUMENT_REQUIREMENT_STATUS", "DOCUMENT_REQUIREMENT", id, requirement.getDocumentName(),
                     "Đổi trạng thái quy định giấy tờ", values("status", requirement.getStatus()), values("status", status));
             requirement.setStatus(status);
             requirement.setUpdatedAt(changedAt);
-            requirement.setUpdatedBy(actor);
+            requirement.setUpdatedBy(staff);
             repository.save(requirement);
         }
         return toResponse(requirement);
+    }
+
+    // Chỉ ADMIN (có bản ghi STAFF) được sửa cấu hình giấy tờ
+    private Staff resolveStaff(String username) {
+        return staffRepository.findByUser_Username(username)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhân viên thực hiện thao tác."));
     }
 
     private void ensureUnique(DocumentRequirementRequest request, Integer ignoredId) {
@@ -112,10 +127,39 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
                         && request.getDocumentGroup().equals(item.getDocumentGroup())
                         && request.getDocumentType().equals(item.getDocumentType())
                         && request.getTripType().equals(item.getTripType())
-                        && request.getCountry().equals(item.getCountry()));
+                        && request.getCountry().equals(item.getCountry())
+                        && Objects.equals(request.getLocationId(), locationId(item)));
         if (duplicate) {
-            throw new IllegalArgumentException("Cấu hình loại giấy, loại chuyến và quốc gia này đã tồn tại.");
+            throw new IllegalArgumentException("Cấu hình loại giấy, loại chuyến, quốc gia và cửa khẩu này đã tồn tại.");
         }
+    }
+
+    // Giấy tờ theo cửa khẩu: chỉ nhóm thông quan, chuyến quốc tế, địa điểm phải là BorderGate dẫn tới đúng quốc gia
+    private Location resolveGate(DocumentRequirementRequest request) {
+        if (request.getLocationId() == null) {
+            return null;
+        }
+        if (!"CLEARANCE".equals(request.getDocumentGroup())) {
+            throw new IllegalArgumentException("Chỉ giấy tờ thông quan mới gắn được cửa khẩu.");
+        }
+        if (!"INTERNATIONAL".equals(request.getTripType())) {
+            throw new IllegalArgumentException("Giấy tờ theo cửa khẩu chỉ áp dụng cho chuyến quốc tế.");
+        }
+        Location gate = locationRepository.findById(request.getLocationId())
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy cửa khẩu."));
+        if (!"BorderGate".equalsIgnoreCase(gate.getLocationType())) {
+            throw new IllegalArgumentException("Địa điểm được chọn không phải cửa khẩu.");
+        }
+        String gateCountry = gate.getDestinationCountry();
+        if (gateCountry != null && !gateCountry.isBlank() && !"ALL".equals(request.getCountry())
+                && !DocumentRequirementPolicy.normalizeCountry(gateCountry).equals(request.getCountry())) {
+            throw new IllegalArgumentException("Cửa khẩu không dẫn tới quốc gia đã chọn.");
+        }
+        return gate;
+    }
+
+    private static Integer locationId(DocumentRequirement requirement) {
+        return requirement.getLocation() == null ? null : requirement.getLocation().getId();
     }
 
     private void validateScope(DocumentRequirementRequest request) {
@@ -135,61 +179,22 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
         }
     }
 
-    private void copy(DocumentRequirementRequest source, DocumentRequirement target) {
+    private void copy(DocumentRequirementRequest source, Location gate, DocumentRequirement target) {
         target.setDocumentGroup(source.getDocumentGroup());
         target.setDocumentType(source.getDocumentType());
         target.setDocumentName(source.getDocumentName().trim());
         target.setDescription(source.getDescription() == null ? null : source.getDescription().trim());
         target.setTripType(source.getTripType());
         target.setCountry(source.getCountry());
+        target.setLocation(gate);
         target.setRequired(source.isRequired());
         target.setStatus(source.getStatus());
-    }
-
-    private void logAllFields(DocumentRequirement value, String actor) {
-        Instant now = Instant.now();
-        logChange(value.getId(), "created", null,
-                value.getDocumentGroup() + "|" + value.getDocumentType() + "|" + value.getDocumentName()
-                        + "|" + value.getTripType() + "|" + value.getCountry() + "|" + value.isRequired()
-                        + "|" + value.getStatus(),
-                actor, now);
-    }
-
-    private void logChanges(
-            DocumentRequirement current, DocumentRequirementRequest next, String actor, Instant changedAt) {
-        logIfChanged(current.getId(), "documentGroup", current.getDocumentGroup(), next.getDocumentGroup(), actor, changedAt);
-        logIfChanged(current.getId(), "documentType", current.getDocumentType(), next.getDocumentType(), actor, changedAt);
-        logIfChanged(current.getId(), "documentName", current.getDocumentName(), next.getDocumentName().trim(), actor, changedAt);
-        logIfChanged(current.getId(), "description", current.getDescription(), next.getDescription(), actor, changedAt);
-        logIfChanged(current.getId(), "tripType", current.getTripType(), next.getTripType(), actor, changedAt);
-        logIfChanged(current.getId(), "country", current.getCountry(), next.getCountry(), actor, changedAt);
-        logIfChanged(current.getId(), "required", String.valueOf(current.isRequired()), String.valueOf(next.isRequired()), actor, changedAt);
-        logIfChanged(current.getId(), "status", current.getStatus(), next.getStatus(), actor, changedAt);
-    }
-
-    private void logIfChanged(
-            Integer id, String field, String oldValue, String newValue, String actor, Instant changedAt) {
-        if (!Objects.equals(oldValue, newValue)) {
-            logChange(id, field, oldValue, newValue, actor, changedAt);
-        }
-    }
-
-    private void logChange(
-            Integer id, String field, String oldValue, String newValue, String actor, Instant changedAt) {
-        DocumentRequirementChangeLog entry = new DocumentRequirementChangeLog();
-        entry.setRequirementId(id);
-        entry.setFieldName(field);
-        entry.setOldValue(oldValue);
-        entry.setNewValue(newValue);
-        entry.setChangedBy(actor);
-        entry.setChangedAt(changedAt);
-        changeLogRepository.save(entry);
     }
 
     private java.util.Map<String, Object> snapshot(DocumentRequirement r) {
         return values("documentGroup", r.getDocumentGroup(), "documentType", r.getDocumentType(),
                 "documentName", r.getDocumentName(), "description", r.getDescription(), "tripType", r.getTripType(),
-                "country", r.getCountry(), "required", r.isRequired(), "status", r.getStatus());
+                "country", r.getCountry(), "locationId", locationId(r), "required", r.isRequired(), "status", r.getStatus());
     }
 
     private DocumentRequirementResponse toResponse(DocumentRequirement entity) {
@@ -201,9 +206,11 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
                 .description(entity.getDescription())
                 .tripType(entity.getTripType())
                 .country(entity.getCountry())
+                .locationId(locationId(entity))
+                .locationName(entity.getLocation() == null ? null : entity.getLocation().getLocationName())
                 .required(entity.isRequired())
                 .status(entity.getStatus())
-                .updatedBy(entity.getUpdatedBy())
+                .updatedBy(entity.getUpdatedBy() == null ? "SYSTEM" : entity.getUpdatedBy().getUser().getUsername())
                 .updatedAt(entity.getUpdatedAt())
                 .build();
     }

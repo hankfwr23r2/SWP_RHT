@@ -11,6 +11,7 @@ import com.example.racehorse_transport.service.HorseDocumentService;
 import com.example.racehorse_transport.service.StorageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -229,5 +230,31 @@ public class HorseDocumentServiceImpl implements HorseDocumentService {
                 .reviewerName(doc.getReviewerName())
                 .reviewedAt(doc.getReviewedAt())
                 .build();
+    }
+
+    @Override
+    public void assertCustomerOwnsHorse(Integer horseId, String customerUsername) {
+        Horse horse = horseRepository.findById(horseId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy ngựa với ID: " + horseId));
+        if (horse.getCustomerID() == null || horse.getCustomerID().getUser() == null
+                || !customerUsername.equalsIgnoreCase(horse.getCustomerID().getUser().getUsername())) {
+            throw new AccessDeniedException("Bạn không có quyền truy cập giấy tờ ngựa này.");
+        }
+    }
+
+    @Override
+    public void deleteDocument(Integer documentId, String customerUsername) {
+        HorseDocument doc = horseDocumentRepository.findById(documentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giấy tờ với ID: " + documentId));
+
+        if (customerUsername != null) {
+            if (doc.getHorseID() == null || doc.getHorseID().getCustomerID() == null
+                    || doc.getHorseID().getCustomerID().getUser() == null
+                    || !customerUsername.equalsIgnoreCase(doc.getHorseID().getCustomerID().getUser().getUsername())) {
+                throw new AccessDeniedException("Bạn không có quyền xóa giấy tờ này.");
+            }
+        }
+
+        horseDocumentRepository.deleteById(documentId);
     }
 }

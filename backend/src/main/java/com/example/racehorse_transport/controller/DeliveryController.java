@@ -16,14 +16,15 @@ import org.springframework.web.bind.annotation.*;
 public class DeliveryController {
 
     private final DeliveryService deliveryService;
+    private final com.example.racehorse_transport.service.BookingCodeResolver bookingCodes;
 
     // 1. Kíp xe check-in đến điểm giao đích & kích hoạt đếm thời gian 2h
     @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'ADMIN')")
     @PostMapping("/{id}/arrive")
     public ResponseEntity<ApiResponse<BookingResponse>> arriveDelivery(
-            @PathVariable("id") Integer id,
+            @PathVariable("id") String id,
             @RequestBody(required = false) DeliveryArriveRequest request) {
-        BookingResponse response = deliveryService.arriveDelivery(id, request);
+        BookingResponse response = deliveryService.arriveDelivery(bookingCodes.idOf(id), request);
         return ResponseEntity.ok(ApiResponse.success(response, "Đã check-in điểm giao đích, bắt đầu đếm thời gian bàn giao (2 giờ)"));
     }
 
@@ -31,9 +32,9 @@ public class DeliveryController {
     @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'ADMIN')")
     @PostMapping("/{id}/complete")
     public ResponseEntity<ApiResponse<BookingResponse>> completeHandover(
-            @PathVariable("id") Integer id,
+            @PathVariable("id") String id,
             @Valid @RequestBody HandoverCompleteRequest request) {
-        BookingResponse response = deliveryService.completeHandover(id, request);
+        BookingResponse response = deliveryService.completeHandover(bookingCodes.idOf(id), request);
         return ResponseEntity.ok(ApiResponse.success(response, "Đã hoàn tất ký nhận bàn giao ngựa thành công"));
     }
 
@@ -41,12 +42,12 @@ public class DeliveryController {
     @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'ADMIN')")
     @PostMapping("/{id}/timeout")
     public ResponseEntity<ApiResponse<BookingResponse>> reportDeliveryTimeout(
-            @PathVariable("id") Integer id,
+            @PathVariable("id") String id,
             @RequestBody DeliveryTimeoutRequest request,
             org.springframework.security.core.Authentication authentication) {
         String role = authentication.getAuthorities().stream().map(a -> a.getAuthority().replace("ROLE_", ""))
                 .filter(r -> java.util.Set.of("DRIVER", "ESCORT", "ADMIN").contains(r)).findFirst().orElse("");
-        BookingResponse response = deliveryService.reportDeliveryTimeout(id, request, authentication.getName(), role);
+        BookingResponse response = deliveryService.reportDeliveryTimeout(bookingCodes.idOf(id), request, authentication.getName(), role);
         return ResponseEntity.ok(ApiResponse.success(response, "Đã ghi nhận ngoại lệ quá giờ bàn giao và kích hoạt an sinh ngựa"));
     }
 

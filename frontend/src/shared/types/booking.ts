@@ -13,7 +13,6 @@ export interface HorseDoc { fileName: string; fileUrl?: string; uploadedAt: numb
 export interface HorseJourneyLog {
   id: number
   horseId: number
-  bookingId?: number
   tripCode?: string
   fromLocation?: string
   toLocation?: string
@@ -109,7 +108,7 @@ export interface MedicalReview {
   resubmittedAt?: number
 }
 
-export interface QuoteLine { label: string; detail: string; amount: number; calculation?: string }
+export interface QuoteLine { label: string; detail: string; amount: number; calculation?: string; marginApplied?: boolean }
 export interface Adjustment { label: string; amount: number } // dương: phụ phí; âm: chiết khấu
 export interface Quote {
   insuranceSnapshot?: { horseId: string; name: string; insurance?: import('./insurance').HorseInsurance }[]
@@ -135,7 +134,6 @@ export interface ClearanceItem {
   by?: string
   label?: string
   hint?: string
-  regulationId?: number
   gateName?: string
   gateLocationId?: number
 }
@@ -271,10 +269,12 @@ export interface Incident {
   approval?: { at: number; by: string }
   fitConfirmedAt?: number // Escort xác nhận ngựa đủ sức đi tiếp (sự cố sức khỏe)
   resolvedAt?: number
+  actualCost?: number
+  invoiceUrl?: string
   expenses: IncidentExpense[]
 }
-export interface SettlementItem { label: string; amount: number; photo?: string }
-export interface Settlement { items: SettlementItem[]; total: number; issuedAt: number; dueAt: number; by: string; paid?: Payment }
+export interface SettlementItem { id?: string; category?: ExpenseCategory; label?: string; description?: string; amount: number; photo?: string }
+export interface Settlement { items: SettlementItem[]; total: number; internal?: boolean; reviewedAt?: number; reviewedBy?: string; submittedAt?: number; issuedAt?: number; dueAt?: number; by?: string; paid?: Payment }
 export interface Rating { stars: number; comment?: string; at: number; trip?: number; driver?: number; escort?: number }
 export interface HistoryEntry { time: number; actor: string; text: string }
 

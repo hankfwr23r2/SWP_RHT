@@ -1,0 +1,29 @@
+.root { position: relative; }
+
+.trigger { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; text-align: left; cursor: pointer; }
+.trigger > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.placeholder { color: var(--muted); }
+.chevron { flex: none; color: var(--muted); transition: transform 0.2s; }
+.trigger[aria-expanded='true'] .chevron { transform: rotate(180deg); color: var(--orange); }
+
+.panel { position: absolute; z-index: 40; top: 100%; left: 0; width: 100%; min-width: min(420px, 100%); margin-top: 6px; background: white; border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16); overflow: hidden; animation: pop 0.14s ease-out; transform-origin: top; }
+@keyframes pop { from { opacity: 0; transform: translateY(-4px) scale(0.98); } }
+@media (prefers-reduced-motion: reduce) { .panel { animation: none; } }
+
+.tabs { display: flex; border-bottom: 1px solid var(--line); }
+.tab { flex: 1; padding: 12px 8px; border: 0; border-bottom: 2px solid transparent; background: none; font-size: 0.9rem; font-weight: 600; color: var(--muted); cursor: pointer; }
+.tab[aria-selected='true'] { color: var(--orange-dark); border-bottom-color: var(--orange); }
+.tab:disabled { cursor: not-allowed; opacity: 0.5; }
+.tab:focus-visible { outline: 2px solid var(--orange); outline-offset: -2px; }
+.req { color: var(--red); }
+
+.searchRow { display: flex; align-items: center; gap: 8px; margin: 10px; padding: 0 12px; border: 1px solid #d2d6dc; border-radius: 8px; color: var(--muted); }
+.searchRow:focus-within { border-color: var(--orange); box-shadow: 0 0 0 3px rgba(234, 88, 12, 0.15); }
+.search { flex: 1; min-width: 0; height: 40px; border: 0; outline: none; background: none; font-size: 0.93rem; color: var(--text); }
+
+.list { max-height: 300px; overflow-y: auto; margin: 0; padding: 0 6px 6px; list-style: none; }
+.option { padding: 10px; border-bottom: 1px solid var(--line); font-size: 0.93rem; color: var(--text); cursor: pointer; }
+.option:last-child { border-bottom: 0; }
+.option.active { background: var(--orange-soft); border-radius: 8px; }
+.option.selected { font-weight: 600; color: var(--orange-dark); }
+.empty { padding: 14px 10px; font-size: 0.9rem; color: var(--muted); }

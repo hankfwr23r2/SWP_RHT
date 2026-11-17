@@ -32,7 +32,7 @@ export default function HistoryPage() {
   useEffect(() => { pager.reset() }, [tab, keyword])
   const count = (t: Tab) => fits.filter(b => t === 'all' || orderTabOf(b) === t).length
   // Kết quả tài chính của đơn: hoàn tất thì tổng đã trả, đã hủy thì số tiền được hoàn
-  const money = (b: (typeof finished)[number]) => b.status === 'cancelled' ? (b.cancellation?.refund ? `Hoàn ${formatVND(b.cancellation.refund)}` : b.payment ? b.cancellation?.insuranceReconciliationPending ? 'Chờ đối soát bảo hiểm' : `Phí hủy ${formatVND(b.cancellation?.penalty ?? b.payment.amount)}` : 'Không phát sinh') : b.quote ? formatVND(b.quote.total + (b.settlement?.total ?? 0)) : '-'
+  const money = (b: (typeof finished)[number]) => b.status === 'cancelled' ? (b.cancellation?.refund ? `Hoàn ${formatVND(b.cancellation.refund)}` : b.payment ? b.cancellation?.insuranceReconciliationPending ? 'Chờ đối soát bảo hiểm' : `Phí hủy ${formatVND(b.cancellation?.penalty ?? b.payment.amount)}` : 'Không phát sinh') : b.quote ? formatVND(b.quote.total) : '-'
 
   return (
     <div className="page">
@@ -60,7 +60,7 @@ export default function HistoryPage() {
                   <td>{placeName(b.origin.name)} → {placeName(b.dest.name)}</td>
                   <td className="nowrap">{formatDate(b.departAt)}</td>
                   <td>{b.horses.map(h => h.name).join(', ')}</td>
-                  <td className="nowrap"><BookingStatusBadge status={b.status} labels={b} /><div className="sub-text">{b.rejection ? formatDateTime(b.rejection.at) : b.cancellation?.at ? formatDateTime(b.cancellation.at) : b.settlement?.paid ? formatDateTime(b.settlement.paid.paidAt) : ''}</div></td>
+                  <td className="nowrap"><BookingStatusBadge status={b.status} labels={b} /><div className="sub-text">{b.rejection ? formatDateTime(b.rejection.at) : b.cancellation?.at ? formatDateTime(b.cancellation.at) : b.rating?.at ? formatDateTime(b.rating.at) : ''}</div></td>
                   <td className="nowrap">{money(b)}</td>
                   <td className="nowrap">{b.rating ? `${b.rating.stars ?? b.rating.trip}/5 ★` : '-'}</td>
                   <td className="text-right"><Link to={`/orders/${b.id}`} className="btn btn-ghost btn-sm">{t('history.btnReview')}</Link></td>

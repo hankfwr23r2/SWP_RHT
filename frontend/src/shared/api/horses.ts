@@ -33,7 +33,6 @@ export interface BackendHorseTypeDto {
 export interface BackendHorseJourneyLogDto {
   id: number
   horseId: number
-  bookingId?: number
   tripCode?: string
   fromLocation?: string
   toLocation?: string
@@ -169,7 +168,7 @@ export const backendHorseApi = {
   },
 
   // Cập nhật vị trí chuồng hiện tại của ngựa (Dời chuồng ngoài hệ thống / cập nhật thủ công)
-  updateLocation: async (id: number, payload: { locationName: string; country?: string; reason?: string; notes?: string }): Promise<BackendHorseDto> => {
+  updateLocation: async (id: number, payload: { locationName: string; country?: string; notes?: string }): Promise<BackendHorseDto> => {
     const res = await apiClient.patch<ApiResponse<BackendHorseDto>>(`/horses/${id}/location`, payload)
     return res.data.data
   },

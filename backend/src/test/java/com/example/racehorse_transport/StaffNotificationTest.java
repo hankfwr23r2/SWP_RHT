@@ -128,7 +128,7 @@ class StaffNotificationTest {
     void acceptingABookingTellsTheAssignedSpecialistAndCoordinator() throws Exception {
         Booking booking = booking("pending_intake", "{}");
 
-        HttpResponse<String> response = post("/manager/bookings/" + booking.getId() + "/activate", managerToken,
+        HttpResponse<String> response = post("/manager/bookings/" + booking.getCode() + "/activate", managerToken,
                 ("{\"by\":\"Quản lý\",\"specialist\":{\"id\":\"%s\",\"name\":\"Chuyên viên\"},"
                         + "\"coordinator\":{\"id\":\"%s\",\"name\":\"Điều phối\"}}").formatted(specialistCode, coordinatorCode));
 
@@ -142,7 +142,7 @@ class StaffNotificationTest {
     void sendingBackTellsEachSideItsOwnReason() throws Exception {
         Booking booking = booking("pending_commercial", assignedAndReady());
 
-        HttpResponse<String> response = post("/manager/bookings/" + booking.getId() + "/send-back", managerToken,
+        HttpResponse<String> response = post("/manager/bookings/" + booking.getCode() + "/send-back", managerToken,
                 "{\"to\":\"both\",\"specialistReason\":\"Hộ chiếu mờ\",\"coordinatorReason\":\"Đổi sang xe Medium\"}");
 
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
@@ -159,7 +159,7 @@ class StaffNotificationTest {
                 + "\"plan\":{\"at\":1,\"by\":\"Điều phối\",\"note\":\"\"}}").formatted(specialistCode, coordinatorCode);
         Booking booking = booking("under_review", details);
 
-        HttpResponse<String> response = post("/specialist/bookings/" + booking.getId() + "/verify-horse", specialistToken, "{\"note\":\"Đủ\"}");
+        HttpResponse<String> response = post("/specialist/bookings/" + booking.getCode() + "/verify-horse", specialistToken, "{\"note\":\"Đủ\"}");
 
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
         assertThat(noticesAbout(booking, "manager", managerToken)).isNotEmpty();
@@ -223,7 +223,7 @@ class StaffNotificationTest {
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
         List<JsonNode> mine = new ArrayList<>();
         for (JsonNode notice : json.readTree(response.body()).path("data")) {
-            if (("BK-" + booking.getId()).equals(notice.path("bookingId").asText())) mine.add(notice);
+            if (booking.getCode().equals(notice.path("bookingId").asText())) mine.add(notice);
         }
         return mine;
     }

@@ -27,7 +27,7 @@ public class BookingController {
         this.bookingService = bookingService;
     }
 
-    // Tra cứu đơn công khai theo mã đơn và 4 số cuối số điện thoại (không cần đăng nhập, không yêu cầu captcha)
+    // Tra cứu đơn công khai theo mã đơn và 4 số cuối số điện thoại (không cần đăng nhập)
     @GetMapping("/public-track")
     public ResponseEntity<ApiResponse<PublicTrackingResponse>> getPublicTracking(
             @RequestParam("code") String code,

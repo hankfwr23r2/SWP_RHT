@@ -83,9 +83,9 @@ export const BOOKING_STATUS: Record<BookingStatus, { code: string; label: string
   handover_timeout: { code: 'Handover Timeout - Stabled', label: 'Quá hạn bàn giao', customerLabel: 'Quá giờ nhận ngựa', tone: 'danger' },
   returning_to_hq: { code: 'Handover Timeout - Returning to HQ', label: 'Chở về trụ sở', customerLabel: 'Chở về trụ sở', tone: 'warning' },
   delivered_pending_settlement: { code: 'Delivered - Pending Settlement', label: 'Đã giao ngựa', customerLabel: 'Đã giao ngựa', tone: 'success' },
-  expenses_submitted: { code: 'Expenses Submitted - Pending Audit', label: 'Chờ đối soát chi phí', customerLabel: 'Đang quyết toán', tone: 'orange' },
-  settlement_issued: { code: 'Settlement Issued - Awaiting Final Payment', label: 'Chờ thanh toán quyết toán', customerLabel: 'Chờ thanh toán quyết toán', tone: 'warning' },
-  payment_overdue: { code: 'Payment Overdue', label: 'Quá hạn thanh toán', customerLabel: 'Quá hạn thanh toán', tone: 'danger' },
+  expenses_submitted: { code: 'Expenses Submitted - Pending Audit', label: 'Chờ đối soát chi phí nội bộ', customerLabel: 'Đã giao ngựa', tone: 'orange' },
+  settlement_issued: { code: 'Internal Expense Review', label: 'Chờ đối soát chi phí nội bộ', customerLabel: 'Đã giao ngựa', tone: 'warning' },
+  payment_overdue: { code: 'Internal Expense Review - Legacy', label: 'Chờ đối soát chi phí nội bộ', customerLabel: 'Đã giao ngựa', tone: 'danger' },
   completed: { code: 'Order Completed', label: 'Đã hoàn tất', customerLabel: 'Đã hoàn tất', tone: 'success' },
   cancelled: { code: 'Cancelled', label: 'Đã hủy', customerLabel: 'Đã hủy', tone: 'muted' },
   rejected: { code: 'Order Rejected', label: 'Bị từ chối', customerLabel: 'Bị từ chối', tone: 'danger' },
@@ -98,7 +98,7 @@ export const STATUS_SHORT: Record<BookingStatus, string> = {
   waybill_issued: 'Có vận đơn', clearance_in_progress: 'Làm giấy tờ', clearance_done: 'Giấy tờ xong', ready_for_pickup: 'Sẵn sàng đón', en_route_to_pickup: 'Đến điểm đón', pickup_failed: 'Không nhận ngựa',
   in_transit: 'Vận chuyển', incident_reported: 'Báo sự cố', pending_emergency_approval: 'Chờ duyệt khẩn cấp', emergency_plan_active: 'Xử lý sự cố',
   arrived: 'Tới điểm giao', handover_timeout: 'Quá hạn giao', returning_to_hq: 'Về trụ sở',
-  delivered_pending_settlement: 'Đã giao', expenses_submitted: 'Chờ đối soát', settlement_issued: 'Chờ khách trả', payment_overdue: 'Quá hạn trả', completed: 'Hoàn tất',
+  delivered_pending_settlement: 'Đã giao', expenses_submitted: 'Chờ đối soát', settlement_issued: 'Chờ đối soát', payment_overdue: 'Chờ đối soát', completed: 'Hoàn tất',
   cancelled: 'Đã hủy', rejected: 'Bị từ chối',
 }
 
@@ -118,6 +118,10 @@ export const stepOf = (s: BookingStatus): number => ({
   delivered_pending_settlement: 7, expenses_submitted: 7, settlement_issued: 7, payment_overdue: 7,
   completed: BOOKING_STEPS.length, cancelled: 0, rejected: 1,
 }[s])
+
+// Customer portal combines quote/deposit and preparation into six displayed steps.
+export const customerStepOf = (status: BookingStatus): number =>
+  [0, 1, 2, 2, 3, 3, 4, 5, 6][stepOf(status)] ?? 0
 
 // Tra cứu công khai ở trang chủ chỉ cho thấy 5 bước gọn
 export const PUBLIC_STEPS = ['Gửi đơn', 'Thẩm định', 'Đặt cọc', 'Chuẩn bị chuyến', 'Vận chuyển']
@@ -147,7 +151,6 @@ export const EXPENSE_CATEGORY: Record<ExpenseCategory, string> = {
 }
 export type IncidentStatus = 'reported' | 'pending_approval' | 'active' | 'resolved'
 export type Payer = 'customer' | 'carrier'
-export const SETTLEMENT_GRACE_HOURS = 24 // hạn trả bảng quyết toán; quá hạn là Payment Overdue (PRD mục 8.2)
 
 // ===== Giấy tờ pháp lý do Specialist làm (Flow 2, PRD mục 3.3, 12) =====
 export type ClearanceDocType = 'health_cert' | 'poa' | 'customs_declaration' | 'import_permit' | 'quarantine_cert' | 'ata_carnet' | 'commercial_invoice'
@@ -164,7 +167,6 @@ export const CLEARANCE_DOC: Record<ClearanceDocType, { label: string; short: str
 
 // ===== Đơn giá nghiệp vụ (Có thể cấu hình bởi Admin qua SystemConfig) =====
 export let CLASS_FACTOR: Record<VehicleClass, number> = { light: 1, medium: BIG_TRUCK_FACTOR, heavy: 1.9 }
-export let CREW_FEE_PER_DAY = 1_800_000 // 01 Driver + 01 Escort, mỗi ngày
 export const SINGLE_STALL_FEE = 1_500_000 // khoang đơn mở rộng, mỗi ngựa
 // Dinh dưỡng và cữ nước khách chọn riêng cho từng ngựa (PRD mục 2.2). Gói cơ bản và cữ 3 giờ đã gồm trong cước; phí mỗi ngựa là số mẫu.
 export const FEED_PACKAGE = {
@@ -185,34 +187,6 @@ export let CLEARANCE_FEE = { domestic: 0, international: 300_000 } // phí thủ
 export const FUEL_BOT_PER_KM = 9_000 // nhiên liệu + BOT ước tính mỗi km (số mẫu)
 export const FUEL_BUFFER_RATE = 0.05 // dự phòng trên nhiên liệu và BOT
 export let MARGIN_RATE = 0.05 // biên lợi nhuận, gộp vào đơn giá, không hiện thành dòng riêng
-export let DEMURRAGE_PER_HOUR = 400_000 // phí lưu xe chờ, chỉ khi lỗi phía khách (PRD mục 11.3: 300.000 – 500.000 đ/giờ)
-// Giá trị tham khảo của giống ngựa (VNĐ), không dùng để tính phí bảo hiểm bên thứ ba.
-export const BREED_INSURED_VALUE: Record<string, number> = {
-  Thoroughbred: 1_000_000_000,
-  Arabian: 800_000_000,
-  'American Quarter Horse': 600_000_000,
-  Friesian: 850_000_000,
-  Andalusian: 800_000_000,
-  Lusitano: 800_000_000,
-  Appaloosa: 500_000_000,
-  'American Paint Horse': 550_000_000,
-  Morgan: 550_000_000,
-  'Tennessee Walking Horse': 550_000_000,
-  Standardbred: 700_000_000,
-  Hanoverian: 900_000_000,
-  'Akhal-Teke': 950_000_000,
-  Mustang: 500_000_000,
-  Clydesdale: 600_000_000,
-  Shire: 600_000_000,
-  'Belgian Draft': 500_000_000,
-  Percheron: 550_000_000,
-  Haflinger: 450_000_000,
-  'Shetland Pony': 350_000_000,
-  Khác: 400_000_000,
-  // Tương thích ngược dữ liệu cũ
-  'Quarter Horse': 600_000_000,
-  Warmblood: 900_000_000,
-}
 
 // ===== Lộ trình: trạm nghỉ và Lệnh điều xe (Flow 1, 3, PRD mục 4.2) =====
 export let MAX_CONTINUOUS_HOURS = 4 // quy chuẩn an sinh: ngựa không đi liên tục quá 4 giờ
@@ -223,14 +197,12 @@ export let VITAL_CHECK_INTERVAL_HOURS = 2
 export function applyRuntimeBookingRules(config: {
   depositRate: number
   quoteValidHours: number
-  demurragePerHour: number
   maxContinuousHours: number
   minRestMinutes: number
   vitalCheckIntervalHours: number
 }) {
   DEPOSIT_RATE = config.depositRate
   QUOTE_VALID_HOURS = config.quoteValidHours
-  DEMURRAGE_PER_HOUR = config.demurragePerHour
   MAX_CONTINUOUS_HOURS = config.maxContinuousHours
   MIN_REST_MINUTES = config.minRestMinutes
   VITAL_CHECK_INTERVAL_HOURS = config.vitalCheckIntervalHours
@@ -240,7 +212,6 @@ export function applyRuntimePricingRules(config: {
   classFactorLight?: number
   classFactorMedium?: number
   classFactorHeavy?: number
-  crewFeePerDay?: number
   marginRate?: number
   clearanceFeeInternational?: number
 }) {
@@ -253,22 +224,11 @@ export function applyRuntimePricingRules(config: {
   if (config.classFactorHeavy != null && Number.isFinite(config.classFactorHeavy)) {
     CLASS_FACTOR.heavy = config.classFactorHeavy
   }
-  if (config.crewFeePerDay != null && Number.isFinite(config.crewFeePerDay)) {
-    CREW_FEE_PER_DAY = config.crewFeePerDay
-  }
   if (config.marginRate != null && Number.isFinite(config.marginRate)) {
     MARGIN_RATE = config.marginRate
   }
   if (config.clearanceFeeInternational != null && Number.isFinite(config.clearanceFeeInternational)) {
     CLEARANCE_FEE.international = config.clearanceFeeInternational
-  }
-}
-
-export function applyRuntimeHorseTypes(types: { typeName: string; insuredValue?: number }[]) {
-  for (const t of types) {
-    if (t.insuredValue != null && Number.isFinite(t.insuredValue)) {
-      BREED_INSURED_VALUE[t.typeName] = t.insuredValue
-    }
   }
 }
 

@@ -6,10 +6,12 @@ import com.example.racehorse_transport.dto.admin.SystemConfigResponse;
 import com.example.racehorse_transport.dto.admin.UpdateSystemConfigRequest;
 import com.example.racehorse_transport.entity.SystemConfig;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
+import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.SystemConfigRepository;
 import com.example.racehorse_transport.service.SystemConfigService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,8 +49,6 @@ public class SystemConfigServiceImpl implements SystemConfigService {
                     "Tỷ lệ đặt cọc trên tổng báo giá để phát hành vận đơn.", new BigDecimal("0.01"), new BigDecimal("0.99")),
             new Definition("QUOTE_VALID_HOURS", "Thời hạn hiệu lực báo giá", "24", "giờ", "PAYMENT",
                     "Số giờ khách có thể thanh toán đặt cọc sau khi báo giá được phát hành.", BigDecimal.ONE, BigDecimal.valueOf(168)),
-            new Definition("DEMURRAGE_PER_HOUR", "Phí lưu xe chờ khách", "400000", "VNĐ/giờ", "PAYMENT",
-                    "Phí lưu xe mỗi giờ khi bàn giao bị chậm do phía khách hàng.", BigDecimal.ZERO, BigDecimal.valueOf(100_000_000)),
             new Definition("MIN_LEAD_DAYS", "Số ngày đặt trước tối thiểu", "20", "ngày", "OPERATIONS",
                     "Số ngày tối thiểu giữa ngày tạo đơn và ngày khởi hành.", BigDecimal.ZERO, BigDecimal.valueOf(365)),
             new Definition("MAX_DRIVE_HOURS_PER_DAY", "Giờ lái tối đa mỗi ngày", "10", "giờ", "JOURNEY",
@@ -77,20 +77,19 @@ public class SystemConfigServiceImpl implements SystemConfigService {
                     "Hệ số cước áp dụng cho xe tải trung 4-6 ngăn.", new BigDecimal("0.1"), BigDecimal.valueOf(10)),
             new Definition("CLASS_FACTOR_HEAVY", "Hệ số xe Heavy (9 ngăn)", "1.9", "hệ số", "PRICING",
                     "Hệ số cước áp dụng cho xe tải nặng 9 ngăn.", new BigDecimal("0.1"), BigDecimal.valueOf(10)),
-            new Definition("CREW_FEE_PER_DAY", "Phí kíp xe mỗi ngày", "1800000", "VNĐ/ngày", "PRICING",
-                    "Chi phí nhân sự 01 tài xế và 01 hộ tống mỗi ngày cho mỗi xe.", BigDecimal.ZERO, BigDecimal.valueOf(100_000_000)),
             new Definition("MARGIN_RATE", "Biên lợi nhuận gộp", "0.05", "tỷ lệ", "PRICING",
                     "Tỷ lệ lợi nhuận định mức gộp vào đơn giá.", BigDecimal.ZERO, BigDecimal.ONE),
             new Definition("CLEARANCE_FEE_INTERNATIONAL", "Phí thủ tục hải quan quốc tế", "300000", "VNĐ/chuyến", "PRICING",
                     "Phí làm thủ tục xuất nhập cảnh biên giới cho chuyến quốc tế.", BigDecimal.ZERO, BigDecimal.valueOf(50_000_000))
     );
 
-    private static final Set<String> RETIRED_CONFIG_KEYS = Set.of("BORDER_OPEN_MINUTES", "BORDER_CLOSE_MINUTES", "INSURANCE_RATE");
+    private static final Set<String> RETIRED_CONFIG_KEYS = Set.of("DEMURRAGE_PER_HOUR", "BORDER_OPEN_MINUTES", "BORDER_CLOSE_MINUTES", "INSURANCE_RATE", "CREW_FEE_PER_DAY");
 
     private static final Map<String, Definition> DEFINITIONS_BY_KEY = DEFINITIONS.stream()
             .collect(LinkedHashMap::new, (map, definition) -> map.put(definition.key(), definition), LinkedHashMap::putAll);
 
     private final SystemConfigRepository repository;
+    private final StaffRepository staffRepository;
 
     @Override
     @Transactional
@@ -148,7 +147,9 @@ public class SystemConfigServiceImpl implements SystemConfigService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy cấu hình: " + key));
         String oldValue = config.getConfigValue();
         config.setConfigValue(value);
-        config.setUpdatedBy(updatedBy);
+        // Chỉ nhân viên có bản ghi STAFF mới được ghi nhận là người sửa
+        config.setUpdatedBy(staffRepository.findByUser_Username(updatedBy)
+                .orElseThrow(() -> new AccessDeniedException("Không xác định được nhân viên thực hiện thao tác.")));
         config.setUpdatedAt(Instant.now());
         SystemConfig saved = repository.save(config);
         audit.record("UPDATE_CONFIG", "SYSTEM_CONFIG", key, config.getConfigName(), "Cập nhật tham số " + key,
@@ -178,8 +179,12 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         return definition;
     }
 
+    // Tham số được nhập số lẻ: tỷ lệ, hệ số xe và giờ lái liên tục; còn lại (tiền, km, giờ) là số nguyên
+    private static final Set<String> DECIMAL_CONFIG_KEYS = Set.of("DEPOSIT_RATE", "MAX_CONTINUOUS_HOURS",
+            "CLASS_FACTOR_LIGHT", "CLASS_FACTOR_MEDIUM", "CLASS_FACTOR_HEAVY", "MARGIN_RATE");
+
     private boolean isIntegerRule(String key) {
-        return !"DEPOSIT_RATE".equals(key) && !"MAX_CONTINUOUS_HOURS".equals(key);
+        return !DECIMAL_CONFIG_KEYS.contains(key);
     }
 
     private SystemConfig toEntity(Definition definition) {
@@ -201,7 +206,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
                 .unit(config.getUnit())
                 .configGroup(config.getConfigGroup())
                 .description(config.getDescription())
-                .updatedBy(config.getUpdatedBy())
+                .updatedBy(config.getUpdatedBy() == null ? "SYSTEM" : config.getUpdatedBy().getUser().getUsername())
                 .updatedAt(config.getUpdatedAt())
                 .build();
     }

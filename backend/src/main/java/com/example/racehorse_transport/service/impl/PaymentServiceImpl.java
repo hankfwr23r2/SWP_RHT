@@ -135,12 +135,11 @@ public class PaymentServiceImpl implements PaymentService {
             appendHistory(payload, actor, "Hủy đơn");
             savePayload(booking, payload);
             bookingRepository.save(booking);
-            staffNotifier.toManagers(booking, "Khách hủy đơn · BK-" + booking.getId(),
+            staffNotifier.toManagers(booking, "Khách hủy đơn · " + booking.getCode(),
                     "Khách hủy đơn trước khi đặt cọc" + (reason == null || reason.isBlank() ? "." : ": " + reason), "/manager/cancelled-orders");
 
             return CancelWithRefundResponse.builder()
-                    .bookingId(booking.getId())
-                    .bookingCode("BK-" + booking.getId())
+                    .bookingCode(booking.getCode())
                     .bookingStatus("cancelled")
                     .depositPaid(BigDecimal.ZERO)
                     .daysToDeparture(0)
@@ -154,7 +153,7 @@ public class PaymentServiceImpl implements PaymentService {
         // Trường hợp 2: Đã cọc -> Khách tự ý hủy đơn: Mất 100% tiền cọc (không hoàn tiền)
         CancelWithRefundResponse forfeited = forfeitDeposit(booking, depositOpt.get(), reason, actor, "Hủy đơn sau khi đặt cọc",
                 "Khách hàng tự ý hủy đơn sau khi đặt cọc.");
-        staffNotifier.toManagers(booking, "Khách hủy đơn đã cọc · BK-" + booking.getId(),
+        staffNotifier.toManagers(booking, "Khách hủy đơn đã cọc · " + booking.getCode(),
                 "Khách hủy sau khi đặt cọc, tiền cọc không hoàn. Kiểm tra khoản bảo hiểm thu hộ cần đối soát.", "/manager/cancelled-orders");
         return forfeited;
     }
@@ -237,8 +236,7 @@ public class PaymentServiceImpl implements PaymentService {
         log.info("Cancelled booking ID={} with policy: refund={}, penalty={}", booking.getId(), refundAmount, penaltyAmount);
 
         return CancelWithRefundResponse.builder()
-                .bookingId(booking.getId())
-                .bookingCode("BK-" + booking.getId())
+                .bookingCode(booking.getCode())
                 .bookingStatus("cancelled")
                 .depositPaid(depositPaid)
                 .daysToDeparture(daysToDeparture)
@@ -304,8 +302,7 @@ public class PaymentServiceImpl implements PaymentService {
         boolean fullyPaid = depositPaid && balancePaid;
 
         return PaymentSummaryResponse.builder()
-                .bookingId(booking.getId())
-                .bookingCode("BK-" + booking.getId())
+                .bookingCode(booking.getCode())
                 .waybillNo(booking.getWaybillNo())
                 .bookingStatus(booking.getStatus())
                 .totalAmount(totalAmount)
@@ -369,8 +366,7 @@ public class PaymentServiceImpl implements PaymentService {
     private PaymentResponse mapToPaymentResponse(Payment payment, Booking booking) {
         return PaymentResponse.builder()
                 .id(payment.getId())
-                .bookingId(booking != null ? booking.getId() : null)
-                .bookingCode(booking != null ? "BK-" + booking.getId() : null)
+                .bookingCode(booking != null ? booking.getCode() : null)
                 .waybillNo(booking != null ? booking.getWaybillNo() : null)
                 .amount(payment.getAmount())
                 .paymentDate(payment.getPaymentDate())
@@ -386,19 +382,8 @@ public class PaymentServiceImpl implements PaymentService {
         if (bookingIdentifier == null || bookingIdentifier.trim().isEmpty()) {
             throw new IllegalArgumentException("Mã đơn hàng không được để trống!");
         }
-        String cleanId = bookingIdentifier.trim();
-        try {
-            if (cleanId.toUpperCase().startsWith("BK-")) {
-                return Integer.parseInt(cleanId.substring(3).trim());
-            } else if (cleanId.toUpperCase().startsWith("ORD-")) {
-                String[] parts = cleanId.split("-");
-                return Integer.parseInt(parts[parts.length - 1].trim());
-            } else {
-                return Integer.parseInt(cleanId);
-            }
-        } catch (Exception ex) {
-            throw new IllegalArgumentException("Định dạng mã đơn không hợp lệ: " + bookingIdentifier);
-        }
+        return bookingRepository.findIdByCode(bookingIdentifier.trim().toUpperCase())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
     }
 
     private BookingDetailsPayload extractPayload(Booking booking) {

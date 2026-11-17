@@ -2,9 +2,7 @@ import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { usePageData } from '@shared/routing/pageData'
 import { systemConfigApi, type SystemConfigItem } from '@shared/api/systemConfig'
-import { backendHorseApi, type BackendHorseTypeDto } from '@shared/api/horses'
 import { applyRuntimeBusinessConfig } from '@shared/config/runtimeBusinessRules'
-import { applyRuntimeHorseTypes } from '@shared/config/booking-rules'
 import { useToast } from '@shared/ui/toast'
 import type { adminPricingLoader } from '../../../shared/loaders'
 import s from './AdminPricing.module.css'
@@ -98,19 +96,11 @@ const PARAMETER_DEFS: ParameterDef[] = [
 
   // Chi phí & Quy định
   {
-    key: 'CREW_FEE_PER_DAY',
-    name: 'Phí kíp kỹ thuật / ngày',
-    group: 'OPERATIONS',
-    unit: '₫/ngày',
-    desc: 'Công tác phí tiêu chuẩn cho 01 tài xế chuyên tuyến + 01 hộ tống chăm sóc ngựa',
-    defaultValue: '1800000',
-  },
-  {
     key: 'MARGIN_RATE',
     name: 'Biên lợi nhuận gộp (Margin)',
     group: 'OPERATIONS',
     unit: '%',
-    desc: 'Tỷ lệ biên lợi nhuận được gộp đều vào toàn bộ đơn giá báo giá',
+    desc: 'Tỷ lệ biên lợi nhuận được gộp',
     defaultValue: '0.05',
     isPercent: true,
   },
@@ -124,6 +114,10 @@ const PARAMETER_DEFS: ParameterDef[] = [
   },
 
 ]
+
+function toDraftValue(def: ParameterDef, value: string) {
+  return def.isPercent ? String(Number((Number(value) * 100).toPrecision(15))) : value
+}
 
 function formatVND(val: number) {
   return val.toLocaleString('vi-VN') + ' ₫'
@@ -139,16 +133,15 @@ export default function AdminPricingPage() {
   const initialData = usePageData<typeof adminPricingLoader>()
   const toast = useToast()
 
-  const [activeTab, setActiveTab] = useState<'parameters' | 'breeds' | 'simulator'>('parameters')
+  const [activeTab, setActiveTab] = useState<'parameters' | 'simulator'>('parameters')
   const [configsList, setConfigsList] = useState<SystemConfigItem[]>(initialData.configs ?? [])
-  const [horseTypesList, setHorseTypesList] = useState<BackendHorseTypeDto[]>(initialData.horseTypes ?? [])
 
   // Draft configurations dictionary
   const [draftValues, setDraftValues] = useState<Record<string, string>>(() => {
     const map: Record<string, string> = {}
     for (const def of PARAMETER_DEFS) {
       const found = (initialData.configs ?? []).find(c => c.configKey === def.key)
-      map[def.key] = found ? found.configValue : def.defaultValue
+      map[def.key] = toDraftValue(def, found ? found.configValue : def.defaultValue)
     }
     return map
   })
@@ -158,39 +151,40 @@ export default function AdminPricingPage() {
     for (const def of PARAMETER_DEFS) {
       const found = configsList.find(c => c.configKey === def.key)
       const current = found ? found.configValue : def.defaultValue
-      if (draftValues[def.key] !== current) return true
+      if (draftValues[def.key] !== toDraftValue(def, current)) return true
     }
     return false
   }, [draftValues, configsList])
 
   const [isSaving, setIsSaving] = useState(false)
 
-  // Breeds search & modal CRUD
-  const [breedSearch, setBreedSearch] = useState('')
-  const [breedModalMode, setBreedModalMode] = useState<'create' | 'edit' | null>(null)
-  const [selectedBreedForEdit, setSelectedBreedForEdit] = useState<BackendHorseTypeDto | null>(null)
-  const [breedFormName, setBreedFormName] = useState('')
-  const [breedFormDesc, setBreedFormDesc] = useState('')
-  const [editInsuredValStr, setEditInsuredValStr] = useState('')
-  const [isUpdatingBreed, setIsUpdatingBreed] = useState(false)
-
   // Simulator inputs
   const [simKm, setSimKm] = useState(350)
   const [simVehicleClass, setSimVehicleClass] = useState<'light' | 'medium' | 'heavy'>('medium')
-  const [simDays, setSimDays] = useState(2)
   const [simIsIntl, setSimIsIntl] = useState(false)
-  const [simBreedId, setSimBreedId] = useState<number>(horseTypesList[0]?.id ?? 1)
   const [simStallType, setSimStallType] = useState<'standard' | 'single'>('standard')
   const [simFeed, setSimFeed] = useState<'basic' | 'advanced' | 'sport'>('basic')
   const [simInsurancePremium, setSimInsurancePremium] = useState(0)
 
   // Save all system configs
   const handleSaveAllConfigs = async () => {
+    for (const def of PARAMETER_DEFS) {
+      const raw = draftValues[def.key] ?? toDraftValue(def, def.defaultValue)
+      const value = Number(raw)
+      if (!raw.trim() || !Number.isFinite(value) || value < 0
+        || (def.isPercent && value > 100)
+        || (def.group === 'VEHICLE' && (value < 0.1 || value > 10))
+        || (!def.isPercent && def.group !== 'VEHICLE' && !Number.isInteger(value))) {
+        toast(`Giá trị ${def.name} không hợp lệ.`, 'error')
+        return
+      }
+    }
     setIsSaving(true)
     try {
       const updatedList: SystemConfigItem[] = [...configsList]
       for (const def of PARAMETER_DEFS) {
-        const val = draftValues[def.key] ?? def.defaultValue
+        const draft = draftValues[def.key] ?? toDraftValue(def, def.defaultValue)
+        const val = def.isPercent ? String(Number(draft) / 100) : draft
         const res = await systemConfigApi.updateConfig(def.key, val)
         const idx = updatedList.findIndex(c => c.configKey === def.key)
         if (idx >= 0) updatedList[idx] = res
@@ -219,99 +213,10 @@ export default function AdminPricingPage() {
     const map: Record<string, string> = {}
     for (const def of PARAMETER_DEFS) {
       const found = configsList.find(c => c.configKey === def.key)
-      map[def.key] = found ? found.configValue : def.defaultValue
+      map[def.key] = toDraftValue(def, found ? found.configValue : def.defaultValue)
     }
     setDraftValues(map)
   }
-
-  // Handle open create breed modal
-  const handleOpenCreateBreed = () => {
-    setSelectedBreedForEdit(null)
-    setBreedFormName('')
-    setBreedFormDesc('')
-    setEditInsuredValStr('400000000')
-    setBreedModalMode('create')
-  }
-
-  // Handle open edit breed modal
-  const handleOpenEditBreed = (breed: BackendHorseTypeDto) => {
-    setSelectedBreedForEdit(breed)
-    setBreedFormName(breed.typeName)
-    setBreedFormDesc(breed.description || '')
-    setEditInsuredValStr(String(breed.insuredValue ?? 400000000))
-    setBreedModalMode('edit')
-  }
-
-  // Handle save create / update breed
-  const handleSaveBreedModal = async () => {
-    if (!breedFormName.trim()) {
-      toast('Vui lòng nhập tên giống ngựa.', 'error')
-      return
-    }
-    const numericVal = Number(editInsuredValStr.replace(/\D/g, ''))
-    if (!Number.isFinite(numericVal) || numericVal < 0) {
-      toast('Giá trị bảo hiểm không hợp lệ.', 'error')
-      return
-    }
-
-    setIsUpdatingBreed(true)
-    try {
-      if (breedModalMode === 'create') {
-        const created = await backendHorseApi.createType({
-          typeName: breedFormName.trim(),
-          description: breedFormDesc.trim(),
-          insuredValue: numericVal,
-        })
-        const nextList = [...horseTypesList, created]
-        setHorseTypesList(nextList)
-        applyRuntimeHorseTypes(nextList)
-        toast(`Đã thêm thành công giống ngựa ${created.typeName}!`, 'success')
-      } else if (breedModalMode === 'edit' && selectedBreedForEdit) {
-        const updated = await backendHorseApi.updateType(selectedBreedForEdit.id, {
-          typeName: breedFormName.trim(),
-          description: breedFormDesc.trim(),
-          insuredValue: numericVal,
-        })
-        const nextList = horseTypesList.map(h => (h.id === updated.id ? updated : h))
-        setHorseTypesList(nextList)
-        applyRuntimeHorseTypes(nextList)
-        toast(`Đã cập nhật giống ngựa ${updated.typeName}!`, 'success')
-      }
-      setBreedModalMode(null)
-      setSelectedBreedForEdit(null)
-    } catch (e: any) {
-      toast(e?.message || 'Có lỗi xảy ra khi lưu giống ngựa.', 'error')
-    } finally {
-      setIsUpdatingBreed(false)
-    }
-  }
-
-  // Handle delete breed
-  const handleDeleteBreed = async (breed: BackendHorseTypeDto) => {
-    const ok = window.confirm(
-      `Bạn có chắc chắn muốn xóa giống ngựa "${breed.typeName}"?\n\nLưu ý: Hệ thống sẽ từ chối xóa nếu giống ngựa này đã có cá thể ngựa nào liên kết trong hồ sơ hoặc đơn vận chuyển.`
-    )
-    if (!ok) return
-
-    try {
-      await backendHorseApi.deleteType(breed.id)
-      const nextList = horseTypesList.filter(h => h.id !== breed.id)
-      setHorseTypesList(nextList)
-      applyRuntimeHorseTypes(nextList)
-      toast(`Đã xóa giống ngựa "${breed.typeName}" thành công!`, 'success')
-    } catch (e: any) {
-      toast(e?.message || 'Không thể xóa giống ngựa vì đang có cá thể ngựa liên kết.', 'error')
-    }
-  }
-
-  // Filtered breeds
-  const filteredBreeds = useMemo(() => {
-    if (!breedSearch.trim()) return horseTypesList
-    const q = breedSearch.toLowerCase()
-    return horseTypesList.filter(
-      b => b.typeName.toLowerCase().includes(q) || (b.description && b.description.toLowerCase().includes(q))
-    )
-  }, [horseTypesList, breedSearch])
 
   // Simulator Calculation Logic using Draft Values
   const simulatorQuote = useMemo(() => {
@@ -329,8 +234,7 @@ export default function AdminPricingPage() {
           ? Number(draftValues['CLASS_FACTOR_MEDIUM'] ?? 1.4)
           : Number(draftValues['CLASS_FACTOR_LIGHT'] ?? 1.0)
 
-    const crewDaily = Number(draftValues['CREW_FEE_PER_DAY'] ?? 1800000)
-    const margin = Number(draftValues['MARGIN_RATE'] ?? 0.05)
+    const margin = Number(draftValues['MARGIN_RATE'] ?? 5) / 100
     const clearanceIntl = Number(draftValues['CLEARANCE_FEE_INTERNATIONAL'] ?? 300000)
 
     const m = 1 + margin
@@ -353,18 +257,15 @@ export default function AdminPricingPage() {
     }
 
     const truckCostLine = Math.round((tieredTruckCost * classFactor * m) / 1000) * 1000
-    const crewCostLine = Math.round((simDays * crewDaily * m) / 1000) * 1000
-    const fuelBotLine = Math.round((simKm * 9000 * 1.05 * m) / 1000) * 1000
+    const fuelBotLine = Math.round((simKm * 9000 * 1.05) / 1000) * 1000
 
     const stallCost = simStallType === 'single' ? 1500000 : 0
     const feedCost = simFeed === 'sport' ? 500000 : simFeed === 'advanced' ? 300000 : 0
     const clearanceCost = simIsIntl ? clearanceIntl : 0
 
-    const selectedBreedObj = horseTypesList.find(h => h.id === simBreedId)
-    const breedVal = selectedBreedObj?.insuredValue ?? 400000000
     const insuranceCost = Math.max(0, simInsurancePremium)
 
-    const total = truckCostLine + crewCostLine + fuelBotLine + stallCost + feedCost + clearanceCost + insuranceCost
+    const total = truckCostLine + fuelBotLine + stallCost + feedCost + clearanceCost + insuranceCost
 
     return {
       lines: [
@@ -372,11 +273,6 @@ export default function AdminPricingPage() {
           label: 'Cước vận chuyển nguyên chuyến',
           detail: `Xe hạng ${simVehicleClass.toUpperCase()} · ${simKm} km · Phí mở chuyến + 3 bậc km`,
           amount: truckCostLine,
-        },
-        {
-          label: 'Nhân sự kỹ thuật (01 Tài xế + 01 Hộ tống)',
-          detail: `${simDays} ngày × ${formatVND(crewDaily)}/ngày (đã gồm Margin ${margin * 100}%)`,
-          amount: crewCostLine,
         },
         {
           label: 'Nhiên liệu & BOT ước tính',
@@ -409,7 +305,7 @@ export default function AdminPricingPage() {
         ...(insuranceCost > 0
           ? [
               {
-                label: `Bảo hiểm chuyến đi (${selectedBreedObj?.typeName ?? 'Ngựa'})`,
+                label: 'Bảo hiểm chuyến đi',
                 detail: 'Phí thu hộ do bên thứ ba báo (nhập để mô phỏng)',
                 amount: insuranceCost,
               },
@@ -417,9 +313,8 @@ export default function AdminPricingPage() {
           : []),
       ],
       total,
-      breedVal,
     }
-  }, [draftValues, simKm, simVehicleClass, simDays, simIsIntl, simBreedId, simStallType, simFeed, simInsurancePremium, horseTypesList])
+  }, [draftValues, simKm, simVehicleClass, simIsIntl, simStallType, simFeed, simInsurancePremium])
 
   return (
     <div className={s.wrap}>
@@ -429,7 +324,7 @@ export default function AdminPricingPage() {
           <h1>
             {t('adminPricing.title', 'Cấu hình Biểu phí & Báo giá')}
           </h1>
-          <p>{t('adminPricing.subtitle', 'Điều chỉnh công thức cước cự ly, phụ phí loại xe, hệ số giống ngựa và mô phỏng giá.')}</p>
+          <p>{t('adminPricing.subtitle', 'Điều chỉnh công thức cước cự ly, phụ phí loại xe và mô phỏng giá.')}</p>
         </div>
         <div className={s.headerActions}>
           {hasChanges && (
@@ -449,37 +344,31 @@ export default function AdminPricingPage() {
           <h3>
             <i className="fa-solid fa-network-wired" /> Công Thức Tính Tổng Báo Giá Vận Chuyển
           </h3>
-          <span className={s.formulaBadge}>Single Source of Truth</span>
         </div>
         <div className={s.formulaFlow}>
           <div className={s.formulaNode}>
             <span className={s.formulaNodeLabel}>1. Cước Quãng Đường</span>
-            <span className={s.formulaNodeDesc}>[Mở chuyến + Bậc km] × Hệ số xe</span>
+            <span className={s.formulaNodeDesc}>[Mở chuyến + Bậc km] × Hệ số xe x (1+Margin)</span>
           </div>
           <span className={s.formulaOp}>+</span>
           <div className={s.formulaNode}>
-            <span className={s.formulaNodeLabel}>2. Nhân Sự Chuyên Môn</span>
-            <span className={s.formulaNodeDesc}>Số ngày × Phí kíp xe / ngày</span>
-          </div>
-          <span className={s.formulaOp}>+</span>
-          <div className={s.formulaNode}>
-            <span className={s.formulaNodeLabel}>3. Nhiên Liệu & BOT</span>
+            <span className={s.formulaNodeLabel}>2. Nhiên Liệu & BOT</span>
             <span className={s.formulaNodeDesc}>km × 9.000 ₫ × 1.05 (Dự phòng)</span>
           </div>
           <span className={s.formulaOp}>+</span>
           <div className={s.formulaNode}>
-            <span className={s.formulaNodeLabel}>4. Dịch Vụ Đi Kèm</span>
+            <span className={s.formulaNodeLabel}>3. Dịch Vụ Đi Kèm</span>
             <span className={s.formulaNodeDesc}>Khoang đơn + Dinh dưỡng</span>
           </div>
           <span className={s.formulaOp}>+</span>
           <div className={s.formulaNode}>
-            <span className={s.formulaNodeLabel}>5. Bảo Hiểm & Hải Quan</span>
-            <span className={s.formulaNodeDesc}>Giá trị giống × Tỷ lệ + Hồ sơ</span>
+            <span className={s.formulaNodeLabel}>4. Bảo Hiểm & Hải Quan</span>
+            <span className={s.formulaNodeDesc}>Tiền bảo hiểm và phí thủ tục kiểm dịch & hải quan (nếu có)</span>
           </div>
           <span className={s.formulaEqual}>=</span>
           <div className={s.formulaTotalNode}>
-            <span className={s.formulaNodeLabel}>Tổng Báo Giá Đơn Hàng</span>
-            <span className={s.formulaNodeDesc}>Cộng dồn × (1 + Margin)</span>
+            <span className={s.formulaNodeLabel}>Tổng Tiền</span>
+            <span className={s.formulaNodeDesc}>Tiền cộng dồn</span>
           </div>
         </div>
       </div>
@@ -492,13 +381,6 @@ export default function AdminPricingPage() {
         >
           <i className="fa-solid fa-sliders" /> {t('adminPricing.tabParams', 'Thông số & Biểu phí')}
           <span className={s.tabBadge}>{PARAMETER_DEFS.length}</span>
-        </button>
-        <button
-          className={`${s.tabBtn} ${activeTab === 'breeds' ? s.tabBtnActive : ''}`}
-          onClick={() => setActiveTab('breeds')}
-        >
-          <i className="fa-solid fa-horse-head" /> {t('adminPricing.tabBreeds', 'Hệ số giống ngựa')}
-          <span className={s.tabBadge}>{horseTypesList.length}</span>
         </button>
         <button
           className={`${s.tabBtn} ${activeTab === 'simulator' ? s.tabBtnActive : ''}`}
@@ -561,9 +443,9 @@ export default function AdminPricingPage() {
                     <div className={s.configInputWrap}>
                       <input
                         type="number"
-                        step="0.1"
-                        min="0.5"
-                        max="5.0"
+                        step="any"
+                        min="0.1"
+                        max="10"
                         value={draftValues[def.key] ?? def.defaultValue}
                         onChange={e => {
                           setDraftValues(prev => ({ ...prev, [def.key]: e.target.value }))
@@ -595,10 +477,10 @@ export default function AdminPricingPage() {
                       {def.isPercent ? (
                         <input
                           type="number"
-                          step="0.01"
+                          step="any"
                           min="0"
-                          max="1"
-                          value={draftValues[def.key] ?? def.defaultValue}
+                          max="100"
+                          value={draftValues[def.key] ?? toDraftValue(def, def.defaultValue)}
                           onChange={e => {
                             setDraftValues(prev => ({ ...prev, [def.key]: e.target.value }))
                           }}
@@ -640,86 +522,7 @@ export default function AdminPricingPage() {
         </>
       )}
 
-      {/* TAB 2: BREEDS */}
-      {activeTab === 'breeds' && (
-        <div className={s.tableWrap}>
-          <div className={s.tableToolbar}>
-            <div className={s.searchBox}>
-              <i className="fa-solid fa-magnifying-glass" />
-              <input
-                type="text"
-                placeholder="Tìm giống ngựa theo tên..."
-                value={breedSearch}
-                onChange={e => setBreedSearch(e.target.value)}
-              />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div className={s.tableStats}>
-                Hiển thị <b>{filteredBreeds.length}</b> / {horseTypesList.length} giống ngựa
-              </div>
-              <button className={s.createBreedBtn} onClick={handleOpenCreateBreed}>
-                <i className="fa-solid fa-plus" /> Thêm giống ngựa mới
-              </button>
-            </div>
-          </div>
-
-          <table className={s.customTable}>
-            <thead>
-              <tr>
-                <th style={{ width: '60px' }}>ID</th>
-                <th>Giống Ngựa</th>
-                <th>Mô Tả Tiêu Chuẩn</th>
-                <th style={{ width: '220px', textAlign: 'right' }}>Giá Trị Định Mức (VND)</th>
-                <th style={{ width: '180px', textAlign: 'right' }}>Phí bảo hiểm bên thứ ba</th>
-                <th style={{ width: '160px', textAlign: 'center' }}>Thao Tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredBreeds.map(b => {
-                const val = b.insuredValue ?? 400000000
-                return (
-                  <tr key={b.id}>
-                    <td>
-                      <span className={s.configKey}>#{b.id}</span>
-                    </td>
-                    <td>
-                      <div className={s.breedBadge}>{b.typeName}</div>
-                    </td>
-                    <td>
-                      <div className={s.breedDesc}>{b.description || 'Chưa có mô tả chi tiết'}</div>
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <span className={s.insuredValueCell}>{formatVND(val)}</span>
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <span className={s.insurancePremiumCell}>Báo giá theo chuyến</span>
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <div className={s.rowActions}>
-                        <button className={s.rowActionBtn} onClick={() => handleOpenEditBreed(b)} title="Chỉnh sửa thông tin giống ngựa">
-                          <i className="fa-solid fa-pen-to-square" /> Sửa
-                        </button>
-                        <button className={s.rowActionBtnDelete} onClick={() => handleDeleteBreed(b)} title="Xóa giống ngựa khỏi danh mục">
-                          <i className="fa-solid fa-trash-can" /> Xóa
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                )
-              })}
-              {filteredBreeds.length === 0 && (
-                <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '30px', color: 'var(--muted)' }}>
-                    Không tìm thấy giống ngựa nào phù hợp với từ khóa "{breedSearch}".
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* TAB 3: SIMULATOR */}
+      {/* TAB 2: SIMULATOR */}
       {activeTab === 'simulator' && (
         <div className={s.simulatorGrid}>
           {/* Controls */}
@@ -735,7 +538,6 @@ export default function AdminPricingPage() {
                   const km = Number(e.target.value)
                   if (km > 0) {
                     setSimKm(km)
-                    setSimDays(km > 1000 ? 3 : km > 500 ? 2 : 1)
                   }
                 }}
               >
@@ -773,17 +575,6 @@ export default function AdminPricingPage() {
             </div>
 
             <div className={s.simField}>
-              <label>Thời gian hành trình dự kiến (ngày)</label>
-              <input
-                type="number"
-                min="1"
-                max="30"
-                value={simDays}
-                onChange={e => setSimDays(Math.max(1, Number(e.target.value)))}
-              />
-            </div>
-
-            <div className={s.simField}>
               <label>Loại tuyến vận chuyển</label>
               <select
                 value={simIsIntl ? 'intl' : 'domestic'}
@@ -791,17 +582,6 @@ export default function AdminPricingPage() {
               >
                 <option value="domestic">Nội địa Việt Nam (Miễn phí thủ tục)</option>
                 <option value="intl">Quốc tế (Lào / Campuchia - Gồm phí hải quan)</option>
-              </select>
-            </div>
-
-            <div className={s.simField}>
-              <label>Giống ngựa áp tải</label>
-              <select value={simBreedId} onChange={e => setSimBreedId(Number(e.target.value))}>
-                {horseTypesList.map(h => (
-                  <option key={h.id} value={h.id}>
-                    {h.typeName} ({formatVND(h.insuredValue ?? 400000000)})
-                  </option>
-                ))}
               </select>
             </div>
 
@@ -870,87 +650,6 @@ export default function AdminPricingPage() {
         </div>
       )}
 
-      {/* Modal Create / Edit Breed */}
-      {breedModalMode !== null && (
-        <div className={s.modalBackdrop} onClick={() => setBreedModalMode(null)}>
-          <div className={s.modalCard} onClick={e => e.stopPropagation()}>
-            <div className={s.modalHeader}>
-              <h3>
-                <i className="fa-solid fa-horse-head" />{' '}
-                {breedModalMode === 'create' ? 'Thêm Giống Ngựa Mới' : 'Chỉnh Sửa Giống Ngựa & Bảo Hiểm'}
-              </h3>
-              <button className={s.closeBtn} onClick={() => setBreedModalMode(null)}>
-                <i className="fa-solid fa-xmark" />
-              </button>
-            </div>
-            <div className={s.modalBody}>
-              <div className={s.modalField}>
-                <label>Tên giống ngựa <span style={{ color: '#ef4444' }}>*</span></label>
-                <input
-                  type="text"
-                  placeholder="Ví dụ: Quarter Horse, Andalusian..."
-                  value={breedFormName}
-                  onChange={e => setBreedFormName(e.target.value)}
-                  autoFocus
-                />
-              </div>
-              <div className={s.modalField}>
-                <label>Mô tả tiêu chuẩn giống</label>
-                <input
-                  type="text"
-                  placeholder="Ví dụ: Giống ngựa chạy cự ly ngắn siêu tốc, thể hình cơ bắp..."
-                  value={breedFormDesc}
-                  onChange={e => setBreedFormDesc(e.target.value)}
-                />
-              </div>
-              <div className={s.modalField}>
-                <label>Giá trị tham chiếu của giống (VNĐ) <span style={{ color: '#ef4444' }}>*</span></label>
-                <input
-                  type="text"
-                  value={formatNumber(editInsuredValStr)}
-                  onChange={e => {
-                    const raw = e.target.value.replace(/\D/g, '')
-                    setEditInsuredValStr(raw)
-                  }}
-                />
-                <div className={s.quickPresets}>
-                  <button className={s.presetBtn} onClick={() => setEditInsuredValStr('400000000')}>
-                    400 Tr (Tiêu chuẩn)
-                  </button>
-                  <button className={s.presetBtn} onClick={() => setEditInsuredValStr('600000000')}>
-                    600 Tr (Trung bình)
-                  </button>
-                  <button className={s.presetBtn} onClick={() => setEditInsuredValStr('800000000')}>
-                    800 Tr (Cao cấp)
-                  </button>
-                  <button className={s.presetBtn} onClick={() => setEditInsuredValStr('1000000000')}>
-                    1 Tỷ (Thoroughbred)
-                  </button>
-                </div>
-              </div>
-              <p style={{ margin: '10px 0 0', fontSize: '0.82rem', color: 'var(--muted)' }}>
-                Giá trị này chỉ để tham khảo. Không dùng để tính phí bảo hiểm cho đơn mới.
-              </p>
-            </div>
-            <div className={s.modalFooter}>
-              <button
-                className="btn btn-secondary"
-                onClick={() => setBreedModalMode(null)}
-                disabled={isUpdatingBreed}
-              >
-                Hủy
-              </button>
-              <button
-                className="btn btn-primary"
-                onClick={handleSaveBreedModal}
-                disabled={isUpdatingBreed}
-              >
-                {isUpdatingBreed ? 'Đang lưu...' : breedModalMode === 'create' ? 'Tạo giống ngựa' : 'Lưu thay đổi'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

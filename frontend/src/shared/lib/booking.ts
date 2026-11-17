@@ -1,6 +1,6 @@
 // Hàm thuần của luồng đặt đơn → duyệt báo giá → đặt cọc (Flow 1). Khớp docs/PRD.md mục 2, 10, 11.
 import {
-  CLEARANCE_DOC, CLEARANCE_FEE, CLASS_FACTOR, CREW_FEE_PER_DAY, DEPOSIT_RATE, DOCS_CUTOFF_HOUR, FUEL_BOT_PER_KM, FUEL_BUFFER_RATE, MARGIN_RATE,
+  CLEARANCE_DOC, CLEARANCE_FEE, CLASS_FACTOR, DEPOSIT_RATE, DOCS_CUTOFF_HOUR, FUEL_BOT_PER_KM, FUEL_BUFFER_RATE, MARGIN_RATE,
   DELAY_ALERT_MINUTES, HOME_BASE, RETURN_EARLIEST_RATIO, MAX_CONTINUOUS_HOURS, MIN_REST_MINUTES, QUOTE_VALID_HOURS, TARGET_LEG_HOURS, SINGLE_STALL_FEE, FEED_PACKAGE, VEHICLE_CLASS, EXPENSE_CATEGORY, type BookingStatus, type ClearanceDocType, type ExpenseCategory, type IncidentAction, type IncidentKind, type Payer, type HorseDocType, type VehicleClass,
 } from '../config/booking-rules'
 import { DAY, HOUR, MIN_LEAD_DAYS } from '../config/business-rules'
@@ -69,18 +69,12 @@ export const findLocation = (id: string, country?: string) => {
   const venue = FAMOUS_HORSE_VENUES.find(v => v.id === id || v.name.toLowerCase().includes(clean) || clean.includes(v.name.toLowerCase()))
   if (venue) return { id, name: venue.name, lat: venue.lat, lng: venue.lng }
 
-  // Kiểm tra địa chỉ 2 cấp (Tỉnh / Thành và Xã / Phường)
+  // Địa chỉ chọn từ danh mục hiện hành: "chi tiết, Phường/Xã, Tỉnh/Thành", so khớp nguyên từng phần
+  const parts = clean.split(',').map(part => part.trim())
   for (const prov of PROVINCES_DATA) {
-    const provMatched = clean.includes(prov.name.toLowerCase()) || clean.includes(prov.code.toLowerCase())
-    if (provMatched) {
-      for (const w of prov.wards) {
-        const wClean = w.name.toLowerCase().replace(/^(xã|phường|sangkat|ban|krong)\s+/i, '').split('(')[0].trim()
-        if (clean.includes(wClean)) {
-          return { id, name: id, lat: w.lat, lng: w.lng }
-        }
-      }
-      return { id, name: id, lat: prov.lat, lng: prov.lng }
-    }
+    if (!parts.includes(prov.name.toLowerCase())) continue
+    const ward = prov.wards.find(w => parts.includes(w.name.toLowerCase()))
+    return { id, name: id, lat: (ward ?? prov).lat, lng: (ward ?? prov).lng }
   }
 
   if (country && COUNTRY_LOCATIONS[country as CountryCode]?.length) {
@@ -218,9 +212,8 @@ export function quoteLines(b: QuoteInput, vehicles: Pick<Vehicle, 'capacity'>[])
     const cls = vehicleClassOf(v.capacity)
     const tag = many ? ` (xe ${i + 1}/${vehicles.length})` : ''
     lines.push(
-      { label: `Cước vận chuyển nguyên chuyến${tag}`, detail: `Xe ${VEHICLE_CLASS[cls].label} (${VEHICLE_CLASS[cls].stalls}) · ${km} km`, calculation: `Tính theo quãng đường ${km} km và hạng xe ${VEHICLE_CLASS[cls].label}.`, amount: roundK(truckCost(km, false) * CLASS_FACTOR[cls] * m) },
-      { label: `Nhân sự kỹ thuật, 01 tài xế + 01 hộ tống${tag}`, detail: `${days} ngày`, calculation: `${days} ngày × chi phí cho 1 tài xế và 1 hộ tống mỗi ngày.`, amount: roundK(days * CREW_FEE_PER_DAY * m) },
-      { label: `Nhiên liệu và BOT${tag}`, detail: `Ước tính theo lộ trình ${km} km, đã gồm dự phòng`, calculation: `${km} km × chi phí nhiên liệu và BOT ước tính mỗi km, đã gồm dự phòng 5%.`, amount: roundK(km * FUEL_BOT_PER_KM * (1 + FUEL_BUFFER_RATE) * m) },
+      { label: `Cước vận chuyển nguyên chuyến${tag}`, detail: `Xe ${VEHICLE_CLASS[cls].label} (${VEHICLE_CLASS[cls].stalls}) · ${km} km`, calculation: `Tính theo quãng đường ${km} km và hạng xe ${VEHICLE_CLASS[cls].label}.`, amount: roundK(truckCost(km, false) * CLASS_FACTOR[cls] * m), marginApplied: true },
+      { label: `Nhiên liệu và BOT${tag}`, detail: `Ước tính theo lộ trình ${km} km, đã gồm dự phòng`, calculation: `${km} km × chi phí nhiên liệu và BOT ước tính mỗi km, đã gồm dự phòng 5%.`, amount: roundK(km * FUEL_BOT_PER_KM * (1 + FUEL_BUFFER_RATE)), marginApplied: false },
     )
   })
   const addServiceLine = (
@@ -247,11 +240,14 @@ export function quoteLines(b: QuoteInput, vehicles: Pick<Vehicle, 'capacity'>[])
     const pricedHorses = b.horses.filter((horse, index) =>
       selected[index] ? selected[index]!.price > 0 : legacyFee(horse) > 0).length
     const hasTripUnit = pricedSelections.some(service => service?.billingUnit === 'PER_TRIP')
+    const hasHorseUnit = pricedSelections.some(service => service?.billingUnit === 'PER_HORSE')
     const hasDailyUnit = pricedSelections.some(service => service?.billingUnit === 'PER_HORSE_DAY')
     const detail = hasTripUnit
       ? `${names.join(', ')} · mỗi chuyến`
       : hasDailyUnit
         ? `${pricedHorses} ngựa × ${days} ngày · ${names.join(', ')}`
+        : hasHorseUnit
+          ? `${pricedHorses} ngựa/chuyến · ${names.join(', ')}`
         : names.length
       ? `${pricedHorses} ngựa · ${names.join(', ')}`
       : `${pricedHorses} ngựa`
@@ -485,7 +481,7 @@ export const ORDER_GROUPS: Record<OrderGroup, { label: string; icon: string; hin
   approved: { label: 'Đã duyệt', icon: 'fa-circle-check', hint: 'Đã có báo giá, đặt cọc, làm giấy tờ, chờ xe đón ngựa' },
   supplement: { label: 'Yêu cầu bổ sung', icon: 'fa-file-circle-exclamation', hint: 'Chuyên viên cần bạn bổ sung hồ sơ ngựa' },
   moving: { label: 'Đang di chuyển', icon: 'fa-truck-fast', hint: 'Xe đang đến điểm đón hoặc đang chở ngựa' },
-  settle: { label: 'Chờ quyết toán', icon: 'fa-receipt', hint: 'Ngựa đã giao, đang đối soát chi phí hoặc chờ bạn thanh toán và đánh giá' },
+  settle: { label: 'Hoàn tất chuyến', icon: 'fa-flag-checkered', hint: 'Ngựa đã giao, nhà xe đang hoàn tất thủ tục nội bộ' },
   closed: { label: 'Hết hạn / hủy / từ chối', icon: 'fa-ban', hint: 'Báo giá hết hạn, đơn đã hủy hoặc nhà xe từ chối đơn' },
   done: { label: 'Đã hoàn thành', icon: 'fa-flag-checkered', hint: 'Ngựa đã được giao' },
 }
@@ -518,7 +514,7 @@ export function orderTabOf(b: Pick<Booking, 'status' | 'medical' | 'balance' | '
     case 'in_transit': case 'incident_reported': case 'pending_emergency_approval': case 'emergency_plan_active':
     case 'arrived': case 'handover_timeout': case 'returning_to_hq': return 'moving'
     case 'delivered_pending_settlement': case 'expenses_submitted': return 'settle'
-    case 'settlement_issued': case 'payment_overdue': return b.settlement?.total ? 'pay' : 'settle'
+    case 'settlement_issued': case 'payment_overdue': return 'settle'
     case 'completed': return 'done'
     case 'quote_expired': case 'cancelled': case 'rejected': return 'closed'
   }
@@ -895,11 +891,8 @@ export const needsAttention = (w?: WelfareLog) => !!w && w.condition !== 'normal
 export const openIncidentOf = (b: Pick<Booking, 'incidents'>, tripId: string) => b.incidents?.find(i => i.tripId === tripId && i.status !== 'resolved' && i.kind !== 'handover_timeout')
 // Quá hạn bàn giao đang chờ người nhận của chuyến
 export const handoverTimeoutOf = (b: Pick<Booking, 'incidents'>, tripId: string) => b.incidents?.find(i => i.tripId === tripId && i.status !== 'resolved' && i.kind === 'handover_timeout')
-// Ngựa thì khách chịu, vận chuyển thì nhà xe chịu; chuồng đệm do tắc cửa khẩu nhà xe chịu. Manager sửa được lúc đối soát.
-export function defaultPayer(kind: IncidentKind, category: ExpenseCategory): Payer {
-  if (kind === 'traffic_jam') return 'carrier' // tắc đường là việc vận chuyển: nhà xe chịu toàn bộ (PRD 11.5)
-  return category === 'vet_fee' || category === 'medicine' || category === 'holding_stable' ? 'customer' : 'carrier'
-}
+// All incident and handover waiting expenses are internal company costs.
+export function defaultPayer(_kind: IncidentKind, _category: ExpenseCategory): Payer { return 'carrier' }
 // Mỗi nhóm sự cố có đúng một cách xử lý, lập trên bản đồ
 export function incidentActionsFor(kind: IncidentKind): IncidentAction[] {
   return kind === 'horse_health' ? ['to_station'] : kind === 'vehicle_breakdown' ? ['rescue_and_station'] : ['reroute']
@@ -957,9 +950,9 @@ export function incidentLocation(b: Pick<Booking, 'origin' | 'dest' | 'gate' | '
   const f = p && p.total ? (p.done + 0.5) / p.total : 0.5
   return pointAlong(path, Math.max(0.08, Math.min(0.92, f)))
 }
-// Chỉ các khoản khách chịu vào bảng quyết toán
+// Internal expense review includes every recorded company expense.
 export function settlementOf(b: Pick<Booking, 'incidents'>): { items: SettlementItem[]; total: number } {
-  const items = (b.incidents ?? []).flatMap(i => i.expenses).filter(e => e.payer === 'customer').map(e => ({ label: `${EXPENSE_CATEGORY[e.category]}: ${e.label}`, amount: e.amount, photo: e.photo }))
+  const items = (b.incidents ?? []).flatMap(i => i.expenses).map(e => ({ label: `${EXPENSE_CATEGORY[e.category]}: ${e.label}`, amount: e.amount, photo: e.photo }))
   return { items, total: items.reduce((n, i) => n + i.amount, 0) }
 }
 
@@ -977,11 +970,18 @@ export const isVehicleReadyForDispatch = (v: Vehicle): boolean => {
   return s === 'AVAILABLE' || s === 'ACTIVE' || s === ''
 }
 
+// Số ngăn một con ngựa chiếm trên xe: khoang đơn mở rộng chiếm 2 ngăn, khoang tiêu chuẩn 1 ngăn
+export function stallUnitsOf(horse: Pick<BookingHorse, 'stall' | 'selectedServices'>): number {
+  const code = horse.selectedServices?.stall?.serviceCode
+  return code === 'STALL_SINGLE_EXTENDED' || horse.stall === 'single' ? 2 : 1
+}
+
 export function autoPackFleet(
   horseIds: string[],
   vehicles: Vehicle[],
   schedVehicles: Map<string, Booked[]>,
-  departAt: number
+  departAt: number,
+  stallsOf: (horseId: string) => number = () => 1
 ): AutoPackDraft[] {
   if (!horseIds.length) return [{ vehicleId: '', horseIds: [] }]
 
@@ -997,8 +997,9 @@ export function autoPackFleet(
 
   // Trường hợp 1: Tất cả ngựa có thể xếp vừa vào 1 xe duy nhất
   // Tìm xe có capacity >= horseIds.length nhỏ nhất (Best-Fit Single Vehicle)
+  const totalStalls = horseIds.reduce((sum, id) => sum + stallsOf(id), 0)
   const singleFits = available
-    .filter(v => v.capacity >= horseIds.length)
+    .filter(v => v.capacity >= totalStalls)
     .sort((a, b) => a.capacity - b.capacity)
 
   if (singleFits.length > 0) {
@@ -1016,9 +1017,14 @@ export function autoPackFleet(
     if (!remainingHorses.length) break
     if (usedVehicleIds.has(v.id)) continue
 
-    const takeCount = Math.min(v.capacity, remainingHorses.length)
-    const assigned = remainingHorses.slice(0, takeCount)
-    remainingHorses = remainingHorses.slice(takeCount)
+    let free = v.capacity
+    const assigned = remainingHorses.filter(id => {
+      if (stallsOf(id) > free) return false
+      free -= stallsOf(id)
+      return true
+    })
+    if (!assigned.length) continue
+    remainingHorses = remainingHorses.filter(id => !assigned.includes(id))
     usedVehicleIds.add(v.id)
 
     results.push({

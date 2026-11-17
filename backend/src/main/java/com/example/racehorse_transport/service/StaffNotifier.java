@@ -55,7 +55,7 @@ public class StaffNotifier {
     }
 
     private void save(String role, String username, Booking booking, String title, String message, String link) {
-        String code = booking != null && booking.getId() != null ? "BK-" + booking.getId() : null;
+        String code = booking != null && booking.getId() != null ? booking.getCode() : null;
         notifications.save(Notification.builder()
                 .recipientRole(role)
                 .recipientUsername(username)

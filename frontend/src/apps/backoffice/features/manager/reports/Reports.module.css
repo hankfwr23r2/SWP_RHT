@@ -6,7 +6,7 @@
 .seg button { border: 0; background: transparent; padding: 7px 14px; border-radius: 8px; font: inherit; font-size: 0.86rem; font-weight: 600; color: var(--muted); cursor: pointer; transition: all 0.15s; }
 .seg button.on { background: #fff; color: var(--navy); box-shadow: 0 1px 4px rgba(15, 23, 42, 0.15); }
 .title { margin: 22px 0 10px; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
-.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .kpi { display: flex; justify-content: space-between; gap: 10px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 14px; background: #fff; transition: transform 0.15s, box-shadow 0.15s; }
 .kpi:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08); }
 .kpi small { display: block; font-size: 0.72rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }

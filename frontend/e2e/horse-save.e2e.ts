@@ -1,9 +1,9 @@
 import { expect, test, type Page } from '@playwright/test'
 
-async function openForm(page: Page, options: { failDocument?: boolean; failRefresh?: boolean } = {}) {
+async function openForm(page: Page, options: { failDocument?: boolean; failRefresh?: boolean; chip?: string } = {}) {
   const state = { creates: 0, updates: 0, uploads: {} as Record<string, number>, reads: 0 }
   const documents: { id: number; horseId: number; documentType: string; status: string; fileUrl: string }[] = []
-  const horse = { id: 9, horseName: 'Tí Tèo', microchipID: 'VN-374959', breed: 'Arabian', gender: 'mare', color: 'Black', age: 5 }
+  const horse = { id: 9, horseName: 'Tí Tèo', microchipID: '985112000374959', breed: 'Arabian', gender: 'mare', color: 'Black', age: 5 }
   await page.route('**/api/v1/**', async route => {
     const request = route.request()
     const path = new URL(request.url()).pathname
@@ -40,7 +40,7 @@ async function openForm(page: Page, options: { failDocument?: boolean; failRefre
   await page.route('**/horse-save-test', route => route.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body><div id="root"></div><script type="module">import R from '/@react-refresh';R.injectIntoGlobalHook(window);window.$RefreshReg$=()=>{};window.$RefreshSig$=()=>t=>t;window.__vite_plugin_react_preamble_installed__=true;</script><script type="module" src="/e2e/fixtures/horseSaveHarness.tsx"></script></body></html>` }))
   await page.goto('/horse-save-test')
   await page.getByLabel('Tên ngựa', { exact: true }).fill('Tí Tèo')
-  await page.getByLabel('Mã microchip', { exact: true }).fill('VN-374959')
+  await page.getByLabel('Mã microchip', { exact: true }).fill(options.chip ?? '985 112-000374959')
   await page.getByLabel('Màu lông', { exact: true }).fill('Black')
   await page.getByLabel('Năm sinh', { exact: true }).fill('2021')
   await expect(page.getByRole('button', { name: 'Lưu vào hồ sơ', exact: true })).toBeEnabled()
@@ -55,6 +55,16 @@ async function selectDocuments(page: Page) {
     })
   }
 }
+
+test('microchip that is not 15 digits blocks saving before any request', async ({ page }) => {
+  const state = await openForm(page, { chip: 'VN-374959' })
+  await selectDocuments(page)
+
+  await page.getByRole('button', { name: 'Lưu vào hồ sơ', exact: true }).click()
+
+  await expect(page.getByText('Mã microchip phải gồm đúng 15 chữ số', { exact: false })).toBeVisible()
+  expect(state.creates).toBe(0)
+})
 
 test('oversized document blocks saving before any horse or upload request', async ({ page }) => {
   const state = await openForm(page)

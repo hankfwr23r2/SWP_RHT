@@ -13,11 +13,12 @@ import org.springframework.web.multipart.MultipartFile;
 @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT')")
 public class CaptureController {
     private final CaptureService captureService;
+    private final com.example.racehorse_transport.service.BookingCodeResolver bookingCodes;
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<CaptureEvidenceDto>> upload(@RequestParam MultipartFile file,
-            @RequestParam Integer bookingId, @RequestParam String tripId, @RequestParam String purpose,
+            @RequestParam String bookingCode, @RequestParam String tripId, @RequestParam String purpose,
             @RequestParam(defaultValue = "") String target, @RequestParam long capturedAt, Authentication auth) {
         String role = auth.getAuthorities().stream().anyMatch(a -> "ROLE_DRIVER".equals(a.getAuthority())) ? "DRIVER" : "ESCORT";
-        return ResponseEntity.ok(ApiResponse.success(captureService.upload(file, bookingId, tripId, purpose, target, capturedAt, auth.getName(), role), "Đã lưu ảnh chụp"));
+        return ResponseEntity.ok(ApiResponse.success(captureService.upload(file, bookingCodes.idOf(bookingCode), tripId, purpose, target, capturedAt, auth.getName(), role), "Đã lưu ảnh chụp"));
     }
 }

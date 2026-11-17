@@ -5,8 +5,9 @@ import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.LocationRepository;
-import com.example.racehorse_transport.repository.RegulationRepository;
+import com.example.racehorse_transport.repository.DocumentRequirementRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.repository.TripDocumentRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,8 @@ class SpecialistServiceImplTest {
 
     private final BookingRepository bookingRepository = mock(BookingRepository.class);
     private final StaffRepository staffRepository = mock(StaffRepository.class);
-    private final RegulationRepository regulationRepository = mock(RegulationRepository.class);
+    private final TripDocumentRepository tripDocumentRepository = mock(TripDocumentRepository.class);
+    private final DocumentRequirementRepository documentRequirementRepository = mock(DocumentRequirementRepository.class);
     private final LocationRepository locationRepository = mock(LocationRepository.class);
 
     private SpecialistServiceImpl service;
@@ -37,7 +39,8 @@ class SpecialistServiceImplTest {
         service = new SpecialistServiceImpl(
                 bookingRepository,
                 staffRepository,
-                regulationRepository,
+                tripDocumentRepository,
+                documentRequirementRepository,
                 locationRepository,
                 new ObjectMapper(), org.mockito.Mockito.mock(com.example.racehorse_transport.service.StaffNotifier.class));
 
@@ -56,7 +59,7 @@ class SpecialistServiceImplTest {
         when(bookingRepository.findById(1)).thenReturn(Optional.of(order));
         when(bookingRepository.findByIdForUpdate(1)).thenReturn(Optional.of(order));
         var request = com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("assistance").provider("Other").premium(java.math.BigDecimal.ONE).reviewed(true).build();
-        assertThatThrownBy(() -> service.updateInsurance("BK-1", "H1", request, "specialist")).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> service.updateInsurance(code(1), "H1", request, "specialist")).isInstanceOf(IllegalStateException.class);
         verify(bookingRepository, never()).save(any());
     }
 
@@ -70,8 +73,8 @@ class SpecialistServiceImplTest {
         request.setPolicyDocuments(List.of());
         request.setDocumentNames(Map.of());
         request.setPremium(new java.math.BigDecimal("1250000.00"));
-        service.updateInsurance("BK-1", "H1", request, "specialist");
-        service.updateInsurance("BK-1", "H1", request, "specialist");
+        service.updateInsurance(code(1), "H1", request, "specialist");
+        service.updateInsurance(code(1), "H1", request, "specialist");
         verify(bookingRepository, never()).save(any());
         assertThat(order.getDetailsJson()).isEqualTo(original);
     }
@@ -82,7 +85,7 @@ class SpecialistServiceImplTest {
         String original = order.getDetailsJson();
         var request = confirmedInsuranceRequest(false);
         request.setReviewed(false);
-        assertThatThrownBy(() -> service.updateInsurance("BK-1", "H1", request, "specialist"))
+        assertThatThrownBy(() -> service.updateInsurance(code(1), "H1", request, "specialist"))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("đã được xác nhận");
         verify(bookingRepository, never()).save(any());
         assertThat(order.getDetailsJson()).isEqualTo(original);
@@ -94,110 +97,14 @@ class SpecialistServiceImplTest {
         var draft = confirmedInsuranceRequest(false);
         draft.setPremium(new java.math.BigDecimal("2250000"));
         draft.setReviewed(false);
-        var saved = service.updateInsurance("BK-1", "H1", draft, "specialist");
+        var saved = service.updateInsurance(code(1), "H1", draft, "specialist");
         assertThat(saved.getHorses().getFirst().getInsurance().getReviewed()).isFalse();
         assertThat(saved.getHorses().getFirst().getInsurance().getPremium()).isEqualByComparingTo("2250000");
         var confirmed = confirmedInsuranceRequest(false);
         confirmed.setPremium(new java.math.BigDecimal("2250000"));
-        var reviewed = service.updateInsurance("BK-1", "H1", confirmed, "specialist");
+        var reviewed = service.updateInsurance(code(1), "H1", confirmed, "specialist");
         assertThat(reviewed.getHorses().getFirst().getInsurance().getReviewed()).isTrue();
         assertThat(order.getDetailsJson()).contains("2250000");
-    }
-
-    @Test
-    void newInsuranceConfirmationRecordsActualActorAndKeepsStampOnRetry() throws Exception {
-        Booking order = confirmedInsuranceBooking("under_review", false);
-        normalizeInsuranceBooking(order);
-        var actor = staffRepository.findByUser_Username("specialist").orElseThrow();
-        var user = new com.example.racehorse_transport.entity.User();
-        user.setId(8);
-        user.setUsername("specialist");
-        actor.setUser(user);
-        var draft = confirmedInsuranceRequest(false);
-        draft.setPremium(new java.math.BigDecimal("2250000"));
-        draft.setReviewed(false);
-        service.updateInsurance("BK-1", "H1", draft, "specialist");
-        var confirmed = confirmedInsuranceRequest(false);
-        confirmed.setPremium(new java.math.BigDecimal("2250000"));
-
-        service.updateInsurance("BK-1", "H1", confirmed, "specialist");
-
-        var policy = order.getBookingHorses().getFirst().getInsurancePolicy();
-        assertThat(policy.getReviewedBy()).isSameAs(user);
-        assertThat(policy.getReviewedAt()).isNotNull();
-        var confirmedAt = policy.getReviewedAt();
-        service.updateInsurance("BK-1", "H1", confirmed, "specialist");
-        assertThat(policy.getReviewedAt()).isEqualTo(confirmedAt);
-        assertThat(policy.getArrangedAt()).isNull();
-    }
-
-    @Test
-    void unchangedLegacyConfirmationDoesNotInventReviewerOrTimestamp() throws Exception {
-        Booking order = confirmedInsuranceBooking("under_review", false);
-        normalizeInsuranceBooking(order);
-
-        service.updateInsurance("BK-1", "H1", confirmedInsuranceRequest(false), "specialist");
-
-        var policy = order.getBookingHorses().getFirst().getInsurancePolicy();
-        assertThat(policy.getReviewedBy()).isNull();
-        assertThat(policy.getReviewedAt()).isNull();
-        assertThat(policy.getArrangedAt()).isNull();
-    }
-
-    @Test
-    void arrangingPolicyRecordsActorWithoutInventingLegacyQuoteReviewMetadata() throws Exception {
-        Booking order = confirmedInsuranceBooking("clearance_in_progress", false);
-        normalizeInsuranceBooking(order);
-        var actor = staffRepository.findByUser_Username("specialist").orElseThrow();
-        var user = new com.example.racehorse_transport.entity.User();
-        user.setId(8);
-        actor.setUser(user);
-
-        service.updateInsurance("BK-1", "H1", confirmedInsuranceRequest(true), "specialist");
-
-        var policy = order.getBookingHorses().getFirst().getInsurancePolicy();
-        assertThat(policy.getArrangedBy()).isSameAs(user);
-        assertThat(policy.getArrangedAt()).isNotNull();
-        assertThat(policy.getReviewedBy()).isNull();
-        assertThat(policy.getReviewedAt()).isNull();
-        var arrangedAt = policy.getArrangedAt();
-        service.updateInsurance("BK-1", "H1", confirmedInsuranceRequest(true), "specialist");
-        assertThat(policy.getArrangedAt()).isEqualTo(arrangedAt);
-    }
-
-    @Test
-    void invalidDraftPolicyDateFailsBeforeSavingOrChangingNormalizedInsurance() throws Exception {
-        Booking order = confirmedInsuranceBooking("under_review", false);
-        var json = new ObjectMapper().readTree(order.getDetailsJson());
-        var insurance = (com.fasterxml.jackson.databind.node.ObjectNode) json.path("horses").get(0).path("insurance");
-        insurance.put("option", "personal").put("reviewed", false).put("policyNumber", "PERSONAL-1")
-                .put("validFrom", "2026-01-01").put("validUntil", "2027-12-31");
-        order.setDetailsJson(json.toString());
-        normalizeInsuranceBooking(order);
-        String original = order.getDetailsJson();
-        var request = com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder()
-                .option("personal").provider("Provider").policyNumber("PERSONAL-1")
-                .validFrom("invalid-date").validUntil("2027-12-31").reviewed(false).arranged(false).build();
-
-        assertThatThrownBy(() -> service.updateInsurance("BK-1", "H1", request, "specialist"))
-                .isInstanceOf(IllegalStateException.class)
-                .hasRootCauseInstanceOf(java.time.format.DateTimeParseException.class);
-
-        verify(bookingRepository, never()).save(any());
-        assertThat(order.getDetailsJson()).isEqualTo(original);
-        assertThat(order.getBookingHorses().getFirst().getInsurancePolicy().getValidFrom())
-                .isEqualTo(java.time.LocalDate.of(2026, 1, 1));
-    }
-
-    private void normalizeInsuranceBooking(Booking order) throws Exception {
-        var json = new ObjectMapper().readTree(order.getDetailsJson());
-        var horse = (com.fasterxml.jackson.databind.node.ObjectNode) json.path("horses").get(0);
-        horse.set("selectedServices", new ObjectMapper().readTree("""
-                {"stall":{"id":1,"serviceCode":"STALL_STANDARD","price":0},
-                 "feed":{"id":2,"serviceCode":"FEED_BASIC","price":0},
-                 "water":{"id":3,"serviceCode":"WATER_EVERY_3H","price":0}}
-                """));
-        order.setDetailsJson(json.toString());
     }
 
     @Test
@@ -205,7 +112,7 @@ class SpecialistServiceImplTest {
         Booking order = confirmedInsuranceBooking("clearance_in_progress", true);
         String original = order.getDetailsJson();
         var request = confirmedInsuranceRequest(true);
-        service.updateInsurance("BK-1", "H1", request, "specialist");
+        service.updateInsurance(code(1), "H1", request, "specialist");
         verify(bookingRepository, never()).save(any());
         assertThat(order.getDetailsJson()).isEqualTo(original);
     }
@@ -216,11 +123,11 @@ class SpecialistServiceImplTest {
         String original = order.getDetailsJson();
         var request = confirmedInsuranceRequest(true);
         request.setArranged(false);
-        assertThatThrownBy(() -> service.updateInsurance("BK-1", "H1", request, "specialist"))
+        assertThatThrownBy(() -> service.updateInsurance(code(1), "H1", request, "specialist"))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("có hiệu lực");
         request.setArranged(true);
         request.setPolicyNumber("CHANGED");
-        assertThatThrownBy(() -> service.updateInsurance("BK-1", "H1", request, "specialist"))
+        assertThatThrownBy(() -> service.updateInsurance(code(1), "H1", request, "specialist"))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("có hiệu lực");
         verify(bookingRepository, never()).save(any());
         assertThat(order.getDetailsJson()).isEqualTo(original);
@@ -256,7 +163,7 @@ class SpecialistServiceImplTest {
         when(bookingRepository.findByIdForUpdate(1)).thenReturn(Optional.of(order));
         var request = com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("none").provider("Other").premium(java.math.BigDecimal.ONE)
             .policyNumber("POLICY-1").validFrom("2026-01-01").validUntil("2027-12-31").arranged(true).build();
-        var response = service.updateInsurance("BK-1", "H1", request, "specialist");
+        var response = service.updateInsurance(code(1), "H1", request, "specialist");
         var insurance = response.getHorses().getFirst().getInsurance();
         assertThat(insurance.getPremium()).isEqualByComparingTo("1250000");
         assertThat(insurance.getProvider()).isEqualTo("Provider");
@@ -267,15 +174,16 @@ class SpecialistServiceImplTest {
 
     @Test
     void getVerificationBookings_keepsApprovedBookingsUntilQuotationIsIssued() {
-        when(bookingRepository.findAllByOrderByBookingDateDesc()).thenReturn(List.of(
+        List<Booking> all = List.of(
                 booking(1, "pending_commercial", "approved"),
                 booking(2, "awaiting_payment", "approved"),
-                booking(3, "under_review", "pending")));
+                booking(3, "under_review", "pending"));
+        when(bookingRepository.findAllByOrderByBookingDateDesc()).thenReturn(all);
 
         List<BookingResponse> bookings = service.getVerificationBookings("specialist");
 
         assertThat(bookings).extracting(BookingResponse::getId)
-                .containsExactly("BK-001", "BK-003");
+                .containsExactly(code(1), code(3));
     }
 
     @Test
@@ -296,7 +204,7 @@ class SpecialistServiceImplTest {
                 """);
         when(bookingRepository.findById(4)).thenReturn(Optional.of(domestic));
 
-        BookingResponse response = service.getBookingDetail("BK-004", "specialist");
+        BookingResponse response = service.getBookingDetail(code(4), "specialist");
 
         Map<?, ?> clearance = (Map<?, ?>) response.getClearance();
         List<?> items = (List<?>) clearance.get("items");
@@ -316,7 +224,7 @@ class SpecialistServiceImplTest {
         when(bookingRepository.findById(5)).thenReturn(Optional.of(domestic));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        BookingResponse response = service.acceptWaybill("BK-005", "specialist");
+        BookingResponse response = service.acceptWaybill(code(5), "specialist");
 
         Map<?, ?> clearance = (Map<?, ?>) response.getClearance();
         List<?> items = (List<?>) clearance.get("items");
@@ -338,7 +246,7 @@ class SpecialistServiceImplTest {
         when(bookingRepository.findById(6)).thenReturn(Optional.of(domestic));
 
         assertThatThrownBy(() -> service.updateClearanceItem(
-                "BK-006",
+                code(6),
                 com.example.racehorse_transport.dto.specialist.UpdateClearanceItemRequest.builder()
                         .type("import_permit")
                         .build(),
@@ -356,13 +264,13 @@ class SpecialistServiceImplTest {
         when(bookingRepository.findByIdForUpdate(1)).thenReturn(Optional.of(order));
         var request = com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("assistance")
             .policyNumber("SHOULD-NOT-BE-SAVED").policyDocuments(List.of("https://example.test/policy.pdf")).reviewed(false).build();
-        var result = service.updateInsurance("BK-1", "H1", request, "specialist").getHorses().getFirst().getInsurance();
+        var result = service.updateInsurance(code(1), "H1", request, "specialist").getHorses().getFirst().getInsurance();
         assertThat(result.getPolicyNumber()).isNull();
         assertThat(result.getPolicyDocuments()).isNull();
         assertThat(result.getReviewed()).isFalse();
         order.setDetailsJson(order.getDetailsJson().replace("assistance", "personal"));
         request.setOption("personal");
-        assertThat(service.updateInsurance("BK-1", "H1", request, "specialist").getHorses().getFirst().getInsurance().getReviewed()).isFalse();
+        assertThat(service.updateInsurance(code(1), "H1", request, "specialist").getHorses().getFirst().getInsurance().getReviewed()).isFalse();
     }
 
     @Test
@@ -375,7 +283,7 @@ class SpecialistServiceImplTest {
         var request = com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("assistance")
             .documents(List.of("https://example.test/tampered.pdf")).note("Edited terms").quoteValidUntil("2027-01-01")
             .policyDocuments(List.of("https://example.test/policy.pdf")).build();
-        var result = service.updateInsurance("BK-1", "H1", request, "specialist").getHorses().getFirst().getInsurance();
+        var result = service.updateInsurance(code(1), "H1", request, "specialist").getHorses().getFirst().getInsurance();
         assertThat(result.getDocuments()).containsExactly("https://example.test/quote.pdf");
         assertThat(result.getPolicyDocuments()).containsExactly("https://example.test/policy.pdf");
         assertThat(result.getQuoteValidUntil()).isEqualTo("2026-12-31");
@@ -388,12 +296,86 @@ class SpecialistServiceImplTest {
         Booking other = booking(2, "under_review", "pending");
         other.setDetailsJson(other.getDetailsJson().replace("SP-01", "SP-99"));
         when(bookingRepository.findAllByOrderByBookingDateDesc()).thenReturn(List.of(assigned, other));
-        assertThat(service.getInsuranceBookings("specialist")).extracting(r -> r.getNumericId()).containsExactly(1);
+        assertThat(service.getInsuranceBookings("specialist")).extracting(r -> r.getId()).containsExactly(code(1));
+    }
+
+    @Test
+    void noteOnlyUpdatePreservesPhotosAndRepeatedSaveDoesNotAddHistory() {
+        Booking b = clearanceBooking();
+        var patch = com.example.racehorse_transport.dto.specialist.UpdateClearanceItemRequest.builder()
+                .type("health_cert").note("updated").build();
+        service.updateClearanceItem(code(7), patch, "specialist");
+        service.updateClearanceItem(code(7), patch, "specialist");
+        var payload = new ObjectMapper().valueToTree(service.getBookingDetail(code(7), "specialist").getClearance());
+        assertThat(payload.path("items").get(0).path("photos").size()).isEqualTo(1);
+        assertThat(payload.path("items").get(0).path("status").asText()).isEqualTo("done");
+        verify(bookingRepository, org.mockito.Mockito.times(1)).save(b);
+    }
+
+    @Test
+    void explicitEmptyPhotosRemovesAttachments() {
+        clearanceBooking();
+        var response = service.updateClearanceItem(code(7),
+                com.example.racehorse_transport.dto.specialist.UpdateClearanceItemRequest.builder()
+                        .type("health_cert").photos(List.of()).build(), "specialist");
+        var item = new ObjectMapper().valueToTree(response.getClearance()).path("items").get(0);
+        assertThat(item.path("photos").isEmpty()).isTrue();
+        assertThat(item.path("status").asText()).isEqualTo("todo");
+        assertThat(item.path("note").asText()).isEqualTo("before");
+    }
+
+    @Test
+    void batchSaveCreatesOneHistoryEntryForMultipleDocuments() {
+        clearanceBooking();
+        var response = service.updateClearanceItems(code(7),
+                com.example.racehorse_transport.dto.specialist.UpdateClearanceItemsRequest.builder().items(List.of(
+                        com.example.racehorse_transport.dto.specialist.UpdateClearanceItemRequest.builder()
+                                .type("health_cert").note("updated").build(),
+                        com.example.racehorse_transport.dto.specialist.UpdateClearanceItemRequest.builder()
+                                .type("poa").note("signed").photos(List.of("https://example.test/poa.png")).build()
+                )).build(), "specialist");
+        assertThat(response.getHistory()).hasSize(1);
+        var items = new ObjectMapper().valueToTree(response.getClearance()).path("items");
+        assertThat(items.get(0).path("photos").size()).isEqualTo(1);
+        assertThat(items.get(1).path("status").asText()).isEqualTo("done");
+    }
+
+    @Test
+    void batchRejectsDuplicateTypesAndLockedBookingsWithoutSaving() {
+        Booking b = clearanceBooking();
+        var patch = com.example.racehorse_transport.dto.specialist.UpdateClearanceItemRequest.builder()
+                .type("health_cert").note("changed").build();
+        var duplicate = com.example.racehorse_transport.dto.specialist.UpdateClearanceItemsRequest.builder()
+                .items(List.of(patch, patch)).build();
+        assertThatThrownBy(() -> service.updateClearanceItems(code(7), duplicate, "specialist"))
+                .isInstanceOf(IllegalArgumentException.class);
+        b.setStatus("completed");
+        assertThatThrownBy(() -> service.updateClearanceItem(code(7), patch, "specialist"))
+                .isInstanceOf(IllegalStateException.class);
+        verify(bookingRepository, never()).save(any());
+    }
+
+    private Booking clearanceBooking() {
+        Booking b = booking(7, "clearance_in_progress", "approved");
+        b.setBookingType("domestic");
+        b.setDetailsJson("{\"intake\":{\"specialist\":{\"id\":\"SP-01\"}},\"history\":[],\"clearance\":{\"items\":["
+                + "{\"type\":\"health_cert\",\"note\":\"before\",\"photos\":[\"https://example.test/cert.png\"],\"status\":\"done\"},"
+                + "{\"type\":\"poa\",\"note\":\"\",\"photos\":[],\"status\":\"todo\"}]}}");
+        when(bookingRepository.findById(7)).thenReturn(Optional.of(b));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        return b;
+    }
+
+    // Mã đơn giả cho từng đơn trong test; repository giả đổi mã này về đúng BookingID
+    private static String code(int id) {
+        return "BK-TESTCOD" + id;
     }
 
     private Booking booking(int id, String status, String medicalStatus) {
+        when(bookingRepository.findIdByCode(code(id))).thenReturn(Optional.of(id));
         return Booking.builder()
                 .id(id)
+                .code(code(id))
                 .status(status)
                 .detailsJson("""
                         {

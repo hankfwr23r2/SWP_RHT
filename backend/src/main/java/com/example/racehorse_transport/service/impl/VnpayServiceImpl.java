@@ -66,6 +66,9 @@ public class VnpayServiceImpl implements VnpayService {
     @Override
     @Transactional
     public VnpayCreateResponse createPaymentUrl(VnpayCreateRequest request, String username, String clientIp) {
+        if ("SETTLEMENT".equalsIgnoreCase(request.getPaymentType())) {
+            throw new IllegalArgumentException("Chi phí sự cố do công ty chịu; khách hàng không thanh toán quyết toán.");
+        }
         if (!props.isConfigured()) {
             List<String> missingConfig = new ArrayList<>();
             if (props.getTmnCode() == null || props.getTmnCode().isBlank()) {
@@ -110,7 +113,7 @@ public class VnpayServiceImpl implements VnpayService {
                     expiresAt = quoteDeadline;
                 }
                 amount = quotation.getDepositAmount();
-                orderInfo = "Thanh toan coc don BK-" + booking.getId();
+                orderInfo = "Thanh toan coc don " + booking.getCode();
                 prefix = "DEP";
             }
             case "BALANCE" -> {
@@ -128,16 +131,8 @@ public class VnpayServiceImpl implements VnpayService {
                 amount = quotation.getBalanceAmount() != null
                         ? quotation.getBalanceAmount()
                         : quotation.getTotalAmount().multiply(new BigDecimal("0.7"));
-                orderInfo = "Thanh toan con lai don BK-" + booking.getId();
+                orderInfo = "Thanh toan con lai don " + booking.getCode();
                 prefix = "BAL";
-            }
-            case "SETTLEMENT" -> {
-                if (hasCompleted(payments, "SETTLEMENT")) {
-                    throw new IllegalStateException("Đơn hàng này đã thanh toán quyết toán!");
-                }
-                amount = settlementService.holdForVnpay(booking, request.getRating());
-                orderInfo = "Thanh toan quyet toan don BK-" + booking.getId();
-                prefix = "SET";
             }
             default -> throw new IllegalArgumentException("Loại thanh toán không hợp lệ: " + request.getPaymentType());
         }
@@ -159,7 +154,7 @@ public class VnpayServiceImpl implements VnpayService {
             }
         }
 
-        String txnRef = prefix + String.format("%04d", booking.getId()) + now.toEpochMilli();
+        String txnRef = prefix + booking.getCode().substring(3) + now.toEpochMilli();
         Payment payment = Payment.builder()
                 .bookingID(booking)
                 .amount(amount)
@@ -293,8 +288,7 @@ public class VnpayServiceImpl implements VnpayService {
         return switch (payment.getPaymentType().toUpperCase()) {
             case "DEPOSIT" -> "awaiting_payment".equalsIgnoreCase(booking.getStatus()) && !hasCompleted(payments, "DEPOSIT");
             case "BALANCE" -> !isClosed(booking) && !hasCompleted(payments, "BALANCE");
-            case "SETTLEMENT" -> ("settlement_issued".equalsIgnoreCase(booking.getStatus())
-                    || "payment_overdue".equalsIgnoreCase(booking.getStatus())) && !hasCompleted(payments, "SETTLEMENT");
+            case "SETTLEMENT" -> false; // retired customer charge; incoming money requires reconciliation
             default -> false;
         };
     }
@@ -341,18 +335,8 @@ public class VnpayServiceImpl implements VnpayService {
         if (bookingIdentifier == null || bookingIdentifier.trim().isEmpty()) {
             throw new IllegalArgumentException("Mã đơn hàng không được để trống!");
         }
-        String cleanId = bookingIdentifier.trim();
-        try {
-            if (cleanId.toUpperCase().startsWith("BK-")) {
-                return Integer.parseInt(cleanId.substring(3).trim());
-            } else if (cleanId.toUpperCase().startsWith("ORD-")) {
-                String[] parts = cleanId.split("-");
-                return Integer.parseInt(parts[parts.length - 1].trim());
-            }
-            return Integer.parseInt(cleanId);
-        } catch (Exception ex) {
-            throw new IllegalArgumentException("Định dạng mã đơn không hợp lệ: " + bookingIdentifier);
-        }
+        return bookingRepository.findIdByCode(bookingIdentifier.trim().toUpperCase())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
     }
 
     private String describeStatus(Payment payment) {
@@ -391,8 +375,7 @@ public class VnpayServiceImpl implements VnpayService {
                 .message(message);
         if (payment != null) {
             Booking booking = payment.getBookingID();
-            builder.bookingId(booking != null ? booking.getId() : null)
-                    .bookingCode(booking != null ? String.format("BK-%03d", booking.getId()) : null)
+            builder.bookingCode(booking != null ? booking.getCode() : null)
                     .paymentType(payment.getPaymentType())
                     .paymentStatus(payment.getStatus())
                     .amount(payment.getAmount())

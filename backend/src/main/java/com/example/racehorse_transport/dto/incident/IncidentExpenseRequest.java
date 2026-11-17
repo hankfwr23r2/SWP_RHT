@@ -26,6 +26,5 @@ public class IncidentExpenseRequest {
     @Positive(message = "Số tiền phải lớn hơn 0")
     private BigDecimal amount;
 
-    @NotBlank(message = "Bên chịu chi phí không được để trống")
-    private String payer;
+    private String payer; // optional compatibility field; service accepts company/carrier only
 }

@@ -7,7 +7,7 @@ import com.example.racehorse_transport.repository.BookingAssignmentRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.IncidentRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
-import com.example.racehorse_transport.repository.SystemLogRepository;
+import com.example.racehorse_transport.service.OperationalLogWriter;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -32,13 +32,14 @@ class IncidentServiceImplTest {
             bookingRepository,
             mock(BookingAssignmentRepository.class),
             staffRepository,
-            mock(SystemLogRepository.class),
+            mock(OperationalLogWriter.class),
             healthService, org.mockito.Mockito.mock(com.example.racehorse_transport.service.StaffNotifier.class));
 
     @Test
     void customerIncidentsAreLoadedForTheSignedInCustomerInOneQueryWithoutInternalFields() {
         Booking booking = new Booking();
         booking.setId(3);
+        booking.setCode("BK-7F3K9QXM");
         Incident incident = Incident.builder()
                 .id(7)
                 .bookingID(booking)
@@ -55,8 +56,7 @@ class IncidentServiceImplTest {
 
         assertThat(incidents).hasSize(1);
         IncidentResponse response = incidents.get(0);
-        assertThat(response.getBookingId()).isEqualTo(3);
-        assertThat(response.getBookingCode()).isEqualTo("BK-003");
+        assertThat(response.getBookingCode()).isEqualTo("BK-7F3K9QXM");
         assertThat(response.getStatus()).isEqualTo("active");
         assertThat(response.getDescription()).isNull();
         assertThat(response.getPartnerName()).isNull();
@@ -67,15 +67,17 @@ class IncidentServiceImplTest {
     void incidentsOfSeveralBookingsAreLoadedInOneQuery() {
         Booking first = new Booking();
         first.setId(1);
+        first.setCode("BK-AAAAAAAA");
         Booking second = new Booking();
         second.setId(2);
+        second.setCode("BK-BBBBBBBB");
         when(incidentRepository.findByBookingID_IdIn(List.of(1, 2))).thenReturn(List.of(
                 Incident.builder().id(7).bookingID(first).status("active").description("Nổ lốp").build(),
                 Incident.builder().id(8).bookingID(second).status("resolved").build()));
 
         List<IncidentResponse> incidents = service.getIncidentsForBookings(List.of(1, 2));
 
-        assertThat(incidents).extracting(IncidentResponse::getBookingId).containsExactly(1, 2);
+        assertThat(incidents).extracting(IncidentResponse::getBookingCode).containsExactly("BK-AAAAAAAA", "BK-BBBBBBBB");
         assertThat(incidents.get(0).getDescription()).isEqualTo("Nổ lốp");
     }
 
@@ -280,14 +282,14 @@ class IncidentServiceImplTest {
     }
 
     @Test
-    void horseHealthExpensesRespectManagerApprovedPayer() {
+    void horseHealthExpensesAreEntirelyCompanyCosts() {
         Incident incident = healthIncident(true); incident.setCostBearer("COMPANY");
         var expense = new com.example.racehorse_transport.dto.incident.IncidentExpenseRequest();
         expense.setCategory("vet_fee"); expense.setLabel("Khám tại trạm"); expense.setPhoto("invoice.jpg");
-        expense.setAmount(new BigDecimal("100000")); expense.setPayer("customer");
+        expense.setAmount(new BigDecimal("100000")); expense.setPayer("carrier");
         IncidentResponse result = service.addExpense(7, expense, "admin", "ADMIN");
         assertThat(result.getExpenses().get(0).get("payer")).isEqualTo("carrier");
-        assertThat(result.getActualCost()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(result.getActualCost()).isEqualByComparingTo("100000");
     }
 
     @Test
@@ -295,7 +297,7 @@ class IncidentServiceImplTest {
         Incident incident = healthIncident(true);
         var expense = new com.example.racehorse_transport.dto.incident.IncidentExpenseRequest();
         expense.setCategory("vet_fee"); expense.setLabel("Khám tại trạm"); expense.setPhoto("invoice.jpg");
-        expense.setAmount(new BigDecimal("10000000000000000")); expense.setPayer("customer");
+        expense.setAmount(new BigDecimal("10000000000000000")); expense.setPayer("carrier");
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.addExpense(7, expense, "admin", "ADMIN"))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -317,7 +319,7 @@ class IncidentServiceImplTest {
 
         assertThat(response.getExpenses()).hasSize(1);
         assertThat(response.getExpenses().get(0).get("id")).isEqualTo("expense-2");
-        assertThat(incident.getActualCost()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(incident.getActualCost()).isEqualByComparingTo("200000");
         assertThat(incident.getCostBearer()).isEqualTo("COMPANY");
     }
 

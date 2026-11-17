@@ -160,7 +160,7 @@ class TripReportRealDataTest {
                 ("{\"trips\":[{\"tripId\":\"TRP-1\",\"vehicleId\":\"VH-001\",\"horseIds\":[\"H-1\"],\"escortId\":\"%s\","
                         + "\"run\":{\"startedAt\":%d}}]}").formatted(escortCode, start)));
 
-        assertThat(reportList()).noneMatch(item -> ("BK-" + booking.getId()).equals(item.path("id").asText()));
+        assertThat(reportList()).noneMatch(item -> booking.getCode().equals(item.path("id").asText()));
     }
 
     private Booking deliveredBooking(String status, String extra) {
@@ -194,9 +194,9 @@ class TripReportRealDataTest {
 
     private JsonNode reportOf(Booking booking) throws Exception {
         for (JsonNode item : reportList()) {
-            if (("BK-" + booking.getId()).equals(item.path("id").asText())) return item;
+            if (booking.getCode().equals(item.path("id").asText())) return item;
         }
-        throw new AssertionError("Không thấy BK-" + booking.getId() + " trong báo cáo chuyến");
+        throw new AssertionError("Không thấy " + booking.getCode() + " trong báo cáo chuyến");
     }
 
     private List<JsonNode> reportList() throws Exception {

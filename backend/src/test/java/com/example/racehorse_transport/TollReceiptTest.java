@@ -193,12 +193,12 @@ class TollReceiptTest {
         Booking booking = bookingWithTrip("delivered_pending_settlement", deliveredAndDrivingBack());
         addToll(booking, driverToken, 185000, "Trạm BOT Long Thành", receipt(booking));
 
-        HttpResponse<String> submit = post("/settlements/" + booking.getId() + "/submit-expenses", driverToken,
+        HttpResponse<String> submit = post("/settlements/" + booking.getCode() + "/submit-expenses", driverToken,
                 "{\"tripId\":\"TRP-1\",\"expenses\":[]}");
 
         assertThat(submit.statusCode()).as(submit.body()).isEqualTo(200);
         Booking saved = bookings.findById(booking.getId()).orElseThrow();
-        assertThat(saved.getStatus()).isEqualTo("settlement_issued");
+        assertThat(saved.getStatus()).isEqualTo("expenses_submitted");
         assertThat(json.readTree(saved.getDetailsJson()).path("settlement").path("total").asLong()).isZero();
     }
 
@@ -215,7 +215,7 @@ class TollReceiptTest {
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
         JsonNode report = null;
         for (JsonNode item : json.readTree(response.body()).path("data")) {
-            if (("BK-" + booking.getId()).equals(item.path("id").asText())) report = item;
+            if (booking.getCode().equals(item.path("id").asText())) report = item;
         }
         assertThat(report).as(response.body()).isNotNull();
         assertThat(report.path("tollCost").asLong()).isEqualTo(245000);
@@ -248,7 +248,7 @@ class TollReceiptTest {
     }
 
     private HttpResponse<String> tripUpdate(Booking booking, String token, String action, String payload) throws Exception {
-        return post("/field/bookings/" + booking.getId() + "/trip-update", token,
+        return post("/field/bookings/" + booking.getCode() + "/trip-update", token,
                 "{\"tripId\":\"TRP-1\",\"action\":\"%s\",\"actor\":\"Tài xế\",\"payload\":%s}".formatted(action, payload));
     }
 

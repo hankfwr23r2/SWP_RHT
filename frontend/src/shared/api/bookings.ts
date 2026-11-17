@@ -47,7 +47,6 @@ export interface CreateBookingPayload {
 export interface BackendBookingResponse {
   photoEvidence?: Record<string, import('../types/capture').CaptureEvidence>
   id: string
-  numericId: number
   type: string
   customer: string
   customerName: string
@@ -90,21 +89,6 @@ export interface BackendBookingResponse {
   history?: Array<{ time: number; actor: string; text: string }>
 }
 
-export function toNumericBookingId(identifier: number | string): number {
-  if (typeof identifier === 'number') {
-    if (Number.isSafeInteger(identifier) && identifier > 0) return identifier
-    throw new Error('Mã đơn hàng không hợp lệ.')
-  }
-
-  const value = identifier.trim()
-  const match = /^(?:BK-)?(\d+)$/i.exec(value)
-  const numericId = match ? Number(match[1]) : Number.NaN
-  if (!Number.isSafeInteger(numericId) || numericId <= 0) {
-    throw new Error(`Mã đơn hàng không hợp lệ: ${identifier}`)
-  }
-  return numericId
-}
-
 export interface BackendTripTeam {
   tripId: string
   horseNames: string[]
@@ -114,16 +98,20 @@ export interface BackendTripTeam {
 }
 
 export const backendBookingApi = {
+  submitRating: async (id: string, rating: { stars: number; comment?: string }): Promise<BackendBookingResponse> => {
+    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${id}/rating`, rating)
+    return res.data.data
+  },
   changeSchedule: async (id: string, departureDate: string): Promise<BackendBookingResponse> => {
-    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${toNumericBookingId(id)}/schedule-change`, { departureDate })
+    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${id}/schedule-change`, { departureDate })
     return res.data.data
   },
   cancelScheduleRequest: async (id: string, reason: string): Promise<BackendBookingResponse> => {
-    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${toNumericBookingId(id)}/schedule-change/cancel`, { reason })
+    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${id}/schedule-change/cancel`, { reason })
     return res.data.data
   },
   requestScheduleSupport: async (id: string): Promise<BackendBookingResponse> => {
-    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${toNumericBookingId(id)}/schedule-change/support`)
+    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${id}/schedule-change/support`)
     return res.data.data
   },
   // 1. Khách hàng tạo đơn vận chuyển mới (POST /api/v1/customer/bookings)
@@ -139,15 +127,14 @@ export const backendBookingApi = {
   },
 
   // 3. Khách hàng xem chi tiết đơn (GET /api/v1/customer/bookings/{id})
-  getCustomerBookingById: async (id: number | string): Promise<BackendBookingResponse> => {
-    const numericId = toNumericBookingId(id)
-    const res = await apiClient.get<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${numericId}`)
+  getCustomerBookingById: async (id: string): Promise<BackendBookingResponse> => {
+    const res = await apiClient.get<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${id}`)
     return res.data.data
   },
 
   // Xe và kíp xe từng chuyến của đơn, phần khách được xem (GET /api/v1/customer/bookings/{id}/team)
-  getCustomerTripTeam: async (id: number | string): Promise<BackendTripTeam[]> => {
-    const res = await apiClient.get<ApiResponse<BackendTripTeam[]>>(`/customer/bookings/${toNumericBookingId(id)}/team`)
+  getCustomerTripTeam: async (id: string): Promise<BackendTripTeam[]> => {
+    const res = await apiClient.get<ApiResponse<BackendTripTeam[]>>(`/customer/bookings/${id}/team`)
     return res.data.data
   },
 

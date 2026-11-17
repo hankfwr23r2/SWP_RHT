@@ -30,7 +30,8 @@ public class SpecialistServiceImpl implements SpecialistService {
 
     private final BookingRepository bookingRepository;
     private final StaffRepository staffRepository;
-    private final RegulationRepository regulationRepository;
+    private final TripDocumentRepository tripDocumentRepository;
+    private final DocumentRequirementRepository documentRequirementRepository;
     private final LocationRepository locationRepository;
     private final ObjectMapper objectMapper;
     private final com.example.racehorse_transport.service.StaffNotifier staffNotifier;
@@ -39,7 +40,7 @@ public class SpecialistServiceImpl implements SpecialistService {
     @Transactional
     public BookingResponse updateInsurance(String id, String horseId, HorseInsuranceDto request, String username) {
         Booking booking = bookingRepository.findByIdForUpdate(parseBookingId(id)).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
-        Staff actor = requireAssignment(username, booking);
+        requireAssignment(username, booking);
         BookingDetailsPayload payload = extractPayload(booking);
         var horse = payload.getHorses().stream().filter(h -> horseId.equals(h.getHorseId())).findFirst()
             .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy ngựa trong đơn."));
@@ -104,7 +105,6 @@ public class SpecialistServiceImpl implements SpecialistService {
         appendHistory(payload, username, "Cập nhật hồ sơ bảo hiểm cho " + horse.getName());
         horse.setInsurance(request);
         savePayload(booking, payload);
-        stampInsuranceConfirmation(booking, horseId, existing, request, actor, beforeQuote);
         bookingRepository.save(booking);
         return mapToBookingResponse(booking);
     }
@@ -191,7 +191,7 @@ public class SpecialistServiceImpl implements SpecialistService {
         savePayload(booking, payload);
         Booking saved = bookingRepository.save(booking);
         if (planConfirmed) {
-            staffNotifier.toManagers(saved, "Đơn chờ duyệt báo giá · BK-" + saved.getId(),
+            staffNotifier.toManagers(saved, "Đơn chờ duyệt báo giá · " + saved.getCode(),
                     "Chuyên viên đã duyệt hồ sơ và Điều phối viên đã chốt xe, lộ trình. Chọn kíp xe và gửi báo giá.", "/manager/approvals");
         }
         log.info("Specialist approved horse profiles for booking ID={}", saved.getId());
@@ -287,47 +287,62 @@ public class SpecialistServiceImpl implements SpecialistService {
     @Override
     @Transactional
     public BookingResponse updateClearanceItem(String bookingIdentifier, UpdateClearanceItemRequest request, String username) {
+        return updateClearanceItems(bookingIdentifier,
+                UpdateClearanceItemsRequest.builder().items(List.of(request)).build(), username);
+    }
+
+    @Override
+    @Transactional
+    public BookingResponse updateClearanceItems(String bookingIdentifier, UpdateClearanceItemsRequest request, String username) {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
         requireAssignment(username, booking);
+        if (!Set.of("waybill_issued", "clearance_in_progress").contains(booking.getStatus())) {
+            throw new IllegalStateException("Giấy tờ chỉ được sửa trong giai đoạn chuẩn bị.");
+        }
+        if (request == null || request.getItems() == null || request.getItems().isEmpty()) {
+            throw new IllegalArgumentException("Danh sách cập nhật giấy tờ không được để trống.");
+        }
+        Set<String> types = new HashSet<>();
+        for (UpdateClearanceItemRequest patch : request.getItems()) {
+            if (patch == null || patch.getType() == null || patch.getType().isBlank()
+                    || !types.add(patch.getType().trim().toLowerCase(Locale.ROOT))) {
+                throw new IllegalArgumentException("Loại giấy tờ không hợp lệ hoặc bị lặp.");
+            }
+            requireApplicableClearanceType(booking, patch.getType());
+        }
         BookingDetailsPayload payload = extractPayload(booking);
-
         Map<String, Object> clearanceMap = getOrCreateClearanceMap(payload, booking);
         List<Map<String, Object>> items = getClearanceItemsList(clearanceMap);
-
-        String type = request.getType();
-        requireApplicableClearanceType(booking, type);
-        Map<String, Object> targetItem = items.stream()
-                .filter(i -> type.equalsIgnoreCase((String) i.get("type")))
-                .findFirst()
-                .orElse(null);
-
-        if (targetItem == null) {
-            targetItem = new HashMap<>();
-            targetItem.put("type", type);
-            items.add(targetItem);
+        boolean changed = false;
+        for (UpdateClearanceItemRequest patch : request.getItems()) {
+            String type = patch.getType().trim().toLowerCase(Locale.ROOT);
+            Map<String, Object> item = items.stream().filter(i -> type.equalsIgnoreCase((String) i.get("type")))
+                    .findFirst().orElse(null);
+            boolean itemChanged = item == null;
+            if (item == null) {
+                item = new HashMap<>(); item.put("type", type); item.put("note", "");
+                item.put("photos", List.of()); item.put("status", "todo"); items.add(item);
+            }
+            if (patch.getNote() != null && !Objects.equals(patch.getNote(), item.get("note"))) {
+                item.put("note", patch.getNote()); itemChanged = true;
+            }
+            // Omitted photos means keep existing attachments; an explicit [] removes them.
+            if (patch.getPhotos() != null && !Objects.equals(patch.getPhotos(), item.get("photos"))) {
+                item.put("photos", new ArrayList<>(patch.getPhotos())); itemChanged = true;
+            }
+            if (itemChanged) {
+                List<?> photos = item.get("photos") instanceof List<?> list ? list : List.of();
+                item.put("status", photos.isEmpty() ? "todo" : "done");
+                item.put("updatedAt", System.currentTimeMillis());
+                item.put("updatedBy", username);
+                changed = true;
+            }
         }
-
-        if (request.getNote() != null) {
-            targetItem.put("note", request.getNote());
-        }
-
-        List<String> photos = request.getPhotos() != null ? request.getPhotos() : Collections.emptyList();
-        targetItem.put("photos", photos);
-
-        // Quy tắc PRD 3.3: Tải ảnh lên -> tự chuyển 'done'; xóa hết ảnh -> về 'todo'
-        String newStatus = !photos.isEmpty() ? "done" : "todo";
-        targetItem.put("status", newStatus);
-        targetItem.put("updatedAt", System.currentTimeMillis());
-        targetItem.put("updatedBy", username != null ? username : "Chuyên viên");
-
-        appendHistory(payload, username != null ? username : "Chuyên viên",
-                "Cập nhật giấy tờ kiểm dịch");
-
+        if (!changed) return mapToBookingResponse(booking);
+        appendHistory(payload, username != null ? username : "Chuyên viên", "Cập nhật giấy tờ kiểm dịch");
         payload.setClearance(clearanceMap);
         savePayload(booking, payload);
-        Booking saved = bookingRepository.save(booking);
-        log.info("Updated clearance item [{}] for booking ID={}", type, saved.getId());
-        return mapToBookingResponse(saved);
+        return mapToBookingResponse(bookingRepository.save(booking));
     }
 
     @Override
@@ -448,8 +463,8 @@ public class SpecialistServiceImpl implements SpecialistService {
         savePayload(booking, payload);
         Booking saved = bookingRepository.save(booking);
         staffNotifier.toCrew(saved, payload, "clearance_done".equals(saved.getStatus())
-                        ? "Giấy tờ chuyến đã xong, cần bạn xác nhận · BK-" + saved.getId()
-                        : "Sẵn sàng đón ngựa · BK-" + saved.getId(),
+                        ? "Giấy tờ chuyến đã xong, cần bạn xác nhận · " + saved.getCode()
+                        : "Sẵn sàng đón ngựa · " + saved.getCode(),
                 "clearance_done".equals(saved.getStatus())
                         ? "Chuyên viên đã hoàn tất giấy tờ. Mở ứng dụng để nhận lệnh và xác nhận giấy tờ chuyến đi."
                         : "Giấy tờ đã xong và kíp xe đã nhận lệnh. Chuẩn bị xuất phát đến điểm đón đúng giờ.");
@@ -563,19 +578,8 @@ public class SpecialistServiceImpl implements SpecialistService {
     }
 
     private Integer parseBookingId(String bookingIdentifier) {
-        String cleanId = bookingIdentifier.trim();
-        try {
-            if (cleanId.toUpperCase().startsWith("BK-")) {
-                return Integer.parseInt(cleanId.substring(3).trim());
-            } else if (cleanId.toUpperCase().startsWith("ORD-")) {
-                String[] parts = cleanId.split("-");
-                return Integer.parseInt(parts[parts.length - 1].trim());
-            } else {
-                return Integer.parseInt(cleanId);
-            }
-        } catch (Exception ex) {
-            throw new IllegalArgumentException("Định dạng mã đơn không hợp lệ: " + bookingIdentifier);
-        }
+        return bookingRepository.findIdByCode(bookingIdentifier.trim().toUpperCase())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
     }
 
     private BookingDetailsPayload extractPayload(Booking booking) {
@@ -630,44 +634,18 @@ public class SpecialistServiceImpl implements SpecialistService {
         }
     }
 
-    private Staff requireAssignment(String username, Booking booking) {
+    private void requireAssignment(String username, Booking booking) {
         Staff actor = findStaff(username);
         if (!isPrivileged(actor) && !isAssignedToSpecialist(actor, booking)) {
             throw new AccessDeniedException("Đơn hàng chưa được phân công cho tài khoản này.");
-        }
-        return actor;
-    }
-
-    private void stampInsuranceConfirmation(Booking booking, String horseId, HorseInsuranceDto previous,
-                                            HorseInsuranceDto current, Staff actor, boolean beforeQuote) {
-        boolean reviewedNow = beforeQuote && Boolean.TRUE.equals(current.getReviewed())
-                && (previous == null || !Boolean.TRUE.equals(previous.getReviewed())
-                || !HorseInsurancePolicy.sameContent(previous, current));
-        boolean arrangedNow = !beforeQuote && Boolean.TRUE.equals(current.getArranged())
-                && (previous == null || !Boolean.TRUE.equals(previous.getArranged()));
-        if (!reviewedNow && !arrangedNow) return;
-
-        var policy = booking.getBookingHorses().stream()
-                .filter(row -> Objects.equals(horseId, row.getHorseReference()))
-                .map(BookingHorse::getInsurancePolicy).filter(Objects::nonNull).findFirst().orElse(null);
-        if (policy == null) return;
-        java.time.Instant confirmedAt = java.time.Instant.now();
-        User actorUser = actor == null ? null : actor.getUser();
-        if (reviewedNow) {
-            policy.setReviewedBy(actorUser);
-            policy.setReviewedAt(confirmedAt);
-        }
-        if (arrangedNow) {
-            policy.setArrangedBy(actorUser);
-            policy.setArrangedAt(confirmedAt);
         }
     }
 
     private void savePayload(Booking booking, BookingDetailsPayload payload) {
         try {
             booking.setDetailsJson(objectMapper.writeValueAsString(payload));
-        } catch (com.fasterxml.jackson.core.JsonProcessingException ex) {
-            throw new IllegalStateException("Không thể lưu chi tiết đơn " + booking.getId() + ".", ex);
+        } catch (Exception ex) {
+            log.error("Could not serialize payload: {}", ex.getMessage());
         }
     }
 
@@ -724,73 +702,12 @@ public class SpecialistServiceImpl implements SpecialistService {
                     .orElse(null);
         }
 
-        List<Regulation> applicableRegs = new ArrayList<>();
-        applicableRegs.addAll(regulationRepository.findByLocationIDIsNullAndStatus("ACTIVE"));
-        if (isInternational) {
-            if (borderGate != null) {
-                applicableRegs.addAll(regulationRepository.findByLocationID_IdAndStatus(borderGate.getId(), "ACTIVE"));
-            } else {
-                applicableRegs.addAll(regulationRepository.findByStatus("ACTIVE").stream()
-                        .filter(r -> r.getLocationID() != null)
-                        .toList());
-            }
-        }
         boolean hasRequirementSnapshot = payload.getDocumentRequirements() != null;
-        List<DocumentRequirementSnapshot> requiredClearanceDocuments = hasRequirementSnapshot
-                ? payload.getDocumentRequirements().stream()
-                        .filter(requirement -> "CLEARANCE".equals(requirement.getDocumentGroup()))
-                        .toList()
-                : List.of();
         String configuredDestinationCountry = payload.getDestCountry() != null ? payload.getDestCountry()
                 : borderGate != null ? borderGate.getDestinationCountry() : null;
-        applicableRegs = applicableRegs.stream()
-                .filter(regulation -> ClearanceDocumentPolicy.isApplicable(regulation, isInternational))
-                .filter(regulation -> !hasRequirementSnapshot
-                        || ClearanceDocumentPolicy.isForDestinationCountry(regulation, configuredDestinationCountry))
-                .filter(regulation -> !hasRequirementSnapshot || requiredClearanceDocuments.stream()
-                        .anyMatch(requirement -> requirement.getDocumentType().equals(regulation.getDocumentType())))
-                .toList();
-        Map<String, DocumentRequirementSnapshot> requirementByType = requiredClearanceDocuments.stream()
-                .collect(Collectors.toMap(
-                        DocumentRequirementSnapshot::getDocumentType, requirement -> requirement, (first, ignored) -> first));
-
-        List<Map<String, Object>> items = new ArrayList<>();
-        for (Regulation reg : applicableRegs) {
-            Map<String, Object> item = new HashMap<>();
-            String type = reg.getDocumentType() != null ? reg.getDocumentType() : ("doc_" + reg.getId());
-            DocumentRequirementSnapshot requirement = requirementByType.get(type);
-            item.put("type", type);
-            item.put("label", requirement != null ? requirement.getDocumentName() : reg.getRegulationName());
-            item.put("hint", requirement != null && requirement.getDescription() != null
-                    ? requirement.getDescription() : reg.getDescription());
-            item.put("note", "");
-            item.put("status", "todo");
-            item.put("photos", new ArrayList<String>());
-            item.put("regulationId", reg.getId());
-            if (reg.getLocationID() != null) {
-                item.put("gateName", reg.getLocationID().getLocationName());
-                item.put("gateLocationId", reg.getLocationID().getId());
-            }
-            items.add(item);
-        }
-
-        Set<String> presentTypes = items.stream()
-                .map(item -> Objects.toString(item.get("type"), ""))
-                .collect(Collectors.toSet());
-        if (hasRequirementSnapshot) {
-            for (DocumentRequirementSnapshot requirement : requiredClearanceDocuments) {
-                if (presentTypes.add(requirement.getDocumentType())) {
-                    Map<String, Object> item = new HashMap<>();
-                    item.put("type", requirement.getDocumentType());
-                    item.put("label", requirement.getDocumentName());
-                    item.put("hint", requirement.getDescription());
-                    item.put("note", "");
-                    item.put("status", "todo");
-                    item.put("photos", new ArrayList<String>());
-                    items.add(item);
-                }
-            }
-        }
+        List<Map<String, Object>> items = ClearanceDocumentPolicy.buildItems(
+                documentRequirementRepository.findByDocumentGroupAndStatusOrderByDocumentNameAsc("CLEARANCE", "ACTIVE"),
+                isInternational, borderGate, configuredDestinationCountry, payload.getDocumentRequirements());
 
         if (items.isEmpty() && !hasRequirementSnapshot) {
             addLegacyFallbackItems(items, isInternational);
@@ -879,8 +796,7 @@ public class SpecialistServiceImpl implements SpecialistService {
                 : "Khách hàng";
 
         return BookingResponse.builder()
-                .id("BK-" + String.format("%03d", b.getId()))
-                .numericId(b.getId())
+                .id(b.getCode())
                 .type(b.getBookingType() != null ? b.getBookingType() : "domestic")
                 .customer(customerFullName)
                 .customerName(customerFullName)

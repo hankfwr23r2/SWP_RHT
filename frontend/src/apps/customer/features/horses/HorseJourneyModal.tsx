@@ -153,9 +153,10 @@ export function HorseJourneyModal({ horse, onClose }: Props) {
                       </div>
                     </div>
 
-                    {(log.driverName || log.notes) && (
+                    {((isSystem && log.driverName) || log.notes) && (
                       <div style={{ fontSize: '0.84rem', color: 'var(--muted)', background: '#f8fafc', padding: '8px 12px', borderRadius: 6, display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-                        {log.driverName && (
+                        {/* Chỉ chuyến xe của hệ thống mới có tài xế; chủ ngựa tự dời chuồng thì không hiện */}
+                        {isSystem && log.driverName && (
                           <span>
                             <strong style={{ color: 'var(--navy)' }}>Tài xế/Kíp xe:</strong> {log.driverName}
                           </span>

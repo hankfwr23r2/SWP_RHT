@@ -92,7 +92,7 @@ class BookingWithSubmittedDocumentsTest {
     }
 
     private int createHorse(String token) throws Exception {
-        String chip = "CHIP" + UUID.randomUUID().toString().replace("-", "").substring(0, 10).toUpperCase();
+        String chip = "985" + String.format("%012d", Math.abs(UUID.randomUUID().getMostSignificantBits()) % 1_000_000_000_000L);
         HttpResponse<String> response = post("/horses", token, """
                 {"horseName":"Storm","microchipID":"%s","gender":"MARE","breed":"Arabian","age":5,"weight":450}""".formatted(chip));
         assertThat(response.statusCode()).as(response.body()).isBetween(200, 201);

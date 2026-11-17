@@ -14,7 +14,6 @@ public class IncidentResponse {
 
     private Integer id;
     private String formattedId; // INC-001
-    private Integer bookingId;
     private String bookingCode; // BK-003
     private String reporter;
     private String tripId;

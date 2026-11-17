@@ -3,6 +3,9 @@ package com.example.racehorse_transport.service.impl;
 import com.example.racehorse_transport.dto.admin.UpdateSystemConfigRequest;
 import com.example.racehorse_transport.entity.SystemConfig;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
+import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.entity.User;
+import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.SystemConfigRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,10 +23,16 @@ import static org.mockito.Mockito.when;
 class SystemConfigServiceImplTest {
 
     private final SystemConfigRepository repository = mock(SystemConfigRepository.class);
-    private final SystemConfigServiceImpl service = new SystemConfigServiceImpl(org.mockito.Mockito.mock(com.example.racehorse_transport.service.AdminAuditWriter.class), repository);
+    private final StaffRepository staffRepository = mock(StaffRepository.class);
+    private final SystemConfigServiceImpl service = new SystemConfigServiceImpl(org.mockito.Mockito.mock(com.example.racehorse_transport.service.AdminAuditWriter.class), repository, staffRepository);
 
     @BeforeEach
     void setUp() {
+        User user = new User();
+        user.setUsername("admin");
+        Staff admin = new Staff();
+        admin.setUser(user);
+        when(staffRepository.findByUser_Username("admin")).thenReturn(java.util.Optional.of(admin));
         when(repository.findAllById(anyIterable())).thenReturn(List.of(
                 config("BORDER_OPEN_MINUTES", "450"),
                 config("BORDER_CLOSE_MINUTES", "990"),
@@ -47,11 +56,12 @@ class SystemConfigServiceImplTest {
     }
 
     @Test
-    void getAllHidesRetiredRulesIncludingInsuranceRate() {
+    void getAllHidesRetiredRulesIncludingInsuranceRateAndCrewFee() {
         when(repository.findAll(any(Sort.class))).thenReturn(List.of(
                 config("BORDER_OPEN_MINUTES", "450"),
                 config("BORDER_CLOSE_MINUTES", "990"),
                 config("INSURANCE_RATE", "0.02"),
+                config("CREW_FEE_PER_DAY", "1800000"),
                 config("DEPOSIT_RATE", "0.30")));
 
         assertThat(service.getAllConfigs()).extracting("configKey").containsExactly("DEPOSIT_RATE");
@@ -65,6 +75,13 @@ class SystemConfigServiceImplTest {
     }
 
     @Test
+    void retiredCrewFeeIsNoLongerEditable() {
+        assertThatThrownBy(() -> service.updateConfig("CREW_FEE_PER_DAY",
+                UpdateSystemConfigRequest.builder().configValue("1800000").build(), "admin"))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
     void updateAcceptsDecimalForMaxContinuousHours() {
         SystemConfig current = config("MAX_CONTINUOUS_HOURS", "4");
         when(repository.findById("MAX_CONTINUOUS_HOURS")).thenReturn(java.util.Optional.of(current));
@@ -74,6 +91,28 @@ class SystemConfigServiceImplTest {
                 UpdateSystemConfigRequest.builder().configValue("3.5").build(), "admin");
 
         assertThat(response.getConfigValue()).isEqualTo("3.5");
+        assertThat(response.getUpdatedBy()).isEqualTo("admin");
+    }
+
+    @Test
+    void updateAcceptsDecimalVehicleClassFactorsAndMargin() {
+        when(repository.save(any(SystemConfig.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        for (String[] pair : new String[][] {
+                { "CLASS_FACTOR_LIGHT", "1.1" }, { "CLASS_FACTOR_MEDIUM", "1.4" },
+                { "CLASS_FACTOR_HEAVY", "1.9" }, { "MARGIN_RATE", "0.05" } }) {
+            when(repository.findById(pair[0])).thenReturn(java.util.Optional.of(config(pair[0], "1")));
+            var response = service.updateConfig(pair[0],
+                    UpdateSystemConfigRequest.builder().configValue(pair[1]).build(), "admin");
+            assertThat(response.getConfigValue()).as(pair[0]).isEqualTo(pair[1]);
+        }
+    }
+
+    @Test
+    void updateStillRejectsDecimalMoneyAmounts() {
+        assertThatThrownBy(() -> service.updateConfig("KM_TIER_1_RATE",
+                UpdateSystemConfigRequest.builder().configValue("50000.5").build(), "admin"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("số nguyên");
     }
 
     @Test

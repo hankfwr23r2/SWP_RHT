@@ -130,6 +130,16 @@ class PickupChipCheckTest {
     }
 
     @Test
+    void chipScannedWithSpacesOrHyphensStillMatchesAndTheStoredChipIsRecorded() throws Exception {
+        Booking booking = booking(oneHorse(), pickup("\"chips\":[]"));
+
+        HttpResponse<String> response = tripUpdate(booking, escortToken, "SCAN_CHIP", "{\"chip\":\"vn 800 221\"}");
+
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
+        assertThat(pickupOf(booking).path("chips").toString()).isEqualTo("[\"VN-800221\"]");
+    }
+
+    @Test
     void balanceIsNotPayableWhileThePickupIsStillInProgress() throws Exception {
         Booking booking = booking(oneHorse(), pickup("\"chips\":[\"VN-800221\"]"));
 
@@ -193,7 +203,7 @@ class PickupChipCheckTest {
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
         assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus()).isEqualTo("pickup_failed");
         HttpResponse<String> notifications = get("/notifications?role=manager", managerToken);
-        assertThat(notifications.body()).contains("BK-%03d".formatted(booking.getId())).contains("Không nhận được ngựa");
+        assertThat(notifications.body()).contains(booking.getCode()).contains("Không nhận được ngựa");
     }
 
     @Test
@@ -217,7 +227,7 @@ class PickupChipCheckTest {
         payments.save(Payment.builder().bookingID(booking).amount(new BigDecimal("3000000")).paymentDate(Instant.now())
                 .paymentType("DEPOSIT").paymentMethod("VNPAY").transactionCode("DEP-" + booking.getId()).status("COMPLETED").build());
 
-        HttpResponse<String> response = post("/manager/bookings/" + booking.getId() + "/cancel-pickup-failed", managerToken,
+        HttpResponse<String> response = post("/manager/bookings/" + booking.getCode() + "/cancel-pickup-failed", managerToken,
                 "{\"reason\":\"Chip ngựa không khớp hồ sơ\"}");
 
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
@@ -234,7 +244,7 @@ class PickupChipCheckTest {
     void managerCannotCancelABookingThatStillHasHorsesToPickUp() throws Exception {
         Booking booking = booking(oneHorse(), pickup("\"chips\":[]"));
 
-        HttpResponse<String> response = post("/manager/bookings/" + booking.getId() + "/cancel-pickup-failed", managerToken,
+        HttpResponse<String> response = post("/manager/bookings/" + booking.getCode() + "/cancel-pickup-failed", managerToken,
                 "{\"reason\":\"Thử hủy\"}");
 
         assertThat(response.statusCode()).as(response.body()).isBetween(400, 499);
@@ -307,7 +317,7 @@ class PickupChipCheckTest {
     }
 
     private HttpResponse<String> tripUpdate(Booking booking, String token, String action, String payload) throws Exception {
-        return post("/field/bookings/" + booking.getId() + "/trip-update", token,
+        return post("/field/bookings/" + booking.getCode() + "/trip-update", token,
                 "{\"tripId\":\"TRP-1\",\"action\":\"%s\",\"actor\":\"Kíp xe\",\"payload\":%s}".formatted(action, payload));
     }
 

@@ -131,6 +131,8 @@ export function incidentOf(response: BackendIncidentResponse): Incident | undefi
     note: response.description ?? '',
     status: incidentStatusOf(response.status),
     expenses,
+    actualCost: response.actualCost,
+    invoiceUrl: response.invoiceUrl,
     ...(response.plan ? { plan: response.plan } : {}),
     ...(response.directive ? { directive: response.directive } : {}),
     ...(response.rejection ? { rejection: response.rejection } : {}),

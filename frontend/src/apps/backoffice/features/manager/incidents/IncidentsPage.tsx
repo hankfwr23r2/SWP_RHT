@@ -29,7 +29,6 @@ export function ApproveModal({ item, onClose, onDone }: { item: Item; onClose: (
   const { session } = useAuth()
   const { b, i } = item
   const [directive, setDirective] = useState('')
-  const [costBearer, setCostBearer] = useState<'COMPANY' | 'CUSTOMER'>('COMPANY')
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
   const act = async (fn: () => Promise<unknown>, msg: string) => {
@@ -40,7 +39,7 @@ export function ApproveModal({ item, onClose, onDone }: { item: Item; onClose: (
     <Modal wide onClose={onClose} title={`Duyệt phương án ${i.id}`} subtitle={`${b.id} · ${b.customer} · ${INCIDENT_KIND[i.kind].label} · xe ${i.tripId}`}
       footer={<>
         <button className="btn btn-ghost" disabled={busy || !reason.trim()} onClick={() => act(() => bookingsApi.rejectIncident(b.id, i.id, session!.name, reason), 'Đã trả phương án về Điều phối viên')}><i className="fa-solid fa-rotate-left" /> Trả về</button>
-        <button className="btn btn-primary" disabled={busy} onClick={() => act(() => bookingsApi.approveIncident(b.id, i.id, session!.name, { directive, costBearer }), 'Đã duyệt phương án khẩn cấp')}><i className="fa-solid fa-check" /> Duyệt phương án</button>
+        <button className="btn btn-primary" disabled={busy} onClick={() => act(() => bookingsApi.approveIncident(b.id, i.id, session!.name, { directive, costBearer: 'COMPANY' }), 'Đã duyệt phương án khẩn cấp')}><i className="fa-solid fa-check" /> Duyệt phương án</button>
       </>}>
       <p><b>Báo từ hiện trường ({formatDateTime(i.reportedAt)}):</b> {i.note || 'Không có ghi chú.'} <ImageThumb name={i.photo} size={40} /></p>
       {i.plan && <div style={{ margin: '10px 0' }}><IncidentPlanView b={b} i={i} /></div>}
@@ -49,13 +48,7 @@ export function ApproveModal({ item, onClose, onDone }: { item: Item; onClose: (
         <label htmlFor="dir">Ý kiến chỉ đạo khi duyệt (tùy chọn - gửi trực tiếp đến kíp xe &amp; ĐPV)</label>
         <input id="dir" className="form-control" placeholder="Ví dụ: Đồng ý cứu hộ, yêu cầu đưa ngựa về trạm nghỉ gần nhất..." value={directive} onChange={e => setDirective(e.target.value)} />
       </div>
-      <div className="form-group">
-        <label htmlFor="cb">Bên chịu chi phí</label>
-        <select id="cb" className="form-control" value={costBearer} onChange={e => setCostBearer(e.target.value as 'COMPANY' | 'CUSTOMER')}>
-          <option value="COMPANY">Nhà xe bảo lãnh / chịu chi phí</option>
-          <option value="CUSTOMER">Khách hàng chịu chi phí (phát sinh do ngựa)</option>
-        </select>
-      </div>
+      <p className="form-hint">Công ty chịu toàn bộ chi phí sự cố và chờ bàn giao.</p>
       <div className="form-group">
         <label htmlFor="rs">Lý do trả về (chỉ cần khi bấm nút Trả về)</label>
         <input id="rs" className="form-control" placeholder="Nhập lý do nếu cần ĐPV lập lại phương án..." value={reason} onChange={e => setReason(e.target.value)} />
@@ -136,7 +129,7 @@ export default function IncidentsPage() {
     { head: t('intakePage.colCustomer', 'Khách hàng'), cell: r => r.b.customer, nowrap: true },
     { head: t('intakePage.colRoute', 'Tuyến'), cell: r => routeCell(placeShort(r.b.origin.name), placeShort(r.b.dest.name)) },
     { head: t('incidentsPage.colDetails', 'Nội dung'), minWidth: 220, cell: r => (tab === 'pickup' ? <><b>Không nhận được ngựa</b><div className="sub-text">{excludedHorses(r.b).map(h => `${h.name}: ${h.unfitInfo?.reason ?? 'bị loại'}`).join('; ')}</div></> : r.i ? <><b>{INCIDENT_KIND[r.i.kind].label}</b> · xe {r.i.tripId}<div className="sub-text">{r.i.plan ? `${INCIDENT_ACTION[r.i.plan.action]}, ETA mới ${formatDateTime(r.i.plan.newEta)}` : r.i.rejection ? <span style={{ color: 'var(--red)' }}>Đã trả về: {r.i.rejection.reason}</span> : r.i.note || 'Chưa có ghi chú'}</div></> : <>Chi phí sự cố <b>{formatVND(expenses(r.b))}</b></>) },
-    { head: t('incidentsPage.colTime', 'Thời gian'), cell: r => (r.i ? `Báo ${formatDateTime(r.i.reportedAt)}` : r.b.settlement ? `${r.b.settlement.paid ? 'Đã trả' : 'Hạn trả'} ${formatDateTime(r.b.settlement.paid?.paidAt ?? r.b.settlement.dueAt)}` : '-'), minWidth: 110 },
+    { head: t('incidentsPage.colTime', 'Thời gian'), cell: r => (r.i ? `Báo ${formatDateTime(r.i.reportedAt)}` : r.b.settlement?.reviewedAt ? `Đã đối soát ${formatDateTime(r.b.settlement.reviewedAt)}` : '-'), minWidth: 110 },
     { head: t('intakePage.colStatus', 'Trạng thái'), cell: r => statusCell(r.b.status) },
     { head: t('incidentsPage.colValue', 'Giá trị'), cell: r => (r.i ? '-' : r.b.settlement ? formatVND(r.b.settlement.total) : '-'), right: true },
     { head: t('intakePage.colAction', 'Thao tác'), cell: r => (tab === 'pickup' ? <button className="btn btn-danger btn-sm" onClick={() => setParams(p => { p.set('pickup', r.b.id); return p })}>Xem và hủy đơn</button> : tab === 'approve' && r.i ? <button className="btn btn-primary btn-sm" onClick={() => setApprove({ b: r.b, i: r.i! })}>{t('incidentsPage.viewAndApprove', 'Xem và duyệt')}</button> : null), right: true },

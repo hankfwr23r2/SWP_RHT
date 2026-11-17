@@ -2,7 +2,6 @@ export type CapturePurpose = 'ARRIVE_PICKUP' | 'ARRIVE_CHECKPOINT' | 'UPLOAD_HAN
 export interface CaptureEvidence {
   id: number
   url: string
-  bookingId: number
   tripId: string
   purpose: CapturePurpose
   target: string

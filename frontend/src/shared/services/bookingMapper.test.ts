@@ -11,7 +11,7 @@ const locations: CatalogLocation[] = [
 setNetworkLocations(locations)
 
 const base: BackendBookingResponse = {
-  id: 'BK-007', numericId: 7, type: 'international', customer: 'khach01', customerName: 'Nguyễn Văn A', status: 'waybill_issued',
+  id: 'BK-007', type: 'international', customer: 'khach01', customerName: 'Nguyễn Văn A', status: 'waybill_issued',
   createdAt: 1_000, departAt: 5_000, originName: 'Kho Đồng Nai — Trang trại Đua ngựa Long Thành', originCountry: 'VN',
   destName: 'Kho Phnom Penh', destCountry: 'KH', consignor: { name: 'Gửi', phone: '0901111111' }, consignee: { name: 'Nhận', phone: '0902222222' },
   totalHorses: 1, horses: [{ horseId: 'H-001', name: 'Ngựa 1', microchip: 'MC1', breed: 'Arabian', sex: 'mare', stall: 'single', feedPackage: 'basic', waterPlan: 'every_3h', insuranceOpted: true }],
@@ -117,7 +117,6 @@ describe('chuyển sự cố Flow 5 từ backend sang frontend', () => {
   const incident: BackendIncidentResponse = {
     id: 7,
     formattedId: 'INC-007',
-    bookingId: 12,
     bookingCode: 'BK-012',
     tripId: 'TRP-012-1',
     location: { lat: 10.8, lng: 106.6 },

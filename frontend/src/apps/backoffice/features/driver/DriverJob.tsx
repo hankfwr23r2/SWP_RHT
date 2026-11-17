@@ -9,7 +9,6 @@ import { bookingsApi } from '@shared/services/bookings'
 import type { Booking, BookingHorse, Checkpoint, VehicleTrip } from '@shared/types/booking'
 import { CaptureScope } from '@shared/ui/CaptureScope'
 import { CaptureField } from '@shared/ui/CaptureField'
-import { ImageThumb } from '@shared/ui/ImageThumb'
 import { useNow } from '@shared/ui/useNow'
 import { HorseDocsModal } from '../../shared/HorseDocsModal'
 import { Checklist, Panel } from '../../shared/field'
@@ -149,7 +148,6 @@ function PickupStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
 }
 
 import { backendDeliveryApi } from '@shared/api/delivery'
-import { toNumericBookingId } from '@shared/api/bookings'
 import { Modal } from '@shared/ui/Modal'
 
 function TimeoutModal({ b, t, waited, onClose, run }: { b: Booking; t: VehicleTrip; waited: number; onClose: () => void; run: Run }) {
@@ -169,7 +167,7 @@ function TimeoutModal({ b, t, waited, onClose, run }: { b: Booking; t: VehicleTr
     if (action === 'STABLE_NEARBY' && !validCost) return
     setBusy(true)
     try {
-      await run(() => backendDeliveryApi.reportTimeout(toNumericBookingId(b.id), {
+      await run(() => backendDeliveryApi.reportTimeout(b.id, {
         tripId: t.tripId,
         confirmEarly: early,
         timeoutReason: reason,
@@ -215,7 +213,7 @@ function TimeoutModal({ b, t, waited, onClose, run }: { b: Booking; t: VehicleTr
             <input id="pp" className="form-control" placeholder="VD: 0901 234 567" value={partnerPhone} onChange={e => setPartnerPhone(e.target.value)} />
           </div>
           <div className="form-group">
-            <label htmlFor="pc">Chi phí lưu chuồng ước tính (VNĐ)</label>
+            <label htmlFor="pc">Chi phí lưu chuồng công ty dự kiến chi (VNĐ)</label>
             <input id="pc" inputMode="numeric" className="form-control" value={formattedCost} aria-invalid={!validCost} onChange={e => setCost(e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, ''))} />
             {!validCost && <p className="form-error" role="alert">Nhập chi phí lớn hơn 0 và không vượt quá 9,999,999,999,999,999 VNĐ.</p>}
           </div>
@@ -265,7 +263,7 @@ function DeliveryStep({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Check
       {timeout ? (
         <Panel title="Đã báo quá hạn bàn giao" icon="fa-clock" tone="warn">
           <p>{timeout.note || 'Người nhận chưa tới nhận ngựa.'} Khi người nhận tới, làm các bước trên rồi bấm "Hoàn tất giao ngựa", sự cố tự đóng.</p>
-          <p>Đã ghi {formatVND(timeout.expenses.reduce((n, e) => n + e.amount, 0))} chi phí. Chụp hóa đơn lưu chuồng để tính vào quyết toán (khách chịu).</p>
+          <p>Đã ghi {formatVND(timeout.expenses.reduce((n, e) => n + e.amount, 0))} chi phí. Chụp hóa đơn lưu chuồng để ghi nhận chi phí nội bộ công ty.</p>
           <ul className={s.checklist}>{timeout.expenses.map(e => <li key={e.id} style={{ padding: '6px 0', fontSize: '0.9rem' }}>{e.label}: <b>{formatVND(e.amount)}</b></li>)}</ul>
           <ExpenseForm b={b} inc={timeout} run={run} />
         </Panel>
@@ -294,50 +292,6 @@ function CustomsStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
   )
 }
 
-// Phí cầu đường: chụp hóa đơn ở trạm thu phí rồi ghi số tiền. Ghi từ lúc rời trụ sở tới khi về lại trụ sở (cả chiều về).
-// Nhà xe chịu khoản này, khách không thấy và không phải trả thêm.
-const MAX_TOLL = 10_000_000
-function TollPanel({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
-  const { session } = useAuth()
-  const [photo, setPhoto] = useState<string>()
-  const [station, setStation] = useState('')
-  const [amount, setAmount] = useState('')
-  const tolls = t.tolls ?? []
-  const total = tolls.reduce((n, x) => n + x.amount, 0)
-  const value = Number(amount || 0)
-  const tooMuch = value > MAX_TOLL
-  const reset = () => { setPhoto(undefined); setStation(''); setAmount('') }
-  return (
-    <Panel title="Phí cầu đường" icon="fa-road">
-      <p>Qua trạm thu phí thì chụp hóa đơn và ghi số tiền. Nhà xe chịu khoản này, khách không phải trả thêm.{tolls.length ? <> Đã ghi {tolls.length} hóa đơn, tổng <b>{formatVND(total)}</b>.</> : null}</p>
-      {tolls.length > 0 && (
-        <ul className={s.checklist}>{tolls.map(x => (
-          <li key={x.id} style={{ display: 'flex', gap: 10, alignItems: 'center', padding: '6px 0', fontSize: '0.9rem' }}>
-            <ImageThumb name={x.photo} size={40} />
-            <span style={{ flex: 1 }}>{x.station || 'Trạm thu phí'} · {formatDateTime(x.at)} — <b>{formatVND(x.amount)}</b></span>
-            <button type="button" className="btn btn-ghost" aria-label={`Xóa hóa đơn ${x.station || ''} ${formatVND(x.amount)}`} onClick={() => run(() => bookingsApi.removeToll(b.id, t.tripId, session!.name, x.id), 'Đã xóa hóa đơn phí cầu đường')}>Xóa</button>
-          </li>
-        ))}</ul>
-      )}
-      <CaptureField purpose="TOLL" target="toll" label="Ảnh hóa đơn phí cầu đường (chụp trước)" required value={photo} onChange={setPhoto} />
-      <div className="form-group" style={{ margin: 0 }}>
-        <label htmlFor="toll-station">Trạm thu phí</label>
-        <input id="toll-station" className="form-control" style={{ minHeight: 48 }} maxLength={120} placeholder="VD: Trạm BOT Long Thành" value={station} onChange={e => setStation(e.target.value)} />
-      </div>
-      <div className="form-group" style={{ margin: 0 }}>
-        <label htmlFor="toll-amount">Số tiền trên hóa đơn (VNĐ){!photo && ' — chụp ảnh trước để mở khóa'}</label>
-        <input id="toll-amount" inputMode="numeric" className="form-control" style={{ minHeight: 48 }} disabled={!photo} aria-invalid={tooMuch}
-          value={amount.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} onChange={e => setAmount(e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, '').slice(0, 9))} />
-        {tooMuch && <p className="form-error" role="alert">Mỗi hóa đơn tối đa {formatVND(MAX_TOLL)}.</p>}
-      </div>
-      <button className={`btn btn-outline ${s.big}`} disabled={!photo || value <= 0 || tooMuch}
-        onClick={() => run(async () => { await bookingsApi.addToll(b.id, t.tripId, session!.name, { amount: value, station: station.trim(), photo: photo! }); reset() }, 'Đã ghi phí cầu đường')}>
-        <i className="fa-solid fa-plus" /> Ghi phí cầu đường
-      </button>
-    </Panel>
-  )
-}
-
 export function DriverJob({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
   return <CaptureScope bookingId={b.id} tripId={t.tripId}><DriverJobContent b={b} t={t} run={run} /></CaptureScope>
 }
@@ -352,7 +306,6 @@ function DriverJobContent({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run 
       <DriverSteps b={b} t={t} run={run} />
       {!atDelivery && !t.run?.deliveredAt && (b.status === 'in_transit' || t.run?.startedAt) && <SosPanel b={b} t={t} run={run} />}
       {b.status === 'delivered_pending_settlement' && <SubmitExpensesPanel b={b} run={run} />}
-      {t.departedAt && !t.homeReturn?.backAt && <TollPanel b={b} t={t} run={run} />}
     </>
   )
 }

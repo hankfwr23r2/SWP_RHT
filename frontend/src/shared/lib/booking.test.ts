@@ -11,7 +11,7 @@ import type { DocumentRequirement } from '../api/documentRequirements'
 import {
   schedulesOf, clashOf, crewClashOf, planHomeReturn, returnLate, returningTrips, vehicleSpot, vehiclePoint, pendingDeparture, spotLabel, nearestTo, projectOnPath, pointsAhead, pointAlong, bookingPath, incidentLocation, needsFitCheck, transitProgress, defaultPayer, incidentActionsFor, settlementOf, approvedSubOf, APPROVED_SUBS, orderGroupOf, ORDER_GROUPS, capacitiesFor, estimateQuote, busyResources, buildRoutePlan, gatesFor, suggestGate, suggestTransitStations, canCompleteClearance, classForHorses, defaultClearanceItems, deriveStatus, docsDueAt, earliestDeparture, finalizeQuote, horseReadiness,
   isClearanceOverdue, isDepartureAllowed, isQuoteExpired, layoutLegs, manifestDocuments, nextBookingId, quoteLines, reviewDone, routeKm, activeStaff,
-  findLocation, arrivalOf, routeOutline, managerBoardOf, managerCounts, orderTabOf, tripIdFor, validateRoutePlan, vehicleClassOf, autoPackFleet, horseCountryMatchesOrigin, horseHasUnverifiedLocationCountry, pickupFailReason,
+  findLocation, arrivalOf, routeOutline, managerBoardOf, managerCounts, orderTabOf, tripIdFor, validateRoutePlan, vehicleClassOf, autoPackFleet, stallUnitsOf, horseCountryMatchesOrigin, horseHasUnverifiedLocationCountry, pickupFailReason,
 } from './booking'
 
 
@@ -193,7 +193,31 @@ describe('báo giá', () => {
     expect(amount('Cữ nước')).toBeUndefined()
     expect(amount('Bảo hiểm chuyến đi')).toBeUndefined()
   })
-  it('nhân phí dịch vụ theo ngựa × ngày và chỉ tính dịch vụ theo chuyến một lần', () => {
+  it('tính gói thức ăn theo từng ngựa cho mỗi chuyến, không nhân theo ngày', () => {
+    const service = {
+      id: 32, serviceCode: 'FEED_ADVANCED', serviceName: 'Gói nâng cao', categoryId: 2,
+      categoryName: 'Gói thức ăn', price: 300_000, billingUnit: 'PER_HORSE' as const,
+    }
+    const horses = [
+      bh({ selectedServices: { feed: service } }),
+      bh({ horseId: 'H2', selectedServices: { feed: service } }),
+    ]
+    const departAt = new Date(2026, 10, 2, 5).getTime()
+    const arriveAt = new Date(2026, 10, 4, 10).getTime()
+    const route = {
+      legs: [{ no: 1, from: 'A', to: 'B', departAt, arriveAt, km: 1200, hours: 30 }],
+      rests: [],
+    }
+    const { lines, days } = quoteLines({ ...base, route, horses }, [{ capacity: 4 }])
+    const feedLine = lines.find(line => line.label === 'Gói thức ăn')
+
+    expect(days).toBe(3)
+    expect(feedLine?.amount).toBe(600_000)
+    expect(feedLine?.detail).toContain('2 ngựa/chuyến')
+    expect(feedLine?.calculation).not.toContain('ngày')
+  })
+
+  it('giữ đơn vị ngày cho snapshot dịch vụ cũ và chỉ tính dịch vụ theo chuyến một lần', () => {
     const horses = [
       bh({
         selectedServices: {
@@ -234,18 +258,36 @@ describe('báo giá', () => {
     expect(lines.find(line => line.label === 'Khoang trên xe')?.amount).toBe(250_000)
     expect(lines.find(line => line.label === 'Bảo hiểm chuyến đi')).toBeUndefined()
   })
-  it('mỗi xe có cước, nhân sự, nhiên liệu và BOT; không có phí lưu xe hay Carrier Info Sheet', () => {
+  it('mỗi xe chỉ có cước và nhiên liệu, BOT; không thu phí nhân sự', () => {
     const { lines } = quoteLines(base, [{ capacity: 2 }, { capacity: 4 }])
     expect(lines.filter(l => /^Cước/.test(l.label))).toHaveLength(2)
-    expect(lines.filter(l => /^Nhân sự/.test(l.label))).toHaveLength(2)
+    expect(lines.filter(l => /^Nhân sự/.test(l.label))).toHaveLength(0)
     expect(lines.filter(l => /^Nhiên liệu/.test(l.label))).toHaveLength(2)
     expect(lines.some(l => /lưu xe|Carrier/i.test(l.label))).toBe(false)
     expect(lines.some(l => /thủ tục/i.test(l.label))).toBe(true)
   })
-  it('nhiên liệu và BOT cộng dự phòng 5% và lợi nhuận 5% trên km của lộ trình', () => {
+  it('cùng quãng đường và dịch vụ theo chuyến thì kéo dài hành trình không tăng phí', () => {
+    const departAt = new Date(2026, 10, 2, 5).getTime()
+    const quote = (day: number) => quoteLines({
+      ...base,
+      route: {
+        legs: [{ no: 1, from: origin.name, to: dest.name, departAt,
+          arriveAt: new Date(2026, 10, day, 20).getTime(), km: 256, hours: 8 }],
+        rests: [],
+      },
+    }, [{ capacity: 2 }])
+    const short = quote(2)
+    const long = quote(4)
+    expect(short.days).toBe(1)
+    expect(long.days).toBe(3)
+    expect(long.lines).toEqual(short.lines)
+    expect(long.lines.reduce((total, line) => total + line.amount, 0)).toBe(14_358_000)
+  })
+  it('nhiên liệu và BOT cộng dự phòng 5% nhưng không cộng Margin', () => {
     const { lines, km } = quoteLines(base, [{ capacity: 2 }])
     const fuel = lines.find(l => /^Nhiên liệu/.test(l.label))!
-    expect(fuel.amount).toBe(Math.round((km * 9_000 * 1.05 * 1.05) / 1000) * 1000)
+    expect(fuel.amount).toBe(Math.round((km * 9_000 * 1.05) / 1000) * 1000)
+    expect(fuel.marginApplied).toBe(false)
   })
   it('đơn nội địa không thu phí thủ tục, quốc tế thu 300.000', () => {
     const fee = (q: Parameters<typeof quoteLines>[0]) => quoteLines(q, [{ capacity: 2 }]).lines.find(l => /thủ tục/i.test(l.label))!.amount
@@ -618,12 +660,12 @@ describe('trạng thái đơn khi có sự cố (Flow 5)', () => {
 })
 
 describe('chi phí sự cố và quyết toán (PRD 11.5, Flow 6)', () => {
-  it('bên chịu mặc định: ngựa thì khách, vận chuyển thì nhà xe, tắc đường thì nhà xe chịu toàn bộ', () => {
-    expect(defaultPayer('horse_health', 'vet_fee')).toBe('customer')
-    expect(defaultPayer('horse_health', 'medicine')).toBe('customer')
+  it('công ty chịu mọi loại chi phí sự cố', () => {
+    expect(defaultPayer('horse_health', 'vet_fee')).toBe('carrier')
+    expect(defaultPayer('horse_health', 'medicine')).toBe('carrier')
     expect(defaultPayer('vehicle_breakdown', 'rescue')).toBe('carrier')
     expect(defaultPayer('vehicle_breakdown', 'repair')).toBe('carrier')
-    expect(defaultPayer('horse_health', 'holding_stable')).toBe('customer')
+    expect(defaultPayer('horse_health', 'holding_stable')).toBe('carrier')
     expect(defaultPayer('traffic_jam', 'holding_stable')).toBe('carrier')
     expect(defaultPayer('traffic_jam', 'medicine')).toBe('carrier') // tắc đường là việc vận chuyển: nhà xe chịu toàn bộ (PRD 11.5)
     expect(defaultPayer('vehicle_breakdown', 'other')).toBe('carrier')
@@ -634,11 +676,11 @@ describe('chi phí sự cố và quyết toán (PRD 11.5, Flow 6)', () => {
     expect(incidentActionsFor('traffic_jam')).toEqual(['reroute'])
     expect(needsFitCheck('horse_health') && needsFitCheck('vehicle_breakdown') && !needsFitCheck('traffic_jam')).toBe(true) // ngựa tới trạm nghỉ thì phải xác nhận đủ sức; tắc đường thì không
   })
-  it('bảng quyết toán chỉ gồm khoản khách chịu, tổng đúng; không có khoản nào thì 0 đồng', () => {
+  it('đối soát nội bộ gồm toàn bộ chi phí sự cố', () => {
     const b = { incidents: [inc('resolved', { expenses: [exp(1_000_000, 'customer'), exp(500_000, 'carrier'), exp(300_000, 'customer')] })] }
     const sheet = settlementOf(b)
-    expect(sheet.items.map(i => i.amount)).toEqual([1_000_000, 300_000])
-    expect(sheet.total).toBe(1_300_000)
+    expect(sheet.items.map(i => i.amount)).toEqual([1_000_000, 500_000, 300_000])
+    expect(sheet.total).toBe(1_800_000)
     expect(settlementOf({ incidents: [] }).total).toBe(0)
     expect(settlementOf({}).items).toEqual([])
   })
@@ -684,7 +726,7 @@ describe('orderTabOf', () => {
     expect(o('ready_for_pickup')).toBe('pay')
     expect(o('ready_for_pickup', { balance: {} })).toBe('prepare')
     expect(o('en_route_to_pickup', { balance: {} })).toBe('moving')
-    expect(o('settlement_issued', { settlement: { total: 500000 } })).toBe('pay')
+    expect(o('settlement_issued', { settlement: { total: 500000 } })).toBe('settle')
     expect(o('settlement_issued', { settlement: { total: 0 } })).toBe('settle')
     expect(o('rejected')).toBe('closed')
   })
@@ -898,6 +940,31 @@ describe('autoPackFleet - Tự động phân bổ xe thông minh', () => {
     const res = autoPackFleet(['H1'], [v1, v2], sched, NOW)
     expect(res).toHaveLength(1)
     expect(res[0].vehicleId).toBe('V2')
+  })
+
+  it('ngựa khoang đơn mở rộng chiếm 2 ngăn: 2 con không xếp vào xe 2 ngăn', () => {
+    const stalls = (id: string) => (id === 'H1' || id === 'H2' ? 2 : 1)
+    const res = autoPackFleet(['H1', 'H2'], [v1, v2], new Map(), NOW, stalls)
+    expect(res).toHaveLength(1)
+    expect(res[0].vehicleId).toBe('V2')
+    expect(res[0].horseIds).toEqual(['H1', 'H2'])
+  })
+
+  it('chia xe theo số ngăn khi có ngựa khoang mở rộng', () => {
+    // 3 ngựa mở rộng (6 ngăn) với xe 4 ngăn và xe 2 ngăn: xe 4 chở 2 con, xe 2 chở 1 con
+    const res = autoPackFleet(['H1', 'H2', 'H3'], [v1, v2], new Map(), NOW, () => 2)
+    expect(res).toEqual([
+      { vehicleId: 'V2', horseIds: ['H1', 'H2'] },
+      { vehicleId: 'V1', horseIds: ['H3'] },
+    ])
+  })
+})
+
+describe('stallUnitsOf', () => {
+  it('khoang đơn mở rộng tính 2 ngăn, khoang tiêu chuẩn 1 ngăn', () => {
+    expect(stallUnitsOf({ stall: 'single' })).toBe(2)
+    expect(stallUnitsOf({ stall: 'standard' })).toBe(1)
+    expect(stallUnitsOf({ stall: 'standard', selectedServices: { stall: { id: 2, serviceCode: 'STALL_SINGLE_EXTENDED', serviceName: 'Khoang đơn mở rộng', categoryId: 1, categoryName: 'Khoang trên xe', price: 2000000 } } })).toBe(2)
   })
 })
 

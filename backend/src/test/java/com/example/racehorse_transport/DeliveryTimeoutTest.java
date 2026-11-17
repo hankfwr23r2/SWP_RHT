@@ -118,6 +118,8 @@ class DeliveryTimeoutTest {
         assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus()).isEqualTo("handover_timeout");
         Incident incident = incidents.findByBookingID_Id(booking.getId()).get(0);
         assertThat(incident.getIncidentType()).isEqualTo("HANDOVER_TIMEOUT");
+        assertThat(incident.getCostBearer()).isEqualTo("COMPANY");
+        assertThat(incident.getActualCost()).isNull();
         assertThat(incident.getStatus()).isEqualTo("active");
         assertThat(incident.getTripId()).isEqualTo("TRP-1");
         assertThat(incident.getLocationLat()).isEqualTo(11.56);
@@ -159,7 +161,7 @@ class DeliveryTimeoutTest {
         Booking booking = atDelivery(10, ",\"handoverPhoto\":\"https://example.com/bb.jpg\",\"returnedOriginals\":true");
         assertThat(timeout(booking, driverToken, true).statusCode()).isEqualTo(200);
 
-        HttpResponse<String> response = post("/field/bookings/" + booking.getId() + "/trip-update", driverToken,
+        HttpResponse<String> response = post("/field/bookings/" + booking.getCode() + "/trip-update", driverToken,
                 "{\"tripId\":\"TRP-1\",\"action\":\"COMPLETE_DELIVERY\",\"actor\":\"Tài xế\",\"payload\":{}}");
 
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
@@ -190,7 +192,7 @@ class DeliveryTimeoutTest {
     }
 
     private HttpResponse<String> timeout(Booking booking, String token, boolean confirmEarly) throws Exception {
-        return post("/delivery/" + booking.getId() + "/timeout", token,
+        return post("/delivery/" + booking.getCode() + "/timeout", token,
                 "{\"tripId\":\"TRP-1\",\"timeoutReason\":\"UNREACHABLE\",\"selectedAction\":\"STABLE_NEARBY\","
                 + "\"partnerName\":\"Chuồng tạm\",\"estimatedCost\":1500000,\"note\":\"Gọi không nghe máy\",\"confirmEarly\":" + confirmEarly + "}");
     }

@@ -1,11 +1,11 @@
 // Service Hồ sơ ngựa của khách, gọi Backend Spring Boot (/horses, /horse-documents). Không giữ dữ liệu ở máy khách.
 import { backendHorseApi, HORSE_DOC_BACKEND_TYPE, type BackendHorseDto, type BackendHorseDocResponse } from '../api/horses'
-import { applyRuntimeHorseTypes, type HorseDocType } from '../config/booking-rules'
+import type { HorseDocType } from '../config/booking-rules'
 import type { HorseDoc, HorseProfile } from '../types/booking'
+import { normalizeMicrochip } from '@shared/lib/microchip'
 
 export type NewHorse = Omit<HorseProfile, 'id' | 'owner' | 'completedTrips' | 'createdAt'>
 export type HorseTypeOption = { id: number; typeName: string; description?: string }
-const normalizeChip = (s: string) => s.trim().toUpperCase()
 const horseCode = (id?: number) => `H-${String(id ?? 0).padStart(3, '0')}`
 const numericId = (id: string) => Number(id.replace(/\D/g, ''))
 const thisYear = () => new Date().getFullYear()
@@ -56,9 +56,7 @@ const payloadOf = (data: Pick<NewHorse, 'name' | 'breed' | 'horseTypeId' | 'sex'
 
 export const horsesApi = {
   listTypes: async (): Promise<HorseTypeOption[]> => {
-    const types = await backendHorseApi.listTypes()
-    applyRuntimeHorseTypes(types)
-    return types
+    return backendHorseApi.listTypes()
   },
 
   // Ngựa và giấy tờ của mọi ngựa tải song song, mỗi loại một request
@@ -85,7 +83,7 @@ export const horsesApi = {
   },
 
   create: async (owner: string, data: NewHorse): Promise<HorseProfile> => {
-    const microchip = normalizeChip(data.microchip)
+    const microchip = normalizeMicrochip(data.microchip)
     if (!microchip) throw new Error('Cần nhập mã microchip.')
     return profileOf(await backendHorseApi.create(payloadOf(data, microchip)), owner, {})
   },
@@ -111,14 +109,14 @@ export const horsesApi = {
     const n = numericId(id)
     const current = n ? await horsesApi.byId(id) : undefined
     if (!current) throw new Error('Không tìm thấy ngựa.')
-    if (patch.microchip !== undefined && normalizeChip(patch.microchip) !== current.microchip) throw new Error('Không sửa được mã microchip sau khi đã lưu.')
+    if (patch.microchip !== undefined && normalizeMicrochip(patch.microchip) !== normalizeMicrochip(current.microchip)) throw new Error('Không sửa được mã microchip sau khi đã lưu.')
     const merged = { name: patch.name ?? current.name, breed: patch.breed ?? current.breed, horseTypeId: patch.horseTypeId ?? current.horseTypeId, sex: patch.sex ?? current.sex, color: patch.color ?? current.color, birthYear: patch.birthYear ?? current.birthYear, marks: patch.marks ?? current.marks }
     const updated = await backendHorseApi.update(n, { id: n, ...payloadOf(merged, current.microchip) })
     return profileOf(updated, owner, current.docs)
   },
 
   // Cập nhật vị trí chuồng ngựa hiện tại (Dời chuồng ngoài hệ thống / cập nhật thủ công)
-  updateLocation: async (id: string, payload: { locationName: string; country?: string; reason?: string; notes?: string }): Promise<HorseProfile> => {
+  updateLocation: async (id: string, payload: { locationName: string; country?: string; notes?: string }): Promise<HorseProfile> => {
     const n = numericId(id)
     if (!n) throw new Error('Mã hồ sơ ngựa không hợp lệ.')
     const updated = await backendHorseApi.updateLocation(n, payload)

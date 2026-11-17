@@ -32,6 +32,9 @@ public class DocumentRequirementRequest {
     @Pattern(regexp = "ALL|VN|LA|KH")
     private String country = "ALL";
 
+    // Cửa khẩu (Location loại BorderGate); null = áp dụng chung
+    private Integer locationId;
+
     private boolean required = true;
 
     @NotBlank

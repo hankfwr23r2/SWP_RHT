@@ -64,6 +64,8 @@ class VnpayServiceImplTest {
     private VnpayServiceImpl service;
     private Booking booking;
 
+    private static final String CODE = "BK-7F3K9QXM";
+
     @BeforeEach
     void setUp() {
         VnpayProperties props = new VnpayProperties();
@@ -79,7 +81,8 @@ class VnpayServiceImplTest {
         user.setUsername("khach1");
         Customer customer = new Customer();
         customer.setUser(user);
-        booking = Booking.builder().id(12).status("awaiting_payment").customerID(customer).build();
+        booking = Booking.builder().id(12).code(CODE).status("awaiting_payment").customerID(customer).build();
+        when(bookingRepository.findIdByCode(CODE)).thenReturn(Optional.of(12));
         when(bookingRepository.findByIdForUpdate(12)).thenReturn(Optional.of(booking));
         when(paymentRepository.findBookingIdByTransactionCode("DEP00121")).thenReturn(Optional.of(12));
         when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(12))
@@ -122,7 +125,7 @@ class VnpayServiceImplTest {
     void newDepositCannotBeCreatedAfterTheRequestedDepartureDay() {
         booking.setDepartureDate(Instant.parse("2026-11-05T17:00:00Z"));
         assertThatThrownBy(() -> service.createPaymentUrl(
-                VnpayCreateRequest.builder().bookingId("BK-12").paymentType("DEPOSIT").build(), "khach1", "1.2.3.4"))
+                VnpayCreateRequest.builder().bookingId(CODE).paymentType("DEPOSIT").build(), "khach1", "1.2.3.4"))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("xác nhận lại lịch");
         verify(paymentRepository, never()).save(any());
     }
@@ -143,14 +146,14 @@ class VnpayServiceImplTest {
                 .thenReturn(Optional.of(quotation(NOW.plus(10, ChronoUnit.HOURS))));
 
         VnpayCreateResponse res = service.createPaymentUrl(
-                VnpayCreateRequest.builder().bookingId("BK-12").paymentType("deposit").build(), "khach1", "1.2.3.4");
+                VnpayCreateRequest.builder().bookingId(CODE).paymentType("deposit").build(), "khach1", "1.2.3.4");
 
         ArgumentCaptor<Payment> saved = ArgumentCaptor.forClass(Payment.class);
         verify(paymentRepository).save(saved.capture());
         assertThat(saved.getValue().getStatus()).isEqualTo("PENDING");
         assertThat(saved.getValue().getPaymentMethod()).isEqualTo("VNPAY");
         assertThat(saved.getValue().getAmount()).isEqualByComparingTo("3000000");
-        assertThat(res.getTransactionCode()).isEqualTo(saved.getValue().getTransactionCode()).startsWith("DEP0012");
+        assertThat(res.getTransactionCode()).isEqualTo(saved.getValue().getTransactionCode()).startsWith("DEP7F3K9QXM");
 
         Map<String, String> query = new HashMap<>();
         for (String pair : res.getPaymentUrl().substring(res.getPaymentUrl().indexOf('?') + 1).split("&")) {
@@ -169,7 +172,7 @@ class VnpayServiceImplTest {
         when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(12)).thenReturn(Optional.of(quotation(quoteEnds)));
 
         VnpayCreateResponse res = service.createPaymentUrl(
-                VnpayCreateRequest.builder().bookingId("12").paymentType("DEPOSIT").build(), "khach1", "1.2.3.4");
+                VnpayCreateRequest.builder().bookingId(CODE).paymentType("DEPOSIT").build(), "khach1", "1.2.3.4");
 
         assertThat(res.getExpiresAt()).isEqualTo(quoteEnds.toEpochMilli());
     }
@@ -177,13 +180,13 @@ class VnpayServiceImplTest {
     @Test
     void create_rejectsOtherCustomerAndExpiredQuotation() {
         assertThatThrownBy(() -> service.createPaymentUrl(
-                VnpayCreateRequest.builder().bookingId("12").paymentType("DEPOSIT").build(), "nguoi_khac", "1.2.3.4"))
+                VnpayCreateRequest.builder().bookingId(CODE).paymentType("DEPOSIT").build(), "nguoi_khac", "1.2.3.4"))
                 .isInstanceOf(AccessDeniedException.class);
 
         when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(12))
                 .thenReturn(Optional.of(quotation(NOW.minus(1, ChronoUnit.MINUTES))));
         assertThatThrownBy(() -> service.createPaymentUrl(
-                VnpayCreateRequest.builder().bookingId("12").paymentType("DEPOSIT").build(), "khach1", "1.2.3.4"))
+                VnpayCreateRequest.builder().bookingId(CODE).paymentType("DEPOSIT").build(), "khach1", "1.2.3.4"))
                 .isInstanceOf(IllegalStateException.class);
         verify(paymentRepository, never()).save(any());
     }
@@ -247,38 +250,23 @@ class VnpayServiceImplTest {
     }
 
     @Test
-    void settlement_holdsRatingThenClosesOrderOnlyAfterVnpayConfirms() {
-        booking.setStatus("settlement_issued");
-        RatingDto rating = RatingDto.builder().stars(5).comment("Tốt").build();
-        when(settlementService.holdForVnpay(booking, rating)).thenReturn(new BigDecimal("1250000"));
-
-        VnpayCreateResponse res = service.createPaymentUrl(
-                VnpayCreateRequest.builder().bookingId("BK-012").paymentType("SETTLEMENT").rating(rating).build(), "khach1", "1.2.3.4");
-
-        assertThat(res.getAmount()).isEqualByComparingTo("1250000");
-        assertThat(res.getTransactionCode()).startsWith("SET0012");
-        verify(settlementService, never()).confirmSettlementPaid(any(), anyString());
-
-        Payment payment = Payment.builder().id(2).bookingID(booking).amount(new BigDecimal("1250000"))
-                .paymentType("SETTLEMENT").paymentMethod("VNPAY").transactionCode("DEP00121").status("PENDING").build();
-        when(paymentRepository.findByTransactionCode("DEP00121")).thenReturn(Optional.of(payment));
-
-        assertThat(service.confirm(signedCallback("125000000", "00")).isSuccess()).isTrue();
-        verify(settlementService, times(1)).confirmSettlementPaid(payment, "khach1");
+    void incidentSettlementCannotCreateACustomerPayment() {
+        assertThatThrownBy(() -> service.createPaymentUrl(
+                VnpayCreateRequest.builder().bookingId(CODE).paymentType("SETTLEMENT").build(), "khach1", "1.2.3.4"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("công ty chịu");
+        verify(paymentRepository, never()).save(any());
     }
 
     @Test
-    void settlement_rejectsAmountBeyondSupportedPaymentRangeBeforeSaving() {
-        booking.setStatus("settlement_issued");
-        when(settlementService.holdForVnpay(booking, null))
-                .thenReturn(new BigDecimal("111111111111111100"));
-
-        assertThatThrownBy(() -> service.createPaymentUrl(
-                VnpayCreateRequest.builder().bookingId("12").paymentType("SETTLEMENT").build(),
-                "khach1", "1.2.3.4"))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("vượt quá giới hạn");
-        verify(paymentRepository, never()).save(any());
+    void moneyReceivedForARetiredSettlementIsFlaggedForReviewWithoutClosingTheOrder() {
+        booking.setStatus("expenses_submitted");
+        Payment payment = Payment.builder().id(2).bookingID(booking).amount(new BigDecimal("1250000"))
+                .paymentType("SETTLEMENT").paymentMethod("VNPAY").transactionCode("DEP00121").status("PENDING").build();
+        when(paymentRepository.findByTransactionCode("DEP00121")).thenReturn(Optional.of(payment));
+        assertThat(service.confirm(signedCallback("125000000", "00")).isSuccess()).isFalse();
+        assertThat(payment.getStatus()).isEqualTo("NEEDS_REVIEW");
+        assertThat(booking.getStatus()).isEqualTo("expenses_submitted");
+        verify(settlementService, never()).confirmSettlementPaid(any(), anyString());
     }
 
     private Map<String, String> callbackPaidAt(Instant paidAt) {
@@ -377,7 +365,7 @@ class VnpayServiceImplTest {
     void createDeposit_atDeadline_cannotCreateNewSessionDuringGrace() {
         when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(12)).thenReturn(Optional.of(quotation(NOW)));
         assertThatThrownBy(() -> service.createPaymentUrl(
-                VnpayCreateRequest.builder().bookingId("12").paymentType("DEPOSIT").build(), "khach1", "1.2.3.4"))
+                VnpayCreateRequest.builder().bookingId(CODE).paymentType("DEPOSIT").build(), "khach1", "1.2.3.4"))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("hết hạn");
         verify(paymentRepository, never()).save(any());
     }
@@ -393,7 +381,7 @@ class VnpayServiceImplTest {
         when(paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(anyInt())).thenReturn(List.of(completedDeposit()));
 
         assertThatThrownBy(() -> service.createPaymentUrl(
-                VnpayCreateRequest.builder().bookingId("12").paymentType("BALANCE").build(), "khach1", "1.2.3.4"))
+                VnpayCreateRequest.builder().bookingId(CODE).paymentType("BALANCE").build(), "khach1", "1.2.3.4"))
                 .isInstanceOf(IllegalStateException.class);
         verify(paymentRepository, never()).save(any());
     }
@@ -405,7 +393,7 @@ class VnpayServiceImplTest {
         when(bookingService.isPickupComplete(booking)).thenReturn(false);
 
         assertThatThrownBy(() -> service.createPaymentUrl(
-                VnpayCreateRequest.builder().bookingId("12").paymentType("BALANCE").build(), "khach1", "1.2.3.4"))
+                VnpayCreateRequest.builder().bookingId(CODE).paymentType("BALANCE").build(), "khach1", "1.2.3.4"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("kíp xe đã nhận ngựa");
         verify(paymentRepository, never()).save(any());
@@ -419,7 +407,7 @@ class VnpayServiceImplTest {
         when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(12))
                 .thenReturn(Optional.of(quotation(Instant.now().plus(10, ChronoUnit.HOURS))));
 
-        service.createPaymentUrl(VnpayCreateRequest.builder().bookingId("12").paymentType("BALANCE").build(), "khach1", "1.2.3.4");
+        service.createPaymentUrl(VnpayCreateRequest.builder().bookingId(CODE).paymentType("BALANCE").build(), "khach1", "1.2.3.4");
 
         ArgumentCaptor<Payment> saved = ArgumentCaptor.forClass(Payment.class);
         verify(paymentRepository).save(saved.capture());

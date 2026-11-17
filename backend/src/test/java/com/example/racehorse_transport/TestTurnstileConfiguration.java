@@ -10,7 +10,7 @@ class TestTurnstileConfiguration {
     @Bean
     @Primary
     TurnstileVerifier testTurnstileVerifier() {
-        return new TurnstileVerifier("test-secret", "http://127.0.0.1") {
+        return new TurnstileVerifier("test-secret", "http://127.0.0.1", new org.springframework.mock.env.MockEnvironment()) {
             @Override
             public void verify(String token, String expectedAction) {
             }

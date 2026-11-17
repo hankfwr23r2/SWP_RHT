@@ -1,6 +1,7 @@
 // Dữ liệu các trang nội bộ, router tải song song với file trang (xem shared/routing/pageData).
 // Service nạp động để mỗi vai trò chỉ tải phần mình dùng.
 import { loadAll, type PageLoaderContext } from '@shared/routing/pageData'
+import type { BackendLocationResponse } from '@shared/api/routes'
 import type { Booking, HorseProfile } from '@shared/types/booking'
 
 const bookings = () => import('@shared/services/bookings')
@@ -37,19 +38,23 @@ export async function systemConfigLoader() {
 }
 
 export async function adminPricingLoader() {
-  const [{ systemConfigApi }, { backendHorseApi }] = await Promise.all([
-    import('@shared/api/systemConfig'),
-    import('@shared/api/horses'),
-  ])
-  return loadAll({
-    configs: systemConfigApi.listAdminConfigs(),
-    horseTypes: backendHorseApi.listTypes(),
-  })
+  const { systemConfigApi } = await import('@shared/api/systemConfig')
+  return loadAll({ configs: systemConfigApi.listAdminConfigs() })
+}
+
+export async function adminHorseTypesLoader() {
+  const { backendHorseApi } = await import('@shared/api/horses')
+  return loadAll({ horseTypes: backendHorseApi.listTypes() })
 }
 
 export async function documentRequirementsLoader() {
   const { documentRequirementsApi } = await import('@shared/api/documentRequirements')
-  return loadAll({ requirements: documentRequirementsApi.listAdmin() })
+  const { routesApi } = await import('@shared/api/routes')
+  return loadAll({
+    requirements: documentRequirementsApi.listAdmin(),
+    gates: routesApi.listAdminLocations()
+      .then((locations): BackendLocationResponse[] => locations.filter(location => location.locationType === 'BorderGate')),
+  })
 }
 
 // Giám sát vận chuyển: đơn và kíp xe

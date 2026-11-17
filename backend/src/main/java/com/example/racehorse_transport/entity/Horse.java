@@ -68,6 +68,10 @@ public class Horse {
     @Column(name = "created_at")
     private Long createdAt;
 
+    // Lần cuối khách chỉnh sửa hồ sơ, dùng để đưa hồ sơ vừa sửa lên đầu danh sách
+    @Column(name = "updated_at")
+    private Long updatedAt;
+
     @Size(max = 50)
     @Column(name = "status", length = 50)
     private String status;

@@ -12,7 +12,6 @@ import java.util.List;
 @AllArgsConstructor
 public class BookingResponse {
     private String id; // "BK-001"
-    private Integer numericId; // 1
     private String type; // "domestic", "international"
     private String customer; // username
     private String customerName; // Họ tên khách hàng
@@ -48,7 +47,8 @@ public class BookingResponse {
     private java.math.BigDecimal cancelPenalty; // số tiền cọc mất nếu hủy lúc này
     private Object medical;
     private Object clearance;
-    private Object settlement;
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private Object settlement; // internal company expense review; omitted for customers
     private Object rating;
     private Object intake;
     private java.util.Map<String, Object> scheduleChange;

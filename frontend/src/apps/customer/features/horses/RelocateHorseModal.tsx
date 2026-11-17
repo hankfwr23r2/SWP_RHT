@@ -1,8 +1,11 @@
-import { useState, type FormEvent } from 'react'
+import { useId, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
+import { PROVINCES_DATA, buildFullAddress, splitAddress } from '@shared/config/administrative'
 import { COUNTRIES, COUNTRY_LOCATIONS, type CountryCode } from '@shared/config/network'
+import { isValidLocationDetail, removeLocationDetailSpecialCharacters } from '@shared/lib/locationValidation'
 import { horsesApi } from '@shared/services/horses'
 import type { HorseProfile } from '@shared/types/booking'
+import { AddressPicker } from '@shared/ui/AddressPicker'
 import { Modal } from '@shared/ui/Modal'
 import s from './Horses.module.css'
 
@@ -12,41 +15,43 @@ interface Props {
   onSaved: (updated: HorseProfile) => void
 }
 
-const RELOCATION_REASONS = [
-  'Dời chuồng huấn luyện / luyện tập định kỳ',
-  'Di chuyển tham gia giải đấu thể thao / biểu diễn',
-  'Chuyển nhượng / đổi trang trại nuôi dưỡng cố định',
-  'Lưu trú / thăm khám tại phòng khám thú y ngoài hệ thống',
-  'Khác (di chuyển nội bộ chủ nuôi)',
-]
-
 export function RelocateHorseModal({ horse, onClose, onSaved }: Props) {
   const { t, i18n } = useTranslation()
+  const areaLabel = useId()
   const [country, setCountry] = useState<CountryCode>((horse.currentCountry as CountryCode) || 'VN')
   const [selectedPreset, setSelectedPreset] = useState<string>('')
-  const [customLocation, setCustomLocation] = useState<string>(horse.currentLocationName || '')
-  const [reason, setReason] = useState<string>(RELOCATION_REASONS[0])
+  const [address, setAddress] = useState(() => splitAddress(horse.currentLocationName || '', country))
   const [notes, setNotes] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string>('')
 
   const presets = COUNTRY_LOCATIONS[country] || []
+  const province = PROVINCES_DATA.find(p => p.code === address.provinceCode)
 
   const handlePresetChange = (val: string) => {
     setSelectedPreset(val)
-    if (val) {
-      const found = presets.find(p => p.id === val)
-      if (found) {
-        setCustomLocation(found.name)
-      }
-    }
+    const found = presets.find(p => p.id === val)
+    if (!found) return
+    const parsed = splitAddress(found.name, country)
+    const detail = removeLocationDetailSpecialCharacters(found.name).replace(/\s+/g, ' ').trim()
+    setAddress({ provinceCode: parsed.provinceCode, wardName: parsed.wardName, detail })
   }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    const finalLocation = customLocation.trim()
-    if (!finalLocation) {
-      setError('Vui lòng nhập hoặc chọn địa điểm chuồng mới của ngựa.')
+    const detail = address.detail.trim()
+    if (!detail || !province || !address.wardName) {
+      setError(`Vui lòng nhập địa chỉ chi tiết và chọn ${country === 'VN' ? 'Tỉnh/Thành phố, Phường/Xã' : 'Tỉnh/Thành phố, Quận/Huyện'} của chuồng mới.`)
+      return
+    }
+    if (!isValidLocationDetail(detail)) {
+      setError('Địa chỉ chi tiết chỉ gồm chữ, số và khoảng trắng.')
+      return
+    }
+    const finalLocation = buildFullAddress(detail, address.wardName, province.name)
+    if (finalLocation.toLocaleLowerCase() === (horse.currentLocationName || '').trim().toLocaleLowerCase()
+      && country === horse.currentCountry) {
+      setError('Địa chỉ mới trùng với vị trí chuồng hiện tại.')
       return
     }
 
@@ -56,7 +61,6 @@ export function RelocateHorseModal({ horse, onClose, onSaved }: Props) {
       const updated = await horsesApi.updateLocation(horse.id, {
         locationName: finalLocation,
         country,
-        reason,
         notes: notes.trim() || undefined,
       })
       onSaved(updated)
@@ -91,24 +95,19 @@ export function RelocateHorseModal({ horse, onClose, onSaved }: Props) {
             <i className="fa-solid fa-location-dot" style={{ color: 'var(--icon-accent)' }} />
             <span>{horse.currentLocationName || 'Chưa xác định / Khởi tạo lần đầu'}</span>
           </div>
-          {horse.transitStatus === 'IN_TRANSIT' && (
-            <div style={{ marginTop: 6, color: '#b45309', fontWeight: 600 }}>
-              ⚠️ Ngựa đang trong hành trình vận chuyển trên hệ thống. Hãy cân nhắc nếu ngựa chưa kết thúc chuyến đi.
-            </div>
-          )}
         </div>
 
         <fieldset className={s.fieldset}>
-          <legend>Khai báo chuồng / trang trại mới</legend>
+          <legend>Chuồng / trang trại mới</legend>
           <div className="form-group">
-            <label className="form-label">Quốc gia hiện tại</label>
+            <label className="form-label">Quốc gia</label>
             <select
               className="form-control"
               value={country}
               onChange={e => {
-                const c = e.target.value as CountryCode
-                setCountry(c)
+                setCountry(e.target.value as CountryCode)
                 setSelectedPreset('')
+                setAddress(prev => ({ provinceCode: '', wardName: '', detail: prev.detail }))
               }}
             >
               {(Object.keys(COUNTRIES) as CountryCode[]).map(code => (
@@ -119,48 +118,47 @@ export function RelocateHorseModal({ horse, onClose, onSaved }: Props) {
             </select>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Gợi ý địa điểm / CLB uy tín liên kết</label>
-            <select
-              className="form-control"
-              value={selectedPreset}
-              onChange={e => handlePresetChange(e.target.value)}
-            >
-              <option value="">-- Chọn nhanh từ danh sách điểm đón/trang trại liên kết --</option>
-              {presets.map(p => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {presets.length > 0 && (
+            <div className="form-group">
+              <label className="form-label">Gợi ý địa điểm / CLB uy tín liên kết</label>
+              <select
+                className="form-control"
+                value={selectedPreset}
+                onChange={e => handlePresetChange(e.target.value)}
+              >
+                <option value="">-- Chọn nhanh từ danh sách điểm đón/trang trại liên kết --</option>
+                {presets.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <div className="form-group">
-            <label className="form-label">Tên trang trại / Địa chỉ chuồng chi tiết <span style={{ color: 'red' }}>*</span></label>
+            <label className="form-label" htmlFor={`${areaLabel}-detail`}>Địa chỉ chi tiết <span style={{ color: 'red' }}>*</span></label>
             <input
+              id={`${areaLabel}-detail`}
               type="text"
               className="form-control"
-              placeholder="VD: Trang trại Cưỡi ngựa Long Thành, Đồng Nai"
-              value={customLocation}
-              onChange={e => setCustomLocation(e.target.value)}
-              required
+              placeholder={t('bookingWizard.farmAddressPlaceholder')}
+              value={address.detail}
+              onChange={e => { setSelectedPreset(''); setAddress(prev => ({ ...prev, detail: e.target.value })) }}
+              onBlur={() => setAddress(prev => ({ ...prev, detail: removeLocationDetailSpecialCharacters(prev.detail) }))}
             />
-            <span className={s.subNote}>Địa chỉ này sẽ dùng để đối soát điểm đón tự động khi bạn tạo đơn vận chuyển mới.</span>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Lý do dời chuồng ngoài hệ thống</label>
-            <select
-              className="form-control"
-              value={reason}
-              onChange={e => setReason(e.target.value)}
-            >
-              {RELOCATION_REASONS.map(r => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-            </select>
+            <label className="form-label" id={areaLabel}>{country === 'VN' ? t('bookingWizard.addressArea') : t('bookingWizard.addressAreaDistrict')} <span style={{ color: 'red' }}>*</span></label>
+            <AddressPicker
+              country={country}
+              provinceCode={address.provinceCode}
+              wardName={address.wardName}
+              onChange={area => setAddress(prev => ({ ...prev, ...area }))}
+              labelledBy={areaLabel}
+            />
+            <span className={s.subNote}>Địa chỉ này dùng để đối chiếu với điểm đón khi bạn tạo đơn vận chuyển mới.</span>
           </div>
 
           <div className="form-group">

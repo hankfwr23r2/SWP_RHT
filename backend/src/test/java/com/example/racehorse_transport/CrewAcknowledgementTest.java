@@ -168,11 +168,11 @@ class CrewAcknowledgementTest {
     }
 
     private HttpResponse<String> completeClearance(Booking booking) throws Exception {
-        return post("/specialist/bookings/" + booking.getId() + "/complete-clearance", specialistToken, "{}");
+        return post("/specialist/bookings/" + booking.getCode() + "/complete-clearance", specialistToken, "{}");
     }
 
     private HttpResponse<String> acknowledge(Booking booking, String token, String who) throws Exception {
-        return post("/field/bookings/" + booking.getId() + "/trip-update", token,
+        return post("/field/bookings/" + booking.getCode() + "/trip-update", token,
                 "{\"tripId\":\"TRP-1\",\"action\":\"ACKNOWLEDGE\",\"actor\":\"Kíp xe\",\"payload\":{\"who\":\"%s\"}}".formatted(who));
     }
 

@@ -60,10 +60,10 @@ class BookingScheduleFlowTest {
         String owner = booking.getCustomerID().getUser().getUsername();
         String token = jwt.generateToken(owner, "CUSTOMER");
         // Approval is blocked before the periodic scan has marked the row.
-        assertThat(post("/manager/bookings/" + booking.getId() + "/activate", "{}",
+        assertThat(post("/manager/bookings/" + booking.getCode() + "/activate", "{}",
                 jwt.generateToken(owner, "ADMIN")).statusCode()).isEqualTo(409);
         schedules.flagOverdue(booking.getId());
-        String path = "/customer/bookings/" + booking.getId() + "/schedule-change";
+        String path = "/customer/bookings/" + booking.getCode() + "/schedule-change";
         assertThat(post(path, "{\"departureDate\":\"2026-12-21\"}",
                 jwt.generateToken("other-customer", "CUSTOMER")).statusCode()).isEqualTo(403);
         assertThat(post(path, "{\"departureDate\":\"2026-12-21\"}",
@@ -73,7 +73,7 @@ class BookingScheduleFlowTest {
         assertThat(post(path + "/support", "{}", token).statusCode()).isEqualTo(200);
         assertThat(post(path + "/support", "{}", token).statusCode()).isEqualTo(200);
         assertThat(database.queryForObject("select count(*) from notification where bookingid = ? and title like 'Khách cần hỗ trợ%'",
-                Integer.class, "BK-" + booking.getId())).isEqualTo(1);
+                Integer.class, booking.getCode())).isEqualTo(1);
         HttpResponse<String> response = post(path, "{\"departureDate\":\"2026-12-21\"}", token);
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
         assertThat(json.readTree(response.body()).path("data").path("status").asText()).isEqualTo("pending_intake");
@@ -85,7 +85,7 @@ class BookingScheduleFlowTest {
     void unpaidRequestCanBeCancelledOnlyByItsOwnerWithAReason() throws Exception {
         Booking booking = order();
         schedules.flagOverdue(booking.getId());
-        String path = "/customer/bookings/" + booking.getId() + "/schedule-change/cancel";
+        String path = "/customer/bookings/" + booking.getCode() + "/schedule-change/cancel";
         String token = jwt.generateToken(booking.getCustomerID().getUser().getUsername(), "CUSTOMER");
         assertThat(post(path, "{\"reason\":\" \"}", token).statusCode()).isEqualTo(400);
         assertThat(post(path, "{\"reason\":\"Không còn nhu cầu\"}", token).statusCode()).isEqualTo(200);
@@ -98,12 +98,9 @@ class BookingScheduleFlowTest {
         users.saveAndFlush(user);
         Customer customer = new Customer(); customer.setUser(user); customer.setFullName("Khách đổi lịch");
         customer = customers.saveAndFlush(customer);
-        Booking booking = Booking.builder().customerID(customer).status("pending_intake")
+        return bookings.saveAndFlush(Booking.builder().customerID(customer).status("pending_intake")
                 .bookingType("domestic").bookingDate(Instant.parse("2026-11-05T03:00:00Z"))
-                .departureDate(Instant.parse("2026-11-29T17:00:00Z")).detailsJson("{\"horses\":[]}").build();
-        Booking saved = bookings.saveAndFlush(booking);
-        saved.setCustomerID(customer);
-        return saved;
+                .departureDate(Instant.parse("2026-11-29T17:00:00Z")).detailsJson("{\"horses\":[]}").build());
     }
 
     private HttpResponse<String> post(String path, String body, String token) throws Exception {

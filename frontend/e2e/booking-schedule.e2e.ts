@@ -4,7 +4,7 @@ async function open(page: Page, fail = false) {
   let status = 'schedule_change_required'
   let supported = false
   const sent: { path: string; body: unknown }[] = []
-  const booking = () => ({ id: 'BK-3', numericId: 3, type: 'domestic', customer: 'Customer', customerName: 'Customer',
+  const booking = () => ({ id: 'BK-7F3K9QXM', type: 'domestic', customer: 'Customer', customerName: 'Customer',
     status, createdAt: 1000, departAt: Date.parse('2026-11-30T00:00:00+07:00'), originName: 'Hà Nội', destName: 'Đà Nẵng',
     totalHorses: 0, horses: [], consignor: { name: 'Sender', phone: '' }, consignee: { name: 'Recipient', phone: '' },
     scheduleChange: { flaggedAt: 1000, previousStatus: 'pending_intake', ...(supported ? { supportRequestedAt: 1001 } : {}) } })
@@ -31,7 +31,7 @@ test('customer submits a calendar day for company review', async ({ page }) => {
   await input.fill('2026-12-21')
   await page.getByRole('button', { name: 'Gửi yêu cầu đổi lịch', exact: true }).click()
   await expect(page.getByText('Chờ công ty xác nhận lịch mới', { exact: true })).toBeVisible()
-  expect(sent).toEqual([{ path: '/api/v1/customer/bookings/3/schedule-change', body: { departureDate: '2026-12-21' } }])
+  expect(sent).toEqual([{ path: '/api/v1/customer/bookings/BK-7F3K9QXM/schedule-change', body: { departureDate: '2026-12-21' } }])
 })
 
 test('cancellation needs a reason and an explicit confirmation', async ({ page }) => {

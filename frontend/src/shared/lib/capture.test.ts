@@ -8,7 +8,7 @@ describe('thời gian chứng từ camera', () => {
     expect(captureTime('https://example.com/capture_1790000000000.jpg')).toBeUndefined()
   })
   it('giữ riêng giờ thiết bị và giờ backend, khôi phục từ metadata sau khi tải đơn', () => {
-    const item: CaptureEvidence = { id: 1, url: 'https://example.com/camera-1.jpg', bookingId: 1, tripId: 'T1', purpose: 'ARRIVE_PICKUP', target: 'pickup', capturedBy: 'driver', capturedAt: 1793520000000, recordedAt: 1793520060000 }
+    const item: CaptureEvidence = { id: 1, url: 'https://example.com/camera-1.jpg', tripId: 'T1', purpose: 'ARRIVE_PICKUP', target: 'pickup', capturedBy: 'driver', capturedAt: 1793520000000, recordedAt: 1793520060000 }
     registerCaptureEvidence({ [item.url]: item })
     expect(captureTime(item.url)).toBe(item.capturedAt)
     expect(evidenceOf(item.url)?.recordedAt).toBe(item.recordedAt)

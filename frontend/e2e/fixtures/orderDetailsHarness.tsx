@@ -10,7 +10,7 @@ import '../../src/shared/styles/base.css'
 
 const params = new URLSearchParams(location.search)
 const booking = toBooking({
-  id: 'BK-003', numericId: 3, type: 'domestic', customer: 'Customer', customerName: 'Customer',
+  id: 'BK-003', type: 'domestic', customer: 'Customer', customerName: 'Customer',
   status: 'pending_intake', createdAt: 1000, departAt: Date.parse('2026-12-01'),
   originName: 'Hà Nội', originCountry: 'VN', destName: 'Đà Nẵng', destCountry: 'VN',
   consignor: { name: 'Sender', phone: '0900000000' }, consignee: { name: 'Recipient', phone: '0900000001' },

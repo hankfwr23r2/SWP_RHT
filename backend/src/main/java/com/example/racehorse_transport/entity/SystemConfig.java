@@ -47,8 +47,10 @@ public class SystemConfig {
     @Nationalized
     private String description;
 
-    @Column(name = "updated_by", length = 100)
-    private String updatedBy;
+    // Nhân viên (ADMIN) sửa gần nhất; null = giá trị mặc định do hệ thống tạo
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "updated_by_staffid", foreignKey = @ForeignKey(name = "fk_system_config_updated_by_staff"))
+    private Staff updatedBy;
 
     @Column(name = "updated_at")
     private Instant updatedAt;

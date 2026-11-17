@@ -8,7 +8,7 @@ import '../../src/shared/i18n'
 import '../../src/shared/styles/base.css'
 
 const initial = toBooking({
-  id: 'BK-3', numericId: 3, type: 'domestic', customer: 'Customer', customerName: 'Customer',
+  id: 'BK-7F3K9QXM', type: 'domestic', customer: 'Customer', customerName: 'Customer',
   status: 'schedule_change_required', createdAt: 1000, departAt: Date.parse('2026-11-30T00:00:00+07:00'),
   originName: 'Hà Nội', destName: 'Đà Nẵng', totalHorses: 0, horses: [], consignor: { name: 'Sender', phone: '' },
   consignee: { name: 'Recipient', phone: '' }, scheduleChange: { flaggedAt: 1000, previousStatus: 'pending_intake' },
@@ -18,7 +18,7 @@ function Harness() {
   const [booking, setBooking] = useState(initial)
   return <ToastProvider><main style={{ maxWidth: 650, margin: '30px auto', padding: 16 }}>
     {booking.status === 'schedule_change_required'
-      ? <ScheduleChangeCard b={booking} onDone={() => { void backendBookingApi.getCustomerBookingById('BK-3').then(data => setBooking(toBooking(data))) }} />
+      ? <ScheduleChangeCard b={booking} onDone={() => { void backendBookingApi.getCustomerBookingById('BK-7F3K9QXM').then(data => setBooking(toBooking(data))) }} />
       : <p role="status">{booking.status === 'cancelled' ? 'Đã hủy yêu cầu' : 'Chờ công ty xác nhận lịch mới'}</p>}
   </main></ToastProvider>
 }

@@ -4,7 +4,7 @@ import com.example.racehorse_transport.entity.Category;
 import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.HorseType;
 import com.example.racehorse_transport.entity.Location;
-import com.example.racehorse_transport.entity.Regulation;
+import com.example.racehorse_transport.entity.DocumentRequirement;
 import com.example.racehorse_transport.entity.Service;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.User;
@@ -13,11 +13,12 @@ import com.example.racehorse_transport.repository.CategoryRepository;
 import com.example.racehorse_transport.repository.CustomerRepository;
 import com.example.racehorse_transport.repository.HorseTypeRepository;
 import com.example.racehorse_transport.repository.LocationRepository;
-import com.example.racehorse_transport.repository.RegulationRepository;
+import com.example.racehorse_transport.repository.DocumentRequirementRepository;
 import com.example.racehorse_transport.repository.ServiceRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.UserRepository;
 import com.example.racehorse_transport.repository.VehicleRepository;
+import com.example.racehorse_transport.util.DocumentRequirementPolicy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +27,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
@@ -46,7 +48,7 @@ public class ReferenceDataSeeder implements CommandLineRunner {
     private final HorseTypeRepository horseTypeRepository;
     private final LocationRepository locationRepository;
     private final VehicleRepository vehicleRepository;
-    private final RegulationRepository regulationRepository;
+    private final DocumentRequirementRepository documentRequirementRepository;
     private final UserRepository userRepository;
     private final StaffRepository staffRepository;
     private final CustomerRepository customerRepository;
@@ -66,9 +68,9 @@ public class ReferenceDataSeeder implements CommandLineRunner {
     private static final String[][] SERVICES = {
             new String[] { "1", "Khoang tiêu chuẩn", "1", "1000000", "ACTIVE", "STALL_STANDARD", "PER_HORSE", "" },
             new String[] { "2", "Khoang đơn mở rộng", "1", "2000000", "ACTIVE", "STALL_SINGLE_EXTENDED", "PER_HORSE", "" },
-            new String[] { "3", "Gói cơ bản", "2", "0", "ACTIVE", "FEED_BASIC", "PER_HORSE_DAY", "" },
-            new String[] { "4", "Gói nâng cao", "2", "300000", "ACTIVE", "FEED_ADVANCED", "PER_HORSE_DAY", "" },
-            new String[] { "5", "Gói thể thao", "2", "500000", "ACTIVE", "FEED_SPORT", "PER_HORSE_DAY", "" },
+            new String[] { "3", "Gói cơ bản", "2", "0", "ACTIVE", "FEED_BASIC", "PER_HORSE", "" },
+            new String[] { "4", "Gói nâng cao", "2", "300000", "ACTIVE", "FEED_ADVANCED", "PER_HORSE", "" },
+            new String[] { "5", "Gói thể thao", "2", "500000", "ACTIVE", "FEED_SPORT", "PER_HORSE", "" },
             new String[] { "6", "Mỗi 3 giờ", "3", "0", "INACTIVE", "WATER_EVERY_3H", "PER_HORSE", "" },
             new String[] { "7", "Mỗi 2 giờ", "3", "50000", "INACTIVE", "WATER_EVERY_2H", "PER_HORSE", "" },
             new String[] { "8", "Mỗi giờ", "3", "100000", "INACTIVE", "WATER_EVERY_1H", "PER_HORSE", "" },
@@ -90,16 +92,13 @@ public class ReferenceDataSeeder implements CommandLineRunner {
 
     private static final Map<Integer, String> LEGACY_BILLING_UNITS = Map.of(
             1, "PER_HORSE",
-            2, "PER_HORSE_DAY",
+            2, "PER_HORSE",
             3, "PER_HORSE",
             4, "PER_HORSE");
 
-    // {RegulationName, Description, Status, LocationID, DocumentType, Country}
-    private static final String[][] REGULATIONS = {
-            // Quy định áp dụng chung (Nội địa & chuẩn bị chung)
-            new String[] { "Giấy chứng nhận kiểm dịch động vật vận chuyển", "Yêu cầu mộc đỏ của Chi cục Thú y vùng trước khi vận chuyển theo Thông tư 25/2016/TT-BNNPTNT.", "ACTIVE", "", "health_cert", "Việt Nam" },
-            new String[] { "Giấy ủy quyền áp tải & vận chuyển ngựa", "Văn bản ủy quyền song ngữ xác nhận lái xe và nhân viên hộ tống chịu trách nhiệm áp tải cá thể ngựa.", "ACTIVE", "", "poa", "Việt Nam" },
-
+    // {Tên, Mô tả, Trạng thái, LocationID cửa khẩu, Loại giấy, Quốc gia}
+    // Giấy tờ chung (health_cert, poa) do DocumentRequirementSeeder tạo
+    private static final String[][] GATE_DOCUMENT_REQUIREMENTS = {
             // Cửa khẩu Mộc Bài - Bavet (ID 16 - Campuchia)
             new String[] { "Tờ khai hải quan điện tử cửa khẩu Mộc Bài - Bavet", "Khai báo hải quan qua cặp cửa khẩu Mộc Bài (Tây Ninh) - Bavet (Svay Rieng), đính kèm số vận đơn và biển số xe vận chuyển.", "ACTIVE", "16", "customs_declaration", "Campuchia" },
             new String[] { "Giấy phép nhập khẩu động vật Campuchia (MAFF)", "Giấy phép nhập khẩu do Cục Thú y và Sức khỏe Động vật Campuchia (Bộ Nông Lâm Thủy sản) phê duyệt cho ngựa nhập cảnh qua Bavet.", "ACTIVE", "16", "import_permit", "Campuchia" },
@@ -408,7 +407,7 @@ public class ReferenceDataSeeder implements CommandLineRunner {
         }
         // Mỗi bảng nạp riêng: một bảng lỗi (ví dụ schema cũ) không làm hỏng các bảng khác và không làm dừng ứng dụng
         step("vehicles", this::seedVehicles);
-        step("regulations", this::seedRegulations);
+        step("gate document requirements", this::seedGateDocumentRequirements);
     }
 
     private void step(String name, Runnable seed) {
@@ -502,6 +501,11 @@ public class ReferenceDataSeeder implements CommandLineRunner {
                             "Không thể gán đơn vị tính cho dịch vụ " + service.getId() + " thuộc danh mục " + categoryId);
                 }
                 service.setBillingUnit(unit);
+                changed = true;
+            }
+            if (Integer.valueOf(2).equals(categoryId)
+                    && "PER_HORSE_DAY".equalsIgnoreCase(service.getBillingUnit())) {
+                service.setBillingUnit("PER_HORSE");
                 changed = true;
             }
             if (Integer.valueOf(3).equals(categoryId) && "ACTIVE".equalsIgnoreCase(service.getStatus())) {
@@ -686,45 +690,40 @@ public class ReferenceDataSeeder implements CommandLineRunner {
         }
     }
 
-    // Gán người phụ trách là Specialist đã nạp và liên kết quy định tới cửa khẩu tương ứng
-    private void seedRegulations() {
-        Staff specialist = userRepository.findByUsername("specialist01").flatMap(u -> staffRepository.findById(u.getId())).orElse(null);
-        if (specialist == null) {
-            log.warn("Regulations not seeded: specialist01 account is missing.");
-            return;
-        }
-        for (String[] r : REGULATIONS) {
+    // Giấy tờ thông quan riêng theo cửa khẩu (trước đây là bảng REGULATION).
+    // Chỉ tạo khi chưa có; sau đó ADMIN quản lý trên màn hình quy định giấy tờ nên không ghi đè.
+    private void seedGateDocumentRequirements() {
+        List<DocumentRequirement> existing = documentRequirementRepository.findAll();
+        for (String[] r : GATE_DOCUMENT_REQUIREMENTS) {
             String name = r[0];
             String desc = r[1];
             String status = r[2];
-            Integer locId = (r[3] != null && !r[3].trim().isEmpty()) ? Integer.valueOf(r[3].trim()) : null;
+            Integer locId = Integer.valueOf(r[3].trim());
             String docType = r[4];
-            String country = r[5];
+            String country = DocumentRequirementPolicy.normalizeCountry(r[5]);
 
-            Location location = locId != null ? locationRepository.findById(locId).orElse(null) : null;
-            if (locId != null && location == null) {
-                log.warn("Regulation not seeded because its border location is missing: name={}, locationId={}", name, locId);
+            Location gate = locationRepository.findById(locId).orElse(null);
+            if (gate == null) {
+                log.warn("Gate document requirement not seeded because its border location is missing: name={}, locationId={}", name, locId);
                 continue;
             }
+            boolean exists = existing.stream().anyMatch(item -> "CLEARANCE".equals(item.getDocumentGroup())
+                    && docType.equals(item.getDocumentType())
+                    && item.getLocation() != null && locId.equals(item.getLocation().getId()));
+            if (exists) continue;
 
-            Regulation g = regulationRepository.findAll().stream()
-                    .filter(reg -> name.equalsIgnoreCase(reg.getRegulationName()) ||
-                            (docType != null && docType.equalsIgnoreCase(reg.getDocumentType()) &&
-                                    (locId == null ? reg.getLocationID() == null : (reg.getLocationID() != null && locId.equals(reg.getLocationID().getId())))))
-                    .findFirst()
-                    .orElse(null);
-
-            if (g == null) {
-                g = new Regulation();
-                g.setStaffID(specialist);
-                g.setRegulationName(name);
-            }
-            g.setDescription(desc);
-            g.setStatus(status);
-            g.setLocationID(location);
-            g.setDocumentType(docType);
-            g.setCountry(country);
-            regulationRepository.save(g);
+            DocumentRequirement requirement = new DocumentRequirement();
+            requirement.setDocumentGroup("CLEARANCE");
+            requirement.setDocumentType(docType);
+            requirement.setDocumentName(name);
+            requirement.setDescription(desc);
+            requirement.setTripType("INTERNATIONAL");
+            requirement.setCountry(country);
+            requirement.setLocation(gate);
+            requirement.setRequired(true);
+            requirement.setStatus(status);
+            requirement.setUpdatedAt(Instant.now());
+            documentRequirementRepository.save(requirement);
         }
     }
 }

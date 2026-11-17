@@ -13,8 +13,8 @@ import lombok.*;
 @AllArgsConstructor
 public class ReportIncidentRequest {
 
-    @NotNull(message = "Mã đơn hàng không được để trống")
-    private Integer bookingId;
+    @NotBlank(message = "Mã đơn hàng không được để trống")
+    private String bookingCode;
 
     @NotBlank(message = "Loại sự cố không được để trống")
     private String incidentType; // VEHICLE_BREAKDOWN, HORSE_HEALTH, TRAFFIC_DELAY, OTHER
