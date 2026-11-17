@@ -44,7 +44,7 @@ public class HorseDeliveryLocationService {
     @Transactional
     public void recordBookingHandover(Booking booking, BookingDetailsPayload payload,
             String actor, String proofImageUrl, long arrivedAt) {
-        recordDelivery(booking, payload, bookingHorseIds(payload), "BK-" + booking.getId(),
+        recordDelivery(booking, payload, bookingHorseIds(payload), booking.getCode(),
                 actor, proofImageUrl, null, arrivedAt);
     }
 

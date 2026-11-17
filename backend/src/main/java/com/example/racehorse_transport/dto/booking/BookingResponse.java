@@ -12,7 +12,6 @@ import java.util.List;
 @AllArgsConstructor
 public class BookingResponse {
     private String id; // "BK-001"
-    private Integer numericId; // 1
     private String type; // "domestic", "international"
     private String customer; // username
     private String customerName; // Họ tên khách hàng

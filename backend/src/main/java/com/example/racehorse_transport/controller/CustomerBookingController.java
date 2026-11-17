@@ -23,6 +23,7 @@ import java.util.List;
 public class CustomerBookingController {
 
     private final BookingService bookingService;
+    private final com.example.racehorse_transport.service.BookingCodeResolver bookingCodes;
     private final JwtUtils jwtUtils;
 
     private String extractUsername(String authHeader) {
@@ -76,14 +77,14 @@ public class CustomerBookingController {
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<BookingResponse>> getBookingDetail(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
-            @PathVariable Integer id) {
+            @PathVariable String id) {
         String username = extractUsername(authHeader);
         if (username == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("Vui lòng đăng nhập để xem chi tiết đơn!"));
         }
 
-        BookingResponse response = bookingService.getBookingById(id, username);
+        BookingResponse response = bookingService.getBookingById(bookingCodes.idOf(id), username);
         return ResponseEntity.ok(ApiResponse.success(response, "Lấy chi tiết đơn hàng thành công"));
     }
 
@@ -91,14 +92,14 @@ public class CustomerBookingController {
     @GetMapping("/{id}/team")
     public ResponseEntity<ApiResponse<List<CustomerTripTeamResponse>>> getTripTeam(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
-            @PathVariable Integer id) {
+            @PathVariable String id) {
         String username = extractUsername(authHeader);
         if (username == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error("Vui lòng đăng nhập để xem chi tiết đơn!"));
         }
 
-        List<CustomerTripTeamResponse> team = bookingService.getCustomerTripTeam(id, username);
+        List<CustomerTripTeamResponse> team = bookingService.getCustomerTripTeam(bookingCodes.idOf(id), username);
         return ResponseEntity.ok(ApiResponse.success(team, "Lấy thông tin xe và kíp xe thành công"));
     }
 

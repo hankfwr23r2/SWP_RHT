@@ -201,7 +201,7 @@ class ConfirmHomeTest {
 
     private HttpResponse<String> confirmHome(Booking booking, String photo) throws Exception {
         String payload = photo == null ? "{}" : "{\"photo\":\"%s\"}".formatted(photo);
-        return post("/field/bookings/" + booking.getId() + "/trip-update", driverToken,
+        return post("/field/bookings/" + booking.getCode() + "/trip-update", driverToken,
                 "{\"tripId\":\"TRP-1\",\"action\":\"CONFIRM_HOME\",\"actor\":\"Tài xế\",\"payload\":%s}".formatted(payload));
     }
 

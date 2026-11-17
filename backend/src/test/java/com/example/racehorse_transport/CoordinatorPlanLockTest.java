@@ -159,7 +159,7 @@ class CoordinatorPlanLockTest {
     private HttpResponse<String> confirmPlan(Booking booking) throws Exception {
         String body = "{\"by\":\"Điều phối\",\"trips\":[{\"vehicleId\":\"%d\",\"horseIds\":[\"H-1\"]}],\"note\":\"Đổi xe\"}"
                 .formatted(truck.getId());
-        return post("/coordinator/bookings/" + booking.getId() + "/fleet-plan", coordinatorToken, body);
+        return post("/coordinator/bookings/" + booking.getCode() + "/fleet-plan", coordinatorToken, body);
     }
 
     private HttpResponse<String> post(String path, String token, String body) throws Exception {

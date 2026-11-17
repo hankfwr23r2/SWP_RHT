@@ -191,7 +191,7 @@ public class SpecialistServiceImpl implements SpecialistService {
         savePayload(booking, payload);
         Booking saved = bookingRepository.save(booking);
         if (planConfirmed) {
-            staffNotifier.toManagers(saved, "Đơn chờ duyệt báo giá · BK-" + saved.getId(),
+            staffNotifier.toManagers(saved, "Đơn chờ duyệt báo giá · " + saved.getCode(),
                     "Chuyên viên đã duyệt hồ sơ và Điều phối viên đã chốt xe, lộ trình. Chọn kíp xe và gửi báo giá.", "/manager/approvals");
         }
         log.info("Specialist approved horse profiles for booking ID={}", saved.getId());
@@ -463,8 +463,8 @@ public class SpecialistServiceImpl implements SpecialistService {
         savePayload(booking, payload);
         Booking saved = bookingRepository.save(booking);
         staffNotifier.toCrew(saved, payload, "clearance_done".equals(saved.getStatus())
-                        ? "Giấy tờ chuyến đã xong, cần bạn xác nhận · BK-" + saved.getId()
-                        : "Sẵn sàng đón ngựa · BK-" + saved.getId(),
+                        ? "Giấy tờ chuyến đã xong, cần bạn xác nhận · " + saved.getCode()
+                        : "Sẵn sàng đón ngựa · " + saved.getCode(),
                 "clearance_done".equals(saved.getStatus())
                         ? "Chuyên viên đã hoàn tất giấy tờ. Mở ứng dụng để nhận lệnh và xác nhận giấy tờ chuyến đi."
                         : "Giấy tờ đã xong và kíp xe đã nhận lệnh. Chuẩn bị xuất phát đến điểm đón đúng giờ.");
@@ -578,19 +578,8 @@ public class SpecialistServiceImpl implements SpecialistService {
     }
 
     private Integer parseBookingId(String bookingIdentifier) {
-        String cleanId = bookingIdentifier.trim();
-        try {
-            if (cleanId.toUpperCase().startsWith("BK-")) {
-                return Integer.parseInt(cleanId.substring(3).trim());
-            } else if (cleanId.toUpperCase().startsWith("ORD-")) {
-                String[] parts = cleanId.split("-");
-                return Integer.parseInt(parts[parts.length - 1].trim());
-            } else {
-                return Integer.parseInt(cleanId);
-            }
-        } catch (Exception ex) {
-            throw new IllegalArgumentException("Định dạng mã đơn không hợp lệ: " + bookingIdentifier);
-        }
+        return bookingRepository.findIdByCode(bookingIdentifier.trim().toUpperCase())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
     }
 
     private BookingDetailsPayload extractPayload(Booking booking) {
@@ -868,8 +857,7 @@ public class SpecialistServiceImpl implements SpecialistService {
                 : "Khách hàng";
 
         return BookingResponse.builder()
-                .id("BK-" + String.format("%03d", b.getId()))
-                .numericId(b.getId())
+                .id(b.getCode())
                 .type(b.getBookingType() != null ? b.getBookingType() : "domestic")
                 .customer(customerFullName)
                 .customerName(customerFullName)

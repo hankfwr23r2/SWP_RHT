@@ -221,7 +221,7 @@ public class BookingServiceImpl implements BookingService {
                                             String num = activeHorse.getHorseId().replaceAll("\\D", "");
                                             if (!num.isEmpty()) {
                                                 Integer aId = Integer.valueOf(num);
-                                                horseToActiveBookingMap.putIfAbsent(aId, "#BK-" + cb.getId() + " (" + cb.getStatus() + ")");
+                                                horseToActiveBookingMap.putIfAbsent(aId, "#" + cb.getCode() + " (" + cb.getStatus() + ")");
                                             }
                                         }
                                     }
@@ -323,7 +323,7 @@ public class BookingServiceImpl implements BookingService {
         }
 
         log.info("Successfully created booking ID={} for user={}", savedBooking.getId(), customerUsername);
-        staffNotifier.toManagers(savedBooking, "Đơn mới chờ tiếp nhận · BK-" + savedBooking.getId(),
+        staffNotifier.toManagers(savedBooking, "Đơn mới chờ tiếp nhận · " + savedBooking.getCode(),
                 "Khách vừa gửi đơn " + savedBooking.getTotalHorses() + " ngựa: " + savedBooking.getPickupAddress() + " → " + savedBooking.getDropoffAddress() + ".",
                 "/manager/intake");
         return mapToResponse(savedBooking);
@@ -643,8 +643,8 @@ public class BookingServiceImpl implements BookingService {
         savePayload(booking, payload);
         Booking saved = bookingRepository.save(booking);
 
-        logAction("MANAGER_ACTIVATE_BOOKING", saved.getId(), "Quản lý tiếp nhận đơn BK-" + saved.getId() + " và kích hoạt thẩm định song song");
-        String activatedCode = "BK-" + saved.getId();
+        logAction("MANAGER_ACTIVATE_BOOKING", saved.getId(), "Quản lý tiếp nhận đơn " + saved.getCode() + " và kích hoạt thẩm định song song");
+        String activatedCode = saved.getCode();
         staffNotifier.toAssignedSpecialist(saved, payload, "Đơn cần thẩm định · " + activatedCode,
                 "Quản lý giao bạn thẩm định hồ sơ ngựa của đơn " + activatedCode + ".", "/specialist/verification/" + activatedCode);
         staffNotifier.toAssignedCoordinator(saved, payload, "Đơn cần chốt xe và lộ trình · " + activatedCode,
@@ -688,7 +688,7 @@ public class BookingServiceImpl implements BookingService {
         savePayload(booking, payload);
         Booking saved = bookingRepository.save(booking);
 
-        logAction("REJECT_BOOKING", saved.getId(), "Từ chối đơn BK-" + saved.getId() + " bởi " + role + ": " + reason);
+        logAction("REJECT_BOOKING", saved.getId(), "Từ chối đơn " + saved.getCode() + " bởi " + role + ": " + reason);
         log.info("Booking ID={} rejected by {}: reason={}", saved.getId(), role, reason);
         return mapToResponse(saved);
     }
@@ -700,21 +700,8 @@ public class BookingServiceImpl implements BookingService {
             throw new IllegalArgumentException("Mã đơn hàng không được để trống!");
         }
 
-        // 1. Phân giải Booking ID (chấp nhận "BK-001", "1", "ORD-2026-0001", v.v.)
-        Integer bookingId;
-        String cleanId = bookingIdentifier.trim();
-        try {
-            if (cleanId.toUpperCase().startsWith("BK-")) {
-                bookingId = Integer.parseInt(cleanId.substring(3).trim());
-            } else if (cleanId.toUpperCase().startsWith("ORD-")) {
-                String[] parts = cleanId.split("-");
-                bookingId = Integer.parseInt(parts[parts.length - 1].trim());
-            } else {
-                bookingId = Integer.parseInt(cleanId);
-            }
-        } catch (NumberFormatException ex) {
-            throw new IllegalArgumentException("Định dạng mã đơn không hợp lệ: " + bookingIdentifier, ex);
-        }
+        // 1. Phân giải Booking ID từ mã đơn
+        Integer bookingId = parseBookingId(bookingIdentifier);
 
         // 2. Tìm đơn hàng
         Booking booking = bookingRepository.findById(bookingId)
@@ -765,7 +752,7 @@ public class BookingServiceImpl implements BookingService {
 
             // Chuẩn hóa tripId
             if (trip.getTripId() == null || trip.getTripId().trim().isEmpty()) {
-                trip.setTripId("TRP-" + String.format("%03d", booking.getId()) + "-" + (i + 1));
+                trip.setTripId("TRP-" + booking.getCode().substring(3) + "-" + (i + 1));
             }
             // Chuẩn hóa vehicleId đồng bộ với Frontend (VH-XXX hoặc vehicleCode)
             String vCode = vehicle.getVehicleCode() != null && !vehicle.getVehicleCode().isBlank()
@@ -835,7 +822,7 @@ public class BookingServiceImpl implements BookingService {
 
         Booking updatedBooking = bookingRepository.save(booking);
         if ("pending_commercial".equals(updatedBooking.getStatus()) && !wasWaitingForQuote) {
-            staffNotifier.toManagers(updatedBooking, "Đơn chờ duyệt báo giá · BK-" + updatedBooking.getId(),
+            staffNotifier.toManagers(updatedBooking, "Đơn chờ duyệt báo giá · " + updatedBooking.getCode(),
                     "Chuyên viên đã duyệt hồ sơ và Điều phối viên đã chốt xe, lộ trình. Chọn kíp xe và gửi báo giá.", "/manager/approvals");
         }
 
@@ -843,10 +830,10 @@ public class BookingServiceImpl implements BookingService {
         try {
             String logDesc = medicalApproved
                     ? "Điều phối viên (" + (request.getBy() != null ? request.getBy() : "coordinator") + ") chốt "
-                            + request.getTrips().size() + " xe và lộ trình đơn BK-" + updatedBooking.getId()
+                            + request.getTrips().size() + " xe và lộ trình đơn " + updatedBooking.getCode()
                             + ", cả 2 bên đã đạt -> chuyển Quản lý duyệt báo giá."
                     : "Điều phối viên (" + (request.getBy() != null ? request.getBy() : "coordinator") + ") chốt "
-                            + request.getTrips().size() + " xe và lộ trình đơn BK-" + updatedBooking.getId()
+                            + request.getTrips().size() + " xe và lộ trình đơn " + updatedBooking.getCode()
                             + ", đang chờ Chuyên viên kiểm dịch thẩm định hồ sơ ngựa.";
             operationalLog.record("COORDINATOR_CONFIRM_PLAN", "BOOKING", updatedBooking.getId(), logDesc, null);
         } catch (Exception ex) {
@@ -963,7 +950,7 @@ public class BookingServiceImpl implements BookingService {
         Booking updated = bookingRepository.save(booking);
 
         logAction("ASSIGN_CREW", updated.getId(), "Quản lý (" + request.getBy() + ") phân công "
-                + newAssignments.size() + " nhân sự kíp xe cho đơn BK-" + updated.getId());
+                + newAssignments.size() + " nhân sự kíp xe cho đơn " + updated.getCode());
 
         log.info("Successfully assigned crew for booking ID={}", updated.getId());
         return mapToResponse(updated);
@@ -1084,7 +1071,7 @@ public class BookingServiceImpl implements BookingService {
         booking.setStatus("awaiting_payment");
         Booking updated = bookingRepository.save(booking);
 
-        String bookingCode = "BK-" + updated.getId();
+        String bookingCode = updated.getCode();
         notificationRepository.save(Notification.builder()
                 .recipientRole("customer")
                 .recipientUsername(updated.getCustomerID().getUser().getUsername())
@@ -1097,7 +1084,7 @@ public class BookingServiceImpl implements BookingService {
                 .build());
 
         billMailService.quoteIssued(updated, request.getLines(), total, deposit, balance, expiresAt);
-        logAction("SEND_QUOTATION", updated.getId(), "Phát hành báo giá đơn BK-" + updated.getId()
+        logAction("SEND_QUOTATION", updated.getId(), "Phát hành báo giá đơn " + updated.getCode()
                 + " (Tổng: " + total + ", Cọc: " + deposit + ", Hết hạn: " + expiresAt + ")");
 
         log.info("Successfully issued quote for booking ID={}, status=awaiting_payment", updated.getId());
@@ -1170,13 +1157,13 @@ public class BookingServiceImpl implements BookingService {
         savePayload(booking, payload);
 
         Booking updated = bookingRepository.save(booking);
-        String sentBackCode = "BK-" + updated.getId();
+        String sentBackCode = updated.getCode();
         if (toSpecialist) staffNotifier.toAssignedSpecialist(updated, payload, "Quản lý trả lại đơn · " + sentBackCode,
                 "Lý do: " + specialistReason, "/specialist/verification/" + sentBackCode);
         if (toCoordinator) staffNotifier.toAssignedCoordinator(updated, payload, "Quản lý trả lại đơn · " + sentBackCode,
                 "Lý do: " + coordinatorReason, "/coordinator/fleet-plan/" + sentBackCode);
         logAction("SEND_BACK", updated.getId(),
-                "Quản lý trả đơn BK-" + updated.getId() + " về " + toTarget
+                "Quản lý trả đơn " + updated.getCode() + " về " + toTarget
                         + (toSpecialist ? " · Chuyên viên: " + specialistReason : "")
                         + (toCoordinator ? " · Điều phối viên: " + coordinatorReason : ""));
         log.info("Booking ID={} sent back to {}", updated.getId(), request.getTo());
@@ -1231,8 +1218,8 @@ public class BookingServiceImpl implements BookingService {
         savePayload(booking, payload);
 
         Booking updated = bookingRepository.save(booking);
-        staffNotifier.toAssignedSpecialist(updated, payload, "Khách đã bổ sung hồ sơ · BK-" + updated.getId(),
-                "Khách gửi lại hồ sơ ngựa theo yêu cầu. Vui lòng thẩm định lại.", "/specialist/verification/BK-" + updated.getId());
+        staffNotifier.toAssignedSpecialist(updated, payload, "Khách đã bổ sung hồ sơ · " + updated.getCode(),
+                "Khách gửi lại hồ sơ ngựa theo yêu cầu. Vui lòng thẩm định lại.", "/specialist/verification/" + updated.getCode());
         logAction("RESUBMIT_DOCUMENTS", updated.getId(),
                 "Khách hàng (" + customerUsername + ") gửi lại hồ sơ cho Chuyên viên kiểm dịch duyệt lại");
         log.info("Booking ID={} resubmitted documents by {}", updated.getId(), customerUsername);
@@ -1251,7 +1238,7 @@ public class BookingServiceImpl implements BookingService {
             quotationRepository.save(quotation);
         });
 
-        String waybillNo = "VD-2026-" + String.format("%04d", booking.getId());
+        String waybillNo = "VD-2026-" + booking.getCode().substring(3);
         booking.setWaybillNo(waybillNo);
         booking.setStatus("waybill_issued");
 
@@ -1275,7 +1262,7 @@ public class BookingServiceImpl implements BookingService {
                 "Khách hàng thanh toán tiền cọc (" + payment.getAmount() + " VND) qua " + payment.getPaymentMethod()
                         + ", mã GD " + payment.getTransactionCode() + ", cấp Vận đơn " + waybillNo);
         log.info("Deposit confirmed for booking ID={}, waybill={}", updated.getId(), waybillNo);
-        String depositCode = "BK-" + updated.getId();
+        String depositCode = updated.getCode();
         staffNotifier.toManagers(updated, "Khách đã đặt cọc · " + depositCode, "Đơn " + depositCode + " đã có vận đơn " + waybillNo + ".", "/manager");
         staffNotifier.toAssignedSpecialist(updated, payload, "Khách đã đặt cọc · " + depositCode,
                 "Xác nhận hợp đồng bảo hiểm (nếu khách nhờ mua) và làm giấy tờ chuyến đi.", "/specialist/legal/" + depositCode);
@@ -1425,11 +1412,11 @@ public class BookingServiceImpl implements BookingService {
         savePayload(booking, payload);
         Booking updated = bookingRepository.save(booking);
 
-        staffNotifier.toCrew(updated, payload, "Khách đã trả 70% · BK-" + updated.getId(),
+        staffNotifier.toCrew(updated, payload, "Khách đã trả 70% · " + updated.getCode(),
                 "Khách đã thanh toán phần còn lại. Xe được bắt đầu hành trình khi đủ các bước ở điểm đón.");
         logAction("PAY_BALANCE", updated.getId(),
                 "Khách hàng thanh toán 70% còn lại (" + payment.getAmount() + " VND) qua " + payment.getPaymentMethod()
-                        + ", mã GD " + payment.getTransactionCode() + " cho đơn BK-" + updated.getId());
+                        + ", mã GD " + payment.getTransactionCode() + " cho đơn " + updated.getCode());
         log.info("Balance confirmed for booking ID={}", updated.getId());
         billMailService.paymentReceived(updated, com.example.racehorse_transport.service.BillMailService.Payment.BALANCE, payment.getAmount(), payment.getGatewayTransactionNo(), paidAt, null);
         return updated;
@@ -1477,7 +1464,7 @@ public class BookingServiceImpl implements BookingService {
 
         Booking updated = bookingRepository.save(booking);
         logAction("REJECT_QUOTE", updated.getId(),
-                "Khách hàng từ chối báo giá đơn BK-" + updated.getId() + ": " + reason);
+                "Khách hàng từ chối báo giá đơn " + updated.getCode() + ": " + reason);
         log.info("Booking ID={} cancelled by customer rejecting quote", updated.getId());
         return mapToResponse(updated);
     }
@@ -1528,7 +1515,7 @@ public class BookingServiceImpl implements BookingService {
                     bookingRepository.save(booking);
 
                     logAction("QUOTE_AUTO_EXPIRED_RELEASE_FLEET", booking.getId(),
-                            "Báo giá đơn BK-" + booking.getId()
+                            "Báo giá đơn " + booking.getCode()
                                     + " đã hết hạn. Đã tự động giải phóng xe và kíp xe.");
                     count++;
                 }
@@ -1639,19 +1626,8 @@ public class BookingServiceImpl implements BookingService {
         if (bookingIdentifier == null || bookingIdentifier.trim().isEmpty()) {
             throw new IllegalArgumentException("Mã đơn hàng không được để trống!");
         }
-        String cleanId = bookingIdentifier.trim();
-        try {
-            if (cleanId.toUpperCase().startsWith("BK-")) {
-                return Integer.parseInt(cleanId.substring(3).trim());
-            } else if (cleanId.toUpperCase().startsWith("ORD-")) {
-                String[] parts = cleanId.split("-");
-                return Integer.parseInt(parts[parts.length - 1].trim());
-            } else {
-                return Integer.parseInt(cleanId);
-            }
-        } catch (Exception ex) {
-            throw new IllegalArgumentException("Định dạng mã đơn không hợp lệ: " + bookingIdentifier);
-        }
+        return bookingRepository.findIdByCode(bookingIdentifier.trim().toUpperCase())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
     }
 
     private BookingDetailsPayload extractPayload(Booking booking) {
@@ -1782,7 +1758,7 @@ public class BookingServiceImpl implements BookingService {
         if (payload.getTrips() == null || payload.getTrips().stream().anyMatch(t -> !horsesOnTrip(payload, t).isEmpty())) return;
         booking.setStatus("pickup_failed");
         appendHistory(payload, "Hệ thống", "Không nhận được ngựa: " + reason + ". Chờ quản lý hủy đơn");
-        String bookingCode = "BK-" + String.format("%03d", booking.getId());
+        String bookingCode = booking.getCode();
         Instant now = Instant.now();
         notificationRepository.save(Notification.builder()
                 .recipientRole("manager")
@@ -1820,7 +1796,7 @@ public class BookingServiceImpl implements BookingService {
         payload.setPayment(payment);
         appendHistory(payload, "Hệ thống", "Kíp xe đã nhận ngựa, chờ khách thanh toán 70% còn lại");
         if (booking.getCustomerID() == null || booking.getCustomerID().getUser() == null) return;
-        String bookingCode = "BK-" + String.format("%03d", booking.getId());
+        String bookingCode = booking.getCode();
         notificationRepository.save(Notification.builder()
                 .recipientRole("customer")
                 .recipientUsername(booking.getCustomerID().getUser().getUsername())
@@ -1986,7 +1962,7 @@ public class BookingServiceImpl implements BookingService {
     }
 
     private BookingResponse mapToResponse(Booking b) {
-        String formattedId = "BK-" + String.format("%03d", b.getId());
+        String formattedId = b.getCode();
         String customerUsername = "";
         String customerFullName = "";
 
@@ -2071,7 +2047,6 @@ public class BookingServiceImpl implements BookingService {
         }
         BookingResponse response = BookingResponse.builder()
                 .id(formattedId)
-                .numericId(b.getId())
                 .type(b.getBookingType() != null ? b.getBookingType() : "domestic")
                 .customer(customerUsername)
                 .customerName(customerFullName)
@@ -2882,8 +2857,8 @@ public class BookingServiceImpl implements BookingService {
                         "incident_reported", "pending_emergency_approval", "emergency_plan_active",
                         "arrived", "handover_timeout", "returning_to_hq", "delivered_pending_settlement").contains(status);
                 if (returning || active) {
-                    throw new IllegalStateException("Bạn đang thực hiện chuyến BK-"
-                            + String.format("%03d", booking.getId())
+                    throw new IllegalStateException("Bạn đang thực hiện chuyến "
+                            + booking.getCode()
                             + " và chưa xác nhận về trụ sở, không thể thao tác chuyến khác.");
                 }
             }
@@ -2904,14 +2879,8 @@ public class BookingServiceImpl implements BookingService {
         }
         cleanPhoneLast4 = cleanPhoneLast4.substring(cleanPhoneLast4.length() - 4);
 
-        // 1. Tìm booking theo ID hoặc WaybillNo
-        Optional<Booking> bookingOpt = Optional.empty();
-        String digitsOnly = trimmedCode.replaceAll("\\D", "");
-        if (!digitsOnly.isBlank()) {
-            try {
-                bookingOpt = bookingRepository.findById(Integer.parseInt(digitsOnly));
-            } catch (NumberFormatException ignored) {}
-        }
+        // 1. Tìm booking theo mã đơn hoặc WaybillNo
+        Optional<Booking> bookingOpt = bookingRepository.findByCode(trimmedCode.toUpperCase());
         if (bookingOpt.isEmpty()) {
             bookingOpt = bookingRepository.findByWaybillNoIgnoreCase(trimmedCode);
         }

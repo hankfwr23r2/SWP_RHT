@@ -239,7 +239,6 @@ public class HorseServiceImpl implements HorseService {
         return horseJourneyLogRepository.findByHorse_IdOrderByCreatedAtDesc(id).stream().map(l -> HorseJourneyLogDTO.builder()
                 .id(l.getId())
                 .horseId(l.getHorse().getId())
-                .bookingId(l.getBookingId())
                 .tripCode(l.getTripCode())
                 .fromLocation(l.getFromLocation())
                 .toLocation(l.getToLocation())
@@ -305,10 +304,10 @@ public class HorseServiceImpl implements HorseService {
                 if (payload.getHorses() == null) continue;
                 for (BookingHorseDto bookingHorse : payload.getHorses()) {
                     String id = bookingHorse.getHorseId() != null ? bookingHorse.getHorseId().replaceAll("\\D", "") : "";
-                    if (id.equals(String.valueOf(horse.getId()))) return "#BK-" + booking.getId();
+                    if (id.equals(String.valueOf(horse.getId()))) return "#" + booking.getCode();
                 }
             } catch (Exception e) {
-                throw new IllegalStateException("Không đọc được đơn #BK-" + booking.getId() + " để kiểm tra ngựa.");
+                throw new IllegalStateException("Không đọc được đơn #" + booking.getCode() + " để kiểm tra ngựa.");
             }
         }
         return null;

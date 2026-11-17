@@ -84,11 +84,11 @@ class CompanyIncidentCostFlowTest {
 
     @Test
     void companyReviewsAllCostsWithoutCustomerBillingOrEarlyVehicleRelease() throws Exception {
-        String path = "/settlements/" + booking.getId();
+        String path = "/settlements/" + booking.getCode();
         var submitted = request("POST", path + "/submit-expenses", driverToken, "{}");
         assertThat(submitted.statusCode()).as(submitted.body()).isEqualTo(200);
         assertThat(json.readTree(submitted.body()).path("data").path("settlement").path("total").asInt()).isEqualTo(800000);
-        var customer = request("GET", "/customer/bookings/" + booking.getId(), ownerToken, null);
+        var customer = request("GET", "/customer/bookings/" + booking.getCode(), ownerToken, null);
         assertThat(customer.statusCode()).as(customer.body()).isEqualTo(200);
         assertThat(customer.body()).doesNotContain("800000", "private-vet", "private-stable", "internal-toll", "\"settlement\"");
         assertThat(request("GET", path, ownerToken, null).statusCode()).isEqualTo(403);
@@ -99,7 +99,7 @@ class CompanyIncidentCostFlowTest {
         assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus()).isEqualTo("completed");
         assertThat(vehicles.findById(vehicle.getId()).orElseThrow().getStatus()).isEqualTo("ON_TRIP");
         assertThat(payments.findByBookingID_IdOrderByPaymentDateDesc(booking.getId())).isEmpty();
-        String ratingPath = "/customer/bookings/" + booking.getId() + "/rating";
+        String ratingPath = "/customer/bookings/" + booking.getCode() + "/rating";
         assertThat(request("POST", ratingPath, otherToken, "{\"stars\":5}").statusCode()).isEqualTo(403);
         var rating = request("POST", ratingPath, ownerToken, "{\"stars\":5,\"comment\":\"Good\"}");
         assertThat(rating.statusCode()).as(rating.body()).isEqualTo(200);
@@ -109,9 +109,9 @@ class CompanyIncidentCostFlowTest {
     @Test
     void customerCannotCreateAPaymentOrUseTheRetiredSettlementEndpoint() throws Exception {
         var payment = request("POST", "/payments/vnpay/create", ownerToken,
-                "{\"bookingId\":\"" + booking.getId() + "\",\"paymentType\":\"SETTLEMENT\"}");
+                "{\"bookingId\":\"" + booking.getCode() + "\",\"paymentType\":\"SETTLEMENT\"}");
         assertThat(payment.statusCode()).as(payment.body()).isEqualTo(400);
         assertThat(payments.findByBookingID_IdOrderByPaymentDateDesc(booking.getId())).isEmpty();
-        assertThat(request("POST", "/settlements/" + booking.getId() + "/pay-and-complete", ownerToken, "{}").statusCode()).isBetween(400, 499);
+        assertThat(request("POST", "/settlements/" + booking.getCode() + "/pay-and-complete", ownerToken, "{}").statusCode()).isBetween(400, 499);
     }
 }

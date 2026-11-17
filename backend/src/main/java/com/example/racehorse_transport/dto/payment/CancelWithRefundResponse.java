@@ -10,7 +10,6 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CancelWithRefundResponse {
-    private Integer bookingId;
     private String bookingCode;
     private String bookingStatus;
     private BigDecimal depositPaid;

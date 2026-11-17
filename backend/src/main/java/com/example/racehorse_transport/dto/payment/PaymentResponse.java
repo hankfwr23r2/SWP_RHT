@@ -12,7 +12,6 @@ import java.time.Instant;
 @AllArgsConstructor
 public class PaymentResponse {
     private Integer id;
-    private Integer bookingId;
     private String bookingCode;
     private String waybillNo;
     private BigDecimal amount;

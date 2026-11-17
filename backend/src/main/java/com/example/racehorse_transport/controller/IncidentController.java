@@ -19,6 +19,7 @@ import java.util.List;
 public class IncidentController {
 
     private final IncidentService incidentService;
+    private final com.example.racehorse_transport.service.BookingCodeResolver bookingCodes;
 
     // 1. Driver/Escort Báo cáo sự cố khẩn cấp (SOS)
     @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'COORDINATOR', 'ADMIN')")
@@ -127,11 +128,11 @@ public class IncidentController {
 
     // 6. Lấy sự cố theo đơn hàng
     @PreAuthorize("hasAnyRole('CUSTOMER', 'COORDINATOR', 'MANAGER', 'DRIVER', 'ESCORT', 'ADMIN')")
-    @GetMapping("/booking/{bookingId}")
+    @GetMapping("/booking/{bookingCode}")
     public ResponseEntity<ApiResponse<List<IncidentResponse>>> getIncidentsByBooking(
             Authentication authentication,
-            @PathVariable("bookingId") Integer bookingId) {
-        List<IncidentResponse> list = incidentService.getIncidentsByBooking(bookingId, authentication.getName(), role(authentication));
+            @PathVariable("bookingCode") String bookingCode) {
+        List<IncidentResponse> list = incidentService.getIncidentsByBooking(bookingCodes.idOf(bookingCode), authentication.getName(), role(authentication));
         return ResponseEntity.ok(ApiResponse.success(list, "Lấy danh sách sự cố theo đơn hàng thành công"));
     }
 

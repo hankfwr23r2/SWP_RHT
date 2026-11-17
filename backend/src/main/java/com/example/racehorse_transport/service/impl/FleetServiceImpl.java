@@ -97,8 +97,8 @@ public class FleetServiceImpl implements FleetService {
 
         // Bản đồ: VehicleID -> Lý do bận
         Map<Integer, String> busyMap = new HashMap<>();
-        unreturnedVehicleBookings().forEach((vehicleId, bookingId) -> busyMap.put(vehicleId,
-                "Chưa xác nhận về trụ sở từ đơn BK-" + bookingId));
+        unreturnedVehicleBookings().forEach((vehicleId, booking) -> busyMap.put(vehicleId,
+                "Chưa xác nhận về trụ sở từ đơn " + booking.getCode()));
 
         for (Booking booking : holdingBookings) {
             Instant bookingDepart = booking.getDepartureDate() != null ? booking.getDepartureDate()
@@ -123,7 +123,7 @@ public class FleetServiceImpl implements FleetService {
                     if (bv.getVehicleID() != null) {
                         String tripTag = existingIsInter ? "quốc tế" : "nội địa";
                         busyMap.putIfAbsent(bv.getVehicleID().getId(),
-                                "Đang chạy đơn BK-" + String.format("%03d", booking.getId()) + " (" + tripTag
+                                "Đang chạy đơn " + booking.getCode() + " (" + tripTag
                                         + ", dự kiến về bãi: " + busyEnd + ")");
                     }
                 }
@@ -239,8 +239,8 @@ public class FleetServiceImpl implements FleetService {
                 boolean unreturned = isAssignedToUnreturnedTrip(booking, staff);
                 boolean assigned = unreturned || isStaffAssignedToBooking(booking, staff);
                 if (assigned && (activeRoadStatus || unreturned)) {
-                    busyMap.put(staff.getId(), "Đang thực hiện hoặc chưa xác nhận về trụ sở từ đơn BK-"
-                            + String.format("%03d", booking.getId()));
+                    busyMap.put(staff.getId(), "Đang thực hiện hoặc chưa xác nhận về trụ sở từ đơn "
+                            + booking.getCode());
                 }
             }
 
@@ -264,7 +264,7 @@ public class FleetServiceImpl implements FleetService {
                     if (ba.getStaffID() != null) {
                         String tripTag = existingIsInter ? "quốc tế" : "nội địa";
                         busyMap.put(ba.getStaffID().getId(),
-                                "Đang phục vụ đơn BK-" + String.format("%03d", booking.getId()) + " (" + tripTag
+                                "Đang phục vụ đơn " + booking.getCode() + " (" + tripTag
                                         + ", về dự kiến: " + busyEnd + ")");
                     }
                 }
@@ -288,8 +288,8 @@ public class FleetServiceImpl implements FleetService {
     }
 
     // Financial completion never releases a vehicle that has not returned to HQ.
-    private Map<Integer, Integer> unreturnedVehicleBookings() {
-        Map<Integer, Integer> held = new HashMap<>();
+    private Map<Integer, Booking> unreturnedVehicleBookings() {
+        Map<Integer, Booking> held = new HashMap<>();
         for (Booking booking : bookingRepository.findAll()) {
             BookingDetailsPayload payload = BookingDetailsJson.read(objectMapper, booking);
             if (payload.getTrips() == null) continue;
@@ -299,11 +299,11 @@ public class FleetServiceImpl implements FleetService {
                 String identifier = trip.getVehicleId().trim();
                 if (identifier.matches("(?i)(?:VH-|XE-)?[0-9]+")) {
                     try {
-                        held.put(Integer.valueOf(identifier.replaceFirst("(?i)^(VH|XE)-", "")), booking.getId());
+                        held.put(Integer.valueOf(identifier.replaceFirst("(?i)^(VH|XE)-", "")), booking);
                     } catch (NumberFormatException ignored) { }
                 } else {
                     vehicleRepository.findByLicensePlate(identifier)
-                            .ifPresent(vehicle -> held.put(vehicle.getId(), booking.getId()));
+                            .ifPresent(vehicle -> held.put(vehicle.getId(), booking));
                 }
             }
         }
@@ -412,9 +412,9 @@ public class FleetServiceImpl implements FleetService {
                     "Xe " + vehicle.getLicensePlate() + " (" + vehicle.getVehicleName() + ") đang bận chuyến đi khác!");
         }
 
-        Integer unreturnedBooking = unreturnedVehicleBookings().get(vehicleId);
-        if (unreturnedBooking != null && !Objects.equals(unreturnedBooking, excludeBookingId)) {
-            throw new IllegalStateException("Xe chưa xác nhận về trụ sở từ đơn BK-" + unreturnedBooking);
+        Booking unreturnedBooking = unreturnedVehicleBookings().get(vehicleId);
+        if (unreturnedBooking != null && !Objects.equals(unreturnedBooking.getId(), excludeBookingId)) {
+            throw new IllegalStateException("Xe chưa xác nhận về trụ sở từ đơn " + unreturnedBooking.getCode());
         }
 
         Instant newDepart = departDate != null ? departDate : Instant.now();
@@ -450,8 +450,8 @@ public class FleetServiceImpl implements FleetService {
                     if (bv.getVehicleID() != null && bv.getVehicleID().getId().equals(vehicleId)) {
                         String tripTag = existingIsInter ? "quốc tế" : "nội địa";
                         throw new IllegalStateException("Xe " + vehicle.getLicensePlate() + " ("
-                                + vehicle.getVehicleName() + ") trùng lịch với đơn BK-"
-                                + String.format("%03d", b.getId()) + " (" + tripTag + ", khứ hồi về trụ sở VN đến "
+                                + vehicle.getVehicleName() + ") trùng lịch với đơn "
+                                + b.getCode() + " (" + tripTag + ", khứ hồi về trụ sở VN đến "
                                 + busyEnd + ")!");
                     }
                 }
@@ -540,8 +540,8 @@ public class FleetServiceImpl implements FleetService {
             boolean holding = HOLDING_STATUSES.contains(status);
             if (isActiveRoadStatus(status) || isAssignedToUnreturnedTrip(b, staff)) {
                 throw new IllegalStateException("Nhân sự " + staff.getStaffCode() + " (" + staff.getRole()
-                        + ") hiện đang thực hiện chuyến đi ngoài đường (đơn BK-"
-                        + String.format("%03d", b.getId()) + ") chưa về trụ sở!");
+                        + ") hiện đang thực hiện chuyến đi ngoài đường (đơn "
+                        + b.getCode() + ") chưa về trụ sở!");
             }
             if (!holding) continue;
 
@@ -562,8 +562,8 @@ public class FleetServiceImpl implements FleetService {
             if (!newEnd.isBefore(busyStart) && !newStart.isAfter(busyEnd)) {
                 String tripTag = existingIsInter ? "quốc tế" : "nội địa";
                 throw new IllegalStateException("Nhân sự " + staff.getStaffCode() + " (" + staff.getRole()
-                        + ") trùng lịch chạy với đơn BK-"
-                        + String.format("%03d", b.getId()) + " (" + tripTag + ", từ "
+                        + ") trùng lịch chạy với đơn "
+                        + b.getCode() + " (" + tripTag + ", từ "
                         + busyStart + " đến " + busyEnd + ")!");
             }
         }

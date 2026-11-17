@@ -115,7 +115,7 @@ class FleetServiceImplTest {
         assertThatThrownBy(() -> service.validateCrewAvailability(1, Instant.now().plusSeconds(30L * 86400),
                 "international", null))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("BK-043")
+                .hasMessageContaining("BK-8G4M2RWT")
                 .hasMessageContaining("chưa về trụ sở");
     }
 
@@ -131,7 +131,7 @@ class FleetServiceImplTest {
 
         assertThat(crew).hasSize(1);
         assertThat(crew.get(0).isAvailable()).isFalse();
-        assertThat(crew.get(0).getBusyReason()).contains("BK-043");
+        assertThat(crew.get(0).getBusyReason()).contains("BK-8G4M2RWT");
     }
 
     @Test
@@ -143,7 +143,7 @@ class FleetServiceImplTest {
         assertThatThrownBy(() -> service.validateCrewAvailability(1, Instant.now().plusSeconds(30L * 86400),
                 "international", null))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("BK-043");
+                .hasMessageContaining("BK-8G4M2RWT");
     }
 
     private Staff driver() {
@@ -158,6 +158,7 @@ class FleetServiceImplTest {
     private Booking unreturnedBooking(String status, String tripFields) {
         return Booking.builder()
                 .id(43)
+                .code("BK-8G4M2RWT")
                 .status(status)
                 .detailsJson("{\"trips\":[{\"tripId\":\"TRP-043-1\",\"driverId\":\"DR-01\","
                         + tripFields + "}]}")
@@ -169,14 +170,14 @@ class FleetServiceImplTest {
         Vehicle v = vehicle(1, "AVAILABLE");
         when(vehicleRepository.findAll()).thenReturn(List.of(v));
         when(vehicleRepository.findById(1)).thenReturn(Optional.of(v));
-        Booking b = Booking.builder().id(43).status("completed")
+        Booking b = Booking.builder().id(43).code("BK-8G4M2RWT").status("completed")
                 .detailsJson("{\"trips\":[{\"vehicleId\":\"VH-001\",\"homeReturn\":{\"eta\":1000}}]}").build();
         when(bookingRepository.findAll()).thenReturn(List.of(b));
         assertThat(service.getAllVehicles().getFirst().isAvailable()).isFalse();
         assertThat(service.getAvailableVehicles(Instant.now().plusSeconds(90L * 86400), "domestic")
                 .getFirst().isAvailable()).isFalse();
         assertThatThrownBy(() -> service.validateVehicleAvailability(1, Instant.now(), "domestic", null))
-                .isInstanceOf(IllegalStateException.class).hasMessageContaining("BK-43");
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("BK-8G4M2RWT");
 
         b.setDetailsJson("{\"trips\":[{\"vehicleId\":\"VH-001\",\"homeReturn\":{\"backAt\":2000}}]}");
         assertThat(service.getAllVehicles().getFirst().isAvailable()).isTrue();
@@ -187,7 +188,7 @@ class FleetServiceImplTest {
     @Test
     void onlyTheVehicleWithAnUnreturnedTripIsHeld() {
         when(vehicleRepository.findAll()).thenReturn(List.of(vehicle(1, "AVAILABLE"), vehicle(2, "AVAILABLE")));
-        Booking b = Booking.builder().id(43).status("settlement_issued")
+        Booking b = Booking.builder().id(43).code("BK-8G4M2RWT").status("settlement_issued")
                 .detailsJson("{\"trips\":[{\"vehicleId\":\"1\",\"homeReturn\":{\"backAt\":2000}},"
                         + "{\"vehicleId\":\"VH-002\",\"homeReturn\":{\"eta\":3000}}]}").build();
         when(bookingRepository.findAll()).thenReturn(List.of(b));

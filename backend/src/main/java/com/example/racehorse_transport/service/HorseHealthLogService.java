@@ -15,8 +15,8 @@ public interface HorseHealthLogService {
     // Tìm nhật ký sức khỏe theo mã ngựa
     List<HorseHealthLog> findByHorseId(Integer horseId);
 
-    // Tìm nhật ký sức khỏe theo đơn hàng / chuyến đi
-    List<HorseHealthLog> findByBookingId(Integer bookingId);
+    // Tìm nhật ký sức khỏe theo mã đơn; khách hàng chỉ xem được đơn của mình
+    List<HorseHealthLog> findByBookingCode(String bookingCode, String requester, String role);
 
     // API dành cho Dev 4: Cập nhật tình trạng sức khỏe ngựa kèm các chỉ số
     HorseHealthLog updateHorseHealthStatusByEscort(Integer horseId, Integer bookingId, String healthStatus,

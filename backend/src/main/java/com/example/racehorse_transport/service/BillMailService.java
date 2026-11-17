@@ -182,7 +182,7 @@ public class BillMailService {
     }
 
     private static String code(Booking booking) {
-        return "BK-" + String.format("%03d", booking.getId());
+        return booking.getCode();
     }
 
     private static String esc(String value) {

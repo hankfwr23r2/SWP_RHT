@@ -39,6 +39,7 @@ class IncidentServiceImplTest {
     void customerIncidentsAreLoadedForTheSignedInCustomerInOneQueryWithoutInternalFields() {
         Booking booking = new Booking();
         booking.setId(3);
+        booking.setCode("BK-7F3K9QXM");
         Incident incident = Incident.builder()
                 .id(7)
                 .bookingID(booking)
@@ -55,8 +56,7 @@ class IncidentServiceImplTest {
 
         assertThat(incidents).hasSize(1);
         IncidentResponse response = incidents.get(0);
-        assertThat(response.getBookingId()).isEqualTo(3);
-        assertThat(response.getBookingCode()).isEqualTo("BK-003");
+        assertThat(response.getBookingCode()).isEqualTo("BK-7F3K9QXM");
         assertThat(response.getStatus()).isEqualTo("active");
         assertThat(response.getDescription()).isNull();
         assertThat(response.getPartnerName()).isNull();
@@ -67,15 +67,17 @@ class IncidentServiceImplTest {
     void incidentsOfSeveralBookingsAreLoadedInOneQuery() {
         Booking first = new Booking();
         first.setId(1);
+        first.setCode("BK-AAAAAAAA");
         Booking second = new Booking();
         second.setId(2);
+        second.setCode("BK-BBBBBBBB");
         when(incidentRepository.findByBookingID_IdIn(List.of(1, 2))).thenReturn(List.of(
                 Incident.builder().id(7).bookingID(first).status("active").description("Nổ lốp").build(),
                 Incident.builder().id(8).bookingID(second).status("resolved").build()));
 
         List<IncidentResponse> incidents = service.getIncidentsForBookings(List.of(1, 2));
 
-        assertThat(incidents).extracting(IncidentResponse::getBookingId).containsExactly(1, 2);
+        assertThat(incidents).extracting(IncidentResponse::getBookingCode).containsExactly("BK-AAAAAAAA", "BK-BBBBBBBB");
         assertThat(incidents.get(0).getDescription()).isEqualTo("Nổ lốp");
     }
 

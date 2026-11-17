@@ -21,11 +21,14 @@ public class HorseHealthLogController {
 
     private final HorseHealthLogService horseHealthLogService;
     private final ModelMapper modelMapper;
+    private final com.example.racehorse_transport.service.BookingCodeResolver bookingCodes;
 
     @Autowired
-    public HorseHealthLogController(HorseHealthLogService horseHealthLogService, ModelMapper modelMapper) {
+    public HorseHealthLogController(HorseHealthLogService horseHealthLogService, ModelMapper modelMapper,
+                                    com.example.racehorse_transport.service.BookingCodeResolver bookingCodes) {
         this.horseHealthLogService = horseHealthLogService;
         this.modelMapper = modelMapper;
+        this.bookingCodes = bookingCodes;
     }
 
     // 1. Lấy tất cả nhật ký sức khỏe
@@ -52,9 +55,11 @@ public class HorseHealthLogController {
 
     // 3. Lấy nhật ký sức khỏe theo đơn hàng / chuyến đi
     @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'INSPECTOR', 'MANAGER', 'ADMIN', 'COORDINATOR', 'ESCORT', 'DRIVER')")
-    @GetMapping("/booking/{bookingId}")
-    public ResponseEntity<ApiResponse<List<HorseHealthLogDTO>>> getLogsByBooking(@PathVariable Integer bookingId) {
-        List<HorseHealthLog> logs = horseHealthLogService.findByBookingId(bookingId);
+    @GetMapping("/booking/{bookingCode}")
+    public ResponseEntity<ApiResponse<List<HorseHealthLogDTO>>> getLogsByBooking(@PathVariable String bookingCode,
+                                                                                org.springframework.security.core.Authentication authentication) {
+        boolean customer = authentication.getAuthorities().stream().anyMatch(a -> "ROLE_CUSTOMER".equals(a.getAuthority()));
+        List<HorseHealthLog> logs = horseHealthLogService.findByBookingCode(bookingCode, authentication.getName(), customer ? "CUSTOMER" : null);
         List<HorseHealthLogDTO> dtos = logs.stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
@@ -67,7 +72,7 @@ public class HorseHealthLogController {
     public ResponseEntity<ApiResponse<HorseHealthLogDTO>> createHealthLog(@Valid @RequestBody UpdateHealthLogRequest request) {
         HorseHealthLog saved = horseHealthLogService.updateHorseHealthStatusByEscort(
                 request.getHorseId(),
-                request.getBookingId(),
+                request.getBookingCode() == null ? null : bookingCodes.idOf(request.getBookingCode()),
                 request.getHealthStatus(),
                 request.getTemperature(),
                 request.getWeight(),
@@ -83,7 +88,7 @@ public class HorseHealthLogController {
             dto.setHorseID(entity.getHorseID().getId());
         }
         if (entity.getBookingID() != null) {
-            dto.setBookingID(entity.getBookingID().getId());
+            dto.setBookingCode(entity.getBookingID().getCode());
         }
         if (entity.getReportBy() != null) {
             dto.setReportBy(entity.getReportBy().getId());

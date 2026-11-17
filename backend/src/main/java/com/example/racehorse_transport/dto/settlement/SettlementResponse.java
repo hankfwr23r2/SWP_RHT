@@ -10,7 +10,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class SettlementResponse {
-    private Integer bookingId;
     private String bookingCode;
     private String status;
     private List<ExpenseItemDto> items;

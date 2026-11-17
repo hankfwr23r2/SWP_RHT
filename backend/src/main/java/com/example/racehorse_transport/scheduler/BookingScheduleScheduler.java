@@ -18,7 +18,7 @@ public class BookingScheduleScheduler {
             try {
                 schedules.flagOverdue(id);
             } catch (RuntimeException exception) {
-                log.error("Không cập nhật được lịch đơn BK-{}", id, exception);
+                log.error("Không cập nhật được lịch đơn BookingID={}", id, exception);
             }
         }
     }

@@ -61,7 +61,7 @@ public class SettlementServiceImpl implements SettlementService {
         appendHistory(payload, username, "Gửi bảng kê chi phí nội bộ công ty");
         savePayload(booking, payload);
         Booking saved = bookingRepository.save(booking);
-        staffNotifier.toManagers(saved, "Đối soát chi phí nội bộ · BK-" + saved.getId(),
+        staffNotifier.toManagers(saved, "Đối soát chi phí nội bộ · " + saved.getCode(),
                 "Có " + expenses.size() + " khoản chi phí công ty cần kiểm tra.", "/manager");
         return mapToBookingResponse(saved);
     }
@@ -291,8 +291,7 @@ public class SettlementServiceImpl implements SettlementService {
         List<ExpenseItemDto> items = review.get("items") instanceof List<?> entries
                 ? objectMapper.convertValue(entries, new TypeReference<List<ExpenseItemDto>>() {}) : List.of();
         return SettlementResponse.builder()
-                .bookingId(booking.getId())
-                .bookingCode("BK-" + String.format("%03d", booking.getId()))
+                .bookingCode(booking.getCode())
                 .status(booking.getStatus())
                 .items(items)
                 .totalCompanyCost(toBigDecimal(review.get("total")))
@@ -312,19 +311,8 @@ public class SettlementServiceImpl implements SettlementService {
 
     private Integer parseBookingId(String bookingIdentifier) {
         if (bookingIdentifier == null || bookingIdentifier.isBlank()) throw new IllegalArgumentException("Thiếu mã đơn hàng.");
-        String cleanId = bookingIdentifier.trim();
-        try {
-            if (cleanId.toUpperCase().startsWith("BK-")) {
-                return Integer.parseInt(cleanId.substring(3).trim());
-            } else if (cleanId.toUpperCase().startsWith("ORD-")) {
-                String[] parts = cleanId.split("-");
-                return Integer.parseInt(parts[parts.length - 1].trim());
-            } else {
-                return Integer.parseInt(cleanId);
-            }
-        } catch (Exception ex) {
-            throw new IllegalArgumentException("Định dạng mã đơn không hợp lệ: " + bookingIdentifier);
-        }
+        return bookingRepository.findIdByCode(bookingIdentifier.trim().toUpperCase())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
     }
 
     private BookingDetailsPayload extractPayload(Booking booking) {
@@ -367,8 +355,7 @@ public class SettlementServiceImpl implements SettlementService {
                 : "Khách hàng";
 
         return BookingResponse.builder()
-                .id("BK-" + String.format("%03d", b.getId()))
-                .numericId(b.getId())
+                .id(b.getCode())
                 .type(b.getBookingType() != null ? b.getBookingType() : "domestic")
                 .customer(customerFullName)
                 .customerName(customerFullName)

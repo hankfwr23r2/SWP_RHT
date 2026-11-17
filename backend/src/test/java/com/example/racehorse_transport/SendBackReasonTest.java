@@ -102,10 +102,10 @@ class SendBackReasonTest {
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
         assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus()).isEqualTo("under_review");
 
-        JsonNode seenBySpecialist = detail("/specialist/bookings/" + booking.getId(), specialistToken);
+        JsonNode seenBySpecialist = detail("/specialist/bookings/" + booking.getCode(), specialistToken);
         assertThat(seenBySpecialist.path("sendBack").path("specialist").asText()).isEqualTo("Hộ chiếu ngựa mờ, cần khách chụp lại");
 
-        JsonNode seenByCoordinator = detail("/coordinator/bookings/" + booking.getId(), coordinatorToken);
+        JsonNode seenByCoordinator = detail("/coordinator/bookings/" + booking.getCode(), coordinatorToken);
         assertThat(seenByCoordinator.path("sendBack").path("coordinator").asText()).isEqualTo("Xe Light không đủ ngăn, chọn xe Medium");
     }
 
@@ -116,7 +116,7 @@ class SendBackReasonTest {
         HttpResponse<String> response = sendBack(booking, "{\"to\":\"coordinator\",\"coordinatorReason\":\"Lộ trình đi qua đèo, đổi tuyến\"}");
 
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
-        JsonNode seenByCoordinator = detail("/coordinator/bookings/" + booking.getId(), coordinatorToken);
+        JsonNode seenByCoordinator = detail("/coordinator/bookings/" + booking.getCode(), coordinatorToken);
         assertThat(seenByCoordinator.path("sendBack").path("coordinator").asText()).isEqualTo("Lộ trình đi qua đèo, đổi tuyến");
         assertThat(seenByCoordinator.path("sendBack").path("specialist").isMissingNode()
                 || seenByCoordinator.path("sendBack").path("specialist").isNull()).isTrue();
@@ -137,10 +137,10 @@ class SendBackReasonTest {
         Booking booking = waitingForQuote();
         sendBack(booking, "{\"to\":\"specialist\",\"specialistReason\":\"Sổ tiêm thiếu trang\"}");
 
-        HttpResponse<String> approve = post("/specialist/bookings/" + booking.getId() + "/verify-horse", specialistToken, "{\"note\":\"Đã đủ\"}");
+        HttpResponse<String> approve = post("/specialist/bookings/" + booking.getCode() + "/verify-horse", specialistToken, "{\"note\":\"Đã đủ\"}");
 
         assertThat(approve.statusCode()).as(approve.body()).isEqualTo(200);
-        JsonNode seenBySpecialist = detail("/specialist/bookings/" + booking.getId(), specialistToken);
+        JsonNode seenBySpecialist = detail("/specialist/bookings/" + booking.getCode(), specialistToken);
         assertThat(seenBySpecialist.path("sendBack").path("specialist").isMissingNode()
                 || seenBySpecialist.path("sendBack").path("specialist").isNull()).isTrue();
     }
@@ -164,7 +164,7 @@ class SendBackReasonTest {
     }
 
     private HttpResponse<String> sendBack(Booking booking, String body) throws Exception {
-        return post("/manager/bookings/" + booking.getId() + "/send-back", managerToken, body);
+        return post("/manager/bookings/" + booking.getCode() + "/send-back", managerToken, body);
     }
 
     private JsonNode detail(String path, String token) throws Exception {
