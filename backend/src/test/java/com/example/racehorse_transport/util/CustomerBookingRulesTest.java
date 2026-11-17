@@ -13,20 +13,33 @@ class CustomerBookingRulesTest {
     @ParameterizedTest
     @ValueSource(strings = {"waybill_issued", "clearance_in_progress", "clearance_done", "ready_for_pickup", "en_route_to_pickup"})
     void customerCanCancelAfterDepositUntilTheBalanceIsPaid(String status) {
-        assertThat(CustomerBookingRules.canCancel(status, false)).isTrue();
+        assertThat(CustomerBookingRules.canCancel(status, false, false)).isTrue();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"pending_intake", "under_review", "resubmission_requested", "pending_commercial"})
+    void customerCanWithdrawForFreeBeforeTheDeposit(String status) {
+        assertThat(CustomerBookingRules.canCancel(status, false, false)).isTrue();
+        assertThat(CustomerBookingRules.isBeforeDeposit(status)).isTrue();
+    }
+
+    @org.junit.jupiter.api.Test
+    void customerCannotCancelOnceTheCrewHasTheHorses() {
+        assertThat(CustomerBookingRules.canCancel("en_route_to_pickup", false, true)).isFalse();
+        assertThat(CustomerBookingRules.canCancel("en_route_to_pickup", false, false)).isTrue();
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"waybill_issued", "clearance_done", "ready_for_pickup", "en_route_to_pickup"})
     void customerCannotCancelOnceTheBalanceIsPaid(String status) {
-        assertThat(CustomerBookingRules.canCancel(status, true)).isFalse();
+        assertThat(CustomerBookingRules.canCancel(status, true, false)).isFalse();
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"pending_intake", "under_review", "pending_commercial", "awaiting_payment", "quote_expired",
+    @ValueSource(strings = {"awaiting_payment", "quote_expired",
             "in_transit", "arrived", "completed", "cancelled", "rejected"})
-    void customerCannotCancelBeforeTheDepositOrAfterTheTruckHasLoaded(String status) {
-        assertThat(CustomerBookingRules.canCancel(status, false)).isFalse();
+    void customerCannotCancelWhileAQuoteIsOpenOrAfterTheTruckHasLeft(String status) {
+        assertThat(CustomerBookingRules.canCancel(status, false, false)).isFalse();
     }
 
     @Test
@@ -40,8 +53,8 @@ class CustomerBookingRulesTest {
 
     @Test
     void unknownOrMissingStatusIsNeverAllowed() {
-        assertThat(CustomerBookingRules.canCancel(null, false)).isFalse();
+        assertThat(CustomerBookingRules.canCancel(null, false, false)).isFalse();
         assertThat(CustomerBookingRules.canPayBalance(null, false)).isFalse();
-        assertThat(CustomerBookingRules.canCancel("EN_ROUTE_TO_PICKUP", false)).isFalse();
+        assertThat(CustomerBookingRules.canCancel("EN_ROUTE_TO_PICKUP", false, false)).isFalse();
     }
 }

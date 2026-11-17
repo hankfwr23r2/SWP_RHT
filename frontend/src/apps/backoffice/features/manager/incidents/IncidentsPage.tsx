@@ -63,20 +63,26 @@ type Row = { key: string; b: Booking; i?: Incident }
 // Ngựa bị loại ở điểm đón kèm lý do (chip không khớp hồ sơ, hoặc ốm/sốt)
 const excludedHorses = (b: Booking) => b.horses.filter(h => h.status === 'chip_mismatch' || h.status === 'unfit')
 
-// Đơn "Không nhận được ngựa": quản lý xem lý do rồi hủy đơn, khách mất phần cọc vận chuyển
+// Đơn "Không nhận được ngựa": quản lý xem lý do rồi chọn bên chịu lỗi.
+// Do khách (ngựa không khớp hồ sơ, khách không giao): khách mất phần cọc vận chuyển.
+// Do nhà xe (máy quét hỏng, nhập sai chip...): hoàn 100% cho khách.
 function PickupFailedModal({ b, onClose, onDone }: { b: Booking; onClose: () => void; onDone: () => void }) {
   const toast = useToast()
   const [reason, setReason] = useState(() => pickupFailReason(b))
   const [busy, setBusy] = useState(false)
-  const cancel = async () => {
+  const cancel = async (fault: 'CUSTOMER' | 'COMPANY') => {
     setBusy(true)
-    try { toast(await bookingsApi.cancelPickupFailed(b.id, reason)); onDone() } catch (e) { toast(e instanceof Error ? e.message : 'Không hủy được đơn', 'error'); setBusy(false) }
+    try {
+      toast(fault === 'CUSTOMER' ? await bookingsApi.cancelPickupFailed(b.id, reason) : await bookingsApi.cancelTrip(b.id, 'COMPANY', reason))
+      onDone()
+    } catch (e) { toast(e instanceof Error ? e.message : 'Không hủy được đơn', 'error'); setBusy(false) }
   }
   return (
     <Modal wide onClose={onClose} title={`Không nhận được ngựa · ${b.id}`} subtitle={`${b.customer} · ${placeShort(b.origin.name)} → ${placeShort(b.dest.name)}`}
       footer={<>
         <button className="btn btn-ghost" onClick={onClose}>Để sau</button>
-        <button className="btn btn-danger" disabled={busy || !reason.trim()} onClick={cancel}><i className="fa-solid fa-ban" /> Hủy đơn, khách mất cọc</button>
+        <button className="btn btn-outline" disabled={busy || !reason.trim()} onClick={() => cancel('COMPANY')}><i className="fa-solid fa-rotate-left" /> Lỗi do nhà xe: hủy, hoàn 100%</button>
+        <button className="btn btn-danger" disabled={busy || !reason.trim()} onClick={() => cancel('CUSTOMER')}><i className="fa-solid fa-ban" /> Lỗi do khách: hủy, khách mất cọc</button>
       </>}>
       <p style={{ marginTop: 0 }}>Kíp xe đã tới điểm đón nhưng không nhận được con ngựa nào:</p>
       <ul>
@@ -89,7 +95,7 @@ function PickupFailedModal({ b, onClose, onDone }: { b: Booking; onClose: () => 
           </li>
         ))}
       </ul>
-      <div className="alert alert-warning"><i className="fa-solid fa-circle-info" /><div>Khách chưa thanh toán 70% còn lại nên không có khoản nào phải hoàn. Hủy đơn thì khách mất phần cọc vận chuyển, phần bảo hiểm thu hộ (nếu có) chờ đối soát riêng. Xe, tài xế và hộ tống được nhả cho đơn khác.</div></div>
+      <div className="alert alert-warning"><i className="fa-solid fa-circle-info" /><div>Chọn bên chịu lỗi. Do khách (ngựa không khớp hồ sơ, không giao ngựa): khách mất phần cọc vận chuyển, bảo hiểm thu hộ (nếu có) chờ đối soát. Do nhà xe (máy quét hỏng, nhập sai chip...): hoàn 100% số khách đã trả. Xe, tài xế và hộ tống được nhả cho đơn khác.</div></div>
       <div className="form-group" style={{ margin: 0 }}>
         <label htmlFor="pf-reason" className="required">Lý do hủy (khách xem được)</label>
         <input id="pf-reason" className="form-control" value={reason} onChange={e => setReason(e.target.value)} />

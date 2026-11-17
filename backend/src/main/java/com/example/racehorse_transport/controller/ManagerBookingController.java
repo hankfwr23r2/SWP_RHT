@@ -115,6 +115,16 @@ public class ManagerBookingController {
         return ResponseEntity.ok(ApiResponse.success(response, response.getMessage()));
     }
 
+    // Quản lý hủy chuyến đã cọc: lỗi do công ty thì hoàn 100%, lỗi do khách thì khách mất phần cọc vận chuyển
+    @PostMapping("/{id}/cancel-trip")
+    public ResponseEntity<ApiResponse<com.example.racehorse_transport.dto.payment.CancelWithRefundResponse>> cancelTrip(
+            @PathVariable("id") String id,
+            @RequestBody com.example.racehorse_transport.dto.payment.CancelTripRequest request,
+            Authentication authentication) {
+        var response = paymentService.cancelTrip(id, request.getFault(), request.getReason(), authentication.getName());
+        return ResponseEntity.ok(ApiResponse.success(response, response.getMessage()));
+    }
+
     // 8. API Kích hoạt quét & giải phóng xe/kíp xe quá hạn 24h (Dành cho Quản lý / Batch Job)
     @PostMapping("/maintenance/release-expired")
     public ResponseEntity<ApiResponse<Integer>> releaseExpired() {

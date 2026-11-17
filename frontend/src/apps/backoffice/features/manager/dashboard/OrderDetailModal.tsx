@@ -16,6 +16,7 @@ import { AuditModal } from './AuditModal'
 import { IntakeModal } from '../intake/IntakePage'
 import { QuoteModal } from '../approvals/ApprovalsPage'
 import { ApproveModal } from '../incidents/IncidentsPage'
+import { CancelTripModal, TRIP_CANCELLABLE_STATUSES } from './CancelTripModal'
 
 // Tài xế và hộ tống Manager đã chọn cho từng xe (chỉ xem; chọn ở trang Duyệt giá)
 function CrewTab({ b }: { b: Booking }) {
@@ -47,6 +48,7 @@ export function OrderDetailModal({ b, all = [], onClose, onDone }: { b: Booking;
   const [intakeOpen, setIntakeOpen] = useState(false)
   const [quoteOpen, setQuoteOpen] = useState(false)
   const [incidentOpen, setIncidentOpen] = useState(false)
+  const [cancelOpen, setCancelOpen] = useState(false)
   const pendingIncident = (b.incidents ?? []).find(i => i.status === 'pending_approval')
   const at = stepOf(b.status)
   const stepName = t(`bookingSteps.${at}`, BOOKING_STEPS[at] ?? '')
@@ -61,7 +63,7 @@ export function OrderDetailModal({ b, all = [], onClose, onDone }: { b: Booking;
   )
   return (
     <>
-      {!intakeOpen && !quoteOpen && <SideTabsModal
+      {!intakeOpen && !quoteOpen && !cancelOpen && <SideTabsModal
         onClose={onClose} title={b.id} subtitle={`${b.customer} · ${b.type === 'international' ? `Quốc tế${b.gate ? ` · ${b.gate}` : ''}` : 'Trong nước'}`}
         tabs={[
           { id: 'summary', label: t('orderDetailModal.tabSummary', 'Tổng quan'), icon: 'fa-chart-pie', content: summary },
@@ -74,6 +76,9 @@ export function OrderDetailModal({ b, all = [], onClose, onDone }: { b: Booking;
         ]}
         footer={<>
           <button className="btn btn-ghost" onClick={onClose}>{t('orderDetailModal.close', 'Đóng')}</button>
+          {TRIP_CANCELLABLE_STATUSES.has(b.status) && (
+            <button className="btn btn-outline" onClick={() => setCancelOpen(true)}><i className="fa-solid fa-ban" /> {t('orderDetailModal.cancelTrip', 'Hủy chuyến')}</button>
+          )}
           {b.status === 'expenses_submitted' ? (
             <button className="btn btn-primary" onClick={() => setAudit(true)}><i className="fa-solid fa-file-invoice-dollar" /> {t('orderDetailModal.auditExpenses', 'Đối soát chi phí')}</button>
           ) : b.status === 'pending_intake' ? (
@@ -85,6 +90,7 @@ export function OrderDetailModal({ b, all = [], onClose, onDone }: { b: Booking;
           ) : null}
         </>}
       />}
+      {cancelOpen && <CancelTripModal b={b} onClose={() => setCancelOpen(false)} onDone={() => { setCancelOpen(false); onDone() }} />}
       {audit && <AuditModal b={b} onClose={() => setAudit(false)} onDone={() => { setAudit(false); onDone() }} />}
       {intakeOpen && <IntakeModal b={b} onClose={onClose} onDone={onDone} />}
       {quoteOpen && <QuoteModal b={b} all={all} onClose={onClose} onDone={onDone} />}

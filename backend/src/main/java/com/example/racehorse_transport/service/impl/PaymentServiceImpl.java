@@ -37,6 +37,12 @@ public class PaymentServiceImpl implements PaymentService {
     private final QuotationRepository quotationRepository;
     private final ObjectMapper objectMapper;
     private final com.example.racehorse_transport.service.StaffNotifier staffNotifier;
+    private final com.example.racehorse_transport.service.BookingService bookingService;
+
+    // Quản lý hủy chuyến được từ lúc khách đặt cọc tới trước khi xe rời điểm đón
+    private static final Set<String> TRIP_CANCELLABLE_STATUSES = Set.of(
+            "waybill_issued", "clearance_in_progress", "clearance_done", "ready_for_pickup",
+            "en_route_to_pickup", "pickup_failed");
 
     @Override
     @Transactional
@@ -117,7 +123,11 @@ public class PaymentServiceImpl implements PaymentService {
         if (balancePaid) {
             throw new IllegalStateException("Đơn đã thanh toán đủ nên không tự hủy được. Vui lòng liên hệ hotline để được hỗ trợ.");
         }
-        if (!CustomerBookingRules.canCancel(booking.getStatus(), false)) {
+        boolean horsesPickedUp = "en_route_to_pickup".equals(booking.getStatus()) && bookingService.isPickupComplete(booking);
+        if (horsesPickedUp) {
+            throw new IllegalStateException("Kíp xe đã nhận ngựa nên không tự hủy đơn được. Vui lòng liên hệ nhà xe để được hỗ trợ hủy chuyến và nhận lại ngựa.");
+        }
+        if (!CustomerBookingRules.canCancel(booking.getStatus(), false, false)) {
             throw new IllegalStateException("Không thể hủy đơn hàng ở trạng thái: " + booking.getStatus());
         }
 
@@ -130,9 +140,10 @@ public class PaymentServiceImpl implements PaymentService {
 
         // Trường hợp 1: Chưa cọc -> Hủy miễn phí, không mất tiền
         if (depositOpt.isEmpty()) {
+            boolean withdrawal = CustomerBookingRules.isBeforeDeposit(booking.getStatus());
             booking.setStatus("cancelled");
             BookingDetailsPayload payload = extractPayload(booking);
-            appendHistory(payload, actor, "Hủy đơn");
+            appendHistory(payload, actor, withdrawal ? "Rút yêu cầu vận chuyển" : "Hủy đơn");
             savePayload(booking, payload);
             bookingRepository.save(booking);
             staffNotifier.toManagers(booking, "Khách hủy đơn · " + booking.getCode(),
@@ -183,6 +194,105 @@ public class PaymentServiceImpl implements PaymentService {
         String why = reason != null && !reason.isBlank() ? reason.trim() : "Không nhận được ngựa ở điểm đón";
         return forfeitDeposit(booking, deposit, why, username, "Hủy đơn vì không nhận được ngựa: " + why,
                 "Không nhận được ngựa ở điểm đón (" + why + ").");
+    }
+
+    @Override
+    @Transactional
+    public CancelWithRefundResponse cancelTrip(String bookingIdentifier, String fault, String reason, String username) {
+        Booking booking = bookingRepository.findByIdForUpdate(parseBookingId(bookingIdentifier))
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
+        if (!TRIP_CANCELLABLE_STATUSES.contains(booking.getStatus())) {
+            throw new IllegalStateException("Chỉ hủy chuyến khi đơn đã đặt cọc và xe chưa rời điểm đón.");
+        }
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException("Cần nhập lý do hủy chuyến.");
+        }
+        List<Payment> payments = paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(booking.getId());
+        Payment deposit = payments.stream()
+                .filter(p -> "DEPOSIT".equalsIgnoreCase(p.getPaymentType()) && "COMPLETED".equalsIgnoreCase(p.getStatus()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Đơn chưa có tiền cọc đã thanh toán."));
+        boolean balancePaid = payments.stream()
+                .anyMatch(p -> "BALANCE".equalsIgnoreCase(p.getPaymentType()) && "COMPLETED".equalsIgnoreCase(p.getStatus()));
+        // Ngựa đã trên xe: kíp xe phải trả ngựa và hồ sơ gốc cho người giao, có biên bản
+        boolean horsesOnBoard = "en_route_to_pickup".equals(booking.getStatus()) && bookingService.isPickupComplete(booking);
+        String why = reason.trim() + (horsesOnBoard ? ". Kíp xe trả ngựa và hồ sơ gốc cho người giao, lập biên bản" : "");
+
+        CancelWithRefundResponse response;
+        if ("COMPANY".equalsIgnoreCase(fault)) {
+            response = refundAll(booking, payments, why, username);
+        } else if ("CUSTOMER".equalsIgnoreCase(fault)) {
+            if (balancePaid) {
+                throw new IllegalStateException("Khách đã thanh toán đủ; hủy do khách sau mốc này cần xử lý hoàn tiền riêng.");
+            }
+            response = forfeitDeposit(booking, deposit, why, username, "Quản lý hủy chuyến do khách: " + why,
+                    "Nhà xe hủy chuyến do phía khách (" + why + ").");
+        } else {
+            throw new IllegalArgumentException("Cần chọn lỗi do công ty (COMPANY) hoặc do khách (CUSTOMER).");
+        }
+        staffNotifier.toCustomer(booking, "Nhà xe đã hủy chuyến · " + booking.getCode(), response.getMessage());
+        return response;
+    }
+
+    // Công ty hủy chuyến: hoàn toàn bộ tiền khách đã trả (cọc, 70% nếu có, gồm cả bảo hiểm thu hộ).
+    // Hệ thống ghi nhận khoản hoàn; việc chuyển khoản trả khách làm ngoài hệ thống như đối soát bảo hiểm.
+    private CancelWithRefundResponse refundAll(Booking booking, List<Payment> payments, String reason, String actor) {
+        Instant now = Instant.now();
+        BigDecimal collected = BigDecimal.ZERO;
+        BigDecimal depositPaid = BigDecimal.ZERO;
+        for (Payment p : payments) {
+            if (!"COMPLETED".equalsIgnoreCase(p.getStatus()) || p.getAmount() == null) continue;
+            if ("DEPOSIT".equalsIgnoreCase(p.getPaymentType())) depositPaid = depositPaid.add(p.getAmount());
+            if ("DEPOSIT".equalsIgnoreCase(p.getPaymentType()) || "BALANCE".equalsIgnoreCase(p.getPaymentType())) {
+                collected = collected.add(p.getAmount());
+            } else if ("REFUND".equalsIgnoreCase(p.getPaymentType())) {
+                collected = collected.subtract(p.getAmount());
+            }
+        }
+        collected = collected.max(BigDecimal.ZERO);
+        Payment refund = null;
+        if (collected.signum() > 0) {
+            refund = paymentRepository.save(Payment.builder()
+                    .bookingID(booking)
+                    .amount(collected)
+                    .paymentDate(now)
+                    .paymentType("REFUND")
+                    .paymentMethod("MANUAL")
+                    .transactionCode("RF-" + booking.getId() + "-" + now.toEpochMilli())
+                    .status("COMPLETED")
+                    .note("Hoàn 100% do nhà xe hủy chuyến: " + reason)
+                    .build());
+        }
+
+        booking.setStatus("cancelled");
+        BookingDetailsPayload payload = extractPayload(booking);
+        Map<String, Object> paymentMap = getOrCreatePaymentMap(payload);
+        paymentMap.put("cancelled", true);
+        paymentMap.put("cancelledBy", "COMPANY");
+        paymentMap.put("refundAmount", collected);
+        paymentMap.put("penaltyAmount", BigDecimal.ZERO);
+        paymentMap.put("insuranceReconciliationPending", false);
+        paymentMap.put("cancelReason", reason);
+        paymentMap.put("cancelledAt", now.toEpochMilli());
+        payload.setPayment(paymentMap);
+        appendHistory(payload, actor, "Nhà xe hủy chuyến, hoàn 100% (" + collected + " VND): " + reason);
+        savePayload(booking, payload);
+        bookingRepository.save(booking);
+        staffNotifier.bookingCancelled(booking, payload, reason);
+
+        String message = "Nhà xe hủy chuyến (" + reason + "). Hoàn lại toàn bộ " + collected
+                + " VND đã thanh toán; nhà xe sẽ chuyển khoản và liên hệ xác nhận.";
+        return CancelWithRefundResponse.builder()
+                .bookingCode(booking.getCode())
+                .bookingStatus("cancelled")
+                .depositPaid(depositPaid)
+                .daysToDeparture(booking.getDepartureDate() == null ? 0 : ChronoUnit.DAYS.between(now, booking.getDepartureDate()))
+                .refundPercentage(100)
+                .refundAmount(collected)
+                .penaltyAmount(BigDecimal.ZERO)
+                .message(message)
+                .refundPayment(refund != null ? mapToPaymentResponse(refund, booking) : null)
+                .build();
     }
 
     // Hủy đơn đã đặt cọc mà chưa trả 70%: khách mất phần cọc vận chuyển, phần bảo hiểm thu hộ chờ quản lý đối soát riêng

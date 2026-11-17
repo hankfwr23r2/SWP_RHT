@@ -331,6 +331,12 @@ export const bookingsApi = {
     invalidateBookingsListCache()
     return res.data.data?.message ?? res.data.message ?? 'Đã hủy đơn'
   },
+  // Quản lý hủy chuyến đã cọc: COMPANY = nhà xe chịu, hoàn 100%; CUSTOMER = khách mất phần cọc vận chuyển
+  cancelTrip: async (id: string, fault: 'COMPANY' | 'CUSTOMER', reason: string): Promise<string> => {
+    const res = await apiClient.post<ApiResponse<{ message?: string }>>(`/manager/bookings/${id}/cancel-trip`, { fault, reason: reason.trim() })
+    invalidateBookingsListCache()
+    return res.data.data?.message ?? res.data.message ?? 'Đã hủy chuyến'
+  },
   assignCrew: async (id: string, by: string, picks: { tripId: string; driverId: string; escortId: string }[]): Promise<Booking> =>
     toBooking(await backendBookingApi.assignCrew(id, { by, picks })),
   quoteDraft: async (id: string) => {
