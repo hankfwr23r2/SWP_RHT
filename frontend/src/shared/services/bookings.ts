@@ -124,6 +124,7 @@ export interface NewBookingInput {
   consignee: Booking['consignee']
   horses: Array<Omit<BookingHorse, 'stall' | 'feedPackage' | 'waterPlan'>
     & Partial<Pick<BookingHorse, 'stall' | 'feedPackage' | 'waterPlan'>>>
+  limitedLiabilityAccepted?: boolean // khách đã đồng ý Điều khoản Trách nhiệm Hạn chế vì không mua bảo hiểm
 }
 
 
@@ -194,6 +195,7 @@ export const customerBookingsApi = {
         selectedServices: h.selectedServices,
         selectedServiceCodes: h.selectedServiceCodes,
       })),
+      limitedLiabilityAccepted: input.limitedLiabilityAccepted,
     })
     return toCustomerView(toBooking(created, customer))
   },

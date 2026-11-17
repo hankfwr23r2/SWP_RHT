@@ -101,6 +101,7 @@ export default function Step4ReviewPage() {
             selectedServiceCodes: Object.fromEntries(Object.entries(selectedServices).map(([key, service]) => [key, service?.serviceCode])) as Partial<Record<BookingRequiredServiceCategory, string>>,
           }
         }),
+        limitedLiabilityAccepted: draft.limitedLiabilityAccepted,
       })
       setPlaced({ id: order.id, route: `${origin.name.split(' — ')[0]} → ${dest.name.split(' — ')[0]}`, date: formatDate(fromIsoDay(draft.departDate)), horses: rows.length })
       setSent(true)
