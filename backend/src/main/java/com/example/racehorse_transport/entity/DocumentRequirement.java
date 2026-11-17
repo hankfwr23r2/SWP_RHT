@@ -41,6 +41,11 @@ public class DocumentRequirement {
     @Column(name = "country", nullable = false, length = 10)
     private String country;
 
+    // Cửa khẩu áp dụng riêng (thay bảng REGULATION cũ); null = áp dụng chung cho mọi cửa khẩu
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "LocationID", foreignKey = @ForeignKey(name = "fk_document_requirement_location"))
+    private Location location;
+
     @Column(name = "required", nullable = false)
     private boolean required;
 

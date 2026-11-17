@@ -135,7 +135,6 @@ export interface ClearanceItem {
   by?: string
   label?: string
   hint?: string
-  regulationId?: number
   gateName?: string
   gateLocationId?: number
 }

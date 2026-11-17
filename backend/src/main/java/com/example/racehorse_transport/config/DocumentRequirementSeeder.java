@@ -33,7 +33,8 @@ public class DocumentRequirementSeeder implements CommandLineRunner {
         List<DocumentRequirement> existingRequirements = repository.findAll();
         for (String[] defaults : DEFAULTS) {
             boolean exists = existingRequirements.stream().anyMatch(item ->
-                    defaults[0].equals(item.getDocumentGroup())
+                    item.getLocation() == null
+                            && defaults[0].equals(item.getDocumentGroup())
                             && defaults[1].equals(item.getDocumentType())
                             && defaults[3].equals(item.getTripType())
                             && defaults[4].equals(item.getCountry()));

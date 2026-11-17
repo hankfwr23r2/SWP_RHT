@@ -17,13 +17,16 @@ export interface DocumentRequirement {
   description?: string
   tripType: DocumentTripType
   country: DocumentCountry
+  /** Cửa khẩu áp dụng riêng; null = áp dụng chung */
+  locationId?: number | null
+  locationName?: string | null
   required: boolean
   status: DocumentRequirementStatus
   updatedBy?: string
   updatedAt?: string
 }
 
-export type DocumentRequirementPayload = Omit<DocumentRequirement, 'id' | 'updatedBy' | 'updatedAt'>
+export type DocumentRequirementPayload = Omit<DocumentRequirement, 'id' | 'updatedBy' | 'updatedAt' | 'locationName'>
 
 export const documentRequirementsApi = {
   listAdmin: async (): Promise<DocumentRequirement[]> => {

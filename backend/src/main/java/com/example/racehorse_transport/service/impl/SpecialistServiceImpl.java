@@ -31,7 +31,7 @@ public class SpecialistServiceImpl implements SpecialistService {
     private final BookingRepository bookingRepository;
     private final StaffRepository staffRepository;
     private final TripDocumentRepository tripDocumentRepository;
-    private final RegulationRepository regulationRepository;
+    private final DocumentRequirementRepository documentRequirementRepository;
     private final LocationRepository locationRepository;
     private final ObjectMapper objectMapper;
     private final com.example.racehorse_transport.service.StaffNotifier staffNotifier;
@@ -713,73 +713,12 @@ public class SpecialistServiceImpl implements SpecialistService {
                     .orElse(null);
         }
 
-        List<Regulation> applicableRegs = new ArrayList<>();
-        applicableRegs.addAll(regulationRepository.findByLocationIDIsNullAndStatus("ACTIVE"));
-        if (isInternational) {
-            if (borderGate != null) {
-                applicableRegs.addAll(regulationRepository.findByLocationID_IdAndStatus(borderGate.getId(), "ACTIVE"));
-            } else {
-                applicableRegs.addAll(regulationRepository.findByStatus("ACTIVE").stream()
-                        .filter(r -> r.getLocationID() != null)
-                        .toList());
-            }
-        }
         boolean hasRequirementSnapshot = payload.getDocumentRequirements() != null;
-        List<DocumentRequirementSnapshot> requiredClearanceDocuments = hasRequirementSnapshot
-                ? payload.getDocumentRequirements().stream()
-                        .filter(requirement -> "CLEARANCE".equals(requirement.getDocumentGroup()))
-                        .toList()
-                : List.of();
         String configuredDestinationCountry = payload.getDestCountry() != null ? payload.getDestCountry()
                 : borderGate != null ? borderGate.getDestinationCountry() : null;
-        applicableRegs = applicableRegs.stream()
-                .filter(regulation -> ClearanceDocumentPolicy.isApplicable(regulation, isInternational))
-                .filter(regulation -> !hasRequirementSnapshot
-                        || ClearanceDocumentPolicy.isForDestinationCountry(regulation, configuredDestinationCountry))
-                .filter(regulation -> !hasRequirementSnapshot || requiredClearanceDocuments.stream()
-                        .anyMatch(requirement -> requirement.getDocumentType().equals(regulation.getDocumentType())))
-                .toList();
-        Map<String, DocumentRequirementSnapshot> requirementByType = requiredClearanceDocuments.stream()
-                .collect(Collectors.toMap(
-                        DocumentRequirementSnapshot::getDocumentType, requirement -> requirement, (first, ignored) -> first));
-
-        List<Map<String, Object>> items = new ArrayList<>();
-        for (Regulation reg : applicableRegs) {
-            Map<String, Object> item = new HashMap<>();
-            String type = reg.getDocumentType() != null ? reg.getDocumentType() : ("doc_" + reg.getId());
-            DocumentRequirementSnapshot requirement = requirementByType.get(type);
-            item.put("type", type);
-            item.put("label", requirement != null ? requirement.getDocumentName() : reg.getRegulationName());
-            item.put("hint", requirement != null && requirement.getDescription() != null
-                    ? requirement.getDescription() : reg.getDescription());
-            item.put("note", "");
-            item.put("status", "todo");
-            item.put("photos", new ArrayList<String>());
-            item.put("regulationId", reg.getId());
-            if (reg.getLocationID() != null) {
-                item.put("gateName", reg.getLocationID().getLocationName());
-                item.put("gateLocationId", reg.getLocationID().getId());
-            }
-            items.add(item);
-        }
-
-        Set<String> presentTypes = items.stream()
-                .map(item -> Objects.toString(item.get("type"), ""))
-                .collect(Collectors.toSet());
-        if (hasRequirementSnapshot) {
-            for (DocumentRequirementSnapshot requirement : requiredClearanceDocuments) {
-                if (presentTypes.add(requirement.getDocumentType())) {
-                    Map<String, Object> item = new HashMap<>();
-                    item.put("type", requirement.getDocumentType());
-                    item.put("label", requirement.getDocumentName());
-                    item.put("hint", requirement.getDescription());
-                    item.put("note", "");
-                    item.put("status", "todo");
-                    item.put("photos", new ArrayList<String>());
-                    items.add(item);
-                }
-            }
-        }
+        List<Map<String, Object>> items = ClearanceDocumentPolicy.buildItems(
+                documentRequirementRepository.findByDocumentGroupAndStatusOrderByDocumentNameAsc("CLEARANCE", "ACTIVE"),
+                isInternational, borderGate, configuredDestinationCountry, payload.getDocumentRequirements());
 
         if (items.isEmpty() && !hasRequirementSnapshot) {
             addLegacyFallbackItems(items, isInternational);

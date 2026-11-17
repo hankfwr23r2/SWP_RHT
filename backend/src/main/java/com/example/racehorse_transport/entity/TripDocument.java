@@ -24,10 +24,6 @@ public class TripDocument {
     private Booking bookingID;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "RegulationID")
-    private Regulation regulationID;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "StaffID")
     private Staff staffID;
 

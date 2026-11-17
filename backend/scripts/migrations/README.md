@@ -17,6 +17,13 @@ Hai script dành cho schema PostgreSQL hiện có trước refactor. DB mới ho
    - `system_config.updated_by_staffid` → `staff(userid)`, cùng cách backfill và bỏ cột `updated_by`.
    Script chạy lại được. Nếu backend mới lỡ khởi động trước, Hibernate chỉ thêm cột/FK mới; chạy 003 sau đó vẫn backfill và dọn cột cũ.
 
+8. Khi backend vẫn dừng, chạy `004_merge_regulation_into_document_requirement.sql` để gộp `REGULATION` vào `DOCUMENT_REQUIREMENT`:
+   - Thêm `document_requirement.locationid` → `location(locationid)`. NULL = áp dụng chung, có giá trị = giấy tờ riêng của cửa khẩu đó.
+   - Quy định theo cửa khẩu thành requirement `CLEARANCE`/`INTERNATIONAL` của cửa khẩu, giữ tên, mô tả, trạng thái và nhân viên tạo; quốc gia lấy từ `location.destination_country`, thiếu thì từ quy định cũ.
+   - Quy định chung chỉ được thêm khi chưa có requirement chung cùng loại giấy (không nhân bản `health_cert`/`poa`).
+   - Bỏ cột `trip_document.regulationid` (không còn được ghi) và bảng `regulation`. Quy định không có `document_type` làm script dừng để phân loại tay.
+   Chạy lại an toàn. Booking cũ vẫn giữ checklist đã lưu trong `details_json`; khóa `regulationId` trong các mục cũ không còn được đọc.
+
 Không khởi động code cũ sau bước 5: Hibernate `ddl-auto=update` có thể tạo lại bảng cũ rỗng và code cũ sẽ ghi sai nơi. Các script không được đặt vào seeder hoặc chạy lại mỗi lần ứng dụng khởi động.
 
 ## Dữ liệu được bảo toàn

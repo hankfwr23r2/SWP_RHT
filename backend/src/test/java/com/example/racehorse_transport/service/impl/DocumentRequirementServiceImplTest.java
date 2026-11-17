@@ -5,6 +5,8 @@ import com.example.racehorse_transport.entity.DocumentRequirement;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.User;
 import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.repository.LocationRepository;
+import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.service.AdminAuditWriter;
 
 import com.example.racehorse_transport.repository.DocumentRequirementRepository;
@@ -30,12 +32,14 @@ class DocumentRequirementServiceImplTest {
     private AdminAuditWriter audit;
     @Mock
     private StaffRepository staffRepository;
+    @Mock
+    private LocationRepository locationRepository;
 
     private DocumentRequirementServiceImpl service;
 
     @BeforeEach
     void setUp() {
-        service = new DocumentRequirementServiceImpl(repository, staffRepository, audit);
+        service = new DocumentRequirementServiceImpl(repository, staffRepository, locationRepository, audit);
     }
 
     @Test
@@ -97,6 +101,69 @@ class DocumentRequirementServiceImplTest {
         assertThatThrownBy(() -> service.create(request("CLEARANCE", "poa", "ALL", "ALL"), "ghost"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Không tìm thấy nhân viên");
+    }
+
+    @Test
+    void gateRequirementIsStoredWithBorderGateAndReturnsItsName() {
+        when(repository.findAll()).thenReturn(List.of());
+        when(repository.save(any(DocumentRequirement.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(staffRepository.findByUser_Username("admin")).thenReturn(Optional.of(admin()));
+        when(locationRepository.findById(16)).thenReturn(Optional.of(gate(16, "BorderGate", "KH")));
+        DocumentRequirementRequest request = request("CLEARANCE", "customs_declaration", "INTERNATIONAL", "KH");
+        request.setLocationId(16);
+
+        var response = service.create(request, "admin");
+
+        assertThat(response.getLocationId()).isEqualTo(16);
+        assertThat(response.getLocationName()).isEqualTo("Cửa khẩu 16");
+    }
+
+    @Test
+    void gateRequirementRejectsNonGateWrongCountryAndDomesticScope() {
+        when(locationRepository.findById(5)).thenReturn(Optional.of(gate(5, "Warehouse", null)));
+        when(locationRepository.findById(24)).thenReturn(Optional.of(gate(24, "BorderGate", "LA")));
+        DocumentRequirementRequest warehouse = request("CLEARANCE", "customs_declaration", "INTERNATIONAL", "KH");
+        warehouse.setLocationId(5);
+        DocumentRequirementRequest wrongCountry = request("CLEARANCE", "customs_declaration", "INTERNATIONAL", "KH");
+        wrongCountry.setLocationId(24);
+        DocumentRequirementRequest horseDoc = request("HORSE", "passport", "ALL", "ALL");
+        horseDoc.setLocationId(24);
+
+        assertThatThrownBy(() -> service.create(warehouse, "admin")).hasMessageContaining("không phải cửa khẩu");
+        assertThatThrownBy(() -> service.create(wrongCountry, "admin")).hasMessageContaining("không dẫn tới quốc gia");
+        assertThatThrownBy(() -> service.create(horseDoc, "admin")).hasMessageContaining("Chỉ giấy tờ thông quan");
+    }
+
+    @Test
+    void sameTypeMayExistOncePerGate() {
+        DocumentRequirement general = new DocumentRequirement();
+        general.setId(1);
+        general.setDocumentGroup("CLEARANCE");
+        general.setDocumentType("customs_declaration");
+        general.setTripType("INTERNATIONAL");
+        general.setCountry("KH");
+        DocumentRequirement atGate = new DocumentRequirement();
+        atGate.setId(2);
+        atGate.setDocumentGroup("CLEARANCE");
+        atGate.setDocumentType("customs_declaration");
+        atGate.setTripType("INTERNATIONAL");
+        atGate.setCountry("KH");
+        atGate.setLocation(gate(16, "BorderGate", "KH"));
+        when(repository.findAll()).thenReturn(List.of(general, atGate));
+        when(locationRepository.findById(16)).thenReturn(Optional.of(gate(16, "BorderGate", "KH")));
+        DocumentRequirementRequest duplicate = request("CLEARANCE", "customs_declaration", "INTERNATIONAL", "KH");
+        duplicate.setLocationId(16);
+
+        assertThatThrownBy(() -> service.create(duplicate, "admin")).hasMessageContaining("đã tồn tại");
+    }
+
+    private Location gate(int id, String type, String destinationCountry) {
+        Location location = new Location();
+        location.setId(id);
+        location.setLocationType(type);
+        location.setLocationName("Cửa khẩu " + id);
+        location.setDestinationCountry(destinationCountry);
+        return location;
     }
 
     private Staff admin() {

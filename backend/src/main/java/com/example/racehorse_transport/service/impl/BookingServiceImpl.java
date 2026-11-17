@@ -86,7 +86,6 @@ public class BookingServiceImpl implements BookingService {
     private final LogRepository logRepository;
     private final VehicleRepository vehicleRepository;
     private final StaffRepository staffRepository;
-    private final RegulationRepository regulationRepository;
     private final LocationRepository locationRepository;
     private final SystemConfigService systemConfigService;
     private final TripDocumentRepository tripDocumentRepository;
@@ -160,6 +159,8 @@ public class BookingServiceImpl implements BookingService {
                 .findByStatusOrderByDocumentGroupAscDocumentNameAsc("ACTIVE")
                 .stream()
                 .filter(DocumentRequirement::isRequired)
+                // Dòng theo cửa khẩu chỉ bổ sung chi tiết lúc làm thông quan, không đưa vào danh sách khách phải nộp
+                .filter(requirement -> requirement.getLocation() == null)
                 .filter(requirement -> DocumentRequirementPolicy.applies(
                         requirement, request.getType(), request.getDestCountry()))
                 .filter(requirement -> internationalBooking
@@ -1309,80 +1310,12 @@ public class BookingServiceImpl implements BookingService {
                     .orElse(null);
         }
 
-        // 2. Kéo danh sách Regulation từ database
-        List<Regulation> applicableRegs = new ArrayList<>();
-        // a. Các quy định chung (nội địa & chuẩn bị): locationID is null
-        applicableRegs.addAll(regulationRepository.findByLocationIDIsNullAndStatus("ACTIVE"));
-
-        // b. Nếu là quốc tế, kéo các quy định gắn riêng với Cửa khẩu đó
-        if (isInternational) {
-            if (borderGate != null) {
-                applicableRegs.addAll(regulationRepository.findByLocationID_IdAndStatus(borderGate.getId(), "ACTIVE"));
-            } else {
-                applicableRegs.addAll(regulationRepository.findByStatus("ACTIVE").stream()
-                        .filter(r -> r.getLocationID() != null)
-                        .toList());
-            }
-        }
-        boolean hasRequirementSnapshot = payload.getDocumentRequirements() != null;
-        List<DocumentRequirementSnapshot> requiredClearanceDocuments = hasRequirementSnapshot
-                ? payload.getDocumentRequirements().stream()
-                        .filter(requirement -> "CLEARANCE".equals(requirement.getDocumentGroup()))
-                        .toList()
-                : List.of();
+        // 2. Dựng clearance.items từ cấu hình giấy tờ (dòng chung + dòng riêng theo cửa khẩu)
         String configuredDestinationCountry = payload.getDestCountry() != null ? payload.getDestCountry()
                 : borderGate != null ? borderGate.getDestinationCountry() : null;
-        Set<String> requiredClearanceTypes = requiredClearanceDocuments.stream()
-                .map(DocumentRequirementSnapshot::getDocumentType)
-                .collect(java.util.stream.Collectors.toSet());
-        Map<String, DocumentRequirementSnapshot> requirementByType = requiredClearanceDocuments.stream()
-                .collect(java.util.stream.Collectors.toMap(
-                        DocumentRequirementSnapshot::getDocumentType, requirement -> requirement, (first, ignored) -> first));
-        applicableRegs = applicableRegs.stream()
-                .filter(regulation -> ClearanceDocumentPolicy.isApplicable(regulation, isInternational))
-                .filter(regulation -> !hasRequirementSnapshot
-                        || ClearanceDocumentPolicy.isForDestinationCountry(regulation, configuredDestinationCountry))
-                .filter(regulation -> !hasRequirementSnapshot
-                        || requiredClearanceTypes.contains(regulation.getDocumentType()))
-                .toList();
-
-        // 3. Khởi tạo clearance.items
-        List<Map<String, Object>> items = new ArrayList<>();
-        for (Regulation reg : applicableRegs) {
-            Map<String, Object> item = new HashMap<>();
-            String type = reg.getDocumentType() != null ? reg.getDocumentType() : ("doc_" + reg.getId());
-            item.put("type", type);
-            DocumentRequirementSnapshot requirement = requirementByType.get(reg.getDocumentType());
-            item.put("label", requirement != null ? requirement.getDocumentName() : reg.getRegulationName());
-            item.put("hint", requirement != null && requirement.getDescription() != null
-                    ? requirement.getDescription() : reg.getDescription());
-            item.put("note", "");
-            item.put("status", "todo");
-            item.put("photos", new ArrayList<String>());
-            item.put("regulationId", reg.getId());
-            if (reg.getLocationID() != null) {
-                item.put("gateName", reg.getLocationID().getLocationName());
-                item.put("gateLocationId", reg.getLocationID().getId());
-            }
-            items.add(item);
-        }
-        Set<String> configuredTypesPresent = items.stream()
-                .map(item -> String.valueOf(item.get("type")))
-                .collect(java.util.stream.Collectors.toSet());
-        if (hasRequirementSnapshot) {
-            for (DocumentRequirementSnapshot requirement : requiredClearanceDocuments) {
-                if (configuredTypesPresent.add(requirement.getDocumentType())) {
-                    Map<String, Object> item = new HashMap<>();
-                    item.put("type", requirement.getDocumentType());
-                    item.put("label", requirement.getDocumentName());
-                    item.put("hint", requirement.getDescription());
-                    item.put("note", "");
-                    item.put("status", "todo");
-                    item.put("photos", new ArrayList<String>());
-                    items.add(item);
-                }
-            }
-        }
+        List<Map<String, Object>> items = ClearanceDocumentPolicy.buildItems(
+                documentRequirementRepository.findByDocumentGroupAndStatusOrderByDocumentNameAsc("CLEARANCE", "ACTIVE"),
+                isInternational, borderGate, configuredDestinationCountry, payload.getDocumentRequirements());
 
         Map<String, Object> clearanceMap = new HashMap<>();
         clearanceMap.put("items", items);
