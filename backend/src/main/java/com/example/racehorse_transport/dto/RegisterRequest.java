@@ -42,4 +42,7 @@ public class RegisterRequest {
 
     // Ngôn ngữ đang chọn trên giao diện lúc đăng ký ("vi" hoặc "en"); khác thì bỏ qua
     private String language;
+
+    // Khách phải đồng ý Điều khoản vận chuyển mới đăng ký được; giờ và phiên bản do server ghi
+    private Boolean acceptedTerms;
 }

@@ -98,6 +98,7 @@ class BookingServiceImplTest {
     private BookingServiceImpl service;
     private Customer customer;
     private final Clock clock = mock(Clock.class);
+    private final com.example.racehorse_transport.repository.TermsAcceptanceRepository termsAcceptances = mock(com.example.racehorse_transport.repository.TermsAcceptanceRepository.class);
     private static final Instant DEPOSIT_DEADLINE = Instant.parse("2026-11-07T03:00:00Z");
 
     private static final String CODE = "BK-7F3K9QXM";
@@ -135,6 +136,7 @@ class BookingServiceImplTest {
                 mock(com.example.racehorse_transport.repository.IncidentRepository.class),
                 billMailService, org.mockito.Mockito.mock(com.example.racehorse_transport.service.StaffNotifier.class),
                 new com.example.racehorse_transport.service.PublicTrackingGuard(clock));
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "termsAcceptanceRepository", termsAcceptances);
 
         when(documentRequirementRepository.findByDocumentGroupAndStatusOrderByDocumentNameAsc(any(), any()))
                 .thenReturn(List.of());
@@ -183,6 +185,7 @@ class BookingServiceImplTest {
                 .consignor(PartyContactDto.builder().name("  Sender  ").phone(" 0900 ").build())
                 .consignee(PartyContactDto.builder().name(" Receiver ").phone(" 0901 ").build())
                 .horses(List.of(horseDto))
+                .limitedLiabilityAccepted(true)
                 .build();
         Horse horse = Horse.builder().id(12).customerID(customer).currentCountry("VN").build();
 
@@ -212,6 +215,7 @@ class BookingServiceImplTest {
 
         BookingResponse response = service.createBooking("phuc", request);
 
+        verify(termsAcceptances).save(any());
         // Mã đơn được sinh ở service (đã kiểm tra chưa trùng) trước khi lưu
         assertThat(response.getId()).matches("^BK-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{8}$");
         verify(bookingRepository).existsByCode(response.getId());
@@ -761,7 +765,7 @@ class BookingServiceImplTest {
                 .consignee(PartyContactDto.builder().name("Recipient").phone("0900000001").build())
                 .horses(List.of(BookingHorseDto.builder().horseId("H-012").name("Lightning")
                         .insurance(com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder()
-                                .option("none").build()).build())).build();
+                                .option("none").build()).build())).limitedLiabilityAccepted(true).build();
         assertThat(service.createBooking("phuc", next).getStatus()).isEqualTo("pending_intake");
     }
 

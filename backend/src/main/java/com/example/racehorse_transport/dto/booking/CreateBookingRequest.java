@@ -39,4 +39,7 @@ public class CreateBookingRequest {
 
     @NotEmpty(message = "Danh sách ngựa vận chuyển không được để trống")
     private List<BookingHorseDto> horses;
+
+    // Bắt buộc true khi có ngựa từ chối bảo hiểm; giờ và phiên bản do server ghi
+    private Boolean limitedLiabilityAccepted;
 }

@@ -77,7 +77,7 @@ class BookingWithSubmittedDocumentsTest {
         String email = "khach" + suffix + "@gmail.com";
         HttpResponse<String> register = post("/auth/register", null, """
                 {"username":"khach%s","email":"%s","password":"Test@123","fullName":"Khach Test",
-                 "phone":"0900000098","address":"Ha Noi"}""".formatted(suffix, email));
+                 "phone":"0900000098","address":"Ha Noi","acceptedTerms":true}""".formatted(suffix, email));
         assertThat(register.statusCode()).as(register.body()).isBetween(200, 201);
         // Test này không kiểm luồng OTP email (đã có CustomerSignInVerificationTest): đánh dấu email đã xác thực
         try (Connection connection = DriverManager.getConnection(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
@@ -120,7 +120,7 @@ class BookingWithSubmittedDocumentsTest {
                  "consignor":{"name":"Nguoi Gui","phone":"0900000091","idNumber":"079200000091","address":"Dong Nai"},
                  "consignee":{"name":"Nguoi Nhan","phone":"0900000097","idNumber":"079200000097","address":"Ha Noi"},
                  "horses":[{"horseId":"H-%d","name":"Storm","breed":"Arabian","sex":"mare","stall":"standard",
-                            "feedPackage":"basic","waterPlan":"every_3h","insuranceOpted":false,"insurance":{"option":"none"}}]}""".formatted(departAt, horseId));
+                            "feedPackage":"basic","waterPlan":"every_3h","insuranceOpted":false,"insurance":{"option":"none"}}],"limitedLiabilityAccepted":true}""".formatted(departAt, horseId));
     }
 
     private HttpResponse<String> post(String path, String token, String body) throws Exception {
