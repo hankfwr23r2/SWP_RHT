@@ -2,9 +2,13 @@ package com.example.racehorse_transport.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.Instant;
 import lombok.Getter;
@@ -43,8 +47,11 @@ public class DocumentRequirement {
     @Column(name = "status", nullable = false, length = 10)
     private String status;
 
-    @Column(name = "updatedBy", length = 100)
-    private String updatedBy;
+    // Nhân viên (ADMIN) sửa gần nhất; null = dữ liệu mặc định do seeder tạo
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "updatedBy_StaffID",
+            foreignKey = @ForeignKey(name = "fk_document_requirement_updated_by_staff"))
+    private Staff updatedBy;
 
     @Column(name = "updatedAt")
     private Instant updatedAt;

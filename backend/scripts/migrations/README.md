@@ -11,6 +11,11 @@ Hai script dành cho schema PostgreSQL hiện có trước refactor. DB mới ho
 5. Khi backend vẫn dừng, chạy `002_remove_legacy_tables.sql`. Script kiểm tra lại nội dung OTP/lịch sử trước khi bỏ bốn bảng cũ; không dùng CASCADE.
 6. Khởi động backend phiên bản mới và kiểm tra đăng nhập/xác thực email/reset password, CRUD danh mục và trang lịch sử admin. Khởi động lại để kiểm tra seeder không tạo dữ liệu trùng.
 
+7. Khi backend vẫn dừng, chạy `003_add_user_staff_fk.sql` để gắn khóa ngoại người liên quan:
+   - `email_otp.userid` → `users(userid)` (`ON DELETE CASCADE`), backfill theo email chuẩn hóa; OTP không khớp tài khoản nào bị xóa (chỉ sống 10 phút).
+   - `document_requirement.updated_by_staffid` → `staff(userid)`, backfill từ username cũ; giá trị không phải nhân viên (vd `SYSTEM` của seeder) thành NULL, rồi bỏ cột chuỗi `updated_by`.
+   Script chạy lại được. Nếu backend mới lỡ khởi động trước, Hibernate chỉ thêm cột/FK mới; chạy 003 sau đó vẫn backfill và dọn cột cũ.
+
 Không khởi động code cũ sau bước 5: Hibernate `ddl-auto=update` có thể tạo lại bảng cũ rỗng và code cũ sẽ ghi sai nơi. Các script không được đặt vào seeder hoặc chạy lại mỗi lần ứng dụng khởi động.
 
 ## Dữ liệu được bảo toàn

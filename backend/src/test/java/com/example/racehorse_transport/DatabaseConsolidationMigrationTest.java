@@ -65,6 +65,40 @@ class DatabaseConsolidationMigrationTest {
         }
     }
 
+    @Test
+    void addsUserAndStaffForeignKeysWithBackfillAndCanReplay() throws Exception {
+        try (var postgres = new PostgreSQLContainer("postgres:16-alpine")) {
+            postgres.start();
+            try (var connection = DriverManager.getConnection(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword())) {
+                execute(connection, """
+                    CREATE TABLE users(userid integer PRIMARY KEY,username varchar(255),email varchar(255));
+                    CREATE TABLE staff(userid integer PRIMARY KEY REFERENCES users,role varchar(100));
+                    CREATE TABLE email_otp(id bigint PRIMARY KEY,email varchar(255) NOT NULL,purpose varchar(30) NOT NULL);
+                    CREATE TABLE document_requirement(id integer PRIMARY KEY,updated_by varchar(100));
+                    INSERT INTO users VALUES (1,'admin01',' Admin@Example.com '),(2,'customer','cus@example.com');
+                    INSERT INTO staff VALUES (1,'ADMIN');
+                    INSERT INTO email_otp VALUES (1,'admin@example.com','VERIFY_EMAIL'),(2,'cus@example.com','RESET_PASSWORD'),
+                        (3,'ghost@example.com','VERIFY_EMAIL');
+                    INSERT INTO document_requirement VALUES (1,'admin01'),(2,'SYSTEM'),(3,'customer'),(4,null);
+                    """);
+                migrate(connection, "003_add_user_staff_fk.sql");
+                migrate(connection, "003_add_user_staff_fk.sql");
+                assertThat(number(connection, "SELECT userid FROM email_otp WHERE id=1")).isEqualTo(1);
+                assertThat(number(connection, "SELECT userid FROM email_otp WHERE id=2")).isEqualTo(2);
+                assertThat(number(connection, "SELECT count(*) FROM email_otp WHERE id=3")).isZero();
+                assertThat(number(connection, "SELECT updated_by_staffid FROM document_requirement WHERE id=1")).isEqualTo(1);
+                // 'SYSTEM' và khách hàng (không phải staff) không có staff tương ứng -> NULL
+                assertThat(number(connection, "SELECT count(*) FROM document_requirement WHERE updated_by_staffid IS NULL")).isEqualTo(3);
+                assertThat(number(connection, "SELECT count(*) FROM information_schema.columns WHERE table_name='document_requirement' AND column_name='updated_by'")).isZero();
+                assertThat(number(connection, "SELECT count(*) FROM pg_constraint WHERE conname IN ('fk_email_otp_user','fk_document_requirement_updated_by_staff')")).isEqualTo(2);
+                assertThatThrownBy(() -> execute(connection, "UPDATE document_requirement SET updated_by_staffid=2 WHERE id=4"))
+                        .isInstanceOf(SQLException.class).hasMessageContaining("fk_document_requirement_updated_by_staff");
+                execute(connection, "DELETE FROM users WHERE userid=2");
+                assertThat(number(connection, "SELECT count(*) FROM email_otp WHERE id=2")).isZero();
+            }
+        }
+    }
+
     private void legacySchema(Connection connection) throws SQLException {
         execute(connection,"""
             CREATE TABLE users(userid integer PRIMARY KEY,username varchar(255));

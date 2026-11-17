@@ -61,6 +61,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         }
 
         otp.setEmail(normalizedEmail);
+        otp.setUser(user.get());
         otp.setPurpose(OtpPurpose.RESET_PASSWORD);
         otp.setOtpHash(passwordEncoder.encode(code));
         otp.setExpiresAt(now.plus(OTP_TTL));

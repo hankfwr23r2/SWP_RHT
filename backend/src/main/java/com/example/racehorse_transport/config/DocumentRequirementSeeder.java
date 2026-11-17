@@ -46,7 +46,6 @@ public class DocumentRequirementSeeder implements CommandLineRunner {
                 requirement.setCountry(defaults[4]);
                 requirement.setRequired(true);
                 requirement.setStatus("ACTIVE");
-                requirement.setUpdatedBy("SYSTEM");
                 requirement.setUpdatedAt(Instant.now());
                 repository.save(requirement);
             }
