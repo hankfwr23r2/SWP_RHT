@@ -44,6 +44,7 @@ class UnifiedOtpIntegrationTest {
         assertThat(after.getId()).isEqualTo(first.getId());
         assertThat(after.getOtpHash()).isEqualTo(first.getOtpHash());
         assertThat(after.getLastSentAt()).isEqualTo(first.getLastSentAt());
+        assertThat(after.getUser().getId()).isEqualTo(users.findByEmailIgnoreCase(email).orElseThrow().getId());
         verify(mail, times(1)).send(anyString(), anyString(), anyString());
     }
 
@@ -140,6 +141,7 @@ class UnifiedOtpIntegrationTest {
 
     private EmailOtp token(String email, OtpPurpose purpose, String code) {
         EmailOtp token = new EmailOtp(); token.setEmail(email); token.setPurpose(purpose);
+        token.setUser(users.findByEmailIgnoreCase(email).orElseThrow());
         token.setOtpHash(encoder.encode(code)); token.setExpiresAt(Instant.now().plusSeconds(600));
         token.setLastSentAt(Instant.now()); token.setAttempts(0);
         return tokens.saveAndFlush(token);

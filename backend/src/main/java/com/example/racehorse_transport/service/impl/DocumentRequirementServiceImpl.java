@@ -5,7 +5,9 @@ import static com.example.racehorse_transport.service.AdminAuditWriter.values;
 import com.example.racehorse_transport.dto.DocumentRequirementRequest;
 import com.example.racehorse_transport.dto.DocumentRequirementResponse;
 import com.example.racehorse_transport.entity.DocumentRequirement;
+import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.repository.DocumentRequirementRepository;
+import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.service.DocumentRequirementService;
 import java.time.Instant;
 import java.util.List;
@@ -18,18 +20,21 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
     private final AdminAuditWriter audit;
 
     private final DocumentRequirementRepository repository;
+    private final StaffRepository staffRepository;
 
     public DocumentRequirementServiceImpl(
             DocumentRequirementRepository repository,
+            StaffRepository staffRepository,
             AdminAuditWriter audit) {
         this.audit = audit;
         this.repository = repository;
+        this.staffRepository = staffRepository;
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<DocumentRequirementResponse> listAll() {
-        return repository.findAll().stream()
+        return repository.findAllWithUpdatedBy().stream()
                 .sorted((a, b) -> {
                     int group = a.getDocumentGroup().compareTo(b.getDocumentGroup());
                     return group != 0 ? group : a.getDocumentName().compareToIgnoreCase(b.getDocumentName());
@@ -51,10 +56,11 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
     public DocumentRequirementResponse create(DocumentRequirementRequest request, String actor) {
         validateScope(request);
         ensureUnique(request, null);
+        Staff staff = resolveStaff(actor);
         DocumentRequirement requirement = new DocumentRequirement();
         copy(request, requirement);
         requirement.setUpdatedAt(Instant.now());
-        requirement.setUpdatedBy(actor);
+        requirement.setUpdatedBy(staff);
         DocumentRequirement saved = repository.save(requirement);
         audit.record("CREATE_DOCUMENT_REQUIREMENT", "DOCUMENT_REQUIREMENT", saved.getId(), saved.getDocumentName(),
                 "Tạo quy định giấy tờ", null, snapshot(saved));
@@ -68,11 +74,12 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
         DocumentRequirement requirement = repository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy cấu hình giấy tờ."));
         ensureUnique(request, id);
+        Staff staff = resolveStaff(actor);
         var before = snapshot(requirement);
         Instant changedAt = Instant.now();
         copy(request, requirement);
         requirement.setUpdatedAt(changedAt);
-        requirement.setUpdatedBy(actor);
+        requirement.setUpdatedBy(staff);
         DocumentRequirement saved = repository.save(requirement);
         audit.record("UPDATE_DOCUMENT_REQUIREMENT", "DOCUMENT_REQUIREMENT", id, saved.getDocumentName(),
                 "Cập nhật quy định giấy tờ", before, snapshot(saved));
@@ -88,15 +95,22 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
         DocumentRequirement requirement = repository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy cấu hình giấy tờ."));
         if (!Objects.equals(requirement.getStatus(), status)) {
+            Staff staff = resolveStaff(actor);
             Instant changedAt = Instant.now();
             audit.record("CHANGE_DOCUMENT_REQUIREMENT_STATUS", "DOCUMENT_REQUIREMENT", id, requirement.getDocumentName(),
                     "Đổi trạng thái quy định giấy tờ", values("status", requirement.getStatus()), values("status", status));
             requirement.setStatus(status);
             requirement.setUpdatedAt(changedAt);
-            requirement.setUpdatedBy(actor);
+            requirement.setUpdatedBy(staff);
             repository.save(requirement);
         }
         return toResponse(requirement);
+    }
+
+    // Chỉ ADMIN (có bản ghi STAFF) được sửa cấu hình giấy tờ
+    private Staff resolveStaff(String username) {
+        return staffRepository.findByUser_Username(username)
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhân viên thực hiện thao tác."));
     }
 
     private void ensureUnique(DocumentRequirementRequest request, Integer ignoredId) {
@@ -156,7 +170,7 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
                 .country(entity.getCountry())
                 .required(entity.isRequired())
                 .status(entity.getStatus())
-                .updatedBy(entity.getUpdatedBy())
+                .updatedBy(entity.getUpdatedBy() == null ? "SYSTEM" : entity.getUpdatedBy().getUser().getUsername())
                 .updatedAt(entity.getUpdatedAt())
                 .build();
     }

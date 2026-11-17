@@ -2,12 +2,18 @@ package com.example.racehorse_transport.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -32,6 +38,12 @@ public class EmailOtp {
 
     @Column(name = "Email", nullable = false, length = 255)
     private String email;
+
+    // Tài khoản sở hữu OTP; xóa user thì OTP xóa theo. Email vẫn giữ để tra cứu/khóa theo địa chỉ đã gửi.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "UserID", foreignKey = @ForeignKey(name = "fk_email_otp_user"))
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private User user;
 
     @Column(name = "OtpHash", nullable = false, length = 100)
     private String otpHash;

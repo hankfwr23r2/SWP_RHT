@@ -37,6 +37,9 @@ public class EmailVerificationService {
     public void sendOtp(String email) {
         String normalizedEmail = normalize(email);
         otpLock.acquire(normalizedEmail);
+        // OTP luôn gắn với tài khoản (FK UserID); email chưa có tài khoản thì không phát mã
+        User user = userRepository.findByEmailIgnoreCase(normalizedEmail).orElse(null);
+        if (user == null) return;
         Instant now = Instant.now();
         EmailOtp otp = otpRepository.findByEmailAndPurpose(normalizedEmail, OtpPurpose.VERIFY_EMAIL).orElseGet(EmailOtp::new);
         if (otp.getLastSentAt() != null && otp.getLastSentAt().isAfter(now.minus(RESEND_COOLDOWN))) return;
@@ -57,6 +60,7 @@ public class EmailVerificationService {
         }
 
         otp.setEmail(normalizedEmail);
+        otp.setUser(user);
         otp.setPurpose(OtpPurpose.VERIFY_EMAIL);
         otp.setOtpHash(passwordEncoder.encode(code));
         otp.setExpiresAt(now.plus(OTP_TTL));
