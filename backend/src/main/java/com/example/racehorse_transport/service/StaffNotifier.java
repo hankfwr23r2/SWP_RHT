@@ -66,6 +66,12 @@ public class StaffNotifier {
                 .ifPresent(coordinator -> save("coordinator", coordinator, booking, title, message, "/coordinator"));
     }
 
+    // Báo cho chủ đơn (khách) khi nhân viên thay đổi đơn của họ, ví dụ nhà xe hủy chuyến
+    public void toCustomer(Booking booking, String title, String message) {
+        if (booking == null || booking.getCustomerID() == null || booking.getCustomerID().getUser() == null) return;
+        save("customer", booking.getCustomerID().getUser().getUsername(), booking, title, message, "/orders/" + booking.getCode());
+    }
+
     private void save(String role, String username, Booking booking, String title, String message, String link) {
         String code = booking != null && booking.getId() != null ? booking.getCode() : null;
         notifications.save(Notification.builder()

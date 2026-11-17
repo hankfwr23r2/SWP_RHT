@@ -27,6 +27,13 @@ public interface PaymentService {
     CancelWithRefundResponse cancelPickupFailed(String bookingIdentifier, String reason, String username);
 
     /**
+     * Quản lý hủy chuyến đã đặt cọc, chưa rời điểm đón.
+     * fault = COMPANY: công ty không thực hiện được chuyến, hoàn 100% số đã thu.
+     * fault = CUSTOMER: lỗi do khách (không giao ngựa, không trả 70%...), khách mất phần cọc vận chuyển.
+     */
+    CancelWithRefundResponse cancelTrip(String bookingIdentifier, String fault, String reason, String username);
+
+    /**
      * Xem tóm tắt tài chính (tổng tiền, đã cọc, còn thiếu, trạng thái đã thanh toán đủ chưa)
      */
     PaymentSummaryResponse getPaymentSummary(String bookingIdentifier, String customerUsername);

@@ -31,6 +31,9 @@ import type { orderDetailLoader } from './loaders'
 import { POST_PAYMENT, ROUTE_STAGE, ROUTE_VISIBLE, nextStep } from './nextStep'
 import s from './OrderDetail.module.css'
 
+// Chưa đặt cọc: khách rút yêu cầu miễn phí (khớp CustomerBookingRules ở backend)
+const BEFORE_DEPOSIT = new Set(['pending_intake', 'under_review', 'resubmission_requested', 'pending_commercial'])
+
 const TONE: Record<string, string> = { info: s.nextInfo, orange: s.nextOrange, warning: s.nextWarning, danger: s.nextDanger, success: s.nextSuccess, muted: s.nextMuted }
 const placeName = (n: string) => n.split(' — ')[0]
 
@@ -455,7 +458,7 @@ export default function OrderDetailPage() {
                       <i className="fa-solid fa-ban" /> {t('orderDetail.cancelBtn')}
                     </button>
                   </div>
-                  <p className="form-hint">{t('orderDetail.cancelNotice')}</p>
+                  <p className="form-hint">{BEFORE_DEPOSIT.has(b.status) ? t('orderDetail.withdrawNotice') : t('orderDetail.cancelNotice')}</p>
                 </div>
               )}
             </>

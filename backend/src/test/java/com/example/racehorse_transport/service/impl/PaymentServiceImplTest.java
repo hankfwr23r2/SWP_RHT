@@ -33,6 +33,8 @@ class PaymentServiceImplTest {
 
     private final com.example.racehorse_transport.service.StaffNotifier staffNotifier =
             mock(com.example.racehorse_transport.service.StaffNotifier.class);
+    private final com.example.racehorse_transport.service.BookingService bookingService =
+            mock(com.example.racehorse_transport.service.BookingService.class);
     private PaymentServiceImpl service;
     private Booking booking;
 
@@ -40,7 +42,7 @@ class PaymentServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new PaymentServiceImpl(paymentRepository, bookingRepository, quotationRepository, new ObjectMapper(), staffNotifier);
+        service = new PaymentServiceImpl(paymentRepository, bookingRepository, quotationRepository, new ObjectMapper(), staffNotifier, bookingService);
 
         User user = new User();
         user.setId(7);
@@ -132,6 +134,75 @@ class PaymentServiceImplTest {
         // Kíp xe và điều phối được báo hủy, không chỉ Quản lý
         org.mockito.Mockito.verify(staffNotifier).bookingCancelled(org.mockito.ArgumentMatchers.eq(booking),
                 org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq("Đổi lịch"));
+    }
+
+    @Test
+    void cancel_afterTheCrewHasTheHorses_isRejectedForTheCustomer() {
+        booking.setStatus("en_route_to_pickup");
+        when(bookingService.isPickupComplete(booking)).thenReturn(true);
+
+        assertThatThrownBy(() -> service.cancelWithRefundPolicy(CODE, CancelBookingRequest.builder().reason("Đổi ý").build(), "phuc"))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("đã nhận ngựa");
+        assertThat(booking.getStatus()).isEqualTo("en_route_to_pickup");
+    }
+
+    @Test
+    void withdraw_beforeDeposit_isFreeAndNotifiesStaff() {
+        booking.setStatus("pending_intake");
+        when(paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(42)).thenReturn(List.of());
+
+        var response = service.cancelWithRefundPolicy(CODE, CancelBookingRequest.builder().reason("Không cần nữa").build(), "phuc");
+
+        assertThat(booking.getStatus()).isEqualTo("cancelled");
+        assertThat(response.getPenaltyAmount()).isZero();
+        assertThat(booking.getDetailsJson()).contains("Rút yêu cầu vận chuyển");
+        verify(staffNotifier).bookingCancelled(org.mockito.ArgumentMatchers.eq(booking), any(), org.mockito.ArgumentMatchers.eq("Không cần nữa"));
+    }
+
+    @Test
+    void cancelTrip_byCompany_refundsEverythingCollected() {
+        Payment deposit = Payment.builder().id(1).bookingID(booking).amount(new BigDecimal("3000000"))
+                .paymentType("DEPOSIT").status("COMPLETED").build();
+        Payment balance = Payment.builder().id(2).bookingID(booking).amount(new BigDecimal("7000000"))
+                .paymentType("BALANCE").status("COMPLETED").build();
+        when(paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(42)).thenReturn(List.of(balance, deposit));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.cancelTrip(CODE, "COMPANY", "Xe hỏng, không có xe thay", "manager01");
+
+        org.mockito.ArgumentCaptor<Payment> saved = org.mockito.ArgumentCaptor.forClass(Payment.class);
+        verify(paymentRepository).save(saved.capture());
+        assertThat(saved.getValue().getPaymentType()).isEqualTo("REFUND");
+        assertThat(saved.getValue().getAmount()).isEqualByComparingTo("10000000");
+        assertThat(response.getRefundPercentage()).isEqualTo(100);
+        assertThat(response.getPenaltyAmount()).isZero();
+        assertThat(booking.getStatus()).isEqualTo("cancelled");
+        assertThat(booking.getDetailsJson()).contains("\"cancelledBy\":\"COMPANY\"");
+        verify(staffNotifier).bookingCancelled(org.mockito.ArgumentMatchers.eq(booking), any(), any());
+        verify(staffNotifier).toCustomer(org.mockito.ArgumentMatchers.eq(booking), any(), org.mockito.ArgumentMatchers.contains("Hoàn lại toàn bộ"));
+    }
+
+    @Test
+    void cancelTrip_byCustomerFault_forfeitsDepositAndTellsCrewToReturnHorses() {
+        booking.setStatus("en_route_to_pickup");
+        when(bookingService.isPickupComplete(booking)).thenReturn(true);
+
+        var response = service.cancelTrip(CODE, "CUSTOMER", "Khách không thanh toán 70%", "manager01");
+
+        assertThat(booking.getStatus()).isEqualTo("cancelled");
+        assertThat(response.getRefundAmount()).isZero();
+        verify(staffNotifier).bookingCancelled(org.mockito.ArgumentMatchers.eq(booking), any(),
+                org.mockito.ArgumentMatchers.contains("trả ngựa và hồ sơ gốc"));
+    }
+
+    @Test
+    void cancelTrip_isRejectedAfterDepartureWithoutReasonOrUnknownFault() {
+        booking.setStatus("in_transit");
+        assertThatThrownBy(() -> service.cancelTrip(CODE, "COMPANY", "x", "manager01")).isInstanceOf(IllegalStateException.class);
+        booking.setStatus("waybill_issued");
+        assertThatThrownBy(() -> service.cancelTrip(CODE, "COMPANY", " ", "manager01")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> service.cancelTrip(CODE, "OTHER", "x", "manager01")).isInstanceOf(IllegalArgumentException.class);
+        assertThat(booking.getStatus()).isEqualTo("waybill_issued");
     }
 
     @Test

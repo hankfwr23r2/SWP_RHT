@@ -1962,7 +1962,8 @@ public class BookingServiceImpl implements BookingService {
 
         Map<?, ?> paymentMap = payload != null && payload.getPayment() instanceof Map<?, ?> m ? m : Map.of();
         boolean balancePaid = Boolean.TRUE.equals(paymentMap.get("balancePaid"));
-        boolean canCancel = CustomerBookingRules.canCancel(b.getStatus(), balancePaid);
+        boolean horsesPickedUp = payload != null && "en_route_to_pickup".equals(b.getStatus()) && pickupComplete(payload);
+        boolean canCancel = CustomerBookingRules.canCancel(b.getStatus(), balancePaid, horsesPickedUp);
         Object clearance = payload != null
                 ? ClearanceDocumentPolicy.forBooking(payload.getClearance(), "international".equalsIgnoreCase(b.getBookingType()))
                 : null;
