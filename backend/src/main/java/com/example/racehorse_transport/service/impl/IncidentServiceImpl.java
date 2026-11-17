@@ -43,8 +43,8 @@ public class IncidentServiceImpl implements IncidentService {
     @Override
     @Transactional
     public IncidentResponse reportIncident(ReportIncidentRequest request, String actor, String role) {
-        Booking booking = bookingRepository.findById(request.getBookingId())
-                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng ID: " + request.getBookingId()));
+        Booking booking = bookingRepository.findByCode(request.getBookingCode().trim().toUpperCase())
+                .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + request.getBookingCode()));
 
         ensureIncidentBookingStatus(booking);
         Staff reporter = staffRepository.findByUser_Username(actor).orElse(null);
@@ -94,10 +94,10 @@ public class IncidentServiceImpl implements IncidentService {
         bookingRepository.save(booking);
 
         logAction("INCIDENT_REPORTED", booking.getId(),
-                "Phát hiện sự cố INC-" + saved.getId() + " cho đơn BK-" + booking.getId() + ": " + request.getIncidentName());
+                "Phát hiện sự cố INC-" + saved.getId() + " cho đơn " + booking.getCode() + ": " + request.getIncidentName());
 
         staffNotifier.toAssignedCoordinator(booking, BookingDetailsJson.read(objectMapper, booking),
-                "SOS mới · BK-" + booking.getId(), request.getIncidentName() + ". Lập phương án xử lý trên bản đồ.", "/coordinator/incidents");
+                "SOS mới · " + booking.getCode(), request.getIncidentName() + ". Lập phương án xử lý trên bản đồ.", "/coordinator/incidents");
         log.info("Incident ID={} reported for Booking ID={}", saved.getId(), booking.getId());
         return mapToResponse(saved);
     }
@@ -167,7 +167,7 @@ public class IncidentServiceImpl implements IncidentService {
                     planDesc);
             refreshBookingIncidentStatus(booking, saved);
             bookingRepository.save(booking);
-            staffNotifier.toManagers(booking, "Phương án sự cố chờ duyệt · BK-" + booking.getId(),
+            staffNotifier.toManagers(booking, "Phương án sự cố chờ duyệt · " + booking.getCode(),
                     "Điều phối viên đề xuất " + partner + " (" + service + "). Duyệt phương án và chi phí.", "/manager/incidents");
 
             logAction("INCIDENT_PLAN_PROPOSED", booking.getId(),
@@ -225,7 +225,7 @@ public class IncidentServiceImpl implements IncidentService {
                     : BookingDetailsJson.read(objectMapper, booking).getTrips().stream()
                             .filter(t -> Objects.equals(t.getTripId(), saved.getTripId())).findFirst().orElse(null);
             staffNotifier.toTripCrew(booking, approvedTrip,
-                    "Phương án sự cố đã được duyệt · BK-" + booking.getId(), "Mở ứng dụng để đi theo phương án mới.");
+                    "Phương án sự cố đã được duyệt · " + booking.getCode(), "Mở ứng dụng để đi theo phương án mới.");
         }
 
         log.info("Manager approved plan for Incident ID={}", saved.getId());
@@ -250,7 +250,7 @@ public class IncidentServiceImpl implements IncidentService {
             refreshBookingIncidentStatus(booking, saved);
             bookingRepository.save(booking);
             staffNotifier.toAssignedCoordinator(booking, BookingDetailsJson.read(objectMapper, booking),
-                    "Quản lý trả phương án sự cố · BK-" + booking.getId(), "Lý do: " + request.getReason().trim(), "/coordinator/incidents");
+                    "Quản lý trả phương án sự cố · " + booking.getCode(), "Lý do: " + request.getReason().trim(), "/coordinator/incidents");
         }
         return mapToResponse(saved);
     }
@@ -831,15 +831,13 @@ public class IncidentServiceImpl implements IncidentService {
     }
 
     private IncidentResponse mapToResponse(Incident inc) {
-        String bookingCode = inc.getBookingID() != null ? "BK-" + String.format("%03d", inc.getBookingID().getId()) : null;
-        Integer bookingId = inc.getBookingID() != null ? inc.getBookingID().getId() : null;
+        String bookingCode = inc.getBookingID() != null ? inc.getBookingID().getCode() : null;
         String reporter = inc.getStaffID() != null && inc.getStaffID().getUser() != null
                 ? inc.getStaffID().getUser().getUsername() : null;
 
         return IncidentResponse.builder()
                 .id(inc.getId())
                 .formattedId("INC-" + String.format("%03d", inc.getId()))
-                .bookingId(bookingId)
                 .bookingCode(bookingCode)
                 .reporter(reporter)
                 .tripId(inc.getTripId())
@@ -879,12 +877,10 @@ public class IncidentServiceImpl implements IncidentService {
     }
 
     private IncidentResponse mapToCustomerResponse(Incident incident) {
-        Integer bookingId = incident.getBookingID() != null ? incident.getBookingID().getId() : null;
-        String bookingCode = bookingId != null ? "BK-" + String.format("%03d", bookingId) : null;
+        String bookingCode = incident.getBookingID() != null ? incident.getBookingID().getCode() : null;
         return IncidentResponse.builder()
                 .id(incident.getId())
                 .formattedId("INC-" + String.format("%03d", incident.getId()))
-                .bookingId(bookingId)
                 .bookingCode(bookingCode)
                 .incidentType(incident.getIncidentType())
                 .status(incident.getStatus())

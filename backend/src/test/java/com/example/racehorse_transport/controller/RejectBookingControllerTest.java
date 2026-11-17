@@ -32,7 +32,7 @@ class RejectBookingControllerTest {
     void coordinatorRejectionAlwaysActsAsCoordinator() {
         RejectBookingRequest body = RejectBookingRequest.builder().by("manager01").role("manager").reason("Không có lộ trình").build();
 
-        new CoordinatorBookingController(bookingService).rejectBooking("BK-002", body, new TestingAuthenticationToken("coordinator01", null, "ROLE_COORDINATOR"));
+        new CoordinatorBookingController(bookingService, org.mockito.Mockito.mock(com.example.racehorse_transport.service.BookingCodeResolver.class)).rejectBooking("BK-002", body, new TestingAuthenticationToken("coordinator01", null, "ROLE_COORDINATOR"));
 
         ArgumentCaptor<RejectBookingRequest> sent = ArgumentCaptor.forClass(RejectBookingRequest.class);
         verify(bookingService).rejectBooking(eq("BK-002"), sent.capture());

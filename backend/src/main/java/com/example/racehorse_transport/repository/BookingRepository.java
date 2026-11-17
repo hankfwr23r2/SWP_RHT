@@ -44,4 +44,9 @@ public interface BookingRepository extends JpaRepository<Booking, Integer> {
     Page<Booking> findAllByOrderByBookingDateDesc(Pageable pageable);
 
     java.util.Optional<Booking> findByWaybillNoIgnoreCase(String waybillNo);
+
+    java.util.Optional<Booking> findByCode(String code);
+
+    @org.springframework.data.jpa.repository.Query("select b.id from Booking b where b.code = :code")
+    java.util.Optional<Integer> findIdByCode(@org.springframework.data.repository.query.Param("code") String code);
 }

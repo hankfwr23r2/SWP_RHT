@@ -33,7 +33,6 @@ export interface BackendHorseTypeDto {
 export interface BackendHorseJourneyLogDto {
   id: number
   horseId: number
-  bookingId?: number
   tripCode?: string
   fromLocation?: string
   toLocation?: string

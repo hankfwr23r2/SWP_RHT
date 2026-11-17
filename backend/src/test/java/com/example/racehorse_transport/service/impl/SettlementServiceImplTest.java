@@ -23,10 +23,13 @@ class SettlementServiceImplTest {
     private SettlementServiceImpl service;
     private Booking booking;
 
+    private static final String CODE = "BK-7F3K9QXM";
+
     @BeforeEach
     void setUp() {
         service = new SettlementServiceImpl(bookings, incidents, mock(StaffRepository.class), json, notifier);
-        booking = Booking.builder().id(12).status("delivered_pending_settlement").detailsJson("{}").build();
+        booking = Booking.builder().id(12).code(CODE).status("delivered_pending_settlement").detailsJson("{}").build();
+        when(bookings.findIdByCode(CODE)).thenReturn(Optional.of(12));
         when(bookings.findByIdForUpdate(12)).thenReturn(Optional.of(booking));
         when(bookings.save(any(Booking.class))).thenAnswer(i -> i.getArgument(0));
     }
@@ -42,9 +45,9 @@ class SettlementServiceImplTest {
 
     @Test
     void repeatedSubmissionCannotCreateADuplicateReview() {
-        service.submitExpenses("12", null, "driver");
+        service.submitExpenses(CODE, null, "driver");
         assertThat(booking.getStatus()).isEqualTo("expenses_submitted");
-        assertThatThrownBy(() -> service.submitExpenses("12", null, "driver")).hasMessageContaining("đã gửi");
+        assertThatThrownBy(() -> service.submitExpenses(CODE, null, "driver")).hasMessageContaining("đã gửi");
         verify(bookings, times(1)).save(any());
         verify(notifier, times(1)).toManagers(any(), any(), any(), any());
     }
@@ -56,7 +59,7 @@ class SettlementServiceImplTest {
             {"trips":[{"tripId":"T","vehicleId":"1","homeReturn":{"eta":9999999999999}}],"settlement":{"total":800000}}
             """);
         when(incidents.findByBookingID_Id(12)).thenReturn(List.of(expenseLedger()));
-        var response = service.issueSettlement("12", IssueSettlementRequest.builder().build(), "manager");
+        var response = service.issueSettlement(CODE, IssueSettlementRequest.builder().build(), "manager");
         assertThat(response.getTotalCompanyCost()).isEqualByComparingTo("800000");
         assertThat(response.getItems()).hasSize(2);
         assertThat(booking.getStatus()).isEqualTo("completed");
@@ -70,7 +73,7 @@ class SettlementServiceImplTest {
     void managerCannotAssignAnyExpenseToTheCustomer() {
         booking.setStatus("expenses_submitted");
         var request = IssueSettlementRequest.builder().payers(java.util.Map.of("vet", "customer")).build();
-        assertThatThrownBy(() -> service.issueSettlement("12", request, "manager"))
+        assertThatThrownBy(() -> service.issueSettlement(CODE, request, "manager"))
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("không được chuyển");
         verify(bookings, never()).save(any());
     }
@@ -80,7 +83,7 @@ class SettlementServiceImplTest {
         booking.setStatus("expenses_submitted");
         when(incidents.findByBookingID_Id(12)).thenReturn(List.of(Incident.builder().id(1)
                 .estimatedCost(new BigDecimal("1500000")).build()));
-        assertThat(service.issueSettlement("12", null, "manager").getTotalCompanyCost()).isZero();
+        assertThat(service.issueSettlement(CODE, null, "manager").getTotalCompanyCost()).isZero();
     }
 
     @Test
@@ -88,7 +91,7 @@ class SettlementServiceImplTest {
         User user = new User(); user.setUsername("owner");
         Customer owner = new Customer(); owner.setUser(user); booking.setCustomerID(owner);
         booking.setStatus("completed");
-        assertThatThrownBy(() -> service.submitRating("12", RatingDto.builder().stars(5).build(), "other"))
+        assertThatThrownBy(() -> service.submitRating(CODE, RatingDto.builder().stars(5).build(), "other"))
                 .isInstanceOf(AccessDeniedException.class);
         verify(bookings, never()).save(any());
     }
@@ -99,7 +102,7 @@ class SettlementServiceImplTest {
         booking.setDetailsJson("""
             {"settlement":{"items":[{"description":"Legacy vet invoice","amount":300000,"photo":"vet.jpg","payer":"customer"}]}}
             """);
-        var response = service.issueSettlement("12", null, "manager");
+        var response = service.issueSettlement(CODE, null, "manager");
         assertThat(response.getTotalCompanyCost()).isEqualByComparingTo("300000");
         assertThat(response.getItems()).extracting(ExpenseItemDto::getPayer).containsExactly("carrier");
     }

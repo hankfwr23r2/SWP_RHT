@@ -13,7 +13,6 @@ public class VnpayResultResponse {
     private boolean success;
     private String rspCode; // Mã phản hồi IPN cho VNPAY: 00, 01, 02, 04, 97, 99
     private String message;
-    private Integer bookingId;
     private String bookingCode;
     private String paymentType;
     private String paymentStatus;

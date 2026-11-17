@@ -159,7 +159,7 @@ public class TripReportServiceImpl implements TripReportService {
         }
 
         return TripReportResponse.builder()
-                .id("BK-" + b.getId())
+                .id(b.getCode())
                 .tripId(trips.stream().map(VehicleTripDto::getTripId).filter(Objects::nonNull).reduce((x, y) -> x + ", " + y).orElse(null))
                 .customer(customerName(b))
                 .route(placeName(b.getPickupAddress(), "Điểm đón") + " — " + placeName(b.getDropoffAddress(), "Điểm giao"))

@@ -180,7 +180,7 @@ class ApproveMedicalTest {
     }
 
     private HttpResponse<String> requestResubmission(Booking booking) throws Exception {
-        return post("/specialist/bookings/" + booking.getId() + "/request-resubmission", specialistToken,
+        return post("/specialist/bookings/" + booking.getCode() + "/request-resubmission", specialistToken,
                 "{\"reason\":\"Sổ tiêm hết hạn\",\"items\":[{\"horseId\":\"H-1\",\"doc\":\"vaccine\",\"reason\":\"Hết hạn\"}]}");
     }
 
@@ -206,7 +206,7 @@ class ApproveMedicalTest {
     }
 
     private HttpResponse<String> approve(Booking booking) throws Exception {
-        return post("/specialist/bookings/" + booking.getId() + "/verify-horse", specialistToken, "{\"note\":\"Hồ sơ đầy đủ\"}");
+        return post("/specialist/bookings/" + booking.getCode() + "/verify-horse", specialistToken, "{\"note\":\"Hồ sơ đầy đủ\"}");
     }
 
     private HttpResponse<String> post(String path, String token, String body) throws Exception {

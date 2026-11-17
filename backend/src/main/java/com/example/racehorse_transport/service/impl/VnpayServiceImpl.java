@@ -113,7 +113,7 @@ public class VnpayServiceImpl implements VnpayService {
                     expiresAt = quoteDeadline;
                 }
                 amount = quotation.getDepositAmount();
-                orderInfo = "Thanh toan coc don BK-" + booking.getId();
+                orderInfo = "Thanh toan coc don " + booking.getCode();
                 prefix = "DEP";
             }
             case "BALANCE" -> {
@@ -131,7 +131,7 @@ public class VnpayServiceImpl implements VnpayService {
                 amount = quotation.getBalanceAmount() != null
                         ? quotation.getBalanceAmount()
                         : quotation.getTotalAmount().multiply(new BigDecimal("0.7"));
-                orderInfo = "Thanh toan con lai don BK-" + booking.getId();
+                orderInfo = "Thanh toan con lai don " + booking.getCode();
                 prefix = "BAL";
             }
             default -> throw new IllegalArgumentException("Loại thanh toán không hợp lệ: " + request.getPaymentType());
@@ -154,7 +154,7 @@ public class VnpayServiceImpl implements VnpayService {
             }
         }
 
-        String txnRef = prefix + String.format("%04d", booking.getId()) + now.toEpochMilli();
+        String txnRef = prefix + booking.getCode().substring(3) + now.toEpochMilli();
         Payment payment = Payment.builder()
                 .bookingID(booking)
                 .amount(amount)
@@ -335,18 +335,8 @@ public class VnpayServiceImpl implements VnpayService {
         if (bookingIdentifier == null || bookingIdentifier.trim().isEmpty()) {
             throw new IllegalArgumentException("Mã đơn hàng không được để trống!");
         }
-        String cleanId = bookingIdentifier.trim();
-        try {
-            if (cleanId.toUpperCase().startsWith("BK-")) {
-                return Integer.parseInt(cleanId.substring(3).trim());
-            } else if (cleanId.toUpperCase().startsWith("ORD-")) {
-                String[] parts = cleanId.split("-");
-                return Integer.parseInt(parts[parts.length - 1].trim());
-            }
-            return Integer.parseInt(cleanId);
-        } catch (Exception ex) {
-            throw new IllegalArgumentException("Định dạng mã đơn không hợp lệ: " + bookingIdentifier);
-        }
+        return bookingRepository.findIdByCode(bookingIdentifier.trim().toUpperCase())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
     }
 
     private String describeStatus(Payment payment) {
@@ -385,8 +375,7 @@ public class VnpayServiceImpl implements VnpayService {
                 .message(message);
         if (payment != null) {
             Booking booking = payment.getBookingID();
-            builder.bookingId(booking != null ? booking.getId() : null)
-                    .bookingCode(booking != null ? String.format("BK-%03d", booking.getId()) : null)
+            builder.bookingCode(booking != null ? booking.getCode() : null)
                     .paymentType(payment.getPaymentType())
                     .paymentStatus(payment.getStatus())
                     .amount(payment.getAmount())

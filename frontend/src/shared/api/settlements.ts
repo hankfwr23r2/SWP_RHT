@@ -25,7 +25,6 @@ export interface IssueSettlementPayload {
 }
 
 export interface SettlementDetailResponse {
-  bookingId: number
   bookingCode: string
   status: string
   items: ExpenseItemPayload[]

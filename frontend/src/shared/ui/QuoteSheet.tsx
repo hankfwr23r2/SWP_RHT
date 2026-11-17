@@ -101,7 +101,7 @@ export function QuoteSheet({
   const bundledFreightAmount = freightLines.reduce((sum, l) => sum + (l.amount || 0), 0)
 
   // Mã định danh hóa đơn / báo giá
-  const displayCode = bookingCode ? (bookingCode.startsWith('BK-') ? bookingCode : `BK-${bookingCode}`) : 'BK-2026-DEMO'
+  const displayCode = bookingCode || 'BK-2026-DEMO'
   const createdDate = invoiceDate ? formatDate(invoiceDate) : formatDate(Date.now())
 
   return (

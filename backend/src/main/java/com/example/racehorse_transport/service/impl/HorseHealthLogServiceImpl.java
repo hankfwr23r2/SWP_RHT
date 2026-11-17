@@ -72,11 +72,20 @@ public class HorseHealthLogServiceImpl implements HorseHealthLogService {
     }
 
     @Override
-    public List<HorseHealthLog> findByBookingId(Integer bookingId) {
-        if (bookingId == null) {
-            throw new IllegalArgumentException("bookingId không được để trống!");
+    public List<HorseHealthLog> findByBookingCode(String bookingCode, String requester, String role) {
+        if (bookingCode == null || bookingCode.isBlank()) {
+            throw new IllegalArgumentException("Thiếu mã đơn hàng.");
         }
-        return horseHealthLogRepository.findByBookingId(bookingId);
+        Booking booking = bookingRepository.findByCode(bookingCode.trim().toUpperCase())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingCode));
+        if ("CUSTOMER".equals(role)) {
+            String owner = booking.getCustomerID() != null && booking.getCustomerID().getUser() != null
+                    ? booking.getCustomerID().getUser().getUsername() : null;
+            if (!java.util.Objects.equals(owner, requester)) {
+                throw new org.springframework.security.access.AccessDeniedException("Bạn không có quyền xem nhật ký sức khỏe của đơn hàng này.");
+            }
+        }
+        return horseHealthLogRepository.findByBookingId(booking.getId());
     }
 
     // =========================================================================

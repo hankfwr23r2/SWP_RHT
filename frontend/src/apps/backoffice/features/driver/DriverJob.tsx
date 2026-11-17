@@ -148,7 +148,6 @@ function PickupStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
 }
 
 import { backendDeliveryApi } from '@shared/api/delivery'
-import { toNumericBookingId } from '@shared/api/bookings'
 import { Modal } from '@shared/ui/Modal'
 
 function TimeoutModal({ b, t, waited, onClose, run }: { b: Booking; t: VehicleTrip; waited: number; onClose: () => void; run: Run }) {
@@ -168,7 +167,7 @@ function TimeoutModal({ b, t, waited, onClose, run }: { b: Booking; t: VehicleTr
     if (action === 'STABLE_NEARBY' && !validCost) return
     setBusy(true)
     try {
-      await run(() => backendDeliveryApi.reportTimeout(toNumericBookingId(b.id), {
+      await run(() => backendDeliveryApi.reportTimeout(b.id, {
         tripId: t.tripId,
         confirmEarly: early,
         timeoutReason: reason,

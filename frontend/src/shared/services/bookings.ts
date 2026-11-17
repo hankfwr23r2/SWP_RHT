@@ -144,12 +144,12 @@ export const customerBookingsApi = {
     // Đơn và sự cố của mọi đơn tải song song, mỗi loại một request
     const [bookings, incidents] = await Promise.all([backendBookingApi.getCustomerBookings(), backendIncidentApi.getMine()])
     return bookings
-      .map(b => toCustomerBooking(b, incidents.filter(i => i.bookingId === b.numericId), customer))
+      .map(b => toCustomerBooking(b, incidents.filter(i => i.bookingCode === b.id), customer))
       .sort((a, b) => b.createdAt - a.createdAt)
   },
   get: async (customer: string, id: string): Promise<CustomerBookingView | undefined> => {
     const booking = await backendBookingApi.getCustomerBookingById(id)
-    const incidents = await backendIncidentApi.getByBooking(booking.numericId)
+    const incidents = await backendIncidentApi.getByBooking(booking.id)
     return toCustomerBooking(booking, incidents, customer)
   },
   create: async (customer: string, input: NewBookingInput): Promise<CustomerBookingView> => {
@@ -163,7 +163,7 @@ export const customerBookingsApi = {
         for (const h of (b.horses || [])) {
           if (h.horseId) {
             const num = h.horseId.replace(/\D/g, '')
-            if (num) busyHorseMap.set(num, b.id || `#BK-${b.numericId}`)
+            if (num) busyHorseMap.set(num, b.id)
           }
         }
       }
@@ -232,13 +232,13 @@ async function listForRole() {
   if (role === 'driver' || role === 'escort') {
     // Đơn và sự cố của mọi chuyến tải song song, mỗi loại một request
     const [bookings, incidents] = await Promise.all([backendBookingApi.myFieldBookings(), backendIncidentApi.getMyFieldIncidents()])
-    return bookings.map(booking => ({ ...booking, incidents: incidents.filter(i => i.bookingId === booking.numericId) }))
+    return bookings.map(booking => ({ ...booking, incidents: incidents.filter(i => i.bookingCode === booking.id) }))
   }
   if (role === 'coordinator') {
     const [bookings, incidents] = await Promise.all([backendBookingApi.getCoordinatorBookings(), backendIncidentApi.list()])
     return bookings.map(booking => ({
       ...booking,
-      incidents: incidents.filter(incident => incident.bookingId === booking.numericId),
+      incidents: incidents.filter(incident => incident.bookingCode === booking.id),
     }))
   }
   if (role === 'specialist') {
@@ -249,7 +249,7 @@ async function listForRole() {
     const [bookings, incidents] = await Promise.all([backendBookingApi.getAllBookings(), backendIncidentApi.list()])
     return bookings.map(booking => ({
       ...booking,
-      incidents: incidents.filter(incident => incident.bookingId === booking.numericId),
+      incidents: incidents.filter(incident => incident.bookingCode === booking.id),
     }))
   }
   return []
@@ -290,7 +290,7 @@ async function getForRole(id: string) {
   const booking = role === 'driver' || role === 'escort'
     ? await backendBookingApi.getFieldBookingById(id)
     : await backendBookingApi.getCoordinatorBookingById(id)
-  return { ...booking, incidents: await backendIncidentApi.getByBooking(booking.numericId) }
+  return { ...booking, incidents: await backendIncidentApi.getByBooking(booking.id) }
 }
 
 const byId = async (id: string): Promise<Booking> => toBooking(await getForRole(id))
@@ -485,7 +485,7 @@ export const bookingsApi = {
   reportIncident: async (id: string, tripId: string, _by: string, kind: IncidentKind, photo: string, note: string, booking: Booking, trip: VehicleTrip, horseIds?: string[]) => {
     const location = incidentLocation(booking, trip)
     return backendIncidentApi.report({
-      bookingId: numericId(id, 'BK'),
+      bookingCode: id,
       tripId,
       horseIds,
       incidentName: INCIDENT_KIND[kind].label,

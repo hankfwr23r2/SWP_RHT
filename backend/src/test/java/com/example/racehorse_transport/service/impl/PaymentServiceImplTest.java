@@ -34,6 +34,8 @@ class PaymentServiceImplTest {
     private PaymentServiceImpl service;
     private Booking booking;
 
+    private static final String CODE = "BK-7F3K9QXM";
+
     @BeforeEach
     void setUp() {
         service = new PaymentServiceImpl(paymentRepository, bookingRepository, quotationRepository, new ObjectMapper(), org.mockito.Mockito.mock(com.example.racehorse_transport.service.StaffNotifier.class));
@@ -48,6 +50,8 @@ class PaymentServiceImplTest {
 
         booking = new Booking();
         booking.setId(42);
+        booking.setCode(CODE);
+        when(bookingRepository.findIdByCode(CODE)).thenReturn(Optional.of(42));
         booking.setCustomerID(customer);
         booking.setStatus("clearance_in_progress");
         when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
@@ -64,14 +68,14 @@ class PaymentServiceImplTest {
         booking.setDetailsJson("""
             {"quote":{"total":10000000,"lines":[{"label":"Thu hộ bảo hiểm bên thứ ba","amount":2000000}]}}
             """);
-        var result = service.cancelWithRefundPolicy("BK-42", CancelBookingRequest.builder().reason("Đổi lịch").build(), "phuc");
+        var result = service.cancelWithRefundPolicy(CODE, CancelBookingRequest.builder().reason("Đổi lịch").build(), "phuc");
         assertThat(result.getPenaltyAmount()).isEqualByComparingTo("2400000");
         assertThat(booking.getDetailsJson()).contains("\"insuranceCollected\":600000", "\"insuranceReconciliationPending\":true");
         when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
         var request = new com.example.racehorse_transport.dto.payment.ReconcileInsuranceRequest(BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("600000"), "REF-42", "Chưa chuyển đối tác; đã hoàn khách");
-        service.reconcileInsurance("BK-42", request, "manager");
+        service.reconcileInsurance(CODE, request, "manager");
         assertThat(booking.getDetailsJson()).contains("\"insuranceReconciliationPending\":false", "\"refundAmount\":600000");
-        assertThatThrownBy(() -> service.reconcileInsurance("BK-42", request, "manager")).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> service.reconcileInsurance(CODE, request, "manager")).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -82,13 +86,13 @@ class PaymentServiceImplTest {
             """);
         when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
         var request = new com.example.racehorse_transport.dto.payment.ReconcileInsuranceRequest(new BigDecimal("500000"), BigDecimal.ZERO, new BigDecimal("600000"), "REF-42", "Đối soát");
-        assertThatThrownBy(() -> service.reconcileInsurance("BK-42", request, "manager")).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> service.reconcileInsurance(CODE, request, "manager")).isInstanceOf(IllegalArgumentException.class);
         verify(paymentRepository, never()).save(any());
     }
 
     @Test
     void cancel_byAnotherCustomer_isDenied() {
-        assertThatThrownBy(() -> service.cancelWithRefundPolicy("BK-42", CancelBookingRequest.builder().reason("Đổi lịch").build(), "khac"))
+        assertThatThrownBy(() -> service.cancelWithRefundPolicy(CODE, CancelBookingRequest.builder().reason("Đổi lịch").build(), "khac"))
                 .isInstanceOf(AccessDeniedException.class);
 
         assertThat(booking.getStatus()).isEqualTo("clearance_in_progress");
@@ -99,7 +103,7 @@ class PaymentServiceImplTest {
     void cancel_whileInTransit_isRejected() {
         booking.setStatus("in_transit");
 
-        assertThatThrownBy(() -> service.cancelWithRefundPolicy("BK-42", CancelBookingRequest.builder().reason("Đổi lịch").build(), "phuc"))
+        assertThatThrownBy(() -> service.cancelWithRefundPolicy(CODE, CancelBookingRequest.builder().reason("Đổi lịch").build(), "phuc"))
                 .isInstanceOf(IllegalStateException.class);
 
         assertThat(booking.getStatus()).isEqualTo("in_transit");
@@ -108,7 +112,7 @@ class PaymentServiceImplTest {
 
     @Test
     void cancel_byOwner_recordsTheSignedInUserAsActor() {
-        service.cancelWithRefundPolicy("BK-42", CancelBookingRequest.builder().reason("Đổi lịch").build(), "phuc");
+        service.cancelWithRefundPolicy(CODE, CancelBookingRequest.builder().reason("Đổi lịch").build(), "phuc");
 
         assertThat(booking.getStatus()).isEqualTo("cancelled");
         assertThat(booking.getDetailsJson()).contains("\"actor\":\"phuc\"");
@@ -116,7 +120,7 @@ class PaymentServiceImplTest {
 
     @Test
     void cancel_afterDeposit_recordsWhenAndWhyForTheCustomerViews() {
-        service.cancelWithRefundPolicy("BK-42", CancelBookingRequest.builder().reason("Đổi lịch").build(), "phuc");
+        service.cancelWithRefundPolicy(CODE, CancelBookingRequest.builder().reason("Đổi lịch").build(), "phuc");
 
         assertThat(booking.getDetailsJson())
                 .contains("\"cancelled\":true")
@@ -127,15 +131,15 @@ class PaymentServiceImplTest {
 
     @Test
     void paymentViews_forAnotherCustomer_areDenied() {
-        assertThatThrownBy(() -> service.getPaymentSummary("BK-42", "khac")).isInstanceOf(AccessDeniedException.class);
-        assertThatThrownBy(() -> service.getPaymentsByBooking("BK-42", "khac")).isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> service.getPaymentSummary(CODE, "khac")).isInstanceOf(AccessDeniedException.class);
+        assertThatThrownBy(() -> service.getPaymentsByBooking(CODE, "khac")).isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> service.getPaymentDetail(1, "khac")).isInstanceOf(AccessDeniedException.class);
     }
 
     @Test
     void paymentViews_forOwnerOrStaff_areAllowed() {
-        assertThat(service.getPaymentSummary("BK-42", "phuc@example.com").getBookingId()).isEqualTo(42);
-        assertThat(service.getPaymentsByBooking("BK-42", null)).hasSize(1);
+        assertThat(service.getPaymentSummary(CODE, "phuc@example.com").getBookingCode()).isEqualTo(CODE);
+        assertThat(service.getPaymentsByBooking(CODE, null)).hasSize(1);
         assertThat(service.getPaymentDetail(1, "phuc").getId()).isEqualTo(1);
     }
 
@@ -148,7 +152,7 @@ class PaymentServiceImplTest {
                 .paymentType("BALANCE").status("COMPLETED").build();
         when(paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(42)).thenReturn(List.of(balance, deposit));
 
-        assertThatThrownBy(() -> service.cancelWithRefundPolicy("BK-42", CancelBookingRequest.builder().reason("Đổi lịch").build(), "phuc"))
+        assertThatThrownBy(() -> service.cancelWithRefundPolicy(CODE, CancelBookingRequest.builder().reason("Đổi lịch").build(), "phuc"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("hotline");
         assertThat(booking.getStatus()).isEqualTo("ready_for_pickup");

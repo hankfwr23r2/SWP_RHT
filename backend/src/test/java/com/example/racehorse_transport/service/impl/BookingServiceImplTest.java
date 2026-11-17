@@ -102,9 +102,12 @@ class BookingServiceImplTest {
     private final Clock clock = mock(Clock.class);
     private static final Instant DEPOSIT_DEADLINE = Instant.parse("2026-11-07T03:00:00Z");
 
+    private static final String CODE = "BK-7F3K9QXM";
+
     @BeforeEach
     void setUp() {
         when(clock.instant()).thenReturn(DEPOSIT_DEADLINE);
+        when(bookingRepository.findIdByCode(CODE)).thenReturn(Optional.of(42));
         service = new BookingServiceImpl(
                 mock(com.example.racehorse_transport.service.CaptureService.class),
                 bookingRepository,
@@ -206,13 +209,13 @@ class BookingServiceImplTest {
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> {
             Booking saved = invocation.getArgument(0);
             saved.setId(42);
+            if (saved.getCode() == null) saved.setCode(CODE);
             return saved;
         });
 
         BookingResponse response = service.createBooking("phuc", request);
 
-        assertThat(response.getId()).isEqualTo("BK-042");
-        assertThat(response.getNumericId()).isEqualTo(42);
+        assertThat(response.getId()).isEqualTo(CODE);
         assertThat(response.getType()).isEqualTo("international");
         assertThat(response.getStatus()).isEqualTo("pending_intake");
         assertThat(response.getDepartAt()).isEqualTo(departure.toEpochMilli());
@@ -511,6 +514,7 @@ class BookingServiceImplTest {
 
         Booking existingActiveBooking = Booking.builder()
                 .id(99)
+                .code("BK-OTHER99")
                 .status("in_transit")
                 .detailsJson("{\"horses\":[{\"horseId\":\"HORSE-12\",\"name\":\"Lightning\"}]}")
                 .build();
@@ -522,7 +526,7 @@ class BookingServiceImplTest {
 
         assertThatThrownBy(() -> service.createBooking("phuc", request))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("#BK-99");
+                .hasMessageContaining("#BK-OTHER99");
 
         verify(bookingRepository, never()).save(any(Booking.class));
     }
@@ -586,8 +590,8 @@ class BookingServiceImplTest {
         BookingResponse byUsername = service.getBookingById(42, "phuc");
         BookingResponse byEmail = service.getBookingById(42, "phuc@example.com");
 
-        assertThat(byUsername.getNumericId()).isEqualTo(42);
-        assertThat(byEmail.getNumericId()).isEqualTo(42);
+        assertThat(byUsername.getId()).isEqualTo(CODE);
+        assertThat(byEmail.getId()).isEqualTo(CODE);
     }
 
     @Test
@@ -603,7 +607,7 @@ class BookingServiceImplTest {
         request.setActor("escort01");
         request.setPayload(Map.of("horseId", "H-001", "discountAmount", "năm triệu"));
 
-        assertThatThrownBy(() -> service.updateTripProgress("BK-042", request, "manager", "MANAGER"))
+        assertThatThrownBy(() -> service.updateTripProgress(CODE, request, "manager", "MANAGER"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("giảm trừ");
         verify(bookingRepository, never()).save(any(Booking.class));
@@ -630,7 +634,7 @@ class BookingServiceImplTest {
         request.setActor("driver02");
         request.setPayload(Map.of("checkpointId", "delivery", "returnedOriginals", true));
 
-        service.updateTripProgress("BK-042", request, "manager", "MANAGER");
+        service.updateTripProgress(CODE, request, "manager", "MANAGER");
 
         ArgumentCaptor<Booking> saved = ArgumentCaptor.forClass(Booking.class);
         verify(bookingRepository).save(saved.capture());
@@ -660,7 +664,7 @@ class BookingServiceImplTest {
         request.setActor("driver02");
         request.setPayload(Map.of("returnedOriginals", true));
 
-        assertThatThrownBy(() -> service.updateTripProgress("BK-042", request, "manager", "MANAGER"))
+        assertThatThrownBy(() -> service.updateTripProgress(CODE, request, "manager", "MANAGER"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("original documents were returned");
 
@@ -677,7 +681,7 @@ class BookingServiceImplTest {
         request.setTripId("TRP-042-1");
         request.setAction("DEPART_TO_PICKUP");
 
-        assertThatThrownBy(() -> service.updateTripProgress("BK-042", request, "driver01", "DRIVER"))
+        assertThatThrownBy(() -> service.updateTripProgress(CODE, request, "driver01", "DRIVER"))
                 .isInstanceOf(AccessDeniedException.class)
                 .hasMessageContaining("không được phân công");
         verify(bookingRepository, never()).save(any(Booking.class));
@@ -695,9 +699,9 @@ class BookingServiceImplTest {
         request.setTripId("TRP-042-1");
         request.setAction("ARRIVE_PICKUP");
 
-        assertThatThrownBy(() -> service.updateTripProgress("BK-042", request, "driver01", "DRIVER"))
+        assertThatThrownBy(() -> service.updateTripProgress(CODE, request, "driver01", "DRIVER"))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("BK-043")
+                .hasMessageContaining("BK-OTHER43")
                 .hasMessageContaining("chưa xác nhận về trụ sở");
         verify(bookingRepository, never()).save(any(Booking.class));
     }
@@ -706,6 +710,7 @@ class BookingServiceImplTest {
         String tripId = String.format("TRP-%03d-1", id);
         return Booking.builder()
                 .id(id)
+                .code(id == 42 ? CODE : "BK-OTHER" + id)
                 .status(status)
                 .detailsJson("{\"trips\":[{\"tripId\":\"" + tripId + "\"," + tripFields + "}]}")
                 .build();
@@ -736,7 +741,7 @@ class BookingServiceImplTest {
         var delivery = new com.example.racehorse_transport.dto.field.TripUpdateRequest();
         delivery.setTripId("TRP-042-1");
         delivery.setAction("COMPLETE_DELIVERY");
-        service.updateTripProgress("BK-042", delivery, "manager", "MANAGER");
+        service.updateTripProgress(CODE, delivery, "manager", "MANAGER");
 
         assertThat(horse.getCurrentCountry()).isEqualTo("VN");
         assertThat(horse.getCurrentLocationName()).isEqualTo("Trang trại A, Hà Nội");
@@ -771,7 +776,7 @@ class BookingServiceImplTest {
         var delivery = new com.example.racehorse_transport.dto.field.TripUpdateRequest();
         delivery.setTripId("TRP-042-1");
         delivery.setAction("COMPLETE_DELIVERY");
-        service.updateTripProgress("BK-042", delivery, "manager", "MANAGER");
+        service.updateTripProgress(CODE, delivery, "manager", "MANAGER");
         verify(horseRepository).save(horse);
         verify(horseRepository, never()).findById(13);
         assertThat(booking.getStatus()).isEqualTo("in_transit");
@@ -811,6 +816,7 @@ class BookingServiceImplTest {
     private Booking deliveryBooking(String runJson) {
         return Booking.builder()
                 .id(42)
+                .code(CODE)
                 .status("in_transit")
                 .bookingType("domestic")
                 .pickupAddress("Điểm đón")
@@ -871,7 +877,7 @@ class BookingServiceImplTest {
 
         List<BookingResponse> responses = service.getMyFieldBookings("driver02", "DRIVER");
 
-        assertThat(responses).extracting(BookingResponse::getNumericId).containsExactly(42);
+        assertThat(responses).extracting(BookingResponse::getId).containsExactly(CODE);
     }
 
     @Test
@@ -886,7 +892,7 @@ class BookingServiceImplTest {
         for (Object route : List.of("Hà Nội → Lạng Sơn", Map.of("rests", List.of()))) {
             var request = com.example.racehorse_transport.dto.coordinator.CoordinatorPlanRequest.builder()
                     .trips(List.of(trip)).route(route).build();
-            assertThatThrownBy(() -> service.confirmCoordinatorPlan("BK-042", request))
+            assertThatThrownBy(() -> service.confirmCoordinatorPlan(CODE, request))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("chặng");
         }
@@ -919,7 +925,7 @@ class BookingServiceImplTest {
                 .route(Map.of("legs", List.of(Map.of("from", "A", "to", "B"))))
                 .build();
 
-        assertThatThrownBy(() -> service.confirmCoordinatorPlan("BK-042", request))
+        assertThatThrownBy(() -> service.confirmCoordinatorPlan(CODE, request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("29H-12345")
                 .hasMessageContaining("4 ngăn");
@@ -954,7 +960,7 @@ class BookingServiceImplTest {
                 .route(Map.of("legs", List.of(Map.of("from", "A", "to", "B"))))
                 .build();
 
-        BookingResponse res = service.confirmCoordinatorPlan("BK-042", planRequest);
+        BookingResponse res = service.confirmCoordinatorPlan(CODE, planRequest);
 
         assertThat(res.getRouteId()).isEqualTo(5);
         assertThat(booking.getRouteID()).isEqualTo(route);
@@ -1000,7 +1006,7 @@ class BookingServiceImplTest {
         List<BookingResponse> responses = service.getCustomerBookings("phuc");
 
         assertThat(responses).hasSize(1);
-        assertThat(responses.get(0).getNumericId()).isEqualTo(42);
+        assertThat(responses.get(0).getId()).isEqualTo(CODE);
         assertThat(responses.get(0).getCustomer()).isEqualTo("phuc");
         assertThat(responses.get(0).getStatus()).isEqualTo("pending_intake");
         assertThat(responses.get(0).getType()).isEqualTo("international");
@@ -1065,7 +1071,7 @@ class BookingServiceImplTest {
         List<BookingResponse> responses = service.getBookingsByStatus("under_review");
 
         assertThat(responses).hasSize(1);
-        assertThat(responses.get(0).getNumericId()).isEqualTo(42);
+        assertThat(responses.get(0).getId()).isEqualTo(CODE);
         assertThat(responses.get(0).getStatus()).isEqualTo("under_review");
         verify(bookingRepository).findByStatusOrderByBookingDateDesc("under_review");
         verify(bookingRepository, never()).findAllByOrderByBookingDateDesc();
@@ -1079,7 +1085,7 @@ class BookingServiceImplTest {
         for (String status : List.of("", "  ", "ALL")) {
             List<BookingResponse> responses = service.getBookingsByStatus(status);
             assertThat(responses).hasSize(1);
-            assertThat(responses.get(0).getNumericId()).isEqualTo(42);
+            assertThat(responses.get(0).getId()).isEqualTo(CODE);
         }
         assertThat(service.getBookingsByStatus(null)).hasSize(1);
 
@@ -1106,7 +1112,7 @@ class BookingServiceImplTest {
         when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        BookingResponse response = service.resubmitBooking("BK-042", "phuc");
+        BookingResponse response = service.resubmitBooking(CODE, "phuc");
 
         assertThat(response.getStatus()).isEqualTo("under_review");
         assertThat(response.getMedical()).isInstanceOf(Map.class);
@@ -1130,7 +1136,7 @@ class BookingServiceImplTest {
         booking.setStatus("resubmission_requested");
         when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
 
-        assertThatThrownBy(() -> service.resubmitBooking("42", "another-customer"))
+        assertThatThrownBy(() -> service.resubmitBooking(CODE, "another-customer"))
                 .isInstanceOf(AccessDeniedException.class)
                 .hasMessageContaining("không có quyền");
 
@@ -1143,7 +1149,7 @@ class BookingServiceImplTest {
         booking.setStatus("pending_intake");
         when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
 
-        assertThatThrownBy(() -> service.resubmitBooking("ORD-42", "phuc"))
+        assertThatThrownBy(() -> service.resubmitBooking(CODE, "phuc"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("không chờ khách bổ sung hồ sơ");
 
@@ -1161,7 +1167,7 @@ class BookingServiceImplTest {
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         BookingResponse response = service.rejectQuote(
-                "BK-042", "phuc", RejectQuoteRequest.builder().reason("  Giá vượt ngân sách  ").build());
+                CODE, "phuc", RejectQuoteRequest.builder().reason("  Giá vượt ngân sách  ").build());
 
         assertThat(response.getStatus()).isEqualTo("cancelled");
         assertThat(quotation.getStatus()).isEqualTo("REJECTED");
@@ -1184,7 +1190,7 @@ class BookingServiceImplTest {
         when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(42)).thenReturn(Optional.empty());
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        BookingResponse response = service.rejectQuote("42", "phuc", null);
+        BookingResponse response = service.rejectQuote(CODE, "phuc", null);
 
         assertThat(response.getStatus()).isEqualTo("cancelled");
         assertThat(response.getHistory().get(0).get("text"))
@@ -1200,7 +1206,7 @@ class BookingServiceImplTest {
         booking.setStatus("under_review");
         when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
 
-        assertThatThrownBy(() -> service.rejectQuote("42", "phuc", RejectQuoteRequest.builder().build()))
+        assertThatThrownBy(() -> service.rejectQuote(CODE, "phuc", RejectQuoteRequest.builder().build()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("chờ đặt cọc");
 
@@ -1225,13 +1231,13 @@ class BookingServiceImplTest {
         when(bookingRepository.save(any(Booking.class))).thenAnswer(i -> i.getArgument(0));
         var line = com.example.racehorse_transport.dto.manager.QuoteLineDto.builder().label("Cước").amount(new java.math.BigDecimal("1000000")).build();
         var request = com.example.racehorse_transport.dto.manager.SendQuoteRequest.builder().lines(List.of(line)).adjustments(List.of()).build();
-        service.sendQuote("BK-42", request);
+        service.sendQuote(CODE, request);
         ArgumentCaptor<Quotation> quote = ArgumentCaptor.forClass(Quotation.class);
         verify(quotationRepository).save(quote.capture());
         assertThat(quote.getValue().getExpiresAt()).isEqualTo(java.time.LocalDate.parse(today).plusDays(1).atStartOfDay(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant().minusMillis(1));
         booking.setStatus("pending_commercial");
         booking.setDetailsJson(details.replace(today, "2020-01-01"));
-        assertThatThrownBy(() -> service.sendQuote("BK-42", request)).hasMessageContaining("hết hạn");
+        assertThatThrownBy(() -> service.sendQuote(CODE, request)).hasMessageContaining("hết hạn");
     }
 
     @Test
@@ -1242,10 +1248,10 @@ class BookingServiceImplTest {
         when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
         when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
         booking.setStatus("pending_intake");
-        assertThatThrownBy(() -> service.activateBooking("BK-42", null))
+        assertThatThrownBy(() -> service.activateBooking(CODE, null))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("xác nhận lại lịch");
         booking.setStatus("pending_commercial");
-        assertThatThrownBy(() -> service.sendQuote("BK-42", null))
+        assertThatThrownBy(() -> service.sendQuote(CODE, null))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("xác nhận lại lịch");
         verify(quotationRepository, never()).save(any());
         verify(bookingRepository, never()).save(any());
@@ -1264,7 +1270,7 @@ class BookingServiceImplTest {
         var transport = com.example.racehorse_transport.dto.manager.QuoteLineDto.builder().label("Cước vận chuyển").amount(new java.math.BigDecimal("10000000")).build();
         var tampered = com.example.racehorse_transport.dto.manager.QuoteLineDto.builder().label("Thu hộ bảo hiểm bên thứ ba").amount(java.math.BigDecimal.ONE).build();
         var request = com.example.racehorse_transport.dto.manager.SendQuoteRequest.builder().by("manager01").lines(List.of(transport, tampered)).adjustments(List.of()).build();
-        service.sendQuote("BK-42", request);
+        service.sendQuote(CODE, request);
         ArgumentCaptor<Quotation> saved = ArgumentCaptor.forClass(Quotation.class);
         verify(quotationRepository).save(saved.capture());
         assertThat(saved.getValue().getTotalAmount()).isEqualByComparingTo("11250000");
@@ -1288,7 +1294,7 @@ class BookingServiceImplTest {
                 .subtotal(java.math.BigDecimal.ONE).total(java.math.BigDecimal.ONE)
                 .deposit(java.math.BigDecimal.ONE).balance(java.math.BigDecimal.ZERO).build();
 
-        service.sendQuote("BK-042", request);
+        service.sendQuote(CODE, request);
 
         ArgumentCaptor<Quotation> saved = ArgumentCaptor.forClass(Quotation.class);
         verify(quotationRepository).save(saved.capture());
@@ -1308,9 +1314,9 @@ class BookingServiceImplTest {
         verify(notificationRepository).save(notice.capture());
         assertThat(notice.getValue().getRecipientRole()).isEqualTo("customer");
         assertThat(notice.getValue().getRecipientUsername()).isEqualTo("phuc");
-        assertThat(notice.getValue().getTitle()).contains("BK-42");
-        assertThat(notice.getValue().getBookingId()).isEqualTo("BK-42");
-        assertThat(notice.getValue().getLink()).isEqualTo("/orders/BK-42");
+        assertThat(notice.getValue().getTitle()).contains(CODE);
+        assertThat(notice.getValue().getBookingId()).isEqualTo(CODE);
+        assertThat(notice.getValue().getLink()).isEqualTo("/orders/" + CODE);
         assertThat(notice.getValue().getIsRead()).isFalse();
     }
 
@@ -1323,7 +1329,7 @@ class BookingServiceImplTest {
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         BookingResponse response = service.rejectBooking(
-                "BK-042",
+                CODE,
                 RejectBookingRequest.builder()
                         .by("manager1")
                         .role("manager")
@@ -1353,7 +1359,7 @@ class BookingServiceImplTest {
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         BookingResponse response = service.rejectBooking(
-                "ORD-42",
+                CODE,
                 RejectBookingRequest.builder()
                         .by("coordinator1")
                         .role("coordinator")
@@ -1376,7 +1382,7 @@ class BookingServiceImplTest {
         when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
 
         assertThatThrownBy(() -> service.rejectBooking(
-                "42",
+                CODE,
                 RejectBookingRequest.builder().role("manager").reason("reason").build()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("pending_intake");
@@ -1392,7 +1398,7 @@ class BookingServiceImplTest {
         when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
 
         assertThatThrownBy(() -> service.rejectBooking(
-                "42",
+                CODE,
                 RejectBookingRequest.builder().role("coordinator").reason("reason").build()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("under_review");
@@ -1413,6 +1419,7 @@ class BookingServiceImplTest {
     private Booking bookingOwnedByCustomer() {
         return Booking.builder()
                 .id(42)
+                .code(CODE)
                 .customerID(customer)
                 .status("pending_intake")
                 .bookingDate(Instant.parse("2026-10-20T10:00:00Z"))
@@ -1427,6 +1434,7 @@ class BookingServiceImplTest {
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> {
             Booking saved = invocation.getArgument(0);
             saved.setId(42);
+            if (saved.getCode() == null) saved.setCode(CODE);
             return saved;
         });
     }
@@ -1614,7 +1622,7 @@ class BookingServiceImplTest {
     @Test
     void assignCrew_duringPaymentConfirmationCannotChangeExistingCrew() {
         Booking booking = prepareDepositExpiry("PENDING", DEPOSIT_DEADLINE.plusSeconds(120));
-        assertThatThrownBy(() -> service.assignCrew("42", new com.example.racehorse_transport.dto.manager.AssignCrewRequest()))
+        assertThatThrownBy(() -> service.assignCrew(CODE, new com.example.racehorse_transport.dto.manager.AssignCrewRequest()))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("pending_commercial");
         assertThat(booking.getStatus()).isEqualTo("awaiting_payment");
         verify(bookingAssignmentRepository, never()).deleteByBookingID_Id(42);

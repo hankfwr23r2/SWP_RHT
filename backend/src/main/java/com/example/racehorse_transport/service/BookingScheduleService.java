@@ -61,10 +61,10 @@ public class BookingScheduleService {
         save(booking, details);
         String day = booking.getDepartureDate().atZone(BookingSchedulePolicy.VIETNAM)
                 .toLocalDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
-        notify(booking, "customer", "Đơn BK-" + id + " cần xác nhận lại lịch",
+        notify(booking, "customer", "Đơn " + booking.getCode() + " cần xác nhận lại lịch",
                 "Ngày khởi hành dự kiến " + day + " đã qua, nhưng đơn chưa hoàn tất chuẩn bị chuyến. "
                         + "Vui lòng chọn ngày mới, hủy yêu cầu hoặc liên hệ hỗ trợ.");
-        notify(booking, "manager", "Đơn BK-" + id + " đã quá lịch dự kiến",
+        notify(booking, "manager", "Đơn " + booking.getCode() + " đã quá lịch dự kiến",
                 "Đã thông báo khách xác nhận lại lịch. Chờ khách chọn ngày mới hoặc yêu cầu hỗ trợ.");
         mail.scheduleChangeRequired(booking);
     }
@@ -102,9 +102,9 @@ public class BookingScheduleService {
         history(details, username, "Yêu cầu đổi ngày khởi hành từ " + previous + " sang " + departureDate
                 + ". Chờ quản lý tiếp nhận và thẩm định lại.");
         save(booking, details);
-        notify(booking, "manager", "Khách đã chọn lịch mới cho BK-" + id,
+        notify(booking, "manager", "Khách đã chọn lịch mới cho " + booking.getCode(),
                 "Ngày dự kiến mới: " + departureDate + ". Cần tiếp nhận và kiểm tra lại hồ sơ, xe và nhân sự.");
-        notify(booking, "customer", "Đã nhận lịch mới cho BK-" + id,
+        notify(booking, "customer", "Đã nhận lịch mới cho " + booking.getCode(),
                 "Lịch " + departureDate + " đang chờ công ty kiểm tra và xác nhận.");
     }
 
@@ -119,7 +119,7 @@ public class BookingScheduleService {
         booking.setStatus("cancelled");
         history(details, username, "Hủy yêu cầu chưa thanh toán sau khi quá lịch: " + reason.trim());
         save(booking, details);
-        notify(booking, "manager", "Khách đã hủy yêu cầu BK-" + id, reason.trim());
+        notify(booking, "manager", "Khách đã hủy yêu cầu " + booking.getCode(), reason.trim());
     }
 
     @Transactional
@@ -135,7 +135,7 @@ public class BookingScheduleService {
         details.setScheduleChange(change);
         history(details, username, "Yêu cầu quản lý liên hệ hỗ trợ sắp xếp lại lịch.");
         save(booking, details);
-        notify(booking, "manager", "Khách cần hỗ trợ đổi lịch BK-" + id,
+        notify(booking, "manager", "Khách cần hỗ trợ đổi lịch " + booking.getCode(),
                 "Vui lòng liên hệ khách để thống nhất ngày khởi hành mới.");
     }
 
@@ -188,8 +188,8 @@ public class BookingScheduleService {
     private void notify(Booking booking, String role, String title, String message) {
         notifications.save(Notification.builder().recipientRole(role)
                 .recipientUsername("customer".equals(role) ? booking.getCustomerID().getUser().getUsername() : null)
-                .title(title).message(message).bookingId("BK-" + booking.getId())
-                .link("customer".equals(role) ? "/orders/BK-" + booking.getId()
+                .title(title).message(message).bookingId(booking.getCode())
+                .link("customer".equals(role) ? "/orders/" + booking.getCode()
                         : "/manager/intake" + (BookingSchedulePolicy.REQUIRED.equals(booking.getStatus()) ? "?group=schedule" : ""))
                 .isRead(false).createdAt(clock.instant()).build());
     }

@@ -11,7 +11,6 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PaymentSummaryResponse {
-    private Integer bookingId;
     private String bookingCode;
     private String waybillNo;
     private String bookingStatus;

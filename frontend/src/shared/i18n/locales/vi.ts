@@ -269,7 +269,7 @@ export const vi = {
       lookupAria: 'Tra cứu',
       orderTab: 'Tra cứu đơn hàng',
       priceTab: 'Bảng giá',
-      codePlaceholder: 'Mã đơn: BK-001 hoặc VD-2026-0001',
+      codePlaceholder: 'Mã đơn: BK-7F3K9QXM hoặc VD-2026-7F3K9QXM',
       phonePlaceholder: '4 số cuối SĐT người đặt',
       searchBtn: 'Tìm kiếm',
       searching: 'Đang tìm…',

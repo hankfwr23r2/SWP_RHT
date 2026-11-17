@@ -58,7 +58,7 @@ public class DeliveryServiceImpl implements DeliveryService {
         savePayload(booking, payload);
 
         Booking updated = bookingRepository.save(booking);
-        logAction("DELIVERY_ARRIVE", updated.getId(), "Xe đã tới điểm giao đích đơn BK-" + updated.getId());
+        logAction("DELIVERY_ARRIVE", updated.getId(), "Xe đã tới điểm giao đích đơn " + updated.getCode());
 
         log.info("Driver checked in arrival at destination for booking ID={}", updated.getId());
         return mapToResponse(updated);
@@ -185,7 +185,7 @@ public class DeliveryServiceImpl implements DeliveryService {
         logAction("DELIVERY_TIMEOUT", updated.getId(),
                 "Kích hoạt xử lý ngoại lệ bàn giao quá giờ: " + action + ", chi phí dự kiến: " + request.getEstimatedCost());
 
-        staffNotifier.toManagers(updated, "Quá hạn bàn giao · BK-" + updated.getId(),
+        staffNotifier.toManagers(updated, "Quá hạn bàn giao · " + updated.getCode(),
                 ("RETURN_TO_HQ".equalsIgnoreCase(action) ? "Người nhận không tới, xe chở ngựa về trụ sở." : "Người nhận không tới quá 2 giờ, ngựa đưa vào chuồng lưu trú.")
                         + " Liên hệ khách để hẹn lại.", "/manager/incidents");
         log.info("Delivery timeout reported for booking ID={}, action={}", updated.getId(), action);
@@ -242,7 +242,7 @@ public class DeliveryServiceImpl implements DeliveryService {
     }
 
     private BookingResponse mapToResponse(Booking b) {
-        String formattedId = "BK-" + String.format("%03d", b.getId());
+        String formattedId = b.getCode();
         String customerUsername = "";
         String customerFullName = "";
 
@@ -258,7 +258,6 @@ public class DeliveryServiceImpl implements DeliveryService {
 
         return BookingResponse.builder()
                 .id(formattedId)
-                .numericId(b.getId())
                 .type(b.getBookingType() != null ? b.getBookingType() : "domestic")
                 .customer(customerUsername)
                 .customerName(customerFullName)

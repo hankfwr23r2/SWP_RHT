@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 public class HorseHealthLogDTO implements Serializable {
     private Integer id;
     private Integer horseID;
-    private Integer bookingID;
+    private String bookingCode;
     private Integer reportBy;
     private String healthStatus;
     private BigDecimal tempature;

@@ -89,7 +89,7 @@ class BookingEndpointsAccessTest {
     void publicTrackingFindsTheBookingByCodeAndLastFourDigitsWithoutLogin() throws Exception {
         Booking booking = booking("awaiting_payment", "0987651234");
 
-        HttpResponse<String> response = get("/bookings/public-track?code=BK-" + booking.getId() + "&phoneLast4=1234", null);
+        HttpResponse<String> response = get("/bookings/public-track?code=" + booking.getCode() + "&phoneLast4=1234", null);
 
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
         assertThat(response.body()).contains("Kho Đồng Nai → Hà Nội");
@@ -99,7 +99,7 @@ class BookingEndpointsAccessTest {
     void publicTrackingAlsoAcceptsTheCustomersOwnPhone() throws Exception {
         Booking booking = booking("awaiting_payment", null);
 
-        HttpResponse<String> response = get("/bookings/public-track?code=" + booking.getId() + "&phoneLast4=5678", null);
+        HttpResponse<String> response = get("/bookings/public-track?code=" + booking.getCode() + "&phoneLast4=5678", null);
 
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
     }
@@ -108,7 +108,7 @@ class BookingEndpointsAccessTest {
     void publicTrackingDoesNotRevealTheBookingWhenTheDigitsAreWrong() throws Exception {
         Booking booking = booking("awaiting_payment", "0987651234");
 
-        HttpResponse<String> response = get("/bookings/public-track?code=BK-" + booking.getId() + "&phoneLast4=0000", null);
+        HttpResponse<String> response = get("/bookings/public-track?code=" + booking.getCode() + "&phoneLast4=0000", null);
 
         assertThat(response.statusCode()).isEqualTo(404);
         assertThat(response.body()).doesNotContain("Kho Đồng Nai").doesNotContain("Hà Nội");
@@ -127,7 +127,7 @@ class BookingEndpointsAccessTest {
         Booking other = booking("awaiting_payment", "0911110000");
 
         HttpResponse<String> response = post("/bookings/public-track/batch", null,
-                "{\"codes\":[\"BK-%d\",\"BK-%d\"],\"phoneLast4\":\"1234\"}".formatted(mine.getId(), other.getId()));
+                "{\"codes\":[\"%s\",\"%s\"],\"phoneLast4\":\"1234\"}".formatted(mine.getCode(), other.getCode()));
 
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
         JsonNode results = json.readTree(response.body()).path("data");
@@ -151,8 +151,8 @@ class BookingEndpointsAccessTest {
         Booking booking = booking("under_review", null);
 
         assertThat(get("/manager/bookings/intake", ownerToken).statusCode()).isEqualTo(403);
-        assertThat(post("/manager/bookings/" + booking.getId() + "/send-quote", ownerToken, "{}").statusCode()).isEqualTo(403);
-        assertThat(post("/manager/bookings/" + booking.getId() + "/reject", ownerToken, "{\"reason\":\"x\"}").statusCode()).isEqualTo(403);
+        assertThat(post("/manager/bookings/" + booking.getCode() + "/send-quote", ownerToken, "{}").statusCode()).isEqualTo(403);
+        assertThat(post("/manager/bookings/" + booking.getCode() + "/reject", ownerToken, "{\"reason\":\"x\"}").statusCode()).isEqualTo(403);
         assertThat(post("/manager/bookings/maintenance/release-expired", ownerToken, "{}").statusCode()).isEqualTo(403);
         assertThat(get("/manager/bookings/intake", null).statusCode()).isIn(401, 403);
         assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus()).isEqualTo("under_review");
@@ -170,8 +170,8 @@ class BookingEndpointsAccessTest {
         Booking booking = booking("awaiting_payment", null);
 
         assertThat(get("/customer/bookings", managerToken).statusCode()).isEqualTo(403);
-        assertThat(post("/customer/bookings/" + booking.getId() + "/reject-quote", managerToken, "{}").statusCode()).isEqualTo(403);
-        assertThat(post("/customer/bookings/" + booking.getId() + "/resubmit", driverToken, "{}").statusCode()).isEqualTo(403);
+        assertThat(post("/customer/bookings/" + booking.getCode() + "/reject-quote", managerToken, "{}").statusCode()).isEqualTo(403);
+        assertThat(post("/customer/bookings/" + booking.getCode() + "/resubmit", driverToken, "{}").statusCode()).isEqualTo(403);
     }
 
     @Test
@@ -187,7 +187,7 @@ class BookingEndpointsAccessTest {
     void aCustomerCannotRejectAnotherCustomersQuote() throws Exception {
         Booking booking = booking("awaiting_payment", null);
 
-        HttpResponse<String> response = post("/customer/bookings/" + booking.getId() + "/reject-quote", strangerToken, "{\"reason\":\"không thích\"}");
+        HttpResponse<String> response = post("/customer/bookings/" + booking.getCode() + "/reject-quote", strangerToken, "{\"reason\":\"không thích\"}");
 
         assertThat(response.statusCode()).as(response.body()).isGreaterThanOrEqualTo(400);
         assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus()).isEqualTo("awaiting_payment");
@@ -197,7 +197,7 @@ class BookingEndpointsAccessTest {
     void theOwnerCanStillRejectTheirOwnQuote() throws Exception {
         Booking booking = booking("awaiting_payment", null);
 
-        HttpResponse<String> response = post("/customer/bookings/" + booking.getId() + "/reject-quote", ownerToken, "{\"reason\":\"giá cao\"}");
+        HttpResponse<String> response = post("/customer/bookings/" + booking.getCode() + "/reject-quote", ownerToken, "{\"reason\":\"giá cao\"}");
 
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
         assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus()).isEqualTo("cancelled");
@@ -207,7 +207,7 @@ class BookingEndpointsAccessTest {
     void aCustomerCannotResubmitAnotherCustomersDocuments() throws Exception {
         Booking booking = booking("schedule_change_required", null);
 
-        HttpResponse<String> response = post("/customer/bookings/" + booking.getId() + "/resubmit", strangerToken, "{}");
+        HttpResponse<String> response = post("/customer/bookings/" + booking.getCode() + "/resubmit", strangerToken, "{}");
 
         assertThat(response.statusCode()).as(response.body()).isGreaterThanOrEqualTo(400);
         assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus()).isEqualTo("schedule_change_required");
@@ -217,9 +217,59 @@ class BookingEndpointsAccessTest {
     void aCustomerCannotSeeAnotherCustomersTripTeamOrBooking() throws Exception {
         Booking booking = booking("en_route_to_pickup", null);
 
-        assertThat(get("/customer/bookings/" + booking.getId() + "/team", strangerToken).statusCode()).isGreaterThanOrEqualTo(400);
-        assertThat(get("/customer/bookings/" + booking.getId(), strangerToken).statusCode()).isGreaterThanOrEqualTo(400);
-        assertThat(get("/customer/bookings/" + booking.getId(), ownerToken).statusCode()).isEqualTo(200);
+        assertThat(get("/customer/bookings/" + booking.getCode() + "/team", strangerToken).statusCode()).isGreaterThanOrEqualTo(400);
+        assertThat(get("/customer/bookings/" + booking.getCode(), strangerToken).statusCode()).isGreaterThanOrEqualTo(400);
+        assertThat(get("/customer/bookings/" + booking.getCode(), ownerToken).statusCode()).isEqualTo(200);
+    }
+
+    // ===== Mã đơn ngẫu nhiên, không lộ BookingID tự tăng =====
+
+    @Test
+    void bookingDetailsCarryTheRandomCodeAndNoNumericId() throws Exception {
+        Booking booking = booking("awaiting_payment", null);
+
+        HttpResponse<String> response = get("/customer/bookings/" + booking.getCode(), ownerToken);
+
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
+        JsonNode data = json.readTree(response.body()).path("data");
+        assertThat(data.path("id").asText()).isEqualTo(booking.getCode()).matches("^BK-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{8}$");
+        assertThat(data.has("numericId")).isFalse();
+    }
+
+    @Test
+    void sequentialReferencesNoLongerOpenTheBookingEvenForItsOwner() throws Exception {
+        Booking booking = booking("awaiting_payment", null);
+
+        assertThat(get("/customer/bookings/BK-" + booking.getId(), ownerToken).statusCode()).isEqualTo(404);
+        assertThat(get("/customer/bookings/BK-" + String.format("%03d", booking.getId()), ownerToken).statusCode()).isEqualTo(404);
+        assertThat(get("/customer/bookings/" + booking.getId(), ownerToken).statusCode()).isEqualTo(404);
+    }
+
+    @Test
+    void publicTrackingNoLongerAcceptsTheSequentialNumber() throws Exception {
+        Booking booking = booking("awaiting_payment", "0987651234");
+
+        assertThat(get("/bookings/public-track?code=BK-" + booking.getId() + "&phoneLast4=1234", null).statusCode()).isEqualTo(404);
+        assertThat(get("/bookings/public-track?code=" + booking.getId() + "&phoneLast4=1234", null).statusCode()).isEqualTo(404);
+    }
+
+    @Test
+    void publicTrackingFindsTheBookingByItsWaybill() throws Exception {
+        Booking booking = booking("deposit_paid", "0987651234");
+        booking.setWaybillNo("VD-2026-" + booking.getCode().substring(3));
+        bookings.save(booking);
+
+        HttpResponse<String> response = get("/bookings/public-track?code=" + booking.getWaybillNo() + "&phoneLast4=1234", null);
+
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
+    }
+
+    @Test
+    void aCustomerCannotReadAnotherCustomersHorseHealthLogs() throws Exception {
+        Booking booking = booking("in_transit", null);
+
+        assertThat(get("/horse-health-logs/booking/" + booking.getCode(), strangerToken).statusCode()).isGreaterThanOrEqualTo(400);
+        assertThat(get("/horse-health-logs/booking/" + booking.getCode(), ownerToken).statusCode()).isEqualTo(200);
     }
 
     // ===== Dựng dữ liệu =====

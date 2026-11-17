@@ -20,6 +20,7 @@ import java.util.List;
 public class CoordinatorBookingController {
 
     private final BookingService bookingService;
+    private final com.example.racehorse_transport.service.BookingCodeResolver bookingCodes;
 
     // 1. Điều phối viên chốt xe và lộ trình đơn hàng
     @PostMapping("/{id}/fleet-plan")
@@ -42,17 +43,7 @@ public class CoordinatorBookingController {
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<BookingResponse>> getBookingDetail(
             @PathVariable("id") String id) {
-        Integer bookingId;
-        try {
-            if (id.toUpperCase().startsWith("BK-")) {
-                bookingId = Integer.parseInt(id.substring(3).trim());
-            } else {
-                bookingId = Integer.parseInt(id.trim());
-            }
-        } catch (Exception ex) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Mã đơn không hợp lệ"));
-        }
-        BookingResponse response = bookingService.getBookingById(bookingId, null);
+        BookingResponse response = bookingService.getBookingById(bookingCodes.idOf(id), null);
         return ResponseEntity.ok(ApiResponse.success(response, "Lấy chi tiết đơn hàng thành công"));
     }
 

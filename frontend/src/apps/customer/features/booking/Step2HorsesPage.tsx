@@ -58,7 +58,7 @@ export default function Step2HorsesPage() {
             if (bh.horseId) {
               const num = Number(bh.horseId.replace(/\D/g, ''))
               if (num && !map.has(num)) {
-                map.set(num, b.id || `#BK-${b.numericId}`)
+                map.set(num, b.id)
               }
             }
           }

@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 
 async function open(page: Page, failFirst = false) {
   const state = {
-    id: 'BK-701', numericId: 701, type: 'domestic', status: 'clearance_in_progress',
+    id: 'BK-701', type: 'domestic', status: 'clearance_in_progress',
     customer: 'QA', createdAt: Date.now(), departAt: Date.now() + 30 * 86400_000,
     originName: 'Depot', originCountry: 'VN', destName: 'Club', destCountry: 'VN', horses: [],
     intake: { specialist: { id: 'SP-01', name: 'specialist01' }, coordinator: { id: 'CO-01' } },

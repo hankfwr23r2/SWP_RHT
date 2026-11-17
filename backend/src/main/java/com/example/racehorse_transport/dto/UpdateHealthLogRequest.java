@@ -17,7 +17,7 @@ public class UpdateHealthLogRequest {
     @NotNull(message = "horseId không được để trống")
     private Integer horseId;
 
-    private Integer bookingId;
+    private String bookingCode;
     private Integer escortStaffId;
 
     @NotBlank(message = "Trạng thái sức khỏe không được để trống")

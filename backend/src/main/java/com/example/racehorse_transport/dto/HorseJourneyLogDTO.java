@@ -12,7 +12,6 @@ import java.io.Serializable;
 public class HorseJourneyLogDTO implements Serializable {
     private Long id;
     private Integer horseId;
-    private Integer bookingId;
     private String tripCode;
     private String fromLocation;
     private String toLocation;

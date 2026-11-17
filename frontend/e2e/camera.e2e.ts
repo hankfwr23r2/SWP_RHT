@@ -19,7 +19,7 @@ test('chụp từ camera, upload lỗi thì giữ ảnh và giờ chụp khi th�
     sent.push(body)
     if (sent.length === 1) return route.fulfill({ status: 503, json: { status: 'error', message: 'Không tải được ảnh, thử lại.' } })
     const capturedAt = Number(body.match(/name="capturedAt"\r\n\r\n(\d+)/)?.[1])
-    await route.fulfill({ json: { status: 'success', data: { id: 1, url: 'https://example.com/camera.jpg', bookingId: 1, tripId: 'T1', purpose: 'ARRIVE_PICKUP', target: 'pickup', capturedBy: 'driver', capturedAt, recordedAt: capturedAt + 2000 } } })
+    await route.fulfill({ json: { status: 'success', data: { id: 1, url: 'https://example.com/camera.jpg', tripId: 'T1', purpose: 'ARRIVE_PICKUP', target: 'pickup', capturedBy: 'driver', capturedAt, recordedAt: capturedAt + 2000 } } })
   })
   await openHarness(page)
   await expect(page.getByRole('button', { name: 'Chụp', exact: true })).toBeEnabled()

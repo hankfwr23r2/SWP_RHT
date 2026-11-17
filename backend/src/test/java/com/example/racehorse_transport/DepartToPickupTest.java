@@ -206,7 +206,7 @@ class DepartToPickupTest {
     }
 
     private HttpResponse<String> depart(Booking booking, String tripId, String token) throws Exception {
-        return post("/field/bookings/" + booking.getId() + "/trip-update", token,
+        return post("/field/bookings/" + booking.getCode() + "/trip-update", token,
                 "{\"tripId\":\"%s\",\"action\":\"DEPART_TO_PICKUP\",\"actor\":\"Tài xế\",\"payload\":{}}".formatted(tripId));
     }
 

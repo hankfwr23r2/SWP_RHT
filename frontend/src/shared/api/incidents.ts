@@ -4,7 +4,6 @@ import type { IncidentPlan } from '../types/booking'
 export interface BackendIncidentResponse {
   id: number
   formattedId: string // INC-001
-  bookingId: number
   bookingCode: string // BK-003
   horseIds?: string[]
   reporter?: string
@@ -35,7 +34,7 @@ export interface BackendIncidentResponse {
 }
 
 export interface ReportIncidentPayload {
-  bookingId: number
+  bookingCode: string
   tripId: string
   incidentName: string
   incidentType: string
@@ -136,9 +135,9 @@ export const backendIncidentApi = {
     return res.data.data
   },
 
-  // 6. Lấy sự cố theo đơn hàng -> GET /api/v1/incidents/booking/{bookingId}
-  getByBooking: async (bookingId: number): Promise<BackendIncidentResponse[]> => {
-    const res = await apiClient.get<ApiResponse<BackendIncidentResponse[]>>(`/incidents/booking/${bookingId}`)
+  // 6. Lấy sự cố theo đơn hàng -> GET /api/v1/incidents/booking/{bookingCode}
+  getByBooking: async (bookingCode: string): Promise<BackendIncidentResponse[]> => {
+    const res = await apiClient.get<ApiResponse<BackendIncidentResponse[]>>(`/incidents/booking/${bookingCode}`)
     return res.data.data
   },
 
