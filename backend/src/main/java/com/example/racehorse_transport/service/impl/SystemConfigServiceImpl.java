@@ -6,10 +6,12 @@ import com.example.racehorse_transport.dto.admin.SystemConfigResponse;
 import com.example.racehorse_transport.dto.admin.UpdateSystemConfigRequest;
 import com.example.racehorse_transport.entity.SystemConfig;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
+import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.SystemConfigRepository;
 import com.example.racehorse_transport.service.SystemConfigService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -87,6 +89,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
             .collect(LinkedHashMap::new, (map, definition) -> map.put(definition.key(), definition), LinkedHashMap::putAll);
 
     private final SystemConfigRepository repository;
+    private final StaffRepository staffRepository;
 
     @Override
     @Transactional
@@ -144,7 +147,9 @@ public class SystemConfigServiceImpl implements SystemConfigService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy cấu hình: " + key));
         String oldValue = config.getConfigValue();
         config.setConfigValue(value);
-        config.setUpdatedBy(updatedBy);
+        // Chỉ nhân viên có bản ghi STAFF mới được ghi nhận là người sửa
+        config.setUpdatedBy(staffRepository.findByUser_Username(updatedBy)
+                .orElseThrow(() -> new AccessDeniedException("Không xác định được nhân viên thực hiện thao tác.")));
         config.setUpdatedAt(Instant.now());
         SystemConfig saved = repository.save(config);
         audit.record("UPDATE_CONFIG", "SYSTEM_CONFIG", key, config.getConfigName(), "Cập nhật tham số " + key,
@@ -201,7 +206,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
                 .unit(config.getUnit())
                 .configGroup(config.getConfigGroup())
                 .description(config.getDescription())
-                .updatedBy(config.getUpdatedBy())
+                .updatedBy(config.getUpdatedBy() == null ? "SYSTEM" : config.getUpdatedBy().getUser().getUsername())
                 .updatedAt(config.getUpdatedAt())
                 .build();
     }
