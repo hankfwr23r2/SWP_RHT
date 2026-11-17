@@ -663,7 +663,7 @@ class BookingServiceImplTest {
 
         assertThatThrownBy(() -> service.updateTripProgress(CODE, request, "manager", "MANAGER"))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("original documents were returned");
+                .hasMessageContaining("đã trả hồ sơ gốc");
 
         verify(bookingRepository, never()).save(any(Booking.class));
     }

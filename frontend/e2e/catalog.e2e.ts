@@ -3,6 +3,9 @@ import { expect, test } from '@playwright/test'
 // Trang cần danh mục mà backend chưa trả lời: chỉ trang đó báo lỗi, có nút thử lại; không phải màn lỗi mặc định của router.
 test('trang cần danh mục báo lỗi tại chỗ và cho thử lại khi backend chưa trả lời', async ({ page }) => {
   test.skip(!!process.env.E2E_BACKEND_URL, 'Chỉ chạy khi không có backend')
+  // Chủ động làm mọi request API thất bại ngay: không phụ thuộc cổng 9 bị từ chối tức thì
+  // (trên WSL kết nối tới cổng đó bị treo đến hết timeout 15 giây của client)
+  await page.route('**/api/v1/**', route => route.abort('connectionrefused'))
 
   await page.goto('/payment/vnpay-return')
 

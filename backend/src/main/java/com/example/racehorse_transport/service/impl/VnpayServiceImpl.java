@@ -62,6 +62,7 @@ public class VnpayServiceImpl implements VnpayService {
     private final BookingService bookingService;
     private final SettlementService settlementService;
     private final Clock clock;
+    private final com.example.racehorse_transport.service.StaffNotifier staffNotifier;
 
     @Override
     @Transactional
@@ -400,6 +401,13 @@ public class VnpayServiceImpl implements VnpayService {
         payment.setNote("Đã nhận tiền VNPAY. " + reason + " Cần Quản lý kiểm tra và hoàn tiền.");
         paymentRepository.save(payment);
         log.warn("VNPAY payment txnRef={} needs review: {}", payment.getTransactionCode(), reason);
+        // Tiền đã vào tài khoản nhưng không ghi nhận cho đơn: Quản lý phải biết ngay để kiểm tra và hoàn tiền
+        Booking booking = payment.getBookingID();
+        staffNotifier.toManagers(booking, "Giao dịch VNPAY cần kiểm tra · " + payment.getTransactionCode(),
+                "Đã nhận " + payment.getAmount() + " VND (mã " + payment.getTransactionCode() + ")"
+                        + (booking != null ? " cho đơn " + booking.getCode() : "")
+                        + " nhưng không ghi nhận vào đơn: " + reason + " Cần kiểm tra và hoàn tiền cho khách.",
+                "/manager");
         return result(false, "00", "Đã nhận tiền nhưng chưa thể xác nhận đơn. Nhà xe sẽ kiểm tra và liên hệ hoàn tiền.", payment);
     }
 }
