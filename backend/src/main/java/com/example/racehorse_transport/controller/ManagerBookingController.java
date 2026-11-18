@@ -115,7 +115,8 @@ public class ManagerBookingController {
         return ResponseEntity.ok(ApiResponse.success(response, response.getMessage()));
     }
 
-    // Quản lý hủy chuyến đã cọc: lỗi do công ty thì hoàn 100%, lỗi do khách thì khách mất phần cọc vận chuyển
+    // Quản lý hủy chuyến đã cọc: lỗi do công ty thì hoàn 100%, lỗi do khách thì không hoàn (mất cọc, và 70% nếu đã trả).
+    // Ngựa đã trên xe thì đơn sang "Chờ trả ngựa" cho tới khi tài xế trả ngựa và hồ sơ gốc có biên bản (RETURN_HORSES).
     @PostMapping("/{id}/cancel-trip")
     public ResponseEntity<ApiResponse<com.example.racehorse_transport.dto.payment.CancelWithRefundResponse>> cancelTrip(
             @PathVariable("id") String id,

@@ -188,6 +188,14 @@ export interface Checkpoint {
   returnedOriginals?: boolean // delivery: đã trả hồ sơ gốc
   returnedOriginalsAt?: number // delivery: thời điểm xác nhận trả hồ sơ gốc
   returnedOriginalsBy?: string // delivery: người xác nhận trả hồ sơ gốc
+  // pickup: quản lý hủy chuyến khi ngựa đã lên xe, tài xế trả lại ngựa và hồ sơ gốc tại điểm đón
+  returnedAt?: number
+  returnedBy?: string
+  returnRecipient?: string
+  returnRecipientPhone?: string
+  returnChips?: string[]
+  returnOriginals?: string[]
+  returnPhoto?: string // ảnh biên bản trả ngựa có chữ ký hai bên
 }
 export interface WelfareLog {
   id: string

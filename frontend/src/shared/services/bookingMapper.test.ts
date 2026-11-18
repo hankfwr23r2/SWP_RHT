@@ -71,6 +71,11 @@ describe('chuyển đơn từ backend sang frontend', () => {
     const b = toBooking({ ...base, status: 'cancelled', payment: { paidAt: 2_000, amount: 3_000_000, cancelled: true, cancelledAt: 9_000, cancelReason: 'Đổi lịch', refundAmount: 0, penaltyAmount: 3_000_000 } })
     expect(b.cancellation).toEqual({ at: 9_000, reason: 'Đổi lịch', by: 'customer', refund: 0 })
   })
+  it('nhà xe hủy chuyến (lỗi công ty) và đang trả ngựa: khách thấy đúng bên hủy và số tiền hoàn', () => {
+    const b = toBooking({ ...base, status: 'returning_horses', payment: { paidAt: 2_000, amount: 3_000_000, cancelled: true, cancelledBy: 'COMPANY', cancelledAt: 9_000, cancelReason: 'Xe hỏng', refundAmount: 3_000_000, penaltyAmount: 0 } })
+    expect(b.status).toBe('returning_horses')
+    expect(b.cancellation).toEqual({ at: 9_000, reason: 'Xe hỏng', by: 'manager', refund: 3_000_000 })
+  })
   it('giữ lộ trình có danh sách chặng', () => {
     const route = { legs: [{ no: 1, from: 'A', to: 'B', departAt: 6_000, arriveAt: 7_000 }], rests: [] }
     expect(toBooking({ ...base, route }).route).toEqual(route)

@@ -190,6 +190,7 @@ export const en = {
     ready_for_pickup: 'Ready for Pickup',
     en_route_to_pickup: 'En Route to Pickup',
     pickup_failed: 'Horse Not Picked Up',
+    returning_horses: 'Returning Horses',
     in_transit: 'In Transit',
     incident_reported: 'Incident Reported',
     pending_emergency_approval: 'Pending Incident Approval',

@@ -304,6 +304,16 @@ function EscortSteps({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
       <HomeReturnPanel b={b} t={t} role="escort" run={run} />
     </>
   )
+  if (b.status === 'returning_horses' || b.status === 'cancelled') {
+    if (pickup?.returnedAt) return (
+      <>
+        <Panel title="Đã trả ngựa" icon="fa-rotate-left" tone="ok"><p>Tài xế đã trả ngựa và hồ sơ gốc cho {pickup.returnRecipient} lúc {formatDateTime(pickup.returnedAt)}.</p></Panel>
+        <HomeReturnPanel b={b} t={t} role="escort" run={run} />
+      </>
+    )
+    if (b.status === 'returning_horses') return <Panel title="Chuyến đã hủy, trả ngựa" icon="fa-ban" tone="warn"><p>Quản lý đã hủy chuyến. Không xuất phát. Hạ ngựa an toàn, giúp tài xế quét chip từng con và trao lại hồ sơ gốc cho người giao. Tài xế chụp biên bản trả ngựa trên app.</p></Panel>
+    return <HomeReturnPanel b={b} t={t} role="escort" run={run} />
+  }
   if (t.departedAt && !t.run?.startedAt) {
     return pickup?.arrivedAt ? <ScanStep key={pickup.chips?.length ?? 0} b={b} t={t} run={run} /> : <Panel title="Xe đang đến điểm đón" icon="fa-truck-moving" tone="warn"><p>Khi tài xế xác nhận có mặt tại điểm đón, bạn sẽ quét microchip từng con trên xe này và đối soát với hộ chiếu ngựa.</p></Panel>
   }

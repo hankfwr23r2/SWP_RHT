@@ -66,6 +66,17 @@ public class StaffNotifier {
                 .ifPresent(coordinator -> save("coordinator", coordinator, booking, title, message, "/coordinator"));
     }
 
+    // Hủy chuyến khi ngựa đã trên xe: kíp xe trả ngựa và hồ sơ gốc tại điểm đón, lập biên bản trả ngựa
+    public void horsesToReturn(Booking booking, BookingDetailsPayload payload, String reason) {
+        String title = "Hủy chuyến, trả ngựa · " + booking.getCode();
+        String message = "Đơn " + booking.getCode() + " đã bị hủy"
+                + (reason == null || reason.isBlank() ? "" : " (" + reason.trim() + ")")
+                + ". Không xuất phát. Trả ngựa và toàn bộ hồ sơ gốc cho người giao tại điểm đón, chụp biên bản trả ngựa có chữ ký trên app.";
+        toCrew(booking, payload, title, message);
+        username("COORDINATOR", intakeId(payload, "coordinator"))
+                .ifPresent(coordinator -> save("coordinator", coordinator, booking, title, message, "/coordinator"));
+    }
+
     // Báo cho chủ đơn (khách) khi nhân viên thay đổi đơn của họ, ví dụ nhà xe hủy chuyến
     public void toCustomer(Booking booking, String title, String message) {
         if (booking == null || booking.getCustomerID() == null || booking.getCustomerID().getUser() == null) return;

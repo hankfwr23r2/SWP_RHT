@@ -82,11 +82,14 @@ class PickupChipCheckTest {
     private NotificationRepository notifications;
     @Autowired
     private PasswordEncoder passwordEncoder;
+    @Autowired
+    private com.example.racehorse_transport.repository.CaptureAssetRepository captures;
 
     private final HttpClient http = HttpClient.newHttpClient();
     private final ObjectMapper json = new ObjectMapper();
     private String driverCode;
     private String escortCode;
+    private String driverUsername;
     private String driverToken;
     private String escortToken;
     private String managerToken;
@@ -97,7 +100,8 @@ class PickupChipCheckTest {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         driverCode = "DR-" + suffix;
         escortCode = "ES-" + suffix;
-        driverToken = staffLogin("taixe" + suffix, "DRIVER", driverCode);
+        driverUsername = "taixe" + suffix;
+        driverToken = staffLogin(driverUsername, "DRIVER", driverCode);
         escortToken = staffLogin("hotong" + suffix, "ESCORT", escortCode);
         managerToken = staffLogin("quanly" + suffix, "MANAGER", "MG-" + suffix);
 
@@ -294,6 +298,67 @@ class PickupChipCheckTest {
 
         assertThat(response.statusCode()).as(response.body()).isBetween(400, 499);
         assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus()).isEqualTo("en_route_to_pickup");
+    }
+
+    @Test
+    void managerCancelsATripWithHorsesOnBoardAndTheBookingWaitsForTheReturn() throws Exception {
+        Booking booking = booking(oneHorse(), pickup("\"chips\":[\"VN-800221\"],\"originals\":" + ORIGINALS
+                + ",\"handoverPhoto\":\"https://example.com/bien-ban.jpg\""));
+        payments.save(Payment.builder().bookingID(booking).amount(new BigDecimal("3000000")).paymentDate(Instant.now())
+                .paymentType("DEPOSIT").paymentMethod("VNPAY").transactionCode("DEP-" + booking.getId()).status("COMPLETED").build());
+
+        HttpResponse<String> response = post("/manager/bookings/" + booking.getCode() + "/cancel-trip", managerToken,
+                "{\"fault\":\"CUSTOMER\",\"reason\":\"Khách không thanh toán 70%\"}");
+
+        assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
+        assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus()).isEqualTo("returning_horses");
+        assertThat(notifications.findForUser("driver", driverUsername))
+                .anySatisfy(n -> assertThat(n.getMessage()).contains("Trả ngựa"));
+    }
+
+    @Test
+    void crewMustReturnEveryHorseAndOriginalWithASignedRecordBeforeTheBookingCloses() throws Exception {
+        Booking booking = booking(oneHorse(), pickup("\"chips\":[\"VN-800221\"],\"originals\":" + ORIGINALS
+                + ",\"handoverPhoto\":\"https://example.com/bien-ban.jpg\""));
+        booking.setStatus("returning_horses");
+        bookings.save(booking);
+        String photo = "https://example.com/tra-ngua-" + booking.getId() + ".jpg";
+        String full = "{\"recipientName\":\"Nguyễn Văn Giao\",\"recipientPhone\":\"0901234567\","
+                + "\"chips\":[\"vn 800 221\"],\"originals\":" + ORIGINALS + ",\"photo\":\"" + photo + "\"}";
+
+        HttpResponse<String> escort = tripUpdate(booking, escortToken, "RETURN_HORSES", full);
+        assertThat(escort.statusCode()).as(escort.body()).isEqualTo(403);
+
+        HttpResponse<String> noChip = tripUpdate(booking, driverToken, "RETURN_HORSES",
+                full.replace("\"vn 800 221\"", ""));
+        assertThat(noChip.statusCode()).as(noChip.body()).isBetween(400, 499);
+        assertThat(messageOf(noChip)).contains("VN-800221");
+
+        HttpResponse<String> noOriginals = tripUpdate(booking, driverToken, "RETURN_HORSES",
+                full.replace(ORIGINALS, "[\"Sổ tiêm phòng\"]"));
+        assertThat(noOriginals.statusCode()).as(noOriginals.body()).isBetween(400, 499);
+        assertThat(messageOf(noOriginals)).contains("hồ sơ gốc");
+        assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus()).isEqualTo("returning_horses");
+
+        captures.save(com.example.racehorse_transport.entity.CaptureAsset.builder().url(photo).bookingId(booking.getId()).tripId("TRP-1")
+                .purpose("RETURN_HORSES").target("pickup").capturedBy(driverUsername).capturedAt(Instant.now()).recordedAt(Instant.now()).build());
+        HttpResponse<String> done = tripUpdate(booking, driverToken, "RETURN_HORSES", full);
+
+        assertThat(done.statusCode()).as(done.body()).isEqualTo(200);
+        assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus()).isEqualTo("cancelled");
+        JsonNode pickup = pickupOf(booking);
+        assertThat(pickup.path("returnedAt").asLong()).isPositive();
+        assertThat(pickup.path("returnPhoto").asText()).isEqualTo(photo);
+        assertThat(pickup.path("returnRecipient").asText()).isEqualTo("Nguyễn Văn Giao");
+        // Single HQ: xe vẫn phải chạy về và xác nhận tại trụ sở
+        JsonNode homeReturn = json.readTree(bookings.findById(booking.getId()).orElseThrow().getDetailsJson())
+                .path("trips").path(0).path("homeReturn");
+        assertThat(homeReturn.path("earliestAt").asLong()).isPositive();
+        assertThat(homeReturn.path("backAt").isMissingNode()).isTrue();
+        assertThat(notifications.findForUser("customer", customer.getUser().getUsername()))
+                .anySatisfy(n -> assertThat(n.getTitle()).contains("Đã nhận lại ngựa"));
+        // Kíp xe vẫn thấy chuyến để xác nhận về trụ sở
+        assertThat(get("/field/bookings/mine", driverToken).body()).contains(booking.getCode());
     }
 
     private String oneHorse() {

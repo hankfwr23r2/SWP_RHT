@@ -42,6 +42,7 @@ public class FleetServiceImpl implements FleetService {
             "ready_for_pickup",
             "en_route_to_pickup",
             "pickup_failed",
+            "returning_horses",
             "in_transit",
             "incident_reported",
             "pending_emergency_approval",
@@ -607,7 +608,7 @@ public class FleetServiceImpl implements FleetService {
     }
 
     private boolean isActiveRoadStatus(String status) {
-        return Set.of("en_route_to_pickup", "pickup_failed", "in_transit", "incident_reported",
+        return Set.of("en_route_to_pickup", "pickup_failed", "returning_horses", "in_transit", "incident_reported",
                 "pending_emergency_approval", "emergency_plan_active", "arrived", "handover_timeout",
                 "returning_to_hq", "delivered_pending_settlement").contains(status);
     }

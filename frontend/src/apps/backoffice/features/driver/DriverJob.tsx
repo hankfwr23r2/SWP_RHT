@@ -5,6 +5,7 @@ import { insuranceDepartureProblem } from '@shared/types/insurance'
 import { useAuth } from '@shared/auth/AuthContext'
 import { openIncidentOf, handoverTimeoutOf, currentCheckpoint, manifestDocuments, pendingDeparture, spotLabel } from '@shared/lib/booking'
 import { formatDateTime, formatVND } from '@shared/lib/format'
+import { normalizeMicrochip } from '@shared/lib/microchip'
 import { bookingsApi } from '@shared/services/bookings'
 import type { Booking, BookingHorse, Checkpoint, VehicleTrip } from '@shared/types/booking'
 import { CaptureScope } from '@shared/ui/CaptureScope'
@@ -143,6 +144,70 @@ function PickupStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
         {insuranceProblems.map(problem => <p className="form-error" key={problem}>{problem}. Liên hệ chuyên viên.</p>)}
         <button className={`btn btn-primary ${s.big}`} disabled={!ready} onClick={() => run(() => bookingsApi.startJourney(b.id, t.tripId, session!.name), 'Hành trình bắt đầu')}><i className="fa-solid fa-play" /> Bắt đầu hành trình</button>
       </Panel>
+    </>
+  )
+}
+
+// Quản lý hủy chuyến khi ngựa đã lên xe: trả lại đúng những con và hồ sơ gốc đã nhận ở điểm đón, có biên bản ký hai bên
+function ReturnHorsesStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
+  const { session } = useAuth()
+  const pickup = t.run!.checkpoints[0]
+  const received = pickup.chips ?? []
+  const collected = pickup.originals ?? []
+  const horseOf = (chip: string) => b.horses.find(h => normalizeMicrochip(h.microchip) === normalizeMicrochip(chip))
+  const [scan, setScan] = useState('')
+  const [scanError, setScanError] = useState('')
+  const [chips, setChips] = useState<string[]>([])
+  const [originals, setOriginals] = useState<string[]>([])
+  const [recipientName, setRecipientName] = useState(b.consignor?.name ?? '')
+  const [recipientPhone, setRecipientPhone] = useState(b.consignor?.phone ?? '')
+  const [photo, setPhoto] = useState<string>()
+  const addChip = () => {
+    const match = received.find(c => normalizeMicrochip(c) === normalizeMicrochip(scan))
+    if (!match) { setScanError(`Chip ${scan.trim()} không thuộc ngựa nào đã nhận lên xe này.`); return }
+    setScanError('')
+    setChips(current => current.includes(match) ? current : [...current, match])
+    setScan('')
+  }
+  const chipsOk = received.every(c => chips.includes(c))
+  const originalsOk = collected.every(o => originals.includes(o))
+  const ready = chipsOk && originalsOk && !!recipientName.trim() && !!photo
+  const submit = () => run(() => bookingsApi.returnHorses(b.id, t.tripId, session!.name, {
+    recipientName: recipientName.trim(), recipientPhone: recipientPhone.trim(), chips, originals, photo: photo!,
+  }), 'Đã trả ngựa và hồ sơ gốc, có biên bản')
+  return (
+    <>
+      <div className="alert alert-warning" style={{ marginBottom: 12 }}><i className="fa-solid fa-ban" /><div><b>Quản lý đã hủy chuyến.</b> Không xuất phát. Trả lại ngựa và toàn bộ hồ sơ gốc cho người giao ngay tại điểm đón.</div></div>
+      <Panel title="Quét chip từng con khi hạ khỏi xe" icon="fa-wave-square" tone={chipsOk ? 'ok' : undefined}>
+        <p>Đã trả <b>{chips.length}/{received.length}</b> ngựa.</p>
+        <ul className={s.checklist}>{received.map(c => (
+          <li key={c} style={{ padding: '6px 0', fontSize: '0.9rem' }}>
+            <i className={`fa-solid ${chips.includes(c) ? 'fa-circle-check' : 'fa-circle'}`} style={{ color: chips.includes(c) ? 'var(--green)' : 'var(--line)', marginRight: 8 }} />{horseOf(c)?.name ?? 'Ngựa'} · {c}
+          </li>
+        ))}</ul>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <input aria-label="Số microchip" className="form-control" value={scan} onChange={e => setScan(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && scan.trim()) addChip() }} placeholder="Quét hoặc nhập số chip" autoComplete="off" />
+          <button type="button" className="btn btn-outline" disabled={!scan.trim()} onClick={addChip}>Ghi nhận</button>
+        </div>
+        {scanError && <p className="form-error" role="alert">{scanError}</p>}
+      </Panel>
+      <Panel title="Trả hồ sơ gốc" icon="fa-folder-open" tone={originalsOk ? 'ok' : undefined}>
+        <p>Tick từng giấy khi đã trao lại cho người giao. Đây là các bản gốc đã nhận lúc đón.</p>
+        <Checklist items={collected} checked={originals} onChange={next => setOriginals(next)} />
+      </Panel>
+      <Panel title="Biên bản trả ngựa" icon="fa-file-signature">
+        <div className="form-group">
+          <label htmlFor="rh-name" className="required">Người nhận lại ngựa</label>
+          <input id="rh-name" className="form-control" value={recipientName} onChange={e => setRecipientName(e.target.value)} />
+        </div>
+        <div className="form-group">
+          <label htmlFor="rh-phone">Số điện thoại</label>
+          <input id="rh-phone" className="form-control" inputMode="tel" value={recipientPhone} onChange={e => setRecipientPhone(e.target.value)} />
+        </div>
+        <ReadMore text="Lập biên bản trả ngựa: ghi số ngựa, số chip, các hồ sơ gốc đã trả và tình trạng ngựa lúc trả. Hai bên ký, mỗi bên giữ 01 bản." />
+        <CaptureField purpose="RETURN_HORSES" target="pickup" label="Ảnh biên bản trả ngựa có đủ chữ ký" required value={photo} onChange={setPhoto} />
+      </Panel>
+      <button className={`btn btn-primary ${s.big}`} disabled={!ready} onClick={submit}><i className="fa-solid fa-rotate-left" /> Xác nhận đã trả ngựa</button>
     </>
   )
 }
@@ -321,6 +386,17 @@ function DriverSteps({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
       <HomeReturnPanel b={b} t={t} role="driver" run={run} />
     </>
   )
+
+  if (b.status === 'returning_horses' || b.status === 'cancelled') {
+    if (pickup?.returnedAt) return (
+      <>
+        <Panel title="Đã trả ngựa" icon="fa-rotate-left" tone="ok"><p>Đã trả ngựa và hồ sơ gốc cho {pickup.returnRecipient} lúc {formatDateTime(pickup.returnedAt)}.{b.status === 'returning_horses' ? ' Chờ các xe khác của đơn trả xong.' : ''}</p></Panel>
+        <HomeReturnPanel b={b} t={t} role="driver" run={run} />
+      </>
+    )
+    if (b.status === 'returning_horses' && pickup && (pickup.chips?.length ?? 0) > 0) return <ReturnHorsesStep b={b} t={t} run={run} />
+    return <HomeReturnPanel b={b} t={t} role="driver" run={run} />
+  }
 
   if (t.departedAt && !t.run?.startedAt) {
     if (!pickup?.arrivedAt) return <ArriveStep purpose="ARRIVE_PICKUP" target="pickup" key="pickup" title="Xác nhận có mặt tại điểm đón" icon="fa-location-dot" button="Đã tới điểm đón" hint={`Khi tới trang trại, chụp ảnh cổng hoặc khu chuồng. Dự kiến ${b.route ? formatDateTime(b.route.legs[0].departAt) : 'đúng hẹn'}.`} run={run} action={photo => bookingsApi.arriveAtPickup(b.id, t.tripId, session!.name, photo)} />

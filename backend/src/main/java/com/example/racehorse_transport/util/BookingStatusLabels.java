@@ -23,6 +23,7 @@ public final class BookingStatusLabels {
             Map.entry("ready_for_pickup", new Label("Sẵn sàng đón ngựa", "Sẵn sàng đón ngựa")),
             Map.entry("en_route_to_pickup", new Label("Đến điểm đón", "Đến điểm đón")),
             Map.entry("pickup_failed", new Label("Không nhận được ngựa", "Không nhận được ngựa")),
+            Map.entry("returning_horses", new Label("Chờ trả ngựa", "Chờ trả ngựa")),
             Map.entry("in_transit", new Label("Đang vận chuyển", "Đang vận chuyển")),
             Map.entry("incident_reported", new Label("Báo sự cố", "Đang xử lý sự cố")),
             Map.entry("pending_emergency_approval", new Label("Chờ duyệt xử lý sự cố", "Đang xử lý sự cố")),
