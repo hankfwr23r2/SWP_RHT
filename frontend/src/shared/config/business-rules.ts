@@ -64,8 +64,8 @@ export let OFFICE_ADDRESS = 'Văn phòng Vận chuyển Ngựa, 120 Xô Viết N
 // ===== Điều khoản và chính sách (PRD mục 11.5): mỗi văn bản là một tệp ảnh hoặc PDF, xem ở trang /terms =====
 // Thay tệp trong public/policies rồi đổi đường dẫn ở đây (đuôi .pdf thì hiện bằng khung PDF, còn lại hiện như ảnh).
 export const POLICY_DOCS = {
-  transport: { title: 'Điều khoản vận chuyển', file: '/policies/dieu-khoan-van-chuyen.svg' },
-  incident_cost: { title: 'Chính sách chi phí khi có sự cố', file: '/policies/chinh-sach-chi-phi-su-co.svg' },
-  liability: { title: 'Điều khoản Trách nhiệm Hạn chế', file: '/policies/dieu-khoan-trach-nhiem-han-che.svg' },
+  transport: { title: 'Điều khoản vận chuyển', file: '/policies/dieu-khoan-van-chuyen.pdf' },
+  incident_cost: { title: 'Chính sách chi phí khi có sự cố', file: '/policies/chinh-sach-chi-phi-su-co.pdf' },
+  liability: { title: 'Điều khoản Trách nhiệm Hạn chế', file: '/policies/dieu-khoan-trach-nhiem-han-che.pdf' },
 } as const
 export type PolicyDocId = keyof typeof POLICY_DOCS

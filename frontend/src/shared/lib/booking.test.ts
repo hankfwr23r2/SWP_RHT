@@ -1,4 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import i18n from '../i18n'
+import { QuoteSheet } from '../ui/QuoteSheet'
 import { DAY, HOUR } from '../config/business-rules'
 import { BOOKING_STATUS, BOOKING_STEPS, stepOf, statusRank, type BookingStatus } from '../config/booking-rules'
 import type { Incident, IncidentExpense } from '../types/booking'
@@ -289,10 +293,40 @@ describe('báo giá', () => {
     expect(fuel.amount).toBe(Math.round((km * 9_000 * 1.05) / 1000) * 1000)
     expect(fuel.marginApplied).toBe(false)
   })
-  it('đơn nội địa không thu phí thủ tục, quốc tế thu 300.000', () => {
-    const fee = (q: Parameters<typeof quoteLines>[0]) => quoteLines(q, [{ capacity: 2 }]).lines.find(l => /thủ tục/i.test(l.label))!.amount
-    expect(fee({ ...base, type: 'domestic', gate: undefined, dest: { id: 'CLB-SG', name: 'CLB', country: 'VN' } })).toBe(0)
-    expect(fee(base)).toBe(300_000)
+  it('đơn nội địa không có dòng phí thủ tục, quốc tế thu 300.000', () => {
+    const feeLine = (q: Parameters<typeof quoteLines>[0]) => quoteLines(q, [{ capacity: 2 }]).lines.find(l => /thủ tục/i.test(l.label))
+    expect(feeLine({ ...base, type: 'domestic', gate: undefined, dest: { id: 'CLB-SG', name: 'CLB', country: 'VN' } })).toBeUndefined()
+    expect(feeLine(base)?.amount).toBe(300_000)
+  })
+  // Backend (QuoteLinePolicy) từ chối dòng báo giá có số tiền không lớn hơn 0, nên màn quản lý không được gửi dòng như vậy
+  it('mọi dòng báo giá màn quản lý gửi lên đều có số tiền lớn hơn 0, cả đơn nội địa lẫn quốc tế', () => {
+    const domestic = { ...base, type: 'domestic' as const, gate: undefined, dest: { id: 'CLB-SG', name: 'CLB', country: 'VN' as const } }
+    for (const q of [domestic, base]) {
+      const lines = quoteLines(q, [{ capacity: 2 }]).lines
+      expect(lines.length).toBeGreaterThan(0)
+      expect(lines.filter(l => !(l.amount > 0)).map(l => l.label)).toEqual([])
+    }
+  })
+  // Công ty không ký điện tử và không xuất hóa đơn qua phiếu này: phiếu không được tự nhận là hóa đơn
+  it('phiếu báo giá mang tên "PHIẾU BÁO GIÁ" và không tự nhận là hóa đơn hay dự thảo hóa đơn điện tử', () => {
+    const { lines } = quoteLines(base, [{ capacity: 2 }])
+    const total = lines.reduce((sum, line) => sum + line.amount, 0)
+    void i18n.changeLanguage('vi')
+    const html = renderToStaticMarkup(createElement(QuoteSheet, { lines, subtotal: total, total, deposit: Math.round(total * 0.3), balance: total - Math.round(total * 0.3) }))
+    const text = html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ')
+
+    expect(text).toContain('PHIẾU BÁO GIÁ')
+    expect(text).not.toMatch(/HÓA ĐƠN BÁO GIÁ/)
+    expect(text).not.toMatch(/dự thảo hóa đơn|hóa đơn (dịch vụ vận chuyển )?điện tử/i)
+  })
+  // Chủ dự án chốt 18/11: phí giấy phép nhập khẩu và kiểm dịch của đơn quốc tế do khách chịu, thể hiện trong báo giá
+  it('dòng phí thủ tục đơn quốc tế nói rõ do khách chịu theo mức ghi trên báo giá, không gọi là phí trọn gói', () => {
+    const line = quoteLines(base, [{ capacity: 2 }]).lines.find(l => /thủ tục/i.test(l.label))!
+    const wording = `${line.detail} ${line.calculation}`
+
+    expect(wording).toMatch(/do khách chịu/)
+    expect(wording).toMatch(/báo giá/)
+    expect(wording).not.toMatch(/trọn gói/i)
   })
   it('xe hạng cao hơn thì cước cao hơn', () => {
     const cost = (capacity: number) => quoteLines(base, [{ capacity }]).lines[0].amount

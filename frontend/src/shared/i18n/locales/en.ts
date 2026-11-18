@@ -473,7 +473,7 @@ export const en = {
     viewDetail: 'View Details',
     cancelOrder: 'Cancel Shipment',
     quote: {
-      docBadge: 'Quotation & Draft Electronic Service Invoice',
+      docBadge: 'Quotation',
       stage1: 'Stage 1: Deposit ({{percent}}%)',
       stage2: 'Stage 2: Balance ({{percent}}%)',
       stage1Note: 'Pay deposit to confirm shipment, issue electronic waybill, and lock transporter crew schedule.',
@@ -702,7 +702,7 @@ export const en = {
   clearance: {
     title: 'Veterinary & Customs Clearance',
     itemsCount: '{{done}}/{{total}} items',
-    desc: 'The carrier provides comprehensive turnkey clearance processing for you.',
+    desc: 'The carrier handles these documents for you. The processing fee is included in your quotation.',
     statusTodo: 'Pending',
     statusDone: 'Completed',
     customsCleared: 'Customs clearance: {{cleared}}/{{total}} horses recorded.',
