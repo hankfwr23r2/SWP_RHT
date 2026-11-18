@@ -1,8 +1,8 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.booking.BookingResponse;
+import com.example.racehorse_transport.dto.booking.BookingResponseDto;
 import com.example.racehorse_transport.dto.settlement.*;
-import com.example.racehorse_transport.response.ApiResponse;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.service.SettlementService;
 import jakarta.validation.Valid;
@@ -43,14 +43,14 @@ public class SettlementController {
      */
     @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'COORDINATOR', 'ADMIN')")
     @PostMapping("/{id}/submit-expenses")
-    public ResponseEntity<ApiResponse<BookingResponse>> submitExpenses(
+    public ResponseEntity<ApiResponseDto<BookingResponseDto>> submitExpenses(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
             @PathVariable("id") String id,
-            @RequestBody(required = false) SubmitExpensesRequest request) {
+            @RequestBody(required = false) SubmitExpensesRequestDto request) {
 
         String username = extractUsername(authHeader);
-        BookingResponse response = settlementService.submitExpenses(id, request, username);
-        return ResponseEntity.ok(ApiResponse.success(response, "Kê khai chi phí phát sinh thành công"));
+        BookingResponseDto response = settlementService.submitExpenses(id, request, username);
+        return ResponseEntity.ok(ApiResponseDto.success(response, "Kê khai chi phí phát sinh thành công"));
     }
 
     /**
@@ -59,14 +59,14 @@ public class SettlementController {
      */
     @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
     @PostMapping("/{id}/issue")
-    public ResponseEntity<ApiResponse<SettlementResponse>> issueSettlement(
+    public ResponseEntity<ApiResponseDto<SettlementResponseDto>> issueSettlement(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
             @PathVariable("id") String id,
-            @Valid @RequestBody IssueSettlementRequest request) {
+            @Valid @RequestBody IssueSettlementRequestDto request) {
 
         String username = extractUsername(authHeader);
-        SettlementResponse response = settlementService.issueSettlement(id, request, username);
-        return ResponseEntity.ok(ApiResponse.success(response, "Đã duyệt chi phí nội bộ và hoàn tất đơn"));
+        SettlementResponseDto response = settlementService.issueSettlement(id, request, username);
+        return ResponseEntity.ok(ApiResponseDto.success(response, "Đã duyệt chi phí nội bộ và hoàn tất đơn"));
     }
 
     /**
@@ -75,10 +75,10 @@ public class SettlementController {
      */
     @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER', 'DRIVER', 'ESCORT', 'ADMIN')")
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<SettlementResponse>> getSettlementDetail(
+    public ResponseEntity<ApiResponseDto<SettlementResponseDto>> getSettlementDetail(
             @PathVariable("id") String id) {
 
-        SettlementResponse response = settlementService.getSettlementDetail(id);
-        return ResponseEntity.ok(ApiResponse.success(response, "Lấy thông tin đối soát nội bộ thành công"));
+        SettlementResponseDto response = settlementService.getSettlementDetail(id);
+        return ResponseEntity.ok(ApiResponseDto.success(response, "Lấy thông tin đối soát nội bộ thành công"));
     }
 }

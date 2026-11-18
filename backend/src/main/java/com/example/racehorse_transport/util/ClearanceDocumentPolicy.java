@@ -1,6 +1,6 @@
 package com.example.racehorse_transport.util;
 
-import com.example.racehorse_transport.dto.booking.DocumentRequirementSnapshot;
+import com.example.racehorse_transport.dto.booking.DocumentRequirementSnapshotDto;
 import com.example.racehorse_transport.entity.DocumentRequirement;
 import com.example.racehorse_transport.entity.Location;
 
@@ -32,7 +32,7 @@ public final class ClearanceDocumentPolicy {
      * @param snapshot        requirement đã chốt lúc đặt đơn; null với đơn cũ chưa có snapshot
      */
     public static List<Map<String, Object>> buildItems(List<DocumentRequirement> activeClearance, boolean international,
-            Location borderGate, String destinationCountry, List<DocumentRequirementSnapshot> snapshot) {
+            Location borderGate, String destinationCountry, List<DocumentRequirementSnapshotDto> snapshot) {
         List<DocumentRequirement> gateRows = international
                 ? activeClearance.stream()
                         .filter(requirement -> requirement.getLocation() != null)
@@ -46,7 +46,7 @@ public final class ClearanceDocumentPolicy {
 
         if (snapshot != null) {
             // Tên/mô tả theo snapshot đã chốt với khách; dòng cửa khẩu chỉ bổ sung thông tin cửa khẩu
-            for (DocumentRequirementSnapshot requirement : snapshot) {
+            for (DocumentRequirementSnapshotDto requirement : snapshot) {
                 String type = requirement.getDocumentType();
                 if (!"CLEARANCE".equals(requirement.getDocumentGroup()) || !seen.add(type)) continue;
                 List<DocumentRequirement> gates = gateRows.stream().filter(gate -> type.equals(gate.getDocumentType())).toList();

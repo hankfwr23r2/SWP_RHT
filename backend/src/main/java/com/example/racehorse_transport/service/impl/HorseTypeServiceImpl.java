@@ -1,23 +1,21 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.HorseTypeDTO;
-import com.example.racehorse_transport.dto.admin.CreateHorseTypeRequest;
-import com.example.racehorse_transport.dto.admin.UpdateHorseTypeInsuredValueRequest;
+import com.example.racehorse_transport.dto.HorseTypeDto;
+import com.example.racehorse_transport.dto.admin.CreateHorseTypeRequestDto;
+import com.example.racehorse_transport.dto.admin.UpdateHorseTypeInsuredValueRequestDto;
 import com.example.racehorse_transport.entity.HorseType;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.HorseRepository;
 import com.example.racehorse_transport.repository.HorseTypeRepository;
-import com.example.racehorse_transport.service.AdminAuditWriter;
+import com.example.racehorse_transport.service.AdminAuditService;
 import com.example.racehorse_transport.service.HorseTypeService;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.Map;
-
-import static com.example.racehorse_transport.service.AdminAuditWriter.values;
+import static com.example.racehorse_transport.service.AdminAuditService.values;
 
 @Service
 @RequiredArgsConstructor
@@ -25,10 +23,10 @@ public class HorseTypeServiceImpl implements HorseTypeService {
 
     private final HorseTypeRepository horseTypeRepository;
     private final HorseRepository horseRepository;
-    private final AdminAuditWriter audit;
+    private final AdminAuditService audit;
 
     @Override
-    public List<HorseTypeDTO> findAll() {
+    public List<HorseTypeDto> findAll() {
         return horseTypeRepository.findAll(Sort.by(Sort.Direction.ASC, "id"))
                 .stream()
                 .map(this::toDto)
@@ -37,15 +35,12 @@ public class HorseTypeServiceImpl implements HorseTypeService {
 
     @Override
     @Transactional
-    public HorseTypeDTO create(CreateHorseTypeRequest request) {
+    public HorseTypeDto create(CreateHorseTypeRequestDto request) {
         if (horseTypeRepository.existsByTypeNameIgnoreCase(request.getTypeName().trim())) {
             throw new IllegalArgumentException("Giống ngựa '" + request.getTypeName().trim() + "' đã tồn tại trong hệ thống!");
         }
 
-        HorseType horseType = new HorseType();
-        horseType.setTypeName(request.getTypeName().trim());
-        horseType.setDescription(request.getDescription() != null ? request.getDescription().trim() : null);
-        horseType.setInsuredValue(request.getInsuredValue());
+        HorseType horseType = request.toEntity();
 
         HorseType saved = horseTypeRepository.save(horseType);
         audit.record("CREATE_HORSE_TYPE", "HORSE_TYPE", saved.getId(), saved.getTypeName(), "Tạo giống ngựa", null, snapshot(saved));
@@ -54,7 +49,7 @@ public class HorseTypeServiceImpl implements HorseTypeService {
 
     @Override
     @Transactional
-    public HorseTypeDTO update(Integer id, CreateHorseTypeRequest request) {
+    public HorseTypeDto update(Integer id, CreateHorseTypeRequestDto request) {
         HorseType horseType = horseTypeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giống ngựa ID: " + id));
 
@@ -63,9 +58,7 @@ public class HorseTypeServiceImpl implements HorseTypeService {
         }
 
         var before = snapshot(horseType);
-        horseType.setTypeName(request.getTypeName().trim());
-        horseType.setDescription(request.getDescription() != null ? request.getDescription().trim() : null);
-        horseType.setInsuredValue(request.getInsuredValue());
+        request.applyTo(horseType);
 
         HorseType saved = horseTypeRepository.save(horseType);
         audit.record("UPDATE_HORSE_TYPE", "HORSE_TYPE", id, saved.getTypeName(), "Cập nhật giống ngựa", before, snapshot(saved));
@@ -89,7 +82,7 @@ public class HorseTypeServiceImpl implements HorseTypeService {
 
     @Override
     @Transactional
-    public HorseTypeDTO updateInsuredValue(Integer id, UpdateHorseTypeInsuredValueRequest request) {
+    public HorseTypeDto updateInsuredValue(Integer id, UpdateHorseTypeInsuredValueRequestDto request) {
         HorseType horseType = horseTypeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giống ngựa ID: " + id));
         var before = snapshot(horseType);
@@ -103,7 +96,7 @@ public class HorseTypeServiceImpl implements HorseTypeService {
         return values("typeName", type.getTypeName(), "description", type.getDescription(), "insuredValue", type.getInsuredValue());
     }
 
-    private HorseTypeDTO toDto(HorseType horseType) {
-        return new HorseTypeDTO(horseType.getId(), horseType.getTypeName(), horseType.getDescription(), horseType.getInsuredValue());
+    private HorseTypeDto toDto(HorseType horseType) {
+        return new HorseTypeDto(horseType.getId(), horseType.getTypeName(), horseType.getDescription(), horseType.getInsuredValue());
     }
 }

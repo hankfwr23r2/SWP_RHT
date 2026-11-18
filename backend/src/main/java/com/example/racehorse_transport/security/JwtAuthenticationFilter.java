@@ -1,9 +1,6 @@
 package com.example.racehorse_transport.security;
 
-import com.example.racehorse_transport.entity.Staff;
-import com.example.racehorse_transport.entity.User;
-import com.example.racehorse_transport.repository.StaffRepository;
-import com.example.racehorse_transport.repository.UserRepository;
+import com.example.racehorse_transport.service.AuthService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,7 +20,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Slf4j
 @Component
@@ -31,8 +27,7 @@ import java.util.Optional;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
-    private final UserRepository userRepository;
-    private final StaffRepository staffRepository;
+    private final AuthService authService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -44,16 +39,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String role = jwtUtils.getRoleFromToken(jwt);
 
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    // Kiểm tra xem tài khoản có bị khóa hoặc vô hiệu hóa trong CSDL hay không
-                    Optional<User> userOpt = userRepository.findByUsername(username);
-                    if (userOpt.isPresent()) {
-                        Integer userId = userOpt.get().getId();
-                        Optional<Staff> staffOpt = staffRepository.findById(userId);
-                        if (staffOpt.isPresent() && "INACTIVE".equalsIgnoreCase(staffOpt.get().getEmploymentStatus())) {
-                            log.warn("Tài khoản nhân viên {} (ID: {}) đã bị vô hiệu hóa, từ chối xác thực token", username, userId);
-                            filterChain.doFilter(request, response);
-                            return;
-                        }
+                    if (authService.isInactiveStaff(username)) {
+                        log.warn("Tài khoản nhân viên {} đã bị vô hiệu hóa, từ chối xác thực token", username);
+                        filterChain.doFilter(request, response);
+                        return;
                     }
 
                     List<GrantedAuthority> authorities = new ArrayList<>();

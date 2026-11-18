@@ -1,20 +1,22 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.booking.BookingResponse;
-import com.example.racehorse_transport.dto.booking.CreateBookingRequest;
-import com.example.racehorse_transport.dto.booking.CustomerTripTeamResponse;
-import com.example.racehorse_transport.response.ApiResponse;
+import com.example.racehorse_transport.dto.booking.BookingResponseDto;
+import com.example.racehorse_transport.dto.booking.CreateBookingRequestDto;
+import com.example.racehorse_transport.dto.booking.CustomerTripTeamResponseDto;
+import com.example.racehorse_transport.dto.booking.RejectQuoteRequestDto;
+import com.example.racehorse_transport.dto.common.PagedResponseDto;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.security.JwtUtils;
+import com.example.racehorse_transport.service.BookingQueryService;
 import com.example.racehorse_transport.service.BookingService;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import org.springframework.security.access.prepost.PreAuthorize;
-import java.util.List;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/customer/bookings")
@@ -23,7 +25,7 @@ import java.util.List;
 public class CustomerBookingController {
 
     private final BookingService bookingService;
-    private final com.example.racehorse_transport.service.BookingCodeResolver bookingCodes;
+    private final BookingQueryService bookingQueries;
     private final JwtUtils jwtUtils;
 
     private String extractUsername(String authHeader) {
@@ -38,99 +40,99 @@ public class CustomerBookingController {
 
     // 1. API Khách hàng tạo yêu cầu đặt chuyến
     @PostMapping
-    public ResponseEntity<ApiResponse<BookingResponse>> createBooking(
+    public ResponseEntity<ApiResponseDto<BookingResponseDto>> createBooking(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
-            @Valid @RequestBody CreateBookingRequest request) {
+            @Valid @RequestBody CreateBookingRequestDto request) {
         String username = extractUsername(authHeader);
         if (username == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Vui lòng đăng nhập để đặt chuyến!"));
+                    .body(ApiResponseDto.error("Vui lòng đăng nhập để đặt chuyến!"));
         }
 
-        BookingResponse response = bookingService.createBooking(username, request);
+        BookingResponseDto response = bookingService.createBooking(username, request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(response, "Gửi yêu cầu đặt đơn thành công"));
+                .body(ApiResponseDto.success(response, "Gửi yêu cầu đặt đơn thành công"));
     }
 
     // 2. API Khách hàng lấy danh sách đơn của mình (hỗ trợ phân trang tùy chọn)
     @GetMapping
-    public ResponseEntity<ApiResponse<?>> getMyBookings(
+    public ResponseEntity<ApiResponseDto<?>> getMyBookings(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
             @RequestParam(value = "page", required = false) Integer page,
             @RequestParam(value = "size", required = false, defaultValue = "20") Integer size) {
         String username = extractUsername(authHeader);
         if (username == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Vui lòng đăng nhập để xem đơn hàng!"));
+                    .body(ApiResponseDto.error("Vui lòng đăng nhập để xem đơn hàng!"));
         }
 
         if (page != null) {
-            com.example.racehorse_transport.dto.common.PagedResponse<BookingResponse> paged = bookingService.getCustomerBookingsPaged(username, page, size);
-            return ResponseEntity.ok(ApiResponse.success(paged, "Lấy danh sách đơn hàng thành công"));
+            PagedResponseDto<BookingResponseDto> paged = bookingService.getCustomerBookingsPaged(username, page, size);
+            return ResponseEntity.ok(ApiResponseDto.success(paged, "Lấy danh sách đơn hàng thành công"));
         }
 
-        List<BookingResponse> bookings = bookingService.getCustomerBookings(username);
-        return ResponseEntity.ok(ApiResponse.success(bookings, "Lấy danh sách đơn hàng thành công"));
+        List<BookingResponseDto> bookings = bookingService.getCustomerBookings(username);
+        return ResponseEntity.ok(ApiResponseDto.success(bookings, "Lấy danh sách đơn hàng thành công"));
     }
 
     // 3. API Xem chi tiết 1 đơn hàng
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<BookingResponse>> getBookingDetail(
+    public ResponseEntity<ApiResponseDto<BookingResponseDto>> getBookingDetail(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
             @PathVariable String id) {
         String username = extractUsername(authHeader);
         if (username == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Vui lòng đăng nhập để xem chi tiết đơn!"));
+                    .body(ApiResponseDto.error("Vui lòng đăng nhập để xem chi tiết đơn!"));
         }
 
-        BookingResponse response = bookingService.getBookingById(bookingCodes.idOf(id), username);
-        return ResponseEntity.ok(ApiResponse.success(response, "Lấy chi tiết đơn hàng thành công"));
+        BookingResponseDto response = bookingService.getBookingById(bookingQueries.resolveBookingId(id), username);
+        return ResponseEntity.ok(ApiResponseDto.success(response, "Lấy chi tiết đơn hàng thành công"));
     }
 
     // 4. API Xe và kíp xe của từng chuyến trong đơn (khách không gọi được /fleet nội bộ)
     @GetMapping("/{id}/team")
-    public ResponseEntity<ApiResponse<List<CustomerTripTeamResponse>>> getTripTeam(
+    public ResponseEntity<ApiResponseDto<List<CustomerTripTeamResponseDto>>> getTripTeam(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
             @PathVariable String id) {
         String username = extractUsername(authHeader);
         if (username == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Vui lòng đăng nhập để xem chi tiết đơn!"));
+                    .body(ApiResponseDto.error("Vui lòng đăng nhập để xem chi tiết đơn!"));
         }
 
-        List<CustomerTripTeamResponse> team = bookingService.getCustomerTripTeam(bookingCodes.idOf(id), username);
-        return ResponseEntity.ok(ApiResponse.success(team, "Lấy thông tin xe và kíp xe thành công"));
+        List<CustomerTripTeamResponseDto> team = bookingService.getCustomerTripTeam(bookingQueries.resolveBookingId(id), username);
+        return ResponseEntity.ok(ApiResponseDto.success(team, "Lấy thông tin xe và kíp xe thành công"));
     }
 
     // 5. API Khách hàng từ chối báo giá (giải phóng xe và kíp xe)
     @PostMapping("/{id}/reject-quote")
-    public ResponseEntity<ApiResponse<BookingResponse>> rejectQuote(
+    public ResponseEntity<ApiResponseDto<BookingResponseDto>> rejectQuote(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
             @PathVariable("id") String id,
-            @RequestBody(required = false) com.example.racehorse_transport.dto.booking.RejectQuoteRequest request) {
+            @RequestBody(required = false) RejectQuoteRequestDto request) {
         String username = extractUsername(authHeader);
         if (username == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Vui lòng đăng nhập để thao tác!"));
+                    .body(ApiResponseDto.error("Vui lòng đăng nhập để thao tác!"));
         }
 
-        BookingResponse response = bookingService.rejectQuote(id, username, request);
-        return ResponseEntity.ok(ApiResponse.success(response, "Đã từ chối báo giá. Đơn hàng đã hủy và giải phóng xe."));
+        BookingResponseDto response = bookingService.rejectQuote(id, username, request);
+        return ResponseEntity.ok(ApiResponseDto.success(response, "Đã từ chối báo giá. Đơn hàng đã hủy và giải phóng xe."));
     }
 
     // 6. API Khách hàng gửi lại hồ sơ ngựa sau khi được yêu cầu bổ sung
     @PostMapping("/{id}/resubmit")
-    public ResponseEntity<ApiResponse<BookingResponse>> resubmitDocuments(
+    public ResponseEntity<ApiResponseDto<BookingResponseDto>> resubmitDocuments(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
             @PathVariable("id") String id) {
         String username = extractUsername(authHeader);
         if (username == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Vui lòng đăng nhập để gửi lại hồ sơ!"));
+                    .body(ApiResponseDto.error("Vui lòng đăng nhập để gửi lại hồ sơ!"));
         }
 
-        BookingResponse response = bookingService.resubmitDocuments(id, username);
-        return ResponseEntity.ok(ApiResponse.success(response, "Đã gửi lại hồ sơ cho Chuyên viên kiểm dịch thẩm định"));
+        BookingResponseDto response = bookingService.resubmitDocuments(id, username);
+        return ResponseEntity.ok(ApiResponseDto.success(response, "Đã gửi lại hồ sơ cho Chuyên viên kiểm dịch thẩm định"));
     }
 }

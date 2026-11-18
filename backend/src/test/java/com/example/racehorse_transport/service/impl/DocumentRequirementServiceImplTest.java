@@ -1,15 +1,14 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.DocumentRequirementRequest;
+import com.example.racehorse_transport.dto.DocumentRequirementRequestDto;
 import com.example.racehorse_transport.entity.DocumentRequirement;
+import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.User;
-import com.example.racehorse_transport.repository.StaffRepository;
-import com.example.racehorse_transport.repository.LocationRepository;
-import com.example.racehorse_transport.entity.Location;
-import com.example.racehorse_transport.service.AdminAuditWriter;
-
 import com.example.racehorse_transport.repository.DocumentRequirementRepository;
+import com.example.racehorse_transport.repository.LocationRepository;
+import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.service.AdminAuditService;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,7 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -29,7 +27,7 @@ class DocumentRequirementServiceImplTest {
     @Mock
     private DocumentRequirementRepository repository;
     @Mock
-    private AdminAuditWriter audit;
+    private AdminAuditService audit;
     @Mock
     private StaffRepository staffRepository;
     @Mock
@@ -51,7 +49,7 @@ class DocumentRequirementServiceImplTest {
             return saved;
         });
         when(staffRepository.findByUser_Username("admin")).thenReturn(Optional.of(admin()));
-        DocumentRequirementRequest request = request("CLEARANCE", "poa", "ALL", "ALL");
+        DocumentRequirementRequestDto request = request("CLEARANCE", "poa", "ALL", "ALL");
 
         var response = service.create(request, "admin");
 
@@ -73,7 +71,7 @@ class DocumentRequirementServiceImplTest {
         when(repository.findById(4)).thenReturn(Optional.of(existing));
         when(repository.findAll()).thenReturn(List.of(existing));
         when(repository.save(any(DocumentRequirement.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        DocumentRequirementRequest request = request("CLEARANCE", "poa", "ALL", "ALL");
+        DocumentRequirementRequestDto request = request("CLEARANCE", "poa", "ALL", "ALL");
         request.setDocumentName("Tên mới");
         when(staffRepository.findByUser_Username("admin")).thenReturn(Optional.of(admin()));
 
@@ -86,7 +84,7 @@ class DocumentRequirementServiceImplTest {
 
     @Test
     void customsDocumentCannotBeConfiguredForDomesticTrips() {
-        DocumentRequirementRequest request = request("CLEARANCE", "customs_declaration", "DOMESTIC", "VN");
+        DocumentRequirementRequestDto request = request("CLEARANCE", "customs_declaration", "DOMESTIC", "VN");
 
         assertThatThrownBy(() -> service.create(request, "admin"))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -109,7 +107,7 @@ class DocumentRequirementServiceImplTest {
         when(repository.save(any(DocumentRequirement.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(staffRepository.findByUser_Username("admin")).thenReturn(Optional.of(admin()));
         when(locationRepository.findById(16)).thenReturn(Optional.of(gate(16, "BorderGate", "KH")));
-        DocumentRequirementRequest request = request("CLEARANCE", "customs_declaration", "INTERNATIONAL", "KH");
+        DocumentRequirementRequestDto request = request("CLEARANCE", "customs_declaration", "INTERNATIONAL", "KH");
         request.setLocationId(16);
 
         var response = service.create(request, "admin");
@@ -122,11 +120,11 @@ class DocumentRequirementServiceImplTest {
     void gateRequirementRejectsNonGateWrongCountryAndDomesticScope() {
         when(locationRepository.findById(5)).thenReturn(Optional.of(gate(5, "Warehouse", null)));
         when(locationRepository.findById(24)).thenReturn(Optional.of(gate(24, "BorderGate", "LA")));
-        DocumentRequirementRequest warehouse = request("CLEARANCE", "customs_declaration", "INTERNATIONAL", "KH");
+        DocumentRequirementRequestDto warehouse = request("CLEARANCE", "customs_declaration", "INTERNATIONAL", "KH");
         warehouse.setLocationId(5);
-        DocumentRequirementRequest wrongCountry = request("CLEARANCE", "customs_declaration", "INTERNATIONAL", "KH");
+        DocumentRequirementRequestDto wrongCountry = request("CLEARANCE", "customs_declaration", "INTERNATIONAL", "KH");
         wrongCountry.setLocationId(24);
-        DocumentRequirementRequest horseDoc = request("HORSE", "passport", "ALL", "ALL");
+        DocumentRequirementRequestDto horseDoc = request("HORSE", "passport", "ALL", "ALL");
         horseDoc.setLocationId(24);
 
         assertThatThrownBy(() -> service.create(warehouse, "admin")).hasMessageContaining("không phải cửa khẩu");
@@ -151,7 +149,7 @@ class DocumentRequirementServiceImplTest {
         atGate.setLocation(gate(16, "BorderGate", "KH"));
         when(repository.findAll()).thenReturn(List.of(general, atGate));
         when(locationRepository.findById(16)).thenReturn(Optional.of(gate(16, "BorderGate", "KH")));
-        DocumentRequirementRequest duplicate = request("CLEARANCE", "customs_declaration", "INTERNATIONAL", "KH");
+        DocumentRequirementRequestDto duplicate = request("CLEARANCE", "customs_declaration", "INTERNATIONAL", "KH");
         duplicate.setLocationId(16);
 
         assertThatThrownBy(() -> service.create(duplicate, "admin")).hasMessageContaining("đã tồn tại");
@@ -177,8 +175,8 @@ class DocumentRequirementServiceImplTest {
         return staff;
     }
 
-    private DocumentRequirementRequest request(String group, String type, String tripType, String country) {
-        DocumentRequirementRequest request = new DocumentRequirementRequest();
+    private DocumentRequirementRequestDto request(String group, String type, String tripType, String country) {
+        DocumentRequirementRequestDto request = new DocumentRequirementRequestDto();
         request.setDocumentGroup(group);
         request.setDocumentType(type);
         request.setDocumentName("Giấy tờ " + type);

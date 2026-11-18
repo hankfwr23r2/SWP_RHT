@@ -1,7 +1,7 @@
 package com.example.racehorse_transport.service;
 
-import com.example.racehorse_transport.dto.document.HorseDocumentResponse;
-import com.example.racehorse_transport.dto.document.ReviewHorseDocumentRequest;
+import com.example.racehorse_transport.dto.document.HorseDocumentResponseDto;
+import com.example.racehorse_transport.dto.document.ReviewHorseDocumentRequestDto;
 import com.example.racehorse_transport.entity.HorseDocument;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,7 +24,7 @@ public interface HorseDocumentService {
      * @param file         File tải lên (ảnh hoặc PDF)
      * @return Thông tin hồ sơ vừa tạo
      */
-    HorseDocumentResponse uploadHorseDocument(Integer horseId,
+    HorseDocumentResponseDto uploadHorseDocument(Integer horseId,
                                               String documentType,
                                               MultipartFile file);
 
@@ -35,7 +35,7 @@ public interface HorseDocumentService {
      * @param request    Thông tin duyệt (approved, note, reviewerName)
      * @return Thông tin hồ sơ sau khi cập nhật
      */
-    HorseDocumentResponse reviewDocument(Integer documentId, ReviewHorseDocumentRequest request);
+    HorseDocumentResponseDto reviewDocument(Integer documentId, ReviewHorseDocumentRequestDto request);
 
     /**
      * Overload duyệt hoặc từ chối hồ sơ ngựa nhận tham số rời (tương thích ngược).
@@ -48,7 +48,7 @@ public interface HorseDocumentService {
      * @param horseId ID con ngựa
      * @return Danh sách hồ sơ
      */
-    List<HorseDocumentResponse> getDocumentsByHorse(Integer horseId);
+    List<HorseDocumentResponseDto> getDocumentsByHorse(Integer horseId);
 
     /**
      * Lấy hồ sơ của mọi con ngựa thuộc khách hàng đang đăng nhập.
@@ -56,7 +56,7 @@ public interface HorseDocumentService {
      * @param customerUsername Tài khoản khách hàng
      * @return Danh sách hồ sơ
      */
-    List<HorseDocumentResponse> getCustomerDocuments(String customerUsername);
+    List<HorseDocumentResponseDto> getCustomerDocuments(String customerUsername);
 
     /**
      * Chặn khách hàng truy cập giấy tờ của ngựa không thuộc về mình.

@@ -1,0 +1,116 @@
+package com.example.racehorse_transport.service.impl;
+
+import com.example.racehorse_transport.dto.route.GeoPointDto;
+import com.example.racehorse_transport.dto.route.RoadRouteDto;
+import com.example.racehorse_transport.exception.NoTruckRouteException;
+import com.example.racehorse_transport.exception.RoutingUnavailableException;
+import com.example.racehorse_transport.service.RoadRoutingService;
+import com.example.racehorse_transport.util.Polyline;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+// Gọi Valhalla (dữ liệu OpenStreetMap, phủ Việt Nam, Campuchia, Lào) lấy đường đi thật của xe tải.
+// Máy chủ công khai chỉ dùng cho demo/test; chạy thật thì tự dựng và đổi routing.valhalla.url.
+@Slf4j
+@Component
+public class RoadRoutingServiceImpl implements RoadRoutingService {
+
+    // 442: không có đường đi; 171: không có đường xe tải nào gần điểm
+    private static final Set<Integer> NO_PATH_CODES = Set.of(442, 171);
+
+    // Máy chủ công khai yêu cầu User-Agent nêu tên ứng dụng
+    static final String USER_AGENT = "racehorse-transport/1.0 (+https://github.com/hankfwr23r2/SWP_RHT)";
+
+    private final String baseUrl;
+    private final ObjectMapper json;
+    private final HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
+
+    public RoadRoutingServiceImpl(@Value("${routing.valhalla.url:https://valhalla1.openstreetmap.de}") String baseUrl, ObjectMapper json) {
+        this.baseUrl = baseUrl;
+        this.json = json;
+    }
+
+    // Điểm đi qua (through) chỉ ép đường đi qua đó, không tách chặng và không dừng
+
+
+    public RoadRouteDto truckRoute(List<GeoPointDto> points, double weightTons, int topSpeedKmh, LocalDateTime departLocal) {
+        return truckRouteVia(points.stream().map(Waypoint::stop).toList(), weightTons, topSpeedKmh, departLocal);
+    }
+
+    public RoadRouteDto truckRouteVia(List<Waypoint> waypoints, double weightTons, int topSpeedKmh, LocalDateTime departLocal) {
+        ObjectNode body = json.createObjectNode();
+        ArrayNode locations = body.putArray("locations");
+        waypoints.forEach(w -> locations.addObject().put("lat", w.point().lat()).put("lon", w.point().lng())
+                .put("type", w.through() ? "through" : "break"));
+        body.put("costing", "truck");
+        body.putObject("costing_options").putObject("truck").put("weight", weightTons).put("top_speed", topSpeedKmh);
+        body.put("units", "kilometers");
+        body.putObject("date_time").put("type", 1).put("value", departLocal.truncatedTo(ChronoUnit.MINUTES).toString());
+
+        HttpResponse<String> response;
+        try {
+            HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + "/route"))
+                    .timeout(Duration.ofSeconds(30))
+                    .header("Content-Type", "application/json")
+                    .header("User-Agent", USER_AGENT)
+                    .POST(HttpRequest.BodyPublishers.ofString(json.writeValueAsString(body)))
+                    .build();
+            response = http.send(request, HttpResponse.BodyHandlers.ofString());
+        } catch (IOException e) {
+            log.warn("Không gọi được Valhalla: {}", e.toString());
+            throw new RoutingUnavailableException();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RoutingUnavailableException();
+        }
+
+        JsonNode root = readOrNull(response.body());
+        if (response.statusCode() == 400 && root != null && NO_PATH_CODES.contains(root.path("error_code").asInt())) {
+            throw new NoTruckRouteException();
+        }
+        if (response.statusCode() != 200 || root == null) {
+            log.warn("Valhalla trả {}: {}", response.statusCode(), root == null ? "không phải JSON" : root.path("error").asText());
+            throw new RoutingUnavailableException();
+        }
+
+        JsonNode trip = root.path("trip");
+        List<RoadRouteDto.Leg> legs = new ArrayList<>();
+        for (JsonNode leg : trip.path("legs")) {
+            legs.add(new RoadRouteDto.Leg(
+                    leg.path("summary").path("length").asDouble(),
+                    Math.round(leg.path("summary").path("time").asDouble()),
+                    Polyline.decode(leg.path("shape").asText(), 6)));
+        }
+        long stops = waypoints.stream().filter(w -> !w.through()).count();
+        if (legs.size() != stops - 1) {
+            log.warn("Valhalla trả {} chặng cho {} điểm dừng", legs.size(), stops);
+            throw new RoutingUnavailableException();
+        }
+        return new RoadRouteDto(trip.path("summary").path("length").asDouble(),
+                Math.round(trip.path("summary").path("time").asDouble()), legs);
+    }
+
+    private JsonNode readOrNull(String body) {
+        try {
+            return json.readTree(body);
+        } catch (IOException e) {
+            return null;
+        }
+    }
+}

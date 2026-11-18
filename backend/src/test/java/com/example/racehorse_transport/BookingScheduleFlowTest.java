@@ -1,11 +1,19 @@
 package com.example.racehorse_transport;
 
-import com.example.racehorse_transport.entity.*;
-import com.example.racehorse_transport.repository.*;
+import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.Customer;
+import com.example.racehorse_transport.entity.User;
+import com.example.racehorse_transport.repository.BookingRepository;
+import com.example.racehorse_transport.repository.CustomerRepository;
+import com.example.racehorse_transport.repository.UserRepository;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.service.BillMailService;
 import com.example.racehorse_transport.service.BookingScheduleService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.net.URI;
+import java.net.http.*;
+import java.time.*;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,10 +27,6 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.testcontainers.postgresql.PostgreSQLContainer;
-import java.net.URI;
-import java.net.http.*;
-import java.time.*;
-import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)

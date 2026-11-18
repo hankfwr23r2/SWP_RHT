@@ -1,0 +1,39 @@
+package com.example.racehorse_transport.dto.booking;
+
+import com.example.racehorse_transport.dto.coordinator.VehicleTripDto;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.*;
+
+import java.util.List;
+import java.util.Map;
+
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class BookingDetailsPayloadDto {
+    private String originCountry;
+    private String destCountry;
+    private List<BookingHorseDto> horses;
+    private List<DocumentRequirementSnapshotDto> documentRequirements;
+    private List<VehicleTripDto> trips;
+    private Object route;
+    private Object plan;
+    private java.util.Map<String, com.example.racehorse_transport.dto.file.CaptureEvidenceDto> photoEvidence;
+    private String gate;
+    private Object quote;
+    private Object payment;
+    private Object medical;
+    private Object clearance;
+    private Object settlement;
+    private Object arrival;
+    private Object handover;
+    private Object rating;
+    private Object intake;
+    private Map<String, Object> scheduleChange;
+    private Object rejection;
+    private Map<String, Object> sendBack; // lý do Quản lý trả lại từng bên, xóa phần của bên nào đã làm lại
+    private List<Map<String, Object>> history;
+}

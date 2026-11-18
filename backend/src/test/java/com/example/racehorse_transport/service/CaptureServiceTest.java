@@ -1,29 +1,36 @@
 package com.example.racehorse_transport.service;
 
-import com.example.racehorse_transport.dto.booking.BookingDetailsPayload;
-import com.example.racehorse_transport.entity.*;
-import com.example.racehorse_transport.repository.*;
+import com.example.racehorse_transport.dto.booking.BookingDetailsPayloadDto;
+import com.example.racehorse_transport.dto.file.CaptureEvidenceDto;
+import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.CaptureAsset;
+import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.repository.BookingRepository;
+import com.example.racehorse_transport.repository.CaptureAssetRepository;
+import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.service.impl.CaptureServiceImpl;
+import com.example.racehorse_transport.service.impl.BookingVisibilityServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.*;
-import org.springframework.mock.web.MockMultipartFile;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.authentication.TestingAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.time.Instant;
 import java.util.*;
 import javax.imageio.ImageIO;
+import org.junit.jupiter.api.*;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 class CaptureServiceTest {
     final CaptureAssetRepository assets = mock(CaptureAssetRepository.class);
     final BookingRepository bookings = mock(BookingRepository.class);
     final StaffRepository staff = mock(StaffRepository.class);
     final StorageService storage = mock(StorageService.class);
-    final CaptureService service = new CaptureService(assets, bookings, staff, storage, new ObjectMapper());
+    final CaptureService service = new CaptureServiceImpl(assets, bookings, staff, storage, new ObjectMapper());
     final String url = "https://example.com/photo.jpg";
     @BeforeEach void setup() {
         Booking booking = Booking.builder().id(1).status("in_transit").detailsJson("""
@@ -88,7 +95,7 @@ class CaptureServiceTest {
         verify(assets, never()).save(any());
     }
     @Test void rejectsUnstoredPhotoAndCrossTripCrossActorCrossCheckpointReuse() {
-        var payload = new BookingDetailsPayload();
+        var payload = new BookingDetailsPayloadDto();
         when(assets.findByUrl(url)).thenReturn(Optional.of(asset()));
         assertThatThrownBy(() -> service.attach(payload, 1, "T2", "ARRIVE_PICKUP", "pickup", url, "driver")).isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> service.attach(payload, 1, "T1", "ARRIVE_PICKUP", "other", url, "driver")).isInstanceOf(AccessDeniedException.class);
@@ -99,12 +106,13 @@ class CaptureServiceTest {
         assertThat(payload.getPhotoEvidence()).containsKey(url);
     }
     @Test void cameraMetadataNeverLeaksInternalIncidentPhotosToCustomer() {
-        var payload = new BookingDetailsPayload();
+        var payload = new BookingDetailsPayloadDto();
         var sos = asset(); sos.setPurpose("SOS");
-        payload.setPhotoEvidence(Map.of(url, com.example.racehorse_transport.dto.file.CaptureEvidenceDto.of(sos)));
+        payload.setPhotoEvidence(Map.of(url, CaptureEvidenceDto.of(sos)));
         SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken("customer", null, "ROLE_CUSTOMER"));
-        assertThat(CaptureService.visibleEvidence(payload)).isEmpty();
+        var visibility = new BookingVisibilityServiceImpl();
+        assertThat(visibility.visibleEvidence(payload)).isEmpty();
         payload.setSettlement(Map.of("items", List.of(Map.of("photo", url))));
-        assertThat(CaptureService.visibleEvidence(payload)).containsKey(url);
+        assertThat(visibility.visibleEvidence(payload)).containsKey(url);
     }
 }

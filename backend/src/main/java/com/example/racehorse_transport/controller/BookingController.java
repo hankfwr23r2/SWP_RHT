@@ -1,10 +1,10 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.booking.BookingResponse;
-import com.example.racehorse_transport.dto.booking.PublicTrackingResponse;
-import com.example.racehorse_transport.dto.booking.PublicTrackingLookupRequest;
-import com.example.racehorse_transport.dto.booking.PublicTrackingLookupResponse;
-import com.example.racehorse_transport.response.ApiResponse;
+import com.example.racehorse_transport.dto.booking.BookingResponseDto;
+import com.example.racehorse_transport.dto.booking.PublicTrackingResponseDto;
+import com.example.racehorse_transport.dto.booking.PublicTrackingLookupRequestDto;
+import com.example.racehorse_transport.dto.booking.PublicTrackingLookupResponseDto;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.service.BookingService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,33 +29,33 @@ public class BookingController {
 
     // Tra cứu đơn công khai theo mã đơn và 4 số cuối số điện thoại (không cần đăng nhập)
     @GetMapping("/public-track")
-    public ResponseEntity<ApiResponse<PublicTrackingResponse>> getPublicTracking(
+    public ResponseEntity<ApiResponseDto<PublicTrackingResponseDto>> getPublicTracking(
             @RequestParam("code") String code,
             @RequestParam("phoneLast4") String phoneLast4) {
-        PublicTrackingResponse response = bookingService.getPublicTracking(code, phoneLast4);
+        PublicTrackingResponseDto response = bookingService.getPublicTracking(code, phoneLast4);
         if (response == null) {
-            return ResponseEntity.status(404).body(ApiResponse.error("Không tìm thấy đơn hàng hoặc 4 số cuối điện thoại không khớp."));
+            return ResponseEntity.status(404).body(ApiResponseDto.error("Không tìm thấy đơn hàng hoặc 4 số cuối điện thoại không khớp."));
         }
-        return ResponseEntity.ok(ApiResponse.success(response, "Tra cứu tiến độ đơn hàng thành công"));
+        return ResponseEntity.ok(ApiResponseDto.success(response, "Tra cứu tiến độ đơn hàng thành công"));
     }
 
     @PostMapping("/public-track/batch")
-    public ResponseEntity<ApiResponse<List<PublicTrackingLookupResponse>>> getPublicTrackingBatch(
-            @Valid @RequestBody PublicTrackingLookupRequest request) {
-        List<PublicTrackingLookupResponse> results = new ArrayList<>();
+    public ResponseEntity<ApiResponseDto<List<PublicTrackingLookupResponseDto>>> getPublicTrackingBatch(
+            @Valid @RequestBody PublicTrackingLookupRequestDto request) {
+        List<PublicTrackingLookupResponseDto> results = new ArrayList<>();
         for (String code : request.codes().stream().distinct().toList()) {
-            results.add(new PublicTrackingLookupResponse(
+            results.add(new PublicTrackingLookupResponseDto(
                     code,
                     bookingService.getPublicTracking(code, request.phoneLast4())));
         }
-        return ResponseEntity.ok(ApiResponse.success(results, "Tra cứu tiến độ đơn hàng thành công"));
+        return ResponseEntity.ok(ApiResponseDto.success(results, "Tra cứu tiến độ đơn hàng thành công"));
     }
 
     @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT')")
     @GetMapping("/assigned")
-    public ResponseEntity<ApiResponse<List<BookingResponse>>> getAssignedBookings(
+    public ResponseEntity<ApiResponseDto<List<BookingResponseDto>>> getAssignedBookings(
             Authentication authentication) {
-        List<BookingResponse> bookings = bookingService.getAssignedBookings(authentication.getName());
-        return ResponseEntity.ok(ApiResponse.success(bookings, "Lấy danh sách chuyến được phân công thành công"));
+        List<BookingResponseDto> bookings = bookingService.getAssignedBookings(authentication.getName());
+        return ResponseEntity.ok(ApiResponseDto.success(bookings, "Lấy danh sách chuyến được phân công thành công"));
     }
 }

@@ -1,8 +1,8 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.booking.BookingResponse;
+import com.example.racehorse_transport.dto.booking.BookingResponseDto;
 import com.example.racehorse_transport.dto.settlement.RatingDto;
-import com.example.racehorse_transport.response.ApiResponse;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.service.SettlementService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,9 +19,9 @@ public class CustomerRatingController {
     private final SettlementService settlementService;
 
     @PostMapping("/{id}/rating")
-    public ResponseEntity<ApiResponse<BookingResponse>> submitRating(
+    public ResponseEntity<ApiResponseDto<BookingResponseDto>> submitRating(
             @PathVariable String id, @Valid @RequestBody RatingDto request, Authentication authentication) {
-        return ResponseEntity.ok(ApiResponse.success(
+        return ResponseEntity.ok(ApiResponseDto.success(
                 settlementService.submitRating(id, request, authentication.getName()), "Đã gửi đánh giá chuyến đi"));
     }
 }

@@ -1,7 +1,7 @@
 package com.example.racehorse_transport.util;
 
 import com.example.racehorse_transport.entity.Location;
-import com.example.racehorse_transport.dto.booking.DocumentRequirementSnapshot;
+import com.example.racehorse_transport.dto.booking.DocumentRequirementSnapshotDto;
 import com.example.racehorse_transport.entity.DocumentRequirement;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +21,7 @@ class ClearanceDocumentPolicyTest {
                 requirement("customs_declaration", "Tờ khai hải quan", null, "INTERNATIONAL", "KH"),
                 requirement("customs_declaration", "Tờ khai Mộc Bài", mocBai, "INTERNATIONAL", "KH"),
                 requirement("customs_declaration", "Tờ khai Tịnh Biên", tinhBien, "INTERNATIONAL", "KH"));
-        List<DocumentRequirementSnapshot> snapshot = List.of(
+        List<DocumentRequirementSnapshotDto> snapshot = List.of(
                 snapshot("CLEARANCE", "customs_declaration", "Tờ khai hải quan"),
                 snapshot("CLEARANCE", "poa", "Giấy ủy quyền"),
                 snapshot("HORSE", "passport", "Hộ chiếu"));
@@ -110,8 +110,8 @@ class ClearanceDocumentPolicyTest {
         return requirement;
     }
 
-    private DocumentRequirementSnapshot snapshot(String group, String type, String name) {
-        return DocumentRequirementSnapshot.builder().documentGroup(group).documentType(type).documentName(name).build();
+    private DocumentRequirementSnapshotDto snapshot(String group, String type, String name) {
+        return DocumentRequirementSnapshotDto.builder().documentGroup(group).documentType(type).documentName(name).build();
     }
 
     private Location gate(Integer id, String name, String destinationCountry) {

@@ -1,11 +1,11 @@
 package com.example.racehorse_transport.service;
 
-import com.example.racehorse_transport.dto.notification.NoticeResponse;
+import com.example.racehorse_transport.dto.notification.NoticeResponseDto;
 
 import java.util.List;
 
 public interface NotificationService {
-    List<NoticeResponse> findForUser(String role, String username);
+    List<NoticeResponseDto> findForUser(String role, String username);
 
     void markAsRead(Integer id);
 

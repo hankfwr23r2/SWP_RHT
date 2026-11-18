@@ -1,12 +1,11 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.HorseDTO;
-import com.example.racehorse_transport.dto.HorseJourneyLogDTO;
-import com.example.racehorse_transport.dto.UpdateHorseLocationRequest;
-import com.example.racehorse_transport.dto.booking.BookingDetailsPayload;
+import com.example.racehorse_transport.dto.HorseDto;
+import com.example.racehorse_transport.dto.HorseJourneyLogDto;
+import com.example.racehorse_transport.dto.UpdateHorseLocationRequestDto;
+import com.example.racehorse_transport.dto.booking.BookingDetailsPayloadDto;
 import com.example.racehorse_transport.dto.booking.BookingHorseDto;
 import com.example.racehorse_transport.entity.Booking;
-import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.Horse;
 import com.example.racehorse_transport.entity.HorseDocument;
 import com.example.racehorse_transport.entity.HorseJourneyLog;
@@ -14,7 +13,6 @@ import com.example.racehorse_transport.entity.User;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.BookingHorseRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
-import com.example.racehorse_transport.repository.CustomerRepository;
 import com.example.racehorse_transport.repository.HorseDocumentRepository;
 import com.example.racehorse_transport.repository.HorseHealthLogRepository;
 import com.example.racehorse_transport.repository.HorseJourneyLogRepository;
@@ -22,20 +20,20 @@ import com.example.racehorse_transport.repository.HorseRepository;
 import com.example.racehorse_transport.repository.HorseTypeRepository;
 import com.example.racehorse_transport.repository.ServiceBookingRepository;
 import com.example.racehorse_transport.repository.UserRepository;
+import com.example.racehorse_transport.service.CustomerProfileService;
 import com.example.racehorse_transport.service.HorseService;
 import com.example.racehorse_transport.service.StorageService;
 import com.example.racehorse_transport.util.MicrochipPolicy;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
 
 @Service
 public class HorseServiceImpl implements HorseService {
@@ -48,7 +46,7 @@ public class HorseServiceImpl implements HorseService {
     private final HorseDocumentRepository horseDocumentRepository;
     private final StorageService storageService;
     private final HorseTypeRepository horseTypeRepository;
-    private final CustomerRepository customerRepository;
+    private final CustomerProfileService customerProfiles;
     private final UserRepository userRepository;
     private final BookingRepository bookingRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -63,7 +61,7 @@ public class HorseServiceImpl implements HorseService {
             HorseDocumentRepository horseDocumentRepository,
             StorageService storageService,
             HorseTypeRepository horseTypeRepository,
-            CustomerRepository customerRepository,
+            CustomerProfileService customerProfiles,
             UserRepository userRepository,
             BookingRepository bookingRepository) {
         this.horseRepository = horseRepository;
@@ -74,7 +72,7 @@ public class HorseServiceImpl implements HorseService {
         this.horseDocumentRepository = horseDocumentRepository;
         this.storageService = storageService;
         this.horseTypeRepository = horseTypeRepository;
-        this.customerRepository = customerRepository;
+        this.customerProfiles = customerProfiles;
         this.userRepository = userRepository;
         this.bookingRepository = bookingRepository;
     }
@@ -113,7 +111,7 @@ public class HorseServiceImpl implements HorseService {
     }
 
     @Override
-    public List<HorseDTO> list(String username, boolean customer) {
+    public List<HorseDto> list(String username, boolean customer) {
         List<Horse> horses = customer
                 ? horseRepository.findByCustomerNewestFirst(currentUser(username).getId())
                 : findAll();
@@ -121,7 +119,7 @@ public class HorseServiceImpl implements HorseService {
     }
 
     @Override
-    public Optional<HorseDTO> view(Integer id, String username, boolean customer) {
+    public Optional<HorseDto> view(Integer id, String username, boolean customer) {
         Horse horse = findById(id).orElse(null);
         if (horse == null) return Optional.empty();
         ensureCanAccess(horse, username, customer);
@@ -129,7 +127,7 @@ public class HorseServiceImpl implements HorseService {
     }
 
     @Override
-    public HorseDTO create(HorseDTO request, String username, boolean customer) {
+    public HorseDto create(HorseDto request, String username, boolean customer) {
         String chip = MicrochipPolicy.normalize(request.getMicrochipID());
         if (chip.isEmpty()) {
             throw new IllegalArgumentException("Mã microchip không được để trống.");
@@ -145,9 +143,10 @@ public class HorseServiceImpl implements HorseService {
         Horse horse = new Horse();
         apply(request, horse);
         if (customer) {
-            horse.setCustomerID(customerFor(currentUser(username)));
+            User user = currentUser(username);
+            horse.setCustomerID(customerProfiles.getOrCreate(user, user.getUsername(), null));
         } else if (request.getCustomerID() != null) {
-            horse.setCustomerID(customerRepository.findById(request.getCustomerID())
+            horse.setCustomerID(customerProfiles.findById(request.getCustomerID())
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy khách hàng.")));
         }
         Horse saved;
@@ -161,7 +160,7 @@ public class HorseServiceImpl implements HorseService {
     }
 
     @Override
-    public HorseDTO update(Integer id, HorseDTO request, String username, boolean customer) {
+    public HorseDto update(Integer id, HorseDto request, String username, boolean customer) {
         Horse horse = findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ ngựa."));
         ensureCanAccess(horse, username, customer);
@@ -175,7 +174,7 @@ public class HorseServiceImpl implements HorseService {
     }
 
     @Override
-    public HorseDTO updateLocation(Integer id, UpdateHorseLocationRequest request, String username, boolean customer) {
+    public HorseDto updateLocation(Integer id, UpdateHorseLocationRequestDto request, String username, boolean customer) {
         Horse horse = findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ ngựa."));
         ensureCanAccess(horse, username, customer);
@@ -231,12 +230,12 @@ public class HorseServiceImpl implements HorseService {
     }
 
     @Override
-    public List<HorseJourneyLogDTO> journeyLogs(Integer id, String username, boolean customer) {
+    public List<HorseJourneyLogDto> journeyLogs(Integer id, String username, boolean customer) {
         Horse horse = findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy hồ sơ ngựa."));
         ensureCanAccess(horse, username, customer);
 
-        return horseJourneyLogRepository.findByHorse_IdOrderByCreatedAtDesc(id).stream().map(l -> HorseJourneyLogDTO.builder()
+        return horseJourneyLogRepository.findByHorse_IdOrderByCreatedAtDesc(id).stream().map(l -> HorseJourneyLogDto.builder()
                 .id(l.getId())
                 .horseId(l.getHorse().getId())
                 .tripCode(l.getTripCode())
@@ -269,16 +268,8 @@ public class HorseServiceImpl implements HorseService {
                 || horseHealthLogRepository.existsByHorseID_Id(id);
     }
 
-    private void apply(HorseDTO request, Horse horse) {
-        if (request.getHorseName() != null) horse.setHorseName(request.getHorseName().trim());
-        if (request.getMicrochipID() != null) horse.setMicrochipID(request.getMicrochipID().trim().toUpperCase());
-        if (request.getGender() != null) horse.setGender(request.getGender());
-        if (request.getBreed() != null) horse.setBreed(request.getBreed());
-        if (request.getColor() != null) horse.setColor(request.getColor());
-        if (request.getAge() != null) horse.setAge(request.getAge());
-        if (request.getWeight() != null) horse.setWeight(request.getWeight());
-        if (request.getIdentificationMarks() != null) horse.setIdentificationMarks(request.getIdentificationMarks());
-        if (request.getStatus() != null) horse.setStatus(request.getStatus());
+    private void apply(HorseDto request, Horse horse) {
+        request.applyTo(horse);
         if (request.getHorseTypeID() != null) {
             horse.setHorseTypeID(horseTypeRepository.findById(request.getHorseTypeID())
                     .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy giống ngựa.")));
@@ -300,7 +291,7 @@ public class HorseServiceImpl implements HorseService {
             String status = booking.getStatus() != null ? booking.getStatus().toLowerCase() : "";
             if (finished.contains(status) || booking.getDetailsJson() == null || booking.getDetailsJson().isBlank()) continue;
             try {
-                BookingDetailsPayload payload = objectMapper.readValue(booking.getDetailsJson(), BookingDetailsPayload.class);
+                BookingDetailsPayloadDto payload = objectMapper.readValue(booking.getDetailsJson(), BookingDetailsPayloadDto.class);
                 if (payload.getHorses() == null) continue;
                 for (BookingHorseDto bookingHorse : payload.getHorses()) {
                     String id = bookingHorse.getHorseId() != null ? bookingHorse.getHorseId().replaceAll("\\D", "") : "";
@@ -313,8 +304,8 @@ public class HorseServiceImpl implements HorseService {
         return null;
     }
 
-    private HorseDTO toDto(Horse horse) {
-        HorseDTO dto = new HorseDTO();
+    private HorseDto toDto(Horse horse) {
+        HorseDto dto = new HorseDto();
         dto.setId(horse.getId());
         dto.setHorseTypeID(horse.getHorseTypeID() != null ? horse.getHorseTypeID().getId() : null);
         dto.setCustomerID(horse.getCustomerID() != null ? horse.getCustomerID().getId() : null);
@@ -341,15 +332,6 @@ public class HorseServiceImpl implements HorseService {
     private User currentUser(String username) {
         return userRepository.findByUsernameOrEmail(username, username)
                 .orElseThrow(() -> new AccessDeniedException("Không xác định được tài khoản."));
-    }
-
-    private Customer customerFor(User user) {
-        return customerRepository.findById(user.getId()).orElseGet(() -> {
-            Customer customer = new Customer();
-            customer.setUser(user);
-            customer.setFullName(user.getUsername());
-            return customerRepository.save(customer);
-        });
     }
 
     private void ensureCanAccess(Horse horse, String username, boolean customer) {

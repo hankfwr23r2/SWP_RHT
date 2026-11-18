@@ -1,9 +1,9 @@
 package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.config.VnpayProperties;
-import com.example.racehorse_transport.dto.payment.VnpayCreateRequest;
-import com.example.racehorse_transport.dto.payment.VnpayCreateResponse;
-import com.example.racehorse_transport.dto.payment.VnpayResultResponse;
+import com.example.racehorse_transport.dto.payment.VnpayCreateRequestDto;
+import com.example.racehorse_transport.dto.payment.VnpayCreateResponseDto;
+import com.example.racehorse_transport.dto.payment.VnpayResultResponseDto;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.Payment;
@@ -14,19 +14,13 @@ import com.example.racehorse_transport.repository.PaymentRepository;
 import com.example.racehorse_transport.repository.QuotationRepository;
 import com.example.racehorse_transport.service.BookingService;
 import com.example.racehorse_transport.service.SettlementService;
-import com.example.racehorse_transport.dto.settlement.RatingDto;
+import com.example.racehorse_transport.service.StaffNotificationService;
 import com.example.racehorse_transport.util.VnpayUtil;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.test.util.ReflectionTestUtils;
-
 import java.math.BigDecimal;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -34,21 +28,25 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.test.util.ReflectionTestUtils;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.inOrder;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullAndEmptySource;
-import org.junit.jupiter.params.provider.ValueSource;
 
 class VnpayServiceImplTest {
 
@@ -61,7 +59,7 @@ class VnpayServiceImplTest {
     private final PaymentRepository paymentRepository = mock(PaymentRepository.class);
     private final BookingService bookingService = mock(BookingService.class);
     private final SettlementService settlementService = mock(SettlementService.class);
-    private final com.example.racehorse_transport.service.StaffNotifier staffNotifier = mock(com.example.racehorse_transport.service.StaffNotifier.class);
+    private final StaffNotificationService staffNotifier = mock(StaffNotificationService.class);
     private VnpayServiceImpl service;
     private Booking booking;
 
@@ -126,7 +124,7 @@ class VnpayServiceImplTest {
     void newDepositCannotBeCreatedAfterTheRequestedDepartureDay() {
         booking.setDepartureDate(Instant.parse("2026-11-05T17:00:00Z"));
         assertThatThrownBy(() -> service.createPaymentUrl(
-                VnpayCreateRequest.builder().bookingId(CODE).paymentType("DEPOSIT").build(), "khach1", "1.2.3.4"))
+                VnpayCreateRequestDto.builder().bookingId(CODE).paymentType("DEPOSIT").build(), "khach1", "1.2.3.4"))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("xác nhận lại lịch");
         verify(paymentRepository, never()).save(any());
     }
@@ -148,8 +146,8 @@ class VnpayServiceImplTest {
         when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(12))
                 .thenReturn(Optional.of(quotation(NOW.plus(10, ChronoUnit.HOURS))));
 
-        VnpayCreateResponse res = service.createPaymentUrl(
-                VnpayCreateRequest.builder().bookingId(CODE).paymentType("deposit").build(), "khach1", "1.2.3.4");
+        VnpayCreateResponseDto res = service.createPaymentUrl(
+                VnpayCreateRequestDto.builder().bookingId(CODE).paymentType("deposit").build(), "khach1", "1.2.3.4");
 
         ArgumentCaptor<Payment> saved = ArgumentCaptor.forClass(Payment.class);
         verify(paymentRepository).save(saved.capture());
@@ -174,8 +172,8 @@ class VnpayServiceImplTest {
         Instant quoteEnds = NOW.plus(5, ChronoUnit.MINUTES);
         when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(12)).thenReturn(Optional.of(quotation(quoteEnds)));
 
-        VnpayCreateResponse res = service.createPaymentUrl(
-                VnpayCreateRequest.builder().bookingId(CODE).paymentType("DEPOSIT").build(), "khach1", "1.2.3.4");
+        VnpayCreateResponseDto res = service.createPaymentUrl(
+                VnpayCreateRequestDto.builder().bookingId(CODE).paymentType("DEPOSIT").build(), "khach1", "1.2.3.4");
 
         assertThat(res.getExpiresAt()).isEqualTo(quoteEnds.toEpochMilli());
     }
@@ -183,13 +181,13 @@ class VnpayServiceImplTest {
     @Test
     void create_rejectsOtherCustomerAndExpiredQuotation() {
         assertThatThrownBy(() -> service.createPaymentUrl(
-                VnpayCreateRequest.builder().bookingId(CODE).paymentType("DEPOSIT").build(), "nguoi_khac", "1.2.3.4"))
+                VnpayCreateRequestDto.builder().bookingId(CODE).paymentType("DEPOSIT").build(), "nguoi_khac", "1.2.3.4"))
                 .isInstanceOf(AccessDeniedException.class);
 
         when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(12))
                 .thenReturn(Optional.of(quotation(NOW.minus(1, ChronoUnit.MINUTES))));
         assertThatThrownBy(() -> service.createPaymentUrl(
-                VnpayCreateRequest.builder().bookingId(CODE).paymentType("DEPOSIT").build(), "khach1", "1.2.3.4"))
+                VnpayCreateRequestDto.builder().bookingId(CODE).paymentType("DEPOSIT").build(), "khach1", "1.2.3.4"))
                 .isInstanceOf(IllegalStateException.class);
         verify(paymentRepository, never()).save(any());
     }
@@ -199,8 +197,8 @@ class VnpayServiceImplTest {
         Payment payment = pendingDeposit();
         when(paymentRepository.findByTransactionCode("DEP00121")).thenReturn(Optional.of(payment));
 
-        VnpayResultResponse first = service.confirm(signedCallback("300000000", "00"));
-        VnpayResultResponse second = service.confirm(signedCallback("300000000", "00"));
+        VnpayResultResponseDto first = service.confirm(signedCallback("300000000", "00"));
+        VnpayResultResponseDto second = service.confirm(signedCallback("300000000", "00"));
 
         assertThat(first.isSuccess()).isTrue();
         assertThat(first.getRspCode()).isEqualTo("00");
@@ -231,7 +229,7 @@ class VnpayServiceImplTest {
         Payment payment = pendingDeposit();
         when(paymentRepository.findByTransactionCode("DEP00121")).thenReturn(Optional.of(payment));
 
-        VnpayResultResponse res = service.confirm(signedCallback("300000000", "24"));
+        VnpayResultResponseDto res = service.confirm(signedCallback("300000000", "24"));
 
         assertThat(res.isSuccess()).isFalse();
         assertThat(res.getRspCode()).isEqualTo("00");
@@ -245,7 +243,7 @@ class VnpayServiceImplTest {
         Payment payment = pendingDeposit();
         when(paymentRepository.findByTransactionCode("DEP00121")).thenReturn(Optional.of(payment));
 
-        VnpayResultResponse res = service.confirm(signedCallback("300000000", "00"));
+        VnpayResultResponseDto res = service.confirm(signedCallback("300000000", "00"));
 
         assertThat(res.isSuccess()).isFalse();
         assertThat(payment.getStatus()).isEqualTo("NEEDS_REVIEW");
@@ -255,7 +253,7 @@ class VnpayServiceImplTest {
     @Test
     void incidentSettlementCannotCreateACustomerPayment() {
         assertThatThrownBy(() -> service.createPaymentUrl(
-                VnpayCreateRequest.builder().bookingId(CODE).paymentType("SETTLEMENT").build(), "khach1", "1.2.3.4"))
+                VnpayCreateRequestDto.builder().bookingId(CODE).paymentType("SETTLEMENT").build(), "khach1", "1.2.3.4"))
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("công ty chịu");
         verify(paymentRepository, never()).save(any());
     }
@@ -368,7 +366,7 @@ class VnpayServiceImplTest {
     void createDeposit_atDeadline_cannotCreateNewSessionDuringGrace() {
         when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(12)).thenReturn(Optional.of(quotation(NOW)));
         assertThatThrownBy(() -> service.createPaymentUrl(
-                VnpayCreateRequest.builder().bookingId(CODE).paymentType("DEPOSIT").build(), "khach1", "1.2.3.4"))
+                VnpayCreateRequestDto.builder().bookingId(CODE).paymentType("DEPOSIT").build(), "khach1", "1.2.3.4"))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("hết hạn");
         verify(paymentRepository, never()).save(any());
     }
@@ -384,7 +382,7 @@ class VnpayServiceImplTest {
         when(paymentRepository.findByBookingID_IdOrderByPaymentDateDesc(anyInt())).thenReturn(List.of(completedDeposit()));
 
         assertThatThrownBy(() -> service.createPaymentUrl(
-                VnpayCreateRequest.builder().bookingId(CODE).paymentType("BALANCE").build(), "khach1", "1.2.3.4"))
+                VnpayCreateRequestDto.builder().bookingId(CODE).paymentType("BALANCE").build(), "khach1", "1.2.3.4"))
                 .isInstanceOf(IllegalStateException.class);
         verify(paymentRepository, never()).save(any());
     }
@@ -396,7 +394,7 @@ class VnpayServiceImplTest {
         when(bookingService.isPickupComplete(booking)).thenReturn(false);
 
         assertThatThrownBy(() -> service.createPaymentUrl(
-                VnpayCreateRequest.builder().bookingId(CODE).paymentType("BALANCE").build(), "khach1", "1.2.3.4"))
+                VnpayCreateRequestDto.builder().bookingId(CODE).paymentType("BALANCE").build(), "khach1", "1.2.3.4"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("kíp xe đã nhận ngựa");
         verify(paymentRepository, never()).save(any());
@@ -410,7 +408,7 @@ class VnpayServiceImplTest {
         when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(12))
                 .thenReturn(Optional.of(quotation(Instant.now().plus(10, ChronoUnit.HOURS))));
 
-        service.createPaymentUrl(VnpayCreateRequest.builder().bookingId(CODE).paymentType("BALANCE").build(), "khach1", "1.2.3.4");
+        service.createPaymentUrl(VnpayCreateRequestDto.builder().bookingId(CODE).paymentType("BALANCE").build(), "khach1", "1.2.3.4");
 
         ArgumentCaptor<Payment> saved = ArgumentCaptor.forClass(Payment.class);
         verify(paymentRepository).save(saved.capture());

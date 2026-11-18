@@ -1,7 +1,7 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.notification.NoticeResponse;
-import com.example.racehorse_transport.response.ApiResponse;
+import com.example.racehorse_transport.dto.notification.NoticeResponseDto;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ public class NotificationController {
     private final NotificationService notificationService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<NoticeResponse>>> getNotifications(
+    public ResponseEntity<ApiResponseDto<List<NoticeResponseDto>>> getNotifications(
             @RequestParam(value = "role", required = false) String role,
             @RequestParam(value = "name", required = false) String name,
             Authentication authentication) {
@@ -33,44 +33,44 @@ public class NotificationController {
         String queryUsername = requireRecipient(role, authentication);
 
 
-        List<NoticeResponse> responses = notificationService.findForUser(role, queryUsername);
-        return ResponseEntity.ok(ApiResponse.success(responses, "Lấy danh sách thông báo thành công"));
+        List<NoticeResponseDto> responses = notificationService.findForUser(role, queryUsername);
+        return ResponseEntity.ok(ApiResponseDto.success(responses, "Lấy danh sách thông báo thành công"));
     }
 
     @PatchMapping("/{id}/read")
-    public ResponseEntity<ApiResponse<Void>> markAsRead(@PathVariable Integer id) {
+    public ResponseEntity<ApiResponseDto<Void>> markAsRead(@PathVariable Integer id) {
         notificationService.markAsRead(id);
-        return ResponseEntity.ok(ApiResponse.success(null, "Đã đánh dấu thông báo là đã đọc"));
+        return ResponseEntity.ok(ApiResponseDto.success(null, "Đã đánh dấu thông báo là đã đọc"));
     }
 
     @PatchMapping("/read-all")
-    public ResponseEntity<ApiResponse<Void>> markAllAsRead(
+    public ResponseEntity<ApiResponseDto<Void>> markAllAsRead(
             @RequestParam(value = "role", required = false) String role,
             @RequestParam(value = "name", required = false) String name,
             Authentication authentication) {
         notificationService.markAllAsRead(role, requireRecipient(role, authentication));
-        return ResponseEntity.ok(ApiResponse.success(null, "Đã đánh dấu tất cả thông báo là đã đọc"));
+        return ResponseEntity.ok(ApiResponseDto.success(null, "Đã đánh dấu tất cả thông báo là đã đọc"));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<Void>> deleteNotification(
+    public ResponseEntity<ApiResponseDto<Void>> deleteNotification(
             @PathVariable Integer id,
             @RequestParam String role,
             Authentication authentication) {
         String username = requireRecipient(role, authentication);
         notificationService.delete(id, role, username);
-        return ResponseEntity.ok(ApiResponse.success(null, "Đã xóa thông báo"));
+        return ResponseEntity.ok(ApiResponseDto.success(null, "Đã xóa thông báo"));
     }
 
     @DeleteMapping
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<ApiResponse<Void>> deleteAllNotifications(
+    public ResponseEntity<ApiResponseDto<Void>> deleteAllNotifications(
             @RequestParam String role,
             Authentication authentication) {
         String username = requireRecipient(role, authentication);
         notificationService.deleteAll(role, username);
-        return ResponseEntity.ok(ApiResponse.success(null, "Đã xóa tất cả thông báo"));
+        return ResponseEntity.ok(ApiResponseDto.success(null, "Đã xóa tất cả thông báo"));
     }
 
     private String requireRecipient(String role, Authentication authentication) {

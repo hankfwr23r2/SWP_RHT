@@ -1,31 +1,31 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.AuthResponse;
-import com.example.racehorse_transport.dto.LoginRequest;
-import com.example.racehorse_transport.dto.RegisterRequest;
+import com.example.racehorse_transport.dto.AuthResponseDto;
+import com.example.racehorse_transport.dto.ChangePasswordRequestDto;
+import com.example.racehorse_transport.dto.LoginRequestDto;
+import com.example.racehorse_transport.dto.RegisterRequestDto;
 import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.TermsAcceptance;
 import com.example.racehorse_transport.entity.User;
-import com.example.racehorse_transport.repository.CustomerRepository;
+import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.TermsAcceptanceRepository;
 import com.example.racehorse_transport.repository.UserRepository;
 import com.example.racehorse_transport.security.JwtUtils;
+import com.example.racehorse_transport.service.AdminAuditService;
 import com.example.racehorse_transport.service.AuthService;
+import com.example.racehorse_transport.service.CustomerProfileService;
 import com.example.racehorse_transport.service.EmailVerificationService;
 import com.example.racehorse_transport.util.TermsDocuments;
+import java.time.Instant;
+import org.springframework.beans.factory.annotation.Autowired;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import com.example.racehorse_transport.service.AdminAuditWriter;
-import com.example.racehorse_transport.exception.ResourceNotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -33,19 +33,28 @@ import java.util.Optional;
 public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
-    private final CustomerRepository customerRepository;
+    private final CustomerProfileService customerProfiles;
     private final StaffRepository staffRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
-    private final AdminAuditWriter audit;
+    private final AdminAuditService audit;
     private final EmailVerificationService emailVerificationService;
     // Tiêm bằng trường (không qua constructor) để giữ nguyên chữ ký constructor mà unit test dựng tay đang dùng
     @Autowired
     private TermsAcceptanceRepository termsAcceptanceRepository;
 
     @Override
+    @Transactional(readOnly = true)
+    public boolean isInactiveStaff(String username) {
+        return userRepository.findByUsername(username)
+                .flatMap(user -> staffRepository.findById(user.getId()))
+                .map(staff -> "INACTIVE".equalsIgnoreCase(staff.getEmploymentStatus()))
+                .orElse(false);
+    }
+
+    @Override
     @Transactional
-    public void register(RegisterRequest request) {
+    public void register(RegisterRequestDto request) {
         // 1-2. Username hoặc email đã có tài khoản: trả 409 để form gắn lỗi vào ô Email (username đang chính là email)
         if (userRepository.existsByUsername(request.getUsername()) || userRepository.existsByEmail(request.getEmail())) {
             throw new IllegalStateException("Email này đã có tài khoản. Hãy đăng nhập hoặc dùng email khác.");
@@ -56,12 +65,7 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // 3. Tạo tài khoản User mới với mật khẩu mã hóa BCrypt
-        User user = new User();
-        user.setUsername(request.getUsername());
-        user.setEmail(request.getEmail());
-        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        user.setEmailVerified(false);
-        if ("vi".equals(request.getLanguage()) || "en".equals(request.getLanguage())) user.setPreferredLanguage(request.getLanguage());
+        User user = request.toEntity(passwordEncoder.encode(request.getPassword()));
         User savedUser = userRepository.save(user);
         termsAcceptanceRepository.save(TermsAcceptance.builder()
                 .documentCode(TermsDocuments.TRANSPORT_TERMS)
@@ -71,14 +75,10 @@ public class AuthServiceImpl implements AuthService {
                 .build());
 
         // 4. Mặc định tạo thông tin hồ sơ Customer tương ứng
-        Customer customer = new Customer();
-        customer.setUser(savedUser);
-        customer.setFullName(request.getFullName() != null && !request.getFullName().isBlank()
+        String fullName = request.getFullName() != null && !request.getFullName().isBlank()
                 ? request.getFullName()
-                : request.getUsername());
-        customer.setPhone(request.getPhone());
-        customer.setAddress(request.getAddress());
-        customerRepository.save(customer);
+                : request.getUsername();
+        customerProfiles.create(savedUser, fullName, request.getPhone(), request.getAddress());
 
         // 5. Gửi OTP xác thực email; chưa nhập OTP thì chưa đăng nhập được
         emailVerificationService.sendOtp(savedUser.getEmail());
@@ -88,7 +88,7 @@ public class AuthServiceImpl implements AuthService {
     // 1. ĐĂNG NHẬP DÀNH CHO KHÁCH HÀNG (CUSTOMER)
     // ==========================================
     @Override
-    public AuthResponse loginCustomer(LoginRequest request) {
+    public AuthResponseDto loginCustomer(LoginRequestDto request) {
         // Tìm User theo username HOẶC email
         User user = userRepository.findByUsernameOrEmail(request.getUsername(), request.getUsername())
                 .orElseThrow(() -> new IllegalArgumentException("Email hoặc mật khẩu không đúng."));
@@ -99,13 +99,13 @@ public class AuthServiceImpl implements AuthService {
         }
 
         // KIỂM TRA BẢO MẬT: Bắt buộc phải có trong bảng Customer
-        Customer customer = customerRepository.findById(user.getId())
+        Customer customer = customerProfiles.findById(user.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Tài khoản này không phải là tài khoản khách hàng!"));
 
         // Email chưa xác thực (đăng ký mới hoặc tài khoản cũ): gửi OTP, chưa cấp token
         if (!Boolean.TRUE.equals(user.getEmailVerified())) {
             emailVerificationService.sendOtp(user.getEmail());
-            return AuthResponse.builder()
+            return AuthResponseDto.builder()
                     .userId(user.getId())
                     .username(user.getUsername())
                     .email(user.getEmail())
@@ -120,23 +120,23 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public void resendEmailOtp(String email) {
         userRepository.findByEmailIgnoreCase(email == null ? "" : email.trim())
-                .filter(user -> customerRepository.existsById(user.getId()))
+                .filter(user -> customerProfiles.existsById(user.getId()))
                 .ifPresent(user -> emailVerificationService.sendOtp(user.getEmail()));
     }
 
     @Override
-    public AuthResponse confirmEmail(String email, String otp) {
+    public AuthResponseDto confirmEmail(String email, String otp) {
         User user = emailVerificationService.confirm(email, otp);
-        Customer customer = customerRepository.findById(user.getId())
+        Customer customer = customerProfiles.findById(user.getId())
                 .orElseThrow(() -> new IllegalArgumentException("Tài khoản này không phải là tài khoản khách hàng!"));
         return customerAuth(user, customer);
     }
 
-    private AuthResponse customerAuth(User user, Customer customer) {
+    private AuthResponseDto customerAuth(User user, Customer customer) {
         // Sinh JWT Token với Role là CUSTOMER
         String token = jwtUtils.generateToken(user.getUsername(), "CUSTOMER");
 
-        return AuthResponse.builder()
+        return AuthResponseDto.builder()
                 .accessToken(token)
                 .tokenType("Bearer")
                 .userId(user.getId())
@@ -151,7 +151,7 @@ public class AuthServiceImpl implements AuthService {
     // 2. ĐĂNG NHẬP DÀNH CHO NHÂN VIÊN NỘI BỘ (STAFF)
     // ==========================================
     @Override
-    public AuthResponse loginStaff(LoginRequest request) {
+    public AuthResponseDto loginStaff(LoginRequestDto request) {
         // Tìm User theo username HOẶC email
         User user = userRepository.findByUsernameOrEmail(request.getUsername(), request.getUsername())
                 .orElseThrow(() -> new IllegalArgumentException("Tài khoản nội bộ hoặc mật khẩu không chính xác!"));
@@ -175,7 +175,7 @@ public class AuthServiceImpl implements AuthService {
         // Sinh JWT Token với đúng Role nội bộ (MANAGER, SPECIALIST, COORDINATOR...)
         String token = jwtUtils.generateToken(user.getUsername(), staffRole);
 
-        return AuthResponse.builder()
+        return AuthResponseDto.builder()
                 .accessToken(token)
                 .tokenType("Bearer")
                 .userId(user.getId())
@@ -191,7 +191,7 @@ public class AuthServiceImpl implements AuthService {
     // 3. LÀM MỚI ACCESS TOKEN TỪ REFRESH TOKEN
     // ==========================================
     @Override
-    public AuthResponse refreshToken(String refreshToken) {
+    public AuthResponseDto refreshToken(String refreshToken) {
         if (!jwtUtils.validateToken(refreshToken)) {
             throw new IllegalArgumentException("Refresh token không hợp lệ hoặc đã hết hạn!");
         }
@@ -214,7 +214,7 @@ public class AuthServiceImpl implements AuthService {
             fullName = user.getUsername();
             staffCode = staff.getStaffCode();
         } else {
-            Optional<Customer> customerOpt = customerRepository.findById(user.getId());
+            Optional<Customer> customerOpt = customerProfiles.findById(user.getId());
             if (customerOpt.isPresent()) {
                 fullName = customerOpt.get().getFullName();
             }
@@ -222,7 +222,7 @@ public class AuthServiceImpl implements AuthService {
 
         String newAccessToken = jwtUtils.generateToken(username, role);
 
-        return AuthResponse.builder()
+        return AuthResponseDto.builder()
                 .accessToken(newAccessToken)
                 .tokenType("Bearer")
                 .userId(user.getId())
@@ -239,7 +239,7 @@ public class AuthServiceImpl implements AuthService {
     // ==========================================
     @Override
     @Transactional
-    public void changePassword(String username, com.example.racehorse_transport.dto.ChangePasswordRequest request) {
+    public void changePassword(String username, ChangePasswordRequestDto request) {
         if (username == null || username.trim().isEmpty()) {
             throw new IllegalArgumentException("Thông tin xác thực không hợp lệ!");
         }

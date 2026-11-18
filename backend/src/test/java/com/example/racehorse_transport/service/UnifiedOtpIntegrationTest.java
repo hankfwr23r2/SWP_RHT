@@ -1,24 +1,25 @@
 package com.example.racehorse_transport.service;
 
-import com.example.racehorse_transport.dto.ResetPasswordWithOtpRequest;
+import com.example.racehorse_transport.dto.ResetPasswordWithOtpRequestDto;
 import com.example.racehorse_transport.entity.EmailOtp;
 import com.example.racehorse_transport.entity.OtpPurpose;
 import com.example.racehorse_transport.entity.User;
 import com.example.racehorse_transport.repository.EmailOtpRepository;
 import com.example.racehorse_transport.repository.UserRepository;
+import com.example.racehorse_transport.scheduler.ExpiredOtpCleanup;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import java.time.Instant;
-import java.util.UUID;
-import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
-import java.util.List;
 import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
 
 @SpringBootTest
 class UnifiedOtpIntegrationTest {
@@ -28,7 +29,7 @@ class UnifiedOtpIntegrationTest {
     @Autowired UserRepository users;
     @Autowired PasswordEncoder encoder;
     @Autowired ExpiredOtpCleanup cleanup;
-    @MockitoBean OtpMailSender mail;
+    @MockitoBean MailDeliveryService mail;
 
     @Test
     void concurrentIssuanceAndCooldownDoNotReplaceTheFirstToken() throws Exception {
@@ -60,7 +61,7 @@ class UnifiedOtpIntegrationTest {
         verification.confirm(" " + email.toUpperCase() + " ", "123456");
         assertThat(tokens.findByEmailAndPurpose(email, OtpPurpose.VERIFY_EMAIL)).isEmpty();
         assertThat(tokens.findByEmailAndPurpose(email, OtpPurpose.RESET_PASSWORD)).isPresent();
-        ResetPasswordWithOtpRequest request = new ResetPasswordWithOtpRequest();
+        ResetPasswordWithOtpRequestDto request = new ResetPasswordWithOtpRequestDto();
         request.setEmail(email); request.setOtp("654321");
         request.setNewPassword("NewPassword123!"); request.setConfirmPassword("NewPassword123!");
         reset.resetPassword(request);
@@ -87,7 +88,7 @@ class UnifiedOtpIntegrationTest {
         String email = account();
         token(email, OtpPurpose.VERIFY_EMAIL, "123456");
         token(email, OtpPurpose.RESET_PASSWORD, "654321");
-        ResetPasswordWithOtpRequest request = new ResetPasswordWithOtpRequest();
+        ResetPasswordWithOtpRequestDto request = new ResetPasswordWithOtpRequestDto();
         request.setEmail(email); request.setOtp("654321");
         request.setNewPassword("NewPassword123!"); request.setConfirmPassword("NewPassword123!");
         Callable<Void> verifyEmail = () -> { verification.confirm(email,"123456"); return null; };

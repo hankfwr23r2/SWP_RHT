@@ -1,18 +1,18 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.admin.UpdateSystemConfigRequest;
-import com.example.racehorse_transport.entity.SystemConfig;
-import com.example.racehorse_transport.exception.ResourceNotFoundException;
+import com.example.racehorse_transport.dto.admin.SystemConfigResponseDto;
+import com.example.racehorse_transport.dto.admin.UpdateSystemConfigRequestDto;
 import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.entity.SystemConfig;
 import com.example.racehorse_transport.entity.User;
+import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.SystemConfigRepository;
+import com.example.racehorse_transport.service.AdminAuditService;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.domain.Sort;
-
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -24,7 +24,7 @@ class SystemConfigServiceImplTest {
 
     private final SystemConfigRepository repository = mock(SystemConfigRepository.class);
     private final StaffRepository staffRepository = mock(StaffRepository.class);
-    private final SystemConfigServiceImpl service = new SystemConfigServiceImpl(org.mockito.Mockito.mock(com.example.racehorse_transport.service.AdminAuditWriter.class), repository, staffRepository);
+    private final SystemConfigServiceImpl service = new SystemConfigServiceImpl(org.mockito.Mockito.mock(AdminAuditService.class), repository, staffRepository);
 
     @BeforeEach
     void setUp() {
@@ -43,7 +43,7 @@ class SystemConfigServiceImplTest {
     @Test
     void updateRejectsDepositRateOutsideTheSupportedRange() {
         assertThatThrownBy(() -> service.updateConfig("DEPOSIT_RATE",
-                UpdateSystemConfigRequest.builder().configValue("1").build(), "admin"))
+                UpdateSystemConfigRequestDto.builder().configValue("1").build(), "admin"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("0.01 đến 0.99");
     }
@@ -51,7 +51,7 @@ class SystemConfigServiceImplTest {
     @Test
     void globalBorderHoursAreNoLongerEditable() {
         assertThatThrownBy(() -> service.updateConfig("BORDER_OPEN_MINUTES",
-                UpdateSystemConfigRequest.builder().configValue("480").build(), "admin"))
+                UpdateSystemConfigRequestDto.builder().configValue("480").build(), "admin"))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -70,14 +70,14 @@ class SystemConfigServiceImplTest {
     @Test
     void legacyInsuranceRateIsNoLongerEditable() {
         assertThatThrownBy(() -> service.updateConfig("INSURANCE_RATE",
-                UpdateSystemConfigRequest.builder().configValue("0.05").build(), "admin"))
+                UpdateSystemConfigRequestDto.builder().configValue("0.05").build(), "admin"))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
     void retiredCrewFeeIsNoLongerEditable() {
         assertThatThrownBy(() -> service.updateConfig("CREW_FEE_PER_DAY",
-                UpdateSystemConfigRequest.builder().configValue("1800000").build(), "admin"))
+                UpdateSystemConfigRequestDto.builder().configValue("1800000").build(), "admin"))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -87,8 +87,8 @@ class SystemConfigServiceImplTest {
         when(repository.findById("MAX_CONTINUOUS_HOURS")).thenReturn(java.util.Optional.of(current));
         when(repository.save(any(SystemConfig.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        com.example.racehorse_transport.dto.admin.SystemConfigResponse response = service.updateConfig("MAX_CONTINUOUS_HOURS",
-                UpdateSystemConfigRequest.builder().configValue("3.5").build(), "admin");
+        SystemConfigResponseDto response = service.updateConfig("MAX_CONTINUOUS_HOURS",
+                UpdateSystemConfigRequestDto.builder().configValue("3.5").build(), "admin");
 
         assertThat(response.getConfigValue()).isEqualTo("3.5");
         assertThat(response.getUpdatedBy()).isEqualTo("admin");
@@ -102,7 +102,7 @@ class SystemConfigServiceImplTest {
                 { "CLASS_FACTOR_HEAVY", "1.9" }, { "MARGIN_RATE", "0.05" } }) {
             when(repository.findById(pair[0])).thenReturn(java.util.Optional.of(config(pair[0], "1")));
             var response = service.updateConfig(pair[0],
-                    UpdateSystemConfigRequest.builder().configValue(pair[1]).build(), "admin");
+                    UpdateSystemConfigRequestDto.builder().configValue(pair[1]).build(), "admin");
             assertThat(response.getConfigValue()).as(pair[0]).isEqualTo(pair[1]);
         }
     }
@@ -110,7 +110,7 @@ class SystemConfigServiceImplTest {
     @Test
     void updateStillRejectsDecimalMoneyAmounts() {
         assertThatThrownBy(() -> service.updateConfig("KM_TIER_1_RATE",
-                UpdateSystemConfigRequest.builder().configValue("50000.5").build(), "admin"))
+                UpdateSystemConfigRequestDto.builder().configValue("50000.5").build(), "admin"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("số nguyên");
     }
@@ -118,7 +118,7 @@ class SystemConfigServiceImplTest {
     @Test
     void updateRejectsUnknownConfigurationKeys() {
         assertThatThrownBy(() -> service.updateConfig("UNSUPPORTED_RULE",
-                UpdateSystemConfigRequest.builder().configValue("1").build(), "admin"))
+                UpdateSystemConfigRequestDto.builder().configValue("1").build(), "admin"))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 

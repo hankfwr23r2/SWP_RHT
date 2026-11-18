@@ -1,7 +1,7 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.fleet.VehicleRequest;
-import com.example.racehorse_transport.dto.fleet.VehicleResponse;
+import com.example.racehorse_transport.dto.fleet.VehicleRequestDto;
+import com.example.racehorse_transport.dto.fleet.VehicleResponseDto;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.BookingVehicle;
 import com.example.racehorse_transport.entity.Staff;
@@ -82,7 +82,7 @@ class FleetServiceImplTest {
         when(bookingVehicleRepository.findByVehicleID_Id(1)).thenReturn(List.of());
         when(vehicleRepository.save(vehicle)).thenReturn(vehicle);
 
-        VehicleResponse response = service.updateVehicle("1", request(4, "MAINTENANCE"));
+        VehicleResponseDto response = service.updateVehicle("1", request(4, "MAINTENANCE"));
 
         assertThat(response.getCapacity()).isEqualTo(4);
         assertThat(response.getStatus()).isEqualTo("AVAILABLE");
@@ -97,7 +97,7 @@ class FleetServiceImplTest {
         when(bookingVehicleRepository.findByVehicleID_Id(1)).thenReturn(List.of());
         when(vehicleRepository.save(vehicle)).thenReturn(vehicle);
 
-        VehicleResponse response = service.updateVehicle("1", request(6, "AVAILABLE"));
+        VehicleResponseDto response = service.updateVehicle("1", request(6, "AVAILABLE"));
 
         assertThat(response.getCapacity()).isEqualTo(6);
         assertThat(response.getStatus()).isEqualTo("MAINTENANCE");
@@ -204,8 +204,8 @@ class FleetServiceImplTest {
                 .build();
     }
 
-    private VehicleRequest request(int capacity, String status) {
-        VehicleRequest request = new VehicleRequest();
+    private VehicleRequestDto request(int capacity, String status) {
+        VehicleRequestDto request = new VehicleRequestDto();
         request.setType("Xe chuyên dụng");
         request.setCapacity(capacity);
         request.setPlate("29H-12345");

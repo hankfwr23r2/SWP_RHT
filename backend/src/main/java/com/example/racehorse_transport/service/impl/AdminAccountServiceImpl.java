@@ -1,10 +1,9 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.service.AdminAuditWriter;
-import static com.example.racehorse_transport.service.AdminAuditWriter.values;
-import com.example.racehorse_transport.dto.admin.AccountLogResponse;
-import com.example.racehorse_transport.dto.admin.AccountResponse;
-import com.example.racehorse_transport.dto.admin.CreateStaffRequest;
+import com.example.racehorse_transport.dto.admin.AccountLogResponseDto;
+import com.example.racehorse_transport.dto.admin.AccountResponseDto;
+import com.example.racehorse_transport.dto.admin.CreateStaffRequestDto;
+import com.example.racehorse_transport.dto.admin.UpdateAccountRequestDto;
 import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.SystemLog;
@@ -15,21 +14,21 @@ import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.SystemLogRepository;
 import com.example.racehorse_transport.repository.UserRepository;
 import com.example.racehorse_transport.service.AdminAccountService;
+import com.example.racehorse_transport.service.AdminAuditService;
+import java.time.LocalDate;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.*;
+import static com.example.racehorse_transport.service.AdminAuditService.values;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdminAccountServiceImpl implements AdminAccountService {
-    private final AdminAuditWriter audit;
+    private final AdminAuditService audit;
 
 
     private final UserRepository userRepository;
@@ -40,8 +39,8 @@ public class AdminAccountServiceImpl implements AdminAccountService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AccountResponse> getAllAccounts() {
-        List<AccountResponse> result = new ArrayList<>();
+    public List<AccountResponseDto> getAllAccounts() {
+        List<AccountResponseDto> result = new ArrayList<>();
 
         // 1. Thêm danh sách nhân viên Staff
         List<Staff> staffList = staffRepository.findAll();
@@ -51,7 +50,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
                 String role = staff.getRole() != null ? staff.getRole().toLowerCase() : "staff";
                 String status = "ACTIVE".equalsIgnoreCase(staff.getEmploymentStatus()) ? "active" : "locked";
 
-                result.add(AccountResponse.builder()
+                result.add(AccountResponseDto.builder()
                         .id("TK-" + String.format("%03d", user.getId()))
                         .userId(user.getId())
                         .name(user.getUsername() != null ? user.getUsername() : staff.getStaffCode())
@@ -71,7 +70,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
         for (Customer customer : customerList) {
             User user = customer.getUser();
             if (user != null) {
-                result.add(AccountResponse.builder()
+                result.add(AccountResponseDto.builder()
                         .id("TK-" + String.format("%03d", user.getId()))
                         .userId(user.getId())
                         .name(customer.getFullName() != null ? customer.getFullName() : user.getUsername())
@@ -91,7 +90,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
 
     @Override
     @Transactional
-    public AccountResponse createStaffAccount(CreateStaffRequest request, String actorUsername) {
+    public AccountResponseDto createStaffAccount(CreateStaffRequestDto request, String actorUsername) {
         String email = request.getEmail().trim().toLowerCase();
 
         // 1. Kiểm tra Email đã tồn tại chưa
@@ -103,10 +102,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
         String tempPassword = "Eq" + UUID.randomUUID().toString().replace("-", "").substring(0, 6) + (10 + (int)(Math.random() * 90));
 
         // 3. Tạo tài khoản User
-        User user = new User();
-        user.setUsername(request.getName().trim());
-        user.setEmail(email);
-        user.setPasswordHash(passwordEncoder.encode(tempPassword));
+        User user = request.toUser(email, passwordEncoder.encode(tempPassword));
         User savedUser = userRepository.save(user);
 
         // 4. Sinh mã nhân viên tự động theo vai trò
@@ -116,13 +112,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
         String staffCode = prefix + "-" + String.format("%02d", count);
 
         // 5. Tạo thông tin Staff
-        Staff staff = new Staff();
-        staff.setUser(savedUser);
-        staff.setRole(rawRole.toUpperCase());
-        staff.setStaffCode(staffCode);
-        staff.setHireDate(LocalDate.now());
-        staff.setEmploymentStatus("ACTIVE");
-        staff.setPhone(request.getPhone() != null ? request.getPhone().trim() : null);
+        Staff staff = request.toStaff(savedUser, rawRole, staffCode, LocalDate.now());
         staffRepository.save(staff);
 
         // 6. Ghi Audit Log vào SYSTEM_LOG
@@ -131,7 +121,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
                         "role", staff.getRole(), "staffCode", staffCode, "status", "ACTIVE"));
 
         // 7. Trả về kết quả kèm mật khẩu tạm cho Admin
-        return AccountResponse.builder()
+        return AccountResponseDto.builder()
                 .id("TK-" + String.format("%03d", savedUser.getId()))
                 .userId(savedUser.getId())
                 .name(request.getName().trim())
@@ -148,13 +138,13 @@ public class AdminAccountServiceImpl implements AdminAccountService {
 
     @Override
     @Transactional
-    public AccountResponse createStaffAccount(CreateStaffRequest request) {
+    public AccountResponseDto createStaffAccount(CreateStaffRequestDto request) {
         return createStaffAccount(request, null);
     }
 
     @Override
     @Transactional
-    public AccountResponse updateAccount(Integer userId, com.example.racehorse_transport.dto.admin.UpdateAccountRequest request, String actorUsername) {
+    public AccountResponseDto updateAccount(Integer userId, UpdateAccountRequestDto request, String actorUsername) {
         var actor = audit.actor();
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy người dùng có ID: " + userId));
@@ -206,7 +196,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
                 values("name", oldName, "email", oldEmail, "phone", oldPhone),
                 values("name", newName, "email", newEmail, "phone", newPhone));
 
-        return AccountResponse.builder()
+        return AccountResponseDto.builder()
                 .id("TK-" + String.format("%03d", user.getId()))
                 .userId(user.getId())
                 .name(newName)
@@ -285,7 +275,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AccountLogResponse> getAccountLogs(Integer userId) {
+    public List<AccountLogResponseDto> getAccountLogs(Integer userId) {
         return systemLogRepository.findByTargetTableAndTargetRecordIDOrderByCreatedAtDesc("USER", userId)
                 .stream()
                 .map(this::mapToLogResponse)
@@ -294,14 +284,14 @@ public class AdminAccountServiceImpl implements AdminAccountService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<AccountLogResponse> getAllAccountLogs() {
+    public List<AccountLogResponseDto> getAllAccountLogs() {
         return systemLogRepository.findByTargetTableOrderByCreatedAtDesc("USER")
                 .stream()
                 .map(this::mapToLogResponse)
                 .toList();
     }
 
-    private AccountLogResponse mapToLogResponse(SystemLog log) {
+    private AccountLogResponseDto mapToLogResponse(SystemLog log) {
         String actorName = log.getActorName() != null ? log.getActorName() : "Không xác định";
         String actorEmail = log.getActorEmail() != null ? log.getActorEmail() : "";
         if (log.getDataVersion() == null && log.getActionbyUserid() != null) {
@@ -310,7 +300,7 @@ public class AdminAccountServiceImpl implements AdminAccountService {
             actorEmail = actor.getEmail() != null ? actor.getEmail() : "";
         }
 
-        return AccountLogResponse.builder()
+        return AccountLogResponseDto.builder()
                 .id(log.getId())
                 .actionType(log.getActionType())
                 .actionByName(actorName)

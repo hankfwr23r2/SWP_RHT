@@ -1,15 +1,14 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.service.AdminAuditWriter;
-import static com.example.racehorse_transport.service.AdminAuditWriter.values;
-import com.example.racehorse_transport.dto.DocumentRequirementRequest;
-import com.example.racehorse_transport.dto.DocumentRequirementResponse;
+import com.example.racehorse_transport.dto.DocumentRequirementRequestDto;
+import com.example.racehorse_transport.dto.DocumentRequirementResponseDto;
 import com.example.racehorse_transport.entity.DocumentRequirement;
 import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.repository.DocumentRequirementRepository;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.service.AdminAuditService;
 import com.example.racehorse_transport.service.DocumentRequirementService;
 import com.example.racehorse_transport.util.DocumentRequirementPolicy;
 import java.time.Instant;
@@ -17,10 +16,11 @@ import java.util.List;
 import java.util.Objects;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import static com.example.racehorse_transport.service.AdminAuditService.values;
 
 @Service
 public class DocumentRequirementServiceImpl implements DocumentRequirementService {
-    private final AdminAuditWriter audit;
+    private final AdminAuditService audit;
 
     private final DocumentRequirementRepository repository;
     private final StaffRepository staffRepository;
@@ -30,7 +30,7 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
             DocumentRequirementRepository repository,
             StaffRepository staffRepository,
             LocationRepository locationRepository,
-            AdminAuditWriter audit) {
+            AdminAuditService audit) {
         this.audit = audit;
         this.repository = repository;
         this.staffRepository = staffRepository;
@@ -39,7 +39,7 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
 
     @Override
     @Transactional(readOnly = true)
-    public List<DocumentRequirementResponse> listAll() {
+    public List<DocumentRequirementResponseDto> listAll() {
         return repository.findAllWithUpdatedBy().stream()
                 .sorted((a, b) -> {
                     int group = a.getDocumentGroup().compareTo(b.getDocumentGroup());
@@ -51,7 +51,7 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
 
     @Override
     @Transactional(readOnly = true)
-    public List<DocumentRequirementResponse> listActive() {
+    public List<DocumentRequirementResponseDto> listActive() {
         return repository.findByStatusOrderByDocumentGroupAscDocumentNameAsc("ACTIVE").stream()
                 .map(this::toResponse)
                 .toList();
@@ -59,13 +59,12 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
 
     @Override
     @Transactional
-    public DocumentRequirementResponse create(DocumentRequirementRequest request, String actor) {
+    public DocumentRequirementResponseDto create(DocumentRequirementRequestDto request, String actor) {
         validateScope(request);
         Location gate = resolveGate(request);
         ensureUnique(request, null);
         Staff staff = resolveStaff(actor);
-        DocumentRequirement requirement = new DocumentRequirement();
-        copy(request, gate, requirement);
+        DocumentRequirement requirement = request.toEntity(gate);
         requirement.setUpdatedAt(Instant.now());
         requirement.setUpdatedBy(staff);
         DocumentRequirement saved = repository.save(requirement);
@@ -76,7 +75,7 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
 
     @Override
     @Transactional
-    public DocumentRequirementResponse update(Integer id, DocumentRequirementRequest request, String actor) {
+    public DocumentRequirementResponseDto update(Integer id, DocumentRequirementRequestDto request, String actor) {
         validateScope(request);
         Location gate = resolveGate(request);
         DocumentRequirement requirement = repository.findById(id)
@@ -85,7 +84,7 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
         Staff staff = resolveStaff(actor);
         var before = snapshot(requirement);
         Instant changedAt = Instant.now();
-        copy(request, gate, requirement);
+        request.applyTo(requirement, gate);
         requirement.setUpdatedAt(changedAt);
         requirement.setUpdatedBy(staff);
         DocumentRequirement saved = repository.save(requirement);
@@ -96,7 +95,7 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
 
     @Override
     @Transactional
-    public DocumentRequirementResponse changeStatus(Integer id, String status, String actor) {
+    public DocumentRequirementResponseDto changeStatus(Integer id, String status, String actor) {
         if (!"ACTIVE".equals(status) && !"INACTIVE".equals(status)) {
             throw new IllegalArgumentException("Trạng thái phải là ACTIVE hoặc INACTIVE.");
         }
@@ -121,7 +120,7 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhân viên thực hiện thao tác."));
     }
 
-    private void ensureUnique(DocumentRequirementRequest request, Integer ignoredId) {
+    private void ensureUnique(DocumentRequirementRequestDto request, Integer ignoredId) {
         boolean duplicate = repository.findAll().stream()
                 .anyMatch(item -> !Objects.equals(item.getId(), ignoredId)
                         && request.getDocumentGroup().equals(item.getDocumentGroup())
@@ -135,7 +134,7 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
     }
 
     // Giấy tờ theo cửa khẩu: chỉ nhóm thông quan, chuyến quốc tế, địa điểm phải là BorderGate dẫn tới đúng quốc gia
-    private Location resolveGate(DocumentRequirementRequest request) {
+    private Location resolveGate(DocumentRequirementRequestDto request) {
         if (request.getLocationId() == null) {
             return null;
         }
@@ -162,7 +161,7 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
         return requirement.getLocation() == null ? null : requirement.getLocation().getId();
     }
 
-    private void validateScope(DocumentRequirementRequest request) {
+    private void validateScope(DocumentRequirementRequestDto request) {
         if ("DOMESTIC".equals(request.getTripType())
                 && !List.of("ALL", "VN").contains(request.getCountry())) {
             throw new IllegalArgumentException("Chuyến trong nước chỉ áp dụng cho Việt Nam hoặc tất cả quốc gia.");
@@ -179,17 +178,6 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
         }
     }
 
-    private void copy(DocumentRequirementRequest source, Location gate, DocumentRequirement target) {
-        target.setDocumentGroup(source.getDocumentGroup());
-        target.setDocumentType(source.getDocumentType());
-        target.setDocumentName(source.getDocumentName().trim());
-        target.setDescription(source.getDescription() == null ? null : source.getDescription().trim());
-        target.setTripType(source.getTripType());
-        target.setCountry(source.getCountry());
-        target.setLocation(gate);
-        target.setRequired(source.isRequired());
-        target.setStatus(source.getStatus());
-    }
 
     private java.util.Map<String, Object> snapshot(DocumentRequirement r) {
         return values("documentGroup", r.getDocumentGroup(), "documentType", r.getDocumentType(),
@@ -197,8 +185,8 @@ public class DocumentRequirementServiceImpl implements DocumentRequirementServic
                 "country", r.getCountry(), "locationId", locationId(r), "required", r.isRequired(), "status", r.getStatus());
     }
 
-    private DocumentRequirementResponse toResponse(DocumentRequirement entity) {
-        return DocumentRequirementResponse.builder()
+    private DocumentRequirementResponseDto toResponse(DocumentRequirement entity) {
+        return DocumentRequirementResponseDto.builder()
                 .id(entity.getId())
                 .documentGroup(entity.getDocumentGroup())
                 .documentType(entity.getDocumentType())

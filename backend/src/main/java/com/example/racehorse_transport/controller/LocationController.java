@@ -1,10 +1,10 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.LocationChangeStatusRequest;
-import com.example.racehorse_transport.dto.LocationDTO;
-import com.example.racehorse_transport.dto.LocationRequest;
+import com.example.racehorse_transport.dto.LocationChangeStatusRequestDto;
+import com.example.racehorse_transport.dto.LocationDto;
+import com.example.racehorse_transport.dto.LocationRequestDto;
 import com.example.racehorse_transport.entity.Location;
-import com.example.racehorse_transport.response.ApiResponse;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.service.LocationService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -23,10 +23,10 @@ public class LocationController {
     private final LocationService locationService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<LocationDTO>>> getLocationCatalog(
+    public ResponseEntity<ApiResponseDto<List<LocationDto>>> getLocationCatalog(
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String country) {
-        return ResponseEntity.ok(ApiResponse.success(
+        return ResponseEntity.ok(ApiResponseDto.success(
                 locationService.findLocations(type, country, true).stream()
                         .map(this::toDTO)
                         .collect(Collectors.toList()),
@@ -35,10 +35,10 @@ public class LocationController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin")
-    public ResponseEntity<ApiResponse<List<LocationDTO>>> getAllLocationsForAdmin(
+    public ResponseEntity<ApiResponseDto<List<LocationDto>>> getAllLocationsForAdmin(
             @RequestParam(required = false) String type,
             @RequestParam(required = false) String country) {
-        return ResponseEntity.ok(ApiResponse.success(
+        return ResponseEntity.ok(ApiResponseDto.success(
                 locationService.findLocations(type, country, true).stream()
                         .map(this::toDTO)
                         .collect(Collectors.toList()),
@@ -47,36 +47,36 @@ public class LocationController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<ApiResponse<LocationDTO>> createLocation(
-            @Valid @RequestBody LocationRequest request,
+    public ResponseEntity<ApiResponseDto<LocationDto>> createLocation(
+            @Valid @RequestBody LocationRequestDto request,
             Authentication authentication) {
         Location created = locationService.createLocation(request, authentication.getName());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(toDTO(created), "Tạo địa điểm thành công"));
+                .body(ApiResponseDto.success(toDTO(created), "Tạo địa điểm thành công"));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<LocationDTO>> updateLocation(
+    public ResponseEntity<ApiResponseDto<LocationDto>> updateLocation(
             @PathVariable Integer id,
-            @Valid @RequestBody LocationRequest request,
+            @Valid @RequestBody LocationRequestDto request,
             Authentication authentication) {
         Location updated = locationService.updateLocation(id, request, authentication.getName());
-        return ResponseEntity.ok(ApiResponse.success(toDTO(updated), "Cập nhật địa điểm thành công"));
+        return ResponseEntity.ok(ApiResponseDto.success(toDTO(updated), "Cập nhật địa điểm thành công"));
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/status")
-    public ResponseEntity<ApiResponse<LocationDTO>> changeStatus(
+    public ResponseEntity<ApiResponseDto<LocationDto>> changeStatus(
             @PathVariable Integer id,
-            @Valid @RequestBody LocationChangeStatusRequest request,
+            @Valid @RequestBody LocationChangeStatusRequestDto request,
             Authentication authentication) {
         Location updated = locationService.changeStatus(id, request.getStatus(), authentication.getName());
-        return ResponseEntity.ok(ApiResponse.success(toDTO(updated), "Cập nhật trạng thái địa điểm thành công"));
+        return ResponseEntity.ok(ApiResponseDto.success(toDTO(updated), "Cập nhật trạng thái địa điểm thành công"));
     }
 
-    private LocationDTO toDTO(Location location) {
-        return LocationDTO.builder()
+    private LocationDto toDTO(Location location) {
+        return LocationDto.builder()
                 .id(location.getId())
                 .locationCode(location.getLocationCode())
                 .locationType(location.getLocationType())

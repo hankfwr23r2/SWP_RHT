@@ -18,3 +18,10 @@
   - Kiểm tra tính tương thích giữa Frontend và Backend.
   - Chạy đầy đủ Quality Gate (`mvnw verify`, `npm run lint`, `npx tsc -b`, `npm test`, `npm run build`).
   - Không phá vỡ unit test hiện có và kiến trúc Single HQ.
+
+## 3. Quy ước package và tên file Java
+
+- Các file Java đặt trực tiếp trong `service/` phải có hậu tố `Service.java` và định nghĩa hợp đồng nghiệp vụ.
+- Các file Java đặt trực tiếp trong `service/impl/` phải có hậu tố `Impl.java` và triển khai hợp đồng tương ứng.
+- Mỗi package chuyên biệt chỉ chứa file đúng trách nhiệm và quy ước đặt tên của package đó. Ví dụ, controller dùng `*Controller.java`, repository dùng `*Repository.java` và mapper dùng `*Mapper.java`.
+- Khi thêm hoặc di chuyển lớp, xác định trách nhiệm và kiểm tra service hiện có để tái sử dụng trước khi chọn package và tên file.

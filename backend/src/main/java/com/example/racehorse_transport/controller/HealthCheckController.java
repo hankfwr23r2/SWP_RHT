@@ -1,6 +1,6 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.response.ApiResponse;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,7 +21,7 @@ public class HealthCheckController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<Map<String, String>>> checkHealth() {
-        return ResponseEntity.ok(ApiResponse.success(Map.of("status", "UP", "commit", commit), "Service is healthy"));
+    public ResponseEntity<ApiResponseDto<Map<String, String>>> checkHealth() {
+        return ResponseEntity.ok(ApiResponseDto.success(Map.of("status", "UP", "commit", commit), "Service is healthy"));
     }
 }

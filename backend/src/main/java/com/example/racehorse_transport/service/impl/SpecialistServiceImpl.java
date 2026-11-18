@@ -1,27 +1,41 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.dto.booking.BookingDetailsPayloadDto;
+import com.example.racehorse_transport.dto.booking.BookingResponseDto;
 import com.example.racehorse_transport.dto.booking.HorseInsuranceDto;
-import com.example.racehorse_transport.util.HorseInsurancePolicy;
-import com.example.racehorse_transport.dto.booking.BookingDetailsPayload;
-import com.example.racehorse_transport.dto.booking.BookingResponse;
-import com.example.racehorse_transport.dto.booking.DocumentRequirementSnapshot;
 import com.example.racehorse_transport.dto.booking.PartyContactDto;
+import com.example.racehorse_transport.dto.coordinator.VehicleTripDto;
+import com.example.racehorse_transport.dto.specialist.AddClearanceItemRequestDto;
+import com.example.racehorse_transport.dto.specialist.ApproveMedicalRequestDto;
+import com.example.racehorse_transport.dto.specialist.MarkHorseClearedRequestDto;
+import com.example.racehorse_transport.dto.specialist.RequestResubmissionRequestDto;
+import com.example.racehorse_transport.dto.specialist.UpdateClearanceItemRequestDto;
+import com.example.racehorse_transport.dto.specialist.UpdateClearanceItemsRequestDto;
+import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.Location;
+import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
-import com.example.racehorse_transport.dto.specialist.*;
-import com.example.racehorse_transport.entity.*;
-import com.example.racehorse_transport.repository.*;
+import com.example.racehorse_transport.repository.BookingRepository;
+import com.example.racehorse_transport.repository.DocumentRequirementRepository;
+import com.example.racehorse_transport.repository.LocationRepository;
+import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.repository.TripDocumentRepository;
 import com.example.racehorse_transport.service.SpecialistService;
+import com.example.racehorse_transport.service.StaffNotificationService;
 import com.example.racehorse_transport.util.BookingDetailsJson;
+import com.example.racehorse_transport.util.BookingHistory;
+import com.example.racehorse_transport.util.BookingSchedulePolicy;
+import com.example.racehorse_transport.service.BookingVisibilityService;
 import com.example.racehorse_transport.util.ClearanceDocumentPolicy;
+import com.example.racehorse_transport.util.HorseInsurancePolicy;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -34,14 +48,15 @@ public class SpecialistServiceImpl implements SpecialistService {
     private final DocumentRequirementRepository documentRequirementRepository;
     private final LocationRepository locationRepository;
     private final ObjectMapper objectMapper;
-    private final com.example.racehorse_transport.service.StaffNotifier staffNotifier;
+    private final StaffNotificationService staffNotifier;
+    private final BookingVisibilityService bookingVisibility;
 
     @Override
     @Transactional
-    public BookingResponse updateInsurance(String id, String horseId, HorseInsuranceDto request, String username) {
+    public BookingResponseDto updateInsurance(String id, String horseId, HorseInsuranceDto request, String username) {
         Booking booking = bookingRepository.findByIdForUpdate(parseBookingId(id)).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
         requireAssignment(username, booking);
-        BookingDetailsPayload payload = extractPayload(booking);
+        BookingDetailsPayloadDto payload = BookingDetailsJson.readWithMedicalDefaults(objectMapper, booking);
         var horse = payload.getHorses().stream().filter(h -> horseId.equals(h.getHorseId())).findFirst()
             .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy ngựa trong đơn."));
         var existing = horse.getInsurance();
@@ -102,7 +117,7 @@ public class SpecialistServiceImpl implements SpecialistService {
                     throw new IllegalArgumentException("Hợp đồng phải bao phủ ngày khởi hành.");
             }
         }
-        appendHistory(payload, username, "Cập nhật hồ sơ bảo hiểm cho " + horse.getName());
+        BookingHistory.appendHistory(payload, username, "Cập nhật hồ sơ bảo hiểm cho " + horse.getName());
         horse.setInsurance(request);
         savePayload(booking, payload);
         bookingRepository.save(booking);
@@ -115,7 +130,7 @@ public class SpecialistServiceImpl implements SpecialistService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<BookingResponse> getInsuranceBookings(String username) {
+    public List<BookingResponseDto> getInsuranceBookings(String username) {
         Staff actor = findStaff(username);
         return bookingRepository.findAllByOrderByBookingDateDesc().stream()
             .filter(b -> isPrivileged(actor) || isAssignedToSpecialist(actor, b))
@@ -124,7 +139,7 @@ public class SpecialistServiceImpl implements SpecialistService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<BookingResponse> getVerificationBookings(String username) {
+    public List<BookingResponseDto> getVerificationBookings(String username) {
         List<Booking> all = bookingRepository.findAllByOrderByBookingDateDesc();
         Staff actor = findStaff(username);
         // Lấy các đơn ở giai đoạn thẩm định hồ sơ ngựa
@@ -133,7 +148,7 @@ public class SpecialistServiceImpl implements SpecialistService {
                     String s = b.getStatus() != null ? b.getStatus().toLowerCase() : "";
                     boolean inPhase = s.contains("review") || s.contains("verification") || s.contains("pending_intake")
                             || s.contains("intake") || s.contains("resubmission_requested");
-                    Object medical = extractPayload(b).getMedical();
+                    Object medical = BookingDetailsJson.readWithMedicalDefaults(objectMapper, b).getMedical();
                     boolean approvedAwaitingQuotation = "pending_commercial".equals(s)
                             && medical instanceof Map<?, ?> medicalMap
                             && "approved".equalsIgnoreCase(Objects.toString(medicalMap.get("status"), ""));
@@ -146,7 +161,7 @@ public class SpecialistServiceImpl implements SpecialistService {
 
     @Override
     @Transactional(readOnly = true)
-    public BookingResponse getBookingDetail(String bookingIdentifier, String username) {
+    public BookingResponseDto getBookingDetail(String bookingIdentifier, String username) {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
         requireAssignment(username, booking);
         return mapToBookingResponse(booking);
@@ -154,14 +169,14 @@ public class SpecialistServiceImpl implements SpecialistService {
 
     @Override
     @Transactional
-    public BookingResponse approveMedical(String bookingIdentifier, ApproveMedicalRequest request, String username) {
-        Booking booking = findBookingByIdentifier(bookingIdentifier);
+    public BookingResponseDto approveMedical(String bookingIdentifier, ApproveMedicalRequestDto request, String username) {
+        Booking booking = findBookingByIdentifier(bookingIdentifier, true);
         requireAssignment(username, booking);
-        com.example.racehorse_transport.util.BookingSchedulePolicy.requireCurrentSchedule(booking, java.time.Instant.now());
+        BookingSchedulePolicy.requireCurrentSchedule(booking, java.time.Instant.now());
         if (!"under_review".equalsIgnoreCase(booking.getStatus())) {
             throw new IllegalStateException("Chỉ duyệt hồ sơ ngựa khi đơn đang ở bước thẩm định.");
         }
-        BookingDetailsPayload payload = extractPayload(booking);
+        BookingDetailsPayloadDto payload = BookingDetailsJson.readWithMedicalDefaults(objectMapper, booking);
 
         String specialist = (request != null && request.getSpecialistName() != null && !request.getSpecialistName().isBlank())
                 ? request.getSpecialistName()
@@ -175,17 +190,17 @@ public class SpecialistServiceImpl implements SpecialistService {
         medicalMap.put("note", request != null && request.getNote() != null ? request.getNote() : "Hồ sơ đầy đủ, hợp lệ.");
         payload.setMedical(medicalMap);
 
-        appendHistory(payload, specialist, "Duyệt hồ sơ ngựa ĐẠT");
+        BookingHistory.appendHistory(payload, specialist, "Duyệt hồ sơ ngựa ĐẠT");
         if (payload.getSendBack() != null) payload.getSendBack().remove("specialist"); // đã duyệt lại theo lý do Quản lý trả
 
         // Kiểm tra xem Coordinator đã chốt xe và lộ trình chưa
         boolean planConfirmed = payload.getTrips() != null && !payload.getTrips().isEmpty() && payload.getPlan() != null;
         if (planConfirmed) {
             booking.setStatus("pending_commercial");
-            appendHistory(payload, "Hệ thống", "Hồ sơ ngựa và phương án xe đã duyệt xong");
+            BookingHistory.appendHistory(payload, "Hệ thống", "Hồ sơ ngựa và phương án xe đã duyệt xong");
         } else {
             booking.setStatus("under_review");
-            appendHistory(payload, specialist, "Đã duyệt hồ sơ ngựa ĐẠT");
+            BookingHistory.appendHistory(payload, specialist, "Đã duyệt hồ sơ ngựa ĐẠT");
         }
 
         savePayload(booking, payload);
@@ -200,13 +215,13 @@ public class SpecialistServiceImpl implements SpecialistService {
 
     @Override
     @Transactional
-    public BookingResponse requestResubmission(String bookingIdentifier, RequestResubmissionRequest request, String username) {
+    public BookingResponseDto requestResubmission(String bookingIdentifier, RequestResubmissionRequestDto request, String username) {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
         requireAssignment(username, booking);
         if (!"under_review".equalsIgnoreCase(booking.getStatus())) {
             throw new IllegalStateException("Chỉ yêu cầu bổ sung hồ sơ ngựa khi đơn đang ở bước thẩm định.");
         }
-        BookingDetailsPayload payload = extractPayload(booking);
+        BookingDetailsPayloadDto payload = BookingDetailsJson.readWithMedicalDefaults(objectMapper, booking);
 
         String specialist = (request != null && request.getSpecialistName() != null && !request.getSpecialistName().isBlank())
                 ? request.getSpecialistName()
@@ -231,7 +246,7 @@ public class SpecialistServiceImpl implements SpecialistService {
 
         booking.setStatus("under_review");
 
-        appendHistory(payload, specialist, "Yêu cầu bổ sung hồ sơ ngựa");
+        BookingHistory.appendHistory(payload, specialist, "Yêu cầu bổ sung hồ sơ ngựa");
 
         savePayload(booking, payload);
         Booking saved = bookingRepository.save(booking);
@@ -245,7 +260,7 @@ public class SpecialistServiceImpl implements SpecialistService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<BookingResponse> getClearanceBookings(String username) {
+    public List<BookingResponseDto> getClearanceBookings(String username) {
         List<Booking> all = bookingRepository.findAllByOrderByBookingDateDesc();
         Staff actor = findStaff(username);
         // Lấy các đơn ở giai đoạn làm giấy tờ kiểm dịch và hải quan
@@ -263,10 +278,10 @@ public class SpecialistServiceImpl implements SpecialistService {
 
     @Override
     @Transactional
-    public BookingResponse acceptWaybill(String bookingIdentifier, String username) {
+    public BookingResponseDto acceptWaybill(String bookingIdentifier, String username) {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
         requireAssignment(username, booking);
-        BookingDetailsPayload payload = extractPayload(booking);
+        BookingDetailsPayloadDto payload = BookingDetailsJson.readWithMedicalDefaults(objectMapper, booking);
 
         booking.setStatus("clearance_in_progress");
 
@@ -276,7 +291,7 @@ public class SpecialistServiceImpl implements SpecialistService {
         clearanceMap.put("specialistName", username != null ? username : "Chuyên viên");
         payload.setClearance(clearanceMap);
 
-        appendHistory(payload, username != null ? username : "Chuyên viên",
+        BookingHistory.appendHistory(payload, username != null ? username : "Chuyên viên",
                 "Tiếp nhận Vận đơn");
         savePayload(booking, payload);
         Booking saved = bookingRepository.save(booking);
@@ -286,14 +301,14 @@ public class SpecialistServiceImpl implements SpecialistService {
 
     @Override
     @Transactional
-    public BookingResponse updateClearanceItem(String bookingIdentifier, UpdateClearanceItemRequest request, String username) {
+    public BookingResponseDto updateClearanceItem(String bookingIdentifier, UpdateClearanceItemRequestDto request, String username) {
         return updateClearanceItems(bookingIdentifier,
-                UpdateClearanceItemsRequest.builder().items(List.of(request)).build(), username);
+                UpdateClearanceItemsRequestDto.builder().items(List.of(request)).build(), username);
     }
 
     @Override
     @Transactional
-    public BookingResponse updateClearanceItems(String bookingIdentifier, UpdateClearanceItemsRequest request, String username) {
+    public BookingResponseDto updateClearanceItems(String bookingIdentifier, UpdateClearanceItemsRequestDto request, String username) {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
         requireAssignment(username, booking);
         if (!Set.of("waybill_issued", "clearance_in_progress").contains(booking.getStatus())) {
@@ -303,18 +318,18 @@ public class SpecialistServiceImpl implements SpecialistService {
             throw new IllegalArgumentException("Danh sách cập nhật giấy tờ không được để trống.");
         }
         Set<String> types = new HashSet<>();
-        for (UpdateClearanceItemRequest patch : request.getItems()) {
+        for (UpdateClearanceItemRequestDto patch : request.getItems()) {
             if (patch == null || patch.getType() == null || patch.getType().isBlank()
                     || !types.add(patch.getType().trim().toLowerCase(Locale.ROOT))) {
                 throw new IllegalArgumentException("Loại giấy tờ không hợp lệ hoặc bị lặp.");
             }
             requireApplicableClearanceType(booking, patch.getType());
         }
-        BookingDetailsPayload payload = extractPayload(booking);
+        BookingDetailsPayloadDto payload = BookingDetailsJson.readWithMedicalDefaults(objectMapper, booking);
         Map<String, Object> clearanceMap = getOrCreateClearanceMap(payload, booking);
         List<Map<String, Object>> items = getClearanceItemsList(clearanceMap);
         boolean changed = false;
-        for (UpdateClearanceItemRequest patch : request.getItems()) {
+        for (UpdateClearanceItemRequestDto patch : request.getItems()) {
             String type = patch.getType().trim().toLowerCase(Locale.ROOT);
             Map<String, Object> item = items.stream().filter(i -> type.equalsIgnoreCase((String) i.get("type")))
                     .findFirst().orElse(null);
@@ -339,7 +354,7 @@ public class SpecialistServiceImpl implements SpecialistService {
             }
         }
         if (!changed) return mapToBookingResponse(booking);
-        appendHistory(payload, username != null ? username : "Chuyên viên", "Cập nhật giấy tờ kiểm dịch");
+        BookingHistory.appendHistory(payload, username != null ? username : "Chuyên viên", "Cập nhật giấy tờ kiểm dịch");
         payload.setClearance(clearanceMap);
         savePayload(booking, payload);
         return mapToBookingResponse(bookingRepository.save(booking));
@@ -347,10 +362,10 @@ public class SpecialistServiceImpl implements SpecialistService {
 
     @Override
     @Transactional
-    public BookingResponse addClearanceItem(String bookingIdentifier, AddClearanceItemRequest request, String username) {
+    public BookingResponseDto addClearanceItem(String bookingIdentifier, AddClearanceItemRequestDto request, String username) {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
         requireAssignment(username, booking);
-        BookingDetailsPayload payload = extractPayload(booking);
+        BookingDetailsPayloadDto payload = BookingDetailsJson.readWithMedicalDefaults(objectMapper, booking);
 
         Map<String, Object> clearanceMap = getOrCreateClearanceMap(payload, booking);
         List<Map<String, Object>> items = getClearanceItemsList(clearanceMap);
@@ -367,7 +382,7 @@ public class SpecialistServiceImpl implements SpecialistService {
             newItem.put("photos", Collections.emptyList());
             items.add(newItem);
 
-            appendHistory(payload, username != null ? username : "Chuyên viên", "Bổ sung hạng mục giấy tờ");
+            BookingHistory.appendHistory(payload, username != null ? username : "Chuyên viên", "Bổ sung hạng mục giấy tờ");
         }
 
         payload.setClearance(clearanceMap);
@@ -378,10 +393,10 @@ public class SpecialistServiceImpl implements SpecialistService {
 
     @Override
     @Transactional
-    public BookingResponse markHorseCleared(String bookingIdentifier, MarkHorseClearedRequest request, String username) {
+    public BookingResponseDto markHorseCleared(String bookingIdentifier, MarkHorseClearedRequestDto request, String username) {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
         requireAssignment(username, booking);
-        BookingDetailsPayload payload = extractPayload(booking);
+        BookingDetailsPayloadDto payload = BookingDetailsJson.readWithMedicalDefaults(objectMapper, booking);
 
         Map<String, Object> clearanceMap = getOrCreateClearanceMap(payload, booking);
         List<String> horsesCleared = getHorsesClearedList(clearanceMap);
@@ -396,7 +411,7 @@ public class SpecialistServiceImpl implements SpecialistService {
         }
         clearanceMap.put("horsesCleared", horsesCleared);
 
-        appendHistory(payload, username != null ? username : "Chuyên viên",
+        BookingHistory.appendHistory(payload, username != null ? username : "Chuyên viên",
                 (request.isCleared() ? "Ghi nhận thông quan ngựa" : "Hủy ghi nhận thông quan ngựa"));
 
         payload.setClearance(clearanceMap);
@@ -407,10 +422,10 @@ public class SpecialistServiceImpl implements SpecialistService {
 
     @Override
     @Transactional
-    public BookingResponse completeClearance(String bookingIdentifier, String username) {
+    public BookingResponseDto completeClearance(String bookingIdentifier, String username) {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
         requireAssignment(username, booking);
-        BookingDetailsPayload payload = extractPayload(booking);
+        BookingDetailsPayloadDto payload = BookingDetailsJson.readWithMedicalDefaults(objectMapper, booking);
 
         Map<String, Object> clearanceMap = getOrCreateClearanceMap(payload, booking);
         List<Map<String, Object>> items = getClearanceItemsList(clearanceMap);
@@ -432,7 +447,7 @@ public class SpecialistServiceImpl implements SpecialistService {
         }
 
         // Đơn chỉ sẵn sàng đón ngựa khi tài xế và hộ tống của mọi xe đã nhận lệnh
-        List<com.example.racehorse_transport.dto.coordinator.VehicleTripDto> trips = payload.getTrips();
+        List<VehicleTripDto> trips = payload.getTrips();
         boolean crewAcked = trips != null && !trips.isEmpty() && trips.stream().allMatch(t -> {
             Map<String, Object> acks = t.getAcks();
             return acks != null && acks.get("driver") != null && acks.get("escort") != null;
@@ -452,11 +467,11 @@ public class SpecialistServiceImpl implements SpecialistService {
 
         if (crewAcked) {
             booking.setStatus("ready_for_pickup");
-            appendHistory(payload, username != null ? username : "Chuyên viên",
+            BookingHistory.appendHistory(payload, username != null ? username : "Chuyên viên",
                     "Hoàn tất hồ sơ kiểm dịch & hải quan");
         } else {
             booking.setStatus("clearance_done");
-            appendHistory(payload, username != null ? username : "Chuyên viên",
+            BookingHistory.appendHistory(payload, username != null ? username : "Chuyên viên",
                     "Hoàn tất hồ sơ kiểm dịch & hải quan");
         }
 
@@ -474,13 +489,13 @@ public class SpecialistServiceImpl implements SpecialistService {
 
     @Override
     @Transactional
-    public BookingResponse transferForQuarantine(String bookingIdentifier, String username) {
+    public BookingResponseDto transferForQuarantine(String bookingIdentifier, String username) {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
         requireAssignment(username, booking);
-        BookingDetailsPayload payload = extractPayload(booking);
+        BookingDetailsPayloadDto payload = BookingDetailsJson.readWithMedicalDefaults(objectMapper, booking);
 
         // Kiểm tra xem kíp xe (Driver & Escort) đã xác nhận chưa
-        List<com.example.racehorse_transport.dto.coordinator.VehicleTripDto> trips = payload.getTrips();
+        List<VehicleTripDto> trips = payload.getTrips();
         if (trips != null && !trips.isEmpty()) {
             boolean allAcked = trips.stream().allMatch(t -> {
                 Map<String, Object> acks = t.getAcks();
@@ -507,7 +522,7 @@ public class SpecialistServiceImpl implements SpecialistService {
         clearanceMap.put("quarantineStatus", "PENDING_SPECIALIST_REVIEW");
         payload.setClearance(clearanceMap);
 
-        appendHistory(payload, username != null ? username : "Hệ thống",
+        BookingHistory.appendHistory(payload, username != null ? username : "Hệ thống",
                 "Kíp xe đã xác nhận đủ giấy tờ. Chuyển đơn sang Chuyên viên kiểm dịch (" + specialistName + ") để duyệt xác nhận dịch tễ.");
 
         savePayload(booking, payload);
@@ -518,10 +533,10 @@ public class SpecialistServiceImpl implements SpecialistService {
 
     @Override
     @Transactional
-    public BookingResponse approveQuarantine(String bookingIdentifier, ApproveMedicalRequest request, String username) {
+    public BookingResponseDto approveQuarantine(String bookingIdentifier, ApproveMedicalRequestDto request, String username) {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
         requireAssignment(username, booking);
-        BookingDetailsPayload payload = extractPayload(booking);
+        BookingDetailsPayloadDto payload = BookingDetailsJson.readWithMedicalDefaults(objectMapper, booking);
 
         String assignedSpecialist = null;
         if (payload.getIntake() instanceof Map<?, ?> intakeMap && intakeMap.get("specialist") instanceof Map<?, ?> spMap) {
@@ -556,7 +571,7 @@ public class SpecialistServiceImpl implements SpecialistService {
 
         payload.setClearance(clearanceMap);
 
-        appendHistory(payload, reviewer, "Chuyên viên kiểm dịch đã duyệt ĐẠT xác nhận dịch tễ cho chuyến đi: " + note);
+        BookingHistory.appendHistory(payload, reviewer, "Chuyên viên kiểm dịch đã duyệt ĐẠT xác nhận dịch tễ cho chuyến đi: " + note);
 
         savePayload(booking, payload);
         Booking saved = bookingRepository.save(booking);
@@ -569,27 +584,21 @@ public class SpecialistServiceImpl implements SpecialistService {
     // =========================================================================
 
     private Booking findBookingByIdentifier(String bookingIdentifier) {
+        return findBookingByIdentifier(bookingIdentifier, false);
+    }
+
+    private Booking findBookingByIdentifier(String bookingIdentifier, boolean forUpdate) {
         if (bookingIdentifier == null || bookingIdentifier.trim().isEmpty()) {
             throw new IllegalArgumentException("Mã đơn hàng không được để trống!");
         }
         Integer id = parseBookingId(bookingIdentifier);
-        return bookingRepository.findById(id)
+        return (forUpdate ? bookingRepository.findByIdForUpdate(id) : bookingRepository.findById(id))
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
     }
 
     private Integer parseBookingId(String bookingIdentifier) {
         return bookingRepository.findIdByCode(bookingIdentifier.trim().toUpperCase())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
-    }
-
-    private BookingDetailsPayload extractPayload(Booking booking) {
-        BookingDetailsPayload payload = BookingDetailsJson.read(objectMapper, booking);
-        if (payload.getMedical() == null) {
-            Map<String, Object> med = new HashMap<>();
-            med.put("status", "pending");
-            payload.setMedical(med);
-        }
-        return payload;
     }
 
     private Staff findStaff(String username) {
@@ -609,7 +618,7 @@ public class SpecialistServiceImpl implements SpecialistService {
 
     private boolean isAssignedToSpecialist(Staff actor, Booking booking) {
         if (actor == null) return false;
-        Object intakeValue = extractPayload(booking).getIntake();
+        Object intakeValue = BookingDetailsJson.readWithMedicalDefaults(objectMapper, booking).getIntake();
         if (!(intakeValue instanceof Map<?, ?> intake)) return false;
         Object specialistValue = intake.get("specialist");
         if (!(specialistValue instanceof Map<?, ?> specialist)) return false;
@@ -641,7 +650,7 @@ public class SpecialistServiceImpl implements SpecialistService {
         }
     }
 
-    private void savePayload(Booking booking, BookingDetailsPayload payload) {
+    private void savePayload(Booking booking, BookingDetailsPayloadDto payload) {
         try {
             booking.setDetailsJson(objectMapper.writeValueAsString(payload));
         } catch (Exception ex) {
@@ -658,7 +667,7 @@ public class SpecialistServiceImpl implements SpecialistService {
     }
 
     @SuppressWarnings("unchecked")
-    private Map<String, Object> getOrCreateClearanceMap(BookingDetailsPayload payload, Booking booking) {
+    private Map<String, Object> getOrCreateClearanceMap(BookingDetailsPayloadDto payload, Booking booking) {
         if (payload.getClearance() instanceof Map) {
             Map<String, Object> existing = (Map<String, Object>) payload.getClearance();
             if (existing.get("items") instanceof List && !((List<?>) existing.get("items")).isEmpty()) {
@@ -776,26 +785,15 @@ public class SpecialistServiceImpl implements SpecialistService {
     }
 
 
-    private void appendHistory(BookingDetailsPayload payload, String actor, String text) {
-        if (payload.getHistory() == null) {
-            payload.setHistory(new ArrayList<>());
-        }
-        Map<String, Object> entry = new HashMap<>();
-        entry.put("time", System.currentTimeMillis());
-        entry.put("actor", actor);
-        entry.put("text", text);
-        payload.getHistory().add(entry);
-    }
-
-    private BookingResponse mapToBookingResponse(Booking b) {
-        BookingDetailsPayload payload = extractPayload(b);
+    private BookingResponseDto mapToBookingResponse(Booking b) {
+        BookingDetailsPayloadDto payload = BookingDetailsJson.readWithMedicalDefaults(objectMapper, b);
         Object clearance = ClearanceDocumentPolicy.forBooking(
                 payload.getClearance(), "international".equalsIgnoreCase(b.getBookingType()));
         String customerFullName = (b.getCustomerID() != null && b.getCustomerID().getUser() != null)
                 ? b.getCustomerID().getUser().getUsername()
                 : "Khách hàng";
 
-        return BookingResponse.builder()
+        return BookingResponseDto.builder()
                 .id(b.getCode())
                 .type(b.getBookingType() != null ? b.getBookingType() : "domestic")
                 .customer(customerFullName)
@@ -812,11 +810,11 @@ public class SpecialistServiceImpl implements SpecialistService {
                 .totalHorses(b.getTotalHorses() != null ? b.getTotalHorses() : 1)
                 .horses(payload.getHorses())
                 .waybillNo(b.getWaybillNo())
-                .trips(com.example.racehorse_transport.service.CaptureService.visibleTrips(payload))
+                .trips(bookingVisibility.visibleTrips(payload))
                 .route(payload.getRoute())
                 .gate(payload.getGate())
                 .plan(payload.getPlan())
-                .photoEvidence(com.example.racehorse_transport.service.CaptureService.visibleEvidence(payload))
+                .photoEvidence(bookingVisibility.visibleEvidence(payload))
                 .quote(payload.getQuote())
                 .payment(payload.getPayment())
                 .medical(payload.getMedical())

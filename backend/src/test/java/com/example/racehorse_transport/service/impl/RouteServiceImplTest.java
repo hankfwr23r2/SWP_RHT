@@ -1,19 +1,18 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.route.CreateRouteRequest;
+import com.example.racehorse_transport.dto.route.CreateRouteRequestDto;
 import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.LocationRoute;
 import com.example.racehorse_transport.entity.Route;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.repository.LocationRouteRepository;
 import com.example.racehorse_transport.repository.RouteRepository;
+import com.example.racehorse_transport.service.AdminAuditService;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-
-import java.util.List;
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -29,7 +28,7 @@ class RouteServiceImplTest {
     private final LocationRouteRepository locationRouteRepository = mock(LocationRouteRepository.class);
     private final LocationRepository locationRepository = mock(LocationRepository.class);
     private final RouteServiceImpl service = new RouteServiceImpl(
-            routeRepository, locationRouteRepository, locationRepository, org.mockito.Mockito.mock(com.example.racehorse_transport.service.AdminAuditWriter.class));
+            routeRepository, locationRouteRepository, locationRepository, org.mockito.Mockito.mock(AdminAuditService.class));
 
     @BeforeEach
     void setUp() {
@@ -41,7 +40,7 @@ class RouteServiceImplTest {
 
     @Test
     void createRouteRequiresDistinctOriginAndDestination() {
-        CreateRouteRequest request = request(List.of(stop(1, null, null)));
+        CreateRouteRequestDto request = request(List.of(stop(1, null, null)));
 
         assertThatThrownBy(() -> service.createRoute(request))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -52,7 +51,7 @@ class RouteServiceImplTest {
 
     @Test
     void createRoutePersistsOrderedStopsAndCoordinates() {
-        CreateRouteRequest request = request(List.of(
+        CreateRouteRequestDto request = request(List.of(
                 stop(1, 10.78, 107.0),
                 stop(2, 11.07, 106.2),
                 stop(3, 11.56, 104.92)));
@@ -75,7 +74,7 @@ class RouteServiceImplTest {
         existing.setRouteName("Tuyến cũ");
         when(routeRepository.findById(2)).thenReturn(Optional.of(existing));
 
-        CreateRouteRequest request = new CreateRouteRequest();
+        CreateRouteRequestDto request = new CreateRouteRequestDto();
         request.setStatus("maintenance");
 
         Route updated = service.updateRoute(2, request);
@@ -85,7 +84,7 @@ class RouteServiceImplTest {
 
     @Test
     void createRouteRejectsRepeatedLocation() {
-        CreateRouteRequest request = request(List.of(stop(1, null, null), stop(1, null, null)));
+        CreateRouteRequestDto request = request(List.of(stop(1, null, null), stop(1, null, null)));
 
         assertThatThrownBy(() -> service.createRoute(request))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -94,15 +93,15 @@ class RouteServiceImplTest {
         verify(routeRepository, never()).save(any(Route.class));
     }
 
-    private CreateRouteRequest request(List<CreateRouteRequest.RouteStopItem> stops) {
-        CreateRouteRequest request = new CreateRouteRequest();
+    private CreateRouteRequestDto request(List<CreateRouteRequestDto.RouteStopItem> stops) {
+        CreateRouteRequestDto request = new CreateRouteRequestDto();
         request.setRouteName("Tuyến thử");
         request.setStops(stops);
         return request;
     }
 
-    private CreateRouteRequest.RouteStopItem stop(Integer locationId, Double latitude, Double longitude) {
-        return CreateRouteRequest.RouteStopItem.builder()
+    private CreateRouteRequestDto.RouteStopItem stop(Integer locationId, Double latitude, Double longitude) {
+        return CreateRouteRequestDto.RouteStopItem.builder()
                 .locationId(locationId)
                 .latitude(latitude)
                 .longitude(longitude)

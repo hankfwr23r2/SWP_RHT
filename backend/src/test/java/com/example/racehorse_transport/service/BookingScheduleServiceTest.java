@@ -1,18 +1,28 @@
 package com.example.racehorse_transport.service;
 
-import com.example.racehorse_transport.dto.admin.SystemConfigResponse;
-import com.example.racehorse_transport.dto.booking.BookingDetailsPayload;
-import com.example.racehorse_transport.entity.*;
-import com.example.racehorse_transport.repository.*;
+import com.example.racehorse_transport.dto.admin.SystemConfigResponseDto;
+import com.example.racehorse_transport.dto.booking.BookingDetailsPayloadDto;
+import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.Customer;
+import com.example.racehorse_transport.entity.Payment;
+import com.example.racehorse_transport.entity.Quotation;
+import com.example.racehorse_transport.entity.User;
+import com.example.racehorse_transport.repository.BookingAssignmentRepository;
+import com.example.racehorse_transport.repository.BookingRepository;
+import com.example.racehorse_transport.repository.BookingVehicleRepository;
+import com.example.racehorse_transport.repository.NotificationRepository;
+import com.example.racehorse_transport.repository.PaymentRepository;
+import com.example.racehorse_transport.repository.QuotationRepository;
+import com.example.racehorse_transport.service.impl.BookingScheduleServiceImpl;
 import com.example.racehorse_transport.util.BookingDetailsJson;
 import com.example.racehorse_transport.util.BookingSchedulePolicy;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.security.access.AccessDeniedException;
 import java.time.*;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.security.access.AccessDeniedException;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -27,7 +37,7 @@ class BookingScheduleServiceTest {
     private final SystemConfigService config = mock(SystemConfigService.class);
     private final BillMailService mail = mock(BillMailService.class);
     private final Clock clock = Clock.fixed(Instant.parse("2026-11-30T17:00:00Z"), ZoneOffset.UTC);
-    private final BookingScheduleService service = new BookingScheduleService(bookings, payments, quotations,
+    private final BookingScheduleService service = new BookingScheduleServiceImpl(bookings, payments, quotations,
             vehicles, assignments, notifications, config, mail, clock);
     private Booking booking;
 
@@ -46,7 +56,7 @@ class BookingScheduleServiceTest {
         when(bookings.findByIdForUpdate(3)).thenReturn(Optional.of(booking));
         when(payments.findByBookingID_IdOrderByPaymentDateDesc(3)).thenReturn(List.of());
         when(quotations.findByBookingIdOrderBySentAtDesc(3)).thenReturn(List.of());
-        when(config.getConfig("MIN_LEAD_DAYS")).thenReturn(SystemConfigResponse.builder()
+        when(config.getConfig("MIN_LEAD_DAYS")).thenReturn(SystemConfigResponseDto.builder()
                 .configKey("MIN_LEAD_DAYS").configValue("20").build());
     }
 
@@ -108,7 +118,7 @@ class BookingScheduleServiceTest {
         service.reschedule(3, "customer12", LocalDate.of(2026, 12, 21));
         assertThat(booking.getStatus()).isEqualTo("pending_intake");
         assertThat(booking.getDepartureDate()).isEqualTo(Instant.parse("2026-12-20T17:00:00Z"));
-        BookingDetailsPayload changed = details();
+        BookingDetailsPayloadDto changed = details();
         assertThat(changed.getScheduleChange()).isNull();
         assertThat(changed.getPlan()).isNull();
         assertThat(changed.getTrips()).isNull();
@@ -156,7 +166,7 @@ class BookingScheduleServiceTest {
         assertThat(details().getHistory().getLast().get("text").toString()).contains("Không còn nhu cầu");
     }
 
-    private BookingDetailsPayload details() {
+    private BookingDetailsPayloadDto details() {
         return BookingDetailsJson.read(new ObjectMapper(), booking);
     }
 }

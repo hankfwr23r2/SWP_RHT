@@ -1,20 +1,19 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.admin.AccountResponse;
-import com.example.racehorse_transport.dto.admin.CreateStaffRequest;
+import com.example.racehorse_transport.dto.admin.AccountResponseDto;
+import com.example.racehorse_transport.dto.admin.CreateStaffRequestDto;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.User;
 import com.example.racehorse_transport.repository.CustomerRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.SystemLogRepository;
 import com.example.racehorse_transport.repository.UserRepository;
+import com.example.racehorse_transport.service.AdminAuditService;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
-import java.util.List;
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,7 +35,7 @@ class AdminAccountServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new AdminAccountServiceImpl(org.mockito.Mockito.mock(com.example.racehorse_transport.service.AdminAuditWriter.class),
+        service = new AdminAccountServiceImpl(org.mockito.Mockito.mock(AdminAuditService.class),
                 userRepository,
                 staffRepository,
                 customerRepository,
@@ -76,7 +75,7 @@ class AdminAccountServiceImplTest {
     void createStaffAccount_usesCoordinatorCodePrefix() {
         when(staffRepository.countByRoleIgnoreCase("coordinator")).thenReturn(1L);
 
-        AccountResponse response = service.createStaffAccount(request("coordinator"));
+        AccountResponseDto response = service.createStaffAccount(request("coordinator"));
 
         assertThat(response.getStaffCode()).isEqualTo("CO-02");
     }
@@ -85,7 +84,7 @@ class AdminAccountServiceImplTest {
     void createStaffAccount_usesSpecialistCodePrefix() {
         when(staffRepository.countByRoleIgnoreCase("specialist")).thenReturn(1L);
 
-        AccountResponse response = service.createStaffAccount(request("specialist"));
+        AccountResponseDto response = service.createStaffAccount(request("specialist"));
 
         assertThat(response.getStaffCode()).isEqualTo("SP-02");
     }
@@ -94,7 +93,7 @@ class AdminAccountServiceImplTest {
     void createStaffAccount_usesAdminCodePrefix() {
         when(staffRepository.countByRoleIgnoreCase("admin")).thenReturn(1L);
 
-        AccountResponse response = service.createStaffAccount(request("admin"));
+        AccountResponseDto response = service.createStaffAccount(request("admin"));
 
         assertThat(response.getStaffCode()).isEqualTo("ADMIN-02");
     }
@@ -103,7 +102,7 @@ class AdminAccountServiceImplTest {
     void createStaffAccount_usesDriverCodePrefix() {
         when(staffRepository.countByRoleIgnoreCase("driver")).thenReturn(1L);
 
-        AccountResponse response = service.createStaffAccount(request("driver"));
+        AccountResponseDto response = service.createStaffAccount(request("driver"));
 
         assertThat(response.getStaffCode()).isEqualTo("DR-02");
     }
@@ -112,13 +111,13 @@ class AdminAccountServiceImplTest {
     void createStaffAccount_usesEscortCodePrefix() {
         when(staffRepository.countByRoleIgnoreCase("escort")).thenReturn(1L);
 
-        AccountResponse response = service.createStaffAccount(request("escort"));
+        AccountResponseDto response = service.createStaffAccount(request("escort"));
 
         assertThat(response.getStaffCode()).isEqualTo("ES-02");
     }
 
-    private CreateStaffRequest request(String role) {
-        return CreateStaffRequest.builder()
+    private CreateStaffRequestDto request(String role) {
+        return CreateStaffRequestDto.builder()
                 .name("Test Staff")
                 .email(role + "@example.com")
                 .phone("0901234567")

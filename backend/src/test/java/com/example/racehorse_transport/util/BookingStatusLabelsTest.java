@@ -1,6 +1,6 @@
 package com.example.racehorse_transport.util;
 
-import com.example.racehorse_transport.dto.booking.BookingResponse;
+import com.example.racehorse_transport.dto.booking.BookingResponseDto;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -17,7 +17,7 @@ class BookingStatusLabelsTest {
 
     @Test
     void bookingResponseCarriesTheLabelsOfItsStatus() {
-        BookingResponse response = BookingResponse.builder().status("waybill_issued").build();
+        BookingResponseDto response = BookingResponseDto.builder().status("waybill_issued").build();
 
         assertThat(response.getStatusLabel()).isEqualTo("Đã có vận đơn");
         assertThat(response.getCustomerStatusLabel()).isEqualTo("Đã có vận đơn");

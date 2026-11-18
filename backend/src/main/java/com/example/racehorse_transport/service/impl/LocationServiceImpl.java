@@ -1,10 +1,10 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.service.AdminAuditWriter;
-import com.example.racehorse_transport.dto.LocationRequest;
+import com.example.racehorse_transport.dto.LocationRequestDto;
 import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.LocationRepository;
+import com.example.racehorse_transport.service.AdminAuditService;
 import com.example.racehorse_transport.service.LocationService;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class LocationServiceImpl implements LocationService {
-    private final AdminAuditWriter audit;
+    private final AdminAuditService audit;
 
     private static final String BORDER_GATE = "BorderGate";
 
@@ -41,12 +41,11 @@ public class LocationServiceImpl implements LocationService {
     @Override
     @Transactional
     @CacheEvict(value = "locations", allEntries = true)
-    public Location createLocation(LocationRequest request, String changedBy) {
+    public Location createLocation(LocationRequestDto request, String changedBy) {
         validateRequest(request, changedBy);
-        Location location = new Location();
+        Location location = request.toEntity();
         location.setId(locationRepository.findMaxId() + 1);
         location.setLocationCode("LOC-" + location.getId());
-        apply(location, request);
         Location saved = locationRepository.save(location);
         audit.record("CREATE_LOCATION", "LOCATION", saved.getId(), saved.getLocationName(), "Tạo địa điểm", null, values(saved));
         return saved;
@@ -55,11 +54,11 @@ public class LocationServiceImpl implements LocationService {
     @Override
     @Transactional
     @CacheEvict(value = "locations", allEntries = true)
-    public Location updateLocation(Integer id, LocationRequest request, String changedBy) {
+    public Location updateLocation(Integer id, LocationRequestDto request, String changedBy) {
         validateRequest(request, changedBy);
         Location location = findLocation(id);
         Map<String, String> oldValues = values(location);
-        apply(location, request);
+        request.applyTo(location);
         Location saved = locationRepository.save(location);
         audit.record("UPDATE_LOCATION", "LOCATION", id, saved.getLocationName(), "Cập nhật địa điểm", oldValues, values(saved));
         return saved;
@@ -81,7 +80,7 @@ public class LocationServiceImpl implements LocationService {
         Location saved = locationRepository.save(location);
         if (!Objects.equals(oldStatus, status)) {
             audit.record("CHANGE_LOCATION_STATUS", "LOCATION", id, saved.getLocationName(), "Đổi trạng thái địa điểm",
-                    AdminAuditWriter.values("status", oldStatus), AdminAuditWriter.values("status", status));
+                    AdminAuditService.values("status", oldStatus), AdminAuditService.values("status", status));
         }
         return saved;
     }
@@ -91,7 +90,7 @@ public class LocationServiceImpl implements LocationService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy địa điểm có ID: " + id));
     }
 
-    private void validateRequest(LocationRequest request, String changedBy) {
+    private void validateRequest(LocationRequestDto request, String changedBy) {
         if (request == null) {
             throw new IllegalArgumentException("Thông tin địa điểm không được để trống.");
         }
@@ -111,21 +110,6 @@ public class LocationServiceImpl implements LocationService {
         }
     }
 
-    private void apply(Location location, LocationRequest request) {
-        location.setLocationType(request.getLocationType());
-        location.setLocationName(request.getLocationName().trim());
-        location.setAddress(request.getAddress().trim());
-        location.setCity(request.getCity().trim());
-        location.setProvince(request.getProvince().trim());
-        location.setCountry(request.getCountry().trim());
-        location.setLatitude(request.getLatitude());
-        location.setLongitude(request.getLongitude());
-        location.setStatus(request.getStatus());
-        location.setOpeningMinutes(request.getOpeningMinutes());
-        location.setClosingMinutes(request.getClosingMinutes());
-        location.setContactPhone(request.getContactPhone() == null ? null : request.getContactPhone().trim());
-        location.setDestinationCountry(request.getDestinationCountry());
-    }
 
     private Map<String, String> values(Location location) {
         Map<String, String> values = new LinkedHashMap<>();

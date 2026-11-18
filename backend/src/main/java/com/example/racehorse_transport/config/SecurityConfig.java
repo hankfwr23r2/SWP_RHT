@@ -30,7 +30,7 @@ public class SecurityConfig {
 
     // Bean mã hóa mật khẩu bằng thuật toán BCrypt
     @Bean
-    public PasswordEncoder passwordEncoder() {
+    public static PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 

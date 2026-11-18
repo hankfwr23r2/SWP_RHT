@@ -1,6 +1,6 @@
 package com.example.racehorse_transport.util;
 
-import com.example.racehorse_transport.dto.booking.BookingDetailsPayload;
+import com.example.racehorse_transport.dto.booking.BookingDetailsPayloadDto;
 import com.example.racehorse_transport.entity.Booking;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -37,7 +37,7 @@ class BookingDetailsJsonTest {
                 "capturedAt":1,"recordedAt":2,"bookingId":19}}}
                 """;
 
-        BookingDetailsPayload payload = objectMapper.readValue(json, BookingDetailsPayload.class);
+        BookingDetailsPayloadDto payload = objectMapper.readValue(json, BookingDetailsPayloadDto.class);
 
         assertThat(payload.getPhotoEvidence().get("capture-url").id()).isEqualTo(4L);
     }

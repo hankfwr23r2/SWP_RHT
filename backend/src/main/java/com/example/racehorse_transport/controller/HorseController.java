@@ -1,9 +1,9 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.HorseDTO;
-import com.example.racehorse_transport.dto.HorseJourneyLogDTO;
-import com.example.racehorse_transport.dto.UpdateHorseLocationRequest;
-import com.example.racehorse_transport.response.ApiResponse;
+import com.example.racehorse_transport.dto.HorseDto;
+import com.example.racehorse_transport.dto.HorseJourneyLogDto;
+import com.example.racehorse_transport.dto.UpdateHorseLocationRequestDto;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.service.HorseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -23,57 +23,57 @@ public class HorseController {
 
     @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'INSPECTOR', 'MANAGER', 'ADMIN', 'COORDINATOR')")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<HorseDTO>>> getAllHorses(Authentication authentication) {
-        return ResponseEntity.ok(ApiResponse.success(
+    public ResponseEntity<ApiResponseDto<List<HorseDto>>> getAllHorses(Authentication authentication) {
+        return ResponseEntity.ok(ApiResponseDto.success(
                 horseService.list(authentication.getName(), isCustomer(authentication)), "Lấy danh sách hồ sơ ngựa thành công"));
     }
 
     @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'INSPECTOR', 'MANAGER', 'ADMIN', 'COORDINATOR', 'ESCORT', 'DRIVER')")
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<HorseDTO>> getHorseById(@PathVariable Integer id, Authentication authentication) {
+    public ResponseEntity<ApiResponseDto<HorseDto>> getHorseById(@PathVariable Integer id, Authentication authentication) {
         return horseService.view(id, authentication.getName(), isCustomer(authentication))
-                .map(horse -> ResponseEntity.ok(ApiResponse.success(horse, "Lấy hồ sơ ngựa thành công")))
-                .orElseGet(() -> ResponseEntity.status(404).body(ApiResponse.error("Không tìm thấy hồ sơ ngựa")));
+                .map(horse -> ResponseEntity.ok(ApiResponseDto.success(horse, "Lấy hồ sơ ngựa thành công")))
+                .orElseGet(() -> ResponseEntity.status(404).body(ApiResponseDto.error("Không tìm thấy hồ sơ ngựa")));
     }
 
     @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'ADMIN')")
     @PostMapping
-    public ResponseEntity<ApiResponse<HorseDTO>> createHorse(@RequestBody HorseDTO request, Authentication authentication) {
-        HorseDTO saved = horseService.create(request, authentication.getName(), isCustomer(authentication));
-        return ResponseEntity.status(201).body(ApiResponse.success(saved, "Tạo hồ sơ ngựa thành công"));
+    public ResponseEntity<ApiResponseDto<HorseDto>> createHorse(@RequestBody HorseDto request, Authentication authentication) {
+        HorseDto saved = horseService.create(request, authentication.getName(), isCustomer(authentication));
+        return ResponseEntity.status(201).body(ApiResponseDto.success(saved, "Tạo hồ sơ ngựa thành công"));
     }
 
     @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<HorseDTO>> updateHorse(@PathVariable Integer id, @RequestBody HorseDTO request, Authentication authentication) {
-        HorseDTO saved = horseService.update(id, request, authentication.getName(), isCustomer(authentication));
-        return ResponseEntity.ok(ApiResponse.success(saved, "Cập nhật hồ sơ ngựa thành công"));
+    public ResponseEntity<ApiResponseDto<HorseDto>> updateHorse(@PathVariable Integer id, @RequestBody HorseDto request, Authentication authentication) {
+        HorseDto saved = horseService.update(id, request, authentication.getName(), isCustomer(authentication));
+        return ResponseEntity.ok(ApiResponseDto.success(saved, "Cập nhật hồ sơ ngựa thành công"));
     }
 
     @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN', 'MANAGER')")
     @PatchMapping("/{id}/location")
-    public ResponseEntity<ApiResponse<HorseDTO>> updateLocation(
+    public ResponseEntity<ApiResponseDto<HorseDto>> updateLocation(
             @PathVariable Integer id,
-            @RequestBody UpdateHorseLocationRequest request,
+            @RequestBody UpdateHorseLocationRequestDto request,
             Authentication authentication) {
-        HorseDTO saved = horseService.updateLocation(id, request, authentication.getName(), isCustomer(authentication));
-        return ResponseEntity.ok(ApiResponse.success(saved, "Cập nhật vị trí ngựa thành công"));
+        HorseDto saved = horseService.updateLocation(id, request, authentication.getName(), isCustomer(authentication));
+        return ResponseEntity.ok(ApiResponseDto.success(saved, "Cập nhật vị trí ngựa thành công"));
     }
 
     @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'INSPECTOR', 'MANAGER', 'ADMIN', 'COORDINATOR', 'ESCORT', 'DRIVER')")
     @GetMapping("/{id}/journey-logs")
-    public ResponseEntity<ApiResponse<List<HorseJourneyLogDTO>>> getJourneyLogs(
+    public ResponseEntity<ApiResponseDto<List<HorseJourneyLogDto>>> getJourneyLogs(
             @PathVariable Integer id,
             Authentication authentication) {
-        List<HorseJourneyLogDTO> logs = horseService.journeyLogs(id, authentication.getName(), isCustomer(authentication));
-        return ResponseEntity.ok(ApiResponse.success(logs, "Lấy lịch sử hành trình ngựa thành công"));
+        List<HorseJourneyLogDto> logs = horseService.journeyLogs(id, authentication.getName(), isCustomer(authentication));
+        return ResponseEntity.ok(ApiResponseDto.success(logs, "Lấy lịch sử hành trình ngựa thành công"));
     }
 
     @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteHorse(@PathVariable Integer id, Authentication authentication) {
+    public ResponseEntity<ApiResponseDto<Void>> deleteHorse(@PathVariable Integer id, Authentication authentication) {
         horseService.deleteHorse(id, authentication.getName(), isCustomer(authentication));
-        return ResponseEntity.ok(ApiResponse.success(null, "Xóa hồ sơ ngựa thành công"));
+        return ResponseEntity.ok(ApiResponseDto.success(null, "Xóa hồ sơ ngựa thành công"));
     }
 
     private boolean isCustomer(Authentication authentication) {

@@ -1,7 +1,7 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import i18n from '../i18n'
 
-// 1. Cấu trúc Response chuẩn từ Spring Boot (com.example.racehorse_transport.response.ApiResponse)
+// 1. Cấu trúc Response chuẩn từ Spring Boot (com.example.racehorse_transport.dto.common.ApiResponseDto)
 export interface ApiResponse<T = unknown> {
   status: 'success' | 'error'
   message: string

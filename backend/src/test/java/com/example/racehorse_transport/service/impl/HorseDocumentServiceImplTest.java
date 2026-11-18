@@ -1,6 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.document.HorseDocumentResponse;
+import com.example.racehorse_transport.dto.document.HorseDocumentResponseDto;
 import com.example.racehorse_transport.entity.Horse;
 import com.example.racehorse_transport.entity.HorseDocument;
 import com.example.racehorse_transport.repository.HorseDocumentRepository;
@@ -37,7 +37,7 @@ class HorseDocumentServiceImplTest {
         when(horseDocumentRepository.findByHorseID_CustomerID_User_UsernameIgnoreCase("customer@example.com"))
                 .thenReturn(List.of(document));
 
-        List<HorseDocumentResponse> documents = service.getCustomerDocuments("customer@example.com");
+        List<HorseDocumentResponseDto> documents = service.getCustomerDocuments("customer@example.com");
 
         assertThat(documents).hasSize(1);
         assertThat(documents.get(0).getHorseId()).isEqualTo(2);

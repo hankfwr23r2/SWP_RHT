@@ -1,25 +1,24 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.ResetPasswordWithOtpRequest;
+import com.example.racehorse_transport.dto.ResetPasswordWithOtpRequestDto;
 import com.example.racehorse_transport.entity.EmailOtp;
 import com.example.racehorse_transport.entity.OtpPurpose;
-import com.example.racehorse_transport.service.OtpStorageLock;
 import com.example.racehorse_transport.entity.User;
 import com.example.racehorse_transport.repository.EmailOtpRepository;
+import com.example.racehorse_transport.repository.OtpLockRepository;
 import com.example.racehorse_transport.repository.UserRepository;
-import com.example.racehorse_transport.service.OtpMailSender;
+import com.example.racehorse_transport.service.MailDeliveryService;
 import com.example.racehorse_transport.service.PasswordResetService;
+import java.security.SecureRandom;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.MailException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.security.SecureRandom;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.Locale;
 
 @Slf4j
 @Service
@@ -31,9 +30,9 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
     private final UserRepository userRepository;
     private final EmailOtpRepository otpRepository;
-    private final OtpStorageLock otpLock;
+    private final OtpLockRepository otpLock;
     private final PasswordEncoder passwordEncoder;
-    private final OtpMailSender mailSender;
+    private final MailDeliveryService mailSender;
     private final SecureRandom secureRandom = new SecureRandom();
 
 
@@ -72,7 +71,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
     @Override
     @Transactional(noRollbackFor = IllegalArgumentException.class)
-    public void resetPassword(ResetPasswordWithOtpRequest request) {
+    public void resetPassword(ResetPasswordWithOtpRequestDto request) {
         String normalizedEmail = normalize(request.getEmail());
         otpLock.acquire(normalizedEmail);
         EmailOtp otp = otpRepository.findByEmailAndPurpose(normalizedEmail, OtpPurpose.RESET_PASSWORD)

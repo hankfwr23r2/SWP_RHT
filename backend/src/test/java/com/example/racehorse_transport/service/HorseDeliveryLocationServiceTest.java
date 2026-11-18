@@ -1,6 +1,6 @@
 package com.example.racehorse_transport.service;
 
-import com.example.racehorse_transport.dto.booking.BookingDetailsPayload;
+import com.example.racehorse_transport.dto.booking.BookingDetailsPayloadDto;
 import com.example.racehorse_transport.dto.booking.BookingHorseDto;
 import com.example.racehorse_transport.dto.coordinator.VehicleTripDto;
 import com.example.racehorse_transport.entity.Booking;
@@ -8,14 +8,13 @@ import com.example.racehorse_transport.entity.Horse;
 import com.example.racehorse_transport.entity.HorseJourneyLog;
 import com.example.racehorse_transport.repository.HorseJourneyLogRepository;
 import com.example.racehorse_transport.repository.HorseRepository;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-
+import com.example.racehorse_transport.service.impl.HorseDeliveryLocationServiceImpl;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -24,9 +23,9 @@ import static org.mockito.Mockito.*;
 class HorseDeliveryLocationServiceTest {
     private final HorseRepository horses = mock(HorseRepository.class);
     private final HorseJourneyLogRepository journeys = mock(HorseJourneyLogRepository.class);
-    private final HorseDeliveryLocationService service = new HorseDeliveryLocationService(horses, journeys);
+    private final HorseDeliveryLocationService service = new HorseDeliveryLocationServiceImpl(horses, journeys);
     private Booking booking;
-    private BookingDetailsPayload payload;
+    private BookingDetailsPayloadDto payload;
     private Horse horse;
     private VehicleTripDto trip;
 
@@ -34,7 +33,7 @@ class HorseDeliveryLocationServiceTest {
     void setup() {
         booking = Booking.builder().id(42).bookingType("domestic")
                 .pickupAddress("Trang trại A, Đà Nẵng").dropoffAddress("Trang trại B, Hà Nội").build();
-        payload = new BookingDetailsPayload();
+        payload = new BookingDetailsPayloadDto();
         payload.setDestCountry("VN");
         var reference = new BookingHorseDto();
         reference.setHorseId("H-012");

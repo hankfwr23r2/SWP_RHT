@@ -1,10 +1,10 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.admin.CategoryResponse;
-import com.example.racehorse_transport.dto.admin.CreateServiceRequest;
-import com.example.racehorse_transport.dto.admin.ServiceResponse;
-import com.example.racehorse_transport.response.ApiResponse;
-import com.example.racehorse_transport.service.AdminServiceService;
+import com.example.racehorse_transport.dto.admin.CategoryResponseDto;
+import com.example.racehorse_transport.dto.admin.CreateServiceRequestDto;
+import com.example.racehorse_transport.dto.admin.ServiceResponseDto;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
+import com.example.racehorse_transport.service.ServiceCatalogService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,44 +20,44 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdminServiceController {
 
-    private final AdminServiceService adminServiceService;
+    private final ServiceCatalogService serviceCatalogService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ServiceResponse>>> getAllServices() {
-        List<ServiceResponse> services = adminServiceService.getAllServices();
-        return ResponseEntity.ok(ApiResponse.success(services, "Lấy danh sách dịch vụ thành công"));
+    public ResponseEntity<ApiResponseDto<List<ServiceResponseDto>>> getAllServices() {
+        List<ServiceResponseDto> services = serviceCatalogService.getAllServices();
+        return ResponseEntity.ok(ApiResponseDto.success(services, "Lấy danh sách dịch vụ thành công"));
     }
 
     @GetMapping("/categories")
-    public ResponseEntity<ApiResponse<List<CategoryResponse>>> getAllCategories() {
-        List<CategoryResponse> categories = adminServiceService.getAllCategories();
-        return ResponseEntity.ok(ApiResponse.success(categories, "Lấy danh sách phân loại dịch vụ thành công"));
+    public ResponseEntity<ApiResponseDto<List<CategoryResponseDto>>> getAllCategories() {
+        List<CategoryResponseDto> categories = serviceCatalogService.getAllCategories();
+        return ResponseEntity.ok(ApiResponseDto.success(categories, "Lấy danh sách phân loại dịch vụ thành công"));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<ServiceResponse>> getServiceById(@PathVariable Integer id) {
-        ServiceResponse service = adminServiceService.getServiceById(id);
-        return ResponseEntity.ok(ApiResponse.success(service, "Lấy thông tin dịch vụ thành công"));
+    public ResponseEntity<ApiResponseDto<ServiceResponseDto>> getServiceById(@PathVariable Integer id) {
+        ServiceResponseDto service = serviceCatalogService.getServiceById(id);
+        return ResponseEntity.ok(ApiResponseDto.success(service, "Lấy thông tin dịch vụ thành công"));
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<ServiceResponse>> createService(@Valid @RequestBody CreateServiceRequest request) {
-        ServiceResponse created = adminServiceService.createService(request);
+    public ResponseEntity<ApiResponseDto<ServiceResponseDto>> createService(@Valid @RequestBody CreateServiceRequestDto request) {
+        ServiceResponseDto created = serviceCatalogService.createService(request);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(created, "Thêm mới dịch vụ thành công"));
+                .body(ApiResponseDto.success(created, "Thêm mới dịch vụ thành công"));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<ServiceResponse>> updateService(
+    public ResponseEntity<ApiResponseDto<ServiceResponseDto>> updateService(
             @PathVariable Integer id,
-            @Valid @RequestBody CreateServiceRequest request) {
-        ServiceResponse updated = adminServiceService.updateService(id, request);
-        return ResponseEntity.ok(ApiResponse.success(updated, "Cập nhật dịch vụ thành công"));
+            @Valid @RequestBody CreateServiceRequestDto request) {
+        ServiceResponseDto updated = serviceCatalogService.updateService(id, request);
+        return ResponseEntity.ok(ApiResponseDto.success(updated, "Cập nhật dịch vụ thành công"));
     }
 
     @PatchMapping("/{id}/toggle-status")
-    public ResponseEntity<ApiResponse<Void>> toggleStatus(@PathVariable Integer id) {
-        adminServiceService.toggleServiceStatus(id);
-        return ResponseEntity.ok(ApiResponse.success(null, "Cập nhật trạng thái dịch vụ thành công"));
+    public ResponseEntity<ApiResponseDto<Void>> toggleStatus(@PathVariable Integer id) {
+        serviceCatalogService.toggleServiceStatus(id);
+        return ResponseEntity.ok(ApiResponseDto.success(null, "Cập nhật trạng thái dịch vụ thành công"));
     }
 }

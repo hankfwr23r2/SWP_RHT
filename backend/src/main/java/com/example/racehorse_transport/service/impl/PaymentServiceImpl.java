@@ -1,8 +1,11 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.util.HorseInsurancePolicy;
-import com.example.racehorse_transport.dto.booking.BookingDetailsPayload;
-import com.example.racehorse_transport.dto.payment.*;
+import com.example.racehorse_transport.dto.booking.BookingDetailsPayloadDto;
+import com.example.racehorse_transport.dto.payment.CancelBookingRequestDto;
+import com.example.racehorse_transport.dto.payment.CancelWithRefundResponseDto;
+import com.example.racehorse_transport.dto.payment.PaymentResponseDto;
+import com.example.racehorse_transport.dto.payment.PaymentSummaryResponseDto;
+import com.example.racehorse_transport.dto.payment.ReconcileInsuranceRequestDto;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Payment;
 import com.example.racehorse_transport.entity.Quotation;
@@ -11,21 +14,24 @@ import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.PaymentRepository;
 import com.example.racehorse_transport.repository.QuotationRepository;
+import com.example.racehorse_transport.service.BookingService;
 import com.example.racehorse_transport.service.PaymentService;
+import com.example.racehorse_transport.service.StaffNotificationService;
 import com.example.racehorse_transport.util.BookingDetailsJson;
+import com.example.racehorse_transport.util.BookingHistory;
 import com.example.racehorse_transport.util.CustomerBookingRules;
+import com.example.racehorse_transport.util.HorseInsurancePolicy;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -36,8 +42,8 @@ public class PaymentServiceImpl implements PaymentService {
     private final BookingRepository bookingRepository;
     private final QuotationRepository quotationRepository;
     private final ObjectMapper objectMapper;
-    private final com.example.racehorse_transport.service.StaffNotifier staffNotifier;
-    private final com.example.racehorse_transport.service.BookingService bookingService;
+    private final StaffNotificationService staffNotifier;
+    private final BookingService bookingService;
     // Tiêm bằng field để không đổi chữ ký constructor; null (test dựng tay) thì câu báo không kèm số
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.example.racehorse_transport.service.SystemConfigService systemConfigService;
@@ -49,10 +55,10 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
-    public void reconcileInsurance(String identifier, ReconcileInsuranceRequest request, String actor) {
+    public void reconcileInsurance(String identifier, ReconcileInsuranceRequestDto request, String actor) {
         Booking booking = bookingRepository.findByIdForUpdate(parseBookingId(identifier)).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
         if (!Set.of("cancelled", "returning_horses").contains(booking.getStatus())) throw new IllegalStateException("Chỉ đối soát đơn đã hủy.");
-        BookingDetailsPayload payload = extractPayload(booking);
+        BookingDetailsPayloadDto payload = extractPayload(booking);
         Map<String, Object> payment = getOrCreatePaymentMap(payload);
         if (!Boolean.TRUE.equals(payment.get("insuranceReconciliationPending"))) throw new IllegalStateException("Đơn không có khoản bảo hiểm chờ đối soát hoặc đã đối soát.");
         BigDecimal collected = new BigDecimal(payment.get("insuranceCollected").toString());
@@ -76,7 +82,7 @@ public class PaymentServiceImpl implements PaymentService {
         payment.put("insuranceReconciliationReference", request.getReference());
         payment.put("insuranceReconciliationNote", request.getNote());
         payload.setPayment(payment);
-        appendHistory(payload, actor, "Đối soát bảo hiểm thu hộ, hoàn khách " + request.getCustomerRefundAmount());
+        BookingHistory.appendHistory(payload, actor, "Đối soát bảo hiểm thu hộ, hoàn khách " + request.getCustomerRefundAmount());
         savePayload(booking, payload);
         bookingRepository.save(booking);
     }
@@ -118,7 +124,7 @@ public class PaymentServiceImpl implements PaymentService {
      */
     @Override
     @Transactional
-    public CancelWithRefundResponse cancelWithRefundPolicy(String bookingIdentifier, CancelBookingRequest request, String username) {
+    public CancelWithRefundResponseDto cancelWithRefundPolicy(String bookingIdentifier, CancelBookingRequestDto request, String username) {
         Integer bookingId = parseBookingId(bookingIdentifier);
         Booking booking = bookingRepository.findByIdForUpdate(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
@@ -149,15 +155,15 @@ public class PaymentServiceImpl implements PaymentService {
         if (depositOpt.isEmpty()) {
             boolean withdrawal = CustomerBookingRules.isBeforeDeposit(booking.getStatus());
             booking.setStatus("cancelled");
-            BookingDetailsPayload payload = extractPayload(booking);
-            appendHistory(payload, actor, withdrawal ? "Rút yêu cầu vận chuyển" : "Hủy đơn");
+            BookingDetailsPayloadDto payload = extractPayload(booking);
+            BookingHistory.appendHistory(payload, actor, withdrawal ? "Rút yêu cầu vận chuyển" : "Hủy đơn");
             savePayload(booking, payload);
             bookingRepository.save(booking);
             staffNotifier.toManagers(booking, "Khách hủy đơn · " + booking.getCode(),
                     "Khách hủy đơn trước khi đặt cọc" + (reason == null || reason.isBlank() ? "." : ": " + reason), "/manager/cancelled-orders");
             staffNotifier.bookingCancelled(booking, payload, reason);
 
-            return CancelWithRefundResponse.builder()
+            return CancelWithRefundResponseDto.builder()
                     .bookingCode(booking.getCode())
                     .bookingStatus("cancelled")
                     .depositPaid(BigDecimal.ZERO)
@@ -170,7 +176,7 @@ public class PaymentServiceImpl implements PaymentService {
         }
 
         // Trường hợp 2: Đã cọc -> Khách tự ý hủy đơn: Mất 100% tiền cọc (không hoàn tiền)
-        CancelWithRefundResponse forfeited = forfeitDeposit(booking, depositOpt.get(), reason, actor, "Hủy đơn sau khi đặt cọc",
+        CancelWithRefundResponseDto forfeited = forfeitDeposit(booking, depositOpt.get(), reason, actor, "Hủy đơn sau khi đặt cọc",
                 "Khách hàng tự ý hủy đơn sau khi đặt cọc.");
         staffNotifier.toManagers(booking, "Khách hủy đơn đã cọc · " + booking.getCode(),
                 "Khách hủy sau khi đặt cọc, tiền cọc không hoàn. Kiểm tra khoản bảo hiểm thu hộ cần đối soát.", "/manager/cancelled-orders");
@@ -183,7 +189,7 @@ public class PaymentServiceImpl implements PaymentService {
      */
     @Override
     @Transactional
-    public CancelWithRefundResponse cancelPickupFailed(String bookingIdentifier, String reason, String username) {
+    public CancelWithRefundResponseDto cancelPickupFailed(String bookingIdentifier, String reason, String username) {
         Integer bookingId = parseBookingId(bookingIdentifier);
         Booking booking = bookingRepository.findByIdForUpdate(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
@@ -205,7 +211,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     @Transactional
-    public CancelWithRefundResponse cancelTrip(String bookingIdentifier, String fault, String reason, String username) {
+    public CancelWithRefundResponseDto cancelTrip(String bookingIdentifier, String fault, String reason, String username) {
         Booking booking = bookingRepository.findByIdForUpdate(parseBookingId(bookingIdentifier))
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
         if (!TRIP_CANCELLABLE_STATUSES.contains(booking.getStatus())) {
@@ -227,7 +233,7 @@ public class PaymentServiceImpl implements PaymentService {
         boolean horsesOnBoard = "en_route_to_pickup".equals(booking.getStatus()) && bookingService.isPickupComplete(booking);
         String why = reason.trim();
 
-        CancelWithRefundResponse response;
+        CancelWithRefundResponseDto response;
         if ("COMPANY".equalsIgnoreCase(fault)) {
             response = refundAll(booking, payments, why, username, horsesOnBoard);
         } else if ("CUSTOMER".equalsIgnoreCase(fault)) {
@@ -245,10 +251,10 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     // Ngựa đã trên xe thì đơn sang "Chờ trả ngựa" và kíp xe được giao việc trả; chưa có ngựa thì đóng đơn ngay
-    private void closeCancelledBooking(Booking booking, BookingDetailsPayload payload, String reason, boolean horsesOnBoard) {
+    private void closeCancelledBooking(Booking booking, BookingDetailsPayloadDto payload, String reason, boolean horsesOnBoard) {
         if (horsesOnBoard) {
             booking.setStatus("returning_horses");
-            appendHistory(payload, "Hệ thống", "Chờ kíp xe trả ngựa và hồ sơ gốc tại điểm đón");
+            BookingHistory.appendHistory(payload, "Hệ thống", "Chờ kíp xe trả ngựa và hồ sơ gốc tại điểm đón");
         } else {
             booking.setStatus("cancelled");
         }
@@ -263,7 +269,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     // Công ty hủy chuyến: hoàn toàn bộ tiền khách đã trả (cọc, 70% nếu có, gồm cả bảo hiểm thu hộ).
     // Hệ thống ghi nhận khoản hoàn; việc chuyển khoản trả khách làm ngoài hệ thống như đối soát bảo hiểm.
-    private CancelWithRefundResponse refundAll(Booking booking, List<Payment> payments, String reason, String actor, boolean horsesOnBoard) {
+    private CancelWithRefundResponseDto refundAll(Booking booking, List<Payment> payments, String reason, String actor, boolean horsesOnBoard) {
         Instant now = Instant.now();
         BigDecimal collected = BigDecimal.ZERO;
         BigDecimal depositPaid = BigDecimal.ZERO;
@@ -291,7 +297,7 @@ public class PaymentServiceImpl implements PaymentService {
                     .build());
         }
 
-        BookingDetailsPayload payload = extractPayload(booking);
+        BookingDetailsPayloadDto payload = extractPayload(booking);
         Map<String, Object> paymentMap = getOrCreatePaymentMap(payload);
         paymentMap.put("cancelled", true);
         paymentMap.put("cancelledBy", "COMPANY");
@@ -301,12 +307,12 @@ public class PaymentServiceImpl implements PaymentService {
         paymentMap.put("cancelReason", reason);
         paymentMap.put("cancelledAt", now.toEpochMilli());
         payload.setPayment(paymentMap);
-        appendHistory(payload, actor, "Nhà xe hủy chuyến, hoàn 100% (" + collected + " VND): " + reason);
+        BookingHistory.appendHistory(payload, actor, "Nhà xe hủy chuyến, hoàn 100% (" + collected + " VND): " + reason);
         closeCancelledBooking(booking, payload, reason, horsesOnBoard);
 
         String message = "Nhà xe hủy chuyến (" + reason + "). Hoàn lại toàn bộ " + collected
                 + " VND đã thanh toán; nhà xe sẽ chuyển khoản và liên hệ xác nhận.";
-        return CancelWithRefundResponse.builder()
+        return CancelWithRefundResponseDto.builder()
                 .bookingCode(booking.getCode())
                 .bookingStatus(booking.getStatus())
                 .depositPaid(depositPaid)
@@ -320,13 +326,13 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     // Hủy đơn đã đặt cọc mà chưa trả 70%: khách mất phần cọc vận chuyển, phần bảo hiểm thu hộ chờ quản lý đối soát riêng
-    private CancelWithRefundResponse forfeitDeposit(Booking booking, Payment deposit, String reason, String actor,
+    private CancelWithRefundResponseDto forfeitDeposit(Booking booking, Payment deposit, String reason, String actor,
             String historyText, String lead) {
         return forfeitDeposit(booking, deposit, null, reason, actor, historyText, lead, false);
     }
 
     // balance khác null: khách đã trả 70% (đã đồng ý bắt đầu chuyến) nên mất cả khoản 70%, không hoàn
-    private CancelWithRefundResponse forfeitDeposit(Booking booking, Payment deposit, Payment balance, String reason, String actor,
+    private CancelWithRefundResponseDto forfeitDeposit(Booking booking, Payment deposit, Payment balance, String reason, String actor,
             String historyText, String lead, boolean horsesOnBoard) {
         BigDecimal depositPaid = deposit.getAmount();
         BigDecimal balancePaid = balance != null && balance.getAmount() != null ? balance.getAmount() : BigDecimal.ZERO;
@@ -338,7 +344,7 @@ public class PaymentServiceImpl implements PaymentService {
 
         int refundPercentage = 0;
         BigDecimal refundAmount = BigDecimal.ZERO;
-        BookingDetailsPayload cancellationPayload = extractPayload(booking);
+        BookingDetailsPayloadDto cancellationPayload = extractPayload(booking);
         BigDecimal insuranceCollected = HorseInsurancePolicy.insuranceDeposit(cancellationPayload.getQuote(), depositPaid)
                 .add(HorseInsurancePolicy.insuranceDeposit(cancellationPayload.getQuote(), balancePaid));
         BigDecimal penaltyAmount = depositPaid.add(balancePaid).subtract(insuranceCollected);
@@ -368,7 +374,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .build();
         paymentRepository.save(penaltyPayment);
 
-        BookingDetailsPayload payload = extractPayload(booking);
+        BookingDetailsPayloadDto payload = extractPayload(booking);
         Map<String, Object> paymentMap = getOrCreatePaymentMap(payload);
         paymentMap.put("insuranceCollected", insuranceCollected);
         paymentMap.put("insuranceReconciliationPending", insuranceCollected.signum() > 0);
@@ -379,12 +385,12 @@ public class PaymentServiceImpl implements PaymentService {
         paymentMap.put("cancelledAt", now.toEpochMilli()); // khách xem lại thời điểm hủy trong lịch sử đơn
         payload.setPayment(paymentMap);
 
-        appendHistory(payload, actor, historyText);
+        BookingHistory.appendHistory(payload, actor, historyText);
         closeCancelledBooking(booking, payload, reason, horsesOnBoard);
 
         log.info("Cancelled booking ID={} with policy: refund={}, penalty={}", booking.getId(), refundAmount, penaltyAmount);
 
-        return CancelWithRefundResponse.builder()
+        return CancelWithRefundResponseDto.builder()
                 .bookingCode(booking.getCode())
                 .bookingStatus(booking.getStatus())
                 .depositPaid(depositPaid)
@@ -402,7 +408,7 @@ public class PaymentServiceImpl implements PaymentService {
      */
     @Override
     @Transactional(readOnly = true)
-    public PaymentSummaryResponse getPaymentSummary(String bookingIdentifier, String customerUsername) {
+    public PaymentSummaryResponseDto getPaymentSummary(String bookingIdentifier, String customerUsername) {
         Integer bookingId = parseBookingId(bookingIdentifier);
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
@@ -424,7 +430,7 @@ public class PaymentServiceImpl implements PaymentService {
         boolean depositPaid = false;
         boolean balancePaid = false;
 
-        List<PaymentResponse> paymentResponses = new ArrayList<>();
+        List<PaymentResponseDto> paymentResponses = new ArrayList<>();
         for (Payment p : payments) {
             paymentResponses.add(mapToPaymentResponse(p, booking));
             if ("COMPLETED".equalsIgnoreCase(p.getStatus())) {
@@ -450,7 +456,7 @@ public class PaymentServiceImpl implements PaymentService {
         if (Set.of("cancelled", "returning_horses").contains(booking.getStatus())) remainingBalance = BigDecimal.ZERO;
         boolean fullyPaid = depositPaid && balancePaid;
 
-        return PaymentSummaryResponse.builder()
+        return PaymentSummaryResponseDto.builder()
                 .bookingCode(booking.getCode())
                 .waybillNo(booking.getWaybillNo())
                 .bookingStatus(booking.getStatus())
@@ -471,7 +477,7 @@ public class PaymentServiceImpl implements PaymentService {
      */
     @Override
     @Transactional(readOnly = true)
-    public List<PaymentResponse> getPaymentsByBooking(String bookingIdentifier, String customerUsername) {
+    public List<PaymentResponseDto> getPaymentsByBooking(String bookingIdentifier, String customerUsername) {
         Integer bookingId = parseBookingId(bookingIdentifier);
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
@@ -490,7 +496,7 @@ public class PaymentServiceImpl implements PaymentService {
      */
     @Override
     @Transactional(readOnly = true)
-    public PaymentResponse getPaymentDetail(Integer paymentId, String customerUsername) {
+    public PaymentResponseDto getPaymentDetail(Integer paymentId, String customerUsername) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy giao dịch thanh toán ID: " + paymentId));
         if (customerUsername != null) {
@@ -512,8 +518,8 @@ public class PaymentServiceImpl implements PaymentService {
         }
     }
 
-    private PaymentResponse mapToPaymentResponse(Payment payment, Booking booking) {
-        return PaymentResponse.builder()
+    private PaymentResponseDto mapToPaymentResponse(Payment payment, Booking booking) {
+        return PaymentResponseDto.builder()
                 .id(payment.getId())
                 .bookingCode(booking != null ? booking.getCode() : null)
                 .waybillNo(booking != null ? booking.getWaybillNo() : null)
@@ -535,11 +541,11 @@ public class PaymentServiceImpl implements PaymentService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
     }
 
-    private BookingDetailsPayload extractPayload(Booking booking) {
+    private BookingDetailsPayloadDto extractPayload(Booking booking) {
         return BookingDetailsJson.read(objectMapper, booking);
     }
 
-    private void savePayload(Booking booking, BookingDetailsPayload payload) {
+    private void savePayload(Booking booking, BookingDetailsPayloadDto payload) {
         try {
             booking.setDetailsJson(objectMapper.writeValueAsString(payload));
         } catch (Exception ex) {
@@ -548,7 +554,7 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @SuppressWarnings("unchecked")
-    private Map<String, Object> getOrCreatePaymentMap(BookingDetailsPayload payload) {
+    private Map<String, Object> getOrCreatePaymentMap(BookingDetailsPayloadDto payload) {
         if (payload.getPayment() instanceof Map) {
             return (Map<String, Object>) payload.getPayment();
         }
@@ -557,14 +563,4 @@ public class PaymentServiceImpl implements PaymentService {
         return map;
     }
 
-    private void appendHistory(BookingDetailsPayload payload, String actor, String text) {
-        if (payload.getHistory() == null) {
-            payload.setHistory(new ArrayList<>());
-        }
-        Map<String, Object> entry = new HashMap<>();
-        entry.put("time", System.currentTimeMillis());
-        entry.put("actor", actor);
-        entry.put("text", text);
-        payload.getHistory().add(entry);
-    }
 }

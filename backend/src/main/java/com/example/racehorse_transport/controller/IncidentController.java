@@ -1,9 +1,19 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.incident.*;
-import com.example.racehorse_transport.response.ApiResponse;
+
+import com.example.racehorse_transport.dto.incident.ApproveIncidentPlanRequestDto;
+import com.example.racehorse_transport.dto.incident.ConfirmIncidentFitRequestDto;
+import com.example.racehorse_transport.dto.incident.IncidentExpenseRequestDto;
+import com.example.racehorse_transport.dto.incident.IncidentResponseDto;
+import com.example.racehorse_transport.dto.incident.ProposeExternalPlanRequestDto;
+import com.example.racehorse_transport.dto.incident.RejectIncidentPlanRequestDto;
+import com.example.racehorse_transport.dto.incident.ReportIncidentRequestDto;
+import com.example.racehorse_transport.dto.incident.ResolveIncidentRequestDto;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
+import com.example.racehorse_transport.service.BookingQueryService;
 import com.example.racehorse_transport.service.IncidentService;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,129 +21,127 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/incidents")
 @RequiredArgsConstructor
 public class IncidentController {
 
     private final IncidentService incidentService;
-    private final com.example.racehorse_transport.service.BookingCodeResolver bookingCodes;
+    private final BookingQueryService bookingQueries;
 
     // 1. Driver/Escort Báo cáo sự cố khẩn cấp (SOS)
     @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'COORDINATOR', 'ADMIN')")
     @PostMapping("/report")
-    public ResponseEntity<ApiResponse<IncidentResponse>> reportIncident(
+    public ResponseEntity<ApiResponseDto<IncidentResponseDto>> reportIncident(
             Authentication authentication,
-            @Valid @RequestBody ReportIncidentRequest request) {
-        IncidentResponse response = incidentService.reportIncident(request, authentication.getName(), role(authentication));
+            @Valid @RequestBody ReportIncidentRequestDto request) {
+        IncidentResponseDto response = incidentService.reportIncident(request, authentication.getName(), role(authentication));
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(response, "Đã gửi báo động sự cố khẩn cấp!"));
+                .body(ApiResponseDto.success(response, "Đã gửi báo động sự cố khẩn cấp!"));
     }
 
     // 2. Coordinator Đề xuất phương án Gọi Đội Ngoài (Cứu hộ xe / Thú y cơ động)
     @PreAuthorize("hasAnyRole('COORDINATOR', 'ADMIN')")
     @PostMapping("/{id}/propose-external")
-    public ResponseEntity<ApiResponse<IncidentResponse>> proposeExternalPlan(
+    public ResponseEntity<ApiResponseDto<IncidentResponseDto>> proposeExternalPlan(
             Authentication authentication,
             @PathVariable("id") Integer id,
-            @Valid @RequestBody ProposeExternalPlanRequest request) {
-        IncidentResponse response = incidentService.proposeExternalPlan(id, request, authentication.getName());
-        return ResponseEntity.ok(ApiResponse.success(response, "Đã gửi đề xuất đội ngoài trình Quản lý"));
+            @Valid @RequestBody ProposeExternalPlanRequestDto request) {
+        IncidentResponseDto response = incidentService.proposeExternalPlan(id, request, authentication.getName());
+        return ResponseEntity.ok(ApiResponseDto.success(response, "Đã gửi đề xuất đội ngoài trình Quản lý"));
     }
 
     // 3. Manager Phê duyệt phương án & Bảo lãnh chi phí
     @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
     @PostMapping("/{id}/approve-plan")
-    public ResponseEntity<ApiResponse<IncidentResponse>> approveIncidentPlan(
+    public ResponseEntity<ApiResponseDto<IncidentResponseDto>> approveIncidentPlan(
             Authentication authentication,
             @PathVariable("id") Integer id,
-            @Valid @RequestBody ApproveIncidentPlanRequest request) {
-        IncidentResponse response = incidentService.approveIncidentPlan(id, request, authentication.getName());
-        return ResponseEntity.ok(ApiResponse.success(response, "Quản lý đã phê duyệt phương án giải quyết sự cố"));
+            @Valid @RequestBody ApproveIncidentPlanRequestDto request) {
+        IncidentResponseDto response = incidentService.approveIncidentPlan(id, request, authentication.getName());
+        return ResponseEntity.ok(ApiResponseDto.success(response, "Quản lý đã phê duyệt phương án giải quyết sự cố"));
     }
 
     @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
     @PostMapping("/{id}/reject-plan")
-    public ResponseEntity<ApiResponse<IncidentResponse>> rejectIncidentPlan(
+    public ResponseEntity<ApiResponseDto<IncidentResponseDto>> rejectIncidentPlan(
             Authentication authentication,
             @PathVariable("id") Integer id,
-            @Valid @RequestBody RejectIncidentPlanRequest request) {
-        IncidentResponse response = incidentService.rejectIncidentPlan(id, request, authentication.getName());
-        return ResponseEntity.ok(ApiResponse.success(response, "Đã trả phương án về Điều phối viên"));
+            @Valid @RequestBody RejectIncidentPlanRequestDto request) {
+        IncidentResponseDto response = incidentService.rejectIncidentPlan(id, request, authentication.getName());
+        return ResponseEntity.ok(ApiResponseDto.success(response, "Đã trả phương án về Điều phối viên"));
     }
 
     @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'ADMIN')")
     @PostMapping("/{id}/expenses")
-    public ResponseEntity<ApiResponse<IncidentResponse>> addExpense(
+    public ResponseEntity<ApiResponseDto<IncidentResponseDto>> addExpense(
             Authentication authentication,
             @PathVariable("id") Integer id,
-            @Valid @RequestBody IncidentExpenseRequest request) {
-        IncidentResponse response = incidentService.addExpense(id, request, authentication.getName(), role(authentication));
-        return ResponseEntity.ok(ApiResponse.success(response, "Đã ghi nhận chi phí sự cố"));
+            @Valid @RequestBody IncidentExpenseRequestDto request) {
+        IncidentResponseDto response = incidentService.addExpense(id, request, authentication.getName(), role(authentication));
+        return ResponseEntity.ok(ApiResponseDto.success(response, "Đã ghi nhận chi phí sự cố"));
     }
 
     @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT')")
     @DeleteMapping("/{id}/expenses/{expenseId}")
-    public ResponseEntity<ApiResponse<IncidentResponse>> deleteExpense(
+    public ResponseEntity<ApiResponseDto<IncidentResponseDto>> deleteExpense(
             Authentication authentication,
             @PathVariable("id") Integer id,
             @PathVariable("expenseId") String expenseId) {
-        IncidentResponse response = incidentService.deleteExpense(id, expenseId, authentication.getName(), role(authentication));
-        return ResponseEntity.ok(ApiResponse.success(response, "Đã xóa khoản chi phí sự cố"));
+        IncidentResponseDto response = incidentService.deleteExpense(id, expenseId, authentication.getName(), role(authentication));
+        return ResponseEntity.ok(ApiResponseDto.success(response, "Đã xóa khoản chi phí sự cố"));
     }
 
     @PreAuthorize("hasAnyRole('ESCORT', 'ADMIN')")
     @PostMapping("/{id}/confirm-fit")
-    public ResponseEntity<ApiResponse<IncidentResponse>> confirmFit(
+    public ResponseEntity<ApiResponseDto<IncidentResponseDto>> confirmFit(
             Authentication authentication,
             @PathVariable("id") Integer id,
-            @Valid @RequestBody(required = false) ConfirmIncidentFitRequest request) {
-        IncidentResponse response = incidentService.confirmFit(id, request, authentication.getName(), role(authentication));
-        return ResponseEntity.ok(ApiResponse.success(response, "Đã xác nhận ngựa đủ sức đi tiếp"));
+            @Valid @RequestBody(required = false) ConfirmIncidentFitRequestDto request) {
+        IncidentResponseDto response = incidentService.confirmFit(id, request, authentication.getName(), role(authentication));
+        return ResponseEntity.ok(ApiResponseDto.success(response, "Đã xác nhận ngựa đủ sức đi tiếp"));
     }
 
     @PreAuthorize("hasAnyRole('DRIVER', 'ADMIN')")
     @PostMapping("/{id}/resume")
-    public ResponseEntity<ApiResponse<IncidentResponse>> resumeJourney(
+    public ResponseEntity<ApiResponseDto<IncidentResponseDto>> resumeJourney(
             Authentication authentication,
             @PathVariable("id") Integer id,
             @RequestBody(required = false) java.util.Map<String, Object> body) {
         boolean confirmEarlyLeave = body != null && Boolean.TRUE.equals(body.get("confirmEarlyLeave"));
         String note = body != null && body.get("note") != null ? String.valueOf(body.get("note")) : null;
-        IncidentResponse response = incidentService.resumeJourney(id, authentication.getName(), role(authentication), confirmEarlyLeave, note);
-        return ResponseEntity.ok(ApiResponse.success(response, "Đã tiếp tục hành trình"));
+        IncidentResponseDto response = incidentService.resumeJourney(id, authentication.getName(), role(authentication), confirmEarlyLeave, note);
+        return ResponseEntity.ok(ApiResponseDto.success(response, "Đã tiếp tục hành trình"));
     }
 
     // 4. Kíp xe nghiệm thu hiện trường, lưu hóa đơn đội ngoài và tiếp tục hành trình
     @PreAuthorize("hasAnyRole('DRIVER', 'ESCORT', 'COORDINATOR', 'ADMIN')")
     @PostMapping("/{id}/complete-resolution")
-    public ResponseEntity<ApiResponse<IncidentResponse>> completeResolution(
+    public ResponseEntity<ApiResponseDto<IncidentResponseDto>> completeResolution(
             Authentication authentication,
             @PathVariable("id") Integer id,
-            @Valid @RequestBody ResolveIncidentRequest request) {
-        IncidentResponse response = incidentService.completeResolution(id, request, authentication.getName());
-        return ResponseEntity.ok(ApiResponse.success(response, "Đã giải quyết sự cố và cập nhật hóa đơn đội ngoài thành công"));
+            @Valid @RequestBody ResolveIncidentRequestDto request) {
+        IncidentResponseDto response = incidentService.completeResolution(id, request, authentication.getName());
+        return ResponseEntity.ok(ApiResponseDto.success(response, "Đã giải quyết sự cố và cập nhật hóa đơn đội ngoài thành công"));
     }
 
     // 5. Lấy danh sách sự cố
     @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER', 'ADMIN')")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<IncidentResponse>>> getAllIncidents(
+    public ResponseEntity<ApiResponseDto<List<IncidentResponseDto>>> getAllIncidents(
             @RequestParam(value = "status", required = false) String status) {
-        List<IncidentResponse> list = incidentService.getAllIncidents(status);
-        return ResponseEntity.ok(ApiResponse.success(list, "Lấy danh sách sự cố thành công"));
+        List<IncidentResponseDto> list = incidentService.getAllIncidents(status);
+        return ResponseEntity.ok(ApiResponseDto.success(list, "Lấy danh sách sự cố thành công"));
     }
 
     // 6. Lấy sự cố theo đơn hàng
     @PreAuthorize("hasAnyRole('CUSTOMER', 'COORDINATOR', 'MANAGER', 'DRIVER', 'ESCORT', 'ADMIN')")
     @GetMapping("/booking/{bookingCode}")
-    public ResponseEntity<ApiResponse<List<IncidentResponse>>> getIncidentsByBooking(
+    public ResponseEntity<ApiResponseDto<List<IncidentResponseDto>>> getIncidentsByBooking(
             Authentication authentication,
             @PathVariable("bookingCode") String bookingCode) {
-        List<IncidentResponse> list = incidentService.getIncidentsByBooking(bookingCodes.idOf(bookingCode), authentication.getName(), role(authentication));
-        return ResponseEntity.ok(ApiResponse.success(list, "Lấy danh sách sự cố theo đơn hàng thành công"));
+        List<IncidentResponseDto> list = incidentService.getIncidentsByBooking(bookingQueries.resolveBookingId(bookingCode), authentication.getName(), role(authentication));
+        return ResponseEntity.ok(ApiResponseDto.success(list, "Lấy danh sách sự cố theo đơn hàng thành công"));
     }
 
     private String role(Authentication authentication) {

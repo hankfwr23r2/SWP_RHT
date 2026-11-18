@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface PaymentService {
-    void reconcileInsurance(String identifier, ReconcileInsuranceRequest request, String actor);
+    void reconcileInsurance(String identifier, ReconcileInsuranceRequestDto request, String actor);
     // CRUD cơ bản
     List<Payment> findAll();
     Optional<Payment> findById(Integer id);
@@ -21,31 +21,31 @@ public interface PaymentService {
     /**
      * Khách hủy đơn của chính mình sau khi đặt cọc (mất cọc). Chỉ chủ đơn được hủy, và chỉ trước khi xe chở ngựa đi.
      */
-    CancelWithRefundResponse cancelWithRefundPolicy(String bookingIdentifier, CancelBookingRequest request, String username);
+    CancelWithRefundResponseDto cancelWithRefundPolicy(String bookingIdentifier, CancelBookingRequestDto request, String username);
 
     // Quản lý hủy đơn "Không nhận được ngựa": khách mất phần cọc vận chuyển
-    CancelWithRefundResponse cancelPickupFailed(String bookingIdentifier, String reason, String username);
+    CancelWithRefundResponseDto cancelPickupFailed(String bookingIdentifier, String reason, String username);
 
     /**
      * Quản lý hủy chuyến đã đặt cọc, chưa rời điểm đón.
      * fault = COMPANY: công ty không thực hiện được chuyến, hoàn 100% số đã thu.
      * fault = CUSTOMER: lỗi do khách (không giao ngựa, không trả 70%...), khách mất phần cọc vận chuyển.
      */
-    CancelWithRefundResponse cancelTrip(String bookingIdentifier, String fault, String reason, String username);
+    CancelWithRefundResponseDto cancelTrip(String bookingIdentifier, String fault, String reason, String username);
 
     /**
      * Xem tóm tắt tài chính (tổng tiền, đã cọc, còn thiếu, trạng thái đã thanh toán đủ chưa)
      */
-    PaymentSummaryResponse getPaymentSummary(String bookingIdentifier, String customerUsername);
+    PaymentSummaryResponseDto getPaymentSummary(String bookingIdentifier, String customerUsername);
 
     /**
      * Lấy danh sách lịch sử tất cả các đợt thanh toán của một đơn hàng
      */
-    List<PaymentResponse> getPaymentsByBooking(String bookingIdentifier, String customerUsername);
+    List<PaymentResponseDto> getPaymentsByBooking(String bookingIdentifier, String customerUsername);
 
     /**
      * Lấy chi tiết một giao dịch thanh toán.
      * Ở các hàm xem: customerUsername khác null thì người gọi là khách và phải là chủ đơn; null là nhân viên.
      */
-    PaymentResponse getPaymentDetail(Integer paymentId, String customerUsername);
+    PaymentResponseDto getPaymentDetail(Integer paymentId, String customerUsername);
 }

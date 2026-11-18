@@ -1,7 +1,7 @@
 package com.example.racehorse_transport.controller;
 
 import com.example.racehorse_transport.dto.payment.*;
-import com.example.racehorse_transport.response.ApiResponse;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.service.PaymentService;
 import lombok.RequiredArgsConstructor;
@@ -44,14 +44,14 @@ public class PaymentController {
      */
     @PostMapping("/cancel")
     @PreAuthorize("hasRole('CUSTOMER')")
-    public ResponseEntity<ApiResponse<CancelWithRefundResponse>> cancelBookingWithRefund(
+    public ResponseEntity<ApiResponseDto<CancelWithRefundResponseDto>> cancelBookingWithRefund(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
             @RequestParam("bookingId") String bookingId,
-            @RequestBody(required = false) CancelBookingRequest request) {
+            @RequestBody(required = false) CancelBookingRequestDto request) {
 
         String username = extractUsername(authHeader);
-        CancelWithRefundResponse response = paymentService.cancelWithRefundPolicy(bookingId, request, username);
-        return ResponseEntity.ok(ApiResponse.success(response, response.getMessage()));
+        CancelWithRefundResponseDto response = paymentService.cancelWithRefundPolicy(bookingId, request, username);
+        return ResponseEntity.ok(ApiResponseDto.success(response, response.getMessage()));
     }
 
     /**
@@ -60,12 +60,12 @@ public class PaymentController {
      */
     @GetMapping("/booking/{bookingId}/summary")
     @PreAuthorize("hasAnyRole('CUSTOMER', 'MANAGER', 'ADMIN')")
-    public ResponseEntity<ApiResponse<PaymentSummaryResponse>> getPaymentSummary(
+    public ResponseEntity<ApiResponseDto<PaymentSummaryResponseDto>> getPaymentSummary(
             Authentication authentication,
             @PathVariable("bookingId") String bookingId) {
 
-        PaymentSummaryResponse response = paymentService.getPaymentSummary(bookingId, customerUsernameOf(authentication));
-        return ResponseEntity.ok(ApiResponse.success(response, "Lấy thông tin tài chính đơn hàng thành công"));
+        PaymentSummaryResponseDto response = paymentService.getPaymentSummary(bookingId, customerUsernameOf(authentication));
+        return ResponseEntity.ok(ApiResponseDto.success(response, "Lấy thông tin tài chính đơn hàng thành công"));
     }
 
     /**
@@ -74,12 +74,12 @@ public class PaymentController {
      */
     @GetMapping("/booking/{bookingId}")
     @PreAuthorize("hasAnyRole('CUSTOMER', 'MANAGER', 'ADMIN')")
-    public ResponseEntity<ApiResponse<List<PaymentResponse>>> getPaymentsByBooking(
+    public ResponseEntity<ApiResponseDto<List<PaymentResponseDto>>> getPaymentsByBooking(
             Authentication authentication,
             @PathVariable("bookingId") String bookingId) {
 
-        List<PaymentResponse> responses = paymentService.getPaymentsByBooking(bookingId, customerUsernameOf(authentication));
-        return ResponseEntity.ok(ApiResponse.success(responses, "Lấy lịch sử thanh toán thành công"));
+        List<PaymentResponseDto> responses = paymentService.getPaymentsByBooking(bookingId, customerUsernameOf(authentication));
+        return ResponseEntity.ok(ApiResponseDto.success(responses, "Lấy lịch sử thanh toán thành công"));
     }
 
     /**
@@ -88,11 +88,11 @@ public class PaymentController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('CUSTOMER', 'MANAGER', 'ADMIN')")
-    public ResponseEntity<ApiResponse<PaymentResponse>> getPaymentDetail(
+    public ResponseEntity<ApiResponseDto<PaymentResponseDto>> getPaymentDetail(
             Authentication authentication,
             @PathVariable("id") Integer id) {
 
-        PaymentResponse response = paymentService.getPaymentDetail(id, customerUsernameOf(authentication));
-        return ResponseEntity.ok(ApiResponse.success(response, "Lấy chi tiết giao dịch thành công"));
+        PaymentResponseDto response = paymentService.getPaymentDetail(id, customerUsernameOf(authentication));
+        return ResponseEntity.ok(ApiResponseDto.success(response, "Lấy chi tiết giao dịch thành công"));
     }
 }
