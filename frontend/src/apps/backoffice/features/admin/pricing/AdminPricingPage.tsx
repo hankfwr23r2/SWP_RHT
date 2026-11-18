@@ -352,7 +352,7 @@ export default function AdminPricingPage() {
           </div>
           <span className={s.formulaOp}>+</span>
           <div className={s.formulaNode}>
-            <span className={s.formulaNodeLabel}>2. Nhiên Liệu & BOT</span>
+            <span className={s.formulaNodeLabel}>2. Nhiên Liệu </span>
             <span className={s.formulaNodeDesc}>km × 9.000 ₫ × 1.05 (Dự phòng)</span>
           </div>
           <span className={s.formulaOp}>+</span>
