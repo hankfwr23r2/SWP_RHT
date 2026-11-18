@@ -5,14 +5,13 @@ import com.example.racehorse_transport.dto.settlement.ExpenseItemDto;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.User;
-import org.junit.jupiter.api.Test;
-import org.springframework.mail.MailSendException;
-
+import com.example.racehorse_transport.service.impl.BillMailServiceImpl;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-
+import org.junit.jupiter.api.Test;
+import org.springframework.mail.MailSendException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
@@ -23,7 +22,7 @@ class BillMailServiceTest {
     record Sent(String to, String subject, String html, String text) {}
 
     // Bộ gửi giả: ghi lại thư thay vì gửi thật
-    static class RecordingSender extends OtpMailSender {
+    static class RecordingSender extends com.example.racehorse_transport.service.impl.MailDeliveryServiceImpl {
         final List<Sent> sent = new ArrayList<>();
         boolean configured = true;
         boolean fail = false;
@@ -45,7 +44,7 @@ class BillMailServiceTest {
     }
 
     private final RecordingSender sender = new RecordingSender();
-    private final BillMailService mail = new BillMailService(sender, "http://localhost:5173/payment/vnpay-return");
+    private final BillMailService mail = new BillMailServiceImpl(sender, "http://localhost:5173/payment/vnpay-return");
 
     private static Booking booking(String name, String email) {
         return booking(name, email, null);

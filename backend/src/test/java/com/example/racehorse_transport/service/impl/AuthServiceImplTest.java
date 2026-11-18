@@ -1,21 +1,21 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.AuthResponse;
-import com.example.racehorse_transport.dto.LoginRequest;
-import com.example.racehorse_transport.dto.RegisterRequest;
+import com.example.racehorse_transport.dto.AuthResponseDto;
+import com.example.racehorse_transport.dto.LoginRequestDto;
+import com.example.racehorse_transport.dto.RegisterRequestDto;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.User;
+import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.CustomerRepository;
+import com.example.racehorse_transport.repository.HorseRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
-import com.example.racehorse_transport.service.AdminAuditWriter;
 import com.example.racehorse_transport.repository.UserRepository;
 import com.example.racehorse_transport.security.JwtUtils;
+import com.example.racehorse_transport.service.AdminAuditService;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
-import java.util.Optional;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -31,7 +31,7 @@ class AuthServiceImplTest {
     private final StaffRepository staffRepository = mock(StaffRepository.class);
     private final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
     private final JwtUtils jwtUtils = mock(JwtUtils.class);
-    private final AdminAuditWriter audit = mock(AdminAuditWriter.class);
+    private final AdminAuditService audit = mock(AdminAuditService.class);
 
     private AuthServiceImpl service;
     private User user;
@@ -40,7 +40,7 @@ class AuthServiceImplTest {
     void setUp() {
         service = new AuthServiceImpl(
                 userRepository,
-                customerRepository,
+                new CustomerProfileServiceImpl(userRepository, customerRepository, mock(HorseRepository.class), mock(BookingRepository.class)),
                 staffRepository,
                 passwordEncoder,
                 jwtUtils,
@@ -68,8 +68,8 @@ class AuthServiceImplTest {
 
     @Test
     void loginStaff_returnsTheAccountNameAsFullName() {
-        AuthResponse response = service.loginStaff(
-                LoginRequest.builder().username("staff@example.com").password("password").build());
+        AuthResponseDto response = service.loginStaff(
+                LoginRequestDto.builder().username("staff@example.com").password("password").build());
 
         assertThat(response.getFullName()).isEqualTo("Trần Dân");
         assertThat(response.getStaffCode()).isEqualTo("CO-02");
@@ -80,7 +80,7 @@ class AuthServiceImplTest {
         when(userRepository.existsByEmail("da.co@gmail.com")).thenReturn(true);
 
         // IllegalStateException được GlobalExceptionHandler trả 409, form gắn lỗi vào ô Email
-        assertThatThrownBy(() -> service.register(RegisterRequest.builder()
+        assertThatThrownBy(() -> service.register(RegisterRequestDto.builder()
                 .username("da.co@gmail.com").email("da.co@gmail.com").password("matkhau1")
                 .fullName("Nguyễn Văn An").phone("0912345678").build()))
                 .isInstanceOf(IllegalStateException.class)

@@ -1,0 +1,32 @@
+package com.example.racehorse_transport.dto.field;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.*;
+
+import java.math.BigDecimal;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Schema(name = "DeliveryTimeoutRequest")
+public class DeliveryTimeoutRequestDto {
+
+    private String driverUsername;
+
+    private String tripId; // chuyến đang ở điểm giao
+
+    private boolean confirmEarly; // báo trước khi chờ đủ 2 giờ: tài xế đã xác nhận (demo không bắt chờ)
+
+    private String timeoutReason; // UNREACHABLE (Không liên lạc được), DESTINATION_UNREADY (Trại đích chưa nhận), CONSIGNEE_REJECTED (Từ chối nhận)
+
+    private String selectedAction; // STABLE_NEARBY (Thuê chuồng lưu trú khẩn cấp), RETURN_TO_HQ (Chở ngựa quay về Trụ sở chính VN)
+
+    private String partnerName; // Tên trang trại / trạm thú y lưu trú tạm thời
+
+    private String partnerPhone;
+
+    private BigDecimal estimatedCost; // Phí thuê chuồng trọ ngoài + phí lưu ca xe
+
+    private String note;
+}

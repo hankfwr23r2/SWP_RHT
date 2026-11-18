@@ -1,9 +1,9 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.fleet.CrewResponse;
-import com.example.racehorse_transport.dto.fleet.VehicleResponse;
-import com.example.racehorse_transport.dto.fleet.VehicleRequest;
-import com.example.racehorse_transport.response.ApiResponse;
+import com.example.racehorse_transport.dto.fleet.CrewResponseDto;
+import com.example.racehorse_transport.dto.fleet.VehicleResponseDto;
+import com.example.racehorse_transport.dto.fleet.VehicleRequestDto;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.service.FleetService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -24,11 +24,11 @@ public class FleetController {
 
     // 1. API Lấy danh sách xe (Có lọc khả dụng theo ngày khởi hành và loại chuyến nếu truyền tham số)
     @GetMapping("/vehicles")
-    public ResponseEntity<ApiResponse<List<VehicleResponse>>> getVehicles(
+    public ResponseEntity<ApiResponseDto<List<VehicleResponseDto>>> getVehicles(
             @RequestParam(value = "departAt", required = false) Long departAtEpochMs,
             @RequestParam(value = "tripType", required = false, defaultValue = "domestic") String tripType) {
 
-        List<VehicleResponse> vehicles;
+        List<VehicleResponseDto> vehicles;
         if (departAtEpochMs != null) {
             Instant departDate = Instant.ofEpochMilli(departAtEpochMs);
             vehicles = fleetService.getAvailableVehicles(departDate, tripType);
@@ -36,16 +36,16 @@ public class FleetController {
             vehicles = fleetService.getAllVehicles();
         }
 
-        return ResponseEntity.ok(ApiResponse.success(vehicles, "Lấy danh sách đội xe thành công"));
+        return ResponseEntity.ok(ApiResponseDto.success(vehicles, "Lấy danh sách đội xe thành công"));
     }
 
     // 2. API Lấy danh sách nhân sự vận hành (Có lọc theo vai trò và kiểm tra trùng lịch theo ngày)
     @GetMapping("/crew")
-    public ResponseEntity<ApiResponse<List<CrewResponse>>> getCrew(
+    public ResponseEntity<ApiResponseDto<List<CrewResponseDto>>> getCrew(
             @RequestParam(value = "departAt", required = false) Long departAtEpochMs,
             @RequestParam(value = "role", required = false) String role) {
 
-        List<CrewResponse> crew;
+        List<CrewResponseDto> crew;
         if (departAtEpochMs != null) {
             Instant departDate = Instant.ofEpochMilli(departAtEpochMs);
             crew = fleetService.getAvailableCrew(departDate, role);
@@ -53,25 +53,25 @@ public class FleetController {
             crew = fleetService.getAllCrew(role);
         }
 
-        return ResponseEntity.ok(ApiResponse.success(crew, "Lấy danh sách nhân sự kíp xe thành công"));
+        return ResponseEntity.ok(ApiResponseDto.success(crew, "Lấy danh sách nhân sự kíp xe thành công"));
     }
 
     @PostMapping("/vehicles")
     @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER', 'ADMIN')")
-    public ResponseEntity<ApiResponse<VehicleResponse>> createVehicle(@Valid @RequestBody VehicleRequest request) {
-        return ResponseEntity.status(201).body(ApiResponse.success(fleetService.createVehicle(request), "Tạo xe thành công"));
+    public ResponseEntity<ApiResponseDto<VehicleResponseDto>> createVehicle(@Valid @RequestBody VehicleRequestDto request) {
+        return ResponseEntity.status(201).body(ApiResponseDto.success(fleetService.createVehicle(request), "Tạo xe thành công"));
     }
 
     @PutMapping("/vehicles/{id}")
     @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER', 'ADMIN')")
-    public ResponseEntity<ApiResponse<VehicleResponse>> updateVehicle(@PathVariable String id, @Valid @RequestBody VehicleRequest request) {
-        return ResponseEntity.ok(ApiResponse.success(fleetService.updateVehicle(id, request), "Cập nhật xe thành công"));
+    public ResponseEntity<ApiResponseDto<VehicleResponseDto>> updateVehicle(@PathVariable String id, @Valid @RequestBody VehicleRequestDto request) {
+        return ResponseEntity.ok(ApiResponseDto.success(fleetService.updateVehicle(id, request), "Cập nhật xe thành công"));
     }
 
     @DeleteMapping("/vehicles/{id}")
     @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER', 'ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> deleteVehicle(@PathVariable String id) {
+    public ResponseEntity<ApiResponseDto<Void>> deleteVehicle(@PathVariable String id) {
         fleetService.deleteVehicle(id);
-        return ResponseEntity.ok(ApiResponse.success(null, "Xóa xe thành công"));
+        return ResponseEntity.ok(ApiResponseDto.success(null, "Xóa xe thành công"));
     }
 }

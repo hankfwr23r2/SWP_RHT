@@ -1,9 +1,9 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.payment.VnpayCreateRequest;
-import com.example.racehorse_transport.dto.payment.VnpayCreateResponse;
-import com.example.racehorse_transport.dto.payment.VnpayResultResponse;
-import com.example.racehorse_transport.response.ApiResponse;
+import com.example.racehorse_transport.dto.payment.VnpayCreateRequestDto;
+import com.example.racehorse_transport.dto.payment.VnpayCreateResponseDto;
+import com.example.racehorse_transport.dto.payment.VnpayResultResponseDto;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.service.VnpayService;
 import com.example.racehorse_transport.util.VnpayUtil;
@@ -45,14 +45,14 @@ public class VnpayController {
      */
     @PreAuthorize("hasRole('CUSTOMER')")
     @PostMapping("/create")
-    public ResponseEntity<ApiResponse<VnpayCreateResponse>> create(
+    public ResponseEntity<ApiResponseDto<VnpayCreateResponseDto>> create(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
-            @Valid @RequestBody VnpayCreateRequest request,
+            @Valid @RequestBody VnpayCreateRequestDto request,
             HttpServletRequest httpRequest) {
         String username = extractUsername(authHeader);
         if (username == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Vui lòng đăng nhập để thanh toán!"));
+                    .body(ApiResponseDto.error("Vui lòng đăng nhập để thanh toán!"));
         }
         if (request.getReturnUrl() == null || request.getReturnUrl().isBlank()) {
             String origin = httpRequest.getHeader("Origin");
@@ -60,8 +60,8 @@ public class VnpayController {
                 request.setReturnUrl(origin.replaceAll("/+$", "") + "/payment/vnpay-return");
             }
         }
-        VnpayCreateResponse response = vnpayService.createPaymentUrl(request, username, VnpayUtil.clientIp(httpRequest));
-        return ResponseEntity.ok(ApiResponse.success(response, "Đã tạo link thanh toán VNPAY"));
+        VnpayCreateResponseDto response = vnpayService.createPaymentUrl(request, username, VnpayUtil.clientIp(httpRequest));
+        return ResponseEntity.ok(ApiResponseDto.success(response, "Đã tạo link thanh toán VNPAY"));
     }
 
     /**
@@ -96,19 +96,19 @@ public class VnpayController {
      * GET /api/v1/payments/vnpay/return
      */
     @GetMapping("/return")
-    public ResponseEntity<ApiResponse<VnpayResultResponse>> vnpayReturn(@RequestParam Map<String, String> params) {
+    public ResponseEntity<ApiResponseDto<VnpayResultResponseDto>> vnpayReturn(@RequestParam Map<String, String> params) {
         try {
-            VnpayResultResponse response = vnpayService.confirm(params);
-            return ResponseEntity.ok(ApiResponse.success(response, response.getMessage()));
+            VnpayResultResponseDto response = vnpayService.confirm(params);
+            return ResponseEntity.ok(ApiResponseDto.success(response, response.getMessage()));
         } catch (Exception ex) {
             log.error("VNPAY Return confirmation error, txnRef={}: {}", params.get("vnp_TxnRef"), ex.getMessage(), ex);
-            VnpayResultResponse fallback = VnpayResultResponse.builder()
+            VnpayResultResponseDto fallback = VnpayResultResponseDto.builder()
                     .success(false)
                     .rspCode("99")
                     .message("Không thể hoàn tất kiểm tra giao dịch: " + ex.getMessage())
                     .transactionCode(params.get("vnp_TxnRef"))
                     .build();
-            return ResponseEntity.ok(ApiResponse.success(fallback, fallback.getMessage()));
+            return ResponseEntity.ok(ApiResponseDto.success(fallback, fallback.getMessage()));
         }
     }
 }

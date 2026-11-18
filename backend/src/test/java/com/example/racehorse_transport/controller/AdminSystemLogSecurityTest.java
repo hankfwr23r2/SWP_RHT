@@ -1,6 +1,6 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.service.AdminAuditWriter;
+import com.example.racehorse_transport.service.AdminAuditService;
 import com.example.racehorse_transport.service.AdminSystemLogService;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
@@ -13,7 +13,6 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -42,7 +41,7 @@ class AdminSystemLogSecurityTest {
             }
             verifyNoInteractions(service);
             signIn("ADMIN");
-            assertThat(controller.options().getData()).isEqualTo(AdminAuditWriter.ACTIONS);
+            assertThat(controller.options().getData()).isEqualTo(AdminAuditService.ACTIONS);
             controller.detail(1);
             controller.search(null, null, null, null, null, null, 0, 20, null);
             verify(service).detail(1);

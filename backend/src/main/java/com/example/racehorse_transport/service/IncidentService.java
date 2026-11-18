@@ -6,33 +6,33 @@ import java.util.List;
 
 public interface IncidentService {
 
-    IncidentResponse reportIncident(ReportIncidentRequest request, String actor, String role);
+    IncidentResponseDto reportIncident(ReportIncidentRequestDto request, String actor, String role);
 
-    IncidentResponse proposeExternalPlan(Integer incidentId, ProposeExternalPlanRequest request, String actor);
+    IncidentResponseDto proposeExternalPlan(Integer incidentId, ProposeExternalPlanRequestDto request, String actor);
 
-    IncidentResponse approveIncidentPlan(Integer incidentId, ApproveIncidentPlanRequest request, String actor);
+    IncidentResponseDto approveIncidentPlan(Integer incidentId, ApproveIncidentPlanRequestDto request, String actor);
 
-    IncidentResponse rejectIncidentPlan(Integer incidentId, RejectIncidentPlanRequest request, String actor);
+    IncidentResponseDto rejectIncidentPlan(Integer incidentId, RejectIncidentPlanRequestDto request, String actor);
 
-    IncidentResponse addExpense(Integer incidentId, IncidentExpenseRequest request, String actor, String role);
+    IncidentResponseDto addExpense(Integer incidentId, IncidentExpenseRequestDto request, String actor, String role);
 
-    IncidentResponse deleteExpense(Integer incidentId, String expenseId, String actor, String role);
+    IncidentResponseDto deleteExpense(Integer incidentId, String expenseId, String actor, String role);
 
-    IncidentResponse confirmFit(Integer incidentId, ConfirmIncidentFitRequest request, String actor, String role);
+    IncidentResponseDto confirmFit(Integer incidentId, ConfirmIncidentFitRequestDto request, String actor, String role);
 
-    IncidentResponse resumeJourney(Integer incidentId, String actor, String role);
+    IncidentResponseDto resumeJourney(Integer incidentId, String actor, String role);
 
     // Rời trạm SOS trước giờ nghỉ đã duyệt chỉ được khi kíp xe xác nhận (confirmEarlyLeave), kèm ghi chú nếu có
-    IncidentResponse resumeJourney(Integer incidentId, String actor, String role, boolean confirmEarlyLeave, String note);
+    IncidentResponseDto resumeJourney(Integer incidentId, String actor, String role, boolean confirmEarlyLeave, String note);
 
-    IncidentResponse completeResolution(Integer incidentId, ResolveIncidentRequest request, String actor);
+    IncidentResponseDto completeResolution(Integer incidentId, ResolveIncidentRequestDto request, String actor);
 
-    List<IncidentResponse> getIncidentsByBooking(Integer bookingId, String requester, String role);
+    List<IncidentResponseDto> getIncidentsByBooking(Integer bookingId, String requester, String role);
 
-    List<IncidentResponse> getCustomerIncidents(String customerUsername);
+    List<IncidentResponseDto> getCustomerIncidents(String customerUsername);
 
-    List<IncidentResponse> getAllIncidents(String status);
+    List<IncidentResponseDto> getAllIncidents(String status);
 
     // Sự cố của nhiều đơn trong một truy vấn (đơn đã được kiểm tra quyền ở nơi gọi)
-    List<IncidentResponse> getIncidentsForBookings(java.util.Collection<Integer> bookingIds);
+    List<IncidentResponseDto> getIncidentsForBookings(java.util.Collection<Integer> bookingIds);
 }

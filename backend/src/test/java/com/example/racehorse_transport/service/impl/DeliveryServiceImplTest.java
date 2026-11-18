@@ -1,19 +1,21 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.field.DeliveryArriveRequest;
+import com.example.racehorse_transport.dto.field.DeliveryArriveRequestDto;
+import com.example.racehorse_transport.dto.field.DeliveryTimeoutRequestDto;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.repository.BookingAssignmentRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.BookingVehicleRepository;
 import com.example.racehorse_transport.repository.IncidentRepository;
 import com.example.racehorse_transport.repository.PaymentRepository;
-import com.example.racehorse_transport.service.OperationalLogWriter;
+import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.VehicleRepository;
-import org.junit.jupiter.api.Test;
-
+import com.example.racehorse_transport.service.HorseDeliveryLocationService;
+import com.example.racehorse_transport.service.OperationalLogService;
+import com.example.racehorse_transport.service.StaffNotificationService;
 import java.math.BigDecimal;
 import java.util.Optional;
-
+import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -33,9 +35,9 @@ class DeliveryServiceImplTest {
             mock(BookingAssignmentRepository.class),
             mock(IncidentRepository.class),
             mock(PaymentRepository.class),
-            mock(OperationalLogWriter.class),
-            mock(com.example.racehorse_transport.service.HorseDeliveryLocationService.class),
-            mock(com.example.racehorse_transport.repository.StaffRepository.class), org.mockito.Mockito.mock(com.example.racehorse_transport.service.StaffNotifier.class));
+            mock(OperationalLogService.class),
+            mock(HorseDeliveryLocationService.class),
+            mock(StaffRepository.class), org.mockito.Mockito.mock(StaffNotificationService.class), new BookingVisibilityServiceImpl());
 
     @Test
     void unreadableDetailsAreNotOverwrittenWhenTheCrewArrives() {
@@ -44,9 +46,9 @@ class DeliveryServiceImplTest {
         booking.setId(1);
         booking.setStatus("in_transit");
         booking.setDetailsJson(corrupt);
-        when(bookingRepository.findById(1)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByIdForUpdate(1)).thenReturn(Optional.of(booking));
 
-        assertThatThrownBy(() -> service.arriveDelivery(1, new DeliveryArriveRequest()))
+        assertThatThrownBy(() -> service.arriveDelivery(1, new DeliveryArriveRequestDto()))
                 .isInstanceOf(IllegalStateException.class);
 
         assertThat(booking.getDetailsJson()).isEqualTo(corrupt);
@@ -59,7 +61,7 @@ class DeliveryServiceImplTest {
         Booking booking = new Booking();
         booking.setId(1);
         booking.setStatus("in_transit");
-        when(bookingRepository.findById(1)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByIdForUpdate(1)).thenReturn(Optional.of(booking));
 
         for (BigDecimal amount : new BigDecimal[] {
                 null,
@@ -67,7 +69,7 @@ class DeliveryServiceImplTest {
                 new BigDecimal("1.5"),
                 new BigDecimal("10000000000000000")
         }) {
-            var request = new com.example.racehorse_transport.dto.field.DeliveryTimeoutRequest();
+            var request = new DeliveryTimeoutRequestDto();
             request.setSelectedAction("STABLE_NEARBY");
             request.setEstimatedCost(amount);
 

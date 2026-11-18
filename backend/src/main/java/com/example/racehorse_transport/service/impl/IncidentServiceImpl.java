@@ -1,7 +1,16 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.booking.BookingDetailsPayload;
-import com.example.racehorse_transport.dto.incident.*;
+
+import com.example.racehorse_transport.dto.booking.BookingDetailsPayloadDto;
+import com.example.racehorse_transport.dto.coordinator.VehicleTripDto;
+import com.example.racehorse_transport.dto.incident.ApproveIncidentPlanRequestDto;
+import com.example.racehorse_transport.dto.incident.ConfirmIncidentFitRequestDto;
+import com.example.racehorse_transport.dto.incident.IncidentExpenseRequestDto;
+import com.example.racehorse_transport.dto.incident.IncidentResponseDto;
+import com.example.racehorse_transport.dto.incident.ProposeExternalPlanRequestDto;
+import com.example.racehorse_transport.dto.incident.RejectIncidentPlanRequestDto;
+import com.example.racehorse_transport.dto.incident.ReportIncidentRequestDto;
+import com.example.racehorse_transport.dto.incident.ResolveIncidentRequestDto;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Incident;
 import com.example.racehorse_transport.entity.Staff;
@@ -10,39 +19,42 @@ import com.example.racehorse_transport.repository.BookingAssignmentRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.IncidentRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.service.CaptureService;
+import com.example.racehorse_transport.service.HorseHealthLogService;
 import com.example.racehorse_transport.service.IncidentService;
+import com.example.racehorse_transport.service.OperationalLogService;
+import com.example.racehorse_transport.service.StaffNotificationService;
 import com.example.racehorse_transport.util.BookingDetailsJson;
-import com.example.racehorse_transport.util.PaymentAmountLimits;
 import com.example.racehorse_transport.util.IncidentCostPolicy;
+import com.example.racehorse_transport.util.PaymentAmountLimits;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.*;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class IncidentServiceImpl implements IncidentService {
 
-    private final com.example.racehorse_transport.service.CaptureService captureService;
+    private final CaptureService captureService;
     private final IncidentRepository incidentRepository;
     private final BookingRepository bookingRepository;
     private final BookingAssignmentRepository bookingAssignmentRepository;
     private final StaffRepository staffRepository;
-    private final com.example.racehorse_transport.service.OperationalLogWriter operationalLog;
-    private final com.example.racehorse_transport.service.HorseHealthLogService horseHealthLogService;
-    private final com.example.racehorse_transport.service.StaffNotifier staffNotifier;
+    private final OperationalLogService operationalLog;
+    private final HorseHealthLogService horseHealthLogService;
+    private final StaffNotificationService staffNotifier;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     @Transactional
-    public IncidentResponse reportIncident(ReportIncidentRequest request, String actor, String role) {
+    public IncidentResponseDto reportIncident(ReportIncidentRequestDto request, String actor, String role) {
         Booking booking = bookingRepository.findByCode(request.getBookingCode().trim().toUpperCase())
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy đơn hàng: " + request.getBookingCode()));
 
@@ -59,7 +71,7 @@ public class IncidentServiceImpl implements IncidentService {
                 Objects.equals(i.getTripId(), request.getTripId()) && !"resolved".equalsIgnoreCase(i.getStatus())))
             throw new IllegalArgumentException("Chuyến đang có SOS chưa giải quyết; hãy tiếp tục xử lý sự cố hiện tại.");
 
-        BookingDetailsPayload photoPayload = BookingDetailsJson.read(objectMapper, booking);
+        BookingDetailsPayloadDto photoPayload = BookingDetailsJson.read(objectMapper, booking);
         captureService.attach(photoPayload, booking.getId(), request.getTripId(), "SOS", "", request.getPhotoUrl(), actor);
         booking.setDetailsJson(writeJson(photoPayload));
         Incident incident = Incident.builder()
@@ -104,7 +116,7 @@ public class IncidentServiceImpl implements IncidentService {
 
     @Override
     @Transactional
-    public IncidentResponse proposeExternalPlan(Integer incidentId, ProposeExternalPlanRequest request, String actor) {
+    public IncidentResponseDto proposeExternalPlan(Integer incidentId, ProposeExternalPlanRequestDto request, String actor) {
         Incident incident = incidentRepository.findById(incidentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố ID: " + incidentId));
 
@@ -124,13 +136,7 @@ public class IncidentServiceImpl implements IncidentService {
         if ("REROUTE".equalsIgnoreCase(request.getResolutionType())) {
             validateReroute(request.getPlan());
         }
-        incident.setResolutionType(request.getResolutionType() != null
-                ? request.getResolutionType().toUpperCase(Locale.ROOT)
-                : "EXTERNAL_PARTNER");
-        incident.setPartnerName(request.getPartnerName());
-        incident.setPartnerService(request.getPartnerService());
-        incident.setPartnerPhone(request.getPartnerPhone());
-        incident.setEstimatedCost(request.getEstimatedCost());
+        request.applyTo(incident);
         incident.setCostBearer("COMPANY");
         incident.setStatus("proposed");
         incident.setFitConfirmedAt(null);
@@ -180,7 +186,7 @@ public class IncidentServiceImpl implements IncidentService {
 
     @Override
     @Transactional
-    public IncidentResponse approveIncidentPlan(Integer incidentId, ApproveIncidentPlanRequest request, String actor) {
+    public IncidentResponseDto approveIncidentPlan(Integer incidentId, ApproveIncidentPlanRequestDto request, String actor) {
         Incident incident = incidentRepository.findById(incidentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố ID: " + incidentId));
 
@@ -234,7 +240,7 @@ public class IncidentServiceImpl implements IncidentService {
 
     @Override
     @Transactional
-    public IncidentResponse rejectIncidentPlan(Integer incidentId, RejectIncidentPlanRequest request, String actor) {
+    public IncidentResponseDto rejectIncidentPlan(Integer incidentId, RejectIncidentPlanRequestDto request, String actor) {
         Incident incident = incidentRepository.findById(incidentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố ID: " + incidentId));
         requireStatus(incident, "proposed");
@@ -257,7 +263,7 @@ public class IncidentServiceImpl implements IncidentService {
 
     @Override
     @Transactional
-    public IncidentResponse addExpense(Integer incidentId, IncidentExpenseRequest request, String actor, String role) {
+    public IncidentResponseDto addExpense(Integer incidentId, IncidentExpenseRequestDto request, String actor, String role) {
         Incident incident = incidentRepository.findById(incidentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố ID: " + incidentId));
         requireStatus(incident, "active");
@@ -271,7 +277,7 @@ public class IncidentServiceImpl implements IncidentService {
                 && request.getAmount().compareTo(PaymentAmountLimits.MAXIMUM_VND_AMOUNT) > 0) {
             throw new IllegalArgumentException("Số tiền chi phí vượt quá giới hạn thanh toán được hỗ trợ.");
         }
-        BookingDetailsPayload photoPayload = BookingDetailsJson.read(objectMapper, incident.getBookingID());
+        BookingDetailsPayloadDto photoPayload = BookingDetailsJson.read(objectMapper, incident.getBookingID());
         captureService.attach(photoPayload, incident.getBookingID().getId(), incident.getTripId(), "EXPENSE", "", request.getPhoto(), actor);
         incident.getBookingID().setDetailsJson(writeJson(photoPayload));
         bookingRepository.save(incident.getBookingID());
@@ -304,7 +310,7 @@ public class IncidentServiceImpl implements IncidentService {
 
     @Override
     @Transactional
-    public IncidentResponse deleteExpense(Integer incidentId, String expenseId, String actor, String role) {
+    public IncidentResponseDto deleteExpense(Integer incidentId, String expenseId, String actor, String role) {
         Incident incident = incidentRepository.findById(incidentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố ID: " + incidentId));
         requireStatus(incident, "active");
@@ -336,7 +342,7 @@ public class IncidentServiceImpl implements IncidentService {
 
     @Override
     @Transactional
-    public IncidentResponse confirmFit(Integer incidentId, ConfirmIncidentFitRequest request, String actor, String role) {
+    public IncidentResponseDto confirmFit(Integer incidentId, ConfirmIncidentFitRequestDto request, String actor, String role) {
         Incident incident = incidentRepository.findById(incidentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố ID: " + incidentId));
         requireStatus(incident, "active");
@@ -350,7 +356,7 @@ public class IncidentServiceImpl implements IncidentService {
         }
         if (!"ADMIN".equals(role) && !"ESCORT".equals(role)) throw new AccessDeniedException("Chỉ hộ tống được xác nhận sức khỏe.");
         if ("HORSE_HEALTH".equalsIgnoreCase(incident.getIncidentType())) {
-            BookingDetailsPayload payload = BookingDetailsJson.read(objectMapper, incident.getBookingID());
+            BookingDetailsPayloadDto payload = BookingDetailsJson.read(objectMapper, incident.getBookingID());
             Map<String, Object> checkpoint = stationCheckpoint(incident, payload);
             if (checkpoint.get("arrivedAt") == null) throw new IllegalArgumentException("Cần xác nhận tới trạm SOS trước khi khám.");
             long arrival = ((Number) checkpoint.get("arrivedAt")).longValue();
@@ -362,7 +368,7 @@ public class IncidentServiceImpl implements IncidentService {
             if (request == null || request.getHorses() == null || request.getHorses().isEmpty())
                 throw new IllegalArgumentException("Cần ghi kết quả chăm sóc từng ngựa bị ảnh hưởng.");
             var expected = affectedHorseIds(incident);
-            var actual = request.getHorses().stream().map(ConfirmIncidentFitRequest.CareRecord::getHorseId).toList();
+            var actual = request.getHorses().stream().map(ConfirmIncidentFitRequestDto.CareRecord::getHorseId).toList();
             if (actual.size() != new HashSet<>(actual).size() || !new HashSet<>(actual).equals(new HashSet<>(expected)))
                 throw new IllegalArgumentException("Cần ghi đủ và đúng các ngựa bị ảnh hưởng.");
             Staff escort = staffRepository.findByUser_Username(actor).orElseThrow(() -> new AccessDeniedException("Không tìm thấy hộ tống."));
@@ -395,13 +401,13 @@ public class IncidentServiceImpl implements IncidentService {
 
     @Override
     @Transactional
-    public IncidentResponse resumeJourney(Integer incidentId, String actor, String role) {
+    public IncidentResponseDto resumeJourney(Integer incidentId, String actor, String role) {
         return resumeJourney(incidentId, actor, role, false, null);
     }
 
     @Override
     @Transactional
-    public IncidentResponse resumeJourney(Integer incidentId, String actor, String role, boolean confirmEarlyLeave, String note) {
+    public IncidentResponseDto resumeJourney(Integer incidentId, String actor, String role, boolean confirmEarlyLeave, String note) {
         Incident incident = incidentRepository.findById(incidentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố ID: " + incidentId));
         requireStatus(incident, "active");
@@ -430,7 +436,7 @@ public class IncidentServiceImpl implements IncidentService {
 
     @Override
     @Transactional
-    public IncidentResponse completeResolution(Integer incidentId, ResolveIncidentRequest request, String actor) {
+    public IncidentResponseDto completeResolution(Integer incidentId, ResolveIncidentRequestDto request, String actor) {
         Incident incident = incidentRepository.findById(incidentId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy sự cố ID: " + incidentId));
 
@@ -471,7 +477,7 @@ public class IncidentServiceImpl implements IncidentService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<IncidentResponse> getIncidentsByBooking(Integer bookingId, String requester, String role) {
+    public List<IncidentResponseDto> getIncidentsByBooking(Integer bookingId, String requester, String role) {
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng ID: " + bookingId));
         if ("CUSTOMER".equals(role)) {
@@ -493,7 +499,7 @@ public class IncidentServiceImpl implements IncidentService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<IncidentResponse> getCustomerIncidents(String customerUsername) {
+    public List<IncidentResponseDto> getCustomerIncidents(String customerUsername) {
         return incidentRepository.findByBookingID_CustomerID_User_Username(customerUsername)
                 .stream()
                 .map(this::mapToCustomerResponse)
@@ -502,21 +508,21 @@ public class IncidentServiceImpl implements IncidentService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<IncidentResponse> getIncidentsForBookings(java.util.Collection<Integer> bookingIds) {
+    public List<IncidentResponseDto> getIncidentsForBookings(java.util.Collection<Integer> bookingIds) {
         if (bookingIds == null || bookingIds.isEmpty()) return List.of();
         return incidentRepository.findByBookingID_IdIn(bookingIds).stream().map(this::mapToResponse).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<IncidentResponse> getAllIncidents(String status) {
+    public List<IncidentResponseDto> getAllIncidents(String status) {
         List<Incident> list = (status != null && !status.isBlank() && !status.equalsIgnoreCase("ALL"))
                 ? incidentRepository.findByStatus(status.toLowerCase())
                 : incidentRepository.findAll();
         return list.stream().map(this::mapToResponse).toList();
     }
 
-    private com.example.racehorse_transport.dto.coordinator.VehicleTripDto incidentTrip(Incident incident, BookingDetailsPayload payload) {
+    private VehicleTripDto incidentTrip(Incident incident, BookingDetailsPayloadDto payload) {
         if (payload.getTrips() == null) throw new IllegalArgumentException("Đơn chưa có chuyến xe.");
         return payload.getTrips().stream().filter(t -> Objects.equals(t.getTripId(), incident.getTripId())).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chuyến xe của sự cố."));
@@ -546,13 +552,13 @@ public class IncidentServiceImpl implements IncidentService {
     }
 
     @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> tripCheckpoints(com.example.racehorse_transport.dto.coordinator.VehicleTripDto trip) {
+    private List<Map<String, Object>> tripCheckpoints(VehicleTripDto trip) {
         if (trip.getRun() == null || !(trip.getRun().get("checkpoints") instanceof List<?>))
             throw new IllegalArgumentException("Chuyến chưa có các mốc hành trình.");
         return (List<Map<String, Object>>) trip.getRun().get("checkpoints");
     }
 
-    private Map<String, Object> stationCheckpoint(Incident incident, BookingDetailsPayload payload) {
+    private Map<String, Object> stationCheckpoint(Incident incident, BookingDetailsPayloadDto payload) {
         return tripCheckpoints(incidentTrip(incident, payload)).stream()
                 .filter(cp -> Objects.equals("sos-" + incident.getId(), cp.get("id"))).findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Phương án SOS cũ chưa có mốc trạm; cần điều phối lập lại phương án."));
@@ -562,7 +568,7 @@ public class IncidentServiceImpl implements IncidentService {
         Map<String, Object> plan = new LinkedHashMap<>(readPlan(incident.getPlanJson()) == null ? Map.of() : readPlan(incident.getPlanJson()));
         validateStationPlan(plan);
         Booking booking = incident.getBookingID();
-        BookingDetailsPayload payload = BookingDetailsJson.read(objectMapper, booking);
+        BookingDetailsPayloadDto payload = BookingDetailsJson.read(objectMapper, booking);
         var trip = incidentTrip(incident, payload);
         var checkpoints = tripCheckpoints(trip);
         Map<String, Object> next = checkpoints.stream().filter(cp -> cp.get("doneAt") == null).findFirst()
@@ -613,7 +619,7 @@ public class IncidentServiceImpl implements IncidentService {
 
     private void finishStation(Incident incident, String actor, boolean confirmEarlyLeave, String note) {
         Booking booking = incident.getBookingID();
-        BookingDetailsPayload payload = BookingDetailsJson.read(objectMapper, booking);
+        BookingDetailsPayloadDto payload = BookingDetailsJson.read(objectMapper, booking);
         var trip = incidentTrip(incident, payload);
         Map<String, Object> checkpoint = stationCheckpoint(incident, payload);
         if (!(checkpoint.get("arrivedAt") instanceof Number arrival) || incident.getFitConfirmedAt() == null)
@@ -659,7 +665,7 @@ public class IncidentServiceImpl implements IncidentService {
     private void applyReroute(Incident incident, String actor) {
         Booking booking = incident.getBookingID();
         if (booking == null) throw new IllegalArgumentException("Sự cố không liên kết với đơn hàng.");
-        BookingDetailsPayload payload = BookingDetailsJson.read(objectMapper, booking);
+        BookingDetailsPayloadDto payload = BookingDetailsJson.read(objectMapper, booking);
         var trip = payload.getTrips() == null ? null : payload.getTrips().stream()
                 .filter(item -> Objects.equals(item.getTripId(), incident.getTripId())).findFirst().orElse(null);
         if (trip == null) throw new IllegalArgumentException("Không tìm thấy chuyến xe cần đổi tuyến.");
@@ -720,7 +726,7 @@ public class IncidentServiceImpl implements IncidentService {
             throw new IllegalArgumentException("Đơn hàng chưa có dữ liệu chuyến xe để báo sự cố.");
         }
         try {
-            BookingDetailsPayload payload = objectMapper.readValue(booking.getDetailsJson(), BookingDetailsPayload.class);
+            BookingDetailsPayloadDto payload = objectMapper.readValue(booking.getDetailsJson(), BookingDetailsPayloadDto.class);
             boolean belongs = payload.getTrips() != null && payload.getTrips().stream()
                     .anyMatch(trip -> Objects.equals(trip.getTripId(), tripId));
             if (!belongs) {
@@ -797,14 +803,14 @@ public class IncidentServiceImpl implements IncidentService {
 
     private void appendBookingHistory(Booking booking, String actor, String text) {
         try {
-            BookingDetailsPayload payload = null;
+            BookingDetailsPayloadDto payload = null;
             if (booking.getDetailsJson() != null && !booking.getDetailsJson().isBlank()) {
                 if (booking.getDetailsJson().trim().startsWith("{")) {
-                    payload = objectMapper.readValue(booking.getDetailsJson(), BookingDetailsPayload.class);
+                    payload = objectMapper.readValue(booking.getDetailsJson(), BookingDetailsPayloadDto.class);
                 }
             }
             if (payload == null) {
-                payload = new BookingDetailsPayload();
+                payload = new BookingDetailsPayloadDto();
             }
             if (payload.getHistory() == null) {
                 payload.setHistory(new ArrayList<>());
@@ -830,12 +836,12 @@ public class IncidentServiceImpl implements IncidentService {
         }
     }
 
-    private IncidentResponse mapToResponse(Incident inc) {
+    private IncidentResponseDto mapToResponse(Incident inc) {
         String bookingCode = inc.getBookingID() != null ? inc.getBookingID().getCode() : null;
         String reporter = inc.getStaffID() != null && inc.getStaffID().getUser() != null
                 ? inc.getStaffID().getUser().getUsername() : null;
 
-        return IncidentResponse.builder()
+        return IncidentResponseDto.builder()
                 .id(inc.getId())
                 .formattedId("INC-" + String.format("%03d", inc.getId()))
                 .bookingCode(bookingCode)
@@ -876,9 +882,9 @@ public class IncidentServiceImpl implements IncidentService {
                 .build();
     }
 
-    private IncidentResponse mapToCustomerResponse(Incident incident) {
+    private IncidentResponseDto mapToCustomerResponse(Incident incident) {
         String bookingCode = incident.getBookingID() != null ? incident.getBookingID().getCode() : null;
-        return IncidentResponse.builder()
+        return IncidentResponseDto.builder()
                 .id(incident.getId())
                 .formattedId("INC-" + String.format("%03d", incident.getId()))
                 .bookingCode(bookingCode)

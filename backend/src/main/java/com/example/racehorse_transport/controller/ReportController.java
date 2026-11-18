@@ -1,7 +1,7 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.report.TripReportResponse;
-import com.example.racehorse_transport.response.ApiResponse;
+import com.example.racehorse_transport.dto.report.TripReportResponseDto;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.service.TripReportService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +21,7 @@ public class ReportController {
     private final TripReportService tripReportService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<TripReportResponse>>> getTripReports() {
-        return ResponseEntity.ok(ApiResponse.success(tripReportService.findAll(), "Lấy danh sách báo cáo chuyến đi thành công"));
+    public ResponseEntity<ApiResponseDto<List<TripReportResponseDto>>> getTripReports() {
+        return ResponseEntity.ok(ApiResponseDto.success(tripReportService.findAll(), "Lấy danh sách báo cáo chuyến đi thành công"));
     }
 }

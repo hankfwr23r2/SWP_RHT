@@ -1,6 +1,6 @@
 package com.example.racehorse_transport.security;
 
-import com.example.racehorse_transport.response.ApiResponse;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -23,7 +23,7 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
         response.setCharacterEncoding("UTF-8");
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 
-        ApiResponse<Void> apiResponse = ApiResponse.error("Yêu cầu xác thực! Vui lòng đăng nhập với token hợp lệ.");
+        ApiResponseDto<Void> apiResponse = ApiResponseDto.error("Yêu cầu xác thực! Vui lòng đăng nhập với token hợp lệ.");
         response.getWriter().write(objectMapper.writeValueAsString(apiResponse));
     }
 }

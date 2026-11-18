@@ -1,64 +1,79 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.config.VnpayProperties;
+import com.example.racehorse_transport.dto.admin.SystemConfigResponseDto;
+import com.example.racehorse_transport.dto.booking.BookingDetailsPayloadDto;
 import com.example.racehorse_transport.dto.booking.BookingHorseDto;
+import com.example.racehorse_transport.dto.booking.BookingResponseDto;
 import com.example.racehorse_transport.dto.booking.BookingServiceSelectionDto;
-import com.example.racehorse_transport.dto.booking.BookingResponse;
-import com.example.racehorse_transport.dto.booking.CreateBookingRequest;
-import com.example.racehorse_transport.dto.booking.CustomerTripTeamResponse;
+import com.example.racehorse_transport.dto.booking.CreateBookingRequestDto;
+import com.example.racehorse_transport.dto.booking.CustomerTripTeamResponseDto;
+import com.example.racehorse_transport.dto.booking.HorseInsuranceDto;
 import com.example.racehorse_transport.dto.booking.PartyContactDto;
-import com.example.racehorse_transport.dto.booking.RejectQuoteRequest;
-import com.example.racehorse_transport.dto.manager.RejectBookingRequest;
+import com.example.racehorse_transport.dto.booking.RejectQuoteRequestDto;
+import com.example.racehorse_transport.dto.common.PagedResponseDto;
+import com.example.racehorse_transport.dto.coordinator.CoordinatorPlanRequestDto;
+import com.example.racehorse_transport.dto.coordinator.VehicleTripDto;
+import com.example.racehorse_transport.dto.field.TripUpdateRequestDto;
+import com.example.racehorse_transport.dto.manager.AssignCrewRequestDto;
+import com.example.racehorse_transport.dto.manager.QuoteLineDto;
+import com.example.racehorse_transport.dto.manager.RejectBookingRequestDto;
+import com.example.racehorse_transport.dto.manager.SendQuoteRequestDto;
 import com.example.racehorse_transport.entity.Booking;
-import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.Category;
-import com.example.racehorse_transport.entity.Horse;
+import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.DocumentRequirement;
+import com.example.racehorse_transport.entity.Horse;
 import com.example.racehorse_transport.entity.Notification;
+import com.example.racehorse_transport.entity.Payment;
 import com.example.racehorse_transport.entity.Quotation;
-import com.example.racehorse_transport.dto.admin.SystemConfigResponse;
+import com.example.racehorse_transport.entity.Route;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.User;
 import com.example.racehorse_transport.entity.Vehicle;
-import com.example.racehorse_transport.entity.Route;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.BookingAssignmentRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.BookingVehicleRepository;
 import com.example.racehorse_transport.repository.CustomerRepository;
-import com.example.racehorse_transport.repository.HorseRepository;
-import com.example.racehorse_transport.repository.HorseDocumentRepository;
 import com.example.racehorse_transport.repository.DocumentRequirementRepository;
+import com.example.racehorse_transport.repository.HorseDocumentRepository;
+import com.example.racehorse_transport.repository.HorseJourneyLogRepository;
+import com.example.racehorse_transport.repository.HorseRepository;
+import com.example.racehorse_transport.repository.IncidentRepository;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.repository.LogRepository;
 import com.example.racehorse_transport.repository.NotificationRepository;
 import com.example.racehorse_transport.repository.PaymentRepository;
 import com.example.racehorse_transport.repository.QuotationRepository;
-import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.repository.RouteRepository;
 import com.example.racehorse_transport.repository.ServiceRepository;
-import com.example.racehorse_transport.service.OperationalLogWriter;
+import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.TripDocumentRepository;
 import com.example.racehorse_transport.repository.UserRepository;
 import com.example.racehorse_transport.repository.VehicleRepository;
+import com.example.racehorse_transport.security.PublicTrackingGuard;
+import com.example.racehorse_transport.service.BillMailService;
+import com.example.racehorse_transport.service.CaptureService;
 import com.example.racehorse_transport.service.FleetService;
+import com.example.racehorse_transport.service.HorseDeliveryLocationService;
+import com.example.racehorse_transport.service.OperationalLogService;
+import com.example.racehorse_transport.service.StaffNotificationService;
 import com.example.racehorse_transport.service.SystemConfigService;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.security.access.AccessDeniedException;
-
-import java.time.Instant;
-import java.time.Clock;
-import com.example.racehorse_transport.config.VnpayProperties;
-import com.example.racehorse_transport.entity.Payment;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -72,7 +87,7 @@ class BookingServiceImplTest {
     private final UserRepository userRepository = mock(UserRepository.class);
     private final CustomerRepository customerRepository = mock(CustomerRepository.class);
     private final HorseRepository horseRepository = mock(HorseRepository.class);
-    private final OperationalLogWriter operationalLog = mock(OperationalLogWriter.class);
+    private final OperationalLogService operationalLog = mock(OperationalLogService.class);
     private final BookingVehicleRepository bookingVehicleRepository = mock(BookingVehicleRepository.class);
     private final BookingAssignmentRepository bookingAssignmentRepository = mock(BookingAssignmentRepository.class);
     private final QuotationRepository quotationRepository = mock(QuotationRepository.class);
@@ -85,16 +100,16 @@ class BookingServiceImplTest {
     private final LocationRepository locationRepository = mock(LocationRepository.class);
     private final TripDocumentRepository tripDocumentRepository = mock(TripDocumentRepository.class);
     private final SystemConfigService systemConfigService = mock(SystemConfigService.class);
-    private final com.example.racehorse_transport.repository.RouteRepository routeRepository = mock(com.example.racehorse_transport.repository.RouteRepository.class);
+    private final RouteRepository routeRepository = mock(RouteRepository.class);
     private final ServiceRepository serviceRepository = mock(ServiceRepository.class);
     private final HorseDocumentRepository horseDocumentRepository = mock(HorseDocumentRepository.class);
     private final DocumentRequirementRepository documentRequirementRepository = mock(DocumentRequirementRepository.class);
 
-    private final com.example.racehorse_transport.repository.HorseJourneyLogRepository horseJourneyLogRepository =
-            mock(com.example.racehorse_transport.repository.HorseJourneyLogRepository.class);
-    private final com.example.racehorse_transport.service.HorseDeliveryLocationService horseDeliveryLocationService =
-            new com.example.racehorse_transport.service.HorseDeliveryLocationService(horseRepository, horseJourneyLogRepository);
-    private final com.example.racehorse_transport.service.BillMailService billMailService = mock(com.example.racehorse_transport.service.BillMailService.class);
+    private final HorseJourneyLogRepository horseJourneyLogRepository =
+            mock(HorseJourneyLogRepository.class);
+    private final HorseDeliveryLocationService horseDeliveryLocationService =
+            new HorseDeliveryLocationServiceImpl(horseRepository, horseJourneyLogRepository);
+    private final BillMailService billMailService = mock(BillMailService.class);
     private BookingServiceImpl service;
     private Customer customer;
     private final Clock clock = mock(Clock.class);
@@ -107,35 +122,56 @@ class BookingServiceImplTest {
     void setUp() {
         when(clock.instant()).thenReturn(DEPOSIT_DEADLINE);
         when(bookingRepository.findIdByCode(CODE)).thenReturn(Optional.of(42));
-        service = new BookingServiceImpl(
-                mock(com.example.racehorse_transport.service.CaptureService.class),
+        var bookingQueryService = new BookingQueryServiceImpl(
                 bookingRepository,
                 userRepository,
-                customerRepository,
-                horseRepository,
-                operationalLog,
-                bookingVehicleRepository,
                 bookingAssignmentRepository,
+                fleetService,
+                staffRepository,
+                new PublicTrackingGuard(clock),
+                bookingVehicleRepository,
+                quotationRepository,
+                paymentRepository,
+                new VnpayProperties(),
+                clock, new BookingVisibilityServiceImpl());
+        var tripProgressService = new TripProgressServiceImpl(
+                mock(CaptureService.class),
+                bookingRepository,
+                horseRepository,
                 quotationRepository,
                 notificationRepository,
-                paymentRepository,
-                fleetService,
                 logRepository,
                 vehicleRepository,
                 staffRepository,
-                locationRepository,
+                new DeliveryServiceImpl(bookingRepository, vehicleRepository, bookingVehicleRepository, bookingAssignmentRepository, mock(IncidentRepository.class), paymentRepository, operationalLog, horseDeliveryLocationService, staffRepository, mock(StaffNotificationService.class), new BookingVisibilityServiceImpl()),
+                mock(IncidentRepository.class),
+                org.mockito.Mockito.mock(StaffNotificationService.class),
+                operationalLog,
+                bookingQueryService);
+        service = new BookingServiceImpl(
+                bookingRepository,
+                userRepository,
+                new CustomerProfileServiceImpl(userRepository, customerRepository, mock(HorseRepository.class), mock(BookingRepository.class)),
+                horseRepository,
+                operationalLog,
                 systemConfigService,
-                tripDocumentRepository,
-                routeRepository,
                 serviceRepository,
                 horseDocumentRepository,
                 documentRequirementRepository,
-                horseDeliveryLocationService,
-                new VnpayProperties(),
+                org.mockito.Mockito.mock(StaffNotificationService.class),
+                bookingVehicleRepository,
+                bookingAssignmentRepository,
+                fleetService,
+                routeRepository,
                 clock,
-                mock(com.example.racehorse_transport.repository.IncidentRepository.class),
-                billMailService, org.mockito.Mockito.mock(com.example.racehorse_transport.service.StaffNotifier.class),
-                new com.example.racehorse_transport.service.PublicTrackingGuard(clock));
+                quotationRepository,
+                notificationRepository,
+                paymentRepository,
+                new VnpayProperties(),
+                billMailService,
+                locationRepository,
+                bookingQueryService,
+                tripProgressService);
         org.springframework.test.util.ReflectionTestUtils.setField(service, "termsAcceptanceRepository", termsAcceptances);
 
         when(documentRequirementRepository.findByDocumentGroupAndStatusOrderByDocumentNameAsc(any(), any()))
@@ -158,8 +194,8 @@ class BookingServiceImplTest {
         customer.setFullName("Phuc");
     }
 
-    private SystemConfigResponse config(String key, String value) {
-        return SystemConfigResponse.builder().configKey(key).configValue(value).build();
+    private SystemConfigResponseDto config(String key, String value) {
+        return SystemConfigResponseDto.builder().configKey(key).configValue(value).build();
     }
 
     @Test
@@ -167,7 +203,7 @@ class BookingServiceImplTest {
         Instant departure = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
                 .plusDays(25).atTime(10, 0).atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant();
         BookingHorseDto horseDto = BookingHorseDto.builder()
-                .insurance(com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("none").quoteValidUntil("2027-01-01").policyDocuments(List.of("https://example.test/forged.pdf")).build())
+                .insurance(HorseInsuranceDto.builder().option("none").quoteValidUntil("2027-01-01").policyDocuments(List.of("https://example.test/forged.pdf")).build())
                 .horseId("HORSE-12")
                 .name("Lightning")
                 .selectedServiceCodes(Map.of(
@@ -175,7 +211,7 @@ class BookingServiceImplTest {
                         "feed", "FEED_BASIC",
                         "insurance", "INSURANCE_DECLINED"))
                 .build();
-        CreateBookingRequest request = CreateBookingRequest.builder()
+        CreateBookingRequestDto request = CreateBookingRequestDto.builder()
                 .type("INTERNATIONAL")
                 .originName("  Hanoi  ")
                 .originCountry("VN")
@@ -213,7 +249,7 @@ class BookingServiceImplTest {
             return saved;
         });
 
-        BookingResponse response = service.createBooking("phuc", request);
+        BookingResponseDto response = service.createBooking("phuc", request);
 
         verify(termsAcceptances).save(any());
         // Mã đơn được sinh ở service (đã kiểm tra chưa trùng) trước khi lưu
@@ -252,7 +288,7 @@ class BookingServiceImplTest {
         Instant departure = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
                 .plusDays(25).atTime(10, 0).atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant();
         BookingHorseDto horseDto = BookingHorseDto.builder()
-                .insurance(com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("none").build())
+                .insurance(HorseInsuranceDto.builder().option("none").build())
                 .horseId("HORSE-12")
                 .name("Lightning")
                 .selectedServiceCodes(Map.of(
@@ -260,7 +296,7 @@ class BookingServiceImplTest {
                         "feed", "FEED_BASIC",
                         "insurance", "INSURANCE_DECLINED"))
                 .build();
-        CreateBookingRequest request = CreateBookingRequest.builder()
+        CreateBookingRequestDto request = CreateBookingRequestDto.builder()
                 .type("INTERNATIONAL")
                 .originName("Trang trại tại Việt Nam")
                 .originCountry("VN")
@@ -299,7 +335,7 @@ class BookingServiceImplTest {
         Instant departure = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
                 .plusDays(25).atTime(10, 0).atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant();
         BookingHorseDto horseDto = BookingHorseDto.builder()
-                .insurance(com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("none").build())
+                .insurance(HorseInsuranceDto.builder().option("none").build())
                 .horseId("HORSE-12")
                 .name("Lightning")
                 .selectedServiceCodes(Map.of(
@@ -307,7 +343,7 @@ class BookingServiceImplTest {
                         "feed", "FEED_BASIC",
                         "insurance", "INSURANCE_DECLINED"))
                 .build();
-        CreateBookingRequest request = CreateBookingRequest.builder()
+        CreateBookingRequestDto request = CreateBookingRequestDto.builder()
                 .type("INTERNATIONAL")
                 .originName("Trang trại tại Việt Nam")
                 .originCountry("VN")
@@ -346,7 +382,7 @@ class BookingServiceImplTest {
         Instant departure = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
                 .plusDays(25).atTime(10, 0).atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant();
         BookingHorseDto horseDto = BookingHorseDto.builder()
-                .insurance(com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("none").build())
+                .insurance(HorseInsuranceDto.builder().option("none").build())
                 .horseId("HORSE-12")
                 .name("Lightning")
                 .selectedServices(Map.of(
@@ -355,7 +391,7 @@ class BookingServiceImplTest {
                         "water", serviceSelection(6),
                         "insurance", serviceSelection(10)))
                 .build();
-        CreateBookingRequest request = CreateBookingRequest.builder()
+        CreateBookingRequestDto request = CreateBookingRequestDto.builder()
                 .type("DOMESTIC")
                 .departAt(departure.toEpochMilli())
                 .horses(List.of(horseDto))
@@ -379,7 +415,7 @@ class BookingServiceImplTest {
         Instant departure = java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
                 .plusDays(25).atTime(10, 0).atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toInstant();
         BookingHorseDto horseDto = BookingHorseDto.builder()
-                .insurance(com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("none").build())
+                .insurance(HorseInsuranceDto.builder().option("none").build())
                 .horseId("HORSE-12")
                 .name("Lightning")
                 .selectedServiceCodes(Map.of(
@@ -387,7 +423,7 @@ class BookingServiceImplTest {
                         "feed", "FEED_BASIC",
                         "insurance", "INSURANCE_DECLINED"))
                 .build();
-        CreateBookingRequest request = CreateBookingRequest.builder()
+        CreateBookingRequestDto request = CreateBookingRequestDto.builder()
                 .type("DOMESTIC")
                 .originCountry("VN")
                 .destCountry("VN")
@@ -450,7 +486,7 @@ class BookingServiceImplTest {
 
     @Test
     void createBooking_rejectsDepartureBeforeConfiguredLeadTime() {
-        CreateBookingRequest request = CreateBookingRequest.builder()
+        CreateBookingRequestDto request = CreateBookingRequestDto.builder()
                 .departAt(java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
                         .plusDays(19).atTime(10, 0).atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))
                         .toInstant().toEpochMilli())
@@ -476,8 +512,8 @@ class BookingServiceImplTest {
     @Test
     void createBooking_rejectsHorseInTransit() {
         BookingHorseDto horseDto = BookingHorseDto.builder()
-                .insurance(com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("none").build()).horseId("HORSE-12").name("Lightning").build();
-        CreateBookingRequest request = CreateBookingRequest.builder()
+                .insurance(HorseInsuranceDto.builder().option("none").build()).horseId("HORSE-12").name("Lightning").build();
+        CreateBookingRequestDto request = CreateBookingRequestDto.builder()
                 .horses(List.of(horseDto))
                 .consignor(PartyContactDto.builder().name("Sender").phone("0900").build())
                 .build();
@@ -503,8 +539,8 @@ class BookingServiceImplTest {
     @Test
     void createBooking_rejectsHorseInUncompletedBooking() {
         BookingHorseDto horseDto = BookingHorseDto.builder()
-                .insurance(com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("none").build()).horseId("HORSE-12").name("Lightning").build();
-        CreateBookingRequest request = CreateBookingRequest.builder()
+                .insurance(HorseInsuranceDto.builder().option("none").build()).horseId("HORSE-12").name("Lightning").build();
+        CreateBookingRequestDto request = CreateBookingRequestDto.builder()
                 .horses(List.of(horseDto))
                 .consignor(PartyContactDto.builder().name("Sender").phone("0900").build())
                 .build();
@@ -590,8 +626,8 @@ class BookingServiceImplTest {
         Booking booking = bookingOwnedByCustomer();
         when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
 
-        BookingResponse byUsername = service.getBookingById(42, "phuc");
-        BookingResponse byEmail = service.getBookingById(42, "phuc@example.com");
+        BookingResponseDto byUsername = service.getBookingById(42, "phuc");
+        BookingResponseDto byEmail = service.getBookingById(42, "phuc@example.com");
 
         assertThat(byUsername.getId()).isEqualTo(CODE);
         assertThat(byEmail.getId()).isEqualTo(CODE);
@@ -603,8 +639,8 @@ class BookingServiceImplTest {
         booking.setStatus("ready_for_pickup");
         booking.setDetailsJson("{\"horses\":[{\"horseId\":\"H-001\",\"name\":\"Storm\"}],"
                 + "\"trips\":[{\"tripId\":\"TRP-042-1\",\"vehicleId\":\"VH-001\",\"horseIds\":[\"H-001\"]}]}");
-        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
-        var request = new com.example.racehorse_transport.dto.field.TripUpdateRequest();
+        when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
+        var request = new TripUpdateRequestDto();
         request.setTripId("TRP-042-1");
         request.setAction("EXCLUDE_UNFIT_HORSE");
         request.setActor("escort01");
@@ -628,10 +664,10 @@ class BookingServiceImplTest {
                   "welfare": []
                 }
                 """);
-        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var request = new com.example.racehorse_transport.dto.field.TripUpdateRequest();
+        var request = new TripUpdateRequestDto();
         request.setTripId("TRP-042-1");
         request.setAction("RETURN_ORIGINALS");
         request.setActor("driver02");
@@ -659,9 +695,9 @@ class BookingServiceImplTest {
                   "welfare": [{ "checkpointId": "delivery" }]
                 }
                 """);
-        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
 
-        var request = new com.example.racehorse_transport.dto.field.TripUpdateRequest();
+        var request = new TripUpdateRequestDto();
         request.setTripId("TRP-042-1");
         request.setAction("COMPLETE_DELIVERY");
         request.setActor("driver02");
@@ -677,10 +713,10 @@ class BookingServiceImplTest {
     @Test
     void driverCannotStartTripAssignedToAnotherDriver() {
         Booking booking = fieldTripBooking(42, "ready_for_pickup", "\"driverId\":\"DR-02\"");
-        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
         when(staffRepository.findByUser_Username("driver01")).thenReturn(Optional.of(fieldDriver()));
 
-        var request = new com.example.racehorse_transport.dto.field.TripUpdateRequest();
+        var request = new TripUpdateRequestDto();
         request.setTripId("TRP-042-1");
         request.setAction("DEPART_TO_PICKUP");
 
@@ -694,11 +730,11 @@ class BookingServiceImplTest {
     void driverCannotCheckInAnotherTripWhileAssignedTripIsStillActive() {
         Booking target = fieldTripBooking(42, "ready_for_pickup", "\"driverId\":\"DR-01\"");
         Booking active = fieldTripBooking(43, "in_transit", "\"driverId\":\"DR-01\",\"departedAt\":100");
-        when(bookingRepository.findById(42)).thenReturn(Optional.of(target));
+        when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(target));
         when(bookingRepository.findAll()).thenReturn(List.of(target, active));
         when(staffRepository.findByUser_Username("driver01")).thenReturn(Optional.of(fieldDriver()));
 
-        var request = new com.example.racehorse_transport.dto.field.TripUpdateRequest();
+        var request = new TripUpdateRequestDto();
         request.setTripId("TRP-042-1");
         request.setAction("ARRIVE_PICKUP");
 
@@ -735,13 +771,13 @@ class BookingServiceImplTest {
         Booking booking = deliveredHorseBooking(false);
         Horse horse = Horse.builder().id(12).customerID(customer).transitStatus("IN_TRANSIT").build();
         when(horseRepository.findById(12)).thenReturn(Optional.of(horse));
-        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> {
             Booking saved = invocation.getArgument(0);
             if (saved.getId() == null) saved.setId(43);
             return saved;
         });
-        var delivery = new com.example.racehorse_transport.dto.field.TripUpdateRequest();
+        var delivery = new TripUpdateRequestDto();
         delivery.setTripId("TRP-042-1");
         delivery.setAction("COMPLETE_DELIVERY");
         service.updateTripProgress(CODE, delivery, "manager", "MANAGER");
@@ -757,14 +793,14 @@ class BookingServiceImplTest {
         when(userRepository.findByUsernameOrEmail("phuc", "phuc")).thenReturn(Optional.of(customer.getUser()));
         when(customerRepository.findById(7)).thenReturn(Optional.of(customer));
         when(bookingRepository.findByCustomerID_IdOrderByBookingDateDesc(7)).thenReturn(List.of(booking));
-        var next = CreateBookingRequest.builder().type("domestic")
+        var next = CreateBookingRequestDto.builder().type("domestic")
                 .originName("Trang trại A, Hà Nội").originCountry("VN")
                 .destName("Trang trại B, Đà Nẵng").destCountry("VN")
                 .departAt(Instant.now().plus(25, java.time.temporal.ChronoUnit.DAYS).toEpochMilli())
                 .consignor(PartyContactDto.builder().name("Sender").phone("0900000000").build())
                 .consignee(PartyContactDto.builder().name("Recipient").phone("0900000001").build())
                 .horses(List.of(BookingHorseDto.builder().horseId("H-012").name("Lightning")
-                        .insurance(com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder()
+                        .insurance(HorseInsuranceDto.builder()
                                 .option("none").build()).build())).limitedLiabilityAccepted(true).build();
         assertThat(service.createBooking("phuc", next).getStatus()).isEqualTo("pending_intake");
     }
@@ -774,9 +810,9 @@ class BookingServiceImplTest {
         Booking booking = deliveredHorseBooking(true);
         Horse horse = Horse.builder().id(12).transitStatus("IN_TRANSIT").build();
         when(horseRepository.findById(12)).thenReturn(Optional.of(horse));
-        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        var delivery = new com.example.racehorse_transport.dto.field.TripUpdateRequest();
+        var delivery = new TripUpdateRequestDto();
         delivery.setTripId("TRP-042-1");
         delivery.setAction("COMPLETE_DELIVERY");
         service.updateTripProgress(CODE, delivery, "manager", "MANAGER");
@@ -795,7 +831,7 @@ class BookingServiceImplTest {
                 """);
         var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
         var payload = mapper.readValue(booking.getDetailsJson(),
-                com.example.racehorse_transport.dto.booking.BookingDetailsPayload.class);
+                BookingDetailsPayloadDto.class);
         payload.setDestCountry("VN");
         payload.getTrips().getFirst().setHorseIds(List.of("H-012"));
         var horses = new java.util.ArrayList<BookingHorseDto>();
@@ -803,7 +839,7 @@ class BookingServiceImplTest {
         if (multipleVehicles) {
             horses.add(BookingHorseDto.builder().horseId("H-013").build());
             var trips = new java.util.ArrayList<>(payload.getTrips());
-            var second = new com.example.racehorse_transport.dto.coordinator.VehicleTripDto();
+            var second = new VehicleTripDto();
             second.setTripId("TRP-042-2");
             second.setHorseIds(List.of("H-013"));
             second.setRun(new java.util.HashMap<>(Map.of("startedAt", 100)));
@@ -878,22 +914,22 @@ class BookingServiceImplTest {
             return java.util.stream.Stream.of(returning, backHome).filter(b -> statuses.contains(b.getStatus())).toList();
         });
 
-        List<BookingResponse> responses = service.getMyFieldBookings("driver02", "DRIVER");
+        List<BookingResponseDto> responses = service.getMyFieldBookings("driver02", "DRIVER");
 
-        assertThat(responses).extracting(BookingResponse::getId).containsExactly(CODE);
+        assertThat(responses).extracting(BookingResponseDto::getId).containsExactly(CODE);
     }
 
     @Test
     void confirmCoordinatorPlan_rejectsRouteWithoutLegs() {
         Booking underReview = bookingOwnedByCustomer();
         underReview.setStatus("under_review"); // điều phối chỉ chốt phương án ở bước thẩm định
-        when(bookingRepository.findById(42)).thenReturn(Optional.of(underReview));
-        var trip = new com.example.racehorse_transport.dto.coordinator.VehicleTripDto();
+        when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(underReview));
+        var trip = new VehicleTripDto();
         trip.setVehicleId("VH-001");
         trip.setHorseIds(List.of("H-001"));
 
         for (Object route : List.of("Hà Nội → Lạng Sơn", Map.of("rests", List.of()))) {
-            var request = com.example.racehorse_transport.dto.coordinator.CoordinatorPlanRequest.builder()
+            var request = CoordinatorPlanRequestDto.builder()
                     .trips(List.of(trip)).route(route).build();
             assertThatThrownBy(() -> service.confirmCoordinatorPlan(CODE, request))
                     .isInstanceOf(IllegalArgumentException.class)
@@ -912,7 +948,7 @@ class BookingServiceImplTest {
                   {"horseId":"H-002","stall":"single","selectedServices":{"stall":{"id":2,"serviceCode":"STALL_SINGLE_EXTENDED"}}}
                 ]}
                 """);
-        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
         Vehicle vehicle = new Vehicle();
         vehicle.setId(1);
         vehicle.setCapacity(2);
@@ -920,10 +956,10 @@ class BookingServiceImplTest {
         vehicle.setLicensePlate("29H-12345");
         when(fleetService.findVehicleByIdOrCode("VH-001")).thenReturn(vehicle);
 
-        var trip = new com.example.racehorse_transport.dto.coordinator.VehicleTripDto();
+        var trip = new VehicleTripDto();
         trip.setVehicleId("VH-001");
         trip.setHorseIds(List.of("H-001", "H-002"));
-        var request = com.example.racehorse_transport.dto.coordinator.CoordinatorPlanRequest.builder()
+        var request = CoordinatorPlanRequestDto.builder()
                 .trips(List.of(trip))
                 .route(Map.of("legs", List.of(Map.of("from", "A", "to", "B"))))
                 .build();
@@ -939,7 +975,7 @@ class BookingServiceImplTest {
     void confirmCoordinatorPlan_setsRouteIdWhenProvided() {
         Booking booking = bookingOwnedByCustomer();
         booking.setStatus("under_review"); // điều phối chỉ chốt phương án ở bước thẩm định
-        when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
+        when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Vehicle vehicle = new Vehicle();
@@ -953,17 +989,17 @@ class BookingServiceImplTest {
         route.setRouteName("Tuyến test");
         when(routeRepository.findById(5)).thenReturn(Optional.of(route));
 
-        var trip = new com.example.racehorse_transport.dto.coordinator.VehicleTripDto();
+        var trip = new VehicleTripDto();
         trip.setVehicleId("VH-001");
         trip.setHorseIds(List.of("H-001"));
 
-        var planRequest = com.example.racehorse_transport.dto.coordinator.CoordinatorPlanRequest.builder()
+        var planRequest = CoordinatorPlanRequestDto.builder()
                 .routeId(5)
                 .trips(List.of(trip))
                 .route(Map.of("legs", List.of(Map.of("from", "A", "to", "B"))))
                 .build();
 
-        BookingResponse res = service.confirmCoordinatorPlan(CODE, planRequest);
+        BookingResponseDto res = service.confirmCoordinatorPlan(CODE, planRequest);
 
         assertThat(res.getRouteId()).isEqualTo(5);
         assertThat(booking.getRouteID()).isEqualTo(route);
@@ -981,7 +1017,7 @@ class BookingServiceImplTest {
                      {"id":"delivery","type":"delivery","plannedAt":300}]}}]}
                 """);
         when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
-        BookingResponse response = service.getBookingById(42, null);
+        BookingResponseDto response = service.getBookingById(42, null);
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> checkpoints = (List<Map<String, Object>>) response.getTrips().get(0).getRun().get("checkpoints");
         assertThat(checkpoints).extracting(cp -> cp.get("id")).containsExactly("pickup", "sos-7", "delivery");
@@ -1006,7 +1042,7 @@ class BookingServiceImplTest {
         when(userRepository.findByUsernameOrEmail("phuc", "phuc")).thenReturn(Optional.of(customer.getUser()));
         when(bookingRepository.findByCustomerID_IdOrderByBookingDateDesc(7)).thenReturn(List.of(booking));
 
-        List<BookingResponse> responses = service.getCustomerBookings("phuc");
+        List<BookingResponseDto> responses = service.getCustomerBookings("phuc");
 
         assertThat(responses).hasSize(1);
         assertThat(responses.get(0).getId()).isEqualTo(CODE);
@@ -1041,10 +1077,10 @@ class BookingServiceImplTest {
         when(fleetService.findStaffByIdOrCode("DR-01", "DRIVER")).thenReturn(staff("driver01", "0901000001"));
         when(fleetService.findStaffByIdOrCode("ES-01", "ESCORT")).thenReturn(staff("escort01", "0901000002"));
 
-        List<CustomerTripTeamResponse> team = service.getCustomerTripTeam(42, "phuc");
+        List<CustomerTripTeamResponseDto> team = service.getCustomerTripTeam(42, "phuc");
 
         assertThat(team).hasSize(1);
-        CustomerTripTeamResponse trip = team.get(0);
+        CustomerTripTeamResponseDto trip = team.get(0);
         assertThat(trip.getTripId()).isEqualTo("TRP-042-1");
         assertThat(trip.getHorseNames()).containsExactly("Storm");
         assertThat(trip.getVehicle().getPlate()).isEqualTo("51C-123.45");
@@ -1071,7 +1107,7 @@ class BookingServiceImplTest {
         booking.setStatus("under_review");
         when(bookingRepository.findByStatusOrderByBookingDateDesc("under_review")).thenReturn(List.of(booking));
 
-        List<BookingResponse> responses = service.getBookingsByStatus("under_review");
+        List<BookingResponseDto> responses = service.getBookingsByStatus("under_review");
 
         assertThat(responses).hasSize(1);
         assertThat(responses.get(0).getId()).isEqualTo(CODE);
@@ -1086,7 +1122,7 @@ class BookingServiceImplTest {
         when(bookingRepository.findAllByOrderByBookingDateDesc()).thenReturn(List.of(booking));
 
         for (String status : List.of("", "  ", "ALL")) {
-            List<BookingResponse> responses = service.getBookingsByStatus(status);
+            List<BookingResponseDto> responses = service.getBookingsByStatus(status);
             assertThat(responses).hasSize(1);
             assertThat(responses.get(0).getId()).isEqualTo(CODE);
         }
@@ -1115,7 +1151,7 @@ class BookingServiceImplTest {
         when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        BookingResponse response = service.resubmitBooking(CODE, "phuc");
+        BookingResponseDto response = service.resubmitBooking(CODE, "phuc");
 
         assertThat(response.getStatus()).isEqualTo("under_review");
         assertThat(response.getMedical()).isInstanceOf(Map.class);
@@ -1169,8 +1205,8 @@ class BookingServiceImplTest {
         when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(42)).thenReturn(Optional.of(quotation));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        BookingResponse response = service.rejectQuote(
-                CODE, "phuc", RejectQuoteRequest.builder().reason("  Giá vượt ngân sách  ").build());
+        BookingResponseDto response = service.rejectQuote(
+                CODE, "phuc", RejectQuoteRequestDto.builder().reason("  Giá vượt ngân sách  ").build());
 
         assertThat(response.getStatus()).isEqualTo("cancelled");
         assertThat(quotation.getStatus()).isEqualTo("REJECTED");
@@ -1193,7 +1229,7 @@ class BookingServiceImplTest {
         when(quotationRepository.findTopByBookingIdOrderBySentAtDesc(42)).thenReturn(Optional.empty());
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        BookingResponse response = service.rejectQuote(CODE, "phuc", null);
+        BookingResponseDto response = service.rejectQuote(CODE, "phuc", null);
 
         assertThat(response.getStatus()).isEqualTo("cancelled");
         assertThat(response.getHistory().get(0).get("text"))
@@ -1209,7 +1245,7 @@ class BookingServiceImplTest {
         booking.setStatus("under_review");
         when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
 
-        assertThatThrownBy(() -> service.rejectQuote(CODE, "phuc", RejectQuoteRequest.builder().build()))
+        assertThatThrownBy(() -> service.rejectQuote(CODE, "phuc", RejectQuoteRequestDto.builder().build()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("chờ đặt cọc");
 
@@ -1232,8 +1268,8 @@ class BookingServiceImplTest {
         booking.setDetailsJson(details);
         when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(i -> i.getArgument(0));
-        var line = com.example.racehorse_transport.dto.manager.QuoteLineDto.builder().label("Cước").amount(new java.math.BigDecimal("1000000")).build();
-        var request = com.example.racehorse_transport.dto.manager.SendQuoteRequest.builder().lines(List.of(line)).adjustments(List.of()).build();
+        var line = QuoteLineDto.builder().label("Cước").amount(new java.math.BigDecimal("1000000")).build();
+        var request = SendQuoteRequestDto.builder().lines(List.of(line)).adjustments(List.of()).build();
         service.sendQuote(CODE, request);
         ArgumentCaptor<Quotation> quote = ArgumentCaptor.forClass(Quotation.class);
         verify(quotationRepository).save(quote.capture());
@@ -1270,9 +1306,9 @@ class BookingServiceImplTest {
             """);
         when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        var transport = com.example.racehorse_transport.dto.manager.QuoteLineDto.builder().label("Cước vận chuyển").amount(new java.math.BigDecimal("10000000")).build();
-        var tampered = com.example.racehorse_transport.dto.manager.QuoteLineDto.builder().label("Thu hộ bảo hiểm bên thứ ba").amount(java.math.BigDecimal.ONE).build();
-        var request = com.example.racehorse_transport.dto.manager.SendQuoteRequest.builder().by("manager01").lines(List.of(transport, tampered)).adjustments(List.of()).build();
+        var transport = QuoteLineDto.builder().label("Cước vận chuyển").amount(new java.math.BigDecimal("10000000")).build();
+        var tampered = QuoteLineDto.builder().label("Thu hộ bảo hiểm bên thứ ba").amount(java.math.BigDecimal.ONE).build();
+        var request = SendQuoteRequestDto.builder().by("manager01").lines(List.of(transport, tampered)).adjustments(List.of()).build();
         service.sendQuote(CODE, request);
         ArgumentCaptor<Quotation> saved = ArgumentCaptor.forClass(Quotation.class);
         verify(quotationRepository).save(saved.capture());
@@ -1289,10 +1325,10 @@ class BookingServiceImplTest {
                 + "\"trips\":[{\"tripId\":\"TRP-042-1\",\"vehicleId\":\"VH-001\",\"driverId\":\"DR-01\",\"escortId\":\"ES-01\",\"horseIds\":[]}]}");
         when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        var line = new com.example.racehorse_transport.dto.manager.QuoteLineDto();
+        var line = new QuoteLineDto();
         line.setLabel("Cước vận chuyển");
         line.setAmount(new java.math.BigDecimal("10000000"));
-        var request = com.example.racehorse_transport.dto.manager.SendQuoteRequest.builder()
+        var request = SendQuoteRequestDto.builder()
                 .by("manager01").lines(List.of(line)).adjustments(List.of())
                 .subtotal(java.math.BigDecimal.ONE).total(java.math.BigDecimal.ONE)
                 .deposit(java.math.BigDecimal.ONE).balance(java.math.BigDecimal.ZERO).build();
@@ -1331,9 +1367,9 @@ class BookingServiceImplTest {
         when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        BookingResponse response = service.rejectBooking(
+        BookingResponseDto response = service.rejectBooking(
                 CODE,
-                RejectBookingRequest.builder()
+                RejectBookingRequestDto.builder()
                         .by("manager1")
                         .role("manager")
                         .reason("  Hồ sơ không đầy đủ  ")
@@ -1361,9 +1397,9 @@ class BookingServiceImplTest {
         when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        BookingResponse response = service.rejectBooking(
+        BookingResponseDto response = service.rejectBooking(
                 CODE,
-                RejectBookingRequest.builder()
+                RejectBookingRequestDto.builder()
                         .by("coordinator1")
                         .role("coordinator")
                         .reason("Không thể sắp xếp lộ trình")
@@ -1386,7 +1422,7 @@ class BookingServiceImplTest {
 
         assertThatThrownBy(() -> service.rejectBooking(
                 CODE,
-                RejectBookingRequest.builder().role("manager").reason("reason").build()))
+                RejectBookingRequestDto.builder().role("manager").reason("reason").build()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("pending_intake");
 
@@ -1402,7 +1438,7 @@ class BookingServiceImplTest {
 
         assertThatThrownBy(() -> service.rejectBooking(
                 CODE,
-                RejectBookingRequest.builder().role("coordinator").reason("reason").build()))
+                RejectBookingRequestDto.builder().role("coordinator").reason("reason").build()))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("under_review");
 
@@ -1442,15 +1478,15 @@ class BookingServiceImplTest {
         });
     }
 
-    private CreateBookingRequest requestWithHorseId(String horseId) {
-        return CreateBookingRequest.builder()
+    private CreateBookingRequestDto requestWithHorseId(String horseId) {
+        return CreateBookingRequestDto.builder()
                 .type("domestic")
                 .originName("Hanoi")
                 .destName("Ho Chi Minh City")
                 .departAt(Instant.parse("2027-01-15T10:00:00Z").toEpochMilli())
                 .consignor(PartyContactDto.builder().name("Sender").phone("0900").build())
                 .consignee(PartyContactDto.builder().name("Receiver").phone("0901").build())
-                .horses(List.of(BookingHorseDto.builder().insurance(com.example.racehorse_transport.dto.booking.HorseInsuranceDto.builder().option("none").build()).horseId(horseId).build()))
+                .horses(List.of(BookingHorseDto.builder().insurance(HorseInsuranceDto.builder().option("none").build()).horseId(horseId).build()))
                 .build();
     }
 
@@ -1502,7 +1538,7 @@ class BookingServiceImplTest {
         booking.setDetailsJson("{\"payment\":{\"amount\":3000000}}");
         when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
 
-        BookingResponse beforeBalance = service.getBookingById(42, "phuc");
+        BookingResponseDto beforeBalance = service.getBookingById(42, "phuc");
         assertThat(beforeBalance.getCanCancel()).isTrue();
         // 70% còn lại chỉ trả được sau khi kíp xe nhận xong ngựa ở điểm đón
         assertThat(beforeBalance.getCanPayBalance()).isFalse();
@@ -1518,13 +1554,13 @@ class BookingServiceImplTest {
         assertThat(service.getBookingById(42, "phuc").getCanPayBalance()).isTrue();
 
         booking.setDetailsJson("{\"payment\":{\"amount\":3000000,\"balancePaid\":true}}");
-        BookingResponse afterBalance = service.getBookingById(42, "phuc");
+        BookingResponseDto afterBalance = service.getBookingById(42, "phuc");
         assertThat(afterBalance.getCanCancel()).isFalse();
         assertThat(afterBalance.getCanPayBalance()).isFalse();
 
         booking.setStatus("clearance_in_progress");
         booking.setDetailsJson("{\"payment\":{\"amount\":3000000}}");
-        BookingResponse duringClearance = service.getBookingById(42, "phuc");
+        BookingResponseDto duringClearance = service.getBookingById(42, "phuc");
         assertThat(duringClearance.getCanCancel()).isTrue();
         assertThat(duringClearance.getCanPayBalance()).isFalse();
     }
@@ -1542,7 +1578,7 @@ class BookingServiceImplTest {
         when(bookingRepository.findByCustomerID_IdOrderByBookingDateDesc(any(Integer.class), any(org.springframework.data.domain.Pageable.class)))
                 .thenReturn(page);
 
-        com.example.racehorse_transport.dto.common.PagedResponse<BookingResponse> result = service.getCustomerBookingsPaged("phuc", 0, 10);
+        PagedResponseDto<BookingResponseDto> result = service.getCustomerBookingsPaged("phuc", 0, 10);
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getTotalElements()).isEqualTo(1);
         assertThat(result.getPage()).isEqualTo(0);
@@ -1618,14 +1654,14 @@ class BookingServiceImplTest {
     void readingAwaitingDepositExposesConfirmationDeadlineWithoutExtendingQuote() {
         Booking booking = prepareDepositExpiry("PENDING", DEPOSIT_DEADLINE.plusSeconds(120));
         when(bookingRepository.findById(42)).thenReturn(Optional.of(booking));
-        BookingResponse response = service.getBookingById(42, "phuc");
+        BookingResponseDto response = service.getBookingById(42, "phuc");
         assertThat(response.getDepositConfirmationUntil()).isEqualTo(DEPOSIT_DEADLINE.plusSeconds(300).toEpochMilli());
     }
 
     @Test
     void assignCrew_duringPaymentConfirmationCannotChangeExistingCrew() {
         Booking booking = prepareDepositExpiry("PENDING", DEPOSIT_DEADLINE.plusSeconds(120));
-        assertThatThrownBy(() -> service.assignCrew(CODE, new com.example.racehorse_transport.dto.manager.AssignCrewRequest()))
+        assertThatThrownBy(() -> service.assignCrew(CODE, new AssignCrewRequestDto()))
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("pending_commercial");
         assertThat(booking.getStatus()).isEqualTo("awaiting_payment");
         verify(bookingAssignmentRepository, never()).deleteByBookingID_Id(42);
@@ -1656,7 +1692,7 @@ class BookingServiceImplTest {
         when(bookingRepository.findAllByOrderByBookingDateDesc(any(org.springframework.data.domain.Pageable.class)))
                 .thenReturn(page);
 
-        com.example.racehorse_transport.dto.common.PagedResponse<BookingResponse> result = service.getBookingsPaged("ALL", 0, 20);
+        PagedResponseDto<BookingResponseDto> result = service.getBookingsPaged("ALL", 0, 20);
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getTotalElements()).isEqualTo(1);
     }

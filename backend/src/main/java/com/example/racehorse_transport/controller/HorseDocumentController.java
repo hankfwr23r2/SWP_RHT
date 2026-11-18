@@ -1,8 +1,8 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.document.HorseDocumentResponse;
-import com.example.racehorse_transport.dto.document.ReviewHorseDocumentRequest;
-import com.example.racehorse_transport.response.ApiResponse;
+import com.example.racehorse_transport.dto.document.HorseDocumentResponseDto;
+import com.example.racehorse_transport.dto.document.ReviewHorseDocumentRequestDto;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.service.HorseDocumentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -46,7 +46,7 @@ public class HorseDocumentController {
      */
     @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'ADMIN')")
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<HorseDocumentResponse>> uploadDocument(
+    public ResponseEntity<ApiResponseDto<HorseDocumentResponseDto>> uploadDocument(
             @RequestParam("file") MultipartFile file,
             @RequestParam("horseId") Integer horseId,
             @RequestParam(value = "documentType", required = false, defaultValue = "OTHER") String documentType,
@@ -54,10 +54,10 @@ public class HorseDocumentController {
 
         assertHorseAccess(horseId, authentication);
 
-        HorseDocumentResponse response = horseDocumentService.uploadHorseDocument(
+        HorseDocumentResponseDto response = horseDocumentService.uploadHorseDocument(
                 horseId, documentType, file);
 
-        return ResponseEntity.ok(ApiResponse.success(response,
+        return ResponseEntity.ok(ApiResponseDto.success(response,
                 "Tải giấy tờ thành công. Bạn có thể đặt đơn ngay; chuyên viên sẽ kiểm tra khi thẩm định đơn."));
     }
 
@@ -74,17 +74,17 @@ public class HorseDocumentController {
      */
     @PreAuthorize("hasAnyRole('SPECIALIST', 'INSPECTOR', 'MANAGER', 'ADMIN')")
     @PutMapping("/{id}/review")
-    public ResponseEntity<ApiResponse<HorseDocumentResponse>> reviewDocument(
+    public ResponseEntity<ApiResponseDto<HorseDocumentResponseDto>> reviewDocument(
             @PathVariable Integer id,
-            @RequestBody ReviewHorseDocumentRequest request) {
+            @RequestBody ReviewHorseDocumentRequestDto request) {
 
-        HorseDocumentResponse response = horseDocumentService.reviewDocument(id, request);
+        HorseDocumentResponseDto response = horseDocumentService.reviewDocument(id, request);
 
         String message = request.isApproved()
                 ? "Hồ sơ đã được DUYỆT thành công!"
                 : "Hồ sơ đã bị TỪ CHỐI. Khách hàng cần bổ sung lại.";
 
-        return ResponseEntity.ok(ApiResponse.success(response, message));
+        return ResponseEntity.ok(ApiResponseDto.success(response, message));
     }
 
     /**
@@ -94,13 +94,13 @@ public class HorseDocumentController {
      */
     @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'INSPECTOR', 'MANAGER', 'COORDINATOR', 'DRIVER', 'ESCORT', 'ADMIN')")
     @GetMapping("/horse/{horseId}")
-    public ResponseEntity<ApiResponse<List<HorseDocumentResponse>>> getDocumentsByHorse(
+    public ResponseEntity<ApiResponseDto<List<HorseDocumentResponseDto>>> getDocumentsByHorse(
             @PathVariable Integer horseId, Authentication authentication) {
 
         assertHorseAccess(horseId, authentication);
 
-        List<HorseDocumentResponse> documents = horseDocumentService.getDocumentsByHorse(horseId);
-        return ResponseEntity.ok(ApiResponse.success(documents,
+        List<HorseDocumentResponseDto> documents = horseDocumentService.getDocumentsByHorse(horseId);
+        return ResponseEntity.ok(ApiResponseDto.success(documents,
                 "Lấy danh sách hồ sơ ngựa ID=" + horseId + " thành công. Tổng: " + documents.size()));
     }
 
@@ -111,9 +111,9 @@ public class HorseDocumentController {
      */
     @PreAuthorize("hasRole('CUSTOMER')")
     @GetMapping("/mine")
-    public ResponseEntity<ApiResponse<List<HorseDocumentResponse>>> getMyDocuments(Authentication authentication) {
-        List<HorseDocumentResponse> documents = horseDocumentService.getCustomerDocuments(authentication.getName());
-        return ResponseEntity.ok(ApiResponse.success(documents, "Lấy hồ sơ ngựa của khách hàng thành công"));
+    public ResponseEntity<ApiResponseDto<List<HorseDocumentResponseDto>>> getMyDocuments(Authentication authentication) {
+        List<HorseDocumentResponseDto> documents = horseDocumentService.getCustomerDocuments(authentication.getName());
+        return ResponseEntity.ok(ApiResponseDto.success(documents, "Lấy hồ sơ ngựa của khách hàng thành công"));
     }
 
     private void assertHorseAccess(Integer horseId, Authentication authentication) {
@@ -132,11 +132,11 @@ public class HorseDocumentController {
      */
     @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteDocument(
+    public ResponseEntity<ApiResponseDto<Void>> deleteDocument(
             @PathVariable Integer id,
             Authentication authentication) {
 
         horseDocumentService.deleteDocument(id, isCustomer(authentication) ? authentication.getName() : null);
-        return ResponseEntity.ok(ApiResponse.success(null, "Đã xóa giấy tờ thành công."));
+        return ResponseEntity.ok(ApiResponseDto.success(null, "Đã xóa giấy tờ thành công."));
     }
 }

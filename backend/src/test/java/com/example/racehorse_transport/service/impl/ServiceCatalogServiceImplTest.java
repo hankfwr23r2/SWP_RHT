@@ -1,0 +1,246 @@
+package com.example.racehorse_transport.service.impl;
+
+import com.example.racehorse_transport.dto.admin.CreateServiceRequestDto;
+import com.example.racehorse_transport.entity.Category;
+import com.example.racehorse_transport.entity.Service;
+import com.example.racehorse_transport.repository.CategoryRepository;
+import com.example.racehorse_transport.repository.ServiceRepository;
+import com.example.racehorse_transport.service.AdminAuditService;
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+class ServiceCatalogServiceImplTest {
+
+    private final ServiceRepository serviceRepository = mock(ServiceRepository.class);
+    private final CategoryRepository categoryRepository = mock(CategoryRepository.class);
+    private final ServiceCatalogServiceImpl service = new ServiceCatalogServiceImpl(org.mockito.Mockito.mock(AdminAuditService.class), serviceRepository, categoryRepository);
+    private Category category;
+
+    @BeforeEach
+    void setUp() {
+        category = new Category();
+        category.setId(2);
+        category.setCategoryName("Gói thức ăn");
+    }
+
+    @Test
+    void getActiveServices_readsOnlyActiveCatalogEntries() {
+        Service item = service(3, "Gói cơ bản", "0", "ACTIVE");
+        when(serviceRepository.findByStatusIgnoreCaseOrderByIdAsc("ACTIVE")).thenReturn(List.of(item));
+
+        var result = service.getActiveServices();
+
+        assertThat(result).singleElement().satisfies(response -> {
+            assertThat(response.getId()).isEqualTo(3);
+            assertThat(response.getServiceName()).isEqualTo("Gói cơ bản");
+            assertThat(response.getServiceCode()).isEqualTo("FEED_BASIC");
+            assertThat(response.getBillingUnit()).isEqualTo("PER_HORSE_DAY");
+            assertThat(response.getCategoryId()).isEqualTo(2);
+            assertThat(response.getPrice()).isEqualByComparingTo("0");
+        });
+        verify(serviceRepository).findByStatusIgnoreCaseOrderByIdAsc("ACTIVE");
+    }
+
+    @Test
+    void publicCatalogExcludesLegacyInsuranceButAdminCanReadIt() {
+        Service insurance = service(9, "Mua bảo hiểm", "20000000", "ACTIVE");
+        insurance.setCategoryID(category(4, "Bảo hiểm chuyến đi"));
+        Service feed = service(3, "Gói cơ bản", "0", "ACTIVE");
+        when(serviceRepository.findByStatusIgnoreCaseOrderByIdAsc("ACTIVE")).thenReturn(List.of(feed, insurance));
+        assertThat(service.getActiveServices()).extracting(r -> r.getId()).containsExactly(3);
+        when(serviceRepository.findAll(org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "id")))
+                .thenReturn(List.of(feed, insurance));
+        assertThat(service.getAllServices()).extracting(r -> r.getId()).containsExactly(3, 9);
+    }
+
+    @Test
+    void createService_persistsTheNewCatalogEntry() {
+        when(categoryRepository.findById(2)).thenReturn(Optional.of(category));
+        when(serviceRepository.findMaxId()).thenReturn(10);
+        when(serviceRepository.save(any(Service.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.createService(CreateServiceRequestDto.builder()
+                .serviceName("Gói mới")
+                .serviceCode("FEED_NEW")
+                .billingUnit("PER_HORSE_DAY")
+                .description("4 bữa/ngày")
+                .categoryId(2)
+                .price(new BigDecimal("125000"))
+                .build());
+
+        assertThat(response.getId()).isEqualTo(11);
+        assertThat(response.getServiceName()).isEqualTo("Gói mới");
+        assertThat(response.getServiceCode()).isEqualTo("FEED_NEW");
+        assertThat(response.getBillingUnit()).isEqualTo("PER_HORSE_DAY");
+        assertThat(response.getDescription()).isEqualTo("4 bữa/ngày");
+        assertThat(response.getPrice()).isEqualByComparingTo("125000");
+        assertThat(response.getStatus()).isEqualTo("ACTIVE");
+        verify(serviceRepository).save(any(Service.class));
+    }
+
+    @Test
+    void createService_rejectsInsuranceCategory() {
+        Category insurance = category(4, "Bảo hiểm chuyến đi");
+        when(categoryRepository.findById(4)).thenReturn(Optional.of(insurance));
+
+        assertThatThrownBy(() -> service.createService(CreateServiceRequestDto.builder()
+                .serviceName("Bảo hiểm bổ sung")
+                .serviceCode("INSURANCE_EXTRA")
+                .billingUnit("PER_HORSE")
+                .categoryId(4)
+                .price(new BigDecimal("100000"))
+                .build()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("bên thứ ba");
+
+        verify(serviceRepository, never()).save(any(Service.class));
+    }
+
+    @Test
+    void updateService_persistsEditedNameAndPrice() {
+        Service existing = service(3, "Old name", "100000", "ACTIVE");
+        when(serviceRepository.findById(3)).thenReturn(Optional.of(existing));
+        when(categoryRepository.findById(2)).thenReturn(Optional.of(category));
+        when(serviceRepository.save(any(Service.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.updateService(3, CreateServiceRequestDto.builder()
+                .serviceName("New name")
+                .serviceCode("FEED_BASIC")
+                .billingUnit("PER_HORSE_DAY")
+                .categoryId(2)
+                .price(new BigDecimal("175000"))
+                .build());
+
+        assertThat(response.getServiceName()).isEqualTo("New name");
+        assertThat(response.getPrice()).isEqualByComparingTo("175000");
+        verify(serviceRepository).save(existing);
+    }
+
+    @Test
+    void updateService_doesNotAllowChangingStableCode() {
+        Service existing = service(3, "Gói cơ bản", "100000", "ACTIVE");
+        when(serviceRepository.findById(3)).thenReturn(Optional.of(existing));
+        when(categoryRepository.findById(2)).thenReturn(Optional.of(category));
+
+        assertThatThrownBy(() -> service.updateService(3, CreateServiceRequestDto.builder()
+                .serviceName("Gói mới")
+                .serviceCode("FEED_RENAMED")
+                .billingUnit("PER_HORSE_DAY")
+                .categoryId(2)
+                .price(new BigDecimal("175000"))
+                .build()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("không thể thay đổi");
+    }
+
+    @Test
+    void updateService_rejectsEditingExistingInsuranceService() {
+        Category insurance = category(4, "Bảo hiểm chuyến đi");
+        Service existing = service(9, "Mua bảo hiểm", "20000000", "ACTIVE");
+        existing.setServiceCode("INSURANCE_BUY");
+        existing.setCategoryID(insurance);
+        when(serviceRepository.findById(9)).thenReturn(Optional.of(existing));
+        when(categoryRepository.findById(2)).thenReturn(Optional.of(category));
+
+        assertThatThrownBy(() -> service.updateService(9, CreateServiceRequestDto.builder()
+                .serviceName("Mua bảo hiểm mới")
+                .serviceCode("INSURANCE_BUY")
+                .billingUnit("PER_HORSE")
+                .categoryId(2)
+                .price(new BigDecimal("25000000"))
+                .build()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("bên thứ ba");
+
+        verify(serviceRepository, never()).save(any(Service.class));
+    }
+
+    @Test
+    void updateService_rejectsMovingServiceIntoInsuranceCategory() {
+        Category insurance = category(4, "Bảo hiểm chuyến đi");
+        Service existing = service(3, "Gói cơ bản", "100000", "ACTIVE");
+        when(serviceRepository.findById(3)).thenReturn(Optional.of(existing));
+        when(categoryRepository.findById(4)).thenReturn(Optional.of(insurance));
+
+        assertThatThrownBy(() -> service.updateService(3, CreateServiceRequestDto.builder()
+                .serviceName("Gói cơ bản")
+                .serviceCode("FEED_BASIC")
+                .billingUnit("PER_HORSE_DAY")
+                .categoryId(4)
+                .price(new BigDecimal("100000"))
+                .build()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("bên thứ ba");
+
+        verify(serviceRepository, never()).save(any(Service.class));
+    }
+
+    @Test
+    void toggleServiceStatus_persistsTheNewStatus() {
+        Service existing = service(3, "Gói cơ bản", "0", "ACTIVE");
+        when(serviceRepository.findById(3)).thenReturn(Optional.of(existing));
+        when(serviceRepository.save(any(Service.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.toggleServiceStatus(3);
+
+        assertThat(existing.getStatus()).isEqualTo("INACTIVE");
+        verify(serviceRepository).save(existing);
+    }
+
+    @Test
+    void toggleServiceStatus_doesNotReactivateRetiredWaterService() {
+        Category water = new Category();
+        water.setId(3);
+        Service existing = service(6, "Cữ nước", "0", "INACTIVE");
+        existing.setCategoryID(water);
+        when(serviceRepository.findById(6)).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> service.toggleServiceStatus(6))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("đã ngừng cung cấp");
+    }
+
+    @Test
+    void toggleServiceStatus_rejectsInsuranceService() {
+        Category insurance = category(4, "Bảo hiểm chuyến đi");
+        Service existing = service(9, "Mua bảo hiểm", "20000000", "ACTIVE");
+        existing.setServiceCode("INSURANCE_BUY");
+        existing.setCategoryID(insurance);
+        when(serviceRepository.findById(9)).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> service.toggleServiceStatus(9))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("bên thứ ba");
+
+        verify(serviceRepository, never()).save(any(Service.class));
+    }
+
+    private Category category(int id, String name) {
+        Category result = new Category();
+        result.setId(id);
+        result.setCategoryName(name);
+        return result;
+    }
+
+    private Service service(int id, String name, String price, String status) {
+        Service item = new Service();
+        item.setId(id);
+        item.setServiceName(name);
+        item.setServiceCode(id == 3 ? "FEED_BASIC" : "FEED_" + id);
+        item.setBillingUnit("PER_HORSE_DAY");
+        item.setCategoryID(category);
+        item.setPrice(new BigDecimal(price));
+        item.setStatus(status);
+        return item;
+    }
+}

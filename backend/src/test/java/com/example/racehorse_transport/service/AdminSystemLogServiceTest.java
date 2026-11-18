@@ -4,6 +4,7 @@ import com.example.racehorse_transport.entity.SystemLog;
 import com.example.racehorse_transport.entity.User;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.SystemLogRepository;
+import com.example.racehorse_transport.service.impl.AdminSystemLogServiceImpl;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -12,14 +13,13 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 class AdminSystemLogServiceTest {
     private final SystemLogRepository repository = mock(SystemLogRepository.class);
-    private final AdminSystemLogService service = new AdminSystemLogService(repository);
+    private final AdminSystemLogService service = new AdminSystemLogServiceImpl(repository);
 
     @Test
     void excludesOrderLogsFromDetailAndRejectsOrderFilter() {

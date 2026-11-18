@@ -1,31 +1,30 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.service.AdminAuditWriter;
-import static com.example.racehorse_transport.service.AdminAuditWriter.values;
-import com.example.racehorse_transport.dto.admin.SystemConfigResponse;
-import com.example.racehorse_transport.dto.admin.UpdateSystemConfigRequest;
+import com.example.racehorse_transport.dto.admin.SystemConfigResponseDto;
+import com.example.racehorse_transport.dto.admin.UpdateSystemConfigRequestDto;
 import com.example.racehorse_transport.entity.SystemConfig;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.SystemConfigRepository;
+import com.example.racehorse_transport.service.AdminAuditService;
 import com.example.racehorse_transport.service.SystemConfigService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Sort;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import static com.example.racehorse_transport.service.AdminAuditService.values;
 
 @Service
 @RequiredArgsConstructor
 public class SystemConfigServiceImpl implements SystemConfigService {
-    private final AdminAuditWriter audit;
+    private final AdminAuditService audit;
 
 
     private record Definition(
@@ -100,7 +99,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     @Override
     @Transactional
-    public List<SystemConfigResponse> getAllConfigs() {
+    public List<SystemConfigResponseDto> getAllConfigs() {
         ensureDefaults();
         return repository.findAll(Sort.by(Sort.Order.asc("configGroup"), Sort.Order.asc("configKey")))
                 .stream()
@@ -111,8 +110,8 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     @Override
     @Transactional
-    public Map<String, List<SystemConfigResponse>> getAllConfigsGrouped() {
-        Map<String, List<SystemConfigResponse>> grouped = new LinkedHashMap<>();
+    public Map<String, List<SystemConfigResponseDto>> getAllConfigsGrouped() {
+        Map<String, List<SystemConfigResponseDto>> grouped = new LinkedHashMap<>();
         getAllConfigs().forEach(config ->
                 grouped.computeIfAbsent(config.getConfigGroup(), ignored -> new java.util.ArrayList<>()).add(config));
         return grouped;
@@ -120,7 +119,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     @Override
     @Transactional
-    public SystemConfigResponse getConfig(String key) {
+    public SystemConfigResponseDto getConfig(String key) {
         ensureDefaults();
         requireDefinition(key);
         return repository.findById(key)
@@ -130,7 +129,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     @Override
     @Transactional
-    public SystemConfigResponse updateConfig(String key, UpdateSystemConfigRequest request, String updatedBy) {
+    public SystemConfigResponseDto updateConfig(String key, UpdateSystemConfigRequestDto request, String updatedBy) {
         if (request == null || request.getConfigValue() == null || request.getConfigValue().isBlank()) {
             throw new IllegalArgumentException("Giá trị cấu hình không được để trống.");
         }
@@ -223,8 +222,8 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         return config;
     }
 
-    private SystemConfigResponse toResponse(SystemConfig config) {
-        return SystemConfigResponse.builder()
+    private SystemConfigResponseDto toResponse(SystemConfig config) {
+        return SystemConfigResponseDto.builder()
                 .configKey(config.getConfigKey())
                 .configName(config.getConfigName())
                 .configValue(config.getConfigValue())

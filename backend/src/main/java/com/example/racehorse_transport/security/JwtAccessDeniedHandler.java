@@ -1,6 +1,6 @@
 package com.example.racehorse_transport.security;
 
-import com.example.racehorse_transport.response.ApiResponse;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -23,7 +23,7 @@ public class JwtAccessDeniedHandler implements AccessDeniedHandler {
         response.setCharacterEncoding("UTF-8");
         response.setStatus(HttpServletResponse.SC_FORBIDDEN);
 
-        ApiResponse<Void> apiResponse = ApiResponse.error("Từ chối truy cập! Bạn không có quyền thực hiện thao tác này.");
+        ApiResponseDto<Void> apiResponse = ApiResponseDto.error("Từ chối truy cập! Bạn không có quyền thực hiện thao tác này.");
         response.getWriter().write(objectMapper.writeValueAsString(apiResponse));
     }
 }

@@ -1,8 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.service.AdminAuditWriter;
-import static com.example.racehorse_transport.service.AdminAuditWriter.values;
-import com.example.racehorse_transport.dto.route.CreateRouteRequest;
+import com.example.racehorse_transport.dto.route.CreateRouteRequestDto;
 import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.LocationRoute;
 import com.example.racehorse_transport.entity.LocationRouteId;
@@ -11,20 +9,21 @@ import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.repository.LocationRouteRepository;
 import com.example.racehorse_transport.repository.RouteRepository;
+import com.example.racehorse_transport.service.AdminAuditService;
 import com.example.racehorse_transport.service.RouteService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import static com.example.racehorse_transport.service.AdminAuditService.values;
 
 @Service
 public class RouteServiceImpl implements RouteService {
-    private final AdminAuditWriter audit;
+    private final AdminAuditService audit;
 
 
     private final RouteRepository routeRepository;
@@ -34,7 +33,7 @@ public class RouteServiceImpl implements RouteService {
     @Autowired
     public RouteServiceImpl(RouteRepository routeRepository,
                             LocationRouteRepository locationRouteRepository,
-                            LocationRepository locationRepository, AdminAuditWriter audit) {
+                            LocationRepository locationRepository, AdminAuditService audit) {
         this.audit = audit;
         this.routeRepository = routeRepository;
         this.locationRouteRepository = locationRouteRepository;
@@ -80,19 +79,13 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     @Transactional
-    public Route createRoute(CreateRouteRequest request) {
+    public Route createRoute(CreateRouteRequestDto request) {
         if (request == null || request.getRouteName() == null || request.getRouteName().trim().isEmpty()) {
             throw new IllegalArgumentException("Tên tuyến đường không được để trống!");
         }
         validateStops(request.getStops());
 
-        Route route = new Route();
-        route.setId(routeRepository.findMaxId() + 1);
-        route.setRouteName(request.getRouteName().trim());
-        route.setDescription(request.getDescription());
-        route.setEstimatedTime(request.getEstimatedTime());
-        route.setDistance(request.getDistance());
-        route.setStatus(normalizeStatus(request.getStatus()));
+        Route route = request.toEntity(routeRepository.findMaxId() + 1, normalizeStatus(request.getStatus()));
 
         Route savedRoute = routeRepository.save(route);
         saveRouteStops(savedRoute, request.getStops());
@@ -102,7 +95,7 @@ public class RouteServiceImpl implements RouteService {
 
     @Override
     @Transactional
-    public Route updateRoute(Integer id, CreateRouteRequest request) {
+    public Route updateRoute(Integer id, CreateRouteRequestDto request) {
         if (request == null) {
             throw new IllegalArgumentException("Thông tin tuyến đường không được để trống!");
         }
@@ -116,21 +109,8 @@ public class RouteServiceImpl implements RouteService {
         if (request.getRouteName() != null && request.getRouteName().trim().isEmpty()) {
             throw new IllegalArgumentException("Tên tuyến đường không được để trống!");
         }
-        if (request.getRouteName() != null && !request.getRouteName().trim().isEmpty()) {
-            route.setRouteName(request.getRouteName().trim());
-        }
-        if (request.getDescription() != null) {
-            route.setDescription(request.getDescription());
-        }
-        if (request.getEstimatedTime() != null) {
-            route.setEstimatedTime(request.getEstimatedTime());
-        }
-        if (request.getDistance() != null) {
-            route.setDistance(request.getDistance());
-        }
-        if (request.getStatus() != null && !request.getStatus().isBlank()) {
-            route.setStatus(normalizeStatus(request.getStatus()));
-        }
+        String status = request.getStatus();
+        request.applyTo(route, status == null || status.isBlank() ? null : normalizeStatus(status));
 
         Route savedRoute = routeRepository.save(route);
         if (request.getStops() != null) {
@@ -160,7 +140,7 @@ public class RouteServiceImpl implements RouteService {
                 "estimatedTime", r.getEstimatedTime(), "distance", r.getDistance(), "status", r.getStatus(), "stops", stops);
     }
 
-    private void saveRouteStops(Route route, List<CreateRouteRequest.RouteStopItem> stops) {
+    private void saveRouteStops(Route route, List<CreateRouteRequestDto.RouteStopItem> stops) {
         locationRouteRepository.deleteByRouteId(route.getId());
         if (stops == null || stops.isEmpty()) {
             return;
@@ -168,7 +148,7 @@ public class RouteServiceImpl implements RouteService {
 
         List<LocationRoute> newStops = new ArrayList<>();
         for (int i = 0; i < stops.size(); i++) {
-            CreateRouteRequest.RouteStopItem stopItem = stops.get(i);
+            CreateRouteRequestDto.RouteStopItem stopItem = stops.get(i);
             Location location = locationRepository.findById(stopItem.getLocationId())
                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy điểm dừng ID: " + stopItem.getLocationId()));
 
@@ -187,13 +167,13 @@ public class RouteServiceImpl implements RouteService {
         locationRouteRepository.saveAll(newStops);
     }
 
-    private void validateStops(List<CreateRouteRequest.RouteStopItem> stops) {
+    private void validateStops(List<CreateRouteRequestDto.RouteStopItem> stops) {
         if (stops == null || stops.size() < 2) {
             throw new IllegalArgumentException("Tuyến đường phải có ít nhất điểm xuất phát và điểm đến.");
         }
 
         Set<Integer> locationIds = new HashSet<>();
-        for (CreateRouteRequest.RouteStopItem stop : stops) {
+        for (CreateRouteRequestDto.RouteStopItem stop : stops) {
             if (stop.getLocationId() == null) {
                 throw new IllegalArgumentException("Mã địa điểm trên tuyến không được để trống.");
             }

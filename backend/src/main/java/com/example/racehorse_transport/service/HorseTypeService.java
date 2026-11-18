@@ -1,19 +1,19 @@
 package com.example.racehorse_transport.service;
 
-import com.example.racehorse_transport.dto.HorseTypeDTO;
-import com.example.racehorse_transport.dto.admin.CreateHorseTypeRequest;
-import com.example.racehorse_transport.dto.admin.UpdateHorseTypeInsuredValueRequest;
+import com.example.racehorse_transport.dto.HorseTypeDto;
+import com.example.racehorse_transport.dto.admin.CreateHorseTypeRequestDto;
+import com.example.racehorse_transport.dto.admin.UpdateHorseTypeInsuredValueRequestDto;
 
 import java.util.List;
 
 public interface HorseTypeService {
-    List<HorseTypeDTO> findAll();
+    List<HorseTypeDto> findAll();
 
-    HorseTypeDTO create(CreateHorseTypeRequest request);
+    HorseTypeDto create(CreateHorseTypeRequestDto request);
 
-    HorseTypeDTO update(Integer id, CreateHorseTypeRequest request);
+    HorseTypeDto update(Integer id, CreateHorseTypeRequestDto request);
 
     void delete(Integer id);
 
-    HorseTypeDTO updateInsuredValue(Integer id, UpdateHorseTypeInsuredValueRequest request);
+    HorseTypeDto updateInsuredValue(Integer id, UpdateHorseTypeInsuredValueRequestDto request);
 }

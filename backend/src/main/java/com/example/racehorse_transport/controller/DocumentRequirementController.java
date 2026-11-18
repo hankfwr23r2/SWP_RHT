@@ -1,8 +1,8 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.DocumentRequirementRequest;
-import com.example.racehorse_transport.dto.DocumentRequirementResponse;
-import com.example.racehorse_transport.response.ApiResponse;
+import com.example.racehorse_transport.dto.DocumentRequirementRequestDto;
+import com.example.racehorse_transport.dto.DocumentRequirementResponseDto;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.service.DocumentRequirementService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -20,38 +20,38 @@ public class DocumentRequirementController {
 
     @GetMapping("/public/document-requirements")
     @PreAuthorize("permitAll()")
-    public ResponseEntity<ApiResponse<List<DocumentRequirementResponse>>> listActive() {
-        return ResponseEntity.ok(ApiResponse.success(service.listActive(), "Lấy danh sách giấy tờ bắt buộc thành công"));
+    public ResponseEntity<ApiResponseDto<List<DocumentRequirementResponseDto>>> listActive() {
+        return ResponseEntity.ok(ApiResponseDto.success(service.listActive(), "Lấy danh sách giấy tờ bắt buộc thành công"));
     }
 
     @GetMapping("/admin/document-requirements")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<List<DocumentRequirementResponse>>> listAll() {
-        return ResponseEntity.ok(ApiResponse.success(service.listAll(), "Lấy cấu hình giấy tờ thành công"));
+    public ResponseEntity<ApiResponseDto<List<DocumentRequirementResponseDto>>> listAll() {
+        return ResponseEntity.ok(ApiResponseDto.success(service.listAll(), "Lấy cấu hình giấy tờ thành công"));
     }
 
     @PostMapping("/admin/document-requirements")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<DocumentRequirementResponse>> create(
-            @Valid @RequestBody DocumentRequirementRequest request, Authentication authentication) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(
+    public ResponseEntity<ApiResponseDto<DocumentRequirementResponseDto>> create(
+            @Valid @RequestBody DocumentRequirementRequestDto request, Authentication authentication) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDto.success(
                 service.create(request, authentication.getName()), "Tạo cấu hình giấy tờ thành công"));
     }
 
     @PutMapping("/admin/document-requirements/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<DocumentRequirementResponse>> update(
-            @PathVariable Integer id, @Valid @RequestBody DocumentRequirementRequest request,
+    public ResponseEntity<ApiResponseDto<DocumentRequirementResponseDto>> update(
+            @PathVariable Integer id, @Valid @RequestBody DocumentRequirementRequestDto request,
             Authentication authentication) {
-        return ResponseEntity.ok(ApiResponse.success(
+        return ResponseEntity.ok(ApiResponseDto.success(
                 service.update(id, request, authentication.getName()), "Cập nhật cấu hình giấy tờ thành công"));
     }
 
     @PatchMapping("/admin/document-requirements/{id}/status")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse<DocumentRequirementResponse>> changeStatus(
+    public ResponseEntity<ApiResponseDto<DocumentRequirementResponseDto>> changeStatus(
             @PathVariable Integer id, @Valid @RequestBody StatusRequest request, Authentication authentication) {
-        return ResponseEntity.ok(ApiResponse.success(
+        return ResponseEntity.ok(ApiResponseDto.success(
                 service.changeStatus(id, request.status(), authentication.getName()),
                 "Cập nhật trạng thái giấy tờ thành công"));
     }

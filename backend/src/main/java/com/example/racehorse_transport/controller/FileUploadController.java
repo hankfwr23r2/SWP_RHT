@@ -1,7 +1,7 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.file.FileUploadResponse;
-import com.example.racehorse_transport.response.ApiResponse;
+import com.example.racehorse_transport.dto.file.FileUploadResponseDto;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.service.StorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -25,20 +25,20 @@ public class FileUploadController {
      * form-data: file (MultipartFile), folder (String - optional)
      */
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<FileUploadResponse>> uploadFile(
+    public ResponseEntity<ApiResponseDto<FileUploadResponseDto>> uploadFile(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "folder", required = false, defaultValue = "documents") String folder) {
 
         String url = storageService.uploadFile(file, folder);
 
-        FileUploadResponse response = FileUploadResponse.builder()
+        FileUploadResponseDto response = FileUploadResponseDto.builder()
                 .url(url)
                 .originalFilename(file.getOriginalFilename())
                 .contentType(file.getContentType())
                 .size(file.getSize())
                 .build();
 
-        return ResponseEntity.ok(ApiResponse.success(response, "Tải tệp lên thành công"));
+        return ResponseEntity.ok(ApiResponseDto.success(response, "Tải tệp lên thành công"));
     }
 
     /**
@@ -47,15 +47,15 @@ public class FileUploadController {
      * form-data: files (List<MultipartFile>), folder (String - optional)
      */
     @PostMapping(value = "/upload-multiple", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse<List<FileUploadResponse>>> uploadMultipleFiles(
+    public ResponseEntity<ApiResponseDto<List<FileUploadResponseDto>>> uploadMultipleFiles(
             @RequestParam("files") List<MultipartFile> files,
             @RequestParam(value = "folder", required = false, defaultValue = "documents") String folder) {
 
-        List<FileUploadResponse> responses = new ArrayList<>();
+        List<FileUploadResponseDto> responses = new ArrayList<>();
         for (MultipartFile file : files) {
             if (file != null && !file.isEmpty()) {
                 String url = storageService.uploadFile(file, folder);
-                responses.add(FileUploadResponse.builder()
+                responses.add(FileUploadResponseDto.builder()
                         .url(url)
                         .originalFilename(file.getOriginalFilename())
                         .contentType(file.getContentType())
@@ -64,6 +64,6 @@ public class FileUploadController {
             }
         }
 
-        return ResponseEntity.ok(ApiResponse.success(responses, "Upload danh sách file thành công"));
+        return ResponseEntity.ok(ApiResponseDto.success(responses, "Upload danh sách file thành công"));
     }
 }

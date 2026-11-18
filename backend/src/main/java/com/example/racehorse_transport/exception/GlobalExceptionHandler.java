@@ -1,6 +1,6 @@
 package com.example.racehorse_transport.exception;
 
-import com.example.racehorse_transport.response.ApiResponse;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.http.HttpStatus;
@@ -28,87 +28,87 @@ public class GlobalExceptionHandler {
     private String maxUploadFileSize = "5MB";
 
     @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
-    public ResponseEntity<ApiResponse<Object>> handleUploadTooLarge(
+    public ResponseEntity<ApiResponseDto<Object>> handleUploadTooLarge(
             org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
-        return ResponseEntity.status(413).body(ApiResponse.error(
+        return ResponseEntity.status(413).body(ApiResponseDto.error(
                 "Tệp tải lên vượt giới hạn cho phép. Mỗi tệp tối đa " + maxUploadFileSize + "."));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ApiResponse<Object>> handleAccessDeniedException(AccessDeniedException ex) {
-        ApiResponse<Object> response = ApiResponse.error(ex.getMessage());
+    public ResponseEntity<ApiResponseDto<Object>> handleAccessDeniedException(AccessDeniedException ex) {
+        ApiResponseDto<Object> response = ApiResponseDto.error(ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.FORBIDDEN);
     }
 
     // Bắt các lỗi do logic nghiệp vụ tự quăng ra (VD: Username đã tồn tại, Sai mật khẩu...)
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ApiResponse<Object>> handleIllegalArgumentException(IllegalArgumentException ex) {
-        ApiResponse<Object> response = ApiResponse.error(ex.getMessage());
+    public ResponseEntity<ApiResponseDto<Object>> handleIllegalArgumentException(IllegalArgumentException ex) {
+        ApiResponseDto<Object> response = ApiResponseDto.error(ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
     // Thao tác không hợp lệ với trạng thái hiện tại (VD: đơn không còn chờ bổ sung hồ sơ): lỗi nghiệp vụ, không phải lỗi máy chủ.
     // Trước đây rơi xuống handler chung nên trả 500, nhìn trên Render/Network như backend bị sập.
     @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<ApiResponse<Object>> handleIllegalStateException(IllegalStateException ex) {
+    public ResponseEntity<ApiResponseDto<Object>> handleIllegalStateException(IllegalStateException ex) {
         log.warn("Từ chối thao tác: {}", ex.getMessage());
-        ApiResponse<Object> response = ApiResponse.error(ex.getMessage());
+        ApiResponseDto<Object> response = ApiResponseDto.error(ex.getMessage());
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
     // Thử sai quá nhiều lần (VD: dò 4 số cuối điện thoại khi tra cứu đơn công khai)
     @ExceptionHandler(TooManyAttemptsException.class)
-    public ResponseEntity<ApiResponse<Object>> handleTooManyAttempts(TooManyAttemptsException ex) {
+    public ResponseEntity<ApiResponseDto<Object>> handleTooManyAttempts(TooManyAttemptsException ex) {
         log.warn("Chặn thử sai nhiều lần: {}", ex.getMessage());
-        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.TOO_MANY_REQUESTS);
+        return new ResponseEntity<>(ApiResponseDto.error(ex.getMessage()), HttpStatus.TOO_MANY_REQUESTS);
     }
 
     // Tài nguyên theo đường dẫn (đơn, sự cố, ngựa...) không tồn tại
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<ApiResponse<Object>> handleResourceNotFound(ResourceNotFoundException ex) {
-        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
+    public ResponseEntity<ApiResponseDto<Object>> handleResourceNotFound(ResourceNotFoundException ex) {
+        return new ResponseEntity<>(ApiResponseDto.error(ex.getMessage()), HttpStatus.NOT_FOUND);
     }
 
     // Gọi sai đường dẫn API
     @ExceptionHandler(NoResourceFoundException.class)
-    public ResponseEntity<ApiResponse<Object>> handleNoResourceFound(NoResourceFoundException ex) {
-        ApiResponse<Object> response = ApiResponse.error("Không tìm thấy API: /" + ex.getResourcePath());
+    public ResponseEntity<ApiResponseDto<Object>> handleNoResourceFound(NoResourceFoundException ex) {
+        ApiResponseDto<Object> response = ApiResponseDto.error("Không tìm thấy API: /" + ex.getResourcePath());
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
 
     // Body không đọc được (JSON sai cú pháp, sai kiểu trường): lỗi của request, không phải lỗi máy chủ
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ApiResponse<Object>> handleUnreadableBody(HttpMessageNotReadableException ex) {
+    public ResponseEntity<ApiResponseDto<Object>> handleUnreadableBody(HttpMessageNotReadableException ex) {
         log.warn("Body không hợp lệ: {}", ex.getMessage());
-        return new ResponseEntity<>(ApiResponse.error("Dữ liệu gửi lên không đúng định dạng."), HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(ApiResponseDto.error("Dữ liệu gửi lên không đúng định dạng."), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
-    public ResponseEntity<ApiResponse<Object>> handleMissingParameter(MissingServletRequestParameterException ex) {
-        return new ResponseEntity<>(ApiResponse.error("Thiếu tham số bắt buộc: " + ex.getParameterName()), HttpStatus.BAD_REQUEST);
+    public ResponseEntity<ApiResponseDto<Object>> handleMissingParameter(MissingServletRequestParameterException ex) {
+        return new ResponseEntity<>(ApiResponseDto.error("Thiếu tham số bắt buộc: " + ex.getParameterName()), HttpStatus.BAD_REQUEST);
     }
 
     // Tham số trên URL sai kiểu (VD: /incidents/abc trong khi cần số)
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ApiResponse<Object>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
-        return new ResponseEntity<>(ApiResponse.error("Tham số không hợp lệ: " + ex.getName()), HttpStatus.BAD_REQUEST);
+    public ResponseEntity<ApiResponseDto<Object>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        return new ResponseEntity<>(ApiResponseDto.error("Tham số không hợp lệ: " + ex.getName()), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    public ResponseEntity<ApiResponse<Object>> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
-        return new ResponseEntity<>(ApiResponse.error("API không hỗ trợ phương thức " + ex.getMethod()), HttpStatus.METHOD_NOT_ALLOWED);
+    public ResponseEntity<ApiResponseDto<Object>> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+        return new ResponseEntity<>(ApiResponseDto.error("API không hỗ trợ phương thức " + ex.getMethod()), HttpStatus.METHOD_NOT_ALLOWED);
     }
 
     // Controller tự chọn mã lỗi (VD: NotificationController trả 404/403): giữ đúng mã đó
     @ExceptionHandler(ResponseStatusException.class)
-    public ResponseEntity<ApiResponse<Object>> handleResponseStatus(ResponseStatusException ex) {
+    public ResponseEntity<ApiResponseDto<Object>> handleResponseStatus(ResponseStatusException ex) {
         String message = ex.getReason() != null ? ex.getReason() : HttpStatus.valueOf(ex.getStatusCode().value()).getReasonPhrase();
-        return new ResponseEntity<>(ApiResponse.error(message), ex.getStatusCode());
+        return new ResponseEntity<>(ApiResponseDto.error(message), ex.getStatusCode());
     }
 
     // Bắt lỗi Validation (@Valid, @NotBlank, @Email...)
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ApiResponse<Map<String, String>>> handleValidationExceptions(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ApiResponseDto<Map<String, String>>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getAllErrors().forEach(error -> {
             String fieldName = ((FieldError) error).getField();
@@ -116,7 +116,7 @@ public class GlobalExceptionHandler {
             errors.put(fieldName, errorMessage);
         });
 
-        ApiResponse<Map<String, String>> response = ApiResponse.<Map<String, String>>builder()
+        ApiResponseDto<Map<String, String>> response = ApiResponseDto.<Map<String, String>>builder()
                 .status("error")
                 .message("Dữ liệu nhập vào không hợp lệ")
                 .data(errors)
@@ -127,29 +127,29 @@ public class GlobalExceptionHandler {
 
     // Dịch vụ chỉ đường không trả lời được: lỗi tạm thời, điều phối thử lại sau
     @ExceptionHandler(RoutingUnavailableException.class)
-    public ResponseEntity<ApiResponse<Object>> handleRoutingUnavailable(RoutingUnavailableException ex) {
-        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.SERVICE_UNAVAILABLE);
+    public ResponseEntity<ApiResponseDto<Object>> handleRoutingUnavailable(RoutingUnavailableException ex) {
+        return new ResponseEntity<>(ApiResponseDto.error(ex.getMessage()), HttpStatus.SERVICE_UNAVAILABLE);
     }
 
     // Không có đường cho xe tải giữa các điểm: điều phối đổi cửa khẩu hoặc xe
     @ExceptionHandler(NoTruckRouteException.class)
-    public ResponseEntity<ApiResponse<Object>> handleNoTruckRoute(NoTruckRouteException ex) {
-        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatusCode.valueOf(422));
+    public ResponseEntity<ApiResponseDto<Object>> handleNoTruckRoute(NoTruckRouteException ex) {
+        return new ResponseEntity<>(ApiResponseDto.error(ex.getMessage()), HttpStatusCode.valueOf(422));
     }
 
     // Tuyến nội địa đi ra nước ngoài: điều phối bỏ hoặc đổi trạm
     @ExceptionHandler(DomesticRouteAbroadException.class)
-    public ResponseEntity<ApiResponse<Object>> handleDomesticRouteAbroad(DomesticRouteAbroadException ex) {
-        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatusCode.valueOf(422));
+    public ResponseEntity<ApiResponseDto<Object>> handleDomesticRouteAbroad(DomesticRouteAbroadException ex) {
+        return new ResponseEntity<>(ApiResponseDto.error(ex.getMessage()), HttpStatusCode.valueOf(422));
     }
 
     // Bắt các lỗi chung chưa được xử lý cụ thể
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<Object>> handleGeneralException(Exception ex) {
+    public ResponseEntity<ApiResponseDto<Object>> handleGeneralException(Exception ex) {
         // Ghi kèm stack trace để tìm được nguyên nhân trong log Render
         log.error("Lỗi chưa xử lý", ex);
         // Không trả ex.getMessage() cho client: có thể lộ tên lớp, câu SQL, đường dẫn nội bộ
-        ApiResponse<Object> response = ApiResponse.error("Lỗi hệ thống, vui lòng thử lại sau.");
+        ApiResponseDto<Object> response = ApiResponseDto.error("Lỗi hệ thống, vui lòng thử lại sau.");
         return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

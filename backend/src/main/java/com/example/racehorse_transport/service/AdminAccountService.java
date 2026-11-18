@@ -1,22 +1,22 @@
 package com.example.racehorse_transport.service;
 
-import com.example.racehorse_transport.dto.admin.AccountLogResponse;
-import com.example.racehorse_transport.dto.admin.AccountResponse;
-import com.example.racehorse_transport.dto.admin.CreateStaffRequest;
+import com.example.racehorse_transport.dto.admin.AccountLogResponseDto;
+import com.example.racehorse_transport.dto.admin.AccountResponseDto;
+import com.example.racehorse_transport.dto.admin.CreateStaffRequestDto;
 
 import java.util.List;
 
 public interface AdminAccountService {
 
     // 1. Lấy toàn bộ danh sách tài khoản (Staff + Customer) cho Admin
-    List<AccountResponse> getAllAccounts();
+    List<AccountResponseDto> getAllAccounts();
 
     // 2. Admin tạo tài khoản nhân viên mới
-    AccountResponse createStaffAccount(CreateStaffRequest request, String actorUsername);
-    AccountResponse createStaffAccount(CreateStaffRequest request);
+    AccountResponseDto createStaffAccount(CreateStaffRequestDto request, String actorUsername);
+    AccountResponseDto createStaffAccount(CreateStaffRequestDto request);
 
     // Cập nhật thông tin tài khoản (Họ tên, Email, SĐT)
-    AccountResponse updateAccount(Integer userId, com.example.racehorse_transport.dto.admin.UpdateAccountRequest request, String actorUsername);
+    AccountResponseDto updateAccount(Integer userId, com.example.racehorse_transport.dto.admin.UpdateAccountRequestDto request, String actorUsername);
 
     // 3. Khóa hoặc mở khóa tài khoản
     void toggleAccountStatus(Integer userId, boolean lock, String actorUsername, String reason);
@@ -27,8 +27,8 @@ public interface AdminAccountService {
     String resetPassword(Integer userId);
 
     // 5. Lấy lịch sử audit log của 1 tài khoản cụ thể
-    List<AccountLogResponse> getAccountLogs(Integer userId);
+    List<AccountLogResponseDto> getAccountLogs(Integer userId);
 
     // 6. Lấy toàn bộ lịch sử audit log tài khoản trong hệ thống
-    List<AccountLogResponse> getAllAccountLogs();
+    List<AccountLogResponseDto> getAllAccountLogs();
 }

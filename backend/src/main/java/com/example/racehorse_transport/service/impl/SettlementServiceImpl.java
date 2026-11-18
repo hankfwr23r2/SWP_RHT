@@ -1,29 +1,36 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.booking.BookingDetailsPayload;
-import com.example.racehorse_transport.dto.booking.BookingResponse;
+import com.example.racehorse_transport.dto.booking.BookingDetailsPayloadDto;
+import com.example.racehorse_transport.dto.booking.BookingResponseDto;
 import com.example.racehorse_transport.dto.booking.PartyContactDto;
-import com.example.racehorse_transport.dto.settlement.*;
+import com.example.racehorse_transport.dto.settlement.ExpenseItemDto;
+import com.example.racehorse_transport.dto.settlement.IssueSettlementRequestDto;
+import com.example.racehorse_transport.dto.settlement.RatingDto;
+import com.example.racehorse_transport.dto.settlement.SettlementResponseDto;
+import com.example.racehorse_transport.dto.settlement.SubmitExpensesRequestDto;
 import com.example.racehorse_transport.entity.Booking;
-import com.example.racehorse_transport.entity.Payment;
 import com.example.racehorse_transport.entity.Incident;
+import com.example.racehorse_transport.entity.Payment;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
-import com.example.racehorse_transport.repository.*;
+import com.example.racehorse_transport.repository.BookingRepository;
+import com.example.racehorse_transport.repository.IncidentRepository;
+import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.service.SettlementService;
+import com.example.racehorse_transport.service.StaffNotificationService;
 import com.example.racehorse_transport.util.BookingDetailsJson;
+import com.example.racehorse_transport.util.BookingHistory;
+import com.example.racehorse_transport.service.BookingVisibilityService;
 import com.example.racehorse_transport.util.ClearanceDocumentPolicy;
-import com.example.racehorse_transport.util.PaymentAmountLimits;
 import com.example.racehorse_transport.util.IncidentCostPolicy;
-import com.example.racehorse_transport.util.CustomerBookingPrivacy;
+import com.example.racehorse_transport.util.PaymentAmountLimits;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.util.*;
 
 @Slf4j
 @Service
@@ -34,17 +41,18 @@ public class SettlementServiceImpl implements SettlementService {
     private final IncidentRepository incidentRepository;
     private final StaffRepository staffRepository;
     private final ObjectMapper objectMapper;
-    private final com.example.racehorse_transport.service.StaffNotifier staffNotifier;
+    private final StaffNotificationService staffNotifier;
+    private final BookingVisibilityService bookingVisibility;
 
     /** The incident ledger is authoritative; client copies never create extra expenses. */
     @Override
     @Transactional
-    public BookingResponse submitExpenses(String bookingIdentifier, SubmitExpensesRequest request, String username) {
+    public BookingResponseDto submitExpenses(String bookingIdentifier, SubmitExpensesRequestDto request, String username) {
         Booking booking = lockedBooking(bookingIdentifier);
         if (!"delivered_pending_settlement".equals(booking.getStatus())) {
             throw new IllegalStateException("Bảng kê chi phí của đơn này đã gửi rồi.");
         }
-        BookingDetailsPayload payload = extractPayload(booking);
+        BookingDetailsPayloadDto payload = extractPayload(booking);
         requireAssignedCrew(payload, username);
         if (request != null && request.getExpenses() != null) {
             request.getExpenses().forEach(item -> IncidentCostPolicy.requireCompany(item.getPayer()));
@@ -58,7 +66,7 @@ public class SettlementServiceImpl implements SettlementService {
         review.put("submittedBy", username);
         payload.setSettlement(review);
         booking.setStatus("expenses_submitted");
-        appendHistory(payload, username, "Gửi bảng kê chi phí nội bộ công ty");
+        BookingHistory.appendHistory(payload, username, "Gửi bảng kê chi phí nội bộ công ty");
         savePayload(booking, payload);
         Booking saved = bookingRepository.save(booking);
         staffNotifier.toManagers(saved, "Đối soát chi phí nội bộ · " + saved.getCode(),
@@ -68,7 +76,7 @@ public class SettlementServiceImpl implements SettlementService {
 
     @Override
     @Transactional
-    public SettlementResponse issueSettlement(String bookingIdentifier, IssueSettlementRequest request, String username) {
+    public SettlementResponseDto issueSettlement(String bookingIdentifier, IssueSettlementRequestDto request, String username) {
         Booking booking = lockedBooking(bookingIdentifier);
         if (!Set.of("expenses_submitted", "settlement_issued", "payment_overdue").contains(String.valueOf(booking.getStatus()))) {
             throw new IllegalStateException("Đơn không ở bước đối soát chi phí nội bộ.");
@@ -80,7 +88,7 @@ public class SettlementServiceImpl implements SettlementService {
                 throw new IllegalArgumentException("Chi phí nội bộ phải khớp chứng từ thực chi.");
             }
         }
-        BookingDetailsPayload payload = extractPayload(booking);
+        BookingDetailsPayloadDto payload = extractPayload(booking);
         List<ExpenseItemDto> items = recordedExpenses(booking, payload);
         Map<String, Object> review = new LinkedHashMap<>();
         review.put("internal", true);
@@ -91,7 +99,7 @@ public class SettlementServiceImpl implements SettlementService {
         review.put("note", request != null ? request.getNote() : "");
         payload.setSettlement(review);
         booking.setStatus("completed");
-        appendHistory(payload, username, "Đã duyệt chi phí nội bộ và hoàn tất đơn");
+        BookingHistory.appendHistory(payload, username, "Đã duyệt chi phí nội bộ và hoàn tất đơn");
         // Resource availability is changed exclusively by the HQ return workflow.
         savePayload(booking, payload);
         bookingRepository.save(booking);
@@ -100,7 +108,7 @@ public class SettlementServiceImpl implements SettlementService {
 
     @Override
     @Transactional
-    public BookingResponse submitRating(String bookingIdentifier, RatingDto rating, String username) {
+    public BookingResponseDto submitRating(String bookingIdentifier, RatingDto rating, String username) {
         Booking booking = lockedBooking(bookingIdentifier);
         if (booking.getCustomerID() == null || booking.getCustomerID().getUser() == null
                 || !Objects.equals(username, booking.getCustomerID().getUser().getUsername())) {
@@ -110,7 +118,7 @@ public class SettlementServiceImpl implements SettlementService {
         if (rating == null || rating.getStars() == null || rating.getStars() < 1 || rating.getStars() > 5) {
             throw new IllegalArgumentException("Điểm đánh giá phải từ 1 đến 5.");
         }
-        BookingDetailsPayload payload = extractPayload(booking);
+        BookingDetailsPayloadDto payload = extractPayload(booking);
         if (payload.getRating() != null) throw new IllegalStateException("Đơn này đã được đánh giá.");
         long now = System.currentTimeMillis();
         Map<String, Object> value = new LinkedHashMap<>();
@@ -120,7 +128,7 @@ public class SettlementServiceImpl implements SettlementService {
         value.put("submittedAt", now);
         payload.setRating(value);
         savePayload(booking, payload);
-        return CustomerBookingPrivacy.apply(mapToBookingResponse(bookingRepository.save(booking)));
+        return bookingVisibility.forCustomer(mapToBookingResponse(bookingRepository.save(booking)));
     }
 
     /** Only pre-existing VNPAY callbacks use this method; no new settlement links exist. */
@@ -128,7 +136,7 @@ public class SettlementServiceImpl implements SettlementService {
     @Transactional
     public Booking confirmSettlementPaid(Payment payment, String actor) {
         Booking booking = payment.getBookingID();
-        BookingDetailsPayload payload = extractPayload(booking);
+        BookingDetailsPayloadDto payload = extractPayload(booking);
         Map<String, Object> review = getMapFromObject(payload.getSettlement());
         review = review == null ? new LinkedHashMap<>() : new LinkedHashMap<>(review);
         Map<String, Object> legacy = new LinkedHashMap<>();
@@ -144,9 +152,9 @@ public class SettlementServiceImpl implements SettlementService {
 
     @Override
     @Transactional(readOnly = true)
-    public SettlementResponse getSettlementDetail(String bookingIdentifier) {
+    public SettlementResponseDto getSettlementDetail(String bookingIdentifier) {
         Booking booking = findBookingByIdentifier(bookingIdentifier);
-        BookingDetailsPayload payload = extractPayload(booking);
+        BookingDetailsPayloadDto payload = extractPayload(booking);
         Map<String, Object> review = getMapFromObject(payload.getSettlement());
         return buildSettlementResponse(booking, payload, review != null ? review : Collections.emptyMap());
     }
@@ -178,7 +186,7 @@ public class SettlementServiceImpl implements SettlementService {
         }
         for (String status : List.of("settlement_issued", "payment_overdue")) {
             for (Booking booking : bookingRepository.findByStatusOrderByBookingDateDesc(status)) {
-                BookingDetailsPayload payload = extractPayload(booking);
+                BookingDetailsPayloadDto payload = extractPayload(booking);
                 Map<String, Object> review = new LinkedHashMap<>();
                 List<ExpenseItemDto> items = recordedExpenses(booking, payload);
                 review.put("internal", true);
@@ -189,7 +197,7 @@ public class SettlementServiceImpl implements SettlementService {
                 if (previous != null && previous.get("paid") != null) review.put("legacyPaid", previous.get("paid"));
                 payload.setSettlement(review);
                 booking.setStatus("expenses_submitted");
-                appendHistory(payload, "Hệ thống", "Chuyển chi phí phát sinh sang đối soát nội bộ công ty");
+                BookingHistory.appendHistory(payload, "Hệ thống", "Chuyển chi phí phát sinh sang đối soát nội bộ công ty");
                 savePayload(booking, payload);
                 bookingRepository.save(booking);
                 changed++;
@@ -203,7 +211,7 @@ public class SettlementServiceImpl implements SettlementService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + identifier));
     }
 
-    private void requireAssignedCrew(BookingDetailsPayload payload, String username) {
+    private void requireAssignedCrew(BookingDetailsPayloadDto payload, String username) {
         var authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || authentication.getAuthorities().stream().noneMatch(a ->
                 Set.of("ROLE_DRIVER", "ROLE_ESCORT").contains(a.getAuthority()))) return;
@@ -216,7 +224,7 @@ public class SettlementServiceImpl implements SettlementService {
         if (!assigned) throw new org.springframework.security.access.AccessDeniedException("Bạn không được phân công cho đơn này.");
     }
 
-    private List<ExpenseItemDto> recordedExpenses(Booking booking, BookingDetailsPayload payload) {
+    private List<ExpenseItemDto> recordedExpenses(Booking booking, BookingDetailsPayloadDto payload) {
         List<ExpenseItemDto> items = new ArrayList<>();
         List<Incident> ledger = incidentRepository.findByBookingID_Id(booking.getId());
         for (Incident incident : ledger) {
@@ -287,10 +295,10 @@ public class SettlementServiceImpl implements SettlementService {
         return value instanceof Number number ? new BigDecimal(number.toString()) : BigDecimal.ZERO;
     }
 
-    private SettlementResponse buildSettlementResponse(Booking booking, BookingDetailsPayload payload, Map<String, Object> review) {
+    private SettlementResponseDto buildSettlementResponse(Booking booking, BookingDetailsPayloadDto payload, Map<String, Object> review) {
         List<ExpenseItemDto> items = review.get("items") instanceof List<?> entries
                 ? objectMapper.convertValue(entries, new TypeReference<List<ExpenseItemDto>>() {}) : List.of();
-        return SettlementResponse.builder()
+        return SettlementResponseDto.builder()
                 .bookingCode(booking.getCode())
                 .status(booking.getStatus())
                 .items(items)
@@ -315,11 +323,11 @@ public class SettlementServiceImpl implements SettlementService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
     }
 
-    private BookingDetailsPayload extractPayload(Booking booking) {
+    private BookingDetailsPayloadDto extractPayload(Booking booking) {
         return BookingDetailsJson.read(objectMapper, booking);
     }
 
-    private void savePayload(Booking booking, BookingDetailsPayload payload) {
+    private void savePayload(Booking booking, BookingDetailsPayloadDto payload) {
         try {
             booking.setDetailsJson(objectMapper.writeValueAsString(payload));
         } catch (Exception ex) {
@@ -335,26 +343,15 @@ public class SettlementServiceImpl implements SettlementService {
         return null;
     }
 
-    private void appendHistory(BookingDetailsPayload payload, String actor, String text) {
-        if (payload.getHistory() == null) {
-            payload.setHistory(new ArrayList<>());
-        }
-        Map<String, Object> entry = new HashMap<>();
-        entry.put("time", System.currentTimeMillis());
-        entry.put("actor", actor);
-        entry.put("text", text);
-        payload.getHistory().add(entry);
-    }
-
-    private BookingResponse mapToBookingResponse(Booking b) {
-        BookingDetailsPayload payload = extractPayload(b);
+    private BookingResponseDto mapToBookingResponse(Booking b) {
+        BookingDetailsPayloadDto payload = extractPayload(b);
         Object clearance = ClearanceDocumentPolicy.forBooking(
                 payload.getClearance(), "international".equalsIgnoreCase(b.getBookingType()));
         String customerFullName = (b.getCustomerID() != null && b.getCustomerID().getUser() != null)
                 ? b.getCustomerID().getUser().getUsername()
                 : "Khách hàng";
 
-        return BookingResponse.builder()
+        return BookingResponseDto.builder()
                 .id(b.getCode())
                 .type(b.getBookingType() != null ? b.getBookingType() : "domestic")
                 .customer(customerFullName)
@@ -371,11 +368,11 @@ public class SettlementServiceImpl implements SettlementService {
                 .totalHorses(b.getTotalHorses() != null ? b.getTotalHorses() : 1)
                 .horses(payload.getHorses())
                 .waybillNo(b.getWaybillNo())
-                .trips(com.example.racehorse_transport.service.CaptureService.visibleTrips(payload))
+                .trips(bookingVisibility.visibleTrips(payload))
                 .route(payload.getRoute())
                 .gate(payload.getGate())
                 .plan(payload.getPlan())
-                .photoEvidence(com.example.racehorse_transport.service.CaptureService.visibleEvidence(payload))
+                .photoEvidence(bookingVisibility.visibleEvidence(payload))
                 .quote(payload.getQuote())
                 .payment(payload.getPayment())
                 .medical(payload.getMedical())

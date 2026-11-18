@@ -1,8 +1,14 @@
 package com.example.racehorse_transport.service;
 
-import com.example.racehorse_transport.dto.admin.UpdateSystemConfigRequest;
+import com.example.racehorse_transport.dto.admin.UpdateAccountRequestDto;
+import com.example.racehorse_transport.dto.admin.UpdateSystemConfigRequestDto;
+import com.example.racehorse_transport.dto.route.CreateRouteRequestDto;
+import com.example.racehorse_transport.entity.Location;
+import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.SystemLog;
 import com.example.racehorse_transport.entity.User;
+import com.example.racehorse_transport.repository.LocationRepository;
+import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.SystemLogRepository;
 import com.example.racehorse_transport.repository.UserRepository;
 import java.time.Instant;
@@ -18,21 +24,20 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
-
-import static com.example.racehorse_transport.service.AdminAuditWriter.values;
+import static com.example.racehorse_transport.service.AdminAuditService.values;
 import static org.assertj.core.api.Assertions.*;
 
 @SpringBootTest
 class AdminAuditIntegrationTest {
-    @Autowired AdminAuditWriter writer;
+    @Autowired AdminAuditService writer;
     @Autowired AdminSystemLogService reader;
     @Autowired SystemConfigService configs;
     @Autowired UserRepository users;
     @Autowired SystemLogRepository logs;
     @Autowired PlatformTransactionManager transactions;
     @Autowired AdminAccountService accounts;
-    @Autowired com.example.racehorse_transport.repository.StaffRepository staff;
-    @Autowired com.example.racehorse_transport.repository.LocationRepository locations;
+    @Autowired StaffRepository staff;
+    @Autowired LocationRepository locations;
     @Autowired RouteService routes;
     @jakarta.persistence.PersistenceContext jakarta.persistence.EntityManager entities;
 
@@ -69,7 +74,7 @@ class AdminAuditIntegrationTest {
     void failureToCaptureActorRollsBackConfigurationChange() {
         String key = "TRIP_OPEN_FEE";
         String original = configs.getConfig(key).getConfigValue();
-        UpdateSystemConfigRequest request = new UpdateSystemConfigRequest();
+        UpdateSystemConfigRequestDto request = new UpdateSystemConfigRequestDto();
         request.setConfigValue("3500001".equals(original) ? "3500002" : "3500001");
         SecurityContextHolder.clearContext();
         assertThatThrownBy(() -> configs.updateConfig(key, request, "forged-name")).isInstanceOf(AccessDeniedException.class);
@@ -81,13 +86,13 @@ class AdminAuditIntegrationTest {
         new TransactionTemplate(transactions).executeWithoutResult(tx -> {
             User user = new User(); user.setUsername("Admin-" + UUID.randomUUID()); user.setEmail(user.getUsername() + "@example.com");
             users.saveAndFlush(user);
-            var person = new com.example.racehorse_transport.entity.Staff();
+            var person = new Staff();
             person.setUser(user); person.setRole("ADMIN"); person.setPhone("0901234567"); person.setEmploymentStatus("ACTIVE");
             staff.saveAndFlush(person);
             String originalName = user.getUsername();
             SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
                     originalName, null, List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))));
-            var request = com.example.racehorse_transport.dto.admin.UpdateAccountRequest.builder()
+            var request = UpdateAccountRequestDto.builder()
                     .name("Updated-" + UUID.randomUUID()).email("changed-" + UUID.randomUUID() + "@example.com")
                     .phone("0901234568").build();
             accounts.updateAccount(user.getId(), request, "forged-actor");
@@ -112,12 +117,12 @@ class AdminAuditIntegrationTest {
                     actor.getUsername(), null, List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))));
             int start = locations.findMaxId() + 1;
             for (int i = 0; i < 2; i++) {
-                var location = new com.example.racehorse_transport.entity.Location();
+                var location = new Location();
                 location.setId(start + i); location.setLocationName("Audit stop " + i); location.setLocationType("Stable");
                 location.setAddress("Address"); location.setCity("City"); location.setProvince("Province"); location.setCountry("VN");
                 locations.saveAndFlush(location);
             }
-            var request = com.example.racehorse_transport.dto.route.CreateRouteRequest.builder().routeName("Audit route")
+            var request = CreateRouteRequestDto.builder().routeName("Audit route")
                     .stops(List.of(stop(start, 1), stop(start + 1, 2))).build();
             var route = routes.createRoute(request);
             entities.flush();
@@ -132,8 +137,8 @@ class AdminAuditIntegrationTest {
         });
     }
 
-    private com.example.racehorse_transport.dto.route.CreateRouteRequest.RouteStopItem stop(int id, int order) {
-        return com.example.racehorse_transport.dto.route.CreateRouteRequest.RouteStopItem.builder()
+    private CreateRouteRequestDto.RouteStopItem stop(int id, int order) {
+        return CreateRouteRequestDto.RouteStopItem.builder()
                 .locationId(id).stopOrder(order).latitude(10.0 + order).longitude(106.0 + order).build();
     }
 }

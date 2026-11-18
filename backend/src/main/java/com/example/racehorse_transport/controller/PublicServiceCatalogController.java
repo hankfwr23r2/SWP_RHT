@@ -1,8 +1,8 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.admin.ServiceResponse;
-import com.example.racehorse_transport.response.ApiResponse;
-import com.example.racehorse_transport.service.AdminServiceService;
+import com.example.racehorse_transport.dto.admin.ServiceResponseDto;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
+import com.example.racehorse_transport.service.ServiceCatalogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,11 +18,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PublicServiceCatalogController {
 
-    private final AdminServiceService adminServiceService;
+    private final ServiceCatalogService serviceCatalogService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ServiceResponse>>> getActiveServices() {
-        List<ServiceResponse> services = adminServiceService.getActiveServices();
-        return ResponseEntity.ok(ApiResponse.success(services, "Lấy danh sách dịch vụ đang áp dụng thành công"));
+    public ResponseEntity<ApiResponseDto<List<ServiceResponseDto>>> getActiveServices() {
+        List<ServiceResponseDto> services = serviceCatalogService.getActiveServices();
+        return ResponseEntity.ok(ApiResponseDto.success(services, "Lấy danh sách dịch vụ đang áp dụng thành công"));
     }
 }
