@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.util;
 
+import com.example.racehorse_transport.dto.booking.BookingDetailsPayload;
 import com.example.racehorse_transport.entity.Booking;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,19 @@ class BookingDetailsJsonTest {
         var payload = BookingDetailsJson.read(objectMapper, booking("{\"gate\":\"Mộc Bài\",\"history\":[]}"));
 
         assertThat(payload.getGate()).isEqualTo("Mộc Bài");
+    }
+
+    @Test
+    void readsLegacyCaptureEvidenceContainingBookingId() throws Exception {
+        String json = """
+                {"photoEvidence":{"capture-url":{"id":4,"url":"capture-url","tripId":"TRP-019-1",
+                "purpose":"ARRIVE_PICKUP","target":"pickup","capturedBy":"driver01",
+                "capturedAt":1,"recordedAt":2,"bookingId":19}}}
+                """;
+
+        BookingDetailsPayload payload = objectMapper.readValue(json, BookingDetailsPayload.class);
+
+        assertThat(payload.getPhotoEvidence().get("capture-url").id()).isEqualTo(4L);
     }
 
     @Test
