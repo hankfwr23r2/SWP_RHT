@@ -5,21 +5,26 @@ import com.example.racehorse_transport.dto.LoginRequest;
 import com.example.racehorse_transport.dto.RegisterRequest;
 import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.entity.TermsAcceptance;
 import com.example.racehorse_transport.entity.User;
 import com.example.racehorse_transport.repository.CustomerRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.repository.TermsAcceptanceRepository;
 import com.example.racehorse_transport.repository.UserRepository;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.service.AuthService;
 import com.example.racehorse_transport.service.EmailVerificationService;
+import com.example.racehorse_transport.util.TermsDocuments;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import com.example.racehorse_transport.service.AdminAuditWriter;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.Optional;
 
 @Slf4j
@@ -34,6 +39,9 @@ public class AuthServiceImpl implements AuthService {
     private final JwtUtils jwtUtils;
     private final AdminAuditWriter audit;
     private final EmailVerificationService emailVerificationService;
+    // Tiêm bằng trường (không qua constructor) để giữ nguyên chữ ký constructor mà unit test dựng tay đang dùng
+    @Autowired
+    private TermsAcceptanceRepository termsAcceptanceRepository;
 
     @Override
     @Transactional
@@ -41,6 +49,10 @@ public class AuthServiceImpl implements AuthService {
         // 1-2. Username hoặc email đã có tài khoản: trả 409 để form gắn lỗi vào ô Email (username đang chính là email)
         if (userRepository.existsByUsername(request.getUsername()) || userRepository.existsByEmail(request.getEmail())) {
             throw new IllegalStateException("Email này đã có tài khoản. Hãy đăng nhập hoặc dùng email khác.");
+        }
+
+        if (!Boolean.TRUE.equals(request.getAcceptedTerms())) {
+            throw new IllegalArgumentException("Bạn cần đồng ý Điều khoản vận chuyển để đăng ký.");
         }
 
         // 3. Tạo tài khoản User mới với mật khẩu mã hóa BCrypt
@@ -51,6 +63,12 @@ public class AuthServiceImpl implements AuthService {
         user.setEmailVerified(false);
         if ("vi".equals(request.getLanguage()) || "en".equals(request.getLanguage())) user.setPreferredLanguage(request.getLanguage());
         User savedUser = userRepository.save(user);
+        termsAcceptanceRepository.save(TermsAcceptance.builder()
+                .documentCode(TermsDocuments.TRANSPORT_TERMS)
+                .documentVersion(TermsDocuments.TRANSPORT_TERMS_VERSION)
+                .acceptedAt(Instant.now())
+                .user(savedUser)
+                .build());
 
         // 4. Mặc định tạo thông tin hồ sơ Customer tương ứng
         Customer customer = new Customer();

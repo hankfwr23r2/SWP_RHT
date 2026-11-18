@@ -18,6 +18,10 @@ function readOptionalNumber(configs: Record<string, string>, key: string): numbe
   return Number.isFinite(value) ? value : undefined
 }
 
+function readOptionalText(configs: Record<string, string>, key: string): string | undefined {
+  return configs[key]?.trim() || undefined
+}
+
 export function applyRuntimeBusinessConfig(configs: Record<string, string>) {
   const readNumber = (key: (typeof REQUIRED_CONFIG_KEYS)[number]) => {
     const raw = configs[key]
@@ -49,7 +53,11 @@ export function applyRuntimeBusinessConfig(configs: Record<string, string>) {
     minRestMinutes: values.MIN_REST_MINUTES,
     vitalCheckIntervalHours: values.VITAL_CHECK_INTERVAL_HOURS,
   })
-  applyRuntimeBusinessRules({ minLeadDays: values.MIN_LEAD_DAYS })
+  applyRuntimeBusinessRules({
+    minLeadDays: values.MIN_LEAD_DAYS,
+    hotline: readOptionalText(configs, 'HOTLINE'),
+    officeAddress: readOptionalText(configs, 'OFFICE_ADDRESS'),
+  })
 
   // Cấu hình biểu giá động
   applyRuntimePublicPricingConfig({

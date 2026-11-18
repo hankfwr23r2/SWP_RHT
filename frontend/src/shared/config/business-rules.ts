@@ -16,8 +16,11 @@ export const WEEKDAYS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
 export let MIN_LEAD_DAYS = 20 // Đặt trước ngày khởi hành tối thiểu 20 ngày
 export const MAX_HORSES = 9 // 1 đơn = 1 xe; xe Heavy lớn nhất có 9 ngăn
 
-export function applyRuntimeBusinessRules(config: { minLeadDays: number }) {
+export function applyRuntimeBusinessRules(config: { minLeadDays: number; hotline?: string; officeAddress?: string }) {
   MIN_LEAD_DAYS = config.minLeadDays
+  // Giá trị trống thì giữ giá trị đang có để trang không hiện hotline/địa chỉ rỗng.
+  if (config.hotline?.trim()) HOTLINE = config.hotline.trim()
+  if (config.officeAddress?.trim()) OFFICE_ADDRESS = config.officeAddress.trim()
 }
 
 // ===== Thẩm định (cam kết với khách) =====
@@ -54,8 +57,9 @@ export const ACCEPTANCE_HOURS = 24
 export const ISSUE_RESPONSE_HOURS = 4
 
 // ===== Liên hệ, thanh toán =====
-export const HOTLINE = '1900 6868'
-export const OFFICE_ADDRESS = 'Văn phòng Vận chuyển Ngựa, 120 Xô Viết Nghệ Tĩnh, TP.HCM'
+// Giá trị mẫu ban đầu; admin cấu hình ở nhóm "Liên hệ" (tham số HOTLINE, OFFICE_ADDRESS) thì được ghi đè lúc chạy.
+export let HOTLINE = '1900 6868'
+export let OFFICE_ADDRESS = 'Văn phòng Vận chuyển Ngựa, 120 Xô Viết Nghệ Tĩnh, TP.HCM'
 
 // ===== Điều khoản và chính sách (PRD mục 11.5): mỗi văn bản là một tệp ảnh hoặc PDF, xem ở trang /terms =====
 // Thay tệp trong public/policies rồi đổi đường dẫn ở đây (đuôi .pdf thì hiện bằng khung PDF, còn lại hiện như ảnh).

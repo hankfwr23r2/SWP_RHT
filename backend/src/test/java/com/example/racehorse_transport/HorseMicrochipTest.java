@@ -111,7 +111,7 @@ class HorseMicrochipTest {
         String email = "khach" + suffix + "@gmail.com";
         HttpResponse<String> register = send("POST", "/auth/register", null, """
                 {"username":"khach%s","email":"%s","password":"Test@123","fullName":"Khach Test",
-                 "phone":"0900000098","address":"Ha Noi"}""".formatted(suffix, email));
+                 "phone":"0900000098","address":"Ha Noi","acceptedTerms":true}""".formatted(suffix, email));
         assertThat(register.statusCode()).as(register.body()).isBetween(200, 201);
         try (Connection connection = DriverManager.getConnection(POSTGRES.getJdbcUrl(), POSTGRES.getUsername(), POSTGRES.getPassword());
              PreparedStatement verify = connection.prepareStatement("UPDATE users SET email_verified = true WHERE email = ?")) {

@@ -15,6 +15,7 @@ export interface RegisterPayload {
   phone?: string
   address?: string
   language?: 'vi' | 'en' // ngôn ngữ đang chọn trên giao diện, để mail gửi đúng ngôn ngữ
+  acceptedTerms: true // khách đã tick đồng ý Điều khoản vận chuyển, backend ghi nhận
 }
 
 // DTO nhận về từ Spring Boot (com.example.racehorse_transport.dto.AuthResponse)

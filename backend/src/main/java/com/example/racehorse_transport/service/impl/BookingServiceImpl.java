@@ -24,6 +24,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,6 +44,7 @@ import com.example.racehorse_transport.service.FleetService;
 import com.example.racehorse_transport.util.BookingDetailsJson;
 import com.example.racehorse_transport.util.ClearanceDocumentPolicy;
 import com.example.racehorse_transport.util.QuoteTotals;
+import com.example.racehorse_transport.util.TermsDocuments;
 import com.example.racehorse_transport.util.CustomerBookingRules;
 import com.example.racehorse_transport.util.DocumentRequirementPolicy;
 import com.example.racehorse_transport.util.DepositPaymentWindow;
@@ -97,6 +99,9 @@ public class BookingServiceImpl implements BookingService {
     private final VnpayProperties vnpayProperties;
     private final Clock clock;
     private final IncidentRepository incidentRepository;
+    // Tiêm bằng trường (không qua constructor) để giữ nguyên chữ ký constructor mà unit test dựng tay đang dùng
+    @Autowired
+    private TermsAcceptanceRepository termsAcceptanceRepository;
     private final com.example.racehorse_transport.service.BillMailService billMailService;
     private final com.example.racehorse_transport.service.StaffNotifier staffNotifier;
     private final com.example.racehorse_transport.service.PublicTrackingGuard publicTrackingGuard;
@@ -289,6 +294,12 @@ public class BookingServiceImpl implements BookingService {
             }
         }
 
+        boolean declinedInsurance = request.getHorses().stream()
+                .anyMatch(horse -> "none".equals(horse.getInsurance().getOption()));
+        if (declinedInsurance && !Boolean.TRUE.equals(request.getLimitedLiabilityAccepted())) {
+            throw new IllegalArgumentException("Cần đồng ý Điều khoản Trách nhiệm Hạn chế cho các ngựa không mua bảo hiểm.");
+        }
+
         // 7. Tạo đơn hàng Booking mới
         Booking booking = Booking.builder()
                 .code(newUniqueCode())
@@ -316,6 +327,19 @@ public class BookingServiceImpl implements BookingService {
                 .build();
 
         Booking savedBooking = bookingRepository.save(booking);
+
+        Instant acceptedAt = Instant.now();
+        for (BookingHorseDto hDto : request.getHorses()) {
+            if (!"none".equals(hDto.getInsurance().getOption())) continue;
+            termsAcceptanceRepository.save(TermsAcceptance.builder()
+                    .documentCode(TermsDocuments.LIMITED_LIABILITY)
+                    .documentVersion(TermsDocuments.LIMITED_LIABILITY_VERSION)
+                    .acceptedAt(acceptedAt)
+                    .user(user)
+                    .booking(savedBooking)
+                    .horse(horseRepository.getReferenceById(Integer.valueOf(hDto.getHorseId().replaceAll("\\D", ""))))
+                    .build());
+        }
 
         // 8. Ghi nhật ký vận hành vào bảng log của booking
         try {
@@ -994,6 +1018,7 @@ public class BookingServiceImpl implements BookingService {
         }
 
         HorseInsurancePolicy.requireQuoteReady(payload.getHorses());
+        com.example.racehorse_transport.util.QuoteLinePolicy.requireValid(request.getLines(), payload.getHorses());
         List<QuoteLineDto> canonicalLines = new ArrayList<>(request.getLines() != null ? request.getLines() : List.of());
         canonicalLines.removeIf(line -> line.getLabel() != null && line.getLabel().toLowerCase(Locale.ROOT).contains("bảo hiểm"));
         canonicalLines.addAll(HorseInsurancePolicy.quoteLines(payload.getHorses()));
@@ -2427,6 +2452,9 @@ public class BookingServiceImpl implements BookingService {
                 break;
             }
             case "START_JOURNEY": {
+                if ("returning_horses".equals(booking.getStatus()) || "cancelled".equals(booking.getStatus())) {
+                    throw new IllegalStateException("Đơn hàng đã hủy, không thể bắt đầu vận chuyển.");
+                }
                 HorseInsurancePolicy.requireDepartureReady(payload.getHorses(), targetTrip.getHorseIds(), java.time.Instant.now());
                 validateJourneyStart(booking, payload, targetTrip);
                 booking.setStatus("in_transit");

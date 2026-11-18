@@ -59,7 +59,7 @@ class CustomerLanguageTest {
         String email = "en." + unique() + "@gmail.com";
 
         HttpResponse<String> response = send("POST", "/auth/register", Map.of("username", email, "email", email, "password", "Test@123",
-                "fullName", "John Rider", "phone", "0901234567", "address", "Ha Noi", "language", "en"), null);
+                "fullName", "John Rider", "phone", "0901234567", "address", "Ha Noi", "language", "en", "acceptedTerms", true), null);
 
         assertThat(response.statusCode()).as(response.body()).isEqualTo(201);
         assertThat(users.findByUsernameOrEmail(email, email).orElseThrow().getPreferredLanguage()).isEqualTo("en");

@@ -38,6 +38,9 @@ public class PaymentServiceImpl implements PaymentService {
     private final ObjectMapper objectMapper;
     private final com.example.racehorse_transport.service.StaffNotifier staffNotifier;
     private final com.example.racehorse_transport.service.BookingService bookingService;
+    // Tiêm bằng field để không đổi chữ ký constructor; null (test dựng tay) thì câu báo không kèm số
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.example.racehorse_transport.service.SystemConfigService systemConfigService;
 
     // Quản lý hủy chuyến được từ lúc khách đặt cọc tới trước khi xe rời điểm đón
     private static final Set<String> TRIP_CANCELLABLE_STATUSES = Set.of(
@@ -106,6 +109,10 @@ public class PaymentServiceImpl implements PaymentService {
     // PHẦN VIỆC DEV 2: TÀI CHÍNH & THANH TOÁN
     // =========================================================================
 
+    private String hotlineSuffix() {
+        return systemConfigService == null ? "" : " " + systemConfigService.getConfig("HOTLINE").getConfigValue();
+    }
+
     /**
      * 1. Khách hủy đơn của mình (mất cọc). Quy tắc nằm ở CustomerBookingRules.
      */
@@ -121,7 +128,7 @@ public class PaymentServiceImpl implements PaymentService {
         boolean balancePaid = existingPayments.stream()
                 .anyMatch(p -> "BALANCE".equalsIgnoreCase(p.getPaymentType()) && "COMPLETED".equalsIgnoreCase(p.getStatus()));
         if (balancePaid) {
-            throw new IllegalStateException("Đơn đã thanh toán đủ nên không tự hủy được. Vui lòng liên hệ hotline để được hỗ trợ.");
+            throw new IllegalStateException("Đơn đã thanh toán đủ nên không tự hủy được. Vui lòng liên hệ hotline" + hotlineSuffix() + " để được hỗ trợ.");
         }
         boolean horsesPickedUp = "en_route_to_pickup".equals(booking.getStatus()) && bookingService.isPickupComplete(booking);
         if (horsesPickedUp) {

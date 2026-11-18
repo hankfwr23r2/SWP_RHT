@@ -25,6 +25,7 @@ export interface BookingDraft {
   consignee: Party
   horseIds: string[]
   config: Record<string, HorseConfig>
+  limitedLiabilityAccepted?: boolean // khách đã tick Điều khoản Trách nhiệm Hạn chế ở bước 3 (bản nháp cũ không có trường này)
 }
 
 export const STORAGE_KEY = 'SWP_RACEHORSE_TRANSPORT_REQUEST'
