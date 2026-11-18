@@ -40,7 +40,7 @@ function calculationOf(line: QuoteLine) {
   if (l.includes('cước vận chuyển') || l.includes('cước cự ly')) return 'Tính theo bảng cước quãng đường bậc thang và hệ số hạng xe chuyên dụng.'
   if (l.includes('nhân sự')) return `Dựa trên số ngày hành trình (${line.detail}), kíp xe gồm 01 tài xế chuyên tuyến và 01 hộ tống chăm sóc an sinh ngựa.`
   if (l.includes('nhiên liệu')) return `Ước tính tiêu hao nhiên liệu theo km thực tế và phí cao tốc/BOT, ${line.detail.toLowerCase()}.`
-  if (l.includes('kiểm dịch') || l.includes('hải quan')) return 'Trọn gói hồ sơ kiểm dịch thú y liên tỉnh / thông quan xuất nhập cảnh tại cửa khẩu quốc tế.'
+  if (l.includes('kiểm dịch') || l.includes('hải quan')) return 'Nhà xe làm hồ sơ kiểm dịch thú y và thông quan tại cửa khẩu thay khách. Khoản này do khách chịu theo mức ghi trên báo giá.'
   if (l.includes('bảo hiểm')) return 'Phí bảo hiểm theo báo giá đã chốt. Khoản thu hộ bên thứ ba được thể hiện riêng.'
   return undefined
 }
@@ -130,7 +130,7 @@ export function QuoteSheet({
         </div>
 
         <div className={s.invoiceMetaBox}>
-          <h2 className={s.invoiceTitle}>{title || 'HÓA ĐƠN BÁO GIÁ'}</h2>
+          <h2 className={s.invoiceTitle}>{title || 'PHIẾU BÁO GIÁ'}</h2>
           <div className={s.metaRow}>
             <span>Số phiếu:</span>
             <b>{displayCode}</b>
@@ -339,7 +339,7 @@ export function QuoteSheet({
       {/* Cam kết chính sách & ghi chú */}
       <div className={s.policyFooter}>
         <div>
-          <i className="fa-solid fa-circle-info" /> Chứng từ này là Phiếu báo giá chính thức kiêm dự thảo hóa đơn dịch vụ vận chuyển điện tử theo chuẩn quy định hiện hành.
+          <i className="fa-solid fa-circle-info" /> Chứng từ này là phiếu báo giá, không phải hóa đơn.
         </div>
       </div>
     </div>

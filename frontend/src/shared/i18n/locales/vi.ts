@@ -474,7 +474,7 @@ export const vi = {
     viewDetail: 'Xem chi tiết đơn',
     cancelOrder: 'Hủy đơn',
     quote: {
-      docBadge: 'Phiếu Báo Giá Kiêm Dự Thảo Hóa Đơn Điện Tử',
+      docBadge: 'Phiếu Báo Giá',
       stage1: 'Đợt 1: Đặt cọc ({{percent}}%)',
       stage2: 'Đợt 2: Còn lại ({{percent}}%)',
       stage1Note: 'Thanh toán để xác nhận đơn vận chuyển, xuất Vận đơn điện tử và khóa lịch kíp xe chuyên dụng.',
@@ -703,7 +703,7 @@ export const vi = {
   clearance: {
     title: 'Giấy tờ kiểm dịch và hải quan',
     itemsCount: '{{done}}/{{total}} hạng mục',
-    desc: 'Nhà xe làm trọn gói các giấy tờ này cho bạn.',
+    desc: 'Nhà xe làm các giấy tờ này cho bạn. Phí thủ tục nằm trong báo giá.',
     statusTodo: 'Chưa nộp',
     statusDone: 'Đã nộp',
     customsCleared: 'Giấy thông quan: {{cleared}}/{{total}} ngựa đã được ghi nhận.',

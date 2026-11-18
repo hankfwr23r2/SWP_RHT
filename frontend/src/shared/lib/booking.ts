@@ -273,7 +273,7 @@ export function quoteLines(b: QuoteInput, vehicles: Pick<Vehicle, 'capacity'>[])
     const feed = b.horses.filter(horse => FEED_PACKAGE[horse.feedPackage ?? 'basic'].fee > 0)
     if (feed.length) lines.push({ label: 'Gói thức ăn', detail: `${feed.length} ngựa chọn gói trả phí`, calculation: 'Cộng phí gói thức ăn đã chọn cho từng ngựa.', amount: feed.reduce((total, horse) => total + FEED_PACKAGE[horse.feedPackage ?? 'basic'].fee, 0) })
   }
-  if (international) lines.push({ label: 'Thủ tục kiểm dịch và hải quan', detail: 'Nhà xe làm trọn gói', calculation: 'Phí thủ tục trọn gói theo loại tuyến.', amount: CLEARANCE_FEE.international })
+  if (international) lines.push({ label: 'Thủ tục kiểm dịch và hải quan', detail: 'Nhà xe làm thủ tục thay khách', calculation: 'Khoản này do khách chịu theo mức ghi trên báo giá.', amount: CLEARANCE_FEE.international })
   // Phí bảo hiểm chỉ lấy từ báo giá bên thứ ba đã được chuyên viên xác nhận.
   // Đơn cũ xem các dòng báo giá đã lưu, không tính lại theo giống ngựa.
   for (const horse of b.horses) {
