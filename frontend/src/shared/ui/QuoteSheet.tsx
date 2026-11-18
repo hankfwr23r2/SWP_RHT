@@ -370,9 +370,6 @@ export function QuoteSheet({
       {/* Cam kết chính sách & ghi chú */}
       <div className={s.policyFooter}>
         <div>
-          <i className="fa-solid fa-shield-halved" /> <b>Cam kết giá trọn gói không phụ thu:</b> Mọi chi phí nhiên liệu, phí cầu đường cao tốc và công tác phí kíp xe đã được bao trọn trong báo giá. Giá vận chuyển thực hiện theo báo giá đã chốt.
-        </div>
-        <div>
           <i className="fa-solid fa-circle-info" /> Chứng từ này là Phiếu báo giá chính thức kiêm dự thảo hóa đơn dịch vụ vận chuyển điện tử theo chuẩn quy định hiện hành.
         </div>
       </div>
