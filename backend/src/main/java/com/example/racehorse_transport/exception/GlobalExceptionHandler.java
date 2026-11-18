@@ -56,6 +56,13 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.CONFLICT);
     }
 
+    // Thử sai quá nhiều lần (VD: dò 4 số cuối điện thoại khi tra cứu đơn công khai)
+    @ExceptionHandler(TooManyAttemptsException.class)
+    public ResponseEntity<ApiResponse<Object>> handleTooManyAttempts(TooManyAttemptsException ex) {
+        log.warn("Chặn thử sai nhiều lần: {}", ex.getMessage());
+        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.TOO_MANY_REQUESTS);
+    }
+
     // Tài nguyên theo đường dẫn (đơn, sự cố, ngựa...) không tồn tại
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ApiResponse<Object>> handleResourceNotFound(ResourceNotFoundException ex) {

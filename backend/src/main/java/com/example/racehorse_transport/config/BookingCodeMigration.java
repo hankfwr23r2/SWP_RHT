@@ -14,8 +14,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,10 +40,19 @@ public class BookingCodeMigration implements CommandLineRunner {
     public void run(String... args) {
         Map<Integer, String> codeById = new HashMap<>();
         List<Booking> changedBookings = new ArrayList<>();
-        for (Booking booking : bookingRepository.findAll()) {
+        List<Booking> bookings = bookingRepository.findAll();
+        Set<String> usedCodes = new HashSet<>();
+        for (Booking booking : bookings) {
+            if (booking.getCode() != null) usedCodes.add(booking.getCode());
+        }
+        for (Booking booking : bookings) {
             boolean changed = false;
             if (booking.getCode() == null) {
-                booking.setCode(BookingCodes.newCode());
+                String code;
+                do {
+                    code = BookingCodes.newCode();
+                } while (!usedCodes.add(code));
+                booking.setCode(code);
                 changed = true;
             }
             Matcher waybill = booking.getWaybillNo() == null ? null : LEGACY_WAYBILL.matcher(booking.getWaybillNo());
