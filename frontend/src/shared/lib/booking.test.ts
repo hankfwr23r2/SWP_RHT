@@ -289,10 +289,19 @@ describe('báo giá', () => {
     expect(fuel.amount).toBe(Math.round((km * 9_000 * 1.05) / 1000) * 1000)
     expect(fuel.marginApplied).toBe(false)
   })
-  it('đơn nội địa không thu phí thủ tục, quốc tế thu 300.000', () => {
-    const fee = (q: Parameters<typeof quoteLines>[0]) => quoteLines(q, [{ capacity: 2 }]).lines.find(l => /thủ tục/i.test(l.label))!.amount
-    expect(fee({ ...base, type: 'domestic', gate: undefined, dest: { id: 'CLB-SG', name: 'CLB', country: 'VN' } })).toBe(0)
-    expect(fee(base)).toBe(300_000)
+  it('đơn nội địa không có dòng phí thủ tục, quốc tế thu 300.000', () => {
+    const feeLine = (q: Parameters<typeof quoteLines>[0]) => quoteLines(q, [{ capacity: 2 }]).lines.find(l => /thủ tục/i.test(l.label))
+    expect(feeLine({ ...base, type: 'domestic', gate: undefined, dest: { id: 'CLB-SG', name: 'CLB', country: 'VN' } })).toBeUndefined()
+    expect(feeLine(base)?.amount).toBe(300_000)
+  })
+  // Backend (QuoteLinePolicy) từ chối dòng báo giá có số tiền không lớn hơn 0, nên màn quản lý không được gửi dòng như vậy
+  it('mọi dòng báo giá màn quản lý gửi lên đều có số tiền lớn hơn 0, cả đơn nội địa lẫn quốc tế', () => {
+    const domestic = { ...base, type: 'domestic' as const, gate: undefined, dest: { id: 'CLB-SG', name: 'CLB', country: 'VN' as const } }
+    for (const q of [domestic, base]) {
+      const lines = quoteLines(q, [{ capacity: 2 }]).lines
+      expect(lines.length).toBeGreaterThan(0)
+      expect(lines.filter(l => !(l.amount > 0)).map(l => l.label)).toEqual([])
+    }
   })
   it('xe hạng cao hơn thì cước cao hơn', () => {
     const cost = (capacity: number) => quoteLines(base, [{ capacity }]).lines[0].amount
