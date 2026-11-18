@@ -1,7 +1,7 @@
 import { useId, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PROVINCES_DATA, buildFullAddress, splitAddress } from '@shared/config/administrative'
-import { COUNTRIES, COUNTRY_LOCATIONS, type CountryCode } from '@shared/config/network'
+import { COUNTRIES, type CountryCode } from '@shared/config/network'
 import { isValidLocationDetail, removeLocationDetailSpecialCharacters } from '@shared/lib/locationValidation'
 import { horsesApi } from '@shared/services/horses'
 import type { HorseProfile } from '@shared/types/booking'
@@ -19,23 +19,12 @@ export function RelocateHorseModal({ horse, onClose, onSaved }: Props) {
   const { t, i18n } = useTranslation()
   const areaLabel = useId()
   const [country, setCountry] = useState<CountryCode>((horse.currentCountry as CountryCode) || 'VN')
-  const [selectedPreset, setSelectedPreset] = useState<string>('')
   const [address, setAddress] = useState(() => splitAddress(horse.currentLocationName || '', country))
   const [notes, setNotes] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string>('')
 
-  const presets = COUNTRY_LOCATIONS[country] || []
   const province = PROVINCES_DATA.find(p => p.code === address.provinceCode)
-
-  const handlePresetChange = (val: string) => {
-    setSelectedPreset(val)
-    const found = presets.find(p => p.id === val)
-    if (!found) return
-    const parsed = splitAddress(found.name, country)
-    const detail = removeLocationDetailSpecialCharacters(found.name).replace(/\s+/g, ' ').trim()
-    setAddress({ provinceCode: parsed.provinceCode, wardName: parsed.wardName, detail })
-  }
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -106,7 +95,6 @@ export function RelocateHorseModal({ horse, onClose, onSaved }: Props) {
               value={country}
               onChange={e => {
                 setCountry(e.target.value as CountryCode)
-                setSelectedPreset('')
                 setAddress(prev => ({ provinceCode: '', wardName: '', detail: prev.detail }))
               }}
             >
@@ -118,24 +106,6 @@ export function RelocateHorseModal({ horse, onClose, onSaved }: Props) {
             </select>
           </div>
 
-          {presets.length > 0 && (
-            <div className="form-group">
-              <label className="form-label">Gợi ý địa điểm / CLB uy tín liên kết</label>
-              <select
-                className="form-control"
-                value={selectedPreset}
-                onChange={e => handlePresetChange(e.target.value)}
-              >
-                <option value="">-- Chọn nhanh từ danh sách điểm đón/trang trại liên kết --</option>
-                {presets.map(p => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
           <div className="form-group">
             <label className="form-label" htmlFor={`${areaLabel}-detail`}>Địa chỉ chi tiết <span style={{ color: 'red' }}>*</span></label>
             <input
@@ -144,7 +114,7 @@ export function RelocateHorseModal({ horse, onClose, onSaved }: Props) {
               className="form-control"
               placeholder={t('bookingWizard.farmAddressPlaceholder')}
               value={address.detail}
-              onChange={e => { setSelectedPreset(''); setAddress(prev => ({ ...prev, detail: e.target.value })) }}
+              onChange={e => setAddress(prev => ({ ...prev, detail: e.target.value }))}
               onBlur={() => setAddress(prev => ({ ...prev, detail: removeLocationDetailSpecialCharacters(prev.detail) }))}
             />
           </div>
