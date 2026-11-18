@@ -2452,6 +2452,9 @@ public class BookingServiceImpl implements BookingService {
                 break;
             }
             case "START_JOURNEY": {
+                if ("returning_horses".equals(booking.getStatus()) || "cancelled".equals(booking.getStatus())) {
+                    throw new IllegalStateException("Đơn hàng đã hủy, không thể bắt đầu vận chuyển.");
+                }
                 HorseInsurancePolicy.requireDepartureReady(payload.getHorses(), targetTrip.getHorseIds(), java.time.Instant.now());
                 validateJourneyStart(booking, payload, targetTrip);
                 booking.setStatus("in_transit");
