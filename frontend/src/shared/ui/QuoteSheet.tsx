@@ -345,28 +345,6 @@ export function QuoteSheet({
         </div>
       </div>
 
-      {/* Chữ ký số và con dấu điện tử */}
-      <div className={s.signaturesGrid}>
-        <div className={s.signatureCol}>
-          <div className={s.sigTitle}>Người Mua / Bên Gửi Hàng</div>
-          <div className={s.sigSub}>(Ký và ghi rõ họ tên)</div>
-          <div className={s.buyerSignPlaceholder}>
-            {consignor?.name ? consignor.name : 'Khách hàng xác nhận'}
-          </div>
-        </div>
-
-        <div className={s.signatureCol}>
-          <div className={s.sigTitle}>Đại Diện Đơn Vị Vận Chuyển</div>
-          <div className={s.sigSub}>(Ký số điện tử, đóng dấu)</div>
-          <div className={s.digitalSignBadge}>
-            <i className="fa-solid fa-circle-check" />
-            <div className={s.digitalSignText}>Đã Ký Số Điện Tử Hợp Lệ</div>
-            <div className={s.digitalSignOrg}>CÔNG TY CP VẬN CHUYỂN NGỰA ĐUA RACEHORSE TRANSPORT</div>
-            <div className={s.digitalSignTime}>Thời gian ký: {createdDate}</div>
-          </div>
-        </div>
-      </div>
-
       {/* Cam kết chính sách & ghi chú */}
       <div className={s.policyFooter}>
         <div>
