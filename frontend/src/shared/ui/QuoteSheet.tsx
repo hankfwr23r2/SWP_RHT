@@ -114,7 +114,7 @@ export function QuoteSheet({
         </div>
       </div>
 
-      {/* Header Công ty & Mẫu số ký hiệu */}
+      {/* Header công ty và thông tin phiếu */}
       <div className={s.header}>
         <div className={s.companyInfo}>
           <div className={s.companyLogoTitle}>
@@ -122,7 +122,6 @@ export function QuoteSheet({
             <div className={s.companyTitleCol}>
               <span className={s.companyName}>CÔNG TY CỔ PHẦN VẬN CHUYỂN NGỰA ĐUA RACEHORSE TRANSPORT</span>
               <div className={s.companyMeta}>
-                <div><b>Mã số thuế:</b> <span className={s.taxCode}>0102026391-DEMO</span></div>
                 <div><b>Trụ sở:</b> {OFFICE_ADDRESS}</div>
                 <div><b>Hotline:</b> {HOTLINE} · <b>Email:</b> billing@racehorsetransport.vn</div>
               </div>
@@ -132,14 +131,6 @@ export function QuoteSheet({
 
         <div className={s.invoiceMetaBox}>
           <h2 className={s.invoiceTitle}>{title || 'HÓA ĐƠN BÁO GIÁ'}</h2>
-          <div className={s.metaRow}>
-            <span>Mẫu số:</span>
-            <b>01GTKT0/001</b>
-          </div>
-          <div className={s.metaRow}>
-            <span>Ký hiệu:</span>
-            <b>C26RHT</b>
-          </div>
           <div className={s.metaRow}>
             <span>Số phiếu:</span>
             <b>{displayCode}</b>

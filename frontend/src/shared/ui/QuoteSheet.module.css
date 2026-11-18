@@ -88,13 +88,6 @@
   line-height: 1.5;
 }
 
-.taxCode {
-  font-weight: 700;
-  color: var(--navy, #0f172a);
-  font-family: var(--font-numeric, monospace);
-  letter-spacing: 0.05em;
-}
-
 .invoiceMetaBox {
   border: 1px solid var(--line, #cbd5e1);
   background: #f8fafc;
