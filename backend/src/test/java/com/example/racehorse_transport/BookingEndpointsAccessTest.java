@@ -115,6 +115,23 @@ class BookingEndpointsAccessTest {
     }
 
     @Test
+    void publicTrackingLocksTheBookingAfterRepeatedWrongDigits() throws Exception {
+        Booking booking = booking("awaiting_payment", "0987651234");
+        for (int i = 0; i < 5; i++) {
+            assertThat(get("/bookings/public-track?code=" + booking.getCode() + "&phoneLast4=" + String.format("%04d", i), null)
+                    .statusCode()).isEqualTo(404);
+        }
+
+        HttpResponse<String> locked = get("/bookings/public-track?code=" + booking.getCode() + "&phoneLast4=1234", null);
+        HttpResponse<String> lockedBatch = post("/bookings/public-track/batch", null,
+                "{\"codes\":[\"%s\"],\"phoneLast4\":\"1234\"}".formatted(booking.getCode()));
+
+        assertThat(locked.statusCode()).as(locked.body()).isEqualTo(429);
+        assertThat(locked.body()).doesNotContain("Kho Đồng Nai").doesNotContain("Hà Nội");
+        assertThat(lockedBatch.statusCode()).as(lockedBatch.body()).isEqualTo(429);
+    }
+
+    @Test
     void publicTrackingOfAnUnknownCodeIsNotFound() throws Exception {
         HttpResponse<String> response = get("/bookings/public-track?code=BK-99999999&phoneLast4=1234", null);
 

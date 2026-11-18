@@ -133,7 +133,8 @@ class BookingServiceImplTest {
                 new VnpayProperties(),
                 clock,
                 mock(com.example.racehorse_transport.repository.IncidentRepository.class),
-                billMailService, org.mockito.Mockito.mock(com.example.racehorse_transport.service.StaffNotifier.class));
+                billMailService, org.mockito.Mockito.mock(com.example.racehorse_transport.service.StaffNotifier.class),
+                new com.example.racehorse_transport.service.PublicTrackingGuard(clock));
 
         when(documentRequirementRepository.findByDocumentGroupAndStatusOrderByDocumentNameAsc(any(), any()))
                 .thenReturn(List.of());
@@ -206,13 +207,14 @@ class BookingServiceImplTest {
         when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> {
             Booking saved = invocation.getArgument(0);
             saved.setId(42);
-            if (saved.getCode() == null) saved.setCode(CODE);
             return saved;
         });
 
         BookingResponse response = service.createBooking("phuc", request);
 
-        assertThat(response.getId()).isEqualTo(CODE);
+        // Mã đơn được sinh ở service (đã kiểm tra chưa trùng) trước khi lưu
+        assertThat(response.getId()).matches("^BK-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{8}$");
+        verify(bookingRepository).existsByCode(response.getId());
         assertThat(response.getType()).isEqualTo("international");
         assertThat(response.getStatus()).isEqualTo("pending_intake");
         assertThat(response.getDepartAt()).isEqualTo(departure.toEpochMilli());
@@ -1653,5 +1655,23 @@ class BookingServiceImplTest {
         com.example.racehorse_transport.dto.common.PagedResponse<BookingResponse> result = service.getBookingsPaged("ALL", 0, 20);
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getTotalElements()).isEqualTo(1);
+    }
+
+    @Test
+    void waybillYearFollowsTheVietnamDateOfTheDepositNotAFixedYear() {
+        Booking booking = Booking.builder().id(42).code(CODE).status("awaiting_payment")
+                .bookingType("domestic").detailsJson("{}").build();
+        Payment payment = new Payment();
+        payment.setBookingID(booking);
+        payment.setAmount(new java.math.BigDecimal("3000000"));
+        payment.setPaymentMethod("VNPAY");
+        payment.setTransactionCode("DEP0042");
+        // 18:00 UTC ngày 31/12/2026 là 01:00 ngày 01/01/2027 giờ Việt Nam
+        payment.setPaymentDate(Instant.parse("2026-12-31T18:00:00Z"));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Booking updated = service.confirmDepositPaid(payment, "khach1");
+
+        assertThat(updated.getWaybillNo()).isEqualTo("VD-2027-" + CODE.substring(3));
     }
 }

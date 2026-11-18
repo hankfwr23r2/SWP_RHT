@@ -99,6 +99,7 @@ public class BookingServiceImpl implements BookingService {
     private final IncidentRepository incidentRepository;
     private final com.example.racehorse_transport.service.BillMailService billMailService;
     private final com.example.racehorse_transport.service.StaffNotifier staffNotifier;
+    private final com.example.racehorse_transport.service.PublicTrackingGuard publicTrackingGuard;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // =========================================================================
@@ -290,6 +291,7 @@ public class BookingServiceImpl implements BookingService {
 
         // 7. Tạo đơn hàng Booking mới
         Booking booking = Booking.builder()
+                .code(newUniqueCode())
                 .customerID(customer)
                 .bookingDate(Instant.now())
                 .departureDate(departureInstant)
@@ -1241,7 +1243,9 @@ public class BookingServiceImpl implements BookingService {
             quotationRepository.save(quotation);
         });
 
-        String waybillNo = "VD-2026-" + booking.getCode().substring(3);
+        // Năm của vận đơn theo ngày nhận cọc (giờ Việt Nam), phần sau là mã đơn ngẫu nhiên
+        int waybillYear = paidAt.atZone(ZoneId.of("Asia/Ho_Chi_Minh")).getYear();
+        String waybillNo = "VD-" + waybillYear + "-" + booking.getCode().substring(3);
         booking.setWaybillNo(waybillNo);
         booking.setStatus("waybill_issued");
 
@@ -2918,6 +2922,7 @@ public class BookingServiceImpl implements BookingService {
         }
 
         Booking booking = bookingOpt.get();
+        publicTrackingGuard.checkAllowed(booking.getId(), booking.getCode());
 
         // 2. Xác thực 4 số cuối số điện thoại (Consignor, Consignee, hoặc Customer Phone)
         boolean phoneMatched = false;
@@ -2931,8 +2936,10 @@ public class BookingServiceImpl implements BookingService {
         }
 
         if (!phoneMatched) {
+            publicTrackingGuard.recordFailure(booking.getId());
             return null;
         }
+        publicTrackingGuard.recordSuccess(booking.getId());
 
         // 3. Map dữ liệu sang PublicTrackingResponse
         String origin = booking.getPickupAddress() != null && !booking.getPickupAddress().isBlank()
@@ -2982,6 +2989,16 @@ public class BookingServiceImpl implements BookingService {
                 .now(nowMap)
                 .note(null)
                 .build();
+    }
+
+    // Mã đơn ngẫu nhiên chưa có trong DB. Trùng gần như không xảy ra (31^8 khả năng), vẫn kiểm tra
+    // để không phải dựa vào lỗi UNIQUE lúc lưu đơn.
+    private String newUniqueCode() {
+        for (int attempt = 0; attempt < 5; attempt++) {
+            String code = com.example.racehorse_transport.util.BookingCodes.newCode();
+            if (!bookingRepository.existsByCode(code)) return code;
+        }
+        throw new IllegalStateException("Không tạo được mã đơn hàng, vui lòng thử lại.");
     }
 
     private boolean checkPhoneLast4(String fullPhone, String last4) {
