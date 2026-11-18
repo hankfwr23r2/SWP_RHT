@@ -34,7 +34,7 @@ function paymentOf(p: Record<string, unknown> | undefined): Payment | undefined 
 function cancellationOf(p: Record<string, unknown> | undefined): Cancellation | undefined {
   if (!p?.cancelled) return undefined
   return {
-    at: num(p.cancelledAt), reason: String(p.cancelReason ?? ''), by: 'customer', refund: num(p.refundAmount) ?? 0,
+    at: num(p.cancelledAt), reason: String(p.cancelReason ?? ''), by: p.cancelledBy === 'COMPANY' ? 'manager' : 'customer', refund: num(p.refundAmount) ?? 0,
     ...(num(p.insuranceCollected) !== undefined ? {
       insuranceCollected: num(p.insuranceCollected),
       insuranceReconciliationPending: p.insuranceReconciliationPending === true,

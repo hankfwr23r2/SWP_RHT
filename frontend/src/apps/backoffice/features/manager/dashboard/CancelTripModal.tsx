@@ -1,7 +1,8 @@
 // Quản lý hủy chuyến đã đặt cọc, trước khi xe rời điểm đón.
 // Lỗi do nhà xe (không bố trí được xe, kíp, máy quét hỏng...): hoàn 100% số khách đã trả.
-// Lỗi do khách (không giao ngựa, không trả 70% còn lại...): khách mất phần cọc vận chuyển.
-// Ngựa đã lên xe thì kíp xe nhận thông báo trả ngựa và hồ sơ gốc cho người giao, có biên bản.
+// Lỗi do khách (không giao ngựa, không trả 70% còn lại...): không hoàn tiền. Khách mất phần cọc vận chuyển,
+// và mất cả 70% nếu đã trả (trả 70% là đã đồng ý bắt đầu chuyến).
+// Ngựa đã lên xe thì đơn sang "Chờ trả ngựa": tài xế trả ngựa và hồ sơ gốc tại điểm đón, chụp biên bản rồi đơn mới đóng.
 import { useState } from 'react'
 import { bookingsApi } from '@shared/services/bookings'
 import type { Booking } from '@shared/types/booking'
@@ -53,12 +54,12 @@ export function CancelTripModal({ b, initialReason = '', onClose, onDone }: {
         </label>
         <label style={{ display: 'flex', gap: 8, marginTop: 8 }}>
           <input type="radio" name="fault" checked={fault === 'CUSTOMER'} onChange={() => setFault('CUSTOMER')} />
-          <span><b>Khách hàng</b> (không giao ngựa, không thanh toán 70%...): khách mất phần cọc vận chuyển, bảo hiểm thu hộ chờ đối soát.</span>
+          <span><b>Khách hàng</b> (không giao ngựa, không thanh toán 70%...): không hoàn tiền. Khách mất phần cọc vận chuyển{b.balance ? ' và cả 70% đã trả' : ''}, bảo hiểm thu hộ chờ đối soát.</span>
         </label>
       </div>
       <div className="alert alert-warning">
         <i className="fa-solid fa-circle-info" />
-        <div>Khách, tài xế, hộ tống và điều phối viên được báo ngay. Nếu kíp xe đã nhận ngựa, kíp sẽ được yêu cầu trả ngựa và hồ sơ gốc cho người giao, có biên bản. Khoản hoàn được ghi nhận trong hệ thống; nhà xe chuyển khoản trả khách bên ngoài.</div>
+        <div>Khách, tài xế, hộ tống và điều phối viên được báo ngay. Nếu kíp xe đã nhận ngựa, đơn sang "Chờ trả ngựa": tài xế trả ngựa và hồ sơ gốc tại điểm đón, chụp biên bản có chữ ký thì đơn mới đóng, sau đó xe về trụ sở. Khoản hoàn được ghi nhận trong hệ thống; nhà xe chuyển khoản trả khách bên ngoài.</div>
       </div>
       <div className="form-group" style={{ margin: 0 }}>
         <label htmlFor="ct-reason" className="required">Lý do hủy (khách xem được)</label>

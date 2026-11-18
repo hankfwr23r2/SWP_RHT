@@ -190,6 +190,7 @@ export const vi = {
     ready_for_pickup: 'Sẵn sàng đón ngựa',
     en_route_to_pickup: 'Đến điểm đón',
     pickup_failed: 'Không nhận được ngựa',
+    returning_horses: 'Chờ trả ngựa',
     in_transit: 'Đang vận chuyển',
     incident_reported: 'Có sự cố',
     pending_emergency_approval: 'Chờ duyệt xử lý sự cố',

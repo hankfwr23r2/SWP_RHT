@@ -65,6 +65,13 @@ export function TripTimeline({ trip, now, staff, incidents = [] }: Props) {
               {[cp.photo, cp.handoverPhoto, ...(cp.stampPhotos ?? [])].filter((p): p is string => !!p).length > 0 && (
                 <div className={s.photos}>{[cp.photo, cp.handoverPhoto, ...(cp.stampPhotos ?? [])].filter((p): p is string => !!p).map(p => <ImageThumb key={p} name={p} size={44} />)}</div>
               )}
+              {cp.returnedAt && (
+                // Chuyến bị hủy khi ngựa đã lên xe: biên bản trả ngựa và hồ sơ gốc tại điểm đón
+                <div className={s.welfare}>
+                  <i className="fa-solid fa-rotate-left" aria-hidden="true" /> Đã trả {cp.returnChips?.length ?? 0} ngựa và {cp.returnOriginals?.length ?? 0} hồ sơ gốc cho {cp.returnRecipient} lúc {formatDateTime(cp.returnedAt)}
+                  {cp.returnPhoto && <ImageThumb name={cp.returnPhoto} size={36} />}
+                </div>
+              )}
               {welfare.map(w => (
                 <div key={w.id} className={`${s.welfare} ${w.condition !== 'normal' ? s.welfareWarn : ''}`}>
                   <i className="fa-solid fa-heart-pulse" aria-hidden="true" /> {WELFARE_CONDITION[w.condition].label}{w.waterLiters ? ' · đã cấp nước' : ''}{w.hay ? ' · đã cho ăn' : ''}{staff && w.note ? ` · ${w.note}` : ''}

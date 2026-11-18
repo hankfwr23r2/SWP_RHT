@@ -55,6 +55,7 @@ export type BookingStatus =
   | 'pending_intake' | 'under_review' | 'pending_commercial' | 'awaiting_payment' | 'quote_expired' // Flow 1
   | 'waybill_issued' | 'clearance_in_progress' | 'clearance_done' // Flow 2
   | 'ready_for_pickup' | 'en_route_to_pickup' | 'pickup_failed' // Flow 3; pickup_failed: tới điểm đón nhưng không còn ngựa nào nhận được
+  | 'returning_horses' // quản lý hủy chuyến khi ngựa đã lên xe: chờ tài xế trả ngựa và hồ sơ gốc tại điểm đón
   | 'in_transit' | 'incident_reported' | 'pending_emergency_approval' | 'emergency_plan_active' // Flow 5
   | 'arrived' | 'handover_timeout' | 'returning_to_hq' // Flow 4: tới điểm giao; quá 2 giờ chưa bàn giao (lưu chuồng hoặc chở về trụ sở)
   | 'delivered_pending_settlement' // Flow 4
@@ -75,6 +76,7 @@ export const BOOKING_STATUS: Record<BookingStatus, { code: string; label: string
   ready_for_pickup: { code: 'Ready for Pickup', label: 'Sẵn sàng đón ngựa', customerLabel: 'Sẵn sàng đón ngựa', tone: 'success' },
   en_route_to_pickup: { code: 'En Route to Pickup', label: 'Đến điểm đón', customerLabel: 'Đến điểm đón', tone: 'info' },
   pickup_failed: { code: 'Pickup Failed', label: 'Không nhận được ngựa', customerLabel: 'Không nhận được ngựa', tone: 'danger' },
+  returning_horses: { code: 'Cancelled - Returning Horses', label: 'Chờ trả ngựa', customerLabel: 'Đã hủy, chờ trả ngựa', tone: 'warning' },
   in_transit: { code: 'In Transit', label: 'Đang vận chuyển', customerLabel: 'Đang vận chuyển', tone: 'info' },
   incident_reported: { code: 'Incident Reported - Action Required', label: 'Báo sự cố', customerLabel: 'Đang xử lý sự cố', tone: 'danger' },
   pending_emergency_approval: { code: 'Pending Emergency Approval', label: 'Chờ duyệt xử lý sự cố', customerLabel: 'Đang xử lý sự cố', tone: 'danger' },
@@ -95,7 +97,7 @@ export const BOOKING_STATUS: Record<BookingStatus, { code: string; label: string
 export const STATUS_SHORT: Record<BookingStatus, string> = {
   schedule_change_required: 'Cần đổi lịch',
   pending_intake: 'Chờ tiếp nhận', under_review: 'Thẩm định', pending_commercial: 'Chờ duyệt giá', awaiting_payment: 'Chờ đặt cọc', quote_expired: 'Hết hạn',
-  waybill_issued: 'Có vận đơn', clearance_in_progress: 'Làm giấy tờ', clearance_done: 'Giấy tờ xong', ready_for_pickup: 'Sẵn sàng đón', en_route_to_pickup: 'Đến điểm đón', pickup_failed: 'Không nhận ngựa',
+  waybill_issued: 'Có vận đơn', clearance_in_progress: 'Làm giấy tờ', clearance_done: 'Giấy tờ xong', ready_for_pickup: 'Sẵn sàng đón', en_route_to_pickup: 'Đến điểm đón', pickup_failed: 'Không nhận ngựa', returning_horses: 'Chờ trả ngựa',
   in_transit: 'Vận chuyển', incident_reported: 'Báo sự cố', pending_emergency_approval: 'Chờ duyệt khẩn cấp', emergency_plan_active: 'Xử lý sự cố',
   arrived: 'Tới điểm giao', handover_timeout: 'Quá hạn giao', returning_to_hq: 'Về trụ sở',
   delivered_pending_settlement: 'Đã giao', expenses_submitted: 'Chờ đối soát', settlement_issued: 'Chờ đối soát', payment_overdue: 'Chờ đối soát', completed: 'Hoàn tất',
@@ -113,7 +115,7 @@ export const stepOf = (s: BookingStatus): number => ({
   schedule_change_required: 0,
   pending_intake: 0, under_review: 1, pending_commercial: 2, awaiting_payment: 3, quote_expired: 3,
   waybill_issued: 4, clearance_in_progress: 4,
-  clearance_done: 5, ready_for_pickup: 5, en_route_to_pickup: 5, pickup_failed: 5,
+  clearance_done: 5, ready_for_pickup: 5, en_route_to_pickup: 5, pickup_failed: 5, returning_horses: 5,
   in_transit: 6, incident_reported: 6, pending_emergency_approval: 6, emergency_plan_active: 6, arrived: 6, handover_timeout: 6, returning_to_hq: 6,
   delivered_pending_settlement: 7, expenses_submitted: 7, settlement_issued: 7, payment_overdue: 7,
   completed: BOOKING_STEPS.length, cancelled: 0, rejected: 1,

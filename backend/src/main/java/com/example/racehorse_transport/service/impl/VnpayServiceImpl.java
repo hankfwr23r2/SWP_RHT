@@ -53,7 +53,8 @@ public class VnpayServiceImpl implements VnpayService {
             .withResolverStyle(ResolverStyle.STRICT);
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
     // Đơn đã đóng thì không nhận thanh toán nữa
-    private static final Set<String> CLOSED_STATUSES = Set.of("cancelled", "completed", "quote_expired");
+    // returning_horses: chuyến đã hủy, đang trả ngựa; khoản 70% đã đóng nên giao dịch treo cũng không được ghi nhận
+    private static final Set<String> CLOSED_STATUSES = Set.of("cancelled", "completed", "quote_expired", "returning_horses");
 
     private final VnpayProperties props;
     private final BookingRepository bookingRepository;

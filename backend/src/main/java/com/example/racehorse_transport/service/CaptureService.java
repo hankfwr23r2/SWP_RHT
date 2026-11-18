@@ -22,7 +22,7 @@ public class CaptureService {
     private final StaffRepository staff;
     private final StorageService storage;
     private final ObjectMapper objectMapper;
-    private static final Set<String> DRIVER_PURPOSES = Set.of("ARRIVE_PICKUP", "ARRIVE_CHECKPOINT", "UPLOAD_HANDOVER", "CUSTOMS_CLEARED", "CONFIRM_HOME", "TOLL");
+    private static final Set<String> DRIVER_PURPOSES = Set.of("ARRIVE_PICKUP", "ARRIVE_CHECKPOINT", "UPLOAD_HANDOVER", "CUSTOMS_CLEARED", "CONFIRM_HOME", "TOLL", "RETURN_HORSES");
     private static final Set<String> ESCORT_PURPOSES = Set.of("EXCLUDE_UNFIT_HORSE", "SUBMIT_WELFARE");
     private static final Set<String> BOTH_PURPOSES = Set.of("SOS", "EXPENSE");
 
@@ -123,7 +123,7 @@ public class CaptureService {
     public void attachTripPhotos(BookingDetailsPayload payload, Integer bookingId, String tripId, String action, Map<String, Object> request, String actor) {
         String purpose = action.toUpperCase(Locale.ROOT);
         String target = switch (purpose) {
-            case "ARRIVE_PICKUP" -> "pickup";
+            case "ARRIVE_PICKUP", "RETURN_HORSES" -> "pickup";
             case "ARRIVE_CHECKPOINT", "SUBMIT_WELFARE" -> Objects.toString(request.get("checkpointId"), "");
             case "UPLOAD_HANDOVER" -> Objects.toString(request.getOrDefault("checkpointId", "pickup"));
             case "EXCLUDE_UNFIT_HORSE" -> Objects.toString(request.get("horseId"), "");

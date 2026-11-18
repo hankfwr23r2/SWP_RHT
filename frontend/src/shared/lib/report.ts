@@ -31,7 +31,7 @@ export function orderFinance(b: Booking): OrderFinance | undefined {
   const paid = b.payment.amount + (b.balance?.amount ?? 0)
   const incidentCost = incidentExpenseItems(b).reduce((total, item) => total + item.amount, 0)
   const base = { id: b.id, customer: b.customer, at: b.payment.paidAt, status: b.status }
-  if (b.status === 'cancelled') {
+  if (b.status === 'cancelled' || b.status === 'returning_horses') {
     const kept = paid - (b.cancellation?.refund ?? 0)
     const grossRevenue = b.cancellation?.penalty ?? (kept - (b.cancellation?.insuranceCollected ?? 0))
     const revenue = grossRevenue - incidentCost

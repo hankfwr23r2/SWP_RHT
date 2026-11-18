@@ -323,7 +323,7 @@ export const reviewDone = (b: Pick<Booking, 'medical' | 'plan'>) => b.medical?.s
 
 // ===== Xe, nhân sự =====
 // Đơn còn giữ xe và nhân sự: từ lúc thẩm định tới khi giao xong
-export const HOLDING: Booking['status'][] = ['under_review', 'pending_commercial', 'awaiting_payment', 'waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'pickup_failed', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active']
+export const HOLDING: Booking['status'][] = ['under_review', 'pending_commercial', 'awaiting_payment', 'waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'pickup_failed', 'returning_horses', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active']
 // Xe đang giữ cho đơn khác có ngày đi cách ngày này dưới 3 ngày. Tài xế và Escort theo kiểu giao việc (assign task):
 // đã được giao vào một chuyến của đơn còn đang giữ nhân sự thì không chọn được nữa, bất kể ngày đi, cho tới khi đơn giao xong.
 export function busyResources(all: Booking[], departAt: number, exceptId?: string) {
@@ -361,7 +361,7 @@ export interface Schedules { vehicles: Map<string, Booked[]>; drivers: Map<strin
 export function schedulesOf(all: Booking[], exceptId: string, now = Date.now()): Schedules {
   const out: Schedules = { vehicles: new Map(), drivers: new Map(), escorts: new Map() }
   const put = (m: Map<string, Booked[]>, id: string, x: Booked) => { if (id) m.set(id, [...(m.get(id) ?? []), x]) }
-  const activeStatuses: Booking['status'][] = ['en_route_to_pickup', 'pickup_failed', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement']
+  const activeStatuses: Booking['status'][] = ['en_route_to_pickup', 'pickup_failed', 'returning_horses', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement']
   const bookedOf = (o: Booking, t: VehicleTrip): Booked => ({
     order: o.id, departAt: o.departAt, route: `${o.origin.name.split(' — ')[0]} → ${o.dest.name.split(' — ')[0]}`, trip: t.tripId,
     countries: `${COUNTRIES[o.origin.country].name} → ${COUNTRIES[o.dest.country].name}`,
@@ -491,7 +491,7 @@ export function orderGroupOf(b: { status: BookingStatus; medical?: { status: str
     case 'schedule_change_required': return 'new'
     case 'pending_intake': case 'under_review': case 'pending_commercial': return 'new'
     case 'awaiting_payment': case 'waybill_issued': case 'clearance_in_progress': case 'clearance_done': case 'ready_for_pickup': return 'approved'
-    case 'en_route_to_pickup': case 'pickup_failed': case 'in_transit': case 'incident_reported': case 'pending_emergency_approval': case 'emergency_plan_active':
+    case 'en_route_to_pickup': case 'pickup_failed': case 'returning_horses': case 'in_transit': case 'incident_reported': case 'pending_emergency_approval': case 'emergency_plan_active':
     case 'arrived': case 'handover_timeout': case 'returning_to_hq': return 'moving'
     case 'delivered_pending_settlement': case 'expenses_submitted': case 'settlement_issued': case 'payment_overdue': return 'settle'
     case 'completed': return 'done'
@@ -510,7 +510,7 @@ export function orderTabOf(b: Pick<Booking, 'status' | 'medical' | 'balance' | '
     case 'waybill_issued': case 'clearance_in_progress': case 'clearance_done': return 'prepare'
     case 'ready_for_pickup': return b.balance ? 'prepare' : 'pay'
     case 'en_route_to_pickup': return b.balance ? 'moving' : 'pay'
-    case 'pickup_failed': return 'moving'
+    case 'pickup_failed': case 'returning_horses': return 'moving'
     case 'in_transit': case 'incident_reported': case 'pending_emergency_approval': case 'emergency_plan_active':
     case 'arrived': case 'handover_timeout': case 'returning_to_hq': return 'moving'
     case 'delivered_pending_settlement': case 'expenses_submitted': return 'settle'
@@ -529,7 +529,7 @@ export function managerBoardOf(s: BookingStatus): BoardCol | undefined {
     case 'under_review': return 'review'
     case 'pending_commercial': return 'quote'
     case 'awaiting_payment': return 'deposit'
-    case 'waybill_issued': case 'clearance_in_progress': case 'clearance_done': case 'ready_for_pickup': case 'en_route_to_pickup': case 'pickup_failed': return 'prepare'
+    case 'waybill_issued': case 'clearance_in_progress': case 'clearance_done': case 'ready_for_pickup': case 'en_route_to_pickup': case 'pickup_failed': case 'returning_horses': return 'prepare'
     case 'in_transit': case 'incident_reported': case 'pending_emergency_approval': case 'emergency_plan_active':
     case 'arrived': case 'handover_timeout': case 'returning_to_hq': return 'moving'
     case 'delivered_pending_settlement': case 'expenses_submitted': case 'settlement_issued': case 'payment_overdue': return 'settle'
