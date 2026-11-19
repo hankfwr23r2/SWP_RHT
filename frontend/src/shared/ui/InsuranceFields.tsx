@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { HorseInsurance } from '../types/insurance'
 import { insuranceLabels } from '../types/insurance'
@@ -13,6 +13,42 @@ const insuranceLabelsEn: Record<string, string> = {
   none: 'No Transit Insurance',
 }
 
+const formatInsuranceDate = (iso?: string) => {
+  if (!iso) return ''
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
+  return match ? `${match[3]}/${match[2]}/${match[1].slice(-2)}` : iso
+}
+
+const parseInsuranceDate = (display: string) => {
+  const match = /^(\d{2})\/(\d{2})\/(\d{2})$/.exec(display.trim())
+  if (!match) return undefined
+  const day = Number(match[1])
+  const month = Number(match[2])
+  const year = 2000 + Number(match[3])
+  const date = new Date(year, month - 1, day)
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return undefined
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
+function InsuranceDateField({ label, value, onChange }: { label: string; value?: string; onChange: (value?: string) => void }) {
+  const [display, setDisplay] = useState(formatInsuranceDate(value))
+  useEffect(() => setDisplay(formatInsuranceDate(value)), [value])
+  return <label className="form-group">{label}<input
+    className="form-control"
+    type="text"
+    inputMode="numeric"
+    placeholder="dd/mm/yy"
+    value={display}
+    onChange={e => {
+      const next = e.target.value
+      setDisplay(next)
+      const iso = parseInsuranceDate(next)
+      if (iso) onChange(iso)
+      else if (!next) onChange(undefined)
+    }}
+  /></label>
+}
+
 export function InsuranceSummary({ insurance, phase = 'all' }: { insurance?: Partial<HorseInsurance>; phase?: 'quote' | 'policy' | 'all' }) {
   const { i18n } = useTranslation()
   const labels = i18n.language === 'en' ? insuranceLabelsEn : insuranceLabels
@@ -25,12 +61,12 @@ export function InsuranceSummary({ insurance, phase = 'all' }: { insurance?: Par
     {i.provider && <div>{i18n.language === 'en' ? 'Insurance Provider: ' : 'Đơn vị bảo hiểm: '}{i.provider}</div>}
     {i.option === 'assistance' && <>
       <div>{i.reviewed && i.premium != null ? `${i18n.language === 'en' ? 'Brokerage fee: ' : 'Phí thu hộ: '}${formatVND(i.premium)}` : (i18n.language === 'en' ? 'Awaiting 3rd-party quote' : 'Chờ báo giá bên thứ ba')}</div>
-      {i.quoteValidUntil && <div>{i18n.language === 'en' ? 'Insurance quote valid until: ' : 'Hạn báo giá bảo hiểm: '}{i.quoteValidUntil}</div>}
+      {i.quoteValidUntil && <div>{i18n.language === 'en' ? 'Insurance quote valid until: ' : 'Hạn báo giá bảo hiểm: '}{formatInsuranceDate(i.quoteValidUntil)}</div>}
     </>}
     {showPolicy && <>
       {i.option === 'assistance' && <div>{i.arranged ? (i18n.language === 'en' ? 'Insurance contract confirmed' : 'Đã xác nhận thu xếp hợp đồng') : (i18n.language === 'en' ? 'Awaiting policy arrangement after deposit' : 'Chờ thu xếp hợp đồng sau đặt cọc')}</div>}
       {i.policyNumber && <div>{i18n.language === 'en' ? 'Policy / Certificate No.: ' : 'Số hợp đồng / Giấy chứng nhận: '}{i.policyNumber}</div>}
-      {i.validFrom && <div>{i18n.language === 'en' ? 'Validity: ' : 'Hiệu lực: '}{i.validFrom} – {i.validUntil}</div>}
+      {i.validFrom && <div>{i18n.language === 'en' ? 'Validity: ' : 'Hiệu lực: '}{formatInsuranceDate(i.validFrom)} – {formatInsuranceDate(i.validUntil)}</div>}
     </>}
     {i.note && <p>{i.note}</p>}
     <InsuranceDocuments urls={i.documents} names={i.documentNames} label={i.option === 'personal' ? (i18n.language === 'en' ? 'Personal Insurance Docs' : 'Chứng từ bảo hiểm cá nhân') : (i18n.language === 'en' ? 'Quotation Documents' : 'Chứng từ báo giá')} />
@@ -52,10 +88,11 @@ export function InsuranceInputs({ value, onChange, premium = false, disabled = f
         const next = parseInsuranceMoney(el.value); onChange({ ...value, premium: next })
         requestAnimationFrame(() => { let digits = 0; let pos = 0; while (pos < el.value.length && digits < digitsBefore) { if (/[0-9]/.test(el.value[pos])) digits++; pos++ } el.setSelectionRange(pos, pos) })
       }} /><small>Phí bên bảo hiểm báo; công ty thu hộ.</small></label>}
-      {quoteOnly && field('quoteValidUntil', 'Báo giá bên thứ ba có hiệu lực đến (nếu có)', 'date')}
+      {quoteOnly && <InsuranceDateField label="Báo giá bên thứ ba có hiệu lực đến (nếu có)" value={value.quoteValidUntil} onChange={quoteValidUntil => onChange({ ...value, quoteValidUntil })} />}
       {!quoteOnly && <>
         {field('policyNumber', 'Số hợp đồng / Giấy chứng nhận bảo hiểm')}
-        {field('validFrom', 'Hiệu lực từ', 'date')}{field('validUntil', 'Hiệu lực đến', 'date')}
+        <InsuranceDateField label="Hiệu lực từ" value={value.validFrom} onChange={validFrom => onChange({ ...value, validFrom })} />
+        <InsuranceDateField label="Hiệu lực đến" value={value.validUntil} onChange={validUntil => onChange({ ...value, validUntil })} />
       </>}
     </div>
     {!policyOnly && <label className="form-group">Ghi chú<textarea className="form-control" rows={3} value={value.note ?? ''} onChange={e => onChange({ ...value, note: e.target.value })} /></label>}
