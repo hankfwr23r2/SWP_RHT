@@ -117,11 +117,11 @@ export function InsuranceSummary({ insurance, phase = 'all' }: { insurance?: Par
     <b>{labels[i.option!] ?? i.option}</b>
     {i.provider && <div>{i18n.language === 'en' ? 'Insurance Provider: ' : 'Đơn vị bảo hiểm: '}{i.provider}</div>}
     {i.option === 'assistance' && <>
-      <div>{i.reviewed && i.premium != null ? `${i18n.language === 'en' ? 'Brokerage fee: ' : 'Phí thu hộ: '}${formatVND(i.premium)}` : (i18n.language === 'en' ? 'Awaiting 3rd-party quote' : 'Chờ báo giá bên thứ ba')}</div>
+      {i.reviewed && i.premium != null && <div>{i18n.language === 'en' ? 'Brokerage fee: ' : 'Phí thu hộ: '}{formatVND(i.premium)}</div>}
       {i.quoteValidUntil && <div>{i18n.language === 'en' ? 'Insurance quote valid until: ' : 'Hạn báo giá bảo hiểm: '}{formatInsuranceDate(i.quoteValidUntil)}</div>}
     </>}
     {showPolicy && <>
-      {i.option === 'assistance' && <div>{i.arranged ? (i18n.language === 'en' ? 'Insurance contract confirmed' : 'Đã xác nhận thu xếp hợp đồng') : (i18n.language === 'en' ? 'Awaiting policy arrangement after deposit' : 'Chờ thu xếp hợp đồng sau đặt cọc')}</div>}
+      {i.option === 'assistance' && i.arranged && <div>{i18n.language === 'en' ? 'Insurance contract confirmed' : 'Đã xác nhận thu xếp hợp đồng'}</div>}
       {i.policyNumber && <div>{i18n.language === 'en' ? 'Policy / Certificate No.: ' : 'Số hợp đồng / Giấy chứng nhận: '}{i.policyNumber}</div>}
       {i.validFrom && <div>{i18n.language === 'en' ? 'Validity: ' : 'Hiệu lực: '}{formatInsuranceDate(i.validFrom)} – {formatInsuranceDate(i.validUntil)}</div>}
     </>}

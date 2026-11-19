@@ -14,7 +14,7 @@ for (const option of ['assistance', 'personal']) {
       await page.getByRole('tab', { name: tab, exact: true }).click()
       await expect(page.getByRole('dialog')).toBeVisible()
       await expect(page.getByText('Chưa tải được trang', { exact: true })).toHaveCount(0)
-      if (tab === 'Thông tin đơn') await expect(page.getByText('Chưa có chứng từ.', { exact: true })).toBeVisible()
+      if (tab === 'Thông tin đơn') await expect(page.getByText('Chưa có chứng từ.', { exact: true })).toHaveCount(0)
     }
   })
 }
