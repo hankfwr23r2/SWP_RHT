@@ -1,6 +1,6 @@
 package com.example.racehorse_transport.service;
 
-import com.example.racehorse_transport.dto.route.CreateRouteRequest;
+import com.example.racehorse_transport.dto.route.CreateRouteRequestDto;
 import com.example.racehorse_transport.entity.LocationRoute;
 import com.example.racehorse_transport.entity.Route;
 
@@ -21,7 +21,7 @@ public interface RouteService {
     // ==========================================
     // Admin: Quản lý tuyến đường cố định
     // ==========================================
-    Route createRoute(CreateRouteRequest request);
-    Route updateRoute(Integer id, CreateRouteRequest request);
+    Route createRoute(CreateRouteRequestDto request);
+    Route updateRoute(Integer id, CreateRouteRequestDto request);
     void deactivateRoute(Integer id);
 }

@@ -143,10 +143,10 @@ class CustomerSignInVerificationTest {
 
     private String lastEmail;
 
-    private Map<String, String> registerBody(String email) {
+    private Map<String, Object> registerBody(String email) {
         lastEmail = email;
         return Map.of("username", email, "email", email, "password", "Test@123",
-                "fullName", "Nguyen Van Khach", "phone", "0901234567", "address", "Ha Noi");
+                "fullName", "Nguyen Van Khach", "phone", "0901234567", "address", "Ha Noi", "acceptedTerms", true);
     }
 
     private Customer saveCustomer(String email, Boolean emailVerified, String phone) {

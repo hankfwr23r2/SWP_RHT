@@ -1,7 +1,7 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.admin.SystemConfigResponse;
-import com.example.racehorse_transport.response.ApiResponse;
+import com.example.racehorse_transport.dto.admin.SystemConfigResponseDto;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.service.SystemConfigService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,9 +19,9 @@ public class PublicSystemConfigController {
     private final SystemConfigService systemConfigService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<SystemConfigResponse>>> getPublicConfigs() {
-        List<SystemConfigResponse> publicConfigs = systemConfigService.getAllConfigs().stream()
-                .map(config -> SystemConfigResponse.builder()
+    public ResponseEntity<ApiResponseDto<List<SystemConfigResponseDto>>> getPublicConfigs() {
+        List<SystemConfigResponseDto> publicConfigs = systemConfigService.getAllConfigs().stream()
+                .map(config -> SystemConfigResponseDto.builder()
                         .configKey(config.getConfigKey())
                         .configName(config.getConfigName())
                         .configValue(config.getConfigValue())
@@ -31,7 +31,7 @@ public class PublicSystemConfigController {
                         .updatedAt(config.getUpdatedAt())
                         .build())
                 .toList();
-        return ResponseEntity.ok(ApiResponse.success(publicConfigs,
+        return ResponseEntity.ok(ApiResponseDto.success(publicConfigs,
                 "Lấy tham số nghiệp vụ công khai thành công."));
     }
 }

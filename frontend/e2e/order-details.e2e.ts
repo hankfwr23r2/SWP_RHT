@@ -21,12 +21,12 @@ for (const option of ['assistance', 'personal']) {
 
 test('null document list can be uploaded to and cleared without crashing', async ({ page }) => {
   await open(page, '?direct=1')
-  await expect(page.getByText('0/10 chứng từ đã tải lên', { exact: true })).toBeVisible()
+  await expect(page.getByLabel('Chọn chứng từ bảo hiểm')).toBeVisible()
   await page.route('**/api/v1/files/upload', route => route.fulfill({
     json: { status: 'success', data: { url: 'https://example.test/quote.pdf', originalFilename: 'quote.pdf' } },
   }))
   await page.getByLabel('Chọn chứng từ bảo hiểm').setInputFiles({ name: 'quote.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4') })
-  await expect(page.getByText('1/10 chứng từ đã tải lên', { exact: true })).toBeVisible()
+  await expect(page.getByText('quote.pdf', { exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Gỡ quote.pdf', exact: true }).click()
-  await expect(page.getByText('0/10 chứng từ đã tải lên', { exact: true })).toBeVisible()
+  await expect(page.getByText('quote.pdf', { exact: true })).toHaveCount(0)
 })

@@ -1,9 +1,9 @@
 package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.config.VnpayProperties;
-import com.example.racehorse_transport.dto.payment.VnpayCreateRequest;
-import com.example.racehorse_transport.dto.payment.VnpayCreateResponse;
-import com.example.racehorse_transport.dto.payment.VnpayResultResponse;
+import com.example.racehorse_transport.dto.payment.VnpayCreateRequestDto;
+import com.example.racehorse_transport.dto.payment.VnpayCreateResponseDto;
+import com.example.racehorse_transport.dto.payment.VnpayResultResponseDto;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Payment;
 import com.example.racehorse_transport.entity.Quotation;
@@ -14,21 +14,17 @@ import com.example.racehorse_transport.repository.PaymentRepository;
 import com.example.racehorse_transport.repository.QuotationRepository;
 import com.example.racehorse_transport.service.BookingService;
 import com.example.racehorse_transport.service.SettlementService;
+import com.example.racehorse_transport.service.StaffNotificationService;
 import com.example.racehorse_transport.service.VnpayService;
+import com.example.racehorse_transport.util.BookingSchedulePolicy;
 import com.example.racehorse_transport.util.CustomerBookingRules;
 import com.example.racehorse_transport.util.DepositPaymentWindow;
 import com.example.racehorse_transport.util.PaymentAmountLimits;
 import com.example.racehorse_transport.util.VnpayUtil;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.Instant;
 import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -41,6 +37,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -53,7 +54,8 @@ public class VnpayServiceImpl implements VnpayService {
             .withResolverStyle(ResolverStyle.STRICT);
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
     // Đơn đã đóng thì không nhận thanh toán nữa
-    private static final Set<String> CLOSED_STATUSES = Set.of("cancelled", "completed", "quote_expired");
+    // returning_horses: chuyến đã hủy, đang trả ngựa; khoản 70% đã đóng nên giao dịch treo cũng không được ghi nhận
+    private static final Set<String> CLOSED_STATUSES = Set.of("cancelled", "completed", "quote_expired", "returning_horses");
 
     private final VnpayProperties props;
     private final BookingRepository bookingRepository;
@@ -62,10 +64,11 @@ public class VnpayServiceImpl implements VnpayService {
     private final BookingService bookingService;
     private final SettlementService settlementService;
     private final Clock clock;
+    private final StaffNotificationService staffNotifier;
 
     @Override
     @Transactional
-    public VnpayCreateResponse createPaymentUrl(VnpayCreateRequest request, String username, String clientIp) {
+    public VnpayCreateResponseDto createPaymentUrl(VnpayCreateRequestDto request, String username, String clientIp) {
         if ("SETTLEMENT".equalsIgnoreCase(request.getPaymentType())) {
             throw new IllegalArgumentException("Chi phí sự cố do công ty chịu; khách hàng không thanh toán quyết toán.");
         }
@@ -91,7 +94,7 @@ public class VnpayServiceImpl implements VnpayService {
         String prefix;
         switch (type) {
             case "DEPOSIT" -> {
-                com.example.racehorse_transport.util.BookingSchedulePolicy.requireCurrentSchedule(booking, now);
+                BookingSchedulePolicy.requireCurrentSchedule(booking, now);
                 if (!"awaiting_payment".equalsIgnoreCase(booking.getStatus())) {
                     throw new IllegalStateException("Đơn hàng không ở bước chờ thanh toán đặt cọc!");
                 }
@@ -103,7 +106,7 @@ public class VnpayServiceImpl implements VnpayService {
                     throw new IllegalStateException("Báo giá thiếu thời hạn thanh toán, vui lòng liên hệ nhà xe.");
                 }
                 Instant quoteDeadline = DepositPaymentWindow.expiresAt(quotation);
-                Instant scheduleDeadline = com.example.racehorse_transport.util.BookingSchedulePolicy.deadline(booking);
+                Instant scheduleDeadline = BookingSchedulePolicy.deadline(booking);
                 if (scheduleDeadline != null && scheduleDeadline.isBefore(quoteDeadline)) quoteDeadline = scheduleDeadline;
                 if (!now.isBefore(quoteDeadline)) {
                     throw new IllegalStateException("Báo giá đã hết hạn, không thể đặt cọc!");
@@ -189,7 +192,7 @@ public class VnpayServiceImpl implements VnpayService {
         String paymentUrl = VnpayUtil.buildPaymentUrl(props.getPayUrl(), params, props.getHashSecret());
         log.info("Created VNPAY {} payment txnRef={} for booking ID={}, amount={}", type, txnRef, booking.getId(), amount);
 
-        return VnpayCreateResponse.builder()
+        return VnpayCreateResponseDto.builder()
                 .paymentUrl(paymentUrl)
                 .transactionCode(txnRef)
                 .amount(amount)
@@ -199,7 +202,7 @@ public class VnpayServiceImpl implements VnpayService {
 
     @Override
     @Transactional
-    public VnpayResultResponse confirm(Map<String, String> params) {
+    public VnpayResultResponseDto confirm(Map<String, String> params) {
         Instant receivedAt = clock.instant();
         if (!VnpayUtil.verify(params, props.getHashSecret())) {
             log.warn("VNPAY callback with invalid signature, txnRef={}", params.get("vnp_TxnRef"));
@@ -255,7 +258,7 @@ public class VnpayServiceImpl implements VnpayService {
                     && "PENDING".equalsIgnoreCase(quote.get().getStatus())
                     && DepositPaymentWindow.canConfirm(quote.get(), payment, paidAt, receivedAt,
                             props.getDepositConfirmationGraceMinutes())
-                    && !com.example.racehorse_transport.util.BookingSchedulePolicy.overdue(booking, paidAt);
+                    && !BookingSchedulePolicy.overdue(booking, paidAt);
         }
         payment.setPaymentDate(paidAt != null ? paidAt : receivedAt);
         if (replaced || !canApply(payment, booking, others) || !withinDepositWindow) {
@@ -368,8 +371,8 @@ public class VnpayServiceImpl implements VnpayService {
         };
     }
 
-    private VnpayResultResponse result(boolean success, String rspCode, String message, Payment payment) {
-        VnpayResultResponse.VnpayResultResponseBuilder builder = VnpayResultResponse.builder()
+    private VnpayResultResponseDto result(boolean success, String rspCode, String message, Payment payment) {
+        VnpayResultResponseDto.VnpayResultResponseDtoBuilder builder = VnpayResultResponseDto.builder()
                 .success(success)
                 .rspCode(rspCode)
                 .message(message);
@@ -395,11 +398,18 @@ public class VnpayServiceImpl implements VnpayService {
         }
     }
 
-    private VnpayResultResponse needsReview(Payment payment, String reason) {
+    private VnpayResultResponseDto needsReview(Payment payment, String reason) {
         payment.setStatus("NEEDS_REVIEW");
         payment.setNote("Đã nhận tiền VNPAY. " + reason + " Cần Quản lý kiểm tra và hoàn tiền.");
         paymentRepository.save(payment);
         log.warn("VNPAY payment txnRef={} needs review: {}", payment.getTransactionCode(), reason);
+        // Tiền đã vào tài khoản nhưng không ghi nhận cho đơn: Quản lý phải biết ngay để kiểm tra và hoàn tiền
+        Booking booking = payment.getBookingID();
+        staffNotifier.toManagers(booking, "Giao dịch VNPAY cần kiểm tra · " + payment.getTransactionCode(),
+                "Đã nhận " + payment.getAmount() + " VND (mã " + payment.getTransactionCode() + ")"
+                        + (booking != null ? " cho đơn " + booking.getCode() : "")
+                        + " nhưng không ghi nhận vào đơn: " + reason + " Cần kiểm tra và hoàn tiền cho khách.",
+                "/manager");
         return result(false, "00", "Đã nhận tiền nhưng chưa thể xác nhận đơn. Nhà xe sẽ kiểm tra và liên hệ hoàn tiền.", payment);
     }
 }

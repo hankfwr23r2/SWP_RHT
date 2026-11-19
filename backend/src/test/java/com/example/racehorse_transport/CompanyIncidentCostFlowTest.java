@@ -1,9 +1,25 @@
 package com.example.racehorse_transport;
 
-import com.example.racehorse_transport.entity.*;
-import com.example.racehorse_transport.repository.*;
+import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.Customer;
+import com.example.racehorse_transport.entity.Incident;
+import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.entity.User;
+import com.example.racehorse_transport.entity.Vehicle;
+import com.example.racehorse_transport.repository.BookingRepository;
+import com.example.racehorse_transport.repository.CustomerRepository;
+import com.example.racehorse_transport.repository.IncidentRepository;
+import com.example.racehorse_transport.repository.PaymentRepository;
+import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.repository.UserRepository;
+import com.example.racehorse_transport.repository.VehicleRepository;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
+import java.net.URI;
+import java.net.http.*;
+import java.time.Instant;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,11 +28,6 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.postgresql.PostgreSQLContainer;
-import java.math.BigDecimal;
-import java.net.URI;
-import java.net.http.*;
-import java.time.Instant;
-import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)

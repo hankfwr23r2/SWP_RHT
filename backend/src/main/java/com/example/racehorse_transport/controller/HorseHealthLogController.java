@@ -1,19 +1,19 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.HorseHealthLogDTO;
-import com.example.racehorse_transport.dto.UpdateHealthLogRequest;
+import com.example.racehorse_transport.dto.HorseHealthLogDto;
+import com.example.racehorse_transport.dto.UpdateHealthLogRequestDto;
 import com.example.racehorse_transport.entity.HorseHealthLog;
-import com.example.racehorse_transport.response.ApiResponse;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
+import com.example.racehorse_transport.service.BookingQueryService;
 import com.example.racehorse_transport.service.HorseHealthLogService;
 import jakarta.validation.Valid;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/horse-health-logs")
@@ -21,69 +21,69 @@ public class HorseHealthLogController {
 
     private final HorseHealthLogService horseHealthLogService;
     private final ModelMapper modelMapper;
-    private final com.example.racehorse_transport.service.BookingCodeResolver bookingCodes;
+    private final BookingQueryService bookingQueries;
 
     @Autowired
     public HorseHealthLogController(HorseHealthLogService horseHealthLogService, ModelMapper modelMapper,
-                                    com.example.racehorse_transport.service.BookingCodeResolver bookingCodes) {
+                                    BookingQueryService bookingQueries) {
         this.horseHealthLogService = horseHealthLogService;
         this.modelMapper = modelMapper;
-        this.bookingCodes = bookingCodes;
+        this.bookingQueries = bookingQueries;
     }
 
     // 1. Lấy tất cả nhật ký sức khỏe
     @PreAuthorize("hasAnyRole('SPECIALIST', 'INSPECTOR', 'MANAGER', 'ADMIN', 'COORDINATOR')")
     @GetMapping
-    public ResponseEntity<ApiResponse<List<HorseHealthLogDTO>>> getAllLogs() {
+    public ResponseEntity<ApiResponseDto<List<HorseHealthLogDto>>> getAllLogs() {
         List<HorseHealthLog> logs = horseHealthLogService.findAll();
-        List<HorseHealthLogDTO> dtos = logs.stream()
+        List<HorseHealthLogDto> dtos = logs.stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
-        return ResponseEntity.ok(ApiResponse.success(dtos, "Lấy danh sách nhật ký sức khỏe thành công"));
+        return ResponseEntity.ok(ApiResponseDto.success(dtos, "Lấy danh sách nhật ký sức khỏe thành công"));
     }
 
     // 2. Lấy nhật ký sức khỏe theo mã ngựa
     @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'INSPECTOR', 'MANAGER', 'ADMIN', 'COORDINATOR', 'ESCORT', 'DRIVER')")
     @GetMapping("/horse/{horseId}")
-    public ResponseEntity<ApiResponse<List<HorseHealthLogDTO>>> getLogsByHorse(@PathVariable Integer horseId) {
+    public ResponseEntity<ApiResponseDto<List<HorseHealthLogDto>>> getLogsByHorse(@PathVariable Integer horseId) {
         List<HorseHealthLog> logs = horseHealthLogService.findByHorseId(horseId);
-        List<HorseHealthLogDTO> dtos = logs.stream()
+        List<HorseHealthLogDto> dtos = logs.stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
-        return ResponseEntity.ok(ApiResponse.success(dtos, "Lấy nhật ký sức khỏe của ngựa thành công"));
+        return ResponseEntity.ok(ApiResponseDto.success(dtos, "Lấy nhật ký sức khỏe của ngựa thành công"));
     }
 
     // 3. Lấy nhật ký sức khỏe theo đơn hàng / chuyến đi
     @PreAuthorize("hasAnyRole('CUSTOMER', 'SPECIALIST', 'INSPECTOR', 'MANAGER', 'ADMIN', 'COORDINATOR', 'ESCORT', 'DRIVER')")
     @GetMapping("/booking/{bookingCode}")
-    public ResponseEntity<ApiResponse<List<HorseHealthLogDTO>>> getLogsByBooking(@PathVariable String bookingCode,
+    public ResponseEntity<ApiResponseDto<List<HorseHealthLogDto>>> getLogsByBooking(@PathVariable String bookingCode,
                                                                                 org.springframework.security.core.Authentication authentication) {
         boolean customer = authentication.getAuthorities().stream().anyMatch(a -> "ROLE_CUSTOMER".equals(a.getAuthority()));
         List<HorseHealthLog> logs = horseHealthLogService.findByBookingCode(bookingCode, authentication.getName(), customer ? "CUSTOMER" : null);
-        List<HorseHealthLogDTO> dtos = logs.stream()
+        List<HorseHealthLogDto> dtos = logs.stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
-        return ResponseEntity.ok(ApiResponse.success(dtos, "Lấy nhật ký sức khỏe chuyến đi thành công"));
+        return ResponseEntity.ok(ApiResponseDto.success(dtos, "Lấy nhật ký sức khỏe chuyến đi thành công"));
     }
 
     // 4. Dev 4: Escort cập nhật sức khỏe / an sinh ngựa trên chuyến đi
     @PreAuthorize("hasAnyRole('ESCORT', 'DRIVER', 'SPECIALIST', 'ADMIN')")
     @PostMapping
-    public ResponseEntity<ApiResponse<HorseHealthLogDTO>> createHealthLog(@Valid @RequestBody UpdateHealthLogRequest request) {
+    public ResponseEntity<ApiResponseDto<HorseHealthLogDto>> createHealthLog(@Valid @RequestBody UpdateHealthLogRequestDto request) {
         HorseHealthLog saved = horseHealthLogService.updateHorseHealthStatusByEscort(
                 request.getHorseId(),
-                request.getBookingCode() == null ? null : bookingCodes.idOf(request.getBookingCode()),
+                request.getBookingCode() == null ? null : bookingQueries.resolveBookingId(request.getBookingCode()),
                 request.getHealthStatus(),
                 request.getTemperature(),
                 request.getWeight(),
                 request.getSymptoms(),
                 request.getEscortStaffId()
         );
-        return ResponseEntity.ok(ApiResponse.success(toDTO(saved), "Cập nhật nhật ký sức khỏe ngựa thành công"));
+        return ResponseEntity.ok(ApiResponseDto.success(toDTO(saved), "Cập nhật nhật ký sức khỏe ngựa thành công"));
     }
 
-    private HorseHealthLogDTO toDTO(HorseHealthLog entity) {
-        HorseHealthLogDTO dto = modelMapper.map(entity, HorseHealthLogDTO.class);
+    private HorseHealthLogDto toDTO(HorseHealthLog entity) {
+        HorseHealthLogDto dto = modelMapper.map(entity, HorseHealthLogDto.class);
         if (entity.getHorseID() != null) {
             dto.setHorseID(entity.getHorseID().getId());
         }

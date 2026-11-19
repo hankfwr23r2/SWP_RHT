@@ -26,7 +26,7 @@ export function HomeReturnPanel({ b, t, role, run }: { b: Booking; t: VehicleTri
   const left = mins >= 60 ? `${Math.floor(mins / 60)} giờ ${mins % 60} phút` : `${mins} phút`
   return (
     <Panel title="Đang về trụ sở" icon="fa-road" tone={late ? 'warn' : undefined}>
-      <p>Đã giao ngựa ở <b>{h.fromPlace}</b>. Tài xế và hộ tống chạy về trụ sở, dự kiến tới lúc <b>{formatDateTime(h.eta)}</b>. Trong lúc về bạn chưa nhận được chuyến mới.</p>
+      <p>{b.status === 'cancelled' ? 'Đã trả ngựa ở' : 'Đã giao ngựa ở'} <b>{h.fromPlace}</b>. Tài xế và hộ tống chạy về trụ sở, dự kiến tới lúc <b>{formatDateTime(h.eta)}</b>. Trong lúc về bạn chưa nhận được chuyến mới.</p>
       {late && <div className="alert alert-warning" style={{ marginBottom: 12 }}><i className="fa-solid fa-triangle-exclamation" /><div><b>Về trễ so với giờ dự kiến.</b> Điều phối viên và Quản lý đang thấy cờ này.</div></div>}
       {role === 'driver' ? (
         <>

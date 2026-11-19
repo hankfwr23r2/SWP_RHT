@@ -1,5 +1,5 @@
 // Bước 1: loại chuyến, ngày khởi hành, người gửi & điểm đón, người nhận & điểm giao.
-// Áp dụng mô hình hành chính 2 cấp (Tỉnh/Thành → Xã/Phường) và gợi ý trại ngựa quen thuộc.
+// Áp dụng mô hình hành chính 2 cấp (Tỉnh/Thành → Xã/Phường).
 import { useEffect, useId, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
@@ -11,7 +11,7 @@ import {
   type ProvinceInfo,
 } from '@shared/config/administrative'
 import { MIN_LEAD_DAYS } from '@shared/config/business-rules'
-import { COUNTRIES, COUNTRY_LOCATIONS, type CountryCode } from '@shared/config/network'
+import { COUNTRIES, type CountryCode } from '@shared/config/network'
 import { earliestDeparture, fromIsoDay, isDepartureAllowed } from '@shared/lib/booking'
 import { formatDate } from '@shared/lib/format'
 import { isValidContactName, isValidPhoneForCountry, PHONE_CALLING_CODES, toInternationalPhone } from '@shared/lib/contactValidation'
@@ -116,35 +116,15 @@ interface LocationPickerProps {
 function LocationPicker({ country, address, onChange, errors }: LocationPickerProps) {
   const { t } = useTranslation()
   const provinces = useMemo(() => PROVINCES_DATA.filter(p => p.country === country), [country])
-  const presets = useMemo(() => COUNTRY_LOCATIONS[country] || [], [country])
-  const [selectedPreset, setSelectedPreset] = useState<string>('')
   const areaLabel = useId()
 
-  useEffect(() => {
-    setSelectedPreset('')
-  }, [country])
-
   const selectedProv: ProvinceInfo | undefined = provinces.find(p => p.code === address.provinceCode)
-
-  const handlePresetChange = (presetId: string) => {
-    setSelectedPreset(presetId)
-    if (!presetId) return
-    const found = presets.find(p => p.id === presetId)
-    if (!found) return
-    const parsed = splitAddress(found.name, country)
-    onChange({
-      provinceCode: parsed.provinceCode || address.provinceCode,
-      wardName: parsed.wardName || address.wardName,
-      detail: found.name,
-    })
-  }
 
   const handleAreaChange = (area: { provinceCode: string; wardName: string }) => {
     onChange({ ...address, ...area })
   }
 
   const handleDetailChange = (detail: string) => {
-    if (selectedPreset) setSelectedPreset('')
     onChange({
       ...address,
       detail,
@@ -163,30 +143,6 @@ function LocationPicker({ country, address, onChange, errors }: LocationPickerPr
   return (
     <div style={{ display: 'grid', gap: 10, marginTop: 4 }}>
       <div className={s.grid2}>
-        {presets.length > 0 && (
-          <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600, fontSize: '0.85rem' }}>
-              <i className="fa-solid fa-building-wheat" style={{ color: 'var(--icon-accent, #ea580c)' }} />
-              Gợi ý địa điểm / CLB uy tín liên kết
-            </label>
-            <select
-              className="form-control"
-              value={selectedPreset}
-              onChange={e => handlePresetChange(e.target.value)}
-            >
-              <option value="">-- Chọn nhanh từ danh sách điểm đón/trang trại liên kết --</option>
-              {presets.map(p => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            <div className="form-hint" style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: 4 }}>
-              Các trường đua, CLB cưỡi ngựa và trạm trung chuyển có sẵn vị trí chuẩn trên hệ thống.
-            </div>
-          </div>
-        )}
-
         <div className="form-group" style={{ gridColumn: '1 / -1' }}>
           <label className="required" htmlFor={`${areaLabel}-detail`}>{t('bookingWizard.farmAddress')}</label>
           <input

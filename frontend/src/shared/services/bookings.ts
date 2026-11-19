@@ -44,7 +44,7 @@ const partyDto = (p: Booking['consignor']) => ({
 })
 
 // Bỏ trường nội bộ trước khi đưa sang app khách; xe, lộ trình chỉ hiện khi báo giá đã gửi
-const QUOTED: Booking['status'][] = ['awaiting_payment', 'quote_expired', 'waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'pickup_failed', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed']
+const QUOTED: Booking['status'][] = ['awaiting_payment', 'quote_expired', 'waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'pickup_failed', 'returning_horses', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed']
 export type CustomerTrip = Omit<VehicleTrip, 'driverPack' | 'acks' | 'tolls'>
 // Khách chỉ thấy diễn biến sự cố; chi phí và chứng từ thuộc nội bộ công ty.
 export type CustomerIncident = Pick<Incident, 'id' | 'tripId' | 'kind' | 'status' | 'reportedAt' | 'resolvedAt'> & { newEta?: number }
@@ -124,6 +124,7 @@ export interface NewBookingInput {
   consignee: Booking['consignee']
   horses: Array<Omit<BookingHorse, 'stall' | 'feedPackage' | 'waterPlan'>
     & Partial<Pick<BookingHorse, 'stall' | 'feedPackage' | 'waterPlan'>>>
+  limitedLiabilityAccepted?: boolean // khách đã đồng ý Điều khoản Trách nhiệm Hạn chế vì không mua bảo hiểm
 }
 
 
@@ -194,6 +195,7 @@ export const customerBookingsApi = {
         selectedServices: h.selectedServices,
         selectedServiceCodes: h.selectedServiceCodes,
       })),
+      limitedLiabilityAccepted: input.limitedLiabilityAccepted,
     })
     return toCustomerView(toBooking(created, customer))
   },
@@ -331,6 +333,12 @@ export const bookingsApi = {
     invalidateBookingsListCache()
     return res.data.data?.message ?? res.data.message ?? 'Đã hủy đơn'
   },
+  // Quản lý hủy chuyến đã cọc: COMPANY = nhà xe chịu, hoàn 100%; CUSTOMER = khách mất phần cọc vận chuyển
+  cancelTrip: async (id: string, fault: 'COMPANY' | 'CUSTOMER', reason: string): Promise<string> => {
+    const res = await apiClient.post<ApiResponse<{ message?: string }>>(`/manager/bookings/${id}/cancel-trip`, { fault, reason: reason.trim() })
+    invalidateBookingsListCache()
+    return res.data.data?.message ?? res.data.message ?? 'Đã hủy chuyến'
+  },
   assignCrew: async (id: string, by: string, picks: { tripId: string; driverId: string; escortId: string }[]): Promise<Booking> =>
     toBooking(await backendBookingApi.assignCrew(id, { by, picks })),
   quoteDraft: async (id: string) => {
@@ -437,6 +445,12 @@ export const bookingsApi = {
     toBooking(await backendBookingApi.updateTripProgress(id, { tripId, action: 'REMOVE_TOLL', actor: by, payload: { tollId } })),
   uploadHandover: async (id: string, tripId: string, by: string, checkpointId: string, photo: string): Promise<Booking> => {
     const res = await backendBookingApi.updateTripProgress(id, { tripId, action: 'UPLOAD_HANDOVER', actor: by, payload: { checkpointId, photo } })
+    invalidateBookingsListCache()
+    return toBooking(res)
+  },
+  // Quản lý đã hủy chuyến khi ngựa trên xe: tài xế trả lại ngựa và hồ sơ gốc tại điểm đón, có biên bản ký hai bên
+  returnHorses: async (id: string, tripId: string, by: string, payload: { recipientName: string; recipientPhone: string; chips: string[]; originals: string[]; photo: string }): Promise<Booking> => {
+    const res = await backendBookingApi.updateTripProgress(id, { tripId, action: 'RETURN_HORSES', actor: by, payload })
     invalidateBookingsListCache()
     return toBooking(res)
   },

@@ -1,0 +1,69 @@
+package com.example.racehorse_transport.dto.booking;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import com.example.racehorse_transport.util.BookingStatusLabels;
+import lombok.*;
+
+import java.util.List;
+
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Schema(name = "BookingResponse")
+public class BookingResponseDto {
+    private String id; // "BK-001"
+    private String type; // "domestic", "international"
+    private String customer; // username
+    private String customerName; // Họ tên khách hàng
+    private String status; // "pending_intake", "under_review", etc.
+    private Long createdAt; // timestamp ms
+    private Long departAt; // timestamp ms
+
+    private String originName;
+    private String originCountry;
+    private String destName;
+    private String destCountry;
+
+    private PartyContactDto consignor;
+    private PartyContactDto consignee;
+
+    private Integer totalHorses;
+    private Integer vehicleCount;
+    private List<BookingHorseDto> horses;
+    private String waybillNo;
+
+    private List<com.example.racehorse_transport.dto.coordinator.VehicleTripDto> trips;
+    private Integer routeId;
+    private Object route;
+    private java.util.Map<String, com.example.racehorse_transport.dto.file.CaptureEvidenceDto> photoEvidence;
+    private String gate;
+    private Object plan;
+    private Object quote;
+    private Object payment;
+    private Long depositConfirmationUntil; // mốc kết thúc giữ chỗ chờ kết quả cọc (timestamp ms), không gia hạn thanh toán
+    // Việc khách được làm, do backend quyết định (CustomerBookingRules); frontend chỉ hiện nút theo các cờ này
+    private Boolean canCancel;
+    private Boolean canPayBalance;
+    private java.math.BigDecimal cancelPenalty; // số tiền cọc mất nếu hủy lúc này
+    private Object medical;
+    private Object clearance;
+    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+    private Object settlement; // internal company expense review; omitted for customers
+    private Object rating;
+    private Object intake;
+    private java.util.Map<String, Object> scheduleChange;
+    private Object rejection;
+    private java.util.Map<String, Object> sendBack;
+    private List<java.util.Map<String, Object>> history;
+
+    // Nhãn của trạng thái hiện tại, lấy từ BookingStatusLabels; mọi nơi dựng BookingResponseDto đều có sẵn
+    public String getStatusLabel() {
+        return BookingStatusLabels.staffLabel(status);
+    }
+
+    public String getCustomerStatusLabel() {
+        return BookingStatusLabels.customerLabel(status);
+    }
+}

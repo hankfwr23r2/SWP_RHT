@@ -1,13 +1,12 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.LocationRequest;
+import com.example.racehorse_transport.dto.LocationRequestDto;
 import com.example.racehorse_transport.entity.Location;
-import com.example.racehorse_transport.service.AdminAuditWriter;
 import com.example.racehorse_transport.repository.LocationRepository;
+import com.example.racehorse_transport.service.AdminAuditService;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -18,7 +17,7 @@ import static org.mockito.Mockito.when;
 
 class LocationServiceImplTest {
     private final LocationRepository locationRepository = mock(LocationRepository.class);
-    private final AdminAuditWriter audit = mock(AdminAuditWriter.class);
+    private final AdminAuditService audit = mock(AdminAuditService.class);
     private final LocationServiceImpl service = new LocationServiceImpl(audit, locationRepository);
 
     @Test
@@ -38,7 +37,7 @@ class LocationServiceImplTest {
 
     @Test
     void updateLocationRejectsBorderGateWithoutValidWindow() {
-        LocationRequest request = request("BorderGate");
+        LocationRequestDto request = request("BorderGate");
         request.setOpeningMinutes(990);
         request.setClosingMinutes(450);
         request.setDestinationCountry("KH");
@@ -92,8 +91,8 @@ class LocationServiceImplTest {
         assertThat(service.findLocations(null, null, true)).containsExactly(active, inactive);
     }
 
-    private LocationRequest request(String type) {
-        LocationRequest request = new LocationRequest();
+    private LocationRequestDto request(String type) {
+        LocationRequestDto request = new LocationRequestDto();
         request.setLocationType(type);
         request.setLocationName(" Trạm nghỉ ");
         request.setAddress(" Quốc lộ 1 ");

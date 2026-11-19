@@ -6,7 +6,7 @@ import { formatDateTime, formatVND, timeLeftText } from '@shared/lib/format'
 import type { CustomerBookingView } from '@shared/services/bookings'
 
 // Đã đặt cọc: có Vận đơn, nhà xe làm giấy tờ
-export const POST_PAYMENT: CustomerBookingView['status'][] = ['waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'pickup_failed', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed']
+export const POST_PAYMENT: CustomerBookingView['status'][] = ['waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'pickup_failed', 'returning_horses', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed']
 // Từ lúc giấy tờ xong trở đi: hành trình quan trọng hơn giấy tờ
 export const ROUTE_STAGE: CustomerBookingView['status'][] = ['clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'pickup_failed', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed']
 // Đã có lộ trình: khách xem được tóm tắt hành trình (lộ trình lập từ trước báo giá)
@@ -23,6 +23,15 @@ export interface NextStep {
 
 // Xe đang chạy đầu tiên (đơn nhiều xe): mốc hiện tại của xe đó
 const activeTrip = (b: CustomerBookingView) => b.trips?.find(t => t.run?.startedAt && !t.run.deliveredAt)
+
+// Tiền của đơn đã hủy: hoàn bao nhiêu, hay không hoàn theo chính sách
+function cancelMoneyText(b: CustomerBookingView): string {
+  if (!b.payment) return 'Đơn đã đóng khi chưa đặt cọc, không phát sinh phí.'
+  if (b.cancellation?.by === 'manager') return `Nhà xe đã hủy đơn. Hoàn ${formatVND(b.cancellation.refund)} về tài khoản bạn dùng để thanh toán.`
+  if (b.cancellation?.refund) return `Tiền cọc không được hoàn. Số dư đã trả ${formatVND(b.cancellation.refund)} được hoàn về tài khoản bạn dùng để thanh toán.`
+  if (b.balance) return 'Bạn đã thanh toán 70% còn lại, tức đã đồng ý bắt đầu chuyến, nên tiền cọc và 70% không được hoàn.'
+  return 'Tiền cọc không được hoàn theo chính sách hủy đơn.'
+}
 
 function baseStep(b: CustomerBookingView, now: number): NextStep {
   switch (b.status) {
@@ -81,8 +90,10 @@ function baseStep(b: CustomerBookingView, now: number): NextStep {
       return { tone: 'success', icon: 'fa-star', title: 'Chuyến đi đã hoàn tất', text: b.rating ? 'Cảm ơn bạn đã sử dụng dịch vụ.' : 'Bạn có thể gửi đánh giá trải nghiệm chuyến đi.', actionNeeded: !b.rating }
     case 'rejected':
       return { tone: 'danger', icon: 'fa-circle-xmark', title: 'Nhà xe không nhận đơn này', text: `${b.rejection?.role === 'coordinator' ? 'Điều phối viên không xếp được xe và lộ trình' : 'Quản lý không tiếp nhận đơn'}. Lý do: ${b.rejection?.reason ?? 'không nêu'}. Bạn có thể chỉnh lại và đặt chuyến mới.`, actionNeeded: false }
+    case 'returning_horses':
+      return { tone: 'warning', icon: 'fa-rotate-left', title: 'Chuyến đã hủy, kíp xe đang trả ngựa', text: `${cancelMoneyText(b)} Vui lòng có mặt tại điểm đón để nhận lại ngựa và hồ sơ gốc, kiểm tra rồi ký biên bản trả ngựa.`, actionNeeded: true }
     case 'cancelled':
-      return { tone: 'muted', icon: 'fa-ban', title: 'Đơn đã hủy', text: !b.payment ? 'Đơn đã đóng khi chưa đặt cọc, không phát sinh phí.' : b.cancellation?.by === 'manager' ? `Nhà xe đã hủy đơn. Hoàn ${formatVND(b.cancellation.refund)} về tài khoản bạn dùng để thanh toán.` : b.cancellation?.refund ? `Tiền cọc không được hoàn. Số dư đã trả ${formatVND(b.cancellation.refund)} được hoàn về tài khoản bạn dùng để thanh toán.` : 'Tiền cọc không được hoàn theo chính sách hủy đơn.', actionNeeded: false }
+      return { tone: 'muted', icon: 'fa-ban', title: 'Đơn đã hủy', text: cancelMoneyText(b), actionNeeded: false }
     case 'arrived':
       return { tone: 'info', icon: 'fa-location-dot', title: 'Xe đã tới điểm giao', text: 'Xe đã tới điểm giao và đang chờ người nhận ra bàn giao ngựa.', actionNeeded: false }
     case 'handover_timeout':

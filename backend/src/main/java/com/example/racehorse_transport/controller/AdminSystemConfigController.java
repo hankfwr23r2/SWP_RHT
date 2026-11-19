@@ -1,8 +1,8 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.admin.SystemConfigResponse;
-import com.example.racehorse_transport.dto.admin.UpdateSystemConfigRequest;
-import com.example.racehorse_transport.response.ApiResponse;
+import com.example.racehorse_transport.dto.admin.SystemConfigResponseDto;
+import com.example.racehorse_transport.dto.admin.UpdateSystemConfigRequestDto;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.service.SystemConfigService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,29 +23,29 @@ public class AdminSystemConfigController {
     private final SystemConfigService systemConfigService;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<SystemConfigResponse>>> getAllConfigs() {
-        return ResponseEntity.ok(ApiResponse.success(systemConfigService.getAllConfigs(),
+    public ResponseEntity<ApiResponseDto<List<SystemConfigResponseDto>>> getAllConfigs() {
+        return ResponseEntity.ok(ApiResponseDto.success(systemConfigService.getAllConfigs(),
                 "Lấy danh sách tham số hệ thống thành công."));
     }
 
     @GetMapping("/grouped")
-    public ResponseEntity<ApiResponse<Map<String, List<SystemConfigResponse>>>> getGroupedConfigs() {
-        return ResponseEntity.ok(ApiResponse.success(systemConfigService.getAllConfigsGrouped(),
+    public ResponseEntity<ApiResponseDto<Map<String, List<SystemConfigResponseDto>>>> getGroupedConfigs() {
+        return ResponseEntity.ok(ApiResponseDto.success(systemConfigService.getAllConfigsGrouped(),
                 "Lấy tham số hệ thống theo nhóm thành công."));
     }
 
     @GetMapping("/{key}")
-    public ResponseEntity<ApiResponse<SystemConfigResponse>> getConfig(@PathVariable String key) {
-        return ResponseEntity.ok(ApiResponse.success(systemConfigService.getConfig(key),
+    public ResponseEntity<ApiResponseDto<SystemConfigResponseDto>> getConfig(@PathVariable String key) {
+        return ResponseEntity.ok(ApiResponseDto.success(systemConfigService.getConfig(key),
                 "Lấy thông tin cấu hình thành công."));
     }
 
     @PutMapping("/{key}")
-    public ResponseEntity<ApiResponse<SystemConfigResponse>> updateConfig(
+    public ResponseEntity<ApiResponseDto<SystemConfigResponseDto>> updateConfig(
             @PathVariable String key,
-            @Valid @RequestBody UpdateSystemConfigRequest request,
+            @Valid @RequestBody UpdateSystemConfigRequestDto request,
             Authentication authentication) {
-        SystemConfigResponse updated = systemConfigService.updateConfig(key, request, authentication.getName());
-        return ResponseEntity.ok(ApiResponse.success(updated, "Cập nhật cấu hình thành công."));
+        SystemConfigResponseDto updated = systemConfigService.updateConfig(key, request, authentication.getName());
+        return ResponseEntity.ok(ApiResponseDto.success(updated, "Cập nhật cấu hình thành công."));
     }
 }

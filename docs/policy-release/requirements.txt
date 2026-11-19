@@ -1,0 +1,2 @@
+weasyprint==70.0
+Markdown==3.10.2

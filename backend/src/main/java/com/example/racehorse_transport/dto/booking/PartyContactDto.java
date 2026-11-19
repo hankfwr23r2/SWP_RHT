@@ -4,7 +4,7 @@ import com.example.racehorse_transport.entity.Booking;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.Pattern;
-import com.example.racehorse_transport.validation.ContactPatterns;
+import com.example.racehorse_transport.util.ContactPatterns;
 import lombok.*;
 
 @Getter

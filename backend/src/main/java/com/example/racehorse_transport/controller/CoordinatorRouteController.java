@@ -1,11 +1,11 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.routing.RoadRouteRequest;
-import com.example.racehorse_transport.dto.routing.RoadRouteResponse;
-import com.example.racehorse_transport.dto.routing.RoutePreviewRequest;
-import com.example.racehorse_transport.dto.routing.RoutePreviewResponse;
-import com.example.racehorse_transport.response.ApiResponse;
-import com.example.racehorse_transport.service.routing.RoutePreviewService;
+import com.example.racehorse_transport.dto.route.RoadRouteRequestDto;
+import com.example.racehorse_transport.dto.route.RoadRouteResponseDto;
+import com.example.racehorse_transport.dto.route.RoutePreviewRequestDto;
+import com.example.racehorse_transport.dto.route.RoutePreviewResponseDto;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
+import com.example.racehorse_transport.service.RoutePreviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -25,13 +25,13 @@ public class CoordinatorRouteController {
 
     // Điều phối xem trước đường xe tải, lịch trình và phí cầu đường trước khi chốt xe
     @PostMapping("/route-preview")
-    public ResponseEntity<ApiResponse<RoutePreviewResponse>> preview(@Valid @RequestBody RoutePreviewRequest request) {
-        return ResponseEntity.ok(ApiResponse.success(routePreviewService.preview(request), "Đã tính lộ trình xe tải"));
+    public ResponseEntity<ApiResponseDto<RoutePreviewResponseDto>> preview(@Valid @RequestBody RoutePreviewRequestDto request) {
+        return ResponseEntity.ok(ApiResponseDto.success(routePreviewService.preview(request), "Đã tính lộ trình xe tải"));
     }
 
     // Đường xe tải cho phương án sự cố: tới trạm gần nhất, cứu hộ tới xe, đường tránh kẹt xe, phần đường còn lại
     @PostMapping("/road-route")
-    public ResponseEntity<ApiResponse<RoadRouteResponse>> roadRoute(@Valid @RequestBody RoadRouteRequest request) {
-        return ResponseEntity.ok(ApiResponse.success(routePreviewService.roadRoute(request), "Đã tính đường xe tải"));
+    public ResponseEntity<ApiResponseDto<RoadRouteResponseDto>> roadRoute(@Valid @RequestBody RoadRouteRequestDto request) {
+        return ResponseEntity.ok(ApiResponseDto.success(routePreviewService.roadRoute(request), "Đã tính đường xe tải"));
     }
 }

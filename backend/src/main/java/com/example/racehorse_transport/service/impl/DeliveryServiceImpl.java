@@ -1,25 +1,40 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.booking.BookingDetailsPayload;
+import com.example.racehorse_transport.dto.booking.BookingDetailsPayloadDto;
 import com.example.racehorse_transport.dto.booking.BookingHorseDto;
-import com.example.racehorse_transport.dto.booking.BookingResponse;
+import com.example.racehorse_transport.dto.booking.BookingResponseDto;
 import com.example.racehorse_transport.dto.booking.PartyContactDto;
+import com.example.racehorse_transport.dto.coordinator.VehicleTripDto;
+import com.example.racehorse_transport.dto.field.DeliveryArriveRequestDto;
+import com.example.racehorse_transport.dto.field.DeliveryTimeoutRequestDto;
+import com.example.racehorse_transport.dto.field.HandoverCompleteRequestDto;
+import com.example.racehorse_transport.dto.field.ReturnToHqRequestDto;
+import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.Incident;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
-import com.example.racehorse_transport.dto.field.*;
-import com.example.racehorse_transport.entity.*;
-import com.example.racehorse_transport.repository.*;
+import com.example.racehorse_transport.repository.BookingAssignmentRepository;
+import com.example.racehorse_transport.repository.BookingRepository;
+import com.example.racehorse_transport.repository.BookingVehicleRepository;
+import com.example.racehorse_transport.repository.IncidentRepository;
+import com.example.racehorse_transport.repository.PaymentRepository;
+import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.repository.VehicleRepository;
 import com.example.racehorse_transport.service.DeliveryService;
+import com.example.racehorse_transport.service.HorseDeliveryLocationService;
+import com.example.racehorse_transport.service.OperationalLogService;
+import com.example.racehorse_transport.service.StaffNotificationService;
 import com.example.racehorse_transport.util.BookingDetailsJson;
+import com.example.racehorse_transport.util.BookingHistory;
+import com.example.racehorse_transport.service.BookingVisibilityService;
 import com.example.racehorse_transport.util.PaymentAmountLimits;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.*;
 
 @Slf4j
 @Service
@@ -32,19 +47,20 @@ public class DeliveryServiceImpl implements DeliveryService {
     private final BookingAssignmentRepository bookingAssignmentRepository;
     private final IncidentRepository incidentRepository;
     private final PaymentRepository paymentRepository;
-    private final com.example.racehorse_transport.service.OperationalLogWriter operationalLog;
-    private final com.example.racehorse_transport.service.HorseDeliveryLocationService horseDeliveryLocationService;
-    private final com.example.racehorse_transport.repository.StaffRepository staffRepository;
-    private final com.example.racehorse_transport.service.StaffNotifier staffNotifier;
+    private final OperationalLogService operationalLog;
+    private final HorseDeliveryLocationService locations;
+    private final StaffRepository staffRepository;
+    private final StaffNotificationService staffNotifier;
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final BookingVisibilityService bookingVisibility;
 
     @Override
     @Transactional
-    public BookingResponse arriveDelivery(Integer bookingId, DeliveryArriveRequest request) {
-        Booking booking = bookingRepository.findById(bookingId)
+    public BookingResponseDto arriveDelivery(Integer bookingId, DeliveryArriveRequestDto request) {
+        Booking booking = bookingRepository.findByIdForUpdate(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng ID: " + bookingId));
 
-        BookingDetailsPayload payload = extractPayload(booking);
+        BookingDetailsPayloadDto payload = extractPayload(booking);
         Map<String, Object> arrivalMap = new HashMap<>();
         arrivalMap.put("arrivedAt", System.currentTimeMillis());
         arrivalMap.put("proofImageUrl", request != null ? request.getProofImageUrl() : null);
@@ -52,7 +68,7 @@ public class DeliveryServiceImpl implements DeliveryService {
         arrivalMap.put("graceWindowHours", 2); // 2 giờ chờ miễn phí
 
         payload.setArrival(arrivalMap);
-        appendHistory(payload, request != null && request.getDriverUsername() != null ? request.getDriverUsername() : "Tài xế",
+        BookingHistory.appendHistory(payload, request != null && request.getDriverUsername() != null ? request.getDriverUsername() : "Tài xế",
                 "Xe tới điểm giao đích");
         booking.setStatus("arrived");
         savePayload(booking, payload);
@@ -66,11 +82,11 @@ public class DeliveryServiceImpl implements DeliveryService {
 
     @Override
     @Transactional
-    public BookingResponse completeHandover(Integer bookingId, HandoverCompleteRequest request) {
-        Booking booking = bookingRepository.findById(bookingId)
+    public BookingResponseDto completeHandover(Integer bookingId, HandoverCompleteRequestDto request) {
+        Booking booking = bookingRepository.findByIdForUpdate(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng ID: " + bookingId));
 
-        BookingDetailsPayload payload = extractPayload(booking);
+        BookingDetailsPayloadDto payload = extractPayload(booking);
         Map<String, Object> handoverMap = new HashMap<>();
         handoverMap.put("recipientName", request.getRecipientName());
         handoverMap.put("recipientPhone", request.getRecipientPhone());
@@ -81,12 +97,11 @@ public class DeliveryServiceImpl implements DeliveryService {
 
         payload.setHandover(handoverMap);
 
-        horseDeliveryLocationService.recordBookingHandover(booking, payload,
+        completeBooking(booking, payload,
                 request.getDriverUsername() != null ? request.getDriverUsername() : "Kíp xe",
                 request.getProofImageUrl(), System.currentTimeMillis());
 
-        booking.setStatus("delivered_pending_settlement");
-        appendHistory(payload, request.getDriverUsername() != null ? request.getDriverUsername() : "Kíp xe",
+        BookingHistory.appendHistory(payload, request.getDriverUsername() != null ? request.getDriverUsername() : "Kíp xe",
                 "Hoàn tất bàn giao ngựa, chờ đối soát nội bộ công ty");
 
         savePayload(booking, payload);
@@ -101,8 +116,8 @@ public class DeliveryServiceImpl implements DeliveryService {
 
     @Override
     @Transactional
-    public BookingResponse reportDeliveryTimeout(Integer bookingId, DeliveryTimeoutRequest request, String username, String role) {
-        Booking booking = bookingRepository.findById(bookingId)
+    public BookingResponseDto reportDeliveryTimeout(Integer bookingId, DeliveryTimeoutRequestDto request, String username, String role) {
+        Booking booking = bookingRepository.findByIdForUpdate(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng ID: " + bookingId));
         request.setDriverUsername(username);
         if (!java.util.Set.of("in_transit", "arrived").contains(String.valueOf(booking.getStatus()))) {
@@ -119,7 +134,7 @@ public class DeliveryServiceImpl implements DeliveryService {
                 throw new IllegalArgumentException("Chi phí lưu chuồng vượt quá giới hạn thanh toán được hỗ trợ.");
             }
         }
-        BookingDetailsPayload tripPayload = extractPayload(booking);
+        BookingDetailsPayloadDto tripPayload = extractPayload(booking);
         var trip = tripPayload.getTrips() == null ? null : tripPayload.getTrips().stream()
                 .filter(t -> request.getTripId() == null || request.getTripId().equals(t.getTripId()))
                 .findFirst().orElseThrow(() -> new IllegalArgumentException("Không tìm thấy chuyến của đơn."));
@@ -168,14 +183,14 @@ public class DeliveryServiceImpl implements DeliveryService {
                 .build();
         incidentRepository.save(incident);
 
-        BookingDetailsPayload payload = extractPayload(booking);
+        BookingDetailsPayloadDto payload = extractPayload(booking);
         if ("RETURN_TO_HQ".equalsIgnoreCase(action)) {
             booking.setStatus("returning_to_hq");
-            appendHistory(payload, request.getDriverUsername() != null ? request.getDriverUsername() : "Kíp xe",
+            BookingHistory.appendHistory(payload, request.getDriverUsername() != null ? request.getDriverUsername() : "Kíp xe",
                     "Chở ngựa về trụ sở");
         } else {
             booking.setStatus("handover_timeout");
-            appendHistory(payload, request.getDriverUsername() != null ? request.getDriverUsername() : "Kíp xe",
+            BookingHistory.appendHistory(payload, request.getDriverUsername() != null ? request.getDriverUsername() : "Kíp xe",
                     "Quá hạn bàn giao: Lưu chuồng tạm");
         }
 
@@ -194,12 +209,12 @@ public class DeliveryServiceImpl implements DeliveryService {
 
     @Override
     @Transactional
-    public void returnToHq(ReturnToHqRequest request) {
+    public void returnToHq(ReturnToHqRequestDto request) {
         throw new IllegalStateException("Vui lòng xác nhận về trụ sở trên chuyến được phân công, kèm ảnh tại trụ sở.");
     }
 
     // Vị trí sự cố quá hạn: tọa độ mốc điểm giao nếu có, không thì điểm cuối của lộ trình đã chốt
-    private Double[] deliveryLocation(Map<String, Object> deliveryPoint, BookingDetailsPayload payload) {
+    private Double[] deliveryLocation(Map<String, Object> deliveryPoint, BookingDetailsPayloadDto payload) {
         if (deliveryPoint.get("lat") instanceof Number lat && deliveryPoint.get("lng") instanceof Number lng)
             return new Double[]{lat.doubleValue(), lng.doubleValue()};
         if (payload.getRoute() instanceof Map<?, ?> route && route.get("path") instanceof List<?> path && !path.isEmpty()
@@ -209,27 +224,16 @@ public class DeliveryServiceImpl implements DeliveryService {
         return new Double[]{null, null};
     }
 
-    private BookingDetailsPayload extractPayload(Booking b) {
+    private BookingDetailsPayloadDto extractPayload(Booking b) {
         return BookingDetailsJson.read(objectMapper, b);
     }
 
-    private void savePayload(Booking b, BookingDetailsPayload payload) {
+    private void savePayload(Booking b, BookingDetailsPayloadDto payload) {
         try {
             b.setDetailsJson(objectMapper.writeValueAsString(payload));
         } catch (Exception ex) {
             log.error("Could not serialize payload for booking ID={}: {}", b.getId(), ex.getMessage());
         }
-    }
-
-    private void appendHistory(BookingDetailsPayload payload, String actor, String text) {
-        if (payload.getHistory() == null) {
-            payload.setHistory(new ArrayList<>());
-        }
-        Map<String, Object> entry = new HashMap<>();
-        entry.put("time", System.currentTimeMillis());
-        entry.put("actor", actor);
-        entry.put("text", text);
-        payload.getHistory().add(entry);
     }
 
     private void logAction(String actionType, Integer targetRecordId, String newData) {
@@ -241,7 +245,7 @@ public class DeliveryServiceImpl implements DeliveryService {
         }
     }
 
-    private BookingResponse mapToResponse(Booking b) {
+    private BookingResponseDto mapToResponse(Booking b) {
         String formattedId = b.getCode();
         String customerUsername = "";
         String customerFullName = "";
@@ -253,10 +257,10 @@ public class DeliveryServiceImpl implements DeliveryService {
             }
         }
 
-        BookingDetailsPayload payload = extractPayload(b);
+        BookingDetailsPayloadDto payload = extractPayload(b);
         List<BookingHorseDto> horseDtos = payload.getHorses() != null ? payload.getHorses() : new ArrayList<>();
 
-        return BookingResponse.builder()
+        return BookingResponseDto.builder()
                 .id(formattedId)
                 .type(b.getBookingType() != null ? b.getBookingType() : "domestic")
                 .customer(customerUsername)
@@ -273,11 +277,11 @@ public class DeliveryServiceImpl implements DeliveryService {
                 .totalHorses(b.getTotalHorses() != null ? b.getTotalHorses() : 1)
                 .horses(horseDtos)
                 .waybillNo(b.getWaybillNo())
-                .trips(com.example.racehorse_transport.service.CaptureService.visibleTrips(payload))
+                .trips(bookingVisibility.visibleTrips(payload))
                 .route(payload.getRoute())
                 .gate(payload.getGate())
                 .plan(payload.getPlan())
-                .photoEvidence(com.example.racehorse_transport.service.CaptureService.visibleEvidence(payload))
+                .photoEvidence(bookingVisibility.visibleEvidence(payload))
                 .quote(payload.getQuote())
                 .payment(payload.getPayment())
                 .medical(payload.getMedical())
@@ -286,5 +290,24 @@ public class DeliveryServiceImpl implements DeliveryService {
                 .sendBack(payload.getSendBack())
                 .history(payload.getHistory())
                 .build();
+    }
+
+    @Override
+    public void completeTrip(Booking booking, BookingDetailsPayloadDto payload, VehicleTripDto trip,
+                      String actor, String photo, long time) {
+        if (payload.getTrips().stream().allMatch(t -> t.getRun() != null
+                && t.getRun().get("deliveredAt") != null)) {
+            markDelivered(booking);
+        }
+        locations.recordTripDelivery(booking, payload, trip, actor, photo, time);
+    }
+
+    private void completeBooking(Booking booking, BookingDetailsPayloadDto payload, String actor, String photo, long time) {
+        locations.recordBookingHandover(booking, payload, actor, photo, time);
+        markDelivered(booking);
+    }
+
+    private void markDelivered(Booking booking) {
+        booking.setStatus("delivered_pending_settlement");
     }
 }

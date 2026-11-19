@@ -1,6 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.notification.NoticeResponse;
+import com.example.racehorse_transport.dto.notification.NoticeResponseDto;
 import com.example.racehorse_transport.entity.Notification;
 import com.example.racehorse_transport.repository.NotificationRepository;
 import com.example.racehorse_transport.service.NotificationService;
@@ -19,7 +19,7 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
 
     @Override
-    public List<NoticeResponse> findForUser(String role, String username) {
+    public List<NoticeResponseDto> findForUser(String role, String username) {
         return notificationRepository.findForUser(role, username).stream().map(this::mapToResponse).toList();
     }
 
@@ -58,8 +58,8 @@ public class NotificationServiceImpl implements NotificationService {
         notificationRepository.deleteForUser(role, username);
     }
 
-    private NoticeResponse mapToResponse(Notification n) {
-        return NoticeResponse.builder()
+    private NoticeResponseDto mapToResponse(Notification n) {
+        return NoticeResponseDto.builder()
                 .id(String.valueOf(n.getId()))
                 .role(n.getRecipientRole())
                 .name(n.getRecipientUsername())

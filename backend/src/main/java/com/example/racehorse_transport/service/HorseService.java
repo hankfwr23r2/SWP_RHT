@@ -1,8 +1,8 @@
 package com.example.racehorse_transport.service;
 
-import com.example.racehorse_transport.dto.HorseDTO;
-import com.example.racehorse_transport.dto.HorseJourneyLogDTO;
-import com.example.racehorse_transport.dto.UpdateHorseLocationRequest;
+import com.example.racehorse_transport.dto.HorseDto;
+import com.example.racehorse_transport.dto.HorseJourneyLogDto;
+import com.example.racehorse_transport.dto.UpdateHorseLocationRequestDto;
 import com.example.racehorse_transport.entity.Horse;
 
 import java.util.List;
@@ -18,18 +18,18 @@ public interface HorseService {
     Horse save(Horse entity);
     void deleteById(Integer id);
 
-    List<HorseDTO> list(String username, boolean customer);
+    List<HorseDto> list(String username, boolean customer);
 
     /** Rỗng nếu không có ngựa với id này. */
-    Optional<HorseDTO> view(Integer id, String username, boolean customer);
+    Optional<HorseDto> view(Integer id, String username, boolean customer);
 
-    HorseDTO create(HorseDTO request, String username, boolean customer);
+    HorseDto create(HorseDto request, String username, boolean customer);
 
-    HorseDTO update(Integer id, HorseDTO request, String username, boolean customer);
+    HorseDto update(Integer id, HorseDto request, String username, boolean customer);
 
-    HorseDTO updateLocation(Integer id, UpdateHorseLocationRequest request, String username, boolean customer);
+    HorseDto updateLocation(Integer id, UpdateHorseLocationRequestDto request, String username, boolean customer);
 
-    List<HorseJourneyLogDTO> journeyLogs(Integer id, String username, boolean customer);
+    List<HorseJourneyLogDto> journeyLogs(Integer id, String username, boolean customer);
 
     void deleteHorse(Integer id, String username, boolean customer);
 }

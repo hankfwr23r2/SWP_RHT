@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { authApi } from '@shared/api/auth'
 import { AuthShell, authStyles as s } from '@shared/ui/AuthShell'
 import { TurnstileWidget } from '@shared/ui/TurnstileWidget'
+import { PolicyLink } from '@shared/ui/PolicyLink'
 import { isValidGmail, isValidPersonName, isValidRegionalPhone } from '@shared/lib/contactValidation'
 
 type FieldName = 'fullname' | 'email' | 'password' | 'phone'
@@ -39,6 +40,7 @@ export default function RegisterPage() {
   const [showPwd, setShowPwd] = useState(false)
   const [captchaToken, setCaptchaToken] = useState<string | null>(null)
   const [captchaGeneration, setCaptchaGeneration] = useState(0)
+  const [termsError, setTermsError] = useState('')
 
   const field = (name: FieldName, hasNote = true) => ({
     id: name,
@@ -65,12 +67,20 @@ export default function RegisterPage() {
       phone: (data.get('phone') as string).trim(),
     }
     const address = (data.get('address') as string)?.trim() || ''
+    const acceptedTerms = data.get('acceptedTerms') === 'on'
 
+    const termsRequired = i18n.language === 'en' ? 'Please agree to the Transport Terms to register.' : 'Vui lòng đồng ý Điều khoản vận chuyển để đăng ký.'
     const errors = validate(values)
     setFieldErrors(errors)
     const firstInvalid = (Object.keys(values) as FieldName[]).find(name => errors[name])
     if (firstInvalid) {
       (form.elements.namedItem(firstInvalid) as HTMLInputElement).focus()
+      if (!acceptedTerms) setTermsError(termsRequired)
+      return
+    }
+    if (!acceptedTerms) {
+      setTermsError(termsRequired)
+      ;(form.elements.namedItem('acceptedTerms') as HTMLInputElement).focus()
       return
     }
     if (!captchaToken) {
@@ -89,6 +99,7 @@ export default function RegisterPage() {
         phone: values.phone,
         address,
         language: i18n.language.startsWith('en') ? 'en' : 'vi',
+        acceptedTerms: true,
       }, captchaToken)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Đăng ký thất bại. Vui lòng thử lại.'
@@ -146,6 +157,13 @@ export default function RegisterPage() {
         <div className="form-group">
           <label htmlFor="address">{t('authPages.addressLabel')} <span className="text-muted">{t('authPages.addressOptional')}</span></label>
           <input className="form-control" id="address" name="address" type="text" placeholder={t('authPages.addressPlaceholder')} autoComplete="street-address" />
+        </div>
+        <div className="form-group">
+          <label className={s.ack}>
+            <input type="checkbox" name="acceptedTerms" aria-invalid={termsError ? true : undefined} aria-describedby={termsError ? 'acceptedTerms-note' : undefined} onChange={() => { setError(''); setTermsError('') }} />
+            <span>{i18n.language === 'en' ? <>I agree to the <PolicyLink doc="transport">Transport Terms</PolicyLink></> : <>Tôi đồng ý với <PolicyLink doc="transport">Điều khoản vận chuyển</PolicyLink></>}</span>
+          </label>
+          <Note id="acceptedTerms" error={termsError} />
         </div>
 
         <TurnstileWidget key={captchaGeneration} action="register" onTokenChange={setCaptchaToken} />

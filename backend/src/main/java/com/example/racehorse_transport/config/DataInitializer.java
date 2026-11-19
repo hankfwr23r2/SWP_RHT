@@ -52,12 +52,14 @@ public class DataInitializer implements CommandLineRunner {
             Staff staff = new Staff();
             staff.setUser(user);
             staff.setRole(role);
-            staff.setStaffCode(staffCode);
+            // Seed dữ liệu mẫu có thể đã dùng mã này (vd admin01 = ADMIN-01): lấy mã kế tiếp còn trống
+            staff.setStaffCode(staffRepository.nextFreeStaffCode(staffCode));
             staff.setEmploymentStatus("ACTIVE");
             staff.setHireDate(LocalDate.now());
             staffRepository.save(staff);
 
-            log.info(">>> Seeded staff account: role={}, username={}, email={} (UserID: {})", role, username, email, user.getId());
+            log.info(">>> Seeded staff account: role={}, username={}, email={}, staffCode={} (UserID: {})",
+                    role, username, email, staff.getStaffCode(), user.getId());
         }
     }
 

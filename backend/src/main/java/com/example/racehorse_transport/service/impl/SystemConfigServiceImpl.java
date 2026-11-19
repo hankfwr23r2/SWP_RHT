@@ -1,31 +1,30 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.service.AdminAuditWriter;
-import static com.example.racehorse_transport.service.AdminAuditWriter.values;
-import com.example.racehorse_transport.dto.admin.SystemConfigResponse;
-import com.example.racehorse_transport.dto.admin.UpdateSystemConfigRequest;
+import com.example.racehorse_transport.dto.admin.SystemConfigResponseDto;
+import com.example.racehorse_transport.dto.admin.UpdateSystemConfigRequestDto;
 import com.example.racehorse_transport.entity.SystemConfig;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.SystemConfigRepository;
+import com.example.racehorse_transport.service.AdminAuditService;
 import com.example.racehorse_transport.service.SystemConfigService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Sort;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import static com.example.racehorse_transport.service.AdminAuditService.values;
 
 @Service
 @RequiredArgsConstructor
 public class SystemConfigServiceImpl implements SystemConfigService {
-    private final AdminAuditWriter audit;
+    private final AdminAuditService audit;
 
 
     private record Definition(
@@ -80,8 +79,15 @@ public class SystemConfigServiceImpl implements SystemConfigService {
             new Definition("MARGIN_RATE", "Biên lợi nhuận gộp", "0.05", "tỷ lệ", "PRICING",
                     "Tỷ lệ lợi nhuận định mức gộp vào đơn giá.", BigDecimal.ZERO, BigDecimal.ONE),
             new Definition("CLEARANCE_FEE_INTERNATIONAL", "Phí thủ tục hải quan quốc tế", "300000", "VNĐ/chuyến", "PRICING",
-                    "Phí làm thủ tục xuất nhập cảnh biên giới cho chuyến quốc tế.", BigDecimal.ZERO, BigDecimal.valueOf(50_000_000))
+                    "Phí làm thủ tục xuất nhập cảnh biên giới cho chuyến quốc tế.", BigDecimal.ZERO, BigDecimal.valueOf(50_000_000)),
+            // Cấu hình kiểu chữ: không có minimum/maximum, luật kiểm nằm ở validateText
+            new Definition("HOTLINE", "Số hotline", "1900 6868", null, "CONTACT",
+                    "Số điện thoại hỗ trợ khách hàng, hiển thị cho khách.", null, null),
+            new Definition("OFFICE_ADDRESS", "Địa chỉ văn phòng", "Văn phòng Vận chuyển Ngựa, 120 Xô Viết Nghệ Tĩnh, TP.HCM", null, "CONTACT",
+                    "Địa chỉ văn phòng, hiển thị cho khách.", null, null)
     );
+
+    private static final java.util.regex.Pattern HOTLINE_PATTERN = java.util.regex.Pattern.compile("[0-9 +().-]{6,20}");
 
     private static final Set<String> RETIRED_CONFIG_KEYS = Set.of("DEMURRAGE_PER_HOUR", "BORDER_OPEN_MINUTES", "BORDER_CLOSE_MINUTES", "INSURANCE_RATE", "CREW_FEE_PER_DAY");
 
@@ -93,7 +99,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     @Override
     @Transactional
-    public List<SystemConfigResponse> getAllConfigs() {
+    public List<SystemConfigResponseDto> getAllConfigs() {
         ensureDefaults();
         return repository.findAll(Sort.by(Sort.Order.asc("configGroup"), Sort.Order.asc("configKey")))
                 .stream()
@@ -104,8 +110,8 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     @Override
     @Transactional
-    public Map<String, List<SystemConfigResponse>> getAllConfigsGrouped() {
-        Map<String, List<SystemConfigResponse>> grouped = new LinkedHashMap<>();
+    public Map<String, List<SystemConfigResponseDto>> getAllConfigsGrouped() {
+        Map<String, List<SystemConfigResponseDto>> grouped = new LinkedHashMap<>();
         getAllConfigs().forEach(config ->
                 grouped.computeIfAbsent(config.getConfigGroup(), ignored -> new java.util.ArrayList<>()).add(config));
         return grouped;
@@ -113,7 +119,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     @Override
     @Transactional
-    public SystemConfigResponse getConfig(String key) {
+    public SystemConfigResponseDto getConfig(String key) {
         ensureDefaults();
         requireDefinition(key);
         return repository.findById(key)
@@ -123,25 +129,17 @@ public class SystemConfigServiceImpl implements SystemConfigService {
 
     @Override
     @Transactional
-    public SystemConfigResponse updateConfig(String key, UpdateSystemConfigRequest request, String updatedBy) {
+    public SystemConfigResponseDto updateConfig(String key, UpdateSystemConfigRequestDto request, String updatedBy) {
         if (request == null || request.getConfigValue() == null || request.getConfigValue().isBlank()) {
             throw new IllegalArgumentException("Giá trị cấu hình không được để trống.");
         }
         ensureDefaults();
         Definition definition = requireDefinition(key);
         String value = request.getConfigValue().trim();
-        BigDecimal numericValue;
-        try {
-            numericValue = new BigDecimal(value);
-        } catch (NumberFormatException exception) {
-            throw new IllegalArgumentException("Giá trị cấu hình phải là một số hợp lệ.");
-        }
-        if (numericValue.compareTo(definition.minimum()) < 0 || numericValue.compareTo(definition.maximum()) > 0) {
-            throw new IllegalArgumentException("Giá trị " + definition.name() + " phải nằm trong khoảng "
-                    + definition.minimum().toPlainString() + " đến " + definition.maximum().toPlainString() + ".");
-        }
-        if (isIntegerRule(key) && numericValue.stripTrailingZeros().scale() > 0) {
-            throw new IllegalArgumentException("Giá trị " + definition.name() + " phải là số nguyên.");
+        if (definition.minimum() == null) {
+            validateText(key, value);
+        } else {
+            validateNumber(key, definition, value);
         }
         SystemConfig config = repository.findById(key)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy cấu hình: " + key));
@@ -155,6 +153,32 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         audit.record("UPDATE_CONFIG", "SYSTEM_CONFIG", key, config.getConfigName(), "Cập nhật tham số " + key,
                 values("value", oldValue), values("value", saved.getConfigValue()));
         return toResponse(saved);
+    }
+
+    private void validateText(String key, String value) {
+        if ("HOTLINE".equals(key) && !HOTLINE_PATTERN.matcher(value).matches()) {
+            throw new IllegalArgumentException("Số hotline chỉ gồm chữ số, khoảng trắng và các ký tự + ( ) . -, dài 6 đến 20 ký tự.");
+        }
+        if ("OFFICE_ADDRESS".equals(key)
+                && (value.length() < 5 || value.length() > 200 || value.contains("<") || value.contains(">"))) {
+            throw new IllegalArgumentException("Địa chỉ văn phòng phải dài 5 đến 200 ký tự và không chứa ký tự < hoặc >.");
+        }
+    }
+
+    private void validateNumber(String key, Definition definition, String value) {
+        BigDecimal numericValue;
+        try {
+            numericValue = new BigDecimal(value);
+        } catch (NumberFormatException exception) {
+            throw new IllegalArgumentException("Giá trị cấu hình phải là một số hợp lệ.");
+        }
+        if (numericValue.compareTo(definition.minimum()) < 0 || numericValue.compareTo(definition.maximum()) > 0) {
+            throw new IllegalArgumentException("Giá trị " + definition.name() + " phải nằm trong khoảng "
+                    + definition.minimum().toPlainString() + " đến " + definition.maximum().toPlainString() + ".");
+        }
+        if (isIntegerRule(key) && numericValue.stripTrailingZeros().scale() > 0) {
+            throw new IllegalArgumentException("Giá trị " + definition.name() + " phải là số nguyên.");
+        }
     }
 
     private void ensureDefaults() {
@@ -198,8 +222,8 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         return config;
     }
 
-    private SystemConfigResponse toResponse(SystemConfig config) {
-        return SystemConfigResponse.builder()
+    private SystemConfigResponseDto toResponse(SystemConfig config) {
+        return SystemConfigResponseDto.builder()
                 .configKey(config.getConfigKey())
                 .configName(config.getConfigName())
                 .configValue(config.getConfigValue())

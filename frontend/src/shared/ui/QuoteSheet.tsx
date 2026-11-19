@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { DEPOSIT_RATE } from '../config/booking-rules'
+import { HOTLINE, OFFICE_ADDRESS } from '../config/business-rules'
 import { formatDate, formatDateTime, formatVND, formatVNDWords } from '../lib/format'
 import type { Adjustment, Party, QuoteLine } from '../types/booking'
 import s from './QuoteSheet.module.css'
@@ -39,7 +40,7 @@ function calculationOf(line: QuoteLine) {
   if (l.includes('cước vận chuyển') || l.includes('cước cự ly')) return 'Tính theo bảng cước quãng đường bậc thang và hệ số hạng xe chuyên dụng.'
   if (l.includes('nhân sự')) return `Dựa trên số ngày hành trình (${line.detail}), kíp xe gồm 01 tài xế chuyên tuyến và 01 hộ tống chăm sóc an sinh ngựa.`
   if (l.includes('nhiên liệu')) return `Ước tính tiêu hao nhiên liệu theo km thực tế và phí cao tốc/BOT, ${line.detail.toLowerCase()}.`
-  if (l.includes('kiểm dịch') || l.includes('hải quan')) return 'Trọn gói hồ sơ kiểm dịch thú y liên tỉnh / thông quan xuất nhập cảnh tại cửa khẩu quốc tế.'
+  if (l.includes('kiểm dịch') || l.includes('hải quan')) return 'Nhà xe làm hồ sơ kiểm dịch thú y và thông quan tại cửa khẩu thay khách. Khoản này do khách chịu theo mức ghi trên báo giá.'
   if (l.includes('bảo hiểm')) return 'Phí bảo hiểm theo báo giá đã chốt. Khoản thu hộ bên thứ ba được thể hiện riêng.'
   return undefined
 }
@@ -113,7 +114,7 @@ export function QuoteSheet({
         </div>
       </div>
 
-      {/* Header Công ty & Mẫu số ký hiệu */}
+      {/* Header công ty và thông tin phiếu */}
       <div className={s.header}>
         <div className={s.companyInfo}>
           <div className={s.companyLogoTitle}>
@@ -121,24 +122,15 @@ export function QuoteSheet({
             <div className={s.companyTitleCol}>
               <span className={s.companyName}>CÔNG TY CỔ PHẦN VẬN CHUYỂN NGỰA ĐUA RACEHORSE TRANSPORT</span>
               <div className={s.companyMeta}>
-                <div><b>Mã số thuế:</b> <span className={s.taxCode}>0102026391-DEMO</span></div>
-                <div><b>Trụ sở:</b> Khu Đua Ngựa & Trung Tâm Logistics Vận Tải Cao Cấp, TP. Hồ Chí Minh</div>
-                <div><b>Hotline:</b> 1900 6868 · <b>Email:</b> billing@racehorsetransport.vn</div>
+                <div><b>Trụ sở:</b> {OFFICE_ADDRESS}</div>
+                <div><b>Hotline:</b> {HOTLINE} · <b>Email:</b> billing@racehorsetransport.vn</div>
               </div>
             </div>
           </div>
         </div>
 
         <div className={s.invoiceMetaBox}>
-          <h2 className={s.invoiceTitle}>{title || 'HÓA ĐƠN BÁO GIÁ'}</h2>
-          <div className={s.metaRow}>
-            <span>Mẫu số:</span>
-            <b>01GTKT0/001</b>
-          </div>
-          <div className={s.metaRow}>
-            <span>Ký hiệu:</span>
-            <b>C26RHT</b>
-          </div>
+          <h2 className={s.invoiceTitle}>{title || 'PHIẾU BÁO GIÁ'}</h2>
           <div className={s.metaRow}>
             <span>Số phiếu:</span>
             <b>{displayCode}</b>
@@ -344,35 +336,10 @@ export function QuoteSheet({
         </div>
       </div>
 
-      {/* Chữ ký số và con dấu điện tử */}
-      <div className={s.signaturesGrid}>
-        <div className={s.signatureCol}>
-          <div className={s.sigTitle}>Người Mua / Bên Gửi Hàng</div>
-          <div className={s.sigSub}>(Ký và ghi rõ họ tên)</div>
-          <div className={s.buyerSignPlaceholder}>
-            {consignor?.name ? consignor.name : 'Khách hàng xác nhận'}
-          </div>
-        </div>
-
-        <div className={s.signatureCol}>
-          <div className={s.sigTitle}>Đại Diện Đơn Vị Vận Chuyển</div>
-          <div className={s.sigSub}>(Ký số điện tử, đóng dấu)</div>
-          <div className={s.digitalSignBadge}>
-            <i className="fa-solid fa-circle-check" />
-            <div className={s.digitalSignText}>Đã Ký Số Điện Tử Hợp Lệ</div>
-            <div className={s.digitalSignOrg}>CÔNG TY CP VẬN CHUYỂN NGỰA ĐUA RACEHORSE TRANSPORT</div>
-            <div className={s.digitalSignTime}>Thời gian ký: {createdDate}</div>
-          </div>
-        </div>
-      </div>
-
       {/* Cam kết chính sách & ghi chú */}
       <div className={s.policyFooter}>
         <div>
-          <i className="fa-solid fa-shield-halved" /> <b>Cam kết giá trọn gói không phụ thu:</b> Mọi chi phí nhiên liệu, phí cầu đường cao tốc và công tác phí kíp xe đã được bao trọn trong báo giá. Giá vận chuyển thực hiện theo báo giá đã chốt.
-        </div>
-        <div>
-          <i className="fa-solid fa-circle-info" /> Chứng từ này là Phiếu báo giá chính thức kiêm dự thảo hóa đơn dịch vụ vận chuyển điện tử theo chuẩn quy định hiện hành.
+          <i className="fa-solid fa-circle-info" /> Chứng từ này là phiếu báo giá, không phải hóa đơn.
         </div>
       </div>
     </div>

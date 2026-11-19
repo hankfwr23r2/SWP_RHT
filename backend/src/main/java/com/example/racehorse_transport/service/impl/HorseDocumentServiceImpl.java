@@ -1,7 +1,7 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.document.HorseDocumentResponse;
-import com.example.racehorse_transport.dto.document.ReviewHorseDocumentRequest;
+import com.example.racehorse_transport.dto.document.HorseDocumentResponseDto;
+import com.example.racehorse_transport.dto.document.ReviewHorseDocumentRequestDto;
 import com.example.racehorse_transport.entity.Horse;
 import com.example.racehorse_transport.entity.HorseDocument;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
@@ -71,7 +71,7 @@ public class HorseDocumentServiceImpl implements HorseDocumentService {
      */
     @Override
     @Transactional
-    public HorseDocumentResponse uploadHorseDocument(Integer horseId,
+    public HorseDocumentResponseDto uploadHorseDocument(Integer horseId,
                                                      String documentType,
                                                      MultipartFile file) {
         // 1. Kiểm tra con ngựa tồn tại
@@ -127,8 +127,8 @@ public class HorseDocumentServiceImpl implements HorseDocumentService {
      */
     @Override
     @Transactional
-    public HorseDocumentResponse reviewDocument(Integer documentId,
-                                                ReviewHorseDocumentRequest request) {
+    public HorseDocumentResponseDto reviewDocument(Integer documentId,
+                                                ReviewHorseDocumentRequestDto request) {
         // 1. Tìm hồ sơ
         HorseDocument document = horseDocumentRepository.findById(documentId)
                 .orElseThrow(() -> new IllegalArgumentException(
@@ -174,10 +174,10 @@ public class HorseDocumentServiceImpl implements HorseDocumentService {
     @Override
     @Transactional
     public HorseDocument reviewDocument(Integer documentId, boolean isApproved, String note) {
-        ReviewHorseDocumentRequest req = new ReviewHorseDocumentRequest();
+        ReviewHorseDocumentRequestDto req = new ReviewHorseDocumentRequestDto();
         req.setApproved(isApproved);
         req.setNote(note);
-        HorseDocumentResponse response = reviewDocument(documentId, req);
+        HorseDocumentResponseDto response = reviewDocument(documentId, req);
         return horseDocumentRepository.findById(response.getId()).orElse(null);
     }
 
@@ -186,7 +186,7 @@ public class HorseDocumentServiceImpl implements HorseDocumentService {
      */
     @Override
     @Transactional(readOnly = true)
-    public List<HorseDocumentResponse> getDocumentsByHorse(Integer horseId) {
+    public List<HorseDocumentResponseDto> getDocumentsByHorse(Integer horseId) {
         if (!horseRepository.existsById(horseId)) {
             throw new ResourceNotFoundException("Không tìm thấy ngựa với ID: " + horseId);
         }
@@ -201,7 +201,7 @@ public class HorseDocumentServiceImpl implements HorseDocumentService {
      */
     @Override
     @Transactional(readOnly = true)
-    public List<HorseDocumentResponse> getCustomerDocuments(String customerUsername) {
+    public List<HorseDocumentResponseDto> getCustomerDocuments(String customerUsername) {
         return horseDocumentRepository.findByHorseID_CustomerID_User_UsernameIgnoreCase(customerUsername)
                 .stream()
                 .map(this::mapToResponse)
@@ -212,13 +212,13 @@ public class HorseDocumentServiceImpl implements HorseDocumentService {
     // HELPER METHODS
     // =========================================================================
 
-    private HorseDocumentResponse mapToResponse(HorseDocument doc) {
+    private HorseDocumentResponseDto mapToResponse(HorseDocument doc) {
         String horseName = null;
         if (doc.getHorseID() != null) {
             horseName = doc.getHorseID().getHorseName();
         }
 
-        return HorseDocumentResponse.builder()
+        return HorseDocumentResponseDto.builder()
                 .id(doc.getId())
                 .horseId(doc.getHorseID() != null ? doc.getHorseID().getId() : null)
                 .horseName(horseName)

@@ -1,29 +1,31 @@
 package com.example.racehorse_transport.service;
 
-import com.example.racehorse_transport.dto.AuthResponse;
-import com.example.racehorse_transport.dto.LoginRequest;
-import com.example.racehorse_transport.dto.RegisterRequest;
+import com.example.racehorse_transport.dto.AuthResponseDto;
+import com.example.racehorse_transport.dto.LoginRequestDto;
+import com.example.racehorse_transport.dto.RegisterRequestDto;
 
 public interface AuthService {
+
+    boolean isInactiveStaff(String username);
     
     // Đăng ký tài khoản người dùng mới
-    void register(RegisterRequest request);
+    void register(RegisterRequestDto request);
 
     // 1. Đăng nhập cho Khách hàng
-    AuthResponse loginCustomer(LoginRequest request);
+    AuthResponseDto loginCustomer(LoginRequestDto request);
 
     // Gửi lại OTP xác thực email cho khách
     void resendEmailOtp(String email);
 
     // Nhập đúng OTP email thì đăng nhập luôn
-    AuthResponse confirmEmail(String email, String otp);
+    AuthResponseDto confirmEmail(String email, String otp);
 
     // 2. Đăng nhập cho Nhân viên nội bộ
-    AuthResponse loginStaff(LoginRequest request);
+    AuthResponseDto loginStaff(LoginRequestDto request);
 
     // 3. Làm mới Access Token từ Refresh Token
-    AuthResponse refreshToken(String refreshToken);
+    AuthResponseDto refreshToken(String refreshToken);
 
     // 4. Đổi mật khẩu cá nhân cho người dùng đang đăng nhập
-    void changePassword(String username, com.example.racehorse_transport.dto.ChangePasswordRequest request);
+    void changePassword(String username, com.example.racehorse_transport.dto.ChangePasswordRequestDto request);
 }

@@ -1,8 +1,8 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.customer.CustomerProfileResponse;
-import com.example.racehorse_transport.dto.customer.UpdateCustomerProfileRequest;
-import com.example.racehorse_transport.response.ApiResponse;
+import com.example.racehorse_transport.dto.customer.CustomerProfileResponseDto;
+import com.example.racehorse_transport.dto.customer.UpdateCustomerProfileRequestDto;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.service.CustomerProfileService;
 import jakarta.validation.Valid;
@@ -33,37 +33,37 @@ public class CustomerProfileController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<CustomerProfileResponse>> getProfile(
+    public ResponseEntity<ApiResponseDto<CustomerProfileResponseDto>> getProfile(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader) {
         String username = extractUsername(authHeader);
         if (username == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Vui lòng đăng nhập để xem thông tin hồ sơ!"));
+                    .body(ApiResponseDto.error("Vui lòng đăng nhập để xem thông tin hồ sơ!"));
         }
-        CustomerProfileResponse profile = profileService.getProfile(username);
-        return ResponseEntity.ok(ApiResponse.success(profile, "Lấy thông tin hồ sơ thành công"));
+        CustomerProfileResponseDto profile = profileService.getProfile(username);
+        return ResponseEntity.ok(ApiResponseDto.success(profile, "Lấy thông tin hồ sơ thành công"));
     }
 
     @PutMapping
-    public ResponseEntity<ApiResponse<CustomerProfileResponse>> updateProfile(
+    public ResponseEntity<ApiResponseDto<CustomerProfileResponseDto>> updateProfile(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
-            @Valid @RequestBody UpdateCustomerProfileRequest request) {
+            @Valid @RequestBody UpdateCustomerProfileRequestDto request) {
         String username = extractUsername(authHeader);
         if (username == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error("Vui lòng đăng nhập để cập nhật hồ sơ!"));
+                    .body(ApiResponseDto.error("Vui lòng đăng nhập để cập nhật hồ sơ!"));
         }
-        CustomerProfileResponse updated = profileService.updateProfile(username, request);
-        return ResponseEntity.ok(ApiResponse.success(updated, "Cập nhật hồ sơ thành công"));
+        CustomerProfileResponseDto updated = profileService.updateProfile(username, request);
+        return ResponseEntity.ok(ApiResponseDto.success(updated, "Cập nhật hồ sơ thành công"));
     }
 
     // Khách đổi VI/EN trên giao diện: lưu lại để mail hóa đơn gửi đúng ngôn ngữ
     @PutMapping("/language")
-    public ResponseEntity<ApiResponse<String>> updateLanguage(
+    public ResponseEntity<ApiResponseDto<String>> updateLanguage(
             org.springframework.security.core.Authentication authentication,
             @RequestBody java.util.Map<String, String> body) {
         String language = body == null ? null : body.get("language");
         profileService.updateLanguage(authentication.getName(), language);
-        return ResponseEntity.ok(ApiResponse.success(language, "Đã lưu ngôn ngữ"));
+        return ResponseEntity.ok(ApiResponseDto.success(language, "Đã lưu ngôn ngữ"));
     }
 }

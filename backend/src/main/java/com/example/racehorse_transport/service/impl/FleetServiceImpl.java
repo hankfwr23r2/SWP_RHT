@@ -1,22 +1,31 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.fleet.CrewResponse;
-import com.example.racehorse_transport.dto.fleet.VehicleResponse;
-import com.example.racehorse_transport.dto.fleet.VehicleRequest;
-import com.example.racehorse_transport.entity.*;
-import com.example.racehorse_transport.repository.*;
-import com.example.racehorse_transport.service.FleetService;
-import com.example.racehorse_transport.dto.booking.BookingDetailsPayload;
+import com.example.racehorse_transport.dto.booking.BookingDetailsPayloadDto;
 import com.example.racehorse_transport.dto.coordinator.VehicleTripDto;
+import com.example.racehorse_transport.dto.fleet.CrewResponseDto;
+import com.example.racehorse_transport.dto.fleet.VehicleRequestDto;
+import com.example.racehorse_transport.dto.fleet.VehicleResponseDto;
+import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.BookingAssignment;
+import com.example.racehorse_transport.entity.BookingVehicle;
+import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.entity.User;
+import com.example.racehorse_transport.entity.Vehicle;
+import com.example.racehorse_transport.repository.BookingAssignmentRepository;
+import com.example.racehorse_transport.repository.BookingRepository;
+import com.example.racehorse_transport.repository.BookingVehicleRepository;
+import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.repository.UserRepository;
+import com.example.racehorse_transport.repository.VehicleRepository;
+import com.example.racehorse_transport.service.FleetService;
 import com.example.racehorse_transport.util.BookingDetailsJson;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
@@ -42,6 +51,7 @@ public class FleetServiceImpl implements FleetService {
             "ready_for_pickup",
             "en_route_to_pickup",
             "pickup_failed",
+            "returning_horses",
             "in_transit",
             "incident_reported",
             "pending_emergency_approval",
@@ -60,7 +70,7 @@ public class FleetServiceImpl implements FleetService {
     }
 
     @Override
-    public List<VehicleResponse> getAllVehicles() {
+    public List<VehicleResponseDto> getAllVehicles() {
         List<Booking> holdingBookings = getHoldingBookings();
         Set<Integer> busyVehicleIds = new HashSet<>(unreturnedVehicleBookings().keySet());
         for (Booking b : holdingBookings) {
@@ -73,7 +83,7 @@ public class FleetServiceImpl implements FleetService {
         }
 
         return vehicleRepository.findAll().stream().map(v -> {
-            VehicleResponse res = mapToVehicleResponse(v);
+            VehicleResponseDto res = mapToVehicleResponse(v);
             if (busyVehicleIds.contains(v.getId()) || isBusyStatus(v.getStatus())) {
                 res.setStatus("BUSY");
                 res.setAvailable(false);
@@ -84,7 +94,7 @@ public class FleetServiceImpl implements FleetService {
     }
 
     @Override
-    public List<VehicleResponse> getAvailableVehicles(Instant departDate, String tripType) {
+    public List<VehicleResponseDto> getAvailableVehicles(Instant departDate, String tripType) {
         Instant newDepart = departDate != null ? departDate : Instant.now();
         boolean newIsInter = "international".equalsIgnoreCase(tripType);
         int newDaysBefore = newIsInter ? 2 : 1;
@@ -131,7 +141,7 @@ public class FleetServiceImpl implements FleetService {
         }
 
         return allVehicles.stream().map(v -> {
-            VehicleResponse res = mapToVehicleResponse(v);
+            VehicleResponseDto res = mapToVehicleResponse(v);
             if (isMaintenanceStatus(v.getStatus())) {
                 res.setAvailable(false);
                 res.setBusyReason("Xe đang bảo dưỡng định kỳ");
@@ -152,19 +162,18 @@ public class FleetServiceImpl implements FleetService {
 
     @Override
     @org.springframework.transaction.annotation.Transactional
-    public VehicleResponse createVehicle(VehicleRequest request) {
+    public VehicleResponseDto createVehicle(VehicleRequestDto request) {
         String plate = request.getPlate().trim().toUpperCase(Locale.ROOT);
         if (vehicleRepository.findByLicensePlate(plate).isPresent()) {
             throw new IllegalArgumentException("Biển số xe đã tồn tại.");
         }
-        Vehicle vehicle = new Vehicle();
-        applyVehicleRequest(vehicle, request, plate);
+        Vehicle vehicle = request.toEntity(plate);
         return mapToVehicleResponse(vehicleRepository.save(vehicle));
     }
 
     @Override
     @org.springframework.transaction.annotation.Transactional
-    public VehicleResponse updateVehicle(String identifier, VehicleRequest request) {
+    public VehicleResponseDto updateVehicle(String identifier, VehicleRequestDto request) {
         Vehicle vehicle = findVehicleByIdOrCode(identifier);
         boolean isBusy = isBusyStatus(vehicle.getStatus())
                 || bookingVehicleRepository.findByVehicleID_Id(vehicle.getId()).stream()
@@ -195,17 +204,9 @@ public class FleetServiceImpl implements FleetService {
         vehicleRepository.delete(vehicle);
     }
 
-    private void applyVehicleRequest(Vehicle vehicle, VehicleRequest request, String plate) {
-        vehicle.setVehicleType(request.getType().trim());
-        vehicle.setCapacity(request.getCapacity());
-        vehicle.setLicensePlate(plate);
-        vehicle.setStatus(request.getStatus() == null || request.getStatus().isBlank()
-                ? "ACTIVE"
-                : request.getStatus().trim().toUpperCase(Locale.ROOT));
-    }
 
     @Override
-    public List<CrewResponse> getAllCrew(String role) {
+    public List<CrewResponseDto> getAllCrew(String role) {
         List<Staff> staffList = role != null && !role.isBlank() && !role.equalsIgnoreCase("ALL")
                 ? staffRepository.findByRoleIgnoreCase(role)
                 : staffRepository.findAll();
@@ -213,7 +214,7 @@ public class FleetServiceImpl implements FleetService {
     }
 
     @Override
-    public List<CrewResponse> getAvailableCrew(Instant departDate, String role) {
+    public List<CrewResponseDto> getAvailableCrew(Instant departDate, String role) {
         Instant newDepart = departDate != null ? departDate : Instant.now();
         Instant newStart = newDepart.minus(1, ChronoUnit.DAYS);
         Instant newEnd = newDepart.plus(2, ChronoUnit.DAYS);
@@ -272,7 +273,7 @@ public class FleetServiceImpl implements FleetService {
         }
 
         return staffList.stream().map(s -> {
-            CrewResponse res = mapToCrewResponse(s);
+            CrewResponseDto res = mapToCrewResponse(s);
             if (!"ACTIVE".equalsIgnoreCase(s.getEmploymentStatus())) {
                 res.setAvailable(false);
                 res.setBusyReason("Tài khoản nhân sự đang tạm khóa / nghỉ phép");
@@ -291,7 +292,7 @@ public class FleetServiceImpl implements FleetService {
     private Map<Integer, Booking> unreturnedVehicleBookings() {
         Map<Integer, Booking> held = new HashMap<>();
         for (Booking booking : bookingRepository.findAll()) {
-            BookingDetailsPayload payload = BookingDetailsJson.read(objectMapper, booking);
+            BookingDetailsPayloadDto payload = BookingDetailsJson.read(objectMapper, booking);
             if (payload.getTrips() == null) continue;
             for (VehicleTripDto trip : payload.getTrips()) {
                 if (trip.getHomeReturn() == null || trip.getHomeReturn().get("backAt") != null
@@ -316,8 +317,8 @@ public class FleetServiceImpl implements FleetService {
                 .toList();
     }
 
-    private VehicleResponse mapToVehicleResponse(Vehicle v) {
-        return VehicleResponse.builder()
+    private VehicleResponseDto mapToVehicleResponse(Vehicle v) {
+        return VehicleResponseDto.builder()
                 .id(v.getId())
                 .code(v.getVehicleCode() != null ? v.getVehicleCode() : "VH-" + String.format("%03d", v.getId()))
                 .name(v.getVehicleName() != null ? v.getVehicleName() : "Xe chuyên dụng " + v.getCapacity() + " ngăn")
@@ -332,10 +333,10 @@ public class FleetServiceImpl implements FleetService {
                 .build();
     }
 
-    private CrewResponse mapToCrewResponse(Staff s) {
+    private CrewResponseDto mapToCrewResponse(Staff s) {
         String fullName = s.getUser() != null ? s.getUser().getUsername() : "Nhân viên " + s.getId();
         String email = s.getUser() != null ? s.getUser().getEmail() : "";
-        return CrewResponse.builder()
+        return CrewResponseDto.builder()
                 .userId(s.getId())
                 .staffCode(s.getStaffCode() != null ? s.getStaffCode() : fallbackStaffCode(s))
                 .name(fullName)
@@ -576,12 +577,12 @@ public class FleetServiceImpl implements FleetService {
                 return true;
             }
         }
-        BookingDetailsPayload payload = BookingDetailsJson.read(objectMapper, b);
+        BookingDetailsPayloadDto payload = BookingDetailsJson.read(objectMapper, b);
         return payload.getTrips() != null && payload.getTrips().stream().anyMatch(trip -> isStaffAssignedToTrip(trip, staff));
     }
 
     private boolean isAssignedToUnreturnedTrip(Booking booking, Staff staff) {
-        BookingDetailsPayload payload = BookingDetailsJson.read(objectMapper, booking);
+        BookingDetailsPayloadDto payload = BookingDetailsJson.read(objectMapper, booking);
         if (payload.getTrips() == null) return false;
         return payload.getTrips().stream().anyMatch(trip -> isStaffAssignedToTrip(trip, staff)
                 && trip.getHomeReturn() != null && trip.getHomeReturn().get("backAt") == null);
@@ -607,7 +608,7 @@ public class FleetServiceImpl implements FleetService {
     }
 
     private boolean isActiveRoadStatus(String status) {
-        return Set.of("en_route_to_pickup", "pickup_failed", "in_transit", "incident_reported",
+        return Set.of("en_route_to_pickup", "pickup_failed", "returning_horses", "in_transit", "incident_reported",
                 "pending_emergency_approval", "emergency_plan_active", "arrived", "handover_timeout",
                 "returning_to_hq", "delivered_pending_settlement").contains(status);
     }

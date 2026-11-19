@@ -173,6 +173,20 @@
   position: relative;
 }
 
+.ack {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 0.9rem;
+}
+
+.ack input {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--orange);
+}
+
 .pwdWrap :global(.form-control) {
   padding-right: 46px;
 }

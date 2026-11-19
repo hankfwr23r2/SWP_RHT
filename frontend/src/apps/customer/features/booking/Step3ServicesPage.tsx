@@ -101,7 +101,7 @@ export default function Step3ServicesPage() {
       ])) as Partial<Record<BookingRequiredServiceCategory, string>>
       return [h.id, { ...current, selectedServiceCodes }]
     }))
-    save({ config: selectedConfig })
+    save({ config: selectedConfig, limitedLiabilityAccepted: declined.length > 0 && ack })
     navigate('/booking/review')
   }
 

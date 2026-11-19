@@ -1,10 +1,10 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.dto.LocationRouteDTO;
-import com.example.racehorse_transport.dto.RouteDTO;
+import com.example.racehorse_transport.dto.route.LocationRouteDto;
+import com.example.racehorse_transport.dto.route.RouteDto;
 import com.example.racehorse_transport.entity.LocationRoute;
 import com.example.racehorse_transport.entity.Route;
-import com.example.racehorse_transport.response.ApiResponse;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.service.RouteService;
 import jakarta.validation.Valid;
 import org.modelmapper.ModelMapper;
@@ -32,66 +32,66 @@ public class RouteController {
 
     // 1. Lấy tất cả lộ trình
     @GetMapping
-    public ResponseEntity<ApiResponse<List<RouteDTO>>> getAllRoutes() {
+    public ResponseEntity<ApiResponseDto<List<RouteDto>>> getAllRoutes() {
         List<Route> routes = routeService.findAll();
-        List<RouteDTO> dtos = routes.stream()
+        List<RouteDto> dtos = routes.stream()
                 .map(this::toRouteDTO)
                 .collect(Collectors.toList());
-        return ResponseEntity.ok(ApiResponse.success(dtos, "Lấy danh sách lộ trình thành công"));
+        return ResponseEntity.ok(ApiResponseDto.success(dtos, "Lấy danh sách lộ trình thành công"));
     }
 
     // 2. Xem chi tiết 1 lộ trình
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<RouteDTO>> getRouteById(@PathVariable Integer id) {
+    public ResponseEntity<ApiResponseDto<RouteDto>> getRouteById(@PathVariable Integer id) {
         Optional<Route> routeOpt = routeService.findById(id);
         if (routeOpt.isPresent()) {
-            RouteDTO dto = toRouteDTO(routeOpt.get());
-            return ResponseEntity.ok(ApiResponse.success(dto, "Lấy thông tin lộ trình thành công"));
+            RouteDto dto = toRouteDTO(routeOpt.get());
+            return ResponseEntity.ok(ApiResponseDto.success(dto, "Lấy thông tin lộ trình thành công"));
         } else {
-            return ResponseEntity.status(404).body(ApiResponse.error("Không tìm thấy lộ trình ID: " + id));
+            return ResponseEntity.status(404).body(ApiResponseDto.error("Không tìm thấy lộ trình ID: " + id));
         }
     }
 
     // 3. Dev 4: Lấy danh sách điểm dừng của lộ trình theo thứ tự
     @GetMapping("/{routeId}/stops")
-    public ResponseEntity<ApiResponse<List<LocationRouteDTO>>> getRouteStops(@PathVariable Integer routeId) {
+    public ResponseEntity<ApiResponseDto<List<LocationRouteDto>>> getRouteStops(@PathVariable Integer routeId) {
         List<LocationRoute> stops = routeService.getStopsByRouteId(routeId);
-        List<LocationRouteDTO> dtos = stops.stream()
+        List<LocationRouteDto> dtos = stops.stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
-        return ResponseEntity.ok(ApiResponse.success(dtos, "Lấy danh sách điểm dừng thành công"));
+        return ResponseEntity.ok(ApiResponseDto.success(dtos, "Lấy danh sách điểm dừng thành công"));
     }
 
     // 4. Admin: Tạo mới tuyến đường cố định
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<ApiResponse<RouteDTO>> createRoute(@Valid @RequestBody com.example.racehorse_transport.dto.route.CreateRouteRequest request) {
+    public ResponseEntity<ApiResponseDto<RouteDto>> createRoute(@Valid @RequestBody com.example.racehorse_transport.dto.route.CreateRouteRequestDto request) {
         Route created = routeService.createRoute(request);
-        RouteDTO dto = toRouteDTO(created);
-        return ResponseEntity.ok(ApiResponse.success(dto, "Tạo tuyến đường cố định thành công"));
+        RouteDto dto = toRouteDTO(created);
+        return ResponseEntity.ok(ApiResponseDto.success(dto, "Tạo tuyến đường cố định thành công"));
     }
 
     // 5. Admin: Cập nhật tuyến đường cố định
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<RouteDTO>> updateRoute(
+    public ResponseEntity<ApiResponseDto<RouteDto>> updateRoute(
             @PathVariable Integer id,
-            @Valid @RequestBody com.example.racehorse_transport.dto.route.CreateRouteRequest request) {
+            @Valid @RequestBody com.example.racehorse_transport.dto.route.CreateRouteRequestDto request) {
         Route updated = routeService.updateRoute(id, request);
-        RouteDTO dto = toRouteDTO(updated);
-        return ResponseEntity.ok(ApiResponse.success(dto, "Cập nhật tuyến đường thành công"));
+        RouteDto dto = toRouteDTO(updated);
+        return ResponseEntity.ok(ApiResponseDto.success(dto, "Cập nhật tuyến đường thành công"));
     }
 
     // 6. Admin: Ngừng kích hoạt tuyến đường
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteRoute(@PathVariable Integer id) {
+    public ResponseEntity<ApiResponseDto<Void>> deleteRoute(@PathVariable Integer id) {
         routeService.deactivateRoute(id);
-        return ResponseEntity.ok(ApiResponse.success(null, "Ngừng kích hoạt tuyến đường thành công"));
+        return ResponseEntity.ok(ApiResponseDto.success(null, "Ngừng kích hoạt tuyến đường thành công"));
     }
 
-    private LocationRouteDTO toDTO(LocationRoute entity) {
-        LocationRouteDTO dto = modelMapper.map(entity, LocationRouteDTO.class);
+    private LocationRouteDto toDTO(LocationRoute entity) {
+        LocationRouteDto dto = modelMapper.map(entity, LocationRouteDto.class);
         if (entity.getId() != null) {
             dto.setRouteID(entity.getId().getRouteID());
             dto.setLocationID(entity.getId().getLocationID());
@@ -108,8 +108,8 @@ public class RouteController {
         return dto;
     }
 
-    private RouteDTO toRouteDTO(Route route) {
-        RouteDTO dto = modelMapper.map(route, RouteDTO.class);
+    private RouteDto toRouteDTO(Route route) {
+        RouteDto dto = modelMapper.map(route, RouteDto.class);
         List<LocationRoute> stops = routeService.getStopsByRouteId(route.getId());
         if (!stops.isEmpty()) {
             LocationRoute origin = stops.get(0);

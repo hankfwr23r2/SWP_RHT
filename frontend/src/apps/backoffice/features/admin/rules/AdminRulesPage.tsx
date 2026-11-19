@@ -12,7 +12,10 @@ const GROUPS: Array<{ id: SystemConfigGroup; label: string; icon: string }> = [
   { id: 'PAYMENT', label: 'Tài chính & Đặt cọc', icon: 'fa-credit-card' },
   { id: 'OPERATIONS', label: 'Vận hành', icon: 'fa-gears' },
   { id: 'JOURNEY', label: 'Lộ trình & Giờ lái', icon: 'fa-route' },
+  { id: 'CONTACT', label: 'Liên hệ', icon: 'fa-phone' },
 ]
+
+const MAX_TEXT_LENGTH = 200
 
 const INPUTS: Record<string, { min: number; max: number; step: number }> = {
   MAX_CONTINUOUS_HOURS: { min: 0.25, max: 12, step: 0.25 },
@@ -38,6 +41,7 @@ function parseDotsNumber(val: string) {
 }
 
 function formatConfigValue(config: SystemConfigItem) {
+  if (config.configGroup === 'CONTACT') return config.configValue
   if (config.configKey === 'DEPOSIT_RATE') {
     return `${(Number(config.configValue) * 100).toLocaleString('vi-VN')}%`
   }
@@ -80,7 +84,8 @@ function ConfigEditor({
   const isMaxHours = config.configKey === 'MAX_CONTINUOUS_HOURS'
   const isDepositRate = config.configKey === 'DEPOSIT_RATE'
   const isBorderTime = config.configGroup === 'BORDER'
-  const isFormattedNumber = !isMaxHours && !isDepositRate && !isBorderTime
+  const isText = config.configGroup === 'CONTACT'
+  const isFormattedNumber = !isMaxHours && !isDepositRate && !isBorderTime && !isText
 
   const initialHours = isMaxHours
     ? String(Math.floor(Number(config.configValue) || 0))
@@ -143,6 +148,26 @@ function ConfigEditor({
         const nextM = Math.round((nextVal - nextH) * 60)
         setHours(String(nextH))
         setMinutes(String(nextM))
+        onSaved(updated)
+        toast(`Đã cập nhật “${config.configName}”.`, 'success')
+      } catch (error) {
+        toast(error instanceof Error ? error.message : 'Không thể cập nhật cấu hình.', 'error')
+      } finally {
+        setBusy(false)
+      }
+      return
+    }
+
+    if (isText) {
+      const text = value.trim()
+      if (!text) {
+        toast('Vui lòng nhập nội dung.', 'error')
+        return
+      }
+      setBusy(true)
+      try {
+        const updated = await systemConfigApi.updateConfig(config.configKey, text)
+        setValue(updated.configValue)
         onSaved(updated)
         toast(`Đã cập nhật “${config.configName}”.`, 'success')
       } catch (error) {
@@ -235,12 +260,13 @@ function ConfigEditor({
             <span className={s.srOnly}>{config.configName}</span>
             <input
               className="form-control"
-              type={isBorderTime ? 'time' : isFormattedNumber ? 'text' : 'number'}
+              type={isBorderTime ? 'time' : isFormattedNumber || isText ? 'text' : 'number'}
               inputMode={isFormattedNumber ? 'numeric' : undefined}
+              maxLength={isText ? MAX_TEXT_LENGTH : undefined}
               required
-              min={isBorderTime || isFormattedNumber ? undefined : input?.min}
-              max={isBorderTime || isFormattedNumber ? undefined : input?.max}
-              step={isBorderTime ? 60 : isFormattedNumber ? undefined : input?.step ?? 1}
+              min={isBorderTime || isFormattedNumber || isText ? undefined : input?.min}
+              max={isBorderTime || isFormattedNumber || isText ? undefined : input?.max}
+              step={isBorderTime ? 60 : isFormattedNumber || isText ? undefined : input?.step ?? 1}
               value={value}
               onChange={isFormattedNumber ? handleFormattedChange : event => setValue(event.target.value)}
             />

@@ -42,6 +42,7 @@ export interface CreateBookingPayload {
   consignor: BookingPartyDto
   consignee: BookingPartyDto
   horses: BookingHorseDto[]
+  limitedLiabilityAccepted?: boolean
 }
 
 export interface BackendBookingResponse {

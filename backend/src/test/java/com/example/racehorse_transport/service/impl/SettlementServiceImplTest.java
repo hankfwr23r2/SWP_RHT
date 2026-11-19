@@ -1,16 +1,23 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.settlement.*;
-import com.example.racehorse_transport.entity.*;
-import com.example.racehorse_transport.repository.*;
-import com.example.racehorse_transport.service.StaffNotifier;
+import com.example.racehorse_transport.dto.settlement.ExpenseItemDto;
+import com.example.racehorse_transport.dto.settlement.IssueSettlementRequestDto;
+import com.example.racehorse_transport.dto.settlement.RatingDto;
+import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.Customer;
+import com.example.racehorse_transport.entity.Incident;
+import com.example.racehorse_transport.entity.User;
+import com.example.racehorse_transport.repository.BookingRepository;
+import com.example.racehorse_transport.repository.IncidentRepository;
+import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.service.StaffNotificationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.security.access.AccessDeniedException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.security.access.AccessDeniedException;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -18,7 +25,7 @@ import static org.mockito.Mockito.*;
 class SettlementServiceImplTest {
     private final BookingRepository bookings = mock(BookingRepository.class);
     private final IncidentRepository incidents = mock(IncidentRepository.class);
-    private final StaffNotifier notifier = mock(StaffNotifier.class);
+    private final StaffNotificationService notifier = mock(StaffNotificationService.class);
     private final ObjectMapper json = new ObjectMapper();
     private SettlementServiceImpl service;
     private Booking booking;
@@ -27,7 +34,7 @@ class SettlementServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        service = new SettlementServiceImpl(bookings, incidents, mock(StaffRepository.class), json, notifier);
+        service = new SettlementServiceImpl(bookings, incidents, mock(StaffRepository.class), json, notifier, new BookingVisibilityServiceImpl());
         booking = Booking.builder().id(12).code(CODE).status("delivered_pending_settlement").detailsJson("{}").build();
         when(bookings.findIdByCode(CODE)).thenReturn(Optional.of(12));
         when(bookings.findByIdForUpdate(12)).thenReturn(Optional.of(booking));
@@ -59,7 +66,7 @@ class SettlementServiceImplTest {
             {"trips":[{"tripId":"T","vehicleId":"1","homeReturn":{"eta":9999999999999}}],"settlement":{"total":800000}}
             """);
         when(incidents.findByBookingID_Id(12)).thenReturn(List.of(expenseLedger()));
-        var response = service.issueSettlement(CODE, IssueSettlementRequest.builder().build(), "manager");
+        var response = service.issueSettlement(CODE, IssueSettlementRequestDto.builder().build(), "manager");
         assertThat(response.getTotalCompanyCost()).isEqualByComparingTo("800000");
         assertThat(response.getItems()).hasSize(2);
         assertThat(booking.getStatus()).isEqualTo("completed");
@@ -72,7 +79,7 @@ class SettlementServiceImplTest {
     @Test
     void managerCannotAssignAnyExpenseToTheCustomer() {
         booking.setStatus("expenses_submitted");
-        var request = IssueSettlementRequest.builder().payers(java.util.Map.of("vet", "customer")).build();
+        var request = IssueSettlementRequestDto.builder().payers(java.util.Map.of("vet", "customer")).build();
         assertThatThrownBy(() -> service.issueSettlement(CODE, request, "manager"))
                 .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("không được chuyển");
         verify(bookings, never()).save(any());

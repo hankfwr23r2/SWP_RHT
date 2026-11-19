@@ -1,0 +1,43 @@
+{
+  "version": "1.0",
+  "authored_at": "2026-11-17",
+  "baseline_commit": "a089ec0e",
+  "documents": [
+    {
+      "id": "transport",
+      "title": "Điều khoản vận chuyển",
+      "audience": "customer",
+      "source": "source/dieu-khoan-van-chuyen.md",
+      "file": "pdf/dieu-khoan-van-chuyen.pdf",
+      "pages": 5,
+      "sha256": "524a3e3493b098a42752cedb6a34be62caf237d01282ab63340bef95b506daf5"
+    },
+    {
+      "id": "liability",
+      "title": "Điều khoản Trách nhiệm Hạn chế",
+      "audience": "customer",
+      "source": "source/dieu-khoan-trach-nhiem-han-che.md",
+      "file": "pdf/dieu-khoan-trach-nhiem-han-che.pdf",
+      "pages": 2,
+      "sha256": "a6f79f81dc48e193183b03b339b0b2e2ce70030afc2605d4e0060ac6f64696af"
+    },
+    {
+      "id": "incident_cost",
+      "title": "Chính sách chi phí khi có sự cố",
+      "audience": "customer",
+      "source": "source/chinh-sach-chi-phi-su-co.md",
+      "file": "pdf/chinh-sach-chi-phi-su-co.pdf",
+      "pages": 2,
+      "sha256": "be5831be4811d4d985b163bec08a754ac6a9947cd69681e8e562e48fa69544c6"
+    },
+    {
+      "id": "developer",
+      "title": "Bàn giao chính sách cho đội phát triển",
+      "audience": "internal",
+      "source": "source/huong-dan-tich-hop-chinh-sach.md",
+      "file": "pdf/huong-dan-tich-hop-chinh-sach.pdf",
+      "pages": 4,
+      "sha256": "b2cc846a99de88b374c84a79d0900698812aee444f720891a019d7632b9f2a59"
+    }
+  ]
+}

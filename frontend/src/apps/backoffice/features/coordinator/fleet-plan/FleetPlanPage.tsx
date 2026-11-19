@@ -668,32 +668,30 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <i className="fa-solid fa-road" style={{ color: 'var(--orange, #ea580c)', fontSize: '1rem' }} />
-                <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>
-                  Hành lang an toàn cố định (Admin phê duyệt)
-                </span>
               </div>
               <span style={{ fontSize: '0.75rem', background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: 6, fontWeight: 600 }}>
-                <i className="fa-solid fa-shield-check" /> Tuyến chuẩn an sinh
               </span>
             </div>
             
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <div style={{ flex: '1 1 260px' }}>
-                <FormSelect
-                  className="form-control"
-                  style={{ fontSize: '0.85rem', height: 38 }}
-                  value={selectedCorridorId}
-                  onChange={e => { keepSavedPlan.current = false; setSelectedCorridorId(e.target.value ? Number(e.target.value) : '') }}
-                >
-                  <option value="">-- Lộ trình linh hoạt (Tự động đề xuất) --</option>
-                  {suggestingCorridors && <option disabled>Đang đối chiếu tọa độ điểm đón/trả…</option>}
-                  {corridorSuggestions.map(({ corridor: c, match }, idx) => (
-                    <option key={c.id} value={c.id}>
-                      {idx === 0 ? '⭐ Gợi ý tốt nhất · ' : ''}{c.routeName} · {match.direction === 'reverse' ? 'chiều ngược' : 'chiều xuôi'}
-                    </option>
-                  ))}
-                </FormSelect>
-              </div>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                style={{ flex: '1 1 260px', height: 38, whiteSpace: 'nowrap' }}
+                disabled={!previewRequest || previewLoading}
+                onClick={() => {
+                  keepSavedPlan.current = false
+                  setSelectedCorridorId('')
+                  setManualStops([])
+                  setPreviewAttempt(attempt => attempt + 1)
+                }}
+              >
+                {previewLoading ? (
+                  <><i className="fa-solid fa-spinner fa-spin" /> Đang đề xuất lộ trình…</>
+                ) : (
+                  <><i className="fa-solid fa-wand-magic-sparkles" /> Lộ trình linh hoạt (Tự động đề xuất)</>
+                )}
+              </button>
 
               {selectedCorridor && (
                 <button

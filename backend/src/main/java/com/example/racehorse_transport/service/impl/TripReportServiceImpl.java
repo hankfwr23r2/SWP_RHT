@@ -1,9 +1,9 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.booking.BookingDetailsPayload;
+import com.example.racehorse_transport.dto.booking.BookingDetailsPayloadDto;
 import com.example.racehorse_transport.dto.coordinator.VehicleTripDto;
 import com.example.racehorse_transport.dto.report.ReportLegDto;
-import com.example.racehorse_transport.dto.report.TripReportResponse;
+import com.example.racehorse_transport.dto.report.TripReportResponseDto;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Incident;
 import com.example.racehorse_transport.entity.Staff;
@@ -38,8 +38,8 @@ public class TripReportServiceImpl implements TripReportService {
     // Trường nào chuyến chưa có thì để trống, không điền giá trị mẫu.
     @Override
     @Transactional(readOnly = true)
-    public List<TripReportResponse> findAll() {
-        List<TripReportResponse> reports = new ArrayList<>();
+    public List<TripReportResponseDto> findAll() {
+        List<TripReportResponseDto> reports = new ArrayList<>();
         for (Booking b : bookingRepository.findAllByOrderByBookingDateDesc()) {
             String status = b.getStatus() != null ? b.getStatus().toLowerCase(Locale.ROOT) : "";
             if (!REPORTED_STATUSES.contains(status)) continue;
@@ -48,7 +48,7 @@ public class TripReportServiceImpl implements TripReportService {
         return reports;
     }
 
-    private TripReportResponse report(Booking b, BookingDetailsPayload payload) {
+    private TripReportResponseDto report(Booking b, BookingDetailsPayloadDto payload) {
         List<VehicleTripDto> trips = payload.getTrips() != null ? payload.getTrips() : List.of();
         boolean manyTrips = trips.size() > 1;
 
@@ -158,7 +158,7 @@ public class TripReportServiceImpl implements TripReportService {
             if (!comment.isEmpty()) feedback = comment;
         }
 
-        return TripReportResponse.builder()
+        return TripReportResponseDto.builder()
                 .id(b.getCode())
                 .tripId(trips.stream().map(VehicleTripDto::getTripId).filter(Objects::nonNull).reduce((x, y) -> x + ", " + y).orElse(null))
                 .customer(customerName(b))
@@ -248,14 +248,14 @@ public class TripReportServiceImpl implements TripReportService {
         return null;
     }
 
-    private BookingDetailsPayload extractPayload(Booking booking) {
+    private BookingDetailsPayloadDto extractPayload(Booking booking) {
         if (booking.getDetailsJson() == null || booking.getDetailsJson().isBlank()) {
-            return new BookingDetailsPayload();
+            return new BookingDetailsPayloadDto();
         }
         try {
-            return objectMapper.readValue(booking.getDetailsJson(), BookingDetailsPayload.class);
+            return objectMapper.readValue(booking.getDetailsJson(), BookingDetailsPayloadDto.class);
         } catch (Exception e) {
-            return new BookingDetailsPayload();
+            return new BookingDetailsPayloadDto();
         }
     }
 }

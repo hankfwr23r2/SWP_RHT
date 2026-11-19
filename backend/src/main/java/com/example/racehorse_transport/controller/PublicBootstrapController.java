@@ -1,6 +1,6 @@
 package com.example.racehorse_transport.controller;
 
-import com.example.racehorse_transport.response.ApiResponse;
+import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,11 +22,11 @@ public class PublicBootstrapController {
     private final DocumentRequirementController documentRequirements;
 
     @GetMapping
-    public ResponseEntity<ApiResponse<Map<String, Object>>> bootstrap() {
+    public ResponseEntity<ApiResponseDto<Map<String, Object>>> bootstrap() {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("configs", configs.getPublicConfigs().getBody().getData());
         data.put("locations", locations.getLocationCatalog(null, null).getBody().getData());
         data.put("documentRequirements", documentRequirements.listActive().getBody().getData());
-        return ResponseEntity.ok(ApiResponse.success(data, "Lấy dữ liệu khởi động thành công"));
+        return ResponseEntity.ok(ApiResponseDto.success(data, "Lấy dữ liệu khởi động thành công"));
     }
 }

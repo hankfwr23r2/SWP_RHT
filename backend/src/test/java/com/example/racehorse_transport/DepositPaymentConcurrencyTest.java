@@ -1,11 +1,37 @@
 package com.example.racehorse_transport;
 
-import com.example.racehorse_transport.entity.*;
-import com.example.racehorse_transport.repository.*;
+import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.BookingAssignment;
+import com.example.racehorse_transport.entity.BookingVehicle;
+import com.example.racehorse_transport.entity.BookingVehicleId;
+import com.example.racehorse_transport.entity.Customer;
+import com.example.racehorse_transport.entity.Payment;
+import com.example.racehorse_transport.entity.Quotation;
+import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.entity.User;
+import com.example.racehorse_transport.entity.Vehicle;
+import com.example.racehorse_transport.repository.BookingAssignmentRepository;
+import com.example.racehorse_transport.repository.BookingRepository;
+import com.example.racehorse_transport.repository.BookingVehicleRepository;
+import com.example.racehorse_transport.repository.CustomerRepository;
+import com.example.racehorse_transport.repository.PaymentRepository;
+import com.example.racehorse_transport.repository.QuotationRepository;
+import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.repository.UserRepository;
+import com.example.racehorse_transport.repository.VehicleRepository;
 import com.example.racehorse_transport.scheduler.QuotationExpiryScheduler;
 import com.example.racehorse_transport.service.BookingService;
 import com.example.racehorse_transport.service.VnpayService;
 import com.example.racehorse_transport.util.VnpayUtil;
+import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,17 +43,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.testcontainers.postgresql.PostgreSQLContainer;
-
-import java.math.BigDecimal;
-import java.time.Clock;
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
