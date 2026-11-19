@@ -40,6 +40,7 @@ public final class BookingDetailsJson {
             }
             return objectMapper.readerFor(BookingDetailsPayloadDto.class)
                     .with(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS)
+                    .without(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
                     .readValue(json);
         } catch (JsonProcessingException ex) {
             throw new IllegalStateException("Không thể đọc chi tiết đơn " + booking.getId() + ".", ex);
