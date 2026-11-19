@@ -79,7 +79,6 @@ public class JwtUtils {
         return null;
     }
 
-
     // 1. Sinh Access Token từ username và role (thời hạn 15 phút)
     public String generateToken(String username, String role) {
         Date now = new Date();
@@ -115,6 +114,7 @@ public class JwtUtils {
             return true;
         }
     }
+
     // Lấy username từ JWT token
     public String getUsernameFromToken(String token) {
         return extractClaims(token).getSubject();

@@ -59,7 +59,9 @@ public class RoadRoutingServiceImpl implements RoadRoutingService {
         waypoints.forEach(w -> locations.addObject().put("lat", w.point().lat()).put("lon", w.point().lng())
                 .put("type", w.through() ? "through" : "break"));
         body.put("costing", "truck");
-        body.putObject("costing_options").putObject("truck").put("weight", weightTons).put("top_speed", topSpeedKmh);
+        // Ưu tiên tránh vượt biên; chỉ là ưu tiên tìm đường, backend vẫn kiểm tra lãnh thổ của tuyến trả về.
+        body.putObject("costing_options").putObject("truck").put("weight", weightTons).put("top_speed", topSpeedKmh)
+                .put("country_crossing_penalty", 43200);
         body.put("units", "kilometers");
         body.putObject("date_time").put("type", 1).put("value", departLocal.truncatedTo(ChronoUnit.MINUTES).toString());
 

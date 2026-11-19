@@ -11,3 +11,4 @@ public record CaptureEvidenceDto(Long id, String url, String tripId, String purp
             a.getTarget(), a.getCapturedBy(), a.getCapturedAt().toEpochMilli(), a.getRecordedAt().toEpochMilli());
     }
 }
+

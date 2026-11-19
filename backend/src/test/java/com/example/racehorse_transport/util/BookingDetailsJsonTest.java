@@ -71,4 +71,12 @@ class BookingDetailsJsonTest {
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Không thể đọc chi tiết đơn 7");
     }
+
+    @Test
+    void readsPhotoEvidenceWithExtraProperties() {
+        String json = "{\"photoEvidence\":{\"http://example.com/img.jpg\":{\"id\":115,\"bookingId\":57,\"url\":\"http://example.com/img.jpg\"}}}";
+        var payload = BookingDetailsJson.read(objectMapper, booking(json));
+        assertThat(payload.getPhotoEvidence()).containsKey("http://example.com/img.jpg");
+        assertThat(payload.getPhotoEvidence().get("http://example.com/img.jpg").id()).isEqualTo(115L);
+    }
 }

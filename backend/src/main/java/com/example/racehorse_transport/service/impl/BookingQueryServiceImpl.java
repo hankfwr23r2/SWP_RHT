@@ -474,19 +474,13 @@ public class BookingQueryServiceImpl implements BookingQueryService {
         BookingDetailsPayloadDto payload = null;
         List<BookingHorseDto> horseDtos = new ArrayList<>();
         if (b.getDetailsJson() != null && !b.getDetailsJson().trim().isEmpty()) {
-            String json = b.getDetailsJson().trim();
             try {
-                if (json.startsWith("{")) {
-                    payload = objectMapper.readValue(json, BookingDetailsPayloadDto.class);
-                    if (payload.getHorses() != null) {
-                        horseDtos = payload.getHorses();
-                    }
-                } else if (json.startsWith("[")) {
-                    horseDtos = objectMapper.readValue(json, new TypeReference<List<BookingHorseDto>>() {
-                    });
+                payload = BookingDetailsJson.read(objectMapper, b);
+                if (payload.getHorses() != null) {
+                    horseDtos = payload.getHorses();
                 }
-            } catch (JsonProcessingException ex) {
-                throw new IllegalStateException("Không thể đọc chi tiết đơn " + b.getId() + ".", ex);
+            } catch (Exception ex) {
+                log.warn("Không thể đọc chi tiết đơn {}: {}", b.getId(), ex.getMessage());
             }
         }
 

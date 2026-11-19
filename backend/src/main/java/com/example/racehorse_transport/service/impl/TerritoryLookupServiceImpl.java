@@ -12,14 +12,15 @@ import java.util.Map;
 import com.example.racehorse_transport.service.TerritoryLookupService;
 import org.springframework.stereotype.Service;
 
-// Lãnh thổ Campuchia và Lào (Natural Earth 1:50m, public domain) để biết tuyến nội địa có đi ra nước ngoài không.
+// Việt Nam và các nước lân cận (Natural Earth 1:50m, public domain) để kiểm tra quốc gia của từng chặng.
 // Ranh giới thô nên chỉ coi là "ở nước ngoài" khi điểm nằm sâu hơn ngưỡng tính từ đường biên.
 @Service
 public class TerritoryLookupServiceImpl implements TerritoryLookupService {
 
     private record Area(String country, double[][] ring, double minLat, double maxLat, double minLng, double maxLng) {}
 
-    private static final Map<String, String> NAMES = Map.of("KH", "Campuchia", "LA", "Lào");
+    private static final Map<String, String> NAMES = Map.of(
+            "VN", "Việt Nam", "KH", "Campuchia", "LA", "Lào", "TH", "Thái Lan", "CN", "Trung Quốc", "MM", "Myanmar");
 
     private final List<Area> areas = new ArrayList<>();
 
@@ -38,7 +39,7 @@ public class TerritoryLookupServiceImpl implements TerritoryLookupService {
                         minLat = Math.min(minLat, ring[i][1]);
                         maxLat = Math.max(maxLat, ring[i][1]);
                     }
-                    areas.add(new Area(entry.getValue(), ring, minLat, maxLat, minLng, maxLng));
+                    areas.add(new Area(entry.getKey(), ring, minLat, maxLat, minLng, maxLng));
                 }
             }
         } catch (IOException e) {
@@ -48,6 +49,12 @@ public class TerritoryLookupServiceImpl implements TerritoryLookupService {
 
     @Override
     public String countryDeeperThan(GeoPointDto point, double depthKm) {
+        String code = countryCodeDeeperThan(point, depthKm);
+        return code == null || "VN".equals(code) ? null : NAMES.get(code);
+    }
+
+    @Override
+    public String countryCodeDeeperThan(GeoPointDto point, double depthKm) {
         for (Area area : areas) {
             if (point.lat() < area.minLat() || point.lat() > area.maxLat()
                     || point.lng() < area.minLng() || point.lng() > area.maxLng()) {
