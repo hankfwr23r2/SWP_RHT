@@ -14,6 +14,7 @@ export function InsuranceDocuments({ urls: rawUrls, names, label, disabled = fal
   const [viewing, setViewing] = useState<string>()
   // Pending orders explicitly contain null, which a default parameter does not replace.
   const urls = Array.isArray(rawUrls) ? rawUrls.filter(url => typeof url === 'string' && url.trim()) : []
+  if (!urls.length && !onChange) return null
   const safeNames = names ?? {}
   const nameOf = (url: string) => safeNames[url] || decodeURIComponent(url.split('/').pop()?.split('?')[0] || 'Chứng từ')
   return <div className={s.documents}>
@@ -35,7 +36,6 @@ export function InsuranceDocuments({ urls: rawUrls, names, label, disabled = fal
       </label>
     </>}
     {error && <p className="form-error" role="alert">{error}</p>}
-    {!urls.length && !onChange && <p className="text-muted">Chưa có chứng từ.</p>}
     {urls.map(url => <div key={url} className={s.document}>
       <ImageThumb name={url} size={44} /><span className={s.fileName}>{nameOf(url)}</span>
       <button type="button" className="btn btn-ghost btn-sm" onClick={() => setViewing(url)}><i className="fa-regular fa-eye" /> Xem</button>
