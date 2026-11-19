@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { HorseInsurance } from '../types/insurance'
 import { insuranceLabels } from '../types/insurance'
@@ -30,23 +30,80 @@ const parseInsuranceDate = (display: string) => {
   return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
 }
 
-function InsuranceDateField({ label, value, onChange }: { label: string; value?: string; onChange: (value?: string) => void }) {
+const formatInsuranceDateInput = (input: string) => {
+  const digits = input.replace(/\D/g, '').slice(0, 6)
+  if (digits.length <= 2) return digits
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`
+}
+
+function InsuranceDateField({ label, value, onChange, onValidityChange, dateKey }: {
+  label: string
+  value?: string
+  onChange: (value?: string) => void
+  onValidityChange: (dateKey: string, valid: boolean) => void
+  dateKey: string
+}) {
+  const id = useId()
+  const nativeDateRef = useRef<HTMLInputElement>(null)
   const [display, setDisplay] = useState(formatInsuranceDate(value))
-  useEffect(() => setDisplay(formatInsuranceDate(value)), [value])
-  return <label className="form-group">{label}<input
-    className="form-control"
-    type="text"
-    inputMode="numeric"
-    placeholder="dd/mm/yy"
-    value={display}
-    onChange={e => {
-      const next = e.target.value
-      setDisplay(next)
-      const iso = parseInsuranceDate(next)
-      if (iso) onChange(iso)
-      else if (!next) onChange(undefined)
-    }}
-  /></label>
+  const [touched, setTouched] = useState(false)
+  useEffect(() => {
+    setDisplay(formatInsuranceDate(value))
+  }, [value])
+  useEffect(() => {
+    onValidityChange(dateKey, !value || !!parseInsuranceDate(formatInsuranceDate(value)))
+  }, [dateKey, value, onValidityChange])
+  const invalid = touched && !!display && !parseInsuranceDate(display)
+  const openPicker = () => {
+    const input = nativeDateRef.current
+    if (!input) return
+    if (typeof input.showPicker === 'function') input.showPicker()
+    else input.click()
+  }
+  return <div className="form-group">
+    <label htmlFor={id}>{label}</label>
+    <div className={s.dateInput}>
+      <input
+        id={id}
+        className="form-control"
+        type="text"
+        inputMode="numeric"
+        placeholder="dd/mm/yy"
+        value={display}
+        aria-invalid={invalid}
+        onBlur={() => setTouched(true)}
+        onChange={e => {
+          const next = formatInsuranceDateInput(e.target.value)
+          setTouched(true)
+          setDisplay(next)
+          const iso = parseInsuranceDate(next)
+          onValidityChange(dateKey, !next || !!iso)
+          if (iso) onChange(iso)
+          else if (!next) onChange(undefined)
+        }}
+      />
+      <button type="button" className={s.datePickerButton} onClick={openPicker} aria-label={`Mở lịch chọn ${label.toLowerCase()}`} title="Chọn ngày">
+        <i className="fa-regular fa-calendar" aria-hidden="true" />
+      </button>
+      <input
+        ref={nativeDateRef}
+        className={s.nativeDateInput}
+        type="date"
+        aria-label={`Chọn ${label.toLowerCase()} từ lịch`}
+        value={value ?? ''}
+        onChange={e => {
+          const iso = e.target.value
+          setTouched(true)
+          setDisplay(formatInsuranceDate(iso))
+          onValidityChange(dateKey, !!iso)
+          onChange(iso || undefined)
+        }}
+        tabIndex={-1}
+      />
+    </div>
+    {invalid && <p className="form-error" role="alert">Nhập ngày hợp lệ dạng dd/mm/yy.</p>}
+  </div>
 }
 
 export function InsuranceSummary({ insurance, phase = 'all' }: { insurance?: Partial<HorseInsurance>; phase?: 'quote' | 'policy' | 'all' }) {
@@ -74,10 +131,25 @@ export function InsuranceSummary({ insurance, phase = 'all' }: { insurance?: Par
   </div>
 }
 
-export function InsuranceInputs({ value, onChange, premium = false, disabled = false, freezeQuote = false, onBusyChange }: { value: HorseInsurance; onChange: (v: HorseInsurance) => void; premium?: boolean; disabled?: boolean; freezeQuote?: boolean; onBusyChange?: (busy: boolean) => void }) {
+export function InsuranceInputs({ value, onChange, premium = false, disabled = false, freezeQuote = false, onBusyChange, onValidityChange }: {
+  value: HorseInsurance
+  onChange: (v: HorseInsurance) => void
+  premium?: boolean
+  disabled?: boolean
+  freezeQuote?: boolean
+  onBusyChange?: (busy: boolean) => void
+  onValidityChange?: (valid: boolean) => void
+}) {
   const [uploading, setUploading] = useState(false)
+  const [dateValidity, setDateValidity] = useState<Record<string, boolean>>({})
   const quoteOnly = value.option === 'assistance' && !freezeQuote
   const policyOnly = value.option === 'assistance' && freezeQuote
+  const updateDateValidity = (dateKey: string, valid: boolean) => {
+    setDateValidity(previous => previous[dateKey] === valid ? previous : { ...previous, [dateKey]: valid })
+  }
+  useEffect(() => {
+    onValidityChange?.(Object.values(dateValidity).every(Boolean))
+  }, [dateValidity, onValidityChange])
   const field = (key: 'provider' | 'policyNumber' | 'validFrom' | 'validUntil' | 'quoteValidUntil', label: string, type = 'text') => <label className="form-group">{label}<input className="form-control" type={type} disabled={freezeQuote && key === 'provider'} value={value[key] ?? ''} onChange={e => onChange({ ...value, [key]: e.target.value || undefined })} /></label>
   return <fieldset className={s.fields} disabled={disabled || uploading}>
     <div className={s.formGrid}>
@@ -88,11 +160,11 @@ export function InsuranceInputs({ value, onChange, premium = false, disabled = f
         const next = parseInsuranceMoney(el.value); onChange({ ...value, premium: next })
         requestAnimationFrame(() => { let digits = 0; let pos = 0; while (pos < el.value.length && digits < digitsBefore) { if (/[0-9]/.test(el.value[pos])) digits++; pos++ } el.setSelectionRange(pos, pos) })
       }} /><small>Phí bên bảo hiểm báo; công ty thu hộ.</small></label>}
-      {quoteOnly && <InsuranceDateField label="Báo giá bên thứ ba có hiệu lực đến (nếu có)" value={value.quoteValidUntil} onChange={quoteValidUntil => onChange({ ...value, quoteValidUntil })} />}
+      {quoteOnly && <InsuranceDateField dateKey="quoteValidUntil" label="Báo giá bên thứ ba có hiệu lực đến (nếu có)" value={value.quoteValidUntil} onChange={quoteValidUntil => onChange({ ...value, quoteValidUntil })} onValidityChange={updateDateValidity} />}
       {!quoteOnly && <>
         {field('policyNumber', 'Số hợp đồng / Giấy chứng nhận bảo hiểm')}
-        <InsuranceDateField label="Hiệu lực từ" value={value.validFrom} onChange={validFrom => onChange({ ...value, validFrom })} />
-        <InsuranceDateField label="Hiệu lực đến" value={value.validUntil} onChange={validUntil => onChange({ ...value, validUntil })} />
+        <InsuranceDateField dateKey="validFrom" label="Hiệu lực từ" value={value.validFrom} onChange={validFrom => onChange({ ...value, validFrom })} onValidityChange={updateDateValidity} />
+        <InsuranceDateField dateKey="validUntil" label="Hiệu lực đến" value={value.validUntil} onChange={validUntil => onChange({ ...value, validUntil })} onValidityChange={updateDateValidity} />
       </>}
     </div>
     {!policyOnly && <label className="form-group">Ghi chú<textarea className="form-control" rows={3} value={value.note ?? ''} onChange={e => onChange({ ...value, note: e.target.value })} /></label>}

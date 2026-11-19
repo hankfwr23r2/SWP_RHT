@@ -114,6 +114,12 @@
 
 .fields { border: 0; padding: 0; margin: 0; min-width: 0; display: grid; gap: 16px; }
 .formGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.dateInput { position: relative; }
+.dateInput > .form-control { padding-right: 48px; }
+.datePickerButton { position: absolute; right: 6px; top: 50%; width: 36px; height: 36px; transform: translateY(-50%); border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--orange); cursor: pointer; }
+.datePickerButton:hover { background: var(--orange-soft); }
+.datePickerButton:focus-visible { outline: 2px solid var(--orange); outline-offset: 1px; }
+.nativeDateInput { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .summary, .documents { display: grid; gap: 10px; }
 .sectionTitle { font-weight: 600; color: var(--navy); }
 .document { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px; border: 1px solid var(--line); border-radius: var(--radius-sm); }
