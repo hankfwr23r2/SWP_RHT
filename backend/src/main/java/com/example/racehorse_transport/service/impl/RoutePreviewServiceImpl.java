@@ -10,6 +10,7 @@ import com.example.racehorse_transport.dto.route.RoutePreviewResponseDto;
 import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.Vehicle;
 import com.example.racehorse_transport.exception.DomesticRouteAbroadException;
+import com.example.racehorse_transport.exception.NoTruckRouteException;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.service.FleetService;
 import com.example.racehorse_transport.service.RoadRoutingService;
@@ -40,7 +41,7 @@ import org.springframework.stereotype.Service;
 
 // Xem trước lộ trình xe tải cho điều phối: tuyến Valhalla. Phí cầu đường do tài xế ghi theo hóa đơn thực tế
 // + lịch trình JourneyPlanner (nghỉ ở trạm nghỉ thật trên đường khi có) + tên chỗ nghỉ dọc đường theo trạm gần nhất.
-// Đơn nội địa: chỉ dừng ở trạm trong nước, không qua cửa khẩu, tuyến không được đi sâu vào Campuchia/Lào.
+// Mỗi chặng chỉ đi trong quốc gia tương ứng trước/sau cửa khẩu, không đi xuyên nước thứ ba.
 @Service
 @RequiredArgsConstructor
 public class RoutePreviewServiceImpl implements RoutePreviewService {
@@ -51,8 +52,22 @@ public class RoutePreviewServiceImpl implements RoutePreviewService {
     private static final double STATION_MAX_OFF_ROUTE_KM = 5;
     // Ranh giới Natural Earth thô: chỉ tính là ra nước ngoài khi sâu hơn 5 km
     private static final double FOREIGN_DEPTH_KM = 5;
-    // Tuyến nội địa lọt ra nước ngoài: thử ép đi qua tối đa 4 trạm nghỉ trong nước, không vòng quá 1,6 lần đường thẳng
-    private static final int MAX_DETOUR_TRIES = 4;
+    private static final int MAX_DETOUR_TRIES = 8;
+    private static final double TERRITORY_SAMPLE_KM = 2;
+    // Điểm dẫn đường trên các trục trong Việt Nam; không phải trạm nghỉ, không tạo thêm chặng hay thời gian dừng.
+    private static final List<GeoPointDto> VIETNAM_CORRIDOR = List.of(
+            new GeoPointDto(10.46, 105.63),   // Cao Lãnh
+            new GeoPointDto(10.36, 106.36),   // Mỹ Tho
+            new GeoPointDto(10.7769, 106.7009), // TP.HCM
+            new GeoPointDto(10.9289, 108.1021), // Phan Thiết
+            new GeoPointDto(12.2388, 109.1967), // Nha Trang
+            new GeoPointDto(13.782, 109.219), // Quy Nhơn
+            new GeoPointDto(16.0544, 108.2022), // Đà Nẵng
+            new GeoPointDto(16.4637, 107.5909), // Huế
+            new GeoPointDto(17.4689, 106.6223), // Đồng Hới
+            new GeoPointDto(18.6796, 105.6813), // Vinh
+            new GeoPointDto(19.807, 105.776), // Thanh Hóa
+            new GeoPointDto(21.0278, 105.8342)); // Hà Nội
     // Máy chủ Valhalla công khai nhận tối đa 10 điểm mỗi lần tính: điểm đón + điểm trả + 8 điểm giữa (trạm, cửa khẩu, điểm đi qua)
     static final int MAX_ROUTE_POINTS = 10;
     private static final double MAX_DETOUR_RATIO = 1.6;
@@ -85,6 +100,7 @@ public class RoutePreviewServiceImpl implements RoutePreviewService {
                 }
             }
         }
+        validateCountries(request, middle, gate);
         Vehicle vehicle = fleetService.findVehicleByIdOrCode(request.vehicleId());
         int capacityKg = capacityKg(vehicle.getCapacity());
         int topSpeed = (int) number("TRUCK_TOP_SPEED_KMH");
@@ -111,12 +127,22 @@ public class RoutePreviewServiceImpl implements RoutePreviewService {
         List<String> names = stops.stream().map(Stop::name).toList();
 
         List<Location> restStopLocations = restStopLocations();
-        RoadRouteDto road = domestic
-                ? routeInsideVietnam(points, stops, middle, restStopLocations, capacityKg, topSpeed, departAt)
-                : truckRoute(points.stream().map(RoadRoutingService.Waypoint::stop).toList(), capacityKg, topSpeed, departAt);
-
-        restStopLocations.forEach(l -> knownPlaces.putIfAbsent(l.getLocationName(), new GeoPointDto(l.getLatitude(), l.getLongitude())));
         int gateIndex = gate == null ? -1 : middle.indexOf(gate) + 1;
+        List<String> legCountries = IntStream.range(0, points.size() - 1)
+                .mapToObj(i -> gateIndex < 0 || i < gateIndex ? request.pickup().country() : request.dropoff().country())
+                .toList();
+        Inside inside = insideCountries(points, middle, restStopLocations, legCountries, capacityKg, topSpeed, departAt);
+        if (inside.abroad() != null) {
+            if (domestic) {
+                throw abroadException(inside.abroad(), stops);
+            }
+            Abroad abroad = inside.abroad();
+            throw new DomesticRouteAbroadException("Chặng " + names.get(abroad.legIndex()) + " → "
+                    + names.get(abroad.legIndex() + 1) + " đi qua lãnh thổ " + abroad.country()
+                    + " ngoài quốc gia được phép. Hãy đổi trạm hoặc cửa khẩu để không đi xuyên nước thứ ba.");
+        }
+        RoadRouteDto road = inside.road();
+        restStopLocations.forEach(l -> knownPlaces.putIfAbsent(l.getLocationName(), new GeoPointDto(l.getLatitude(), l.getLongitude())));
         List<List<Station>> stations = IntStream.range(0, road.legs().size())
                 .mapToObj(i -> stationsOnLeg(road.legs().get(i), restStopLocations,
                         gateIndex < 0 || i < gateIndex ? countryCode(request.pickup().country()) : countryCode(request.dropoff().country())))
@@ -208,7 +234,8 @@ public class RoutePreviewServiceImpl implements RoutePreviewService {
     // không theo thứ tự bấm hay đường chim bay: tuyến cong (Châu Đốc → Cao Lãnh → Bình Dương) vẫn ghé đúng thứ tự.
     private List<Location> orderAlongRoad(RoutePreviewRequestDto request, List<Location> middle, Location gate,
                                           int capacityKg, int topSpeed, Instant departAt) {
-        if (middle.stream().filter(l -> !isGate(l)).count() < 2) {
+        long stationCount = middle.stream().filter(l -> !isGate(l)).count();
+        if (stationCount == 0 || (gate == null && stationCount < 2)) {
             return middle;
         }
         List<RoadRoutingService.Waypoint> base = new ArrayList<>();
@@ -222,34 +249,53 @@ public class RoutePreviewServiceImpl implements RoutePreviewService {
         if (shape.isEmpty()) {
             return middle;
         }
-        return middle.stream()
-                .sorted(Comparator.comparingDouble((Location l) ->
-                        RouteGeometry.project(shape, new GeoPointDto(l.getLatitude(), l.getLongitude())).kmAlongShape()))
-                .toList();
+        Comparator<Location> alongRoad = Comparator.comparingDouble(l ->
+                RouteGeometry.project(shape, new GeoPointDto(l.getLatitude(), l.getLongitude())).kmAlongShape());
+        if (gate == null) {
+            return middle.stream().sorted(alongRoad).toList();
+        }
+        List<Location> ordered = new ArrayList<>(middle.stream().filter(l -> !isGate(l)
+                && request.pickup().country().equals(countryCode(l.getCountry()))).sorted(alongRoad).toList());
+        ordered.add(gate);
+        ordered.addAll(middle.stream().filter(l -> !isGate(l)
+                && request.dropoff().country().equals(countryCode(l.getCountry()))).sorted(alongRoad).toList());
+        return ordered;
+    }
+
+    private static void validateCountries(RoutePreviewRequestDto request, List<Location> middle, Location gate) {
+        if (gate != null && request.pickup().country().equals(request.dropoff().country())) {
+            throw new IllegalArgumentException("Tuyến cùng quốc gia không đi qua cửa khẩu.");
+        }
+        for (Location location : middle) {
+            String country = countryCode(location.getCountry());
+            if (!isGate(location) && !country.equals(request.pickup().country()) && !country.equals(request.dropoff().country())) {
+                throw new IllegalArgumentException("Không được dừng tại nước thứ ba: " + location.getLocationName() + ".");
+            }
+        }
+        if (gate != null && gate.getDestinationCountry() != null) {
+            String foreign = isVietnam(request.pickup().country()) ? request.dropoff().country() : request.pickup().country();
+            if (!foreign.equals(gate.getDestinationCountry())) {
+                throw new IllegalArgumentException("Cửa khẩu đã chọn không kết nối với quốc gia của đơn.");
+            }
+        }
     }
 
     private record Abroad(int legIndex, String country) {}
-
-    // Đơn nội địa: đường xe tải ngắn nhất có thể cắt qua Campuchia/Lào (vd. Châu Đốc → Bình Dương qua Svay Rieng).
-    // Chặng nào lọt ra nước ngoài thì ép xe đi qua một trạm nghỉ trong nước (điểm đi qua, không dừng), thử trạm vòng ít
-    // nhất trước; không trạm nào giúp được thì báo chặng và việc điều phối cần làm.
-    private RoadRouteDto routeInsideVietnam(List<GeoPointDto> points, List<Stop> stops, List<Location> middle,
-                                         List<Location> restStops, int capacityKg, int topSpeed, Instant departAt) {
-        Inside inside = insideVietnam(points, middle, restStops, capacityKg, topSpeed, departAt);
-        if (inside.abroad() != null) {
-            throw abroadException(inside.abroad(), stops);
-        }
-        return inside.road();
-    }
 
     // abroad != null: không tìm được đường trong nước cho chặng đó, road là đường tốt nhất đã có
     private record Inside(RoadRouteDto road, Abroad abroad) {}
 
     private Inside insideVietnam(List<GeoPointDto> points, List<Location> middle, List<Location> restStops,
                                  int capacityKg, int topSpeed, Instant departAt) {
+        return insideCountries(points, middle, restStops, java.util.Collections.nCopies(points.size() - 1, "VN"),
+                capacityKg, topSpeed, departAt);
+    }
+
+    private Inside insideCountries(List<GeoPointDto> points, List<Location> middle, List<Location> restStops,
+                                   List<String> legCountries, int capacityKg, int topSpeed, Instant departAt) {
         List<RoadRoutingService.Waypoint> waypoints = new ArrayList<>(points.stream().map(RoadRoutingService.Waypoint::stop).toList());
         RoadRouteDto road = truckRoute(waypoints, capacityKg, topSpeed, departAt);
-        Abroad abroad = abroad(road);
+        Abroad abroad = abroad(road, legCountries);
         while (abroad != null) {
             if (waypoints.size() >= MAX_ROUTE_POINTS) {
                 return new Inside(road, abroad);
@@ -257,19 +303,45 @@ public class RoutePreviewServiceImpl implements RoutePreviewService {
             int leg = abroad.legIndex();
             GeoPointDto from = points.get(leg);
             GeoPointDto to = points.get(leg + 1);
-            List<GeoPointDto> candidates = detourCandidates(from, to, middle, restStops);
+            String country = legCountries.get(leg);
+            List<GeoPointDto> candidates = detourCandidates(from, to, middle, restStops, country);
             boolean fixed = false;
             for (GeoPointDto candidate : candidates) {
                 List<RoadRoutingService.Waypoint> trial = new ArrayList<>(waypoints);
                 trial.add(stopIndex(waypoints, leg + 1), new RoadRoutingService.Waypoint(candidate, true));
-                RoadRouteDto retry = truckRoute(trial, capacityKg, topSpeed, departAt);
-                Abroad still = abroad(retry);
+                RoadRouteDto retry;
+                try {
+                    retry = truckRoute(trial, capacityKg, topSpeed, departAt);
+                } catch (NoTruckRouteException e) {
+                    continue;
+                }
+                Abroad still = abroad(retry, legCountries);
                 if (still == null || still.legIndex() > leg) {
                     waypoints = trial;
                     road = retry;
                     abroad = still;
                     fixed = true;
                     break;
+                }
+            }
+            if (!fixed && "VN".equals(country)) {
+                List<GeoPointDto> corridor = corridorBetween(from, to, MAX_ROUTE_POINTS - waypoints.size());
+                if (!corridor.isEmpty()) {
+                    List<RoadRoutingService.Waypoint> trial = new ArrayList<>(waypoints);
+                    trial.addAll(stopIndex(waypoints, leg + 1), corridor.stream()
+                            .map(p -> new RoadRoutingService.Waypoint(p, true)).toList());
+                    try {
+                        RoadRouteDto retry = truckRoute(trial, capacityKg, topSpeed, departAt);
+                        Abroad still = abroad(retry, legCountries);
+                        if (still == null || still.legIndex() > leg) {
+                            waypoints = trial;
+                            road = retry;
+                            abroad = still;
+                            fixed = true;
+                        }
+                    } catch (NoTruckRouteException e) {
+                        // Điểm dẫn đường không có lối xe tải: trả lỗi chặng gốc, không dùng tuyến xuyên biên giới.
+                    }
                 }
             }
             if (!fixed) {
@@ -351,16 +423,41 @@ public class RoutePreviewServiceImpl implements RoutePreviewService {
     }
 
     // Trạm nghỉ trong nước chưa có trong tuyến, xếp theo quãng vòng thêm so với đi thẳng
-    private static List<GeoPointDto> detourCandidates(GeoPointDto from, GeoPointDto to, List<Location> middle, List<Location> restStops) {
+    private static List<GeoPointDto> detourCandidates(GeoPointDto from, GeoPointDto to, List<Location> middle,
+                                                    List<Location> restStops, String country) {
         double direct = Math.max(GeoPointDto.distanceKm(from, to), 1);
         return restStops.stream()
-                .filter(l -> "VN".equals(countryCode(l.getCountry())))
+                .filter(l -> country.equals(countryCode(l.getCountry())))
                 .filter(l -> middle.stream().noneMatch(m -> m.getId().equals(l.getId())))
                 .map(l -> new GeoPointDto(l.getLatitude(), l.getLongitude()))
                 .filter(p -> GeoPointDto.distanceKm(from, p) + GeoPointDto.distanceKm(p, to) <= direct * MAX_DETOUR_RATIO)
                 .sorted(Comparator.comparingDouble(p -> GeoPointDto.distanceKm(from, p) + GeoPointDto.distanceKm(p, to)))
                 .limit(MAX_DETOUR_TRIES)
                 .toList();
+    }
+
+    private static List<GeoPointDto> corridorBetween(GeoPointDto from, GeoPointDto to, int limit) {
+        double direct = Math.max(GeoPointDto.distanceKm(from, to), 1);
+        double dx = (to.lng() - from.lng()) * Math.cos(Math.toRadians((from.lat() + to.lat()) / 2));
+        double dy = to.lat() - from.lat();
+        double squared = dx * dx + dy * dy;
+        if (squared == 0 || limit <= 0) {
+            return List.of();
+        }
+        java.util.function.ToDoubleFunction<GeoPointDto> progress = p ->
+                ((p.lng() - from.lng()) * Math.cos(Math.toRadians((from.lat() + to.lat()) / 2)) * dx
+                        + (p.lat() - from.lat()) * dy) / squared;
+        List<GeoPointDto> candidates = VIETNAM_CORRIDOR.stream()
+                .filter(p -> progress.applyAsDouble(p) > 0.02 && progress.applyAsDouble(p) < 0.98)
+                .filter(p -> GeoPointDto.distanceKm(from, p) > 10 && GeoPointDto.distanceKm(to, p) > 10)
+                .filter(p -> GeoPointDto.distanceKm(from, p) + GeoPointDto.distanceKm(p, to) <= direct * MAX_DETOUR_RATIO)
+                .sorted(Comparator.comparingDouble(progress)).toList();
+        if (candidates.size() <= limit) {
+            return candidates;
+        }
+        // Rải đều điểm dẫn đường để vẫn phủ cả hành trình khi gần giới hạn 10 điểm của Valhalla.
+        return IntStream.range(0, limit).mapToObj(i -> candidates.get(
+                (int) Math.floor((i + 0.5) * candidates.size() / limit))).toList();
     }
 
     // Vị trí trong danh sách điểm của điểm dừng thứ stopNumber (bỏ qua các điểm đi qua đã chèn)
@@ -375,11 +472,24 @@ public class RoutePreviewServiceImpl implements RoutePreviewService {
     }
 
     private Abroad abroad(RoadRouteDto road) {
+        return abroad(road, java.util.Collections.nCopies(road.legs().size(), "VN"));
+    }
+
+    private Abroad abroad(RoadRouteDto road, List<String> legCountries) {
         for (int i = 0; i < road.legs().size(); i++) {
-            for (GeoPointDto point : road.legs().get(i).shape()) {
-                String country = territoryLookup.countryDeeperThan(point, FOREIGN_DEPTH_KM);
-                if (country != null) {
-                    return new Abroad(i, country);
+            List<GeoPointDto> shape = road.legs().get(i).shape();
+            for (int j = 0; j < shape.size(); j++) {
+                GeoPointDto from = shape.get(j == 0 ? 0 : j - 1);
+                GeoPointDto to = shape.get(j);
+                int samples = Math.max(1, (int) Math.ceil(GeoPointDto.distanceKm(from, to) / TERRITORY_SAMPLE_KM));
+                for (int sample = 1; sample <= samples; sample++) {
+                    double fraction = sample / (double) samples;
+                    GeoPointDto point = new GeoPointDto(from.lat() + (to.lat() - from.lat()) * fraction,
+                            from.lng() + (to.lng() - from.lng()) * fraction);
+                    String country = territoryLookup.countryCodeDeeperThan(point, FOREIGN_DEPTH_KM);
+                    if (country != null && !country.equals(legCountries.get(i))) {
+                        return new Abroad(i, countryName(country));
+                    }
                 }
             }
         }
@@ -397,7 +507,7 @@ public class RoutePreviewServiceImpl implements RoutePreviewService {
 
     private RoadRouteDto truckRoute(List<RoadRoutingService.Waypoint> waypoints, int capacityKg, int topSpeed, Instant departAt) {
         // Không gồm giờ xuất phát trong khóa: cùng tuyến cùng xe thì lộ trình và báo giá dùng cùng số liệu
-        String key = "valhalla-truck|" + waypoints.stream()
+        String key = "valhalla-truck-country-v2|" + waypoints.stream()
                 .map(w -> (w.through() ? "~" : "") + w.point().key()).collect(Collectors.joining(";"))
                 + "|" + capacityKg + "|" + topSpeed;
         return cache.find(key, RoadRouteDto.class).orElseGet(() -> {
@@ -454,7 +564,22 @@ public class RoutePreviewServiceImpl implements RoutePreviewService {
         String value = country == null ? "" : country.trim().toLowerCase(Locale.ROOT);
         if (value.equals("kh") || value.contains("campuchia") || value.contains("cambodia")) return "KH";
         if (value.equals("la") || value.contains("lào") || value.contains("laos")) return "LA";
+        if (value.equals("th") || value.contains("thái lan") || value.contains("thailand")) return "TH";
+        if (value.equals("cn") || value.contains("trung quốc") || value.contains("china")) return "CN";
+        if (value.equals("mm") || value.contains("myanmar")) return "MM";
         return "VN";
+    }
+
+    private static String countryName(String code) {
+        return switch (code) {
+            case "VN" -> "Việt Nam";
+            case "KH" -> "Campuchia";
+            case "LA" -> "Lào";
+            case "TH" -> "Thái Lan";
+            case "CN" -> "Trung Quốc";
+            case "MM" -> "Myanmar";
+            default -> code;
+        };
     }
 
     private static List<double[]> path(RoadRouteDto road) {

@@ -31,4 +31,15 @@ class TerritoryLookupServiceImplTest {
         // Svay Rieng sâu ~11,8 km trong ranh giới
         assertThat(territory.countryDeeperThan(new GeoPointDto(11.087, 105.80), 20)).isNull();
     }
+
+    @Test
+    void identifiesVietnamAndThirdCountriesForInternationalLegs() {
+        assertThat(territory.countryCodeDeeperThan(new GeoPointDto(10.7769, 106.7009), 5)).isEqualTo("VN");
+        assertThat(territory.countryCodeDeeperThan(new GeoPointDto(11.5564, 104.9282), 5)).isEqualTo("KH");
+        assertThat(territory.countryCodeDeeperThan(new GeoPointDto(16.55, 105.0), 5)).isEqualTo("LA");
+        assertThat(territory.countryCodeDeeperThan(new GeoPointDto(13.7563, 100.5018), 5)).isEqualTo("TH");
+        assertThat(territory.countryCodeDeeperThan(new GeoPointDto(22.817, 108.366), 5)).isEqualTo("CN");
+        assertThat(territory.countryCodeDeeperThan(new GeoPointDto(16.866, 96.195), 5)).isEqualTo("MM");
+        assertThat(territory.countryDeeperThan(new GeoPointDto(13.7563, 100.5018), 5)).isEqualTo("Thái Lan");
+    }
 }
