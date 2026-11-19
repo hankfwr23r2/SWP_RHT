@@ -25,8 +25,8 @@ test('sau đặt cọc chỉ bổ sung hợp đồng và chứng từ, báo giá
   await expect(page.getByLabel('Số hợp đồng / Giấy chứng nhận bảo hiểm')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Xác nhận hợp đồng có hiệu lực' })).toBeDisabled()
   await page.getByLabel('Số hợp đồng / Giấy chứng nhận bảo hiểm').fill('POLICY-1')
-  await page.getByLabel('Hiệu lực từ', { exact: true }).fill('2027-01-01')
-  await page.getByLabel('Hiệu lực đến', { exact: true }).fill('2027-12-31')
+  await page.getByLabel('Hiệu lực từ', { exact: true }).fill('01/01/27')
+  await page.getByLabel('Hiệu lực đến', { exact: true }).fill('31/12/27')
   await expect(page.getByRole('button', { name: 'Xác nhận hợp đồng có hiệu lực' })).toBeEnabled()
 })
 test('upload chứng từ có tên và xem PDF, lỗi upload cho phép thử lại', async ({ page }) => {
