@@ -66,6 +66,7 @@ function InsuranceEditor({ b, horseId, insurance, onDone, onLock }: { b: Booking
   const saving = useRef(false)
   const [busy, setBusy] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [dateValid, setDateValid] = useState(true)
   const [error, setError] = useState('')
   const toast = useToast()
   const before = insuranceBeforeQuote(b.status)
@@ -138,13 +139,13 @@ function InsuranceEditor({ b, horseId, insurance, onDone, onLock }: { b: Booking
       </p>
     )}
     {editable && <>
-      {!readOnly && optionConfirmed && value.option !== 'none' && <InsuranceInputs value={value} onChange={next => { setValue({ ...next, ...(before ? { reviewed: false } : { arranged: false }) }); setError('') }} onBusyChange={setUploading} disabled={busy} freezeQuote={after} premium={before && value.option === 'assistance'} />}
+      {!readOnly && optionConfirmed && value.option !== 'none' && <InsuranceInputs value={value} onChange={next => { setValue({ ...next, ...(before ? { reviewed: false } : { arranged: false }) }); setError('') }} onBusyChange={setUploading} onValidityChange={setDateValid} disabled={busy} freezeQuote={after} premium={before && value.option === 'assistance'} />}
       {optionConfirmed && value.option === 'none' && <p>{t('specialistInsurance.noInsuranceDesc', 'Khách chọn không bảo hiểm. Không cần báo giá hoặc hợp đồng.')}</p>}
       {error && <div className="alert alert-danger" role="alert">{error}</div>}
       {!readOnly && optionConfirmed && value.option !== 'none' && (before ? reviewProblem : policyProblem) && <p className="form-hint">{before ? reviewProblem : policyProblem}</p>}
       <div className={s.actions}>
-        <button type="button" className="btn btn-outline" disabled={busy || uploading || readOnly || !dirty || !optionConfirmed} onClick={() => void save(false)}>{busy ? t('specialistInsurance.saving', 'Đang lưu…') : t('specialistInsurance.saveDraft', 'Lưu nháp')}</button>
-        <button type="button" className="btn btn-primary" disabled={busy || uploading || readOnly || (confirmed && !dirty) || !optionConfirmed || !!(before ? reviewProblem : policyProblem)} onClick={() => void save(true)}>{readOnly ? <><i className="fa-solid fa-check" /> {before ? t('specialistInsurance.quoteConfirmed', 'Đã xác nhận báo giá') : t('specialistInsurance.policyConfirmed', 'Đã xác nhận hợp đồng')}</> : value.option === 'none' ? t('specialistInsurance.saveChoice', 'Lưu lựa chọn') : before ? value.option === 'personal' ? t('specialistInsurance.confirmCheckContract', 'Xác nhận đã kiểm tra hợp đồng') : t('specialistInsurance.confirmQuote', 'Xác nhận báo giá bảo hiểm') : t('specialistInsurance.confirmActive', 'Xác nhận hợp đồng có hiệu lực')}</button>
+        <button type="button" className="btn btn-outline" disabled={busy || uploading || readOnly || !dirty || !optionConfirmed || !dateValid} onClick={() => void save(false)}>{busy ? t('specialistInsurance.saving', 'Đang lưu…') : t('specialistInsurance.saveDraft', 'Lưu nháp')}</button>
+        <button type="button" className="btn btn-primary" disabled={busy || uploading || readOnly || (confirmed && !dirty) || !optionConfirmed || !dateValid || !!(before ? reviewProblem : policyProblem)} onClick={() => void save(true)}>{readOnly ? <><i className="fa-solid fa-check" /> {before ? t('specialistInsurance.quoteConfirmed', 'Đã xác nhận báo giá') : t('specialistInsurance.policyConfirmed', 'Đã xác nhận hợp đồng')}</> : value.option === 'none' ? t('specialistInsurance.saveChoice', 'Lưu lựa chọn') : before ? value.option === 'personal' ? t('specialistInsurance.confirmCheckContract', 'Xác nhận đã kiểm tra hợp đồng') : t('specialistInsurance.confirmQuote', 'Xác nhận báo giá bảo hiểm') : t('specialistInsurance.confirmActive', 'Xác nhận hợp đồng có hiệu lực')}</button>
         {readOnly && before && <button type="button" className="btn btn-outline" disabled={busy || uploading} onClick={() => { setEditingConfirmed(true); setError('') }}>{t('specialistInsurance.editQuote', 'Chỉnh sửa báo giá')}</button>}
         {(dirty || editingConfirmed) && <button type="button" className="btn btn-ghost" disabled={busy || uploading} onClick={() => { setValue(savedValue); setOptionConfirmed(savedOptionConfirmed); setEditingConfirmed(false); setError('') }}>{t('specialistInsurance.discard', 'Hủy thay đổi')}</button>}
       </div>
