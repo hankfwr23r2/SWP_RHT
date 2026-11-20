@@ -51,3 +51,19 @@ export function insuranceStage(status: string, horses: { insurance: Partial<Hors
   if (insuranceAfterDeposit(status)) return horses.some(h => h.insurance.option === 'assistance' && !h.insurance.arranged) ? 'policy' : 'done'
   return status === 'awaiting_payment' ? 'waiting' : 'done'
 }
+
+// Việc chuyên viên còn phải làm với bảo hiểm của một ngựa, theo giai đoạn của đơn
+export function horseInsuranceTask(status: string, i: Partial<HorseInsurance>): { label: string; tone: 'warning' | 'success' | 'muted'; pending: boolean } {
+  const todo = (label: string) => ({ label, tone: 'warning' as const, pending: true })
+  const done = (label: string) => ({ label, tone: 'success' as const, pending: false })
+  if (i.option === 'none') return { label: 'Không cần xử lý', tone: 'muted', pending: false }
+  if (insuranceBeforeQuote(status)) {
+    if (!i.option) return todo('Chưa chọn phương án')
+    if (i.option === 'personal') return i.reviewed ? done('Đã kiểm tra giấy tờ') : todo('Chưa kiểm tra giấy tờ')
+    return i.reviewed ? done('Đã xác nhận báo giá') : todo('Cần báo giá bảo hiểm')
+  }
+  if (insuranceAfterDeposit(status) && i.option === 'assistance') return i.arranged ? done('Hợp đồng có hiệu lực') : todo('Cần bổ sung hợp đồng')
+  if (!i.option) return { label: 'Theo báo giá cũ', tone: 'muted', pending: false }
+  if (i.option === 'assistance') return i.arranged ? done('Hợp đồng có hiệu lực') : i.reviewed ? done('Đã xác nhận báo giá') : { label: 'Chưa xác nhận', tone: 'muted', pending: false }
+  return i.reviewed ? done('Đã kiểm tra giấy tờ') : { label: 'Chưa kiểm tra', tone: 'muted', pending: false }
+}

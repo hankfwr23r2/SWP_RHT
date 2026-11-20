@@ -9,6 +9,7 @@ import { accountsLoader, adminHorseTypesLoader, adminPricingLoader, adminRoutesL
 const SitemapPage = lazy(() => import('../sitemap/SitemapPage').then(m => ({ default: m.SitemapPage })))
 const SystemLogsPage = lazy(() => import('./features/admin/system-logs/SystemLogsPage'))
 const FleetPage = lazy(() => import('./features/coordinator/fleet/FleetPage'))
+const AdminFleetPage = lazy(() => import('./features/admin/fleet/AdminFleetPage'))
 const DriverPage = lazy(() => import('./features/driver/DriverPage'))
 const EscortPage = lazy(() => import('./features/escort/EscortPage'))
 const StaffProfilePage = lazy(() => import('./features/profile/StaffProfilePage'))
@@ -27,6 +28,7 @@ export const routes: AppRoute[] = [
 
   { path: '/admin/pricing', lazyPage: () => import('./features/admin/pricing/AdminPricingPage'), loader: adminPricingLoader, roles: A, title: 'Biểu giá & Công thức', layout: 'staff' },
   { path: '/admin/horse-types', lazyPage: () => import('./features/admin/horse-types/AdminHorseTypesPage'), loader: adminHorseTypesLoader, roles: A, title: 'Danh mục giống ngựa', layout: 'staff' },
+  { path: '/admin/fleet', page: AdminFleetPage, roles: A, title: 'Đội xe', layout: 'staff' },
   { path: '/admin/routes', lazyPage: () => import('./features/admin/routes/AdminRoutesPage'), loader: adminRoutesLoader, roles: A, title: 'Tuyến đường cố định', layout: 'staff' },
   { path: '/admin/services', lazyPage: () => import('./features/admin/services/AdminServicesPage'), loader: adminServicesLoader, roles: A, title: 'Dịch vụ & Biểu phí', layout: 'staff' },
   { path: '/admin/rules', lazyPage: () => import('./features/admin/rules/AdminRulesPage'), loader: systemConfigLoader, roles: A, title: 'Quy định & Tham số', layout: 'staff' },
@@ -54,7 +56,7 @@ export const routes: AppRoute[] = [
   { path: '/coordinator/fleet-plan/:id', lazyPage: () => import('./features/coordinator/fleet-plan/FleetPlanPage'), loader: fleetPlanLoader, roles: CO, title: 'Chốt xe và lộ trình một đơn', layout: 'staff' },
   { path: '/coordinator/monitoring', lazyPage: () => import('./features/coordinator/monitoring/MonitoringPage'), loader: monitoringLoader, roles: CO, title: 'Giám sát vận chuyển', layout: 'staff' },
   { path: '/coordinator/incidents', lazyPage: () => import('./features/coordinator/incidents/CoordinatorIncidentsPage'), loader: bookingListLoader, roles: CO, title: 'Xử lý sự cố', layout: 'staff' },
-  { path: '/coordinator/fleet', page: FleetPage, roles: CO, title: 'Quản lý đội xe', layout: 'staff' },
+  { path: '/coordinator/fleet', page: FleetPage, roles: CO, title: 'Đội xe', layout: 'staff' },
 
   { path: '/driver', page: DriverPage, roles: ['driver'], title: 'Chuyến của tôi', layout: 'mobile' },
   { path: '/escort', page: EscortPage, roles: ['escort'], title: 'Nhật ký sức khỏe ngựa', layout: 'mobile' },

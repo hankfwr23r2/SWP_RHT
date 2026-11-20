@@ -656,35 +656,8 @@ function Plan({ b, vehicles }: { b: Booking; vehicles: Vehicle[] }) {
 
         {corridors.length > 0 && (
           <div style={{ marginBottom: 14, padding: '12px 14px', background: 'var(--surface-soft, #f8fafc)', border: '1px solid var(--line, #e2e8f0)', borderRadius: 8, display: 'grid', gap: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <i className="fa-solid fa-road" style={{ color: 'var(--orange, #ea580c)', fontSize: '1rem' }} />
-              </div>
-              <span style={{ fontSize: '0.75rem', background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: 6, fontWeight: 600 }}>
-              </span>
-            </div>
-            
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                className="btn btn-primary btn-sm"
-                style={{ flex: '1 1 260px', height: 38, whiteSpace: 'nowrap' }}
-                disabled={!previewRequest || previewLoading}
-                onClick={() => {
-                  keepSavedPlan.current = false
-                  setSelectedCorridorId('')
-                  setManualStops([])
-                  setPreviewAttempt(attempt => attempt + 1)
-                }}
-              >
-                {previewLoading ? (
-                  <><i className="fa-solid fa-spinner fa-spin" /> Đang đề xuất lộ trình…</>
-                ) : (
-                  <><i className="fa-solid fa-wand-magic-sparkles" /> Lộ trình linh hoạt (Tự động đề xuất)</>
-                )}
-              </button>
-
-              {selectedCorridor && (
+            {selectedCorridor && (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 <button
                   type="button"
                   className="btn btn-outline btn-sm font-semibold"
@@ -699,8 +672,8 @@ function Plan({ b, vehicles }: { b: Booking; vehicles: Vehicle[] }) {
                     <><i className="fa-solid fa-route" /> Áp dụng trạm dừng của hành lang</>
                   )}
                 </button>
-              )}
-            </div>
+              </div>
+            )}
 
             {!suggestingCorridors && corridorSuggestions.length === 0 && (
               <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>

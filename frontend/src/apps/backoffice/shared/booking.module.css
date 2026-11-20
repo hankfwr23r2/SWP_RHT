@@ -21,7 +21,8 @@
 
 .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px 20px; }
 .grid dt { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); font-weight: 600; }
-.grid dd { font-weight: 600; }
+.grid > div { min-width: 0; }
+.grid dd { font-weight: 600; overflow-wrap: anywhere; }
 
 .horse { border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 10px; background: white; }
 .horseTop { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }

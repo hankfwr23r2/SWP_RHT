@@ -77,6 +77,11 @@ public class SpecialistServiceImpl implements SpecialistService {
                 request.setNote(existing.getNote());
             }
         }
+        if ("personal".equals(request.getOption())) {
+            // Chứng từ bảo hiểm cá nhân do khách gửi; chuyên viên chỉ xem, không thay hay gỡ.
+            request.setDocuments(existing == null ? null : existing.getDocuments());
+            request.setDocumentNames(existing == null ? null : existing.getDocumentNames());
+        }
         if (beforeQuote && "assistance".equals(request.getOption())) {
             request.setPolicyNumber(null); request.setValidFrom(null); request.setValidUntil(null);
             request.setPolicyDocuments(null);

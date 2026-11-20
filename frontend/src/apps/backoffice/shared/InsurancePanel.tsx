@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useBlocker } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import type { Booking } from '@shared/types/booking'
-import { insuranceAfterDeposit, insuranceBeforeQuote, insuranceDepartureProblem, insuranceReviewProblem, type HorseInsurance } from '@shared/types/insurance'
+import { horseInsuranceTask, insuranceAfterDeposit, insuranceBeforeQuote, insuranceDepartureProblem, insuranceReviewProblem, type HorseInsurance } from '@shared/types/insurance'
 import { InsuranceInputs, InsuranceSummary } from '@shared/ui/InsuranceFields'
 import { specialistApi } from '@shared/api/specialist'
 import { invalidateBookingsListCache } from '@shared/services/bookings'
@@ -33,23 +33,40 @@ export function InsuranceLink({ b }: { b: Booking }) {
 
 export function InsurancePanel({ b, onDone }: { b: Booking; onDone: () => void }) {
   const { t } = useTranslation()
-  const [picked, setPicked] = useState(b.horses[0]?.horseId ?? '')
+  const tasks = new Map(b.horses.map(h => [h.horseId, horseInsuranceTask(b.status, h.insurance)]))
+  const remaining = b.horses.filter(h => tasks.get(h.horseId)?.pending).length
+  // Mở sẵn ngựa đầu tiên còn việc để chuyên viên không phải dò từng con
+  const [picked, setPicked] = useState(() => b.horses.find(h => tasks.get(h.horseId)?.pending)?.horseId ?? b.horses[0]?.horseId ?? '')
   const [locked, setLocked] = useState(false)
   const horse = b.horses.find(h => h.horseId === picked) ?? b.horses[0]
   return (
     <section className="card">
       <div className="card-header">
         <h3>{insuranceBeforeQuote(b.status) ? t('specialistInsurance.quoteAndCheck', 'Báo giá và kiểm tra bảo hiểm') : t('specialistInsurance.insuranceByBooking', 'Bảo hiểm theo đơn')}</h3>
+        <span className={`badge ${remaining ? 'badge-warning' : 'badge-success'}`}>
+          {remaining ? t('specialistInsurance.horsesRemaining', '{{remaining}}/{{total}} ngựa còn cần xử lý', { remaining, total: b.horses.length }) : t('specialistInsurance.allHorsesDone', 'Đã xử lý đủ {{total}} ngựa', { total: b.horses.length })}
+        </span>
       </div>
-      <div className={s.body}>
-        <label className="form-group">
-          {t('specialistInsurance.selectHorse', 'Chọn ngựa ({{count}})', { count: b.horses.length })}
-          <select className="form-control" value={horse?.horseId ?? ''} disabled={locked} onChange={e => setPicked(e.target.value)}>
-            {b.horses.map(h => <option key={h.horseId} value={h.horseId}>{h.name} · {h.microchip}</option>)}
-          </select>
-          <small>{t('specialistInsurance.selectHorseHint', 'Lưu hoặc hủy thay đổi trước khi chuyển ngựa.')}</small>
-        </label>
-        {horse && <InsuranceEditor key={`${horse.horseId}-${JSON.stringify(horse.insurance)}`} b={b} horseId={horse.horseId} insurance={horse.insurance} onDone={onDone} onLock={setLocked} />}
+      <div className={s.layout}>
+        <div className={s.horseColumn}>
+          <ul className={s.horseList} aria-label={t('specialistInsurance.horseListLabel', 'Ngựa trong đơn')}>
+            {b.horses.map(h => {
+              const task = tasks.get(h.horseId)!
+              const option = h.insurance.option
+              return <li key={h.horseId}>
+                <button type="button" className={`${s.horseItem} ${h.horseId === horse?.horseId ? s.horseItemActive : ''}`} aria-pressed={h.horseId === horse?.horseId} disabled={locked && h.horseId !== horse?.horseId} onClick={() => setPicked(h.horseId)}>
+                  <span className={s.horseName}>{h.name}<small>{h.microchip}</small></span>
+                  <span className={s.horseOption}>{option === 'assistance' ? t('specialistInsurance.reqAssistance', 'Yêu cầu hỗ trợ bảo hiểm') : option === 'personal' ? t('specialistInsurance.hasPersonal', 'Đã có bảo hiểm cá nhân') : option === 'none' ? t('specialistInsurance.noInsurance', 'Không bảo hiểm') : t('specialistInsurance.noChoice', 'Khách chưa chọn')}</span>
+                  <span className={`badge badge-${task.tone}`}>{task.label}</span>
+                </button>
+              </li>
+            })}
+          </ul>
+          {locked && <small className="text-muted">{t('specialistInsurance.selectHorseHint', 'Lưu hoặc hủy thay đổi trước khi chuyển ngựa.')}</small>}
+        </div>
+        <div className={s.body}>
+          {horse && <InsuranceEditor key={`${horse.horseId}-${JSON.stringify(horse.insurance)}`} b={b} horseId={horse.horseId} insurance={horse.insurance} onDone={onDone} onLock={setLocked} />}
+        </div>
       </div>
     </section>
   )
@@ -139,7 +156,7 @@ function InsuranceEditor({ b, horseId, insurance, onDone, onLock }: { b: Booking
       </p>
     )}
     {editable && <>
-      {!readOnly && optionConfirmed && value.option !== 'none' && <InsuranceInputs value={value} onChange={next => { setValue({ ...next, ...(before ? { reviewed: false } : { arranged: false }) }); setError('') }} onBusyChange={setUploading} onValidityChange={setDateValid} disabled={busy} freezeQuote={after} premium={before && value.option === 'assistance'} />}
+      {!readOnly && optionConfirmed && value.option !== 'none' && <InsuranceInputs value={value} onChange={next => { setValue({ ...next, ...(before ? { reviewed: false } : { arranged: false }) }); setError('') }} onBusyChange={setUploading} onValidityChange={setDateValid} disabled={busy} freezeQuote={after} lockDocuments={value.option === 'personal'} premium={before && value.option === 'assistance'} />}
       {optionConfirmed && value.option === 'none' && <p>{t('specialistInsurance.noInsuranceDesc', 'Khách chọn không bảo hiểm. Không cần báo giá hoặc hợp đồng.')}</p>}
       {error && <div className="alert alert-danger" role="alert">{error}</div>}
       {!readOnly && optionConfirmed && value.option !== 'none' && (before ? reviewProblem : policyProblem) && <p className="form-hint">{before ? reviewProblem : policyProblem}</p>}

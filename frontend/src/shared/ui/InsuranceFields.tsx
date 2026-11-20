@@ -131,12 +131,14 @@ export function InsuranceSummary({ insurance, phase = 'all' }: { insurance?: Par
   </div>
 }
 
-export function InsuranceInputs({ value, onChange, premium = false, disabled = false, freezeQuote = false, onBusyChange, onValidityChange }: {
+export function InsuranceInputs({ value, onChange, premium = false, disabled = false, freezeQuote = false, lockDocuments = false, onBusyChange, onValidityChange }: {
   value: HorseInsurance
   onChange: (v: HorseInsurance) => void
   premium?: boolean
   disabled?: boolean
   freezeQuote?: boolean
+  // Chứng từ do khách gửi: chỉ xem và tải xuống
+  lockDocuments?: boolean
   onBusyChange?: (busy: boolean) => void
   onValidityChange?: (valid: boolean) => void
 }) {
@@ -168,10 +170,15 @@ export function InsuranceInputs({ value, onChange, premium = false, disabled = f
       </>}
     </div>
     {!policyOnly && <label className="form-group">Ghi chú<textarea className="form-control" rows={3} value={value.note ?? ''} onChange={e => onChange({ ...value, note: e.target.value })} /></label>}
-    <InsuranceDocuments label={policyOnly ? 'Chứng từ hợp đồng' : quoteOnly ? 'Chứng từ báo giá' : 'Chứng từ bảo hiểm cá nhân'} urls={policyOnly ? value.policyDocuments : value.documents} names={value.documentNames} disabled={disabled}
-      onBusyChange={busy => { setUploading(busy); onBusyChange?.(busy) }}
-      onChange={(urls, names) => onChange({ ...value, [policyOnly ? 'policyDocuments' : 'documents']: urls, documentNames: names })} />
-    <small className="text-muted">Thay đổi và gỡ chứng từ có hiệu lực với hồ sơ khi lưu.</small>
+    {lockDocuments ? <>
+      <InsuranceDocuments label="Chứng từ bảo hiểm cá nhân (khách gửi)" urls={value.documents} names={value.documentNames} />
+      {!value.documents?.length && <small className="text-muted">Khách chưa gửi chứng từ bảo hiểm cá nhân.</small>}
+    </> : <>
+      <InsuranceDocuments label={policyOnly ? 'Chứng từ hợp đồng' : quoteOnly ? 'Chứng từ báo giá' : 'Chứng từ bảo hiểm cá nhân'} urls={policyOnly ? value.policyDocuments : value.documents} names={value.documentNames} disabled={disabled}
+        onBusyChange={busy => { setUploading(busy); onBusyChange?.(busy) }}
+        onChange={(urls, names) => onChange({ ...value, [policyOnly ? 'policyDocuments' : 'documents']: urls, documentNames: names })} />
+      <small className="text-muted">Thay đổi và gỡ chứng từ có hiệu lực với hồ sơ khi lưu.</small>
+    </>}
   </fieldset>
 }
 export function CustomerInsuranceFields({ value, option, onChange, onBusyChange }: { value?: HorseInsurance; option: string; onChange: (v: HorseInsurance) => void; onBusyChange?: (busy: boolean) => void }) {
