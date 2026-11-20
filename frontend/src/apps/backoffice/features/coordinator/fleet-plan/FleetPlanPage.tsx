@@ -203,6 +203,10 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
   const [manualStops, setManualStops] = useState<RestStop[]>(
     () => (b.route?.rests ?? []).filter(r => r.manual === true && findTransitStation(r.name)?.locationId != null)
   )
+  const [excludedSystemStops, setExcludedSystemStops] = useState<{
+    previewKey: string
+    stops: Array<Pick<RestStop, 'afterLeg' | 'name'>>
+  }>({ previewKey: '', stops: [] })
   const [corridors, setCorridors] = useState<BackendRouteResponse[]>([])
   const [selectedCorridorId, setSelectedCorridorId] = useState<number | ''>(b.routeId ?? '')
   // Mở lại phương án đã chốt: giữ tuyến và trạm dừng đã lưu, không tự thay bằng gợi ý cho tới khi điều phối tự đổi tuyến
@@ -321,6 +325,7 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
   const [previewAttempt, setPreviewAttempt] = useState(0)
   // Mỗi lần thử lại cũng là một yêu cầu mới
   const previewKey = previewRequest ? `${previewAttempt}|${JSON.stringify(previewRequest)}` : ''
+  const activeExcludedSystemStops = excludedSystemStops.previewKey === previewKey ? excludedSystemStops.stops : undefined
   const [previewResult, setPreviewResult] = useState<{ key: string; preview?: RoutePreviewResponse; error?: string; status?: number }>()
   const current = previewKey && previewResult?.key === previewKey ? previewResult : undefined
   const preview = current?.preview
@@ -349,8 +354,8 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
   }, [previewKey])
 
   const plan = useMemo(
-    () => (preview ? routePlanFromPreview(preview, b.origin.name, b.dest.name, manualStops.map(r => r.name)) : undefined),
-    [preview, b.origin.name, b.dest.name, manualStops]
+    () => (preview ? routePlanFromPreview(preview, b.origin.name, b.dest.name, manualStops.map(r => r.name), activeExcludedSystemStops) : undefined),
+    [preview, b.origin.name, b.dest.name, manualStops, activeExcludedSystemStops]
   )
   const route = plan ?? NO_ROUTE
   const previewRoad = useMemo(() => (preview ? roadFromPreview(preview) : null), [preview])
@@ -364,8 +369,15 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
   )
   const { legs } = route
   const borderEta = route.borderEta
+  const originalAfterLeg = (afterLeg: number) => {
+    let original = afterLeg
+    for (let i = 0; i < (activeExcludedSystemStops?.length ?? 0); i++) {
+      original = afterLeg + (activeExcludedSystemStops?.filter(stop => stop.afterLeg <= original).length ?? 0)
+    }
+    return original
+  }
   const systemStops = route.rests
-    .map((r, i) => ({ r, n: i + 1 }))
+    .map((r, i) => ({ r, n: i + 1, originalAfterLeg: originalAfterLeg(r.afterLeg) }))
     .filter(({ r }) => !manualStops.some(m => m.name === r.name))
 
   const { errors: routeErrors, warnings: routeWarnings } = plan
@@ -788,13 +800,13 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
           </div>
         ))}
 
-        {/* TRẠM HỆ THỐNG TỰ CHỌN (CHỈ ĐỌC) */}
+        {/* TRẠM HỆ THỐNG TỰ CHỌN */}
         {systemStops.length > 0 && (
           <>
             <h4 style={{ margin: '16px 0 8px', fontSize: '0.88rem', color: 'var(--navy)' }}>Chỗ nghỉ hệ thống tự thêm</h4>
             <ol className={s.stopList}>
-              {systemStops.map(({ r, n }) => (
-                <li key={n}>
+              {systemStops.map(({ r, n, originalAfterLeg }) => (
+                <li key={`${originalAfterLeg}:${r.name}`}>
                   <div className={s.stopItem} style={{ cursor: 'default' }}>
                     <span className={s.stopNum}>{n}</span>
                     <span className={s.stopName}>
@@ -805,6 +817,17 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
                       <i className="fa-regular fa-clock" /> {restLabel(r)}
                     </span>
                   </div>
+                  <button
+                    type="button"
+                    className={s.iconBtn}
+                    aria-label={`Bỏ chỗ nghỉ ${restTitle(r.name)}`}
+                    onClick={() => setExcludedSystemStops(previous => ({
+                      previewKey,
+                      stops: [...(previous.previewKey === previewKey ? previous.stops : []), { afterLeg: originalAfterLeg, name: r.name }],
+                    }))}
+                  >
+                    <i className="fa-solid fa-xmark" />
+                  </button>
                 </li>
               ))}
             </ol>
