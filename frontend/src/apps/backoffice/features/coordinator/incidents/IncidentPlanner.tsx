@@ -216,7 +216,7 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
             {waypoints.length > 0 && <div><p>Đã chọn {waypoints.length} điểm đi qua.</p><button type="button" className="btn btn-ghost btn-sm" onClick={() => setWaypoints(points => points.slice(0, -1))}>Bỏ điểm cuối</button><button type="button" className="btn btn-ghost btn-sm" onClick={() => setWaypoints([])}>Xóa các điểm</button></div>}
             <button type="button" className="btn btn-ghost btn-sm" disabled={loading} onClick={() => { clearRoadCache(); setRouteAttempt(attempt => attempt + 1) }}>Tìm lại đường bộ</button>
             {rerouteUnchanged && <p role="alert" className="im-note">Đường đang chọn trùng phương án bị trả về. Hãy chọn đường khác hoặc thêm điểm đi qua.</p>}
-            {!loading && !altChosen && <p role="alert" className="im-note">Chưa kết nối được dịch vụ đường bộ hoặc không tìm thấy tuyến. Đường thẳng chỉ để tham khảo; chưa thể trình duyệt.</p>}
+            {!loading && !altChosen && <p role="alert" className="im-note">Chưa kết nối được dịch vụ đường bộ hoặc không tìm thấy tuyến. Đường thẳng chỉ để tham khảo, chưa thể trình duyệt.</p>}
             <h4>Lộ trình thay thế tới {ahead[0] ? 'điểm kế tiếp' : 'điểm trả'}</h4>
             <div className="im-list" style={{ marginTop: 6 }}>
               {altList.length ? altList.map((r, idx) => (

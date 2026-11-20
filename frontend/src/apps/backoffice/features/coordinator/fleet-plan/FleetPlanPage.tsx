@@ -421,7 +421,7 @@ function Plan({ b, vehicles }: { b: Booking; vehicles: Vehicle[] }) {
         <div className="alert alert-info">
           <i className="fa-solid fa-circle-check" />
           <div>
-            <b>Bạn đang sửa phương án đã chốt</b> lúc {formatDateTime(b.plan.at)}. Bấm xác nhận để lưu thay đổi; phương án cũ
+            <b>Bạn đang sửa phương án đã chốt</b> lúc {formatDateTime(b.plan.at)}. Bấm xác nhận để lưu thay đổi, phương án cũ
             được giữ nếu bạn hủy sửa.
           </div>
         </div>
@@ -453,7 +453,7 @@ function Plan({ b, vehicles }: { b: Booking; vehicles: Vehicle[] }) {
           </span>
         </div>
         <div className="form-hint" style={{ marginBottom: 12 }}>
-          Ưu tiên xe đủ số ngăn cho ngựa; ngựa chọn khoang đơn mở rộng chiếm 2 ngăn. Xe có lịch chồng lên khoảng ngày của đơn này (gồm thời gian chuẩn bị và quay về trụ sở, kể cả chuyến đang chạy hoặc chưa xác nhận về) hoặc đang bảo dưỡng sẽ bị khóa; xe có đơn ở ngày khác vẫn chọn được.
+          Ưu tiên xe đủ số ngăn cho ngựa. Ngựa chọn khoang đơn mở rộng chiếm 2 ngăn. Xe có lịch chồng lên khoảng ngày của đơn này (gồm thời gian chuẩn bị và quay về trụ sở, kể cả chuyến đang chạy hoặc chưa xác nhận về) hoặc đang bảo dưỡng sẽ bị khóa. Xe có đơn ở ngày khác vẫn chọn được.
         </div>
 
         {trips.map((t, i) => {
@@ -677,7 +677,7 @@ function Plan({ b, vehicles }: { b: Booking; vehicles: Vehicle[] }) {
 
             {!suggestingCorridors && corridorSuggestions.length === 0 && (
               <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
-                Không có tuyến cố định phù hợp với tọa độ và cửa khẩu của đơn. Đang dùng tuyến đường xe tải trực tiếp.
+                Không có tuyến cố định nào khớp với đơn này, hệ thống tự tính đường xe tải và chỗ nghỉ.
               </div>
             )}
 
@@ -708,7 +708,7 @@ function Plan({ b, vehicles }: { b: Booking; vehicles: Vehicle[] }) {
         )}
 
         {/* TRẠM ĐIỀU PHỐI CHỌN TAY */}
-        <h4 style={{ margin: '0 0 8px', fontSize: '0.88rem', color: 'var(--navy)' }}>Trạm điều phối chọn tay</h4>
+        <h4 style={{ margin: '0 0 8px', fontSize: '0.88rem', color: 'var(--navy)' }}>Trạm bạn chọn</h4>
         {manualStops.length ? (
           <ol className={s.stopList}>
             {manualStops.map((r, i) => {
@@ -743,7 +743,7 @@ function Plan({ b, vehicles }: { b: Booking; vehicles: Vehicle[] }) {
           </ol>
         ) : (
           <div className={s.stopEmpty}>
-            <i className="fa-solid fa-mug-hot" /> Chưa có trạm dừng nghỉ nào.
+            <i className="fa-solid fa-mug-hot" /> {systemStops.length ? `Bạn chưa chọn trạm nào. Hệ thống đã tự thêm ${systemStops.length} chỗ nghỉ ở mục bên dưới.` : 'Chưa có trạm nghỉ nào.'}
           </div>
         )}
         {unusableStops.map(r => (

@@ -79,3 +79,21 @@ test('navigation warns before discarding unsaved notes', async ({ page }) => {
   await expect(page).toHaveURL(/legal-review-test/)
   await expect(page.locator('input[aria-label^="Ghi"]').first()).toHaveValue('Keep this draft')
 })
+
+for (const width of [1440, 1024, 768]) {
+  test(`nút lưu và hủy không nhảy chỗ khi có thay đổi chưa lưu (${width}px)`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 })
+    await open(page)
+    const where = async () => Promise.all(['Hủy thay đổi', 'Lưu cập nhật giấy tờ'].map(async name => {
+      const b = (await page.getByRole('button', { name, exact: true }).boundingBox())!
+      return [Math.round(b.x), Math.round(b.y)]
+    }))
+    const status = page.getByRole('status')
+    const before = await where()
+    const statusTop = (await status.boundingBox())!.y
+    await page.locator('input[aria-label^="Ghi"]').first().fill('Updated')
+    await expect(status).toContainText('Có thay đổi chưa lưu')
+    expect(await where()).toEqual(before)
+    expect((await status.boundingBox())!.y).toBe(statusTop)
+  })
+}

@@ -124,7 +124,7 @@ export default function ReportsPage() {
             </table>
           </div>
         </div>
-        <p className={s.note}>Doanh thu công ty = doanh thu vận chuyển (tách bảo hiểm thu hộ) − thực chi sự cố có chứng từ. Lợi nhuận = doanh thu công ty − giá vốn vận hành gốc. Chi phí sự cố được tính một lần từ chứng từ; chi phí ước tính chưa được ghi nhận. Số mẫu theo biểu giá mẫu.</p>
+        <p className={s.note}>Doanh thu công ty = doanh thu vận chuyển (tách bảo hiểm thu hộ) − thực chi sự cố có chứng từ. Lợi nhuận = doanh thu công ty − giá vốn vận hành gốc. Chi phí sự cố được tính một lần từ chứng từ, chi phí ước tính chưa được ghi nhận. Số mẫu theo biểu giá mẫu.</p>
       </div>
     </div>
   )

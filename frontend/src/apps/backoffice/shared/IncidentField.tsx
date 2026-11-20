@@ -173,7 +173,7 @@ export function IncidentPanel({ b, inc, role, run }: { b: Booking; inc: Incident
               {role === 'escort' && !inc.fitConfirmedAt && !health && <button className={`btn btn-primary ${s.big}`} onClick={() => run(() => bookingsApi.confirmFit(b.id, inc.id, session!.name), 'Đã xác nhận ngựa đủ sức')}>Xác nhận ngựa đủ sức đi tiếp</button>}
             </Panel>
           )}
-          {health && leaveAt && !restReady && <p role="status">Nghỉ tại trạm SOS đến {formatDateTime(leaveAt)}; còn {Math.ceil((leaveAt - now) / 60000)} phút.</p>}
+          {health && leaveAt && !restReady && <p role="status">Nghỉ tại trạm SOS đến {formatDateTime(leaveAt)}, còn {Math.ceil((leaveAt - now) / 60000)} phút.</p>}
           {role === 'driver' && (
             <button className={`btn btn-primary ${s.big}`} disabled={needFit && !inc.fitConfirmedAt} onClick={() => restReady ? run(() => bookingsApi.resumeJourney(b.id, inc.id, session!.name), 'Tiếp tục theo phương án đã duyệt') : setAskEarly(true)}><i className="fa-solid fa-truck-fast" /> Tiếp tục theo phương án đã duyệt</button>
           )}

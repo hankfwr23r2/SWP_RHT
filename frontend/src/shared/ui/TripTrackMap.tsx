@@ -79,7 +79,8 @@ export function TripTrackMap({ b, trips = [], height, plain }: Props) {
     const gate = findGate(b.gate)
     if (gate) L.marker(ll(gate), { icon: pin('tt-g', '⚑') }).bindTooltip(`Cửa khẩu ${gate.name}`, { direction: 'top', offset: [0, -12] }).addTo(g)
     ;(b.route?.rests ?? []).forEach(r => {
-      const s = findTransitStation(r.name)
+      // Tọa độ lưu lúc chốt (cả nghỉ dọc đường); đơn cũ chưa lưu tọa độ thì tìm theo tên trạm
+      const s = r.lat != null && r.lng != null && validPoint({ lat: r.lat, lng: r.lng }) ? { lat: r.lat, lng: r.lng } : findTransitStation(r.name)
       if (!s) return
       L.marker(ll(s), { icon: L.divIcon({ className: 'tt-icon', html: `<span class="tt-st ${passed.has(r.name) ? 'tt-done' : ''}"></span>`, iconSize: [34, 34], iconAnchor: [17, 17] }) }).bindTooltip(`${r.name} · ${restLabel(r)}${passed.has(r.name) ? ' (đã qua)' : ''}`, { direction: 'top', offset: [0, -12] }).addTo(g)
     })

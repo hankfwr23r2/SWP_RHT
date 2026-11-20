@@ -59,7 +59,7 @@ export function CancelTripModal({ b, initialReason = '', onClose, onDone }: {
       </div>
       <div className="alert alert-warning">
         <i className="fa-solid fa-circle-info" />
-        <div>Khách, tài xế, hộ tống và điều phối viên được báo ngay. Nếu kíp xe đã nhận ngựa, đơn sang "Chờ trả ngựa": tài xế trả ngựa và hồ sơ gốc tại điểm đón, chụp biên bản có chữ ký thì đơn mới đóng, sau đó xe về trụ sở. Khoản hoàn được ghi nhận trong hệ thống; nhà xe chuyển khoản trả khách bên ngoài.</div>
+        <div>Khách, tài xế, hộ tống và điều phối viên được báo ngay. Nếu kíp xe đã nhận ngựa, đơn sang "Chờ trả ngựa": tài xế trả ngựa và hồ sơ gốc tại điểm đón, chụp biên bản có chữ ký thì đơn mới đóng, sau đó xe về trụ sở. Khoản hoàn được ghi nhận trong hệ thống, nhà xe chuyển khoản trả khách bên ngoài.</div>
       </div>
       <div className="form-group" style={{ margin: 0 }}>
         <label htmlFor="ct-reason" className="required">Lý do hủy (khách xem được)</label>

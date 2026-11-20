@@ -25,6 +25,7 @@ import com.example.racehorse_transport.service.OperationalLogService;
 import com.example.racehorse_transport.service.StaffNotificationService;
 import com.example.racehorse_transport.util.BookingDetailsJson;
 import com.example.racehorse_transport.util.BookingHistory;
+import com.example.racehorse_transport.util.BookingTripRules;
 import com.example.racehorse_transport.service.BookingVisibilityService;
 import com.example.racehorse_transport.util.PaymentAmountLimits;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -295,8 +296,10 @@ public class DeliveryServiceImpl implements DeliveryService {
     @Override
     public void completeTrip(Booking booking, BookingDetailsPayloadDto payload, VehicleTripDto trip,
                       String actor, String photo, long time) {
-        if (payload.getTrips().stream().allMatch(t -> t.getRun() != null
-                && t.getRun().get("deliveredAt") != null)) {
+        // Chỉ xét các xe còn chở ngựa: xe bị loại hết ngựa ở điểm đón không chạy nên không bao giờ "giao"
+        if (payload.getTrips().stream()
+                .filter(t -> !BookingTripRules.horsesOnTrip(payload, t).isEmpty())
+                .allMatch(t -> t.getRun() != null && t.getRun().get("deliveredAt") != null)) {
             markDelivered(booking);
         }
         locations.recordTripDelivery(booking, payload, trip, actor, photo, time);

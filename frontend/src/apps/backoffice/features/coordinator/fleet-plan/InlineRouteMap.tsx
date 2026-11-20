@@ -213,11 +213,7 @@ export function InlineRouteMap({ origin, dest, gate, rests, activeRoad: road, lo
         <span style={{ color: 'var(--muted)' }}>|</span>
         <span>
           <i className="fa-solid fa-mug-hot" style={{ color: '#059669', marginRight: 5 }} />
-          {manualCount != null && rests.length > manualCount ? (
-            <><b>{manualCount}</b> chọn tay · <b>{rests.length - manualCount}</b> hệ thống thêm</>
-          ) : (
-            <><b>{rests.length}</b> trạm dừng nghỉ</>
-          )}
+          <b>{rests.length}</b> trạm nghỉ{manualCount ? <> · <b>{manualCount}</b> do bạn chọn</> : null}
         </span>
       </div>
       <div
