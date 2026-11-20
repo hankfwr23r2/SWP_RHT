@@ -33,7 +33,13 @@ function cancelMoneyText(b: CustomerBookingView): string {
   return 'Tiền cọc không được hoàn theo chính sách hủy đơn.'
 }
 
+// Người nhận không tới: kíp xe gửi ngựa tại chuồng, khách tự liên hệ chuồng để tới nhận và trả tiền chuồng
+const AFTER_DELIVERY: CustomerBookingView['status'][] = ['delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue']
+
 function baseStep(b: CustomerBookingView, now: number): NextStep {
+  const stabled = AFTER_DELIVERY.includes(b.status) ? b.trips?.find(t => t.run?.stabled)?.run?.stabled : undefined
+  if (stabled) return { tone: 'warning', icon: 'fa-warehouse', title: 'Ngựa đang gửi tại chuồng',
+    text: `Người nhận chưa tới nhận ngựa nên kíp xe đã gửi ngựa tại chuồng ${stabled.name}, địa chỉ ${stabled.address}, số điện thoại ${stabled.phone}. Vui lòng liên hệ chuồng để tới nhận ngựa. Tiền chuồng thanh toán trực tiếp với chuồng khi nhận ngựa.`, actionNeeded: false }
   switch (b.status) {
     case 'schedule_change_required':
       return { tone: 'warning', icon: 'fa-calendar-days', title: 'Cần xác nhận lại lịch', text: 'Ngày khởi hành dự kiến đã qua, nhưng đơn chưa hoàn tất chuẩn bị chuyến. Bạn có thể chọn ngày mới, hủy yêu cầu hoặc nhờ quản lý liên hệ hỗ trợ.', actionNeeded: true }

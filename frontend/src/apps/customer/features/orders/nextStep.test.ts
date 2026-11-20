@@ -42,3 +42,19 @@ describe('đặt cọc sát hạn', () => {
     expect(nextStep({ ...booking, depositConfirmationUntil: undefined }, deadline).title).toBe('Đã hết hạn đặt cọc')
   })
 })
+
+describe('ngựa gửi tại chuồng vì người nhận không tới', () => {
+  const stabled = {
+    ...booking, status: 'delivered_pending_settlement' as const,
+    trips: [{ tripId: 'T1', vehicleId: 'VH-001', driverId: 'DR-01', escortId: 'ES-01', horseIds: ['H1'],
+      run: { checkpoints: [], welfare: [], deliveredAt: deadline, stabled: { name: 'Trại ngựa Đức Hòa', address: 'Ấp 3, Đức Hòa, Long An', phone: '0901234567', photo: 'x.jpg', at: deadline, by: 'driver01' } } }],
+  } as unknown as CustomerBookingView
+  it('báo khách tên, địa chỉ, số điện thoại chuồng để tới nhận ngựa, không nói là đã giao cho người nhận', () => {
+    const step = nextStep(stabled, deadline)
+    expect(step.title).toBe('Ngựa đang gửi tại chuồng')
+    expect(step.text).toContain('Trại ngựa Đức Hòa')
+    expect(step.text).toContain('Ấp 3, Đức Hòa, Long An')
+    expect(step.text).toContain('0901234567')
+    expect(step.text).not.toContain('bàn giao cho người nhận')
+  })
+})
