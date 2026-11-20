@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { insuranceDepartureProblem } from '@shared/types/insurance'
 import { useAuth } from '@shared/auth/AuthContext'
 import { openIncidentOf, handoverTimeoutOf, currentCheckpoint, manifestDocuments, pendingDeparture, spotLabel } from '@shared/lib/booking'
-import { formatDateTime, formatVND } from '@shared/lib/format'
+import { formatDateTime } from '@shared/lib/format'
 import { normalizeMicrochip } from '@shared/lib/microchip'
 import { bookingsApi } from '@shared/services/bookings'
 import type { Booking, BookingHorse, Checkpoint, VehicleTrip } from '@shared/types/booking'
@@ -14,7 +14,7 @@ import { useNow } from '@shared/ui/useNow'
 import { HorseDocsModal } from '../../shared/HorseDocsModal'
 import { Checklist, Panel } from '../../shared/field'
 import { HomeReturnPanel } from '../../shared/HomeReturnPanel'
-import { ExpenseForm, IncidentPanel, SosPanel, SubmitExpensesPanel } from '../../shared/IncidentField'
+import { IncidentPanel, SosPanel, SubmitExpensesPanel } from '../../shared/IncidentField'
 import s from '../../shared/field.module.css'
 
 type Run = (fn: () => Promise<unknown>, msg: string) => Promise<void>
@@ -328,14 +328,7 @@ function DeliveryStep({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Check
       <button className="btn btn-outline" disabled={!photo || photo === cp.handoverPhoto} onClick={() => run(() => bookingsApi.uploadHandover(b.id, t.tripId, session!.name, cp.id, photo!), 'Đã tải ảnh biên bản')}><i className="fa-solid fa-upload" /> Tải ảnh biên bản</button>
       </Panel>
       <button className={`btn btn-primary ${s.big}`} disabled={!ready} onClick={() => run(() => bookingsApi.completeDelivery(b.id, t.tripId, session!.name), 'Đã giao ngựa. Khách nhận thông báo')}><i className="fa-solid fa-flag-checkered" /> Hoàn tất giao ngựa</button>
-      {timeout ? (
-        <Panel title="Đã báo quá hạn bàn giao" icon="fa-clock" tone="warn">
-          <p>{timeout.note || 'Người nhận chưa tới nhận ngựa.'} Khi người nhận tới, làm các bước trên rồi bấm "Hoàn tất giao ngựa", sự cố tự đóng.</p>
-          <p>Đã ghi {formatVND(timeout.expenses.reduce((n, e) => n + e.amount, 0))} chi phí. Chụp hóa đơn lưu chuồng để ghi nhận chi phí nội bộ công ty.</p>
-          <ul className={s.checklist}>{timeout.expenses.map(e => <li key={e.id} style={{ padding: '6px 0', fontSize: '0.9rem' }}>{e.label}: <b>{formatVND(e.amount)}</b></li>)}</ul>
-          <ExpenseForm b={b} inc={timeout} run={run} />
-        </Panel>
-      ) : (
+      {!timeout && (
         <button type="button" className="btn btn-outline btn-full" style={{ marginTop: 10, borderColor: 'var(--orange)', color: 'var(--orange)' }} onClick={() => setShowTimeout(true)}><i className="fa-solid fa-clock-rotate-left" /> Quá hạn 2 giờ: Báo sự cố không nhận ngựa</button>
       )}
       {showTimeout && <TimeoutModal b={b} t={t} waited={cp.arrivedAt ? Math.max(0, Math.floor((now - cp.arrivedAt) / 60000)) : 0} onClose={() => setShowTimeout(false)} run={run} />}
