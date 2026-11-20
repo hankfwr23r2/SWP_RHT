@@ -5,6 +5,7 @@ import com.example.racehorse_transport.dto.coordinator.VehicleTripDto;
 import com.example.racehorse_transport.dto.fleet.CrewResponseDto;
 import com.example.racehorse_transport.dto.fleet.VehicleRequestDto;
 import com.example.racehorse_transport.dto.fleet.VehicleResponseDto;
+import com.example.racehorse_transport.dto.fleet.VehicleScheduleDto;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.BookingAssignment;
 import com.example.racehorse_transport.entity.BookingVehicle;
@@ -19,14 +20,28 @@ import com.example.racehorse_transport.repository.UserRepository;
 import com.example.racehorse_transport.repository.VehicleRepository;
 import com.example.racehorse_transport.service.FleetService;
 import com.example.racehorse_transport.util.BookingDetailsJson;
+import com.example.racehorse_transport.util.BookingSchedulePolicy;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+/**
+ * Quy tắc giữ lịch xe và kíp (một quy tắc cho danh sách chọn và lúc lưu):
+ * <ol>
+ *   <li>Mỗi đơn đã gán tài nguyên giữ nó trong khoảng quanh ngày đi D: nội địa [D-1, D+2], quốc tế [D-2, D+4].</li>
+ *   <li>Khoảng giữ không đổi dù đơn chưa chạy hay đang chạy.</li>
+ *   <li>Đã rời trụ sở mà chưa xác nhận về: khoảng giữ kéo tới giờ về dự kiến, và không bao giờ kết thúc trước
+ *       "hiện tại + {@link #NOT_BACK_BUFFER}" cho tới khi xác nhận về (Single HQ).</li>
+ *   <li>Đơn mới chỉ bị khóa khi khoảng giữ của nó chồng lên một khoảng giữ khác. Có đơn ở ngày khác vẫn nhận được.</li>
+ * </ol>
+ * Rủi ro về trễ không bị chặn trước; về trễ thật thì cờ "Về trễ" báo điều phối xử lý.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -39,6 +54,14 @@ public class FleetServiceImpl implements FleetService {
     private final BookingAssignmentRepository bookingAssignmentRepository;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+            .withZone(BookingSchedulePolicy.VIETNAM);
+    private static final DateTimeFormatter DAY_TIME = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy")
+            .withZone(BookingSchedulePolicy.VIETNAM);
+
+    // Tài nguyên chưa xác nhận về trụ sở thì không nhận đơn đi trước "hiện tại + khoảng này"
+    private static final Duration NOT_BACK_BUFFER = Duration.ofDays(1);
 
     // Danh sách các trạng thái đơn hàng đang chiếm dụng tài nguyên xe và nhân sự
     private static final Set<String> HOLDING_STATUSES = Set.of(
@@ -57,6 +80,98 @@ public class FleetServiceImpl implements FleetService {
             "pending_emergency_approval",
             "emergency_plan_active");
 
+    // Đơn đang thực tế lăn bánh ngoài đường: tài nguyên đã rời trụ sở
+    private static final Set<String> ACTIVE_ROAD_STATUSES = Set.of(
+            "en_route_to_pickup", "pickup_failed", "returning_horses", "in_transit", "incident_reported",
+            "pending_emergency_approval", "emergency_plan_active", "arrived", "handover_timeout",
+            "returning_to_hq", "delivered_pending_settlement");
+
+    /** Khoảng thời gian giữ tài nguyên. */
+    private record Window(Instant start, Instant end) {
+        boolean overlaps(Window other) {
+            return !end.isBefore(other.start) && !start.isAfter(other.end);
+        }
+    }
+
+    /**
+     * Một khoảng giữ tài nguyên của một đơn.
+     * away = tài nguyên đã rời trụ sở, chưa xác nhận về; returning = đã giao, đang về; overdue = đã quá giờ dự kiến.
+     */
+    private record Hold(Booking booking, Window window, boolean away, boolean returning, Long eta, boolean overdue) { }
+
+    private static boolean isInternational(String tripType) {
+        return "international".equalsIgnoreCase(tripType);
+    }
+
+    private static Window holdWindow(Instant depart, String tripType) {
+        boolean inter = isInternational(tripType);
+        return new Window(depart.minus(inter ? 2 : 1, ChronoUnit.DAYS), depart.plus(inter ? 4 : 2, ChronoUnit.DAYS));
+    }
+
+    private static Instant departOf(Booking booking) {
+        return booking.getDepartureDate() != null ? booking.getDepartureDate() : booking.getBookingDate();
+    }
+
+    private static Window holdWindow(Booking booking) {
+        Instant depart = departOf(booking);
+        return depart == null ? null : holdWindow(depart, booking.getBookingType());
+    }
+
+    private static String tripTag(Booking booking) {
+        return isInternational(booking.getBookingType()) ? "quốc tế" : "nội địa";
+    }
+
+    private static String statusOf(Booking booking) {
+        return booking.getStatus() == null ? "" : booking.getStatus().toLowerCase(Locale.ROOT);
+    }
+
+    private static Hold plannedHold(Booking booking, Window window) {
+        return new Hold(booking, window, false, false, null, false);
+    }
+
+    // Đã rời trụ sở, chưa xác nhận về: theo kế hoạch (hoặc giờ về dự kiến nếu muộn hơn),
+    // không kết thúc trước "hiện tại + NOT_BACK_BUFFER" cho tới khi xác nhận về.
+    private static Hold notBackHold(Booking booking, boolean returning, Long eta, Instant now) {
+        Window planned = holdWindow(booking);
+        Instant start = planned != null && planned.start().isBefore(now) ? planned.start() : now;
+        // Mốc về dự kiến: muộn nhất giữa cuối khoảng kế hoạch và giờ về dự kiến (nếu có)
+        Instant expected = planned != null ? planned.end() : null;
+        if (eta != null && (expected == null || Instant.ofEpochMilli(eta).isAfter(expected))) {
+            expected = Instant.ofEpochMilli(eta);
+        }
+        boolean overdue = expected != null && now.isAfter(expected);
+        Instant floor = now.plus(NOT_BACK_BUFFER);
+        Instant end = expected == null || floor.isAfter(expected) ? floor : expected;
+        return new Hold(booking, new Window(start, end), true, returning, eta, overdue);
+    }
+
+    // Câu lý do dùng chung cho thẻ chọn và lỗi khi lưu, để người dùng chỉ thấy một cách diễn đạt
+    private static String holdText(Hold hold) {
+        Booking b = hold.booking();
+        if (!hold.away()) {
+            return "Trùng lịch với đơn " + b.getCode() + " (" + tripTag(b) + ", khởi hành "
+                    + DAY.format(departOf(b)) + ", bận tới " + DAY.format(hold.window().end()) + ")";
+        }
+        String what = hold.returning()
+                ? "Đang về trụ sở từ đơn " + b.getCode()
+                        + (hold.eta() != null ? " (dự kiến " + DAY_TIME.format(Instant.ofEpochMilli(hold.eta())) + ")" : "")
+                : "Đang đi đơn " + b.getCode() + " (" + tripTag(b) + ")";
+        return what + (hold.overdue() ? ", đã quá giờ dự kiến về" : "")
+                + ", bận tới " + DAY.format(hold.window().end());
+    }
+
+    private static Hold firstConflict(List<Hold> holds, Window wanted) {
+        if (holds == null) return null;
+        return holds.stream()
+                .filter(h -> h.window().overlaps(wanted))
+                .min(Comparator.comparing((Hold h) -> h.window().start()))
+                .orElse(null);
+    }
+
+    private static Hold awayOf(List<Hold> holds) {
+        return holds == null ? null : holds.stream().filter(Hold::away).findFirst().orElse(null);
+    }
+
     private boolean isBusyStatus(String status) {
         if (status == null || status.isBlank()) return false;
         String s = status.toUpperCase(Locale.ROOT).replace("_", "").replace(" ", "").replace("-", "");
@@ -69,95 +184,195 @@ public class FleetServiceImpl implements FleetService {
         return "MAINTENANCE".equals(s) || "UNAVAILABLE".equals(s);
     }
 
+    // Không truyền ngày: trạng thái hiện tại của từng xe cho trang Đội xe.
+    // available = sẵn sàng hẳn (ở trụ sở, chưa nhận đơn nào); upcoming liệt kê đơn đã nhận chưa lăn bánh.
     @Override
     public List<VehicleResponseDto> getAllVehicles() {
-        List<Booking> holdingBookings = getHoldingBookings();
-        Set<Integer> busyVehicleIds = new HashSet<>(unreturnedVehicleBookings().keySet());
-        for (Booking b : holdingBookings) {
-            List<BookingVehicle> bvs = bookingVehicleRepository.findByBookingID_Id(b.getId());
-            for (BookingVehicle bv : bvs) {
-                if (bv.getVehicleID() != null && bv.getVehicleID().getId() != null) {
-                    busyVehicleIds.add(bv.getVehicleID().getId());
-                }
-            }
-        }
+        Map<Integer, List<Hold>> holds = vehicleHolds(null);
 
         return vehicleRepository.findAll().stream().map(v -> {
             VehicleResponseDto res = mapToVehicleResponse(v);
-            if (busyVehicleIds.contains(v.getId()) || isBusyStatus(v.getStatus())) {
-                res.setStatus("BUSY");
+            List<Hold> held = holds.get(v.getId());
+            List<VehicleScheduleDto> upcoming = upcomingOf(held);
+            res.setUpcoming(upcoming);
+            Hold away = awayOf(held);
+            applyAway(res, away);
+            if (isMaintenanceStatus(v.getStatus())) {
+                res.setAvailable(false);
+                res.setBusyReason("Xe đang bảo dưỡng định kỳ");
+            } else if (away != null) {
+                res.setAvailable(false);
+                res.setBusyReason(holdText(away));
+                res.setBusyBookingCode(away.booking().getCode());
+                res.setBusyUntil(away.window().end().toEpochMilli());
+            } else if (isBusyStatus(v.getStatus())) {
                 res.setAvailable(false);
                 res.setBusyReason("Xe đang được gán cho chuyến đi");
+            } else if (!upcoming.isEmpty()) {
+                VehicleScheduleDto next = upcoming.getFirst();
+                res.setAvailable(false);
+                res.setBusyReason("Đã nhận đơn " + next.getBookingCode() + " (khởi hành "
+                        + DAY.format(Instant.ofEpochMilli(next.getDepartAt())) + ")");
+                res.setBusyBookingCode(next.getBookingCode());
+                res.setBusyUntil(next.getBusyUntil());
+            } else {
+                res.setAvailable(true);
             }
             return res;
         }).toList();
     }
 
+    // Có ngày đi: xe nào chọn được cho đơn đó. Đơn đang xếp (bookingRef) không tự khóa xe của chính nó.
     @Override
-    public List<VehicleResponseDto> getAvailableVehicles(Instant departDate, String tripType) {
-        Instant newDepart = departDate != null ? departDate : Instant.now();
-        boolean newIsInter = "international".equalsIgnoreCase(tripType);
-        int newDaysBefore = newIsInter ? 2 : 1;
-        int newDaysAfter = newIsInter ? 4 : 2;
-        Instant newStart = newDepart.minus(newDaysBefore, ChronoUnit.DAYS);
-        Instant newEnd = newDepart.plus(newDaysAfter, ChronoUnit.DAYS);
+    public List<VehicleResponseDto> getAvailableVehicles(Instant departDate, String tripType, String bookingRef) {
+        Integer excludeBookingId = resolveBookingId(bookingRef);
+        Window wanted = holdWindow(departDate != null ? departDate : Instant.now(), tripType);
+        Map<Integer, List<Hold>> holds = vehicleHolds(excludeBookingId);
 
-        List<Vehicle> allVehicles = vehicleRepository.findAll();
-        List<Booking> holdingBookings = getHoldingBookings();
-
-        // Bản đồ: VehicleID -> Lý do bận
-        Map<Integer, String> busyMap = new HashMap<>();
-        unreturnedVehicleBookings().forEach((vehicleId, booking) -> busyMap.put(vehicleId,
-                "Chưa xác nhận về trụ sở từ đơn " + booking.getCode()));
-
-        for (Booking booking : holdingBookings) {
-            Instant bookingDepart = booking.getDepartureDate() != null ? booking.getDepartureDate()
-                    : booking.getBookingDate();
-            if (bookingDepart == null)
-                continue;
-
-            // Tính khoảng đệm giữ xe khứ hồi về trụ sở VN dựa theo chính đơn hàng đang giữ
-            // xe
-            boolean existingIsInter = booking.getBookingType() != null
-                    && booking.getBookingType().equalsIgnoreCase("international");
-            int existingDaysBefore = existingIsInter ? 2 : 1;
-            int existingDaysAfter = existingIsInter ? 4 : 2;
-
-            Instant busyStart = bookingDepart.minus(existingDaysBefore, ChronoUnit.DAYS);
-            Instant busyEnd = bookingDepart.plus(existingDaysAfter, ChronoUnit.DAYS);
-
-            // Kiểm tra hai khoảng thời gian có giao nhau (overlap) hay không
-            if (!newEnd.isBefore(busyStart) && !newStart.isAfter(busyEnd)) {
-                List<BookingVehicle> bvs = bookingVehicleRepository.findByBookingID_Id(booking.getId());
-                for (BookingVehicle bv : bvs) {
-                    if (bv.getVehicleID() != null) {
-                        String tripTag = existingIsInter ? "quốc tế" : "nội địa";
-                        busyMap.putIfAbsent(bv.getVehicleID().getId(),
-                                "Đang chạy đơn " + booking.getCode() + " (" + tripTag
-                                        + ", dự kiến về bãi: " + busyEnd + ")");
-                    }
-                }
-            }
-        }
-
-        return allVehicles.stream().map(v -> {
+        return vehicleRepository.findAll().stream().map(v -> {
             VehicleResponseDto res = mapToVehicleResponse(v);
+            List<Hold> held = holds.get(v.getId());
+            res.setUpcoming(upcomingOf(held));
+            applyAway(res, awayOf(held)); // chỉ để hiển thị "đang đi đơn / đang về"
+            Hold conflict = firstConflict(held, wanted);
             if (isMaintenanceStatus(v.getStatus())) {
                 res.setAvailable(false);
                 res.setBusyReason("Xe đang bảo dưỡng định kỳ");
             } else if (isBusyStatus(v.getStatus())) {
-                res.setStatus("BUSY");
                 res.setAvailable(false);
                 res.setBusyReason("Xe đang được gán cho chuyến đi");
-            } else if (busyMap.containsKey(v.getId())) {
+            } else if (conflict != null) {
                 res.setAvailable(false);
-                res.setBusyReason(busyMap.get(v.getId()));
+                res.setBusyReason(holdText(conflict));
+                res.setBusyBookingCode(conflict.booking().getCode());
+                res.setBusyUntil(conflict.window().end().toEpochMilli());
             } else {
                 res.setAvailable(true);
-                res.setBusyReason(null);
             }
             return res;
         }).toList();
+    }
+
+    private void applyAway(VehicleResponseDto res, Hold away) {
+        if (away == null) return;
+        res.setOnTrip(true);
+        res.setOnTripBookingCode(away.booking().getCode());
+        res.setReturnEta(away.returning() ? away.eta() : null);
+    }
+
+    // Đơn đã nhận xe nhưng chưa lăn bánh, theo ngày đi tăng dần
+    private List<VehicleScheduleDto> upcomingOf(List<Hold> holds) {
+        if (holds == null) return new ArrayList<>();
+        return holds.stream()
+                .filter(h -> !h.away() && !ACTIVE_ROAD_STATUSES.contains(statusOf(h.booking())))
+                .sorted(Comparator.comparing((Hold h) -> h.window().start()))
+                .map(h -> VehicleScheduleDto.builder()
+                        .bookingCode(h.booking().getCode())
+                        .tripType(isInternational(h.booking().getBookingType()) ? "international" : "domestic")
+                        .departAt(departOf(h.booking()).toEpochMilli())
+                        .busyFrom(h.window().start().toEpochMilli())
+                        .busyUntil(h.window().end().toEpochMilli())
+                        .build())
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+    }
+
+    // VehicleID -> các khoảng giữ xe
+    private Map<Integer, List<Hold>> vehicleHolds(Integer excludeBookingId) {
+        Instant now = Instant.now();
+        Map<Integer, List<Hold>> holds = new HashMap<>();
+        for (Booking booking : bookingRepository.findAll()) {
+            if (Objects.equals(booking.getId(), excludeBookingId)) continue;
+            String status = statusOf(booking);
+            boolean onRoad = ACTIVE_ROAD_STATUSES.contains(status);
+
+            // Xe của đơn đã rời trụ sở và chưa xác nhận về (kể cả đơn đã đóng tài chính)
+            Set<Integer> notBack = new HashSet<>();
+            BookingDetailsPayloadDto payload = BookingDetailsJson.read(objectMapper, booking);
+            if (payload.getTrips() != null) {
+                for (VehicleTripDto trip : payload.getTrips()) {
+                    if (trip.getVehicleId() == null) continue;
+                    Map<String, Object> hr = trip.getHomeReturn();
+                    boolean returning = hr != null;
+                    if (returning && hr.get("backAt") != null) continue; // chuyến này đã về trụ sở
+                    if (!returning && !onRoad) continue; // chưa lăn bánh: giữ theo kế hoạch bên dưới
+                    Integer vehicleId = resolveTripVehicleId(trip.getVehicleId());
+                    if (vehicleId == null || !notBack.add(vehicleId)) continue;
+                    holds.computeIfAbsent(vehicleId, k -> new ArrayList<>())
+                            .add(notBackHold(booking, returning, returning ? epochOf(hr.get("eta")) : null, now));
+                }
+            }
+
+            // Xe được gán cho đơn còn giữ xe: giữ theo khoảng kế hoạch
+            Window window = HOLDING_STATUSES.contains(status) ? holdWindow(booking) : null;
+            if (window == null) continue;
+            for (BookingVehicle bv : bookingVehicleRepository.findByBookingID_Id(booking.getId())) {
+                if (bv.getVehicleID() == null || bv.getVehicleID().getId() == null) continue;
+                Integer vehicleId = bv.getVehicleID().getId();
+                if (notBack.contains(vehicleId)) continue;
+                holds.computeIfAbsent(vehicleId, k -> new ArrayList<>()).add(plannedHold(booking, window));
+            }
+        }
+        return holds;
+    }
+
+    // StaffID -> các khoảng giữ nhân sự, cùng quy tắc với xe
+    private Map<Integer, List<Hold>> crewHolds(List<Staff> staffList, Integer excludeBookingId) {
+        Instant now = Instant.now();
+        Map<Integer, List<Hold>> holds = new HashMap<>();
+        for (Booking booking : bookingRepository.findAll()) {
+            if (Objects.equals(booking.getId(), excludeBookingId)) continue;
+            String status = statusOf(booking);
+            boolean onRoad = ACTIVE_ROAD_STATUSES.contains(status);
+            Window window = HOLDING_STATUSES.contains(status) ? holdWindow(booking) : null;
+            BookingDetailsPayloadDto payload = BookingDetailsJson.read(objectMapper, booking);
+            List<BookingAssignment> assignments = null;
+
+            for (Staff staff : staffList) {
+                VehicleTripDto trip = notBackTripOf(payload, staff, onRoad);
+                if (trip != null) {
+                    Map<String, Object> hr = trip.getHomeReturn();
+                    holds.computeIfAbsent(staff.getId(), k -> new ArrayList<>())
+                            .add(notBackHold(booking, hr != null, hr != null ? epochOf(hr.get("eta")) : null, now));
+                    continue;
+                }
+                if (!onRoad && window == null) continue;
+                if (assignments == null) assignments = bookingAssignmentRepository.findByBookingID_Id(booking.getId());
+                if (!isStaffAssignedToBooking(staff, assignments, payload)) continue;
+                holds.computeIfAbsent(staff.getId(), k -> new ArrayList<>())
+                        .add(onRoad ? notBackHold(booking, false, null, now) : plannedHold(booking, window));
+            }
+        }
+        return holds;
+    }
+
+    private Integer resolveTripVehicleId(String rawIdentifier) {
+        String identifier = rawIdentifier.trim();
+        if (identifier.matches("(?i)(?:VH-|XE-)?[0-9]+")) {
+            try {
+                return Integer.valueOf(identifier.replaceFirst("(?i)^(VH|XE)-", ""));
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return vehicleRepository.findByLicensePlate(identifier).map(Vehicle::getId).orElse(null);
+    }
+
+    private static Long epochOf(Object value) {
+        return value instanceof Number n && n.longValue() > 0 ? n.longValue() : null;
+    }
+
+    // Nhận mã đơn (BK-...) hoặc ID số; không tìm thấy thì không loại trừ đơn nào
+    private Integer resolveBookingId(String bookingRef) {
+        if (bookingRef == null || bookingRef.isBlank()) return null;
+        String ref = bookingRef.trim();
+        if (ref.matches("\\d+")) {
+            try {
+                return Integer.valueOf(ref);
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return bookingRepository.findIdByCode(ref).orElse(null);
     }
 
     @Override
@@ -214,107 +429,32 @@ public class FleetServiceImpl implements FleetService {
     }
 
     @Override
-    public List<CrewResponseDto> getAvailableCrew(Instant departDate, String role) {
-        Instant newDepart = departDate != null ? departDate : Instant.now();
-        Instant newStart = newDepart.minus(1, ChronoUnit.DAYS);
-        Instant newEnd = newDepart.plus(2, ChronoUnit.DAYS);
+    public List<CrewResponseDto> getAvailableCrew(Instant departDate, String role, String tripType, String bookingRef) {
+        Integer excludeBookingId = resolveBookingId(bookingRef);
+        Window wanted = holdWindow(departDate != null ? departDate : Instant.now(), tripType);
 
         List<Staff> staffList = role != null && !role.isBlank() && !role.equalsIgnoreCase("ALL")
                 ? staffRepository.findByRoleIgnoreCase(role)
                 : staffRepository.findAll();
-
-        List<Booking> bookings = bookingRepository.findAll();
-
-        // Bản đồ: Staff UserID -> Lý do bận
-        Map<Integer, String> busyMap = new HashMap<>();
-
-        for (Booking booking : bookings) {
-            String status = booking.getStatus() != null ? booking.getStatus().toLowerCase(Locale.ROOT) : "";
-            boolean holding = HOLDING_STATUSES.contains(status);
-            boolean activeRoadStatus = isActiveRoadStatus(status);
-            List<BookingAssignment> assignments = holding || activeRoadStatus
-                    ? bookingAssignmentRepository.findByBookingID_Id(booking.getId())
-                    : List.of();
-
-            for (Staff staff : staffList) {
-                boolean unreturned = isAssignedToUnreturnedTrip(booking, staff);
-                boolean assigned = unreturned || isStaffAssignedToBooking(booking, staff);
-                if (assigned && (activeRoadStatus || unreturned)) {
-                    busyMap.put(staff.getId(), "Đang thực hiện hoặc chưa xác nhận về trụ sở từ đơn "
-                            + booking.getCode());
-                }
-            }
-
-            if (!holding) continue;
-            Instant bookingDepart = booking.getDepartureDate() != null ? booking.getDepartureDate()
-                    : booking.getBookingDate();
-            if (bookingDepart == null)
-                continue;
-
-            boolean existingIsInter = booking.getBookingType() != null
-                    && booking.getBookingType().equalsIgnoreCase("international");
-            int existingDaysBefore = existingIsInter ? 2 : 1;
-            int existingDaysAfter = existingIsInter ? 4 : 2;
-
-            Instant busyStart = bookingDepart.minus(existingDaysBefore, ChronoUnit.DAYS);
-            Instant busyEnd = bookingDepart.plus(existingDaysAfter, ChronoUnit.DAYS);
-
-            // Kiểm tra hai khoảng thời gian có giao nhau hay không
-            if (!newEnd.isBefore(busyStart) && !newStart.isAfter(busyEnd)) {
-                for (BookingAssignment ba : assignments) {
-                    if (ba.getStaffID() != null) {
-                        String tripTag = existingIsInter ? "quốc tế" : "nội địa";
-                        busyMap.put(ba.getStaffID().getId(),
-                                "Đang phục vụ đơn " + booking.getCode() + " (" + tripTag
-                                        + ", về dự kiến: " + busyEnd + ")");
-                    }
-                }
-            }
-        }
+        Map<Integer, List<Hold>> holds = crewHolds(staffList, excludeBookingId);
 
         return staffList.stream().map(s -> {
             CrewResponseDto res = mapToCrewResponse(s);
+            Hold conflict = firstConflict(holds.get(s.getId()), wanted);
             if (!"ACTIVE".equalsIgnoreCase(s.getEmploymentStatus())) {
                 res.setAvailable(false);
                 res.setBusyReason("Tài khoản nhân sự đang tạm khóa / nghỉ phép");
-            } else if (busyMap.containsKey(s.getId())) {
+            } else if (conflict != null) {
                 res.setAvailable(false);
-                res.setBusyReason(busyMap.get(s.getId()));
+                res.setBusyReason(holdText(conflict));
+                res.setBusyBookingCode(conflict.booking().getCode());
+                res.setBusyUntil(conflict.window().end().toEpochMilli());
             } else {
                 res.setAvailable(true);
                 res.setBusyReason(null);
             }
             return res;
         }).toList();
-    }
-
-    // Financial completion never releases a vehicle that has not returned to HQ.
-    private Map<Integer, Booking> unreturnedVehicleBookings() {
-        Map<Integer, Booking> held = new HashMap<>();
-        for (Booking booking : bookingRepository.findAll()) {
-            BookingDetailsPayloadDto payload = BookingDetailsJson.read(objectMapper, booking);
-            if (payload.getTrips() == null) continue;
-            for (VehicleTripDto trip : payload.getTrips()) {
-                if (trip.getHomeReturn() == null || trip.getHomeReturn().get("backAt") != null
-                        || trip.getVehicleId() == null) continue;
-                String identifier = trip.getVehicleId().trim();
-                if (identifier.matches("(?i)(?:VH-|XE-)?[0-9]+")) {
-                    try {
-                        held.put(Integer.valueOf(identifier.replaceFirst("(?i)^(VH|XE)-", "")), booking);
-                    } catch (NumberFormatException ignored) { }
-                } else {
-                    vehicleRepository.findByLicensePlate(identifier)
-                            .ifPresent(vehicle -> held.put(vehicle.getId(), booking));
-                }
-            }
-        }
-        return held;
-    }
-
-    private List<Booking> getHoldingBookings() {
-        return bookingRepository.findAll().stream()
-                .filter(b -> b.getStatus() != null && HOLDING_STATUSES.contains(b.getStatus().toLowerCase()))
-                .toList();
     }
 
     private VehicleResponseDto mapToVehicleResponse(Vehicle v) {
@@ -413,50 +553,11 @@ public class FleetServiceImpl implements FleetService {
                     "Xe " + vehicle.getLicensePlate() + " (" + vehicle.getVehicleName() + ") đang bận chuyến đi khác!");
         }
 
-        Booking unreturnedBooking = unreturnedVehicleBookings().get(vehicleId);
-        if (unreturnedBooking != null && !Objects.equals(unreturnedBooking.getId(), excludeBookingId)) {
-            throw new IllegalStateException("Xe chưa xác nhận về trụ sở từ đơn " + unreturnedBooking.getCode());
-        }
-
-        Instant newDepart = departDate != null ? departDate : Instant.now();
-        boolean newIsInter = "international".equalsIgnoreCase(tripType);
-        int newDaysBefore = newIsInter ? 2 : 1;
-        int newDaysAfter = newIsInter ? 4 : 2;
-        Instant newStart = newDepart.minus(newDaysBefore, ChronoUnit.DAYS);
-        Instant newEnd = newDepart.plus(newDaysAfter, ChronoUnit.DAYS);
-
-        // Chỉ kiểm tra xung đột với các đơn đang "giữ xe" (HOLDING_STATUSES).
-        // Đơn đã hoàn thành / huỷ / giao xong không được tính vào conflict.
-        List<Booking> bookings = getHoldingBookings();
-        for (Booking b : bookings) {
-            if (excludeBookingId != null && excludeBookingId.equals(b.getId())) {
-                continue;
-            }
-            Instant bookingDepart = b.getDepartureDate() != null ? b.getDepartureDate() : b.getBookingDate();
-            if (bookingDepart == null)
-                continue;
-
-            boolean existingIsInter = b.getBookingType() != null
-                    && b.getBookingType().equalsIgnoreCase("international");
-            int existingDaysBefore = existingIsInter ? 2 : 1;
-            int existingDaysAfter = existingIsInter ? 4 : 2;
-
-            Instant busyStart = bookingDepart.minus(existingDaysBefore, ChronoUnit.DAYS);
-            Instant busyEnd = bookingDepart.plus(existingDaysAfter, ChronoUnit.DAYS);
-
-            // Kiểm tra hai khoảng thời gian có giao nhau hay không
-            if (!newEnd.isBefore(busyStart) && !newStart.isAfter(busyEnd)) {
-                List<BookingVehicle> bvs = bookingVehicleRepository.findByBookingID_Id(b.getId());
-                for (BookingVehicle bv : bvs) {
-                    if (bv.getVehicleID() != null && bv.getVehicleID().getId().equals(vehicleId)) {
-                        String tripTag = existingIsInter ? "quốc tế" : "nội địa";
-                        throw new IllegalStateException("Xe " + vehicle.getLicensePlate() + " ("
-                                + vehicle.getVehicleName() + ") trùng lịch với đơn "
-                                + b.getCode() + " (" + tripTag + ", khứ hồi về trụ sở VN đến "
-                                + busyEnd + ")!");
-                    }
-                }
-            }
+        Window wanted = holdWindow(departDate != null ? departDate : Instant.now(), tripType);
+        Hold conflict = firstConflict(vehicleHolds(excludeBookingId).get(vehicleId), wanted);
+        if (conflict != null) {
+            throw new IllegalStateException("Xe " + vehicle.getLicensePlate() + " không nhận được đơn này: "
+                    + holdText(conflict) + ".");
         }
     }
 
@@ -519,73 +620,32 @@ public class FleetServiceImpl implements FleetService {
             throw new IllegalStateException("Nhân sự " + staff.getStaffCode() + " hiện không hoạt động / nghỉ phép!");
         }
 
-        Instant newDepart = departDate != null ? departDate : Instant.now();
-        boolean newIsInter = "international".equalsIgnoreCase(tripType);
-        int newDaysBefore = newIsInter ? 2 : 1;
-        int newDaysAfter = newIsInter ? 4 : 2;
-        Instant newStart = newDepart.minus(newDaysBefore, ChronoUnit.DAYS);
-        Instant newEnd = newDepart.plus(newDaysAfter, ChronoUnit.DAYS);
-
-        List<Booking> bookings = bookingRepository.findAll();
-        for (Booking b : bookings) {
-            if (excludeBookingId != null && excludeBookingId.equals(b.getId())) {
-                continue;
-            }
-
-            boolean isAssigned = isStaffAssignedToBooking(b, staff);
-            if (!isAssigned) {
-                continue;
-            }
-
-            String status = b.getStatus() != null ? b.getStatus().toLowerCase(Locale.ROOT) : "";
-            boolean holding = HOLDING_STATUSES.contains(status);
-            if (isActiveRoadStatus(status) || isAssignedToUnreturnedTrip(b, staff)) {
-                throw new IllegalStateException("Nhân sự " + staff.getStaffCode() + " (" + staff.getRole()
-                        + ") hiện đang thực hiện chuyến đi ngoài đường (đơn "
-                        + b.getCode() + ") chưa về trụ sở!");
-            }
-            if (!holding) continue;
-
-            // 2. Kiểm tra xung đột lịch trình theo khoảng ngày an toàn
-            Instant bookingDepart = b.getDepartureDate() != null ? b.getDepartureDate() : b.getBookingDate();
-            if (bookingDepart == null)
-                continue;
-
-            boolean existingIsInter = b.getBookingType() != null
-                    && b.getBookingType().equalsIgnoreCase("international");
-            int existingDaysBefore = existingIsInter ? 2 : 1;
-            int existingDaysAfter = existingIsInter ? 4 : 2;
-
-            Instant busyStart = bookingDepart.minus(existingDaysBefore, ChronoUnit.DAYS);
-            Instant busyEnd = bookingDepart.plus(existingDaysAfter, ChronoUnit.DAYS);
-
-            // Kiểm tra hai khoảng thời gian có giao nhau hay không
-            if (!newEnd.isBefore(busyStart) && !newStart.isAfter(busyEnd)) {
-                String tripTag = existingIsInter ? "quốc tế" : "nội địa";
-                throw new IllegalStateException("Nhân sự " + staff.getStaffCode() + " (" + staff.getRole()
-                        + ") trùng lịch chạy với đơn "
-                        + b.getCode() + " (" + tripTag + ", từ "
-                        + busyStart + " đến " + busyEnd + ")!");
-            }
+        Window wanted = holdWindow(departDate != null ? departDate : Instant.now(), tripType);
+        Hold conflict = firstConflict(crewHolds(List.of(staff), excludeBookingId).get(staff.getId()), wanted);
+        if (conflict != null) {
+            throw new IllegalStateException("Nhân sự " + staff.getStaffCode() + " (" + staff.getRole()
+                    + ") không nhận được đơn này: " + holdText(conflict) + ".");
         }
     }
 
-    private boolean isStaffAssignedToBooking(Booking b, Staff staff) {
-        List<BookingAssignment> assignments = bookingAssignmentRepository.findByBookingID_Id(b.getId());
+    private boolean isStaffAssignedToBooking(Staff staff, List<BookingAssignment> assignments,
+            BookingDetailsPayloadDto payload) {
         for (BookingAssignment ba : assignments) {
             if (ba.getStaffID() != null && Objects.equals(ba.getStaffID().getId(), staff.getId())) {
                 return true;
             }
         }
-        BookingDetailsPayloadDto payload = BookingDetailsJson.read(objectMapper, b);
         return payload.getTrips() != null && payload.getTrips().stream().anyMatch(trip -> isStaffAssignedToTrip(trip, staff));
     }
 
-    private boolean isAssignedToUnreturnedTrip(Booking booking, Staff staff) {
-        BookingDetailsPayloadDto payload = BookingDetailsJson.read(objectMapper, booking);
-        if (payload.getTrips() == null) return false;
-        return payload.getTrips().stream().anyMatch(trip -> isStaffAssignedToTrip(trip, staff)
-                && trip.getHomeReturn() != null && trip.getHomeReturn().get("backAt") == null);
+    // Chuyến của nhân sự đã rời trụ sở và chưa xác nhận về (null nếu không có)
+    private VehicleTripDto notBackTripOf(BookingDetailsPayloadDto payload, Staff staff, boolean onRoad) {
+        if (payload.getTrips() == null) return null;
+        return payload.getTrips().stream().filter(trip -> {
+            if (!isStaffAssignedToTrip(trip, staff)) return false;
+            Map<String, Object> hr = trip.getHomeReturn();
+            return hr != null ? hr.get("backAt") == null : onRoad;
+        }).findFirst().orElse(null);
     }
 
     private boolean isStaffAssignedToTrip(VehicleTripDto trip, Staff staff) {
@@ -605,11 +665,5 @@ public class FleetServiceImpl implements FleetService {
         String normalizedFirst = normalizedValue.replaceFirst("^(TX|DR|NV|ES|HT)-", "").replaceAll("\\D", "");
         String normalizedSecond = normalizedExpected.replaceFirst("^(TX|DR|NV|ES|HT)-", "").replaceAll("\\D", "");
         return !normalizedFirst.isEmpty() && normalizedFirst.equals(normalizedSecond);
-    }
-
-    private boolean isActiveRoadStatus(String status) {
-        return Set.of("en_route_to_pickup", "pickup_failed", "returning_horses", "in_transit", "incident_reported",
-                "pending_emergency_approval", "emergency_plan_active", "arrived", "handover_timeout",
-                "returning_to_hq", "delivered_pending_settlement").contains(status);
     }
 }

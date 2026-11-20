@@ -1,9 +1,12 @@
 // Quản lý đội xe. Chuyển từ Fleet And Route/OPS-07.html + ops-07.js.
-// Thêm / sửa / xóa xe. Không hiện đơn đang giữ xe: trạng thái sẵn sàng / có đơn chỉ hiện lúc chọn xe cho một đơn (theo ngày đi của đơn đó).
+// Thêm / sửa / xóa xe. Trạng thái do backend tính: Sẵn sàng, Đã nhận đơn (ở trụ sở, có đơn chưa lăn bánh),
+// Đang chạy (đang đi đơn hoặc chưa xác nhận về trụ sở), Chưa sẵn sàng (bảo dưỡng). Xe đã nhận đơn vẫn chọn được
+// cho đơn ở ngày khác: việc đó chỉ quyết định lúc chọn xe cho một đơn (theo ngày đi của đơn đó).
 // Ô số liệu tính từ danh sách xe (bản cũ ghi cứng 24 / 18 / 4 / 2).
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { TFunction } from 'i18next'
+import { formatDate, formatDateTime } from '@shared/lib/format'
 import { vehiclesApi, type Vehicle } from '@shared/services/fleet'
 import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
@@ -26,19 +29,34 @@ const normalizeStatusKey = (st?: string): string => {
   return s
 }
 
-const statusOf = (st: string | undefined, t: TFunction) => {
-  const k = normalizeStatusKey(st)
-  const map: Record<string, { label: string; color: string }> = {
-    AVAILABLE: { label: t('coordinatorFleet.statusAvailable', 'Sẵn sàng'), color: '#059669' },
-    MAINTENANCE: { label: t('coordinatorFleet.statusMaintenance', 'Chưa sẵn sàng'), color: '#d97706' },
-    BUSY: { label: t('coordinatorFleet.statusBusy', 'Đang bận'), color: '#2563eb' },
-  }
-  return map[k] || { label: t('coordinatorFleet.statusAvailable', 'Sẵn sàng'), color: '#059669' }
+type FleetState = 'AVAILABLE' | 'ASSIGNED' | 'ON_TRIP' | 'MAINTENANCE'
+type FleetFilter = 'all' | FleetState
+
+// Trạng thái hiển thị của xe. Bảo dưỡng là trạng thái người dùng đặt; còn lại do backend tính từ các đơn.
+const stateOf = (v: Vehicle): FleetState => {
+  const physical = normalizeStatusKey(v.status)
+  if (physical === 'MAINTENANCE') return 'MAINTENANCE'
+  if (v.onTrip || physical === 'BUSY') return 'ON_TRIP'
+  if (v.upcoming?.length) return 'ASSIGNED'
+  return 'AVAILABLE'
 }
 
-const isBusy = (st?: string) => normalizeStatusKey(st) === 'BUSY'
-const isAvailable = (st?: string) => normalizeStatusKey(st) === 'AVAILABLE'
-const isMaintenance = (st?: string) => normalizeStatusKey(st) === 'MAINTENANCE'
+const STATE_META: Record<FleetState, { key: string; fallback: string; color: string }> = {
+  AVAILABLE: { key: 'coordinatorFleet.statusAvailable', fallback: 'Sẵn sàng', color: '#059669' },
+  ASSIGNED: { key: 'coordinatorFleet.statusAssigned', fallback: 'Đã nhận đơn', color: '#2563eb' },
+  ON_TRIP: { key: 'coordinatorFleet.statusOnTrip', fallback: 'Đang chạy', color: '#ea580c' },
+  MAINTENANCE: { key: 'coordinatorFleet.statusMaintenance', fallback: 'Chưa sẵn sàng', color: '#d97706' },
+}
+const STATES: FleetState[] = ['AVAILABLE', 'ASSIGNED', 'ON_TRIP', 'MAINTENANCE']
+const stateLabel = (state: FleetState, t: TFunction) => t(STATE_META[state].key, STATE_META[state].fallback)
+
+// Backend chặn sửa/xóa khi xe còn gắn với đơn đang giữ xe hoặc chưa về trụ sở: nêu đúng lý do thay cho "đang bận"
+const lockReason = (v: Vehicle): string => {
+  if (v.onTrip) return `Xe đang đi đơn${v.onTripBookingCode ? ` ${v.onTripBookingCode}` : ''}, sửa hoặc xóa được khi xe đã về trụ sở và không còn đơn`
+  if (normalizeStatusKey(v.status) === 'BUSY') return 'Xe đang có chuyến đi, chưa sửa hoặc xóa được'
+  const next = v.upcoming?.[0]
+  return next ? `Xe đã nhận đơn ${next.bookingCode}, chỉ sửa hoặc xóa được khi xe không còn đơn` : ''
+}
 
 export default function FleetPage() {
   const { t } = useTranslation()
@@ -47,14 +65,15 @@ export default function FleetPage() {
   const [editing, setEditing] = useState<string | null>(null) // null = thêm mới
   const [formOpen, setFormOpen] = useState(false)
   const [text, setText] = useState('')
-  const [filterStatus, setFilterStatus] = useState<string>('all')
+  const [filterStatus, setFilterStatus] = useState<FleetFilter>('all')
   const [form, setForm] = useState(EMPTY)
   const [invalid, setInvalid] = useState('')
   const [confirmDelete, setConfirmDelete] = useState<Vehicle | null>(null)
 
   const edit = (v: Vehicle | null) => {
-    if (v && isBusy(v.status)) {
-      toast('Xe đang bận, không thể chỉnh sửa!', 'error')
+    const locked = v ? lockReason(v) : ''
+    if (locked) {
+      toast(`${locked}.`, 'error')
       return
     }
     setEditing(v?.id ?? null)
@@ -64,10 +83,6 @@ export default function FleetPage() {
   }
   const closeForm = () => { setFormOpen(false); setEditing(null); setInvalid('') }
   const save = async () => {
-    if (editing && isBusy(form.status)) {
-      toast('Xe đang bận, không thể chỉnh sửa!', 'error')
-      return
-    }
     if (!isSupportedCapacity(form.capacity)) return setInvalid('capacity')
     if (!form.plate.trim()) return setInvalid('plate')
     const plate = form.plate.trim()
@@ -85,8 +100,9 @@ export default function FleetPage() {
     reload()
   }
   const remove = async (v: Vehicle) => {
-    if (isBusy(v.status)) {
-      toast('Xe đang bận, không thể xóa!', 'error')
+    const locked = lockReason(v)
+    if (locked) {
+      toast(`${locked}.`, 'error')
       return
     }
     await vehiclesApi.remove(v.id)
@@ -97,15 +113,11 @@ export default function FleetPage() {
   }
   const set = <K extends keyof typeof form>(key: K) => (value: (typeof form)[K]) => { setInvalid(''); setForm({ ...form, [key]: value }) }
 
-  const availableCount = vehicles.filter(v => isAvailable(v.status)).length
-  const notReadyCount = vehicles.filter(v => isMaintenance(v.status)).length
-  const busyCount = vehicles.filter(v => isBusy(v.status)).length
+  const countOf = (state: FleetState) => vehicles.filter(v => stateOf(v) === state).length
 
   const keyword = text.trim().toLowerCase()
   const shown = vehicles.filter(v => {
-    if (filterStatus === 'available' && !isAvailable(v.status)) return false
-    if (filterStatus === 'not_ready' && !isMaintenance(v.status)) return false
-    if (filterStatus === 'busy' && !isBusy(v.status)) return false
+    if (filterStatus !== 'all' && stateOf(v) !== filterStatus) return false
     return !keyword || [v.id, v.plate].some(x => x.toLowerCase().includes(keyword))
   })
 
@@ -122,19 +134,16 @@ export default function FleetPage() {
             <button type="button" className={`${f.chip} ${filterStatus === 'all' ? f.chipOn : ''}`} onClick={() => setFilterStatus('all')}>
               {t('common.all', 'Tất cả')} <span className={f.num}>{vehicles.length}</span>
             </button>
-            <button type="button" className={`${f.chip} ${filterStatus === 'available' ? f.chipOn : ''}`} onClick={() => setFilterStatus('available')}>
-              <span className={f.dot} style={{ background: '#059669' }} /> {t('coordinatorFleet.statusAvailable', 'Sẵn sàng')} <span className={f.num}>{availableCount}</span>
-            </button>
-            {notReadyCount > 0 && (
-              <button type="button" className={`${f.chip} ${filterStatus === 'not_ready' ? f.chipOn : ''}`} onClick={() => setFilterStatus('not_ready')}>
-                <span className={f.dot} style={{ background: '#d97706' }} /> {t('coordinatorFleet.statusMaintenance', 'Chưa sẵn sàng')} <span className={f.num}>{notReadyCount}</span>
-              </button>
-            )}
-            {busyCount > 0 && (
-              <button type="button" className={`${f.chip} ${filterStatus === 'busy' ? f.chipOn : ''}`} onClick={() => setFilterStatus('busy')}>
-                <span className={f.dot} style={{ background: '#2563eb' }} /> {t('coordinatorFleet.statusBusy', 'Đang bận')} <span className={f.num}>{busyCount}</span>
-              </button>
-            )}
+            {STATES.map(state => {
+              const count = countOf(state)
+              // "Sẵn sàng" luôn hiện; nhóm khác chỉ hiện khi có xe hoặc đang được chọn (để không mất bộ lọc)
+              if (state !== 'AVAILABLE' && !count && filterStatus !== state) return null
+              return (
+                <button key={state} type="button" className={`${f.chip} ${filterStatus === state ? f.chipOn : ''}`} onClick={() => setFilterStatus(state)}>
+                  <span className={f.dot} style={{ background: STATE_META[state].color }} /> {stateLabel(state, t)} <span className={f.num}>{count}</span>
+                </button>
+              )
+            })}
           </div>
           <label className={f.search}><i className="fa-solid fa-magnifying-glass" aria-hidden="true" /><input className="form-control" placeholder={t('coordinatorFleet.searchPlaceholder', 'Tìm biển số...')} value={text} onChange={e => setText(e.target.value)} /></label>
           <button className="btn btn-primary" onClick={() => edit(null)}><i className="fa-solid fa-plus" /> {t('coordinatorFleet.btnAddVehicle', 'Thêm xe')}</button>
@@ -142,33 +151,47 @@ export default function FleetPage() {
 
         <div className={f.grid}>
           {shown.map(v => {
-            const st = statusOf(v.status, t)
-            const busy = isBusy(v.status)
+            const state = stateOf(v)
+            const color = STATE_META[state].color
+            const locked = lockReason(v)
+            const upcoming = v.upcoming ?? []
             return (
-              <article key={v.id} className={f.card} style={{ ['--tone' as string]: st.color }} onClick={() => !busy && edit(v)} tabIndex={busy ? -1 : 0} onKeyDown={e => !busy && e.key === 'Enter' && edit(v)} aria-label={`Xe ${v.plate}`}>
+              <article key={v.id} className={f.card} style={{ ['--tone' as string]: color }} onClick={() => !locked && edit(v)} tabIndex={locked ? -1 : 0} onKeyDown={e => !locked && e.key === 'Enter' && edit(v)} aria-label={`Xe ${v.plate}, ${stateLabel(state, t)}`}>
                 <div className={f.top}>
                   <span className={f.code}>{v.id}</span>
-                  <span className={f.status}>{st.label}</span>
+                  <span className={f.status}>{stateLabel(state, t)}</span>
                 </div>
-                <div className={f.art}><VehicleArt stalls={v.capacity} color={st.color} /></div>
+                <div className={f.art}><VehicleArt stalls={v.capacity} color={color} /></div>
                 <span className={f.plate}>{v.plate}</span>
                 <div className={f.name}>{VEHICLE_NAME}<small>{t('coordinatorFleet.horsesCapacity', '{{count}} ngựa', { count: v.capacity })}</small></div>
+                {(v.onTrip || upcoming.length > 0) && (
+                  <div className={f.rows}>
+                    {v.onTrip && (
+                      <div><span><i className="fa-solid fa-truck-fast" /> {v.returnEta ? 'Đang về trụ sở' : 'Đang đi đơn'}</span><b title={v.onTripBookingCode}>{v.onTripBookingCode}{v.returnEta ? ` · ${formatDateTime(v.returnEta)}` : ''}</b></div>
+                    )}
+                    {upcoming.length > 0 && (
+                      <div><span><i className="fa-regular fa-calendar" /> Đơn kế tiếp</span><b title={upcoming.map(x => `${x.bookingCode} (${formatDate(x.departAt)})`).join(', ')}>{upcoming[0].bookingCode} · đi {formatDate(upcoming[0].departAt)}</b></div>
+                    )}
+                    {upcoming.length > 1 && <div><span /><b>+{upcoming.length - 1} đơn khác</b></div>}
+                  </div>
+                )}
+                {locked && <span className={f.lockNote}><i className="fa-solid fa-lock" /> {locked}</span>}
                 <div className={f.actions} onClick={e => e.stopPropagation()}>
                   <button
                     className="btn btn-ghost btn-sm"
-                    disabled={busy}
-                    title={busy ? 'Xe đang bận, không thể chỉnh sửa' : 'Sửa xe'}
-                    style={busy ? { opacity: 0.45, cursor: 'not-allowed' } : undefined}
+                    disabled={!!locked}
+                    title={locked || 'Sửa xe'}
+                    style={locked ? { opacity: 0.45, cursor: 'not-allowed' } : undefined}
                     onClick={() => edit(v)}
                   >
                     {t('common.edit', 'Sửa')}
                   </button>
                   <button
-                    className={`btn btn-ghost btn-sm ${busy ? '' : 'text-red'}`}
-                    disabled={busy}
-                    title={busy ? 'Xe đang bận, không thể xóa' : 'Xóa xe'}
-                    style={busy ? { opacity: 0.45, cursor: 'not-allowed' } : undefined}
-                    onClick={() => !busy && setConfirmDelete(v)}
+                    className={`btn btn-ghost btn-sm ${locked ? '' : 'text-red'}`}
+                    disabled={!!locked}
+                    title={locked || 'Xóa xe'}
+                    style={locked ? { opacity: 0.45, cursor: 'not-allowed' } : undefined}
+                    onClick={() => !locked && setConfirmDelete(v)}
                   >
                     {t('common.delete', 'Xóa')}
                   </button>
@@ -182,14 +205,13 @@ export default function FleetPage() {
 
       {formOpen && (
         <Modal wide onClose={closeForm} title={editing ? `Xe chuyên dụng ${editing}` : 'Thêm xe chuyên dụng mới'} subtitle={editing ? form.plate : undefined}
-          footer={<><button className="btn btn-ghost" onClick={closeForm}>{t('common.cancel', 'Hủy')}</button><button className="btn btn-primary" onClick={save} disabled={!!editing && isBusy(form.status)}><i className="fa-solid fa-floppy-disk" /> {t('coordinatorFleet.saveVehicle', 'Lưu xe')}</button></>}>
+          footer={<><button className="btn btn-ghost" onClick={closeForm}>{t('common.cancel', 'Hủy')}</button><button className="btn btn-primary" onClick={save}><i className="fa-solid fa-floppy-disk" /> {t('coordinatorFleet.saveVehicle', 'Lưu xe')}</button></>}>
           <div className={c.formRow}>
             <div className="form-group">
               <label>{t('coordinatorFleet.capacity', 'Sức chứa')}</label>
               <select
                 className={cx('form-control', invalid === 'capacity' && 'invalid')}
                 value={isSupportedCapacity(form.capacity) ? form.capacity : ''}
-                disabled={!!editing && isBusy(form.status)}
                 onChange={e => set('capacity')(Number(e.target.value))}
               >
                 <option value="" disabled>Chọn sức chứa</option>
@@ -217,21 +239,15 @@ export default function FleetPage() {
               <select
                 className="form-control"
                 value={form.status ?? 'AVAILABLE'}
-                disabled={!!editing || isBusy(form.status)}
-                style={editing || isBusy(form.status) ? { background: '#f1f5f9', cursor: 'not-allowed' } : undefined}
+                disabled={!!editing}
+                style={editing ? { background: '#f1f5f9', cursor: 'not-allowed' } : undefined}
                 onChange={e => set('status')(e.target.value)}
               >
-                {isBusy(form.status) && <option value="BUSY">{t('coordinatorFleet.statusBusy', 'Đang bận')}</option>}
                 <option value="AVAILABLE">{t('coordinatorFleet.statusAvailable', 'Sẵn sàng')}</option>
                 <option value="MAINTENANCE">{t('coordinatorFleet.statusMaintenance', 'Chưa sẵn sàng')}</option>
               </select>
-              {editing && !isBusy(form.status) && (
+              {editing && (
                 <div className="form-hint">Khi sửa xe, chỉ có thể thay đổi số ngăn.</div>
-              )}
-              {isBusy(form.status) && (
-                <div className="form-hint text-orange" style={{ fontWeight: 600 }}>
-                  <i className="fa-solid fa-lock" /> Xe đang có chuyến đi (Đang bận), không thể đổi trạng thái.
-                </div>
               )}
             </div>
           </div>

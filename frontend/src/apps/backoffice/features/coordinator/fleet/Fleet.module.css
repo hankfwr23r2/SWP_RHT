@@ -28,6 +28,8 @@
 .rows span { color: var(--muted); }
 .rows b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; font-weight: 600; }
 .warn { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border-radius: 8px; background: var(--amber-soft); color: var(--amber); font-size: 0.74rem; font-weight: 600; }
+.lockNote { display: flex; align-items: flex-start; gap: 6px; font-size: 0.76rem; line-height: 1.4; color: var(--muted); }
+.lockNote i { margin-top: 2px; }
 .actions { display: flex; justify-content: flex-end; gap: 6px; }
 .empty { grid-column: 1 / -1; padding: 56px 20px; border: 1px dashed #d5d9e0; border-radius: var(--radius); text-align: center; color: var(--muted); }
 .empty i { display: block; margin-bottom: 8px; font-size: 2.4rem; color: #d1d5db; }

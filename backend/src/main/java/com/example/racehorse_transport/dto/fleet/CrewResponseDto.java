@@ -17,6 +17,8 @@ public class CrewResponseDto {
     private String phone;
     private String email;
     private String employmentStatus; // ACTIVE, LOCKED
-    private boolean isAvailable;
+    private boolean isAvailable; // JSON: "available"
     private String busyReason;
+    private String busyBookingCode; // đơn gây khóa nhân sự (nếu có)
+    private Long busyUntil; // epoch ms: cuối khoảng giữ hoặc giờ về trụ sở dự kiến
 }

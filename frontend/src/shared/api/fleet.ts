@@ -1,4 +1,5 @@
 import apiClient, { type ApiResponse } from './client'
+import type { VehicleSchedule } from '../types/fleet'
 
 export interface BackendVehicleResponse {
   id: number
@@ -10,8 +11,14 @@ export interface BackendVehicleResponse {
   status: string
   homeDepot?: string
   currentLocation?: string
-  isAvailable: boolean
+  available: boolean // Lombok boolean isAvailable -> JSON "available"
   busyReason?: string
+  busyBookingCode?: string
+  busyUntil?: number
+  onTrip?: boolean
+  onTripBookingCode?: string
+  returnEta?: number
+  upcoming?: VehicleSchedule[]
 }
 
 export interface VehiclePayload {
@@ -29,28 +36,33 @@ export interface BackendCrewResponse {
   phone: string
   email: string
   employmentStatus: string
-  isAvailable: boolean
+  available: boolean // Lombok boolean isAvailable -> JSON "available"
   busyReason?: string
+  busyBookingCode?: string
+  busyUntil?: number
 }
 
 export const backendFleetApi = {
-  // Lấy danh sách đội xe (có thể lọc theo ngày khởi hành và loại chuyến để kiểm tra xung đột)
-  getVehicles: async (departAt?: number, tripType?: string): Promise<BackendVehicleResponse[]> => {
+  // Lấy danh sách đội xe. Kèm ngày đi (và mã đơn đang xếp) thì backend tính xe nào chọn được cho đơn đó
+  getVehicles: async (departAt?: number, tripType?: string, bookingId?: string): Promise<BackendVehicleResponse[]> => {
     const res = await apiClient.get<ApiResponse<BackendVehicleResponse[]>>('/fleet/vehicles', {
       params: {
         departAt,
         tripType,
+        bookingId,
       },
     })
     return res.data.data
   },
 
   // Lấy danh sách nhân sự (Tài xế / Hộ tống / Điều phối / Thú y)
-  getCrew: async (departAt?: number, role?: string): Promise<BackendCrewResponse[]> => {
+  getCrew: async (departAt?: number, role?: string, tripType?: string, bookingId?: string): Promise<BackendCrewResponse[]> => {
     const res = await apiClient.get<ApiResponse<BackendCrewResponse[]>>('/fleet/crew', {
       params: {
         departAt,
         role,
+        tripType,
+        bookingId,
       },
     })
     return res.data.data

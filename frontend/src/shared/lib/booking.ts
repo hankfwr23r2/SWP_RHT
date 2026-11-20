@@ -400,8 +400,6 @@ export const returningTrips = (all: Booking[]) => all.flatMap(b => (b.trips ?? [
 // Quá giờ về dự kiến từ 30 phút mà chưa xác nhận: cờ "Về trễ" (cùng ngưỡng Delayed Check-in)
 export const returnLate = (t: Pick<VehicleTrip, 'homeReturn'>, now = Date.now()) => !!t.homeReturn && !t.homeReturn.backAt && now - t.homeReturn.eta >= DELAY_ALERT_MINUTES * 60_000
 
-// Xe trùng lịch: đơn khác của xe có ngày đi cách ngày đi này dưới 3 ngày (cùng quy tắc với busyResources)
-export const clashOf = (booked: Booked[] | undefined, departAt: number) => (booked ?? []).find(x => Math.abs(x.departAt - departAt) < 3 * DAY)
 
 // So sánh linh hoạt mã nhân viên (hỗ trợ DR-01, TX-01, NV-01, ES-01 hoặc ID số)
 export const sameStaffId = (a?: string, b?: string): boolean => {
@@ -424,16 +422,6 @@ export function findCrewBooked(schedules: Map<string, Booked[]>, id?: string, na
 }
 
 // Nhân sự đang chạy chuyến hoặc chưa xác nhận về trụ sở luôn bị khóa.
-export function crewClashOf(booked: Booked[] | undefined, departAt: number): Booked | undefined {
-  if (!booked?.length) return undefined
-  return booked.find(x => {
-    if (x.returning || x.active) return true
-    const isInter = x.countries.includes('Campuchia') || x.countries.includes('Lào')
-    const days = isInter ? 5 * DAY : 3 * DAY
-    return Math.abs(x.departAt - departAt) < days
-  })
-}
-
 export const tripIdFor = (bookingId: string, index: number) => `TRP-${bookingId.slice(-4)}-${index}`
 
 // Nhân viên đang hoạt động (không nghỉ), có thể giao việc. Manager chỉ cần biết điều này, không xem số đơn họ đang làm.
@@ -976,19 +964,19 @@ export function stallUnitsOf(horse: Pick<BookingHorse, 'stall' | 'selectedServic
   return code === 'STALL_SINGLE_EXTENDED' || horse.stall === 'single' ? 2 : 1
 }
 
+// Xe chọn được cho đơn đang xếp: sẵn sàng về mặt vật lý và backend không báo trùng lịch / đang đi đơn.
+// Danh sách xe phải được tải theo ngày đi của đơn (vehiclesApi.forBooking) để cờ available đúng nghĩa.
+export const isVehicleSelectable = (v: Vehicle): boolean => isVehicleReadyForDispatch(v) && v.available !== false
+
 export function autoPackFleet(
   horseIds: string[],
   vehicles: Vehicle[],
-  schedVehicles: Map<string, Booked[]>,
-  departAt: number,
   stallsOf: (horseId: string) => number = () => 1
 ): AutoPackDraft[] {
   if (!horseIds.length) return [{ vehicleId: '', horseIds: [] }]
 
-  // 1. Lọc xe khả dụng: trạng thái sẵn sàng (không bận/bảo dưỡng) và không trùng lịch.
-  const available = vehicles.filter(v =>
-    isVehicleReadyForDispatch(v) && !clashOf(schedVehicles.get(v.id), departAt)
-  )
+  // 1. Lọc xe khả dụng theo kết quả của backend
+  const available = vehicles.filter(isVehicleSelectable)
 
   // Nếu không có xe nào đạt chuẩn, trả về 1 chuyến chưa gán xe để điều phối viên nhận biết
   if (!available.length) {
