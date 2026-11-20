@@ -97,6 +97,17 @@ public class BillMailServiceImpl implements BillMailService {
                         + code(booking) + "</b>.</p>" + table(rows), text);
     }
 
+    public void balanceDue(Booking booking, BigDecimal amount) {
+        boolean en = english(booking);
+        String what = en ? Payment.BALANCE.en() : Payment.BALANCE.vi();
+        String rows = row(en ? "Payment" : "Khoản thanh toán", esc(what)) + row(en ? "Amount" : "Số tiền", "<b>" + money(amount, en) + "</b>");
+        String note = en ? "The crew has collected your horses and signed the handover record. Please pay the remaining balance so the vehicle can start the journey."
+                : "Kíp xe đã nhận ngựa và ký biên bản giao nhận. Vui lòng thanh toán phần còn lại để xe được bắt đầu hành trình.";
+        send(booking, en ? "Please pay the remaining balance · order " + code(booking) : "Thanh toán 70% còn lại · đơn " + code(booking),
+                en ? "Remaining balance due" : "Đến hạn thanh toán 70% còn lại",
+                "<p>" + note + "</p>" + table(rows), note + "\n" + what + ": " + money(amount, en) + "\n");
+    }
+
     /** Retired: internal company expenses must never be mailed to customers. */
     @Deprecated
     public void settlementIssued(Booking booking, List<ExpenseItemDto> customerItems, BigDecimal total, Instant dueAt) {

@@ -30,6 +30,7 @@ class MultiVehicleTripFlowTest {
     private final HorseRepository horses = mock(HorseRepository.class);
     private final StaffRepository staff = mock(StaffRepository.class);
     private final VehicleRepository vehicles = mock(VehicleRepository.class);
+    private final com.example.racehorse_transport.service.BillMailService mail = mock(com.example.racehorse_transport.service.BillMailService.class);
     private TripProgressServiceImpl service;
 
     @BeforeEach
@@ -41,7 +42,7 @@ class MultiVehicleTripFlowTest {
         service = new TripProgressServiceImpl(mock(CaptureService.class), bookings, horses, mock(QuotationRepository.class),
                 mock(NotificationRepository.class), mock(LogRepository.class), vehicles, staff, delivery,
                 mock(IncidentRepository.class), mock(StaffNotificationService.class), mock(OperationalLogService.class),
-                mock(BookingQueryService.class));
+                mock(BookingQueryService.class), mail);
         when(bookings.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(horses.findById(org.mockito.ArgumentMatchers.anyInt())).thenAnswer(invocation ->
                 Optional.of(com.example.racehorse_transport.entity.Horse.builder().id(invocation.getArgument(0)).build()));
@@ -85,6 +86,23 @@ class MultiVehicleTripFlowTest {
 
         assertThat(booking.getStatus()).isEqualTo("en_route_to_pickup");
         assertThat(booking.getDetailsJson()).contains("\"homeReturn\":{").contains("không còn ngựa để chở, xe về trụ sở");
+    }
+
+    @Test
+    void customerGetsOneReminderMailToPayTheBalanceOnceTheCrewHasCollectedTheHorses() {
+        Booking booking = booking(1, "BK-AAAA0001", "en_route_to_pickup", """
+            {"horses":[{"horseId":"H1","name":"Storm","microchip":"985000000000001"}],
+             "quote":{"total":10000000,"deposit":3000000,"balance":7000000},"payment":{"depositPaid":true},
+             "trips":[{"tripId":"T1","vehicleId":"VH-001","driverId":"DR-01","escortId":"ES-01","horseIds":["H1"],"departedAt":10,
+               "run":{"checkpoints":[{"id":"pickup","type":"pickup","arrivedAt":90,"photo":"p.jpg","chips":["985000000000001"],
+                 "originals":["Hộ chiếu ngựa bản gốc (FEI / National Passport)","Sổ tiêm phòng","Phiếu xét nghiệm EIA/EVA, bản gốc kèm 02 bản sao công chứng"]}]}}]}
+            """);
+
+        service.updateTripProgress("BK-AAAA0001", action("T1", "UPLOAD_HANDOVER", Map.of("checkpointId", "pickup", "photo", "h.jpg")), "driver01", "DRIVER");
+        service.updateTripProgress("BK-AAAA0001", action("T1", "UPLOAD_HANDOVER", Map.of("checkpointId", "pickup", "photo", "h2.jpg")), "driver01", "DRIVER");
+
+        org.mockito.Mockito.verify(mail, org.mockito.Mockito.times(1))
+                .balanceDue(org.mockito.ArgumentMatchers.same(booking), org.mockito.ArgumentMatchers.argThat(a -> a.compareTo(new java.math.BigDecimal("7000000")) == 0));
     }
 
     @Test
