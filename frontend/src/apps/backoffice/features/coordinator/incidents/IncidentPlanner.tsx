@@ -16,7 +16,7 @@ import { useRoadAlternatives, useRoadRoute } from '@shared/services/useRoadRoute
 import type { Booking, Incident, PlanLine } from '@shared/types/booking'
 import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
-import { IncidentMap, NEW_ROUTE, ONWARD_LEGEND, ONWARD_ROUTE, oldRouteLines, type MapLine } from '../../../shared/IncidentMap'
+import { IncidentMap, NEW_ROUTE, ONWARD_LEGEND, ONWARD_ROUTE, RESCUE_ROUTE, oldRouteLines, type MapLine } from '../../../shared/IncidentMap'
 import s from '../../../shared/booking.module.css'
 
 const MINUTES = [MIN_REST_MINUTES, 45, 60, 90, 120]
@@ -110,7 +110,7 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
   const old = oldRouteLines(routeBeforeIncident(b, i, path.map(lngLat)), loc, kind === 'traffic_jam' ? next : undefined)
   const lines: MapLine[] = [
     ...old.lines,
-    ...(rescueLine ? [{ path: rescueLine.path, color: '#059669', flow: true, label: `Cứu hộ tới chỗ xe: ${rescueLine.km} km` }] : []),
+    ...(rescueLine ? [{ path: rescueLine.path, color: RESCUE_ROUTE, flow: true, legend: 'Đường cứu hộ', label: `Cứu hộ tới chỗ xe: ${rescueLine.km} km` }] : []),
     ...(toStationLine ? [{ path: toStationLine.path, color: NEW_ROUTE, flow: true, weight: 6, label: `Đưa ngựa tới ${stationName}: ${toStationLine.km} km`, legend: 'Đường mới' }] : []),
     ...(kind === 'traffic_jam'
       ? (waypoints.length && detour ? [{ path: detour.path, color: NEW_ROUTE, weight: 6, flow: true, label: 'Đường tránh qua các điểm đã chọn', legend: 'Đường mới' }] : altList.length ? altList.map((r, idx): MapLine => ({ path: r.path, color: idx === altIdx ? NEW_ROUTE : '#64748b', weight: idx === altIdx ? 6 : 4, flow: idx === altIdx, faded: idx !== altIdx, label: `Đường ${idx + 1}: ${Math.round(r.km)} km · ${hm(r.hours)}`, legend: idx === altIdx ? 'Đường mới' : undefined, onClick: () => { setWaypoints([]); setAltIdx(idx) } }))

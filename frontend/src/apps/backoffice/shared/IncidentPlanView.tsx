@@ -4,7 +4,7 @@ import { INCIDENT_ACTION } from '@shared/config/booking-rules'
 import { findLocation, projectOnPath } from '@shared/lib/booking'
 import { routeBeforeIncident } from '@shared/lib/incidentRoute'
 import type { Booking, Incident } from '@shared/types/booking'
-import { IncidentMap, NEW_ROUTE, ONWARD_LEGEND, ONWARD_ROUTE, oldRouteLines, type MapLine } from './IncidentMap'
+import { IncidentMap, NEW_ROUTE, ONWARD_LEGEND, ONWARD_ROUTE, RESCUE_ROUTE, oldRouteLines, type MapLine } from './IncidentMap'
 
 export function IncidentPlanView({ b, i, height = 340 }: { b: Booking; i: Incident; height?: number }) {
   const plan = i.plan
@@ -22,7 +22,7 @@ export function IncidentPlanView({ b, i, height = 340 }: { b: Booking; i: Incide
     : []
   const lines: MapLine[] = [
     ...old.lines,
-    ...(plan.rescueLine ? [{ path: plan.rescueLine.path, color: '#059669', flow: true, label: `Cứu hộ tới chỗ xe: ${plan.rescueLine.km} km` }] : []),
+    ...(plan.rescueLine ? [{ path: plan.rescueLine.path, color: RESCUE_ROUTE, flow: true, legend: 'Đường cứu hộ', label: `Cứu hộ tới chỗ xe: ${plan.rescueLine.km} km` }] : []),
     ...(plan.toStation ? [{ path: plan.toStation.path, color: NEW_ROUTE, flow: true, weight: 6, label: `Đưa ngựa tới ${plan.station}: ${plan.toStation.km} km`, legend: 'Đường mới' }] : []),
     ...(plan.detour ? [{ path: plan.detour.path, color: NEW_ROUTE, flow: true, weight: 6, label: `Lộ trình mới: ${plan.detour.km} km`, legend: 'Đường mới' }] : []),
     ...(plan.onward ? [{ path: plan.onward.path, color: ONWARD_ROUTE, flow: true, weight: 5, label: 'Đường đi tiếp từ trạm SOS tới điểm trả', legend: ONWARD_LEGEND, fit: false }] : []),
