@@ -16,7 +16,7 @@ import { useRoadAlternatives, useRoadRoute } from '@shared/services/useRoadRoute
 import type { Booking, Incident, PlanLine } from '@shared/types/booking'
 import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
-import { IncidentMap, NEW_ROUTE, oldRouteLines, type MapLine } from '../../../shared/IncidentMap'
+import { IncidentMap, NEW_ROUTE, ONWARD_LEGEND, ONWARD_ROUTE, oldRouteLines, type MapLine } from '../../../shared/IncidentMap'
 import s from '../../../shared/booking.module.css'
 
 const MINUTES = [MIN_REST_MINUTES, 45, 60, 90, 120]
@@ -116,7 +116,9 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
       ? (waypoints.length && detour ? [{ path: detour.path, color: NEW_ROUTE, weight: 6, flow: true, label: 'Đường tránh qua các điểm đã chọn', legend: 'Đường mới' }] : altList.length ? altList.map((r, idx): MapLine => ({ path: r.path, color: idx === altIdx ? NEW_ROUTE : '#64748b', weight: idx === altIdx ? 6 : 4, flow: idx === altIdx, faded: idx !== altIdx, label: `Đường ${idx + 1}: ${Math.round(r.km)} km · ${hm(r.hours)}`, legend: idx === altIdx ? 'Đường mới' : undefined, onClick: () => { setWaypoints([]); setAltIdx(idx) } }))
         : detour ? [{ path: detour.path, color: NEW_ROUTE, weight: 5, dashed: true, label: 'Đường nối thẳng (chưa lấy được đường thay thế)', legend: 'Đường mới' }] : [])
       : []),
-    ...(afterRoad.route ? [{ path: afterRoad.route.path, color: NEW_ROUTE, weight: 4, label: 'Đường đi tiếp tới điểm trả', legend: 'Đường mới', fit: false }] : []),
+    // Nối cuối đường mới tới điểm trả; chưa lấy được đường bộ thì nối thẳng qua các điểm còn lại (nét đứt)
+    ...(afterRoad.route ? [{ path: afterRoad.route.path, color: ONWARD_ROUTE, weight: 4, label: 'Đường đi tiếp tới điểm trả', legend: ONWARD_LEGEND, fit: false }]
+      : afterPts.length > 1 && !afterRoad.loading ? [{ path: afterPts.map(lngLat), color: ONWARD_ROUTE, weight: 3, dashed: true, label: 'Đi tiếp tới điểm trả (nối thẳng, chưa lấy được đường bộ)', legend: ONWARD_LEGEND, fit: false }] : []),
   ]
   // Chỉ hiện khi máy tính đường lỗi và màn hình đang phải dùng đường nối thẳng
   const recalc = <button type="button" className="btn btn-ghost btn-sm" onClick={() => { clearRoadCache(); setRouteAttempt(attempt => attempt + 1) }}>Tính lại đường</button>

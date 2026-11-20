@@ -15,6 +15,9 @@ export interface MapLine { path: [number, number][]; color: string; weight?: num
 // Đường cũ cam nét đứt, đường mới xanh nước biển nét liền để so sánh phương án
 export const OLD_ROUTE = '#ea580c'
 export const NEW_ROUTE = '#2563eb'
+// Đoạn đi tiếp từ cuối đường mới tới điểm trả (khác màu xanh lục của đường cứu hộ)
+export const ONWARD_ROUTE = '#16a34a'
+export const ONWARD_LEGEND = 'Đi tiếp tới điểm trả'
 export const pathKm = (path: [number, number][]) => path.slice(1).reduce((km, [lat, lng], i) => km + haversineKm({ lat: path[i][0], lng: path[i][1] }, { lat, lng }), 0)
 
 // Tách lộ trình đã lập tại chỗ xe báo sự cố: đoạn đã đi (mờ) và đoạn cũ còn lại tới điểm `until` (không có thì tới cuối)
