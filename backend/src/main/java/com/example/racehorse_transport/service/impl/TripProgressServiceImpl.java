@@ -64,6 +64,7 @@ public class TripProgressServiceImpl implements TripProgressService {
     private final OperationalLogService operationalLog;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final BookingQueryService bookingQueryService;
+    private final com.example.racehorse_transport.service.BillMailService billMailService;
 
     private static final long MAX_TOLL_PER_RECEIPT = 10_000_000L;
     // Chia việc trong kíp xe, khớp với màn hình tài xế và hộ tống. Nhận lệnh và xác nhận về trụ sở thì ai cũng làm.
@@ -143,6 +144,9 @@ public class TripProgressServiceImpl implements TripProgressService {
         payment.put("balanceRequestedAt", now.toEpochMilli());
         payload.setPayment(payment);
         BookingHistory.appendWithDefaultActor(payload, "Hệ thống", "Kíp xe đã nhận ngựa, chờ khách thanh toán 70% còn lại");
+        // Mail nhắc kèm số tiền còn lại theo báo giá (gửi sau khi lưu đơn thành công)
+        Object balance = payload.getQuote() instanceof Map<?, ?> quote ? quote.get("balance") : null;
+        if (balance != null) billMailService.balanceDue(booking, new BigDecimal(balance.toString()));
         if (booking.getCustomerID() == null || booking.getCustomerID().getUser() == null) return;
         String bookingCode = booking.getCode();
         notificationRepository.save(Notification.builder()
