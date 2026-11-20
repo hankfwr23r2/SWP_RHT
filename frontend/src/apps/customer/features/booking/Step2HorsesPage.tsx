@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { VEHICLE_CLASS } from '@shared/config/booking-rules'
 import { MAX_HORSES } from '@shared/config/business-rules'
 import { COUNTRIES, COUNTRY_LOCATIONS } from '@shared/config/network'
-import { ageOf, classForHorses, horseCountryMatchesOrigin, horseHasUnverifiedLocationCountry, horseReadiness } from '@shared/lib/booking'
+import { activeHorseBookingById, ageOf, classForHorses, horseCountryMatchesOrigin, horseHasUnverifiedLocationCountry, horseIsBusy, horseReadiness } from '@shared/lib/booking'
 import { horsePickupLocationStatus } from '@shared/lib/horseLocation'
 import { usePageData } from '@shared/routing/pageData'
 import { SEX_LABEL, type HorseProfile } from '@shared/types/booking'
@@ -15,8 +15,6 @@ import type { horsesLoader } from '../horses/loaders'
 import { countriesOf, defaultConfig, useBookingDraft } from './draft'
 import { isBookingRouteReady } from './routeValidation'
 import s from './Booking.module.css'
-
-const FINISHED_STATUSES = new Set(['completed', 'cancelled', 'rejected', 'quote_expired'])
 
 export default function Step2HorsesPage() {
   const { t, i18n } = useTranslation()
@@ -47,26 +45,7 @@ export default function Step2HorsesPage() {
   [hasUnverifiedLocationCountry, originCountry])
 
   // Map từ numeric ID của ngựa -> thông tin đơn hàng chưa hoàn tất
-  const activeHorseBookingMap = useMemo(() => {
-    const map = new Map<number, string>()
-    if (!customerBookings) return map
-    for (const b of customerBookings) {
-      const st = (b.status || '').toLowerCase()
-      if (!FINISHED_STATUSES.has(st)) {
-        if (b.horses && Array.isArray(b.horses)) {
-          for (const bh of b.horses) {
-            if (bh.horseId) {
-              const num = Number(bh.horseId.replace(/\D/g, ''))
-              if (num && !map.has(num)) {
-                map.set(num, b.id)
-              }
-            }
-          }
-        }
-      }
-    }
-    return map
-  }, [customerBookings])
+  const activeHorseBookingMap = useMemo(() => activeHorseBookingById(customerBookings), [customerBookings])
 
   // Tự động loại bỏ ngựa không còn hợp lệ nếu được lưu trong bản nháp cũ.
   useEffect(() => {
@@ -75,8 +54,7 @@ export default function Step2HorsesPage() {
       const valid = prev.filter(id => {
         const h = horses.find(item => item.id === id)
         if (!h) return false
-        const numId = Number(h.id.replace(/\D/g, ''))
-        const isBusy = h.transitStatus === 'IN_TRANSIT' || activeHorseBookingMap.has(numId)
+        const isBusy = horseIsBusy(h, activeHorseBookingMap)
         return !isBusy && !isCountryMismatch(h) && !hasUnverifiedLocationCountry(h)
       })
       return valid.length === prev.length ? prev : valid
@@ -97,9 +75,7 @@ export default function Step2HorsesPage() {
   const readyList = useMemo(
     () => (horses ?? []).filter(h => {
       if (!horseReadiness(h, draft.type || undefined, destinationCountry).ok) return false
-      const numId = Number(h.id.replace(/\D/g, ''))
-      const isBusy = h.transitStatus === 'IN_TRANSIT' || activeHorseBookingMap.has(numId)
-      return !isBusy
+      return !horseIsBusy(h, activeHorseBookingMap)
     }),
     [horses, activeHorseBookingMap, draft.type, destinationCountry]
   )
@@ -140,10 +116,7 @@ export default function Step2HorsesPage() {
     if (!selected.length) return
 
     // Chặn nếu có bất kỳ ngựa nào đang bận trong đơn khác chưa hoàn tất
-    const busySelected = selectedHorses.filter(h => {
-      const numId = Number(h.id.replace(/\D/g, ''))
-      return h.transitStatus === 'IN_TRANSIT' || activeHorseBookingMap.has(numId)
-    })
+    const busySelected = selectedHorses.filter(h => horseIsBusy(h, activeHorseBookingMap))
     if (busySelected.length > 0) {
       setRelocationError(`Ngựa ${busySelected.map(h => h.name).join(', ')} hiện đang trong đơn hàng khác chưa hoàn tất, không thể tiếp tục.`)
       return
@@ -220,7 +193,7 @@ export default function Step2HorsesPage() {
             const inTransit = h.transitStatus === 'IN_TRANSIT'
             const numId = Number(h.id.replace(/\D/g, ''))
             const activeBookingCode = activeHorseBookingMap.get(numId)
-            const isBusy = inTransit || Boolean(activeBookingCode)
+            const isBusy = horseIsBusy(h, activeHorseBookingMap)
             const countryMismatch = isCountryMismatch(h)
             const countryUnverified = hasUnverifiedLocationCountry(h)
             const blocked = (!on && full) || isBusy || countryMismatch || countryUnverified

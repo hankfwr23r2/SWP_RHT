@@ -35,6 +35,30 @@ export function horseReadiness(h: HorseProfile, tripType?: 'domestic' | 'interna
   return { ok: !missing.length, missing }
 }
 
+const FINISHED_HORSE_BOOKING_STATUSES = new Set(['completed', 'cancelled', 'rejected', 'quote_expired'])
+
+export function activeHorseBookingById(bookings: readonly {
+  id: string
+  status?: string
+  horses?: readonly { horseId?: string }[]
+}[] | undefined) {
+  const active = new Map<number, string>()
+  for (const booking of bookings ?? []) {
+    if (FINISHED_HORSE_BOOKING_STATUSES.has((booking.status || '').toLowerCase())) continue
+    for (const horse of booking.horses ?? []) {
+      if (!horse.horseId) continue
+      const id = Number(horse.horseId.replace(/\D/g, ''))
+      if (id && !active.has(id)) active.set(id, booking.id)
+    }
+  }
+  return active
+}
+
+export function horseIsBusy(horse: Pick<HorseProfile, 'id' | 'transitStatus'>, activeBookings: ReadonlyMap<number, string>) {
+  const id = Number(horse.id.replace(/\D/g, ''))
+  return horse.transitStatus === 'IN_TRANSIT' || activeBookings.has(id)
+}
+
 export function horseCountryMatchesOrigin(currentCountry?: string, originCountry?: string) {
   const current = normalizeCountry(currentCountry)
   const origin = normalizeCountry(originCountry)
