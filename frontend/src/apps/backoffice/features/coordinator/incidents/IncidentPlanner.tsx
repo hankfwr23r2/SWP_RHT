@@ -7,6 +7,7 @@ import { AVG_SPEED_KMH } from '@shared/config/public-pricing'
 import { findGate, findTransitStation, RESCUE_POINTS, TRANSIT_STATIONS, type GeoPoint } from '@shared/config/network'
 import { effectiveArrivalOf, checkpointPoint, bookingPath, findLocation, incidentActionsFor, nearestTo, pointsAhead } from '@shared/lib/booking'
 import { formatDateTime } from '@shared/lib/format'
+import { insertWaypoint } from '@shared/lib/waypoints'
 import { haversineKm } from '@shared/lib/pricing'
 import { bookingsApi } from '@shared/services/bookings'
 import { clearRoadCache, thinPath, type RoadRoute } from '@shared/services/routing'
@@ -14,7 +15,7 @@ import { useRoadAlternatives, useRoadRoute } from '@shared/services/useRoadRoute
 import type { Booking, Incident, PlanLine } from '@shared/types/booking'
 import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
-import { IncidentMap, type MapLine } from '../../../shared/IncidentMap'
+import { IncidentMap, NEW_ROUTE, oldRouteLines, type MapLine } from '../../../shared/IncidentMap'
 import s from '../../../shared/booking.module.css'
 
 const MINUTES = [MIN_REST_MINUTES, 45, 60, 90, 120]
@@ -104,16 +105,20 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
   const newEta = new Date(etaValue).getTime()
   const oldEta = effectiveArrivalOf({ route: b.route, trips: b.trips?.filter(trip => trip.tripId === i.tripId) })
 
+  // Đường cũ: phần lộ trình đã lập còn lại từ chỗ xe (tắc đường: tới điểm kế tiếp, đoạn bị thay bằng đường tránh)
+  const old = oldRouteLines(b.route?.path?.length ? b.route.path : path.map(lngLat), loc, kind === 'traffic_jam' ? next : undefined)
   const lines: MapLine[] = [
-    { path: b.route?.path?.length ? b.route.path : path.map(lngLat), color: '#94a3b8', dashed: true, weight: 3, faded: true, label: 'Lộ trình đã lập' },
+    ...old.lines,
     ...(rescueLine ? [{ path: rescueLine.path, color: '#059669', flow: true, label: `Cứu hộ tới chỗ xe: ${rescueLine.km} km` }] : []),
-    ...(toStationLine ? [{ path: toStationLine.path, color: '#ea580c', flow: true, weight: 6, label: `Đưa ngựa tới ${stationName}: ${toStationLine.km} km` }] : []),
+    ...(toStationLine ? [{ path: toStationLine.path, color: NEW_ROUTE, flow: true, weight: 6, label: `Đưa ngựa tới ${stationName}: ${toStationLine.km} km`, legend: 'Đường mới' }] : []),
     ...(kind === 'traffic_jam'
-      ? (waypoints.length && detour ? [{ path: detour.path, color: '#2563eb', weight: 6, flow: true, label: 'Đường tránh qua các điểm đã chọn' }] : altList.length ? altList.map((r, idx): MapLine => ({ path: r.path, color: idx === altIdx ? '#2563eb' : '#64748b', weight: idx === altIdx ? 6 : 4, flow: idx === altIdx, faded: idx !== altIdx, label: `Đường ${idx + 1}: ${Math.round(r.km)} km · ${hm(r.hours)}`, onClick: () => { setWaypoints([]); setAltIdx(idx) } }))
-        : detour ? [{ path: detour.path, color: '#2563eb', weight: 5, dashed: true, label: 'Đường nối thẳng (chưa lấy được đường thay thế)' }] : [])
+      ? (waypoints.length && detour ? [{ path: detour.path, color: NEW_ROUTE, weight: 6, flow: true, label: 'Đường tránh qua các điểm đã chọn', legend: 'Đường mới' }] : altList.length ? altList.map((r, idx): MapLine => ({ path: r.path, color: idx === altIdx ? NEW_ROUTE : '#64748b', weight: idx === altIdx ? 6 : 4, flow: idx === altIdx, faded: idx !== altIdx, label: `Đường ${idx + 1}: ${Math.round(r.km)} km · ${hm(r.hours)}`, legend: idx === altIdx ? 'Đường mới' : undefined, onClick: () => { setWaypoints([]); setAltIdx(idx) } }))
+        : detour ? [{ path: detour.path, color: NEW_ROUTE, weight: 5, dashed: true, label: 'Đường nối thẳng (chưa lấy được đường thay thế)', legend: 'Đường mới' }] : [])
       : []),
-    ...(afterRoad.route ? [{ path: afterRoad.route.path, color: '#2563eb', dashed: true, weight: 3, faded: true, label: 'Đường đi tiếp tới điểm trả' }] : []),
+    ...(afterRoad.route ? [{ path: afterRoad.route.path, color: NEW_ROUTE, weight: 4, label: 'Đường đi tiếp tới điểm trả', legend: 'Đường mới', fit: false }] : []),
   ]
+  // So sánh đường cũ và đường mới (tắc đường: cùng điểm đầu và điểm kế tiếp)
+  const kmDiff = detour ? Math.round((detour.km - old.km) * 10) / 10 : 0
 
   const send = async () => {
     if ((horses && !stationPt) || (kind === 'vehicle_breakdown' && !rescuePt)) {
@@ -180,7 +185,9 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
         stations={horses ? stations : []} nearest={NEAR} rescues={kind === 'vehicle_breakdown' ? RESCUE_POINTS : []}
         selectedStation={horses ? stationName : undefined} selectedRescue={kind === 'vehicle_breakdown' ? rescueName : undefined}
         waypoints={waypoints}
-        onPoint={kind === 'traffic_jam' ? point => setWaypoints(points => [...points, point]) : undefined}
+        onPoint={kind === 'traffic_jam' ? point => setWaypoints(points => insertWaypoint(loc, points, next, point)) : undefined}
+        onMoveWaypoint={kind === 'traffic_jam' ? (index, point) => setWaypoints(points => points.map((p, i) => (i === index ? point : p))) : undefined}
+        onRemoveWaypoint={kind === 'traffic_jam' ? index => setWaypoints(points => points.filter((_, i) => i !== index)) : undefined}
         onStation={setStationName} onRescue={setRescueName} lines={lines}
       >
         <div className="im-head"><span className="im-icon"><i className={`fa-solid ${INCIDENT_KIND[kind].icon}`} /></span><div><b>{INCIDENT_KIND[kind].label}</b><small>Xe {i.tripId} · báo {formatDateTime(i.reportedAt)}</small></div></div>
@@ -212,8 +219,10 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
         )}
         {kind === 'traffic_jam' && (
           <div>
-            <p className="im-note">Bấm trên bản đồ để thêm các điểm đi qua theo thứ tự, dẫn xe tránh đoạn bị tắc.</p>
-            {waypoints.length > 0 && <div><p>Đã chọn {waypoints.length} điểm đi qua.</p><button type="button" className="btn btn-ghost btn-sm" onClick={() => setWaypoints(points => points.slice(0, -1))}>Bỏ điểm cuối</button><button type="button" className="btn btn-ghost btn-sm" onClick={() => setWaypoints([])}>Xóa các điểm</button></div>}
+            <p className="im-note">Bấm trên bản đồ để thêm điểm đi qua, dẫn xe tránh đoạn bị tắc. Điểm mới tự xếp đúng thứ tự trên đường. Kéo điểm để dời, bấm vào điểm để bỏ.</p>
+            {waypoints.length > 0 && <div><p>Đã chọn {waypoints.length} điểm đi qua.</p>
+              <div className="rm-chips">{waypoints.map((_, idx) => <button key={idx} type="button" aria-label={`Bỏ điểm đi qua ${idx + 1}`} onClick={() => setWaypoints(points => points.filter((__, i) => i !== idx))}>Điểm {idx + 1} ×</button>)}</div>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setWaypoints([])}>Xóa các điểm</button></div>}
             <button type="button" className="btn btn-ghost btn-sm" disabled={loading} onClick={() => { clearRoadCache(); setRouteAttempt(attempt => attempt + 1) }}>Tìm lại đường bộ</button>
             {rerouteUnchanged && <p role="alert" className="im-note">Đường đang chọn trùng phương án bị trả về. Hãy chọn đường khác hoặc thêm điểm đi qua.</p>}
             {!loading && !altChosen && <p role="alert" className="im-note">Chưa kết nối được dịch vụ đường bộ hoặc không tìm thấy tuyến. Đường thẳng chỉ để tham khảo, chưa thể trình duyệt.</p>}
@@ -226,6 +235,12 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
               )) : <p className="im-note">{alts.loading ? 'Đang tìm đường thay thế…' : 'Chưa lấy được đường bộ. Chọn điểm đi qua để tìm lại đường tránh.'}</p>}
             </div>
             <p className="im-note" style={{ marginTop: 6 }}>Giữ nguyên cửa khẩu đã chốt{gate ? ` (${gate.name})` : ''}, chỉ đổi đường đi tới điểm kế tiếp.</p>
+            {detour && old.km > 0 && (
+              <div className="im-road" aria-label="So sánh đường cũ và đường mới">
+                <span>Đường cũ <b>{old.km} km</b> → đường mới <b>{detour.km} km</b></span>
+                <small>{kmDiff === 0 ? 'Bằng quãng đường cũ' : kmDiff > 0 ? `Dài hơn ${kmDiff} km` : `Ngắn hơn ${-kmDiff} km`}</small>
+              </div>
+            )}
           </div>
         )}
         {loading && <p className="im-note"><i className="fa-solid fa-spinner fa-spin" /> Đang tính đường đi…</p>}
