@@ -69,6 +69,7 @@ class RoadRoutingServiceImplTest {
         assertThat(sent.path("costing").asText()).isEqualTo("truck");
         assertThat(sent.path("costing_options").path("truck").path("weight").asDouble()).isEqualTo(8.0);
         assertThat(sent.path("costing_options").path("truck").path("top_speed").asInt()).isEqualTo(70);
+        assertThat(sent.path("costing_options").path("truck").path("country_crossing_penalty").asInt()).isEqualTo(43200);
         assertThat(sent.path("units").asText()).isEqualTo("kilometers");
         assertThat(sent.path("date_time").path("type").asInt()).isEqualTo(1);
         assertThat(sent.path("date_time").path("value").asText()).isEqualTo("2026-11-02T05:00");

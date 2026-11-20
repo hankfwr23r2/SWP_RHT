@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { HorseInsurance } from '../types/insurance'
 import { insuranceLabels } from '../types/insurance'
@@ -13,6 +13,99 @@ const insuranceLabelsEn: Record<string, string> = {
   none: 'No Transit Insurance',
 }
 
+const formatInsuranceDate = (iso?: string) => {
+  if (!iso) return ''
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso)
+  return match ? `${match[3]}/${match[2]}/${match[1].slice(-2)}` : iso
+}
+
+const parseInsuranceDate = (display: string) => {
+  const match = /^(\d{2})\/(\d{2})\/(\d{2})$/.exec(display.trim())
+  if (!match) return undefined
+  const day = Number(match[1])
+  const month = Number(match[2])
+  const year = 2000 + Number(match[3])
+  const date = new Date(year, month - 1, day)
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return undefined
+  return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+}
+
+const formatInsuranceDateInput = (input: string) => {
+  const digits = input.replace(/\D/g, '').slice(0, 6)
+  if (digits.length <= 2) return digits
+  if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`
+}
+
+function InsuranceDateField({ label, value, onChange, onValidityChange, dateKey }: {
+  label: string
+  value?: string
+  onChange: (value?: string) => void
+  onValidityChange: (dateKey: string, valid: boolean) => void
+  dateKey: string
+}) {
+  const id = useId()
+  const nativeDateRef = useRef<HTMLInputElement>(null)
+  const [display, setDisplay] = useState(formatInsuranceDate(value))
+  const [touched, setTouched] = useState(false)
+  useEffect(() => {
+    setDisplay(formatInsuranceDate(value))
+  }, [value])
+  useEffect(() => {
+    onValidityChange(dateKey, !value || !!parseInsuranceDate(formatInsuranceDate(value)))
+  }, [dateKey, value, onValidityChange])
+  const invalid = touched && !!display && !parseInsuranceDate(display)
+  const openPicker = () => {
+    const input = nativeDateRef.current
+    if (!input) return
+    if (typeof input.showPicker === 'function') input.showPicker()
+    else input.click()
+  }
+  return <div className="form-group">
+    <label htmlFor={id}>{label}</label>
+    <div className={s.dateInput}>
+      <input
+        id={id}
+        className="form-control"
+        type="text"
+        inputMode="numeric"
+        placeholder="dd/mm/yy"
+        value={display}
+        aria-invalid={invalid}
+        onBlur={() => setTouched(true)}
+        onChange={e => {
+          const next = formatInsuranceDateInput(e.target.value)
+          setTouched(true)
+          setDisplay(next)
+          const iso = parseInsuranceDate(next)
+          onValidityChange(dateKey, !next || !!iso)
+          if (iso) onChange(iso)
+          else if (!next) onChange(undefined)
+        }}
+      />
+      <button type="button" className={s.datePickerButton} onClick={openPicker} aria-label={`Mở lịch chọn ${label.toLowerCase()}`} title="Chọn ngày">
+        <i className="fa-regular fa-calendar" aria-hidden="true" />
+      </button>
+      <input
+        ref={nativeDateRef}
+        className={s.nativeDateInput}
+        type="date"
+        aria-label={`Chọn ${label.toLowerCase()} từ lịch`}
+        value={value ?? ''}
+        onChange={e => {
+          const iso = e.target.value
+          setTouched(true)
+          setDisplay(formatInsuranceDate(iso))
+          onValidityChange(dateKey, !!iso)
+          onChange(iso || undefined)
+        }}
+        tabIndex={-1}
+      />
+    </div>
+    {invalid && <p className="form-error" role="alert">Nhập ngày hợp lệ dạng dd/mm/yy.</p>}
+  </div>
+}
+
 export function InsuranceSummary({ insurance, phase = 'all' }: { insurance?: Partial<HorseInsurance>; phase?: 'quote' | 'policy' | 'all' }) {
   const { i18n } = useTranslation()
   const labels = i18n.language === 'en' ? insuranceLabelsEn : insuranceLabels
@@ -24,13 +117,13 @@ export function InsuranceSummary({ insurance, phase = 'all' }: { insurance?: Par
     <b>{labels[i.option!] ?? i.option}</b>
     {i.provider && <div>{i18n.language === 'en' ? 'Insurance Provider: ' : 'Đơn vị bảo hiểm: '}{i.provider}</div>}
     {i.option === 'assistance' && <>
-      <div>{i.reviewed && i.premium != null ? `${i18n.language === 'en' ? 'Brokerage fee: ' : 'Phí thu hộ: '}${formatVND(i.premium)}` : (i18n.language === 'en' ? 'Awaiting 3rd-party quote' : 'Chờ báo giá bên thứ ba')}</div>
-      {i.quoteValidUntil && <div>{i18n.language === 'en' ? 'Insurance quote valid until: ' : 'Hạn báo giá bảo hiểm: '}{i.quoteValidUntil}</div>}
+      {i.reviewed && i.premium != null && <div>{i18n.language === 'en' ? 'Brokerage fee: ' : 'Phí thu hộ: '}{formatVND(i.premium)}</div>}
+      {i.quoteValidUntil && <div>{i18n.language === 'en' ? 'Insurance quote valid until: ' : 'Hạn báo giá bảo hiểm: '}{formatInsuranceDate(i.quoteValidUntil)}</div>}
     </>}
     {showPolicy && <>
-      {i.option === 'assistance' && <div>{i.arranged ? (i18n.language === 'en' ? 'Insurance contract confirmed' : 'Đã xác nhận thu xếp hợp đồng') : (i18n.language === 'en' ? 'Awaiting policy arrangement after deposit' : 'Chờ thu xếp hợp đồng sau đặt cọc')}</div>}
+      {i.option === 'assistance' && i.arranged && <div>{i18n.language === 'en' ? 'Insurance contract confirmed' : 'Đã xác nhận thu xếp hợp đồng'}</div>}
       {i.policyNumber && <div>{i18n.language === 'en' ? 'Policy / Certificate No.: ' : 'Số hợp đồng / Giấy chứng nhận: '}{i.policyNumber}</div>}
-      {i.validFrom && <div>{i18n.language === 'en' ? 'Validity: ' : 'Hiệu lực: '}{i.validFrom} – {i.validUntil}</div>}
+      {i.validFrom && <div>{i18n.language === 'en' ? 'Validity: ' : 'Hiệu lực: '}{formatInsuranceDate(i.validFrom)} – {formatInsuranceDate(i.validUntil)}</div>}
     </>}
     {i.note && <p>{i.note}</p>}
     <InsuranceDocuments urls={i.documents} names={i.documentNames} label={i.option === 'personal' ? (i18n.language === 'en' ? 'Personal Insurance Docs' : 'Chứng từ bảo hiểm cá nhân') : (i18n.language === 'en' ? 'Quotation Documents' : 'Chứng từ báo giá')} />
@@ -38,10 +131,25 @@ export function InsuranceSummary({ insurance, phase = 'all' }: { insurance?: Par
   </div>
 }
 
-export function InsuranceInputs({ value, onChange, premium = false, disabled = false, freezeQuote = false, onBusyChange }: { value: HorseInsurance; onChange: (v: HorseInsurance) => void; premium?: boolean; disabled?: boolean; freezeQuote?: boolean; onBusyChange?: (busy: boolean) => void }) {
+export function InsuranceInputs({ value, onChange, premium = false, disabled = false, freezeQuote = false, onBusyChange, onValidityChange }: {
+  value: HorseInsurance
+  onChange: (v: HorseInsurance) => void
+  premium?: boolean
+  disabled?: boolean
+  freezeQuote?: boolean
+  onBusyChange?: (busy: boolean) => void
+  onValidityChange?: (valid: boolean) => void
+}) {
   const [uploading, setUploading] = useState(false)
+  const [dateValidity, setDateValidity] = useState<Record<string, boolean>>({})
   const quoteOnly = value.option === 'assistance' && !freezeQuote
   const policyOnly = value.option === 'assistance' && freezeQuote
+  const updateDateValidity = (dateKey: string, valid: boolean) => {
+    setDateValidity(previous => previous[dateKey] === valid ? previous : { ...previous, [dateKey]: valid })
+  }
+  useEffect(() => {
+    onValidityChange?.(Object.values(dateValidity).every(Boolean))
+  }, [dateValidity, onValidityChange])
   const field = (key: 'provider' | 'policyNumber' | 'validFrom' | 'validUntil' | 'quoteValidUntil', label: string, type = 'text') => <label className="form-group">{label}<input className="form-control" type={type} disabled={freezeQuote && key === 'provider'} value={value[key] ?? ''} onChange={e => onChange({ ...value, [key]: e.target.value || undefined })} /></label>
   return <fieldset className={s.fields} disabled={disabled || uploading}>
     <div className={s.formGrid}>
@@ -52,10 +160,11 @@ export function InsuranceInputs({ value, onChange, premium = false, disabled = f
         const next = parseInsuranceMoney(el.value); onChange({ ...value, premium: next })
         requestAnimationFrame(() => { let digits = 0; let pos = 0; while (pos < el.value.length && digits < digitsBefore) { if (/[0-9]/.test(el.value[pos])) digits++; pos++ } el.setSelectionRange(pos, pos) })
       }} /><small>Phí bên bảo hiểm báo; công ty thu hộ.</small></label>}
-      {quoteOnly && field('quoteValidUntil', 'Báo giá bên thứ ba có hiệu lực đến (nếu có)', 'date')}
+      {quoteOnly && <InsuranceDateField dateKey="quoteValidUntil" label="Báo giá bên thứ ba có hiệu lực đến (nếu có)" value={value.quoteValidUntil} onChange={quoteValidUntil => onChange({ ...value, quoteValidUntil })} onValidityChange={updateDateValidity} />}
       {!quoteOnly && <>
         {field('policyNumber', 'Số hợp đồng / Giấy chứng nhận bảo hiểm')}
-        {field('validFrom', 'Hiệu lực từ', 'date')}{field('validUntil', 'Hiệu lực đến', 'date')}
+        <InsuranceDateField dateKey="validFrom" label="Hiệu lực từ" value={value.validFrom} onChange={validFrom => onChange({ ...value, validFrom })} onValidityChange={updateDateValidity} />
+        <InsuranceDateField dateKey="validUntil" label="Hiệu lực đến" value={value.validUntil} onChange={validUntil => onChange({ ...value, validUntil })} onValidityChange={updateDateValidity} />
       </>}
     </div>
     {!policyOnly && <label className="form-group">Ghi chú<textarea className="form-control" rows={3} value={value.note ?? ''} onChange={e => onChange({ ...value, note: e.target.value })} /></label>}

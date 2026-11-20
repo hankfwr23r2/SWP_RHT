@@ -44,7 +44,13 @@ export function stationsForBooking(stations: TransitStation[], international: bo
 // Lịch trình backend → dạng RoutePlan cũ: mỗi chỗ nghỉ (trạm, nghỉ dọc đường, nghỉ đêm) chia chặng, rests[i] ở cuối legs[i];
 // chờ và làm thủ tục cửa khẩu nằm trong chặng (giờ tới cửa khẩu ở borderEta) và tính là nghỉ:
 // hours của chặng = đoạn lái liên tục dài nhất trong chặng. manualNames: tên các trạm do điều phối viên chọn tay (đánh dấu manual).
-export function routePlanFromPreview(preview: RoutePreviewResponse, originName: string, destName: string, manualNames: string[] = []): Pick<RoutePlan, 'legs' | 'rests' | 'borderEta'> {
+export function routePlanFromPreview(
+  preview: RoutePreviewResponse,
+  originName: string,
+  destName: string,
+  manualNames: string[] = [],
+  excludedStops: Array<Pick<RestStop, 'afterLeg' | 'name'>> = [],
+): Pick<RoutePlan, 'legs' | 'rests' | 'borderEta'> {
   const legs: RouteLeg[] = []
   const rests: RestStop[] = []
   let from = originName
@@ -53,6 +59,9 @@ export function routePlanFromPreview(preview: RoutePreviewResponse, originName: 
   let km = 0
   let stretch = 0
   let longest = 0
+  let originalAfterLeg = 0
+  let removedPauseMs = 0
+  let removedPauseBeforeBorderMs = 0
   const close = (to: string) => {
     legs.push({ no: legs.length + 1, from, to, departAt: departAt ?? arriveAt, arriveAt, km: Math.round(km * 10) / 10, hours: Math.round(longest / 36) / 100 })
     from = to
@@ -63,8 +72,8 @@ export function routePlanFromPreview(preview: RoutePreviewResponse, originName: 
   }
   for (const e of preview.schedule) {
     if (e.type === 'DRIVE') {
-      departAt ??= e.startAt
-      arriveAt = e.endAt
+      departAt ??= e.startAt - removedPauseMs
+      arriveAt = e.endAt - removedPauseMs
       km += e.km
       stretch += (e.endAt - e.startAt) / 1000
       longest = Math.max(longest, stretch)
@@ -72,6 +81,15 @@ export function routePlanFromPreview(preview: RoutePreviewResponse, originName: 
       stretch = 0
     } else if (STOPS.has(e.type)) {
       const name = restName(e.type, e.place)
+      originalAfterLeg++
+      if (excludedStops.some(r => r.afterLeg === originalAfterLeg && r.name === name)) {
+        const pauseMs = e.endAt - e.startAt
+        removedPauseMs += pauseMs
+        if (preview.borderArrivalAt != null && e.startAt < preview.borderArrivalAt) {
+          removedPauseBeforeBorderMs += pauseMs
+        }
+        continue
+      }
       close(name)
       rests.push({
         afterLeg: legs.length,
@@ -81,11 +99,15 @@ export function routePlanFromPreview(preview: RoutePreviewResponse, originName: 
         ...(manualNames.includes(name) ? { manual: true } : {}),
         ...(e.type === 'OVERNIGHT' ? { overnight: true } : {}),
       })
-      arriveAt = e.endAt
+      arriveAt = e.endAt - removedPauseMs
     }
   }
   close(destName)
-  return { legs, rests, borderEta: preview.borderArrivalAt ?? undefined }
+  return {
+    legs,
+    rests,
+    borderEta: preview.borderArrivalAt == null ? undefined : preview.borderArrivalAt - removedPauseBeforeBorderMs,
+  }
 }
 
 // Đường vẽ và số liệu tổng của tuyến xe tải backend, theo dạng RoadRoute mà bản đồ đang dùng

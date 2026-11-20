@@ -57,6 +57,21 @@ describe('đổi lịch trình backend sang RoutePlan', () => {
     expect(plan.borderEta).toBeUndefined()
   })
 
+  it('bỏ chỗ nghỉ hệ thống khỏi lịch trình và cập nhật chặng liên tục', () => {
+    const plan = routePlanFromPreview(domestic, 'Kho TP.HCM', 'Đà Lạt', [], [
+      { afterLeg: 1, name: 'Trạm nghỉ B' },
+    ])
+
+    expect(plan.legs.map(l => [l.from, l.to, l.departAt, l.arriveAt, l.km, l.hours])).toEqual([
+      ['Kho TP.HCM', 'Nghỉ dọc đường (km 490)', VN('2026-11-02T05:00'), VN('2026-11-02T12:30'), 490, 7.5],
+      ['Nghỉ dọc đường (km 490)', 'Đà Lạt', VN('2026-11-02T13:00'), VN('2026-11-02T14:30'), 110, 1.5],
+    ])
+    expect(plan.rests).toEqual([
+      { afterLeg: 1, name: 'Nghỉ dọc đường (km 490)', minutes: 30, lat: 11.7, lng: 108.2 },
+    ])
+    expect(validateRoutePlan(plan, false).errors).toContain('Chặng 1 đi liên tục 7.5 giờ, vượt 4 giờ. Thêm trạm nghỉ.')
+  })
+
   it('chờ và làm thủ tục cửa khẩu nằm trong chặng, không tính là giờ lái', () => {
     const plan = routePlanFromPreview(international, 'Kho TP.HCM', 'Phnom Penh')
 
