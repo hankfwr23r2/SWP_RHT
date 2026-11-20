@@ -3,7 +3,7 @@ import { Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { BOOKING_STEPS, DEPOSIT_RATE, QUOTE_VALID_HOURS } from '@shared/config/booking-rules'
-import { horseReadiness } from '@shared/lib/booking'
+import { activeHorseBookingById, horseIsBusy, horseReadiness } from '@shared/lib/booking'
 import { formatDate } from '@shared/lib/format'
 import { useStaggerIn } from '@shared/motion/motion'
 import { usePageData } from '@shared/routing/pageData'
@@ -50,8 +50,9 @@ export default function PortalPage() {
   const withNext = (orders ?? []).map(b => ({ b, next: nextStep(b, now) }))
   const todo = withNext.filter(x => x.next.actionNeeded)
   const inProgress = withNext.filter(x => ['pending_intake', 'under_review', 'pending_commercial'].includes(x.b.status)).length
-  const ready = (horses ?? []).filter(h => horseReadiness(h).ok).length
-  const needDocs = (horses ?? []).length - ready
+  const activeBookings = activeHorseBookingById(orders)
+  const ready = (horses ?? []).filter(h => horseReadiness(h).ok && !horseIsBusy(h, activeBookings)).length
+  const needDocs = (horses ?? []).filter(h => !horseReadiness(h).ok).length
 
   const reveal = useLandingReveal()
 
