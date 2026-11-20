@@ -18,7 +18,7 @@ export function ManagerUrgentBanner() {
       <i className="fa-solid fa-triangle-exclamation" aria-hidden="true" />
       <div className={s.text}>
         <b>Cần xử lý ngay · {failed.length} đơn không nhận được ngựa</b>
-        <span>{failed.map(b => `${b.id}: ${pickupFailReason(b).toLowerCase()}`).join('; ')}. Xe và kíp đang chờ.</span>
+        <span>{failed.map(b => `${b.id}: ${pickupFailReason(b).toLowerCase()}`).join(', ')}. Xe và kíp đang chờ.</span>
       </div>
       <div className={s.actions}>
         {failed.map(b => (
