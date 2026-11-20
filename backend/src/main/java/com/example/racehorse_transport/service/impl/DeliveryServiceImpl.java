@@ -27,7 +27,6 @@ import com.example.racehorse_transport.util.BookingDetailsJson;
 import com.example.racehorse_transport.util.BookingHistory;
 import com.example.racehorse_transport.util.BookingTripRules;
 import com.example.racehorse_transport.service.BookingVisibilityService;
-import com.example.racehorse_transport.util.PaymentAmountLimits;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -125,16 +124,7 @@ public class DeliveryServiceImpl implements DeliveryService {
             throw new IllegalStateException("Đơn không ở bước bàn giao nên không báo quá hạn được.");
         }
         String action = request.getSelectedAction() != null ? request.getSelectedAction() : "STABLE_NEARBY";
-        if ("STABLE_NEARBY".equalsIgnoreCase(action)) {
-            BigDecimal estimatedCost = request.getEstimatedCost();
-            if (estimatedCost == null || estimatedCost.signum() <= 0
-                    || estimatedCost.stripTrailingZeros().scale() > 0) {
-                throw new IllegalArgumentException("Chi phí lưu chuồng phải là số nguyên lớn hơn 0.");
-            }
-            if (PaymentAmountLimits.exceedsMaximum(estimatedCost)) {
-                throw new IllegalArgumentException("Chi phí lưu chuồng vượt quá giới hạn thanh toán được hỗ trợ.");
-            }
-        }
+        boolean stabled = "STABLE_NEARBY".equalsIgnoreCase(action);
         BookingDetailsPayloadDto tripPayload = extractPayload(booking);
         var trip = tripPayload.getTrips() == null ? null : tripPayload.getTrips().stream()
                 .filter(t -> request.getTripId() == null || request.getTripId().equals(t.getTripId()))
@@ -158,6 +148,15 @@ public class DeliveryServiceImpl implements DeliveryService {
         if (waitedMinutes < 120 && !request.isConfirmEarly()) {
             throw new IllegalArgumentException("Mới chờ " + waitedMinutes + "/120 phút ở điểm giao. Cần xác nhận báo quá hạn sớm.");
         }
+        if (stabled) {
+            // Tiền chuồng người nhận tự trả khi lấy ngựa: kíp xe chỉ ghi chuồng, địa chỉ, số điện thoại và ảnh bằng chứng
+            if (blank(request.getPartnerName()) || blank(request.getPartnerAddress()) || blank(request.getPartnerPhone())) {
+                throw new IllegalArgumentException("Nhập tên chuồng, địa chỉ và số điện thoại chuồng để báo khách tới nhận ngựa.");
+            }
+            if (blank(request.getPhotoUrl())) {
+                throw new IllegalArgumentException("Cần ảnh chụp ngựa đã gửi tại chuồng làm bằng chứng.");
+            }
+        }
         Double[] where = deliveryLocation(deliveryPoint, tripPayload);
 
         String reason = request.getTimeoutReason() != null ? request.getTimeoutReason() : "UNREACHABLE";
@@ -167,43 +166,74 @@ public class DeliveryServiceImpl implements DeliveryService {
                 .bookingID(booking)
                 .incidentType("HANDOVER_TIMEOUT")
                 .incidentName("Quá hạn 2 giờ: Người nhận chưa nhận được ngựa (" + reason + ")")
-                .description("Kích hoạt an sinh ngựa: " + ("STABLE_NEARBY".equalsIgnoreCase(action) ? "Thuê chuồng lưu trú khẩn cấp gần nhất" : "Chở ngựa quay về Trụ sở chính VN")
+                .description((stabled ? "Gửi ngựa tại chuồng " + request.getPartnerName().trim() + ", " + request.getPartnerAddress().trim()
+                        + " (" + request.getPartnerPhone().trim() + "), người nhận tự tới lấy và trả tiền chuồng" : "Chở ngựa quay về Trụ sở chính VN")
                         + (waitedMinutes < 120 ? ". Tài xế báo sớm sau " + waitedMinutes + " phút chờ" : "") + ". Ghi chú: " + request.getNote())
                 .resolutionType("HANDOVER_TIMEOUT")
                 .partnerName(request.getPartnerName())
                 .partnerPhone(request.getPartnerPhone())
-                .estimatedCost(request.getEstimatedCost())
+                .partnerService(stabled ? request.getPartnerAddress().trim() : null)
+                .photoUrl(stabled ? request.getPhotoUrl().trim() : null)
                 .actualCost(null)
                 .costBearer("COMPANY") // Công ty chịu toàn bộ chi phí chờ bàn giao và an sinh
                 .tripId(trip.getTripId())
                 .locationLat(where[0])
                 .locationLng(where[1])
                 .staffID(staffRepository.findByUser_Username(username).orElse(null))
-                .status("active")
+                .status(stabled ? "resolved" : "active")
                 .createdAt(Instant.now())
+                .resolvedAt(stabled ? Instant.now() : null)
                 .build();
         incidentRepository.save(incident);
 
-        BookingDetailsPayloadDto payload = extractPayload(booking);
-        if ("RETURN_TO_HQ".equalsIgnoreCase(action)) {
-            booking.setStatus("returning_to_hq");
-            BookingHistory.appendHistory(payload, request.getDriverUsername() != null ? request.getDriverUsername() : "Kíp xe",
-                    "Chở ngựa về trụ sở");
+        String actor = request.getDriverUsername() != null ? request.getDriverUsername() : "Kíp xe";
+        String stable = stabled ? request.getPartnerName().trim() + ", " + request.getPartnerAddress().trim() : null;
+        if (stabled) {
+            // Gửi ngựa tại chuồng coi như giao xong chuyến này: ghi chuồng, ảnh bằng chứng, vị trí ngựa và cho kíp xe về trụ sở
+            long now = Instant.now().toEpochMilli();
+            Map<String, Object> run = trip.getRun();
+            Map<String, Object> stabling = new HashMap<>();
+            stabling.put("name", request.getPartnerName().trim());
+            stabling.put("address", request.getPartnerAddress().trim());
+            stabling.put("phone", request.getPartnerPhone().trim());
+            stabling.put("photo", request.getPhotoUrl().trim());
+            stabling.put("at", now);
+            stabling.put("by", actor);
+            run.put("stabled", stabling);
+            run.put("deliveredAt", now);
+            deliveryPoint.put("doneAt", now);
+            Map<String, Object> homeReturn = new HashMap<>();
+            homeReturn.put("fromPlace", stable);
+            homeReturn.put("earliestAt", now + 1000);
+            homeReturn.put("eta", now + 7200000L);
+            trip.setHomeReturn(homeReturn);
+            BookingHistory.appendHistory(tripPayload, actor, "Người nhận không tới, gửi ngựa tại chuồng " + stable + ". Kíp xe về trụ sở");
+            if (tripPayload.getTrips().stream()
+                    .filter(t -> !BookingTripRules.horsesOnTrip(tripPayload, t).isEmpty())
+                    .allMatch(t -> t.getRun() != null && t.getRun().get("deliveredAt") != null)) {
+                markDelivered(booking);
+            }
+            locations.recordTripStabling(booking, tripPayload, trip, actor, request.getPhotoUrl().trim(), now, stable);
         } else {
-            booking.setStatus("handover_timeout");
-            BookingHistory.appendHistory(payload, request.getDriverUsername() != null ? request.getDriverUsername() : "Kíp xe",
-                    "Quá hạn bàn giao: Lưu chuồng tạm");
+            booking.setStatus("returning_to_hq");
+            BookingHistory.appendHistory(tripPayload, actor, "Chở ngựa về trụ sở");
         }
 
-        savePayload(booking, payload);
+        savePayload(booking, tripPayload);
         Booking updated = bookingRepository.save(booking);
 
-        logAction("DELIVERY_TIMEOUT", updated.getId(),
-                "Kích hoạt xử lý ngoại lệ bàn giao quá giờ: " + action + ", chi phí dự kiến: " + request.getEstimatedCost());
+        logAction("DELIVERY_TIMEOUT", updated.getId(), "Kích hoạt xử lý ngoại lệ bàn giao quá giờ: " + action
+                + (stabled ? ", gửi ngựa tại " + stable : ""));
 
+        if (stabled) {
+            staffNotifier.toCustomer(updated, "Ngựa đang gửi tại chuồng · " + updated.getCode(),
+                    "Người nhận chưa tới nhận ngựa nên kíp xe đã gửi ngựa tại chuồng " + request.getPartnerName().trim()
+                            + ", địa chỉ " + request.getPartnerAddress().trim() + ", số điện thoại " + request.getPartnerPhone().trim()
+                            + ". Vui lòng liên hệ chuồng để tới nhận ngựa. Tiền chuồng thanh toán trực tiếp với chuồng khi nhận ngựa.");
+        }
         staffNotifier.toManagers(updated, "Quá hạn bàn giao · " + updated.getCode(),
-                ("RETURN_TO_HQ".equalsIgnoreCase(action) ? "Người nhận không tới, xe chở ngựa về trụ sở." : "Người nhận không tới quá 2 giờ, ngựa đưa vào chuồng lưu trú.")
-                        + " Liên hệ khách để hẹn lại.", "/manager/incidents");
+                (stabled ? "Người nhận không tới, ngựa gửi tại chuồng " + stable + " (" + request.getPartnerPhone().trim() + "). Khách đã được báo, kíp xe về trụ sở."
+                        : "Người nhận không tới, xe chở ngựa về trụ sở. Liên hệ khách để hẹn lại."), "/manager/incidents");
         log.info("Delivery timeout reported for booking ID={}, action={}", updated.getId(), action);
         return mapToResponse(updated);
     }
@@ -223,6 +253,10 @@ public class DeliveryServiceImpl implements DeliveryService {
                 && last.get(0) instanceof Number lat && last.get(1) instanceof Number lng)
             return new Double[]{lat.doubleValue(), lng.doubleValue()};
         return new Double[]{null, null};
+    }
+
+    private static boolean blank(String value) {
+        return value == null || value.isBlank();
     }
 
     private BookingDetailsPayloadDto extractPayload(Booking b) {

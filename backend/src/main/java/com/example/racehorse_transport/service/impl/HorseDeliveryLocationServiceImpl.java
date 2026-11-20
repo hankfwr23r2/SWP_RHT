@@ -38,20 +38,31 @@ public class HorseDeliveryLocationServiceImpl implements HorseDeliveryLocationSe
         }
         Long departedAt = trip.getRun() != null && trip.getRun().get("startedAt") instanceof Number time
                 ? time.longValue() : null;
-        recordDelivery(booking, payload, assigned, trip.getTripId(), actor, proofImageUrl, departedAt, arrivedAt);
+        recordDelivery(booking, payload, assigned, trip.getTripId(), actor, proofImageUrl, departedAt, arrivedAt,
+                booking.getDropoffAddress(), "Hoàn tất vận chuyển và bàn giao ngựa");
+    }
+
+    @Transactional
+    public void recordTripStabling(Booking booking, BookingDetailsPayloadDto payload, VehicleTripDto trip,
+            String actor, String proofImageUrl, long arrivedAt, String stablePlace) {
+        Long departedAt = trip.getRun() != null && trip.getRun().get("startedAt") instanceof Number time
+                ? time.longValue() : null;
+        List<String> assigned = trip.getHorseIds() != null ? trip.getHorseIds() : List.of();
+        recordDelivery(booking, payload, assigned, trip.getTripId(), actor, proofImageUrl, departedAt, arrivedAt,
+                stablePlace, "Người nhận không tới, ngựa gửi tại chuồng chờ người nhận tới lấy");
     }
 
     @Transactional
     public void recordBookingHandover(Booking booking, BookingDetailsPayloadDto payload,
             String actor, String proofImageUrl, long arrivedAt) {
         recordDelivery(booking, payload, bookingHorseIds(payload), booking.getCode(),
-                actor, proofImageUrl, null, arrivedAt);
+                actor, proofImageUrl, null, arrivedAt, booking.getDropoffAddress(), "Hoàn tất vận chuyển và bàn giao ngựa");
     }
 
     private void recordDelivery(Booking booking, BookingDetailsPayloadDto payload, Collection<String> deliveredIds,
-            String tripCode, String actor, String proofImageUrl, Long departedAt, long arrivedAt) {
+            String tripCode, String actor, String proofImageUrl, Long departedAt, long arrivedAt,
+            String destination, String notes) {
         if (deliveredIds.isEmpty()) return;
-        String destination = booking.getDropoffAddress();
         if (destination == null || destination.isBlank()) {
             throw new IllegalStateException("Đơn hàng chưa có địa chỉ bàn giao ngựa.");
         }
@@ -87,7 +98,7 @@ public class HorseDeliveryLocationServiceImpl implements HorseDeliveryLocationSe
                     .fromLocation(booking.getPickupAddress()).toLocation(destination.trim())
                     .departAt(departedAt).arrivedAt(arrivedAt).createdAt(arrivedAt)
                     .driverName(actor).proofImageUrl(proofImageUrl)
-                    .notes("Hoàn tất vận chuyển và bàn giao ngựa")
+                    .notes(notes)
                     .source("SYSTEM_DELIVERY").build());
         }
     }

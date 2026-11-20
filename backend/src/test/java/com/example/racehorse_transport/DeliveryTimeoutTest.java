@@ -35,7 +35,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 // Người nhận không tới điểm giao (quá hạn bàn giao):
 // - Chưa đủ 2 giờ thì vẫn báo được, nhưng phải xác nhận rõ ràng (demo không bắt chờ).
 // - Chỉ tài xế được phân công, và xe phải đã tới điểm giao.
-// - Sự cố có mã chuyến và vị trí để quản lý thấy; giao ngựa xong thì sự cố tự đóng.
+// - Sự cố có mã chuyến và vị trí để quản lý thấy.
+// - Gửi ngựa tại chuồng (người nhận tự tới lấy, tự trả tiền chuồng): chuyến coi như đã giao, sự cố đóng, kíp xe về trụ sở.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @MockTurnstileVerification
 class DeliveryTimeoutTest {
@@ -115,12 +116,14 @@ class DeliveryTimeoutTest {
         HttpResponse<String> response = timeout(booking, driverToken, true);
 
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
-        assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus()).isEqualTo("handover_timeout");
+        assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus()).isEqualTo("delivered_pending_settlement");
         Incident incident = incidents.findByBookingID_Id(booking.getId()).get(0);
         assertThat(incident.getIncidentType()).isEqualTo("HANDOVER_TIMEOUT");
-        assertThat(incident.getCostBearer()).isEqualTo("COMPANY");
         assertThat(incident.getActualCost()).isNull();
-        assertThat(incident.getStatus()).isEqualTo("active");
+        assertThat(incident.getEstimatedCost()).isNull();
+        assertThat(incident.getStatus()).isEqualTo("resolved");
+        assertThat(incident.getPartnerName()).isEqualTo("Chuồng tạm");
+        assertThat(incident.getPartnerPhone()).isEqualTo("0901234567");
         assertThat(incident.getTripId()).isEqualTo("TRP-1");
         assertThat(incident.getLocationLat()).isEqualTo(11.56);
         assertThat(incident.getLocationLng()).isEqualTo(104.92);
@@ -153,20 +156,30 @@ class DeliveryTimeoutTest {
         HttpResponse<String> response = timeout(booking, driverToken, false);
 
         assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
-        assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus()).isEqualTo("handover_timeout");
+        assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus()).isEqualTo("delivered_pending_settlement");
     }
 
     @Test
-    void completingTheDeliveryLaterClosesTheTimeoutIncident() throws Exception {
-        Booking booking = atDelivery(10, ",\"handoverPhoto\":\"https://example.com/bb.jpg\",\"returnedOriginals\":true");
-        assertThat(timeout(booking, driverToken, true).statusCode()).isEqualTo(200);
+    void stablingTheHorseLetsTheCrewHeadHomeAndKeepsTheStableForTheCustomer() throws Exception {
+        Booking booking = atDelivery(130, "");
 
-        HttpResponse<String> response = post("/field/bookings/" + booking.getCode() + "/trip-update", driverToken,
-                "{\"tripId\":\"TRP-1\",\"action\":\"COMPLETE_DELIVERY\",\"actor\":\"Tài xế\",\"payload\":{}}");
+        assertThat(timeout(booking, driverToken, false).statusCode()).isEqualTo(200);
 
-        assertThat(response.statusCode()).as(response.body()).isEqualTo(200);
-        assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus()).isEqualTo("delivered_pending_settlement");
-        assertThat(incidents.findByBookingID_Id(booking.getId()).get(0).getStatus()).isEqualTo("resolved");
+        String details = bookings.findById(booking.getId()).orElseThrow().getDetailsJson();
+        assertThat(details).contains("\"stabled\"").contains("Chuồng tạm").contains("Ấp 3, Đức Hòa").contains("0901234567")
+                .contains("https://example.com/chuong.jpg").contains("\"deliveredAt\"").contains("\"homeReturn\"");
+    }
+
+    @Test
+    void stablingWithoutAddressPhoneOrPhotoIsRejected() throws Exception {
+        Booking booking = atDelivery(130, "");
+
+        HttpResponse<String> response = post("/delivery/" + booking.getCode() + "/timeout", driverToken,
+                "{\"tripId\":\"TRP-1\",\"timeoutReason\":\"UNREACHABLE\",\"selectedAction\":\"STABLE_NEARBY\",\"partnerName\":\"Chuồng tạm\",\"note\":\"x\"}");
+
+        assertThat(response.statusCode()).as(response.body()).isBetween(400, 499);
+        assertThat(bookings.findById(booking.getId()).orElseThrow().getStatus()).isEqualTo("in_transit");
+        assertThat(incidents.findByBookingID_Id(booking.getId())).isEmpty();
     }
 
     // Xe đã chạy tới điểm giao; arrivedMinutesAgo < 0 nghĩa là chưa tới
@@ -194,7 +207,8 @@ class DeliveryTimeoutTest {
     private HttpResponse<String> timeout(Booking booking, String token, boolean confirmEarly) throws Exception {
         return post("/delivery/" + booking.getCode() + "/timeout", token,
                 "{\"tripId\":\"TRP-1\",\"timeoutReason\":\"UNREACHABLE\",\"selectedAction\":\"STABLE_NEARBY\","
-                + "\"partnerName\":\"Chuồng tạm\",\"estimatedCost\":1500000,\"note\":\"Gọi không nghe máy\",\"confirmEarly\":" + confirmEarly + "}");
+                + "\"partnerName\":\"Chuồng tạm\",\"partnerAddress\":\"Ấp 3, Đức Hòa\",\"partnerPhone\":\"0901234567\","
+                + "\"photoUrl\":\"https://example.com/chuong.jpg\",\"note\":\"Gọi không nghe máy\",\"confirmEarly\":" + confirmEarly + "}");
     }
 
     private String staffLogin(String username, String role, String code) throws Exception {
