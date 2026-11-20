@@ -131,12 +131,14 @@ export function InsuranceSummary({ insurance, phase = 'all' }: { insurance?: Par
   </div>
 }
 
-export function InsuranceInputs({ value, onChange, premium = false, disabled = false, freezeQuote = false, onBusyChange, onValidityChange }: {
+export function InsuranceInputs({ value, onChange, premium = false, disabled = false, freezeQuote = false, lockDocuments = false, onBusyChange, onValidityChange }: {
   value: HorseInsurance
   onChange: (v: HorseInsurance) => void
   premium?: boolean
   disabled?: boolean
   freezeQuote?: boolean
+  // Chứng từ do khách gửi: chỉ xem và tải xuống
+  lockDocuments?: boolean
   onBusyChange?: (busy: boolean) => void
   onValidityChange?: (valid: boolean) => void
 }) {
@@ -159,7 +161,7 @@ export function InsuranceInputs({ value, onChange, premium = false, disabled = f
         const digitsBefore = el.value.slice(0, el.selectionStart ?? el.value.length).replace(/[^0-9]/g, '').length
         const next = parseInsuranceMoney(el.value); onChange({ ...value, premium: next })
         requestAnimationFrame(() => { let digits = 0; let pos = 0; while (pos < el.value.length && digits < digitsBefore) { if (/[0-9]/.test(el.value[pos])) digits++; pos++ } el.setSelectionRange(pos, pos) })
-      }} /><small>Phí bên bảo hiểm báo; công ty thu hộ.</small></label>}
+      }} /><small>Phí bên bảo hiểm báo, công ty thu hộ.</small></label>}
       {quoteOnly && <InsuranceDateField dateKey="quoteValidUntil" label="Báo giá bên thứ ba có hiệu lực đến (nếu có)" value={value.quoteValidUntil} onChange={quoteValidUntil => onChange({ ...value, quoteValidUntil })} onValidityChange={updateDateValidity} />}
       {!quoteOnly && <>
         {field('policyNumber', 'Số hợp đồng / Giấy chứng nhận bảo hiểm')}
@@ -168,10 +170,15 @@ export function InsuranceInputs({ value, onChange, premium = false, disabled = f
       </>}
     </div>
     {!policyOnly && <label className="form-group">Ghi chú<textarea className="form-control" rows={3} value={value.note ?? ''} onChange={e => onChange({ ...value, note: e.target.value })} /></label>}
-    <InsuranceDocuments label={policyOnly ? 'Chứng từ hợp đồng' : quoteOnly ? 'Chứng từ báo giá' : 'Chứng từ bảo hiểm cá nhân'} urls={policyOnly ? value.policyDocuments : value.documents} names={value.documentNames} disabled={disabled}
-      onBusyChange={busy => { setUploading(busy); onBusyChange?.(busy) }}
-      onChange={(urls, names) => onChange({ ...value, [policyOnly ? 'policyDocuments' : 'documents']: urls, documentNames: names })} />
-    <small className="text-muted">Thay đổi và gỡ chứng từ có hiệu lực với hồ sơ khi lưu.</small>
+    {lockDocuments ? <>
+      <InsuranceDocuments label="Chứng từ bảo hiểm cá nhân (khách gửi)" urls={value.documents} names={value.documentNames} />
+      {!value.documents?.length && <small className="text-muted">Khách chưa gửi chứng từ bảo hiểm cá nhân.</small>}
+    </> : <>
+      <InsuranceDocuments label={policyOnly ? 'Chứng từ hợp đồng' : quoteOnly ? 'Chứng từ báo giá' : 'Chứng từ bảo hiểm cá nhân'} urls={policyOnly ? value.policyDocuments : value.documents} names={value.documentNames} disabled={disabled}
+        onBusyChange={busy => { setUploading(busy); onBusyChange?.(busy) }}
+        onChange={(urls, names) => onChange({ ...value, [policyOnly ? 'policyDocuments' : 'documents']: urls, documentNames: names })} />
+      <small className="text-muted">Thay đổi và gỡ chứng từ có hiệu lực với hồ sơ khi lưu.</small>
+    </>}
   </fieldset>
 }
 export function CustomerInsuranceFields({ value, option, onChange, onBusyChange }: { value?: HorseInsurance; option: string; onChange: (v: HorseInsurance) => void; onBusyChange?: (busy: boolean) => void }) {

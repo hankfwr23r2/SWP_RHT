@@ -66,6 +66,11 @@ public class TripProgressServiceImpl implements TripProgressService {
     private final BookingQueryService bookingQueryService;
 
     private static final long MAX_TOLL_PER_RECEIPT = 10_000_000L;
+    // Chia việc trong kíp xe, khớp với màn hình tài xế và hộ tống. Nhận lệnh và xác nhận về trụ sở thì ai cũng làm.
+    private static final Set<String> DRIVER_ACTIONS = Set.of("DEPART_TO_PICKUP", "ARRIVE_PICKUP", "COLLECT_ORIGINALS",
+            "UPLOAD_HANDOVER", "START_JOURNEY", "ARRIVE_CHECKPOINT", "CONTINUE_JOURNEY", "CUSTOMS_CLEARED",
+            "RETURN_ORIGINALS", "COMPLETE_DELIVERY", "CHIP_MISMATCH", "RETURN_HORSES", "ADD_TOLL", "REMOVE_TOLL");
+    private static final Set<String> ESCORT_ACTIONS = Set.of("SCAN_CHIP", "EXCLUDE_UNFIT_HORSE", "SUBMIT_WELFARE");
 
     private void validateJourneyStart(Booking booking, BookingDetailsPayloadDto payload, VehicleTripDto trip) {
         if (trip.getDepartedAt() == null) {
@@ -82,6 +87,18 @@ public class TripProgressServiceImpl implements TripProgressService {
         if (!Boolean.TRUE.equals(payment.get("balancePaid"))) {
             throw new IllegalStateException("Khách hàng cần thanh toán đủ 70% còn lại trước khi xe xuất phát.");
         }
+    }
+
+    // Xe vừa bị loại hết ngựa trong khi xe khác của đơn còn chở: xe rỗng không chạy tuyến mà quay về trụ sở
+    private void sendEmptyTripHome(Booking booking, BookingDetailsPayloadDto payload, VehicleTripDto trip, long now) {
+        if (!BookingTripRules.horsesOnTrip(payload, trip).isEmpty() || trip.getDepartedAt() == null || trip.getHomeReturn() != null) return;
+        if (payload.getTrips().stream().allMatch(t -> BookingTripRules.horsesOnTrip(payload, t).isEmpty())) return; // cả đơn không còn ngựa: chờ quản lý hủy
+        Map<String, Object> hr = new HashMap<>();
+        hr.put("fromPlace", booking.getPickupAddress() != null ? booking.getPickupAddress() : "Điểm đón");
+        hr.put("earliestAt", now + 1000);
+        hr.put("eta", now + 7200000L);
+        trip.setHomeReturn(hr);
+        BookingHistory.appendWithDefaultActor(payload, "Hệ thống", "Chuyến " + trip.getTripId() + " không còn ngựa để chở, xe về trụ sở");
     }
 
     // Loại hết ngựa ở điểm đón thì xe không có gì để chở: đơn sang "Không nhận được ngựa" chờ quản lý hủy
@@ -179,7 +196,9 @@ public class TripProgressServiceImpl implements TripProgressService {
         switch (action.toUpperCase()) {
             case "ACKNOWLEDGE":
             case "ACK": {
-                String who = String.valueOf(reqPayload.getOrDefault("who", "driver"));
+                // Tài xế / hộ tống chỉ nhận lệnh cho chính mình; nhân viên điều hành mới ghi thay theo "who"
+                String who = "DRIVER".equalsIgnoreCase(role) ? "driver" : "ESCORT".equalsIgnoreCase(role) ? "escort"
+                        : String.valueOf(reqPayload.getOrDefault("who", "driver"));
                 Map<String, Object> acks = targetTrip.getAcks() != null ? targetTrip.getAcks() : new HashMap<>();
                 acks.put(who, now);
                 targetTrip.setAcks(acks);
@@ -285,7 +304,7 @@ public class TripProgressServiceImpl implements TripProgressService {
                         .findFirst().orElse(null);
                 if (recordedChip == null) {
                     throw new IllegalArgumentException("Chip " + chip + " không khớp ngựa nào trên chuyến này. "
-                            + "Quét lại; nếu vẫn sai, tài xế báo \"Chip không khớp hồ sơ\" cho con ngựa đó.");
+                            + "Quét lại. Nếu vẫn sai, tài xế báo \"Chip không khớp hồ sơ\" cho con ngựa đó.");
                 }
                 Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
                 @SuppressWarnings("unchecked")
@@ -317,6 +336,10 @@ public class TripProgressServiceImpl implements TripProgressService {
                 break;
             }
             case "EXCLUDE_UNFIT_HORSE": {
+                // Chỉ loại ngựa ở điểm đón; xe đã chạy thì xử lý sức khỏe ngựa bằng báo sự cố
+                if (targetTrip.getRun() != null && targetTrip.getRun().get("startedAt") != null) {
+                    throw new IllegalStateException("Hành trình đã bắt đầu, không loại ngựa ở bước nhận ngựa được nữa. Hãy báo sự cố sức khỏe ngựa.");
+                }
                 String horseId = String.valueOf(reqPayload.getOrDefault("horseId", "")).trim();
                 String reason = String.valueOf(reqPayload.getOrDefault("reason", "Ốm / Sốt không đủ điều kiện khởi hành")).trim();
                 String symptoms = String.valueOf(reqPayload.getOrDefault("symptoms", "")).trim();
@@ -435,6 +458,7 @@ public class TripProgressServiceImpl implements TripProgressService {
 
                 // 5. Ghi lịch sử đơn hàng
                 BookingHistory.appendWithDefaultActor(payload, actor, "Từ chối tiếp nhận ngựa");
+                sendEmptyTripHome(booking, payload, targetTrip, now);
                 markPickupFailedIfNoHorseLeft(booking, payload, actor, "Ngựa không đủ điều kiện sức khỏe");
                 break;
             }
@@ -473,6 +497,7 @@ public class TripProgressServiceImpl implements TripProgressService {
                 }
                 BookingHistory.appendWithDefaultActor(payload, actor, "Báo chip không khớp hồ sơ: " + horse.getName()
                         + " (hồ sơ " + horse.getMicrochip() + ", đọc được " + chipRead + ")");
+                sendEmptyTripHome(booking, payload, targetTrip, now);
                 markPickupFailedIfNoHorseLeft(booking, payload, actor, "Chip ngựa không khớp hồ sơ");
                 break;
             }
@@ -954,19 +979,13 @@ public class TripProgressServiceImpl implements TripProgressService {
         }
 
         String normalizedAction = action.toUpperCase(java.util.Locale.ROOT);
-        if ("CHIP_MISMATCH".equals(normalizedAction) && !"DRIVER".equalsIgnoreCase(role)) {
-            throw new org.springframework.security.access.AccessDeniedException(
-                    "Chỉ tài xế được báo chip không khớp hồ sơ.");
+        if (DRIVER_ACTIONS.contains(normalizedAction) && !"DRIVER".equalsIgnoreCase(role)) {
+            throw new org.springframework.security.access.AccessDeniedException("Thao tác này do tài xế của chuyến thực hiện.");
         }
-        if ("RETURN_HORSES".equals(normalizedAction) && !"DRIVER".equalsIgnoreCase(role)) {
-            throw new org.springframework.security.access.AccessDeniedException(
-                    "Chỉ tài xế được xác nhận trả ngựa và ký biên bản.");
+        if (ESCORT_ACTIONS.contains(normalizedAction) && !"ESCORT".equalsIgnoreCase(role)) {
+            throw new org.springframework.security.access.AccessDeniedException("Thao tác này do hộ tống của chuyến thực hiện.");
         }
         if (!"DEPART_TO_PICKUP".equals(normalizedAction) && !"ARRIVE_PICKUP".equals(normalizedAction)) return;
-        if (!"DRIVER".equalsIgnoreCase(role)) {
-            throw new org.springframework.security.access.AccessDeniedException(
-                    "Chỉ tài xế được phép xuất phát hoặc xác nhận đến điểm đón.");
-        }
 
         for (Booking booking : bookingRepository.findAll()) {
             BookingDetailsPayloadDto payload = BookingDetailsJson.readWithMedicalDefaults(objectMapper, booking);
@@ -976,8 +995,10 @@ public class TripProgressServiceImpl implements TripProgressService {
                 if (booking.getId().equals(targetBooking.getId())
                         && java.util.Objects.equals(trip.getTripId(), targetTrip.getTripId())) continue;
                 if (!BookingTripRules.matchesStaffIdentifier(trip.getDriverId(), staffCode, staffId, username, staffName, role)) continue;
-                boolean returning = trip.getHomeReturn() != null && trip.getHomeReturn().get("backAt") == null;
-                boolean active = Set.of("en_route_to_pickup", "pickup_failed", "returning_horses", "in_transit",
+                // Chỉ xét chuyến của chính tài xế: đã về trụ sở thì rảnh dù xe khác của đơn còn chạy
+                if (trip.getHomeReturn() != null && trip.getHomeReturn().get("backAt") != null) continue;
+                boolean returning = trip.getHomeReturn() != null;
+                boolean active = trip.getDepartedAt() != null && Set.of("en_route_to_pickup", "pickup_failed", "returning_horses", "in_transit",
                         "incident_reported", "pending_emergency_approval", "emergency_plan_active",
                         "arrived", "handover_timeout", "returning_to_hq", "delivered_pending_settlement").contains(status);
                 if (returning || active) {

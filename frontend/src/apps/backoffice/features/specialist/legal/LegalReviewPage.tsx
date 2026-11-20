@@ -213,13 +213,15 @@ function Work({ b, onDone }: { b: Booking; onDone: () => void | Promise<void> })
 
       {editable && (
         <div className="card">
-          <div className={s.actionBar}>
-            <p role="status">{dirty ? t('specialistLegal.unsavedHint') : t('specialistLegal.savedHint')}</p>
-            <button className="btn btn-outline" disabled={!dirty || working} onClick={() => setDraftItems(null)}>{t('specialistLegal.discardDraft')}</button>
-            <button className="btn btn-primary" disabled={!dirty || working} onClick={save}>{t('specialistLegal.saveUpdates')}</button>
+          <div className={s.saveBar}>
+            <div className={s.actionButtons}>
+              <button className="btn btn-outline" disabled={!dirty || working} onClick={() => setDraftItems(null)}>{t('specialistLegal.discardDraft')}</button>
+              <button className="btn btn-primary" disabled={!dirty || working} onClick={save}>{t('specialistLegal.saveUpdates')}</button>
+            </div>
+            <p role="status" className={s.actionText}>{dirty ? t('specialistLegal.unsavedHint') : t('specialistLegal.savedHint')}</p>
           </div>
           <div className={s.actionBar}>
-            <div><b>{why ? t('specialistLegal.notCompletedYet', 'Chưa thể hoàn tất') : t('specialistLegal.allDocsDone', 'Mọi giấy tờ đã xong')}</b><div className={s.hint}>{why ?? t('specialistLegal.completeHint', 'Hoàn tất để chuyển giao cho kíp xe (Tài xế & Hộ tống) nhận lệnh điều xe và sẵn sàng đón ngựa.')}</div></div>
+            <div className={s.actionText}><b>{why ? t('specialistLegal.notCompletedYet', 'Chưa thể hoàn tất') : t('specialistLegal.allDocsDone', 'Mọi giấy tờ đã xong')}</b><div className={s.hint}>{why ?? t('specialistLegal.completeHint', 'Hoàn tất để chuyển giao cho kíp xe (Tài xế & Hộ tống) nhận lệnh điều xe và sẵn sàng đón ngựa.')}</div></div>
             <button className="btn btn-primary" disabled={!!why || working || dirty} onClick={() => run(() => bookingsApi.completeClearance(b.id, session!.name), t('specialistLegal.completedClearanceToast', 'Đã hoàn tất giấy tờ {{id}}', { id: b.id }), () => navigate('/specialist/legal'))}><i className="fa-solid fa-stamp" /> {t('specialistLegal.completeClearanceBtn', 'Hoàn tất giấy tờ')}</button>
           </div>
         </div>

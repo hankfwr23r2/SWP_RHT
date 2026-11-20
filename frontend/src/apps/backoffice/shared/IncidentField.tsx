@@ -142,7 +142,7 @@ export function IncidentPanel({ b, inc, role, run }: { b: Booking; inc: Incident
   return (
     <>
       <Panel title={`Sự cố: ${INCIDENT_KIND[inc.kind].label}`} icon="fa-triangle-exclamation" tone="warn">
-        <p>Báo lúc {formatDateTime(inc.reportedAt)}{inc.note ? `: ${inc.note}` : ''}. {inc.status === 'active' ? 'Thực hiện phương án đã duyệt, giữ nguyên xe và cửa khẩu.' : 'Chờ phương án được duyệt; không tự đổi cửa khẩu hay xe.'}</p>
+        <p>Báo lúc {formatDateTime(inc.reportedAt)}{inc.note ? `: ${inc.note}` : ''}. {inc.status === 'active' ? 'Thực hiện phương án đã duyệt, giữ nguyên xe và cửa khẩu.' : 'Chờ phương án được duyệt, không tự đổi cửa khẩu hay xe.'}</p>
         {inc.status === 'reported' && <p>{inc.rejection ? <><b>Quản lý trả phương án về:</b> {inc.rejection.reason}. Điều phối viên đang lập lại.</> : 'Điều phối viên đang lập phương án.'}</p>}
         {inc.status === 'pending_approval' && <p>Phương án đã gửi, chờ Quản lý duyệt.</p>}
         {inc.status === 'active' && inc.plan && inc.approval && (
@@ -173,7 +173,7 @@ export function IncidentPanel({ b, inc, role, run }: { b: Booking; inc: Incident
               {role === 'escort' && !inc.fitConfirmedAt && !health && <button className={`btn btn-primary ${s.big}`} onClick={() => run(() => bookingsApi.confirmFit(b.id, inc.id, session!.name), 'Đã xác nhận ngựa đủ sức')}>Xác nhận ngựa đủ sức đi tiếp</button>}
             </Panel>
           )}
-          {health && leaveAt && !restReady && <p role="status">Nghỉ tại trạm SOS đến {formatDateTime(leaveAt)}; còn {Math.ceil((leaveAt - now) / 60000)} phút.</p>}
+          {health && leaveAt && !restReady && <p role="status">Nghỉ tại trạm SOS đến {formatDateTime(leaveAt)}, còn {Math.ceil((leaveAt - now) / 60000)} phút.</p>}
           {role === 'driver' && (
             <button className={`btn btn-primary ${s.big}`} disabled={needFit && !inc.fitConfirmedAt} onClick={() => restReady ? run(() => bookingsApi.resumeJourney(b.id, inc.id, session!.name), 'Tiếp tục theo phương án đã duyệt') : setAskEarly(true)}><i className="fa-solid fa-truck-fast" /> Tiếp tục theo phương án đã duyệt</button>
           )}

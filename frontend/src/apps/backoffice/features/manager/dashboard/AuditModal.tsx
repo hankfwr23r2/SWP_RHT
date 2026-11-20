@@ -52,7 +52,7 @@ export function AuditModal({ b, onClose, onDone }: { b: Booking; onClose: () => 
           </table></div>
         : <p className={s.sub}>Tài xế chưa ghi hóa đơn phí cầu đường nào.</p>}
       <p style={{ marginTop: 14 }}>Chi phí sự cố công ty chịu: <b>{formatVND(carrierTotal)}</b>{tolls.length ? <> · Phí cầu đường: <b>{formatVND(tollTotal)}</b></> : null}</p>
-      <ReadMore className={s.hint} text="Toàn bộ chi phí sự cố, lưu chuồng và chờ bàn giao do công ty chịu. Duyệt chi phí sẽ hoàn tất đơn; xe và kíp xe cần xác nhận về trụ sở trước khi nhận chuyến mới." />
+      <ReadMore className={s.hint} text="Toàn bộ chi phí sự cố, lưu chuồng và chờ bàn giao do công ty chịu. Duyệt chi phí sẽ hoàn tất đơn. Xe và kíp xe cần xác nhận về trụ sở trước khi nhận chuyến mới." />
     </Modal>
   )
 }

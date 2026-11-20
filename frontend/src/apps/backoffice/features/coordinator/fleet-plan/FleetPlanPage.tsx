@@ -421,7 +421,7 @@ function Plan({ b, vehicles }: { b: Booking; vehicles: Vehicle[] }) {
         <div className="alert alert-info">
           <i className="fa-solid fa-circle-check" />
           <div>
-            <b>Bạn đang sửa phương án đã chốt</b> lúc {formatDateTime(b.plan.at)}. Bấm xác nhận để lưu thay đổi; phương án cũ
+            <b>Bạn đang sửa phương án đã chốt</b> lúc {formatDateTime(b.plan.at)}. Bấm xác nhận để lưu thay đổi, phương án cũ
             được giữ nếu bạn hủy sửa.
           </div>
         </div>
@@ -453,7 +453,7 @@ function Plan({ b, vehicles }: { b: Booking; vehicles: Vehicle[] }) {
           </span>
         </div>
         <div className="form-hint" style={{ marginBottom: 12 }}>
-          Ưu tiên xe đủ số ngăn cho ngựa; ngựa chọn khoang đơn mở rộng chiếm 2 ngăn. Xe có lịch chồng lên khoảng ngày của đơn này (gồm thời gian chuẩn bị và quay về trụ sở, kể cả chuyến đang chạy hoặc chưa xác nhận về) hoặc đang bảo dưỡng sẽ bị khóa; xe có đơn ở ngày khác vẫn chọn được.
+          Ưu tiên xe đủ số ngăn cho ngựa. Ngựa chọn khoang đơn mở rộng chiếm 2 ngăn. Xe có lịch chồng lên khoảng ngày của đơn này (gồm thời gian chuẩn bị và quay về trụ sở, kể cả chuyến đang chạy hoặc chưa xác nhận về) hoặc đang bảo dưỡng sẽ bị khóa. Xe có đơn ở ngày khác vẫn chọn được.
         </div>
 
         {trips.map((t, i) => {
@@ -656,35 +656,8 @@ function Plan({ b, vehicles }: { b: Booking; vehicles: Vehicle[] }) {
 
         {corridors.length > 0 && (
           <div style={{ marginBottom: 14, padding: '12px 14px', background: 'var(--surface-soft, #f8fafc)', border: '1px solid var(--line, #e2e8f0)', borderRadius: 8, display: 'grid', gap: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <i className="fa-solid fa-road" style={{ color: 'var(--orange, #ea580c)', fontSize: '1rem' }} />
-              </div>
-              <span style={{ fontSize: '0.75rem', background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: 6, fontWeight: 600 }}>
-              </span>
-            </div>
-            
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                className="btn btn-primary btn-sm"
-                style={{ flex: '1 1 260px', height: 38, whiteSpace: 'nowrap' }}
-                disabled={!previewRequest || previewLoading}
-                onClick={() => {
-                  keepSavedPlan.current = false
-                  setSelectedCorridorId('')
-                  setManualStops([])
-                  setPreviewAttempt(attempt => attempt + 1)
-                }}
-              >
-                {previewLoading ? (
-                  <><i className="fa-solid fa-spinner fa-spin" /> Đang đề xuất lộ trình…</>
-                ) : (
-                  <><i className="fa-solid fa-wand-magic-sparkles" /> Lộ trình linh hoạt (Tự động đề xuất)</>
-                )}
-              </button>
-
-              {selectedCorridor && (
+            {selectedCorridor && (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 <button
                   type="button"
                   className="btn btn-outline btn-sm font-semibold"
@@ -699,12 +672,12 @@ function Plan({ b, vehicles }: { b: Booking; vehicles: Vehicle[] }) {
                     <><i className="fa-solid fa-route" /> Áp dụng trạm dừng của hành lang</>
                   )}
                 </button>
-              )}
-            </div>
+              </div>
+            )}
 
             {!suggestingCorridors && corridorSuggestions.length === 0 && (
               <div style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>
-                Không có tuyến cố định phù hợp với tọa độ và cửa khẩu của đơn. Đang dùng tuyến đường xe tải trực tiếp.
+                Không có tuyến cố định nào khớp với đơn này, hệ thống tự tính đường xe tải và chỗ nghỉ.
               </div>
             )}
 
@@ -735,7 +708,7 @@ function Plan({ b, vehicles }: { b: Booking; vehicles: Vehicle[] }) {
         )}
 
         {/* TRẠM ĐIỀU PHỐI CHỌN TAY */}
-        <h4 style={{ margin: '0 0 8px', fontSize: '0.88rem', color: 'var(--navy)' }}>Trạm điều phối chọn tay</h4>
+        <h4 style={{ margin: '0 0 8px', fontSize: '0.88rem', color: 'var(--navy)' }}>Trạm bạn chọn</h4>
         {manualStops.length ? (
           <ol className={s.stopList}>
             {manualStops.map((r, i) => {
@@ -770,7 +743,7 @@ function Plan({ b, vehicles }: { b: Booking; vehicles: Vehicle[] }) {
           </ol>
         ) : (
           <div className={s.stopEmpty}>
-            <i className="fa-solid fa-mug-hot" /> Chưa có trạm dừng nghỉ nào.
+            <i className="fa-solid fa-mug-hot" /> {systemStops.length ? `Bạn chưa chọn trạm nào. Hệ thống đã tự thêm ${systemStops.length} chỗ nghỉ ở mục bên dưới.` : 'Chưa có trạm nghỉ nào.'}
           </div>
         )}
         {unusableStops.map(r => (

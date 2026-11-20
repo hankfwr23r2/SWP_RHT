@@ -53,7 +53,7 @@ export function ApproveModal({ item, onClose, onDone }: { item: Item; onClose: (
         <label htmlFor="rs">Lý do trả về (chỉ cần khi bấm nút Trả về)</label>
         <input id="rs" className="form-control" placeholder="Nhập lý do nếu cần ĐPV lập lại phương án..." value={reason} onChange={e => setReason(e.target.value)} />
       </div>
-      <ReadMore className={s.hint} text={'Chỉ Quản lý được duyệt thay đổi phương án di chuyển và trực tiếp làm việc với khách khi có sự cố. Sau khi duyệt, phương án được cập nhật trên màn hình của kíp xe; khách xem được trạng thái xử lý và giờ đến dự kiến mới.'} />
+      <ReadMore className={s.hint} text={'Chỉ Quản lý được duyệt thay đổi phương án di chuyển và trực tiếp làm việc với khách khi có sự cố. Sau khi duyệt, phương án được cập nhật trên màn hình của kíp xe, khách xem được trạng thái xử lý và giờ đến dự kiến mới.'} />
     </Modal>
   )
 }
@@ -134,7 +134,7 @@ export default function IncidentsPage() {
     { head: t('intakePage.colOrderId', 'Mã đơn'), cell: r => idCell(r.b) },
     { head: t('intakePage.colCustomer', 'Khách hàng'), cell: r => r.b.customer, nowrap: true },
     { head: t('intakePage.colRoute', 'Tuyến'), cell: r => routeCell(placeShort(r.b.origin.name), placeShort(r.b.dest.name)) },
-    { head: t('incidentsPage.colDetails', 'Nội dung'), minWidth: 220, cell: r => (tab === 'pickup' ? <><b>Không nhận được ngựa</b><div className="sub-text">{excludedHorses(r.b).map(h => `${h.name}: ${h.unfitInfo?.reason ?? 'bị loại'}`).join('; ')}</div></> : r.i ? <><b>{INCIDENT_KIND[r.i.kind].label}</b> · xe {r.i.tripId}<div className="sub-text">{r.i.plan ? `${INCIDENT_ACTION[r.i.plan.action]}, ETA mới ${formatDateTime(r.i.plan.newEta)}` : r.i.rejection ? <span style={{ color: 'var(--red)' }}>Đã trả về: {r.i.rejection.reason}</span> : r.i.note || 'Chưa có ghi chú'}</div></> : <>Chi phí sự cố <b>{formatVND(expenses(r.b))}</b></>) },
+    { head: t('incidentsPage.colDetails', 'Nội dung'), minWidth: 220, cell: r => (tab === 'pickup' ? <><b>Không nhận được ngựa</b><div className="sub-text">{excludedHorses(r.b).map(h => `${h.name}: ${h.unfitInfo?.reason ?? 'bị loại'}`).join(', ')}</div></> : r.i ? <><b>{INCIDENT_KIND[r.i.kind].label}</b> · xe {r.i.tripId}<div className="sub-text">{r.i.plan ? `${INCIDENT_ACTION[r.i.plan.action]}, ETA mới ${formatDateTime(r.i.plan.newEta)}` : r.i.rejection ? <span style={{ color: 'var(--red)' }}>Đã trả về: {r.i.rejection.reason}</span> : r.i.note || 'Chưa có ghi chú'}</div></> : <>Chi phí sự cố <b>{formatVND(expenses(r.b))}</b></>) },
     { head: t('incidentsPage.colTime', 'Thời gian'), cell: r => (r.i ? `Báo ${formatDateTime(r.i.reportedAt)}` : r.b.settlement?.reviewedAt ? `Đã đối soát ${formatDateTime(r.b.settlement.reviewedAt)}` : '-'), minWidth: 110 },
     { head: t('intakePage.colStatus', 'Trạng thái'), cell: r => statusCell(r.b.status) },
     { head: t('incidentsPage.colValue', 'Giá trị'), cell: r => (r.i ? '-' : r.b.settlement ? formatVND(r.b.settlement.total) : '-'), right: true },

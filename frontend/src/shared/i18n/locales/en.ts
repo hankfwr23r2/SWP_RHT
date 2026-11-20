@@ -845,6 +845,7 @@ export const en = {
   staffMenus: {
     '/admin/pricing': 'Pricing & Formulas',
     '/admin/horse-types': 'Horse Breeds',
+    '/admin/fleet': 'Vehicle Fleet',
     '/admin/routes': 'Fixed Routes',
     '/admin/services': 'Services & Fees',
     '/admin/rules': 'Regulations & Config',
@@ -1250,6 +1251,10 @@ export const en = {
     quoteAndCheck: 'Insurance Quote & Verification',
     selectHorse: 'Select horse ({{count}})',
     selectHorseHint: 'Save or discard changes before switching horses.',
+    horsesRemaining: '{{remaining}}/{{total}} horses still need action',
+    allHorsesDone: 'All {{total}} horses handled',
+    horseListLabel: 'Horses in booking',
+    noChoice: 'Customer has not chosen',
     linkCardRemaining: '{{remaining}}/{{total}} horses require insurance processing.',
     blocksQuote: 'The manager cannot send the quote until insurance is complete.',
     blocksDeparture: 'The driver cannot start the journey until the insurance policy is confirmed.',
@@ -1437,6 +1442,7 @@ export const en = {
   coordinatorFleet: {
     title: 'Fleet Management',
     subtitle: 'Specialized equine transport vehicles, readiness, and maintenance status.',
+    subtitleView: 'Click a vehicle to see which bookings it is on or has taken, from which day to which day, and its crew.',
     btnAddVehicle: 'Add Vehicle',
     statusAll: 'All Statuses',
     statusAvailable: 'Available',

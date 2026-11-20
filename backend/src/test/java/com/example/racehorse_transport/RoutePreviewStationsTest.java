@@ -136,7 +136,7 @@ class RoutePreviewStationsTest {
         assertThat(roadside.path("lat").isNumber()).isTrue();
         // Cảnh báo nói rõ xe dừng ở đâu và điều phối có thể làm gì
         assertThat(json.readTree(response.body()).path("data").path("warnings").toString())
-                .contains("xe phải nghỉ dọc đường 5 lần (km 533; km 683; km 956; km 1229; km 1366)")
+                .contains("xe phải nghỉ dọc đường 5 lần (km 533, km 683, km 956, km 1229, km 1366)")
                 .contains("Có thể chọn thêm trạm nghỉ trên bản đồ.");
     }
 

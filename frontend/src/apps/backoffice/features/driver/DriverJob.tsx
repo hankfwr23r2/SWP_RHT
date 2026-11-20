@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { insuranceDepartureProblem } from '@shared/types/insurance'
 import { useAuth } from '@shared/auth/AuthContext'
 import { openIncidentOf, handoverTimeoutOf, currentCheckpoint, manifestDocuments, pendingDeparture, spotLabel } from '@shared/lib/booking'
-import { formatDateTime, formatVND } from '@shared/lib/format'
+import { formatDateTime } from '@shared/lib/format'
 import { normalizeMicrochip } from '@shared/lib/microchip'
 import { bookingsApi } from '@shared/services/bookings'
 import type { Booking, BookingHorse, Checkpoint, VehicleTrip } from '@shared/types/booking'
@@ -14,7 +14,7 @@ import { useNow } from '@shared/ui/useNow'
 import { HorseDocsModal } from '../../shared/HorseDocsModal'
 import { Checklist, Panel } from '../../shared/field'
 import { HomeReturnPanel } from '../../shared/HomeReturnPanel'
-import { ExpenseForm, IncidentPanel, SosPanel, SubmitExpensesPanel } from '../../shared/IncidentField'
+import { IncidentPanel, SosPanel, SubmitExpensesPanel } from '../../shared/IncidentField'
 import s from '../../shared/field.module.css'
 
 type Run = (fn: () => Promise<unknown>, msg: string) => Promise<void>
@@ -221,15 +221,16 @@ function TimeoutModal({ b, t, waited, onClose, run }: { b: Booking; t: VehicleTr
   const [reason, setReason] = useState('UNREACHABLE')
   const [action, setAction] = useState('STABLE_NEARBY')
   const [partnerName, setPartnerName] = useState('')
+  const [partnerAddress, setPartnerAddress] = useState('')
   const [partnerPhone, setPartnerPhone] = useState('')
-  const [cost, setCost] = useState('1500000')
+  const [photo, setPhoto] = useState<string>()
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
-  const formattedCost = cost.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-  const validCost = /^[1-9]\d{0,15}$/.test(cost)
+  // Gửi ngựa tại chuồng: tiền chuồng người nhận tự trả khi lấy ngựa, kíp xe chỉ ghi chuồng và chụp ảnh rồi về trụ sở
+  const stableReady = !!partnerName.trim() && !!partnerAddress.trim() && !!partnerPhone.trim() && !!photo
 
   const submit = async () => {
-    if (action === 'STABLE_NEARBY' && !validCost) return
+    if (action === 'STABLE_NEARBY' && !stableReady) return
     setBusy(true)
     try {
       await run(() => backendDeliveryApi.reportTimeout(b.id, {
@@ -237,11 +238,12 @@ function TimeoutModal({ b, t, waited, onClose, run }: { b: Booking; t: VehicleTr
         confirmEarly: early,
         timeoutReason: reason,
         selectedAction: action,
-        partnerName: action === 'STABLE_NEARBY' ? partnerName.trim() || undefined : undefined,
-        partnerPhone: action === 'STABLE_NEARBY' ? partnerPhone.trim() || undefined : undefined,
-        estimatedCost: action === 'STABLE_NEARBY' ? cost : undefined,
+        partnerName: action === 'STABLE_NEARBY' ? partnerName.trim() : undefined,
+        partnerAddress: action === 'STABLE_NEARBY' ? partnerAddress.trim() : undefined,
+        partnerPhone: action === 'STABLE_NEARBY' ? partnerPhone.trim() : undefined,
+        photoUrl: action === 'STABLE_NEARBY' ? photo : undefined,
         note: note.trim() || 'Quá hạn 2 giờ người nhận không tới nhận ngựa.',
-      }), 'Đã ghi nhận ngoại lệ quá 2h và kích hoạt phương án an sinh')
+      }), action === 'STABLE_NEARBY' ? 'Đã gửi ngựa tại chuồng và báo khách. Kíp xe về trụ sở' : 'Đã ghi nhận quá hạn, xe chở ngựa về trụ sở')
       onClose()
     } catch {
       setBusy(false)
@@ -250,7 +252,7 @@ function TimeoutModal({ b, t, waited, onClose, run }: { b: Booking; t: VehicleTr
 
   return (
     <Modal onClose={onClose} title="Báo sự cố quá hạn 2h bàn giao" subtitle="Kích hoạt quy trình an sinh khẩn cấp khi người nhận không đến"
-      footer={<><button className="btn btn-ghost" onClick={onClose}>Hủy</button><button className="btn btn-danger" disabled={busy || (action === 'STABLE_NEARBY' && !validCost)} onClick={submit}>{early ? 'Xác nhận báo quá hạn sớm' : 'Xác nhận kích hoạt an sinh'}</button></>}>
+      footer={<><button className="btn btn-ghost" onClick={onClose}>Hủy</button><button className="btn btn-danger" disabled={busy || (action === 'STABLE_NEARBY' && !stableReady)} onClick={submit}>{early ? 'Xác nhận báo quá hạn sớm' : 'Xác nhận kích hoạt an sinh'}</button></>}>
       {early && <div className="alert alert-warning" role="status"><i className="fa-solid fa-clock" /><div>Mới chờ <b>{waited} phút</b> ở điểm giao, quy định là 120 phút. Bạn vẫn báo được, quản lý sẽ thấy đây là báo sớm.</div></div>}
       <div className="form-group">
         <label htmlFor="tr">Lý do quá hạn</label>
@@ -263,25 +265,26 @@ function TimeoutModal({ b, t, waited, onClose, run }: { b: Booking; t: VehicleTr
       <div className="form-group">
         <label htmlFor="ta">Phương án xử lý khẩn cấp</label>
         <select id="ta" className="form-control" value={action} onChange={e => setAction(e.target.value)}>
-          <option value="STABLE_NEARBY">Thuê chuồng / đưa ngựa vào trạm nghỉ gần nhất</option>
+          <option value="STABLE_NEARBY">Gửi ngựa tại chuồng gần nhất, người nhận tự tới lấy</option>
           <option value="RETURN_TO_HQ">Quay xe chuyển ngựa về Trụ sở chính (Việt Nam)</option>
         </select>
       </div>
       {action === 'STABLE_NEARBY' && (
         <>
+          <p className="form-hint">Tiền chuồng do người nhận tự trả khi tới lấy ngựa. Khách sẽ nhận tên, địa chỉ và số điện thoại chuồng. Gửi xong, kíp xe về trụ sở.</p>
           <div className="form-group">
-            <label htmlFor="pn">Tên trạm nghỉ / chuồng đệm</label>
-            <input id="pn" className="form-control" placeholder="VD: Trại ngựa tạm Đức Hòa" value={partnerName} onChange={e => setPartnerName(e.target.value)} />
+            <label htmlFor="pn" className="required">Tên chuồng</label>
+            <input id="pn" className="form-control" placeholder="VD: Trại ngựa Đức Hòa" value={partnerName} onChange={e => setPartnerName(e.target.value)} />
           </div>
           <div className="form-group">
-            <label htmlFor="pp">Số điện thoại liên hệ</label>
-            <input id="pp" className="form-control" placeholder="VD: 0901 234 567" value={partnerPhone} onChange={e => setPartnerPhone(e.target.value)} />
+            <label htmlFor="pa" className="required">Địa chỉ chuồng</label>
+            <input id="pa" className="form-control" placeholder="VD: Ấp 3, xã Đức Hòa, Long An" value={partnerAddress} onChange={e => setPartnerAddress(e.target.value)} />
           </div>
           <div className="form-group">
-            <label htmlFor="pc">Chi phí lưu chuồng công ty dự kiến chi (VNĐ)</label>
-            <input id="pc" inputMode="numeric" className="form-control" value={formattedCost} aria-invalid={!validCost} onChange={e => setCost(e.target.value.replace(/\D/g, '').replace(/^0+(?=\d)/, ''))} />
-            {!validCost && <p className="form-error" role="alert">Nhập chi phí lớn hơn 0 và không vượt quá 9,999,999,999,999,999 VNĐ.</p>}
+            <label htmlFor="pp" className="required">Số điện thoại chuồng</label>
+            <input id="pp" className="form-control" inputMode="tel" placeholder="VD: 0901 234 567" value={partnerPhone} onChange={e => setPartnerPhone(e.target.value)} />
           </div>
+          <CaptureField purpose="STABLE_HANDOVER" target="stable" label="Ảnh ngựa đã gửi tại chuồng" required value={photo} onChange={setPhoto} />
         </>
       )}
       <div className="form-group">
@@ -325,14 +328,7 @@ function DeliveryStep({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Check
       <button className="btn btn-outline" disabled={!photo || photo === cp.handoverPhoto} onClick={() => run(() => bookingsApi.uploadHandover(b.id, t.tripId, session!.name, cp.id, photo!), 'Đã tải ảnh biên bản')}><i className="fa-solid fa-upload" /> Tải ảnh biên bản</button>
       </Panel>
       <button className={`btn btn-primary ${s.big}`} disabled={!ready} onClick={() => run(() => bookingsApi.completeDelivery(b.id, t.tripId, session!.name), 'Đã giao ngựa. Khách nhận thông báo')}><i className="fa-solid fa-flag-checkered" /> Hoàn tất giao ngựa</button>
-      {timeout ? (
-        <Panel title="Đã báo quá hạn bàn giao" icon="fa-clock" tone="warn">
-          <p>{timeout.note || 'Người nhận chưa tới nhận ngựa.'} Khi người nhận tới, làm các bước trên rồi bấm "Hoàn tất giao ngựa", sự cố tự đóng.</p>
-          <p>Đã ghi {formatVND(timeout.expenses.reduce((n, e) => n + e.amount, 0))} chi phí. Chụp hóa đơn lưu chuồng để ghi nhận chi phí nội bộ công ty.</p>
-          <ul className={s.checklist}>{timeout.expenses.map(e => <li key={e.id} style={{ padding: '6px 0', fontSize: '0.9rem' }}>{e.label}: <b>{formatVND(e.amount)}</b></li>)}</ul>
-          <ExpenseForm b={b} inc={timeout} run={run} />
-        </Panel>
-      ) : (
+      {!timeout && (
         <button type="button" className="btn btn-outline btn-full" style={{ marginTop: 10, borderColor: 'var(--orange)', color: 'var(--orange)' }} onClick={() => setShowTimeout(true)}><i className="fa-solid fa-clock-rotate-left" /> Quá hạn 2 giờ: Báo sự cố không nhận ngựa</button>
       )}
       {showTimeout && <TimeoutModal b={b} t={t} waited={cp.arrivedAt ? Math.max(0, Math.floor((now - cp.arrivedAt) / 60000)) : 0} onClose={() => setShowTimeout(false)} run={run} />}
@@ -382,7 +378,9 @@ function DriverSteps({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
 
   if (t.run?.deliveredAt) return (
     <>
-      <Panel title="Đã giao ngựa" icon="fa-flag-checkered" tone="ok"><p>Giao xong lúc {formatDateTime(t.run.deliveredAt)}. </p></Panel>
+      {t.run.stabled
+        ? <Panel title="Đã gửi ngựa tại chuồng" icon="fa-warehouse" tone="ok"><p>Gửi lúc {formatDateTime(t.run.stabled.at)} tại <b>{t.run.stabled.name}</b>, {t.run.stabled.address} · {t.run.stabled.phone}. Khách đã được báo để tới nhận ngựa.</p></Panel>
+        : <Panel title="Đã giao ngựa" icon="fa-flag-checkered" tone="ok"><p>Giao xong lúc {formatDateTime(t.run.deliveredAt)}. </p></Panel>}
       <HomeReturnPanel b={b} t={t} role="driver" run={run} />
     </>
   )

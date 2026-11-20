@@ -24,7 +24,7 @@ function getTokenExpiration(token: string): number | null {
     const claims = JSON.parse(decoded) as { exp?: unknown }
     return typeof claims.exp === 'number' ? claims.exp * 1000 : null
   } catch (error) {
-    console.warn('Không thể đọc thời hạn Access Token; sẽ refresh khi API trả về 401.', error)
+    console.warn('Không thể đọc thời hạn Access Token, sẽ refresh khi API trả về 401.', error)
     return null
   }
 }
@@ -41,7 +41,7 @@ function scheduleTokenRefresh(token: string): void {
   const delay = Math.max(0, expirationTime - Date.now() - refreshBeforeExpirationMs)
   refreshTimer = setTimeout(() => {
     void refreshAccessToken().catch(error => {
-      console.warn('Không thể tự làm mới Access Token; sẽ thử lại khi API cần xác thực.', error)
+      console.warn('Không thể tự làm mới Access Token, sẽ thử lại khi API cần xác thực.', error)
     })
   }, delay)
 }

@@ -7,7 +7,7 @@ public final class IncidentCostPolicy {
     public static void requireCompany(String payer) {
         if (payer != null && !payer.isBlank()
                 && !"COMPANY".equalsIgnoreCase(payer) && !"carrier".equalsIgnoreCase(payer)) {
-            throw new IllegalArgumentException("Công ty chịu toàn bộ chi phí sự cố; không được chuyển chi phí sang khách hàng.");
+            throw new IllegalArgumentException("Công ty chịu toàn bộ chi phí sự cố, không được chuyển chi phí sang khách hàng.");
         }
     }
 }

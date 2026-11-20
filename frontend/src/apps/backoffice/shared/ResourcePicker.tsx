@@ -108,7 +108,7 @@ export function ResourcePicker({ kind, vehicles, people, schedules, usedHere, se
   }
 
   return (
-    <Modal wide onClose={onClose} title={t.title} subtitle={kind === 'vehicle' ? `Chuyến này đang xếp ${horses} ngựa. Xe có lịch chồng lên khoảng ngày của đơn này (kể cả chuyến đang chạy) hoặc đang bảo dưỡng sẽ bị khóa; có đơn ở ngày khác vẫn chọn được.` : 'Tài xế và hộ tống luôn xuất phát từ trụ sở ở Việt Nam. Người có lịch chồng lên khoảng ngày của đơn này (kể cả chuyến đang chạy hoặc chưa về trụ sở) thì bị khóa; có đơn ở ngày khác vẫn chọn được.'}>
+    <Modal wide onClose={onClose} title={t.title} subtitle={kind === 'vehicle' ? `Chuyến này đang xếp ${horses} ngựa. Xe có lịch chồng lên khoảng ngày của đơn này (kể cả chuyến đang chạy) hoặc đang bảo dưỡng sẽ bị khóa. Xe có đơn ở ngày khác vẫn chọn được.` : 'Tài xế và hộ tống luôn xuất phát từ trụ sở ở Việt Nam. Người có lịch chồng lên khoảng ngày của đơn này (kể cả chuyến đang chạy hoặc chưa về trụ sở) thì bị khóa. Người có đơn ở ngày khác vẫn chọn được.'}>
       <div className={p.bar}>
         <label className={p.search}><i className="fa-solid fa-magnifying-glass" aria-hidden="true" /><input className="form-control" placeholder={t.search} value={text} onChange={e => setText(e.target.value)} /></label>
         <label className={p.check}><input type="checkbox" checked={onlyOk} onChange={e => setOnlyOk(e.target.checked)} /> Chỉ hiện chọn được</label>

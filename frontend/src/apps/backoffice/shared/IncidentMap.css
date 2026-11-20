@@ -21,10 +21,13 @@
 .im-note { margin: 0; font-size: 0.8rem; line-height: 1.4; color: var(--text); }
 .rm-sos { width: 36px; height: 36px; background: #dc2626; font-size: 1.1rem; animation: rmPulseRed 1.3s ease-out infinite; }
 @keyframes rmPulseRed { 0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.65); } 100% { box-shadow: 0 0 0 18px rgba(220, 38, 38, 0); } }
-.rm-rs { background: #059669; font-size: 0.6rem; }
+.rm-rs { background: #7c3aed; font-size: 0.6rem; }
 .rm-rs-on { background: #ea580c; font-size: 0.7rem; box-shadow: 0 0 0 5px rgba(234, 88, 12, 0.25), 0 3px 8px rgba(15, 23, 42, 0.4); }
 .rm-legend .rm-sos { width: 16px; height: 16px; font-size: 0.6rem; animation: none; }
 .rm-legend .rm-rs { width: 18px; height: 18px; }
+.rm-wp { cursor: grab; }
+.rm-wp:active { cursor: grabbing; }
+.rm-legend .im-swatch { display: inline-block; width: 22px; height: 0; border-top-width: 4px; }
 @media (max-width: 760px) { .im-panel { width: 220px; } }
 @media (prefers-reduced-motion: reduce) { .rm-sos { animation: none; } }
 

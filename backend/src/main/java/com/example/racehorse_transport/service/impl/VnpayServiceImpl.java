@@ -70,7 +70,7 @@ public class VnpayServiceImpl implements VnpayService {
     @Transactional
     public VnpayCreateResponseDto createPaymentUrl(VnpayCreateRequestDto request, String username, String clientIp) {
         if ("SETTLEMENT".equalsIgnoreCase(request.getPaymentType())) {
-            throw new IllegalArgumentException("Chi phí sự cố do công ty chịu; khách hàng không thanh toán quyết toán.");
+            throw new IllegalArgumentException("Chi phí sự cố do công ty chịu, khách hàng không thanh toán quyết toán.");
         }
         if (!props.isConfigured()) {
             List<String> missingConfig = new ArrayList<>();

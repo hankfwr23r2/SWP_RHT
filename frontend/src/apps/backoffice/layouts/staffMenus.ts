@@ -5,6 +5,7 @@ export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: 
   admin: [
     ['/admin/pricing', 'Biểu giá & Công thức', { icon: 'fa-calculator' }],
     ['/admin/horse-types', 'Danh mục giống ngựa', { icon: 'fa-horse-head' }],
+    ['/admin/fleet', 'Đội xe', { icon: 'fa-truck' }],
     ['/admin/routes', 'Tuyến đường cố định', { icon: 'fa-road' }],
     ['/admin/services', 'Dịch vụ & Biểu phí', { icon: 'fa-bell-concierge' }],
     ['/admin/rules', 'Quy định & Tham số', { icon: 'fa-scale-balanced' }],

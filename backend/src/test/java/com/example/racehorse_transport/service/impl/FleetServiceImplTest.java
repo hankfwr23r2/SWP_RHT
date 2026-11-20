@@ -284,6 +284,48 @@ class FleetServiceImplTest {
     }
 
     @Test
+    void fleetListGivesEveryNonOverlappingBookingOfAVehicleWithItsCrew() {
+        Vehicle v = vehicle(1, "AVAILABLE");
+        Booking rolling = scheduled(51, "BK-ROL00001", "in_transit", "domestic", -1);
+        rolling.setDetailsJson("{\"trips\":[{\"vehicleId\":\"VH-001\",\"driverId\":\"DR-01\",\"escortId\":\"ES-01\",\"departedAt\":100}]}");
+        Booking later = scheduled(52, "BK-LAT00001", "awaiting_payment", "international", 20);
+        later.setDetailsJson("{\"trips\":[{\"vehicleId\":\"VH-001\",\"driverId\":\"DR-01\",\"escortId\":\"ES-01\"}]}");
+        Booking next = scheduled(53, "BK-NXT00001", "under_review", "domestic", 8);
+        when(vehicleRepository.findAll()).thenReturn(List.of(v));
+        when(bookingRepository.findAll()).thenReturn(List.of(later, rolling, next));
+        holdVehicle(v, rolling);
+        holdVehicle(v, later);
+        holdVehicle(v, next);
+        when(staffRepository.findByStaffCode("DR-01")).thenReturn(Optional.of(staff(1, "DRIVER", "DR-01", "driver01")));
+        when(staffRepository.findByStaffCode("ES-01")).thenReturn(Optional.of(staff(8, "ESCORT", "ES-01", "escort01")));
+
+        var schedule = service.getAllVehicles().getFirst().getSchedule();
+
+        assertThat(schedule).extracting("bookingCode").containsExactly("BK-ROL00001", "BK-NXT00001", "BK-LAT00001");
+        assertThat(schedule).extracting("onTrip").containsExactly(true, false, false);
+        assertThat(schedule.get(0).getDriverName()).isEqualTo("driver01");
+        assertThat(schedule.get(0).getEscortName()).isEqualTo("escort01");
+        // Chưa chốt phương án thì chưa có kíp
+        assertThat(schedule.get(1).getDriverName()).isNull();
+        assertThat(schedule.get(2).getDriverName()).isEqualTo("driver01");
+        // Khoảng giữ theo cùng quy tắc khóa xe: quốc tế [D-2, D+4]
+        assertThat(schedule.get(2).getBusyFrom()).isEqualTo(later.getDepartureDate().minusSeconds(2 * DAY).toEpochMilli());
+        assertThat(schedule.get(2).getBusyUntil()).isEqualTo(later.getDepartureDate().plusSeconds(4 * DAY).toEpochMilli());
+    }
+
+    private Staff staff(int id, String role, String code, String username) {
+        Staff staff = new Staff();
+        staff.setId(id);
+        staff.setRole(role);
+        staff.setStaffCode(code);
+        var user = new com.example.racehorse_transport.entity.User();
+        user.setId(id);
+        user.setUsername(username);
+        staff.setUser(user);
+        return staff;
+    }
+
+    @Test
     void crewListUsesTripTypeLikeSaveValidation() {
         Staff driver = driver();
         Booking inter = scheduled(60, "BK-INT00001", "awaiting_payment", "international", 10);

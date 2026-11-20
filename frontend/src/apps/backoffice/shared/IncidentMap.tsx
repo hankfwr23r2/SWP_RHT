@@ -4,11 +4,41 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { GeoPoint, RescuePoint, TransitStation } from '@shared/config/network'
+import { projectOnPath } from '@shared/lib/booking'
+import { haversineKm } from '@shared/lib/pricing'
 import { addBaseLayer, BASE_MAP_OPTIONS } from '@shared/ui/baseMap'
 import '../features/coordinator/fleet-plan/RouteMapPicker.css'
 import './IncidentMap.css'
 
-export interface MapLine { path: [number, number][]; color: string; weight?: number; dashed?: boolean; flow?: boolean; faded?: boolean; label?: string; onClick?: () => void }
+export interface MapLine { path: [number, number][]; color: string; weight?: number; dashed?: boolean; flow?: boolean; faded?: boolean; label?: string; onClick?: () => void; legend?: string; fit?: boolean } // legend: tên hiện ở chú thích; fit: false = không tính khi zoom lần đầu
+
+// Đường cũ cam nét đứt, đường mới xanh nước biển nét liền để so sánh phương án
+export const OLD_ROUTE = '#ea580c'
+export const NEW_ROUTE = '#2563eb'
+// Đoạn đi tiếp từ cuối đường mới tới điểm trả
+export const ONWARD_ROUTE = '#16a34a'
+// Cứu hộ (đường và điểm CH) màu tím để không lẫn với đoạn đi tiếp xanh lá
+export const RESCUE_ROUTE = '#7c3aed'
+export const ONWARD_LEGEND = 'Đi tiếp tới điểm trả'
+export const pathKm = (path: [number, number][]) => path.slice(1).reduce((km, [lat, lng], i) => km + haversineKm({ lat: path[i][0], lng: path[i][1] }, { lat, lng }), 0)
+
+// Tách lộ trình đã lập tại chỗ xe báo sự cố: đoạn đã đi (mờ) và đoạn cũ còn lại tới điểm `until` (không có thì tới cuối)
+export function oldRouteLines(planned: [number, number][], at: GeoPoint, until?: GeoPoint): { lines: MapLine[]; km: number } {
+  if (planned.length < 2) return { lines: [], km: 0 }
+  const pts = planned.map(([lat, lng]) => ({ lat, lng }))
+  const from = projectOnPath(pts, at).segment
+  const to = until ? projectOnPath(pts, until).segment : planned.length - 1
+  const here: [number, number] = [at.lat, at.lng]
+  const old: [number, number][] = [here, ...planned.slice(from + 1, Math.max(from + 1, to + 1)), ...(until ? [[until.lat, until.lng] as [number, number]] : [])]
+  const km = Math.round(pathKm(old) * 10) / 10
+  return {
+    km,
+    lines: [
+      { path: [...planned.slice(0, from + 1), here], color: '#94a3b8', dashed: true, weight: 3, faded: true, label: 'Đoạn đã đi', fit: false },
+      { path: old, color: OLD_ROUTE, dashed: true, weight: 5, label: `Đường cũ: ${km} km`, legend: 'Đường cũ', fit: !!until },
+    ],
+  }
+}
 type Named = GeoPoint & { name: string }
 
 interface Props {
@@ -27,6 +57,8 @@ interface Props {
   onRescue?: (name: string) => void
   onPoint?: (point: GeoPoint) => void
   waypoints?: GeoPoint[]
+  onMoveWaypoint?: (index: number, point: GeoPoint) => void // kéo điểm đi qua tới chỗ khác
+  onRemoveWaypoint?: (index: number) => void // bấm vào điểm đi qua để bỏ riêng điểm đó
   children?: ReactNode // bảng điều khiển ở góc trên bên trái
 }
 
@@ -34,7 +66,7 @@ const short = (name: string) => name.split(' — ')[0]
 const pin = (cls: string, label: string, size = 30) => L.divIcon({ className: 'rm-icon', html: `<span class="rm-pin ${cls}">${label}</span>`, iconSize: [size, size], iconAnchor: [size / 2, size / 2] })
 const dot = (on: boolean, rank = 0) => L.divIcon({ className: 'rm-icon', iconSize: [34, 34], iconAnchor: [17, 17], html: on ? '<span class="rm-st rm-on rm-active">✓</span>' : rank ? `<span class="rm-st rm-on">${rank}</span>` : '<span class="rm-st"></span>' })
 
-export function IncidentMap({ height = 460, location, origin, dest, gate, stations = [], rescues = [], selectedStation, nearest = 0, selectedRescue, lines = [], onStation, onRescue, onPoint, waypoints = [], children }: Props) {
+export function IncidentMap({ height = 460, location, origin, dest, gate, stations = [], rescues = [], selectedStation, nearest = 0, selectedRescue, lines = [], onStation, onRescue, onPoint, waypoints = [], onMoveWaypoint, onRemoveWaypoint, children }: Props) {
   const box = useRef<HTMLDivElement>(null)
   const map = useRef<L.Map | null>(null)
   const layer = useRef<L.LayerGroup | null>(null)
@@ -80,7 +112,11 @@ export function IncidentMap({ height = 460, location, origin, dest, gate, statio
       if (l.onClick) line.on('click', l.onClick)
     })
     waypoints.forEach((p, idx) => {
-      L.marker([p.lat, p.lng], { icon: pin('rm-g', String(idx + 1)), interactive: false }).addTo(g)
+      const editable = !!(onMoveWaypoint || onRemoveWaypoint)
+      const mk = L.marker([p.lat, p.lng], { icon: pin('rm-g rm-wp', String(idx + 1)), interactive: editable, draggable: !!onMoveWaypoint, zIndexOffset: 800, title: `Điểm đi qua ${idx + 1}` }).addTo(g)
+      if (editable) mk.bindTooltip(`Điểm đi qua ${idx + 1}${onMoveWaypoint ? ' · kéo để dời' : ''}${onRemoveWaypoint ? ' · bấm để bỏ' : ''}`, { direction: 'top', offset: [0, -14] })
+      if (onMoveWaypoint) mk.on('dragend', () => { const at = mk.getLatLng(); onMoveWaypoint(idx, { lat: at.lat, lng: at.lng }) })
+      if (onRemoveWaypoint) mk.on('click', () => onRemoveWaypoint(idx))
     })
     stations.forEach((s, idx) => {
       const on = s.name === selectedStation
@@ -99,7 +135,7 @@ export function IncidentMap({ height = 460, location, origin, dest, gate, statio
     L.marker([location.lat, location.lng], { icon: pin('rm-sos', '!', 36), zIndexOffset: 1000 }).bindTooltip('Vị trí xe lúc báo sự cố', { direction: 'top', offset: [0, -16], permanent: true }).addTo(g)
     // Lần vẽ đầu: zoom vào vị trí xe và các điểm của phương án
     if (!fitted.current) {
-      const pts: [number, number][] = [[location.lat, location.lng], ...stations.slice(0, nearest).map((s): [number, number] => [s.lat, s.lng]), ...lines.filter(l => !l.faded && !l.dashed).flatMap(l => l.path)]
+      const pts: [number, number][] = [[location.lat, location.lng], ...stations.slice(0, nearest).map((s): [number, number] => [s.lat, s.lng]), ...lines.filter(l => l.fit ?? (!l.faded && !l.dashed)).flatMap(l => l.path)]
       if (pts.length > 1) m.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [320, 50], paddingBottomRight: [50, 50], maxZoom: 11 })
       fitted.current = true
     }
@@ -114,6 +150,9 @@ export function IncidentMap({ height = 460, location, origin, dest, gate, statio
         <span><i className="rm-st" /> Trạm nghỉ</span>
         {rescues.length > 0 && <span><i className="rm-pin rm-rs">CH</i> Cứu hộ</span>}
         <span><i className="rm-pin rm-a">A</i> Đón</span><span><i className="rm-pin rm-b">B</i> Trả</span>
+        {lines.filter((l, idx) => l.legend && lines.findIndex(x => x.legend === l.legend) === idx).map(l => (
+          <span key={l.legend}><i className="im-swatch" style={{ borderTopColor: l.color, borderTopStyle: l.dashed ? 'dashed' : 'solid' }} /> {l.legend}</span>
+        ))}
       </div>
     </div>
   )

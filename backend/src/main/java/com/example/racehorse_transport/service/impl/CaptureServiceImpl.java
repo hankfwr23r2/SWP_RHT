@@ -28,7 +28,7 @@ public class CaptureServiceImpl implements CaptureService {
     private final StaffRepository staff;
     private final StorageService storage;
     private final ObjectMapper objectMapper;
-    private static final Set<String> DRIVER_PURPOSES = Set.of("ARRIVE_PICKUP", "ARRIVE_CHECKPOINT", "UPLOAD_HANDOVER", "CUSTOMS_CLEARED", "CONFIRM_HOME", "TOLL", "RETURN_HORSES");
+    private static final Set<String> DRIVER_PURPOSES = Set.of("ARRIVE_PICKUP", "ARRIVE_CHECKPOINT", "UPLOAD_HANDOVER", "CUSTOMS_CLEARED", "CONFIRM_HOME", "TOLL", "RETURN_HORSES", "STABLE_HANDOVER");
     private static final Set<String> ESCORT_PURPOSES = Set.of("EXCLUDE_UNFIT_HORSE", "SUBMIT_WELFARE");
     private static final Set<String> BOTH_PURPOSES = Set.of("SOS", "EXPENSE");
 

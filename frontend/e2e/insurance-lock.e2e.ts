@@ -35,27 +35,33 @@ async function open(page: Page, options: { confirmed?: boolean; policy?: boolean
   return state
 }
 
+// Chọn ngựa trong danh sách ngựa của đơn (trang tự mở ngựa đầu tiên còn việc)
+const pick = (page: Page, name: string) => page.getByRole('list', { name: 'Ngựa trong đơn' }).getByRole('button', { name: new RegExp(name) })
+
 test('confirmation locks immediately, prevents double submission and survives reload and horse switches', async ({ page }) => {
   const state = await open(page)
   await page.getByRole('button', { name: 'Xác nhận báo giá bảo hiểm', exact: true }).evaluate(button => {
     (button as HTMLButtonElement).click(); (button as HTMLButtonElement).click()
   })
+  // Lưu xong vẫn ở ngựa đang làm, không tự nhảy sang ngựa khác
+  await expect(pick(page, 'Storm')).toHaveAttribute('aria-pressed', 'true')
   await expect(page.getByRole('button', { name: 'Đã xác nhận báo giá', exact: true })).toBeDisabled()
   await expect(page.getByRole('button', { name: 'Lưu nháp', exact: true })).toBeDisabled()
   await expect(page.getByLabel('Phí thu hộ (VNĐ)')).toHaveCount(0)
   expect(state.requests).toHaveLength(1)
   await page.reload()
+  await pick(page, 'Storm').click()
   await expect(page.getByRole('button', { name: 'Đã xác nhận báo giá', exact: true })).toBeDisabled()
-  const picker = page.getByRole('combobox', { name: 'Chọn ngựa', exact: false })
-  await picker.selectOption('H2')
+  await pick(page, 'Wind').click()
   await expect(page.getByRole('button', { name: 'Xác nhận báo giá bảo hiểm', exact: true })).toBeEnabled()
-  await picker.selectOption('H1')
+  await pick(page, 'Storm').click()
   await expect(page.getByRole('button', { name: 'Đã xác nhận báo giá', exact: true })).toBeDisabled()
   expect(state.requests).toHaveLength(1)
 })
 
 test('editing is explicit and cancel restores the last confirmed values without a request', async ({ page }) => {
   const state = await open(page, { confirmed: true })
+  await pick(page, 'Storm').click()
   await page.getByRole('button', { name: 'Chỉnh sửa báo giá', exact: true }).click()
   await expect(page.getByRole('button', { name: 'Lưu nháp', exact: true })).toBeDisabled()
   await expect(page.getByRole('button', { name: 'Xác nhận báo giá bảo hiểm', exact: true })).toBeDisabled()
@@ -69,6 +75,7 @@ test('editing is explicit and cancel restores the last confirmed values without 
 
 test('a changed draft must be confirmed again and locks after reconfirmation', async ({ page }) => {
   const state = await open(page, { confirmed: true })
+  await pick(page, 'Storm').click()
   await page.getByRole('button', { name: 'Chỉnh sửa báo giá', exact: true }).click()
   await page.getByLabel('Phí thu hộ (VNĐ)').fill('2234567')
   await page.getByRole('button', { name: 'Lưu nháp', exact: true }).click()
@@ -101,6 +108,7 @@ test('policy confirmation is separate from reviewed quote and locks after arrang
   await expect(page.getByRole('button', { name: 'Chỉnh sửa báo giá', exact: true })).toHaveCount(0)
   expect(state.requests[0]).toMatchObject({ reviewed: true, arranged: true, premium: 1234567 })
   await page.reload()
+  await pick(page, 'Storm').click()
   await expect(page.getByRole('button', { name: 'Đã xác nhận hợp đồng', exact: true })).toBeDisabled()
 })
 

@@ -210,7 +210,9 @@ export interface WelfareLog {
 }
 // Xe giao ngựa ở nước ngoài xong thì Driver và Escort chạy về trụ sở; Driver xác nhận có ảnh chụp tại trụ sở
 export interface HomeReturn { fromPlace: string; eta: number; earliestAt: number; backAt?: number; photo?: string; by?: string }
-export interface TripRun { supersededCheckpoints?: Checkpoint[]; checkpoints: Checkpoint[]; welfare: WelfareLog[]; startedAt?: number; deliveredAt?: number }
+// stabled: người nhận không tới, kíp xe gửi ngựa tại chuồng (người nhận tự tới lấy và trả tiền chuồng) rồi về trụ sở
+export interface StabledAt { name: string; address: string; phone: string; photo: string; at: number; by: string }
+export interface TripRun { supersededCheckpoints?: Checkpoint[]; checkpoints: Checkpoint[]; welfare: WelfareLog[]; startedAt?: number; deliveredAt?: number; stabled?: StabledAt }
 
 // ===== Mỗi xe của đơn là một chuyến (PRD mục 1.4, 10.2) =====
 export interface DriverPack { items: string[]; at: number; by: string } // Coordinator nhập cho Driver mang theo

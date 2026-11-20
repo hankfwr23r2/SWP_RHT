@@ -142,7 +142,7 @@ export function HorseFormModal({ owner, horse, onClose, onSaved }: Props) {
       setPersistedHorse({ ...saved, docs: serverDocs })
       if (Object.keys(uploadErrors).length) {
         setErrors(uploadErrors)
-        setFormError('Thông tin ngựa đã được lưu. Một số giấy tờ chưa tải lên được; hãy thử lại để gửi những giấy tờ còn thiếu, không cần tạo lại ngựa.')
+        setFormError('Thông tin ngựa đã được lưu. Một số giấy tờ chưa tải lên được. Hãy thử lại để gửi những giấy tờ còn thiếu, không cần tạo lại ngựa.')
         setTab('docs')
         return
       }

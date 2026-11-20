@@ -1,7 +1,7 @@
 // Service đội xe và người đi theo chuyến, gọi Backend Spring Boot (/fleet/vehicles, /fleet/crew). Không giữ dữ liệu ở máy khách.
 import { backendFleetApi, type BackendVehicleResponse } from '../api/fleet'
 import type { Booking } from '../types/booking'
-import type { CrewMember, Vehicle } from '../types/fleet'
+import type { CrewMember, Vehicle, VehicleSchedule } from '../types/fleet'
 
 // Đơn đang xếp xe hoặc kíp: backend tính rảnh/bận theo ngày đi, loại chuyến và bỏ qua chính đơn này
 type ForBooking = Pick<Booking, 'id' | 'departAt' | 'type'>
@@ -29,6 +29,7 @@ const mapVehicle = (v: BackendVehicleResponse): Vehicle => ({
   onTripBookingCode: v.onTripBookingCode || undefined,
   returnEta: v.returnEta ?? undefined,
   upcoming: v.upcoming ?? [],
+  schedule: v.schedule ?? [],
 })
 
 const toVehiclePayload = (v: Omit<Vehicle, 'id'>): Parameters<typeof backendFleetApi.createVehicle>[0] => ({
@@ -69,4 +70,4 @@ export const crewApi = {
   },
 }
 
-export type { CrewMember, Vehicle }
+export type { CrewMember, Vehicle, VehicleSchedule }

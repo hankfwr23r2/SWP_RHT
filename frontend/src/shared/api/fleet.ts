@@ -19,6 +19,7 @@ export interface BackendVehicleResponse {
   onTripBookingCode?: string
   returnEta?: number
   upcoming?: VehicleSchedule[]
+  schedule?: VehicleSchedule[]
 }
 
 export interface VehiclePayload {

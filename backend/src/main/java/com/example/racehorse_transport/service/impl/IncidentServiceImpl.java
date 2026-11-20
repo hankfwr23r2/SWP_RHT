@@ -69,7 +69,7 @@ public class IncidentServiceImpl implements IncidentService {
         ensureTripBelongsToBooking(booking, request.getTripId());
         if (incidentRepository.findByBookingID_Id(booking.getId()).stream().anyMatch(i ->
                 Objects.equals(i.getTripId(), request.getTripId()) && !"resolved".equalsIgnoreCase(i.getStatus())))
-            throw new IllegalArgumentException("Chuyến đang có SOS chưa giải quyết; hãy tiếp tục xử lý sự cố hiện tại.");
+            throw new IllegalArgumentException("Chuyến đang có SOS chưa giải quyết. Hãy tiếp tục xử lý sự cố hiện tại.");
 
         BookingDetailsPayloadDto photoPayload = BookingDetailsJson.read(objectMapper, booking);
         captureService.attach(photoPayload, booking.getId(), request.getTripId(), "SOS", "", request.getPhotoUrl(), actor);
@@ -561,7 +561,7 @@ public class IncidentServiceImpl implements IncidentService {
     private Map<String, Object> stationCheckpoint(Incident incident, BookingDetailsPayloadDto payload) {
         return tripCheckpoints(incidentTrip(incident, payload)).stream()
                 .filter(cp -> Objects.equals("sos-" + incident.getId(), cp.get("id"))).findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Phương án SOS cũ chưa có mốc trạm; cần điều phối lập lại phương án."));
+                .orElseThrow(() -> new IllegalArgumentException("Phương án SOS cũ chưa có mốc trạm. Cần điều phối lập lại phương án."));
     }
 
     private void applyStationPlan(Incident incident, String actor) {
