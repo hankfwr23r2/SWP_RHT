@@ -28,4 +28,6 @@ public class VehicleResponseDto {
     private Long returnEta; // epoch ms, giờ về trụ sở dự kiến (nếu đã giao)
     @Builder.Default
     private java.util.List<VehicleScheduleDto> upcoming = new java.util.ArrayList<>(); // đơn đã nhận, chưa lăn bánh
+    @Builder.Default
+    private java.util.List<VehicleScheduleDto> schedule = new java.util.ArrayList<>(); // mọi đơn đang giữ xe (kể cả đang chạy), theo thời gian
 }

@@ -845,6 +845,7 @@ export const en = {
   staffMenus: {
     '/admin/pricing': 'Pricing & Formulas',
     '/admin/horse-types': 'Horse Breeds',
+    '/admin/fleet': 'Vehicle Fleet',
     '/admin/routes': 'Fixed Routes',
     '/admin/services': 'Services & Fees',
     '/admin/rules': 'Regulations & Config',
@@ -1441,6 +1442,7 @@ export const en = {
   coordinatorFleet: {
     title: 'Fleet Management',
     subtitle: 'Specialized equine transport vehicles, readiness, and maintenance status.',
+    subtitleView: 'Click a vehicle to see which bookings it is on or has taken, from which day to which day, and its crew.',
     btnAddVehicle: 'Add Vehicle',
     statusAll: 'All Statuses',
     statusAvailable: 'Available',

@@ -846,6 +846,7 @@ export const vi = {
   staffMenus: {
     '/admin/pricing': 'Biểu giá & Công thức',
     '/admin/horse-types': 'Danh mục giống ngựa',
+    '/admin/fleet': 'Đội xe',
     '/admin/routes': 'Tuyến đường cố định',
     '/admin/services': 'Dịch vụ & Biểu phí',
     '/admin/rules': 'Quy định & Tham số',
@@ -1442,6 +1443,7 @@ export const vi = {
   coordinatorFleet: {
     title: 'Đội xe vận chuyển',
     subtitle: 'Danh sách xe chuyên dụng vận chuyển ngựa, trạng thái sẵn sàng và bảo dưỡng.',
+    subtitleView: 'Bấm vào xe để xem xe đang đi hoặc đã nhận đơn nào, từ ngày nào tới ngày nào và kíp xe đi cùng.',
     btnAddVehicle: 'Thêm xe',
     statusAll: 'Tất cả trạng thái',
     statusAvailable: 'Sẵn sàng',

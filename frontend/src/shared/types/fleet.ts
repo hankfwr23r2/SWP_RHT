@@ -5,6 +5,10 @@ export interface VehicleSchedule {
   departAt: number
   busyFrom: number // đầu khoảng giữ xe (gồm chuẩn bị)
   busyUntil: number // cuối khoảng giữ xe (gồm quay về trụ sở)
+  onTrip?: boolean // xe đã rời trụ sở cho đơn này, chưa xác nhận về
+  returnEta?: number // giờ về trụ sở dự kiến (đã giao, đang về)
+  driverName?: string // kíp của chuyến dùng xe này; chưa chốt phương án thì chưa có
+  escortName?: string
 }
 
 // Rảnh/bận do backend quyết định, cùng quy tắc với bước lưu. Khi tải kèm ngày đi của một đơn:
@@ -27,6 +31,7 @@ export interface Vehicle extends Availability {
   onTripBookingCode?: string
   returnEta?: number
   upcoming?: VehicleSchedule[] // đơn đã nhận, chưa lăn bánh
+  schedule?: VehicleSchedule[] // mọi đơn đang giữ xe (kể cả đang chạy), theo thời gian; chỉ có ở danh sách đội xe
 }
 
 export interface CrewMember extends Availability {

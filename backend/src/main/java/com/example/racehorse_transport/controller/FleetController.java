@@ -60,19 +60,19 @@ public class FleetController {
     }
 
     @PostMapping("/vehicles")
-    @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER', 'ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponseDto<VehicleResponseDto>> createVehicle(@Valid @RequestBody VehicleRequestDto request) {
         return ResponseEntity.status(201).body(ApiResponseDto.success(fleetService.createVehicle(request), "Tạo xe thành công"));
     }
 
     @PutMapping("/vehicles/{id}")
-    @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER', 'ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponseDto<VehicleResponseDto>> updateVehicle(@PathVariable String id, @Valid @RequestBody VehicleRequestDto request) {
         return ResponseEntity.ok(ApiResponseDto.success(fleetService.updateVehicle(id, request), "Cập nhật xe thành công"));
     }
 
     @DeleteMapping("/vehicles/{id}")
-    @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER', 'ADMIN')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponseDto<Void>> deleteVehicle(@PathVariable String id) {
         fleetService.deleteVehicle(id);
         return ResponseEntity.ok(ApiResponseDto.success(null, "Xóa xe thành công"));

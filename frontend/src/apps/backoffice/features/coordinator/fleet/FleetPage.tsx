@@ -1,5 +1,5 @@
 // Quản lý đội xe. Chuyển từ Fleet And Route/OPS-07.html + ops-07.js.
-// Thêm / sửa / xóa xe. Trạng thái do backend tính: Sẵn sàng, Đã nhận đơn (ở trụ sở, có đơn chưa lăn bánh),
+// Quản trị viên thêm / sửa / xóa xe (manage); điều phối chỉ xem, bấm vào xe để xem lịch giữ xe. Trạng thái do backend tính: Sẵn sàng, Đã nhận đơn (ở trụ sở, có đơn chưa lăn bánh),
 // Đang chạy (đang đi đơn hoặc chưa xác nhận về trụ sở), Chưa sẵn sàng (bảo dưỡng). Xe đã nhận đơn vẫn chọn được
 // cho đơn ở ngày khác: việc đó chỉ quyết định lúc chọn xe cho một đơn (theo ngày đi của đơn đó).
 // Ô số liệu tính từ danh sách xe (bản cũ ghi cứng 24 / 18 / 4 / 2).
@@ -12,6 +12,7 @@ import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
 import { cx } from '../../../shared/parts'
 import { VehicleArt } from './VehicleArt'
+import { VehicleScheduleModal } from './VehicleScheduleModal'
 import f from './Fleet.module.css'
 import c from '../Coordinator.module.css'
 import { useOps } from '../../../shared/useOps'
@@ -58,7 +59,7 @@ const lockReason = (v: Vehicle): string => {
   return next ? `Xe đã nhận đơn ${next.bookingCode}, chỉ sửa hoặc xóa được khi xe không còn đơn` : ''
 }
 
-export default function FleetPage() {
+export default function FleetPage({ manage = false }: { manage?: boolean }) {
   const { t } = useTranslation()
   const toast = useToast()
   const { vehicles, reload } = useOps()
@@ -69,6 +70,7 @@ export default function FleetPage() {
   const [form, setForm] = useState(EMPTY)
   const [invalid, setInvalid] = useState('')
   const [confirmDelete, setConfirmDelete] = useState<Vehicle | null>(null)
+  const [viewing, setViewing] = useState<Vehicle | null>(null)
 
   const edit = (v: Vehicle | null) => {
     const locked = v ? lockReason(v) : ''
@@ -111,6 +113,8 @@ export default function FleetPage() {
     toast(`Đã xóa xe ${v.id}`, 'info')
     reload()
   }
+  // Quản trị: mở form sửa (nếu xe không bị khóa). Điều phối: xem lịch giữ xe
+  const open = (v: Vehicle) => { if (!manage) setViewing(v); else if (!lockReason(v)) edit(v) }
   const set = <K extends keyof typeof form>(key: K) => (value: (typeof form)[K]) => { setInvalid(''); setForm({ ...form, [key]: value }) }
 
   const countOf = (state: FleetState) => vehicles.filter(v => stateOf(v) === state).length
@@ -126,7 +130,7 @@ export default function FleetPage() {
       <div className="wrap">
         <div className="page-header">
           <h1>{t('coordinatorFleet.title', 'Đội xe vận chuyển')}</h1>
-          <p>{t('coordinatorFleet.subtitle', 'Danh sách xe chuyên dụng vận chuyển ngựa, trạng thái sẵn sàng và bảo dưỡng.')}</p>
+          <p>{manage ? t('coordinatorFleet.subtitle', 'Danh sách xe chuyên dụng vận chuyển ngựa, trạng thái sẵn sàng và bảo dưỡng.') : t('coordinatorFleet.subtitleView', 'Bấm vào xe để xem xe đang đi hoặc đã nhận đơn nào, từ ngày nào tới ngày nào và kíp xe đi cùng.')}</p>
         </div>
 
         <div className={f.bar}>
@@ -146,7 +150,7 @@ export default function FleetPage() {
             })}
           </div>
           <label className={f.search}><i className="fa-solid fa-magnifying-glass" aria-hidden="true" /><input className="form-control" placeholder={t('coordinatorFleet.searchPlaceholder', 'Tìm biển số...')} value={text} onChange={e => setText(e.target.value)} /></label>
-          <button className="btn btn-primary" onClick={() => edit(null)}><i className="fa-solid fa-plus" /> {t('coordinatorFleet.btnAddVehicle', 'Thêm xe')}</button>
+          {manage && <button className="btn btn-primary" onClick={() => edit(null)}><i className="fa-solid fa-plus" /> {t('coordinatorFleet.btnAddVehicle', 'Thêm xe')}</button>}
         </div>
 
         <div className={f.grid}>
@@ -156,7 +160,7 @@ export default function FleetPage() {
             const locked = lockReason(v)
             const upcoming = v.upcoming ?? []
             return (
-              <article key={v.id} className={f.card} style={{ ['--tone' as string]: color }} onClick={() => !locked && edit(v)} tabIndex={locked ? -1 : 0} onKeyDown={e => !locked && e.key === 'Enter' && edit(v)} aria-label={`Xe ${v.plate}, ${stateLabel(state, t)}`}>
+              <article key={v.id} className={f.card} style={{ ['--tone' as string]: color }} onClick={() => open(v)} tabIndex={manage && locked ? -1 : 0} onKeyDown={e => e.key === 'Enter' && open(v)} aria-label={`Xe ${v.plate}, ${stateLabel(state, t)}`}>
                 <div className={f.top}>
                   <span className={f.code}>{v.id}</span>
                   <span className={f.status}>{stateLabel(state, t)}</span>
@@ -175,8 +179,8 @@ export default function FleetPage() {
                     {upcoming.length > 1 && <div><span /><b>+{upcoming.length - 1} đơn khác</b></div>}
                   </div>
                 )}
-                {locked && <span className={f.lockNote}><i className="fa-solid fa-lock" /> {locked}</span>}
-                <div className={f.actions} onClick={e => e.stopPropagation()}>
+                {manage && locked && <span className={f.lockNote}><i className="fa-solid fa-lock" /> {locked}</span>}
+                {manage && <div className={f.actions} onClick={e => e.stopPropagation()}>
                   <button
                     className="btn btn-ghost btn-sm"
                     disabled={!!locked}
@@ -195,7 +199,7 @@ export default function FleetPage() {
                   >
                     {t('common.delete', 'Xóa')}
                   </button>
-                </div>
+                </div>}
               </article>
             )
           })}
@@ -253,6 +257,8 @@ export default function FleetPage() {
           </div>
         </Modal>
       )}
+
+      {viewing && <VehicleScheduleModal vehicle={viewing} onClose={() => setViewing(null)} />}
 
       {confirmDelete && (
         <Modal title={t('coordinatorFleet.deleteVehicle', 'Xóa xe')} onClose={() => setConfirmDelete(null)} footer={<><button className="btn btn-ghost" onClick={() => setConfirmDelete(null)}>{t('common.cancel', 'Hủy')}</button><button className="btn btn-danger" onClick={() => remove(confirmDelete)}>{t('common.delete', 'Xóa')}</button></>}>

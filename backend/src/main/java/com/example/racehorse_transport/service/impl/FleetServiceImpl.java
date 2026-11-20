@@ -195,6 +195,7 @@ public class FleetServiceImpl implements FleetService {
             List<Hold> held = holds.get(v.getId());
             List<VehicleScheduleDto> upcoming = upcomingOf(held);
             res.setUpcoming(upcoming);
+            res.setSchedule(scheduleOf(held, v.getId()));
             Hold away = awayOf(held);
             applyAway(res, away);
             if (isMaintenanceStatus(v.getStatus())) {
@@ -274,6 +275,47 @@ public class FleetServiceImpl implements FleetService {
                         .busyUntil(h.window().end().toEpochMilli())
                         .build())
                 .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+    }
+
+    // Mọi đơn đang giữ xe, theo thời gian; các khoảng không chồng nhau vì lúc lưu đã chặn trùng lịch
+    private List<VehicleScheduleDto> scheduleOf(List<Hold> holds, Integer vehicleId) {
+        if (holds == null) return new ArrayList<>();
+        return holds.stream()
+                .sorted(Comparator.comparing((Hold h) -> h.window().start()))
+                .map(h -> {
+                    VehicleTripDto trip = tripOf(h.booking(), vehicleId);
+                    return VehicleScheduleDto.builder()
+                            .bookingCode(h.booking().getCode())
+                            .tripType(isInternational(h.booking().getBookingType()) ? "international" : "domestic")
+                            .departAt(departOf(h.booking()) == null ? null : departOf(h.booking()).toEpochMilli())
+                            .busyFrom(h.window().start().toEpochMilli())
+                            .busyUntil(h.window().end().toEpochMilli())
+                            .onTrip(h.away())
+                            .returnEta(h.returning() ? h.eta() : null)
+                            .driverName(trip == null ? null : staffName(trip.getDriverId()))
+                            .escortName(trip == null ? null : staffName(trip.getEscortId()))
+                            .build();
+                })
+                .collect(java.util.stream.Collectors.toCollection(ArrayList::new));
+    }
+
+    // Chuyến của đơn dùng xe này (Coordinator chốt phương án mới có)
+    private VehicleTripDto tripOf(Booking booking, Integer vehicleId) {
+        BookingDetailsPayloadDto payload = BookingDetailsJson.read(objectMapper, booking);
+        if (payload.getTrips() == null) return null;
+        return payload.getTrips().stream()
+                .filter(trip -> trip.getVehicleId() != null && Objects.equals(resolveTripVehicleId(trip.getVehicleId()), vehicleId))
+                .findFirst().orElse(null);
+    }
+
+    private String staffName(String identifier) {
+        if (identifier == null || identifier.isBlank()) return null;
+        try {
+            Staff staff = findStaffByIdOrCode(identifier, null);
+            return staff.getUser() != null ? staff.getUser().getUsername() : identifier;
+        } catch (IllegalArgumentException e) {
+            return identifier;
+        }
     }
 
     // VehicleID -> các khoảng giữ xe
