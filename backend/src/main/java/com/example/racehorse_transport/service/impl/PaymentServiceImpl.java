@@ -311,7 +311,7 @@ public class PaymentServiceImpl implements PaymentService {
         closeCancelledBooking(booking, payload, reason, horsesOnBoard);
 
         String message = "Nhà xe hủy chuyến (" + reason + "). Hoàn lại toàn bộ " + collected
-                + " VND đã thanh toán; nhà xe sẽ chuyển khoản và liên hệ xác nhận.";
+                + " VND đã thanh toán. Nhà xe sẽ chuyển khoản và liên hệ xác nhận.";
         return CancelWithRefundResponseDto.builder()
                 .bookingCode(booking.getCode())
                 .bookingStatus(booking.getStatus())

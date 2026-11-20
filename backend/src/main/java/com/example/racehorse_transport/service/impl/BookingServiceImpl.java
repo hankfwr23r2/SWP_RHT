@@ -1242,7 +1242,7 @@ public class BookingServiceImpl implements BookingService {
                     if (pending) {
                         for (Payment p : payments) {
                             if (DepositPaymentWindow.hasPendingDeposit(List.of(p), q)) {
-                                p.setNote("Hết thời gian giữ chỗ; chưa nhận kết quả VNPAY. Chờ đối soát, chưa xác định thanh toán thất bại.");
+                                p.setNote("Hết thời gian giữ chỗ. Chưa nhận kết quả VNPAY. Chờ đối soát, chưa xác định thanh toán thất bại.");
                                 paymentRepository.save(p);
                             }
                         }

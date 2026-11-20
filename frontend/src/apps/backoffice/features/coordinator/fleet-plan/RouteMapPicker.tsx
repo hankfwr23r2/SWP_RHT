@@ -192,7 +192,7 @@ export function RouteMapPicker({ origin, dest, gate, international, value, estim
   const total = [...picked.values()].reduce((t, x) => t + x, 0)
 
   return (
-    <Modal wide onClose={onClose} title="Chọn trạm nghỉ" subtitle="Bấm vào các chấm trạm trên bản đồ; hệ thống tự xếp thứ tự và vẽ đường đi qua các điểm."
+    <Modal wide onClose={onClose} title="Chọn trạm nghỉ" subtitle="Bấm vào các chấm trạm trên bản đồ, hệ thống tự xếp thứ tự và vẽ đường đi qua các điểm."
       footer={<><button className="btn btn-ghost" onClick={onClose}>Hủy</button><button className="btn btn-primary" onClick={apply}><i className="fa-solid fa-check" /> Áp dụng {outline.stations.length} trạm{added.length ? ` (+${added.length} nghỉ theo quy định)` : ''}</button></>}>
       <div className="rm-wrap">
         <div ref={box} className="rm-map" role="application" aria-label="Bản đồ chọn trạm nghỉ" />
@@ -246,7 +246,7 @@ export function RouteMapPicker({ origin, dest, gate, international, value, estim
                 {added.length > 0 && (
                   <small>
                     Hệ thống sẽ thêm {added.length} chỗ nghỉ để không lái quá {MAX_CONTINUOUS_HOURS} giờ liên tục:{' '}
-                    {added.join('; ')}.
+                    {added.join(', ')}.
                   </small>
                 )}
               </>

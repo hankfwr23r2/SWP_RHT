@@ -285,7 +285,7 @@ public class TripProgressServiceImpl implements TripProgressService {
                         .findFirst().orElse(null);
                 if (recordedChip == null) {
                     throw new IllegalArgumentException("Chip " + chip + " không khớp ngựa nào trên chuyến này. "
-                            + "Quét lại; nếu vẫn sai, tài xế báo \"Chip không khớp hồ sơ\" cho con ngựa đó.");
+                            + "Quét lại. Nếu vẫn sai, tài xế báo \"Chip không khớp hồ sơ\" cho con ngựa đó.");
                 }
                 Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();
                 @SuppressWarnings("unchecked")

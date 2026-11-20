@@ -176,7 +176,7 @@ public class RoutePreviewServiceImpl implements RoutePreviewService {
                 .toList();
         if (!roadside.isEmpty()) {
             warnings.add("Không có trạm nghỉ ở đoạn xe cần nghỉ, xe phải nghỉ dọc đường " + roadside.size() + " lần ("
-                    + String.join("; ", roadside) + "). Có thể chọn thêm trạm nghỉ trên bản đồ.");
+                    + String.join(", ", roadside) + "). Có thể chọn thêm trạm nghỉ trên bản đồ.");
         }
 
         return new RoutePreviewResponseDto("valhalla", round1(road.km()), hours(road.driveSeconds()), legs,
