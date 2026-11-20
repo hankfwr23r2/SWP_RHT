@@ -2,6 +2,7 @@
 import { findGate, findTransitStation } from '@shared/config/network'
 import { INCIDENT_ACTION } from '@shared/config/booking-rules'
 import { findLocation } from '@shared/lib/booking'
+import { routeBeforeIncident } from '@shared/lib/incidentRoute'
 import type { Booking, Incident } from '@shared/types/booking'
 import { IncidentMap, NEW_ROUTE, oldRouteLines, type MapLine } from './IncidentMap'
 
@@ -13,7 +14,7 @@ export function IncidentPlanView({ b, i, height = 340 }: { b: Booking; i: Incide
   const station = plan.station ? [findTransitStation(plan.station)].filter(s => s !== undefined) : []
   // Đường cũ để so sánh: tắc đường thì tới điểm cuối của đường tránh, các loại khác tới hết lộ trình đã lập
   const detourEnd = plan.detour?.path.at(-1)
-  const old = oldRouteLines(b.route?.path ?? [], i.location, detourEnd ? { lat: detourEnd[0], lng: detourEnd[1] } : undefined)
+  const old = oldRouteLines(routeBeforeIncident(b, i), i.location, detourEnd ? { lat: detourEnd[0], lng: detourEnd[1] } : undefined)
   const lines: MapLine[] = [
     ...old.lines,
     ...(plan.onward ? [{ path: plan.onward.path, color: NEW_ROUTE, flow: true, weight: 5, label: 'Đường đi tiếp từ trạm SOS', legend: 'Đường mới', fit: false }] : []),

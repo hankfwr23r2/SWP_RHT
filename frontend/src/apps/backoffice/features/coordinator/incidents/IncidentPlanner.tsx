@@ -8,6 +8,7 @@ import { findGate, findTransitStation, RESCUE_POINTS, TRANSIT_STATIONS, type Geo
 import { effectiveArrivalOf, checkpointPoint, bookingPath, findLocation, incidentActionsFor, nearestTo, pointsAhead } from '@shared/lib/booking'
 import { formatDateTime } from '@shared/lib/format'
 import { insertWaypoint } from '@shared/lib/waypoints'
+import { routeBeforeIncident } from '@shared/lib/incidentRoute'
 import { haversineKm } from '@shared/lib/pricing'
 import { bookingsApi } from '@shared/services/bookings'
 import { clearRoadCache, thinPath, type RoadRoute } from '@shared/services/routing'
@@ -105,8 +106,8 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
   const newEta = new Date(etaValue).getTime()
   const oldEta = effectiveArrivalOf({ route: b.route, trips: b.trips?.filter(trip => trip.tripId === i.tripId) })
 
-  // Đường cũ: phần lộ trình đã lập còn lại từ chỗ xe (tắc đường: tới điểm kế tiếp, đoạn bị thay bằng đường tránh)
-  const old = oldRouteLines(b.route?.path?.length ? b.route.path : path.map(lngLat), loc, kind === 'traffic_jam' ? next : undefined)
+  // Đường cũ: lộ trình xe đang đi (gồm phương án sự cố đã duyệt trước đó) còn lại từ chỗ xe; tắc đường thì tới điểm kế tiếp
+  const old = oldRouteLines(routeBeforeIncident(b, i, path.map(lngLat)), loc, kind === 'traffic_jam' ? next : undefined)
   const lines: MapLine[] = [
     ...old.lines,
     ...(rescueLine ? [{ path: rescueLine.path, color: '#059669', flow: true, label: `Cứu hộ tới chỗ xe: ${rescueLine.km} km` }] : []),
@@ -117,6 +118,8 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
       : []),
     ...(afterRoad.route ? [{ path: afterRoad.route.path, color: NEW_ROUTE, weight: 4, label: 'Đường đi tiếp tới điểm trả', legend: 'Đường mới', fit: false }] : []),
   ]
+  // Chỉ hiện khi máy tính đường lỗi và màn hình đang phải dùng đường nối thẳng
+  const recalc = <button type="button" className="btn btn-ghost btn-sm" onClick={() => { clearRoadCache(); setRouteAttempt(attempt => attempt + 1) }}>Tính lại đường</button>
   // So sánh đường cũ và đường mới (tắc đường: cùng điểm đầu và điểm kế tiếp)
   const kmDiff = detour ? Math.round((detour.km - old.km) * 10) / 10 : 0
 
@@ -212,8 +215,8 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
             <div><h4>{kind === 'vehicle_breakdown' ? '2. Chọn trạm nghỉ gần chỗ xe để đưa ngựa tới' : 'Chọn trạm nghỉ gần chỗ xe'}</h4><div style={{ marginTop: 6 }}>{stationOptions}</div></div>
             {toStationLine && <div className="im-road"><span>Đưa ngựa tới trạm: <b>{toStationLine.km} km · {hm(toStationLine.hours)}</b></span><small>{toStation.route ? (toStation.route.traffic ? 'Theo Google, có giao thông' : 'Theo đường bộ') : 'Đường nối thẳng, chưa lấy được đường bộ'}</small></div>}
             {kind === 'horse_health' && replaceableRest && <label className="im-note"><input type="checkbox" checked={replaceRestApplied} disabled={sameStationRest} onChange={e => setReplaceRest(e.target.checked)} /> Trạm SOS thay thế mốc nghỉ kế tiếp: {replaceableRest.place}</label>}
-            {kind === 'horse_health' && <button type="button" className="btn btn-ghost btn-sm" disabled={loading} onClick={() => { clearRoadCache(); setRouteAttempt(attempt => attempt + 1) }}>Tìm lại đường tới trạm và đi tiếp</button>}
             {kind === 'horse_health' && !stationReady && !loading && <p role="alert" className="im-note">Cần tính được cả đường tới trạm và đường đi tiếp trước khi trình duyệt.</p>}
+            {kind === 'horse_health' && !loading && (!toStation.route || !afterRoad.route) && recalc}
             {restChips}
           </>
         )}
@@ -223,9 +226,9 @@ export function IncidentPlanner({ item, onClose, onDone }: { item: { b: Booking;
             {waypoints.length > 0 && <div><p>Đã chọn {waypoints.length} điểm đi qua.</p>
               <div className="rm-chips">{waypoints.map((_, idx) => <button key={idx} type="button" aria-label={`Bỏ điểm đi qua ${idx + 1}`} onClick={() => setWaypoints(points => points.filter((__, i) => i !== idx))}>Điểm {idx + 1} ×</button>)}</div>
               <button type="button" className="btn btn-ghost btn-sm" onClick={() => setWaypoints([])}>Xóa các điểm</button></div>}
-            <button type="button" className="btn btn-ghost btn-sm" disabled={loading} onClick={() => { clearRoadCache(); setRouteAttempt(attempt => attempt + 1) }}>Tìm lại đường bộ</button>
             {rerouteUnchanged && <p role="alert" className="im-note">Đường đang chọn trùng phương án bị trả về. Hãy chọn đường khác hoặc thêm điểm đi qua.</p>}
             {!loading && !altChosen && <p role="alert" className="im-note">Chưa kết nối được dịch vụ đường bộ hoặc không tìm thấy tuyến. Đường thẳng chỉ để tham khảo, chưa thể trình duyệt.</p>}
+            {!loading && !altChosen && recalc}
             <h4>Lộ trình thay thế tới {ahead[0] ? 'điểm kế tiếp' : 'điểm trả'}</h4>
             <div className="im-list" style={{ marginTop: 6 }}>
               {altList.length ? altList.map((r, idx) => (
