@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { DEPOSIT_RATE, QUOTE_VALID_HOURS, VEHICLE_CLASS } from '@shared/config/booking-rules'
-import { finalizeQuote, sameVehicleId, schedulesOf, vehicleClassOf, crewClashOf, findCrewBooked } from '@shared/lib/booking'
+import { finalizeQuote, sameVehicleId, schedulesOf, vehicleClassOf } from '@shared/lib/booking'
 import { formatDate, formatDateTime, formatVND } from '@shared/lib/format'
 import { bookingsApi, invalidateBookingsListCache } from '@shared/services/bookings'
 import { crewApi, vehiclesApi } from '@shared/services/fleet'
@@ -32,9 +32,10 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
   const { session } = useAuth()
   const { data: draft } = useLoad(() => bookingsApi.quoteDraft(b.id), [b.id])
   const { data: vehicles } = useLoad(vehiclesApi.list)
-  const { data: crew } = useLoad(crewApi.list)
+  // Rảnh/bận theo ngày đi và loại chuyến của chính đơn này, cùng quy tắc với bước lưu ở backend
+  const { data: crew } = useLoad(() => crewApi.forBooking(b), [b.id, b.departAt, b.type])
   const trips = b.trips ?? []
-  const sched = schedulesOf(all, b.id)
+  const sched = schedulesOf(all, b.id) // chỉ để hiển thị lịch của từng người trong popup chọn
   const [picks, setPicks] = useState<Record<string, Pick2>>(() => Object.fromEntries(trips.map(t => [t.tripId, { driverId: t.driverId, escortId: t.escortId }])))
 
   useEffect(() => {
@@ -42,8 +43,8 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
     setPicks(prev => {
       let changed = false
       const next = { ...prev }
-      const availableDrivers = crew.filter(c => c.role === 'driver' && !crewClashOf(findCrewBooked(sched.drivers, c.id, c.name), b.departAt))
-      const availableEscorts = crew.filter(c => c.role === 'escort' && !crewClashOf(findCrewBooked(sched.escorts, c.id, c.name), b.departAt))
+      const availableDrivers = crew.filter(c => c.role === 'driver' && c.available !== false)
+      const availableEscorts = crew.filter(c => c.role === 'escort' && c.available !== false)
       let dIdx = 0, eIdx = 0
       for (const t of trips) {
         const cur = next[t.tripId] || { driverId: '', escortId: '' }
@@ -61,7 +62,7 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
       }
       return changed ? next : prev
     })
-  }, [crew, trips, sched, b.departAt])
+  }, [crew, trips])
 
   const [picking, setPicking] = useState<{ tripId: string; kind: 'driver' | 'escort' } | null>(null)
   const [back, setBack] = useState<{ to: 'specialist' | 'coordinator' | 'both'; specialist: string; coordinator: string } | null>(null) // đang nhập lý do trả lại, mỗi bên một lý do
@@ -73,11 +74,9 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
     if (!p.driverId) out.push(`Xe ${i + 1} chưa chọn tài xế.`)
     if (!p.escortId) out.push(`Xe ${i + 1} chưa chọn nhân viên hộ tống.`)
     const d = crew?.find(c => c.id === p.driverId), e = crew?.find(c => c.id === p.escortId)
-    const dc = crewClashOf(findCrewBooked(sched.drivers, p.driverId, d?.name), b.departAt)
-    const ec = crewClashOf(findCrewBooked(sched.escorts, p.escortId, e?.name), b.departAt)
-    const why = (x: NonNullable<typeof dc>) => (x.returning ? `đang về trụ sở từ ${x.returning.from} (đơn ${x.order})` : x.active ? `đang đi đơn ${x.order} (${x.countries})` : `trùng lịch với đơn ${x.order} (khởi hành ${formatDate(x.departAt)})`)
-    if (d && dc) out.push(`Tài xế ${d.name} ${why(dc)}.`)
-    if (e && ec) out.push(`Hộ tống ${e.name} ${why(ec)}.`)
+    // Cùng câu với lỗi backend trả về khi lưu
+    if (d && d.available === false) out.push(`Tài xế ${d.name} không nhận được đơn này: ${d.busyReason ?? 'không sẵn sàng'}.`)
+    if (e && e.available === false) out.push(`Hộ tống ${e.name} không nhận được đơn này: ${e.busyReason ?? 'không sẵn sàng'}.`)
     return out
   })
   const insuranceErrors = b.horses.flatMap(h => {
@@ -111,7 +110,7 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
   const crewTab = (
     <>
       <h4 style={{ margin: '0 0 10px' }}>Chọn tài xế và nhân viên hộ tống</h4>
-      <p className={s.hint} style={{ marginBottom: 10 }}>Điều phối viên đã chọn <b>{trips.length} xe</b>. Mỗi xe cần đúng 1 tài xế và 1 nhân viên hộ tống. Tài xế và hộ tống luôn xuất phát từ trụ sở ở Việt Nam. Người đang đi đơn khác hoặc đang chạy về trụ sở thì bị khóa, về tới trụ sở mới chọn lại được.</p>
+      <p className={s.hint} style={{ marginBottom: 10 }}>Điều phối viên đã chọn <b>{trips.length} xe</b>. Mỗi xe cần đúng 1 tài xế và 1 nhân viên hộ tống. Tài xế và hộ tống luôn xuất phát từ trụ sở ở Việt Nam. Người có lịch chồng lên khoảng ngày của đơn này (kể cả chuyến đang chạy hoặc chưa xác nhận về trụ sở) thì bị khóa; có đơn ở ngày khác vẫn chọn được.</p>
       {trips.map((t, i) => {
         const v = vehicles?.find(x => sameVehicleId(x.id, t.vehicleId))
         const p = picks[t.tripId]

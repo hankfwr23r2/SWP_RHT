@@ -19,6 +19,13 @@ public class VehicleResponseDto {
     private String status;
     private String homeDepot;
     private String currentLocation;
-    private boolean isAvailable;
+    private boolean isAvailable; // JSON: "available"
     private String busyReason;
+    private String busyBookingCode; // đơn gây khóa xe (nếu có)
+    private Long busyUntil; // epoch ms: hết bận dự kiến (cuối khoảng giữ hoặc giờ về trụ sở)
+    private boolean onTrip; // đang lăn bánh hoặc chưa xác nhận về trụ sở
+    private String onTripBookingCode;
+    private Long returnEta; // epoch ms, giờ về trụ sở dự kiến (nếu đã giao)
+    @Builder.Default
+    private java.util.List<VehicleScheduleDto> upcoming = new java.util.ArrayList<>(); // đơn đã nhận, chưa lăn bánh
 }

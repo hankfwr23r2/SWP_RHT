@@ -26,12 +26,13 @@ public class FleetController {
     @GetMapping("/vehicles")
     public ResponseEntity<ApiResponseDto<List<VehicleResponseDto>>> getVehicles(
             @RequestParam(value = "departAt", required = false) Long departAtEpochMs,
-            @RequestParam(value = "tripType", required = false, defaultValue = "domestic") String tripType) {
+            @RequestParam(value = "tripType", required = false, defaultValue = "domestic") String tripType,
+            @RequestParam(value = "bookingId", required = false) String bookingId) {
 
         List<VehicleResponseDto> vehicles;
         if (departAtEpochMs != null) {
             Instant departDate = Instant.ofEpochMilli(departAtEpochMs);
-            vehicles = fleetService.getAvailableVehicles(departDate, tripType);
+            vehicles = fleetService.getAvailableVehicles(departDate, tripType, bookingId);
         } else {
             vehicles = fleetService.getAllVehicles();
         }
@@ -43,12 +44,14 @@ public class FleetController {
     @GetMapping("/crew")
     public ResponseEntity<ApiResponseDto<List<CrewResponseDto>>> getCrew(
             @RequestParam(value = "departAt", required = false) Long departAtEpochMs,
-            @RequestParam(value = "role", required = false) String role) {
+            @RequestParam(value = "role", required = false) String role,
+            @RequestParam(value = "tripType", required = false, defaultValue = "domestic") String tripType,
+            @RequestParam(value = "bookingId", required = false) String bookingId) {
 
         List<CrewResponseDto> crew;
         if (departAtEpochMs != null) {
             Instant departDate = Instant.ofEpochMilli(departAtEpochMs);
-            crew = fleetService.getAvailableCrew(departDate, role);
+            crew = fleetService.getAvailableCrew(departDate, role, tripType, bookingId);
         } else {
             crew = fleetService.getAllCrew(role);
         }

@@ -13,7 +13,7 @@ import type { Booking, BookingHorse, HorseProfile, VehicleTrip, Checkpoint, Trip
 import { applyDocumentRequirements } from '../config/runtimeDocumentRequirements'
 import type { DocumentRequirement } from '../api/documentRequirements'
 import {
-  schedulesOf, clashOf, crewClashOf, planHomeReturn, returnLate, returningTrips, vehicleSpot, vehiclePoint, pendingDeparture, spotLabel, nearestTo, projectOnPath, pointsAhead, pointAlong, bookingPath, incidentLocation, needsFitCheck, transitProgress, defaultPayer, incidentActionsFor, settlementOf, approvedSubOf, APPROVED_SUBS, orderGroupOf, ORDER_GROUPS, capacitiesFor, estimateQuote, busyResources, buildRoutePlan, gatesFor, suggestGate, suggestTransitStations, canCompleteClearance, classForHorses, defaultClearanceItems, deriveStatus, docsDueAt, earliestDeparture, finalizeQuote, horseReadiness,
+  schedulesOf, planHomeReturn, returnLate, returningTrips, vehicleSpot, vehiclePoint, pendingDeparture, spotLabel, nearestTo, projectOnPath, pointsAhead, pointAlong, bookingPath, incidentLocation, needsFitCheck, transitProgress, defaultPayer, incidentActionsFor, settlementOf, approvedSubOf, APPROVED_SUBS, orderGroupOf, ORDER_GROUPS, capacitiesFor, estimateQuote, busyResources, buildRoutePlan, gatesFor, suggestGate, suggestTransitStations, canCompleteClearance, classForHorses, defaultClearanceItems, deriveStatus, docsDueAt, earliestDeparture, finalizeQuote, horseReadiness,
   isClearanceOverdue, isDepartureAllowed, isQuoteExpired, layoutLegs, manifestDocuments, nextBookingId, quoteLines, reviewDone, routeKm, activeStaff,
   findLocation, arrivalOf, routeOutline, managerBoardOf, managerCounts, orderTabOf, tripIdFor, validateRoutePlan, vehicleClassOf, autoPackFleet, stallUnitsOf, horseCountryMatchesOrigin, horseHasUnverifiedLocationCountry, pickupFailReason,
 } from './booking'
@@ -415,12 +415,11 @@ describe('lịch bận của xe, tài xế, hộ tống (PRD mục 10.2)', () =>
     expect([...s.escorts.keys()].sort()).toEqual(['E1', 'E2'])
     expect(s.vehicles.get('V1')![0]).toMatchObject({ order: 'ORD-1', route: 'Kho A → Kho B' })
   })
-  it('trùng lịch khi ngày đi cách dưới 3 ngày; xa hơn thì vẫn chọn được nhưng thấy lịch', () => {
+  it('liệt kê lịch các đơn khác để hiển thị (khóa hay không do backend quyết định)', () => {
     const s = schedulesOf(all, 'ORD-4')
-    expect(clashOf(s.vehicles.get('V1'), D)?.order).toBe('ORD-1')
-    expect(clashOf(s.drivers.get('D2'), D)).toBeUndefined()
     expect(s.drivers.get('D2')).toHaveLength(1)
-    expect(clashOf(undefined, D)).toBeUndefined()
+    expect(s.drivers.get('D2')![0]).toMatchObject({ order: 'ORD-2', active: true })
+    expect(s.vehicles.get('V1')![0]).toMatchObject({ order: 'ORD-1', active: false })
   })
   it('một xe giữ nhiều đơn thì liệt kê đủ để Coordinator biết xe bận gì', () => {
     const two = [...all, order('ORD-5', 2, 'clearance_done', { vehicleId: 'V1', driverId: 'D9', escortId: 'E9' })]
@@ -906,15 +905,15 @@ describe('Driver và Escort về trụ sở sau khi giao ngựa ở nước ngo�
     expect(busy.crew.has('D9') && busy.crew.has('E9')).toBe(true)
     expect(busy.vehicles.has('V9')).toBe(false)
   })
-  it('chặn phân công Driver đang chờ xác nhận về trụ sở dù đơn mới khởi hành xa hơn nhiều ngày', () => {
+  it('lịch hiển thị Driver đang chờ xác nhận về trụ sở là "đang về"', () => {
     const booking = abroad('completed', {})
     const scheduled = schedulesOf([booking], 'ORD-new').drivers.get('D9')
-    expect(crewClashOf(scheduled, NOW0 + 30 * DAY)).toBeDefined()
+    expect(scheduled?.[0].returning).toBeDefined()
   })
-  it('chặn tài xế đang chạy chuyến dù đơn mới khởi hành xa hơn nhiều ngày', () => {
+  it('lịch hiển thị tài xế đang chạy chuyến là "đang đi đơn"', () => {
     const booking = abroad('in_transit')
     const scheduled = schedulesOf([booking], 'ORD-new').drivers.get('D9')
-    expect(crewClashOf(scheduled, NOW0 + 30 * DAY)).toBeDefined()
+    expect(scheduled?.[0].active).toBe(true)
   })
   it('đã xác nhận về trụ sở thì mở lại', () => {
     const o = abroad('delivered_pending_settlement', { backAt: NOW0 + 7 * H })
@@ -937,14 +936,14 @@ describe('autoPackFleet - Tự động phân bổ xe thông minh', () => {
 
   it('chọn xe nhỏ nhất vừa đủ (Best-fit) để không lãng phí xe lớn', () => {
     // 1 ngựa -> chọn xe 2 chỗ V1 thay vì xe 4 chỗ V2
-    const res = autoPackFleet(['H1'], [v2, v1], new Map(), NOW)
+    const res = autoPackFleet(['H1'], [v2, v1])
     expect(res).toHaveLength(1)
     expect(res[0].vehicleId).toBe('V1')
     expect(res[0].horseIds).toEqual(['H1'])
   })
 
   it('chọn xe 4 chỗ khi có 3 ngựa', () => {
-    const res = autoPackFleet(['H1', 'H2', 'H3'], [v1, v2], new Map(), NOW)
+    const res = autoPackFleet(['H1', 'H2', 'H3'], [v1, v2])
     expect(res).toHaveLength(1)
     expect(res[0].vehicleId).toBe('V2')
     expect(res[0].horseIds).toEqual(['H1', 'H2', 'H3'])
@@ -952,7 +951,7 @@ describe('autoPackFleet - Tự động phân bổ xe thông minh', () => {
 
   it('tự động chia nhiều xe khi số ngựa vượt quá sức chứa 1 xe (Multi-vehicle Bin Packing)', () => {
     // 5 ngựa, có xe 4 chỗ (V2) và xe 2 chỗ (V1) -> chia làm 2 xe: Xe 4 chỗ (4 con) + Xe 2 chỗ (1 con)
-    const res = autoPackFleet(['H1', 'H2', 'H3', 'H4', 'H5'], [v1, v2], new Map(), NOW)
+    const res = autoPackFleet(['H1', 'H2', 'H3', 'H4', 'H5'], [v1, v2])
     expect(res).toHaveLength(2)
     expect(res[0].vehicleId).toBe('V2')
     expect(res[0].horseIds).toEqual(['H1', 'H2', 'H3', 'H4'])
@@ -961,24 +960,27 @@ describe('autoPackFleet - Tự động phân bổ xe thông minh', () => {
   })
 
   it('không lọc xe theo mã giấy tờ giả không được lưu trong vehicle', () => {
-    const res = autoPackFleet(['H1', 'H2', 'H3'], [v2, v3], new Map(), NOW)
+    const res = autoPackFleet(['H1', 'H2', 'H3'], [v2, v3])
     expect(res).toHaveLength(1)
     expect(res[0].vehicleId).toBe('V2')
   })
 
-  it('lọc xe bị trùng lịch trong vòng 3 ngày', () => {
-    const sched = new Map([
-      ['V1', [{ order: 'ORD-1', departAt: NOW + DAY, route: 'HN -> HP', trip: 'T1', countries: 'VN -> VN' }]]
-    ])
-    // V1 bị trùng lịch -> chọn V2
-    const res = autoPackFleet(['H1'], [v1, v2], sched, NOW)
+  it('bỏ xe backend báo không chọn được cho đơn này (trùng lịch, đang đi đơn)', () => {
+    const blocked: Vehicle = { ...v1, available: false, busyReason: 'Trùng lịch với đơn BK-1', busyBookingCode: 'BK-1' }
+    const res = autoPackFleet(['H1'], [blocked, v2])
     expect(res).toHaveLength(1)
     expect(res[0].vehicleId).toBe('V2')
+  })
+
+  it('xe có đơn ở ngày khác vẫn được xếp nếu backend báo chọn được', () => {
+    const farBooked: Vehicle = { ...v1, available: true, upcoming: [{ bookingCode: 'BK-9', tripType: 'domestic', departAt: NOW + 20 * DAY, busyFrom: NOW + 19 * DAY, busyUntil: NOW + 22 * DAY }] }
+    const res = autoPackFleet(['H1'], [farBooked, v2])
+    expect(res[0].vehicleId).toBe('V1')
   })
 
   it('ngựa khoang đơn mở rộng chiếm 2 ngăn: 2 con không xếp vào xe 2 ngăn', () => {
     const stalls = (id: string) => (id === 'H1' || id === 'H2' ? 2 : 1)
-    const res = autoPackFleet(['H1', 'H2'], [v1, v2], new Map(), NOW, stalls)
+    const res = autoPackFleet(['H1', 'H2'], [v1, v2], stalls)
     expect(res).toHaveLength(1)
     expect(res[0].vehicleId).toBe('V2')
     expect(res[0].horseIds).toEqual(['H1', 'H2'])
@@ -986,7 +988,7 @@ describe('autoPackFleet - Tự động phân bổ xe thông minh', () => {
 
   it('chia xe theo số ngăn khi có ngựa khoang mở rộng', () => {
     // 3 ngựa mở rộng (6 ngăn) với xe 4 ngăn và xe 2 ngăn: xe 4 chở 2 con, xe 2 chở 1 con
-    const res = autoPackFleet(['H1', 'H2', 'H3'], [v1, v2], new Map(), NOW, () => 2)
+    const res = autoPackFleet(['H1', 'H2', 'H3'], [v1, v2], () => 2)
     expect(res).toEqual([
       { vehicleId: 'V2', horseIds: ['H1', 'H2'] },
       { vehicleId: 'V1', horseIds: ['H3'] },

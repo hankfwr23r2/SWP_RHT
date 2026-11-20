@@ -9,7 +9,6 @@ import { countryCodeOf, findGate, findTransitStation, type GeoPoint, type Transi
 import { AVG_SPEED_KMH } from '@shared/config/public-pricing'
 import {
   borderOutsideWindow,
-  clashOf,
   findLocation,
   gatesFor,
   routeKm,
@@ -17,7 +16,6 @@ import {
   suggestGateWithSavings,
   suggestOptimalDepartureForBorder,
   routeOutline,
-  schedulesOf,
   validateRoutePlan,
   vehicleClassOf,
   autoPackFleet,
@@ -61,12 +59,11 @@ type CorridorSuggestion = {
   match: FixedRouteMatch
 }
 
-function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Booking[] }) {
+function Plan({ b, vehicles }: { b: Booking; vehicles: Vehicle[] }) {
   const toast = useToast()
   const navigate = useNavigate()
   const { session } = useAuth()
   const international = b.type === 'international'
-  const sched = useMemo(() => schedulesOf(all, b.id), [all, b.id])
   const stallsOf = useMemo(() => {
     const units = new Map(b.horses.map(h => [h.horseId, stallUnitsOf(h)]))
     return (horseId: string) => units.get(horseId) ?? 1
@@ -79,16 +76,10 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
       return b.trips.map(t => ({ vehicleId: t.vehicleId, horseIds: t.horseIds }))
     }
     if (vehicles.length) {
-      return autoPackFleet(
-        b.horses.map(h => h.horseId),
-        vehicles,
-        sched.vehicles,
-        b.departAt,
-        stallsOf
-      )
+      return autoPackFleet(b.horses.map(h => h.horseId), vehicles, stallsOf)
     }
     return [{ vehicleId: '', horseIds: b.horses.map(h => h.horseId) }]
-  }, [b.trips, b.horses, b.departAt, vehicles, sched.vehicles, stallsOf])
+  }, [b.trips, b.horses, vehicles, stallsOf])
 
   const [trips, setTrips] = useState<Draft[]>(initialTrips)
 
@@ -97,26 +88,14 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
     if (!vehicles.length) return
     setTrips(prev => {
       if (prev.length === 1 && !prev[0].vehicleId) {
-        return autoPackFleet(
-          b.horses.map(h => h.horseId),
-          vehicles,
-          sched.vehicles,
-          b.departAt,
-          stallsOf
-        )
+        return autoPackFleet(b.horses.map(h => h.horseId), vehicles, stallsOf)
       }
       return prev
     })
-  }, [vehicles, sched.vehicles, b.departAt, b.horses, stallsOf])
+  }, [vehicles, b.horses, stallsOf])
 
   const runAutoPack = () => {
-    const packed = autoPackFleet(
-      b.horses.map(h => h.horseId),
-      vehicles,
-      sched.vehicles,
-      b.departAt,
-      stallsOf
-    )
+    const packed = autoPackFleet(b.horses.map(h => h.horseId), vehicles, stallsOf)
     setTrips(packed)
     toast('Đã tự động tính toán và phân bổ xe tối ưu (Best-fit).')
   }
@@ -155,8 +134,8 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
     else {
       if (stallsUsed(t.horseIds) > v.capacity)
         out.push(`Xe ${i + 1} chỉ có ${v.capacity} ngăn, đang xếp ${t.horseIds.length} ngựa cần ${stallsUsed(t.horseIds)} ngăn.`)
-      const clash = clashOf(sched.vehicles.get(t.vehicleId), b.departAt)
-      if (clash) out.push(`Xe ${v.plate} trùng lịch với ${clash.order} (khởi hành ${formatDate(clash.departAt)}).`)
+      // Cùng câu với lỗi backend trả về khi lưu
+      if (v.available === false) out.push(`Xe ${v.plate} không nhận được đơn này: ${v.busyReason ?? 'xe không sẵn sàng'}.`)
     }
     return out
   })
@@ -462,15 +441,15 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
           </span>
         </div>
         <div className="form-hint" style={{ marginBottom: 12 }}>
-          Ưu tiên xe đủ số ngăn cho ngựa; ngựa chọn khoang đơn mở rộng chiếm 2 ngăn. Phương tiện trùng lịch trong vòng 3 ngày sẽ tự động bị khóa và cảnh báo.
+          Ưu tiên xe đủ số ngăn cho ngựa; ngựa chọn khoang đơn mở rộng chiếm 2 ngăn. Xe có lịch chồng lên khoảng ngày của đơn này (gồm thời gian chuẩn bị và quay về trụ sở, kể cả chuyến đang chạy hoặc chưa xác nhận về) hoặc đang bảo dưỡng sẽ bị khóa; xe có đơn ở ngày khác vẫn chọn được.
         </div>
 
         {trips.map((t, i) => {
           const v = vehicles.find(x => x.id === t.vehicleId)
           const used = stallsUsed(t.horseIds)
           const isOverloaded = v && used > v.capacity
-          const booked = v ? sched.vehicles.get(t.vehicleId) : undefined
-          const hasClash = v && clashOf(booked, b.departAt)
+          const blocked = v && v.available === false ? (v.busyReason ?? 'xe không sẵn sàng') : undefined
+          const others = v?.upcoming ?? [] // đơn khác đã nhận xe này (backend đã bỏ chính đơn đang xếp)
           return (
             <div
               key={i}
@@ -478,7 +457,7 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
               style={{
                 display: 'block',
                 marginBottom: 12,
-                border: isOverloaded || hasClash ? '1px solid var(--red)' : undefined,
+                border: isOverloaded || blocked ? '1px solid var(--red)' : undefined,
               }}
             >
               <div className={s.pickName} style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
@@ -521,9 +500,9 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
                   <i className="fa-solid fa-circle-exclamation" /> Xe chỉ có {v.capacity} ngăn nhưng {t.horseIds.length} ngựa đang xếp cần {used} ngăn. Vui lòng thêm xe hoặc đổi xe lớn hơn!
                 </div>
               )}
-              {hasClash && (
+              {v && blocked && (
                 <div style={{ color: 'var(--red)', fontSize: '0.82rem', marginTop: 4, fontWeight: 600 }}>
-                  <i className="fa-solid fa-triangle-exclamation" /> Xe {v.plate} bị trùng lịch với đơn {hasClash.order}!
+                  <i className="fa-solid fa-triangle-exclamation" /> Xe {v.plate} không nhận được đơn này: {blocked}. Vui lòng chọn xe khác.
                 </div>
               )}
               <div className="form-group" style={{ marginTop: 10, maxWidth: 420 }}>
@@ -541,10 +520,10 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
                   <em>{v ? 'Đổi xe' : 'Chọn xe'}</em>
                 </button>
                 {t.vehicleId && (
-                  <span className={`${s.busyNote} ${booked?.length ? s.busyOn : s.busyFree}`}>
-                    <i className={`fa-solid ${booked?.length ? 'fa-calendar-check' : 'fa-circle-check'}`} />
-                    {booked?.length
-                      ? `Đang nhận ${booked.length} đơn khác: ${booked.slice(0, 2).map(x => `${x.order.slice(-4)} (${formatDate(x.departAt)})`).join(', ')}`
+                  <span className={`${s.busyNote} ${others.length ? s.busyOn : s.busyFree}`}>
+                    <i className={`fa-solid ${others.length ? 'fa-calendar-check' : 'fa-circle-check'}`} />
+                    {others.length
+                      ? `Đã nhận ${others.length} đơn khác: ${others.slice(0, 2).map(x => `${x.bookingCode} (${formatDate(x.departAt)})`).join(', ')}${others.length > 2 ? '…' : ''}`
                       : 'Xe rảnh, sẵn sàng nhận chuyến'}
                   </span>
                 )}
@@ -1124,7 +1103,6 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
           vehicles={vehicles}
           people={[]}
           departAt={b.departAt}
-          schedules={sched.vehicles}
           usedHere={usedVehicles}
           selected={trips[picking].vehicleId}
           horses={trips[picking].horseIds.length}
@@ -1140,13 +1118,13 @@ function Plan({ b, vehicles, all }: { b: Booking; vehicles: Vehicle[]; all: Book
 export default function FleetPlanPage() {
   const { t } = useTranslation()
   const { session } = useAuth()
-  const { b, all, vehicles, reload } = usePageData<typeof fleetPlanLoader>()
+  const { b, vehicles, reload } = usePageData<typeof fleetPlanLoader>()
   useAutoRefresh(reload)
   const [showOrderDetails, setShowOrderDetails] = useState(false)
   const [showDocs, setShowDocs] = useState(false)
   const [editingPlan, setEditingPlan] = useState(false)
 
-  if (!b || !all || !vehicles)
+  if (!b || !vehicles)
     return (
       <div className="page">
         <div className="wrap">
@@ -1282,7 +1260,7 @@ export default function FleetPlanPage() {
                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditingPlan(false)}>Hủy sửa, giữ phương án đã chốt</button>
                   </div>
                 )}
-                <Plan b={b} vehicles={vehicles} all={all} />
+                <Plan b={b} vehicles={vehicles} />
               </>
             ) : b.plan ? (
               <div className="alert alert-success" style={{ alignItems: 'center' }}>
