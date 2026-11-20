@@ -125,6 +125,35 @@ class RoutePreviewServiceImplTest {
     }
 
     @Test
+    void legLeavingAGatePlacedInsideVietnamMayStillCrossTheBorder() {
+        // Tọa độ cửa khẩu Mộc Bài trong dữ liệu nằm phía Việt Nam, cách biên hơn 5 km
+        GeoPointDto gatePoint = new GeoPointDto(11.07, 106.2);
+        GeoPointDto bavet = new GeoPointDto(11.08, 106.15);
+        GeoPointDto kampongCham = new GeoPointDto(12.0, 105.46);
+        Location gate = location("BorderGate", "Mộc Bài", "VN", gatePoint);
+        Location rest = location("RestStop", "Trạm nghỉ Kampong Cham", "KH", kampongCham);
+        RoadRouteDto valid = road(List.of(HCM, gatePoint), List.of(gatePoint, bavet, kampongCham), List.of(kampongCham, PHNOM_PENH));
+        answerByThroughPoints(valid, valid);
+
+        RoutePreviewResponseDto preview = service.preview(request(HCM, "VN", PHNOM_PENH, "KH", List.of(gate.getId(), rest.getId())));
+
+        assertThat(preview.legs()).hasSize(3);
+        assertThat(preview.borderArrivalAt()).isNotNull();
+    }
+
+    @Test
+    void legAfterTheCrossingLegMustStayInDestinationCountry() {
+        GeoPointDto kampongCham = new GeoPointDto(12.0, 105.46);
+        Location gate = location("BorderGate", "Mộc Bài", "VN", MOC_BAI);
+        Location rest = location("RestStop", "Trạm nghỉ Kampong Cham", "KH", kampongCham);
+        RoadRouteDto foreign = road(List.of(HCM, MOC_BAI), List.of(MOC_BAI, kampongCham), List.of(kampongCham, HCM, PHNOM_PENH));
+        answerByThroughPoints(foreign, foreign);
+
+        assertThatThrownBy(() -> service.preview(request(HCM, "VN", PHNOM_PENH, "KH", List.of(gate.getId(), rest.getId()))))
+                .isInstanceOf(DomesticRouteAbroadException.class).hasMessageContaining("Việt Nam");
+    }
+
+    @Test
     void validCrossBorderRouteRemainsAccepted() {
         Location gate = location("BorderGate", "Mộc Bài", "VN", MOC_BAI);
         RoadRouteDto valid = road(List.of(HCM, MOC_BAI), List.of(MOC_BAI, PHNOM_PENH));

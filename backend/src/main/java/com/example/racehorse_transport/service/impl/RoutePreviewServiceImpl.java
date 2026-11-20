@@ -477,6 +477,8 @@ public class RoutePreviewServiceImpl implements RoutePreviewService {
 
     private Abroad abroad(RoadRouteDto road, List<String> legCountries) {
         for (int i = 0; i < road.legs().size(); i++) {
+            // Chặng rời cửa khẩu là chặng xe qua biên: được đi cả nước trước lẫn nước sau cửa khẩu
+            String crossingFrom = i > 0 && !legCountries.get(i).equals(legCountries.get(i - 1)) ? legCountries.get(i - 1) : null;
             List<GeoPointDto> shape = road.legs().get(i).shape();
             for (int j = 0; j < shape.size(); j++) {
                 GeoPointDto from = shape.get(j == 0 ? 0 : j - 1);
@@ -487,7 +489,7 @@ public class RoutePreviewServiceImpl implements RoutePreviewService {
                     GeoPointDto point = new GeoPointDto(from.lat() + (to.lat() - from.lat()) * fraction,
                             from.lng() + (to.lng() - from.lng()) * fraction);
                     String country = territoryLookup.countryCodeDeeperThan(point, FOREIGN_DEPTH_KM);
-                    if (country != null && !country.equals(legCountries.get(i))) {
+                    if (country != null && !country.equals(legCountries.get(i)) && !country.equals(crossingFrom)) {
                         return new Abroad(i, countryName(country));
                     }
                 }
