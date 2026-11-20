@@ -18,7 +18,7 @@ export interface OrderFinance {
   id: string; customer: string; at: number // at = ngày đặt cọc (đơn có hiệu lực)
   insuranceCollection: number // phí thu hộ trong báo giá, đơn hủy dùng số đã thu
   grossRevenue: number // doanh thu vận chuyển trước chi phí sự cố
-  incidentCost: number // thực chi sự cố, có chứng từ
+  incidentCost: number // thực chi sự cố đã được Quản lý duyệt
   revenue: number // doanh thu công ty sau chi phí sự cố
   cost: number // giá vốn vận hành gốc; chi phí sự cố đã trừ khỏi revenue
   profit: number
@@ -29,7 +29,9 @@ export interface OrderFinance {
 export function orderFinance(b: Booking): OrderFinance | undefined {
   if (!b.payment) return undefined // chưa cọc thì chưa có doanh thu
   const paid = b.payment.amount + (b.balance?.amount ?? 0)
-  const incidentCost = incidentExpenseItems(b).reduce((total, item) => total + item.amount, 0)
+  const incidentCost = b.settlement?.reviewedAt != null
+    ? incidentExpenseItems(b).reduce((total, item) => total + item.amount, 0)
+    : 0
   const base = { id: b.id, customer: b.customer, at: b.payment.paidAt, status: b.status }
   if (b.status === 'cancelled' || b.status === 'returning_horses') {
     const kept = paid - (b.cancellation?.refund ?? 0)
