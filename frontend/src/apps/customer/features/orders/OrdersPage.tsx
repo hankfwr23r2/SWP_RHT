@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { stepOf, statusRank } from '@shared/config/booking-rules'
+import { customerStepOf, statusRank } from '@shared/config/booking-rules'
 import { effectiveArrivalOf, orderTabOf, type OrderTab } from '@shared/lib/booking'
 import { formatDate, formatVND } from '@shared/lib/format'
 import { useStaggerIn } from '@shared/motion/motion'
@@ -103,7 +103,7 @@ export default function OrdersPage() {
         ) : (
           <div ref={ref} className={s.list}>
             {pager.rows.map(({ b, next }) => {
-              const at = stepOf(b.status)
+              const at = customerStepOf(b.status)
               const stopped = b.status === 'quote_expired' || b.status === 'rejected' || b.status === 'cancelled'
               return (
                 <article key={b.id} data-row className={`${s.card} ${next.actionNeeded ? s.alertCard : ''} ${b.id === newId ? s.freshCard : ''}`}>
