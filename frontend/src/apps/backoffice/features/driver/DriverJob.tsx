@@ -215,7 +215,8 @@ function ReturnHorsesStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run 
 import { backendDeliveryApi } from '@shared/api/delivery'
 import { Modal } from '@shared/ui/Modal'
 
-function TimeoutModal({ b, t, waited, onClose, run }: { b: Booking; t: VehicleTrip; waited: number; onClose: () => void; run: Run }) {
+// stableOnly: chuyến đã báo quá hạn theo luồng cũ (sự cố còn mở), chỉ còn việc gửi ngựa tại chuồng rồi về trụ sở
+function TimeoutModal({ b, t, waited, onClose, run, stableOnly = false }: { b: Booking; t: VehicleTrip; waited: number; onClose: () => void; run: Run; stableOnly?: boolean }) {
   // Chưa chờ đủ 2 giờ vẫn báo được (demo không bắt chờ), nhưng form ghi rõ và phải bấm xác nhận báo sớm
   const early = waited < 120
   const [reason, setReason] = useState('UNREACHABLE')
@@ -251,9 +252,10 @@ function TimeoutModal({ b, t, waited, onClose, run }: { b: Booking; t: VehicleTr
   }
 
   return (
-    <Modal onClose={onClose} title="Báo sự cố quá hạn 2h bàn giao" subtitle="Kích hoạt quy trình an sinh khẩn cấp khi người nhận không đến"
+    <Modal onClose={onClose} title={stableOnly ? 'Gửi ngựa tại chuồng và về trụ sở' : 'Báo sự cố quá hạn 2h bàn giao'} subtitle={stableOnly ? 'Đã báo quá hạn bàn giao, ghi chuồng gửi ngựa để kíp xe về trụ sở' : 'Kích hoạt quy trình an sinh khẩn cấp khi người nhận không đến'}
       footer={<><button className="btn btn-ghost" onClick={onClose}>Hủy</button><button className="btn btn-danger" disabled={busy || (action === 'STABLE_NEARBY' && !stableReady)} onClick={submit}>{early ? 'Xác nhận báo quá hạn sớm' : 'Xác nhận kích hoạt an sinh'}</button></>}>
-      {early && <div className="alert alert-warning" role="status"><i className="fa-solid fa-clock" /><div>Mới chờ <b>{waited} phút</b> ở điểm giao, quy định là 120 phút. Bạn vẫn báo được, quản lý sẽ thấy đây là báo sớm.</div></div>}
+      {early && !stableOnly && <div className="alert alert-warning" role="status"><i className="fa-solid fa-clock" /><div>Mới chờ <b>{waited} phút</b> ở điểm giao, quy định là 120 phút. Bạn vẫn báo được, quản lý sẽ thấy đây là báo sớm.</div></div>}
+      {!stableOnly && <>
       <div className="form-group">
         <label htmlFor="tr">Lý do quá hạn</label>
         <select id="tr" className="form-control" value={reason} onChange={e => setReason(e.target.value)}>
@@ -269,6 +271,7 @@ function TimeoutModal({ b, t, waited, onClose, run }: { b: Booking; t: VehicleTr
           <option value="RETURN_TO_HQ">Quay xe chuyển ngựa về Trụ sở chính (Việt Nam)</option>
         </select>
       </div>
+      </>}
       {action === 'STABLE_NEARBY' && (
         <>
           <p className="form-hint">Tiền chuồng do người nhận tự trả khi tới lấy ngựa. Khách sẽ nhận tên, địa chỉ và số điện thoại chuồng. Gửi xong, kíp xe về trụ sở.</p>
@@ -328,10 +331,11 @@ function DeliveryStep({ b, t, cp, run }: { b: Booking; t: VehicleTrip; cp: Check
       <button className="btn btn-outline" disabled={!photo || photo === cp.handoverPhoto} onClick={() => run(() => bookingsApi.uploadHandover(b.id, t.tripId, session!.name, cp.id, photo!), 'Đã tải ảnh biên bản')}><i className="fa-solid fa-upload" /> Tải ảnh biên bản</button>
       </Panel>
       <button className={`btn btn-primary ${s.big}`} disabled={!ready} onClick={() => run(() => bookingsApi.completeDelivery(b.id, t.tripId, session!.name), 'Đã giao ngựa. Khách nhận thông báo')}><i className="fa-solid fa-flag-checkered" /> Hoàn tất giao ngựa</button>
-      {!timeout && (
-        <button type="button" className="btn btn-outline btn-full" style={{ marginTop: 10, borderColor: 'var(--orange)', color: 'var(--orange)' }} onClick={() => setShowTimeout(true)}><i className="fa-solid fa-clock-rotate-left" /> Quá hạn 2 giờ: Báo sự cố không nhận ngựa</button>
-      )}
-      {showTimeout && <TimeoutModal b={b} t={t} waited={cp.arrivedAt ? Math.max(0, Math.floor((now - cp.arrivedAt) / 60000)) : 0} onClose={() => setShowTimeout(false)} run={run} />}
+      {/* Đã báo quá hạn theo luồng cũ (sự cố còn mở): còn việc gửi ngựa tại chuồng để kíp xe về trụ sở */}
+      <button type="button" className="btn btn-outline btn-full" style={{ marginTop: 10, borderColor: 'var(--orange)', color: 'var(--orange)' }} onClick={() => setShowTimeout(true)}>
+        {timeout ? <><i className="fa-solid fa-warehouse" /> Gửi ngựa tại chuồng và về trụ sở</> : <><i className="fa-solid fa-clock-rotate-left" /> Quá hạn 2 giờ: Báo sự cố không nhận ngựa</>}
+      </button>
+      {showTimeout && <TimeoutModal b={b} t={t} waited={cp.arrivedAt ? Math.max(0, Math.floor((now - cp.arrivedAt) / 60000)) : 0} onClose={() => setShowTimeout(false)} run={run} stableOnly={!!timeout} />}
     </>
   )
 }

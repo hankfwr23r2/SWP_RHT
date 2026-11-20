@@ -120,11 +120,13 @@ public class DeliveryServiceImpl implements DeliveryService {
         Booking booking = bookingRepository.findByIdForUpdate(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng ID: " + bookingId));
         request.setDriverUsername(username);
-        if (!java.util.Set.of("in_transit", "arrived").contains(String.valueOf(booking.getStatus()))) {
-            throw new IllegalStateException("Đơn không ở bước bàn giao nên không báo quá hạn được.");
-        }
         String action = request.getSelectedAction() != null ? request.getSelectedAction() : "STABLE_NEARBY";
         boolean stabled = "STABLE_NEARBY".equalsIgnoreCase(action);
+        // Đơn đã báo quá hạn theo luồng cũ ("Chờ bàn giao", sự cố còn mở) vẫn được gửi ngựa tại chuồng để kíp xe về trụ sở
+        boolean waitingOldFlow = stabled && "handover_timeout".equals(booking.getStatus());
+        if (!waitingOldFlow && !java.util.Set.of("in_transit", "arrived").contains(String.valueOf(booking.getStatus()))) {
+            throw new IllegalStateException("Đơn không ở bước bàn giao nên không báo quá hạn được.");
+        }
         BookingDetailsPayloadDto tripPayload = extractPayload(booking);
         var trip = tripPayload.getTrips() == null ? null : tripPayload.getTrips().stream()
                 .filter(t -> request.getTripId() == null || request.getTripId().equals(t.getTripId()))
@@ -184,6 +186,22 @@ public class DeliveryServiceImpl implements DeliveryService {
                 .createdAt(Instant.now())
                 .resolvedAt(stabled ? Instant.now() : null)
                 .build();
+        Incident open = incidentRepository.findByBookingID_Id(booking.getId()).stream()
+                .filter(i -> "HANDOVER_TIMEOUT".equalsIgnoreCase(i.getIncidentType()) && "active".equalsIgnoreCase(i.getStatus())
+                        && (i.getTripId() == null || i.getTripId().equals(trip.getTripId())))
+                .findFirst().orElse(null);
+        if (open != null) {
+            // Đóng sự cố quá hạn đang mở bằng thông tin gửi chuồng, không tạo thêm sự cố mới
+            open.setDescription(incident.getDescription());
+            open.setPartnerName(incident.getPartnerName());
+            open.setPartnerPhone(incident.getPartnerPhone());
+            open.setPartnerService(incident.getPartnerService());
+            open.setPhotoUrl(incident.getPhotoUrl());
+            open.setEstimatedCost(null);
+            open.setStatus(incident.getStatus());
+            open.setResolvedAt(incident.getResolvedAt());
+            incident = open;
+        }
         incidentRepository.save(incident);
 
         String actor = request.getDriverUsername() != null ? request.getDriverUsername() : "Kíp xe";
