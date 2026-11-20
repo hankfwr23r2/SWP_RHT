@@ -51,20 +51,33 @@ describe('doanh thu và chi phí vận hành của một đơn', () => {
 
     expect(finance.cost).toBe(legacyCost + Math.round(fuel.amount - fuel.amount / (1 + MARGIN_RATE)))
   })
-  it('mọi thực chi sự cố trừ vào doanh thu công ty, không trừ lại trong giá vốn', () => {
+  it('thực chi sự cố đã duyệt trừ vào doanh thu công ty, không trừ lại trong giá vốn', () => {
     const base = orderFinance(quoted())!
     const withInc = orderFinance(quoted({
       incidents: [{ id: 'I', tripId: 'T', kind: 'vehicle_breakdown', reportedBy: 'x', reportedAt: 1, location: { lat: 1, lng: 1 }, photo: 'a', note: '', status: 'resolved', expenses: [
         { id: 'e1', category: 'rescue', label: 'Cứu hộ', photo: 'p', amount: 800_000, payer: 'carrier', at: 1, by: 'x' },
         { id: 'e2', category: 'vet_fee', label: 'Thú y', photo: 'p', amount: 500_000, payer: 'customer', at: 1, by: 'x' },
       ] }],
-      settlement: { items: [], total: 500_000, issuedAt: 1, dueAt: 2, by: 'x' },
+      settlement: { items: [], total: 500_000, reviewedAt: NOW, issuedAt: 1, dueAt: 2, by: 'x' },
     }))!
     expect(withInc.cost).toBe(base.cost)
     expect(withInc.incidentCost).toBe(1_300_000)
     expect(withInc.grossRevenue).toBe(base.grossRevenue)
     expect(withInc.profit).toBe(base.profit - 1_300_000)
     expect(withInc.revenue - base.revenue).toBe(-1_300_000)
+  })
+  it('không tính chi phí sự cố vào báo cáo khi bảng kê còn chờ Quản lý duyệt', () => {
+    const b = quoted({
+      status: 'expenses_submitted',
+      incidents: [{ id: 'I', tripId: 'T', kind: 'vehicle_breakdown', reportedBy: 'x', reportedAt: 1, location: { lat: 1, lng: 1 }, photo: 'a', note: '', status: 'resolved', expenses: [
+        { id: 'e1', category: 'rescue', label: 'Cứu hộ', photo: 'p', amount: 800_000, payer: 'carrier', at: 1, by: 'x' },
+      ] }],
+      settlement: { items: [], total: 800_000, submittedAt: NOW },
+    })
+
+    const finance = orderFinance(b)!
+    expect(finance.incidentCost).toBe(0)
+    expect(finance.revenue).toBe(b.quote!.total)
   })
 })
 
