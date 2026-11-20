@@ -135,6 +135,29 @@ class SpecialistServiceImplTest {
         assertThat(order.getDetailsJson()).isEqualTo(original);
     }
 
+    @Test
+    void specialistCannotReplaceOrRemoveCustomerPersonalInsuranceDocuments() {
+        Booking order = booking(1, "under_review", "approved");
+        order.setDetailsJson("""
+            {"intake":{"specialist":{"id":"SP-01"}},"horses":[{"horseId":"H1","name":"Storm",
+             "insurance":{"option":"personal","provider":"Bảo Việt","policyNumber":"P-1","validFrom":"2026-01-01","validUntil":"2027-12-31",
+             "documents":["https://example.test/khach.pdf"],"documentNames":{"https://example.test/khach.pdf":"Hop-dong.pdf"}}}]}
+            """);
+        when(bookingRepository.findByIdForUpdate(1)).thenReturn(Optional.of(order));
+        var request = HorseInsuranceDto.builder().option("personal").provider("Bảo Việt").policyNumber("P-1")
+            .validFrom("2026-01-01").validUntil("2027-12-31").reviewed(true)
+            .documents(List.of("https://example.test/chuyen-vien.pdf"))
+            .documentNames(Map.of("https://example.test/chuyen-vien.pdf", "Khac.pdf")).build();
+        var insurance = service.updateInsurance(code(1), "H1", request, "specialist").getHorses().getFirst().getInsurance();
+        assertThat(insurance.getDocuments()).containsExactly("https://example.test/khach.pdf");
+        assertThat(insurance.getDocumentNames()).containsEntry("https://example.test/khach.pdf", "Hop-dong.pdf").hasSize(1);
+        assertThat(insurance.getReviewed()).isTrue();
+
+        request.setDocuments(List.of());
+        var afterRemove = service.updateInsurance(code(1), "H1", request, "specialist").getHorses().getFirst().getInsurance();
+        assertThat(afterRemove.getDocuments()).containsExactly("https://example.test/khach.pdf");
+    }
+
     private Booking confirmedInsuranceBooking(String status, boolean policyActive) {
         Booking order = booking(1, status, "approved");
         order.setDetailsJson("""

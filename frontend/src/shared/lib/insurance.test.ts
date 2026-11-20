@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { insuranceReviewProblem } from '../types/insurance'
+import { horseInsuranceTask, insuranceReviewProblem } from '../types/insurance'
 import { quoteLines } from './booking'
 import { toBooking } from '../services/bookingMapper'
 import type { Booking } from '../types/booking'
@@ -33,5 +33,21 @@ describe('bảo hiểm bên thứ ba', () => {
     const insurance = { option: 'assistance' as const, provider: 'Provider', premium: 1234567, reviewed: true, documents: ['https://example.com/quote.pdf'] }
     const b = toBooking({ id: 'BK-1', originName: 'TP.HCM', destName: 'Hà Nội', horses: [{ name: 'Storm', insurance }], createdAt: 1, departAt: 2 } as BackendBookingResponse)
     expect(b.horses[0].insurance).toMatchObject(insurance)
+  })
+})
+
+describe('việc bảo hiểm từng ngựa của chuyên viên', () => {
+  it('trước báo giá: phân biệt chưa chọn, chưa kiểm tra giấy tờ, cần báo giá và đã xong', () => {
+    expect(horseInsuranceTask('under_review', {})).toMatchObject({ label: 'Chưa chọn phương án', pending: true })
+    expect(horseInsuranceTask('under_review', { option: 'personal' })).toMatchObject({ label: 'Chưa kiểm tra giấy tờ', pending: true })
+    expect(horseInsuranceTask('under_review', { option: 'personal', reviewed: true })).toMatchObject({ label: 'Đã kiểm tra giấy tờ', pending: false })
+    expect(horseInsuranceTask('under_review', { option: 'assistance' })).toMatchObject({ label: 'Cần báo giá bảo hiểm', pending: true })
+    expect(horseInsuranceTask('under_review', { option: 'assistance', reviewed: true })).toMatchObject({ label: 'Đã xác nhận báo giá', pending: false })
+    expect(horseInsuranceTask('under_review', { option: 'none' })).toMatchObject({ label: 'Không cần xử lý', pending: false })
+  })
+  it('sau đặt cọc: chỉ ngựa yêu cầu hỗ trợ chưa có hợp đồng còn việc', () => {
+    expect(horseInsuranceTask('clearance_in_progress', { option: 'assistance', reviewed: true })).toMatchObject({ label: 'Cần bổ sung hợp đồng', pending: true })
+    expect(horseInsuranceTask('clearance_in_progress', { option: 'assistance', reviewed: true, arranged: true })).toMatchObject({ label: 'Hợp đồng có hiệu lực', pending: false })
+    expect(horseInsuranceTask('clearance_in_progress', { option: 'personal', reviewed: true })).toMatchObject({ pending: false })
   })
 })

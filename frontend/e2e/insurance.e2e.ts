@@ -1,8 +1,8 @@
 import { expect, test, type Page } from '@playwright/test'
-async function open(page: Page, policy = false) {
+async function open(page: Page, policy = false, personal = false) {
   await page.route('**/insurance-test*', route => route.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body><div id="root"></div><script type="module">import R from '/@react-refresh';R.injectIntoGlobalHook(window);window.$RefreshReg$=()=>{};window.$RefreshSig$=()=>t=>t;window.__vite_plugin_react_preamble_installed__=true;</script><script type="module" src="/e2e/fixtures/insuranceHarness.tsx"></script></body></html>` }))
   await page.route('https://example.test/**', route => route.fulfill({ body: '%PDF-1.4', contentType: 'application/pdf' }))
-  await page.goto(`/insurance-test${policy ? '?policy=1' : ''}`)
+  await page.goto(`/insurance-test${policy ? '?policy=1' : personal ? '?personal=1' : ''}`)
 }
 test('báo giá chỉ nhập phí, định dạng tiền và gửi số nguyên đã xác nhận', async ({ page }) => {
   let sent: Record<string, unknown> = {}
@@ -61,4 +61,37 @@ test('giao diện điện thoại không tràn ngang và có nút tải tệp đ
   await expect(page.getByText('Chọn chứng từ', { exact: true })).toBeVisible()
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
   await page.screenshot({ path: '/tmp/rht-insurance-mobile.png', fullPage: true })
+})
+
+test('danh sách ngựa cho biết ngựa nào cần kiểm tra giấy tờ hay cần báo giá, mở sẵn ngựa còn việc', async ({ page }) => {
+  await open(page, false, true)
+  const list = page.getByRole('list', { name: 'Ngựa trong đơn' })
+  await expect(list.getByRole('listitem')).toHaveCount(3)
+  await expect(page.getByText('1/3 ngựa còn cần xử lý')).toBeVisible()
+  const sao = list.getByRole('button', { name: /Sao Băng/ })
+  await expect(sao).toContainText('Đã có bảo hiểm cá nhân')
+  await expect(sao).toContainText('Chưa kiểm tra giấy tờ')
+  await expect(sao).toHaveAttribute('aria-pressed', 'true')
+  await expect(list.getByRole('button', { name: /Gió Bấc/ })).toContainText('Đã xác nhận báo giá')
+  await expect(list.getByRole('button', { name: /Bạch Vân/ })).toContainText('Không bảo hiểm')
+  await list.getByRole('button', { name: /Gió Bấc/ }).click()
+  await expect(list.getByRole('button', { name: /Gió Bấc/ })).toHaveAttribute('aria-pressed', 'true')
+})
+test('chứng từ bảo hiểm cá nhân của khách chỉ xem và tải xuống, không tải lên hay gỡ', async ({ page }) => {
+  await open(page, false, true)
+  await expect(page.getByText('Hop-dong.pdf', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Xem', exact: true })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Tải xuống' })).toBeVisible()
+  await expect(page.getByRole('button', { name: /^Gỡ/ })).toHaveCount(0)
+  await expect(page.locator('input[type=file]')).toHaveCount(0)
+  await expect(page.getByText('Chọn chứng từ', { exact: true })).toHaveCount(0)
+})
+test('email khách dài không tràn sang cột bên cạnh trong thông tin chuyến', async ({ page }) => {
+  await open(page, false, true)
+  const email = page.getByText('khietnguyenngoc.ttma@gmail.com', { exact: true })
+  await expect(email).toBeVisible()
+  expect(await email.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true)
+  const emailBox = (await email.boundingBox())!
+  const routeBox = (await page.getByText(/Quốc tế/).boundingBox())!
+  expect(emailBox.x + emailBox.width).toBeLessThanOrEqual(routeBox.x)
 })
