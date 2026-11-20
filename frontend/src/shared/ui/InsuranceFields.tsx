@@ -161,7 +161,7 @@ export function InsuranceInputs({ value, onChange, premium = false, disabled = f
         const digitsBefore = el.value.slice(0, el.selectionStart ?? el.value.length).replace(/[^0-9]/g, '').length
         const next = parseInsuranceMoney(el.value); onChange({ ...value, premium: next })
         requestAnimationFrame(() => { let digits = 0; let pos = 0; while (pos < el.value.length && digits < digitsBefore) { if (/[0-9]/.test(el.value[pos])) digits++; pos++ } el.setSelectionRange(pos, pos) })
-      }} /><small>Phí bên bảo hiểm báo; công ty thu hộ.</small></label>}
+      }} /><small>Phí bên bảo hiểm báo, công ty thu hộ.</small></label>}
       {quoteOnly && <InsuranceDateField dateKey="quoteValidUntil" label="Báo giá bên thứ ba có hiệu lực đến (nếu có)" value={value.quoteValidUntil} onChange={quoteValidUntil => onChange({ ...value, quoteValidUntil })} onValidityChange={updateDateValidity} />}
       {!quoteOnly && <>
         {field('policyNumber', 'Số hợp đồng / Giấy chứng nhận bảo hiểm')}

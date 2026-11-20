@@ -110,7 +110,7 @@ export function QuoteModal({ b, all, onClose, onDone }: { b: Booking; all: Booki
   const crewTab = (
     <>
       <h4 style={{ margin: '0 0 10px' }}>Chọn tài xế và nhân viên hộ tống</h4>
-      <p className={s.hint} style={{ marginBottom: 10 }}>Điều phối viên đã chọn <b>{trips.length} xe</b>. Mỗi xe cần đúng 1 tài xế và 1 nhân viên hộ tống. Tài xế và hộ tống luôn xuất phát từ trụ sở ở Việt Nam. Người có lịch chồng lên khoảng ngày của đơn này (kể cả chuyến đang chạy hoặc chưa xác nhận về trụ sở) thì bị khóa; có đơn ở ngày khác vẫn chọn được.</p>
+      <p className={s.hint} style={{ marginBottom: 10 }}>Điều phối viên đã chọn <b>{trips.length} xe</b>. Mỗi xe cần đúng 1 tài xế và 1 nhân viên hộ tống. Tài xế và hộ tống luôn xuất phát từ trụ sở ở Việt Nam. Người có lịch chồng lên khoảng ngày của đơn này (kể cả chuyến đang chạy hoặc chưa xác nhận về trụ sở) thì bị khóa. Người có đơn ở ngày khác vẫn chọn được.</p>
       {trips.map((t, i) => {
         const v = vehicles?.find(x => sameVehicleId(x.id, t.vehicleId))
         const p = picks[t.tripId]

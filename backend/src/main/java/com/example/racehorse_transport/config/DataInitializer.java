@@ -34,7 +34,7 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         if (isBlank(bootstrapAdminUsername) || isBlank(bootstrapAdminEmail) || isBlank(bootstrapAdminPassword)) {
-            log.info("Admin bootstrap skipped; configure APP_BOOTSTRAP_ADMIN_USERNAME, APP_BOOTSTRAP_ADMIN_EMAIL, and APP_BOOTSTRAP_ADMIN_PASSWORD to create the initial administrator.");
+            log.info("Admin bootstrap skipped. Configure APP_BOOTSTRAP_ADMIN_USERNAME, APP_BOOTSTRAP_ADMIN_EMAIL, and APP_BOOTSTRAP_ADMIN_PASSWORD to create the initial administrator.");
             return;
         }
 
