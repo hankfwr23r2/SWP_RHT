@@ -27,13 +27,13 @@ class HorseInsurancePolicyTest {
     @Test void premiumIsNotProofOfEffectivePolicyAndExcludedHorseDoesNotBlockTrip() {
         var insurance = HorseInsuranceDto.builder().option("assistance").provider("Provider").premium(BigDecimal.TEN).reviewed(true).build();
         var horses = List.of(horse("H1", insurance));
-        var departure = Instant.parse("2026-12-01T00:00:00Z");
-        assertThatThrownBy(() -> HorseInsurancePolicy.requireDepartureReady(horses, List.of("H1"), departure)).isInstanceOf(IllegalStateException.class);
-        HorseInsurancePolicy.requireDepartureReady(horses, List.of("H2"), departure);
-        insurance.setArranged(true); insurance.setPolicyNumber("P1"); insurance.setValidFrom("2026-11-01"); insurance.setValidUntil("2026-11-30");
-        assertThatThrownBy(() -> HorseInsurancePolicy.requireDepartureReady(horses, List.of("H1"), departure)).hasMessageContaining("khởi hành");
-        insurance.setValidUntil("2026-12-02");
-        HorseInsurancePolicy.requireDepartureReady(horses, List.of("H1"), departure);
+        assertThatThrownBy(() -> HorseInsurancePolicy.requireDepartureReady(horses, List.of("H1"))).isInstanceOf(IllegalStateException.class);
+        HorseInsurancePolicy.requireDepartureReady(horses, List.of("H2"));
+        insurance.setArranged(true); insurance.setPolicyNumber("P1");
+        HorseInsurancePolicy.requireDepartureReady(horses, List.of("H1"));
+        // Xe chạy sớm hoặc muộn hơn thời hạn hợp đồng không còn bị chặn khi khởi hành
+        insurance.setValidFrom("2026-11-01"); insurance.setValidUntil("2026-11-30");
+        HorseInsurancePolicy.requireDepartureReady(horses, List.of("H1"));
     }
     @Test void cancellationAllocatesOnlyCollectedPremiumAndPreservesLegacyDeposit() {
         var quote = Map.of("total", 10000000, "lines", List.of(Map.of("label", HorseInsurancePolicy.LABEL, "amount", 2000000), Map.of("label", "Vận chuyển", "amount", 8000000)));

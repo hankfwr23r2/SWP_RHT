@@ -85,7 +85,9 @@ public final class HorseInsurancePolicy {
                 .calculation("Phí do bên thứ ba báo. Công ty thu hộ, không áp dụng tỷ lệ theo giống.")
                 .amount(h.getInsurance().getPremium()).build()).toList();
     }
-    public static void requireDepartureReady(List<BookingHorseDto> horses, List<String> horseIds, java.time.Instant departure) {
+    // Khởi hành chỉ cần bảo hiểm đã xác nhận; thời hạn hợp đồng đã được kiểm theo ngày đi dự kiến
+    // lúc chuyên viên xác nhận, không kiểm lại theo ngày xe chạy thực tế để tránh kẹt đơn.
+    public static void requireDepartureReady(List<BookingHorseDto> horses, List<String> horseIds) {
         if (horses == null || horseIds == null) throw new IllegalStateException("Chưa có danh sách ngựa để xác nhận bảo hiểm.");
         for (BookingHorseDto h : horses) {
             if (!horseIds.contains(h.getHorseId()) || h.getInsurance() == null) continue;
@@ -93,10 +95,6 @@ public final class HorseInsurancePolicy {
             if ("none".equals(i.getOption())) continue;
             if (!Boolean.TRUE.equals(i.getReviewed()) || ("assistance".equals(i.getOption()) && (!Boolean.TRUE.equals(i.getArranged()) || blank(i.getPolicyNumber()))))
                 throw new IllegalStateException("Chưa xác nhận bảo hiểm có hiệu lực cho " + h.getName());
-            validateDates(i);
-            LocalDate day = departure.atZone(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).toLocalDate();
-            if (day.isBefore(LocalDate.parse(i.getValidFrom())) || day.isAfter(LocalDate.parse(i.getValidUntil())))
-                throw new IllegalStateException("Bảo hiểm không bao phủ ngày khởi hành của " + h.getName());
         }
     }
     public static BigDecimal insuranceDeposit(Object quoteObject, BigDecimal paid) {

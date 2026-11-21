@@ -554,7 +554,7 @@ public class TripProgressServiceImpl implements TripProgressService {
                 if ("returning_horses".equals(booking.getStatus()) || "cancelled".equals(booking.getStatus())) {
                     throw new IllegalStateException("Đơn hàng đã hủy, không thể bắt đầu vận chuyển.");
                 }
-                HorseInsurancePolicy.requireDepartureReady(payload.getHorses(), targetTrip.getHorseIds(), java.time.Instant.now());
+                HorseInsurancePolicy.requireDepartureReady(payload.getHorses(), targetTrip.getHorseIds());
                 validateJourneyStart(booking, payload, targetTrip);
                 booking.setStatus("in_transit");
                 Map<String, Object> run = targetTrip.getRun() != null ? targetTrip.getRun() : new HashMap<>();

@@ -457,6 +457,15 @@ class SpecialistServiceImplTest {
     }
 
     @Test
+    void assistanceInsuranceIsArrangedByCompanyAndCannotBeSentBackToCustomer() {
+        pendingInsuranceBooking("under_review", "pending", "{\"option\":\"assistance\",\"provider\":\"P\",\"premium\":1000,\"reviewed\":true}");
+        assertThatThrownBy(() -> service.requestResubmission(code(9), insuranceRequest("Đối tác từ chối"), "specialist"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("do công ty thu xếp");
+        verify(bookingRepository, never()).save(any());
+        verify(notifier, never()).toCustomer(any(), any(), any());
+    }
+
+    @Test
     void medicalResubmissionStillRequiresReviewStage() {
         pendingInsuranceBooking("pending_commercial", "approved", "{\"option\":\"assistance\"}");
         var request = com.example.racehorse_transport.dto.specialist.RequestResubmissionRequestDto.builder().reason("Mờ")

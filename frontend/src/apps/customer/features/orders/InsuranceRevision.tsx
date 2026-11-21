@@ -64,7 +64,6 @@ export function InsuranceRevisionModal({ horseName, horseId, current, draft, onS
       {!switching && <>
         <p><b>{t('insuranceRevision.currentOption', 'Phương án hiện tại:')}</b> {label(current.option)}</p>
         {current.option === 'personal' && <InsuranceInputs audience="customer" value={value} onChange={setValue} onBusyChange={setBusy} onValidityChange={setDatesValid} />}
-        {current.option === 'assistance' && <p>{t('insuranceRevision.keepAssistance', 'Giữ phương án hỗ trợ: công ty tiếp tục liên hệ bên bảo hiểm và gửi phí cùng báo giá vận chuyển.')}</p>}
         <button type="button" className="btn btn-ghost btn-sm" onClick={startSwitch}>
           <i className="fa-solid fa-right-left" aria-hidden="true" /> {t('insuranceRevision.cannotSupplement', 'Không bổ sung được? Đổi phương án bảo hiểm')}
         </button>

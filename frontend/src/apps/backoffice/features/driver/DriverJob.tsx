@@ -72,8 +72,8 @@ function PickupStep({ b, t, run }: { b: Booking; t: VehicleTrip; run: Run }) {
   // Xe không chạy rỗng: phải còn ít nhất một con và mọi con đều đã quét đúng chip
   const horsesOk = horses.length > 0 && scanned >= horses.length
   const pickupDone = horsesOk && (pickup.originals?.length ?? 0) >= originalsAll.length && !!pickup.handoverPhoto
-  const departureDay = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
-  const insuranceProblems = horses.flatMap(h => { const problem = insuranceDepartureProblem(h.insurance, departureDay); return problem ? [`${h.name}: ${problem}`] : [] })
+  // Chỉ cần bảo hiểm đã xác nhận; không so thời hạn hợp đồng với ngày xe chạy thực tế
+  const insuranceProblems = horses.flatMap(h => { const problem = insuranceDepartureProblem(h.insurance); return problem ? [`${h.name}: ${problem}`] : [] })
   const ready = insuranceProblems.length === 0 && paid && pickupDone
   return (
     <>

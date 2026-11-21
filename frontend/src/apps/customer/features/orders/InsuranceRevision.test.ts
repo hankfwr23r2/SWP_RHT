@@ -28,3 +28,14 @@ describe('bổ sung bảo hiểm', () => {
     expect(revisionProblem({ horseId: 'H1', insurance: { option: 'none' }, switchReason: 'Không mua', limitedLiabilityAccepted: true }, 'personal')).toBeUndefined()
   })
 })
+
+describe('khởi hành không kiểm lại ngày hợp đồng', () => {
+  it('tài xế chỉ cần bảo hiểm đã xác nhận, xe chạy ngoài thời hạn vẫn không bị chặn', async () => {
+    const { insuranceDepartureProblem } = await import('@shared/types/insurance')
+    const arranged = { option: 'assistance' as const, reviewed: true, arranged: true, policyNumber: 'P1', validFrom: '2026-11-25', validUntil: '2026-11-30' }
+    expect(insuranceDepartureProblem(arranged)).toBeUndefined()
+    expect(insuranceDepartureProblem({ ...arranged, arranged: false })).toBe('Chưa xác nhận thu xếp hợp đồng bảo hiểm')
+    // Chuyên viên xác nhận vẫn phải bao phủ ngày đi dự kiến
+    expect(insuranceDepartureProblem(arranged, '2026-11-21')).toBe('Bảo hiểm không bao phủ ngày khởi hành')
+  })
+})
