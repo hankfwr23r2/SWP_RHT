@@ -44,6 +44,7 @@ function InsuranceDateField({ label, value, onChange, onValidityChange, dateKey 
   onValidityChange: (dateKey: string, valid: boolean) => void
   dateKey: string
 }) {
+  const { t } = useTranslation()
   const id = useId()
   const nativeDateRef = useRef<HTMLInputElement>(null)
   const [display, setDisplay] = useState(formatInsuranceDate(value))
@@ -83,14 +84,14 @@ function InsuranceDateField({ label, value, onChange, onValidityChange, dateKey 
           else if (!next) onChange(undefined)
         }}
       />
-      <button type="button" className={s.datePickerButton} onClick={openPicker} aria-label={`Mở lịch chọn ${label.toLowerCase()}`} title="Chọn ngày">
+      <button type="button" className={s.datePickerButton} onClick={openPicker} aria-label={t('insuranceForm.openCalendar', 'Mở lịch chọn {{label}}', { label: label.toLowerCase() })} title={t('insuranceForm.pickDate', 'Chọn ngày')}>
         <i className="fa-regular fa-calendar" aria-hidden="true" />
       </button>
       <input
         ref={nativeDateRef}
         className={s.nativeDateInput}
         type="date"
-        aria-label={`Chọn ${label.toLowerCase()} từ lịch`}
+        aria-label={t('insuranceForm.pickFromCalendar', 'Chọn {{label}} từ lịch', { label: label.toLowerCase() })}
         value={value ?? ''}
         onChange={e => {
           const iso = e.target.value
@@ -102,7 +103,7 @@ function InsuranceDateField({ label, value, onChange, onValidityChange, dateKey 
         tabIndex={-1}
       />
     </div>
-    {invalid && <p className="form-error" role="alert">Nhập ngày hợp lệ dạng dd/mm/yy.</p>}
+    {invalid && <p className="form-error" role="alert">{t('insuranceForm.invalidDate', 'Nhập ngày hợp lệ dạng dd/mm/yy.')}</p>}
   </div>
 }
 
@@ -131,7 +132,7 @@ export function InsuranceSummary({ insurance, phase = 'all' }: { insurance?: Par
   </div>
 }
 
-export function InsuranceInputs({ value, onChange, premium = false, disabled = false, freezeQuote = false, lockDocuments = false, onBusyChange, onValidityChange }: {
+export function InsuranceInputs({ value, onChange, premium = false, disabled = false, freezeQuote = false, lockDocuments = false, audience = 'staff', onBusyChange, onValidityChange }: {
   value: HorseInsurance
   onChange: (v: HorseInsurance) => void
   premium?: boolean
@@ -139,9 +140,12 @@ export function InsuranceInputs({ value, onChange, premium = false, disabled = f
   freezeQuote?: boolean
   // Chứng từ do khách gửi: chỉ xem và tải xuống
   lockDocuments?: boolean
+  // Khách không thấy các gợi ý nghiệp vụ dành cho nhân viên
+  audience?: 'staff' | 'customer'
   onBusyChange?: (busy: boolean) => void
   onValidityChange?: (valid: boolean) => void
 }) {
+  const { t } = useTranslation()
   const [uploading, setUploading] = useState(false)
   const [dateValidity, setDateValidity] = useState<Record<string, boolean>>({})
   const quoteOnly = value.option === 'assistance' && !freezeQuote
@@ -155,29 +159,29 @@ export function InsuranceInputs({ value, onChange, premium = false, disabled = f
   const field = (key: 'provider' | 'policyNumber' | 'validFrom' | 'validUntil' | 'quoteValidUntil', label: string, type = 'text') => <label className="form-group">{label}<input className="form-control" type={type} disabled={freezeQuote && key === 'provider'} value={value[key] ?? ''} onChange={e => onChange({ ...value, [key]: e.target.value || undefined })} /></label>
   return <fieldset className={s.fields} disabled={disabled || uploading}>
     <div className={s.formGrid}>
-      {!policyOnly && field('provider', 'Đơn vị bảo hiểm')}
-      {premium && <label className="form-group">Phí thu hộ (VNĐ)<input className="form-control" inputMode="numeric" autoComplete="off" value={formatInsuranceMoney(value.premium)} onChange={e => {
+      {!policyOnly && field('provider', t('insuranceForm.provider', 'Đơn vị bảo hiểm'))}
+      {premium && <label className="form-group">{t('insuranceForm.premium', 'Phí thu hộ (VNĐ)')}<input className="form-control" inputMode="numeric" autoComplete="off" value={formatInsuranceMoney(value.premium)} onChange={e => {
         const el = e.currentTarget
         const digitsBefore = el.value.slice(0, el.selectionStart ?? el.value.length).replace(/[^0-9]/g, '').length
         const next = parseInsuranceMoney(el.value); onChange({ ...value, premium: next })
         requestAnimationFrame(() => { let digits = 0; let pos = 0; while (pos < el.value.length && digits < digitsBefore) { if (/[0-9]/.test(el.value[pos])) digits++; pos++ } el.setSelectionRange(pos, pos) })
-      }} /><small>Phí bên bảo hiểm báo, công ty thu hộ.</small></label>}
-      {quoteOnly && <InsuranceDateField dateKey="quoteValidUntil" label="Báo giá bên thứ ba có hiệu lực đến (nếu có)" value={value.quoteValidUntil} onChange={quoteValidUntil => onChange({ ...value, quoteValidUntil })} onValidityChange={updateDateValidity} />}
+      }} /><small>{t('insuranceForm.premiumHint', 'Phí bên bảo hiểm báo, công ty thu hộ.')}</small></label>}
+      {quoteOnly && <InsuranceDateField dateKey="quoteValidUntil" label={t('insuranceForm.quoteValidUntil', 'Báo giá bên thứ ba có hiệu lực đến (nếu có)')} value={value.quoteValidUntil} onChange={quoteValidUntil => onChange({ ...value, quoteValidUntil })} onValidityChange={updateDateValidity} />}
       {!quoteOnly && <>
-        {field('policyNumber', 'Số hợp đồng / Giấy chứng nhận bảo hiểm')}
-        <InsuranceDateField dateKey="validFrom" label="Hiệu lực từ" value={value.validFrom} onChange={validFrom => onChange({ ...value, validFrom })} onValidityChange={updateDateValidity} />
-        <InsuranceDateField dateKey="validUntil" label="Hiệu lực đến" value={value.validUntil} onChange={validUntil => onChange({ ...value, validUntil })} onValidityChange={updateDateValidity} />
+        {field('policyNumber', t('insuranceForm.policyNumber', 'Số hợp đồng / Giấy chứng nhận bảo hiểm'))}
+        <InsuranceDateField dateKey="validFrom" label={t('insuranceForm.validFrom', 'Hiệu lực từ')} value={value.validFrom} onChange={validFrom => onChange({ ...value, validFrom })} onValidityChange={updateDateValidity} />
+        <InsuranceDateField dateKey="validUntil" label={t('insuranceForm.validUntil', 'Hiệu lực đến')} value={value.validUntil} onChange={validUntil => onChange({ ...value, validUntil })} onValidityChange={updateDateValidity} />
       </>}
     </div>
-    {!policyOnly && <label className="form-group">Ghi chú<textarea className="form-control" rows={3} value={value.note ?? ''} onChange={e => onChange({ ...value, note: e.target.value })} /></label>}
+    {!policyOnly && <label className="form-group">{t('insuranceForm.note', 'Ghi chú')}<textarea className="form-control" rows={3} value={value.note ?? ''} onChange={e => onChange({ ...value, note: e.target.value })} /></label>}
     {lockDocuments ? <>
-      <InsuranceDocuments label="Chứng từ bảo hiểm cá nhân (khách gửi)" urls={value.documents} names={value.documentNames} />
-      {!value.documents?.length && <small className="text-muted">Khách chưa gửi chứng từ bảo hiểm cá nhân.</small>}
+      <InsuranceDocuments label={t('insuranceForm.customerDocs', 'Chứng từ bảo hiểm cá nhân (khách gửi)')} urls={value.documents} names={value.documentNames} />
+      {!value.documents?.length && <small className="text-muted">{t('insuranceForm.noCustomerDocs', 'Khách chưa gửi chứng từ bảo hiểm cá nhân.')}</small>}
     </> : <>
-      <InsuranceDocuments label={policyOnly ? 'Chứng từ hợp đồng' : quoteOnly ? 'Chứng từ báo giá' : 'Chứng từ bảo hiểm cá nhân'} urls={policyOnly ? value.policyDocuments : value.documents} names={value.documentNames} disabled={disabled}
+      <InsuranceDocuments label={policyOnly ? t('insuranceForm.policyDocs', 'Chứng từ hợp đồng') : quoteOnly ? t('insuranceForm.quoteDocs', 'Chứng từ báo giá') : t('insuranceForm.personalDocs', 'Chứng từ bảo hiểm cá nhân')} urls={policyOnly ? value.policyDocuments : value.documents} names={value.documentNames} disabled={disabled}
         onBusyChange={busy => { setUploading(busy); onBusyChange?.(busy) }}
         onChange={(urls, names) => onChange({ ...value, [policyOnly ? 'policyDocuments' : 'documents']: urls, documentNames: names })} />
-      <small className="text-muted">Thay đổi và gỡ chứng từ có hiệu lực với hồ sơ khi lưu.</small>
+      {audience === 'staff' && <small className="text-muted">{t('insuranceForm.docsSaveHint', 'Thay đổi và gỡ chứng từ có hiệu lực với hồ sơ khi lưu.')}</small>}
     </>}
   </fieldset>
 }
@@ -196,7 +200,7 @@ export function CustomerInsuranceFields({ value, option, onChange, onBusyChange 
         </label>
       ))}
     </div>
-    {option === 'personal' && value && <InsuranceInputs value={value} onChange={onChange} onBusyChange={busy => { setUploading(busy); onBusyChange?.(busy) }} />}
+    {option === 'personal' && value && <InsuranceInputs audience="customer" value={value} onChange={onChange} onBusyChange={busy => { setUploading(busy); onBusyChange?.(busy) }} />}
     {option === 'assistance' && <p>{i18n.language === 'en' ? 'Insurance premium and documents will be included in your official quotation. No upfront fee at this stage.' : 'Phí và chứng từ được gửi cùng báo giá vận chuyển. Chưa có mức phí tại bước này.'}</p>}
   </section>
 }

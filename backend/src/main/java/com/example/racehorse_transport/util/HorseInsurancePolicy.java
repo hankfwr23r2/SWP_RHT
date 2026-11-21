@@ -107,5 +107,23 @@ public final class HorseInsurancePolicy {
         for (Object row : lines) if (row instanceof Map<?, ?> line && LABEL.equals(line.get("label"))) insurance = insurance.add(new BigDecimal(line.get("amount").toString()));
         return paid.multiply(insurance).divide(total, 0, java.math.RoundingMode.HALF_UP).min(paid);
     }
+    // Khách chỉ khai báo loại và hợp đồng cá nhân; phần báo giá, xác nhận và yêu cầu bổ sung do công ty ghi.
+    public static void normalizeCustomerDeclaration(HorseInsuranceDto insurance) {
+        insurance.setReviewed(false);
+        insurance.setArranged(false);
+        insurance.setPremium(null);
+        insurance.setPolicyDocuments(null);
+        insurance.setQuoteValidUntil(null);
+        insurance.setRevisionReason(null);
+        insurance.setRevisionRequestedAt(null);
+        insurance.setLastRevision(null);
+        if (!"personal".equals(insurance.getOption())) {
+            insurance.setProvider(null); insurance.setPolicyNumber(null); insurance.setDocumentNames(null);
+            insurance.setValidFrom(null); insurance.setValidUntil(null); insurance.setDocuments(null);
+        }
+    }
+    public static boolean revisionPending(HorseInsuranceDto insurance) {
+        return insurance != null && !blank(insurance.getRevisionReason());
+    }
     public static boolean blank(String s) { return s == null || s.isBlank(); }
 }

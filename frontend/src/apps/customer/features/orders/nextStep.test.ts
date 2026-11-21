@@ -58,3 +58,14 @@ describe('ngựa gửi tại chuồng vì người nhận không tới', () => {
     expect(step.text).not.toContain('bàn giao cho người nhận')
   })
 })
+
+describe('bổ sung bảo hiểm qua thẻ Bổ sung hồ sơ', () => {
+  const pending = { ...booking, status: 'pending_commercial' as const, quote: undefined,
+    horses: [{ horseId: 'H1', name: 'Storm', insurance: { opted: false, option: 'personal' as const, revisionReason: 'Hợp đồng hết hạn' } }] } as unknown as CustomerBookingView
+  it('yêu cầu khách bổ sung bảo hiểm cả khi hồ sơ y tế đã đạt', () => {
+    expect(nextStep(pending, deadline)).toMatchObject({ actionNeeded: true, title: 'Cần bạn bổ sung bảo hiểm', cta: 'Bổ sung hồ sơ', text: 'Storm: Hợp đồng hết hạn' })
+  })
+  it('không còn yêu cầu sau khi đã phát hành báo giá', () => {
+    expect(nextStep({ ...pending, status: 'awaiting_payment', quote: booking.quote }, deadline - 1000).cta).toBe('Đặt cọc 30%')
+  })
+})

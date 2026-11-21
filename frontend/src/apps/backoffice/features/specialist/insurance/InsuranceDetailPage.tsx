@@ -17,6 +17,6 @@ export default function InsuranceDetailPage() {
     <div className="breadcrumb"><Link to="/specialist/insurance">{t('specialistInsurance.title', 'Bảo hiểm')}</Link> / {b.id}</div>
     <div className="page-header"><h1>{t('specialistInsurance.title', 'Bảo hiểm')} · {b.id}</h1><BookingStatusBadge status={b.status} labels={b} audience="staff" /></div>
     <div className="card"><div className="card-header"><h3>{t('specialistInsurance.tripInfo', 'Thông tin chuyến')}</h3></div><TripSummary b={b} /></div>
-    <InsurancePanel b={b} onDone={reload} />
+    <InsurancePanel b={b} onDone={reload} by={session?.name} />
   </div></div>
 }

@@ -219,8 +219,9 @@ export const backendBookingApi = {
   },
 
   // 14. Customer gửi lại hồ sơ ngựa sau khi được yêu cầu bổ sung (POST /api/v1/customer/bookings/{id}/resubmit)
-  resubmitDocuments: async (id: number | string): Promise<BackendBookingResponse> => {
-    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${id}/resubmit`)
+  // Kèm khai báo bảo hiểm mới khi chuyên viên yêu cầu bổ sung bảo hiểm
+  resubmitDocuments: async (id: number | string, insurance?: import('../types/insurance').InsuranceResubmission[]): Promise<BackendBookingResponse> => {
+    const res = await apiClient.post<ApiResponse<BackendBookingResponse>>(`/customer/bookings/${id}/resubmit`, insurance?.length ? { insurance } : undefined)
     return res.data.data
   },
 

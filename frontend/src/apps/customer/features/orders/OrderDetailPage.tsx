@@ -13,6 +13,7 @@ import { customerBookingsApi, type CustomerBookingView, type TripTeam } from '@s
 import { horsesApi } from '@shared/services/horses'
 import { useLoad } from '@shared/services/useLoad'
 import type { HorseProfile } from '@shared/types/booking'
+import { insuranceBeforeQuote, insuranceRevisionPending, type InsuranceResubmission } from '@shared/types/insurance'
 import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
 import { Modal } from '@shared/ui/Modal'
 import { PolicyLink } from '@shared/ui/PolicyLink'
@@ -26,6 +27,8 @@ import { HorseFormModal } from '../horses/HorseFormModal'
 import { IncidentsCard, RatingCard } from './TripFeedback'
 import { ClearanceProgressCard } from './ClearanceProgressCard'
 import { ScheduleChangeCard } from './ScheduleChangeCard'
+import { CustomerInsuranceStatusLine, InsuranceRevisionModal } from './InsuranceRevision'
+import { revisionProblem } from './insuranceRevisionRules'
 import { OrderFacts } from './OrderFacts.tsx'
 import type { orderDetailLoader } from './loaders'
 import { POST_PAYMENT, ROUTE_STAGE, ROUTE_VISIBLE, nextStep } from './nextStep'
@@ -74,11 +77,18 @@ function Resubmit({ b, owner, onDone }: { b: CustomerBookingView; owner: string;
   const { data: horses, reload } = useLoad(() => horsesApi.list(owner), [owner])
   const [edit, setEdit] = useState<HorseProfile | null>(null)
   const [busy, setBusy] = useState(false)
-  const items = b.medical?.resubmit?.items ?? []
+  const [editingInsurance, setEditingInsurance] = useState<string | null>(null)
+  const [drafts, setDrafts] = useState<Record<string, InsuranceResubmission>>({})
+  const items = b.medical?.status === 'resubmit' ? b.medical?.resubmit?.items ?? [] : []
+  // Bảo hiểm được yêu cầu bổ sung đi chung thẻ Bổ sung hồ sơ, nhưng có tiến độ riêng với hồ sơ y tế
+  const insuranceItems = insuranceBeforeQuote(b.status) ? b.horses.filter(h => insuranceRevisionPending(h.insurance) && h.insurance.option) : []
+  const insuranceMissing = insuranceItems.filter(h => { const d = drafts[h.horseId]; return !d || !!revisionProblem(d, h.insurance.option!) })
   const send = async () => {
+    if (insuranceMissing.length) { toast(t('insuranceRevision.updateAllFirst', 'Cập nhật bảo hiểm cho {{names}} trước khi gửi.', { names: insuranceMissing.map(h => h.name).join(', ') }), 'error'); return }
     setBusy(true)
-    try { await customerBookingsApi.resubmit(owner, b.id); toast(t('orderDetail.resubmitSuccess')); onDone() } catch (e) { toast(e instanceof Error ? e.message : 'Không gửi được', 'error'); setBusy(false) }
+    try { await customerBookingsApi.resubmit(owner, b.id, insuranceItems.map(h => drafts[h.horseId])); toast(t('orderDetail.resubmitSuccess')); onDone() } catch (e) { toast(e instanceof Error ? e.message : 'Không gửi được', 'error'); setBusy(false) }
   }
+  const editingHorse = insuranceItems.find(h => h.horseId === editingInsurance)
   return (
     <div className="card">
       <div className="card-header"><h3><i className="fa-solid fa-file-circle-exclamation" /> {t('orderDetail.resubmitTitle')}</h3></div>
@@ -92,10 +102,28 @@ function Resubmit({ b, owner, onDone }: { b: CustomerBookingView; owner: string;
             </div>
           )
         })}
+        {insuranceItems.map(h => {
+          const draft = drafts[h.horseId]
+          const switched = draft && draft.insurance.option !== h.insurance.option
+          return (
+            <div key={`${h.horseId}-insurance`} className={s.fixItem}>
+              <span>
+                <b>{h.name}</b>: {t('insuranceRevision.itemLabel', 'Bảo hiểm chuyến đi')}
+                <small className="text-muted" style={{ display: 'block' }}>{h.insurance.revisionReason}</small>
+                {draft && <small className="badge badge-success" style={{ marginTop: 4 }}>{switched ? t('insuranceRevision.draftSwitched', 'Đã chọn đổi phương án') : t('insuranceRevision.draftReady', 'Đã cập nhật')}</small>}
+              </span>
+              <button className="btn btn-primary btn-sm" onClick={() => setEditingInsurance(h.horseId)}>{t('insuranceRevision.updateBtn', 'Cập nhật bảo hiểm')}</button>
+            </div>
+          )
+        })}
       </div>
       <p className="form-hint" style={{ margin: '12px 0' }}>{t('orderDetail.resubmitHint')}</p>
       <button className="btn btn-primary" disabled={busy} onClick={send}><i className="fa-solid fa-paper-plane" /> {busy ? t('orderDetail.resubmitSending') : t('orderDetail.resubmitBtn')}</button>
       {edit && <HorseFormModal owner={owner} horse={edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); reload(); toast(t('orderDetail.updateDoc')) }} />}
+      {editingHorse && <InsuranceRevisionModal horseName={editingHorse.name} horseId={editingHorse.horseId}
+        current={{ ...editingHorse.insurance, option: editingHorse.insurance.option! }} draft={drafts[editingHorse.horseId]}
+        onClose={() => setEditingInsurance(null)}
+        onSave={draft => { setDrafts(current => ({ ...current, [draft.horseId]: draft })); setEditingInsurance(null) }} />}
     </div>
   )
 }
@@ -286,7 +314,8 @@ export default function OrderDetailPage() {
   const route = `${placeName(b.origin.name)} → ${placeName(b.dest.name)}`
   const feedbackOpen = b.status === 'completed'
   const canPayBalance = b.canPayBalance === true
-  const needResubmit = b.status === 'under_review' && b.medical?.status === 'resubmit'
+  const needResubmit = (b.status === 'under_review' && b.medical?.status === 'resubmit')
+    || (insuranceBeforeQuote(b.status) && b.horses.some(h => insuranceRevisionPending(h.insurance)))
   const journeyIncidents: JourneyTimelineIncident[] = (b.incidents ?? []).map(incident => ({
     id: incident.id,
     tripId: incident.tripId,
@@ -404,7 +433,7 @@ export default function OrderDetailPage() {
           )}
 
           {tab === 'docs' && <ClearanceProgressCard b={b} />}
-          {tab === 'insurance' && <div className="card"><div className="card-header"><h3>{b.payment ? 'Thông tin bảo hiểm và hợp đồng' : 'Lựa chọn và báo giá bảo hiểm'}</h3></div>{b.horses.map(h => <section key={h.horseId} style={{ padding: 20 }}><h4>{h.name}</h4><InsuranceSummary insurance={h.insurance} phase={b.payment ? 'all' : 'quote'} /></section>)}</div>}
+          {tab === 'insurance' && <div className="card"><div className="card-header"><h3>{b.payment ? t('insuranceRevision.tabTitlePolicy', 'Thông tin bảo hiểm và hợp đồng') : t('insuranceRevision.tabTitleQuote', 'Lựa chọn và báo giá bảo hiểm')}</h3></div>{b.horses.map(h => <section key={h.horseId} style={{ padding: 20 }}><h4>{h.name}</h4><CustomerInsuranceStatusLine status={b.status} insurance={h.insurance} hasQuote={!!b.quote} /><InsuranceSummary insurance={h.insurance} phase={b.payment ? 'all' : 'quote'} /></section>)}</div>}
 
           {tab === 'pay' && (
             <>

@@ -1,6 +1,7 @@
 // Service đơn đặt chuyến (Flow 1–6): kết nối trực tiếp API Spring Boot, không giữ dữ liệu ở máy khách.
 import { CLEARANCE_DOC, INCIDENT_KIND, type ClearanceDocType, type IncidentKind } from '../config/booking-rules'
 import { crewAssigned, defaultPayer, finalizeQuote, incidentLocation, quoteLines, sameVehicleId } from '../lib/booking'
+import type { InsuranceResubmission } from '../types/insurance'
 import type { Adjustment, Booking, BookingHorse, Incident, IncidentExpense, IncidentPlan, Rating, RoutePlan, StaffRef, VehicleTrip } from '../types/booking'
 import { backendBookingApi, type BackendBookingResponse } from '../api/bookings'
 import { backendIncidentApi, type BackendIncidentResponse } from '../api/incidents'
@@ -219,8 +220,8 @@ export const customerBookingsApi = {
   changeSchedule: async (id: string, day: string): Promise<void> => { await backendBookingApi.changeSchedule(id, day) },
   cancelScheduleRequest: async (id: string, reason: string): Promise<void> => { await backendBookingApi.cancelScheduleRequest(id, reason) },
   requestScheduleSupport: async (id: string): Promise<void> => { await backendBookingApi.requestScheduleSupport(id) },
-  resubmit: async (customer: string, id: string): Promise<CustomerBookingView> =>
-    toCustomerView(toBooking(await backendBookingApi.resubmitDocuments(id), customer)),
+  resubmit: async (customer: string, id: string, insurance?: InsuranceResubmission[]): Promise<CustomerBookingView> =>
+    toCustomerView(toBooking(await backendBookingApi.resubmitDocuments(id, insurance), customer)),
   // Link sang cổng VNPAY cho cọc 30% / số dư 70%; đơn chỉ đổi trạng thái khi VNPAY xác nhận đã nhận tiền
   vnpayUrl: async (id: string, type: VnpayPaymentType): Promise<string> =>
     (await paymentApi.createVnpay(id, type)).paymentUrl,
@@ -314,6 +315,12 @@ export const bookingsApi = {
   },
   requestResubmission: async (id: string, by: string, reason: string, items: { horseId: string; doc: 'passport' | 'vaccine' | 'lab' }[]): Promise<Booking> => {
     const saved = toBooking(await specialistApi.requestResubmission(id, { specialistName: by, reason: reason.trim(), items }))
+    invalidateBookingsListCache()
+    return saved
+  },
+  // Yêu cầu khách bổ sung bảo hiểm qua luồng Bổ sung hồ sơ; không ảnh hưởng tiến độ duyệt hồ sơ y tế
+  requestInsuranceRevision: async (id: string, by: string | undefined, reason: string, horseId: string): Promise<Booking> => {
+    const saved = toBooking(await specialistApi.requestResubmission(id, { specialistName: by || undefined, reason: reason.trim(), items: [{ horseId, doc: 'insurance' }] }))
     invalidateBookingsListCache()
     return saved
   },

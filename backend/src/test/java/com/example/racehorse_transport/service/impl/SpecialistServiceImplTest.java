@@ -34,6 +34,8 @@ class SpecialistServiceImplTest {
     private final DocumentRequirementRepository documentRequirementRepository = mock(DocumentRequirementRepository.class);
     private final LocationRepository locationRepository = mock(LocationRepository.class);
 
+    private final StaffNotificationService notifier = mock(StaffNotificationService.class);
+
     private SpecialistServiceImpl service;
 
     @BeforeEach
@@ -44,7 +46,7 @@ class SpecialistServiceImplTest {
                 tripDocumentRepository,
                 documentRequirementRepository,
                 locationRepository,
-                new ObjectMapper(), org.mockito.Mockito.mock(StaffNotificationService.class), new BookingVisibilityServiceImpl());
+                new ObjectMapper(), notifier, new BookingVisibilityServiceImpl());
 
         Staff specialist = new Staff();
         specialist.setRole("SPECIALIST");
@@ -409,6 +411,77 @@ class SpecialistServiceImplTest {
                         }
                         """.formatted(medicalStatus))
                 .build();
+    }
+
+    // ===== Yêu cầu khách bổ sung bảo hiểm =====
+
+    private Booking pendingInsuranceBooking(String status, String medicalStatus, String insuranceJson) {
+        Booking order = booking(9, status, medicalStatus);
+        order.setDetailsJson("""
+            {"intake":{"specialist":{"id":"SP-01"}},"medical":{"status":"%s"},"horses":[{"horseId":"H1","name":"Lightning","insurance":%s}]}
+            """.formatted(medicalStatus, insuranceJson));
+        when(bookingRepository.findByIdForUpdate(9)).thenReturn(Optional.of(order));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        return order;
+    }
+
+    private static com.example.racehorse_transport.dto.specialist.RequestResubmissionRequestDto insuranceRequest(String reason) {
+        return com.example.racehorse_transport.dto.specialist.RequestResubmissionRequestDto.builder().reason(reason)
+                .items(List.of(com.example.racehorse_transport.dto.specialist.ResubmitItemDto.builder().horseId("H1").doc("insurance").build()))
+                .build();
+    }
+
+    @Test
+    void insuranceResubmissionKeepsApprovedMedicalAndNotifiesCustomer() {
+        Booking order = pendingInsuranceBooking("pending_commercial", "approved",
+                "{\"option\":\"personal\",\"provider\":\"P\",\"policyNumber\":\"1\",\"validFrom\":\"2026-01-01\",\"validUntil\":\"2026-02-01\",\"reviewed\":true}");
+
+        var insurance = service.requestResubmission(code(9), insuranceRequest("Hợp đồng hết hạn trước ngày đi"), "specialist")
+                .getHorses().getFirst().getInsurance();
+
+        assertThat(insurance.getRevisionReason()).isEqualTo("Hợp đồng hết hạn trước ngày đi");
+        assertThat(insurance.getReviewed()).isFalse();
+        assertThat(order.getStatus()).isEqualTo("pending_commercial");
+        assertThat(order.getDetailsJson()).contains("\"status\":\"approved\"").doesNotContain("\"resubmit\"");
+        verify(notifier).toCustomer(any(), any(), any());
+    }
+
+    @Test
+    void insuranceResubmissionNeedsReasonAndInsuredHorse() {
+        pendingInsuranceBooking("under_review", "pending", "{\"option\":\"none\"}");
+        assertThatThrownBy(() -> service.requestResubmission(code(9), insuranceRequest(" "), "specialist"))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> service.requestResubmission(code(9), insuranceRequest("Thiếu chứng từ"), "specialist"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("không mua bảo hiểm");
+        verify(bookingRepository, never()).save(any());
+    }
+
+    @Test
+    void medicalResubmissionStillRequiresReviewStage() {
+        pendingInsuranceBooking("pending_commercial", "approved", "{\"option\":\"assistance\"}");
+        var request = com.example.racehorse_transport.dto.specialist.RequestResubmissionRequestDto.builder().reason("Mờ")
+                .items(List.of(com.example.racehorse_transport.dto.specialist.ResubmitItemDto.builder().horseId("H1").doc("vaccine").build()))
+                .build();
+        assertThatThrownBy(() -> service.requestResubmission(code(9), request, "specialist")).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void specialistCannotEditInsuranceWhileWaitingForCustomer() {
+        pendingInsuranceBooking("under_review", "pending",
+                "{\"option\":\"assistance\",\"revisionReason\":\"Đổi phương án\",\"revisionRequestedAt\":1}");
+        var request = HorseInsuranceDto.builder().option("assistance").provider("P").premium(java.math.BigDecimal.TEN).reviewed(true).build();
+        assertThatThrownBy(() -> service.updateInsurance(code(9), "H1", request, "specialist"))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("chờ khách bổ sung");
+        verify(bookingRepository, never()).save(any());
+    }
+
+    @Test
+    void specialistDraftCannotForgeRevisionRequest() {
+        Booking order = pendingInsuranceBooking("under_review", "pending", "{\"option\":\"assistance\"}");
+        var request = HorseInsuranceDto.builder().option("assistance").provider("P").revisionReason("forged").build();
+        var saved = service.updateInsurance(code(9), "H1", request, "specialist").getHorses().getFirst().getInsurance();
+        assertThat(saved.getRevisionReason()).isNull();
+        assertThat(order.getDetailsJson()).doesNotContain("forged");
     }
 
 }

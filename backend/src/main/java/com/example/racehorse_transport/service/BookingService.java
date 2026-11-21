@@ -43,7 +43,8 @@ public interface BookingService {
     BookingResponseDto sendBack(String bookingIdentifier, com.example.racehorse_transport.dto.manager.SendBackRequestDto request);
 
     // Nghiệp vụ Phase 4 & 5: Khách hàng duyệt cọc 30%, từ chối báo giá, giải phóng 24h tự động, gửi lại hồ sơ, thanh toán 70% ngày D (qua VNPAY)
-    BookingResponseDto resubmitDocuments(String bookingIdentifier, String customerUsername);
+    BookingResponseDto resubmitDocuments(String bookingIdentifier, String customerUsername,
+            com.example.racehorse_transport.dto.booking.ResubmitDocumentsRequestDto request);
     // Áp hiệu ứng nghiệp vụ sau khi cổng thanh toán xác nhận đã nhận tiền
     Booking confirmDepositPaid(Payment payment, String actor);
     Booking confirmBalancePaid(Payment payment, String actor);
