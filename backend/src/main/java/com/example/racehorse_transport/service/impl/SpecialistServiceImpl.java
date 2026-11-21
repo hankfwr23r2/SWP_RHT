@@ -266,6 +266,9 @@ public class SpecialistServiceImpl implements SpecialistService {
                     throw new IllegalStateException("Đơn cũ chưa khai báo bảo hiểm cho " + horse.getName() + ", hãy xác nhận trực tiếp với khách.");
                 if ("none".equals(insurance.getOption()))
                     throw new IllegalArgumentException(horse.getName() + " không mua bảo hiểm, không cần bổ sung.");
+                // Hỗ trợ bảo hiểm do công ty thu xếp với đối tác, khách không có giấy tờ để bổ sung.
+                if ("assistance".equals(insurance.getOption()))
+                    throw new IllegalArgumentException("Bảo hiểm của " + horse.getName() + " do công ty thu xếp, không yêu cầu khách bổ sung.");
                 insurance.setRevisionReason(HorseInsurancePolicy.blank(item.getReason()) ? reason.trim() : item.getReason().trim());
                 insurance.setRevisionRequestedAt(now);
                 insurance.setReviewed(false);

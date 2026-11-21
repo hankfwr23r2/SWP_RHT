@@ -9,7 +9,7 @@ test('báo giá chỉ nhập phí, định dạng tiền và gửi số nguyên 
   await page.route('**/api/v1/specialist/bookings/*/horses/*/insurance', async route => { sent = route.request().postDataJSON(); await route.fulfill({ json: { status: 'success', data: {} } }) })
   await open(page)
   await expect(page.getByLabel('Số hợp đồng', { exact: false })).toHaveCount(0)
-  const confirm = page.getByRole('button', { name: 'Xác nhận báo giá bảo hiểm' })
+  const confirm = page.getByRole('button', { name: 'Xác nhận', exact: true })
   await expect(confirm).toBeDisabled()
   await page.getByLabel('Đơn vị bảo hiểm', { exact: true }).fill('Insurer')
   await page.getByLabel('Phí thu hộ (VNĐ)').fill('3131322')
@@ -95,23 +95,29 @@ test('email khách dài không tràn sang cột bên cạnh trong thông tin chu
   const routeBox = (await page.getByText(/Quốc tế/).boundingBox())!
   expect(emailBox.x + emailBox.width).toBeLessThanOrEqual(routeBox.x)
 })
-test('chuyên viên yêu cầu khách bổ sung bảo hiểm qua luồng Bổ sung hồ sơ, có lý do', async ({ page }) => {
+test('hỗ trợ bảo hiểm do công ty thu xếp nên không có nút yêu cầu khách bổ sung', async ({ page }) => {
+  await open(page)
+  await expect(page.getByRole('button', { name: 'Xác nhận', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Yêu cầu khách bổ sung' })).toHaveCount(0)
+})
+test('chuyên viên yêu cầu khách bổ sung bảo hiểm cá nhân qua luồng Bổ sung hồ sơ, có lý do', async ({ page }) => {
   let sent: Record<string, unknown> = {}
   await page.route('**/api/v1/specialist/bookings/*/request-resubmission', async route => { sent = route.request().postDataJSON(); await route.fulfill({ json: { status: 'success', data: {} } }) })
-  await open(page)
+  await open(page, false, true)
+  await page.getByRole('list', { name: 'Ngựa trong đơn' }).getByRole('button', { name: /Sao Băng/ }).click()
   await page.getByRole('button', { name: 'Yêu cầu khách bổ sung' }).click()
   const send = page.getByRole('button', { name: 'Gửi yêu cầu bổ sung' })
   await expect(send).toBeDisabled()
   await page.getByLabel('Lý do bổ sung (khách sẽ thấy)').fill('Bên bảo hiểm từ chối')
   await send.click()
-  await expect.poll(() => sent.items).toEqual([{ horseId: 'H1', doc: 'insurance' }])
+  await expect.poll(() => sent.items).toEqual([{ horseId: 'H2', doc: 'insurance' }])
   expect(sent.reason).toBe('Bên bảo hiểm từ chối')
 })
 test('đang chờ khách bổ sung thì chuyên viên chỉ xem, không sửa hay xác nhận', async ({ page }) => {
   await open(page, false, false, true)
   await expect(page.getByText('Đang chờ khách bổ sung bảo hiểm')).toBeVisible()
   await expect(page.getByText('Bên bảo hiểm từ chối, cần khách chọn lại')).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Xác nhận báo giá bảo hiểm' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Xác nhận', exact: true })).toHaveCount(0)
   await expect(page.getByRole('button', { name: 'Yêu cầu khách bổ sung' })).toHaveCount(0)
   await expect(page.getByLabel('Đơn vị bảo hiểm', { exact: true })).toHaveCount(0)
 })
