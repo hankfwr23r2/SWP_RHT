@@ -517,7 +517,9 @@ public class BookingQueryServiceImpl implements BookingQueryService {
             for (BookingHorseDto horse : horseDtos) {
                 var i = horse.getInsurance();
                 if (i != null && "assistance".equals(i.getOption()))
-                    horse.setInsurance(HorseInsuranceDto.builder().option("assistance").build());
+                    horse.setInsurance(HorseInsuranceDto.builder().option("assistance")
+                            .revisionReason(i.getRevisionReason()).revisionRequestedAt(i.getRevisionRequestedAt())
+                            .lastRevision(i.getLastRevision()).build());
             }
         }
         if (customerView && payload != null && payload.getQuote() instanceof Map<?, ?> quoteMap) {

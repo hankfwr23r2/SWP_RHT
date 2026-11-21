@@ -50,6 +50,8 @@ public class SpecialistServiceImpl implements SpecialistService {
     private final ObjectMapper objectMapper;
     private final StaffNotificationService staffNotifier;
     private final BookingVisibilityService bookingVisibility;
+    private static final String INSURANCE_DOC = "insurance";
+    private static final Set<String> INSURANCE_BEFORE_QUOTE = Set.of("under_review", "pending_commercial", "resubmission_requested");
 
     @Override
     @Transactional
@@ -62,10 +64,16 @@ public class SpecialistServiceImpl implements SpecialistService {
         var existing = horse.getInsurance();
 
         String status = Objects.toString(booking.getStatus(), "");
-        boolean beforeQuote = Set.of("under_review", "pending_commercial", "resubmission_requested").contains(status);
+        boolean beforeQuote = INSURANCE_BEFORE_QUOTE.contains(status);
         boolean afterDeposit = Set.of("waybill_issued", "clearance_in_progress", "clearance_done", "ready_for_pickup", "en_route_to_pickup").contains(status);
         if (!beforeQuote && !afterDeposit) throw new IllegalStateException("Không thể sửa bảo hiểm ở trạng thái hiện tại.");
         if ((existing == null || existing.getOption() == null) && !beforeQuote) throw new IllegalStateException("Không thay đổi bảo hiểm của báo giá cũ.");
+        if (HorseInsurancePolicy.revisionPending(existing))
+            throw new IllegalStateException("Đang chờ khách bổ sung bảo hiểm cho " + horse.getName() + ". Chờ khách gửi lại trước khi cập nhật.");
+        // Yêu cầu bổ sung chỉ đi qua luồng Bổ sung hồ sơ; giữ lại lần bổ sung gần nhất của khách.
+        request.setRevisionReason(null);
+        request.setRevisionRequestedAt(null);
+        request.setLastRevision(existing == null ? null : existing.getLastRevision());
         if (existing != null && existing.getOption() != null) request.setOption(existing.getOption());
         if (!beforeQuote) {
             // Phí, đơn vị và chứng từ báo giá đã chốt; chỉ bổ sung thông tin hợp đồng.
@@ -221,10 +229,20 @@ public class SpecialistServiceImpl implements SpecialistService {
     @Override
     @Transactional
     public BookingResponseDto requestResubmission(String bookingIdentifier, RequestResubmissionRequestDto request, String username) {
-        Booking booking = findBookingByIdentifier(bookingIdentifier);
+        Booking booking = findBookingByIdentifier(bookingIdentifier, true);
         requireAssignment(username, booking);
-        if (!"under_review".equalsIgnoreCase(booking.getStatus())) {
+        List<com.example.racehorse_transport.dto.specialist.ResubmitItemDto> items = request != null && request.getItems() != null
+                ? request.getItems() : Collections.emptyList();
+        // Bảo hiểm có tiến độ riêng: yêu cầu bổ sung bảo hiểm không đánh trượt hồ sơ y tế.
+        var insuranceItems = items.stream().filter(i -> i != null && INSURANCE_DOC.equals(i.getDoc())).toList();
+        var medicalItems = items.stream().filter(i -> i != null && !INSURANCE_DOC.equals(i.getDoc())).toList();
+        boolean medicalRequest = !medicalItems.isEmpty() || insuranceItems.isEmpty();
+        String status = Objects.toString(booking.getStatus(), "");
+        if (medicalRequest && !"under_review".equalsIgnoreCase(status)) {
             throw new IllegalStateException("Chỉ yêu cầu bổ sung hồ sơ ngựa khi đơn đang ở bước thẩm định.");
+        }
+        if (!insuranceItems.isEmpty() && !INSURANCE_BEFORE_QUOTE.contains(status)) {
+            throw new IllegalStateException("Chỉ yêu cầu bổ sung bảo hiểm trước khi phát hành báo giá.");
         }
         BookingDetailsPayloadDto payload = BookingDetailsJson.readWithMedicalDefaults(objectMapper, booking);
 
@@ -234,24 +252,51 @@ public class SpecialistServiceImpl implements SpecialistService {
 
         String reason = (request != null && request.getReason() != null) ? request.getReason() : "Hồ sơ chưa đạt yêu cầu kiểm dịch";
 
-        Map<String, Object> resubmitInfo = new HashMap<>();
-        resubmitInfo.put("reason", reason);
-        resubmitInfo.put("items", request != null ? request.getItems() : Collections.emptyList());
-        resubmitInfo.put("at", System.currentTimeMillis());
+        if (!insuranceItems.isEmpty()) {
+            if (request == null || HorseInsurancePolicy.blank(request.getReason()))
+                throw new IllegalArgumentException("Nhập lý do bổ sung bảo hiểm để khách biết cần làm gì.");
+            long now = System.currentTimeMillis();
+            List<String> names = new ArrayList<>();
+            for (var item : insuranceItems) {
+                var horse = Optional.ofNullable(payload.getHorses()).orElse(List.of()).stream()
+                        .filter(h -> Objects.equals(item.getHorseId(), h.getHorseId())).findFirst()
+                        .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy ngựa trong đơn."));
+                var insurance = horse.getInsurance();
+                if (insurance == null || insurance.getOption() == null)
+                    throw new IllegalStateException("Đơn cũ chưa khai báo bảo hiểm cho " + horse.getName() + ", hãy xác nhận trực tiếp với khách.");
+                if ("none".equals(insurance.getOption()))
+                    throw new IllegalArgumentException(horse.getName() + " không mua bảo hiểm, không cần bổ sung.");
+                insurance.setRevisionReason(HorseInsurancePolicy.blank(item.getReason()) ? reason.trim() : item.getReason().trim());
+                insurance.setRevisionRequestedAt(now);
+                insurance.setReviewed(false);
+                insurance.setArranged(false);
+                names.add(horse.getName());
+            }
+            BookingHistory.appendHistory(payload, specialist, "Yêu cầu khách bổ sung bảo hiểm cho " + String.join(", ", names) + ": " + reason.trim());
+            staffNotifier.toCustomer(booking, "Cần bổ sung bảo hiểm · " + booking.getCode(),
+                    "Chuyên viên yêu cầu bổ sung bảo hiểm cho " + String.join(", ", names) + ": " + reason.trim());
+        }
 
-        Map<String, Object> medicalMap = getOrCreateMap(payload.getMedical());
-        medicalMap.put("status", "resubmit");
-        medicalMap.put("resubmit", resubmitInfo);
-        medicalMap.put("conclusion", "rejected");
-        medicalMap.put("reason", reason);
-        medicalMap.put("items", request != null ? request.getItems() : Collections.emptyList());
-        medicalMap.put("requestedAt", System.currentTimeMillis());
-        medicalMap.put("requestedBy", specialist);
-        payload.setMedical(medicalMap);
+        if (medicalRequest) {
+            Map<String, Object> resubmitInfo = new HashMap<>();
+            resubmitInfo.put("reason", reason);
+            resubmitInfo.put("items", medicalItems);
+            resubmitInfo.put("at", System.currentTimeMillis());
 
-        booking.setStatus("under_review");
+            Map<String, Object> medicalMap = getOrCreateMap(payload.getMedical());
+            medicalMap.put("status", "resubmit");
+            medicalMap.put("resubmit", resubmitInfo);
+            medicalMap.put("conclusion", "rejected");
+            medicalMap.put("reason", reason);
+            medicalMap.put("items", medicalItems);
+            medicalMap.put("requestedAt", System.currentTimeMillis());
+            medicalMap.put("requestedBy", specialist);
+            payload.setMedical(medicalMap);
 
-        BookingHistory.appendHistory(payload, specialist, "Yêu cầu bổ sung hồ sơ ngựa");
+            booking.setStatus("under_review");
+
+            BookingHistory.appendHistory(payload, specialist, "Yêu cầu bổ sung hồ sơ ngựa");
+        }
 
         savePayload(booking, payload);
         Booking saved = bookingRepository.save(booking);

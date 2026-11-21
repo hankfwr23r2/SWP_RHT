@@ -1715,4 +1715,122 @@ class BookingServiceImplTest {
 
         assertThat(updated.getWaybillNo()).isEqualTo("VD-2027-" + CODE.substring(3));
     }
+
+    // ===== Bổ sung bảo hiểm qua luồng Bổ sung hồ sơ =====
+
+    private Booking insuranceRevisionBooking(String status, String insuranceJson) {
+        Booking booking = Booking.builder().id(42).code(CODE).status(status).customerID(customer)
+                .departureDate(Instant.parse("2026-12-20T02:00:00Z"))
+                .detailsJson("""
+                        {"intake":{"specialist":{"id":"SP-01"}},"medical":{"status":"approved"},
+                         "horses":[{"horseId":"H12","name":"Lightning","insurance":%s}]}
+                        """.formatted(insuranceJson))
+                .build();
+        when(bookingRepository.findByIdForUpdate(42)).thenReturn(Optional.of(booking));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        return booking;
+    }
+
+    private static final String PENDING_PERSONAL = """
+            {"option":"personal","provider":"Bao Viet","policyNumber":"P-1","validFrom":"2026-01-01","validUntil":"2026-02-01",
+             "documents":["https://res.cloudinary.com/x/old.pdf"],"reviewed":false,"revisionReason":"Hợp đồng hết hạn","revisionRequestedAt":1}
+            """;
+
+    private static com.example.racehorse_transport.dto.booking.ResubmitDocumentsRequestDto insuranceResubmission(
+            HorseInsuranceDto insurance, String switchReason, Boolean liability) {
+        return com.example.racehorse_transport.dto.booking.ResubmitDocumentsRequestDto.builder()
+                .insurance(List.of(com.example.racehorse_transport.dto.booking.InsuranceResubmissionDto.builder()
+                        .horseId("H12").insurance(insurance).switchReason(switchReason).limitedLiabilityAccepted(liability).build()))
+                .build();
+    }
+
+    private static HorseInsuranceDto storedInsurance(Booking booking) throws Exception {
+        var payload = new com.fasterxml.jackson.databind.ObjectMapper().readValue(booking.getDetailsJson(), BookingDetailsPayloadDto.class);
+        return payload.getHorses().getFirst().getInsurance();
+    }
+
+    @Test
+    void resubmitInsurance_supplementsPersonalPolicyWithoutReopeningApprovedMedical() throws Exception {
+        Booking booking = insuranceRevisionBooking("pending_commercial", PENDING_PERSONAL);
+        var fixed = HorseInsuranceDto.builder().option("personal").provider("Bao Viet").policyNumber("P-2")
+                .validFrom("2026-12-01").validUntil("2027-01-31").documents(List.of("https://res.cloudinary.com/x/new.pdf"))
+                .reviewed(true).premium(java.math.BigDecimal.TEN).build();
+
+        service.resubmitDocuments(CODE, "phuc", insuranceResubmission(fixed, null, null));
+
+        HorseInsuranceDto saved = storedInsurance(booking);
+        assertThat(saved.getPolicyNumber()).isEqualTo("P-2");
+        assertThat(saved.getRevisionReason()).isNull();
+        assertThat(saved.getReviewed()).isFalse();
+        assertThat(saved.getPremium()).isNull();
+        assertThat(saved.getLastRevision().getAction()).isEqualTo("supplemented");
+        assertThat(saved.getLastRevision().getRequestReason()).isEqualTo("Hợp đồng hết hạn");
+        assertThat(booking.getStatus()).isEqualTo("pending_commercial");
+        assertThat(booking.getDetailsJson()).contains("\"status\":\"approved\"");
+    }
+
+    @Test
+    void resubmitInsurance_personalSupplementNeedsDocuments() {
+        insuranceRevisionBooking("under_review", PENDING_PERSONAL);
+        var fixed = HorseInsuranceDto.builder().option("personal").provider("Bao Viet").policyNumber("P-2")
+                .validFrom("2026-12-01").validUntil("2027-01-31").documents(List.of()).build();
+        assertThatThrownBy(() -> service.resubmitDocuments(CODE, "phuc", insuranceResubmission(fixed, null, null)))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("chứng từ");
+        verify(bookingRepository, never()).save(any());
+    }
+
+    @Test
+    void resubmitInsurance_switchingTypeNeedsReasonAndClearsPersonalData() throws Exception {
+        Booking booking = insuranceRevisionBooking("pending_commercial", PENDING_PERSONAL);
+        var assistance = HorseInsuranceDto.builder().option("assistance").provider("Ignored").policyNumber("P-1").build();
+        assertThatThrownBy(() -> service.resubmitDocuments(CODE, "phuc", insuranceResubmission(assistance, " ", null)))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("lý do");
+
+        var response = service.resubmitDocuments(CODE, "phuc", insuranceResubmission(assistance, "Chưa gia hạn kịp", null));
+
+        HorseInsuranceDto saved = storedInsurance(booking);
+        assertThat(saved.getOption()).isEqualTo("assistance");
+        assertThat(saved.getProvider()).isNull();
+        assertThat(saved.getPolicyNumber()).isNull();
+        assertThat(saved.getDocuments()).isNull();
+        assertThat(saved.getLastRevision().getAction()).isEqualTo("switched");
+        assertThat(saved.getLastRevision().getFromOption()).isEqualTo("personal");
+        assertThat(saved.getLastRevision().getCustomerReason()).isEqualTo("Chưa gia hạn kịp");
+        assertThat(response.getHorses().getFirst().getInsuranceOpted()).isTrue();
+        assertThat(booking.getDetailsJson()).contains("đổi từ Bảo hiểm cá nhân sang Hỗ trợ bảo hiểm");
+        var notifier = (StaffNotificationService) org.springframework.test.util.ReflectionTestUtils.getField(service, "staffNotifier");
+        verify(notifier).toManagers(any(), any(), any(), any());
+        verify(notifier).toAssignedSpecialist(any(), any(), any(), any(), org.mockito.ArgumentMatchers.eq("/specialist/insurance/" + CODE));
+    }
+
+    @Test
+    void resubmitInsurance_switchingToNoneRecordsLimitedLiabilityConsent() throws Exception {
+        Booking booking = insuranceRevisionBooking("under_review", PENDING_PERSONAL);
+        var none = HorseInsuranceDto.builder().option("none").build();
+        assertThatThrownBy(() -> service.resubmitDocuments(CODE, "phuc", insuranceResubmission(none, "Không mua nữa", false)))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Trách nhiệm Hạn chế");
+        verify(termsAcceptances, never()).save(any());
+
+        service.resubmitDocuments(CODE, "phuc", insuranceResubmission(none, "Không mua nữa", true));
+
+        assertThat(storedInsurance(booking).getOption()).isEqualTo("none");
+        verify(termsAcceptances).save(any());
+    }
+
+    @Test
+    void resubmitInsurance_isClosedOnceQuoteIsIssued() {
+        insuranceRevisionBooking("awaiting_payment", PENDING_PERSONAL);
+        var assistance = HorseInsuranceDto.builder().option("assistance").build();
+        assertThatThrownBy(() -> service.resubmitDocuments(CODE, "phuc", insuranceResubmission(assistance, "Đổi", null)))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("báo giá");
+        verify(bookingRepository, never()).save(any());
+    }
+
+    @Test
+    void resubmitInsurance_requiresDeclarationForEveryRequestedHorse() {
+        insuranceRevisionBooking("under_review", PENDING_PERSONAL);
+        assertThatThrownBy(() -> service.resubmitDocuments(CODE, "phuc", null))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Lightning");
+        verify(bookingRepository, never()).save(any());
+    }
 }

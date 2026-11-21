@@ -13,6 +13,10 @@ import com.example.racehorse_transport.dto.booking.CustomerTripTeamResponseDto;
 import com.example.racehorse_transport.dto.booking.DocumentRequirementSnapshotDto;
 import com.example.racehorse_transport.dto.booking.PublicTrackingResponseDto;
 import com.example.racehorse_transport.dto.booking.RejectQuoteRequestDto;
+import com.example.racehorse_transport.dto.booking.HorseInsuranceDto;
+import com.example.racehorse_transport.dto.booking.InsuranceResubmissionDto;
+import com.example.racehorse_transport.dto.booking.InsuranceRevisionDto;
+import com.example.racehorse_transport.dto.booking.ResubmitDocumentsRequestDto;
 import com.example.racehorse_transport.dto.common.PagedResponseDto;
 import com.example.racehorse_transport.dto.coordinator.CoordinatorPlanRequestDto;
 import com.example.racehorse_transport.dto.coordinator.VehicleTripDto;
@@ -89,6 +93,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -161,16 +166,8 @@ public class BookingServiceImpl implements BookingService {
         for (BookingHorseDto horse : request.getHorses()) {
             HorseInsurancePolicy.validateDeclaration(horse.getInsurance());
             var insurance = horse.getInsurance();
-            insurance.setReviewed(false);
-            insurance.setArranged(false);
-            insurance.setPremium(null);
-            insurance.setPolicyDocuments(null);
-            insurance.setQuoteValidUntil(null);
+            HorseInsurancePolicy.normalizeCustomerDeclaration(insurance);
             horse.setInsuranceOpted("assistance".equals(insurance.getOption()));
-            if (!"personal".equals(insurance.getOption())) {
-                insurance.setProvider(null); insurance.setPolicyNumber(null); insurance.setDocumentNames(null);
-                insurance.setValidFrom(null); insurance.setValidUntil(null); insurance.setDocuments(null);
-            }
         }
         snapshotSelectedServices(request.getHorses());
         boolean internationalBooking = "INTERNATIONAL".equalsIgnoreCase(request.getType());
@@ -949,13 +946,14 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     @Transactional
-    public BookingResponseDto resubmitDocuments(String bookingIdentifier, String customerUsername) {
+    public BookingResponseDto resubmitDocuments(String bookingIdentifier, String customerUsername,
+            ResubmitDocumentsRequestDto request) {
         Integer bookingId = parseBookingId(bookingIdentifier);
-        Booking booking = bookingRepository.findById(bookingId)
+        Booking booking = bookingRepository.findByIdForUpdate(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn hàng: " + bookingIdentifier));
 
+        User owner = booking.getCustomerID() != null ? booking.getCustomerID().getUser() : null;
         if (customerUsername != null) {
-            User owner = booking.getCustomerID() != null ? booking.getCustomerID().getUser() : null;
             boolean ownsBooking = owner != null
                     && (customerUsername.equals(owner.getUsername()) || customerUsername.equals(owner.getEmail()));
             if (!ownsBooking) {
@@ -966,34 +964,137 @@ public class BookingServiceImpl implements BookingService {
 
         BookingDetailsPayloadDto payload = BookingDetailsJson.readWithMedicalDefaults(objectMapper, booking);
         String medicalStatus = BookingTripRules.getMedicalStatus(payload);
-        if (!"resubmit".equalsIgnoreCase(medicalStatus) && !"resubmission_requested".equalsIgnoreCase(medicalStatus)) {
+        boolean medicalPending = "resubmit".equalsIgnoreCase(medicalStatus) || "resubmission_requested".equalsIgnoreCase(medicalStatus);
+        List<BookingHorseDto> insurancePending = Optional.ofNullable(payload.getHorses()).orElse(List.of()).stream()
+                .filter(h -> HorseInsurancePolicy.revisionPending(h.getInsurance())).toList();
+        if (!medicalPending && insurancePending.isEmpty()) {
             throw new IllegalStateException("Đơn hàng này hiện không có yêu cầu bổ sung hồ sơ!");
         }
+        String actor = customerUsername != null ? customerUsername : "Khách hàng";
+        List<String> insuranceNotes = reviseInsurance(booking, payload, insurancePending, request, owner, actor);
 
-        Map<String, Object> medicalMap = payload.getMedical() instanceof Map<?, ?>
-                ? new HashMap<>((Map<String, Object>) payload.getMedical())
-                : new HashMap<>();
-        medicalMap.put("status", "pending");
-        if (medicalMap.get("resubmit") instanceof Map<?, ?> resubmitMap) {
-            medicalMap.put("lastResubmit", resubmitMap);
+        if (medicalPending) {
+            Map<String, Object> medicalMap = payload.getMedical() instanceof Map<?, ?>
+                    ? new HashMap<>((Map<String, Object>) payload.getMedical())
+                    : new HashMap<>();
+            medicalMap.put("status", "pending");
+            if (medicalMap.get("resubmit") instanceof Map<?, ?> resubmitMap) {
+                medicalMap.put("lastResubmit", resubmitMap);
+            }
+            medicalMap.remove("resubmit");
+            medicalMap.put("resubmittedAt", System.currentTimeMillis());
+            payload.setMedical(medicalMap);
+            booking.setStatus("under_review");
+            BookingHistory.appendWithDefaultActor(payload, actor, "Bổ sung hồ sơ");
         }
-        medicalMap.remove("resubmit");
-        medicalMap.put("resubmittedAt", System.currentTimeMillis());
-        payload.setMedical(medicalMap);
-
-        booking.setStatus("under_review");
-
-        BookingHistory.appendWithDefaultActor(payload, customerUsername != null ? customerUsername : "Khách hàng",
-                "Bổ sung hồ sơ");
         savePayload(booking, payload);
 
         Booking updated = bookingRepository.save(booking);
-        staffNotifier.toAssignedSpecialist(updated, payload, "Khách đã bổ sung hồ sơ · " + updated.getCode(),
-                "Khách gửi lại hồ sơ ngựa theo yêu cầu. Vui lòng thẩm định lại.", "/specialist/verification/" + updated.getCode());
+        if (medicalPending) {
+            staffNotifier.toAssignedSpecialist(updated, payload, "Khách đã bổ sung hồ sơ · " + updated.getCode(),
+                    "Khách gửi lại hồ sơ ngựa theo yêu cầu. Vui lòng thẩm định lại.", "/specialist/verification/" + updated.getCode());
+        }
+        if (!insuranceNotes.isEmpty()) {
+            String message = String.join(" ", insuranceNotes) + " Vui lòng kiểm tra lại bảo hiểm.";
+            staffNotifier.toAssignedSpecialist(updated, payload, "Khách đã cập nhật bảo hiểm · " + updated.getCode(),
+                    message, "/specialist/insurance/" + updated.getCode());
+            // Quản lý đang chuẩn bị báo giá cần biết bảo hiểm đã đổi và phải chờ chuyên viên xác nhận lại.
+            if ("pending_commercial".equals(updated.getStatus())) {
+                staffNotifier.toManagers(updated, "Bảo hiểm thay đổi trước báo giá · " + updated.getCode(), message, "/manager/approvals");
+            }
+        }
         logAction("RESUBMIT_DOCUMENTS", updated.getId(),
-                "Khách hàng (" + customerUsername + ") gửi lại hồ sơ cho Chuyên viên kiểm dịch duyệt lại");
+                "Khách hàng (" + customerUsername + ") gửi lại hồ sơ"
+                        + (insuranceNotes.isEmpty() ? "" : " và bảo hiểm") + " cho Chuyên viên duyệt lại");
         log.info("Booking ID={} resubmitted documents by {}", updated.getId(), customerUsername);
         return bookingQueryService.mapToResponse(updated);
+    }
+
+    // Khách bổ sung bảo hiểm trên loại đang có; chỉ khi không bổ sung được mới đổi loại và phải nêu lý do.
+    private List<String> reviseInsurance(Booking booking, BookingDetailsPayloadDto payload, List<BookingHorseDto> pending,
+            ResubmitDocumentsRequestDto request, User owner, String actor) {
+        List<InsuranceResubmissionDto> submissions = request == null || request.getInsurance() == null
+                ? List.of() : request.getInsurance();
+        if (pending.isEmpty()) {
+            if (!submissions.isEmpty()) throw new IllegalArgumentException("Đơn không có yêu cầu bổ sung bảo hiểm.");
+            return List.of();
+        }
+        if (!Set.of("under_review", "pending_commercial", "resubmission_requested").contains(Objects.toString(booking.getStatus(), ""))) {
+            throw new IllegalStateException("Đơn đã có báo giá, không thể bổ sung bảo hiểm tại bước này.");
+        }
+        Map<String, InsuranceResubmissionDto> byHorse = new HashMap<>();
+        for (InsuranceResubmissionDto item : submissions) {
+            if (item == null || item.getHorseId() == null || byHorse.put(item.getHorseId(), item) != null)
+                throw new IllegalArgumentException("Mỗi ngựa chỉ gửi một khai báo bảo hiểm.");
+            if (pending.stream().noneMatch(h -> item.getHorseId().equals(h.getHorseId())))
+                throw new IllegalArgumentException("Ngựa " + item.getHorseId() + " không có yêu cầu bổ sung bảo hiểm.");
+        }
+        Instant now = Instant.now();
+        List<String> notes = new ArrayList<>();
+        for (BookingHorseDto horse : pending) {
+            InsuranceResubmissionDto item = byHorse.get(horse.getHorseId());
+            if (item == null || item.getInsurance() == null)
+                throw new IllegalArgumentException("Cập nhật bảo hiểm cho " + horse.getName() + " trước khi gửi lại.");
+            HorseInsuranceDto current = horse.getInsurance();
+            HorseInsuranceDto next = item.getInsurance();
+            HorseInsurancePolicy.validateDeclaration(next);
+            String from = current.getOption();
+            String to = next.getOption();
+            boolean switched = !Objects.equals(from, to);
+            String switchReason = item.getSwitchReason() == null ? null : item.getSwitchReason().trim();
+            if (switched && HorseInsurancePolicy.blank(switchReason))
+                throw new IllegalArgumentException("Nêu lý do không bổ sung được bảo hiểm cho " + horse.getName() + " trước khi đổi loại.");
+            if ("personal".equals(to) && (next.getDocuments() == null || next.getDocuments().isEmpty()))
+                throw new IllegalArgumentException("Tải chứng từ bảo hiểm cá nhân cho " + horse.getName() + ".");
+            if ("none".equals(to) && !Boolean.TRUE.equals(item.getLimitedLiabilityAccepted()))
+                throw new IllegalArgumentException("Cần đồng ý Điều khoản Trách nhiệm Hạn chế cho " + horse.getName() + ".");
+
+            HorseInsuranceDto saved;
+            if (!switched && "assistance".equals(to)) {
+                // Khách giữ phương án hỗ trợ: thông tin báo giá chuyên viên đã nhập được giữ để làm tiếp.
+                saved = current;
+                saved.setReviewed(false);
+                saved.setArranged(false);
+                saved.setRevisionReason(null);
+                saved.setRevisionRequestedAt(null);
+            } else {
+                saved = next;
+                HorseInsurancePolicy.normalizeCustomerDeclaration(saved);
+            }
+            saved.setLastRevision(InsuranceRevisionDto.builder()
+                    .action(switched ? "switched" : "supplemented").fromOption(from).toOption(to)
+                    .requestReason(current.getRevisionReason()).customerReason(switched ? switchReason : null)
+                    .at(now.toEpochMilli()).build());
+            horse.setInsurance(saved);
+            horse.setInsuranceOpted("assistance".equals(to));
+
+            if ("none".equals(to) && owner != null) {
+                termsAcceptanceRepository.save(TermsAcceptance.builder()
+                        .documentCode(TermsDocuments.LIMITED_LIABILITY)
+                        .documentVersion(TermsDocuments.LIMITED_LIABILITY_VERSION)
+                        .acceptedAt(now)
+                        .user(owner)
+                        .booking(booking)
+                        .horse(horseRepository.getReferenceById(Integer.valueOf(horse.getHorseId().replaceAll("\\D", ""))))
+                        .build());
+            }
+            String note = switched
+                    ? "Khách không bổ sung được bảo hiểm cho " + horse.getName() + ", đổi từ " + insuranceLabel(from)
+                            + " sang " + insuranceLabel(to) + ": " + switchReason + "."
+                    : "Khách đã bổ sung bảo hiểm cho " + horse.getName() + ".";
+            BookingHistory.appendWithDefaultActor(payload, actor, note);
+            notes.add(note);
+        }
+        return notes;
+    }
+
+    private static String insuranceLabel(String option) {
+        return switch (Objects.toString(option, "")) {
+            case "personal" -> "Bảo hiểm cá nhân";
+            case "assistance" -> "Hỗ trợ bảo hiểm";
+            case "none" -> "Không bảo hiểm";
+            default -> option;
+        };
     }
 
     // Khoang đơn mở rộng chiếm 2 ngăn, khoang tiêu chuẩn chiếm 1 ngăn.

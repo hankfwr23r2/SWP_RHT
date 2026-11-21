@@ -125,14 +125,15 @@ public class CustomerBookingController {
     @PostMapping("/{id}/resubmit")
     public ResponseEntity<ApiResponseDto<BookingResponseDto>> resubmitDocuments(
             @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authHeader,
-            @PathVariable("id") String id) {
+            @PathVariable("id") String id,
+            @Valid @RequestBody(required = false) com.example.racehorse_transport.dto.booking.ResubmitDocumentsRequestDto request) {
         String username = extractUsername(authHeader);
         if (username == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponseDto.error("Vui lòng đăng nhập để gửi lại hồ sơ!"));
         }
 
-        BookingResponseDto response = bookingService.resubmitDocuments(id, username);
+        BookingResponseDto response = bookingService.resubmitDocuments(id, username, request);
         return ResponseEntity.ok(ApiResponseDto.success(response, "Đã gửi lại hồ sơ cho Chuyên viên kiểm dịch thẩm định"));
     }
 }

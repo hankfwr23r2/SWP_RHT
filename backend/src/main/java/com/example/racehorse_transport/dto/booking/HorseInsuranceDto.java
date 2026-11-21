@@ -19,4 +19,9 @@ public class HorseInsuranceDto {
     private String quoteValidUntil;
     private Boolean reviewed;
     private Boolean arranged;
+    // Chuyên viên yêu cầu khách bổ sung bảo hiểm qua luồng Bổ sung hồ sơ; null khi không chờ khách.
+    private String revisionReason;
+    private Long revisionRequestedAt;
+    // Lần bổ sung gần nhất của khách, để chuyên viên biết khách đã bổ sung hay đổi loại.
+    private InsuranceRevisionDto lastRevision;
 }

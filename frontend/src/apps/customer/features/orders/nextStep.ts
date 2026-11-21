@@ -4,6 +4,7 @@ import { DEPOSIT_RATE, type Tone } from '@shared/config/booking-rules'
 import { effectiveArrivalOf, clearanceProgress, currentCheckpoint, pickupFailReason } from '@shared/lib/booking'
 import { formatDateTime, formatVND, timeLeftText } from '@shared/lib/format'
 import type { CustomerBookingView } from '@shared/services/bookings'
+import { insuranceBeforeQuote, insuranceRevisionPending } from '@shared/types/insurance'
 
 // Đã đặt cọc: có Vận đơn, nhà xe làm giấy tờ
 export const POST_PAYMENT: CustomerBookingView['status'][] = ['waybill_issued', 'clearance_in_progress', 'clearance_done', 'ready_for_pickup', 'en_route_to_pickup', 'pickup_failed', 'returning_horses', 'in_transit', 'incident_reported', 'pending_emergency_approval', 'emergency_plan_active', 'arrived', 'handover_timeout', 'returning_to_hq', 'delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue', 'completed']
@@ -36,7 +37,19 @@ function cancelMoneyText(b: CustomerBookingView): string {
 // Người nhận không tới: kíp xe gửi ngựa tại chuồng, khách tự liên hệ chuồng để tới nhận và trả tiền chuồng
 const AFTER_DELIVERY: CustomerBookingView['status'][] = ['delivered_pending_settlement', 'expenses_submitted', 'settlement_issued', 'payment_overdue']
 
+// Ngựa chuyên viên yêu cầu bổ sung bảo hiểm (chỉ trước khi phát hành báo giá)
+const insuranceRevisions = (b: CustomerBookingView) =>
+  insuranceBeforeQuote(b.status) ? (b.horses ?? []).filter(h => insuranceRevisionPending(h.insurance)) : []
+
 function baseStep(b: CustomerBookingView, now: number): NextStep {
+  const revisions = insuranceRevisions(b)
+  if (revisions.length) {
+    const medicalToo = b.status === 'under_review' && b.medical?.status === 'resubmit'
+    return { tone: 'danger', icon: 'fa-file-circle-exclamation',
+      title: medicalToo ? 'Cần bạn bổ sung hồ sơ ngựa và bảo hiểm' : 'Cần bạn bổ sung bảo hiểm',
+      text: [medicalToo ? b.medical?.resubmit?.reason : undefined, ...revisions.map(h => `${h.name}: ${h.insurance.revisionReason}`)].filter(Boolean).join(' · '),
+      actionNeeded: true }
+  }
   const stabled = AFTER_DELIVERY.includes(b.status) ? b.trips?.find(t => t.run?.stabled)?.run?.stabled : undefined
   if (stabled) return { tone: 'warning', icon: 'fa-warehouse', title: 'Ngựa đang gửi tại chuồng',
     text: `Người nhận chưa tới nhận ngựa nên kíp xe đã gửi ngựa tại chuồng ${stabled.name}, địa chỉ ${stabled.address}, số điện thoại ${stabled.phone}. Vui lòng liên hệ chuồng để tới nhận ngựa. Tiền chuồng thanh toán trực tiếp với chuồng khi nhận ngựa.`, actionNeeded: false }
@@ -120,6 +133,7 @@ export const isAcceptance = (b: CustomerBookingView) => b.status === 'completed'
 
 // Tên nút theo việc khách cần làm, dùng ở danh sách đơn và chi tiết đơn
 function ctaOf(b: CustomerBookingView): string {
+  if (insuranceRevisions(b).length) return 'Bổ sung hồ sơ'
   switch (b.status) {
     case 'schedule_change_required': return 'Chọn phương án'
     case 'under_review': return 'Bổ sung hồ sơ'

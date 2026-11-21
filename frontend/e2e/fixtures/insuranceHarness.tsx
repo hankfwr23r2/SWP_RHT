@@ -7,9 +7,10 @@ import '../../src/shared/styles/base.css'
 const params = new URLSearchParams(location.search)
 const policy = params.has('policy')
 const personal = params.has('personal')
+const waiting = params.has('waiting')
 const booking = {
   id: 'BK-1', status: policy ? 'clearance_in_progress' : 'under_review', departAt: Date.parse('2027-06-01T00:00:00Z'),
-  horses: [{ horseId: 'H1', name: 'Storm', microchip: 'MC1', insurance: { option: 'assistance', ...(policy ? { provider: 'Insurer', premium: 1234567, reviewed: true, documents: ['https://example.test/quote.pdf'] } : {}) } }],
+  horses: [{ horseId: 'H1', name: 'Storm', microchip: 'MC1', insurance: { option: 'assistance', ...(waiting ? { revisionReason: 'Bên bảo hiểm từ chối, cần khách chọn lại', revisionRequestedAt: Date.parse('2027-05-01T02:00:00Z') } : {}), ...(policy ? { provider: 'Insurer', premium: 1234567, reviewed: true, documents: ['https://example.test/quote.pdf'] } : {}) } }],
 } as Booking
 const personalBooking = {
   id: 'BK-2', status: 'under_review', type: 'international', departAt: Date.parse('2027-06-01T00:00:00Z'),

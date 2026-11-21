@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useBlocker } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import type { Booking } from '@shared/types/booking'
-import { horseInsuranceTask, insuranceAfterDeposit, insuranceBeforeQuote, insuranceDepartureProblem, insuranceReviewProblem, type HorseInsurance } from '@shared/types/insurance'
+import { horseInsuranceTask, insuranceAfterDeposit, insuranceBeforeQuote, insuranceDepartureProblem, insuranceReviewProblem, insuranceRevisionPending, type HorseInsurance } from '@shared/types/insurance'
 import { InsuranceInputs, InsuranceSummary } from '@shared/ui/InsuranceFields'
 import { specialistApi } from '@shared/api/specialist'
+import { formatDateTime } from '@shared/lib/format'
+import { bookingsApi } from '@shared/services/bookings'
 import { invalidateBookingsListCache } from '@shared/services/bookings'
 import { useToast } from '@shared/ui/toast'
 import s from './InsurancePanel.module.css'
@@ -31,7 +33,8 @@ export function InsuranceLink({ b }: { b: Booking }) {
   )
 }
 
-export function InsurancePanel({ b, onDone }: { b: Booking; onDone: () => void }) {
+// by: tên chuyên viên ghi vào lịch sử khi yêu cầu khách bổ sung; bỏ trống thì backend dùng tài khoản đăng nhập
+export function InsurancePanel({ b, onDone, by }: { b: Booking; onDone: () => void; by?: string }) {
   const { t } = useTranslation()
   const tasks = new Map(b.horses.map(h => [h.horseId, horseInsuranceTask(b.status, h.insurance)]))
   const remaining = b.horses.filter(h => tasks.get(h.horseId)?.pending).length
@@ -65,14 +68,14 @@ export function InsurancePanel({ b, onDone }: { b: Booking; onDone: () => void }
           {locked && <small className="text-muted">{t('specialistInsurance.selectHorseHint', 'Lưu hoặc hủy thay đổi trước khi chuyển ngựa.')}</small>}
         </div>
         <div className={s.body}>
-          {horse && <InsuranceEditor key={`${horse.horseId}-${JSON.stringify(horse.insurance)}`} b={b} horseId={horse.horseId} insurance={horse.insurance} onDone={onDone} onLock={setLocked} />}
+          {horse && <InsuranceEditor key={`${horse.horseId}-${JSON.stringify(horse.insurance)}`} b={b} by={by} horseId={horse.horseId} insurance={horse.insurance} onDone={onDone} onLock={setLocked} />}
         </div>
       </div>
     </section>
   )
 }
 
-function InsuranceEditor({ b, horseId, insurance, onDone, onLock }: { b: Booking; horseId: string; insurance: Partial<HorseInsurance>; onDone: () => void; onLock: (locked: boolean) => void }) {
+function InsuranceEditor({ b, by, horseId, insurance, onDone, onLock }: { b: Booking; by?: string; horseId: string; insurance: Partial<HorseInsurance>; onDone: () => void; onLock: (locked: boolean) => void }) {
   const { t } = useTranslation()
   const initial = { ...insurance, option: insurance.option ?? 'none' } as HorseInsurance
   const [value, setValue] = useState(initial)
@@ -86,9 +89,14 @@ function InsuranceEditor({ b, horseId, insurance, onDone, onLock }: { b: Booking
   const [dateValid, setDateValid] = useState(true)
   const [error, setError] = useState('')
   const toast = useToast()
+  const [asking, setAsking] = useState(false)
+  const [askReason, setAskReason] = useState('')
   const before = insuranceBeforeQuote(b.status)
   const after = insuranceAfterDeposit(b.status)
-  const editable = before || (!!insurance.option && insurance.option !== 'none' && after)
+  // Đang chờ khách bổ sung qua thẻ Bổ sung hồ sơ: chuyên viên chỉ xem cho tới khi khách gửi lại
+  const waitingCustomer = before && insuranceRevisionPending(insurance)
+  const canAskCustomer = before && !waitingCustomer && !!insurance.option && insurance.option !== 'none'
+  const editable = (before && !waitingCustomer) || (!!insurance.option && insurance.option !== 'none' && after)
   const savedValue = JSON.parse(baseline) as HorseInsurance
   const confirmed = before ? savedValue.reviewed === true : after && savedValue.arranged === true
   const readOnly = confirmed && !editingConfirmed
@@ -109,6 +117,16 @@ function InsuranceEditor({ b, horseId, insurance, onDone, onLock }: { b: Booking
     if (!uploading && window.confirm(t('specialistInsurance.leaveConfirm', 'Bạn có thay đổi bảo hiểm chưa lưu. Rời trang và bỏ các thay đổi này?'))) blocker.proceed()
     else blocker.reset()
   }, [blocker, uploading, t])
+  const optionLabel = (option?: HorseInsurance['option']) => option === 'assistance' ? t('specialistInsurance.reqAssistance', 'Yêu cầu hỗ trợ bảo hiểm') : option === 'personal' ? t('specialistInsurance.hasPersonal', 'Đã có bảo hiểm cá nhân') : t('specialistInsurance.noInsurance', 'Không bảo hiểm')
+  const askCustomer = async () => {
+    if (busy || !askReason.trim()) return
+    setBusy(true); setError('')
+    try {
+      await bookingsApi.requestInsuranceRevision(b.id, by, askReason, horseId)
+      toast(t('specialistInsurance.askSent', 'Đã yêu cầu khách bổ sung bảo hiểm')); setAsking(false); setAskReason(''); onDone()
+    } catch (err) { setError(err instanceof Error ? err.message : t('specialistInsurance.askFailed', 'Không gửi được yêu cầu bổ sung.')) }
+    finally { setBusy(false) }
+  }
   const save = async (confirm: boolean) => {
     if (saving.current || busy || uploading || !editable || readOnly || (!confirm && !dirty) || (confirm && confirmed && !dirty)) return
     setError('')
@@ -137,6 +155,18 @@ function InsuranceEditor({ b, horseId, insurance, onDone, onLock }: { b: Booking
       <i className="fa-solid fa-shield-halved" />
       <span>{before ? value.reviewed ? t('specialistInsurance.statusConfirmedForQuote', 'Đã xác nhận thông tin bảo hiểm để gửi báo giá chung') : t('specialistInsurance.statusPreparedForQuote', 'Chuẩn bị thông tin trước khi gửi báo giá chung') : after ? value.arranged ? t('specialistInsurance.statusPolicyActive', 'Đã xác nhận hợp đồng có hiệu lực') : t('specialistInsurance.statusNeedPolicyAfterDeposit', 'Bổ sung hợp đồng sau đặt cọc') : t('specialistInsurance.statusSavedByPhase', 'Thông tin đã lưu theo giai đoạn của đơn')}</span>
     </div>
+    {waitingCustomer && <div className="alert alert-warning" role="status"><i className="fa-solid fa-hourglass-half" /><div>
+      <b>{t('specialistInsurance.waitingCustomer', 'Đang chờ khách bổ sung bảo hiểm')}</b>{insurance.revisionRequestedAt ? ` · ${formatDateTime(insurance.revisionRequestedAt)}` : ''}
+      <div>{insurance.revisionReason}</div>
+      <small>{t('specialistInsurance.waitingCustomerHint', 'Khách cập nhật trong thẻ Bổ sung hồ sơ của đơn. Khi khách gửi lại, bảo hiểm của ngựa này quay về mục Cần báo giá / kiểm tra.')}</small>
+    </div></div>}
+    {before && !waitingCustomer && insurance.lastRevision && !insurance.reviewed && <div className="alert alert-info" role="status"><i className="fa-solid fa-rotate-right" /><div>
+      <b>{insurance.lastRevision.action === 'switched'
+        ? t('specialistInsurance.customerSwitched', 'Khách không bổ sung được, đổi {{from}} → {{to}}', { from: optionLabel(insurance.lastRevision.fromOption), to: optionLabel(insurance.lastRevision.toOption) })
+        : t('specialistInsurance.customerSupplemented', 'Khách vừa bổ sung bảo hiểm')}</b>{insurance.lastRevision.at ? ` · ${formatDateTime(insurance.lastRevision.at)}` : ''}
+      {insurance.lastRevision.customerReason && <div>{t('specialistInsurance.customerReason', 'Lý do của khách:')} {insurance.lastRevision.customerReason}</div>}
+      {insurance.lastRevision.requestReason && <small>{t('specialistInsurance.previousRequest', 'Yêu cầu trước đó:')} {insurance.lastRevision.requestReason}</small>}
+    </div></div>}
     {(!editable || readOnly || (after && insurance.option === 'assistance')) && <InsuranceSummary insurance={readOnly ? savedValue : insurance} phase={after && !readOnly ? 'quote' : 'all'} />}
     {!insurance.option && before && (
       <label className="form-group">
@@ -165,7 +195,18 @@ function InsuranceEditor({ b, horseId, insurance, onDone, onLock }: { b: Booking
         <button type="button" className="btn btn-primary" disabled={busy || uploading || readOnly || (confirmed && !dirty) || !optionConfirmed || !dateValid || !!(before ? reviewProblem : policyProblem)} onClick={() => void save(true)}>{readOnly ? <><i className="fa-solid fa-check" /> {before ? t('specialistInsurance.quoteConfirmed', 'Đã xác nhận báo giá') : t('specialistInsurance.policyConfirmed', 'Đã xác nhận hợp đồng')}</> : value.option === 'none' ? t('specialistInsurance.saveChoice', 'Lưu lựa chọn') : before ? value.option === 'personal' ? t('specialistInsurance.confirmCheckContract', 'Xác nhận đã kiểm tra hợp đồng') : t('specialistInsurance.confirmQuote', 'Xác nhận báo giá bảo hiểm') : t('specialistInsurance.confirmActive', 'Xác nhận hợp đồng có hiệu lực')}</button>
         {readOnly && before && <button type="button" className="btn btn-outline" disabled={busy || uploading} onClick={() => { setEditingConfirmed(true); setError('') }}>{t('specialistInsurance.editQuote', 'Chỉnh sửa báo giá')}</button>}
         {(dirty || editingConfirmed) && <button type="button" className="btn btn-ghost" disabled={busy || uploading} onClick={() => { setValue(savedValue); setOptionConfirmed(savedOptionConfirmed); setEditingConfirmed(false); setError('') }}>{t('specialistInsurance.discard', 'Hủy thay đổi')}</button>}
+        {canAskCustomer && !dirty && !asking && <button type="button" className="btn btn-ghost" disabled={busy || uploading} onClick={() => { setAsking(true); setError('') }}><i className="fa-solid fa-rotate-left" /> {t('specialistInsurance.askCustomer', 'Yêu cầu khách bổ sung')}</button>}
       </div>
+      {asking && <div className="form-group">
+        <label htmlFor={`ask-${horseId}`} className="required">{t('specialistInsurance.askReason', 'Lý do bổ sung (khách sẽ thấy)')}</label>
+        <textarea id={`ask-${horseId}`} className="form-control" rows={3} maxLength={500} value={askReason} onChange={e => setAskReason(e.target.value)}
+          placeholder={t('specialistInsurance.askPlaceholder', 'VD: Hợp đồng hết hạn trước ngày khởi hành, cần hợp đồng gia hạn.')} />
+        <small className="text-muted">{t('specialistInsurance.askHint', 'Khách bổ sung trong thẻ Bổ sung hồ sơ. Nếu không bổ sung được, khách có thể đổi phương án bảo hiểm và phải nêu lý do.')}</small>
+        <div className={s.actions}>
+          <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => { setAsking(false); setAskReason('') }}>{t('specialistInsurance.askCancel', 'Hủy')}</button>
+          <button type="button" className="btn btn-danger" disabled={busy || !askReason.trim()} onClick={() => void askCustomer()}>{t('specialistInsurance.askSend', 'Gửi yêu cầu bổ sung')}</button>
+        </div>
+      </div>}
     </>}
     {!insurance.option && !before && <p className="text-muted">{t('specialistInsurance.legacyNote', 'Đơn cũ giữ thông tin bảo hiểm theo báo giá đã phát hành.')}</p>}
   </div>

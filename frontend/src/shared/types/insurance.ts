@@ -12,7 +12,30 @@ export interface HorseInsurance {
   quoteValidUntil?: string
   reviewed?: boolean
   arranged?: boolean
+  // Chuyên viên yêu cầu khách bổ sung qua luồng Bổ sung hồ sơ
+  revisionReason?: string
+  revisionRequestedAt?: number
+  lastRevision?: InsuranceRevision
 }
+
+export interface InsuranceRevision {
+  action: 'supplemented' | 'switched'
+  fromOption?: HorseInsurance['option']
+  toOption?: HorseInsurance['option']
+  requestReason?: string
+  customerReason?: string
+  at?: number
+}
+
+// Khai báo khách gửi lại cho một ngựa: bổ sung trên loại cũ, hoặc đổi loại khi không bổ sung được
+export interface InsuranceResubmission {
+  horseId: string
+  insurance: HorseInsurance
+  switchReason?: string
+  limitedLiabilityAccepted?: boolean
+}
+
+export const insuranceRevisionPending = (i?: Partial<HorseInsurance>) => !!i?.revisionReason?.trim()
 export const insuranceLabels = { personal: 'Đã có bảo hiểm cá nhân', assistance: 'Yêu cầu hỗ trợ bảo hiểm', none: 'Không bảo hiểm' }
 
 export function insuranceDepartureProblem(insurance: Partial<HorseInsurance>, day: string): string | undefined {
@@ -56,6 +79,7 @@ export function insuranceStage(status: string, horses: { insurance: Partial<Hors
 export function horseInsuranceTask(status: string, i: Partial<HorseInsurance>): { label: string; tone: 'warning' | 'success' | 'muted'; pending: boolean } {
   const todo = (label: string) => ({ label, tone: 'warning' as const, pending: true })
   const done = (label: string) => ({ label, tone: 'success' as const, pending: false })
+  if (insuranceBeforeQuote(status) && insuranceRevisionPending(i)) return { label: 'Chờ khách bổ sung', tone: 'muted', pending: false }
   if (i.option === 'none') return { label: 'Không cần xử lý', tone: 'muted', pending: false }
   if (insuranceBeforeQuote(status)) {
     if (!i.option) return todo('Chưa chọn phương án')
@@ -66,4 +90,16 @@ export function horseInsuranceTask(status: string, i: Partial<HorseInsurance>): 
   if (!i.option) return { label: 'Theo báo giá cũ', tone: 'muted', pending: false }
   if (i.option === 'assistance') return i.arranged ? done('Hợp đồng có hiệu lực') : i.reviewed ? done('Đã xác nhận báo giá') : { label: 'Chưa xác nhận', tone: 'muted', pending: false }
   return i.reviewed ? done('Đã kiểm tra giấy tờ') : { label: 'Chưa kiểm tra', tone: 'muted', pending: false }
+}
+
+// Trạng thái bảo hiểm khách thấy trong đơn: đang ở bước nào và ai đang xử lý
+export type CustomerInsuranceStatus = 'legacy' | 'none' | 'revision' | 'reviewing' | 'quoting' | 'confirmed' | 'awaitingPolicy' | 'active'
+export function customerInsuranceStatus(status: string, i?: Partial<HorseInsurance>, hasQuote = false): CustomerInsuranceStatus {
+  if (!i?.option) return 'legacy'
+  if (i.option === 'none') return 'none'
+  if (insuranceBeforeQuote(status) && insuranceRevisionPending(i)) return 'revision'
+  if (i.option === 'assistance' && i.arranged) return 'active'
+  if (!i.reviewed) return i.option === 'assistance' && !hasQuote ? 'quoting' : 'reviewing'
+  if (i.option === 'assistance' && insuranceAfterDeposit(status)) return 'awaitingPolicy'
+  return 'confirmed'
 }
