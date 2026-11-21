@@ -18,7 +18,8 @@ const booking = {
   quote: { total: 10_500_000, lines: [{ label: 'Cước vận chuyển', amount: 10_500_000, marginApplied: true }] },
   incidents: [{ id: 'I-1', kind: 'handover_timeout', tripId: 'T', reportedAt: now, reportedBy: 'Driver', status: 'resolved',
     expenses: [{ id: 'stable', category: 'holding_stable', label: 'Chuồng tạm', photo: '/receipt.png', amount: expenseAmount, payer: 'carrier', at: now, by: 'Driver' }] }],
-  settlement: { items: [{ label: 'Chuồng tạm', amount: 800_000 }], total: 800_000 },
+  // Đơn đã hoàn tất nên quyết toán đã được quản lý duyệt: báo cáo chỉ tính chi phí sự cố đã duyệt
+  settlement: { items: [{ label: 'Chuồng tạm', amount: 800_000 }], total: 800_000, reviewedAt: now, reviewedBy: 'manager' },
 } as unknown as Booking
 const view = new URLSearchParams(location.search).get('view')
 const router = createBrowserRouter([{

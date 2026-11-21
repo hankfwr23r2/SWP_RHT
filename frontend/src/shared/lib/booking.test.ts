@@ -13,7 +13,7 @@ import type { Booking, BookingHorse, HorseProfile, VehicleTrip, Checkpoint, Trip
 import { applyDocumentRequirements } from '../config/runtimeDocumentRequirements'
 import type { DocumentRequirement } from '../api/documentRequirements'
 import {
-  schedulesOf, planHomeReturn, returnLate, returningTrips, vehicleSpot, vehiclePoint, pendingDeparture, spotLabel, nearestTo, projectOnPath, pointsAhead, pointAlong, bookingPath, incidentLocation, needsFitCheck, transitProgress, defaultPayer, incidentActionsFor, settlementOf, approvedSubOf, APPROVED_SUBS, orderGroupOf, ORDER_GROUPS, capacitiesFor, estimateQuote, busyResources, buildRoutePlan, gatesFor, suggestGate, suggestTransitStations, canCompleteClearance, classForHorses, defaultClearanceItems, deriveStatus, docsDueAt, earliestDeparture, finalizeQuote, horseReadiness,
+  schedulesOf, planHomeReturn, returnLate, returningTrips, vehicleSpot, vehiclePoint, pendingDeparture, spotLabel, nearestTo, projectOnPath, pointsAhead, pointAlong, bookingPath, incidentLocation, needsFitCheck, transitProgress, defaultPayer, incidentActionsFor, settlementOf, approvedSubOf, APPROVED_SUBS, orderGroupOf, ORDER_GROUPS, capacitiesFor, estimateQuote, busyResources, buildRoutePlan, gatesFor, suggestGate, suggestTransitStations, canCompleteClearance, classForHorses, defaultClearanceItems, deriveStatus, docsDueAt, earliestDeparture, finalizeQuote, horseReadiness, activeHorseBookingById, horseIsBusy,
   isClearanceOverdue, isDepartureAllowed, isQuoteExpired, layoutLegs, manifestDocuments, nextBookingId, quoteLines, reviewDone, routeKm, activeStaff,
   findLocation, arrivalOf, routeOutline, managerBoardOf, managerCounts, orderTabOf, tripIdFor, validateRoutePlan, vehicleClassOf, autoPackFleet, stallUnitsOf, horseCountryMatchesOrigin, horseHasUnverifiedLocationCountry, pickupFailReason,
 } from './booking'
@@ -91,6 +91,19 @@ describe('hồ sơ ngựa', () => {
   it('giấy vừa tải lên, chưa ai duyệt, vẫn tính là đã nộp: đặt chuyến được', () => {
     const submitted = { ...doc(), status: 'PENDING' }
     expect(horseReadiness(horse({ passport: submitted, vaccine: submitted, lab: submitted })).ok).toBe(true)
+  })
+  it('coi ngựa trong đơn chưa kết thúc hoặc đang vận chuyển là bận', () => {
+    const activeBookings: Pick<Booking, 'id' | 'status' | 'horses'>[] = [
+      { id: 'BK-ACTIVE', status: 'in_transit', horses: [bh({ horseId: 'H-123' })] },
+      { id: 'BK-DONE', status: 'completed', horses: [bh({ horseId: 'H-456' })] },
+    ]
+    const active = activeHorseBookingById(activeBookings)
+
+    expect(active.get(123)).toBe('BK-ACTIVE')
+    expect(active.has(456)).toBe(false)
+    expect(horseIsBusy({ id: 'H-123', transitStatus: 'STABLE_IDLE' }, active)).toBe(true)
+    expect(horseIsBusy({ id: 'H-789', transitStatus: 'IN_TRANSIT' }, active)).toBe(true)
+    expect(horseIsBusy({ id: 'H-789', transitStatus: 'STABLE_IDLE' }, active)).toBe(false)
   })
   it('áp dụng yêu cầu giấy ngựa theo loại chuyến và quốc gia', () => {
     const requirement = (id: number, documentGroup: DocumentRequirement['documentGroup'], documentType: DocumentRequirement['documentType'], tripType: DocumentRequirement['tripType'], country: DocumentRequirement['country']): DocumentRequirement => ({

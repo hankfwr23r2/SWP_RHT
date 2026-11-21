@@ -32,5 +32,8 @@ public interface BillMailService {
 
     void paymentReceived(Booking booking, Payment payment, BigDecimal amount, String transactionNo, Instant paidAt, String waybillNo);
 
+    // Kíp xe đã nhận ngựa ở điểm đón: nhắc khách trả 70% còn lại để xe được bắt đầu hành trình
+    void balanceDue(Booking booking, BigDecimal amount);
+
     void settlementIssued(Booking booking, List<ExpenseItemDto> customerItems, BigDecimal total, Instant dueAt);
 }

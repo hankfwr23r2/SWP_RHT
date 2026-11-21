@@ -147,7 +147,8 @@ class BookingServiceImplTest {
                 mock(IncidentRepository.class),
                 org.mockito.Mockito.mock(StaffNotificationService.class),
                 operationalLog,
-                bookingQueryService);
+                bookingQueryService,
+                billMailService);
         service = new BookingServiceImpl(
                 bookingRepository,
                 userRepository,

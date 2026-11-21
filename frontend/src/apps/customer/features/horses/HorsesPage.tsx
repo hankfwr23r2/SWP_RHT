@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
-import { ageOf, horseReadiness } from '@shared/lib/booking'
+import { activeHorseBookingById, ageOf, horseIsBusy, horseReadiness } from '@shared/lib/booking'
 import { useStaggerIn } from '@shared/motion/motion'
 import { usePageData } from '@shared/routing/pageData'
 import { horsesApi } from '@shared/services/horses'
@@ -17,8 +17,6 @@ import { HorseJourneyModal } from './HorseJourneyModal'
 import type { horsesLoader } from './loaders'
 import { RelocateHorseModal } from './RelocateHorseModal'
 import s from './Horses.module.css'
-
-const FINISHED_STATUSES = new Set(['completed', 'cancelled', 'rejected', 'quote_expired'])
 
 type Filter = 'all' | 'ready' | 'transit' | 'missing'
 
@@ -52,34 +50,15 @@ export default function HorsesPage() {
   const [deleting, setDeleting] = useState(false)
 
   // Map từ numeric ID của ngựa -> thông tin đơn hàng chưa hoàn tất
-  const activeHorseBookingMap = useMemo(() => {
-    const map = new Map<number, string>()
-    if (!customerBookings) return map
-    for (const b of customerBookings) {
-      const st = (b.status || '').toLowerCase()
-      if (!FINISHED_STATUSES.has(st)) {
-        if (b.horses && Array.isArray(b.horses)) {
-          for (const bh of b.horses) {
-            if (bh.horseId) {
-              const num = Number(bh.horseId.replace(/\D/g, ''))
-              if (num && !map.has(num)) {
-                map.set(num, b.id)
-              }
-            }
-          }
-        }
-      }
-    }
-    return map
-  }, [customerBookings])
+  const activeHorseBookingMap = useMemo(() => activeHorseBookingById(customerBookings), [customerBookings])
 
   const list = horses ?? []
   const busyHorses = useMemo(
-    () => list.filter(h => h.transitStatus === 'IN_TRANSIT' || activeHorseBookingMap.has(Number(h.id.replace(/\D/g, '')))),
+    () => list.filter(h => horseIsBusy(h, activeHorseBookingMap)),
     [list, activeHorseBookingMap]
   )
   const readyHorses = useMemo(
-    () => list.filter(h => horseReadiness(h).ok && h.transitStatus !== 'IN_TRANSIT' && !activeHorseBookingMap.has(Number(h.id.replace(/\D/g, '')))),
+    () => list.filter(h => horseReadiness(h).ok && !horseIsBusy(h, activeHorseBookingMap)),
     [list, activeHorseBookingMap]
   )
   const missingHorses = useMemo(
@@ -206,7 +185,7 @@ export default function HorsesPage() {
                 const numId = Number(h.id.replace(/\D/g, ''))
                 const activeBookingCode = activeHorseBookingMap.get(numId)
                 const inTransit = h.transitStatus === 'IN_TRANSIT'
-                const isBusy = inTransit || Boolean(activeBookingCode)
+                const isBusy = horseIsBusy(h, activeHorseBookingMap)
 
                 return (
                   <article key={h.id} data-horse className={s.horse}>

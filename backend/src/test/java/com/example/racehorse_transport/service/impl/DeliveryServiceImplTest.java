@@ -97,6 +97,28 @@ class DeliveryServiceImplTest {
         assertThat(message.getValue()).contains("Trại ngựa Đức Hòa").contains("Ấp 3, Đức Hòa, Long An").contains("0901234567");
     }
 
+    @Test
+    void bookingReportedOverdueUnderTheOldFlowCanStillStableTheHorseAndClosesTheOpenIncident() {
+        // Đã báo quá hạn trước khi đổi luồng: đơn "Chờ bàn giao", sự cố quá hạn còn mở, kíp xe đang kẹt ở điểm giao
+        Booking booking = atDelivery();
+        booking.setStatus("handover_timeout");
+        var open = com.example.racehorse_transport.entity.Incident.builder().id(7).bookingID(booking).tripId("T1")
+                .incidentType("HANDOVER_TIMEOUT").status("active").estimatedCost(new BigDecimal("1500000")).build();
+        when(incidents.findByBookingID_Id(1)).thenReturn(java.util.List.of(open));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.reportDeliveryTimeout(1, stableRequest(), "admin", "ADMIN");
+
+        assertThat(booking.getStatus()).isEqualTo("delivered_pending_settlement");
+        var saved = org.mockito.ArgumentCaptor.forClass(com.example.racehorse_transport.entity.Incident.class);
+        verify(incidents).save(saved.capture());
+        assertThat(saved.getValue().getId()).isEqualTo(7); // đóng đúng sự cố cũ, không tạo sự cố mới
+        assertThat(saved.getValue().getStatus()).isEqualTo("resolved");
+        assertThat(saved.getValue().getPartnerName()).isEqualTo("Trại ngựa Đức Hòa");
+        assertThat(saved.getValue().getEstimatedCost()).isNull();
+        assertThat(booking.getDetailsJson()).contains("\"homeReturn\"").contains("\"stabled\"");
+    }
+
     private Booking atDelivery() {
         Booking booking = new Booking();
         booking.setId(1);
