@@ -38,10 +38,13 @@ export interface InsuranceResubmission {
 export const insuranceRevisionPending = (i?: Partial<HorseInsurance>) => !!i?.revisionReason?.trim()
 export const insuranceLabels = { personal: 'Đã có bảo hiểm cá nhân', assistance: 'Yêu cầu hỗ trợ bảo hiểm', none: 'Không bảo hiểm' }
 
-export function insuranceDepartureProblem(insurance: Partial<HorseInsurance>, day: string): string | undefined {
+// day: ngày cần hợp đồng bao phủ (chuyên viên xác nhận theo ngày đi dự kiến).
+// Bỏ trống khi tài xế bắt đầu hành trình: chỉ cần bảo hiểm đã xác nhận, không kiểm lại ngày để tránh kẹt đơn.
+export function insuranceDepartureProblem(insurance: Partial<HorseInsurance>, day?: string): string | undefined {
   if (!insurance.option || insurance.option === 'none') return undefined // historical bookings retain their departure contract
   if (!insurance.reviewed) return 'Chưa hoàn tất kiểm tra bảo hiểm'
   if (insurance.option === 'assistance' && (!insurance.arranged || !insurance.policyNumber?.trim())) return 'Chưa xác nhận thu xếp hợp đồng bảo hiểm'
+  if (day === undefined) return undefined
   if (!insurance.validFrom || !insurance.validUntil || insurance.validFrom > day || insurance.validUntil < day) return 'Bảo hiểm không bao phủ ngày khởi hành'
   return undefined
 }
