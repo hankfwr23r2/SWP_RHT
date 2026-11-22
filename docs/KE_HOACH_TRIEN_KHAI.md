@@ -208,13 +208,22 @@ Mục tiêu: dựng sẵn **mọi thứ cả hai luồng cùng cần**, để t�
 | `exception/*`, `dto/common/*`, `HealthCheckController` | Giữ | |
 
 **Tạo DB:**
-- Thêm `flyway-core` và `flyway-database-postgresql`. Đặt `spring.jpa.hibernate.ddl-auto=validate`.
+- Thêm `spring-boot-starter-flyway` và `flyway-database-postgresql` (Spring Boot 4 quản lý phiên bản). Đặt `spring.jpa.hibernate.ddl-auto=validate`.
 - Viết `V1__tier1.sql` … `V14__tier14.sql` đúng **từng cột, CHECK, UK, FK, index, EXCLUDE** trong `DB_SCHEMA_59_BANG.md`, kể cả `btree_gist`, `booked_stalls`, các cột tiền của `quotation`.
 - `V15__reference_data.sql`: vai trò, `stall_type`, `vehicle_class`, `service`, `document_type`, 3 quốc gia, tỉnh.
 - `db/seed-dev/R__dev_seed_base.sql`: tài khoản mỗi vai trò, `HUB-HCM`, `HUB-DN`, trại cách ly, cửa khẩu, tuyến HCM-PNH / HCM-DN / DN-HCM, lịch, xe, bảng giá mẫu.
 - Test `MigrationTest` (Testcontainers PostgreSQL 16): migrate từ đầu, kiểm vài CHECK quan trọng bằng câu INSERT sai (ví dụ `booked_stalls > capacity_stalls` phải lỗi).
+- Annotation `@PostgresIntegrationTest` (SpringBootTest + `TestcontainersConfiguration` có `@ServiceConnection` + profile `test` nạp `db/seed-dev`). **Mọi test cần DB dùng annotation này**, không tự dựng container.
 
 **Xong khi:** `mvnw verify` xanh với app chỉ còn hạ tầng, `MigrationTest` xanh.
+
+**Ghi chú sau khi làm P0.1** (khác với dự kiến ban đầu):
+- `DepositPaymentWindow`, `HorseInsurancePolicy`, `BookingSchedulePolicy` phụ thuộc entity và DTO cũ nên đã xóa. Làm lại từ `main` ở A7, A6, A1.
+- `RoutePreviewServiceImpl` phụ thuộc domain cũ nên đã xóa. A1 làm lại.
+- Bảng `route_cache` (nhóm 15) đã có entity `RouteCacheEntry` và repository ở P0.1, vì hạ tầng định tuyến được giữ cần nó. P0.2-B bỏ qua bảng này.
+- `JwtAuthenticationFilter` tạm bỏ bước từ chối token của tài khoản bị khóa. **P0.3-A phải làm lại** trên bảng `app_user`.
+- Dữ liệu đơn mẫu (trạng thái `CONFIRMED`, để luồng B điều độ) chuyển sang P0.3-A.
+- `docker-compose.yml` dùng volume mới `postgres_data_v2`: Flyway không chạy trên DB cũ đã có bảng. Chạy ngoài Docker thì tạo DB mới và trỏ tới trong `application-local.properties`, đặt `FLYWAY_LOCATIONS=classpath:db/migration,classpath:db/seed-dev` để có dữ liệu mẫu.
 
 ### P0.2 Entity và repository (A ∥ B, sau P0.1)
 
@@ -570,7 +579,7 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 
 | Mã | Task | Luồng | Đợt | Trạng thái | PR |
 |---|---|---|---|---|---|
-| P0.1 | Dọn code cũ, Flyway, 59 bảng | A | 0 | Chưa làm | |
+| P0.1 | Dọn code cũ, Flyway, 59 bảng | A | 0 | Đang làm (nhánh `rd/p0-1-db`) | |
 | P0.2-A | Entity, repository nhóm 1–8 | A | 0 | Chưa làm | |
 | P0.2-B | Entity, repository nhóm 9–15 | B | 0 | Chưa làm | |
 | P0.3-A | Auth, interface gọi chéo, `TestData` | A | 0 | Chưa làm | |

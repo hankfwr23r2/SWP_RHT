@@ -126,7 +126,7 @@ Phải có dữ liệu nền trước khi nhận đơn đầu tiên. Nhóm nên 
 
 | Thứ tự | Dữ liệu | Bảng | Ví dụ |
 |---|---|---|---|
-| 1 | Quốc gia, tỉnh | `country`, `province` | VN, KH, LA và 63 tỉnh |
+| 1 | Quốc gia, tỉnh | `country`, `province` | VN, KH, LA; 34 tỉnh/thành VN (sắp xếp từ 01/07/2025), 25 tỉnh KH, 18 tỉnh LA |
 | 2 | Điểm mạng lưới | `location` | `HUB-HCM` (trụ sở), `HUB-DN` (hub vệ tinh), `QF-CUCHI` (trại cách ly), `REST-TRANGBANG`, `GATE-MOCBAI`, `HUB-PNH` |
 | 3 | Vùng phục vụ của hub (mỗi tỉnh thuộc đúng một hub) | `hub_service_area` | HUB-HCM phục vụ TP.HCM, Bình Dương, Đồng Nai…; HUB-DN phục vụ Đà Nẵng, Quảng Nam, Huế… |
 | 4 | Vai trò, tài khoản nhân viên | `role`, `app_user`, `user_role`, `staff` | |

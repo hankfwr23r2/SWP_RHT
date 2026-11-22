@@ -44,7 +44,7 @@
 
 - Bảng và cột dùng `snake_case`, tên bảng số ít (`booking`, không phải `bookings`).
 - Khóa ngoại đặt tên theo `<bảng đích>_id`. Nếu một bảng có nhiều FK tới cùng bảng thì thêm vai trò: `from_location_id`, `to_location_id`.
-- Tên ràng buộc: `pk_<bảng>`, `fk_<bảng>_<cột>`, `uk_<bảng>_<cột>`, `ck_<bảng>_<ý nghĩa>`, `ix_<bảng>_<cột>`.
+- Tên ràng buộc: `pk_<bảng>`, `fk_<bảng>_<cột>`, `uk_<bảng>_<cột>`, `ck_<bảng>_<ý nghĩa>`, `ex_<bảng>_<ý nghĩa>` (EXCLUDE), `ix_<bảng>_<cột>`.
 
 ### Khóa ngoại
 
