@@ -10,28 +10,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.postgresql.PostgreSQLContainer;
+import com.example.racehorse_transport.PostgresIntegrationTest;
 import static org.assertj.core.api.Assertions.assertThat;
 
 // Hai màn hình xem trước cùng một tuyến cùng lúc: cả hai ghi bộ đệm cùng một khóa, không lần nào được lỗi.
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@PostgresIntegrationTest
 class RouteCacheConcurrencyTest {
-
-    private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer("postgres:16-alpine");
-
-    static {
-        POSTGRES.start();
-    }
-
-    @DynamicPropertySource
-    static void datasource(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
-        registry.add("spring.datasource.username", POSTGRES::getUsername);
-        registry.add("spring.datasource.password", POSTGRES::getPassword);
-    }
 
     @Autowired
     private RouteCacheService cache;

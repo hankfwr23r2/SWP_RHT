@@ -1,6 +1,5 @@
 package com.example.racehorse_transport.security;
 
-import com.example.racehorse_transport.service.AuthService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,7 +26,6 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
-    private final AuthService authService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -39,12 +37,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String role = jwtUtils.getRoleFromToken(jwt);
 
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    if (authService.isInactiveStaff(username)) {
-                        log.warn("Tài khoản nhân viên {} đã bị vô hiệu hóa, từ chối xác thực token", username);
-                        filterChain.doFilter(request, response);
-                        return;
-                    }
-
+                    // Task P0.3-A bổ sung lại bước từ chối token của tài khoản đã bị khóa, dựa trên bảng app_user mới.
                     List<GrantedAuthority> authorities = new ArrayList<>();
                     if (StringUtils.hasText(role)) {
                         String primaryRole = role.toUpperCase();

@@ -1,0 +1,209 @@
+package com.example.racehorse_transport.policy;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
+
+// Từ thời gian lái thật của từng chặng → lịch trình thực tế: nghỉ bắt buộc, nghỉ đêm, chờ cửa khẩu mở và làm thủ tục.
+// Có trạm nghỉ ứng viên trên chặng thì nghỉ ở trạm xa nhất trong khoảng [giới hạn − nửa giờ lái liên tục tối đa, giới hạn];
+// không có thì nhận trạm sớm hơn (từ giờ lái thứ nhất) nếu nghỉ ở đó là đủ tới cuối chặng; còn lại nghỉ dọc đường đúng mốc giới hạn. Hàm thuần, không đọc DB: tham số quy định truyền vào qua Rules.
+public final class JourneyPlanPolicy {
+
+    public enum StopKind { PICKUP, VIA, GATE, DROPOFF }
+
+    public enum EventType { DRIVE, REST, ROADSIDE_REST, OVERNIGHT, BORDER_WAIT, BORDER_PROCESSING }
+
+    public record Rules(double maxContinuousHours, int minRestMinutes, double maxDriveHoursPerDay,
+                        double overnightRestHours, double borderProcessingHours) {}
+
+    public record Stop(String name, StopKind kind, Integer openingMinutes, Integer closingMinutes) {}
+
+    public record Leg(double km, long driveSeconds) {}
+
+    // Trạm nghỉ nằm trên chặng, cách đầu chặng offsetSeconds giây lái (km tính từ đầu chặng)
+    public record Station(String name, long offsetSeconds, double km) {}
+
+    // place == null: nghỉ dọc đường, vị trí là legIndex + kmIntoLeg (nơi gọi đặt tên theo trạm nghỉ gần nhất)
+    public record Event(EventType type, String place, Instant startAt, Instant endAt, int legIndex, double kmIntoLeg) {}
+
+    public record Journey(List<Event> events, Instant arrivalAt, Instant borderArrivalAt, int crewDays) {}
+
+    // Nghỉ khi mới lái chưa tới 1 giờ thì không có ích cho ngựa
+    private static final long EARLIEST_REST_SECONDS = 3600;
+    // Còn ít hơn 1 giờ lái trong ngày khi tới trạm thì nghỉ đêm luôn tại trạm
+    private static final long LAST_DRIVING_HOUR_SECONDS = 3600;
+
+    private JourneyPlanPolicy() {}
+
+    public static Journey plan(Instant departAt, List<Stop> stops, List<Leg> legs, Rules rules, ZoneId zone) {
+        return plan(departAt, stops, legs, List.of(), rules, zone);
+    }
+
+    public static Journey plan(Instant departAt, List<Stop> stops, List<Leg> legs, List<List<Station>> stations,
+                               Rules rules, ZoneId zone) {
+        if (stops.size() != legs.size() + 1) {
+            throw new IllegalArgumentException("Số điểm dừng phải bằng số chặng cộng một.");
+        }
+        if (!stations.isEmpty() && stations.size() != legs.size()) {
+            throw new IllegalArgumentException("Danh sách trạm ứng viên phải có một phần tử cho mỗi chặng.");
+        }
+        long maxContinuous = Math.round(rules.maxContinuousHours() * 3600);
+        long maxPerDay = Math.round(rules.maxDriveHoursPerDay() * 3600);
+        long rest = rules.minRestMinutes() * 60L;
+        long overnight = Math.round(rules.overnightRestHours() * 3600);
+        long processing = Math.round(rules.borderProcessingHours() * 3600);
+
+        List<Event> events = new ArrayList<>();
+        Instant t = departAt;
+        Instant borderArrival = null;
+        long continuous = 0;
+        long today = 0;
+        for (int i = 0; i < legs.size(); i++) {
+            Leg leg = legs.get(i);
+            // Trạm đầu/cuối chặng (điểm điều phối chọn) không tính lại là trạm nghỉ giữa chặng: điểm dừng nằm trên mép đường
+            // nên tọa độ trạm vẫn "gần" chặng, dễ thành nghỉ hai lần cùng một trạm
+            String fromName = stops.get(i).name();
+            String toName = stops.get(i + 1).name();
+            List<Station> candidates = (stations.isEmpty() ? List.<Station>of() : stations.get(i)).stream()
+                    .filter(st -> !st.name().equals(fromName) && !st.name().equals(toName))
+                    .toList();
+            long remaining = leg.driveSeconds();
+            long driven = 0;
+            while (remaining > 0) {
+                double km = kmAt(leg, driven);
+                String here = driven == 0 ? stops.get(i).name() : null;
+                if (today >= maxPerDay) {
+                    events.add(new Event(EventType.OVERNIGHT, here, t, t.plusSeconds(overnight), i, km));
+                    t = t.plusSeconds(overnight);
+                    continuous = 0;
+                    today = 0;
+                    continue;
+                }
+                if (continuous >= maxContinuous) {
+                    events.add(new Event(EventType.ROADSIDE_REST, here, t, t.plusSeconds(rest), i, km));
+                    t = t.plusSeconds(rest);
+                    continuous = 0;
+                    continue;
+                }
+                long allowed = Math.min(maxContinuous - continuous, maxPerDay - today);
+                if (remaining > allowed) {
+                    Station station = pick(candidates, driven, allowed, maxContinuous / 2);
+                    if (station == null && allowed <= maxContinuous - continuous) {
+                        station = earlyStationCoveringRest(candidates, driven, allowed, remaining, maxContinuous);
+                    }
+                    if (station != null) {
+                        boolean night = maxPerDay - today <= maxContinuous - continuous;
+                        long chunk = station.offsetSeconds() - driven;
+                        events.add(new Event(EventType.DRIVE, null, t, t.plusSeconds(chunk), i, km));
+                        t = t.plusSeconds(chunk);
+                        remaining -= chunk;
+                        driven += chunk;
+                        double stationKm = kmAt(leg, driven);
+                        if (night) {
+                            events.add(new Event(EventType.OVERNIGHT, station.name(), t, t.plusSeconds(overnight), i, stationKm));
+                            t = t.plusSeconds(overnight);
+                            today = 0;
+                        } else {
+                            events.add(new Event(EventType.REST, station.name(), t, t.plusSeconds(rest), i, stationKm));
+                            t = t.plusSeconds(rest);
+                            today += chunk;
+                        }
+                        continuous = 0;
+                        continue;
+                    }
+                }
+                long chunk = Math.min(remaining, allowed);
+                events.add(new Event(EventType.DRIVE, null, t, t.plusSeconds(chunk), i, km));
+                t = t.plusSeconds(chunk);
+                remaining -= chunk;
+                driven += chunk;
+                continuous += chunk;
+                today += chunk;
+            }
+            Stop next = stops.get(i + 1);
+            if (next.kind() == StopKind.VIA) {
+                // Tới trạm khi giờ lái trong ngày còn chưa tới 1 giờ và không kịp chạy hết chặng sau: nghỉ đêm luôn tại trạm
+                boolean dayAlmostOver = i + 1 < legs.size() && maxPerDay - today < LAST_DRIVING_HOUR_SECONDS
+                        && legs.get(i + 1).driveSeconds() > maxPerDay - today;
+                if (dayAlmostOver) {
+                    events.add(new Event(EventType.OVERNIGHT, next.name(), t, t.plusSeconds(overnight), i, leg.km()));
+                    t = t.plusSeconds(overnight);
+                    today = 0;
+                } else {
+                    events.add(new Event(EventType.REST, next.name(), t, t.plusSeconds(rest), i, leg.km()));
+                    t = t.plusSeconds(rest);
+                }
+                continuous = 0;
+            } else if (next.kind() == StopKind.GATE) {
+                borderArrival = t;
+                Instant open = nextOpening(t, next, zone);
+                if (open.isAfter(t)) {
+                    events.add(new Event(EventType.BORDER_WAIT, next.name(), t, open, i, leg.km()));
+                    if (Duration.between(t, open).getSeconds() >= overnight) {
+                        today = 0;
+                    }
+                    t = open;
+                }
+                events.add(new Event(EventType.BORDER_PROCESSING, next.name(), t, t.plusSeconds(processing), i, leg.km()));
+                t = t.plusSeconds(processing);
+                continuous = 0;
+            }
+        }
+        int crewDays = (int) ChronoUnit.DAYS.between(departAt.atZone(zone).toLocalDate(), t.atZone(zone).toLocalDate()) + 1;
+        return new Journey(List.copyOf(events), t, borderArrival, crewDays);
+    }
+
+    // Trạm xa nhất trong khoảng [driven + allowed − minGap, driven + allowed], và phải nằm sau vị trí hiện tại
+    private static Station pick(List<Station> candidates, long driven, long allowed, long minGap) {
+        long latest = driven + allowed;
+        long earliest = latest - minGap;
+        Station best = null;
+        for (Station station : candidates) {
+            long offset = station.offsetSeconds();
+            if (offset > driven && offset >= earliest && offset <= latest
+                    && (best == null || offset > best.offsetSeconds())) {
+                best = station;
+            }
+        }
+        return best;
+    }
+
+    // Trạm sớm (sau ít nhất 1 giờ lái) mà nghỉ ở đó thì phần còn lại của chặng không phải dừng thêm
+    private static Station earlyStationCoveringRest(List<Station> candidates, long driven, long allowed, long remaining,
+                                                    long maxContinuous) {
+        Station best = null;
+        for (Station station : candidates) {
+            long chunk = station.offsetSeconds() - driven;
+            if (chunk >= EARLIEST_REST_SECONDS && chunk <= allowed && remaining - chunk <= maxContinuous
+                    && (best == null || station.offsetSeconds() > best.offsetSeconds())) {
+                best = station;
+            }
+        }
+        return best;
+    }
+
+    private static double kmAt(Leg leg, long drivenSeconds) {
+        return leg.driveSeconds() == 0 ? 0 : leg.km() * drivenSeconds / leg.driveSeconds();
+    }
+
+    // Cửa khẩu chưa khai báo giờ thì coi như mở cả ngày
+    private static Instant nextOpening(Instant at, Stop gate, ZoneId zone) {
+        if (gate.openingMinutes() == null || gate.closingMinutes() == null) {
+            return at;
+        }
+        ZonedDateTime local = at.atZone(zone);
+        int minute = local.getHour() * 60 + local.getMinute();
+        ZonedDateTime todayOpening = local.toLocalDate().atStartOfDay(zone).plusMinutes(gate.openingMinutes());
+        if (minute < gate.openingMinutes()) {
+            return todayOpening.toInstant();
+        }
+        if (minute >= gate.closingMinutes()) {
+            return todayOpening.plusDays(1).toInstant();
+        }
+        return at;
+    }
+}
