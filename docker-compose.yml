@@ -48,6 +48,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      - SERVER_PORT=8080
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/horse_transport_db
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=RaceHorse@2026
