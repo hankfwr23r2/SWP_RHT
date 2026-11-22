@@ -7,10 +7,11 @@
 ## 0. Thứ tự ưu tiên nguồn sự thật
 
 1. `AGENTS.md`: cách làm việc, cấu trúc code.
-2. `docs/DB_SCHEMA_59_BANG.md`: bảng, cột, ràng buộc, view, quy tắc phải kiểm ở service.
+2. `docs/DB_SCHEMA_59_BANG.md`: bảng, cột, ràng buộc, dữ liệu dẫn xuất, quy tắc phải kiểm ở service.
 3. `docs/NGHIEP_VU_THEO_59_BANG.md`: ai làm gì, lúc nào, ghi vào bảng nào.
 4. `docs/NGU_CANH_THIET_KE_LAI.md`: lý do thiết kế, quyết định đã chốt, câu hỏi còn mở.
-5. Code hiện có. Code cũ **không** phải là chuẩn. Nó được viết theo mô hình cũ.
+5. `docs/KE_HOACH_TRIEN_KHAI.md`: task, chủ sở hữu bảng, hợp đồng gọi chéo giữa hai luồng, quy trình cho agent. Nhận task nào thì đọc đúng task đó.
+6. Code hiện có. Code cũ **không** phải là chuẩn. Nó được viết theo mô hình cũ.
 
 Khi hai nguồn mâu thuẫn: **dừng lại, nêu mâu thuẫn và hỏi người dùng**. Không tự chọn một bên. Không mở lại các quyết định đã chốt trong `NGU_CANH_THIET_KE_LAI.md`.
 
@@ -130,7 +131,11 @@ Gốc package: `backend/src/main/java/com/example/racehorse_transport/`.
 - **Cấm lưu dữ liệu nghiệp vụ dạng JSON/TEXT** (danh sách, trạng thái, tiền, tham chiếu). Chỉ có 2 ngoại lệ: `payment_transaction.raw_payload` và `audit_log.old_data/new_data`.
 - Mọi tham chiếu tới bản ghi khác **phải là FK** (`@ManyToOne` + `@JoinColumn`). Không lưu ID hay tên dạng chuỗi.
 - Trạng thái và loại dùng Java enum với `@Enumerated(EnumType.STRING)`, kèm `CHECK` trong migration.
-- Không lưu giá trị suy ra được (tổng, số đã trả, số khoang còn trống). Dùng view trong `DB_SCHEMA_59_BANG.md`. Snapshot có chủ đích phải ghi comment `// snapshot: <lý do>`.
+- **Không có view chứa logic nghiệp vụ.** Mọi phép tính nằm trong code.
+- Cột dẫn xuất chỉ được lưu khi là **snapshot của chứng từ đã chốt** (ví dụ tiền của `quotation`) hoặc **bộ đếm có khóa bảo vệ** (ví dụ `departure.booked_stalls`). Danh sách cột được phép nằm ở mục "Dữ liệu dẫn xuất" của `DB_SCHEMA_59_BANG.md`.
+  - Mỗi cột dẫn xuất chỉ do **một service** ghi, trong cùng transaction với thao tác gốc. Entity ghi comment `// derived: <service ghi>`.
+  - Giá trị đổi liên tục (đã trả, còn nợ, ngựa đang ở đâu, đủ giấy chưa) thì **tính khi đọc**: repository truy vấn tổng hợp, policy tính kết quả.
+- Snapshot có chủ đích phải ghi comment `// snapshot: <lý do>`.
 - Quy ước:
   - tên bảng và cột dùng `snake_case`, tên bảng số ít;
   - PK là `bigint` identity ↔ `Long`;
@@ -205,7 +210,7 @@ public class VehicleCreateRequestDto {
 - Mỗi `*ServiceImpl` phục vụ một nhóm use case. Vượt **500 dòng** hoặc **10 dependency** thì phải đề xuất tách trước khi thêm code.
 - Method ghi có `@Transactional`. Method chỉ đọc có `@Transactional(readOnly = true)`.
 - Lấy thời gian qua `Clock` được inject. Không gọi `Instant.now()` hay `LocalDate.now()` trực tiếp.
-- Đặt chỗ vào `departure` phải khóa dòng `departure` (`SELECT … FOR UPDATE`) trước khi đọc `v_departure_capacity`.
+- Đặt chỗ vào `departure` phải khóa dòng `departure` (`SELECT … FOR UPDATE`) rồi mới đọc và cập nhật `booked_stalls`.
 - Ném exception riêng trong `exception/` (ví dụ `ResourceNotFoundException`). Không ném `RuntimeException` chung chung, không trả `null` để báo lỗi.
 
 ### 7.2 API
@@ -221,19 +226,135 @@ public class VehicleCreateRequestDto {
 
 ---
 
-## 8. Cấu trúc frontend
+## 8. Frontend
 
-- `frontend/src/apps/customer`: ứng dụng khách.
-- `frontend/src/apps/backoffice/features/<vai-trò>`: ứng dụng nhân viên, chia theo vai trò (`admin`, `coordinator`, `driver`, `escort`, `manager`, `specialist`).
-- `frontend/src/shared/`: dùng chung (`api`, `auth`, `routing`, `i18n`, `ui`, `lib`).
-- Mọi lời gọi API đi qua `shared/api/` và `apiClient`. Component không gọi `fetch` hay `axios` trực tiếp.
-- Kiểu dữ liệu request/response **sinh từ OpenAPI** của backend, không viết tay. Đổi DTO ở backend thì sinh lại kiểu trong cùng thay đổi.
-- **Cấm:**
-  - tính giá, cọc, số dư hay phụ phí ở frontend;
-  - tự suy trạng thái vận hành hoặc tự tính hạn chót (frontend hiển thị giá trị backend trả về);
-  - rẽ nhánh code chạy thật theo môi trường test (`import.meta.env.MODE === 'test'`) hoặc giữ dữ liệu giả trong code chạy thật. Test thì mock ở tầng `apiClient`.
-- Kiểm tra đầu vào ở frontend chỉ để báo lỗi sớm. Backend vẫn phải kiểm lại.
-- Chuỗi hiển thị cho người dùng đi qua i18n (`shared/i18n`).
+React 19, TypeScript, Vite, React Router, Vitest. Có hai ứng dụng build riêng: khách hàng (`/`, `index.html`) và nhân viên (`/backoffice`, `backoffice.html`). Gói của khách không được chứa code của nhân viên.
+
+### 8.1 Cấu trúc thư mục
+
+```
+frontend/src/
+├─ apps/
+│  ├─ customer/    main.tsx · routes.tsx · layouts/ · features/<tính-năng>/
+│  └─ backoffice/  main.tsx · routes.tsx · layouts/ · features/<vai-trò>/<tính-năng>/
+└─ shared/
+   ├─ api/         generated/ · client.ts · <tài-nguyên>.ts
+   ├─ ui/          component cơ bản, không biết nghiệp vụ
+   ├─ components/  component nghiệp vụ dùng chung giữa các ứng dụng
+   ├─ hooks/       hook dùng chung
+   ├─ lib/         hàm thuần không mang nghiệp vụ
+   ├─ auth/  routing/  i18n/  motion/
+   ├─ styles/      tokens.css · base.css
+   └─ config/      cấu hình runtime
+```
+
+| Thư mục | Chứa | Không được chứa |
+|---|---|---|
+| `apps/<app>/routes.tsx` | Bảng route: đường dẫn, trang (`lazyPage`), `loader`, vai trò, tiêu đề, layout | Logic hiển thị |
+| `apps/<app>/layouts/` | Khung trang: header, sidebar, topbar, menu theo vai trò | Gọi API của tính năng |
+| `apps/<app>/features/…/` | Một tính năng (mục 8.2) | Code dùng cho tính năng khác |
+| `shared/api/generated/` | Kiểu dữ liệu và client **sinh từ OpenAPI** của backend | Bất kỳ chỉnh sửa tay nào. Sinh lại khi backend đổi DTO |
+| `shared/api/client.ts` | Axios instance, token, refresh, xử lý 401, chuẩn hóa lỗi | Gọi endpoint cụ thể |
+| `shared/api/<tài-nguyên>.ts` | Hàm gọi API mỏng, dùng kiểu trong `generated/` | Chuyển đổi dữ liệu mang nghiệp vụ, tự đặt mã hay trạng thái, giữ dữ liệu giả |
+| `shared/ui/` | Component cơ bản có biến thể: `Button`, `Input`, `Select`, `Modal`, `ConfirmDialog`, `Table`, `Badge`, `Card`, `Tabs`, `Stepper`, `Skeleton`, `EmptyState`, `ErrorState`, `Toast` | Import `api`, `components`, kiểu nghiệp vụ |
+| `shared/components/` | Component nghiệp vụ **cả hai ứng dụng** cùng dùng: bảng báo giá, timeline hành trình ngựa, chọn địa chỉ, bản đồ | Component chỉ một tính năng dùng (đặt ở tính năng đó) |
+| `shared/hooks/` | `useLoad`, `useAutoRefresh`, `useNow`, `usePagination`… | Hook gắn với một tính năng |
+| `shared/lib/` | Định dạng tiền và ngày, xử lý chuỗi, hình học bản đồ, kiểm tra đầu vào sớm | Tính giá, cọc, hạn chót, trạng thái, mọi quy tắc nghiệp vụ |
+| `shared/config/` | Biến môi trường, dữ liệu khởi động | Bảng giá, quy định, danh mục địa lý chép cứng (lấy từ API) |
+| `shared/styles/` | `tokens.css` (design token), `base.css` (reset, kiểu chữ nền) | Style riêng của một trang |
+
+**Không có** `shared/services/` hay `shared/types/`. Kiểu dữ liệu API lấy từ `shared/api/generated/`. Kiểu chỉ dùng ở frontend đặt cạnh nơi dùng.
+
+### 8.2 Cấu trúc một tính năng
+
+```
+features/<vai-trò>/<tính-năng>/
+├─ XxxPage.tsx        trang: nhận dữ liệu từ loader hoặc hook, ghép component
+├─ components/        component riêng của tính năng
+├─ useXxx.ts          hook riêng (state, gọi api, xử lý form)
+├─ loaders.ts         loader của route
+├─ Xxx.module.css     style riêng
+└─ *.test.ts(x)       test đặt cạnh file được test
+```
+
+- Mỗi file trang tối đa **300 dòng**, mỗi component tối đa **200 dòng**. Vượt ngưỡng thì phải tách component hoặc hook trước khi thêm code.
+- Một tính năng chỉ có `components/` khi có từ 3 component riêng trở lên. Ít hơn thì đặt cạnh file trang.
+- Tên file: component và trang dùng `PascalCase.tsx`; hook dùng `useXxx.ts`; hàm thường dùng `camelCase.ts`; style dùng `Xxx.module.css`.
+
+### 8.3 Chiều phụ thuộc (khóa bằng lint)
+
+```
+apps/<app>/features  →  shared/components  →  shared/ui
+         ↓                     ↓
+     shared/api, shared/hooks, shared/lib, shared/i18n
+```
+
+- `apps/customer` và `apps/backoffice` **không** import lẫn nhau.
+- Tính năng **không** import tính năng khác. Cần dùng chung thì chuyển lên `shared/components` hoặc `shared/hooks`.
+- `shared/*` **không** import `apps/*`. `shared/ui` **không** import `shared/api` hay `shared/components`.
+- Component **không** gọi API trực tiếp. Trang lấy dữ liệu qua `loader` hoặc hook, rồi truyền xuống bằng props.
+- Mọi lời gọi HTTP đi qua `shared/api/`. Không gọi `fetch` hay `axios` ở chỗ khác.
+- Import bằng alias `@shared/...`, `@customer/...` (trỏ tới `apps/customer`) và `@backoffice/...` (trỏ tới `apps/backoffice`), không dùng đường dẫn tương đối quá một cấp (`../../`).
+
+### 8.4 Dữ liệu và nghiệp vụ
+
+- Frontend **chỉ hiển thị** giá trị backend trả về. **Cấm**:
+  - tính giá, cọc, số dư, phụ phí, chi phí sự cố;
+  - tự suy trạng thái vận hành, vị trí ngựa, hạn chót;
+  - chép cứng bảng giá, quy định, danh mục địa lý, danh sách trạng thái kèm quy tắc chuyển trạng thái.
+- Muốn xem trước giá thì gọi endpoint preview của backend.
+- Kiểm tra đầu vào ở frontend chỉ để báo lỗi sớm. Backend vẫn kiểm lại, và lỗi validate của backend phải hiện ngay dưới đúng ô nhập.
+- **Cấm** rẽ nhánh code chạy thật theo môi trường test (`import.meta.env.MODE === 'test'`) hay giữ dữ liệu giả trong code chạy thật. Test thì mock ở tầng `apiClient`.
+- Chuỗi hiển thị cho người dùng đi qua i18n (`shared/i18n`), có đủ cả `vi` và `en`.
+
+### 8.5 Giao diện (UI)
+
+- **Một ngôn ngữ thiết kế cho mọi vai trò.** Không có theme riêng đè style cho từng vai trò.
+- Mọi giá trị giao diện lấy từ **design token** trong `shared/styles/tokens.css`:
+  - màu theo ngữ nghĩa: `--color-bg`, `--color-surface`, `--color-text`, `--color-muted`, `--color-border`, `--color-primary`, `--color-success`, `--color-warning`, `--color-danger`, `--color-info`;
+  - khoảng cách theo thang 4px (`--space-1` = 4px …), cỡ chữ theo thang (`--text-xs` … `--text-2xl`);
+  - bo góc, bóng đổ, z-index, thời gian chuyển động.
+- Style viết bằng **CSS Modules** cạnh component. `base.css` chỉ chứa reset và kiểu chữ nền.
+- **Cấm** trong TSX:
+  - mã màu (`#…`, `rgb(…)`);
+  - `style={{…}}`, trừ giá trị động không biểu diễn được bằng class (tọa độ, phần trăm tiến độ, kích thước tính lúc chạy).
+- Nút, ô nhập, nhãn trạng thái… dùng component trong `shared/ui` có biến thể (`<Button variant="primary" size="sm">`). Không tự viết lại.
+- Màu của trạng thái nghiệp vụ được ánh xạ tại **một nơi** (component `StatusBadge`), không rải ở từng trang.
+
+### 8.6 Trải nghiệm (UX)
+
+- **Mỗi màn hình có đủ 4 trạng thái:**
+  - đang tải: dùng `Skeleton` giữ đúng bố cục, không để trang nhảy;
+  - trống: dùng `EmptyState`, nói rõ bước tiếp theo;
+  - lỗi: dùng `ErrorState` có nút thử lại;
+  - có dữ liệu.
+- Tải lại sau khi cập nhật thì giữ dữ liệu cũ trên màn hình (`useLoad` tải ngầm), không chớp màn hình.
+- Thao tác **không hoàn tác được** (gửi, hủy, duyệt, thanh toán, xóa) phải có `ConfirmDialog` nói rõ hậu quả. Nút đang xử lý thì khóa lại và hiện trạng thái để tránh bấm hai lần.
+- Kết quả thao tác báo bằng `Toast`. Lỗi dùng ngôn ngữ người dùng hiểu được, không hiện mã lỗi kỹ thuật.
+- Luồng nhiều bước (đặt đơn) dùng `Stepper`, giữ bản nháp khi người dùng quay lại bước trước.
+- **Ứng dụng hiện trường (tài xế, groom) ưu tiên điện thoại:**
+  - vùng chạm tối thiểu 44×44px;
+  - thao tác theo **điểm dừng** của lượt xe;
+  - quét chip và chụp ảnh chỉ cần một chạm.
+- Khách theo dõi đơn **theo từng con ngựa**: một timeline gồm chặng, lưu trú và giao nhận, khớp mô hình `horse_leg`, `horse_stay`, `handover`.
+- Mọi trang dùng được ở bề rộng 360px trở lên. Bảng dữ liệu trên điện thoại chuyển thành dạng thẻ.
+
+### 8.7 Khả năng tiếp cận
+
+- Mọi ô nhập có nhãn. Mọi nút chỉ có biểu tượng phải có `aria-label`.
+- Có viền `:focus-visible` rõ ràng. Modal giữ tiêu điểm bên trong và đóng được bằng phím Escape.
+- Độ tương phản chữ tối thiểu 4.5:1. Không truyền đạt thông tin chỉ bằng màu sắc: trạng thái phải có thêm chữ hoặc biểu tượng.
+- Tôn trọng `prefers-reduced-motion` cho mọi hiệu ứng chuyển động.
+
+### 8.8 Chuyển đổi code cũ
+
+Code frontend hiện tại chưa theo các mục trên: còn `shared/services`, `shared/types`, logic giá trong `shared/lib` và `shared/config`, trang dài hơn 1000 dòng, và rất nhiều `style={{}}`. Trên nhánh `redesign/system-v2`, làm theo thứ tự:
+
+1. Hoàn thiện `tokens.css` và các component trong `shared/ui`. Thêm alias `@customer` và `@backoffice` (hiện mới có `@shared`), cấu hình sinh `shared/api/generated/` từ OpenAPI, và các kiểm tra lint ở mục 10.3.
+2. Viết lại từng tính năng khi backend của tính năng đó đã xong.
+3. Khi tính năng cuối cùng đã chuyển, xóa `shared/services`, `shared/types` và các file nghiệp vụ trong `shared/lib`, `shared/config`.
+
+Code mới phải theo quy tắc ngay. Không sửa code cũ ngoài phạm vi đã duyệt (mục 1.2).
 
 ---
 
@@ -286,7 +407,11 @@ Từ nhánh thiết kế lại (`redesign/system-v2`), backend có **test kiến
 - không gọi `Instant.now()`/`LocalDate.now()` trong service và policy;
 - không có `CommandLineRunner` chạy DDL.
 
-Vi phạm thì build đỏ. **Không** được tắt, nới lỏng hay thêm ngoại lệ cho test này khi người dùng chưa đồng ý.
+Frontend cũng được khóa bằng lint trên nhánh này:
+- oxlint `no-restricted-imports` cho các chiều phụ thuộc ở mục 8.3;
+- một bước kiểm tra trong `npm run lint` chặn mã màu và `style={{` trong file TSX mới.
+
+Vi phạm thì build đỏ. **Không** được tắt, nới lỏng hay thêm ngoại lệ cho các kiểm tra này khi người dùng chưa đồng ý.
 
 ---
 
@@ -298,12 +423,14 @@ Vi phạm thì build đỏ. **Không** được tắt, nới lỏng hay thêm ng
 4. Entity import DTO. DTO gọi repository. `toEntity()` gán id, trạng thái, người thao tác hoặc số tiền.
 5. ModelMapper, package `mapper/`, chép field thủ công thay cho method chuyển đổi của DTO.
 6. Sửa lược đồ ngoài Flyway. Seed bằng Java. Đổi `ddl-auto`. Sửa migration đã merge.
-7. Lưu dữ liệu nghiệp vụ dạng JSON. Tham chiếu dạng chuỗi thay cho FK. Lưu cột dẫn xuất.
+7. Lưu dữ liệu nghiệp vụ dạng JSON. Tham chiếu dạng chuỗi thay cho FK. View chứa logic nghiệp vụ. Cột dẫn xuất ngoài danh sách được phép, hoặc do nhiều nơi cùng ghi.
 8. Nhận số tiền tính sẵn từ client. Một công thức viết ở hai nơi.
 9. Hằng số nghiệp vụ hard-code.
 10. Endpoint dạng `action` + `switch`.
 11. Thêm trạng thái vận hành vào `booking.status`.
 12. Commit bí mật. Commit, push hay merge khi chưa được yêu cầu.
+13. Frontend: import chéo giữa hai ứng dụng hoặc giữa các tính năng; component gọi API trực tiếp; sửa tay `shared/api/generated/`.
+14. Frontend: mã màu hay `style={{}}` tĩnh trong TSX; tự viết lại nút, ô nhập, modal thay cho `shared/ui`; trang thiếu trạng thái đang tải, trống hoặc lỗi.
 
 ## 12. Checklist trước khi báo hoàn thành
 
@@ -313,5 +440,7 @@ Vi phạm thì build đỏ. **Không** được tắt, nới lỏng hay thêm ng
 - [ ] Response DTO có `from()`. Request DTO có `toEntity()` hoặc `applyTo()`, không gán field bị cấm (mục 5).
 - [ ] Số tiền tính ở backend, trong `policy/` (mục 6).
 - [ ] Method ghi có `@Transactional`. Thời gian lấy qua `Clock` (mục 7).
-- [ ] DTO đổi thì đã sinh lại kiểu ở frontend (mục 8).
+- [ ] DTO đổi thì đã sinh lại `shared/api/generated/` (mục 8.1).
+- [ ] Frontend: file đúng thư mục, đúng chiều phụ thuộc, trang ≤ 300 dòng (mục 8.1–8.3).
+- [ ] Frontend: chỉ dùng token và `shared/ui`; có đủ 4 trạng thái; thao tác không hoàn tác có xác nhận; chạy được ở bề rộng 360px (mục 8.5–8.7).
 - [ ] Có test theo mục 10.1. Quality Gate xanh, hoặc đã báo rõ phần nào không chạy hay bị fail.

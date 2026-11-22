@@ -197,7 +197,7 @@ Tiến độ vận hành (ngựa đang ở đâu, chặng nào, có sự cố kh
 | 2 | Đồng ý điều khoản dịch vụ và chính sách riêng tư | `terms_acceptance` (`booking_id` NULL) |
 | 3 | Khai hồ sơ ngựa: tên, chip, hộ chiếu, giới tính, năm sinh, giá trị khai báo… | `horse` |
 | 4 | Lưu sổ địa chỉ (tùy chọn) | `party_address` |
-| 5 | Chọn **loại đơn**, **điểm đón**, **điểm giao** và **chuyến** muốn đi. Hệ thống gợi ý các `departure` OPEN phù hợp | Chỉ đọc `departure`, `v_departure_capacity` |
+| 5 | Chọn **loại đơn**, **điểm đón**, **điểm giao** và **chuyến** muốn đi. Hệ thống gợi ý các `departure` OPEN phù hợp | Chỉ đọc `departure` (`capacity_stalls − booked_stalls`) |
 | 6 | Khai các bên: người trả tiền, người gửi, người nhận, người liên hệ khẩn cấp | `booking_party` × 4 |
 | 7 | Chọn ngựa, loại khoang, chế độ ăn, dịch vụ thêm | `booking_horse`, `booking_horse_service` |
 | 8 | Khai bảo hiểm cho từng con: tự có / nhờ công ty thu xếp / không mua | `horse_insurance` (DRAFT). Chọn NONE thì phải ký cam kết miễn trách: `terms_acceptance` LIABILITY_WAIVER |
@@ -205,7 +205,7 @@ Tiến độ vận hành (ngựa đang ở đâu, chặng nào, có sự cố kh
 | 10 | Gửi đơn | `booking` (PENDING_INTAKE), `booking_address` × 2 (snapshot), `terms_acceptance` SERVICE_TERMS gắn `booking_id`, `booking_status_history` |
 
 **Quy tắc:**
-- Chỉ chọn được `departure` có `status = OPEN`, chưa qua `booking_cutoff_at`, còn đủ khoang theo `v_departure_capacity`. Khi ghi, service khóa dòng `departure` bằng `FOR UPDATE`.
+- Chỉ chọn được `departure` có `status = OPEN`, chưa qua `booking_cutoff_at`, còn đủ khoang (`booked_stalls` cộng số ngựa của đơn không vượt `capacity_stalls`). Khi ghi, `DepartureService` khóa dòng `departure` bằng `FOR UPDATE` rồi cộng `booked_stalls` trong cùng transaction.
 - `booking_cutoff_at` phải đủ xa so với hôm nay để kịp thẩm định, làm giấy (`permit_lead_days`, `cert_lead_days`) và cách ly (`quarantine_days`) theo `country_rule`. Không đủ thì cảnh báo và gợi ý chuyến sớm nhất khả thi.
 - Hệ thống hiển thị danh sách giấy phải nộp từ `document_requirement`, ghi rõ **ai nộp** (`submitted_by`). Ví dụ: giấy phép nhập khẩu của nước đến do người nhận hoặc đại lý nộp.
 - Microchip được chuẩn hóa theo ISO 11784/11785 (15 chữ số) trước khi lưu.
@@ -223,7 +223,7 @@ Hai nhánh chạy song song. Mỗi nhánh tự lưu trạng thái trên đối t
 | Việc | Bảng |
 |---|---|
 | Duyệt từng giấy: đạt / không đạt (bắt buộc ghi lý do) | `document.status`, `reviewed_by`, `reviewed_at`, `review_note` |
-| Kiểm tra còn thiếu giấy nào | `v_booking_document_status` |
+| Kiểm tra còn thiếu giấy nào | `DocumentCompletenessPolicy` (đọc `document_requirement` và `document`) |
 | Bảo hiểm PERSONAL: kiểm hợp đồng. Thiếu thì yêu cầu khách bổ sung | `horse_insurance.status = REVISION_REQUESTED`, `revision_reason` |
 | Bảo hiểm ARRANGED: lấy báo giá từ công ty bảo hiểm | `horse_insurance.insurer_party_id`, `premium`, `quote_expires_at` |
 | Xác nhận bảo hiểm | `horse_insurance.status = CONFIRMED`, `confirmed_by` |
@@ -257,7 +257,7 @@ Hai nhánh chạy song song. Mỗi nhánh tự lưu trạng thái trên đối t
 | 4 | Quản lý có thể thêm dòng điều chỉnh giảm giá | `quotation_line` loại ADJUSTMENT |
 | 5 | Quản lý gửi báo giá cho khách | `quotation.status = SENT`, `sent_by`, `sent_at`, `valid_until`. Các bản cũ chuyển SUPERSEDED |
 
-Tổng tiền, tiền cọc và số dư đọc từ `v_quotation_total`, **không lưu**.
+`QuotationService` tính và ghi `quotation.total_amount`, `pass_through_amount`, `deposit_amount` khi báo giá còn DRAFT. Sau khi SENT thì các cột này không đổi. Tiền cọc gồm **toàn bộ** phần thu hộ (bảo hiểm, lệ phí): `deposit = round(deposit_rate × (tổng − thu hộ), 2) + thu hộ`.
 
 ---
 
@@ -268,11 +268,11 @@ Tổng tiền, tiền cọc và số dư đọc từ `v_quotation_total`, **khô
 | Bước | Hành động | Bảng |
 |---|---|---|
 | 1 | Khách chấp nhận báo giá | `quotation.status = ACCEPTED`, `accepted_at`. Mỗi đơn chỉ có một báo giá ACCEPTED (partial unique index) |
-| 2 | Tạo khoản cọc | `payment` DEPOSIT, `amount = v_quotation_total.deposit_amount`, `due_at` |
+| 2 | Tạo khoản cọc | `payment` DEPOSIT, `amount = quotation.deposit_amount`, `due_at` |
 | 3 | Khách trả qua VNPAY. Cổng gọi lại (callback và IPN) | `payment_transaction` (UK `gateway + gateway_txn_no` chống ghi trùng), `payment.status = PAID` |
 | 4 | Cấp vận đơn | `booking.waybill_no`, `status = CONFIRMED` |
 
-Quá `valid_until` mà chưa cọc thì scheduler chuyển báo giá sang `EXPIRED` và đơn sang `QUOTE_EXPIRED`. Đơn hết hạn thì nhả khoang: `v_departure_capacity` loại các đơn này khỏi số khoang đã đặt.
+Quá `valid_until` mà chưa cọc thì scheduler chuyển báo giá sang `EXPIRED` và đơn sang `QUOTE_EXPIRED`. Đơn hết hạn thì nhả khoang: trừ `departure.booked_stalls` trong cùng transaction.
 
 ---
 
@@ -292,8 +292,8 @@ Quá `valid_until` mà chưa cọc thì scheduler chuyển báo giá sang `EXPIR
 | Gắn ngựa vào lượt xe | `horse_leg.vehicle_trip_id`, `board_stop_id`, `alight_stop_id` |
 
 **Điều kiện được đón ngựa**, kiểm bằng truy vấn khi xe xuất phát:
-- đã trả đủ theo `v_booking_paid`;
-- đủ giấy theo `v_booking_document_status`;
+- đã trả đủ: số còn nợ do `SettlementPolicy` tính bằng 0;
+- đủ giấy theo `DocumentCompletenessPolicy`;
 - bảo hiểm của từng con đã CONFIRMED;
 - lượt xe đã có tài xế ACKNOWLEDGED.
 
@@ -324,7 +324,7 @@ Quá `valid_until` mà chưa cọc thì scheduler chuyển báo giá sang `EXPIR
 
 **Ngoại lệ ở bước 4–5:**
 - Chip không khớp: không nhận con đó, ghi `incident` loại DOCUMENT.
-- Ngựa không đủ sức khỏe: loại khỏi đơn (`booking_horse.status = EXCLUDED`), hủy các `horse_leg` còn lại của con đó, và điều chỉnh báo giá bằng phiên bản mới.
+- Ngựa không đủ sức khỏe: loại khỏi đơn (`booking_horse.status = EXCLUDED`), hủy các `horse_leg` còn lại của con đó, trừ `departure.booked_stalls`, và điều chỉnh báo giá bằng phiên bản mới (SUPERSEDED bản cũ và ACCEPTED bản mới trong cùng transaction).
 
 **Mốc không hoàn tiền:** khi `handover` PICKUP DONE thì đơn không còn được hoàn tiền nếu khách hủy.
 
@@ -416,7 +416,7 @@ Giao ngựa **đối xứng với đón ngựa**. **Ai:** tài xế và groom (g
 | Rà soát mọi chi phí phát sinh của đơn | `cost_item` theo `booking_id` |
 | Duyệt từng khoản | `cost_item.approved_by`, `approved_at` |
 | Khoản do khách hoặc người nhận chịu thì lập khoản thu thêm | `payment` EXTRA_CHARGE, gắn vào `cost_item.extra_payment_id` |
-| Đối chiếu số đã trả và số còn nợ | `v_booking_paid` |
+| Đối chiếu số đã trả và số còn nợ | `SettlementPolicy`, từ tổng `payment` và `cost_item` (truy vấn tổng hợp ở repository) |
 | Tách các khoản thu hộ (bảo hiểm, lệ phí nhà nước) khỏi doanh thu | `quotation_line.is_pass_through` |
 
 **Ai chịu chi phí** do `incident.cause` quyết định:
@@ -438,7 +438,7 @@ Phải hỏi khách trước khi chi (`customer_consulted = true`). Ngoại lệ
 
 | Việc | Bảng |
 |---|---|
-| Đã trả đủ: `v_booking_paid.outstanding_amount = 0` | `booking.status = COMPLETED` |
+| Đã trả đủ: số còn nợ theo `SettlementPolicy` bằng 0 | `booking.status = COMPLETED` |
 | Khách đánh giá | `booking_rating` |
 | Thông báo cho các bên | `notification`, `notification_recipient` |
 
@@ -464,7 +464,7 @@ Hạn khiếu nại là 7 ngày kể từ `handover` DELIVERY DONE.
 
 1. Quản lý hủy chuyến: `departure.status = CANCELLED`.
 2. Các đơn đã gán vào chuyến chuyển sang `SCHEDULE_CHANGE_REQUIRED`.
-3. Khách chọn chuyến khác (`booking.departure_id` mới, có thể cần báo giá mới) hoặc hủy đơn mà không mất phí.
+3. Khách chọn chuyến khác (`booking.departure_id` mới, có thể cần báo giá mới) hoặc hủy đơn mà không mất phí. Đổi chuyến thì trừ `booked_stalls` của chuyến cũ và cộng vào chuyến mới, giữ `FOR UPDATE` trên cả hai dòng.
 
 ### 5.3 Ngựa không đạt cách ly
 
@@ -590,7 +590,7 @@ Mức tận dụng:
 | Chống bot (Cloudflare Turnstile) | `security/TurnstileVerifier` | Giữ | |
 | Chặn dò số điện thoại khi tra cứu đơn | `security/PublicTrackingGuard` | Giữ | |
 | Đăng nhập, quên mật khẩu, xác thực email | `AuthServiceImpl`, `PasswordResetServiceImpl`, `EmailVerificationServiceImpl`, `scheduler/ExpiredOtpCleanup` | Sửa | Dùng bảng `otp` (khóa `email + purpose`). Khi đăng ký thì tạo thêm `party` |
-| Gửi mail | `MailDeliveryServiceImpl`, `BillMailServiceImpl` | Giữ / Sửa | Số liệu trong hóa đơn lấy từ `v_quotation_total` và `v_booking_paid` |
+| Gửi mail | `MailDeliveryServiceImpl`, `BillMailServiceImpl` | Giữ / Sửa | Số liệu trong hóa đơn lấy từ các cột tiền của `quotation` và `SettlementPolicy` |
 | Lưu file (Cloudinary) | `CloudinaryStorageServiceImpl`, `config/CloudinaryConfig`, `FileUploadController` | Giữ | Sau khi tải lên thì ghi `document` |
 | Đồng hồ hệ thống (Clock) | `config/ClockConfiguration` | Giữ | Cần cho test scheduler và các hạn chót |
 | Cache, Jackson, OpenAPI | `config/CacheConfig`, `JacksonConfig`, `OpenApiConfig` | Giữ | Dùng OpenAPI làm hợp đồng và sinh code client cho frontend |
@@ -623,10 +623,10 @@ Mức tận dụng:
 | `BookingCodes` | Giữ | `booking.code`, `vehicle_trip.code` |
 | `BookingSchedulePolicy` (ngày theo giờ Việt Nam) | Sửa | Hạn chót tính theo `departure.booking_cutoff_at` |
 | `HorseInsurancePolicy` (kiểm khai báo, bản nháp, ngày hiệu lực, yêu cầu bổ sung) | Sửa | Chuyển từ JSON sang cột của `horse_insurance`. Giữ quy tắc chỉ yêu cầu bổ sung với PERSONAL |
-| `DocumentRequirementPolicy`, `ClearanceDocumentPolicy` | Viết lại | Thay bằng `country_rule` + `document_requirement` + `v_booking_document_status` |
+| `DocumentRequirementPolicy`, `ClearanceDocumentPolicy` | Viết lại | Thay bằng `country_rule` + `document_requirement` + `DocumentCompletenessPolicy` |
 | `TermsDocuments` (văn bản và phiên bản điều khoản) | Sửa | Cấp giá trị cho `terms_acceptance.terms_kind/terms_version` |
 | `IncidentCostPolicy` (mọi chi phí sự cố do công ty chịu) | **Viết lại** | Chia theo `incident.cause` (mục GĐ9) |
-| `QuoteLinePolicy`, `QuoteTotals` | **Bỏ** | Thay bằng `PricingService` ở backend và `v_quotation_total` |
+| `QuoteLinePolicy`, `QuoteTotals` | **Bỏ** | Thay bằng `PricingService`, `DepositPolicy` và các cột tiền của `quotation` |
 | `BookingDetailsJson`, `BookingHistory` | **Bỏ** | Dữ liệu chuyển ra các bảng riêng và `booking_status_history` |
 | `BookingStatusLabels` | Sửa | Còn 12 trạng thái |
 | `BookingTripRules`, `CustomerBookingRules` | Viết lại | Theo các quy tắc của GĐ1 và GĐ5 |
@@ -691,19 +691,19 @@ Các class migration một lần sẽ **bỏ** khi chuyển sang Flyway: `Bookin
 | `HorseService`, `HorseTypeService`, `LocationService`, `RouteService`, `CustomerProfileService`, `AdminAccountService`, `NotificationService`, `StaffNotificationService` | **Sửa** theo bảng mới, logic CRUD giữ được nhiều |
 | `BookingService` (rất lớn) | **Tách** thành `BookingService` (tạo và đổi trạng thái), `QuotationService`, `PricingService` (mới), `InsuranceService`, `BookingPartyService` |
 | `BookingQueryService`, `BookingVisibilityService` | **Sửa**. Giữ quy tắc ẩn chi phí nội bộ (phí cầu đường) với khách |
-| `SpecialistService`, `HorseDocumentService`, `DocumentRequirementService` | **Sửa** thành `DocumentReviewService`, dựa trên `document` và `v_booking_document_status` |
+| `SpecialistService`, `HorseDocumentService`, `DocumentRequirementService` | **Sửa** thành `DocumentReviewService`, dựa trên `document` và `DocumentCompletenessPolicy` |
 | `FleetService` (giữ xe theo khoảng ngày cố định cho từng đơn) | **Viết lại** thành `DispatchService`: tạo `vehicle_trip`, `crew_assignment`, kiểm trùng giờ |
 | `TripProgressService` (switch khoảng 21 action) | **Viết lại** thành `TripStopService`, `HandoverService`, `HealthLogService`, với endpoint theo tài nguyên |
 | `DeliveryService` | **Gộp** vào `HandoverService` (kind DELIVERY). Giữ quy tắc hết thời gian chờ thì gửi chuồng gần hoặc về hub |
 | `BookingScheduleService` | **Viết lại** thành `DepartureService` (sinh chuyến, đóng chuyến, hủy chuyến) |
 | `IncidentService` | **Sửa**: thêm phương án có phiên bản và chia chi phí theo nguyên nhân |
-| `SettlementService` | **Sửa** thành `SettlementService` dùng `cost_item`, `payment` EXTRA_CHARGE và `v_booking_paid`. Phần đánh giá chuyển sang `RatingService` |
+| `SettlementService` | **Sửa** thành `SettlementService` dùng `cost_item`, `payment` EXTRA_CHARGE và `SettlementPolicy`. Phần đánh giá chuyển sang `RatingService` |
 | `PaymentService`, `VnpayService` | **Sửa** theo `payment`/`payment_transaction` |
 | `CaptureService` | **Gộp** vào `DocumentService` (ảnh hiện trường là `document` có `captured_at` và tọa độ) |
 | `TripReportService` | **Sửa**. Dựng báo cáo từ `trip_stop`, `horse_health_log`, `incident`, `cost_item`, `booking_rating` |
 | `AdminAuditService`, `AdminSystemLogService`, `OperationalLogService` | **Gộp** thành `AuditService` trên `audit_log` |
 | `ServiceCatalogService`, `SystemConfigService` | **Sửa**. Thêm `PriceListService` cho bảng giá |
-| `HorseDeliveryLocationService` | **Viết lại**: vị trí hiện tại của ngựa đọc từ `v_horse_current_custody` |
+| `HorseDeliveryLocationService` | **Viết lại**: vị trí hiện tại của ngựa lấy từ `handover` DONE mới nhất (truy vấn ở repository) |
 
 ### 8.8 Frontend
 

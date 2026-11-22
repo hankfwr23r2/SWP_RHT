@@ -11,7 +11,7 @@
 2. [Danh sách 59 bảng](#danh-sách-59-bảng)
 3. [Thứ tự tạo bảng](#thứ-tự-tạo-bảng)
 4. Chi tiết từng nhóm: [1](#nhóm-1-danh-mục-địa-lý) · [2](#nhóm-2-tài-khoản-nhân-sự-các-bên) · [3](#nhóm-3-ngựa) · [4](#nhóm-4-mạng-lưới-và-lịch-chạy) · [5](#nhóm-5-xe) · [6](#nhóm-6-dịch-vụ-và-bảng-giá) · [7](#nhóm-7-quy-định-và-giấy-tờ-yêu-cầu) · [8](#nhóm-8-đơn-hàng) · [9](#nhóm-9-vận-hành) · [10](#nhóm-10-chuỗi-giao-nhận) · [11](#nhóm-11-bảo-hiểm) · [12](#nhóm-12-báo-giá-và-thanh-toán) · [13](#nhóm-13-sự-cố-và-chi-phí) · [14](#nhóm-14-chứng-từ) · [15](#nhóm-15-hỗ-trợ)
-5. [View thay cho cột dẫn xuất](#view-thay-cho-cột-dẫn-xuất)
+5. [Dữ liệu dẫn xuất](#dữ-liệu-dẫn-xuất)
 6. [Ràng buộc phải kiểm ở service](#ràng-buộc-phải-kiểm-ở-service)
 
 ---
@@ -65,7 +65,7 @@
 ### Nguyên tắc chung
 
 1. **Không lưu dữ liệu nghiệp vụ dạng JSON.** Chỉ có 2 ngoại lệ: `payment_transaction.raw_payload` (phản hồi thô của cổng thanh toán) và `audit_log.old_data/new_data` (bản chụp kiểm toán).
-2. **Không lưu cột dẫn xuất** như tổng tiền, số đã trả, số khoang còn trống. Các giá trị này tính bằng view (mục 5).
+2. **Không có view chứa logic nghiệp vụ.** Cột dẫn xuất chỉ được lưu khi là snapshot của chứng từ đã chốt hoặc là bộ đếm có khóa bảo vệ, và chỉ do một service ghi. Các giá trị khác tính trong code (mục 5).
 3. **Snapshot chỉ dùng có chủ đích**, cho các giá trị phải giữ nguyên theo thời điểm: đơn giá, tỷ lệ cọc, thông tin các bên trong đơn, địa chỉ đón và giao.
 4. Thời gian hiệu lực dùng cặp `valid_from` (bắt buộc) và `valid_to` (NULL = vô thời hạn), tính khoảng đóng `[valid_from, valid_to]`.
 5. Mọi thay đổi schema đi qua Flyway. JPA chạy với `ddl-auto=validate`.
@@ -97,6 +97,7 @@ CREATE EXTENSION IF NOT EXISTS btree_gist;   -- cho EXCLUDE chống trùng thờ
 | 13 | Thêm `DIRECT` vào `vehicle_trip.kind`, `horse_leg.stage`, `service.layer` và `quotation_line.line_type` | Đơn có hub đón trùng hub giao (LOCAL hoặc liên tỉnh gần) chạy thẳng từ địa chỉ tới địa chỉ, không qua trục chính |
 | 14 | `hub_service_area`: thêm `UNIQUE (province_code)` | Mỗi tỉnh thuộc đúng một hub, để tra được hub đón và hub giao |
 | 15 | Có **trục nội địa** (ví dụ HCM ⇄ Đà Nẵng) với **hub vệ tinh** | Hub vệ tinh là location loại HUB, có vùng phục vụ nhưng không có xe hay nhân viên trực thuộc. `vehicle.home_hub_id` và `staff.home_hub_id` vẫn là trụ sở |
+| 16 | Bỏ mọi view. Thêm cột dẫn xuất `quotation.total_amount`, `pass_through_amount`, `deposit_amount` và `departure.booked_stalls` | Logic nghiệp vụ nằm hoàn toàn trong code. Chỉ lưu cột khi giá trị đã chốt (báo giá) hoặc có khóa bảo vệ (khoang). Đã trả và còn nợ tính trong code vì đổi liên tục |
 
 ---
 
@@ -352,7 +353,7 @@ Ràng buộc bảng: `UNIQUE (email, purpose)`.
 | `weight_kg` | `numeric(6,1)` | có | CK `> 0` | |
 | `declared_value` | `numeric(15,2)` | có | CK `>= 0` | Giá trị khai báo, dùng cho bảo hiểm |
 | `declared_currency` | `char(3)` | có | | |
-| `status` | `varchar(30)` | | CK `ACTIVE, RETIRED, DECEASED` | Trạng thái của hồ sơ. Ngựa đang ở đâu lấy từ `v_horse_current_custody` |
+| `status` | `varchar(30)` | | CK `ACTIVE, RETIRED, DECEASED` | Trạng thái của hồ sơ. Ngựa đang ở đâu tính từ `handover` mới nhất (mục 5) |
 | `created_at` | `timestamptz` | | default `now()` | |
 | `updated_at` | `timestamptz` | | | |
 
@@ -426,11 +427,13 @@ Index: `route_id`.
 | `planned_depart_at` | `timestamptz` | | | |
 | `booking_cutoff_at` | `timestamptz` | | | |
 | `capacity_stalls` | `int` | | CK `> 0` | Snapshot từ lịch, sửa được cho từng chuyến |
+| `booked_stalls` | `int` | | default `0` | Dẫn xuất: số khoang đã đặt. Chỉ `DepartureService` ghi, khi đang giữ `FOR UPDATE` |
 | `status` | `varchar(30)` | | CK `OPEN, CLOSED, IN_PROGRESS, COMPLETED, CANCELLED` | |
 
 Ràng buộc bảng:
 - `UNIQUE (schedule_id, departure_date)`: mỗi lịch sinh tối đa một chuyến mỗi ngày. Chuyến đột xuất có `schedule_id` NULL nên không bị giới hạn.
 - `CHECK (booking_cutoff_at < planned_depart_at)`.
+- `CHECK (booked_stalls BETWEEN 0 AND capacity_stalls)`: DB chặn bán quá chỗ.
 
 Index: `route_id`, `(status, planned_depart_at)`.
 
@@ -978,6 +981,9 @@ Index: `insurer_party_id`, `waiver_acceptance_id`.
 | `confirmed_pickup_date` | `date` | | | |
 | `confirmed_departure_date` | `date` | | | |
 | `estimated_delivery_date` | `date` | | CK `>= confirmed_departure_date` | |
+| `total_amount` | `numeric(15,2)` | | CK `>= 0` | Dẫn xuất: Σ dòng báo giá. Bất biến sau khi SENT |
+| `pass_through_amount` | `numeric(15,2)` | | CK `0..total_amount` | Dẫn xuất: phần thu hộ |
+| `deposit_amount` | `numeric(15,2)` | | CK `pass_through_amount..total_amount` | Dẫn xuất: cọc, gồm toàn bộ phần thu hộ (`DepositPolicy`) |
 | `status` | `varchar(30)` | | CK `DRAFT, SENT, ACCEPTED, REJECTED, EXPIRED, SUPERSEDED` | |
 | `sent_by` | `bigint` | có | FK → staff(user_id) | NULL khi còn DRAFT |
 | `sent_at` | `timestamptz` | có | | |
@@ -1016,7 +1022,7 @@ Ràng buộc bảng:
 
 Index: `service_id`, `price_item_id`, `booking_horse_id`, `horse_leg_id`.
 
-Tổng tiền **không lưu**, tính bằng `v_quotation_total`.
+Tổng tiền lưu ở `quotation.total_amount`, do `QuotationService` tính từ các dòng (mục 5).
 
 ### 12.3 `payment`: khoản phải thu hoặc phải hoàn
 
@@ -1271,100 +1277,54 @@ Index: `created_at`.
 
 ---
 
-## View thay cho cột dẫn xuất
+## Dữ liệu dẫn xuất
 
-### `v_quotation_total`: tổng tiền của báo giá
+DB **không có view chứa logic nghiệp vụ**. Mọi phép tính nằm trong code (`policy/` và service).
 
-```sql
-CREATE VIEW v_quotation_total AS
-SELECT q.id                                             AS quotation_id,
-       q.booking_id,
-       q.currency,
-       COALESCE(SUM(l.amount), 0)                       AS total_amount,
-       COALESCE(SUM(l.amount) FILTER (WHERE l.is_pass_through), 0) AS pass_through_amount,
-       ROUND(COALESCE(SUM(l.amount), 0) * q.deposit_rate, 2)        AS deposit_amount
-FROM quotation q
-LEFT JOIN quotation_line l ON l.quotation_id = q.id
-GROUP BY q.id;
+Có hai cách xử lý giá trị dẫn xuất:
+- **Lưu cột** khi giá trị là snapshot của chứng từ đã chốt, hoặc là bộ đếm có khóa bảo vệ. Mỗi cột chỉ do **một service** ghi, trong cùng transaction với thao tác gốc.
+- **Tính khi đọc** bằng truy vấn tổng hợp ở repository, rồi đưa qua policy. Áp dụng cho giá trị thay đổi liên tục.
+
+### Cột dẫn xuất được lưu
+
+| Cột | Ý nghĩa | Ai ghi, khi nào | Ràng buộc ở DB |
+|---|---|---|---|
+| `quotation.total_amount` | Tổng các dòng báo giá | `QuotationService`, lúc tạo hoặc sửa bản DRAFT. Bất biến sau khi SENT | `CHECK (total_amount >= 0)` |
+| `quotation.pass_through_amount` | Phần thu hộ (bảo hiểm, lệ phí nhà nước) | Như trên | `CHECK (pass_through_amount BETWEEN 0 AND total_amount)` |
+| `quotation.deposit_amount` | Tiền cọc, gồm **toàn bộ** phần thu hộ | Như trên, tính bằng `DepositPolicy` | `CHECK (deposit_amount BETWEEN pass_through_amount AND total_amount)` |
+| `departure.booked_stalls` | Số khoang đã được đặt | `DepartureService`, cộng khi đặt chỗ, trừ khi nhả chỗ (hủy, từ chối, báo giá hết hạn, loại ngựa). Luôn giữ `SELECT … FOR UPDATE` trên dòng `departure` | `CHECK (booked_stalls BETWEEN 0 AND capacity_stalls)`: DB chặn bán quá chỗ |
+
+Công thức:
+
+```
+total_amount        = Σ quotation_line.amount
+pass_through_amount = Σ quotation_line.amount với is_pass_through = true
+deposit_amount      = round(deposit_rate × (total_amount − pass_through_amount), 2) + pass_through_amount
 ```
 
-### `v_booking_paid`: đơn đã trả bao nhiêu, còn phải trả bao nhiêu
+Phí bảo hiểm và lệ phí thu hộ được **thu đủ ngay khi đặt cọc**. Tỷ lệ cọc chỉ áp lên cước dịch vụ của công ty. Khoản `payment` DEPOSIT lấy `amount = quotation.deposit_amount`.
 
-```sql
-CREATE VIEW v_booking_paid AS
-WITH paid AS (
-    SELECT booking_id,
-           SUM(CASE WHEN kind = 'REFUND' THEN -amount ELSE amount END) AS paid_amount
-    FROM payment
-    WHERE status = 'PAID'
-    GROUP BY booking_id
-), extra AS (
-    SELECT booking_id, SUM(amount) AS extra_amount
-    FROM cost_item
-    WHERE payer <> 'COMPANY' AND approved_at IS NOT NULL
-    GROUP BY booking_id
-)
-SELECT b.id                                              AS booking_id,
-       t.total_amount,
-       COALESCE(e.extra_amount, 0)                       AS extra_amount,
-       COALESCE(p.paid_amount, 0)                        AS paid_amount,
-       COALESCE(t.total_amount, 0) + COALESCE(e.extra_amount, 0)
-         - COALESCE(p.paid_amount, 0)                    AS outstanding_amount
-FROM booking b
-LEFT JOIN quotation q        ON q.booking_id = b.id AND q.status = 'ACCEPTED'
-LEFT JOIN v_quotation_total t ON t.quotation_id = q.id
-LEFT JOIN paid p             ON p.booking_id = b.id
-LEFT JOIN extra e            ON e.booking_id = b.id;
-```
+### Giá trị tính khi đọc
 
-### `v_departure_capacity`: chuyến còn bao nhiêu khoang
+| Giá trị | Nguồn | Nơi tính |
+|---|---|---|
+| Đã trả, đã hoàn của đơn | `SUM(payment.amount)` với `status = PAID`, tách theo `kind` | Repository tổng hợp |
+| Chi phí phát sinh khách phải trả | `SUM(cost_item.amount)` với `payer IN ('CUSTOMER','CONSIGNEE')` và đã duyệt | Repository tổng hợp |
+| Số còn nợ | `total_amount` của báo giá ACCEPTED + chi phí phát sinh khách phải trả − đã trả + đã hoàn | `SettlementPolicy` |
+| Ngựa đang trong tay ai | `handover` DONE mới nhất có `handover_horse` thuộc chặng của con ngựa đó. `to_party_id` NULL nghĩa là công ty đang giữ | Repository, `HandoverService` |
+| Đơn đã đủ giấy bắt buộc chưa | Xem cách tính bên dưới | `DocumentCompletenessPolicy` |
 
-```sql
-CREATE VIEW v_departure_capacity AS
-SELECT d.id                                   AS departure_id,
-       d.capacity_stalls,
-       COUNT(bh.id)                           AS booked_stalls,
-       d.capacity_stalls - COUNT(bh.id)       AS available_stalls
-FROM departure d
-LEFT JOIN booking b        ON b.departure_id = d.id
-                          AND b.status NOT IN ('CANCELLED', 'REJECTED', 'QUOTE_EXPIRED')
-LEFT JOIN booking_horse bh ON bh.booking_id = b.id
-                          AND bh.status NOT IN ('CANCELLED', 'EXCLUDED')
-GROUP BY d.id;
-```
+Mọi số tiền cộng với nhau phải cùng `currency` với báo giá (quy tắc #22).
 
-Khi khách đặt chỗ, service phải khóa dòng `departure` (`SELECT ... FOR UPDATE`) trước khi đọc view này. Nếu không, hai đơn đặt cùng lúc có thể cùng lấy khoang cuối.
+### Cách xác định đơn đã đủ giấy
 
-### `v_horse_current_custody`: ngựa đang ở trong tay ai
-
-```sql
-CREATE VIEW v_horse_current_custody AS
-SELECT DISTINCT ON (hl.booking_horse_id)
-       hl.booking_horse_id,
-       h.id            AS handover_id,
-       h.kind,
-       h.to_party_id   AS holder_party_id,     -- NULL = công ty đang giữ
-       h.trip_stop_id,
-       h.horse_stay_id,
-       h.handed_at
-FROM handover_horse hh
-JOIN handover  h  ON h.id  = hh.handover_id AND h.status = 'DONE'
-JOIN horse_leg hl ON hl.id = hh.horse_leg_id
-ORDER BY hl.booking_horse_id, h.handed_at DESC;
-```
-
-### `v_booking_document_status`: đơn đã đủ giấy bắt buộc chưa
-
-Cách tính:
 1. Xác định nước đối tác của đơn. Với EXPORT là `country_code` của `booking_address` DELIVERY, với IMPORT là của PICKUP, với INTERPROVINCE là `VN`.
 2. Tìm `country_rule` cùng nước, có `direction = booking_type` và có thời hạn hiệu lực chứa `requested_pickup_date`.
 3. Lấy các `document_requirement` có `is_mandatory` của quy định đó.
 4. Với mỗi yêu cầu:
    - nếu `document_type.subject` là `HORSE` hoặc `BOOKING_HORSE` thì **mỗi** `booking_horse` ACTIVE phải có một `document` APPROVED, còn hạn, có `requirement_id` này;
    - nếu là `BOOKING` thì chỉ cần một `document` cho cả đơn.
-5. Kết quả mỗi dòng gồm `booking_id`, `requirement_id`, `booking_horse_id` (NULL với giấy của đơn) và `is_satisfied`.
-
-Nên viết view này trong một migration riêng và kiểm thử với dữ liệu mẫu, vì đây là view phức tạp nhất.
+5. Kết quả gồm danh sách yêu cầu, con ngựa (nếu có) và trạng thái đạt hay chưa. Repository nạp dữ liệu, còn `DocumentCompletenessPolicy` quyết định đạt hay không. Policy này cần unit test với nhiều trường hợp.
 
 ---
 
@@ -1376,7 +1336,7 @@ Các quy tắc dưới đây cần so dữ liệu ở nhiều bảng nên CHECK 
 |---|---|---|
 | 1 | `location` được tham chiếu phải đúng `type`: `hub_service_area`, `staff.home_hub_id`, `vehicle.home_hub_id`, `route.origin_hub_id` là HUB. `document_requirement.gate_location_id` là BORDER_GATE | location |
 | 2 | `departure.route_id` phải bằng `departure_schedule.route_id` khi có `schedule_id` | departure |
-| 3 | Chỉ nhận đặt chỗ khi `departure.status = OPEN`, `now() < booking_cutoff_at` và còn đủ khoang | booking, v_departure_capacity |
+| 3 | Chỉ nhận đặt chỗ khi `departure.status = OPEN`, `now() < booking_cutoff_at` và còn đủ khoang (`booked_stalls + số ngựa ≤ capacity_stalls`) | booking, departure |
 | 4 | `booking_cutoff_at` phải đủ xa: lấy `permit_lead_days`, `cert_lead_days` và `quarantine_days` từ `country_rule` | departure, country_rule |
 | 5 | Tổng khoang của xe ≤ `vehicle_class.max_stalls` | vehicle |
 | 6 | Các `trip_stop` của một lượt LINEHAUL phải chép từ `route_stop` của đúng tuyến của `departure` | trip_stop |
@@ -1394,4 +1354,8 @@ Các quy tắc dưới đây cần so dữ liệu ở nhiều bảng nên CHECK 
 | 18 | Mỗi lần đổi `booking.status` phải ghi một dòng `booking_status_history`, trong cùng transaction | booking |
 | 19 | Chọn cách chạy theo hub, không theo `booking_type`: hub đón trùng hub giao thì chạy thẳng (`DIRECT`, `departure_id` NULL); khác hub thì đi trục (bắt buộc có `departure_id`, `route` nối hai hub hoặc nối hub với cửa khẩu) | booking, hub_service_area, route |
 | 20 | `vehicle_trip.start_location_id` phải bằng `end_location_id` của lượt chạy liền trước của cùng xe. Xe tới hub vệ tinh thì phải có lượt chạy về trụ sở, ví dụ chuyến trục chiều ngược | vehicle_trip |
-| 21 | Đợt này ngựa chỉ lên xe trục ở điểm đầu tuyến và xuống ở điểm cuối tuyến. Vì vậy `v_departure_capacity` đếm theo cả chuyến là đúng | horse_leg, trip_stop, departure |
+| 21 | Đợt này ngựa chỉ lên xe trục ở điểm đầu tuyến và xuống ở điểm cuối tuyến. Vì vậy `departure.booked_stalls` đếm theo cả chuyến là đúng | horse_leg, trip_stop, departure |
+| 22 | Mọi khoản `payment` và `cost_item` của một đơn dùng cùng `currency` với báo giá. Chi phí phát sinh ở nước ngoài quy đổi lúc ghi; hóa đơn gốc lưu ở `document` | payment, cost_item, quotation |
+| 23 | `quotation.total_amount`, `pass_through_amount`, `deposit_amount` chỉ được ghi khi báo giá còn DRAFT, và phải khớp tổng các dòng. Tổng dòng ADJUSTMENT không được làm tổng báo giá âm | quotation, quotation_line |
+| 24 | Thay báo giá đã ACCEPTED (ví dụ khi loại ngựa): chuyển bản cũ sang SUPERSEDED và bản mới sang ACCEPTED trong cùng một transaction | quotation |
+| 25 | Mọi thao tác làm đổi số khoang đã đặt (đặt chỗ, đổi chuyến, hủy, từ chối, báo giá hết hạn, loại ngựa) phải cập nhật `departure.booked_stalls` trong cùng transaction, khi đang giữ `FOR UPDATE` | departure, booking, booking_horse |
