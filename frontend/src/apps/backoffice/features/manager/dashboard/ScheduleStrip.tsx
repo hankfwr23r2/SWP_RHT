@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DAY } from '@shared/config/business-rules'
 import type { Booking } from '@shared/types/booking'
-import { placeShort } from '../../../shared/place'
+import { placeShort } from '@backoffice/shared/place'
 import s from './Board.module.css'
 
 const MAX_EVENTS = 3

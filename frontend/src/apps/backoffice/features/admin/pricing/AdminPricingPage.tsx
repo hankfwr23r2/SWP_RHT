@@ -4,7 +4,7 @@ import { usePageData } from '@shared/routing/pageData'
 import { systemConfigApi, type SystemConfigItem } from '@shared/api/systemConfig'
 import { applyRuntimeBusinessConfig } from '@shared/config/runtimeBusinessRules'
 import { useToast } from '@shared/ui/toast'
-import type { adminPricingLoader } from '../../../shared/loaders'
+import type { adminPricingLoader } from '@backoffice/shared/loaders'
 import s from './AdminPricing.module.css'
 
 interface ParameterDef {

@@ -11,10 +11,10 @@ import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
 import { formatVND } from '@shared/lib/format'
 import { SERVICE_BILLING_UNIT_LABEL, type ServiceBillingUnit } from '@shared/api/serviceCatalog'
-import { ListPage, type Column, type TabDef } from '../../../shared/ListPage'
+import { ListPage, type Column, type TabDef } from '@backoffice/shared/ListPage'
 import s from './AdminServices.module.css'
 import { usePageData } from '@shared/routing/pageData'
-import type { adminServicesLoader } from '../../../shared/loaders'
+import type { adminServicesLoader } from '@backoffice/shared/loaders'
 
 type Tab = 'all' | 'ACTIVE' | 'INACTIVE'
 const INSURANCE_CATEGORY_ID = 4

@@ -4,7 +4,7 @@ import { systemConfigApi, type SystemConfigGroup, type SystemConfigItem } from '
 import { applyRuntimeBusinessConfig } from '@shared/config/runtimeBusinessRules'
 import { useToast } from '@shared/ui/toast'
 import { usePageData } from '@shared/routing/pageData'
-import type { systemConfigLoader } from '../../../shared/loaders'
+import type { systemConfigLoader } from '@backoffice/shared/loaders'
 import s from './AdminRules.module.css'
 
 const GROUPS: Array<{ id: SystemConfigGroup; label: string; icon: string }> = [

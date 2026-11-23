@@ -7,7 +7,7 @@ import { tokenStorage } from '@shared/api/client'
 import type { StaffRole } from '@shared/types/role'
 import { AuthShell, authStyles as s } from '@shared/ui/AuthShell'
 import { TurnstileWidget } from '@shared/ui/TurnstileWidget'
-import { HOME_OF } from '../../layouts/staffMenus'
+import { HOME_OF } from '@backoffice/layouts/staffMenus'
 
 function LoginForm({ managerOnly }: { managerOnly: boolean }) {
   const { t } = useTranslation()

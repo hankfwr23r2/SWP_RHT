@@ -1,4 +1,4 @@
-import { ApprovedIncidentRoute } from '../../shared/IncidentField'
+import { ApprovedIncidentRoute } from '@backoffice/shared/IncidentField'
 // App Hộ tống (Escort): nhận Lệnh điều xe, chuẩn bị tủ thuốc (Flow 3), rồi quét chip và ghi nhật ký an sinh (Flow 4, PRD mục 4.4, 5). Mỗi xe một chuyến riêng.
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -9,11 +9,11 @@ import { bookingsApi, invalidateBookingsListCache } from '@shared/services/booki
 import { TripTimeline } from '@shared/ui/TripTimeline'
 import { useNow } from '@shared/ui/useNow'
 import { useToast } from '@shared/ui/toast'
-import { crewStep } from '../../shared/crewStep'
-import { Checklist, Empty, Panel, Segmented, TripHeader, TripPicker } from '../../shared/field'
-import { ManifestView } from '../../shared/ManifestView'
-import { isFieldBookingUpdate, useFieldTrips } from '../../shared/useFieldTrips'
-import s from '../../shared/field.module.css'
+import { crewStep } from '@backoffice/shared/crewStep'
+import { Checklist, Empty, Panel, Segmented, TripHeader, TripPicker } from '@backoffice/shared/field'
+import { ManifestView } from '@backoffice/shared/ManifestView'
+import { isFieldBookingUpdate, useFieldTrips } from '@backoffice/shared/useFieldTrips'
+import s from '@backoffice/shared/field.module.css'
 import { EscortJob } from './EscortJob'
 
 type Tab = 'job' | 'journey' | 'manifest'

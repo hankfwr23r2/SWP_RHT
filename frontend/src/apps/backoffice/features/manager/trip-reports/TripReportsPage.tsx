@@ -8,10 +8,10 @@ import { ImageThumb } from '@shared/ui/ImageThumb'
 import { type TripReport } from '@shared/services/reports'
 import { Modal } from '@shared/ui/Modal'
 import { usePagination } from '@shared/ui/usePagination'
-import { SearchBox, partStyles as m } from '../../../shared/parts'
+import { SearchBox, partStyles as m } from '@backoffice/shared/parts'
 import s from './TripReports.module.css'
 import { usePageData } from '@shared/routing/pageData'
-import type { tripReportsLoader } from '../../../shared/loaders'
+import type { tripReportsLoader } from '@backoffice/shared/loaders'
 
 const ON_TIME_MS = 15 * 60_000 // lệch trong 15 phút vẫn tính đúng giờ, cùng ngưỡng với backend
 const dash = '—'

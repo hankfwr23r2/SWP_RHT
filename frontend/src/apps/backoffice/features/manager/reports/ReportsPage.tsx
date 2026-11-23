@@ -8,7 +8,7 @@ import { useToast } from '@shared/ui/toast'
 import { MoneyChart, TripsChart } from './ReportCharts'
 import s from './Reports.module.css'
 import { usePageData } from '@shared/routing/pageData'
-import type { bookingListLoader } from '../../../shared/loaders'
+import type { bookingListLoader } from '@backoffice/shared/loaders'
 
 const PERIODS = [[7, '7 ngày'], [30, '30 ngày'], [90, '90 ngày']] as const
 const money = (v: number) => (Math.abs(v) >= 1e9 ? `${(v / 1e9).toFixed(2)} tỷ ₫` : Math.abs(v) >= 1e6 ? `${(v / 1e6).toFixed(1)} triệu ₫` : formatVND(v))

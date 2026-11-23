@@ -11,7 +11,7 @@ import bd from './Board.module.css'
 import s from './Dashboard.module.css'
 import { usePageData } from '@shared/routing/pageData'
 import { invalidateBookingsListCache } from '@shared/services/bookings'
-import type { bookingListLoader } from '../../../shared/loaders'
+import type { bookingListLoader } from '@backoffice/shared/loaders'
 
 export default function DashboardPage() {
   const { t } = useTranslation()

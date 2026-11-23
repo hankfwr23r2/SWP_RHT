@@ -1,6 +1,6 @@
 // Specialist: làm giấy tờ kiểm dịch và hải quan một đơn (PRD mục 3). Cập nhật từng hạng mục kèm ảnh; tuyến quốc tế ghi nhận thông quan từng ngựa.
 import { useEffect, useState } from 'react'
-import { InsuranceLink } from '../../../shared/InsurancePanel'
+import { InsuranceLink } from '@backoffice/shared/InsurancePanel'
 import { Link, Navigate, useBlocker, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
@@ -15,11 +15,11 @@ import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
 import { FileField } from '@shared/ui/FileField'
 import { ImageThumb } from '@shared/ui/ImageThumb'
 import { useToast } from '@shared/ui/toast'
-import { History, TripSummary } from '../../../shared/BookingParts'
-import s from '../../../shared/booking.module.css'
+import { History, TripSummary } from '@backoffice/shared/BookingParts'
+import s from '@backoffice/shared/booking.module.css'
 import { FormSelect } from '@shared/ui/FormSelect'
 import { usePageData } from '@shared/routing/pageData'
-import type { bookingLoader } from '../../../shared/loaders'
+import type { bookingLoader } from '@backoffice/shared/loaders'
 
 function ItemRow({ b, item, editable, change, upload }: { b: Booking; item: ClearanceItem; editable: boolean; change: (patch: Partial<ClearanceItem>) => void; upload: (fn: () => Promise<void>) => Promise<void> }) {
   const { t } = useTranslation()

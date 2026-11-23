@@ -10,10 +10,10 @@ import { ROLE_LABEL, type Role } from '@shared/types/role'
 import { FormSelect } from '@shared/ui/FormSelect'
 import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
-import { ListPage, type Column } from '../../../shared/ListPage'
+import { ListPage, type Column } from '@backoffice/shared/ListPage'
 import s from './Accounts.module.css'
 import { usePageData } from '@shared/routing/pageData'
-import type { accountsLoader } from '../../../shared/loaders'
+import type { accountsLoader } from '@backoffice/shared/loaders'
 
 const ROLES: Role[] = ['admin', 'manager', 'specialist', 'coordinator', 'driver', 'escort', 'customer']
 // Vai trò có thể chọn khi tạo tài khoản mới (khách tự đăng ký nên không tạo ở đây)

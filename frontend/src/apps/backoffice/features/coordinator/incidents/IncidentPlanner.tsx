@@ -16,8 +16,8 @@ import { useRoadAlternatives, useRoadRoute } from '@shared/services/useRoadRoute
 import type { Booking, Incident, PlanLine } from '@shared/types/booking'
 import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
-import { IncidentMap, NEW_ROUTE, ONWARD_LEGEND, ONWARD_ROUTE, RESCUE_ROUTE, oldRouteLines, type MapLine } from '../../../shared/IncidentMap'
-import s from '../../../shared/booking.module.css'
+import { IncidentMap, NEW_ROUTE, ONWARD_LEGEND, ONWARD_ROUTE, RESCUE_ROUTE, oldRouteLines, type MapLine } from '@backoffice/shared/IncidentMap'
+import s from '@backoffice/shared/booking.module.css'
 
 const MINUTES = [MIN_REST_MINUTES, 45, 60, 90, 120]
 const toLocal = (ms: number) => new Date(ms - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16)

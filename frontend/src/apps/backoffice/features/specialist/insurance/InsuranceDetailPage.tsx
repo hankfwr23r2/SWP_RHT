@@ -4,9 +4,9 @@ import { useAuth } from '@shared/auth/AuthContext'
 import { usePageData } from '@shared/routing/pageData'
 import { isAssignedTo } from '@shared/lib/staffAssignment'
 import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
-import { InsurancePanel } from '../../../shared/InsurancePanel'
-import { TripSummary } from '../../../shared/BookingParts'
-import type { bookingLoader } from '../../../shared/loaders'
+import { InsurancePanel } from '@backoffice/shared/InsurancePanel'
+import { TripSummary } from '@backoffice/shared/BookingParts'
+import type { bookingLoader } from '@backoffice/shared/loaders'
 
 export default function InsuranceDetailPage() {
   const { t } = useTranslation()
