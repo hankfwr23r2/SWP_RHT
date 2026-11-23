@@ -37,4 +37,23 @@ public interface HorseLegRepository extends JpaRepository<HorseLeg, Long> {
     @EntityGraph(attributePaths = {"vehicleTrip", "bookingHorse"})
     @Query("SELECT l FROM HorseLeg l WHERE l.id = :id")
     Optional<HorseLeg> findWithTrip(@Param("id") Long id);
+
+    // Ngựa lên xe (đón, ra hub) hoặc xuống xe (giao, vào hub) ở một điểm dừng
+    @EntityGraph(attributePaths = {"bookingHorse", "bookingHorse.horse", "bookingHorse.booking"})
+    List<HorseLeg> findByBoardTripStop_IdAndStatusIn(Long tripStopId, Collection<HorseLegStatus> statuses);
+
+    @EntityGraph(attributePaths = {"bookingHorse", "bookingHorse.horse", "bookingHorse.booking"})
+    List<HorseLeg> findByAlightTripStop_IdAndStatusIn(Long tripStopId, Collection<HorseLegStatus> statuses);
+
+    long countByVehicleTrip_IdAndStatus(Long vehicleTripId, HorseLegStatus status);
+
+    // Quy tắc #16: số con ACTIVE của đơn chưa có chặng giao hoặc chạy thẳng đã xong
+    @Query("""
+            SELECT count(h) FROM BookingHorse h
+            WHERE h.booking.id = :bookingId AND h.status = com.example.racehorse_transport.entity.enums.BookingHorseStatus.ACTIVE
+              AND NOT EXISTS (SELECT l FROM HorseLeg l WHERE l.bookingHorse = h
+                    AND l.legType IN (com.example.racehorse_transport.entity.enums.HorseLegType.DELIVERY, com.example.racehorse_transport.entity.enums.HorseLegType.DIRECT)
+                    AND l.status = com.example.racehorse_transport.entity.enums.HorseLegStatus.COMPLETED)
+            """)
+    long countActiveHorsesNotDelivered(@Param("bookingId") Long bookingId);
 }

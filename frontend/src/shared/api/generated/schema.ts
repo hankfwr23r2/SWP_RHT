@@ -676,6 +676,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/crew/vehicle-trips/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["trip_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/customers/me": {
         parameters: {
             query?: never;
@@ -926,6 +942,38 @@ export interface paths {
         get: operations["getDocumentType"];
         put: operations["updateDocumentType"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/handovers/{id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["completeHandover"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/handovers/{id}/horses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["scan"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1428,6 +1476,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/trip-stops/{id}/arrive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["arrive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/trip-stops/{id}/depart": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["depart"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/trip-stops/{id}/handovers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createHandover"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vehicle-classes": {
         parameters: {
             query?: never;
@@ -1492,6 +1588,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vehicle-trips/{id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["complete"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vehicle-trips/{id}/crew-assignments": {
         parameters: {
             query?: never;
@@ -1518,6 +1630,22 @@ export interface paths {
         get: operations["horsesOnTrip"];
         put?: never;
         post: operations["assignHorse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicle-trips/{id}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["start"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1685,6 +1813,11 @@ export interface components {
         };
         ApiResponseCountryRuleResponseDto: {
             data?: components["schemas"]["CountryRuleResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseCrewTripResponseDto: {
+            data?: components["schemas"]["CrewTripResponseDto"];
             message?: string;
             status?: string;
         };
@@ -2143,6 +2276,11 @@ export interface components {
             /** Format: int64 */
             staffId?: number;
         };
+        CrewTripResponseDto: {
+            handovers?: components["schemas"]["HandoverResponseDto"][];
+            horses?: components["schemas"]["TripHorseResponseDto"][];
+            trip?: components["schemas"]["VehicleTripResponseDto"];
+        };
         CustomerAddressCreateRequestDto: {
             addressLine: string;
             countryCode: string;
@@ -2397,6 +2535,41 @@ export interface components {
             /** Format: email */
             email: string;
             otp?: string;
+        };
+        HandoverCreateRequestDto: {
+            /** @enum {string} */
+            handoverType: "PICKUP" | "HUB_IN" | "HUB_OUT" | "STAY_IN" | "STAY_OUT" | "AGENT" | "DELIVERY" | "RETURN";
+            note?: string;
+        };
+        HandoverHorseDto: {
+            bookingCode?: string;
+            conditionNote?: string;
+            /** Format: int64 */
+            horseLegId?: number;
+            horseName?: string;
+            microchipMatched?: boolean;
+            scannedMicrochip?: string;
+        };
+        HandoverResponseDto: {
+            /** Format: date-time */
+            handedAt?: string;
+            handledByName?: string;
+            /** @enum {string} */
+            handoverType?: "PICKUP" | "HUB_IN" | "HUB_OUT" | "STAY_IN" | "STAY_OUT" | "AGENT" | "DELIVERY" | "RETURN";
+            horses?: components["schemas"]["HandoverHorseDto"][];
+            /** Format: int64 */
+            id?: number;
+            note?: string;
+            /** @enum {string} */
+            status?: "PENDING" | "DONE" | "TIMEOUT" | "FAILED";
+            /** Format: int64 */
+            tripStopId?: number;
+        };
+        HandoverScanRequestDto: {
+            conditionNote?: string;
+            /** Format: int64 */
+            horseLegId: number;
+            microchip: string;
         };
         HorseCreateRequestDto: {
             /** Format: int32 */
@@ -4339,6 +4512,28 @@ export interface operations {
             };
         };
     };
+    trip_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
     getCustomerProfile: {
         parameters: {
             query?: never;
@@ -4863,6 +5058,54 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseDocumentTypeResponseDto"];
+                };
+            };
+        };
+    };
+    completeHandover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
+    scan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HandoverScanRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
                 };
             };
         };
@@ -6002,6 +6245,76 @@ export interface operations {
             };
         };
     };
+    arrive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
+    depart: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
+    createHandover: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HandoverCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
     vehicleClasses: {
         parameters: {
             query?: never;
@@ -6117,6 +6430,28 @@ export interface operations {
             };
         };
     };
+    complete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
     assignCrew: {
         parameters: {
             query?: never;
@@ -6187,6 +6522,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListTripHorseResponseDto"];
+                };
+            };
+        };
+    };
+    start: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
                 };
             };
         };

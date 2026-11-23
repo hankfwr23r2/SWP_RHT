@@ -227,6 +227,20 @@
         },
         "type" : "object"
       },
+      "ApiResponseCrewTripResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/CrewTripResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseCustomerAddressResponseDto" : {
         "properties" : {
           "data" : {
@@ -1546,6 +1560,26 @@
         },
         "type" : "object"
       },
+      "CrewTripResponseDto" : {
+        "properties" : {
+          "handovers" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HandoverResponseDto"
+            },
+            "type" : "array"
+          },
+          "horses" : {
+            "items" : {
+              "$ref" : "#/components/schemas/TripHorseResponseDto"
+            },
+            "type" : "array"
+          },
+          "trip" : {
+            "$ref" : "#/components/schemas/VehicleTripResponseDto"
+          }
+        },
+        "type" : "object"
+      },
       "CustomerAddressCreateRequestDto" : {
         "properties" : {
           "addressLine" : {
@@ -2252,6 +2286,102 @@
           }
         },
         "required" : [ "email" ],
+        "type" : "object"
+      },
+      "HandoverCreateRequestDto" : {
+        "properties" : {
+          "handoverType" : {
+            "enum" : [ "PICKUP", "HUB_IN", "HUB_OUT", "STAY_IN", "STAY_OUT", "AGENT", "DELIVERY", "RETURN" ],
+            "type" : "string"
+          },
+          "note" : {
+            "maxLength" : 1000,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "handoverType" ],
+        "type" : "object"
+      },
+      "HandoverHorseDto" : {
+        "properties" : {
+          "bookingCode" : {
+            "type" : "string"
+          },
+          "conditionNote" : {
+            "type" : "string"
+          },
+          "horseLegId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "horseName" : {
+            "type" : "string"
+          },
+          "microchipMatched" : {
+            "type" : "boolean"
+          },
+          "scannedMicrochip" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "HandoverResponseDto" : {
+        "properties" : {
+          "handedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "handledByName" : {
+            "type" : "string"
+          },
+          "handoverType" : {
+            "enum" : [ "PICKUP", "HUB_IN", "HUB_OUT", "STAY_IN", "STAY_OUT", "AGENT", "DELIVERY", "RETURN" ],
+            "type" : "string"
+          },
+          "horses" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HandoverHorseDto"
+            },
+            "type" : "array"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "note" : {
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "PENDING", "DONE", "TIMEOUT", "FAILED" ],
+            "type" : "string"
+          },
+          "tripStopId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "HandoverScanRequestDto" : {
+        "properties" : {
+          "conditionNote" : {
+            "maxLength" : 1000,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "horseLegId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "microchip" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "horseLegId", "microchip" ],
         "type" : "object"
       },
       "HorseCreateRequestDto" : {
@@ -5999,6 +6129,33 @@
         "tags" : [ "dispatch-controller" ]
       }
     },
+    "/crew/vehicle-trips/{id}" : {
+      "get" : {
+        "operationId" : "trip_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCrewTripResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "trip-execution-controller" ]
+      }
+    },
     "/customers/me" : {
       "get" : {
         "operationId" : "getCustomerProfile",
@@ -6644,6 +6801,70 @@
           }
         },
         "tags" : [ "document-type-controller" ]
+      }
+    },
+    "/handovers/{id}/complete" : {
+      "post" : {
+        "operationId" : "completeHandover",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCrewTripResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "trip-execution-controller" ]
+      }
+    },
+    "/handovers/{id}/horses" : {
+      "post" : {
+        "operationId" : "scan",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HandoverScanRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCrewTripResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "trip-execution-controller" ]
       }
     },
     "/health" : {
@@ -8034,6 +8255,97 @@
         "tags" : [ "system-config-controller" ]
       }
     },
+    "/trip-stops/{id}/arrive" : {
+      "post" : {
+        "operationId" : "arrive",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCrewTripResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "trip-execution-controller" ]
+      }
+    },
+    "/trip-stops/{id}/depart" : {
+      "post" : {
+        "operationId" : "depart",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCrewTripResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "trip-execution-controller" ]
+      }
+    },
+    "/trip-stops/{id}/handovers" : {
+      "post" : {
+        "operationId" : "createHandover",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HandoverCreateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCrewTripResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "trip-execution-controller" ]
+      }
+    },
     "/vehicle-classes" : {
       "get" : {
         "operationId" : "vehicleClasses",
@@ -8177,6 +8489,33 @@
         "tags" : [ "dispatch-controller" ]
       }
     },
+    "/vehicle-trips/{id}/complete" : {
+      "post" : {
+        "operationId" : "complete",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCrewTripResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "trip-execution-controller" ]
+      }
+    },
     "/vehicle-trips/{id}/crew-assignments" : {
       "post" : {
         "operationId" : "assignCrew",
@@ -8274,6 +8613,33 @@
           }
         },
         "tags" : [ "dispatch-controller" ]
+      }
+    },
+    "/vehicle-trips/{id}/start" : {
+      "post" : {
+        "operationId" : "start",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCrewTripResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "trip-execution-controller" ]
       }
     },
     "/vehicles" : {
