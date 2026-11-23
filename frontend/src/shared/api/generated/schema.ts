@@ -4,6 +4,54 @@
  */
 
 export interface paths {
+    "/admin/system-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["search"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/system-logs/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["options"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/system-logs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_4"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/change-password": {
         parameters: {
             query?: never;
@@ -2498,6 +2546,13 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseMapStringListString: {
+            data?: {
+                [key: string]: string[];
+            };
+            message?: string;
+            status?: string;
+        };
         ApiResponseMapStringString: {
             data?: {
                 [key: string]: string;
@@ -2557,6 +2612,16 @@ export interface components {
         };
         ApiResponseSystemConfigResponseDto: {
             data?: components["schemas"]["SystemConfigResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseSystemLogPageResponseDto: {
+            data?: components["schemas"]["SystemLogPageResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseSystemLogResponseDto: {
+            data?: components["schemas"]["SystemLogResponseDto"];
             message?: string;
             status?: string;
         };
@@ -4150,6 +4215,36 @@ export interface components {
         SystemConfigUpdateRequestDto: {
             configValue: number;
         };
+        SystemLogPageResponseDto: {
+            content?: components["schemas"]["SystemLogResponseDto"][];
+            /** Format: int32 */
+            number?: number;
+            /** Format: int32 */
+            size?: number;
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+        };
+        SystemLogResponseDto: {
+            actionType?: string;
+            actorEmail?: string;
+            /** Format: int64 */
+            actorId?: number;
+            actorName?: string;
+            actorRole?: string;
+            /** Format: date-time */
+            createdAt?: string;
+            description?: string;
+            /** Format: int64 */
+            id?: number;
+            legacy?: boolean;
+            newData?: string;
+            oldData?: string;
+            targetKey?: string;
+            targetLabel?: string;
+            targetTable?: string;
+        };
         TripHorseResponseDto: {
             bookingCode?: string;
             horseName?: string;
@@ -4337,6 +4432,78 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    search: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+                target?: string;
+                action?: string;
+                role?: string;
+                actor?: string;
+                key?: string;
+                page?: number;
+                size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseSystemLogPageResponseDto"];
+                };
+            };
+        };
+    };
+    options: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseMapStringListString"];
+                };
+            };
+        };
+    };
+    get_4: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseSystemLogResponseDto"];
+                };
+            };
+        };
+    };
     changePassword: {
         parameters: {
             query?: never;

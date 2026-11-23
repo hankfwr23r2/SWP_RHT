@@ -1032,6 +1032,26 @@
         },
         "type" : "object"
       },
+      "ApiResponseMapStringListString" : {
+        "properties" : {
+          "data" : {
+            "additionalProperties" : {
+              "items" : {
+                "type" : "string"
+              },
+              "type" : "array"
+            },
+            "type" : "object"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseMapStringString" : {
         "properties" : {
           "data" : {
@@ -1193,6 +1213,34 @@
         "properties" : {
           "data" : {
             "$ref" : "#/components/schemas/SystemConfigResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseSystemLogPageResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/SystemLogPageResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseSystemLogResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/SystemLogResponseDto"
           },
           "message" : {
             "type" : "string"
@@ -5492,6 +5540,83 @@
         "required" : [ "configValue" ],
         "type" : "object"
       },
+      "SystemLogPageResponseDto" : {
+        "properties" : {
+          "content" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SystemLogResponseDto"
+            },
+            "type" : "array"
+          },
+          "number" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "size" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "totalElements" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "totalPages" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "SystemLogResponseDto" : {
+        "properties" : {
+          "actionType" : {
+            "type" : "string"
+          },
+          "actorEmail" : {
+            "type" : "string"
+          },
+          "actorId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "actorName" : {
+            "type" : "string"
+          },
+          "actorRole" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "legacy" : {
+            "type" : "boolean"
+          },
+          "newData" : {
+            "type" : "string"
+          },
+          "oldData" : {
+            "type" : "string"
+          },
+          "targetKey" : {
+            "type" : "string"
+          },
+          "targetLabel" : {
+            "type" : "string"
+          },
+          "targetTable" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "TripHorseResponseDto" : {
         "properties" : {
           "bookingCode" : {
@@ -5954,6 +6079,139 @@
   },
   "openapi" : "3.1.0",
   "paths" : {
+    "/admin/system-logs" : {
+      "get" : {
+        "operationId" : "search",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "from",
+          "required" : true,
+          "schema" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "to",
+          "required" : true,
+          "schema" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "target",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "action",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "role",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "actor",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "key",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "default" : 20,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSystemLogPageResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "system-log-controller" ]
+      }
+    },
+    "/admin/system-logs/options" : {
+      "get" : {
+        "operationId" : "options",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseMapStringListString"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "system-log-controller" ]
+      }
+    },
+    "/admin/system-logs/{id}" : {
+      "get" : {
+        "operationId" : "get_4",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSystemLogResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "system-log-controller" ]
+      }
+    },
     "/auth/change-password" : {
       "post" : {
         "operationId" : "changePassword",
