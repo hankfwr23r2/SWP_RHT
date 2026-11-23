@@ -24,6 +24,16 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(RegulationRuleException.class)
+    public ResponseEntity<ApiResponseDto<Map<String, String>>> handleRegulationRule(RegulationRuleException ex) {
+        return ResponseEntity.status(ex.isConflict() ? HttpStatus.CONFLICT : HttpStatus.BAD_REQUEST)
+                .body(ApiResponseDto.<Map<String, String>>builder()
+                        .status("error")
+                        .message(ex.getMessage())
+                        .data(Map.of(ex.getField(), ex.getMessage()))
+                        .build());
+    }
+
     @ExceptionHandler(VehicleRuleException.class)
     public ResponseEntity<ApiResponseDto<Map<String, String>>> handleVehicleRule(VehicleRuleException ex) {
         return ResponseEntity.status(ex.isConflict() ? HttpStatus.CONFLICT : HttpStatus.BAD_REQUEST)
