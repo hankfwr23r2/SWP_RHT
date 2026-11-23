@@ -1,5 +1,106 @@
 // Khung chung của app nội bộ: menu, thanh trên, hồ sơ nhân viên, phần dùng chung giữa các vai trò
 export const staff = {
+  incidents: {
+    "title": "Sự cố",
+    "description": "Sự cố đang xử lý: lập phương án, duyệt, theo dõi chi phí. Sự cố không đổi trạng thái đơn.",
+    "loadError": "Không tải được danh sách sự cố",
+    "emptyTitle": "Không có sự cố đang xử lý",
+    "emptyDescription": "Khi tổ xe báo sự cố, sự cố sẽ hiện ở đây.",
+    "caption": "Sự cố đang xử lý",
+    "colTitle": "Sự cố",
+    "colType": "Loại",
+    "colTrip": "Lượt xe",
+    "colHorse": "Ngựa",
+    "colStatus": "Trạng thái",
+    "view": "Xem",
+    "type": {
+      "HEALTH": "Sức khỏe",
+      "VEHICLE_BREAKDOWN": "Hỏng xe",
+      "ACCIDENT": "Tai nạn",
+      "DELAY": "Chậm trễ",
+      "DOCUMENT": "Giấy tờ",
+      "HANDOVER_TIMEOUT": "Quá giờ chờ",
+      "OTHER": "Khác"
+    },
+    "cause": {
+      "COMPANY_FAULT": "Lỗi công ty",
+      "HORSE_CONDITION": "Tình trạng ngựa",
+      "CUSTOMER_DOCS": "Giấy tờ của khách",
+      "AGENT_FAULT": "Lỗi đại lý",
+      "FORCE_MAJEURE": "Bất khả kháng",
+      "RECIPIENT_ABSENT": "Người nhận vắng"
+    },
+    "status": {
+      "REPORTED": "Mới báo",
+      "PLAN_PENDING": "Chờ duyệt phương án",
+      "PLAN_ACTIVE": "Đang xử lý",
+      "RESOLVED": "Đã xử lý",
+      "CLOSED": "Đã đóng"
+    },
+    "resolution": {
+      "CONTINUE": "Đi tiếp",
+      "VET_TREATMENT": "Thú y điều trị",
+      "STABLE_NEARBY": "Gửi chuồng gần",
+      "TRANSFER_VEHICLE": "Đổi xe",
+      "RETURN_TO_HUB": "Về hub",
+      "CANCEL": "Hủy chặng"
+    },
+    "planStatus": {
+      "PROPOSED": "Chờ duyệt",
+      "APPROVED": "Đã duyệt",
+      "REJECTED": "Bị từ chối",
+      "SUPERSEDED": "Đã thay",
+      "DONE": "Đã xong"
+    },
+    "plans": "Phương án",
+    "noPlans": "Chưa có phương án.",
+    "version": "Phiên bản {{n}}",
+    "propose": "Lập phương án",
+    "resolutionType": "Cách xử lý",
+    "instructions": "Chỉ đạo",
+    "estimatedCost": "Chi phí dự kiến (VND)",
+    "handler": "Bên xử lý",
+    "noHandler": "Không cần",
+    "approve": "Duyệt",
+    "reject": "Từ chối",
+    "rejectTitle": "Từ chối phương án phiên bản {{n}}",
+    "rejectReason": "Lý do từ chối",
+    "rejectMessage": "Điều phối sẽ lập phiên bản tiếp theo.",
+    "resolve": "Đã xử lý xong",
+    "close": "Đóng sự cố",
+    "fitConfirmed": "Đã xác nhận đủ sức đi tiếp",
+    "notFit": "Chưa xác nhận đủ sức đi tiếp",
+    "costs": "Chi phí",
+    "noCosts": "Chưa có chi phí.",
+    "payer": {
+      "COMPANY": "Công ty chịu",
+      "CUSTOMER": "Khách chịu",
+      "CONSIGNEE": "Người nhận chịu",
+      "AGENT": "Đại lý chịu"
+    },
+    "approveCost": "Duyệt chi phí",
+    "approved": "Đã duyệt",
+    "consulted": "Đã hỏi khách",
+    "notConsulted": "Chưa hỏi khách",
+    "category": {
+      "TOLL": "Phí đường",
+      "FUEL": "Nhiên liệu",
+      "STABLING": "Gửi chuồng",
+      "VET": "Thú y",
+      "RESCUE": "Cứu hộ",
+      "REPAIR": "Sửa xe",
+      "WAITING": "Phí chờ",
+      "OTHER": "Khác"
+    },
+    "done": {
+      "proposed": "Đã lập phương án",
+      "approved": "Đã duyệt phương án",
+      "rejected": "Đã từ chối phương án",
+      "resolved": "Đã xử lý xong sự cố",
+      "closed": "Đã đóng sự cố",
+      "costApproved": "Đã duyệt chi phí"
+    }
+  },
   staffMenus: {
     '/coordinator/dispatch': 'Điều độ',
     '/my-trips': 'Lượt xe của tôi',

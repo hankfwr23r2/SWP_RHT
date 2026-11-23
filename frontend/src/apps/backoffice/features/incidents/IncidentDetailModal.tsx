@@ -1,0 +1,172 @@
+// Chi tiết sự cố: phương án theo phiên bản, chi phí. Điều phối lập phương án, xử lý xong, đóng; quản lý duyệt, từ chối, duyệt chi phí
+import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { incidentsApi, type Incident, type ResolutionType } from '@shared/api/incidentOps'
+import { useLoad } from '@shared/hooks/useLoad'
+import { formatVND } from '@shared/lib/format'
+import { Button } from '@shared/ui/Button'
+import { ErrorState } from '@shared/ui/ErrorState'
+import { Field } from '@shared/ui/Field'
+import { Input } from '@shared/ui/Input'
+import { Modal } from '@shared/ui/Modal'
+import { Select } from '@shared/ui/Select'
+import { Skeleton } from '@shared/ui/Skeleton'
+import { StatusBadge } from '@shared/ui/StatusBadge'
+import { Textarea } from '@shared/ui/Textarea'
+import { useToast } from '@shared/ui/toast'
+import s from './Incidents.module.css'
+
+const RESOLUTIONS: ResolutionType[] = ['CONTINUE', 'VET_TREATMENT', 'STABLE_NEARBY', 'TRANSFER_VEHICLE', 'RETURN_TO_HUB', 'CANCEL']
+
+interface Props { incidentId: number; role: 'coordinator' | 'manager'; onClose: () => void; onChanged: () => void }
+
+export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Props) {
+  const { t } = useTranslation()
+  const toast = useToast()
+  const [busy, setBusy] = useState(false)
+  const [resolution, setResolution] = useState<ResolutionType>('CONTINUE')
+  const [instructions, setInstructions] = useState('')
+  const [estimatedCost, setEstimatedCost] = useState('')
+  const [handler, setHandler] = useState('')
+  const [rejecting, setRejecting] = useState<{ id: number; version: number }>()
+  const [reason, setReason] = useState('')
+  const { data, loaded, error, reload } = useLoad(async () => {
+    const [incident, costs] = await Promise.all([incidentsApi.incident(incidentId), incidentsApi.costs(incidentId)])
+    return { incident, costs }
+  }, [incidentId], { toastOnError: false })
+  const { data: parties } = useLoad(async () => (role === 'coordinator' ? incidentsApi.parties() : []), [role])
+
+  const run = async (action: () => Promise<unknown>, done: string) => {
+    setBusy(true)
+    try {
+      await action()
+      toast(done, 'success')
+      onChanged()
+      await reload()
+      return true
+    } catch (e) {
+      toast(e instanceof Error ? e.message : String(e), 'error')
+      return false
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (!loaded) return <Modal title={t('incidents.view')} onClose={onClose} wide><Skeleton variant="block" lines={4} /></Modal>
+  if (error || !data) return <Modal title={t('incidents.view')} onClose={onClose} wide><ErrorState message={error?.message} onRetry={reload} /></Modal>
+  const incident: Incident = data.incident
+  const plans = incident.plans ?? []
+  const latest = plans[plans.length - 1]
+  const open = incident.status !== 'RESOLVED' && incident.status !== 'CLOSED'
+
+  return (
+    <Modal wide title={incident.title} subtitle={`${t(`incidents.type.${incident.incidentType}`)} · ${t(`incidents.cause.${incident.causeType}`)}`} onClose={onClose}
+      footer={role === 'coordinator' && (
+        <>
+          {incident.status === 'PLAN_ACTIVE' && <Button variant="primary" loading={busy} onClick={() => run(() => incidentsApi.resolve(incidentId), t('incidents.done.resolved'))}>{t('incidents.resolve')}</Button>}
+          {incident.status === 'RESOLVED' && <Button loading={busy} onClick={() => run(() => incidentsApi.close(incidentId), t('incidents.done.closed'))}>{t('incidents.close')}</Button>}
+        </>
+      )}>
+      <div className={s.section}>
+        <div className={s.row}>
+          <StatusBadge tone={open ? 'warning' : 'success'} label={t(`incidents.status.${incident.status}`)} />
+          {incident.horseName && <StatusBadge tone={incident.fitConfirmedAt ? 'success' : 'neutral'}
+            label={incident.fitConfirmedAt ? t('incidents.fitConfirmed') : t('incidents.notFit')} />}
+        </div>
+        <p className={s.muted}>{[incident.vehicleTripCode, incident.horseName, incident.bookingCode].filter(Boolean).join(' · ')}</p>
+        <p>{incident.description}</p>
+      </div>
+
+      <section className={s.section} aria-labelledby="incident-plans">
+        <h3 id="incident-plans" className={s.title}>{t('incidents.plans')}</h3>
+        {plans.length ? (
+          <ol className={s.list}>
+            {plans.map(plan => (
+              <li key={plan.id} className={s.item}>
+                <div className={s.row}>
+                  <strong>{t('incidents.version', { n: plan.version })} · {t(`incidents.resolution.${plan.resolutionType}`)}</strong>
+                  <StatusBadge tone={plan.status === 'APPROVED' || plan.status === 'DONE' ? 'success' : plan.status === 'REJECTED' ? 'danger' : 'neutral'}
+                    label={t(`incidents.planStatus.${plan.status}`)} />
+                </div>
+                <p className={s.muted}>{plan.instructions}{plan.handlerPartyName ? ` · ${plan.handlerPartyName}` : ''}{plan.estimatedCost ? ` · ${formatVND(plan.estimatedCost)}` : ''}</p>
+                {plan.rejectionReason && <p className={s.muted}>{plan.rejectionReason}</p>}
+                {role === 'manager' && plan.status === 'PROPOSED' && plan.id === latest?.id && (
+                  <div className={s.row}>
+                    <Button variant="primary" loading={busy} onClick={() => run(() => incidentsApi.approve(plan.id ?? 0), t('incidents.done.approved'))}>{t('incidents.approve')}</Button>
+                    <Button variant="danger" onClick={() => { setReason(''); setRejecting({ id: plan.id ?? 0, version: plan.version ?? 0 }) }}>{t('incidents.reject')}</Button>
+                  </div>
+                )}
+              </li>
+            ))}
+          </ol>
+        ) : <p className={s.muted}>{t('incidents.noPlans')}</p>}
+        {role === 'coordinator' && open && (
+          <div className={s.form}>
+            <Field label={t('incidents.resolutionType')}>
+              {c => <Select {...c} value={resolution} onChange={value => setResolution(value as ResolutionType)}
+                options={RESOLUTIONS.map(r => ({ value: r, label: t(`incidents.resolution.${r}`) }))} />}
+            </Field>
+            <Field label={t('incidents.handler')}>
+              {c => <Select {...c} value={handler} onChange={setHandler} placeholder={t('incidents.noHandler')}
+                options={[{ value: '', label: t('incidents.noHandler') }, ...(parties ?? []).map(p => ({ value: `${p.id}`, label: p.displayName ?? '' }))]} />}
+            </Field>
+            <Field label={t('incidents.estimatedCost')}>
+              {c => <Input {...c} inputMode="numeric" value={estimatedCost} onChange={e => setEstimatedCost(e.target.value)} />}
+            </Field>
+            <Field label={t('incidents.instructions')} required>
+              {c => <Textarea {...c} value={instructions} onChange={e => setInstructions(e.target.value)} />}
+            </Field>
+            <Button variant="primary" disabled={!instructions.trim()} loading={busy}
+              onClick={() => run(() => incidentsApi.propose(incidentId, {
+                resolutionType: resolution, instructions: instructions.trim(),
+                estimatedCost: estimatedCost ? Number(estimatedCost) : undefined, handlerPartyId: handler ? Number(handler) : undefined,
+              }), t('incidents.done.proposed')).then(ok => { if (ok) setInstructions('') })}>
+              {t('incidents.propose')}
+            </Button>
+          </div>
+        )}
+      </section>
+
+      <section className={s.section} aria-labelledby="incident-costs">
+        <h3 id="incident-costs" className={s.title}>{t('incidents.costs')}</h3>
+        {data.costs.length ? (
+          <ul className={s.list}>
+            {data.costs.map(cost => (
+              <li key={cost.id} className={s.item}>
+                <div className={s.row}>
+                  <strong>{t(`incidents.category.${cost.category}`)} · {formatVND(cost.amount ?? 0)}</strong>
+                  <StatusBadge tone={cost.payerType === 'COMPANY' ? 'neutral' : 'info'} label={t(`incidents.payer.${cost.payerType}`)} />
+                  {cost.payerType !== 'COMPANY' && <StatusBadge tone={cost.customerConsulted ? 'success' : 'warning'}
+                    label={cost.customerConsulted ? t('incidents.consulted') : t('incidents.notConsulted')} />}
+                  {cost.approvedAt && <StatusBadge tone="success" label={t('incidents.approved')} />}
+                </div>
+                <p className={s.muted}>{cost.description}</p>
+                {role === 'manager' && !cost.approvedAt && (
+                  <div><Button size="sm" loading={busy} onClick={() => run(() => incidentsApi.approveCost(cost.id ?? 0), t('incidents.done.costApproved'))}>{t('incidents.approveCost')}</Button></div>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : <p className={s.muted}>{t('incidents.noCosts')}</p>}
+      </section>
+
+      {rejecting && (
+        <Modal title={t('incidents.rejectTitle', { n: rejecting.version })} onClose={() => setRejecting(undefined)}
+          footer={(
+            <>
+              <Button onClick={() => setRejecting(undefined)}>{t('ui.cancel')}</Button>
+              <Button variant="danger" disabled={!reason.trim()} loading={busy}
+                onClick={() => run(() => incidentsApi.reject(rejecting.id, reason.trim()), t('incidents.done.rejected')).then(ok => { if (ok) setRejecting(undefined) })}>
+                {t('incidents.reject')}
+              </Button>
+            </>
+          )}>
+          <p className={s.muted}>{t('incidents.rejectMessage')}</p>
+          <Field label={t('incidents.rejectReason')} required>
+            {c => <Textarea {...c} value={reason} onChange={e => setReason(e.target.value)} data-autofocus />}
+          </Field>
+        </Modal>
+      )}
+    </Modal>
+  )
+}

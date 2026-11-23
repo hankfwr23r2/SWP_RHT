@@ -17,6 +17,7 @@ import { Textarea } from '@shared/ui/Textarea'
 import { StatusBadge, type StatusTone } from '@shared/ui/StatusBadge'
 import { useToast } from '@shared/ui/toast'
 import { StopHealthPanel } from './StopHealthPanel'
+import { TripIncidentPanel } from './TripIncidentPanel'
 import { canArrive, canComplete, canDepart, canStart, handoverTypesAt, isRestStop, pendingAt, stopState, type StopState } from './tripRunModel'
 import s from './MyTrips.module.css'
 
@@ -133,6 +134,7 @@ export default function TripRunPage() {
           )
         })}
       </ol>
+      {trip.status === 'IN_PROGRESS' && <TripIncidentPanel run={data} />}
       {canComplete(data) && (
         <Button variant="primary" size="lg" fullWidth loading={busy} onClick={() => run(() => tripExecutionApi.complete(tripId), t('myTrips.run.done.completed'))}>
           {t('myTrips.run.complete')}

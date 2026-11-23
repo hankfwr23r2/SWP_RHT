@@ -1,5 +1,106 @@
 // Khung chung của app nội bộ: menu, thanh trên, hồ sơ nhân viên, phần dùng chung giữa các vai trò
 export const staff = {
+  incidents: {
+    "title": "Incidents",
+    "description": "Open incidents: propose plans, approve, follow costs. Incidents do not change the booking status.",
+    "loadError": "Could not load incidents",
+    "emptyTitle": "No open incidents",
+    "emptyDescription": "Incidents reported by crews appear here.",
+    "caption": "Open incidents",
+    "colTitle": "Incident",
+    "colType": "Type",
+    "colTrip": "Trip",
+    "colHorse": "Horse",
+    "colStatus": "Status",
+    "view": "View",
+    "type": {
+      "HEALTH": "Health",
+      "VEHICLE_BREAKDOWN": "Breakdown",
+      "ACCIDENT": "Accident",
+      "DELAY": "Delay",
+      "DOCUMENT": "Documents",
+      "HANDOVER_TIMEOUT": "Wait timed out",
+      "OTHER": "Other"
+    },
+    "cause": {
+      "COMPANY_FAULT": "Company fault",
+      "HORSE_CONDITION": "Horse condition",
+      "CUSTOMER_DOCS": "Customer documents",
+      "AGENT_FAULT": "Agent fault",
+      "FORCE_MAJEURE": "Force majeure",
+      "RECIPIENT_ABSENT": "Recipient absent"
+    },
+    "status": {
+      "REPORTED": "Reported",
+      "PLAN_PENDING": "Plan awaiting approval",
+      "PLAN_ACTIVE": "Being handled",
+      "RESOLVED": "Resolved",
+      "CLOSED": "Closed"
+    },
+    "resolution": {
+      "CONTINUE": "Continue",
+      "VET_TREATMENT": "Vet treatment",
+      "STABLE_NEARBY": "Stable nearby",
+      "TRANSFER_VEHICLE": "Transfer vehicle",
+      "RETURN_TO_HUB": "Return to hub",
+      "CANCEL": "Cancel leg"
+    },
+    "planStatus": {
+      "PROPOSED": "Awaiting approval",
+      "APPROVED": "Approved",
+      "REJECTED": "Rejected",
+      "SUPERSEDED": "Superseded",
+      "DONE": "Done"
+    },
+    "plans": "Plans",
+    "noPlans": "No plan yet.",
+    "version": "Version {{n}}",
+    "propose": "Propose plan",
+    "resolutionType": "Resolution",
+    "instructions": "Instructions",
+    "estimatedCost": "Estimated cost (VND)",
+    "handler": "Handler",
+    "noHandler": "Not needed",
+    "approve": "Approve",
+    "reject": "Reject",
+    "rejectTitle": "Reject plan version {{n}}",
+    "rejectReason": "Reason",
+    "rejectMessage": "The coordinator will propose the next version.",
+    "resolve": "Mark resolved",
+    "close": "Close incident",
+    "fitConfirmed": "Fit to continue confirmed",
+    "notFit": "Fit to continue not confirmed",
+    "costs": "Costs",
+    "noCosts": "No costs yet.",
+    "payer": {
+      "COMPANY": "Company pays",
+      "CUSTOMER": "Customer pays",
+      "CONSIGNEE": "Recipient pays",
+      "AGENT": "Agent pays"
+    },
+    "approveCost": "Approve cost",
+    "approved": "Approved",
+    "consulted": "Customer consulted",
+    "notConsulted": "Customer not consulted",
+    "category": {
+      "TOLL": "Toll",
+      "FUEL": "Fuel",
+      "STABLING": "Stabling",
+      "VET": "Vet",
+      "RESCUE": "Rescue",
+      "REPAIR": "Repair",
+      "WAITING": "Waiting fee",
+      "OTHER": "Other"
+    },
+    "done": {
+      "proposed": "Plan proposed",
+      "approved": "Plan approved",
+      "rejected": "Plan rejected",
+      "resolved": "Incident resolved",
+      "closed": "Incident closed",
+      "costApproved": "Cost approved"
+    }
+  },
   staffMenus: {
     '/coordinator/dispatch': 'Dispatch',
     '/my-trips': 'My trips',
