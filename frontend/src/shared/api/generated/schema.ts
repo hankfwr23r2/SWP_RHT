@@ -484,6 +484,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bookings/{id}/journey": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["journey"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bookings/{id}/reject": {
         parameters: {
             query?: never;
@@ -1684,6 +1700,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/public/tracking": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["publicTrack"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/routes": {
         parameters: {
             query?: never;
@@ -2158,6 +2190,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseBookingJourneyResponseDto: {
+            data?: components["schemas"]["BookingJourneyResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseBookingResponseDto: {
             data?: components["schemas"]["BookingResponseDto"];
             message?: string;
@@ -2363,6 +2400,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListPublicTrackingResponseDto: {
+            data?: components["schemas"]["PublicTrackingResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListRouteResponse: {
             data?: components["schemas"]["RouteResponse"][];
             message?: string;
@@ -2560,6 +2602,14 @@ export interface components {
             typeCode?: string;
         };
         BookingIntakeRequestDto: unknown;
+        BookingJourneyResponseDto: {
+            bookingCode?: string;
+            /** Format: int64 */
+            bookingId?: number;
+            horses?: components["schemas"]["HorseJourneyResponseDto"][];
+            /** @enum {string} */
+            status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
+        };
         BookingQuotingRequestDto: unknown;
         BookingRejectionRequestDto: {
             reason: string;
@@ -3113,6 +3163,22 @@ export interface components {
             insurance: components["schemas"]["InsuranceDeclarationRequestDto"];
             stallTypeCode: string;
         };
+        HorseJourneyResponseDto: {
+            /** Format: int64 */
+            bookingHorseId?: number;
+            handovers?: components["schemas"]["JourneyHandoverDto"][];
+            /** @enum {string} */
+            holder?: "SHIPPER" | "COMPANY" | "PARTY" | "CONSIGNEE";
+            holderPartyName?: string;
+            /** Format: date-time */
+            holderSince?: string;
+            horseName?: string;
+            legs?: components["schemas"]["JourneyLegDto"][];
+            microchip?: string;
+            /** @enum {string} */
+            status?: "ACTIVE" | "EXCLUDED" | "CANCELLED" | "DELIVERED" | "RETURNED";
+            stays?: components["schemas"]["JourneyStayDto"][];
+        };
         HorseLegRequestDto: {
             /** Format: int64 */
             alightTripStopId: number;
@@ -3347,6 +3413,64 @@ export interface components {
             satisfied?: boolean;
             /** @enum {string} */
             submitterType?: "CUSTOMER" | "CONSIGNEE" | "COMPANY" | "AGENT";
+        };
+        JourneyHandoverDto: {
+            fromPartyName?: string;
+            /** Format: date-time */
+            handedAt?: string;
+            /** @enum {string} */
+            handoverType?: "PICKUP" | "HUB_IN" | "HUB_OUT" | "STAY_IN" | "STAY_OUT" | "AGENT" | "DELIVERY" | "RETURN";
+            /** Format: int64 */
+            id?: number;
+            microchipMatched?: boolean;
+            placeName?: string;
+            /** @enum {string} */
+            status?: "PENDING" | "DONE" | "TIMEOUT" | "FAILED";
+            toPartyName?: string;
+            /** Format: date-time */
+            waitStartedAt?: string;
+        };
+        JourneyLegDto: {
+            /** Format: date-time */
+            actualEndAt?: string;
+            /** Format: date-time */
+            actualStartAt?: string;
+            agentName?: string;
+            fromName?: string;
+            /** Format: int64 */
+            id?: number;
+            /** @enum {string} */
+            legType?: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "RETURN" | "DIRECT";
+            /** Format: date-time */
+            plannedEndAt?: string;
+            /** Format: date-time */
+            plannedStartAt?: string;
+            /** Format: int64 */
+            replacedHorseLegId?: number;
+            /** Format: int32 */
+            sequenceNumber?: number;
+            /** @enum {string} */
+            status?: "PLANNED" | "IN_PROGRESS" | "COMPLETED" | "FAILED" | "CANCELLED";
+            toName?: string;
+            vehicleTripCode?: string;
+        };
+        JourneyStayDto: {
+            /** Format: date-time */
+            actualEndAt?: string;
+            /** Format: date-time */
+            actualStartAt?: string;
+            /** Format: int64 */
+            id?: number;
+            locationName?: string;
+            operatorName?: string;
+            /** Format: date-time */
+            plannedEndAt?: string;
+            /** Format: date-time */
+            plannedStartAt?: string;
+            /** @enum {string} */
+            quarantineResult?: "PASSED" | "FAILED";
+            /** @enum {string} */
+            stayType?: "ASSEMBLY" | "QUARANTINE" | "OVERNIGHT" | "STABLING";
         };
         LegDistance: {
             km?: number;
@@ -3675,6 +3799,31 @@ export interface components {
             code?: string;
             countryCode?: string;
             name?: string;
+        };
+        PublicHorseDto: {
+            /** @enum {string} */
+            holder?: "SHIPPER" | "COMPANY" | "PARTY" | "CONSIGNEE";
+            horseName?: string;
+            /** @enum {string} */
+            legType?: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "RETURN" | "DIRECT";
+            locationName?: string;
+            /** @enum {string} */
+            stayType?: "ASSEMBLY" | "QUARANTINE" | "OVERNIGHT" | "STABLING";
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        PublicTrackingRequestDto: {
+            codes: string[];
+            phoneLast4: string;
+        };
+        PublicTrackingResponseDto: {
+            code?: string;
+            found?: boolean;
+            horses?: components["schemas"]["PublicHorseDto"][];
+            /** Format: date-time */
+            plannedDeliveryAt?: string;
+            /** @enum {string} */
+            status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
         };
         RegisterRequest: {
             acceptedTerms?: boolean;
@@ -4744,6 +4893,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseBookingResponseDto"];
+                };
+            };
+        };
+    };
+    journey: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingJourneyResponseDto"];
                 };
             };
         };
@@ -7050,6 +7221,30 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListProvinceResponse"];
+                };
+            };
+        };
+    };
+    publicTrack: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublicTrackingRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListPublicTrackingResponseDto"];
                 };
             };
         };

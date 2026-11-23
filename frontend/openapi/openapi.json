@@ -199,6 +199,20 @@
         },
         "type" : "object"
       },
+      "ApiResponseBookingJourneyResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/BookingJourneyResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseBookingResponseDto" : {
         "properties" : {
           "data" : {
@@ -851,6 +865,23 @@
         },
         "type" : "object"
       },
+      "ApiResponseListPublicTrackingResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PublicTrackingResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListRouteResponse" : {
         "properties" : {
           "data" : {
@@ -1422,6 +1453,28 @@
         "type" : "object"
       },
       "BookingIntakeRequestDto" : { },
+      "BookingJourneyResponseDto" : {
+        "properties" : {
+          "bookingCode" : {
+            "type" : "string"
+          },
+          "bookingId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "horses" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HorseJourneyResponseDto"
+            },
+            "type" : "array"
+          },
+          "status" : {
+            "enum" : [ "PENDING_INTAKE", "UNDER_REVIEW", "NEEDS_RESUBMISSION", "QUOTING", "AWAITING_DEPOSIT", "QUOTE_EXPIRED", "CONFIRMED", "SCHEDULE_CHANGE_REQUIRED", "IN_OPERATION", "DELIVERED", "COMPLETED", "CANCELLED", "REJECTED" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "BookingQuotingRequestDto" : { },
       "BookingRejectionRequestDto" : {
         "properties" : {
@@ -2920,6 +2973,54 @@
         "required" : [ "horseId", "insurance", "stallTypeCode" ],
         "type" : "object"
       },
+      "HorseJourneyResponseDto" : {
+        "properties" : {
+          "bookingHorseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "handovers" : {
+            "items" : {
+              "$ref" : "#/components/schemas/JourneyHandoverDto"
+            },
+            "type" : "array"
+          },
+          "holder" : {
+            "enum" : [ "SHIPPER", "COMPANY", "PARTY", "CONSIGNEE" ],
+            "type" : "string"
+          },
+          "holderPartyName" : {
+            "type" : "string"
+          },
+          "holderSince" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "horseName" : {
+            "type" : "string"
+          },
+          "legs" : {
+            "items" : {
+              "$ref" : "#/components/schemas/JourneyLegDto"
+            },
+            "type" : "array"
+          },
+          "microchip" : {
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "ACTIVE", "EXCLUDED", "CANCELLED", "DELIVERED", "RETURNED" ],
+            "type" : "string"
+          },
+          "stays" : {
+            "items" : {
+              "$ref" : "#/components/schemas/JourneyStayDto"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
       "HorseLegRequestDto" : {
         "properties" : {
           "alightTripStopId" : {
@@ -3522,6 +3623,135 @@
           },
           "submitterType" : {
             "enum" : [ "CUSTOMER", "CONSIGNEE", "COMPANY", "AGENT" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "JourneyHandoverDto" : {
+        "properties" : {
+          "fromPartyName" : {
+            "type" : "string"
+          },
+          "handedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "handoverType" : {
+            "enum" : [ "PICKUP", "HUB_IN", "HUB_OUT", "STAY_IN", "STAY_OUT", "AGENT", "DELIVERY", "RETURN" ],
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "microchipMatched" : {
+            "type" : "boolean"
+          },
+          "placeName" : {
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "PENDING", "DONE", "TIMEOUT", "FAILED" ],
+            "type" : "string"
+          },
+          "toPartyName" : {
+            "type" : "string"
+          },
+          "waitStartedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "JourneyLegDto" : {
+        "properties" : {
+          "actualEndAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "actualStartAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "agentName" : {
+            "type" : "string"
+          },
+          "fromName" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "legType" : {
+            "enum" : [ "PICKUP", "LINEHAUL", "DELIVERY", "TRANSFER", "RETURN", "DIRECT" ],
+            "type" : "string"
+          },
+          "plannedEndAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "plannedStartAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "replacedHorseLegId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "sequenceNumber" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "status" : {
+            "enum" : [ "PLANNED", "IN_PROGRESS", "COMPLETED", "FAILED", "CANCELLED" ],
+            "type" : "string"
+          },
+          "toName" : {
+            "type" : "string"
+          },
+          "vehicleTripCode" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "JourneyStayDto" : {
+        "properties" : {
+          "actualEndAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "actualStartAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "locationName" : {
+            "type" : "string"
+          },
+          "operatorName" : {
+            "type" : "string"
+          },
+          "plannedEndAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "plannedStartAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "quarantineResult" : {
+            "enum" : [ "PASSED", "FAILED" ],
+            "type" : "string"
+          },
+          "stayType" : {
+            "enum" : [ "ASSEMBLY", "QUARANTINE", "OVERNIGHT", "STABLING" ],
             "type" : "string"
           }
         },
@@ -4433,6 +4663,79 @@
             "type" : "string"
           },
           "name" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "PublicHorseDto" : {
+        "properties" : {
+          "holder" : {
+            "enum" : [ "SHIPPER", "COMPANY", "PARTY", "CONSIGNEE" ],
+            "type" : "string"
+          },
+          "horseName" : {
+            "type" : "string"
+          },
+          "legType" : {
+            "enum" : [ "PICKUP", "LINEHAUL", "DELIVERY", "TRANSFER", "RETURN", "DIRECT" ],
+            "type" : "string"
+          },
+          "locationName" : {
+            "type" : "string"
+          },
+          "stayType" : {
+            "enum" : [ "ASSEMBLY", "QUARANTINE", "OVERNIGHT", "STABLING" ],
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "PublicTrackingRequestDto" : {
+        "properties" : {
+          "codes" : {
+            "items" : {
+              "maxLength" : 20,
+              "minLength" : 0,
+              "type" : "string"
+            },
+            "maxItems" : 5,
+            "minItems" : 0,
+            "type" : "array"
+          },
+          "phoneLast4" : {
+            "minLength" : 1,
+            "pattern" : "\\d{4}",
+            "type" : "string"
+          }
+        },
+        "required" : [ "codes", "phoneLast4" ],
+        "type" : "object"
+      },
+      "PublicTrackingResponseDto" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "found" : {
+            "type" : "boolean"
+          },
+          "horses" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PublicHorseDto"
+            },
+            "type" : "array"
+          },
+          "plannedDeliveryAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "PENDING_INTAKE", "UNDER_REVIEW", "NEEDS_RESUBMISSION", "QUOTING", "AWAITING_DEPOSIT", "QUOTE_EXPIRED", "CONFIRMED", "SCHEDULE_CHANGE_REQUIRED", "IN_OPERATION", "DELIVERED", "COMPLETED", "CANCELLED", "REJECTED" ],
             "type" : "string"
           }
         },
@@ -6305,6 +6608,33 @@
           }
         },
         "tags" : [ "booking-review-controller" ]
+      }
+    },
+    "/bookings/{id}/journey" : {
+      "get" : {
+        "operationId" : "journey",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingJourneyResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "tracking-controller" ]
       }
     },
     "/bookings/{id}/reject" : {
@@ -9141,6 +9471,34 @@
           }
         },
         "tags" : [ "geography-controller" ]
+      }
+    },
+    "/public/tracking" : {
+      "post" : {
+        "operationId" : "publicTrack",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PublicTrackingRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListPublicTrackingResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "tracking-controller" ]
       }
     },
     "/routes" : {
