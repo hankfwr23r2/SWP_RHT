@@ -4,7 +4,7 @@ import { useCallback } from 'react'
 import { Link } from 'react-router'
 import { pickupFailReason } from '@shared/lib/booking'
 import { bookingsApi, invalidateBookingsListCache } from '@shared/services/bookings'
-import { useAutoRefresh, useLoad } from '@shared/services/useLoad'
+import { useAutoRefresh, useLoad } from '@shared/hooks/useLoad'
 import s from './ManagerUrgentBanner.module.css'
 
 export function ManagerUrgentBanner() {

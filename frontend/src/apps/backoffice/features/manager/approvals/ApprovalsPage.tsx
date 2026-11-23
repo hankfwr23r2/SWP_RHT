@@ -9,7 +9,7 @@ import { finalizeQuote, sameVehicleId, schedulesOf, vehicleClassOf } from '@shar
 import { formatDate, formatDateTime, formatVND } from '@shared/lib/format'
 import { bookingsApi, invalidateBookingsListCache } from '@shared/services/bookings'
 import { crewApi, vehiclesApi } from '@shared/services/fleet'
-import { useLoad } from '@shared/services/useLoad'
+import { useLoad } from '@shared/hooks/useLoad'
 import type { Booking } from '@shared/types/booking'
 import { InsuranceSummary } from '@shared/ui/InsuranceFields'
 import { QuoteSheet } from '@shared/ui/QuoteSheet'

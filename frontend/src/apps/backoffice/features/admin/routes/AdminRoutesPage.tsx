@@ -10,7 +10,7 @@ import {
   type CreateRoutePayload,
   type LocationPayload,
 } from '@shared/api/routes'
-import { useLoad } from '@shared/services/useLoad'
+import { useLoad } from '@shared/hooks/useLoad'
 import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
 import { ListPage, type Column, type TabDef } from '@backoffice/shared/ListPage'

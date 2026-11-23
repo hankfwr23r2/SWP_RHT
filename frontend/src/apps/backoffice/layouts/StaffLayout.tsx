@@ -11,7 +11,6 @@ import { TranslateToggle } from '@shared/ui/TranslateToggle'
 import { HOME_OF, STAFF_MENUS } from './staffMenus'
 import s from './StaffLayout.module.css'
 import m from './StaffShell.module.css'
-import './manager-theme.css'
 import { StaffSidebar } from './StaffSidebar'
 import { StaffTopbar } from './StaffTopbar'
 import { StaffProfileModal } from './StaffProfileModal'
@@ -41,7 +40,7 @@ export function StaffLayout({ children }: { children: ReactNode }) {
   const { session } = useAuth()
   if (session?.role === 'admin' || session?.role === 'manager' || session?.role === 'specialist' || session?.role === 'coordinator') {
     return (
-      <div className={`mgr ${m.shell}`}>
+      <div className={m.shell}>
         <StaffTopbar />
         <div className={m.body}>
           <StaffSidebar />

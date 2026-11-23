@@ -122,6 +122,16 @@ export const vi = {
         "required": "Bắt buộc"
     }
 },
+  ui: {
+    loading: 'Đang tải',
+    processing: 'Đang xử lý',
+    retry: 'Thử lại',
+    errorTitle: 'Không tải được dữ liệu',
+    close: 'Đóng',
+    cancel: 'Hủy',
+    step: 'Bước {{current}}/{{total}}',
+    stepDone: 'Đã xong',
+  },
   common: {
     brandName: 'Vận chuyển Ngựa',
     brandTagline: 'Vận chuyển ngựa đua đường bộ · Việt Nam · Lào · Campuchia',

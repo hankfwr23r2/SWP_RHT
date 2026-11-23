@@ -1,4 +1,4 @@
-import { useAutoRefresh } from '@shared/services/useLoad'
+import { useAutoRefresh } from '@shared/hooks/useLoad'
 // Manager: duyệt phương án sự cố và theo dõi sự cố đang xử lý (Flow 5, PRD mục 6.6).
 import { useCallback, useState } from 'react'
 import { useSearchParams } from 'react-router'

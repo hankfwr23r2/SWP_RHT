@@ -11,7 +11,7 @@ import { formatClock, formatDate, formatDateTime, formatVND } from '@shared/lib/
 import { usePageData } from '@shared/routing/pageData'
 import { customerBookingsApi, type CustomerBookingView, type TripTeam } from '@shared/services/bookings'
 import { horsesApi } from '@shared/services/horses'
-import { useLoad } from '@shared/services/useLoad'
+import { useLoad } from '@shared/hooks/useLoad'
 import type { HorseProfile } from '@shared/types/booking'
 import { insuranceBeforeQuote, insuranceRevisionPending, type InsuranceResubmission } from '@shared/types/insurance'
 import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
@@ -20,7 +20,7 @@ import { PolicyLink } from '@shared/ui/PolicyLink'
 import { QuoteSheet } from '@shared/ui/QuoteSheet'
 import { TripTimeline, type JourneyTimelineIncident } from '@shared/ui/TripTimeline'
 import { useToast } from '@shared/ui/toast'
-import { useNow } from '@shared/ui/useNow'
+import { useNow } from '@shared/hooks/useNow'
 
 const TripTrackMap = lazy(() => import('@shared/ui/TripTrackMap').then(m => ({ default: m.TripTrackMap })))
 import { HorseFormModal } from '../horses/HorseFormModal'

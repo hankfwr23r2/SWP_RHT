@@ -58,7 +58,8 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['src/**/*.test.ts'],
+    // Test component (*.test.tsx) khai báo môi trường jsdom ở đầu file bằng comment @vitest-environment
+    include: ['src/**/*.test.{ts,tsx}'],
   },
   server: {
     port: 5173,
