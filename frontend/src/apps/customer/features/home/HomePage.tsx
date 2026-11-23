@@ -13,11 +13,11 @@ import { loadBootstrap } from '@shared/config/bootstrap'
 import { ACTIVE_DOCUMENT_REQUIREMENTS } from '@shared/config/runtimeDocumentRequirements'
 import type { DocumentGroup } from '@shared/api/documentRequirements'
 import { DEPOSIT_RATE } from '@shared/config/booking-rules'
-import { formatDate, formatDateTime } from '@shared/lib/format'
-import { trackOrders, type PublicTracking } from '@shared/services/tracking'
+import { trackingApi, type PublicTracking } from '@shared/api/tracking'
 import { FLAG_SVG } from '@shared/ui/flags'
 import { PHOTOS } from '@shared/config/photos'
 import { PriceTable } from '../pricing/PriceLookup'
+import { TrackResult } from './TrackResult'
 import s from './HomePage.module.css'
 
 gsap.registerPlugin(MotionPathPlugin)
@@ -90,14 +90,12 @@ export function Hero({ link = same }: { link?: LinkMap }) {
 }
 
 // ===== Tra cứu đơn hàng =====
-type TrackRow = { code: string; result: PublicTracking | null }
-
 function OrderLookup({ onShowPrice }: { onShowPrice: () => void }) {
   const { t } = useTranslation()
   const [codesText, setCodesText] = useState('')
   const [phone, setPhone] = useState('')
   const [error, setError] = useState<{ field: 'codes' | 'phone'; message: string } | null>(null)
-  const [rows, setRows] = useState<TrackRow[]>([])
+  const [rows, setRows] = useState<PublicTracking[]>([])
   const [loading, setLoading] = useState(false)
   const submit = async (e: FormEvent) => {
     e.preventDefault()
@@ -108,7 +106,7 @@ function OrderLookup({ onShowPrice }: { onShowPrice: () => void }) {
     setError(null)
     setLoading(true)
     try {
-      setRows(await trackOrders(codes, phone.trim()))
+      setRows(await trackingApi.publicTrack(codes, phone.trim()))
     } catch (err) {
       setError({ field: 'codes', message: err instanceof Error ? err.message : t('home.lookup.notFound') })
     } finally {
@@ -157,43 +155,7 @@ function OrderLookup({ onShowPrice }: { onShowPrice: () => void }) {
       <div aria-live="polite">
       {!error && rows.length > 0 && (
         <div className={s.trackList}>
-          {rows.map(({ code, result: o }, i) => o ? (
-            <div key={code} className={s.trackItem} style={{ animationDelay: `${i * 80}ms` }}>
-              <div className={s.trackHead}>
-                <span className={s.trackCode}>{code}</span>
-                <span className={cx(s.trackStatus, o.tone && s[o.tone])}>{o.status}</span>
-              </div>
-              <div className={s.trackMeta}>
-                <i className="fa-solid fa-route" /> {o.route} · {t('home.lookup.departure')} {o.depart ? formatDate(o.depart) : t('home.lookup.undeterminedDate')}
-              </div>
-              <div className={s.trackSteps}>
-                {[t('home.process.step1Title'), t('home.process.step2Title'), t('home.process.step3Title'), t('home.process.step4Title'), t('home.process.step5Title')].map((label, k) => {
-                  const state = o.done || k < (o.step ?? 0) ? 'done' : k === o.step ? 'current' : ''
-                  return (
-                    <div key={label} className={cx(s.trackStep, state && s[state])}>
-                      <span className={s.dot}>{state === 'done' && <i className="fa-solid fa-check" />}</span>
-                      <div>{label}</div>
-                    </div>
-                  )
-                })}
-              </div>
-              {o.now && (
-                <div className={s.trackNow}>
-                  <i className="fa-solid fa-location-dot" /> <b>{o.now.place}</b><br />
-                  {t('home.lookup.updatedAt')} {formatDateTime(o.now.at)} · {t('home.lookup.estimatedDelivery')} {formatDateTime(o.now.eta)}
-                </div>
-              )}
-              {o.note && (
-                <div className={s.trackNow}>
-                  <i className="fa-solid fa-circle-info" /> {o.note}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div key={code} className={cx(s.trackItem, s.trackMiss)} style={{ animationDelay: `${i * 80}ms` }}>
-              <b>{code}</b>: {t('home.lookup.notFound')}
-            </div>
-          ))}
+          {rows.map((row, i) => <TrackResult key={row.code} result={row} delay={i * 80} />)}
         </div>
       )}
       </div>

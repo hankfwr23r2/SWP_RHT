@@ -62,6 +62,23 @@ export const common = {
     confirmDeleteAllTitle: 'Delete all notifications',
     confirmDeleteAllMessage: 'These notifications will be removed from your inbox.',
   },
+  journey: {
+    horseLabel: 'Journey of {{name}}',
+    empty: 'No legs planned for this horse yet.',
+    noHorses: 'This booking has no horses.',
+    noHorsesHint: 'Horses on the booking will appear here with their journey.',
+    loadError: 'Could not load the journey.',
+    plannedAt: 'Planned {{time}}',
+    holder: { SHIPPER: 'With the shipper', COMPANY: 'With the company', PARTY: 'With partner: {{party}}', CONSIGNEE: 'Delivered to consignee' },
+    state: { current: 'In progress', planned: 'Planned', problem: 'Problem', done: 'Done' },
+    leg: { PICKUP: 'Pickup leg', LINEHAUL: 'Linehaul leg', DELIVERY: 'Delivery leg', DIRECT: 'Direct run', TRANSFER: 'Vehicle transfer', RETURN: 'Return' },
+    bookingStatus: { PENDING_INTAKE: 'Awaiting intake', UNDER_REVIEW: 'Under review', NEEDS_RESUBMISSION: 'Needs resubmission', QUOTING: 'Quoting', AWAITING_DEPOSIT: 'Awaiting deposit', QUOTE_EXPIRED: 'Quote expired', CONFIRMED: 'Confirmed', SCHEDULE_CHANGE_REQUIRED: 'Schedule change required', IN_OPERATION: 'In transit', DELIVERED: 'Delivered', COMPLETED: 'Completed', CANCELLED: 'Cancelled', REJECTED: 'Rejected' },
+    stay: { ASSEMBLY: 'Staging at hub', QUARANTINE: 'Quarantine', OVERNIGHT: 'Overnight stop', STABLING: 'Stabling' },
+    handover: {
+      PICKUP: 'Received from shipper', HUB_IN: 'Into hub', HUB_OUT: 'Out of hub', STAY_IN: 'Into stay location', STAY_OUT: 'Out of stay location',
+      AGENT: 'Agent handover', DELIVERY: 'Delivered to consignee', RETURN: 'Returned to shipper',
+    },
+  },
   captcha: {
     required: 'Please complete the CAPTCHA challenge before continuing.',
     unavailable: 'CAPTCHA is not configured. Please contact the administrator.',

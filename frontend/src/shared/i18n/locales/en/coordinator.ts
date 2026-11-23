@@ -38,7 +38,10 @@ export const coordinator = {
       "colStall": "Stall",
       "colLegs": "Planned legs",
       "direct": "Direct",
-      "noLegs": "Not planned"
+      "noLegs": "Not planned",
+      "colJourney": "Journey",
+      "viewJourney": "View",
+      "journeyTitle": "Journey of booking {{code}}"
     },
     "trips": {
       "emptyTitle": "No vehicle trips this week",

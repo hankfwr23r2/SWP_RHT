@@ -62,6 +62,23 @@ export const common = {
     confirmDeleteAllTitle: 'Xóa tất cả thông báo',
     confirmDeleteAllMessage: 'Các thông báo sẽ bị gỡ khỏi hộp thư của bạn.',
   },
+  journey: {
+    horseLabel: 'Hành trình của {{name}}',
+    empty: 'Chưa lập chặng nào cho con ngựa này.',
+    noHorses: 'Đơn chưa có ngựa.',
+    noHorsesHint: 'Ngựa trong đơn sẽ hiện ở đây kèm hành trình.',
+    loadError: 'Không tải được hành trình.',
+    plannedAt: 'Dự kiến {{time}}',
+    holder: { SHIPPER: 'Đang ở người gửi', COMPANY: 'Công ty đang giữ', PARTY: 'Đối tác đang giữ: {{party}}', CONSIGNEE: 'Đã giao người nhận' },
+    state: { current: 'Đang diễn ra', planned: 'Kế hoạch', problem: 'Có vấn đề', done: 'Xong' },
+    leg: { PICKUP: 'Chặng đón', LINEHAUL: 'Chặng trục', DELIVERY: 'Chặng giao', DIRECT: 'Chạy thẳng', TRANSFER: 'Chuyển xe', RETURN: 'Trả ngựa' },
+    bookingStatus: { PENDING_INTAKE: 'Chờ tiếp nhận', UNDER_REVIEW: 'Đang thẩm định', NEEDS_RESUBMISSION: 'Cần bổ sung', QUOTING: 'Đang báo giá', AWAITING_DEPOSIT: 'Chờ đặt cọc', QUOTE_EXPIRED: 'Báo giá hết hạn', CONFIRMED: 'Đã xác nhận', SCHEDULE_CHANGE_REQUIRED: 'Cần đổi lịch', IN_OPERATION: 'Đang vận chuyển', DELIVERED: 'Đã giao', COMPLETED: 'Hoàn tất', CANCELLED: 'Đã hủy', REJECTED: 'Từ chối' },
+    stay: { ASSEMBLY: 'Tập kết ở hub', QUARANTINE: 'Cách ly', OVERNIGHT: 'Nghỉ qua đêm', STABLING: 'Gửi chuồng' },
+    handover: {
+      PICKUP: 'Nhận ngựa từ người gửi', HUB_IN: 'Nhập hub', HUB_OUT: 'Xuất hub', STAY_IN: 'Vào nơi lưu trú', STAY_OUT: 'Rời nơi lưu trú',
+      AGENT: 'Giao nhận với đại lý', DELIVERY: 'Giao người nhận', RETURN: 'Trả lại người gửi',
+    },
+  },
   captcha: {
     required: 'Vui lòng hoàn tất xác minh CAPTCHA trước khi tiếp tục.',
     unavailable: 'CAPTCHA chưa được cấu hình. Vui lòng liên hệ quản trị viên.',
