@@ -13,6 +13,9 @@ import com.example.racehorse_transport.repository.BookingHorseAddOnRepository;
 import com.example.racehorse_transport.repository.BookingHorseRepository;
 import com.example.racehorse_transport.repository.BookingPartyRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
+import com.example.racehorse_transport.repository.BookingStatusHistoryRepository;
+import com.example.racehorse_transport.entity.BookingStatusHistory;
+import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.repository.HorseInsuranceRepository;
 import com.example.racehorse_transport.service.BookingQueryService;
 import java.util.List;
@@ -34,6 +37,7 @@ public class BookingQueryServiceImpl implements BookingQueryService {
     private final BookingHorseAddOnRepository addOns;
     private final BookingHorseRepository horses;
     private final HorseInsuranceRepository insurances;
+    private final BookingStatusHistoryRepository history;
 
     @Override
     public List<BookingResponseDto> list(String username) {
@@ -46,9 +50,33 @@ public class BookingQueryServiceImpl implements BookingQueryService {
     public BookingDetailResponseDto get(String username, Long id) {
         Booking booking = bookings.findByIdAndCustomer_User_Username(id, username)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
+        return detail(booking);
+    }
+
+    @Override
+    public List<BookingResponseDto> reviewQueue() {
+        return bookings.findByStatusInOrderByCreatedAtAscIdAsc(List.of(
+                BookingStatus.PENDING_INTAKE,
+                BookingStatus.UNDER_REVIEW,
+                BookingStatus.NEEDS_RESUBMISSION))
+                .stream().map(BookingResponseDto::from).toList();
+    }
+
+    @Override
+    public BookingDetailResponseDto reviewDetail(Long id) {
+        return detail(bookings.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn.")));
+    }
+
+    private BookingDetailResponseDto detail(Booking booking) {
+        Long id = booking.getId();
         List<BookingHorse> rows = horses.findForDetail(id);
+        String reason = history.findFirstByBooking_IdOrderByChangedAtDescIdDesc(id)
+                .filter(row -> row.getToStatus() == BookingStatus.NEEDS_RESUBMISSION
+                        || row.getToStatus() == BookingStatus.REJECTED)
+                .map(BookingStatusHistory::getReason).orElse(null);
         return BookingDetailResponseDto.from(booking, parties.findById_BookingId(id),
-                addresses.findAddressesForDetail(id), horseDetails(rows));
+                addresses.findAddressesForDetail(id), horseDetails(rows), reason);
     }
 
     private List<HorseDetail> horseDetails(List<BookingHorse> rows) {

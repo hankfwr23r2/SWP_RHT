@@ -2,6 +2,8 @@ package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.booking.BookingCreateRequestDto;
 import com.example.racehorse_transport.dto.booking.BookingCreateRequestDto.AddressInput;
+import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.BookingAddress;
 import com.example.racehorse_transport.entity.Departure;
 import com.example.racehorse_transport.entity.Province;
 import com.example.racehorse_transport.entity.Route;
@@ -11,12 +13,18 @@ import com.example.racehorse_transport.entity.enums.BookingType;
 import com.example.racehorse_transport.exception.BookingRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.BookingSubmissionPolicy;
+import com.example.racehorse_transport.policy.DepartureRoutePolicy;
+import com.example.racehorse_transport.policy.RegulationPolicy;
 import com.example.racehorse_transport.policy.HubResolutionPolicy;
+import com.example.racehorse_transport.repository.BookingAddressRepository;
 import com.example.racehorse_transport.repository.DepartureRepository;
 import com.example.racehorse_transport.repository.HubServiceAreaRepository;
 import com.example.racehorse_transport.repository.ProvinceRepository;
 import com.example.racehorse_transport.repository.RouteRepository;
 import com.example.racehorse_transport.service.BookingRoutingService;
+import com.example.racehorse_transport.service.RegulationService;
+import java.time.Clock;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -29,6 +37,65 @@ public class BookingRoutingServiceImpl implements BookingRoutingService {
     private final HubServiceAreaRepository serviceAreas;
     private final RouteRepository routes;
     private final DepartureRepository departures;
+    private final BookingAddressRepository bookingAddresses;
+    private final RegulationService regulations;
+    private final Clock clock;
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean requiresDeparture(Booking booking) {
+        if (booking.getBookingType() == BookingType.LOCAL) {
+            return false;
+        }
+        BookingHubs hubs = bookingHubs(booking.getId());
+        return HubResolutionPolicy.routingOf(booking.getBookingType(), hubs.pickup(), hubs.delivery())
+                == HubResolutionPolicy.Routing.LINEHAUL;
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Departure lockReplacement(Booking booking, Long replacementId) {
+        Long oldId = booking.getDeparture() == null ? null : booking.getDeparture().getId();
+        if (oldId != null && oldId < replacementId) {
+            lock(oldId);
+        }
+        Departure replacement = lock(replacementId);
+        if (oldId != null && oldId > replacementId) {
+            lock(oldId);
+        }
+        List<BookingAddress> addresses = bookingAddresses.findAddressesForDetail(booking.getId());
+        BookingAddress pickup = bookingAddress(addresses, AddressRole.PICKUP);
+        BookingAddress delivery = bookingAddress(addresses, AddressRole.DELIVERY);
+        BookingHubs hubs = new BookingHubs(hubOf(pickup.getProvince()), hubOf(delivery.getProvince()));
+        BookingSubmissionPolicy.validateDepartureSelection(
+                HubResolutionPolicy.routingOf(booking.getBookingType(), hubs.pickup(), hubs.delivery()), replacementId);
+        BookingSubmissionPolicy.validateRoute(replacement.getRoute(), booking.getBookingType(), hubs.pickup(), hubs.delivery());
+        BookingSubmissionPolicy.validatePickupDate(booking.getRequestedPickupDate(), replacement.getDepartureDate());
+        Long gate = DepartureRoutePolicy.gateId(replacement.getRoute(), booking.getBookingType());
+        long leadDays = regulations.resolve(booking.getBookingType(), pickup.getCountry().getCode(),
+                delivery.getCountry().getCode(), booking.getRequestedPickupDate(), gate).leadDays();
+        if (!RegulationPolicy.feasible(leadDays, clock.instant(), replacement.getBookingCutoffAt())) {
+            throw BookingRuleException.conflict("Không đủ thời gian chuẩn bị giấy tờ cho chuyến mới.");
+        }
+        return replacement;
+    }
+
+    private Departure lock(Long id) {
+        return departures.findForUpdate(id).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến."));
+    }
+
+    private BookingHubs bookingHubs(Long bookingId) {
+        var addresses = bookingAddresses.findAddressesForDetail(bookingId);
+        return new BookingHubs(hubOf(bookingAddress(addresses, AddressRole.PICKUP).getProvince()),
+                hubOf(bookingAddress(addresses, AddressRole.DELIVERY).getProvince()));
+    }
+
+    private static BookingAddress bookingAddress(List<BookingAddress> addresses, AddressRole role) {
+        return addresses.stream().filter(row -> row.getAddressType() == role).findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy địa chỉ của đơn."));
+    }
+
+    private record BookingHubs(Long pickup, Long delivery) {}
 
     @Override
     @Transactional(readOnly = true)

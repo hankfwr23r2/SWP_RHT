@@ -10,6 +10,10 @@ public interface BookingRoutingService {
 
     Departure lockDeparture(BookingCreateRequestDto request, SubmissionRouting routing);
 
+    Departure lockReplacement(com.example.racehorse_transport.entity.Booking booking, Long replacementId);
+
+    boolean requiresDeparture(com.example.racehorse_transport.entity.Booking booking);
+
     record SubmissionRouting(AddressInput pickup, AddressInput delivery, Province pickupProvince,
                              Province deliveryProvince, Long pickupHub, Long deliveryHub) {
     }

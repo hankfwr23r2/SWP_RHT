@@ -43,6 +43,12 @@ class BookingSubmissionPostgresTest {
 
     @Autowired private BookingService bookings;
     @Autowired private BookingQueryService queries;
+    @Autowired private BookingReviewService review;
+    @Autowired private InsuranceService insurance;
+    @Autowired private DocumentReviewService documentReview;
+    @Autowired private DocumentCompletenessService documentCompleteness;
+    @org.springframework.test.context.bean.override.mockito.MockitoBean
+    private com.example.racehorse_transport.client.CloudinaryClient cloudinary;
     @Autowired private TestData data;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private Clock clock;
@@ -208,6 +214,227 @@ class BookingSubmissionPostgresTest {
                 .andExpect(status().isForbidden());
         mvc.perform(get("/bookings/{id}", id).header(HttpHeaders.AUTHORIZATION, token(owner, "CUSTOMER")))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.horses[0].insurance.status").value("DRAFT"));
+    }
+
+    @Test
+    void reviewApiEnforcesRolesOwnershipAndDuplicateStateTransitions() throws Exception {
+        String owner = customer();
+        String other = customer();
+        String specialist = data.unique("a6-specialist");
+        String coordinator = data.unique("a6-coordinator");
+        data.staff(specialist, "SPECIALIST");
+        data.staff(coordinator, "COORDINATOR");
+        Long id = bookings.submit(owner, null, directArranged(owner)).id();
+
+        mvc.perform(get("/bookings/review-queue").header(HttpHeaders.AUTHORIZATION, token(coordinator, "COORDINATOR")))
+                .andExpect(status().isOk());
+        mvc.perform(post("/bookings/{id}/intake", id).header(HttpHeaders.AUTHORIZATION, token(coordinator, "COORDINATOR")))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/bookings/{id}/intake", Long.MAX_VALUE)
+                        .header(HttpHeaders.AUTHORIZATION, token(specialist, "SPECIALIST")))
+                .andExpect(status().isNotFound());
+        mvc.perform(post("/bookings/{id}/intake", id).header(HttpHeaders.AUTHORIZATION, token(specialist, "SPECIALIST")))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("UNDER_REVIEW"));
+        mvc.perform(post("/bookings/{id}/intake", id).header(HttpHeaders.AUTHORIZATION, token(specialist, "SPECIALIST")))
+                .andExpect(status().isConflict());
+        assertThat(review.returnToCustomer(id, specialist, "Thiếu hồ sơ").status()).isEqualTo(BookingStatus.NEEDS_RESUBMISSION);
+        mvc.perform(post("/bookings/{id}/resubmit", id).header(HttpHeaders.AUTHORIZATION, token(other, "CUSTOMER")))
+                .andExpect(status().isNotFound());
+        mvc.perform(post("/bookings/{id}/resubmit", id).header(HttpHeaders.AUTHORIZATION, token(owner, "CUSTOMER")))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("UNDER_REVIEW"));
+        mvc.perform(post("/bookings/{id}/start-quoting", id).header(HttpHeaders.AUTHORIZATION, token(specialist, "SPECIALIST")))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void waiverCanBeConfirmedOnceAndAllowsLocalQuotation() {
+        String owner = customer();
+        String specialist = data.unique("a6-specialist");
+        data.staff(specialist, "SPECIALIST");
+        Long id = bookings.submit(owner, null, request(null, pickupDate(), List.of(
+                horseInput(horse(owner), InsuranceCoverageOption.NONE, true, List.of())))).id();
+        review.intake(id, specialist);
+        Long insuranceId = queries.get(owner, id).horses().getFirst().insurance().id();
+        insurance.confirm(id, insuranceId, specialist);
+        assertThatThrownBy(() -> insurance.confirm(id, insuranceId, specialist))
+                .isInstanceOfSatisfying(BookingRuleException.class, ex -> assertThat(ex.getStatusCode().value()).isEqualTo(409));
+        assertThat(review.startQuoting(id, specialist).status()).isEqualTo(BookingStatus.QUOTING);
+    }
+
+    @Test
+    void onlyOneBookingCanMoveToTheLastStallAndRejectReleasesOnlyOnce() throws Exception {
+        String specialist = data.unique("a6-specialist");
+        data.staff(specialist, "SPECIALIST");
+        LocalDate date = pickupDate();
+        var departure = data.departure("HCM-DN", date, 2);
+        var replacement = data.departure("HCM-DN", date.plusDays(1), 1);
+        String firstOwner = customer();
+        String secondOwner = customer();
+        Long firstId = bookings.submit(firstOwner, null, request(departure.getId(), date, List.of(
+                horseInput(horse(firstOwner), InsuranceCoverageOption.NONE, true, List.of())))).id();
+        Long secondId = bookings.submit(secondOwner, null, request(departure.getId(), date, List.of(
+                horseInput(horse(secondOwner), InsuranceCoverageOption.NONE, true, List.of())))).id();
+        review.intake(firstId, specialist);
+        review.intake(secondId, specialist);
+
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var ready = new CountDownLatch(2);
+            var start = new CountDownLatch(1);
+            var first = executor.submit(() -> move(firstId, replacement.getId(), ready, start));
+            var second = executor.submit(() -> move(secondId, replacement.getId(), ready, start));
+            assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
+            start.countDown();
+            assertThat(List.of(first.get(15, TimeUnit.SECONDS), second.get(15, TimeUnit.SECONDS)))
+                    .containsExactlyInAnyOrder(true, false);
+        }
+
+        assertThat(reserved(departure.getId())).isEqualTo(1);
+        assertThat(reserved(replacement.getId())).isEqualTo(1);
+        Long winner = queries.reviewDetail(firstId).booking().departureId().equals(replacement.getId()) ? firstId : secondId;
+        assertThat(review.reject(winner, specialist, "Từ chối").status()).isEqualTo(BookingStatus.REJECTED);
+        assertThatThrownBy(() -> review.reject(winner, specialist, "Từ chối")).isInstanceOf(BookingRuleException.class);
+        assertThat(reserved(departure.getId())).isEqualTo(1);
+        assertThat(reserved(replacement.getId())).isZero();
+    }
+
+    @Test
+    void uploadsAndReviewsBookingDocumentExactlyOnce() {
+        String owner = customer();
+        String other = customer();
+        String specialist = data.unique("a6-specialist");
+        data.staff(specialist, "SPECIALIST");
+        LocalDate date = pickupDate();
+        var departure = data.departure("HCM-DN", date, 2);
+        Long id = bookings.submit(owner, null, request(departure.getId(), date, List.of(
+                horseInput(horse(owner), InsuranceCoverageOption.NONE, true, List.of())))).id();
+        review.intake(id, specialist);
+        Long typeId = jdbc.queryForObject("""
+                INSERT INTO document_type (code, name, owner_type) VALUES (?, 'Booking document', 'BOOKING')
+                RETURNING id
+                """, Long.class, data.unique("a6-doc"));
+        Long requirementId = jdbc.queryForObject("""
+                INSERT INTO document_requirement (country_rule_id, document_type_id, submitter_type, is_mandatory)
+                SELECT id, ?, 'CUSTOMER', false FROM country_rule
+                WHERE country_code = 'VN' AND direction = 'INTERPROVINCE' RETURNING id
+                """, Long.class, typeId);
+        var file = new org.springframework.mock.web.MockMultipartFile("file", "transport.pdf", "application/pdf", new byte[]{1});
+        org.mockito.Mockito.when(cloudinary.uploadFile(file, "documents/booking"))
+                .thenReturn("https://example.test/doc.pdf");
+        var request = new com.example.racehorse_transport.dto.booking.DocumentUploadRequestDto(
+                requirementId, null, date.plusDays(1), file);
+
+        assertThatThrownBy(() -> documentReview.attach(id, other, request))
+                .isInstanceOf(com.example.racehorse_transport.exception.ResourceNotFoundException.class);
+        var uploaded = documentReview.attach(id, owner, request);
+        assertThat(uploaded.requirementId()).isEqualTo(requirementId);
+        assertThatThrownBy(() -> documentReview.attach(id, owner, request)).isInstanceOf(BookingRuleException.class);
+        var approved = documentReview.approve(id, uploaded.id(), specialist,
+                new com.example.racehorse_transport.dto.booking.DocumentApprovalRequestDto("Đã đối chiếu"));
+        assertThat(approved.status()).isEqualTo(DocumentStatus.APPROVED);
+        assertThat(approved.reviewedAt()).isNotNull();
+        assertThat(approved.reviewNote()).isEqualTo("Đã đối chiếu");
+        assertThatThrownBy(() -> documentReview.reject(id, uploaded.id(), specialist, "Không hợp lệ"))
+                .isInstanceOf(BookingRuleException.class);
+        assertThat(documentReview.checklist(id, owner).items()).anySatisfy(item -> {
+            assertThat(item.requirement().id()).isEqualTo(requirementId);
+            assertThat(item.satisfied()).isTrue();
+        });
+        assertThat(documentCompleteness.isComplete(id)).isFalse();
+    }
+
+    @Test
+    void confirmedArrangedInsuranceKeepsTheEvidenceWhenTwoActionsCompete() throws Exception {
+        String owner = customer();
+        String specialist = data.unique("a6-specialist");
+        data.staff(specialist, "SPECIALIST");
+        Long insurer = jdbc.queryForObject("""
+                INSERT INTO party (party_type, display_name, country_code, status)
+                VALUES ('ORGANIZATION', ?, 'VN', 'ACTIVE') RETURNING id
+                """, Long.class, data.unique("a6-insurer"));
+        jdbc.update("INSERT INTO party_role (party_id, role_type, valid_from) VALUES (?, 'INSURER', ?)",
+                insurer, pickupDate().minusMonths(2));
+        Long id = bookings.submit(owner, null, directArranged(owner)).id();
+        review.intake(id, specialist);
+        Long insuranceId = queries.get(owner, id).horses().getFirst().insurance().id();
+        var evidence = new com.example.racehorse_transport.dto.booking.InsuranceEvidenceRequestDto(insurer,
+                new BigDecimal("8000000"), new BigDecimal("2500"), "VND", clock.instant().plusSeconds(3600));
+        insurance.recordEvidence(id, insuranceId, evidence);
+
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var ready = new CountDownLatch(2);
+            var start = new CountDownLatch(1);
+            java.util.concurrent.Callable<Integer> confirm = () -> {
+                ready.countDown();
+                if (!start.await(5, TimeUnit.SECONDS)) {
+                    throw new AssertionError("Concurrent insurance confirmation did not start.");
+                }
+                try {
+                    insurance.confirm(id, insuranceId, specialist);
+                    return 200;
+                } catch (BookingRuleException ex) {
+                    return ex.getStatusCode().value();
+                }
+            };
+            var first = executor.submit(confirm);
+            var second = executor.submit(confirm);
+            assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
+            start.countDown();
+            assertThat(List.of(first.get(15, TimeUnit.SECONDS), second.get(15, TimeUnit.SECONDS)))
+                    .containsExactlyInAnyOrder(200, 409);
+        }
+        assertThatThrownBy(() -> insurance.recordEvidence(id, insuranceId, evidence))
+                .isInstanceOf(BookingRuleException.class);
+        var confirmed = queries.get(owner, id).horses().getFirst().insurance();
+        assertThat(confirmed.status()).isEqualTo(HorseInsuranceStatus.CONFIRMED);
+        assertThat(confirmed.premiumAmount()).isEqualByComparingTo("2500");
+        assertThat(confirmed.coverageAmount()).isEqualByComparingTo("8000000");
+    }
+
+    @Test
+    void personalRevisionPreservesTheReasonAndReturnsToDraft() {
+        String owner = customer();
+        String other = customer();
+        String specialist = data.unique("a6-specialist");
+        data.staff(specialist, "SPECIALIST");
+        Long insurer = jdbc.queryForObject("""
+                INSERT INTO party (party_type, display_name, country_code, status)
+                VALUES ('ORGANIZATION', ?, 'VN', 'ACTIVE') RETURNING id
+                """, Long.class, data.unique("a6-insurer"));
+        LocalDate date = pickupDate();
+        jdbc.update("INSERT INTO party_role (party_id, role_type, valid_from) VALUES (?, 'INSURER', ?)",
+                insurer, date.minusMonths(2));
+        var declaration = new InsuranceDeclarationRequestDto(InsuranceCoverageOption.PERSONAL,
+                "ORIGINAL-01", date, date.plusDays(5), insurer, null);
+        Long id = bookings.submit(owner, null, request(null, date, List.of(
+                new HorseInput(horse(owner), "STANDARD", null, null, false, List.of(), declaration)))).id();
+        review.intake(id, specialist);
+        Long insuranceId = queries.get(owner, id).horses().getFirst().insurance().id();
+        var revision = new com.example.racehorse_transport.dto.booking.PersonalInsuranceRevisionRequestDto(
+                insurer, "REVISED-02", date, date.plusDays(8));
+        insurance.requestRevision(id, insuranceId, specialist, "Bổ sung số hợp đồng");
+        assertThatThrownBy(() -> insurance.revise(id, insuranceId, other, revision))
+                .isInstanceOf(com.example.racehorse_transport.exception.ResourceNotFoundException.class);
+        insurance.revise(id, insuranceId, owner, revision);
+        var result = queries.get(owner, id).horses().getFirst().insurance();
+        assertThat(result.status()).isEqualTo(HorseInsuranceStatus.DRAFT);
+        assertThat(result.policyNumber()).isEqualTo("REVISED-02");
+        assertThat(result.revisionReason()).isEqualTo("Bổ sung số hợp đồng");
+        assertThatThrownBy(() -> insurance.revise(id, insuranceId, owner, revision))
+                .isInstanceOf(BookingRuleException.class);
+    }
+
+    private boolean move(Long bookingId, Long departureId, CountDownLatch ready, CountDownLatch start)
+            throws InterruptedException {
+        ready.countDown();
+        if (!start.await(5, TimeUnit.SECONDS)) {
+            throw new AssertionError("Concurrent departure change did not start.");
+        }
+        try {
+            review.changeDeparture(bookingId, departureId);
+            return true;
+        } catch (IllegalStateException fullDeparture) {
+            return false;
+        }
     }
 
     private String customer() {

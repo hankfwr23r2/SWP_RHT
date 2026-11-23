@@ -241,7 +241,7 @@ Hai nhánh chạy song song. Mỗi nhánh tự lưu trạng thái trên đối t
 
 **Khi thiếu thông tin:** chuyên viên trả đơn về khách, ghi lý do vào `booking_status_history.reason` và chuyển trạng thái `NEEDS_RESUBMISSION`. Khách bổ sung xong thì đơn quay lại `UNDER_REVIEW`.
 
-**Điều kiện sang GĐ3:** đủ giấy bắt buộc, mọi `horse_insurance` đã CONFIRMED, và đơn đi trục đã có `departure_id` (đơn chạy thẳng không cần). Hệ thống kiểm điều kiện này bằng truy vấn, không lưu thành cờ.
+**Điều kiện sang GĐ3:** đủ giấy bắt buộc có `submitter_type = CUSTOMER` và đã xác định yêu cầu phụ thuộc cửa khẩu. Mỗi ngựa ACTIVE phải có bảo hiểm CONFIRMED. Hợp đồng PERSONAL phải phủ ngày đón và ngày xuất phát hiện tại của đơn nếu có chuyến trục. Báo giá ARRANGED phải còn hạn. Đơn đi trục phải có `departure_id`. Hệ thống kiểm các điều kiện khi bắt đầu báo giá và tính tình trạng giấy tờ khi đọc checklist.
 
 ---
 
@@ -283,7 +283,7 @@ Quá `expires_at` mà chưa cọc thì scheduler chuyển báo giá sang `EXPIRE
 | Việc | Bảng |
 |---|---|
 | Khách trả số dư trước ngày đón N ngày | `payment` BALANCE |
-| Hoàn tất giấy tờ kiểm dịch, giấy phép nhập | `document` |
+| Hoàn tất giấy tờ kiểm dịch, giấy phép nhập. Chuyên viên tải giấy của COMPANY, CONSIGNEE, AGENT và duyệt hoặc từ chối từng giấy. Khách có thể nộp lại giấy CUSTOMER bắt buộc khi thiếu bản còn hiệu lực | `document` |
 | **Tạo lượt xe đón**: gom các đơn có điểm đón gần nhau trong cùng ngày | `vehicle_trip` PICKUP, `trip_stop` (mỗi `booking_address` PICKUP là một điểm dừng, cuối cùng là hub) |
 | **Tạo lượt xe trục chính** cho chuyến | `vehicle_trip` LINEHAUL có `departure_id`. `trip_stop` chép từ `route_stop`: giờ = `planned_departure_at + arrival_offset_minutes` |
 | **Tạo lượt xe chạy thẳng** cho đơn không qua trục | `vehicle_trip` DIRECT: trụ sở → các địa chỉ đón → các địa chỉ giao → trụ sở. Có thể gom nhiều đơn cùng vùng |
@@ -293,7 +293,7 @@ Quá `expires_at` mà chưa cọc thì scheduler chuyển báo giá sang `EXPIRE
 
 **Điều kiện được đón ngựa**, kiểm bằng truy vấn khi xe xuất phát:
 - đã trả đủ: số còn nợ do `SettlementPolicy` tính bằng 0;
-- đủ giấy theo `DocumentCompletenessPolicy`;
+- đủ tất cả giấy bắt buộc của CUSTOMER, COMPANY, CONSIGNEE và AGENT theo `DocumentCompletenessService.isComplete`;
 - bảo hiểm của từng con đã CONFIRMED;
 - lượt xe đã có tài xế ACKNOWLEDGED.
 

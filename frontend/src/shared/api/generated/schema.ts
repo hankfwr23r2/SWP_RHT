@@ -196,6 +196,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bookings/review-queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["queue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bookings/{id}": {
         parameters: {
             query?: never;
@@ -206,6 +222,310 @@ export interface paths {
         get: operations["get_3"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/change-departure": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["changeDeparture"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_7"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/documents/checklist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["checklist"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/documents/my-checklist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["customerChecklist"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/documents/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["upload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/documents/upload-for-partner": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["uploadForPartner"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/documents/{documentId}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["approve"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/documents/{documentId}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reject_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/insurances/{insuranceId}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/insurances/{insuranceId}/record-evidence": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["recordEvidence"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/insurances/{insuranceId}/reopen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reopen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/insurances/{insuranceId}/request-revision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["requestRevision"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/insurances/{insuranceId}/revise": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["revise"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/intake": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["intake"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/resubmit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["resubmit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/return-for-resubmission": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["returnToCustomer"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/review-detail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/start-quoting": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["startQuoting"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1101,6 +1421,16 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseBookingDocumentChecklistResponseDto: {
+            data?: components["schemas"]["BookingDocumentChecklistResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseBookingDocumentResponseDto: {
+            data?: components["schemas"]["BookingDocumentResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseBookingResponseDto: {
             data?: components["schemas"]["BookingResponseDto"];
             message?: string;
@@ -1158,6 +1488,11 @@ export interface components {
         };
         ApiResponseListBillableServiceResponseDto: {
             data?: components["schemas"]["BillableServiceResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListBookingDocumentResponseDto: {
+            data?: components["schemas"]["BookingDocumentResponseDto"][];
             message?: string;
             status?: string;
         };
@@ -1373,11 +1708,46 @@ export interface components {
             /** Format: date */
             requestedPickupDate: string;
         };
+        BookingDepartureChangeRequestDto: {
+            /** Format: int64 */
+            departureId: number;
+        };
         BookingDetailResponseDto: {
             addresses?: components["schemas"]["AddressSnapshot"][];
             booking?: components["schemas"]["BookingResponseDto"];
             horses?: components["schemas"]["HorseDetail"][];
             parties?: components["schemas"]["PartySnapshot"][];
+            reviewReason?: string;
+        };
+        BookingDocumentChecklistResponseDto: {
+            documents?: components["schemas"]["BookingDocumentResponseDto"][];
+            items?: components["schemas"]["Item"][];
+            requirementsDependOnGate?: boolean;
+        };
+        BookingDocumentResponseDto: {
+            /** Format: int64 */
+            bookingHorseId?: number;
+            /** Format: date */
+            expiryDate?: string;
+            fileName?: string;
+            fileUrl?: string;
+            /** Format: int64 */
+            horseId?: number;
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            requirementId?: number;
+            reviewNote?: string;
+            /** Format: date-time */
+            reviewedAt?: string;
+            /** @enum {string} */
+            status?: "UPLOADED" | "APPROVED" | "REJECTED" | "EXPIRED";
+            typeCode?: string;
+        };
+        BookingIntakeRequestDto: unknown;
+        BookingQuotingRequestDto: unknown;
+        BookingRejectionRequestDto: {
+            reason: string;
         };
         BookingResponseDto: {
             /** @enum {string} */
@@ -1395,6 +1765,10 @@ export interface components {
             /** @enum {string} */
             status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
             waybillNumber?: string;
+        };
+        BookingResubmissionRequestDto: unknown;
+        BookingReturnRequestDto: {
+            reason: string;
         };
         ChangePasswordRequest: {
             confirmPassword: string;
@@ -1610,6 +1984,12 @@ export interface components {
             /** @enum {string} */
             routing?: "DIRECT" | "LINEHAUL";
         };
+        DocumentApprovalRequestDto: {
+            note?: string;
+        };
+        DocumentRejectionRequestDto: {
+            reason: string;
+        };
         DocumentRequirementCreateRequestDto: {
             /** Format: int64 */
             documentTypeId: number;
@@ -1664,6 +2044,16 @@ export interface components {
             name: string;
             /** @enum {string} */
             ownerType: "HORSE" | "BOOKING" | "BOOKING_HORSE" | "HORSE_LEG" | "VEHICLE_TRIP" | "INSURANCE" | "INCIDENT" | "COST_ITEM" | "HANDOVER" | "VEHICLE" | "STAFF" | "PARTY" | "CUSTOMER";
+        };
+        DocumentUploadRequestDto: {
+            /** Format: int64 */
+            bookingHorseId?: number;
+            /** Format: date */
+            expiryDate?: string;
+            /** Format: binary */
+            file: string;
+            /** Format: int64 */
+            requirementId: number;
         };
         EmailVerificationRequest: {
             /** Format: email */
@@ -1786,6 +2176,7 @@ export interface components {
             provinceCode?: string;
             provinceName?: string;
         };
+        InsuranceConfirmationRequestDto: unknown;
         InsuranceDeclarationRequestDto: {
             acceptedWaiver?: boolean;
             /** @enum {string} */
@@ -1799,11 +2190,19 @@ export interface components {
             validTo?: string;
         };
         InsuranceDetail: {
+            coverageAmount?: number;
             /** @enum {string} */
             coverageOption?: "PERSONAL" | "ARRANGED" | "NONE";
+            currencyCode?: string;
+            /** Format: int64 */
+            id?: number;
             /** Format: int64 */
             insurerPartyId?: number;
             policyNumber?: string;
+            premiumAmount?: number;
+            /** Format: date-time */
+            quoteExpiresAt?: string;
+            revisionReason?: string;
             /** @enum {string} */
             status?: "DRAFT" | "REVISION_REQUESTED" | "CONFIRMED";
             /** Format: date */
@@ -1812,6 +2211,31 @@ export interface components {
             validTo?: string;
             /** Format: int64 */
             waiverTermsAcceptanceId?: number;
+        };
+        InsuranceEvidenceRequestDto: {
+            coverageAmount: number;
+            currencyCode: string;
+            /** Format: int64 */
+            insurerPartyId: number;
+            premiumAmount?: number;
+            /** Format: date-time */
+            quoteExpiresAt?: string;
+        };
+        InsuranceReopenRequestDto: {
+            reason: string;
+        };
+        InsuranceRevisionReasonRequestDto: {
+            reason: string;
+        };
+        Item: {
+            /** Format: int64 */
+            bookingHorseId?: number;
+            requiredBeforePickup?: boolean;
+            requiredForQuoting?: boolean;
+            requirement?: components["schemas"]["DocumentRequirementResponseDto"];
+            satisfied?: boolean;
+            /** @enum {string} */
+            submitterType?: "CUSTOMER" | "CONSIGNEE" | "COMPANY" | "AGENT";
         };
         LegDistance: {
             km?: number;
@@ -1855,6 +2279,16 @@ export interface components {
         LoginRequest: {
             password: string;
             username: string;
+        };
+        PartnerDocumentUploadRequestDto: {
+            /** Format: int64 */
+            bookingHorseId?: number;
+            /** Format: date */
+            expiryDate?: string;
+            /** Format: binary */
+            file: string;
+            /** Format: int64 */
+            requirementId: number;
         };
         PartyCreateRequestDto: {
             address?: string;
@@ -1938,6 +2372,15 @@ export interface components {
         PasswordResetOtpRequest: {
             /** Format: email */
             email: string;
+        };
+        PersonalInsuranceRevisionRequestDto: {
+            /** Format: int64 */
+            insurerPartyId: number;
+            policyNumber: string;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo: string;
         };
         PriceItemCreateRequestDto: {
             /** Format: int64 */
@@ -2601,6 +3044,26 @@ export interface operations {
             };
         };
     };
+    queue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListBookingResponseDto"];
+                };
+            };
+        };
+    };
     get_3: {
         parameters: {
             query?: never;
@@ -2619,6 +3082,487 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseBookingDetailResponseDto"];
+                };
+            };
+        };
+    };
+    changeDeparture: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingDepartureChangeRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingResponseDto"];
+                };
+            };
+        };
+    };
+    list_7: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListBookingDocumentResponseDto"];
+                };
+            };
+        };
+    };
+    checklist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingDocumentChecklistResponseDto"];
+                };
+            };
+        };
+    };
+    customerChecklist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingDocumentChecklistResponseDto"];
+                };
+            };
+        };
+    };
+    upload: {
+        parameters: {
+            query: {
+                request: components["schemas"]["DocumentUploadRequestDto"];
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingDocumentResponseDto"];
+                };
+            };
+        };
+    };
+    uploadForPartner: {
+        parameters: {
+            query: {
+                request: components["schemas"]["PartnerDocumentUploadRequestDto"];
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingDocumentResponseDto"];
+                };
+            };
+        };
+    };
+    approve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                documentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DocumentApprovalRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingDocumentResponseDto"];
+                };
+            };
+        };
+    };
+    reject_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                documentId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentRejectionRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingDocumentResponseDto"];
+                };
+            };
+        };
+    };
+    confirm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                insuranceId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["InsuranceConfirmationRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    recordEvidence: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                insuranceId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InsuranceEvidenceRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    reopen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                insuranceId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InsuranceReopenRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    requestRevision: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                insuranceId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InsuranceRevisionReasonRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    revise: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                insuranceId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonalInsuranceRevisionRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    intake: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["BookingIntakeRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingResponseDto"];
+                };
+            };
+        };
+    };
+    reject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingRejectionRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingResponseDto"];
+                };
+            };
+        };
+    };
+    resubmit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["BookingResubmissionRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingResponseDto"];
+                };
+            };
+        };
+    };
+    returnToCustomer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingReturnRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingResponseDto"];
+                };
+            };
+        };
+    };
+    detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingDetailResponseDto"];
+                };
+            };
+        };
+    };
+    startQuoting: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["BookingQuotingRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingResponseDto"];
                 };
             };
         };
