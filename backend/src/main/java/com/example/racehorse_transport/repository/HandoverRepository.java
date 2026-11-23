@@ -22,4 +22,9 @@ public interface HandoverRepository extends JpaRepository<Handover, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT h FROM Handover h WHERE h.id = :id")
     Optional<Handover> findForUpdate(@Param("id") Long id);
+
+    // Lần giao đang chờ người nhận đã quá giờ chờ miễn phí (scheduler B5)
+    @Query("SELECT h FROM Handover h WHERE h.handoverType = com.example.racehorse_transport.entity.enums.HandoverType.DELIVERY AND h.status = :pending AND h.waitStartedAt IS NOT NULL AND h.waitStartedAt <= :before")
+    List<Handover> findWaitingSince(@Param("pending") HandoverStatus pending, @Param("before") java.time.Instant before);
 }
+

@@ -135,3 +135,41 @@ test('ở trạm nghỉ hộ tống ghi ăn uống từng con, rời sớm thì 
   await expect(rest).toContainText('Đã rời')
   expect(sent.depart).toEqual({ earlyReason: 'Kịp giờ giao theo hẹn' })
 })
+
+test('tài xế bắt đầu chờ người nhận rồi ghi nhận không gặp, có hộp xác nhận', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.addInitScript(() => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: 'driver', name: 'Tài xế Một', username: 'driver@example.com' })))
+  const handover: Record<string, unknown> = { id: 60, handoverType: 'DELIVERY', status: 'PENDING', tripStopId: 4, horses: [{ horseLegId: 70, bookingCode: 'BK-AAAA0001', horseName: 'Sao Mai' }] }
+  const run = {
+    trip: {
+      id: 9, code: 'VT-AAAA0009', tripType: 'DIRECT', status: 'IN_PROGRESS', licensePlate: '51C-12345', startLocationName: 'Hub HCM', endLocationName: 'Hub HCM',
+      stops: [
+        { id: 2, sequenceNumber: 1, stopType: 'PICKUP', bookingCode: 'BK-AAAA0001', addressLine: 'Trại Long Thành', actualArrivalAt: 't', actualDepartureAt: 't' },
+        { id: 4, sequenceNumber: 2, stopType: 'DELIVERY', bookingCode: 'BK-AAAA0001', addressLine: 'Trại Huế', actualArrivalAt: '2031-03-05T08:00:00Z' },
+        { id: 5, sequenceNumber: 3, stopType: 'HUB', locationName: 'Hub HCM' },
+      ],
+    },
+    horses: [{ bookingCode: 'BK-AAAA0001', horseName: 'Sao Mai', seats: 1, leg: { id: 70, boardTripStopId: 2, alightTripStopId: 4, status: 'IN_PROGRESS' } }],
+    handovers: [handover],
+  }
+  let failed = false
+  await page.route('**/api/v1/**', async route => {
+    const path = new URL(route.request().url()).pathname.replace('/api/v1', '')
+    if (path === '/crew/vehicle-trips/9') return ok(route, run)
+    if (path === '/handovers/60/start-waiting') { handover.waitStartedAt = '2031-03-05T08:05:00Z'; return ok(route, run) }
+    if (path === '/handovers/60/fail') { failed = true; handover.status = 'TIMEOUT'; run.horses[0].leg.status = 'FAILED'; return ok(route, run) }
+    return ok(route, [])
+  })
+  await page.goto('/backoffice/my-trips/9')
+
+  const stop = page.getByRole('list', { name: 'Điểm dừng' }).getByRole('listitem').filter({ hasText: 'Trại Huế' }).first()
+  await stop.getByRole('button', { name: 'Bắt đầu chờ người nhận' }).click({ timeout: 15_000 })
+  await expect(stop).toContainText('Đang chờ người nhận từ')
+  await stop.getByRole('button', { name: 'Không gặp người nhận' }).click()
+  const confirm = page.getByRole('alertdialog', { name: 'Ghi nhận không gặp người nhận?' })
+  await expect(confirm).toContainText('Chỉ làm được sau khi hết giờ chờ miễn phí')
+  await confirm.getByRole('button', { name: 'Không gặp người nhận' }).click()
+  await expect(confirm).toHaveCount(0)
+  expect(failed).toBe(true)
+  await expect(stop.getByRole('button', { name: 'Hoàn tất giao nhận' })).toHaveCount(0)
+})

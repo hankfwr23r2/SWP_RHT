@@ -4,6 +4,8 @@ import com.example.racehorse_transport.entity.enums.HandoverType;
 import com.example.racehorse_transport.entity.enums.TripStopType;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.exception.DispatchRuleException;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collection;
 
 // Quy tắc thực hiện lượt xe tại điểm dừng (B2), hàm thuần
@@ -90,4 +92,25 @@ public final class TripExecutionPolicy {
             throw new DispatchRuleException("status", "Còn " + horsesStillOnBoard + " con ngựa trên xe chưa bàn giao.", true);
         }
     }
+
+    // Bắt đầu chờ người nhận ở lần giao đang mở (mục 6.5)
+    public static void requireCanStartWaiting(HandoverType type, boolean pending, boolean alreadyWaiting) {
+        if (type != HandoverType.DELIVERY || !pending) {
+            throw new DispatchRuleException("handoverId", "Chỉ bắt đầu chờ ở lần giao ngựa đang mở.", true);
+        }
+        if (alreadyWaiting) {
+            throw new DispatchRuleException("handoverId", "Đã bắt đầu chờ người nhận.", true);
+        }
+    }
+
+    // Không gặp người nhận: chỉ khi đã chờ hết thời gian chờ miễn phí (mục 6.6, B5)
+    public static void requireFreeWaitOver(Instant waitStartedAt, Instant now, int freeWaitMinutes) {
+        if (waitStartedAt == null) {
+            throw new DispatchRuleException("handoverId", "Chưa bắt đầu chờ người nhận.", true);
+        }
+        if (Duration.between(waitStartedAt, now).compareTo(Duration.ofMinutes(freeWaitMinutes)) < 0) {
+            throw new DispatchRuleException("handoverId", "Chưa hết " + freeWaitMinutes + " phút chờ miễn phí.", true);
+        }
+    }
 }
+

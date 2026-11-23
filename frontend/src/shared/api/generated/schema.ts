@@ -1028,6 +1028,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/handovers/{id}/fail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["fail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/handovers/{id}/horses": {
         parameters: {
             query?: never;
@@ -1038,6 +1054,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["scan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/handovers/{id}/start-waiting": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["startWaiting"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2894,6 +2926,8 @@ export interface components {
             status?: "PENDING" | "DONE" | "TIMEOUT" | "FAILED";
             /** Format: int64 */
             tripStopId?: number;
+            /** Format: date-time */
+            waitStartedAt?: string;
         };
         HandoverScanRequestDto: {
             conditionNote?: string;
@@ -5654,6 +5688,28 @@ export interface operations {
             };
         };
     };
+    fail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
     scan: {
         parameters: {
             query?: never;
@@ -5668,6 +5724,28 @@ export interface operations {
                 "application/json": components["schemas"]["HandoverScanRequestDto"];
             };
         };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
+    startWaiting: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description OK */
             200: {

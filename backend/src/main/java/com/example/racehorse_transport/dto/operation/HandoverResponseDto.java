@@ -11,7 +11,7 @@ import java.util.Map;
 
 // Một lần giao nhận ở điểm dừng: các con cần giao nhận và kết quả quét chip từng con
 public record HandoverResponseDto(
-        Long id, HandoverType handoverType, HandoverStatus status, Long tripStopId, String handledByName, Instant handedAt, String note,
+        Long id, HandoverType handoverType, HandoverStatus status, Long tripStopId, String handledByName, Instant waitStartedAt, Instant handedAt, String note,
         List<HandoverHorseDto> horses) {
 
     // scanned == null: chưa quét
@@ -25,7 +25,7 @@ public record HandoverResponseDto(
 
     public static HandoverResponseDto from(Handover handover, List<HorseLeg> legs, Map<Long, HandoverHorse> scansByLeg) {
         return new HandoverResponseDto(handover.getId(), handover.getHandoverType(), handover.getStatus(), handover.getTripStop().getId(),
-                handover.getHandledBy().getFullName(), handover.getHandedAt(), handover.getNote(),
+                handover.getHandledBy().getFullName(), handover.getWaitStartedAt(), handover.getHandedAt(), handover.getNote(),
                 legs.stream().map(leg -> HandoverHorseDto.from(leg, scansByLeg.get(leg.getId()))).toList());
     }
 }
