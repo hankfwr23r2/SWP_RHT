@@ -31,6 +31,24 @@
         "required" : [ "quantity", "serviceId" ],
         "type" : "object"
       },
+      "AddressDto" : {
+        "properties" : {
+          "addressLine" : {
+            "type" : "string"
+          },
+          "contactName" : {
+            "type" : "string"
+          },
+          "contactPhone" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "AddressInput" : {
         "properties" : {
           "accessNote" : {
@@ -488,6 +506,23 @@
         },
         "type" : "object"
       },
+      "ApiResponseListDispatchBookingResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DispatchBookingResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListDocumentRequirementResponseDto" : {
         "properties" : {
           "data" : {
@@ -714,6 +749,23 @@
           "data" : {
             "items" : {
               "$ref" : "#/components/schemas/SystemConfigResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListTripHorseResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/TripHorseResponseDto"
             },
             "type" : "array"
           },
@@ -1945,6 +1997,53 @@
         },
         "type" : "object"
       },
+      "DispatchBookingResponseDto" : {
+        "properties" : {
+          "bookingType" : {
+            "enum" : [ "LOCAL", "INTERPROVINCE", "EXPORT", "IMPORT" ],
+            "type" : "string"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "deliveryAddress" : {
+            "$ref" : "#/components/schemas/AddressDto"
+          },
+          "departureId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "horses" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HorseDto"
+            },
+            "type" : "array"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "pickupAddress" : {
+            "$ref" : "#/components/schemas/AddressDto"
+          },
+          "plannedDepartureAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "requestedPickupDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "routeCode" : {
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "PENDING_INTAKE", "UNDER_REVIEW", "NEEDS_RESUBMISSION", "QUOTING", "AWAITING_DEPOSIT", "QUOTE_EXPIRED", "CONFIRMED", "SCHEDULE_CHANGE_REQUIRED", "IN_OPERATION", "DELIVERED", "COMPLETED", "CANCELLED", "REJECTED" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "DocumentApprovalRequestDto" : {
         "properties" : {
           "note" : {
@@ -2253,6 +2352,38 @@
         },
         "type" : "object"
       },
+      "HorseDto" : {
+        "properties" : {
+          "bookingHorseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "horseName" : {
+            "type" : "string"
+          },
+          "legs" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HorseLegResponseDto"
+            },
+            "type" : "array"
+          },
+          "microchip" : {
+            "type" : "string"
+          },
+          "seats" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "stallTypeCode" : {
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "ACTIVE", "EXCLUDED", "CANCELLED", "DELIVERED", "RETURNED" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "HorseInput" : {
         "properties" : {
           "addOns" : {
@@ -2289,6 +2420,78 @@
           }
         },
         "required" : [ "horseId", "insurance", "stallTypeCode" ],
+        "type" : "object"
+      },
+      "HorseLegRequestDto" : {
+        "properties" : {
+          "alightTripStopId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "boardTripStopId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "bookingHorseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "alightTripStopId", "boardTripStopId", "bookingHorseId" ],
+        "type" : "object"
+      },
+      "HorseLegResponseDto" : {
+        "properties" : {
+          "alightTripStopId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "boardTripStopId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "bookingHorseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "fromName" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "legType" : {
+            "enum" : [ "PICKUP", "LINEHAUL", "DELIVERY", "TRANSFER", "RETURN", "DIRECT" ],
+            "type" : "string"
+          },
+          "plannedEndAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "plannedStartAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "sequenceNumber" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "status" : {
+            "enum" : [ "PLANNED", "IN_PROGRESS", "COMPLETED", "FAILED", "CANCELLED" ],
+            "type" : "string"
+          },
+          "toName" : {
+            "type" : "string"
+          },
+          "vehicleTripCode" : {
+            "type" : "string"
+          },
+          "vehicleTripId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
         "type" : "object"
       },
       "HorseResponseDto" : {
@@ -3944,6 +4147,30 @@
           }
         },
         "required" : [ "configValue" ],
+        "type" : "object"
+      },
+      "TripHorseResponseDto" : {
+        "properties" : {
+          "bookingCode" : {
+            "type" : "string"
+          },
+          "horseName" : {
+            "type" : "string"
+          },
+          "leg" : {
+            "$ref" : "#/components/schemas/HorseLegResponseDto"
+          },
+          "microchip" : {
+            "type" : "string"
+          },
+          "seats" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "stallTypeCode" : {
+            "type" : "string"
+          }
+        },
         "type" : "object"
       },
       "TripStopRequestDto" : {
@@ -6209,6 +6436,41 @@
         "tags" : [ "departure-controller" ]
       }
     },
+    "/dispatch/bookings" : {
+      "get" : {
+        "operationId" : "bookings",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "from",
+          "required" : true,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "to",
+          "required" : true,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListDispatchBookingResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "dispatch-controller" ]
+      }
+    },
     "/dispatch/crew-candidates" : {
       "get" : {
         "operationId" : "crewCandidates",
@@ -6376,6 +6638,33 @@
           }
         },
         "tags" : [ "health-check-controller" ]
+      }
+    },
+    "/horse-legs/{id}/cancel" : {
+      "post" : {
+        "operationId" : "cancelLeg",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListTripHorseResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "dispatch-controller" ]
       }
     },
     "/horse-types" : {
@@ -7892,6 +8181,68 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseVehicleTripResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "dispatch-controller" ]
+      }
+    },
+    "/vehicle-trips/{id}/horse-legs" : {
+      "get" : {
+        "operationId" : "horsesOnTrip",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListTripHorseResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "dispatch-controller" ]
+      },
+      "post" : {
+        "operationId" : "assignHorse",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HorseLegRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListTripHorseResponseDto"
                 }
               }
             },

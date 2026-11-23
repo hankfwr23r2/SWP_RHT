@@ -852,6 +852,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dispatch/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["bookings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/dispatch/crew-candidates": {
         parameters: {
             query?: never;
@@ -926,6 +942,22 @@ export interface paths {
         get: operations["checkHealth"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-legs/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancelLeg"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1476,6 +1508,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vehicle-trips/{id}/horse-legs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["horsesOnTrip"];
+        put?: never;
+        post: operations["assignHorse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vehicles": {
         parameters: {
             query?: never;
@@ -1572,6 +1620,13 @@ export interface components {
             quantity: number;
             /** Format: int64 */
             serviceId: number;
+        };
+        AddressDto: {
+            addressLine?: string;
+            contactName?: string;
+            contactPhone?: string;
+            /** Format: int64 */
+            id?: number;
         };
         AddressInput: {
             accessNote?: string;
@@ -1723,6 +1778,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListDispatchBookingResponseDto: {
+            data?: components["schemas"]["DispatchBookingResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListDocumentRequirementResponseDto: {
             data?: components["schemas"]["DocumentRequirementResponseDto"][];
             message?: string;
@@ -1790,6 +1850,11 @@ export interface components {
         };
         ApiResponseListSystemConfigResponseDto: {
             data?: components["schemas"]["SystemConfigResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListTripHorseResponseDto: {
+            data?: components["schemas"]["TripHorseResponseDto"][];
             message?: string;
             status?: string;
         };
@@ -2230,6 +2295,25 @@ export interface components {
             /** @enum {string} */
             routing?: "DIRECT" | "LINEHAUL";
         };
+        DispatchBookingResponseDto: {
+            /** @enum {string} */
+            bookingType?: "LOCAL" | "INTERPROVINCE" | "EXPORT" | "IMPORT";
+            code?: string;
+            deliveryAddress?: components["schemas"]["AddressDto"];
+            /** Format: int64 */
+            departureId?: number;
+            horses?: components["schemas"]["HorseDto"][];
+            /** Format: int64 */
+            id?: number;
+            pickupAddress?: components["schemas"]["AddressDto"];
+            /** Format: date-time */
+            plannedDepartureAt?: string;
+            /** Format: date */
+            requestedPickupDate?: string;
+            routeCode?: string;
+            /** @enum {string} */
+            status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
+        };
         DocumentApprovalRequestDto: {
             note?: string;
         };
@@ -2341,6 +2425,18 @@ export interface components {
             /** @enum {string} */
             status?: "ACTIVE" | "EXCLUDED" | "CANCELLED" | "DELIVERED" | "RETURNED";
         };
+        HorseDto: {
+            /** Format: int64 */
+            bookingHorseId?: number;
+            horseName?: string;
+            legs?: components["schemas"]["HorseLegResponseDto"][];
+            microchip?: string;
+            /** Format: int32 */
+            seats?: number;
+            stallTypeCode?: string;
+            /** @enum {string} */
+            status?: "ACTIVE" | "EXCLUDED" | "CANCELLED" | "DELIVERED" | "RETURNED";
+        };
         HorseInput: {
             addOns?: components["schemas"]["AddOnInput"][];
             dietNote?: string;
@@ -2351,6 +2447,39 @@ export interface components {
             horseId: number;
             insurance: components["schemas"]["InsuranceDeclarationRequestDto"];
             stallTypeCode: string;
+        };
+        HorseLegRequestDto: {
+            /** Format: int64 */
+            alightTripStopId: number;
+            /** Format: int64 */
+            boardTripStopId: number;
+            /** Format: int64 */
+            bookingHorseId: number;
+        };
+        HorseLegResponseDto: {
+            /** Format: int64 */
+            alightTripStopId?: number;
+            /** Format: int64 */
+            boardTripStopId?: number;
+            /** Format: int64 */
+            bookingHorseId?: number;
+            fromName?: string;
+            /** Format: int64 */
+            id?: number;
+            /** @enum {string} */
+            legType?: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "RETURN" | "DIRECT";
+            /** Format: date-time */
+            plannedEndAt?: string;
+            /** Format: date-time */
+            plannedStartAt?: string;
+            /** Format: int32 */
+            sequenceNumber?: number;
+            /** @enum {string} */
+            status?: "PLANNED" | "IN_PROGRESS" | "COMPLETED" | "FAILED" | "CANCELLED";
+            toName?: string;
+            vehicleTripCode?: string;
+            /** Format: int64 */
+            vehicleTripId?: number;
         };
         HorseResponseDto: {
             /** Format: int32 */
@@ -2939,6 +3068,15 @@ export interface components {
         };
         SystemConfigUpdateRequestDto: {
             configValue: number;
+        };
+        TripHorseResponseDto: {
+            bookingCode?: string;
+            horseName?: string;
+            leg?: components["schemas"]["HorseLegResponseDto"];
+            microchip?: string;
+            /** Format: int32 */
+            seats?: number;
+            stallTypeCode?: string;
         };
         TripStopRequestDto: {
             /** Format: int64 */
@@ -4560,6 +4698,29 @@ export interface operations {
             };
         };
     };
+    bookings: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListDispatchBookingResponseDto"];
+                };
+            };
+        };
+    };
     crewCandidates: {
         parameters: {
             query: {
@@ -4710,6 +4871,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseMapStringString"];
+                };
+            };
+        };
+    };
+    cancelLeg: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListTripHorseResponseDto"];
                 };
             };
         };
@@ -5944,6 +6127,54 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseVehicleTripResponseDto"];
+                };
+            };
+        };
+    };
+    horsesOnTrip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListTripHorseResponseDto"];
+                };
+            };
+        };
+    };
+    assignHorse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HorseLegRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListTripHorseResponseDto"];
                 };
             };
         };

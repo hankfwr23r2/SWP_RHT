@@ -1,0 +1,284 @@
+package com.example.racehorse_transport.controller;
+
+import static org.hamcrest.Matchers.startsWith;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.example.racehorse_transport.PostgresIntegrationTest;
+import com.example.racehorse_transport.entity.Vehicle;
+import com.example.racehorse_transport.repository.LocationRepository;
+import com.example.racehorse_transport.security.JwtUtils;
+import com.example.racehorse_transport.support.TestData;
+import com.jayway.jsonpath.JsonPath;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.transaction.annotation.Transactional;
+
+// B1: xếp ngựa của 3 đơn seed vào lượt xe (chạy thẳng, trục nội địa, quốc tế) và các quy tắc chặng
+@PostgresIntegrationTest
+@AutoConfigureMockMvc
+@Transactional
+class HorseLegFlowTest {
+
+    @Autowired private MockMvc mvc;
+    @Autowired private JdbcTemplate jdbc;
+    @Autowired private TestData testData;
+    @Autowired private JwtUtils jwtUtils;
+    @Autowired private LocationRepository locations;
+
+    private String coordinator;
+    private long hcm;
+
+    @BeforeEach
+    void setUp() {
+        String username = testData.unique("legs.coordinator");
+        testData.staff(username, "COORDINATOR");
+        coordinator = "Bearer " + jwtUtils.generateToken(username, List.of("COORDINATOR"));
+        hcm = locations.findByCode("HUB-HCM").orElseThrow().getId();
+    }
+
+    @Test
+    void directBookingRidesOneTripFromPickupToDelivery() throws Exception {
+        Seed seed = seed("DEV-DIRECT-001");
+        Instant start = seed.pickupDate().atTime(1, 0).toInstant(java.time.ZoneOffset.UTC);
+        long trip = tripId(createTrip(testData.vehicle(4, 0), "DIRECT", stop(hcm, "HUB", start, 0), address(seed.pickup(), "PICKUP", start, 60),
+                address(seed.delivery(), "DELIVERY", start, 240), stop(hcm, "HUB", start, 480)));
+        List<Long> stops = stopIds(trip);
+
+        // Chạy thẳng phải xuống ở địa chỉ giao
+        assign(trip, seed.horses().getFirst(), stops.get(1), stops.get(3)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Chạy thẳng phải xuống xe ở địa chỉ giao của đơn."));
+        assign(trip, seed.horses().getFirst(), stops.get(2), stops.get(1)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Điểm xuống phải sau điểm lên."));
+        assign(trip, seed.horses().getFirst(), stops.get(1), stops.get(2)).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data[0].bookingCode").value("DEV-DIRECT-001"))
+                .andExpect(jsonPath("$.data[0].leg.legType").value("DIRECT"))
+                .andExpect(jsonPath("$.data[0].leg.status").value("PLANNED"))
+                .andExpect(jsonPath("$.data[0].leg.sequenceNumber").value(1));
+        assign(trip, seed.horses().getFirst(), stops.get(1), stops.get(2)).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Ngựa đã có trên lượt xe này."));
+    }
+
+    @Test
+    void domesticBookingGoesPickupLinehaulDeliveryAsOneChain() throws Exception {
+        Seed seed = seed("DEV-DOMESTIC-001");
+        long danang = locations.findByCode("HUB-DN").orElseThrow().getId();
+        Instant pickupStart = seed.departureAt().minusSeconds(6 * 3600);
+        long pickupTrip = tripId(createTrip(testData.vehicle(4, 0), "PICKUP", stop(hcm, "HUB", pickupStart, 0),
+                address(seed.pickup(), "PICKUP", pickupStart, 90), stop(hcm, "HUB", pickupStart, 240)));
+        Vehicle linehaulVehicle = testData.vehicle(4, 1);
+        long linehaul = tripId(createTrip(linehaulVehicle, "LINEHAUL", seed.departureId()));
+
+        // Chưa có chặng nào thì không đi thẳng vào lượt trục rồi giao bỏ qua đón: chặng giao đầu tiên không xuất phát ở địa chỉ đón
+        Instant linehaulEnd = Instant.parse(JsonPath.read(trip(linehaul), "$.data.plannedEndAt"));
+        long delivery = tripId(createTrip(linehaulVehicle, "DELIVERY", stop(danang, "HUB", linehaulEnd, 30),
+                address(seed.delivery(), "DELIVERY", linehaulEnd, 120), stop(danang, "HUB", linehaulEnd, 300)));
+        List<Long> deliveryStops = stopIds(delivery);
+        assign(delivery, seed.horses().getFirst(), deliveryStops.get(0), deliveryStops.get(1)).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message", startsWith("Chặng mới phải bắt đầu ở nơi chặng trước")));
+
+        List<Long> pickupStops = stopIds(pickupTrip);
+        for (long horse : seed.horses()) {
+            assign(pickupTrip, horse, pickupStops.get(1), pickupStops.get(2)).andExpect(status().isCreated());
+        }
+
+        List<Long> linehaulStops = stopIds(linehaul);
+        // Quy tắc #21: chỉ lên ở điểm đầu tuyến
+        assign(linehaul, seed.horses().getFirst(), linehaulStops.get(1), linehaulStops.getLast()).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", startsWith("Ngựa chỉ lên xe trục ở điểm đầu tuyến")));
+        assign(linehaul, seed.horses().getFirst(), linehaulStops.getFirst(), linehaulStops.getLast()).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data[0].leg.legType").value("LINEHAUL"))
+                .andExpect(jsonPath("$.data[0].leg.sequenceNumber").value(2));
+
+        // Quy tắc #30: con thứ hai cùng đơn không đi lượt trục khác
+        long otherLinehaul = tripId(createTrip(testData.vehicle(4, 0), "LINEHAUL", seed.departureId()));
+        List<Long> otherStops = stopIds(otherLinehaul);
+        assign(otherLinehaul, seed.horses().get(1), otherStops.getFirst(), otherStops.getLast()).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Ngựa cùng đơn phải đi cùng một lượt xe trục."));
+        assign(linehaul, seed.horses().get(1), linehaulStops.getFirst(), linehaulStops.getLast()).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.length()").value(2));
+
+        assign(delivery, seed.horses().getFirst(), deliveryStops.get(0), deliveryStops.get(1)).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data[0].leg.legType").value("DELIVERY"))
+                .andExpect(jsonPath("$.data[0].leg.sequenceNumber").value(3));
+
+        // Bảng điều độ thấy đủ chuỗi 3 chặng của con đầu
+        mvc.perform(get("/dispatch/bookings").param("from", seed.pickupDate().toString()).param("to", seed.pickupDate().toString())
+                        .header(HttpHeaders.AUTHORIZATION, coordinator))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.code == 'DEV-DOMESTIC-001')].horses[0].legs.length()").value(3))
+                .andExpect(jsonPath("$.data[?(@.code == 'DEV-DOMESTIC-001')].routeCode").value("HCM-DN"));
+
+        // Gỡ chặng: không gỡ chặng đón khi còn chặng sau; gỡ chặng cuối được
+        long pickupLeg = legId(seed.horses().getFirst(), 1);
+        mvc.perform(post("/horse-legs/{id}/cancel", pickupLeg).header(HttpHeaders.AUTHORIZATION, coordinator))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.message", startsWith("Con ngựa còn chặng sau")));
+        mvc.perform(post("/horse-legs/{id}/cancel", legId(seed.horses().getFirst(), 3)).header(HttpHeaders.AUTHORIZATION, coordinator))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(0));
+        // Lượt có ngựa thì không hủy được
+        mvc.perform(post("/vehicle-trips/{id}/cancel", linehaul).header(HttpHeaders.AUTHORIZATION, coordinator)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"reason\":\"Thử\"}"))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void nextLegContinuesFromWhereAndWhenThePreviousLegEnded() throws Exception {
+        Seed seed = seed("DEV-DOMESTIC-001");
+        long danang = locations.findByCode("HUB-DN").orElseThrow().getId();
+        // Lượt đón kết thúc ở HUB-HCM lúc 1 giờ sau giờ chạy trục: con ngựa chưa kịp lên trục
+        Instant late = seed.departureAt().minusSeconds(3 * 3600);
+        long pickupTrip = tripId(createTrip(testData.vehicle(4, 0), "PICKUP", stop(hcm, "HUB", late, 0),
+                address(seed.pickup(), "PICKUP", late, 60), stop(hcm, "HUB", late, 240)));
+        List<Long> pickupStops = stopIds(pickupTrip);
+        assign(pickupTrip, seed.horses().getFirst(), pickupStops.get(1), pickupStops.get(2)).andExpect(status().isCreated());
+
+        long linehaul = tripId(createTrip(testData.vehicle(4, 0), "LINEHAUL", seed.departureId()));
+        List<Long> linehaulStops = stopIds(linehaul);
+        assign(linehaul, seed.horses().getFirst(), linehaulStops.getFirst(), linehaulStops.getLast()).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message", startsWith("Chặng mới bắt đầu trước khi chặng trước")));
+
+        // Sau chặng đón con ngựa ở HUB-HCM, không bắt đầu chặng giao ở HUB-DN được
+        Instant later = seed.departureAt().plusSeconds(3 * 24 * 3600);
+        Vehicle atDanang = testData.vehicle(4, 0);
+        long toDanang = tripId(createTrip(atDanang, "TRANSFER", stop(hcm, "HUB", later, 0), stop(danang, "HUB", later, 900)));
+        long delivery = tripId(createTrip(atDanang, "DELIVERY", stop(danang, "HUB", later, 960),
+                address(seed.delivery(), "DELIVERY", later, 1020), stop(danang, "HUB", later, 1200)));
+        List<Long> deliveryStops = stopIds(delivery);
+        assign(delivery, seed.horses().getFirst(), deliveryStops.get(0), deliveryStops.get(1)).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message", startsWith("Chặng mới phải bắt đầu ở nơi chặng trước")));
+        // Chuyển xe từ HUB-HCM tới HUB-DN thì nối tiếp được
+        List<Long> transferStops = stopIds(toDanang);
+        assign(toDanang, seed.horses().getFirst(), transferStops.get(0), transferStops.get(1)).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data[0].leg.legType").value("TRANSFER"));
+        assign(delivery, seed.horses().getFirst(), deliveryStops.get(0), deliveryStops.get(1)).andExpect(status().isCreated());
+    }
+
+    @Test
+    void vehicleSeatsAreNeverExceeded() throws Exception {
+        Seed seed = seed("DEV-DOMESTIC-001");
+        Instant start = seed.departureAt().minusSeconds(6 * 3600);
+        long trip = tripId(createTrip(testData.vehicle(1, 0), "PICKUP", stop(hcm, "HUB", start, 0),
+                address(seed.pickup(), "PICKUP", start, 90), stop(hcm, "HUB", start, 240)));
+        List<Long> stops = stopIds(trip);
+        assign(trip, seed.horses().getFirst(), stops.get(1), stops.get(2)).andExpect(status().isCreated());
+        assign(trip, seed.horses().get(1), stops.get(1), stops.get(2)).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message", startsWith("Xe chỉ có 1 chỗ")));
+    }
+
+    @Test
+    void exportBookingRidesPickupThenLinehaulToTheBorderGate() throws Exception {
+        Seed seed = seed("DEV-EXPORT-001");
+        long gate = locations.findByCode("GATE-MOCBAI").orElseThrow().getId();
+        Instant start = seed.departureAt().minusSeconds(6 * 3600);
+        long pickupTrip = tripId(createTrip(testData.vehicle(4, 0), "PICKUP", stop(hcm, "HUB", start, 0),
+                address(seed.pickup(), "PICKUP", start, 90), stop(hcm, "HUB", start, 240)));
+        List<Long> pickupStops = stopIds(pickupTrip);
+        assign(pickupTrip, seed.horses().getFirst(), pickupStops.get(1), pickupStops.get(2)).andExpect(status().isCreated());
+
+        long linehaul = tripId(createTrip(testData.vehicle(4, 0), "LINEHAUL", seed.departureId()));
+        List<Long> linehaulStops = stopIds(linehaul);
+        assign(linehaul, seed.horses().getFirst(), linehaulStops.getFirst(), linehaulStops.getLast()).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data[0].leg.toName").value(locations.findById(gate).orElseThrow().getName()));
+
+        // Lượt trục của chuyến khác không nhận ngựa của đơn này
+        long otherDeparture = testData.departure("HCM-PNH", seed.pickupDate().plusDays(40), 9).getId();
+        long otherTrip = tripId(createTrip(testData.vehicle(4, 0), "LINEHAUL", otherDeparture));
+        List<Long> otherStops = stopIds(otherTrip);
+        assign(otherTrip, seed.horses().getFirst(), otherStops.getFirst(), otherStops.getLast()).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", startsWith("Đơn DEV-EXPORT-001 không đi chuyến")));
+    }
+
+    @Test
+    void stopOfAnotherBookingCannotBeUsed() throws Exception {
+        Seed direct = seed("DEV-DIRECT-001");
+        Seed domestic = seed("DEV-DOMESTIC-001");
+        Instant start = domestic.departureAt().minusSeconds(6 * 3600);
+        long trip = tripId(createTrip(testData.vehicle(4, 0), "PICKUP", stop(hcm, "HUB", start, 0),
+                address(direct.pickup(), "PICKUP", start, 60), address(domestic.pickup(), "PICKUP", start, 120), stop(hcm, "HUB", start, 240)));
+        List<Long> stops = stopIds(trip);
+        assign(trip, domestic.horses().getFirst(), stops.get(1), stops.get(3)).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Điểm dừng 2 là địa chỉ của đơn khác."));
+        mvc.perform(get("/vehicle-trips/{id}/horse-legs", trip).header(HttpHeaders.AUTHORIZATION, coordinator))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(0));
+    }
+
+    private record Seed(long bookingId, LocalDate pickupDate, Long departureId, Instant departureAt, long pickup, long delivery, List<Long> horses) {}
+
+    private Seed seed(String code) {
+        var row = jdbc.queryForMap("""
+                SELECT b.id, b.requested_pickup_date, b.departure_id, d.planned_departure_at FROM booking b
+                LEFT JOIN departure d ON d.id = b.departure_id WHERE b.code = ?""", code);
+        long id = ((Number) row.get("id")).longValue();
+        long pickup = jdbc.queryForObject("SELECT id FROM booking_address WHERE booking_id = ? AND address_type = 'PICKUP'", Long.class, id);
+        long delivery = jdbc.queryForObject("SELECT id FROM booking_address WHERE booking_id = ? AND address_type = 'DELIVERY'", Long.class, id);
+        List<Long> horses = jdbc.queryForList("SELECT id FROM booking_horse WHERE booking_id = ? ORDER BY id", Long.class, id);
+        Object departure = row.get("departure_id");
+        Object departureAt = row.get("planned_departure_at");
+        return new Seed(id, ((java.sql.Date) row.get("requested_pickup_date")).toLocalDate(),
+                departure == null ? null : ((Number) departure).longValue(),
+                departureAt == null ? null : toInstant(departureAt), pickup, delivery, horses);
+    }
+
+    private static Instant toInstant(Object value) {
+        return value instanceof Timestamp ts ? ts.toInstant() : ((java.time.OffsetDateTime) value).toInstant();
+    }
+
+    private ResultActions createTrip(Vehicle vehicle, String type, String... stops) throws Exception {
+        return mvc.perform(post("/vehicle-trips").header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"tripType\":\"%s\",\"vehicleId\":%d,\"stops\":[%s]}".formatted(type, vehicle.getId(), String.join(",", stops))));
+    }
+
+    private ResultActions createTrip(Vehicle vehicle, String type, long departureId) throws Exception {
+        return mvc.perform(post("/vehicle-trips").header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"tripType\":\"%s\",\"vehicleId\":%d,\"departureId\":%d}".formatted(type, vehicle.getId(), departureId)));
+    }
+
+    private ResultActions assign(long trip, long bookingHorse, long board, long alight) throws Exception {
+        return mvc.perform(post("/vehicle-trips/{id}/horse-legs", trip).header(HttpHeaders.AUTHORIZATION, coordinator)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"bookingHorseId\":%d,\"boardTripStopId\":%d,\"alightTripStopId\":%d}".formatted(bookingHorse, board, alight)));
+    }
+
+    private String trip(long id) throws Exception {
+        return mvc.perform(get("/vehicle-trips/{id}", id).header(HttpHeaders.AUTHORIZATION, coordinator))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+    }
+
+    private List<Long> stopIds(long tripId) throws Exception {
+        List<Number> ids = JsonPath.read(trip(tripId), "$.data.stops[*].id");
+        return ids.stream().map(Number::longValue).toList();
+    }
+
+    private long legId(long bookingHorse, int sequence) {
+        return jdbc.queryForObject("SELECT id FROM horse_leg WHERE booking_horse_id = ? AND sequence_number = ?", Long.class, bookingHorse, sequence);
+    }
+
+    private static String stop(long locationId, String type, Instant base, int minutes) {
+        String at = base.plusSeconds(60L * minutes).toString();
+        return "{\"locationId\":%d,\"stopType\":\"%s\",\"plannedArrivalAt\":\"%s\",\"plannedDepartureAt\":\"%s\"}".formatted(locationId, type, at, at);
+    }
+
+    private static String address(long addressId, String type, Instant base, int minutes) {
+        String at = base.plusSeconds(60L * minutes).toString();
+        String leave = base.plusSeconds(60L * (minutes + 30)).toString();
+        return "{\"bookingAddressId\":%d,\"stopType\":\"%s\",\"plannedArrivalAt\":\"%s\",\"plannedDepartureAt\":\"%s\"}".formatted(addressId, type, at, leave);
+    }
+
+    private static long tripId(ResultActions result) throws Exception {
+        String body = result.andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        return ((Number) JsonPath.read(body, "$.data.id")).longValue();
+    }
+}

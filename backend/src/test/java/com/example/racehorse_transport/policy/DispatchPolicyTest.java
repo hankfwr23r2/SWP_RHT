@@ -129,6 +129,13 @@ class DispatchPolicyTest {
     }
 
     @Test
+    void legStartsAfterPreviousLegEnded() {
+        assertThatCode(() -> DispatchPolicy.requireAfterPreviousLeg(at("09:00"), at("09:00"))).doesNotThrowAnyException();
+        assertThatThrownBy(() -> DispatchPolicy.requireAfterPreviousLeg(at("09:00"), at("08:59")))
+                .hasMessageContaining("trước khi chặng trước");
+    }
+
+    @Test
     void legStartsWherePreviousLegEnded() {
         assertThatCode(() -> DispatchPolicy.requireContinuous("L3", "L3")).doesNotThrowAnyException();
         assertThatThrownBy(() -> DispatchPolicy.requireContinuous("L3", "L4")).hasMessageContaining("chặng trước");

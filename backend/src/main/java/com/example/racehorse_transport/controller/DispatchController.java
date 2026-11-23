@@ -3,6 +3,9 @@ package com.example.racehorse_transport.controller;
 import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.dto.dispatch.CrewAssignmentRequestDto;
 import com.example.racehorse_transport.dto.dispatch.CrewCandidateResponseDto;
+import com.example.racehorse_transport.dto.dispatch.DispatchBookingResponseDto;
+import com.example.racehorse_transport.dto.dispatch.HorseLegRequestDto;
+import com.example.racehorse_transport.dto.dispatch.TripHorseResponseDto;
 import com.example.racehorse_transport.dto.dispatch.VehicleTripCancelRequestDto;
 import com.example.racehorse_transport.dto.dispatch.VehicleTripCreateRequestDto;
 import com.example.racehorse_transport.dto.dispatch.VehicleTripResponseDto;
@@ -10,8 +13,10 @@ import com.example.racehorse_transport.dto.vehicle.VehicleResponseDto;
 import com.example.racehorse_transport.entity.enums.CrewRole;
 import com.example.racehorse_transport.service.CrewAssignmentService;
 import com.example.racehorse_transport.service.DispatchService;
+import com.example.racehorse_transport.service.HorseLegService;
 import jakarta.validation.Valid;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -33,6 +38,7 @@ public class DispatchController {
 
     private final DispatchService dispatch;
     private final CrewAssignmentService crew;
+    private final HorseLegService horseLegs;
 
     @GetMapping("/vehicle-trips")
     @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER')")
@@ -76,5 +82,28 @@ public class DispatchController {
     @GetMapping("/dispatch/crew-candidates")
     public ApiResponseDto<List<CrewCandidateResponseDto>> crewCandidates(@RequestParam CrewRole role) {
         return ApiResponseDto.success(crew.candidates(role), "Nhân viên có thể phân công");
+    }
+
+    @GetMapping("/dispatch/bookings")
+    public ApiResponseDto<List<DispatchBookingResponseDto>> bookings(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ApiResponseDto.success(horseLegs.dispatchableBookings(from, to), "Đơn chờ xếp xe");
+    }
+
+    @GetMapping("/vehicle-trips/{id}/horse-legs")
+    @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER')")
+    public ApiResponseDto<List<TripHorseResponseDto>> horsesOnTrip(@PathVariable Long id) {
+        return ApiResponseDto.success(horseLegs.horsesOnTrip(id), "Ngựa trên lượt xe");
+    }
+
+    @PostMapping("/vehicle-trips/{id}/horse-legs")
+    public ResponseEntity<ApiResponseDto<List<TripHorseResponseDto>>> assignHorse(@PathVariable Long id, @Valid @RequestBody HorseLegRequestDto request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDto.success(horseLegs.assign(id, request), "Đã xếp ngựa vào lượt xe"));
+    }
+
+    @PostMapping("/horse-legs/{id}/cancel")
+    public ApiResponseDto<List<TripHorseResponseDto>> cancelLeg(@PathVariable Long id) {
+        return ApiResponseDto.success(horseLegs.cancel(id), "Đã gỡ ngựa khỏi lượt xe");
     }
 }
