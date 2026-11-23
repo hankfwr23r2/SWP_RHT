@@ -126,12 +126,14 @@ ON CONFLICT (license_plate) DO NOTHING;
 -- ---------------------------------------------------------------------------
 -- 4. Tuyến trục chính, điểm dừng, lịch chạy
 -- ---------------------------------------------------------------------------
-INSERT INTO route (code, name, origin_hub_id, destination_location_id, distance_km, est_duration_minutes, status)
+INSERT INTO route (code, name, origin_location_id, destination_location_id, distance_km, est_duration_minutes, status)
 SELECT v.code, v.name, o.id, d.id, v.distance_km, v.minutes, 'ACTIVE'
 FROM (VALUES
           ('HCM-PNH', 'TP.HCM – Cửa khẩu Mộc Bài (đi Phnom Penh)', 'HUB-HCM', 'GATE-MOCBAI', 75.00, 120),
           ('HCM-DN', 'TP.HCM – Đà Nẵng', 'HUB-HCM', 'HUB-DN', 960.00, 1260),
-          ('DN-HCM', 'Đà Nẵng – TP.HCM', 'HUB-DN', 'HUB-HCM', 960.00, 1260)
+          ('DN-HCM', 'Đà Nẵng – TP.HCM', 'HUB-DN', 'HUB-HCM', 960.00, 1260),
+          -- Chiều nhập: từ cửa khẩu về trụ sở (đơn IMPORT)
+          ('MOCBAI-HCM', 'Cửa khẩu Mộc Bài – TP.HCM (từ Phnom Penh về)', 'GATE-MOCBAI', 'HUB-HCM', 75.00, 120)
      ) AS v(code, name, origin_code, destination_code, distance_km, minutes)
 JOIN location o ON o.code = v.origin_code
 JOIN location d ON d.code = v.destination_code
@@ -152,26 +154,31 @@ FROM (VALUES
           ('DN-HCM', 2, 'REST-QUYNHON', 'REST', 330, 30),
           ('DN-HCM', 3, 'REST-NHATRANG', 'VITAL_CHECK', 690, 45),
           ('DN-HCM', 4, 'REST-PHANTHIET', 'REST', 1005, 30),
-          ('DN-HCM', 5, 'HUB-HCM', 'HUB', 1260, 0)
+          ('DN-HCM', 5, 'HUB-HCM', 'HUB', 1260, 0),
+          ('MOCBAI-HCM', 1, 'GATE-MOCBAI', 'BORDER', 0, 60),
+          ('MOCBAI-HCM', 2, 'REST-TRANGBANG', 'REST', 70, 20),
+          ('MOCBAI-HCM', 3, 'HUB-HCM', 'HUB', 120, 0)
      ) AS v(route_code, seq, location_code, stop_type, offset_minutes, dwell_minutes)
 JOIN route r ON r.code = v.route_code
 JOIN location l ON l.code = v.location_code
 ON CONFLICT DO NOTHING;
 
--- Lịch chạy: HCM-PNH thứ Hai và thứ Năm; HCM-DN thứ Ba; DN-HCM thứ Năm để xe quay về trụ sở
+-- Lịch chạy: HCM-PNH thứ Hai và thứ Năm; HCM-DN thứ Ba; DN-HCM thứ Năm để xe quay về trụ sở;
+-- MOCBAI-HCM chiều thứ Hai và thứ Năm, xe vừa giao ở cửa khẩu nhận ngựa nhập về
 INSERT INTO departure_schedule (route_id, departure_time, booking_cutoff_hours, capacity_stalls, valid_from, status)
 SELECT r.id, v.departure_time, v.cutoff_hours, 9, DATE '2026-11-01', 'ACTIVE'
 FROM (VALUES
           ('HCM-PNH', TIME '06:00', 72),
           ('HCM-DN', TIME '05:00', 72),
-          ('DN-HCM', TIME '05:00', 48)
+          ('DN-HCM', TIME '05:00', 48),
+          ('MOCBAI-HCM', TIME '14:00', 72)
      ) AS v(route_code, departure_time, cutoff_hours)
 JOIN route r ON r.code = v.route_code
 WHERE NOT EXISTS (SELECT 1 FROM departure_schedule s WHERE s.route_id = r.id AND s.departure_time = v.departure_time);
 
 INSERT INTO departure_schedule_day (schedule_id, weekday)
 SELECT s.id, v.weekday
-FROM (VALUES ('HCM-PNH', 1), ('HCM-PNH', 4), ('HCM-DN', 2), ('DN-HCM', 4)) AS v(route_code, weekday)
+FROM (VALUES ('HCM-PNH', 1), ('HCM-PNH', 4), ('HCM-DN', 2), ('DN-HCM', 4), ('MOCBAI-HCM', 1), ('MOCBAI-HCM', 4)) AS v(route_code, weekday)
 JOIN route r ON r.code = v.route_code
 JOIN departure_schedule s ON s.route_id = r.id
 ON CONFLICT DO NOTHING;
@@ -189,7 +196,8 @@ SELECT pl.id, s.id, r.id, v.stall_type, v.unit_price
 FROM (VALUES
           ('HCM-PNH', 'STANDARD', 6000000), ('HCM-PNH', 'WIDE', 8000000),
           ('HCM-DN', 'STANDARD', 12000000), ('HCM-DN', 'WIDE', 15000000),
-          ('DN-HCM', 'STANDARD', 12000000), ('DN-HCM', 'WIDE', 15000000)
+          ('DN-HCM', 'STANDARD', 12000000), ('DN-HCM', 'WIDE', 15000000),
+          ('MOCBAI-HCM', 'STANDARD', 6000000), ('MOCBAI-HCM', 'WIDE', 8000000)
      ) AS v(route_code, stall_type, unit_price)
 JOIN price_list pl ON pl.name = 'Bảng giá mẫu (dev)'
 JOIN service s ON s.code = 'LINEHAUL_STALL'

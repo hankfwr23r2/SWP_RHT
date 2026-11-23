@@ -64,12 +64,16 @@ Kết luận: **cơ chế giao tiếp** (REST/JSON + JWT + refresh cookie) khôn
 | `document_requirement`: bỏ `status` và `per_horse` | Trùng với thời hạn hiệu lực, hoặc suy ra được từ `document_type.subject` |
 | Bỏ `handover.signed_document_id` và `cost_item.invoice_document_id` | Trùng với cột chủ sở hữu trong `document`, và tạo vòng khóa ngoại |
 | Giữ `departure_schedule_day`, nên tổng là **59 bảng** | Một lịch chạy nhiều ngày trong tuần. Nếu quy ước mỗi lịch chỉ chạy một ngày thì bỏ được, còn 58 |
+| Tuyến trục được xuất phát từ cửa khẩu: `route.origin_hub_id` đổi thành `origin_location_id` (23/11/2026) | Người dùng chốt. Đơn IMPORT đi tuyến định kỳ từ cửa khẩu về hub, đối xứng với chiều xuất. Trước đó tài liệu nghiệp vụ ghi IMPORT có departure nhưng lược đồ chỉ cho tuyến xuất phát từ hub |
 | Có trục nội địa, dùng mô hình trụ sở + hub vệ tinh (22/11/2026) | Gom hàng chỉ có ý nghĩa khi đơn liên tỉnh cũng đi trục. Hub vệ tinh giúp giữ toàn bộ xe và nhân viên ở trụ sở, nên không phải phân quyền theo hub |
 | Thêm `DIRECT` vào `vehicle_trip.kind`, `horse_leg.stage`, `service.layer`, `quotation_line.line_type`. Thêm `UNIQUE (province_code)` vào `hub_service_area` | Đơn cùng hub cần chặng chạy thẳng và cước riêng. Mỗi tỉnh phải tra ra đúng một hub |
 | Lượt chạy mới của xe bắt đầu ở nơi lượt trước kết thúc. Ngựa chỉ lên xe trục ở đầu tuyến và xuống ở cuối tuyến | Biết xe đang ở đâu mà không cần thêm cột. Giữ `departure.booked_stalls` đếm theo cả chuyến |
 | Bỏ qua quy tắc niêm phong xe trong đợt này. Giữ `sealed_at`, `disinfected_at` làm cột ghi nhận | Người dùng chốt: project môn học chưa cần. Việc bốc dỡ lại ở hub có thể mâu thuẫn với niêm phong theo TT 01/2026, nhưng chưa kiểm chứng |
 | Bỏ mọi view, logic nằm hoàn toàn trong code (22/11/2026). Lưu cột dẫn xuất cho tiền báo giá và `departure.booked_stalls`; đã trả, còn nợ, vị trí ngựa, đủ giấy tính khi đọc | Người dùng chốt: view chứa logic thì khó test và trùng với policy. Chỉ lưu cột khi giá trị đã chốt hoặc có khóa bảo vệ. `CHECK (booked_stalls <= capacity_stalls)` giúp DB chặn bán quá chỗ |
 | Tiền cọc gồm toàn bộ phần thu hộ (bảo hiểm, lệ phí): `cọc = tỷ lệ × (tổng − thu hộ) + thu hộ` | Phí bảo hiểm phải nộp đủ cho hãng trước khi hợp đồng có hiệu lực. Tỷ lệ cọc chỉ áp lên cước dịch vụ |
+| Giữ vai trò `ESCORT` (nhân viên hộ tống), không đổi thành groom | Người dùng chốt. Tên đã dùng thống nhất trong lược đồ, thư mục `backoffice/features/escort` và code cũ |
+| Tên trong code (bảng, cột, enum, class, biến, endpoint) dùng tiếng Anh theo chuẩn đặt tên. Chữ hiển thị cho người dùng đi qua i18n (`vi`, `en`) | Người dùng chốt. Tài liệu viết tiếng Việt nhưng mọi định danh phải là tiếng Anh |
+| `MO_HINH_NGHIEP_VU_MOI.md` và `MO_HINH_NGHIEP_VU_MUC_1_2.md` chỉ là tài liệu tham khảo, không phải yêu cầu | Yêu cầu chi tiết lấy từ `DB_SCHEMA_59_BANG.md` và `NGHIEP_VU_THEO_59_BANG.md` |
 | Backend theo n-layer: Controller → Service → Repository, cộng Policy và Client | DTO có `from()`, `toEntity()`, `applyTo()`. Không dùng ModelMapper. Chi tiết: `AGENTS.md` |
 
 ## 5. Câu hỏi còn mở

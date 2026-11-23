@@ -58,6 +58,8 @@ public class SecurityConfig {
                         // Công khai: xác thực, tra cứu công khai, Swagger và health check
                         .requestMatchers("/auth/**", "/public/**", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html", "/health", "/health/**").permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // Danh mục quốc gia, tỉnh cho các form (kể cả form đăng ký chưa đăng nhập)
+                        .requestMatchers(HttpMethod.GET, "/countries", "/provinces").permitAll()
 
                         // VNPAY gọi IPN server-to-server và trang kết quả gửi lại tham số: bảo vệ bằng chữ ký HMAC, không cần token
                         .requestMatchers(HttpMethod.GET, "/payments/vnpay/ipn", "/payments/vnpay/return").permitAll()
