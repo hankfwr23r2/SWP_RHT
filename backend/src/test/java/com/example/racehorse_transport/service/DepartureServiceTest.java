@@ -7,7 +7,7 @@ import com.example.racehorse_transport.PostgresIntegrationTest;
 import com.example.racehorse_transport.dto.network.DepartureScheduleRequestDto;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Departure;
-import com.example.racehorse_transport.entity.Party;
+import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.BookingType;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
@@ -111,7 +111,7 @@ class DepartureServiceTest {
     @Test
     void cancellingDepartureAsksCustomersToChangeSchedule() {
         Departure departure = testData.departure("HCM-PNH", TODAY.plusDays(25), 9);
-        Party customer = testData.customer(testData.unique("khach"));
+        Customer customer = testData.customer(testData.unique("khach"));
         Booking confirmed = onDeparture(testData.booking(customer, BookingType.EXPORT, BookingStatus.CONFIRMED), departure);
         Booking cancelled = onDeparture(testData.booking(customer, BookingType.EXPORT, BookingStatus.CANCELLED), departure);
         String manager = testData.unique("quanly");
@@ -132,7 +132,7 @@ class DepartureServiceTest {
 
     @Test
     void bookingStatusRejectsInvalidTransition() {
-        Party customer = testData.customer(testData.unique("khach"));
+        Customer customer = testData.customer(testData.unique("khach"));
         Booking booking = testData.booking(customer, BookingType.LOCAL, BookingStatus.PENDING_INTAKE);
         Long actor = customer.getUser().getId();
 

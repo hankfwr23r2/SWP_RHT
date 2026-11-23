@@ -40,8 +40,8 @@ public class Horse {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "owner_party_id", nullable = false)
-    private Party owner;
+    @JoinColumn(name = "owner_customer_id", nullable = false)
+    private Customer owner;
 
     @Column(name = "name", length = 100, nullable = false)
     private String name;

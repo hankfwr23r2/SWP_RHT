@@ -16,13 +16,13 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 
-// Sổ địa chỉ của một bên. Mỗi bên chỉ có một địa chỉ mặc định.
+// Sổ địa chỉ của khách. Mỗi khách chỉ có một địa chỉ mặc định.
 @Getter
 @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "party_address")
-public class PartyAddress {
+@Table(name = "customer_address")
+public class CustomerAddress {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,8 +30,8 @@ public class PartyAddress {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "party_id", nullable = false)
-    private Party party;
+    @JoinColumn(name = "customer_id", nullable = false)
+    private Customer customer;
 
     @Column(name = "label", length = 100, nullable = false)
     private String label;

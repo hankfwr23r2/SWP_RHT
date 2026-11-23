@@ -25,8 +25,8 @@ class MigrationTest {
         return value;
     }
 
-    private long customerPartyId() {
-        return id("SELECT p.id FROM party p JOIN app_user u ON u.id = p.user_id WHERE u.username = 'customer1.dev'");
+    private long customerId() {
+        return id("SELECT c.user_id FROM customer c JOIN app_user u ON u.id = c.user_id WHERE u.username = 'customer1.dev'");
     }
 
     private long userId(String username) {
@@ -35,9 +35,9 @@ class MigrationTest {
 
     private long newBooking() {
         return id("""
-                INSERT INTO booking (code, customer_party_id, booking_type, requested_pickup_date, status, created_by)
+                INSERT INTO booking (code, customer_id, booking_type, requested_pickup_date, status, created_by)
                 VALUES ('TEST-001', ?, 'EXPORT', DATE '2026-12-13', 'QUOTING', ?)
-                RETURNING id""", customerPartyId(), userId("customer1.dev"));
+                RETURNING id""", customerId(), userId("customer1.dev"));
     }
 
     private long newQuotation(long bookingId) {
@@ -52,9 +52,9 @@ class MigrationTest {
 
     private long newBookingHorse(long bookingId) {
         long horseId = id("""
-                INSERT INTO horse (owner_party_id, name, microchip, gender, horse_type_id, status)
+                INSERT INTO horse (owner_customer_id, name, microchip, gender, horse_type_id, status)
                 VALUES (?, 'Sao Mai', '985000000000001', 'MARE', (SELECT min(id) FROM horse_type), 'ACTIVE')
-                RETURNING id""", customerPartyId());
+                RETURNING id""", customerId());
         return id("""
                 INSERT INTO booking_horse (booking_id, horse_id, stall_type, status)
                 VALUES (?, ?, 'STANDARD', 'ACTIVE')
@@ -143,8 +143,8 @@ class MigrationTest {
     @Test
     void emailIsUniqueIgnoringCase() {
         assertThatThrownBy(() -> jdbc.update("""
-                INSERT INTO app_user (username, email, password_hash, status)
-                VALUES ('another.admin', 'ADMIN.DEV@racehorse.test', 'x', 'ACTIVE')"""))
+                INSERT INTO app_user (username, email, password_hash, status, role_code)
+                VALUES ('another.admin', 'ADMIN.DEV@racehorse.test', 'x', 'ACTIVE', 'ADMIN')"""))
                 .isInstanceOf(DataAccessException.class)
                 .hasMessageContaining("uk_app_user_email");
     }
@@ -183,6 +183,39 @@ class MigrationTest {
                         TIMESTAMPTZ '2026-12-20 06:00+07', TIMESTAMPTZ '2026-12-20 08:00+07', 'PLANNED')""", bookingHorseId))
                 .isInstanceOf(DataAccessException.class)
                 .hasMessageContaining("ck_horse_leg_carrier");
+    }
+
+    @Test
+    void bookingCustomerMustBeCustomerAccount() {
+        long manager = userId("manager.dev");
+        assertThatThrownBy(() -> jdbc.update("""
+                INSERT INTO booking (code, customer_id, booking_type, requested_pickup_date, status, created_by)
+                VALUES ('TEST-002', ?, 'LOCAL', DATE '2026-12-13', 'PENDING_INTAKE', ?)""", manager, manager))
+                .isInstanceOf(DataAccessException.class)
+                .hasMessageContaining("fk_booking_customer_id");
+    }
+
+    private long newHandover(String kind, Long fromParty, Long toParty) {
+        long stayId = id("""
+                INSERT INTO horse_stay (booking_horse_id, kind, location_id, planned_from, planned_to)
+                VALUES (?, 'ASSEMBLY', (SELECT id FROM location WHERE code = 'HUB-HCM'), now(), now() + interval '1 day')
+                RETURNING id""", newBookingHorse(newBooking()));
+        return id("""
+                INSERT INTO handover (kind, horse_stay_id, from_party_id, to_party_id, staff_id, status)
+                VALUES (?, ?, ?, ?, ?, 'PENDING') RETURNING id""", kind, stayId, fromParty, toParty, userId("driver1.dev"));
+    }
+
+    @Test
+    void hubHandoverHasNoPartner() {
+        assertThat(newHandover("HUB_IN", null, null)).isPositive();
+    }
+
+    @Test
+    void handoverBetweenSamePartnerIsRejected() {
+        Long agent = id("SELECT party_id FROM party_role WHERE role_type = 'DEST_AGENT'");
+        assertThatThrownBy(() -> newHandover("AGENT", agent, agent))
+                .isInstanceOf(DataAccessException.class)
+                .hasMessageContaining("ck_handover_parties");
     }
 
     @Test

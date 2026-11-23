@@ -4,19 +4,17 @@ import com.example.racehorse_transport.dto.auth.AuthResponseDto;
 import com.example.racehorse_transport.dto.auth.ChangePasswordRequestDto;
 import com.example.racehorse_transport.dto.auth.LoginRequestDto;
 import com.example.racehorse_transport.entity.AppUser;
-import com.example.racehorse_transport.entity.Party;
+import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.enums.AppUserStatus;
 import com.example.racehorse_transport.entity.enums.EmploymentStatus;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.AppUserRepository;
-import com.example.racehorse_transport.repository.PartyRepository;
+import com.example.racehorse_transport.repository.CustomerRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
-import com.example.racehorse_transport.repository.UserRoleRepository;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.service.AuthService;
 import com.example.racehorse_transport.service.EmailVerificationService;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -29,16 +27,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthServiceImpl implements AuthService {
 
     private static final String CUSTOMER_ROLE = "CUSTOMER";
-    // Thứ tự chọn vai trò chính khi một tài khoản có nhiều vai trò
-    private static final List<String> ROLE_PRIORITY =
-            List.of("ADMIN", "MANAGER", "COORDINATOR", "SPECIALIST", "DRIVER", "ESCORT", CUSTOMER_ROLE);
     private static final String BAD_CUSTOMER_LOGIN = "Email hoặc mật khẩu không đúng.";
     private static final String BAD_STAFF_LOGIN = "Tài khoản nội bộ hoặc mật khẩu không chính xác!";
+    private static final String NOT_INTERNAL_ACCOUNT = "Tài khoản này không có quyền truy cập hệ thống nội bộ!";
 
     private final AppUserRepository users;
-    private final UserRoleRepository userRoles;
     private final StaffRepository staff;
-    private final PartyRepository parties;
+    private final CustomerRepository customers;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtils jwtUtils;
     private final EmailVerificationService emailVerification;
@@ -50,8 +45,7 @@ public class AuthServiceImpl implements AuthService {
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new IllegalArgumentException(BAD_CUSTOMER_LOGIN);
         }
-        List<String> roles = rolesOf(user);
-        if (!roles.contains(CUSTOMER_ROLE)) {
+        if (!isCustomer(user)) {
             throw new IllegalArgumentException("Tài khoản này không phải là tài khoản khách hàng!");
         }
         requireActive(user);
@@ -70,25 +64,22 @@ public class AuthServiceImpl implements AuthService {
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new IllegalArgumentException(BAD_STAFF_LOGIN);
         }
-        Staff profile = staff.findById(user.getId())
-                .orElseThrow(() -> new IllegalArgumentException("Tài khoản này không có quyền truy cập hệ thống nội bộ!"));
-        List<String> roles = rolesOf(user).stream().filter(role -> !CUSTOMER_ROLE.equals(role)).toList();
-        if (roles.isEmpty()) {
-            throw new IllegalArgumentException("Tài khoản này không có quyền truy cập hệ thống nội bộ!");
+        if (isCustomer(user)) {
+            throw new IllegalArgumentException(NOT_INTERNAL_ACCOUNT);
         }
+        Staff profile = staffProfileOf(user);
         requireActive(user);
         if (profile.getEmploymentStatus() == EmploymentStatus.TERMINATED) {
             throw new IllegalArgumentException("Tài khoản nhân viên đã bị vô hiệu hóa. Vui lòng liên hệ Admin!");
         }
-        return AuthResponseDto.from(user, jwtUtils.generateToken(user.getUsername(), roles), roles,
-                profile.getFullName(), profile.getStaffCode());
+        return staffAuth(user, profile);
     }
 
     @Override
     @Transactional
     public void resendEmailOtp(String email) {
         users.findByEmailIgnoreCase(email == null ? "" : email.trim())
-                .filter(user -> rolesOf(user).contains(CUSTOMER_ROLE))
+                .filter(this::isCustomer)
                 .ifPresent(user -> emailVerification.sendOtp(user.getEmail()));
     }
 
@@ -96,7 +87,7 @@ public class AuthServiceImpl implements AuthService {
     @Transactional(noRollbackFor = IllegalArgumentException.class)
     public AuthResponseDto confirmEmail(String email, String otp) {
         AppUser user = emailVerification.confirm(email, otp);
-        if (!rolesOf(user).contains(CUSTOMER_ROLE)) {
+        if (!isCustomer(user)) {
             throw new IllegalArgumentException("Tài khoản này không phải là tài khoản khách hàng!");
         }
         requireActive(user);
@@ -114,13 +105,7 @@ public class AuthServiceImpl implements AuthService {
         if (!isActive(user)) {
             throw new IllegalArgumentException("Tài khoản đã bị khóa hoặc vô hiệu hóa!");
         }
-        Optional<Staff> profile = staff.findById(user.getId());
-        if (profile.isPresent()) {
-            List<String> roles = rolesOf(user).stream().filter(role -> !CUSTOMER_ROLE.equals(role)).toList();
-            return AuthResponseDto.from(user, jwtUtils.generateToken(user.getUsername(), roles), roles,
-                    profile.get().getFullName(), profile.get().getStaffCode());
-        }
-        return customerAuth(user);
+        return isCustomer(user) ? customerAuth(user) : staffAuth(user, staffProfileOf(user));
     }
 
     @Override
@@ -163,17 +148,28 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private AuthResponseDto customerAuth(AppUser user) {
-        List<String> roles = List.of(CUSTOMER_ROLE);
-        String fullName = parties.findByUser_Id(user.getId()).map(Party::getDisplayName).orElse(user.getUsername());
+        List<String> roles = rolesOf(user);
+        String fullName = customers.findById(user.getId()).map(Customer::getFullName).orElse(user.getUsername());
         return AuthResponseDto.from(user, jwtUtils.generateToken(user.getUsername(), roles), roles, fullName, null);
     }
 
-    // Vai trò của tài khoản, xếp theo ROLE_PRIORITY: phần tử đầu là vai trò chính
+    private AuthResponseDto staffAuth(AppUser user, Staff profile) {
+        List<String> roles = rolesOf(user);
+        return AuthResponseDto.from(user, jwtUtils.generateToken(user.getUsername(), roles), roles,
+                profile.getFullName(), profile.getStaffCode());
+    }
+
+    private Staff staffProfileOf(AppUser user) {
+        return staff.findById(user.getId()).orElseThrow(() -> new IllegalArgumentException(NOT_INTERNAL_ACCOUNT));
+    }
+
+    private boolean isCustomer(AppUser user) {
+        return CUSTOMER_ROLE.equals(user.getRole().getCode());
+    }
+
+    // Mỗi tài khoản một vai trò. Trả danh sách để giữ claim "roles" cho giao diện
     private List<String> rolesOf(AppUser user) {
-        return userRoles.findById_UserId(user.getId()).stream()
-                .map(userRole -> userRole.getId().getRoleCode())
-                .sorted(Comparator.comparingInt(role -> ROLE_PRIORITY.indexOf(role) < 0 ? ROLE_PRIORITY.size() : ROLE_PRIORITY.indexOf(role)))
-                .toList();
+        return List.of(user.getRole().getCode());
     }
 
     // Đăng nhập bằng username hoặc email

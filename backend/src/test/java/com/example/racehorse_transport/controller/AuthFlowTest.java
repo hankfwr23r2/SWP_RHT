@@ -14,14 +14,13 @@ import com.example.racehorse_transport.MockTurnstileVerification;
 import com.example.racehorse_transport.PostgresIntegrationTest;
 import com.example.racehorse_transport.client.MailClient;
 import com.example.racehorse_transport.entity.AppUser;
-import com.example.racehorse_transport.entity.Party;
+import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.enums.AppUserStatus;
-import com.example.racehorse_transport.entity.enums.PartyRoleType;
 import com.example.racehorse_transport.repository.AppUserRepository;
+import com.example.racehorse_transport.repository.CustomerRepository;
 import com.example.racehorse_transport.repository.PartyRepository;
-import com.example.racehorse_transport.repository.PartyRoleRepository;
+import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.TermsAcceptanceRepository;
-import com.example.racehorse_transport.repository.UserRoleRepository;
 import com.example.racehorse_transport.support.TestData;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.servlet.http.Cookie;
@@ -30,6 +29,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -40,7 +41,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 // Luồng auth trên bảng mới: đăng ký -> xác thực email -> đăng nhập -> làm mới token -> đổi mật khẩu,
-// quên mật khẩu, vai trò lấy từ user_role, và token của tài khoản bị khóa bị từ chối.
+// quên mật khẩu, vai trò lấy từ app_user, và token của tài khoản bị khóa bị từ chối.
 @PostgresIntegrationTest
 @MockTurnstileVerification
 @AutoConfigureMockMvc
@@ -51,9 +52,9 @@ class AuthFlowTest {
     @Autowired private MockMvc mvc;
     @Autowired private TestData testData;
     @Autowired private AppUserRepository users;
-    @Autowired private UserRoleRepository userRoles;
+    @Autowired private CustomerRepository customers;
+    @Autowired private StaffRepository staff;
     @Autowired private PartyRepository parties;
-    @Autowired private PartyRoleRepository partyRoles;
     @Autowired private TermsAcceptanceRepository termsAcceptances;
 
     @MockitoBean private MailClient mail;
@@ -67,6 +68,9 @@ class AuthFlowTest {
     void registerVerifyLoginRefreshAndChangePassword() throws Exception {
         String username = testData.unique("khach").replace("-", "");
         String email = username + "@gmail.com";
+        long usersBefore = users.count();
+        long customersBefore = customers.count();
+        long partiesBefore = parties.count();
 
         mvc.perform(post("/auth/register").contentType(MediaType.APPLICATION_JSON).content("""
                         {"username":"%s","email":"%s","password":"Matkhau@1","fullName":"Nguyễn Văn An",
@@ -76,10 +80,15 @@ class AuthFlowTest {
         AppUser user = users.findByUsername(username).orElseThrow();
         assertThat(user.getEmailVerified()).isFalse();
         assertThat(user.getPreferredLanguage()).isEqualTo("en");
-        assertThat(userRoles.findById_UserId(user.getId())).extracting(r -> r.getId().getRoleCode()).containsExactly("CUSTOMER");
-        Party party = parties.findByUser_Id(user.getId()).orElseThrow();
-        assertThat(party.getDisplayName()).isEqualTo("Nguyễn Văn An");
-        assertThat(partyRoles.findById_PartyId(party.getId())).extracting(r -> r.getId().getRoleType()).containsExactly(PartyRoleType.CUSTOMER);
+        assertThat(user.getRole().getCode()).isEqualTo("CUSTOMER");
+        Customer customer = customers.findById(user.getId()).orElseThrow();
+        assertThat(customer.getFullName()).isEqualTo("Nguyễn Văn An");
+        assertThat(customer.getPhone()).isEqualTo("0909123456");
+        // Đúng một tài khoản và một hồ sơ khách, không có hồ sơ nhân viên, không tạo party
+        assertThat(users.count()).isEqualTo(usersBefore + 1);
+        assertThat(customers.count()).isEqualTo(customersBefore + 1);
+        assertThat(parties.count()).isEqualTo(partiesBefore);
+        assertThat(staff.findById(user.getId())).isEmpty();
         assertThat(termsAcceptances.findAll()).anySatisfy(t -> assertThat(t.getUser().getId()).isEqualTo(user.getId()));
 
         // Chưa xác thực email: đăng nhập không cấp token
@@ -146,20 +155,32 @@ class AuthFlowTest {
         assertThat(users.findByUsername(username)).isEmpty();
     }
 
-    @Test
-    void staffLoginUsesRolesFromUserRole() throws Exception {
-        String username = testData.unique("dieuphoi");
-        testData.staff(username, "COORDINATOR");
+    @ParameterizedTest
+    @ValueSource(strings = {"ADMIN", "MANAGER", "COORDINATOR", "SPECIALIST", "DRIVER", "ESCORT"})
+    void staffLoginUsesRoleOfAccount(String roleCode) throws Exception {
+        String username = testData.unique("nhanvien");
+        testData.staff(username, roleCode);
 
         mvc.perform(post("/auth/staff/login").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"%s\",\"password\":\"%s\"}".formatted(username, TestData.PASSWORD)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.role").value("COORDINATOR"))
+                .andExpect(jsonPath("$.data.role").value(roleCode))
                 .andExpect(jsonPath("$.data.roles.length()").value(1))
+                .andExpect(jsonPath("$.data.roles[0]").value(roleCode))
                 .andExpect(jsonPath("$.data.staffCode").isNotEmpty());
 
         // Tài khoản nhân viên không đăng nhập được ở cổng khách
         mvc.perform(post("/auth/customer/login").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"%s\",\"password\":\"%s\"}".formatted(username, TestData.PASSWORD)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void customerCannotLogInToBackoffice() throws Exception {
+        String username = testData.unique("khachnoibo");
+        testData.customer(username);
+
+        mvc.perform(post("/auth/staff/login").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"%s\",\"password\":\"%s\"}".formatted(username, TestData.PASSWORD)))
                 .andExpect(status().isBadRequest());
     }

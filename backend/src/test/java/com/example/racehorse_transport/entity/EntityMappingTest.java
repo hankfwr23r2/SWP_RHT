@@ -8,6 +8,7 @@ import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.BookingPartyRole;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.BookingType;
+import com.example.racehorse_transport.entity.enums.CustomerType;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
 import com.example.racehorse_transport.entity.enums.DocumentSubject;
 import com.example.racehorse_transport.entity.enums.HorseGender;
@@ -28,6 +29,8 @@ import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.BookingStatusHistoryRepository;
 import com.example.racehorse_transport.repository.CountryRepository;
 import com.example.racehorse_transport.repository.CountryRuleRepository;
+import com.example.racehorse_transport.repository.CustomerAddressRepository;
+import com.example.racehorse_transport.repository.CustomerRepository;
 import com.example.racehorse_transport.repository.DepartureRepository;
 import com.example.racehorse_transport.repository.DepartureScheduleDayRepository;
 import com.example.racehorse_transport.repository.DepartureScheduleRepository;
@@ -45,7 +48,6 @@ import com.example.racehorse_transport.repository.RouteStopRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.StallTypeRepository;
 import com.example.racehorse_transport.repository.TermsAcceptanceRepository;
-import com.example.racehorse_transport.repository.UserRoleRepository;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -67,7 +69,8 @@ class EntityMappingTest {
     @Autowired private StaffRepository staff;
     @Autowired private HubServiceAreaRepository hubServiceAreas;
     @Autowired private AppUserRepository users;
-    @Autowired private UserRoleRepository userRoles;
+    @Autowired private CustomerRepository customers;
+    @Autowired private CustomerAddressRepository customerAddresses;
     @Autowired private PartyRepository parties;
     @Autowired private PartyRoleRepository partyRoles;
     @Autowired private PriceListRepository priceLists;
@@ -127,14 +130,23 @@ class EntityMappingTest {
     }
 
     @Test
-    void customerAccountLinksToPartyAndRoles() {
-        AppUser customer = users.findByUsername("customer1.dev").orElseThrow();
-        Party party = parties.findByUser_Id(customer.getId()).orElseThrow();
+    void customerSharesKeyWithAccount() {
+        AppUser user = users.findByUsername("customer1.dev").orElseThrow();
+        Customer customer = customers.findById(user.getId()).orElseThrow();
 
-        assertThat(users.findByEmailIgnoreCase("CUSTOMER1.DEV@racehorse.test")).contains(customer);
-        assertThat(customer.getCreatedAt()).isNotNull();
-        assertThat(userRoles.findById_UserId(customer.getId())).extracting(r -> r.getRole().getCode()).containsExactly("CUSTOMER");
-        assertThat(partyRoles.findById_PartyId(party.getId())).extracting(r -> r.getId().getRoleType()).containsExactly(PartyRoleType.CUSTOMER);
+        assertThat(users.findByEmailIgnoreCase("CUSTOMER1.DEV@racehorse.test")).contains(user);
+        assertThat(user.getCreatedAt()).isNotNull();
+        assertThat(user.getRole().getCode()).isEqualTo("CUSTOMER");
+        assertThat(customer.getUser()).isEqualTo(user);
+        assertThat(customer.getCustomerType()).isEqualTo(CustomerType.PERSON);
+        assertThat(customer.getCountry().getCode()).isEqualTo("VN");
+    }
+
+    @Test
+    void partnerKeepsItsRoles() {
+        Party agent = parties.findAll().stream().filter(p -> p.getDisplayName().startsWith("Đại lý")).findFirst().orElseThrow();
+
+        assertThat(partyRoles.findById_PartyId(agent.getId())).extracting(r -> r.getId().getRoleType()).containsExactly(PartyRoleType.DEST_AGENT);
     }
 
     @Test
@@ -196,7 +208,7 @@ class EntityMappingTest {
     @Test
     void bookingAggregateRoundTrip() {
         AppUser customerUser = users.findByUsername("customer1.dev").orElseThrow();
-        Party customer = parties.findByUser_Id(customerUser.getId()).orElseThrow();
+        Customer customer = customers.findById(customerUser.getId()).orElseThrow();
 
         Booking booking = new Booking();
         booking.setCode("TEST-MAPPING-1");
@@ -210,14 +222,22 @@ class EntityMappingTest {
         BookingParty payer = new BookingParty();
         payer.setId(new BookingPartyId(booking.getId(), BookingPartyRole.PAYER));
         payer.setBooking(booking);
-        payer.setParty(customer);
         payer.setFullName("Nguyễn Văn Khách");
         payer.setPhone("0909000001");
         payer.setIdCountry("VN");
         payer.setAddress("Phường Thủ Dầu Một, TP.HCM");
         bookingParties.save(payer);
 
+        CustomerAddress saved = new CustomerAddress();
+        saved.setCustomer(customer);
+        saved.setLabel("Trang trại");
+        saved.setAddressLine("Trang trại Long Thành");
+        saved.setProvince(provinces.findById("VN-75").orElseThrow());
+        saved.setCountry(countries.findById("VN").orElseThrow());
+        saved = customerAddresses.save(saved);
+
         BookingAddress pickup = new BookingAddress();
+        pickup.setSourceAddress(saved);
         pickup.setBooking(booking);
         pickup.setRole(AddressRole.PICKUP);
         pickup.setAddressLine("Trang trại Long Thành");
@@ -284,7 +304,12 @@ class EntityMappingTest {
                     assertThat(p.getIdCountry()).isEqualTo("VN");
                 });
         assertThat(bookingAddresses.findByBooking_Id(reloaded.getId()))
-                .singleElement().satisfies(a -> assertThat(a.getProvince().getCode()).isEqualTo("VN-75"));
+                .singleElement().satisfies(a -> {
+                    assertThat(a.getProvince().getCode()).isEqualTo("VN-75");
+                    assertThat(a.getSourceAddress().getLabel()).isEqualTo("Trang trại");
+                });
+        assertThat(customerAddresses.findByCustomer_UserIdOrderById(customerUser.getId()))
+                .extracting(CustomerAddress::getLabel).contains("Trang trại");
         BookingHorse reloadedLine = bookingHorses.findByBooking_Id(reloaded.getId()).get(0);
         assertThat(reloadedLine.getAddedAt()).isNotNull();
         assertThat(reloadedLine.getOwnerSuppliesFeed()).isFalse();

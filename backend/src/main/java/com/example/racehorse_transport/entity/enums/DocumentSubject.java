@@ -13,5 +13,6 @@ public enum DocumentSubject {
     HANDOVER,
     VEHICLE,
     STAFF,
-    PARTY
+    PARTY,
+    CUSTOMER
 }
