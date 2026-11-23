@@ -64,7 +64,9 @@ main  (bản cũ, vẫn deploy được)
 ### 2.3 Hợp đồng API (OpenAPI → TypeScript)
 
 1. Backend có test `OpenApiExportTest` ghi `frontend/openapi/openapi.json` từ springdoc (đã có `springdoc-openapi`, `OpenApiConfig`).
-2. Frontend dùng **orval** sinh `src/shared/api/generated/` từ file đó. Hàm sinh ra gọi qua `apiClient` hiện có (mutator), nên giữ nguyên cơ chế token và refresh.
+2. Frontend dùng **openapi-typescript** sinh **kiểu dữ liệu** vào `src/shared/api/generated/schema.ts` từ file đó. Hàm gọi API viết tay, mỏng, trong `shared/api/<tài-nguyên>.ts`, dùng kiểu trong `generated/` và gọi qua `apiClient` hiện có, nên giữ nguyên cơ chế token và refresh (AGENTS.md mục 8.1).
+   - Công cụ là devDependency khóa phiên bản trong `package-lock.json`. Nó khai báo peer `typescript@^5`, dự án dùng TypeScript 6 nên `package.json` có `overrides` để công cụ dùng TypeScript của dự án (kết quả đã so: giống hệt khi chạy với TypeScript 5). Có bản hỗ trợ TypeScript 6 thì bỏ `overrides`.
+   - Không chọn orval: orval sinh cả hàm gọi API, trùng vai trò với `shared/api/<tài-nguyên>.ts` mà AGENTS.md mục 8.1 quy định.
 3. Lệnh: `npm run api:gen`. CI chạy lại lệnh và `git diff --exit-code`, lệch là đỏ.
 4. **Không bao giờ sửa tay hay gộp xung đột bằng tay** `openapi.json` và `generated/`: khi xung đột, chạy lại export và `api:gen`.
 
@@ -254,7 +256,7 @@ Mục tiêu: dựng sẵn **mọi thứ cả hai luồng cùng cần**, để t�
 | `shared/ui` | `Button`, `Input`, `Textarea`, `Select`, `Field` (nhãn + lỗi), `Modal`, `ConfirmDialog`, `Table` (tự chuyển thành thẻ trên điện thoại), `Badge`, `StatusBadge`, `Card`, `Tabs`, `Stepper`, `Skeleton`, `EmptyState`, `ErrorState`, `Toast`, `PageHeader` | `Modal.tsx`, `Select.tsx`, `toast.tsx`, `FormSelect`, `FileField`, các class `.btn`/`.card` trong `base.css` |
 | `shared/hooks` | Chuyển `useLoad`, `useAutoRefresh`, `useNow`, `usePagination`, `useRoadRoute` | Giữ nguyên logic |
 | Layout | `StaffLayout`, `StaffSidebar`, `StaffTopbar`, layout khách dựng lại bằng `shared/ui` | Cấu trúc layout hiện có |
-| Client sinh tự động | Cài `orval`, mutator dùng `apiClient`, lệnh `api:gen`, kiểm `git diff` trong CI | `shared/api/client.ts` giữ nguyên |
+| Kiểu API sinh tự động | Cài `openapi-typescript` (mục 2.3), lệnh `api:gen`, kiểm `git diff` của `openapi.json` và `generated/` trong CI | `shared/api/client.ts` giữ nguyên |
 | Alias | Thêm `@customer/*`, `@backoffice/*` vào `vite.config.ts` và `tsconfig.app.json`, đúng `AGENTS.md` mục 8.3 | `@shared` đã có |
 | Lint | oxlint `no-restricted-imports` theo `AGENTS.md` mục 8.3. Script `scripts/check-style.mjs` chặn mã màu và `style={{` trong file **mới** (file cũ nằm trong danh sách ngoại lệ, danh sách này chỉ được rút ngắn) | |
 | i18n | Tách `vi.ts`/`en.ts` (khoảng 1700 dòng mỗi file) theo namespace | Nội dung chuỗi hiện có |
