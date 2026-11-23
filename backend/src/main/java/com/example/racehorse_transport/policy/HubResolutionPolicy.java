@@ -7,6 +7,8 @@ import java.util.Objects;
 // Hub đón, hub giao tra từ hub_service_area theo tỉnh của địa chỉ đón, giao. Hàm thuần.
 public final class HubResolutionPolicy {
 
+    static final String HOME_COUNTRY = "VN";
+
     public enum Routing {
         // Một chặng DIRECT từ địa chỉ đón tới địa chỉ giao, không có departure
         DIRECT,
@@ -37,6 +39,22 @@ public final class HubResolutionPolicy {
                 yield pickupHubId.equals(deliveryHubId) ? Routing.DIRECT : Routing.LINEHAUL;
             }
         };
+    }
+
+    // Loại đơn phải khớp nơi đón và nơi giao. Công ty đặt tại Việt Nam nên VN là phía trong nước.
+    public static void requireConsistentBookingType(BookingType bookingType, String pickupCountry, String deliveryCountry,
+                                                    String pickupProvince, String deliveryProvince) {
+        boolean pickupHome = HOME_COUNTRY.equals(pickupCountry);
+        boolean deliveryHome = HOME_COUNTRY.equals(deliveryCountry);
+        boolean valid = switch (bookingType) {
+            case LOCAL -> pickupHome && deliveryHome && Objects.equals(pickupProvince, deliveryProvince);
+            case INTERPROVINCE -> pickupHome && deliveryHome && !Objects.equals(pickupProvince, deliveryProvince);
+            case EXPORT -> pickupHome && !deliveryHome;
+            case IMPORT -> !pickupHome && deliveryHome;
+        };
+        if (!valid) {
+            throw new IllegalArgumentException("Loại đơn " + bookingType + " không khớp với nơi đón và nơi giao.");
+        }
     }
 
     private static void requireServed(Long hubId) {

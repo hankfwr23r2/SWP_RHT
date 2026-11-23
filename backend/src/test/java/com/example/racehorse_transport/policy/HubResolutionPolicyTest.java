@@ -37,6 +37,21 @@ class HubResolutionPolicyTest {
     }
 
     @Test
+    void bookingTypeMustMatchPickupAndDeliveryPlaces() {
+        HubResolutionPolicy.requireConsistentBookingType(BookingType.LOCAL, "VN", "VN", "VN-79", "VN-79");
+        HubResolutionPolicy.requireConsistentBookingType(BookingType.INTERPROVINCE, "VN", "VN", "VN-75", "VN-46");
+        HubResolutionPolicy.requireConsistentBookingType(BookingType.EXPORT, "VN", "KH", "VN-79", "KH-12");
+        HubResolutionPolicy.requireConsistentBookingType(BookingType.IMPORT, "LA", "VN", "LA-VT", "VN-44");
+
+        assertThatThrownBy(() -> HubResolutionPolicy.requireConsistentBookingType(BookingType.LOCAL, "VN", "VN", "VN-75", "VN-79"))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> HubResolutionPolicy.requireConsistentBookingType(BookingType.INTERPROVINCE, "VN", "KH", "VN-79", "KH-12"))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> HubResolutionPolicy.requireConsistentBookingType(BookingType.EXPORT, "KH", "VN", "KH-12", "VN-79"))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void rejectsProvinceWithoutServingHub() {
         assertThatThrownBy(() -> HubResolutionPolicy.routingOf(BookingType.INTERPROVINCE, HUB_HCM, null))
                 .isInstanceOf(IllegalArgumentException.class)
