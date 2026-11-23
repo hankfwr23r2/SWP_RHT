@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import { PageTransition } from '@shared/motion/motion'
 import { AppHeader, appHeaderStyles as h } from '@shared/ui/AppHeader'
-import { NoticeBell } from '@shared/ui/NoticeBell'
+import { NoticeBell } from '@shared/components/NoticeBell'
 import { TranslateToggle } from '@shared/ui/TranslateToggle'
 
 const isActive = (to: string, path: string) =>

@@ -17,7 +17,6 @@ const EXCEPTIONS = {
     'src/shared/ui/CaptureField.tsx',
     'src/shared/ui/ChangePasswordModal.tsx',
     'src/shared/ui/InsuranceDocuments.tsx',
-    'src/shared/ui/NoticeBell.tsx',
   ],
   R4: [
     'src/apps/backoffice/features/admin/fleet/AdminFleetPage.tsx',
