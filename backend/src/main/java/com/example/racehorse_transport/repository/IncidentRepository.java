@@ -28,4 +28,7 @@ public interface IncidentRepository extends JpaRepository<Incident, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT i FROM Incident i WHERE i.id = :id")
     Optional<Incident> findForUpdate(@Param("id") Long id);
+
+    // Báo cáo chuyến
+    List<Incident> findByVehicleTrip_IdInOrderByReportedAt(Collection<Long> vehicleTripIds);
 }

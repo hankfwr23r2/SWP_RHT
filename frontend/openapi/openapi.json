@@ -950,6 +950,23 @@
         },
         "type" : "object"
       },
+      "ApiResponseListTripReportRowResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/TripReportRowResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListVehicleClassResponseDto" : {
         "properties" : {
           "data" : {
@@ -1036,6 +1053,20 @@
         "properties" : {
           "data" : {
             "$ref" : "#/components/schemas/MyCrewAssignmentResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseOperationsSummaryResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/OperationsSummaryResponseDto"
           },
           "message" : {
             "type" : "string"
@@ -1162,6 +1193,20 @@
         "properties" : {
           "data" : {
             "$ref" : "#/components/schemas/SystemConfigResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseTripReportResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/TripReportResponseDto"
           },
           "message" : {
             "type" : "string"
@@ -3477,6 +3522,18 @@
         },
         "type" : "object"
       },
+      "IncidentTypeCountDto" : {
+        "properties" : {
+          "count" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "key" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "InsuranceConfirmationRequestDto" : { },
       "InsuranceDeclarationRequestDto" : {
         "properties" : {
@@ -3972,6 +4029,66 @@
         },
         "type" : "object"
       },
+      "OperationsSummaryResponseDto" : {
+        "properties" : {
+          "arrivedStopCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "averageRating" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "completedTripCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "costTotal" : {
+            "type" : "number"
+          },
+          "costsByPayer" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PayerAmountDto"
+            },
+            "type" : "array"
+          },
+          "horsesDelivered" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "incidentCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "incidentsByType" : {
+            "items" : {
+              "$ref" : "#/components/schemas/IncidentTypeCountDto"
+            },
+            "type" : "array"
+          },
+          "lateStopCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "onTimeRate" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "openIncidentCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "ratingCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "tripCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "PartnerDocumentUploadRequestDto" : {
         "properties" : {
           "bookingHorseId" : {
@@ -4241,6 +4358,17 @@
           }
         },
         "required" : [ "email" ],
+        "type" : "object"
+      },
+      "PayerAmountDto" : {
+        "properties" : {
+          "amount" : {
+            "type" : "number"
+          },
+          "key" : {
+            "type" : "string"
+          }
+        },
         "type" : "object"
       },
       "PersonalInsuranceRevisionRequestDto" : {
@@ -4843,6 +4971,136 @@
         },
         "type" : "object"
       },
+      "ReportCostDto" : {
+        "properties" : {
+          "amount" : {
+            "type" : "number"
+          },
+          "approved" : {
+            "type" : "boolean"
+          },
+          "category" : {
+            "enum" : [ "TOLL", "FUEL", "STABLING", "VET", "RESCUE", "REPAIR", "WAITING", "OTHER" ],
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "payerType" : {
+            "enum" : [ "COMPANY", "CUSTOMER", "CONSIGNEE", "AGENT" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ReportHealthDto" : {
+        "properties" : {
+          "feedIntake" : {
+            "enum" : [ "NORMAL", "REDUCED", "REFUSED" ],
+            "type" : "string"
+          },
+          "healthStatus" : {
+            "enum" : [ "NORMAL", "WATCH", "SICK", "CRITICAL" ],
+            "type" : "string"
+          },
+          "horseName" : {
+            "type" : "string"
+          },
+          "recordedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "symptoms" : {
+            "type" : "string"
+          },
+          "temperatureCelsius" : {
+            "type" : "number"
+          },
+          "waterIntake" : {
+            "enum" : [ "NORMAL", "REDUCED", "REFUSED" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ReportIncidentDto" : {
+        "properties" : {
+          "causeType" : {
+            "enum" : [ "COMPANY_FAULT", "HORSE_CONDITION", "CUSTOMER_DOCS", "AGENT_FAULT", "FORCE_MAJEURE", "RECIPIENT_ABSENT" ],
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "incidentType" : {
+            "enum" : [ "HEALTH", "VEHICLE_BREAKDOWN", "ACCIDENT", "DELAY", "DOCUMENT", "HANDOVER_TIMEOUT", "OTHER" ],
+            "type" : "string"
+          },
+          "reportedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "resolvedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "REPORTED", "PLAN_PENDING", "PLAN_ACTIVE", "RESOLVED", "CLOSED" ],
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ReportRatingDto" : {
+        "properties" : {
+          "bookingCode" : {
+            "type" : "string"
+          },
+          "comment" : {
+            "type" : "string"
+          },
+          "score" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "ReportStopDto" : {
+        "properties" : {
+          "actualArrivalAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "actualDepartureAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "late" : {
+            "type" : "boolean"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "plannedArrivalAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "sequenceNumber" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "stopType" : {
+            "enum" : [ "PICKUP", "DELIVERY", "HUB", "REST", "VITAL_CHECK", "BORDER", "QUARANTINE" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ResetPasswordWithOtpRequest" : {
         "properties" : {
           "confirmPassword" : {
@@ -5253,6 +5511,112 @@
             "type" : "integer"
           },
           "stallTypeCode" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "TripReportResponseDto" : {
+        "properties" : {
+          "costs" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ReportCostDto"
+            },
+            "type" : "array"
+          },
+          "healthLogs" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ReportHealthDto"
+            },
+            "type" : "array"
+          },
+          "incidents" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ReportIncidentDto"
+            },
+            "type" : "array"
+          },
+          "ratings" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ReportRatingDto"
+            },
+            "type" : "array"
+          },
+          "stops" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ReportStopDto"
+            },
+            "type" : "array"
+          },
+          "summary" : {
+            "$ref" : "#/components/schemas/TripReportRowResponseDto"
+          }
+        },
+        "type" : "object"
+      },
+      "TripReportRowResponseDto" : {
+        "properties" : {
+          "actualEndAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "actualStartAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "arrivedStopCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "averageRating" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "costTotal" : {
+            "type" : "number"
+          },
+          "endLocationName" : {
+            "type" : "string"
+          },
+          "horseCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "incidentCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "lateStopCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "licensePlate" : {
+            "type" : "string"
+          },
+          "plannedStartAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "startLocationName" : {
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "PLANNED", "DISPATCHED", "IN_PROGRESS", "COMPLETED", "CANCELLED" ],
+            "type" : "string"
+          },
+          "stopCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "tripType" : {
+            "enum" : [ "PICKUP", "LINEHAUL", "DELIVERY", "TRANSFER", "DIRECT" ],
             "type" : "string"
           }
         },
@@ -7198,7 +7562,7 @@
     },
     "/crew/vehicle-trips/{id}" : {
       "get" : {
-        "operationId" : "trip_1",
+        "operationId" : "trip_2",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -9499,6 +9863,103 @@
           }
         },
         "tags" : [ "tracking-controller" ]
+      }
+    },
+    "/reports/operations" : {
+      "get" : {
+        "operationId" : "summary",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "from",
+          "required" : true,
+          "schema" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "to",
+          "required" : true,
+          "schema" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseOperationsSummaryResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "report-controller" ]
+      }
+    },
+    "/reports/trips" : {
+      "get" : {
+        "operationId" : "trips_1",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "from",
+          "required" : true,
+          "schema" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "to",
+          "required" : true,
+          "schema" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListTripReportRowResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "report-controller" ]
+      }
+    },
+    "/reports/trips/{id}" : {
+      "get" : {
+        "operationId" : "trip_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseTripReportResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "report-controller" ]
       }
     },
     "/routes" : {

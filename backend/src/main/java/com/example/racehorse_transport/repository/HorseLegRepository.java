@@ -56,4 +56,8 @@ public interface HorseLegRepository extends JpaRepository<HorseLeg, Long> {
                     AND l.status = com.example.racehorse_transport.entity.enums.HorseLegStatus.COMPLETED)
             """)
     long countActiveHorsesNotDelivered(@Param("bookingId") Long bookingId);
+
+    // Báo cáo chuyến: chặng của các lượt xe
+    @EntityGraph(attributePaths = {"bookingHorse", "bookingHorse.horse", "bookingHorse.booking"})
+    List<HorseLeg> findByVehicleTrip_IdIn(Collection<Long> vehicleTripIds);
 }
