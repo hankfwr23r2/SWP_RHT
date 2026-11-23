@@ -372,6 +372,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/horse-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listHorseTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listHorses"];
+        put?: never;
+        post: operations["createHorse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horses/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getHorse"];
+        put: operations["updateHorse"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/hub-service-areas": {
         parameters: {
             query?: never;
@@ -758,6 +806,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseHorseResponseDto: {
+            data?: components["schemas"]["HorseResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseHubServiceAreaResponse: {
             data?: components["schemas"]["HubServiceAreaResponse"];
             message?: string;
@@ -780,6 +833,16 @@ export interface components {
         };
         ApiResponseListDepartureScheduleResponse: {
             data?: components["schemas"]["DepartureScheduleResponse"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListHorseResponseDto: {
+            data?: components["schemas"]["HorseResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListHorseTypeResponseDto: {
+            data?: components["schemas"]["HorseTypeResponseDto"][];
             message?: string;
             status?: string;
         };
@@ -1059,6 +1122,77 @@ export interface components {
             /** Format: email */
             email: string;
             otp?: string;
+        };
+        HorseCreateRequestDto: {
+            /** Format: int32 */
+            birthYear?: number;
+            breed?: string;
+            color?: string;
+            dam?: string;
+            declaredCurrencyCode?: string;
+            declaredValue?: number;
+            /** Format: int64 */
+            horseTypeId: number;
+            identificationMarks?: string;
+            microchip: string;
+            name: string;
+            passportNumber?: string;
+            /** @enum {string} */
+            sex: "STALLION" | "MARE" | "GELDING";
+            sire?: string;
+            weightKg?: number;
+        };
+        HorseResponseDto: {
+            /** Format: int32 */
+            birthYear?: number;
+            breed?: string;
+            color?: string;
+            /** Format: date-time */
+            createdAt?: string;
+            dam?: string;
+            declaredCurrencyCode?: string;
+            declaredValue?: number;
+            /** Format: int64 */
+            horseTypeId?: number;
+            horseTypeName?: string;
+            /** Format: int64 */
+            id?: number;
+            identificationMarks?: string;
+            microchip?: string;
+            name?: string;
+            passportNumber?: string;
+            /** @enum {string} */
+            sex?: "STALLION" | "MARE" | "GELDING";
+            sire?: string;
+            /** @enum {string} */
+            status?: "ACTIVE" | "RETIRED" | "DECEASED";
+            /** Format: date-time */
+            updatedAt?: string;
+            weightKg?: number;
+        };
+        HorseTypeResponseDto: {
+            description?: string;
+            /** Format: int64 */
+            id?: number;
+            name?: string;
+        };
+        HorseUpdateRequestDto: {
+            /** Format: int32 */
+            birthYear?: number;
+            breed?: string;
+            color?: string;
+            dam?: string;
+            declaredCurrencyCode?: string;
+            declaredValue?: number;
+            /** Format: int64 */
+            horseTypeId: number;
+            identificationMarks?: string;
+            name: string;
+            passportNumber?: string;
+            /** @enum {string} */
+            sex: "STALLION" | "MARE" | "GELDING";
+            sire?: string;
+            weightKg?: number;
         };
         HubServiceAreaRequest: {
             /** Format: int64 */
@@ -2039,6 +2173,118 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseMapStringString"];
+                };
+            };
+        };
+    };
+    listHorseTypes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHorseTypeResponseDto"];
+                };
+            };
+        };
+    };
+    listHorses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHorseResponseDto"];
+                };
+            };
+        };
+    };
+    createHorse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HorseCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHorseResponseDto"];
+                };
+            };
+        };
+    };
+    getHorse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHorseResponseDto"];
+                };
+            };
+        };
+    };
+    updateHorse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HorseUpdateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHorseResponseDto"];
                 };
             };
         };
