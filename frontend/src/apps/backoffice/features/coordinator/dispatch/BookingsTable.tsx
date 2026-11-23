@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import type { DispatchBooking, DispatchHorse } from '@shared/api/dispatch'
 import { formatDate } from '@shared/lib/format'
 import { Badge } from '@shared/ui/Badge'
+import { Button } from '@shared/ui/Button'
 import { Table, type TableColumn } from '@shared/ui/Table'
 import { activeLegs } from './dispatchModel'
 import s from './Dispatch.module.css'
@@ -9,7 +10,7 @@ import s from './Dispatch.module.css'
 interface Row { booking: DispatchBooking; horse: DispatchHorse }
 
 // Mỗi dòng là một con ngựa của đơn, kèm các chặng đã lập
-export function BookingsTable({ bookings }: { bookings: DispatchBooking[] }) {
+export function BookingsTable({ bookings, onJourney }: { bookings: DispatchBooking[]; onJourney: (booking: DispatchBooking) => void }) {
   const { t } = useTranslation()
   const rows: Row[] = bookings.flatMap(booking => (booking.horses ?? []).map(horse => ({ booking, horse })))
   const columns: TableColumn<Row>[] = [
@@ -30,6 +31,11 @@ export function BookingsTable({ bookings }: { bookings: DispatchBooking[] }) {
           </span>
         )
       },
+    },
+    {
+      key: 'journey',
+      header: t('dispatch.bookings.colJourney'),
+      render: r => <Button size="sm" variant="ghost" onClick={() => onJourney(r.booking)}>{t('dispatch.bookings.viewJourney')}</Button>,
     },
   ]
   return <Table caption={t('dispatch.bookings.caption')} columns={columns} rows={rows} rowKey={r => r.horse.bookingHorseId ?? 0} />

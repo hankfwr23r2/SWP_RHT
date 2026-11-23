@@ -38,7 +38,10 @@ export const coordinator = {
       "colStall": "Khoang",
       "colLegs": "Chặng đã lập",
       "direct": "Chạy thẳng",
-      "noLegs": "Chưa xếp"
+      "noLegs": "Chưa xếp",
+      "colJourney": "Hành trình",
+      "viewJourney": "Xem",
+      "journeyTitle": "Hành trình đơn {{code}}"
     },
     "trips": {
       "emptyTitle": "Chưa có lượt xe trong tuần này",

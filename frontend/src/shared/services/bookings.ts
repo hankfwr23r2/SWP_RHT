@@ -99,23 +99,6 @@ export interface TripTeam {
   escort: { name: string; phone: string }
 }
 
-// Tra cứu công khai: mã đơn + 4 số cuối SĐT người gửi. Chỉ trả tiến trình, tuyến, ngày; không có tên, giá hay giấy tờ.
-export interface PublicTracking {
-  route: string
-  depart: number
-  step: number
-  done?: boolean
-  status: string
-  tone?: 'warn' | 'done' | 'bad'
-  now?: { place: string; at: number; eta: number }
-  note?: string
-}
-
-export interface PublicTrackingLookup {
-  code: string
-  result: PublicTracking | null
-}
-
 export interface NewBookingInput {
   type: Booking['type']
   origin: Booking['origin']
@@ -126,18 +109,6 @@ export interface NewBookingInput {
   horses: Array<Omit<BookingHorse, 'stall' | 'feedPackage' | 'waterPlan'>
     & Partial<Pick<BookingHorse, 'stall' | 'feedPackage' | 'waterPlan'>>>
   limitedLiabilityAccepted?: boolean // khách đã đồng ý Điều khoản Trách nhiệm Hạn chế vì không mua bảo hiểm
-}
-
-
-// Công khai: không cần đăng nhập. Tra cứu đơn theo mã đơn và 4 số cuối SĐT.
-export const publicBookingsApi = {
-  trackMany: async (codes: string[], phoneLast4: string): Promise<PublicTrackingLookup[]> => {
-    const res = await apiClient.post<ApiResponse<PublicTrackingLookup[]>>('/bookings/public-track/batch', {
-      codes: codes.map(code => code.trim()),
-      phoneLast4: phoneLast4.trim(),
-    })
-    return res.data.data
-  },
 }
 
 // Dành cho app khách

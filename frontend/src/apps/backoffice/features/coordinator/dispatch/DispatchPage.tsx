@@ -1,13 +1,15 @@
 // Điều độ (điều phối viên): đơn chờ xếp xe và lượt xe trong tuần (docs/MAN_HINH_VA_TAC_DONG.md mục 3.9)
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { dispatchApi, type VehicleTrip } from '@shared/api/dispatch'
+import { dispatchApi, type DispatchBooking, type VehicleTrip } from '@shared/api/dispatch'
+import { BookingJourney } from '@shared/components/HorseJourney'
 import { useLoad } from '@shared/hooks/useLoad'
 import { Button } from '@shared/ui/Button'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
 import { Input } from '@shared/ui/Input'
+import { Modal } from '@shared/ui/Modal'
 import { PageHeader } from '@shared/ui/PageHeader'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { Tabs } from '@shared/ui/Tabs'
@@ -27,6 +29,7 @@ export default function DispatchPage() {
   const [tab, setTab] = useState('bookings')
   const [creating, setCreating] = useState(false)
   const [openTripId, setOpenTripId] = useState<number>()
+  const [journeyOf, setJourneyOf] = useState<DispatchBooking>()
   const range = weekRange(weekStart)
   const { data, loaded, error, reload } = useLoad(async () => {
     const [bookings, trips] = await Promise.all([dispatchApi.bookings(range.fromDate, range.toDate), dispatchApi.trips(range.from, range.to)])
@@ -39,7 +42,7 @@ export default function DispatchPage() {
     if (error || !data) return <ErrorState title={t('dispatch.loadError')} message={error?.message} onRetry={reload} />
     if (tab === 'bookings') {
       return data.bookings.length
-        ? <BookingsTable bookings={data.bookings} />
+        ? <BookingsTable bookings={data.bookings} onJourney={setJourneyOf} />
         : <EmptyState icon={<i className="fa-solid fa-inbox" />} title={t('dispatch.bookings.emptyTitle')} description={t('dispatch.bookings.emptyDescription')} />
     }
     return data.trips.length
@@ -85,6 +88,11 @@ export default function DispatchPage() {
       )}
       {openTripId !== undefined && data && (
         <TripDetailModal tripId={openTripId} bookings={data.bookings} onClose={() => setOpenTripId(undefined)} onChanged={() => void reload()} />
+      )}
+      {journeyOf && (
+        <Modal title={t('dispatch.bookings.journeyTitle', { code: journeyOf.code })} onClose={() => setJourneyOf(undefined)}>
+          <BookingJourney bookingId={journeyOf.id!} />
+        </Modal>
       )}
     </div>
   )
