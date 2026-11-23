@@ -65,11 +65,26 @@ class SystemConfigServiceTest {
     void rejectsInvalidValueMissingKeyAndNonAdmin() {
         var request = new SystemConfigUpdateRequestDto(BigDecimal.ONE);
         assertThatThrownBy(() -> configs.updateConfiguration(KEY, "admin.dev", new SystemConfigUpdateRequestDto(BigDecimal.ZERO)))
-                .isInstanceOf(SystemConfigRuleException.class);
+                .isInstanceOf(SystemConfigRuleException.class).hasMessageContaining("từ 1 đến 10");
         assertThatThrownBy(() -> configs.updateConfiguration("INVALID_KEY", "admin.dev", request))
                 .isInstanceOf(ResourceNotFoundException.class);
         assertThatThrownBy(() -> configs.updateConfiguration(KEY, "customer1.dev", request))
                 .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void rejectsValueAboveMaximumWithoutChangingConfigOrAudit() {
+        var prior = configs.configuration(KEY);
+        long targetId = repository.findById(KEY).orElseThrow().getAuditTargetId();
+        long count = auditCount(targetId);
+        var request = new SystemConfigUpdateRequestDto(BigDecimal.valueOf(11));
+
+        assertThat(prior.minValue()).isEqualTo(1);
+        assertThat(prior.maxValue()).isEqualTo(10);
+        assertThatThrownBy(() -> configs.updateConfiguration(KEY, "admin.dev", request))
+                .isInstanceOf(SystemConfigRuleException.class).hasMessageContaining("từ 1 đến 10");
+        assertThat(configs.configuration(KEY)).isEqualTo(prior);
+        assertThat(auditCount(targetId)).isEqualTo(count);
     }
 
     private long auditCount(long targetId) {

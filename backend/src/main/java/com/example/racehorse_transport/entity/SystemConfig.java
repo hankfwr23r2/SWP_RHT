@@ -35,6 +35,12 @@ public class SystemConfig {
     @Column(name = "config_value", length = 500, nullable = false)
     private String configValue;
 
+    @Column(name = "min_value", insertable = false, updatable = false)
+    private Integer minValue;
+
+    @Column(name = "max_value", insertable = false, updatable = false)
+    private Integer maxValue;
+
     // MINUTE, HOUR, DAY, COUNT
     @Column(name = "unit", length = 30)
     private String unit;

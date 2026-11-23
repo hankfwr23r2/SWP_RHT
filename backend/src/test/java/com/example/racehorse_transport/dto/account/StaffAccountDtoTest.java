@@ -4,11 +4,27 @@ import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.Role;
 import com.example.racehorse_transport.entity.enums.AppUserStatus;
 import com.example.racehorse_transport.entity.enums.EmploymentStatus;
+import jakarta.validation.Validation;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class StaffAccountDtoTest {
+
+    @Test
+    void validatesStaffCodeForCreateAndUpdate() {
+        try (var factory = Validation.buildDefaultValidatorFactory()) {
+            var validator = factory.getValidator();
+            String valid = "\t drv._-01 \u2003";
+            assertThat(validator.validateValue(StaffAccountCreateRequestDto.class, "staffCode", valid)).isEmpty();
+            assertThat(validator.validateValue(StaffAccountUpdateRequestDto.class, "staffCode", valid)).isEmpty();
+
+            for (String invalid : new String[]{"DRV 01", "ĐRV-01", "DRV/01"}) {
+                assertThat(validator.validateValue(StaffAccountCreateRequestDto.class, "staffCode", invalid)).isNotEmpty();
+                assertThat(validator.validateValue(StaffAccountUpdateRequestDto.class, "staffCode", invalid)).isNotEmpty();
+            }
+        }
+    }
 
     @Test
     void mapsCreateUpdateAndResponseWithoutAssigningServerFields() {

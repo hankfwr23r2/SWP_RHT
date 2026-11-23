@@ -18,6 +18,8 @@ class SystemConfigDtoTest {
         config.setConfigKey("OTP_MAX_ATTEMPTS");
         config.setUnit("COUNT");
         config.setConfigGroup("AUTH");
+        config.setMinValue(1);
+        config.setMaxValue(10);
         config.setUpdatedBy(actor);
         var updatedAt = Instant.parse("2026-11-23T08:00:00Z");
         config.setUpdatedAt(updatedAt);
@@ -27,6 +29,6 @@ class SystemConfigDtoTest {
         assertThat(config.getAuditTargetId()).isEqualTo(7L);
         assertThat(config.getUpdatedBy()).isSameAs(actor);
         assertThat(SystemConfigResponseDto.from(config)).isEqualTo(new SystemConfigResponseDto(
-                "OTP_MAX_ATTEMPTS", "6", "COUNT", "AUTH", null, 8L, updatedAt));
+                "OTP_MAX_ATTEMPTS", "6", "COUNT", "AUTH", null, 8L, updatedAt, 1, 10));
     }
 }

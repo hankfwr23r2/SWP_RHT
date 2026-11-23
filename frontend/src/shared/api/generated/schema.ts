@@ -1309,6 +1309,10 @@ export interface components {
             configKey?: string;
             configValue?: string;
             description?: string;
+            /** Format: int32 */
+            maxValue?: number;
+            /** Format: int32 */
+            minValue?: number;
             unit?: string;
             /** Format: date-time */
             updatedAt?: string;
