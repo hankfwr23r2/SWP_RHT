@@ -1622,6 +1622,7 @@
           "staffCode" : {
             "maxLength" : 30,
             "minLength" : 0,
+            "pattern" : "\\p{javaWhitespace}*[A-Za-z0-9._-]+\\p{javaWhitespace}*",
             "type" : "string"
           },
           "username" : {
@@ -1716,6 +1717,7 @@
           "staffCode" : {
             "maxLength" : 30,
             "minLength" : 0,
+            "pattern" : "\\p{javaWhitespace}*[A-Za-z0-9._-]+\\p{javaWhitespace}*",
             "type" : "string"
           }
         },
@@ -1735,6 +1737,14 @@
           },
           "description" : {
             "type" : "string"
+          },
+          "maxValue" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "minValue" : {
+            "format" : "int32",
+            "type" : "integer"
           },
           "unit" : {
             "type" : "string"

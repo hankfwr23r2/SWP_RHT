@@ -81,6 +81,8 @@ API tham số trả thêm `minValue` và `maxValue` từ DB. Giá trị ngoài k
 
 Khi tạo hoặc cập nhật tài khoản nhân viên, mã nhân viên chỉ gồm chữ ASCII, chữ số, dấu chấm, gạch dưới và gạch ngang. Khoảng trắng ở hai đầu được bỏ khi lưu.
 
+Kiểm tra: `mvnw verify` chạy 295 test, 0 lỗi, 1 bỏ qua, nhưng lượt đó lỗi ở bước đóng gói (`Unable to find main class`). Chạy lại `clean verify` với 39 test liên quan thì đóng gói đạt.
+
 ## Kết quả kiểm tra
 
 | Kiểm tra | Đồng bộ tên | A2.1 | A2.2 | A2.3 và A2.4 | A2.5 trên nền P0.2-B |
