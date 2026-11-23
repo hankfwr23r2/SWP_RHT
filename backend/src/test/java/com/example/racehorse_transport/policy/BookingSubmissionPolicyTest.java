@@ -12,7 +12,6 @@ import com.example.racehorse_transport.entity.enums.AddressRole;
 import com.example.racehorse_transport.entity.enums.BookingPartyRole;
 import com.example.racehorse_transport.entity.enums.BookingType;
 import com.example.racehorse_transport.entity.enums.InsuranceCoverageOption;
-import com.example.racehorse_transport.entity.enums.HorseGender;
 import com.example.racehorse_transport.entity.enums.TransferMethod;
 import com.example.racehorse_transport.exception.BookingRuleException;
 import java.time.Instant;
@@ -82,14 +81,6 @@ class BookingSubmissionPolicyTest {
                 .isInstanceOf(BookingRuleException.class);
         assertThatThrownBy(() -> BookingSubmissionPolicy.validateTransfer(BookingType.INTERPROVINCE,
                 HubResolutionPolicy.Routing.DIRECT, self, company)).isInstanceOf(BookingRuleException.class);
-    }
-
-    @Test
-    void stallionRequiresWideStall() {
-        assertThatCode(() -> BookingSubmissionPolicy.requireStall(HorseGender.STALLION, "WIDE"))
-                .doesNotThrowAnyException();
-        assertThatThrownBy(() -> BookingSubmissionPolicy.requireStall(HorseGender.STALLION, "STANDARD"))
-                .isInstanceOf(BookingRuleException.class);
     }
 
     private static BookingCreateRequestDto request(LocalDate date, boolean accepted, List<HorseInput> horses) {

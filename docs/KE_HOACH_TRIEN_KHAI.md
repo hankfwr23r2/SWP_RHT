@@ -402,7 +402,7 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
 | A2 | Đổi trạng thái xe, quy tắc chỗ, bỏ hạn đăng ký, tham số mới |
 | A3 | Bỏ tính tiền cách ly, lưu chuồng theo ngày đón sớm, tự thêm `VET_CHECK` |
 | A4 | Bỏ ngày cách ly khỏi thời gian cần trước ngày đón |
-| A5 | Giữ chỗ theo loại khoang, ngựa giống đực chọn khoang rộng, chọn cách đưa và nhận ngựa |
+| A5 | Giữ chỗ theo loại khoang, chọn cách đưa và nhận ngựa |
 | A6 | `LAB_TEST` do công ty nộp, `QUARANTINE_CLEARANCE`, mốc kiểm của đơn nhập, danh sách đơn thiếu giấy chuyển A8 |
 
 **Xong khi:** 9 ngựa khoang rộng không đặt được trên chuyến 9 chỗ; đơn Lào không chọn được Mộc Bài; tuyến có đoạn quá 4 giờ bị từ chối; xe bảo dưỡng không gán được (B kiểm); không còn `quarantine_days` trong code.

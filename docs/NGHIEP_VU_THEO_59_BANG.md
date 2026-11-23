@@ -255,7 +255,7 @@ Tiến độ vận hành (ngựa đang ở đâu, chặng nào, có sự cố kh
 | 10 | Gửi đơn | `booking` (PENDING_INTAKE), `booking_address` × 2 (snapshot), `terms_acceptance` SERVICE_TERMS gắn `booking_id`, `booking_status_history` |
 
 **Quy tắc:**
-- Chỉ chọn được `departure` có `status = OPEN`, chưa qua `booking_cutoff_at`, còn đủ chỗ (`booked_stall_count` cộng số chỗ của đơn không vượt `stall_capacity`; khoang thường 1 chỗ, khoang rộng 2 chỗ). Ngựa giống đực (`STALLION`) bắt buộc khoang rộng. Khi ghi, `DepartureService` khóa dòng `departure` bằng `FOR UPDATE` rồi cộng `booked_stall_count` trong cùng transaction.
+- Chỉ chọn được `departure` có `status = OPEN`, chưa qua `booking_cutoff_at`, còn đủ chỗ (`booked_stall_count` cộng số chỗ của đơn không vượt `stall_capacity`; khoang thường 1 chỗ, khoang rộng 2 chỗ). Khách tự chọn loại khoang cho từng con; không bắt buộc theo giới tính. Khi ghi, `DepartureService` khóa dòng `departure` bằng `FOR UPDATE` rồi cộng `booked_stall_count` trong cùng transaction.
 - `booking_cutoff_at` phải đủ xa so với hôm nay để kịp thẩm định, làm giấy (`permit_lead_days`, `certificate_lead_days`) theo `country_rule`. Không đủ thì cảnh báo và gợi ý chuyến sớm nhất khả thi.
 - Hệ thống hiển thị danh sách giấy phải nộp từ `document_requirement`, ghi rõ **ai nộp** (`submitter_type`). Ví dụ: giấy phép nhập khẩu của nước đến do người nhận hoặc đại lý nộp.
 - Microchip được chuẩn hóa theo ISO 11784/11785 (15 chữ số) trước khi lưu.

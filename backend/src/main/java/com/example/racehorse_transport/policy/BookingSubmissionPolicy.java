@@ -98,12 +98,6 @@ public final class BookingSubmissionPolicy {
         }
     }
 
-    public static void requireStall(HorseGender sex, String stallTypeCode) {
-        if (sex == HorseGender.STALLION && !"WIDE".equals(stallTypeCode)) {
-            throw new BookingRuleException("Ngựa giống đực phải chọn khoang rộng.");
-        }
-    }
-
     public static void validateAddOn(BillableService service) {
         if (service.getStatus() != ActiveStatus.ACTIVE || service.getLayer() != ServiceLayer.ADD_ON) {
             throw new BookingRuleException("Dịch vụ thêm được chọn không khả dụng.");

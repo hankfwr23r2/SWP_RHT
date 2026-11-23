@@ -111,7 +111,6 @@ public class PricingDataServiceImpl implements PricingDataService {
             if (horse.getStatus() != HorseStatus.ACTIVE || !validStalls.contains(selected.stallTypeCode())) {
                 throw new PricingRuleException("Ngựa hoặc loại khoang không khả dụng.");
             }
-            BookingSubmissionPolicy.requireStall(horse.getSex(), selected.stallTypeCode());
             Set<Long> serviceIds = new HashSet<>(selected.addOnServiceIds());
             if (serviceIds.size() != selected.addOnServiceIds().size()) {
                 throw new PricingRuleException("Một dịch vụ chỉ được chọn một lần cho mỗi con ngựa.");
