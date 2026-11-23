@@ -1,7 +1,13 @@
 package com.example.racehorse_transport.service;
 
-// Hợp đồng gọi chéo giữa hai luồng (docs/KE_HOACH_TRIEN_KHAI.md mục 3.3).
-// Cài đặt: luồng A (task A1). Gọi: luồng A. Chưa có cài đặt thì bên gọi test bằng mock.
+import com.example.racehorse_transport.dto.departure.DepartureCreateRequestDto;
+import com.example.racehorse_transport.dto.departure.DepartureResponseDto;
+import com.example.racehorse_transport.entity.enums.DepartureStatus;
+import java.time.LocalDate;
+import java.util.List;
+
+// Chuyến cụ thể theo ngày. Chủ sở hữu bảng departure (kể cả cột dẫn xuất booked_stalls): luồng A (A1).
+// reserve/release là hợp đồng gọi chéo (docs/KE_HOACH_TRIEN_KHAI.md mục 3.3).
 public interface DepartureService {
 
     // Giữ khoang trên chuyến. Khóa dòng departure (SELECT ... FOR UPDATE) rồi mới cộng booked_stalls;
@@ -10,4 +16,18 @@ public interface DepartureService {
 
     // Nhả khoang: hủy đơn, từ chối, báo giá hết hạn, loại ngựa, đổi chuyến
     void release(Long departureId, int stalls);
+
+    // Sinh chuyến từ các lịch đang chạy cho DEPARTURE_GENERATION_WEEKS tuần tới. Trả về số chuyến mới.
+    int generateFromSchedules();
+
+    // Đóng các chuyến đang nhận đơn mà đã qua giờ chốt. Trả về số chuyến đã đóng.
+    int closePastCutoff();
+
+    // routeId, status null nghĩa là không lọc
+    List<DepartureResponseDto> departures(Long routeId, DepartureStatus status, LocalDate fromDate, LocalDate toDate);
+
+    DepartureResponseDto createAdHoc(DepartureCreateRequestDto request);
+
+    // Hủy chuyến chưa chạy; các đơn trên chuyến chuyển sang SCHEDULE_CHANGE_REQUIRED kèm lý do
+    DepartureResponseDto cancel(Long departureId, String reason, String actorUsername);
 }

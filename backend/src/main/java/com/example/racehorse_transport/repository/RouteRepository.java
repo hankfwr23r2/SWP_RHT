@@ -20,6 +20,9 @@ public interface RouteRepository extends JpaRepository<Route, Long> {
     @Query("SELECT r FROM Route r JOIN FETCH r.origin JOIN FETCH r.destination WHERE r.id = :id")
     Optional<Route> findWithEndpoints(@Param("id") Long id);
 
+    @Query("SELECT r FROM Route r JOIN FETCH r.origin JOIN FETCH r.destination WHERE r.status = :status")
+    List<Route> findByStatusWithEndpoints(@Param("status") ActiveStatus status);
+
     // Địa điểm đang là điểm đầu, điểm cuối hoặc điểm dừng của một tuyến ở trạng thái cho trước
     @Query("""
             SELECT count(r) > 0 FROM Route r
