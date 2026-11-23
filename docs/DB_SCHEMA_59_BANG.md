@@ -196,6 +196,7 @@ Gồm hub, trại cách ly, trạm nghỉ, cửa khẩu, chuồng và trường 
 | `address` | `varchar(500)` | | | |
 | `latitude` | `numeric(9,6)` | có | CK −90..90 | |
 | `longitude` | `numeric(9,6)` | có | CK −180..180 | |
+| `is_headquarters` | `boolean` | | mặc định `false` | Đánh dấu hub trụ sở quản lý xe |
 | `opening_time` | `time` | có | | Giờ mở cửa |
 | `closing_time` | `time` | có | | Giờ đóng cửa |
 | `contact_phone` | `varchar(20)` | có | | |
@@ -503,7 +504,7 @@ Index: `route_id`, `(status, planned_departure_at)`.
 | `registration_expiry_date` | `date` | có | | |
 | `status` | `varchar(30)` | | CK `ACTIVE, MAINTENANCE, RETIRED` | Xe đang chạy hay rảnh suy ra từ `vehicle_trip` |
 
-Ràng buộc bảng: `CHECK (standard_stall_count + wide_stall_count > 0)`. Điều kiện tổng khoang ≤ `vehicle_class.max_stall_count` cần so hai bảng nên kiểm ở service.
+Ràng buộc bảng: `CHECK (standard_stall_count + wide_stall_count > 0)`. Service kiểm tổng khoang ≤ `vehicle_class.max_stall_count` và yêu cầu hub gốc của xe là địa điểm được đánh dấu `is_headquarters`. Cờ này chỉ áp dụng cho `location_type = 'HUB'` và unique index cho phép tối đa một trụ sở. Hub gốc xác định đơn vị quản lý. Vị trí xe và điều kiện nhận lượt tiếp theo thuộc luồng vận hành.
 Index: `vehicle_class_id`, `home_hub_location_id`.
 
 ---
@@ -1376,7 +1377,7 @@ Các quy tắc dưới đây cần so dữ liệu ở nhiều bảng nên CHECK 
 
 | # | Quy tắc | Bảng liên quan |
 |---|---|---|
-| 1 | `location` được tham chiếu phải đúng `location_type`: `hub_service_area`, `staff.home_hub_location_id`, `vehicle.home_hub_location_id` là HUB. `route.origin_location_id` là HUB hoặc BORDER_GATE. `document_requirement.gate_location_id` là BORDER_GATE | location |
+| 1 | `location` được tham chiếu phải đúng `location_type`: `hub_service_area`, `staff.home_hub_location_id`, `vehicle.home_hub_location_id` là HUB. Hub gốc của xe phải có `is_headquarters = true`. `route.origin_location_id` là HUB hoặc BORDER_GATE. `document_requirement.gate_location_id` là BORDER_GATE | location |
 | 2 | `departure.route_id` phải bằng `departure_schedule.route_id` khi có `departure_schedule_id` | departure |
 | 3 | Chỉ nhận đặt chỗ khi `departure.status = OPEN`, `now() < booking_cutoff_at` và còn đủ khoang (`booked_stall_count + số ngựa ≤ stall_capacity`) | booking, departure |
 | 4 | `booking_cutoff_at` phải đủ xa: lấy `permit_lead_days`, `certificate_lead_days` và `quarantine_days` từ `country_rule` | departure, country_rule |
