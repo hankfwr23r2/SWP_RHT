@@ -8,7 +8,6 @@ import { PageTransition } from '@shared/motion/motion'
 import { AppHeader, appHeaderStyles as h } from '@shared/ui/AppHeader'
 import { NoticeBell } from '@shared/ui/NoticeBell'
 import { TranslateToggle } from '@shared/ui/TranslateToggle'
-import './customer-theme.css'
 
 const isActive = (to: string, path: string) =>
   path === to || (to === '/booking/route' && path.startsWith('/booking')) || (to === '/orders' && path.startsWith('/orders/'))
@@ -32,13 +31,9 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
       <AppHeader
         homeHref="/portal" contained links={menu} isActive={isActive} userName={session?.name} profileHref="/profile"
         onLogout={() => { logout(); navigate('/') }}
-        extra={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <NoticeBell />
-          </div>
-        }
+        extra={<NoticeBell />}
       />
-      <main className="customer-theme"><PageTransition>{children}</PageTransition></main>
+      <main><PageTransition>{children}</PageTransition></main>
       <footer className={h.footer}>{t('common.footerCopyright')}</footer>
       <TranslateToggle />
     </>

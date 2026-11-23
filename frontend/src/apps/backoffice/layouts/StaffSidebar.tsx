@@ -9,6 +9,7 @@ import { workOf } from '../shared/staffWork'
 import { useAuth } from '@shared/auth/AuthContext'
 import type { StaffRole } from '@shared/types/role'
 import { STAFF_MENUS } from './staffMenus'
+import { Button } from '@shared/ui/Button'
 import s from './StaffSidebar.module.css'
 
 const KEY = 'SWP_MANAGER_SIDEBAR_COLLAPSED'
@@ -46,7 +47,7 @@ export function StaffSidebar() {
     <aside className={`${s.side} ${collapsed ? s.collapsed : ''}`} aria-label={t('staffSidebar.title', 'Menu')}>
       <div className={s.head}>
         <span>{t('staffSidebar.title', 'Menu')}</span>
-        <button className={s.toggle} onClick={toggle} aria-label={collapsed ? t('staffSidebar.expand', 'Mở rộng menu') : t('staffSidebar.collapse', 'Thu gọn menu')} title={collapsed ? t('staffSidebar.expand', 'Mở rộng menu') : t('staffSidebar.collapse', 'Thu gọn menu')}><i className="fa-regular fa-window-maximize" style={{ transform: 'rotate(90deg)' }} /></button>
+        <Button size="sm" className={s.toggle} icon={<i className={`fa-regular fa-window-maximize ${s.toggleIcon}`} />} onClick={toggle} aria-label={collapsed ? t('staffSidebar.expand', 'Mở rộng menu') : t('staffSidebar.collapse', 'Thu gọn menu')} title={collapsed ? t('staffSidebar.expand', 'Mở rộng menu') : t('staffSidebar.collapse', 'Thu gọn menu')} />
       </div>
 
       <nav className={s.menu}>

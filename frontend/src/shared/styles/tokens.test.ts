@@ -63,6 +63,15 @@ describe('design token', () => {
     expect(tokens['--radius-md']).toBe('12px')
   })
 
+  it('màu biểu tượng trang khách giữ như khi còn customer-theme.css', () => {
+    expect(hex('--icon-accent')).toBe('#ea580c')
+    expect(hex('--icon-info')).toBe('#1d4ed8')
+    expect(hex('--icon-success')).toBe('#059669')
+    expect(hex('--icon-warning')).toBe('#b45309')
+    expect(hex('--icon-danger')).toBe('#dc2626')
+    expect(hex('--icon-muted')).toBe('#1e293b')
+  })
+
   it('khoảng cách theo thang 4px', () => {
     for (const [name, value] of Object.entries(tokens).filter(([name]) => name.startsWith('--space-'))) {
       expect(Number(value.replace('px', '')) % 4, name).toBe(0)

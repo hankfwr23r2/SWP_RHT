@@ -5,6 +5,7 @@ import { Link, NavLink, useLocation } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { gsap } from 'gsap'
 import { useGSAP } from '@gsap/react'
+import { Button } from './Button'
 import s from './AppHeader.module.css'
 
 export interface AppHeaderProps {
@@ -57,7 +58,7 @@ export function AppHeader({ homeHref, badge, links, isActive, userName, profileH
           {links.map(([to, label]) => (
             <NavLink key={to} to={to} end className={`${s.link} ${activeOf(to) ? s.active : ''}`}>{label}</NavLink>
           ))}
-          <span ref={bar} className={s.indicator} style={{ left: 0, width: 0, opacity: 0 }} />
+          <span ref={bar} className={s.indicator} />
         </nav>
         <div className={s.right}>
           {extra}
@@ -67,7 +68,7 @@ export function AppHeader({ homeHref, badge, links, isActive, userName, profileH
               <span className={s.userName}>{userName}</span>
             </button>
           ) : profileHref ? (
-            <Link to={profileHref} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, textDecoration: 'none', color: 'inherit' }} title="Xem hồ sơ cá nhân">
+            <Link to={profileHref} className={s.profileButton} title="Xem hồ sơ cá nhân">
               <span className={s.avatar} title={userName}>{initialsOf(userName)}</span>
               <span className={s.userName}>{userName}</span>
             </Link>
@@ -77,7 +78,7 @@ export function AppHeader({ homeHref, badge, links, isActive, userName, profileH
               <span className={s.userName}>{userName}</span>
             </>
           )}
-          <button className={s.logout} onClick={onLogout}><i className="fa-solid fa-arrow-right-from-bracket" /> {t('common.logout')}</button>
+          <Button variant="ghost" size="sm" icon={<i className="fa-solid fa-arrow-right-from-bracket" />} onClick={onLogout}>{t('common.logout')}</Button>
         </div>
       </div>
     </header>
