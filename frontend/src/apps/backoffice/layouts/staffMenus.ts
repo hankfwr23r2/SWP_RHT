@@ -12,6 +12,7 @@ export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: 
     ['/admin/document-requirements', 'Giấy tờ bắt buộc', { icon: 'fa-file-circle-check' }],
     ['/admin/accounts', 'Tất cả tài khoản', { icon: 'fa-users-gear' }],
     ['/admin/system-logs', 'Nhật ký hệ thống', { icon: 'fa-clock-rotate-left' }],
+    ['/admin/ui-library', 'Thư viện giao diện', { icon: 'fa-swatchbook' }],
   ],
   manager: [
     ['/manager', 'Tổng quan', { group: 'Việc cần làm', icon: 'fa-chart-pie' }],
