@@ -3,7 +3,7 @@ import { insuranceListLoader } from './shared/loaders'
 import { lazy } from 'react'
 import type { AppRoute } from '@shared/routing/types'
 import { ManagerLoginPage, StaffLoginPage } from './features/auth/StaffLoginPage'
-import { accountsLoader, adminHorseTypesLoader, adminPricingLoader, adminRoutesLoader, adminServicesLoader, documentRequirementsLoader, systemConfigLoader, bookingListLoader, bookingLoader, fleetPlanLoader, monitoringLoader, tripReportsLoader, verifyLoader } from './shared/loaders'
+import { accountsLoader, adminHorseTypesLoader, adminPricingLoader, adminRoutesLoader, adminServicesLoader, documentRequirementsLoader, systemConfigLoader, bookingListLoader, bookingLoader, fleetPlanLoader, monitoringLoader, verifyLoader } from './shared/loaders'
 // Trang đăng nhập tải ngay; các trang còn lại chỉ tải khi mở tới (lazy), mỗi vai trò chỉ tải phần mình dùng.
 // Trang có loader khai báo lazyPage: router tải file trang song song với dữ liệu rồi mới vẽ trang.
 const SitemapPage = lazy(() => import('../sitemap/SitemapPage').then(m => ({ default: m.SitemapPage })))
@@ -42,7 +42,7 @@ export const routes: AppRoute[] = [
   { path: '/manager/intake', lazyPage: () => import('./features/manager/intake/IntakePage'), loader: bookingListLoader, roles: M, title: 'Tiếp nhận đơn hàng', layout: 'staff' },
   { path: '/manager/approvals', lazyPage: () => import('./features/manager/approvals/ApprovalsPage'), loader: bookingListLoader, roles: M, title: 'Duyệt báo giá', layout: 'staff' },
   { path: '/manager/reports', lazyPage: () => import('./features/manager/reports/ReportsPage'), loader: bookingListLoader, roles: M, title: 'Báo cáo doanh thu', layout: 'staff' },
-  { path: '/manager/trip-reports', lazyPage: () => import('./features/manager/trip-reports/TripReportsPage'), loader: tripReportsLoader, roles: M, title: 'Báo cáo Chuyến đi', layout: 'staff' },
+  { path: '/manager/trip-reports', lazyPage: () => import('./features/manager/trip-reports/TripReportsPage'), roles: M, title: 'Báo cáo vận hành', layout: 'staff', catalog: false },
   { path: '/manager/cancelled-orders', lazyPage: () => import('./features/manager/cancelled-orders/CancelledOrdersPage'), loader: bookingListLoader, roles: M, title: 'Đơn đã hủy', layout: 'staff' },
   { path: '/manager/incidents', lazyPage: () => import('./features/incidents/IncidentsBoardPage'), roles: M, title: 'Sự cố', layout: 'staff', catalog: false },
 
