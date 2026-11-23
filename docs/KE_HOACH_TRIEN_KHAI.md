@@ -638,7 +638,7 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 | P0-FE | Token, `shared/ui`, layout, openapi-typescript, lint, i18n | B | 0 | Xong (8 PR) | #355, #358, #367, #368, #369, #372, #373, #375 |
 | A1 | Mạng lưới, tuyến, lịch, chuyến | A | 1 | Backend chờ review: PR1 danh mục (`rd/a1-network`), PR2 chuyến (`rd/a1-departures`). FE làm sau P0-FE | |
 | A2 | Xe, nhân sự, đối tác, tham số | A | 1 | Chưa làm | |
-| B1 | Điều độ | B | 1 | Đang làm (4 PR): PR1 `DispatchPolicy` (#377) xong; PR2 lượt xe và tổ lái (nhánh `rd/b1-2-dispatch-trips`); còn PR3 gán ngựa vào lượt xe, PR4 giao diện điều độ | |
+| B1 | Điều độ | B | 1 | Đang làm (4 PR): PR1 `DispatchPolicy` (#377), PR2 lượt xe và tổ lái (#378) xong; PR3 gán ngựa vào lượt xe (nhánh `rd/b1-3-horse-legs`); còn PR4 giao diện điều độ | |
 | A3 | Bảng giá, tính giá | A | 2 | Chưa làm | |
 | A4 | Quy định, giấy tờ yêu cầu | A | 2 | Chưa làm | |
 | B2 | Điểm dừng, giao nhận | B | 2 | Chưa làm | |

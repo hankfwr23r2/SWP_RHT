@@ -139,6 +139,13 @@ public final class DispatchPolicy {
         }
     }
 
+    // Chặng mới của con ngựa không bắt đầu trước khi chặng trước kết thúc
+    public static void requireAfterPreviousLeg(Instant previousLegEnd, Instant nextLegStart) {
+        if (nextLegStart.isBefore(previousLegEnd)) {
+            throw new DispatchRuleException("boardTripStopId", "Chặng mới bắt đầu trước khi chặng trước của con ngựa kết thúc.", true);
+        }
+    }
+
     // Quy tắc #7: chặng mới bắt đầu đúng nơi chặng trước của con ngựa kết thúc.
     // Nơi được so bằng khóa "L<id>" (điểm mạng lưới) hoặc "A<id>" (địa chỉ của đơn).
     public static void requireContinuous(String previousEnd, String nextStart) {

@@ -5,17 +5,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.example.racehorse_transport.entity.AppUser;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.BookingAddress;
+import com.example.racehorse_transport.entity.BookingHorse;
 import com.example.racehorse_transport.entity.CrewAssignment;
 import com.example.racehorse_transport.entity.Departure;
+import com.example.racehorse_transport.entity.Horse;
+import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.Role;
 import com.example.racehorse_transport.entity.Route;
 import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.entity.StallType;
 import com.example.racehorse_transport.entity.TripStop;
 import com.example.racehorse_transport.entity.Vehicle;
 import com.example.racehorse_transport.entity.VehicleTrip;
+import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
 import com.example.racehorse_transport.entity.enums.CrewRole;
+import com.example.racehorse_transport.entity.enums.HorseLegStatus;
+import com.example.racehorse_transport.entity.enums.HorseLegType;
 import com.example.racehorse_transport.entity.enums.TripStopType;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.entity.enums.VehicleTripType;
@@ -150,6 +157,61 @@ class DispatchDtoTest {
         var candidate = CrewCandidateResponseDto.from(assignment.getStaff());
         assertThat(candidate.roleCode()).isEqualTo("DRIVER");
         assertThat(candidate.homeHubName()).isEqualTo("Hub HCM");
+    }
+
+    @Test
+    void describesLegHorseOnTripAndBookingWaitingForDispatch() {
+        VehicleTrip trip = trip();
+        Booking booking = new Booking();
+        booking.setId(20L);
+        booking.setCode("BK-ABCDEFGH");
+        booking.setDeparture(trip.getDeparture());
+        BookingAddress delivery = new BookingAddress();
+        delivery.setId(31L);
+        delivery.setAddressLine("Trại Huế");
+        BookingHorse line = new BookingHorse();
+        line.setId(40L);
+        line.setBooking(booking);
+        Horse horse = new Horse();
+        horse.setName("Sao Mai");
+        horse.setMicrochip("985000000100002");
+        line.setHorse(horse);
+        StallType wide = new StallType();
+        wide.setCode("WIDE");
+        line.setStallType(wide);
+        line.setStatus(BookingHorseStatus.ACTIVE);
+        HorseLeg leg = new HorseLeg();
+        leg.setId(50L);
+        leg.setBookingHorse(line);
+        leg.setSequenceNumber(3);
+        leg.setLegType(HorseLegType.DELIVERY);
+        leg.setStatus(HorseLegStatus.PLANNED);
+        leg.setVehicleTrip(trip);
+        leg.setFromLocation(trip.getEndLocation());
+        leg.setToBookingAddress(delivery);
+        leg.setPlannedStartAt(START);
+        leg.setPlannedEndAt(END);
+
+        var legDto = HorseLegResponseDto.from(leg);
+        assertThat(legDto.fromName()).isEqualTo("Hub Đà Nẵng");
+        assertThat(legDto.toName()).isEqualTo("Trại Huế");
+        assertThat(legDto.vehicleTripCode()).isEqualTo("VT-ABCDEFGH");
+        assertThat(legDto.boardTripStopId()).isNull();
+
+        var onTrip = TripHorseResponseDto.from(leg);
+        assertThat(onTrip.bookingCode()).isEqualTo("BK-ABCDEFGH");
+        assertThat(onTrip.horseName()).isEqualTo("Sao Mai");
+        assertThat(onTrip.seats()).isEqualTo(2);
+
+        var waiting = DispatchBookingResponseDto.from(booking, null, delivery,
+                List.of(DispatchBookingResponseDto.HorseDto.from(line, List.of(legDto))));
+        assertThat(waiting.routeCode()).isEqualTo("HCM-DN");
+        assertThat(waiting.pickupAddress()).isNull();
+        assertThat(waiting.deliveryAddress().addressLine()).isEqualTo("Trại Huế");
+        assertThat(waiting.horses()).singleElement().satisfies(h -> {
+            assertThat(h.seats()).isEqualTo(2);
+            assertThat(h.legs()).hasSize(1);
+        });
     }
 
     private static VehicleTrip trip() {
