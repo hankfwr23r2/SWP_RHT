@@ -81,6 +81,29 @@ class MigrationTest {
     }
 
     @Test
+    void devSeedHasConfirmedBookingsForOperations() {
+        // Ba đơn CONFIRMED để luồng vận hành điều độ: một chạy thẳng, một trục nội địa, một quốc tế
+        assertThat(jdbc.queryForList("""
+                SELECT b.code FROM booking b
+                JOIN quotation q ON q.booking_id = b.id AND q.status = 'ACCEPTED'
+                WHERE b.code LIKE 'DEV-%' AND b.status = 'CONFIRMED'
+                ORDER BY b.code""", String.class))
+                .containsExactly("DEV-DIRECT-001", "DEV-DOMESTIC-001", "DEV-EXPORT-001");
+        assertThat(jdbc.queryForObject("SELECT departure_id FROM booking WHERE code = 'DEV-DIRECT-001'", Long.class)).isNull();
+        // Tổng báo giá khớp các dòng, và đã trả đủ tổng
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM quotation q
+                JOIN booking b ON b.id = q.booking_id AND b.code LIKE 'DEV-%'
+                WHERE q.total_amount <> (SELECT sum(amount) FROM quotation_line l WHERE l.quotation_id = q.id)
+                   OR q.total_amount <> (SELECT sum(amount) FROM payment p WHERE p.quotation_id = q.id AND p.status = 'PAID')""",
+                Integer.class)).isZero();
+        // Khoang đã đặt của chuyến khớp số ngựa của các đơn mẫu đi trục (2 + 1)
+        assertThat(jdbc.queryForObject("""
+                SELECT sum(d.booked_stalls) FROM departure d WHERE d.id IN (SELECT departure_id FROM booking WHERE code LIKE 'DEV-%')""",
+                Integer.class)).isEqualTo(3);
+    }
+
+    @Test
     void departureCannotBeOverbooked() {
         assertThatThrownBy(() -> jdbc.update("""
                 INSERT INTO departure (route_id, departure_date, planned_depart_at, booking_cutoff_at, capacity_stalls, booked_stalls, status)
