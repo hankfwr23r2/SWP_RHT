@@ -197,6 +197,7 @@ public class VehicleCreateRequestDto {
 
 ## 6. Tiền và quy tắc nghiệp vụ
 
+- Ngoại lệ cho mục 5 và 6: DTO cấu hình bảng giá của `ADMIN` và `MANAGER` được nhận `unitPrice`, `marginRate`, `fuelBufferRate` và `depositRate` để service kiểm tra và ghi.
 - **Backend là nguồn sự thật duy nhất** cho mọi con số có hệ quả tiền: giá, cọc, số dư, hoàn tiền, phụ phí, điều chỉnh.
 - Request từ client chỉ chứa **lựa chọn đầu vào**: chuyến, ngựa, dịch vụ, địa chỉ, khoản điều chỉnh kèm lý do. **Cấm** nhận `amount`, `total`, `subtotal`, `unitPrice` từ client làm dữ liệu chính thức.
 - Mỗi công thức có **đúng một nơi**, trong `policy/`. Frontend muốn xem trước thì gọi endpoint preview.

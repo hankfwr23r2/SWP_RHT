@@ -34,6 +34,12 @@ public class GlobalExceptionHandler {
                         .build());
     }
 
+    @ExceptionHandler(PricingRuleException.class)
+    public ResponseEntity<ApiResponseDto<Object>> handlePricingRule(PricingRuleException ex) {
+        return ResponseEntity.status(ex.isConflict() ? HttpStatus.CONFLICT : HttpStatus.BAD_REQUEST)
+                .body(ApiResponseDto.error(ex.getMessage()));
+    }
+
     @ExceptionHandler(VehicleRuleException.class)
     public ResponseEntity<ApiResponseDto<Map<String, String>>> handleVehicleRule(VehicleRuleException ex) {
         return ResponseEntity.status(ex.isConflict() ? HttpStatus.CONFLICT : HttpStatus.BAD_REQUEST)

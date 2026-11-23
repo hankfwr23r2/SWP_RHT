@@ -266,11 +266,11 @@ class EntityMappingTest {
         line.setStatus(BookingHorseStatus.ACTIVE);
         line = bookingHorses.saveAndFlush(line);
 
-        BillableService feeding = services.findByCode("FEEDING").orElseThrow();
+        BillableService vetCheck = services.findByCode("VET_CHECK").orElseThrow();
         BookingHorseAddOn addOn = new BookingHorseAddOn();
-        addOn.setId(new BookingHorseAddOnId(line.getId(), feeding.getId()));
+        addOn.setId(new BookingHorseAddOnId(line.getId(), vetCheck.getId()));
         addOn.setBookingHorse(line);
-        addOn.setBillableService(feeding);
+        addOn.setBillableService(vetCheck);
         addOn.setQuantity(3);
         addOns.save(addOn);
 
@@ -314,7 +314,7 @@ class EntityMappingTest {
         assertThat(reloadedLine.getAddedAt()).isNotNull();
         assertThat(reloadedLine.getFeedSuppliedByOwner()).isFalse();
         assertThat(addOns.findById_BookingHorseId(reloadedLine.getId()))
-                .singleElement().satisfies(a -> assertThat(a.getBillableService().getCode()).isEqualTo("FEEDING"));
+                .singleElement().satisfies(a -> assertThat(a.getBillableService().getCode()).isEqualTo("VET_CHECK"));
         assertThat(statusHistory.findByBooking_IdOrderByChangedAtAscIdAsc(reloaded.getId()))
                 .singleElement().satisfies(h -> {
                     assertThat(h.getFromStatus()).isNull();

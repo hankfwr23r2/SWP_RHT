@@ -21,7 +21,7 @@ class SystemConfigAuditMigrationTest {
             jdbc.update("update system_config set config_value = '8' where config_key = 'OTP_MAX_ATTEMPTS'");
             long before = jdbc.queryForObject("select count(*) from system_config", Long.class);
 
-            Flyway.configure().dataSource(source).load().migrate();
+            Flyway.configure().dataSource(source).target("202611231500").load().migrate();
 
             assertThat(jdbc.queryForObject("select count(distinct audit_target_id) from system_config", Long.class))
                     .isEqualTo(before);

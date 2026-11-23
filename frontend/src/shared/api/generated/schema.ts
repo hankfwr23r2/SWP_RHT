@@ -164,6 +164,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/billable-services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["billableServices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/countries": {
         parameters: {
             query?: never;
@@ -205,7 +221,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["preview"];
+        post: operations["preview_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -315,9 +331,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_3"];
+        get: operations["list_4"];
         put?: never;
-        post: operations["create_2"];
+        post: operations["create_3"];
         delete?: never;
         options?: never;
         head?: never;
@@ -332,7 +348,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put: operations["update_2"];
+        put: operations["update_3"];
         post?: never;
         delete?: never;
         options?: never;
@@ -395,7 +411,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_2"];
+        get: operations["list_3"];
         put?: never;
         post: operations["createAdHoc"];
         delete?: never;
@@ -539,7 +555,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_4"];
+        get: operations["list_5"];
         put?: never;
         post?: never;
         delete?: never;
@@ -571,9 +587,9 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_1"];
+        get: operations["list_2"];
         put?: never;
-        post: operations["create_1"];
+        post: operations["create_2"];
         delete?: never;
         options?: never;
         head?: never;
@@ -587,8 +603,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["get_1"];
-        put: operations["update_1"];
+        get: operations["get_2"];
+        put: operations["update_2"];
         post?: never;
         delete?: never;
         options?: never;
@@ -605,7 +621,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["activate_1"];
+        post: operations["activate_2"];
         delete?: never;
         options?: never;
         head?: never;
@@ -686,6 +702,118 @@ export interface paths {
         get?: never;
         put: operations["updatePartyRole"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/price-lists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_1"];
+        put?: never;
+        post: operations["create_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/price-lists/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_1"];
+        put: operations["update_1"];
+        post?: never;
+        delete: operations["delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/price-lists/{id}/activate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["activate_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/price-lists/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["archive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/price-lists/{id}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["items"];
+        put?: never;
+        post: operations["createItem"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/price-lists/{id}/items/{itemId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getItem"];
+        put: operations["updateItem"];
+        post?: never;
+        delete: operations["deleteItem"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/pricing/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["preview"];
         delete?: never;
         options?: never;
         head?: never;
@@ -943,6 +1071,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListBillableServiceResponseDto: {
+            data?: components["schemas"]["BillableServiceResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListCountryResponse: {
             data?: components["schemas"]["CountryResponse"][];
             message?: string;
@@ -1003,6 +1136,16 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListPriceItemResponseDto: {
+            data?: components["schemas"]["PriceItemResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListPriceListResponseDto: {
+            data?: components["schemas"]["PriceListResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListProvinceResponse: {
             data?: components["schemas"]["ProvinceResponse"][];
             message?: string;
@@ -1055,6 +1198,21 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponsePriceItemResponseDto: {
+            data?: components["schemas"]["PriceItemResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponsePriceListResponseDto: {
+            data?: components["schemas"]["PriceListResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponsePricingPreviewResponseDto: {
+            data?: components["schemas"]["PricingPreviewResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseRegulationPreviewResponseDto: {
             data?: components["schemas"]["RegulationPreviewResponseDto"];
             message?: string;
@@ -1097,6 +1255,20 @@ export interface components {
             /** Format: int64 */
             userId?: number;
             username?: string;
+        };
+        BillableServiceResponseDto: {
+            autoApplied?: boolean;
+            /** @enum {string} */
+            billingUnit?: "PER_STALL" | "PER_KM" | "PER_HORSE" | "PER_HORSE_DAY" | "PER_BOOKING";
+            code?: string;
+            /** Format: int64 */
+            id?: number;
+            /** @enum {string} */
+            layer?: "LINEHAUL" | "PICKUP" | "DELIVERY" | "DIRECT" | "FUEL" | "STALL" | "QUARANTINE" | "ADD_ON" | "DOCS" | "SURCHARGE";
+            name?: string;
+            passThrough?: boolean;
+            /** @enum {string} */
+            status?: "ACTIVE" | "INACTIVE";
         };
         ChangePasswordRequest: {
             confirmPassword: string;
@@ -1419,6 +1591,12 @@ export interface components {
             updatedAt?: string;
             weightKg?: number;
         };
+        HorseSelection: {
+            addOnServiceIds: number[];
+            /** Format: int64 */
+            horseId: number;
+            stallTypeCode: string;
+        };
         HorseTypeResponseDto: {
             description?: string;
             /** Format: int64 */
@@ -1454,6 +1632,13 @@ export interface components {
             hubName?: string;
             provinceCode?: string;
             provinceName?: string;
+        };
+        LegDistance: {
+            km?: number;
+            /** @enum {string} */
+            layer?: "LINEHAUL" | "PICKUP" | "DELIVERY" | "DIRECT" | "FUEL" | "STALL" | "QUARANTINE" | "ADD_ON" | "DOCS" | "SURCHARGE";
+            /** Format: int64 */
+            vehicleClassId?: number;
         };
         LocationRequest: {
             address: string;
@@ -1553,6 +1738,121 @@ export interface components {
         PasswordResetOtpRequest: {
             /** Format: email */
             email: string;
+        };
+        PriceItemCreateRequestDto: {
+            /** Format: int64 */
+            billableServiceId: number;
+            kmFrom?: number;
+            kmTo?: number;
+            /** Format: int64 */
+            routeId?: number;
+            stallTypeCode?: string;
+            unitPrice: number;
+            /** Format: int64 */
+            vehicleClassId?: number;
+        };
+        PriceItemResponseDto: {
+            /** Format: int64 */
+            billableServiceId?: number;
+            /** Format: int64 */
+            id?: number;
+            kmFrom?: number;
+            kmTo?: number;
+            /** Format: int64 */
+            priceListId?: number;
+            /** Format: int64 */
+            routeId?: number;
+            stallTypeCode?: string;
+            unitPrice?: number;
+            /** Format: int64 */
+            vehicleClassId?: number;
+        };
+        PriceItemUpdateRequestDto: {
+            /** Format: int64 */
+            billableServiceId: number;
+            kmFrom?: number;
+            kmTo?: number;
+            /** Format: int64 */
+            routeId?: number;
+            stallTypeCode?: string;
+            unitPrice: number;
+            /** Format: int64 */
+            vehicleClassId?: number;
+        };
+        PriceLineResponseDto: {
+            amount?: number;
+            /** @enum {string} */
+            billingUnit?: "PER_STALL" | "PER_KM" | "PER_HORSE" | "PER_HORSE_DAY" | "PER_BOOKING";
+            passThrough?: boolean;
+            /** Format: int64 */
+            priceItemId?: number;
+            quantity?: number;
+            serviceCode?: string;
+            stallTypeCode?: string;
+            unitPrice?: number;
+            /** Format: int64 */
+            vehicleClassId?: number;
+        };
+        PriceListActivateRequestDto: unknown;
+        PriceListArchiveRequestDto: unknown;
+        PriceListCreateRequestDto: {
+            currencyCode: string;
+            depositRate: number;
+            fuelBufferRate: number;
+            marginRate: number;
+            name: string;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string;
+        };
+        PriceListResponseDto: {
+            currencyCode?: string;
+            depositRate?: number;
+            fuelBufferRate?: number;
+            /** Format: int64 */
+            id?: number;
+            marginRate?: number;
+            name?: string;
+            /** @enum {string} */
+            status?: "DRAFT" | "ACTIVE" | "ARCHIVED";
+            /** Format: date */
+            validFrom?: string;
+            /** Format: date */
+            validTo?: string;
+        };
+        PriceListUpdateRequestDto: {
+            currencyCode: string;
+            depositRate: number;
+            fuelBufferRate: number;
+            marginRate: number;
+            name: string;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string;
+        };
+        PricingPreviewRequestDto: {
+            /** Format: int64 */
+            deliveryAddressId: number;
+            /** Format: int64 */
+            departureId?: number;
+            horses: components["schemas"]["HorseSelection"][];
+            /** Format: int64 */
+            pickupAddressId: number;
+            /** Format: date-time */
+            pickupAt: string;
+        };
+        PricingPreviewResponseDto: {
+            /** @enum {string} */
+            bookingType?: "LOCAL" | "INTERPROVINCE" | "EXPORT" | "IMPORT";
+            currencyCode?: string;
+            depositRate?: number;
+            legs?: components["schemas"]["LegDistance"][];
+            lines?: components["schemas"]["PriceLineResponseDto"][];
+            /** Format: int64 */
+            priceListId?: number;
+            total?: number;
         };
         ProvinceResponse: {
             code?: string;
@@ -2037,6 +2337,26 @@ export interface operations {
             };
         };
     };
+    billableServices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListBillableServiceResponseDto"];
+                };
+            };
+        };
+    };
     countries: {
         parameters: {
             query?: never;
@@ -2101,7 +2421,7 @@ export interface operations {
             };
         };
     };
-    preview: {
+    preview_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -2384,7 +2704,7 @@ export interface operations {
             };
         };
     };
-    list_3: {
+    list_4: {
         parameters: {
             query?: {
                 routeId?: number;
@@ -2406,7 +2726,7 @@ export interface operations {
             };
         };
     };
-    create_2: {
+    create_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -2430,7 +2750,7 @@ export interface operations {
             };
         };
     };
-    update_2: {
+    update_3: {
         parameters: {
             query?: never;
             header?: never;
@@ -2522,7 +2842,7 @@ export interface operations {
             };
         };
     };
-    list_2: {
+    list_3: {
         parameters: {
             query: {
                 routeId?: number;
@@ -2843,7 +3163,7 @@ export interface operations {
             };
         };
     };
-    list_4: {
+    list_5: {
         parameters: {
             query?: never;
             header?: never;
@@ -2911,7 +3231,7 @@ export interface operations {
             };
         };
     };
-    list_1: {
+    list_2: {
         parameters: {
             query?: {
                 type?: "HUB" | "QUARANTINE_FARM" | "REST_STOP" | "BORDER_GATE" | "STABLE" | "RACETRACK";
@@ -2934,7 +3254,7 @@ export interface operations {
             };
         };
     };
-    create_1: {
+    create_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -2958,7 +3278,7 @@ export interface operations {
             };
         };
     };
-    get_1: {
+    get_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -2980,7 +3300,7 @@ export interface operations {
             };
         };
     };
-    update_1: {
+    update_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -3006,7 +3326,7 @@ export interface operations {
             };
         };
     };
-    activate_1: {
+    activate_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -3191,6 +3511,317 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponsePartyRoleResponseDto"];
+                };
+            };
+        };
+    };
+    list_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListPriceListResponseDto"];
+                };
+            };
+        };
+    };
+    create_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PriceListCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePriceListResponseDto"];
+                };
+            };
+        };
+    };
+    get_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePriceListResponseDto"];
+                };
+            };
+        };
+    };
+    update_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PriceListUpdateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePriceListResponseDto"];
+                };
+            };
+        };
+    };
+    delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    activate_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PriceListActivateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePriceListResponseDto"];
+                };
+            };
+        };
+    };
+    archive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PriceListArchiveRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePriceListResponseDto"];
+                };
+            };
+        };
+    };
+    items: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListPriceItemResponseDto"];
+                };
+            };
+        };
+    };
+    createItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PriceItemCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePriceItemResponseDto"];
+                };
+            };
+        };
+    };
+    getItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                itemId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePriceItemResponseDto"];
+                };
+            };
+        };
+    };
+    updateItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                itemId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PriceItemUpdateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePriceItemResponseDto"];
+                };
+            };
+        };
+    };
+    deleteItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                itemId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PricingPreviewRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePricingPreviewResponseDto"];
                 };
             };
         };

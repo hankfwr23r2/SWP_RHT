@@ -214,7 +214,6 @@ FROM (VALUES
           ('FUEL_TOLL', 9000),
           ('STALL_WIDE', 1500000),
           ('QUARANTINE_STAY', 800000),
-          ('FEEDING', 150000),
           ('VET_CHECK', 500000),
           ('QUARANTINE_DOCS', 300000),
           ('GOV_FEE', 200000)
