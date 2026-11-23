@@ -3,6 +3,18 @@
 > Agent luồng B đọc file này sau `AGENTS.md`, trước khi bắt đầu task. Mục mới nhất ở trên. Đây là thông tin phối hợp, không thay quy trình duyệt ở mục 1.1 của `AGENTS.md`.
 > Cập nhật: 23/11/2026.
 
+## 23/11/2026. Màn hình và tác động (người dùng đã chốt)
+
+Đọc `MAN_HINH_VA_TAC_DONG.md` trước B1–B5. Các điểm ảnh hưởng luồng B:
+
+- Ngựa trượt cách ly: gọi `BookingHorseService.exclude` (`EXCLUDED`); trả xong thì `RETURNED`.
+- Chuyên viên kết luận cách ly, hộ tống chỉ đo và ghi.
+- Ngựa ở hub: người ở `handover.handled_by` của HUB_IN phụ trách tới HUB_OUT. Hub vệ tinh: tổ xe trục ở lại; qua đêm thì gửi đối tác `STABLE`.
+- Ăn uống ghi vào `horse_health_log.note`, không thêm cột. Không có dịch vụ cho ăn tính tiền.
+- Mốc của đại lý do điều phối nhập hộ.
+
+Thấy chỗ nào không làm được thì báo lại, không tự đổi.
+
 ## 23/11/2026. AuditService và P0.3-B
 
 - Cả A2 (`06c1375`) và `rd/p0-3b-shared-services` đều có `AuditServiceImpl`, `AuditServiceTest`. Nhánh P0.3-B (`7b57809`) đã gộp A2; kiểm bằng `git merge-tree` thì merge vào `redesign/system-v2` không xung đột.
