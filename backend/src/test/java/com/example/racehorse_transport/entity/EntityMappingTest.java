@@ -179,8 +179,8 @@ class EntityMappingTest {
         assertThat(scheduleDays.findById_ScheduleId(schedule.getId())).extracting(d -> d.getId().getWeekday())
                 .containsExactlyInAnyOrder((short) 1, (short) 4);
 
+        // Chuyến đột xuất (không theo lịch) để không trùng các chuyến do seed sinh từ lịch
         Departure departure = new Departure();
-        departure.setSchedule(schedule);
         departure.setRoute(schedule.getRoute());
         departure.setDepartureDate(LocalDate.of(2026, 12, 21));
         departure.setPlannedDepartAt(Instant.parse("2026-12-20T23:00:00Z"));

@@ -1,5 +1,6 @@
 package com.example.racehorse_transport;
 
+import com.example.racehorse_transport.support.TestData;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -17,7 +18,7 @@ import org.springframework.test.context.ActiveProfiles;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @SpringBootTest
-@Import(TestcontainersConfiguration.class)
+@Import({TestcontainersConfiguration.class, TestData.class})
 @ActiveProfiles("test")
 public @interface PostgresIntegrationTest {
 }

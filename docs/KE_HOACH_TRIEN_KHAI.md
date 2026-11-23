@@ -141,11 +141,11 @@ Có **3 thành viên** thì tách luồng A thành A-BE và A-FE (khách hàng),
 | `BookingStatusService.transition(bookingId, toStatus, reason, actor)` | A | A, B | B chuyển đơn sang `IN_OPERATION` (handover PICKUP đầu tiên) và `DELIVERED` (chặng giao cuối cùng xong) |
 | `BookingHorseService.exclude(bookingHorseId, reason, actor)` | A | B | Ngựa không đạt khi nhận (GĐ6) hoặc trượt cách ly (5.3). A nhả khoang và tạo báo giá mới |
 | `DepartureService.reserve/release(departureId, stalls)` | A | A | Mọi thay đổi `booked_stalls` |
-| `DocumentService.attach(file, documentTypeCode, owner)` | P0 | A, B | Ảnh hiện trường, biên bản giao nhận, biên lai, giấy tờ |
-| `PaymentService.createExtraCharge(bookingId, costItemIds)` | A | A (quyết toán) | Lập khoản thu thêm |
+| `DocumentService.attach(file, documentTypeCode, ownerSubject, ownerId, uploadedByUserId)` | P0 | A, B | Ảnh hiện trường, biên bản giao nhận, biên lai, giấy tờ |
+| `PaymentService.createExtraCharge(bookingId, costItemIds, actorUserId)` | A | A (quyết toán) | Lập khoản thu thêm |
 | `CostItemService.linkExtraPayment(costItemIds, paymentId)` | B | A | Gắn khoản thu thêm vào chi phí |
 | `NotificationService.notify(...)`, `AuditService.record(...)` | P0 | A, B | Mọi giai đoạn |
-| `PaymentReadiness.isPaidInFull(bookingId)`, `DocumentCompleteness.isComplete(bookingId)` | A | B | Kiểm điều kiện được đón ngựa khi xe xuất phát (GĐ5) |
+| `PaymentReadinessService.isPaidInFull(bookingId)`, `DocumentCompletenessService.isComplete(bookingId)` | A | B | Kiểm điều kiện được đón ngựa khi xe xuất phát (GĐ5) |
 
 ---
 
@@ -267,6 +267,16 @@ Mục tiêu: dựng sẵn **mọi thứ cả hai luồng cùng cần**, để t�
 - Cột có mặc định `now()` dùng `@Generated` + `insertable = false`: DB đặt giờ. Cột `char(n)` dùng `@JdbcTypeCode(SqlTypes.CHAR)`, cột `smallint` dùng `Short`.
 - Profile `test` tắt lazy initialization để `contextLoads` bắt lỗi của mọi bean và truy vấn repository.
 
+**Ghi chú sau khi làm P0.3-A:**
+- Đăng ký tách ra `CustomerRegistrationService` để `AuthServiceImpl` không vượt 10 dependency (`AGENTS.md` mục 7.1). Dọn OTP hết hạn nằm ở `EmailVerificationService`.
+- Vai trò lấy từ `user_role`. Token có claim `role` (vai trò chính, giữ cho giao diện cũ) và `roles` (đủ danh sách). Đường dẫn `/auth/**` giữ như cũ.
+- `JwtAuthenticationFilter` từ chối token khi `app_user.status` khác ACTIVE hoặc nhân viên đã TERMINATED.
+- Thời hạn OTP và số lần nhập sai đọc từ `system_config` qua `SystemConfigService` (entity `SystemConfig` tạo ở P0.3-A, P0.2-B bỏ qua bảng này). Task A2 thêm phần quản trị tham số.
+- Không ghi mã OTP ra log. Máy chưa cấu hình mail thì không gửi được mã; tài khoản trong seed dev đều đã xác thực email.
+- 10 interface gọi chéo ở mục 3.3 đã có trong `service/`, mỗi file ghi rõ luồng cài đặt và luồng gọi.
+- `TestData` (`support/TestData`, được `@PostgresIntegrationTest` nạp sẵn): tạo nhanh tài khoản, khách, nhân viên, đơn, chuyến đột xuất. Chỉ thêm method mới, không sửa method cũ.
+- `db/seed-dev/R__dev_seed_bookings.sql`: chuyến cho 8 tuần tới và 3 đơn CONFIRMED của `customer1.dev` (`DEV-DIRECT-001` chạy thẳng, `DEV-DOMESTIC-001` trục HCM-DN, `DEV-EXPORT-001` trục HCM-PNH), có ngựa, bảo hiểm đã xác nhận, báo giá ACCEPTED và đã trả đủ. Chuyến do seed sinh trùng lịch, nên test tạo chuyến riêng thì dùng chuyến đột xuất (`TestData.departure`).
+
 **Mốc M0** khi P0.1–P0.3 và P0-FE đã merge.
 
 ---
@@ -353,7 +363,7 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
 
 - **BE:**
   - `DocumentReviewService` (duyệt hoặc từ chối, bắt buộc lý do);
-  - `DocumentCompletenessPolicy` (cách tính ở `DB_SCHEMA_59_BANG.md` mục 5) và cài đặt `DocumentCompleteness`;
+  - `DocumentCompletenessPolicy` (cách tính ở `DB_SCHEMA_59_BANG.md` mục 5) và cài đặt `DocumentCompletenessService`;
   - `InsuranceService`: PERSONAL / ARRANGED / NONE, `REVISION_REQUESTED` chỉ với PERSONAL, xác nhận;
   - trả đơn về khách (`NEEDS_RESUBMISSION`), từ chối đơn.
 - **FE:** chuyên viên duyệt hồ sơ, giấy tờ, bảo hiểm. Quản lý tiếp nhận đơn. Khách bổ sung hồ sơ.
@@ -372,7 +382,7 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
   - `VnpayClient`: callback và IPN ghi `payment_transaction`, chống trùng bằng UK;
   - cấp vận đơn;
   - scheduler: hết hạn báo giá (nhả khoang), nhắc trả số dư;
-  - `PaymentReadiness`.
+  - `PaymentReadinessService`.
 - **FE:** quản lý lập, điều chỉnh, gửi báo giá. Khách xem báo giá, chấp nhận, thanh toán VNPAY, trang kết quả trả về.
 - **Tận dụng:**
   - `VnpayServiceImpl`, `VnpayUtil`, `DepositPaymentWindow`, `PaymentAmountLimits`, `PaymentServiceImpl` (khóa đặt cọc, chờ xác nhận 5 phút), `QuotationExpiryScheduler`;
@@ -422,14 +432,14 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
 ### B2. Thực hiện tại điểm dừng và chuỗi giao nhận (đợt 2)
 
 - **BE:**
-  - `TripStopService`: xe xuất phát (kiểm `PaymentReadiness`, `DocumentCompleteness`, bảo hiểm CONFIRMED, tài xế đã xác nhận), tới và rời điểm dừng;
+  - `TripStopService`: xe xuất phát (kiểm `PaymentReadinessService`, `DocumentCompletenessService`, bảo hiểm CONFIRMED, tài xế đã xác nhận), tới và rời điểm dừng;
   - `HandoverService`: PICKUP, HUB_IN/OUT, STAY_IN/OUT, AGENT, DELIVERY, RETURN; quét chip (`MicrochipPolicy`); `handover_item` nhận và trả giấy gốc; biên bản qua `DocumentService`;
   - cập nhật trạng thái `horse_leg`. Handover PICKUP đầu tiên thì gọi `BookingStatusService` → `IN_OPERATION`.
   - **Endpoint theo tài nguyên**, ví dụ:
     - `POST /vehicle-trips/{id}/start`;
     - `POST /trip-stops/{id}/arrive`, `POST /trip-stops/{id}/depart`;
     - `POST /handovers`, `POST /handovers/{id}/horses`, `POST /handovers/{id}/complete`.
-- **FE:** ứng dụng tài xế và groom, ưu tiên điện thoại: danh sách việc theo lượt xe, màn hình theo **từng điểm dừng**, quét chip, chụp ảnh, ký biên bản, nhận và trả giấy gốc.
+- **FE:** ứng dụng tài xế và hộ tống, ưu tiên điện thoại: danh sách việc theo lượt xe, màn hình theo **từng điểm dừng**, quét chip, chụp ảnh, ký biên bản, nhận và trả giấy gốc.
 - **Tận dụng:**
   - `TripProgressServiceImpl` (switch khoảng 21 action): **chỉ lấy quy tắc** ở từng nhánh, tách thành các service trên;
   - `DeliveryServiceImpl`, `CaptureServiceImpl`;
@@ -446,7 +456,7 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
 - **BE:**
   - `HorseStayService`: ASSEMBLY, QUARANTINE, OVERNIGHT, STABLING; kéo dài cách ly; kết quả PASSED/FAILED. FAILED thì gọi `BookingHorseService.exclude` và tạo chặng RETURN;
   - `HealthLogService`: đo tại điểm dừng, trong lúc lưu trú, hoặc trên đường.
-- **FE:** groom ghi sức khỏe hằng ngày. Điều phối viên quản lý lưu trú tại hub và trại.
+- **FE:** hộ tống ghi sức khỏe hằng ngày. Điều phối viên quản lý lưu trú tại hub và trại.
 - **Tận dụng:** `HorseHealthLogServiceImpl`, FE `escort/*`, `healthLogs` API cũ (đổi dữ liệu).
 - **Xong khi:** test luồng cách ly đạt và không đạt. Chuỗi chặng của con ngựa bị loại được hủy đúng.
 
@@ -589,7 +599,7 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 | P0.1 | Dọn code cũ, Flyway, 59 bảng | A | 0 | Xong | #344 |
 | P0.2-A | Entity, repository nhóm 1–8 | A | 0 | Chờ review (nhánh `rd/p0-2a-entities`) | |
 | P0.2-B | Entity, repository nhóm 9–15 | B | 0 | Chưa làm | |
-| P0.3-A | Auth, interface gọi chéo, `TestData` | A | 0 | Chưa làm | |
+| P0.3-A | Auth, interface gọi chéo, `TestData` | A | 0 | Chờ review (nhánh `rd/p0-3a-auth`) | |
 | P0.3-B | Document, Notification, Audit, ArchUnit, OpenAPI | B | 0 | Chưa làm | |
 | P0-FE | Token, `shared/ui`, layout, orval, lint, i18n | B | 0 | Chưa làm | |
 | A1 | Mạng lưới, tuyến, lịch, chuyến | A | 1 | Chưa làm | |
