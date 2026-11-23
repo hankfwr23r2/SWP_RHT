@@ -1,40 +1,27 @@
 package com.example.racehorse_transport.service;
 
-import com.example.racehorse_transport.dto.network.DepartureScheduleRequestDto;
-import com.example.racehorse_transport.dto.network.DepartureScheduleResponseDto;
-import com.example.racehorse_transport.dto.network.RouteRequestDto;
-import com.example.racehorse_transport.dto.network.RouteResponseDto;
+import com.example.racehorse_transport.dto.route.CreateRouteRequestDto;
+import com.example.racehorse_transport.entity.LocationRoute;
+import com.example.racehorse_transport.entity.Route;
+
 import java.util.List;
+import java.util.Optional;
 
-// Tuyến trục chính, điểm dừng và lịch chạy định kỳ. Chủ sở hữu: luồng A (A1).
 public interface RouteService {
+    List<Route> findAll();
+    Optional<Route> findById(Integer id);
+    Route save(Route entity);
+    void deleteById(Integer id);
 
-    // Danh sách tuyến, không kèm điểm dừng
-    List<RouteResponseDto> routes();
+    // ==========================================
+    // Dev 4: Lấy danh sách điểm dừng của lộ trình
+    // ==========================================
+    List<LocationRoute> getStopsByRouteId(Integer routeId);
 
-    // Chi tiết tuyến kèm điểm dừng theo thứ tự
-    RouteResponseDto route(Long id);
-
-    RouteResponseDto createRoute(RouteRequestDto request);
-
-    // Cập nhật thông tin và thay toàn bộ điểm dừng
-    RouteResponseDto updateRoute(Long id, RouteRequestDto request);
-
-    RouteResponseDto activateRoute(Long id);
-
-    RouteResponseDto deactivateRoute(Long id);
-
-    // routeId null nghĩa là mọi tuyến
-    List<DepartureScheduleResponseDto> schedules(Long routeId);
-
-    DepartureScheduleResponseDto createSchedule(DepartureScheduleRequestDto request);
-
-    DepartureScheduleResponseDto updateSchedule(Long id, DepartureScheduleRequestDto request);
-
-    DepartureScheduleResponseDto pauseSchedule(Long id);
-
-    DepartureScheduleResponseDto resumeSchedule(Long id);
-
-    // Kết thúc lịch; không mở lại được
-    DepartureScheduleResponseDto endSchedule(Long id);
+    // ==========================================
+    // Admin: Quản lý tuyến đường cố định
+    // ==========================================
+    Route createRoute(CreateRouteRequestDto request);
+    Route updateRoute(Integer id, CreateRouteRequestDto request);
+    void deactivateRoute(Integer id);
 }

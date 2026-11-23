@@ -1,24 +1,16 @@
 package com.example.racehorse_transport.repository;
 
 import com.example.racehorse_transport.entity.Location;
-import com.example.racehorse_transport.entity.enums.ActiveStatus;
-import com.example.racehorse_transport.entity.enums.LocationType;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-
-import java.util.List;
+import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
-public interface LocationRepository extends JpaRepository<Location, Long> {
+@Repository
+public interface LocationRepository extends JpaRepository<Location, Integer> {
+    @Query("SELECT COALESCE(MAX(l.id), 0) FROM Location l")
+    Integer findMaxId();
 
-    Optional<Location> findByCode(String code);
-
-    // Lọc theo loại và trạng thái; tham số null nghĩa là không lọc
-    @Query("""
-            SELECT l FROM Location l JOIN FETCH l.country LEFT JOIN FETCH l.province
-            WHERE (:locationType IS NULL OR l.locationType = :locationType) AND (:status IS NULL OR l.status = :status)
-            ORDER BY l.code""")
-    List<Location> search(@Param("locationType") LocationType locationType, @Param("status") ActiveStatus status);
+    Optional<Location> findByLocationCodeIgnoreCase(String locationCode);
 }

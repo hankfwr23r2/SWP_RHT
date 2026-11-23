@@ -72,7 +72,7 @@ Các đầu mục pháp lý cần được rà soát theo phạm vi vận hành 
 2. Mở cả ba PDF trên desktop và điện thoại; tiếng Việt đủ dấu, phóng to/đọc/tải được, không cắt chữ. Nếu trình duyệt không xem iframe được, liên kết mở trực tiếp vẫn sử dụng được.
 3. Checkbox/liên kết tại bước bảo hiểm và đặt cọc trỏ đúng tài liệu. Không coi thử nghiệm liên kết là thử nghiệm lưu consent.
 4. Rà soát các màn thanh toán, hủy chuyến, thông báo hoàn tiền và sự cố: cọc vận chuyển/bảo hiểm thu hộ tách rõ; hoàn ngoài hệ thống không bị hiển thị như tiền đã ghi có tự động.
-5. Nếu chỉ thay ba tài liệu và mapping, chạy lint, TypeScript, unit test, build và kiểm tra ba trang. Nếu sửa nghiệp vụ/API, chạy đủ quality gate của repository và test nhánh thay đổi; giữ quy tắc xe và kíp xe về hub gốc mới được nhận chuyến mới (`AGENTS.md` mục 2).
+5. Nếu chỉ thay ba tài liệu và mapping, chạy lint, TypeScript, unit test, build và kiểm tra ba trang. Nếu sửa nghiệp vụ/API, chạy đủ quality gate của repository và test nhánh thay đổi; giữ Single HQ.
 6. Trước công bố phiên bản mới, lưu nguyên PDF/bản nội dung cũ gắn với đơn đã chấp thuận. Không ghi đè lịch sử bằng cách thay tệp cùng URL mà không lưu phiên bản tương ứng.
 
 ## 8. Tái tạo và quản lý bản phát hành

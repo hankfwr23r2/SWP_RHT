@@ -1,245 +1,201 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.network.DepartureScheduleRequestDto;
-import com.example.racehorse_transport.dto.network.DepartureScheduleResponseDto;
-import com.example.racehorse_transport.dto.network.RouteRequestDto;
-import com.example.racehorse_transport.dto.network.RouteResponseDto;
-import com.example.racehorse_transport.dto.network.RouteStopRequestDto;
-import com.example.racehorse_transport.entity.DepartureSchedule;
-import com.example.racehorse_transport.entity.DepartureScheduleDay;
-import com.example.racehorse_transport.entity.DepartureScheduleDayId;
+import com.example.racehorse_transport.dto.route.CreateRouteRequestDto;
 import com.example.racehorse_transport.entity.Location;
+import com.example.racehorse_transport.entity.LocationRoute;
+import com.example.racehorse_transport.entity.LocationRouteId;
 import com.example.racehorse_transport.entity.Route;
-import com.example.racehorse_transport.entity.enums.ActiveStatus;
-import com.example.racehorse_transport.entity.enums.ScheduleStatus;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
-import com.example.racehorse_transport.policy.RouteStopsPolicy;
-import com.example.racehorse_transport.repository.DepartureScheduleDayRepository;
-import com.example.racehorse_transport.repository.DepartureScheduleRepository;
 import com.example.racehorse_transport.repository.LocationRepository;
+import com.example.racehorse_transport.repository.LocationRouteRepository;
 import com.example.racehorse_transport.repository.RouteRepository;
-import com.example.racehorse_transport.repository.RouteStopRepository;
+import com.example.racehorse_transport.service.AdminAuditService;
 import com.example.racehorse_transport.service.RouteService;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import static com.example.racehorse_transport.service.AdminAuditService.values;
 
 @Service
-@RequiredArgsConstructor
 public class RouteServiceImpl implements RouteService {
+    private final AdminAuditService audit;
 
-    private final RouteRepository routes;
-    private final RouteStopRepository routeStops;
-    private final LocationRepository locations;
-    private final DepartureScheduleRepository schedules;
-    private final DepartureScheduleDayRepository scheduleDays;
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<RouteResponseDto> routes() {
-        return routes.findAllWithEndpoints().stream().map(route -> RouteResponseDto.from(route, null)).toList();
+    private final RouteRepository routeRepository;
+    private final LocationRouteRepository locationRouteRepository;
+    private final LocationRepository locationRepository;
+
+    @Autowired
+    public RouteServiceImpl(RouteRepository routeRepository,
+                            LocationRouteRepository locationRouteRepository,
+                            LocationRepository locationRepository, AdminAuditService audit) {
+        this.audit = audit;
+        this.routeRepository = routeRepository;
+        this.locationRouteRepository = locationRouteRepository;
+        this.locationRepository = locationRepository;
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public RouteResponseDto route(Long id) {
-        return RouteResponseDto.from(findRoute(id), routeStops.findWithLocation(id));
+    public List<Route> findAll() {
+        return routeRepository.findAll();
     }
 
     @Override
-    @Transactional
-    public RouteResponseDto createRoute(RouteRequestDto request) {
-        requireUniqueCode(request.getCode(), null);
-        Location origin = activeLocation(request.getOriginLocationId());
-        Location destination = activeLocation(request.getDestinationLocationId());
-        Map<Long, Location> stopLocations = validateStops(request, origin, destination);
-
-        Route route = request.toEntity(origin, destination);
-        route.setStatus(ActiveStatus.ACTIVE);
-        route = routes.save(route);
-        saveStops(route, request.getStops(), stopLocations);
-        return RouteResponseDto.from(route, routeStops.findWithLocation(route.getId()));
+    public Optional<Route> findById(Integer id) {
+        return routeRepository.findById(id);
     }
 
     @Override
-    @Transactional
-    public RouteResponseDto updateRoute(Long id, RouteRequestDto request) {
-        Route route = findRoute(id);
-        requireUniqueCode(request.getCode(), id);
-        Location origin = activeLocation(request.getOriginLocationId());
-        Location destination = activeLocation(request.getDestinationLocationId());
-        Map<Long, Location> stopLocations = validateStops(request, origin, destination);
-
-        request.applyTo(route, origin, destination);
-        // Thay toàn bộ điểm dừng; lệnh xóa tự flush thay đổi của tuyến trước khi chạy
-        routeStops.deleteByRouteId(id);
-        saveStops(route, request.getStops(), stopLocations);
-        return RouteResponseDto.from(route, routeStops.findWithLocation(id));
+    public Route save(Route entity) {
+        return routeRepository.save(entity);
     }
 
     @Override
-    @Transactional
-    public RouteResponseDto activateRoute(Long id) {
-        Route route = findRoute(id);
-        if (route.getOrigin().getStatus() != ActiveStatus.ACTIVE || route.getDestination().getStatus() != ActiveStatus.ACTIVE) {
-            throw new IllegalStateException("Điểm đầu hoặc điểm cuối của tuyến đang ngừng dùng.");
+    public void deleteById(Integer id) {
+        routeRepository.deleteById(id);
+    }
+
+    // =========================================================================
+    // PHẦN VIỆC CỦA DEV 4: Vận hành chuyến đi (Flow 4)
+    // =========================================================================
+
+    // 1. Lấy danh sách điểm dừng của một lộ trình theo thứ tự stopOrder
+    @Override
+    public List<LocationRoute> getStopsByRouteId(Integer routeId) {
+        if (routeId == null) {
+            throw new IllegalArgumentException("routeId không được để trống!");
         }
-        route.setStatus(ActiveStatus.ACTIVE);
-        return RouteResponseDto.from(route, null);
+        return locationRouteRepository.findByRouteId(routeId);
+    }
+
+    // =========================================================================
+    // PHẦN VIỆC CỦA ADMIN: Quản lý tuyến đường cố định & trạm dừng
+    // =========================================================================
+
+    @Override
+    @Transactional
+    public Route createRoute(CreateRouteRequestDto request) {
+        if (request == null || request.getRouteName() == null || request.getRouteName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Tên tuyến đường không được để trống!");
+        }
+        validateStops(request.getStops());
+
+        Route route = request.toEntity(routeRepository.findMaxId() + 1, normalizeStatus(request.getStatus()));
+
+        Route savedRoute = routeRepository.save(route);
+        saveRouteStops(savedRoute, request.getStops());
+        audit.record("CREATE_ROUTE", "ROUTE", savedRoute.getId(), savedRoute.getRouteName(), "Tạo tuyến đường", null, snapshot(savedRoute));
+        return savedRoute;
     }
 
     @Override
     @Transactional
-    public RouteResponseDto deactivateRoute(Long id) {
-        Route route = findRoute(id);
-        route.setStatus(ActiveStatus.INACTIVE);
-        return RouteResponseDto.from(route, null);
+    public Route updateRoute(Integer id, CreateRouteRequestDto request) {
+        if (request == null) {
+            throw new IllegalArgumentException("Thông tin tuyến đường không được để trống!");
+        }
+        Route route = routeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tuyến đường có ID: " + id));
+        var before = snapshot(route);
+        if (request.getStops() != null) {
+            validateStops(request.getStops());
+        }
+
+        if (request.getRouteName() != null && request.getRouteName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Tên tuyến đường không được để trống!");
+        }
+        String status = request.getStatus();
+        request.applyTo(route, status == null || status.isBlank() ? null : normalizeStatus(status));
+
+        Route savedRoute = routeRepository.save(route);
+        if (request.getStops() != null) {
+            saveRouteStops(savedRoute, request.getStops());
+        }
+        audit.record("UPDATE_ROUTE", "ROUTE", id, savedRoute.getRouteName(), "Cập nhật tuyến đường", before, snapshot(savedRoute));
+        return savedRoute;
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public List<DepartureScheduleResponseDto> schedules(Long routeId) {
-        Map<Long, List<DepartureScheduleDay>> daysBySchedule = scheduleDays.findAll().stream()
-                .collect(Collectors.groupingBy(day -> day.getId().getDepartureScheduleId()));
-        return schedules.findWithRoute(routeId).stream()
-                .map(schedule -> DepartureScheduleResponseDto.from(schedule, daysBySchedule.getOrDefault(schedule.getId(), List.of())))
+    @Transactional
+    public void deactivateRoute(Integer id) {
+        Route route = routeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tuyến đường có ID: " + id));
+        var before = snapshot(route);
+        route.setStatus("INACTIVE");
+        routeRepository.save(route);
+        audit.record("DEACTIVATE_ROUTE", "ROUTE", id, route.getRouteName(), "Ngừng hoạt động tuyến đường", before, snapshot(route));
+    }
+
+    private java.util.Map<String, Object> snapshot(Route r) {
+        var stops = locationRouteRepository.findAuditStopsByRouteId(r.getId()).stream()
+                .map(stop -> values("locationCode", stop.locationId(), "name", stop.name(), "stopOrder", stop.stopOrder(),
+                        "latitude", stop.latitude(), "longitude", stop.longitude()))
                 .toList();
+        return values("routeName", r.getRouteName(), "description", r.getDescription(),
+                "estimatedTime", r.getEstimatedTime(), "distance", r.getDistance(), "status", r.getStatus(), "stops", stops);
     }
 
-    @Override
-    @Transactional
-    public DepartureScheduleResponseDto createSchedule(DepartureScheduleRequestDto request) {
-        Route route = activeRoute(request.getRouteId());
-        requireValidPeriod(request);
-        DepartureSchedule schedule = request.toEntity(route);
-        schedule.setStatus(ScheduleStatus.ACTIVE);
-        schedule = schedules.save(schedule);
-        return DepartureScheduleResponseDto.from(schedule, saveDays(schedule, request.getDaysOfWeek()));
-    }
-
-    @Override
-    @Transactional
-    public DepartureScheduleResponseDto updateSchedule(Long id, DepartureScheduleRequestDto request) {
-        DepartureSchedule schedule = findSchedule(id);
-        if (schedule.getStatus() == ScheduleStatus.ENDED) {
-            throw new IllegalStateException("Lịch đã kết thúc, không sửa được.");
+    private void saveRouteStops(Route route, List<CreateRouteRequestDto.RouteStopItem> stops) {
+        locationRouteRepository.deleteByRouteId(route.getId());
+        if (stops == null || stops.isEmpty()) {
+            return;
         }
-        Route route = activeRoute(request.getRouteId());
-        requireValidPeriod(request);
-        request.applyTo(schedule, route);
-        // Đổi lịch không đổi các chuyến đã sinh: sức chứa và giờ chạy đã chép vào từng chuyến
-        scheduleDays.deleteByScheduleId(id);
-        return DepartureScheduleResponseDto.from(schedule, saveDays(schedule, request.getDaysOfWeek()));
-    }
 
-    @Override
-    @Transactional
-    public DepartureScheduleResponseDto pauseSchedule(Long id) {
-        return changeScheduleStatus(id, Set.of(ScheduleStatus.ACTIVE), ScheduleStatus.PAUSED);
-    }
+        List<LocationRoute> newStops = new ArrayList<>();
+        for (int i = 0; i < stops.size(); i++) {
+            CreateRouteRequestDto.RouteStopItem stopItem = stops.get(i);
+            Location location = locationRepository.findById(stopItem.getLocationId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy điểm dừng ID: " + stopItem.getLocationId()));
 
-    @Override
-    @Transactional
-    public DepartureScheduleResponseDto resumeSchedule(Long id) {
-        return changeScheduleStatus(id, Set.of(ScheduleStatus.PAUSED), ScheduleStatus.ACTIVE);
-    }
-
-    @Override
-    @Transactional
-    public DepartureScheduleResponseDto endSchedule(Long id) {
-        return changeScheduleStatus(id, Set.of(ScheduleStatus.ACTIVE, ScheduleStatus.PAUSED), ScheduleStatus.ENDED);
-    }
-
-    private DepartureScheduleResponseDto changeScheduleStatus(Long id, Set<ScheduleStatus> allowedFrom, ScheduleStatus to) {
-        DepartureSchedule schedule = findSchedule(id);
-        if (!allowedFrom.contains(schedule.getStatus())) {
-            throw new IllegalStateException("Không chuyển được lịch từ " + schedule.getStatus() + " sang " + to + ".");
+            LocationRoute lr = new LocationRoute();
+            LocationRouteId lrId = new LocationRouteId();
+            lrId.setRouteID(route.getId());
+            lrId.setLocationID(location.getId());
+            lr.setId(lrId);
+            lr.setRouteID(route);
+            lr.setLocationID(location);
+            lr.setStopOrder(stopItem.getStopOrder() != null ? stopItem.getStopOrder() : (i + 1));
+            lr.setLatitude(stopItem.getLatitude());
+            lr.setLongitude(stopItem.getLongitude());
+            newStops.add(lr);
         }
-        schedule.setStatus(to);
-        return DepartureScheduleResponseDto.from(schedule, scheduleDays.findById_DepartureScheduleId(id));
+        locationRouteRepository.saveAll(newStops);
     }
 
-    // Kiểm điểm dừng bằng RouteStopsPolicy; trả về địa điểm của các điểm dừng theo id
-    private Map<Long, Location> validateStops(RouteRequestDto request, Location origin, Location destination) {
-        List<Long> ids = request.getStops().stream().map(RouteStopRequestDto::getLocationId).distinct().toList();
-        Map<Long, Location> byId = locations.findAllById(ids).stream().collect(Collectors.toMap(Location::getId, Function.identity()));
-        for (Long locationId : ids) {
-            Location location = byId.get(locationId);
-            if (location == null) {
-                throw new IllegalArgumentException("Không tìm thấy địa điểm " + locationId + " của điểm dừng.");
+    private void validateStops(List<CreateRouteRequestDto.RouteStopItem> stops) {
+        if (stops == null || stops.size() < 2) {
+            throw new IllegalArgumentException("Tuyến đường phải có ít nhất điểm xuất phát và điểm đến.");
+        }
+
+        Set<Integer> locationIds = new HashSet<>();
+        for (CreateRouteRequestDto.RouteStopItem stop : stops) {
+            if (stop.getLocationId() == null) {
+                throw new IllegalArgumentException("Mã địa điểm trên tuyến không được để trống.");
             }
-            if (location.getStatus() != ActiveStatus.ACTIVE) {
-                throw new IllegalArgumentException("Địa điểm " + location.getCode() + " đang ngừng dùng.");
+            if (!locationIds.add(stop.getLocationId())) {
+                throw new IllegalArgumentException("Một địa điểm không thể xuất hiện nhiều lần trên cùng tuyến.");
+            }
+            if ((stop.getLatitude() == null) != (stop.getLongitude() == null)) {
+                throw new IllegalArgumentException("Vĩ độ và kinh độ của điểm tuyến phải được cung cấp cùng nhau.");
+            }
+            if (stop.getLatitude() != null
+                    && (stop.getLatitude() < -90 || stop.getLatitude() > 90
+                    || stop.getLongitude() < -180 || stop.getLongitude() > 180)) {
+                throw new IllegalArgumentException("Tọa độ điểm tuyến không hợp lệ.");
             }
         }
-        List<RouteStopsPolicy.Stop> stops = request.getStops().stream()
-                .map(stop -> new RouteStopsPolicy.Stop(stop.getSequenceNumber(), stop.getLocationId(), byId.get(stop.getLocationId()).getLocationType(),
-                        stop.getStopType(), stop.getArrivalOffsetMinutes(), stop.getDwellMinutes()))
-                .toList();
-        List<String> errors = RouteStopsPolicy.violations(origin.getId(), origin.getLocationType(), destination.getId(), destination.getLocationType(), stops);
-        if (!errors.isEmpty()) {
-            throw new IllegalArgumentException(String.join(" ", errors));
+    }
+
+    private String normalizeStatus(String status) {
+        String normalized = status == null || status.isBlank() ? "ACTIVE" : status.trim().toUpperCase();
+        if (!List.of("ACTIVE", "MAINTENANCE", "INACTIVE").contains(normalized)) {
+            throw new IllegalArgumentException("Trạng thái tuyến phải là ACTIVE, MAINTENANCE hoặc INACTIVE.");
         }
-        return byId;
-    }
-
-    private void saveStops(Route route, List<RouteStopRequestDto> stops, Map<Long, Location> stopLocations) {
-        routeStops.saveAll(stops.stream().map(stop -> stop.toEntity(route, stopLocations.get(stop.getLocationId()))).toList());
-        routeStops.flush();
-    }
-
-    private List<DepartureScheduleDay> saveDays(DepartureSchedule schedule, Set<Short> daysOfWeek) {
-        List<DepartureScheduleDay> days = daysOfWeek.stream().sorted().map(dayOfWeek -> {
-            DepartureScheduleDay day = new DepartureScheduleDay();
-            day.setId(new DepartureScheduleDayId(schedule.getId(), dayOfWeek));
-            day.setDepartureSchedule(schedule);
-            return day;
-        }).toList();
-        return scheduleDays.saveAll(days);
-    }
-
-    private void requireValidPeriod(DepartureScheduleRequestDto request) {
-        if (request.getValidTo() != null && request.getValidTo().isBefore(request.getValidFrom())) {
-            throw new IllegalArgumentException("Ngày hết hiệu lực phải sau hoặc bằng ngày bắt đầu.");
-        }
-    }
-
-    private void requireUniqueCode(String code, Long selfId) {
-        String normalized = code.trim().toUpperCase(Locale.ROOT);
-        routes.findByCode(normalized)
-                .filter(other -> !other.getId().equals(selfId))
-                .ifPresent(other -> {
-                    throw new IllegalStateException("Mã tuyến " + normalized + " đã được dùng.");
-                });
-    }
-
-    private Route findRoute(Long id) {
-        return routes.findWithEndpoints(id).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tuyến " + id));
-    }
-
-    private Route activeRoute(Long id) {
-        Route route = findRoute(id);
-        if (route.getStatus() != ActiveStatus.ACTIVE) {
-            throw new IllegalArgumentException("Tuyến " + route.getCode() + " đang ngừng chạy.");
-        }
-        return route;
-    }
-
-    private Location activeLocation(Long id) {
-        Location location = locations.findById(id).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy địa điểm " + id));
-        if (location.getStatus() != ActiveStatus.ACTIVE) {
-            throw new IllegalArgumentException("Địa điểm " + location.getCode() + " đang ngừng dùng.");
-        }
-        return location;
-    }
-
-    private DepartureSchedule findSchedule(Long id) {
-        return schedules.findWithRouteById(id).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lịch chạy " + id));
+        return normalized;
     }
 }

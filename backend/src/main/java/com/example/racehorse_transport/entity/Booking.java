@@ -1,85 +1,129 @@
 package com.example.racehorse_transport.entity;
 
-import com.example.racehorse_transport.entity.enums.BookingStatus;
-import com.example.racehorse_transport.entity.enums.BookingType;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-import org.hibernate.annotations.Generated;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
+import lombok.*;
+import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDate;
 
-// Phần đầu đơn. booking.status chỉ có mốc thương mại.
 @Getter
 @Setter
-@NoArgsConstructor
 @Entity
-@Table(name = "booking")
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Table(name = "BOOKING")
 public class Booking {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
+    @Column(name = "BookingID", nullable = false)
+    private Integer id;
 
-    @Column(name = "code", length = 30, nullable = false)
+    // Mã đơn đưa ra ngoài (URL, API, thông báo); BookingID chỉ dùng nội bộ làm khóa.
+    @Column(name = "BookingCode", length = 11, unique = true)
     private String code;
 
-    // Người đặt đơn
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "customer_id", nullable = false)
-    private Customer customer;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CustomerID")
+    private Customer customerID;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "booking_type", length = 30, nullable = false)
-    private BookingType bookingType;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "RouteID")
+    private Route routeID;
 
-    // Chuyến trục chính. NULL khi chưa gán chuyến hoặc khi đơn chạy thẳng
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "departure_id")
-    private Departure departure;
+    @Column(name = "BookingDate")
+    private Instant bookingDate;
 
-    @Column(name = "requested_pickup_date", nullable = false)
-    private LocalDate requestedPickupDate;
+    @Column(name = "DepartureDate")
+    private Instant departureDate;
 
-    @Column(name = "waybill_number", length = 30)
-    private String waybillNumber;
+    @Column(name = "TotalBookingPrice", precision = 18, scale = 2)
+    private BigDecimal totalBookingPrice;
 
-    @Column(name = "emergency_spending_limit", precision = 15, scale = 2)
-    private BigDecimal emergencySpendingLimit;
+    @Size(max = 50)
+    @Column(name = "Status", length = 50)
+    private String status;
 
-    // Đơn này là chuyến hồi hương của đơn nào
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "original_booking_id")
-    private Booking originalBooking;
+    @Size(max = 50)
+    @Column(name = "BookingType", length = 50)
+    private String bookingType; // domestic, international
 
-    // Chỉ đổi qua BookingStatusService, kèm một dòng booking_status_history
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", length = 30, nullable = false)
-    private BookingStatus status;
+    @Size(max = 255)
+    @Nationalized
+    @Column(name = "ConsignorName")
+    private String consignorName;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "created_by", nullable = false)
-    private AppUser createdBy;
+    @Size(max = 50)
+    @Column(name = "ConsignorPhone", length = 50)
+    private String consignorPhone;
 
-    // DB đặt giá trị mặc định now() lúc thêm dòng
-    @Generated
-    @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
-    private Instant createdAt;
+    @Size(max = 255)
+    @Nationalized
+    @Column(name = "ConsigneeName")
+    private String consigneeName;
+
+    @Size(max = 50)
+    @Column(name = "ConsigneePhone", length = 50)
+    private String consigneePhone;
+
+    // CCCD / MST / Hộ chiếu (bắt buộc khi tạo đơn mới) và địa chỉ của người gửi, người nhận
+    @Size(max = 50)
+    @Column(name = "ConsignorIdNumber", length = 50)
+    private String consignorIdNumber;
+
+    @Column(name = "ConsignorIdCountry", length = 2)
+    private String consignorIdCountry;
+
+    @Column(name = "ConsignorIdType", length = 20)
+    private String consignorIdType;
+
+    @Size(max = 255)
+    @Nationalized
+    @Column(name = "ConsignorAddress")
+    private String consignorAddress;
+
+    @Size(max = 50)
+    @Column(name = "ConsigneeIdNumber", length = 50)
+    private String consigneeIdNumber;
+
+    @Column(name = "ConsigneeIdCountry", length = 2)
+    private String consigneeIdCountry;
+
+    @Column(name = "ConsigneeIdType", length = 20)
+    private String consigneeIdType;
+
+    @Size(max = 255)
+    @Nationalized
+    @Column(name = "ConsigneeAddress")
+    private String consigneeAddress;
+
+    @Size(max = 255)
+    @Nationalized
+    @Column(name = "PickupAddress")
+    private String pickupAddress;
+
+    @Size(max = 255)
+    @Nationalized
+    @Column(name = "DropoffAddress")
+    private String dropoffAddress;
+
+    @Column(name = "TotalHorses")
+    private Integer totalHorses;
+
+    @Size(max = 50)
+    @Column(name = "WaybillNo", length = 50)
+    private String waybillNo;
+
+    @Column(name = "DetailsJson", columnDefinition = "TEXT")
+    private String detailsJson;
+
+    @PrePersist
+    void assignCode() {
+        if (code == null) {
+            code = com.example.racehorse_transport.util.BookingCodes.newCode();
+        }
+    }
 }

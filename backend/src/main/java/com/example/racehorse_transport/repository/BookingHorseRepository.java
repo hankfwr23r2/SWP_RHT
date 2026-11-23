@@ -1,12 +1,11 @@
 package com.example.racehorse_transport.repository;
 
 import com.example.racehorse_transport.entity.BookingHorse;
-
+import com.example.racehorse_transport.entity.BookingHorseId;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-import java.util.List;
-
-public interface BookingHorseRepository extends JpaRepository<BookingHorse, Long> {
-
-    List<BookingHorse> findByBooking_Id(Long bookingId);
+@Repository
+public interface BookingHorseRepository extends JpaRepository<BookingHorse, BookingHorseId> {
+    boolean existsByHorseID_Id(Integer horseId);
 }

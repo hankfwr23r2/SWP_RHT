@@ -1,32 +1,28 @@
 package com.example.racehorse_transport.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
 
-// Loại ngựa.
 @Getter
 @Setter
-@NoArgsConstructor
 @Entity
-@Table(name = "horse_type")
+@Table(name = "HORSE_TYPE")
 public class HorseType {
-
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
+    @Column(name = "HorseTypeID", nullable = false)
+    private Integer id;
 
-    @Column(name = "name", length = 100, nullable = false)
-    private String name;
+    @Size(max = 255)
+    @Nationalized
+    @Column(name = "typeName")
+    private String typeName;
 
-    @Column(name = "description", columnDefinition = "text")
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
+
+    @Column(name = "insured_value", precision = 18, scale = 2)
+    private java.math.BigDecimal insuredValue;
 }

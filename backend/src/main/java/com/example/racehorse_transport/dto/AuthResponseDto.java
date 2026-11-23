@@ -1,0 +1,30 @@
+package com.example.racehorse_transport.dto;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Schema(name = "AuthResponse")
+public class AuthResponseDto {
+
+    private String accessToken;
+
+    @Builder.Default
+    private String tokenType = "Bearer";
+
+    private Integer userId;
+    private String username;
+    private String email;
+    private String role;
+    private String fullName;
+    private String staffCode;
+
+    // Khách chưa xác thực email: không có token, đã gửi OTP về email
+    private boolean emailVerificationRequired;
+}
