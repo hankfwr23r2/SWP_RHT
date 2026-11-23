@@ -180,6 +180,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/booking-horses/{id}/health-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ofHorse"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bookings": {
         parameters: {
             query?: never;
@@ -996,6 +1012,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/health-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["record"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/horse-legs/{id}/cancel": {
         parameters: {
             query?: never;
@@ -1006,6 +1038,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["cancelLeg"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["activeStays"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1856,6 +1904,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseHealthLogResponseDto: {
+            data?: components["schemas"]["HealthLogResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseHorseResponseDto: {
             data?: components["schemas"]["HorseResponseDto"];
             message?: string;
@@ -1926,8 +1979,18 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListHealthLogResponseDto: {
+            data?: components["schemas"]["HealthLogResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListHorseResponseDto: {
             data?: components["schemas"]["HorseResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListHorseStayResponseDto: {
+            data?: components["schemas"]["HorseStayResponseDto"][];
             message?: string;
             status?: string;
         };
@@ -2571,6 +2634,57 @@ export interface components {
             horseLegId: number;
             microchip: string;
         };
+        HealthLogRequestDto: {
+            /** Format: int64 */
+            bookingHorseId: number;
+            /** @enum {string} */
+            feedIntake?: "NORMAL" | "REDUCED" | "REFUSED";
+            /** @enum {string} */
+            healthStatus: "NORMAL" | "WATCH" | "SICK" | "CRITICAL";
+            /** Format: int32 */
+            heartRateBpm?: number;
+            /** Format: int64 */
+            horseStayId?: number;
+            note?: string;
+            /** Format: int32 */
+            respirationRatePerMinute?: number;
+            symptoms?: string;
+            temperatureCelsius?: number;
+            /** Format: int64 */
+            tripStopId?: number;
+            /** @enum {string} */
+            waterIntake?: "NORMAL" | "REDUCED" | "REFUSED";
+            weightKg?: number;
+        };
+        HealthLogResponseDto: {
+            /** Format: int64 */
+            bookingHorseId?: number;
+            /** @enum {string} */
+            feedIntake?: "NORMAL" | "REDUCED" | "REFUSED";
+            /** @enum {string} */
+            healthStatus?: "NORMAL" | "WATCH" | "SICK" | "CRITICAL";
+            /** Format: int32 */
+            heartRateBpm?: number;
+            horseName?: string;
+            /** Format: int64 */
+            horseStayId?: number;
+            /** Format: int64 */
+            id?: number;
+            note?: string;
+            placeName?: string;
+            /** Format: date-time */
+            recordedAt?: string;
+            recordedByName?: string;
+            /** Format: int32 */
+            respirationRatePerMinute?: number;
+            symptoms?: string;
+            temperatureCelsius?: number;
+            /** Format: int64 */
+            tripStopId?: number;
+            /** @enum {string} */
+            waterIntake?: "NORMAL" | "REDUCED" | "REFUSED";
+            weightKg?: number;
+        };
         HorseCreateRequestDto: {
             /** Format: int32 */
             birthYear?: number;
@@ -2695,6 +2809,25 @@ export interface components {
             /** Format: int64 */
             horseId: number;
             stallTypeCode: string;
+        };
+        HorseStayResponseDto: {
+            /** Format: date-time */
+            actualEndAt?: string;
+            /** Format: date-time */
+            actualStartAt?: string;
+            bookingCode?: string;
+            /** Format: int64 */
+            bookingHorseId?: number;
+            horseName?: string;
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            locationId?: number;
+            locationName?: string;
+            /** Format: date-time */
+            plannedEndAt?: string;
+            /** @enum {string} */
+            stayType?: "ASSEMBLY" | "QUARANTINE" | "OVERNIGHT" | "STABLING";
         };
         HorseTypeResponseDto: {
             description?: string;
@@ -3236,6 +3369,9 @@ export interface components {
             phone: string;
             staffCode: string;
         };
+        StopDepartRequestDto: {
+            earlyReason?: string;
+        };
         SystemConfigResponseDto: {
             configGroup?: string;
             configKey?: string;
@@ -3666,6 +3802,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListBillableServiceResponseDto"];
+                };
+            };
+        };
+    };
+    ofHorse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHealthLogResponseDto"];
                 };
             };
         };
@@ -5130,6 +5288,30 @@ export interface operations {
             };
         };
     };
+    record: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HealthLogRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHealthLogResponseDto"];
+                };
+            };
+        };
+    };
     cancelLeg: {
         parameters: {
             query?: never;
@@ -5148,6 +5330,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListTripHorseResponseDto"];
+                };
+            };
+        };
+    };
+    activeStays: {
+        parameters: {
+            query: {
+                locationId: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHorseStayResponseDto"];
                 };
             };
         };
@@ -6276,7 +6480,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["StopDepartRequestDto"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {

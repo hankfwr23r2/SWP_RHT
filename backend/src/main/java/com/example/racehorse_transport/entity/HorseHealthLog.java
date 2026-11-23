@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.entity;
 
 import com.example.racehorse_transport.entity.enums.HealthStatus;
+import com.example.racehorse_transport.entity.enums.IntakeLevel;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -73,6 +74,14 @@ public class HorseHealthLog {
 
     @Column(name = "weight_kg", precision = 6, scale = 1)
     private BigDecimal weightKg;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "water_intake", length = 30)
+    private IntakeLevel waterIntake;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "feed_intake", length = 30)
+    private IntakeLevel feedIntake;
 
     @Column(name = "symptoms", columnDefinition = "text")
     private String symptoms;
