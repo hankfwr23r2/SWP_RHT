@@ -1,237 +1,89 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.admin.SystemConfigResponseDto;
-import com.example.racehorse_transport.dto.admin.UpdateSystemConfigRequestDto;
-import com.example.racehorse_transport.entity.SystemConfig;
+import com.example.racehorse_transport.dto.config.SystemConfigResponseDto;
+import com.example.racehorse_transport.dto.config.SystemConfigUpdateRequestDto;
+import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.entity.enums.AppUserStatus;
+import com.example.racehorse_transport.entity.enums.EmploymentStatus;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
+import com.example.racehorse_transport.policy.SystemConfigPolicy;
+import com.example.racehorse_transport.repository.AppUserRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.SystemConfigRepository;
-import com.example.racehorse_transport.service.AdminAuditService;
+import com.example.racehorse_transport.service.AuditService;
 import com.example.racehorse_transport.service.SystemConfigService;
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.LinkedHashMap;
+import java.time.Clock;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Sort;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import static com.example.racehorse_transport.service.AdminAuditService.values;
 
 @Service
 @RequiredArgsConstructor
 public class SystemConfigServiceImpl implements SystemConfigService {
-    private final AdminAuditService audit;
-
-
-    private record Definition(
-            String key,
-            String name,
-            String value,
-            String unit,
-            String group,
-            String description,
-            BigDecimal minimum,
-            BigDecimal maximum) {}
-
-    private static final List<Definition> DEFINITIONS = List.of(
-            new Definition("MAX_CONTINUOUS_HOURS", "Thời gian di chuyển liên tục tối đa", "4", "giờ", "WELFARE",
-                    "Giới hạn thời gian ngựa di chuyển liên tục trước khi cần nghỉ.", new BigDecimal("0.25"), BigDecimal.valueOf(12)),
-            new Definition("MIN_REST_MINUTES", "Thời gian nghỉ tối thiểu", "30", "phút", "WELFARE",
-                    "Thời gian nghỉ tối thiểu tại mỗi trạm dừng.", BigDecimal.valueOf(15), BigDecimal.valueOf(240)),
-            new Definition("VITAL_CHECK_INTERVAL_HOURS", "Tần suất đo sinh hiệu", "2", "giờ", "WELFARE",
-                    "Khoảng thời gian tối đa giữa các lần ghi nhận sinh hiệu của ngựa.", BigDecimal.ONE, BigDecimal.valueOf(24)),
-            new Definition("DEPOSIT_RATE", "Tỷ lệ đặt cọc", "0.30", "tỷ lệ", "PAYMENT",
-                    "Tỷ lệ đặt cọc trên tổng báo giá để phát hành vận đơn.", new BigDecimal("0.01"), new BigDecimal("0.99")),
-            new Definition("QUOTE_VALID_HOURS", "Thời hạn hiệu lực báo giá", "24", "giờ", "PAYMENT",
-                    "Số giờ khách có thể thanh toán đặt cọc sau khi báo giá được phát hành.", BigDecimal.ONE, BigDecimal.valueOf(168)),
-            new Definition("MIN_LEAD_DAYS", "Số ngày đặt trước tối thiểu", "20", "ngày", "OPERATIONS",
-                    "Số ngày tối thiểu giữa ngày tạo đơn và ngày khởi hành.", BigDecimal.ZERO, BigDecimal.valueOf(365)),
-            new Definition("MAX_DRIVE_HOURS_PER_DAY", "Giờ lái tối đa mỗi ngày", "10", "giờ", "JOURNEY",
-                    "Tổng giờ lái trong một ngày. Quá thì xe nghỉ đêm.", BigDecimal.ONE, BigDecimal.valueOf(24)),
-            new Definition("OVERNIGHT_REST_HOURS", "Thời gian nghỉ đêm", "10", "giờ", "JOURNEY",
-                    "Thời gian nghỉ khi đã lái đủ giờ trong ngày.", BigDecimal.ONE, BigDecimal.valueOf(24)),
-            new Definition("BORDER_PROCESSING_HOURS", "Thời gian làm thủ tục cửa khẩu", "3", "giờ", "JOURNEY",
-                    "Thời gian dự kiến làm thủ tục kiểm dịch và hải quan tại cửa khẩu.", BigDecimal.ZERO, BigDecimal.valueOf(24)),
-            new Definition("TRUCK_TOP_SPEED_KMH", "Tốc độ tối đa của xe tải", "80", "km/h", "JOURNEY",
-                    "Tốc độ tối đa dùng để tính thời gian lái theo đường xe tải.", BigDecimal.valueOf(30), BigDecimal.valueOf(120)),
-            new Definition("TRIP_OPEN_FEE", "Phí mở chuyến cơ sở", "3000000", "VNĐ/xe", "PRICING",
-                    "Phí cố định xuất bến cho mỗi xe vận chuyển.", BigDecimal.ZERO, BigDecimal.valueOf(500_000_000)),
-            new Definition("KM_TIER_1_LIMIT", "Ngưỡng cự ly bậc 1", "300", "km", "PRICING",
-                    "Mốc khoảng cách tối đa cho bậc cước ngắn.", BigDecimal.TEN, BigDecimal.valueOf(5000)),
-            new Definition("KM_TIER_1_RATE", "Đơn giá cước bậc 1", "26000", "VNĐ/km", "PRICING",
-                    "Đơn giá mỗi km cho chặng dưới ngưỡng bậc 1.", BigDecimal.ZERO, BigDecimal.valueOf(10_000_000)),
-            new Definition("KM_TIER_2_LIMIT", "Ngưỡng cự ly bậc 2", "600", "km", "PRICING",
-                    "Mốc khoảng cách tối đa cho bậc cước trung bình.", BigDecimal.TEN, BigDecimal.valueOf(5000)),
-            new Definition("KM_TIER_2_RATE", "Đơn giá cước bậc 2", "20000", "VNĐ/km", "PRICING",
-                    "Đơn giá mỗi km cho chặng từ bậc 1 đến bậc 2.", BigDecimal.ZERO, BigDecimal.valueOf(10_000_000)),
-            new Definition("KM_TIER_3_RATE", "Đơn giá cước bậc 3", "15000", "VNĐ/km", "PRICING",
-                    "Đơn giá mỗi km cho chặng vượt ngưỡng bậc 2.", BigDecimal.ZERO, BigDecimal.valueOf(10_000_000)),
-            new Definition("CLASS_FACTOR_LIGHT", "Hệ số xe Light (2 ngăn)", "1.0", "hệ số", "PRICING",
-                    "Hệ số cước áp dụng cho xe tải nhẹ 2 ngăn.", new BigDecimal("0.1"), BigDecimal.valueOf(10)),
-            new Definition("CLASS_FACTOR_MEDIUM", "Hệ số xe Medium (4-6 ngăn)", "1.4", "hệ số", "PRICING",
-                    "Hệ số cước áp dụng cho xe tải trung 4-6 ngăn.", new BigDecimal("0.1"), BigDecimal.valueOf(10)),
-            new Definition("CLASS_FACTOR_HEAVY", "Hệ số xe Heavy (9 ngăn)", "1.9", "hệ số", "PRICING",
-                    "Hệ số cước áp dụng cho xe tải nặng 9 ngăn.", new BigDecimal("0.1"), BigDecimal.valueOf(10)),
-            new Definition("MARGIN_RATE", "Biên lợi nhuận gộp", "0.05", "tỷ lệ", "PRICING",
-                    "Tỷ lệ lợi nhuận định mức gộp vào đơn giá.", BigDecimal.ZERO, BigDecimal.ONE),
-            new Definition("CLEARANCE_FEE_INTERNATIONAL", "Phí thủ tục hải quan quốc tế", "300000", "VNĐ/chuyến", "PRICING",
-                    "Phí làm thủ tục xuất nhập cảnh biên giới cho chuyến quốc tế.", BigDecimal.ZERO, BigDecimal.valueOf(50_000_000)),
-            // Cấu hình kiểu chữ: không có minimum/maximum, luật kiểm nằm ở validateText
-            new Definition("HOTLINE", "Số hotline", "1900 6868", null, "CONTACT",
-                    "Số điện thoại hỗ trợ khách hàng, hiển thị cho khách.", null, null),
-            new Definition("OFFICE_ADDRESS", "Địa chỉ văn phòng", "Văn phòng Vận chuyển Ngựa, 120 Xô Viết Nghệ Tĩnh, TP.HCM", null, "CONTACT",
-                    "Địa chỉ văn phòng, hiển thị cho khách.", null, null)
-    );
-
-    private static final java.util.regex.Pattern HOTLINE_PATTERN = java.util.regex.Pattern.compile("[0-9 +().-]{6,20}");
-
-    private static final Set<String> RETIRED_CONFIG_KEYS = Set.of("DEMURRAGE_PER_HOUR", "BORDER_OPEN_MINUTES", "BORDER_CLOSE_MINUTES", "INSURANCE_RATE", "CREW_FEE_PER_DAY");
-
-    private static final Map<String, Definition> DEFINITIONS_BY_KEY = DEFINITIONS.stream()
-            .collect(LinkedHashMap::new, (map, definition) -> map.put(definition.key(), definition), LinkedHashMap::putAll);
 
     private final SystemConfigRepository repository;
-    private final StaffRepository staffRepository;
+    private final AppUserRepository users;
+    private final StaffRepository staff;
+    private final AuditService audit;
+    private final Clock clock;
 
     @Override
-    @Transactional
-    public List<SystemConfigResponseDto> getAllConfigs() {
-        ensureDefaults();
-        return repository.findAll(Sort.by(Sort.Order.asc("configGroup"), Sort.Order.asc("configKey")))
-                .stream()
-                .filter(config -> !RETIRED_CONFIG_KEYS.contains(config.getConfigKey()))
-                .map(this::toResponse)
-                .toList();
-    }
-
-    @Override
-    @Transactional
-    public Map<String, List<SystemConfigResponseDto>> getAllConfigsGrouped() {
-        Map<String, List<SystemConfigResponseDto>> grouped = new LinkedHashMap<>();
-        getAllConfigs().forEach(config ->
-                grouped.computeIfAbsent(config.getConfigGroup(), ignored -> new java.util.ArrayList<>()).add(config));
-        return grouped;
-    }
-
-    @Override
-    @Transactional
-    public SystemConfigResponseDto getConfig(String key) {
-        ensureDefaults();
-        requireDefinition(key);
-        return repository.findById(key)
-                .map(this::toResponse)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy cấu hình: " + key));
-    }
-
-    @Override
-    @Transactional
-    public SystemConfigResponseDto updateConfig(String key, UpdateSystemConfigRequestDto request, String updatedBy) {
-        if (request == null || request.getConfigValue() == null || request.getConfigValue().isBlank()) {
-            throw new IllegalArgumentException("Giá trị cấu hình không được để trống.");
-        }
-        ensureDefaults();
-        Definition definition = requireDefinition(key);
-        String value = request.getConfigValue().trim();
-        if (definition.minimum() == null) {
-            validateText(key, value);
-        } else {
-            validateNumber(key, definition, value);
-        }
-        SystemConfig config = repository.findById(key)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy cấu hình: " + key));
-        String oldValue = config.getConfigValue();
-        config.setConfigValue(value);
-        // Chỉ nhân viên có bản ghi STAFF mới được ghi nhận là người sửa
-        config.setUpdatedBy(staffRepository.findByUser_Username(updatedBy)
-                .orElseThrow(() -> new AccessDeniedException("Không xác định được nhân viên thực hiện thao tác.")));
-        config.setUpdatedAt(Instant.now());
-        SystemConfig saved = repository.save(config);
-        audit.record("UPDATE_CONFIG", "SYSTEM_CONFIG", key, config.getConfigName(), "Cập nhật tham số " + key,
-                values("value", oldValue), values("value", saved.getConfigValue()));
-        return toResponse(saved);
-    }
-
-    private void validateText(String key, String value) {
-        if ("HOTLINE".equals(key) && !HOTLINE_PATTERN.matcher(value).matches()) {
-            throw new IllegalArgumentException("Số hotline chỉ gồm chữ số, khoảng trắng và các ký tự + ( ) . -, dài 6 đến 20 ký tự.");
-        }
-        if ("OFFICE_ADDRESS".equals(key)
-                && (value.length() < 5 || value.length() > 200 || value.contains("<") || value.contains(">"))) {
-            throw new IllegalArgumentException("Địa chỉ văn phòng phải dài 5 đến 200 ký tự và không chứa ký tự < hoặc >.");
-        }
-    }
-
-    private void validateNumber(String key, Definition definition, String value) {
-        BigDecimal numericValue;
+    @Transactional(readOnly = true)
+    public int getInt(String key) {
+        String value = repository.findById(key)
+                .orElseThrow(() -> new IllegalStateException("Thiếu tham số hệ thống " + key))
+                .getConfigValue();
         try {
-            numericValue = new BigDecimal(value);
-        } catch (NumberFormatException exception) {
-            throw new IllegalArgumentException("Giá trị cấu hình phải là một số hợp lệ.");
-        }
-        if (numericValue.compareTo(definition.minimum()) < 0 || numericValue.compareTo(definition.maximum()) > 0) {
-            throw new IllegalArgumentException("Giá trị " + definition.name() + " phải nằm trong khoảng "
-                    + definition.minimum().toPlainString() + " đến " + definition.maximum().toPlainString() + ".");
-        }
-        if (isIntegerRule(key) && numericValue.stripTrailingZeros().scale() > 0) {
-            throw new IllegalArgumentException("Giá trị " + definition.name() + " phải là số nguyên.");
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            throw new IllegalStateException("Tham số hệ thống " + key + " phải là số nguyên", e);
         }
     }
 
-    private void ensureDefaults() {
-        List<String> keys = DEFINITIONS.stream().map(Definition::key).toList();
-        List<SystemConfig> existing = repository.findAllById(keys);
-        java.util.Set<String> existingKeys = existing.stream().map(SystemConfig::getConfigKey)
-                .collect(java.util.stream.Collectors.toSet());
-        List<SystemConfig> missing = DEFINITIONS.stream()
-                .filter(definition -> !existingKeys.contains(definition.key()))
-                .map(this::toEntity)
-                .toList();
-        if (!missing.isEmpty()) {
-            repository.saveAll(missing);
+    @Override
+    @Transactional(readOnly = true)
+    public List<SystemConfigResponseDto> configurations() {
+        return repository.findAllByOrderByConfigKeyAsc().stream().map(SystemConfigResponseDto::from).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public SystemConfigResponseDto configuration(String key) {
+        return repository.findOneByConfigKey(key).map(SystemConfigResponseDto::from).orElseThrow(this::unknownConfig);
+    }
+
+    @Override
+    @Transactional
+    public SystemConfigResponseDto updateConfiguration(String key, String username, SystemConfigUpdateRequestDto request) {
+        Staff actor = adminStaff(username);
+        var config = repository.findForUpdate(key).orElseThrow(this::unknownConfig);
+        int value = request.integerValue();
+        SystemConfigPolicy.requireValidUpdate(config.getUnit(), value, config.getMinValue(), config.getMaxValue());
+        var before = SystemConfigResponseDto.from(config);
+        if (Integer.toString(value).equals(config.getConfigValue())) {
+            return before;
         }
+        request.applyTo(config);
+        config.setUpdatedBy(actor);
+        config.setUpdatedAt(clock.instant().truncatedTo(ChronoUnit.MICROS));
+        var after = SystemConfigResponseDto.from(config);
+        audit.record(actor.getUserId(), "UPDATE_SYSTEM_CONFIG", "system_config", config.getAuditTargetId(), before, after);
+        return after;
     }
 
-    private Definition requireDefinition(String key) {
-        Definition definition = DEFINITIONS_BY_KEY.get(key);
-        if (definition == null) {
-            throw new ResourceNotFoundException("Không tìm thấy cấu hình: " + key);
-        }
-        return definition;
+    private Staff adminStaff(String username) {
+        var user = users.findByUsername(username)
+                .filter(candidate -> candidate.getStatus() == AppUserStatus.ACTIVE
+                        && "ADMIN".equals(candidate.getRole().getCode()))
+                .orElseThrow(() -> new AccessDeniedException("Chỉ quản trị viên được sửa tham số."));
+        return staff.findById(user.getId()).filter(profile -> profile.getEmploymentStatus() != EmploymentStatus.TERMINATED)
+                .orElseThrow(() -> new AccessDeniedException("Tài khoản quản trị không còn hoạt động."));
     }
 
-    // Tham số được nhập số lẻ: tỷ lệ, hệ số xe và giờ lái liên tục; còn lại (tiền, km, giờ) là số nguyên
-    private static final Set<String> DECIMAL_CONFIG_KEYS = Set.of("DEPOSIT_RATE", "MAX_CONTINUOUS_HOURS",
-            "CLASS_FACTOR_LIGHT", "CLASS_FACTOR_MEDIUM", "CLASS_FACTOR_HEAVY", "MARGIN_RATE");
-
-    private boolean isIntegerRule(String key) {
-        return !DECIMAL_CONFIG_KEYS.contains(key);
-    }
-
-    private SystemConfig toEntity(Definition definition) {
-        SystemConfig config = new SystemConfig();
-        config.setConfigKey(definition.key());
-        config.setConfigName(definition.name());
-        config.setConfigValue(definition.value());
-        config.setUnit(definition.unit());
-        config.setConfigGroup(definition.group());
-        config.setDescription(definition.description());
-        return config;
-    }
-
-    private SystemConfigResponseDto toResponse(SystemConfig config) {
-        return SystemConfigResponseDto.builder()
-                .configKey(config.getConfigKey())
-                .configName(config.getConfigName())
-                .configValue(config.getConfigValue())
-                .unit(config.getUnit())
-                .configGroup(config.getConfigGroup())
-                .description(config.getDescription())
-                .updatedBy(config.getUpdatedBy() == null ? "SYSTEM" : config.getUpdatedBy().getUser().getUsername())
-                .updatedAt(config.getUpdatedAt())
-                .build();
+    private ResourceNotFoundException unknownConfig() {
+        return new ResourceNotFoundException("Không tìm thấy tham số kỹ thuật.");
     }
 }

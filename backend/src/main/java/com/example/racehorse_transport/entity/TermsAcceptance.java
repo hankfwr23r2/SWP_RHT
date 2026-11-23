@@ -1,43 +1,62 @@
 package com.example.racehorse_transport.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
+import com.example.racehorse_transport.entity.enums.TermsKind;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import org.hibernate.annotations.Generated;
 
 import java.time.Instant;
 
-// Bằng chứng khách đồng ý điều khoản: văn bản nào, phiên bản nào, lúc nào (giờ server), của ai, cho đơn/ngựa nào
+// Bằng chứng khách đồng ý điều khoản.
 @Getter
 @Setter
-@Entity
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
+@Entity
 @Table(name = "terms_acceptance")
 public class TermsAcceptance {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
-    private Integer id;
+    @Column(name = "id")
+    private Long id;
 
-    @Column(name = "document_code", nullable = false, length = 50)
-    private String documentCode;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "terms_type", length = 30, nullable = false)
+    private TermsKind termsType;
 
-    @Column(name = "document_version", nullable = false, length = 50)
-    private String documentVersion;
-
-    @Column(name = "accepted_at", nullable = false)
-    private Instant acceptedAt;
+    // Ví dụ 2027.1. Nội dung nằm ở file terms/<kind>/<version>.md
+    @Column(name = "terms_version", length = 20, nullable = false)
+    private String termsVersion;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    private AppUser user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    // NULL nếu đồng ý lúc đăng ký tài khoản
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "booking_id")
     private Booking booking;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "horse_id")
-    private Horse horse;
+    // DB đặt giá trị mặc định now() lúc thêm dòng
+    @Generated
+    @Column(name = "accepted_at", nullable = false, insertable = false, updatable = false)
+    private Instant acceptedAt;
+
+    @Column(name = "ip_address", length = 45)
+    private String ipAddress;
 }

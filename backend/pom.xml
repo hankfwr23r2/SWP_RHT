@@ -51,6 +51,15 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-cache</artifactId>
         </dependency>
+        <!-- Quản lý lược đồ DB bằng file migration (src/main/resources/db/migration) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-flyway</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.postgresql</groupId>
@@ -84,6 +93,12 @@
             <artifactId>testcontainers-postgresql</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Tự nối datasource của test vào container Postgres (@ServiceConnection) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- Máy chủ SMTP chạy trong test để nhận email OTP thật -->
         <dependency>
             <groupId>com.icegreen</groupId>
@@ -91,13 +106,15 @@
             <version>2.1.3</version>
             <scope>test</scope>
         </dependency>
-        
-        <!-- ModelMapper for Entity-DTO conversion -->
+
+        <!-- Test kiến trúc: khóa các quy tắc ở AGENTS.md mục 3 và 10.3 -->
         <dependency>
-            <groupId>org.modelmapper</groupId>
-            <artifactId>modelmapper</artifactId>
-            <version>3.2.0</version>
+            <groupId>com.tngtech.archunit</groupId>
+            <artifactId>archunit-junit5</artifactId>
+            <version>1.5.1</version>
+            <scope>test</scope>
         </dependency>
+        
         
         <!-- Swagger OpenAPI for API Documentation -->
         <dependency>

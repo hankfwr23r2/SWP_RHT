@@ -7,8 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.HexFormat;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -25,10 +25,11 @@ public class RouteCacheServiceImpl implements RouteCacheService {
 
     private final RouteCacheRepository repository;
     private final ObjectMapper json;
+    private final Clock clock;
 
     public <T> Optional<T> find(String key, Class<T> type) {
         return repository.findById(hash(key))
-                .filter(entry -> entry.getCreatedAt().isAfter(Instant.now().minus(TTL)))
+                .filter(entry -> entry.getCreatedAt().isAfter(clock.instant().minus(TTL)))
                 .flatMap(entry -> read(entry.getPayload(), type));
     }
 
@@ -39,7 +40,7 @@ public class RouteCacheServiceImpl implements RouteCacheService {
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Không ghi được kết quả lộ trình vào bộ đệm", e);
         }
-        repository.upsert(hash(key), payload, Instant.now());
+        repository.upsert(hash(key), payload, clock.instant());
     }
 
     static String hash(String key) {
