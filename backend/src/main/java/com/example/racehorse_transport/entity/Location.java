@@ -1,80 +1,82 @@
 package com.example.racehorse_transport.entity;
 
-import com.example.racehorse_transport.entity.enums.ActiveStatus;
-import com.example.racehorse_transport.entity.enums.LocationType;
-
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
 
-import java.math.BigDecimal;
-import java.time.LocalTime;
-
-// Điểm thuộc mạng lưới của công ty: hub, trại cách ly, trạm nghỉ, cửa khẩu, chuồng, trường đua. Không chứa địa chỉ của khách.
 @Getter
 @Setter
-@NoArgsConstructor
 @Entity
-@Table(name = "location")
+@Table(name = "LOCATION")
 public class Location {
-
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
+    @Column(name = "LocationID", nullable = false)
+    private Integer id;
 
-    @Column(name = "code", length = 30, nullable = false)
-    private String code;
+    @Column(name = "locationCode", unique = true, length = 50)
+    private String locationCode;
 
-    @Column(name = "name", length = 200, nullable = false)
-    private String name;
+    @NotNull
+    @Size(max = 20)
+    @Column(name = "LocationType", nullable = false, length = 20)
+    @Pattern(regexp = "Warehouse|RidingClub|RaceTrack|Stable|RestStop|BorderGate|RescuePoint|City")
+    private String locationType;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "location_type", length = 30, nullable = false)
-    private LocationType locationType;
+    @NotNull
+    @Size(max = 255)
+    @Nationalized
+    @Column(name = "LocationName")
+    private String locationName;
 
-    @Column(name = "is_headquarters", nullable = false)
-    private boolean headquarters;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "country_code", nullable = false)
-    private Country country;
-
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "province_code")
-    private Province province;
-
-    @Column(name = "address", length = 500, nullable = false)
+    @NotNull
+    @Size(max = 255)
+    @Nationalized
+    @Column(name = "address")
     private String address;
 
-    @Column(name = "latitude", precision = 9, scale = 6)
-    private BigDecimal latitude;
+    @NotNull
+    @Size(max = 100)
+    @Nationalized
+    @Column(name = "city", length = 100)
+    private String city;
 
-    @Column(name = "longitude", precision = 9, scale = 6)
-    private BigDecimal longitude;
+    @NotNull
+    @Size(max = 100)
+    @Nationalized
+    @Column(name = "province", length = 100)
+    private String province;
+    
+    @NotNull
+    @Size(max = 100)
+    @Nationalized
+    @Column(name = "country", length = 100)
+    private String country;
 
-    @Column(name = "opening_time")
-    private LocalTime openingTime;
+    @Column(name = "latitude")
+    private Double latitude;
 
-    @Column(name = "closing_time")
-    private LocalTime closingTime;
+    @Column(name = "longitude")
+    private Double longitude;
 
-    @Column(name = "contact_phone", length = 20)
+    @Column(name = "status", length = 20)
+    private String status = "ACTIVE";
+
+    @Column(name = "openingMinutes")
+    private Integer openingMinutes;
+
+    @Column(name = "closingMinutes")
+    private Integer closingMinutes;
+
+    @Column(name = "contactPhone", length = 100)
     private String contactPhone;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", length = 30, nullable = false)
-    private ActiveStatus status;
+    @Column(name = "destinationCountry", length = 2)
+    private String destinationCountry;
 }

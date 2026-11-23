@@ -18,10 +18,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.LinkedHashSet;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.Set;
 
 @Slf4j
 @Component
@@ -38,18 +36,35 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String jwt = parseJwt(request);
             if (jwt != null && jwtUtils.validateToken(jwt)) {
                 String username = jwtUtils.getUsernameFromToken(jwt);
+                String role = jwtUtils.getRoleFromToken(jwt);
 
                 if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    // Tài khoản bị khóa, vô hiệu hóa hoặc nhân viên đã nghỉ việc: token cũ không còn dùng được
-                    if (!authService.isActive(username)) {
-                        log.warn("Từ chối token của tài khoản không còn hoạt động: {}", username);
+                    if (authService.isInactiveStaff(username)) {
+                        log.warn("Tài khoản nhân viên {} đã bị vô hiệu hóa, từ chối xác thực token", username);
                         filterChain.doFilter(request, response);
                         return;
                     }
 
+                    List<GrantedAuthority> authorities = new ArrayList<>();
+                    if (StringUtils.hasText(role)) {
+                        String primaryRole = role.toUpperCase();
+                        if (!primaryRole.startsWith("ROLE_")) {
+                            primaryRole = "ROLE_" + primaryRole;
+                        }
+                        authorities.add(new SimpleGrantedAuthority(primaryRole));
+
+                        // Nếu là ADMIN, cấp thêm quyền quản trị các khối khác để hỗ trợ kiểm tra/điều phối
+                        if ("ROLE_ADMIN".equals(primaryRole)) {
+                            authorities.add(new SimpleGrantedAuthority("ROLE_MANAGER"));
+                            authorities.add(new SimpleGrantedAuthority("ROLE_COORDINATOR"));
+                            authorities.add(new SimpleGrantedAuthority("ROLE_SPECIALIST"));
+                        }
+                    }
+
                     UsernamePasswordAuthenticationToken authentication =
-                            new UsernamePasswordAuthenticationToken(username, null, authorities(jwtUtils.getRolesFromToken(jwt)));
+                            new UsernamePasswordAuthenticationToken(username, null, authorities);
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }
             }
@@ -58,22 +73,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
-    }
-
-    private List<GrantedAuthority> authorities(List<String> roles) {
-        Set<String> names = new LinkedHashSet<>();
-        for (String role : roles) {
-            if (StringUtils.hasText(role)) {
-                names.add("ROLE_" + role.toUpperCase(Locale.ROOT));
-            }
-        }
-        // ADMIN được thao tác thay các khối quản lý, điều phối, chuyên viên để hỗ trợ kiểm tra
-        if (names.contains("ROLE_ADMIN")) {
-            names.add("ROLE_MANAGER");
-            names.add("ROLE_COORDINATOR");
-            names.add("ROLE_SPECIALIST");
-        }
-        return names.stream().<GrantedAuthority>map(SimpleGrantedAuthority::new).toList();
     }
 
     private String parseJwt(HttpServletRequest request) {

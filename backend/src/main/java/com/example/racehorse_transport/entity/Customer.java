@@ -1,74 +1,38 @@
 package com.example.racehorse_transport.entity;
 
-import com.example.racehorse_transport.entity.enums.CustomerType;
-import com.example.racehorse_transport.entity.enums.IdentityDocumentType;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.MapsId;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
-
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
 
-// Hồ sơ khách hàng (1–1 với app_user). Email và trạng thái lấy từ app_user.
 @Getter
 @Setter
-@NoArgsConstructor
 @Entity
-@Table(name = "customer")
+@Table(name = "CUSTOMER")
 public class Customer {
-
     @Id
-    @Column(name = "user_id")
-    private Long userId;
+    @Column(name = "UserID", nullable = false)
+    private Integer id;
 
-    // Khóa chính kế thừa khóa của tài khoản
     @MapsId
     @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id")
-    private AppUser user;
+    @JoinColumn(name = "UserID", nullable = false)
+    private User user;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "customer_type", length = 30, nullable = false)
-    private CustomerType customerType;
-
-    // Tên người hoặc tổ chức
-    @Column(name = "full_name", length = 200, nullable = false)
+    @Size(max = 255)
+    @Nationalized
+    @Column(name = "FullName")
     private String fullName;
 
-    @Column(name = "phone", length = 20)
+    @Size(max = 20)
+    @Column(name = "Phone", length = 20)
     private String phone;
 
-    // Địa chỉ liên lạc hoặc xuất hóa đơn
-    @Column(name = "address", length = 500)
+    @Size(max = 255)
+    @Nationalized
+    @Column(name = "Address")
     private String address;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "country_code", nullable = false)
-    private Country country;
 
-    // Giấy tờ: khai đủ cả 3 field hoặc bỏ trống cả 3
-    @Enumerated(EnumType.STRING)
-    @Column(name = "identity_document_type", length = 30)
-    private IdentityDocumentType identityDocumentType;
-
-    @Column(name = "identity_document_number", length = 50)
-    private String identityDocumentNumber;
-
-    // Nước cấp giấy tờ
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "identity_document_country_code")
-    private Country identityDocumentCountry;
-
-    @Column(name = "tax_code", length = 30)
-    private String taxCode;
 }

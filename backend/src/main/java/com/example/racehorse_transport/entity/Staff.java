@@ -1,66 +1,44 @@
 package com.example.racehorse_transport.entity;
 
-import com.example.racehorse_transport.entity.enums.EmploymentStatus;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.MapsId;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
-
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
 
-// Hồ sơ nhân viên (1–1 với app_user).
 @Getter
 @Setter
-@NoArgsConstructor
 @Entity
-@Table(name = "staff")
+@Table(name = "STAFF")
 public class Staff {
-
     @Id
-    @Column(name = "user_id")
-    private Long userId;
+    @Column(name = "UserID", nullable = false)
+    private Integer id;
 
-    // Khóa chính kế thừa khóa của tài khoản
     @MapsId
     @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id")
-    private AppUser user;
+    @JoinColumn(name = "UserID", nullable = false)
+    private User user;
 
-    @Column(name = "staff_code", length = 30, nullable = false)
+    @Size(max = 100)
+    @Column(name = "Role", length = 100)
+    private String role;
+
+    @Size(max = 50)
+    @Column(name = "StaffCode", length = 50)
     private String staffCode;
 
-    @Column(name = "full_name", length = 200, nullable = false)
-    private String fullName;
-
-    @Column(name = "phone", length = 20, nullable = false)
-    private String phone;
-
-    @Column(name = "hire_date", nullable = false)
+    @Column(name = "HireDate")
     private LocalDate hireDate;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "employment_status", length = 30, nullable = false)
-    private EmploymentStatus employmentStatus;
+    @Size(max = 50)
+    @Column(name = "EmploymentStatus", length = 50)
+    private String employmentStatus;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "home_hub_location_id", nullable = false)
-    private Location homeHubLocation;
+    @Size(max = 20)
+    @Column(name = "Phone", length = 20)
+    private String phone;
 
-    @Column(name = "driver_license_class", length = 10)
-    private String driverLicenseClass;
 
-    @Column(name = "driver_license_expiry_date")
-    private LocalDate driverLicenseExpiryDate;
 }

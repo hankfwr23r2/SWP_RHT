@@ -1,28 +1,28 @@
 package com.example.racehorse_transport.repository;
 
 import com.example.racehorse_transport.entity.Staff;
-import jakarta.persistence.LockModeType;
-import java.util.List;
-import org.springframework.data.jpa.repository.EntityGraph;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
-
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
-import java.util.Optional;
+import java.util.List;
 
-public interface StaffRepository extends JpaRepository<Staff, Long> {
+@Repository
+public interface StaffRepository extends JpaRepository<Staff, Integer> {
+    long countByRoleIgnoreCase(String role);
+    List<Staff> findByRoleIgnoreCase(String role);
+    List<Staff> findByRoleIgnoreCaseAndEmploymentStatusIgnoreCase(String role, String employmentStatus);
+    java.util.Optional<Staff> findByStaffCode(String staffCode);
+    java.util.Optional<Staff> findByUser_Username(String username);
 
-    Optional<Staff> findByStaffCode(String staffCode);
-
-    @EntityGraph(attributePaths = {"user", "user.role", "homeHubLocation"})
-    List<Staff> findAllByOrderByStaffCodeAsc();
-
-    @EntityGraph(attributePaths = {"user", "user.role", "homeHubLocation"})
-    Optional<Staff> findOneByUserId(Long userId);
-
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("select s from Staff s where s.userId = :id")
-    Optional<Staff> findForUpdate(@Param("id") Long id);
+    // Mã nhân sự chưa ai dùng: giữ mã mong muốn nếu còn trống, nếu không thì tăng số cuối (ADMIN-01 -> ADMIN-02 ...)
+    default String nextFreeStaffCode(String preferred) {
+        if (findByStaffCode(preferred).isEmpty()) return preferred;
+        int dash = preferred.lastIndexOf('-');
+        String prefix = dash >= 0 ? preferred.substring(0, dash + 1) : preferred + "-";
+        int width = dash >= 0 ? preferred.length() - dash - 1 : 2;
+        for (int number = 1; ; number++) {
+            String candidate = prefix + String.format("%0" + Math.max(width, 1) + "d", number);
+            if (findByStaffCode(candidate).isEmpty()) return candidate;
+        }
+    }
 }

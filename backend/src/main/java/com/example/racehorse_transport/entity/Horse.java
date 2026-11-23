@@ -1,102 +1,100 @@
 package com.example.racehorse_transport.entity;
 
-import com.example.racehorse_transport.entity.enums.HorseGender;
-import com.example.racehorse_transport.entity.enums.HorseStatus;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-import org.hibernate.annotations.Generated;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
+import lombok.*;
+import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 
-// Hồ sơ ngựa. Ngựa đang ở đâu tính từ handover mới nhất, không lưu ở đây.
 @Getter
 @Setter
-@NoArgsConstructor
 @Entity
-@Table(name = "horse")
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Table(name = "HORSE")
 public class Horse {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
+    @Column(name = "HorseID", nullable = false)
+    private Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "owner_customer_id", nullable = false)
-    private Customer owner;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "HorseTypeID")
+    private HorseType horseTypeID;
 
-    @Column(name = "name", length = 100, nullable = false)
-    private String name;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "CustomerID")
+    private Customer customerID;
 
-    @Column(name = "microchip", length = 30)
-    private String microchip;
+    @Size(max = 255)
+    @Nationalized
+    @Column(name = "HorseName")
+    private String horseName;
 
-    @Column(name = "passport_number", length = 50)
-    private String passportNumber;
+    @Size(max = 100)
+    @Column(name = "MicrochipID", length = 100)
+    private String microchipID;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "sex", length = 30, nullable = false)
-    private HorseGender sex;
+    @Size(max = 20)
+    @Column(name = "Gender", length = 20)
+    private String gender;
 
-    @Column(name = "birth_year")
-    private Short birthYear;
-
-    @Column(name = "color", length = 50)
-    private String color;
-
+    @Size(max = 100)
+    @Nationalized
     @Column(name = "breed", length = 100)
     private String breed;
 
-    @Column(name = "sire", length = 100)
-    private String sire;
+    @Size(max = 50)
+    @Nationalized
+    @Column(name = "color", length = 50)
+    private String color;
 
-    @Column(name = "dam", length = 100)
-    private String dam;
+    @Column(name = "Age")
+    private Integer age;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "horse_type_id", nullable = false)
-    private HorseType horseType;
+    @Column(name = "Weight", precision = 10, scale = 2)
+    private BigDecimal weight;
 
-    @Column(name = "identification_marks", columnDefinition = "text")
+    @Column(name = "identification_marks", columnDefinition = "TEXT")
     private String identificationMarks;
 
-    @Column(name = "weight_kg", precision = 6, scale = 1)
-    private BigDecimal weightKg;
+    @Column(name = "completed_trips", nullable = false)
+    private Integer completedTrips;
 
-    @Column(name = "declared_value", precision = 15, scale = 2)
-    private BigDecimal declaredValue;
+    // Existing PostgreSQL installations store this value as epoch milliseconds (BIGINT).
+    @Column(name = "created_at")
+    private Long createdAt;
 
-    @JdbcTypeCode(SqlTypes.CHAR)
-    @Column(name = "declared_currency_code", length = 3)
-    private String declaredCurrencyCode;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", length = 30, nullable = false)
-    private HorseStatus status;
-
-    // DB đặt giá trị mặc định now() lúc thêm dòng
-    @Generated
-    @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
-    private Instant createdAt;
-
+    // Lần cuối khách chỉnh sửa hồ sơ, dùng để đưa hồ sơ vừa sửa lên đầu danh sách
     @Column(name = "updated_at")
-    private Instant updatedAt;
+    private Long updatedAt;
+
+    @Size(max = 50)
+    @Column(name = "status", length = 50)
+    private String status;
+
+    @Size(max = 255)
+    @Nationalized
+    @Column(name = "current_location_name")
+    private String currentLocationName;
+
+    @Size(max = 10)
+    @Column(name = "current_country", length = 10)
+    private String currentCountry;
+
+    @Column(name = "location_updated_at")
+    private Long locationUpdatedAt;
+
+    @Size(max = 50)
+    @Column(name = "location_source", length = 50)
+    private String locationSource;
+
+    @Size(max = 50)
+    @Column(name = "transit_status", length = 50)
+    private String transitStatus;
+
 }
+

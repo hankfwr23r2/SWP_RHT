@@ -197,8 +197,8 @@ gốc của nhân sự.
 và trạng thái gốc. Xe vẫn có thể không nhận được chuyến mới nếu đang bận đơn khác
 hoặc bảo dưỡng. Việc nhả chỗ chỉ gỡ phần giữ lịch của đơn hết hạn này.
 
-Bản sửa không thay đổi quy tắc về hub gốc: xe/kíp xe đang thực hiện chuyến phải
-xác nhận về hub gốc (`home_hub_id`, hiện là trụ sở) theo quy trình vận hành.
+Bản sửa không thay đổi quy tắc Single HQ: xe/kíp xe đang thực hiện chuyến phải
+xác nhận về trụ sở theo quy trình vận hành.
 
 ## 8. Giao diện thay đổi gì?
 

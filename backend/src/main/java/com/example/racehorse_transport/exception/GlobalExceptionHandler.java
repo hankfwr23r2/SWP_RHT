@@ -24,16 +24,6 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(VehicleRuleException.class)
-    public ResponseEntity<ApiResponseDto<Map<String, String>>> handleVehicleRule(VehicleRuleException ex) {
-        return ResponseEntity.status(ex.isConflict() ? HttpStatus.CONFLICT : HttpStatus.BAD_REQUEST)
-                .body(ApiResponseDto.<Map<String, String>>builder()
-                        .status("error")
-                        .message(ex.getMessage())
-                        .data(Map.of(ex.getField(), ex.getMessage()))
-                        .build());
-    }
-
     @org.springframework.beans.factory.annotation.Value("${spring.servlet.multipart.max-file-size:5MB}")
     private String maxUploadFileSize = "5MB";
 

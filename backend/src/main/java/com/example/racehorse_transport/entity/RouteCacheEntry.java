@@ -13,11 +13,11 @@ import java.time.Instant;
 @Getter
 @Setter
 @Entity
-@Table(name = "route_cache")
+@Table(name = "ROUTE_CACHE")
 public class RouteCacheEntry {
 
     @Id
-    @Column(name = "cache_key", length = 200, nullable = false)
+    @Column(name = "cache_key", length = 64, nullable = false)
     private String cacheKey;
 
     @Column(name = "payload", columnDefinition = "TEXT", nullable = false)

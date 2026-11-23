@@ -1,82 +1,47 @@
 package com.example.racehorse_transport.entity;
 
-import com.example.racehorse_transport.entity.enums.HealthStatus;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Nationalized;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 
-// Một lần đo sức khỏe ngựa: tại điểm dừng, trong lúc lưu trú, hoặc trên đường.
 @Getter
 @Setter
-@NoArgsConstructor
 @Entity
-@Table(name = "horse_health_log")
+@Table(name = "HORSE_HEALTH_LOG")
 public class HorseHealthLog {
-
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
+    @Column(name = "HealthLogID", nullable = false)
+    private Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "booking_horse_id", nullable = false)
-    private BookingHorse bookingHorse;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "HorseID")
+    private Horse horseID;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "recorded_by", nullable = false)
-    private Staff recordedBy;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "BookingID")
+    private Booking bookingID;
 
-    @Column(name = "recorded_at", nullable = false)
-    private Instant recordedAt;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "ReportBy")
+    private Staff reportBy;
 
-    // Đo ở đâu: trên đường, tại điểm dừng, hoặc trong lưu trú; nhiều nhất một (CHECK ở DB)
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "vehicle_trip_id")
-    private VehicleTrip vehicleTrip;
+    @Size(max = 255)
+    @Nationalized
+    @Column(name = "healthStatus")
+    private String healthStatus;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "trip_stop_id")
-    private TripStop tripStop;
+    @Column(name = "tempature", precision = 5, scale = 2)
+    private BigDecimal tempature;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "horse_stay_id")
-    private HorseStay horseStay;
+    @Column(name = "weight", precision = 10, scale = 2)
+    private BigDecimal weight;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "health_status", length = 30, nullable = false)
-    private HealthStatus healthStatus;
-
-    @Column(name = "temperature_celsius", precision = 4, scale = 1)
-    private BigDecimal temperatureCelsius;
-
-    @Column(name = "heart_rate_bpm")
-    private Short heartRateBpm;
-
-    @Column(name = "respiration_rate_per_minute")
-    private Short respirationRatePerMinute;
-
-    @Column(name = "weight_kg", precision = 6, scale = 1)
-    private BigDecimal weightKg;
-
-    @Column(name = "symptoms", columnDefinition = "text")
+    @Column(name = "symptoms", columnDefinition = "TEXT")
     private String symptoms;
 
-    @Column(name = "note", columnDefinition = "text")
-    private String note;
+
 }

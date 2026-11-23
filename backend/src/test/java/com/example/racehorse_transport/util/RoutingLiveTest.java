@@ -2,7 +2,7 @@ package com.example.racehorse_transport.util;
 
 import com.example.racehorse_transport.dto.route.GeoPointDto;
 import com.example.racehorse_transport.dto.route.RoadRouteDto;
-import com.example.racehorse_transport.client.ValhallaClient;
+import com.example.racehorse_transport.service.impl.RoadRoutingServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,7 +23,7 @@ class RoutingLiveTest {
     @Test
     @EnabledIfEnvironmentVariable(named = "ROUTING_LIVE_TEST", matches = "1")
     void valhallaReturnsATruckRouteAcrossTheBorder() {
-        RoadRouteDto route = new ValhallaClient("https://valhalla1.openstreetmap.de", json)
+        RoadRouteDto route = new RoadRoutingServiceImpl("https://valhalla1.openstreetmap.de", json)
                 .truckRoute(List.of(HCM, MOC_BAI, PHNOM_PENH), 8, 80, LocalDateTime.now().plusDays(1).withHour(5).withMinute(0));
 
         assertThat(route.legs()).hasSize(2);

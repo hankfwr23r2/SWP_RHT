@@ -1,53 +1,63 @@
 package com.example.racehorse_transport.entity;
 
-import com.example.racehorse_transport.entity.enums.DocumentSubmitter;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-
+import java.time.Instant;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-// Theo quy định thì cần giấy gì, ai nộp.
 @Getter
 @Setter
-@NoArgsConstructor
 @Entity
-@Table(name = "document_requirement")
+@Table(name = "DOCUMENT_REQUIREMENT")
 public class DocumentRequirement {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
-    private Long id;
+    private Integer id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "country_rule_id", nullable = false)
-    private CountryRule rule;
+    @Column(name = "documentGroup", nullable = false, length = 20)
+    private String documentGroup;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "document_type_id", nullable = false)
-    private DocumentType documentType;
+    @Column(name = "documentType", nullable = false, length = 50)
+    private String documentType;
 
-    // Chỉ áp cho một cửa khẩu. NULL = mọi cửa khẩu
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "gate_location_id")
-    private Location gateLocation;
+    @Column(name = "documentName", nullable = false, length = 255)
+    private String documentName;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "submitter_type", length = 30, nullable = false)
-    private DocumentSubmitter submitterType;
+    @Column(name = "description", length = 1000)
+    private String description;
 
-    @Column(name = "is_mandatory", nullable = false)
-    private Boolean mandatory = true;
+    @Column(name = "tripType", nullable = false, length = 20)
+    private String tripType;
+
+    @Column(name = "country", nullable = false, length = 10)
+    private String country;
+
+    // Cửa khẩu áp dụng riêng (thay bảng REGULATION cũ); null = áp dụng chung cho mọi cửa khẩu
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "LocationID", foreignKey = @ForeignKey(name = "fk_document_requirement_location"))
+    private Location location;
+
+    @Column(name = "required", nullable = false)
+    private boolean required;
+
+    @Column(name = "status", nullable = false, length = 10)
+    private String status;
+
+    // Nhân viên (ADMIN) sửa gần nhất; null = dữ liệu mặc định do seeder tạo
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "updatedBy_StaffID",
+            foreignKey = @ForeignKey(name = "fk_document_requirement_updated_by_staff"))
+    private Staff updatedBy;
+
+    @Column(name = "updatedAt")
+    private Instant updatedAt;
 }
