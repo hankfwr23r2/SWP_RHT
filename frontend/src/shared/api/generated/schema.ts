@@ -628,6 +628,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/crew-assignments/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["mine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crew-assignments/{id}/acknowledge": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["acknowledge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/crew-assignments/{id}/release": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["releaseCrew"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/customers/me": {
         parameters: {
             query?: never;
@@ -798,6 +846,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dispatch/crew-candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["crewCandidates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dispatch/vehicles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["vehicles"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1332,6 +1412,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vehicle-trips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["trips"];
+        put?: never;
+        post: operations["createTrip"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicle-trips/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["trip"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicle-trips/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancelTrip"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicle-trips/{id}/crew-assignments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["assignCrew"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vehicles": {
         parameters: {
             query?: never;
@@ -1559,6 +1703,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListCrewCandidateResponseDto: {
+            data?: components["schemas"]["CrewCandidateResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListCustomerAddressResponseDto: {
             data?: components["schemas"]["CustomerAddressResponseDto"][];
             message?: string;
@@ -1601,6 +1750,11 @@ export interface components {
         };
         ApiResponseListLocationResponse: {
             data?: components["schemas"]["LocationResponse"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListMyCrewAssignmentResponseDto: {
+            data?: components["schemas"]["MyCrewAssignmentResponseDto"][];
             message?: string;
             status?: string;
         };
@@ -1649,6 +1803,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListVehicleTripResponseDto: {
+            data?: components["schemas"]["VehicleTripResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseLocationResponse: {
             data?: components["schemas"]["LocationResponse"];
             message?: string;
@@ -1658,6 +1817,11 @@ export interface components {
             data?: {
                 [key: string]: string;
             };
+            message?: string;
+            status?: string;
+        };
+        ApiResponseMyCrewAssignmentResponseDto: {
+            data?: components["schemas"]["MyCrewAssignmentResponseDto"];
             message?: string;
             status?: string;
         };
@@ -1708,6 +1872,11 @@ export interface components {
         };
         ApiResponseVehicleResponseDto: {
             data?: components["schemas"]["VehicleResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseVehicleTripResponseDto: {
+            data?: components["schemas"]["VehicleTripResponseDto"];
             message?: string;
             status?: string;
         };
@@ -1868,6 +2037,38 @@ export interface components {
             validFrom: string;
             /** Format: date */
             validTo?: string;
+        };
+        CrewAssignmentRequestDto: {
+            /** @enum {string} */
+            crewRole: "DRIVER" | "ESCORT" | "VET";
+            note?: string;
+            /** Format: int64 */
+            staffId: number;
+        };
+        CrewAssignmentResponseDto: {
+            /** Format: date-time */
+            assignedAt?: string;
+            /** @enum {string} */
+            crewRole?: "DRIVER" | "ESCORT" | "VET";
+            fullName?: string;
+            /** Format: int64 */
+            id?: number;
+            note?: string;
+            staffCode?: string;
+            /** Format: int64 */
+            staffId?: number;
+            /** @enum {string} */
+            status?: "ASSIGNED" | "ACKNOWLEDGED" | "RELEASED";
+        };
+        CrewCandidateResponseDto: {
+            fullName?: string;
+            /** Format: int64 */
+            homeHubLocationId?: number;
+            homeHubName?: string;
+            roleCode?: string;
+            staffCode?: string;
+            /** Format: int64 */
+            staffId?: number;
         };
         CustomerAddressCreateRequestDto: {
             addressLine: string;
@@ -2327,6 +2528,28 @@ export interface components {
             password: string;
             username: string;
         };
+        MyCrewAssignmentResponseDto: {
+            /** @enum {string} */
+            crewRole?: "DRIVER" | "ESCORT" | "VET";
+            endLocationName?: string;
+            /** Format: int64 */
+            id?: number;
+            licensePlate?: string;
+            /** Format: date-time */
+            plannedEndAt?: string;
+            /** Format: date-time */
+            plannedStartAt?: string;
+            startLocationName?: string;
+            /** @enum {string} */
+            status?: "ASSIGNED" | "ACKNOWLEDGED" | "RELEASED";
+            tripCode?: string;
+            /** @enum {string} */
+            tripStatus?: "PLANNED" | "DISPATCHED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+            /** @enum {string} */
+            tripType?: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "DIRECT";
+            /** Format: int64 */
+            vehicleTripId?: number;
+        };
         PartnerDocumentUploadRequestDto: {
             /** Format: int64 */
             bookingHorseId?: number;
@@ -2717,6 +2940,41 @@ export interface components {
         SystemConfigUpdateRequestDto: {
             configValue: number;
         };
+        TripStopRequestDto: {
+            /** Format: int64 */
+            bookingAddressId?: number;
+            /** Format: int64 */
+            locationId?: number;
+            /** Format: date-time */
+            plannedArrivalAt: string;
+            /** Format: date-time */
+            plannedDepartureAt: string;
+            /** @enum {string} */
+            stopType: "PICKUP" | "DELIVERY" | "HUB" | "REST" | "VITAL_CHECK" | "BORDER" | "QUARANTINE";
+        };
+        TripStopResponseDto: {
+            /** Format: date-time */
+            actualArrivalAt?: string;
+            /** Format: date-time */
+            actualDepartureAt?: string;
+            addressLine?: string;
+            /** Format: int64 */
+            bookingAddressId?: number;
+            bookingCode?: string;
+            /** Format: int64 */
+            id?: number;
+            /** Format: int64 */
+            locationId?: number;
+            locationName?: string;
+            /** Format: date-time */
+            plannedArrivalAt?: string;
+            /** Format: date-time */
+            plannedDepartureAt?: string;
+            /** Format: int32 */
+            sequenceNumber?: number;
+            /** @enum {string} */
+            stopType?: "PICKUP" | "DELIVERY" | "HUB" | "REST" | "VITAL_CHECK" | "BORDER" | "QUARANTINE";
+        };
         VehicleClassResponseDto: {
             code?: string;
             /** Format: int64 */
@@ -2755,6 +3013,51 @@ export interface components {
         };
         VehicleStatusChangeRequestDto: {
             reason: string;
+        };
+        VehicleTripCancelRequestDto: {
+            reason: string;
+        };
+        VehicleTripCreateRequestDto: {
+            /** Format: int64 */
+            departureId?: number;
+            stops?: components["schemas"]["TripStopRequestDto"][];
+            /** @enum {string} */
+            tripType: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "DIRECT";
+            /** Format: int64 */
+            vehicleId: number;
+        };
+        VehicleTripResponseDto: {
+            /** Format: date-time */
+            actualEndAt?: string;
+            /** Format: date-time */
+            actualStartAt?: string;
+            code?: string;
+            crew?: components["schemas"]["CrewAssignmentResponseDto"][];
+            /** Format: int64 */
+            departureId?: number;
+            /** Format: int64 */
+            endLocationId?: number;
+            endLocationName?: string;
+            /** Format: int64 */
+            id?: number;
+            licensePlate?: string;
+            /** Format: date-time */
+            plannedEndAt?: string;
+            /** Format: date-time */
+            plannedStartAt?: string;
+            routeCode?: string;
+            /** Format: int64 */
+            startLocationId?: number;
+            startLocationName?: string;
+            /** @enum {string} */
+            status?: "PLANNED" | "DISPATCHED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+            stops?: components["schemas"]["TripStopResponseDto"][];
+            /** @enum {string} */
+            tripType?: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "DIRECT";
+            /** Format: int64 */
+            vehicleId?: number;
+            /** Format: int32 */
+            vehicleSeats?: number;
         };
         VehicleUpdateRequestDto: {
             /** Format: int64 */
@@ -3822,6 +4125,70 @@ export interface operations {
             };
         };
     };
+    mine: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListMyCrewAssignmentResponseDto"];
+                };
+            };
+        };
+    };
+    acknowledge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseMyCrewAssignmentResponseDto"];
+                };
+            };
+        };
+    };
+    releaseCrew: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVehicleTripResponseDto"];
+                };
+            };
+        };
+    };
     getCustomerProfile: {
         parameters: {
             query?: never;
@@ -4189,6 +4556,48 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseDepartureResponse"];
+                };
+            };
+        };
+    };
+    crewCandidates: {
+        parameters: {
+            query: {
+                role: "DRIVER" | "ESCORT" | "VET";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListCrewCandidateResponseDto"];
+                };
+            };
+        };
+    };
+    vehicles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListVehicleResponseDto"];
                 };
             };
         };
@@ -5414,6 +5823,127 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListVehicleClassResponseDto"];
+                };
+            };
+        };
+    };
+    trips: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListVehicleTripResponseDto"];
+                };
+            };
+        };
+    };
+    createTrip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VehicleTripCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVehicleTripResponseDto"];
+                };
+            };
+        };
+    };
+    trip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVehicleTripResponseDto"];
+                };
+            };
+        };
+    };
+    cancelTrip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VehicleTripCancelRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVehicleTripResponseDto"];
+                };
+            };
+        };
+    };
+    assignCrew: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CrewAssignmentRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVehicleTripResponseDto"];
                 };
             };
         };
