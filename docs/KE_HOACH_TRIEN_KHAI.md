@@ -606,7 +606,7 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 |---|---|---|---|---|---|
 | P0.1 | Dọn code cũ, Flyway, 59 bảng | A | 0 | Xong | #344 |
 | P0.2-A | Entity, repository nhóm 1–8 | A | 0 | Chờ review (nhánh `rd/p0-2a-entities`) | |
-| P0.2-B | Entity, repository nhóm 9–15 | B | 0 | Chưa làm | |
+| P0.2-B | Entity, repository nhóm 9–15 | B | 0 | Chờ review (nhánh `rd/p0-2b-entities`) | |
 | P0.3-A | Auth, interface gọi chéo, `TestData` | A | 0 | Chờ review (nhánh `rd/p0-3a-auth`) | |
 | P0.3-B | Document, Notification, Audit, ArchUnit, OpenAPI | B | 0 | Chưa làm | |
 | P0-FE | Token, `shared/ui`, layout, orval, lint, i18n | B | 0 | Chưa làm | |
