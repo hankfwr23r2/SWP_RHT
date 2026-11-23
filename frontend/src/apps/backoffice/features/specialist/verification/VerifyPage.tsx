@@ -1,6 +1,6 @@
 // Specialist: duyệt hồ sơ ngựa một đơn. Đạt thì xác nhận; sai sót thì yêu cầu khách bổ sung (bắt buộc ghi lý do).
 import { useState } from 'react'
-import { InsuranceLink } from '../../../shared/InsurancePanel'
+import { InsuranceLink } from '@backoffice/shared/InsurancePanel'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
@@ -14,10 +14,10 @@ import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
 import { HorseDocChips } from '@shared/ui/HorseDocChips'
 import { ImageLightbox, ImageThumb } from '@shared/ui/ImageThumb'
 import { useToast } from '@shared/ui/toast'
-import { History, ReviewChips, TripSummary } from '../../../shared/BookingParts'
-import s from '../../../shared/booking.module.css'
+import { History, ReviewChips, TripSummary } from '@backoffice/shared/BookingParts'
+import s from '@backoffice/shared/booking.module.css'
 import { usePageData } from '@shared/routing/pageData'
-import type { verifyLoader } from '../../../shared/loaders'
+import type { verifyLoader } from '@backoffice/shared/loaders'
 
 type Pair = { horseId: string; doc: HorseDocType }
 const key = (p: Pair) => `${p.horseId}:${p.doc}`

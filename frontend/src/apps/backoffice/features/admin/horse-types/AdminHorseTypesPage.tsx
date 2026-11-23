@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { usePageData } from '@shared/routing/pageData'
 import { backendHorseApi, type BackendHorseTypeDto } from '@shared/api/horses'
 import { useToast } from '@shared/ui/toast'
-import type { adminHorseTypesLoader } from '../../../shared/loaders'
+import type { adminHorseTypesLoader } from '@backoffice/shared/loaders'
 import s from './AdminHorseTypes.module.css'
 
 const LEGACY_INSURED_VALUE = 400_000_000

@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Modal } from '@shared/ui/Modal'
-import { InsuranceReconciliation } from '../../../shared/InsuranceReconciliation'
+import { InsuranceReconciliation } from '@backoffice/shared/InsuranceReconciliation'
 import { formatDate } from '@shared/lib/format'
 import type { Booking } from '@shared/types/booking'
 import { invalidateBookingsListCache } from '@shared/services/bookings'
 import { OrderDetailModal } from '../dashboard/OrderDetailModal'
-import { ListPage, idCell, routeCell, statusCell, type Column } from '../../../shared/ListPage'
-import { placeShort } from '../../../shared/place'
+import { ListPage, idCell, routeCell, statusCell, type Column } from '@backoffice/shared/ListPage'
+import { placeShort } from '@backoffice/shared/place'
 import { usePageData } from '@shared/routing/pageData'
-import type { bookingListLoader } from '../../../shared/loaders'
+import type { bookingListLoader } from '@backoffice/shared/loaders'
 
 export default function CancelledOrdersPage() {
   const { t } = useTranslation()

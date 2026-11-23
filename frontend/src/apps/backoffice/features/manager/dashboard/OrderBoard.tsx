@@ -5,8 +5,8 @@ import { BOOKING_STEPS, stepOf } from '@shared/config/booking-rules'
 import { managerBoardOf, type BoardCol } from '@shared/lib/booking'
 import { formatDate } from '@shared/lib/format'
 import type { Booking } from '@shared/types/booking'
-import { placeShort } from '../../../shared/place'
-import { managerAction } from '../../../shared/managerAction'
+import { placeShort } from '@backoffice/shared/place'
+import { managerAction } from '@backoffice/shared/managerAction'
 import s from './Board.module.css'
 
 const COLS: [BoardCol, string, string, string][] = [

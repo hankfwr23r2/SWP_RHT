@@ -11,11 +11,11 @@ import type { Booking, BookingHorse, Checkpoint, VehicleTrip } from '@shared/typ
 import { CaptureScope } from '@shared/ui/CaptureScope'
 import { CaptureField } from '@shared/ui/CaptureField'
 import { useNow } from '@shared/ui/useNow'
-import { HorseDocsModal } from '../../shared/HorseDocsModal'
-import { Checklist, Panel } from '../../shared/field'
-import { HomeReturnPanel } from '../../shared/HomeReturnPanel'
-import { IncidentPanel, SosPanel, SubmitExpensesPanel } from '../../shared/IncidentField'
-import s from '../../shared/field.module.css'
+import { HorseDocsModal } from '@backoffice/shared/HorseDocsModal'
+import { Checklist, Panel } from '@backoffice/shared/field'
+import { HomeReturnPanel } from '@backoffice/shared/HomeReturnPanel'
+import { IncidentPanel, SosPanel, SubmitExpensesPanel } from '@backoffice/shared/IncidentField'
+import s from '@backoffice/shared/field.module.css'
 
 type Run = (fn: () => Promise<unknown>, msg: string) => Promise<void>
 

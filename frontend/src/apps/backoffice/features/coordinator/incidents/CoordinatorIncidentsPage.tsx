@@ -9,10 +9,10 @@ import { formatDateTime } from '@shared/lib/format'
 import { useAuth } from '@shared/auth/AuthContext'
 import type { Booking, Incident } from '@shared/types/booking'
 import { IncidentPlanner } from './IncidentPlanner'
-import { ListPage, idCell, routeCell, type Column } from '../../../shared/ListPage'
-import { placeShort } from '../../../shared/place'
+import { ListPage, idCell, routeCell, type Column } from '@backoffice/shared/ListPage'
+import { placeShort } from '@backoffice/shared/place'
 import { usePageData } from '@shared/routing/pageData'
-import type { bookingListLoader } from '../../../shared/loaders'
+import type { bookingListLoader } from '@backoffice/shared/loaders'
 
 type Tab = 'todo' | 'waiting' | 'active' | 'done'
 type Item = { b: Booking; i: Incident }

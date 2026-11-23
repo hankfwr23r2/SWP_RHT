@@ -7,7 +7,7 @@ import type { BackendLocationResponse } from '@shared/api/routes'
 import { applyDocumentRequirements } from '@shared/config/runtimeDocumentRequirements'
 import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
-import type { documentRequirementsLoader } from '../../../shared/loaders'
+import type { documentRequirementsLoader } from '@backoffice/shared/loaders'
 import s from './AdminDocumentRequirements.module.css'
 
 const HORSE_TYPES: DocumentType[] = ['passport', 'vaccine', 'lab']

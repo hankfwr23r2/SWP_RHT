@@ -6,8 +6,8 @@ import { useAutoRefresh } from '@shared/services/useLoad'
 import { formatDate } from '@shared/lib/format'
 import type { Booking } from '@shared/types/booking'
 import { insuranceStage, type InsuranceStage } from '@shared/types/insurance'
-import { ListPage, idCell, type Column } from '../../../shared/ListPage'
-import type { insuranceListLoader } from '../../../shared/loaders'
+import { ListPage, idCell, type Column } from '@backoffice/shared/ListPage'
+import type { insuranceListLoader } from '@backoffice/shared/loaders'
 
 export default function InsuranceListPage() {
   const { t } = useTranslation()

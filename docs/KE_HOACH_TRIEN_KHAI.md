@@ -611,7 +611,7 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 | P0.2-B | Entity, repository nhóm 9–15 | B | 0 | Xong | #351 |
 | P0.3-A | Auth, interface gọi chéo, `TestData` | A | 0 | Chờ review (nhánh `rd/p0-3a-auth`) | |
 | P0.3-B | Document, Notification, Audit, ArchUnit, OpenAPI | B | 0 | Xong | #353 |
-| P0-FE | Token, `shared/ui`, layout, orval, lint, i18n | B | 0 | Đang làm: PR1/5 hợp đồng API, alias (nhánh `rd/p0-fe-1-api-contract`) | |
+| P0-FE | Token, `shared/ui`, layout, openapi-typescript, lint, i18n | B | 0 | Đang làm: PR1/5 xong (#355); PR2/5 lint chiều phụ thuộc, kiểm style (nhánh `rd/p0-fe-2-lint`) | |
 | A1 | Mạng lưới, tuyến, lịch, chuyến | A | 1 | Backend chờ review: PR1 danh mục (`rd/a1-network`), PR2 chuyến (`rd/a1-departures`). FE làm sau P0-FE | |
 | A2 | Xe, nhân sự, đối tác, tham số | A | 1 | Chưa làm | |
 | B1 | Điều độ | B | 1 | Chưa làm | |

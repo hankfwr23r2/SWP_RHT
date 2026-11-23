@@ -10,12 +10,12 @@ import { formatDate, formatDateTime } from '@shared/lib/format'
 import { vehiclesApi, type Vehicle } from '@shared/services/fleet'
 import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
-import { cx } from '../../../shared/parts'
+import { cx } from '@backoffice/shared/parts'
 import { VehicleArt } from './VehicleArt'
 import { VehicleScheduleModal } from './VehicleScheduleModal'
 import f from './Fleet.module.css'
 import c from '../Coordinator.module.css'
-import { useOps } from '../../../shared/useOps'
+import { useOps } from '@backoffice/shared/useOps'
 
 const VEHICLE_NAME = 'Xe chuyên dụng' // mọi xe đều là xe chuyên dụng chở ngựa
 const VEHICLE_CAPACITIES = [2, 4, 6, 9] as const

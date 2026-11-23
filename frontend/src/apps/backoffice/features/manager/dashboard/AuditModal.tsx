@@ -11,8 +11,8 @@ import { ImageThumb } from '@shared/ui/ImageThumb'
 import { Modal } from '@shared/ui/Modal'
 import { ReadMore } from '@shared/ui/ReadMore'
 import { useToast } from '@shared/ui/toast'
-import { placeShort } from '../../../shared/place'
-import s from '../../../shared/booking.module.css'
+import { placeShort } from '@backoffice/shared/place'
+import s from '@backoffice/shared/booking.module.css'
 
 const route = (b: Booking) => `${placeShort(b.origin.name)} → ${placeShort(b.dest.name)}`
 

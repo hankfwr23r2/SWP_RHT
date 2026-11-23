@@ -5,7 +5,7 @@ import { formatDate } from '@shared/lib/format'
 import type { Booking } from '@shared/types/booking'
 import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
 import { Modal } from '@shared/ui/Modal'
-import { placeShort } from '../../../shared/place'
+import { placeShort } from '@backoffice/shared/place'
 import s from './Calendar.module.css'
 
 type View = 'day' | 'month' | 'year'
