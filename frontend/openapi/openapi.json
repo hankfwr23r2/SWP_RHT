@@ -15,6 +15,20 @@
         },
         "type" : "object"
       },
+      "ApiResponseCountryRuleResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/CountryRuleResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseCustomerAddressResponseDto" : {
         "properties" : {
           "data" : {
@@ -85,6 +99,34 @@
         },
         "type" : "object"
       },
+      "ApiResponseDocumentRequirementResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/DocumentRequirementResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseDocumentTypeResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/DocumentTypeResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseHorseResponseDto" : {
         "properties" : {
           "data" : {
@@ -118,6 +160,23 @@
           "data" : {
             "items" : {
               "$ref" : "#/components/schemas/CountryResponse"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListCountryRuleResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CountryRuleResponseDto"
             },
             "type" : "array"
           },
@@ -169,6 +228,40 @@
           "data" : {
             "items" : {
               "$ref" : "#/components/schemas/DepartureScheduleResponse"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListDocumentRequirementResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DocumentRequirementResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListDocumentTypeResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DocumentTypeResponseDto"
             },
             "type" : "array"
           },
@@ -427,6 +520,20 @@
         },
         "type" : "object"
       },
+      "ApiResponseRegulationPreviewResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/RegulationPreviewResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseRouteResponse" : {
         "properties" : {
           "data" : {
@@ -565,6 +672,112 @@
             "type" : "string"
           }
         },
+        "type" : "object"
+      },
+      "CountryRuleCreateRequestDto" : {
+        "properties" : {
+          "certificateLeadDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "countryCode" : {
+            "minLength" : 1,
+            "pattern" : "[A-Z]{2}",
+            "type" : "string"
+          },
+          "direction" : {
+            "enum" : [ "INTERPROVINCE", "EXPORT", "IMPORT" ],
+            "type" : "string"
+          },
+          "permitLeadDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "quarantineDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "validFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "validTo" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "certificateLeadDays", "countryCode", "direction", "permitLeadDays", "quarantineDays", "validFrom" ],
+        "type" : "object"
+      },
+      "CountryRuleResponseDto" : {
+        "properties" : {
+          "certificateLeadDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "countryCode" : {
+            "type" : "string"
+          },
+          "direction" : {
+            "enum" : [ "INTERPROVINCE", "EXPORT", "IMPORT" ],
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "permitLeadDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "quarantineDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "validFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "validTo" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "CountryRuleUpdateRequestDto" : {
+        "properties" : {
+          "certificateLeadDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "countryCode" : {
+            "minLength" : 1,
+            "pattern" : "[A-Z]{2}",
+            "type" : "string"
+          },
+          "direction" : {
+            "enum" : [ "INTERPROVINCE", "EXPORT", "IMPORT" ],
+            "type" : "string"
+          },
+          "permitLeadDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "quarantineDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "validFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "validTo" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "certificateLeadDays", "countryCode", "direction", "permitLeadDays", "quarantineDays", "validFrom" ],
         "type" : "object"
       },
       "CustomerAddressCreateRequestDto" : {
@@ -1031,6 +1244,145 @@
             "type" : "string"
           }
         },
+        "type" : "object"
+      },
+      "DocumentRequirementCreateRequestDto" : {
+        "properties" : {
+          "documentTypeId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "gateLocationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "mandatory" : {
+            "type" : "boolean"
+          },
+          "submitterType" : {
+            "enum" : [ "CUSTOMER", "CONSIGNEE", "COMPANY", "AGENT" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "documentTypeId", "mandatory", "submitterType" ],
+        "type" : "object"
+      },
+      "DocumentRequirementResponseDto" : {
+        "properties" : {
+          "countryRuleId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "documentTypeCode" : {
+            "type" : "string"
+          },
+          "documentTypeId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "documentTypeName" : {
+            "type" : "string"
+          },
+          "gateLocationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "mandatory" : {
+            "type" : "boolean"
+          },
+          "ownerType" : {
+            "enum" : [ "HORSE", "BOOKING", "BOOKING_HORSE", "HORSE_LEG", "VEHICLE_TRIP", "INSURANCE", "INCIDENT", "COST_ITEM", "HANDOVER", "VEHICLE", "STAFF", "PARTY", "CUSTOMER" ],
+            "type" : "string"
+          },
+          "submitterType" : {
+            "enum" : [ "CUSTOMER", "CONSIGNEE", "COMPANY", "AGENT" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "DocumentRequirementUpdateRequestDto" : {
+        "properties" : {
+          "documentTypeId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "gateLocationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "mandatory" : {
+            "type" : "boolean"
+          },
+          "submitterType" : {
+            "enum" : [ "CUSTOMER", "CONSIGNEE", "COMPANY", "AGENT" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "documentTypeId", "mandatory", "submitterType" ],
+        "type" : "object"
+      },
+      "DocumentTypeCreateRequestDto" : {
+        "properties" : {
+          "code" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "name" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "ownerType" : {
+            "enum" : [ "HORSE", "BOOKING", "BOOKING_HORSE", "HORSE_LEG", "VEHICLE_TRIP", "INSURANCE", "INCIDENT", "COST_ITEM", "HANDOVER", "VEHICLE", "STAFF", "PARTY", "CUSTOMER" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "name", "ownerType" ],
+        "type" : "object"
+      },
+      "DocumentTypeResponseDto" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "ownerType" : {
+            "enum" : [ "HORSE", "BOOKING", "BOOKING_HORSE", "HORSE_LEG", "VEHICLE_TRIP", "INSURANCE", "INCIDENT", "COST_ITEM", "HANDOVER", "VEHICLE", "STAFF", "PARTY", "CUSTOMER" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "DocumentTypeUpdateRequestDto" : {
+        "properties" : {
+          "code" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "name" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "ownerType" : {
+            "enum" : [ "HORSE", "BOOKING", "BOOKING_HORSE", "HORSE_LEG", "VEHICLE_TRIP", "INSURANCE", "INCIDENT", "COST_ITEM", "HANDOVER", "VEHICLE", "STAFF", "PARTY", "CUSTOMER" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "code", "name", "ownerType" ],
         "type" : "object"
       },
       "EmailVerificationRequest" : {
@@ -1659,6 +2011,64 @@
           }
         },
         "required" : [ "email", "fullName", "password", "phone", "username" ],
+        "type" : "object"
+      },
+      "RegulationPreviewRequestDto" : {
+        "properties" : {
+          "bookingType" : {
+            "enum" : [ "LOCAL", "INTERPROVINCE", "EXPORT", "IMPORT" ],
+            "type" : "string"
+          },
+          "deliveryCountryCode" : {
+            "pattern" : "[A-Z]{2}",
+            "type" : "string"
+          },
+          "departureId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "gateLocationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "pickupCountryCode" : {
+            "pattern" : "[A-Z]{2}",
+            "type" : "string"
+          },
+          "requestedPickupDate" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "bookingType", "deliveryCountryCode", "pickupCountryCode", "requestedPickupDate" ],
+        "type" : "object"
+      },
+      "RegulationPreviewResponseDto" : {
+        "properties" : {
+          "bookingCutoffAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "feasible" : {
+            "type" : "boolean"
+          },
+          "leadDays" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "requirements" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DocumentRequirementResponseDto"
+            },
+            "type" : "array"
+          },
+          "requirementsDependOnGate" : {
+            "type" : "boolean"
+          },
+          "rule" : {
+            "$ref" : "#/components/schemas/CountryRuleResponseDto"
+          }
+        },
         "type" : "object"
       },
       "ResetPasswordWithOtpRequest" : {
@@ -2524,6 +2934,247 @@
         "tags" : [ "geography-controller" ]
       }
     },
+    "/country-rules" : {
+      "get" : {
+        "operationId" : "listCountryRules",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListCountryRuleResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "country-rule-controller" ]
+      },
+      "post" : {
+        "operationId" : "createCountryRule",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CountryRuleCreateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCountryRuleResponseDto"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "country-rule-controller" ]
+      }
+    },
+    "/country-rules/preview" : {
+      "post" : {
+        "operationId" : "preview",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RegulationPreviewRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseRegulationPreviewResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "country-rule-controller" ]
+      }
+    },
+    "/country-rules/{id}" : {
+      "get" : {
+        "operationId" : "getCountryRule",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCountryRuleResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "country-rule-controller" ]
+      },
+      "put" : {
+        "operationId" : "updateCountryRule",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CountryRuleUpdateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCountryRuleResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "country-rule-controller" ]
+      }
+    },
+    "/country-rules/{ruleId}/document-requirements" : {
+      "get" : {
+        "operationId" : "listDocumentRequirements",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "ruleId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListDocumentRequirementResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "document-requirement-controller" ]
+      },
+      "post" : {
+        "operationId" : "createDocumentRequirement",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "ruleId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DocumentRequirementCreateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDocumentRequirementResponseDto"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "document-requirement-controller" ]
+      }
+    },
+    "/country-rules/{ruleId}/document-requirements/{id}" : {
+      "put" : {
+        "operationId" : "updateDocumentRequirement",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "ruleId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DocumentRequirementUpdateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDocumentRequirementResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "document-requirement-controller" ]
+      }
+    },
     "/customers/me" : {
       "get" : {
         "operationId" : "getCustomerProfile",
@@ -2983,6 +3634,112 @@
           }
         },
         "tags" : [ "departure-controller" ]
+      }
+    },
+    "/document-types" : {
+      "get" : {
+        "operationId" : "listDocumentTypes",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListDocumentTypeResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "document-type-controller" ]
+      },
+      "post" : {
+        "operationId" : "createDocumentType",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DocumentTypeCreateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDocumentTypeResponseDto"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "document-type-controller" ]
+      }
+    },
+    "/document-types/{id}" : {
+      "get" : {
+        "operationId" : "getDocumentType",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDocumentTypeResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "document-type-controller" ]
+      },
+      "put" : {
+        "operationId" : "updateDocumentType",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DocumentTypeUpdateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDocumentTypeResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "document-type-controller" ]
       }
     },
     "/health" : {

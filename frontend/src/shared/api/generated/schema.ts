@@ -180,6 +180,86 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/country-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listCountryRules"];
+        put?: never;
+        post: operations["createCountryRule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/country-rules/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/country-rules/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getCountryRule"];
+        put: operations["updateCountryRule"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/country-rules/{ruleId}/document-requirements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listDocumentRequirements"];
+        put?: never;
+        post: operations["createDocumentRequirement"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/country-rules/{ruleId}/document-requirements/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateDocumentRequirement"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/customers/me": {
         parameters: {
             query?: never;
@@ -350,6 +430,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/document-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listDocumentTypes"];
+        put?: never;
+        post: operations["createDocumentType"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/document-types/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getDocumentType"];
+        put: operations["updateDocumentType"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -781,6 +893,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseCountryRuleResponseDto: {
+            data?: components["schemas"]["CountryRuleResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseCustomerAddressResponseDto: {
             data?: components["schemas"]["CustomerAddressResponseDto"];
             message?: string;
@@ -806,6 +923,16 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseDocumentRequirementResponseDto: {
+            data?: components["schemas"]["DocumentRequirementResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseDocumentTypeResponseDto: {
+            data?: components["schemas"]["DocumentTypeResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseHorseResponseDto: {
             data?: components["schemas"]["HorseResponseDto"];
             message?: string;
@@ -821,6 +948,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListCountryRuleResponseDto: {
+            data?: components["schemas"]["CountryRuleResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListCustomerAddressResponseDto: {
             data?: components["schemas"]["CustomerAddressResponseDto"][];
             message?: string;
@@ -833,6 +965,16 @@ export interface components {
         };
         ApiResponseListDepartureScheduleResponse: {
             data?: components["schemas"]["DepartureScheduleResponse"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListDocumentRequirementResponseDto: {
+            data?: components["schemas"]["DocumentRequirementResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListDocumentTypeResponseDto: {
+            data?: components["schemas"]["DocumentTypeResponseDto"][];
             message?: string;
             status?: string;
         };
@@ -913,6 +1055,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseRegulationPreviewResponseDto: {
+            data?: components["schemas"]["RegulationPreviewResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseRouteResponse: {
             data?: components["schemas"]["RouteResponse"];
             message?: string;
@@ -960,6 +1107,53 @@ export interface components {
             code?: string;
             defaultCurrencyCode?: string;
             name?: string;
+        };
+        CountryRuleCreateRequestDto: {
+            /** Format: int32 */
+            certificateLeadDays: number;
+            countryCode: string;
+            /** @enum {string} */
+            direction: "INTERPROVINCE" | "EXPORT" | "IMPORT";
+            /** Format: int32 */
+            permitLeadDays: number;
+            /** Format: int32 */
+            quarantineDays: number;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string;
+        };
+        CountryRuleResponseDto: {
+            /** Format: int32 */
+            certificateLeadDays?: number;
+            countryCode?: string;
+            /** @enum {string} */
+            direction?: "INTERPROVINCE" | "EXPORT" | "IMPORT";
+            /** Format: int64 */
+            id?: number;
+            /** Format: int32 */
+            permitLeadDays?: number;
+            /** Format: int32 */
+            quarantineDays?: number;
+            /** Format: date */
+            validFrom?: string;
+            /** Format: date */
+            validTo?: string;
+        };
+        CountryRuleUpdateRequestDto: {
+            /** Format: int32 */
+            certificateLeadDays: number;
+            countryCode: string;
+            /** @enum {string} */
+            direction: "INTERPROVINCE" | "EXPORT" | "IMPORT";
+            /** Format: int32 */
+            permitLeadDays: number;
+            /** Format: int32 */
+            quarantineDays: number;
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string;
         };
         CustomerAddressCreateRequestDto: {
             addressLine: string;
@@ -1117,6 +1311,61 @@ export interface components {
             pickupHubCode?: string;
             /** @enum {string} */
             routing?: "DIRECT" | "LINEHAUL";
+        };
+        DocumentRequirementCreateRequestDto: {
+            /** Format: int64 */
+            documentTypeId: number;
+            /** Format: int64 */
+            gateLocationId?: number;
+            mandatory: boolean;
+            /** @enum {string} */
+            submitterType: "CUSTOMER" | "CONSIGNEE" | "COMPANY" | "AGENT";
+        };
+        DocumentRequirementResponseDto: {
+            /** Format: int64 */
+            countryRuleId?: number;
+            documentTypeCode?: string;
+            /** Format: int64 */
+            documentTypeId?: number;
+            documentTypeName?: string;
+            /** Format: int64 */
+            gateLocationId?: number;
+            /** Format: int64 */
+            id?: number;
+            mandatory?: boolean;
+            /** @enum {string} */
+            ownerType?: "HORSE" | "BOOKING" | "BOOKING_HORSE" | "HORSE_LEG" | "VEHICLE_TRIP" | "INSURANCE" | "INCIDENT" | "COST_ITEM" | "HANDOVER" | "VEHICLE" | "STAFF" | "PARTY" | "CUSTOMER";
+            /** @enum {string} */
+            submitterType?: "CUSTOMER" | "CONSIGNEE" | "COMPANY" | "AGENT";
+        };
+        DocumentRequirementUpdateRequestDto: {
+            /** Format: int64 */
+            documentTypeId: number;
+            /** Format: int64 */
+            gateLocationId?: number;
+            mandatory: boolean;
+            /** @enum {string} */
+            submitterType: "CUSTOMER" | "CONSIGNEE" | "COMPANY" | "AGENT";
+        };
+        DocumentTypeCreateRequestDto: {
+            code: string;
+            name: string;
+            /** @enum {string} */
+            ownerType: "HORSE" | "BOOKING" | "BOOKING_HORSE" | "HORSE_LEG" | "VEHICLE_TRIP" | "INSURANCE" | "INCIDENT" | "COST_ITEM" | "HANDOVER" | "VEHICLE" | "STAFF" | "PARTY" | "CUSTOMER";
+        };
+        DocumentTypeResponseDto: {
+            code?: string;
+            /** Format: int64 */
+            id?: number;
+            name?: string;
+            /** @enum {string} */
+            ownerType?: "HORSE" | "BOOKING" | "BOOKING_HORSE" | "HORSE_LEG" | "VEHICLE_TRIP" | "INSURANCE" | "INCIDENT" | "COST_ITEM" | "HANDOVER" | "VEHICLE" | "STAFF" | "PARTY" | "CUSTOMER";
+        };
+        DocumentTypeUpdateRequestDto: {
+            code: string;
+            name: string;
+            /** @enum {string} */
+            ownerType: "HORSE" | "BOOKING" | "BOOKING_HORSE" | "HORSE_LEG" | "VEHICLE_TRIP" | "INSURANCE" | "INCIDENT" | "COST_ITEM" | "HANDOVER" | "VEHICLE" | "STAFF" | "PARTY" | "CUSTOMER";
         };
         EmailVerificationRequest: {
             /** Format: email */
@@ -1320,6 +1569,28 @@ export interface components {
             password: string;
             phone: string;
             username: string;
+        };
+        RegulationPreviewRequestDto: {
+            /** @enum {string} */
+            bookingType: "LOCAL" | "INTERPROVINCE" | "EXPORT" | "IMPORT";
+            deliveryCountryCode: string;
+            /** Format: int64 */
+            departureId?: number;
+            /** Format: int64 */
+            gateLocationId?: number;
+            pickupCountryCode: string;
+            /** Format: date */
+            requestedPickupDate: string;
+        };
+        RegulationPreviewResponseDto: {
+            /** Format: date-time */
+            bookingCutoffAt?: string;
+            feasible?: boolean;
+            /** Format: int64 */
+            leadDays?: number;
+            requirements?: components["schemas"]["DocumentRequirementResponseDto"][];
+            requirementsDependOnGate?: boolean;
+            rule?: components["schemas"]["CountryRuleResponseDto"];
         };
         ResetPasswordWithOtpRequest: {
             confirmPassword: string;
@@ -1786,6 +2057,197 @@ export interface operations {
             };
         };
     };
+    listCountryRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListCountryRuleResponseDto"];
+                };
+            };
+        };
+    };
+    createCountryRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CountryRuleCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCountryRuleResponseDto"];
+                };
+            };
+        };
+    };
+    preview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegulationPreviewRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseRegulationPreviewResponseDto"];
+                };
+            };
+        };
+    };
+    getCountryRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCountryRuleResponseDto"];
+                };
+            };
+        };
+    };
+    updateCountryRule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CountryRuleUpdateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCountryRuleResponseDto"];
+                };
+            };
+        };
+    };
+    listDocumentRequirements: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ruleId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListDocumentRequirementResponseDto"];
+                };
+            };
+        };
+    };
+    createDocumentRequirement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ruleId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentRequirementCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDocumentRequirementResponseDto"];
+                };
+            };
+        };
+    };
+    updateDocumentRequirement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ruleId: number;
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentRequirementUpdateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDocumentRequirementResponseDto"];
+                };
+            };
+        };
+    };
     getCustomerProfile: {
         parameters: {
             query?: never;
@@ -2153,6 +2615,98 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseDepartureResponse"];
+                };
+            };
+        };
+    };
+    listDocumentTypes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListDocumentTypeResponseDto"];
+                };
+            };
+        };
+    };
+    createDocumentType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentTypeCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDocumentTypeResponseDto"];
+                };
+            };
+        };
+    };
+    getDocumentType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDocumentTypeResponseDto"];
+                };
+            };
+        };
+    };
+    updateDocumentType: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentTypeUpdateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDocumentTypeResponseDto"];
                 };
             };
         };
