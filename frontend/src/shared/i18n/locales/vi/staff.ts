@@ -1,6 +1,8 @@
 // Khung chung của app nội bộ: menu, thanh trên, hồ sơ nhân viên, phần dùng chung giữa các vai trò
 export const staff = {
   staffMenus: {
+    '/coordinator/dispatch': 'Điều độ',
+    '/my-trips': 'Lượt xe của tôi',
     '/admin/pricing': 'Biểu giá & Công thức',
     '/admin/horse-types': 'Danh mục giống ngựa',
     '/admin/fleet': 'Đội xe',

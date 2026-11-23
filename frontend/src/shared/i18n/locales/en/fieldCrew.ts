@@ -1,5 +1,19 @@
 // Ứng dụng hiện trường của tài xế và hộ tống
 export const fieldCrew = {
+  myTrips: {
+    "title": "My trips",
+    "description": "Trips you are assigned to. Confirm each one so the coordinator knows you are ready.",
+    "loadError": "Could not load your trips",
+    "emptyTitle": "No trips yet",
+    "emptyDescription": "Trips appear here once the coordinator assigns you.",
+    "acknowledge": "Confirm assignment",
+    "acknowledged": "Confirmed",
+    "waiting": "Waiting for your confirmation",
+    "journey": "{{from}} → {{to}}",
+    "vehicle": "Vehicle {{plate}}",
+    "start": "Starts {{time}}",
+    "done": "Assignment confirmed"
+  },
   fieldCrew: {
     tabJob: 'Tasks',
     tabJourney: 'Journey',

@@ -1,5 +1,118 @@
 // Trang của điều phối viên
 export const coordinator = {
+  dispatch: {
+    "title": "Dispatch",
+    "description": "Plan vehicles, crews and horses by week. Rules are checked on save, with the reason when something is not allowed.",
+    "weekFrom": "Week starting",
+    "tabsLabel": "Dispatch views",
+    "tabBookings": "Bookings to dispatch",
+    "tabTrips": "Vehicle trips",
+    "newTrip": "New trip",
+    "loadError": "Could not load dispatch data",
+    "bookings": {
+      "emptyTitle": "No bookings to dispatch this week",
+      "emptyDescription": "Paid bookings with a pickup or departure date in this week appear here.",
+      "caption": "Bookings to dispatch",
+      "colBooking": "Booking",
+      "colRoute": "Routing",
+      "colPickupDate": "Pickup date",
+      "colHorse": "Horse",
+      "colStall": "Stall",
+      "colLegs": "Planned legs",
+      "direct": "Direct",
+      "noLegs": "Not planned"
+    },
+    "trips": {
+      "emptyTitle": "No vehicle trips this week",
+      "emptyDescription": "Click \"New trip\" to create a pickup, linehaul, delivery or direct trip.",
+      "caption": "Vehicle trips this week",
+      "colCode": "Trip",
+      "colType": "Type",
+      "colVehicle": "Vehicle",
+      "colRoute": "Journey",
+      "colTime": "Time",
+      "colCrew": "Crew",
+      "colStatus": "Status",
+      "view": "View",
+      "noCrew": "Not assigned"
+    },
+    "tripType": {
+      "PICKUP": "Pickup",
+      "LINEHAUL": "Linehaul",
+      "DELIVERY": "Delivery",
+      "DIRECT": "Direct",
+      "TRANSFER": "Transfer"
+    },
+    "tripStatus": {
+      "PLANNED": "Planned",
+      "DISPATCHED": "Dispatched",
+      "IN_PROGRESS": "In progress",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled"
+    },
+    "crewStatus": {
+      "ASSIGNED": "Awaiting confirmation",
+      "ACKNOWLEDGED": "Confirmed",
+      "RELEASED": "Released"
+    },
+    "crewRole": {
+      "DRIVER": "Driver",
+      "ESCORT": "Escort"
+    },
+    "detail": {
+      "stops": "Stops",
+      "crew": "Crew",
+      "horses": "Horses on board",
+      "seats": "Using {{used}}/{{total}} seats",
+      "noCrew": "No crew yet.",
+      "noHorses": "No horses on this trip yet.",
+      "assignCrew": "Assign",
+      "staff": "Staff",
+      "role": "Role",
+      "choose": "Choose",
+      "release": "Remove",
+      "releaseTitle": "Remove {{name}} from the trip?",
+      "releaseMessage": "The staff member will no longer see this trip.",
+      "assignHorse": "Add horse",
+      "horse": "Horse",
+      "noEligible": "No more horses this week fit this trip.",
+      "removeTitle": "Remove {{name}} from the trip?",
+      "removeMessage": "This leg is cancelled. Only a horse's last leg can be removed.",
+      "cancelTrip": "Cancel trip",
+      "cancelTitle": "Cancel trip {{code}}",
+      "cancelReason": "Reason",
+      "cancelMessage": "The crew is released. A trip with horses must have them removed first.",
+      "cancelConfirm": "Cancel trip",
+      "locked": "This trip has started or was cancelled and cannot be changed."
+    },
+    "create": {
+      "title": "New vehicle trip",
+      "type": "Trip type",
+      "vehicle": "Vehicle",
+      "vehicleLocked": "{{plate}} ({{status}})",
+      "departure": "Linehaul departure",
+      "departureHint": "Stops are copied from the departure's route.",
+      "stops": "Stops",
+      "stopsHint": "The first and last stops are hubs; customer addresses go in between.",
+      "addStop": "Add stop",
+      "removeStop": "Remove stop {{n}}",
+      "place": "Stop {{n}}",
+      "arrival": "Arrive at",
+      "leave": "Leave at",
+      "submit": "Create trip",
+      "placeHub": "Hub: {{name}}",
+      "placePickup": "Pickup {{code}}: {{line}}",
+      "placeDelivery": "Delivery {{code}}: {{line}}"
+    },
+    "done": {
+      "created": "Trip {{code}} created",
+      "assigned": "Assigned",
+      "released": "Staff removed",
+      "horseAssigned": "Horse added",
+      "horseRemoved": "Horse removed",
+      "cancelled": "Trip cancelled"
+    }
+  },
   coordinatorFleetPlan: {
     listTitle: 'Vehicles & Route Planning',
     listSubtitle: 'Select vehicles, drivers, and escorts for each trip, allocate horses, plan detailed route, and confirm.',
