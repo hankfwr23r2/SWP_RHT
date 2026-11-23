@@ -122,6 +122,12 @@ export const en = {
         "required": "Required"
     }
 },
+  ui: {
+    loading: 'Loading',
+    processing: 'Processing',
+    retry: 'Try again',
+    errorTitle: 'Could not load data',
+  },
   common: {
     brandName: 'Racehorse Transport',
     brandTagline: 'Road Racehorse Transport · Vietnam · Laos · Cambodia',
