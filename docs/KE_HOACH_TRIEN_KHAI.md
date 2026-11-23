@@ -635,7 +635,7 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 | P0.2-B | Entity, repository nhóm 9–15 | B | 0 | Xong | #351 |
 | P0.3-A | Auth, interface gọi chéo, `TestData` | A | 0 | Chờ review (nhánh `rd/p0-3a-auth`) | |
 | P0.3-B | Document, Notification, Audit, ArchUnit, OpenAPI | B | 0 | Xong | #353 |
-| P0-FE | Token, `shared/ui`, layout, openapi-typescript, lint, i18n | B | 0 | Đang làm (8 PR): PR1 (#355), PR2 (#358), PR3a token và component cơ bản (#367), PR3b component phức tạp (#368), PR3c hook (#369) xong; PR4a layout dùng token và `shared/ui`, bỏ `customer-theme.css` (nhánh `rd/p0-fe-4a-layout`); còn PR4b trang thư viện giao diện, PR5 i18n | |
+| P0-FE | Token, `shared/ui`, layout, openapi-typescript, lint, i18n | B | 0 | Đang làm (8 PR): PR1 (#355), PR2 (#358), PR3a token và component cơ bản (#367), PR3b component phức tạp (#368), PR3c hook (#369), PR4a layout (#372) xong; PR4b trang thư viện giao diện `/admin/ui-library` (nhánh `rd/p0-fe-4b-ui-library`); còn PR5 i18n | |
 | A1 | Mạng lưới, tuyến, lịch, chuyến | A | 1 | Backend chờ review: PR1 danh mục (`rd/a1-network`), PR2 chuyến (`rd/a1-departures`). FE làm sau P0-FE | |
 | A2 | Xe, nhân sự, đối tác, tham số | A | 1 | Chưa làm | |
 | B1 | Điều độ | B | 1 | Chưa làm | |

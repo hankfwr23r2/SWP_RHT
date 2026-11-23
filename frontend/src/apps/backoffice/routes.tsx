@@ -34,6 +34,7 @@ export const routes: AppRoute[] = [
   { path: '/admin/rules', lazyPage: () => import('./features/admin/rules/AdminRulesPage'), loader: systemConfigLoader, roles: A, title: 'Quy định & Tham số', layout: 'staff' },
   { path: '/admin/document-requirements', lazyPage: () => import('./features/admin/documents/AdminDocumentRequirementsPage'), loader: documentRequirementsLoader, roles: A, title: 'Giấy tờ bắt buộc', layout: 'staff' },
   { path: '/admin/system-logs', page: SystemLogsPage, roles: A, title: 'Nhật ký hệ thống', layout: 'staff', catalog: false },
+  { path: '/admin/ui-library', lazyPage: () => import('./features/admin/ui-library/UiLibraryPage'), roles: A, title: 'Thư viện giao diện', layout: 'staff', catalog: false },
   { path: '/admin/accounts', lazyPage: () => import('./features/admin/accounts/AccountsPage'), loader: accountsLoader, roles: A, title: 'Tất cả tài khoản', layout: 'staff' },
   { path: '/admin/accounts/:role', lazyPage: () => import('./features/admin/accounts/AccountsPage'), loader: accountsLoader, roles: A, title: 'Tài khoản theo loại', layout: 'staff' },
 
