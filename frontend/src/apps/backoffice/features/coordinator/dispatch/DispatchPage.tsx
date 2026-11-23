@@ -13,6 +13,7 @@ import { Skeleton } from '@shared/ui/Skeleton'
 import { Tabs } from '@shared/ui/Tabs'
 import { BookingsTable } from './BookingsTable'
 import { CreateTripModal } from './CreateTripModal'
+import { HubStaysPanel } from './HubStaysPanel'
 import { TripDetailModal } from './TripDetailModal'
 import { TripsTable } from './TripsTable'
 import { weekRange } from './dispatchModel'
@@ -33,6 +34,7 @@ export default function DispatchPage() {
   }, [weekStart], { toastOnError: false })
 
   const content = () => {
+    if (tab === 'stays') return <HubStaysPanel />
     if (!loaded) return <Skeleton variant="block" lines={4} />
     if (error || !data) return <ErrorState title={t('dispatch.loadError')} message={error?.message} onRetry={reload} />
     if (tab === 'bookings') {
@@ -67,6 +69,7 @@ export default function DispatchPage() {
         items={[
           { value: 'bookings', label: t('dispatch.tabBookings'), count: data?.bookings.length },
           { value: 'trips', label: t('dispatch.tabTrips'), count: data?.trips.length },
+          { value: 'stays', label: t('dispatch.stays.tab') },
         ]}
       >
         {content()}

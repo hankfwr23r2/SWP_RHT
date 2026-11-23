@@ -15,6 +15,7 @@ export type CrewCandidate = Schemas['CrewCandidateResponseDto']
 export type DispatchVehicle = Schemas['VehicleResponseDto']
 export type Departure = Schemas['DepartureResponse']
 export type NetworkLocation = Schemas['LocationResponse']
+export type HorseStay = Schemas['HorseStayResponseDto']
 export type VehicleTripCreate = Schemas['VehicleTripCreateRequestDto']
 export type TripStopCreate = Schemas['TripStopRequestDto']
 export type CrewRole = NonNullable<Schemas['CrewAssignmentRequestDto']['crewRole']>
@@ -40,5 +41,6 @@ export const dispatchApi = {
   departures: (from: string, to: string) => get<Departure[]>('/departures', { from, to }),
   locations: () => get<NetworkLocation[]>('/locations', { status: 'ACTIVE' }),
   myAssignments: () => get<MyCrewAssignment[]>('/crew-assignments/mine'),
+  horseStays: (locationId: number) => get<HorseStay[]>('/horse-stays', { locationId: String(locationId) }),
   acknowledge: (assignmentId: number) => post<MyCrewAssignment>(`/crew-assignments/${assignmentId}/acknowledge`),
 }

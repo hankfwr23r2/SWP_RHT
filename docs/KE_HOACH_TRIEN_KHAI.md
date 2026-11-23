@@ -645,7 +645,7 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 | A4 | Quy định, giấy tờ yêu cầu | A | 2 | Chưa làm | |
 | B2 | Điểm dừng, giao nhận | B | 2 | Đang làm: PR1 backend (#381), PR2 màn tổ xe (#382) xong; còn giao nhận AGENT ở cửa khẩu, biên bản và giấy gốc; chờ A7 (thanh toán: trả 70%, rời nơi nhận), A (loại ngựa) cho Không nhận, A8 cho trả ngựa tại chỗ | #381, #382 |
 | A5 | Đặt đơn | A | 3 | Chưa làm | |
-| B3 | Lưu trú, sức khỏe | B | 3 | Đang làm: PR1 backend sổ sức khỏe, lưu trú tập kết, chặn rời trạm (nhánh `rd/b3-1-health-stay`); còn màn ghi sức khỏe của hộ tống và lưu trú của điều phối | |
+| B3 | Lưu trú, sức khỏe | B | 3 | Xong phần chính (2 PR). PR2 màn ghi sức khỏe và ngựa ở hub (nhánh `rd/b3-2-health-ui`). Còn: nghỉ đêm OVERNIGHT, bàn giao ca SHIFT; hủy chặng của con bị loại chờ luồng A | #383 |
 | A6 | Thẩm định, bảo hiểm | A | 4 | Backend xong, chưa commit (`feat/a6-review`) | |
 | A6b | Đồng bộ quyết định 23/11/2026 | A | 4 | Tài liệu xong, code chờ duyệt danh sách file | |
 | A7 | Báo giá, thanh toán | A | 4 | Chưa làm | |

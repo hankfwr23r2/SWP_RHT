@@ -2,6 +2,29 @@
 export const fieldCrew = {
   myTrips: {
     "run": {
+      "earlyReason": "Reason for leaving early (if rest is not complete)",
+      "health": {
+        "title": "Log health at this stop",
+        "status": "Health",
+        "water": "Water",
+        "feed": "Feed",
+        "temperature": "Temperature (°C)",
+        "save": "Save",
+        "logged": "Logged",
+        "notLogged": "Not logged",
+        "saved": "Health logged",
+        "statusValue": {
+          "NORMAL": "Normal",
+          "WATCH": "Watch",
+          "SICK": "Sick",
+          "CRITICAL": "Critical"
+        },
+        "intakeValue": {
+          "NORMAL": "Normal",
+          "REDUCED": "Reduced",
+          "REFUSED": "Refused"
+        }
+      },
       "open": "Open trip",
       "back": "My trips",
       "loadError": "Could not load the trip",

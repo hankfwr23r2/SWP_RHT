@@ -81,3 +81,57 @@ test('hộ tống xuất phát, nhận ngựa có quét chip rồi rời điểm
   await expect(pickup).toContainText('Đã rời')
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0)
 })
+
+test('ở trạm nghỉ hộ tống ghi ăn uống từng con, rời sớm thì gửi kèm lý do', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.addInitScript(() => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: 'escort', name: 'Hộ tống Một', username: 'escort@example.com' })))
+  const run = {
+    trip: {
+      id: 9, code: 'VT-AAAA0009', tripType: 'DIRECT', status: 'IN_PROGRESS', licensePlate: '51C-12345', startLocationName: 'Hub HCM', endLocationName: 'Hub HCM',
+      stops: [
+        { id: 2, sequenceNumber: 1, stopType: 'PICKUP', bookingCode: 'BK-AAAA0001', addressLine: 'Trại Long Thành', actualArrivalAt: 't', actualDepartureAt: 't' },
+        { id: 3, sequenceNumber: 2, stopType: 'REST', locationName: 'Trạm Phan Thiết', actualArrivalAt: '2031-03-05T04:00:00Z' },
+        { id: 4, sequenceNumber: 3, stopType: 'DELIVERY', bookingCode: 'BK-AAAA0001', addressLine: 'Trại Huế' },
+      ] as Record<string, unknown>[],
+    },
+    horses: [{ bookingCode: 'BK-AAAA0001', horseName: 'Sao Mai', seats: 1, leg: { id: 70, bookingHorseId: 50, boardTripStopId: 2, alightTripStopId: 4, status: 'IN_PROGRESS' } }],
+    handovers: [],
+  }
+  const logs: Record<string, unknown>[] = []
+  const sent: Record<string, unknown> = {}
+  await page.route('**/api/v1/**', async route => {
+    const request = route.request()
+    const path = new URL(request.url()).pathname.replace('/api/v1', '')
+    if (path === '/crew/vehicle-trips/9') return ok(route, run)
+    if (path === '/booking-horses/50/health-logs') return ok(route, logs)
+    if (path === '/health-logs') {
+      sent.log = request.postDataJSON()
+      logs.push({ id: 1, bookingHorseId: 50, tripStopId: 3, waterIntake: 'NORMAL', feedIntake: 'REDUCED' })
+      return route.fulfill({ status: 201, json: { status: 'success', message: '', data: logs[0] } })
+    }
+    if (path === '/trip-stops/3/depart') {
+      sent.depart = request.postDataJSON()
+      run.trip.stops[1].actualDepartureAt = '2031-03-05T04:10:00Z'
+      return ok(route, run)
+    }
+    return ok(route, [])
+  })
+  await page.goto('/backoffice/my-trips/9')
+
+  const rest = page.getByRole('list', { name: 'Điểm dừng' }).getByRole('listitem').filter({ hasText: 'Trạm Phan Thiết' }).first()
+  const health = rest.getByRole('region', { name: 'Ghi sức khỏe tại điểm này' })
+  await expect(health).toContainText('Chưa ghi', { timeout: 15_000 })
+  await expect(health.getByRole('button', { name: 'Lưu' })).toBeDisabled()
+  await health.getByRole('combobox', { name: 'Uống nước' }).click()
+  await page.getByRole('option', { name: 'Bình thường' }).click()
+  await health.getByRole('combobox', { name: 'Ăn' }).click()
+  await page.getByRole('option', { name: 'Ít' }).click()
+  await health.getByRole('button', { name: 'Lưu' }).click()
+  await expect(health).toContainText('Đã ghi')
+  expect(sent.log).toEqual({ bookingHorseId: 50, tripStopId: 3, healthStatus: 'NORMAL', waterIntake: 'NORMAL', feedIntake: 'REDUCED' })
+
+  await rest.getByLabel('Lý do rời sớm (nếu chưa nghỉ đủ)').fill('Kịp giờ giao theo hẹn')
+  await rest.getByRole('button', { name: 'Rời đi' }).click()
+  await expect(rest).toContainText('Đã rời')
+  expect(sent.depart).toEqual({ earlyReason: 'Kịp giờ giao theo hẹn' })
+})

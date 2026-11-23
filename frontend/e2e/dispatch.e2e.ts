@@ -57,6 +57,9 @@ async function mockDispatch(page: Page, control: { failBookings?: boolean } = {}
     }
     if (method === 'GET' && path === '/departures') return ok(route, [{ id: 7, routeCode: 'HCM-DN', plannedDepartureAt: '2031-03-05T23:00:00Z', status: 'OPEN' }])
     if (method === 'GET' && path === '/locations') return ok(route, [{ id: 1, name: 'Hub HCM', locationType: 'HUB' }])
+    if (method === 'GET' && path === '/horse-stays') {
+      return ok(route, [{ id: 6, bookingHorseId: 50, bookingCode: booking.code, horseName: 'Sao Mai', stayType: 'ASSEMBLY', locationName: 'Hub HCM', actualStartAt: '2031-03-05T05:00:00Z', plannedEndAt: '2031-03-05T23:00:00Z' }])
+    }
     if (method === 'POST' && path === '/vehicle-trips') {
       sent.trip = request.postDataJSON()
       return ok(route, { ...linehaul, id: 9, code: 'VT-NEW00001' }, 201)
@@ -157,3 +160,15 @@ test('tài xế xem lượt xe của mình và xác nhận nhận việc', async
   await expect(card).toContainText('Đã nhận việc')
   await expect(card.getByRole('button', { name: 'Xác nhận nhận việc' })).toHaveCount(0)
 })
+
+test('điều phối xem ngựa đang tập kết ở hub', async ({ page }) => {
+  await signIn(page, 'coordinator')
+  await mockDispatch(page)
+  await page.goto('/backoffice/coordinator/dispatch')
+  await page.getByRole('tab', { name: 'Ngựa ở hub' }).click()
+  await page.getByRole('combobox', { name: 'Hub' }).click()
+  await page.getByRole('option', { name: 'Hub HCM' }).click()
+  const stays = page.getByRole('table', { name: 'Ngựa đang lưu trú' })
+  await expect(stays.getByRole('row', { name: /Sao Mai/ })).toContainText('Tập kết')
+})
+

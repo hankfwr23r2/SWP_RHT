@@ -13,9 +13,11 @@ import { Field } from '@shared/ui/Field'
 import { Input } from '@shared/ui/Input'
 import { PageHeader } from '@shared/ui/PageHeader'
 import { Skeleton } from '@shared/ui/Skeleton'
+import { Textarea } from '@shared/ui/Textarea'
 import { StatusBadge, type StatusTone } from '@shared/ui/StatusBadge'
 import { useToast } from '@shared/ui/toast'
-import { canArrive, canComplete, canDepart, canStart, handoverTypesAt, pendingAt, stopState, type StopState } from './tripRunModel'
+import { StopHealthPanel } from './StopHealthPanel'
+import { canArrive, canComplete, canDepart, canStart, handoverTypesAt, isRestStop, pendingAt, stopState, type StopState } from './tripRunModel'
 import s from './MyTrips.module.css'
 
 const STATE_TONE: Record<StopState, StatusTone> = { waiting: 'neutral', here: 'info', left: 'success' }
@@ -27,6 +29,7 @@ export default function TripRunPage() {
   const toast = useToast()
   const [busy, setBusy] = useState(false)
   const [chips, setChips] = useState<Record<number, string>>({})
+  const [earlyReasons, setEarlyReasons] = useState<Record<number, string>>({})
   const { data, loaded, error, reload, updateData } = useLoad(() => tripExecutionApi.trip(tripId), [tripId], { toastOnError: false })
 
   // Mọi thao tác trả về lượt xe mới; lỗi hiện đúng lý do backend trả về
@@ -111,9 +114,18 @@ export default function TripRunPage() {
                     </Button>
                   ))}
                   {pending && handoverPanel(pending)}
+                  {state === 'here' && isRestStop(stop) && <StopHealthPanel run={data} stop={stop} />}
+                  {canDepart(data, stop) && isRestStop(stop) && (
+                    <Field label={t('myTrips.run.earlyReason')}>
+                      {c => <Textarea {...c} value={earlyReasons[stop.id ?? 0] ?? ''}
+                        onChange={e => setEarlyReasons(current => ({ ...current, [stop.id ?? 0]: e.target.value }))} />}
+                    </Field>
+                  )}
                   {canDepart(data, stop) && (
                     <Button size="lg" fullWidth loading={busy}
-                      onClick={() => run(() => tripExecutionApi.depart(stop.id ?? 0), t('myTrips.run.done.departed'))}>{t('myTrips.run.depart')}</Button>
+                      onClick={() => run(() => tripExecutionApi.depart(stop.id ?? 0, earlyReasons[stop.id ?? 0]?.trim() || undefined), t('myTrips.run.done.departed'))}>
+                      {t('myTrips.run.depart')}
+                    </Button>
                   )}
                 </div>
               </Card>
