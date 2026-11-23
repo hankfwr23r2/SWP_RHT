@@ -42,4 +42,10 @@ public interface CrewAssignmentRepository extends JpaRepository<CrewAssignment, 
     Optional<CrewAssignment> findWithTripAndStaff(@Param("id") Long id);
 
     boolean existsByVehicleTrip_IdAndStaff_UserIdAndStatusNot(Long vehicleTripId, Long staffId, CrewAssignmentStatus status);
+
+    // Người đang trong tổ lái của lượt (chưa bị gỡ)
+    @EntityGraph(attributePaths = {"staff", "staff.user"})
+    Optional<CrewAssignment> findFirstByVehicleTrip_IdAndStaff_User_UsernameAndStatusNot(Long vehicleTripId, String username, CrewAssignmentStatus status);
+
+    boolean existsByVehicleTrip_IdAndCrewRoleAndStatus(Long vehicleTripId, com.example.racehorse_transport.entity.enums.CrewRole crewRole, CrewAssignmentStatus status);
 }

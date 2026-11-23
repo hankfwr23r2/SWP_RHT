@@ -640,10 +640,10 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 | P0-FE | Token, `shared/ui`, layout, openapi-typescript, lint, i18n | B | 0 | Xong (8 PR) | #355, #358, #367, #368, #369, #372, #373, #375 |
 | A1 | Mạng lưới, tuyến, lịch, chuyến | A | 1 | Backend chờ review: PR1 danh mục (`rd/a1-network`), PR2 chuyến (`rd/a1-departures`). FE làm sau P0-FE | |
 | A2 | Xe, nhân sự, đối tác, tham số | A | 1 | Chưa làm | |
-| B1 | Điều độ | B | 1 | Xong (4 PR). PR cuối giao diện điều độ và Lượt xe của tôi (nhánh `rd/b1-4-dispatch-ui`) | #377, #378, #379 |
+| B1 | Điều độ | B | 1 | Xong (4 PR) | #377, #378, #379, #380 |
 | A3 | Bảng giá, tính giá | A | 2 | Chưa làm | |
 | A4 | Quy định, giấy tờ yêu cầu | A | 2 | Chưa làm | |
-| B2 | Điểm dừng, giao nhận | B | 2 | Chưa làm | |
+| B2 | Điểm dừng, giao nhận | B | 2 | Đang làm: PR1 backend thực hiện lượt xe và giao nhận (nhánh `rd/b2-1-stop-handover`); còn ứng dụng tổ xe theo điểm dừng; chờ A7 (thanh toán) cho trả 70% và rời nơi nhận, A (loại ngựa) cho Không nhận | |
 | A5 | Đặt đơn | A | 3 | Chưa làm | |
 | B3 | Lưu trú, sức khỏe | B | 3 | Chưa làm | |
 | A6 | Thẩm định, bảo hiểm | A | 4 | Backend xong, chưa commit (`feat/a6-review`) | |
