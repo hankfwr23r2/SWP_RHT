@@ -17,4 +17,7 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c from Customer c where c.userId = :id")
     Optional<Customer> findForUpdate(@Param("id") Long id);
+
+    @Query("SELECT c FROM Customer c JOIN FETCH c.user u WHERE u.username = :username")
+    Optional<Customer> findSubmittingCustomer(String username);
 }

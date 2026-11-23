@@ -11,7 +11,7 @@ import com.example.racehorse_transport.entity.Route;
 import com.example.racehorse_transport.entity.enums.ActiveStatus;
 import com.example.racehorse_transport.entity.enums.BookingType;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
-import com.example.racehorse_transport.entity.enums.LocationType;
+import com.example.racehorse_transport.policy.DepartureRoutePolicy;
 import com.example.racehorse_transport.policy.DepartureCapacityPolicy;
 import com.example.racehorse_transport.policy.HubResolutionPolicy;
 import com.example.racehorse_transport.policy.HubResolutionPolicy.Routing;
@@ -25,7 +25,7 @@ import java.time.Clock;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
+
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -66,7 +66,8 @@ public class DepartureSuggestionServiceImpl implements DepartureSuggestionServic
 
         // Tuyến phù hợp và khoảng cách từ cửa khẩu tới điểm ở nước ngoài (0 với tuyến nội địa) để xếp thứ tự
         Map<Long, Double> routeDistance = routes.findByStatusWithEndpoints(ActiveStatus.ACTIVE).stream()
-                .filter(routeMatcher(query.getBookingType(), pickupHub, deliveryHub))
+                .filter(route -> DepartureRoutePolicy.matches(route, query.getBookingType(),
+                        pickupHub == null ? null : pickupHub.getId(), deliveryHub == null ? null : deliveryHub.getId()))
                 .collect(Collectors.toMap(Route::getId, route -> foreignLegKm(query, route)));
         if (routeDistance.isEmpty()) {
             return response.departures(List.of()).build();
@@ -82,18 +83,7 @@ public class DepartureSuggestionServiceImpl implements DepartureSuggestionServic
         return response.departures(found).build();
     }
 
-    // Tuyến nội địa nối đúng hai hub; xuất khẩu đi từ hub đón tới cửa khẩu; nhập khẩu đi từ cửa khẩu về hub giao
-    private static Predicate<Route> routeMatcher(BookingType type, Location pickupHub, Location deliveryHub) {
-        return route -> switch (type) {
-            case INTERPROVINCE -> route.getOrigin().getId().equals(pickupHub.getId())
-                    && route.getDestination().getId().equals(deliveryHub.getId());
-            case EXPORT -> route.getOrigin().getId().equals(pickupHub.getId())
-                    && route.getDestination().getLocationType() == LocationType.BORDER_GATE;
-            case IMPORT -> route.getOrigin().getLocationType() == LocationType.BORDER_GATE
-                    && route.getDestination().getId().equals(deliveryHub.getId());
-            case LOCAL -> false;
-        };
-    }
+
 
     // Quãng đường chim bay giữa cửa khẩu và điểm ở nước ngoài, chỉ dùng để xếp hạng; thiếu tọa độ thì coi như bằng nhau
     private static double foreignLegKm(DepartureSuggestionQueryDto query, Route route) {

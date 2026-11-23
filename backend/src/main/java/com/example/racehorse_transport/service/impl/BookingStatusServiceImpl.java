@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.service.impl;
 
+import com.example.racehorse_transport.entity.AppUser;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.BookingStatusHistory;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
@@ -11,6 +12,7 @@ import com.example.racehorse_transport.repository.BookingStatusHistoryRepository
 import com.example.racehorse_transport.service.BookingStatusService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 // Nơi duy nhất đổi booking.status (DB_SCHEMA_59_BANG.md quy tắc #18). Mỗi lần đổi có một dòng booking_status_history.
@@ -33,11 +35,22 @@ public class BookingStatusServiceImpl implements BookingStatusService {
         }
         booking.setStatus(toStatus);
 
+        recordHistory(booking, from, reason, users.getReferenceById(actorUserId));
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void recordInitialStatus(Booking booking) {
+        recordHistory(booking, null, null, booking.getCreatedBy());
+    }
+
+    private void recordHistory(Booking booking, BookingStatus from, String reason,
+                               AppUser actor) {
         BookingStatusHistory row = new BookingStatusHistory();
         row.setBooking(booking);
         row.setFromStatus(from);
-        row.setToStatus(toStatus);
-        row.setChangedBy(users.getReferenceById(actorUserId));
+        row.setToStatus(booking.getStatus());
+        row.setChangedBy(actor);
         row.setReason(reason == null || reason.isBlank() ? null : reason.trim());
         history.save(row);
     }

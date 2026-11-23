@@ -1,0 +1,70 @@
+package com.example.racehorse_transport.dto.booking;
+
+import com.example.racehorse_transport.entity.*;
+import com.example.racehorse_transport.entity.enums.*;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.List;
+
+public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySnapshot> parties,
+        List<AddressSnapshot> addresses, List<HorseDetail> horses) {
+
+    public static BookingDetailResponseDto from(Booking booking, List<BookingParty> parties,
+                                                 List<BookingAddress> addresses, List<HorseDetail> horses) {
+        return new BookingDetailResponseDto(BookingResponseDto.from(booking),
+                parties.stream().map(PartySnapshot::from).toList(),
+                addresses.stream().map(AddressSnapshot::from).toList(), List.copyOf(horses));
+    }
+
+    public record PartySnapshot(BookingPartyRole bookingRole, String fullName, String phone,
+            String identityDocumentType, String identityDocumentNumber, String identityDocumentCountryCode, String address) {
+
+        public static PartySnapshot from(BookingParty party) {
+            return new PartySnapshot(party.getId().getBookingRole(), party.getFullName(), party.getPhone(),
+                    party.getIdentityDocumentType(), party.getIdentityDocumentNumber(),
+                    party.getIdentityDocumentCountryCode(), party.getAddress());
+        }
+    }
+
+    public record AddressSnapshot(Long id, AddressRole addressType, String addressLine, String provinceCode,
+            String countryCode, BigDecimal latitude, BigDecimal longitude, String contactName, String contactPhone,
+            String accessNote, Long sourceCustomerAddressId) {
+
+        public static AddressSnapshot from(BookingAddress address) {
+            return new AddressSnapshot(address.getId(), address.getAddressType(), address.getAddressLine(),
+                    address.getProvince().getCode(), address.getCountry().getCode(), address.getLatitude(),
+                    address.getLongitude(), address.getContactName(), address.getContactPhone(), address.getAccessNote(),
+                    address.getSourceAddress() == null ? null : address.getSourceAddress().getId());
+        }
+    }
+
+    public record HorseDetail(Long id, Long horseId, String horseName, String stallTypeCode, String dietNote,
+            Short feedingsPerDay, Boolean feedSuppliedByOwner, BookingHorseStatus status,
+            List<AddOn> addOns, InsuranceDetail insurance) {
+
+        public static HorseDetail from(BookingHorse row, List<BookingHorseAddOn> addOns, HorseInsurance insurance) {
+            return new HorseDetail(row.getId(), row.getHorse().getId(), row.getHorse().getName(),
+                    row.getStallType().getCode(), row.getDietNote(), row.getFeedingsPerDay(),
+                    row.getFeedSuppliedByOwner(), row.getStatus(), addOns.stream().map(AddOn::from).toList(),
+                    insurance == null ? null : InsuranceDetail.from(insurance));
+        }
+    }
+
+    public record AddOn(Long serviceId, String serviceName, int quantity) {
+
+        public static AddOn from(BookingHorseAddOn addOn) {
+            return new AddOn(addOn.getBillableService().getId(), addOn.getBillableService().getName(), addOn.getQuantity());
+        }
+    }
+
+    public record InsuranceDetail(InsuranceCoverageOption coverageOption, HorseInsuranceStatus status,
+            Long insurerPartyId, String policyNumber, LocalDate validFrom, LocalDate validTo, Long waiverTermsAcceptanceId) {
+
+        public static InsuranceDetail from(HorseInsurance insurance) {
+            return new InsuranceDetail(insurance.getCoverageOption(), insurance.getStatus(),
+                    insurance.getInsurerParty() == null ? null : insurance.getInsurerParty().getId(),
+                    insurance.getPolicyNumber(), insurance.getValidFrom(), insurance.getValidTo(),
+                    insurance.getWaiverTermsAcceptance() == null ? null : insurance.getWaiverTermsAcceptance().getId());
+        }
+    }
+}

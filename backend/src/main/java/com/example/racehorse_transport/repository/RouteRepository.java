@@ -29,4 +29,10 @@ public interface RouteRepository extends JpaRepository<Route, Long> {
             WHERE r.status = :status AND (r.origin.id = :locationId OR r.destination.id = :locationId
                   OR EXISTS (SELECT 1 FROM RouteStop s WHERE s.route = r AND s.location.id = :locationId))""")
     boolean isUsedByRoute(@Param("locationId") Long locationId, @Param("status") ActiveStatus status);
+
+    @Query("""
+            SELECT r FROM Route r JOIN FETCH r.origin JOIN FETCH r.destination
+            WHERE r.id = (SELECT d.route.id FROM Departure d WHERE d.id = :departureId)
+            """)
+    Optional<Route> findRouteForSubmission(Long departureId);
 }
