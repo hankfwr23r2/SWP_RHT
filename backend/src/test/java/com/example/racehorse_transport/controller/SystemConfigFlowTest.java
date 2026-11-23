@@ -34,12 +34,16 @@ class SystemConfigFlowTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data").isArray());
         mvc.perform(put(URL).header(HttpHeaders.AUTHORIZATION, token).contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"configValue":7,"updatedByUserId":999999}
+                                {"configValue":7,"updatedByUserId":999999,"minValue":7,"maxValue":7}
                                 """))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.configValue").value("7"))
+                .andExpect(jsonPath("$.data.minValue").value(1))
+                .andExpect(jsonPath("$.data.maxValue").value(10))
                 .andExpect(jsonPath("$.data.updatedByUserId").isNumber());
         mvc.perform(get(URL).header(HttpHeaders.AUTHORIZATION, token))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.data.configValue").value("7"));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.configValue").value("7"))
+                .andExpect(jsonPath("$.data.minValue").value(1))
+                .andExpect(jsonPath("$.data.maxValue").value(10));
     }
 
     @Test
@@ -49,6 +53,12 @@ class SystemConfigFlowTest {
                         .content("""
                                 {"configValue":1.5}
                                 """)).andExpect(status().isBadRequest());
+        mvc.perform(put(URL).header(HttpHeaders.AUTHORIZATION, admin).contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"configValue":11,"maxValue":100}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Giá trị tham số phải nằm trong khoảng từ 1 đến 10."));
         String coordinator = staffToken("COORDINATOR");
         mvc.perform(get(URL).header(HttpHeaders.AUTHORIZATION, coordinator))
                 .andExpect(status().isForbidden());

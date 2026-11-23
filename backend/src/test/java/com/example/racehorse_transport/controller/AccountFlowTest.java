@@ -46,10 +46,11 @@ class AccountFlowTest {
         mvc.perform(get("/staff-accounts/{id}", id).header(HttpHeaders.AUTHORIZATION, token)).andExpect(status().isOk());
         mvc.perform(put("/staff-accounts/{id}", id).header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON).content("""
-                                {"staffCode":"FLOW-A2","fullName":"Updated Driver","phone":"0981234567",
+                                {"staffCode":" flow-a2 ","fullName":"Updated Driver","phone":"0981234567",
                                  "hireDate":"2026-11-23","homeHubLocationId":%d,"roleCode":"ADMIN"}
                                 """.formatted(hub)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.roleCode").value("DRIVER"))
+                .andExpect(jsonPath("$.data.staffCode").value("FLOW-A2"))
                 .andExpect(jsonPath("$.data.fullName").value("Updated Driver"));
         mvc.perform(post("/auth/staff/login").contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -67,6 +68,26 @@ class AccountFlowTest {
         long hub = locations.findByCode("HUB-HCM").orElseThrow().getId();
         mvc.perform(post("/staff-accounts").header(HttpHeaders.AUTHORIZATION, staffToken("ADMIN"))
                         .contentType(MediaType.APPLICATION_JSON).content(createBody("CUSTOMER", hub)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void rejectsInvalidStaffCodesOnCreateAndUpdate() throws Exception {
+        String token = staffToken("ADMIN");
+        long hub = locations.findByCode("HUB-HCM").orElseThrow().getId();
+        String payload = createBody("DRIVER", hub);
+        mvc.perform(post("/staff-accounts").header(HttpHeaders.AUTHORIZATION, token)
+                        .contentType(MediaType.APPLICATION_JSON).content(payload.replace("FLOW-A2", "FLOW/A2")))
+                .andExpect(status().isBadRequest());
+        String response = mvc.perform(post("/staff-accounts").header(HttpHeaders.AUTHORIZATION, token)
+                        .contentType(MediaType.APPLICATION_JSON).content(payload))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        long id = ((Number) JsonPath.read(response, "$.data.userId")).longValue();
+        mvc.perform(put("/staff-accounts/{id}", id).header(HttpHeaders.AUTHORIZATION, token)
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"staffCode":"FLOW A2","fullName":"Driver Test","phone":"0981234567",
+                                 "hireDate":"2026-11-23","homeHubLocationId":%d}
+                                """.formatted(hub)))
                 .andExpect(status().isBadRequest());
     }
 

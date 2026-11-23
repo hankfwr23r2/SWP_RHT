@@ -18,7 +18,8 @@ public record StaffAccountCreateRequestDto(
         @NotBlank @Email @Size(max = 254) String email,
         @JsonProperty(access = JsonProperty.Access.WRITE_ONLY) @NotBlank @Size(min = 6, max = 72) String password,
         @NotBlank @Size(max = 30) String roleCode,
-        @NotBlank @Size(max = 30) String staffCode,
+        @NotBlank @Size(max = 30) @Pattern(regexp = "\\p{javaWhitespace}*[A-Za-z0-9._-]+\\p{javaWhitespace}*")
+        String staffCode,
         @NotBlank @Size(max = 200) String fullName,
         @NotBlank @Size(max = 20) String phone,
         @NotNull LocalDate hireDate,

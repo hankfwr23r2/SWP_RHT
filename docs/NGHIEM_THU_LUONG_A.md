@@ -75,6 +75,12 @@ Admin xem danh sách và chi tiết tại `GET /api/v1/system-configs` và `GET 
 
 [Migration tham chiếu audit](../backend/src/main/resources/db/migration/V202611231500__system_config_audit_target.sql) cấp `audit_target_id` kiểu `bigint` duy nhất cho tham số hiện có và tham số thêm sau này. Ứng dụng vẫn tra cứu bằng `config_key`. Khi giá trị thực sự thay đổi, `AuditService` ghi một dòng `UPDATE_SYSTEM_CONFIG` với người sửa, ID đích và bản chụp trước và sau trong cùng transaction. Gửi lại giá trị hiện tại trả bản ghi sẵn có. [SystemConfigController](../backend/src/main/java/com/example/racehorse_transport/controller/SystemConfigController.java)
 
+### Giới hạn tham số và định dạng mã nhân viên
+
+API tham số trả thêm `minValue` và `maxValue` từ DB. Giá trị ngoài khoảng trả `400` kèm hai cận. Migration dừng và báo khóa tham số nếu dữ liệu hiện có sai định dạng số nguyên hoặc vượt giới hạn. [Giới hạn theo tham số](DB_SCHEMA_59_BANG.md#154-system_config-tham-số-kỹ-thuật)
+
+Khi tạo hoặc cập nhật tài khoản nhân viên, mã nhân viên chỉ gồm chữ ASCII, chữ số, dấu chấm, gạch dưới và gạch ngang. Khoảng trắng ở hai đầu được bỏ khi lưu.
+
 ## Kết quả kiểm tra
 
 | Kiểm tra | Đồng bộ tên | A2.1 | A2.2 | A2.3 và A2.4 | A2.5 trên nền P0.2-B |

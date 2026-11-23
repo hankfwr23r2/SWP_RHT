@@ -61,7 +61,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
         Staff actor = adminStaff(username);
         var config = repository.findForUpdate(key).orElseThrow(this::unknownConfig);
         int value = request.integerValue();
-        SystemConfigPolicy.requireValidUpdate(config.getUnit(), value);
+        SystemConfigPolicy.requireValidUpdate(config.getUnit(), value, config.getMinValue(), config.getMaxValue());
         var before = SystemConfigResponseDto.from(config);
         if (Integer.toString(value).equals(config.getConfigValue())) {
             return before;

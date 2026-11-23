@@ -1301,11 +1301,24 @@ Chỉ chứa tham số **không phải giá tiền**, ví dụ thời gian chờ
 | `config_key` | `varchar(100)` | | PK | Ví dụ `HANDOVER_WAIT_MINUTES` |
 | `audit_target_id` | `bigint` | | identity, UK | Định danh ổn định để ghi `audit_log.target_id` khi cập nhật tham số |
 | `config_value` | `varchar(500)` | | | |
+| `min_value` | `int` | có | CHECK cùng có giá trị hoặc cùng NULL với `max_value` | Cận dưới, tính cả giá trị cận |
+| `max_value` | `int` | có | CHECK `min_value <= max_value` khi có giới hạn | Cận trên, tính cả giá trị cận |
 | `unit` | `varchar(30)` | có | | `MINUTE`, `HOUR`, `COUNT` |
 | `config_group` | `varchar(50)` | | | |
 | `description` | `text` | có | | |
 | `updated_by` | `bigint` | có | FK → staff(user_id) | |
 | `updated_at` | `timestamptz` | | default `now()` | |
+
+Backend kiểm tra giới hạn khi cập nhật giá trị. Nếu hai cận đều NULL, quy tắc cập nhật số nguyên dương cho đơn vị được hỗ trợ vẫn áp dụng.
+
+| Tham số | Nhỏ nhất | Lớn nhất |
+|---|---:|---:|
+| `DEPARTURE_GENERATION_WEEKS` | 1 | 52 |
+| `OTP_EXPIRY_MINUTES` | 1 | 30 |
+| `OTP_MAX_ATTEMPTS` | 1 | 10 |
+| `QUOTATION_VALID_HOURS` | 1 | 720 |
+| `BALANCE_DUE_DAYS_BEFORE_PICKUP` | 1 | 30 |
+| `HANDOVER_FREE_WAIT_MINUTES` | 1 | 1440 |
 
 ### 15.5 `route_cache`: bộ đệm kết quả tính lộ trình
 
