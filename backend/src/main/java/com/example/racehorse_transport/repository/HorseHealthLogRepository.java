@@ -16,4 +16,8 @@ public interface HorseHealthLogRepository extends JpaRepository<HorseHealthLog, 
 
     // Lần ghi gần nhất của con ngựa ở nơi khác (điểm dừng hoặc lưu trú trước)
     Optional<HorseHealthLog> findFirstByBookingHorse_IdOrderByRecordedAtDesc(Long bookingHorseId);
+
+    // Báo cáo chuyến: các lần ghi sức khỏe trên một lượt xe
+    @EntityGraph(attributePaths = {"bookingHorse", "bookingHorse.horse"})
+    List<HorseHealthLog> findByVehicleTrip_IdOrderByRecordedAt(Long vehicleTripId);
 }

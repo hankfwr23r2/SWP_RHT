@@ -24,4 +24,12 @@ public interface CostItemRepository extends JpaRepository<CostItem, Long> {
             WHERE c.booking.id = :bookingId AND c.payerType IN :payers AND c.customerConsulted = false AND c.approvedAt IS NOT NULL
             """)
     BigDecimal sumApprovedWithoutConsulting(@Param("bookingId") Long bookingId, @Param("payers") Collection<CostPayerType> payers);
+
+    // Báo cáo chuyến: chi phí gắn thẳng với lượt xe hoặc với sự cố của lượt xe
+    @Query("""
+            SELECT c FROM CostItem c LEFT JOIN c.incident i
+            WHERE c.vehicleTrip.id IN :tripIds OR i.vehicleTrip.id IN :tripIds
+            ORDER BY c.incurredAt, c.id
+            """)
+    List<CostItem> findOfTrips(@Param("tripIds") Collection<Long> tripIds);
 }

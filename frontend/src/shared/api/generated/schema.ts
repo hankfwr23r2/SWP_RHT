@@ -763,7 +763,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["trip_1"];
+        get: operations["trip_2"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1716,6 +1716,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reports/operations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reports/trips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["trips_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reports/trips/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["trip_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/routes": {
         parameters: {
             query?: never;
@@ -2425,6 +2473,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListTripReportRowResponseDto: {
+            data?: components["schemas"]["TripReportRowResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListVehicleClassResponseDto: {
             data?: components["schemas"]["VehicleClassResponseDto"][];
             message?: string;
@@ -2454,6 +2507,11 @@ export interface components {
         };
         ApiResponseMyCrewAssignmentResponseDto: {
             data?: components["schemas"]["MyCrewAssignmentResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseOperationsSummaryResponseDto: {
+            data?: components["schemas"]["OperationsSummaryResponseDto"];
             message?: string;
             status?: string;
         };
@@ -2499,6 +2557,11 @@ export interface components {
         };
         ApiResponseSystemConfigResponseDto: {
             data?: components["schemas"]["SystemConfigResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseTripReportResponseDto: {
+            data?: components["schemas"]["TripReportResponseDto"];
             message?: string;
             status?: string;
         };
@@ -3353,6 +3416,11 @@ export interface components {
             /** Format: int64 */
             vehicleTripId?: number;
         };
+        IncidentTypeCountDto: {
+            /** Format: int64 */
+            count?: number;
+            key?: string;
+        };
         InsuranceConfirmationRequestDto: unknown;
         InsuranceDeclarationRequestDto: {
             acceptedWaiver?: boolean;
@@ -3549,6 +3617,31 @@ export interface components {
             read?: boolean;
             title?: string;
         };
+        OperationsSummaryResponseDto: {
+            /** Format: int32 */
+            arrivedStopCount?: number;
+            /** Format: double */
+            averageRating?: number;
+            /** Format: int32 */
+            completedTripCount?: number;
+            costTotal?: number;
+            costsByPayer?: components["schemas"]["PayerAmountDto"][];
+            /** Format: int32 */
+            horsesDelivered?: number;
+            /** Format: int32 */
+            incidentCount?: number;
+            incidentsByType?: components["schemas"]["IncidentTypeCountDto"][];
+            /** Format: int32 */
+            lateStopCount?: number;
+            /** Format: double */
+            onTimeRate?: number;
+            /** Format: int32 */
+            openIncidentCount?: number;
+            /** Format: int32 */
+            ratingCount?: number;
+            /** Format: int32 */
+            tripCount?: number;
+        };
         PartnerDocumentUploadRequestDto: {
             /** Format: int64 */
             bookingHorseId?: number;
@@ -3641,6 +3734,10 @@ export interface components {
         PasswordResetOtpRequest: {
             /** Format: email */
             email: string;
+        };
+        PayerAmountDto: {
+            amount?: number;
+            key?: string;
         };
         PersonalInsuranceRevisionRequestDto: {
             /** Format: int64 */
@@ -3858,6 +3955,63 @@ export interface components {
             requirementsDependOnGate?: boolean;
             rule?: components["schemas"]["CountryRuleResponseDto"];
         };
+        ReportCostDto: {
+            amount?: number;
+            approved?: boolean;
+            /** @enum {string} */
+            category?: "TOLL" | "FUEL" | "STABLING" | "VET" | "RESCUE" | "REPAIR" | "WAITING" | "OTHER";
+            description?: string;
+            /** @enum {string} */
+            payerType?: "COMPANY" | "CUSTOMER" | "CONSIGNEE" | "AGENT";
+        };
+        ReportHealthDto: {
+            /** @enum {string} */
+            feedIntake?: "NORMAL" | "REDUCED" | "REFUSED";
+            /** @enum {string} */
+            healthStatus?: "NORMAL" | "WATCH" | "SICK" | "CRITICAL";
+            horseName?: string;
+            /** Format: date-time */
+            recordedAt?: string;
+            symptoms?: string;
+            temperatureCelsius?: number;
+            /** @enum {string} */
+            waterIntake?: "NORMAL" | "REDUCED" | "REFUSED";
+        };
+        ReportIncidentDto: {
+            /** @enum {string} */
+            causeType?: "COMPANY_FAULT" | "HORSE_CONDITION" | "CUSTOMER_DOCS" | "AGENT_FAULT" | "FORCE_MAJEURE" | "RECIPIENT_ABSENT";
+            /** Format: int64 */
+            id?: number;
+            /** @enum {string} */
+            incidentType?: "HEALTH" | "VEHICLE_BREAKDOWN" | "ACCIDENT" | "DELAY" | "DOCUMENT" | "HANDOVER_TIMEOUT" | "OTHER";
+            /** Format: date-time */
+            reportedAt?: string;
+            /** Format: date-time */
+            resolvedAt?: string;
+            /** @enum {string} */
+            status?: "REPORTED" | "PLAN_PENDING" | "PLAN_ACTIVE" | "RESOLVED" | "CLOSED";
+            title?: string;
+        };
+        ReportRatingDto: {
+            bookingCode?: string;
+            comment?: string;
+            /** Format: int32 */
+            score?: number;
+        };
+        ReportStopDto: {
+            /** Format: date-time */
+            actualArrivalAt?: string;
+            /** Format: date-time */
+            actualDepartureAt?: string;
+            late?: boolean;
+            name?: string;
+            /** Format: date-time */
+            plannedArrivalAt?: string;
+            /** Format: int32 */
+            sequenceNumber?: number;
+            /** @enum {string} */
+            stopType?: "PICKUP" | "DELIVERY" | "HUB" | "REST" | "VITAL_CHECK" | "BORDER" | "QUARANTINE";
+        };
         ResetPasswordWithOtpRequest: {
             confirmPassword: string;
             /** Format: email */
@@ -4004,6 +4158,45 @@ export interface components {
             /** Format: int32 */
             seats?: number;
             stallTypeCode?: string;
+        };
+        TripReportResponseDto: {
+            costs?: components["schemas"]["ReportCostDto"][];
+            healthLogs?: components["schemas"]["ReportHealthDto"][];
+            incidents?: components["schemas"]["ReportIncidentDto"][];
+            ratings?: components["schemas"]["ReportRatingDto"][];
+            stops?: components["schemas"]["ReportStopDto"][];
+            summary?: components["schemas"]["TripReportRowResponseDto"];
+        };
+        TripReportRowResponseDto: {
+            /** Format: date-time */
+            actualEndAt?: string;
+            /** Format: date-time */
+            actualStartAt?: string;
+            /** Format: int32 */
+            arrivedStopCount?: number;
+            /** Format: double */
+            averageRating?: number;
+            code?: string;
+            costTotal?: number;
+            endLocationName?: string;
+            /** Format: int32 */
+            horseCount?: number;
+            /** Format: int64 */
+            id?: number;
+            /** Format: int32 */
+            incidentCount?: number;
+            /** Format: int32 */
+            lateStopCount?: number;
+            licensePlate?: string;
+            /** Format: date-time */
+            plannedStartAt?: string;
+            startLocationName?: string;
+            /** @enum {string} */
+            status?: "PLANNED" | "DISPATCHED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+            /** Format: int32 */
+            stopCount?: number;
+            /** @enum {string} */
+            tripType?: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "DIRECT";
         };
         TripStopRequestDto: {
             /** Format: int64 */
@@ -5366,7 +5559,7 @@ export interface operations {
             };
         };
     };
-    trip_1: {
+    trip_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -7245,6 +7438,74 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListPublicTrackingResponseDto"];
+                };
+            };
+        };
+    };
+    summary: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseOperationsSummaryResponseDto"];
+                };
+            };
+        };
+    };
+    trips_1: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListTripReportRowResponseDto"];
+                };
+            };
+        };
+    };
+    trip_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseTripReportResponseDto"];
                 };
             };
         };
