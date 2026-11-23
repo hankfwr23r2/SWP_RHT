@@ -15,7 +15,7 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 
-// Vai trò của một bên.
+// Vai trò của một đối tác.
 @Getter
 @Setter
 @NoArgsConstructor

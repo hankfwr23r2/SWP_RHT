@@ -1,6 +1,9 @@
 package com.example.racehorse_transport.dto.auth;
 
 import com.example.racehorse_transport.entity.AppUser;
+import com.example.racehorse_transport.entity.Country;
+import com.example.racehorse_transport.entity.Customer;
+import com.example.racehorse_transport.entity.enums.CustomerType;
 import com.example.racehorse_transport.util.ContactPatterns;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
@@ -47,7 +50,7 @@ public class RegisterRequestDto {
     // Phải đồng ý Điều khoản vận chuyển mới đăng ký được; giờ và phiên bản do server ghi
     private Boolean acceptedTerms;
 
-    // Tài khoản mới, chưa lưu. Trạng thái và cờ xác thực email do service đặt.
+    // Tài khoản mới, chưa lưu. Vai trò, trạng thái và cờ xác thực email do service đặt.
     public AppUser toEntity(String passwordHash) {
         AppUser user = new AppUser();
         user.setUsername(username.trim());
@@ -57,5 +60,17 @@ public class RegisterRequestDto {
             user.setPreferredLanguage(language);
         }
         return user;
+    }
+
+    // Hồ sơ khách mới, chưa lưu. Form đăng ký chỉ dành cho cá nhân.
+    public Customer toCustomer(AppUser user, Country country) {
+        Customer customer = new Customer();
+        customer.setUser(user);
+        customer.setCustomerType(CustomerType.PERSON);
+        customer.setFullName(fullName.trim());
+        customer.setPhone(phone.trim());
+        customer.setAddress(address == null || address.isBlank() ? null : address.trim());
+        customer.setCountry(country);
+        return customer;
     }
 }

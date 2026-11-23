@@ -65,7 +65,7 @@ Agent **không được** tạo, sửa, xóa hay di chuyển file trong repo khi
 - **Mô hình nghiệp vụ** (chi tiết ở `NGHIEP_VU_THEO_59_BANG.md`):
   - **Gom hàng qua hub:** chặng đón → tập kết ở hub → chuyến trục định kỳ (`departure`) → lưu trú hoặc cách ly → chặng giao.
   - **Trục nội địa** (hub ⇄ hub) và **trục quốc tế** (hub → cửa khẩu, rồi bàn giao cho đại lý).
-  - **Trụ sở và hub vệ tinh:** mọi xe và nhân viên thuộc trụ sở. Xe về **hub gốc** (`home_hub_id`) thì mới rảnh.
+  - **Trụ sở và hub vệ tinh:** mọi xe và nhân viên thuộc trụ sở. Xe về **hub gốc** (`home_hub_location_id`) thì mới rảnh.
   - Hub đón trùng hub giao thì **chạy thẳng** (`DIRECT`). Mỗi đơn có tối đa một chặng trục.
   - Ba lớp không được trộn:
     - thương mại: `booking`, `quotation`, `payment`;
@@ -132,12 +132,13 @@ Gốc package: `backend/src/main/java/com/example/racehorse_transport/`.
 - Mọi tham chiếu tới bản ghi khác **phải là FK** (`@ManyToOne` + `@JoinColumn`). Không lưu ID hay tên dạng chuỗi.
 - Trạng thái và loại dùng Java enum với `@Enumerated(EnumType.STRING)`, kèm `CHECK` trong migration.
 - **Không có view chứa logic nghiệp vụ.** Mọi phép tính nằm trong code.
-- Cột dẫn xuất chỉ được lưu khi là **snapshot của chứng từ đã chốt** (ví dụ tiền của `quotation`) hoặc **bộ đếm có khóa bảo vệ** (ví dụ `departure.booked_stalls`). Danh sách cột được phép nằm ở mục "Dữ liệu dẫn xuất" của `DB_SCHEMA_59_BANG.md`.
+- Cột dẫn xuất chỉ được lưu khi là **snapshot của chứng từ đã chốt** (ví dụ tiền của `quotation`) hoặc **bộ đếm có khóa bảo vệ** (ví dụ `departure.booked_stall_count`). Danh sách cột được phép nằm ở mục "Dữ liệu dẫn xuất" của `DB_SCHEMA_59_BANG.md`.
   - Mỗi cột dẫn xuất chỉ do **một service** ghi, trong cùng transaction với thao tác gốc. Entity ghi comment `// derived: <service ghi>`.
   - Giá trị đổi liên tục (đã trả, còn nợ, ngựa đang ở đâu, đủ giấy chưa) thì **tính khi đọc**: repository truy vấn tổng hợp, policy tính kết quả.
 - Snapshot có chủ đích phải ghi comment `// snapshot: <lý do>`.
 - Quy ước:
   - tên bảng và cột dùng `snake_case`, tên bảng số ít;
+  - mọi định danh dùng tiếng Anh, theo quy tắc N1–N10 ở mục 0 của `DB_SCHEMA_59_BANG.md`. Tài liệu dùng tên mới; code và migration **chưa đồng bộ** thì giữ tên đang có và tra `docs/BANG_DOI_TEN.md`. Không tự đổi tên khi người dùng chưa giao việc đồng bộ;
   - PK là `bigint` identity ↔ `Long`;
   - `timestamptz` ↔ `Instant`, `date` ↔ `LocalDate`;
   - tiền là `numeric(15,2)` ↔ `BigDecimal`.
@@ -210,7 +211,7 @@ public class VehicleCreateRequestDto {
 - Mỗi `*ServiceImpl` phục vụ một nhóm use case. Vượt **500 dòng** hoặc **10 dependency** thì phải đề xuất tách trước khi thêm code.
 - Method ghi có `@Transactional`. Method chỉ đọc có `@Transactional(readOnly = true)`.
 - Lấy thời gian qua `Clock` được inject. Không gọi `Instant.now()` hay `LocalDate.now()` trực tiếp.
-- Đặt chỗ vào `departure` phải khóa dòng `departure` (`SELECT … FOR UPDATE`) rồi mới đọc và cập nhật `booked_stalls`.
+- Đặt chỗ vào `departure` phải khóa dòng `departure` (`SELECT … FOR UPDATE`) rồi mới đọc và cập nhật `booked_stall_count`.
 - Ném exception riêng trong `exception/` (ví dụ `ResourceNotFoundException`). Không ném `RuntimeException` chung chung, không trả `null` để báo lỗi.
 
 ### 7.2 API

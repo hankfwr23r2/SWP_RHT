@@ -24,7 +24,6 @@ ON CONFLICT ON CONSTRAINT uk_departure_schedule_date DO NOTHING;
 DO $$
 DECLARE
     v_user      bigint;
-    v_party     bigint;
     v_specialist bigint;
     v_manager   bigint;
     v_pl        bigint;
@@ -43,8 +42,8 @@ BEGIN
         RETURN;
     END IF;
 
-    SELECT u.id, p.id INTO v_user, v_party
-    FROM app_user u JOIN party p ON p.user_id = u.id
+    SELECT c.user_id INTO v_user
+    FROM customer c JOIN app_user u ON u.id = c.user_id
     WHERE u.username = 'customer1.dev';
     SELECT id INTO v_specialist FROM app_user WHERE username = 'specialist.dev';
     SELECT id INTO v_manager FROM app_user WHERE username = 'manager.dev';
@@ -55,22 +54,22 @@ BEGIN
     END IF;
 
     -- Ngựa của khách
-    INSERT INTO horse (owner_party_id, name, microchip, passport_no, gender, birth_year, color, breed, horse_type_id, weight_kg, status)
-    VALUES (v_party, 'Sao Mai', '985000000100001', 'VN-PP-0001', 'MARE', 2019, 'Nâu', 'Thoroughbred', v_horse_type, 480.0, 'ACTIVE'),
-           (v_party, 'Bạch Long', '985000000100002', 'VN-PP-0002', 'STALLION', 2018, 'Trắng', 'Arabian', v_horse_type, 450.0, 'ACTIVE'),
-           (v_party, 'Gió Nam', '985000000100003', 'VN-PP-0003', 'GELDING', 2020, 'Hồng', 'Thoroughbred', v_horse_type, 470.0, 'ACTIVE'),
-           (v_party, 'Hắc Mã', '985000000100004', 'VN-PP-0004', 'STALLION', 2017, 'Đen', 'Friesian', v_horse_type, 520.0, 'ACTIVE');
+    INSERT INTO horse (owner_customer_id, name, microchip, passport_no, gender, birth_year, color, breed, horse_type_id, weight_kg, status)
+    VALUES (v_user, 'Sao Mai', '985000000100001', 'VN-PP-0001', 'MARE', 2019, 'Nâu', 'Thoroughbred', v_horse_type, 480.0, 'ACTIVE'),
+           (v_user, 'Bạch Long', '985000000100002', 'VN-PP-0002', 'STALLION', 2018, 'Trắng', 'Arabian', v_horse_type, 450.0, 'ACTIVE'),
+           (v_user, 'Gió Nam', '985000000100003', 'VN-PP-0003', 'GELDING', 2020, 'Hồng', 'Thoroughbred', v_horse_type, 470.0, 'ACTIVE'),
+           (v_user, 'Hắc Mã', '985000000100004', 'VN-PP-0004', 'STALLION', 2017, 'Đen', 'Friesian', v_horse_type, 520.0, 'ACTIVE');
 
     -- ===================== Đơn 1: chạy thẳng Đồng Nai -> TP.HCM (cùng hub HUB-HCM) =====================
     v_pickup := current_date + 10;
-    INSERT INTO booking (code, customer_party_id, booking_type, departure_id, requested_pickup_date, waybill_no, status, created_by)
-    VALUES ('DEV-DIRECT-001', v_party, 'INTERPROVINCE', NULL, v_pickup, 'WB-DEV-0001', 'CONFIRMED', v_user)
+    INSERT INTO booking (code, customer_id, booking_type, departure_id, requested_pickup_date, waybill_no, status, created_by)
+    VALUES ('DEV-DIRECT-001', v_user, 'INTERPROVINCE', NULL, v_pickup, 'WB-DEV-0001', 'CONFIRMED', v_user)
     RETURNING id INTO v_booking;
 
-    INSERT INTO booking_party (booking_id, role, party_id, full_name, phone, address)
-    VALUES (v_booking, 'PAYER', v_party, 'Nguyễn Văn Khách (mẫu)', '0909000001', 'Phường Thủ Dầu Một, TP.HCM'),
-           (v_booking, 'SHIPPER', v_party, 'Nguyễn Văn Khách (mẫu)', '0909000001', 'Phường Thủ Dầu Một, TP.HCM'),
-           (v_booking, 'CONSIGNEE', NULL, 'Trần Người Nhận (mẫu)', '0909000011', 'Phường Bình Thạnh, TP.HCM');
+    INSERT INTO booking_party (booking_id, role, full_name, phone, address)
+    VALUES (v_booking, 'PAYER', 'Nguyễn Văn Khách (mẫu)', '0909000001', 'Phường Thủ Dầu Một, TP.HCM'),
+           (v_booking, 'SHIPPER', 'Nguyễn Văn Khách (mẫu)', '0909000001', 'Phường Thủ Dầu Một, TP.HCM'),
+           (v_booking, 'CONSIGNEE', 'Trần Người Nhận (mẫu)', '0909000011', 'Phường Bình Thạnh, TP.HCM');
 
     INSERT INTO booking_address (booking_id, role, address_line, province_code, country_code, latitude, longitude, contact_name, contact_phone)
     VALUES (v_booking, 'PICKUP', 'Trang trại Long Thành, Đồng Nai', 'VN-75', 'VN', 10.780000, 106.950000, 'Anh Ba', '0909000021'),
@@ -101,14 +100,14 @@ BEGIN
     WHERE r.code = 'HCM-DN' AND d.status = 'OPEN' AND d.departure_date >= current_date + 10
     ORDER BY d.departure_date LIMIT 1;
     v_pickup := (SELECT departure_date - 2 FROM departure WHERE id = v_dep);
-    INSERT INTO booking (code, customer_party_id, booking_type, departure_id, requested_pickup_date, waybill_no, status, created_by)
-    VALUES ('DEV-DOMESTIC-001', v_party, 'INTERPROVINCE', v_dep, v_pickup, 'WB-DEV-0002', 'CONFIRMED', v_user)
+    INSERT INTO booking (code, customer_id, booking_type, departure_id, requested_pickup_date, waybill_no, status, created_by)
+    VALUES ('DEV-DOMESTIC-001', v_user, 'INTERPROVINCE', v_dep, v_pickup, 'WB-DEV-0002', 'CONFIRMED', v_user)
     RETURNING id INTO v_booking;
 
-    INSERT INTO booking_party (booking_id, role, party_id, full_name, phone, address)
-    VALUES (v_booking, 'PAYER', v_party, 'Nguyễn Văn Khách (mẫu)', '0909000001', 'Phường Thủ Dầu Một, TP.HCM'),
-           (v_booking, 'SHIPPER', v_party, 'Nguyễn Văn Khách (mẫu)', '0909000001', 'Phường Thủ Dầu Một, TP.HCM'),
-           (v_booking, 'CONSIGNEE', NULL, 'Lê Chủ Trại Huế (mẫu)', '0909000012', 'Phường Thuận Hóa, TP. Huế');
+    INSERT INTO booking_party (booking_id, role, full_name, phone, address)
+    VALUES (v_booking, 'PAYER', 'Nguyễn Văn Khách (mẫu)', '0909000001', 'Phường Thủ Dầu Một, TP.HCM'),
+           (v_booking, 'SHIPPER', 'Nguyễn Văn Khách (mẫu)', '0909000001', 'Phường Thủ Dầu Một, TP.HCM'),
+           (v_booking, 'CONSIGNEE', 'Lê Chủ Trại Huế (mẫu)', '0909000012', 'Phường Thuận Hóa, TP. Huế');
 
     INSERT INTO booking_address (booking_id, role, address_line, province_code, country_code, latitude, longitude, contact_name, contact_phone)
     VALUES (v_booking, 'PICKUP', 'Trang trại Long Thành, Đồng Nai', 'VN-75', 'VN', 10.780000, 106.950000, 'Anh Ba', '0909000021'),
@@ -147,14 +146,14 @@ BEGIN
     ORDER BY d.departure_date LIMIT 1;
     -- Đón trước 7 ngày để cách ly trước khi xuất
     v_pickup := (SELECT departure_date - 7 FROM departure WHERE id = v_dep);
-    INSERT INTO booking (code, customer_party_id, booking_type, departure_id, requested_pickup_date, waybill_no, status, created_by)
-    VALUES ('DEV-EXPORT-001', v_party, 'EXPORT', v_dep, v_pickup, 'WB-DEV-0003', 'CONFIRMED', v_user)
+    INSERT INTO booking (code, customer_id, booking_type, departure_id, requested_pickup_date, waybill_no, status, created_by)
+    VALUES ('DEV-EXPORT-001', v_user, 'EXPORT', v_dep, v_pickup, 'WB-DEV-0003', 'CONFIRMED', v_user)
     RETURNING id INTO v_booking;
 
-    INSERT INTO booking_party (booking_id, role, party_id, full_name, phone, id_type, id_number, id_country, address)
-    VALUES (v_booking, 'PAYER', v_party, 'Nguyễn Văn Khách (mẫu)', '0909000001', NULL, NULL, NULL, 'Phường Thủ Dầu Một, TP.HCM'),
-           (v_booking, 'SHIPPER', v_party, 'Nguyễn Văn Khách (mẫu)', '0909000001', NULL, NULL, NULL, 'Phường Thủ Dầu Một, TP.HCM'),
-           (v_booking, 'CONSIGNEE', NULL, 'Sok Dara (mẫu)', '+85512000001', 'PASSPORT', 'N0000001', 'KH', 'Phnom Penh, Campuchia');
+    INSERT INTO booking_party (booking_id, role, full_name, phone, id_type, id_number, id_country, address)
+    VALUES (v_booking, 'PAYER', 'Nguyễn Văn Khách (mẫu)', '0909000001', NULL, NULL, NULL, 'Phường Thủ Dầu Một, TP.HCM'),
+           (v_booking, 'SHIPPER', 'Nguyễn Văn Khách (mẫu)', '0909000001', NULL, NULL, NULL, 'Phường Thủ Dầu Một, TP.HCM'),
+           (v_booking, 'CONSIGNEE', 'Sok Dara (mẫu)', '+85512000001', 'PASSPORT', 'N0000001', 'KH', 'Phnom Penh, Campuchia');
 
     INSERT INTO booking_address (booking_id, role, address_line, province_code, country_code, latitude, longitude, contact_name, contact_phone)
     VALUES (v_booking, 'PICKUP', 'CLB Cưỡi ngựa Sài Gòn, TP.HCM', 'VN-79', 'VN', 10.800000, 106.740000, 'Chị Tư', '0909000022'),

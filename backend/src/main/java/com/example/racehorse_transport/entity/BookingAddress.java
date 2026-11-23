@@ -73,8 +73,8 @@ public class BookingAddress {
     @JoinColumn(name = "location_id")
     private Location location;
 
-    // Chép từ sổ địa chỉ nào
+    // Chép từ dòng nào trong sổ địa chỉ của khách
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "source_address_id")
-    private PartyAddress sourceAddress;
+    @JoinColumn(name = "source_customer_address_id")
+    private CustomerAddress sourceAddress;
 }

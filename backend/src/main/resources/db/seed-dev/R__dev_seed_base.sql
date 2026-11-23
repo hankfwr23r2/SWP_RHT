@@ -39,26 +39,16 @@ ON CONFLICT DO NOTHING;
 -- ---------------------------------------------------------------------------
 -- 2. Tài khoản, nhân viên, khách hàng
 -- ---------------------------------------------------------------------------
-INSERT INTO app_user (username, email, password_hash, email_verified, preferred_language, status) VALUES
-    ('admin.dev', 'admin.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE'),
-    ('manager.dev', 'manager.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE'),
-    ('coordinator.dev', 'coordinator.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE'),
-    ('specialist.dev', 'specialist.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE'),
-    ('driver1.dev', 'driver1.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE'),
-    ('driver2.dev', 'driver2.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE'),
-    ('escort1.dev', 'escort1.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE'),
-    ('customer1.dev', 'customer1.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE')
+INSERT INTO app_user (username, email, password_hash, email_verified, preferred_language, status, role_code) VALUES
+    ('admin.dev', 'admin.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'ADMIN'),
+    ('manager.dev', 'manager.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'MANAGER'),
+    ('coordinator.dev', 'coordinator.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'COORDINATOR'),
+    ('specialist.dev', 'specialist.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'SPECIALIST'),
+    ('driver1.dev', 'driver1.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'DRIVER'),
+    ('driver2.dev', 'driver2.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'DRIVER'),
+    ('escort1.dev', 'escort1.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'ESCORT'),
+    ('customer1.dev', 'customer1.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'CUSTOMER')
 ON CONFLICT (username) DO NOTHING;
-
-INSERT INTO user_role (user_id, role_code)
-SELECT u.id, v.role_code
-FROM (VALUES
-          ('admin.dev', 'ADMIN'), ('manager.dev', 'MANAGER'), ('coordinator.dev', 'COORDINATOR'),
-          ('specialist.dev', 'SPECIALIST'), ('driver1.dev', 'DRIVER'), ('driver2.dev', 'DRIVER'),
-          ('escort1.dev', 'ESCORT'), ('customer1.dev', 'CUSTOMER')
-     ) AS v(username, role_code)
-JOIN app_user u ON u.username = v.username
-ON CONFLICT DO NOTHING;
 
 INSERT INTO staff (user_id, staff_code, full_name, phone, hire_date, employment_status, home_hub_id, driver_license_class, driver_license_expiry)
 SELECT u.id, v.staff_code, v.full_name, v.phone, DATE '2026-01-01', 'ACTIVE', hub.id, v.license_class, v.license_expiry
@@ -75,8 +65,8 @@ JOIN app_user u ON u.username = v.username
 JOIN location hub ON hub.code = 'HUB-HCM'
 ON CONFLICT (user_id) DO NOTHING;
 
-INSERT INTO party (kind, display_name, phone, email, address, country_code, user_id, status)
-SELECT 'PERSON', 'Nguyễn Văn Khách (mẫu)', '0909000001', u.email, 'Phường Thủ Dầu Một, TP.HCM', 'VN', u.id, 'ACTIVE'
+INSERT INTO customer (user_id, customer_type, full_name, phone, address, country_code)
+SELECT u.id, 'PERSON', 'Nguyễn Văn Khách (mẫu)', '0909000001', 'Phường Thủ Dầu Một, TP.HCM', 'VN'
 FROM app_user u
 WHERE u.username = 'customer1.dev'
 ON CONFLICT (user_id) DO NOTHING;
@@ -97,7 +87,6 @@ WHERE NOT EXISTS (SELECT 1 FROM party p WHERE p.display_name = v.display_name);
 INSERT INTO party_role (party_id, role_type, valid_from)
 SELECT p.id, v.role_type, DATE '2026-01-01'
 FROM (VALUES
-          ('Nguyễn Văn Khách (mẫu)', 'CUSTOMER'),
           ('Đại lý vận tải Campuchia (mẫu)', 'DEST_AGENT'),
           ('Trại cách ly Củ Chi (mẫu)', 'QUARANTINE_FARM'),
           ('Phòng khám thú y ngựa (mẫu)', 'VET'),

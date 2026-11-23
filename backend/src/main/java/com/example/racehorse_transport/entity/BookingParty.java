@@ -32,12 +32,7 @@ public class BookingParty {
     @JoinColumn(name = "booking_id")
     private Booking booking;
 
-    // Bên đã có hồ sơ. NULL nếu khách chỉ nhập tên
-    @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "party_id")
-    private Party party;
-
-    // snapshot: thông tin các bên tại thời điểm đặt đơn, không đổi theo hồ sơ party
+    // snapshot: thông tin các bên tại thời điểm đặt đơn, không đổi theo hồ sơ khách
     @Column(name = "full_name", length = 200, nullable = false)
     private String fullName;
 

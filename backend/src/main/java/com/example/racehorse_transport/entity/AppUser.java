@@ -6,9 +6,12 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import lombok.Getter;
@@ -19,7 +22,7 @@ import org.hibernate.annotations.Generated;
 
 import java.time.Instant;
 
-// Tài khoản đăng nhập. Vai trò nằm ở user_role.
+// Tài khoản đăng nhập. Mỗi tài khoản có đúng một vai trò; hồ sơ nằm ở customer hoặc staff.
 @Getter
 @Setter
 @NoArgsConstructor
@@ -46,6 +49,10 @@ public class AppUser {
 
     @Column(name = "preferred_language", length = 5, nullable = false)
     private String preferredLanguage = "vi";
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "role_code", nullable = false)
+    private Role role;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 30, nullable = false)

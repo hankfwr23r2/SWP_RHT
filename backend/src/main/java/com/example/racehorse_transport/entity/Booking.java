@@ -43,8 +43,8 @@ public class Booking {
 
     // Người đặt đơn
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "customer_party_id", nullable = false)
-    private Party customer;
+    @JoinColumn(name = "customer_id", nullable = false)
+    private Customer customer;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "booking_type", length = 30, nullable = false)

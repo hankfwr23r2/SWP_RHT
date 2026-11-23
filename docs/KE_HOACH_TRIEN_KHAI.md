@@ -96,7 +96,7 @@ main  (bản cũ, vẫn deploy được)
 |---|---|---|
 | Phạm vi nghiệp vụ | Dữ liệu nền, đặt đơn, thẩm định, bảo hiểm, giấy tờ, báo giá, thanh toán, quyết toán | Điều độ xe, chặng, điểm dừng, giao nhận, lưu trú, sức khỏe, sự cố, chi phí, theo dõi, báo cáo |
 | Giai đoạn nghiệp vụ | GĐ1–GĐ5 (phần thương mại), GĐ9–GĐ10 | GĐ5 (phần điều độ), GĐ6–GĐ8, nhánh phụ 5.1, 5.3 |
-| Backend | `LocationService`, `RouteService`, `DepartureService`, `VehicleService`, `PartyService`, `PriceListService`, `PricingService`, `RegulationService`, `BookingService`, `BookingStatusService`, `InsuranceService`, `DocumentReviewService`, `QuotationService`, `PaymentService`, `SettlementService`, `RatingService` | `DispatchService`, `HorseLegService`, `TripStopService`, `HandoverService`, `HorseStayService`, `HealthLogService`, `IncidentService`, `CostItemService`, `TrackingService`, `ReportService` |
+| Backend | `LocationService`, `RouteService`, `DepartureService`, `VehicleService`, `CustomerService`, `PartyService`, `PriceListService`, `PricingService`, `RegulationService`, `BookingService`, `BookingStatusService`, `InsuranceService`, `DocumentReviewService`, `QuotationService`, `PaymentService`, `SettlementService`, `RatingService` | `DispatchService`, `HorseLegService`, `TripStopService`, `HandoverService`, `HorseStayService`, `HealthLogService`, `IncidentService`, `CostItemService`, `TrackingService`, `ReportService` |
 | Frontend | `apps/customer` (trừ khối theo dõi), `backoffice/features/admin`, `manager` (tiếp nhận, báo giá, quyết toán), `specialist` | `backoffice/features/coordinator`, `driver`, `escort`, `manager` (sự cố, duyệt chi phí, báo cáo), `shared/components/HorseJourney` |
 | Đợt 0 | Backend nền: DB, entity nhóm 1–8, auth | Backend chéo (entity nhóm 9–15, document, notification, audit, ArchUnit, OpenAPI) và toàn bộ frontend nền |
 
@@ -107,14 +107,15 @@ Có **3 thành viên** thì tách luồng A thành A-BE và A-FE (khách hàng),
 | Nhóm | Bảng | Service chủ sở hữu | Luồng / task |
 |---|---|---|---|
 | 1 | `country`, `province`, `location`, `hub_service_area` | `LocationService` | A1 |
-| 2 | `app_user`, `role`, `user_role`, `otp` | `AuthService`, `AccountService` | P0 (auth), A2 (quản trị tài khoản) |
+| 2 | `app_user`, `role`, `otp` | `AuthService`, `AccountService` | P0 (auth), A2 (quản trị tài khoản) |
 | 2 | `staff` | `AccountService` | A2 |
-| 2 | `party`, `party_role`, `party_address` | `PartyService` | P0 (tạo khi đăng ký), A2 |
+| 2 | `customer`, `customer_address` | `CustomerService` | P0 (tạo khi đăng ký), A2 |
+| 2 | `party`, `party_role` | `PartyService` | A2 |
 | 3 | `horse_type`, `horse` | `HorseService` | A5 |
 | 4 | `route`, `route_stop`, `departure_schedule`, `departure_schedule_day` | `RouteService` | A1 |
-| 4 | `departure` (kể cả `booked_stalls`) | `DepartureService` | A1 |
+| 4 | `departure` (kể cả `booked_stall_count`) | `DepartureService` | A1 |
 | 5 | `vehicle_class`, `stall_type`, `vehicle` | `VehicleService` | A2 |
-| 6 | `service`, `price_list`, `price_item` | `PriceListService` | A3 |
+| 6 | `billable_service`, `price_list`, `price_item` | `PriceListService` | A3 |
 | 7 | `country_rule`, `document_type`, `document_requirement` | `RegulationService` | A4 |
 | 8 | `booking`, `booking_party`, `booking_address`, `booking_horse`, `booking_horse_service`, `terms_acceptance` | `BookingService` | A5 |
 | 8 | `booking.status`, `booking_status_history` | `BookingStatusService` | P0 (interface), A5 |
@@ -122,7 +123,7 @@ Có **3 thành viên** thì tách luồng A thành A-BE và A-FE (khách hàng),
 | 9 | `vehicle_trip`, `trip_stop` (kế hoạch), `crew_assignment`, `horse_leg` | `DispatchService`, `HorseLegService` | B1 |
 | 9 | `trip_stop` (giờ thực tế) | `TripStopService` | B2 |
 | 9 | `horse_stay`, `horse_health_log` | `HorseStayService`, `HealthLogService` | B3 |
-| 10 | `handover`, `handover_horse`, `handover_item` | `HandoverService` | B2 |
+| 10 | `handover`, `handover_horse`, `handover_document` | `HandoverService` | B2 |
 | 11 | `horse_insurance` | `InsuranceService` | A5 (bản nháp), A6 |
 | 12 | `quotation`, `quotation_line` | `QuotationService` | A7 |
 | 12 | `payment`, `payment_transaction` | `PaymentService` | A7 |
@@ -140,7 +141,7 @@ Có **3 thành viên** thì tách luồng A thành A-BE và A-FE (khách hàng),
 |---|---|---|---|
 | `BookingStatusService.transition(bookingId, toStatus, reason, actor)` | A | A, B | B chuyển đơn sang `IN_OPERATION` (handover PICKUP đầu tiên) và `DELIVERED` (chặng giao cuối cùng xong) |
 | `BookingHorseService.exclude(bookingHorseId, reason, actor)` | A | B | Ngựa không đạt khi nhận (GĐ6) hoặc trượt cách ly (5.3). A nhả khoang và tạo báo giá mới |
-| `DepartureService.reserve/release(departureId, stalls)` | A | A | Mọi thay đổi `booked_stalls` |
+| `DepartureService.reserve/release(departureId, stalls)` | A | A | Mọi thay đổi `booked_stall_count` |
 | `DocumentService.attach(file, documentTypeCode, ownerSubject, ownerId, uploadedByUserId)` | P0 | A, B | Ảnh hiện trường, biên bản giao nhận, biên lai, giấy tờ |
 | `PaymentService.createExtraCharge(bookingId, costItemIds, actorUserId)` | A | A (quyết toán) | Lập khoản thu thêm |
 | `CostItemService.linkExtraPayment(costItemIds, paymentId)` | B | A | Gắn khoản thu thêm vào chi phí |
@@ -195,7 +196,7 @@ Mục tiêu: dựng sẵn **mọi thứ cả hai luồng cùng cần**, để t�
 
 | Code cũ | Chỗ mới | Sửa gì |
 |---|---|---|
-| `security/*` | Giữ | `JwtUtils` lấy vai trò từ `user_role` (làm ở P0.3) |
+| `security/*` | Giữ | `JwtUtils` lấy vai trò từ `app_user.role_code` |
 | `config/SecurityConfig`, `CorsConfig`, `CacheConfig`, `JacksonConfig`, `ClockConfiguration`, `CloudinaryConfig`, `VnpayProperties`, `OpenApiConfig` | Giữ | Bỏ các đường dẫn API cũ khỏi `SecurityConfig` |
 | `RoadRoutingServiceImpl` (gọi Valhalla) | `client/ValhallaClient` + `RoadRoutingService` | Phần gọi HTTP chuyển sang client, service chỉ điều phối |
 | `RouteCacheServiceImpl`, `TerritoryLookupServiceImpl` | Giữ | Map sang bảng `route_cache` mới |
@@ -209,10 +210,10 @@ Mục tiêu: dựng sẵn **mọi thứ cả hai luồng cùng cần**, để t�
 
 **Tạo DB:**
 - Thêm `spring-boot-starter-flyway` và `flyway-database-postgresql` (Spring Boot 4 quản lý phiên bản). Đặt `spring.jpa.hibernate.ddl-auto=validate`.
-- Viết `V1__tier1.sql` … `V14__tier14.sql` đúng **từng cột, CHECK, UK, FK, index, EXCLUDE** trong `DB_SCHEMA_59_BANG.md`, kể cả `btree_gist`, `booked_stalls`, các cột tiền của `quotation`.
-- `V15__reference_data.sql`: vai trò, `stall_type`, `vehicle_class`, `service`, `document_type`, 3 quốc gia, tỉnh.
+- Viết `V1__tier1.sql` … `V14__tier14.sql` đúng **từng cột, CHECK, UK, FK, index, EXCLUDE** trong `DB_SCHEMA_59_BANG.md`, kể cả `btree_gist`, `booked_stall_count`, các cột tiền của `quotation`.
+- `V15__reference_data.sql`: vai trò, `stall_type`, `vehicle_class`, `billable_service`, `document_type`, 3 quốc gia, tỉnh.
 - `db/seed-dev/R__dev_seed_base.sql`: tài khoản mỗi vai trò, `HUB-HCM`, `HUB-DN`, trại cách ly, cửa khẩu, tuyến HCM-PNH / HCM-DN / DN-HCM, lịch, xe, bảng giá mẫu.
-- Test `MigrationTest` (Testcontainers PostgreSQL 16): migrate từ đầu, kiểm vài CHECK quan trọng bằng câu INSERT sai (ví dụ `booked_stalls > capacity_stalls` phải lỗi).
+- Test `MigrationTest` (Testcontainers PostgreSQL 16): migrate từ đầu, kiểm vài CHECK quan trọng bằng câu INSERT sai (ví dụ `booked_stall_count > stall_capacity` phải lỗi).
 - Annotation `@PostgresIntegrationTest` (SpringBootTest + `TestcontainersConfiguration` có `@ServiceConnection` + profile `test` nạp `db/seed-dev`). **Mọi test cần DB dùng annotation này**, không tự dựng container.
 
 **Xong khi:** `mvnw verify` xanh với app chỉ còn hạ tầng, `MigrationTest` xanh.
@@ -235,12 +236,12 @@ Mục tiêu: dựng sẵn **mọi thứ cả hai luồng cùng cần**, để t�
 ### P0.3 Phần dùng chung của backend (A ∥ B)
 
 **A:**
-- **Auth** trên bảng mới: đăng ký (tạo `app_user` + `party` + `party_role` CUSTOMER + `user_role`), đăng nhập, refresh, OTP (một bảng `otp` có `purpose`), quên mật khẩu. Tận dụng `AuthServiceImpl`, `EmailVerificationServiceImpl`, `PasswordResetServiceImpl`, `ExpiredOtpCleanup`, test `UnifiedOtpIntegrationTest`.
+- **Auth** trên bảng mới: đăng ký (tạo `app_user` vai trò CUSTOMER + `customer`), đăng nhập, refresh, OTP (một bảng `otp` có `purpose`), quên mật khẩu. Tận dụng `AuthServiceImpl`, `EmailVerificationServiceImpl`, `PasswordResetServiceImpl`, `ExpiredOtpCleanup`, test `UnifiedOtpIntegrationTest`.
 - Các interface gọi chéo ở mục 3.3, chưa cần cài đặt.
 - `TestData` fixture dùng chung: tạo nhanh người dùng, đơn ở từng trạng thái, chuyến.
 
 **B:**
-- `DocumentService` (tải lên Cloudinary, ghi `document`, kiểm cột chủ sở hữu theo `document_type.subject`), dùng lại `FileUploadController`, `shared/lib/documentUpload`.
+- `DocumentService` (tải lên Cloudinary, ghi `document`, kiểm cột chủ sở hữu theo `document_type.owner_type`), dùng lại `FileUploadController`, `shared/lib/documentUpload`.
 - `NotificationService` (`notification` + `notification_recipient`), `AuditService` (`audit_log`).
 - **ArchUnit** (`archunit-junit5`): đủ các luật trong `AGENTS.md` mục 10.3.
 - `OpenApiExportTest` ghi `frontend/openapi/openapi.json`.
@@ -261,7 +262,7 @@ Mục tiêu: dựng sẵn **mọi thứ cả hai luồng cùng cần**, để t�
 | Trang mẫu | Một trang "Thư viện giao diện" trong backoffice (chỉ ADMIN) hiển thị mọi component và 4 trạng thái | |
 
 **Ghi chú sau khi làm P0.2-A:**
-- Bảng `service` có entity `BillableService`, bảng `booking_horse_service` có entity `BookingHorseAddOn`: tránh trùng annotation `@Service` của Spring và interface `BookingHorseService`.
+- Bảng `billable_service` (migration hiện là `service`) có entity `BillableService`, bảng `booking_horse_service` có entity `BookingHorseAddOn`: tránh trùng annotation `@Service` của Spring và interface `BookingHorseService`.
 - Khóa ghép dùng `@EmbeddedId` + `@MapsId`; `staff` và `booking_rating` dùng `@MapsId` trên `@OneToOne`. Khi lưu entity có khóa ghép, đặt đủ giá trị khóa trước khi gọi `save`.
 - Chỉ có quan hệ `@ManyToOne`/`@OneToOne` ở phía giữ FK, chưa có collection. Task nào cần `@OneToMany` thì thêm trong task đó.
 - Cột có mặc định `now()` dùng `@Generated` + `insertable = false`: DB đặt giờ. Cột `char(n)` dùng `@JdbcTypeCode(SqlTypes.CHAR)`, cột `smallint` dùng `Short`.
@@ -269,7 +270,7 @@ Mục tiêu: dựng sẵn **mọi thứ cả hai luồng cùng cần**, để t�
 
 **Ghi chú sau khi làm P0.3-A:**
 - Đăng ký tách ra `CustomerRegistrationService` để `AuthServiceImpl` không vượt 10 dependency (`AGENTS.md` mục 7.1). Dọn OTP hết hạn nằm ở `EmailVerificationService`.
-- Vai trò lấy từ `user_role`. Token có claim `role` (vai trò chính, giữ cho giao diện cũ) và `roles` (đủ danh sách). Đường dẫn `/auth/**` giữ như cũ.
+- Vai trò lấy từ `app_user.role_code`, mỗi tài khoản một vai trò. Token có claim `role` và `roles` (danh sách một phần tử, giữ cho giao diện). Đường dẫn `/auth/**` giữ như cũ.
 - `JwtAuthenticationFilter` từ chối token khi `app_user.status` khác ACTIVE hoặc nhân viên đã TERMINATED.
 - Thời hạn OTP và số lần nhập sai đọc từ `system_config` qua `SystemConfigService` (entity `SystemConfig` tạo ở P0.3-A, P0.2-B bỏ qua bảng này). Task A2 thêm phần quản trị tham số.
 - Không ghi mã OTP ra log. Máy chưa cấu hình mail thì không gửi được mã; tài khoản trong seed dev đều đã xác thực email.
@@ -295,13 +296,13 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
 
 - **BE:**
   - `LocationService` (location, `hub_service_area`, kiểm `UNIQUE (province_code)`), `RouteService` (route, route_stop, `departure_schedule`, `_day`);
-  - `DepartureService`: sinh chuyến từ lịch (scheduler hằng ngày, idempotent nhờ `UNIQUE (schedule_id, departure_date)`), đóng chuyến khi tới giờ chốt, tạo chuyến đột xuất, hủy chuyến (đơn → `SCHEDULE_CHANGE_REQUIRED` qua `BookingStatusService`), `reserve/release` có `FOR UPDATE`;
+  - `DepartureService`: sinh chuyến từ lịch (scheduler hằng ngày, idempotent nhờ `UNIQUE (departure_schedule_id, departure_date)`), đóng chuyến khi tới giờ chốt, tạo chuyến đột xuất, hủy chuyến (đơn → `SCHEDULE_CHANGE_REQUIRED` qua `BookingStatusService`), `reserve/release` có `FOR UPDATE`;
   - `HubResolutionPolicy`: tra hub đón/giao và quyết định chạy thẳng hay đi trục (quy tắc #19);
   - endpoint gợi ý chuyến phù hợp cho khách.
-- **FE:** admin quản lý điểm mạng lưới, vùng phục vụ, tuyến (bản đồ, điểm dừng, `offset_minutes`/`dwell_minutes`), lịch chạy, danh sách chuyến.
+- **FE:** admin quản lý điểm mạng lưới, vùng phục vụ, tuyến (bản đồ, điểm dừng, `arrival_offset_minutes`/`dwell_minutes`), lịch chạy, danh sách chuyến.
 - **Tận dụng:**
   - `LocationServiceImpl`, `RouteServiceImpl`, `RoutePreviewServiceImpl`, `CoordinatorRouteController`;
-  - `JourneyPlanPolicy` (P0.1) để tính `offset_minutes` khi dựng tuyến;
+  - `JourneyPlanPolicy` (P0.1) để tính `arrival_offset_minutes` khi dựng tuyến;
   - FE `admin/routes/AdminRoutesPage.tsx` (1017 dòng): **tách** phần bản đồ thành `shared/components/RouteEditorMap`, phần form viết lại bằng `shared/ui`;
   - `shared/lib/fixedRouteMatch.ts` (+ test): **chuyển xuống backend** thành `DepartureMatchPolicy` (hành lang ≤ 80 km, đi vòng ≤ 1,5 lần);
   - `BookingScheduleScheduler` → `DepartureScheduler`.
@@ -314,8 +315,9 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
 ### A2. Xe, nhân sự, đối tác, tham số (đợt 1)
 
 - **BE:**
-  - `VehicleService` (kiểm tổng khoang ≤ `vehicle_class.max_stalls`, `home_hub_id` là HUB);
+  - `VehicleService` (kiểm tổng khoang ≤ `vehicle_class.max_stall_count`, `home_hub_location_id` là HUB);
   - `AccountService` (tài khoản và `staff`);
+  - `CustomerService` (hồ sơ khách cá nhân, tổ chức và sổ địa chỉ);
   - `PartyService` (đối tác và `party_role`);
   - `SystemConfigService` (chỉ tham số kỹ thuật).
 - **FE:** admin quản lý xe, tài khoản nhân viên, đối tác (đại lý, trại cách ly, thú y, bảo hiểm), tham số.
@@ -338,7 +340,7 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
 
 ### A4. Quy định và yêu cầu giấy tờ (đợt 2)
 
-- **BE:** `RegulationService` (`country_rule` có EXCLUDE chống trùng hiệu lực, `document_type`, `document_requirement`). `RegulationPolicy`: tìm quy định theo nước đối tác, chiều đi và ngày; tính thời gian cần trước ngày đón (`permit_lead_days`, `cert_lead_days`, `quarantine_days`).
+- **BE:** `RegulationService` (`country_rule` có EXCLUDE chống trùng hiệu lực, `document_type`, `document_requirement`). `RegulationPolicy`: tìm quy định theo nước đối tác, chiều đi và ngày; tính thời gian cần trước ngày đón (`permit_lead_days`, `certificate_lead_days`, `quarantine_days`).
 - **FE:** admin quản lý quy định và giấy tờ yêu cầu. Danh sách giấy cần nộp hiển thị cho khách.
 - **Tận dụng:** dữ liệu trong `DocumentRequirementSeeder` → đưa vào seed SQL. FE `admin/rules`, `admin/documents`.
 - **Xong khi:** test chọn đúng quy định theo ngày hiệu lực và chiều đi, kể cả INTERPROVINCE cho VN.
@@ -419,9 +421,9 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
 
 - **BE:**
   - `DispatchService`: tạo `vehicle_trip` theo loại PICKUP, LINEHAUL, DELIVERY, TRANSFER, DIRECT;
-  - sinh `trip_stop`: với LINEHAUL thì chép từ `route_stop` (giờ = `planned_depart_at + offset_minutes`), với lượt đón và giao thì từ `booking_address`, thứ tự dừng do `JourneyPlanPolicy` tính;
+  - sinh `trip_stop`: với LINEHAUL thì chép từ `route_stop` (giờ = `planned_departure_at + arrival_offset_minutes`), với lượt đón và giao thì từ `booking_address`, thứ tự dừng do `JourneyPlanPolicy` tính;
   - `crew_assignment`, nhân viên xác nhận nhận việc;
-  - `HorseLegService`: gán ngựa vào lượt xe (`board_stop_id`, `alight_stop_id`), kiểm chuỗi chặng liền mạch.
+  - `HorseLegService`: gán ngựa vào lượt xe (`board_trip_stop_id`, `alight_trip_stop_id`), kiểm chuỗi chặng liền mạch.
   - `DispatchPolicy` (hàm thuần), gồm các quy tắc #8, #9, #10, #20, #21:
     - không trùng giờ xe hoặc nhân viên;
     - lượt mới bắt đầu ở nơi lượt trước kết thúc;
@@ -439,7 +441,7 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
 
 - **BE:**
   - `TripStopService`: xe xuất phát (kiểm `PaymentReadinessService`, `DocumentCompletenessService`, bảo hiểm CONFIRMED, tài xế đã xác nhận), tới và rời điểm dừng;
-  - `HandoverService`: PICKUP, HUB_IN/OUT, STAY_IN/OUT, AGENT, DELIVERY, RETURN; quét chip (`MicrochipPolicy`); `handover_item` nhận và trả giấy gốc; biên bản qua `DocumentService`;
+  - `HandoverService`: PICKUP, HUB_IN/OUT, STAY_IN/OUT, AGENT, DELIVERY, RETURN; quét chip (`MicrochipPolicy`); `handover_document` nhận và trả giấy gốc; biên bản qua `DocumentService`;
   - cập nhật trạng thái `horse_leg`. Handover PICKUP đầu tiên thì gọi `BookingStatusService` → `IN_OPERATION`.
   - **Endpoint theo tài nguyên**, ví dụ:
     - `POST /vehicle-trips/{id}/start`;
@@ -470,7 +472,7 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
 
 - **BE:**
   - `IncidentService`: báo sự cố gắn `vehicle_trip` hoặc `horse_leg`; `incident_plan` có phiên bản, đề xuất, duyệt hoặc từ chối; xác nhận ngựa đủ sức đi tiếp; đóng sự cố;
-  - `CostItemService`: ghi chi phí, `CostPayerPolicy` (bên chịu theo `cause`), duyệt, kiểm hạn mức chi khẩn cấp, `linkExtraPayment`;
+  - `CostItemService`: ghi chi phí, `CostPayerPolicy` (bên chịu theo `cause_type`), duyệt, kiểm hạn mức chi khẩn cấp, `linkExtraPayment`;
   - phương án `TRANSFER_VEHICLE` và `RETURN_TO_HUB` gọi `DispatchService` và `HorseLegService`.
 - **FE:** tài xế báo SOS. Điều phối viên lập phương án trên bản đồ. Quản lý duyệt phương án và chi phí. Tổ xe ghi chi phí kèm biên lai.
 - **Tận dụng:**
@@ -484,7 +486,7 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
 
 - **BE:**
   - scheduler kiểm hết thời gian chờ (`HANDOVER_FREE_WAIT_MINUTES`): handover `TIMEOUT` → incident `HANDOVER_TIMEOUT`;
-  - phương án gửi chuồng hoặc về hub giao, gồm chặng RETURN/TRANSFER, `horse_stay` STABLING, chặng DELIVERY mới có `replaces_leg_id`;
+  - phương án gửi chuồng hoặc về hub giao, gồm chặng RETURN/TRANSFER, `horse_stay` STABLING, chặng DELIVERY mới có `replaced_horse_leg_id`;
   - chi phí do CONSIGNEE chịu;
   - chặng giao cuối xong thì gọi `BookingStatusService` → `DELIVERED` (quy tắc #16).
 - **FE:** tài xế bấm bắt đầu chờ và xem đồng hồ đếm giờ. Điều phối viên chọn phương án.
