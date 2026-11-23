@@ -213,6 +213,20 @@
         },
         "type" : "object"
       },
+      "ApiResponseCostItemResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/CostItemResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseCountryRuleResponseDto" : {
         "properties" : {
           "data" : {
@@ -381,6 +395,20 @@
         },
         "type" : "object"
       },
+      "ApiResponseIncidentResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/IncidentResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListBillableServiceResponseDto" : {
         "properties" : {
           "data" : {
@@ -420,6 +448,23 @@
           "data" : {
             "items" : {
               "$ref" : "#/components/schemas/BookingResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListCostItemResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CostItemResponseDto"
             },
             "type" : "array"
           },
@@ -658,6 +703,23 @@
           "data" : {
             "items" : {
               "$ref" : "#/components/schemas/HubServiceAreaResponse"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListIncidentResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/IncidentResponseDto"
             },
             "type" : "array"
           },
@@ -1420,6 +1482,101 @@
           }
         },
         "required" : [ "confirmPassword", "currentPassword", "newPassword" ],
+        "type" : "object"
+      },
+      "CostItemRequestDto" : {
+        "properties" : {
+          "amount" : {
+            "type" : "number"
+          },
+          "bookingId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "category" : {
+            "enum" : [ "TOLL", "FUEL", "STABLING", "VET", "RESCUE", "REPAIR", "WAITING", "OTHER" ],
+            "type" : "string"
+          },
+          "currencyCode" : {
+            "pattern" : "^[A-Z]{3}$",
+            "type" : "string"
+          },
+          "customerConsulted" : {
+            "type" : "boolean"
+          },
+          "description" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "incidentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "incurredAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "vehicleTripId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "amount", "category", "description", "incurredAt" ],
+        "type" : "object"
+      },
+      "CostItemResponseDto" : {
+        "properties" : {
+          "amount" : {
+            "type" : "number"
+          },
+          "approvedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "approvedByName" : {
+            "type" : "string"
+          },
+          "bookingCode" : {
+            "type" : "string"
+          },
+          "category" : {
+            "enum" : [ "TOLL", "FUEL", "STABLING", "VET", "RESCUE", "REPAIR", "WAITING", "OTHER" ],
+            "type" : "string"
+          },
+          "currencyCode" : {
+            "type" : "string"
+          },
+          "customerConsulted" : {
+            "type" : "boolean"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "extraChargePaymentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "incidentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "incurredAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "payerType" : {
+            "enum" : [ "COMPANY", "CUSTOMER", "CONSIGNEE", "AGENT" ],
+            "type" : "string"
+          },
+          "recordedByName" : {
+            "type" : "string"
+          }
+        },
         "type" : "object"
       },
       "CountryResponse" : {
@@ -3060,6 +3217,144 @@
         },
         "type" : "object"
       },
+      "IncidentPlanRequestDto" : {
+        "properties" : {
+          "estimatedCost" : {
+            "type" : "number"
+          },
+          "handlerPartyId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "instructions" : {
+            "maxLength" : 4000,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "resolutionType" : {
+            "enum" : [ "CONTINUE", "VET_TREATMENT", "STABLE_NEARBY", "TRANSFER_VEHICLE", "RETURN_TO_HUB", "CANCEL" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "instructions", "resolutionType" ],
+        "type" : "object"
+      },
+      "IncidentReportRequestDto" : {
+        "properties" : {
+          "causeType" : {
+            "enum" : [ "COMPANY_FAULT", "HORSE_CONDITION", "CUSTOMER_DOCS", "AGENT_FAULT", "FORCE_MAJEURE", "RECIPIENT_ABSENT" ],
+            "type" : "string"
+          },
+          "description" : {
+            "maxLength" : 4000,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "horseLegId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "incidentType" : {
+            "enum" : [ "HEALTH", "VEHICLE_BREAKDOWN", "ACCIDENT", "DELAY", "DOCUMENT", "HANDOVER_TIMEOUT", "OTHER" ],
+            "type" : "string"
+          },
+          "latitude" : {
+            "maximum" : 90,
+            "minimum" : -90,
+            "type" : "number"
+          },
+          "longitude" : {
+            "maximum" : 180,
+            "minimum" : -180,
+            "type" : "number"
+          },
+          "title" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "vehicleTripId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "causeType", "description", "incidentType", "title", "vehicleTripId" ],
+        "type" : "object"
+      },
+      "IncidentResponseDto" : {
+        "properties" : {
+          "bookingCode" : {
+            "type" : "string"
+          },
+          "causeType" : {
+            "enum" : [ "COMPANY_FAULT", "HORSE_CONDITION", "CUSTOMER_DOCS", "AGENT_FAULT", "FORCE_MAJEURE", "RECIPIENT_ABSENT" ],
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "fitConfirmedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "fitConfirmedByName" : {
+            "type" : "string"
+          },
+          "horseLegId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "horseName" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "incidentType" : {
+            "enum" : [ "HEALTH", "VEHICLE_BREAKDOWN", "ACCIDENT", "DELAY", "DOCUMENT", "HANDOVER_TIMEOUT", "OTHER" ],
+            "type" : "string"
+          },
+          "latitude" : {
+            "type" : "number"
+          },
+          "longitude" : {
+            "type" : "number"
+          },
+          "plans" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PlanDto"
+            },
+            "type" : "array"
+          },
+          "reportedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "reportedByName" : {
+            "type" : "string"
+          },
+          "resolvedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "REPORTED", "PLAN_PENDING", "PLAN_ACTIVE", "RESOLVED", "CLOSED" ],
+            "type" : "string"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "vehicleTripCode" : {
+            "type" : "string"
+          },
+          "vehicleTripId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "InsuranceConfirmationRequestDto" : { },
       "InsuranceDeclarationRequestDto" : {
         "properties" : {
@@ -3693,6 +3988,67 @@
           }
         },
         "required" : [ "insurerPartyId", "policyNumber", "validFrom", "validTo" ],
+        "type" : "object"
+      },
+      "PlanDto" : {
+        "properties" : {
+          "decidedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "decidedByName" : {
+            "type" : "string"
+          },
+          "estimatedCost" : {
+            "type" : "number"
+          },
+          "handlerPartyId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "handlerPartyName" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "instructions" : {
+            "type" : "string"
+          },
+          "proposedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "proposedByName" : {
+            "type" : "string"
+          },
+          "rejectionReason" : {
+            "type" : "string"
+          },
+          "resolutionType" : {
+            "enum" : [ "CONTINUE", "VET_TREATMENT", "STABLE_NEARBY", "TRANSFER_VEHICLE", "RETURN_TO_HUB", "CANCEL" ],
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "PROPOSED", "APPROVED", "REJECTED", "SUPERSEDED", "DONE" ],
+            "type" : "string"
+          },
+          "version" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "PlanRejectRequestDto" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 2000,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
         "type" : "object"
       },
       "PriceItemCreateRequestDto" : {
@@ -5380,6 +5736,33 @@
         "tags" : [ "booking-review-controller" ]
       }
     },
+    "/bookings/{id}/cost-items" : {
+      "get" : {
+        "operationId" : "costsOfBooking",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListCostItemResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      }
+    },
     "/bookings/{id}/documents" : {
       "get" : {
         "operationId" : "list_7",
@@ -6049,6 +6432,61 @@
           }
         },
         "tags" : [ "booking-review-controller" ]
+      }
+    },
+    "/cost-items" : {
+      "post" : {
+        "operationId" : "recordCost",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CostItemRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCostItemResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      }
+    },
+    "/cost-items/{id}/approve" : {
+      "post" : {
+        "operationId" : "approveCost",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCostItemResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
       }
     },
     "/countries" : {
@@ -7420,6 +7858,286 @@
           }
         },
         "tags" : [ "hub-service-area-controller" ]
+      }
+    },
+    "/incident-plans/{id}/approve" : {
+      "post" : {
+        "operationId" : "approvePlan",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseIncidentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      }
+    },
+    "/incident-plans/{id}/reject" : {
+      "post" : {
+        "operationId" : "rejectPlan",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PlanRejectRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseIncidentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      }
+    },
+    "/incidents" : {
+      "get" : {
+        "operationId" : "open",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListIncidentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      },
+      "post" : {
+        "operationId" : "report",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/IncidentReportRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseIncidentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      }
+    },
+    "/incidents/{id}" : {
+      "get" : {
+        "operationId" : "incident",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseIncidentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      }
+    },
+    "/incidents/{id}/close" : {
+      "post" : {
+        "operationId" : "close",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseIncidentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      }
+    },
+    "/incidents/{id}/cost-items" : {
+      "get" : {
+        "operationId" : "costsOfIncident",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListCostItemResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      }
+    },
+    "/incidents/{id}/fit-confirmation" : {
+      "post" : {
+        "operationId" : "confirmFit",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseIncidentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      }
+    },
+    "/incidents/{id}/plans" : {
+      "post" : {
+        "operationId" : "propose",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/IncidentPlanRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseIncidentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      }
+    },
+    "/incidents/{id}/resolve" : {
+      "post" : {
+        "operationId" : "resolve",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseIncidentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
       }
     },
     "/locations" : {
@@ -8930,6 +9648,33 @@
           }
         },
         "tags" : [ "dispatch-controller" ]
+      }
+    },
+    "/vehicle-trips/{id}/incidents" : {
+      "get" : {
+        "operationId" : "ofTrip",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListIncidentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
       }
     },
     "/vehicle-trips/{id}/start" : {
