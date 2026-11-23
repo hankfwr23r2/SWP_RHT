@@ -16,7 +16,11 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "strict": true,
-    "paths": { "@shared/*": ["./src/shared/*"] },
+    "paths": {
+      "@shared/*": ["./src/shared/*"],
+      "@customer/*": ["./src/apps/customer/*"],
+      "@backoffice/*": ["./src/apps/backoffice/*"]
+    },
 
     /* Linting */
     "noUnusedLocals": true,

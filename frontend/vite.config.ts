@@ -23,7 +23,11 @@ export default defineConfig({
   plugins: [react(), multiAppFallback],
   css: { modules: { localsConvention: 'camelCase' } },
   resolve: {
-    alias: { '@shared': resolve(import.meta.dirname, 'src/shared') },
+    alias: {
+      '@shared': resolve(import.meta.dirname, 'src/shared'),
+      '@customer': resolve(import.meta.dirname, 'src/apps/customer'),
+      '@backoffice': resolve(import.meta.dirname, 'src/apps/backoffice'),
+    },
   },
   build: {
     chunkSizeWarningLimit: 1200,
