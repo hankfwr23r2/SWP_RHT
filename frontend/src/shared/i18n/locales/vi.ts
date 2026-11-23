@@ -127,6 +127,10 @@ export const vi = {
     processing: 'Đang xử lý',
     retry: 'Thử lại',
     errorTitle: 'Không tải được dữ liệu',
+    close: 'Đóng',
+    cancel: 'Hủy',
+    step: 'Bước {{current}}/{{total}}',
+    stepDone: 'Đã xong',
   },
   common: {
     brandName: 'Vận chuyển Ngựa',
