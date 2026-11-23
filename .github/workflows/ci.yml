@@ -38,6 +38,9 @@ jobs:
           cache: maven
       - name: Test and package
         run: ./mvnw -B verify
+      # OpenApiExportTest vừa ghi lại hợp đồng API; lệch với bản đã commit nghĩa là API đổi mà chưa commit openapi.json
+      - name: API contract is committed
+        run: git diff --exit-code -- ../frontend/openapi/openapi.json
 
   frontend:
     runs-on: ubuntu-latest
@@ -53,6 +56,11 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
+      # Kiểu dữ liệu API phải sinh từ openapi.json đã commit, không sửa tay
+      - name: Generated API types are up to date
+        run: |
+          npm run api:gen
+          git diff --exit-code -- src/shared/api/generated
       - name: Test
         run: npm test
       # npm run build gồm cả oxlint và tsc -b
