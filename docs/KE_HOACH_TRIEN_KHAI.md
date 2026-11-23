@@ -643,7 +643,7 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 | B1 | Điều độ | B | 1 | Xong (4 PR) | #377, #378, #379, #380 |
 | A3 | Bảng giá, tính giá | A | 2 | Chưa làm | |
 | A4 | Quy định, giấy tờ yêu cầu | A | 2 | Chưa làm | |
-| B2 | Điểm dừng, giao nhận | B | 2 | Đang làm: PR1 backend thực hiện lượt xe và giao nhận (nhánh `rd/b2-1-stop-handover`); còn ứng dụng tổ xe theo điểm dừng; chờ A7 (thanh toán) cho trả 70% và rời nơi nhận, A (loại ngựa) cho Không nhận | |
+| B2 | Điểm dừng, giao nhận | B | 2 | Đang làm: PR1 backend (#381) xong; PR2 màn tổ xe theo điểm dừng (nhánh `rd/b2-2-crew-stops`); còn giao nhận AGENT ở cửa khẩu, biên bản và giấy gốc; chờ A7 (thanh toán: trả 70%, rời nơi nhận), A (loại ngựa) cho Không nhận, A8 cho trả ngựa tại chỗ | #381 |
 | A5 | Đặt đơn | A | 3 | Chưa làm | |
 | B3 | Lưu trú, sức khỏe | B | 3 | Chưa làm | |
 | A6 | Thẩm định, bảo hiểm | A | 4 | Backend xong, chưa commit (`feat/a6-review`) | |

@@ -1,6 +1,48 @@
 // Ứng dụng hiện trường của tài xế và hộ tống
 export const fieldCrew = {
   myTrips: {
+    "run": {
+      "open": "Open trip",
+      "back": "My trips",
+      "loadError": "Could not load the trip",
+      "start": "Start trip",
+      "complete": "Finish trip",
+      "stops": "Stops",
+      "stopState": {
+        "waiting": "Not yet",
+        "here": "At this stop",
+        "left": "Left"
+      },
+      "arrive": "Arrived",
+      "depart": "Leave",
+      "handover": {
+        "PICKUP": "Receive horses",
+        "DELIVERY": "Deliver horses",
+        "HUB_IN": "Hand into hub",
+        "HUB_OUT": "Take from hub"
+      },
+      "handoverStatus": {
+        "PENDING": "In progress",
+        "DONE": "Done",
+        "TIMEOUT": "Wait timed out",
+        "FAILED": "Failed"
+      },
+      "chip": "Chip of {{name}}",
+      "scan": "Scan",
+      "matched": "Chip matches",
+      "mismatched": "Wrong chip",
+      "notScanned": "Not scanned",
+      "completeHandover": "Complete handover",
+      "done": {
+        "started": "Trip started",
+        "arrived": "Arrived at stop",
+        "departed": "Left the stop",
+        "opened": "Handover opened",
+        "scanned": "Chip scanned",
+        "handed": "Handover completed",
+        "completed": "Trip finished"
+      }
+    },
     "title": "My trips",
     "description": "Trips you are assigned to. Confirm each one so the coordinator knows you are ready.",
     "loadError": "Could not load your trips",
