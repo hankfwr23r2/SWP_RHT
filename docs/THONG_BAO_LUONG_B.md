@@ -3,14 +3,31 @@
 > Agent luồng B đọc file này sau `AGENTS.md`, trước khi bắt đầu task. Mục mới nhất ở trên. Đây là thông tin phối hợp, không thay quy trình duyệt ở mục 1.1 của `AGENTS.md`.
 > Cập nhật: 23/11/2026.
 
+## 23/11/2026. Quyết định nghiệp vụ đợt hai (người dùng đã chốt)
+
+Đọc lại `NGHIEP_VU_THEO_59_BANG.md`, `MAN_HINH_VA_TAC_DONG.md`, quy tắc #29–#36 của `DB_SCHEMA_59_BANG.md`. **Mục này thay các ý trùng ở mục "Màn hình và tác động" bên dưới.** Code luồng A đổi ở task A6b, hiện chưa làm.
+
+| Nội dung | Ảnh hưởng luồng B | Task |
+|---|---|---|
+| Không vận hành cách ly | Không làm `horse_stay` QUARANTINE, `quarantine_result`, lượt TRANSFER tới trại. **Cần B xác nhận** được xóa các giá trị `QUARANTINE`, `QUARANTINE_FARM` và cột `quarantine_result` khỏi DB hay không | B3 |
+| Khoang rộng 2 chỗ | Sức chứa xe tính theo chỗ: `standard_stall_count + 2 × wide_stall_count` | B1 |
+| Ghép đơn | Ngựa cùng đơn cùng lượt LINEHAUL. Hệ thống gợi ý nhóm đón, giao (đủ chỗ, vòng ≤ 1,5 lần, ≤ 4 giờ), điều phối duyệt | B1 |
+| Lịch tuần, 6 tuyến | Một xe nối nhiều tuyến. Chuyến chiều về bị hủy vẫn có lượt về rỗng | B1 |
+| Xe | Không giấy tờ xe. Không gán xe khác ACTIVE. Xe về hub gốc thì tài xế báo bình thường hoặc cần bảo dưỡng | B1, B2 |
+| Nhân viên | Bắt đầu lượt mới ở nơi lượt trước kết thúc | B1 |
+| Thanh toán | **Không** chặn xe đi đón vì còn nợ. Nhận ngựa xong thì lập số dư 70%; chưa trả đủ thì xe không rời nơi nhận; quá 30 phút thì trả ngựa tại chỗ. `IN_OPERATION` khi xe rời nơi nhận | B2 |
+| Nghỉ, cho ăn | Cột `water_intake`, `feed_intake` của `horse_health_log` (A thêm migration ở A6b, **cần B đồng ý**). Chặn rời trạm khi thiếu ghi hoặc chưa đủ 30 phút | B2, B3 |
+| Đơn nhập | Đại lý giao ngựa ở cửa khẩu: `handover` AGENT, `from_party_id` = đại lý. Thiếu `IMPORT_TRANSPORT_CERT` thì không nhận | B2 |
+| Ngựa tới hub | Trước giờ chạy 3 giờ. Trễ thì chờ hoặc dời chuyến | B1 |
+| Sự cố | Theo quy trình nhóm. `FORCE_MAJEURE` do công ty chịu. Không chia chi phí theo đầu ngựa | B4 |
+
 ## 23/11/2026. Màn hình và tác động (người dùng đã chốt)
 
 Đọc `MAN_HINH_VA_TAC_DONG.md` trước B1–B5. Các điểm ảnh hưởng luồng B:
 
-- Ngựa trượt cách ly: gọi `BookingHorseService.exclude` (`EXCLUDED`); trả xong thì `RETURNED`.
-- Chuyên viên kết luận cách ly, hộ tống chỉ đo và ghi.
+- Ngựa bị loại lúc nhận: gọi `BookingHorseService.exclude` (`EXCLUDED`); trả xong thì `RETURNED`.
 - Ngựa ở hub: người ở `handover.handled_by` của HUB_IN phụ trách tới HUB_OUT. Hub vệ tinh: tổ xe trục ở lại; qua đêm thì gửi đối tác `STABLE`.
-- Ăn uống ghi vào `horse_health_log.note`, không thêm cột. Không có dịch vụ cho ăn tính tiền.
+- Không có dịch vụ cho ăn tính tiền. Cách ghi ăn uống xem mục trên.
 - Mốc của đại lý do điều phối nhập hộ.
 
 Thấy chỗ nào không làm được thì báo lại, không tự đổi.
