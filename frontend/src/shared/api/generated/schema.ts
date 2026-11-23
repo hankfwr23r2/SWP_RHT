@@ -20,6 +20,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/system-configs/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getSystemConfig"];
+        put: operations["updateSystemConfig"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/staff-accounts/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getStaffAccount"];
+        put: operations["updateStaffAccount"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/routes/{id}": {
         parameters: {
             query?: never;
@@ -29,6 +61,38 @@ export interface paths {
         };
         get: operations["get"];
         put: operations["update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/parties/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getParty"];
+        put: operations["updateParty"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/parties/{id}/roles/{roleType}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updatePartyRole"];
         post?: never;
         delete?: never;
         options?: never;
@@ -84,6 +148,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/customers/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getCustomerProfile"];
+        put: operations["updateCustomerProfile"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customers/me/addresses/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateCustomerAddress"];
+        post?: never;
+        delete: operations["deleteCustomerAddress"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vehicles": {
         parameters: {
             query?: never;
@@ -94,6 +190,22 @@ export interface paths {
         get: operations["listVehicles"];
         put?: never;
         post: operations["createVehicle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/staff-accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listStaffAccounts"];
+        put?: never;
+        post: operations["createStaffAccount"];
         delete?: never;
         options?: never;
         head?: never;
@@ -142,6 +254,38 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["activate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/parties": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listParties"];
+        put?: never;
+        post: operations["createParty"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/parties/{id}/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["addPartyRole"];
         delete?: never;
         options?: never;
         head?: never;
@@ -286,6 +430,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["end"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customers/me/addresses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listCustomerAddresses"];
+        put?: never;
+        post: operations["createCustomerAddress"];
         delete?: never;
         options?: never;
         head?: never;
@@ -468,6 +628,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/system-configs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listSystemConfigs"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/provinces": {
         parameters: {
             query?: never;
@@ -589,6 +765,63 @@ export interface components {
             /** @enum {string} */
             status?: "ACTIVE" | "MAINTENANCE" | "RETIRED";
         };
+        SystemConfigUpdateRequestDto: {
+            configValue: number;
+        };
+        ApiResponseSystemConfigResponseDto: {
+            status?: string;
+            message?: string;
+            data?: components["schemas"]["SystemConfigResponseDto"];
+        };
+        SystemConfigResponseDto: {
+            configKey?: string;
+            configValue?: string;
+            unit?: string;
+            configGroup?: string;
+            description?: string;
+            /** Format: int64 */
+            updatedByUserId?: number;
+            /** Format: date-time */
+            updatedAt?: string;
+        };
+        StaffAccountUpdateRequestDto: {
+            staffCode: string;
+            fullName: string;
+            phone: string;
+            /** Format: date */
+            hireDate: string;
+            /** Format: int64 */
+            homeHubLocationId: number;
+            driverLicenseClass?: string;
+            /** Format: date */
+            driverLicenseExpiryDate?: string;
+        };
+        ApiResponseStaffAccountResponseDto: {
+            status?: string;
+            message?: string;
+            data?: components["schemas"]["StaffAccountResponseDto"];
+        };
+        StaffAccountResponseDto: {
+            /** Format: int64 */
+            userId?: number;
+            username?: string;
+            email?: string;
+            roleCode?: string;
+            /** @enum {string} */
+            accountStatus?: "ACTIVE" | "LOCKED" | "DISABLED";
+            staffCode?: string;
+            fullName?: string;
+            phone?: string;
+            /** Format: date */
+            hireDate?: string;
+            /** @enum {string} */
+            employmentStatus?: "ACTIVE" | "ON_LEAVE" | "TERMINATED";
+            /** Format: int64 */
+            homeHubLocationId?: number;
+            driverLicenseClass?: string;
+            /** Format: date */
+            driverLicenseExpiryDate?: string;
+        };
         RouteRequest: {
             code: string;
             name: string;
@@ -653,6 +886,56 @@ export interface components {
             arrivalOffsetMinutes?: number;
             /** Format: int32 */
             dwellMinutes?: number;
+        };
+        PartyUpdateRequestDto: {
+            /** @enum {string} */
+            partyType: "PERSON" | "ORGANIZATION";
+            displayName: string;
+            phone?: string;
+            /** Format: email */
+            email?: string;
+            address?: string;
+            countryCode: string;
+            taxCode?: string;
+        };
+        ApiResponsePartyResponseDto: {
+            status?: string;
+            message?: string;
+            data?: components["schemas"]["PartyResponseDto"];
+        };
+        PartyResponseDto: {
+            /** Format: int64 */
+            id?: number;
+            /** @enum {string} */
+            partyType?: "PERSON" | "ORGANIZATION";
+            displayName?: string;
+            phone?: string;
+            email?: string;
+            address?: string;
+            countryCode?: string;
+            taxCode?: string;
+            /** @enum {string} */
+            status?: "ACTIVE" | "INACTIVE";
+            roles?: components["schemas"]["PartyRoleResponseDto"][];
+        };
+        PartyRoleResponseDto: {
+            /** @enum {string} */
+            roleType?: "DEST_AGENT" | "QUARANTINE_FARM" | "STABLE" | "VET" | "RESCUE" | "INSURER";
+            /** Format: date */
+            validFrom?: string;
+            /** Format: date */
+            validTo?: string;
+        };
+        PartyRoleUpdateRequestDto: {
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string;
+        };
+        ApiResponsePartyRoleResponseDto: {
+            status?: string;
+            message?: string;
+            data?: components["schemas"]["PartyRoleResponseDto"];
         };
         LocationRequest: {
             code: string;
@@ -746,6 +1029,69 @@ export interface components {
             status?: "ACTIVE" | "PAUSED" | "ENDED";
             daysOfWeek?: number[];
         };
+        CustomerProfileUpdateRequestDto: {
+            /** @enum {string} */
+            customerType: "PERSON" | "ORGANIZATION";
+            fullName: string;
+            phone?: string;
+            address?: string;
+            countryCode: string;
+            /** @enum {string} */
+            identityDocumentType?: "CCCD" | "PASSPORT" | "BUSINESS_REG";
+            identityDocumentNumber?: string;
+            identityDocumentCountryCode?: string;
+            taxCode?: string;
+        };
+        ApiResponseCustomerProfileResponseDto: {
+            status?: string;
+            message?: string;
+            data?: components["schemas"]["CustomerProfileResponseDto"];
+        };
+        CustomerProfileResponseDto: {
+            /** Format: int64 */
+            userId?: number;
+            email?: string;
+            /** @enum {string} */
+            accountStatus?: "ACTIVE" | "LOCKED" | "DISABLED";
+            /** @enum {string} */
+            customerType?: "PERSON" | "ORGANIZATION";
+            fullName?: string;
+            phone?: string;
+            address?: string;
+            countryCode?: string;
+            /** @enum {string} */
+            identityDocumentType?: "CCCD" | "PASSPORT" | "BUSINESS_REG";
+            identityDocumentNumber?: string;
+            identityDocumentCountryCode?: string;
+            taxCode?: string;
+        };
+        CustomerAddressUpdateRequestDto: {
+            label: string;
+            addressLine: string;
+            ward?: string;
+            provinceCode: string;
+            countryCode: string;
+            latitude?: number;
+            longitude?: number;
+            defaultAddress?: boolean;
+        };
+        ApiResponseCustomerAddressResponseDto: {
+            status?: string;
+            message?: string;
+            data?: components["schemas"]["CustomerAddressResponseDto"];
+        };
+        CustomerAddressResponseDto: {
+            /** Format: int64 */
+            id?: number;
+            label?: string;
+            addressLine?: string;
+            ward?: string;
+            provinceCode?: string;
+            countryCode?: string;
+            latitude?: number;
+            longitude?: number;
+            defaultAddress?: boolean;
+        };
         VehicleCreateRequestDto: {
             licensePlate: string;
             /** Format: int64 */
@@ -758,6 +1104,42 @@ export interface components {
             homeHubLocationId: number;
             /** Format: date */
             registrationExpiryDate?: string;
+        };
+        StaffAccountCreateRequestDto: {
+            username: string;
+            /** Format: email */
+            email: string;
+            password: string;
+            roleCode: string;
+            staffCode: string;
+            fullName: string;
+            phone: string;
+            /** Format: date */
+            hireDate: string;
+            /** Format: int64 */
+            homeHubLocationId: number;
+            driverLicenseClass?: string;
+            /** Format: date */
+            driverLicenseExpiryDate?: string;
+        };
+        PartyCreateRequestDto: {
+            /** @enum {string} */
+            partyType: "PERSON" | "ORGANIZATION";
+            displayName: string;
+            phone?: string;
+            /** Format: email */
+            email?: string;
+            address?: string;
+            countryCode: string;
+            taxCode?: string;
+        };
+        PartyRoleCreateRequestDto: {
+            /** @enum {string} */
+            roleType: "DEST_AGENT" | "QUARANTINE_FARM" | "STABLE" | "VET" | "RESCUE" | "INSURER";
+            /** Format: date */
+            validFrom: string;
+            /** Format: date */
+            validTo?: string;
         };
         DepartureCreateRequest: {
             /** Format: int64 */
@@ -803,6 +1185,16 @@ export interface components {
         };
         DepartureCancelRequest: {
             reason: string;
+        };
+        CustomerAddressCreateRequestDto: {
+            label: string;
+            addressLine: string;
+            ward?: string;
+            provinceCode: string;
+            countryCode: string;
+            latitude?: number;
+            longitude?: number;
+            defaultAddress?: boolean;
         };
         LoginRequest: {
             username: string;
@@ -881,6 +1273,16 @@ export interface components {
             /** Format: int32 */
             maxStallCount?: number;
         };
+        ApiResponseListSystemConfigResponseDto: {
+            status?: string;
+            message?: string;
+            data?: components["schemas"]["SystemConfigResponseDto"][];
+        };
+        ApiResponseListStaffAccountResponseDto: {
+            status?: string;
+            message?: string;
+            data?: components["schemas"]["StaffAccountResponseDto"][];
+        };
         ApiResponseListRouteResponse: {
             status?: string;
             message?: string;
@@ -895,6 +1297,11 @@ export interface components {
             code?: string;
             name?: string;
             countryCode?: string;
+        };
+        ApiResponseListPartyResponseDto: {
+            status?: string;
+            message?: string;
+            data?: components["schemas"]["PartyResponseDto"][];
         };
         ApiResponseListLocationResponse: {
             status?: string;
@@ -948,6 +1355,11 @@ export interface components {
             status?: string;
             message?: string;
             data?: components["schemas"]["DepartureScheduleResponse"][];
+        };
+        ApiResponseListCustomerAddressResponseDto: {
+            status?: string;
+            message?: string;
+            data?: components["schemas"]["CustomerAddressResponseDto"][];
         };
         ApiResponseListCountryResponse: {
             status?: string;
@@ -1016,6 +1428,102 @@ export interface operations {
             };
         };
     };
+    getSystemConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseSystemConfigResponseDto"];
+                };
+            };
+        };
+    };
+    updateSystemConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SystemConfigUpdateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseSystemConfigResponseDto"];
+                };
+            };
+        };
+    };
+    getStaffAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseStaffAccountResponseDto"];
+                };
+            };
+        };
+    };
+    updateStaffAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffAccountUpdateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseStaffAccountResponseDto"];
+                };
+            };
+        };
+    };
     get: {
         parameters: {
             query?: never;
@@ -1060,6 +1568,81 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseRouteResponse"];
+                };
+            };
+        };
+    };
+    getParty: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePartyResponseDto"];
+                };
+            };
+        };
+    };
+    updateParty: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PartyUpdateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePartyResponseDto"];
+                };
+            };
+        };
+    };
+    updatePartyRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+                roleType: "DEST_AGENT" | "QUARANTINE_FARM" | "STABLE" | "VET" | "RESCUE" | "INSURER";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PartyRoleUpdateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePartyRoleResponseDto"];
                 };
             };
         };
@@ -1186,6 +1769,98 @@ export interface operations {
             };
         };
     };
+    getCustomerProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCustomerProfileResponseDto"];
+                };
+            };
+        };
+    };
+    updateCustomerProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomerProfileUpdateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCustomerProfileResponseDto"];
+                };
+            };
+        };
+    };
+    updateCustomerAddress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomerAddressUpdateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCustomerAddressResponseDto"];
+                };
+            };
+        };
+    };
+    deleteCustomerAddress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
     listVehicles: {
         parameters: {
             query?: never;
@@ -1226,6 +1901,50 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseVehicleResponseDto"];
+                };
+            };
+        };
+    };
+    listStaffAccounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListStaffAccountResponseDto"];
+                };
+            };
+        };
+    };
+    createStaffAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffAccountCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseStaffAccountResponseDto"];
                 };
             };
         };
@@ -1314,6 +2033,76 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseRouteResponse"];
+                };
+            };
+        };
+    };
+    listParties: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListPartyResponseDto"];
+                };
+            };
+        };
+    };
+    createParty: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PartyCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePartyResponseDto"];
+                };
+            };
+        };
+    };
+    addPartyRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PartyRoleCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePartyRoleResponseDto"];
                 };
             };
         };
@@ -1596,6 +2385,50 @@ export interface operations {
             };
         };
     };
+    listCustomerAddresses: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListCustomerAddressResponseDto"];
+                };
+            };
+        };
+    };
+    createCustomerAddress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomerAddressCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCustomerAddressResponseDto"];
+                };
+            };
+        };
+    };
     loginStaff: {
         parameters: {
             query?: never;
@@ -1860,6 +2693,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListVehicleClassResponseDto"];
+                };
+            };
+        };
+    };
+    listSystemConfigs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListSystemConfigResponseDto"];
                 };
             };
         };

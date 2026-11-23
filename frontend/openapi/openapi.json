@@ -15,6 +15,34 @@
         },
         "type" : "object"
       },
+      "ApiResponseCustomerAddressResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/CustomerAddressResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseCustomerProfileResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/CustomerProfileResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseDepartureResponse" : {
         "properties" : {
           "data" : {
@@ -76,6 +104,23 @@
           "data" : {
             "items" : {
               "$ref" : "#/components/schemas/CountryResponse"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListCustomerAddressResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CustomerAddressResponseDto"
             },
             "type" : "array"
           },
@@ -156,6 +201,23 @@
         },
         "type" : "object"
       },
+      "ApiResponseListPartyResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PartyResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListProvinceResponse" : {
         "properties" : {
           "data" : {
@@ -178,6 +240,40 @@
           "data" : {
             "items" : {
               "$ref" : "#/components/schemas/RouteResponse"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListStaffAccountResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/StaffAccountResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListSystemConfigResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SystemConfigResponseDto"
             },
             "type" : "array"
           },
@@ -255,10 +351,66 @@
         },
         "type" : "object"
       },
+      "ApiResponsePartyResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/PartyResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponsePartyRoleResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/PartyRoleResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseRouteResponse" : {
         "properties" : {
           "data" : {
             "$ref" : "#/components/schemas/RouteResponse"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseStaffAccountResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/StaffAccountResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseSystemConfigResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/SystemConfigResponseDto"
           },
           "message" : {
             "type" : "string"
@@ -365,6 +517,220 @@
             "type" : "string"
           }
         },
+        "type" : "object"
+      },
+      "CustomerAddressCreateRequestDto" : {
+        "properties" : {
+          "addressLine" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "countryCode" : {
+            "minLength" : 1,
+            "pattern" : "[A-Za-z]{2}",
+            "type" : "string"
+          },
+          "defaultAddress" : {
+            "type" : "boolean"
+          },
+          "label" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "latitude" : {
+            "maximum" : 90,
+            "minimum" : -90,
+            "type" : "number"
+          },
+          "longitude" : {
+            "maximum" : 180,
+            "minimum" : -180,
+            "type" : "number"
+          },
+          "provinceCode" : {
+            "maxLength" : 10,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "ward" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "addressLine", "countryCode", "label", "provinceCode" ],
+        "type" : "object"
+      },
+      "CustomerAddressResponseDto" : {
+        "properties" : {
+          "addressLine" : {
+            "type" : "string"
+          },
+          "countryCode" : {
+            "type" : "string"
+          },
+          "defaultAddress" : {
+            "type" : "boolean"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "latitude" : {
+            "type" : "number"
+          },
+          "longitude" : {
+            "type" : "number"
+          },
+          "provinceCode" : {
+            "type" : "string"
+          },
+          "ward" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "CustomerAddressUpdateRequestDto" : {
+        "properties" : {
+          "addressLine" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "countryCode" : {
+            "minLength" : 1,
+            "pattern" : "[A-Za-z]{2}",
+            "type" : "string"
+          },
+          "defaultAddress" : {
+            "type" : "boolean"
+          },
+          "label" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "latitude" : {
+            "maximum" : 90,
+            "minimum" : -90,
+            "type" : "number"
+          },
+          "longitude" : {
+            "maximum" : 180,
+            "minimum" : -180,
+            "type" : "number"
+          },
+          "provinceCode" : {
+            "maxLength" : 10,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "ward" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "addressLine", "countryCode", "label", "provinceCode" ],
+        "type" : "object"
+      },
+      "CustomerProfileResponseDto" : {
+        "properties" : {
+          "accountStatus" : {
+            "enum" : [ "ACTIVE", "LOCKED", "DISABLED" ],
+            "type" : "string"
+          },
+          "address" : {
+            "type" : "string"
+          },
+          "countryCode" : {
+            "type" : "string"
+          },
+          "customerType" : {
+            "enum" : [ "PERSON", "ORGANIZATION" ],
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "fullName" : {
+            "type" : "string"
+          },
+          "identityDocumentCountryCode" : {
+            "type" : "string"
+          },
+          "identityDocumentNumber" : {
+            "type" : "string"
+          },
+          "identityDocumentType" : {
+            "enum" : [ "CCCD", "PASSPORT", "BUSINESS_REG" ],
+            "type" : "string"
+          },
+          "phone" : {
+            "type" : "string"
+          },
+          "taxCode" : {
+            "type" : "string"
+          },
+          "userId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "CustomerProfileUpdateRequestDto" : {
+        "properties" : {
+          "address" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "countryCode" : {
+            "minLength" : 1,
+            "pattern" : "[A-Za-z]{2}",
+            "type" : "string"
+          },
+          "customerType" : {
+            "enum" : [ "PERSON", "ORGANIZATION" ],
+            "type" : "string"
+          },
+          "fullName" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "identityDocumentCountryCode" : {
+            "pattern" : "[A-Za-z]{2}",
+            "type" : "string"
+          },
+          "identityDocumentNumber" : {
+            "maxLength" : 50,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "identityDocumentType" : {
+            "enum" : [ "CCCD", "PASSPORT", "BUSINESS_REG" ],
+            "type" : "string"
+          },
+          "phone" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "taxCode" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "countryCode", "customerType", "fullName" ],
         "type" : "object"
       },
       "DepartureCancelRequest" : {
@@ -783,6 +1149,178 @@
         "required" : [ "password", "username" ],
         "type" : "object"
       },
+      "PartyCreateRequestDto" : {
+        "properties" : {
+          "address" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "countryCode" : {
+            "minLength" : 1,
+            "pattern" : "[A-Za-z]{2}",
+            "type" : "string"
+          },
+          "displayName" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "email" : {
+            "format" : "email",
+            "maxLength" : 254,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "partyType" : {
+            "enum" : [ "PERSON", "ORGANIZATION" ],
+            "type" : "string"
+          },
+          "phone" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "taxCode" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "countryCode", "displayName", "partyType" ],
+        "type" : "object"
+      },
+      "PartyResponseDto" : {
+        "properties" : {
+          "address" : {
+            "type" : "string"
+          },
+          "countryCode" : {
+            "type" : "string"
+          },
+          "displayName" : {
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "partyType" : {
+            "enum" : [ "PERSON", "ORGANIZATION" ],
+            "type" : "string"
+          },
+          "phone" : {
+            "type" : "string"
+          },
+          "roles" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PartyRoleResponseDto"
+            },
+            "type" : "array"
+          },
+          "status" : {
+            "enum" : [ "ACTIVE", "INACTIVE" ],
+            "type" : "string"
+          },
+          "taxCode" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "PartyRoleCreateRequestDto" : {
+        "properties" : {
+          "roleType" : {
+            "enum" : [ "DEST_AGENT", "QUARANTINE_FARM", "STABLE", "VET", "RESCUE", "INSURER" ],
+            "type" : "string"
+          },
+          "validFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "validTo" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "roleType", "validFrom" ],
+        "type" : "object"
+      },
+      "PartyRoleResponseDto" : {
+        "properties" : {
+          "roleType" : {
+            "enum" : [ "DEST_AGENT", "QUARANTINE_FARM", "STABLE", "VET", "RESCUE", "INSURER" ],
+            "type" : "string"
+          },
+          "validFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "validTo" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "PartyRoleUpdateRequestDto" : {
+        "properties" : {
+          "validFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "validTo" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "validFrom" ],
+        "type" : "object"
+      },
+      "PartyUpdateRequestDto" : {
+        "properties" : {
+          "address" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "countryCode" : {
+            "minLength" : 1,
+            "pattern" : "[A-Za-z]{2}",
+            "type" : "string"
+          },
+          "displayName" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "email" : {
+            "format" : "email",
+            "maxLength" : 254,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "partyType" : {
+            "enum" : [ "PERSON", "ORGANIZATION" ],
+            "type" : "string"
+          },
+          "phone" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "taxCode" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "countryCode", "displayName", "partyType" ],
+        "type" : "object"
+      },
       "PasswordResetOtpRequest" : {
         "properties" : {
           "email" : {
@@ -1033,6 +1571,194 @@
             "type" : "string"
           }
         },
+        "type" : "object"
+      },
+      "StaffAccountCreateRequestDto" : {
+        "properties" : {
+          "driverLicenseClass" : {
+            "maxLength" : 10,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "driverLicenseExpiryDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "email" : {
+            "format" : "email",
+            "maxLength" : 254,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "fullName" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "hireDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "homeHubLocationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "password" : {
+            "maxLength" : 72,
+            "minLength" : 6,
+            "type" : "string",
+            "writeOnly" : true
+          },
+          "phone" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "roleCode" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "staffCode" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "username" : {
+            "maxLength" : 50,
+            "minLength" : 3,
+            "pattern" : "[A-Za-z0-9._-]+",
+            "type" : "string"
+          }
+        },
+        "required" : [ "email", "fullName", "hireDate", "homeHubLocationId", "password", "phone", "roleCode", "staffCode", "username" ],
+        "type" : "object"
+      },
+      "StaffAccountResponseDto" : {
+        "properties" : {
+          "accountStatus" : {
+            "enum" : [ "ACTIVE", "LOCKED", "DISABLED" ],
+            "type" : "string"
+          },
+          "driverLicenseClass" : {
+            "type" : "string"
+          },
+          "driverLicenseExpiryDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "employmentStatus" : {
+            "enum" : [ "ACTIVE", "ON_LEAVE", "TERMINATED" ],
+            "type" : "string"
+          },
+          "fullName" : {
+            "type" : "string"
+          },
+          "hireDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "homeHubLocationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "phone" : {
+            "type" : "string"
+          },
+          "roleCode" : {
+            "type" : "string"
+          },
+          "staffCode" : {
+            "type" : "string"
+          },
+          "userId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "username" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "StaffAccountUpdateRequestDto" : {
+        "properties" : {
+          "driverLicenseClass" : {
+            "maxLength" : 10,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "driverLicenseExpiryDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "fullName" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "hireDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "homeHubLocationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "phone" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "staffCode" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "fullName", "hireDate", "homeHubLocationId", "phone", "staffCode" ],
+        "type" : "object"
+      },
+      "SystemConfigResponseDto" : {
+        "properties" : {
+          "configGroup" : {
+            "type" : "string"
+          },
+          "configKey" : {
+            "type" : "string"
+          },
+          "configValue" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "unit" : {
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "updatedByUserId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "SystemConfigUpdateRequestDto" : {
+        "properties" : {
+          "configValue" : {
+            "maximum" : 2147483647,
+            "minimum" : -2147483648,
+            "type" : "number"
+          }
+        },
+        "required" : [ "configValue" ],
         "type" : "object"
       },
       "VehicleClassResponseDto" : {
@@ -1515,6 +2241,156 @@
           }
         },
         "tags" : [ "geography-controller" ]
+      }
+    },
+    "/customers/me" : {
+      "get" : {
+        "operationId" : "getCustomerProfile",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCustomerProfileResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "customer-controller" ]
+      },
+      "put" : {
+        "operationId" : "updateCustomerProfile",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CustomerProfileUpdateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCustomerProfileResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "customer-controller" ]
+      }
+    },
+    "/customers/me/addresses" : {
+      "get" : {
+        "operationId" : "listCustomerAddresses",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListCustomerAddressResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "customer-controller" ]
+      },
+      "post" : {
+        "operationId" : "createCustomerAddress",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CustomerAddressCreateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCustomerAddressResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "customer-controller" ]
+      }
+    },
+    "/customers/me/addresses/{id}" : {
+      "delete" : {
+        "operationId" : "deleteCustomerAddress",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "customer-controller" ]
+      },
+      "put" : {
+        "operationId" : "updateCustomerAddress",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CustomerAddressUpdateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCustomerAddressResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "customer-controller" ]
       }
     },
     "/departure-schedules" : {
@@ -2101,6 +2977,194 @@
         "tags" : [ "location-controller" ]
       }
     },
+    "/parties" : {
+      "get" : {
+        "operationId" : "listParties",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListPartyResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "party-controller" ]
+      },
+      "post" : {
+        "operationId" : "createParty",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PartyCreateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePartyResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "party-controller" ]
+      }
+    },
+    "/parties/{id}" : {
+      "get" : {
+        "operationId" : "getParty",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePartyResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "party-controller" ]
+      },
+      "put" : {
+        "operationId" : "updateParty",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PartyUpdateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePartyResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "party-controller" ]
+      }
+    },
+    "/parties/{id}/roles" : {
+      "post" : {
+        "operationId" : "addPartyRole",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PartyRoleCreateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePartyRoleResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "party-controller" ]
+      }
+    },
+    "/parties/{id}/roles/{roleType}" : {
+      "put" : {
+        "operationId" : "updatePartyRole",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "roleType",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "DEST_AGENT", "QUARANTINE_FARM", "STABLE", "VET", "RESCUE", "INSURER" ],
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PartyRoleUpdateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePartyRoleResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "party-controller" ]
+      }
+    },
     "/provinces" : {
       "get" : {
         "operationId" : "provinces",
@@ -2285,6 +3349,190 @@
           }
         },
         "tags" : [ "route-controller" ]
+      }
+    },
+    "/staff-accounts" : {
+      "get" : {
+        "operationId" : "listStaffAccounts",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListStaffAccountResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "account-controller" ]
+      },
+      "post" : {
+        "operationId" : "createStaffAccount",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StaffAccountCreateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseStaffAccountResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "account-controller" ]
+      }
+    },
+    "/staff-accounts/{id}" : {
+      "get" : {
+        "operationId" : "getStaffAccount",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseStaffAccountResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "account-controller" ]
+      },
+      "put" : {
+        "operationId" : "updateStaffAccount",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StaffAccountUpdateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseStaffAccountResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "account-controller" ]
+      }
+    },
+    "/system-configs" : {
+      "get" : {
+        "operationId" : "listSystemConfigs",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListSystemConfigResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "system-config-controller" ]
+      }
+    },
+    "/system-configs/{key}" : {
+      "get" : {
+        "operationId" : "getSystemConfig",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "key",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSystemConfigResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "system-config-controller" ]
+      },
+      "put" : {
+        "operationId" : "updateSystemConfig",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "key",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SystemConfigUpdateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSystemConfigResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "system-config-controller" ]
       }
     },
     "/vehicle-classes" : {
