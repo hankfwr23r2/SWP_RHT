@@ -164,7 +164,7 @@ service (đơn vị tính)  ──<  price_item (đơn giá + điều kiện)  >
 | Cước chạy thẳng (không qua trục) | DIRECT | PER_KM | `vehicle_class_id` + bậc km, tính từ địa chỉ đón tới địa chỉ giao |
 | Phụ phí nhiên liệu | FUEL | PER_KM | `fuel_buffer_rate` của bảng giá |
 | Lưu chuồng, cách ly | QUARANTINE | PER_HORSE_DAY | |
-| Cho ăn theo chỉ dẫn | ADD_ON | PER_HORSE_DAY | Khách chọn ở `booking_horse_service` |
+| Khám thú y trước chuyến | ADD_ON | PER_HORSE | Khách chọn ở `booking_horse_service`. Một lần, ở nơi đón hoặc hub; kết quả là một `document` |
 | Thủ tục kiểm dịch | DOCS | PER_BOOKING | `is_auto_applied = true` với đơn không phải LOCAL. Lệ phí nhà nước có `is_pass_through` |
 
 Số km của chặng đón và giao do backend tính bằng dịch vụ bản đồ (Valhalla), từ `booking_address` tới hub đón hoặc từ hub giao tới `booking_address`. Với đơn chạy thẳng, số km tính từ địa chỉ đón tới địa chỉ giao. **Frontend không tính giá**, chỉ gọi API xem trước giá.
@@ -338,7 +338,7 @@ Quá `expires_at` mà chưa cọc thì scheduler chuyển báo giá sang `EXPIRE
 | Việc | Bảng |
 |---|---|
 | Xe đón về tới hub | `trip_stop` (hub) `actual_arrival_at`. `horse_leg` PICKUP COMPLETED |
-| Giao ngựa vào hub | `handover` HUB_IN (hoặc STAY_IN), gắn `horse_stay_id` |
+| Giao ngựa vào hub | `handover` HUB_IN (hoặc STAY_IN), gắn `horse_stay_id`. Người ở `handled_by` phụ trách ngựa tới HUB_OUT. Ở hub vệ tinh (không có nhân viên), tổ xe trục ở lại tới khi giao; qua đêm thì gửi đối tác `STABLE` |
 | Ngựa ở hub chờ chuyến trục chính | `horse_stay` ASSEMBLY: `actual_start_at` |
 | Lượt xe đón kết thúc, xe rảnh | `vehicle_trip.status = COMPLETED`, `actual_end_at` |
 
@@ -348,8 +348,10 @@ Quá `expires_at` mà chưa cọc thì scheduler chuyển báo giá sang `EXPIRE
 |---|---|
 | Chuyển từ hub sang trại cách ly | `vehicle_trip` TRANSFER, `horse_leg` leg_type TRANSFER |
 | Nhập trại | `handover` STAY_IN, `horse_stay` QUARANTINE (`operator_party_id` = trại) |
-| Hộ tống ghi sức khỏe hằng ngày | `horse_health_log` (`horse_stay_id`) |
-| Kết thúc cách ly | `horse_stay.quarantine_result = PASSED` hoặc `FAILED`, `actual_end_at`. Có thể kéo dài: tăng `planned_end_at` và tính phụ phí ở `cost_item` |
+| Hộ tống ghi sức khỏe và ăn uống hằng ngày theo chỉ dẫn của khách | `horse_health_log` (`horse_stay_id`, ăn uống ghi ở `note`) |
+| Chuyên viên kết luận cách ly | `horse_stay.quarantine_result = PASSED` hoặc `FAILED`, `actual_end_at`. Có thể kéo dài: tăng `planned_end_at` và tính phụ phí ở `cost_item` |
+
+Phí lưu chuồng, cách ly theo ngày đã gồm ăn uống.
 
 Trong lúc ngựa cách ly, **xe không bị giữ**: chặng tiếp theo là một lượt xe khác.
 
@@ -371,7 +373,7 @@ Trong lúc ngựa cách ly, **xe không bị giữ**: chặng tiếp theo là m�
 | Tới cửa khẩu, làm thủ tục (tính bằng giờ, không phải lưu trú) | `trip_stop` stop_type BORDER |
 | Cán bộ xác nhận giấy chứng nhận kiểm dịch | `document` liên quan được duyệt |
 | Bàn giao cho đại lý | `handover` AGENT, `from_party_id` NULL (công ty), `to_party_id` = đại lý. Có `handover_horse` và biên bản |
-| Chặng của công ty kết thúc, chặng của đại lý bắt đầu | `horse_leg` LINEHAUL COMPLETED. `horse_leg` kế tiếp có `agent_party_id`: IN_PROGRESS |
+| Chặng của công ty kết thúc, chặng của đại lý bắt đầu. Đại lý không có tài khoản: điều phối nhập hộ mốc và ảnh | `horse_leg` LINEHAUL COMPLETED. `horse_leg` kế tiếp có `agent_party_id`: IN_PROGRESS |
 | Bị giữ qua đêm ở cửa khẩu | `horse_stay` OVERNIGHT |
 
 Sau khi bàn giao cho đại lý, công ty **vẫn chịu trách nhiệm với khách**. Đại lý là bên được thuê lại.
@@ -468,7 +470,7 @@ Hạn khiếu nại là 7 ngày kể từ `handover` DELIVERY DONE.
 ### 5.3 Ngựa không đạt cách ly
 
 1. `horse_stay.quarantine_result = FAILED`.
-2. Con ngựa đó bị tách khỏi đơn: `booking_horse.status = RETURNED`, hủy các chặng phía sau.
+2. Con ngựa đó bị tách khỏi đơn: `booking_horse.status = EXCLUDED`, nhả khoang, hủy các chặng phía sau. Trả ngựa xong thì chuyển `RETURNED`.
 3. Tạo chặng RETURN để chở ngựa về. Khách chịu chi phí (`cost_item`, cause_type HORSE_CONDITION).
 4. Lập báo giá phiên bản mới cho các con ngựa còn lại.
 5. Nếu ngựa đang ở nước ngoài, cơ quan nước đến quyết định. Phải đưa về Việt Nam thì tạo **đơn IMPORT liên kết** qua `original_booking_id`.

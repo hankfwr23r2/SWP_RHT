@@ -516,7 +516,7 @@ Index: `vehicle_class_id`, `home_hub_location_id`.
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
 | `id` | `bigint` | | PK, identity | |
-| `code` | `varchar(30)` | | UK | Ví dụ `LINEHAUL_STALL`, `PICKUP_KM`, `FEED_PACK` |
+| `code` | `varchar(30)` | | UK | Ví dụ `LINEHAUL_STALL`, `PICKUP_KM`, `VET_CHECK` |
 | `name` | `varchar(200)` | | | |
 | `layer` | `varchar(30)` | | CK `LINEHAUL, PICKUP, DELIVERY, DIRECT, FUEL, STALL, QUARANTINE, ADD_ON, DOCS, SURCHARGE` | Nhóm cước. `DIRECT` = cước chạy thẳng theo km × hạng xe |
 | `billing_unit` | `varchar(30)` | | CK `PER_STALL, PER_KM, PER_HORSE, PER_HORSE_DAY, PER_BOOKING` | Đơn vị tính |
@@ -704,7 +704,7 @@ Index: `province_code`, `location_id`.
 | `diet_note` | `text` | có | | |
 | `feedings_per_day` | `smallint` | có | CK `1..10` | |
 | `is_feed_supplied_by_owner` | `boolean` | | default `false` | |
-| `status` | `varchar(30)` | | CK `ACTIVE, EXCLUDED, CANCELLED, DELIVERED, RETURNED` | `EXCLUDED` = bị loại vì không đủ sức khỏe khi đón |
+| `status` | `varchar(30)` | | CK `ACTIVE, EXCLUDED, CANCELLED, DELIVERED, RETURNED` | `EXCLUDED` = bị loại vì không đủ sức khỏe khi đón hoặc trượt cách ly; `RETURNED` = đã trả ngựa xong |
 | `added_at` | `timestamptz` | | default `now()` | |
 
 Ràng buộc bảng: `UNIQUE (booking_id, horse_id)`.
