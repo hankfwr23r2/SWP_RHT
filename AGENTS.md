@@ -10,7 +10,7 @@
 2. `docs/DB_SCHEMA_59_BANG.md`: bảng, cột, ràng buộc, dữ liệu dẫn xuất, quy tắc phải kiểm ở service.
 3. `docs/NGHIEP_VU_THEO_59_BANG.md`: ai làm gì, lúc nào, ghi vào bảng nào.
 4. `docs/NGU_CANH_THIET_KE_LAI.md`: lý do thiết kế, quyết định đã chốt, câu hỏi còn mở.
-5. `docs/KE_HOACH_TRIEN_KHAI.md`: task, chủ sở hữu bảng, hợp đồng gọi chéo giữa hai luồng, quy trình cho agent. Nhận task nào thì đọc đúng task đó.
+5. `docs/KE_HOACH_TRIEN_KHAI.md`: task, chủ sở hữu bảng, hợp đồng gọi chéo giữa hai luồng, quy trình cho agent. Nhận task nào thì đọc đúng task đó. **Agent luồng B** đọc thêm `docs/THONG_BAO_LUONG_B.md` trước khi bắt đầu task.
 6. Code hiện có. Code cũ **không** phải là chuẩn. Nó được viết theo mô hình cũ.
 
 Khi hai nguồn mâu thuẫn: **dừng lại, nêu mâu thuẫn và hỏi người dùng**. Không tự chọn một bên. Không mở lại các quyết định đã chốt trong `NGU_CANH_THIET_KE_LAI.md`.
