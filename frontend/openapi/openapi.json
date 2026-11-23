@@ -1,0 +1,3670 @@
+{
+  "components" : {
+    "schemas" : {
+      "ApiResponseAuthResponse" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/AuthResponse"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseCustomerAddressResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/CustomerAddressResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseCustomerProfileResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/CustomerProfileResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseDepartureResponse" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/DepartureResponse"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseDepartureScheduleResponse" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/DepartureScheduleResponse"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseDepartureSuggestionResponse" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/DepartureSuggestionResponse"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseHubServiceAreaResponse" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/HubServiceAreaResponse"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListCountryResponse" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CountryResponse"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListCustomerAddressResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CustomerAddressResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListDepartureResponse" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DepartureResponse"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListDepartureScheduleResponse" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DepartureScheduleResponse"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListHubServiceAreaResponse" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HubServiceAreaResponse"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListLocationResponse" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/LocationResponse"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListPartyResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PartyResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListProvinceResponse" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ProvinceResponse"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListRouteResponse" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RouteResponse"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListStaffAccountResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/StaffAccountResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListSystemConfigResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SystemConfigResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListVehicleClassResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/VehicleClassResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListVehicleResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/VehicleResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseLocationResponse" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/LocationResponse"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseMapStringString" : {
+        "properties" : {
+          "data" : {
+            "additionalProperties" : {
+              "type" : "string"
+            },
+            "type" : "object"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponsePartyResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/PartyResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponsePartyRoleResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/PartyRoleResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseRouteResponse" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/RouteResponse"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseStaffAccountResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/StaffAccountResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseSystemConfigResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/SystemConfigResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseVehicleResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/VehicleResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseVoid" : {
+        "properties" : {
+          "data" : { },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "AuthResponse" : {
+        "properties" : {
+          "accessToken" : {
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "emailVerificationRequired" : {
+            "type" : "boolean"
+          },
+          "fullName" : {
+            "type" : "string"
+          },
+          "role" : {
+            "type" : "string"
+          },
+          "roles" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "staffCode" : {
+            "type" : "string"
+          },
+          "tokenType" : {
+            "type" : "string"
+          },
+          "userId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "username" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ChangePasswordRequest" : {
+        "properties" : {
+          "confirmPassword" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "currentPassword" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "newPassword" : {
+            "maxLength" : 100,
+            "minLength" : 6,
+            "type" : "string"
+          }
+        },
+        "required" : [ "confirmPassword", "currentPassword", "newPassword" ],
+        "type" : "object"
+      },
+      "CountryResponse" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "defaultCurrencyCode" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "CustomerAddressCreateRequestDto" : {
+        "properties" : {
+          "addressLine" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "countryCode" : {
+            "minLength" : 1,
+            "pattern" : "[A-Za-z]{2}",
+            "type" : "string"
+          },
+          "defaultAddress" : {
+            "type" : "boolean"
+          },
+          "label" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "latitude" : {
+            "maximum" : 90,
+            "minimum" : -90,
+            "type" : "number"
+          },
+          "longitude" : {
+            "maximum" : 180,
+            "minimum" : -180,
+            "type" : "number"
+          },
+          "provinceCode" : {
+            "maxLength" : 10,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "ward" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "addressLine", "countryCode", "label", "provinceCode" ],
+        "type" : "object"
+      },
+      "CustomerAddressResponseDto" : {
+        "properties" : {
+          "addressLine" : {
+            "type" : "string"
+          },
+          "countryCode" : {
+            "type" : "string"
+          },
+          "defaultAddress" : {
+            "type" : "boolean"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "label" : {
+            "type" : "string"
+          },
+          "latitude" : {
+            "type" : "number"
+          },
+          "longitude" : {
+            "type" : "number"
+          },
+          "provinceCode" : {
+            "type" : "string"
+          },
+          "ward" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "CustomerAddressUpdateRequestDto" : {
+        "properties" : {
+          "addressLine" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "countryCode" : {
+            "minLength" : 1,
+            "pattern" : "[A-Za-z]{2}",
+            "type" : "string"
+          },
+          "defaultAddress" : {
+            "type" : "boolean"
+          },
+          "label" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "latitude" : {
+            "maximum" : 90,
+            "minimum" : -90,
+            "type" : "number"
+          },
+          "longitude" : {
+            "maximum" : 180,
+            "minimum" : -180,
+            "type" : "number"
+          },
+          "provinceCode" : {
+            "maxLength" : 10,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "ward" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "addressLine", "countryCode", "label", "provinceCode" ],
+        "type" : "object"
+      },
+      "CustomerProfileResponseDto" : {
+        "properties" : {
+          "accountStatus" : {
+            "enum" : [ "ACTIVE", "LOCKED", "DISABLED" ],
+            "type" : "string"
+          },
+          "address" : {
+            "type" : "string"
+          },
+          "countryCode" : {
+            "type" : "string"
+          },
+          "customerType" : {
+            "enum" : [ "PERSON", "ORGANIZATION" ],
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "fullName" : {
+            "type" : "string"
+          },
+          "identityDocumentCountryCode" : {
+            "type" : "string"
+          },
+          "identityDocumentNumber" : {
+            "type" : "string"
+          },
+          "identityDocumentType" : {
+            "enum" : [ "CCCD", "PASSPORT", "BUSINESS_REG" ],
+            "type" : "string"
+          },
+          "phone" : {
+            "type" : "string"
+          },
+          "taxCode" : {
+            "type" : "string"
+          },
+          "userId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "CustomerProfileUpdateRequestDto" : {
+        "properties" : {
+          "address" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "countryCode" : {
+            "minLength" : 1,
+            "pattern" : "[A-Za-z]{2}",
+            "type" : "string"
+          },
+          "customerType" : {
+            "enum" : [ "PERSON", "ORGANIZATION" ],
+            "type" : "string"
+          },
+          "fullName" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "identityDocumentCountryCode" : {
+            "pattern" : "[A-Za-z]{2}",
+            "type" : "string"
+          },
+          "identityDocumentNumber" : {
+            "maxLength" : 50,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "identityDocumentType" : {
+            "enum" : [ "CCCD", "PASSPORT", "BUSINESS_REG" ],
+            "type" : "string"
+          },
+          "phone" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "taxCode" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "countryCode", "customerType", "fullName" ],
+        "type" : "object"
+      },
+      "DepartureCancelRequest" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 1000,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
+      "DepartureCreateRequest" : {
+        "properties" : {
+          "bookingCutoffHours" : {
+            "format" : "int32",
+            "minimum" : 1,
+            "type" : "integer"
+          },
+          "departureDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "departureTime" : {
+            "type" : "string"
+          },
+          "routeId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "stallCapacity" : {
+            "format" : "int32",
+            "minimum" : 1,
+            "type" : "integer"
+          }
+        },
+        "required" : [ "bookingCutoffHours", "departureDate", "departureTime", "routeId", "stallCapacity" ],
+        "type" : "object"
+      },
+      "DepartureResponse" : {
+        "properties" : {
+          "availableStalls" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "bookedStallCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "bookingCutoffAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "departureDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "departureScheduleId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "destinationCode" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "originCode" : {
+            "type" : "string"
+          },
+          "plannedDepartureAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "routeCode" : {
+            "type" : "string"
+          },
+          "routeId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "routeName" : {
+            "type" : "string"
+          },
+          "stallCapacity" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "status" : {
+            "enum" : [ "OPEN", "CLOSED", "IN_PROGRESS", "COMPLETED", "CANCELLED" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "DepartureScheduleRequest" : {
+        "properties" : {
+          "bookingCutoffHours" : {
+            "format" : "int32",
+            "minimum" : 1,
+            "type" : "integer"
+          },
+          "daysOfWeek" : {
+            "items" : {
+              "format" : "int32",
+              "maximum" : 7,
+              "minimum" : 1,
+              "type" : "integer"
+            },
+            "minItems" : 1,
+            "type" : "array",
+            "uniqueItems" : true
+          },
+          "departureTime" : {
+            "type" : "string"
+          },
+          "routeId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "stallCapacity" : {
+            "format" : "int32",
+            "minimum" : 1,
+            "type" : "integer"
+          },
+          "validFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "validTo" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "bookingCutoffHours", "daysOfWeek", "departureTime", "routeId", "stallCapacity", "validFrom" ],
+        "type" : "object"
+      },
+      "DepartureScheduleResponse" : {
+        "properties" : {
+          "bookingCutoffHours" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "daysOfWeek" : {
+            "items" : {
+              "format" : "int32",
+              "type" : "integer"
+            },
+            "type" : "array"
+          },
+          "departureTime" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "routeCode" : {
+            "type" : "string"
+          },
+          "routeId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "stallCapacity" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "status" : {
+            "enum" : [ "ACTIVE", "PAUSED", "ENDED" ],
+            "type" : "string"
+          },
+          "validFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "validTo" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "DepartureSuggestionQuery" : {
+        "properties" : {
+          "bookingType" : {
+            "enum" : [ "LOCAL", "INTERPROVINCE", "EXPORT", "IMPORT" ],
+            "type" : "string"
+          },
+          "deliveryLatitude" : {
+            "maximum" : 90,
+            "minimum" : -90,
+            "type" : "number"
+          },
+          "deliveryLongitude" : {
+            "maximum" : 180,
+            "minimum" : -180,
+            "type" : "number"
+          },
+          "deliveryProvinceCode" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "fromDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "pickupLatitude" : {
+            "maximum" : 90,
+            "minimum" : -90,
+            "type" : "number"
+          },
+          "pickupLongitude" : {
+            "maximum" : 180,
+            "minimum" : -180,
+            "type" : "number"
+          },
+          "pickupProvinceCode" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "stalls" : {
+            "format" : "int32",
+            "maximum" : 50,
+            "minimum" : 1,
+            "type" : "integer"
+          }
+        },
+        "required" : [ "bookingType", "deliveryProvinceCode", "fromDate", "pickupProvinceCode" ],
+        "type" : "object"
+      },
+      "DepartureSuggestionResponse" : {
+        "properties" : {
+          "deliveryHubCode" : {
+            "type" : "string"
+          },
+          "departures" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DepartureResponse"
+            },
+            "type" : "array"
+          },
+          "pickupHubCode" : {
+            "type" : "string"
+          },
+          "routing" : {
+            "enum" : [ "DIRECT", "LINEHAUL" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "EmailVerificationRequest" : {
+        "properties" : {
+          "email" : {
+            "format" : "email",
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "otp" : {
+            "pattern" : "^$|^\\d{6}$",
+            "type" : "string"
+          }
+        },
+        "required" : [ "email" ],
+        "type" : "object"
+      },
+      "HubServiceAreaRequest" : {
+        "properties" : {
+          "hubLocationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "hubLocationId" ],
+        "type" : "object"
+      },
+      "HubServiceAreaResponse" : {
+        "properties" : {
+          "hubCode" : {
+            "type" : "string"
+          },
+          "hubLocationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "hubName" : {
+            "type" : "string"
+          },
+          "provinceCode" : {
+            "type" : "string"
+          },
+          "provinceName" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "LocationRequest" : {
+        "properties" : {
+          "address" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "closingTime" : {
+            "type" : "string"
+          },
+          "code" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "pattern" : "^[A-Za-z0-9-]+$",
+            "type" : "string"
+          },
+          "contactPhone" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "countryCode" : {
+            "minLength" : 1,
+            "pattern" : "^[A-Z]{2}$",
+            "type" : "string"
+          },
+          "latitude" : {
+            "maximum" : 90,
+            "minimum" : -90,
+            "type" : "number"
+          },
+          "locationType" : {
+            "enum" : [ "HUB", "QUARANTINE_FARM", "REST_STOP", "BORDER_GATE", "STABLE", "RACETRACK" ],
+            "type" : "string"
+          },
+          "longitude" : {
+            "maximum" : 180,
+            "minimum" : -180,
+            "type" : "number"
+          },
+          "name" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "openingTime" : {
+            "type" : "string"
+          },
+          "provinceCode" : {
+            "maxLength" : 10,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "address", "code", "countryCode", "locationType", "name" ],
+        "type" : "object"
+      },
+      "LocationResponse" : {
+        "properties" : {
+          "address" : {
+            "type" : "string"
+          },
+          "closingTime" : {
+            "type" : "string"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "contactPhone" : {
+            "type" : "string"
+          },
+          "countryCode" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "latitude" : {
+            "type" : "number"
+          },
+          "locationType" : {
+            "enum" : [ "HUB", "QUARANTINE_FARM", "REST_STOP", "BORDER_GATE", "STABLE", "RACETRACK" ],
+            "type" : "string"
+          },
+          "longitude" : {
+            "type" : "number"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "openingTime" : {
+            "type" : "string"
+          },
+          "provinceCode" : {
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "ACTIVE", "INACTIVE" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "LoginRequest" : {
+        "properties" : {
+          "password" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "username" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "password", "username" ],
+        "type" : "object"
+      },
+      "PartyCreateRequestDto" : {
+        "properties" : {
+          "address" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "countryCode" : {
+            "minLength" : 1,
+            "pattern" : "[A-Za-z]{2}",
+            "type" : "string"
+          },
+          "displayName" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "email" : {
+            "format" : "email",
+            "maxLength" : 254,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "partyType" : {
+            "enum" : [ "PERSON", "ORGANIZATION" ],
+            "type" : "string"
+          },
+          "phone" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "taxCode" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "countryCode", "displayName", "partyType" ],
+        "type" : "object"
+      },
+      "PartyResponseDto" : {
+        "properties" : {
+          "address" : {
+            "type" : "string"
+          },
+          "countryCode" : {
+            "type" : "string"
+          },
+          "displayName" : {
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "partyType" : {
+            "enum" : [ "PERSON", "ORGANIZATION" ],
+            "type" : "string"
+          },
+          "phone" : {
+            "type" : "string"
+          },
+          "roles" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PartyRoleResponseDto"
+            },
+            "type" : "array"
+          },
+          "status" : {
+            "enum" : [ "ACTIVE", "INACTIVE" ],
+            "type" : "string"
+          },
+          "taxCode" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "PartyRoleCreateRequestDto" : {
+        "properties" : {
+          "roleType" : {
+            "enum" : [ "DEST_AGENT", "QUARANTINE_FARM", "STABLE", "VET", "RESCUE", "INSURER" ],
+            "type" : "string"
+          },
+          "validFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "validTo" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "roleType", "validFrom" ],
+        "type" : "object"
+      },
+      "PartyRoleResponseDto" : {
+        "properties" : {
+          "roleType" : {
+            "enum" : [ "DEST_AGENT", "QUARANTINE_FARM", "STABLE", "VET", "RESCUE", "INSURER" ],
+            "type" : "string"
+          },
+          "validFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "validTo" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "PartyRoleUpdateRequestDto" : {
+        "properties" : {
+          "validFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "validTo" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "validFrom" ],
+        "type" : "object"
+      },
+      "PartyUpdateRequestDto" : {
+        "properties" : {
+          "address" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "countryCode" : {
+            "minLength" : 1,
+            "pattern" : "[A-Za-z]{2}",
+            "type" : "string"
+          },
+          "displayName" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "email" : {
+            "format" : "email",
+            "maxLength" : 254,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "partyType" : {
+            "enum" : [ "PERSON", "ORGANIZATION" ],
+            "type" : "string"
+          },
+          "phone" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "taxCode" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "countryCode", "displayName", "partyType" ],
+        "type" : "object"
+      },
+      "PasswordResetOtpRequest" : {
+        "properties" : {
+          "email" : {
+            "format" : "email",
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "email" ],
+        "type" : "object"
+      },
+      "ProvinceResponse" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "countryCode" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "RegisterRequest" : {
+        "properties" : {
+          "acceptedTerms" : {
+            "type" : "boolean"
+          },
+          "address" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "email" : {
+            "format" : "email",
+            "minLength" : 1,
+            "pattern" : "^(?i)[A-Za-z0-9.+_-]+@gmail\\.com$",
+            "type" : "string"
+          },
+          "fullName" : {
+            "maxLength" : 100,
+            "minLength" : 2,
+            "pattern" : "^[\\p{L}\\p{M}]+(?:[ '\\u2019-][\\p{L}\\p{M}]+)*$",
+            "type" : "string"
+          },
+          "language" : {
+            "type" : "string"
+          },
+          "password" : {
+            "maxLength" : 100,
+            "minLength" : 6,
+            "type" : "string"
+          },
+          "phone" : {
+            "minLength" : 1,
+            "pattern" : "^(?:(?:\\+?84|0)[\\s().-]*(?:3|5|7|8|9)(?:[\\s().-]*\\d){8}|(?:\\+?855|0)[\\s().-]*(?:1|6|7|8|9)(?:[\\s().-]*\\d){7,8}|(?:\\+?856|0)[\\s().-]*20(?:[\\s().-]*\\d){8})$",
+            "type" : "string"
+          },
+          "username" : {
+            "maxLength" : 50,
+            "minLength" : 3,
+            "type" : "string"
+          }
+        },
+        "required" : [ "email", "fullName", "password", "phone", "username" ],
+        "type" : "object"
+      },
+      "ResetPasswordWithOtpRequest" : {
+        "properties" : {
+          "confirmPassword" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "email" : {
+            "format" : "email",
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "newPassword" : {
+            "maxLength" : 100,
+            "minLength" : 6,
+            "type" : "string"
+          },
+          "otp" : {
+            "minLength" : 1,
+            "pattern" : "^\\d{6}$",
+            "type" : "string"
+          }
+        },
+        "required" : [ "confirmPassword", "email", "newPassword", "otp" ],
+        "type" : "object"
+      },
+      "RouteRequest" : {
+        "properties" : {
+          "code" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "pattern" : "^[A-Za-z0-9-]+$",
+            "type" : "string"
+          },
+          "destinationLocationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "distanceKm" : {
+            "minimum" : 0.01,
+            "type" : "number"
+          },
+          "estimatedDurationMinutes" : {
+            "format" : "int32",
+            "minimum" : 1,
+            "type" : "integer"
+          },
+          "name" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "originLocationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "stops" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RouteStopRequest"
+            },
+            "maxItems" : 2147483647,
+            "minItems" : 2,
+            "type" : "array"
+          }
+        },
+        "required" : [ "code", "destinationLocationId", "distanceKm", "estimatedDurationMinutes", "name", "originLocationId", "stops" ],
+        "type" : "object"
+      },
+      "RouteResponse" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "destinationCode" : {
+            "type" : "string"
+          },
+          "destinationLocationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "destinationName" : {
+            "type" : "string"
+          },
+          "distanceKm" : {
+            "type" : "number"
+          },
+          "estimatedDurationMinutes" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "originCode" : {
+            "type" : "string"
+          },
+          "originLocationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "originName" : {
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "ACTIVE", "INACTIVE" ],
+            "type" : "string"
+          },
+          "stops" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RouteStopResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "RouteStopRequest" : {
+        "properties" : {
+          "arrivalOffsetMinutes" : {
+            "format" : "int32",
+            "minimum" : 0,
+            "type" : "integer"
+          },
+          "dwellMinutes" : {
+            "format" : "int32",
+            "minimum" : 0,
+            "type" : "integer"
+          },
+          "locationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "sequenceNumber" : {
+            "format" : "int32",
+            "minimum" : 1,
+            "type" : "integer"
+          },
+          "stopType" : {
+            "enum" : [ "HUB", "REST", "VITAL_CHECK", "BORDER", "QUARANTINE" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "arrivalOffsetMinutes", "dwellMinutes", "locationId", "sequenceNumber", "stopType" ],
+        "type" : "object"
+      },
+      "RouteStopResponse" : {
+        "properties" : {
+          "arrivalOffsetMinutes" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "dwellMinutes" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "locationCode" : {
+            "type" : "string"
+          },
+          "locationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "locationName" : {
+            "type" : "string"
+          },
+          "locationType" : {
+            "enum" : [ "HUB", "QUARANTINE_FARM", "REST_STOP", "BORDER_GATE", "STABLE", "RACETRACK" ],
+            "type" : "string"
+          },
+          "sequenceNumber" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "stopType" : {
+            "enum" : [ "HUB", "REST", "VITAL_CHECK", "BORDER", "QUARANTINE" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "StaffAccountCreateRequestDto" : {
+        "properties" : {
+          "driverLicenseClass" : {
+            "maxLength" : 10,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "driverLicenseExpiryDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "email" : {
+            "format" : "email",
+            "maxLength" : 254,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "fullName" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "hireDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "homeHubLocationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "password" : {
+            "maxLength" : 72,
+            "minLength" : 6,
+            "type" : "string",
+            "writeOnly" : true
+          },
+          "phone" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "roleCode" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "staffCode" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "username" : {
+            "maxLength" : 50,
+            "minLength" : 3,
+            "pattern" : "[A-Za-z0-9._-]+",
+            "type" : "string"
+          }
+        },
+        "required" : [ "email", "fullName", "hireDate", "homeHubLocationId", "password", "phone", "roleCode", "staffCode", "username" ],
+        "type" : "object"
+      },
+      "StaffAccountResponseDto" : {
+        "properties" : {
+          "accountStatus" : {
+            "enum" : [ "ACTIVE", "LOCKED", "DISABLED" ],
+            "type" : "string"
+          },
+          "driverLicenseClass" : {
+            "type" : "string"
+          },
+          "driverLicenseExpiryDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "employmentStatus" : {
+            "enum" : [ "ACTIVE", "ON_LEAVE", "TERMINATED" ],
+            "type" : "string"
+          },
+          "fullName" : {
+            "type" : "string"
+          },
+          "hireDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "homeHubLocationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "phone" : {
+            "type" : "string"
+          },
+          "roleCode" : {
+            "type" : "string"
+          },
+          "staffCode" : {
+            "type" : "string"
+          },
+          "userId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "username" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "StaffAccountUpdateRequestDto" : {
+        "properties" : {
+          "driverLicenseClass" : {
+            "maxLength" : 10,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "driverLicenseExpiryDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "fullName" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "hireDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "homeHubLocationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "phone" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "staffCode" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "fullName", "hireDate", "homeHubLocationId", "phone", "staffCode" ],
+        "type" : "object"
+      },
+      "SystemConfigResponseDto" : {
+        "properties" : {
+          "configGroup" : {
+            "type" : "string"
+          },
+          "configKey" : {
+            "type" : "string"
+          },
+          "configValue" : {
+            "type" : "string"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "unit" : {
+            "type" : "string"
+          },
+          "updatedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "updatedByUserId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "SystemConfigUpdateRequestDto" : {
+        "properties" : {
+          "configValue" : {
+            "maximum" : 2147483647,
+            "minimum" : -2147483648,
+            "type" : "number"
+          }
+        },
+        "required" : [ "configValue" ],
+        "type" : "object"
+      },
+      "VehicleClassResponseDto" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "maxStallCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "VehicleCreateRequestDto" : {
+        "properties" : {
+          "homeHubLocationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "licensePlate" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "registrationExpiryDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "standardStallCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "vehicleClassId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "wideStallCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "homeHubLocationId", "licensePlate", "standardStallCount", "vehicleClassId", "wideStallCount" ],
+        "type" : "object"
+      },
+      "VehicleResponseDto" : {
+        "properties" : {
+          "homeHubLocationCode" : {
+            "type" : "string"
+          },
+          "homeHubLocationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "licensePlate" : {
+            "type" : "string"
+          },
+          "registrationExpiryDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "standardStallCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "status" : {
+            "enum" : [ "ACTIVE", "MAINTENANCE", "RETIRED" ],
+            "type" : "string"
+          },
+          "vehicleClassCode" : {
+            "type" : "string"
+          },
+          "vehicleClassId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "wideStallCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "VehicleUpdateRequestDto" : {
+        "properties" : {
+          "homeHubLocationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "licensePlate" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "registrationExpiryDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "standardStallCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "vehicleClassId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "wideStallCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "homeHubLocationId", "licensePlate", "standardStallCount", "vehicleClassId", "wideStallCount" ],
+        "type" : "object"
+      }
+    },
+    "securitySchemes" : {
+      "bearerAuth" : {
+        "bearerFormat" : "JWT",
+        "name" : "bearerAuth",
+        "scheme" : "bearer",
+        "type" : "http"
+      }
+    }
+  },
+  "info" : {
+    "description" : "API Documentation cho he thong van chuyen ngua dua",
+    "title" : "RaceHorse Transport Management API",
+    "version" : "1.0.0"
+  },
+  "openapi" : "3.1.0",
+  "paths" : {
+    "/auth/change-password" : {
+      "post" : {
+        "operationId" : "changePassword",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangePasswordRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "auth-controller" ]
+      }
+    },
+    "/auth/customer/login" : {
+      "post" : {
+        "operationId" : "loginCustomer",
+        "parameters" : [ {
+          "in" : "header",
+          "name" : "X-Captcha-Token",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAuthResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "auth-controller" ]
+      }
+    },
+    "/auth/email-verification/confirm" : {
+      "post" : {
+        "operationId" : "confirmEmail",
+        "parameters" : [ {
+          "in" : "header",
+          "name" : "X-Captcha-Token",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EmailVerificationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAuthResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "auth-controller" ]
+      }
+    },
+    "/auth/email-verification/resend" : {
+      "post" : {
+        "operationId" : "resendEmailOtp",
+        "parameters" : [ {
+          "in" : "header",
+          "name" : "X-Captcha-Token",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/EmailVerificationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "auth-controller" ]
+      }
+    },
+    "/auth/logout" : {
+      "post" : {
+        "operationId" : "logout",
+        "parameters" : [ {
+          "in" : "header",
+          "name" : "Authorization",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "auth-controller" ]
+      }
+    },
+    "/auth/password-reset/complete" : {
+      "post" : {
+        "operationId" : "resetPasswordWithOtp",
+        "parameters" : [ {
+          "in" : "header",
+          "name" : "X-Captcha-Token",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ResetPasswordWithOtpRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "auth-controller" ]
+      }
+    },
+    "/auth/password-reset/request-otp" : {
+      "post" : {
+        "operationId" : "requestPasswordResetOtp",
+        "parameters" : [ {
+          "in" : "header",
+          "name" : "X-Captcha-Token",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PasswordResetOtpRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "auth-controller" ]
+      }
+    },
+    "/auth/refresh-token" : {
+      "post" : {
+        "operationId" : "refreshToken",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAuthResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "auth-controller" ]
+      }
+    },
+    "/auth/register" : {
+      "post" : {
+        "operationId" : "register",
+        "parameters" : [ {
+          "in" : "header",
+          "name" : "X-Captcha-Token",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RegisterRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "auth-controller" ]
+      }
+    },
+    "/auth/staff/login" : {
+      "post" : {
+        "operationId" : "loginStaff",
+        "parameters" : [ {
+          "in" : "header",
+          "name" : "X-Captcha-Token",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAuthResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "auth-controller" ]
+      }
+    },
+    "/countries" : {
+      "get" : {
+        "operationId" : "countries",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListCountryResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "geography-controller" ]
+      }
+    },
+    "/customers/me" : {
+      "get" : {
+        "operationId" : "getCustomerProfile",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCustomerProfileResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "customer-controller" ]
+      },
+      "put" : {
+        "operationId" : "updateCustomerProfile",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CustomerProfileUpdateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCustomerProfileResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "customer-controller" ]
+      }
+    },
+    "/customers/me/addresses" : {
+      "get" : {
+        "operationId" : "listCustomerAddresses",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListCustomerAddressResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "customer-controller" ]
+      },
+      "post" : {
+        "operationId" : "createCustomerAddress",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CustomerAddressCreateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCustomerAddressResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "customer-controller" ]
+      }
+    },
+    "/customers/me/addresses/{id}" : {
+      "delete" : {
+        "operationId" : "deleteCustomerAddress",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "customer-controller" ]
+      },
+      "put" : {
+        "operationId" : "updateCustomerAddress",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CustomerAddressUpdateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCustomerAddressResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "customer-controller" ]
+      }
+    },
+    "/departure-schedules" : {
+      "get" : {
+        "operationId" : "list_3",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "routeId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListDepartureScheduleResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "departure-schedule-controller" ]
+      },
+      "post" : {
+        "operationId" : "create_2",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DepartureScheduleRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDepartureScheduleResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "departure-schedule-controller" ]
+      }
+    },
+    "/departure-schedules/{id}" : {
+      "put" : {
+        "operationId" : "update_2",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DepartureScheduleRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDepartureScheduleResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "departure-schedule-controller" ]
+      }
+    },
+    "/departure-schedules/{id}/end" : {
+      "post" : {
+        "operationId" : "end",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDepartureScheduleResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "departure-schedule-controller" ]
+      }
+    },
+    "/departure-schedules/{id}/pause" : {
+      "post" : {
+        "operationId" : "pause",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDepartureScheduleResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "departure-schedule-controller" ]
+      }
+    },
+    "/departure-schedules/{id}/resume" : {
+      "post" : {
+        "operationId" : "resume",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDepartureScheduleResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "departure-schedule-controller" ]
+      }
+    },
+    "/departures" : {
+      "get" : {
+        "operationId" : "list_2",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "routeId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "OPEN", "CLOSED", "IN_PROGRESS", "COMPLETED", "CANCELLED" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "from",
+          "required" : true,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "to",
+          "required" : true,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListDepartureResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "departure-controller" ]
+      },
+      "post" : {
+        "operationId" : "createAdHoc",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DepartureCreateRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDepartureResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "departure-controller" ]
+      }
+    },
+    "/departures/suggestions" : {
+      "get" : {
+        "operationId" : "suggestions",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "query",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DepartureSuggestionQuery"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDepartureSuggestionResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "departure-controller" ]
+      }
+    },
+    "/departures/{id}/cancel" : {
+      "post" : {
+        "operationId" : "cancel",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DepartureCancelRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseDepartureResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "departure-controller" ]
+      }
+    },
+    "/health" : {
+      "get" : {
+        "operationId" : "checkHealth",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseMapStringString"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "health-check-controller" ]
+      }
+    },
+    "/hub-service-areas" : {
+      "get" : {
+        "operationId" : "list_4",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListHubServiceAreaResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "hub-service-area-controller" ]
+      }
+    },
+    "/hub-service-areas/{provinceCode}" : {
+      "delete" : {
+        "operationId" : "remove",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "provinceCode",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "hub-service-area-controller" ]
+      },
+      "put" : {
+        "operationId" : "assign",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "provinceCode",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HubServiceAreaRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseHubServiceAreaResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "hub-service-area-controller" ]
+      }
+    },
+    "/locations" : {
+      "get" : {
+        "operationId" : "list_1",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "type",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "HUB", "QUARANTINE_FARM", "REST_STOP", "BORDER_GATE", "STABLE", "RACETRACK" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "ACTIVE", "INACTIVE" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListLocationResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "location-controller" ]
+      },
+      "post" : {
+        "operationId" : "create_1",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LocationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseLocationResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "location-controller" ]
+      }
+    },
+    "/locations/{id}" : {
+      "get" : {
+        "operationId" : "get_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseLocationResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "location-controller" ]
+      },
+      "put" : {
+        "operationId" : "update_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LocationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseLocationResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "location-controller" ]
+      }
+    },
+    "/locations/{id}/activate" : {
+      "post" : {
+        "operationId" : "activate_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseLocationResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "location-controller" ]
+      }
+    },
+    "/locations/{id}/deactivate" : {
+      "post" : {
+        "operationId" : "deactivate_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseLocationResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "location-controller" ]
+      }
+    },
+    "/parties" : {
+      "get" : {
+        "operationId" : "listParties",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListPartyResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "party-controller" ]
+      },
+      "post" : {
+        "operationId" : "createParty",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PartyCreateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePartyResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "party-controller" ]
+      }
+    },
+    "/parties/{id}" : {
+      "get" : {
+        "operationId" : "getParty",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePartyResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "party-controller" ]
+      },
+      "put" : {
+        "operationId" : "updateParty",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PartyUpdateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePartyResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "party-controller" ]
+      }
+    },
+    "/parties/{id}/roles" : {
+      "post" : {
+        "operationId" : "addPartyRole",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PartyRoleCreateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePartyRoleResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "party-controller" ]
+      }
+    },
+    "/parties/{id}/roles/{roleType}" : {
+      "put" : {
+        "operationId" : "updatePartyRole",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "roleType",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "DEST_AGENT", "QUARANTINE_FARM", "STABLE", "VET", "RESCUE", "INSURER" ],
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PartyRoleUpdateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePartyRoleResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "party-controller" ]
+      }
+    },
+    "/provinces" : {
+      "get" : {
+        "operationId" : "provinces",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "country",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListProvinceResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "geography-controller" ]
+      }
+    },
+    "/routes" : {
+      "get" : {
+        "operationId" : "list",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListRouteResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "route-controller" ]
+      },
+      "post" : {
+        "operationId" : "create",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RouteRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseRouteResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "route-controller" ]
+      }
+    },
+    "/routes/{id}" : {
+      "get" : {
+        "operationId" : "get",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseRouteResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "route-controller" ]
+      },
+      "put" : {
+        "operationId" : "update",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RouteRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseRouteResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "route-controller" ]
+      }
+    },
+    "/routes/{id}/activate" : {
+      "post" : {
+        "operationId" : "activate",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseRouteResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "route-controller" ]
+      }
+    },
+    "/routes/{id}/deactivate" : {
+      "post" : {
+        "operationId" : "deactivate",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseRouteResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "route-controller" ]
+      }
+    },
+    "/staff-accounts" : {
+      "get" : {
+        "operationId" : "listStaffAccounts",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListStaffAccountResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "account-controller" ]
+      },
+      "post" : {
+        "operationId" : "createStaffAccount",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StaffAccountCreateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseStaffAccountResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "account-controller" ]
+      }
+    },
+    "/staff-accounts/{id}" : {
+      "get" : {
+        "operationId" : "getStaffAccount",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseStaffAccountResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "account-controller" ]
+      },
+      "put" : {
+        "operationId" : "updateStaffAccount",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StaffAccountUpdateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseStaffAccountResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "account-controller" ]
+      }
+    },
+    "/system-configs" : {
+      "get" : {
+        "operationId" : "listSystemConfigs",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListSystemConfigResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "system-config-controller" ]
+      }
+    },
+    "/system-configs/{key}" : {
+      "get" : {
+        "operationId" : "getSystemConfig",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "key",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSystemConfigResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "system-config-controller" ]
+      },
+      "put" : {
+        "operationId" : "updateSystemConfig",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "key",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SystemConfigUpdateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSystemConfigResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "system-config-controller" ]
+      }
+    },
+    "/vehicle-classes" : {
+      "get" : {
+        "operationId" : "vehicleClasses",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListVehicleClassResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "vehicle-controller" ]
+      }
+    },
+    "/vehicles" : {
+      "get" : {
+        "operationId" : "listVehicles",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListVehicleResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "vehicle-controller" ]
+      },
+      "post" : {
+        "operationId" : "createVehicle",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VehicleCreateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVehicleResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "vehicle-controller" ]
+      }
+    },
+    "/vehicles/{id}" : {
+      "get" : {
+        "operationId" : "getVehicle",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVehicleResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "vehicle-controller" ]
+      },
+      "put" : {
+        "operationId" : "updateVehicle",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VehicleUpdateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVehicleResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "vehicle-controller" ]
+      }
+    }
+  },
+  "security" : [ {
+    "bearerAuth" : [ ]
+  } ],
+  "servers" : [ {
+    "description" : "Generated server url",
+    "url" : "http://localhost"
+  } ]
+}

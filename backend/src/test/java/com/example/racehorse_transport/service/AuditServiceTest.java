@@ -1,14 +1,18 @@
 package com.example.racehorse_transport.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.example.racehorse_transport.PostgresIntegrationTest;
+import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.AppUserRepository;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
-import static org.assertj.core.api.Assertions.assertThat;
 
+// Ghi nhật ký kiểm toán trên DB thật, kiểm cột jsonb bằng SQL.
 @PostgresIntegrationTest
 @Transactional
 class AuditServiceTest {
@@ -36,5 +40,17 @@ class AuditServiceTest {
                 select count(*) from audit_log where action = 'TEST_SYSTEM' and target_id = 124
                     and actor_user_id is null and old_data is null and jsonb_typeof(new_data) = 'object'
                 """, Long.class)).isEqualTo(1L);
+    }
+
+    @Test
+    void invalidInputIsRejected() {
+        assertThatThrownBy(() -> audit.record(null, " ", "quotation", 7L, null, null))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> audit.record(null, "A".repeat(51), "quotation", 7L, null, null))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> audit.record(null, "EXPIRE_QUOTATION", "quotation", null, null, null))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> audit.record(-1L, "EXPIRE_QUOTATION", "quotation", 7L, null, null))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 }
