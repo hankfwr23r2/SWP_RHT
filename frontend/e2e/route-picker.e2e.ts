@@ -8,8 +8,8 @@ async function open(page: Page) {
       return route.fulfill({ json: { km: 120, driveHours: 2.5, path: [[21, 105.8], [21.4, 106]], schedule: [] } })
     }
     return route.fulfill({ json: { status: 'success', data: [{
-      id: 1, locationName: 'Trạm nghỉ kiểm thử', status: 'ACTIVE', country: 'VN',
-      latitude: 21.2, longitude: 105.9, city: 'Hà Nội', province: 'Hà Nội',
+      id: 1, code: 'REST-TEST', name: 'Trạm nghỉ kiểm thử', locationType: 'REST_STOP', status: 'ACTIVE',
+      countryCode: 'VN', provinceCode: 'VN-HN', latitude: 21.2, longitude: 105.9,
     }] } })
   })
   await page.route('**/route-picker-test', route => route.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body><div id="root"></div><script type="module">import R from '/@react-refresh';R.injectIntoGlobalHook(window);window.$RefreshReg$=()=>{};window.$RefreshSig$=()=>t=>t;window.__vite_plugin_react_preamble_installed__=true;</script><script type="module" src="/e2e/fixtures/routePickerHarness.tsx"></script></body></html>` }))
