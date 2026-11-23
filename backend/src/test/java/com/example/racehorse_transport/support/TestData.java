@@ -2,16 +2,21 @@ package com.example.racehorse_transport.support;
 
 import com.example.racehorse_transport.entity.AppUser;
 import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.BookingAddress;
 import com.example.racehorse_transport.entity.Customer;
 import com.example.racehorse_transport.entity.Departure;
 import com.example.racehorse_transport.entity.Route;
 import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.entity.Vehicle;
+import com.example.racehorse_transport.entity.enums.AddressRole;
 import com.example.racehorse_transport.entity.enums.AppUserStatus;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.BookingType;
 import com.example.racehorse_transport.entity.enums.CustomerType;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
 import com.example.racehorse_transport.entity.enums.EmploymentStatus;
+import com.example.racehorse_transport.entity.enums.VehicleStatus;
+import com.example.racehorse_transport.repository.BookingAddressRepository;
 import com.example.racehorse_transport.repository.AppUserRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.CountryRepository;
@@ -20,7 +25,11 @@ import com.example.racehorse_transport.repository.DepartureRepository;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.repository.RoleRepository;
 import com.example.racehorse_transport.repository.RouteRepository;
+import com.example.racehorse_transport.repository.ProvinceRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
+import com.example.racehorse_transport.repository.VehicleClassRepository;
+import com.example.racehorse_transport.repository.VehicleRepository;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -49,6 +58,10 @@ public class TestData {
     @Autowired private RouteRepository routes;
     @Autowired private DepartureRepository departures;
     @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private VehicleRepository vehicles;
+    @Autowired private VehicleClassRepository vehicleClasses;
+    @Autowired private BookingAddressRepository bookingAddresses;
+    @Autowired private ProvinceRepository provinces;
 
     // Tên duy nhất trong một lần chạy test
     public String unique(String prefix) {
@@ -116,6 +129,33 @@ public class TestData {
         departure.setStallCapacity(stallCapacity);
         departure.setStatus(DepartureStatus.OPEN);
         return departures.saveAndFlush(departure);
+    }
+
+    // Xe nặng ACTIVE thuộc trụ sở, biển số duy nhất
+    public Vehicle vehicle(int standardStallCount, int wideStallCount) {
+        Vehicle vehicle = new Vehicle();
+        vehicle.setLicensePlate("TV" + System.nanoTime() % 1_000_000_000L + SEQUENCE.incrementAndGet());
+        vehicle.setVehicleClass(vehicleClasses.findByCode("HEAVY").orElseThrow());
+        vehicle.setStandardStallCount(standardStallCount);
+        vehicle.setWideStallCount(wideStallCount);
+        vehicle.setHomeHubLocation(locations.findByCode("HUB-HCM").orElseThrow());
+        vehicle.setStatus(VehicleStatus.ACTIVE);
+        return vehicles.saveAndFlush(vehicle);
+    }
+
+    // Địa chỉ đón hoặc giao của đơn ở Đà Nẵng
+    public BookingAddress bookingAddress(Booking booking, AddressRole type) {
+        BookingAddress address = new BookingAddress();
+        address.setBooking(booking);
+        address.setAddressType(type);
+        address.setAddressLine((type == AddressRole.PICKUP ? "Trại đón " : "Trại giao ") + booking.getCode());
+        address.setProvince(provinces.getReferenceById("VN-48"));
+        address.setCountry(countries.getReferenceById("VN"));
+        address.setLatitude(new BigDecimal("16.054400"));
+        address.setLongitude(new BigDecimal("108.202200"));
+        address.setContactName("Người liên hệ");
+        address.setContactPhone("0909000111");
+        return bookingAddresses.saveAndFlush(address);
     }
 
     // Tiện cho test cần mốc thời gian cố định
