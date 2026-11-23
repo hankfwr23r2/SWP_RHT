@@ -6,7 +6,7 @@ import { orderTabOf } from '@shared/lib/booking'
 import { formatDate, formatDateTime, formatVND } from '@shared/lib/format'
 import { usePageData } from '@shared/routing/pageData'
 import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
-import { usePagination } from '@shared/ui/usePagination'
+import { usePagination } from '@shared/hooks/usePagination'
 import type { ordersLoader } from './loaders'
 import s from './OrdersList.module.css'
 

@@ -5,7 +5,7 @@ import { earliestRescheduleDay } from '@shared/lib/bookingSchedule'
 import { formatDate } from '@shared/lib/format'
 import { customerBookingsApi, type CustomerBookingView } from '@shared/services/bookings'
 import { useToast } from '@shared/ui/toast'
-import { useNow } from '@shared/ui/useNow'
+import { useNow } from '@shared/hooks/useNow'
 
 export function ScheduleChangeCard({ b, onDone }: { b: CustomerBookingView; onDone: () => void }) {
   const { i18n } = useTranslation()

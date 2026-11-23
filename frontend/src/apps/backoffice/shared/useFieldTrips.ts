@@ -3,7 +3,7 @@ import { useCallback, useState } from 'react'
 import { useAuth } from '@shared/auth/AuthContext'
 import { bookingsApi, invalidateBookingsListCache } from '@shared/services/bookings'
 import { crewApi, vehiclesApi } from '@shared/services/fleet'
-import { useLoad } from '@shared/services/useLoad'
+import { useLoad } from '@shared/hooks/useLoad'
 import type { Booking } from '@shared/types/booking'
 import type { FieldTrip } from './field'
 

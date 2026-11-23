@@ -4,7 +4,7 @@ import { useSearchParams } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { STATUS_SHORT, type BookingStatus } from '@shared/config/booking-rules'
 import { BookingStatusBadge } from '@shared/ui/BookingStatusBadge'
-import { usePagination } from '@shared/ui/usePagination'
+import { usePagination } from '@shared/hooks/usePagination'
 import s from './ListPage.module.css'
 
 export interface Column<T> { head: ReactNode; cell: (row: T) => ReactNode; right?: boolean; center?: boolean; nowrap?: boolean; stickyRight?: boolean; minWidth?: number }
