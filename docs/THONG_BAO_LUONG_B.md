@@ -15,8 +15,9 @@
 | Lịch tuần, 6 tuyến | Một xe nối nhiều tuyến. Chuyến chiều về bị hủy vẫn có lượt về rỗng | B1 |
 | Xe | Không giấy tờ xe. Không gán xe khác ACTIVE. Xe về hub gốc thì tài xế báo bình thường hoặc cần bảo dưỡng | B1, B2 |
 | Nhân viên | Bắt đầu lượt mới ở nơi lượt trước kết thúc | B1 |
-| Thanh toán | **Không** chặn xe đi đón vì còn nợ. Nhận ngựa xong thì lập số dư 70%; chưa trả đủ thì xe không rời nơi nhận; quá 30 phút thì trả ngựa tại chỗ. `IN_OPERATION` khi xe rời nơi nhận | B2 |
+| Thanh toán | **Không** chặn xe đi đón vì còn nợ. Nhận ngựa xong thì lập số dư bằng tổng trừ tiền cọc; chưa trả đủ thì xe không rời nơi nhận; quá 30 phút thì trả ngựa tại chỗ. `IN_OPERATION` khi xe rời nơi nhận | B2 |
 | Nghỉ, cho ăn | Cột `water_intake`, `feed_intake` của `horse_health_log` (A thêm migration ở A6b, **cần B đồng ý**). Chặn rời trạm khi thiếu ghi hoặc chưa đủ 30 phút | B2, B3 |
+| Tự chở | B2 nhận hoặc trả ngựa tại hub bằng `handover` PICKUP hoặc DELIVERY gắn `horse_stay`. Kiểm giấy lúc nhận ở hub. Đầu SELF không tạo chặng xe tương ứng. | B2 |
 | Đơn nhập | Đại lý giao ngựa ở cửa khẩu: `handover` AGENT, `from_party_id` = đại lý. Thiếu `IMPORT_TRANSPORT_CERT` thì không nhận | B2 |
 | Ngựa tới hub | Trước giờ chạy 3 giờ. Trễ thì chờ hoặc dời chuyến | B1 |
 | Sự cố | Theo quy trình nhóm. `FORCE_MAJEURE` do công ty chịu. Không chia chi phí theo đầu ngựa | B4 |

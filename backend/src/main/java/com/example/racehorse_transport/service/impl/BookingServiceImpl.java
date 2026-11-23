@@ -124,7 +124,8 @@ public class BookingServiceImpl implements BookingService {
             String code = BookingCodes.newCode();
             if (bookings.insertIfCodeAvailable(code, customer.getUserId(), candidate.getBookingType().name(),
                     departureId, candidate.getRequestedPickupDate(), candidate.getEmergencySpendingLimit(),
-                    candidate.getStatus().name(), candidate.getCreatedBy().getId(), now) == 1) {
+                    candidate.getStatus().name(), candidate.getCreatedBy().getId(), now,
+                    candidate.getPickupMethod().name(), candidate.getDeliveryMethod().name()) == 1) {
                 return bookings.findByCode(code).orElseThrow();
             }
         }

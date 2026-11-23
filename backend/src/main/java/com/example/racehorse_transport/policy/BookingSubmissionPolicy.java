@@ -80,6 +80,24 @@ public final class BookingSubmissionPolicy {
         }
     }
 
+    public static void validatePickupDate(BookingType type, LocalDate pickupDate, LocalDate departureDate) {
+        if ((type == BookingType.INTERPROVINCE || type == BookingType.EXPORT)
+                && !pickupDate.isBefore(departureDate)) {
+            throw new BookingRuleException("Ngày đưa ngựa đến phải trước ngày xuất phát ít nhất một ngày.");
+        }
+        validatePickupDate(pickupDate, departureDate);
+    }
+
+    public static void validateTransfer(BookingType type, HubResolutionPolicy.Routing routing,
+                                        TransferMethod pickupMethod, TransferMethod deliveryMethod) {
+        boolean selfPickup = pickupMethod == TransferMethod.SELF;
+        boolean selfDelivery = deliveryMethod == TransferMethod.SELF;
+        if ((routing == HubResolutionPolicy.Routing.DIRECT && (selfPickup || selfDelivery))
+                || (type == BookingType.IMPORT && selfPickup) || (type == BookingType.EXPORT && selfDelivery)) {
+            throw new BookingRuleException("Chỉ được tự chở ở đầu trong nước của đơn đi trục.");
+        }
+    }
+
     public static void validateAddOn(BillableService service) {
         if (service.getStatus() != ActiveStatus.ACTIVE || service.getLayer() != ServiceLayer.ADD_ON) {
             throw new BookingRuleException("Dịch vụ thêm được chọn không khả dụng.");

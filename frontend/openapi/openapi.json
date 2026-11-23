@@ -1129,6 +1129,10 @@
             "enum" : [ "LOCAL", "INTERPROVINCE", "EXPORT", "IMPORT" ],
             "type" : "string"
           },
+          "deliveryMethod" : {
+            "enum" : [ "COMPANY", "SELF" ],
+            "type" : "string"
+          },
           "departureId" : {
             "format" : "int64",
             "type" : "integer"
@@ -1151,6 +1155,10 @@
             "maxItems" : 4,
             "minItems" : 4,
             "type" : "array"
+          },
+          "pickupMethod" : {
+            "enum" : [ "COMPANY", "SELF" ],
+            "type" : "string"
           },
           "requestedPickupDate" : {
             "format" : "date",
@@ -1181,6 +1189,10 @@
           "booking" : {
             "$ref" : "#/components/schemas/BookingResponseDto"
           },
+          "deliveryMethod" : {
+            "enum" : [ "COMPANY", "SELF" ],
+            "type" : "string"
+          },
           "horses" : {
             "items" : {
               "$ref" : "#/components/schemas/HorseDetail"
@@ -1192,6 +1204,10 @@
               "$ref" : "#/components/schemas/PartySnapshot"
             },
             "type" : "array"
+          },
+          "pickupMethod" : {
+            "enum" : [ "COMPANY", "SELF" ],
+            "type" : "string"
           },
           "reviewReason" : {
             "type" : "string"
@@ -3595,6 +3611,10 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "deliveryMethod" : {
+            "enum" : [ "COMPANY", "SELF" ],
+            "type" : "string"
+          },
           "departureId" : {
             "format" : "int64",
             "type" : "integer"
@@ -3612,6 +3632,10 @@
           },
           "pickupAt" : {
             "format" : "date-time",
+            "type" : "string"
+          },
+          "pickupMethod" : {
+            "enum" : [ "COMPANY", "SELF" ],
             "type" : "string"
           }
         },

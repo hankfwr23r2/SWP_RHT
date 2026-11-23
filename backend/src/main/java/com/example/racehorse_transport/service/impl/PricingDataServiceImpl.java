@@ -6,6 +6,7 @@ import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.entity.enums.*;
 import com.example.racehorse_transport.exception.PricingRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
+import com.example.racehorse_transport.policy.BookingSubmissionPolicy;
 import com.example.racehorse_transport.policy.DepartureRoutePolicy;
 import com.example.racehorse_transport.policy.HubResolutionPolicy.Routing;
 import com.example.racehorse_transport.policy.HubResolutionPolicy;
@@ -57,7 +58,7 @@ public class PricingDataServiceImpl implements PricingDataService {
         LocalDateTime pickupTime = LocalDateTime.ofInstant(request.pickupAt(), BUSINESS_ZONE);
         int seats = StallSeatPolicy.total(selection.stalls());
         RoutePlan plan = routePlan(request, pickup, delivery, type, now, seats);
-        regulations.resolve(type, pickup.getCountry().getCode(), delivery.getCountry().getCode(),
+        var regulation = regulations.resolve(type, pickup.getCountry().getCode(), delivery.getCountry().getCode(),
                 pickupTime.toLocalDate(), plan.gateId());
 
         Long vehicleClassId = null;
@@ -68,13 +69,16 @@ public class PricingDataServiceImpl implements PricingDataService {
             weightTons = config.getInt("TRUCK_WEIGHT_TONS");
             topSpeedKmh = config.getInt("TRUCK_TOP_SPEED_KMH");
         }
-        List<AddOn> addOns = selection.addOnCounts().entrySet().stream()
-                .map(entry -> new AddOn(entry.getKey(), entry.getValue(), entry.getValue(), 0))
-                .toList();
-        Route route = plan.route();
+        Map<Long, AddOn> addOns = new TreeMap<>();
+        selection.addOnCounts().forEach((id, count) -> addOns.put(id, new AddOn(id, count, count, 0)));
+        PricingPolicy.requiredAddOns(regulation.requirements(), items.findPricingCatalog(ActiveStatus.ACTIVE),
+                selection.horseCount()).forEach(addOn -> addOns.put(addOn.serviceId(), addOn));
+        Route route = plan.departure() == null ? null : plan.departure().getRoute();
+        long earlyPickupDays = PricingPolicy.earlyPickupDays(type, pickupTime.toLocalDate(),
+                plan.departure() == null ? null : plan.departure().getDepartureDate());
         PricingInput input = new PricingInput(PREVIEW_CURRENCY, LocalDate.ofInstant(now, BUSINESS_ZONE),
                 type, route == null ? null : route.getId(), route == null ? null : route.getDistanceKm(),
-                List.of(), selection.stalls(), selection.horseCount(), addOns);
+                List.of(), selection.stalls(), selection.horseCount(), List.copyOf(addOns.values()), earlyPickupDays);
         return new PreviewData(input, List.copyOf(plan.roadLegs()), vehicleClassId, weightTons, topSpeedKmh, pickupTime);
     }
 
@@ -122,11 +126,12 @@ public class PricingDataServiceImpl implements PricingDataService {
         Location originHub = domestic(pickup) ? hub(pickup) : null;
         Location destinationHub = type == BookingType.LOCAL ? originHub : domestic(delivery) ? hub(delivery) : null;
         Routing routing = HubResolutionPolicy.routingOf(type, hubId(originHub), hubId(destinationHub));
+        BookingSubmissionPolicy.validateTransfer(type, routing, request.pickupMethod(), request.deliveryMethod());
         if (routing == Routing.DIRECT) {
             if (request.departureId() != null) {
                 throw new PricingRuleException("Đơn chạy thẳng không chọn chuyến trục.");
             }
-            return new RoutePlan(null, null, List.of(new RoadSegment(ServiceLayer.DIRECT, point(pickup), point(delivery))));
+            return new RoutePlan(null, null, List.of(segment(ServiceLayer.DIRECT, point(pickup), point(delivery))));
         }
         if (request.departureId() == null) {
             throw new PricingRuleException("Cần chọn chuyến trục để xem trước giá.");
@@ -140,18 +145,24 @@ public class PricingDataServiceImpl implements PricingDataService {
                 || departure.getStallCapacity() - departure.getBookedStallCount() < stalls) {
             throw new PricingRuleException("Chuyến trục không đủ điều kiện để đặt.", true);
         }
+        BookingSubmissionPolicy.validatePickupDate(type, LocalDate.ofInstant(request.pickupAt(), BUSINESS_ZONE),
+                departure.getDepartureDate());
         String counterpart = DepartureRoutePolicy.counterpartCountryCode(type, pickup.getCountry().getCode(), delivery.getCountry().getCode());
         if (!DepartureRoutePolicy.matches(route, type, hubId(originHub), hubId(destinationHub), counterpart)) {
             throw new PricingRuleException("Chuyến trục không phù hợp với địa chỉ đã chọn.");
         }
         List<RoadSegment> roadLegs = new ArrayList<>();
-        if (originHub != null) {
-            roadLegs.add(new RoadSegment(ServiceLayer.PICKUP, point(pickup), point(originHub)));
+        if (originHub != null && request.pickupMethod() == TransferMethod.COMPANY) {
+            roadLegs.add(segment(ServiceLayer.PICKUP, point(pickup), point(originHub)));
         }
-        if (destinationHub != null) {
-            roadLegs.add(new RoadSegment(ServiceLayer.DELIVERY, point(destinationHub), point(delivery)));
+        if (destinationHub != null && request.deliveryMethod() == TransferMethod.COMPANY) {
+            roadLegs.add(segment(ServiceLayer.DELIVERY, point(destinationHub), point(delivery)));
         }
-        return new RoutePlan(route, DepartureRoutePolicy.gateId(route, type), roadLegs);
+        return new RoutePlan(departure, DepartureRoutePolicy.gateId(route, type), roadLegs);
+    }
+
+    private RoadSegment segment(ServiceLayer layer, GeoPointDto from, GeoPointDto to) {
+        return new RoadSegment(layer, from, to, config.getInt("MAX_DRIVE_HOURS_PER_DAY"));
     }
 
     private Location hub(CustomerAddress address) {
@@ -210,6 +221,6 @@ public class PricingDataServiceImpl implements PricingDataService {
         return new GeoPointDto(latitude.doubleValue(), longitude.doubleValue());
     }
 
-    private record RoutePlan(Route route, Long gateId, List<RoadSegment> roadLegs) {}
+    private record RoutePlan(Departure departure, Long gateId, List<RoadSegment> roadLegs) {}
     private record Selection(Map<String, Integer> stalls, Map<Long, Integer> addOnCounts, int horseCount) {}
 }

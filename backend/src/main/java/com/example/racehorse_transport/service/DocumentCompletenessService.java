@@ -7,7 +7,7 @@ public interface DocumentCompletenessService {
     com.example.racehorse_transport.dto.regulation.RegulationPreviewResponseDto resolve(
             com.example.racehorse_transport.entity.Booking booking);
 
-    // Luồng B kiểm toàn bộ giấy bắt buộc khi xe xuất phát đón (GĐ5).
+    // Luồng B kiểm toàn bộ giấy bắt buộc khi xe xuất phát đón (GĐ5), khi nhận tại hub nếu SELF, hoặc khi nhận ở cửa khẩu với IMPORT.
     boolean isComplete(Long bookingId);
 
     // Khi sang QUOTING, chỉ kiểm giấy bắt buộc do CUSTOMER nộp.

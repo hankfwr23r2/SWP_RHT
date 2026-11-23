@@ -12,6 +12,7 @@ import com.example.racehorse_transport.entity.enums.AddressRole;
 import com.example.racehorse_transport.entity.enums.BookingPartyRole;
 import com.example.racehorse_transport.entity.enums.BookingType;
 import com.example.racehorse_transport.entity.enums.InsuranceCoverageOption;
+import com.example.racehorse_transport.entity.enums.TransferMethod;
 import com.example.racehorse_transport.exception.BookingRuleException;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -48,9 +49,38 @@ class BookingSubmissionPolicyTest {
 
     @Test
     void acceptsPickupOnDepartureDayButRejectsLaterPickup() {
-        assertThatCode(() -> BookingSubmissionPolicy.validatePickupDate(TODAY, TODAY)).doesNotThrowAnyException();
-        assertThatThrownBy(() -> BookingSubmissionPolicy.validatePickupDate(TODAY.plusDays(1), TODAY))
+        assertThatCode(() -> BookingSubmissionPolicy.validatePickupDate(BookingType.IMPORT, TODAY, TODAY)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> BookingSubmissionPolicy.validatePickupDate(BookingType.IMPORT, TODAY.plusDays(1), TODAY))
                 .isInstanceOf(BookingRuleException.class);
+    }
+
+    @Test
+    void linehaulPickupMustBeAtLeastOneCalendarDayBeforeDeparture() {
+        for (BookingType type : List.of(BookingType.INTERPROVINCE, BookingType.EXPORT)) {
+            assertThatCode(() -> BookingSubmissionPolicy.validatePickupDate(type, TODAY.minusDays(1), TODAY))
+                    .doesNotThrowAnyException();
+            assertThatThrownBy(() -> BookingSubmissionPolicy.validatePickupDate(type, TODAY, TODAY))
+                    .isInstanceOf(BookingRuleException.class);
+        }
+    }
+
+    @Test
+    void onlyDomesticLinehaulEndsAllowSelfTransfer() {
+        var linehaul = HubResolutionPolicy.Routing.LINEHAUL;
+        var company = TransferMethod.COMPANY;
+        var self = TransferMethod.SELF;
+        assertThatCode(() -> BookingSubmissionPolicy.validateTransfer(BookingType.INTERPROVINCE, linehaul, self, self))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> BookingSubmissionPolicy.validateTransfer(BookingType.EXPORT, linehaul, self, company))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> BookingSubmissionPolicy.validateTransfer(BookingType.IMPORT, linehaul, company, self))
+                .doesNotThrowAnyException();
+        assertThatThrownBy(() -> BookingSubmissionPolicy.validateTransfer(BookingType.IMPORT, linehaul, self, company))
+                .isInstanceOf(BookingRuleException.class);
+        assertThatThrownBy(() -> BookingSubmissionPolicy.validateTransfer(BookingType.EXPORT, linehaul, company, self))
+                .isInstanceOf(BookingRuleException.class);
+        assertThatThrownBy(() -> BookingSubmissionPolicy.validateTransfer(BookingType.INTERPROVINCE,
+                HubResolutionPolicy.Routing.DIRECT, self, company)).isInstanceOf(BookingRuleException.class);
     }
 
     private static BookingCreateRequestDto request(LocalDate date, boolean accepted, List<HorseInput> horses) {

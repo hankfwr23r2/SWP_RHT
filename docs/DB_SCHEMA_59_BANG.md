@@ -683,7 +683,7 @@ Các giá trị `status`, chỉ gồm mốc thương mại:
 | `CONFIRMED` | Đã cọc, đã cấp vận đơn |
 | `SCHEDULE_CHANGE_REQUIRED` | Chuyến bị hủy hoặc đổi, cần khách xác nhận lại lịch |
 | `IN_OPERATION` | Ngựa đã được nhận, khách đã trả đủ và xe đã rời nơi nhận. Đơn đang vận hành. Chi tiết ngựa đang ở đâu xem `horse_leg`, `horse_stay` và `incident` |
-| `DELIVERED` | Mọi `horse_leg` giao hàng đã xong, chờ quyết toán |
+| `DELIVERED` | Đã bàn giao mọi ngựa cho người nhận, gồm giao tận nơi hoặc ký trả tại hub, chờ quyết toán |
 | `COMPLETED` | Đã quyết toán xong |
 | `CANCELLED` / `REJECTED` | Bị hủy / bị từ chối |
 
@@ -1477,9 +1477,9 @@ Các quy tắc dưới đây cần so dữ liệu ở nhiều bảng nên CHECK 
 | 28 | `handover` loại `AGENT` phải có ít nhất một bên là đối tác | handover |
 | 29 | Đơn EXPORT, IMPORT chỉ đi tuyến có cửa khẩu mà `counterpart_country_code` bằng nước đối tác của đơn | booking, route, location |
 | 30 | Mọi ngựa ACTIVE của một đơn đi cùng một lượt LINEHAUL | horse_leg, vehicle_trip |
-| 31 | Trên tuyến, thời gian chạy giữa hai điểm dừng liên tiếp ≤ `MAX_CONTINUOUS_HOURS`; điểm `REST`, `VITAL_CHECK` dừng ≥ `MIN_REST_MINUTES`; chạy đủ `MAX_DRIVE_HOURS_PER_DAY` thì phải có điểm nghỉ ≥ `OVERNIGHT_REST_HOURS`. Chặng đón và giao cũng ≤ `MAX_CONTINUOUS_HOURS` | route_stop, trip_stop |
+| 31 | Trên tuyến, thời gian chạy giữa hai điểm dừng liên tiếp ≤ `MAX_CONTINUOUS_HOURS`; điểm `REST`, `VITAL_CHECK` dừng ≥ `MIN_REST_MINUTES`; chạy đủ `MAX_DRIVE_HOURS_PER_DAY` thì phải có điểm nghỉ ≥ `OVERNIGHT_REST_HOURS`. Một chiều chặng đón và giao do công ty chở ≤ `MAX_DRIVE_HOURS_PER_DAY / 2`. Nếu thời gian lái vượt `MAX_CONTINUOUS_HOURS` thì bố trí điểm nghỉ | route_stop, trip_stop |
 | 32 | Xe chỉ rời nơi nhận ngựa (điểm đón, hoặc cửa khẩu với đơn IMPORT) khi mọi đơn có ngựa lên xe ở đó đã trả đủ. Quá `BALANCE_WAIT_MINUTES` thì trả ngựa của đơn chưa trả và hủy đơn đó | trip_stop, payment |
-| 33 | `quotation.expires_at` không muộn hơn hạn báo giá bảo hiểm và mốc `planned_departure_at − DEPARTURE_DECISION_HOURS`. Tới mốc này, đơn chưa CONFIRMED phải nhả chỗ | quotation, departure |
+| 33 | `quotation.expires_at` là mốc sớm nhất trong 24 giờ sau khi gửi, hết ngày đón và hết ngày hiệu lực báo giá bảo hiểm (nếu có). Mốc `planned_departure_at − DEPARTURE_DECISION_HOURS` chỉ nhả chỗ đơn chưa gửi báo giá. Đơn AWAITING_DEPOSIT giữ chỗ đến khi báo giá hết hạn | quotation, departure |
 | 34 | Xe chỉ rời trạm nghỉ khi mọi ngựa trên xe có `horse_health_log` ở điểm đó (gồm `water_intake`, `feed_intake`) và đã nghỉ đủ. Rời sớm phải xác nhận kèm lý do | trip_stop, horse_health_log |
 | 35 | Đơn IMPORT: hoàn tất `handover` AGENT ở cửa khẩu chỉ khi đủ giấy bắt buộc, gồm `IMPORT_TRANSPORT_CERT` | handover, document |
 | 36 | Xe không chuyển sang MAINTENANCE, RETIRED khi đang chạy hoặc còn lượt chưa hoàn thành. RETIRED không quay lại. Không gán xe khác ACTIVE vào lượt mới | vehicle, vehicle_trip |

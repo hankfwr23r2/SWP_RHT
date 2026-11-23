@@ -2,6 +2,7 @@ package com.example.racehorse_transport.entity;
 
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.BookingType;
+import com.example.racehorse_transport.entity.enums.TransferMethod;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -57,6 +58,14 @@ public class Booking {
 
     @Column(name = "requested_pickup_date", nullable = false)
     private LocalDate requestedPickupDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "pickup_method", length = 30, nullable = false)
+    private TransferMethod pickupMethod = TransferMethod.COMPANY;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "delivery_method", length = 30, nullable = false)
+    private TransferMethod deliveryMethod = TransferMethod.COMPANY;
 
     @Column(name = "waybill_number", length = 30)
     private String waybillNumber;

@@ -42,12 +42,25 @@ class BookingDtoTest {
         Booking booking = input.toEntity(owner, null);
         assertThat(booking.getCustomer()).isSameAs(owner);
         assertThat(booking.getBookingType()).isEqualTo(BookingType.LOCAL);
+        assertThat(booking.getPickupMethod()).isEqualTo(TransferMethod.COMPANY);
+        assertThat(booking.getDeliveryMethod()).isEqualTo(TransferMethod.COMPANY);
         assertThat(booking.getId()).isNull();
         assertThat(booking.getCode()).isNull();
         assertThat(booking.getStatus()).isNull();
         assertThat(booking.getCreatedBy()).isNull();
         assertThat(booking.getCreatedAt()).isNull();
         assertThat(booking.getEmergencySpendingLimit()).isNull();
+    }
+
+    @Test
+    void mapsChosenTransferMethodAndDefaultsNull() throws Exception {
+        BookingCreateRequestDto input = new ObjectMapper().readValue("""
+                {"bookingType":"EXPORT","pickupMethod":"SELF","deliveryMethod":null}
+                """, BookingCreateRequestDto.class);
+        Booking booking = input.toEntity(new Customer(), null);
+        var response = BookingDetailResponseDto.from(booking, List.of(), List.of(), List.of());
+        assertThat(response.pickupMethod()).isEqualTo(TransferMethod.SELF);
+        assertThat(response.deliveryMethod()).isEqualTo(TransferMethod.COMPANY);
     }
 
     @Test

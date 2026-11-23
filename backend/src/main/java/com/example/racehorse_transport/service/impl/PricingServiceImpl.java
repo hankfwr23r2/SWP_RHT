@@ -2,6 +2,7 @@ package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.pricing.PricingPreviewRequestDto;
 import com.example.racehorse_transport.dto.pricing.PricingPreviewResponseDto;
+import com.example.racehorse_transport.policy.PricingPolicy;
 import com.example.racehorse_transport.policy.PricingPolicy.PricingInput;
 import com.example.racehorse_transport.policy.PricingPolicy.PricingResult;
 import com.example.racehorse_transport.policy.PricingPolicy.RoadLeg;
@@ -24,13 +25,16 @@ public class PricingServiceImpl implements PricingService {
     public PricingPreviewResponseDto preview(PricingPreviewRequestDto request, String username) {
         var preview = data.loadPreview(request, username);
         var roadLegs = preview.segments().stream()
-                .map(segment -> new RoadLeg(segment.layer(), preview.vehicleClassId(),
-                        routing.distance(segment, preview.pickupTime(), preview.weightTons(), preview.topSpeedKmh())))
+                .map(segment -> {
+                    var estimate = routing.route(segment, preview.pickupTime(), preview.weightTons(), preview.topSpeedKmh());
+                    PricingPolicy.validateDriveTime(segment.layer(), estimate.driveSeconds(), segment.maxDriveHoursPerDay());
+                    return new RoadLeg(segment.layer(), preview.vehicleClassId(), estimate.km());
+                })
                 .toList();
         PricingInput loaded = preview.input();
         PricingInput input = new PricingInput(loaded.currencyCode(), loaded.quotationDate(), loaded.bookingType(),
                 loaded.routeId(), loaded.linehaulKm(), roadLegs, loaded.stallsByType(), loaded.horseCount(),
-                loaded.addOns());
+                loaded.addOns(), loaded.earlyPickupDays());
         return PricingPreviewResponseDto.from(input, data.calculate(input));
     }
 

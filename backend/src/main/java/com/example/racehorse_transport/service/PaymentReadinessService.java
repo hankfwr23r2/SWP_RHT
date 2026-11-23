@@ -4,6 +4,6 @@ package com.example.racehorse_transport.service;
 // Cài đặt: luồng A (task A7). Gọi: luồng B. Chưa có cài đặt thì bên gọi test bằng mock.
 public interface PaymentReadinessService {
 
-    // Đơn đã trả đủ tiền cần trả trước khi đón ngựa chưa. Luồng B kiểm khi xe xuất phát (GĐ5).
+    // Luồng B kiểm đơn đã trả đủ trước khi xe rời nơi nhận ngựa (GĐ6).
     boolean isPaidInFull(Long bookingId);
 }

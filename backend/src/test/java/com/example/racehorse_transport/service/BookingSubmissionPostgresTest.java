@@ -59,14 +59,18 @@ class BookingSubmissionPostgresTest {
     void persistsAllRowsAndReservesStalls() {
         String owner = customer();
         LocalDate date = pickupDate();
-        var departure = data.departure("HCM-DN", date, 4);
+        var departure = data.departure("HCM-DN", date.plusDays(1), 4);
         Long addOn = jdbc.queryForObject("""
                 INSERT INTO billable_service (code, name, layer, billing_unit, status)
                 VALUES (?, 'Test add-on', 'ADD_ON', 'PER_BOOKING', 'ACTIVE') RETURNING id
                 """, Long.class, data.unique("A52"));
-        var request = request(departure.getId(), date, List.of(
+        var original = request(departure.getId(), date, List.of(
                 horseInput(horse(owner), InsuranceCoverageOption.NONE, true, List.of(new AddOnInput(addOn, 2))),
                 horseInput(horse(owner), InsuranceCoverageOption.NONE, true, List.of())));
+        var request = new BookingCreateRequestDto(original.bookingType(), original.departureId(),
+                original.requestedPickupDate(), original.emergencySpendingLimit(), original.parties(),
+                original.addresses(), original.horses(), original.acceptedServiceTerms(),
+                TransferMethod.SELF, TransferMethod.COMPANY);
         BookingResponseDto result = bookings.submit(owner, "192.0.2.5", request);
         Long id = result.id();
 
@@ -94,14 +98,17 @@ class BookingSubmissionPostgresTest {
                 AND from_status IS NULL AND to_status = 'PENDING_INTAKE'
                 """, id)).isEqualTo(1);
         assertThat(reserved(departure.getId())).isEqualTo(2);
-        assertThat(queries.get(owner, id).horses()).hasSize(2);
+        var detail = queries.get(owner, id);
+        assertThat(detail.horses()).hasSize(2);
+        assertThat(detail.pickupMethod()).isEqualTo(TransferMethod.SELF);
+        assertThat(detail.deliveryMethod()).isEqualTo(TransferMethod.COMPANY);
     }
 
     @Test
     void rejectsNineWideHorsesOnDepartureWithNineSeats() {
         String owner = customer();
         LocalDate date = pickupDate();
-        var departure = data.departure("HCM-DN", date, 9);
+        var departure = data.departure("HCM-DN", date.plusDays(1), 9);
         List<HorseInput> wideHorses = java.util.stream.IntStream.range(0, 9)
                 .mapToObj(index -> new HorseInput(horse(owner), "WIDE", null, null, false, List.of(),
                         new InsuranceDeclarationRequestDto(InsuranceCoverageOption.NONE, null, null, null, null, true)))
@@ -118,7 +125,7 @@ class BookingSubmissionPostgresTest {
     void fullDepartureRollsBackEverything() {
         String owner = customer();
         LocalDate date = pickupDate();
-        var departure = data.departure("HCM-DN", date, 1);
+        var departure = data.departure("HCM-DN", date.plusDays(1), 1);
         jdbc.update("UPDATE departure SET booked_stall_count = 1 WHERE id = ?", departure.getId());
         Long horse = horse(owner);
         Long customer = jdbc.queryForObject("SELECT id FROM app_user WHERE username = ?", Long.class, owner);
@@ -283,8 +290,8 @@ class BookingSubmissionPostgresTest {
         String specialist = data.unique("a6-specialist");
         data.staff(specialist, "SPECIALIST");
         LocalDate date = pickupDate();
-        var departure = data.departure("HCM-DN", date, 2);
-        var replacement = data.departure("HCM-DN", date.plusDays(1), 1);
+        var departure = data.departure("HCM-DN", date.plusDays(1), 2);
+        var replacement = data.departure("HCM-DN", date.plusDays(2), 1);
         String firstOwner = customer();
         String secondOwner = customer();
         Long firstId = bookings.submit(firstOwner, null, request(departure.getId(), date, List.of(
@@ -321,7 +328,7 @@ class BookingSubmissionPostgresTest {
         String specialist = data.unique("a6-specialist");
         data.staff(specialist, "SPECIALIST");
         LocalDate date = pickupDate();
-        var departure = data.departure("HCM-DN", date, 2);
+        var departure = data.departure("HCM-DN", date.plusDays(1), 2);
         Long id = bookings.submit(owner, null, request(departure.getId(), date, List.of(
                 horseInput(horse(owner), InsuranceCoverageOption.NONE, true, List.of())))).id();
         review.intake(id, specialist);

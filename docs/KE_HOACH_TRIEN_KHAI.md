@@ -141,14 +141,14 @@ Có **3 thành viên** thì tách luồng A thành A-BE và A-FE (khách hàng),
 
 | Interface (trong `service/`) | Ai cài đặt | Ai gọi | Dùng khi |
 |---|---|---|---|
-| `BookingStatusService.transition(bookingId, toStatus, reason, actor)` | A | A, B | B chuyển đơn sang `IN_OPERATION` (khách đã trả đủ và xe rời nơi nhận ngựa) và `DELIVERED` (chặng giao cuối cùng xong) |
-| `BookingHorseService.exclude(bookingHorseId, reason, actor)` | A | B | Ngựa không đạt khi nhận (GĐ6). A nhả chỗ và tạo báo giá mới |
+| `BookingStatusService.transition(bookingId, toStatus, reason, actor)` | A | A, B | B chuyển đơn sang `IN_OPERATION` (khách đã trả đủ và xe rời nơi nhận ngựa) và `DELIVERED` (chặng giao cuối cùng xong, hoặc ký trả ngựa tại hub ở đầu SELF) |
+| `BookingHorseService.exclude(bookingHorseId, reason, actor)` | A | B | Ngựa không đạt khi nhận (GĐ6), kể cả tại hub. A nhả chỗ và tạo báo giá mới |
 | `DepartureService.reserve/release(departureId, stalls)` | A | A | Mọi thay đổi `booked_stall_count`. `stalls` là số **chỗ** (khoang rộng 2 chỗ) |
 | `DocumentService.attach(file, documentTypeCode, ownerSubject, ownerId, uploadedByUserId)` | P0 | A, B | Ảnh hiện trường, biên bản giao nhận, biên lai, giấy tờ |
 | `PaymentService.createExtraCharge(bookingId, costItemIds, actorUserId)` | A | A (quyết toán) | Lập khoản thu thêm |
 | `CostItemService.linkExtraPayment(costItemIds, paymentId)` | B | A | Gắn khoản thu thêm vào chi phí |
 | `NotificationService.notify(...)`, `AuditService.record(...)` | P0 | A, B | Mọi giai đoạn |
-| `DocumentCompletenessService.isComplete(bookingId)` | A | B | Khi xe xuất phát đón (GĐ5); với đơn IMPORT khi nhận ngựa ở cửa khẩu |
+| `DocumentCompletenessService.isComplete(bookingId)` | A | B | Khi xe xuất phát đón (GĐ5), khi nhận tại hub nếu SELF, hoặc khi nhận tại cửa khẩu với IMPORT |
 | `PaymentReadinessService.isPaidInFull(bookingId)` | A | B | Khi xe **rời** nơi nhận ngựa (GĐ6) |
 | `PaymentService.requestBalance(bookingId, receivedAt)` (chưa có, A7) | A | B | Lập khoản số dư khi nhận ngựa xong |
 | `BookingCancellationService.cancelUnpaidAtPickup(bookingId, actorUserId)` (chưa có, A8) | A | B | Trả ngựa tại chỗ khi quá thời gian chờ |
@@ -396,14 +396,14 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
 
 | Phần | Việc |
 |---|---|
-| Migration | Bỏ `country_rule.quarantine_days`, `vehicle.registration_expiry_date`; thêm `location.counterpart_country_code`, `booking.special_request`, `horse_health_log.water_intake`, `feed_intake`; loại giấy và tham số mới; đổi tên `VET_CHECK`, `QUARANTINE_STAY`. Entity của B (`horse_health_log`) cần B đồng ý |
+| Migration | Bỏ `country_rule.quarantine_days`, `vehicle.registration_expiry_date`; thêm `location.counterpart_country_code`, `booking.pickup_method`, `booking.delivery_method`, `horse_health_log.water_intake`, `feed_intake`; loại giấy và tham số mới; đổi tên `VET_CHECK`, `QUARANTINE_STAY`. Entity của B (`horse_health_log`) cần B đồng ý |
 | Seed dev | 6 tuyến mỗi tuần một chuyến, cửa khẩu Lao Bảo, đại lý Lào, điểm nghỉ đạt quy tắc #31, xe và tổ xe đủ chạy, quy định và giấy mới, bỏ trại cách ly |
 | A1 | Chỗ theo loại khoang, cửa khẩu khớp nước đối tác, quy tắc #31 khi lưu tuyến, mốc 48 giờ, màn hình chuyến cần quyết định, chuyến đột xuất |
 | A2 | Đổi trạng thái xe, quy tắc chỗ, bỏ hạn đăng ký, tham số mới |
 | A3 | Bỏ tính tiền cách ly, lưu chuồng theo ngày đón sớm, tự thêm `VET_CHECK` |
 | A4 | Bỏ ngày cách ly khỏi thời gian cần trước ngày đón |
-| A5 | Giữ chỗ theo loại khoang, ngựa giống đực chọn khoang rộng, yêu cầu riêng |
-| A6 | `LAB_TEST` do công ty nộp, `QUARANTINE_CLEARANCE`, mốc kiểm của đơn nhập, yêu cầu riêng, danh sách đơn thiếu giấy |
+| A5 | Giữ chỗ theo loại khoang, chọn cách đưa và nhận ngựa |
+| A6 | `LAB_TEST` do công ty nộp, `QUARANTINE_CLEARANCE`, mốc kiểm của đơn nhập, danh sách đơn thiếu giấy chuyển A8 |
 
 **Xong khi:** 9 ngựa khoang rộng không đặt được trên chuyến 9 chỗ; đơn Lào không chọn được Mộc Bài; tuyến có đoạn quá 4 giờ bị từ chối; xe bảo dưỡng không gán được (B kiểm); không còn `quarantine_days` trong code.
 
@@ -433,6 +433,7 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
   - `SettlementPolicy` (số còn nợ, theo `DB_SCHEMA_59_BANG.md` mục 5);
   - `SettlementService`: lấy chi phí đã duyệt mà khách hoặc người nhận chịu, gọi `createExtraCharge` và `CostItemService.linkExtraPayment`, đóng đơn khi nợ bằng 0;
   - hủy đơn theo `NGHIEP_VU_THEO_59_BANG.md` mục 5.4, gồm hủy do không trả số dư tại nơi nhận; tự đóng đơn không phát sinh sau 7 ngày;
+  - danh sách đơn thiếu giấy và đổi chuyến của đơn đã cọc (màn hình 3.5b), xử lý theo nguyên nhân ở GĐ5;
   - `RatingService`.
 - **FE:** quản lý quyết toán. Khách xem khoản thu thêm, thanh toán, đánh giá. Hóa đơn gửi qua mail.
 - **Tận dụng:** `SettlementServiceImpl`, `SettlementExpiryScheduler`, `BillMailServiceImpl`, `CustomerRatingController`, FE `orders/TripFeedback.tsx`, `manager/cancelled-orders`.
@@ -468,6 +469,7 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
 - **BE:**
   - `TripStopService`: xe xuất phát (kiểm `DocumentCompletenessService`, bảo hiểm CONFIRMED, tài xế đã xác nhận); rời nơi nhận ngựa thì kiểm `PaymentReadinessService` (#32); rời trạm nghỉ thì kiểm #34;
   - `HandoverService`: PICKUP, HUB_IN/OUT, STAY_IN/OUT, AGENT, DELIVERY, RETURN; quét chip (`MicrochipPolicy`); `handover_document` nhận và trả giấy gốc; biên bản qua `DocumentService`;
+  - đầu SELF nhận hoặc trả ngựa tại hub bằng `handover` PICKUP hoặc DELIVERY gắn `horse_stay`. Kiểm giấy khi nhận tại hub và giữ hai địa chỉ của đơn cho giấy tờ;
   - cập nhật trạng thái `horse_leg`. Nhận ngựa xong thì gọi `requestBalance`; xe rời nơi nhận thì gọi `BookingStatusService` → `IN_OPERATION`. Đơn IMPORT nhận ngựa ở cửa khẩu (#35).
   - **Endpoint theo tài nguyên**, ví dụ:
     - `POST /vehicle-trips/{id}/start`;

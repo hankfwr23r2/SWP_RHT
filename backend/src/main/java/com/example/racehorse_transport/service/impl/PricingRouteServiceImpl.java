@@ -5,7 +5,6 @@ import com.example.racehorse_transport.exception.RoutingUnavailableException;
 import com.example.racehorse_transport.service.PricingRouteService;
 import jakarta.persistence.EntityManagerFactory;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -25,16 +24,24 @@ public class PricingRouteServiceImpl implements PricingRouteService {
     @Override
     @Transactional(propagation = Propagation.NEVER)
     public BigDecimal distance(RoadSegment segment, LocalDateTime time, int weightTons, int topSpeedKmh) {
-        if (segment.from().equals(segment.to())) return BigDecimal.ZERO.setScale(2);
+        return route(segment, time, weightTons, topSpeedKmh).km();
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.NEVER)
+    public RoadEstimate route(RoadSegment segment, LocalDateTime time, int weightTons, int topSpeedKmh) {
+        if (segment.from().equals(segment.to())) return new RoadEstimate(BigDecimal.ZERO.setScale(2), 0);
         if (weightTons <= 0 || topSpeedKmh <= 0) {
             throw new RoutingUnavailableException();
         }
         releaseRequestConnection();
-        double km = routing.truckRoute(List.of(segment.from(), segment.to()), weightTons, topSpeedKmh, time).km();
+        var route = routing.truckRoute(List.of(segment.from(), segment.to()), weightTons, topSpeedKmh, time);
+        double km = route.km();
         if (!Double.isFinite(km) || km <= 0) {
             throw new RoutingUnavailableException();
         }
-        return BigDecimal.valueOf(km).setScale(2, RoundingMode.HALF_UP);
+        // Km tính tiền: km gần nhất, tối thiểu 1 km
+        return new RoadEstimate(BigDecimal.valueOf(Math.max(1, Math.round(km))).setScale(2), route.driveSeconds());
     }
 
     private void releaseRequestConnection() {
