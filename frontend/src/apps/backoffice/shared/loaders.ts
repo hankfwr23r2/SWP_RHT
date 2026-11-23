@@ -13,11 +13,6 @@ export async function bookingListLoader() {
   return loadAll({ all: bookingsApi.list() })
 }
 
-export async function tripReportsLoader() {
-  const { reportsApi } = await import('@shared/services/reports')
-  return loadAll({ reports: reportsApi.list() })
-}
-
 export async function accountsLoader() {
   const { accountsApi } = await import('@shared/services/accounts')
   return loadAll({ all: accountsApi.list() })

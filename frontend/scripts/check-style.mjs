@@ -36,7 +36,6 @@ const EXCEPTIONS = {
     'src/apps/backoffice/features/manager/intake/IntakePage.tsx',
     'src/apps/backoffice/features/manager/reports/ReportCharts.tsx',
     'src/apps/backoffice/features/manager/reports/ReportsPage.tsx',
-    'src/apps/backoffice/features/manager/trip-reports/TripReportsPage.tsx',
     'src/apps/backoffice/features/specialist/legal/LegalListPage.tsx',
     'src/apps/backoffice/features/specialist/legal/LegalReviewPage.tsx',
     'src/apps/backoffice/features/specialist/verification/VerifyPage.tsx',
