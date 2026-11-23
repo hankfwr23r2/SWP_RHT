@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.repository;
 
 import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.enums.BookingStatus;
 
 import jakarta.persistence.LockModeType;
 
@@ -14,10 +15,15 @@ import org.springframework.data.repository.query.Param;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
+
+    @EntityGraph(attributePaths = "departure")
+    List<Booking> findByStatusInOrderByCreatedAtAscIdAsc(
+            Collection<BookingStatus> statuses);
 
     Optional<Booking> findByCode(String code);
 

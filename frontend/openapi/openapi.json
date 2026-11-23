@@ -153,6 +153,34 @@
         },
         "type" : "object"
       },
+      "ApiResponseBookingDocumentChecklistResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/BookingDocumentChecklistResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseBookingDocumentResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/BookingDocumentResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseBookingResponseDto" : {
         "properties" : {
           "data" : {
@@ -312,6 +340,23 @@
           "data" : {
             "items" : {
               "$ref" : "#/components/schemas/BillableServiceResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListBookingDocumentResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/BookingDocumentResponseDto"
             },
             "type" : "array"
           },
@@ -984,6 +1029,16 @@
         "required" : [ "acceptedServiceTerms", "addresses", "bookingType", "horses", "parties", "requestedPickupDate" ],
         "type" : "object"
       },
+      "BookingDepartureChangeRequestDto" : {
+        "properties" : {
+          "departureId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "departureId" ],
+        "type" : "object"
+      },
       "BookingDetailResponseDto" : {
         "properties" : {
           "addresses" : {
@@ -1006,8 +1061,88 @@
               "$ref" : "#/components/schemas/PartySnapshot"
             },
             "type" : "array"
+          },
+          "reviewReason" : {
+            "type" : "string"
           }
         },
+        "type" : "object"
+      },
+      "BookingDocumentChecklistResponseDto" : {
+        "properties" : {
+          "documents" : {
+            "items" : {
+              "$ref" : "#/components/schemas/BookingDocumentResponseDto"
+            },
+            "type" : "array"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Item"
+            },
+            "type" : "array"
+          },
+          "requirementsDependOnGate" : {
+            "type" : "boolean"
+          }
+        },
+        "type" : "object"
+      },
+      "BookingDocumentResponseDto" : {
+        "properties" : {
+          "bookingHorseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "expiryDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "fileName" : {
+            "type" : "string"
+          },
+          "fileUrl" : {
+            "type" : "string"
+          },
+          "horseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "requirementId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "reviewNote" : {
+            "type" : "string"
+          },
+          "reviewedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "UPLOADED", "APPROVED", "REJECTED", "EXPIRED" ],
+            "type" : "string"
+          },
+          "typeCode" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "BookingIntakeRequestDto" : { },
+      "BookingQuotingRequestDto" : { },
+      "BookingRejectionRequestDto" : {
+        "properties" : {
+          "reason" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
         "type" : "object"
       },
       "BookingResponseDto" : {
@@ -1046,6 +1181,17 @@
             "type" : "string"
           }
         },
+        "type" : "object"
+      },
+      "BookingResubmissionRequestDto" : { },
+      "BookingReturnRequestDto" : {
+        "properties" : {
+          "reason" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
         "type" : "object"
       },
       "ChangePasswordRequest" : {
@@ -1653,6 +1799,24 @@
         },
         "type" : "object"
       },
+      "DocumentApprovalRequestDto" : {
+        "properties" : {
+          "note" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "DocumentRejectionRequestDto" : {
+        "properties" : {
+          "reason" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
       "DocumentRequirementCreateRequestDto" : {
         "properties" : {
           "documentTypeId" : {
@@ -1790,6 +1954,28 @@
           }
         },
         "required" : [ "code", "name", "ownerType" ],
+        "type" : "object"
+      },
+      "DocumentUploadRequestDto" : {
+        "properties" : {
+          "bookingHorseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "expiryDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "file" : {
+            "format" : "binary",
+            "type" : "string"
+          },
+          "requirementId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "file", "requirementId" ],
         "type" : "object"
       },
       "EmailVerificationRequest" : {
@@ -2163,6 +2349,7 @@
         },
         "type" : "object"
       },
+      "InsuranceConfirmationRequestDto" : { },
       "InsuranceDeclarationRequestDto" : {
         "properties" : {
           "acceptedWaiver" : {
@@ -2193,15 +2380,35 @@
       },
       "InsuranceDetail" : {
         "properties" : {
+          "coverageAmount" : {
+            "type" : "number"
+          },
           "coverageOption" : {
             "enum" : [ "PERSONAL", "ARRANGED", "NONE" ],
             "type" : "string"
+          },
+          "currencyCode" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
           },
           "insurerPartyId" : {
             "format" : "int64",
             "type" : "integer"
           },
           "policyNumber" : {
+            "type" : "string"
+          },
+          "premiumAmount" : {
+            "type" : "number"
+          },
+          "quoteExpiresAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "revisionReason" : {
             "type" : "string"
           },
           "status" : {
@@ -2219,6 +2426,76 @@
           "waiverTermsAcceptanceId" : {
             "format" : "int64",
             "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "InsuranceEvidenceRequestDto" : {
+        "properties" : {
+          "coverageAmount" : {
+            "type" : "number"
+          },
+          "currencyCode" : {
+            "minLength" : 1,
+            "pattern" : "[A-Z]{3}",
+            "type" : "string"
+          },
+          "insurerPartyId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "premiumAmount" : {
+            "type" : "number"
+          },
+          "quoteExpiresAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "coverageAmount", "currencyCode", "insurerPartyId" ],
+        "type" : "object"
+      },
+      "InsuranceReopenRequestDto" : {
+        "properties" : {
+          "reason" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
+      "InsuranceRevisionReasonRequestDto" : {
+        "properties" : {
+          "reason" : {
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
+      "Item" : {
+        "properties" : {
+          "bookingHorseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "requiredBeforePickup" : {
+            "type" : "boolean"
+          },
+          "requiredForQuoting" : {
+            "type" : "boolean"
+          },
+          "requirement" : {
+            "$ref" : "#/components/schemas/DocumentRequirementResponseDto"
+          },
+          "satisfied" : {
+            "type" : "boolean"
+          },
+          "submitterType" : {
+            "enum" : [ "CUSTOMER", "CONSIGNEE", "COMPANY", "AGENT" ],
+            "type" : "string"
           }
         },
         "type" : "object"
@@ -2355,6 +2632,28 @@
           }
         },
         "required" : [ "password", "username" ],
+        "type" : "object"
+      },
+      "PartnerDocumentUploadRequestDto" : {
+        "properties" : {
+          "bookingHorseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "expiryDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "file" : {
+            "format" : "binary",
+            "type" : "string"
+          },
+          "requirementId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "file", "requirementId" ],
         "type" : "object"
       },
       "PartyCreateRequestDto" : {
@@ -2604,6 +2903,29 @@
           }
         },
         "required" : [ "email" ],
+        "type" : "object"
+      },
+      "PersonalInsuranceRevisionRequestDto" : {
+        "properties" : {
+          "insurerPartyId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "policyNumber" : {
+            "maxLength" : 50,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "validFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "validTo" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "insurerPartyId", "policyNumber", "validFrom", "validTo" ],
         "type" : "object"
       },
       "PriceItemCreateRequestDto" : {
@@ -3948,6 +4270,24 @@
         "tags" : [ "booking-controller" ]
       }
     },
+    "/bookings/review-queue" : {
+      "get" : {
+        "operationId" : "queue",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBookingResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-review-controller" ]
+      }
+    },
     "/bookings/{id}" : {
       "get" : {
         "operationId" : "get_3",
@@ -3973,6 +4313,714 @@
           }
         },
         "tags" : [ "booking-controller" ]
+      }
+    },
+    "/bookings/{id}/change-departure" : {
+      "post" : {
+        "operationId" : "changeDeparture",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BookingDepartureChangeRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-review-controller" ]
+      }
+    },
+    "/bookings/{id}/documents" : {
+      "get" : {
+        "operationId" : "list_7",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBookingDocumentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-document-review-controller" ]
+      }
+    },
+    "/bookings/{id}/documents/checklist" : {
+      "get" : {
+        "operationId" : "checklist",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingDocumentChecklistResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-document-review-controller" ]
+      }
+    },
+    "/bookings/{id}/documents/my-checklist" : {
+      "get" : {
+        "operationId" : "customerChecklist",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingDocumentChecklistResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-document-review-controller" ]
+      }
+    },
+    "/bookings/{id}/documents/upload" : {
+      "post" : {
+        "operationId" : "upload",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "request",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/DocumentUploadRequestDto"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingDocumentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-document-review-controller" ]
+      }
+    },
+    "/bookings/{id}/documents/upload-for-partner" : {
+      "post" : {
+        "operationId" : "uploadForPartner",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "request",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/PartnerDocumentUploadRequestDto"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingDocumentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-document-review-controller" ]
+      }
+    },
+    "/bookings/{id}/documents/{documentId}/approve" : {
+      "post" : {
+        "operationId" : "approve",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "documentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DocumentApprovalRequestDto"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingDocumentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-document-review-controller" ]
+      }
+    },
+    "/bookings/{id}/documents/{documentId}/reject" : {
+      "post" : {
+        "operationId" : "reject_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "documentId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DocumentRejectionRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingDocumentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-document-review-controller" ]
+      }
+    },
+    "/bookings/{id}/insurances/{insuranceId}/confirm" : {
+      "post" : {
+        "operationId" : "confirm",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "insuranceId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/InsuranceConfirmationRequestDto"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-insurance-review-controller" ]
+      }
+    },
+    "/bookings/{id}/insurances/{insuranceId}/record-evidence" : {
+      "post" : {
+        "operationId" : "recordEvidence",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "insuranceId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/InsuranceEvidenceRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-insurance-review-controller" ]
+      }
+    },
+    "/bookings/{id}/insurances/{insuranceId}/reopen" : {
+      "post" : {
+        "operationId" : "reopen",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "insuranceId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/InsuranceReopenRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-insurance-review-controller" ]
+      }
+    },
+    "/bookings/{id}/insurances/{insuranceId}/request-revision" : {
+      "post" : {
+        "operationId" : "requestRevision",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "insuranceId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/InsuranceRevisionReasonRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-insurance-review-controller" ]
+      }
+    },
+    "/bookings/{id}/insurances/{insuranceId}/revise" : {
+      "post" : {
+        "operationId" : "revise",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "insuranceId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PersonalInsuranceRevisionRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-insurance-review-controller" ]
+      }
+    },
+    "/bookings/{id}/intake" : {
+      "post" : {
+        "operationId" : "intake",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BookingIntakeRequestDto"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-review-controller" ]
+      }
+    },
+    "/bookings/{id}/reject" : {
+      "post" : {
+        "operationId" : "reject",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BookingRejectionRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-review-controller" ]
+      }
+    },
+    "/bookings/{id}/resubmit" : {
+      "post" : {
+        "operationId" : "resubmit",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BookingResubmissionRequestDto"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-review-controller" ]
+      }
+    },
+    "/bookings/{id}/return-for-resubmission" : {
+      "post" : {
+        "operationId" : "returnToCustomer",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BookingReturnRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-review-controller" ]
+      }
+    },
+    "/bookings/{id}/review-detail" : {
+      "get" : {
+        "operationId" : "detail",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingDetailResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-review-controller" ]
+      }
+    },
+    "/bookings/{id}/start-quoting" : {
+      "post" : {
+        "operationId" : "startQuoting",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BookingQuotingRequestDto"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-review-controller" ]
       }
     },
     "/countries" : {

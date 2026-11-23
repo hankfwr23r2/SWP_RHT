@@ -6,6 +6,10 @@ import java.util.List;
 
 public interface BookingQueryService {
 
+    List<BookingResponseDto> reviewQueue();
+
+    BookingDetailResponseDto reviewDetail(Long id);
+
     List<BookingResponseDto> list(String username);
 
     BookingDetailResponseDto get(String username, Long id);

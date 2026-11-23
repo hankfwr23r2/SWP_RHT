@@ -2,11 +2,15 @@ package com.example.racehorse_transport.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.example.racehorse_transport.dto.booking.BookingCreateRequestDto;
 import com.example.racehorse_transport.dto.booking.BookingCreateRequestDto.AddressInput;
+import com.example.racehorse_transport.dto.regulation.RegulationPreviewResponseDto;
+import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.BookingAddress;
 import com.example.racehorse_transport.entity.Country;
 import com.example.racehorse_transport.entity.Departure;
 import com.example.racehorse_transport.entity.Location;
@@ -16,12 +20,15 @@ import com.example.racehorse_transport.entity.enums.ActiveStatus;
 import com.example.racehorse_transport.entity.enums.AddressRole;
 import com.example.racehorse_transport.entity.enums.BookingType;
 import com.example.racehorse_transport.exception.BookingRuleException;
+import com.example.racehorse_transport.repository.BookingAddressRepository;
 import com.example.racehorse_transport.repository.DepartureRepository;
 import com.example.racehorse_transport.repository.HubServiceAreaRepository;
 import com.example.racehorse_transport.repository.ProvinceRepository;
 import com.example.racehorse_transport.repository.RouteRepository;
 import com.example.racehorse_transport.service.impl.BookingRoutingServiceImpl;
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -38,6 +45,9 @@ class BookingRoutingServiceTest {
     @Mock private HubServiceAreaRepository serviceAreas;
     @Mock private RouteRepository routes;
     @Mock private DepartureRepository departures;
+    @Mock private BookingAddressRepository bookingAddresses;
+    @Mock private RegulationService regulations;
+    @Mock private Clock clock;
     @InjectMocks private BookingRoutingServiceImpl routing;
 
     @Test
@@ -73,6 +83,50 @@ class BookingRoutingServiceTest {
 
         assertThatThrownBy(() -> routing.lockDeparture(request, resolved))
                 .isInstanceOf(BookingRuleException.class);
+    }
+
+    @Test
+    void locksTheLowerDepartureIdFirstAndChecksPreparationLeadTime() {
+        LocalDate pickupDate = LocalDate.of(2027, 1, 1);
+        Departure old = new Departure();
+        old.setId(20L);
+        Booking booking = new Booking();
+        booking.setId(7L);
+        booking.setBookingType(BookingType.INTERPROVINCE);
+        booking.setDeparture(old);
+        booking.setRequestedPickupDate(pickupDate);
+        Departure replacement = new Departure();
+        replacement.setId(10L);
+        replacement.setRoute(route(1L, 2L));
+        replacement.setDepartureDate(pickupDate);
+        replacement.setBookingCutoffAt(Instant.parse("2026-12-29T01:00:00Z"));
+        when(departures.findForUpdate(10L)).thenReturn(Optional.of(replacement));
+        when(departures.findForUpdate(20L)).thenReturn(Optional.of(old));
+        when(bookingAddresses.findAddressesForDetail(booking.getId())).thenReturn(List.of(
+                storedAddress(AddressRole.PICKUP, "VN-79"), storedAddress(AddressRole.DELIVERY, "VN-48")));
+        when(serviceAreas.findHubId("VN-79", ActiveStatus.ACTIVE)).thenReturn(Optional.of(1L));
+        when(serviceAreas.findHubId("VN-48", ActiveStatus.ACTIVE)).thenReturn(Optional.of(2L));
+        when(regulations.resolve(BookingType.INTERPROVINCE, "VN", "VN", pickupDate, null))
+                .thenReturn(new RegulationPreviewResponseDto(null, 5, List.of(), false, null, null));
+        when(clock.instant()).thenReturn(Instant.parse("2026-12-28T01:00:00Z"));
+
+        assertThatThrownBy(() -> routing.lockReplacement(booking, 10L))
+                .isInstanceOf(BookingRuleException.class).hasMessageContaining("chuẩn bị giấy tờ");
+        var order = inOrder(departures);
+        order.verify(departures).findForUpdate(10L);
+        order.verify(departures).findForUpdate(20L);
+    }
+
+    private static BookingAddress storedAddress(AddressRole role, String code) {
+        Country country = new Country();
+        country.setCode("VN");
+        Province province = new Province();
+        province.setCode(code);
+        BookingAddress address = new BookingAddress();
+        address.setAddressType(role);
+        address.setProvince(province);
+        address.setCountry(country);
+        return address;
     }
 
     private Province servedProvince(String code, Long hubId) {

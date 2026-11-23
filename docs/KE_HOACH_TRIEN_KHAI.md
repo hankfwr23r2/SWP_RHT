@@ -372,9 +372,9 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
 ### A6. Thẩm định, giấy tờ, bảo hiểm (đợt 4)
 
 - **BE:**
-  - `DocumentReviewService` (duyệt hoặc từ chối, bắt buộc lý do);
-  - `DocumentCompletenessPolicy` (cách tính ở `DB_SCHEMA_59_BANG.md` mục 5) và cài đặt `DocumentCompletenessService`;
-  - `InsuranceService`: PERSONAL / ARRANGED / NONE, `REVISION_REQUESTED` chỉ với PERSONAL, xác nhận;
+  - `DocumentReviewService`: chuyên viên tải giấy của COMPANY, CONSIGNEE, AGENT và duyệt hoặc từ chối giấy ở UNDER_REVIEW, NEEDS_RESUBMISSION, QUOTING, AWAITING_DEPOSIT, CONFIRMED. Giấy do chuyên viên tải vẫn chờ duyệt. Từ chối phải có lý do. Ở CONFIRMED, khách được nộp lại giấy CUSTOMER bắt buộc nếu thiếu bản còn hiệu lực;
+  - `DocumentCompletenessService.isCompleteForQuoting` kiểm giấy bắt buộc của CUSTOMER. `isComplete` kiểm tất cả giấy bắt buộc khi xe xuất phát đón. Hai mốc dùng chung policy và đều chờ xác định yêu cầu phụ thuộc cửa khẩu. Checklist trả bên nộp và cờ cho hai mốc;
+  - `InsuranceService`: PERSONAL / ARRANGED / NONE, `REVISION_REQUESTED` chỉ với PERSONAL, xác nhận. Khi bắt đầu báo giá, kiểm lại bảo hiểm của từng ngựa ACTIVE theo ngày đón, ngày xuất phát hiện tại và hạn báo giá ARRANGED. Chuyên viên có thể mở lại CONFIRMED về DRAFT khi đơn UNDER_REVIEW hoặc NEEDS_RESUBMISSION, có lý do và audit;
   - trả đơn về khách (`NEEDS_RESUBMISSION`), từ chối đơn.
 - **FE:** chuyên viên duyệt hồ sơ, giấy tờ, bảo hiểm. Quản lý tiếp nhận đơn. Khách bổ sung hồ sơ.
 - **Tận dụng:**
@@ -383,6 +383,9 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
   - toàn bộ luồng nhánh `feat/insurance-resubmission`;
   - FE `specialist/*`, `manager/intake`, `InsuranceFields`, `InsuranceDocuments`, `orders/InsuranceRevision.tsx` (+ test).
 - **Xong khi:** test completeness với nhiều trường hợp (giấy theo con, giấy theo đơn, hết hạn, sai loại). Đủ điều kiện mới cho sang `QUOTING`.
+- **API:** nhân viên đọc `GET /bookings/review-queue`, `GET /bookings/{id}/review-detail` và `GET /bookings/{id}/documents/checklist`. Khách xem yêu cầu và kết quả của đơn mình qua `GET /bookings/{id}/documents/my-checklist`.
+- Thao tác đơn dùng `POST /bookings/{id}/intake`, `return-for-resubmission`, `resubmit`, `reject`, `change-departure`, `start-quoting`. Tải giấy qua `POST /bookings/{id}/documents/upload` (multipart) cho khách hoặc `POST /bookings/{id}/documents/upload-for-partner` (multipart) cho chuyên viên, duyệt qua `POST /bookings/{id}/documents/{documentId}/approve` hoặc `reject`.
+- Thao tác bảo hiểm dùng `POST /bookings/{id}/insurances/{insuranceId}/record-evidence`, `confirm`, `reopen`, `request-revision`, `revise`. Chuyên viên nhập phí và số tiền bảo hiểm theo chứng từ. Khoản VND dùng số nguyên đồng. Khách sửa thông tin hợp đồng PERSONAL sau yêu cầu bổ sung, giữ lý do gần nhất trên bảo hiểm và nhật ký yêu cầu trong `audit_log`.
 
 ### A7. Báo giá, đặt cọc, thanh toán (đợt 4)
 

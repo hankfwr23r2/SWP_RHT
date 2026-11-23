@@ -1,0 +1,71 @@
+package com.example.racehorse_transport.service.impl;
+
+import com.example.racehorse_transport.dto.regulation.RegulationPreviewResponseDto;
+import com.example.racehorse_transport.entity.*;
+import com.example.racehorse_transport.entity.enums.AddressRole;
+import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
+import com.example.racehorse_transport.entity.enums.BookingType;
+import com.example.racehorse_transport.entity.enums.DocumentSubmitter;
+import com.example.racehorse_transport.exception.ResourceNotFoundException;
+import com.example.racehorse_transport.policy.DepartureRoutePolicy;
+import com.example.racehorse_transport.policy.DocumentCompletenessPolicy;
+import com.example.racehorse_transport.repository.*;
+import com.example.racehorse_transport.service.DocumentCompletenessService;
+import com.example.racehorse_transport.service.RegulationService;
+import java.time.Clock;
+import static com.example.racehorse_transport.policy.BookingSubmissionPolicy.businessDate;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+@Transactional(readOnly = true)
+public class DocumentCompletenessServiceImpl implements DocumentCompletenessService {
+    private final BookingRepository bookings;
+    private final BookingAddressRepository addresses;
+    private final BookingHorseRepository horses;
+    private final DocumentRepository documents;
+    private final RegulationService regulations;
+    private final Clock clock;
+
+    @Override
+    public boolean isComplete(Long bookingId) {
+        return isComplete(bookingId, null);
+    }
+
+    @Override
+    public boolean isCompleteForQuoting(Long bookingId) {
+        return isComplete(bookingId, DocumentSubmitter.CUSTOMER);
+    }
+
+    private boolean isComplete(Long bookingId, DocumentSubmitter submitter) {
+        Booking booking = bookings.findById(bookingId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
+        if (booking.getBookingType() == BookingType.LOCAL) {
+            return true;
+        }
+        RegulationPreviewResponseDto resolved = resolve(booking);
+        List<BookingHorse> active = horses.findForDetail(bookingId).stream()
+                .filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE).toList();
+        return !resolved.requirementsDependOnGate() && DocumentCompletenessPolicy.isComplete(
+                bookingId, active, resolved.requirements(), documents.findForBookingReview(bookingId),
+                businessDate(clock.instant()), submitter);
+    }
+
+    @Override
+    public RegulationPreviewResponseDto resolve(Booking booking) {
+        List<BookingAddress> rows = addresses.findAddressesForDetail(booking.getId());
+        Departure departure = booking.getDeparture();
+        Long gate = departure == null ? null : DepartureRoutePolicy.gateId(departure.getRoute(), booking.getBookingType());
+        return regulations.resolve(booking.getBookingType(), countryOf(rows, AddressRole.PICKUP),
+                countryOf(rows, AddressRole.DELIVERY), booking.getRequestedPickupDate(), gate);
+    }
+
+    private static String countryOf(List<BookingAddress> rows, AddressRole role) {
+        return rows.stream().filter(row -> row.getAddressType() == role).findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy địa chỉ của đơn."))
+                .getCountry().getCode();
+    }
+}

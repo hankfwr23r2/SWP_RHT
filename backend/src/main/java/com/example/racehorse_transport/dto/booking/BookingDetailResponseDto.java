@@ -3,17 +3,23 @@ package com.example.racehorse_transport.dto.booking;
 import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.entity.enums.*;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
 public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySnapshot> parties,
-        List<AddressSnapshot> addresses, List<HorseDetail> horses) {
+        List<AddressSnapshot> addresses, List<HorseDetail> horses, String reviewReason) {
 
     public static BookingDetailResponseDto from(Booking booking, List<BookingParty> parties,
                                                  List<BookingAddress> addresses, List<HorseDetail> horses) {
+        return from(booking, parties, addresses, horses, null);
+    }
+
+    public static BookingDetailResponseDto from(Booking booking, List<BookingParty> parties,
+            List<BookingAddress> addresses, List<HorseDetail> horses, String reviewReason) {
         return new BookingDetailResponseDto(BookingResponseDto.from(booking),
                 parties.stream().map(PartySnapshot::from).toList(),
-                addresses.stream().map(AddressSnapshot::from).toList(), List.copyOf(horses));
+                addresses.stream().map(AddressSnapshot::from).toList(), List.copyOf(horses), reviewReason);
     }
 
     public record PartySnapshot(BookingPartyRole bookingRole, String fullName, String phone,
@@ -57,14 +63,18 @@ public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySna
         }
     }
 
-    public record InsuranceDetail(InsuranceCoverageOption coverageOption, HorseInsuranceStatus status,
-            Long insurerPartyId, String policyNumber, LocalDate validFrom, LocalDate validTo, Long waiverTermsAcceptanceId) {
+    public record InsuranceDetail(Long id, InsuranceCoverageOption coverageOption, HorseInsuranceStatus status,
+            Long insurerPartyId, String policyNumber, LocalDate validFrom, LocalDate validTo, Long waiverTermsAcceptanceId,
+            BigDecimal coverageAmount, BigDecimal premiumAmount, String currencyCode, Instant quoteExpiresAt,
+            String revisionReason) {
 
         public static InsuranceDetail from(HorseInsurance insurance) {
-            return new InsuranceDetail(insurance.getCoverageOption(), insurance.getStatus(),
+            return new InsuranceDetail(insurance.getId(), insurance.getCoverageOption(), insurance.getStatus(),
                     insurance.getInsurerParty() == null ? null : insurance.getInsurerParty().getId(),
                     insurance.getPolicyNumber(), insurance.getValidFrom(), insurance.getValidTo(),
-                    insurance.getWaiverTermsAcceptance() == null ? null : insurance.getWaiverTermsAcceptance().getId());
+                    insurance.getWaiverTermsAcceptance() == null ? null : insurance.getWaiverTermsAcceptance().getId(),
+                    insurance.getCoverageAmount(), insurance.getPremiumAmount(), insurance.getCurrencyCode(),
+                    insurance.getQuoteExpiresAt(), insurance.getRevisionReason());
         }
     }
 }

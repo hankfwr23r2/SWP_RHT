@@ -4,6 +4,12 @@ package com.example.racehorse_transport.service;
 // Cài đặt: luồng A (task A6). Gọi: luồng B. Chưa có cài đặt thì bên gọi test bằng mock.
 public interface DocumentCompletenessService {
 
-    // Đơn đã đủ giấy bắt buộc theo country_rule và document_requirement chưa. Luồng B kiểm khi xe xuất phát (GĐ5).
+    com.example.racehorse_transport.dto.regulation.RegulationPreviewResponseDto resolve(
+            com.example.racehorse_transport.entity.Booking booking);
+
+    // Luồng B kiểm toàn bộ giấy bắt buộc khi xe xuất phát đón (GĐ5).
     boolean isComplete(Long bookingId);
+
+    // Khi sang QUOTING, chỉ kiểm giấy bắt buộc do CUSTOMER nộp.
+    boolean isCompleteForQuoting(Long bookingId);
 }
