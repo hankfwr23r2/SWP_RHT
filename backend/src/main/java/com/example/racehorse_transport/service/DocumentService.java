@@ -8,6 +8,6 @@ import org.springframework.web.multipart.MultipartFile;
 public interface DocumentService {
 
     // Tải tệp lên kho lưu trữ, ghi một dòng document gắn với đúng một chủ sở hữu.
-    // ownerSubject phải khớp document_type.subject của loại giấy. Trả về id của document.
+    // ownerSubject phải khớp document_type.owner_type của loại giấy. Trả về id của document.
     Long attach(MultipartFile file, String documentTypeCode, DocumentSubject ownerSubject, Long ownerId, Long uploadedByUserId);
 }

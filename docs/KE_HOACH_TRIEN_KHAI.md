@@ -606,9 +606,9 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 |---|---|---|---|---|---|
 | P0.1 | Dọn code cũ, Flyway, 59 bảng | A | 0 | Xong | #344 |
 | P0.2-A | Entity, repository nhóm 1–8 | A | 0 | Chờ review (nhánh `rd/p0-2a-entities`) | |
-| P0.2-B | Entity, repository nhóm 9–15 | B | 0 | Chờ review (nhánh `rd/p0-2b-entities`) | |
+| P0.2-B | Entity, repository nhóm 9–15 | B | 0 | Xong | #351 |
 | P0.3-A | Auth, interface gọi chéo, `TestData` | A | 0 | Chờ review (nhánh `rd/p0-3a-auth`) | |
-| P0.3-B | Document, Notification, Audit, ArchUnit, OpenAPI | B | 0 | Chưa làm | |
+| P0.3-B | Document, Notification, Audit, ArchUnit, OpenAPI | B | 0 | Chờ review (nhánh `rd/p0-3b-shared-services`) | |
 | P0-FE | Token, `shared/ui`, layout, orval, lint, i18n | B | 0 | Chưa làm | |
 | A1 | Mạng lưới, tuyến, lịch, chuyến | A | 1 | Backend chờ review: PR1 danh mục (`rd/a1-network`), PR2 chuyến (`rd/a1-departures`). FE làm sau P0-FE | |
 | A2 | Xe, nhân sự, đối tác, tham số | A | 1 | Chưa làm | |
