@@ -339,6 +339,20 @@
         },
         "type" : "object"
       },
+      "ApiResponseHealthLogResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/HealthLogResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseHorseResponseDto" : {
         "properties" : {
           "data" : {
@@ -571,11 +585,45 @@
         },
         "type" : "object"
       },
+      "ApiResponseListHealthLogResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HealthLogResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListHorseResponseDto" : {
         "properties" : {
           "data" : {
             "items" : {
               "$ref" : "#/components/schemas/HorseResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListHorseStayResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HorseStayResponseDto"
             },
             "type" : "array"
           },
@@ -2384,6 +2432,132 @@
         "required" : [ "horseLegId", "microchip" ],
         "type" : "object"
       },
+      "HealthLogRequestDto" : {
+        "properties" : {
+          "bookingHorseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "feedIntake" : {
+            "enum" : [ "NORMAL", "REDUCED", "REFUSED" ],
+            "type" : "string"
+          },
+          "healthStatus" : {
+            "enum" : [ "NORMAL", "WATCH", "SICK", "CRITICAL" ],
+            "type" : "string"
+          },
+          "heartRateBpm" : {
+            "format" : "int32",
+            "maximum" : 200,
+            "minimum" : 10,
+            "type" : "integer"
+          },
+          "horseStayId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "note" : {
+            "maxLength" : 2000,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "respirationRatePerMinute" : {
+            "format" : "int32",
+            "maximum" : 100,
+            "minimum" : 4,
+            "type" : "integer"
+          },
+          "symptoms" : {
+            "maxLength" : 2000,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "temperatureCelsius" : {
+            "maximum" : 45.0,
+            "minimum" : 30.0,
+            "type" : "number"
+          },
+          "tripStopId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "waterIntake" : {
+            "enum" : [ "NORMAL", "REDUCED", "REFUSED" ],
+            "type" : "string"
+          },
+          "weightKg" : {
+            "type" : "number"
+          }
+        },
+        "required" : [ "bookingHorseId", "healthStatus" ],
+        "type" : "object"
+      },
+      "HealthLogResponseDto" : {
+        "properties" : {
+          "bookingHorseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "feedIntake" : {
+            "enum" : [ "NORMAL", "REDUCED", "REFUSED" ],
+            "type" : "string"
+          },
+          "healthStatus" : {
+            "enum" : [ "NORMAL", "WATCH", "SICK", "CRITICAL" ],
+            "type" : "string"
+          },
+          "heartRateBpm" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "horseName" : {
+            "type" : "string"
+          },
+          "horseStayId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "note" : {
+            "type" : "string"
+          },
+          "placeName" : {
+            "type" : "string"
+          },
+          "recordedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "recordedByName" : {
+            "type" : "string"
+          },
+          "respirationRatePerMinute" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "symptoms" : {
+            "type" : "string"
+          },
+          "temperatureCelsius" : {
+            "type" : "number"
+          },
+          "tripStopId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "waterIntake" : {
+            "enum" : [ "NORMAL", "REDUCED", "REFUSED" ],
+            "type" : "string"
+          },
+          "weightKg" : {
+            "type" : "number"
+          }
+        },
+        "type" : "object"
+      },
       "HorseCreateRequestDto" : {
         "properties" : {
           "birthYear" : {
@@ -2729,6 +2903,48 @@
           }
         },
         "required" : [ "addOnServiceIds", "horseId", "stallTypeCode" ],
+        "type" : "object"
+      },
+      "HorseStayResponseDto" : {
+        "properties" : {
+          "actualEndAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "actualStartAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "bookingCode" : {
+            "type" : "string"
+          },
+          "bookingHorseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "horseName" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "locationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "locationName" : {
+            "type" : "string"
+          },
+          "plannedEndAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "stayType" : {
+            "enum" : [ "ASSEMBLY", "QUARANTINE", "OVERNIGHT", "STABLING" ],
+            "type" : "string"
+          }
+        },
         "type" : "object"
       },
       "HorseTypeResponseDto" : {
@@ -4256,6 +4472,16 @@
         "required" : [ "fullName", "hireDate", "homeHubLocationId", "phone", "staffCode" ],
         "type" : "object"
       },
+      "StopDepartRequestDto" : {
+        "properties" : {
+          "earlyReason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "SystemConfigResponseDto" : {
         "properties" : {
           "configGroup" : {
@@ -4999,6 +5225,33 @@
           }
         },
         "tags" : [ "price-list-controller" ]
+      }
+    },
+    "/booking-horses/{id}/health-logs" : {
+      "get" : {
+        "operationId" : "ofHorse",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListHealthLogResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "health-log-controller" ]
       }
     },
     "/bookings" : {
@@ -6885,6 +7138,34 @@
         "tags" : [ "health-check-controller" ]
       }
     },
+    "/health-logs" : {
+      "post" : {
+        "operationId" : "record",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HealthLogRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseHealthLogResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "health-log-controller" ]
+      }
+    },
     "/horse-legs/{id}/cancel" : {
       "post" : {
         "operationId" : "cancelLeg",
@@ -6910,6 +7191,33 @@
           }
         },
         "tags" : [ "dispatch-controller" ]
+      }
+    },
+    "/horse-stays" : {
+      "get" : {
+        "operationId" : "activeStays",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "locationId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListHorseStayResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "health-log-controller" ]
       }
     },
     "/horse-types" : {
@@ -8294,6 +8602,15 @@
             "type" : "integer"
           }
         } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StopDepartRequestDto"
+              }
+            }
+          }
+        },
         "responses" : {
           "200" : {
             "content" : {

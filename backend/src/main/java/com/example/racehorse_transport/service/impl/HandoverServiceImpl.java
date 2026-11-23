@@ -13,6 +13,7 @@ import com.example.racehorse_transport.entity.TripStop;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
 import com.example.racehorse_transport.entity.enums.HandoverStatus;
+import com.example.racehorse_transport.entity.enums.HandoverType;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.exception.DispatchRuleException;
@@ -27,6 +28,7 @@ import com.example.racehorse_transport.service.BookingStatusService;
 import com.example.racehorse_transport.service.DispatchService;
 import com.example.racehorse_transport.service.HandoverService;
 import com.example.racehorse_transport.service.HorseLegService;
+import com.example.racehorse_transport.service.HorseStayService;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +51,7 @@ public class HandoverServiceImpl implements HandoverService {
     private final BookingStatusService bookingStatus;
     private final DispatchService dispatch;
     private final HorseLegService horseLegs;
+    private final HorseStayService horseStays;
     private final Clock clock;
 
     @Override
@@ -116,9 +119,14 @@ public class HandoverServiceImpl implements HandoverService {
             if (boarding) {
                 leg.setStatus(HorseLegStatus.IN_PROGRESS);
                 leg.setActualStartAt(now);
+                // Nhận từ hub: kết thúc lưu trú tập kết
+                horseStays.closeActive(leg.getBookingHorse().getId(), now);
             } else {
                 leg.setStatus(HorseLegStatus.COMPLETED);
                 leg.setActualEndAt(now);
+                if (handover.getHandoverType() == HandoverType.HUB_IN) {
+                    horseStays.openAssembly(leg, now);
+                }
             }
         }
         handover.setStatus(HandoverStatus.DONE);

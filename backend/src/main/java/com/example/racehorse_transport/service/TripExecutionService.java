@@ -9,8 +9,9 @@ public interface TripExecutionService {
 
     Long arrive(Long tripStopId, String username);
 
-    // Rời nơi nhận ngựa: mọi đơn có ngựa lên xe ở đây phải đã trả đủ (#32), rồi đơn sang IN_OPERATION
-    Long depart(Long tripStopId, String username);
+    // Kiểm qua StopReadinessService (giao nhận dở, #32, #34); rời nơi nhận ngựa thì đơn sang IN_OPERATION.
+    // earlyReason: lý do rời trạm nghỉ trước khi nghỉ đủ, có thể null
+    Long depart(Long tripStopId, String earlyReason, String username);
 
     void complete(Long vehicleTripId, String username);
 }

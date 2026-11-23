@@ -7,7 +7,6 @@ import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
 import com.example.racehorse_transport.entity.enums.CrewRole;
-import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HorseInsuranceStatus;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.entity.enums.TripStopType;
@@ -16,14 +15,13 @@ import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.TripExecutionPolicy;
 import com.example.racehorse_transport.repository.CrewAssignmentRepository;
-import com.example.racehorse_transport.repository.HandoverRepository;
 import com.example.racehorse_transport.repository.HorseInsuranceRepository;
 import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.TripStopRepository;
 import com.example.racehorse_transport.repository.VehicleTripRepository;
 import com.example.racehorse_transport.service.BookingStatusService;
 import com.example.racehorse_transport.service.DocumentCompletenessService;
-import com.example.racehorse_transport.service.PaymentReadinessService;
+import com.example.racehorse_transport.service.StopReadinessService;
 import com.example.racehorse_transport.service.TripExecutionService;
 import java.time.Clock;
 import java.util.LinkedHashMap;
@@ -31,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,11 +43,9 @@ public class TripExecutionServiceImpl implements TripExecutionService {
     private final TripStopRepository stops;
     private final CrewAssignmentRepository crew;
     private final HorseLegRepository legs;
-    private final HandoverRepository handovers;
     private final HorseInsuranceRepository insurances;
     private final DocumentCompletenessService documents;
-    // Luồng A cài đặt ở A7. Chưa có thì không cho xe rời nơi nhận ngựa (không đoán là đã trả)
-    private final ObjectProvider<PaymentReadinessService> paymentReadiness;
+    private final StopReadinessService readiness;
     private final BookingStatusService bookingStatus;
     private final Clock clock;
 
@@ -100,13 +95,12 @@ public class TripExecutionServiceImpl implements TripExecutionService {
 
     @Override
     @Transactional
-    public Long depart(Long tripStopId, String username) {
+    public Long depart(Long tripStopId, String earlyReason, String username) {
         TripStop stop = findStop(tripStopId);
         VehicleTrip trip = trips.findForUpdate(stop.getVehicleTrip().getId()).orElseThrow();
         CrewAssignment member = requireCrew(trip.getId(), username);
         TripExecutionPolicy.requireInProgress(trip.getStatus());
-        TripExecutionPolicy.requireCanDepart(stop.getActualArrivalAt() != null, stop.getActualDepartureAt() != null,
-                handovers.countByTripStop_IdAndStatus(stop.getId(), HandoverStatus.PENDING));
+        readiness.requireCanLeave(stop, earlyReason, member.getStaff().getUserId());
         if (stop.getStopType() == TripStopType.PICKUP) {
             leavePickup(stop, member.getStaff().getUserId());
         }
@@ -127,23 +121,8 @@ public class TripExecutionServiceImpl implements TripExecutionService {
         trip.setActualEndAt(clock.instant());
     }
 
-    // Quy tắc #32: mọi đơn có ngựa đã nhận lên xe ở điểm đón này phải trả đủ; xong thì đơn sang IN_OPERATION
+    // Đã qua kiểm thanh toán (#32): đơn có ngựa đã nhận lên xe ở điểm đón này sang IN_OPERATION
     private void leavePickup(TripStop stop, Long actorUserId) {
-        Map<Long, String> boarded = new LinkedHashMap<>();
-        for (HorseLeg leg : legs.findByBoardTripStop_IdAndStatusIn(stop.getId(), Set.of(HorseLegStatus.IN_PROGRESS))) {
-            var booking = leg.getBookingHorse().getBooking();
-            boarded.put(booking.getId(), booking.getCode());
-        }
-        if (boarded.isEmpty()) return;
-        PaymentReadinessService payments = paymentReadiness.getIfAvailable();
-        if (payments == null) {
-            throw new DispatchRuleException("payment", "Chưa kiểm được thanh toán của đơn nên xe chưa rời nơi nhận được.", true);
-        }
-        boarded.forEach((id, code) -> {
-            if (!payments.isPaidInFull(id)) {
-                throw new DispatchRuleException("payment", "Đơn " + code + " chưa trả đủ. Xe chưa rời nơi nhận được.", true);
-            }
-        });
         legs.findByBoardTripStop_IdAndStatusIn(stop.getId(), Set.of(HorseLegStatus.IN_PROGRESS)).stream()
                 .map(leg -> leg.getBookingHorse().getBooking())
                 .filter(booking -> booking.getStatus() == BookingStatus.CONFIRMED)

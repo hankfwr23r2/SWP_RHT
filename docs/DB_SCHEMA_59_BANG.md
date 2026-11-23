@@ -931,8 +931,8 @@ Index: `booking_horse_id`, `location_id`, `operator_party_id`.
 | `heart_rate_bpm` | `smallint` | có | CK `10..200` | |
 | `respiration_rate_per_minute` | `smallint` | có | CK `4..100` | |
 | `weight_kg` | `numeric(6,1)` | có | CK `> 0` | |
-| `water_intake` | `varchar(30)` | có | CK `NORMAL, REDUCED, REFUSED` | Uống nước trong lần dừng hoặc lưu trú. **Chờ migration** |
-| `feed_intake` | `varchar(30)` | có | CK `NORMAL, REDUCED, REFUSED` | Ăn trong lần dừng hoặc lưu trú. **Chờ migration** |
+| `water_intake` | `varchar(30)` | có | CK `NORMAL, REDUCED, REFUSED` | Uống nước trong lần dừng hoặc lưu trú (`V202611241000`) |
+| `feed_intake` | `varchar(30)` | có | CK `NORMAL, REDUCED, REFUSED` | Ăn trong lần dừng hoặc lưu trú (`V202611241000`) |
 | `symptoms` | `text` | có | | |
 | `note` | `text` | có | | |
 

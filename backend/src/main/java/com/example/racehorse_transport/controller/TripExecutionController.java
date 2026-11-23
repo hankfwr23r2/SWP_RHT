@@ -4,6 +4,7 @@ import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.dto.operation.CrewTripResponseDto;
 import com.example.racehorse_transport.dto.operation.HandoverCreateRequestDto;
 import com.example.racehorse_transport.dto.operation.HandoverScanRequestDto;
+import com.example.racehorse_transport.dto.operation.StopDepartRequestDto;
 import com.example.racehorse_transport.service.HandoverService;
 import com.example.racehorse_transport.service.TripExecutionService;
 import jakarta.validation.Valid;
@@ -45,8 +46,9 @@ public class TripExecutionController {
     }
 
     @PostMapping("/trip-stops/{id}/depart")
-    public ApiResponseDto<CrewTripResponseDto> depart(@PathVariable Long id, Authentication authentication) {
-        Long tripId = execution.depart(id, authentication.getName());
+    public ApiResponseDto<CrewTripResponseDto> depart(@PathVariable Long id, Authentication authentication,
+                                                      @Valid @RequestBody(required = false) StopDepartRequestDto request) {
+        Long tripId = execution.depart(id, request == null ? null : request.earlyReason(), authentication.getName());
         return ApiResponseDto.success(handovers.crewTrip(tripId, authentication.getName()), "Đã rời điểm dừng");
     }
 
