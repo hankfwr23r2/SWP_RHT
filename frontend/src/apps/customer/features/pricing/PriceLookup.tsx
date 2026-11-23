@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { CLASS_FACTOR, CLEARANCE_FEE, DEPOSIT_RATE, FUEL_BOT_PER_KM, FUEL_BUFFER_RATE, MARGIN_RATE, VEHICLE_CLASS, type VehicleClass } from '@shared/config/booking-rules'
 import { formatVND } from '@shared/lib/format'
 import { serviceCatalogApi, type ServiceBillingUnit } from '@shared/api/serviceCatalog'
-import { useLoad } from '@shared/services/useLoad'
+import { useLoad } from '@shared/hooks/useLoad'
 import { KM_TIERS, TRIP_OPEN_FEE } from '@shared/config/public-pricing'
 import s from '../home/HomePage.module.css'
 

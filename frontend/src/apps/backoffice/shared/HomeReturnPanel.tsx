@@ -7,7 +7,7 @@ import { formatDateTime } from '@shared/lib/format'
 import { bookingsApi } from '@shared/services/bookings'
 import type { Booking, VehicleTrip } from '@shared/types/booking'
 import { CaptureField } from '@shared/ui/CaptureField'
-import { useNow } from '@shared/ui/useNow'
+import { useNow } from '@shared/hooks/useNow'
 import { Panel } from './field'
 import s from './field.module.css'
 

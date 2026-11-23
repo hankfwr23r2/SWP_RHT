@@ -1,4 +1,4 @@
-import { useAutoRefresh } from '@shared/services/useLoad'
+import { useAutoRefresh } from '@shared/hooks/useLoad'
 import { invalidateBookingsListCache } from '@shared/services/bookings'
 // Điều phối viên: lập phương án xử lý sự cố, trình Manager duyệt (Flow 5, PRD mục 6.5).
 import { useCallback, useState } from 'react'

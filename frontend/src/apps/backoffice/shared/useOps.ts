@@ -1,6 +1,6 @@
 // Dữ liệu dùng chung các trang Điều phối, Tài xế, Hộ tống: đội xe, người đi theo chuyến.
 import { crewApi, vehiclesApi } from '@shared/services/fleet'
-import { useLoad } from '@shared/services/useLoad'
+import { useLoad } from '@shared/hooks/useLoad'
 
 export function useOps() {
   const vehicles = useLoad(vehiclesApi.list)

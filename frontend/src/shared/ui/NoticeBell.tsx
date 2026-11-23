@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router'
 import { useAuth } from '../auth/AuthContext'
 import { formatDateTime } from '../lib/format'
 import { noticesApi, type Notice } from '../services/notices'
-import { useAutoRefresh } from '../services/useLoad'
+import { useAutoRefresh } from '@shared/hooks/useLoad'
 import { useToast } from './toast'
 import s from './NoticeBell.module.css'
 
