@@ -260,6 +260,13 @@ Mục tiêu: dựng sẵn **mọi thứ cả hai luồng cùng cần**, để t�
 | Test component | Thêm `@testing-library/react`, `jsdom`, cho vitest chạy cả `*.test.tsx`. Mỗi component `shared/ui` có test | |
 | Trang mẫu | Một trang "Thư viện giao diện" trong backoffice (chỉ ADMIN) hiển thị mọi component và 4 trạng thái | |
 
+**Ghi chú sau khi làm P0.2-A:**
+- Bảng `service` có entity `BillableService`, bảng `booking_horse_service` có entity `BookingHorseAddOn`: tránh trùng annotation `@Service` của Spring và interface `BookingHorseService`.
+- Khóa ghép dùng `@EmbeddedId` + `@MapsId`; `staff` và `booking_rating` dùng `@MapsId` trên `@OneToOne`. Khi lưu entity có khóa ghép, đặt đủ giá trị khóa trước khi gọi `save`.
+- Chỉ có quan hệ `@ManyToOne`/`@OneToOne` ở phía giữ FK, chưa có collection. Task nào cần `@OneToMany` thì thêm trong task đó.
+- Cột có mặc định `now()` dùng `@Generated` + `insertable = false`: DB đặt giờ. Cột `char(n)` dùng `@JdbcTypeCode(SqlTypes.CHAR)`, cột `smallint` dùng `Short`.
+- Profile `test` tắt lazy initialization để `contextLoads` bắt lỗi của mọi bean và truy vấn repository.
+
 **Mốc M0** khi P0.1–P0.3 và P0-FE đã merge.
 
 ---
@@ -579,8 +586,8 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 
 | Mã | Task | Luồng | Đợt | Trạng thái | PR |
 |---|---|---|---|---|---|
-| P0.1 | Dọn code cũ, Flyway, 59 bảng | A | 0 | Đang làm (nhánh `rd/p0-1-db`) | |
-| P0.2-A | Entity, repository nhóm 1–8 | A | 0 | Chưa làm | |
+| P0.1 | Dọn code cũ, Flyway, 59 bảng | A | 0 | Xong | #344 |
+| P0.2-A | Entity, repository nhóm 1–8 | A | 0 | Chờ review (nhánh `rd/p0-2a-entities`) | |
 | P0.2-B | Entity, repository nhóm 9–15 | B | 0 | Chưa làm | |
 | P0.3-A | Auth, interface gọi chéo, `TestData` | A | 0 | Chưa làm | |
 | P0.3-B | Document, Notification, Audit, ArchUnit, OpenAPI | B | 0 | Chưa làm | |
