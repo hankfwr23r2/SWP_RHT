@@ -13,6 +13,7 @@ import com.example.racehorse_transport.entity.Province;
 import com.example.racehorse_transport.entity.enums.ActiveStatus;
 import com.example.racehorse_transport.entity.enums.LocationType;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
+import com.example.racehorse_transport.exception.VehicleRuleException;
 import com.example.racehorse_transport.repository.CountryRepository;
 import com.example.racehorse_transport.repository.HubServiceAreaRepository;
 import com.example.racehorse_transport.repository.LocationRepository;
@@ -74,6 +75,9 @@ public class LocationServiceImpl implements LocationService {
     @Transactional
     public LocationResponseDto updateLocation(Long id, LocationRequestDto request) {
         Location location = findLocation(id);
+        if (location.isHeadquarters() && request.getLocationType() != LocationType.HUB) {
+            throw new VehicleRuleException("locationType", "Địa điểm trụ sở phải là hub.");
+        }
         // Kiểm mã trùng trước khi ghi đè, để lần flush tự động của truy vấn không vướng ràng buộc UNIQUE
         requireUniqueCode(request.getCode().trim().toUpperCase(Locale.ROOT), id);
         LocationType previousType = location.getLocationType();

@@ -45,6 +45,9 @@ public class Location {
     @Column(name = "location_type", length = 30, nullable = false)
     private LocationType locationType;
 
+    @Column(name = "is_headquarters", nullable = false)
+    private boolean headquarters;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "country_code", nullable = false)
     private Country country;

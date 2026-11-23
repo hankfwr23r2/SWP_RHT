@@ -23,6 +23,9 @@ INSERT INTO location (code, name, location_type, country_code, province_code, ad
     ('REST-QUYNHON', 'Trạm nghỉ Quy Nhơn', 'REST_STOP', 'VN', 'VN-52', 'Phường Quy Nhơn, Gia Lai', 13.776000, 109.224000, NULL, NULL, NULL, 'ACTIVE')
 ON CONFLICT (code) DO NOTHING;
 
+UPDATE location SET is_headquarters = true
+WHERE code = 'HUB-HCM' AND NOT EXISTS (SELECT 1 FROM location WHERE is_headquarters);
+
 -- Mỗi tỉnh thuộc đúng một hub. Miền Nam về trụ sở, miền Trung về hub vệ tinh Đà Nẵng
 INSERT INTO hub_service_area (hub_location_id, province_code)
 SELECT l.id, p.code
@@ -62,7 +65,7 @@ FROM (VALUES
           ('escort1.dev', 'ESC-001', 'Huỳnh Chăm Ngựa (mẫu)', '0900000007', NULL, NULL::date)
      ) AS v(username, staff_code, full_name, phone, license_class, license_expiry)
 JOIN app_user u ON u.username = v.username
-JOIN location hub ON hub.code = 'HUB-HCM'
+JOIN location hub ON hub.is_headquarters
 ON CONFLICT (user_id) DO NOTHING;
 
 INSERT INTO customer (user_id, customer_type, full_name, phone, address, country_code)
@@ -109,7 +112,7 @@ FROM (VALUES
           ('51C-100.04', 'HEAVY', 9, 0)
      ) AS v(plate, class_code, std, wide)
 JOIN vehicle_class vc ON vc.code = v.class_code
-JOIN location hub ON hub.code = 'HUB-HCM'
+JOIN location hub ON hub.is_headquarters
 ON CONFLICT (license_plate) DO NOTHING;
 
 -- ---------------------------------------------------------------------------
