@@ -45,7 +45,7 @@ export function FormSelect({ value, onChange, children, id, className = '', styl
   const place = useCallback(() => {
     const r = trigger.current?.getBoundingClientRect()
     if (!r) return
-    const dialog = trigger.current?.closest('.modal')?.getBoundingClientRect()
+    const dialog = trigger.current?.closest('[data-dialog], .modal')?.getBoundingClientRect()
     const visibleTop = Math.max(0, dialog?.top ?? 0)
     const visibleBottom = Math.min(innerHeight, dialog?.bottom ?? innerHeight)
     const below = visibleBottom - r.bottom

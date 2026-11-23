@@ -86,7 +86,6 @@ const EXCEPTIONS = {
     'src/shared/ui/FormSelect.tsx',
     'src/shared/ui/ImageThumb.tsx',
     'src/shared/ui/QuoteSheet.tsx',
-    'src/shared/ui/Select.tsx',
     'src/shared/ui/TripTrackMap.tsx',
   ],
   S2: [
