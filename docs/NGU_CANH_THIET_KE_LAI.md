@@ -16,7 +16,7 @@
 | Dữ liệu nghiệp vụ nằm trong JSON | `DetailsJson`, `quote_lines_json`: báo giá, bảo hiểm, giấy tờ đều nằm trong cột text |
 | Logic giá ở frontend | `frontend/src/shared/lib/pricing.ts`, `booking.ts`, `config/booking-rules.ts`. Backend nhận dòng báo giá từ client (`BookingServiceImpl.sendQuote`), và `QuoteLinePolicy` chỉ kiểm 2 dòng. Đây là lỗi CWE-602 |
 | Bảng giá dạng key–value | `system_config` chứa `TRIP_OPEN_FEE`, `KM_TIER_*`, `CLASS_FACTOR_*`, `MARGIN_RATE`… |
-| Không quản lý phiên bản schema | Không có Flyway. ERD ở `docs/database` đã cũ, file SQL nguồn không còn |
+| Không quản lý phiên bản schema | Không có Flyway. ERD cũ lệch với DB, file SQL nguồn không còn |
 | API kiểu hành động và switch | `POST /field/bookings/{id}/trip-update` xử lý khoảng 21 action trong một switch (`TripProgressServiceImpl`) |
 | Trạng thái đơn bùng nổ | `booking.status` có khoảng 27 giá trị, trộn trạng thái thương mại, vận hành và các nhánh duyệt |
 | Suy luận từ chuỗi | `Vehicle` lấy sức chứa bằng cách đọc chuỗi `vehicle_type` |
@@ -26,7 +26,7 @@ Kết luận: **cơ chế giao tiếp** (REST/JSON + JWT + refresh cookie) khôn
 
 ## 3. Mô hình nghiệp vụ mới (người dùng đề xuất, đã thống nhất)
 
-1. **Gom hàng qua hub:** chặng đón → ngựa tập kết ở hub → **chuyến trục chính chạy định kỳ** → trại cách ly → chặng giao.
+1. **Gom hàng qua hub:** chặng đón → ngựa tập kết ở hub → **chuyến trục chính chạy định kỳ** → chặng giao. Không có khâu cách ly do công ty vận hành (quyết định 23/11/2026).
 2. **Mạng lưới hub và tuyến cố định.** Trên tuyến vẫn giữ quy trình chăm sóc hiện tại: trạm nghỉ, kiểm tra sức khỏe, cửa khẩu.
    - Trục chính có cả **tuyến nội địa** (hub ⇄ hub, ví dụ HCM ⇄ Đà Nẵng) và tuyến quốc tế (hub → cửa khẩu).
    - **Trụ sở và hub vệ tinh:** mọi xe và nhân viên thuộc trụ sở. Hub vệ tinh có vùng phục vụ và chỗ tập kết, không có xe hay nhân viên trực thuộc. Xe trục tới hub vệ tinh thì chạy luôn lượt giao ở đó, rồi về trụ sở bằng chuyến trục chiều ngược.
@@ -36,7 +36,7 @@ Kết luận: **cơ chế giao tiếp** (REST/JSON + JWT + refresh cookie) khôn
    - `vehicle_trip`: xe thật chạy, có thể nhiều xe cho một chuyến.
 4. **Theo dõi theo từng con ngựa:**
    - `horse_leg`: chặng di chuyển;
-   - `horse_stay`: thời gian lưu ở một nơi không trên xe (tập kết, cách ly, qua đêm);
+   - `horse_stay`: thời gian lưu ở một nơi không trên xe (tập kết, qua đêm, gửi chuồng);
    - `handover`: chuỗi giao nhận, thể hiện ai đang giữ ngựa.
 5. **Giao hàng đối xứng với đón:**
    - thả ngựa khỏi nơi lưu trú, giao nhận theo từng điểm dừng, quét chip khi giao;
@@ -55,7 +55,7 @@ Kết luận: **cơ chế giao tiếp** (REST/JSON + JWT + refresh cookie) khôn
 | Báo giá lưu snapshot đơn giá; `amount` là cột generated; tổng, thu hộ, cọc lưu cột trên `quotation` | Bảng giá đổi về sau không làm thay đổi báo giá cũ. Báo giá bất biến sau khi SENT nên lưu tổng không có rủi ro lệch |
 | `horse_leg` dùng cho từng con ngựa, gộp ý tưởng shipment_leg và leg_horse. Không có bảng segment | Đoạn đường suy ra được từ các điểm dừng liên tiếp |
 | `trip_stop` vừa là lộ trình kế hoạch vừa ghi giờ thực tế | Chép từ `route_stop`, giờ thực tế điền dần |
-| Giữ `horse_stay` dù đã có `trip_stop` | `trip_stop` gắn với xe và chỉ dài vài phút đến vài giờ. Cách ly kéo dài nhiều ngày và không có xe |
+| Giữ `horse_stay` dù đã có `trip_stop` | `trip_stop` gắn với xe và chỉ dài vài phút đến vài giờ. Tập kết và gửi chuồng kéo dài hơn và không có xe |
 | Bỏ `terms_version`, `insurance_revision`, `incident_party`, `booking_review`. Gộp `document_link` vào `document` | Đều thừa hoặc trùng thông tin, xem mục "Thay đổi" trong `DB_SCHEMA_59_BANG.md` |
 | Bỏ vai trò `PICKUP_CONTACT` khỏi `booking_party` | Người liên hệ tại chỗ nằm ở `booking_address` |
 | `booking.status` còn 12 mốc thương mại | Trạng thái vận hành suy ra từ chặng, sự cố và giao nhận |
@@ -71,14 +71,26 @@ Kết luận: **cơ chế giao tiếp** (REST/JSON + JWT + refresh cookie) khôn
 | Bỏ qua quy tắc niêm phong xe trong đợt này. Giữ `sealed_at`, `disinfected_at` làm cột ghi nhận | Người dùng chốt: project môn học chưa cần. Việc bốc dỡ lại ở hub có thể mâu thuẫn với niêm phong theo TT 01/2026, nhưng chưa kiểm chứng |
 | Bỏ mọi view, logic nằm hoàn toàn trong code (22/11/2026). Lưu cột dẫn xuất cho tiền báo giá và `departure.booked_stall_count`; đã trả, còn nợ, vị trí ngựa, đủ giấy tính khi đọc | Người dùng chốt: view chứa logic thì khó test và trùng với policy. Chỉ lưu cột khi giá trị đã chốt hoặc có khóa bảo vệ. `CHECK (booked_stall_count <= stall_capacity)` giúp DB chặn bán quá chỗ |
 | Tiền cọc gồm toàn bộ phần thu hộ (bảo hiểm, lệ phí): `cọc = tỷ lệ × (tổng − thu hộ) + thu hộ` | Phí bảo hiểm phải nộp đủ cho hãng trước khi hợp đồng có hiệu lực. Tỷ lệ cọc chỉ áp lên cước dịch vụ |
-| Tài khoản và hồ sơ theo cách cũ: `app_user` (một vai trò) 1–0..1 `customer`/`staff`. `party` chỉ chứa đối tác (23/11/2026, **thay** quyết định gộp khách vào `party`) | Người dùng chốt. Vai trò khách chỉ lưu một nơi, FK chặn gán sai loại. Đã thực hiện ở `V202611231200`, xem `SUA_TAI_KHOAN_VA_HO_SO.md` |
+| Tiền cọc làm tròn **lên nghìn đồng**, không vượt tổng; tổng không đổi (23/11/2026) | Người dùng chốt. Sai số phần trăm dồn vào cọc, số dư = tổng − cọc |
+| Tài khoản và hồ sơ theo cách cũ: `app_user` (một vai trò) 1–0..1 `customer`/`staff`. `party` chỉ chứa đối tác (23/11/2026, **thay** quyết định gộp khách vào `party`) | Người dùng chốt. Vai trò khách chỉ lưu một nơi, FK chặn gán sai loại. Đã thực hiện ở `V202611231200`. Giới hạn đã chấp nhận: nhân viên muốn đặt đơn thì dùng tài khoản khách khác; mỗi tổ chức khách một tài khoản; chủ ngựa phải có tài khoản khách; tổ chức vừa là khách vừa là đối tác có hai hồ sơ |
 | Thiết kế tới mức màn hình và tác động, xem `MAN_HINH_VA_TAC_DONG.md`. Trách nhiệm chăm ngựa chuyển theo `handover` của từng con, hộ tống theo lượt xe (23/11/2026) | Đơn được ghép nên không gắn hộ tống với đơn. Mỗi thao tác phải có màn hình, bằng chứng và tác động |
 | Ngừng dịch vụ cho ăn tính tiền, giữ `VET_CHECK`; chăm sóc chuẩn nằm trong cước (23/11/2026) | Phí lưu chuồng đã gồm ăn uống; chỉ dẫn ăn uống là yêu cầu chăm sóc, không phải hàng bán |
 | Giữ tên `location` (23/11/2026) | Người dùng chốt. Chỉ chứa điểm cố định của mạng lưới |
 | Giữ vai trò `ESCORT` (nhân viên hộ tống), không đổi thành groom | Người dùng chốt. Tên đã dùng thống nhất trong lược đồ, thư mục `backoffice/features/escort` và code cũ |
 | Tên trong code (bảng, cột, enum, class, biến, endpoint) dùng tiếng Anh theo chuẩn đặt tên. Chữ hiển thị cho người dùng đi qua i18n (`vi`, `en`) | Người dùng chốt. Tài liệu viết tiếng Việt nhưng mọi định danh phải là tiếng Anh |
-| `MO_HINH_NGHIEP_VU_MOI.md` và `MO_HINH_NGHIEP_VU_MUC_1_2.md` chỉ là tài liệu tham khảo, không phải yêu cầu | Yêu cầu chi tiết lấy từ `DB_SCHEMA_59_BANG.md` và `NGHIEP_VU_THEO_59_BANG.md` |
+| `MO_HINH_NGHIEP_VU_MOI.md` chỉ là tài liệu tham khảo, không phải yêu cầu | Yêu cầu chi tiết lấy từ `DB_SCHEMA_59_BANG.md` và `NGHIEP_VU_THEO_59_BANG.md` |
 | Backend theo n-layer: Controller → Service → Repository, cộng Policy và Client | DTO có `from()`, `toEntity()`, `applyTo()`. Không dùng ModelMapper. Chi tiết: `AGENTS.md` |
+| Công ty không bán chỗ cách ly, chỉ chở ngựa đã đủ điều kiện; vẫn trọn gói vận chuyển và thủ tục (23/11/2026) | Người dùng chốt. Điều kiện thể hiện bằng giấy `QUARANTINE_CLEARANCE` nên bỏ `quarantine_days`. IRT **có** làm khâu cách ly, nên không nói điểm này giống IRT |
+| Đơn nhập làm ngược chiều đơn xuất: đại lý nước ngoài liên hệ cửa khẩu Việt Nam, giao ngựa cho công ty khi có giấy vận chuyển mẫu 14a (23/11/2026) | Thông tư 01/2026 Điều 11. Giả định: địa chỉ giao là nơi chủ ngựa cách ly. Ghé hub là đơn giản hóa, vì luật yêu cầu niêm phong xe về nơi cách ly. Chưa kiểm chứng Thông tư 22/2026 và việc đại lý nước ngoài đứng tên khai báo |
+| Quản lý xe chỉ gồm thuộc tính và trạng thái, không có giấy tờ xe (23/11/2026) | Người dùng chốt giữ cách cũ |
+| Dịch vụ theo IRT: chăm sóc nằm trong cước, khách chọn khoang và bảo hiểm, xét nghiệm do công ty lo, yêu cầu riêng báo giá riêng (23/11/2026) | IRT không bán gói chăm sóc. Dịch vụ khách mua không làm đổi việc của hộ tống, nên ghép nhiều khách vẫn đơn giản |
+| Ghép đơn: trục ghép theo `departure`; đón và giao hệ thống gợi ý, điều phối duyệt; giá từng khách không đổi; khoang rộng tính 2 chỗ; ngựa cùng đơn đi cùng xe trục (23/11/2026) | IRT Đức §7.4 giữ giá khi gom chung. Giấy chung của đơn chỉ có một bản gốc. Bản cũ tính khoang rộng 2 ngăn |
+| Mỗi tuyến chạy **một chuyến mỗi tuần**, 6 tuyến một chiều: HCM ⇄ Mộc Bài, HCM ⇄ Đà Nẵng, Đà Nẵng ⇄ Lao Bảo. Quyết định chạy 48 giờ trước chuyến, ngưỡng cảnh báo 30% chỗ đã cọc (23/11/2026) | Người dùng chốt. IRT chỉ chạy chuyến khi đủ ngựa để có lãi; con số 30% và 48 giờ tự thiết kế. Vẫn giữ một chặng trục mỗi đơn, nên Đà Nẵng → Campuchia và TP.HCM → Lào phải đi chuyến đột xuất |
+| Thanh toán theo bản `main`: cọc 30% trong 24 giờ; **70% sau khi nhận ngựa, trước khi xe rời nơi nhận**, chờ tối đa 30 phút (23/11/2026) | Người dùng chốt, biết rủi ro khách trả chậm làm các khách khác trên xe phải chờ. IRT thì trả đủ trước khi chở. `IN_OPERATION` bắt đầu khi xe rời nơi nhận, nên đơn không trả đủ vẫn chuyển được `CONFIRMED → CANCELLED` |
+| Nghỉ và cho ăn: tối đa 4 giờ một lần nghỉ ≥ 30 phút có nước và cỏ, bữa theo chỉ dẫn ở nơi nghỉ đêm và hub; thêm `water_intake`, `feed_intake` (23/11/2026, **thay** quyết định ghi ăn uống vào `note`) | EFSA: cho ăn uống cách nhau tối đa 4 giờ, mỗi lần 30 phút. USHJA: uống mỗi 4 giờ, nhiều cỏ, không ngũ cốc, không quá 12 giờ mỗi lần đi. Giờ lái và nghỉ đêm theo bản cũ |
+| Sự cố theo quy trình của nhóm; bất khả kháng do **công ty** chịu; không chia chi phí theo đầu ngựa (23/11/2026, **thay** quy định khách chịu bất khả kháng) | Người dùng chốt theo luồng sự cố của nhóm. IRT thì khách chịu. Khoản khách chịu luôn gắn với một con hoặc một đơn nên không phải chia |
+| Đã cọc mà giấy không kịp: xử lý theo nguyên nhân (khách, công ty, cơ quan) (23/11/2026) | Bản cũ mục 6, 8 và IRT Đức §5. Số lần đổi và thời gian giữ giá 30 ngày tự thiết kế |
+| Cửa khẩu gắn nước đối diện (`location.counterpart_country_code`) (23/11/2026) | Trước đó đơn Lào vẫn chọn được Mộc Bài |
 
 ## 5. Câu hỏi còn mở
 
@@ -95,14 +107,16 @@ Kết luận: **cơ chế giao tiếp** (REST/JSON + JWT + refresh cookie) khôn
 |---|---|---|
 | `docs/DB_SCHEMA_59_BANG.md` | **Đặc tả chuẩn để tạo DB**: 59 bảng, ràng buộc, thứ tự tạo, dữ liệu dẫn xuất, quy tắc ở service | Mới nhất |
 | `docs/KE_HOACH_TRIEN_KHAI.md` | Kế hoạch triển khai: đợt 0, luồng A (thương mại) và B (vận hành) chạy song song, chủ sở hữu bảng, hợp đồng gọi chéo, quy trình cho agent, bảng tiến độ | Mới nhất |
-| `docs/SUA_TAI_KHOAN_VA_HO_SO.md` | Việc giao agent: sửa nhóm tài khoản, hồ sơ và ràng buộc `handover` | Đã thực hiện (23/11/2026) |
 | `docs/BANG_DOI_TEN.md` | Tên cũ → tên mới | Code chưa đồng bộ |
 | `docs/NGHIEP_VU_THEO_59_BANG.md` | Nghiệp vụ chi tiết theo 59 bảng (10 giai đoạn, nhánh phụ, ví dụ, ai ghi bảng nào) và danh sách tận dụng từ project cũ | Mới nhất |
 | `docs/DANH_SACH_LOI_THIET_KE.md` | 50 lỗi thiết kế của project cũ, nhóm A–I | **Không còn trong thư mục** (22/11/2026) |
 | `AGENTS.md` (thư mục gốc) | File quy tắc duy nhất: cách làm việc, cấu trúc backend n-layer, DB, DTO, API, frontend, kiểm thử. Đã gộp `BACKEND_ARCHITECTURE_RULES.md` và `frontend/docs/AGENT_GUIDE.md` (hai file này đã xóa) | Mới nhất |
 | `docs/ERD_ENTITY_MERMAID.md`, `docs/ERD_ALL_IN_ONE.md`, `docs/ERD_ENTITY_BOXES.md` | ERD bản 64 bảng | **Không còn trong thư mục.** Nên sinh lại ERD từ DB sau khi chạy Flyway |
-| `docs/MO_HINH_NGHIEP_VU_MUC_1_2.md`, `docs/MO_HINH_NGHIEP_VU_MOI.md` | Kế hoạch thay đổi nghiệp vụ của người dùng | Tham khảo |
-| `docs/database/*` | ERD cũ (34 bảng) | Lỗi thời |
+| `docs/MO_HINH_NGHIEP_VU_MOI.md` | Kế hoạch thay đổi nghiệp vụ của người dùng, căn cứ pháp lý ba nước | Tham khảo, nhiều điểm đã thay |
+| `docs/MAN_HINH_VA_TAC_DONG.md` | Màn hình, thao tác, chặn, tác động | Mới nhất |
+| `docs/THONG_BAO_LUONG_B.md` | Thông báo của luồng A cho luồng B | Mới nhất |
+
+Đã xóa ngày 23/11/2026, còn trong lịch sử Git: `docs/database/` (ERD cũ 34 bảng), `SUA_TAI_KHOAN_VA_HO_SO.md`, `BAN_GIAO_TAI_KHOAN_VA_HO_SO.md`, `NGHIEM_THU_LUONG_A.md`, `admin-system-log.md`, `MO_HINH_NGHIEP_VU_MUC_1_2.md`, `backend/scripts/`.
 
 Khi có mâu thuẫn, **`DB_SCHEMA_59_BANG.md` là nguồn đúng**.
 
