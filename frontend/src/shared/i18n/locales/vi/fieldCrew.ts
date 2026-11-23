@@ -1,6 +1,48 @@
 // Ứng dụng hiện trường của tài xế và hộ tống
 export const fieldCrew = {
   myTrips: {
+    "run": {
+      "open": "Mở lượt xe",
+      "back": "Lượt xe của tôi",
+      "loadError": "Không tải được lượt xe",
+      "start": "Xuất phát",
+      "complete": "Kết thúc lượt",
+      "stops": "Điểm dừng",
+      "stopState": {
+        "waiting": "Chưa tới",
+        "here": "Đang ở đây",
+        "left": "Đã rời"
+      },
+      "arrive": "Tới nơi",
+      "depart": "Rời đi",
+      "handover": {
+        "PICKUP": "Nhận ngựa",
+        "DELIVERY": "Giao ngựa",
+        "HUB_IN": "Giao vào hub",
+        "HUB_OUT": "Nhận từ hub"
+      },
+      "handoverStatus": {
+        "PENDING": "Đang giao nhận",
+        "DONE": "Đã xong",
+        "TIMEOUT": "Hết giờ chờ",
+        "FAILED": "Không thành"
+      },
+      "chip": "Chip của {{name}}",
+      "scan": "Quét",
+      "matched": "Đúng chip",
+      "mismatched": "Sai chip",
+      "notScanned": "Chưa quét",
+      "completeHandover": "Hoàn tất giao nhận",
+      "done": {
+        "started": "Xe đã xuất phát",
+        "arrived": "Đã tới điểm dừng",
+        "departed": "Đã rời điểm dừng",
+        "opened": "Đã mở giao nhận",
+        "scanned": "Đã quét chip",
+        "handed": "Đã hoàn tất giao nhận",
+        "completed": "Đã kết thúc lượt xe"
+      }
+    },
     "title": "Lượt xe của tôi",
     "description": "Lượt xe được phân công. Xác nhận nhận việc để điều phối biết bạn đã sẵn sàng.",
     "loadError": "Không tải được lượt xe",

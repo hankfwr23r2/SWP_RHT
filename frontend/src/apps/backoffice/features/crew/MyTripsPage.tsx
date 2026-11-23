@@ -1,6 +1,7 @@
 // Lượt xe của tôi (tài xế, hộ tống): xem phân công và xác nhận nhận việc (docs/MAN_HINH_VA_TAC_DONG.md mục 3.10)
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router'
 import { dispatchApi, type MyCrewAssignment } from '@shared/api/dispatch'
 import { useLoad } from '@shared/hooks/useLoad'
 import { formatDateTime } from '@shared/lib/format'
@@ -50,6 +51,7 @@ export default function MyTripsPage() {
                 <p className={s.line}>{t('myTrips.journey', { from: assignment.startLocationName, to: assignment.endLocationName })}</p>
                 <p className={s.muted}>{t('myTrips.vehicle', { plate: assignment.licensePlate })}</p>
                 <p className={s.muted}>{t('myTrips.start', { time: assignment.plannedStartAt ? formatDateTime(new Date(assignment.plannedStartAt)) : '' })}</p>
+                <Link to={`/my-trips/${assignment.vehicleTripId}`}>{t('myTrips.run.open')}</Link>
                 {assignment.status === 'ACKNOWLEDGED'
                   ? <StatusBadge tone="success" label={t('myTrips.acknowledged')} />
                   : (
