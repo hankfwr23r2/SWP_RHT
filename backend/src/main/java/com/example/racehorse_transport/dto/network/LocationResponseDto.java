@@ -20,6 +20,7 @@ public class LocationResponseDto {
     private String name;
     private LocationType locationType;
     private String countryCode;
+    private String counterpartCountryCode;
     private String provinceCode;
     private String address;
     private BigDecimal latitude;
@@ -38,6 +39,7 @@ public class LocationResponseDto {
                 .name(location.getName())
                 .locationType(location.getLocationType())
                 .countryCode(location.getCountry().getCode())
+                .counterpartCountryCode(location.getCounterpartCountry() == null ? null : location.getCounterpartCountry().getCode())
                 .provinceCode(location.getProvince() == null ? null : location.getProvince().getCode())
                 .address(location.getAddress())
                 .latitude(location.getLatitude())

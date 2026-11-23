@@ -18,8 +18,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDate;
-
 // Xe. Sức chứa lấy từ cột số khoang, không đọc từ chuỗi.
 @Getter
 @Setter
@@ -49,9 +47,6 @@ public class Vehicle {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "home_hub_location_id", nullable = false)
     private Location homeHubLocation;
-
-    @Column(name = "registration_expiry_date")
-    private LocalDate registrationExpiryDate;
 
     // Xe đang chạy hay rảnh suy ra từ vehicle_trip, không lưu ở đây
     @Enumerated(EnumType.STRING)

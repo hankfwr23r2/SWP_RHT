@@ -67,7 +67,8 @@ public class DepartureSuggestionServiceImpl implements DepartureSuggestionServic
         // Tuyến phù hợp và khoảng cách từ cửa khẩu tới điểm ở nước ngoài (0 với tuyến nội địa) để xếp thứ tự
         Map<Long, Double> routeDistance = routes.findByStatusWithEndpoints(ActiveStatus.ACTIVE).stream()
                 .filter(route -> DepartureRoutePolicy.matches(route, query.getBookingType(),
-                        pickupHub == null ? null : pickupHub.getId(), deliveryHub == null ? null : deliveryHub.getId()))
+                        pickupHub == null ? null : pickupHub.getId(), deliveryHub == null ? null : deliveryHub.getId(),
+                        DepartureRoutePolicy.counterpartCountryCode(query.getBookingType(), pickup.getCountry().getCode(), delivery.getCountry().getCode())))
                 .collect(Collectors.toMap(Route::getId, route -> foreignLegKm(query, route)));
         if (routeDistance.isEmpty()) {
             return response.departures(List.of()).build();

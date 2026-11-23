@@ -22,7 +22,7 @@ public final class DepartureCapacityPolicy {
     public static Optional<String> reasonNotReservable(DepartureStatus status, Instant bookingCutoffAt, Instant now,
                                                        int stallCapacity, int bookedStallCount, int stalls) {
         if (stalls <= 0) {
-            return Optional.of("Số khoang cần đặt phải lớn hơn 0.");
+            return Optional.of("Số chỗ cần đặt phải lớn hơn 0.");
         }
         if (status != DepartureStatus.OPEN) {
             return Optional.of("Chuyến không còn nhận đặt chỗ.");
@@ -31,15 +31,15 @@ public final class DepartureCapacityPolicy {
             return Optional.of("Chuyến đã qua giờ chốt nhận đơn.");
         }
         if (bookedStallCount + stalls > stallCapacity) {
-            return Optional.of("Chuyến chỉ còn " + available(stallCapacity, bookedStallCount) + " khoang.");
+            return Optional.of("Chuyến chỉ còn " + available(stallCapacity, bookedStallCount) + " chỗ.");
         }
         return Optional.empty();
     }
 
-    // Số khoang đã đặt sau khi nhả. Nhả nhiều hơn số đã đặt là lỗi dữ liệu, không âm thầm làm tròn về 0.
+    // Số chỗ đã đặt sau khi nhả. Nhả nhiều hơn số đã đặt là lỗi dữ liệu, không âm thầm làm tròn về 0.
     public static int bookedAfterRelease(int bookedStallCount, int stalls) {
         if (stalls <= 0 || stalls > bookedStallCount) {
-            throw new IllegalStateException("Không nhả được " + stalls + " khoang khi chuyến mới đặt " + bookedStallCount + " khoang.");
+            throw new IllegalStateException("Không nhả được " + stalls + " chỗ khi chuyến mới đặt " + bookedStallCount + " chỗ.");
         }
         return bookedStallCount - stalls;
     }

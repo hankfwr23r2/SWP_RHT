@@ -419,7 +419,29 @@ Giá cũ giữ 30 ngày. Nguyên nhân và lý do ghi ở `booking_status_histor
 - Tối đa 10 giờ lái mỗi ngày, nghỉ đêm 10 giờ.
 - Xe chỉ rời trạm khi mọi con đã được ghi và đã nghỉ đủ. Rời sớm phải xác nhận kèm lý do.
 - Bỏ uống ở 2 trạm liền thì ghi `WATCH` và báo điều phối.
-- Ở hub, hộ tống nhận ngựa ở HUB_IN phụ trách tới HUB_OUT.
+- Ở hub, hộ tống nhận ngựa ở HUB_IN phụ trách tới **lần ký nhận kế tiếp** (SHIFT hoặc HUB_OUT).
+
+**Phân công khác phụ trách:**
+
+| | Phân công | Phụ trách |
+|---|---|---|
+| Câu hỏi | Ai dự kiến đi lượt xe này | Ai đang giữ con ngựa này |
+| Gắn với | Lượt xe (`crew_assignment`) | Từng con ngựa (`handover` DONE mới nhất) |
+| Đổi khi | Điều phối đổi kế hoạch | Người mới quét chip và ký nhận. Không sửa tay |
+
+1. Sổ sức khỏe theo con ngựa. Mỗi dòng `horse_health_log` ghi ai đo, lúc nào, ở đâu; qua nhiều hộ tống vẫn là một dòng thời gian.
+2. Không ai được buông ngựa khi chưa có người nhận: còn con chưa bàn giao thì không kết thúc được ca hay lượt xe.
+3. Nhận ngựa là nhận hồ sơ: người mới xem phiếu tóm tắt (chỉ số gần nhất, ăn uống, cảnh báo, chỉ dẫn) rồi mới ký.
+4. Xe có nhiều hộ tống thì người nào quét nhận con nào thì phụ trách con đó.
+
+Việc chăm sóc suy ra từ nơi ngựa đang ở, nên đổi người thì việc tự chuyển theo: vừa nhận thì khám; trên xe thì ghi ở mỗi điểm dừng; ở hub thì khám lúc tới và 2 lần mỗi ngày cùng các bữa theo chỉ dẫn; `WATCH` thì đo lại ở lần kế tiếp.
+
+| Tình huống | Xử lý |
+|---|---|
+| Đổi ca ở hub | `handover` SHIFT gắn lưu trú |
+| Hộ tống ốm hoặc thay giữa đường | Điều phối cử người; người thay ký SHIFT tại điểm dừng. Người cũ không ký được thì quản lý xác nhận thay kèm lý do |
+| Đổi xe do sự cố | Hộ tống xe mới ký SHIFT tại chỗ |
+| Hub vệ tinh không có nhân viên | Tổ xe trục giữ tới khi giao; gửi qua đêm thì ký sang đối tác `STABLE` |
 
 #### 7.3 Chặng trục chính
 

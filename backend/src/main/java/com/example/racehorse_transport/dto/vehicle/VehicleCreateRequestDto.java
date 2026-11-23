@@ -8,7 +8,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
-import java.time.LocalDate;
 import java.util.Locale;
 
 public record VehicleCreateRequestDto(
@@ -16,8 +15,7 @@ public record VehicleCreateRequestDto(
         @NotNull @Positive Long vehicleClassId,
         @NotNull @PositiveOrZero Integer standardStallCount,
         @NotNull @PositiveOrZero Integer wideStallCount,
-        @NotNull @Positive Long homeHubLocationId,
-        LocalDate registrationExpiryDate) {
+        @NotNull @Positive Long homeHubLocationId) {
 
     public String normalizedLicensePlate() {
         return licensePlate.strip().toUpperCase(Locale.ROOT);
@@ -30,7 +28,6 @@ public record VehicleCreateRequestDto(
         vehicle.setStandardStallCount(standardStallCount);
         vehicle.setWideStallCount(wideStallCount);
         vehicle.setHomeHubLocation(homeHubLocation);
-        vehicle.setRegistrationExpiryDate(registrationExpiryDate);
         return vehicle;
     }
 }

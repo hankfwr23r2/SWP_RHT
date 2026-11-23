@@ -58,7 +58,7 @@ class PricingDtoTest {
                 BigDecimal.TEN, BigDecimal.ONE, BigDecimal.TEN, false);
         PricingInput input = new PricingInput("VND", LocalDate.of(2026, 11, 23), BookingType.LOCAL,
                 null, null, List.of(new RoadLeg(ServiceLayer.DIRECT, 2L, BigDecimal.TEN)),
-                Map.of("STANDARD", 1), 1, 0, List.of());
+                Map.of("STANDARD", 1), 1, List.of());
         PricingPreviewResponseDto response = PricingPreviewResponseDto.from(input,
                 new PricingResult(1L, "VND", BigDecimal.ONE, List.of(line), BigDecimal.TEN));
         assertThat(response.lines()).containsExactly(PriceLineResponseDto.from(line));

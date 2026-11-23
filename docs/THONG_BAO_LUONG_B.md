@@ -20,6 +20,7 @@
 | Đơn nhập | Đại lý giao ngựa ở cửa khẩu: `handover` AGENT, `from_party_id` = đại lý. Thiếu `IMPORT_TRANSPORT_CERT` thì không nhận | B2 |
 | Ngựa tới hub | Trước giờ chạy 3 giờ. Trễ thì chờ hoặc dời chuyến | B1 |
 | Sự cố | Theo quy trình nhóm. `FORCE_MAJEURE` do công ty chịu. Không chia chi phí theo đầu ngựa | B4 |
+| Theo dõi sức khỏe | Phụ trách theo `handover` DONE mới nhất, không gán tay. Thêm `SHIFT` vào `handover_type` (migration do B, **cần B đồng ý**). Chặn kết thúc ca, lượt xe khi còn ngựa chưa bàn giao. Màn hình 4.8–4.11, quy tắc #37, #38 | B2, B3 |
 
 ## 23/11/2026. Màn hình và tác động (người dùng đã chốt)
 
@@ -58,3 +59,5 @@ Thấy chỗ nào không làm được thì báo lại, không tự đổi.
 |---|---|
 | B1 | Quy tắc #26: gán đại lý cho chặng phải kiểm `party_role` còn hiệu lực vào ngày chạy. Hiện `PUT /parties/{id}/roles/{roleType}` cho rút ngắn hiệu lực cả khi đã có chặng dùng đối tác đó: kiểm lại lúc điều độ, và bàn với luồng A nếu cần chặn ở API |
 | B2 | Quy tắc #28: `handover` loại `AGENT` phải có ít nhất một bên là đối tác |
+
+- A6b PR1 thêm hàm đọc `VehicleTripRepository.existsByVehicle_IdAndStatusNotIn`; migration V202611231900 bỏ `country_rule.quarantine_days`, `vehicle.registration_expiry_date`, thêm `location.counterpart_country_code`, `booking.pickup_method`, `delivery_method` và cập nhật danh mục giấy, dịch vụ, tham số.

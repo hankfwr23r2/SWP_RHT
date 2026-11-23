@@ -4,6 +4,7 @@ import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.dto.vehicle.VehicleClassResponseDto;
 import com.example.racehorse_transport.dto.vehicle.VehicleCreateRequestDto;
 import com.example.racehorse_transport.dto.vehicle.VehicleResponseDto;
+import com.example.racehorse_transport.dto.vehicle.VehicleStatusChangeRequestDto;
 import com.example.racehorse_transport.dto.vehicle.VehicleUpdateRequestDto;
 import com.example.racehorse_transport.service.VehicleService;
 import jakarta.validation.Valid;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -50,5 +52,23 @@ public class VehicleController {
     @PutMapping("/vehicles/{id}")
     public ApiResponseDto<VehicleResponseDto> updateVehicle(@PathVariable Long id, @Valid @RequestBody VehicleUpdateRequestDto request) {
         return ApiResponseDto.success(vehicleService.updateVehicle(id, request), "Đã cập nhật xe");
+    }
+
+    @PostMapping("/vehicles/{id}/start-maintenance")
+    public ApiResponseDto<VehicleResponseDto> startMaintenance(@PathVariable Long id, Authentication authentication,
+                                                       @Valid @RequestBody VehicleStatusChangeRequestDto request) {
+        return ApiResponseDto.success(vehicleService.startMaintenance(id, authentication.getName(), request), "Đã cập nhật trạng thái xe");
+    }
+
+    @PostMapping("/vehicles/{id}/reactivate")
+    public ApiResponseDto<VehicleResponseDto> reactivate(@PathVariable Long id, Authentication authentication,
+                                                       @Valid @RequestBody VehicleStatusChangeRequestDto request) {
+        return ApiResponseDto.success(vehicleService.reactivate(id, authentication.getName(), request), "Đã cập nhật trạng thái xe");
+    }
+
+    @PostMapping("/vehicles/{id}/retire")
+    public ApiResponseDto<VehicleResponseDto> retire(@PathVariable Long id, Authentication authentication,
+                                                       @Valid @RequestBody VehicleStatusChangeRequestDto request) {
+        return ApiResponseDto.success(vehicleService.retire(id, authentication.getName(), request), "Đã cập nhật trạng thái xe");
     }
 }

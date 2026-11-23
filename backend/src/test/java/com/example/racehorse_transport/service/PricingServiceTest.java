@@ -126,7 +126,7 @@ class PricingServiceTest {
         var preview = service.preview(request(), "owner");
         var result = service.calculate(new PricingInput("VND", LocalDate.of(2026, 11, 23), BookingType.LOCAL,
                 null, null, List.of(new RoadLeg(ServiceLayer.DIRECT, 11L, new BigDecimal("35.00"))),
-                Map.of("STANDARD", 1), 1, 0, List.of()));
+                Map.of("STANDARD", 1), 1, List.of()));
         assertThat(preview.lines()).extracting(line -> line.priceItemId()).containsExactly(22L, 23L);
         assertThat(preview.legs().getFirst().vehicleClassId()).isEqualTo(11L);
         assertThat(preview.lines()).isEqualTo(result.lines().stream()
@@ -189,14 +189,14 @@ class PricingServiceTest {
         secondProvince.setCode("VN-80");
         delivery.setProvince(secondProvince);
         servedBy("VN-80", 4L);
-        var rule = new CountryRuleResponseDto(1L, "VN", RuleDirection.INTERPROVINCE, 0, 0, 4,
+        var rule = new CountryRuleResponseDto(1L, "VN", RuleDirection.INTERPROVINCE, 0, 4,
                 LocalDate.of(2026, 1, 1), null);
         when(regulations.resolve(BookingType.INTERPROVINCE, "VN", "VN", LocalDate.of(2026, 11, 23), null))
                 .thenReturn(new RegulationPreviewResponseDto(rule, 99, List.of(), false, null, null));
 
         var loaded = data.loadPreview(request(), "owner");
         assertThat(loaded.input().bookingType()).isEqualTo(BookingType.INTERPROVINCE);
-        assertThat(loaded.input().quarantineDays()).isEqualTo(4);
+        verify(regulations).resolve(BookingType.INTERPROVINCE, "VN", "VN", LocalDate.of(2026, 11, 23), null);
         assertThat(loaded.segments()).extracting(PricingRouteService.RoadSegment::layer)
                 .containsExactly(ServiceLayer.DIRECT);
         verifyNoInteractions(departures);

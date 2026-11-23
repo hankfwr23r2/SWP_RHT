@@ -112,11 +112,12 @@ CREATE EXTENSION IF NOT EXISTS btree_gist;   -- cho EXCLUDE chống trùng thờ
 | 17 | `route.origin_hub_id` đổi thành `origin_location_id`, cho phép điểm đầu là cửa khẩu (migration `V202611231100`) | Đơn IMPORT đi tuyến định kỳ từ cửa khẩu về hub, đối xứng với chiều xuất |
 | 18 | Bỏ `user_role`, thêm `app_user.role_code` và `customer`; `party_address` thành `customer_address`; `party` chỉ chứa đối tác; sửa CHECK của `handover` (migration `V202611231200`) | Mỗi tài khoản một vai trò, hồ sơ khách và nhân viên đối xứng, FK chặn gán sai loại. Lý do ở `NGU_CANH_THIET_KE_LAI.md` mục 4 |
 | 16 | Bỏ mọi view. Thêm cột dẫn xuất `quotation.total_amount`, `pass_through_amount`, `deposit_amount` và `departure.booked_stall_count` | Logic nghiệp vụ nằm hoàn toàn trong code. Chỉ lưu cột khi giá trị đã chốt (báo giá) hoặc có khóa bảo vệ (khoang). Đã trả và còn nợ tính trong code vì đổi liên tục |
-| 19 | Bỏ `country_rule.quarantine_days`, thay bằng loại giấy `QUARANTINE_CLEARANCE` theo từng con (**chờ migration**) | Công ty không bán chỗ cách ly, chỉ chở ngựa đủ điều kiện. Điều kiện thể hiện bằng giấy |
-| 20 | Bỏ `vehicle.registration_expiry_date` (**chờ migration**) | Quản lý xe chỉ gồm thuộc tính và trạng thái, không quản lý giấy tờ xe |
-| 21 | Thêm `location.counterpart_country_code`, `booking.special_request`, `horse_health_log.water_intake`, `feed_intake` (**chờ migration**) | Cửa khẩu phải khớp nước đối tác; khách ghi yêu cầu riêng; theo dõi ăn uống từng con |
+| 19 | Bỏ `country_rule.quarantine_days`, thay bằng loại giấy `QUARANTINE_CLEARANCE` theo từng con | Công ty không bán chỗ cách ly, chỉ chở ngựa đủ điều kiện. Điều kiện thể hiện bằng giấy |
+| 20 | Bỏ `vehicle.registration_expiry_date` | Quản lý xe chỉ gồm thuộc tính và trạng thái, không quản lý giấy tờ xe |
+| 21 | Thêm `location.counterpart_country_code`, `booking.pickup_method`, `delivery_method`, `horse_health_log.water_intake`, `feed_intake` (**chờ migration** cho hai cột của bảng `horse_health_log`) | Cửa khẩu phải khớp nước đối tác; khách chọn công ty chở hoặc tự chở tới hub; theo dõi ăn uống từng con |
 | 22 | Khoang rộng chiếm **2 chỗ** khi tính sức chứa, không đổi cột | Xe dùng vách ngăn di động. Trước đó mỗi ngựa tính 1 chỗ nên bán quá được khoang rộng |
 | 23 | Ngừng dùng các giá trị `QUARANTINE`, `QUARANTINE_FARM` và cột `quarantine_result`; chưa xóa khỏi DB | Xóa khi luồng B đồng ý |
+| 24 | Thêm `SHIFT` vào `handover.handover_type` (**chờ migration**, luồng B làm) | Đổi người phụ trách ngựa khi ngựa không đổi chỗ: đổi ca ở hub, thay hộ tống giữa đường, đổi xe do sự cố |
 
 Các dòng ghi **chờ migration** là lược đồ đích đã chốt ngày 23/11/2026. Migration và entity làm ở task A6b (`KE_HOACH_TRIEN_KHAI.md`), trước đó DB vẫn theo bản cũ.
 
@@ -207,12 +208,12 @@ Gồm hub, trạm nghỉ, cửa khẩu, chuồng và trường đua cố định
 | `opening_time` | `time` | có | | Giờ mở cửa |
 | `closing_time` | `time` | có | | Giờ đóng cửa |
 | `contact_phone` | `varchar(20)` | có | | |
-| `counterpart_country_code` | `char(2)` | có | FK → country | Nước ở phía bên kia cửa khẩu, ví dụ `GATE-MOCBAI` là `KH`, `GATE-LAOBAO` là `LA`. **Chờ migration** |
+| `counterpart_country_code` | `char(2)` | có | FK → country | Nước ở phía bên kia cửa khẩu, ví dụ `GATE-MOCBAI` là `KH`, `GATE-LAOBAO` là `LA` |
 | `status` | `varchar(30)` | | CK `ACTIVE, INACTIVE` | |
 
 Ràng buộc bảng:
 - `CHECK ((latitude IS NULL) = (longitude IS NULL))`
-- `CHECK ((location_type = 'BORDER_GATE') = (counterpart_country_code IS NOT NULL))` (**chờ migration**)
+- `CHECK (counterpart_country_code IS NULL OR location_type = 'BORDER_GATE')`. Khi tạo hoặc cập nhật cửa khẩu, service yêu cầu mã nước đối diện khác `country_code`.
 
 Index: `country_code`, `province_code`, `location_type`, `counterpart_country_code`.
 
@@ -624,7 +625,7 @@ EXCLUDE USING gist (country_code WITH =, direction WITH =,
 
 Giấy cấp **cho từng con ngựa** có `owner_type = HORSE` hoặc `BOOKING_HORSE`. Giấy cấp **cho cả đơn** có `owner_type = BOOKING`.
 
-Loại giấy thêm ngày 23/11/2026 (**chờ migration**), cùng `owner_type = BOOKING_HORSE`:
+Loại giấy thêm ngày 23/11/2026, cùng `owner_type = BOOKING_HORSE`:
 - `QUARANTINE_CLEARANCE`: xác nhận ngựa đạt điều kiện cách ly trước khi vận chuyển. Dùng cho EXPORT, `submitter_type = COMPANY` (chuyên viên tải bản do cơ quan thú y hoặc chủ ngựa cung cấp);
 - `ORIGIN_QUARANTINE_CERT`: giấy kiểm dịch của nước xuất, dùng cho IMPORT, `submitter_type = AGENT`;
 - `IMPORT_APPROVAL`: văn bản đồng ý và hướng dẫn kiểm dịch, dùng cho IMPORT;
@@ -660,7 +661,8 @@ Index: `document_type_id`, `gate_location_id`.
 | `booking_type` | `varchar(30)` | | CK `LOCAL, INTERPROVINCE, EXPORT, IMPORT` | |
 | `departure_id` | `bigint` | có | FK → departure | Chuyến trục chính. NULL khi chưa gán chuyến, hoặc khi đơn chạy thẳng (hub đón trùng hub giao). Mỗi đơn có tối đa một chặng trục |
 | `requested_pickup_date` | `date` | | | Ngày khách muốn đón |
-| `special_request` | `text` | có | | Yêu cầu riêng của khách (phụ kiện, người đi cùng…). **Chờ migration** |
+| `pickup_method` | `varchar(30)` | | default `COMPANY`, CK `COMPANY, SELF` | Đầu đón: công ty tới đón, hoặc khách tự chở ngựa tới hub |
+| `delivery_method` | `varchar(30)` | | default `COMPANY`, CK `COMPANY, SELF` | Đầu giao: công ty giao tận nơi, hoặc người nhận tới hub. `SELF` chỉ dùng cho đầu trong nước của đơn đi trục (kiểm ở service) |
 | `waybill_number` | `varchar(30)` | có | UK | Số vận đơn, cấp sau khi khách đặt cọc |
 | `emergency_spending_limit` | `numeric(15,2)` | có | CK `>= 0` | Hạn mức chi khẩn cấp không cần hỏi khách |
 | `original_booking_id` | `bigint` | có | FK → booking | Đơn này là chuyến hồi hương của đơn nào |
@@ -946,7 +948,7 @@ Index: `(booking_horse_id, recorded_at)`, `trip_stop_id`, `horse_stay_id`, `vehi
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
 | `id` | `bigint` | | PK, identity | |
-| `handover_type` | `varchar(30)` | | CK `PICKUP, HUB_IN, HUB_OUT, STAY_IN, STAY_OUT, AGENT, DELIVERY, RETURN` | |
+| `handover_type` | `varchar(30)` | | CK `PICKUP, HUB_IN, HUB_OUT, STAY_IN, STAY_OUT, AGENT, DELIVERY, RETURN, SHIFT` | `SHIFT` chờ migration |
 | `trip_stop_id` | `bigint` | có | FK → trip_stop | Giao nhận tại điểm dừng của xe |
 | `horse_stay_id` | `bigint` | có | FK → horse_stay | Giao nhận khi nhập hoặc xuất trại, chuồng |
 | `from_party_id` | `bigint` | có | FK → party | Đối tác giao. NULL = công ty hoặc bên trong đơn |
@@ -971,7 +973,7 @@ Bên giao và bên nhận suy ra từ `handover_type`:
 | `handover_type` | Bên giao | Bên nhận |
 |---|---|---|
 | `PICKUP` | `booking_party` SHIPPER | Công ty |
-| `HUB_IN`, `HUB_OUT` | Công ty | Công ty |
+| `HUB_IN`, `HUB_OUT`, `SHIFT` | Công ty | Công ty |
 | `STAY_IN`, `STAY_OUT` | Công ty hoặc đối tác (`from_party_id`) | Công ty hoặc đối tác (`to_party_id`) |
 | `AGENT` | Công ty hoặc đối tác (`from_party_id`) | Công ty hoặc đối tác (`to_party_id`); ít nhất một bên là đối tác (kiểm ở service) |
 | `DELIVERY` | Công ty, hoặc đại lý (`from_party_id`) | `booking_party` CONSIGNEE |
@@ -1333,7 +1335,7 @@ Chỉ chứa tham số **không phải giá tiền**, ví dụ thời gian chờ
 | `config_value` | `varchar(500)` | | | |
 | `min_value` | `int` | có | CHECK cùng có giá trị hoặc cùng NULL với `max_value` | Cận dưới, tính cả giá trị cận |
 | `max_value` | `int` | có | CHECK `min_value <= max_value` khi có giới hạn | Cận trên, tính cả giá trị cận |
-| `unit` | `varchar(30)` | có | | `MINUTE`, `HOUR`, `COUNT` |
+| `unit` | `varchar(30)` | có | | `MINUTE`, `HOUR`, `DAY`, `COUNT` |
 | `config_group` | `varchar(50)` | | | |
 | `description` | `text` | có | | |
 | `updated_by` | `bigint` | có | FK → staff(user_id) | |
@@ -1347,11 +1349,11 @@ Backend kiểm tra giới hạn khi cập nhật giá trị. Nếu hai cận đ�
 | `OTP_EXPIRY_MINUTES` | 1 | 30 |
 | `OTP_MAX_ATTEMPTS` | 1 | 10 |
 | `QUOTATION_VALID_HOURS` | 1 | 720 |
-| `DEPARTURE_DECISION_HOURS` (chờ migration) | 1 | 168 |
-| `DEPARTURE_MIN_FILL_PERCENT` (chờ migration) | 1 | 100 |
-| `BALANCE_WAIT_MINUTES` (chờ migration) | 5 | 240 |
+| `DEPARTURE_DECISION_HOURS` | 1 | 168 |
+| `DEPARTURE_MIN_FILL_PERCENT` | 1 | 100 |
+| `BALANCE_WAIT_MINUTES` | 5 | 240 |
 
-Bỏ `BALANCE_DUE_DAYS_BEFORE_PICKUP` (chờ migration): số dư không còn trả trước ngày đón.
+Bỏ `BALANCE_DUE_DAYS_BEFORE_PICKUP`: số dư không còn trả trước ngày đón.
 
 Giá trị khởi đầu của các tham số chốt ngày 23/11/2026, thêm bằng migration ở A6b:
 
@@ -1481,3 +1483,5 @@ Các quy tắc dưới đây cần so dữ liệu ở nhiều bảng nên CHECK 
 | 34 | Xe chỉ rời trạm nghỉ khi mọi ngựa trên xe có `horse_health_log` ở điểm đó (gồm `water_intake`, `feed_intake`) và đã nghỉ đủ. Rời sớm phải xác nhận kèm lý do | trip_stop, horse_health_log |
 | 35 | Đơn IMPORT: hoàn tất `handover` AGENT ở cửa khẩu chỉ khi đủ giấy bắt buộc, gồm `IMPORT_TRANSPORT_CERT` | handover, document |
 | 36 | Xe không chuyển sang MAINTENANCE, RETIRED khi đang chạy hoặc còn lượt chưa hoàn thành. RETIRED không quay lại. Không gán xe khác ACTIVE vào lượt mới | vehicle, vehicle_trip |
+| 37 | Người phụ trách một con ngựa là `handled_by` của `handover` DONE mới nhất mà công ty là bên nhận. Không sửa tay. `crew_assignment` chỉ là kế hoạch | handover, crew_assignment |
+| 38 | Hộ tống không kết thúc ca hoặc lượt xe khi còn phụ trách ngựa chưa bàn giao. Người ký nhận phải đang trong ca, có mặt ở nơi đó, và đã xem phiếu tóm tắt của từng con | handover, vehicle_trip |

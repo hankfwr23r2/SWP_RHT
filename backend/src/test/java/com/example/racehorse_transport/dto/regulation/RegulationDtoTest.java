@@ -18,16 +18,16 @@ class RegulationDtoTest {
         Country country = new Country();
         country.setCode("KH");
         LocalDate start = LocalDate.of(2026, 1, 1);
-        var rule = new CountryRuleCreateRequestDto("KH", RuleDirection.EXPORT, 14, 7, 7, start, null)
+        var rule = new CountryRuleCreateRequestDto("KH", RuleDirection.EXPORT, 14, 7, start, null)
                 .toEntity(country);
         assertThat(rule.getId()).isNull();
         assertThat(CountryRuleResponseDto.from(rule))
-                .isEqualTo(new CountryRuleResponseDto(null, "KH", RuleDirection.EXPORT, 14, 7, 7, start, null));
+                .isEqualTo(new CountryRuleResponseDto(null, "KH", RuleDirection.EXPORT, 14, 7, start, null));
 
         rule.setId(1L);
-        new CountryRuleUpdateRequestDto("KH", RuleDirection.IMPORT, 30, 7, 30, start, start).applyTo(rule, country);
+        new CountryRuleUpdateRequestDto("KH", RuleDirection.IMPORT, 30, 7, start, start).applyTo(rule, country);
         assertThat(CountryRuleResponseDto.fromList(List.of(rule)))
-                .containsExactly(new CountryRuleResponseDto(1L, "KH", RuleDirection.IMPORT, 30, 7, 30, start, start));
+                .containsExactly(new CountryRuleResponseDto(1L, "KH", RuleDirection.IMPORT, 30, 7, start, start));
     }
 
     @Test
@@ -47,7 +47,7 @@ class RegulationDtoTest {
     void mapsRequirementAndPreservesParentOnUpdate() {
         Country country = new Country();
         country.setCode("KH");
-        var rule = new CountryRuleCreateRequestDto("KH", RuleDirection.EXPORT, 0, 0, 0,
+        var rule = new CountryRuleCreateRequestDto("KH", RuleDirection.EXPORT, 0, 0,
                 LocalDate.of(2026, 1, 1), null).toEntity(country);
         rule.setId(1L);
         var type = new DocumentTypeCreateRequestDto("CERT", "Certificate", DocumentSubject.HORSE).toEntity();

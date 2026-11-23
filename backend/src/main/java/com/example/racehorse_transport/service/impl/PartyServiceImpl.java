@@ -76,6 +76,7 @@ public class PartyServiceImpl implements PartyService {
     public PartyRoleResponseDto addRole(Long partyId, PartyRoleCreateRequestDto request) {
         PartyRolePolicy.requireValidPeriod(request.validFrom(), request.validTo());
         Party party = lockParty(partyId);
+        PartyRolePolicy.requireAssignableRole(request.roleType());
         PartyRoleId roleId = new PartyRoleId(partyId, request.roleType());
         if (roles.existsById(roleId)) {
             throw new PartyRuleException.DuplicateRoleException();

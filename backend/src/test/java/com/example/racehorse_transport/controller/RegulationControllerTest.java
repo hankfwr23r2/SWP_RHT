@@ -58,7 +58,7 @@ class RegulationControllerTest {
         mvc.perform(post("/country-rules").header(HttpHeaders.AUTHORIZATION, staffToken("ADMIN"))
                         .contentType(MediaType.APPLICATION_JSON).content("""
                                 {"countryCode":"KH","direction":"EXPORT","permitLeadDays":14,
-                                 "certificateLeadDays":7,"quarantineDays":7,"validFrom":"2026-01-01"}
+                                 "certificateLeadDays":7,"validFrom":"2026-01-01"}
                                 """))
                 .andExpect(status().isConflict()).andExpect(jsonPath("$.data.validFrom").isString());
     }
@@ -77,7 +77,7 @@ class RegulationControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.rule.countryCode").value("KH"))
-                .andExpect(jsonPath("$.data.leadDays").value(28))
+                .andExpect(jsonPath("$.data.leadDays").value(21))
                 .andExpect(jsonPath("$.data.requirements[0].ownerType").isString());
     }
 

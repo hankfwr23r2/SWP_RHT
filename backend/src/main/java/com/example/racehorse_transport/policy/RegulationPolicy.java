@@ -52,7 +52,7 @@ public final class RegulationPolicy {
     }
 
     public static long leadDays(CountryRule rule) {
-        return (long) rule.getPermitLeadDays() + rule.getCertificateLeadDays() + rule.getQuarantineDays();
+        return (long) rule.getPermitLeadDays() + rule.getCertificateLeadDays();
     }
 
     public static boolean feasible(long leadDays, Instant now, Instant bookingCutoffAt) {

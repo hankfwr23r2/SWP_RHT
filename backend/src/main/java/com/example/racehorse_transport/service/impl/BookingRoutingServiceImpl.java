@@ -69,9 +69,11 @@ public class BookingRoutingServiceImpl implements BookingRoutingService {
         BookingHubs hubs = new BookingHubs(hubOf(pickup.getProvince()), hubOf(delivery.getProvince()));
         BookingSubmissionPolicy.validateDepartureSelection(
                 HubResolutionPolicy.routingOf(booking.getBookingType(), hubs.pickup(), hubs.delivery()), replacementId);
-        BookingSubmissionPolicy.validateRoute(replacement.getRoute(), booking.getBookingType(), hubs.pickup(), hubs.delivery());
+        Route route = routeForSubmission(replacementId);
+        BookingSubmissionPolicy.validateRoute(route, booking.getBookingType(), hubs.pickup(), hubs.delivery(),
+                DepartureRoutePolicy.counterpartCountryCode(booking.getBookingType(), pickup.getCountry().getCode(), delivery.getCountry().getCode()));
         BookingSubmissionPolicy.validatePickupDate(booking.getRequestedPickupDate(), replacement.getDepartureDate());
-        Long gate = DepartureRoutePolicy.gateId(replacement.getRoute(), booking.getBookingType());
+        Long gate = DepartureRoutePolicy.gateId(route, booking.getBookingType());
         long leadDays = regulations.resolve(booking.getBookingType(), pickup.getCountry().getCode(),
                 delivery.getCountry().getCode(), booking.getRequestedPickupDate(), gate).leadDays();
         if (!RegulationPolicy.feasible(leadDays, clock.instant(), replacement.getBookingCutoffAt())) {
@@ -113,9 +115,9 @@ public class BookingRoutingServiceImpl implements BookingRoutingService {
                 HubResolutionPolicy.routingOf(type, pickupHub, deliveryHub), request.departureId());
 
         if (request.departureId() != null) {
-            Route route = routes.findRouteForSubmission(request.departureId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến."));
-            BookingSubmissionPolicy.validateRoute(route, type, pickupHub, deliveryHub);
+            Route route = routeForSubmission(request.departureId());
+            BookingSubmissionPolicy.validateRoute(route, type, pickupHub, deliveryHub,
+                    DepartureRoutePolicy.counterpartCountryCode(type, pickup.countryCode(), delivery.countryCode()));
         }
         return new SubmissionRouting(pickup, delivery, pickupProvince, deliveryProvince, pickupHub, deliveryHub);
     }
@@ -126,9 +128,15 @@ public class BookingRoutingServiceImpl implements BookingRoutingService {
         // Khóa chuyến sau ngựa và trước khi INSERT booking lấy khóa FK của chuyến.
         Departure departure = departures.findForUpdate(request.departureId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến."));
-        BookingSubmissionPolicy.validateRoute(departure.getRoute(), request.bookingType(), routing.pickupHub(), routing.deliveryHub());
+        BookingSubmissionPolicy.validateRoute(departure.getRoute(), request.bookingType(), routing.pickupHub(), routing.deliveryHub(),
+                DepartureRoutePolicy.counterpartCountryCode(request.bookingType(), routing.pickup().countryCode(), routing.delivery().countryCode()));
         BookingSubmissionPolicy.validatePickupDate(request.requestedPickupDate(), departure.getDepartureDate());
         return departure;
+    }
+
+    private Route routeForSubmission(Long departureId) {
+        return routes.findRouteForSubmission(departureId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến."));
     }
 
     private static AddressInput addressOf(BookingCreateRequestDto request, AddressRole type) {

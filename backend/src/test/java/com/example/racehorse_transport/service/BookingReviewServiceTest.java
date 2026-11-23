@@ -37,6 +37,7 @@ class BookingReviewServiceTest {
     private static final MockMultipartFile FILE = new MockMultipartFile("file", new byte[] {1});
 
     private final Booking booking = new Booking();
+    private final DepartureService departures = mock(DepartureService.class);
     private final BookingHorse horse = new BookingHorse();
     private final HorseInsurance cover = new HorseInsurance();
     private final Staff specialist = new Staff();
@@ -77,6 +78,9 @@ class BookingReviewServiceTest {
         horse.setId(HORSE_ID);
         horse.setBooking(booking);
         horse.setStatus(BookingHorseStatus.ACTIVE);
+        StallType wide = new StallType();
+        wide.setCode("WIDE");
+        horse.setStallType(wide);
         Horse animal = new Horse();
         animal.setName("Sao Mai");
         horse.setHorse(animal);
@@ -109,7 +113,7 @@ class BookingReviewServiceTest {
             return null;
         }).when(statuses).transition(BOOKING_ID, QUOTING, null, STAFF_ID);
         review = new BookingReviewServiceImpl(bookings, users, horses, insurance, statuses, routing,
-                mock(DepartureService.class), completeness, notifications, mock(BookingStatusHistoryRepository.class));
+                departures, completeness, notifications, mock(BookingStatusHistoryRepository.class));
         resolve(false);
     }
 
@@ -186,7 +190,13 @@ class BookingReviewServiceTest {
         cover.setValidTo(PICKUP.plusDays(1));
         Departure replacement = departure(11L, PICKUP.plusDays(5));
         when(routing.lockReplacement(booking, 11L)).thenReturn(replacement);
+        BookingHorse removed = new BookingHorse();
+        removed.setStatus(BookingHorseStatus.EXCLUDED);
+        removed.setStallType(horse.getStallType());
+        when(horses.findByBooking_Id(BOOKING_ID)).thenReturn(List.of(horse, removed));
         review.changeDeparture(BOOKING_ID, 11L);
+        verify(departures).reserve(11L, 2);
+        verify(departures).release(10L, 2);
         assertConflict(() -> review.startQuoting(BOOKING_ID, "specialist"), "Sao Mai");
 
         insurance.reopen(BOOKING_ID, INSURANCE_ID, "specialist", "  Đổi chuyến  ");
@@ -226,6 +236,9 @@ class BookingReviewServiceTest {
         BookingHorse second = new BookingHorse();
         second.setId(6L);
         second.setStatus(BookingHorseStatus.ACTIVE);
+        StallType wide = new StallType();
+        wide.setCode("WIDE");
+        horse.setStallType(wide);
         Horse animal = new Horse();
         animal.setName("Sao Hôm");
         second.setHorse(animal);

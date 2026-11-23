@@ -98,6 +98,23 @@ class BookingSubmissionPostgresTest {
     }
 
     @Test
+    void rejectsNineWideHorsesOnDepartureWithNineSeats() {
+        String owner = customer();
+        LocalDate date = pickupDate();
+        var departure = data.departure("HCM-DN", date, 9);
+        List<HorseInput> wideHorses = java.util.stream.IntStream.range(0, 9)
+                .mapToObj(index -> new HorseInput(horse(owner), "WIDE", null, null, false, List.of(),
+                        new InsuranceDeclarationRequestDto(InsuranceCoverageOption.NONE, null, null, null, null, true)))
+                .toList();
+        var request = request(departure.getId(), date, wideHorses);
+
+        assertThatThrownBy(() -> bookings.submit(owner, "192.0.2.5", request))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("9 chỗ");
+        assertThat(reserved(departure.getId())).isZero();
+        assertThat(queries.list(owner)).isEmpty();
+    }
+
+    @Test
     void fullDepartureRollsBackEverything() {
         String owner = customer();
         LocalDate date = pickupDate();

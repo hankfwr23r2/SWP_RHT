@@ -24,7 +24,7 @@ public interface DepartureRepository extends JpaRepository<Departure, Long> {
     @Query("SELECT d FROM Departure d WHERE d.id = :id")
     Optional<Departure> findForUpdate(@Param("id") Long id);
 
-    @Query("SELECT d FROM Departure d JOIN FETCH d.route r JOIN FETCH r.origin JOIN FETCH r.destination WHERE d.id = :id")
+    @Query("SELECT d FROM Departure d JOIN FETCH d.route r JOIN FETCH r.origin o JOIN FETCH r.destination dest LEFT JOIN FETCH o.counterpartCountry LEFT JOIN FETCH dest.counterpartCountry WHERE d.id = :id")
     Optional<Departure> findWithRoute(@Param("id") Long id);
 
     // Sinh chuyến từ lịch; chạy lại nhiều lần (hoặc nhiều máy chủ cùng chạy) cũng không tạo trùng

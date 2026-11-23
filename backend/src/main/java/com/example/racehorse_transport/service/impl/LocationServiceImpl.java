@@ -66,7 +66,11 @@ public class LocationServiceImpl implements LocationService {
     @Transactional
     public LocationResponseDto createLocation(LocationRequestDto request) {
         requireUniqueCode(request.getCode().trim().toUpperCase(Locale.ROOT), null);
-        Location location = request.toEntity(country(request.getCountryCode()), province(request.getProvinceCode(), request.getCountryCode()));
+        if (request.getLocationType() == LocationType.QUARANTINE_FARM) {
+            throw new VehicleRuleException("locationType", "Không được tạo mới trại cách ly.");
+        }
+        Country counterpart = counterpartCountry(request);
+        Location location = request.toEntity(country(request.getCountryCode()), province(request.getProvinceCode(), request.getCountryCode()), counterpart);
         location.setStatus(ActiveStatus.ACTIVE);
         return LocationResponseDto.from(locations.save(location));
     }
@@ -81,7 +85,11 @@ public class LocationServiceImpl implements LocationService {
         // Kiểm mã trùng trước khi ghi đè, để lần flush tự động của truy vấn không vướng ràng buộc UNIQUE
         requireUniqueCode(request.getCode().trim().toUpperCase(Locale.ROOT), id);
         LocationType previousType = location.getLocationType();
-        request.applyTo(location, country(request.getCountryCode()), province(request.getProvinceCode(), request.getCountryCode()));
+        if (request.getLocationType() == LocationType.QUARANTINE_FARM && previousType != LocationType.QUARANTINE_FARM) {
+            throw new VehicleRuleException("locationType", "Không được đổi địa điểm thành trại cách ly.");
+        }
+        Country counterpart = counterpartCountry(request);
+        request.applyTo(location, country(request.getCountryCode()), province(request.getProvinceCode(), request.getCountryCode()), counterpart);
         // Đổi loại địa điểm làm sai tuyến và vùng phục vụ đang dùng nó
         if (previousType != location.getLocationType()
                 && (routes.isUsedByRoute(id, ActiveStatus.ACTIVE) || routes.isUsedByRoute(id, ActiveStatus.INACTIVE)
@@ -151,6 +159,20 @@ public class LocationServiceImpl implements LocationService {
 
     private Location findLocation(Long id) {
         return locations.findById(id).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy địa điểm " + id));
+    }
+
+    private Country counterpartCountry(LocationRequestDto request) {
+        String code = request.getCounterpartCountryCode();
+        if (request.getLocationType() == LocationType.BORDER_GATE) {
+            if (code == null || code.isBlank() || code.equals(request.getCountryCode())) {
+                throw new VehicleRuleException("counterpartCountryCode", "Cửa khẩu cần quốc gia đối diện khác quốc gia của địa điểm.");
+            }
+            return country(code);
+        }
+        if (code != null) {
+            throw new VehicleRuleException("counterpartCountryCode", "Chỉ cửa khẩu có quốc gia đối diện.");
+        }
+        return null;
     }
 
     private Country country(String code) {

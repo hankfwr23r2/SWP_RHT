@@ -30,7 +30,7 @@ public class PricingServiceImpl implements PricingService {
         PricingInput loaded = preview.input();
         PricingInput input = new PricingInput(loaded.currencyCode(), loaded.quotationDate(), loaded.bookingType(),
                 loaded.routeId(), loaded.linehaulKm(), roadLegs, loaded.stallsByType(), loaded.horseCount(),
-                loaded.quarantineDays(), loaded.addOns());
+                loaded.addOns());
         return PricingPreviewResponseDto.from(input, data.calculate(input));
     }
 
