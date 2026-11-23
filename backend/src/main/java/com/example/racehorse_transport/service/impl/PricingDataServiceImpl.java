@@ -6,10 +6,12 @@ import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.entity.enums.*;
 import com.example.racehorse_transport.exception.PricingRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
-import com.example.racehorse_transport.policy.HubResolutionPolicy;
+import com.example.racehorse_transport.policy.DepartureRoutePolicy;
 import com.example.racehorse_transport.policy.HubResolutionPolicy.Routing;
-import com.example.racehorse_transport.policy.PricingPolicy;
+import com.example.racehorse_transport.policy.HubResolutionPolicy;
 import com.example.racehorse_transport.policy.PricingPolicy.*;
+import com.example.racehorse_transport.policy.PricingPolicy;
+import com.example.racehorse_transport.policy.StallSeatPolicy;
 import com.example.racehorse_transport.repository.*;
 import com.example.racehorse_transport.service.PricingDataService;
 import com.example.racehorse_transport.service.PricingRouteService.RoadSegment;
@@ -53,16 +55,16 @@ public class PricingDataServiceImpl implements PricingDataService {
         BookingType type = bookingType(pickup, delivery);
         Selection selection = loadSelection(request, username);
         LocalDateTime pickupTime = LocalDateTime.ofInstant(request.pickupAt(), BUSINESS_ZONE);
-        RoutePlan plan = routePlan(request, pickup, delivery, type, now, selection.horseCount());
-        var regulation = regulations.resolve(type, pickup.getCountry().getCode(), delivery.getCountry().getCode(),
+        int seats = StallSeatPolicy.total(selection.stalls());
+        RoutePlan plan = routePlan(request, pickup, delivery, type, now, seats);
+        regulations.resolve(type, pickup.getCountry().getCode(), delivery.getCountry().getCode(),
                 pickupTime.toLocalDate(), plan.gateId());
-        int quarantine = regulation.rule() == null ? 0 : regulation.rule().quarantineDays();
 
         Long vehicleClassId = null;
         int weightTons = 0;
         int topSpeedKmh = 0;
         if (!plan.roadLegs().isEmpty()) {
-            vehicleClassId = PricingPolicy.smallestVehicleClass(vehicleClasses.findAll(), selection.horseCount()).getId();
+            vehicleClassId = PricingPolicy.smallestVehicleClass(vehicleClasses.findAll(), seats).getId();
             weightTons = config.getInt("TRUCK_WEIGHT_TONS");
             topSpeedKmh = config.getInt("TRUCK_TOP_SPEED_KMH");
         }
@@ -72,7 +74,7 @@ public class PricingDataServiceImpl implements PricingDataService {
         Route route = plan.route();
         PricingInput input = new PricingInput(PREVIEW_CURRENCY, LocalDate.ofInstant(now, BUSINESS_ZONE),
                 type, route == null ? null : route.getId(), route == null ? null : route.getDistanceKm(),
-                List.of(), selection.stalls(), selection.horseCount(), quarantine, addOns);
+                List.of(), selection.stalls(), selection.horseCount(), addOns);
         return new PreviewData(input, List.copyOf(plan.roadLegs()), vehicleClassId, weightTons, topSpeedKmh, pickupTime);
     }
 
@@ -138,8 +140,10 @@ public class PricingDataServiceImpl implements PricingDataService {
                 || departure.getStallCapacity() - departure.getBookedStallCount() < stalls) {
             throw new PricingRuleException("Chuyến trục không đủ điều kiện để đặt.", true);
         }
-        requireEndpoint(originHub, route.getOrigin());
-        requireEndpoint(destinationHub, route.getDestination());
+        String counterpart = DepartureRoutePolicy.counterpartCountryCode(type, pickup.getCountry().getCode(), delivery.getCountry().getCode());
+        if (!DepartureRoutePolicy.matches(route, type, hubId(originHub), hubId(destinationHub), counterpart)) {
+            throw new PricingRuleException("Chuyến trục không phù hợp với địa chỉ đã chọn.");
+        }
         List<RoadSegment> roadLegs = new ArrayList<>();
         if (originHub != null) {
             roadLegs.add(new RoadSegment(ServiceLayer.PICKUP, point(pickup), point(originHub)));
@@ -147,22 +151,7 @@ public class PricingDataServiceImpl implements PricingDataService {
         if (destinationHub != null) {
             roadLegs.add(new RoadSegment(ServiceLayer.DELIVERY, point(destinationHub), point(delivery)));
         }
-        Long gateId = switch (type) {
-            case EXPORT -> route.getDestination().getId();
-            case IMPORT -> route.getOrigin().getId();
-            default -> null;
-        };
-        return new RoutePlan(route, gateId, roadLegs);
-    }
-
-    private static void requireEndpoint(Location hub, Location endpoint) {
-        boolean valid = hub == null
-                ? endpoint.getLocationType() == LocationType.BORDER_GATE
-                    && DOMESTIC_COUNTRY.equals(endpoint.getCountry().getCode())
-                : hub.getId().equals(endpoint.getId());
-        if (!valid) {
-            throw new PricingRuleException("Chuyến trục không phù hợp với địa chỉ đã chọn.");
-        }
+        return new RoutePlan(route, DepartureRoutePolicy.gateId(route, type), roadLegs);
     }
 
     private Location hub(CustomerAddress address) {

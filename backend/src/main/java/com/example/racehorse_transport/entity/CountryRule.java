@@ -48,9 +48,6 @@ public class CountryRule {
     @Column(name = "certificate_lead_days", nullable = false)
     private Integer certificateLeadDays;
 
-    @Column(name = "quarantine_days", nullable = false)
-    private Integer quarantineDays;
-
     @Column(name = "valid_from", nullable = false)
     private LocalDate validFrom;
 

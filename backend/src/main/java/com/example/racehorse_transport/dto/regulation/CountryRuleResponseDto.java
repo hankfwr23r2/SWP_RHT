@@ -7,11 +7,11 @@ import java.util.List;
 
 public record CountryRuleResponseDto(
         Long id, String countryCode, RuleDirection direction, Integer permitLeadDays,
-        Integer certificateLeadDays, Integer quarantineDays, LocalDate validFrom, LocalDate validTo) {
+        Integer certificateLeadDays, LocalDate validFrom, LocalDate validTo) {
 
     public static CountryRuleResponseDto from(CountryRule entity) {
         return new CountryRuleResponseDto(entity.getId(), entity.getCountry().getCode(), entity.getDirection(),
-                entity.getPermitLeadDays(), entity.getCertificateLeadDays(), entity.getQuarantineDays(),
+                entity.getPermitLeadDays(), entity.getCertificateLeadDays(),
                 entity.getValidFrom(), entity.getValidTo());
     }
 

@@ -47,12 +47,11 @@ class RegulationPolicyTest {
         CountryRule rule = new CountryRule();
         rule.setPermitLeadDays(14);
         rule.setCertificateLeadDays(7);
-        rule.setQuarantineDays(7);
         long lead = RegulationPolicy.leadDays(rule);
         Instant now = Instant.parse("2026-11-30T18:00:00Z");
-        Instant threshold = Instant.parse("2026-12-28T17:00:00Z");
+        Instant threshold = Instant.parse("2026-12-21T17:00:00Z");
 
-        assertThat(lead).isEqualTo(28);
+        assertThat(lead).isEqualTo(21);
         assertThat(RegulationPolicy.feasible(lead, now, threshold)).isTrue();
         assertThat(RegulationPolicy.feasible(lead, now, threshold.minusSeconds(1))).isFalse();
         assertThat(RegulationPolicy.feasible(0, now, now)).isFalse();

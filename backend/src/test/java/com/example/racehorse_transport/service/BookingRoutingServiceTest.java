@@ -98,6 +98,7 @@ class BookingRoutingServiceTest {
         Departure replacement = new Departure();
         replacement.setId(10L);
         replacement.setRoute(route(1L, 2L));
+        when(routes.findRouteForSubmission(10L)).thenReturn(Optional.of(replacement.getRoute()));
         replacement.setDepartureDate(pickupDate);
         replacement.setBookingCutoffAt(Instant.parse("2026-12-29T01:00:00Z"));
         when(departures.findForUpdate(10L)).thenReturn(Optional.of(replacement));

@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 
 class PricingPolicyTest {
     @Test
-    void pricesRoadLinehaulQuarantineDocumentsAndChosenService() {
+    void pricesRoadLinehaulDocumentsAndChosenServiceWithoutQuarantine() {
         List<BillableService> catalog = List.of(
                 service(1, ServiceLayer.PICKUP, BillingUnit.PER_KM, false),
                 service(2, ServiceLayer.DELIVERY, BillingUnit.PER_KM, false),
@@ -30,16 +30,16 @@ class PricingPolicyTest {
                 item(6, catalog.get(5), "123", null, null), item(7, catalog.get(6), "50.55", null, null));
         PricingInput input = new PricingInput("VND", LocalDate.of(2026, 11, 23), BookingType.INTERPROVINCE,
                 4L, new BigDecimal("100"), List.of(new RoadLeg(ServiceLayer.PICKUP, 3L, new BigDecimal("35")),
-                new RoadLeg(ServiceLayer.DELIVERY, 3L, new BigDecimal("5"))), Map.of("WIDE", 2), 2, 7,
+                new RoadLeg(ServiceLayer.DELIVERY, 3L, new BigDecimal("5"))), Map.of("WIDE", 2), 2,
                 List.of(new AddOn(7L, 1, 1, 3)));
         PricingResult result = PricingPolicy.calculate(list(), items, catalog, input);
-        assertThat(result.lines()).extracting(Line::priceItemId).containsExactly(1L, 2L, 3L, 4L, 5L, 6L, 7L);
+        assertThat(result.lines()).extracting(Line::priceItemId).containsExactly(1L, 2L, 3L, 4L, 6L, 7L);
         assertThat(result.lines()).extracting(Line::amount).containsExactly(
                 new BigDecimal("1155000.00"), new BigDecimal("165000.00"), new BigDecimal("4400000.00"),
-                new BigDecimal("378000.00"), new BigDecimal("1400000.00"), new BigDecimal("123.00"),
+                new BigDecimal("378000.00"), new BigDecimal("123.00"),
                 new BigDecimal("151.65"));
-        assertThat(result.lines().get(5).passThrough()).isTrue();
-        assertThat(result.total()).isEqualByComparingTo("7498274.65");
+        assertThat(result.lines().get(4).passThrough()).isTrue();
+        assertThat(result.total()).isEqualByComparingTo("6098274.65");
     }
 
     @Test
@@ -89,7 +89,7 @@ class PricingPolicyTest {
         wide.setStallType(stallType);
         var directWithWide = new PricingInput("VND", LocalDate.of(2026, 11, 23), BookingType.LOCAL,
                 null, null, List.of(new RoadLeg(ServiceLayer.DIRECT, 1L, BigDecimal.ZERO)),
-                Map.of("STANDARD", 1, "WIDE", 2), 3, 0, List.of());
+                Map.of("STANDARD", 1, "WIDE", 2), 3, List.of());
         assertThat(PricingPolicy.calculate(list(), List.of(generic, wide), List.of(stall), directWithWide).lines())
                 .singleElement().satisfies(line -> {
                     assertThat(line.priceItemId()).isEqualTo(2L);
@@ -107,7 +107,7 @@ class PricingPolicyTest {
         feeding.setCode("FEEDING");
         feeding.setStatus(ActiveStatus.INACTIVE);
         var input = new PricingInput("VND", LocalDate.of(2026, 11, 23), BookingType.LOCAL,
-                null, null, List.of(), Map.of("STANDARD", 1), 1, 0, List.of(new AddOn(1L, 1, 1, 1)));
+                null, null, List.of(), Map.of("STANDARD", 1), 1, List.of(new AddOn(1L, 1, 1, 1)));
         assertThatThrownBy(() -> PricingPolicy.calculate(list(), List.of(item(1, feeding, "10", null, null)),
                 List.of(feeding), input)).isInstanceOf(PricingRuleException.class).hasMessageContaining("không khả dụng");
     }
@@ -115,7 +115,7 @@ class PricingPolicyTest {
     private static PricingInput direct(String km) {
         return new PricingInput("VND", LocalDate.of(2026, 11, 23), BookingType.LOCAL, null, null,
                 List.of(new RoadLeg(ServiceLayer.DIRECT, 1L, new BigDecimal(km))), Map.of("STANDARD", 1),
-                1, 0, List.of());
+                1, List.of());
     }
 
     private static PriceList list() {

@@ -1364,6 +1364,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vehicles/{id}/reactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reactivate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicles/{id}/retire": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["retire"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicles/{id}/start-maintenance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["startMaintenance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1788,8 +1836,6 @@ export interface components {
             direction: "INTERPROVINCE" | "EXPORT" | "IMPORT";
             /** Format: int32 */
             permitLeadDays: number;
-            /** Format: int32 */
-            quarantineDays: number;
             /** Format: date */
             validFrom: string;
             /** Format: date */
@@ -1805,8 +1851,6 @@ export interface components {
             id?: number;
             /** Format: int32 */
             permitLeadDays?: number;
-            /** Format: int32 */
-            quarantineDays?: number;
             /** Format: date */
             validFrom?: string;
             /** Format: date */
@@ -1820,8 +1864,6 @@ export interface components {
             direction: "INTERPROVINCE" | "EXPORT" | "IMPORT";
             /** Format: int32 */
             permitLeadDays: number;
-            /** Format: int32 */
-            quarantineDays: number;
             /** Format: date */
             validFrom: string;
             /** Format: date */
@@ -1974,8 +2016,11 @@ export interface components {
             pickupLatitude?: number;
             pickupLongitude?: number;
             pickupProvinceCode: string;
-            /** Format: int32 */
-            stalls?: number;
+            /**
+             * Format: int32
+             * @description Số chỗ cần: khoang thường 1 chỗ, khoang rộng 2 chỗ
+             */
+            stalls: number;
         };
         DepartureSuggestionResponse: {
             deliveryHubCode?: string;
@@ -2249,6 +2294,7 @@ export interface components {
             closingTime?: string;
             code: string;
             contactPhone?: string;
+            counterpartCountryCode?: string;
             countryCode: string;
             latitude?: number;
             /** @enum {string} */
@@ -2263,6 +2309,7 @@ export interface components {
             closingTime?: string;
             code?: string;
             contactPhone?: string;
+            counterpartCountryCode?: string;
             countryCode?: string;
             /** Format: int64 */
             id?: number;
@@ -2682,8 +2729,6 @@ export interface components {
             /** Format: int64 */
             homeHubLocationId: number;
             licensePlate: string;
-            /** Format: date */
-            registrationExpiryDate?: string;
             /** Format: int32 */
             standardStallCount: number;
             /** Format: int64 */
@@ -2698,8 +2743,6 @@ export interface components {
             /** Format: int64 */
             id?: number;
             licensePlate?: string;
-            /** Format: date */
-            registrationExpiryDate?: string;
             /** Format: int32 */
             standardStallCount?: number;
             /** @enum {string} */
@@ -2710,12 +2753,13 @@ export interface components {
             /** Format: int32 */
             wideStallCount?: number;
         };
+        VehicleStatusChangeRequestDto: {
+            reason: string;
+        };
         VehicleUpdateRequestDto: {
             /** Format: int64 */
             homeHubLocationId: number;
             licensePlate: string;
-            /** Format: date */
-            registrationExpiryDate?: string;
             /** Format: int32 */
             standardStallCount: number;
             /** Format: int64 */
@@ -5452,6 +5496,84 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["VehicleUpdateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVehicleResponseDto"];
+                };
+            };
+        };
+    };
+    reactivate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VehicleStatusChangeRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVehicleResponseDto"];
+                };
+            };
+        };
+    };
+    retire: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VehicleStatusChangeRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVehicleResponseDto"];
+                };
+            };
+        };
+    };
+    startMaintenance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VehicleStatusChangeRequestDto"];
             };
         };
         responses: {

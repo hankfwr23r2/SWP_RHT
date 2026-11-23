@@ -1246,10 +1246,6 @@
             "format" : "int32",
             "type" : "integer"
           },
-          "quarantineDays" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
           "validFrom" : {
             "format" : "date",
             "type" : "string"
@@ -1259,7 +1255,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "certificateLeadDays", "countryCode", "direction", "permitLeadDays", "quarantineDays", "validFrom" ],
+        "required" : [ "certificateLeadDays", "countryCode", "direction", "permitLeadDays", "validFrom" ],
         "type" : "object"
       },
       "CountryRuleResponseDto" : {
@@ -1280,10 +1276,6 @@
             "type" : "integer"
           },
           "permitLeadDays" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "quarantineDays" : {
             "format" : "int32",
             "type" : "integer"
           },
@@ -1317,10 +1309,6 @@
             "format" : "int32",
             "type" : "integer"
           },
-          "quarantineDays" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
           "validFrom" : {
             "format" : "date",
             "type" : "string"
@@ -1330,7 +1318,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "certificateLeadDays", "countryCode", "direction", "permitLeadDays", "quarantineDays", "validFrom" ],
+        "required" : [ "certificateLeadDays", "countryCode", "direction", "permitLeadDays", "validFrom" ],
         "type" : "object"
       },
       "CustomerAddressCreateRequestDto" : {
@@ -1769,13 +1757,14 @@
             "type" : "string"
           },
           "stalls" : {
+            "description" : "Số chỗ cần: khoang thường 1 chỗ, khoang rộng 2 chỗ",
             "format" : "int32",
-            "maximum" : 50,
+            "maximum" : 100,
             "minimum" : 1,
             "type" : "integer"
           }
         },
-        "required" : [ "bookingType", "deliveryProvinceCode", "fromDate", "pickupProvinceCode" ],
+        "required" : [ "bookingType", "deliveryProvinceCode", "fromDate", "pickupProvinceCode", "stalls" ],
         "type" : "object"
       },
       "DepartureSuggestionResponse" : {
@@ -2537,6 +2526,10 @@
             "minLength" : 0,
             "type" : "string"
           },
+          "counterpartCountryCode" : {
+            "pattern" : "^[A-Z]{2}$",
+            "type" : "string"
+          },
           "countryCode" : {
             "minLength" : 1,
             "pattern" : "^[A-Z]{2}$",
@@ -2585,6 +2578,9 @@
             "type" : "string"
           },
           "contactPhone" : {
+            "type" : "string"
+          },
+          "counterpartCountryCode" : {
             "type" : "string"
           },
           "countryCode" : {
@@ -3774,10 +3770,6 @@
             "minLength" : 0,
             "type" : "string"
           },
-          "registrationExpiryDate" : {
-            "format" : "date",
-            "type" : "string"
-          },
           "standardStallCount" : {
             "format" : "int32",
             "type" : "integer"
@@ -3810,10 +3802,6 @@
           "licensePlate" : {
             "type" : "string"
           },
-          "registrationExpiryDate" : {
-            "format" : "date",
-            "type" : "string"
-          },
           "standardStallCount" : {
             "format" : "int32",
             "type" : "integer"
@@ -3836,6 +3824,17 @@
         },
         "type" : "object"
       },
+      "VehicleStatusChangeRequestDto" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
       "VehicleUpdateRequestDto" : {
         "properties" : {
           "homeHubLocationId" : {
@@ -3845,10 +3844,6 @@
           "licensePlate" : {
             "maxLength" : 20,
             "minLength" : 0,
-            "type" : "string"
-          },
-          "registrationExpiryDate" : {
-            "format" : "date",
             "type" : "string"
           },
           "standardStallCount" : {
@@ -7314,6 +7309,117 @@
             "application/json" : {
               "schema" : {
                 "$ref" : "#/components/schemas/VehicleUpdateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVehicleResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "vehicle-controller" ]
+      }
+    },
+    "/vehicles/{id}/reactivate" : {
+      "post" : {
+        "operationId" : "reactivate",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VehicleStatusChangeRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVehicleResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "vehicle-controller" ]
+      }
+    },
+    "/vehicles/{id}/retire" : {
+      "post" : {
+        "operationId" : "retire",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VehicleStatusChangeRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVehicleResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "vehicle-controller" ]
+      }
+    },
+    "/vehicles/{id}/start-maintenance" : {
+      "post" : {
+        "operationId" : "startMaintenance",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VehicleStatusChangeRequestDto"
               }
             }
           },

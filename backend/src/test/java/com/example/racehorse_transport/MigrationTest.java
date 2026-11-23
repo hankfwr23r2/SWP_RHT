@@ -125,8 +125,8 @@ class MigrationTest {
     @Test
     void countryRulesOfSameDirectionCannotOverlap() {
         assertThatThrownBy(() -> jdbc.update("""
-                INSERT INTO country_rule (country_code, direction, permit_lead_days, certificate_lead_days, quarantine_days, valid_from)
-                VALUES ('KH', 'EXPORT', 10, 5, 5, DATE '2027-01-01')"""))
+                INSERT INTO country_rule (country_code, direction, permit_lead_days, certificate_lead_days, valid_from)
+                VALUES ('KH', 'EXPORT', 10, 5, DATE '2027-01-01')"""))
                 .isInstanceOf(DataAccessException.class)
                 .hasMessageContaining("ex_country_rule_period");
     }

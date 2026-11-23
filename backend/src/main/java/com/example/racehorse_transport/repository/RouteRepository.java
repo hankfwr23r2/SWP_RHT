@@ -20,7 +20,7 @@ public interface RouteRepository extends JpaRepository<Route, Long> {
     @Query("SELECT r FROM Route r JOIN FETCH r.origin JOIN FETCH r.destination WHERE r.id = :id")
     Optional<Route> findWithEndpoints(@Param("id") Long id);
 
-    @Query("SELECT r FROM Route r JOIN FETCH r.origin JOIN FETCH r.destination WHERE r.status = :status")
+    @Query("SELECT r FROM Route r JOIN FETCH r.origin o JOIN FETCH r.destination dest LEFT JOIN FETCH o.counterpartCountry LEFT JOIN FETCH dest.counterpartCountry WHERE r.status = :status")
     List<Route> findByStatusWithEndpoints(@Param("status") ActiveStatus status);
 
     // Địa điểm đang là điểm đầu, điểm cuối hoặc điểm dừng của một tuyến ở trạng thái cho trước
@@ -31,7 +31,7 @@ public interface RouteRepository extends JpaRepository<Route, Long> {
     boolean isUsedByRoute(@Param("locationId") Long locationId, @Param("status") ActiveStatus status);
 
     @Query("""
-            SELECT r FROM Route r JOIN FETCH r.origin JOIN FETCH r.destination
+            SELECT r FROM Route r JOIN FETCH r.origin o JOIN FETCH r.destination dest LEFT JOIN FETCH o.counterpartCountry LEFT JOIN FETCH dest.counterpartCountry
             WHERE r.id = (SELECT d.route.id FROM Departure d WHERE d.id = :departureId)
             """)
     Optional<Route> findRouteForSubmission(Long departureId);

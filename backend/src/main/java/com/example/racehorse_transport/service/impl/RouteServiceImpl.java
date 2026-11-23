@@ -20,6 +20,7 @@ import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.repository.RouteRepository;
 import com.example.racehorse_transport.repository.RouteStopRepository;
 import com.example.racehorse_transport.service.RouteService;
+import com.example.racehorse_transport.service.SystemConfigService;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -35,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class RouteServiceImpl implements RouteService {
 
     private final RouteRepository routes;
+    private final SystemConfigService config;
     private final RouteStopRepository routeStops;
     private final LocationRepository locations;
     private final DepartureScheduleRepository schedules;
@@ -182,7 +184,11 @@ public class RouteServiceImpl implements RouteService {
                 .map(stop -> new RouteStopsPolicy.Stop(stop.getSequenceNumber(), stop.getLocationId(), byId.get(stop.getLocationId()).getLocationType(),
                         stop.getStopType(), stop.getArrivalOffsetMinutes(), stop.getDwellMinutes()))
                 .toList();
-        List<String> errors = RouteStopsPolicy.violations(origin.getId(), origin.getLocationType(), destination.getId(), destination.getLocationType(), stops);
+        var limits = new RouteStopsPolicy.Limits(config.getInt("MAX_CONTINUOUS_HOURS"),
+                config.getInt("MIN_REST_MINUTES"), config.getInt("MAX_DRIVE_HOURS_PER_DAY"),
+                config.getInt("OVERNIGHT_REST_HOURS"));
+        List<String> errors = RouteStopsPolicy.violations(origin.getId(), origin.getLocationType(),
+                destination.getId(), destination.getLocationType(), stops, limits);
         if (!errors.isEmpty()) {
             throw new IllegalArgumentException(String.join(" ", errors));
         }

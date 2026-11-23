@@ -84,7 +84,7 @@ class RegulationServiceTest {
         assertThat(result.rule().id()).isEqualTo(2L);
         assertThat(result.requirements()).extracting(DocumentRequirementResponseDto::id).containsExactly(3L);
         assertThat(result.requirementsDependOnGate()).isTrue();
-        assertThat(result.leadDays()).isEqualTo(28);
+        assertThat(result.leadDays()).isEqualTo(21);
         assertThat(result.bookingCutoffAt()).isEqualTo(departure.getBookingCutoffAt());
         assertThat(result.feasible()).isTrue();
     }
@@ -117,18 +117,18 @@ class RegulationServiceTest {
 
         assertThat(service.listCountryRules()).containsExactly(service.getCountryRule(1L));
         assertThat(service.createCountryRule(new CountryRuleCreateRequestDto("KH", RuleDirection.EXPORT,
-                14, 7, 7, PICKUP, null)).countryCode()).isEqualTo("KH");
+                14, 7, PICKUP, null)).countryCode()).isEqualTo("KH");
         assertThat(service.updateCountryRule(1L, new CountryRuleUpdateRequestDto("KH", RuleDirection.EXPORT,
-                1, 2, 3, PICKUP, PICKUP)).validTo()).isEqualTo(PICKUP);
+                1, 2, PICKUP, PICKUP)).validTo()).isEqualTo(PICKUP);
     }
 
     @Test
     void rejectsInvalidRuleAndMissingRuleIds() {
         assertThatThrownBy(() -> service.createCountryRule(new CountryRuleCreateRequestDto("KH", RuleDirection.EXPORT,
-                14, 7, 7, PICKUP, PICKUP.minusDays(1)))).isInstanceOf(RegulationRuleException.class);
+                14, 7, PICKUP, PICKUP.minusDays(1)))).isInstanceOf(RegulationRuleException.class);
         assertThatThrownBy(() -> service.getCountryRule(1L)).isInstanceOf(ResourceNotFoundException.class);
         assertThatThrownBy(() -> service.updateCountryRule(1L, new CountryRuleUpdateRequestDto("KH",
-                RuleDirection.EXPORT, 0, 0, 0, PICKUP, null))).isInstanceOf(ResourceNotFoundException.class);
+                RuleDirection.EXPORT, 0, 0, PICKUP, null))).isInstanceOf(ResourceNotFoundException.class);
         assertThatThrownBy(() -> service.listDocumentRequirements(1L)).isInstanceOf(ResourceNotFoundException.class);
     }
 
@@ -137,7 +137,7 @@ class RegulationServiceTest {
         when(countries.findById("KH")).thenReturn(Optional.of(rule("KH", RuleDirection.EXPORT).getCountry()));
         var conflict = new ConstraintViolationException("overlap", new SQLException("overlap", "23P01"), null);
         when(rules.saveAndFlush(any(CountryRule.class))).thenThrow(new DataIntegrityViolationException("overlap", conflict));
-        var request = new CountryRuleCreateRequestDto("KH", RuleDirection.EXPORT, 0, 0, 0, PICKUP, null);
+        var request = new CountryRuleCreateRequestDto("KH", RuleDirection.EXPORT, 0, 0, PICKUP, null);
 
         assertThatThrownBy(() -> service.createCountryRule(request))
                 .isInstanceOfSatisfying(RegulationRuleException.class, ex -> {
@@ -207,7 +207,7 @@ class RegulationServiceTest {
     private CountryRule rule(String code, RuleDirection direction) {
         Country country = new Country();
         country.setCode(code);
-        CountryRule rule = new CountryRuleCreateRequestDto(code, direction, 14, 7, 7, PICKUP, null).toEntity(country);
+        CountryRule rule = new CountryRuleCreateRequestDto(code, direction, 14, 7, PICKUP, null).toEntity(country);
         rule.setId(1L);
         return rule;
     }

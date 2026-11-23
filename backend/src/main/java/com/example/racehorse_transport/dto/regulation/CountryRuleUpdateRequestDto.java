@@ -14,7 +14,6 @@ public record CountryRuleUpdateRequestDto(
         @NotNull RuleDirection direction,
         @NotNull @PositiveOrZero Integer permitLeadDays,
         @NotNull @PositiveOrZero Integer certificateLeadDays,
-        @NotNull @PositiveOrZero Integer quarantineDays,
         @NotNull LocalDate validFrom,
         LocalDate validTo) {
 
@@ -23,7 +22,6 @@ public record CountryRuleUpdateRequestDto(
         entity.setDirection(direction);
         entity.setPermitLeadDays(permitLeadDays);
         entity.setCertificateLeadDays(certificateLeadDays);
-        entity.setQuarantineDays(quarantineDays);
         entity.setValidFrom(validFrom);
         entity.setValidTo(validTo);
     }

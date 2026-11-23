@@ -3,6 +3,7 @@ package com.example.racehorse_transport.policy;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.example.racehorse_transport.entity.enums.PartyRoleType;
 import com.example.racehorse_transport.exception.PartyRuleException;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
@@ -22,5 +23,12 @@ class PartyRolePolicyTest {
     void rejectsEndBeforeStart() {
         assertThatThrownBy(() -> PartyRolePolicy.requireValidPeriod(START, START.minusDays(1)))
                 .isInstanceOf(PartyRuleException.class);
+    }
+
+    @Test
+    void rejectsNewQuarantineFarmRole() {
+        assertThatThrownBy(() -> PartyRolePolicy.requireAssignableRole(PartyRoleType.QUARANTINE_FARM))
+                .isInstanceOf(PartyRuleException.class);
+        assertThatCode(() -> PartyRolePolicy.requireAssignableRole(PartyRoleType.STABLE)).doesNotThrowAnyException();
     }
 }

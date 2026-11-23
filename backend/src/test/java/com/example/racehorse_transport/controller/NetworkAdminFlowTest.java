@@ -87,13 +87,30 @@ class NetworkAdminFlowTest {
     void locationExposesLocalTimesAsStrings() throws Exception {
         String body = """
                 {"code":"%s","name":"Cửa khẩu","locationType":"BORDER_GATE","countryCode":"VN",
-                 "address":"Địa chỉ","openingTime":"00:00:00","closingTime":"23:59:00"}
+                 "counterpartCountryCode":"KH","address":"Địa chỉ","openingTime":"00:00:00","closingTime":"23:59:00"}
                 """.formatted(uniqueCode("GATE"));
         call(post("/locations"), adminToken, body)
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.locationType").value("BORDER_GATE"))
+                .andExpect(jsonPath("$.data.counterpartCountryCode").value("KH"))
                 .andExpect(jsonPath("$.data.openingTime").value("00:00:00"))
                 .andExpect(jsonPath("$.data.closingTime").value("23:59:00"));
+    }
+
+    @Test
+    void borderGateNeedsForeignCounterpartAndQuarantineFarmIsNotAccepted() throws Exception {
+        String gate = """
+                {"code":"%s","name":"Cửa khẩu","locationType":"BORDER_GATE","countryCode":"VN"%s,"address":"Địa chỉ"}""";
+        call(post("/locations"), adminToken, gate.formatted(uniqueCode("GATE"), "")).andExpect(status().isBadRequest());
+        call(post("/locations"), adminToken, gate.formatted(uniqueCode("GATE"), ",\"counterpartCountryCode\":\"VN\""))
+                .andExpect(status().isBadRequest());
+
+        String code = uniqueCode("REST");
+        long id = createLocation(code, "REST_STOP", "VN-1");
+        String farm = """
+                {"code":"%s","name":"Trại","locationType":"QUARANTINE_FARM","countryCode":"VN","address":"Địa chỉ"}""";
+        call(post("/locations"), adminToken, farm.formatted(uniqueCode("QF"))).andExpect(status().isBadRequest());
+        call(put("/locations/" + id), adminToken, farm.formatted(code)).andExpect(status().isBadRequest());
     }
 
     @Test
@@ -158,7 +175,7 @@ class NetworkAdminFlowTest {
 
         call(put("/routes/" + routeId), adminToken, routeBody(code, origin, gate, """
                 [{"sequenceNumber":1,"locationId":%d,"stopType":"HUB","arrivalOffsetMinutes":0,"dwellMinutes":30},
-                 {"sequenceNumber":2,"locationId":%d,"stopType":"REST","arrivalOffsetMinutes":70,"dwellMinutes":20},
+                 {"sequenceNumber":2,"locationId":%d,"stopType":"REST","arrivalOffsetMinutes":70,"dwellMinutes":30},
                  {"sequenceNumber":3,"locationId":%d,"stopType":"BORDER","arrivalOffsetMinutes":120,"dwellMinutes":60}]""".formatted(origin, rest, gate)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.stops.length()").value(3))

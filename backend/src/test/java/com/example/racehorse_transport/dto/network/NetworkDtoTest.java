@@ -58,7 +58,7 @@ class NetworkDtoTest {
         Province province = new Province();
         province.setCode("VN-79");
 
-        Location entity = request.toEntity(vn(), province);
+        Location entity = request.toEntity(vn(), province, null);
 
         assertThat(entity.getId()).isNull();
         assertThat(entity.getStatus()).isNull();
@@ -72,6 +72,9 @@ class NetworkDtoTest {
     @Test
     void locationResponseCopiesFields() {
         Location entity = location(5L, "GATE-X", LocationType.BORDER_GATE);
+        Country counterpart = new Country();
+        counterpart.setCode("KH");
+        entity.setCounterpartCountry(counterpart);
         entity.setOpeningTime(LocalTime.of(7, 0));
 
         LocationResponseDto dto = LocationResponseDto.from(entity);
@@ -79,6 +82,7 @@ class NetworkDtoTest {
         assertThat(dto.getId()).isEqualTo(5L);
         assertThat(dto.getCountryCode()).isEqualTo("VN");
         assertThat(dto.getProvinceCode()).isNull();
+        assertThat(dto.getCounterpartCountryCode()).isEqualTo("KH");
         assertThat(dto.getOpeningTime()).isEqualTo(LocalTime.of(7, 0));
         assertThat(dto.getStatus()).isEqualTo(ActiveStatus.ACTIVE);
     }

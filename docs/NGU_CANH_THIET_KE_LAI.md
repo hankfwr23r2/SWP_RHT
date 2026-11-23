@@ -91,6 +91,7 @@ Kết luận: **cơ chế giao tiếp** (REST/JSON + JWT + refresh cookie) khôn
 | Sự cố theo quy trình của nhóm; bất khả kháng do **công ty** chịu; không chia chi phí theo đầu ngựa (23/11/2026, **thay** quy định khách chịu bất khả kháng) | Người dùng chốt theo luồng sự cố của nhóm. IRT thì khách chịu. Khoản khách chịu luôn gắn với một con hoặc một đơn nên không phải chia |
 | Đã cọc mà giấy không kịp: xử lý theo nguyên nhân (khách, công ty, cơ quan) (23/11/2026) | Bản cũ mục 6, 8 và IRT Đức §5. Số lần đổi và thời gian giữ giá 30 ngày tự thiết kế |
 | Cửa khẩu gắn nước đối diện (`location.counterpart_country_code`) (23/11/2026) | Trước đó đơn Lào vẫn chọn được Mộc Bài |
+| Phân công (kế hoạch theo lượt xe) tách khỏi phụ trách (người ký nhận gần nhất của từng con); thêm `SHIFT` (23/11/2026) | Người dùng chốt. Hộ tống đổi liên tục nhưng chuỗi ký nhận không đứt nên luôn biết ai giữ con nào, không cần bảng phân công ngựa. IRT: mục tiêu 1 groom cho 6–9 ngựa, khám 2 lần mỗi ngày khi cách ly |
 
 ## 5. Câu hỏi còn mở
 

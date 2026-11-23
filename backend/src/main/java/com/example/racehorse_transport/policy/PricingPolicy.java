@@ -19,7 +19,7 @@ public final class PricingPolicy {
 
     public record PricingInput(String currencyCode, LocalDate quotationDate, BookingType bookingType,
                                Long routeId, BigDecimal linehaulKm, List<RoadLeg> roadLegs,
-                               Map<String, Integer> stallsByType, int horseCount, int quarantineDays,
+                               Map<String, Integer> stallsByType, int horseCount,
                                List<AddOn> addOns) {
         public PricingInput {
             roadLegs = List.copyOf(roadLegs);
@@ -92,10 +92,6 @@ public final class PricingPolicy {
                     new Match(input.routeId(), fuelClass, null, roadKm), roadKm);
         }
         Match booking = new Match(input.routeId(), null, null, null);
-        if (input.quarantineDays() > 0) {
-            addLayer(lines, list, items, catalog, ServiceLayer.QUARANTINE, booking,
-                    BigDecimal.valueOf((long) input.horseCount() * input.quarantineDays()));
-        }
         if (input.bookingType() != BookingType.LOCAL) {
             for (BillableService service : catalog) {
                 if (service.getLayer() == ServiceLayer.DOCS && Boolean.TRUE.equals(service.getAutoApplied())) {
@@ -127,7 +123,7 @@ public final class PricingPolicy {
     }
 
     private static void validateInput(PricingInput input) {
-        if (input.horseCount() <= 0 || input.quarantineDays() < 0
+        if (input.horseCount() <= 0
                 || input.stallsByType().isEmpty() || input.stallsByType().values().stream().anyMatch(count -> count <= 0)) {
             throw new PricingRuleException("Số ngựa, số khoang hoặc số ngày cách ly không hợp lệ.");
         }

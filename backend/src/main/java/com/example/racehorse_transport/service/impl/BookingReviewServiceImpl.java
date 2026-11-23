@@ -3,12 +3,12 @@ package com.example.racehorse_transport.service.impl;
 import com.example.racehorse_transport.dto.booking.BookingResponseDto;
 import com.example.racehorse_transport.entity.AppUser;
 import com.example.racehorse_transport.entity.Booking;
-import com.example.racehorse_transport.entity.BookingHorse;
 import com.example.racehorse_transport.entity.Departure;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.exception.BookingRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.BookingReviewPolicy;
+import com.example.racehorse_transport.policy.StallSeatPolicy;
 import com.example.racehorse_transport.repository.AppUserRepository;
 import com.example.racehorse_transport.repository.BookingHorseRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
@@ -72,7 +72,7 @@ public class BookingReviewServiceImpl implements BookingReviewService {
         Booking booking = lock(id, PENDING_INTAKE, UNDER_REVIEW);
         String note = BookingReviewPolicy.requireReason(reason);
         BookingResponseDto result = transition(booking, REJECTED, note, actor(username));
-        int stalls = activeHorseIds(id).size();
+        int stalls = activeSeats(id);
         if (booking.getDeparture() != null && stalls > 0) {
             departures.release(booking.getDeparture().getId(), stalls);
         }
@@ -88,7 +88,7 @@ public class BookingReviewServiceImpl implements BookingReviewService {
             throw BookingRuleException.conflict("Đơn đã giữ chỗ trên chuyến này.");
         }
         Departure replacement = routing.lockReplacement(booking, departureId);
-        int stalls = activeHorseIds(id).size();
+        int stalls = activeSeats(id);
         if (stalls == 0) {
             throw BookingRuleException.conflict("Đơn không có ngựa đang hoạt động.");
         }
@@ -115,9 +115,10 @@ public class BookingReviewServiceImpl implements BookingReviewService {
         return transition(booking, QUOTING, null, actor(username));
     }
 
-    private List<Long> activeHorseIds(Long id) {
-        return horses.findByBooking_Id(id).stream().filter(horse -> horse.getStatus() == ACTIVE)
-                .map(BookingHorse::getId).toList();
+    private int activeSeats(Long id) {
+        return StallSeatPolicy.total(horses.findByBooking_Id(id).stream()
+                .filter(horse -> horse.getStatus() == ACTIVE)
+                .map(horse -> horse.getStallType().getCode()).toList());
     }
 
     private Booking lock(Long id, BookingStatus... allowed) {

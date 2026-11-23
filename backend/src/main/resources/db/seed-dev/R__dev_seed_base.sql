@@ -23,6 +23,9 @@ INSERT INTO location (code, name, location_type, country_code, province_code, ad
     ('REST-QUYNHON', 'Trạm nghỉ Quy Nhơn', 'REST_STOP', 'VN', 'VN-52', 'Phường Quy Nhơn, Gia Lai', 13.776000, 109.224000, NULL, NULL, NULL, 'ACTIVE')
 ON CONFLICT (code) DO NOTHING;
 
+UPDATE location SET counterpart_country_code = 'KH'
+WHERE code = 'GATE-MOCBAI' AND location_type = 'BORDER_GATE' AND counterpart_country_code IS NULL;
+
 UPDATE location SET is_headquarters = true
 WHERE code = 'HUB-HCM' AND NOT EXISTS (SELECT 1 FROM location WHERE is_headquarters);
 
@@ -103,17 +106,25 @@ ON CONFLICT DO NOTHING;
 -- ---------------------------------------------------------------------------
 -- 3. Xe (mọi xe thuộc trụ sở)
 -- ---------------------------------------------------------------------------
-INSERT INTO vehicle (license_plate, vehicle_class_id, standard_stall_count, wide_stall_count, home_hub_location_id, registration_expiry_date, status)
-SELECT v.plate, vc.id, v.std, v.wide, hub.id, DATE '2027-12-31', 'ACTIVE'
+INSERT INTO vehicle (license_plate, vehicle_class_id, standard_stall_count, wide_stall_count, home_hub_location_id, status)
+SELECT v.plate, vc.id, v.std, v.wide, hub.id, 'ACTIVE'
 FROM (VALUES
           ('51C-100.01', 'LIGHT', 2, 0),
-          ('51C-100.02', 'MEDIUM', 4, 2),
-          ('51C-100.03', 'HEAVY', 7, 2),
+          ('51C-100.02', 'MEDIUM', 2, 2),
+          ('51C-100.03', 'HEAVY', 5, 2),
           ('51C-100.04', 'HEAVY', 9, 0)
      ) AS v(plate, class_code, std, wide)
 JOIN vehicle_class vc ON vc.code = v.class_code
 JOIN location hub ON hub.is_headquarters
 ON CONFLICT (license_plate) DO NOTHING;
+
+UPDATE vehicle
+SET standard_stall_count = adjustment.new_standard
+FROM (VALUES ('51C-100.02', 'MEDIUM', 4, 2), ('51C-100.03', 'HEAVY', 7, 5))
+    AS adjustment(plate, class_code, old_standard, new_standard)
+JOIN vehicle_class vc ON vc.code = adjustment.class_code
+WHERE vehicle.license_plate = adjustment.plate AND vehicle.vehicle_class_id = vc.id
+  AND vehicle.standard_stall_count = adjustment.old_standard AND vehicle.wide_stall_count = 2;
 
 -- ---------------------------------------------------------------------------
 -- 4. Tuyến trục chính, điểm dừng, lịch chạy
@@ -225,13 +236,13 @@ ON CONFLICT ON CONSTRAINT uk_price_item DO NOTHING;
 -- ---------------------------------------------------------------------------
 -- 6. Quy định và giấy tờ yêu cầu (mẫu)
 -- ---------------------------------------------------------------------------
-INSERT INTO country_rule (country_code, direction, permit_lead_days, certificate_lead_days, quarantine_days, valid_from)
+INSERT INTO country_rule (country_code, direction, permit_lead_days, certificate_lead_days, valid_from)
 VALUES
-    ('VN', 'INTERPROVINCE', 0, 5, 0, DATE '2026-01-01'),
-    ('KH', 'EXPORT', 14, 7, 7, DATE '2026-01-01'),
-    ('KH', 'IMPORT', 30, 7, 30, DATE '2026-01-01'),
-    ('LA', 'EXPORT', 14, 7, 7, DATE '2026-01-01'),
-    ('LA', 'IMPORT', 30, 7, 30, DATE '2026-01-01')
+    ('VN', 'INTERPROVINCE', 0, 5, DATE '2026-01-01'),
+    ('KH', 'EXPORT', 14, 7, DATE '2026-01-01'),
+    ('KH', 'IMPORT', 30, 7, DATE '2026-01-01'),
+    ('LA', 'EXPORT', 14, 7, DATE '2026-01-01'),
+    ('LA', 'IMPORT', 30, 7, DATE '2026-01-01')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO document_requirement (country_rule_id, document_type_id, submitter_type, is_mandatory)

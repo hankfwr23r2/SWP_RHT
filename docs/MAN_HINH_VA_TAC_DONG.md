@@ -24,7 +24,7 @@ Task nào làm tới thao tác nào thì đối chiếu dòng đó. Một dòng 
 3. **Backend chặn, giao diện báo trước.** Nút mờ kèm lý do, và backend vẫn kiểm lại.
 4. **Hai người bấm cùng lúc:** người sau nhận lỗi kèm trạng thái mới. Khoang khóa bằng `FOR UPDATE`.
 5. **Trách nhiệm chuyển khi `handover` DONE**, theo từng con ngựa. Với khách, công ty chịu trách nhiệm suốt hành trình.
-6. **Hộ tống theo lượt xe** (`crew_assignment`), không theo đơn. Chỉ dẫn và dịch vụ gắn với `booking_horse` nên đi theo con ngựa.
+6. **Phân công theo lượt xe** (`crew_assignment`) là kế hoạch; **phụ trách theo từng con** là người ký nhận gần nhất. Chỉ dẫn và dịch vụ gắn với `booking_horse` nên đi theo con ngựa.
 7. **Dịch vụ bán thêm phải trả lời được [mới]:** ai làm, khi nào, bằng chứng ở bảng nào, không làm được thì hoàn tiền ra sao.
 
 ## 3. Trước khi nhận ngựa (luồng A)
@@ -61,6 +61,10 @@ Task nào làm tới thao tác nào thì đối chiếu dòng đó. Một dòng 
 | 4.5 | Điểm dừng: hub (hộ tống) | Quét chip, **Giao vào hub** | `handover` HUB_IN, `horse_stay` ASSEMBLY | Chip sai | Xe đón rảnh. Người ở `handled_by` phụ trách tới HUB_OUT **[mới]** | "Ở hub, chờ chuyến" |
 | 4.6 | Ngựa ở hub (hộ tống) | Cho ăn bữa tối, bữa sáng theo chỉ dẫn; đo, ghi ăn uống | `horse_health_log` (`horse_stay_id`, `water_intake`, `feed_intake`) | Không còn lưu trú | Con chưa ghi bữa hiện đỏ **[mới]** | Chỉ số mới nhất |
 | 4.7 | Thú y tại chuồng (chuyên viên) | Chọn đối tác VET, hẹn ngày; tải phiếu khám, phiếu xét nghiệm **[mới]** | `document` gắn `booking_horse_id` | Đối tác không có vai trò VET | Phiếu bắt buộc chưa duyệt thì xe không đi đón; không khám được thì trừ khi quyết toán | Phiếu khám |
+| 4.8 | Ngựa của tôi (hộ tống, điện thoại) **[mới]** | Thẻ từng con kèm việc sắp tới, một chạm để ghi | `horse_health_log` | Không phụ trách con đó | Việc trễ hiện đỏ, báo điều phối | Chỉ số mới nhất |
+| 4.9 | Nhận bàn giao (hộ tống mới) **[mới]** | Xem phiếu tóm tắt, quét chip, khám, ký | `handover` SHIFT, `handover_horse`, `horse_health_log` | Chip sai; chưa xem cảnh báo; không trong ca | Thẻ chuyển sang người mới | Ai đang chăm sóc |
+| 4.10 | Kết thúc ca, lượt xe (hộ tống) **[mới]** | **Kết thúc** | `vehicle_trip`, `crew_assignment` | Còn ngựa chưa có người nhận | Rảnh để nhận việc mới | |
+| 4.11 | Bảng phụ trách (điều phối) **[mới]** | Xem mọi con: ở đâu, ai giữ, việc trễ | | | Con không có người trong ca hiện đỏ đầu bảng | |
 
 ## 5. Giấy đủ điều kiện cách ly
 
@@ -116,6 +120,7 @@ Công ty không vận hành nơi cách ly. Điều kiện cách ly thể hiện 
 | 13 | Giấy không kịp sau khi cọc | Theo nguyên nhân khách, công ty, cơ quan (3.5b) |
 | 14 | Đơn nhập | Ngược đơn xuất; thiếu mẫu 14a thì không nhận ở cửa khẩu |
 | 15 | Xe | Chỉ thuộc tính và trạng thái, không giấy tờ xe |
+| 16 | Theo dõi sức khỏe xuyên suốt | Sổ theo con ngựa; người phụ trách đổi bằng ký nhận (thêm `SHIFT`); không buông ngựa khi chưa có người nhận. Mở rộng điểm 3 |
 
 ## 9. Ai làm phần nào
 
@@ -129,7 +134,7 @@ Công ty không vận hành nơi cách ly. Điều kiện cách ly thể hiện 
 | 3.9–3.10 | B1 |
 | 3.11 | A6b. 3.12: B2 |
 | 4.1–4.5, 6.1–6.5 | B1, B2. Khoản BALANCE và hủy do không trả: A7, A8; loại ngựa gọi `BookingHorseService.exclude` của A5 |
-| 4.6 | B3 |
+| 4.6, 4.8–4.11 | B2, B3 |
 | 4.7 | A6 |
 | 5.1–5.2 | A4, A6b. 5.3–5.4: B2 |
 | 6.6, 7.1–7.4 | B4, B5 |

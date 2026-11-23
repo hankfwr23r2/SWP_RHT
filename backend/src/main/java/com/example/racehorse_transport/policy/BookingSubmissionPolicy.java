@@ -68,8 +68,8 @@ public final class BookingSubmissionPolicy {
         }
     }
 
-    public static void validateRoute(Route route, BookingType type, Long pickupHubId, Long deliveryHubId) {
-        if (route.getStatus() != ActiveStatus.ACTIVE || !DepartureRoutePolicy.matches(route, type, pickupHubId, deliveryHubId)) {
+    public static void validateRoute(Route route, BookingType type, Long pickupHubId, Long deliveryHubId, String counterpartCountryCode) {
+        if (route.getStatus() != ActiveStatus.ACTIVE || !DepartureRoutePolicy.matches(route, type, pickupHubId, deliveryHubId, counterpartCountryCode)) {
             throw new BookingRuleException("Tuyến của chuyến không khớp điểm đón và điểm giao.");
         }
     }

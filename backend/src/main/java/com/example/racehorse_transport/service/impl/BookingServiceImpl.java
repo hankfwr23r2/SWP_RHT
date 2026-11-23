@@ -1,8 +1,8 @@
 package com.example.racehorse_transport.service.impl;
 
-import com.example.racehorse_transport.dto.booking.BookingCreateRequestDto;
 import com.example.racehorse_transport.dto.booking.BookingCreateRequestDto.AddressInput;
 import com.example.racehorse_transport.dto.booking.BookingCreateRequestDto.HorseInput;
+import com.example.racehorse_transport.dto.booking.BookingCreateRequestDto;
 import com.example.racehorse_transport.dto.booking.BookingResponseDto;
 import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.entity.enums.*;
@@ -11,13 +11,14 @@ import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.BookingSubmissionPolicy;
 import com.example.racehorse_transport.policy.DepartureRoutePolicy;
 import com.example.racehorse_transport.policy.RegulationPolicy;
+import com.example.racehorse_transport.policy.StallSeatPolicy;
 import com.example.racehorse_transport.repository.BookingHorseRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.CustomerRepository;
 import com.example.racehorse_transport.repository.HorseRepository;
 import com.example.racehorse_transport.service.BookingDetailsService;
-import com.example.racehorse_transport.service.BookingRoutingService;
 import com.example.racehorse_transport.service.BookingRoutingService.SubmissionRouting;
+import com.example.racehorse_transport.service.BookingRoutingService;
 import com.example.racehorse_transport.service.BookingService;
 import com.example.racehorse_transport.service.BookingStatusService;
 import com.example.racehorse_transport.service.DepartureService;
@@ -78,7 +79,8 @@ public class BookingServiceImpl implements BookingService {
         }
         details.acceptServiceTerms(booking, ipAddress);
         if (departure != null) {
-            departureService.reserve(departure.getId(), selectedHorses.size());
+            int seats = StallSeatPolicy.total(request.horses().stream().map(HorseInput::stallTypeCode).toList());
+            departureService.reserve(departure.getId(), seats);
         }
         statusHistory.recordInitialStatus(booking);
         return BookingResponseDto.from(booking);

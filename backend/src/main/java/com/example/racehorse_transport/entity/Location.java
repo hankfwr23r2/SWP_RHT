@@ -52,6 +52,10 @@ public class Location {
     @JoinColumn(name = "country_code", nullable = false)
     private Country country;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "counterpart_country_code")
+    private Country counterpartCountry;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "province_code")
     private Province province;
