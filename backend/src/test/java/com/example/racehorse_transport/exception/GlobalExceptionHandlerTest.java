@@ -34,6 +34,17 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void dispatchRuleIs400OrConflict409WithTheField() {
+        var invalid = handler.handleDispatchRule(new DispatchRuleException("stops", "Lượt xe cần ít nhất hai điểm dừng."));
+        assertThat(invalid.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(invalid.getBody().getData()).containsEntry("stops", "Lượt xe cần ít nhất hai điểm dừng.");
+
+        var conflict = handler.handleDispatchRule(new DispatchRuleException("vehicleId", "Xe đã có lượt chạy khác trùng giờ.", true));
+        assertThat(conflict.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(conflict.getBody().getMessage()).isEqualTo("Xe đã có lượt chạy khác trùng giờ.");
+    }
+
+    @Test
     void malformedJsonIs400() {
         var ex = new HttpMessageNotReadableException("JSON parse error: Unexpected character", new MockHttpInputMessage(new byte[0]));
 
