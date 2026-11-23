@@ -2,6 +2,24 @@
 export const fieldCrew = {
   myTrips: {
     "run": {
+      "incident": {
+        "report": "Report incident",
+        "reportTitle": "Report an incident",
+        "cause": "Cause",
+        "scope": "Affects",
+        "wholeTrip": "Whole vehicle",
+        "incidentTitle": "Title",
+        "incidentDescription": "Description",
+        "send": "Send report",
+        "reported": "Incident reported",
+        "confirmFit": "Fit to continue",
+        "fitDone": "Fit to continue confirmed",
+        "addCost": "Record cost",
+        "costDescription": "Item",
+        "amount": "Amount (VND)",
+        "consulted": "Customer was consulted",
+        "costSaved": "Cost recorded"
+      },
       "earlyReason": "Reason for leaving early (if rest is not complete)",
       "health": {
         "title": "Log health at this stop",

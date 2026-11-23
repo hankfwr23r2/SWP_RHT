@@ -649,7 +649,7 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 | A6 | Thẩm định, bảo hiểm | A | 4 | Backend xong, chưa commit (`feat/a6-review`) | |
 | A6b | Đồng bộ quyết định 23/11/2026 | A | 4 | Tài liệu xong, code chờ duyệt danh sách file | |
 | A7 | Báo giá, thanh toán | A | 4 | Chưa làm | |
-| B4 | Sự cố, chi phí | B | 4 | Đang làm: PR1 backend sự cố, phương án có phiên bản, chi phí theo nguyên nhân (nhánh `rd/b4-1-incident-cost`); còn màn báo sự cố, lập và duyệt phương án, ghi chi phí; phương án đổi xe và về hub gọi điều độ | |
+| B4 | Sự cố, chi phí | B | 4 | Xong phần chính (2 PR). PR2 màn sự cố và chi phí (nhánh `rd/b4-2-incident-ui`). Còn: phương án đổi xe, về hub tự lập lượt xe; biên lai, ảnh hiện trường | #385 |
 | B5 | Giao thất bại, giao lại | B | 4 | Chưa làm | |
 | A8 | Quyết toán, hủy, đánh giá | A | 5 | Chưa làm | |
 | B6 | Theo dõi, thông báo, báo cáo | B | 5 | Chưa làm | |

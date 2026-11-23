@@ -1,0 +1,136 @@
+import { expect, test, type Page, type Route } from '@playwright/test'
+
+// B4: điều phối lập phương án, quản lý từ chối có lý do rồi duyệt bản sau, duyệt chi phí; tổ xe báo sự cố và ghi chi phí. API giả lập.
+const ok = (route: Route, data: unknown, status = 200) => route.fulfill({ status, json: { status: 'success', message: '', data } })
+
+function incidentState() {
+  return {
+    id: 5, title: 'Ngựa bỏ ăn', incidentType: 'HEALTH', causeType: 'HORSE_CONDITION', status: 'REPORTED', description: 'Sao Mai bỏ ăn từ sáng',
+    vehicleTripCode: 'VT-AAAA0009', horseName: 'Sao Mai', bookingCode: 'BK-AAAA0001', plans: [] as Record<string, unknown>[],
+  }
+}
+
+async function signIn(page: Page, role: string) {
+  await page.addInitScript(r => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: r, name: 'Nhân viên Test', username: `${r}@example.com` })), role)
+}
+
+async function mockBoard(page: Page, incident: ReturnType<typeof incidentState>) {
+  const sent: Record<string, unknown> = {}
+  const costs = [{ id: 30, category: 'VET', description: 'Khám thú y', amount: 1500000, payerType: 'CUSTOMER', customerConsulted: false }] as Record<string, unknown>[]
+  await page.route('**/api/v1/**', async route => {
+    const request = route.request()
+    const path = new URL(request.url()).pathname.replace('/api/v1', '')
+    if (path === '/incidents') return ok(route, [incident])
+    if (path === '/incidents/5') return ok(route, incident)
+    if (path === '/incidents/5/cost-items') return ok(route, costs)
+    if (path === '/parties') return ok(route, [{ id: 3, displayName: 'Phòng khám thú y (mẫu)' }])
+    if (path === '/incidents/5/plans') {
+      sent.plan = request.postDataJSON()
+      incident.plans.forEach(p => { if (p.status === 'PROPOSED') p.status = 'SUPERSEDED' })
+      incident.plans.push({ id: 40 + incident.plans.length, version: incident.plans.length + 1, resolutionType: (sent.plan as { resolutionType: string }).resolutionType,
+        instructions: (sent.plan as { instructions: string }).instructions, status: 'PROPOSED' })
+      incident.status = 'PLAN_PENDING'
+      return ok(route, incident, 201)
+    }
+    const reject = path.match(/^\/incident-plans\/(\d+)\/reject$/)
+    if (reject) {
+      sent.reject = request.postDataJSON()
+      const plan = incident.plans.find(p => p.id === Number(reject[1]))!
+      plan.status = 'REJECTED'
+      plan.rejectionReason = (sent.reject as { reason: string }).reason
+      return ok(route, incident)
+    }
+    const approve = path.match(/^\/incident-plans\/(\d+)\/approve$/)
+    if (approve) {
+      incident.plans.find(p => p.id === Number(approve[1]))!.status = 'APPROVED'
+      incident.status = 'PLAN_ACTIVE'
+      return ok(route, incident)
+    }
+    if (path === '/cost-items/30/approve') { costs[0].approvedAt = '2031-03-05T10:00:00Z'; return ok(route, costs[0]) }
+    return ok(route, [])
+  })
+  return sent
+}
+
+test('điều phối lập phương án, quản lý từ chối có lý do rồi duyệt phiên bản sau và duyệt chi phí', async ({ page, context }) => {
+  const incident = incidentState()
+  await signIn(page, 'coordinator')
+  const sent = await mockBoard(page, incident)
+  await page.goto('/backoffice/coordinator/incidents')
+  await page.getByRole('table', { name: 'Sự cố đang xử lý' }).getByRole('row', { name: /Ngựa bỏ ăn/ }).getByRole('button', { name: 'Xem' }).click({ timeout: 15_000 })
+  const dialog = page.getByRole('dialog', { name: 'Ngựa bỏ ăn' })
+  await dialog.getByRole('combobox', { name: 'Cách xử lý' }).click()
+  await page.getByRole('option', { name: 'Thú y điều trị' }).click()
+  await dialog.getByRole('combobox', { name: 'Bên xử lý' }).click()
+  await page.getByRole('option', { name: 'Phòng khám thú y (mẫu)' }).click()
+  await dialog.getByLabel('Chỉ đạo').fill('Gọi thú y khám tại trạm')
+  await dialog.getByRole('button', { name: 'Lập phương án' }).click()
+  await expect(dialog).toContainText('Phiên bản 1 · Thú y điều trị')
+  expect(sent.plan).toEqual({ resolutionType: 'VET_TREATMENT', instructions: 'Gọi thú y khám tại trạm', handlerPartyId: 3 })
+
+  // Quản lý: từ chối phải có lý do
+  const managerPage = await context.newPage()
+  await signIn(managerPage, 'manager')
+  await mockBoard(managerPage, incident)
+  await managerPage.goto('/backoffice/manager/incidents')
+  await managerPage.getByRole('button', { name: 'Xem' }).click({ timeout: 15_000 })
+  const managerDialog = managerPage.getByRole('dialog', { name: 'Ngựa bỏ ăn' })
+  await managerDialog.getByRole('button', { name: 'Từ chối' }).click()
+  const rejectDialog = managerPage.getByRole('dialog', { name: 'Từ chối phương án phiên bản 1' })
+  await expect(rejectDialog.getByRole('button', { name: 'Từ chối' })).toBeDisabled()
+  await rejectDialog.getByLabel('Lý do từ chối').fill('Chi phí cao, thử nghỉ thêm')
+  await rejectDialog.getByRole('button', { name: 'Từ chối' }).click()
+  await expect(managerDialog).toContainText('Bị từ chối')
+  await expect(managerDialog).toContainText('Chi phí cao, thử nghỉ thêm')
+
+  // Điều phối lập phiên bản 2, quản lý duyệt
+  incident.plans.push({ id: 50, version: 2, resolutionType: 'CONTINUE', instructions: 'Nghỉ thêm 1 giờ rồi đi tiếp', status: 'PROPOSED' })
+  await managerPage.reload()
+  await managerPage.getByRole('button', { name: 'Xem' }).click({ timeout: 15_000 })
+  await managerDialog.getByRole('button', { name: 'Duyệt', exact: true }).click()
+  await expect(managerDialog).toContainText('Đã duyệt')
+  await managerDialog.getByRole('button', { name: 'Duyệt chi phí' }).click()
+  await expect(managerDialog.getByRole('button', { name: 'Duyệt chi phí' })).toHaveCount(0)
+})
+
+test('hộ tống báo sự cố cho một con và ghi chi phí', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await signIn(page, 'escort')
+  const run = {
+    trip: { id: 9, code: 'VT-AAAA0009', tripType: 'DIRECT', status: 'IN_PROGRESS', licensePlate: '51C-12345', startLocationName: 'Hub HCM', endLocationName: 'Hub HCM',
+      stops: [{ id: 2, sequenceNumber: 1, stopType: 'PICKUP', bookingCode: 'BK-AAAA0001', addressLine: 'Trại Long Thành', actualArrivalAt: 't', actualDepartureAt: 't' }] },
+    horses: [{ bookingCode: 'BK-AAAA0001', horseName: 'Sao Mai', seats: 1, leg: { id: 70, bookingHorseId: 50, boardTripStopId: 2, alightTripStopId: 3, status: 'IN_PROGRESS' } }],
+    handovers: [],
+  }
+  const incidents: Record<string, unknown>[] = []
+  const sent: Record<string, unknown> = {}
+  await page.route('**/api/v1/**', async route => {
+    const request = route.request()
+    const path = new URL(request.url()).pathname.replace('/api/v1', '')
+    if (path === '/crew/vehicle-trips/9') return ok(route, run)
+    if (path === '/vehicle-trips/9/incidents') return ok(route, incidents)
+    if (path === '/incidents' && request.method() === 'POST') {
+      sent.report = request.postDataJSON()
+      incidents.push({ id: 5, title: 'Ngựa bỏ ăn', status: 'REPORTED', horseName: 'Sao Mai' })
+      return ok(route, incidents[0], 201)
+    }
+    if (path === '/cost-items') { sent.cost = request.postDataJSON(); return ok(route, { id: 30 }, 201) }
+    return ok(route, [])
+  })
+  await page.goto('/backoffice/my-trips/9')
+
+  await page.getByRole('button', { name: 'Báo sự cố' }).click({ timeout: 15_000 })
+  const dialog = page.getByRole('dialog', { name: 'Báo sự cố' })
+  await dialog.getByRole('combobox', { name: 'Ảnh hưởng' }).click()
+  await page.getByRole('option', { name: 'Sao Mai · BK-AAAA0001' }).click()
+  await dialog.getByLabel('Tiêu đề').fill('Ngựa bỏ ăn')
+  await dialog.getByLabel('Mô tả').fill('Sao Mai bỏ ăn từ sáng')
+  await dialog.getByRole('button', { name: 'Gửi báo cáo' }).click()
+  await expect(page.getByText('Mới báo')).toBeVisible()
+  expect(sent.report).toEqual({ vehicleTripId: 9, horseLegId: 70, incidentType: 'HEALTH', causeType: 'HORSE_CONDITION', title: 'Ngựa bỏ ăn', description: 'Sao Mai bỏ ăn từ sáng' })
+
+  await page.getByLabel('Nội dung').fill('Thuốc hạ sốt')
+  await page.getByLabel('Số tiền (VND)').fill('350000')
+  await page.getByRole('button', { name: 'Ghi chi phí' }).click()
+  await expect.poll(() => sent.cost).toMatchObject({ category: 'VET', description: 'Thuốc hạ sốt', amount: 350000, incidentId: 5, customerConsulted: false })
+})

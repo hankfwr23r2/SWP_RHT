@@ -2,6 +2,24 @@
 export const fieldCrew = {
   myTrips: {
     "run": {
+      "incident": {
+        "report": "Báo sự cố",
+        "reportTitle": "Báo sự cố",
+        "cause": "Nguyên nhân",
+        "scope": "Ảnh hưởng",
+        "wholeTrip": "Cả xe",
+        "incidentTitle": "Tiêu đề",
+        "incidentDescription": "Mô tả",
+        "send": "Gửi báo cáo",
+        "reported": "Đã báo sự cố",
+        "confirmFit": "Đủ sức đi tiếp",
+        "fitDone": "Đã xác nhận đủ sức đi tiếp",
+        "addCost": "Ghi chi phí",
+        "costDescription": "Nội dung",
+        "amount": "Số tiền (VND)",
+        "consulted": "Đã hỏi ý kiến khách",
+        "costSaved": "Đã ghi chi phí"
+      },
       "earlyReason": "Lý do rời sớm (nếu chưa nghỉ đủ)",
       "health": {
         "title": "Ghi sức khỏe tại điểm này",
