@@ -1299,6 +1299,7 @@ Chỉ chứa tham số **không phải giá tiền**, ví dụ thời gian chờ
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
 | `config_key` | `varchar(100)` | | PK | Ví dụ `HANDOVER_WAIT_MINUTES` |
+| `audit_target_id` | `bigint` | | identity, UK | Định danh ổn định để ghi `audit_log.target_id` khi cập nhật tham số |
 | `config_value` | `varchar(500)` | | | |
 | `unit` | `varchar(30)` | có | | `MINUTE`, `HOUR`, `COUNT` |
 | `config_group` | `varchar(50)` | | | |

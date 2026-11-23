@@ -28,6 +28,10 @@ public class SystemConfig {
     @Column(name = "config_key", length = 100, nullable = false)
     private String configKey;
 
+    @Generated
+    @Column(name = "audit_target_id", nullable = false, insertable = false, updatable = false)
+    private Long auditTargetId;
+
     @Column(name = "config_value", length = 500, nullable = false)
     private String configValue;
 
@@ -45,8 +49,8 @@ public class SystemConfig {
     @JoinColumn(name = "updated_by")
     private Staff updatedBy;
 
-    // DB đặt giá trị mặc định now() lúc thêm dòng
+    // DB đặt mặc định lúc thêm dòng. Service cập nhật khi thay tham số.
     @Generated
-    @Column(name = "updated_at", nullable = false, insertable = false, updatable = false)
+    @Column(name = "updated_at", nullable = false, insertable = false)
     private Instant updatedAt;
 }
