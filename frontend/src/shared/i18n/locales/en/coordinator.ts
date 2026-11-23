@@ -1,6 +1,24 @@
 // Trang của điều phối viên
 export const coordinator = {
   dispatch: {
+    "stays": {
+      "tab": "Horses at hub",
+      "hub": "Hub",
+      "caption": "Horses staying",
+      "colHorse": "Horse",
+      "colBooking": "Booking",
+      "colType": "Type",
+      "colSince": "Since",
+      "colUntil": "Planned until",
+      "emptyTitle": "No horses staying at this hub",
+      "emptyDescription": "Horses handed into the hub appear here until they are taken out.",
+      "stayType": {
+        "ASSEMBLY": "Assembly",
+        "OVERNIGHT": "Overnight",
+        "STABLING": "Stabling",
+        "QUARANTINE": "Quarantine"
+      }
+    },
     "title": "Dispatch",
     "description": "Plan vehicles, crews and horses by week. Rules are checked on save, with the reason when something is not allowed.",
     "weekFrom": "Week starting",

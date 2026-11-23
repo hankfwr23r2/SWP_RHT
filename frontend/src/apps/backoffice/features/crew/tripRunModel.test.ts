@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CrewTrip } from '@shared/api/tripExecution'
-import { canArrive, canComplete, canDepart, canStart, handoverTypesAt, stopState } from './tripRunModel'
+import { canArrive, canComplete, canDepart, canStart, handoverTypesAt, horsesPassing, isRestStop, stopState } from './tripRunModel'
 
 const run = (over: Partial<NonNullable<CrewTrip['trip']>> = {}, extra: Partial<CrewTrip> = {}): CrewTrip => ({
   trip: {
@@ -49,5 +49,17 @@ describe('tripRunModel', () => {
     expect(canComplete(run())).toBe(false)
     const atEnd = run({ stops: [{ id: 3, stopType: 'HUB', actualArrivalAt: 't' }] })
     expect(canComplete(atEnd)).toBe(true)
+  })
+
+  it('con đang trên xe khi đi qua trạm nghỉ', () => {
+    const r = run({ stops: [{ id: 1, sequenceNumber: 1, stopType: 'PICKUP' }, { id: 2, sequenceNumber: 2, stopType: 'REST' }, { id: 3, sequenceNumber: 3, stopType: 'DELIVERY' }] },
+      { horses: [
+        { horseName: 'Sao Mai', leg: { boardTripStopId: 1, alightTripStopId: 3, status: 'IN_PROGRESS' } },
+        { horseName: 'Gió Bắc', leg: { boardTripStopId: 1, alightTripStopId: 2, status: 'IN_PROGRESS' } },
+        { horseName: 'Mây', leg: { boardTripStopId: 1, alightTripStopId: 3, status: 'PLANNED' } },
+      ] })
+    expect(horsesPassing(r, r.trip!.stops![1]).map(h => h.horseName)).toEqual(['Sao Mai'])
+    expect(isRestStop(r.trip!.stops![1])).toBe(true)
+    expect(isRestStop(r.trip!.stops![0])).toBe(false)
   })
 })

@@ -47,3 +47,15 @@ export function canComplete(run: CrewTrip): boolean {
   const last = stops[stops.length - 1]
   return running(run) && Boolean(last?.actualArrivalAt) && !pendingAt(run, last?.id)
 }
+
+// Trạm nghỉ và điểm khám: phải ghi uống và ăn cho mọi con đang trên xe trước khi rời (quy tắc #34)
+export const isRestStop = (stop: Stop) => stop.stopType === 'REST' || stop.stopType === 'VITAL_CHECK'
+
+// Con đang trên xe khi đi qua điểm này: đã lên trước điểm này và sẽ xuống sau điểm này
+export function horsesPassing(run: CrewTrip, stop: Stop) {
+  const sequenceOf = new Map(stopsOf(run).map(s => [s.id, s.sequenceNumber ?? 0]))
+  const at = stop.sequenceNumber ?? 0
+  return (run.horses ?? []).filter(h => h.leg?.status === 'IN_PROGRESS'
+    && (sequenceOf.get(h.leg.boardTripStopId) ?? 0) < at && at < (sequenceOf.get(h.leg.alightTripStopId) ?? 0))
+}
+

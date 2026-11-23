@@ -2,6 +2,29 @@
 export const fieldCrew = {
   myTrips: {
     "run": {
+      "earlyReason": "Lý do rời sớm (nếu chưa nghỉ đủ)",
+      "health": {
+        "title": "Ghi sức khỏe tại điểm này",
+        "status": "Sức khỏe",
+        "water": "Uống nước",
+        "feed": "Ăn",
+        "temperature": "Nhiệt độ (°C)",
+        "save": "Lưu",
+        "logged": "Đã ghi",
+        "notLogged": "Chưa ghi",
+        "saved": "Đã ghi sức khỏe",
+        "statusValue": {
+          "NORMAL": "Bình thường",
+          "WATCH": "Theo dõi",
+          "SICK": "Ốm",
+          "CRITICAL": "Nguy kịch"
+        },
+        "intakeValue": {
+          "NORMAL": "Bình thường",
+          "REDUCED": "Ít",
+          "REFUSED": "Bỏ"
+        }
+      },
       "open": "Mở lượt xe",
       "back": "Lượt xe của tôi",
       "loadError": "Không tải được lượt xe",

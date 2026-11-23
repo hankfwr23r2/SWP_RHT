@@ -1,6 +1,24 @@
 // Trang của điều phối viên
 export const coordinator = {
   dispatch: {
+    "stays": {
+      "tab": "Ngựa ở hub",
+      "hub": "Hub",
+      "caption": "Ngựa đang lưu trú",
+      "colHorse": "Ngựa",
+      "colBooking": "Đơn",
+      "colType": "Loại",
+      "colSince": "Từ lúc",
+      "colUntil": "Dự kiến tới",
+      "emptyTitle": "Không có ngựa đang lưu trú ở hub này",
+      "emptyDescription": "Ngựa được giao vào hub sẽ hiện ở đây tới khi nhận ra.",
+      "stayType": {
+        "ASSEMBLY": "Tập kết",
+        "OVERNIGHT": "Nghỉ đêm",
+        "STABLING": "Gửi chuồng",
+        "QUARANTINE": "Cách ly"
+      }
+    },
     "title": "Điều độ",
     "description": "Xếp xe, tổ lái và ngựa theo tuần. Hệ thống kiểm quy tắc khi lưu và nói rõ lý do nếu không được.",
     "weekFrom": "Tuần bắt đầu từ",
