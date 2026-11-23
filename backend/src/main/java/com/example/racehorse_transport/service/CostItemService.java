@@ -1,11 +1,23 @@
 package com.example.racehorse_transport.service;
 
+import com.example.racehorse_transport.dto.incident.CostItemRequestDto;
+import com.example.racehorse_transport.dto.incident.CostItemResponseDto;
 import java.util.List;
 
-// Hợp đồng gọi chéo giữa hai luồng (docs/KE_HOACH_TRIEN_KHAI.md mục 3.3).
-// Cài đặt: luồng B (task B4). Gọi: luồng A. Chưa có cài đặt thì bên gọi test bằng mock.
+// Chi phí phát sinh (B4). Chủ sở hữu cost_item.
+// linkExtraPayment là hợp đồng gọi chéo (docs/KE_HOACH_TRIEN_KHAI.md mục 3.3): luồng B cài đặt, luồng A gọi.
 public interface CostItemService {
 
-    // Gắn khoản thu thêm vào các chi phí (cost_item.extra_payment_id). Chỉ áp cho chi phí không do công ty chịu.
+    List<CostItemResponseDto> ofIncident(Long incidentId);
+
+    List<CostItemResponseDto> ofBooking(Long bookingId);
+
+    // Ghi chi phí; bên chịu theo nguyên nhân sự cố (CostPayerPolicy), không gắn sự cố thì công ty chịu
+    CostItemResponseDto record(CostItemRequestDto request, String username);
+
+    // Quản lý duyệt; khoản khách chịu phải đã hỏi khách hoặc nằm trong hạn mức chi khẩn cấp của đơn
+    CostItemResponseDto approve(Long costItemId, String username);
+
+    // Gắn khoản thu thêm vào các chi phí (cost_item.extra_charge_payment_id). Chỉ áp cho chi phí đã duyệt, không do công ty chịu.
     void linkExtraPayment(List<Long> costItemIds, Long paymentId);
 }
