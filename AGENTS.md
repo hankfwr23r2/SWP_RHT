@@ -15,6 +15,8 @@
 
 Khi hai nguồn mâu thuẫn: **dừng lại, nêu mâu thuẫn và hỏi người dùng**. Không tự chọn một bên. Không mở lại các quyết định đã chốt trong `NGU_CANH_THIET_KE_LAI.md`.
 
+**Nghiệp vụ khó quyết định** mà các nguồn trên chưa nói: tham khảo mô hình của IRT (International Racehorse Transport) hoặc Peden Bloodstock trước, kế đến là nghiệp vụ cũ đã có (nhánh `main`). Phương án phải nêu nguồn; không tìm được thì ghi **chưa kiểm chứng**. Việc tham khảo không thay bước xin duyệt ở mục 1.1.
+
 ---
 
 ## 1. Cách làm việc (khóa cứng)
