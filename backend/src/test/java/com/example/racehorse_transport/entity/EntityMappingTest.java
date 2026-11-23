@@ -97,7 +97,7 @@ class EntityMappingTest {
         Route route = routes.findByCode("HCM-DN").orElseThrow();
         List<RouteStop> stops = routeStops.findById_RouteIdOrderById_Seq(route.getId());
 
-        assertThat(route.getOriginHub().getCode()).isEqualTo("HUB-HCM");
+        assertThat(route.getOrigin().getCode()).isEqualTo("HUB-HCM");
         assertThat(route.getDestination().getType()).isEqualTo(LocationType.HUB);
         assertThat(route.getDistanceKm()).isEqualByComparingTo("960.00");
         assertThat(stops).extracting(s -> s.getId().getSeq()).containsExactly(1, 2, 3, 4, 5);

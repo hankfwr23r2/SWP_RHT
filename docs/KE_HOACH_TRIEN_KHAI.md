@@ -287,6 +287,10 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
 
 ### A1. Mạng lưới, tuyến, lịch chạy, chuyến (đợt 1)
 
+> **Ghi chú khi làm A1:** làm backend trước (2 PR: danh mục, chuyến). Frontend A1 làm sau khi P0-FE và P0.3-B merge.
+> Tuyến được xuất phát từ cửa khẩu (`route.origin_location_id`), có tuyến chiều nhập `MOCBAI-HCM` trong seed dev.
+> `BookingStatusService` (và `BookingStatusPolicy`) cài đặt sớm ở PR2 của A1 vì hủy chuyến cần đổi trạng thái đơn.
+
 - **BE:**
   - `LocationService` (location, `hub_service_area`, kiểm `UNIQUE (province_code)`), `RouteService` (route, route_stop, `departure_schedule`, `_day`);
   - `DepartureService`: sinh chuyến từ lịch (scheduler hằng ngày, idempotent nhờ `UNIQUE (schedule_id, departure_date)`), đóng chuyến khi tới giờ chốt, tạo chuyến đột xuất, hủy chuyến (đơn → `SCHEDULE_CHANGE_REQUIRED` qua `BookingStatusService`), `reserve/release` có `FOR UPDATE`;
@@ -602,7 +606,7 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 | P0.3-A | Auth, interface gọi chéo, `TestData` | A | 0 | Chờ review (nhánh `rd/p0-3a-auth`) | |
 | P0.3-B | Document, Notification, Audit, ArchUnit, OpenAPI | B | 0 | Chưa làm | |
 | P0-FE | Token, `shared/ui`, layout, orval, lint, i18n | B | 0 | Chưa làm | |
-| A1 | Mạng lưới, tuyến, lịch, chuyến | A | 1 | Chưa làm | |
+| A1 | Mạng lưới, tuyến, lịch, chuyến | A | 1 | Đang làm: PR1 danh mục chờ review (nhánh `rd/a1-network`), PR2 chuyến. FE làm sau P0-FE | |
 | A2 | Xe, nhân sự, đối tác, tham số | A | 1 | Chưa làm | |
 | B1 | Điều độ | B | 1 | Chưa làm | |
 | A3 | Bảng giá, tính giá | A | 2 | Chưa làm | |

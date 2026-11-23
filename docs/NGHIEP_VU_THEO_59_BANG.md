@@ -3,7 +3,7 @@
 > Tài liệu mô tả **ai làm gì, lúc nào, ghi vào bảng nào** trong hệ thống mới. Phần cuối nêu những gì tận dụng được từ project cũ.
 >
 > - Đặc tả cột và ràng buộc: [DB_SCHEMA_59_BANG.md](DB_SCHEMA_59_BANG.md). Khi có mâu thuẫn, file đó đúng.
-> - Căn cứ pháp lý và tham chiếu IRT/Peden: [MO_HINH_NGHIEP_VU_MOI.md](MO_HINH_NGHIEP_VU_MOI.md).
+> - Tài liệu **tham khảo** (căn cứ pháp lý, cách làm của IRT/Peden), không phải yêu cầu: [MO_HINH_NGHIEP_VU_MOI.md](MO_HINH_NGHIEP_VU_MOI.md).
 > - Vì sao thiết kế như vậy: [NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LAI.md).
 
 ## Mục lục
@@ -55,7 +55,8 @@ Một **đơn** có nhiều ngựa. Một **lượt xe** chở ngựa của nhi�
 
 **Trục chính có cả tuyến nội địa và tuyến quốc tế:**
 - Nội địa: hub ⇄ hub, ví dụ `HUB-HCM` ⇄ `HUB-DN`.
-- Quốc tế: hub → cửa khẩu, ví dụ `HUB-HCM` → `GATE-MOCBAI`.
+- Quốc tế chiều xuất: hub → cửa khẩu, ví dụ `HUB-HCM` → `GATE-MOCBAI`.
+- Quốc tế chiều nhập: cửa khẩu → hub, ví dụ `GATE-MOCBAI` → `HUB-HCM`. Đại lý đưa ngựa tới cửa khẩu, bàn giao cho công ty, rồi ngựa đi chuyến trục về hub.
 
 **Trụ sở và hub vệ tinh.** Mọi xe và nhân viên thuộc trụ sở (`HUB-HCM`). Hub vệ tinh (ví dụ `HUB-DN`) có vùng phục vụ và chỗ tập kết ngựa, nhưng không có xe hay nhân viên trực thuộc. Xe trục tới hub vệ tinh thì chạy luôn lượt giao ở vùng đó, rồi về trụ sở bằng chuyến trục chiều ngược.
 
@@ -92,7 +93,7 @@ Hub đón và hub giao tra từ `hub_service_area` theo tỉnh của `booking_ad
 | `COORDINATOR` | Điều phối viên | Gán đơn vào chuyến, lập chặng, lượt xe, lưu trú, đề xuất phương án sự cố |
 | `MANAGER` | Quản lý | Duyệt báo giá, phương án sự cố, khoản chi, quyết toán |
 | `DRIVER` | Tài xế | Chạy lượt xe, check-in điểm dừng, giao nhận |
-| `ESCORT` | Người chăm ngựa (groom) | Chăm ngựa, ghi nhật ký sức khỏe, quét chip |
+| `ESCORT` | Nhân viên hộ tống | Chăm ngựa, ghi nhật ký sức khỏe, quét chip |
 | `ADMIN` | Quản trị | Dữ liệu nền: tuyến, lịch, bảng giá, quy định, tài khoản |
 
 Nhân viên có thêm dòng `staff` (1–1 với `app_user`) chứa mã nhân viên, hub trực thuộc và bằng lái. Khách hàng **không** có dòng `staff`.
@@ -288,7 +289,7 @@ Quá `valid_until` mà chưa cọc thì scheduler chuyển báo giá sang `EXPIR
 | **Tạo lượt xe trục chính** cho chuyến | `vehicle_trip` LINEHAUL có `departure_id`. `trip_stop` chép từ `route_stop`: giờ = `planned_depart_at + offset_minutes` |
 | **Tạo lượt xe chạy thẳng** cho đơn không qua trục | `vehicle_trip` DIRECT: trụ sở → các địa chỉ đón → các địa chỉ giao → trụ sở. Có thể gom nhiều đơn cùng vùng |
 | **Tạo lượt giao ở hub vệ tinh** | `vehicle_trip` DELIVERY bắt đầu tại hub vệ tinh, dùng chính xe vừa chạy trục tới. Sau đó xe về trụ sở bằng chuyến trục chiều ngược |
-| Phân công tài xế, groom | `crew_assignment` (ASSIGNED). Nhân viên bấm xác nhận thì thành ACKNOWLEDGED |
+| Phân công tài xế, hộ tống | `crew_assignment` (ASSIGNED). Nhân viên bấm xác nhận thì thành ACKNOWLEDGED |
 | Gắn ngựa vào lượt xe | `horse_leg.vehicle_trip_id`, `board_stop_id`, `alight_stop_id` |
 
 **Điều kiện được đón ngựa**, kiểm bằng truy vấn khi xe xuất phát:
@@ -308,7 +309,7 @@ Quá `valid_until` mà chưa cọc thì scheduler chuyển báo giá sang `EXPIR
 
 ### GĐ6. Nhận ngựa
 
-**Ai:** tài xế, groom. **Trạng thái:** `CONFIRMED` → `IN_OPERATION` khi con ngựa đầu tiên được nhận.
+**Ai:** tài xế, hộ tống. **Trạng thái:** `CONFIRMED` → `IN_OPERATION` khi con ngựa đầu tiên được nhận.
 
 | Bước | Hành động | Bảng |
 |---|---|---|
@@ -332,7 +333,7 @@ Quá `valid_until` mà chưa cọc thì scheduler chuyển báo giá sang `EXPIR
 
 ### GĐ7. Hành trình: các chặng và các lần lưu trú xen kẽ
 
-**Ai:** tài xế, groom, điều phối viên, đại lý. **Trạng thái đơn:** vẫn `IN_OPERATION`.
+**Ai:** tài xế, hộ tống, điều phối viên, đại lý. **Trạng thái đơn:** vẫn `IN_OPERATION`.
 
 #### 7.1 Về hub và tập kết
 
@@ -349,7 +350,7 @@ Quá `valid_until` mà chưa cọc thì scheduler chuyển báo giá sang `EXPIR
 |---|---|
 | Chuyển từ hub sang trại cách ly | `vehicle_trip` TRANSFER, `horse_leg` stage TRANSFER |
 | Nhập trại | `handover` STAY_IN, `horse_stay` QUARANTINE (`operator_party_id` = trại) |
-| Groom ghi sức khỏe hằng ngày | `horse_health_log` (`horse_stay_id`) |
+| Hộ tống ghi sức khỏe hằng ngày | `horse_health_log` (`horse_stay_id`) |
 | Kết thúc cách ly | `horse_stay.result = PASSED` hoặc `FAILED`, `actual_to`. Có thể kéo dài: tăng `planned_to` và tính phụ phí ở `cost_item` |
 
 Trong lúc ngựa cách ly, **xe không bị giữ**: chặng tiếp theo là một lượt xe khác.
@@ -385,7 +386,7 @@ Sau khi bàn giao cho đại lý, công ty **vẫn chịu trách nhiệm với k
 
 ### GĐ8. Giao ngựa
 
-Giao ngựa **đối xứng với đón ngựa**. **Ai:** tài xế và groom (giao trong nước), hoặc đại lý (giao ở nước ngoài). **Trạng thái:** `IN_OPERATION` → `DELIVERED`.
+Giao ngựa **đối xứng với đón ngựa**. **Ai:** tài xế và hộ tống (giao trong nước), hoặc đại lý (giao ở nước ngoài). **Trạng thái:** `IN_OPERATION` → `DELIVERED`.
 
 | Bước | Hành động | Bảng |
 |---|---|---|
@@ -452,12 +453,12 @@ Hạn khiếu nại là 7 ngày kể từ `handover` DELIVERY DONE.
 
 | Bước | Ai | Bảng |
 |---|---|---|
-| Báo sự cố, kèm vị trí và ảnh | Tài xế/groom | `incident` (REPORTED). Gắn `vehicle_trip_id` nếu cả xe bị ảnh hưởng, `horse_leg_id` nếu chỉ một con. `document` ảnh |
+| Báo sự cố, kèm vị trí và ảnh | Tài xế/hộ tống | `incident` (REPORTED). Gắn `vehicle_trip_id` nếu cả xe bị ảnh hưởng, `horse_leg_id` nếu chỉ một con. `document` ảnh |
 | Lập phương án | Điều phối viên | `incident_plan` (PROPOSED, version 1): loại xử lý, chỉ đạo, chi phí dự kiến, bên xử lý (`handler_party_id`) |
 | Duyệt hoặc từ chối | Quản lý | `incident_plan` APPROVED / REJECTED (bắt buộc ghi lý do). Từ chối thì lập version 2 |
 | Thực hiện phương án | Tổ xe | Tùy loại: VET_TREATMENT thì ghi `horse_health_log`; TRANSFER_VEHICLE thì tạo `vehicle_trip` mới và đổi `horse_leg`; RETURN_TO_HUB thì tạo chặng RETURN |
 | Ghi chi phí | Tổ xe | `cost_item` gắn `incident_id`, `payer` theo `cause` |
-| Xác nhận ngựa đủ sức khỏe đi tiếp | Thú y hoặc groom | `incident.fit_confirmed_by`, `fit_confirmed_at` |
+| Xác nhận ngựa đủ sức khỏe đi tiếp | Thú y hoặc hộ tống | `incident.fit_confirmed_by`, `fit_confirmed_at` |
 | Đóng sự cố | Điều phối viên | `incident.status = RESOLVED` → CLOSED, `incident_plan` DONE |
 
 ### 5.2 Chuyến bị hủy hoặc đổi
@@ -555,8 +556,8 @@ Nếu cùng khách đó gửi ngựa từ Đồng Nai sang Bình Dương thì c�
 | 8 | `booking_rating` | Khách | GĐ10 |
 | 9 | `vehicle_trip`, `trip_stop`, `crew_assignment` | Điều phối viên tạo. Tổ xe cập nhật giờ thực tế | GĐ5–8 |
 | 9 | `horse_leg`, `horse_stay` | Điều phối viên lập kế hoạch. Tổ xe hoặc đại lý cập nhật | GĐ5–8 |
-| 9 | `horse_health_log` | Groom, thú y | GĐ6–8 |
-| 10 | `handover`, `handover_horse`, `handover_item` | Tài xế, groom | GĐ6–8 |
+| 9 | `horse_health_log` | Hộ tống, thú y | GĐ6–8 |
+| 10 | `handover`, `handover_horse`, `handover_item` | Tài xế, hộ tống | GĐ6–8 |
 | 11 | `horse_insurance` | Khách khai. Chuyên viên báo giá và xác nhận | GĐ1–2 |
 | 12 | `quotation`, `quotation_line` | Hệ thống tính. Quản lý duyệt và gửi | GĐ3 |
 | 12 | `payment`, `payment_transaction` | Hệ thống tạo. Cổng VNPAY gọi lại | GĐ4, GĐ5, GĐ9 |

@@ -76,7 +76,7 @@ class MigrationTest {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM province", Integer.class)).isEqualTo(77);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM role", Integer.class)).isEqualTo(7);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM app_user WHERE username LIKE '%.dev'", Integer.class)).isEqualTo(8);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM route_stop", Integer.class)).isEqualTo(13);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM route_stop", Integer.class)).isEqualTo(16);
     }
 
     @Test

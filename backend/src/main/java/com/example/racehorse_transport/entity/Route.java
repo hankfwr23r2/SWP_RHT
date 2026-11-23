@@ -39,9 +39,10 @@ public class Route {
     @Column(name = "name", length = 200, nullable = false)
     private String name;
 
+    // Điểm đầu: hub, hoặc cửa khẩu với tuyến chiều nhập
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "origin_hub_id", nullable = false)
-    private Location originHub;
+    @JoinColumn(name = "origin_location_id", nullable = false)
+    private Location origin;
 
     // Điểm cuối: hub, trại cách ly hoặc cửa khẩu
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

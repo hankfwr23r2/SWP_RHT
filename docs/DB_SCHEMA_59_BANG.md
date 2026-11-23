@@ -97,6 +97,7 @@ CREATE EXTENSION IF NOT EXISTS btree_gist;   -- cho EXCLUDE chống trùng thờ
 | 13 | Thêm `DIRECT` vào `vehicle_trip.kind`, `horse_leg.stage`, `service.layer` và `quotation_line.line_type` | Đơn có hub đón trùng hub giao (LOCAL hoặc liên tỉnh gần) chạy thẳng từ địa chỉ tới địa chỉ, không qua trục chính |
 | 14 | `hub_service_area`: thêm `UNIQUE (province_code)` | Mỗi tỉnh thuộc đúng một hub, để tra được hub đón và hub giao |
 | 15 | Có **trục nội địa** (ví dụ HCM ⇄ Đà Nẵng) với **hub vệ tinh** | Hub vệ tinh là location loại HUB, có vùng phục vụ nhưng không có xe hay nhân viên trực thuộc. `vehicle.home_hub_id` và `staff.home_hub_id` vẫn là trụ sở |
+| 17 | `route.origin_hub_id` đổi thành `origin_location_id`, cho phép điểm đầu là cửa khẩu (migration `V202611231100`) | Đơn IMPORT đi tuyến định kỳ từ cửa khẩu về hub, đối xứng với chiều xuất |
 | 16 | Bỏ mọi view. Thêm cột dẫn xuất `quotation.total_amount`, `pass_through_amount`, `deposit_amount` và `departure.booked_stalls` | Logic nghiệp vụ nằm hoàn toàn trong code. Chỉ lưu cột khi giá trị đã chốt (báo giá) hoặc có khóa bảo vệ (khoang). Đã trả và còn nợ tính trong code vì đổi liên tục |
 
 ---
@@ -371,14 +372,16 @@ Index: `owner_party_id`, `horse_type_id`.
 | `id` | `bigint` | | PK, identity | |
 | `code` | `varchar(30)` | | UK | Ví dụ `HCM-PNH` |
 | `name` | `varchar(200)` | | | |
-| `origin_hub_id` | `bigint` | | FK → location | Điểm đầu, phải là HUB |
+| `origin_location_id` | `bigint` | | FK → location | Điểm đầu: HUB, hoặc BORDER_GATE với tuyến chiều nhập |
 | `destination_location_id` | `bigint` | | FK → location | Điểm cuối: hub, trại cách ly hoặc cửa khẩu |
 | `distance_km` | `numeric(8,2)` | | CK `> 0` | |
 | `est_duration_minutes` | `int` | | CK `> 0` | |
 | `status` | `varchar(30)` | | CK `ACTIVE, INACTIVE` | |
 
-Ràng buộc bảng: `CHECK (origin_hub_id <> destination_location_id)`.
-Index: `origin_hub_id`, `destination_location_id`.
+Ràng buộc bảng: `CHECK (origin_location_id <> destination_location_id)`.
+Index: `origin_location_id`, `destination_location_id`.
+
+Loại điểm đầu, điểm cuối và điểm dừng được kiểm ở `RouteStopsPolicy` (cần so với bảng `location`).
 
 ### 4.2 `route_stop`: các điểm dừng trên tuyến
 
@@ -1334,7 +1337,7 @@ Các quy tắc dưới đây cần so dữ liệu ở nhiều bảng nên CHECK 
 
 | # | Quy tắc | Bảng liên quan |
 |---|---|---|
-| 1 | `location` được tham chiếu phải đúng `type`: `hub_service_area`, `staff.home_hub_id`, `vehicle.home_hub_id`, `route.origin_hub_id` là HUB. `document_requirement.gate_location_id` là BORDER_GATE | location |
+| 1 | `location` được tham chiếu phải đúng `type`: `hub_service_area`, `staff.home_hub_id`, `vehicle.home_hub_id` là HUB. `route.origin_location_id` là HUB hoặc BORDER_GATE. `document_requirement.gate_location_id` là BORDER_GATE | location |
 | 2 | `departure.route_id` phải bằng `departure_schedule.route_id` khi có `schedule_id` | departure |
 | 3 | Chỉ nhận đặt chỗ khi `departure.status = OPEN`, `now() < booking_cutoff_at` và còn đủ khoang (`booked_stalls + số ngựa ≤ capacity_stalls`) | booking, departure |
 | 4 | `booking_cutoff_at` phải đủ xa: lấy `permit_lead_days`, `cert_lead_days` và `quarantine_days` từ `country_rule` | departure, country_rule |
