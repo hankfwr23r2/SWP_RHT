@@ -2,6 +2,15 @@
 export const fieldCrew = {
   myTrips: {
     "run": {
+      "delivery": {
+        "startWaiting": "Bắt đầu chờ người nhận",
+        "waitingSince": "Đang chờ người nhận từ {{time}}",
+        "noRecipient": "Không gặp người nhận",
+        "noRecipientTitle": "Ghi nhận không gặp người nhận?",
+        "noRecipientMessage": "Ngựa chưa giao được, chặng giao bị đánh dấu thất bại và điều phối được báo để giao lại. Chỉ làm được sau khi hết giờ chờ miễn phí.",
+        "waitStarted": "Đã bắt đầu chờ người nhận",
+        "failed": "Đã ghi nhận không gặp người nhận"
+      },
       "incident": {
         "report": "Báo sự cố",
         "reportTitle": "Báo sự cố",

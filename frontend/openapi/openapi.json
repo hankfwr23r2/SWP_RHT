@@ -2565,6 +2565,10 @@
           "tripStopId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "waitStartedAt" : {
+            "format" : "date-time",
+            "type" : "string"
           }
         },
         "type" : "object"
@@ -7521,6 +7525,33 @@
         "tags" : [ "trip-execution-controller" ]
       }
     },
+    "/handovers/{id}/fail" : {
+      "post" : {
+        "operationId" : "fail",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCrewTripResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "trip-execution-controller" ]
+      }
+    },
     "/handovers/{id}/horses" : {
       "post" : {
         "operationId" : "scan",
@@ -7543,6 +7574,33 @@
           },
           "required" : true
         },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCrewTripResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "trip-execution-controller" ]
+      }
+    },
+    "/handovers/{id}/start-waiting" : {
+      "post" : {
+        "operationId" : "startWaiting",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
         "responses" : {
           "200" : {
             "content" : {

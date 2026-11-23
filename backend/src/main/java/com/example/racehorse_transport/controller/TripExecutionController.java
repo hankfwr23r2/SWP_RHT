@@ -5,6 +5,7 @@ import com.example.racehorse_transport.dto.operation.CrewTripResponseDto;
 import com.example.racehorse_transport.dto.operation.HandoverCreateRequestDto;
 import com.example.racehorse_transport.dto.operation.HandoverScanRequestDto;
 import com.example.racehorse_transport.dto.operation.StopDepartRequestDto;
+import com.example.racehorse_transport.service.DeliveryFailureService;
 import com.example.racehorse_transport.service.HandoverService;
 import com.example.racehorse_transport.service.TripExecutionService;
 import jakarta.validation.Valid;
@@ -27,6 +28,7 @@ public class TripExecutionController {
 
     private final TripExecutionService execution;
     private final HandoverService handovers;
+    private final DeliveryFailureService deliveryFailures;
 
     @GetMapping("/crew/vehicle-trips/{id}")
     public ApiResponseDto<CrewTripResponseDto> trip(@PathVariable Long id, Authentication authentication) {
@@ -74,4 +76,17 @@ public class TripExecutionController {
     public ApiResponseDto<CrewTripResponseDto> completeHandover(@PathVariable Long id, Authentication authentication) {
         return ApiResponseDto.success(handovers.complete(id, authentication.getName()), "Đã hoàn tất giao nhận");
     }
+
+    @PostMapping("/handovers/{id}/start-waiting")
+    public ApiResponseDto<CrewTripResponseDto> startWaiting(@PathVariable Long id, Authentication authentication) {
+        Long tripId = deliveryFailures.startWaiting(id, authentication.getName());
+        return ApiResponseDto.success(handovers.crewTrip(tripId, authentication.getName()), "Đã bắt đầu chờ người nhận");
+    }
+
+    @PostMapping("/handovers/{id}/fail")
+    public ApiResponseDto<CrewTripResponseDto> fail(@PathVariable Long id, Authentication authentication) {
+        Long tripId = deliveryFailures.fail(id, authentication.getName());
+        return ApiResponseDto.success(handovers.crewTrip(tripId, authentication.getName()), "Đã ghi nhận không gặp người nhận");
+    }
 }
+

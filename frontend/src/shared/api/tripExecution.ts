@@ -23,6 +23,8 @@ export const tripExecutionApi = {
   openHandover: (stopId: number, handoverType: HandoverType) => post<CrewTrip>(`/trip-stops/${stopId}/handovers`, { handoverType }),
   scan: (handoverId: number, horseLegId: number, microchip: string) => post<CrewTrip>(`/handovers/${handoverId}/horses`, { horseLegId, microchip }),
   completeHandover: (handoverId: number) => post<CrewTrip>(`/handovers/${handoverId}/complete`),
+  startWaiting: (handoverId: number) => post<CrewTrip>(`/handovers/${handoverId}/start-waiting`),
+  failDelivery: (handoverId: number) => post<CrewTrip>(`/handovers/${handoverId}/fail`),
   recordHealth: (body: HealthLogCreate) => post<HealthLog>('/health-logs', body),
   healthLogs: (bookingHorseId: number) => get<HealthLog[]>(`/booking-horses/${bookingHorseId}/health-logs`),
 }

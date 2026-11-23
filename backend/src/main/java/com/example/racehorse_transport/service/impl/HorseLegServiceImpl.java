@@ -118,7 +118,13 @@ public class HorseLegServiceImpl implements HorseLegService {
             throw new DispatchRuleException("bookingHorseId", "Ngựa đã có trên lượt xe này.", true);
         }
         HorseLeg previous = chain.stream().filter(l -> !INACTIVE.contains(l.getStatus())).reduce((first, second) -> second).orElse(null);
-        if (previous != null) {
+        HorseLeg last = chain.isEmpty() ? null : chain.getLast();
+        HorseLeg failed = last != null && last.getStatus() == HorseLegStatus.FAILED ? last : null;
+        if (failed != null) {
+            // Giao thất bại: xe đưa ngựa về nơi lượt đó kết thúc (về hub); chặng mới đi tiếp từ đó (B5)
+            DispatchPolicy.requireContinuous("L" + failed.getVehicleTrip().getEndLocation().getId(), placeKey(board));
+            DispatchPolicy.requireAfterPreviousLeg(failed.getVehicleTrip().getPlannedEndAt(), board.getPlannedDepartureAt());
+        } else if (previous != null) {
             DispatchPolicy.requireContinuous(endKey(previous), placeKey(board));
             DispatchPolicy.requireAfterPreviousLeg(previous.getPlannedEndAt(), board.getPlannedDepartureAt());
         } else if (legType != HorseLegType.LINEHAUL) {
@@ -146,6 +152,9 @@ public class HorseLegServiceImpl implements HorseLegService {
         leg.setVehicleTrip(trip);
         leg.setBoardTripStop(board);
         leg.setAlightTripStop(alight);
+        if (failed != null && (failed.getLegType() == HorseLegType.DELIVERY || failed.getLegType() == HorseLegType.DIRECT) && legType == HorseLegType.DELIVERY) {
+            leg.setReplacedHorseLeg(failed);
+        }
         leg.setPlannedStartAt(board.getPlannedDepartureAt());
         leg.setPlannedEndAt(alight.getPlannedArrivalAt());
         leg.setStatus(HorseLegStatus.PLANNED);

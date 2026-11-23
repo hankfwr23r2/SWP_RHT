@@ -2,6 +2,15 @@
 export const fieldCrew = {
   myTrips: {
     "run": {
+      "delivery": {
+        "startWaiting": "Start waiting for recipient",
+        "waitingSince": "Waiting for the recipient since {{time}}",
+        "noRecipient": "Recipient not found",
+        "noRecipientTitle": "Record that the recipient was not found?",
+        "noRecipientMessage": "The horse is not delivered, the delivery leg is marked failed and the coordinator is told to redeliver. Allowed only after the free waiting time.",
+        "waitStarted": "Started waiting for recipient",
+        "failed": "Recipient not found recorded"
+      },
       "incident": {
         "report": "Report incident",
         "reportTitle": "Report an incident",

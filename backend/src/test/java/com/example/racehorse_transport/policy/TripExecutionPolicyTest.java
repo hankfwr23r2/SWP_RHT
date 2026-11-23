@@ -7,6 +7,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.example.racehorse_transport.entity.enums.HandoverType;
 import com.example.racehorse_transport.entity.enums.TripStopType;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -64,4 +65,18 @@ class TripExecutionPolicyTest {
         assertThatThrownBy(() -> TripExecutionPolicy.requireCanComplete(false, 0)).hasMessageContaining("điểm dừng cuối");
         assertThatThrownBy(() -> TripExecutionPolicy.requireCanComplete(true, 2)).hasMessageContaining("Còn 2 con");
     }
+
+    @Test
+    void waitingForTheRecipientStartsOnceAndFailsOnlyAfterTheFreeWait() {
+        assertThatCode(() -> TripExecutionPolicy.requireCanStartWaiting(HandoverType.DELIVERY, true, false)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> TripExecutionPolicy.requireCanStartWaiting(HandoverType.PICKUP, true, false)).hasMessageContaining("lần giao ngựa đang mở");
+        assertThatThrownBy(() -> TripExecutionPolicy.requireCanStartWaiting(HandoverType.DELIVERY, false, false)).hasMessageContaining("lần giao ngựa đang mở");
+        assertThatThrownBy(() -> TripExecutionPolicy.requireCanStartWaiting(HandoverType.DELIVERY, true, true)).hasMessageContaining("Đã bắt đầu chờ");
+
+        Instant started = Instant.parse("2031-03-05T10:00:00Z");
+        assertThatCode(() -> TripExecutionPolicy.requireFreeWaitOver(started, started.plusSeconds(120 * 60), 120)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> TripExecutionPolicy.requireFreeWaitOver(started, started.plusSeconds(119 * 60), 120)).hasMessageContaining("Chưa hết 120 phút");
+        assertThatThrownBy(() -> TripExecutionPolicy.requireFreeWaitOver(null, started, 120)).hasMessageContaining("Chưa bắt đầu chờ");
+    }
 }
+

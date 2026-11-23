@@ -8,6 +8,7 @@ import { useLoad } from '@shared/hooks/useLoad'
 import { formatDateTime } from '@shared/lib/format'
 import { Button } from '@shared/ui/Button'
 import { Card } from '@shared/ui/Card'
+import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
 import { Input } from '@shared/ui/Input'
@@ -31,6 +32,7 @@ export default function TripRunPage() {
   const [busy, setBusy] = useState(false)
   const [chips, setChips] = useState<Record<number, string>>({})
   const [earlyReasons, setEarlyReasons] = useState<Record<number, string>>({})
+  const [failing, setFailing] = useState<number>()
   const { data, loaded, error, reload, updateData } = useLoad(() => tripExecutionApi.trip(tripId), [tripId], { toastOnError: false })
 
   // Mọi thao tác trả về lượt xe mới; lỗi hiện đúng lý do backend trả về
@@ -80,6 +82,19 @@ export default function TripRunPage() {
         onClick={() => run(() => tripExecutionApi.completeHandover(handover.id ?? 0), t('myTrips.run.done.handed'))}>
         {t('myTrips.run.completeHandover')}
       </Button>
+      {handover.handoverType === 'DELIVERY' && (handover.waitStartedAt
+        ? (
+          <>
+            <p className={s.muted}>{t('myTrips.run.delivery.waitingSince', { time: formatDateTime(new Date(handover.waitStartedAt)) })}</p>
+            <Button variant="danger" size="lg" fullWidth onClick={() => setFailing(handover.id)}>{t('myTrips.run.delivery.noRecipient')}</Button>
+          </>
+        )
+        : (
+          <Button size="lg" fullWidth loading={busy}
+            onClick={() => run(() => tripExecutionApi.startWaiting(handover.id ?? 0), t('myTrips.run.delivery.waitStarted'))}>
+            {t('myTrips.run.delivery.startWaiting')}
+          </Button>
+        ))}
     </div>
   )
 
@@ -135,6 +150,21 @@ export default function TripRunPage() {
         })}
       </ol>
       {trip.status === 'IN_PROGRESS' && <TripIncidentPanel run={data} />}
+      {failing !== undefined && (
+        <ConfirmDialog
+          tone="danger"
+          title={t('myTrips.run.delivery.noRecipientTitle')}
+          message={t('myTrips.run.delivery.noRecipientMessage')}
+          confirmLabel={t('myTrips.run.delivery.noRecipient')}
+          onCancel={() => setFailing(undefined)}
+          onConfirm={async () => {
+            const next = await tripExecutionApi.failDelivery(failing).catch(e => { toast(e instanceof Error ? e.message : String(e), 'error'); throw e })
+            updateData(() => next)
+            toast(t('myTrips.run.delivery.failed'), 'success')
+            setFailing(undefined)
+          }}
+        />
+      )}
       {canComplete(data) && (
         <Button variant="primary" size="lg" fullWidth loading={busy} onClick={() => run(() => tripExecutionApi.complete(tripId), t('myTrips.run.done.completed'))}>
           {t('myTrips.run.complete')}
