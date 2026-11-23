@@ -45,7 +45,7 @@ public class RouteRequestDto {
 
     @NotNull(message = "Nhập thời gian chạy dự kiến")
     @Min(value = 1, message = "Thời gian chạy phải lớn hơn 0")
-    private Integer estDurationMinutes;
+    private Integer estimatedDurationMinutes;
 
     @Valid
     @NotNull(message = "Tuyến phải có điểm dừng")
@@ -65,6 +65,6 @@ public class RouteRequestDto {
         route.setOrigin(origin);
         route.setDestination(destination);
         route.setDistanceKm(distanceKm);
-        route.setEstDurationMinutes(estDurationMinutes);
+        route.setEstimatedDurationMinutes(estimatedDurationMinutes);
     }
 }

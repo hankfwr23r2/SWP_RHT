@@ -12,9 +12,9 @@ import java.util.List;
 
 public interface RouteStopRepository extends JpaRepository<RouteStop, RouteStopId> {
 
-    List<RouteStop> findById_RouteIdOrderById_Seq(Long routeId);
+    List<RouteStop> findById_RouteIdOrderById_SequenceNumber(Long routeId);
 
-    @Query("SELECT s FROM RouteStop s JOIN FETCH s.location WHERE s.id.routeId = :routeId ORDER BY s.id.seq")
+    @Query("SELECT s FROM RouteStop s JOIN FETCH s.location WHERE s.id.routeId = :routeId ORDER BY s.id.sequenceNumber")
     List<RouteStop> findWithLocation(@Param("routeId") Long routeId);
 
     @Modifying(flushAutomatically = true, clearAutomatically = true)

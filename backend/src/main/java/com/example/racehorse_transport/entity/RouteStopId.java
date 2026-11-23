@@ -23,6 +23,6 @@ public class RouteStopId implements Serializable {
     @Column(name = "route_id", nullable = false)
     private Long routeId;
 
-    @Column(name = "seq", nullable = false)
-    private Integer seq;
+    @Column(name = "sequence_number", nullable = false)
+    private Integer sequenceNumber;
 }

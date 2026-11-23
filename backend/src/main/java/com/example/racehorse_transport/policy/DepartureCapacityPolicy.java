@@ -14,13 +14,13 @@ public final class DepartureCapacityPolicy {
     private DepartureCapacityPolicy() {
     }
 
-    public static int available(int capacityStalls, int bookedStalls) {
-        return Math.max(0, capacityStalls - bookedStalls);
+    public static int available(int stallCapacity, int bookedStallCount) {
+        return Math.max(0, stallCapacity - bookedStallCount);
     }
 
     // Lý do không đặt được chỗ; rỗng nghĩa là đặt được
     public static Optional<String> reasonNotReservable(DepartureStatus status, Instant bookingCutoffAt, Instant now,
-                                                       int capacityStalls, int bookedStalls, int stalls) {
+                                                       int stallCapacity, int bookedStallCount, int stalls) {
         if (stalls <= 0) {
             return Optional.of("Số khoang cần đặt phải lớn hơn 0.");
         }
@@ -30,18 +30,18 @@ public final class DepartureCapacityPolicy {
         if (!now.isBefore(bookingCutoffAt)) {
             return Optional.of("Chuyến đã qua giờ chốt nhận đơn.");
         }
-        if (bookedStalls + stalls > capacityStalls) {
-            return Optional.of("Chuyến chỉ còn " + available(capacityStalls, bookedStalls) + " khoang.");
+        if (bookedStallCount + stalls > stallCapacity) {
+            return Optional.of("Chuyến chỉ còn " + available(stallCapacity, bookedStallCount) + " khoang.");
         }
         return Optional.empty();
     }
 
     // Số khoang đã đặt sau khi nhả. Nhả nhiều hơn số đã đặt là lỗi dữ liệu, không âm thầm làm tròn về 0.
-    public static int bookedAfterRelease(int bookedStalls, int stalls) {
-        if (stalls <= 0 || stalls > bookedStalls) {
-            throw new IllegalStateException("Không nhả được " + stalls + " khoang khi chuyến mới đặt " + bookedStalls + " khoang.");
+    public static int bookedAfterRelease(int bookedStallCount, int stalls) {
+        if (stalls <= 0 || stalls > bookedStallCount) {
+            throw new IllegalStateException("Không nhả được " + stalls + " khoang khi chuyến mới đặt " + bookedStallCount + " khoang.");
         }
-        return bookedStalls - stalls;
+        return bookedStallCount - stalls;
     }
 
     // Chuyến đang nhận đơn mà đã qua giờ chốt thì đóng

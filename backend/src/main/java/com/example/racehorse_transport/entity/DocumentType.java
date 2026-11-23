@@ -36,6 +36,6 @@ public class DocumentType {
 
     // Giấy gắn với đối tượng nào; mỗi giá trị ứng với một cột chủ sở hữu trong document
     @Enumerated(EnumType.STRING)
-    @Column(name = "subject", length = 30, nullable = false)
-    private DocumentSubject subject;
+    @Column(name = "owner_type", length = 30, nullable = false)
+    private DocumentSubject ownerType;
 }

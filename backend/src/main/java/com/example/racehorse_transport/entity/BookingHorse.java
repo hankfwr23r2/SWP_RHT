@@ -44,17 +44,17 @@ public class BookingHorse {
     private Horse horse;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "stall_type", nullable = false)
+    @JoinColumn(name = "stall_type_code", nullable = false)
     private StallType stallType;
 
     @Column(name = "diet_note", columnDefinition = "text")
     private String dietNote;
 
-    @Column(name = "feed_times_per_day")
-    private Short feedTimesPerDay;
+    @Column(name = "feedings_per_day")
+    private Short feedingsPerDay;
 
-    @Column(name = "owner_supplies_feed", nullable = false)
-    private Boolean ownerSuppliesFeed = false;
+    @Column(name = "is_feed_supplied_by_owner", nullable = false)
+    private Boolean feedSuppliedByOwner = false;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 30, nullable = false)

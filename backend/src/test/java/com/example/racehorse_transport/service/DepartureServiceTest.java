@@ -50,19 +50,19 @@ class DepartureServiceTest {
         request.setRouteId(routes.findByCode("HCM-PNH").orElseThrow().getId());
         request.setDepartureTime(LocalTime.of(20, 30));
         request.setBookingCutoffHours(24);
-        request.setCapacityStalls(6);
+        request.setStallCapacity(6);
         request.setValidFrom(TODAY);
-        request.setWeekdays(Set.of((short) 1, (short) 2, (short) 3, (short) 4, (short) 5, (short) 6, (short) 7));
-        Long scheduleId = routeService.createSchedule(request).getId();
+        request.setDaysOfWeek(Set.of((short) 1, (short) 2, (short) 3, (short) 4, (short) 5, (short) 6, (short) 7));
+        Long departureScheduleId = routeService.createSchedule(request).getId();
         try {
             departureService.generateFromSchedules();
             long generated = departures.findAll().stream()
-                    .filter(d -> d.getSchedule() != null && d.getSchedule().getId().equals(scheduleId)).count();
+                    .filter(d -> d.getDepartureSchedule() != null && d.getDepartureSchedule().getId().equals(departureScheduleId)).count();
             // DEPARTURE_GENERATION_WEEKS = 8 trong dữ liệu nền: mỗi ngày một chuyến trong 56 ngày tới
             assertThat(generated).isEqualTo(56);
             assertThat(departureService.generateFromSchedules()).isZero();
         } finally {
-            routeService.endSchedule(scheduleId);
+            routeService.endSchedule(departureScheduleId);
         }
     }
 
@@ -92,10 +92,10 @@ class DepartureServiceTest {
         } finally {
             pool.shutdownNow();
         }
-        assertThat(departures.findById(departureId).orElseThrow().getBookedStalls()).isEqualTo(1);
+        assertThat(departures.findById(departureId).orElseThrow().getBookedStallCount()).isEqualTo(1);
 
         departureService.release(departureId, 1);
-        assertThat(departures.findById(departureId).orElseThrow().getBookedStalls()).isZero();
+        assertThat(departures.findById(departureId).orElseThrow().getBookedStallCount()).isZero();
         assertThatThrownBy(() -> departureService.release(departureId, 1)).isInstanceOf(IllegalStateException.class);
     }
 

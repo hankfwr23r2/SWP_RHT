@@ -12,13 +12,13 @@ public class CountryResponseDto {
 
     private String code;
     private String name;
-    private String defaultCurrency;
+    private String defaultCurrencyCode;
 
     public static CountryResponseDto from(Country country) {
         return CountryResponseDto.builder()
                 .code(country.getCode())
                 .name(country.getName())
-                .defaultCurrency(country.getDefaultCurrency())
+                .defaultCurrencyCode(country.getDefaultCurrencyCode())
                 .build();
     }
 }

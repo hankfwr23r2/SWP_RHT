@@ -52,8 +52,8 @@ public class Route {
     @Column(name = "distance_km", nullable = false, precision = 8, scale = 2)
     private BigDecimal distanceKm;
 
-    @Column(name = "est_duration_minutes", nullable = false)
-    private Integer estDurationMinutes;
+    @Column(name = "estimated_duration_minutes", nullable = false)
+    private Integer estimatedDurationMinutes;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 30, nullable = false)

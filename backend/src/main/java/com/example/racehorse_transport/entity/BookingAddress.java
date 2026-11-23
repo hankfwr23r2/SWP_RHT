@@ -38,8 +38,8 @@ public class BookingAddress {
     private Booking booking;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "role", length = 30, nullable = false)
-    private AddressRole role;
+    @Column(name = "address_type", length = 30, nullable = false)
+    private AddressRole addressType;
 
     // snapshot: địa chỉ đón và giao tại thời điểm đặt đơn
     @Column(name = "address_line", length = 500, nullable = false)

@@ -20,11 +20,11 @@ public class DepartureScheduleResponseDto {
     private String routeCode;
     private LocalTime departureTime;
     private Integer bookingCutoffHours;
-    private Integer capacityStalls;
+    private Integer stallCapacity;
     private LocalDate validFrom;
     private LocalDate validTo;
     private ScheduleStatus status;
-    private List<Short> weekdays;
+    private List<Short> daysOfWeek;
 
     // Service đã nạp route
     public static DepartureScheduleResponseDto from(DepartureSchedule schedule, List<DepartureScheduleDay> days) {
@@ -34,11 +34,11 @@ public class DepartureScheduleResponseDto {
                 .routeCode(schedule.getRoute().getCode())
                 .departureTime(schedule.getDepartureTime())
                 .bookingCutoffHours(schedule.getBookingCutoffHours())
-                .capacityStalls(schedule.getCapacityStalls())
+                .stallCapacity(schedule.getStallCapacity())
                 .validFrom(schedule.getValidFrom())
                 .validTo(schedule.getValidTo())
                 .status(schedule.getStatus())
-                .weekdays(days.stream().map(day -> day.getId().getWeekday()).sorted().toList())
+                .daysOfWeek(days.stream().map(day -> day.getId().getDayOfWeek()).sorted().toList())
                 .build();
     }
 }

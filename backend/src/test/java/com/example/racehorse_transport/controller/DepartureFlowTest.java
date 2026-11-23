@@ -102,7 +102,7 @@ class DepartureFlowTest {
     void managerCreatesAdHocDepartureAndCustomerCannot() throws Exception {
         long routeId = routes.findByCode("HCM-DN").orElseThrow().getId();
         String body = """
-                {"routeId":%d,"departureDate":"%s","departureTime":"07:00","bookingCutoffHours":48,"capacityStalls":6}"""
+                {"routeId":%d,"departureDate":"%s","departureTime":"07:00","bookingCutoffHours":48,"stallCapacity":6}"""
                 .formatted(routeId, LocalDate.now().plusDays(40));
 
         mvc.perform(post("/departures").header(HttpHeaders.AUTHORIZATION, "Bearer " + customerToken)
@@ -111,7 +111,7 @@ class DepartureFlowTest {
         mvc.perform(post("/departures").header(HttpHeaders.AUTHORIZATION, "Bearer " + managerToken)
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.scheduleId").doesNotExist())
+                .andExpect(jsonPath("$.data.departureScheduleId").doesNotExist())
                 .andExpect(jsonPath("$.data.status").value("OPEN"))
                 .andExpect(jsonPath("$.data.availableStalls").value(6));
         mvc.perform(get("/departures").header(HttpHeaders.AUTHORIZATION, "Bearer " + managerToken)

@@ -42,7 +42,7 @@ class MigrationTest {
 
     private long newQuotation(long bookingId) {
         return id("""
-                INSERT INTO quotation (booking_id, version, price_list_id, currency, deposit_rate, valid_until,
+                INSERT INTO quotation (booking_id, version, price_list_id, currency_code, deposit_rate, expires_at,
                                        confirmed_pickup_date, confirmed_departure_date, estimated_delivery_date,
                                        total_amount, pass_through_amount, deposit_amount, status)
                 VALUES (?, 1, (SELECT id FROM price_list WHERE name = 'Bảng giá mẫu (dev)'), 'VND', 0.3, now() + interval '1 day',
@@ -52,11 +52,11 @@ class MigrationTest {
 
     private long newBookingHorse(long bookingId) {
         long horseId = id("""
-                INSERT INTO horse (owner_customer_id, name, microchip, gender, horse_type_id, status)
+                INSERT INTO horse (owner_customer_id, name, microchip, sex, horse_type_id, status)
                 VALUES (?, 'Sao Mai', '985000000000001', 'MARE', (SELECT min(id) FROM horse_type), 'ACTIVE')
                 RETURNING id""", customerId());
         return id("""
-                INSERT INTO booking_horse (booking_id, horse_id, stall_type, status)
+                INSERT INTO booking_horse (booking_id, horse_id, stall_type_code, status)
                 VALUES (?, ?, 'STANDARD', 'ACTIVE')
                 RETURNING id""", bookingId, horseId);
     }
@@ -99,24 +99,24 @@ class MigrationTest {
                 Integer.class)).isZero();
         // Khoang đã đặt của chuyến khớp số ngựa của các đơn mẫu đi trục (2 + 1)
         assertThat(jdbc.queryForObject("""
-                SELECT sum(d.booked_stalls) FROM departure d WHERE d.id IN (SELECT departure_id FROM booking WHERE code LIKE 'DEV-%')""",
+                SELECT sum(d.booked_stall_count) FROM departure d WHERE d.id IN (SELECT departure_id FROM booking WHERE code LIKE 'DEV-%')""",
                 Integer.class)).isEqualTo(3);
     }
 
     @Test
     void departureCannotBeOverbooked() {
         assertThatThrownBy(() -> jdbc.update("""
-                INSERT INTO departure (route_id, departure_date, planned_depart_at, booking_cutoff_at, capacity_stalls, booked_stalls, status)
+                INSERT INTO departure (route_id, departure_date, planned_departure_at, booking_cutoff_at, stall_capacity, booked_stall_count, status)
                 VALUES ((SELECT id FROM route WHERE code = 'HCM-PNH'), DATE '2026-12-21',
                         TIMESTAMPTZ '2026-12-21 06:00+07', TIMESTAMPTZ '2026-12-18 06:00+07', 9, 10, 'OPEN')"""))
                 .isInstanceOf(DataAccessException.class)
-                .hasMessageContaining("ck_departure_booked_stalls");
+                .hasMessageContaining("ck_departure_booked_stall_count");
     }
 
     @Test
     void activePriceListsOfSameCurrencyCannotOverlap() {
         assertThatThrownBy(() -> jdbc.update("""
-                INSERT INTO price_list (name, currency, margin_rate, fuel_buffer_rate, deposit_rate, valid_from, status)
+                INSERT INTO price_list (name, currency_code, margin_rate, fuel_buffer_rate, deposit_rate, valid_from, status)
                 VALUES ('Bảng giá trùng', 'VND', 0.05, 0.05, 0.3, DATE '2027-01-01', 'ACTIVE')"""))
                 .isInstanceOf(DataAccessException.class)
                 .hasMessageContaining("ex_price_list_active_period");
@@ -125,7 +125,7 @@ class MigrationTest {
     @Test
     void countryRulesOfSameDirectionCannotOverlap() {
         assertThatThrownBy(() -> jdbc.update("""
-                INSERT INTO country_rule (country_code, direction, permit_lead_days, cert_lead_days, quarantine_days, valid_from)
+                INSERT INTO country_rule (country_code, direction, permit_lead_days, certificate_lead_days, quarantine_days, valid_from)
                 VALUES ('KH', 'EXPORT', 10, 5, 5, DATE '2027-01-01')"""))
                 .isInstanceOf(DataAccessException.class)
                 .hasMessageContaining("ex_country_rule_period");
@@ -153,7 +153,7 @@ class MigrationTest {
     void depositMustCoverPassThroughAndNotExceedTotal() {
         long bookingId = newBooking();
         assertThatThrownBy(() -> jdbc.update("""
-                INSERT INTO quotation (booking_id, version, price_list_id, currency, deposit_rate, valid_until,
+                INSERT INTO quotation (booking_id, version, price_list_id, currency_code, deposit_rate, expires_at,
                                        confirmed_pickup_date, confirmed_departure_date, estimated_delivery_date,
                                        total_amount, pass_through_amount, deposit_amount, status)
                 VALUES (?, 1, (SELECT id FROM price_list WHERE name = 'Bảng giá mẫu (dev)'), 'VND', 0.3, now() + interval '1 day',
@@ -166,8 +166,8 @@ class MigrationTest {
     void quotationLineAmountIsComputedByDatabase() {
         long quotationId = newQuotation(newBooking());
         jdbc.update("""
-                INSERT INTO quotation_line (quotation_id, line_no, line_type, service_id, description, quantity, unit, unit_price, is_pass_through)
-                VALUES (?, 1, 'LINEHAUL', (SELECT id FROM service WHERE code = 'LINEHAUL_STALL'), 'Cước trục 2 khoang', 2, 'STALL', 6000000.50, false)""",
+                INSERT INTO quotation_line (quotation_id, line_number, line_type, billable_service_id, description, quantity, unit, unit_price, is_pass_through)
+                VALUES (?, 1, 'LINEHAUL', (SELECT id FROM billable_service WHERE code = 'LINEHAUL_STALL'), 'Cước trục 2 khoang', 2, 'STALL', 6000000.50, false)""",
                 quotationId);
 
         BigDecimal amount = jdbc.queryForObject("SELECT amount FROM quotation_line WHERE quotation_id = ?", BigDecimal.class, quotationId);
@@ -178,7 +178,7 @@ class MigrationTest {
     void horseLegNeedsExactlyOneCarrier() {
         long bookingHorseId = newBookingHorse(newBooking());
         assertThatThrownBy(() -> jdbc.update("""
-                INSERT INTO horse_leg (booking_horse_id, seq, stage, from_location_id, to_location_id, planned_start, planned_end, status)
+                INSERT INTO horse_leg (booking_horse_id, sequence_number, leg_type, from_location_id, to_location_id, planned_start_at, planned_end_at, status)
                 VALUES (?, 1, 'LINEHAUL', (SELECT id FROM location WHERE code = 'HUB-HCM'), (SELECT id FROM location WHERE code = 'GATE-MOCBAI'),
                         TIMESTAMPTZ '2026-12-20 06:00+07', TIMESTAMPTZ '2026-12-20 08:00+07', 'PLANNED')""", bookingHorseId))
                 .isInstanceOf(DataAccessException.class)
@@ -197,11 +197,11 @@ class MigrationTest {
 
     private long newHandover(String kind, Long fromParty, Long toParty) {
         long stayId = id("""
-                INSERT INTO horse_stay (booking_horse_id, kind, location_id, planned_from, planned_to)
+                INSERT INTO horse_stay (booking_horse_id, stay_type, location_id, planned_start_at, planned_end_at)
                 VALUES (?, 'ASSEMBLY', (SELECT id FROM location WHERE code = 'HUB-HCM'), now(), now() + interval '1 day')
                 RETURNING id""", newBookingHorse(newBooking()));
         return id("""
-                INSERT INTO handover (kind, horse_stay_id, from_party_id, to_party_id, staff_id, status)
+                INSERT INTO handover (handover_type, horse_stay_id, from_party_id, to_party_id, handled_by, status)
                 VALUES (?, ?, ?, ?, ?, 'PENDING') RETURNING id""", kind, stayId, fromParty, toParty, userId("driver1.dev"));
     }
 

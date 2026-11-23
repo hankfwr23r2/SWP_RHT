@@ -34,18 +34,18 @@ class DepartureDtoTest {
         request.setDepartureDate(LocalDate.of(2027, 1, 5));
         request.setDepartureTime(LocalTime.of(7, 0));
         request.setBookingCutoffHours(48);
-        request.setCapacityStalls(6);
+        request.setStallCapacity(6);
         Instant planned = Instant.parse("2027-01-05T00:00:00Z");
         Instant cutoff = Instant.parse("2027-01-03T00:00:00Z");
 
         Departure departure = request.toEntity(route(), planned, cutoff);
 
         assertThat(departure.getId()).isNull();
-        assertThat(departure.getSchedule()).isNull();
+        assertThat(departure.getDepartureSchedule()).isNull();
         assertThat(departure.getStatus()).isNull();
-        assertThat(departure.getPlannedDepartAt()).isEqualTo(planned);
+        assertThat(departure.getPlannedDepartureAt()).isEqualTo(planned);
         assertThat(departure.getBookingCutoffAt()).isEqualTo(cutoff);
-        assertThat(departure.getCapacityStalls()).isEqualTo(6);
+        assertThat(departure.getStallCapacity()).isEqualTo(6);
     }
 
     @Test
@@ -54,13 +54,13 @@ class DepartureDtoTest {
         departure.setId(10L);
         departure.setRoute(route());
         departure.setDepartureDate(LocalDate.of(2027, 1, 5));
-        departure.setCapacityStalls(9);
-        departure.setBookedStalls(7);
+        departure.setStallCapacity(9);
+        departure.setBookedStallCount(7);
         departure.setStatus(DepartureStatus.OPEN);
 
         DepartureResponseDto dto = DepartureResponseDto.from(departure, 2);
 
-        assertThat(dto.getScheduleId()).isNull();
+        assertThat(dto.getDepartureScheduleId()).isNull();
         assertThat(dto.getRouteCode()).isEqualTo("HCM-DN");
         assertThat(dto.getOriginCode()).isEqualTo("HUB-HCM");
         assertThat(dto.getDestinationCode()).isEqualTo("HUB-DN");

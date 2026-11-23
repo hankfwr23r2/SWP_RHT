@@ -29,6 +29,6 @@ public class Country {
     private String name;
 
     @JdbcTypeCode(SqlTypes.CHAR)
-    @Column(name = "default_currency", length = 3, nullable = false)
-    private String defaultCurrency;
+    @Column(name = "default_currency_code", length = 3, nullable = false)
+    private String defaultCurrencyCode;
 }

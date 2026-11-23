@@ -39,15 +39,15 @@ public class BookingParty {
     @Column(name = "phone", length = 20, nullable = false)
     private String phone;
 
-    @Column(name = "id_type", length = 30)
-    private String idType;
+    @Column(name = "identity_document_type", length = 30)
+    private String identityDocumentType;
 
-    @Column(name = "id_number", length = 50)
-    private String idNumber;
+    @Column(name = "identity_document_number", length = 50)
+    private String identityDocumentNumber;
 
     @JdbcTypeCode(SqlTypes.CHAR)
-    @Column(name = "id_country", length = 2)
-    private String idCountry;
+    @Column(name = "identity_document_country_code", length = 2)
+    private String identityDocumentCountryCode;
 
     @Column(name = "address", length = 500, nullable = false)
     private String address;

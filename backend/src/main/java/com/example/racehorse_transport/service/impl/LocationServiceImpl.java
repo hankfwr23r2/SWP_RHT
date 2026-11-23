@@ -76,10 +76,10 @@ public class LocationServiceImpl implements LocationService {
         Location location = findLocation(id);
         // Kiểm mã trùng trước khi ghi đè, để lần flush tự động của truy vấn không vướng ràng buộc UNIQUE
         requireUniqueCode(request.getCode().trim().toUpperCase(Locale.ROOT), id);
-        LocationType previousType = location.getType();
+        LocationType previousType = location.getLocationType();
         request.applyTo(location, country(request.getCountryCode()), province(request.getProvinceCode(), request.getCountryCode()));
         // Đổi loại địa điểm làm sai tuyến và vùng phục vụ đang dùng nó
-        if (previousType != location.getType()
+        if (previousType != location.getLocationType()
                 && (routes.isUsedByRoute(id, ActiveStatus.ACTIVE) || routes.isUsedByRoute(id, ActiveStatus.INACTIVE)
                     || (previousType == LocationType.HUB && servesAnyProvince(id)))) {
             throw new IllegalStateException("Không đổi được loại của địa điểm đang dùng trong tuyến hoặc vùng phục vụ.");
@@ -118,7 +118,7 @@ public class LocationServiceImpl implements LocationService {
         Province province = provinces.findById(provinceCode)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tỉnh " + provinceCode));
         Location hub = findLocation(hubLocationId);
-        if (hub.getType() != LocationType.HUB || hub.getStatus() != ActiveStatus.ACTIVE) {
+        if (hub.getLocationType() != LocationType.HUB || hub.getStatus() != ActiveStatus.ACTIVE) {
             throw new IllegalArgumentException("Chỉ giao tỉnh cho hub đang hoạt động.");
         }
         var current = serviceAreas.findById_ProvinceCode(provinceCode);

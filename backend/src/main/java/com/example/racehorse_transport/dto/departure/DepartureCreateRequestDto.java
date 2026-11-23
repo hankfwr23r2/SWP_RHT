@@ -32,15 +32,15 @@ public class DepartureCreateRequestDto {
 
     @NotNull(message = "Nhập số khoang tối đa")
     @Min(value = 1, message = "Số khoang phải lớn hơn 0")
-    private Integer capacityStalls;
+    private Integer stallCapacity;
 
-    public Departure toEntity(Route route, Instant plannedDepartAt, Instant bookingCutoffAt) {
+    public Departure toEntity(Route route, Instant plannedDepartureAt, Instant bookingCutoffAt) {
         Departure departure = new Departure();
         departure.setRoute(route);
         departure.setDepartureDate(departureDate);
-        departure.setPlannedDepartAt(plannedDepartAt);
+        departure.setPlannedDepartureAt(plannedDepartureAt);
         departure.setBookingCutoffAt(bookingCutoffAt);
-        departure.setCapacityStalls(capacityStalls);
+        departure.setStallCapacity(stallCapacity);
         return departure;
     }
 }

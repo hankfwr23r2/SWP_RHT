@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.dto.network;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.example.racehorse_transport.entity.Country;
 import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.Province;
@@ -7,13 +8,12 @@ import com.example.racehorse_transport.entity.enums.LocationType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
+import java.time.LocalTime;
 import java.util.Locale;
 import lombok.Getter;
 import lombok.Setter;
@@ -34,7 +34,7 @@ public class LocationRequestDto {
     private String name;
 
     @NotNull(message = "Chọn loại địa điểm")
-    private LocationType type;
+    private LocationType locationType;
 
     @NotBlank(message = "Chọn quốc gia")
     @Pattern(regexp = "^[A-Z]{2}$", message = "Mã quốc gia gồm 2 chữ in hoa")
@@ -55,13 +55,11 @@ public class LocationRequestDto {
     @DecimalMax(value = "180", message = "Kinh độ từ -180 đến 180")
     private BigDecimal longitude;
 
-    @Min(value = 0, message = "Giờ mở cửa tính bằng phút từ 0 đến 1439")
-    @Max(value = 1439, message = "Giờ mở cửa tính bằng phút từ 0 đến 1439")
-    private Integer openingMinutes;
+    @JsonFormat(pattern = "HH:mm:ss")
+    private LocalTime openingTime;
 
-    @Min(value = 0, message = "Giờ đóng cửa tính bằng phút từ 0 đến 1439")
-    @Max(value = 1439, message = "Giờ đóng cửa tính bằng phút từ 0 đến 1439")
-    private Integer closingMinutes;
+    @JsonFormat(pattern = "HH:mm:ss")
+    private LocalTime closingTime;
 
     @Size(max = 20, message = "Số điện thoại tối đa 20 ký tự")
     private String contactPhone;
@@ -76,14 +74,14 @@ public class LocationRequestDto {
     public void applyTo(Location location, Country country, Province province) {
         location.setCode(code.trim().toUpperCase(Locale.ROOT));
         location.setName(name.trim());
-        location.setType(type);
+        location.setLocationType(locationType);
         location.setCountry(country);
         location.setProvince(province);
         location.setAddress(address.trim());
         location.setLatitude(latitude);
         location.setLongitude(longitude);
-        location.setOpeningMinutes(openingMinutes);
-        location.setClosingMinutes(closingMinutes);
+        location.setOpeningTime(openingTime);
+        location.setClosingTime(closingTime);
         location.setContactPhone(contactPhone == null || contactPhone.isBlank() ? null : contactPhone.trim());
     }
 }

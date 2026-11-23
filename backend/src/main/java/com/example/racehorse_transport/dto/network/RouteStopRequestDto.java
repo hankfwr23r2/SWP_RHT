@@ -18,7 +18,7 @@ public class RouteStopRequestDto {
 
     @NotNull(message = "Thiếu thứ tự điểm dừng")
     @Min(value = 1, message = "Thứ tự điểm dừng bắt đầu từ 1")
-    private Integer seq;
+    private Integer sequenceNumber;
 
     @NotNull(message = "Chọn địa điểm cho điểm dừng")
     private Long locationId;
@@ -29,7 +29,7 @@ public class RouteStopRequestDto {
     // Số phút tính từ lúc xuất phát
     @NotNull(message = "Thiếu thời điểm tới điểm dừng")
     @Min(value = 0, message = "Số phút không được âm")
-    private Integer offsetMinutes;
+    private Integer arrivalOffsetMinutes;
 
     @NotNull(message = "Thiếu thời gian dừng")
     @Min(value = 0, message = "Số phút không được âm")
@@ -38,11 +38,11 @@ public class RouteStopRequestDto {
     // Điểm dừng mới của tuyến đã lưu. Tuyến và địa điểm do service nạp rồi truyền vào.
     public RouteStop toEntity(Route route, Location location) {
         RouteStop stop = new RouteStop();
-        stop.setId(new RouteStopId(route.getId(), seq));
+        stop.setId(new RouteStopId(route.getId(), sequenceNumber));
         stop.setRoute(route);
         stop.setLocation(location);
         stop.setStopType(stopType);
-        stop.setOffsetMinutes(offsetMinutes);
+        stop.setArrivalOffsetMinutes(arrivalOffsetMinutes);
         stop.setDwellMinutes(dwellMinutes);
         return stop;
     }

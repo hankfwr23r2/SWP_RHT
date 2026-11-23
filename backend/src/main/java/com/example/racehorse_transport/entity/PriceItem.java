@@ -34,8 +34,8 @@ public class PriceItem {
     private PriceList priceList;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "service_id", nullable = false)
-    private BillableService service;
+    @JoinColumn(name = "billable_service_id", nullable = false)
+    private BillableService billableService;
 
     // Điều kiện áp dụng: NULL nghĩa là áp cho mọi giá trị
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
@@ -47,7 +47,7 @@ public class PriceItem {
     private VehicleClass vehicleClass;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "stall_type")
+    @JoinColumn(name = "stall_type_code")
     private StallType stallType;
 
     @Column(name = "km_from", precision = 8, scale = 2)

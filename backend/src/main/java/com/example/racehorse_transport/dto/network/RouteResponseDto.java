@@ -24,7 +24,7 @@ public class RouteResponseDto {
     private String destinationCode;
     private String destinationName;
     private BigDecimal distanceKm;
-    private Integer estDurationMinutes;
+    private Integer estimatedDurationMinutes;
     private ActiveStatus status;
     // Danh sách tuyến không kèm điểm dừng (null); chi tiết tuyến có điểm dừng theo thứ tự
     private List<RouteStopResponseDto> stops;
@@ -42,7 +42,7 @@ public class RouteResponseDto {
                 .destinationCode(route.getDestination().getCode())
                 .destinationName(route.getDestination().getName())
                 .distanceKm(route.getDistanceKm())
-                .estDurationMinutes(route.getEstDurationMinutes())
+                .estimatedDurationMinutes(route.getEstimatedDurationMinutes())
                 .status(route.getStatus())
                 .stops(stops == null ? null : stops.stream().map(RouteStopResponseDto::from).toList())
                 .build();

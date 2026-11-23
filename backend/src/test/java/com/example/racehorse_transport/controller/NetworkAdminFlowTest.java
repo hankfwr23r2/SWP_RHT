@@ -62,7 +62,7 @@ class NetworkAdminFlowTest {
 
     private long createLocation(String code, String type, String provinceCode) throws Exception {
         String body = """
-                {"code":"%s","name":"Địa điểm %s","type":"%s","countryCode":"VN","provinceCode":"%s",
+                {"code":"%s","name":"Địa điểm %s","locationType":"%s","countryCode":"VN","provinceCode":"%s",
                  "address":"Địa chỉ thử","latitude":10.9,"longitude":106.6}""".formatted(code, code, type, provinceCode);
         String json = call(post("/locations"), adminToken, body)
                 .andExpect(status().isCreated())
@@ -84,10 +84,23 @@ class NetworkAdminFlowTest {
     }
 
     @Test
+    void locationExposesLocalTimesAsStrings() throws Exception {
+        String body = """
+                {"code":"%s","name":"Cửa khẩu","locationType":"BORDER_GATE","countryCode":"VN",
+                 "address":"Địa chỉ","openingTime":"00:00:00","closingTime":"23:59:00"}
+                """.formatted(uniqueCode("GATE"));
+        call(post("/locations"), adminToken, body)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.locationType").value("BORDER_GATE"))
+                .andExpect(jsonPath("$.data.openingTime").value("00:00:00"))
+                .andExpect(jsonPath("$.data.closingTime").value("23:59:00"));
+    }
+
+    @Test
     void onlyAdminManagesLocationsAndCodesAreUnique() throws Exception {
         String code = uniqueCode("HUB");
         String body = """
-                {"code":"%s","name":"Hub","type":"HUB","countryCode":"VN","address":"Địa chỉ"}""".formatted(code);
+                {"code":"%s","name":"Hub","locationType":"HUB","countryCode":"VN","address":"Địa chỉ"}""".formatted(code);
         call(post("/locations"), customerToken, body).andExpect(status().isForbidden());
         call(post("/locations"), null, body).andExpect(status().isUnauthorized());
         createLocation(code, "HUB", "VN-1");
@@ -95,7 +108,7 @@ class NetworkAdminFlowTest {
 
         // Tỉnh phải thuộc đúng quốc gia đã chọn
         call(post("/locations"), adminToken, """
-                {"code":"%s","name":"Sai tỉnh","type":"HUB","countryCode":"VN","provinceCode":"KH-12","address":"Địa chỉ"}"""
+                {"code":"%s","name":"Sai tỉnh","locationType":"HUB","countryCode":"VN","provinceCode":"KH-12","address":"Địa chỉ"}"""
                 .formatted(uniqueCode("HUB"))).andExpect(status().isBadRequest());
         // Khách đã đăng nhập vẫn xem được danh sách địa điểm
         call(get("/locations").param("type", "HUB"), customerToken, null).andExpect(status().isOk());
@@ -130,23 +143,23 @@ class NetworkAdminFlowTest {
 
         // Điểm dừng đầu không phải điểm đầu tuyến: bị từ chối
         call(post("/routes"), adminToken, routeBody(code, origin, gate, """
-                [{"seq":1,"locationId":%d,"stopType":"REST","offsetMinutes":0,"dwellMinutes":10},
-                 {"seq":2,"locationId":%d,"stopType":"BORDER","offsetMinutes":60,"dwellMinutes":0}]""".formatted(rest, gate)))
+                [{"sequenceNumber":1,"locationId":%d,"stopType":"REST","arrivalOffsetMinutes":0,"dwellMinutes":10},
+                 {"sequenceNumber":2,"locationId":%d,"stopType":"BORDER","arrivalOffsetMinutes":60,"dwellMinutes":0}]""".formatted(rest, gate)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("điểm đầu tuyến")));
 
         String created = call(post("/routes"), adminToken, routeBody(code, origin, gate, """
-                [{"seq":1,"locationId":%d,"stopType":"HUB","offsetMinutes":0,"dwellMinutes":30},
-                 {"seq":2,"locationId":%d,"stopType":"BORDER","offsetMinutes":120,"dwellMinutes":60}]""".formatted(origin, gate)))
+                [{"sequenceNumber":1,"locationId":%d,"stopType":"HUB","arrivalOffsetMinutes":0,"dwellMinutes":30},
+                 {"sequenceNumber":2,"locationId":%d,"stopType":"BORDER","arrivalOffsetMinutes":120,"dwellMinutes":60}]""".formatted(origin, gate)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.stops.length()").value(2))
                 .andReturn().getResponse().getContentAsString();
         long routeId = ((Number) JsonPath.read(created, "$.data.id")).longValue();
 
         call(put("/routes/" + routeId), adminToken, routeBody(code, origin, gate, """
-                [{"seq":1,"locationId":%d,"stopType":"HUB","offsetMinutes":0,"dwellMinutes":30},
-                 {"seq":2,"locationId":%d,"stopType":"REST","offsetMinutes":70,"dwellMinutes":20},
-                 {"seq":3,"locationId":%d,"stopType":"BORDER","offsetMinutes":120,"dwellMinutes":60}]""".formatted(origin, rest, gate)))
+                [{"sequenceNumber":1,"locationId":%d,"stopType":"HUB","arrivalOffsetMinutes":0,"dwellMinutes":30},
+                 {"sequenceNumber":2,"locationId":%d,"stopType":"REST","arrivalOffsetMinutes":70,"dwellMinutes":20},
+                 {"sequenceNumber":3,"locationId":%d,"stopType":"BORDER","arrivalOffsetMinutes":120,"dwellMinutes":60}]""".formatted(origin, rest, gate)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.stops.length()").value(3))
                 .andExpect(jsonPath("$.data.stops[1].locationId").value(rest));
@@ -155,25 +168,25 @@ class NetworkAdminFlowTest {
         call(post("/locations/" + rest + "/deactivate"), adminToken, null).andExpect(status().isConflict());
 
         String schedule = call(post("/departure-schedules"), adminToken, """
-                {"routeId":%d,"departureTime":"06:00","bookingCutoffHours":72,"capacityStalls":9,
-                 "validFrom":"2026-12-01","weekdays":[5,2]}""".formatted(routeId))
+                {"routeId":%d,"departureTime":"06:00","bookingCutoffHours":72,"stallCapacity":9,
+                 "validFrom":"2026-12-01","daysOfWeek":[5,2]}""".formatted(routeId))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.status").value("ACTIVE"))
-                .andExpect(jsonPath("$.data.weekdays[0]").value(2))
+                .andExpect(jsonPath("$.data.daysOfWeek[0]").value(2))
                 .andReturn().getResponse().getContentAsString();
-        long scheduleId = ((Number) JsonPath.read(schedule, "$.data.id")).longValue();
+        long departureScheduleId = ((Number) JsonPath.read(schedule, "$.data.id")).longValue();
 
-        call(post("/departure-schedules/" + scheduleId + "/pause"), adminToken, null)
+        call(post("/departure-schedules/" + departureScheduleId + "/pause"), adminToken, null)
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("PAUSED"));
-        call(post("/departure-schedules/" + scheduleId + "/end"), adminToken, null)
+        call(post("/departure-schedules/" + departureScheduleId + "/end"), adminToken, null)
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.status").value("ENDED"));
-        call(post("/departure-schedules/" + scheduleId + "/resume"), adminToken, null).andExpect(status().isConflict());
+        call(post("/departure-schedules/" + departureScheduleId + "/resume"), adminToken, null).andExpect(status().isConflict());
         call(get("/departure-schedules").param("routeId", String.valueOf(routeId)), customerToken, null).andExpect(status().isForbidden());
     }
 
     private static String routeBody(String code, long origin, long destination, String stops) {
         return """
                 {"code":"%s","name":"Tuyến thử","originLocationId":%d,"destinationLocationId":%d,
-                 "distanceKm":75.5,"estDurationMinutes":180,"stops":%s}""".formatted(code, origin, destination, stops);
+                 "distanceKm":75.5,"estimatedDurationMinutes":180,"stops":%s}""".formatted(code, origin, destination, stops);
     }
 }

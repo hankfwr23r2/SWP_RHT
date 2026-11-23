@@ -36,8 +36,8 @@ public class Departure {
 
     // NULL = chuyến đột xuất
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "schedule_id")
-    private DepartureSchedule schedule;
+    @JoinColumn(name = "departure_schedule_id")
+    private DepartureSchedule departureSchedule;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "route_id", nullable = false)
@@ -46,19 +46,19 @@ public class Departure {
     @Column(name = "departure_date", nullable = false)
     private LocalDate departureDate;
 
-    @Column(name = "planned_depart_at", nullable = false)
-    private Instant plannedDepartAt;
+    @Column(name = "planned_departure_at", nullable = false)
+    private Instant plannedDepartureAt;
 
     @Column(name = "booking_cutoff_at", nullable = false)
     private Instant bookingCutoffAt;
 
     // snapshot: chép từ lịch, sửa được cho từng chuyến
-    @Column(name = "capacity_stalls", nullable = false)
-    private Integer capacityStalls;
+    @Column(name = "stall_capacity", nullable = false)
+    private Integer stallCapacity;
 
     // derived: DepartureService (chỉ ghi khi đang giữ SELECT ... FOR UPDATE)
-    @Column(name = "booked_stalls", nullable = false)
-    private Integer bookedStalls = 0;
+    @Column(name = "booked_stall_count", nullable = false)
+    private Integer bookedStallCount = 0;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 30, nullable = false)

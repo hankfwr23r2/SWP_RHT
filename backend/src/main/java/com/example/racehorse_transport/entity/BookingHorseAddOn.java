@@ -29,11 +29,11 @@ public class BookingHorseAddOn {
     @JoinColumn(name = "booking_horse_id")
     private BookingHorse bookingHorse;
 
-    // Chỉ chọn được dịch vụ có layer = ADD_ON (kiểm ở service)
-    @MapsId("serviceId")
+    // Chỉ chọn được dịch vụ có layer = ADD_ON (kiểm ở billableService)
+    @MapsId("billableServiceId")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "service_id")
-    private BillableService service;
+    @JoinColumn(name = "billable_service_id")
+    private BillableService billableService;
 
     @Column(name = "quantity", nullable = false)
     private Integer quantity;

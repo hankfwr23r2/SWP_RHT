@@ -44,8 +44,8 @@ public class DepartureSchedule {
     @Column(name = "booking_cutoff_hours", nullable = false)
     private Integer bookingCutoffHours;
 
-    @Column(name = "capacity_stalls", nullable = false)
-    private Integer capacityStalls;
+    @Column(name = "stall_capacity", nullable = false)
+    private Integer stallCapacity;
 
     @Column(name = "valid_from", nullable = false)
     private LocalDate validFrom;

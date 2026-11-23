@@ -30,13 +30,13 @@ public interface DepartureRepository extends JpaRepository<Departure, Long> {
     // Sinh chuyến từ lịch; chạy lại nhiều lần (hoặc nhiều máy chủ cùng chạy) cũng không tạo trùng
     @Modifying
     @Query(value = """
-            INSERT INTO departure (schedule_id, route_id, departure_date, planned_depart_at, booking_cutoff_at,
-                                   capacity_stalls, booked_stalls, status)
-            VALUES (:scheduleId, :routeId, :departureDate, :plannedDepartAt, :bookingCutoffAt, :capacityStalls, 0, 'OPEN')
-            ON CONFLICT ON CONSTRAINT uk_departure_schedule_date DO NOTHING""", nativeQuery = true)
-    int insertIfAbsent(@Param("scheduleId") Long scheduleId, @Param("routeId") Long routeId,
-                       @Param("departureDate") LocalDate departureDate, @Param("plannedDepartAt") Instant plannedDepartAt,
-                       @Param("bookingCutoffAt") Instant bookingCutoffAt, @Param("capacityStalls") int capacityStalls);
+            INSERT INTO departure (departure_schedule_id, route_id, departure_date, planned_departure_at, booking_cutoff_at,
+                                   stall_capacity, booked_stall_count, status)
+            VALUES (:departureScheduleId, :routeId, :departureDate, :plannedDepartureAt, :bookingCutoffAt, :stallCapacity, 0, 'OPEN')
+            ON CONFLICT ON CONSTRAINT uk_departure_departure_schedule_id_departure_date DO NOTHING""", nativeQuery = true)
+    int insertIfAbsent(@Param("departureScheduleId") Long departureScheduleId, @Param("routeId") Long routeId,
+                       @Param("departureDate") LocalDate departureDate, @Param("plannedDepartureAt") Instant plannedDepartureAt,
+                       @Param("bookingCutoffAt") Instant bookingCutoffAt, @Param("stallCapacity") int stallCapacity);
 
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE Departure d SET d.status = :to WHERE d.status = :from AND d.bookingCutoffAt <= :now")
@@ -47,7 +47,7 @@ public interface DepartureRepository extends JpaRepository<Departure, Long> {
             SELECT d FROM Departure d JOIN FETCH d.route r JOIN FETCH r.origin JOIN FETCH r.destination
             WHERE (:routeId IS NULL OR r.id = :routeId) AND (:status IS NULL OR d.status = :status)
               AND d.departureDate BETWEEN :fromDate AND :toDate
-            ORDER BY d.plannedDepartAt""")
+            ORDER BY d.plannedDepartureAt""")
     List<Departure> search(@Param("routeId") Long routeId, @Param("status") DepartureStatus status,
                            @Param("fromDate") LocalDate fromDate, @Param("toDate") LocalDate toDate);
 
@@ -55,8 +55,8 @@ public interface DepartureRepository extends JpaRepository<Departure, Long> {
     @Query("""
             SELECT d FROM Departure d JOIN FETCH d.route r JOIN FETCH r.origin JOIN FETCH r.destination
             WHERE r.id IN :routeIds AND d.status = :status AND d.bookingCutoffAt > :now AND d.departureDate >= :fromDate
-              AND d.capacityStalls - d.bookedStalls >= :stalls
-            ORDER BY d.plannedDepartAt""")
+              AND d.stallCapacity - d.bookedStallCount >= :stalls
+            ORDER BY d.plannedDepartureAt""")
     List<Departure> findBookable(@Param("routeIds") Collection<Long> routeIds, @Param("status") DepartureStatus status,
                                  @Param("now") Instant now, @Param("fromDate") LocalDate fromDate, @Param("stalls") int stalls);
 }

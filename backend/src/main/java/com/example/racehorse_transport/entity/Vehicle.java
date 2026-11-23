@@ -40,18 +40,18 @@ public class Vehicle {
     @JoinColumn(name = "vehicle_class_id", nullable = false)
     private VehicleClass vehicleClass;
 
-    @Column(name = "standard_stalls", nullable = false)
-    private Integer standardStalls;
+    @Column(name = "standard_stall_count", nullable = false)
+    private Integer standardStallCount;
 
-    @Column(name = "wide_stalls", nullable = false)
-    private Integer wideStalls;
+    @Column(name = "wide_stall_count", nullable = false)
+    private Integer wideStallCount;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "home_hub_id", nullable = false)
-    private Location homeHub;
+    @JoinColumn(name = "home_hub_location_id", nullable = false)
+    private Location homeHubLocation;
 
-    @Column(name = "registration_expiry")
-    private LocalDate registrationExpiry;
+    @Column(name = "registration_expiry_date")
+    private LocalDate registrationExpiryDate;
 
     // Xe đang chạy hay rảnh suy ra từ vehicle_trip, không lưu ở đây
     @Enumerated(EnumType.STRING)

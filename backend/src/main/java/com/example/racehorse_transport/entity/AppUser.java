@@ -44,7 +44,7 @@ public class AppUser {
     @Column(name = "password_hash", length = 100, nullable = false)
     private String passwordHash;
 
-    @Column(name = "email_verified", nullable = false)
+    @Column(name = "is_email_verified", nullable = false)
     private Boolean emailVerified = false;
 
     @Column(name = "preferred_language", length = 5, nullable = false)

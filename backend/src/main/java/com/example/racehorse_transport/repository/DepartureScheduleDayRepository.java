@@ -12,9 +12,9 @@ import java.util.List;
 
 public interface DepartureScheduleDayRepository extends JpaRepository<DepartureScheduleDay, DepartureScheduleDayId> {
 
-    List<DepartureScheduleDay> findById_ScheduleId(Long scheduleId);
+    List<DepartureScheduleDay> findById_DepartureScheduleId(Long departureScheduleId);
 
     @Modifying(flushAutomatically = true, clearAutomatically = true)
-    @Query("DELETE FROM DepartureScheduleDay d WHERE d.id.scheduleId = :scheduleId")
-    int deleteByScheduleId(@Param("scheduleId") Long scheduleId);
+    @Query("DELETE FROM DepartureScheduleDay d WHERE d.id.departureScheduleId = :departureScheduleId")
+    int deleteByScheduleId(@Param("departureScheduleId") Long departureScheduleId);
 }

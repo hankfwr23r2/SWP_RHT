@@ -23,6 +23,6 @@ public class BookingHorseAddOnId implements Serializable {
     @Column(name = "booking_horse_id", nullable = false)
     private Long bookingHorseId;
 
-    @Column(name = "service_id", nullable = false)
-    private Long serviceId;
+    @Column(name = "billable_service_id", nullable = false)
+    private Long billableServiceId;
 }

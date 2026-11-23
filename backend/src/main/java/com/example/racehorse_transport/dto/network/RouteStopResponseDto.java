@@ -12,25 +12,25 @@ import lombok.Getter;
 @Schema(name = "RouteStopResponse")
 public class RouteStopResponseDto {
 
-    private Integer seq;
+    private Integer sequenceNumber;
     private Long locationId;
     private String locationCode;
     private String locationName;
     private LocationType locationType;
     private RouteStopType stopType;
-    private Integer offsetMinutes;
+    private Integer arrivalOffsetMinutes;
     private Integer dwellMinutes;
 
     // Service đã nạp location
     public static RouteStopResponseDto from(RouteStop stop) {
         return RouteStopResponseDto.builder()
-                .seq(stop.getId().getSeq())
+                .sequenceNumber(stop.getId().getSequenceNumber())
                 .locationId(stop.getLocation().getId())
                 .locationCode(stop.getLocation().getCode())
                 .locationName(stop.getLocation().getName())
-                .locationType(stop.getLocation().getType())
+                .locationType(stop.getLocation().getLocationType())
                 .stopType(stop.getStopType())
-                .offsetMinutes(stop.getOffsetMinutes())
+                .arrivalOffsetMinutes(stop.getArrivalOffsetMinutes())
                 .dwellMinutes(stop.getDwellMinutes())
                 .build();
     }

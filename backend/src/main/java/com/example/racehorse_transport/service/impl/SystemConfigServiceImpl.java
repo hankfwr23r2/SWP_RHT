@@ -17,7 +17,7 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     public int getInt(String key) {
         String value = repository.findById(key)
                 .orElseThrow(() -> new IllegalStateException("Thiếu tham số hệ thống " + key))
-                .getValue();
+                .getConfigValue();
         try {
             return Integer.parseInt(value.trim());
         } catch (NumberFormatException e) {

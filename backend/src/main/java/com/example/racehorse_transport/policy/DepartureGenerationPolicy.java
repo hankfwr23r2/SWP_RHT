@@ -16,9 +16,9 @@ public final class DepartureGenerationPolicy {
     }
 
     // Các ngày có chuyến trong khoảng (today, today + weeks tuần], nằm trong hiệu lực của lịch và đúng thứ trong tuần.
-    // weekdays theo ISO: 1 = thứ Hai, 7 = Chủ nhật. validTo null nghĩa là vô thời hạn.
-    public static List<LocalDate> datesToGenerate(LocalDate today, int weeks, LocalDate validFrom, LocalDate validTo, Set<Short> weekdays) {
-        if (weeks <= 0 || weekdays == null || weekdays.isEmpty()) {
+    // daysOfWeek theo ISO: 1 = thứ Hai, 7 = Chủ nhật. validTo null nghĩa là vô thời hạn.
+    public static List<LocalDate> datesToGenerate(LocalDate today, int weeks, LocalDate validFrom, LocalDate validTo, Set<Short> daysOfWeek) {
+        if (weeks <= 0 || daysOfWeek == null || daysOfWeek.isEmpty()) {
             return List.of();
         }
         LocalDate first = today.plusDays(1).isBefore(validFrom) ? validFrom : today.plusDays(1);
@@ -28,7 +28,7 @@ public final class DepartureGenerationPolicy {
         }
         List<LocalDate> dates = new ArrayList<>();
         for (LocalDate date = first; !date.isAfter(last); date = date.plusDays(1)) {
-            if (weekdays.contains((short) date.getDayOfWeek().getValue())) {
+            if (daysOfWeek.contains((short) date.getDayOfWeek().getValue())) {
                 dates.add(date);
             }
         }
@@ -36,12 +36,12 @@ public final class DepartureGenerationPolicy {
     }
 
     // Giờ xuất phát: ngày chạy và giờ của lịch, theo giờ địa phương của công ty
-    public static Instant plannedDepartAt(LocalDate departureDate, LocalTime departureTime, ZoneId zone) {
+    public static Instant plannedDepartureAt(LocalDate departureDate, LocalTime departureTime, ZoneId zone) {
         return departureDate.atTime(departureTime).atZone(zone).toInstant();
     }
 
     // Chốt nhận đơn trước giờ xuất phát bao nhiêu giờ
-    public static Instant bookingCutoffAt(Instant plannedDepartAt, int bookingCutoffHours) {
-        return plannedDepartAt.minus(Duration.ofHours(bookingCutoffHours));
+    public static Instant bookingCutoffAt(Instant plannedDepartureAt, int bookingCutoffHours) {
+        return plannedDepartureAt.minus(Duration.ofHours(bookingCutoffHours));
     }
 }

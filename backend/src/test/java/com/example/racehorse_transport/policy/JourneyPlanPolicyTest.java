@@ -9,6 +9,7 @@ import com.example.racehorse_transport.policy.JourneyPlanPolicy.Stop;
 import com.example.racehorse_transport.policy.JourneyPlanPolicy.StopKind;
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -22,8 +23,8 @@ class JourneyPlanPolicyTest {
 
     private static final ZoneId VN = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final Rules RULES = new Rules(4, 30, 10, 10, 3);
-    private static final int OPEN = 7 * 60 + 30;
-    private static final int CLOSE = 16 * 60 + 30;
+    private static final LocalTime OPEN = LocalTime.of(7, 30);
+    private static final LocalTime CLOSE = LocalTime.of(16, 30);
 
     private static Instant at(String local) {
         return LocalDateTime.parse(local).atZone(VN).toInstant();

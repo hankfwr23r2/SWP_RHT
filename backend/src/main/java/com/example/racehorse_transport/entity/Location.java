@@ -20,6 +20,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalTime;
 
 // Điểm thuộc mạng lưới của công ty: hub, trại cách ly, trạm nghỉ, cửa khẩu, chuồng, trường đua. Không chứa địa chỉ của khách.
 @Getter
@@ -41,8 +42,8 @@ public class Location {
     private String name;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "type", length = 30, nullable = false)
-    private LocationType type;
+    @Column(name = "location_type", length = 30, nullable = false)
+    private LocationType locationType;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "country_code", nullable = false)
@@ -61,11 +62,11 @@ public class Location {
     @Column(name = "longitude", precision = 9, scale = 6)
     private BigDecimal longitude;
 
-    @Column(name = "opening_minutes")
-    private Integer openingMinutes;
+    @Column(name = "opening_time")
+    private LocalTime openingTime;
 
-    @Column(name = "closing_minutes")
-    private Integer closingMinutes;
+    @Column(name = "closing_time")
+    private LocalTime closingTime;
 
     @Column(name = "contact_phone", length = 20)
     private String contactPhone;

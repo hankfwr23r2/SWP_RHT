@@ -33,8 +33,8 @@ public class Party {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "kind", length = 30, nullable = false)
-    private PartyKind kind;
+    @Column(name = "party_type", length = 30, nullable = false)
+    private PartyKind partyType;
 
     @Column(name = "display_name", length = 200, nullable = false)
     private String displayName;

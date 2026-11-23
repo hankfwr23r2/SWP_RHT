@@ -2,6 +2,7 @@ package com.example.racehorse_transport.policy;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -20,7 +21,7 @@ public final class JourneyPlanPolicy {
     public record Rules(double maxContinuousHours, int minRestMinutes, double maxDriveHoursPerDay,
                         double overnightRestHours, double borderProcessingHours) {}
 
-    public record Stop(String name, StopKind kind, Integer openingMinutes, Integer closingMinutes) {}
+    public record Stop(String name, StopKind kind, LocalTime openingTime, LocalTime closingTime) {}
 
     public record Leg(double km, long driveSeconds) {}
 
@@ -192,16 +193,15 @@ public final class JourneyPlanPolicy {
 
     // Cửa khẩu chưa khai báo giờ thì coi như mở cả ngày
     private static Instant nextOpening(Instant at, Stop gate, ZoneId zone) {
-        if (gate.openingMinutes() == null || gate.closingMinutes() == null) {
+        if (gate.openingTime() == null || gate.closingTime() == null) {
             return at;
         }
         ZonedDateTime local = at.atZone(zone);
-        int minute = local.getHour() * 60 + local.getMinute();
-        ZonedDateTime todayOpening = local.toLocalDate().atStartOfDay(zone).plusMinutes(gate.openingMinutes());
-        if (minute < gate.openingMinutes()) {
+        ZonedDateTime todayOpening = local.toLocalDate().atTime(gate.openingTime()).atZone(zone);
+        if (local.toLocalTime().isBefore(gate.openingTime())) {
             return todayOpening.toInstant();
         }
-        if (minute >= gate.closingMinutes()) {
+        if (!local.toLocalTime().isBefore(gate.closingTime())) {
             return todayOpening.plusDays(1).toInstant();
         }
         return at;

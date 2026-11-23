@@ -22,7 +22,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @Entity
-@Table(name = "service")
+@Table(name = "billable_service")
 public class BillableService {
 
     @Id
@@ -49,8 +49,8 @@ public class BillableService {
     private Boolean passThrough = false;
 
     // Tự thêm vào báo giá, khách không phải chọn
-    @Column(name = "auto_apply", nullable = false)
-    private Boolean autoApply = false;
+    @Column(name = "is_auto_applied", nullable = false)
+    private Boolean autoApplied = false;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 30, nullable = false)

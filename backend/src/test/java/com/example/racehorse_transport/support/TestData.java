@@ -89,7 +89,7 @@ public class TestData {
         profile.setPhone("0900000999");
         profile.setHireDate(LocalDate.of(2026, 1, 1));
         profile.setEmploymentStatus(EmploymentStatus.ACTIVE);
-        profile.setHomeHub(locations.findByCode("HUB-HCM").orElseThrow());
+        profile.setHomeHubLocation(locations.findByCode("HUB-HCM").orElseThrow());
         return staff.saveAndFlush(profile);
     }
 
@@ -106,14 +106,14 @@ public class TestData {
     }
 
     // Chuyến đột xuất (không theo lịch) trên một tuyến, giờ tính theo UTC cho đơn giản
-    public Departure departure(String routeCode, LocalDate date, int capacityStalls) {
+    public Departure departure(String routeCode, LocalDate date, int stallCapacity) {
         Route route = routes.findByCode(routeCode).orElseThrow();
         Departure departure = new Departure();
         departure.setRoute(route);
         departure.setDepartureDate(date);
-        departure.setPlannedDepartAt(date.atTime(6, 0).toInstant(ZoneOffset.UTC));
+        departure.setPlannedDepartureAt(date.atTime(6, 0).toInstant(ZoneOffset.UTC));
         departure.setBookingCutoffAt(date.minusDays(3).atTime(6, 0).toInstant(ZoneOffset.UTC));
-        departure.setCapacityStalls(capacityStalls);
+        departure.setStallCapacity(stallCapacity);
         departure.setStatus(DepartureStatus.OPEN);
         return departures.saveAndFlush(departure);
     }

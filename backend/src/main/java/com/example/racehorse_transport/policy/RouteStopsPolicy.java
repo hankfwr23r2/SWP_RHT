@@ -22,7 +22,7 @@ public final class RouteStopsPolicy {
             RouteStopType.BORDER, LocationType.BORDER_GATE,
             RouteStopType.QUARANTINE, LocationType.QUARANTINE_FARM);
 
-    public record Stop(int seq, Long locationId, LocationType locationType, RouteStopType stopType, int offsetMinutes, int dwellMinutes) {
+    public record Stop(int sequenceNumber, Long locationId, LocationType locationType, RouteStopType stopType, int arrivalOffsetMinutes, int dwellMinutes) {
     }
 
     private RouteStopsPolicy() {
@@ -45,9 +45,9 @@ public final class RouteStopsPolicy {
             return errors;
         }
 
-        List<Stop> ordered = stops.stream().sorted(Comparator.comparingInt(Stop::seq)).toList();
+        List<Stop> ordered = stops.stream().sorted(Comparator.comparingInt(Stop::sequenceNumber)).toList();
         for (int i = 0; i < ordered.size(); i++) {
-            if (ordered.get(i).seq() != i + 1) {
+            if (ordered.get(i).sequenceNumber() != i + 1) {
                 errors.add("Thứ tự điểm dừng phải liên tục từ 1 đến " + ordered.size() + ".");
                 break;
             }
@@ -60,23 +60,23 @@ public final class RouteStopsPolicy {
         if (!Objects.equals(last.locationId(), destinationId)) {
             errors.add("Điểm dừng cuối cùng phải là điểm cuối tuyến.");
         }
-        if (first.offsetMinutes() != 0) {
+        if (first.arrivalOffsetMinutes() != 0) {
             errors.add("Điểm dừng đầu tiên phải có thời điểm 0 phút.");
         }
         for (int i = 0; i < ordered.size(); i++) {
             Stop stop = ordered.get(i);
-            if (stop.offsetMinutes() < 0 || stop.dwellMinutes() < 0) {
-                errors.add("Điểm dừng " + stop.seq() + ": số phút không được âm.");
+            if (stop.arrivalOffsetMinutes() < 0 || stop.dwellMinutes() < 0) {
+                errors.add("Điểm dừng " + stop.sequenceNumber() + ": số phút không được âm.");
             }
             LocationType required = REQUIRED_LOCATION.get(stop.stopType());
             if (required != null && required != stop.locationType()) {
-                errors.add("Điểm dừng " + stop.seq() + ": loại " + stop.stopType() + " phải đặt tại địa điểm loại " + required + ".");
+                errors.add("Điểm dừng " + stop.sequenceNumber() + ": loại " + stop.stopType() + " phải đặt tại địa điểm loại " + required + ".");
             }
             if (i > 0) {
                 Stop previous = ordered.get(i - 1);
                 // Xe phải rời điểm trước rồi mới tới điểm sau
-                if (stop.offsetMinutes() < previous.offsetMinutes() + previous.dwellMinutes()) {
-                    errors.add("Điểm dừng " + stop.seq() + " phải tới sau khi xe rời điểm dừng " + previous.seq() + ".");
+                if (stop.arrivalOffsetMinutes() < previous.arrivalOffsetMinutes() + previous.dwellMinutes()) {
+                    errors.add("Điểm dừng " + stop.sequenceNumber() + " phải tới sau khi xe rời điểm dừng " + previous.sequenceNumber() + ".");
                 }
             }
         }

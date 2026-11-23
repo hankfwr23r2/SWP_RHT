@@ -58,16 +58,16 @@ public class Booking {
     @Column(name = "requested_pickup_date", nullable = false)
     private LocalDate requestedPickupDate;
 
-    @Column(name = "waybill_no", length = 30)
-    private String waybillNo;
+    @Column(name = "waybill_number", length = 30)
+    private String waybillNumber;
 
-    @Column(name = "emergency_spend_limit", precision = 15, scale = 2)
-    private BigDecimal emergencySpendLimit;
+    @Column(name = "emergency_spending_limit", precision = 15, scale = 2)
+    private BigDecimal emergencySpendingLimit;
 
     // Đơn này là chuyến hồi hương của đơn nào
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
-    @JoinColumn(name = "return_of_booking_id")
-    private Booking returnOf;
+    @JoinColumn(name = "original_booking_id")
+    private Booking originalBooking;
 
     // Chỉ đổi qua BookingStatusService, kèm một dòng booking_status_history
     @Enumerated(EnumType.STRING)

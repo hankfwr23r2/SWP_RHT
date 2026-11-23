@@ -106,7 +106,7 @@ public class RouteServiceImpl implements RouteService {
     @Transactional(readOnly = true)
     public List<DepartureScheduleResponseDto> schedules(Long routeId) {
         Map<Long, List<DepartureScheduleDay>> daysBySchedule = scheduleDays.findAll().stream()
-                .collect(Collectors.groupingBy(day -> day.getId().getScheduleId()));
+                .collect(Collectors.groupingBy(day -> day.getId().getDepartureScheduleId()));
         return schedules.findWithRoute(routeId).stream()
                 .map(schedule -> DepartureScheduleResponseDto.from(schedule, daysBySchedule.getOrDefault(schedule.getId(), List.of())))
                 .toList();
@@ -120,7 +120,7 @@ public class RouteServiceImpl implements RouteService {
         DepartureSchedule schedule = request.toEntity(route);
         schedule.setStatus(ScheduleStatus.ACTIVE);
         schedule = schedules.save(schedule);
-        return DepartureScheduleResponseDto.from(schedule, saveDays(schedule, request.getWeekdays()));
+        return DepartureScheduleResponseDto.from(schedule, saveDays(schedule, request.getDaysOfWeek()));
     }
 
     @Override
@@ -135,7 +135,7 @@ public class RouteServiceImpl implements RouteService {
         request.applyTo(schedule, route);
         // Đổi lịch không đổi các chuyến đã sinh: sức chứa và giờ chạy đã chép vào từng chuyến
         scheduleDays.deleteByScheduleId(id);
-        return DepartureScheduleResponseDto.from(schedule, saveDays(schedule, request.getWeekdays()));
+        return DepartureScheduleResponseDto.from(schedule, saveDays(schedule, request.getDaysOfWeek()));
     }
 
     @Override
@@ -162,7 +162,7 @@ public class RouteServiceImpl implements RouteService {
             throw new IllegalStateException("Không chuyển được lịch từ " + schedule.getStatus() + " sang " + to + ".");
         }
         schedule.setStatus(to);
-        return DepartureScheduleResponseDto.from(schedule, scheduleDays.findById_ScheduleId(id));
+        return DepartureScheduleResponseDto.from(schedule, scheduleDays.findById_DepartureScheduleId(id));
     }
 
     // Kiểm điểm dừng bằng RouteStopsPolicy; trả về địa điểm của các điểm dừng theo id
@@ -179,10 +179,10 @@ public class RouteServiceImpl implements RouteService {
             }
         }
         List<RouteStopsPolicy.Stop> stops = request.getStops().stream()
-                .map(stop -> new RouteStopsPolicy.Stop(stop.getSeq(), stop.getLocationId(), byId.get(stop.getLocationId()).getType(),
-                        stop.getStopType(), stop.getOffsetMinutes(), stop.getDwellMinutes()))
+                .map(stop -> new RouteStopsPolicy.Stop(stop.getSequenceNumber(), stop.getLocationId(), byId.get(stop.getLocationId()).getLocationType(),
+                        stop.getStopType(), stop.getArrivalOffsetMinutes(), stop.getDwellMinutes()))
                 .toList();
-        List<String> errors = RouteStopsPolicy.violations(origin.getId(), origin.getType(), destination.getId(), destination.getType(), stops);
+        List<String> errors = RouteStopsPolicy.violations(origin.getId(), origin.getLocationType(), destination.getId(), destination.getLocationType(), stops);
         if (!errors.isEmpty()) {
             throw new IllegalArgumentException(String.join(" ", errors));
         }
@@ -194,11 +194,11 @@ public class RouteServiceImpl implements RouteService {
         routeStops.flush();
     }
 
-    private List<DepartureScheduleDay> saveDays(DepartureSchedule schedule, Set<Short> weekdays) {
-        List<DepartureScheduleDay> days = weekdays.stream().sorted().map(weekday -> {
+    private List<DepartureScheduleDay> saveDays(DepartureSchedule schedule, Set<Short> daysOfWeek) {
+        List<DepartureScheduleDay> days = daysOfWeek.stream().sorted().map(dayOfWeek -> {
             DepartureScheduleDay day = new DepartureScheduleDay();
-            day.setId(new DepartureScheduleDayId(schedule.getId(), weekday));
-            day.setSchedule(schedule);
+            day.setId(new DepartureScheduleDayId(schedule.getId(), dayOfWeek));
+            day.setDepartureSchedule(schedule);
             return day;
         }).toList();
         return scheduleDays.saveAll(days);

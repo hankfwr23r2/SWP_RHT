@@ -1,7 +1,7 @@
 # Bàn giao: sửa nhóm tài khoản và hồ sơ
 
 > Ngày ghi: 23/11/2026. Thiết kế gốc: [SUA_TAI_KHOAN_VA_HO_SO.md](SUA_TAI_KHOAN_VA_HO_SO.md).
-> Nhánh `rd/account-profiles`, tách từ `origin/redesign/system-v2` (dfd8890). **Mọi thay đổi chưa commit, chỉ có trên máy người dùng.** Không chuyển nhánh hay `git clean` trước khi commit.
+> Phần tài khoản và hồ sơ hoàn tất trong commit `698fd29` của nhánh `rd/account-profiles` và đã merge vào `origin/redesign/system-v2` qua PR #350.
 > Đọc `AGENTS.md` trước. Phương án đã được duyệt ngày 23/11/2026 với phạm vi ở mục 2 và 4. Cần sửa file khác thì dừng lại và hỏi.
 
 ## 1. Trạng thái

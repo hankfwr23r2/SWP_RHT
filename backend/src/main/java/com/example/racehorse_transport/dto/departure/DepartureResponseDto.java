@@ -15,17 +15,17 @@ public class DepartureResponseDto {
 
     private Long id;
     // NULL = chuyến đột xuất
-    private Long scheduleId;
+    private Long departureScheduleId;
     private Long routeId;
     private String routeCode;
     private String routeName;
     private String originCode;
     private String destinationCode;
     private LocalDate departureDate;
-    private Instant plannedDepartAt;
+    private Instant plannedDepartureAt;
     private Instant bookingCutoffAt;
-    private Integer capacityStalls;
-    private Integer bookedStalls;
+    private Integer stallCapacity;
+    private Integer bookedStallCount;
     private Integer availableStalls;
     private DepartureStatus status;
 
@@ -33,17 +33,17 @@ public class DepartureResponseDto {
     public static DepartureResponseDto from(Departure departure, int availableStalls) {
         return DepartureResponseDto.builder()
                 .id(departure.getId())
-                .scheduleId(departure.getSchedule() == null ? null : departure.getSchedule().getId())
+                .departureScheduleId(departure.getDepartureSchedule() == null ? null : departure.getDepartureSchedule().getId())
                 .routeId(departure.getRoute().getId())
                 .routeCode(departure.getRoute().getCode())
                 .routeName(departure.getRoute().getName())
                 .originCode(departure.getRoute().getOrigin().getCode())
                 .destinationCode(departure.getRoute().getDestination().getCode())
                 .departureDate(departure.getDepartureDate())
-                .plannedDepartAt(departure.getPlannedDepartAt())
+                .plannedDepartureAt(departure.getPlannedDepartureAt())
                 .bookingCutoffAt(departure.getBookingCutoffAt())
-                .capacityStalls(departure.getCapacityStalls())
-                .bookedStalls(departure.getBookedStalls())
+                .stallCapacity(departure.getStallCapacity())
+                .bookedStallCount(departure.getBookedStallCount())
                 .availableStalls(availableStalls)
                 .status(departure.getStatus())
                 .build();

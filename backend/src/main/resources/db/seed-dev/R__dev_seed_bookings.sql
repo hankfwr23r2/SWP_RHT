@@ -4,21 +4,21 @@
 -- trong ứng dụng, QuotationService và DepositPolicy mới là nơi tính.
 
 -- 1. Chuyến cho 8 tuần tới từ các lịch đang chạy (trong ứng dụng, việc này do scheduler của DepartureService làm)
-INSERT INTO departure (schedule_id, route_id, departure_date, planned_depart_at, booking_cutoff_at, capacity_stalls, booked_stalls, status)
+INSERT INTO departure (departure_schedule_id, route_id, departure_date, planned_departure_at, booking_cutoff_at, stall_capacity, booked_stall_count, status)
 SELECT s.id,
        s.route_id,
        d::date,
        (d::date + s.departure_time) AT TIME ZONE 'Asia/Ho_Chi_Minh',
        ((d::date + s.departure_time) AT TIME ZONE 'Asia/Ho_Chi_Minh') - make_interval(hours => s.booking_cutoff_hours),
-       s.capacity_stalls,
+       s.stall_capacity,
        0,
        'OPEN'
 FROM departure_schedule s
-JOIN departure_schedule_day sd ON sd.schedule_id = s.id
+JOIN departure_schedule_day sd ON sd.departure_schedule_id = s.id
 CROSS JOIN generate_series(current_date + 1, current_date + 56, interval '1 day') AS d
 WHERE s.status = 'ACTIVE'
-  AND extract(isodow FROM d)::smallint = sd.weekday
-ON CONFLICT ON CONSTRAINT uk_departure_schedule_date DO NOTHING;
+  AND extract(isodow FROM d)::smallint = sd.day_of_week
+ON CONFLICT ON CONSTRAINT uk_departure_departure_schedule_id_departure_date DO NOTHING;
 
 -- 2. Ba đơn CONFIRMED của customer1.dev
 DO $$
@@ -54,7 +54,7 @@ BEGIN
     END IF;
 
     -- Ngựa của khách
-    INSERT INTO horse (owner_customer_id, name, microchip, passport_no, gender, birth_year, color, breed, horse_type_id, weight_kg, status)
+    INSERT INTO horse (owner_customer_id, name, microchip, passport_number, sex, birth_year, color, breed, horse_type_id, weight_kg, status)
     VALUES (v_user, 'Sao Mai', '985000000100001', 'VN-PP-0001', 'MARE', 2019, 'Nâu', 'Thoroughbred', v_horse_type, 480.0, 'ACTIVE'),
            (v_user, 'Bạch Long', '985000000100002', 'VN-PP-0002', 'STALLION', 2018, 'Trắng', 'Arabian', v_horse_type, 450.0, 'ACTIVE'),
            (v_user, 'Gió Nam', '985000000100003', 'VN-PP-0003', 'GELDING', 2020, 'Hồng', 'Thoroughbred', v_horse_type, 470.0, 'ACTIVE'),
@@ -62,36 +62,36 @@ BEGIN
 
     -- ===================== Đơn 1: chạy thẳng Đồng Nai -> TP.HCM (cùng hub HUB-HCM) =====================
     v_pickup := current_date + 10;
-    INSERT INTO booking (code, customer_id, booking_type, departure_id, requested_pickup_date, waybill_no, status, created_by)
+    INSERT INTO booking (code, customer_id, booking_type, departure_id, requested_pickup_date, waybill_number, status, created_by)
     VALUES ('DEV-DIRECT-001', v_user, 'INTERPROVINCE', NULL, v_pickup, 'WB-DEV-0001', 'CONFIRMED', v_user)
     RETURNING id INTO v_booking;
 
-    INSERT INTO booking_party (booking_id, role, full_name, phone, address)
+    INSERT INTO booking_party (booking_id, booking_role, full_name, phone, address)
     VALUES (v_booking, 'PAYER', 'Nguyễn Văn Khách (mẫu)', '0909000001', 'Phường Thủ Dầu Một, TP.HCM'),
            (v_booking, 'SHIPPER', 'Nguyễn Văn Khách (mẫu)', '0909000001', 'Phường Thủ Dầu Một, TP.HCM'),
            (v_booking, 'CONSIGNEE', 'Trần Người Nhận (mẫu)', '0909000011', 'Phường Bình Thạnh, TP.HCM');
 
-    INSERT INTO booking_address (booking_id, role, address_line, province_code, country_code, latitude, longitude, contact_name, contact_phone)
+    INSERT INTO booking_address (booking_id, address_type, address_line, province_code, country_code, latitude, longitude, contact_name, contact_phone)
     VALUES (v_booking, 'PICKUP', 'Trang trại Long Thành, Đồng Nai', 'VN-75', 'VN', 10.780000, 106.950000, 'Anh Ba', '0909000021'),
            (v_booking, 'DELIVERY', 'CLB Cưỡi ngựa Sài Gòn, TP.HCM', 'VN-79', 'VN', 10.800000, 106.740000, 'Chị Tư', '0909000022');
 
     SELECT id INTO v_horse FROM horse WHERE microchip = '985000000100001';
-    INSERT INTO booking_horse (booking_id, horse_id, stall_type, status) VALUES (v_booking, v_horse, 'STANDARD', 'ACTIVE') RETURNING id INTO v_line;
-    INSERT INTO horse_insurance (booking_horse_id, option, coverage_amount, currency, policy_no, valid_from, valid_to, status, confirmed_by, confirmed_at)
+    INSERT INTO booking_horse (booking_id, horse_id, stall_type_code, status) VALUES (v_booking, v_horse, 'STANDARD', 'ACTIVE') RETURNING id INTO v_line;
+    INSERT INTO horse_insurance (booking_horse_id, coverage_option, coverage_amount, currency_code, policy_number, valid_from, valid_to, status, confirmed_by, confirmed_at)
     VALUES (v_line, 'PERSONAL', 500000000, 'VND', 'POL-DEV-0001', v_pickup - 1, v_pickup + 30, 'CONFIRMED', v_specialist, now());
 
-    INSERT INTO quotation (booking_id, version, price_list_id, currency, deposit_rate, valid_until, confirmed_pickup_date, confirmed_departure_date,
+    INSERT INTO quotation (booking_id, version, price_list_id, currency_code, deposit_rate, expires_at, confirmed_pickup_date, confirmed_departure_date,
                            estimated_delivery_date, total_amount, pass_through_amount, deposit_amount, status, sent_by, sent_at, accepted_at)
     VALUES (v_booking, 1, v_pl, 'VND', 0.3000, now() + interval '1 day', v_pickup, v_pickup, v_pickup, 0, 0, 0, 'DRAFT', NULL, NULL, NULL)
     RETURNING id INTO v_quotation;
-    INSERT INTO quotation_line (quotation_id, line_no, line_type, service_id, price_item_id, booking_horse_id, description, quantity, unit, unit_price, is_pass_through)
-    SELECT v_quotation, l.line_no, l.line_type, s.id, pi.id, NULL, l.description, l.qty, l.unit, pi.unit_price, s.is_pass_through
+    INSERT INTO quotation_line (quotation_id, line_number, line_type, billable_service_id, price_item_id, booking_horse_id, description, quantity, unit, unit_price, is_pass_through)
+    SELECT v_quotation, l.line_number, l.line_type, s.id, pi.id, NULL, l.description, l.qty, l.unit, pi.unit_price, s.is_pass_through
     FROM (VALUES (1, 'DIRECT', 'DIRECT_KM', 'MEDIUM'::text, 0.00::numeric, 'Cước chạy thẳng 45 km, xe hạng trung', 45::numeric, 'KM'),
                  (2, 'FUEL', 'FUEL_TOLL', NULL, NULL, 'Nhiên liệu và phí cầu đường 45 km', 45, 'KM'),
                  (3, 'DOCS', 'QUARANTINE_DOCS', NULL, NULL, 'Phí làm thủ tục kiểm dịch', 1, 'BOOKING')
-         ) AS l(line_no, line_type, service_code, class_code, km_from, description, qty, unit)
-    JOIN service s ON s.code = l.service_code
-    JOIN price_item pi ON pi.price_list_id = v_pl AND pi.service_id = s.id AND pi.route_id IS NULL AND pi.stall_type IS NULL
+         ) AS l(line_number, line_type, service_code, class_code, km_from, description, qty, unit)
+    JOIN billable_service s ON s.code = l.service_code
+    JOIN price_item pi ON pi.price_list_id = v_pl AND pi.billable_service_id = s.id AND pi.route_id IS NULL AND pi.stall_type_code IS NULL
                       AND pi.vehicle_class_id IS NOT DISTINCT FROM (SELECT id FROM vehicle_class WHERE code = l.class_code)
                       AND pi.km_from IS NOT DISTINCT FROM l.km_from;
 
@@ -100,44 +100,44 @@ BEGIN
     WHERE r.code = 'HCM-DN' AND d.status = 'OPEN' AND d.departure_date >= current_date + 10
     ORDER BY d.departure_date LIMIT 1;
     v_pickup := (SELECT departure_date - 2 FROM departure WHERE id = v_dep);
-    INSERT INTO booking (code, customer_id, booking_type, departure_id, requested_pickup_date, waybill_no, status, created_by)
+    INSERT INTO booking (code, customer_id, booking_type, departure_id, requested_pickup_date, waybill_number, status, created_by)
     VALUES ('DEV-DOMESTIC-001', v_user, 'INTERPROVINCE', v_dep, v_pickup, 'WB-DEV-0002', 'CONFIRMED', v_user)
     RETURNING id INTO v_booking;
 
-    INSERT INTO booking_party (booking_id, role, full_name, phone, address)
+    INSERT INTO booking_party (booking_id, booking_role, full_name, phone, address)
     VALUES (v_booking, 'PAYER', 'Nguyễn Văn Khách (mẫu)', '0909000001', 'Phường Thủ Dầu Một, TP.HCM'),
            (v_booking, 'SHIPPER', 'Nguyễn Văn Khách (mẫu)', '0909000001', 'Phường Thủ Dầu Một, TP.HCM'),
            (v_booking, 'CONSIGNEE', 'Lê Chủ Trại Huế (mẫu)', '0909000012', 'Phường Thuận Hóa, TP. Huế');
 
-    INSERT INTO booking_address (booking_id, role, address_line, province_code, country_code, latitude, longitude, contact_name, contact_phone)
+    INSERT INTO booking_address (booking_id, address_type, address_line, province_code, country_code, latitude, longitude, contact_name, contact_phone)
     VALUES (v_booking, 'PICKUP', 'Trang trại Long Thành, Đồng Nai', 'VN-75', 'VN', 10.780000, 106.950000, 'Anh Ba', '0909000021'),
            (v_booking, 'DELIVERY', 'Trại ngựa Thuận An, TP. Huế', 'VN-46', 'VN', 16.560000, 107.640000, 'Anh Năm', '0909000023');
 
     FOR v_horse IN SELECT id FROM horse WHERE microchip IN ('985000000100002', '985000000100003') ORDER BY id LOOP
-        INSERT INTO booking_horse (booking_id, horse_id, stall_type, status) VALUES (v_booking, v_horse, 'STANDARD', 'ACTIVE') RETURNING id INTO v_line;
-        INSERT INTO horse_insurance (booking_horse_id, option, coverage_amount, currency, policy_no, valid_from, valid_to, status, confirmed_by, confirmed_at)
+        INSERT INTO booking_horse (booking_id, horse_id, stall_type_code, status) VALUES (v_booking, v_horse, 'STANDARD', 'ACTIVE') RETURNING id INTO v_line;
+        INSERT INTO horse_insurance (booking_horse_id, coverage_option, coverage_amount, currency_code, policy_number, valid_from, valid_to, status, confirmed_by, confirmed_at)
         VALUES (v_line, 'PERSONAL', 500000000, 'VND', 'POL-DEV-' || v_horse, v_pickup - 1, v_pickup + 30, 'CONFIRMED', v_specialist, now());
     END LOOP;
-    UPDATE departure SET booked_stalls = booked_stalls + 2 WHERE id = v_dep;
+    UPDATE departure SET booked_stall_count = booked_stall_count + 2 WHERE id = v_dep;
 
-    INSERT INTO quotation (booking_id, version, price_list_id, currency, deposit_rate, valid_until, confirmed_pickup_date, confirmed_departure_date,
+    INSERT INTO quotation (booking_id, version, price_list_id, currency_code, deposit_rate, expires_at, confirmed_pickup_date, confirmed_departure_date,
                            estimated_delivery_date, total_amount, pass_through_amount, deposit_amount, status, sent_by, sent_at, accepted_at)
     SELECT v_booking, 1, v_pl, 'VND', 0.3000, now() + interval '1 day', v_pickup, departure_date, departure_date + 2, 0, 0, 0, 'DRAFT', NULL, NULL, NULL
     FROM departure WHERE id = v_dep
     RETURNING id INTO v_quotation;
-    INSERT INTO quotation_line (quotation_id, line_no, line_type, service_id, price_item_id, description, quantity, unit, unit_price, is_pass_through)
-    SELECT v_quotation, l.line_no, l.line_type, s.id, pi.id, l.description, l.qty, l.unit, pi.unit_price, s.is_pass_through
+    INSERT INTO quotation_line (quotation_id, line_number, line_type, billable_service_id, price_item_id, description, quantity, unit, unit_price, is_pass_through)
+    SELECT v_quotation, l.line_number, l.line_type, s.id, pi.id, l.description, l.qty, l.unit, pi.unit_price, s.is_pass_through
     FROM (VALUES (1, 'LINEHAUL', 'LINEHAUL_STALL', NULL::text, 'HCM-DN'::text, 'STANDARD'::text, NULL::numeric, 'Cước trục HCM-DN, 2 khoang tiêu chuẩn', 2::numeric, 'STALL'),
                  (2, 'PICKUP', 'PICKUP_KM', 'MEDIUM', NULL, NULL, 0.00, 'Cước chặng đón 40 km, xe hạng trung', 40, 'KM'),
                  (3, 'DELIVERY', 'DELIVERY_KM', 'MEDIUM', NULL, NULL, 0.00, 'Cước chặng giao 15 km, xe hạng trung', 15, 'KM'),
                  (4, 'FUEL', 'FUEL_TOLL', NULL, NULL, NULL, NULL, 'Nhiên liệu và phí cầu đường chặng đón, giao 55 km', 55, 'KM'),
                  (5, 'DOCS', 'QUARANTINE_DOCS', NULL, NULL, NULL, NULL, 'Phí làm thủ tục kiểm dịch', 1, 'BOOKING')
-         ) AS l(line_no, line_type, service_code, class_code, route_code, stall, km_from, description, qty, unit)
-    JOIN service s ON s.code = l.service_code
-    JOIN price_item pi ON pi.price_list_id = v_pl AND pi.service_id = s.id
+         ) AS l(line_number, line_type, service_code, class_code, route_code, stall, km_from, description, qty, unit)
+    JOIN billable_service s ON s.code = l.service_code
+    JOIN price_item pi ON pi.price_list_id = v_pl AND pi.billable_service_id = s.id
                       AND pi.vehicle_class_id IS NOT DISTINCT FROM (SELECT id FROM vehicle_class WHERE code = l.class_code)
                       AND pi.route_id IS NOT DISTINCT FROM (SELECT id FROM route WHERE code = l.route_code)
-                      AND pi.stall_type IS NOT DISTINCT FROM l.stall
+                      AND pi.stall_type_code IS NOT DISTINCT FROM l.stall
                       AND pi.km_from IS NOT DISTINCT FROM l.km_from;
 
     -- ===================== Đơn 3: quốc tế TP.HCM -> Phnom Penh (trục HCM -> cửa khẩu Mộc Bài) =====================
@@ -146,44 +146,44 @@ BEGIN
     ORDER BY d.departure_date LIMIT 1;
     -- Đón trước 7 ngày để cách ly trước khi xuất
     v_pickup := (SELECT departure_date - 7 FROM departure WHERE id = v_dep);
-    INSERT INTO booking (code, customer_id, booking_type, departure_id, requested_pickup_date, waybill_no, status, created_by)
+    INSERT INTO booking (code, customer_id, booking_type, departure_id, requested_pickup_date, waybill_number, status, created_by)
     VALUES ('DEV-EXPORT-001', v_user, 'EXPORT', v_dep, v_pickup, 'WB-DEV-0003', 'CONFIRMED', v_user)
     RETURNING id INTO v_booking;
 
-    INSERT INTO booking_party (booking_id, role, full_name, phone, id_type, id_number, id_country, address)
+    INSERT INTO booking_party (booking_id, booking_role, full_name, phone, identity_document_type, identity_document_number, identity_document_country_code, address)
     VALUES (v_booking, 'PAYER', 'Nguyễn Văn Khách (mẫu)', '0909000001', NULL, NULL, NULL, 'Phường Thủ Dầu Một, TP.HCM'),
            (v_booking, 'SHIPPER', 'Nguyễn Văn Khách (mẫu)', '0909000001', NULL, NULL, NULL, 'Phường Thủ Dầu Một, TP.HCM'),
            (v_booking, 'CONSIGNEE', 'Sok Dara (mẫu)', '+85512000001', 'PASSPORT', 'N0000001', 'KH', 'Phnom Penh, Campuchia');
 
-    INSERT INTO booking_address (booking_id, role, address_line, province_code, country_code, latitude, longitude, contact_name, contact_phone)
+    INSERT INTO booking_address (booking_id, address_type, address_line, province_code, country_code, latitude, longitude, contact_name, contact_phone)
     VALUES (v_booking, 'PICKUP', 'CLB Cưỡi ngựa Sài Gòn, TP.HCM', 'VN-79', 'VN', 10.800000, 106.740000, 'Chị Tư', '0909000022'),
            (v_booking, 'DELIVERY', 'Genius Resort Equestrian Centre, Phnom Penh', 'KH-12', 'KH', 11.556400, 104.928200, 'Sok Dara', '+85512000001');
 
     SELECT id INTO v_horse FROM horse WHERE microchip = '985000000100004';
-    INSERT INTO booking_horse (booking_id, horse_id, stall_type, status) VALUES (v_booking, v_horse, 'STANDARD', 'ACTIVE') RETURNING id INTO v_line;
-    INSERT INTO horse_insurance (booking_horse_id, option, coverage_amount, currency, policy_no, valid_from, valid_to, status, confirmed_by, confirmed_at)
+    INSERT INTO booking_horse (booking_id, horse_id, stall_type_code, status) VALUES (v_booking, v_horse, 'STANDARD', 'ACTIVE') RETURNING id INTO v_line;
+    INSERT INTO horse_insurance (booking_horse_id, coverage_option, coverage_amount, currency_code, policy_number, valid_from, valid_to, status, confirmed_by, confirmed_at)
     VALUES (v_line, 'PERSONAL', 800000000, 'VND', 'POL-DEV-0004', v_pickup - 1, v_pickup + 45, 'CONFIRMED', v_specialist, now());
-    UPDATE departure SET booked_stalls = booked_stalls + 1 WHERE id = v_dep;
+    UPDATE departure SET booked_stall_count = booked_stall_count + 1 WHERE id = v_dep;
 
-    INSERT INTO quotation (booking_id, version, price_list_id, currency, deposit_rate, valid_until, confirmed_pickup_date, confirmed_departure_date,
+    INSERT INTO quotation (booking_id, version, price_list_id, currency_code, deposit_rate, expires_at, confirmed_pickup_date, confirmed_departure_date,
                            estimated_delivery_date, total_amount, pass_through_amount, deposit_amount, status, sent_by, sent_at, accepted_at)
     SELECT v_booking, 1, v_pl, 'VND', 0.3000, now() + interval '1 day', v_pickup, departure_date, departure_date + 5, 0, 0, 0, 'DRAFT', NULL, NULL, NULL
     FROM departure WHERE id = v_dep
     RETURNING id INTO v_quotation;
-    INSERT INTO quotation_line (quotation_id, line_no, line_type, service_id, price_item_id, description, quantity, unit, unit_price, is_pass_through)
-    SELECT v_quotation, l.line_no, l.line_type, s.id, pi.id, l.description, l.qty, l.unit, pi.unit_price, s.is_pass_through
+    INSERT INTO quotation_line (quotation_id, line_number, line_type, billable_service_id, price_item_id, description, quantity, unit, unit_price, is_pass_through)
+    SELECT v_quotation, l.line_number, l.line_type, s.id, pi.id, l.description, l.qty, l.unit, pi.unit_price, s.is_pass_through
     FROM (VALUES (1, 'LINEHAUL', 'LINEHAUL_STALL', NULL::text, 'HCM-PNH'::text, 'STANDARD'::text, NULL::numeric, 'Cước trục HCM - Mộc Bài, 1 khoang tiêu chuẩn', 1::numeric, 'STALL'),
                  (2, 'PICKUP', 'PICKUP_KM', 'MEDIUM', NULL, NULL, 0.00, 'Cước chặng đón 20 km, xe hạng trung', 20, 'KM'),
                  (3, 'FUEL', 'FUEL_TOLL', NULL, NULL, NULL, NULL, 'Nhiên liệu và phí cầu đường chặng đón 20 km', 20, 'KM'),
                  (4, 'QUARANTINE', 'QUARANTINE_STAY', NULL, NULL, NULL, NULL, 'Cách ly trước xuất 7 ngày', 7, 'HORSE_DAY'),
                  (5, 'DOCS', 'QUARANTINE_DOCS', NULL, NULL, NULL, NULL, 'Phí làm thủ tục kiểm dịch', 1, 'BOOKING'),
                  (6, 'DOCS', 'GOV_FEE', NULL, NULL, NULL, NULL, 'Lệ phí nhà nước (thu hộ)', 1, 'BOOKING')
-         ) AS l(line_no, line_type, service_code, class_code, route_code, stall, km_from, description, qty, unit)
-    JOIN service s ON s.code = l.service_code
-    JOIN price_item pi ON pi.price_list_id = v_pl AND pi.service_id = s.id
+         ) AS l(line_number, line_type, service_code, class_code, route_code, stall, km_from, description, qty, unit)
+    JOIN billable_service s ON s.code = l.service_code
+    JOIN price_item pi ON pi.price_list_id = v_pl AND pi.billable_service_id = s.id
                       AND pi.vehicle_class_id IS NOT DISTINCT FROM (SELECT id FROM vehicle_class WHERE code = l.class_code)
                       AND pi.route_id IS NOT DISTINCT FROM (SELECT id FROM route WHERE code = l.route_code)
-                      AND pi.stall_type IS NOT DISTINCT FROM l.stall
+                      AND pi.stall_type_code IS NOT DISTINCT FROM l.stall
                       AND pi.km_from IS NOT DISTINCT FROM l.km_from;
 
     -- ===================== Chung cho 3 đơn: chốt báo giá, thanh toán, lịch sử trạng thái =====================
@@ -201,7 +201,7 @@ BEGIN
             status = 'ACCEPTED', sent_by = v_manager, sent_at = now() - interval '3 days', accepted_at = now() - interval '2 days'
         WHERE id = v_quotation;
 
-        INSERT INTO payment (booking_id, quotation_id, kind, amount, currency, method, status, paid_at)
+        INSERT INTO payment (booking_id, quotation_id, payment_type, amount, currency_code, payment_method, status, paid_at)
         VALUES (v_booking, v_quotation, 'DEPOSIT', v_deposit, 'VND', 'VNPAY', 'PAID', now() - interval '2 days'),
                (v_booking, v_quotation, 'BALANCE', v_total - v_deposit, 'VND', 'VNPAY', 'PAID', now() - interval '1 day');
 

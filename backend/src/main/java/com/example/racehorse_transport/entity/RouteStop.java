@@ -17,7 +17,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-// Điểm dừng trên tuyến, thứ tự theo seq.
+// Điểm dừng trên tuyến, thứ tự theo sequence_number.
 @Getter
 @Setter
 @NoArgsConstructor
@@ -42,8 +42,8 @@ public class RouteStop {
     private RouteStopType stopType;
 
     // Số phút tính từ lúc xuất phát
-    @Column(name = "offset_minutes", nullable = false)
-    private Integer offsetMinutes;
+    @Column(name = "arrival_offset_minutes", nullable = false)
+    private Integer arrivalOffsetMinutes;
 
     @Column(name = "dwell_minutes", nullable = false)
     private Integer dwellMinutes;

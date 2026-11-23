@@ -75,9 +75,9 @@ public class DepartureSuggestionServiceImpl implements DepartureSuggestionServic
         List<DepartureResponseDto> found = departures.findBookable(routeDistance.keySet(), DepartureStatus.OPEN, clock.instant(),
                         query.getFromDate(), query.getStalls()).stream()
                 .sorted(Comparator.<Departure>comparingDouble(d -> routeDistance.get(d.getRoute().getId()))
-                        .thenComparing(Departure::getPlannedDepartAt))
+                        .thenComparing(Departure::getPlannedDepartureAt))
                 .limit(MAX_SUGGESTIONS)
-                .map(d -> DepartureResponseDto.from(d, DepartureCapacityPolicy.available(d.getCapacityStalls(), d.getBookedStalls())))
+                .map(d -> DepartureResponseDto.from(d, DepartureCapacityPolicy.available(d.getStallCapacity(), d.getBookedStallCount())))
                 .toList();
         return response.departures(found).build();
     }
@@ -88,8 +88,8 @@ public class DepartureSuggestionServiceImpl implements DepartureSuggestionServic
             case INTERPROVINCE -> route.getOrigin().getId().equals(pickupHub.getId())
                     && route.getDestination().getId().equals(deliveryHub.getId());
             case EXPORT -> route.getOrigin().getId().equals(pickupHub.getId())
-                    && route.getDestination().getType() == LocationType.BORDER_GATE;
-            case IMPORT -> route.getOrigin().getType() == LocationType.BORDER_GATE
+                    && route.getDestination().getLocationType() == LocationType.BORDER_GATE;
+            case IMPORT -> route.getOrigin().getLocationType() == LocationType.BORDER_GATE
                     && route.getDestination().getId().equals(deliveryHub.getId());
             case LOCAL -> false;
         };

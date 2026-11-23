@@ -4,7 +4,7 @@
 > `ERD_ENTITY_MERMAID.md`, `ERD_ALL_IN_ONE.md`, `ERD_ENTITY_BOXES.md` (các file đó chưa cập nhật).
 > Hệ quản trị: PostgreSQL 15 trở lên.
 
-> **Tên trong tài liệu này là tên mới. Migration và code hiện còn dùng tên cũ, chưa đồng bộ.** Trước khi đồng bộ xong, viết code theo tên đang có trong migration và tra [BANG_DOI_TEN.md](BANG_DOI_TEN.md).
+> Migration `V202611231300__sync_names.sql` đồng bộ tên bảng, cột và các đối tượng liên quan theo [BANG_DOI_TEN.md](BANG_DOI_TEN.md).
 
 ## Mục lục
 

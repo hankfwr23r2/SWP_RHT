@@ -36,8 +36,8 @@ public class TermsAcceptance {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "terms_kind", length = 30, nullable = false)
-    private TermsKind termsKind;
+    @Column(name = "terms_type", length = 30, nullable = false)
+    private TermsKind termsType;
 
     // Ví dụ 2027.1. Nội dung nằm ở file terms/<kind>/<version>.md
     @Column(name = "terms_version", length = 20, nullable = false)

@@ -31,7 +31,7 @@ public class DepartureScheduleRequestDto {
 
     @NotNull(message = "Nhập số khoang tối đa mỗi chuyến")
     @Min(value = 1, message = "Số khoang phải lớn hơn 0")
-    private Integer capacityStalls;
+    private Integer stallCapacity;
 
     @NotNull(message = "Nhập ngày bắt đầu hiệu lực")
     private LocalDate validFrom;
@@ -40,7 +40,7 @@ public class DepartureScheduleRequestDto {
 
     // Thứ trong tuần theo ISO: 1 = thứ Hai, 7 = Chủ nhật
     @NotEmpty(message = "Chọn ít nhất một ngày chạy trong tuần")
-    private Set<@NotNull @Min(value = 1, message = "Thứ trong tuần từ 1 đến 7") @Max(value = 7, message = "Thứ trong tuần từ 1 đến 7") Short> weekdays;
+    private Set<@NotNull @Min(value = 1, message = "Thứ trong tuần từ 1 đến 7") @Max(value = 7, message = "Thứ trong tuần từ 1 đến 7") Short> daysOfWeek;
 
     // Lịch mới, chưa lưu. Tuyến do service nạp; trạng thái do service đặt. Các ngày chạy do service ghi riêng.
     public DepartureSchedule toEntity(Route route) {
@@ -53,7 +53,7 @@ public class DepartureScheduleRequestDto {
         schedule.setRoute(route);
         schedule.setDepartureTime(departureTime);
         schedule.setBookingCutoffHours(bookingCutoffHours);
-        schedule.setCapacityStalls(capacityStalls);
+        schedule.setStallCapacity(stallCapacity);
         schedule.setValidFrom(validFrom);
         schedule.setValidTo(validTo);
     }

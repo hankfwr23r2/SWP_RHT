@@ -49,12 +49,12 @@ public class Horse {
     @Column(name = "microchip", length = 30)
     private String microchip;
 
-    @Column(name = "passport_no", length = 50)
-    private String passportNo;
+    @Column(name = "passport_number", length = 50)
+    private String passportNumber;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "gender", length = 30, nullable = false)
-    private HorseGender gender;
+    @Column(name = "sex", length = 30, nullable = false)
+    private HorseGender sex;
 
     @Column(name = "birth_year")
     private Short birthYear;
@@ -85,8 +85,8 @@ public class Horse {
     private BigDecimal declaredValue;
 
     @JdbcTypeCode(SqlTypes.CHAR)
-    @Column(name = "declared_currency", length = 3)
-    private String declaredCurrency;
+    @Column(name = "declared_currency_code", length = 3)
+    private String declaredCurrencyCode;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 30, nullable = false)

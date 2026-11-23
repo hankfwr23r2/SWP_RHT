@@ -25,11 +25,11 @@ import java.time.Instant;
 public class SystemConfig {
 
     @Id
-    @Column(name = "key", length = 100, nullable = false)
-    private String key;
+    @Column(name = "config_key", length = 100, nullable = false)
+    private String configKey;
 
-    @Column(name = "value", length = 500, nullable = false)
-    private String value;
+    @Column(name = "config_value", length = 500, nullable = false)
+    private String configValue;
 
     // MINUTE, HOUR, DAY, COUNT
     @Column(name = "unit", length = 30)

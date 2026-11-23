@@ -55,12 +55,12 @@ public class Staff {
     private EmploymentStatus employmentStatus;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "home_hub_id", nullable = false)
-    private Location homeHub;
+    @JoinColumn(name = "home_hub_location_id", nullable = false)
+    private Location homeHubLocation;
 
     @Column(name = "driver_license_class", length = 10)
     private String driverLicenseClass;
 
-    @Column(name = "driver_license_expiry")
-    private LocalDate driverLicenseExpiry;
+    @Column(name = "driver_license_expiry_date")
+    private LocalDate driverLicenseExpiryDate;
 }

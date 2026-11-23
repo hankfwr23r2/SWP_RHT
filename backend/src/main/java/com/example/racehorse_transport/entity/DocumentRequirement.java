@@ -32,7 +32,7 @@ public class DocumentRequirement {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "rule_id", nullable = false)
+    @JoinColumn(name = "country_rule_id", nullable = false)
     private CountryRule rule;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -45,8 +45,8 @@ public class DocumentRequirement {
     private Location gateLocation;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "submitted_by", length = 30, nullable = false)
-    private DocumentSubmitter submittedBy;
+    @Column(name = "submitter_type", length = 30, nullable = false)
+    private DocumentSubmitter submitterType;
 
     @Column(name = "is_mandatory", nullable = false)
     private Boolean mandatory = true;

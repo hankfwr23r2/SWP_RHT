@@ -37,7 +37,7 @@ class DeparturePoliciesTest {
 
     @Test
     void computesDepartureAndCutoffInLocalTime() {
-        Instant planned = DepartureGenerationPolicy.plannedDepartAt(LocalDate.of(2026, 12, 7), LocalTime.of(6, 0), ZoneId.of("Asia/Ho_Chi_Minh"));
+        Instant planned = DepartureGenerationPolicy.plannedDepartureAt(LocalDate.of(2026, 12, 7), LocalTime.of(6, 0), ZoneId.of("Asia/Ho_Chi_Minh"));
         assertThat(planned).isEqualTo(Instant.parse("2026-12-06T23:00:00Z"));
         assertThat(DepartureGenerationPolicy.bookingCutoffAt(planned, 72)).isEqualTo(Instant.parse("2026-12-03T23:00:00Z"));
     }

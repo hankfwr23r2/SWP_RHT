@@ -14,16 +14,16 @@ class RouteStopsPolicyTest {
     private static final long REST = 2L;
     private static final long GATE = 3L;
 
-    private static Stop hub(int seq, int offset, int dwell) {
-        return new Stop(seq, HUB, LocationType.HUB, RouteStopType.HUB, offset, dwell);
+    private static Stop hub(int sequenceNumber, int offset, int dwell) {
+        return new Stop(sequenceNumber, HUB, LocationType.HUB, RouteStopType.HUB, offset, dwell);
     }
 
-    private static Stop rest(int seq, int offset, int dwell) {
-        return new Stop(seq, REST, LocationType.REST_STOP, RouteStopType.REST, offset, dwell);
+    private static Stop rest(int sequenceNumber, int offset, int dwell) {
+        return new Stop(sequenceNumber, REST, LocationType.REST_STOP, RouteStopType.REST, offset, dwell);
     }
 
-    private static Stop gate(int seq, int offset, int dwell) {
-        return new Stop(seq, GATE, LocationType.BORDER_GATE, RouteStopType.BORDER, offset, dwell);
+    private static Stop gate(int sequenceNumber, int offset, int dwell) {
+        return new Stop(sequenceNumber, GATE, LocationType.BORDER_GATE, RouteStopType.BORDER, offset, dwell);
     }
 
     @Test

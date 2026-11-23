@@ -30,6 +30,6 @@ public class VehicleClass {
     @Column(name = "name", length = 200, nullable = false)
     private String name;
 
-    @Column(name = "max_stalls", nullable = false)
-    private Integer maxStalls;
+    @Column(name = "max_stall_count", nullable = false)
+    private Integer maxStallCount;
 }

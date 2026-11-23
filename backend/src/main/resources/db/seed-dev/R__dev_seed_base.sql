@@ -12,12 +12,12 @@
 -- ---------------------------------------------------------------------------
 -- 1. Điểm mạng lưới và vùng phục vụ
 -- ---------------------------------------------------------------------------
-INSERT INTO location (code, name, type, country_code, province_code, address, latitude, longitude, opening_minutes, closing_minutes, contact_phone, status) VALUES
+INSERT INTO location (code, name, location_type, country_code, province_code, address, latitude, longitude, opening_time, closing_time, contact_phone, status) VALUES
     ('HUB-HCM', 'Trụ sở TP.HCM', 'HUB', 'VN', 'VN-79', 'Phường Long Trường, TP.HCM', 10.805000, 106.815000, NULL, NULL, '0900000100', 'ACTIVE'),
     ('HUB-DN', 'Hub vệ tinh Đà Nẵng', 'HUB', 'VN', 'VN-48', 'Phường Hòa Khánh, TP. Đà Nẵng', 16.075000, 108.150000, NULL, NULL, '0900000200', 'ACTIVE'),
-    ('QF-CUCHI', 'Trại cách ly Củ Chi', 'QUARANTINE_FARM', 'VN', 'VN-79', 'Xã Củ Chi, TP.HCM', 10.973000, 106.493000, 420, 1080, '0900000300', 'ACTIVE'),
+    ('QF-CUCHI', 'Trại cách ly Củ Chi', 'QUARANTINE_FARM', 'VN', 'VN-79', 'Xã Củ Chi, TP.HCM', 10.973000, 106.493000, TIME '07:00', TIME '18:00', '0900000300', 'ACTIVE'),
     ('REST-TRANGBANG', 'Trạm nghỉ Trảng Bàng', 'REST_STOP', 'VN', 'VN-80', 'Phường Trảng Bàng, Tây Ninh', 11.033000, 106.360000, NULL, NULL, NULL, 'ACTIVE'),
-    ('GATE-MOCBAI', 'Cửa khẩu quốc tế Mộc Bài - Bavet', 'BORDER_GATE', 'VN', 'VN-80', 'Xã Bến Cầu, Tây Ninh', 11.070000, 106.200000, 420, 1320, NULL, 'ACTIVE'),
+    ('GATE-MOCBAI', 'Cửa khẩu quốc tế Mộc Bài - Bavet', 'BORDER_GATE', 'VN', 'VN-80', 'Xã Bến Cầu, Tây Ninh', 11.070000, 106.200000, TIME '07:00', TIME '22:00', NULL, 'ACTIVE'),
     ('REST-PHANTHIET', 'Trạm nghỉ Phan Thiết', 'REST_STOP', 'VN', 'VN-68', 'Phường Phan Thiết, Lâm Đồng', 10.933000, 108.100000, NULL, NULL, NULL, 'ACTIVE'),
     ('REST-NHATRANG', 'Trạm nghỉ Nha Trang', 'REST_STOP', 'VN', 'VN-56', 'Phường Nha Trang, Khánh Hòa', 12.238000, 109.196000, NULL, NULL, NULL, 'ACTIVE'),
     ('REST-QUYNHON', 'Trạm nghỉ Quy Nhơn', 'REST_STOP', 'VN', 'VN-52', 'Phường Quy Nhơn, Gia Lai', 13.776000, 109.224000, NULL, NULL, NULL, 'ACTIVE')
@@ -39,7 +39,7 @@ ON CONFLICT DO NOTHING;
 -- ---------------------------------------------------------------------------
 -- 2. Tài khoản, nhân viên, khách hàng
 -- ---------------------------------------------------------------------------
-INSERT INTO app_user (username, email, password_hash, email_verified, preferred_language, status, role_code) VALUES
+INSERT INTO app_user (username, email, password_hash, is_email_verified, preferred_language, status, role_code) VALUES
     ('admin.dev', 'admin.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'ADMIN'),
     ('manager.dev', 'manager.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'MANAGER'),
     ('coordinator.dev', 'coordinator.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'COORDINATOR'),
@@ -50,7 +50,7 @@ INSERT INTO app_user (username, email, password_hash, email_verified, preferred_
     ('customer1.dev', 'customer1.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'CUSTOMER')
 ON CONFLICT (username) DO NOTHING;
 
-INSERT INTO staff (user_id, staff_code, full_name, phone, hire_date, employment_status, home_hub_id, driver_license_class, driver_license_expiry)
+INSERT INTO staff (user_id, staff_code, full_name, phone, hire_date, employment_status, home_hub_location_id, driver_license_class, driver_license_expiry_date)
 SELECT u.id, v.staff_code, v.full_name, v.phone, DATE '2026-01-01', 'ACTIVE', hub.id, v.license_class, v.license_expiry
 FROM (VALUES
           ('admin.dev', 'ADM-001', 'Quản trị viên (mẫu)', '0900000001', NULL, NULL::date),
@@ -72,7 +72,7 @@ WHERE u.username = 'customer1.dev'
 ON CONFLICT (user_id) DO NOTHING;
 
 -- Đối tác: không có tài khoản đăng nhập
-INSERT INTO party (kind, display_name, phone, email, address, country_code, status)
+INSERT INTO party (party_type, display_name, phone, email, address, country_code, status)
 SELECT 'ORGANIZATION', v.display_name, v.phone, NULL, v.address, v.country_code, 'ACTIVE'
 FROM (VALUES
           ('Đại lý vận tải Campuchia (mẫu)', '0855000001', 'Phnom Penh, Campuchia', 'KH'),
@@ -100,7 +100,7 @@ ON CONFLICT DO NOTHING;
 -- ---------------------------------------------------------------------------
 -- 3. Xe (mọi xe thuộc trụ sở)
 -- ---------------------------------------------------------------------------
-INSERT INTO vehicle (license_plate, vehicle_class_id, standard_stalls, wide_stalls, home_hub_id, registration_expiry, status)
+INSERT INTO vehicle (license_plate, vehicle_class_id, standard_stall_count, wide_stall_count, home_hub_location_id, registration_expiry_date, status)
 SELECT v.plate, vc.id, v.std, v.wide, hub.id, DATE '2027-12-31', 'ACTIVE'
 FROM (VALUES
           ('51C-100.01', 'LIGHT', 2, 0),
@@ -115,7 +115,7 @@ ON CONFLICT (license_plate) DO NOTHING;
 -- ---------------------------------------------------------------------------
 -- 4. Tuyến trục chính, điểm dừng, lịch chạy
 -- ---------------------------------------------------------------------------
-INSERT INTO route (code, name, origin_location_id, destination_location_id, distance_km, est_duration_minutes, status)
+INSERT INTO route (code, name, origin_location_id, destination_location_id, distance_km, estimated_duration_minutes, status)
 SELECT v.code, v.name, o.id, d.id, v.distance_km, v.minutes, 'ACTIVE'
 FROM (VALUES
           ('HCM-PNH', 'TP.HCM – Cửa khẩu Mộc Bài (đi Phnom Penh)', 'HUB-HCM', 'GATE-MOCBAI', 75.00, 120),
@@ -128,8 +128,8 @@ JOIN location o ON o.code = v.origin_code
 JOIN location d ON d.code = v.destination_code
 ON CONFLICT (code) DO NOTHING;
 
-INSERT INTO route_stop (route_id, seq, location_id, stop_type, offset_minutes, dwell_minutes)
-SELECT r.id, v.seq, l.id, v.stop_type, v.offset_minutes, v.dwell_minutes
+INSERT INTO route_stop (route_id, sequence_number, location_id, stop_type, arrival_offset_minutes, dwell_minutes)
+SELECT r.id, v.sequence_number, l.id, v.stop_type, v.arrival_offset_minutes, v.dwell_minutes
 FROM (VALUES
           ('HCM-PNH', 1, 'HUB-HCM', 'HUB', 0, 30),
           ('HCM-PNH', 2, 'REST-TRANGBANG', 'REST', 70, 20),
@@ -147,14 +147,14 @@ FROM (VALUES
           ('MOCBAI-HCM', 1, 'GATE-MOCBAI', 'BORDER', 0, 60),
           ('MOCBAI-HCM', 2, 'REST-TRANGBANG', 'REST', 70, 20),
           ('MOCBAI-HCM', 3, 'HUB-HCM', 'HUB', 120, 0)
-     ) AS v(route_code, seq, location_code, stop_type, offset_minutes, dwell_minutes)
+     ) AS v(route_code, sequence_number, location_code, stop_type, arrival_offset_minutes, dwell_minutes)
 JOIN route r ON r.code = v.route_code
 JOIN location l ON l.code = v.location_code
 ON CONFLICT DO NOTHING;
 
 -- Lịch chạy: HCM-PNH thứ Hai và thứ Năm; HCM-DN thứ Ba; DN-HCM thứ Năm để xe quay về trụ sở;
 -- MOCBAI-HCM chiều thứ Hai và thứ Năm, xe vừa giao ở cửa khẩu nhận ngựa nhập về
-INSERT INTO departure_schedule (route_id, departure_time, booking_cutoff_hours, capacity_stalls, valid_from, status)
+INSERT INTO departure_schedule (route_id, departure_time, booking_cutoff_hours, stall_capacity, valid_from, status)
 SELECT r.id, v.departure_time, v.cutoff_hours, 9, DATE '2026-11-01', 'ACTIVE'
 FROM (VALUES
           ('HCM-PNH', TIME '06:00', 72),
@@ -165,9 +165,9 @@ FROM (VALUES
 JOIN route r ON r.code = v.route_code
 WHERE NOT EXISTS (SELECT 1 FROM departure_schedule s WHERE s.route_id = r.id AND s.departure_time = v.departure_time);
 
-INSERT INTO departure_schedule_day (schedule_id, weekday)
-SELECT s.id, v.weekday
-FROM (VALUES ('HCM-PNH', 1), ('HCM-PNH', 4), ('HCM-DN', 2), ('DN-HCM', 4), ('MOCBAI-HCM', 1), ('MOCBAI-HCM', 4)) AS v(route_code, weekday)
+INSERT INTO departure_schedule_day (departure_schedule_id, day_of_week)
+SELECT s.id, v.day_of_week
+FROM (VALUES ('HCM-PNH', 1), ('HCM-PNH', 4), ('HCM-DN', 2), ('DN-HCM', 4), ('MOCBAI-HCM', 1), ('MOCBAI-HCM', 4)) AS v(route_code, day_of_week)
 JOIN route r ON r.code = v.route_code
 JOIN departure_schedule s ON s.route_id = r.id
 ON CONFLICT DO NOTHING;
@@ -175,12 +175,12 @@ ON CONFLICT DO NOTHING;
 -- ---------------------------------------------------------------------------
 -- 5. Bảng giá mẫu
 -- ---------------------------------------------------------------------------
-INSERT INTO price_list (name, currency, margin_rate, fuel_buffer_rate, deposit_rate, valid_from, status)
+INSERT INTO price_list (name, currency_code, margin_rate, fuel_buffer_rate, deposit_rate, valid_from, status)
 SELECT 'Bảng giá mẫu (dev)', 'VND', 0.0500, 0.0500, 0.3000, DATE '2026-01-01', 'ACTIVE'
 WHERE NOT EXISTS (SELECT 1 FROM price_list WHERE name = 'Bảng giá mẫu (dev)');
 
 -- Cước trục chính theo tuyến và loại khoang
-INSERT INTO price_item (price_list_id, service_id, route_id, stall_type, unit_price)
+INSERT INTO price_item (price_list_id, billable_service_id, route_id, stall_type_code, unit_price)
 SELECT pl.id, s.id, r.id, v.stall_type, v.unit_price
 FROM (VALUES
           ('HCM-PNH', 'STANDARD', 6000000), ('HCM-PNH', 'WIDE', 8000000),
@@ -189,23 +189,23 @@ FROM (VALUES
           ('MOCBAI-HCM', 'STANDARD', 6000000), ('MOCBAI-HCM', 'WIDE', 8000000)
      ) AS v(route_code, stall_type, unit_price)
 JOIN price_list pl ON pl.name = 'Bảng giá mẫu (dev)'
-JOIN service s ON s.code = 'LINEHAUL_STALL'
+JOIN billable_service s ON s.code = 'LINEHAUL_STALL'
 JOIN route r ON r.code = v.route_code
 ON CONFLICT ON CONSTRAINT uk_price_item DO NOTHING;
 
 -- Cước đón, giao, chạy thẳng: theo hạng xe và bậc km
-INSERT INTO price_item (price_list_id, service_id, vehicle_class_id, km_from, km_to, unit_price)
+INSERT INTO price_item (price_list_id, billable_service_id, vehicle_class_id, km_from, km_to, unit_price)
 SELECT pl.id, s.id, vc.id, t.km_from, t.km_to, t.base * f.factor
 FROM (VALUES ('PICKUP_KM'), ('DELIVERY_KM'), ('DIRECT_KM')) AS sv(service_code)
 CROSS JOIN (VALUES (0.00, 50.00, 30000), (50.00, 200.00, 25000), (200.00, 3000.00, 20000)) AS t(km_from, km_to, base)
 CROSS JOIN (VALUES ('LIGHT', 1.00), ('MEDIUM', 1.35), ('HEAVY', 1.90)) AS f(class_code, factor)
 JOIN price_list pl ON pl.name = 'Bảng giá mẫu (dev)'
-JOIN service s ON s.code = sv.service_code
+JOIN billable_service s ON s.code = sv.service_code
 JOIN vehicle_class vc ON vc.code = f.class_code
 ON CONFLICT ON CONSTRAINT uk_price_item DO NOTHING;
 
 -- Các dịch vụ không phụ thuộc tuyến hay hạng xe
-INSERT INTO price_item (price_list_id, service_id, unit_price)
+INSERT INTO price_item (price_list_id, billable_service_id, unit_price)
 SELECT pl.id, s.id, v.unit_price
 FROM (VALUES
           ('FUEL_TOLL', 9000),
@@ -217,13 +217,13 @@ FROM (VALUES
           ('GOV_FEE', 200000)
      ) AS v(service_code, unit_price)
 JOIN price_list pl ON pl.name = 'Bảng giá mẫu (dev)'
-JOIN service s ON s.code = v.service_code
+JOIN billable_service s ON s.code = v.service_code
 ON CONFLICT ON CONSTRAINT uk_price_item DO NOTHING;
 
 -- ---------------------------------------------------------------------------
 -- 6. Quy định và giấy tờ yêu cầu (mẫu)
 -- ---------------------------------------------------------------------------
-INSERT INTO country_rule (country_code, direction, permit_lead_days, cert_lead_days, quarantine_days, valid_from)
+INSERT INTO country_rule (country_code, direction, permit_lead_days, certificate_lead_days, quarantine_days, valid_from)
 VALUES
     ('VN', 'INTERPROVINCE', 0, 5, 0, DATE '2026-01-01'),
     ('KH', 'EXPORT', 14, 7, 7, DATE '2026-01-01'),
@@ -232,8 +232,8 @@ VALUES
     ('LA', 'IMPORT', 30, 7, 30, DATE '2026-01-01')
 ON CONFLICT DO NOTHING;
 
-INSERT INTO document_requirement (rule_id, document_type_id, submitted_by, is_mandatory)
-SELECT cr.id, dt.id, v.submitted_by, v.is_mandatory
+INSERT INTO document_requirement (country_rule_id, document_type_id, submitter_type, is_mandatory)
+SELECT cr.id, dt.id, v.submitter_type, v.is_mandatory
 FROM (VALUES
           ('VN', 'INTERPROVINCE', 'HEALTH_CERT', 'COMPANY', true),
           ('VN', 'INTERPROVINCE', 'HORSE_PASSPORT', 'CUSTOMER', true),
@@ -255,7 +255,7 @@ FROM (VALUES
           ('LA', 'EXPORT', 'ATA_CARNET', 'CUSTOMER', false),
           ('LA', 'IMPORT', 'IMPORT_PERMIT', 'COMPANY', true),
           ('LA', 'IMPORT', 'HORSE_PASSPORT', 'CUSTOMER', true)
-     ) AS v(country_code, direction, doc_code, submitted_by, is_mandatory)
+     ) AS v(country_code, direction, doc_code, submitter_type, is_mandatory)
 JOIN country_rule cr ON cr.country_code = v.country_code AND cr.direction = v.direction AND cr.valid_from = DATE '2026-01-01'
 JOIN document_type dt ON dt.code = v.doc_code
 ON CONFLICT ON CONSTRAINT uk_document_requirement DO NOTHING;

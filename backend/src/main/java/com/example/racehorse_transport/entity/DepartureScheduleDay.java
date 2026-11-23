@@ -23,8 +23,8 @@ public class DepartureScheduleDay {
     @EmbeddedId
     private DepartureScheduleDayId id;
 
-    @MapsId("scheduleId")
+    @MapsId("departureScheduleId")
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "schedule_id")
-    private DepartureSchedule schedule;
+    @JoinColumn(name = "departure_schedule_id")
+    private DepartureSchedule departureSchedule;
 }

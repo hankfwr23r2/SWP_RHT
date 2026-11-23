@@ -61,11 +61,11 @@ public class DepartureServiceImpl implements DepartureService {
         Departure departure = departures.findForUpdate(departureId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến " + departureId));
         DepartureCapacityPolicy.reasonNotReservable(departure.getStatus(), departure.getBookingCutoffAt(), clock.instant(),
-                        departure.getCapacityStalls(), departure.getBookedStalls(), stalls)
+                        departure.getStallCapacity(), departure.getBookedStallCount(), stalls)
                 .ifPresent(reason -> {
                     throw new IllegalStateException(reason);
                 });
-        departure.setBookedStalls(departure.getBookedStalls() + stalls);
+        departure.setBookedStallCount(departure.getBookedStallCount() + stalls);
     }
 
     @Override
@@ -73,7 +73,7 @@ public class DepartureServiceImpl implements DepartureService {
     public void release(Long departureId, int stalls) {
         Departure departure = departures.findForUpdate(departureId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến " + departureId));
-        departure.setBookedStalls(DepartureCapacityPolicy.bookedAfterRelease(departure.getBookedStalls(), stalls));
+        departure.setBookedStallCount(DepartureCapacityPolicy.bookedAfterRelease(departure.getBookedStallCount(), stalls));
     }
 
     @Override
@@ -82,18 +82,18 @@ public class DepartureServiceImpl implements DepartureService {
         LocalDate today = LocalDate.ofInstant(clock.instant(), BUSINESS_ZONE);
         int weeks = config.getInt("DEPARTURE_GENERATION_WEEKS");
         Map<Long, Set<Short>> weekdaysBySchedule = scheduleDays.findAll().stream()
-                .collect(Collectors.groupingBy(day -> day.getId().getScheduleId(),
-                        Collectors.mapping(day -> day.getId().getWeekday(), Collectors.toSet())));
+                .collect(Collectors.groupingBy(day -> day.getId().getDepartureScheduleId(),
+                        Collectors.mapping(day -> day.getId().getDayOfWeek(), Collectors.toSet())));
 
         int created = 0;
         for (DepartureSchedule schedule : schedules.findRunnable(ScheduleStatus.ACTIVE, ActiveStatus.ACTIVE)) {
             List<LocalDate> dates = DepartureGenerationPolicy.datesToGenerate(today, weeks, schedule.getValidFrom(),
                     schedule.getValidTo(), weekdaysBySchedule.getOrDefault(schedule.getId(), Set.of()));
             for (LocalDate date : dates) {
-                Instant planned = DepartureGenerationPolicy.plannedDepartAt(date, schedule.getDepartureTime(), BUSINESS_ZONE);
+                Instant planned = DepartureGenerationPolicy.plannedDepartureAt(date, schedule.getDepartureTime(), BUSINESS_ZONE);
                 created += departures.insertIfAbsent(schedule.getId(), schedule.getRoute().getId(), date, planned,
                         DepartureGenerationPolicy.bookingCutoffAt(planned, schedule.getBookingCutoffHours()),
-                        schedule.getCapacityStalls());
+                        schedule.getStallCapacity());
             }
         }
         if (created > 0) {
@@ -126,13 +126,13 @@ public class DepartureServiceImpl implements DepartureService {
         if (route.getStatus() != ActiveStatus.ACTIVE) {
             throw new IllegalArgumentException("Tuyến " + route.getCode() + " đang ngừng chạy.");
         }
-        Instant planned = DepartureGenerationPolicy.plannedDepartAt(request.getDepartureDate(), request.getDepartureTime(), BUSINESS_ZONE);
+        Instant planned = DepartureGenerationPolicy.plannedDepartureAt(request.getDepartureDate(), request.getDepartureTime(), BUSINESS_ZONE);
         if (!planned.isAfter(clock.instant())) {
             throw new IllegalArgumentException("Giờ xuất phát phải ở tương lai.");
         }
         Departure departure = request.toEntity(route, planned,
                 DepartureGenerationPolicy.bookingCutoffAt(planned, request.getBookingCutoffHours()));
-        departure.setBookedStalls(0);
+        departure.setBookedStallCount(0);
         departure.setStatus(DepartureStatus.OPEN);
         return toDto(departures.save(departure));
     }
@@ -160,6 +160,6 @@ public class DepartureServiceImpl implements DepartureService {
 
     private DepartureResponseDto toDto(Departure departure) {
         return DepartureResponseDto.from(departure,
-                DepartureCapacityPolicy.available(departure.getCapacityStalls(), departure.getBookedStalls()));
+                DepartureCapacityPolicy.available(departure.getStallCapacity(), departure.getBookedStallCount()));
     }
 }

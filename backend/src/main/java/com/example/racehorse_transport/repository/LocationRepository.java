@@ -18,7 +18,7 @@ public interface LocationRepository extends JpaRepository<Location, Long> {
     // Lọc theo loại và trạng thái; tham số null nghĩa là không lọc
     @Query("""
             SELECT l FROM Location l JOIN FETCH l.country LEFT JOIN FETCH l.province
-            WHERE (:type IS NULL OR l.type = :type) AND (:status IS NULL OR l.status = :status)
+            WHERE (:locationType IS NULL OR l.locationType = :locationType) AND (:status IS NULL OR l.status = :status)
             ORDER BY l.code""")
-    List<Location> search(@Param("type") LocationType type, @Param("status") ActiveStatus status);
+    List<Location> search(@Param("locationType") LocationType locationType, @Param("status") ActiveStatus status);
 }

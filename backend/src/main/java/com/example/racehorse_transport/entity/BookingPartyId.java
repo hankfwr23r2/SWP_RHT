@@ -28,6 +28,6 @@ public class BookingPartyId implements Serializable {
     private Long bookingId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "role", length = 30, nullable = false)
-    private BookingPartyRole role;
+    @Column(name = "booking_role", length = 30, nullable = false)
+    private BookingPartyRole bookingRole;
 }

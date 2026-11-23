@@ -38,8 +38,8 @@ public class PriceList {
     private String name;
 
     @JdbcTypeCode(SqlTypes.CHAR)
-    @Column(name = "currency", length = 3, nullable = false)
-    private String currency;
+    @Column(name = "currency_code", length = 3, nullable = false)
+    private String currencyCode;
 
     @Column(name = "margin_rate", nullable = false, precision = 5, scale = 4)
     private BigDecimal marginRate;

@@ -45,8 +45,8 @@ public class CountryRule {
     @Column(name = "permit_lead_days", nullable = false)
     private Integer permitLeadDays;
 
-    @Column(name = "cert_lead_days", nullable = false)
-    private Integer certLeadDays;
+    @Column(name = "certificate_lead_days", nullable = false)
+    private Integer certificateLeadDays;
 
     @Column(name = "quarantine_days", nullable = false)
     private Integer quarantineDays;

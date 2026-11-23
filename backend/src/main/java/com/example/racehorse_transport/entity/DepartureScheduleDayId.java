@@ -11,7 +11,7 @@ import lombok.Setter;
 
 import java.io.Serializable;
 
-// Khóa của departure_schedule_day. weekday theo ISO: 1 = thứ Hai, 7 = Chủ nhật.
+// Khóa của departure_schedule_day. dayOfWeek theo ISO: 1 = thứ Hai, 7 = Chủ nhật.
 @Getter
 @Setter
 @NoArgsConstructor
@@ -20,9 +20,9 @@ import java.io.Serializable;
 @Embeddable
 public class DepartureScheduleDayId implements Serializable {
 
-    @Column(name = "schedule_id", nullable = false)
-    private Long scheduleId;
+    @Column(name = "departure_schedule_id", nullable = false)
+    private Long departureScheduleId;
 
-    @Column(name = "weekday", nullable = false)
-    private Short weekday;
+    @Column(name = "day_of_week", nullable = false)
+    private Short dayOfWeek;
 }

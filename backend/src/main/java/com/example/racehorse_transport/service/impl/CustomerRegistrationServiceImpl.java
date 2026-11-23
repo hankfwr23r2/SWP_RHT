@@ -53,7 +53,7 @@ public class CustomerRegistrationServiceImpl implements CustomerRegistrationServ
         customers.save(request.toCustomer(user, countries.getReferenceById(DEFAULT_COUNTRY)));
 
         TermsAcceptance terms = new TermsAcceptance();
-        terms.setTermsKind(TermsKind.SERVICE_TERMS);
+        terms.setTermsType(TermsKind.SERVICE_TERMS);
         terms.setTermsVersion(TermsDocumentPolicy.TRANSPORT_TERMS_VERSION);
         terms.setUser(user);
         terms.setIpAddress(ipAddress);
