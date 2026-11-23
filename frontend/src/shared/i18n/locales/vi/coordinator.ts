@@ -1,5 +1,118 @@
 // Trang của điều phối viên
 export const coordinator = {
+  dispatch: {
+    "title": "Điều độ",
+    "description": "Xếp xe, tổ lái và ngựa theo tuần. Hệ thống kiểm quy tắc khi lưu và nói rõ lý do nếu không được.",
+    "weekFrom": "Tuần bắt đầu từ",
+    "tabsLabel": "Nội dung điều độ",
+    "tabBookings": "Đơn chờ xếp xe",
+    "tabTrips": "Lượt xe",
+    "newTrip": "Lập lượt xe",
+    "loadError": "Không tải được dữ liệu điều độ",
+    "bookings": {
+      "emptyTitle": "Không có đơn cần xếp xe trong tuần này",
+      "emptyDescription": "Đơn đã cọc có ngày đón hoặc ngày chuyến trong tuần sẽ hiện ở đây.",
+      "caption": "Đơn chờ xếp xe",
+      "colBooking": "Đơn",
+      "colRoute": "Cách chạy",
+      "colPickupDate": "Ngày đón",
+      "colHorse": "Ngựa",
+      "colStall": "Khoang",
+      "colLegs": "Chặng đã lập",
+      "direct": "Chạy thẳng",
+      "noLegs": "Chưa xếp"
+    },
+    "trips": {
+      "emptyTitle": "Chưa có lượt xe trong tuần này",
+      "emptyDescription": "Bấm \"Lập lượt xe\" để tạo lượt đón, trục, giao hoặc chạy thẳng.",
+      "caption": "Lượt xe trong tuần",
+      "colCode": "Mã lượt",
+      "colType": "Loại",
+      "colVehicle": "Xe",
+      "colRoute": "Hành trình",
+      "colTime": "Thời gian",
+      "colCrew": "Tổ lái",
+      "colStatus": "Trạng thái",
+      "view": "Xem",
+      "noCrew": "Chưa phân công"
+    },
+    "tripType": {
+      "PICKUP": "Đón",
+      "LINEHAUL": "Trục",
+      "DELIVERY": "Giao",
+      "DIRECT": "Chạy thẳng",
+      "TRANSFER": "Chuyển xe"
+    },
+    "tripStatus": {
+      "PLANNED": "Đã lập",
+      "DISPATCHED": "Đã điều",
+      "IN_PROGRESS": "Đang chạy",
+      "COMPLETED": "Hoàn thành",
+      "CANCELLED": "Đã hủy"
+    },
+    "crewStatus": {
+      "ASSIGNED": "Chờ xác nhận",
+      "ACKNOWLEDGED": "Đã nhận việc",
+      "RELEASED": "Đã gỡ"
+    },
+    "crewRole": {
+      "DRIVER": "Tài xế",
+      "ESCORT": "Hộ tống"
+    },
+    "detail": {
+      "stops": "Điểm dừng",
+      "crew": "Tổ lái",
+      "horses": "Ngựa trên xe",
+      "seats": "Đang dùng {{used}}/{{total}} chỗ",
+      "noCrew": "Chưa có ai trong tổ lái.",
+      "noHorses": "Chưa có ngựa trên lượt này.",
+      "assignCrew": "Phân công",
+      "staff": "Nhân viên",
+      "role": "Vai trò",
+      "choose": "Chọn",
+      "release": "Gỡ",
+      "releaseTitle": "Gỡ {{name}} khỏi lượt xe?",
+      "releaseMessage": "Nhân viên sẽ không còn thấy lượt xe này.",
+      "assignHorse": "Xếp ngựa",
+      "horse": "Ngựa",
+      "noEligible": "Không còn con nào trong tuần hợp với lượt này.",
+      "removeTitle": "Gỡ {{name}} khỏi lượt xe?",
+      "removeMessage": "Chặng này bị hủy. Chỉ gỡ được chặng cuối của con ngựa.",
+      "cancelTrip": "Hủy lượt xe",
+      "cancelTitle": "Hủy lượt xe {{code}}",
+      "cancelReason": "Lý do hủy",
+      "cancelMessage": "Tổ lái được gỡ khỏi lượt. Lượt còn ngựa thì phải gỡ ngựa trước.",
+      "cancelConfirm": "Hủy lượt",
+      "locked": "Lượt xe đã chạy hoặc đã hủy, không sửa được."
+    },
+    "create": {
+      "title": "Lập lượt xe",
+      "type": "Loại lượt",
+      "vehicle": "Xe",
+      "vehicleLocked": "{{plate}} (đang {{status}})",
+      "departure": "Chuyến trục",
+      "departureHint": "Điểm dừng chép từ tuyến của chuyến.",
+      "stops": "Điểm dừng",
+      "stopsHint": "Điểm đầu và điểm cuối là hub; địa chỉ khách ở giữa.",
+      "addStop": "Thêm điểm dừng",
+      "removeStop": "Bỏ điểm dừng {{n}}",
+      "place": "Nơi dừng {{n}}",
+      "arrival": "Tới lúc",
+      "leave": "Rời lúc",
+      "submit": "Lập lượt xe",
+      "placeHub": "Hub: {{name}}",
+      "placePickup": "Đón {{code}}: {{line}}",
+      "placeDelivery": "Giao {{code}}: {{line}}"
+    },
+    "done": {
+      "created": "Đã lập lượt xe {{code}}",
+      "assigned": "Đã phân công",
+      "released": "Đã gỡ nhân viên",
+      "horseAssigned": "Đã xếp ngựa",
+      "horseRemoved": "Đã gỡ ngựa",
+      "cancelled": "Đã hủy lượt xe"
+    }
+  },
   coordinatorFleetPlan: {
     listTitle: 'Xe và lộ trình',
     listSubtitle: 'Chọn xe, tài xế và hộ tống cho từng chuyến, chia ngựa lên xe, lập lộ trình chi tiết rồi xác nhận.',

@@ -29,13 +29,14 @@ export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: 
     ['/specialist/insurance', 'Bảo hiểm', { icon: 'fa-shield-halved' }],
   ],
   coordinator: [
+    ['/coordinator/dispatch', 'Điều độ', { icon: 'fa-diagram-project' }],
     ['/coordinator/fleet-plan', 'Xe và lộ trình', { icon: 'fa-route' }],
     ['/coordinator/monitoring', 'Giám sát', { icon: 'fa-satellite-dish' }],
     ['/coordinator/incidents', 'Sự cố', { icon: 'fa-triangle-exclamation' }],
     ['/coordinator/fleet', 'Đội xe', { icon: 'fa-truck' }],
   ],
-  driver: [['/driver', 'Chuyến của tôi']],
-  escort: [['/escort', 'Nhật ký sức khỏe']],
+  driver: [['/driver', 'Chuyến của tôi'], ['/my-trips', 'Lượt xe của tôi']],
+  escort: [['/escort', 'Nhật ký sức khỏe'], ['/my-trips', 'Lượt xe của tôi']],
 }
 
 export const HOME_OF: Record<StaffRole, string> = {

@@ -1,5 +1,19 @@
 // Ứng dụng hiện trường của tài xế và hộ tống
 export const fieldCrew = {
+  myTrips: {
+    "title": "Lượt xe của tôi",
+    "description": "Lượt xe được phân công. Xác nhận nhận việc để điều phối biết bạn đã sẵn sàng.",
+    "loadError": "Không tải được lượt xe",
+    "emptyTitle": "Chưa có lượt xe nào",
+    "emptyDescription": "Khi điều phối phân công, lượt xe sẽ hiện ở đây.",
+    "acknowledge": "Xác nhận nhận việc",
+    "acknowledged": "Đã nhận việc",
+    "waiting": "Chờ bạn xác nhận",
+    "journey": "{{from}} → {{to}}",
+    "vehicle": "Xe {{plate}}",
+    "start": "Bắt đầu {{time}}",
+    "done": "Đã xác nhận nhận việc"
+  },
   fieldCrew: {
     tabJob: 'Việc',
     tabJourney: 'Hành trình',

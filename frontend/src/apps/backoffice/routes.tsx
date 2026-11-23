@@ -53,12 +53,14 @@ export const routes: AppRoute[] = [
   { path: '/specialist/legal', lazyPage: () => import('./features/specialist/legal/LegalListPage'), loader: bookingListLoader, roles: SP, title: 'Giấy tờ chuyến đi', layout: 'staff' },
   { path: '/specialist/legal/:id', lazyPage: () => import('./features/specialist/legal/LegalReviewPage'), loader: bookingLoader, roles: SP, title: 'Làm giấy tờ một đơn', layout: 'staff' },
 
+  { path: '/coordinator/dispatch', lazyPage: () => import('./features/coordinator/dispatch/DispatchPage'), roles: CO, title: 'Điều độ', layout: 'staff', catalog: false },
   { path: '/coordinator/fleet-plan', lazyPage: () => import('./features/coordinator/fleet-plan/FleetPlanListPage'), loader: bookingListLoader, roles: CO, title: 'Xe và lộ trình', layout: 'staff' },
   { path: '/coordinator/fleet-plan/:id', lazyPage: () => import('./features/coordinator/fleet-plan/FleetPlanPage'), loader: fleetPlanLoader, roles: CO, title: 'Chốt xe và lộ trình một đơn', layout: 'staff' },
   { path: '/coordinator/monitoring', lazyPage: () => import('./features/coordinator/monitoring/MonitoringPage'), loader: monitoringLoader, roles: CO, title: 'Giám sát vận chuyển', layout: 'staff' },
   { path: '/coordinator/incidents', lazyPage: () => import('./features/coordinator/incidents/CoordinatorIncidentsPage'), loader: bookingListLoader, roles: CO, title: 'Xử lý sự cố', layout: 'staff' },
   { path: '/coordinator/fleet', page: FleetPage, roles: CO, title: 'Đội xe', layout: 'staff' },
 
+  { path: '/my-trips', lazyPage: () => import('./features/crew/MyTripsPage'), roles: ['driver', 'escort'], title: 'Lượt xe của tôi', layout: 'mobile', catalog: false },
   { path: '/driver', page: DriverPage, roles: ['driver'], title: 'Chuyến của tôi', layout: 'mobile' },
   { path: '/escort', page: EscortPage, roles: ['escort'], title: 'Nhật ký sức khỏe ngựa', layout: 'mobile' },
 ]
