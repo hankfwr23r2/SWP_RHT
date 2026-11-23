@@ -7,6 +7,7 @@ import com.example.racehorse_transport.client.ValhallaClient;
 import com.example.racehorse_transport.dto.pricing.PricingPreviewRequestDto.HorseSelection;
 import com.example.racehorse_transport.dto.pricing.PricingPreviewRequestDto;
 import com.example.racehorse_transport.dto.regulation.CountryRuleResponseDto;
+import com.example.racehorse_transport.dto.regulation.DocumentRequirementResponseDto;
 import com.example.racehorse_transport.dto.regulation.RegulationPreviewResponseDto;
 import com.example.racehorse_transport.dto.route.GeoPointDto;
 import com.example.racehorse_transport.dto.route.RoadRouteDto;
@@ -78,6 +79,7 @@ class PricingServiceTest {
             return 8;
         });
         when(config.getInt("TRUCK_TOP_SPEED_KMH")).thenReturn(70);
+        when(config.getInt("MAX_DRIVE_HOURS_PER_DAY")).thenReturn(10);
         when(regulations.resolve(BookingType.LOCAL, "VN", "VN", LocalDate.of(2026, 11, 23), null))
                 .thenReturn(new RegulationPreviewResponseDto(null, 0, List.of(), false, null, null));
         AppUser account = new AppUser();
@@ -175,6 +177,20 @@ class PricingServiceTest {
     }
 
     @Test
+    void billsNearestWholeKilometre() {
+        PricingRouteService routeService = new PricingRouteServiceImpl(routing, mock(EntityManagerFactory.class));
+        var segment = new PricingRouteService.RoadSegment(ServiceLayer.DIRECT,
+                new GeoPointDto(10.70, 106.70), new GeoPointDto(10.80, 106.70));
+        when(routing.truckRoute(anyList(), eq(10.0), eq(60), any())).thenReturn(new RoadRouteDto(35.27, 600, List.of()),
+                new RoadRouteDto(35.5, 600, List.of()), new RoadRouteDto(0.2, 60, List.of()));
+        LocalDateTime time = LocalDateTime.of(2026, 11, 23, 12, 0);
+
+        assertThat(routeService.distance(segment, time, 10, 60)).isEqualByComparingTo("35");
+        assertThat(routeService.distance(segment, time, 10, 60)).isEqualByComparingTo("36");
+        assertThat(routeService.distance(segment, time, 10, 60)).isEqualByComparingTo("1");
+    }
+
+    @Test
     void refusesPreviewInsideAnExistingTransaction() {
         new TransactionTemplate(transactions).executeWithoutResult(status ->
                 assertThatThrownBy(() -> service.preview(request(), "owner"))
@@ -183,7 +199,7 @@ class PricingServiceTest {
     }
 
     @Test
-    void resolvesSharedHubAsDirectAndUsesQuarantineFromRegulation() {
+    void resolvesSharedHubAsDirectWithoutEarlyPickupDays() {
         CustomerAddress delivery = addresses.findById(2L).orElseThrow();
         Province secondProvince = new Province();
         secondProvince.setCode("VN-80");
@@ -196,6 +212,7 @@ class PricingServiceTest {
 
         var loaded = data.loadPreview(request(), "owner");
         assertThat(loaded.input().bookingType()).isEqualTo(BookingType.INTERPROVINCE);
+        assertThat(loaded.input().earlyPickupDays()).isZero();
         verify(regulations).resolve(BookingType.INTERPROVINCE, "VN", "VN", LocalDate.of(2026, 11, 23), null);
         assertThat(loaded.segments()).extracting(PricingRouteService.RoadSegment::layer)
                 .containsExactly(ServiceLayer.DIRECT);
@@ -205,6 +222,30 @@ class PricingServiceTest {
         assertThatThrownBy(() -> data.loadPreview(request(), "owner"))
                 .isInstanceOf(com.example.racehorse_transport.exception.PricingRuleException.class)
                 .hasMessageContaining("Cần chọn chuyến trục");
+    }
+
+    @Test
+    void mandatoryVetCheckReplacesPartialCustomerSelection() {
+        var horse = horses.findById(3L).orElseThrow();
+        when(horses.findById(4L)).thenReturn(Optional.of(horse));
+        var vet = price(25L, ServiceLayer.ADD_ON).getBillableService();
+        vet.setCode("VET_CHECK");
+        vet.setStatus(ActiveStatus.ACTIVE);
+        when(items.findPricingCatalog(ActiveStatus.ACTIVE)).thenReturn(List.of(vet));
+        var labTest = new DocumentRequirementResponseDto(1L, 1L, 1L, "LAB_TEST", "Lab", null, null,
+                DocumentSubmitter.COMPANY, true);
+        CustomerAddress delivery = addresses.findById(2L).orElseThrow();
+        Province secondProvince = new Province();
+        secondProvince.setCode("VN-80");
+        delivery.setProvince(secondProvince);
+        servedBy("VN-80", 4L);
+        when(regulations.resolve(BookingType.INTERPROVINCE, "VN", "VN", LocalDate.of(2026, 11, 23), null))
+                .thenReturn(new RegulationPreviewResponseDto(null, 0, List.of(labTest), false, null, null));
+        var request = new PricingPreviewRequestDto(1L, 2L, null, now.plusSeconds(3600),
+                List.of(new HorseSelection(3L, "STANDARD", List.of(25L)), new HorseSelection(4L, "STANDARD", List.of())));
+
+        assertThat(data.loadPreview(request, "owner").input().addOns())
+                .containsExactly(new com.example.racehorse_transport.policy.PricingPolicy.AddOn(25L, 2, 2, 0));
     }
 
     private void servedBy(String provinceCode, long hubId) {

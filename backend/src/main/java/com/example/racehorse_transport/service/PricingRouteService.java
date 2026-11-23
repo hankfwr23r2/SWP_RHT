@@ -8,5 +8,13 @@ import java.time.LocalDateTime;
 public interface PricingRouteService {
     BigDecimal distance(RoadSegment segment, LocalDateTime time, int weightTons, int topSpeedKmh);
 
-    record RoadSegment(ServiceLayer layer, GeoPointDto from, GeoPointDto to) {}
+    RoadEstimate route(RoadSegment segment, LocalDateTime time, int weightTons, int topSpeedKmh);
+
+    record RoadEstimate(BigDecimal km, long driveSeconds) {}
+
+    record RoadSegment(ServiceLayer layer, GeoPointDto from, GeoPointDto to, int maxDriveHoursPerDay) {
+        public RoadSegment(ServiceLayer layer, GeoPointDto from, GeoPointDto to) {
+            this(layer, from, to, 0);
+        }
+    }
 }

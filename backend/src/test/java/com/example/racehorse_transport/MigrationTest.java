@@ -97,10 +97,14 @@ class MigrationTest {
                 WHERE q.total_amount <> (SELECT sum(amount) FROM quotation_line l WHERE l.quotation_id = q.id)
                    OR q.total_amount <> (SELECT sum(amount) FROM payment p WHERE p.quotation_id = q.id AND p.status = 'PAID')""",
                 Integer.class)).isZero();
-        // Khoang đã đặt của chuyến khớp số ngựa của các đơn mẫu đi trục (2 + 1)
+        // Chỗ đã đặt khớp loại khoang của các đơn mẫu đi trục: 1 khoang thường + 1 khoang rộng (2 chỗ) + 1 khoang thường
         assertThat(jdbc.queryForObject("""
                 SELECT sum(d.booked_stall_count) FROM departure d WHERE d.id IN (SELECT departure_id FROM booking WHERE code LIKE 'DEV-%')""",
-                Integer.class)).isEqualTo(3);
+                Integer.class)).isEqualTo(4);
+        assertThat(jdbc.queryForObject("""
+                SELECT sum(CASE bh.stall_type_code WHEN 'WIDE' THEN 2 ELSE 1 END) FROM booking_horse bh
+                JOIN booking b ON b.id = bh.booking_id AND b.code LIKE 'DEV-%' AND b.departure_id IS NOT NULL""",
+                Integer.class)).isEqualTo(4);
     }
 
     @Test

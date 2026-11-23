@@ -62,6 +62,7 @@ public class BookingDetailsServiceImpl implements BookingDetailsService {
 
     @Override
     public void saveHorse(HorseInput input, Horse horse, Booking booking, String ipAddress, LocalDate submittedOn) {
+        BookingSubmissionPolicy.requireStall(horse.getSex(), input.stallTypeCode().trim());
         StallType stall = stalls.findById(input.stallTypeCode().trim())
                 .orElseThrow(() -> new BookingRuleException("Loại khoang không hợp lệ."));
         BookingHorse row = input.toEntity(booking, horse, stall);

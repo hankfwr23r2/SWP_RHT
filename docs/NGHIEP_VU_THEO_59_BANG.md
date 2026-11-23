@@ -31,6 +31,8 @@ Công ty là **đại lý tổ chức vận chuyển ngựa đua trọn gói** b
 
 ### 1.2 Mô hình gom hàng qua hub
 
+Đơn đi trục có hai cách đưa và nhận ngựa tại mỗi đầu trong nước. Công ty có thể đón hoặc giao tận nơi nếu một chiều không quá nửa giới hạn lái mỗi ngày (5 giờ theo cấu hình 10 giờ). Khách cũng có thể đưa ngựa tới hub hoặc người nhận đến hub vào giờ đã hẹn. Ngựa phải có mặt trước giờ chuyến trục chạy theo `HUB_CHECKIN_HOURS` (mặc định 3 giờ). Quá hạn nhận, ngựa được gửi chuồng và người nhận trả phí. Trách nhiệm của công ty bắt đầu khi ký nhận ngựa tại hub và kết thúc khi bên nhận ký nhận. Đơn chạy thẳng và đầu nước ngoài dùng `COMPANY`. Cả hai địa chỉ gốc vẫn được khai để chọn hub và lập giấy tờ.
+
 ```
  Chuồng khách A ─┐   chặng ĐÓN                      chặng TRỤC CHÍNH                        chặng GIAO
  Chuồng khách B ─┼──(vehicle_trip PICKUP)──► HUB ──(vehicle_trip LINEHAUL theo departure)──► ...
@@ -169,8 +171,8 @@ Một scheduler khác chuyển `departure` sang `CLOSED` khi đã qua `booking_c
 |---|---|
 | 8 tuần | Mở bán (`OPEN`) |
 | 72 giờ | Chốt nhận đơn (`CLOSED`) |
-| 48 giờ (`DEPARTURE_DECISION_HOURS`) | Đơn chưa CONFIRMED bị nhả chỗ: `AWAITING_DEPOSIT` → `QUOTE_EXPIRED`, đơn chưa báo giá xong → `SCHEDULE_CHANGE_REQUIRED`. Quản lý quyết định chạy |
-| 1 ngày | Đón ngựa về hub |
+| 48 giờ (`DEPARTURE_DECISION_HOURS`) | Đơn chưa gửi báo giá nhả chỗ và chuyển `SCHEDULE_CHANGE_REQUIRED`. Đơn `AWAITING_DEPOSIT` giữ chỗ đến khi báo giá hết hạn. Quản lý quyết định chạy |
+| 1 ngày | Ngày đưa ngựa tới hub chuẩn của đơn đi trục INTERPROVINCE, EXPORT. Dùng cho cả COMPANY và SELF. Lưu chuồng sớm hơn tính theo số ngựa và số ngày |
 | 3 giờ (`HUB_CHECKIN_HOURS`) | Ngựa phải có mặt ở hub. Trễ thì điều phối chờ hoặc dời chuyến; chi phí do bên có lỗi chịu |
 
 Khi quyết định chỉ đếm chỗ của đơn CONFIRMED. Dưới `DEPARTURE_MIN_FILL_PERCENT` (30%) thì cảnh báo, quản lý vẫn là người quyết định:
@@ -193,8 +195,8 @@ service (đơn vị tính)  ──<  price_item (đơn giá + điều kiện)  >
 | Thành phần báo giá | `billable_service.layer` | `billing_unit` | Điều kiện tra `price_item` |
 |---|---|---|---|
 | Cước trục chính | LINEHAUL | PER_STALL | `route_id` + `stall_type_code` |
-| Cước đón | PICKUP | PER_KM | `vehicle_class_id` + bậc `km_from..km_to` |
-| Cước giao | DELIVERY | PER_KM | `vehicle_class_id` + bậc km |
+| Cước đón do công ty chở | PICKUP | PER_KM | `vehicle_class_id` + bậc `km_from..km_to` |
+| Cước giao do công ty chở | DELIVERY | PER_KM | `vehicle_class_id` + bậc km |
 | Cước chạy thẳng (không qua trục) | DIRECT | PER_KM | `vehicle_class_id` + bậc km, tính từ địa chỉ đón tới địa chỉ giao |
 | Phụ thu khoang rộng khi chạy thẳng | STALL | PER_HORSE | Tra theo `stall_type_code` WIDE, số lượng là số ngựa chọn khoang rộng |
 | Phụ phí nhiên liệu | FUEL | PER_KM | `fuel_buffer_rate` của bảng giá |
@@ -211,7 +213,7 @@ Số km của chặng đón và giao do backend tính bằng dịch vụ bản �
 | Chuẩn | Hộ tống, ăn uống, đo sức khỏe, theo dõi từng con | Chỉ ghi chỉ dẫn | Trong cước |
 | Bắt buộc | Thủ tục kiểm dịch, hải quan, lệ phí, xét nghiệm nếu nước đến yêu cầu | Không chọn, chỉ thấy | Dòng riêng, tự thêm |
 | Khách chọn | Loại khoang, bảo hiểm, thú y (đơn không bắt buộc), đón sớm | Chọn | Dòng riêng |
-| Yêu cầu riêng | Phụ kiện, người đi cùng, huấn luyện… | Ghi ở `booking.special_request` | Nhận thì quản lý nhập dòng ADJUSTMENT kèm lý do; không nhận thì chuyên viên trả đơn kèm lý do |
+
 | Phát sinh | Thú y khẩn cấp, gửi chuồng do trễ | Đồng ý hoặc từ chối | `cost_item` (GĐ9) |
 
 Dịch vụ khách mua không làm đổi việc của hộ tống: mọi con trên xe được chăm cùng một chuẩn, chỉ khác chỉ dẫn riêng.
@@ -245,9 +247,9 @@ Tiến độ vận hành (ngựa đang ở đâu, chặng nào, có sự cố kh
 | 2 | Đồng ý điều khoản dịch vụ khi đăng ký | `terms_acceptance` SERVICE_TERMS (`booking_id` NULL) |
 | 3 | Khai hồ sơ ngựa: tên, chip, hộ chiếu, giới tính, năm sinh, giá trị khai báo… | `horse` |
 | 4 | Lưu sổ địa chỉ (tùy chọn) | `customer_address` |
-| 5 | Chọn **loại đơn**, **điểm đón**, **điểm giao** và **chuyến** muốn đi. Hệ thống gợi ý các `departure` OPEN phù hợp | Chỉ đọc `departure` (`stall_capacity − booked_stall_count`) |
+| 5 | Chọn **loại đơn**, **điểm đón**, **điểm giao**, cách đưa và nhận ngựa, và **chuyến** muốn đi. Hệ thống gợi ý các `departure` OPEN phù hợp | Chỉ đọc `departure` (`stall_capacity − booked_stall_count`) |
 | 6 | Khai các bên: người trả tiền, người gửi, người nhận, người liên hệ khẩn cấp | `booking_party` × 4 |
-| 7 | Chọn ngựa, loại khoang, chế độ ăn, dịch vụ thêm, ghi yêu cầu riêng | `booking_horse`, `booking_horse_service`, `booking.special_request` |
+| 7 | Chọn ngựa, loại khoang, chế độ ăn và dịch vụ thêm | `booking_horse`, `booking_horse_service` |
 | 8 | Khai bảo hiểm cho từng con: tự có / nhờ công ty thu xếp / không mua | `horse_insurance` (DRAFT). Chọn NONE thì phải ký cam kết miễn trách: `terms_acceptance` LIABILITY_WAIVER |
 | 9 | Tải giấy tờ đang có | `document` (UPLOADED), có `horse_id` hoặc `booking_horse_id` và `document_requirement_id` |
 | 10 | Gửi đơn | `booking` (PENDING_INTAKE), `booking_address` × 2 (snapshot), `terms_acceptance` SERVICE_TERMS gắn `booking_id`, `booking_status_history` |
@@ -283,7 +285,7 @@ Hai nhánh chạy song song. Mỗi nhánh tự lưu trạng thái trên đối t
 | Xác định cách chạy: tra hub đón và hub giao, quyết định chạy thẳng hay đi trục (mục 1.2) | Đọc `hub_service_area` |
 | Đi trục: xác nhận chuyến trục chính, hoặc đổi sang chuyến khác | `booking.departure_id` |
 | Tính **số km và ngày dự kiến** của từng chặng để báo giá: đón, trục, giao, hoặc một chặng chạy thẳng | Chỉ tính, chưa ghi `horse_leg` |
-| Lập **các lần lưu trú dự kiến** | `horse_stay`: ASSEMBLY ở hub (tối đa một đêm) |
+| Lập **các lần lưu trú dự kiến** | `horse_stay`: ASSEMBLY ở hub, gồm số ngày lưu chuồng theo lịch đưa ngựa đã hẹn |
 
 Ở giai đoạn này **chưa tạo `horse_leg`**. Vì ràng buộc "xe hoặc đại lý, đúng một", chặng do xe công ty chạy chỉ được tạo khi đã có `vehicle_trip`, tức ở GĐ5. Riêng chặng ở nước ngoài do đại lý chạy (`agent_party_id`) có thể tạo sớm.
 
@@ -303,7 +305,7 @@ Hai nhánh chạy song song. Mỗi nhánh tự lưu trạng thái trên đối t
 | 2 | Sinh từng dòng báo giá từ `price_item` theo mục 3.2. Mỗi dòng có thể gắn với một con ngựa hoặc một chặng | `quotation_line` (snapshot `unit_price`, `is_pass_through`) |
 | 3 | Tạo phiên bản báo giá, chốt lịch: ngày đón, ngày xuất phát, ngày giao dự kiến | `quotation` (DRAFT, `version` tăng dần, snapshot `deposit_rate`) |
 | 4 | Quản lý có thể thêm dòng điều chỉnh giảm giá | `quotation_line` loại ADJUSTMENT |
-| 5 | Quản lý gửi báo giá cho khách | `quotation.status = SENT`, `sent_by`, `sent_at`, `expires_at`. Các bản cũ chuyển SUPERSEDED. Hạn là 24 giờ, không muộn hơn hạn báo giá bảo hiểm và mốc 48 giờ trước chuyến |
+| 5 | Quản lý gửi báo giá cho khách | `quotation.status = SENT`, `sent_by`, `sent_at`, `expires_at`. Các bản cũ chuyển SUPERSEDED. Hạn là mốc sớm nhất trong 24 giờ sau khi gửi, hết ngày đón và hết ngày hiệu lực báo giá bảo hiểm (nếu có) |
 
 `QuotationService` tính và ghi `quotation.total_amount`, `pass_through_amount`, `deposit_amount` khi báo giá còn DRAFT. Sau khi SENT thì các cột này không đổi. Tiền cọc gồm **toàn bộ** phần thu hộ (bảo hiểm, lệ phí): `deposit = deposit_rate × (tổng − thu hộ) + thu hộ`, làm tròn **lên nghìn đồng** và không vượt tổng; tổng không đổi, số dư = tổng − cọc. Km tính tiền lấy km gần nhất, đơn giá sau hệ số tới đồng nên mọi dòng giá là số nguyên đồng.
 
@@ -326,12 +328,14 @@ Quá `expires_at` mà chưa cọc thì scheduler chuyển báo giá sang `EXPIRE
 
 ### GĐ5. Chuẩn bị
 
+Với đầu `SELF`, điều phối hẹn giờ tại hub và chuẩn bị `horse_stay` để gắn biên bản giao nhận. Đầu tự chở không có chặng xe đón hoặc giao tương ứng.
+
 **Ai:** điều phối viên, chuyên viên, khách. **Trạng thái:** vẫn `CONFIRMED`.
 
 | Việc | Bảng |
 |---|---|
 | Hoàn tất giấy tờ kiểm dịch, giấy phép nhập. Chuyên viên tải giấy của COMPANY, CONSIGNEE, AGENT và duyệt hoặc từ chối từng giấy. Khách có thể nộp lại giấy CUSTOMER bắt buộc khi thiếu bản còn hiệu lực | `document` |
-| **Tạo lượt xe đón**: hệ thống gợi ý gom các đơn cùng hub, cùng ngày, đủ chỗ, đi vòng ≤ 1,5 lần, không con nào quá 4 giờ; điều phối duyệt | `vehicle_trip` PICKUP, `trip_stop` (mỗi `booking_address` PICKUP là một điểm dừng, cuối cùng là hub) |
+| **Tạo lượt xe đón**: hệ thống gợi ý gom các đơn cùng hub, cùng ngày, đủ chỗ, đi vòng ≤ 1,5 lần, bố trí điểm nghỉ theo quy tắc #31; điều phối duyệt | `vehicle_trip` PICKUP, `trip_stop` (mỗi `booking_address` PICKUP là một điểm dừng, cuối cùng là hub) |
 | **Tạo lượt xe trục chính** cho chuyến | `vehicle_trip` LINEHAUL có `departure_id`. `trip_stop` chép từ `route_stop`: giờ = `planned_departure_at + arrival_offset_minutes` |
 | **Tạo lượt xe chạy thẳng** cho đơn không qua trục | `vehicle_trip` DIRECT: trụ sở → các địa chỉ đón → các địa chỉ giao → trụ sở. Có thể gom nhiều đơn cùng vùng |
 | **Tạo lượt giao ở hub vệ tinh** | `vehicle_trip` DELIVERY bắt đầu tại hub vệ tinh, dùng chính xe vừa chạy trục tới. Sau đó xe về trụ sở bằng chuyến trục chiều ngược |
@@ -339,13 +343,13 @@ Quá `expires_at` mà chưa cọc thì scheduler chuyển báo giá sang `EXPIRE
 | Gắn ngựa vào lượt xe | `horse_leg.vehicle_trip_id`, `board_trip_stop_id`, `alight_trip_stop_id` |
 
 **Điều kiện xe xuất phát đón**, kiểm bằng truy vấn:
-- đủ tất cả giấy bắt buộc của CUSTOMER, COMPANY, CONSIGNEE và AGENT theo `DocumentCompletenessService.isComplete`, gồm `QUARANTINE_CLEARANCE` của từng con với đơn EXPORT. Đơn IMPORT kiểm khi nhận ngựa ở cửa khẩu (7.4);
+- đủ tất cả giấy bắt buộc của CUSTOMER, COMPANY, CONSIGNEE và AGENT theo `DocumentCompletenessService.isComplete`, gồm `QUARANTINE_CLEARANCE` của từng con với đơn EXPORT. Đầu SELF kiểm khi nhận ngựa ở hub. Đơn IMPORT kiểm khi nhận ngựa ở cửa khẩu (7.4);
 - bảo hiểm của từng con đã CONFIRMED;
 - lượt xe đã có tài xế ACKNOWLEDGED.
 
 Chưa trả đủ **không** chặn xe đi đón. Số dư thu sau khi nhận ngựa (GĐ6).
 
-**Đã cọc mà giấy không kịp.** Chuyên viên có danh sách đơn thiếu giấy, hệ thống nhắc khách từ 5 ngày trước chuyến. Tới mốc 48 giờ quản lý chọn nguyên nhân kèm lý do, đơn chuyển `SCHEDULE_CHANGE_REQUIRED` và nhả chỗ:
+**Đã cọc mà giấy không kịp (A8).** Chuyên viên có danh sách đơn thiếu giấy, hệ thống nhắc khách từ 5 ngày trước chuyến. Tới mốc 48 giờ quản lý chọn nguyên nhân kèm lý do, đơn chuyển `SCHEDULE_CHANGE_REQUIRED` và nhả chỗ:
 
 | Nguyên nhân | Đổi chuyến | Không đi nữa |
 |---|---|---|
@@ -367,6 +371,8 @@ Giá cũ giữ 30 ngày. Nguyên nhân và lý do ghi ở `booking_status_histor
 ---
 
 ### GĐ6. Nhận ngựa
+
+Với `pickup_method = SELF`, kiểm giấy trước khi ký nhận tại hub, ghi `handover` PICKUP gắn với `horse_stay` và mở thời gian lưu chuồng thực tế. Lập khoản số dư sau khi nhận. Kiểm tra đã trả đủ trước khi xe rời nơi nhận ngựa.
 
 **Ai:** tài xế, hộ tống, khách trả số dư. **Trạng thái:** `CONFIRMED` → `IN_OPERATION` khi khách đã trả đủ và xe rời nơi nhận.
 
@@ -415,7 +421,7 @@ Giá cũ giữ 30 ngày. Nguyên nhân và lý do ghi ở `booking_status_histor
 | Nghỉ đêm và ở hub | Bữa tối, bữa sáng theo chỉ dẫn của khách (`diet_note`, `feedings_per_day`) | Như trên, với `horse_stay_id` nếu ngựa xuống xe |
 | Lúc giao | Nước | Tình trạng bàn giao |
 
-- Chặng đón và giao tối đa 4 giờ nên không có bữa dọc đường. Địa chỉ xa hơn thì không nhận.
+- Chặng đón và giao do công ty chở tối đa 5 giờ lái một chiều với cấu hình 10 giờ lái mỗi ngày. Vượt ngưỡng lái liên tục thì bố trí điểm nghỉ theo quy tắc #31.
 - Tối đa 10 giờ lái mỗi ngày, nghỉ đêm 10 giờ.
 - Xe chỉ rời trạm khi mọi con đã được ghi và đã nghỉ đủ. Rời sớm phải xác nhận kèm lý do.
 - Bỏ uống ở 2 trạm liền thì ghi `WATCH` và báo điều phối.
@@ -484,6 +490,8 @@ Giả định của đợt này: địa chỉ giao của đơn nhập là nơi c
 ---
 
 ### GĐ8. Giao ngựa
+
+Với `delivery_method = SELF`, trả ngựa tại hub và ghi `handover` DELIVERY gắn với `horse_stay`. Quá giờ hẹn thì gửi chuồng, người nhận trả phí.
 
 Giao ngựa **đối xứng với đón ngựa**. **Ai:** tài xế và hộ tống (giao trong nước), hoặc đại lý (giao ở nước ngoài). **Trạng thái:** `IN_OPERATION` → `DELIVERED`.
 

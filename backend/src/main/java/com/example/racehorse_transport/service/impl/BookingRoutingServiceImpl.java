@@ -72,7 +72,7 @@ public class BookingRoutingServiceImpl implements BookingRoutingService {
         Route route = routeForSubmission(replacementId);
         BookingSubmissionPolicy.validateRoute(route, booking.getBookingType(), hubs.pickup(), hubs.delivery(),
                 DepartureRoutePolicy.counterpartCountryCode(booking.getBookingType(), pickup.getCountry().getCode(), delivery.getCountry().getCode()));
-        BookingSubmissionPolicy.validatePickupDate(booking.getRequestedPickupDate(), replacement.getDepartureDate());
+        BookingSubmissionPolicy.validatePickupDate(booking.getBookingType(), booking.getRequestedPickupDate(), replacement.getDepartureDate());
         Long gate = DepartureRoutePolicy.gateId(route, booking.getBookingType());
         long leadDays = regulations.resolve(booking.getBookingType(), pickup.getCountry().getCode(),
                 delivery.getCountry().getCode(), booking.getRequestedPickupDate(), gate).leadDays();
@@ -111,8 +111,9 @@ public class BookingRoutingServiceImpl implements BookingRoutingService {
                 pickupProvince.getCode(), deliveryProvince.getCode());
         Long pickupHub = hubOf(pickupProvince);
         Long deliveryHub = hubOf(deliveryProvince);
-        BookingSubmissionPolicy.validateDepartureSelection(
-                HubResolutionPolicy.routingOf(type, pickupHub, deliveryHub), request.departureId());
+        HubResolutionPolicy.Routing routing = HubResolutionPolicy.routingOf(type, pickupHub, deliveryHub);
+        BookingSubmissionPolicy.validateDepartureSelection(routing, request.departureId());
+        BookingSubmissionPolicy.validateTransfer(type, routing, request.pickupMethod(), request.deliveryMethod());
 
         if (request.departureId() != null) {
             Route route = routeForSubmission(request.departureId());
@@ -130,7 +131,7 @@ public class BookingRoutingServiceImpl implements BookingRoutingService {
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến."));
         BookingSubmissionPolicy.validateRoute(departure.getRoute(), request.bookingType(), routing.pickupHub(), routing.deliveryHub(),
                 DepartureRoutePolicy.counterpartCountryCode(request.bookingType(), routing.pickup().countryCode(), routing.delivery().countryCode()));
-        BookingSubmissionPolicy.validatePickupDate(request.requestedPickupDate(), departure.getDepartureDate());
+        BookingSubmissionPolicy.validatePickupDate(request.bookingType(), request.requestedPickupDate(), departure.getDepartureDate());
         return departure;
     }
 

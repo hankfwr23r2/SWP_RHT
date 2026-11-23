@@ -1,11 +1,13 @@
 package com.example.racehorse_transport.policy;
 
+import com.example.racehorse_transport.dto.regulation.DocumentRequirementResponseDto;
 import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.entity.enums.*;
 import com.example.racehorse_transport.exception.PricingRuleException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 public final class PricingPolicy {
@@ -20,7 +22,14 @@ public final class PricingPolicy {
     public record PricingInput(String currencyCode, LocalDate quotationDate, BookingType bookingType,
                                Long routeId, BigDecimal linehaulKm, List<RoadLeg> roadLegs,
                                Map<String, Integer> stallsByType, int horseCount,
-                               List<AddOn> addOns) {
+                               List<AddOn> addOns, long earlyPickupDays) {
+        public PricingInput(String currencyCode, LocalDate quotationDate, BookingType bookingType,
+                            Long routeId, BigDecimal linehaulKm, List<RoadLeg> roadLegs,
+                            Map<String, Integer> stallsByType, int horseCount, List<AddOn> addOns) {
+            this(currencyCode, quotationDate, bookingType, routeId, linehaulKm, roadLegs,
+                    stallsByType, horseCount, addOns, 0);
+        }
+
         public PricingInput {
             roadLegs = List.copyOf(roadLegs);
             stallsByType = Collections.unmodifiableMap(new TreeMap<>(stallsByType));
@@ -36,6 +45,47 @@ public final class PricingPolicy {
                                 List<Line> lines, BigDecimal total) {}
 
     private record Match(Long routeId, Long vehicleClassId, String stallType, BigDecimal km) {}
+
+    public static long earlyPickupDays(LocalDate requestedPickupDate, LocalDate departureDate) {
+        return Math.max(0, ChronoUnit.DAYS.between(requestedPickupDate, departureDate) - 1);
+    }
+
+    public static long earlyPickupDays(BookingType type, LocalDate requestedPickupDate, LocalDate departureDate) {
+        if (departureDate == null || (type != BookingType.INTERPROVINCE && type != BookingType.EXPORT)) {
+            return 0;
+        }
+        return earlyPickupDays(requestedPickupDate, departureDate);
+    }
+
+    public static List<AddOn> requiredAddOns(List<DocumentRequirementResponseDto> requirements,
+                                            List<BillableService> catalog, int horseCount) {
+        boolean required = requirements.stream().anyMatch(requirement ->
+                "LAB_TEST".equals(requirement.documentTypeCode())
+                        && requirement.submitterType() == DocumentSubmitter.COMPANY
+                        && Boolean.TRUE.equals(requirement.mandatory()));
+        if (!required) {
+            return List.of();
+        }
+        BillableService vetCheck = catalog.stream()
+                .filter(service -> "VET_CHECK".equals(service.getCode()) && service.getLayer() == ServiceLayer.ADD_ON
+                        && service.getStatus() == ActiveStatus.ACTIVE)
+                .findFirst().orElseThrow(() -> new PricingRuleException("Thiếu dịch vụ thú y bắt buộc.", true));
+        return List.of(new AddOn(vetCheck.getId(), horseCount, horseCount, 0));
+    }
+
+    public static void validateDriveTime(ServiceLayer layer, long driveSeconds, int dailyHours) {
+        long dailySeconds = dailyHours * 3600L;
+        if (driveSeconds <= (layer == ServiceLayer.DIRECT ? dailySeconds : dailySeconds / 2)) {
+            return;
+        }
+        String message = switch (layer) {
+            case DIRECT -> "Chặng chạy thẳng vượt giới hạn giờ lái trong ngày.";
+            case PICKUP -> "Chặng đón vượt giới hạn giờ lái một chiều. Vui lòng tự chở ngựa tới hub.";
+            case DELIVERY -> "Chặng giao vượt giới hạn giờ lái một chiều. Vui lòng tự nhận ngựa tại hub.";
+            default -> throw new PricingRuleException("Chặng đường tính giá không hợp lệ.");
+        };
+        throw new PricingRuleException(message, true);
+    }
 
     public static PriceList selectList(List<PriceList> candidates, PricingInput input) {
         List<PriceList> matches = candidates.stream()
@@ -92,6 +142,14 @@ public final class PricingPolicy {
                     new Match(input.routeId(), fuelClass, null, roadKm), roadKm);
         }
         Match booking = new Match(input.routeId(), null, null, null);
+        if (input.earlyPickupDays() > 0) {
+            BillableService stay = catalog.stream()
+                    .filter(service -> service.getLayer() == ServiceLayer.QUARANTINE
+                            && "QUARANTINE_STAY".equals(service.getCode()))
+                    .findFirst().orElseThrow(() -> new PricingRuleException("Thiếu dịch vụ lưu chuồng.", true));
+            BigDecimal quantity = BigDecimal.valueOf(input.horseCount()).multiply(BigDecimal.valueOf(input.earlyPickupDays()));
+            lines.add(line(list, items, stay, booking, quantity));
+        }
         if (input.bookingType() != BookingType.LOCAL) {
             for (BillableService service : catalog) {
                 if (service.getLayer() == ServiceLayer.DOCS && Boolean.TRUE.equals(service.getAutoApplied())) {
@@ -123,9 +181,9 @@ public final class PricingPolicy {
     }
 
     private static void validateInput(PricingInput input) {
-        if (input.horseCount() <= 0
+        if (input.earlyPickupDays() < 0 || input.horseCount() <= 0
                 || input.stallsByType().isEmpty() || input.stallsByType().values().stream().anyMatch(count -> count <= 0)) {
-            throw new PricingRuleException("Số ngựa, số khoang hoặc số ngày cách ly không hợp lệ.");
+            throw new PricingRuleException("Số ngựa, số khoang hoặc số ngày lưu chuồng không hợp lệ.");
         }
         if (input.routeId() != null && (input.linehaulKm() == null || input.linehaulKm().signum() < 0)) {
             throw new PricingRuleException("Thiếu quãng đường chặng trục.");
@@ -179,7 +237,8 @@ public final class PricingPolicy {
             case FUEL -> list.getFuelBufferRate();
             default -> BigDecimal.ZERO;
         };
-        BigDecimal unitPrice = money(item.getUnitPrice().multiply(BigDecimal.ONE.add(rate)));
+        // Đơn giá nguyên đồng nên dòng giá và tổng không có lẻ đồng (VNPAY chỉ nhận số nguyên đồng)
+        BigDecimal unitPrice = money(item.getUnitPrice().multiply(BigDecimal.ONE.add(rate)).setScale(0, RoundingMode.HALF_UP));
         BigDecimal amount = money(quantity.multiply(unitPrice));
         return new Line(item.getId(), service.getCode(), service.getBillingUnit(), match.vehicleClassId(),
                 match.stallType(), quantity, unitPrice, amount, passThrough);

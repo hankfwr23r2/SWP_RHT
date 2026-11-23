@@ -1748,11 +1748,15 @@ export interface components {
             addresses: components["schemas"]["AddressInput"][];
             /** @enum {string} */
             bookingType: "LOCAL" | "INTERPROVINCE" | "EXPORT" | "IMPORT";
+            /** @enum {string} */
+            deliveryMethod?: "COMPANY" | "SELF";
             /** Format: int64 */
             departureId?: number;
             emergencySpendingLimit?: number;
             horses: components["schemas"]["HorseInput"][];
             parties: components["schemas"]["PartyInput"][];
+            /** @enum {string} */
+            pickupMethod?: "COMPANY" | "SELF";
             /** Format: date */
             requestedPickupDate: string;
         };
@@ -1763,8 +1767,12 @@ export interface components {
         BookingDetailResponseDto: {
             addresses?: components["schemas"]["AddressSnapshot"][];
             booking?: components["schemas"]["BookingResponseDto"];
+            /** @enum {string} */
+            deliveryMethod?: "COMPANY" | "SELF";
             horses?: components["schemas"]["HorseDetail"][];
             parties?: components["schemas"]["PartySnapshot"][];
+            /** @enum {string} */
+            pickupMethod?: "COMPANY" | "SELF";
             reviewReason?: string;
         };
         BookingDocumentChecklistResponseDto: {
@@ -2525,6 +2533,8 @@ export interface components {
         PricingPreviewRequestDto: {
             /** Format: int64 */
             deliveryAddressId: number;
+            /** @enum {string} */
+            deliveryMethod?: "COMPANY" | "SELF";
             /** Format: int64 */
             departureId?: number;
             horses: components["schemas"]["HorseSelection"][];
@@ -2532,6 +2542,8 @@ export interface components {
             pickupAddressId: number;
             /** Format: date-time */
             pickupAt: string;
+            /** @enum {string} */
+            pickupMethod?: "COMPANY" | "SELF";
         };
         PricingPreviewResponseDto: {
             /** @enum {string} */

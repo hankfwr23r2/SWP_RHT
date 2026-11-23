@@ -2,6 +2,7 @@ package com.example.racehorse_transport.policy;
 
 import static org.assertj.core.api.Assertions.*;
 
+import com.example.racehorse_transport.dto.regulation.DocumentRequirementResponseDto;
 import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.entity.enums.*;
 import com.example.racehorse_transport.exception.PricingRuleException;
@@ -37,9 +38,9 @@ class PricingPolicyTest {
         assertThat(result.lines()).extracting(Line::amount).containsExactly(
                 new BigDecimal("1155000.00"), new BigDecimal("165000.00"), new BigDecimal("4400000.00"),
                 new BigDecimal("378000.00"), new BigDecimal("123.00"),
-                new BigDecimal("151.65"));
+                new BigDecimal("153.00"));
         assertThat(result.lines().get(4).passThrough()).isTrue();
-        assertThat(result.total()).isEqualByComparingTo("6098274.65");
+        assertThat(result.total()).isEqualByComparingTo("6098276");
     }
 
     @Test
@@ -54,8 +55,8 @@ class PricingPolicyTest {
         Line boundary = PricingPolicy.calculate(list(), prices, List.of(direct, fuel), direct("50"))
                 .lines().getFirst();
         assertThat(boundary.priceItemId()).isEqualTo(2L);
-        assertThat(boundary.unitPrice()).isEqualByComparingTo("3.66");
-        assertThat(boundary.amount()).isEqualByComparingTo("183.00");
+        assertThat(boundary.unitPrice()).isEqualByComparingTo("4");
+        assertThat(boundary.amount()).isEqualByComparingTo("200");
         for (String km : List.of("200", "900")) {
             assertThat(PricingPolicy.calculate(list(), prices, List.of(direct, fuel), direct(km))
                     .lines().getFirst().priceItemId()).isEqualTo(3L);
@@ -110,6 +111,63 @@ class PricingPolicyTest {
                 null, null, List.of(), Map.of("STANDARD", 1), 1, List.of(new AddOn(1L, 1, 1, 1)));
         assertThatThrownBy(() -> PricingPolicy.calculate(list(), List.of(item(1, feeding, "10", null, null)),
                 List.of(feeding), input)).isInstanceOf(PricingRuleException.class).hasMessageContaining("không khả dụng");
+    }
+
+    @Test
+    void earlyPickupDaysUseCalendarDaysAndExcludeImportAndDirect() {
+        LocalDate departure = LocalDate.of(2027, 2, 1);
+        assertThat(PricingPolicy.earlyPickupDays(departure, departure)).isZero();
+        assertThat(PricingPolicy.earlyPickupDays(departure.minusDays(1), departure)).isZero();
+        assertThat(PricingPolicy.earlyPickupDays(BookingType.EXPORT, departure.minusDays(2), departure)).isEqualTo(1);
+        assertThat(PricingPolicy.earlyPickupDays(BookingType.INTERPROVINCE, departure.minusDays(5), departure)).isEqualTo(4);
+        assertThat(PricingPolicy.earlyPickupDays(BookingType.IMPORT, departure.minusDays(5), departure)).isZero();
+        assertThat(PricingPolicy.earlyPickupDays(BookingType.INTERPROVINCE, departure.minusDays(5), null)).isZero();
+    }
+
+    @Test
+    void pricesEarlyPickupByHorseDay() {
+        var linehaul = service(1, ServiceLayer.LINEHAUL, BillingUnit.PER_STALL, false);
+        var stay = service(2, ServiceLayer.QUARANTINE, BillingUnit.PER_HORSE_DAY, false);
+        stay.setCode("QUARANTINE_STAY");
+        var input = new PricingInput("VND", LocalDate.of(2026, 11, 23), BookingType.EXPORT, 4L,
+                BigDecimal.TEN, List.of(), Map.of("STANDARD", 2), 2, List.of(), 3);
+        var result = PricingPolicy.calculate(list(), List.of(item(1, linehaul, "10", null, null),
+                item(2, stay, "20", null, null)), List.of(linehaul, stay), input);
+        assertThat(result.lines().getLast().serviceCode()).isEqualTo("QUARANTINE_STAY");
+        assertThat(result.lines().getLast().quantity()).isEqualByComparingTo("6");
+    }
+
+    @Test
+    void labTestAddsVetCheckOnlyWhenMandatoryAndSubmittedByCompany() {
+        var vet = service(2, ServiceLayer.ADD_ON, BillingUnit.PER_HORSE, false);
+        vet.setCode("VET_CHECK");
+        var required = new DocumentRequirementResponseDto(1L, 1L, 1L, "LAB_TEST", "Lab", null, null,
+                DocumentSubmitter.COMPANY, true);
+        var optional = new DocumentRequirementResponseDto(2L, 1L, 1L, "LAB_TEST", "Lab", null, null,
+                DocumentSubmitter.COMPANY, false);
+        assertThat(PricingPolicy.requiredAddOns(List.of(required), List.of(vet), 3))
+                .containsExactly(new AddOn(2L, 3, 3, 0));
+        assertThat(PricingPolicy.requiredAddOns(List.of(optional), List.of(vet), 3)).isEmpty();
+    }
+
+    @Test
+    void driveTimeLimitsUseOneWayDurationForPickupAndDelivery() {
+        assertThatCode(() -> PricingPolicy.validateDriveTime(ServiceLayer.PICKUP, 18000, 10))
+                .doesNotThrowAnyException();
+        assertThatCode(() -> PricingPolicy.validateDriveTime(ServiceLayer.DIRECT, 36000, 10))
+                .doesNotThrowAnyException();
+        assertThatThrownBy(() -> PricingPolicy.validateDriveTime(ServiceLayer.PICKUP, 18001, 10))
+                .isInstanceOfSatisfying(PricingRuleException.class, error -> {
+                    assertThat(error.isConflict()).isTrue();
+                    assertThat(error).hasMessageContaining("Chặng đón");
+                });
+        assertThatThrownBy(() -> PricingPolicy.validateDriveTime(ServiceLayer.DELIVERY, 18001, 10))
+                .isInstanceOfSatisfying(PricingRuleException.class, error -> {
+                    assertThat(error.isConflict()).isTrue();
+                    assertThat(error).hasMessageContaining("Chặng giao");
+                });
+        assertThatThrownBy(() -> PricingPolicy.validateDriveTime(ServiceLayer.DIRECT, 36001, 10))
+                .isInstanceOfSatisfying(PricingRuleException.class, error -> assertThat(error.isConflict()).isTrue());
     }
 
     private static PricingInput direct(String km) {

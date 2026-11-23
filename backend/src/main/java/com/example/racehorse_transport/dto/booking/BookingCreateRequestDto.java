@@ -5,6 +5,7 @@ import com.example.racehorse_transport.entity.enums.AddressRole;
 import com.example.racehorse_transport.entity.enums.BookingPartyRole;
 import com.example.racehorse_transport.entity.enums.BookingType;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.example.racehorse_transport.entity.enums.TransferMethod;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
@@ -20,7 +21,20 @@ public record BookingCreateRequestDto(
         @NotNull @Size(min = 4, max = 4) List<@NotNull @Valid PartyInput> parties,
         @NotNull @Size(min = 2, max = 2) List<@NotNull @Valid AddressInput> addresses,
         @NotEmpty List<@NotNull @Valid HorseInput> horses,
-        @NotNull Boolean acceptedServiceTerms) {
+        @NotNull Boolean acceptedServiceTerms,
+        TransferMethod pickupMethod,
+        TransferMethod deliveryMethod) {
+
+    public BookingCreateRequestDto {
+        pickupMethod = pickupMethod == null ? TransferMethod.COMPANY : pickupMethod;
+        deliveryMethod = deliveryMethod == null ? TransferMethod.COMPANY : deliveryMethod;
+    }
+
+    public BookingCreateRequestDto(BookingType bookingType, Long departureId, LocalDate requestedPickupDate,
+            BigDecimal emergencySpendingLimit, List<PartyInput> parties, List<AddressInput> addresses,
+            List<HorseInput> horses, Boolean acceptedServiceTerms) {
+        this(bookingType, departureId, requestedPickupDate, emergencySpendingLimit, parties, addresses, horses, acceptedServiceTerms, TransferMethod.COMPANY, TransferMethod.COMPANY);
+    }
 
     public Booking toEntity(Customer customer, Departure departure) {
         Booking booking = new Booking();
@@ -28,6 +42,8 @@ public record BookingCreateRequestDto(
         booking.setDeparture(departure);
         booking.setBookingType(bookingType);
         booking.setRequestedPickupDate(requestedPickupDate);
+        booking.setPickupMethod(pickupMethod);
+        booking.setDeliveryMethod(deliveryMethod);
         return booking;
     }
 

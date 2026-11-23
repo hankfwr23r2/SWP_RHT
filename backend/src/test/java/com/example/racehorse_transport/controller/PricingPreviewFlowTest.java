@@ -10,6 +10,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.example.racehorse_transport.PostgresIntegrationTest;
 import com.example.racehorse_transport.client.ValhallaClient;
 import com.example.racehorse_transport.dto.route.RoadRouteDto;
+import com.example.racehorse_transport.routing.RoutingStubServer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import jakarta.persistence.EntityManagerFactory;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.springframework.orm.jpa.EntityManagerHolder;
@@ -34,6 +39,7 @@ class PricingPreviewFlowTest {
     @Autowired private TestData data;
     @Autowired private JwtUtils jwt;
     @Autowired private JdbcTemplate jdbc;
+    @Autowired private Clock clock;
     @Autowired private EntityManagerFactory entityManagerFactory;
     @MockitoBean private ValhallaClient routing;
 
@@ -92,11 +98,63 @@ class PricingPreviewFlowTest {
         }
     }
 
+    @Test
+    void rejectsLongCompanyPickupAndOmitsRoadLegsForSelfTransfer() throws Exception {
+        String customer = "customer1.dev";
+        Long owner = jdbc.queryForObject("SELECT id FROM app_user WHERE username = ?", Long.class, customer);
+        Long horse = jdbc.queryForObject("SELECT id FROM horse WHERE microchip = '985000000100001'", Long.class);
+        ZoneId zone = ZoneId.of("Asia/Ho_Chi_Minh");
+        LocalDate pickupDate = LocalDate.ofInstant(clock.instant(), zone).plusDays(30);
+        var departure = data.departure("HCM-DN", pickupDate.plusDays(2), 4);
+        Long pickup = insertAddress(owner, "VN-79", "10.70");
+        Long delivery = insertAddress(owner, "VN-48", "16.90");
+        String token = "Bearer " + jwt.generateToken(customer, List.of("CUSTOMER"));
+        String payload = """
+                {"pickupAddressId":%d,"deliveryAddressId":%d,"departureId":%d,"pickupAt":"%s",
+                 "pickupMethod":"%s","deliveryMethod":"SELF",
+                 "horses":[{"horseId":%d,"stallTypeCode":"STANDARD","addOnServiceIds":[]}]}
+                """;
+        var pickupAt = pickupDate.atTime(12, 0).atZone(zone).toInstant();
+        try (var stub = new RoutingStubServer()) {
+            stub.replyRaw("/route", 200, """
+                    {"trip":{"summary":{"length":120,"time":18001},
+                             "legs":[{"summary":{"length":120,"time":18001},"shape":""}]}}
+                    """);
+            var client = new ValhallaClient(stub.url(), new ObjectMapper());
+            when(routing.truckRoute(anyList(), anyDouble(), anyInt(), any()))
+                    .thenAnswer(invocation -> client.truckRoute(invocation.getArgument(0),
+                            invocation.getArgument(1), invocation.getArgument(2), invocation.getArgument(3)));
+
+            mvc.perform(post("/pricing/preview").header(HttpHeaders.AUTHORIZATION, token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(payload.formatted(pickup, delivery, departure.getId(), pickupAt, "COMPANY", horse)))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Chặng đón")));
+            mvc.perform(post("/pricing/preview").header(HttpHeaders.AUTHORIZATION, token)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(payload.formatted(pickup, delivery, departure.getId(), pickupAt, "SELF", horse)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.legs[?(@.layer != 'LINEHAUL')]").isEmpty())
+                    .andExpect(jsonPath("$.data.lines[?(@.serviceCode == 'PICKUP_KM')]").isEmpty())
+                    .andExpect(jsonPath("$.data.lines[?(@.serviceCode == 'DELIVERY_KM')]").isEmpty())
+                    .andExpect(jsonPath("$.data.lines[?(@.serviceCode == 'QUARANTINE_STAY')].quantity")
+                            .value(org.hamcrest.Matchers.contains(1)));
+            assertThat(stub.requests("/route")).hasSize(1);
+        } finally {
+            jdbc.update("DELETE FROM customer_address WHERE id IN (?, ?)", pickup, delivery);
+            jdbc.update("DELETE FROM departure WHERE id = ?", departure.getId());
+        }
+    }
+
     private Long insertAddress(Long owner, String latitude) {
+        return insertAddress(owner, "VN-79", latitude);
+    }
+
+    private Long insertAddress(Long owner, String province, String latitude) {
         return jdbc.queryForObject("""
                 INSERT INTO customer_address (customer_id, label, address_line, country_code, province_code, latitude, longitude)
-                VALUES (?, 'Pricing test', 'Pricing test address', 'VN', 'VN-79', CAST(? AS numeric), 106.70)
+                VALUES (?, 'Pricing test', 'Pricing test address', 'VN', ?, CAST(? AS numeric), 106.70)
                 RETURNING id
-                """, Long.class, owner, latitude);
+                """, Long.class, owner, province, latitude);
     }
 }

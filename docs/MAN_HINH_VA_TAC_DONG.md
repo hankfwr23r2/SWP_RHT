@@ -32,15 +32,16 @@ Task nào làm tới thao tác nào thì đối chiếu dòng đó. Một dòng 
 | # | Màn hình (vai trò) | Thao tác | Ghi | Chặn khi | Tác động | Khách thấy |
 |---|---|---|---|---|---|---|
 | 3.1 | Hồ sơ ngựa (khách) | Thêm, sửa ngựa | `horse` | Chip sai hoặc trùng; đổi chip | Chọn được khi đặt đơn | Danh sách ngựa |
-| 3.2 | Đặt đơn, bước 1 (khách) | Chọn nơi đón, nơi giao, chuyến trong tuần | Chưa ghi | Hết chỗ, quá giờ chốt, không kịp làm giấy, cửa khẩu không khớp nước đối tác, địa chỉ xa hub quá 4 giờ chạy | Xem trước giấy phải nộp. Không có tuyến thì cho xin chuyến đột xuất | Chuyến phù hợp, chỗ còn, hạn chốt, nhãn "Dự kiến" hoặc "Đủ điều kiện chạy" |
-| 3.3 | Bước 2–3 (khách) | Chọn ngựa, khoang, chỉ dẫn ăn uống, dịch vụ thêm, bảo hiểm, đón sớm, ghi yêu cầu riêng | Chưa ghi | Ngựa đang ở đơn chưa kết thúc; ngựa giống đực chọn khoang thường | Xem trước giá từ backend, chia "Đã gồm", "Bắt buộc", "Bạn chọn" | Giá tạm tính |
+| 3.2 | Đặt đơn, bước 1 (khách) | Chọn nơi đón, nơi giao, cách đưa và nhận ngựa, chuyến trong tuần | Chưa ghi | Hết chỗ, quá giờ chốt, không kịp làm giấy, cửa khẩu không khớp nước đối tác, chặng công ty chở vượt nửa giới hạn lái mỗi ngày, gợi ý tự chở tại đầu trong nước | Xem trước giấy phải nộp. Không có tuyến thì cho xin chuyến đột xuất | Chuyến phù hợp, chỗ còn, hạn chốt, nhãn "Dự kiến" hoặc "Đủ điều kiện chạy" |
+| 3.3 | Bước 2–3 (khách) | Chọn ngựa, khoang, chỉ dẫn ăn uống, dịch vụ thêm, bảo hiểm, đón sớm và xác nhận cách đưa, nhận ngựa | Chưa ghi | Ngựa đang ở đơn chưa kết thúc; ngựa giống đực chọn khoang thường | Xem trước giá từ backend, chia "Đã gồm", "Bắt buộc", "Bạn chọn" | Giá tạm tính |
 | 3.4 | Bước 4 (khách) | Khai các bên, đồng ý điều khoản, **Gửi đơn** | `booking`, `booking_party`, `booking_address`, `booking_horse`, `booking_horse_service`, `horse_insurance`, `terms_acceptance`, `booking_status_history` | Một trong các điều kiện trên đổi khi gửi | Giữ khoang; đơn vào hàng chờ chuyên viên và điều phối | "Chờ tiếp nhận" |
 | 3.5 | Thẩm định hồ sơ (chuyên viên) | Tải giấy COMPANY, CONSIGNEE, AGENT, duyệt hoặc từ chối từng giấy, xác nhận hoặc mở lại bảo hiểm | `document`, `horse_insurance`, `audit_log` | Từ chối hoặc mở lại thiếu lý do. Chỉ mở lại khi đơn UNDER_REVIEW hoặc NEEDS_RESUBMISSION | Giấy tải lên chờ duyệt. Khi thẩm định, chuyên viên có thể trả đơn thiếu hồ sơ khách về NEEDS_RESUBMISSION. Ở CONFIRMED, khách có thể nộp lại giấy CUSTOMER bắt buộc khi thiếu bản còn hiệu lực | Giấy nào thiếu, ai nộp và cần ở mốc nào |
-| 3.5a | Thẩm định hồ sơ (chuyên viên) **[mới]** | Nhận hoặc không nhận yêu cầu riêng | Lý do ở `booking_status_history`; nhận thì lên dòng ADJUSTMENT khi báo giá (quản lý) | Không nhận mà thiếu lý do | Không nhận: trả đơn NEEDS_RESUBMISSION | Yêu cầu nào không được nhận, vì sao |
-| 3.5b | Đơn thiếu giấy (chuyên viên, quản lý) **[mới]** | Xem danh sách; tới mốc 48 giờ quản lý chọn nguyên nhân khách, công ty hoặc cơ quan | `booking_status_history`, `booking.departure_id` | Không ghi lý do; khách đã dùng lượt đổi miễn phí | Nhắc khách từ 5 ngày trước. Nhả chỗ, đơn sang `SCHEDULE_CHANGE_REQUIRED` | Giấy thiếu, chuyến tuần sau, tiền hoàn nếu không đi |
-| 3.6 | Kế hoạch đơn (điều phối) | Xác nhận hoặc đổi chuyến; lập lưu trú dự kiến ở hub | `booking.departure_id`, `horse_stay` | Chuyến hết chỗ | Đổi chuyến thì nhả và giữ khoang cùng lúc. Ngày xuất phát mới dùng để kiểm bảo hiểm PERSONAL khi bắt đầu báo giá | Lịch dự kiến |
+
+| 3.5b | Đơn thiếu giấy (chuyên viên, quản lý) **[A8]** | Xem danh sách; tới mốc 48 giờ quản lý chọn nguyên nhân khách, công ty hoặc cơ quan | `booking_status_history`, `booking.departure_id` | Không ghi lý do; khách đã dùng lượt đổi miễn phí | Nhắc khách từ 5 ngày trước. Nhả chỗ, đơn sang `SCHEDULE_CHANGE_REQUIRED` | Giấy thiếu, chuyến tuần sau, tiền hoàn nếu không đi |
+| 3.5c | Nhận và trả ngựa tại hub (nhân viên hub) | Xác nhận lịch hẹn, kiểm giấy khi nhận và ký giao nhận | `handover` PICKUP hoặc DELIVERY gắn `horse_stay` | Thiếu giấy bắt buộc khi nhận | Quá hạn nhận thì gửi chuồng, người nhận trả phí | Giờ hẹn và biên bản |
+| 3.6 | Kế hoạch đơn (điều phối) | Xác nhận hoặc đổi chuyến trước khi cọc, lập lưu trú dự kiến ở hub | `booking.departure_id`, `horse_stay` | Chuyến hết chỗ | Đổi chuyến thì nhả và giữ khoang cùng lúc. Ngày xuất phát mới dùng để kiểm bảo hiểm PERSONAL khi bắt đầu báo giá | Lịch dự kiến |
 | 3.7 | Duyệt báo giá (quản lý) | Xem dòng giá, điều chỉnh kèm lý do, **Gửi** | `quotation`, `quotation_line` | Khi bắt đầu báo giá, thiếu giấy CUSTOMER bắt buộc, chưa xác định yêu cầu theo cửa khẩu, thiếu chuyến trục hoặc bảo hiểm ngựa ACTIVE chưa hợp lệ | Đơn sang `AWAITING_DEPOSIT`, đếm giờ hết hạn | Báo giá, hạn chấp nhận |
-| 3.7a | Chuyến cần quyết định (quản lý) **[mới]** | Từng tuyến trong tuần: **Chạy**, dùng xe nhỏ, dồn chuyến, **Hủy** | `departure`, `booking` | Trước mốc 48 giờ; dồn hoặc hủy thiếu lý do | Hiện chỗ đã cọc trên sức chứa, cảnh báo dưới 30%, tuyến sau cần xe này, lượt về rỗng. Đơn chưa cọc bị nhả chỗ | Xác nhận chạy, hoặc đổi chuyến và hoàn 100% |
+| 3.7a | Chuyến cần quyết định (quản lý) **[mới]** | Từng tuyến trong tuần: **Chạy**, dùng xe nhỏ, dồn chuyến, **Hủy** | `departure`, `booking` | Trước mốc 48 giờ; dồn hoặc hủy thiếu lý do | Hiện chỗ đã cọc trên sức chứa, cảnh báo dưới 30%, tuyến sau cần xe này, lượt về rỗng. Đơn chưa gửi báo giá nhả chỗ tại mốc quyết định | Xác nhận chạy, hoặc đổi chuyến và hoàn 100% |
 | 3.7b | Xin chuyến đột xuất (khách, quản lý) **[mới]** | Khách yêu cầu, quản lý tạo chuyến | `departure` không có lịch | Không có xe hoặc tổ xe | Đơn gắn chuyến mới | Ngày, giá riêng |
 | 3.8 | Báo giá và thanh toán (khách) | **Chấp nhận**, trả cọc | `quotation`, `payment`, `payment_transaction` | Báo giá hết hạn hoặc đã có bản mới | Trả xong: `CONFIRMED`, cấp vận đơn. Hết hạn: nhả khoang | Vận đơn |
 | 3.9 | Điều độ (điều phối) | Duyệt nhóm đón, giao do hệ thống gợi ý; gán xe, tài xế, hộ tống, ngựa; xếp xe nối nhiều tuyến trong tuần | `vehicle_trip`, `trip_stop`, `crew_assignment`, `horse_leg` | Quá chỗ, quá 4 giờ, trùng giờ, xe hoặc người không ở điểm đầu, xe bảo dưỡng hoặc ngừng sử dụng, ngựa cùng đơn ở hai xe trục | Nhân viên thấy lượt xe mới. Xe bị khóa hiện lý do | Khung giờ đón |
@@ -60,7 +61,7 @@ Task nào làm tới thao tác nào thì đối chiếu dòng đó. Một dòng 
 | 4.4 | Như trên | **Không nhận**, kèm lý do | `booking_horse` EXCLUDED | Không ghi lý do | Nhả khoang, hủy chặng sau, báo giá mới chờ quản lý. Con khác vẫn đi | Con nào bị loại, vì sao |
 | 4.5 | Điểm dừng: hub (hộ tống) | Quét chip, **Giao vào hub** | `handover` HUB_IN, `horse_stay` ASSEMBLY | Chip sai | Xe đón rảnh. Người ở `handled_by` phụ trách tới HUB_OUT **[mới]** | "Ở hub, chờ chuyến" |
 | 4.6 | Ngựa ở hub (hộ tống) | Cho ăn bữa tối, bữa sáng theo chỉ dẫn; đo, ghi ăn uống | `horse_health_log` (`horse_stay_id`, `water_intake`, `feed_intake`) | Không còn lưu trú | Con chưa ghi bữa hiện đỏ **[mới]** | Chỉ số mới nhất |
-| 4.7 | Thú y tại chuồng (chuyên viên) | Chọn đối tác VET, hẹn ngày; tải phiếu khám, phiếu xét nghiệm **[mới]** | `document` gắn `booking_horse_id` | Đối tác không có vai trò VET | Phiếu bắt buộc chưa duyệt thì xe không đi đón; không khám được thì trừ khi quyết toán | Phiếu khám |
+| 4.7 | Thú y tại chuồng (chuyên viên) | Chọn đối tác VET, hẹn ngày; tải phiếu khám, phiếu xét nghiệm **[mới]** | `document` gắn `booking_horse_id` | Đối tác không có vai trò VET | Kiểm phiếu bắt buộc trước khi xe đi đón hoặc khi nhận tại hub nếu SELF; không khám được thì trừ khi quyết toán | Phiếu khám |
 | 4.8 | Ngựa của tôi (hộ tống, điện thoại) **[mới]** | Thẻ từng con kèm việc sắp tới, một chạm để ghi | `horse_health_log` | Không phụ trách con đó | Việc trễ hiện đỏ, báo điều phối | Chỉ số mới nhất |
 | 4.9 | Nhận bàn giao (hộ tống mới) **[mới]** | Xem phiếu tóm tắt, quét chip, khám, ký | `handover` SHIFT, `handover_horse`, `horse_health_log` | Chip sai; chưa xem cảnh báo; không trong ca | Thẻ chuyển sang người mới | Ai đang chăm sóc |
 | 4.10 | Kết thúc ca, lượt xe (hộ tống) **[mới]** | **Kết thúc** | `vehicle_trip`, `crew_assignment` | Còn ngựa chưa có người nhận | Rảnh để nhận việc mới | |
@@ -113,7 +114,7 @@ Công ty không vận hành nơi cách ly. Điều kiện cách ly thể hiện 
 | 6 | Dịch vụ cho ăn tính tiền | Ngừng `FEEDING` (chuyển `INACTIVE` bằng migration mới, làm cùng A3); giữ `VET_CHECK` với tên "Thú y tại chuồng". Chăm sóc chuẩn nằm trong cước |
 | 7 | Chặng đại lý: đại lý không có tài khoản | Điều phối nhập hộ, khách thấy "theo đại lý" |
 | 8 | Nghỉ và cho ăn | Tối đa 4 giờ, nghỉ ≥ 30 phút có nước và cỏ; bữa theo chỉ dẫn ở nơi nghỉ đêm và hub; tối đa 10 giờ lái mỗi ngày |
-| 9 | Thanh toán | Cọc 30% trong 24 giờ; 70% sau khi nhận ngựa, trước khi xe rời; chờ tối đa 30 phút |
+| 9 | Thanh toán | Cọc theo tỷ lệ trên cước dịch vụ cộng đủ bảo hiểm và lệ phí thu hộ, trả trong hạn báo giá. Thu tổng trừ cọc sau khi nhận ngựa và trước khi xe rời, chờ tối đa 30 phút |
 | 10 | Ghép đơn | Khoang rộng 2 chỗ; ngựa cùng đơn cùng xe trục; quyết định chạy 48 giờ trước; ngưỡng cảnh báo 30% |
 | 11 | Lịch | Mỗi tuyến một chuyến mỗi tuần, 6 tuyến |
 | 12 | Sự cố | Quy trình của nhóm; bất khả kháng công ty chịu; không chia theo đầu ngựa |
@@ -129,12 +130,13 @@ Công ty không vận hành nơi cách ly. Điều kiện cách ly thể hiện 
 | 3.1–3.4 | A5 |
 | 3.5–3.6 | A6 (hồ sơ, bảo hiểm); lưu trú dự kiến phối hợp B3 |
 | 3.7–3.8 | A7 |
-| 3.5a, 3.5b | A6b; phần tiền hoàn A8 |
+| 3.5b | A8, gồm đổi chuyến đơn đã cọc |
 | 3.7a, 3.7b | A6b |
 | 3.9–3.10 | B1 |
 | 3.11 | A6b. 3.12: B2 |
 | 4.1–4.5, 6.1–6.5 | B1, B2. Khoản BALANCE và hủy do không trả: A7, A8; loại ngựa gọi `BookingHorseService.exclude` của A5 |
 | 4.6, 4.8–4.11 | B2, B3 |
+| 3.5c | B2 |
 | 4.7 | A6 |
 | 5.1–5.2 | A4, A6b. 5.3–5.4: B2 |
 | 6.6, 7.1–7.4 | B4, B5 |
