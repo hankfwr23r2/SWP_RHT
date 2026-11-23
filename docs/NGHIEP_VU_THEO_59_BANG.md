@@ -162,6 +162,7 @@ service (đơn vị tính)  ──<  price_item (đơn giá + điều kiện)  >
 | Cước đón | PICKUP | PER_KM | `vehicle_class_id` + bậc `km_from..km_to` |
 | Cước giao | DELIVERY | PER_KM | `vehicle_class_id` + bậc km |
 | Cước chạy thẳng (không qua trục) | DIRECT | PER_KM | `vehicle_class_id` + bậc km, tính từ địa chỉ đón tới địa chỉ giao |
+| Phụ thu khoang rộng khi chạy thẳng | STALL | PER_HORSE | Tra theo `stall_type_code` WIDE, số lượng là số ngựa chọn khoang rộng |
 | Phụ phí nhiên liệu | FUEL | PER_KM | `fuel_buffer_rate` của bảng giá |
 | Lưu chuồng, cách ly | QUARANTINE | PER_HORSE_DAY | |
 | Khám thú y trước chuyến | ADD_ON | PER_HORSE | Khách chọn ở `booking_horse_service`. Một lần, ở nơi đón hoặc hub; kết quả là một `document` |

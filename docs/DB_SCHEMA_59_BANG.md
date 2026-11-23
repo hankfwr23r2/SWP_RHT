@@ -557,17 +557,17 @@ Mỗi dòng là một đơn giá của một dịch vụ, áp theo các điều 
 | `vehicle_class_id` | `bigint` | có | FK → vehicle_class | Giá theo hạng xe, dùng cho cước đón và giao |
 | `stall_type_code` | `varchar(30)` | có | FK → stall_type | |
 | `km_from` | `numeric(8,2)` | có | | Bậc km: từ |
-| `km_to` | `numeric(8,2)` | có | | Bậc km: đến |
+| `km_to` | `numeric(8,2)` | có | | Bậc km: đến, NULL nếu không giới hạn trên |
 | `unit_price` | `numeric(15,2)` | | CK `>= 0` | |
 
 Ràng buộc bảng:
-- `CHECK ((km_from IS NULL) = (km_to IS NULL))`
+- `CHECK (km_to IS NULL OR km_from IS NOT NULL)`
 - `CHECK (km_from IS NULL OR km_from < km_to)`
 - `UNIQUE NULLS NOT DISTINCT (price_list_id, billable_service_id, route_id, vehicle_class_id, stall_type_code, km_from)`
 
 Index: `billable_service_id`, `route_id`, `vehicle_class_id`.
 
-Cách tra giá: chọn `price_list` ACTIVE có thời hạn hiệu lực chứa ngày báo giá, rồi lọc `price_item` theo `billable_service_id`. Điều kiện nào có giá trị thì phải khớp, điều kiện NULL nghĩa là áp cho mọi giá trị. Riêng `km_from`/`km_to` thì chọn bậc chứa số km.
+Cách tra giá: chọn `price_list` ACTIVE có thời hạn hiệu lực chứa ngày báo giá, rồi lọc `price_item` theo `billable_service_id`. Điều kiện nào có giá trị thì phải khớp, điều kiện NULL nghĩa là áp cho mọi giá trị. Riêng `km_from`/`km_to` thì chọn bậc chứa số km theo cận dưới bao gồm và cận trên không bao gồm nếu có.
 
 ---
 

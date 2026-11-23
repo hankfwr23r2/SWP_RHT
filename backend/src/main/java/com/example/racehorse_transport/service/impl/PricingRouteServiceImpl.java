@@ -1,0 +1,51 @@
+package com.example.racehorse_transport.service.impl;
+
+import com.example.racehorse_transport.client.ValhallaClient;
+import com.example.racehorse_transport.exception.RoutingUnavailableException;
+import com.example.racehorse_transport.service.PricingRouteService;
+import jakarta.persistence.EntityManagerFactory;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.hibernate.engine.spi.SessionImplementor;
+import org.springframework.orm.jpa.EntityManagerHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+@Service
+@RequiredArgsConstructor
+public class PricingRouteServiceImpl implements PricingRouteService {
+    private final ValhallaClient routing;
+    private final EntityManagerFactory entityManagerFactory;
+
+    @Override
+    @Transactional(propagation = Propagation.NEVER)
+    public BigDecimal distance(RoadSegment segment, LocalDateTime time, int weightTons, int topSpeedKmh) {
+        if (segment.from().equals(segment.to())) return BigDecimal.ZERO.setScale(2);
+        if (weightTons <= 0 || topSpeedKmh <= 0) {
+            throw new RoutingUnavailableException();
+        }
+        releaseRequestConnection();
+        double km = routing.truckRoute(List.of(segment.from(), segment.to()), weightTons, topSpeedKmh, time).km();
+        if (!Double.isFinite(km) || km <= 0) {
+            throw new RoutingUnavailableException();
+        }
+        return BigDecimal.valueOf(km).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private void releaseRequestConnection() {
+        // With open-in-view, Spring's Hibernate adapter can hold the connection until the request closes.
+        // Return it to the pool now. The managed session can acquire another connection for calculation.
+        if (TransactionSynchronizationManager.getResource(entityManagerFactory) instanceof EntityManagerHolder holder) {
+            var session = holder.getEntityManager().unwrap(SessionImplementor.class);
+            var connection = session.getJdbcCoordinator().getLogicalConnection();
+            if (connection.isPhysicallyConnected()) {
+                connection.manualDisconnect();
+            }
+        }
+    }
+}

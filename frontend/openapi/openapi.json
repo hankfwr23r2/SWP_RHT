@@ -155,6 +155,23 @@
         },
         "type" : "object"
       },
+      "ApiResponseListBillableServiceResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/BillableServiceResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListCountryResponse" : {
         "properties" : {
           "data" : {
@@ -359,6 +376,40 @@
         },
         "type" : "object"
       },
+      "ApiResponseListPriceItemResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PriceItemResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListPriceListResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PriceListResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListProvinceResponse" : {
         "properties" : {
           "data" : {
@@ -520,6 +571,48 @@
         },
         "type" : "object"
       },
+      "ApiResponsePriceItemResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/PriceItemResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponsePriceListResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/PriceListResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponsePricingPreviewResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/PricingPreviewResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseRegulationPreviewResponseDto" : {
         "properties" : {
           "data" : {
@@ -636,6 +729,39 @@
             "type" : "integer"
           },
           "username" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "BillableServiceResponseDto" : {
+        "properties" : {
+          "autoApplied" : {
+            "type" : "boolean"
+          },
+          "billingUnit" : {
+            "enum" : [ "PER_STALL", "PER_KM", "PER_HORSE", "PER_HORSE_DAY", "PER_BOOKING" ],
+            "type" : "string"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "layer" : {
+            "enum" : [ "LINEHAUL", "PICKUP", "DELIVERY", "DIRECT", "FUEL", "STALL", "QUARANTINE", "ADD_ON", "DOCS", "SURCHARGE" ],
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "passThrough" : {
+            "type" : "boolean"
+          },
+          "status" : {
+            "enum" : [ "ACTIVE", "INACTIVE" ],
             "type" : "string"
           }
         },
@@ -1541,6 +1667,28 @@
         },
         "type" : "object"
       },
+      "HorseSelection" : {
+        "properties" : {
+          "addOnServiceIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          },
+          "horseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "stallTypeCode" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "addOnServiceIds", "horseId", "stallTypeCode" ],
+        "type" : "object"
+      },
       "HorseTypeResponseDto" : {
         "properties" : {
           "description" : {
@@ -1650,6 +1798,22 @@
           },
           "provinceName" : {
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "LegDistance" : {
+        "properties" : {
+          "km" : {
+            "type" : "number"
+          },
+          "layer" : {
+            "enum" : [ "LINEHAUL", "PICKUP", "DELIVERY", "DIRECT", "FUEL", "STALL", "QUARANTINE", "ADD_ON", "DOCS", "SURCHARGE" ],
+            "type" : "string"
+          },
+          "vehicleClassId" : {
+            "format" : "int64",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -1953,6 +2117,325 @@
           }
         },
         "required" : [ "email" ],
+        "type" : "object"
+      },
+      "PriceItemCreateRequestDto" : {
+        "properties" : {
+          "billableServiceId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "kmFrom" : {
+            "minimum" : 0,
+            "type" : "number"
+          },
+          "kmTo" : {
+            "minimum" : 0,
+            "type" : "number"
+          },
+          "routeId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "stallTypeCode" : {
+            "maxLength" : 30,
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "unitPrice" : {
+            "minimum" : 0,
+            "type" : "number"
+          },
+          "vehicleClassId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "billableServiceId", "unitPrice" ],
+        "type" : "object"
+      },
+      "PriceItemResponseDto" : {
+        "properties" : {
+          "billableServiceId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "kmFrom" : {
+            "type" : "number"
+          },
+          "kmTo" : {
+            "type" : "number"
+          },
+          "priceListId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "routeId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "stallTypeCode" : {
+            "type" : "string"
+          },
+          "unitPrice" : {
+            "type" : "number"
+          },
+          "vehicleClassId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "PriceItemUpdateRequestDto" : {
+        "properties" : {
+          "billableServiceId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "kmFrom" : {
+            "minimum" : 0,
+            "type" : "number"
+          },
+          "kmTo" : {
+            "minimum" : 0,
+            "type" : "number"
+          },
+          "routeId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "stallTypeCode" : {
+            "maxLength" : 30,
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "unitPrice" : {
+            "minimum" : 0,
+            "type" : "number"
+          },
+          "vehicleClassId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "billableServiceId", "unitPrice" ],
+        "type" : "object"
+      },
+      "PriceLineResponseDto" : {
+        "properties" : {
+          "amount" : {
+            "type" : "number"
+          },
+          "billingUnit" : {
+            "enum" : [ "PER_STALL", "PER_KM", "PER_HORSE", "PER_HORSE_DAY", "PER_BOOKING" ],
+            "type" : "string"
+          },
+          "passThrough" : {
+            "type" : "boolean"
+          },
+          "priceItemId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "quantity" : {
+            "type" : "number"
+          },
+          "serviceCode" : {
+            "type" : "string"
+          },
+          "stallTypeCode" : {
+            "type" : "string"
+          },
+          "unitPrice" : {
+            "type" : "number"
+          },
+          "vehicleClassId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "PriceListActivateRequestDto" : { },
+      "PriceListArchiveRequestDto" : { },
+      "PriceListCreateRequestDto" : {
+        "properties" : {
+          "currencyCode" : {
+            "pattern" : "[A-Z]{3}",
+            "type" : "string"
+          },
+          "depositRate" : {
+            "maximum" : 1,
+            "minimum" : 0,
+            "type" : "number"
+          },
+          "fuelBufferRate" : {
+            "maximum" : 1,
+            "minimum" : 0,
+            "type" : "number"
+          },
+          "marginRate" : {
+            "maximum" : 1,
+            "minimum" : 0,
+            "type" : "number"
+          },
+          "name" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "validFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "validTo" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "currencyCode", "depositRate", "fuelBufferRate", "marginRate", "name", "validFrom" ],
+        "type" : "object"
+      },
+      "PriceListResponseDto" : {
+        "properties" : {
+          "currencyCode" : {
+            "type" : "string"
+          },
+          "depositRate" : {
+            "type" : "number"
+          },
+          "fuelBufferRate" : {
+            "type" : "number"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "marginRate" : {
+            "type" : "number"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "DRAFT", "ACTIVE", "ARCHIVED" ],
+            "type" : "string"
+          },
+          "validFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "validTo" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "PriceListUpdateRequestDto" : {
+        "properties" : {
+          "currencyCode" : {
+            "pattern" : "[A-Z]{3}",
+            "type" : "string"
+          },
+          "depositRate" : {
+            "maximum" : 1,
+            "minimum" : 0,
+            "type" : "number"
+          },
+          "fuelBufferRate" : {
+            "maximum" : 1,
+            "minimum" : 0,
+            "type" : "number"
+          },
+          "marginRate" : {
+            "maximum" : 1,
+            "minimum" : 0,
+            "type" : "number"
+          },
+          "name" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "validFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "validTo" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "currencyCode", "depositRate", "fuelBufferRate", "marginRate", "name", "validFrom" ],
+        "type" : "object"
+      },
+      "PricingPreviewRequestDto" : {
+        "properties" : {
+          "deliveryAddressId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "departureId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "horses" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HorseSelection"
+            },
+            "minItems" : 1,
+            "type" : "array"
+          },
+          "pickupAddressId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "pickupAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "deliveryAddressId", "horses", "pickupAddressId", "pickupAt" ],
+        "type" : "object"
+      },
+      "PricingPreviewResponseDto" : {
+        "properties" : {
+          "bookingType" : {
+            "enum" : [ "LOCAL", "INTERPROVINCE", "EXPORT", "IMPORT" ],
+            "type" : "string"
+          },
+          "currencyCode" : {
+            "type" : "string"
+          },
+          "depositRate" : {
+            "type" : "number"
+          },
+          "legs" : {
+            "items" : {
+              "$ref" : "#/components/schemas/LegDistance"
+            },
+            "type" : "array"
+          },
+          "lines" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PriceLineResponseDto"
+            },
+            "type" : "array"
+          },
+          "priceListId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "total" : {
+            "type" : "number"
+          }
+        },
         "type" : "object"
       },
       "ProvinceResponse" : {
@@ -2916,6 +3399,24 @@
         "tags" : [ "auth-controller" ]
       }
     },
+    "/billable-services" : {
+      "get" : {
+        "operationId" : "billableServices",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBillableServiceResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "price-list-controller" ]
+      }
+    },
     "/countries" : {
       "get" : {
         "operationId" : "countries",
@@ -2980,7 +3481,7 @@
     },
     "/country-rules/preview" : {
       "post" : {
-        "operationId" : "preview",
+        "operationId" : "preview_1",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -3327,7 +3828,7 @@
     },
     "/departure-schedules" : {
       "get" : {
-        "operationId" : "list_3",
+        "operationId" : "list_4",
         "parameters" : [ {
           "in" : "query",
           "name" : "routeId",
@@ -3352,7 +3853,7 @@
         "tags" : [ "departure-schedule-controller" ]
       },
       "post" : {
-        "operationId" : "create_2",
+        "operationId" : "create_3",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -3380,7 +3881,7 @@
     },
     "/departure-schedules/{id}" : {
       "put" : {
-        "operationId" : "update_2",
+        "operationId" : "update_3",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -3498,7 +3999,7 @@
     },
     "/departures" : {
       "get" : {
-        "operationId" : "list_2",
+        "operationId" : "list_3",
         "parameters" : [ {
           "in" : "query",
           "name" : "routeId",
@@ -3886,7 +4387,7 @@
     },
     "/hub-service-areas" : {
       "get" : {
-        "operationId" : "list_4",
+        "operationId" : "list_5",
         "responses" : {
           "200" : {
             "content" : {
@@ -3964,7 +4465,7 @@
     },
     "/locations" : {
       "get" : {
-        "operationId" : "list_1",
+        "operationId" : "list_2",
         "parameters" : [ {
           "in" : "query",
           "name" : "type",
@@ -3997,7 +4498,7 @@
         "tags" : [ "location-controller" ]
       },
       "post" : {
-        "operationId" : "create_1",
+        "operationId" : "create_2",
         "requestBody" : {
           "content" : {
             "application/json" : {
@@ -4025,7 +4526,7 @@
     },
     "/locations/{id}" : {
       "get" : {
-        "operationId" : "get_1",
+        "operationId" : "get_2",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -4050,7 +4551,7 @@
         "tags" : [ "location-controller" ]
       },
       "put" : {
-        "operationId" : "update_1",
+        "operationId" : "update_2",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -4087,7 +4588,7 @@
     },
     "/locations/{id}/activate" : {
       "post" : {
-        "operationId" : "activate_1",
+        "operationId" : "activate_2",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -4325,6 +4826,412 @@
           }
         },
         "tags" : [ "party-controller" ]
+      }
+    },
+    "/price-lists" : {
+      "get" : {
+        "operationId" : "list_1",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListPriceListResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "price-list-controller" ]
+      },
+      "post" : {
+        "operationId" : "create_1",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PriceListCreateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePriceListResponseDto"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "price-list-controller" ]
+      }
+    },
+    "/price-lists/{id}" : {
+      "delete" : {
+        "operationId" : "delete",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "price-list-controller" ]
+      },
+      "get" : {
+        "operationId" : "get_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePriceListResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "price-list-controller" ]
+      },
+      "put" : {
+        "operationId" : "update_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PriceListUpdateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePriceListResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "price-list-controller" ]
+      }
+    },
+    "/price-lists/{id}/activate" : {
+      "post" : {
+        "operationId" : "activate_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PriceListActivateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePriceListResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "price-list-controller" ]
+      }
+    },
+    "/price-lists/{id}/archive" : {
+      "post" : {
+        "operationId" : "archive",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PriceListArchiveRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePriceListResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "price-list-controller" ]
+      }
+    },
+    "/price-lists/{id}/items" : {
+      "get" : {
+        "operationId" : "items",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListPriceItemResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "price-list-controller" ]
+      },
+      "post" : {
+        "operationId" : "createItem",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PriceItemCreateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePriceItemResponseDto"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "price-list-controller" ]
+      }
+    },
+    "/price-lists/{id}/items/{itemId}" : {
+      "delete" : {
+        "operationId" : "deleteItem",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "itemId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "price-list-controller" ]
+      },
+      "get" : {
+        "operationId" : "getItem",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "itemId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePriceItemResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "price-list-controller" ]
+      },
+      "put" : {
+        "operationId" : "updateItem",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "itemId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PriceItemUpdateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePriceItemResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "price-list-controller" ]
+      }
+    },
+    "/pricing/preview" : {
+      "post" : {
+        "operationId" : "preview",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PricingPreviewRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePricingPreviewResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "pricing-controller" ]
       }
     },
     "/provinces" : {
