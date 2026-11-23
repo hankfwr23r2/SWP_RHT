@@ -281,22 +281,22 @@ ul {
   font-weight: 600;
   white-space: nowrap;
   background: var(--bg-soft);
-  color: var(--muted);
+  color: var(--color-neutral-strong);
 }
 
 .badge-success {
   background: var(--green-soft);
-  color: var(--green);
+  color: var(--color-success-strong);
 }
 
 .badge-warning {
   background: var(--amber-soft);
-  color: var(--amber);
+  color: var(--color-warning-strong);
 }
 
 .badge-danger {
   background: var(--red-soft);
-  color: var(--red);
+  color: var(--color-danger-strong);
 }
 
 .badge-info {
@@ -311,7 +311,7 @@ ul {
 
 .badge-muted {
   background: var(--bg-soft);
-  color: var(--muted);
+  color: var(--color-neutral-strong);
 }
 
 /* ===== Bảng ===== */

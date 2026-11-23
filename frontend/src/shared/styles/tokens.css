@@ -110,4 +110,11 @@
   --radius: var(--radius-md);
   --shadow: var(--shadow-sm);
   --font: var(--font-sans);
+  /* Màu biểu tượng của trang khách, trước đây khai báo trong customer-theme.css */
+  --icon-accent: var(--color-primary-bright);
+  --icon-info: var(--color-info);
+  --icon-success: var(--color-success);
+  --icon-warning: var(--color-warning);
+  --icon-danger: var(--color-danger);
+  --icon-muted: var(--color-text);
 }
