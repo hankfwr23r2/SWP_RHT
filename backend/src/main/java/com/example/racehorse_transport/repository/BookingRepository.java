@@ -27,6 +27,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     Optional<Booking> findByCode(String code);
 
+    // Tra cứu công khai bằng số vận đơn
+    Optional<Booking> findByWaybillNumber(String waybillNumber);
+
     @EntityGraph(attributePaths = "departure")
     List<Booking> findByCustomer_User_UsernameOrderByCreatedAtDescIdDesc(String username);
 

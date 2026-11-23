@@ -109,6 +109,11 @@ class DeliveryFailureFlowTest {
                 .isEqualTo("RECIPIENT_ABSENT");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM notification_recipient WHERE user_id = ?", Integer.class, coordinatorStaff.getUserId())).isEqualTo(1);
         assertThat(bookingStatus()).isEqualTo("IN_OPERATION");
+        // B6: hành trình ghi chặng thất bại, biên bản quá giờ; ngựa vẫn trong tay công ty
+        journey().andExpect(jsonPath("$.data.horses[0].holder").value("COMPANY"))
+                .andExpect(jsonPath("$.data.horses[0].legs[0].status").value("FAILED"))
+                .andExpect(jsonPath("$.data.horses[0].handovers[1].handoverType").value("DELIVERY"))
+                .andExpect(jsonPath("$.data.horses[0].handovers[1].status").value("TIMEOUT"));
 
         // Xe đưa ngựa về hub và kết thúc lượt
         first.act("/trip-stops/" + first.stops.get(2) + "/depart").andExpect(status().isOk());
@@ -131,6 +136,12 @@ class DeliveryFailureFlowTest {
         long redelivery = second.openHandover(1, "DELIVERY");
         second.scanAndComplete(redelivery);
         assertThat(bookingStatus()).isEqualTo("DELIVERED");
+        journey().andExpect(jsonPath("$.data.horses[0].holder").value("CONSIGNEE"))
+                .andExpect(jsonPath("$.data.horses[0].holderSince").isNotEmpty())
+                .andExpect(jsonPath("$.data.horses[0].legs.length()").value(2))
+                .andExpect(jsonPath("$.data.horses[0].legs[1].replacedHorseLegId").value(failedLeg))
+                .andExpect(jsonPath("$.data.horses[0].legs[1].status").value("COMPLETED"))
+                .andExpect(jsonPath("$.data.horses[0].handovers[*].handoverType").value(org.hamcrest.Matchers.contains("PICKUP", "DELIVERY", "HUB_OUT", "DELIVERY")));
     }
 
     @Test
@@ -151,6 +162,12 @@ class DeliveryFailureFlowTest {
         assertThat(deliveryFailures.timeoutExpired()).isEqualTo(1);
         entityManager.flush();
         assertThat(jdbc.queryForObject("SELECT status FROM handover WHERE id = ?", String.class, handover)).isEqualTo("TIMEOUT");
+    }
+
+    private ResultActions journey() throws Exception {
+        entityManager.flush();
+        entityManager.clear();
+        return mvc.perform(get("/bookings/{id}/journey", booking).header(HttpHeaders.AUTHORIZATION, coordinator)).andExpect(status().isOk());
     }
 
     private String bookingStatus() {

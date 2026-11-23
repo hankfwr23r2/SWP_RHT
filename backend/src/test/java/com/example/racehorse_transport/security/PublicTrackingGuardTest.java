@@ -19,53 +19,53 @@ class PublicTrackingGuardTest {
 
     @Test
     void allowsLookupsBelowTheLimit() {
-        for (int i = 0; i < PublicTrackingGuard.MAX_FAILURES - 1; i++) guard.recordFailure(1);
+        for (int i = 0; i < PublicTrackingGuard.MAX_FAILURES - 1; i++) guard.recordFailure(1L);
 
-        assertThatCode(() -> guard.checkAllowed(1, CODE)).doesNotThrowAnyException();
+        assertThatCode(() -> guard.checkAllowed(1L, CODE)).doesNotThrowAnyException();
     }
 
     @Test
     void locksTheBookingAfterTooManyWrongDigits() {
-        for (int i = 0; i < PublicTrackingGuard.MAX_FAILURES; i++) guard.recordFailure(1);
+        for (int i = 0; i < PublicTrackingGuard.MAX_FAILURES; i++) guard.recordFailure(1L);
 
-        assertThatThrownBy(() -> guard.checkAllowed(1, CODE))
+        assertThatThrownBy(() -> guard.checkAllowed(1L, CODE))
                 .isInstanceOf(TooManyAttemptsException.class)
                 .hasMessageContaining(CODE);
     }
 
     @Test
     void theLockOnlyAffectsThatBooking() {
-        for (int i = 0; i < PublicTrackingGuard.MAX_FAILURES; i++) guard.recordFailure(1);
+        for (int i = 0; i < PublicTrackingGuard.MAX_FAILURES; i++) guard.recordFailure(1L);
 
-        assertThatCode(() -> guard.checkAllowed(2, "BK-8G4M2RWT")).doesNotThrowAnyException();
+        assertThatCode(() -> guard.checkAllowed(2L, "BK-8G4M2RWT")).doesNotThrowAnyException();
     }
 
     @Test
     void theLockEndsWhenTheWindowHasPassed() {
-        for (int i = 0; i < PublicTrackingGuard.MAX_FAILURES; i++) guard.recordFailure(1);
+        for (int i = 0; i < PublicTrackingGuard.MAX_FAILURES; i++) guard.recordFailure(1L);
 
         clock.advance(PublicTrackingGuard.WINDOW);
 
-        assertThatCode(() -> guard.checkAllowed(1, CODE)).doesNotThrowAnyException();
+        assertThatCode(() -> guard.checkAllowed(1L, CODE)).doesNotThrowAnyException();
     }
 
     @Test
     void failuresOlderThanTheWindowStartANewCount() {
-        for (int i = 0; i < PublicTrackingGuard.MAX_FAILURES - 1; i++) guard.recordFailure(1);
+        for (int i = 0; i < PublicTrackingGuard.MAX_FAILURES - 1; i++) guard.recordFailure(1L);
         clock.advance(PublicTrackingGuard.WINDOW.plusSeconds(1));
 
-        guard.recordFailure(1);
+        guard.recordFailure(1L);
 
-        assertThatCode(() -> guard.checkAllowed(1, CODE)).doesNotThrowAnyException();
+        assertThatCode(() -> guard.checkAllowed(1L, CODE)).doesNotThrowAnyException();
     }
 
     @Test
     void aCorrectLookupClearsEarlierFailures() {
-        for (int i = 0; i < PublicTrackingGuard.MAX_FAILURES - 1; i++) guard.recordFailure(1);
-        guard.recordSuccess(1);
-        guard.recordFailure(1);
+        for (int i = 0; i < PublicTrackingGuard.MAX_FAILURES - 1; i++) guard.recordFailure(1L);
+        guard.recordSuccess(1L);
+        guard.recordFailure(1L);
 
-        assertThatCode(() -> guard.checkAllowed(1, CODE)).doesNotThrowAnyException();
+        assertThatCode(() -> guard.checkAllowed(1L, CODE)).doesNotThrowAnyException();
     }
 
     private static final class MutableClock extends Clock {

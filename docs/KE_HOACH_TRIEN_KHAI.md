@@ -650,7 +650,7 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 | A6b | Đồng bộ quyết định 23/11/2026 | A | 4 | Tài liệu xong, code chờ duyệt danh sách file | |
 | A7 | Báo giá, thanh toán | A | 4 | Chưa làm | |
 | B4 | Sự cố, chi phí | B | 4 | Xong phần chính (2 PR). Còn: phương án đổi xe, về hub tự lập lượt xe; biên lai, ảnh hiện trường | #385, #386 |
-| B5 | Giao thất bại, giao lại | B | 4 | Xong phần chính (nhánh `rd/b5-1-delivery-failure`): chờ người nhận, quá giờ thì giao thất bại, về hub, giao lại. Còn: gửi chuồng | |
+| B5 | Giao thất bại, giao lại | B | 4 | Xong phần chính: chờ người nhận, quá giờ thì giao thất bại, về hub, giao lại. Còn: gửi chuồng | #387 |
 | A8 | Quyết toán, hủy, đánh giá | A | 5 | Chưa làm | |
-| B6 | Theo dõi, thông báo, báo cáo | B | 5 | Đang làm. PR1 chuông thông báo (nhánh `rd/b6-1-notifications`) | |
+| B6 | Theo dõi, thông báo, báo cáo | B | 5 | Đang làm. PR1 chuông thông báo; PR2 backend theo dõi hành trình, tra cứu công khai (nhánh `rd/b6-2-tracking`) | #388 |
 | E | Tích hợp, dọn dẹp, ERD, merge | A + B | 6 | Chưa làm | |
