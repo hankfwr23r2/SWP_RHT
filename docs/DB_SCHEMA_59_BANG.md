@@ -997,9 +997,9 @@ Index: `document_id`.
 | `confirmed_at` | `timestamptz` | có | | |
 
 Ràng buộc bảng:
-- `CHECK (coverage_option <> 'ARRANGED' OR insurer_party_id IS NOT NULL)`
+- `CHECK (status <> 'CONFIRMED' OR coverage_option <> 'ARRANGED' OR insurer_party_id IS NOT NULL)`
 - `CHECK (coverage_option <> 'NONE' OR waiver_terms_acceptance_id IS NOT NULL)`
-- `CHECK (coverage_option = 'NONE' OR (coverage_amount IS NOT NULL AND currency_code IS NOT NULL))`
+- `CHECK (status <> 'CONFIRMED' OR coverage_option = 'NONE' OR (coverage_amount IS NOT NULL AND currency_code IS NOT NULL))`
 - `CHECK (status <> 'REVISION_REQUESTED' OR (revision_reason IS NOT NULL AND revision_requested_at IS NOT NULL))`. Chỉ được yêu cầu bổ sung khi `coverage_option = PERSONAL` (kiểm ở service).
 - `CHECK (status <> 'CONFIRMED' OR (confirmed_by IS NOT NULL AND confirmed_at IS NOT NULL))`
 

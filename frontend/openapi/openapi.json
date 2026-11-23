@@ -1,10 +1,162 @@
 {
   "components" : {
     "schemas" : {
+      "AddOn" : {
+        "properties" : {
+          "quantity" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "serviceId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "serviceName" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "AddOnInput" : {
+        "properties" : {
+          "quantity" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "serviceId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "quantity", "serviceId" ],
+        "type" : "object"
+      },
+      "AddressInput" : {
+        "properties" : {
+          "accessNote" : {
+            "maxLength" : 2000,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "addressLine" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "addressType" : {
+            "enum" : [ "PICKUP", "DELIVERY" ],
+            "type" : "string"
+          },
+          "contactName" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "contactPhone" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "countryCode" : {
+            "pattern" : "[A-Z]{2}",
+            "type" : "string"
+          },
+          "latitude" : {
+            "maximum" : 90,
+            "minimum" : -90,
+            "type" : "number"
+          },
+          "longitude" : {
+            "maximum" : 180,
+            "minimum" : -180,
+            "type" : "number"
+          },
+          "provinceCode" : {
+            "maxLength" : 10,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "sourceCustomerAddressId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "addressLine", "addressType", "contactName", "contactPhone", "countryCode", "latitude", "longitude", "provinceCode" ],
+        "type" : "object"
+      },
+      "AddressSnapshot" : {
+        "properties" : {
+          "accessNote" : {
+            "type" : "string"
+          },
+          "addressLine" : {
+            "type" : "string"
+          },
+          "addressType" : {
+            "enum" : [ "PICKUP", "DELIVERY" ],
+            "type" : "string"
+          },
+          "contactName" : {
+            "type" : "string"
+          },
+          "contactPhone" : {
+            "type" : "string"
+          },
+          "countryCode" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "latitude" : {
+            "type" : "number"
+          },
+          "longitude" : {
+            "type" : "number"
+          },
+          "provinceCode" : {
+            "type" : "string"
+          },
+          "sourceCustomerAddressId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseAuthResponse" : {
         "properties" : {
           "data" : {
             "$ref" : "#/components/schemas/AuthResponse"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseBookingDetailResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/BookingDetailResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseBookingResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/BookingResponseDto"
           },
           "message" : {
             "type" : "string"
@@ -160,6 +312,23 @@
           "data" : {
             "items" : {
               "$ref" : "#/components/schemas/BillableServiceResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListBookingResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/BookingResponseDto"
             },
             "type" : "array"
           },
@@ -762,6 +931,118 @@
           },
           "status" : {
             "enum" : [ "ACTIVE", "INACTIVE" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "BookingCreateRequestDto" : {
+        "properties" : {
+          "acceptedServiceTerms" : {
+            "type" : "boolean"
+          },
+          "addresses" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AddressInput"
+            },
+            "maxItems" : 2,
+            "minItems" : 2,
+            "type" : "array"
+          },
+          "bookingType" : {
+            "enum" : [ "LOCAL", "INTERPROVINCE", "EXPORT", "IMPORT" ],
+            "type" : "string"
+          },
+          "departureId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "emergencySpendingLimit" : {
+            "minimum" : 0,
+            "type" : "number"
+          },
+          "horses" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HorseInput"
+            },
+            "minItems" : 1,
+            "type" : "array"
+          },
+          "parties" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PartyInput"
+            },
+            "maxItems" : 4,
+            "minItems" : 4,
+            "type" : "array"
+          },
+          "requestedPickupDate" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "acceptedServiceTerms", "addresses", "bookingType", "horses", "parties", "requestedPickupDate" ],
+        "type" : "object"
+      },
+      "BookingDetailResponseDto" : {
+        "properties" : {
+          "addresses" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AddressSnapshot"
+            },
+            "type" : "array"
+          },
+          "booking" : {
+            "$ref" : "#/components/schemas/BookingResponseDto"
+          },
+          "horses" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HorseDetail"
+            },
+            "type" : "array"
+          },
+          "parties" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PartySnapshot"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "BookingResponseDto" : {
+        "properties" : {
+          "bookingType" : {
+            "enum" : [ "LOCAL", "INTERPROVINCE", "EXPORT", "IMPORT" ],
+            "type" : "string"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "departureId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "emergencySpendingLimit" : {
+            "type" : "number"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "requestedPickupDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "PENDING_INTAKE", "UNDER_REVIEW", "NEEDS_RESUBMISSION", "QUOTING", "AWAITING_DEPOSIT", "QUOTE_EXPIRED", "CONFIRMED", "SCHEDULE_CHANGE_REQUIRED", "IN_OPERATION", "DELIVERED", "COMPLETED", "CANCELLED", "REJECTED" ],
+            "type" : "string"
+          },
+          "waybillNumber" : {
             "type" : "string"
           }
         },
@@ -1598,6 +1879,86 @@
         "required" : [ "horseTypeId", "microchip", "name", "sex" ],
         "type" : "object"
       },
+      "HorseDetail" : {
+        "properties" : {
+          "addOns" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AddOn"
+            },
+            "type" : "array"
+          },
+          "dietNote" : {
+            "type" : "string"
+          },
+          "feedSuppliedByOwner" : {
+            "type" : "boolean"
+          },
+          "feedingsPerDay" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "horseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "horseName" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "insurance" : {
+            "$ref" : "#/components/schemas/InsuranceDetail"
+          },
+          "stallTypeCode" : {
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "ACTIVE", "EXCLUDED", "CANCELLED", "DELIVERED", "RETURNED" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "HorseInput" : {
+        "properties" : {
+          "addOns" : {
+            "items" : {
+              "$ref" : "#/components/schemas/AddOnInput"
+            },
+            "type" : "array"
+          },
+          "dietNote" : {
+            "maxLength" : 2000,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "feedSuppliedByOwner" : {
+            "type" : "boolean"
+          },
+          "feedingsPerDay" : {
+            "format" : "int32",
+            "maximum" : 10,
+            "minimum" : 1,
+            "type" : "integer"
+          },
+          "horseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "insurance" : {
+            "$ref" : "#/components/schemas/InsuranceDeclarationRequestDto"
+          },
+          "stallTypeCode" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "horseId", "insurance", "stallTypeCode" ],
+        "type" : "object"
+      },
       "HorseResponseDto" : {
         "properties" : {
           "birthYear" : {
@@ -1802,6 +2163,66 @@
         },
         "type" : "object"
       },
+      "InsuranceDeclarationRequestDto" : {
+        "properties" : {
+          "acceptedWaiver" : {
+            "type" : "boolean"
+          },
+          "coverageOption" : {
+            "enum" : [ "PERSONAL", "ARRANGED", "NONE" ],
+            "type" : "string"
+          },
+          "insurerPartyId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "policyNumber" : {
+            "type" : "string"
+          },
+          "validFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "validTo" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "coverageOption" ],
+        "type" : "object"
+      },
+      "InsuranceDetail" : {
+        "properties" : {
+          "coverageOption" : {
+            "enum" : [ "PERSONAL", "ARRANGED", "NONE" ],
+            "type" : "string"
+          },
+          "insurerPartyId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "policyNumber" : {
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "DRAFT", "REVISION_REQUESTED", "CONFIRMED" ],
+            "type" : "string"
+          },
+          "validFrom" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "validTo" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "waiverTermsAcceptanceId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "LegDistance" : {
         "properties" : {
           "km" : {
@@ -1977,6 +2398,45 @@
         "required" : [ "countryCode", "displayName", "partyType" ],
         "type" : "object"
       },
+      "PartyInput" : {
+        "properties" : {
+          "address" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "bookingRole" : {
+            "enum" : [ "PAYER", "SHIPPER", "CONSIGNEE", "EMERGENCY_CONTACT" ],
+            "type" : "string"
+          },
+          "fullName" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "identityDocumentCountryCode" : {
+            "pattern" : "[A-Z]{2}",
+            "type" : "string"
+          },
+          "identityDocumentNumber" : {
+            "maxLength" : 50,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "identityDocumentType" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "phone" : {
+            "maxLength" : 20,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "address", "bookingRole", "fullName", "phone" ],
+        "type" : "object"
+      },
       "PartyResponseDto" : {
         "properties" : {
           "address" : {
@@ -2065,6 +2525,33 @@
           }
         },
         "required" : [ "validFrom" ],
+        "type" : "object"
+      },
+      "PartySnapshot" : {
+        "properties" : {
+          "address" : {
+            "type" : "string"
+          },
+          "bookingRole" : {
+            "enum" : [ "PAYER", "SHIPPER", "CONSIGNEE", "EMERGENCY_CONTACT" ],
+            "type" : "string"
+          },
+          "fullName" : {
+            "type" : "string"
+          },
+          "identityDocumentCountryCode" : {
+            "type" : "string"
+          },
+          "identityDocumentNumber" : {
+            "type" : "string"
+          },
+          "identityDocumentType" : {
+            "type" : "string"
+          },
+          "phone" : {
+            "type" : "string"
+          }
+        },
         "type" : "object"
       },
       "PartyUpdateRequestDto" : {
@@ -3417,6 +3904,77 @@
         "tags" : [ "price-list-controller" ]
       }
     },
+    "/bookings" : {
+      "get" : {
+        "operationId" : "list_5",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBookingResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-controller" ]
+      },
+      "post" : {
+        "operationId" : "submit",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/BookingCreateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingResponseDto"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "booking-controller" ]
+      }
+    },
+    "/bookings/{id}" : {
+      "get" : {
+        "operationId" : "get_3",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingDetailResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-controller" ]
+      }
+    },
     "/countries" : {
       "get" : {
         "operationId" : "countries",
@@ -4387,7 +4945,7 @@
     },
     "/hub-service-areas" : {
       "get" : {
-        "operationId" : "list_5",
+        "operationId" : "list_6",
         "responses" : {
           "200" : {
             "content" : {

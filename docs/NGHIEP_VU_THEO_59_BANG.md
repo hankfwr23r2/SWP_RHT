@@ -194,7 +194,7 @@ Tiến độ vận hành (ngựa đang ở đâu, chặng nào, có sự cố kh
 | Bước | Hành động | Bảng ghi |
 |---|---|---|
 | 1 | Đăng ký, xác thực email bằng OTP | `app_user` (`role_code` = CUSTOMER), `customer` (customer_type PERSON), `otp` |
-| 2 | Đồng ý điều khoản dịch vụ và chính sách riêng tư | `terms_acceptance` (`booking_id` NULL) |
+| 2 | Đồng ý điều khoản dịch vụ khi đăng ký | `terms_acceptance` SERVICE_TERMS (`booking_id` NULL) |
 | 3 | Khai hồ sơ ngựa: tên, chip, hộ chiếu, giới tính, năm sinh, giá trị khai báo… | `horse` |
 | 4 | Lưu sổ địa chỉ (tùy chọn) | `customer_address` |
 | 5 | Chọn **loại đơn**, **điểm đón**, **điểm giao** và **chuyến** muốn đi. Hệ thống gợi ý các `departure` OPEN phù hợp | Chỉ đọc `departure` (`stall_capacity − booked_stall_count`) |

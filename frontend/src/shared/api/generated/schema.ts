@@ -180,6 +180,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bookings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["list_5"];
+        put?: never;
+        post: operations["submit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["get_3"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/countries": {
         parameters: {
             query?: never;
@@ -555,7 +587,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["list_5"];
+        get: operations["list_6"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1016,8 +1048,61 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AddOn: {
+            /** Format: int32 */
+            quantity?: number;
+            /** Format: int64 */
+            serviceId?: number;
+            serviceName?: string;
+        };
+        AddOnInput: {
+            /** Format: int32 */
+            quantity: number;
+            /** Format: int64 */
+            serviceId: number;
+        };
+        AddressInput: {
+            accessNote?: string;
+            addressLine: string;
+            /** @enum {string} */
+            addressType: "PICKUP" | "DELIVERY";
+            contactName: string;
+            contactPhone: string;
+            countryCode: string;
+            latitude: number;
+            longitude: number;
+            provinceCode: string;
+            /** Format: int64 */
+            sourceCustomerAddressId?: number;
+        };
+        AddressSnapshot: {
+            accessNote?: string;
+            addressLine?: string;
+            /** @enum {string} */
+            addressType?: "PICKUP" | "DELIVERY";
+            contactName?: string;
+            contactPhone?: string;
+            countryCode?: string;
+            /** Format: int64 */
+            id?: number;
+            latitude?: number;
+            longitude?: number;
+            provinceCode?: string;
+            /** Format: int64 */
+            sourceCustomerAddressId?: number;
+        };
         ApiResponseAuthResponse: {
             data?: components["schemas"]["AuthResponse"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseBookingDetailResponseDto: {
+            data?: components["schemas"]["BookingDetailResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseBookingResponseDto: {
+            data?: components["schemas"]["BookingResponseDto"];
             message?: string;
             status?: string;
         };
@@ -1073,6 +1158,11 @@ export interface components {
         };
         ApiResponseListBillableServiceResponseDto: {
             data?: components["schemas"]["BillableServiceResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListBookingResponseDto: {
+            data?: components["schemas"]["BookingResponseDto"][];
             message?: string;
             status?: string;
         };
@@ -1269,6 +1359,42 @@ export interface components {
             passThrough?: boolean;
             /** @enum {string} */
             status?: "ACTIVE" | "INACTIVE";
+        };
+        BookingCreateRequestDto: {
+            acceptedServiceTerms: boolean;
+            addresses: components["schemas"]["AddressInput"][];
+            /** @enum {string} */
+            bookingType: "LOCAL" | "INTERPROVINCE" | "EXPORT" | "IMPORT";
+            /** Format: int64 */
+            departureId?: number;
+            emergencySpendingLimit?: number;
+            horses: components["schemas"]["HorseInput"][];
+            parties: components["schemas"]["PartyInput"][];
+            /** Format: date */
+            requestedPickupDate: string;
+        };
+        BookingDetailResponseDto: {
+            addresses?: components["schemas"]["AddressSnapshot"][];
+            booking?: components["schemas"]["BookingResponseDto"];
+            horses?: components["schemas"]["HorseDetail"][];
+            parties?: components["schemas"]["PartySnapshot"][];
+        };
+        BookingResponseDto: {
+            /** @enum {string} */
+            bookingType?: "LOCAL" | "INTERPROVINCE" | "EXPORT" | "IMPORT";
+            code?: string;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: int64 */
+            departureId?: number;
+            emergencySpendingLimit?: number;
+            /** Format: int64 */
+            id?: number;
+            /** Format: date */
+            requestedPickupDate?: string;
+            /** @enum {string} */
+            status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
+            waybillNumber?: string;
         };
         ChangePasswordRequest: {
             confirmPassword: string;
@@ -1563,6 +1689,33 @@ export interface components {
             sire?: string;
             weightKg?: number;
         };
+        HorseDetail: {
+            addOns?: components["schemas"]["AddOn"][];
+            dietNote?: string;
+            feedSuppliedByOwner?: boolean;
+            /** Format: int32 */
+            feedingsPerDay?: number;
+            /** Format: int64 */
+            horseId?: number;
+            horseName?: string;
+            /** Format: int64 */
+            id?: number;
+            insurance?: components["schemas"]["InsuranceDetail"];
+            stallTypeCode?: string;
+            /** @enum {string} */
+            status?: "ACTIVE" | "EXCLUDED" | "CANCELLED" | "DELIVERED" | "RETURNED";
+        };
+        HorseInput: {
+            addOns?: components["schemas"]["AddOnInput"][];
+            dietNote?: string;
+            feedSuppliedByOwner?: boolean;
+            /** Format: int32 */
+            feedingsPerDay?: number;
+            /** Format: int64 */
+            horseId: number;
+            insurance: components["schemas"]["InsuranceDeclarationRequestDto"];
+            stallTypeCode: string;
+        };
         HorseResponseDto: {
             /** Format: int32 */
             birthYear?: number;
@@ -1633,6 +1786,33 @@ export interface components {
             provinceCode?: string;
             provinceName?: string;
         };
+        InsuranceDeclarationRequestDto: {
+            acceptedWaiver?: boolean;
+            /** @enum {string} */
+            coverageOption: "PERSONAL" | "ARRANGED" | "NONE";
+            /** Format: int64 */
+            insurerPartyId?: number;
+            policyNumber?: string;
+            /** Format: date */
+            validFrom?: string;
+            /** Format: date */
+            validTo?: string;
+        };
+        InsuranceDetail: {
+            /** @enum {string} */
+            coverageOption?: "PERSONAL" | "ARRANGED" | "NONE";
+            /** Format: int64 */
+            insurerPartyId?: number;
+            policyNumber?: string;
+            /** @enum {string} */
+            status?: "DRAFT" | "REVISION_REQUESTED" | "CONFIRMED";
+            /** Format: date */
+            validFrom?: string;
+            /** Format: date */
+            validTo?: string;
+            /** Format: int64 */
+            waiverTermsAcceptanceId?: number;
+        };
         LegDistance: {
             km?: number;
             /** @enum {string} */
@@ -1687,6 +1867,16 @@ export interface components {
             phone?: string;
             taxCode?: string;
         };
+        PartyInput: {
+            address: string;
+            /** @enum {string} */
+            bookingRole: "PAYER" | "SHIPPER" | "CONSIGNEE" | "EMERGENCY_CONTACT";
+            fullName: string;
+            identityDocumentCountryCode?: string;
+            identityDocumentNumber?: string;
+            identityDocumentType?: string;
+            phone: string;
+        };
         PartyResponseDto: {
             address?: string;
             countryCode?: string;
@@ -1723,6 +1913,16 @@ export interface components {
             validFrom: string;
             /** Format: date */
             validTo?: string;
+        };
+        PartySnapshot: {
+            address?: string;
+            /** @enum {string} */
+            bookingRole?: "PAYER" | "SHIPPER" | "CONSIGNEE" | "EMERGENCY_CONTACT";
+            fullName?: string;
+            identityDocumentCountryCode?: string;
+            identityDocumentNumber?: string;
+            identityDocumentType?: string;
+            phone?: string;
         };
         PartyUpdateRequestDto: {
             address?: string;
@@ -2353,6 +2553,72 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListBillableServiceResponseDto"];
+                };
+            };
+        };
+    };
+    list_5: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListBookingResponseDto"];
+                };
+            };
+        };
+    };
+    submit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingResponseDto"];
+                };
+            };
+        };
+    };
+    get_3: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingDetailResponseDto"];
                 };
             };
         };
@@ -3163,7 +3429,7 @@ export interface operations {
             };
         };
     };
-    list_5: {
+    list_6: {
         parameters: {
             query?: never;
             header?: never;
