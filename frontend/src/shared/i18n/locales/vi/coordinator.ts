@@ -171,6 +171,7 @@ export const coordinator = {
       "ESCORT": "Hộ tống"
     },
     "detail": {
+      "midwayHint": "Lượt đang chạy: chỉ thêm được hộ tống thay ca. Người thay tới điểm dừng và bấm Nhận bàn giao ca; người cũ chỉ gỡ được sau khi đã bàn giao hết ngựa.",
       "stops": "Điểm dừng",
       "crew": "Tổ lái",
       "horses": "Ngựa trên xe",

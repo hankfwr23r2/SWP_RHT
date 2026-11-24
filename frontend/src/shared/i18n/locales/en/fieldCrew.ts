@@ -98,6 +98,7 @@ export const fieldCrew = {
         "HUB_IN": "Hand into hub",
         "RETURN": "Return to shipper",
         "AGENT": "Hand over with agent",
+        "SHIFT": "Take over shift",
         "HUB_OUT": "Take from hub"
       },
       "handoverStatus": {

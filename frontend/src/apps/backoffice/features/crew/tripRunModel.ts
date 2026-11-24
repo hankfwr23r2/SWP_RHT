@@ -39,6 +39,11 @@ export function handoverTypesAt(run: CrewTrip, stop: Stop): HandoverType[] {
   if (stop.stopType === 'HUB' && boarding) types.push('HUB_OUT')
   // Cửa khẩu: giao cho đại lý (đơn xuất) hoặc nhận từ đại lý (đơn nhập); backend chọn đại lý theo chặng
   if (stop.stopType === 'BORDER' && (alighting || boarding)) types.push('AGENT')
+  // Bàn giao ca: có con đang trên xe ở điểm này (đã lên, chưa tới điểm xuống)
+  const sequenceOf = new Map(stopsOf(run).map(s => [s.id, s.sequenceNumber ?? 0]))
+  const at = stop.sequenceNumber ?? 0
+  if (horses.some(h => h.leg?.status === 'IN_PROGRESS'
+    && (sequenceOf.get(h.leg.boardTripStopId) ?? 0) <= at && at < (sequenceOf.get(h.leg.alightTripStopId) ?? 0))) types.push('SHIFT')
   return types
 }
 

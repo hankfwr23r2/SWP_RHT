@@ -62,6 +62,8 @@ public final class TripExecutionPolicy {
             case HUB_IN, HUB_OUT -> stopType == TripStopType.HUB;
             // Bàn giao với đại lý nước ngoài ở cửa khẩu (GĐ7.4)
             case AGENT -> stopType == TripStopType.BORDER;
+            // Bàn giao ca ở bất kỳ điểm dừng nào tổ xe đang đứng
+            case SHIFT -> true;
             default -> false;
         };
         if (!fits) {

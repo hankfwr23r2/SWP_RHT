@@ -364,6 +364,54 @@ class TripExecutionFlowTest {
         return ids.getLast().longValue();
     }
 
+    @Test
+    void escortIsReplacedMidwayOnlyAfterTheNewOneSignsTheShift() throws Exception {
+        makeLocal();
+        acknowledge(driver);
+        act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + stops.get(0) + "/arrive").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + stops.get(0) + "/depart").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + stops.get(1) + "/arrive").andExpect(status().isOk());
+        long pickup = handoverId(handover(escort, stops.get(1), "PICKUP").andExpect(status().isCreated()));
+        scan(escort, pickup, chip).andExpect(status().isOk());
+        act(escort, "/handovers/" + pickup + "/complete").andExpect(status().isOk());
+
+        // Lượt đang chạy chỉ thêm được hộ tống thay ca, không cần bắt đầu ở nơi lượt trước kết thúc
+        Staff relief = testData.staff(testData.unique("exec.relief"), "ESCORT");
+        Staff otherDriver = testData.staff(testData.unique("exec.driver.relief"), "DRIVER");
+        crewAssign(otherDriver, "DRIVER").andExpect(status().isConflict());
+        crewAssign(relief, "ESCORT").andExpect(status().isCreated());
+        String reliefToken = token(relief, "ESCORT");
+
+        // Quy tắc #38: hộ tống đang giữ ngựa thì chưa gỡ được
+        long escortAssignment = jdbc.queryForObject("SELECT ca.id FROM crew_assignment ca JOIN staff s ON s.user_id = ca.staff_id "
+                + "JOIN app_user u ON u.id = s.user_id WHERE ca.vehicle_trip_id = ? AND ca.crew_role = 'ESCORT' AND u.username <> ? ORDER BY ca.id LIMIT 1",
+                Long.class, trip, relief.getUser().getUsername());
+        act(coordinator, "/crew-assignments/" + escortAssignment + "/release").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message", startsWith("Nhân viên exec.escort")));
+
+        // Tài xế không nhận bàn giao ca; hộ tống mới quét chip và ký, ngựa vẫn trên xe
+        handover(driver, stops.get(1), "SHIFT").andExpect(status().isConflict()).andExpect(jsonPath("$.message").value("Chỉ hộ tống nhận bàn giao ca."));
+        long shift = handoverId(handover(reliefToken, stops.get(1), "SHIFT").andExpect(status().isCreated()));
+        scan(reliefToken, shift, chip).andExpect(status().isOk());
+        act(reliefToken, "/handovers/" + shift + "/complete").andExpect(status().isOk());
+        assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, leg)).isEqualTo("IN_PROGRESS");
+
+        act(coordinator, "/crew-assignments/" + escortAssignment + "/release").andExpect(status().isOk());
+        // Hộ tống cũ đã rời ca; người mới tiếp tục giao ngựa
+        act(driver, "/trip-stops/" + stops.get(1) + "/depart").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + stops.get(2) + "/arrive").andExpect(status().isOk());
+        long delivery = handoverId(handover(reliefToken, stops.get(2), "DELIVERY").andExpect(status().isCreated()));
+        scan(reliefToken, delivery, chip).andExpect(status().isOk());
+        act(reliefToken, "/handovers/" + delivery + "/complete").andExpect(status().isOk());
+        assertThat(bookingStatus()).isEqualTo("DELIVERED");
+    }
+
+    private ResultActions crewAssign(Staff member, String role) throws Exception {
+        return mvc.perform(post("/vehicle-trips/{id}/crew-assignments", trip).header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"staffId\":%d,\"crewRole\":\"%s\"}".formatted(member.getUserId(), role)));
+    }
+
     // Sửa thẳng DB rồi bỏ bộ đệm của JPA để service đọc lại
     private void makeLocal() {
         entityManager.flush();

@@ -13,6 +13,7 @@ import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.Party;
 import com.example.racehorse_transport.entity.TripStop;
 import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
+import com.example.racehorse_transport.entity.enums.CrewRole;
 import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HandoverType;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
@@ -88,6 +89,10 @@ public class HandoverServiceImpl implements HandoverService {
         Handover handover = request.toEntity(stop, member.getStaff());
         if (request.handoverType() == HandoverType.AGENT) {
             assignAgent(handover, request.partyId());
+        }
+        // Người nhận ca là hộ tống đang trong tổ lái (quy tắc #38)
+        if (request.handoverType() == HandoverType.SHIFT && member.getCrewRole() != CrewRole.ESCORT) {
+            throw new DispatchRuleException("handoverType", "Chỉ hộ tống nhận bàn giao ca.", true);
         }
         if (candidates(handover).isEmpty()) {
             throw new DispatchRuleException("handoverType", "Không có con ngựa nào cần giao nhận loại này ở điểm dừng này.", true);
@@ -228,6 +233,15 @@ public class HandoverServiceImpl implements HandoverService {
     // Con cần giao nhận: lên xe ở điểm này (đón, ra hub, nhận từ đại lý) hoặc xuống xe ở điểm này (giao, vào hub, giao cho đại lý)
     private List<HorseLeg> candidates(Handover handover) {
         Long stopId = handover.getTripStop().getId();
+        if (handover.getHandoverType() == HandoverType.SHIFT) {
+            // Bàn giao ca: các con đang trên xe ở điểm này (đã lên, chưa tới điểm xuống)
+            TripStop stop = handover.getTripStop();
+            int at = stop.getSequenceNumber();
+            return legs.findActiveOnTrip(stop.getVehicleTrip().getId(), Set.of(HorseLegStatus.CANCELLED, HorseLegStatus.FAILED)).stream()
+                    .filter(l -> l.getStatus() == HorseLegStatus.IN_PROGRESS
+                            && l.getBoardTripStop().getSequenceNumber() <= at && at < l.getAlightTripStop().getSequenceNumber())
+                    .toList();
+        }
         boolean boarding = TripExecutionPolicy.isBoarding(handover.getHandoverType(), handover.getFromParty() != null);
         List<HorseLeg> found = boarding
                 ? legs.findByBoardTripStop_IdAndStatusIn(stopId, Set.of(HorseLegStatus.PLANNED, HorseLegStatus.IN_PROGRESS))

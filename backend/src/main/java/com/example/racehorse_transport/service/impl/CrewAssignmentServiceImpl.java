@@ -27,6 +27,15 @@ import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+import com.example.racehorse_transport.entity.HorseLeg;
+import com.example.racehorse_transport.entity.enums.HandoverStatus;
+import com.example.racehorse_transport.entity.enums.HorseLegStatus;
+import com.example.racehorse_transport.policy.TrackingPolicy;
+import com.example.racehorse_transport.policy.TrackingPolicy.CustodyHolder;
+import com.example.racehorse_transport.repository.HandoverHorseRepository;
+import com.example.racehorse_transport.repository.HorseLegRepository;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -45,14 +54,21 @@ public class CrewAssignmentServiceImpl implements CrewAssignmentService {
     private final StaffRepository staff;
     private final DispatchService dispatch;
     private final NotificationService notifications;
+    private final HorseLegRepository legs;
+    private final HandoverHorseRepository scans;
 
     @Override
     @Transactional
     public VehicleTripResponseDto assign(Long vehicleTripId, CrewAssignmentRequestDto request) {
         VehicleTrip trip = trips.findForUpdate(vehicleTripId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lượt xe " + vehicleTripId));
-        if (trip.getStatus() != VehicleTripStatus.PLANNED && trip.getStatus() != VehicleTripStatus.DISPATCHED) {
-            throw new DispatchRuleException("vehicleTripId", "Chỉ phân công cho lượt xe chưa chạy.", true);
+        // Lượt đang chạy chỉ nhận thêm hộ tống thay ca giữa đường (người thay tự tới điểm dừng rồi ký SHIFT)
+        boolean midway = trip.getStatus() == VehicleTripStatus.IN_PROGRESS;
+        if (!midway && trip.getStatus() != VehicleTripStatus.PLANNED && trip.getStatus() != VehicleTripStatus.DISPATCHED) {
+            throw new DispatchRuleException("vehicleTripId", "Chỉ phân công cho lượt xe chưa chạy, hoặc thêm hộ tống thay ca cho lượt đang chạy.", true);
+        }
+        if (midway && request.crewRole() != CrewRole.ESCORT) {
+            throw new DispatchRuleException("crewRole", "Lượt xe đang chạy chỉ thêm được hộ tống thay ca.", true);
         }
         Staff member = staff.findForUpdate(request.staffId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhân viên " + request.staffId()));
@@ -61,7 +77,7 @@ public class CrewAssignmentServiceImpl implements CrewAssignmentService {
         if (assignments.existsByVehicleTrip_IdAndStaff_UserIdAndStatusNot(trip.getId(), member.getUserId(), CrewAssignmentStatus.RELEASED)) {
             throw new DispatchRuleException("staffId", "Nhân viên đã có trong lượt xe này.", true);
         }
-        requireStaffFree(member, trip);
+        requireStaffFree(member, trip, midway);
         CrewAssignment assignment = request.toEntity(trip, member);
         assignment.setStatus(CrewAssignmentStatus.ASSIGNED);
         assignments.save(assignment);
@@ -76,8 +92,15 @@ public class CrewAssignmentServiceImpl implements CrewAssignmentService {
     public VehicleTripResponseDto release(Long assignmentId) {
         CrewAssignment assignment = find(assignmentId);
         VehicleTripStatus tripStatus = assignment.getVehicleTrip().getStatus();
-        if (tripStatus != VehicleTripStatus.PLANNED && tripStatus != VehicleTripStatus.DISPATCHED) {
-            throw new DispatchRuleException("status", "Lượt xe đã chạy, không gỡ nhân viên được.", true);
+        if (tripStatus == VehicleTripStatus.IN_PROGRESS) {
+            // Quy tắc #38: không rời ca khi còn phụ trách ngựa chưa bàn giao
+            List<String> held = horsesHeldBy(assignment.getStaff().getUserId(), assignment.getVehicleTrip().getId());
+            if (!held.isEmpty()) {
+                throw new DispatchRuleException("status", assignment.getStaff().getFullName() + " còn phụ trách " + String.join(", ", held)
+                        + ". Người thay phải nhận bàn giao ca trước.", true);
+            }
+        } else if (tripStatus != VehicleTripStatus.PLANNED && tripStatus != VehicleTripStatus.DISPATCHED) {
+            throw new DispatchRuleException("status", "Lượt xe đã kết thúc hoặc bị hủy, không gỡ nhân viên được.", true);
         }
         assignment.setStatus(CrewAssignmentStatus.RELEASED);
         return dispatch.trip(assignment.getVehicleTrip().getId());
@@ -121,8 +144,24 @@ public class CrewAssignmentServiceImpl implements CrewAssignmentService {
         return MyCrewAssignmentResponseDto.from(assignment);
     }
 
-    // Quy tắc #10: nhân viên không ở hai lượt trùng giờ và bắt đầu ở nơi lượt trước của mình kết thúc (chưa có lượt thì ở hub gốc)
-    private void requireStaffFree(Staff member, VehicleTrip trip) {
+    // Quy tắc #37: người phụ trách một con là người ký lần giao nhận DONE mới nhất mà công ty là bên nhận
+    private List<String> horsesHeldBy(Long userId, Long tripId) {
+        List<HorseLeg> onboard = legs.findActiveOnTrip(tripId, Set.of(HorseLegStatus.CANCELLED, HorseLegStatus.FAILED)).stream()
+                .filter(l -> l.getStatus() == HorseLegStatus.IN_PROGRESS).toList();
+        if (onboard.isEmpty()) return List.of();
+        Map<Long, Long> holder = new HashMap<>();
+        scans.findByBookingHorseIds(onboard.stream().map(l -> l.getBookingHorse().getId()).toList()).stream()
+                .filter(row -> row.getHandover().getStatus() == HandoverStatus.DONE && Boolean.TRUE.equals(row.getMicrochipMatched())
+                        && TrackingPolicy.holderAfter(row.getHandover().getHandoverType(), row.getHandover().getToParty() != null) == CustodyHolder.COMPANY)
+                .sorted(Comparator.comparing(row -> row.getHandover().getHandedAt()))
+                .forEach(row -> holder.put(row.getHorseLeg().getBookingHorse().getId(), row.getHandover().getHandledBy().getUserId()));
+        return onboard.stream().filter(l -> userId.equals(holder.get(l.getBookingHorse().getId())))
+                .map(l -> l.getBookingHorse().getHorse().getName()).toList();
+    }
+
+    // Quy tắc #10: nhân viên không ở hai lượt trùng giờ và bắt đầu ở nơi lượt trước của mình kết thúc (chưa có lượt thì ở hub gốc).
+    // Hộ tống thay ca giữa đường (midway) tự tới điểm dừng nên không xét nơi bắt đầu
+    private void requireStaffFree(Staff member, VehicleTrip trip, boolean midway) {
         List<VehicleTrip> others = assignments.findActiveOfStaff(member.getUserId(), CrewAssignmentStatus.RELEASED, VehicleTripStatus.CANCELLED)
                 .stream().map(CrewAssignment::getVehicleTrip).filter(t -> !t.getId().equals(trip.getId())).toList();
         DispatchPolicy.requireNoOverlap("staffId", "Nhân viên", new Interval(trip.getPlannedStartAt(), trip.getPlannedEndAt()),
@@ -131,7 +170,9 @@ public class CrewAssignmentServiceImpl implements CrewAssignmentService {
                 .max(Comparator.comparing(VehicleTrip::getPlannedEndAt))
                 .map(t -> t.getEndLocation().getId())
                 .orElse(member.getHomeHubLocation() == null ? null : member.getHomeHubLocation().getId());
-        DispatchPolicy.requireStartsWherePreviousEnded("staffId", "Nhân viên", trip.getStartLocation().getId(), expectedStart);
+        if (!midway) {
+            DispatchPolicy.requireStartsWherePreviousEnded("staffId", "Nhân viên", trip.getStartLocation().getId(), expectedStart);
+        }
     }
 
     private CrewAssignment find(Long id) {
