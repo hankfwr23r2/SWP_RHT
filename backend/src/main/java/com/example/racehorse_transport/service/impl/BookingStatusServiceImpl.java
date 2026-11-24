@@ -35,7 +35,7 @@ public class BookingStatusServiceImpl implements BookingStatusService {
         }
         booking.setStatus(toStatus);
 
-        recordHistory(booking, from, reason, users.getReferenceById(actorUserId));
+        recordHistory(booking, from, reason, actorUserId == null ? null : users.getReferenceById(actorUserId));
     }
 
     @Override

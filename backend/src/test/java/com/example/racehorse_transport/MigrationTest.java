@@ -76,8 +76,8 @@ class MigrationTest {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM province", Integer.class)).isEqualTo(77);
         assertThat(jdbc.queryForObject("SELECT count(*) FROM role", Integer.class)).isEqualTo(7);
         assertThat(jdbc.queryForObject("SELECT name FROM role WHERE code = 'ESCORT'", String.class)).isEqualTo("Nhân viên hộ tống");
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM app_user WHERE username LIKE '%.dev'", Integer.class)).isEqualTo(8);
-        assertThat(jdbc.queryForObject("SELECT count(*) FROM route_stop", Integer.class)).isEqualTo(16);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM app_user WHERE username LIKE '%.dev'", Integer.class)).isEqualTo(12);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM route_stop", Integer.class)).isEqualTo(30);
     }
 
     @Test
@@ -216,7 +216,7 @@ class MigrationTest {
 
     @Test
     void handoverBetweenSamePartnerIsRejected() {
-        Long agent = id("SELECT party_id FROM party_role WHERE role_type = 'DEST_AGENT'");
+        Long agent = id("SELECT min(party_id) FROM party_role WHERE role_type = 'DEST_AGENT'");
         assertThatThrownBy(() -> newHandover("AGENT", agent, agent))
                 .isInstanceOf(DataAccessException.class)
                 .hasMessageContaining("ck_handover_parties");

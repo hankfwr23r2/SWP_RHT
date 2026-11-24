@@ -48,8 +48,9 @@ public class BookingStatusHistory {
     @Column(name = "to_status", length = 30, nullable = false)
     private BookingStatus toStatus;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "changed_by", nullable = false)
+    // NULL = hệ thống tự đổi (scheduler)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "changed_by")
     private AppUser changedBy;
 
     // DB đặt giá trị mặc định now() lúc thêm dòng

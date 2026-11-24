@@ -99,7 +99,7 @@ BEGIN
     SELECT d.id INTO v_dep FROM departure d JOIN route r ON r.id = d.route_id
     WHERE r.code = 'HCM-DN' AND d.status = 'OPEN' AND d.departure_date >= current_date + 10
     ORDER BY d.departure_date LIMIT 1;
-    v_pickup := (SELECT departure_date - 2 FROM departure WHERE id = v_dep);
+    v_pickup := (SELECT departure_date - 1 FROM departure WHERE id = v_dep);
     INSERT INTO booking (code, customer_id, booking_type, departure_id, requested_pickup_date, waybill_number, status, created_by)
     VALUES ('DEV-DOMESTIC-001', v_user, 'INTERPROVINCE', v_dep, v_pickup, 'WB-DEV-0002', 'CONFIRMED', v_user)
     RETURNING id INTO v_booking;
@@ -144,8 +144,8 @@ BEGIN
     SELECT d.id INTO v_dep FROM departure d JOIN route r ON r.id = d.route_id
     WHERE r.code = 'HCM-PNH' AND d.status = 'OPEN' AND d.departure_date >= current_date + 14
     ORDER BY d.departure_date LIMIT 1;
-    -- Đón trước 7 ngày để cách ly trước khi xuất
-    v_pickup := (SELECT departure_date - 7 FROM departure WHERE id = v_dep);
+    -- Đón trước chuyến 1 ngày; ngựa đã đủ điều kiện cách ly trước khi đón
+    v_pickup := (SELECT departure_date - 1 FROM departure WHERE id = v_dep);
     INSERT INTO booking (code, customer_id, booking_type, departure_id, requested_pickup_date, waybill_number, status, created_by)
     VALUES ('DEV-EXPORT-001', v_user, 'EXPORT', v_dep, v_pickup, 'WB-DEV-0003', 'CONFIRMED', v_user)
     RETURNING id INTO v_booking;
@@ -175,7 +175,7 @@ BEGIN
     FROM (VALUES (1, 'LINEHAUL', 'LINEHAUL_STALL', NULL::text, 'HCM-PNH'::text, 'STANDARD'::text, NULL::numeric, 'Cước trục HCM - Mộc Bài, 1 khoang tiêu chuẩn', 1::numeric, 'STALL'),
                  (2, 'PICKUP', 'PICKUP_KM', 'MEDIUM', NULL, NULL, 0.00, 'Cước chặng đón 20 km, xe hạng trung', 20, 'KM'),
                  (3, 'FUEL', 'FUEL_TOLL', NULL, NULL, NULL, NULL, 'Nhiên liệu và phí cầu đường chặng đón 20 km', 20, 'KM'),
-                 (4, 'QUARANTINE', 'QUARANTINE_STAY', NULL, NULL, NULL, NULL, 'Cách ly trước xuất 7 ngày', 7, 'HORSE_DAY'),
+                 (4, 'SERVICE', 'VET_CHECK', NULL, NULL, NULL, NULL, 'Thú y tại chuồng: khám và lấy mẫu', 1, 'HORSE'),
                  (5, 'DOCS', 'QUARANTINE_DOCS', NULL, NULL, NULL, NULL, 'Phí làm thủ tục kiểm dịch', 1, 'BOOKING'),
                  (6, 'DOCS', 'GOV_FEE', NULL, NULL, NULL, NULL, 'Lệ phí nhà nước (thu hộ)', 1, 'BOOKING')
          ) AS l(line_number, line_type, service_code, class_code, route_code, stall, km_from, description, qty, unit)
@@ -194,8 +194,8 @@ BEGIN
         SELECT coalesce(sum(amount), 0), coalesce(sum(amount) FILTER (WHERE is_pass_through), 0)
         INTO v_total, v_pass
         FROM quotation_line WHERE quotation_id = v_quotation;
-        -- Cọc gồm toàn bộ phần thu hộ (công thức của DepositPolicy)
-        v_deposit := round(0.3000 * (v_total - v_pass), 2) + v_pass;
+        -- Cọc gồm toàn bộ phần thu hộ, làm tròn lên nghìn đồng (công thức của DepositPolicy)
+        v_deposit := least(ceil((0.3000 * (v_total - v_pass) + v_pass) / 1000) * 1000, v_total);
         UPDATE quotation
         SET total_amount = v_total, pass_through_amount = v_pass, deposit_amount = v_deposit,
             status = 'ACCEPTED', sent_by = v_manager, sent_at = now() - interval '3 days', accepted_at = now() - interval '2 days'

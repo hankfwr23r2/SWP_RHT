@@ -3,10 +3,12 @@ package com.example.racehorse_transport.controller;
 import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.dto.departure.DepartureCancelRequestDto;
 import com.example.racehorse_transport.dto.departure.DepartureCreateRequestDto;
+import com.example.racehorse_transport.dto.departure.DepartureDecisionResponseDto;
 import com.example.racehorse_transport.dto.departure.DepartureResponseDto;
 import com.example.racehorse_transport.dto.departure.DepartureSuggestionQueryDto;
 import com.example.racehorse_transport.dto.departure.DepartureSuggestionResponseDto;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
+import com.example.racehorse_transport.service.DepartureDecisionService;
 import com.example.racehorse_transport.service.DepartureService;
 import com.example.racehorse_transport.service.DepartureSuggestionService;
 import jakarta.validation.Valid;
@@ -35,6 +37,7 @@ public class DepartureController {
 
     private final DepartureService departureService;
     private final DepartureSuggestionService suggestionService;
+    private final DepartureDecisionService decisionService;
 
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'COORDINATOR')")
@@ -51,6 +54,21 @@ public class DepartureController {
     @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN', 'MANAGER', 'COORDINATOR')")
     public ResponseEntity<ApiResponseDto<DepartureSuggestionResponseDto>> suggestions(@Valid @ModelAttribute DepartureSuggestionQueryDto query) {
         return ResponseEntity.ok(ApiResponseDto.success(suggestionService.suggest(query), "Gợi ý chuyến"));
+    }
+
+    // Chuyến cần quyết định: số chỗ đã cọc, mốc quyết định, cảnh báo dưới mức tối thiểu
+    @GetMapping("/decisions")
+    @PreAuthorize("hasAnyRole('MANAGER', 'COORDINATOR')")
+    public ResponseEntity<ApiResponseDto<List<DepartureDecisionResponseDto>>> decisions(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ResponseEntity.ok(ApiResponseDto.success(decisionService.decisions(from, to), "Chuyến cần quyết định"));
+    }
+
+    @PostMapping("/{id}/confirm-run")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<ApiResponseDto<DepartureDecisionResponseDto>> confirmRun(@PathVariable Long id, Authentication authentication) {
+        return ResponseEntity.ok(ApiResponseDto.success(decisionService.confirmRun(id, authentication.getName()), "Đã xác nhận chạy"));
     }
 
     @PostMapping

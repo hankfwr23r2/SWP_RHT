@@ -647,7 +647,7 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 | A5 | Đặt đơn | A | 3 | Chưa làm | |
 | B3 | Lưu trú, sức khỏe | B | 3 | Xong phần chính (2 PR). Còn: nghỉ đêm OVERNIGHT, bàn giao ca SHIFT; hủy chặng của con bị loại chờ luồng A | #383, #384 |
 | A6 | Thẩm định, bảo hiểm | A | 4 | Backend xong, chưa commit (`feat/a6-review`) | |
-| A6b | Đồng bộ quyết định 23/11/2026 | A | 4 | Tài liệu xong, code chờ duyệt danh sách file | |
+| A6b | Đồng bộ quyết định 23/11/2026 | A | 4 | PR1, PR2 đã merge. PR3 (quyết định chạy, đổi chuyến, seed) đang làm | |
 | A7 | Báo giá, thanh toán | A | 4 | Chưa làm | |
 | B4 | Sự cố, chi phí | B | 4 | Xong phần chính (2 PR). Còn: phương án đổi xe, về hub tự lập lượt xe; biên lai, ảnh hiện trường | #385, #386 |
 | B5 | Giao thất bại, giao lại | B | 4 | Xong phần chính: chờ người nhận, quá giờ thì giao thất bại, về hub, giao lại. Còn: gửi chuồng | #387 |

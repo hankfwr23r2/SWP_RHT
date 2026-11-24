@@ -475,13 +475,16 @@ Index: `route_id`.
 | `stall_capacity` | `int` | | CK `> 0` | Snapshot từ lịch, sửa được cho từng chuyến |
 | `booked_stall_count` | `int` | | default `0` | Dẫn xuất: số **chỗ** đã đặt (khoang thường 1, khoang rộng 2). Chỉ `DepartureService` ghi, khi đang giữ `FOR UPDATE` |
 | `status` | `varchar(30)` | | CK `OPEN, CLOSED, IN_PROGRESS, COMPLETED, CANCELLED` | |
+| `run_confirmed_at` | `timestamptz` | có | | Lúc quản lý xác nhận chạy. NULL = chưa xác nhận, điều phối chưa được lập lượt trục |
+| `run_confirmed_by` | `bigint` | có | FK → app_user | Quản lý xác nhận |
 
 Ràng buộc bảng:
+- `CHECK ((run_confirmed_at IS NULL) = (run_confirmed_by IS NULL))`.
 - `UNIQUE (departure_schedule_id, departure_date)`: mỗi lịch sinh tối đa một chuyến mỗi ngày. Chuyến đột xuất có `departure_schedule_id` NULL nên không bị giới hạn.
 - `CHECK (booking_cutoff_at < planned_departure_at)`.
 - `CHECK (booked_stall_count BETWEEN 0 AND stall_capacity)`: DB chặn bán quá chỗ.
 
-Index: `route_id`, `(status, planned_departure_at)`.
+Index: `route_id`, `(status, planned_departure_at)`, `run_confirmed_by`.
 
 ---
 
@@ -756,7 +759,7 @@ Index: `horse_id`.
 | `booking_id` | `bigint` | | FK → booking, CASCADE | |
 | `from_status` | `varchar(30)` | có | | NULL ở dòng đầu tiên |
 | `to_status` | `varchar(30)` | | | |
-| `changed_by` | `bigint` | | FK → app_user | |
+| `changed_by` | `bigint` | có | FK → app_user | NULL = hệ thống tự đổi (scheduler) |
 | `changed_at` | `timestamptz` | | default `now()` | |
 | `reason` | `text` | có | | Lý do từ chối, lý do yêu cầu bổ sung hồ sơ… |
 
@@ -1362,7 +1365,7 @@ Giá trị khởi đầu của các tham số chốt ngày 23/11/2026, thêm b�
 | `DEPARTURE_DECISION_HOURS` | 48 | Mốc quyết định chạy, tính trước giờ xuất phát |
 | `DEPARTURE_MIN_FILL_PERCENT` | 30 | Ngưỡng cảnh báo số chỗ đã cọc trên `stall_capacity` |
 | `HUB_CHECKIN_HOURS` | 3 | Ngựa phải tới hub trước giờ chuyến trục xuất phát |
-| `BALANCE_WAIT_MINUTES` | 30 | Thời gian chờ khách trả 70% sau khi nhận ngựa |
+| `BALANCE_WAIT_MINUTES` | 30 | Thời gian chờ khách trả số dư (tổng trừ số đã trả) sau khi nhận ngựa |
 | `MAX_CONTINUOUS_HOURS` | 4 | Thời gian chạy liên tục tối đa |
 | `MIN_REST_MINUTES` | 30 | Thời gian nghỉ tối thiểu ở trạm |
 | `MAX_DRIVE_HOURS_PER_DAY` | 10 | Giờ lái tối đa mỗi ngày |

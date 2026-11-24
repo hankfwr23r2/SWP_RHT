@@ -42,10 +42,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 class DispatchFlowTest {
 
-    // Chuyến HCM-DN đột xuất lúc 06:00 UTC; tuyến có 5 điểm, điểm cuối HUB-DN tới sau 1260 phút
+    // Chuyến HCM-DN đột xuất lúc 06:00 UTC; tuyến có 8 điểm, điểm cuối HUB-DN tới sau 1781 phút
     private static final LocalDate DAY = LocalDate.of(2031, 3, 3);
     private static final Instant LINEHAUL_START = Instant.parse("2031-03-03T06:00:00Z");
-    private static final Instant LINEHAUL_END = Instant.parse("2031-03-04T03:00:00Z");
+    private static final Instant LINEHAUL_END = Instant.parse("2031-03-04T11:41:00Z");
 
     @Autowired private MockMvc mvc;
     @Autowired private JdbcTemplate jdbc;
@@ -80,12 +80,12 @@ class DispatchFlowTest {
                 .andExpect(jsonPath("$.data.startLocationId").value(hcm))
                 .andExpect(jsonPath("$.data.endLocationId").value(danang))
                 .andExpect(jsonPath("$.data.plannedStartAt").value("2031-03-03T06:00:00Z"))
-                .andExpect(jsonPath("$.data.plannedEndAt").value("2031-03-04T03:00:00Z"))
-                .andExpect(jsonPath("$.data.stops.length()").value(5))
+                .andExpect(jsonPath("$.data.plannedEndAt").value("2031-03-04T11:41:00Z"))
+                .andExpect(jsonPath("$.data.stops.length()").value(8))
                 .andExpect(jsonPath("$.data.stops[1].stopType").value("REST"))
-                .andExpect(jsonPath("$.data.stops[1].plannedArrivalAt").value("2031-03-03T10:00:00Z"))
-                .andExpect(jsonPath("$.data.stops[1].plannedDepartureAt").value("2031-03-03T10:30:00Z"))
-                .andExpect(jsonPath("$.data.stops[4].locationId").value(danang));
+                .andExpect(jsonPath("$.data.stops[1].plannedArrivalAt").value("2031-03-03T08:57:00Z"))
+                .andExpect(jsonPath("$.data.stops[1].plannedDepartureAt").value("2031-03-03T09:27:00Z"))
+                .andExpect(jsonPath("$.data.stops[7].locationId").value(danang));
 
         createTrip("""
                 {"tripType":"LINEHAUL","vehicleId":%d}""".formatted(vehicle.getId()))
@@ -100,12 +100,12 @@ class DispatchFlowTest {
         createTrip(localTrip(hcm, hcm, "2031-03-03T08:00:00Z", "2031-03-03T12:00:00Z"))
                 .andExpect(status().isConflict()).andExpect(jsonPath("$.message").value("Xe đã có lượt chạy khác trùng giờ."));
         // Sau lượt trục xe đang ở Đà Nẵng, không bắt đầu ở HCM được
-        createTrip(localTrip(hcm, hcm, "2031-03-04T05:00:00Z", "2031-03-04T09:00:00Z"))
+        createTrip(localTrip(hcm, hcm, "2031-03-04T13:00:00Z", "2031-03-04T17:00:00Z"))
                 .andExpect(status().isConflict()).andExpect(jsonPath("$.message", startsWith("Xe không ở điểm xuất phát")));
         // Trước lượt trục, xe kết thúc ở Đà Nẵng thì lượt trục (bắt đầu ở HCM) bị đứt
         createTrip(localTrip(hcm, danang, "2031-03-02T06:00:00Z", "2031-03-02T09:00:00Z"))
                 .andExpect(status().isConflict()).andExpect(jsonPath("$.message", startsWith("Lượt sau của xe")));
-        createTrip(localTrip(danang, danang, "2031-03-04T05:00:00Z", "2031-03-04T09:00:00Z"))
+        createTrip(localTrip(danang, danang, "2031-03-04T13:00:00Z", "2031-03-04T17:00:00Z"))
                 .andExpect(status().isCreated());
     }
 

@@ -564,6 +564,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bookings/{id}/reschedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reschedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bookings/{id}/resubmit": {
         parameters: {
             query?: never;
@@ -964,6 +980,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/departures/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["decisions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/departures/suggestions": {
         parameters: {
             query?: never;
@@ -990,6 +1022,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/departures/{id}/confirm-run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["confirmRun"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2321,6 +2369,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseDepartureDecisionResponseDto: {
+            data?: components["schemas"]["DepartureDecisionResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseDepartureResponse: {
             data?: components["schemas"]["DepartureResponse"];
             message?: string;
@@ -2403,6 +2456,11 @@ export interface components {
         };
         ApiResponseListCustomerAddressResponseDto: {
             data?: components["schemas"]["CustomerAddressResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListDepartureDecisionResponseDto: {
+            data?: components["schemas"]["DepartureDecisionResponseDto"][];
             message?: string;
             status?: string;
         };
@@ -2742,6 +2800,12 @@ export interface components {
         BookingRejectionRequestDto: {
             reason: string;
         };
+        BookingRescheduleRequestDto: {
+            /** Format: int64 */
+            departureId: number;
+            /** Format: date */
+            requestedPickupDate: string;
+        };
         BookingResponseDto: {
             /** @enum {string} */
             bookingType?: "LOCAL" | "INTERPROVINCE" | "EXPORT" | "IMPORT";
@@ -2966,6 +3030,32 @@ export interface components {
             routeId: number;
             /** Format: int32 */
             stallCapacity: number;
+        };
+        DepartureDecisionResponseDto: {
+            belowMinimum?: boolean;
+            /** Format: int32 */
+            bookedStallCount?: number;
+            /** Format: int32 */
+            committedStallCount?: number;
+            confirmable?: boolean;
+            /** Format: date-time */
+            decisionAt?: string;
+            /** Format: date */
+            departureDate?: string;
+            /** Format: int64 */
+            id?: number;
+            /** Format: date-time */
+            plannedDepartureAt?: string;
+            routeCode?: string;
+            routeName?: string;
+            /** Format: date-time */
+            runConfirmedAt?: string;
+            /** Format: int32 */
+            stallCapacity?: number;
+            /** @enum {string} */
+            status?: "OPEN" | "CLOSED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+            /** Format: int32 */
+            uncommittedBookingCount?: number;
         };
         DepartureResponse: {
             /** Format: int32 */
@@ -5305,6 +5395,32 @@ export interface operations {
             };
         };
     };
+    reschedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BookingRescheduleRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingResponseDto"];
+                };
+            };
+        };
+    };
     resubmit: {
         parameters: {
             query?: never;
@@ -6071,6 +6187,29 @@ export interface operations {
             };
         };
     };
+    decisions: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListDepartureDecisionResponseDto"];
+                };
+            };
+        };
+    };
     suggestions: {
         parameters: {
             query: {
@@ -6115,6 +6254,28 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseDepartureResponse"];
+                };
+            };
+        };
+    };
+    confirmRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseDepartureDecisionResponseDto"];
                 };
             };
         };

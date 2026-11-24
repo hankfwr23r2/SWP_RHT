@@ -1,7 +1,17 @@
 # Thông báo của luồng A cho luồng B
 
 > Agent luồng B đọc file này sau `AGENTS.md`, trước khi bắt đầu task. Mục mới nhất ở trên. Đây là thông tin phối hợp, không thay quy trình duyệt ở mục 1.1 của `AGENTS.md`.
-> Cập nhật: 23/11/2026.
+> Cập nhật: 24/11/2026.
+
+## 24/11/2026. A6b PR3: quyết định chạy chuyến và dữ liệu mẫu
+
+| Nội dung | Ảnh hưởng luồng B |
+|---|---|
+| `departure.run_confirmed_at`, `run_confirmed_by` | Chỉ lập lượt LINEHAUL khi `run_confirmed_at` khác NULL. B thêm kiểm này ở B1 |
+| Hủy chuyến | Bị chặn khi còn đơn `IN_OPERATION`. Trường hợp đó xử lý bằng sự cố |
+| `booking_status_history.changed_by` | Cho phép NULL = hệ thống. Màn hình hiện "Hệ thống" |
+| Seed | 6 tuyến, mỗi tuần một chuyến. HCM-DN và DN-HCM nay có 8 điểm dừng, nghỉ đêm 600 phút ở REST-TUYHOA, REST-NHATRANG: cần đối tác có chuồng (`STABLE`) ở hai điểm này. Thêm GATE-LAOBAO, đại lý Lào, `driver3.dev`, `driver4.dev`, `escort2.dev`, `escort3.dev`. Ngừng QF-CUCHI |
+| Ngựa đực và ngựa cái cùng xe | Chỉ cảnh báo khi xếp khoang, không chặn |
 
 ## 23/11/2026. Quyết định nghiệp vụ đợt hai (người dùng đã chốt)
 

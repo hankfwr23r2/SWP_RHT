@@ -70,7 +70,7 @@ class PricingPreviewFlowTest {
         Long feeding = jdbc.queryForObject("SELECT id FROM billable_service WHERE code = 'FEEDING'", Long.class);
         Long pickup = insertAddress(owner, "10.70");
         Long delivery = insertAddress(owner, "10.80");
-        when(routing.truckRoute(anyList(), eq(10.0), eq(60), any())).thenAnswer(invocation -> {
+        when(routing.truckRoute(anyList(), eq(10.0), eq(80), any())).thenAnswer(invocation -> {
             assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
             if (TransactionSynchronizationManager.getResource(entityManagerFactory) instanceof EntityManagerHolder holder) {
                 var session = holder.getEntityManager().unwrap(SessionImplementor.class);
