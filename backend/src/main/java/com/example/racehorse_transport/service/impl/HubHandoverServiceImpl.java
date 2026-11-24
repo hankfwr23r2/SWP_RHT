@@ -26,10 +26,9 @@ import com.example.racehorse_transport.repository.HorseInsuranceRepository;
 import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.HorseStayRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
-import com.example.racehorse_transport.service.BookingStatusService;
 import com.example.racehorse_transport.service.DocumentCompletenessService;
 import com.example.racehorse_transport.service.HubHandoverService;
-import com.example.racehorse_transport.service.PaymentService;
+import com.example.racehorse_transport.service.HandoverOutcomeService;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -50,8 +49,7 @@ public class HubHandoverServiceImpl implements HubHandoverService {
     private final StaffRepository staff;
     private final HorseInsuranceRepository insurances;
     private final DocumentCompletenessService documents;
-    private final PaymentService payments;
-    private final BookingStatusService bookingStatus;
+    private final HandoverOutcomeService outcomes;
     private final Clock clock;
 
     @Override
@@ -80,11 +78,11 @@ public class HubHandoverServiceImpl implements HubHandoverService {
         }
         requireChip(stay, request);
         Instant now = clock.instant();
-        record(stay, next, HandoverType.PICKUP, request, username, now);
+        Handover handover = record(stay, next, HandoverType.PICKUP, request, username, now);
         stay.setActualStartAt(now);
         stays.flush();
-        // Nhận ngựa từ khách xong thì lập khoản số dư; xe chỉ rời hub khi đã trả đủ (#32)
-        payments.requestBalance(booking.getId(), now);
+        // Lập khoản số dư (xe chỉ rời hub khi đã trả đủ, #32) và báo khách
+        outcomes.atHub(handover, next, handover.getHandledBy().getUserId());
         return HorseStayResponseDto.from(stay);
     }
 
@@ -112,12 +110,11 @@ public class HubHandoverServiceImpl implements HubHandoverService {
         }
         requireChip(stay, request);
         Instant now = clock.instant();
-        record(stay, last, HandoverType.DELIVERY, request, username, now);
+        Handover handover = record(stay, last, HandoverType.DELIVERY, request, username, now);
         stay.setActualEndAt(now);
         stays.flush();
-        if (legs.countActiveHorsesNotDelivered(booking.getId()) == 0) {
-            bookingStatus.transition(booking.getId(), BookingStatus.DELIVERED, "Người nhận đã nhận đủ ngựa tại hub", actor(username).getUserId());
-        }
+        // Con cuối của đơn giao xong thì đơn DELIVERED (#16); báo khách
+        outcomes.atHub(handover, last, handover.getHandledBy().getUserId());
         return HorseStayResponseDto.from(stay);
     }
 
@@ -141,7 +138,7 @@ public class HubHandoverServiceImpl implements HubHandoverService {
     }
 
     // handover gắn horse_stay (không có điểm dừng); handover_horse ghi chặng liền kề của con ngựa
-    private void record(HorseStay stay, HorseLeg leg, HandoverType type, HubHandoverRequestDto request, String username, Instant at) {
+    private Handover record(HorseStay stay, HorseLeg leg, HandoverType type, HubHandoverRequestDto request, String username, Instant at) {
         Handover handover = new Handover();
         handover.setHandoverType(type);
         handover.setHorseStay(stay);
@@ -157,6 +154,7 @@ public class HubHandoverServiceImpl implements HubHandoverService {
         row.setMicrochipMatched(true);
         row.setConditionNote(request.conditionNote() == null || request.conditionNote().isBlank() ? null : request.conditionNote().strip());
         scans.saveAndFlush(row);
+        return handover;
     }
 
     private Staff actor(String username) {

@@ -107,6 +107,7 @@ class HubSelfFlowTest {
                 + join(stays) + ")", Long.class)).isEqualTo(lines.size());
         // Nhận xong thì lập khoản số dư
         assertThat(jdbc.queryForObject("SELECT status FROM payment WHERE booking_id = ? AND payment_type = 'BALANCE'", String.class, booking)).isEqualTo("PENDING");
+        assertThat(customerNotices(booking)).contains("Đã nhận ngựa");
 
         acknowledge();
         act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isOk());
@@ -158,6 +159,7 @@ class HubSelfFlowTest {
         }
         // Quy tắc #16: con cuối giao xong (lần giao DELIVERY tại hub) thì đơn DELIVERED
         assertThat(bookingStatus()).isEqualTo("DELIVERED");
+        assertThat(customerNotices(booking)).contains("Đã giao ngựa");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM handover WHERE handover_type = 'DELIVERY' AND horse_stay_id IN (" + join(stays) + ")", Long.class))
                 .isEqualTo(lines.size());
     }
@@ -305,5 +307,12 @@ class HubSelfFlowTest {
         entityManager.flush();
         jdbc.update("UPDATE departure SET run_confirmed_at = now(), run_confirmed_by = (SELECT min(id) FROM app_user) WHERE id = ? AND run_confirmed_at IS NULL", departureId);
         entityManager.clear();
+    }
+
+    // Thông báo khách nhận được trên đơn (B6), theo thứ tự gửi
+    private List<String> customerNotices(long bookingId) {
+        entityManager.flush();
+        return jdbc.queryForList("SELECT n.title FROM notification n JOIN notification_recipient r ON r.notification_id = n.id "
+                + "JOIN booking b ON b.id = n.booking_id WHERE n.booking_id = ? AND r.user_id = b.customer_id ORDER BY n.id", String.class, bookingId);
     }
 }

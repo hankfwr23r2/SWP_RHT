@@ -96,6 +96,7 @@ class BorderAgentFlowTest {
         act(escort, "/handovers/" + handover + "/complete").andExpect(status().isOk());
         assertThat(legStatus(legOnTrip(trip))).isEqualTo("COMPLETED");
         assertThat(legStatus(agentLeg)).isEqualTo("IN_PROGRESS");
+        assertThat(customerNotices(booking)).contains("Đã qua cửa khẩu");
         act(driver, "/vehicle-trips/" + trip + "/complete").andExpect(status().isOk());
 
         // Điều phối nhập hộ mốc đại lý đã giao: con cuối giao xong thì đơn DELIVERED
@@ -147,6 +148,7 @@ class BorderAgentFlowTest {
         act(escort, "/handovers/" + handover + "/complete").andExpect(status().isOk());
         assertThat(legStatus(legOnTrip(trip))).isEqualTo("IN_PROGRESS");
         assertThat(legStatus(agentLeg)).isEqualTo("COMPLETED");
+        assertThat(customerNotices(booking)).contains("Đã nhận ngựa ở cửa khẩu");
         // Rời cửa khẩu là rời nơi nhận: đã trả đủ (seed) nên đi được, đơn sang IN_OPERATION
         act(driver, "/trip-stops/" + stops.getFirst() + "/depart").andExpect(status().isOk());
         assertThat(bookingStatus()).isEqualTo("IN_OPERATION");
@@ -323,5 +325,12 @@ class BorderAgentFlowTest {
         entityManager.flush();
         jdbc.update("UPDATE departure SET run_confirmed_at = now(), run_confirmed_by = (SELECT min(id) FROM app_user) WHERE id = ? AND run_confirmed_at IS NULL", departureId);
         entityManager.clear();
+    }
+
+    // Thông báo khách nhận được trên đơn (B6), theo thứ tự gửi
+    private List<String> customerNotices(long bookingId) {
+        entityManager.flush();
+        return jdbc.queryForList("SELECT n.title FROM notification n JOIN notification_recipient r ON r.notification_id = n.id "
+                + "JOIN booking b ON b.id = n.booking_id WHERE n.booking_id = ? AND r.user_id = b.customer_id ORDER BY n.id", String.class, bookingId);
     }
 }

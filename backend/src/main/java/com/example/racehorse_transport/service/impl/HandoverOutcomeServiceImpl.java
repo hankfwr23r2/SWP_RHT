@@ -16,10 +16,13 @@ import com.example.racehorse_transport.service.BookingStatusService;
 import com.example.racehorse_transport.service.DocumentCompletenessService;
 import com.example.racehorse_transport.service.HandoverOutcomeService;
 import com.example.racehorse_transport.service.HorseStayService;
+import com.example.racehorse_transport.service.NotificationService;
 import com.example.racehorse_transport.service.PaymentService;
 import java.time.Instant;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -36,6 +39,7 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
     private final PaymentService payments;
     private final BookingCancellationService cancellations;
     private final DocumentCompletenessService documents;
+    private final NotificationService notifications;
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
@@ -90,6 +94,46 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
                     .filter(b -> b.getStatus() == BookingStatus.IN_OPERATION && legs.countActiveHorsesNotDelivered(b.getId()) == 0)
                     .forEach(b -> bookingStatus.transition(b.getId(), BookingStatus.DELIVERED, "Đã giao xong mọi con ngựa", actorUserId));
         }
+        notifyCustomers(handover, matched);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void atHub(Handover handover, HorseLeg leg, Long actorUserId) {
+        Booking booking = leg.getBookingHorse().getBooking();
+        if (handover.getHandoverType() == HandoverType.PICKUP) {
+            payments.requestBalance(booking.getId(), handover.getHandedAt());
+        } else if (handover.getHandoverType() == HandoverType.DELIVERY
+                && booking.getStatus() == BookingStatus.IN_OPERATION && legs.countActiveHorsesNotDelivered(booking.getId()) == 0) {
+            bookingStatus.transition(booking.getId(), BookingStatus.DELIVERED, "Người nhận đã nhận đủ ngựa tại hub", actorUserId);
+        }
+        notifyCustomers(handover, List.of(leg));
+    }
+
+    // B6: báo khách các mốc khách thấy trên đơn (MAN_HINH: đã nhận ngựa, đã qua cửa khẩu, đã giao). Mỗi đơn một thông báo
+    private void notifyCustomers(Handover handover, List<HorseLeg> handed) {
+        String place = handover.getTripStop() != null ? placeOf(handover) : handover.getHorseStay().getLocation().getName();
+        String party = handover.getToParty() != null ? handover.getToParty().getDisplayName()
+                : handover.getFromParty() != null ? handover.getFromParty().getDisplayName() : null;
+        handed.stream().collect(Collectors.groupingBy(l -> l.getBookingHorse().getBooking(), LinkedHashMap::new,
+                Collectors.mapping(l -> l.getBookingHorse().getHorse().getName(), Collectors.joining(", "))))
+                .forEach((booking, names) -> {
+                    String[] notice = switch (handover.getHandoverType()) {
+                        case PICKUP -> new String[] {"Đã nhận ngựa", "Công ty đã nhận " + names + " tại " + place + "."};
+                        case DELIVERY -> new String[] {"Đã giao ngựa", names + " đã được giao cho người nhận tại " + place + "."};
+                        case AGENT -> handover.getToParty() != null
+                                ? new String[] {"Đã qua cửa khẩu", names + " đã được bàn giao cho đại lý " + party + " tại " + place + " để chở tiếp tới nơi nhận."}
+                                : new String[] {"Đã nhận ngựa ở cửa khẩu", "Công ty đã nhận " + names + " từ đại lý " + party + " tại " + place + "."};
+                        default -> null;
+                    };
+                    if (notice == null) return;
+                    notifications.notify(List.of(booking.getCustomer().getUser().getId()), booking.getId(), notice[0], notice[1], "/orders/" + booking.getId());
+                });
+    }
+
+    private static String placeOf(Handover handover) {
+        var stop = handover.getTripStop();
+        return stop.getLocation() != null ? stop.getLocation().getName() : stop.getBookingAddress().getAddressLine();
     }
 
     private HorseLeg adjacentAgentLeg(HorseLeg leg, boolean next) {
