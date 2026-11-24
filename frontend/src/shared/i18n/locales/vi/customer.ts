@@ -549,6 +549,37 @@ export const customer = {
         SELF: 'Không tính phí chặng giao. Nhận ngựa ở hub {{hub}} theo giờ hẹn.',
       },
     },
+    methodRules: {
+      pickup: {
+        COMPANY: 'Xe đến đón từ {{pickupWindowStartHour}} giờ, ngựa về tới hub chậm nhất {{pickupWindowEndHour}} giờ cùng ngày.',
+        SELF: 'Có mặt ở hub chậm nhất {{hubCheckinHours}} giờ trước giờ chạy. Tới trễ thì chuyến có thể phải dời và bên có lỗi chịu chi phí.',
+      },
+      delivery: {
+        COMPANY: 'Xe giao từ {{deliveryWindowStartHour}} giờ đến {{deliveryWindowEndHour}} giờ, chờ người nhận miễn phí {{handoverFreeWaitMinutes}} phút.',
+        SELF: 'Quá giờ hẹn thì ngựa được gửi chuồng và người nhận trả phí.',
+      },
+    },
+    companyBlocked: {
+      limit: 'Xe chỉ chạy tối đa {{hours}} giờ một chiều.',
+      pickup: {
+        TOO_FAR: 'Nơi đón quá xa hub nên xe công ty không đến đón được.',
+        NO_ROUTE: 'Không có đường cho xe tải tới nơi đón nên xe công ty không đến đón được.',
+        switched: 'Đã chuyển sang bạn tự chở ngựa tới hub.',
+      },
+      delivery: {
+        TOO_FAR: 'Nơi giao quá xa hub nên xe công ty không giao tận nơi được.',
+        NO_ROUTE: 'Không có đường cho xe tải tới nơi giao nên xe công ty không giao tận nơi được.',
+        switched: 'Đã chuyển sang người nhận tự đến hub nhận.',
+      },
+    },
+    needToKnow: {
+      title: 'Bạn cần biết',
+      balance: 'Trả số dư trong {{balanceWaitMinutes}} phút sau khi công ty nhận ngựa; xe chỉ rời đi khi đã trả đủ.',
+      freeWait: 'Xe chờ người nhận miễn phí {{handoverFreeWaitMinutes}} phút ở nơi giao.',
+      decision: 'Công ty quyết định có chạy chuyến hay không {{departureDecisionHours}} giờ trước giờ chạy. Chuyến ít ngựa có thể được dồn sang chuyến khác hoặc hủy.',
+      more: 'Đọc đầy đủ ở',
+      terms: 'Điều khoản và chính sách',
+    },
     summary: {
       title: 'Tóm tắt đơn',
       pickup: 'Nơi đón',

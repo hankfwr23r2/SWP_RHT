@@ -9,6 +9,8 @@ export type RegulationPreviewRequest = Schemas['RegulationPreviewRequestDto']
 export type RegulationPreview = Schemas['RegulationPreviewResponseDto']
 export type PricingPreviewRequest = Schemas['PricingPreviewRequestDto']
 export type PricingPreview = Schemas['PricingPreviewResponseDto']
+export type TransferOptionsRequest = Schemas['TransferOptionsRequestDto']
+export type TransferOptions = Schemas['TransferOptionsResponseDto']
 export type BookingCreateRequest = Schemas['BookingCreateRequestDto']
 export type CustomerProfile = Schemas['CustomerProfileResponseDto']
 export type CustomerProfileUpdate = Schemas['CustomerProfileUpdateRequestDto']
@@ -26,6 +28,8 @@ export const bookingOrdersApi = {
     (await apiClient.post<ApiResponse<RegulationPreview>>('/country-rules/preview', body)).data.data,
   previewPricing: async (body: PricingPreviewRequest) =>
     (await apiClient.post<ApiResponse<PricingPreview>>('/pricing/preview', body)).data.data,
+  transferOptions: async (body: TransferOptionsRequest) =>
+    (await apiClient.post<ApiResponse<TransferOptions>>('/pricing/transfer-options', body)).data.data,
   create: async (body: BookingCreateRequest) =>
     readFormResponse<BookingOrder>(await apiClient.post('/bookings', body, formResponseOptions)),
   list: async () => (await apiClient.get<ApiResponse<BookingSummary[]>>('/bookings')).data.data,

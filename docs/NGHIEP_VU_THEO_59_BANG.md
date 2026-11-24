@@ -253,7 +253,7 @@ Tiến độ vận hành (ngựa đang ở đâu, chặng nào, có sự cố kh
 | 7 | Chọn ngựa, loại khoang, chế độ ăn và dịch vụ thêm | `booking_horse`, `booking_horse_service` |
 | 8 | Khai bảo hiểm cho từng con: tự có / nhờ công ty thu xếp / không mua | `horse_insurance` (DRAFT). Chọn NONE thì phải ký cam kết miễn trách: `terms_acceptance` LIABILITY_WAIVER |
 | 9 | Tải giấy tờ đang có | `document` (UPLOADED), có `horse_id` hoặc `booking_horse_id` và `document_requirement_id` |
-| 10 | Gửi đơn | `booking` (PENDING_INTAKE), `booking_address` × 2 (snapshot), `terms_acceptance` SERVICE_TERMS gắn `booking_id`, `booking_status_history` |
+| 10 | Gửi đơn | `booking` (PENDING_INTAKE), `booking_address` × 2 (snapshot), `terms_acceptance` SERVICE_TERMS gắn `booking_id`, `booking_status_history`, `notification` cho khách và chuyên viên |
 
 **Quy tắc:**
 - Chỉ chọn được `departure` có `status = OPEN`, chưa qua `booking_cutoff_at`, còn đủ chỗ (`booked_stall_count` cộng số chỗ của đơn không vượt `stall_capacity`; khoang thường 1 chỗ, khoang rộng 2 chỗ). Khách tự chọn loại khoang cho từng con; không bắt buộc theo giới tính. Khi ghi, `DepartureService` khóa dòng `departure` bằng `FOR UPDATE` rồi cộng `booked_stall_count` trong cùng transaction.

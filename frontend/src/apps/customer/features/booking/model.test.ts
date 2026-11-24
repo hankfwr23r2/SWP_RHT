@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { CustomerAddress } from '@shared/api/customerAddresses'
 import { emptyDraft, emptyHorse, type BookingDraft } from './draft'
-import { addDays, bookingTypeOf, createRequest, insuranceReady, latestPickup, pricingRequest, routeReady, showDateTime, todayIso } from './model'
+import { addDays, bookingTypeOf, createRequest, insuranceReady, latestPickup, pricingRequest, routeReady, showDateTime, todayIso, transferRequest } from './model'
 
 const place = (id: number, countryCode: string, provinceCode: string): CustomerAddress =>
   ({ id, countryCode, provinceCode, addressLine: `Số ${id}`, ward: 'Phường X', latitude: 10, longitude: 106 })
@@ -36,6 +36,15 @@ describe('ngày', () => {
     expect(latestPickup('INTERPROVINCE', '2099-01-20')).toBe('2099-01-19')
     expect(latestPickup('IMPORT', '2099-01-20')).toBe('2099-01-20')
     expect(latestPickup('LOCAL')).toBeUndefined()
+  })
+})
+
+describe('hỏi công ty chở được không', () => {
+  it('chỉ hỏi khi đơn đi trục đã có địa chỉ, chuyến, ngày', () => {
+    expect(transferRequest(ready())).toEqual({ pickupAddressId: 1, deliveryAddressId: 2, pickupAt: '2099-01-19T01:00:00.000Z' })
+    expect(transferRequest({ ...ready(), routing: 'DIRECT', departure: null })).toBeNull()
+    expect(transferRequest({ ...ready(), departure: null })).toBeNull()
+    expect(transferRequest({ ...ready(), pickupDate: '' })).toBeNull()
   })
 })
 

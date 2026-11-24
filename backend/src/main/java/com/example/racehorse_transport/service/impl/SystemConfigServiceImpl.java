@@ -4,12 +4,15 @@ import com.example.racehorse_transport.dto.config.ContactResponseDto;
 import com.example.racehorse_transport.dto.config.SystemConfigResponseDto;
 import com.example.racehorse_transport.dto.config.SystemConfigUpdateRequestDto;
 import com.example.racehorse_transport.dto.config.SystemTextConfigUpdateRequestDto;
+import com.example.racehorse_transport.dto.config.TransportRulesResponseDto;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.SystemConfig;
 import com.example.racehorse_transport.entity.enums.AppUserStatus;
 import com.example.racehorse_transport.entity.enums.EmploymentStatus;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.SystemConfigPolicy;
+import com.example.racehorse_transport.policy.TripSchedulePolicy;
+import com.example.racehorse_transport.policy.TripSchedulePolicy.Rules;
 import com.example.racehorse_transport.repository.AppUserRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.repository.SystemConfigRepository;
@@ -91,6 +94,18 @@ public class SystemConfigServiceImpl implements SystemConfigService {
     @Transactional(readOnly = true)
     public ContactResponseDto contact() {
         return new ContactResponseDto(text(SystemConfigPolicy.HOTLINE), text(SystemConfigPolicy.OFFICE_ADDRESS));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TransportRulesResponseDto transportRules() {
+        Rules rules = new Rules(getInt("MAX_CONTINUOUS_HOURS"), getInt("MIN_REST_MINUTES"), getInt("MAX_DRIVE_HOURS_PER_DAY"), 0, 0);
+        return new TransportRulesResponseDto(
+                getInt("PICKUP_WINDOW_START_HOUR"), getInt("PICKUP_WINDOW_END_HOUR"),
+                getInt("DELIVERY_WINDOW_START_HOUR"), getInt("DELIVERY_WINDOW_END_HOUR"),
+                getInt("HUB_CHECKIN_HOURS"), getInt("HANDOVER_FREE_WAIT_MINUTES"), getInt("BALANCE_WAIT_MINUTES"),
+                getInt("DEPARTURE_DECISION_HOURS"),
+                Math.toIntExact(TripSchedulePolicy.rideLimitSeconds(false, rules) / 60));
     }
 
     private String text(String key) {

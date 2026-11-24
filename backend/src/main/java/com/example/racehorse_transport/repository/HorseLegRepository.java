@@ -17,6 +17,9 @@ public interface HorseLegRepository extends JpaRepository<HorseLeg, Long> {
 
     boolean existsByVehicleTrip_IdAndStatusNot(Long vehicleTripId, HorseLegStatus status);
 
+    // Con khác của đơn đang có chặng trên lượt xe
+    boolean existsByVehicleTrip_IdAndBookingHorse_Booking_IdAndIdNotAndStatusNot(Long vehicleTripId, Long bookingId, Long id, HorseLegStatus status);
+
     // Chặng của các con ngựa (kèm lượt xe và điểm lên xuống) để hiện ở bảng điều độ
     @EntityGraph(attributePaths = {"vehicleTrip", "fromLocation", "toLocation", "fromBookingAddress", "toBookingAddress", "boardTripStop", "alightTripStop"})
     List<HorseLeg> findByBookingHorse_IdInOrderByBookingHorse_IdAscSequenceNumberAsc(Collection<Long> bookingHorseIds);

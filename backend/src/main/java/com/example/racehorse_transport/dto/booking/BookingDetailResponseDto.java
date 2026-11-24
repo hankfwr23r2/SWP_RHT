@@ -7,21 +7,22 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
+// intakeByName: nhân viên đã tiếp nhận đơn, chỉ trả cho nhân viên
 public record BookingDetailResponseDto(BookingResponseDto booking, List<PartySnapshot> parties,
         List<AddressSnapshot> addresses, List<HorseDetail> horses, String reviewReason,
-        TransferMethod pickupMethod, TransferMethod deliveryMethod) {
+        TransferMethod pickupMethod, TransferMethod deliveryMethod, String intakeByName) {
 
     public static BookingDetailResponseDto from(Booking booking, List<BookingParty> parties,
                                                  List<BookingAddress> addresses, List<HorseDetail> horses) {
-        return from(booking, parties, addresses, horses, null);
+        return from(booking, parties, addresses, horses, null, null);
     }
 
     public static BookingDetailResponseDto from(Booking booking, List<BookingParty> parties,
-            List<BookingAddress> addresses, List<HorseDetail> horses, String reviewReason) {
+            List<BookingAddress> addresses, List<HorseDetail> horses, String reviewReason, String intakeByName) {
         return new BookingDetailResponseDto(BookingResponseDto.from(booking),
                 parties.stream().map(PartySnapshot::from).toList(),
                 addresses.stream().map(AddressSnapshot::from).toList(), List.copyOf(horses), reviewReason,
-                booking.getPickupMethod(), booking.getDeliveryMethod());
+                booking.getPickupMethod(), booking.getDeliveryMethod(), intakeByName);
     }
 
     public record PartySnapshot(BookingPartyRole bookingRole, String fullName, String phone,

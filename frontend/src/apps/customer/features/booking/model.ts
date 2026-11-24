@@ -1,5 +1,5 @@
 // Chuyển bản nháp thành yêu cầu gửi backend. Không tính giá, không tự suy hạn chót.
-import type { BookingCreateRequest, PricingPreviewRequest } from '@shared/api/bookingOrders'
+import type { BookingCreateRequest, PricingPreviewRequest, TransferOptionsRequest } from '@shared/api/bookingOrders'
 import type { CustomerAddress } from '@shared/api/customerAddresses'
 import { PARTY_ROLES, type BookingDraft, type HorseChoice, type PartyDraft } from './draft'
 
@@ -75,6 +75,12 @@ export function pricingRequest(draft: BookingDraft): PricingPreviewRequest | nul
       addOnServiceIds: draft.horses[horseId].addOnServiceIds,
     })),
   }
+}
+
+// Hỏi công ty chở được đầu đón, đầu giao không: chỉ đơn đi trục đã đủ địa chỉ, chuyến, ngày
+export function transferRequest(draft: BookingDraft): TransferOptionsRequest | null {
+  if (draft.routing !== 'LINEHAUL' || !routeReady(draft)) return null
+  return { pickupAddressId: draft.pickupAddressId!, deliveryAddressId: draft.deliveryAddressId!, pickupAt: pickupAt(draft) }
 }
 
 const text = (value: string) => value.trim() || undefined

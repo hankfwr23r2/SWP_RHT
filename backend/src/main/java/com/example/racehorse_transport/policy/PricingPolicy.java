@@ -73,18 +73,47 @@ public final class PricingPolicy {
         return List.of(new AddOn(vetCheck.getId(), horseCount, horseCount, 0));
     }
 
-    public static void validateDriveTime(ServiceLayer layer, long driveSeconds, int dailyHours) {
-        long dailySeconds = dailyHours * 3600L;
-        if (driveSeconds <= (layer == ServiceLayer.DIRECT ? dailySeconds : dailySeconds / 2)) {
-            return;
+    // Công ty chở được một đầu đón, giao hay không. UNKNOWN: bản đồ chưa trả lời được, không chặn khách
+    public enum TransferStatus {
+        AVAILABLE, TOO_FAR, NO_ROUTE, UNKNOWN;
+
+        public boolean companyAllowed() {
+            return this == AVAILABLE || this == UNKNOWN;
         }
-        String message = switch (layer) {
+    }
+
+    public static void validateDriveTime(ServiceLayer layer, long driveSeconds, int dailyHours) {
+        if (!withinDriveTime(layer, driveSeconds, dailyHours)) {
+            throw new PricingRuleException(tooFarMessage(layer), true);
+        }
+    }
+
+    public static TransferStatus transferStatus(ServiceLayer layer, long driveSeconds, int dailyHours) {
+        return withinDriveTime(layer, driveSeconds, dailyHours) ? TransferStatus.AVAILABLE : TransferStatus.TOO_FAR;
+    }
+
+    // Lý do hiện cho khách. NULL khi chở được
+    public static String transferReason(ServiceLayer layer, TransferStatus status) {
+        return switch (status) {
+            case AVAILABLE -> null;
+            case TOO_FAR -> tooFarMessage(layer);
+            case NO_ROUTE -> "Không tìm được đường cho xe tải tới địa chỉ này.";
+            case UNKNOWN -> "Chưa kiểm được quãng đường. Công ty sẽ kiểm lại khi tính giá.";
+        };
+    }
+
+    private static boolean withinDriveTime(ServiceLayer layer, long driveSeconds, int dailyHours) {
+        long dailySeconds = dailyHours * 3600L;
+        return driveSeconds <= (layer == ServiceLayer.DIRECT ? dailySeconds : dailySeconds / 2);
+    }
+
+    private static String tooFarMessage(ServiceLayer layer) {
+        return switch (layer) {
             case DIRECT -> "Chặng chạy thẳng vượt giới hạn giờ lái trong ngày.";
             case PICKUP -> "Chặng đón vượt giới hạn giờ lái một chiều. Vui lòng tự chở ngựa tới hub.";
             case DELIVERY -> "Chặng giao vượt giới hạn giờ lái một chiều. Vui lòng tự nhận ngựa tại hub.";
             default -> throw new PricingRuleException("Chặng đường tính giá không hợp lệ.");
         };
-        throw new PricingRuleException(message, true);
     }
 
     public static PriceList selectList(List<PriceList> candidates, PricingInput input) {

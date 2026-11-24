@@ -18,6 +18,8 @@ import com.example.racehorse_transport.entity.enums.BookingPartyRole;
 import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
+import com.example.racehorse_transport.policy.CustomerNoticePolicy;
+import com.example.racehorse_transport.policy.CustomerNoticePolicy.ExpectedTimes;
 import com.example.racehorse_transport.policy.TrackingPolicy;
 import com.example.racehorse_transport.policy.TripExecutionPolicy;
 import com.example.racehorse_transport.repository.BookingHorseRepository;
@@ -142,9 +144,17 @@ public class TrackingServiceImpl implements TrackingService {
         return new HorseJourneyResponseDto(line.getId(), line.getHorse().getName(), line.getHorse().getMicrochip(), line.getStatus(),
                 holder, holder == CustodyHolder.PARTY ? last.getHandover().getToParty().getDisplayName() : null,
                 last == null ? null : last.getHandover().getHandedAt(),
-                journey.of(journey.legs(), line).stream().map(HorseJourneyResponseDto.JourneyLegDto::from).toList(),
+                journey.of(journey.legs(), line).stream().map(TrackingServiceImpl::journeyLeg).toList(),
                 journey.of(journey.stays(), line).stream().map(HorseJourneyResponseDto.JourneyStayDto::from).toList(),
                 handoversOf(line, journey));
+    }
+
+    // Chặng đã gỡ khỏi lượt xe thì khung giờ không còn đúng
+    private static HorseJourneyResponseDto.JourneyLegDto journeyLeg(HorseLeg leg) {
+        ExpectedTimes expected = leg.getStatus() == HorseLegStatus.CANCELLED ? new ExpectedTimes(null, null) : CustomerNoticePolicy.expectedTimes(leg);
+        return HorseJourneyResponseDto.JourneyLegDto.from(leg,
+                expected.pickup() == null ? null : CustomerNoticePolicy.window(expected.pickup()),
+                expected.delivery() == null ? null : CustomerNoticePolicy.window(expected.delivery()));
     }
 
     // Giao nhận đã có dòng của con này, cộng các lần chưa xong ở điểm lên, xuống xe của nó, xếp theo thứ tự lập

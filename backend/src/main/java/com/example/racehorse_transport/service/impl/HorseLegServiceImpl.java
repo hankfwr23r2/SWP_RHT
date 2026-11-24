@@ -29,6 +29,7 @@ import com.example.racehorse_transport.repository.DispatchBookingRepository;
 import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.TripStopRepository;
 import com.example.racehorse_transport.repository.VehicleTripRepository;
+import com.example.racehorse_transport.service.CustomerNoticeService;
 import com.example.racehorse_transport.service.HorseLegService;
 import com.example.racehorse_transport.service.StallPlanService;
 import com.example.racehorse_transport.service.SystemConfigService;
@@ -59,6 +60,7 @@ public class HorseLegServiceImpl implements HorseLegService {
     private final DispatchBookingRepository dispatchBookings;
     private final StallPlanService stallPlans;
     private final SystemConfigService configs;
+    private final CustomerNoticeService notices;
 
     @Override
     @Transactional(readOnly = true)
@@ -176,6 +178,7 @@ public class HorseLegServiceImpl implements HorseLegService {
         legs.saveAndFlush(leg);
         // Hệ thống tự xếp vị trí khoang ngay khi gán ngựa (NGHIEP_VU GĐ5), điều phối chỉnh ở sơ đồ khoang
         stallPlans.placeNew(leg);
+        notices.legAssigned(leg);
         return horsesOnTrip(trip.getId());
     }
 

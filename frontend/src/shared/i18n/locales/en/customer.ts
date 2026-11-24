@@ -549,6 +549,37 @@ export const customer = {
         SELF: 'No delivery charge. Collect at hub {{hub}} at the agreed time.',
       },
     },
+    methodRules: {
+      pickup: {
+        COMPANY: 'The truck comes from {{pickupWindowStartHour}}:00; the horse reaches the hub by {{pickupWindowEndHour}}:00 the same day.',
+        SELF: 'Be at the hub at least {{hubCheckinHours}} hours before departure. If you are late the trip may be moved, and the party at fault bears the cost.',
+      },
+      delivery: {
+        COMPANY: 'Delivery between {{deliveryWindowStartHour}}:00 and {{deliveryWindowEndHour}}:00; the truck waits {{handoverFreeWaitMinutes}} minutes free of charge.',
+        SELF: 'After the agreed time the horse is stabled and the consignee pays the fee.',
+      },
+    },
+    companyBlocked: {
+      limit: 'Our truck drives at most {{hours}} hours one way.',
+      pickup: {
+        TOO_FAR: 'The pickup address is too far from the hub for our truck.',
+        NO_ROUTE: 'There is no truck road to the pickup address.',
+        switched: 'Switched to you bringing the horse to the hub.',
+      },
+      delivery: {
+        TOO_FAR: 'The delivery address is too far from the hub for our truck.',
+        NO_ROUTE: 'There is no truck road to the delivery address.',
+        switched: 'Switched to the consignee collecting at the hub.',
+      },
+    },
+    needToKnow: {
+      title: 'Good to know',
+      balance: 'Pay the balance within {{balanceWaitMinutes}} minutes after we receive the horse; the truck leaves only when it is paid in full.',
+      freeWait: 'The truck waits for the consignee {{handoverFreeWaitMinutes}} minutes free of charge.',
+      decision: 'We decide whether a trip runs {{departureDecisionHours}} hours before departure. A trip with few horses may be merged into another or cancelled.',
+      more: 'Read the full',
+      terms: 'Terms and policies',
+    },
     summary: {
       title: 'Order summary',
       pickup: 'Pickup',

@@ -78,6 +78,8 @@ class HubSelfFlowTest {
                     .andExpect(jsonPath("$.data.pickupMethod").value("SELF"))));
         }
         appoint(lines.getFirst(), departAt.minusSeconds(3 * 3600)).andExpect(status().isConflict());
+        // Các con hẹn cùng giờ: khách nhận một thông báo giờ hẹn
+        assertThat(customerNotices(booking)).containsOnlyOnce("Giờ hẹn đưa ngựa tới hub");
         long hub = locations.findByCode("HUB-HCM").orElseThrow().getId();
         mvc.perform(get("/horse-stays/appointments").param("locationId", String.valueOf(hub)).header(HttpHeaders.AUTHORIZATION, coordinator))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(lines.size()));
@@ -207,7 +209,16 @@ class HubSelfFlowTest {
         stable(first, "500000").andExpect(status().isConflict()).andExpect(jsonPath("$.message", startsWith("Chưa quá giờ hẹn người nhận tới")));
         // Điều phối hẹn người nhận tới 30 phút trước; giờ hẹn không được trước lúc ngựa tới hub
         collectAt(first, java.time.Instant.now().minusSeconds(3 * 3600)).andExpect(status().isBadRequest());
-        collectAt(first, java.time.Instant.now().minusSeconds(1800)).andExpect(status().isOk());
+        assertThat(customerNotices(booking)).doesNotContain("Giờ hẹn nhận ngựa ở hub");
+        java.time.Instant collect = java.time.Instant.now().minusSeconds(1800).truncatedTo(java.time.temporal.ChronoUnit.SECONDS);
+        collectAt(first, collect).andExpect(status().isOk());
+        assertThat(customerNotices(booking)).containsOnlyOnce("Giờ hẹn nhận ngựa ở hub");
+        // Đặt lại đúng giờ cũ, hoặc con khác cùng giờ, thì không báo thêm; đổi giờ thì báo
+        collectAt(first, collect).andExpect(status().isOk());
+        collectAt(stays.getLast(), collect).andExpect(status().isOk());
+        assertThat(customerNotices(booking)).containsOnlyOnce("Giờ hẹn nhận ngựa ở hub");
+        collectAt(stays.getLast(), collect.minusSeconds(600)).andExpect(status().isOk());
+        assertThat(customerNotices(booking).stream().filter("Giờ hẹn nhận ngựa ở hub"::equals)).hasSize(2);
         long stabling = ((Number) JsonPath.read(content(stable(first, "500000").andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.stayType").value("STABLING"))), "$.data.id")).longValue();
         assertThat(jdbc.queryForObject("SELECT actual_end_at IS NOT NULL FROM horse_stay WHERE id = ?", Boolean.class, first)).isTrue();

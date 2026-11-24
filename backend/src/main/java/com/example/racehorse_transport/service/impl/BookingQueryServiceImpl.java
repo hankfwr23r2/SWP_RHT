@@ -6,10 +6,12 @@ import com.example.racehorse_transport.dto.booking.BookingSummaryResponseDto;
 import com.example.racehorse_transport.dto.booking.BookingDetailResponseDto;
 import com.example.racehorse_transport.dto.booking.BookingDetailResponseDto.HorseDetail;
 import com.example.racehorse_transport.dto.booking.BookingResponseDto;
+import com.example.racehorse_transport.entity.AppUser;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.BookingHorse;
 import com.example.racehorse_transport.entity.BookingHorseAddOn;
 import com.example.racehorse_transport.entity.HorseInsurance;
+import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.repository.BookingAddressRepository;
 import com.example.racehorse_transport.repository.BookingHorseAddOnRepository;
@@ -20,6 +22,7 @@ import com.example.racehorse_transport.repository.BookingStatusHistoryRepository
 import com.example.racehorse_transport.entity.BookingStatusHistory;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.repository.HorseInsuranceRepository;
+import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.service.BookingQueryService;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +47,7 @@ public class BookingQueryServiceImpl implements BookingQueryService {
     private final BookingHorseRepository horses;
     private final HorseInsuranceRepository insurances;
     private final BookingStatusHistoryRepository history;
+    private final StaffRepository staff;
 
     @Override
     public List<BookingSummaryResponseDto> list(String username) {
@@ -54,7 +58,7 @@ public class BookingQueryServiceImpl implements BookingQueryService {
     public BookingDetailResponseDto get(String username, Long id) {
         Booking booking = bookings.findByIdAndCustomer_User_Username(id, username)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
-        return detail(booking);
+        return detail(booking, null);
     }
 
     @Override
@@ -87,11 +91,20 @@ public class BookingQueryServiceImpl implements BookingQueryService {
 
     @Override
     public BookingDetailResponseDto reviewDetail(Long id) {
-        return detail(bookings.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn.")));
+        Booking booking = bookings.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
+        return detail(booking, intakeByName(id));
     }
 
-    private BookingDetailResponseDto detail(Booking booking) {
+    // Người đã tiếp nhận đơn. NULL khi đơn chưa được tiếp nhận
+    private String intakeByName(Long bookingId) {
+        AppUser actor = history.findFirstByBooking_IdAndFromStatusAndToStatusOrderByChangedAtDescIdDesc(
+                bookingId, BookingStatus.PENDING_INTAKE, BookingStatus.UNDER_REVIEW)
+                .map(BookingStatusHistory::getChangedBy).orElse(null);
+        return actor == null ? null : staff.findById(actor.getId()).map(Staff::getFullName).orElse(actor.getUsername());
+    }
+
+    private BookingDetailResponseDto detail(Booking booking, String intakeByName) {
         Long id = booking.getId();
         List<BookingHorse> rows = horses.findForDetail(id);
         String reason = history.findFirstByBooking_IdOrderByChangedAtDescIdDesc(id)
@@ -99,7 +112,7 @@ public class BookingQueryServiceImpl implements BookingQueryService {
                         || row.getToStatus() == BookingStatus.REJECTED)
                 .map(BookingStatusHistory::getReason).orElse(null);
         return BookingDetailResponseDto.from(booking, parties.findById_BookingId(id),
-                addresses.findAddressesForDetail(id), horseDetails(rows), reason);
+                addresses.findAddressesForDetail(id), horseDetails(rows), reason, intakeByName);
     }
 
     private List<HorseDetail> horseDetails(List<BookingHorse> rows) {
