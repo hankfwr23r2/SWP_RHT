@@ -9,7 +9,7 @@
 - Góp ý của thầy: **"học lại kiến thức nền"**, và nghiệp vụ còn nhiều chỗ chưa sát thực tế.
 - Câu hỏi nhóm không trả lời được: *DB thể hiện việc tính tiền theo km hay theo điểm dừng như thế nào?* Câu trả lời thật là DB **không thể hiện**. Giá được tính ở frontend rồi lưu thành JSON.
 
-## 2. Chẩn đoán gốc rễ (chi tiết: `DANH_SACH_LOI_THIET_KE.md`, 50 lỗi)
+## 2. Chẩn đoán gốc rễ
 
 | Vấn đề | Biểu hiện trong code cũ |
 |---|---|
@@ -78,7 +78,7 @@ Kết luận: **cơ chế giao tiếp** (REST/JSON + JWT + refresh cookie) khôn
 | Giữ tên `location` (23/11/2026) | Người dùng chốt. Chỉ chứa điểm cố định của mạng lưới |
 | Giữ vai trò `ESCORT` (nhân viên hộ tống), không đổi thành groom | Người dùng chốt. Tên đã dùng thống nhất trong lược đồ, thư mục `backoffice/features/escort` và code cũ |
 | Tên trong code (bảng, cột, enum, class, biến, endpoint) dùng tiếng Anh theo chuẩn đặt tên. Chữ hiển thị cho người dùng đi qua i18n (`vi`, `en`) | Người dùng chốt. Tài liệu viết tiếng Việt nhưng mọi định danh phải là tiếng Anh |
-| `MO_HINH_NGHIEP_VU_MOI.md` chỉ là tài liệu tham khảo, không phải yêu cầu | Yêu cầu chi tiết lấy từ `DB_SCHEMA_59_BANG.md` và `NGHIEP_VU_THEO_59_BANG.md` |
+| `CAN_CU_PHAP_LY_VA_IRT.md` là tài liệu tham khảo | Yêu cầu chi tiết lấy từ `DB_SCHEMA_59_BANG.md` và `NGHIEP_VU_THEO_59_BANG.md` |
 | Backend theo n-layer: Controller → Service → Repository, cộng Policy và Client | DTO có `from()`, `toEntity()`, `applyTo()`. Không dùng ModelMapper. Chi tiết: `AGENTS.md` |
 | Công ty không bán chỗ cách ly, chỉ chở ngựa đã đủ điều kiện; vẫn trọn gói vận chuyển và thủ tục (23/11/2026) | Người dùng chốt. Điều kiện thể hiện bằng giấy `QUARANTINE_CLEARANCE` nên bỏ `quarantine_days`. IRT **có** làm khâu cách ly, nên không nói điểm này giống IRT |
 | Đơn nhập làm ngược chiều đơn xuất: đại lý nước ngoài liên hệ cửa khẩu Việt Nam, giao ngựa cho công ty khi có giấy vận chuyển mẫu 14a (23/11/2026) | Thông tư 01/2026 Điều 11. Giả định: địa chỉ giao là nơi chủ ngựa cách ly. Ghé hub là đơn giản hóa, vì luật yêu cầu niêm phong xe về nơi cách ly. Chưa kiểm chứng Thông tư 22/2026 và việc đại lý nước ngoài đứng tên khai báo |
@@ -99,9 +99,10 @@ Kết luận: **cơ chế giao tiếp** (REST/JSON + JWT + refresh cookie) khôn
 - [ ] Bỏ `departure_schedule_day` (thành 58 bảng) hay giữ?
 - [ ] Rà lại các giá trị trạng thái mà agent tự đặt cho `vehicle_trip`, `horse_leg`, `payment`, `incident`, `incident_plan`, `document`… để khớp nghiệp vụ.
 - [ ] Đánh giá chỉ cho cả đơn, hay cho từng tài xế/chuyến? Nếu cho tài xế/chuyến thì `booking_rating` phải đổi.
-- [ ] Viết `DocumentCompletenessPolicy` (đơn đã đủ giấy chưa) và unit test với nhiều trường hợp.
+- [x] Đã có `DocumentCompletenessPolicy` trong `backend/src/main/java/com/example/racehorse_transport/policy/` và `DocumentCompletenessPolicyTest`.
 - [x] ~~Một hub hay nhiều hub~~: đã chốt trụ sở + hub vệ tinh (mục 4). `AGENTS.md` đã ghi "xe về hub gốc".
-- [ ] Bổ sung **dữ liệu nền đầy đủ**: điểm mạng lưới, vùng phục vụ của từng hub, tuyến (mỗi chiều một tuyến), lịch chạy, bảng giá, quy định. Các ví dụ trong `NGHIEP_VU_THEO_59_BANG.md` mục 3 chỉ là minh họa.
+- [x] Seed dev đã có dữ liệu mẫu cho 6 tuyến một chiều.
+- [ ] Bổ sung dữ liệu thật về điểm mạng lưới, vùng phục vụ của hub, tuyến, lịch chạy, bảng giá và quy định.
 
 ## 6. Bản đồ tài liệu
 
@@ -109,27 +110,23 @@ Kết luận: **cơ chế giao tiếp** (REST/JSON + JWT + refresh cookie) khôn
 |---|---|---|
 | `docs/DB_SCHEMA_59_BANG.md` | **Đặc tả chuẩn để tạo DB**: 59 bảng, ràng buộc, thứ tự tạo, dữ liệu dẫn xuất, quy tắc ở service | Mới nhất |
 | `docs/KE_HOACH_TRIEN_KHAI.md` | Kế hoạch triển khai: đợt 0, luồng A (thương mại) và B (vận hành) chạy song song, chủ sở hữu bảng, hợp đồng gọi chéo, quy trình cho agent, bảng tiến độ | Mới nhất |
-| `docs/BANG_DOI_TEN.md` | Tên cũ → tên mới | Code chưa đồng bộ |
 | `docs/NGHIEP_VU_THEO_59_BANG.md` | Nghiệp vụ chi tiết theo 59 bảng (10 giai đoạn, nhánh phụ, ví dụ, ai ghi bảng nào) và danh sách tận dụng từ project cũ | Mới nhất |
-| `docs/DANH_SACH_LOI_THIET_KE.md` | 50 lỗi thiết kế của project cũ, nhóm A–I | **Không còn trong thư mục** (22/11/2026) |
 | `AGENTS.md` (thư mục gốc) | File quy tắc duy nhất: cách làm việc, cấu trúc backend n-layer, DB, DTO, API, frontend, kiểm thử. Đã gộp `BACKEND_ARCHITECTURE_RULES.md` và `frontend/docs/AGENT_GUIDE.md` (hai file này đã xóa) | Mới nhất |
-| `docs/ERD_ENTITY_MERMAID.md`, `docs/ERD_ALL_IN_ONE.md`, `docs/ERD_ENTITY_BOXES.md` | ERD bản 64 bảng | **Không còn trong thư mục.** Nên sinh lại ERD từ DB sau khi chạy Flyway |
-| `docs/MO_HINH_NGHIEP_VU_MOI.md` | Kế hoạch thay đổi nghiệp vụ của người dùng, căn cứ pháp lý ba nước | Tham khảo, nhiều điểm đã thay |
+| `docs/CAN_CU_PHAP_LY_VA_IRT.md` | Căn cứ pháp lý ba nước, đối chiếu IRT/Peden | Tham khảo |
 | `docs/MAN_HINH_VA_TAC_DONG.md` | Màn hình, thao tác, chặn, tác động | Mới nhất |
 | `docs/THONG_BAO_LUONG_B.md` | Thông báo của luồng A cho luồng B | Mới nhất |
 
 Đã xóa ngày 23/11/2026, còn trong lịch sử Git: `docs/database/` (ERD cũ 34 bảng), `SUA_TAI_KHOAN_VA_HO_SO.md`, `BAN_GIAO_TAI_KHOAN_VA_HO_SO.md`, `NGHIEM_THU_LUONG_A.md`, `admin-system-log.md`, `MO_HINH_NGHIEP_VU_MUC_1_2.md`, `backend/scripts/`.
 
+Đã xóa 24/11/2026, còn trong lịch sử Git: bảng đối chiếu tên cũ, bản Markdown và PDF của hướng dẫn tích hợp nội bộ, manifest bộ chính sách.
+
 Khi có mâu thuẫn, **`DB_SCHEMA_59_BANG.md` là nguồn đúng**.
 
-## 7. Việc tiếp theo đề xuất
+## 7. Việc tiếp theo
 
-1. Chốt các câu hỏi ở mục 5.
-2. Sinh ERD từ DB thật sau khi chạy Flyway (DBeaver hoặc SchemaSpy), không vẽ tay.
-3. Viết Flyway migration theo các bậc trong mục "Thứ tự tạo bảng" và chạy thử trên PostgreSQL 15 trở lên. Bật `ddl-auto=validate`.
-4. Chuyển toàn bộ tính giá từ frontend sang `PricingService` ở backend. Frontend chỉ hiển thị.
-5. Tách API `trip-update` kiểu switch thành các endpoint theo tài nguyên (`/trips/{id}/stops/{stopId}/arrive`, `/handovers/{id}/complete`…).
-6. Bật test kiến trúc (ArchUnit) khi bắt đầu nhánh `redesign/system-v2`, theo `AGENTS.md` mục 10.3.
+1. Làm FE luồng A theo thứ tự PR ở [Kế hoạch triển khai](KE_HOACH_TRIEN_KHAI.md#fe-luồng-a).
+2. Luồng B nối các hợp đồng A7/A8 ở hub, cửa khẩu và khi trả ngựa tại chỗ, rồi hoàn tất phần vận hành còn lại theo [Thông báo luồng B](THONG_BAO_LUONG_B.md).
+3. Đợt cuối tích hợp hai luồng, kiểm thử E2E, dọn code cũ và sinh ERD từ DB thật theo [Kế hoạch triển khai](KE_HOACH_TRIEN_KHAI.md#8-đợt-cuối-tích-hợp-và-dọn-dẹp).
 
 ## 8. Ràng buộc khi làm việc với repo này
 

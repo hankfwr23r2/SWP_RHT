@@ -1,8 +1,6 @@
-"""Build the three customer policies and the internal developer handover."""
+"""Build the three customer policies."""
 from pathlib import Path
-import hashlib
 import html
-import json
 import markdown
 from weasyprint import HTML
 
@@ -11,7 +9,6 @@ DOCS = [
     ("transport", "dieu-khoan-van-chuyen", "Điều khoản vận chuyển", "customer"),
     ("liability", "dieu-khoan-trach-nhiem-han-che", "Điều khoản Trách nhiệm Hạn chế", "customer"),
     ("incident_cost", "chinh-sach-chi-phi-su-co", "Chính sách chi phí khi có sự cố", "customer"),
-    ("developer", "huong-dan-tich-hop-chinh-sach", "Bàn giao chính sách cho đội phát triển", "internal"),
 ]
 CSS = """
 @font-face { font-family: Policy; src: url('file:///usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'); }
@@ -45,7 +42,6 @@ ul, ol { padding-left: 5mm; }
 
 def main():
     (ROOT / "pdf").mkdir(exist_ok=True)
-    manifest = {"version": "1.0", "authored_at": "2026-11-17", "baseline_commit": "a089ec0e", "documents": []}
     for key, stem, title, audience in DOCS:
         source = ROOT / "source" / f"{stem}.md"
         body = markdown.markdown(source.read_text(), extensions=["tables", "fenced_code"])
@@ -56,11 +52,7 @@ def main():
         rendered = HTML(string=page, base_url=str(ROOT)).render()
         target = ROOT / "pdf" / f"{stem}.pdf"
         rendered.write_pdf(target)
-        manifest["documents"].append({"id": key, "title": title, "audience": audience,
-            "source": str(source.relative_to(ROOT)), "file": str(target.relative_to(ROOT)),
-            "pages": len(rendered.pages), "sha256": hashlib.sha256(target.read_bytes()).hexdigest()})
         print(f"{target.name}: {len(rendered.pages)} pages")
-    (ROOT / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
 
 
 if __name__ == "__main__":
