@@ -2,6 +2,7 @@ package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.operation.CrewTripResponseDto;
 import com.example.racehorse_transport.dto.operation.HandoverCreateRequestDto;
+import com.example.racehorse_transport.dto.operation.HandoverRefusalRequestDto;
 import com.example.racehorse_transport.dto.operation.HandoverResponseDto;
 import com.example.racehorse_transport.dto.operation.HandoverScanRequestDto;
 import com.example.racehorse_transport.entity.CrewAssignment;
@@ -10,7 +11,6 @@ import com.example.racehorse_transport.entity.HandoverHorse;
 import com.example.racehorse_transport.entity.HandoverHorseId;
 import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.TripStop;
-import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
 import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HandoverType;
@@ -24,11 +24,10 @@ import com.example.racehorse_transport.repository.HandoverHorseRepository;
 import com.example.racehorse_transport.repository.HandoverRepository;
 import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.TripStopRepository;
-import com.example.racehorse_transport.service.BookingStatusService;
 import com.example.racehorse_transport.service.DispatchService;
+import com.example.racehorse_transport.service.HandoverOutcomeService;
 import com.example.racehorse_transport.service.HandoverService;
 import com.example.racehorse_transport.service.HorseLegService;
-import com.example.racehorse_transport.service.HorseStayService;
 import java.time.Clock;
 import java.util.List;
 import java.util.Map;
@@ -48,10 +47,9 @@ public class HandoverServiceImpl implements HandoverService {
     private final HorseLegRepository legs;
     private final TripStopRepository stops;
     private final CrewAssignmentRepository crew;
-    private final BookingStatusService bookingStatus;
     private final DispatchService dispatch;
     private final HorseLegService horseLegs;
-    private final HorseStayService horseStays;
+    private final HandoverOutcomeService outcomes;
     private final Clock clock;
 
     @Override
@@ -109,35 +107,34 @@ public class HandoverServiceImpl implements HandoverService {
         Handover handover = pending(handoverId, username);
         Long tripId = handover.getTripStop().getVehicleTrip().getId();
         Long actorId = requireCrew(tripId, username).getStaff().getUserId();
-        List<HandoverHorse> results = scans.findById_HandoverId(handover.getId());
+        // Con đã bị từ chối nhận (chặng đã hủy) không còn trong lần giao nhận
+        List<HandoverHorse> results = scans.findById_HandoverId(handover.getId()).stream()
+                .filter(r -> r.getHorseLeg().getStatus() != HorseLegStatus.CANCELLED).toList();
         TripExecutionPolicy.requireSomeMatched(results.stream().map(HandoverHorse::getMicrochipMatched).toList());
-        var now = clock.instant();
-        boolean boarding = TripExecutionPolicy.isBoarding(handover.getHandoverType());
-        for (HandoverHorse result : results) {
-            if (!Boolean.TRUE.equals(result.getMicrochipMatched())) continue;
-            HorseLeg leg = result.getHorseLeg();
-            if (boarding) {
-                leg.setStatus(HorseLegStatus.IN_PROGRESS);
-                leg.setActualStartAt(now);
-                // Nhận từ hub: kết thúc lưu trú tập kết
-                horseStays.closeActive(leg.getBookingHorse().getId(), now);
-            } else {
-                leg.setStatus(HorseLegStatus.COMPLETED);
-                leg.setActualEndAt(now);
-                if (handover.getHandoverType() == HandoverType.HUB_IN) {
-                    horseStays.openAssembly(leg, now);
-                }
-            }
-        }
         handover.setStatus(HandoverStatus.DONE);
-        handover.setHandedAt(now);
-        legs.flush();
-        if (!boarding) {
-            // Quy tắc #16: con ACTIVE cuối cùng của đơn giao xong thì đơn DELIVERED
-            results.stream().filter(r -> Boolean.TRUE.equals(r.getMicrochipMatched()))
-                    .map(r -> r.getHorseLeg().getBookingHorse().getBooking()).distinct()
-                    .filter(booking -> booking.getStatus() == BookingStatus.IN_OPERATION && legs.countActiveHorsesNotDelivered(booking.getId()) == 0)
-                    .forEach(booking -> bookingStatus.transition(booking.getId(), BookingStatus.DELIVERED, "Đã giao xong mọi con ngựa", actorId));
+        handover.setHandedAt(clock.instant());
+        outcomes.complete(handover, results.stream().filter(r -> Boolean.TRUE.equals(r.getMicrochipMatched()))
+                .map(HandoverHorse::getHorseLeg).toList(), actorId);
+        return crewTrip(tripId, username);
+    }
+
+    @Override
+    @Transactional
+    public CrewTripResponseDto refuse(Long handoverId, HandoverRefusalRequestDto request, String username) {
+        Handover handover = pending(handoverId, username);
+        Long tripId = handover.getTripStop().getVehicleTrip().getId();
+        Long actorId = requireCrew(tripId, username).getStaff().getUserId();
+        if (handover.getHandoverType() != HandoverType.PICKUP) {
+            throw new DispatchRuleException("handoverType", "Chỉ từ chối nhận ngựa khi nhận ngựa từ khách.", true);
+        }
+        HorseLeg leg = candidates(handover).stream().filter(l -> l.getId().equals(request.horseLegId())).findFirst()
+                .orElseThrow(() -> new DispatchRuleException("horseLegId", "Con ngựa này không thuộc lần giao nhận.", true));
+        outcomes.refuse(leg, request.reason().strip(), actorId);
+        // Không còn con nào để nhận thì lần giao nhận kết thúc là không thành, xe được rời điểm dừng
+        if (candidates(handover).isEmpty()) {
+            handover.setStatus(HandoverStatus.FAILED);
+            handover.setHandedAt(clock.instant());
+            handovers.flush();
         }
         return crewTrip(tripId, username);
     }

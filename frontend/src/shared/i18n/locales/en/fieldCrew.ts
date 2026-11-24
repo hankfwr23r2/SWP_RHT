@@ -2,6 +2,13 @@
 export const fieldCrew = {
   myTrips: {
     "run": {
+      "refusal": {
+        "refuse": "Refuse",
+        "title": "Refuse {{name}}?",
+        "message": "This horse is removed from the booking, its seat on the departure is released and the quotation is recalculated for the remaining horses. The manager is notified. The other horses are received as usual.",
+        "reason": "Reason for refusing",
+        "done": "Horse refused"
+      },
       "delivery": {
         "startWaiting": "Start waiting for recipient",
         "waitingSince": "Waiting for the recipient since {{time}}",

@@ -82,6 +82,47 @@ test('hộ tống xuất phát, nhận ngựa có quét chip rồi rời điểm
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0)
 })
 
+test('hộ tống không nhận một con ở điểm đón, phải ghi lý do, con còn lại vẫn nhận', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.addInitScript(() => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: 'escort', name: 'Hộ tống Một', username: 'escort@example.com' })))
+  const run = newRun()
+  run.trip.status = 'IN_PROGRESS'
+  Object.assign(run.trip.stops[0], { actualArrivalAt: '2031-03-05T01:00:00Z', actualDepartureAt: '2031-03-05T01:30:00Z' })
+  Object.assign(run.trip.stops[1], { actualArrivalAt: '2031-03-05T02:00:00Z' })
+  run.horses.push({ bookingCode: 'BK-AAAA0001', horseName: 'Gió Bấc', seats: 1, leg: { id: 71, boardTripStopId: 2, alightTripStopId: 3, status: 'PLANNED' } })
+  run.handovers.push({ id: 50, handoverType: 'PICKUP', status: 'PENDING', tripStopId: 2, horses: [
+    { horseLegId: 70, bookingCode: 'BK-AAAA0001', horseName: 'Sao Mai' },
+    { horseLegId: 71, bookingCode: 'BK-AAAA0001', horseName: 'Gió Bấc' },
+  ] })
+  let refusal: unknown
+  await page.route('**/api/v1/**', async route => {
+    const request = route.request()
+    const path = new URL(request.url()).pathname.replace('/api/v1', '')
+    if (path === '/crew/vehicle-trips/9') return ok(route, run)
+    if (path === '/handovers/50/refusals') {
+      refusal = request.postDataJSON()
+      run.horses[1].leg.status = 'CANCELLED'
+      run.handovers[0].horses = (run.handovers[0].horses as Record<string, unknown>[]).filter(h => h.horseLegId !== 71)
+      return ok(route, run)
+    }
+    return ok(route, [])
+  })
+  await page.goto('/backoffice/my-trips/9')
+
+  const pickup = page.getByRole('list', { name: 'Điểm dừng' }).getByRole('listitem').filter({ has: page.locator('h2') }).nth(1)
+  await expect(pickup).toContainText('Gió Bấc', { timeout: 15_000 })
+  await pickup.getByRole('listitem').filter({ hasText: 'Gió Bấc' }).getByRole('button', { name: 'Không nhận' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Không nhận Gió Bấc?' })
+  await expect(dialog.getByRole('button', { name: 'Không nhận' })).toBeDisabled()
+  await dialog.getByLabel('Lý do không nhận').fill('Ngựa què chân trước')
+  await dialog.getByRole('button', { name: 'Không nhận' }).click()
+
+  await expect(dialog).toHaveCount(0)
+  expect(refusal).toEqual({ horseLegId: 71, reason: 'Ngựa què chân trước' })
+  await expect(pickup).not.toContainText('Gió Bấc')
+  await expect(pickup).toContainText('Sao Mai')
+})
+
 test('ở trạm nghỉ hộ tống ghi ăn uống từng con, rời sớm thì gửi kèm lý do', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.addInitScript(() => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: 'escort', name: 'Hộ tống Một', username: 'escort@example.com' })))

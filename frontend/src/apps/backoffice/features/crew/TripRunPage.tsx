@@ -1,5 +1,5 @@
 // Thực hiện lượt xe theo điểm dừng (tài xế, hộ tống, điện thoại): xuất phát, tới, giao nhận và quét chip, rời, kết thúc
-// (docs/MAN_HINH_VA_TAC_DONG.md mục 4.1–4.5, 6.1, 6.5)
+// (docs/MAN_HINH_VA_TAC_DONG.md mục 4.1–4.5, 6.1, 6.5). Nhận ngựa: không nhận con nào thì ghi lý do (4.4)
 import { useState } from 'react'
 import { useParams, Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
@@ -12,6 +12,7 @@ import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
 import { Input } from '@shared/ui/Input'
+import { Modal } from '@shared/ui/Modal'
 import { PageHeader } from '@shared/ui/PageHeader'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { Textarea } from '@shared/ui/Textarea'
@@ -33,6 +34,8 @@ export default function TripRunPage() {
   const [chips, setChips] = useState<Record<number, string>>({})
   const [earlyReasons, setEarlyReasons] = useState<Record<number, string>>({})
   const [failing, setFailing] = useState<number>()
+  const [refusing, setRefusing] = useState<{ handoverId: number; legId: number; name: string }>()
+  const [refusalReason, setRefusalReason] = useState('')
   const { data, loaded, error, reload, updateData } = useLoad(() => tripExecutionApi.trip(tripId), [tripId], { toastOnError: false })
 
   // Mọi thao tác trả về lượt xe mới; lỗi hiện đúng lý do backend trả về
@@ -42,8 +45,10 @@ export default function TripRunPage() {
       const next = await action()
       updateData(() => next)
       toast(done, 'success')
+      return true
     } catch (e) {
       toast(e instanceof Error ? e.message : String(e), 'error')
+      return false
     } finally {
       setBusy(false)
     }
@@ -74,6 +79,12 @@ export default function TripRunPage() {
                 onClick={() => run(() => tripExecutionApi.scan(handover.id ?? 0, legId, chips[legId].trim()), t('myTrips.run.done.scanned'))}>
                 {t('myTrips.run.scan')}
               </Button>
+              {handover.handoverType === 'PICKUP' && (
+                <Button variant="danger" size="lg" fullWidth
+                  onClick={() => { setRefusalReason(''); setRefusing({ handoverId: handover.id ?? 0, legId, name: horse.horseName ?? '' }) }}>
+                  {t('myTrips.run.refusal.refuse')}
+                </Button>
+              )}
             </li>
           )
         })}
@@ -164,6 +175,24 @@ export default function TripRunPage() {
             setFailing(undefined)
           }}
         />
+      )}
+      {refusing && (
+        <Modal title={t('myTrips.run.refusal.title', { name: refusing.name })} onClose={() => setRefusing(undefined)}
+          footer={(
+            <>
+              <Button onClick={() => setRefusing(undefined)}>{t('ui.cancel')}</Button>
+              <Button variant="danger" disabled={!refusalReason.trim()} loading={busy}
+                onClick={() => run(() => tripExecutionApi.refuse(refusing.handoverId, refusing.legId, refusalReason.trim()), t('myTrips.run.refusal.done'))
+                  .then(ok => { if (ok) setRefusing(undefined) })}>
+                {t('myTrips.run.refusal.refuse')}
+              </Button>
+            </>
+          )}>
+          <p className={s.muted}>{t('myTrips.run.refusal.message')}</p>
+          <Field label={t('myTrips.run.refusal.reason')} required>
+            {c => <Textarea {...c} value={refusalReason} onChange={e => setRefusalReason(e.target.value)} data-autofocus />}
+          </Field>
+        </Modal>
       )}
       {canComplete(data) && (
         <Button variant="primary" size="lg" fullWidth loading={busy} onClick={() => run(() => tripExecutionApi.complete(tripId), t('myTrips.run.done.completed'))}>

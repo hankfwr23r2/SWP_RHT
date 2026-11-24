@@ -2,6 +2,13 @@
 export const fieldCrew = {
   myTrips: {
     "run": {
+      "refusal": {
+        "refuse": "Không nhận",
+        "title": "Không nhận {{name}}?",
+        "message": "Con này bị loại khỏi đơn, chỗ trên chuyến được nhả và báo giá được tính lại cho các con còn lại. Quản lý được báo. Các con khác vẫn nhận bình thường.",
+        "reason": "Lý do không nhận",
+        "done": "Đã ghi không nhận ngựa"
+      },
       "delivery": {
         "startWaiting": "Bắt đầu chờ người nhận",
         "waitingSince": "Đang chờ người nhận từ {{time}}",

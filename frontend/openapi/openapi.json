@@ -3000,6 +3000,21 @@
         },
         "type" : "object"
       },
+      "HandoverRefusalRequestDto" : {
+        "properties" : {
+          "horseLegId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "horseLegId", "reason" ],
+        "type" : "object"
+      },
       "HandoverResponseDto" : {
         "properties" : {
           "handedAt" : {
@@ -9785,6 +9800,43 @@
             "application/json" : {
               "schema" : {
                 "$ref" : "#/components/schemas/HandoverScanRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCrewTripResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "trip-execution-controller" ]
+      }
+    },
+    "/handovers/{id}/refusals" : {
+      "post" : {
+        "operationId" : "refuse",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HandoverRefusalRequestDto"
               }
             }
           },
