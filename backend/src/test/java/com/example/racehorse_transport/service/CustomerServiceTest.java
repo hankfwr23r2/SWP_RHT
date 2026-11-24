@@ -9,6 +9,7 @@ import com.example.racehorse_transport.entity.enums.IdentityDocumentType;
 import com.example.racehorse_transport.exception.CustomerRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.support.TestData;
+import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,6 +53,21 @@ class CustomerServiceTest {
                 "Wrong country", "Address", null, "VN-79", "KH", null, null, false))).isInstanceOf(CustomerRuleException.class);
         assertThat(customers.customerAddresses(other)).isEmpty();
         assertThat(customers.customerAddresses(owner)).hasSize(1);
+    }
+
+    @Test
+    void rejectsPinFarFromProvinceWhenCreatingAndUpdating() {
+        String owner = customer();
+        BigDecimal farLat = new BigDecimal("15.505957");
+        BigDecimal farLng = new BigDecimal("106.479492");
+        assertThatThrownBy(() -> customers.createCustomerAddress(owner, new CustomerAddressCreateRequestDto(
+                "Far", "Address", null, "VN-79", "VN", farLat, farLng, false))).isInstanceOf(CustomerRuleException.class);
+        long id = customers.createCustomerAddress(owner, new CustomerAddressCreateRequestDto(
+                "Near", "Address", null, "VN-79", "VN", new BigDecimal("10.973"), new BigDecimal("106.493"), false)).id();
+        assertThatThrownBy(() -> customers.updateCustomerAddress(owner, id, new CustomerAddressUpdateRequestDto(
+                "Near", "Address", null, "VN-79", "VN", farLat, farLng, false))).isInstanceOf(CustomerRuleException.class);
+        assertThat(customers.customerAddresses(owner)).singleElement()
+                .satisfies(saved -> assertThat(saved.latitude()).isEqualByComparingTo("10.973"));
     }
 
     @Test

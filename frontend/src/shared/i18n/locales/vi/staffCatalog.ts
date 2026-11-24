@@ -327,6 +327,7 @@ export const staffCatalog = {
         "COUNT": ""
       },
       "groups": {
+        "ADDRESS": "Sổ địa chỉ",
         "CONTACT": "Liên hệ",
         "AUTH": "Đăng nhập và xác minh",
         "DEPARTURE": "Chuyến khởi hành",
@@ -339,6 +340,7 @@ export const staffCatalog = {
         "SCHEDULE": "Lịch chạy"
       },
       "keys": {
+        "ADDRESS_MAX_KM_FROM_PROVINCE": "Khoảng cách tối đa từ vị trí ghim tới trung tâm tỉnh (km)",
         "HOTLINE": "Hotline",
         "OFFICE_ADDRESS": "Địa chỉ văn phòng",
         "HANDOVER_FREE_WAIT_MINUTES": "Thời gian chờ người nhận miễn phí",

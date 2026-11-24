@@ -186,6 +186,8 @@ Thứ tự này bảo đảm bảng cha luôn được tạo trước bảng con
 | `code` | `varchar(10)` | | PK | Mã tỉnh, ví dụ `VN-SG`, `KH-12` |
 | `country_code` | `char(2)` | | FK → country | |
 | `name` | `varchar(200)` | | | |
+| `latitude` | `numeric(9,6)` | | CHECK `-90..90` | Trung tâm tỉnh: mở bản đồ và kiểm vị trí ghim |
+| `longitude` | `numeric(9,6)` | | CHECK `-180..180` | |
 
 Index: `ix_province_country_code`.
 
@@ -1365,8 +1367,11 @@ Backend kiểm tra giới hạn khi cập nhật giá trị. Nếu hai cận đ�
 | `DEPARTURE_DECISION_HOURS` | 1 | 168 |
 | `DEPARTURE_MIN_FILL_PERCENT` | 1 | 100 |
 | `BALANCE_WAIT_MINUTES` | 5 | 240 |
+| `ADDRESS_MAX_KM_FROM_PROVINCE` | 50 | 500 |
 
 Bỏ `BALANCE_DUE_DAYS_BEFORE_PICKUP`: số dư không còn trả trước ngày đón.
+
+`ADDRESS_MAX_KM_FROM_PROVINCE` (mặc định 200, nhóm `ADDRESS`): khi lưu sổ địa chỉ, vị trí ghim cách trung tâm tỉnh đã chọn tối đa bao nhiêu km.
 
 Giá trị khởi đầu của các tham số chốt ngày 23/11/2026, thêm bằng migration ở A6b:
 

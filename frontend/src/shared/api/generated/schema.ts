@@ -5130,6 +5130,8 @@ export interface components {
         ProvinceResponse: {
             code?: string;
             countryCode?: string;
+            latitude?: number;
+            longitude?: number;
             name?: string;
         };
         PublicHorseDto: {

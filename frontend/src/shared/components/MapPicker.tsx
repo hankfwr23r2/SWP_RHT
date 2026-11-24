@@ -23,13 +23,15 @@ export function parseMapPoint(latitude: string, longitude: string): MapPoint | n
 
 interface Props {
   value: MapPoint | null
+  // Nơi mở bản đồ khi chưa ghim, ví dụ trung tâm tỉnh đã chọn
+  center?: MapPoint
   onChange: (point: MapPoint | null) => void
   disabled?: boolean
   latitudeError?: string
   longitudeError?: string
 }
 
-export default function MapPicker({ value, onChange, disabled, latitudeError, longitudeError }: Props) {
+export default function MapPicker({ value, center, onChange, disabled, latitudeError, longitudeError }: Props) {
   const { t } = useTranslation()
   const container = useRef<HTMLDivElement>(null)
   const locationControls = useRef<HTMLDivElement>(null)
@@ -64,6 +66,14 @@ export default function MapPicker({ value, onChange, disabled, latitudeError, lo
       marker.current = null
     }
   }, [])
+
+  const pinned = value != null
+  const centerLatitude = center?.latitude
+  const centerLongitude = center?.longitude
+  useEffect(() => {
+    if (!map.current || mapError || pinned || centerLatitude == null || centerLongitude == null) return
+    map.current.setView([centerLatitude, centerLongitude], 10, { animate: false })
+  }, [mapError, pinned, centerLatitude, centerLongitude])
 
   const zoomIn = t('mapPicker.zoomIn')
   const zoomOut = t('mapPicker.zoomOut')
