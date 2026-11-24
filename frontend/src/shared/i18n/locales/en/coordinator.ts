@@ -2,6 +2,17 @@
 export const coordinator = {
   dispatch: {
     "stays": {
+      "collect": "Set pickup time",
+      "collectTitle": "Consignee pickup time · {{horse}} · {{code}}",
+      "collectHint": "When the consignee comes to the hub. After this time the horse goes to stabling and the consignee pays the fee.",
+      "collectAt": "Pickup time",
+      "collectDone": "Pickup time set",
+      "stable": "Stable",
+      "stableTitle": "Stable · {{horse}} · {{code}}",
+      "stableHint": "The consignee is late. The horse moves to stabling at the hub; the consignee pays the fee after the manager approves it.",
+      "fee": "Stabling fee (VND)",
+      "stableNote": "Note",
+      "stableDone": "Moved to stabling",
       "colAppointment": "Appointment",
       "appointmentsCaption": "Self drop-off appointments",
       "receive": "Receive",

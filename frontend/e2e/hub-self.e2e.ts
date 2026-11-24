@@ -89,3 +89,49 @@ test('tại hub điều phối nhận ngựa khách tự chở tới và trả n
     { delivery: { microchip: '985000000100005', conditionNote: 'Khỏe' } },
   ])
 })
+
+test('người nhận tới trễ hơn giờ hẹn thì điều phối gửi chuồng tại hub, phí do người nhận chịu', async ({ page }) => {
+  await signIn(page)
+  const stays = [{ id: 7, bookingHorseId: 51, bookingCode: 'BK-AAAA0005', horseName: 'Gió Bấc', stayType: 'ASSEMBLY',
+    actualStartAt: '2026-01-01T05:00:00Z', plannedEndAt: '2026-01-02T05:00:00Z', deliveryMethod: 'SELF' }] as Record<string, unknown>[]
+  const sent: Record<string, unknown> = {}
+  await page.route('**/api/v1/**', async route => {
+    const request = route.request()
+    const path = new URL(request.url()).pathname.replace('/api/v1', '')
+    if (path === '/locations') return ok(route, [{ id: 1, name: 'Hub Đà Nẵng', locationType: 'HUB' }])
+    if (path === '/horse-stays') return ok(route, stays)
+    if (path === '/horse-stays/7/collection-time') { sent.collect = request.postDataJSON(); return ok(route, stays[0]) }
+    if (path === '/horse-stays/7/stabling') {
+      sent.stable = request.postDataJSON()
+      stays.splice(0, 1, { ...stays[0], id: 8, stayType: 'STABLING', plannedEndAt: '2026-01-03T05:00:00Z' })
+      return ok(route, stays[0])
+    }
+    return ok(route, [])
+  })
+  await page.goto('/backoffice/coordinator/dispatch')
+  await page.getByRole('tab', { name: 'Ngựa ở hub' }).click({ timeout: 15_000 })
+  await page.getByRole('combobox', { name: 'Hub' }).click()
+  await page.getByRole('option', { name: 'Hub Đà Nẵng' }).click()
+  const present = page.getByRole('table', { name: 'Ngựa đang lưu trú' })
+  const row = present.getByRole('row', { name: /Gió Bấc/ })
+
+  await row.getByRole('button', { name: 'Hẹn giờ nhận' }).click()
+  const collect = page.getByRole('dialog', { name: 'Hẹn người nhận tới · Gió Bấc · BK-AAAA0005' })
+  await collect.getByLabel('Giờ hẹn').fill('2026-01-01T15:00')
+  await collect.getByRole('button', { name: 'Hẹn giờ nhận' }).click()
+  await expect(collect).toHaveCount(0)
+  expect(sent.collect).toEqual({ collectAt: new Date('2026-01-01T15:00').toISOString() })
+
+  // Giờ hẹn đã qua: có nút gửi chuồng
+  await row.getByRole('button', { name: 'Gửi chuồng' }).click()
+  const stable = page.getByRole('dialog', { name: 'Gửi chuồng · Gió Bấc · BK-AAAA0005' })
+  await expect(stable.getByRole('button', { name: 'Gửi chuồng' })).toBeDisabled()
+  await stable.getByLabel('Phí gửi chuồng (VND)').fill('500000')
+  await stable.getByLabel('Ghi chú').fill('Người nhận báo tới muộn')
+  await stable.getByRole('button', { name: 'Gửi chuồng' }).click()
+  await expect(present.getByRole('row', { name: /Gió Bấc/ })).toContainText('Gửi chuồng')
+  expect(sent.stable).toEqual({ fee: 500000, note: 'Người nhận báo tới muộn' })
+  // Ngựa đang gửi chuồng vẫn trả được, không gửi chuồng lần nữa
+  await expect(present.getByRole('row', { name: /Gió Bấc/ }).getByRole('button', { name: 'Trả ngựa' })).toBeVisible()
+  await expect(present.getByRole('row', { name: /Gió Bấc/ }).getByRole('button', { name: 'Gửi chuồng' })).toHaveCount(0)
+})

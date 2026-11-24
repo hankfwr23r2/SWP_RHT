@@ -2,6 +2,17 @@ package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.health.HorseStayResponseDto;
 import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.CostItem;
+import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.entity.enums.CostCategory;
+import com.example.racehorse_transport.entity.enums.CostPayerType;
+import com.example.racehorse_transport.dto.operation.HubStablingRequestDto;
+import com.example.racehorse_transport.repository.CostItemRepository;
+import com.example.racehorse_transport.repository.StaffRepository;
+import java.time.Clock;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import org.springframework.security.access.AccessDeniedException;
 import com.example.racehorse_transport.entity.BookingHorse;
 import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.Location;
@@ -29,12 +40,17 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class HorseStayServiceImpl implements HorseStayService {
 
+    private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy").withZone(ZoneId.of("Asia/Ho_Chi_Minh"));
+
     // Chưa có chặng sau thì dự kiến tập kết tối đa một đêm (docs/NGHIEP_VU_THEO_59_BANG.md mục 1.2)
     private static final Duration DEFAULT_ASSEMBLY = Duration.ofHours(24);
 
     private final HorseStayRepository stays;
     private final HorseLegRepository legs;
     private final BookingHorseRepository bookingHorses;
+    private final CostItemRepository costItems;
+    private final StaffRepository staff;
+    private final Clock clock;
 
     @Override
     @Transactional
@@ -90,6 +106,65 @@ public class HorseStayServiceImpl implements HorseStayService {
         stay.setPlannedEndAt(departAt);
         stays.saveAndFlush(stay);
         return HorseStayResponseDto.from(stay);
+    }
+
+    @Override
+    @Transactional
+    public HorseStayResponseDto setCollectionTime(Long horseStayId, Instant collectAt) {
+        HorseStay stay = selfCollectionStay(horseStayId);
+        if (!collectAt.isAfter(stay.getActualStartAt())) {
+            throw new DispatchRuleException("collectAt", "Giờ hẹn phải sau lúc ngựa tới hub.");
+        }
+        stay.setPlannedEndAt(collectAt);
+        stays.flush();
+        return HorseStayResponseDto.from(stay);
+    }
+
+    @Override
+    @Transactional
+    public HorseStayResponseDto stableOverdue(Long horseStayId, HubStablingRequestDto request, String username) {
+        HorseStay assembly = selfCollectionStay(horseStayId);
+        Instant now = clock.instant();
+        if (!now.isAfter(assembly.getPlannedEndAt())) {
+            throw new DispatchRuleException("horseStayId", "Chưa quá giờ hẹn người nhận tới (" + TIME.format(assembly.getPlannedEndAt()) + ").", true);
+        }
+        Staff actor = staff.findByUser_Username(username).orElseThrow(() -> new AccessDeniedException("Không tìm thấy hồ sơ nhân viên."));
+        assembly.setActualEndAt(now);
+        HorseStay stabling = new HorseStay();
+        stabling.setBookingHorse(assembly.getBookingHorse());
+        stabling.setStayType(HorseStayType.STABLING);
+        stabling.setLocation(assembly.getLocation());
+        stabling.setPlannedStartAt(now);
+        stabling.setPlannedEndAt(now.plus(DEFAULT_ASSEMBLY));
+        stabling.setActualStartAt(now);
+        stays.saveAndFlush(stabling);
+        // Phí gửi chuồng người nhận chịu (NGHIEP_VU GĐ8 mục 6); quản lý duyệt rồi mới vào quyết toán
+        CostItem fee = new CostItem();
+        fee.setCategory(CostCategory.STABLING);
+        fee.setDescription("Gửi chuồng tại " + assembly.getLocation().getName() + " do người nhận tới trễ hơn giờ hẹn"
+                + (request.note() == null || request.note().isBlank() ? "" : ". " + request.note().strip()));
+        fee.setAmount(request.fee());
+        fee.setCurrencyCode("VND");
+        fee.setPayerType(CostPayerType.CONSIGNEE);
+        fee.setBooking(assembly.getBookingHorse().getBooking());
+        fee.setHorseStay(stabling);
+        fee.setIncurredAt(now);
+        fee.setRecordedBy(actor);
+        costItems.saveAndFlush(fee);
+        return HorseStayResponseDto.from(stabling);
+    }
+
+    // Lưu trú tập kết đang diễn ra của con mà người nhận tự tới hub nhận, ngựa đã tới bằng chặng cuối
+    private HorseStay selfCollectionStay(Long id) {
+        HorseStay stay = stays.findById(id).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lưu trú " + id));
+        Booking booking = stay.getBookingHorse().getBooking();
+        boolean arrived = legs.findByBookingHorse_IdOrderBySequenceNumber(stay.getBookingHorse().getId()).stream()
+                .noneMatch(l -> l.getStatus() == HorseLegStatus.PLANNED || l.getStatus() == HorseLegStatus.IN_PROGRESS);
+        if (stay.getStayType() != HorseStayType.ASSEMBLY || stay.getActualStartAt() == null || stay.getActualEndAt() != null
+                || booking.getDeliveryMethod() != TransferMethod.SELF || booking.getStatus() != BookingStatus.IN_OPERATION || !arrived) {
+            throw new DispatchRuleException("horseStayId", "Con ngựa này không chờ người nhận tới hub.", true);
+        }
+        return stay;
     }
 
     @Override

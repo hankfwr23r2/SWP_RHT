@@ -1668,6 +1668,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/horse-stays/{id}/collection-time": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["collectionTime"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/horse-stays/{id}/deliveries": {
         parameters: {
             query?: never;
@@ -1694,6 +1710,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["receive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays/{id}/stabling": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["stable"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4379,6 +4411,10 @@ export interface components {
             /** Format: date-time */
             plannedStartAt: string;
         };
+        HubCollectionTimeRequestDto: {
+            /** Format: date-time */
+            collectAt: string;
+        };
         HubHandoverRequestDto: {
             conditionNote?: string;
             microchip: string;
@@ -4394,6 +4430,10 @@ export interface components {
             hubName?: string;
             provinceCode?: string;
             provinceName?: string;
+        };
+        HubStablingRequestDto: {
+            fee: number;
+            note?: string;
         };
         IncidentPlanRequestDto: {
             estimatedCost?: number;
@@ -8383,6 +8423,32 @@ export interface operations {
             };
         };
     };
+    collectionTime: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HubCollectionTimeRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHorseStayResponseDto"];
+                };
+            };
+        };
+    };
     deliver: {
         parameters: {
             query?: never;
@@ -8421,6 +8487,32 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["HubHandoverRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHorseStayResponseDto"];
+                };
+            };
+        };
+    };
+    stable: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HubStablingRequestDto"];
             };
         };
         responses: {

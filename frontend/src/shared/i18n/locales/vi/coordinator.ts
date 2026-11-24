@@ -2,6 +2,17 @@
 export const coordinator = {
   dispatch: {
     "stays": {
+      "collect": "Hẹn giờ nhận",
+      "collectTitle": "Hẹn người nhận tới · {{horse}} · {{code}}",
+      "collectHint": "Giờ người nhận tới hub nhận ngựa. Quá giờ này thì gửi chuồng, người nhận trả phí.",
+      "collectAt": "Giờ hẹn",
+      "collectDone": "Đã hẹn giờ người nhận tới",
+      "stable": "Gửi chuồng",
+      "stableTitle": "Gửi chuồng · {{horse}} · {{code}}",
+      "stableHint": "Người nhận tới trễ hơn giờ hẹn. Ngựa chuyển sang gửi chuồng tại hub, phí gửi chuồng do người nhận chịu và chờ quản lý duyệt.",
+      "fee": "Phí gửi chuồng (VND)",
+      "stableNote": "Ghi chú",
+      "stableDone": "Đã chuyển sang gửi chuồng",
       "colAppointment": "Giờ hẹn",
       "appointmentsCaption": "Lịch hẹn khách tự chở ngựa tới",
       "receive": "Nhận ngựa",

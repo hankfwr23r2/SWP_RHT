@@ -3,6 +3,8 @@ package com.example.racehorse_transport.controller;
 import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.dto.health.HorseStayResponseDto;
 import com.example.racehorse_transport.dto.operation.HubAppointmentRequestDto;
+import com.example.racehorse_transport.dto.operation.HubCollectionTimeRequestDto;
+import com.example.racehorse_transport.dto.operation.HubStablingRequestDto;
 import com.example.racehorse_transport.dto.operation.HubHandoverRequestDto;
 import com.example.racehorse_transport.service.HorseStayService;
 import com.example.racehorse_transport.service.HubHandoverService;
@@ -44,6 +46,16 @@ public class HubHandoverController {
     @PostMapping("/horse-stays/{id}/receipts")
     public ApiResponseDto<HorseStayResponseDto> receive(@PathVariable Long id, Authentication authentication, @Valid @RequestBody HubHandoverRequestDto request) {
         return ApiResponseDto.success(hubHandovers.receive(id, request, authentication.getName()), "Đã nhận ngựa tại hub");
+    }
+
+    @PostMapping("/horse-stays/{id}/collection-time")
+    public ApiResponseDto<HorseStayResponseDto> collectionTime(@PathVariable Long id, @Valid @RequestBody HubCollectionTimeRequestDto request) {
+        return ApiResponseDto.success(stays.setCollectionTime(id, request.collectAt()), "Đã hẹn giờ người nhận tới");
+    }
+
+    @PostMapping("/horse-stays/{id}/stabling")
+    public ApiResponseDto<HorseStayResponseDto> stable(@PathVariable Long id, Authentication authentication, @Valid @RequestBody HubStablingRequestDto request) {
+        return ApiResponseDto.success(stays.stableOverdue(id, request, authentication.getName()), "Đã chuyển sang gửi chuồng");
     }
 
     @PostMapping("/horse-stays/{id}/deliveries")

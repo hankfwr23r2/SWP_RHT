@@ -91,7 +91,11 @@ public class HubHandoverServiceImpl implements HubHandoverService {
     @Override
     @Transactional
     public HorseStayResponseDto deliver(Long horseStayId, HubHandoverRequestDto request, String username) {
-        HorseStay stay = assemblyStay(horseStayId);
+        // Người nhận tới trễ: ngựa đang gửi chuồng tại hub vẫn trả được
+        HorseStay stay = stays.findById(horseStayId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lưu trú " + horseStayId));
+        if (stay.getStayType() != HorseStayType.ASSEMBLY && stay.getStayType() != HorseStayType.STABLING) {
+            throw new DispatchRuleException("horseStayId", "Chỉ giao nhận với khách ở lưu trú tập kết hoặc gửi chuồng tại hub.", true);
+        }
         Booking booking = stay.getBookingHorse().getBooking();
         if (booking.getDeliveryMethod() != TransferMethod.SELF || stay.getActualStartAt() == null || stay.getActualEndAt() != null) {
             throw new DispatchRuleException("horseStayId", "Con ngựa này không chờ người nhận tới hub.", true);
