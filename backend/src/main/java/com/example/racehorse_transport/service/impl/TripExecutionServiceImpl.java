@@ -101,7 +101,7 @@ public class TripExecutionServiceImpl implements TripExecutionService {
         CrewAssignment member = requireCrew(trip.getId(), username);
         TripExecutionPolicy.requireInProgress(trip.getStatus());
         readiness.requireCanLeave(stop, earlyReason, member.getStaff().getUserId());
-        if (stop.getStopType() == TripStopType.PICKUP || stop.getStopType() == TripStopType.BORDER) {
+        if (stop.getStopType() == TripStopType.PICKUP || stop.getStopType() == TripStopType.BORDER || stop.getStopType() == TripStopType.HUB) {
             leavePickup(stop, member.getStaff().getUserId());
         }
         stop.setActualDepartureAt(clock.instant());

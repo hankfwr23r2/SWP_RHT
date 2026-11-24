@@ -308,6 +308,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/booking-horses/{id}/hub-appointments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["appoint"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bookings": {
         parameters: {
             query?: never;
@@ -1582,6 +1598,54 @@ export interface paths {
         get: operations["activeStays"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays/appointments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["appointments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays/{id}/deliveries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["deliver"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays/{id}/receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["receive"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2941,6 +3005,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseHorseStayResponseDto: {
+            data?: components["schemas"]["HorseStayResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseHubServiceAreaResponse: {
             data?: components["schemas"]["HubServiceAreaResponse"];
             message?: string;
@@ -3778,12 +3847,16 @@ export interface components {
             bookingType?: "LOCAL" | "INTERPROVINCE" | "EXPORT" | "IMPORT";
             code?: string;
             deliveryAddress?: components["schemas"]["AddressDto"];
+            /** @enum {string} */
+            deliveryMethod?: "COMPANY" | "SELF";
             /** Format: int64 */
             departureId?: number;
             horses?: components["schemas"]["HorseDto"][];
             /** Format: int64 */
             id?: number;
             pickupAddress?: components["schemas"]["AddressDto"];
+            /** @enum {string} */
+            pickupMethod?: "COMPANY" | "SELF";
             /** Format: date-time */
             plannedDepartureAt?: string;
             /** Format: date */
@@ -4117,14 +4190,20 @@ export interface components {
             bookingCode?: string;
             /** Format: int64 */
             bookingHorseId?: number;
+            /** @enum {string} */
+            deliveryMethod?: "COMPANY" | "SELF";
             horseName?: string;
             /** Format: int64 */
             id?: number;
             /** Format: int64 */
             locationId?: number;
             locationName?: string;
+            /** @enum {string} */
+            pickupMethod?: "COMPANY" | "SELF";
             /** Format: date-time */
             plannedEndAt?: string;
+            /** Format: date-time */
+            plannedStartAt?: string;
             /** @enum {string} */
             stayType?: "ASSEMBLY" | "QUARANTINE" | "OVERNIGHT" | "STABLING";
         };
@@ -4151,6 +4230,14 @@ export interface components {
             sex: "STALLION" | "MARE" | "GELDING";
             sire?: string;
             weightKg?: number;
+        };
+        HubAppointmentRequestDto: {
+            /** Format: date-time */
+            plannedStartAt: string;
+        };
+        HubHandoverRequestDto: {
+            conditionNote?: string;
+            microchip: string;
         };
         HubServiceAreaRequest: {
             /** Format: int64 */
@@ -5776,6 +5863,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListHealthLogResponseDto"];
+                };
+            };
+        };
+    };
+    appoint: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HubAppointmentRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHorseStayResponseDto"];
                 };
             };
         };
@@ -7938,6 +8051,80 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListHorseStayResponseDto"];
+                };
+            };
+        };
+    };
+    appointments: {
+        parameters: {
+            query: {
+                locationId: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHorseStayResponseDto"];
+                };
+            };
+        };
+    };
+    deliver: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HubHandoverRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHorseStayResponseDto"];
+                };
+            };
+        };
+    };
+    receive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HubHandoverRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHorseStayResponseDto"];
                 };
             };
         };

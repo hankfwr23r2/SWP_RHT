@@ -47,13 +47,18 @@ public interface HorseLegRepository extends JpaRepository<HorseLeg, Long> {
 
     long countByVehicleTrip_IdAndStatus(Long vehicleTripId, HorseLegStatus status);
 
-    // Quy tắc #16: số con ACTIVE của đơn chưa có chặng giao hoặc chạy thẳng đã xong
+    // Quy tắc #16: số con ACTIVE của đơn chưa giao xong: chưa có chặng giao hoặc chạy thẳng đã xong,
+    // và chưa có lần giao DELIVERY đã xong (người nhận tự tới hub nhận, không có chặng giao)
     @Query("""
             SELECT count(h) FROM BookingHorse h
             WHERE h.booking.id = :bookingId AND h.status = com.example.racehorse_transport.entity.enums.BookingHorseStatus.ACTIVE
               AND NOT EXISTS (SELECT l FROM HorseLeg l WHERE l.bookingHorse = h
                     AND l.legType IN (com.example.racehorse_transport.entity.enums.HorseLegType.DELIVERY, com.example.racehorse_transport.entity.enums.HorseLegType.DIRECT)
                     AND l.status = com.example.racehorse_transport.entity.enums.HorseLegStatus.COMPLETED)
+              AND NOT EXISTS (SELECT hh FROM HandoverHorse hh WHERE hh.horseLeg.bookingHorse = h
+                    AND hh.handover.handoverType = com.example.racehorse_transport.entity.enums.HandoverType.DELIVERY
+                    AND hh.handover.status = com.example.racehorse_transport.entity.enums.HandoverStatus.DONE
+                    AND hh.microchipMatched = true)
             """)
     long countActiveHorsesNotDelivered(@Param("bookingId") Long bookingId);
 
