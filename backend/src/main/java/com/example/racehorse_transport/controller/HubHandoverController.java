@@ -2,6 +2,7 @@ package com.example.racehorse_transport.controller;
 
 import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.dto.health.HorseStayResponseDto;
+import com.example.racehorse_transport.dto.health.StablePartnerResponseDto;
 import com.example.racehorse_transport.dto.operation.HubAppointmentRequestDto;
 import com.example.racehorse_transport.dto.operation.HubCollectionTimeRequestDto;
 import com.example.racehorse_transport.dto.operation.HubStablingRequestDto;
@@ -41,6 +42,13 @@ public class HubHandoverController {
     @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER')")
     public ApiResponseDto<List<HorseStayResponseDto>> appointments(@RequestParam Long locationId) {
         return ApiResponseDto.success(stays.appointmentsAt(locationId), "Lịch hẹn nhận ngựa");
+    }
+
+    // Chuồng gửi qua đêm cho tổ xe chọn khi nghỉ đêm ở trạm (STAY_IN)
+    @GetMapping("/stable-partners")
+    @PreAuthorize("hasAnyRole('COORDINATOR', 'DRIVER', 'ESCORT')")
+    public ApiResponseDto<List<StablePartnerResponseDto>> stablePartners() {
+        return ApiResponseDto.success(stays.stablePartners(), "Chuồng gửi qua đêm");
     }
 
     @PostMapping("/horse-stays/{id}/receipts")

@@ -1,6 +1,9 @@
 package com.example.racehorse_transport.service;
 
 import com.example.racehorse_transport.dto.health.HorseStayResponseDto;
+import com.example.racehorse_transport.dto.health.StablePartnerResponseDto;
+import com.example.racehorse_transport.entity.Party;
+import com.example.racehorse_transport.entity.TripStop;
 import com.example.racehorse_transport.dto.operation.HubStablingRequestDto;
 import com.example.racehorse_transport.entity.HorseLeg;
 import java.time.Instant;
@@ -16,6 +19,14 @@ public interface HorseStayService {
     void closeActive(Long bookingHorseId, Instant at);
 
     List<HorseStayResponseDto> activeAt(Long locationId);
+
+    // Nghỉ đêm ở trạm (STAY_IN): mở lưu trú OVERNIGHT do đối tác chuồng vận hành, dự kiến tới giờ rời trạm
+    void openOvernight(HorseLeg leg, TripStop stop, Party operator, Instant at);
+
+    // Đối tác có vai trò STABLE còn hiệu lực hôm nay (quy tắc #26)
+    Party requireStablePartner(Long partyId);
+
+    List<StablePartnerResponseDto> stablePartners();
 
     // Khách tự chở tới hub (pickup_method SELF): điều phối hẹn giờ, lập lưu trú tập kết dự kiến ở hub đầu tuyến trục, tới giờ xuất phát
     HorseStayResponseDto planSelfDropOff(Long bookingHorseId, Instant plannedStartAt);

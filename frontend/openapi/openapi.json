@@ -1110,6 +1110,23 @@
         },
         "type" : "object"
       },
+      "ApiResponseListStablePartnerResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/StablePartnerResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListStaffAccountResponseDto" : {
         "properties" : {
           "data" : {
@@ -6451,6 +6468,24 @@
           },
           "status" : {
             "enum" : [ "PENDING_INTAKE", "UNDER_REVIEW", "NEEDS_RESUBMISSION", "QUOTING", "AWAITING_DEPOSIT", "QUOTE_EXPIRED", "CONFIRMED", "SCHEDULE_CHANGE_REQUIRED", "IN_OPERATION", "DELIVERED", "COMPLETED", "CANCELLED", "REJECTED" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "StablePartnerResponseDto" : {
+        "properties" : {
+          "address" : {
+            "type" : "string"
+          },
+          "displayName" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "phone" : {
             "type" : "string"
           }
         },
@@ -13200,6 +13235,24 @@
           }
         },
         "tags" : [ "route-controller" ]
+      }
+    },
+    "/stable-partners" : {
+      "get" : {
+        "operationId" : "stablePartners",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListStablePartnerResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "hub-handover-controller" ]
       }
     },
     "/staff-accounts" : {

@@ -2,6 +2,12 @@
 export const fieldCrew = {
   myTrips: {
     "run": {
+      "stayIn": {
+        "title": "Stable overnight",
+        "hint": "The horses on board are left with a partner stable overnight. In the morning, collect them from the stable before leaving.",
+        "partner": "Stable",
+        "choose": "Choose a stable"
+      },
       "papers": {
         "record": "Photo of the signed record",
         "upload": "Upload record",
@@ -99,6 +105,8 @@ export const fieldCrew = {
         "RETURN": "Return to shipper",
         "AGENT": "Hand over with agent",
         "SHIFT": "Take over shift",
+        "STAY_IN": "Stable overnight",
+        "STAY_OUT": "Collect from stable",
         "HUB_OUT": "Take from hub"
       },
       "handoverStatus": {

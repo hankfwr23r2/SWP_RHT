@@ -64,6 +64,8 @@ public final class TripExecutionPolicy {
             case AGENT -> stopType == TripStopType.BORDER;
             // Bàn giao ca ở bất kỳ điểm dừng nào tổ xe đang đứng
             case SHIFT -> true;
+            // Nghỉ đêm: gửi ngựa cho đối tác chuồng ở trạm nghỉ hoặc cửa khẩu rồi nhận lại
+            case STAY_IN, STAY_OUT -> stopType == TripStopType.REST || stopType == TripStopType.VITAL_CHECK || stopType == TripStopType.BORDER;
             default -> false;
         };
         if (!fits) {

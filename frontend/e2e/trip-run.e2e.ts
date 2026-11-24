@@ -313,3 +313,48 @@ test('hộ tống thay ca thấy Nhận bàn giao ca ở điểm có ngựa đan
   // Bàn giao ca không cần biên bản
   await expect(stopOf(page).getByRole('button', { name: 'Hoàn tất giao nhận' })).toBeEnabled()
 })
+
+test('nghỉ đêm ở trạm: hộ tống gửi chuồng đối tác rồi sáng hôm sau nhận lại', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.addInitScript(() => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: 'escort', name: 'Hộ tống Một', username: 'escort@example.com' })))
+  const run = {
+    trip: {
+      id: 9, code: 'VT-AAAA0009', tripType: 'LINEHAUL', status: 'IN_PROGRESS', licensePlate: '51C-12345', startLocationName: 'Hub HCM', endLocationName: 'Hub Đà Nẵng',
+      stops: [
+        { id: 1, sequenceNumber: 1, stopType: 'HUB', locationName: 'Hub HCM', actualArrivalAt: 't', actualDepartureAt: 't' },
+        { id: 2, sequenceNumber: 2, stopType: 'REST', locationName: 'Trạm nghỉ Tuy Hòa', actualArrivalAt: 't' },
+        { id: 3, sequenceNumber: 3, stopType: 'HUB', locationName: 'Hub Đà Nẵng' },
+      ],
+    },
+    horses: [{ bookingCode: 'BK-AAAA0002', horseName: 'Sao Mai', seats: 1, leg: { id: 70, boardTripStopId: 1, alightTripStopId: 3, status: 'IN_PROGRESS' } }],
+    handovers: [] as Record<string, unknown>[],
+  }
+  const sent: unknown[] = []
+  await page.route('**/api/v1/**', async route => {
+    const request = route.request()
+    const path = new URL(request.url()).pathname.replace('/api/v1', '')
+    if (path === '/crew/vehicle-trips/9') return ok(route, run)
+    if (path === '/stable-partners') return ok(route, [{ id: 6, displayName: 'Chuồng gửi Tuy Hòa (mẫu)', address: 'Tuy Hòa' }])
+    if (path === '/trip-stops/2/handovers') {
+      const body = request.postDataJSON() as { handoverType: string }
+      sent.push(body)
+      // Giả lập lần gửi chuồng đã xong để thấy bước nhận lại
+      run.handovers.push({ id: 60 + sent.length, handoverType: body.handoverType, status: 'DONE', tripStopId: 2, horses: [] })
+      return ok(route, run)
+    }
+    return ok(route, [])
+  })
+  await page.goto('/backoffice/my-trips/9')
+  const rest = page.getByRole('list', { name: 'Điểm dừng' }).getByRole('listitem').filter({ has: page.locator('h2') }).nth(1)
+
+  await rest.getByRole('button', { name: 'Gửi chuồng qua đêm' }).click({ timeout: 15_000 })
+  const dialog = page.getByRole('dialog', { name: 'Gửi chuồng qua đêm' })
+  await expect(dialog.getByRole('button', { name: 'Gửi chuồng qua đêm' })).toBeDisabled()
+  await dialog.getByRole('combobox', { name: 'Chuồng gửi' }).click()
+  await page.getByRole('option', { name: /Chuồng gửi Tuy Hòa/ }).click()
+  await dialog.getByRole('button', { name: 'Gửi chuồng qua đêm' }).click()
+  await expect(dialog).toHaveCount(0)
+  // Đã gửi chuồng: nút đổi thành nhận lại
+  await rest.getByRole('button', { name: 'Nhận lại từ chuồng' }).click()
+  expect(sent).toEqual([{ handoverType: 'STAY_IN', partyId: 6 }, { handoverType: 'STAY_OUT' }])
+})

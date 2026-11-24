@@ -2,6 +2,12 @@
 export const fieldCrew = {
   myTrips: {
     "run": {
+      "stayIn": {
+        "title": "Gửi chuồng qua đêm",
+        "hint": "Các con đang trên xe được gửi cho chuồng đối tác qua đêm. Sáng hôm sau bấm Nhận lại từ chuồng rồi mới rời trạm.",
+        "partner": "Chuồng gửi",
+        "choose": "Chọn chuồng"
+      },
       "papers": {
         "record": "Ảnh biên bản đã ký",
         "upload": "Tải biên bản",
@@ -99,6 +105,8 @@ export const fieldCrew = {
         "RETURN": "Trả ngựa cho người gửi",
         "AGENT": "Bàn giao với đại lý",
         "SHIFT": "Nhận bàn giao ca",
+        "STAY_IN": "Gửi chuồng qua đêm",
+        "STAY_OUT": "Nhận lại từ chuồng",
         "HUB_OUT": "Nhận từ hub"
       },
       "handoverStatus": {

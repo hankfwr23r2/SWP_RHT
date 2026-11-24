@@ -2580,6 +2580,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/stable-partners": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["stablePartners"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/staff-accounts": {
         parameters: {
             query?: never;
@@ -3389,6 +3405,11 @@ export interface components {
         };
         ApiResponseListRouteResponse: {
             data?: components["schemas"]["RouteResponse"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListStablePartnerResponseDto: {
+            data?: components["schemas"]["StablePartnerResponseDto"][];
             message?: string;
             status?: string;
         };
@@ -5371,6 +5392,13 @@ export interface components {
             quotationTotal?: number;
             /** @enum {string} */
             status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
+        };
+        StablePartnerResponseDto: {
+            address?: string;
+            displayName?: string;
+            /** Format: int64 */
+            id?: number;
+            phone?: string;
         };
         StaffAccountCreateRequestDto: {
             driverLicenseClass?: string;
@@ -10225,6 +10253,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseRouteResponse"];
+                };
+            };
+        };
+    };
+    stablePartners: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListStablePartnerResponseDto"];
                 };
             };
         };

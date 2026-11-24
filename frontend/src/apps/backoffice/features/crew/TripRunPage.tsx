@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useParams, Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
-import { tripExecutionApi, type CrewTrip, type Handover } from '@shared/api/tripExecution'
+import { tripExecutionApi, type CrewTrip, type Handover, type StablePartner } from '@shared/api/tripExecution'
 import { useLoad } from '@shared/hooks/useLoad'
 import { formatDateTime } from '@shared/lib/format'
 import { Button } from '@shared/ui/Button'
@@ -14,6 +14,7 @@ import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
 import { Input } from '@shared/ui/Input'
 import { Modal } from '@shared/ui/Modal'
+import { Select } from '@shared/ui/Select'
 import { PageHeader } from '@shared/ui/PageHeader'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { Textarea } from '@shared/ui/Textarea'
@@ -40,6 +41,10 @@ export default function TripRunPage() {
   const [returning, setReturning] = useState<number>()
   const [refusing, setRefusing] = useState<{ handoverId: number; legId: number; name: string }>()
   const [refusalReason, setRefusalReason] = useState('')
+  // Gửi chuồng qua đêm: chọn đối tác chuồng
+  const [stayAt, setStayAt] = useState<number>()
+  const [partners, setPartners] = useState<StablePartner[]>([])
+  const [partnerId, setPartnerId] = useState('')
   const { data, loaded, error, reload, updateData } = useLoad(() => tripExecutionApi.trip(tripId), [tripId], { toastOnError: false })
 
   // Mọi thao tác trả về lượt xe mới; lỗi hiện đúng lý do backend trả về
@@ -62,6 +67,11 @@ export default function TripRunPage() {
   if (error || !data?.trip) return <ErrorState title={t('myTrips.run.loadError')} message={error?.message} onRetry={reload} />
   const trip = data.trip
 
+  const openStayIn = async (stopId: number) => {
+    setPartnerId('')
+    setStayAt(stopId)
+    try { setPartners(await tripExecutionApi.stablePartners()) } catch (e) { toast(e instanceof Error ? e.message : String(e), 'error') }
+  }
   const stallOf = (legId: number) => (data.horses ?? []).find(h => h.leg?.id === legId)?.leg?.stallPosition
   const handoverPanel = (handover: Handover) => (
     <div className={s.body}>
@@ -146,7 +156,8 @@ export default function TripRunPage() {
                   )}
                   {handoverTypesAt(data, stop).filter(type => type !== 'SHIFT' || session?.role === 'escort').map(type => (
                     <Button key={type} size="lg" fullWidth loading={busy}
-                      onClick={() => run(() => tripExecutionApi.openHandover(stop.id ?? 0, type), t('myTrips.run.done.opened'))}>
+                      onClick={() => (type === 'STAY_IN' ? openStayIn(stop.id ?? 0)
+                        : run(() => tripExecutionApi.openHandover(stop.id ?? 0, type), t('myTrips.run.done.opened')))}>
                       {t(`myTrips.run.handover.${type}`)}
                     </Button>
                   ))}
@@ -203,6 +214,25 @@ export default function TripRunPage() {
             setReturning(undefined)
           }}
         />
+      )}
+      {stayAt !== undefined && (
+        <Modal title={t('myTrips.run.stayIn.title')} onClose={() => setStayAt(undefined)}
+          footer={(
+            <>
+              <Button onClick={() => setStayAt(undefined)}>{t('ui.cancel')}</Button>
+              <Button variant="primary" disabled={!partnerId} loading={busy}
+                onClick={() => run(() => tripExecutionApi.openHandover(stayAt, 'STAY_IN', Number(partnerId)), t('myTrips.run.done.opened'))
+                  .then(ok => { if (ok) setStayAt(undefined) })}>
+                {t('myTrips.run.handover.STAY_IN')}
+              </Button>
+            </>
+          )}>
+          <p className={s.muted}>{t('myTrips.run.stayIn.hint')}</p>
+          <Field label={t('myTrips.run.stayIn.partner')} required>
+            {c => <Select {...c} value={partnerId} onChange={setPartnerId} placeholder={t('myTrips.run.stayIn.choose')}
+              options={partners.map(p => ({ value: String(p.id), label: p.address ? `${p.displayName} · ${p.address}` : p.displayName ?? '' }))} />}
+          </Field>
+        </Modal>
       )}
       {refusing && (
         <Modal title={t('myTrips.run.refusal.title', { name: refusing.name })} onClose={() => setRefusing(undefined)}

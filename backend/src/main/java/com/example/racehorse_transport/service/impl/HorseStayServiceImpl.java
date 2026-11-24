@@ -2,6 +2,14 @@ package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.health.HorseStayResponseDto;
 import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.Party;
+import com.example.racehorse_transport.entity.TripStop;
+import com.example.racehorse_transport.entity.enums.PartyRoleType;
+import com.example.racehorse_transport.dto.health.StablePartnerResponseDto;
+import com.example.racehorse_transport.policy.DispatchPolicy;
+import com.example.racehorse_transport.repository.PartyRepository;
+import com.example.racehorse_transport.repository.PartyRoleRepository;
+import java.time.LocalDate;
 import com.example.racehorse_transport.entity.CostItem;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.enums.CostCategory;
@@ -31,6 +39,7 @@ import com.example.racehorse_transport.repository.HorseStayRepository;
 import com.example.racehorse_transport.service.HorseStayService;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -44,6 +53,8 @@ public class HorseStayServiceImpl implements HorseStayService {
 
     // Chưa có chặng sau thì dự kiến tập kết tối đa một đêm (docs/NGHIEP_VU_THEO_59_BANG.md mục 1.2)
     private static final Duration DEFAULT_ASSEMBLY = Duration.ofHours(24);
+    // Nghỉ đêm 10 giờ (OVERNIGHT_REST_HOURS), dự phòng thêm khi điểm dừng không có giờ rời dự kiến
+    private static final Duration OVERNIGHT = Duration.ofHours(12);
 
     private final HorseStayRepository stays;
     private final HorseLegRepository legs;
@@ -51,6 +62,8 @@ public class HorseStayServiceImpl implements HorseStayService {
     private final CostItemRepository costItems;
     private final StaffRepository staff;
     private final Clock clock;
+    private final PartyRepository parties;
+    private final PartyRoleRepository partyRoles;
 
     @Override
     @Transactional
@@ -67,6 +80,43 @@ public class HorseStayServiceImpl implements HorseStayService {
         stay.setPlannedEndAt(plannedEnd);
         stay.setActualStartAt(at);
         stays.save(stay);
+    }
+
+    @Override
+    @Transactional
+    public void openOvernight(HorseLeg leg, TripStop stop, Party operator, Instant at) {
+        HorseStay stay = new HorseStay();
+        stay.setBookingHorse(leg.getBookingHorse());
+        stay.setStayType(HorseStayType.OVERNIGHT);
+        stay.setLocation(stop.getLocation());
+        stay.setOperatorParty(operator);
+        stay.setPlannedStartAt(at);
+        stay.setPlannedEndAt(stop.getPlannedDepartureAt() != null && stop.getPlannedDepartureAt().isAfter(at) ? stop.getPlannedDepartureAt() : at.plus(OVERNIGHT));
+        stay.setActualStartAt(at);
+        stays.save(stay);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Party requireStablePartner(Long partyId) {
+        Party party = parties.findById(partyId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đối tác " + partyId));
+        if (!isStable(party.getId())) {
+            throw new DispatchRuleException("partyId", party.getDisplayName() + " không có vai trò chuồng gửi còn hiệu lực.");
+        }
+        return party;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<StablePartnerResponseDto> stablePartners() {
+        return parties.findAll().stream().filter(p -> isStable(p.getId()))
+                .sorted(Comparator.comparing(Party::getDisplayName)).map(StablePartnerResponseDto::from).toList();
+    }
+
+    private boolean isStable(Long partyId) {
+        LocalDate today = LocalDate.ofInstant(clock.instant(), ZoneId.of("Asia/Ho_Chi_Minh"));
+        return partyRoles.findById_PartyId(partyId).stream()
+                .anyMatch(r -> r.getId().getRoleType() == PartyRoleType.STABLE && DispatchPolicy.roleValidOn(r.getValidFrom(), r.getValidTo(), today));
     }
 
     @Override

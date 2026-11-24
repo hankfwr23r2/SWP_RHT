@@ -150,6 +150,64 @@ class HealthStayFlowTest {
     }
 
     // Lập lượt, phân công tài xế và hộ tống, xếp ngựa, xuất phát, đi tới điểm đón, nhận ngựa rồi rời điểm đón
+    @Test
+    void overnightHorsesGoToThePartnerStableAndComeBackBeforeTheVehicleLeaves() throws Exception {
+        long rest = locations.findByCode("REST-PHANTHIET").orElseThrow().getId();
+        List<Long> stops = runToPickupAndLeave("DIRECT", List.of(
+                stop("locationId", hcm, "HUB", 0), stop("bookingAddressId", pickup, "PICKUP", 60), stop("locationId", rest, "REST", 120),
+                stop("bookingAddressId", delivery, "DELIVERY", 240), stop("locationId", hcm, "HUB", 480)), 2);
+        act("/trip-stops/" + stops.get(2) + "/arrive").andExpect(status().isOk());
+        long stable = jdbc.queryForObject("SELECT id FROM party WHERE display_name = 'Chuồng gửi ngựa Đà Nẵng (mẫu)'", Long.class);
+        long vet = jdbc.queryForObject("SELECT id FROM party WHERE display_name = 'Phòng khám thú y ngựa (mẫu)'", Long.class);
+        mvc.perform(get("/stable-partners").header(HttpHeaders.AUTHORIZATION, escort)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[?(@.id == " + stable + ")]").isNotEmpty())
+                .andExpect(jsonPath("$.data[?(@.id == " + vet + ")]").isEmpty());
+
+        // Gửi chuồng: phải chọn đối tác có vai trò chuồng gửi
+        stayHandover(stops.get(2), "STAY_IN", null).andExpect(status().isBadRequest());
+        stayHandover(stops.get(2), "STAY_IN", vet).andExpect(status().isBadRequest());
+        long in = handoverIdOf(stayHandover(stops.get(2), "STAY_IN", stable).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.handovers[-1:].partyName").value(org.hamcrest.Matchers.hasItem("Chuồng gửi ngựa Đà Nẵng (mẫu)"))));
+        scanOnly(in);
+        act("/handovers/" + in + "/complete").andExpect(status().isOk());
+        var stay = jdbc.queryForMap("SELECT stay_type, operator_party_id, actual_end_at FROM horse_stay WHERE booking_horse_id = ? ORDER BY id DESC LIMIT 1", line);
+        assertThat(stay.get("stay_type")).isEqualTo("OVERNIGHT");
+        assertThat(((Number) stay.get("operator_party_id")).longValue()).isEqualTo(stable);
+        assertThat(stay.get("actual_end_at")).isNull();
+        // Ngựa vẫn đang trên chặng, chỉ tạm xuống xe; hành trình cho thấy đối tác đang giữ
+        assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE booking_horse_id = ? AND status <> 'CANCELLED' ORDER BY sequence_number DESC LIMIT 1", String.class, line))
+                .isEqualTo("IN_PROGRESS");
+        mvc.perform(get("/bookings/{id}/journey", booking).header(HttpHeaders.AUTHORIZATION, coordinator))
+                .andExpect(jsonPath("$.data.horses[0].holder").value("PARTY"));
+
+        // Chưa nhận lại thì chưa rời trạm
+        log(stops.get(2), null, "NORMAL", "NORMAL", "NORMAL").andExpect(status().isCreated());
+        act("/trip-stops/" + stops.get(2) + "/depart").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Còn ngựa đang gửi chuồng qua đêm: Sao Mai. Nhận lại trước khi rời trạm."));
+        long out = handoverIdOf(stayHandover(stops.get(2), "STAY_OUT", null).andExpect(status().isCreated()));
+        scanOnly(out);
+        act("/handovers/" + out + "/complete").andExpect(status().isOk());
+        assertThat(jdbc.queryForObject("SELECT actual_end_at IS NOT NULL FROM horse_stay WHERE booking_horse_id = ? AND stay_type = 'OVERNIGHT'", Boolean.class, line)).isTrue();
+        mvc.perform(post("/trip-stops/{id}/depart", stops.get(2)).header(HttpHeaders.AUTHORIZATION, escort).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"earlyReason\":\"Nghỉ đêm xong\"}")).andExpect(status().isOk());
+    }
+
+    private ResultActions stayHandover(long stopId, String type, Long partyId) throws Exception {
+        return mvc.perform(post("/trip-stops/{id}/handovers", stopId).header(HttpHeaders.AUTHORIZATION, escort)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"handoverType\":\"%s\",\"partyId\":%s}".formatted(type, partyId)));
+    }
+
+    private static long handoverIdOf(ResultActions result) throws Exception {
+        List<Number> ids = com.jayway.jsonpath.JsonPath.read(result.andReturn().getResponse().getContentAsString(), "$.data.handovers[*].id");
+        return ids.getLast().longValue();
+    }
+
+    private void scanOnly(long handoverId) throws Exception {
+        long leg = jdbc.queryForObject("SELECT id FROM horse_leg WHERE booking_horse_id = ? AND status <> 'CANCELLED' ORDER BY sequence_number DESC LIMIT 1", Long.class, line);
+        mvc.perform(post("/handovers/{id}/horses", handoverId).header(HttpHeaders.AUTHORIZATION, escort).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"horseLegId\":%d,\"microchip\":\"%s\"}".formatted(leg, chip))).andExpect(status().isOk());
+    }
+
     private List<Long> runToPickupAndLeave(String type, List<String> stopBodies, int alightIndex) throws Exception {
         Staff driverStaff = testData.staff(testData.unique("health.driver"), "DRIVER");
         Staff escortStaff = testData.staff(testData.unique("health.escort"), "ESCORT");

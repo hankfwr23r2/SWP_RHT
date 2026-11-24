@@ -3,6 +3,7 @@ package com.example.racehorse_transport.service.impl;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Handover;
 import com.example.racehorse_transport.entity.HorseLeg;
+import com.example.racehorse_transport.entity.Party;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HandoverType;
@@ -60,6 +61,15 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
         handover.setHandedAt(now);
         // Bàn giao ca chỉ đổi người phụ trách (người ký), ngựa vẫn trên xe, chặng không đổi
         if (handover.getHandoverType() == HandoverType.SHIFT) return;
+        // Nghỉ đêm: ngựa tạm xuống xe gửi đối tác chuồng rồi lên lại; chặng vẫn đang chạy
+        if (handover.getHandoverType() == HandoverType.STAY_IN) {
+            matched.forEach(leg -> horseStays.openOvernight(leg, handover.getTripStop(), handover.getToParty(), now));
+            return;
+        }
+        if (handover.getHandoverType() == HandoverType.STAY_OUT) {
+            matched.forEach(leg -> horseStays.closeActive(leg.getBookingHorse().getId(), now));
+            return;
+        }
         for (HorseLeg leg : matched) {
             if (boarding) {
                 leg.setStatus(HorseLegStatus.IN_PROGRESS);
@@ -97,6 +107,11 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
                     .forEach(b -> bookingStatus.transition(b.getId(), BookingStatus.DELIVERED, "Đã giao xong mọi con ngựa", actorUserId));
         }
         notifyCustomers(handover, matched);
+    }
+
+    @Override
+    public Party stablePartner(Long partyId) {
+        return horseStays.requireStablePartner(partyId);
     }
 
     @Override

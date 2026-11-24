@@ -11,6 +11,7 @@ export type HealthLogCreate = Schemas['HealthLogRequestDto']
 export type HealthStatus = NonNullable<HealthLogCreate['healthStatus']>
 export type IntakeLevel = NonNullable<HealthLogCreate['waterIntake']>
 export type HandoverPaper = Schemas['HandoverPaperResponseDto']
+export type StablePartner = Schemas['StablePartnerResponseDto']
 
 const get = async <T>(url: string) => (await apiClient.get<ApiResponse<T>>(url)).data.data
 const post = async <T>(url: string, body?: unknown) => (await apiClient.post<ApiResponse<T>>(url, body)).data.data
@@ -21,7 +22,9 @@ export const tripExecutionApi = {
   complete: (tripId: number) => post<CrewTrip>(`/vehicle-trips/${tripId}/complete`),
   arrive: (stopId: number) => post<CrewTrip>(`/trip-stops/${stopId}/arrive`),
   depart: (stopId: number, earlyReason?: string) => post<CrewTrip>(`/trip-stops/${stopId}/depart`, earlyReason ? { earlyReason } : undefined),
-  openHandover: (stopId: number, handoverType: HandoverType) => post<CrewTrip>(`/trip-stops/${stopId}/handovers`, { handoverType }),
+  openHandover: (stopId: number, handoverType: HandoverType, partyId?: number) =>
+    post<CrewTrip>(`/trip-stops/${stopId}/handovers`, partyId ? { handoverType, partyId } : { handoverType }),
+  stablePartners: () => get<StablePartner[]>('/stable-partners'),
   scan: (handoverId: number, horseLegId: number, microchip: string) => post<CrewTrip>(`/handovers/${handoverId}/horses`, { horseLegId, microchip }),
   refuse: (handoverId: number, horseLegId: number, reason: string) => post<CrewTrip>(`/handovers/${handoverId}/refusals`, { horseLegId, reason }),
   uploadRecord: async (handoverId: number, file: File) => {

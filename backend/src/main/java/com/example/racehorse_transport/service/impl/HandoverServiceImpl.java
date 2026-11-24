@@ -90,6 +90,16 @@ public class HandoverServiceImpl implements HandoverService {
         if (request.handoverType() == HandoverType.AGENT) {
             assignAgent(handover, request.partyId());
         }
+        // Nghỉ đêm: gửi đối tác chuồng (bắt buộc chọn), nhận lại từ chính đối tác đã nhận
+        if (request.handoverType() == HandoverType.STAY_IN) {
+            if (request.partyId() == null) {
+                throw new DispatchRuleException("partyId", "Chọn chuồng gửi qua đêm.");
+            }
+            handover.setToParty(outcomes.stablePartner(request.partyId()));
+        }
+        if (request.handoverType() == HandoverType.STAY_OUT) {
+            handover.setFromParty(overnightPartner(stop));
+        }
         // Người nhận ca là hộ tống đang trong tổ lái (quy tắc #38)
         if (request.handoverType() == HandoverType.SHIFT && member.getCrewRole() != CrewRole.ESCORT) {
             throw new DispatchRuleException("handoverType", "Chỉ hộ tống nhận bàn giao ca.", true);
@@ -233,6 +243,18 @@ public class HandoverServiceImpl implements HandoverService {
     // Con cần giao nhận: lên xe ở điểm này (đón, ra hub, nhận từ đại lý) hoặc xuống xe ở điểm này (giao, vào hub, giao cho đại lý)
     private List<HorseLeg> candidates(Handover handover) {
         Long stopId = handover.getTripStop().getId();
+        if (handover.getHandoverType() == HandoverType.STAY_IN || handover.getHandoverType() == HandoverType.STAY_OUT) {
+            // Các con đi qua điểm này: STAY_IN là con còn trên xe, STAY_OUT là con đang gửi chuồng (lần giao nhận cuối ở đây là STAY_IN)
+            TripStop stop = handover.getTripStop();
+            int at = stop.getSequenceNumber();
+            Map<Long, HandoverType> last = lastHandoverAt(stop);
+            boolean in = handover.getHandoverType() == HandoverType.STAY_IN;
+            return legs.findActiveOnTrip(stop.getVehicleTrip().getId(), Set.of(HorseLegStatus.CANCELLED, HorseLegStatus.FAILED)).stream()
+                    .filter(l -> l.getStatus() == HorseLegStatus.IN_PROGRESS
+                            && l.getBoardTripStop().getSequenceNumber() < at && at < l.getAlightTripStop().getSequenceNumber())
+                    .filter(l -> in != (last.get(l.getId()) == HandoverType.STAY_IN))
+                    .toList();
+        }
         if (handover.getHandoverType() == HandoverType.SHIFT) {
             // Bàn giao ca: các con đang trên xe ở điểm này (đã lên, chưa tới điểm xuống)
             TripStop stop = handover.getTripStop();
@@ -274,6 +296,23 @@ public class HandoverServiceImpl implements HandoverService {
     @Transactional(readOnly = true)
     public Set<Long> bookingIdsOf(Handover handover) {
         return candidates(handover).stream().map(l -> l.getBookingHorse().getBooking().getId()).collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    // Loại giao nhận DONE cuối cùng (chip khớp) của từng chặng tại điểm dừng
+    private Map<Long, HandoverType> lastHandoverAt(TripStop stop) {
+        Map<Long, HandoverType> last = new LinkedHashMap<>();
+        handovers.findByTripStop_IdInOrderById(List.of(stop.getId())).stream().filter(h -> h.getStatus() == HandoverStatus.DONE)
+                .forEach(h -> scans.findById_HandoverId(h.getId()).stream().filter(r -> Boolean.TRUE.equals(r.getMicrochipMatched()))
+                        .forEach(r -> last.put(r.getId().getHorseLegId(), h.getHandoverType())));
+        return last;
+    }
+
+    // Đối tác đã nhận ngựa nghỉ đêm ở điểm này (lần STAY_IN mới nhất)
+    private Party overnightPartner(TripStop stop) {
+        return handovers.findByTripStop_IdInOrderById(List.of(stop.getId())).stream()
+                .filter(h -> h.getStatus() == HandoverStatus.DONE && h.getHandoverType() == HandoverType.STAY_IN)
+                .reduce((a, b) -> b).map(Handover::getToParty)
+                .orElseThrow(() -> new DispatchRuleException("handoverType", "Không có con ngựa nào đang gửi chuồng ở điểm dừng này.", true));
     }
 
     private static boolean needsRecord(Handover handover) {

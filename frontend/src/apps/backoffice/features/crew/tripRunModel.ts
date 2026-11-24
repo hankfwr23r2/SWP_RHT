@@ -39,9 +39,18 @@ export function handoverTypesAt(run: CrewTrip, stop: Stop): HandoverType[] {
   if (stop.stopType === 'HUB' && boarding) types.push('HUB_OUT')
   // Cửa khẩu: giao cho đại lý (đơn xuất) hoặc nhận từ đại lý (đơn nhập); backend chọn đại lý theo chặng
   if (stop.stopType === 'BORDER' && (alighting || boarding)) types.push('AGENT')
-  // Bàn giao ca: có con đang trên xe ở điểm này (đã lên, chưa tới điểm xuống)
   const sequenceOf = new Map(stopsOf(run).map(s => [s.id, s.sequenceNumber ?? 0]))
   const at = stop.sequenceNumber ?? 0
+  // Nghỉ đêm ở trạm nghỉ hoặc cửa khẩu: gửi chuồng các con đi qua điểm này, rồi nhận lại trước khi rời
+  if (stop.stopType === 'REST' || stop.stopType === 'VITAL_CHECK' || stop.stopType === 'BORDER') {
+    const stays = (run.handovers ?? []).filter(h => h.tripStopId === stop.id && h.status === 'DONE'
+      && (h.handoverType === 'STAY_IN' || h.handoverType === 'STAY_OUT'))
+    const passing = horses.some(h => h.leg?.status === 'IN_PROGRESS'
+      && (sequenceOf.get(h.leg.boardTripStopId) ?? 0) < at && at < (sequenceOf.get(h.leg.alightTripStopId) ?? 0))
+    if (stays.at(-1)?.handoverType === 'STAY_IN') types.push('STAY_OUT')
+    else if (passing) types.push('STAY_IN')
+  }
+  // Bàn giao ca: có con đang trên xe ở điểm này (đã lên, chưa tới điểm xuống)
   if (horses.some(h => h.leg?.status === 'IN_PROGRESS'
     && (sequenceOf.get(h.leg.boardTripStopId) ?? 0) <= at && at < (sequenceOf.get(h.leg.alightTripStopId) ?? 0))) types.push('SHIFT')
   return types
