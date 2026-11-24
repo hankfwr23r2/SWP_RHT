@@ -1,7 +1,7 @@
 // Điều độ (điều phối viên): đơn chờ xếp xe và lượt xe trong tuần (docs/MAN_HINH_VA_TAC_DONG.md mục 3.9)
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { dispatchApi, type DispatchBooking, type DispatchHorse, type VehicleTrip } from '@shared/api/dispatch'
+import { dispatchApi, type DispatchBooking, type DispatchHorse, type DispatchVehicle, type VehicleTrip } from '@shared/api/dispatch'
 import { BookingJourney } from '@shared/components/HorseJourney'
 import { useLoad } from '@shared/hooks/useLoad'
 import { Button } from '@shared/ui/Button'
@@ -36,7 +36,8 @@ export default function DispatchPage() {
   const { t } = useTranslation()
   const [weekStart, setWeekStart] = useState(() => mondayOf(today()))
   const [grouping, setGrouping] = useState(false)
-  const [creating, setCreating] = useState(false)
+  // true: lập lượt mới; một xe: lập lượt đưa xe đó về
+  const [creating, setCreating] = useState<boolean | DispatchVehicle>(false)
   const [openTripId, setOpenTripId] = useState<number>()
   const [journeyOf, setJourneyOf] = useState<DispatchBooking>()
   const [agentOf, setAgentOf] = useState<{ bookingId: number; bookingHorseId: number }>()
@@ -60,7 +61,7 @@ export default function DispatchPage() {
         <WaitingList bookings={data.bookings} next={data.next} onWeek={setWeekStart} onJourney={setJourneyOf}
           onAgent={(booking, horse) => setAgentOf({ bookingId: booking.id ?? 0, bookingHorseId: horse.bookingHorseId ?? 0 })}
           onHub={(booking, horse) => setHubOf({ booking, horse })} />
-        <WeekBoard weekStart={weekStart} vehicles={data.vehicles} trips={data.trips} onOpen={(trip: VehicleTrip) => setOpenTripId(trip.id)} />
+        <WeekBoard weekStart={weekStart} vehicles={data.vehicles} trips={data.trips} onOpen={(trip: VehicleTrip) => setOpenTripId(trip.id)} onReturn={setCreating} />
       </div>
     )
   }
@@ -87,7 +88,9 @@ export default function DispatchPage() {
         <CreateTripModal
           bookings={data.bookings}
           weekFrom={range.fromDate}
-          weekTo={range.toDate}
+          // Chuyến chiều ngược có thể nằm ở tuần sau
+          weekTo={typeof creating === 'object' ? addDays(range.toDate, 7) : range.toDate}
+          returning={typeof creating === 'object' ? creating : undefined}
           onClose={() => setCreating(false)}
           onCreated={trip => { setCreating(false); void reload(); setOpenTripId(trip.id) }}
         />

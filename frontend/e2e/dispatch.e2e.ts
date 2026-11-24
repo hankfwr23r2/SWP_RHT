@@ -55,7 +55,7 @@ async function mockDispatch(page: Page, control: { failBookings?: boolean } = {}
     if (method === 'GET' && path === '/dispatch/vehicles') {
       return ok(route, [{ id: 3, licensePlate: '51C-12345', status: 'ACTIVE', standardStallCount: 6 }, { id: 4, licensePlate: '51C-99999', status: 'MAINTENANCE' }])
     }
-    if (method === 'GET' && path === '/departures') return ok(route, [{ id: 7, routeCode: 'HCM-DN', plannedDepartureAt: '2031-03-05T23:00:00Z', status: 'OPEN' }])
+    if (method === 'GET' && path === '/departures') return ok(route, [{ id: 7, routeCode: 'HCM-DN', plannedDepartureAt: '2031-03-05T23:00:00Z', status: 'OPEN', runConfirmed: true }])
     if (method === 'GET' && path === '/locations') return ok(route, [{ id: 1, name: 'Hub HCM', locationType: 'HUB' }])
     if (method === 'GET' && path === '/horse-stays') {
       return ok(route, [{ id: 6, bookingHorseId: 50, bookingCode: booking.code, horseName: 'Sao Mai', stayType: 'ASSEMBLY', locationName: 'Hub HCM', actualStartAt: '2031-03-05T05:00:00Z', plannedEndAt: '2031-03-05T23:00:00Z' }])

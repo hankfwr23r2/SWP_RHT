@@ -753,6 +753,23 @@
         },
         "type" : "object"
       },
+      "ApiResponseListDispatchVehicleResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DispatchVehicleResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListDocumentRequirementResponseDto" : {
         "properties" : {
           "data" : {
@@ -2956,6 +2973,9 @@
           "routeName" : {
             "type" : "string"
           },
+          "runConfirmed" : {
+            "type" : "boolean"
+          },
           "stallCapacity" : {
             "format" : "int32",
             "type" : "integer"
@@ -3203,6 +3223,48 @@
           "status" : {
             "enum" : [ "PENDING_INTAKE", "UNDER_REVIEW", "NEEDS_RESUBMISSION", "QUOTING", "AWAITING_DEPOSIT", "QUOTE_EXPIRED", "CONFIRMED", "SCHEDULE_CHANGE_REQUIRED", "IN_OPERATION", "DELIVERED", "COMPLETED", "CANCELLED", "REJECTED" ],
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "DispatchVehicleResponseDto" : {
+        "properties" : {
+          "currentLocationCode" : {
+            "type" : "string"
+          },
+          "currentLocationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "currentLocationName" : {
+            "type" : "string"
+          },
+          "freeFrom" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "homeHubLocationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "licensePlate" : {
+            "type" : "string"
+          },
+          "standardStallCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "status" : {
+            "enum" : [ "ACTIVE", "MAINTENANCE", "RETIRED" ],
+            "type" : "string"
+          },
+          "wideStallCount" : {
+            "format" : "int32",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -11293,7 +11355,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseListVehicleResponseDto"
+                  "$ref" : "#/components/schemas/ApiResponseListDispatchVehicleResponseDto"
                 }
               }
             },

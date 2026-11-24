@@ -76,10 +76,10 @@ public final class DispatchPolicy {
     }
 
     // Quy tắc #20 (xe) và #10 (nhân viên): lượt mới bắt đầu ở nơi lượt trước kết thúc.
-    // expectedLocationId là nơi kết thúc lượt liền trước, hoặc hub gốc khi chưa có lượt nào.
-    public static void requireStartsWherePreviousEnded(String field, String subject, Long startLocationId, Long expectedLocationId) {
+    // expected là nơi kết thúc lượt liền trước, hoặc hub gốc khi chưa có lượt nào.
+    public static void requireStartsWherePreviousEnded(String field, String subject, Long startLocationId, Long expectedLocationId, String expectedName) {
         if (!Objects.equals(startLocationId, expectedLocationId)) {
-            throw new DispatchRuleException(field, subject + " không ở điểm xuất phát của lượt này: lượt trước kết thúc ở nơi khác.", true);
+            throw new DispatchRuleException(field, subject + " không ở điểm xuất phát của lượt này: lượt trước kết thúc ở nơi khác (" + expectedName + ").", true);
         }
     }
 

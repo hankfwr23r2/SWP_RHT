@@ -1,18 +1,20 @@
 // Lịch tuần theo xe: mỗi xe một hàng, mỗi lượt một khối trải theo ngày. Điện thoại thì xếp dọc theo xe
 import { useTranslation } from 'react-i18next'
 import type { DispatchVehicle, VehicleTrip } from '@shared/api/dispatch'
-import { addDays, boardRows, daySpan, lacksDriver } from './dispatchModel'
+import { Button } from '@shared/ui/Button'
+import { addDays, boardRows, daySpan, isAway, lacksDriver } from './dispatchModel'
 import s from './Board.module.css'
 
 const ICON: Record<string, string> = { PICKUP: 'fa-arrow-up', LINEHAUL: 'fa-road', DELIVERY: 'fa-arrow-down', DIRECT: 'fa-arrows-left-right', TRANSFER: 'fa-rotate' }
 const FROM = [s.from0, s.from1, s.from2, s.from3, s.from4, s.from5, s.from6]
 const SPAN = [s.span1, s.span1, s.span2, s.span3, s.span4, s.span5, s.span6, s.span7]
 
-export function WeekBoard({ weekStart, vehicles, trips, onOpen }: {
+export function WeekBoard({ weekStart, vehicles, trips, onOpen, onReturn }: {
   weekStart: string
   vehicles: DispatchVehicle[]
   trips: VehicleTrip[]
   onOpen: (trip: VehicleTrip) => void
+  onReturn: (vehicle: DispatchVehicle) => void
 }) {
   const { t, i18n } = useTranslation()
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
@@ -29,6 +31,12 @@ export function WeekBoard({ weekStart, vehicles, trips, onOpen }: {
           <div className={s.vehicle}>
             <strong>{vehicle.licensePlate}</strong>
             <span>{t('dispatch.board.seats', { count: (vehicle.standardStallCount ?? 0) + 2 * (vehicle.wideStallCount ?? 0) })}</span>
+            {isAway(vehicle) && (
+              <>
+                <span className={s.warn}><i className="fa-solid fa-location-dot" aria-hidden="true" /> {t('dispatch.board.awayAt', { name: vehicle.currentLocationName })}</span>
+                {vehicle.status === 'ACTIVE' && <Button size="sm" variant="ghost" onClick={() => onReturn(vehicle)}>{t('dispatch.board.planReturn')}</Button>}
+              </>
+            )}
             {vehicle.status !== 'ACTIVE' && <span className={s.warn}>{t(`staffCatalog.status.${vehicle.status}`, { defaultValue: vehicle.status })}</span>}
           </div>
           <div className={s.lane}>

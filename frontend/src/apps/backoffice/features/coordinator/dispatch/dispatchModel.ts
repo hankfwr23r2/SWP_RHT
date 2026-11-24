@@ -96,6 +96,10 @@ export function daySpan(trip: VehicleTrip, weekStart: string): { from: number; d
   return { from: first, days: Math.min(6, to) - first + 1 }
 }
 
+// Xe đang ở ngoài hub gốc sau lượt cuối: cần lập lượt về
+export const isAway = (vehicle: DispatchVehicle) =>
+  vehicle.currentLocationId != null && vehicle.currentLocationId !== vehicle.homeHubLocationId
+
 export interface BoardRow { vehicle: DispatchVehicle; trips: VehicleTrip[] }
 
 // Mỗi xe một hàng: xe đang dùng được, và xe khác nếu có lượt trong tuần

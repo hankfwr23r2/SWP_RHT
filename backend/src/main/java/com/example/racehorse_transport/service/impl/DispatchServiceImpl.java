@@ -6,7 +6,7 @@ import com.example.racehorse_transport.dto.dispatch.TripStopResponseDto;
 import com.example.racehorse_transport.dto.dispatch.VehicleTripCancelRequestDto;
 import com.example.racehorse_transport.dto.dispatch.VehicleTripCreateRequestDto;
 import com.example.racehorse_transport.dto.dispatch.VehicleTripResponseDto;
-import com.example.racehorse_transport.dto.vehicle.VehicleResponseDto;
+import com.example.racehorse_transport.dto.dispatch.DispatchVehicleResponseDto;
 import com.example.racehorse_transport.entity.BookingAddress;
 import com.example.racehorse_transport.entity.CrewAssignment;
 import com.example.racehorse_transport.entity.Departure;
@@ -124,8 +124,12 @@ public class DispatchServiceImpl implements DispatchService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<VehicleResponseDto> vehicles() {
-        return vehicles.findAllByOrderByLicensePlateAsc().stream().map(VehicleResponseDto::from).toList();
+    public List<DispatchVehicleResponseDto> vehicles() {
+        return vehicles.findAllByOrderByLicensePlateAsc().stream().map(vehicle -> trips
+                .findByVehicle_IdAndStatusNot(vehicle.getId(), VehicleTripStatus.CANCELLED).stream()
+                .max(Comparator.comparing(VehicleTrip::getPlannedEndAt))
+                .map(last -> DispatchVehicleResponseDto.from(vehicle, last.getEndLocation(), last.getPlannedEndAt()))
+                .orElseGet(() -> DispatchVehicleResponseDto.from(vehicle, vehicle.getHomeHubLocation(), null))).toList();
     }
 
     // Lượt trục: theo chuyến, đi từ điểm đầu tới điểm cuối tuyến, giờ theo giờ xuất phát của chuyến
@@ -256,15 +260,16 @@ public class DispatchServiceImpl implements DispatchService {
         Interval planned = new Interval(trip.getPlannedStartAt(), trip.getPlannedEndAt());
         DispatchPolicy.requireNoOverlap("vehicleId", "Xe", planned,
                 others.stream().map(t -> new Interval(t.getPlannedStartAt(), t.getPlannedEndAt())).toList());
-        Long expectedStart = others.stream().filter(t -> !t.getPlannedEndAt().isAfter(trip.getPlannedStartAt()))
+        Location expectedStart = others.stream().filter(t -> !t.getPlannedEndAt().isAfter(trip.getPlannedStartAt()))
                 .max(Comparator.comparing(VehicleTrip::getPlannedEndAt))
-                .map(t -> t.getEndLocation().getId())
-                .orElse(vehicle.getHomeHubLocation().getId());
-        DispatchPolicy.requireStartsWherePreviousEnded("vehicleId", "Xe", trip.getStartLocation().getId(), expectedStart);
+                .map(VehicleTrip::getEndLocation)
+                .orElse(vehicle.getHomeHubLocation());
+        DispatchPolicy.requireStartsWherePreviousEnded("vehicleId", "Xe", trip.getStartLocation().getId(),
+                expectedStart.getId(), expectedStart.getName());
         others.stream().filter(t -> !t.getPlannedStartAt().isBefore(trip.getPlannedEndAt()))
                 .min(Comparator.comparing(VehicleTrip::getPlannedStartAt))
                 .ifPresent(next -> DispatchPolicy.requireStartsWherePreviousEnded("vehicleId", "Lượt sau của xe",
-                        next.getStartLocation().getId(), trip.getEndLocation().getId()));
+                        next.getStartLocation().getId(), trip.getEndLocation().getId(), trip.getEndLocation().getName()));
     }
 
     private List<VehicleTripResponseDto> describe(List<VehicleTrip> found) {

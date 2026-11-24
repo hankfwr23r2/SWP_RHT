@@ -77,9 +77,9 @@ class DispatchPolicyTest {
 
     @Test
     void newTripStartsWherePreviousTripEnded() {
-        assertThatCode(() -> DispatchPolicy.requireStartsWherePreviousEnded("startLocationId", "Xe", 1L, 1L)).doesNotThrowAnyException();
-        assertThatThrownBy(() -> DispatchPolicy.requireStartsWherePreviousEnded("startLocationId", "Xe", 1L, 2L))
-                .hasMessageContaining("lượt trước kết thúc ở nơi khác");
+        assertThatCode(() -> DispatchPolicy.requireStartsWherePreviousEnded("startLocationId", "Xe", 1L, 1L, "Hub A")).doesNotThrowAnyException();
+        assertThatThrownBy(() -> DispatchPolicy.requireStartsWherePreviousEnded("startLocationId", "Xe", 1L, 2L, "Hub B"))
+                .hasMessageContaining("lượt trước kết thúc ở nơi khác (Hub B)");
     }
 
     @Test
