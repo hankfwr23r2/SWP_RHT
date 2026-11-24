@@ -39,6 +39,9 @@ export const incidentsApi = {
   recordCost: (body: CostItemCreate) => post<CostItem>('/cost-items', body),
   approveCost: (costId: number) => post<CostItem>(`/cost-items/${costId}/approve`),
   parties: () => get<Party[]>('/parties'),
+  // Thực hiện phương án đã duyệt: đổi xe, đưa ngựa về hub
+  swapVehicle: (incidentId: number, vehicleId: number) => post<Incident>(`/incidents/${incidentId}/vehicle-swap`, { vehicleId }),
+  returnToHub: (incidentId: number) => post<Incident>(`/incidents/${incidentId}/return-to-hub`),
   // Chứng từ: biên lai, hóa đơn kèm chi phí; ảnh hiện trường kèm sự cố (có tọa độ nếu máy cho lấy vị trí)
   receipts: (costId: number) => get<Evidence[]>(`/cost-items/${costId}/receipts`),
   attachReceipt: (costId: number, file: File) => upload(`/cost-items/${costId}/receipts`, file),

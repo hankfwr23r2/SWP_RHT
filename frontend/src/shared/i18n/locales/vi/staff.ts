@@ -99,7 +99,14 @@ export const staff = {
       "WAITING": "Phí chờ",
       "OTHER": "Khác"
     },
+    "swapVehicle": "Đổi xe",
+    "swapVehicleHint": "Lượt xe đang chạy chuyển sang xe thay thế; ngựa, điểm dừng và tổ lái giữ nguyên. Người phụ trách đổi thì hộ tống mới ký bàn giao ca.",
+    "replacementVehicle": "Xe thay thế",
+    "returnToHub": "Đưa ngựa về hub",
+    "returnToHubHint": "Các con đang trên xe dừng chặng giao. Tới hub, tổ xe giao ngựa vào hub để chờ lượt giao lại.",
     "done": {
+      "swapped": "Đã đổi xe",
+      "returned": "Đã cho ngựa về hub",
       "proposed": "Đã lập phương án",
       "approved": "Đã duyệt phương án",
       "rejected": "Đã từ chối phương án",

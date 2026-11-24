@@ -167,3 +167,29 @@ test('điều phối thêm ảnh hiện trường và biên lai; quản lý xem 
   await expect(dialog.getByRole('list', { name: 'Ảnh hiện trường' }).getByRole('link', { name: 'hien-truong.jpg' })).toBeVisible()
   expect(uploads).toBe(1)
 })
+
+test('phương án đổi xe đã duyệt: điều phối chọn xe thay thế cho lượt đang chạy', async ({ page }) => {
+  const incident = { ...incidentState(), incidentType: 'VEHICLE_BREAKDOWN', vehicleTripId: 9, status: 'PLAN_ACTIVE',
+    plans: [{ id: 41, version: 1, resolutionType: 'TRANSFER_VEHICLE', instructions: 'Gọi xe cứu hộ', status: 'APPROVED' }] as Record<string, unknown>[] }
+  let swapped: unknown
+  await signIn(page, 'coordinator')
+  await page.route('**/api/v1/**', async route => {
+    const request = route.request()
+    const path = new URL(request.url()).pathname.replace('/api/v1', '')
+    if (path === '/incidents') return ok(route, [incident])
+    if (path === '/incidents/5') return ok(route, incident)
+    if (path === '/dispatch/vehicles') return ok(route, [{ id: 3, licensePlate: '51C-11111', status: 'ACTIVE' }, { id: 4, licensePlate: '51C-22222', status: 'MAINTENANCE' }])
+    if (path === '/incidents/5/vehicle-swap') { swapped = request.postDataJSON(); return ok(route, incident) }
+    return ok(route, [])
+  })
+  await page.goto('/backoffice/coordinator/incidents')
+  await page.getByRole('table', { name: 'Sự cố đang xử lý' }).getByRole('row', { name: /Ngựa bỏ ăn/ }).getByRole('button', { name: 'Xem' }).click({ timeout: 15_000 })
+  const dialog = page.getByRole('dialog', { name: 'Ngựa bỏ ăn' })
+  await expect(dialog.getByRole('button', { name: 'Đổi xe' })).toBeDisabled()
+  await dialog.getByRole('combobox', { name: 'Xe thay thế' }).click()
+  await expect(page.getByRole('option', { name: '51C-22222' })).toBeDisabled()
+  await page.getByRole('option', { name: '51C-11111' }).click()
+  await dialog.getByRole('button', { name: 'Đổi xe' }).click()
+  await expect(page.getByText('Đã đổi xe')).toBeVisible()
+  expect(swapped).toEqual({ vehicleId: 3 })
+})

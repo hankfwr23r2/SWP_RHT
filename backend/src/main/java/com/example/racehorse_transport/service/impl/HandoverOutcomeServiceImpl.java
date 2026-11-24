@@ -8,9 +8,11 @@ import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HandoverType;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
+import com.example.racehorse_transport.entity.enums.IncidentType;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.policy.TripExecutionPolicy;
 import com.example.racehorse_transport.repository.HorseLegRepository;
+import com.example.racehorse_transport.repository.IncidentRepository;
 import com.example.racehorse_transport.service.BookingCancellationService;
 import com.example.racehorse_transport.service.BookingHorseService;
 import com.example.racehorse_transport.service.BookingStatusService;
@@ -41,6 +43,7 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
     private final BookingCancellationService cancellations;
     private final DocumentCompletenessService documents;
     private final NotificationService notifications;
+    private final IncidentRepository incidents;
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
@@ -73,7 +76,12 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
         for (HorseLeg leg : matched) {
             // Giao thất bại (B5): xe về hub, giao con vào hub thì giữ và chăm sóc tại hub; chặng thất bại giữ nguyên
             if (leg.getStatus() == HorseLegStatus.FAILED) {
-                horseStays.openFailedDeliveryStabling(leg, handover.getTripStop().getLocation(), now);
+                // Không gặp người nhận thì giữ có phí người nhận chịu; về hub do sự cố khác thì tập kết chờ giao lại
+                if (incidents.existsByHorseLeg_IdAndIncidentType(leg.getId(), IncidentType.HANDOVER_TIMEOUT)) {
+                    horseStays.openFailedDeliveryStabling(leg, handover.getTripStop().getLocation(), now);
+                } else {
+                    horseStays.openReturnAssembly(leg, handover.getTripStop().getLocation(), now);
+                }
                 continue;
             }
             if (boarding) {

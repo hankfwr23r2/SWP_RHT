@@ -99,7 +99,14 @@ export const staff = {
       "WAITING": "Waiting fee",
       "OTHER": "Other"
     },
+    "swapVehicle": "Swap vehicle",
+    "swapVehicleHint": "The running trip moves to the replacement vehicle; horses, stops and crew stay the same. A new escort signs a shift handover.",
+    "replacementVehicle": "Replacement vehicle",
+    "returnToHub": "Return horses to hub",
+    "returnToHubHint": "Horses on board stop their delivery legs. At the hub, the crew hands them in to wait for redelivery.",
     "done": {
+      "swapped": "Vehicle swapped",
+      "returned": "Horses sent back to the hub",
       "proposed": "Plan proposed",
       "approved": "Plan approved",
       "rejected": "Plan rejected",

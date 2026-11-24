@@ -1,5 +1,7 @@
 package com.example.racehorse_transport.repository;
 
+import com.example.racehorse_transport.entity.enums.IncidentType;
+
 import com.example.racehorse_transport.entity.Incident;
 import com.example.racehorse_transport.entity.enums.IncidentStatus;
 import jakarta.persistence.LockModeType;
@@ -13,6 +15,9 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface IncidentRepository extends JpaRepository<Incident, Long> {
+
+    // Con giao thất bại do không gặp người nhận (B5) thì giữ có phí; về hub do sự cố khác thì tập kết không phí
+    boolean existsByHorseLeg_IdAndIncidentType(Long horseLegId, IncidentType incidentType);
 
     boolean existsByVehicleTrip_IdAndHorseLegIsNullAndStatusIn(Long vehicleTripId, Collection<IncidentStatus> statuses);
 

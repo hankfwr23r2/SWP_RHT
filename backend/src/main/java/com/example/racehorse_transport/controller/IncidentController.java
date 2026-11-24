@@ -7,7 +7,9 @@ import com.example.racehorse_transport.dto.incident.IncidentPlanRequestDto;
 import com.example.racehorse_transport.dto.incident.IncidentReportRequestDto;
 import com.example.racehorse_transport.dto.incident.IncidentResponseDto;
 import com.example.racehorse_transport.dto.incident.PlanRejectRequestDto;
+import com.example.racehorse_transport.dto.incident.VehicleSwapRequestDto;
 import com.example.racehorse_transport.service.CostItemService;
+import com.example.racehorse_transport.service.IncidentActionService;
 import com.example.racehorse_transport.service.IncidentService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -28,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class IncidentController {
 
     private final IncidentService incidents;
+    private final IncidentActionService actions;
     private final CostItemService costs;
 
     @GetMapping("/incidents")
@@ -89,6 +92,19 @@ public class IncidentController {
     @PreAuthorize("hasRole('COORDINATOR')")
     public ApiResponseDto<IncidentResponseDto> close(@PathVariable Long id, Authentication authentication) {
         return ApiResponseDto.success(incidents.close(id, authentication.getName()), "Đã đóng sự cố");
+    }
+
+    // Thực hiện phương án đã duyệt: đổi xe, đưa ngựa về hub (B4)
+    @PostMapping("/incidents/{id}/vehicle-swap")
+    @PreAuthorize("hasRole('COORDINATOR')")
+    public ApiResponseDto<IncidentResponseDto> swapVehicle(@PathVariable Long id, @Valid @RequestBody VehicleSwapRequestDto request, Authentication authentication) {
+        return ApiResponseDto.success(actions.swapVehicle(id, request.vehicleId(), authentication.getName()), "Đã đổi xe");
+    }
+
+    @PostMapping("/incidents/{id}/return-to-hub")
+    @PreAuthorize("hasRole('COORDINATOR')")
+    public ApiResponseDto<IncidentResponseDto> returnToHub(@PathVariable Long id, Authentication authentication) {
+        return ApiResponseDto.success(actions.returnToHub(id, authentication.getName()), "Đã cho ngựa về hub");
     }
 
     @GetMapping("/incidents/{id}/cost-items")

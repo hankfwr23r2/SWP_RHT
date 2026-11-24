@@ -7607,6 +7607,16 @@
         "required" : [ "reason" ],
         "type" : "object"
       },
+      "VehicleSwapRequestDto" : {
+        "properties" : {
+          "vehicleId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "vehicleId" ],
+        "type" : "object"
+      },
       "VehicleTripCancelRequestDto" : {
         "properties" : {
           "reason" : {
@@ -12244,6 +12254,70 @@
             "type" : "integer"
           }
         } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseIncidentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      }
+    },
+    "/incidents/{id}/return-to-hub" : {
+      "post" : {
+        "operationId" : "returnToHub",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseIncidentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "incident-controller" ]
+      }
+    },
+    "/incidents/{id}/vehicle-swap" : {
+      "post" : {
+        "operationId" : "swapVehicle",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VehicleSwapRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
         "responses" : {
           "200" : {
             "content" : {
