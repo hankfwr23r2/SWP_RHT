@@ -13,6 +13,13 @@
 | Seed | 6 tuyến, mỗi tuần một chuyến. HCM-DN và DN-HCM nay có 8 điểm dừng, nghỉ đêm 600 phút ở REST-TUYHOA, REST-NHATRANG: cần đối tác có chuồng (`STABLE`) ở hai điểm này. Thêm GATE-LAOBAO, đại lý Lào, `driver3.dev`, `driver4.dev`, `escort2.dev`, `escort3.dev`. Ngừng QF-CUCHI |
 | Ngựa đực và ngựa cái cùng xe | Chỉ cảnh báo khi xếp khoang, không chặn |
 
+## 24/11/2026. Hợp đồng thanh toán và loại ngựa (A7)
+
+- Khi ghi giao nhận DONE ở nơi nhận (đón, SELF tại hub hoặc nhận từ đại lý ở cửa khẩu với IMPORT), gọi `PaymentService.requestBalance(bookingId, handedAt)` cho từng đơn CONFIRMED đã có báo giá ACCEPTED và cọc PAID. Nếu giao nhận liên quan nhiều đơn, khóa booking theo ID tăng dần trước khi ghi. Hàm tạo tối đa một khoản số dư, hạn tính từ `handedAt`, và gửi thông báo khách.
+- Trước khi xe rời nơi nhận, gọi `PaymentReadinessService.isPaidInFull(bookingId)` cho từng đơn có ngựa lên xe. `StopReadinessServiceImpl` đã gọi cho điểm PICKUP. Luồng B nối thêm các đường nhận ở hub/cửa khẩu và bảo đảm thứ tự khóa.
+- Nếu quá `BALANCE_WAIT_MINUTES` và vẫn thiếu tiền, kiểm `PaymentService.hasPendingBalanceConfirmation(bookingId)` trong cùng giao dịch đang giữ khóa booking. Nếu còn phiên VNPAY chưa có kết quả thì chờ VNPAY trả lời; link mở trước hạn chỉ được chờ hết hạn link (15 phút) cộng thời gian chờ kết quả (5 phút). Luồng B thực hiện giao nhận RETURN và phối hợp A8 hủy đơn.
+- Khi không nhận một con, gọi `BookingHorseService.exclude(bookingHorseId, reason, actorUserId)` trước khi lập khoản số dư. Luồng A nhả chỗ và thay báo giá có hiệu lực ngay, giữ đơn giá đã chốt. Luồng B hủy các chặng còn lại của con bị loại trong cùng giao dịch.
+
 ## 23/11/2026. Quyết định nghiệp vụ đợt hai (người dùng đã chốt)
 
 Đọc lại `NGHIEP_VU_THEO_59_BANG.md`, `MAN_HINH_VA_TAC_DONG.md`, quy tắc #29–#36 của `DB_SCHEMA_59_BANG.md`. **Mục này thay các ý trùng ở mục "Màn hình và tác động" bên dưới.** Code luồng A đổi ở task A6b, hiện chưa làm.

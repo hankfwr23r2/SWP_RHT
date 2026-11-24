@@ -276,6 +276,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bookings/{bookingId}/payments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["payments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{bookingId}/quotations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["quotations"];
+        put?: never;
+        post: operations["draft"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bookings/{id}": {
         parameters: {
             query?: never;
@@ -429,7 +461,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["reject_1"];
+        post: operations["reject_2"];
         delete?: never;
         options?: never;
         head?: never;
@@ -557,7 +589,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["reject"];
+        post: operations["reject_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1668,6 +1700,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/payments/vnpay/ipn": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ipn"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payments/vnpay/return": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["paymentReturn"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/payments/{id}/checkout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["checkout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/price-lists": {
         parameters: {
             query?: never;
@@ -1806,6 +1886,70 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["publicTrack"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/quotations/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/quotations/{id}/adjust": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["adjust"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/quotations/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["reject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/quotations/{id}/send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["send"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2539,6 +2683,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListPaymentResponseDto: {
+            data?: components["schemas"]["PaymentResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListPriceItemResponseDto: {
             data?: components["schemas"]["PriceItemResponseDto"][];
             message?: string;
@@ -2556,6 +2705,11 @@ export interface components {
         };
         ApiResponseListPublicTrackingResponseDto: {
             data?: components["schemas"]["PublicTrackingResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListQuotationResponseDto: {
+            data?: components["schemas"]["QuotationResponseDto"][];
             message?: string;
             status?: string;
         };
@@ -2638,6 +2792,16 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponsePaymentCheckoutResponseDto: {
+            data?: components["schemas"]["PaymentCheckoutResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponsePaymentResultResponseDto: {
+            data?: components["schemas"]["PaymentResultResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponsePriceItemResponseDto: {
             data?: components["schemas"]["PriceItemResponseDto"];
             message?: string;
@@ -2650,6 +2814,11 @@ export interface components {
         };
         ApiResponsePricingPreviewResponseDto: {
             data?: components["schemas"]["PricingPreviewResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseQuotationResponseDto: {
+            data?: components["schemas"]["QuotationResponseDto"];
             message?: string;
             status?: string;
         };
@@ -3894,6 +4063,33 @@ export interface components {
             amount?: number;
             key?: string;
         };
+        PaymentCheckoutResponseDto: {
+            /** Format: date-time */
+            expiresAt?: string;
+            paymentUrl?: string;
+        };
+        PaymentResponseDto: {
+            amount?: number;
+            /** Format: int64 */
+            bookingId?: number;
+            currencyCode?: string;
+            /** Format: date-time */
+            dueAt?: string;
+            /** Format: int64 */
+            id?: number;
+            /** Format: date-time */
+            paidAt?: string;
+            /** Format: int64 */
+            quotationId?: number;
+            /** @enum {string} */
+            status?: "PENDING" | "PAID" | "FAILED" | "CANCELLED";
+            /** @enum {string} */
+            type?: "DEPOSIT" | "BALANCE" | "EXTRA_CHARGE" | "REFUND";
+        };
+        PaymentResultResponseDto: {
+            code?: string;
+            message?: string;
+        };
         PersonalInsuranceRevisionRequestDto: {
             /** Format: int64 */
             insurerPartyId: number;
@@ -4077,6 +4273,54 @@ export interface components {
             /** @enum {string} */
             status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
         };
+        QuotationAcceptRequestDto: unknown;
+        QuotationAdjustmentRequestDto: {
+            adjustment: number;
+            reason: string;
+        };
+        QuotationLineResponseDto: {
+            amount?: number;
+            /** Format: int64 */
+            bookingHorseId?: number;
+            description?: string;
+            /** Format: int32 */
+            lineNumber?: number;
+            /** @enum {string} */
+            lineType?: "LINEHAUL" | "PICKUP" | "DELIVERY" | "DIRECT" | "FUEL" | "STALL" | "QUARANTINE" | "SERVICE" | "DOCS" | "INSURANCE" | "ADJUSTMENT";
+            passThrough?: boolean;
+            /** Format: int64 */
+            priceItemId?: number;
+            quantity?: number;
+            unit?: string;
+            unitPrice?: number;
+        };
+        QuotationRejectRequestDto: {
+            reason: string;
+        };
+        QuotationResponseDto: {
+            /** Format: int64 */
+            bookingId?: number;
+            currencyCode?: string;
+            /** Format: date */
+            departureDate?: string;
+            depositAmount?: number;
+            /** Format: date */
+            estimatedDeliveryDate?: string;
+            /** Format: date-time */
+            expiresAt?: string;
+            /** Format: int64 */
+            id?: number;
+            lines?: components["schemas"]["QuotationLineResponseDto"][];
+            passThroughAmount?: number;
+            /** Format: date */
+            pickupDate?: string;
+            /** @enum {string} */
+            status?: "DRAFT" | "SENT" | "ACCEPTED" | "REJECTED" | "EXPIRED" | "SUPERSEDED";
+            totalAmount?: number;
+            /** Format: int32 */
+            version?: number;
+        };
+        QuotationSendRequestDto: unknown;
         RegisterRequest: {
             acceptedTerms?: boolean;
             address?: string;
@@ -4513,6 +4757,10 @@ export interface components {
             /** Format: int32 */
             wideStallCount: number;
         };
+        VnpayIpnResponseDto: {
+            Message?: string;
+            RspCode?: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -4948,6 +5196,72 @@ export interface operations {
             };
         };
     };
+    payments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListPaymentResponseDto"];
+                };
+            };
+        };
+    };
+    quotations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListQuotationResponseDto"];
+                };
+            };
+        };
+    };
+    draft: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                bookingId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseQuotationResponseDto"];
+                };
+            };
+        };
+    };
     get_3: {
         parameters: {
             query?: never;
@@ -5159,7 +5473,7 @@ export interface operations {
             };
         };
     };
-    reject_1: {
+    reject_2: {
         parameters: {
             query?: never;
             header?: never;
@@ -5369,7 +5683,7 @@ export interface operations {
             };
         };
     };
-    reject: {
+    reject_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -7413,6 +7727,76 @@ export interface operations {
             };
         };
     };
+    ipn: {
+        parameters: {
+            query: {
+                parameters: {
+                    [key: string]: string;
+                };
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["VnpayIpnResponseDto"];
+                };
+            };
+        };
+    };
+    paymentReturn: {
+        parameters: {
+            query: {
+                parameters: {
+                    [key: string]: string;
+                };
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePaymentResultResponseDto"];
+                };
+            };
+        };
+    };
+    checkout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePaymentCheckoutResponseDto"];
+                };
+            };
+        };
+    };
     list_1: {
         parameters: {
             query?: never;
@@ -7766,6 +8150,110 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListPublicTrackingResponseDto"];
+                };
+            };
+        };
+    };
+    accept: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["QuotationAcceptRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseQuotationResponseDto"];
+                };
+            };
+        };
+    };
+    adjust: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuotationAdjustmentRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseQuotationResponseDto"];
+                };
+            };
+        };
+    };
+    reject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuotationRejectRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseQuotationResponseDto"];
+                };
+            };
+        };
+    };
+    send: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["QuotationSendRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseQuotationResponseDto"];
                 };
             };
         };

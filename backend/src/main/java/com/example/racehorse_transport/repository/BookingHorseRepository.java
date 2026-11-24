@@ -9,10 +9,14 @@ import org.springframework.data.jpa.repository.Query;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface BookingHorseRepository extends JpaRepository<BookingHorse, Long> {
 
     List<BookingHorse> findByBooking_Id(Long bookingId);
+
+    @Query("select h.booking.id from BookingHorse h where h.id = :id")
+    Optional<Long> findBookingId(Long id);
 
     @Query("""
             SELECT h FROM BookingHorse h JOIN FETCH h.horse JOIN FETCH h.stallType

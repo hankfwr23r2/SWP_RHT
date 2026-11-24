@@ -1,0 +1,108 @@
+package com.example.racehorse_transport.policy;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.Payment;
+import com.example.racehorse_transport.entity.Quotation;
+import com.example.racehorse_transport.entity.enums.PaymentStatus;
+import com.example.racehorse_transport.entity.enums.PaymentType;
+import com.example.racehorse_transport.entity.enums.PaymentMethod;
+import com.example.racehorse_transport.entity.enums.BookingStatus;
+import com.example.racehorse_transport.entity.enums.QuotationStatus;
+import com.example.racehorse_transport.exception.BookingRuleException;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+import org.junit.jupiter.api.Test;
+
+class PaymentPolicyTest {
+    @Test
+    void sessionReferenceUsesAlphanumericsAndPreservesPaymentAndGatewayTime() {
+        Instant created = Instant.parse("2027-01-15T10:00:00Z");
+        String first = PaymentPolicy.reference(Long.MAX_VALUE, created, UUID.randomUUID());
+        String second = PaymentPolicy.reference(Long.MAX_VALUE, created, UUID.randomUUID());
+        assertThat(first).matches("[A-Za-z0-9]+").isNotEqualTo(second);
+        assertThat(PaymentPolicy.parseReference(first)).isEqualTo(new PaymentPolicy.Session(Long.MAX_VALUE, created));
+        assertThat(PaymentPolicy.parseReference("123")).isNull();
+    }
+
+    @Test
+    void usesActualPaymentsAndRefundsInTheQuotationCurrency() {
+        var quote = new Quotation();
+        quote.setTotalAmount(new BigDecimal("8600"));
+        quote.setCurrencyCode("VND");
+        var deposit = payment(PaymentType.DEPOSIT, PaymentStatus.PAID, "3000", "VND");
+        var pending = payment(PaymentType.BALANCE, PaymentStatus.PENDING, "5600", "VND");
+        var refund = payment(PaymentType.REFUND, PaymentStatus.PAID, "500", "VND");
+        assertThat(PaymentPolicy.outstanding(quote, List.of(deposit, pending, refund))).isEqualByComparingTo("6100");
+        deposit.setCurrencyCode("USD");
+        assertThatThrownBy(() -> PaymentPolicy.outstanding(quote, List.of(deposit)))
+                .isInstanceOf(BookingRuleException.class);
+    }
+
+    @Test
+    void depositAllowsLateConfirmationOnlyForFundsPaidBeforeTheDeadline() {
+        var paidAt = Instant.parse("2027-01-15T10:00:00Z");
+        var deadline = paidAt.plusSeconds(1);
+        var booking = new Booking();
+        booking.setStatus(BookingStatus.AWAITING_DEPOSIT);
+        var quotation = new Quotation();
+        quotation.setStatus(QuotationStatus.ACCEPTED);
+        quotation.setCurrencyCode("VND");
+        var payment = payment(PaymentType.DEPOSIT, PaymentStatus.PENDING, "3000", "VND");
+        payment.setQuotation(quotation);
+        payment.setPaymentMethod(PaymentMethod.VNPAY);
+        payment.setDueAt(deadline);
+        var session = new PaymentPolicy.Session(1L, paidAt.minusSeconds(10));
+
+        assertThat(PaymentPolicy.canApply(payment, booking, session, paidAt, deadline.plusSeconds(50),
+                5, payment.getAmount())).isTrue();
+        assertThat(PaymentPolicy.canApply(payment, booking, session, deadline, deadline.plusSeconds(50),
+                5, payment.getAmount())).isFalse();
+        assertThat(PaymentPolicy.canApply(payment, booking, session, paidAt, deadline.plusSeconds(300),
+                5, payment.getAmount())).isFalse();
+    }
+
+    @Test
+    void balanceCanApplyTheHigherSignedAmountFromBeforeTheQuoteWasReduced() {
+        var now = Instant.parse("2027-01-15T10:00:00Z");
+        var booking = new Booking();
+        booking.setStatus(BookingStatus.CONFIRMED);
+        var quotation = new Quotation();
+        quotation.setStatus(QuotationStatus.ACCEPTED);
+        quotation.setCurrencyCode("VND");
+        var payment = payment(PaymentType.BALANCE, PaymentStatus.PENDING, "3000", "VND");
+        payment.setQuotation(quotation);
+        payment.setPaymentMethod(PaymentMethod.VNPAY);
+        payment.setDueAt(now.minusSeconds(5));
+        var session = new PaymentPolicy.Session(1L, now.minusSeconds(120));
+        var signedAmount = new BigDecimal("6000");
+
+        assertThat(PaymentPolicy.canApply(payment, booking, session, now, now, 5, signedAmount)).isTrue();
+        booking.setStatus(BookingStatus.CANCELLED);
+        assertThat(PaymentPolicy.canApply(payment, booking, session, now, now, 5, signedAmount)).isFalse();
+    }
+
+    private static Payment payment(PaymentType type, PaymentStatus status, String amount, String currency) {
+        var payment = new Payment();
+        payment.setPaymentType(type);
+        payment.setStatus(status);
+        payment.setAmount(new BigDecimal(amount));
+        payment.setCurrencyCode(currency);
+        return payment;
+    }
+
+    @Test
+    void abandonedGatewaySessionStopsCountingAfterLinkAndGraceTime() {
+        Instant opened = Instant.parse("2026-12-01T01:00:00Z");
+        var session = new PaymentPolicy.Session(1L, opened);
+        Instant due = opened.plusSeconds(60);
+        assertThat(PaymentPolicy.awaitsGateway(session, due, opened.plusSeconds(20 * 60 - 1), 15, 5)).isTrue();
+        assertThat(PaymentPolicy.awaitsGateway(session, due, opened.plusSeconds(20 * 60), 15, 5)).isFalse();
+        assertThat(PaymentPolicy.awaitsGateway(session, opened, opened.plusSeconds(1), 15, 5)).isFalse();
+        assertThat(PaymentPolicy.awaitsGateway(null, due, opened, 15, 5)).isFalse();
+    }
+}

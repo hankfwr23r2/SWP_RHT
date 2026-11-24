@@ -1082,7 +1082,7 @@ Index: `price_list_id`.
 | `line_number` | `int` | | CK `>= 1` | |
 | `line_type` | `varchar(30)` | | CK `LINEHAUL, PICKUP, DELIVERY, DIRECT, FUEL, STALL, QUARANTINE, SERVICE, DOCS, INSURANCE, ADJUSTMENT` | |
 | `billable_service_id` | `bigint` | có | FK → billable_service | |
-| `price_item_id` | `bigint` | có | FK → price_item | Đơn giá lấy từ dòng giá nào. NULL với dòng điều chỉnh tay |
+| `price_item_id` | `bigint` | có | FK → price_item | Đơn giá lấy từ dòng giá nào. NULL với dòng điều chỉnh tay và dòng phí bảo hiểm |
 | `booking_horse_id` | `bigint` | có | FK → booking_horse | Dòng này tính cho con ngựa nào |
 | `horse_leg_id` | `bigint` | có | FK → horse_leg | Dòng này tính cho chặng nào |
 | `description` | `varchar(500)` | | | |
@@ -1466,13 +1466,13 @@ Các quy tắc dưới đây cần so dữ liệu ở nhiều bảng nên CHECK 
 | 14 | `horse_insurance` chỉ chuyển sang REVISION_REQUESTED khi `coverage_option = PERSONAL` | horse_insurance |
 | 15 | `booking_horse_service.billable_service_id` phải là dịch vụ có `layer = ADD_ON` | booking_horse_service |
 | 16 | `booking` chỉ chuyển sang DELIVERED khi mọi `booking_horse` ACTIVE đã có `horse_leg` leg_type DELIVERY hoặc DIRECT ở trạng thái COMPLETED | booking, horse_leg |
-| 17 | Đơn giá trong `quotation_line` phải lấy từ `price_item` thuộc đúng `quotation.price_list_id` | quotation_line |
+| 17 | Đơn giá trong `quotation_line` phải lấy từ `price_item` thuộc đúng `quotation.price_list_id`. Ngoại lệ: dòng ADJUSTMENT nhập tay và dòng INSURANCE lấy `horse_insurance.premium_amount` hãng báo, cả hai có `price_item_id` NULL | quotation_line |
 | 18 | Mỗi lần đổi `booking.status` phải ghi một dòng `booking_status_history`, trong cùng transaction | booking |
 | 19 | Chọn cách chạy theo hub, không theo `booking_type`: hub đón trùng hub giao thì chạy thẳng (`DIRECT`, `departure_id` NULL); khác hub thì đi trục (bắt buộc có `departure_id`, `route` nối hai hub hoặc nối hub với cửa khẩu) | booking, hub_service_area, route |
 | 20 | `vehicle_trip.start_location_id` phải bằng `end_location_id` của lượt chạy liền trước của cùng xe. Xe tới hub vệ tinh thì phải có lượt chạy về trụ sở, ví dụ chuyến trục chiều ngược | vehicle_trip |
 | 21 | Đợt này ngựa chỉ lên xe trục ở điểm đầu tuyến và xuống ở điểm cuối tuyến. Vì vậy `departure.booked_stall_count` đếm theo cả chuyến là đúng | horse_leg, trip_stop, departure |
 | 22 | Mọi khoản `payment` và `cost_item` của một đơn dùng cùng `currency_code` với báo giá. Chi phí phát sinh ở nước ngoài quy đổi lúc ghi; hóa đơn gốc lưu ở `document` | payment, cost_item, quotation |
-| 23 | `quotation.total_amount`, `pass_through_amount`, `deposit_amount` chỉ được ghi khi báo giá còn DRAFT, và phải khớp tổng các dòng. Tổng dòng ADJUSTMENT không được làm tổng báo giá âm | quotation, quotation_line |
+| 23 | `quotation.total_amount`, `pass_through_amount`, `deposit_amount` chỉ được ghi khi báo giá còn DRAFT, và phải khớp tổng các dòng. Tổng dòng ADJUSTMENT không được làm tổng báo giá âm. Báo giá có tổng hoặc tiền cọc bằng 0 thì không gửi được. Báo giá thay thế khi loại ngựa chỉ tính khoản giảm tới mức tiền còn lại ngoài thu hộ | quotation, quotation_line |
 | 24 | Thay báo giá đã ACCEPTED (ví dụ khi loại ngựa): chuyển bản cũ sang SUPERSEDED và bản mới sang ACCEPTED trong cùng một transaction | quotation |
 | 25 | Mọi thao tác làm đổi số chỗ đã đặt (đặt chỗ, đổi chuyến, hủy, từ chối, báo giá hết hạn, loại ngựa) phải cập nhật `departure.booked_stall_count` trong cùng transaction, khi đang giữ `FOR UPDATE` | departure, booking, booking_horse |
 | 26 | Bên được tham chiếu phải có `party_role` còn hiệu lực đúng loại: `horse_leg.agent_party_id` là `DEST_AGENT`; `horse_stay.operator_party_id` là `QUARANTINE_FARM`, `STABLE` hoặc `DEST_AGENT`; `horse_insurance.insurer_party_id` là `INSURER`. `incident_plan.handler_party_id` theo quy tắc #13 | party_role, horse_leg, horse_stay, horse_insurance |
@@ -1481,7 +1481,7 @@ Các quy tắc dưới đây cần so dữ liệu ở nhiều bảng nên CHECK 
 | 29 | Đơn EXPORT, IMPORT chỉ đi tuyến có cửa khẩu mà `counterpart_country_code` bằng nước đối tác của đơn | booking, route, location |
 | 30 | Mọi ngựa ACTIVE của một đơn đi cùng một lượt LINEHAUL | horse_leg, vehicle_trip |
 | 31 | Trên tuyến, thời gian chạy giữa hai điểm dừng liên tiếp ≤ `MAX_CONTINUOUS_HOURS`; điểm `REST`, `VITAL_CHECK` dừng ≥ `MIN_REST_MINUTES`; chạy đủ `MAX_DRIVE_HOURS_PER_DAY` thì phải có điểm nghỉ ≥ `OVERNIGHT_REST_HOURS`. Một chiều chặng đón và giao do công ty chở ≤ `MAX_DRIVE_HOURS_PER_DAY / 2`. Nếu thời gian lái vượt `MAX_CONTINUOUS_HOURS` thì bố trí điểm nghỉ | route_stop, trip_stop |
-| 32 | Xe chỉ rời nơi nhận ngựa (điểm đón, hoặc cửa khẩu với đơn IMPORT) khi mọi đơn có ngựa lên xe ở đó đã trả đủ. Quá `BALANCE_WAIT_MINUTES` thì trả ngựa của đơn chưa trả và hủy đơn đó | trip_stop, payment |
+| 32 | Xe chỉ rời nơi nhận ngựa (điểm đón, hoặc cửa khẩu với đơn IMPORT) khi mọi đơn có ngựa lên xe ở đó đã trả đủ. Quá `BALANCE_WAIT_MINUTES` thì trả ngựa của đơn chưa trả và hủy đơn đó. Giao dịch đang chờ VNPAY xác nhận chưa bị coi là không trả | trip_stop, payment |
 | 33 | `quotation.expires_at` là mốc sớm nhất trong 24 giờ sau khi gửi, hết ngày đón và hết ngày hiệu lực báo giá bảo hiểm (nếu có). Mốc `planned_departure_at − DEPARTURE_DECISION_HOURS` chỉ nhả chỗ đơn chưa gửi báo giá. Đơn AWAITING_DEPOSIT giữ chỗ đến khi báo giá hết hạn | quotation, departure |
 | 34 | Xe chỉ rời trạm nghỉ khi mọi ngựa trên xe có `horse_health_log` ở điểm đó (gồm `water_intake`, `feed_intake`) và đã nghỉ đủ. Rời sớm phải xác nhận kèm lý do | trip_stop, horse_health_log |
 | 35 | Đơn IMPORT: hoàn tất `handover` AGENT ở cửa khẩu chỉ khi đủ giấy bắt buộc, gồm `IMPORT_TRANSPORT_CERT` | handover, document |
