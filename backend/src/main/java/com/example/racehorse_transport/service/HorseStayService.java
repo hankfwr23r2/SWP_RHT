@@ -23,6 +23,9 @@ public interface HorseStayService {
     // Giao thất bại, xe về hub: giữ ngựa tại hub (STABLING) tới hạn STABLING_MAX_DAYS, báo khách hạn và phí mỗi ngày
     void openFailedDeliveryStabling(HorseLeg failedLeg, Location hub, Instant at);
 
+    // Về hub do sự cố (B4, RETURN_TO_HUB): tập kết tại hub chờ lượt giao lại, không tính phí
+    void openReturnAssembly(HorseLeg failedLeg, Location hub, Instant at);
+
     // Scheduler mỗi sáng: ngựa giữ sau giao thất bại đã quá hạn thì nhắc khách và quản lý, kèm phí tạm tính. Trả số con quá hạn
     int remindOverdueStabling();
 

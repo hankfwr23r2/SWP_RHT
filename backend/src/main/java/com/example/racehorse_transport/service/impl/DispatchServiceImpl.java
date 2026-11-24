@@ -27,6 +27,7 @@ import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.DispatchPolicy;
 import com.example.racehorse_transport.policy.DispatchPolicy.Interval;
+import com.example.racehorse_transport.policy.StallSeatPolicy;
 import com.example.racehorse_transport.repository.BookingAddressRepository;
 import com.example.racehorse_transport.repository.CrewAssignmentRepository;
 import com.example.racehorse_transport.repository.DepartureRepository;
@@ -44,6 +45,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.time.Clock;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -66,6 +68,7 @@ public class DispatchServiceImpl implements DispatchService {
     private final RouteStopRepository routeStops;
     private final LocationRepository locations;
     private final BookingAddressRepository bookingAddresses;
+    private final Clock clock;
 
     @Override
     @Transactional(readOnly = true)
@@ -217,6 +220,34 @@ public class DispatchServiceImpl implements DispatchService {
             throw new DispatchRuleException("stops", "Đơn " + address.getBooking().getCode() + " đang " + address.getBooking().getStatus() + ", chưa xếp xe được.", true);
         }
         return address;
+    }
+
+    @Override
+    @Transactional
+    public VehicleTripResponseDto swapVehicle(Long tripId, Long vehicleId) {
+        VehicleTrip trip = trips.findForUpdate(tripId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy lượt xe " + tripId));
+        if (trip.getStatus() != VehicleTripStatus.IN_PROGRESS) {
+            throw new DispatchRuleException("tripId", "Chỉ đổi xe khi lượt xe đang chạy.", true);
+        }
+        Vehicle vehicle = vehicles.findById(vehicleId).orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy xe " + vehicleId));
+        if (vehicle.getId().equals(trip.getVehicle().getId())) {
+            throw new DispatchRuleException("vehicleId", "Chọn xe khác xe đang chạy.");
+        }
+        DispatchPolicy.requireActiveVehicle(vehicle.getStatus());
+        // Xe cứu hộ tới từ nơi khác nên không áp quy tắc bắt đầu ở nơi lượt trước kết thúc; chỉ không trùng giờ phần còn lại của lượt
+        Interval rest = new Interval(clock.instant(), trip.getPlannedEndAt().isAfter(clock.instant()) ? trip.getPlannedEndAt() : clock.instant().plusSeconds(60));
+        DispatchPolicy.requireNoOverlap("vehicleId", "Xe", rest, trips.findByVehicle_IdAndStatusNot(vehicle.getId(), VehicleTripStatus.CANCELLED).stream()
+                .filter(t -> !t.getId().equals(trip.getId())).map(t -> new Interval(t.getPlannedStartAt(), t.getPlannedEndAt())).toList());
+        int capacity = vehicle.getStandardStallCount() * StallSeatPolicy.seats("STANDARD") + vehicle.getWideStallCount() * StallSeatPolicy.seats("WIDE");
+        int used = legs.findActiveOnTrip(trip.getId(), Set.of(HorseLegStatus.CANCELLED, HorseLegStatus.FAILED, HorseLegStatus.COMPLETED)).stream()
+                .filter(l -> l.getStallPosition() != null)
+                .mapToInt(l -> l.getStallPosition() + StallSeatPolicy.seats(l.getBookingHorse().getStallType().getCode()) - 1).max().orElse(0);
+        if (used > capacity) {
+            throw new DispatchRuleException("vehicleId", "Xe " + vehicle.getLicensePlate() + " chỉ có " + capacity + " chỗ, sơ đồ khoang đang dùng tới chỗ " + used + ".", true);
+        }
+        trip.setVehicle(vehicle);
+        trips.flush();
+        return trip(trip.getId());
     }
 
     // Quy tắc #10, #20: xe không trùng giờ; bắt đầu ở nơi lượt trước kết thúc và lượt sau bắt đầu ở nơi lượt này kết thúc

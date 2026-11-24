@@ -170,6 +170,19 @@ public class HorseStayServiceImpl implements HorseStayService {
     }
 
     @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void openReturnAssembly(HorseLeg failedLeg, Location hub, Instant at) {
+        HorseStay stay = new HorseStay();
+        stay.setBookingHorse(failedLeg.getBookingHorse());
+        stay.setStayType(HorseStayType.ASSEMBLY);
+        stay.setLocation(hub);
+        stay.setPlannedStartAt(at);
+        stay.setPlannedEndAt(at.plus(DEFAULT_ASSEMBLY));
+        stay.setActualStartAt(at);
+        stays.save(stay);
+    }
+
+    @Override
     @Transactional
     public int remindOverdueStabling() {
         Instant now = clock.instant();

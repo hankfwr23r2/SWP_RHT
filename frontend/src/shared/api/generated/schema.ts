@@ -2020,6 +2020,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/incidents/{id}/return-to-hub": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["returnToHub"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incidents/{id}/vehicle-swap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["swapVehicle"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/locations": {
         parameters: {
             query?: never;
@@ -5915,6 +5947,10 @@ export interface components {
         VehicleStatusChangeRequestDto: {
             reason: string;
         };
+        VehicleSwapRequestDto: {
+            /** Format: int64 */
+            vehicleId: number;
+        };
         VehicleTripCancelRequestDto: {
             reason: string;
         };
@@ -9404,6 +9440,54 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIncidentResponseDto"];
+                };
+            };
+        };
+    };
+    returnToHub: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseIncidentResponseDto"];
+                };
+            };
+        };
+    };
+    swapVehicle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VehicleSwapRequestDto"];
+            };
+        };
         responses: {
             /** @description OK */
             200: {
