@@ -15,4 +15,10 @@ public interface HorseStayService {
     void closeActive(Long bookingHorseId, Instant at);
 
     List<HorseStayResponseDto> activeAt(Long locationId);
+
+    // Khách tự chở tới hub (pickup_method SELF): điều phối hẹn giờ, lập lưu trú tập kết dự kiến ở hub đầu tuyến trục, tới giờ xuất phát
+    HorseStayResponseDto planSelfDropOff(Long bookingHorseId, Instant plannedStartAt);
+
+    // Lịch hẹn nhận ngựa ở hub: lưu trú dự kiến chưa bắt đầu
+    List<HorseStayResponseDto> appointmentsAt(Long locationId);
 }

@@ -655,7 +655,7 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 | B1 | Điều độ | B | 1 | Xong (4 PR) | #377, #378, #379, #380 |
 | A3 | Bảng giá, tính giá | A | 2 | Xong backend | #365 |
 | A4 | Quy định, giấy tờ yêu cầu | A | 2 | Xong backend | #363 |
-| B2 | Điểm dừng, giao nhận | B | 2 | Đang làm: PR1 backend (#381), PR2 màn tổ xe (#382), PR3 nhận ngựa lập khoản số dư, kiểm thanh toán thật khi rời nơi nhận, không nhận một con (#398), PR4 quá hạn số dư thì trả ngựa tại chỗ và hủy đơn (#399), PR5 chặng đại lý và bàn giao AGENT ở cửa khẩu (backend #402, giao diện #403). Còn: trả ngựa cho đại lý khi đơn nhập quá hạn số dư, nhận và trả ngựa tại hub (SELF), biên bản và giấy gốc | #381, #382, #398, #399, #402, #403 |
+| B2 | Điểm dừng, giao nhận | B | 2 | Đang làm: PR1 backend (#381), PR2 màn tổ xe (#382), PR3 nhận ngựa lập khoản số dư, kiểm thanh toán thật khi rời nơi nhận, không nhận một con (#398), PR4 quá hạn số dư thì trả ngựa tại chỗ và hủy đơn (#399), PR5 chặng đại lý và bàn giao AGENT ở cửa khẩu (backend #402, giao diện #403), PR7 khách tự chở tới hub và tự nhận ở hub SELF (backend, #405). Còn: giao diện nhận và trả ngựa tại hub, trả ngựa cho đại lý khi đơn nhập quá hạn số dư, biên bản và giấy gốc | #381, #382, #398, #399, #402, #403, #405 |
 | A5 | Đặt đơn | A | 3 | Xong backend | #364, #366 |
 | B3 | Lưu trú, sức khỏe | B | 3 | Xong phần chính (2 PR). Còn: nghỉ đêm OVERNIGHT, bàn giao ca SHIFT; hủy chặng của con bị loại ở các đường nhận còn lại (điểm đón đã nối trong #398) | #383, #384 |
 | A6 | Thẩm định, bảo hiểm | A | 4 | Xong backend | #370 |

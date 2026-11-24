@@ -6,6 +6,7 @@ import com.example.racehorse_transport.entity.BookingHorse;
 import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.BookingType;
+import com.example.racehorse_transport.entity.enums.TransferMethod;
 import com.example.racehorse_transport.policy.StallSeatPolicy;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -15,7 +16,8 @@ import java.util.List;
 public record DispatchBookingResponseDto(
         Long id, String code, BookingType bookingType, BookingStatus status, LocalDate requestedPickupDate,
         Long departureId, String routeCode, Instant plannedDepartureAt,
-        AddressDto pickupAddress, AddressDto deliveryAddress, List<HorseDto> horses) {
+        AddressDto pickupAddress, AddressDto deliveryAddress, List<HorseDto> horses,
+        TransferMethod pickupMethod, TransferMethod deliveryMethod) {
 
     public record AddressDto(Long id, String addressLine, String contactName, String contactPhone) {
         public static AddressDto from(BookingAddress address) {
@@ -38,6 +40,6 @@ public record DispatchBookingResponseDto(
                 booking.getRequestedPickupDate(),
                 departure == null ? null : departure.getId(), departure == null ? null : departure.getRoute().getCode(),
                 departure == null ? null : departure.getPlannedDepartureAt(),
-                AddressDto.from(pickup), AddressDto.from(delivery), horses);
+                AddressDto.from(pickup), AddressDto.from(delivery), horses, booking.getPickupMethod(), booking.getDeliveryMethod());
     }
 }

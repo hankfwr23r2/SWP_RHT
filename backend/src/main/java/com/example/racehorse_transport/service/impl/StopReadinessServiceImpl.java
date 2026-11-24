@@ -3,6 +3,7 @@ package com.example.racehorse_transport.service.impl;
 import com.example.racehorse_transport.entity.HorseHealthLog;
 import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.TripStop;
+import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.entity.enums.TripStopType;
@@ -46,8 +47,8 @@ public class StopReadinessServiceImpl implements StopReadinessService {
     public void requireCanLeave(TripStop stop, String earlyReason, Long actorUserId) {
         TripExecutionPolicy.requireCanDepart(stop.getActualArrivalAt() != null, stop.getActualDepartureAt() != null,
                 handovers.countByTripStop_IdAndStatus(stop.getId(), HandoverStatus.PENDING));
-        // Nơi nhận ngựa: điểm đón, hoặc cửa khẩu với đơn nhập (ngựa nhận từ đại lý lên xe ở đây)
-        if (stop.getStopType() == TripStopType.PICKUP || stop.getStopType() == TripStopType.BORDER) {
+        // Nơi nhận ngựa: điểm đón, cửa khẩu với đơn nhập (nhận từ đại lý), hub với khách tự chở tới (SELF)
+        if (stop.getStopType() == TripStopType.PICKUP || stop.getStopType() == TripStopType.BORDER || stop.getStopType() == TripStopType.HUB) {
             requirePaid(stop);
         } else if (REST_STOPS.contains(stop.getStopType())) {
             requireRestStopDone(stop, earlyReason, actorUserId);
@@ -58,6 +59,8 @@ public class StopReadinessServiceImpl implements StopReadinessService {
     private void requirePaid(TripStop stop) {
         Map<Long, String> boarded = new LinkedHashMap<>();
         for (HorseLeg leg : legs.findByBoardTripStop_IdAndStatusIn(stop.getId(), Set.of(HorseLegStatus.IN_PROGRESS))) {
+            // Đơn đã IN_OPERATION là đã trả đủ khi rời nơi nhận trước đó
+            if (leg.getBookingHorse().getBooking().getStatus() != BookingStatus.CONFIRMED) continue;
             boarded.put(leg.getBookingHorse().getBooking().getId(), leg.getBookingHorse().getBooking().getCode());
         }
         if (boarded.isEmpty()) return;

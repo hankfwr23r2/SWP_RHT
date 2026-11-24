@@ -459,6 +459,20 @@
         },
         "type" : "object"
       },
+      "ApiResponseHorseStayResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/HorseStayResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseHubServiceAreaResponse" : {
         "properties" : {
           "data" : {
@@ -2874,6 +2888,10 @@
           "deliveryAddress" : {
             "$ref" : "#/components/schemas/AddressDto"
           },
+          "deliveryMethod" : {
+            "enum" : [ "COMPANY", "SELF" ],
+            "type" : "string"
+          },
           "departureId" : {
             "format" : "int64",
             "type" : "integer"
@@ -2890,6 +2908,10 @@
           },
           "pickupAddress" : {
             "$ref" : "#/components/schemas/AddressDto"
+          },
+          "pickupMethod" : {
+            "enum" : [ "COMPANY", "SELF" ],
+            "type" : "string"
           },
           "plannedDepartureAt" : {
             "format" : "date-time",
@@ -3780,6 +3802,10 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "deliveryMethod" : {
+            "enum" : [ "COMPANY", "SELF" ],
+            "type" : "string"
+          },
           "horseName" : {
             "type" : "string"
           },
@@ -3794,7 +3820,15 @@
           "locationName" : {
             "type" : "string"
           },
+          "pickupMethod" : {
+            "enum" : [ "COMPANY", "SELF" ],
+            "type" : "string"
+          },
           "plannedEndAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "plannedStartAt" : {
             "format" : "date-time",
             "type" : "string"
           },
@@ -3885,6 +3919,32 @@
           }
         },
         "required" : [ "horseTypeId", "name", "sex" ],
+        "type" : "object"
+      },
+      "HubAppointmentRequestDto" : {
+        "properties" : {
+          "plannedStartAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "plannedStartAt" ],
+        "type" : "object"
+      },
+      "HubHandoverRequestDto" : {
+        "properties" : {
+          "conditionNote" : {
+            "maxLength" : 1000,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "microchip" : {
+            "maxLength" : 30,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "microchip" ],
         "type" : "object"
       },
       "HubServiceAreaRequest" : {
@@ -7609,6 +7669,43 @@
         "tags" : [ "health-log-controller" ]
       }
     },
+    "/booking-horses/{id}/hub-appointments" : {
+      "post" : {
+        "operationId" : "appoint",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HubAppointmentRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseHorseStayResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "hub-handover-controller" ]
+      }
+    },
     "/bookings" : {
       "get" : {
         "operationId" : "list_5",
@@ -10410,6 +10507,107 @@
           }
         },
         "tags" : [ "health-log-controller" ]
+      }
+    },
+    "/horse-stays/appointments" : {
+      "get" : {
+        "operationId" : "appointments",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "locationId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListHorseStayResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "hub-handover-controller" ]
+      }
+    },
+    "/horse-stays/{id}/deliveries" : {
+      "post" : {
+        "operationId" : "deliver",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HubHandoverRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseHorseStayResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "hub-handover-controller" ]
+      }
+    },
+    "/horse-stays/{id}/receipts" : {
+      "post" : {
+        "operationId" : "receive",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HubHandoverRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseHorseStayResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "hub-handover-controller" ]
       }
     },
     "/horse-types" : {

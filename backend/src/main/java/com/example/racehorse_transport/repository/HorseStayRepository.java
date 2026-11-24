@@ -17,5 +17,7 @@ public interface HorseStayRepository extends JpaRepository<HorseStay, Long> {
 
     // Theo dõi hành trình: mọi lưu trú của các con trong một đơn
     @EntityGraph(attributePaths = {"location", "operatorParty"})
+    List<HorseStay> findByLocation_IdAndActualStartAtIsNullOrderByPlannedStartAt(Long locationId);
+
     List<HorseStay> findByBookingHorse_IdInOrderById(Collection<Long> bookingHorseIds);
 }
