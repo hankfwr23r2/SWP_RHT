@@ -21,7 +21,6 @@ const EXCEPTIONS = {
     'src/apps/backoffice/features/coordinator/fleet/VehicleArt.tsx',
     'src/apps/backoffice/features/coordinator/incidents/CoordinatorIncidentsPage.tsx',
     'src/apps/backoffice/features/coordinator/incidents/IncidentPlanner.tsx',
-    'src/apps/backoffice/features/coordinator/monitoring/MonitoringPage.tsx',
     'src/apps/backoffice/features/driver/DriverJob.tsx',
     'src/apps/backoffice/features/escort/EscortJob.tsx',
     'src/apps/backoffice/features/manager/approvals/ApprovalsPage.tsx',

@@ -11,12 +11,6 @@ export async function bookingListLoader() {
   return loadAll({ all: bookingsApi.list() })
 }
 
-// Giám sát vận chuyển: đơn và kíp xe
-export async function monitoringLoader() {
-  const [{ bookingsApi }, { crewApi }] = await Promise.all([bookings(), import('@shared/services/fleet')])
-  return loadAll({ all: bookingsApi.list(), crew: crewApi.list() })
-}
-
 // Chốt xe và lộ trình một đơn: đơn và đội xe.
 // Xe tải theo ngày đi và loại chuyến của chính đơn: backend quyết định xe nào chọn được (kèm lịch từng xe), cùng quy tắc với bước lưu.
 export async function fleetPlanLoader({ params }: PageLoaderContext) {
