@@ -1,5 +1,6 @@
 // Khung chung của app nội bộ: menu, thanh trên, hồ sơ nhân viên, phần dùng chung giữa các vai trò
 export const staff = {
+  staffAction: { next: 'Next step' },
   incidents: {
     "title": "Incidents",
     "description": "Open incidents: propose plans, approve, follow costs. Incidents do not change the booking status.",
@@ -72,6 +73,12 @@ export const staff = {
     "notFit": "Fit to continue not confirmed",
     "costs": "Costs",
     "noCosts": "No costs yet.",
+    "photos": "Scene photos",
+    "receipts": "Receipts and invoices",
+    "noEvidence": "No files yet.",
+    "evidenceFile": "Choose file",
+    "uploadEvidence": "Upload",
+    "evidenceUploaded": "Uploaded",
     "payer": {
       "COMPANY": "Company pays",
       "CUSTOMER": "Customer pays",

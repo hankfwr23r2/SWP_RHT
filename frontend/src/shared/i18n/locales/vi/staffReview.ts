@@ -1,5 +1,27 @@
 export const staffReview = {
   "staffReview": {
+    "open": "Xem đơn",
+    "reviewNow": "Thẩm định",
+    "askReason": "Cần nộp: {{name}}",
+    "viewFile": "Xem {{name}}",
+    "todoDocs": "Duyệt {{count}} giấy đang chờ.",
+    "todoInsurance": "Xác nhận bảo hiểm của {{count}} con.",
+    "todoCustomer": "Còn {{count}} giấy khách cần nộp.",
+    "ready": "Hồ sơ đã xem hết. Có thể bắt đầu báo giá.",
+    "nextStep": {
+      "PENDING_INTAKE": "Tiếp nhận để bắt đầu kiểm hồ sơ, hoặc từ chối kèm lý do.",
+      "NEEDS_RESUBMISSION": "Đang chờ khách bổ sung hồ sơ. Khách nộp xong đơn tự quay lại.",
+      "QUOTING": "Đang chờ quản lý lập và gửi báo giá.",
+      "AWAITING_DEPOSIT": "Đang chờ khách chấp nhận báo giá và đặt cọc.",
+      "QUOTE_EXPIRED": "Báo giá đã hết hạn, đơn không còn việc thẩm định.",
+      "CONFIRMED": "Nộp và duyệt các giấy còn thiếu trước ngày đón ngựa.",
+      "SCHEDULE_CHANGE_REQUIRED": "Đang chờ khách chọn lại chuyến.",
+      "IN_OPERATION": "Đơn đang vận chuyển, không còn việc thẩm định.",
+      "DELIVERED": "Đơn đã giao, không còn việc thẩm định.",
+      "COMPLETED": "Đơn đã đóng.",
+      "CANCELLED": "Đơn đã hủy.",
+      "REJECTED": "Đơn đã bị từ chối."
+    },
     "title": "Thẩm định đơn",
     "detailTitle": "Chi tiết thẩm định",
     "missingTitle": "Đơn thiếu giấy",
@@ -61,7 +83,6 @@ export const staffReview = {
     "optional": "Không bắt buộc",
     "satisfied": "Đã đáp ứng",
     "unsatisfied": "Chưa đáp ứng",
-    "viewFile": "Xem tệp",
     "upload": "Nộp giấy thay",
     "file": "Tệp giấy tờ",
     "expiryDate": "Ngày hết hạn của giấy",
@@ -103,6 +124,7 @@ export const staffReview = {
     "failed": "Chưa thực hiện được thao tác. Vui lòng thử lại.",
     "checkFields": "Vui lòng kiểm tra các ô được đánh dấu.",
     "action": {
+      "askDocument": "Yêu cầu khách nộp",
       "intake": "Tiếp nhận",
       "return": "Trả lại để bổ sung",
       "rejectOrder": "Từ chối đơn",
@@ -114,6 +136,7 @@ export const staffReview = {
       "reopenInsurance": "Mở lại bảo hiểm"
     },
     "consequence": {
+      "askDocument": "Đơn sẽ chờ khách bổ sung. Khách nhận được lời nhắn này.",
       "intake": "Đơn sẽ chuyển sang Đang thẩm định.",
       "return": "Đơn sẽ chờ khách bổ sung. Khách sẽ nhận được lý do bạn nhập.",
       "rejectOrder": "Đơn sẽ kết thúc và chỗ đã giữ trên chuyến sẽ được giải phóng.",

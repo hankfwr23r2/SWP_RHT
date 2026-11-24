@@ -58,7 +58,7 @@ export function QuotePanel({ data }: { data: OrderData }) {
                 <li key={quote.id} className={s.item}>
                   <div>{t('mgr.quote.version', { version: quote.version })}</div>
                   <span className={s.amount}>{money(quote.totalAmount, quote.currencyCode)}</span>
-                  {quote.status && <Badge tone={TONE[quote.status]}>{t(`myOrders.quote.status.${quote.status}`)}</Badge>}
+                  {quote.status && <Badge tone={TONE[quote.status]}>{quote.status === 'SENT' ? t('mgr.quote.waitingCustomer') : t(`myOrders.quote.status.${quote.status}`)}</Badge>}
                 </li>
               ))}
             </ul>
@@ -82,7 +82,7 @@ function QuoteSheet({ quote }: { quote: Quotation }) {
     <>
       <div className={s.between}>
         <strong>{t('mgr.quote.version', { version: quote.version })}</strong>
-        {quote.status && <Badge tone={TONE[quote.status]}>{t(`myOrders.quote.status.${quote.status}`)}</Badge>}
+        {quote.status && <Badge tone={TONE[quote.status]}>{quote.status === 'SENT' ? t('mgr.quote.waitingCustomer') : t(`myOrders.quote.status.${quote.status}`)}</Badge>}
       </div>
       <dl className={s.facts}>
         {quote.pickupDate && <div><dt>{t('myOrders.quote.pickup')}</dt><dd>{showDate(quote.pickupDate)}</dd></div>}

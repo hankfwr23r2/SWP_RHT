@@ -38,6 +38,10 @@ import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.HorseStayRepository;
 import com.example.racehorse_transport.service.CustomerNoticeService;
 import com.example.racehorse_transport.service.HorseStayService;
+import com.example.racehorse_transport.service.NotificationService;
+import com.example.racehorse_transport.service.SystemConfigService;
+import com.example.racehorse_transport.policy.StablingPolicy;
+import com.example.racehorse_transport.entity.enums.AppUserStatus;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Comparator;
@@ -57,6 +61,8 @@ public class HorseStayServiceImpl implements HorseStayService {
     private static final Duration DEFAULT_ASSEMBLY = Duration.ofHours(24);
     // Nghỉ đêm 10 giờ (OVERNIGHT_REST_HOURS), dự phòng thêm khi điểm dừng không có giờ rời dự kiến
     private static final Duration OVERNIGHT = Duration.ofHours(12);
+    private static final String MAX_DAYS = "STABLING_MAX_DAYS";
+    private static final String DAILY_FEE = "STABLING_DAILY_FEE";
 
     private final HorseStayRepository stays;
     private final HorseLegRepository legs;
@@ -67,6 +73,8 @@ public class HorseStayServiceImpl implements HorseStayService {
     private final PartyRepository parties;
     private final PartyRoleRepository partyRoles;
     private final CustomerNoticeService notices;
+    private final SystemConfigService configs;
+    private final NotificationService notifications;
 
     @Override
     @Transactional
@@ -124,8 +132,71 @@ public class HorseStayServiceImpl implements HorseStayService {
 
     @Override
     @Transactional
-    public void closeActive(Long bookingHorseId, Instant at) {
-        stays.findFirstByBookingHorse_IdAndActualStartAtIsNotNullAndActualEndAtIsNull(bookingHorseId).ifPresent(stay -> stay.setActualEndAt(at));
+    public void closeActive(Long bookingHorseId, Instant at, Long actorUserId) {
+        stays.findFirstByBookingHorse_IdAndActualStartAtIsNotNullAndActualEndAtIsNull(bookingHorseId).ifPresent(stay -> {
+            stay.setActualEndAt(at);
+            // Gửi chuồng sau giao thất bại chưa có phí (gửi chuồng do người nhận tới hub trễ đã ghi phí lúc mở)
+            if (stay.getStayType() == HorseStayType.STABLING && !costItems.existsByHorseStay_Id(stay.getId())) {
+                long days = StablingPolicy.days(stay.getActualStartAt(), at);
+                CostItem fee = new CostItem();
+                fee.setCategory(CostCategory.STABLING);
+                fee.setDescription("Lưu chuồng và chăm sóc tại " + stay.getLocation().getName() + " " + days + " ngày sau khi giao thất bại");
+                fee.setAmount(StablingPolicy.fee(stay.getActualStartAt(), at, configs.getInt(DAILY_FEE)));
+                fee.setCurrencyCode("VND");
+                fee.setPayerType(CostPayerType.CONSIGNEE);
+                fee.setBooking(stay.getBookingHorse().getBooking());
+                fee.setHorseStay(stay);
+                fee.setIncurredAt(at);
+                fee.setRecordedBy(staff.getReferenceById(actorUserId));
+                costItems.save(fee);
+            }
+        });
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void openFailedDeliveryStabling(HorseLeg failedLeg, Location hub, Instant at) {
+        HorseStay stay = new HorseStay();
+        stay.setBookingHorse(failedLeg.getBookingHorse());
+        stay.setStayType(HorseStayType.STABLING);
+        stay.setLocation(hub);
+        stay.setPlannedStartAt(at);
+        stay.setPlannedEndAt(at.plus(Duration.ofDays(configs.getInt(MAX_DAYS))));
+        stay.setActualStartAt(at);
+        stays.save(stay);
+        Booking booking = failedLeg.getBookingHorse().getBooking();
+        notifications.notify(List.of(booking.getCustomer().getUser().getId()), booking.getId(), "Ngựa đang được giữ tại hub",
+                failedLeg.getBookingHorse().getHorse().getName() + " chưa giao được do không gặp người nhận, đang được giữ và chăm sóc tại "
+                        + hub.getName() + " tới " + TIME.format(stay.getPlannedEndAt()) + ". Phí lưu chuồng và chăm sóc "
+                        + money(configs.getInt(DAILY_FEE)) + " mỗi ngày, người nhận chịu.", "/orders/" + booking.getId());
+    }
+
+    @Override
+    @Transactional
+    public int remindOverdueStabling() {
+        Instant now = clock.instant();
+        List<HorseStay> overdue = stays.findByStayTypeAndActualStartAtIsNotNullAndActualEndAtIsNullAndPlannedEndAtBefore(HorseStayType.STABLING, now)
+                .stream().filter(stay -> !costItems.existsByHorseStay_Id(stay.getId())).toList();
+        List<Long> managers = staff.findUserIdsByRoleAndStatus("MANAGER", AppUserStatus.ACTIVE);
+        for (HorseStay stay : overdue) {
+            Booking booking = stay.getBookingHorse().getBooking();
+            String horse = stay.getBookingHorse().getHorse().getName();
+            String accrued = money(StablingPolicy.fee(stay.getActualStartAt(), now, configs.getInt(DAILY_FEE)).longValue());
+            String link = "/orders/" + booking.getId();
+            notifications.notify(List.of(booking.getCustomer().getUser().getId()), booking.getId(), "Quá hạn giữ ngựa tại hub",
+                    horse + " đã quá hạn giữ tại " + stay.getLocation().getName() + " từ " + TIME.format(stay.getPlannedEndAt())
+                            + ". Phí lưu chuồng và chăm sóc tạm tính " + accrued + " và vẫn tính mỗi ngày. Liên hệ công ty để nhận ngựa.", link);
+            if (!managers.isEmpty()) {
+                notifications.notify(managers, booking.getId(), "Quá hạn giữ ngựa tại hub",
+                        horse + " (đơn " + booking.getCode() + ") quá hạn giữ tại " + stay.getLocation().getName() + ", phí tạm tính " + accrued
+                                + ". Quyết định giao lại, trả về người gửi hoặc xử lý theo hợp đồng.", "/manager/orders/" + booking.getId());
+            }
+        }
+        return overdue.size();
+    }
+
+    private static String money(long amount) {
+        return String.format(java.util.Locale.ROOT, "%,d", amount).replace(',', '.') + " ₫";
     }
 
     @Override

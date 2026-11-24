@@ -18,7 +18,31 @@ export const staffManager = {
         WIDE: 'Wide stall',
       },
     },
+    nextStep: {
+      PENDING_INTAKE: 'Accept the order or reject it with a reason.',
+      UNDER_REVIEW: 'Waiting for the specialist to review the file.',
+      NEEDS_RESUBMISSION: 'Waiting for the customer to complete the file.',
+      QUOTING: 'Prepare, check and send the quotation.',
+      AWAITING_DEPOSIT: 'Waiting for the customer to answer the quotation and pay the deposit.',
+      QUOTE_EXPIRED: 'The quotation has expired and the seats were released.',
+      CONFIRMED: 'Deposit paid. The coordinator arranges vehicles. Report late documents below.',
+      SCHEDULE_CHANGE_REQUIRED: 'Waiting for the customer to choose another departure.',
+      IN_OPERATION: 'In transit. Approve extra costs if any.',
+      DELIVERED: 'Approve costs, charge extras if any, then close the order.',
+      COMPLETED: 'The order is closed.',
+      CANCELLED: 'The order is cancelled. Check refunds if any.',
+      REJECTED: 'The order was rejected.',
+    },
     orders: {
+      action: 'To do',
+      back: 'Back to orders',
+      tasks: {
+        intake: 'Review and accept',
+        quote: 'Prepare quotation',
+        settle: 'Settle',
+        delay: 'Handle documents',
+        view: 'View',
+      },
       title: 'Orders',
       subtitle: 'Orders by task.',
       code: 'Order',
@@ -71,6 +95,7 @@ export const staffManager = {
       rejectHint: 'The customer sees this reason and the places are released.',
     },
     quote: {
+      waitingCustomer: 'Waiting for the customer',
       title: 'Quotation',
       empty: 'No quotation yet',
       emptyHint: 'Create a draft; the system prices it from the price list.',
@@ -94,6 +119,7 @@ export const staffManager = {
       sendHint: 'Total {{total}}, deposit {{deposit}}. It cannot be edited after sending.',
     },
     payments: {
+      refund: 'Handle refund',
       title: 'Payments and refunds',
     },
     delay: {

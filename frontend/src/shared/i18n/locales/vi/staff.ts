@@ -1,5 +1,6 @@
 // Khung chung của app nội bộ: menu, thanh trên, hồ sơ nhân viên, phần dùng chung giữa các vai trò
 export const staff = {
+  staffAction: { next: 'Bước tiếp theo' },
   incidents: {
     "title": "Sự cố",
     "description": "Sự cố đang xử lý: lập phương án, duyệt, theo dõi chi phí. Sự cố không đổi trạng thái đơn.",
@@ -72,6 +73,12 @@ export const staff = {
     "notFit": "Chưa xác nhận đủ sức đi tiếp",
     "costs": "Chi phí",
     "noCosts": "Chưa có chi phí.",
+    "photos": "Ảnh hiện trường",
+    "receipts": "Biên lai, hóa đơn",
+    "noEvidence": "Chưa có tệp nào.",
+    "evidenceFile": "Chọn tệp",
+    "uploadEvidence": "Tải lên",
+    "evidenceUploaded": "Đã tải lên",
     "payer": {
       "COMPANY": "Công ty chịu",
       "CUSTOMER": "Khách chịu",

@@ -270,6 +270,7 @@ public class HandoverServiceImpl implements HandoverService {
         List<HorseLeg> found = boarding
                 ? legs.findByBoardTripStop_IdAndStatusIn(stopId, Set.of(HorseLegStatus.PLANNED, HorseLegStatus.IN_PROGRESS))
                 : legs.findByAlightTripStop_IdAndStatusIn(stopId, Set.of(HorseLegStatus.IN_PROGRESS, HorseLegStatus.COMPLETED));
+        if (handover.getHandoverType() == HandoverType.HUB_IN) return withFailedAwaitingHub(handover, found);
         if (handover.getHandoverType() != HandoverType.AGENT) return found;
         Party agent = boarding ? handover.getFromParty() : handover.getToParty();
         if (agent == null) return List.of();
@@ -277,6 +278,18 @@ public class HandoverServiceImpl implements HandoverService {
             Party adjacent = adjacentAgent(l, !boarding);
             return adjacent != null && adjacent.getId().equals(agent.getId());
         }).toList();
+    }
+
+    // Giao thất bại (B5): con không giao được ở điểm trước của lượt này còn trên xe, giao vào hub ở điểm hub sau đó
+    private List<HorseLeg> withFailedAwaitingHub(Handover handover, List<HorseLeg> alighting) {
+        TripStop stop = handover.getTripStop();
+        Long self = handover.getId() == null ? -1L : handover.getId();
+        List<HorseLeg> failed = legs.findActiveOnTrip(stop.getVehicleTrip().getId(), Set.of(HorseLegStatus.CANCELLED)).stream()
+                .filter(l -> l.getStatus() == HorseLegStatus.FAILED && l.getAlightTripStop().getSequenceNumber() < stop.getSequenceNumber())
+                .filter(l -> !scans.existsByHorseLeg_IdAndHandover_HandoverTypeAndHandover_StatusAndHandover_IdNot(
+                        l.getId(), HandoverType.HUB_IN, HandoverStatus.DONE, self))
+                .toList();
+        return failed.isEmpty() ? alighting : java.util.stream.Stream.concat(alighting.stream(), failed.stream()).toList();
     }
 
     private HandoverResponseDto describe(Handover handover) {

@@ -5,6 +5,7 @@ import com.example.racehorse_transport.entity.Document;
 import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -21,6 +22,13 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
 
     // Biên bản giao nhận (HANDOVER_RECORD) đã tải cho lần giao nhận chưa
     boolean existsByHandover_IdAndDocumentType_Code(Long handoverId, String documentTypeCode);
+
+    // Biên lai, hóa đơn của một chi phí và ảnh hiện trường của một sự cố (B4)
+    @EntityGraph(attributePaths = {"documentType", "uploadedBy"})
+    List<Document> findByCostItem_IdOrderById(Long costItemId);
+
+    @EntityGraph(attributePaths = {"documentType", "uploadedBy"})
+    List<Document> findByIncident_IdOrderById(Long incidentId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT d FROM Document d WHERE d.id = :id")

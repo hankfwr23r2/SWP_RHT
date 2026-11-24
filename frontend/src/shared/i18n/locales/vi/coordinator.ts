@@ -23,6 +23,7 @@ export const coordinator = {
       "refuseTitle": "Không nhận ngựa {{horse}} · {{code}}",
       "refuseHint": "Con ngựa bị loại khỏi đơn: hủy các chặng, bỏ lịch hẹn, thay báo giá và báo quản lý. Không hoàn tác được.",
       "refuseDone": "Đã ghi không nhận ngựa",
+      "overdue": "Quá hạn giữ",
       "reason": "Lý do",
       "deliver": "Trả ngựa",
       "deliverTitle": "Trả ngựa {{horse}} · {{code}}",

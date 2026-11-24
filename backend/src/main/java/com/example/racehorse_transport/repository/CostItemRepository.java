@@ -12,6 +12,8 @@ import org.springframework.data.repository.query.Param;
 
 public interface CostItemRepository extends JpaRepository<CostItem, Long> {
 
+    boolean existsByHorseStay_Id(Long horseStayId);
+
     @EntityGraph(attributePaths = {"booking", "incident", "recordedBy", "approvedBy"})
     List<CostItem> findByIncident_IdOrderByIncurredAt(Long incidentId);
 

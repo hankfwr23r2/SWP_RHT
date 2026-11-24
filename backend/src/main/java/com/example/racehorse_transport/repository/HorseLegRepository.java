@@ -1,6 +1,8 @@
 package com.example.racehorse_transport.repository;
 
 import com.example.racehorse_transport.entity.HorseLeg;
+import com.example.racehorse_transport.entity.enums.HandoverStatus;
+import com.example.racehorse_transport.entity.enums.HandoverType;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import java.util.Collection;
 import java.util.List;
@@ -27,6 +29,15 @@ public interface HorseLegRepository extends JpaRepository<HorseLeg, Long> {
             "boardTripStop", "alightTripStop", "fromLocation", "toLocation", "fromBookingAddress", "toBookingAddress", "vehicleTrip"})
     @Query("SELECT l FROM HorseLeg l WHERE l.vehicleTrip.id = :tripId AND l.status NOT IN :inactive ORDER BY l.boardTripStop.sequenceNumber, l.id")
     List<HorseLeg> findActiveOnTrip(@Param("tripId") Long tripId, @Param("inactive") Collection<HorseLegStatus> inactive);
+
+    // Con giao thất bại của lượt xe chưa được giao vào hub (B5): còn trên xe
+    @Query("""
+            SELECT count(l) FROM HorseLeg l WHERE l.vehicleTrip.id = :tripId AND l.status = :failed AND NOT EXISTS (
+                SELECT 1 FROM HandoverHorse hh WHERE hh.horseLeg = l AND hh.handover.handoverType = :hubIn AND hh.handover.status = :done)
+            """)
+    long countFailedNotInHub(@Param("tripId") Long tripId, @Param("failed") HorseLegStatus failed,
+                             @Param("hubIn") HandoverType hubIn,
+                             @Param("done") HandoverStatus done);
 
     // Chặng trục của các ngựa cùng đơn (quy tắc #30)
     @Query("""
