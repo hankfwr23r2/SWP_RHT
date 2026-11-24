@@ -5,15 +5,18 @@ import com.example.racehorse_transport.dto.dispatch.CrewAssignmentRequestDto;
 import com.example.racehorse_transport.dto.dispatch.CrewCandidateResponseDto;
 import com.example.racehorse_transport.dto.dispatch.DispatchBookingResponseDto;
 import com.example.racehorse_transport.dto.dispatch.HorseLegRequestDto;
+import com.example.racehorse_transport.dto.dispatch.TripGroupResponseDto;
 import com.example.racehorse_transport.dto.dispatch.TripHorseResponseDto;
 import com.example.racehorse_transport.dto.dispatch.VehicleTripCancelRequestDto;
 import com.example.racehorse_transport.dto.dispatch.VehicleTripCreateRequestDto;
 import com.example.racehorse_transport.dto.dispatch.VehicleTripResponseDto;
 import com.example.racehorse_transport.dto.vehicle.VehicleResponseDto;
 import com.example.racehorse_transport.entity.enums.CrewRole;
+import com.example.racehorse_transport.entity.enums.VehicleTripType;
 import com.example.racehorse_transport.service.CrewAssignmentService;
 import com.example.racehorse_transport.service.DispatchService;
 import com.example.racehorse_transport.service.HorseLegService;
+import com.example.racehorse_transport.service.TripGroupingService;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -39,6 +42,7 @@ public class DispatchController {
     private final DispatchService dispatch;
     private final CrewAssignmentService crew;
     private final HorseLegService horseLegs;
+    private final TripGroupingService grouping;
 
     @GetMapping("/vehicle-trips")
     @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER')")
@@ -89,6 +93,13 @@ public class DispatchController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
         return ApiResponseDto.success(horseLegs.dispatchableBookings(from, to), "Đơn chờ xếp xe");
+    }
+
+    // Gợi ý gom đơn vào lượt đón hoặc giao ở một hub trong ngày; điều phối duyệt rồi lập lượt xe
+    @GetMapping("/dispatch/grouping-suggestions")
+    public ApiResponseDto<List<TripGroupResponseDto>> groupingSuggestions(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date, @RequestParam Long hubId, @RequestParam VehicleTripType tripType) {
+        return ApiResponseDto.success(grouping.suggest(date, hubId, tripType), "Gợi ý gom đơn");
     }
 
     @GetMapping("/vehicle-trips/{id}/horse-legs")

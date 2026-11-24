@@ -32,7 +32,7 @@ async function open(page: Page, path: string, order: { status: string; quotation
       if (url === '/bookings/8/ratings') return reply({ bookingId: 8, score: 5 })
       return reply({})
     }
-    if (url === '/bookings') return reply([booking, { ...booking, id: 9, code: 'BK-XONG', status: 'COMPLETED' }, { ...booking, id: 10, code: 'BK-CHAY', status: 'IN_OPERATION' }])
+    if (url === '/bookings') return reply([{ ...booking, horseCount: 2, routeName: 'TP.HCM – Đà Nẵng', departureDate: '2099-01-12' }, { ...booking, id: 9, code: 'BK-XONG', status: 'COMPLETED' }, { ...booking, id: 10, code: 'BK-CHAY', status: 'IN_OPERATION' }])
     if (url === '/bookings/8') return reply({
       booking, pickupMethod: 'COMPANY', deliveryMethod: 'COMPANY', reviewReason: state.reviewReason,
       addresses: [{ addressType: 'PICKUP', addressLine: 'Trại A', provinceCode: 'VN-79', countryCode: 'VN' }, { addressType: 'DELIVERY', addressLine: 'Trại B', provinceCode: 'VN-48', countryCode: 'VN' }],
@@ -62,6 +62,8 @@ test('danh sách: đơn cần làm lên đầu, đơn xong nằm ở lịch sử
   await page.setViewportSize({ width: 360, height: 740 })
   await open(page, '/orders', { status: 'AWAITING_DEPOSIT' })
   await expect(page.getByRole('listitem').filter({ hasText: 'BK-' }).first()).toContainText('BK-TEST')
+  await expect(page.getByText('2 con ngựa')).toBeVisible()
+  await expect(page.getByText('Xuất phát 12/01/2099')).toBeVisible()
   await expect(page.getByText('BK-XONG')).toHaveCount(0)
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0)
   await page.getByRole('tab', { name: /Đang vận chuyển/ }).click()

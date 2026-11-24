@@ -1130,6 +1130,23 @@
         },
         "type" : "object"
       },
+      "ApiResponseListTripGroupResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/TripGroupResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListTripHorseResponseDto" : {
         "properties" : {
           "data" : {
@@ -3151,6 +3168,47 @@
           }
         },
         "required" : [ "costItemIds" ],
+        "type" : "object"
+      },
+      "GroupBookingDto" : {
+        "properties" : {
+          "addressLine" : {
+            "type" : "string"
+          },
+          "bookingAddressId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "bookingCode" : {
+            "type" : "string"
+          },
+          "bookingId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "horses" : {
+            "items" : {
+              "$ref" : "#/components/schemas/GroupHorseDto"
+            },
+            "type" : "array"
+          }
+        },
+        "type" : "object"
+      },
+      "GroupHorseDto" : {
+        "properties" : {
+          "bookingHorseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "horseName" : {
+            "type" : "string"
+          },
+          "seats" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
         "type" : "object"
       },
       "HandoverCreateRequestDto" : {
@@ -6576,6 +6634,31 @@
         },
         "type" : "object"
       },
+      "SuggestedStopDto" : {
+        "properties" : {
+          "bookingAddressId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "locationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "plannedArrivalAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "plannedDepartureAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "stopType" : {
+            "enum" : [ "PICKUP", "DELIVERY", "HUB", "REST", "VITAL_CHECK", "BORDER", "QUARANTINE" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "SystemConfigResponseDto" : {
         "properties" : {
           "configGroup" : {
@@ -6696,6 +6779,35 @@
           },
           "targetTable" : {
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "TripGroupResponseDto" : {
+        "properties" : {
+          "bookings" : {
+            "items" : {
+              "$ref" : "#/components/schemas/GroupBookingDto"
+            },
+            "type" : "array"
+          },
+          "hours" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "routeKm" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "seats" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "stops" : {
+            "items" : {
+              "$ref" : "#/components/schemas/SuggestedStopDto"
+            },
+            "type" : "array"
           }
         },
         "type" : "object"
@@ -7838,7 +7950,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseListBookingResponseDto"
+                  "$ref" : "#/components/schemas/ApiResponseListBookingSummaryResponseDto"
                 }
               }
             },
@@ -10245,6 +10357,49 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseListCrewCandidateResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "dispatch-controller" ]
+      }
+    },
+    "/dispatch/grouping-suggestions" : {
+      "get" : {
+        "operationId" : "groupingSuggestions",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "date",
+          "required" : true,
+          "schema" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "hubId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "tripType",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "PICKUP", "LINEHAUL", "DELIVERY", "TRANSFER", "DIRECT" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListTripGroupResponseDto"
                 }
               }
             },

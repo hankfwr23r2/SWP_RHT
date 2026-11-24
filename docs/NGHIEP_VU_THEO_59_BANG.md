@@ -357,11 +357,11 @@ Chưa trả đủ **không** chặn xe đi đón. Số dư thu sau khi nhận ng
 
 | Nguyên nhân | Đổi chuyến | Không đi nữa |
 |---|---|---|
-| Khách | Miễn phí 1 lần | Mất cọc vận chuyển (5.4) |
+| Khách | Miễn phí 1 lần | Mất cọc, gồm cả phần thu hộ (5.4) |
 | Công ty | Miễn phí | Hoàn 100% |
-| Cơ quan cấp chậm | Miễn phí mỗi lần, không tính vào lượt của khách | Khi chưa đủ `AUTHORITY_DELAY_REFUND_MISSES` lần lỡ chuyến thì xử lý như khách hủy. Từ ngưỡng này hoàn cọc vận chuyển |
+| Cơ quan cấp chậm | Miễn phí mỗi lần, không tính vào lượt của khách | Khi chưa đủ `AUTHORITY_DELAY_REFUND_MISSES` lần lỡ chuyến thì xử lý như khách hủy. Từ ngưỡng này hoàn cọc vận chuyển, không hoàn khoản thu hộ và `VET_CHECK` |
 
-Giá cũ giữ trong `PRICE_HOLD_DAYS` ngày tính từ ngày chạy của chuyến vừa lỡ. Lịch sử chuyển sang `SCHEDULE_CHANGE_REQUIRED` ghi chuyến vào `previous_departure_id`, nguyên nhân vào `cause_type` và lý do vào `reason`. Đếm lượt đổi do khách và số lần lỡ chuyến do cơ quan từ loại nguyên nhân trong lịch sử. Chỉ quản lý xác nhận hoàn các dòng thu hộ và `VET_CHECK` chưa chi, theo số tiền trên báo giá ACCEPTED. Có thể đối soát sau khi khách tự hủy. `RefundService` ghi `quotation_line.refund_payment_id` trong cùng giao dịch để mỗi dòng chỉ lập hoàn một lần. Công ty hủy thì hoàn toàn bộ tiền đã trả.
+Giá cũ giữ trong `PRICE_HOLD_DAYS` ngày tính từ ngày chạy của chuyến vừa lỡ. Lịch sử chuyển sang `SCHEDULE_CHANGE_REQUIRED` ghi chuyến vào `previous_departure_id`, nguyên nhân vào `cause_type` và lý do vào `reason`. Đếm lượt đổi do khách và số lần lỡ chuyến do cơ quan từ loại nguyên nhân trong lịch sử. Các dòng thu hộ và `VET_CHECK` không hoàn và không chọn hoàn riêng từng dòng (24/11/2026). Công ty hủy thì hoàn toàn bộ tiền đã trả, gồm cả khoản thu hộ.
 
 **Quy tắc phân xe:**
 - Tổng chỗ ngựa trên xe chiếm không vượt tổng chỗ của xe; khoang rộng 2 chỗ.
@@ -606,11 +606,11 @@ Theo điều khoản của bản cũ:
 | Thời điểm | Kết quả |
 |---|---|
 | Trước khi cọc | Hủy miễn phí |
-| Đã cọc, chưa nhận ngựa xong | Khách tự hủy, mất phần cọc vận chuyển. Phần bảo hiểm thu hộ đối soát riêng |
-| Đã nhận ngựa, chưa trả đủ, xe chưa rời nơi nhận | Quản lý hủy do khách: mất phần cọc vận chuyển, trả ngựa tại chỗ |
+| Đã cọc, chưa nhận ngựa xong | Khách tự hủy, mất cọc, gồm cả phần thu hộ |
+| Đã nhận ngựa, chưa trả đủ, xe chưa rời nơi nhận | Quản lý hủy do khách: mất cọc, gồm cả phần thu hộ, trả ngựa tại chỗ |
 | Đã trả đủ hoặc xe đã rời nơi nhận | Khách không tự hủy được |
 
-Nguyên nhân thuộc công ty thì hoàn 100%. Nếu đang chờ đổi chuyến do giấy không kịp, áp dụng bảng ở GĐ5. Ngoài trường hợp hoàn toàn bộ, quản lý xét từng dòng thu hộ và `VET_CHECK` chưa chi theo báo giá ACCEPTED, kể cả sau khi khách tự hủy. Trả ngựa tại nơi nhận khi quá hạn số dư; có link VNPAY mở trước hạn chưa có kết quả thì chờ thêm 5 phút sau hạn. Link bỏ dở không chặn khách hoặc công ty hủy đơn. Xe chạy trễ và sự cố trên đường xử lý theo quy trình vận hành. Hoàn tiền ghi bằng `payment` REFUND có `refunded_payment_id`. Quản lý chuyển khoản ngoài hệ thống rồi ghi mã chuyển khoản và chứng từ nếu có.
+Nguyên nhân thuộc công ty thì hoàn 100%, gồm cả khoản thu hộ. Nếu đang chờ đổi chuyến do giấy không kịp, áp dụng bảng ở GĐ5. Khách hủy hoặc hủy theo nguyên nhân khách, cơ quan thì khoản thu hộ và `VET_CHECK` **không hoàn**, kể cả phần chưa chi (24/11/2026). Trả ngựa tại nơi nhận khi quá hạn số dư; có link VNPAY mở trước hạn chưa có kết quả thì chờ thêm 5 phút sau hạn. Link bỏ dở không chặn khách hoặc công ty hủy đơn. Xe chạy trễ và sự cố trên đường xử lý theo quy trình vận hành. Hoàn tiền ghi bằng `payment` REFUND có `refunded_payment_id`. Quản lý chuyển khoản ngoài hệ thống rồi ghi mã chuyển khoản và chứng từ nếu có.
 
 ### 5.5 Từ chối đơn
 

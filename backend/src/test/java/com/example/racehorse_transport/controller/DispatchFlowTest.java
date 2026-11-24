@@ -93,6 +93,15 @@ class DispatchFlowTest {
     }
 
     @Test
+    void linehaulNeedsTheManagerToConfirmTheRun() throws Exception {
+        createTrip("""
+                {"tripType":"LINEHAUL","departureId":%d,"vehicleId":%d}""".formatted(departure.getId(), vehicle.getId()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Chuyến chưa được quản lý xác nhận chạy, chưa lập lượt trục được."));
+        createLinehaul().andExpect(status().isCreated());
+    }
+
+    @Test
     void vehicleCannotRunTwoOverlappingTripsOrStartAwayFromWhereItIs() throws Exception {
         createLinehaul().andExpect(status().isCreated());
 
@@ -231,6 +240,7 @@ class DispatchFlowTest {
     }
 
     private ResultActions createLinehaul() throws Exception {
+        confirmRun(departure.getId());
         return createTrip("""
                 {"tripType":"LINEHAUL","departureId":%d,"vehicleId":%d}""".formatted(departure.getId(), vehicle.getId()));
     }
@@ -280,5 +290,12 @@ class DispatchFlowTest {
 
     private String bearer(Staff staff, String role) {
         return "Bearer " + jwtUtils.generateToken(staff.getUser().getUsername(), List.of(role));
+    }
+
+    // Quản lý đã xác nhận chạy chuyến (A6b): điều kiện để lập lượt trục
+    private void confirmRun(long departureId) {
+        entityManager.flush();
+        jdbc.update("UPDATE departure SET run_confirmed_at = now(), run_confirmed_by = (SELECT min(id) FROM app_user) WHERE id = ? AND run_confirmed_at IS NULL", departureId);
+        entityManager.clear();
     }
 }

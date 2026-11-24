@@ -14,7 +14,7 @@ function newRun() {
         { id: 3, sequenceNumber: 3, stopType: 'HUB', locationName: 'Hub HCM', plannedArrivalAt: '2031-03-05T05:00:00Z' } as Record<string, unknown>,
       ],
     },
-    horses: [{ bookingCode: 'BK-AAAA0001', horseName: 'Sao Mai', seats: 1, leg: { id: 70, boardTripStopId: 2, alightTripStopId: 3, status: 'PLANNED' } }],
+    horses: [{ bookingCode: 'BK-AAAA0001', horseName: 'Sao Mai', seats: 1, leg: { id: 70, boardTripStopId: 2, alightTripStopId: 3, status: 'PLANNED', stallPosition: 2 } }],
     handovers: [] as Record<string, unknown>[],
   }
 }
@@ -75,6 +75,8 @@ test('hộ tống xuất phát, nhận ngựa có quét chip rồi rời điểm
   await pickup.getByLabel('Chip của Sao Mai').fill(CHIP)
   await pickup.getByRole('button', { name: 'Quét' }).click()
   await expect(pickup).toContainText('Đúng chip')
+  // Chip đúng thì hiện số khoang để dẫn ngựa vào
+  await expect(pickup).toContainText('Khoang số 2')
   await pickup.getByRole('button', { name: 'Hoàn tất giao nhận' }).click()
 
   await pickup.getByRole('button', { name: 'Rời đi' }).click()

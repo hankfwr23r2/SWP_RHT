@@ -91,7 +91,7 @@ export const common = {
     orderHistory: 'Lịch sử đơn',
     lookup: 'Tra cứu',
     lookupOrder: 'Tra cứu đơn hàng',
-    pricing: 'Bảng giá',
+    pricing: 'Giá tạm tính',
     network: 'Mạng lưới',
     services: 'Dịch vụ',
     process: 'Quy trình',

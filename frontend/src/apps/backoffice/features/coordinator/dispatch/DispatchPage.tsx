@@ -15,6 +15,7 @@ import { Skeleton } from '@shared/ui/Skeleton'
 import { Tabs } from '@shared/ui/Tabs'
 import { AgentLegModal } from './AgentLegModal'
 import { BookingsTable } from './BookingsTable'
+import { GroupingPanel } from './GroupingPanel'
 import { HubAppointmentModal } from './HubAppointmentModal'
 import { CreateTripModal } from './CreateTripModal'
 import { HubStaysPanel } from './HubStaysPanel'
@@ -49,6 +50,9 @@ export default function DispatchPage() {
 
   const content = () => {
     if (tab === 'stays') return <HubStaysPanel />
+    if (tab === 'grouping') {
+      return <GroupingPanel defaultDate={weekStart} onCreated={trip => { setTab('trips'); void reload(); setOpenTripId(trip.id) }} />
+    }
     if (!loaded) return <Skeleton variant="block" lines={4} />
     if (error || !data) return <ErrorState title={t('dispatch.loadError')} message={error?.message} onRetry={reload} />
     if (tab === 'bookings') {
@@ -85,6 +89,7 @@ export default function DispatchPage() {
         items={[
           { value: 'bookings', label: t('dispatch.tabBookings'), count: data?.bookings.length },
           { value: 'trips', label: t('dispatch.tabTrips'), count: data?.trips.length },
+          { value: 'grouping', label: t('dispatch.grouping.tab') },
           { value: 'stays', label: t('dispatch.stays.tab') },
         ]}
       >

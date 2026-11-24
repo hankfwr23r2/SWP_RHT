@@ -2,6 +2,7 @@
 export const fieldCrew = {
   myTrips: {
     "run": {
+      "stall": "Khoang số {{n}}",
       "agentParty": "Đại lý: {{name}}",
       "unpaidReturn": {
         "action": "Trả ngựa do quá hạn thanh toán",

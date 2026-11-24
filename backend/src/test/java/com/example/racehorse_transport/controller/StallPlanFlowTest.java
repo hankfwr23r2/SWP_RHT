@@ -26,7 +26,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
 // B1 (màn 3.9a, quy tắc #39, #40): hệ thống tự xếp khoang khi gán ngựa, dồn chỗ khi lẻ vị trí; điều phối lưu sơ đồ,
-// phát hiện người khác vừa đổi; xe xuất phát thì khóa sơ đồ. Đơn mẫu DEV-DOMESTIC-001 trên xe 3 chỗ, vách di động
+// phát hiện người khác vừa đổi; chưa xếp đủ thì không xuất phát, xe xuất phát thì khóa sơ đồ. Đơn mẫu DEV-DOMESTIC-001 trên xe 3 chỗ, vách di động
 @PostgresIntegrationTest
 @AutoConfigureMockMvc
 @Transactional
@@ -57,6 +57,7 @@ class StallPlanFlowTest {
         entityManager.flush();
         jdbc.update("UPDATE booking_horse SET stall_type_code = 'WIDE' WHERE id = ?", lines.get(1));
         entityManager.clear();
+        confirmRun(departure);
         trip = ((Number) JsonPath.read(mvc.perform(post("/vehicle-trips").header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"tripType\":\"LINEHAUL\",\"vehicleId\":%d,\"departureId\":%d}".formatted(testData.vehicle(3, 0).getId(), departure)))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString(), "$.data.id")).longValue();
@@ -114,6 +115,14 @@ class StallPlanFlowTest {
         long assignment = ((Number) JsonPath.read(mvc.perform(get("/crew-assignments/mine").header(HttpHeaders.AUTHORIZATION, driver))
                 .andReturn().getResponse().getContentAsString(), "$.data[0].id")).longValue();
         mvc.perform(post("/crew-assignments/{id}/acknowledge", assignment).header(HttpHeaders.AUTHORIZATION, driver)).andExpect(status().isOk());
+        // Quy tắc #40: còn con chưa có vị trí (chặng lập trước khi có sơ đồ) thì chưa xuất phát
+        entityManager.flush();
+        jdbc.update("UPDATE horse_leg SET stall_position = NULL WHERE id = ?", standard);
+        entityManager.clear();
+        mvc.perform(post("/vehicle-trips/{id}/start", trip).header(HttpHeaders.AUTHORIZATION, driver)).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message", startsWith("Còn ngựa chưa có vị trí khoang")));
+        mvc.perform(post("/vehicle-trips/{id}/stall-plan/apply", trip).header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"horses\":[{\"horseLegId\":%d,\"stallPosition\":1}]}".formatted(standard))).andExpect(status().isOk());
         mvc.perform(post("/vehicle-trips/{id}/start", trip).header(HttpHeaders.AUTHORIZATION, driver)).andExpect(status().isOk());
 
         apply(List.of(new long[] {standard, 1, 2})).andExpect(status().isConflict())
@@ -150,5 +159,12 @@ class StallPlanFlowTest {
 
     private String token(Staff staff, String role) {
         return "Bearer " + jwtUtils.generateToken(staff.getUser().getUsername(), List.of(role));
+    }
+
+    // Quản lý đã xác nhận chạy chuyến (A6b): điều kiện để lập lượt trục
+    private void confirmRun(long departureId) {
+        entityManager.flush();
+        jdbc.update("UPDATE departure SET run_confirmed_at = now(), run_confirmed_by = (SELECT min(id) FROM app_user) WHERE id = ? AND run_confirmed_at IS NULL", departureId);
+        entityManager.clear();
     }
 }

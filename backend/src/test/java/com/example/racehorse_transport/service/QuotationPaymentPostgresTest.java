@@ -11,6 +11,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.example.racehorse_transport.PostgresIntegrationTest;
 import com.example.racehorse_transport.dto.booking.CancelBookingRequestDto;
 import com.example.racehorse_transport.dto.booking.CompanyCancelBookingRequestDto;
+import com.example.racehorse_transport.dto.booking.ManagerCancelBookingRequestDto;
 import com.example.racehorse_transport.dto.payment.MarkRefundedRequestDto;
 import com.example.racehorse_transport.dto.quotation.QuotationAdjustmentRequestDto;
 import com.example.racehorse_transport.scheduler.DocumentReminderScheduler;
@@ -399,10 +400,12 @@ class QuotationPaymentPostgresTest {
         long booking = fixture.booking().getId();
         long quote = quote(fixture, QuotationStatus.ACCEPTED, START.plusSeconds(120), "10000", "4000");
         long deposit = paidDeposit(booking, quote, "4000");
+        addServiceLine(quote, 1, "GOV_FEE", "1000");
         jdbc.update("update departure set status = 'CANCELLED' where id = ?", departure);
 
         var cancelled = cancellations.cancelForCompany(booking, fixture.manager(), new CompanyCancelBookingRequestDto("Hủy chuyến"));
         assertThat(cancelled.refundable()).isEqualByComparingTo("4000");
+        assertThat(cancelled.forfeited()).isEqualByComparingTo("0");
         assertThat(bookedSeats(departure)).isZero();
         long refund = jdbc.queryForObject("""
                 select id from payment where booking_id = ? and payment_type = 'REFUND' and refunded_payment_id = ?
@@ -469,12 +472,13 @@ class QuotationPaymentPostgresTest {
     }
 
     @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.CsvSource({"CUSTOMER,1,0", "COMPANY,1,4000", "AUTHORITY,1,0", "AUTHORITY,2,4000"})
-    void cancelsAccordingToRecordedScheduleChangeCause(String cause, int misses, String expectedRefund) {
+    @org.junit.jupiter.params.provider.CsvSource({"CUSTOMER,1,0,4000", "COMPANY,1,4000,0", "AUTHORITY,1,0,4000", "AUTHORITY,2,3000,1000"})
+    void cancelsAccordingToRecordedScheduleChangeCause(String cause, int misses, String expectedRefund, String expectedForfeited) {
         var fixture = fixture(BookingType.INTERPROVINCE, BookingStatus.SCHEDULE_CHANGE_REQUIRED);
         long booking = fixture.booking().getId();
         long quote = quote(fixture, QuotationStatus.ACCEPTED, START.plusSeconds(120), "10000", "4000");
         paidDeposit(booking, quote, "4000");
+        addServiceLine(quote, 1, "GOV_FEE", "1000");
         for (int i = 0; i < misses; i++) {
             jdbc.update("""
                     insert into booking_status_history (booking_id, from_status, to_status, cause_type)
@@ -484,6 +488,10 @@ class QuotationPaymentPostgresTest {
         var cancelled = cancellations.cancelByCustomer(booking, fixture.customer(), new CancelBookingRequestDto("Không thể đi chuyến khác"));
         assertThat(cancelled.status()).isEqualTo(BookingStatus.CANCELLED);
         assertThat(cancelled.refundable()).isEqualByComparingTo(expectedRefund);
+        assertThat(cancelled.reviewable()).isEqualByComparingTo("0");
+        assertThat(cancelled.forfeited()).isEqualByComparingTo(expectedForfeited);
+        assertThat(jdbc.queryForObject("select coalesce(sum(amount), 0) from payment where booking_id = ? and payment_type = 'REFUND'",
+                BigDecimal.class, booking)).isEqualByComparingTo(expectedRefund);
     }
 
     @Test
@@ -518,31 +526,62 @@ class QuotationPaymentPostgresTest {
     }
 
     @Test
-    void managerCanRefundUnspentLineAfterCustomerCancelsOnlyOnce() throws Exception {
+    void customerCancellationForfeitsPassThroughAndVetCheckAndManagerCannotRefundThem() throws Exception {
         var fixture = fixture(BookingType.LOCAL, BookingStatus.CONFIRMED);
         long booking = fixture.booking().getId();
         long quote = quote(fixture, QuotationStatus.ACCEPTED, START.plusSeconds(120), "10000", "4000");
-        long deposit = paidDeposit(booking, quote, "4000");
-        long line = jdbc.queryForObject("""
-                insert into quotation_line (quotation_id, line_number, line_type, billable_service_id, description,
-                    quantity, unit, unit_price, is_pass_through)
-                select ?, 1, 'SERVICE', id, 'Khám thú y', 1, 'PER_HORSE', 500, false
-                from billable_service where code = 'VET_CHECK'
-                returning id
-                """, Long.class, quote);
-        String input = "{\"unspentQuotationLineIds\":[" + line + "]}";
+        paidDeposit(booking, quote, "4000");
+        long govFee = addServiceLine(quote, 1, "GOV_FEE", "1000");
+        long vetCheck = addServiceLine(quote, 2, "VET_CHECK", "500");
+
+        var preview = cancellations.preview(booking, fixture.customer());
+        assertThat(preview.forfeited()).isEqualByComparingTo("4000");
         var cancelled = cancellations.cancelByCustomer(booking, fixture.customer(), new CancelBookingRequestDto("Đổi lịch"));
         assertThat(cancelled.refundable()).isEqualByComparingTo("0");
+        assertThat(cancelled.reviewable()).isEqualByComparingTo("0");
+        assertThat(cancelled.forfeited()).isEqualByComparingTo("4000");
+        assertThat(cancelled.reviewableQuotationLineIds()).isEmpty();
+
+        String input = "{\"unspentQuotationLineIds\":[" + vetCheck + "]}";
         mvc.perform(post("/bookings/{id}/refund-unspent-lines", booking).contentType("application/json").content(input)
                 .header(HttpHeaders.AUTHORIZATION, auth(fixture.customer(), "CUSTOMER"))).andExpect(status().isForbidden());
-        mvc.perform(post("/bookings/{id}/refund-unspent-lines", booking).contentType("application/json").content(input)
-                .header(HttpHeaders.AUTHORIZATION, auth(fixture.manager(), "MANAGER"))).andExpect(status().isOk());
-        mvc.perform(post("/bookings/{id}/refund-unspent-lines", booking).contentType("application/json").content(input)
-                .header(HttpHeaders.AUTHORIZATION, auth(fixture.manager(), "MANAGER"))).andExpect(status().isConflict());
-        assertThat(jdbc.queryForObject("""
-                select p.amount from quotation_line l join payment p on p.id = l.refund_payment_id
-                where l.id = ? and p.refunded_payment_id = ? and p.status = 'PENDING'
-                """, BigDecimal.class, line, deposit)).isEqualByComparingTo("500");
+        for (long line : List.of(vetCheck, govFee)) {
+            mvc.perform(post("/bookings/{id}/refund-unspent-lines", booking).contentType("application/json")
+                            .content("{\"unspentQuotationLineIds\":[" + line + "]}")
+                            .header(HttpHeaders.AUTHORIZATION, auth(fixture.manager(), "MANAGER")))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.message").value("Khoản thu hộ và phí khám thú y không được hoàn riêng khi hủy đơn."));
+        }
+        mvc.perform(post("/bookings/{id}/refund-unspent-lines", Long.MAX_VALUE).contentType("application/json").content(input)
+                .header(HttpHeaders.AUTHORIZATION, auth(fixture.manager(), "MANAGER"))).andExpect(status().isNotFound());
+        mvc.perform(get("/bookings/{id}/refund-review", booking)
+                        .header(HttpHeaders.AUTHORIZATION, auth(fixture.manager(), "MANAGER")))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.reviewable").value(0))
+                .andExpect(jsonPath("$.data.forfeited").value(4000.0))
+                .andExpect(jsonPath("$.data.reviewableQuotationLineIds").isEmpty());
+        assertThat(refundRows(booking)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from quotation_line where quotation_id = ? and refund_payment_id is not null",
+                Integer.class, quote)).isZero();
+    }
+
+    @Test
+    void managerCancellationRejectsSelectedPassThroughLineWithoutChangingBooking() {
+        var fixture = fixture(BookingType.LOCAL, BookingStatus.CONFIRMED);
+        long booking = fixture.booking().getId();
+        long quote = quote(fixture, QuotationStatus.ACCEPTED, START.plusSeconds(120), "10000", "4000");
+        paidDeposit(booking, quote, "4000");
+        long govFee = addServiceLine(quote, 1, "GOV_FEE", "1000");
+
+        assertThatThrownBy(() -> cancellations.cancelForCustomer(booking, fixture.manager(),
+                new ManagerCancelBookingRequestDto("Khách đổi lịch", List.of(govFee))))
+                .isInstanceOf(BookingRuleException.class).hasMessageContaining("không được hoàn riêng");
+        assertThat(bookingStatus(fixture)).isEqualTo("CONFIRMED");
+
+        var cancelled = cancellations.cancelForCustomer(booking, fixture.manager(),
+                new ManagerCancelBookingRequestDto("Khách đổi lịch", List.of()));
+        assertThat(cancelled.status()).isEqualTo(BookingStatus.CANCELLED);
+        assertThat(cancelled.forfeited()).isEqualByComparingTo("4000");
+        assertThat(refundRows(booking)).isZero();
     }
 
     @Test
@@ -651,6 +690,21 @@ class QuotationPaymentPostgresTest {
                 insert into quotation_line (quotation_id, line_number, line_type, description, quantity, unit, unit_price, is_pass_through)
                 values (?, ?, 'ADJUSTMENT', 'Điều chỉnh', 1, 'PER_BOOKING', ?, false)
                 """, quote, number, new BigDecimal(price));
+    }
+
+    private long addServiceLine(long quote, int number, String service, String price) {
+        return jdbc.queryForObject("""
+                insert into quotation_line (quotation_id, line_number, line_type, billable_service_id, description,
+                    quantity, unit, unit_price, is_pass_through)
+                select ?, ?, 'SERVICE', id, name, 1, 'PER_HORSE', ?, is_pass_through
+                from billable_service where code = ?
+                returning id
+                """, Long.class, quote, number, new BigDecimal(price), service);
+    }
+
+    private int refundRows(long booking) {
+        return jdbc.queryForObject("select count(*) from payment where booking_id = ? and payment_type = 'REFUND'",
+                Integer.class, booking);
     }
 
     private String bookingStatus(Fixture fixture) {

@@ -81,6 +81,11 @@ class HubSelfFlowTest {
         long hub = locations.findByCode("HUB-HCM").orElseThrow().getId();
         mvc.perform(get("/horse-stays/appointments").param("locationId", String.valueOf(hub)).header(HttpHeaders.AUTHORIZATION, coordinator))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(lines.size()));
+        // Đơn rời chuyến (chờ đổi chuyến) thì lịch hẹn không còn hiện
+        sql("UPDATE booking SET status = 'SCHEDULE_CHANGE_REQUIRED' WHERE id = " + booking);
+        mvc.perform(get("/horse-stays/appointments").param("locationId", String.valueOf(hub)).header(HttpHeaders.AUTHORIZATION, coordinator))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(0));
+        sql("UPDATE booking SET status = 'CONFIRMED' WHERE id = " + booking);
 
         // Chưa xếp lượt trục thì chưa nhận: đầu SELF không có chặng đón, ngựa ghi vào chặng trục
         receive(stays.getFirst(), chip(lines.getFirst())).andExpect(status().isConflict())
@@ -158,6 +163,7 @@ class HubSelfFlowTest {
     }
 
     private long linehaulTrip() throws Exception {
+        confirmRun(departure);
         long trip = id(mvc.perform(post("/vehicle-trips").header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"tripType\":\"LINEHAUL\",\"vehicleId\":%d,\"departureId\":%d}".formatted(testData.vehicle(4, 0).getId(), departure))));
         for (Staff member : List.of(driverStaff, escortStaff)) {
@@ -241,5 +247,12 @@ class HubSelfFlowTest {
 
     private String token(Staff staff, String role) {
         return "Bearer " + jwtUtils.generateToken(staff.getUser().getUsername(), List.of(role));
+    }
+
+    // Quản lý đã xác nhận chạy chuyến (A6b): điều kiện để lập lượt trục
+    private void confirmRun(long departureId) {
+        entityManager.flush();
+        jdbc.update("UPDATE departure SET run_confirmed_at = now(), run_confirmed_by = (SELECT min(id) FROM app_user) WHERE id = ? AND run_confirmed_at IS NULL", departureId);
+        entityManager.clear();
     }
 }

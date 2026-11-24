@@ -2,7 +2,6 @@
 // Service nạp động để mỗi vai trò chỉ tải phần mình dùng.
 import type { Vehicle } from '@shared/types/fleet'
 import { loadAll, type PageLoaderContext } from '@shared/routing/pageData'
-import type { BackendLocationResponse } from '@shared/api/routes'
 
 const bookings = () => import('@shared/services/bookings')
 
@@ -10,46 +9,6 @@ const bookings = () => import('@shared/services/bookings')
 export async function bookingListLoader() {
   const { bookingsApi } = await bookings()
   return loadAll({ all: bookingsApi.list() })
-}
-
-export async function accountsLoader() {
-  const { accountsApi } = await import('@shared/services/accounts')
-  return loadAll({ all: accountsApi.list() })
-}
-
-export async function adminRoutesLoader() {
-  const { routesApi } = await import('@shared/api/routes')
-  return loadAll({ routes: routesApi.listRoutes(), locations: routesApi.listAdminLocations() })
-}
-
-export async function adminServicesLoader() {
-  const { adminServicesApi } = await import('@shared/api/adminServices')
-  return loadAll({ services: adminServicesApi.listServices(), categories: adminServicesApi.listCategories() })
-}
-
-export async function systemConfigLoader() {
-  const { systemConfigApi } = await import('@shared/api/systemConfig')
-  return loadAll({ configs: systemConfigApi.listAdminConfigs() })
-}
-
-export async function adminPricingLoader() {
-  const { systemConfigApi } = await import('@shared/api/systemConfig')
-  return loadAll({ configs: systemConfigApi.listAdminConfigs() })
-}
-
-export async function adminHorseTypesLoader() {
-  const { backendHorseApi } = await import('@shared/api/horses')
-  return loadAll({ horseTypes: backendHorseApi.listTypes() })
-}
-
-export async function documentRequirementsLoader() {
-  const { documentRequirementsApi } = await import('@shared/api/documentRequirements')
-  const { routesApi } = await import('@shared/api/routes')
-  return loadAll({
-    requirements: documentRequirementsApi.listAdmin(),
-    gates: routesApi.listAdminLocations()
-      .then((locations): BackendLocationResponse[] => locations.filter(location => location.locationType === 'BorderGate')),
-  })
 }
 
 // Giám sát vận chuyển: đơn và kíp xe

@@ -13,8 +13,6 @@ const SRC = join(FRONTEND, 'src')
 
 const EXCEPTIONS = {
   S1: [
-    'src/apps/backoffice/features/admin/accounts/AccountsPage.tsx',
-    'src/apps/backoffice/features/admin/pricing/AdminPricingPage.tsx',
     'src/apps/backoffice/features/auth/StaffLoginPage.tsx',
     'src/apps/backoffice/features/coordinator/fleet-plan/FleetPlanPage.tsx',
     'src/apps/backoffice/features/coordinator/fleet-plan/InlineRouteMap.tsx',
@@ -48,11 +46,7 @@ const EXCEPTIONS = {
     'src/apps/backoffice/shared/field.tsx',
     'src/apps/customer/features/auth/LoginPage.tsx',
     'src/apps/customer/features/auth/VerifyEmailPage.tsx',
-    'src/apps/customer/features/home/HomePage.tsx',
     'src/apps/customer/features/policies/PolicyPage.tsx',
-    'src/apps/customer/features/portal/PortalPage.tsx',
-    'src/apps/customer/features/pricing/PriceLookup.tsx',
-    'src/apps/customer/features/profile/ProfilePage.tsx',
     'src/shared/auth/ForgotPasswordPage.tsx',
     'src/shared/routing/RouteError.tsx',
     'src/shared/ui/CaptureEvidenceInfo.tsx',
@@ -66,7 +60,6 @@ const EXCEPTIONS = {
     'src/shared/ui/TripTrackMap.tsx',
   ],
   S2: [
-    'src/apps/backoffice/features/admin/routes/AdminRoutesPage.tsx',
     'src/apps/backoffice/features/coordinator/fleet-plan/FleetPlanPage.tsx',
     'src/apps/backoffice/features/coordinator/fleet-plan/InlineRouteMap.tsx',
     'src/apps/backoffice/features/coordinator/fleet-plan/RouteMapPicker.tsx',
@@ -85,7 +78,6 @@ const EXCEPTIONS = {
     'src/apps/backoffice/shared/InsurancePanel.tsx',
     'src/apps/backoffice/shared/ResourcePicker.tsx',
     'src/apps/backoffice/shared/StaffPicker.tsx',
-    'src/apps/customer/features/profile/ProfilePage.tsx',
     'src/shared/ui/ChangePasswordModal.tsx',
     'src/shared/ui/FileField.tsx',
     'src/shared/ui/Flag.tsx',
