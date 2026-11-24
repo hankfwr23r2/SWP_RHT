@@ -653,7 +653,7 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 | P0-FE | Token, `shared/ui`, layout, openapi-typescript, lint, i18n | B | 0 | Xong (8 PR) | #355, #358, #367, #368, #369, #372, #373, #375 |
 | A1 | Mạng lưới, tuyến, lịch, chuyến | A | 1 | Xong backend | #348, #349 |
 | A2 | Xe, nhân sự, đối tác, tham số | A | 1 | Xong | |
-| B1 | Điều độ | B | 1 | Xong phần chính (4 PR). Vị trí khoang: backend #412, giao diện #414. Chỉ lập lượt trục khi chuyến đã chốt chạy, hợp đồng hủy chặng chưa chạy khi đơn rời chuyến (#415; luồng A cần gọi). Gợi ý gom đơn đón, giao: backend #418, giao diện tiếp theo | #377, #378, #379, #380, #412, #414, #415, #418 |
+| B1 | Điều độ | B | 1 | Xong phần chính (4 PR). Vị trí khoang: backend #412, giao diện #414. Chỉ lập lượt trục khi chuyến đã chốt chạy, hợp đồng hủy chặng chưa chạy khi đơn rời chuyến (#415; luồng A cần gọi). Gợi ý gom đơn đón, giao: backend #418, giao diện #419 | #377, #378, #379, #380, #412, #414, #415, #418, #419 |
 | A3 | Bảng giá, tính giá | A | 2 | Xong backend | #365 |
 | A4 | Quy định, giấy tờ yêu cầu | A | 2 | Xong backend | #363 |
 | B2 | Điểm dừng, giao nhận | B | 2 | Đang làm: PR1 backend (#381), PR2 màn tổ xe (#382), PR3 nhận ngựa lập khoản số dư, kiểm thanh toán thật khi rời nơi nhận, không nhận một con (#398), PR4 quá hạn số dư thì trả ngựa tại chỗ và hủy đơn (#399), PR5 chặng đại lý và bàn giao AGENT ở cửa khẩu (backend #402, giao diện #403), PR7 khách tự chở tới hub và tự nhận ở hub SELF (backend #405, giao diện #407). Còn: trả ngựa cho đại lý khi đơn nhập quá hạn số dư, biên bản và giấy gốc | #381, #382, #398, #399, #402, #403, #405, #407 |

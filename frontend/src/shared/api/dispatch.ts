@@ -23,6 +23,7 @@ export type TripType = NonNullable<VehicleTripCreate['tripType']>
 export type AgentLegCreate = Schemas['AgentLegRequestDto']
 export type Partner = Schemas['PartyResponseDto']
 export type StallPlan = Schemas['StallPlanResponseDto']
+export type TripGroup = Schemas['TripGroupResponseDto']
 export type StallAssignment = Schemas['StallAssignmentDto']
 
 const get = async <T>(url: string, params?: Record<string, string>) => (await apiClient.get<ApiResponse<T>>(url, { params })).data.data
@@ -46,6 +47,8 @@ export const dispatchApi = {
   locations: () => get<NetworkLocation[]>('/locations', { status: 'ACTIVE' }),
   myAssignments: () => get<MyCrewAssignment[]>('/crew-assignments/mine'),
   horseStays: (locationId: number) => get<HorseStay[]>('/horse-stays', { locationId: String(locationId) }),
+  groupingSuggestions: (date: string, hubId: number, tripType: 'PICKUP' | 'DELIVERY') =>
+    get<TripGroup[]>('/dispatch/grouping-suggestions', { date, hubId: String(hubId), tripType }),
   stallPlan: (tripId: number) => get<StallPlan>(`/vehicle-trips/${tripId}/stall-plan`),
   suggestStallPlan: (tripId: number) => post<StallPlan>(`/vehicle-trips/${tripId}/stall-plan/suggest`),
   applyStallPlan: (tripId: number, horses: StallAssignment[]) => post<StallPlan>(`/vehicle-trips/${tripId}/stall-plan/apply`, { horses }),
