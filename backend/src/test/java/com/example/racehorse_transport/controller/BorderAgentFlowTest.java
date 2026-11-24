@@ -99,6 +99,10 @@ class BorderAgentFlowTest {
         assertThat(customerNotices(booking)).contains("Đã qua cửa khẩu");
         act(driver, "/vehicle-trips/" + trip + "/complete").andExpect(status().isOk());
 
+        // Trang theo dõi có chặng của đại lý để điều phối ghi đã giao
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/custody-board").header(HttpHeaders.AUTHORIZATION, coordinator))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data[?(@.agentLegId == " + agentLeg + ")]").isNotEmpty());
+
         // Điều phối nhập hộ mốc đại lý đã giao: con cuối giao xong thì đơn DELIVERED
         act(coordinator, "/agent-legs/" + agentLeg + "/complete").andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.status").value("COMPLETED"));

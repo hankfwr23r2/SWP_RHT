@@ -11,6 +11,8 @@ export const staffDispatch = {
     "overdue": "Trễ khám",
     "unknownPlace": "Chưa có vị trí",
     "heldBy": "{{name}} đang giữ",
+    "agentDeliveredMessage": "Ghi {{agent}} đã giao {{horse}} tới nơi nhận. Giao hết các con thì đơn chuyển sang Đã giao.",
+    "agentDelivered": "Đã ghi đại lý giao xong",
     "heldByPartner": "Đối tác {{name}} đang giữ",
     "since": "từ {{at}}",
     "lastCheck": "Khám lúc {{at}}",

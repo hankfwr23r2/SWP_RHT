@@ -11,6 +11,8 @@ export const staffDispatch = {
     "overdue": "Check overdue",
     "unknownPlace": "No position yet",
     "heldBy": "Held by {{name}}",
+    "agentDeliveredMessage": "Record that {{agent}} delivered {{horse}}. The order becomes Delivered once every horse has arrived.",
+    "agentDelivered": "Agent delivery recorded",
     "heldByPartner": "Held by partner {{name}}",
     "since": "since {{at}}",
     "lastCheck": "Checked at {{at}}",

@@ -42,6 +42,9 @@
           "contactPhone" : {
             "type" : "string"
           },
+          "countryCode" : {
+            "type" : "string"
+          },
           "id" : {
             "format" : "int64",
             "type" : "integer"
@@ -2554,6 +2557,10 @@
       },
       "CustodyRowResponseDto" : {
         "properties" : {
+          "agentLegId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "bookingCode" : {
             "type" : "string"
           },

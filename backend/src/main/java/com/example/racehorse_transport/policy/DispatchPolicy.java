@@ -162,6 +162,20 @@ public final class DispatchPolicy {
         }
     }
 
+    // Đoạn ở nước ngoài do đại lý của chính nước đó chạy (NGHIEP_VU mục 1: đại lý Campuchia, đại lý Lào)
+    public static void requireAgentOfCountry(String agentName, String agentCountryCode, String addressCountryCode) {
+        if (!Objects.equals(agentCountryCode, addressCountryCode)) {
+            throw new DispatchRuleException("agentPartyId", agentName + " không ở nước của địa chỉ này. Chọn đại lý của nước đó.");
+        }
+    }
+
+    // Đơn nhập đã giữ chỗ chuyến trục thì đại lý giao ngựa ở đúng cửa khẩu chuyến đó xuất phát
+    public static void requireGateOfDeparture(Long gateId, Long departureGateId, String departureGateName) {
+        if (departureGateId != null && !departureGateId.equals(gateId)) {
+            throw new DispatchRuleException("gateLocationId", "Chuyến trục của đơn xuất phát ở " + departureGateName + ". Chọn cửa khẩu đó.");
+        }
+    }
+
     // Quy tắc #26: đối tác chỉ được tham chiếu khi có vai trò đúng loại còn hiệu lực vào ngày đó
     public static boolean roleValidOn(LocalDate validFrom, LocalDate validTo, LocalDate day) {
         return (validFrom == null || !validFrom.isAfter(day)) && (validTo == null || !validTo.isBefore(day));

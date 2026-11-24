@@ -2,17 +2,20 @@
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { custodyApi, type CustodyRow } from '@shared/api/custody'
+import { dispatchApi } from '@shared/api/dispatch'
 import { BookingJourney } from '@shared/components/HorseJourney'
 import { useLoad } from '@shared/hooks/useLoad'
 import { formatDateTime } from '@shared/lib/format'
 import { Badge } from '@shared/ui/Badge'
 import { Button } from '@shared/ui/Button'
+import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Input } from '@shared/ui/Input'
 import { Modal } from '@shared/ui/Modal'
 import { PageHeader } from '@shared/ui/PageHeader'
 import { Skeleton } from '@shared/ui/Skeleton'
+import { useToast } from '@shared/ui/toast'
 import { matchesCustody } from './custody'
 import s from './Tracking.module.css'
 
@@ -23,6 +26,8 @@ const REFRESH_MS = 60_000
 export default function TrackingPage() {
   const { t } = useTranslation()
   const [query, setQuery] = useState('')
+  const toast = useToast()
+  const [delivered, setDelivered] = useState<CustodyRow>()
   const [journey, setJourney] = useState<CustodyRow>()
   const { data, loaded, error, reload } = useLoad(custodyApi.board, [], { toastOnError: false })
   // Giữ hàm tải lại mới nhất để đồng hồ chỉ đặt một lần
@@ -59,7 +64,10 @@ export default function TrackingPage() {
                 {row.holderSince && ` · ${t('tracking.since', { at: formatDateTime(new Date(row.holderSince)) })}`}</p>
               <p className={s.line}><i className="fa-solid fa-heart-pulse" aria-hidden="true" /> {row.lastCheckAt ? t('tracking.lastCheck', { at: formatDateTime(new Date(row.lastCheckAt)) }) : t('tracking.noCheck')}
                 {row.nextCheckAt && row.holder === 'COMPANY' && ` · ${t('tracking.nextCheck', { at: formatDateTime(new Date(row.nextCheckAt)) })}`}</p>
-              <div><Button size="sm" onClick={() => setJourney(row)}>{t('dispatch.board.journey')}</Button></div>
+              <div className={s.chips}>
+                {row.agentLegId && <Button size="sm" variant="primary" onClick={() => setDelivered(row)}>{t('dispatch.agent.complete')}</Button>}
+                <Button size="sm" onClick={() => setJourney(row)}>{t('dispatch.board.journey')}</Button>
+              </div>
             </li>
           ))}
         </ul>
@@ -73,6 +81,16 @@ export default function TrackingPage() {
       <PageHeader title={t('tracking.title')} description={t('tracking.subtitle')} />
       <Input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t('tracking.search')} aria-label={t('tracking.search')} />
       {content()}
+      {delivered && (
+        <ConfirmDialog title={t('dispatch.agent.complete')} message={t('tracking.agentDeliveredMessage', { horse: delivered.horseName, agent: delivered.holderName })}
+          confirmLabel={t('dispatch.agent.complete')} onCancel={() => setDelivered(undefined)}
+          onConfirm={async () => {
+            await dispatchApi.completeAgentLeg(delivered.agentLegId!).catch(e => { toast(e instanceof Error ? e.message : String(e), 'error'); throw e })
+            toast(t('tracking.agentDelivered'), 'success')
+            setDelivered(undefined)
+            await reload()
+          }} />
+      )}
       {journey && (
         <Modal title={t('dispatch.bookings.journeyTitle', { code: journey.bookingCode })} onClose={() => setJourney(undefined)}>
           <BookingJourney bookingId={journey.bookingId!} />

@@ -3241,6 +3241,7 @@ export interface components {
             addressLine?: string;
             contactName?: string;
             contactPhone?: string;
+            countryCode?: string;
             /** Format: int64 */
             id?: number;
         };
@@ -4106,6 +4107,8 @@ export interface components {
             trip?: components["schemas"]["VehicleTripResponseDto"];
         };
         CustodyRowResponseDto: {
+            /** Format: int64 */
+            agentLegId?: number;
             bookingCode?: string;
             /** Format: int64 */
             bookingHorseId?: number;
