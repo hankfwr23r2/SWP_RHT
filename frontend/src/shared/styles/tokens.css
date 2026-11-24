@@ -49,7 +49,7 @@
   --space-12: 48px;
 
   /* Chữ */
-  --font-sans: 'Roboto', 'Inter', sans-serif;
+  --font-sans: 'Roboto Variable', 'Roboto', 'Inter', sans-serif;
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-md: 1rem;

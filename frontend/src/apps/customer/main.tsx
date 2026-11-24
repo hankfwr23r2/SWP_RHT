@@ -1,11 +1,12 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { RouterProvider } from 'react-router'
+import 'virtual:icons-customer.css'
+import '@fontsource-variable/roboto/wght.css'
 import '@shared/styles/base.css'
-import '@shared/i18n'
+import { i18nReady } from '@shared/i18n'
 import { AuthProvider } from '@shared/auth/AuthContext'
 import { CustomerLanguageSync } from '@shared/auth/CustomerLanguageSync'
-import { loadBootstrap } from '@shared/config/bootstrap'
 import { buildRouter } from '@shared/routing/buildRouter'
 import { ToastProvider } from '@shared/ui/toast'
 import { CustomerLayout } from './layouts/CustomerLayout'
@@ -14,8 +15,7 @@ import { routes } from './routes'
 
 const router = buildRouter(routes, { public: PublicLayout, customer: CustomerLayout }, { app: 'customer', loginPath: '/login' })
 
-// Tải dữ liệu dùng chung ngay khi mở app, không chờ; trang nào cần thì router chờ qua loader
-loadBootstrap().catch(() => {})
+await i18nReady
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

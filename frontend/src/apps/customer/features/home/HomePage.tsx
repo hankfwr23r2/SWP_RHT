@@ -1,26 +1,47 @@
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent } from 'react'
-import { gsap } from 'gsap'
-import { MotionPathPlugin } from 'gsap/MotionPathPlugin'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { useGSAP } from '@gsap/react'
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent, type RefObject } from 'react'
 import { reducedMotion, useScrollReveal } from '@shared/motion/motion'
 import { Link, useLocation } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { QUOTE_VALID_HOURS } from '@shared/config/booking-rules'
 import { MIN_LEAD_DAYS } from '@shared/config/business-rules'
-import { COUNTRIES, GATES, type CountryCode } from '@shared/config/network'
-import { loadBootstrap } from '@shared/config/bootstrap'
-import { ACTIVE_DOCUMENT_REQUIREMENTS } from '@shared/config/runtimeDocumentRequirements'
-import type { DocumentGroup } from '@shared/api/documentRequirements'
+import { COUNTRIES, type CountryCode } from '@shared/config/network'
 import { DEPOSIT_RATE } from '@shared/config/booking-rules'
 import { trackingApi, type PublicTracking } from '@shared/api/tracking'
 import { FLAG_SVG } from '@shared/ui/flags'
-import { PHOTOS } from '@shared/config/photos'
+import { PHOTOS, type Photo } from '@shared/config/photos'
 import { PriceTable } from '../pricing/PriceLookup'
 import { TrackResult } from './TrackResult'
 import s from './HomePage.module.css'
 
-gsap.registerPlugin(MotionPathPlugin)
+// Thư viện hiệu ứng chỉ tải khi có hiệu ứng cần chạy, sau khi trang đã hiện
+const loadGsap = () => Promise.all([import('gsap'), import('gsap/MotionPathPlugin'), import('gsap/ScrollTrigger')])
+  .then(([{ gsap }, { MotionPathPlugin }, { ScrollTrigger }]) => {
+    gsap.registerPlugin(MotionPathPlugin, ScrollTrigger)
+    return { gsap, ScrollTrigger }
+  })
+type Motion = Awaited<ReturnType<typeof loadGsap>>
+
+// Chạy hiệu ứng GSAP trong phạm vi một khối, chỉ tải thư viện khi khối sắp vào màn hình.
+// Đổi deps hoặc rời trang thì hoàn nguyên.
+function useGsapEffect(run: (motion: Motion) => void, scope: RefObject<Element | null>, deps: unknown[], enabled = true) {
+  useEffect(() => {
+    if (!enabled || !scope.current || typeof IntersectionObserver === 'undefined') return
+    let alive = true
+    let revert = () => {}
+    const observer = new IntersectionObserver(entries => {
+      if (!entries.some(entry => entry.isIntersecting)) return
+      observer.disconnect()
+      void loadGsap().then(motion => {
+        if (!alive || !scope.current) return
+        const context = motion.gsap.context(() => run(motion), scope.current)
+        revert = () => context.revert()
+      }).catch(() => {})
+    }, { rootMargin: '200px' })
+    observer.observe(scope.current)
+    return () => { alive = false; observer.disconnect(); revert() }
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, deps)
+}
 
 const cx = (...c: (string | false | undefined)[]) => c.filter(Boolean).join(' ')
 const MAX_TRACK_CODES = 5
@@ -32,31 +53,44 @@ const same: LinkMap = to => to
 
 const Words = ({ text }: { text: string }) => <>{text.split(' ').map((w, i) => <span key={i} className={s.word}>{w}&nbsp;</span>)}</>
 
+// Ảnh nền qua biến CSS: điện thoại dùng bản nhỏ
+const photoVars = (photo: Photo) => ({ '--bg': `url('${photo.src}')`, '--bg-sm': `url('${photo.small}')` }) as CSSProperties
+
 export function Hero({ link = same }: { link?: LinkMap }) {
   const { t } = useTranslation()
   const slides = [
-    { bg: PHOTOS.transport.src, tag: t('home.hero.slide1.tag'), title: t('home.hero.slide1.title'), hl: t('home.hero.slide1.hl'), text: t('home.hero.slide1.text'), cta: [t('home.hero.slide1.cta'), '/login'] as [string, string] },
-    { bg: PHOTOS.checkup.src, tag: t('home.hero.slide2.tag'), title: t('home.hero.slide2.title'), hl: t('home.hero.slide2.hl'), text: t('home.hero.slide2.text'), cta: [t('home.hero.slide2.cta'), '/#quy-trinh'] as [string, string] },
-    { bg: PHOTOS.race.src, tag: t('home.hero.slide3.tag'), title: t('home.hero.slide3.title'), hl: t('home.hero.slide3.hl'), text: t('home.hero.slide3.text'), cta: [t('home.hero.slide3.cta'), '/?tab=price#tra-cuu'] as [string, string] },
+    { bg: PHOTOS.transport, tag: t('home.hero.slide1.tag'), title: t('home.hero.slide1.title'), hl: t('home.hero.slide1.hl'), text: t('home.hero.slide1.text'), cta: [t('home.hero.slide1.cta'), '/login'] as [string, string] },
+    { bg: PHOTOS.checkup, tag: t('home.hero.slide2.tag'), title: t('home.hero.slide2.title'), hl: t('home.hero.slide2.hl'), text: t('home.hero.slide2.text'), cta: [t('home.hero.slide2.cta'), '/#quy-trinh'] as [string, string] },
+    { bg: PHOTOS.race, tag: t('home.hero.slide3.tag'), title: t('home.hero.slide3.title'), hl: t('home.hero.slide3.hl'), text: t('home.hero.slide3.text'), cta: [t('home.hero.slide3.cta'), '/?tab=price#tra-cuu'] as [string, string] },
   ]
 
   const [index, setIndex] = useState(0)
   const [hold, setHold] = useState(false) // chuột hoặc focus bàn phím đang ở trong banner
   const [stopped, setStopped] = useState(reducedMotion) // người xem bấm dừng; giảm chuyển động thì không tự chạy
   const root = useRef<HTMLElement>(null)
+  const [moved, setMoved] = useState(false)
+  // Banner đầu hiện ngay cùng trang, chỉ chạy hiệu ứng từ lần đổi banner
+  const goTo = (next: number) => { setMoved(true); setIndex(next) }
+  // Ảnh các banner sau chỉ tải khi trang đã hiện xong
+  const [showAll, setShowAll] = useState(false)
+  useEffect(() => {
+    const id = setTimeout(() => setShowAll(true), 3000)
+    return () => clearTimeout(id)
+  }, [])
   // Mỗi lần đổi banner: từng từ của tiêu đề trượt lên, rồi tới nhãn, mô tả và nút
-  useGSAP(() => {
+  useGsapEffect(({ gsap }) => {
     const slide = root.current?.querySelectorAll(`.${s.heroSlide}`)[index]
+    // Banner đầu hiện ngay cùng trang, chỉ chạy hiệu ứng từ lần đổi banner
     if (!slide || reducedMotion()) return
     const q = gsap.utils.selector(slide)
     gsap.timeline()
       .fromTo(q(`.${s.heroTag}`), { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: 'power3.out' })
       .fromTo(q(`.${s.word}`), { yPercent: 110 }, { yPercent: 0, duration: 0.8, stagger: 0.06, ease: 'power4.out' }, '-=0.25')
       .fromTo(q('p, a'), { y: 24, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, stagger: 0.12, ease: 'power3.out' }, '-=0.5')
-  }, { dependencies: [index], scope: root })
+  }, root, [index], moved)
   useEffect(() => {
     if (hold || stopped) return
-    const t = setInterval(() => setIndex(i => (i + 1) % slides.length), 6000)
+    const t = setInterval(() => goTo((index + 1) % slides.length), 6000)
     return () => clearInterval(t)
   }, [hold, stopped, index, slides.length])
   return (
@@ -70,7 +104,7 @@ export function Hero({ link = same }: { link?: LinkMap }) {
       onBlur={e => { if (!e.currentTarget.contains(e.relatedTarget)) setHold(false) }}
     >
       {slides.map((sl, i) => (
-        <div key={i} className={cx(s.heroSlide, !sl.bg && s.heroSlidePlain, i === index && s.active)} aria-hidden={i !== index} style={sl.bg ? { '--bg': `url('${sl.bg}')` } as CSSProperties : undefined}>
+        <div key={i} className={cx(s.heroSlide, !sl.bg && s.heroSlidePlain, i === index && s.active)} aria-hidden={i !== index} style={sl.bg && (i === index || showAll) ? photoVars(sl.bg) : undefined}>
           <div className={cx('wrap', s.heroContent)}>
             <span className={s.heroTag}>{sl.tag}</span>
             <h1><span className={s.line}><Words text={sl.title} /></span><span className={s.line}><span className={s.hl}><Words text={sl.hl} /></span></span></h1>
@@ -83,7 +117,7 @@ export function Hero({ link = same }: { link?: LinkMap }) {
         <button type="button" className={s.heroPause} aria-label={stopped ? t('home.hero.playBanner') : t('home.hero.pauseBanner')} onClick={() => setStopped(v => !v)}>
           <i className={`fa-solid ${stopped ? 'fa-play' : 'fa-pause'}`} aria-hidden="true" />
         </button>
-        {slides.map((_, i) => <button key={i} type="button" className={cx(s.heroDot, i === index && s.active)} aria-label={t('home.hero.bannerIndex', { index: i + 1 })} aria-current={i === index} onClick={() => setIndex(i)} />)}
+        {slides.map((_, i) => <button key={i} type="button" className={cx(s.heroDot, i === index && s.active)} aria-label={t('home.hero.bannerIndex', { index: i + 1 })} aria-current={i === index} onClick={() => goTo(i)} />)}
       </div>
     </section>
   )
@@ -284,7 +318,7 @@ function Journey({ country }: { country: CountryCode }) {
   ]
   const d = pathOf(config.points)
 
-  useGSAP(() => {
+  useGsapEffect(({ gsap, ScrollTrigger }) => {
     const q = gsap.utils.selector(root)
     const path = root.current!.querySelector<SVGPathElement>(`.${s.journeyPath}`)!
     const len = path.getTotalLength()
@@ -304,7 +338,7 @@ function Journey({ country }: { country: CountryCode }) {
 
     if (seen.current) tl.play()
     else ScrollTrigger.create({ trigger: root.current, start: 'top 80%', once: true, onEnter: () => { seen.current = true; tl.play() } })
-  }, { dependencies: [country], scope: root, revertOnUpdate: true })
+  }, root, [country])
 
   const [a, b, c] = stops
   return (
@@ -348,27 +382,14 @@ function Journey({ country }: { country: CountryCode }) {
   )
 }
 
-// Giấy tờ bắt buộc admin cấu hình cho từng nước (tuyến trong nước hoặc quốc tế)
-const docsFor = (group: DocumentGroup, code: CountryCode) => [...new Set(ACTIVE_DOCUMENT_REQUIREMENTS
-  .filter(r => r.documentGroup === group && r.required && r.status === 'ACTIVE')
-  .filter(r => r.tripType === 'ALL' || r.tripType === (code === 'VN' ? 'DOMESTIC' : 'INTERNATIONAL'))
-  .filter(r => r.country === 'ALL' || r.country === code)
-  .map(r => r.documentName))]
-
 export function Network() {
   const { t } = useTranslation()
   const [active, setActive] = useState<CountryCode>('VN')
-  // Cửa khẩu và giấy tờ lấy từ /public/bootstrap; lỗi thì chỉ hiện phần mô tả chung
-  const [catalog, setCatalog] = useState<'loading' | 'ready' | 'failed'>('loading')
-  useEffect(() => { loadBootstrap().then(() => setCatalog('ready'), () => setCatalog('failed')) }, [])
-  const gates = active === 'VN' ? [] : GATES.filter(g => g.country === active).map(g => g.name.replace(/^Cửa khẩu (quốc tế )?/, ''))
-  const horseDocs = docsFor('HORSE', active)
-  const tripDocs = docsFor('CLEARANCE', active)
   const flagsRef = useRef<HTMLDivElement>(null)
-  useGSAP(() => {
+  useGsapEffect(({ gsap }) => {
     if (reducedMotion()) return
     gsap.fromTo(`.${s.flag}`, { y: 40, scale: 0.85, opacity: 0 }, { y: 0, scale: 1, opacity: 1, duration: 0.7, stagger: 0.15, ease: 'back.out(1.6)', scrollTrigger: { trigger: flagsRef.current, start: 'top 85%', once: true } })
-  }, { scope: flagsRef })
+  }, flagsRef, [])
   return (
     <section className={s.network} id="mang-luoi">
       <div className="wrap">
@@ -389,9 +410,7 @@ export function Network() {
           <div className={s.networkCols} key={active}>
             {active === 'VN'
               ? <div><h4>{t('home.network.pickupDrop')}</h4><p><i className="fa-solid fa-location-dot" aria-hidden="true" /> {t('home.network.pickupDesc')}</p></div>
-              : <div><h4>{t('home.network.borderGate')}</h4><p><i className="fa-solid fa-flag" aria-hidden="true" /> {catalog === 'ready' && gates.length ? t('home.network.borderDescReady', { gates: gates.join(', ') }) : t('home.network.borderDesc')}</p></div>}
-            {catalog === 'ready' && horseDocs.length > 0 && <div><h4>{t('home.network.horseDocsTitle')}</h4><p><i className="fa-solid fa-horse-head" aria-hidden="true" /> {horseDocs.join(', ')}.</p></div>}
-            {catalog === 'ready' && tripDocs.length > 0 && <div><h4>{t('home.network.tripDocsTitle')}</h4><p><i className="fa-solid fa-file-circle-check" aria-hidden="true" /> {tripDocs.join(', ')}. {t('home.network.tripDocsDesc')}</p></div>}
+              : <div><h4>{t('home.network.borderGate')}</h4><p><i className="fa-solid fa-flag" aria-hidden="true" /> {t('home.network.borderDesc')}</p></div>}
           </div>
         </div>
       </div>
@@ -402,10 +421,10 @@ export function Network() {
 export function Services({ link = same }: { link?: LinkMap }) {
   const { t } = useTranslation()
   const services: [string, string, string, string][] = [
-    ['/?tab=price#tra-cuu', PHOTOS.transport.src, t('home.services.privateTruck'), t('home.services.privateTruckDesc')],
-    ['/#quy-trinh', PHOTOS.checkup.src, t('home.services.docsBorder'), t('home.services.docsBorderDesc')],
-    ['/?tab=order#tra-cuu', PHOTOS.trailers.src, t('home.services.liveTracking'), t('home.services.liveTrackingDesc')],
-    ['/?tab=price#tra-cuu', PHOTOS.stable.src, t('home.services.careInsurance'), t('home.services.careInsuranceDesc')],
+    ['/?tab=price#tra-cuu', PHOTOS.transport.small, t('home.services.privateTruck'), t('home.services.privateTruckDesc')],
+    ['/#quy-trinh', PHOTOS.checkup.small, t('home.services.docsBorder'), t('home.services.docsBorderDesc')],
+    ['/?tab=order#tra-cuu', PHOTOS.trailers.small, t('home.services.liveTracking'), t('home.services.liveTrackingDesc')],
+    ['/?tab=price#tra-cuu', PHOTOS.stable.small, t('home.services.careInsurance'), t('home.services.careInsuranceDesc')],
   ]
   return (
       <section className={s.services} id="dich-vu">
@@ -474,7 +493,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className={s.cta} style={{ '--bg': `url('${PHOTOS.race.src}')` } as CSSProperties}>
+      <section className={s.cta} style={photoVars(PHOTOS.race)}>
         <div className={cx('wrap', s.reveal)}>
           <h2>{t('home.cta.title')}</h2>
           <p>{t('home.cta.desc', { days: MIN_LEAD_DAYS })}</p>

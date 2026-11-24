@@ -1,22 +1,24 @@
 import { expect, test } from '@playwright/test'
 
-// Trang cần danh mục mà backend chưa trả lời: chỉ trang đó báo lỗi, có nút thử lại; không phải màn lỗi mặc định của router.
-test('trang cần danh mục báo lỗi tại chỗ và cho thử lại khi backend chưa trả lời', async ({ page }) => {
+// Trang hiện ngay, không chờ dữ liệu chung: backend chưa trả lời thì chỉ phần cần dữ liệu báo lỗi.
+test('trang hiện ngay khi backend chưa trả lời, không chờ danh mục chung', async ({ page }) => {
   test.skip(!!process.env.E2E_BACKEND_URL, 'Chỉ chạy khi không có backend')
   // Chủ động làm mọi request API thất bại ngay: không phụ thuộc cổng 9 bị từ chối tức thì
   // (trên WSL kết nối tới cổng đó bị treo đến hết timeout 15 giây của client)
+  const bootstrap: string[] = []
+  page.on('request', request => { if (request.url().includes('/public/bootstrap')) bootstrap.push(request.url()) })
   await page.route('**/api/v1/**', route => route.abort('connectionrefused'))
 
   await page.goto('/payment/vnpay-return')
 
-  await expect(page.getByRole('heading', { name: 'Chưa tải được trang' })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Thử tải lại' })).toBeEnabled()
+  await expect(page.getByText('Không có thông tin giao dịch từ VNPAY.')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Chưa tải được trang' })).toHaveCount(0)
   await expect(page.getByText('Unexpected Application Error')).toHaveCount(0)
+  expect(bootstrap).toEqual([])
 })
 
-// Khách đăng nhập rồi mở Hồ sơ ngựa (trang dùng danh mục giấy tờ): dữ liệu chung về trong một request /public/bootstrap,
-// không gọi lẻ /locations, /public/configs, /public/document-requirements; trang hiện đúng ngựa của khách.
-test('khách mở Hồ sơ ngựa: dữ liệu chung tải một lần, trang hiện ngựa của khách', async ({ page }) => {
+// Khách đăng nhập rồi mở Hồ sơ ngựa: trang chỉ gọi dữ liệu của mình, không chờ dữ liệu chung; hiện đúng ngựa của khách.
+test('khách mở Hồ sơ ngựa: không chờ dữ liệu chung, trang hiện ngựa của khách', async ({ page }) => {
   const email = process.env.E2E_CUSTOMER_EMAIL
   const password = process.env.E2E_CUSTOMER_PASSWORD
   const horse = process.env.E2E_CUSTOMER_HORSE
@@ -39,5 +41,5 @@ test('khách mở Hồ sơ ngựa: dữ liệu chung tải một lần, trang hi
   await page.waitForURL('**/horses')
   await expect(page.getByText(horse!).first()).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Chưa tải được trang' })).toHaveCount(0)
-  expect(commonRequests).toEqual(['/api/v1/public/bootstrap'])
+  expect(commonRequests).toEqual([])
 })

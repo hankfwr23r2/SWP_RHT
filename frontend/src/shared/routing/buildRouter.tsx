@@ -1,10 +1,9 @@
 import { Suspense, useEffect, type ComponentType, type ReactNode } from 'react'
-import { createBrowserRouter, Outlet, type Params } from 'react-router'
+import { createBrowserRouter, Outlet } from 'react-router'
 import { RequireRole } from '../auth/RequireRole'
-import { readSession } from '../auth/session'
-import { loadBootstrap } from '../config/bootstrap'
 import { NavigationBar, NavigationProgress } from './NavigationProgress'
 import { guardLoader, keepOnQueryChange } from './pageData'
+import { registerPreload } from './preload'
 import { RouteError } from './RouteError'
 import type { AppRoute } from './types'
 
@@ -31,16 +30,9 @@ export function buildRouter(routes: AppRoute[], layouts: Layouts, opts: { app: s
       HydrateFallback: NavigationBar,
       errorElement: <RouteError />,
       children: routes.map(r => {
-        // Trang dùng danh mục chờ dữ liệu khởi động trước rồi mới tải dữ liệu riêng của trang.
-        // Chưa đăng nhập đúng vai trò thì không chờ, để RequireRole chuyển ngay về trang đăng nhập.
-        const pageLoader = r.loader && guardLoader(r.loader, r.roles, opts.app)
-        const loader = r.catalog === false
-          ? pageLoader
-          : async (args: { params: Params }) => {
-            const session = readSession(opts.app)
-            if (!r.roles.length || (session && r.roles.includes(session.role))) await loadBootstrap()
-            return pageLoader ? pageLoader(args) : null
-          }
+        // Mỗi trang tải song song đúng dữ liệu nó cần, không chờ danh mục chung
+        const loader = r.loader && guardLoader(r.loader, r.roles, opts.app)
+        if (r.lazyPage) registerPreload(r.path, r.lazyPage)
         const data = loader && { loader, shouldRevalidate: keepOnQueryChange }
         return r.lazyPage
           ? { path: r.path, ...data, lazy: async () => ({ element: wrap(r, (await r.lazyPage!()).default) }) }

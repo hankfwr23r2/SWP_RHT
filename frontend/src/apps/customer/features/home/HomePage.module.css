@@ -246,5 +246,8 @@
     .track-step { font-size: 0.65rem; }
 }
 
-
-
+/* Điện thoại: ảnh nền bản nhỏ */
+@media (max-width: 700px) {
+  .hero-slide:not(.hero-slide-plain)::before { background-image: linear-gradient(90deg, rgba(15, 23, 42, 0.92) 0%, rgba(15, 23, 42, 0.65) 45%, rgba(15, 23, 42, 0.15) 100%), var(--bg-sm); }
+  .cta { background-image: linear-gradient(90deg, rgba(194, 65, 12, 0.93), rgba(15, 23, 42, 0.85)), var(--bg-sm); }
+}

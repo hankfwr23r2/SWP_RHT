@@ -11,7 +11,8 @@
 .link { position: relative; padding: 6px 0; color: var(--color-text); white-space: nowrap; transition: color var(--duration-base); }
 .link:hover, .active { color: var(--color-primary); }
 /* Vị trí và độ rộng do JS đặt theo mục đang chọn */
-.indicator { position: absolute; bottom: 0; left: 0; width: 0; height: 2px; border-radius: 2px; background: var(--color-primary-bright); opacity: 0; pointer-events: none; }
+.indicator { position: absolute; bottom: 0; left: 0; width: 0; height: 2px; border-radius: 2px; background: var(--color-primary-bright); opacity: 0; pointer-events: none; transition: transform 0.35s ease-out, width 0.35s ease-out, opacity 0.2s; }
+@media (prefers-reduced-motion: reduce) { .indicator { transition: none; } }
 .right { display: flex; flex-shrink: 0; align-items: center; gap: var(--space-2); font-size: var(--text-sm); white-space: nowrap; }
 .hotline { color: var(--color-muted); }
 .hotline strong { color: var(--color-heading); }
