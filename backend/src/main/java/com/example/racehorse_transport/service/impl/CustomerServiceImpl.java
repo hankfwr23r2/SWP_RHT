@@ -18,6 +18,8 @@ import com.example.racehorse_transport.repository.CustomerAddressRepository;
 import com.example.racehorse_transport.repository.CustomerRepository;
 import com.example.racehorse_transport.repository.ProvinceRepository;
 import com.example.racehorse_transport.service.CustomerService;
+import com.example.racehorse_transport.service.SystemConfigService;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
@@ -36,6 +38,7 @@ public class CustomerServiceImpl implements CustomerService {
     private final AppUserRepository users;
     private final CountryRepository countries;
     private final ProvinceRepository provinces;
+    private final SystemConfigService config;
 
     @Override
     @Transactional(readOnly = true)
@@ -78,7 +81,9 @@ public class CustomerServiceImpl implements CustomerService {
         CustomerProfilePolicy.requireCoordinatesTogether(request.latitude(), request.longitude());
         Customer customer = lockProfile(username);
         Country country = country(request.countryCode());
-        var address = request.toEntity(customer, country, province(request.provinceCode(), country));
+        Province province = province(request.provinceCode(), country);
+        requireNearProvince(request.latitude(), request.longitude(), province);
+        var address = request.toEntity(customer, country, province);
         applyDefault(address, customer.getUserId(), request.defaultAddress());
         return CustomerAddressResponseDto.from(addresses.save(address));
     }
@@ -90,7 +95,9 @@ public class CustomerServiceImpl implements CustomerService {
         long customerId = lockProfile(username).getUserId();
         CustomerAddress address = ownedAddress(id, customerId);
         Country country = country(request.countryCode());
-        request.applyTo(address, country, province(request.provinceCode(), country));
+        Province province = province(request.provinceCode(), country);
+        requireNearProvince(request.latitude(), request.longitude(), province);
+        request.applyTo(address, country, province);
         applyDefault(address, customerId, request.defaultAddress());
         return CustomerAddressResponseDto.from(address);
     }
@@ -140,6 +147,11 @@ public class CustomerServiceImpl implements CustomerService {
                 .orElseThrow(() -> new CustomerRuleException("Tỉnh không hợp lệ."));
         CustomerProfilePolicy.requireAddressCountry(country.getCode(), province.getCountry().getCode());
         return province;
+    }
+
+    private void requireNearProvince(BigDecimal latitude, BigDecimal longitude, Province province) {
+        CustomerProfilePolicy.requirePointNearProvince(latitude, longitude, province.getLatitude(), province.getLongitude(),
+                config.getInt("ADDRESS_MAX_KM_FROM_PROVINCE"));
     }
 
     private ResourceNotFoundException missingProfile() {

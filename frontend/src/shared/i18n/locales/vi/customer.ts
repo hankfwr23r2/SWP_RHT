@@ -240,6 +240,7 @@ export const customer = {
     hideMap: 'Ẩn bản đồ',
     required: 'Vui lòng điền mục này.',
     pointRequired: 'Hãy chọn một vị trí trên bản đồ hoặc nhập cả hai tọa độ hợp lệ.',
+    pointTooFar: 'Vị trí ghim quá xa {{province}}. Hãy ghim lại hoặc chọn tỉnh khác.',
     invalidCountry: 'Vui lòng chọn lại quốc gia.',
     invalidProvince: 'Vui lòng chọn tỉnh hoặc thành phố thuộc quốc gia đã chọn.',
     saved: 'Đã lưu địa chỉ.',

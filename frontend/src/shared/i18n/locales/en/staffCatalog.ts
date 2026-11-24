@@ -327,6 +327,7 @@ export const staffCatalog = {
         "COUNT": ""
       },
       "groups": {
+        "ADDRESS": "Address book",
         "CONTACT": "Contact",
         "AUTH": "Sign-in and verification",
         "DEPARTURE": "Departures",
@@ -339,6 +340,7 @@ export const staffCatalog = {
         "SCHEDULE": "Schedules"
       },
       "keys": {
+        "ADDRESS_MAX_KM_FROM_PROVINCE": "Maximum distance from the pin to the province centre (km)",
         "HOTLINE": "Hotline",
         "OFFICE_ADDRESS": "Office address",
         "HANDOVER_FREE_WAIT_MINUTES": "Free waiting time for the recipient",

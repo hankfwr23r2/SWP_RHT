@@ -14,10 +14,11 @@ vi.mock('@shared/api/client', () => ({
   default: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() },
 }))
 vi.mock('@shared/ui/baseMap', () => ({ BASE_MAP_OPTIONS: {}, addBaseLayer: vi.fn() }))
+const { setView } = vi.hoisted(() => ({ setView: vi.fn() }))
 vi.mock('leaflet', () => ({
   default: {
     map: () => ({
-      setView: vi.fn(), on: vi.fn(), off: vi.fn(), remove: vi.fn(),
+      setView, on: vi.fn(), off: vi.fn(), remove: vi.fn(),
       getBounds: () => ({ contains: () => true }), getZoom: () => 10,
     }),
     circleMarker: () => ({ addTo() { return this }, setLatLng: vi.fn(), remove: vi.fn() }),
@@ -114,12 +115,13 @@ describe('Address book', () => {
       if (path === listPath) return response(addresses)
       if (path === '/countries') return response([{ code: 'VN', name: 'Việt Nam' }])
       if (path === '/provinces' && (config?.params as { country?: string } | undefined)?.country === 'VN') {
-        return response([{ code: '79', name: 'TP. Hồ Chí Minh', countryCode: 'VN' }])
+        return response([{ code: '79', name: 'TP. Hồ Chí Minh', countryCode: 'VN', latitude: 10.776, longitude: 106.7 }])
       }
       throw new Error('Unexpected endpoint')
     })
     const post = vi.mocked(apiClient.post)
     post.mockResolvedValueOnce(response({ addressLine: 'Địa chỉ chưa đầy đủ.' }, 400))
+      .mockResolvedValueOnce({ status: 400, data: { message: 'Vị trí ghim cách tỉnh đã chọn quá 200 km.', data: null } })
       .mockImplementationOnce(async () => {
         addresses = [address]
         return response(address, 201)
@@ -140,17 +142,19 @@ describe('Address book', () => {
     fireEvent.change(screen.getByRole('textbox', { name: /Phường hoặc xã/ }), { target: { value: address.ward } })
     fireEvent.click(screen.getByRole('checkbox', { name: 'Đặt làm địa chỉ mặc định' }))
     fireEvent.click(screen.getByRole('button', { name: 'Lưu' }))
-    expect(screen.getByText(/Hãy chọn một vị trí/)).toBeTruthy()
     expect(post).not.toHaveBeenCalled()
-    expect(screen.queryByRole('textbox', { name: 'Vĩ độ' })).toBeNull()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Chọn vị trí' }))
+    // Quên ghim: bản đồ tự mở kèm lỗi
+    expect(await screen.findByText(/Hãy chọn một vị trí/)).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Ẩn bản đồ' })).toBeTruthy()
+    await waitFor(() => expect(setView).toHaveBeenLastCalledWith([10.776, 106.7], 10, { animate: false }))
     fireEvent.change(await screen.findByRole('textbox', { name: 'Vĩ độ' }), { target: { value: '10.12345678' } })
     fireEvent.change(screen.getByRole('textbox', { name: 'Kinh độ' }), { target: { value: '106.12345678' } })
     fireEvent.click(screen.getByRole('button', { name: 'Lưu' }))
     const error = await screen.findByText('Địa chỉ chưa đầy đủ.')
     expect(street.getAttribute('aria-describedby')).toBe(error.id)
     fireEvent.change(street, { target: { value: address.addressLine } })
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu' }))
+    expect(await screen.findByText('Vị trí ghim quá xa TP. Hồ Chí Minh. Hãy ghim lại hoặc chọn tỉnh khác.')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Lưu' }))
     expect(await screen.findByRole('heading', { name: address.label })).toBeTruthy()
     const { id: _id, ...body } = address

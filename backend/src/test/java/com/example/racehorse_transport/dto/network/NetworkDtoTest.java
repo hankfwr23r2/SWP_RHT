@@ -70,6 +70,23 @@ class NetworkDtoTest {
     }
 
     @Test
+    void provinceResponseCopiesCentre() {
+        Province province = new Province();
+        province.setCode("VN-79");
+        province.setName("Thành phố Hồ Chí Minh");
+        province.setCountry(vn());
+        province.setLatitude(new BigDecimal("10.776"));
+        province.setLongitude(new BigDecimal("106.7"));
+
+        ProvinceResponseDto dto = ProvinceResponseDto.from(province);
+
+        assertThat(dto.getCode()).isEqualTo("VN-79");
+        assertThat(dto.getCountryCode()).isEqualTo("VN");
+        assertThat(dto.getLatitude()).isEqualByComparingTo("10.776");
+        assertThat(dto.getLongitude()).isEqualByComparingTo("106.7");
+    }
+
+    @Test
     void locationResponseCopiesFields() {
         Location entity = location(5L, "GATE-X", LocationType.BORDER_GATE);
         Country counterpart = new Country();

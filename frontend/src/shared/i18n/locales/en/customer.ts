@@ -240,6 +240,7 @@ export const customer = {
     hideMap: 'Hide map',
     required: 'Please complete this field.',
     pointRequired: 'Pick a location on the map or enter a valid pair of coordinates.',
+    pointTooFar: 'The pin is too far from {{province}}. Move it or choose another province.',
     invalidCountry: 'Please select a valid country.',
     invalidProvince: 'Select a province or city in the chosen country.',
     saved: 'Address saved.',

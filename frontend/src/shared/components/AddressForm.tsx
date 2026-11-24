@@ -42,8 +42,20 @@ export function AddressForm({ address, onClose, onSave }: Props) {
   const [errors, setErrors] = useState<Fields>({})
   const [busy, setBusy] = useState(false)
   const saving = useRef(false)
+  const mapSection = useRef<HTMLElement>(null)
   const countries = useAddressCountries()
   const provinces = useAddressProvinces(form.countryCode)
+
+  const province = provinces.provinces?.find(item => item.code === form.provinceCode)
+  const center = province?.latitude != null && province.longitude != null
+    ? { latitude: province.latitude, longitude: province.longitude } : undefined
+
+  // Lỗi vị trí: mở bản đồ và cuộn tới, vì phần này nằm cuối form
+  const pointError = errors.latitude ?? errors.longitude
+  const showPoint = () => {
+    setMapOpen(true)
+    mapSection.current?.scrollIntoView?.({ block: 'start' })
+  }
 
   const set = <K extends keyof typeof form>(key: K, value: typeof form[K]) => {
     setForm(current => key === 'countryCode'
@@ -67,6 +79,7 @@ export function AddressForm({ address, onClose, onSave }: Props) {
     }
     if (!point) nextErrors.latitude = t('addresses.pointRequired')
     setErrors(nextErrors)
+    if (nextErrors.latitude && Object.keys(nextErrors).length === 1) showPoint()
     if (Object.keys(nextErrors).length || !point) return
 
     saving.current = true
@@ -78,10 +91,14 @@ export function AddressForm({ address, onClose, onSave }: Props) {
         const fields = error.fields as Fields
         if (Object.keys(fields).length) {
           setErrors(fields)
-          if (fields.latitude || fields.longitude) setMapOpen(true)
+          if (fields.latitude || fields.longitude) showPoint()
         } else {
           if (error.message === 'Quốc gia không hợp lệ.') setErrors({ countryCode: t('addresses.invalidCountry') })
           if (error.message.startsWith('Tỉnh không ')) setErrors({ provinceCode: t('addresses.invalidProvince') })
+          if (error.message.startsWith('Vị trí ghim ')) {
+            setErrors({ latitude: t('addresses.pointTooFar', { province: province?.name ?? '' }) })
+            showPoint()
+          }
         }
       }
     } finally {
@@ -127,7 +144,7 @@ export function AddressForm({ address, onClose, onSave }: Props) {
           {control => <Input {...control} value={form.addressLine} maxLength={500} disabled={busy}
             onChange={e => set('addressLine', e.target.value)} />}
         </Field>
-        <section className={s.mapSection}>
+        <section ref={mapSection} className={s.mapSection}>
           <h3>{t('addresses.point')}</h3>
           {point && <p>{t('mapPicker.point', { latitude: point.latitude.toFixed(6), longitude: point.longitude.toFixed(6) })}</p>}
           <div>
@@ -135,11 +152,9 @@ export function AddressForm({ address, onClose, onSave }: Props) {
               {t(mapOpen ? 'addresses.hideMap' : point ? 'addresses.changePoint' : 'addresses.openMap')}
             </Button>
           </div>
-          {!mapOpen && (errors.latitude || errors.longitude) &&
-            <p className={s.error} role="alert">{errors.latitude ?? errors.longitude}</p>}
+          {pointError && <p className={s.error} role="alert">{pointError}</p>}
           {mapOpen && <Suspense fallback={<Skeleton variant="block" />}>
-            <MapPicker value={point} onChange={updatePoint} disabled={busy}
-              latitudeError={errors.latitude} longitudeError={errors.longitude} />
+            <MapPicker value={point} center={center} onChange={updatePoint} disabled={busy} />
           </Suspense>}
         </section>
         <label className={s.check}>
