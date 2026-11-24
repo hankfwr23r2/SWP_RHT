@@ -14,7 +14,7 @@ import { StaffProfileModal } from './StaffProfileModal'
 import s from './StaffShell.module.css'
 
 // Trang danh sách nhận từ khóa tìm kiếm của từng vai trò
-const SEARCH_IN: Record<StaffRole, string> = { admin: '/admin/accounts', manager: '/manager', specialist: '/specialist/verification', coordinator: '/coordinator/fleet-plan', driver: '/driver', escort: '/escort' }
+const SEARCH_IN: Record<StaffRole, string> = { admin: '/admin/accounts', manager: '/manager/orders', specialist: '/specialist/verification', coordinator: '/coordinator/fleet-plan', driver: '/driver', escort: '/escort' }
 
 export function StaffTopbar() {
   const { t } = useTranslation()

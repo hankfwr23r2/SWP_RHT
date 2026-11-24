@@ -16,12 +16,12 @@ export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: 
   ],
   manager: [
     ['/manager', 'Tổng quan', { group: 'Việc cần làm', icon: 'fa-chart-pie' }],
-    ['/manager/intake', 'Tiếp nhận', { icon: 'fa-inbox' }],
-    ['/manager/approvals', 'Duyệt giá', { icon: 'fa-file-signature' }],
+    ['/manager/orders', 'Đơn hàng', { icon: 'fa-inbox' }],
+    ['/manager/departures', 'Chuyến cần quyết định', { icon: 'fa-truck' }],
+    ['/manager/refunds', 'Hoàn tiền', { icon: 'fa-rotate-left' }],
     ['/manager/incidents', 'Sự cố', { icon: 'fa-triangle-exclamation' }],
     ['/manager/reports', 'Doanh thu', { group: 'Báo cáo', icon: 'fa-chart-line' }],
     ['/manager/trip-reports', 'Chuyến đi', { icon: 'fa-clipboard-check' }],
-    ['/manager/cancelled-orders', 'Đơn đã hủy', { icon: 'fa-ban' }],
   ],
   specialist: [
     ['/specialist/verification', 'Duyệt hồ sơ ngựa', { icon: 'fa-file-medical' }],
