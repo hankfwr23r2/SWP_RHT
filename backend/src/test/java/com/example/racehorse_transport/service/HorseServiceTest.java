@@ -6,10 +6,19 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.example.racehorse_transport.PostgresIntegrationTest;
 import com.example.racehorse_transport.dto.horse.HorseCreateRequestDto;
 import com.example.racehorse_transport.dto.horse.HorseUpdateRequestDto;
+import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.BookingHorse;
+import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
+import com.example.racehorse_transport.entity.enums.BookingStatus;
+import com.example.racehorse_transport.entity.enums.BookingType;
 import com.example.racehorse_transport.entity.enums.HorseGender;
 import com.example.racehorse_transport.entity.enums.HorseStatus;
 import com.example.racehorse_transport.exception.HorseRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
+import com.example.racehorse_transport.repository.BookingHorseRepository;
+import com.example.racehorse_transport.repository.CustomerRepository;
+import com.example.racehorse_transport.repository.HorseRepository;
+import com.example.racehorse_transport.repository.StallTypeRepository;
 import com.example.racehorse_transport.support.TestData;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
@@ -22,6 +31,10 @@ class HorseServiceTest {
 
     @Autowired private HorseService horses;
     @Autowired private TestData data;
+    @Autowired private CustomerRepository customers;
+    @Autowired private HorseRepository horseRows;
+    @Autowired private StallTypeRepository stallTypes;
+    @Autowired private BookingHorseRepository bookingHorses;
 
     @Test
     void customerCreatesAndUpdatesOwnHorse() {
@@ -57,6 +70,33 @@ class HorseServiceTest {
         assertThatThrownBy(() -> horses.createHorse(owner, create("123", null, null))).isInstanceOf(HorseRuleException.class);
         assertThatThrownBy(() -> horses.createHorse(owner, create(chip(), BigDecimal.TEN, null))).isInstanceOf(HorseRuleException.class);
         assertThat(horses.horses(owner)).isEmpty();
+    }
+
+    @Test
+    void showsTheUnfinishedBookingHoldingTheHorse() {
+        String owner = customer();
+        Long held = horses.createHorse(owner, create(chip(), null, null)).id();
+        Long free = horses.createHorse(owner, create(chip(), null, null)).id();
+        Booking open = booking(owner, BookingStatus.PENDING_INTAKE, held, BookingHorseStatus.ACTIVE);
+        booking(owner, BookingStatus.COMPLETED, free, BookingHorseStatus.ACTIVE);
+        booking(owner, BookingStatus.CANCELLED, free, BookingHorseStatus.ACTIVE);
+        booking(owner, BookingStatus.PENDING_INTAKE, free, BookingHorseStatus.CANCELLED);
+
+        assertThat(horses.horse(owner, held).activeBookingCode()).isEqualTo(open.getCode());
+        assertThat(horses.horse(owner, free).activeBookingCode()).isNull();
+        assertThat(horses.horses(owner)).filteredOn(horse -> horse.activeBookingCode() != null)
+                .singleElement().satisfies(horse -> assertThat(horse.id()).isEqualTo(held));
+    }
+
+    private Booking booking(String owner, BookingStatus status, Long horseId, BookingHorseStatus horseStatus) {
+        Booking booking = data.booking(customers.findByUser_Username(owner).orElseThrow(), BookingType.LOCAL, status);
+        BookingHorse row = new BookingHorse();
+        row.setBooking(booking);
+        row.setHorse(horseRows.findById(horseId).orElseThrow());
+        row.setStallType(stallTypes.findAll().get(0));
+        row.setStatus(horseStatus);
+        bookingHorses.saveAndFlush(row);
+        return booking;
     }
 
     // Câu vi phạm ràng buộc DB luôn là câu cuối của transaction

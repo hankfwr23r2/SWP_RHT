@@ -9,13 +9,15 @@ import java.time.Instant;
 public record HorseResponseDto(Long id, String name, String microchip, String passportNumber, HorseGender sex, Short birthYear,
                                String color, String breed, String sire, String dam, Long horseTypeId, String horseTypeName,
                                String identificationMarks, BigDecimal weightKg, BigDecimal declaredValue,
-                               String declaredCurrencyCode, HorseStatus status, Instant createdAt, Instant updatedAt) {
+                               String declaredCurrencyCode, HorseStatus status, Instant createdAt, Instant updatedAt,
+                               String activeBookingCode) {
 
-    public static HorseResponseDto from(Horse horse) {
+    // activeBookingCode: mã đơn chưa kết thúc đang giữ con ngựa, null nếu không có
+    public static HorseResponseDto from(Horse horse, String activeBookingCode) {
         return new HorseResponseDto(horse.getId(), horse.getName(), horse.getMicrochip(), horse.getPassportNumber(),
                 horse.getSex(), horse.getBirthYear(), horse.getColor(), horse.getBreed(), horse.getSire(), horse.getDam(),
                 horse.getHorseType().getId(), horse.getHorseType().getName(), horse.getIdentificationMarks(),
                 horse.getWeightKg(), horse.getDeclaredValue(), horse.getDeclaredCurrencyCode(), horse.getStatus(),
-                horse.getCreatedAt(), horse.getUpdatedAt());
+                horse.getCreatedAt(), horse.getUpdatedAt(), activeBookingCode);
     }
 }

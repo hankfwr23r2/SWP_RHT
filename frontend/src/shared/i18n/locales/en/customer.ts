@@ -431,6 +431,8 @@ export const customer = {
       dietHint: 'For example: hay only, no bran, allergies.',
       full: '{{seats}} places are needed but only {{available}} are left. Remove a horse, change the stall or choose another departure.',
       required: 'Choose at least one horse and its stall type.',
+      busy: 'In order {{code}}; available once that order ends.',
+      removeBusy: 'Deselect {{names}}: already in another order.',
       next: 'Continue: services and insurance',
     },
     services: {

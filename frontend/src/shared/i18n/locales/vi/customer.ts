@@ -431,6 +431,8 @@ export const customer = {
       dietHint: 'Ví dụ: cỏ khô, không cho ăn cám, dị ứng.',
       full: 'Cần {{seats}} chỗ nhưng chuyến chỉ còn {{available}} chỗ. Hãy bớt ngựa, đổi khoang hoặc chọn chuyến khác.',
       required: 'Chọn ít nhất một con ngựa và loại khoang.',
+      busy: 'Đang trong đơn {{code}}, chọn được khi đơn đó kết thúc.',
+      removeBusy: 'Bỏ chọn {{names}} vì đang trong đơn khác.',
       next: 'Tiếp tục: dịch vụ và bảo hiểm',
     },
     services: {

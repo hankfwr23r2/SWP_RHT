@@ -32,6 +32,8 @@ export default function Step2HorsesPage() {
   const seats = draft.horseIds.reduce((sum, id) => sum + seatsOf(draft.horses[id]?.stallTypeCode ?? ''), 0)
   const available = draft.departure?.availableStalls
   const full = available != null && seats > available
+  // Ngựa đã chọn trong bản nháp nhưng vừa vào đơn khác
+  const busy = horses.filter(horse => horse.activeBookingCode && draft.horseIds.includes(horse.id!))
 
   const toggle = (id: number) => {
     if (draft.horseIds.includes(id)) {
@@ -57,7 +59,7 @@ export default function Step2HorsesPage() {
 
   const next = () => {
     setSubmitted(true)
-    if (horsesReady(draft) && !full) navigate('/booking/services')
+    if (horsesReady(draft) && !full && !busy.length) navigate('/booking/services')
   }
 
   return (
@@ -81,10 +83,11 @@ export default function Step2HorsesPage() {
         return (
           <article key={id} className={`${s.horse} ${on ? s.horseOn : ''}`}>
             <label className={s.horsePick}>
-              <input type="checkbox" checked={on} onChange={() => toggle(id)} />
+              <input type="checkbox" checked={on} disabled={!on && !!horse.activeBookingCode} onChange={() => toggle(id)} />
               <div>
                 <strong>{horse.name}</strong>
                 <span>{[...new Set([horse.microchip, horse.breed, horse.horseTypeName])].filter(Boolean).join(' · ')}</span>
+                {horse.activeBookingCode && <em className={s.busy}>{t('bookingForm.horses.busy', { code: horse.activeBookingCode })}</em>}
               </div>
             </label>
             {on && draft.horses[id] && (
@@ -94,6 +97,7 @@ export default function Step2HorsesPage() {
           </article>
         )
       })}
+      {busy.length > 0 && <p className={`${s.alert} ${s.danger}`} role="alert">{t('bookingForm.horses.removeBusy', { names: busy.map(horse => horse.name).join(', ') })}</p>}
       {full && <p className={`${s.alert} ${s.danger}`} role="alert">{t('bookingForm.horses.full', { seats, available })}</p>}
       {submitted && !horsesReady(draft) && <p className={s.error} role="alert">{t('bookingForm.horses.required')}</p>}
       <StepActions back="/booking/route" backLabel={t('bookingForm.back')}>
