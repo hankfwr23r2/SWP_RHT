@@ -338,7 +338,7 @@ Với đầu `SELF`, điều phối hẹn giờ tại hub và chuẩn bị `hors
 | Việc | Bảng |
 |---|---|
 | Hoàn tất giấy tờ kiểm dịch, giấy phép nhập. Chuyên viên tải giấy của COMPANY, CONSIGNEE, AGENT và duyệt hoặc từ chối từng giấy. Khách có thể nộp lại giấy CUSTOMER bắt buộc khi thiếu bản còn hiệu lực | `document` |
-| **Tạo lượt xe đón**: hệ thống gợi ý gom các đơn cùng hub, cùng ngày, đủ chỗ, đi vòng ≤ 1,5 lần, bố trí điểm nghỉ theo quy tắc #31; điều phối duyệt | `vehicle_trip` PICKUP, `trip_stop` (mỗi `booking_address` PICKUP là một điểm dừng, cuối cùng là hub) |
+| **Tạo lượt xe đón**: hệ thống gợi ý gom các đơn cùng hub, cùng ngày, đủ chỗ, đi vòng ≤ 1,5 lần, cộng giờ nghỉ theo quy tắc #31; điều phối duyệt | `vehicle_trip` PICKUP, `trip_stop` (mỗi `booking_address` PICKUP là một điểm dừng, cuối cùng là hub) |
 | **Tạo lượt xe trục chính** cho chuyến | `vehicle_trip` LINEHAUL có `departure_id`. `trip_stop` chép từ `route_stop`: giờ = `planned_departure_at + arrival_offset_minutes` |
 | **Tạo lượt xe chạy thẳng** cho đơn không qua trục | `vehicle_trip` DIRECT: trụ sở → các địa chỉ đón → các địa chỉ giao → trụ sở. Có thể gom nhiều đơn cùng vùng |
 | **Tạo lượt giao ở hub vệ tinh** | `vehicle_trip` DELIVERY bắt đầu tại hub vệ tinh, dùng chính xe vừa chạy trục tới. Sau đó xe về trụ sở bằng chuyến trục chiều ngược |
@@ -362,6 +362,14 @@ Chưa trả đủ **không** chặn xe đi đón. Số dư thu sau khi nhận ng
 | Cơ quan cấp chậm | Miễn phí mỗi lần, không tính vào lượt của khách | Khi chưa đủ `AUTHORITY_DELAY_REFUND_MISSES` lần lỡ chuyến thì xử lý như khách hủy. Từ ngưỡng này hoàn cọc vận chuyển, không hoàn khoản thu hộ và `VET_CHECK` |
 
 Giá cũ giữ trong `PRICE_HOLD_DAYS` ngày tính từ ngày chạy của chuyến vừa lỡ. Lịch sử chuyển sang `SCHEDULE_CHANGE_REQUIRED` ghi chuyến vào `previous_departure_id`, nguyên nhân vào `cause_type` và lý do vào `reason`. Đếm lượt đổi do khách và số lần lỡ chuyến do cơ quan từ loại nguyên nhân trong lịch sử. Các dòng thu hộ không hoàn và không chọn hoàn riêng từng dòng (24/11/2026). Công ty hủy thì hoàn toàn bộ tiền đã trả, gồm cả khoản thu hộ.
+
+**Giờ lượt đón, giao (người dùng chốt 24/11/2026):** hệ thống tính theo đường thật, điều phối chỉ sửa giờ xuất phát.
+- Đón trong khung 06:00–18:00 đúng ngày khách chọn, tới địa chỉ đầu lúc mở khung, ngựa về hub trong khung và nghỉ đêm ở hub. Hạn cuối là giờ chạy trừ `HUB_CHECKIN_HOURS`; quá hạn thì không cho xếp.
+- Giao trong khung 06:00–18:00 sau khi xe trục tới hub. Không kịp trong ngày thì dời sang sáng hôm sau, ngựa nghỉ ở hub; hub vệ tinh gửi chuồng đối tác, công ty chịu chi phí.
+- Mỗi điểm dừng 20 phút cộng 10 phút mỗi con. Lái liên tục quá `MAX_CONTINUOUS_HOURS` thì cộng thời gian nghỉ dọc đường.
+- Mỗi con ở trên xe đón hoặc giao không quá nửa giờ lái mỗi ngày, tính cả đoạn đi vòng.
+- Tài xế không lái quá `MAX_DRIVE_HOURS_PER_DAY` mỗi ngày, gộp mọi lượt, mỗi tài xế tính đủ dù xe có hai người.
+- Dịch vụ bản đồ hỏng thì điều phối nhập giờ tay.
 
 **Quy tắc phân xe:**
 - Tổng chỗ ngựa trên xe chiếm không vượt tổng chỗ của xe; khoang rộng 2 chỗ.

@@ -81,7 +81,7 @@ class HorseLegFlowTest {
     void domesticBookingGoesPickupLinehaulDeliveryAsOneChain() throws Exception {
         Seed seed = seed("DEV-DOMESTIC-001");
         long danang = locations.findByCode("HUB-DN").orElseThrow().getId();
-        Instant pickupStart = seed.departureAt().minusSeconds(6 * 3600);
+        Instant pickupStart = seed.departureAt().minusSeconds(10 * 3600);
         long pickupTrip = tripId(createTrip(testData.vehicle(4, 0), "PICKUP", stop(hcm, "HUB", pickupStart, 0),
                 address(seed.pickup(), "PICKUP", pickupStart, 90), stop(hcm, "HUB", pickupStart, 240)));
         Vehicle linehaulVehicle = testData.vehicle(4, 1);
@@ -142,7 +142,7 @@ class HorseLegFlowTest {
     @Test
     void bookingLeavingItsDepartureLosesAllPlannedLegs() throws Exception {
         Seed seed = seed("DEV-DOMESTIC-001");
-        Instant pickupStart = seed.departureAt().minusSeconds(6 * 3600);
+        Instant pickupStart = seed.departureAt().minusSeconds(10 * 3600);
         long pickupTrip = tripId(createTrip(testData.vehicle(4, 0), "PICKUP", stop(hcm, "HUB", pickupStart, 0),
                 address(seed.pickup(), "PICKUP", pickupStart, 90), stop(hcm, "HUB", pickupStart, 240)));
         long linehaul = tripId(createTrip(testData.vehicle(4, 0), "LINEHAUL", seed.departureId()));
@@ -165,16 +165,26 @@ class HorseLegFlowTest {
     void nextLegContinuesFromWhereAndWhenThePreviousLegEnded() throws Exception {
         Seed seed = seed("DEV-DOMESTIC-001");
         long danang = locations.findByCode("HUB-DN").orElseThrow().getId();
-        // Lượt đón kết thúc ở HUB-HCM lúc 1 giờ sau giờ chạy trục: con ngựa chưa kịp lên trục
+        // Lượt đón tới HUB-HCM 1 giờ sau giờ chạy trục: quá hạn có mặt ở hub
         Instant late = seed.departureAt().minusSeconds(3 * 3600);
-        long pickupTrip = tripId(createTrip(testData.vehicle(4, 0), "PICKUP", stop(hcm, "HUB", late, 0),
+        long lateTrip = tripId(createTrip(testData.vehicle(4, 0), "PICKUP", stop(hcm, "HUB", late, 0),
                 address(seed.pickup(), "PICKUP", late, 60), stop(hcm, "HUB", late, 240)));
+        List<Long> lateStops = stopIds(lateTrip);
+        assign(lateTrip, seed.horses().getFirst(), lateStops.get(1), lateStops.get(2)).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Ngựa tới hub sau hạn có mặt của chuyến trục."));
+
+        Instant onTime = seed.departureAt().minusSeconds(10 * 3600);
+        long pickupTrip = tripId(createTrip(testData.vehicle(4, 0), "PICKUP", stop(hcm, "HUB", onTime, 0),
+                address(seed.pickup(), "PICKUP", onTime, 60), stop(hcm, "HUB", onTime, 240)));
         List<Long> pickupStops = stopIds(pickupTrip);
         assign(pickupTrip, seed.horses().getFirst(), pickupStops.get(1), pickupStops.get(2)).andExpect(status().isCreated());
 
-        long linehaul = tripId(createTrip(testData.vehicle(4, 0), "LINEHAUL", seed.departureId()));
-        List<Long> linehaulStops = stopIds(linehaul);
-        assign(linehaul, seed.horses().getFirst(), linehaulStops.getFirst(), linehaulStops.getLast()).andExpect(status().isConflict())
+        // Chặng chuyển xe bắt đầu trước khi lượt đón về tới hub
+        Instant early = onTime.plusSeconds(60 * 60);
+        Vehicle earlyVehicle = testData.vehicle(4, 0);
+        long earlyTransfer = tripId(createTrip(earlyVehicle, "TRANSFER", stop(hcm, "HUB", early, 0), stop(danang, "HUB", early, 900)));
+        List<Long> earlyStops = stopIds(earlyTransfer);
+        assign(earlyTransfer, seed.horses().getFirst(), earlyStops.get(0), earlyStops.get(1)).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message", startsWith("Chặng mới bắt đầu trước khi chặng trước")));
 
         // Sau chặng đón con ngựa ở HUB-HCM, không bắt đầu chặng giao ở HUB-DN được
@@ -196,7 +206,7 @@ class HorseLegFlowTest {
     @Test
     void vehicleSeatsAreNeverExceeded() throws Exception {
         Seed seed = seed("DEV-DOMESTIC-001");
-        Instant start = seed.departureAt().minusSeconds(6 * 3600);
+        Instant start = seed.departureAt().minusSeconds(10 * 3600);
         long trip = tripId(createTrip(testData.vehicle(1, 0), "PICKUP", stop(hcm, "HUB", start, 0),
                 address(seed.pickup(), "PICKUP", start, 90), stop(hcm, "HUB", start, 240)));
         List<Long> stops = stopIds(trip);
@@ -209,7 +219,7 @@ class HorseLegFlowTest {
     void exportBookingRidesPickupThenLinehaulToTheBorderGate() throws Exception {
         Seed seed = seed("DEV-EXPORT-001");
         long gate = locations.findByCode("GATE-MOCBAI").orElseThrow().getId();
-        Instant start = seed.departureAt().minusSeconds(6 * 3600);
+        Instant start = seed.departureAt().minusSeconds(10 * 3600);
         long pickupTrip = tripId(createTrip(testData.vehicle(4, 0), "PICKUP", stop(hcm, "HUB", start, 0),
                 address(seed.pickup(), "PICKUP", start, 90), stop(hcm, "HUB", start, 240)));
         List<Long> pickupStops = stopIds(pickupTrip);
@@ -232,7 +242,7 @@ class HorseLegFlowTest {
     void stopOfAnotherBookingCannotBeUsed() throws Exception {
         Seed direct = seed("DEV-DIRECT-001");
         Seed domestic = seed("DEV-DOMESTIC-001");
-        Instant start = domestic.departureAt().minusSeconds(6 * 3600);
+        Instant start = domestic.departureAt().minusSeconds(10 * 3600);
         long trip = tripId(createTrip(testData.vehicle(4, 0), "PICKUP", stop(hcm, "HUB", start, 0),
                 address(direct.pickup(), "PICKUP", start, 60), address(domestic.pickup(), "PICKUP", start, 120), stop(hcm, "HUB", start, 240)));
         List<Long> stops = stopIds(trip);

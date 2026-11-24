@@ -147,6 +147,13 @@ public final class DispatchPolicy {
         }
     }
 
+    // Ngựa đi trục phải có mặt ở hub trước giờ chạy theo HUB_CHECKIN_HOURS
+    public static void requireAtHubBeforeDeadline(Instant arrival, Instant deadline) {
+        if (arrival.isAfter(deadline)) {
+            throw new DispatchRuleException("alightTripStopId", "Ngựa tới hub sau hạn có mặt của chuyến trục.", true);
+        }
+    }
+
     // Quy tắc #7: chặng mới bắt đầu đúng nơi chặng trước của con ngựa kết thúc.
     // Nơi được so bằng khóa "L<id>" (điểm mạng lưới) hoặc "A<id>" (địa chỉ của đơn).
     public static void requireContinuous(String previousEnd, String nextStart) {

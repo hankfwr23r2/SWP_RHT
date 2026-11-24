@@ -30,6 +30,7 @@ import com.example.racehorse_transport.repository.TripStopRepository;
 import com.example.racehorse_transport.repository.VehicleTripRepository;
 import com.example.racehorse_transport.service.HorseLegService;
 import com.example.racehorse_transport.service.StallPlanService;
+import com.example.racehorse_transport.service.SystemConfigService;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -56,6 +57,7 @@ public class HorseLegServiceImpl implements HorseLegService {
     private final BookingAddressRepository bookingAddresses;
     private final DispatchBookingRepository dispatchBookings;
     private final StallPlanService stallPlans;
+    private final SystemConfigService configs;
 
     @Override
     @Transactional(readOnly = true)
@@ -142,6 +144,10 @@ public class HorseLegServiceImpl implements HorseLegService {
         DispatchPolicy.requireCapacity(occupancies, trip.getVehicle().getStandardStallCount() * StallSeatPolicy.seats("STANDARD")
                 + trip.getVehicle().getWideStallCount() * StallSeatPolicy.seats("WIDE"));
         DispatchPolicy.requirePlannedWindow(board.getPlannedDepartureAt(), alight.getPlannedArrivalAt());
+        if (legType == HorseLegType.PICKUP && booking.getDeparture() != null) {
+            DispatchPolicy.requireAtHubBeforeDeadline(alight.getPlannedArrivalAt(),
+                    booking.getDeparture().getPlannedDepartureAt().minusSeconds(configs.getInt("HUB_CHECKIN_HOURS") * 3600L));
+        }
 
         HorseLeg leg = new HorseLeg();
         leg.setBookingHorse(line);

@@ -221,7 +221,7 @@ class TripExecutionFlowTest {
         List<Long> lines = jdbc.queryForList("SELECT id FROM booking_horse WHERE booking_id = ? ORDER BY id", Long.class, domestic);
         long hcm = locations.findByCode("HUB-HCM").orElseThrow().getId();
         Instant start = jdbc.queryForObject("SELECT planned_departure_at FROM departure d JOIN booking b ON b.departure_id = d.id WHERE b.id = ?",
-                java.sql.Timestamp.class, domestic).toInstant().minusSeconds(6 * 3600);
+                java.sql.Timestamp.class, domestic).toInstant().minusSeconds(10 * 3600);
         Staff driverStaff = testData.staff(testData.unique("exec.driver2"), "DRIVER");
         String driver2 = token(driverStaff, "DRIVER");
         long pickupTrip = id(mvc.perform(post("/vehicle-trips").header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)

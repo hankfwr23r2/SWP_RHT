@@ -65,7 +65,7 @@ class TripGroupingFlowTest {
     }
 
     @Test
-    void bookingsInTheSameDirectionShareOnePickupFarthestFirstAndReachTheHubThreeHoursEarly() throws Exception {
+    void bookingsInTheSameDirectionShareOnePickupFarthestFirstOnTheChosenDay() throws Exception {
         // Dời điểm đón của đơn xuất sang phía đông, nằm giữa hub và Long Thành
         sql("UPDATE booking_address SET latitude = 10.790000, longitude = 106.890000 WHERE booking_id = " + export + " AND address_type = 'PICKUP'");
         String body = content(suggest(pickupDate, hcm, "PICKUP").andExpect(status().isOk())
@@ -76,10 +76,10 @@ class TripGroupingFlowTest {
                 .andExpect(jsonPath("$.data[0].stops[0].stopType").value("HUB"))
                 .andExpect(jsonPath("$.data[0].stops[1].stopType").value("PICKUP"))
                 .andExpect(jsonPath("$.data[0].stops[3].locationId").value(hcm)));
-        Instant firstDeparture = jdbc.queryForObject("""
-                SELECT min(d.planned_departure_at) FROM booking b JOIN departure d ON d.id = b.departure_id WHERE b.id IN (?, ?)""",
-                java.sql.Timestamp.class, domestic, export).toInstant();
-        assertThat(Instant.parse(JsonPath.read(body, "$.data[0].stops[3].plannedArrivalAt"))).isEqualTo(firstDeparture.minusSeconds(3 * 3600));
+        // Tới địa chỉ đầu lúc 06:00 đúng ngày khách chọn, về hub trong khung giờ
+        ZoneId zone = ZoneId.of("Asia/Ho_Chi_Minh");
+        assertThat(Instant.parse(JsonPath.read(body, "$.data[0].stops[1].plannedArrivalAt"))).isEqualTo(pickupDate.atTime(6, 0).atZone(zone).toInstant());
+        assertThat(Instant.parse(JsonPath.read(body, "$.data[0].stops[3].plannedArrivalAt"))).isBefore(pickupDate.atTime(18, 0).atZone(zone).toInstant());
         assertThat(((Number) JsonPath.read(body, "$.data[0].seats")).intValue())
                 .isEqualTo(jdbc.queryForObject("SELECT count(*) FROM booking_horse WHERE booking_id IN (?, ?)", Integer.class, domestic, export));
 
@@ -110,7 +110,9 @@ class TripGroupingFlowTest {
                 .andExpect(jsonPath("$.data.length()").value(1))
                 .andExpect(jsonPath("$.data[0].bookings[0].bookingCode").value("DEV-DOMESTIC-001"))
                 .andExpect(jsonPath("$.data[0].stops[1].stopType").value("DELIVERY")));
-        assertThat(Instant.parse(JsonPath.read(body, "$.data[0].stops[0].plannedDepartureAt"))).isEqualTo(arrival.plusSeconds(3600));
+        assertThat(Instant.parse(JsonPath.read(body, "$.data[0].stops[0].plannedDepartureAt"))).isAfter(arrival);
+        var firstDelivery = Instant.parse(JsonPath.read(body, "$.data[0].stops[1].plannedArrivalAt")).atZone(ZoneId.of("Asia/Ho_Chi_Minh"));
+        assertThat(firstDelivery.getHour()).isBetween(6, 18);
         suggest(day, danang, "LINEHAUL").andExpect(status().isBadRequest());
     }
 

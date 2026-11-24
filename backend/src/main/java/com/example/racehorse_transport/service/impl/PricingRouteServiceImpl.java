@@ -1,6 +1,8 @@
 package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.client.ValhallaClient;
+import com.example.racehorse_transport.dto.route.RoadRouteDto;
+import com.example.racehorse_transport.dto.route.GeoPointDto;
 import com.example.racehorse_transport.exception.RoutingUnavailableException;
 import com.example.racehorse_transport.service.PricingRouteService;
 import jakarta.persistence.EntityManagerFactory;
@@ -42,6 +44,13 @@ public class PricingRouteServiceImpl implements PricingRouteService {
         }
         // Km tính tiền: km gần nhất, tối thiểu 1 km
         return new RoadEstimate(BigDecimal.valueOf(Math.max(1, Math.round(km))).setScale(2), route.driveSeconds());
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.NEVER)
+    public List<RoadRouteDto.Leg> legs(List<GeoPointDto> points, LocalDateTime time, int weightTons, int topSpeedKmh) {
+        releaseRequestConnection();
+        return routing.truckRoute(points, weightTons, topSpeedKmh, time).legs();
     }
 
     private void releaseRequestConnection() {

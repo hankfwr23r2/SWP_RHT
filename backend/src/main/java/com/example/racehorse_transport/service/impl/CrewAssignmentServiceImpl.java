@@ -31,6 +31,13 @@ import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.policy.TrackingPolicy;
+import com.example.racehorse_transport.policy.TripSchedulePolicy;
+import com.example.racehorse_transport.policy.TripSchedulePolicy.Rules;
+import com.example.racehorse_transport.repository.TripStopRepository;
+import com.example.racehorse_transport.service.SystemConfigService;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.TreeMap;
 import com.example.racehorse_transport.policy.TrackingPolicy.CustodyHolder;
 import com.example.racehorse_transport.repository.HandoverHorseRepository;
 import com.example.racehorse_transport.repository.HorseLegRepository;
@@ -56,6 +63,8 @@ public class CrewAssignmentServiceImpl implements CrewAssignmentService {
     private final NotificationService notifications;
     private final HorseLegRepository legs;
     private final HandoverHorseRepository scans;
+    private final TripStopRepository stops;
+    private final SystemConfigService configs;
 
     @Override
     @Transactional
@@ -78,6 +87,9 @@ public class CrewAssignmentServiceImpl implements CrewAssignmentService {
             throw new DispatchRuleException("staffId", "Nhân viên đã có trong lượt xe này.", true);
         }
         requireStaffFree(member, trip, midway);
+        if (request.crewRole() == CrewRole.DRIVER) {
+            requireDailyDriving(member, trip);
+        }
         CrewAssignment assignment = request.toEntity(trip, member);
         assignment.setStatus(CrewAssignmentStatus.ASSIGNED);
         assignments.save(assignment);
@@ -173,6 +185,22 @@ public class CrewAssignmentServiceImpl implements CrewAssignmentService {
         if (!midway) {
             DispatchPolicy.requireStartsWherePreviousEnded("staffId", "Nhân viên", trip.getStartLocation().getId(), expectedStart);
         }
+    }
+
+    // Tài xế không lái quá giới hạn mỗi ngày, tính gộp mọi lượt; hai tài xế trên một xe thì mỗi người tính đủ
+    private void requireDailyDriving(Staff member, VehicleTrip trip) {
+        List<Long> tripIds = new ArrayList<>(assignments.findActiveOfStaff(member.getUserId(), CrewAssignmentStatus.RELEASED, VehicleTripStatus.CANCELLED)
+                .stream().map(a -> a.getVehicleTrip().getId()).toList());
+        tripIds.add(trip.getId());
+        Map<Long, List<Interval>> planned = new TreeMap<>();
+        stops.findByVehicleTrip_IdInOrderByVehicleTrip_IdAscSequenceNumberAsc(Set.copyOf(tripIds)).forEach(stop -> planned
+                .computeIfAbsent(stop.getVehicleTrip().getId(), id -> new ArrayList<>())
+                .add(new Interval(stop.getPlannedArrivalAt(), stop.getPlannedDepartureAt())));
+        Rules rules = new Rules(configs.getInt("MAX_CONTINUOUS_HOURS"), configs.getInt("MIN_REST_MINUTES"), configs.getInt("MAX_DRIVE_HOURS_PER_DAY"), 0, 0);
+        Map<LocalDate, Long> total = TripSchedulePolicy.drivingByDay(planned.values(), BUSINESS_ZONE, rules);
+        // Chỉ xét những ngày lượt đang phân công có lái
+        total.keySet().retainAll(TripSchedulePolicy.drivingByDay(List.of(planned.getOrDefault(trip.getId(), List.of())), BUSINESS_ZONE, rules).keySet());
+        TripSchedulePolicy.requireDailyDriving("staffId", member.getFullName(), total, rules);
     }
 
     private CrewAssignment find(Long id) {

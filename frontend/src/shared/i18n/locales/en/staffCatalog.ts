@@ -327,6 +327,7 @@ export const staffCatalog = {
         "COUNT": ""
       },
       "groups": {
+        "SCHEDULE_WINDOW": "Pickup and delivery hours",
         "ADDRESS": "Address book",
         "CONTACT": "Contact",
         "AUTH": "Sign-in and verification",
@@ -340,6 +341,13 @@ export const staffCatalog = {
         "SCHEDULE": "Schedules"
       },
       "keys": {
+        "PICKUP_WINDOW_START_HOUR": "Earliest pickup hour",
+        "PICKUP_WINDOW_END_HOUR": "Latest hour to reach the hub on pickup day",
+        "DELIVERY_WINDOW_START_HOUR": "Earliest delivery hour",
+        "DELIVERY_WINDOW_END_HOUR": "Latest delivery hour",
+        "STOP_BASE_MINUTES": "Fixed time at each stop",
+        "STOP_MINUTES_PER_HORSE": "Extra time per horse",
+        "SCHEDULE_CHANGE_NOTICE_MINUTES": "Notify the customer when times move by more than",
         "ADDRESS_MAX_KM_FROM_PROVINCE": "Maximum distance from the pin to the province centre (km)",
         "HOTLINE": "Hotline",
         "OFFICE_ADDRESS": "Office address",
