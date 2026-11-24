@@ -6,6 +6,7 @@ import com.example.racehorse_transport.entity.AppUser;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.BookingAddress;
 import com.example.racehorse_transport.entity.BookingHorse;
+import com.example.racehorse_transport.entity.Country;
 import com.example.racehorse_transport.entity.CrewAssignment;
 import com.example.racehorse_transport.entity.Departure;
 import com.example.racehorse_transport.entity.Horse;
@@ -203,11 +204,15 @@ class DispatchDtoTest {
         assertThat(onTrip.horseName()).isEqualTo("Sao Mai");
         assertThat(onTrip.seats()).isEqualTo(2);
 
+        Country country = new Country();
+        country.setCode("VN");
+        delivery.setCountry(country);
         var waiting = DispatchBookingResponseDto.from(booking, null, delivery,
                 List.of(DispatchBookingResponseDto.HorseDto.from(line, List.of(legDto), List.of())));
         assertThat(waiting.routeCode()).isEqualTo("HCM-DN");
         assertThat(waiting.pickupAddress()).isNull();
         assertThat(waiting.deliveryAddress().addressLine()).isEqualTo("Trại Huế");
+        assertThat(waiting.deliveryAddress().countryCode()).isEqualTo("VN");
         assertThat(waiting.horses()).singleElement().satisfies(h -> {
             assertThat(h.seats()).isEqualTo(2);
             assertThat(h.legs()).hasSize(1);
