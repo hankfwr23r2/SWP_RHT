@@ -10,10 +10,11 @@ import s from './Dispatch.module.css'
 interface Row { booking: DispatchBooking; horse: DispatchHorse }
 
 // Mỗi dòng là một con ngựa của đơn, kèm các chặng đã lập
-export function BookingsTable({ bookings, onJourney, onAgent }: {
+export function BookingsTable({ bookings, onJourney, onAgent, onHub }: {
   bookings: DispatchBooking[]
   onJourney: (booking: DispatchBooking) => void
   onAgent: (booking: DispatchBooking, horse: DispatchHorse) => void
+  onHub: (booking: DispatchBooking, horse: DispatchHorse) => void
 }) {
   const { t } = useTranslation()
   const rows: Row[] = bookings.flatMap(booking => (booking.horses ?? []).map(horse => ({ booking, horse })))
@@ -42,6 +43,14 @@ export function BookingsTable({ bookings, onJourney, onAgent }: {
       header: t('dispatch.agent.col'),
       render: r => (r.booking.bookingType === 'EXPORT' || r.booking.bookingType === 'IMPORT'
         ? <Button size="sm" variant="ghost" onClick={() => onAgent(r.booking, r.horse)}>{t('dispatch.agent.open')}</Button>
+        : null),
+    },
+    {
+      // Khách tự chở ngựa tới hub đầu tuyến trục: hẹn giờ nhận tại hub
+      key: 'hub',
+      header: t('dispatch.hub.col'),
+      render: r => (r.booking.pickupMethod === 'SELF' && r.booking.departureId
+        ? <Button size="sm" variant="ghost" onClick={() => onHub(r.booking, r.horse)}>{t('dispatch.hub.open')}</Button>
         : null),
     },
     {

@@ -2,6 +2,18 @@
 export const coordinator = {
   dispatch: {
     "stays": {
+      "colAppointment": "Appointment",
+      "appointmentsCaption": "Self drop-off appointments",
+      "receive": "Receive",
+      "receiveTitle": "Receive {{horse}} · {{code}}",
+      "receiveHint": "The customer brings the horse to the hub. Insurance, required documents and the microchip are checked before receiving, then the customer is asked to pay the balance.",
+      "receiveDone": "Horse received at the hub",
+      "deliver": "Hand over",
+      "deliverTitle": "Hand over {{horse}} · {{code}}",
+      "deliverHint": "The consignee collects the horse at the hub. Scan the microchip to confirm it is the right horse.",
+      "deliverDone": "Horse handed to the consignee",
+      "chip": "Scanned microchip",
+      "condition": "Condition at handover",
       "tab": "Horses at hub",
       "hub": "Hub",
       "caption": "Horses staying",
@@ -27,6 +39,15 @@ export const coordinator = {
     "tabTrips": "Vehicle trips",
     "newTrip": "New trip",
     "loadError": "Could not load dispatch data",
+    "hub": {
+      "col": "At hub",
+      "open": "Book hub drop-off",
+      "title": "Hub drop-off · {{horse}} · {{code}}",
+      "hint": "The customer brings the horse to the linehaul origin hub. The appointment must be before the departure time.",
+      "at": "Appointment",
+      "appoint": "Book",
+      "done": "Hub drop-off booked"
+    },
     "agent": {
       "col": "Agent",
       "open": "Agent leg",
