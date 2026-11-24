@@ -18,6 +18,21 @@ const run = (over: Partial<NonNullable<CrewTrip['trip']>> = {}, extra: Partial<C
 })
 
 describe('tripRunModel', () => {
+  it('con giao thất bại còn trên xe: điểm hub sau đó có giao vào hub, chưa giao thì chưa kết thúc lượt', () => {
+    const stops = [
+      { id: 1, stopType: 'HUB' as const, sequenceNumber: 1, actualArrivalAt: 't', actualDepartureAt: 't' },
+      { id: 2, stopType: 'DELIVERY' as const, sequenceNumber: 2, actualArrivalAt: 't', actualDepartureAt: 't' },
+      { id: 3, stopType: 'HUB' as const, sequenceNumber: 3, actualArrivalAt: 't' },
+    ]
+    const failed = { leg: { id: 9, boardTripStopId: 1, alightTripStopId: 2, status: 'FAILED' as const } }
+    const r = run({ stops }, { horses: [failed] })
+    expect(handoverTypesAt(r, stops[2])).toContain('HUB_IN')
+    expect(canComplete(r)).toBe(false)
+    const handed = run({ stops }, { horses: [failed], handovers: [{ id: 5, handoverType: 'HUB_IN', status: 'DONE', tripStopId: 3, horses: [{ horseLegId: 9 }] }] })
+    expect(handoverTypesAt(handed, stops[2])).not.toContain('HUB_IN')
+    expect(canComplete(handed)).toBe(true)
+  })
+
   it('không nhận một con ở điểm đón, hoặc ở cửa khẩu khi con lên xe tại đó (nhận từ đại lý)', () => {
     const r = run({}, { horses: [
       { leg: { id: 9, boardTripStopId: 2, alightTripStopId: 3, status: 'PLANNED' } },

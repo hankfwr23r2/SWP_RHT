@@ -1,5 +1,9 @@
 package com.example.racehorse_transport.repository;
 
+import java.time.Instant;
+
+import com.example.racehorse_transport.entity.enums.HorseStayType;
+
 import com.example.racehorse_transport.entity.HorseStay;
 import java.util.Collection;
 import java.util.List;
@@ -20,6 +24,10 @@ public interface HorseStayRepository extends JpaRepository<HorseStay, Long> {
     List<HorseStay> findByLocation_IdAndActualStartAtIsNullOrderByPlannedStartAt(Long locationId);
 
     List<HorseStay> findByBookingHorse_IdInOrderById(Collection<Long> bookingHorseIds);
+
+    // Gửi chuồng đang diễn ra đã quá hạn dự kiến
+    @EntityGraph(attributePaths = {"bookingHorse", "bookingHorse.horse", "bookingHorse.booking", "bookingHorse.booking.customer", "location"})
+    List<HorseStay> findByStayTypeAndActualStartAtIsNotNullAndActualEndAtIsNullAndPlannedEndAtBefore(HorseStayType stayType, Instant at);
 
     // Lịch hẹn chưa bắt đầu của một con (khách tự chở tới hub)
     void deleteByBookingHorse_IdAndActualStartAtIsNull(Long bookingHorseId);
