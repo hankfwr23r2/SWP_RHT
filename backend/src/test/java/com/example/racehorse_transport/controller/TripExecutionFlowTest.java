@@ -155,6 +155,45 @@ class TripExecutionFlowTest {
     }
 
     @Test
+    void overdueBalanceReturnsTheHorseAndCancelsTheBooking() throws Exception {
+        makeLocal();
+        entityManager.flush();
+        jdbc.update("DELETE FROM payment WHERE booking_id = ? AND payment_type = 'BALANCE'", booking);
+        entityManager.clear();
+        acknowledge(driver);
+        act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + stops.get(0) + "/arrive").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + stops.get(0) + "/depart").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + stops.get(1) + "/arrive").andExpect(status().isOk());
+        // Chưa nhận con nào thì không có gì để trả
+        handover(escort, stops.get(1), "RETURN").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Không có con ngựa nào cần giao nhận loại này ở điểm dừng này."));
+        long pickup = handoverId(handover(escort, stops.get(1), "PICKUP").andExpect(status().isCreated()));
+        scan(escort, pickup, chip).andExpect(status().isOk());
+        act(escort, "/handovers/" + pickup + "/complete").andExpect(status().isOk());
+
+        // Còn trong hạn trả số dư: luồng A từ chối hủy, không có gì thay đổi
+        handover(escort, stops.get(1), "RETURN").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Đơn chưa đủ điều kiện hủy do quá thời gian chờ trả số dư."));
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM handover WHERE trip_stop_id = ? AND handover_type = 'RETURN'", Long.class, stops.get(1))).isZero();
+        assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, leg)).isEqualTo("IN_PROGRESS");
+
+        // Quá hạn: trả ngựa cho người gửi, đơn bị hủy, khoản số dư bị hủy, xe rời đi không cần kiểm thanh toán
+        entityManager.flush();
+        jdbc.update("UPDATE payment SET due_at = now() - interval '1 minute' WHERE booking_id = ? AND payment_type = 'BALANCE'", booking);
+        entityManager.clear();
+        handover(escort, stops.get(1), "RETURN").andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.handovers[1].handoverType").value("RETURN"))
+                .andExpect(jsonPath("$.data.handovers[1].status").value("DONE"))
+                .andExpect(jsonPath("$.data.handovers[1].horses[0].scannedMicrochip").value(chip));
+        assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, leg)).isEqualTo("CANCELLED");
+        assertThat(bookingStatus()).isEqualTo("CANCELLED");
+        assertThat(jdbc.queryForObject("SELECT status FROM payment WHERE booking_id = ? AND payment_type = 'BALANCE'", String.class, booking))
+                .isEqualTo("CANCELLED");
+        act(driver, "/trip-stops/" + stops.get(1) + "/depart").andExpect(status().isOk());
+    }
+
+    @Test
     void onlyCrewOfTheTripOperatesIt() throws Exception {
         acknowledge(driver);
         String stranger = token(testData.staff(testData.unique("exec.stranger"), "DRIVER"), "DRIVER");

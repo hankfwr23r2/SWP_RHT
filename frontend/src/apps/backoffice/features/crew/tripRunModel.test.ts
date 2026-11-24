@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CrewTrip } from '@shared/api/tripExecution'
-import { canArrive, canComplete, canDepart, canStart, handoverTypesAt, horsesPassing, isRestStop, stopState } from './tripRunModel'
+import { canArrive, canComplete, canDepart, canReturnUnpaid, canStart, handoverTypesAt, horsesPassing, isRestStop, stopState } from './tripRunModel'
 
 const run = (over: Partial<NonNullable<CrewTrip['trip']>> = {}, extra: Partial<CrewTrip> = {}): CrewTrip => ({
   trip: {
@@ -18,6 +18,16 @@ const run = (over: Partial<NonNullable<CrewTrip['trip']>> = {}, extra: Partial<C
 })
 
 describe('tripRunModel', () => {
+  it('trả ngựa khi quá hạn số dư chỉ có ở điểm đón đang đứng, sau khi đã nhận con lên xe', () => {
+    const received = { leg: { id: 9, boardTripStopId: 2, alightTripStopId: 3, status: 'IN_PROGRESS' as const } }
+    expect(canReturnUnpaid(run(), run().trip!.stops![1])).toBe(false)
+    const r = run({}, { horses: [received] })
+    expect(canReturnUnpaid(r, r.trip!.stops![1])).toBe(true)
+    expect(canReturnUnpaid(r, r.trip!.stops![0])).toBe(false)
+    const pending = run({}, { horses: [received], handovers: [{ id: 5, tripStopId: 2, status: 'PENDING' }] })
+    expect(canReturnUnpaid(pending, pending.trip!.stops![1])).toBe(false)
+  })
+
   it('trạng thái điểm dừng theo giờ tới và rời', () => {
     const stops = run().trip!.stops!
     expect(stops.map(stopState)).toEqual(['left', 'here', 'waiting'])

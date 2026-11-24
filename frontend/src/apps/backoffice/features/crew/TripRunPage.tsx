@@ -20,7 +20,7 @@ import { StatusBadge, type StatusTone } from '@shared/ui/StatusBadge'
 import { useToast } from '@shared/ui/toast'
 import { StopHealthPanel } from './StopHealthPanel'
 import { TripIncidentPanel } from './TripIncidentPanel'
-import { canArrive, canComplete, canDepart, canStart, handoverTypesAt, isRestStop, pendingAt, stopState, type StopState } from './tripRunModel'
+import { canArrive, canComplete, canDepart, canReturnUnpaid, canStart, handoverTypesAt, isRestStop, pendingAt, stopState, type StopState } from './tripRunModel'
 import s from './MyTrips.module.css'
 
 const STATE_TONE: Record<StopState, StatusTone> = { waiting: 'neutral', here: 'info', left: 'success' }
@@ -34,6 +34,7 @@ export default function TripRunPage() {
   const [chips, setChips] = useState<Record<number, string>>({})
   const [earlyReasons, setEarlyReasons] = useState<Record<number, string>>({})
   const [failing, setFailing] = useState<number>()
+  const [returning, setReturning] = useState<number>()
   const [refusing, setRefusing] = useState<{ handoverId: number; legId: number; name: string }>()
   const [refusalReason, setRefusalReason] = useState('')
   const { data, loaded, error, reload, updateData } = useLoad(() => tripExecutionApi.trip(tripId), [tripId], { toastOnError: false })
@@ -141,6 +142,9 @@ export default function TripRunPage() {
                     </Button>
                   ))}
                   {pending && handoverPanel(pending)}
+                  {canReturnUnpaid(data, stop) && (
+                    <Button variant="danger" size="lg" fullWidth onClick={() => setReturning(stop.id)}>{t('myTrips.run.unpaidReturn.action')}</Button>
+                  )}
                   {state === 'here' && isRestStop(stop) && <StopHealthPanel run={data} stop={stop} />}
                   {canDepart(data, stop) && isRestStop(stop) && (
                     <Field label={t('myTrips.run.earlyReason')}>
@@ -173,6 +177,21 @@ export default function TripRunPage() {
             updateData(() => next)
             toast(t('myTrips.run.delivery.failed'), 'success')
             setFailing(undefined)
+          }}
+        />
+      )}
+      {returning !== undefined && (
+        <ConfirmDialog
+          tone="danger"
+          title={t('myTrips.run.unpaidReturn.title')}
+          message={t('myTrips.run.unpaidReturn.message')}
+          confirmLabel={t('myTrips.run.unpaidReturn.action')}
+          onCancel={() => setReturning(undefined)}
+          onConfirm={async () => {
+            const next = await tripExecutionApi.openHandover(returning, 'RETURN').catch(e => { toast(e instanceof Error ? e.message : String(e), 'error'); throw e })
+            updateData(() => next)
+            toast(t('myTrips.run.unpaidReturn.done'), 'success')
+            setReturning(undefined)
           }}
         />
       )}

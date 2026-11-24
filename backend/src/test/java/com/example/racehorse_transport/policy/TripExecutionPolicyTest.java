@@ -37,11 +37,13 @@ class TripExecutionPolicyTest {
     @Test
     void handoverTypeMustFitTheStop() {
         assertThatCode(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.PICKUP, TripStopType.PICKUP)).doesNotThrowAnyException();
+        assertThatCode(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.RETURN, TripStopType.PICKUP)).doesNotThrowAnyException();
         assertThatCode(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.DELIVERY, TripStopType.DELIVERY)).doesNotThrowAnyException();
         assertThatCode(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.HUB_IN, TripStopType.HUB)).doesNotThrowAnyException();
         assertThatCode(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.HUB_OUT, TripStopType.HUB)).doesNotThrowAnyException();
         assertThatThrownBy(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.PICKUP, TripStopType.HUB)).hasMessageContaining("PICKUP");
         assertThatThrownBy(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.HUB_IN, TripStopType.REST)).hasMessageContaining("REST");
+        assertThatThrownBy(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.RETURN, TripStopType.DELIVERY)).hasMessageContaining("RETURN");
         assertThatThrownBy(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.AGENT, TripStopType.BORDER)).hasMessageContaining("AGENT");
         assertThat(TripExecutionPolicy.isBoarding(HandoverType.PICKUP)).isTrue();
         assertThat(TripExecutionPolicy.isBoarding(HandoverType.HUB_OUT)).isTrue();

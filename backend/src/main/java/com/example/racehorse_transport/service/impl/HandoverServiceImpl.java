@@ -72,6 +72,10 @@ public class HandoverServiceImpl implements HandoverService {
             throw new DispatchRuleException("tripStopId", "Chỉ giao nhận khi xe đang ở điểm dừng này.", true);
         }
         TripExecutionPolicy.requireHandoverFitsStop(request.handoverType(), stop.getStopType());
+        if (request.handoverType() == HandoverType.RETURN) {
+            returnUnpaid(stop, request, member);
+            return crewTrip(tripId, username);
+        }
         Handover handover = request.toEntity(stop, member.getStaff());
         if (candidates(handover).isEmpty()) {
             throw new DispatchRuleException("handoverType", "Không có con ngựa nào cần giao nhận loại này ở điểm dừng này.", true);
@@ -139,6 +143,32 @@ public class HandoverServiceImpl implements HandoverService {
         return crewTrip(tripId, username);
     }
 
+    // Quá hạn trả số dư (#32): trả mọi con đã nhận lên xe ở điểm đón này cho người gửi trong một thao tác.
+    // Không quét lại chip: ghi lại chip đã quét đúng lúc nhận ngựa vài phút trước
+    private void returnUnpaid(TripStop stop, HandoverCreateRequestDto request, CrewAssignment member) {
+        List<HorseLeg> boarded = legs.findByBoardTripStop_IdAndStatusIn(stop.getId(), Set.of(HorseLegStatus.IN_PROGRESS));
+        if (boarded.isEmpty()) {
+            throw new DispatchRuleException("handoverType", "Không có con ngựa nào cần giao nhận loại này ở điểm dừng này.", true);
+        }
+        var now = clock.instant();
+        outcomes.returnUnpaid(boarded, now, member.getStaff().getUserId());
+        Handover handover = request.toEntity(stop, member.getStaff());
+        handover.setStatus(HandoverStatus.DONE);
+        handover.setHandedAt(now);
+        handovers.saveAndFlush(handover);
+        for (HorseLeg leg : boarded) {
+            HandoverHorse returned = new HandoverHorse();
+            returned.setId(new HandoverHorseId(handover.getId(), leg.getId()));
+            returned.setHandover(handover);
+            returned.setHorseLeg(leg);
+            returned.setScannedMicrochip(scans.findFirstByHorseLeg_IdAndHandover_HandoverTypeAndMicrochipMatchedTrue(leg.getId(), HandoverType.PICKUP)
+                    .map(HandoverHorse::getScannedMicrochip).orElse(null));
+            returned.setMicrochipMatched(true);
+            scans.save(returned);
+        }
+        scans.flush();
+    }
+
     // Con cần giao nhận: lên xe ở điểm này (đón, ra hub) hoặc xuống xe ở điểm này (giao, vào hub)
     private List<HorseLeg> candidates(Handover handover) {
         Long stopId = handover.getTripStop().getId();
@@ -150,7 +180,10 @@ public class HandoverServiceImpl implements HandoverService {
     private HandoverResponseDto describe(Handover handover) {
         Map<Long, HandoverHorse> byLeg = scans.findById_HandoverId(handover.getId()).stream()
                 .collect(Collectors.toMap(s -> s.getId().getHorseLegId(), s -> s));
-        return HandoverResponseDto.from(handover, candidates(handover), byLeg);
+        // Lần trả ngựa đã xong: các con là các con đã ghi trong lần đó (chặng đã hủy)
+        List<HorseLeg> horses = handover.getHandoverType() == HandoverType.RETURN
+                ? byLeg.values().stream().map(HandoverHorse::getHorseLeg).toList() : candidates(handover);
+        return HandoverResponseDto.from(handover, horses, byLeg);
     }
 
     private Handover pending(Long handoverId, String username) {
