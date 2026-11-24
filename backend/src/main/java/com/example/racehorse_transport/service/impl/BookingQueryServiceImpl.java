@@ -1,5 +1,8 @@
 package com.example.racehorse_transport.service.impl;
 
+import org.springframework.data.domain.PageRequest;
+import java.util.Set;
+import com.example.racehorse_transport.dto.booking.BookingSummaryResponseDto;
 import com.example.racehorse_transport.dto.booking.BookingDetailResponseDto;
 import com.example.racehorse_transport.dto.booking.BookingDetailResponseDto.HorseDetail;
 import com.example.racehorse_transport.dto.booking.BookingResponseDto;
@@ -31,6 +34,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class BookingQueryServiceImpl implements BookingQueryService {
 
+    // Đủ một màn hình danh sách; màn hình tải thêm trang khi cần
+    private static final int PAGE_SIZE = 50;
+
     private final BookingRepository bookings;
     private final BookingPartyRepository parties;
     private final BookingAddressRepository addresses;
@@ -60,6 +66,22 @@ public class BookingQueryServiceImpl implements BookingQueryService {
                 BookingStatus.UNDER_REVIEW,
                 BookingStatus.NEEDS_RESUBMISSION))
                 .stream().map(BookingResponseDto::from).toList();
+    }
+
+    @Override
+    public List<BookingSummaryResponseDto> summaries(Set<BookingStatus> statuses, int page) {
+        if (statuses.isEmpty() || page < 0) {
+            throw new IllegalArgumentException("Chọn ít nhất một trạng thái và trang từ 0.");
+        }
+        List<Booking> rows = bookings.findByStatusInOrderByCreatedAtDescIdDesc(statuses, PageRequest.of(page, PAGE_SIZE));
+        if (rows.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, Integer> horseCounts = bookings.countActiveHorses(rows.stream().map(Booking::getId).toList()).stream()
+                .collect(Collectors.toMap(BookingRepository.HorseCount::getBookingId,
+                        row -> Math.toIntExact(row.getHorseCount())));
+        return rows.stream()
+                .map(row -> BookingSummaryResponseDto.from(row, horseCounts.getOrDefault(row.getId(), 0))).toList();
     }
 
     @Override

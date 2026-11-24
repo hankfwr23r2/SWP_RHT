@@ -1,5 +1,7 @@
 package com.example.racehorse_transport.controller;
 
+import java.util.Set;
+import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.dto.booking.*;
 import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.service.*;
@@ -35,6 +37,14 @@ public class BookingReviewController {
     @PreAuthorize("hasAnyRole('SPECIALIST','MANAGER','COORDINATOR')")
     public ApiResponseDto<List<BookingResponseDto>> queue() {
         return ApiResponseDto.success(queries.reviewQueue(), "Thành công.");
+    }
+
+    // Danh sách đơn theo trạng thái cho màn hình nhân viên
+    @GetMapping("/summaries")
+    @PreAuthorize("hasAnyRole('SPECIALIST','MANAGER','COORDINATOR')")
+    public ApiResponseDto<List<BookingSummaryResponseDto>> summaries(@RequestParam Set<BookingStatus> statuses,
+            @RequestParam(defaultValue = "0") int page) {
+        return ApiResponseDto.success(queries.summaries(statuses, page), "Thành công.");
     }
 
     @GetMapping("/{id}/review-detail")

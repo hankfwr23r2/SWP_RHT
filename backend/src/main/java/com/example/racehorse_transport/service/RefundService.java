@@ -1,5 +1,7 @@
 package com.example.racehorse_transport.service;
 
+import com.example.racehorse_transport.entity.enums.PaymentStatus;
+import com.example.racehorse_transport.dto.payment.RefundResponseDto;
 import com.example.racehorse_transport.dto.payment.MarkRefundedRequestDto;
 import com.example.racehorse_transport.dto.booking.BookingCancellationResponseDto;
 import java.util.List;
@@ -10,6 +12,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 public interface RefundService {
     void createPending(Long bookingId, String currency, BigDecimal amount);
+
+    List<RefundResponseDto> refunds(PaymentStatus status);
 
     BookingCancellationResponseDto reviewCancelledLines(Long bookingId);
 

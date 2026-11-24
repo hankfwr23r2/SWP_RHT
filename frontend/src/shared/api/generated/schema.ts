@@ -356,6 +356,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/bookings/summaries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["summaries"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bookings/{bookingId}/payments": {
         parameters: {
             query?: never;
@@ -780,6 +796,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["journey"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/bookings/{id}/manager-cancellation-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["previewForManager"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1924,6 +1956,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/parties/insurers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listInsurers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/parties/{id}": {
         parameters: {
             query?: never;
@@ -2228,6 +2276,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/refunds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["refunds"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/refunds/{id}/mark-refunded": {
         parameters: {
             query?: never;
@@ -2381,6 +2445,22 @@ export interface paths {
         };
         get: operations["getStaffAccount"];
         put: operations["updateStaffAccount"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/stall-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["stallTypes"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -2886,6 +2966,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListBookingSummaryResponseDto: {
+            data?: components["schemas"]["BookingSummaryResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListCostItemResponseDto: {
             data?: components["schemas"]["CostItemResponseDto"][];
             message?: string;
@@ -2971,6 +3056,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListInsurerResponseDto: {
+            data?: components["schemas"]["InsurerResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListLocationResponse: {
             data?: components["schemas"]["LocationResponse"][];
             message?: string;
@@ -3021,6 +3111,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListRefundResponseDto: {
+            data?: components["schemas"]["RefundResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListRouteResponse: {
             data?: components["schemas"]["RouteResponse"][];
             message?: string;
@@ -3028,6 +3123,11 @@ export interface components {
         };
         ApiResponseListStaffAccountResponseDto: {
             data?: components["schemas"]["StaffAccountResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListStallTypeResponseDto: {
+            data?: components["schemas"]["StallTypeResponseDto"][];
             message?: string;
             status?: string;
         };
@@ -3330,6 +3430,29 @@ export interface components {
         BookingResubmissionRequestDto: unknown;
         BookingReturnRequestDto: {
             reason: string;
+        };
+        BookingSummaryResponseDto: {
+            /** @enum {string} */
+            bookingType?: "LOCAL" | "INTERPROVINCE" | "EXPORT" | "IMPORT";
+            code?: string;
+            /** Format: date-time */
+            createdAt?: string;
+            customerName?: string;
+            customerPhone?: string;
+            /** Format: date */
+            departureDate?: string;
+            /** Format: int64 */
+            departureId?: number;
+            /** Format: int32 */
+            horseCount?: number;
+            /** Format: int64 */
+            id?: number;
+            /** Format: date */
+            requestedPickupDate?: string;
+            routeName?: string;
+            /** @enum {string} */
+            status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
+            waybillNumber?: string;
         };
         CancelBookingRequestDto: {
             reason: string;
@@ -4149,6 +4272,12 @@ export interface components {
         InsuranceRevisionReasonRequestDto: {
             reason: string;
         };
+        InsurerResponseDto: {
+            countryCode?: string;
+            displayName?: string;
+            /** Format: int64 */
+            id?: number;
+        };
         Item: {
             /** Format: int64 */
             bookingHorseId?: number;
@@ -4707,6 +4836,23 @@ export interface components {
         RefundQuotationLinesRequestDto: {
             unspentQuotationLineIds: number[];
         };
+        RefundResponseDto: {
+            amount?: number;
+            bookingCode?: string;
+            /** Format: int64 */
+            bookingId?: number;
+            currencyCode?: string;
+            customerName?: string;
+            customerPhone?: string;
+            /** Format: int64 */
+            id?: number;
+            /** Format: date-time */
+            paidAt?: string;
+            /** @enum {string} */
+            refundedPaymentType?: "DEPOSIT" | "BALANCE" | "EXTRA_CHARGE" | "REFUND";
+            /** @enum {string} */
+            status?: "PENDING" | "PAID" | "FAILED" | "CANCELLED";
+        };
         RegisterRequest: {
             acceptedTerms?: boolean;
             address?: string;
@@ -4931,6 +5077,12 @@ export interface components {
             homeHubLocationId: number;
             phone: string;
             staffCode: string;
+        };
+        StallTypeResponseDto: {
+            code?: string;
+            name?: string;
+            /** Format: int32 */
+            seats?: number;
         };
         StopDepartRequestDto: {
             earlyReason?: string;
@@ -5712,6 +5864,29 @@ export interface operations {
             };
         };
     };
+    summaries: {
+        parameters: {
+            query: {
+                statuses: ("PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED")[];
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListBookingSummaryResponseDto"];
+                };
+            };
+        };
+    };
     payments: {
         parameters: {
             query?: never;
@@ -6391,6 +6566,30 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseBookingJourneyResponseDto"];
+                };
+            };
+        };
+    };
+    previewForManager: {
+        parameters: {
+            query: {
+                byCompany: boolean;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseBookingCancellationResponseDto"];
                 };
             };
         };
@@ -8438,6 +8637,26 @@ export interface operations {
             };
         };
     };
+    listInsurers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListInsurerResponseDto"];
+                };
+            };
+        };
+    };
     getParty: {
         parameters: {
             query?: never;
@@ -9070,6 +9289,28 @@ export interface operations {
             };
         };
     };
+    refunds: {
+        parameters: {
+            query?: {
+                status?: "PENDING" | "PAID" | "FAILED" | "CANCELLED";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListRefundResponseDto"];
+                };
+            };
+        };
+    };
     markRefunded: {
         parameters: {
             query?: never;
@@ -9392,6 +9633,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseStaffAccountResponseDto"];
+                };
+            };
+        };
+    };
+    stallTypes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListStallTypeResponseDto"];
                 };
             };
         };

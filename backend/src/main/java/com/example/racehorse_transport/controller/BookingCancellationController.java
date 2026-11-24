@@ -24,6 +24,12 @@ public class BookingCancellationController {
         return ApiResponseDto.success(cancellations.preview(id, actor.getName()), "Thành công.");
     }
 
+    @GetMapping("/manager-cancellation-preview")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ApiResponseDto<BookingCancellationResponseDto> previewForManager(@PathVariable Long id, @RequestParam boolean byCompany) {
+        return ApiResponseDto.success(cancellations.previewForManager(id, byCompany), "Thành công.");
+    }
+
     @PostMapping("/cancel")
     @PreAuthorize("hasRole('CUSTOMER')")
     public ApiResponseDto<BookingCancellationResponseDto> cancel(@PathVariable Long id, Authentication actor,

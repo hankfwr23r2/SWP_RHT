@@ -538,6 +538,23 @@
         },
         "type" : "object"
       },
+      "ApiResponseListBookingSummaryResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/BookingSummaryResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListCostItemResponseDto" : {
         "properties" : {
           "data" : {
@@ -827,6 +844,23 @@
         },
         "type" : "object"
       },
+      "ApiResponseListInsurerResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/InsurerResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListLocationResponse" : {
         "properties" : {
           "data" : {
@@ -997,6 +1031,23 @@
         },
         "type" : "object"
       },
+      "ApiResponseListRefundResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RefundResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListRouteResponse" : {
         "properties" : {
           "data" : {
@@ -1019,6 +1070,23 @@
           "data" : {
             "items" : {
               "$ref" : "#/components/schemas/StaffAccountResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListStallTypeResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/StallTypeResponseDto"
             },
             "type" : "array"
           },
@@ -1874,6 +1942,58 @@
           }
         },
         "required" : [ "reason" ],
+        "type" : "object"
+      },
+      "BookingSummaryResponseDto" : {
+        "properties" : {
+          "bookingType" : {
+            "enum" : [ "LOCAL", "INTERPROVINCE", "EXPORT", "IMPORT" ],
+            "type" : "string"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "customerName" : {
+            "type" : "string"
+          },
+          "customerPhone" : {
+            "type" : "string"
+          },
+          "departureDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "departureId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "horseCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "requestedPickupDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "routeName" : {
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "PENDING_INTAKE", "UNDER_REVIEW", "NEEDS_RESUBMISSION", "QUOTING", "AWAITING_DEPOSIT", "QUOTE_EXPIRED", "CONFIRMED", "SCHEDULE_CHANGE_REQUIRED", "IN_OPERATION", "DELIVERED", "COMPLETED", "CANCELLED", "REJECTED" ],
+            "type" : "string"
+          },
+          "waybillNumber" : {
+            "type" : "string"
+          }
+        },
         "type" : "object"
       },
       "CancelBookingRequestDto" : {
@@ -4074,6 +4194,21 @@
         "required" : [ "reason" ],
         "type" : "object"
       },
+      "InsurerResponseDto" : {
+        "properties" : {
+          "countryCode" : {
+            "type" : "string"
+          },
+          "displayName" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "Item" : {
         "properties" : {
           "bookingHorseId" : {
@@ -5571,6 +5706,46 @@
         "required" : [ "unspentQuotationLineIds" ],
         "type" : "object"
       },
+      "RefundResponseDto" : {
+        "properties" : {
+          "amount" : {
+            "type" : "number"
+          },
+          "bookingCode" : {
+            "type" : "string"
+          },
+          "bookingId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "currencyCode" : {
+            "type" : "string"
+          },
+          "customerName" : {
+            "type" : "string"
+          },
+          "customerPhone" : {
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "paidAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "refundedPaymentType" : {
+            "enum" : [ "DEPOSIT", "BALANCE", "EXTRA_CHARGE", "REFUND" ],
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "PENDING", "PAID", "FAILED", "CANCELLED" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "RegisterRequest" : {
         "properties" : {
           "acceptedTerms" : {
@@ -6190,6 +6365,21 @@
           }
         },
         "required" : [ "fullName", "hireDate", "homeHubLocationId", "phone", "staffCode" ],
+        "type" : "object"
+      },
+      "StallTypeResponseDto" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "seats" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
         "type" : "object"
       },
       "StopDepartRequestDto" : {
@@ -7499,6 +7689,46 @@
         "tags" : [ "booking-review-controller" ]
       }
     },
+    "/bookings/summaries" : {
+      "get" : {
+        "operationId" : "summaries",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "statuses",
+          "required" : true,
+          "schema" : {
+            "items" : {
+              "enum" : [ "PENDING_INTAKE", "UNDER_REVIEW", "NEEDS_RESUBMISSION", "QUOTING", "AWAITING_DEPOSIT", "QUOTE_EXPIRED", "CONFIRMED", "SCHEDULE_CHANGE_REQUIRED", "IN_OPERATION", "DELIVERED", "COMPLETED", "CANCELLED", "REJECTED" ],
+              "type" : "string"
+            },
+            "type" : "array",
+            "uniqueItems" : true
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "default" : 0,
+            "format" : "int32",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBookingSummaryResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-review-controller" ]
+      }
+    },
     "/bookings/{bookingId}/payments" : {
       "get" : {
         "operationId" : "payments",
@@ -8458,6 +8688,40 @@
           }
         },
         "tags" : [ "tracking-controller" ]
+      }
+    },
+    "/bookings/{id}/manager-cancellation-preview" : {
+      "get" : {
+        "operationId" : "previewForManager",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "byCompany",
+          "required" : true,
+          "schema" : {
+            "type" : "boolean"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingCancellationResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-cancellation-controller" ]
       }
     },
     "/bookings/{id}/refund-review" : {
@@ -10957,6 +11221,24 @@
         "tags" : [ "party-controller" ]
       }
     },
+    "/parties/insurers" : {
+      "get" : {
+        "operationId" : "listInsurers",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListInsurerResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "party-controller" ]
+      }
+    },
     "/parties/{id}" : {
       "get" : {
         "operationId" : "getParty",
@@ -11792,6 +12074,34 @@
         "tags" : [ "quotation-controller" ]
       }
     },
+    "/refunds" : {
+      "get" : {
+        "operationId" : "refunds",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "default" : "PENDING",
+            "enum" : [ "PENDING", "PAID", "FAILED", "CANCELLED" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListRefundResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "refund-controller" ]
+      }
+    },
     "/refunds/{id}/mark-refunded" : {
       "post" : {
         "operationId" : "markRefunded",
@@ -12199,6 +12509,24 @@
           }
         },
         "tags" : [ "account-controller" ]
+      }
+    },
+    "/stall-types" : {
+      "get" : {
+        "operationId" : "stallTypes",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListStallTypeResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "stall-type-controller" ]
       }
     },
     "/system-configs" : {

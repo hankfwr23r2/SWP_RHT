@@ -1,5 +1,7 @@
 package com.example.racehorse_transport.repository;
 
+import java.time.LocalDate;
+import com.example.racehorse_transport.entity.enums.PartyRoleType;
 import com.example.racehorse_transport.entity.Party;
 import jakarta.persistence.LockModeType;
 import java.util.List;
@@ -14,6 +16,13 @@ public interface PartyRepository extends JpaRepository<Party, Long> {
 
     @EntityGraph(attributePaths = "country")
     List<Party> findAllByOrderByDisplayNameAscIdAsc();
+
+    @Query("""
+            SELECT p FROM PartyRole r JOIN r.party p JOIN FETCH p.country
+            WHERE r.id.roleType = :roleType AND p.status = com.example.racehorse_transport.entity.enums.ActiveStatus.ACTIVE
+                AND r.validFrom <= :date AND (r.validTo IS NULL OR r.validTo >= :date)
+            ORDER BY p.displayName, p.id""")
+    List<Party> findActiveByRole(@Param("roleType") PartyRoleType roleType, @Param("date") LocalDate date);
 
     @EntityGraph(attributePaths = "country")
     Optional<Party> findOneById(Long id);

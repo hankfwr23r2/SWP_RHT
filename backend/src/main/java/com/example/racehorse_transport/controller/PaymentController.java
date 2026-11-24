@@ -24,9 +24,11 @@ public class PaymentController {
     private final PaymentResultService results;
 
     @GetMapping("/bookings/{bookingId}/payments")
-    @PreAuthorize("hasRole('CUSTOMER')")
+    @PreAuthorize("hasAnyRole('CUSTOMER','MANAGER')")
     public ApiResponseDto<List<PaymentResponseDto>> payments(@PathVariable Long bookingId, Authentication actor) {
-        return ApiResponseDto.success(payments.payments(bookingId, actor.getName()), "Thành công.");
+        boolean manager = actor.getAuthorities().stream().anyMatch(role -> "ROLE_MANAGER".equals(role.getAuthority()));
+        return ApiResponseDto.success(manager ? payments.paymentsForManager(bookingId)
+                : payments.payments(bookingId, actor.getName()), "Thành công.");
     }
 
     @PostMapping("/payments/{id}/checkout")

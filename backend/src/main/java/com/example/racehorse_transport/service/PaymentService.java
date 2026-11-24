@@ -9,6 +9,8 @@ import java.util.List;
 public interface PaymentService {
     List<PaymentResponseDto> payments(Long bookingId, String username);
 
+    List<PaymentResponseDto> paymentsForManager(Long bookingId);
+
     // Luồng B gọi khi hoàn tất nhận ngựa. A khóa đơn trước khi tạo khoản thu.
     void requestBalance(Long bookingId, Instant receivedAt);
 
