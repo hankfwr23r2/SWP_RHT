@@ -70,6 +70,7 @@ export const common = {
     noHorsesHint: 'Horses on the booking will appear here with their journey.',
     loadError: 'Could not load the journey.',
     plannedAt: 'Planned {{time}}',
+    window: { pickup: 'Truck expected for pickup {{from}}–{{to}} on {{date}}', delivery: 'Truck expected to deliver {{from}}–{{to}} on {{date}}' },
     holder: { SHIPPER: 'With the shipper', COMPANY: 'With the company', PARTY: 'With partner: {{party}}', CONSIGNEE: 'Delivered to consignee' },
     state: { current: 'In progress', planned: 'Planned', problem: 'Problem', done: 'Done' },
     leg: { PICKUP: 'Pickup leg', LINEHAUL: 'Linehaul leg', DELIVERY: 'Delivery leg', DIRECT: 'Direct run', TRANSFER: 'Vehicle transfer', RETURN: 'Return' },

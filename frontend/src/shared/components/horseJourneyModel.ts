@@ -1,7 +1,10 @@
 // Dựng các mốc timeline của một con ngựa từ chặng, lưu trú, giao nhận; xếp theo thời gian (thực tế trước, kế hoạch sau)
-import type { HorseJourney } from '@shared/api/tracking'
+import type { HorseJourney, JourneyLeg } from '@shared/api/tracking'
 
 export type JourneyState = 'done' | 'current' | 'planned' | 'problem'
+
+// Khung giờ xe dự kiến tới điểm đón, điểm giao, backend đã làm tròn
+export interface ExpectedWindow { side: 'pickup' | 'delivery'; from: string; to: string }
 
 export interface JourneyEntry {
   key: string
@@ -13,6 +16,7 @@ export interface JourneyEntry {
   planned: boolean
   place: string
   detail?: string
+  windows?: ExpectedWindow[]
 }
 
 const LEG_STATE: Record<string, JourneyState> = { PLANNED: 'planned', IN_PROGRESS: 'current', COMPLETED: 'done', FAILED: 'problem', CANCELLED: 'problem' }
@@ -23,6 +27,7 @@ export function journeyEntries(horse: HorseJourney): JourneyEntry[] {
     key: `leg-${leg.id}`, kind: 'leg', type: leg.legType ?? '', state: LEG_STATE[leg.status ?? ''] ?? 'planned',
     at: leg.actualStartAt ?? leg.plannedStartAt, endAt: leg.actualEndAt ?? leg.plannedEndAt, planned: !leg.actualStartAt,
     place: `${leg.fromName ?? ''} → ${leg.toName ?? ''}`, detail: leg.vehicleTripCode ?? leg.agentName,
+    windows: windowsOf(leg),
   }))
   const stays: JourneyEntry[] = (horse.stays ?? []).map(stay => ({
     key: `stay-${stay.id}`, kind: 'stay', type: stay.stayType ?? '',
@@ -37,6 +42,15 @@ export function journeyEntries(horse: HorseJourney): JourneyEntry[] {
     detail: handover.toPartyName ?? handover.fromPartyName,
   }))
   return [...legs, ...stays, ...handovers].sort(byTime)
+}
+
+// Chặng chưa chạy thì còn chờ xe ở cả hai đầu, đang chạy thì chỉ còn chờ giao
+function windowsOf(leg: JourneyLeg): ExpectedWindow[] {
+  const pending = { pickup: leg.status === 'PLANNED', delivery: leg.status === 'PLANNED' || leg.status === 'IN_PROGRESS' }
+  return (['pickup', 'delivery'] as const).flatMap(side => {
+    const window = side === 'pickup' ? leg.pickupWindow : leg.deliveryWindow
+    return pending[side] && window?.from && window.to ? [{ side, from: window.from, to: window.to }] : []
+  })
 }
 
 // Mốc chưa có giờ xếp cuối; cùng giờ thì giao nhận trước chặng (nhận ngựa rồi mới chạy)

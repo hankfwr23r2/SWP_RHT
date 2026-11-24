@@ -140,6 +140,61 @@ class HorseLegFlowTest {
     }
 
     @Test
+    void customerIsToldTheExpectedWindowOncePerTripAndAgainOnlyWhenItMovesPastTheThreshold() throws Exception {
+        Seed seed = seed("DEV-DOMESTIC-001");
+        Instant start = seed.departureAt().minusSeconds(10 * 3600);
+        List<Long> first = pickup(seed, start, 60);
+        List<Long> nearby = pickup(seed, start, 80);
+        List<Long> later = pickup(seed, start, 180);
+
+        for (long horse : seed.horses()) assignStops(first, horse);
+        assertThat(notices(seed)).containsExactly("Giờ xe dự kiến");
+        assertThat(lastMessage(seed)).contains("xe dự kiến đến đón ngựa").contains("–");
+
+        // Gỡ khỏi lượt, gán lượt lệch 20 phút (ngưỡng 30): không báo lại; lệch 2 giờ: báo đổi giờ, cũng chỉ một lần
+        moveAll(seed, nearby);
+        assertThat(notices(seed)).containsExactly("Giờ xe dự kiến");
+        moveAll(seed, later);
+        assertThat(notices(seed)).containsExactly("Giờ xe dự kiến", "Giờ dự kiến thay đổi");
+        // Hành trình khách thấy cùng khung giờ, chặng đã gỡ thì không còn khung giờ
+        mvc.perform(get("/bookings/{id}/journey", seed.bookingId()).header(HttpHeaders.AUTHORIZATION, coordinator))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.horses[0].legs[0].pickupWindow").doesNotExist())
+                .andExpect(jsonPath("$.data.horses[0].legs[2].pickupWindow.from").isNotEmpty())
+                .andExpect(jsonPath("$.data.horses[0].legs[2].pickupWindow.to").isNotEmpty())
+                .andExpect(jsonPath("$.data.horses[0].legs[2].deliveryWindow").doesNotExist());
+    }
+
+    // Lượt đón tới địa chỉ đón sau `minutes` phút; trả về mã lượt xe, điểm lên, điểm xuống
+    private List<Long> pickup(Seed seed, Instant start, int minutes) throws Exception {
+        long trip = tripId(createTrip(testData.vehicle(4, 0), "PICKUP", stop(hcm, "HUB", start, 0),
+                address(seed.pickup(), "PICKUP", start, minutes), stop(hcm, "HUB", start, 300)));
+        List<Long> stops = stopIds(trip);
+        return List.of(trip, stops.get(1), stops.get(2));
+    }
+
+    private void assignStops(List<Long> trip, long horse) throws Exception {
+        assign(trip.get(0), horse, trip.get(1), trip.get(2)).andExpect(status().isCreated());
+    }
+
+    private void moveAll(Seed seed, List<Long> trip) throws Exception {
+        for (long horse : seed.horses()) {
+            long planned = jdbc.queryForObject("SELECT id FROM horse_leg WHERE booking_horse_id = ? AND status = 'PLANNED'", Long.class, horse);
+            mvc.perform(post("/horse-legs/{id}/cancel", planned).header(HttpHeaders.AUTHORIZATION, coordinator)).andExpect(status().isOk());
+        }
+        for (long horse : seed.horses()) assignStops(trip, horse);
+    }
+
+    private List<String> notices(Seed seed) {
+        entityManager.flush();
+        return jdbc.queryForList("SELECT title FROM notification WHERE booking_id = ? AND title LIKE 'Giờ%' ORDER BY id", String.class, seed.bookingId());
+    }
+
+    private String lastMessage(Seed seed) {
+        return jdbc.queryForObject("SELECT message FROM notification WHERE booking_id = ? AND title LIKE 'Giờ%' ORDER BY id DESC LIMIT 1", String.class, seed.bookingId());
+    }
+
+    @Test
     void bookingLeavingItsDepartureLosesAllPlannedLegs() throws Exception {
         Seed seed = seed("DEV-DOMESTIC-001");
         Instant pickupStart = seed.departureAt().minusSeconds(10 * 3600);

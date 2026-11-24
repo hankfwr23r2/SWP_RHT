@@ -61,6 +61,8 @@ class BookingDtoTest {
         var response = BookingDetailResponseDto.from(booking, List.of(), List.of(), List.of());
         assertThat(response.pickupMethod()).isEqualTo(TransferMethod.SELF);
         assertThat(response.deliveryMethod()).isEqualTo(TransferMethod.COMPANY);
+        assertThat(response.intakeByName()).isNull();
+        assertThat(BookingDetailResponseDto.from(booking, List.of(), List.of(), List.of(), null, "Lê An").intakeByName()).isEqualTo("Lê An");
     }
 
     @Test

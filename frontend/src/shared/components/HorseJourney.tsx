@@ -2,7 +2,7 @@
 import { useTranslation } from 'react-i18next'
 import { trackingApi, type HorseJourney as HorseJourneyData } from '@shared/api/tracking'
 import { useLoad } from '@shared/hooks/useLoad'
-import { formatDateTime } from '@shared/lib/format'
+import { formatClock, formatDate, formatDateTime } from '@shared/lib/format'
 import { Badge } from '@shared/ui/Badge'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
@@ -42,6 +42,13 @@ export function HorseJourney({ horse }: { horse: HorseJourneyData }) {
                       {t(`journey.state.${entry.state}`)}</Badge>}
                   </div>
                   <div className={s.muted}>{entry.place}{entry.detail ? ` · ${entry.detail}` : ''}</div>
+                  {entry.windows?.map(window => (
+                    <div key={window.side} className={s.window}>
+                      {t(`journey.window.${window.side}`, {
+                        from: formatClock(new Date(window.from)), to: formatClock(new Date(window.to)), date: formatDate(new Date(window.from)),
+                      })}
+                    </div>
+                  ))}
                   {entry.at && (
                     <div className={s.time}>
                       {entry.planned ? t('journey.plannedAt', { time: time(entry.at) }) : time(entry.at)}

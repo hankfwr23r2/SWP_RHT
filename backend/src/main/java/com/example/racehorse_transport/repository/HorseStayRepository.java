@@ -25,6 +25,9 @@ public interface HorseStayRepository extends JpaRepository<HorseStay, Long> {
 
     List<HorseStay> findByBookingHorse_IdInOrderById(Collection<Long> bookingHorseIds);
 
+    @EntityGraph(attributePaths = {"location"})
+    List<HorseStay> findByBookingHorse_Booking_Id(Long bookingId);
+
     // Gửi chuồng đang diễn ra đã quá hạn dự kiến
     @EntityGraph(attributePaths = {"bookingHorse", "bookingHorse.horse", "bookingHorse.booking", "bookingHorse.booking.customer", "location"})
     List<HorseStay> findByStayTypeAndActualStartAtIsNotNullAndActualEndAtIsNullAndPlannedEndAtBefore(HorseStayType stayType, Instant at);

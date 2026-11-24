@@ -24,7 +24,8 @@ test('điều phối hẹn giờ khách tự chở ngựa tới hub', async ({ p
   })
   await page.goto('/backoffice/coordinator/dispatch')
 
-  await page.getByRole('row', { name: /Sao Mai/ }).getByRole('button', { name: 'Hẹn nhận tại hub' }).click({ timeout: 15_000 })
+  await page.getByRole('button', { name: /^Tất cả/ }).click({ timeout: 15_000 })
+  await page.getByRole('listitem').filter({ hasText: 'Sao Mai' }).getByRole('button', { name: 'Hẹn nhận tại hub' }).first().click()
   const dialog = page.getByRole('dialog', { name: 'Hẹn nhận tại hub · Sao Mai · BK-AAAA0002' })
   await expect(dialog.getByRole('button', { name: 'Hẹn giờ' })).toBeDisabled()
   await dialog.getByLabel('Giờ hẹn').fill('2031-03-05T15:00')
@@ -55,9 +56,8 @@ test('tại hub điều phối nhận ngựa khách tự chở tới và trả n
     if (path === '/horse-stays/7/deliveries') { sent.push({ delivery: request.postDataJSON() }); stays.splice(0, 1); return ok(route, {}) }
     return ok(route, [])
   })
-  await page.goto('/backoffice/coordinator/dispatch')
-  await page.getByRole('tab', { name: 'Ngựa ở hub' }).click({ timeout: 15_000 })
-  await page.getByRole('combobox', { name: 'Hub' }).click()
+  await page.goto('/backoffice/coordinator/hub')
+  await page.getByRole('combobox', { name: 'Hub' }).click({ timeout: 15_000 })
   await page.getByRole('option', { name: 'Hub HCM' }).click()
 
   const booked = page.getByRole('table', { name: 'Lịch hẹn khách tự chở ngựa tới' })
@@ -108,9 +108,8 @@ test('người nhận tới trễ hơn giờ hẹn thì điều phối gửi chu
     }
     return ok(route, [])
   })
-  await page.goto('/backoffice/coordinator/dispatch')
-  await page.getByRole('tab', { name: 'Ngựa ở hub' }).click({ timeout: 15_000 })
-  await page.getByRole('combobox', { name: 'Hub' }).click()
+  await page.goto('/backoffice/coordinator/hub')
+  await page.getByRole('combobox', { name: 'Hub' }).click({ timeout: 15_000 })
   await page.getByRole('option', { name: 'Hub Đà Nẵng' }).click()
   const present = page.getByRole('table', { name: 'Ngựa đang lưu trú' })
   const row = present.getByRole('row', { name: /Gió Bấc/ })
@@ -150,9 +149,8 @@ test('tại hub điều phối không nhận một con khách tự chở tới, 
     if (path === '/horse-stays') return ok(route, [{ id: 9, bookingHorseId: 52, bookingCode: 'BK-AAAA0007', horseName: 'Bão Lửa', stayType: 'STABLING', actualStartAt: '2026-01-01T05:00:00Z', plannedEndAt: '2026-01-04T05:00:00Z', deliveryMethod: 'COMPANY' }])
     return ok(route, [])
   })
-  await page.goto('/backoffice/coordinator/dispatch')
-  await page.getByRole('tab', { name: 'Ngựa ở hub' }).click({ timeout: 15_000 })
-  await page.getByRole('combobox', { name: 'Hub' }).click()
+  await page.goto('/backoffice/coordinator/hub')
+  await page.getByRole('combobox', { name: 'Hub' }).click({ timeout: 15_000 })
   await page.getByRole('option', { name: 'Hub HCM' }).click()
 
   const booked = page.getByRole('table', { name: 'Lịch hẹn khách tự chở ngựa tới' })

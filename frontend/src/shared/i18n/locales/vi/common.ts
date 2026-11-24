@@ -70,6 +70,7 @@ export const common = {
     noHorsesHint: 'Ngựa trong đơn sẽ hiện ở đây kèm hành trình.',
     loadError: 'Không tải được hành trình.',
     plannedAt: 'Dự kiến {{time}}',
+    window: { pickup: 'Xe dự kiến đến đón {{from}}–{{to}} ngày {{date}}', delivery: 'Xe dự kiến giao {{from}}–{{to}} ngày {{date}}' },
     holder: { SHIPPER: 'Đang ở người gửi', COMPANY: 'Công ty đang giữ', PARTY: 'Đối tác đang giữ: {{party}}', CONSIGNEE: 'Đã giao người nhận' },
     state: { current: 'Đang diễn ra', planned: 'Kế hoạch', problem: 'Có vấn đề', done: 'Xong' },
     leg: { PICKUP: 'Chặng đón', LINEHAUL: 'Chặng trục', DELIVERY: 'Chặng giao', DIRECT: 'Chạy thẳng', TRANSFER: 'Chuyển xe', RETURN: 'Trả ngựa' },

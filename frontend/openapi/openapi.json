@@ -651,6 +651,23 @@
         },
         "type" : "object"
       },
+      "ApiResponseListCustodyRowResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CustodyRowResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListCustomerAddressResponseDto" : {
         "properties" : {
           "data" : {
@@ -1656,6 +1673,34 @@
         },
         "type" : "object"
       },
+      "ApiResponseTransferOptionsResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/TransferOptionsResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseTransportRulesResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/TransportRulesResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseTripReportResponseDto" : {
         "properties" : {
           "data" : {
@@ -1903,6 +1948,9 @@
               "$ref" : "#/components/schemas/HorseDetail"
             },
             "type" : "array"
+          },
+          "intakeByName" : {
+            "type" : "string"
           },
           "parties" : {
             "items" : {
@@ -2483,6 +2531,72 @@
           },
           "trip" : {
             "$ref" : "#/components/schemas/VehicleTripResponseDto"
+          }
+        },
+        "type" : "object"
+      },
+      "CustodyRowResponseDto" : {
+        "properties" : {
+          "bookingCode" : {
+            "type" : "string"
+          },
+          "bookingHorseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "bookingId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "careOverdue" : {
+            "type" : "boolean"
+          },
+          "healthStatus" : {
+            "enum" : [ "NORMAL", "WATCH", "SICK", "CRITICAL" ],
+            "type" : "string"
+          },
+          "holder" : {
+            "enum" : [ "SHIPPER", "COMPANY", "PARTY", "CONSIGNEE" ],
+            "type" : "string"
+          },
+          "holderName" : {
+            "type" : "string"
+          },
+          "holderSince" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "horseName" : {
+            "type" : "string"
+          },
+          "lastCheckAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "legType" : {
+            "enum" : [ "PICKUP", "LINEHAUL", "DELIVERY", "TRANSFER", "RETURN", "DIRECT" ],
+            "type" : "string"
+          },
+          "nextCheckAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "placeName" : {
+            "type" : "string"
+          },
+          "point" : {
+            "$ref" : "#/components/schemas/GeoPointDto"
+          },
+          "stayType" : {
+            "enum" : [ "ASSEMBLY", "QUARANTINE", "OVERNIGHT", "STABLING" ],
+            "type" : "string"
+          },
+          "tripCode" : {
+            "type" : "string"
+          },
+          "vehicleTripId" : {
+            "format" : "int64",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -3298,6 +3412,19 @@
         },
         "type" : "object"
       },
+      "ExpectedWindowDto" : {
+        "properties" : {
+          "from" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "to" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ExtraChargeRequestDto" : {
         "properties" : {
           "costItemIds" : {
@@ -3780,6 +3907,13 @@
           },
           "microchip" : {
             "type" : "string"
+          },
+          "missingLegs" : {
+            "items" : {
+              "enum" : [ "PICKUP", "LINEHAUL", "DELIVERY", "TRANSFER", "RETURN", "DIRECT" ],
+              "type" : "string"
+            },
+            "type" : "array"
           },
           "seats" : {
             "format" : "int32",
@@ -4648,6 +4782,9 @@
           "agentName" : {
             "type" : "string"
           },
+          "deliveryWindow" : {
+            "$ref" : "#/components/schemas/ExpectedWindowDto"
+          },
           "fromName" : {
             "type" : "string"
           },
@@ -4658,6 +4795,9 @@
           "legType" : {
             "enum" : [ "PICKUP", "LINEHAUL", "DELIVERY", "TRANSFER", "RETURN", "DIRECT" ],
             "type" : "string"
+          },
+          "pickupWindow" : {
+            "$ref" : "#/components/schemas/ExpectedWindowDto"
           },
           "plannedEndAt" : {
             "format" : "date-time",
@@ -7274,6 +7414,91 @@
         "required" : [ "configValue" ],
         "type" : "object"
       },
+      "TransferEndDto" : {
+        "properties" : {
+          "companyAllowed" : {
+            "type" : "boolean"
+          },
+          "reason" : {
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "AVAILABLE", "TOO_FAR", "NO_ROUTE", "UNKNOWN" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "TransferOptionsRequestDto" : {
+        "properties" : {
+          "deliveryAddressId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "pickupAddressId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "pickupAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "deliveryAddressId", "pickupAddressId", "pickupAt" ],
+        "type" : "object"
+      },
+      "TransferOptionsResponseDto" : {
+        "properties" : {
+          "delivery" : {
+            "$ref" : "#/components/schemas/TransferEndDto"
+          },
+          "pickup" : {
+            "$ref" : "#/components/schemas/TransferEndDto"
+          }
+        },
+        "type" : "object"
+      },
+      "TransportRulesResponseDto" : {
+        "properties" : {
+          "balanceWaitMinutes" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "deliveryWindowEndHour" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "deliveryWindowStartHour" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "departureDecisionHours" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "handoverFreeWaitMinutes" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "hubCheckinHours" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "maxTransferDriveMinutes" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "pickupWindowEndHour" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "pickupWindowStartHour" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
       "TripGroupResponseDto" : {
         "properties" : {
           "bookings" : {
@@ -7486,12 +7711,18 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "latitude" : {
+            "type" : "number"
+          },
           "locationId" : {
             "format" : "int64",
             "type" : "integer"
           },
           "locationName" : {
             "type" : "string"
+          },
+          "longitude" : {
+            "type" : "number"
           },
           "plannedArrivalAt" : {
             "format" : "date-time",
@@ -10351,6 +10582,24 @@
           }
         },
         "tags" : [ "trip-execution-controller" ]
+      }
+    },
+    "/custody-board" : {
+      "get" : {
+        "operationId" : "board",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListCustodyRowResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "custody-board-controller" ]
       }
     },
     "/customers/me" : {
@@ -13313,6 +13562,34 @@
         "tags" : [ "pricing-controller" ]
       }
     },
+    "/pricing/transfer-options" : {
+      "post" : {
+        "operationId" : "transferOptions",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/TransferOptionsRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseTransferOptionsResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "pricing-controller" ]
+      }
+    },
     "/provinces" : {
       "get" : {
         "operationId" : "provinces",
@@ -13383,6 +13660,24 @@
           }
         },
         "tags" : [ "tracking-controller" ]
+      }
+    },
+    "/public/transport-rules" : {
+      "get" : {
+        "operationId" : "transportRules",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseTransportRulesResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "transport-rules-controller" ]
       }
     },
     "/quotations/{id}/accept" : {

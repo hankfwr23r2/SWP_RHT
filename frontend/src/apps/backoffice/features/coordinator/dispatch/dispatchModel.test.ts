@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { DispatchBooking, TripHorse, VehicleTrip } from '@shared/api/dispatch'
-import { eligibleHorses, isBookingPlanned, peakSeats, suggestedStops, weekRange } from './dispatchModel'
+import { addDays, boardRows, daySpan, eligibleHorses, horsesNeeding, lacksDriver, missingLegs, mondayOf, peakSeats, placesFor, suggestedStops, weekRange } from './dispatchModel'
 
 const stop = (id: number, sequenceNumber: number, extra: Partial<NonNullable<VehicleTrip['stops']>[number]> = {}) => ({ id, sequenceNumber, ...extra })
 
@@ -45,9 +45,37 @@ describe('dispatchModel', () => {
     expect(peakSeats(direct, [])).toBe(0)
   })
 
-  it('đơn đã lập xong khi mọi con ACTIVE có chặng', () => {
-    expect(isBookingPlanned(booking())).toBe(false)
-    expect(isBookingPlanned(booking({ horses: [{ bookingHorseId: 50, status: 'ACTIVE', legs: [{ status: 'PLANNED' }] }] }))).toBe(true)
-    expect(isBookingPlanned(booking({ horses: [{ bookingHorseId: 50, status: 'ACTIVE', legs: [{ status: 'CANCELLED' }] }] }))).toBe(false)
+})
+
+describe('bảng tuần', () => {
+  const trip = (from: string, to: string) => ({ plannedStartAt: from, plannedEndAt: to })
+  it('đưa về thứ Hai của tuần', () => {
+    expect(mondayOf('2031-03-05')).toBe('2031-03-03')
+    expect(mondayOf('2031-03-03')).toBe('2031-03-03')
+    expect(mondayOf('2031-03-09')).toBe('2031-03-03')
+    expect(addDays('2031-02-28', 1)).toBe('2031-03-01')
+  })
+  it('tính cột theo ngày Việt Nam và cắt ở mép tuần', () => {
+    expect(daySpan(trip('2031-03-04T23:00:00Z', '2031-03-06T20:00:00Z'), '2031-03-03')).toEqual({ from: 2, days: 3 })
+    expect(daySpan(trip('2031-03-01T00:00:00Z', '2031-03-03T01:00:00Z'), '2031-03-03')).toEqual({ from: 0, days: 1 })
+    expect(daySpan(trip('2031-03-08T20:00:00Z', '2031-03-12T01:00:00Z'), '2031-03-03')).toEqual({ from: 6, days: 1 })
+    expect(daySpan(trip('2031-03-20T00:00:00Z', '2031-03-20T01:00:00Z'), '2031-03-03')).toBeUndefined()
+  })
+  it('xe ngừng dùng chỉ hiện khi có lượt, bỏ lượt đã hủy', () => {
+    const rows = boardRows([{ id: 1, status: 'ACTIVE' }, { id: 2, status: 'MAINTENANCE' }, { id: 3, status: 'MAINTENANCE' }],
+      [{ id: 9, vehicleId: 2, status: 'IN_PROGRESS' }, { id: 8, vehicleId: 1, status: 'CANCELLED' }])
+    expect(rows.map(row => [row.vehicle.id, row.trips.length])).toEqual([[1, 0], [2, 1]])
+  })
+  it('báo thiếu tài xế cho lượt chưa chạy', () => {
+    expect(lacksDriver({ status: 'PLANNED', crew: [{ crewRole: 'DRIVER', status: 'RELEASED' }] })).toBe(true)
+    expect(lacksDriver({ status: 'PLANNED', crew: [{ crewRole: 'DRIVER', status: 'ASSIGNED' }] })).toBe(false)
+    expect(lacksDriver({ status: 'IN_PROGRESS', crew: [] })).toBe(false)
+  })
+  it('dựng điểm và chọn ngựa theo chặng còn thiếu', () => {
+    const booking = { pickupAddress: { id: 5 }, deliveryAddress: { id: 6 }, horses: [{ bookingHorseId: 50, missingLegs: ['PICKUP' as const] }, { bookingHorseId: 51, missingLegs: [] }] }
+    expect(placesFor('PICKUP', 1, [booking])).toEqual([{ locationId: 1 }, { bookingAddressId: 5 }, { locationId: 1 }])
+    expect(placesFor('DIRECT', 1, [booking])).toEqual([{ locationId: 1 }, { bookingAddressId: 5 }, { bookingAddressId: 6 }, { locationId: 1 }])
+    expect(horsesNeeding('PICKUP', [booking])).toEqual([50])
+    expect(missingLegs(booking)).toEqual(['PICKUP'])
   })
 })

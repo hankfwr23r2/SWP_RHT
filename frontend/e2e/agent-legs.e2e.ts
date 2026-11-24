@@ -33,7 +33,8 @@ test('điều phối lập chặng đại lý cho đơn xuất rồi ghi đại 
   })
   await page.goto('/backoffice/coordinator/dispatch')
 
-  await page.getByRole('row', { name: /Sao Mai/ }).getByRole('button', { name: 'Chặng đại lý' }).click({ timeout: 15_000 })
+  await page.getByRole('button', { name: /^Tất cả/ }).click({ timeout: 15_000 })
+  await page.getByRole('listitem').filter({ hasText: 'Sao Mai' }).getByRole('button', { name: 'Chặng đại lý' }).first().click()
   const dialog = page.getByRole('dialog', { name: 'Chặng đại lý · Sao Mai · BK-AAAA0003' })
   await expect(dialog.getByRole('button', { name: 'Lập chặng đại lý' })).toBeDisabled()
   // Đơn xuất không chọn cửa khẩu: chặng đi tiếp từ cửa khẩu nơi chặng xe kết thúc
@@ -72,7 +73,8 @@ test('đơn nhập phải chọn cửa khẩu đại lý giao ngựa', async ({ 
   })
   await page.goto('/backoffice/coordinator/dispatch')
 
-  await page.getByRole('row', { name: /Gió Bấc/ }).getByRole('button', { name: 'Chặng đại lý' }).click({ timeout: 15_000 })
+  await page.getByRole('button', { name: /^Tất cả/ }).click({ timeout: 15_000 })
+  await page.getByRole('listitem').filter({ hasText: 'Gió Bấc' }).getByRole('button', { name: 'Chặng đại lý' }).first().click()
   const dialog = page.getByRole('dialog', { name: 'Chặng đại lý · Gió Bấc · BK-AAAA0004' })
   await dialog.getByRole('combobox', { name: 'Đại lý' }).click()
   await page.getByRole('option', { name: 'Đại lý vận tải Campuchia (mẫu)' }).click()

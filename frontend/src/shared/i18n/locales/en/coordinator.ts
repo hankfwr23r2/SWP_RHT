@@ -1,7 +1,99 @@
 // Trang của điều phối viên
 export const coordinator = {
+  "tracking": {
+    "title": "Tracking",
+    "subtitle": "Every horse held by the company or a partner. Overdue checks come first.",
+    "list": "Horses being held",
+    "empty": "No horse is being held",
+    "emptyHint": "Horses appear here from receiving to delivery.",
+    "search": "Search by horse, order, place or holder",
+    "waiting": "Waiting to leave",
+    "overdue": "Check overdue",
+    "unknownPlace": "No position yet",
+    "heldBy": "Held by {{name}}",
+    "heldByPartner": "Held by partner {{name}}",
+    "since": "since {{at}}",
+    "lastCheck": "Checked at {{at}}",
+    "noCheck": "Not checked yet",
+    "nextCheck": "next check {{at}}",
+    "leg": {
+      "PICKUP": "On the way to the hub",
+      "LINEHAUL": "On the linehaul",
+      "DELIVERY": "Being delivered",
+      "DIRECT": "Direct trip",
+      "TRANSFER": "Being transferred",
+      "RETURN": "Being returned"
+    },
+    "health": {
+      "NORMAL": "Normal",
+      "WATCH": "Needs watching",
+      "CRITICAL": "Critical",
+      "SICK": "Sick"
+    }
+  },
+  "plans": {
+    "title": "Order plans",
+    "subtitle": "Orders before deposit: see the held departure and change it when needed.",
+    "filter": "Order status",
+    "code": "Order",
+    "customer": "Customer",
+    "route": "Route",
+    "departure": "Departure",
+    "pickup": "Pickup",
+    "horses": "Horses",
+    "status": "Status",
+    "action": "To do",
+    "change": "Change departure",
+    "changed": "Departure changed and customer notified.",
+    "changeTitle": "Change departure · {{code}}",
+    "changeHint": "Places on the old departure are released and the customer is notified.",
+    "seats": "{{count}} places left",
+    "noOther": "No other departure on this route",
+    "noOtherHint": "Ask the manager for a special departure if needed.",
+    "empty": "No order in this status",
+    "emptyHint": "Choose another status."
+  },
   dispatch: {
+    "board": {
+      "group": "Group automatically",
+      "previous": "Previous week",
+      "next": "Next week",
+      "filter": "Filter orders",
+      "waiting": "To plan ({{count}})",
+      "all": "All ({{count}})",
+      "nothing": "Nothing left to plan",
+      "pickupOn": "Pickup {{date}}",
+      "runsAt": "linehaul at {{at}}",
+      "need": "Needs {{leg}}",
+      "complete": "All legs planned",
+      "journey": "Journey",
+      "seats": "{{count}} places",
+      "free": "Free all week",
+      "noDriver": "No driver"
+    },
+    "plan": {
+      "preview": "See times and map",
+      "failed": "Times could not be calculated",
+      "manual": "Enter times by hand",
+      "backToAuto": "Back to automatic times",
+      "summary": "About {{km}} km, {{minutes}} minutes of driving",
+      "warnings": "Plan warnings",
+      "timeline": "Times at each stop",
+      "start": "Leave the first stop at",
+      "recalculate": "Recalculate",
+      "auto": "Let the system choose",
+      "drive": "Drive {{minutes}} min",
+      "rest": "rest {{minutes}} min",
+      "horses": "Horses loaded or unloaded: {{count}}",
+      "warning": {
+        "RIDE_TOO_LONG": "A horse stays on the truck longer than the one-way driving limit.",
+        "LATE_FOR_HUB": "Horses reach the hub after the linehaul check-in deadline.",
+        "DRIVER_DAY_LIMIT": "The trip exceeds the daily driving limit.",
+        "OUTSIDE_WINDOW": "A pickup or delivery is outside the allowed hours."
+      }
+    },
     "stays": {
+      "subtitle": "Appointments and horses at the hub.",
       "collect": "Set pickup time",
       "collectTitle": "Consignee pickup time · {{horse}} · {{code}}",
       "collectHint": "When the consignee comes to the hub. After this time the horse goes to stabling and the consignee pays the fee.",
@@ -51,9 +143,7 @@ export const coordinator = {
     "title": "Dispatch",
     "description": "Plan vehicles, crews and horses by week. Rules are checked on save, with the reason when something is not allowed.",
     "weekFrom": "Week starting",
-    "tabsLabel": "Dispatch views",
     "tabBookings": "Bookings to dispatch",
-    "tabTrips": "Vehicle trips",
     "newTrip": "New trip",
     "loadError": "Could not load dispatch data",
     "grouping": {
@@ -66,8 +156,7 @@ export const coordinator = {
       "emptyDescription": "No company pickups or deliveries at this hub on that day, or the horses already have legs.",
       "groupTitle": "Group {{n}} · {{count}} bookings",
       "summary": "{{seats}} seats · about {{km}} km · about {{hours}} h (estimate)",
-      "window": "Leaves hub {{start}}, back {{end}}",
-      "overHours": "Over 4 hours",
+      "overHours": "Over the one-way driving limit",
       "vehicle": "Vehicle",
       "approve": "Create trip",
       "created": "Trip {{code}} created and horses assigned"
@@ -204,6 +293,9 @@ export const coordinator = {
       "locked": "This trip has started or was cancelled and cannot be changed."
     },
     "create": {
+      "hub": "Start and end hub",
+      "bookings": "Orders on this trip",
+      "noBookings": "No order needs this leg this week.",
       "title": "New vehicle trip",
       "type": "Trip type",
       "vehicle": "Vehicle",

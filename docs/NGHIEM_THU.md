@@ -25,7 +25,8 @@ Mục tài khoản mẫu và `APP_SEED_REFERENCE_DATA` trong `README.md` là c�
 | Quản lý | Đơn hàng, Chuyến cần quyết định, Hoàn tiền | Báo giá, gửi, chuyến đột xuất, dồn, hủy chuyến, quyết toán, hủy đơn |
 | Quản lý | Sự cố, Chuyến đi, Bảng giá | Duyệt phương án, báo cáo vận hành, tạo và kích hoạt bảng giá |
 | Quản trị viên | Toàn bộ menu | Khóa và mở tài khoản, hotline, xe, đối tác, quy định, tuyến, lịch, bảng giá, nhật ký |
-| Điều phối | Điều độ, Sự cố | Lập lượt xe, gán tổ xe, gom đơn, sơ đồ khoang; chốt sơ đồ trước khi xuất phát |
+| Điều phối | Kế hoạch đơn, Theo dõi, Hub | Đổi chuyến trước khi cọc; ngựa nào ai giữ, trễ khám; lịch hẹn và giao nhận ở hub |
+| Điều phối | Điều độ, Sự cố | Gom tự động, lập lượt xe với giờ tự tính, gán tổ xe, sơ đồ khoang; chốt sơ đồ trước khi xuất phát |
 | Tài xế, hộ tống | Lượt xe của tôi | Nhận việc, xuất phát, điểm dừng, giao nhận, giấy gốc, báo sự cố (thử trên điện thoại) |
 
 ## Luồng nên đi trọn
@@ -51,7 +52,7 @@ Lấy từ bảng tiến độ trong `KE_HOACH_TRIEN_KHAI.md`:
 - Gửi chuồng khi giao thất bại (quá giờ hẹn nhận ở hub thì đã có), nghỉ đêm (OVERNIGHT), bàn giao ca (SHIFT).
 - Phương án đổi xe của sự cố, về hub tự lập lượt xe, biên lai và ảnh hiện trường.
 - Báo khách khi nhận và giao ngựa.
-- Bảng điều khiển, doanh thu của quản lý và màn giám sát của điều phối: màn cũ đã ẩn, chưa có màn mới. Danh sách màn cũ chờ xóa ở cuối `KE_HOACH_TRIEN_KHAI.md`.
+- Bảng điều khiển của quản lý: màn cũ đã ẩn, chưa có màn mới. Danh sách màn cũ chờ xóa ở cuối `KE_HOACH_TRIEN_KHAI.md`.
 
 ## Báo lỗi
 

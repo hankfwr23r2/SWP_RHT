@@ -30,6 +30,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
 @PostgresIntegrationTest
@@ -144,6 +145,43 @@ class PricingPreviewFlowTest {
             jdbc.update("DELETE FROM customer_address WHERE id IN (?, ?)", pickup, delivery);
             jdbc.update("DELETE FROM departure WHERE id = ?", departure.getId());
         }
+    }
+
+    @Test
+    void customerChecksCompanyTransferForOwnAddressesOnly() throws Exception {
+        String customer = "customer1.dev";
+        Long owner = jdbc.queryForObject("SELECT id FROM app_user WHERE username = ?", Long.class, customer);
+        Long pickup = insertAddress(owner, "VN-79", "10.70");
+        Long delivery = insertAddress(owner, "VN-48", "16.90");
+        String payload = """
+                {"pickupAddressId":%d,"deliveryAddressId":%d,"pickupAt":"2090-01-01T00:00:00Z"}
+                """.formatted(pickup, delivery);
+        when(routing.truckRoute(anyList(), anyDouble(), anyInt(), any())).thenAnswer(invocation -> {
+            assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
+            return new RoadRouteDto(400, 18001, List.of());
+        }).thenReturn(new RoadRouteDto(20, 1800, List.of()));
+        try {
+            transferOptions(customer, "CUSTOMER", payload).andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data.pickup.companyAllowed").value(false))
+                    .andExpect(jsonPath("$.data.pickup.status").value("TOO_FAR"))
+                    .andExpect(jsonPath("$.data.pickup.reason").value(org.hamcrest.Matchers.containsString("tự chở")))
+                    .andExpect(jsonPath("$.data.delivery.companyAllowed").value(true))
+                    .andExpect(jsonPath("$.data.delivery.status").value("AVAILABLE"));
+            String other = data.unique("transfer-other");
+            data.customer(other);
+            transferOptions(other, "CUSTOMER", payload).andExpect(status().isNotFound());
+            transferOptions("coordinator.dev", "COORDINATOR", payload).andExpect(status().isForbidden());
+            transferOptions(customer, "CUSTOMER", "{}").andExpect(status().isBadRequest());
+            mvc.perform(post("/pricing/transfer-options").contentType(MediaType.APPLICATION_JSON).content(payload))
+                    .andExpect(status().isUnauthorized());
+        } finally {
+            jdbc.update("DELETE FROM customer_address WHERE id IN (?, ?)", pickup, delivery);
+        }
+    }
+
+    private ResultActions transferOptions(String username, String role, String payload) throws Exception {
+        return mvc.perform(post("/pricing/transfer-options").header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.generateToken(username, List.of(role)))
+                .contentType(MediaType.APPLICATION_JSON).content(payload));
     }
 
     private Long insertAddress(Long owner, String latitude) {

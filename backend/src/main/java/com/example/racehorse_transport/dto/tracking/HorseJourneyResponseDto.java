@@ -13,6 +13,7 @@ import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.entity.enums.HorseLegType;
 import com.example.racehorse_transport.entity.enums.HorseStayType;
 import com.example.racehorse_transport.entity.enums.QuarantineResult;
+import com.example.racehorse_transport.policy.CustomerNoticePolicy.HourWindow;
 import com.example.racehorse_transport.policy.TrackingPolicy.CustodyHolder;
 import java.time.Instant;
 import java.util.List;
@@ -25,14 +26,24 @@ public record HorseJourneyResponseDto(
 
     public record JourneyLegDto(Long id, Integer sequenceNumber, HorseLegType legType, HorseLegStatus status, String fromName, String toName,
                          String vehicleTripCode, String agentName, Long replacedHorseLegId,
-                         Instant plannedStartAt, Instant plannedEndAt, Instant actualStartAt, Instant actualEndAt) {
+                         Instant plannedStartAt, Instant plannedEndAt, Instant actualStartAt, Instant actualEndAt,
+                         ExpectedWindowDto pickupWindow, ExpectedWindowDto deliveryWindow) {
 
-        public static JourneyLegDto from(HorseLeg leg) {
+        public static JourneyLegDto from(HorseLeg leg, HourWindow pickupWindow, HourWindow deliveryWindow) {
             return new JourneyLegDto(leg.getId(), leg.getSequenceNumber(), leg.getLegType(), leg.getStatus(),
                     nameOf(leg.getFromLocation(), leg.getFromBookingAddress()), nameOf(leg.getToLocation(), leg.getToBookingAddress()),
                     leg.getVehicleTrip() == null ? null : leg.getVehicleTrip().getCode(), nameOf(leg.getAgentParty()),
                     leg.getReplacedHorseLeg() == null ? null : leg.getReplacedHorseLeg().getId(),
-                    leg.getPlannedStartAt(), leg.getPlannedEndAt(), leg.getActualStartAt(), leg.getActualEndAt());
+                    leg.getPlannedStartAt(), leg.getPlannedEndAt(), leg.getActualStartAt(), leg.getActualEndAt(),
+                    ExpectedWindowDto.from(pickupWindow), ExpectedWindowDto.from(deliveryWindow));
+        }
+    }
+
+    // Khung giờ xe dự kiến tới điểm đón, điểm giao của khách
+    public record ExpectedWindowDto(Instant from, Instant to) {
+
+        public static ExpectedWindowDto from(HourWindow window) {
+            return window == null ? null : new ExpectedWindowDto(window.from(), window.to());
         }
     }
 

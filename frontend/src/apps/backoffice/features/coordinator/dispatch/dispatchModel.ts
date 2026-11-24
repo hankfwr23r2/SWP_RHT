@@ -1,5 +1,5 @@
 // Logic hiển thị của bảng điều độ. Không quyết định nghiệp vụ: backend vẫn kiểm mọi quy tắc khi gán.
-import type { DispatchBooking, DispatchHorse, HorseLeg, TripHorse, VehicleTrip } from '@shared/api/dispatch'
+import type { DispatchBooking, DispatchHorse, DispatchVehicle, HorseLeg, LegType, NetworkLocation, PlannedTripCreate, TripHorse, TripType, VehicleTrip } from '@shared/api/dispatch'
 import type { StatusTone } from '@shared/ui/StatusBadge'
 
 // Sắc thái của trạng thái lượt xe, một nơi cho cả bảng điều độ
@@ -17,9 +17,6 @@ export function weekRange(fromDate: string) {
   const toDate = new Date(end.getTime() - 24 * 3600 * 1000).toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' })
   return { fromDate, toDate, from: start.toISOString(), to: end.toISOString() }
 }
-
-// Giá trị ô datetime-local (giờ của máy) sang ISO
-export const localToIso = (value: string) => new Date(value).toISOString()
 
 export const activeLegs = (horse: DispatchHorse): HorseLeg[] => (horse.legs ?? []).filter(leg => !INACTIVE_LEGS.has(leg.status ?? ''))
 
@@ -73,6 +70,59 @@ export function peakSeats(trip: VehicleTrip, onTrip: TripHorse[]): number {
   return peak
 }
 
-// Mọi con ACTIVE của đơn đã có ít nhất một chặng
-export const isBookingPlanned = (booking: DispatchBooking) =>
-  (booking.horses ?? []).filter(horse => horse.status === 'ACTIVE').every(horse => activeLegs(horse).length > 0)
+// Chặng còn thiếu của đơn, gộp các con; backend tính
+export const missingLegs = (booking: DispatchBooking): LegType[] =>
+  [...new Set((booking.horses ?? []).flatMap(horse => horse.missingLegs ?? []))]
+
+const DAY_MS = 24 * 3600 * 1000
+
+export const addDays = (date: string, days: number) =>
+  new Date(Date.parse(`${date}T12:00:00${VN_OFFSET}`) + days * DAY_MS).toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' })
+
+// Thứ Hai của tuần chứa ngày này
+export function mondayOf(date: string) {
+  const weekday = new Date(`${date}T12:00:00Z`).getUTCDay()
+  return addDays(date, weekday === 0 ? -6 : 1 - weekday)
+}
+
+// Cột bắt đầu (0–6) và số ngày lượt xe chiếm trong tuần; lượt tràn khỏi tuần thì cắt ở mép
+export function daySpan(trip: VehicleTrip, weekStart: string): { from: number; days: number } | undefined {
+  if (!trip.plannedStartAt) return undefined
+  const start = Date.parse(`${weekStart}T00:00:00${VN_OFFSET}`)
+  const from = Math.floor((Date.parse(trip.plannedStartAt) - start) / DAY_MS)
+  const to = Math.floor((Date.parse(trip.plannedEndAt ?? trip.plannedStartAt) - start) / DAY_MS)
+  if (to < 0 || from > 6) return undefined
+  const first = Math.max(0, from)
+  return { from: first, days: Math.min(6, to) - first + 1 }
+}
+
+export interface BoardRow { vehicle: DispatchVehicle; trips: VehicleTrip[] }
+
+// Mỗi xe một hàng: xe đang dùng được, và xe khác nếu có lượt trong tuần
+export function boardRows(vehicles: DispatchVehicle[], trips: VehicleTrip[]): BoardRow[] {
+  const shown = trips.filter(trip => trip.status !== 'CANCELLED')
+  return vehicles
+    .map(vehicle => ({ vehicle, trips: shown.filter(trip => trip.vehicleId === vehicle.id).sort((a, b) => (a.plannedStartAt ?? '').localeCompare(b.plannedStartAt ?? '')) }))
+    .filter(row => row.vehicle.status === 'ACTIVE' || row.trips.length > 0)
+}
+
+// Lượt chưa chạy mà chưa có tài xế trong tổ lái
+export const lacksDriver = (trip: VehicleTrip) =>
+  (trip.status === 'PLANNED' || trip.status === 'DISPATCHED') && !(trip.crew ?? []).some(member => member.crewRole === 'DRIVER' && member.status !== 'RELEASED')
+
+// Danh sách điểm của một lượt đón, giao hoặc chạy thẳng: hub, địa chỉ các đơn đã chọn, hub
+export function placesFor(type: TripType, hubId: number, bookings: DispatchBooking[]): PlannedTripCreate['places'] {
+  const pickups = bookings.map(booking => ({ bookingAddressId: booking.pickupAddress?.id }))
+  const deliveries = bookings.map(booking => ({ bookingAddressId: booking.deliveryAddress?.id }))
+  const middle = type === 'PICKUP' ? pickups : type === 'DELIVERY' ? deliveries : [...pickups, ...deliveries]
+  return [{ locationId: hubId }, ...middle, { locationId: hubId }]
+}
+
+export const horsesNeeding = (type: TripType, bookings: DispatchBooking[]) =>
+  bookings.flatMap(booking => (booking.horses ?? []).filter(horse => horse.missingLegs?.includes(type as LegType)).map(horse => horse.bookingHorseId ?? 0))
+
+// Các hub, hub gốc của xe (trụ sở) đứng đầu để chọn sẵn
+export function hubsOf(locations: NetworkLocation[], vehicles: DispatchVehicle[]) {
+  const home = new Set(vehicles.map(vehicle => vehicle.homeHubLocationId))
+  return locations.filter(location => location.locationType === 'HUB').sort((a, b) => Number(home.has(b.id)) - Number(home.has(a.id)))
+}

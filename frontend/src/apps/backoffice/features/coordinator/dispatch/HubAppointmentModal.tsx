@@ -7,7 +7,7 @@ import { Field } from '@shared/ui/Field'
 import { Input } from '@shared/ui/Input'
 import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
-import { localToIso } from './dispatchModel'
+import { localToIso } from '@backoffice/shared/localTime'
 import s from './Dispatch.module.css'
 
 export function HubAppointmentModal({ booking, horse, onClose, onDone }: { booking: DispatchBooking; horse: DispatchHorse; onClose: () => void; onDone: () => void }) {

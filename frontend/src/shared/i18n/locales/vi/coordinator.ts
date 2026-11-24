@@ -1,7 +1,99 @@
 // Trang của điều phối viên
 export const coordinator = {
+  "tracking": {
+    "title": "Theo dõi",
+    "subtitle": "Mọi con công ty hoặc đối tác đang giữ. Con trễ khám đứng đầu.",
+    "list": "Ngựa đang được giữ",
+    "empty": "Chưa có ngựa nào đang được giữ",
+    "emptyHint": "Ngựa hiện ở đây từ lúc nhận tới lúc giao.",
+    "search": "Tìm theo ngựa, đơn, nơi ở, người giữ",
+    "waiting": "Chờ xuất phát",
+    "overdue": "Trễ khám",
+    "unknownPlace": "Chưa có vị trí",
+    "heldBy": "{{name}} đang giữ",
+    "heldByPartner": "Đối tác {{name}} đang giữ",
+    "since": "từ {{at}}",
+    "lastCheck": "Khám lúc {{at}}",
+    "noCheck": "Chưa khám lần nào",
+    "nextCheck": "hạn khám {{at}}",
+    "leg": {
+      "PICKUP": "Đang đón về hub",
+      "LINEHAUL": "Đang đi trục",
+      "DELIVERY": "Đang giao",
+      "DIRECT": "Đang chạy thẳng",
+      "TRANSFER": "Đang chuyển xe",
+      "RETURN": "Đang trả về"
+    },
+    "health": {
+      "NORMAL": "Bình thường",
+      "WATCH": "Cần theo dõi",
+      "CRITICAL": "Nguy cấp",
+      "SICK": "Ốm"
+    }
+  },
+  "plans": {
+    "title": "Kế hoạch đơn",
+    "subtitle": "Đơn chưa cọc: xem chuyến đang giữ chỗ, đổi sang chuyến khác khi cần.",
+    "filter": "Trạng thái đơn",
+    "code": "Mã đơn",
+    "customer": "Khách",
+    "route": "Tuyến",
+    "departure": "Ngày chạy",
+    "pickup": "Ngày đón",
+    "horses": "Số ngựa",
+    "status": "Trạng thái",
+    "action": "Việc cần làm",
+    "change": "Đổi chuyến",
+    "changed": "Đã đổi chuyến và báo khách.",
+    "changeTitle": "Đổi chuyến · {{code}}",
+    "changeHint": "Chỗ ở chuyến cũ được nhả và khách nhận thông báo.",
+    "seats": "Còn {{count}} chỗ",
+    "noOther": "Không có chuyến khác cùng tuyến",
+    "noOtherHint": "Nhờ quản lý tạo chuyến đột xuất nếu cần.",
+    "empty": "Không có đơn ở trạng thái này",
+    "emptyHint": "Chọn trạng thái khác để xem."
+  },
   dispatch: {
+    "board": {
+      "group": "Gom tự động",
+      "previous": "Tuần trước",
+      "next": "Tuần sau",
+      "filter": "Lọc đơn",
+      "waiting": "Chờ xếp ({{count}})",
+      "all": "Tất cả ({{count}})",
+      "nothing": "Không còn đơn chờ xếp",
+      "pickupOn": "Đón {{date}}",
+      "runsAt": "trục chạy {{at}}",
+      "need": "Cần {{leg}}",
+      "complete": "Đã đủ chặng",
+      "journey": "Hành trình",
+      "seats": "{{count}} chỗ",
+      "free": "Rảnh cả tuần",
+      "noDriver": "Thiếu tài xế"
+    },
+    "plan": {
+      "preview": "Xem giờ và bản đồ",
+      "failed": "Chưa tính được giờ",
+      "manual": "Nhập giờ tay",
+      "backToAuto": "Quay lại tự tính giờ",
+      "summary": "Khoảng {{km}} km, lái {{minutes}} phút",
+      "warnings": "Cảnh báo kế hoạch",
+      "timeline": "Giờ từng điểm",
+      "start": "Giờ rời điểm đầu",
+      "recalculate": "Tính lại",
+      "auto": "Để hệ thống chọn giờ",
+      "drive": "Lái {{minutes}} phút",
+      "rest": "nghỉ {{minutes}} phút",
+      "horses": "{{count}} ngựa lên hoặc xuống",
+      "warning": {
+        "RIDE_TOO_LONG": "Có con ngựa ở trên xe quá giới hạn giờ lái một chiều.",
+        "LATE_FOR_HUB": "Ngựa tới hub sau hạn có mặt của chuyến trục.",
+        "DRIVER_DAY_LIMIT": "Lượt xe lái quá giới hạn giờ trong ngày.",
+        "OUTSIDE_WINDOW": "Có điểm đón hoặc giao ngoài khung giờ."
+      }
+    },
     "stays": {
+      "subtitle": "Lịch hẹn khách tự chở và ngựa đang ở hub.",
       "collect": "Hẹn giờ nhận",
       "collectTitle": "Hẹn người nhận tới · {{horse}} · {{code}}",
       "collectHint": "Giờ người nhận tới hub nhận ngựa. Quá giờ này thì gửi chuồng, người nhận trả phí.",
@@ -51,9 +143,7 @@ export const coordinator = {
     "title": "Điều độ",
     "description": "Xếp xe, tổ lái và ngựa theo tuần. Hệ thống kiểm quy tắc khi lưu và nói rõ lý do nếu không được.",
     "weekFrom": "Tuần bắt đầu từ",
-    "tabsLabel": "Nội dung điều độ",
     "tabBookings": "Đơn chờ xếp xe",
-    "tabTrips": "Lượt xe",
     "newTrip": "Lập lượt xe",
     "loadError": "Không tải được dữ liệu điều độ",
     "grouping": {
@@ -66,8 +156,7 @@ export const coordinator = {
       "emptyDescription": "Không có đơn công ty đón hoặc giao ở hub này trong ngày, hoặc các con đã có chặng.",
       "groupTitle": "Nhóm {{n}} · {{count}} đơn",
       "summary": "{{seats}} chỗ · khoảng {{km}} km · khoảng {{hours}} giờ (ước lượng)",
-      "window": "Rời hub {{start}}, về hub {{end}}",
-      "overHours": "Quá 4 giờ",
+      "overHours": "Quá giới hạn giờ lái một chiều",
       "vehicle": "Xe",
       "approve": "Lập lượt xe",
       "created": "Đã lập lượt xe {{code}} và xếp ngựa"
@@ -204,6 +293,9 @@ export const coordinator = {
       "locked": "Lượt xe đã chạy hoặc đã hủy, không sửa được."
     },
     "create": {
+      "hub": "Hub xuất phát và về",
+      "bookings": "Đơn trong lượt",
+      "noBookings": "Không có đơn nào cần chặng này trong tuần.",
       "title": "Lập lượt xe",
       "type": "Loại lượt",
       "vehicle": "Xe",

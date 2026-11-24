@@ -125,6 +125,29 @@ class StaffReadApiTest {
     }
 
     @Test
+    void reviewDetailShowsWhoTookTheOrderInOnlyToStaff() throws Exception {
+        var customer = data.customer(data.unique("read-customer"));
+        var booking = data.booking(customer, BookingType.LOCAL, BookingStatus.UNDER_REVIEW);
+        var taker = data.staff(data.unique("read-taker"), "SPECIALIST");
+        String manager = staff("MANAGER");
+        mvc.perform(get("/bookings/{id}/review-detail", booking.getId()).header(HttpHeaders.AUTHORIZATION, manager))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.intakeByName").doesNotExist());
+
+        jdbc.update("""
+                INSERT INTO booking_status_history (booking_id, from_status, to_status, changed_by)
+                VALUES (?, 'PENDING_INTAKE', 'UNDER_REVIEW', ?)""", booking.getId(), taker.getUserId());
+        // Khách nộp lại hồ sơ cũng về UNDER_REVIEW nhưng không phải người tiếp nhận
+        jdbc.update("""
+                INSERT INTO booking_status_history (booking_id, from_status, to_status, changed_by)
+                VALUES (?, 'NEEDS_RESUBMISSION', 'UNDER_REVIEW', ?)""", booking.getId(), customer.getUserId());
+        mvc.perform(get("/bookings/{id}/review-detail", booking.getId()).header(HttpHeaders.AUTHORIZATION, manager))
+                .andExpect(jsonPath("$.data.intakeByName").value(taker.getFullName()));
+        mvc.perform(get("/bookings/{id}", booking.getId())
+                        .header(HttpHeaders.AUTHORIZATION, customer(customer.getUser().getUsername())))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.intakeByName").doesNotExist());
+    }
+
+    @Test
     void managerPreviewsCancellationWithoutChangingTheBooking() throws Exception {
         var customer = data.customer(data.unique("read-customer"));
         var booking = data.booking(customer, BookingType.LOCAL, BookingStatus.UNDER_REVIEW);
