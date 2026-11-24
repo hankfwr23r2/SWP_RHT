@@ -80,6 +80,10 @@ public class HorseLeg {
     @JoinColumn(name = "alight_trip_stop_id")
     private TripStop alightTripStop;
 
+    // Vị trí khoang trên xe, đánh số từ đầu xe ra cửa sau; khoang rộng chiếm thêm vị trí kế sau. Chỉ StallPlanService ghi
+    @Column(name = "stall_position")
+    private Short stallPosition;
+
     // Chặng thất bại mà chặng này thay thế, ví dụ giao lại lần hai
     @ManyToOne(fetch = FetchType.LAZY, optional = true)
     @JoinColumn(name = "replaced_horse_leg_id")
