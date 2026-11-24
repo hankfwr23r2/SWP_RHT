@@ -12,8 +12,6 @@ async function signIn(page: Page, role: 'admin' | 'manager') {
 test('quản trị viên mở Thư viện giao diện từ menu', async ({ page }) => {
   await signIn(page, 'admin')
   await page.goto('/backoffice/admin/system-logs')
-  // Trang nhật ký tự gắn khoảng ngày vào URL khi mở; chờ xong để lần đổi URL đó không đè lên cú bấm menu
-  await expect(page).toHaveURL(/from=/)
   await page.getByRole('complementary', { name: 'Menu' }).getByRole('link', { name: 'Thư viện giao diện' }).click()
 
   // Trang tải lazy: lần đầu mở có thể chậm hơn
