@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -11,7 +12,9 @@ import com.example.racehorse_transport.entity.Vehicle;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.support.TestData;
+import com.example.racehorse_transport.service.HorseLegService;
 import com.jayway.jsonpath.JsonPath;
+import jakarta.persistence.EntityManager;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -35,6 +38,8 @@ class HorseLegFlowTest {
 
     @Autowired private MockMvc mvc;
     @Autowired private JdbcTemplate jdbc;
+    @Autowired private HorseLegService horseLegs;
+    @Autowired private EntityManager entityManager;
     @Autowired private TestData testData;
     @Autowired private JwtUtils jwtUtils;
     @Autowired private LocationRepository locations;
@@ -132,6 +137,28 @@ class HorseLegFlowTest {
         mvc.perform(post("/vehicle-trips/{id}/cancel", linehaul).header(HttpHeaders.AUTHORIZATION, coordinator)
                         .contentType(MediaType.APPLICATION_JSON).content("{\"reason\":\"Thử\"}"))
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    void bookingLeavingItsDepartureLosesAllPlannedLegs() throws Exception {
+        Seed seed = seed("DEV-DOMESTIC-001");
+        Instant pickupStart = seed.departureAt().minusSeconds(6 * 3600);
+        long pickupTrip = tripId(createTrip(testData.vehicle(4, 0), "PICKUP", stop(hcm, "HUB", pickupStart, 0),
+                address(seed.pickup(), "PICKUP", pickupStart, 90), stop(hcm, "HUB", pickupStart, 240)));
+        long linehaul = tripId(createTrip(testData.vehicle(4, 0), "LINEHAUL", seed.departureId()));
+        List<Long> pickupStops = stopIds(pickupTrip);
+        List<Long> linehaulStops = stopIds(linehaul);
+        for (long horse : seed.horses()) {
+            assign(pickupTrip, horse, pickupStops.get(1), pickupStops.get(2)).andExpect(status().isCreated());
+            assign(linehaul, horse, linehaulStops.getFirst(), linehaulStops.getLast()).andExpect(status().isCreated());
+        }
+
+        // Luồng A gọi khi đơn rời chuyến: mọi chặng còn PLANNED của đơn bị hủy, xe được nhả chỗ
+        assertThat(horseLegs.cancelPlannedLegsOfBooking(seed.bookingId())).isEqualTo(2 * seed.horses().size());
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM horse_leg l JOIN booking_horse bh ON bh.id = l.booking_horse_id WHERE bh.booking_id = ? AND l.status <> 'CANCELLED'",
+                Long.class, seed.bookingId())).isZero();
+        mvc.perform(get("/vehicle-trips/{id}/horse-legs", linehaul).header(HttpHeaders.AUTHORIZATION, coordinator))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(0));
     }
 
     @Test
@@ -242,6 +269,7 @@ class HorseLegFlowTest {
     }
 
     private ResultActions createTrip(Vehicle vehicle, String type, long departureId) throws Exception {
+        confirmRun(departureId);
         return mvc.perform(post("/vehicle-trips").header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"tripType\":\"%s\",\"vehicleId\":%d,\"departureId\":%d}".formatted(type, vehicle.getId(), departureId)));
     }
@@ -280,5 +308,12 @@ class HorseLegFlowTest {
     private static long tripId(ResultActions result) throws Exception {
         String body = result.andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         return ((Number) JsonPath.read(body, "$.data.id")).longValue();
+    }
+
+    // Quản lý đã xác nhận chạy chuyến (A6b): điều kiện để lập lượt trục
+    private void confirmRun(long departureId) {
+        entityManager.flush();
+        jdbc.update("UPDATE departure SET run_confirmed_at = now(), run_confirmed_by = (SELECT min(id) FROM app_user) WHERE id = ? AND run_confirmed_at IS NULL", departureId);
+        entityManager.clear();
     }
 }

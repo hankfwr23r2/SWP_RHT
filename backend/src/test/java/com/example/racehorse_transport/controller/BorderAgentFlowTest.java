@@ -179,6 +179,7 @@ class BorderAgentFlowTest {
             jdbc.update("UPDATE staff SET home_hub_location_id = ? WHERE user_id IN (?, ?)", homeHubId, driverStaff.getUserId(), escortStaff.getUserId());
             entityManager.clear();
         }
+        confirmRun(departure);
         long trip = id(mvc.perform(post("/vehicle-trips").header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"tripType\":\"LINEHAUL\",\"vehicleId\":%d,\"departureId\":%d}".formatted(vehicle, departure))));
         for (Staff member : List.of(driverStaff, escortStaff)) {
@@ -251,5 +252,12 @@ class BorderAgentFlowTest {
 
     private String token(Staff staff, String role) {
         return "Bearer " + jwtUtils.generateToken(staff.getUser().getUsername(), List.of(role));
+    }
+
+    // Quản lý đã xác nhận chạy chuyến (A6b): điều kiện để lập lượt trục
+    private void confirmRun(long departureId) {
+        entityManager.flush();
+        jdbc.update("UPDATE departure SET run_confirmed_at = now(), run_confirmed_by = (SELECT min(id) FROM app_user) WHERE id = ? AND run_confirmed_at IS NULL", departureId);
+        entityManager.clear();
     }
 }

@@ -20,4 +20,8 @@ public interface HorseLegService {
 
     // Gỡ chặng chưa chạy, chỉ khi đó là chặng cuối của con ngựa
     List<TripHorseResponseDto> cancel(Long horseLegId);
+
+    // Hợp đồng gọi chéo (KE_HOACH mục 3.3). Cài đặt: luồng B. Gọi: luồng A khi đơn rời chuyến (báo giấy chậm, hủy chuyến,
+    // đổi chuyến, hủy đơn). Hủy mọi chặng còn PLANNED của đơn, kể cả chặng đại lý; nhả chỗ trên lượt xe và vị trí khoang. Trả về số chặng đã hủy
+    int cancelPlannedLegsOfBooking(Long bookingId);
 }

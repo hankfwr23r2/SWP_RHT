@@ -57,6 +57,7 @@ class StallPlanFlowTest {
         entityManager.flush();
         jdbc.update("UPDATE booking_horse SET stall_type_code = 'WIDE' WHERE id = ?", lines.get(1));
         entityManager.clear();
+        confirmRun(departure);
         trip = ((Number) JsonPath.read(mvc.perform(post("/vehicle-trips").header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"tripType\":\"LINEHAUL\",\"vehicleId\":%d,\"departureId\":%d}".formatted(testData.vehicle(3, 0).getId(), departure)))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString(), "$.data.id")).longValue();
@@ -158,5 +159,12 @@ class StallPlanFlowTest {
 
     private String token(Staff staff, String role) {
         return "Bearer " + jwtUtils.generateToken(staff.getUser().getUsername(), List.of(role));
+    }
+
+    // Quản lý đã xác nhận chạy chuyến (A6b): điều kiện để lập lượt trục
+    private void confirmRun(long departureId) {
+        entityManager.flush();
+        jdbc.update("UPDATE departure SET run_confirmed_at = now(), run_confirmed_by = (SELECT min(id) FROM app_user) WHERE id = ? AND run_confirmed_at IS NULL", departureId);
+        entityManager.clear();
     }
 }
