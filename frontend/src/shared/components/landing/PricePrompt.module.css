@@ -1,0 +1,10 @@
+/* Khối dẫn tới đặt chuyến để xem giá tạm tính */
+.price { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-6); align-items: center; }
+.price h2 { margin: 0 0 var(--space-2); font-size: var(--text-xl); color: var(--color-heading); }
+.price p { margin: 0; color: var(--color-muted); }
+.price ul { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); margin: var(--space-4) 0 0; padding: 0; list-style: none; font-size: var(--text-sm); color: var(--color-text); }
+.price li i { margin-right: var(--space-2); color: var(--color-primary-bright); }
+
+@media (max-width: 820px) {
+  .price { grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
+}

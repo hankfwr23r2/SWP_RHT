@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link, useRevalidator } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import type { BookingOrder } from '@shared/api/bookingOrders'
+import type { BookingSummary } from '@shared/api/bookingOrders'
 import { OrderStatusBadge } from '@shared/components/OrderStatusBadge'
+import { groupOf, nextStepOf, type OrderGroup } from '@shared/components/orderSteps'
 import { usePagination } from '@shared/hooks/usePagination'
 import { EmptyState } from '@shared/ui/EmptyState'
 import { ErrorState } from '@shared/ui/ErrorState'
@@ -10,7 +11,6 @@ import { Input } from '@shared/ui/Input'
 import { Tabs } from '@shared/ui/Tabs'
 import { day, showDate } from '../format'
 import { useOrdersData } from '../loaders'
-import { groupOf, nextStepOf, type OrderGroup } from '../orderSteps'
 import s from '../Orders.module.css'
 
 interface Props {
@@ -29,7 +29,7 @@ export function OrderList({ groups, emptyTitle, emptyHint }: Props) {
 
   const mine = (orders ?? []).filter(order => groups.includes(groupOf(order)))
   const term = query.trim().toLowerCase()
-  const found = mine.filter(order => [order.code, order.waybillNumber].some(value => value?.toLowerCase().includes(term)) || !term)
+  const found = mine.filter(order => [order.code, order.waybillNumber, order.routeName].some(value => value?.toLowerCase().includes(term)) || !term)
   const rows = found.filter(order => tab === 'all' || groupOf(order) === tab)
     .sort((a, b) => Number(groupOf(b) === 'action') - Number(groupOf(a) === 'action') || (b.id ?? 0) - (a.id ?? 0))
   const pager = usePagination(rows, 10)
@@ -59,7 +59,7 @@ export function OrderList({ groups, emptyTitle, emptyHint }: Props) {
   )
 }
 
-function OrderRow({ order }: { order: BookingOrder }) {
+function OrderRow({ order }: { order: BookingSummary }) {
   const { t } = useTranslation()
   const next = nextStepOf(order)
   return (
@@ -69,8 +69,10 @@ function OrderRow({ order }: { order: BookingOrder }) {
           <strong>{order.code}</strong>
           <OrderStatusBadge status={order.status} />
         </div>
-        <p className={s.route}>{order.bookingType && t(`bookingForm.types.${order.bookingType}`)}</p>
+        <p className={s.route}>{[order.bookingType && t(`bookingForm.types.${order.bookingType}`), order.routeName].filter(Boolean).join(' · ')}</p>
         <p className={s.meta}>
+          {!!order.horseCount && <span>{t('myOrders.horseCount', { count: order.horseCount })}</span>}
+          {order.departureDate && <span>{t('myOrders.departs', { date: showDate(order.departureDate) })}</span>}
           {order.requestedPickupDate && <span>{t('myOrders.pickup', { date: showDate(order.requestedPickupDate) })}</span>}
           {order.createdAt && <span>{t('myOrders.created', { date: day(order.createdAt) })}</span>}
         </p>

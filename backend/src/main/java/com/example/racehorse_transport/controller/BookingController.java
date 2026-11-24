@@ -4,6 +4,7 @@ import com.example.racehorse_transport.dto.booking.BookingCreateRequestDto;
 import com.example.racehorse_transport.dto.booking.BookingDetailResponseDto;
 import com.example.racehorse_transport.dto.booking.BookingRescheduleRequestDto;
 import com.example.racehorse_transport.dto.booking.BookingResponseDto;
+import com.example.racehorse_transport.dto.booking.BookingSummaryResponseDto;
 import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.service.BookingQueryService;
 import com.example.racehorse_transport.service.BookingRescheduleService;
@@ -36,7 +37,7 @@ public class BookingController {
     }
 
     @GetMapping
-    public ApiResponseDto<List<BookingResponseDto>> list(Authentication authentication) {
+    public ApiResponseDto<List<BookingSummaryResponseDto>> list(Authentication authentication) {
         return ApiResponseDto.success(queries.list(authentication.getName()), "Danh sách đơn.");
     }
 

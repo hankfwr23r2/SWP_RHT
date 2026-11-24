@@ -1412,6 +1412,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dispatch/grouping-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["groupingSuggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/dispatch/vehicles": {
         parameters: {
             query?: never;
@@ -3253,6 +3269,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListTripGroupResponseDto: {
+            data?: components["schemas"]["TripGroupResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListTripHorseResponseDto: {
             data?: components["schemas"]["TripHorseResponseDto"][];
             message?: string;
@@ -3996,6 +4017,22 @@ export interface components {
         };
         ExtraChargeRequestDto: {
             costItemIds: number[];
+        };
+        GroupBookingDto: {
+            addressLine?: string;
+            /** Format: int64 */
+            bookingAddressId?: number;
+            bookingCode?: string;
+            /** Format: int64 */
+            bookingId?: number;
+            horses?: components["schemas"]["GroupHorseDto"][];
+        };
+        GroupHorseDto: {
+            /** Format: int64 */
+            bookingHorseId?: number;
+            horseName?: string;
+            /** Format: int32 */
+            seats?: number;
         };
         HandoverCreateRequestDto: {
             /** @enum {string} */
@@ -5269,6 +5306,18 @@ export interface components {
         StopDepartRequestDto: {
             earlyReason?: string;
         };
+        SuggestedStopDto: {
+            /** Format: int64 */
+            bookingAddressId?: number;
+            /** Format: int64 */
+            locationId?: number;
+            /** Format: date-time */
+            plannedArrivalAt?: string;
+            /** Format: date-time */
+            plannedDepartureAt?: string;
+            /** @enum {string} */
+            stopType?: "PICKUP" | "DELIVERY" | "HUB" | "REST" | "VITAL_CHECK" | "BORDER" | "QUARANTINE";
+        };
         SystemConfigResponseDto: {
             configGroup?: string;
             configKey?: string;
@@ -5316,6 +5365,16 @@ export interface components {
             targetKey?: string;
             targetLabel?: string;
             targetTable?: string;
+        };
+        TripGroupResponseDto: {
+            bookings?: components["schemas"]["GroupBookingDto"][];
+            /** Format: double */
+            hours?: number;
+            /** Format: double */
+            routeKm?: number;
+            /** Format: int32 */
+            seats?: number;
+            stops?: components["schemas"]["SuggestedStopDto"][];
         };
         TripHorseResponseDto: {
             bookingCode?: string;
@@ -6003,7 +6062,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ApiResponseListBookingResponseDto"];
+                    "*/*": components["schemas"]["ApiResponseListBookingSummaryResponseDto"];
                 };
             };
         };
@@ -7828,6 +7887,30 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListCrewCandidateResponseDto"];
+                };
+            };
+        };
+    };
+    groupingSuggestions: {
+        parameters: {
+            query: {
+                date: string;
+                hubId: number;
+                tripType: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "DIRECT";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListTripGroupResponseDto"];
                 };
             };
         };

@@ -147,6 +147,7 @@ Có **3 thành viên** thì tách luồng A thành A-BE và A-FE (khách hàng),
 | `DocumentService.attach(file, documentTypeCode, ownerSubject, ownerId, uploadedByUserId)` | P0 | A, B | Ảnh hiện trường, biên bản giao nhận, biên lai, giấy tờ |
 | `PaymentService.createExtraCharge(bookingId, costItemIds, actorUserId)` | A | A (quyết toán) | Lập khoản thu thêm |
 | `CostItemService.linkExtraPayment(costItemIds, paymentId)` | B | A | Gắn khoản thu thêm vào chi phí |
+| `HorseLegService.cancelPlannedLegsOfBooking(bookingId)` | B | A | Đơn rời chuyến (báo giấy chậm, hủy chuyến, đổi chuyến, hủy đơn): hủy mọi `horse_leg` còn PLANNED của đơn, nhả chỗ trên lượt xe và vị trí khoang |
 | `NotificationService.notify(...)`, `AuditService.record(...)` | P0 | A, B | Mọi giai đoạn |
 | `DocumentCompletenessService.isComplete(bookingId)` | A | B | Khi xe xuất phát đón (GĐ5), khi nhận tại hub nếu SELF, hoặc khi nhận tại cửa khẩu với IMPORT |
 | `PaymentReadinessService.isPaidInFull(bookingId)` | A | B | Khi xe **rời** nơi nhận ngựa (GĐ6) |
@@ -435,7 +436,7 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
   - `SettlementService`: lấy chi phí đã duyệt mà khách hoặc người nhận chịu, gọi `PaymentService.createExtraCharge` qua `ExtraChargeService` và gắn chi phí qua `CostItemService.linkExtraPayment`. Khách thanh toán EXTRA_CHARGE qua VNPAY. Đóng đơn khi đủ điều kiện;
   - hủy đơn theo `NGHIEP_VU_THEO_59_BANG.md` mục 5.4, gồm hủy do không trả số dư tại nơi nhận; tự đóng đơn không phát sinh sau 7 ngày;
   - danh sách đơn thiếu giấy và đổi chuyến của đơn đã cọc (màn hình 3.5b), xử lý theo nguyên nhân ở GĐ5. Tính hạn giữ giá từ `previous_departure_id` và đếm theo `cause_type`;
-  - Hoàn chuyển khoản qua `RefundService`, liên kết từng khoản gốc. Khi quản lý duyệt hoàn dòng chưa chi, `RefundService` ghi `quotation_line.refund_payment_id` trong cùng giao dịch. `RatingService` cho đơn `DELIVERED` hoặc `COMPLETED`.
+  - Hoàn chuyển khoản qua `RefundService`, liên kết từng khoản gốc. Không hoàn riêng dòng thu hộ và `VET_CHECK` (24/11/2026). `RatingService` cho đơn `DELIVERED` hoặc `COMPLETED`.
 - **FE:** quản lý quyết toán. Khách xem khoản thu thêm, thanh toán, đánh giá. Hóa đơn gửi qua mail.
 - **Tận dụng:** `SettlementServiceImpl`, `SettlementExpiryScheduler`, `BillMailServiceImpl`, `CustomerRatingController`, FE `orders/TripFeedback.tsx`, `manager/cancelled-orders`.
 - **Xong khi:** test số còn nợ trong các ca có hoàn tiền, có thu thêm, có khoản do người nhận chịu. Đóng đơn đúng điều kiện.
@@ -652,7 +653,7 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 | P0-FE | Token, `shared/ui`, layout, openapi-typescript, lint, i18n | B | 0 | Xong (8 PR) | #355, #358, #367, #368, #369, #372, #373, #375 |
 | A1 | Mạng lưới, tuyến, lịch, chuyến | A | 1 | Xong backend | #348, #349 |
 | A2 | Xe, nhân sự, đối tác, tham số | A | 1 | Xong | |
-| B1 | Điều độ | B | 1 | Xong phần chính (4 PR). Vị trí khoang: backend #412, giao diện tiếp theo. Còn: gợi ý gom đơn, chỉ lập lượt trục khi chuyến đã chốt chạy, hủy chặng chưa chạy khi đơn rời chuyến | #377, #378, #379, #380, #412 |
+| B1 | Điều độ | B | 1 | Xong phần chính (4 PR). Vị trí khoang: backend #412, giao diện #414. Chỉ lập lượt trục khi chuyến đã chốt chạy, hợp đồng hủy chặng chưa chạy khi đơn rời chuyến (#415; luồng A cần gọi). Gợi ý gom đơn đón, giao: backend #418, giao diện #419 | #377, #378, #379, #380, #412, #414, #415, #418, #419 |
 | A3 | Bảng giá, tính giá | A | 2 | Xong backend | #365 |
 | A4 | Quy định, giấy tờ yêu cầu | A | 2 | Xong backend | #363 |
 | B2 | Điểm dừng, giao nhận | B | 2 | Đang làm: PR1 backend (#381), PR2 màn tổ xe (#382), PR3 nhận ngựa lập khoản số dư, kiểm thanh toán thật khi rời nơi nhận, không nhận một con (#398), PR4 quá hạn số dư thì trả ngựa tại chỗ và hủy đơn (#399), PR5 chặng đại lý và bàn giao AGENT ở cửa khẩu (backend #402, giao diện #403), PR7 khách tự chở tới hub và tự nhận ở hub SELF (backend #405, giao diện #407). Còn: trả ngựa cho đại lý khi đơn nhập quá hạn số dư, biên bản và giấy gốc | #381, #382, #398, #399, #402, #403, #405, #407 |

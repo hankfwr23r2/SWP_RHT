@@ -1,0 +1,23 @@
+// Nhóm đơn của quản lý theo mốc thương mại
+import type { BookingStatus } from '@shared/api/bookingOrders'
+
+export const ORDER_GROUPS = {
+  quoting: ['QUOTING'],
+  intake: ['PENDING_INTAKE'],
+  review: ['UNDER_REVIEW', 'NEEDS_RESUBMISSION'],
+  deposit: ['AWAITING_DEPOSIT'],
+  confirmed: ['CONFIRMED', 'SCHEDULE_CHANGE_REQUIRED'],
+  moving: ['IN_OPERATION'],
+  settle: ['DELIVERED'],
+  closed: ['COMPLETED', 'CANCELLED', 'REJECTED', 'QUOTE_EXPIRED'],
+} satisfies Record<string, BookingStatus[]>
+
+export type OrderGroup = keyof typeof ORDER_GROUPS | 'documents'
+export const GROUPS: OrderGroup[] = ['quoting', 'documents', 'settle', 'intake', 'review', 'deposit', 'confirmed', 'moving', 'closed']
+export const groupOfParam = (value: string | null): OrderGroup => GROUPS.find(group => group === value) ?? 'quoting'
+
+const CLOSED: BookingStatus[] = ['COMPLETED', 'CANCELLED', 'REJECTED', 'QUOTE_EXPIRED', 'DELIVERED']
+// Ẩn nút chắc chắn không dùng được; backend vẫn kiểm lại
+export const canCancel = (status?: BookingStatus) => !!status && !CLOSED.includes(status)
+export const canSettle = (status?: BookingStatus) => status === 'IN_OPERATION' || status === 'DELIVERED' || status === 'COMPLETED'
+export const canReject = (status?: BookingStatus) => status === 'PENDING_INTAKE' || status === 'UNDER_REVIEW' || status === 'NEEDS_RESUBMISSION'

@@ -60,6 +60,17 @@ class StaffReadApiTest {
         mvc.perform(get("/bookings/summaries").param("statuses", "QUOTING")
                         .header(HttpHeaders.AUTHORIZATION, customer(customer.getUser().getUsername())))
                 .andExpect(status().isForbidden());
+
+        // Khách chỉ thấy đơn của mình, cùng dữ liệu tóm tắt
+        mvc.perform(get("/bookings").header(HttpHeaders.AUTHORIZATION, customer(customer.getUser().getUsername())))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.length()").value(2))
+                .andExpect(jsonPath("$.data[?(@.id == %d)].horseCount".formatted(booking.getId())).value(1))
+                .andExpect(jsonPath("$.data[?(@.id == %d)].departureDate".formatted(booking.getId())).value("2031-05-06"))
+                .andExpect(jsonPath("$.data[?(@.id == %d)].routeName".formatted(booking.getId())).value(departure.getRoute().getName()));
+        String other = data.unique("read-other");
+        data.customer(other);
+        mvc.perform(get("/bookings").header(HttpHeaders.AUTHORIZATION, customer(other)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data", empty()));
     }
 
     @Test

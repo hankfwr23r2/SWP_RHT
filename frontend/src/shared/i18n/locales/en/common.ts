@@ -91,7 +91,7 @@ export const common = {
     orderHistory: 'History',
     lookup: 'Tracking',
     lookupOrder: 'Track Shipment',
-    pricing: 'Pricing',
+    pricing: 'Price estimate',
     network: 'Network',
     services: 'Services',
     process: 'Process',

@@ -135,6 +135,10 @@ public class DispatchServiceImpl implements DispatchService {
         if (!RUNNABLE_DEPARTURES.contains(departure.getStatus())) {
             throw new DispatchRuleException("departureId", "Chuyến đang " + departure.getStatus() + ", không lập lượt xe được.", true);
         }
+        // Chỉ lập lượt trục khi quản lý đã quyết định chạy chuyến (THONG_BAO_LUONG_B, A6b)
+        if (departure.getRunConfirmedAt() == null) {
+            throw new DispatchRuleException("departureId", "Chuyến chưa được quản lý xác nhận chạy, chưa lập lượt trục được.", true);
+        }
         List<RouteStop> route = routeStops.findWithLocation(departure.getRoute().getId());
         if (route.size() < 2) {
             throw new DispatchRuleException("departureId", "Tuyến của chuyến chưa có đủ điểm dừng.");

@@ -3,6 +3,7 @@ import { lazy } from 'react'
 import i18n, { i18nReady } from '@shared/i18n'
 import type { PageLoader } from '@shared/routing/pageData'
 import type { AppRoute } from '@shared/routing/types'
+import { managerTexts } from '@shared/i18n/staffTexts'
 import { ManagerLoginPage, StaffLoginPage } from './features/auth/StaffLoginPage'
 import type * as Loaders from './shared/loaders'
 import type * as NetworkLoaders from './features/admin/network/loaders'
@@ -13,9 +14,7 @@ const load = <K extends keyof typeof Loaders>(name: K): PageLoader => async ctx 
 // Trang đăng nhập tải ngay; các trang còn lại chỉ tải khi mở tới (lazy), mỗi vai trò chỉ tải phần mình dùng.
 // Trang có loader khai báo lazyPage: router tải file trang song song với dữ liệu rồi mới vẽ trang.
 const SitemapPage = lazy(() => import('../sitemap/SitemapPage').then(m => ({ default: m.SitemapPage })))
-const SystemLogsPage = lazy(() => import('./features/admin/system-logs/SystemLogsPage'))
 const FleetPage = lazy(() => import('./features/coordinator/fleet/FleetPage'))
-const AdminFleetPage = lazy(() => import('./features/admin/fleet/AdminFleetPage'))
 const DriverPage = lazy(() => import('./features/driver/DriverPage'))
 const EscortPage = lazy(() => import('./features/escort/EscortPage'))
 const StaffProfilePage = lazy(() => import('./features/profile/StaffProfilePage'))
@@ -45,8 +44,6 @@ export const routes: AppRoute[] = [
     () => import('./features/admin/pricing/loaders').then(m => m.pricingLoader()), ['admin', 'manager']),
   staffCatalogPage('/admin/pricing/:id', 'viewPriceList', () => import('./features/admin/pricing/PriceListDetailPage'),
     ctx => import('./features/admin/pricing/loaders').then(m => m.pricingDetailLoader(ctx)), ['admin', 'manager']),
-  { path: '/admin/horse-types', lazyPage: () => import('./features/admin/horse-types/AdminHorseTypesPage'), loader: load('adminHorseTypesLoader'), roles: A, title: 'Danh mục giống ngựa', layout: 'staff' },
-  { path: '/admin/fleet', page: AdminFleetPage, roles: A, title: 'Đội xe', layout: 'staff' },
   staffCatalogPage('/admin/network/locations', 'locations', () => import('./features/admin/network/LocationsPage'), loadNetwork('locationsLoader')),
   staffCatalogPage('/admin/network/areas', 'areas', () => import('./features/admin/network/AreasPage'), loadNetwork('areasLoader')),
   staffCatalogPage('/admin/network/routes', 'routes', () => import('./features/admin/network/RoutesPage'), loadNetwork('routesLoader')),
@@ -55,19 +52,36 @@ export const routes: AppRoute[] = [
   staffCatalogPage('/admin/network/routes/:id/edit', 'editRoute', () => import('./features/admin/network/RouteEditorPage'), loadNetwork('routeEditorLoader')),
   staffCatalogPage('/admin/network/schedules', 'schedules', () => import('./features/admin/network/SchedulesPage'), loadNetwork('schedulesLoader')),
   staffCatalogPage('/admin/network/departures', 'departures', () => import('./features/admin/network/DeparturesPage'), loadNetwork('departuresLoader')),
-  { path: '/admin/rules', lazyPage: () => import('./features/admin/rules/AdminRulesPage'), loader: load('systemConfigLoader'), roles: A, title: 'Quy định & Tham số', layout: 'staff' },
-  { path: '/admin/document-requirements', lazyPage: () => import('./features/admin/documents/AdminDocumentRequirementsPage'), loader: load('documentRequirementsLoader'), roles: A, title: 'Giấy tờ bắt buộc', layout: 'staff' },
-  { path: '/admin/system-logs', page: SystemLogsPage, roles: A, title: 'Nhật ký hệ thống', layout: 'staff', catalog: false },
+  { path: '/admin/horse-types', lazyPage: () => import('./features/admin/horse-types/AdminHorseTypesPage'), loader: () => import('./features/admin/horse-types/loaders').then(m => m.loader()), roles: A, get title() { return i18n.t('staffCatalog.horseTypes.title') }, layout: 'staff' },
+  { path: '/admin/vehicles', lazyPage: () => import('./features/admin/vehicles/VehiclesPage'), loader: () => import('./features/admin/vehicles/loaders').then(m => m.loader()), roles: A, get title() { return i18n.t('staffCatalog.vehicles.title') }, layout: 'staff' },
+  { path: '/admin/settings', lazyPage: () => import('./features/admin/settings/SettingsPage'), loader: () => import('./features/admin/settings/loaders').then(m => m.loader()), roles: A, get title() { return i18n.t('staffCatalog.settings.title') }, layout: 'staff' },
+  { path: '/admin/regulations', lazyPage: () => import('./features/admin/regulations/RegulationsPage'), loader: () => import('./features/admin/regulations/loaders').then(m => m.loader()), roles: A, get title() { return i18n.t('staffCatalog.regulations.title') }, layout: 'staff' },
+  { path: '/admin/system-logs', lazyPage: () => import('./features/admin/system-logs/SystemLogsPage'), loader: () => import('./features/admin/system-logs/loaders').then(m => m.loader()), roles: A, get title() { return i18n.t('systemLogs.title') }, layout: 'staff' },
   { path: '/admin/ui-library', lazyPage: () => import('./features/admin/ui-library/UiLibraryPage'), roles: A, title: 'Thư viện giao diện', layout: 'staff', catalog: false },
-  { path: '/admin/accounts', lazyPage: () => import('./features/admin/accounts/AccountsPage'), loader: load('accountsLoader'), roles: A, title: 'Tất cả tài khoản', layout: 'staff' },
-  { path: '/admin/accounts/:role', lazyPage: () => import('./features/admin/accounts/AccountsPage'), loader: load('accountsLoader'), roles: A, title: 'Tài khoản theo loại', layout: 'staff' },
+  { path: '/admin/accounts', lazyPage: () => import('./features/admin/accounts/AccountsPage'), loader: () => import('./features/admin/accounts/loaders').then(m => m.loader()), roles: A, get title() { return i18n.t('staffCatalog.accounts.title') }, layout: 'staff' },
+  { path: '/admin/parties', lazyPage: () => import('./features/admin/parties/PartiesPage'), loader: () => import('./features/admin/parties/loaders').then(m => m.loader()), roles: ['admin', 'coordinator'], get title() { return i18n.t('staffCatalog.parties.title') }, layout: 'staff' },
 
   { path: '/manager', lazyPage: () => import('./features/manager/dashboard/DashboardPage'), loader: load('bookingListLoader'), roles: M, title: 'Bảng điều khiển', layout: 'staff' },
-  { path: '/manager/intake', lazyPage: () => import('./features/manager/intake/IntakePage'), loader: load('bookingListLoader'), roles: M, title: 'Tiếp nhận đơn hàng', layout: 'staff' },
-  { path: '/manager/approvals', lazyPage: () => import('./features/manager/approvals/ApprovalsPage'), loader: load('bookingListLoader'), roles: M, title: 'Duyệt báo giá', layout: 'staff' },
+  {
+    path: '/manager/orders', roles: M, layout: 'staff', catalog: false,
+    lazyPage: () => Promise.all([import('./features/manager/orders/ManagerOrdersPage'), managerTexts()]).then(([page]) => page), title: 'Đơn hàng',
+  },
+  {
+    path: '/manager/orders/:id', roles: M, layout: 'staff', catalog: false,
+    loader: context => import('./features/manager/orders/loaders').then(m => m.orderLoader(context)),
+    lazyPage: () => Promise.all([import('./features/manager/orders/ManagerOrderPage'), managerTexts()]).then(([page]) => page), title: 'Chi tiết đơn',
+  },
+  {
+    path: '/manager/departures', roles: M, layout: 'staff', catalog: false,
+    loader: () => import('./features/manager/departures/loaders').then(m => m.departuresLoader()),
+    lazyPage: () => Promise.all([import('./features/manager/departures/DeparturesPage'), managerTexts()]).then(([page]) => page), title: 'Chuyến cần quyết định',
+  },
+  {
+    path: '/manager/refunds', roles: M, layout: 'staff', catalog: false,
+    lazyPage: () => Promise.all([import('./features/manager/refunds/RefundsPage'), managerTexts()]).then(([page]) => page), title: 'Hoàn tiền',
+  },
   { path: '/manager/reports', lazyPage: () => import('./features/manager/reports/ReportsPage'), loader: load('bookingListLoader'), roles: M, title: 'Báo cáo doanh thu', layout: 'staff' },
   { path: '/manager/trip-reports', lazyPage: () => import('./features/manager/trip-reports/TripReportsPage'), roles: M, title: 'Báo cáo vận hành', layout: 'staff', catalog: false },
-  { path: '/manager/cancelled-orders', lazyPage: () => import('./features/manager/cancelled-orders/CancelledOrdersPage'), loader: load('bookingListLoader'), roles: M, title: 'Đơn đã hủy', layout: 'staff' },
   { path: '/manager/incidents', lazyPage: () => import('./features/incidents/IncidentsBoardPage'), roles: M, title: 'Sự cố', layout: 'staff', catalog: false },
 
   { path: '/specialist/verification', lazyPage: () => import('./features/specialist/verification/VerificationListPage'), loader: load('bookingListLoader'), roles: SP, title: 'Duyệt hồ sơ ngựa', layout: 'staff' },

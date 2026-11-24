@@ -3,11 +3,9 @@ package com.example.racehorse_transport.service.impl;
 import com.example.racehorse_transport.dto.payment.RefundResponseDto;
 import com.example.racehorse_transport.dto.payment.MarkRefundedRequestDto;
 import com.example.racehorse_transport.dto.booking.BookingCancellationResponseDto;
-import com.example.racehorse_transport.entity.QuotationLine;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.QuotationStatus;
 import com.example.racehorse_transport.policy.BookingCancellationPolicy;
-import com.example.racehorse_transport.policy.BookingCancellationPolicy.Breakdown;
 import com.example.racehorse_transport.policy.BookingCancellationPolicy.Outcome;
 import com.example.racehorse_transport.repository.BookingStatusHistoryRepository;
 import com.example.racehorse_transport.repository.QuotationRepository;
@@ -82,55 +80,33 @@ public class RefundServiceImpl implements RefundService {
     public BookingCancellationResponseDto reviewCancelledLines(Long bookingId) {
         var booking = bookings.findById(bookingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
-        var review = cancelledReview(booking, payments.findByBooking_IdOrderById(bookingId));
-        return BookingCancellationResponseDto.from(booking, false, review.currency(), BigDecimal.ZERO,
-                review.amounts().reviewable(), review.amounts().forfeited(), review.amounts().reviewable().signum() > 0
-                        ? review.lines().stream().filter(BookingCancellationPolicy::canRefundLine).map(QuotationLine::getId).toList()
-                        : List.of());
-    }
-
-    @Override
-    @Transactional
-    public List<PaymentResponseDto> refundUnspentLines(Long bookingId, List<Long> lineIds) {
-        if (lineIds == null || lineIds.isEmpty()) {
-            throw new BookingRuleException("Chọn ít nhất một dòng chưa chi để hoàn.");
-        }
-        var booking = bookings.findForUpdate(bookingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
-        var entries = new ArrayList<>(payments.findByBooking_IdOrderById(bookingId));
-        var review = cancelledReview(booking, entries);
-        BookingCancellationPolicy.includeUnspentLines(review.amounts(), review.lines(), lineIds);
-
-        List<PaymentResponseDto> result = new ArrayList<>();
-        for (var line : review.lines()) {
-            if (lineIds.contains(line.getId())) {
-                var created = createPending(booking, entries, review.currency(), line.getAmount());
-                // Nếu dòng trải qua nhiều khoản gốc, FK đánh dấu bằng khoản hoàn đầu tiên.
-                line.setRefundPayment(created.getFirst());
-                entries.addAll(created);
-                created.stream().map(PaymentResponseDto::from).forEach(result::add);
-            }
-        }
-        return List.copyOf(result);
-    }
-
-    private LineReview cancelledReview(Booking booking, List<Payment> entries) {
         if (booking.getStatus() != BookingStatus.CANCELLED) {
             throw BookingRuleException.conflict("Chỉ đối soát các dòng của đơn đã hủy.");
         }
-        Long bookingId = booking.getId();
         var quotation = quotations.findByBooking_IdAndStatus(bookingId, QuotationStatus.ACCEPTED)
                 .orElseThrow(() -> BookingRuleException.conflict("Đơn không có báo giá đã chấp nhận."));
         var cancelled = history.findFirstByBooking_IdAndToStatusOrderByChangedAtDescIdDesc(bookingId, BookingStatus.CANCELLED)
                 .orElseThrow(() -> BookingRuleException.conflict("Thiếu lịch sử hủy đơn."));
         boolean refundTransport = cancelled.getFromStatus() == BookingStatus.SCHEDULE_CHANGE_REQUIRED
                 && schedules.cancellationTerms(bookingId).refundTransportDeposit();
-        var lines = quotations.findLinesForCancellation(quotation.getId());
-        var amounts = BookingCancellationPolicy.amounts(Outcome.FORFEIT_DEPOSIT, refundTransport, quotation, lines, entries);
-        return new LineReview(quotation.getCurrencyCode(), lines, amounts);
+        var amounts = BookingCancellationPolicy.amounts(Outcome.FORFEIT_DEPOSIT, refundTransport, quotation,
+                quotations.findLinesForCancellation(quotation.getId()), payments.findByBooking_IdOrderById(bookingId));
+        return BookingCancellationResponseDto.from(booking, false, quotation.getCurrencyCode(), BigDecimal.ZERO,
+                amounts.reviewable(), amounts.forfeited(), List.of());
     }
 
-    private record LineReview(String currency, List<QuotationLine> lines, Breakdown amounts) {}
+    @Override
+    @Transactional(readOnly = true)
+    public List<PaymentResponseDto> refundUnspentLines(Long bookingId, List<Long> lineIds) {
+        if (lineIds == null || lineIds.isEmpty()) {
+            throw new BookingRuleException("Chọn ít nhất một dòng chưa chi để hoàn.");
+        }
+        if (!bookings.existsById(bookingId)) {
+            throw new ResourceNotFoundException("Không tìm thấy đơn.");
+        }
+        BookingCancellationPolicy.requireNoLineRefund(lineIds);
+        return List.of();
+    }
 
     private List<Payment> createPending(Booking booking, List<Payment> existing, String currency, BigDecimal amount) {
         List<Payment> created = new ArrayList<>();
