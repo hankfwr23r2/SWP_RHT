@@ -56,6 +56,13 @@ public class TripExecutionServiceImpl implements TripExecutionService {
         requireCrew(trip.getId(), username);
         TripExecutionPolicy.requireStartable(trip.getStatus(),
                 crew.existsByVehicleTrip_IdAndCrewRoleAndStatus(trip.getId(), CrewRole.DRIVER, CrewAssignmentStatus.ACKNOWLEDGED));
+        // Quy tắc #40: sơ đồ khoang chốt trước khi lượt xe bắt đầu, mọi con (kể cả con đón ở điểm sau) phải có vị trí
+        List<String> unplaced = legs.findActiveOnTrip(trip.getId(), Set.of(HorseLegStatus.CANCELLED, HorseLegStatus.FAILED)).stream()
+                .filter(leg -> leg.getStallPosition() == null).map(leg -> leg.getBookingHorse().getHorse().getName()).toList();
+        if (!unplaced.isEmpty()) {
+            throw new DispatchRuleException("stallPlan", "Còn ngựa chưa có vị trí khoang: " + String.join(", ", unplaced)
+                    + ". Xếp sơ đồ khoang trước khi xuất phát.", true);
+        }
         // Đơn có ngựa lên xe ở địa chỉ đón trên lượt này: đủ giấy và bảo hiểm từng con đã xác nhận
         Map<Long, String> bookings = new LinkedHashMap<>();
         for (TripStop stop : stops.findByVehicleTrip_IdOrderBySequenceNumber(trip.getId())) {
