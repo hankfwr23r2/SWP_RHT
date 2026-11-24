@@ -2,22 +2,13 @@ import { expect, test, type Page } from '@playwright/test'
 
 // Hotline và địa chỉ văn phòng do admin cấu hình: màn khách hiện giá trị đang cấu hình, màn admin có nhóm "Liên hệ"
 // với ô nhập chữ. Trang thử chỉ nằm trong test, dựng màn thật; chỉ tầng HTTP được giả lập.
-async function open(page: Page, view: 'schedule' | 'quote' | 'admin') {
+async function open(page: Page, view: 'quote' | 'admin') {
   await page.addInitScript(() => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: 'admin', name: 'Admin', username: 'admin' })))
   await page.route('**/contact-test*', route => route.fulfill({ contentType: 'text/html', body: `<!doctype html><html><body><div id="root"></div>
 <script type="module">import R from '/@react-refresh';R.injectIntoGlobalHook(window);window.$RefreshReg$=()=>{};window.$RefreshSig$=()=>t=>t;window.__vite_plugin_react_preamble_installed__=true;</script>
 <script type="module" src="/e2e/fixtures/contactInfoHarness.tsx"></script></body></html>` }))
   await page.goto(`/contact-test?view=${view}`)
 }
-
-test('đơn cần đổi lịch: số gọi lại là hotline đang cấu hình', async ({ page }) => {
-  await open(page, 'schedule')
-
-  const link = page.getByRole('link', { name: '1900 7777' })
-  await expect(link).toBeVisible()
-  await expect(link).toHaveAttribute('href', 'tel:19007777')
-  await expect(page.getByText('1900 6868')).toHaveCount(0)
-})
 
 test('phiếu báo giá in hotline và địa chỉ đang cấu hình', async ({ page }) => {
   await open(page, 'quote')

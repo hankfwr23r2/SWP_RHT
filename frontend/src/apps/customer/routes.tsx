@@ -5,7 +5,6 @@ import i18n, { i18nReady } from '@shared/i18n'
 import LoginPage from './features/auth/LoginPage'
 import HomePage from './features/home/HomePage'
 import { horseProfilesLoader } from './features/horses/loaders'
-import { orderDetailLoader, ordersLoader } from './features/orders/loaders'
 import { portalLoader } from './features/portal/portalLoader'
 
 // Trang chủ và đăng nhập tải ngay; các trang còn lại chỉ tải khi mở tới (lazy), để lần mở web đầu tiên
@@ -52,10 +51,25 @@ export const routes: AppRoute[] = [
   bookingStep('horses', () => import('./features/booking/Step2HorsesPage')),
   bookingStep('services', () => import('./features/booking/Step3ServicesPage')),
   bookingStep('review', () => import('./features/booking/Step4ReviewPage')),
-  { path: '/orders', lazyPage: () => import('./features/orders/OrdersPage'), loader: ordersLoader, roles: C, title: 'Đơn của tôi', layout: 'customer' },
-  { path: '/history', lazyPage: () => import('./features/orders/HistoryPage'), loader: ordersLoader, roles: C, title: 'Lịch sử đơn', layout: 'customer' },
+  {
+    path: '/orders', roles: C, layout: 'customer',
+    loader: () => import('./features/orders/loaders').then(m => m.ordersLoader()),
+    lazyPage: () => Promise.all([import('./features/orders/OrdersPage'), i18nReady]).then(([page]) => page),
+    get title() { return i18n.t('myOrders.title') },
+  },
+  {
+    path: '/history', roles: C, layout: 'customer',
+    loader: () => import('./features/orders/loaders').then(m => m.ordersLoader()),
+    lazyPage: () => Promise.all([import('./features/orders/HistoryPage'), i18nReady]).then(([page]) => page),
+    get title() { return i18n.t('myOrders.historyTitle') },
+  },
   { path: '/terms', page: PolicyPage, roles: [], title: 'Điều khoản và chính sách', layout: 'public', catalog: false },
-  { path: '/orders/:id', lazyPage: () => import('./features/orders/OrderDetailPage'), loader: orderDetailLoader, roles: C, title: 'Chi tiết đơn', layout: 'customer' },
+  {
+    path: '/orders/:id', roles: C, layout: 'customer',
+    loader: context => import('./features/orders/loaders').then(m => m.orderDetailLoader(context)),
+    lazyPage: () => Promise.all([import('./features/orders/OrderDetailPage'), i18nReady]).then(([page]) => page),
+    get title() { return i18n.t('myOrders.title') },
+  },
   { path: '/payment/vnpay-return', page: VnpayReturnPage, roles: [], title: 'Kết quả thanh toán', layout: 'public' },
 ]
 

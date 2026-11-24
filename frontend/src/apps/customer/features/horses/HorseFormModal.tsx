@@ -2,18 +2,16 @@ import { useId, useRef, useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Horse, HorseType, HorseUpdate } from '@shared/api/horses'
 import { isIsoMicrochip, normalizeMicrochip } from '@shared/lib/microchip'
-import type { HorseProfile } from '@shared/types/booking'
 import { Button } from '@shared/ui/Button'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
-import { FileField } from '@shared/ui/FileField'
 import { Input } from '@shared/ui/Input'
 import { Modal } from '@shared/ui/Modal'
 import { Select } from '@shared/ui/Select'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { Textarea } from '@shared/ui/Textarea'
 import { useToast } from '@shared/ui/toast'
-import { saveHorseProfile, useHorseFormData, useLegacyHorseDocuments } from './loaders'
+import { saveHorseProfile, useHorseFormData } from './loaders'
 import s from './Horses.module.css'
 
 type ModalProps = { onClose: () => void; onSaved: () => void }
@@ -165,32 +163,6 @@ function ProfileFields({ horse, types, onClose, onSaved }: ModalProps & { horse?
             onChange={e => set('identificationMarks', e.target.value)} />}
         </Field>
       </form>
-    </Modal>
-  )
-}
-
-// The existing order detail imports this entry point for document resubmission.
-export function HorseFormModal({ horse, onClose, onSaved }: {
-  owner: string
-  horse: HorseProfile
-  onClose: () => void
-  onSaved: (horse: HorseProfile) => void
-}) {
-  const { t } = useTranslation()
-  const { documents, change, save, busy } = useLegacyHorseDocuments(horse, onSaved)
-  const cancel = () => { if (!busy) onClose() }
-  return (
-    <Modal title={t('horses.documents')} onClose={cancel} footer={
-      <>
-        <Button onClick={cancel} disabled={busy}>{t('ui.cancel')}</Button>
-        <Button variant="primary" onClick={save} loading={busy}>{t('common.save')}</Button>
-      </>
-    }>
-      <fieldset className={s.legacyDocuments} disabled={busy}>
-        {documents.map(({ type, document, error }) => <FileField key={type} label={t(`horses.documentLabels.${type}`)}
-          fileName={document?.fileName} fileUrl={document?.fileUrl} error={error}
-          onChange={(_, file) => change(type, file)} />)}
-      </fieldset>
     </Modal>
   )
 }

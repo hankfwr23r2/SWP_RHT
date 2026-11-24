@@ -1,4 +1,19 @@
 import apiClient, { type ApiResponse } from './client'
+import type { components } from './generated/schema'
+
+type Schemas = components['schemas']
+export type BookingPayment = Schemas['PaymentResponseDto']
+export type PaymentResult = Schemas['PaymentResultResponseDto']
+
+export const bookingPaymentsApi = {
+  ofBooking: async (bookingId: number) =>
+    (await apiClient.get<ApiResponse<BookingPayment[]>>(`/bookings/${bookingId}/payments`)).data.data,
+  // Số tiền do backend lấy từ khoản thu, client chỉ gửi mã khoản thu
+  checkout: async (paymentId: number) =>
+    (await apiClient.post<ApiResponse<Schemas['PaymentCheckoutResponseDto']>>(`/payments/${paymentId}/checkout`, {})).data.data,
+  verifyReturn: async (params: Record<string, string>) =>
+    (await apiClient.get<ApiResponse<PaymentResult>>('/payments/vnpay/return', { params })).data.data,
+}
 
 export interface PaymentDto {
   id: number
@@ -49,19 +64,6 @@ export interface VnpayCreateDto {
   expiresAt: number
 }
 
-export interface VnpayResultDto {
-  success: boolean
-  rspCode: string
-  message: string
-  bookingCode?: string
-  paymentType?: string
-  paymentStatus?: string
-  amount?: number
-  transactionCode?: string
-  gatewayTransactionNo?: string
-  bankCode?: string
-}
-
 // Chỉ giữ các tham số vnp_* mà VNPAY gắn vào URL trang kết quả
 export function vnpayParamsFrom(search: string): Record<string, string> {
   const params: Record<string, string> = {}
@@ -81,14 +83,6 @@ export const paymentApi = {
       ? `${window.location.origin}/payment/vnpay-return`
       : undefined
     const res = await apiClient.post<ApiResponse<VnpayCreateDto>>('/payments/vnpay/create', { bookingId: String(bookingId), paymentType, returnUrl })
-    return res.data.data
-  },
-
-  /**
-   * 2. Gửi lại tham số VNPAY trả về trình duyệt để backend kiểm tra chữ ký và ghi nhận (GET /api/v1/payments/vnpay/return)
-   */
-  verifyVnpayReturn: async (params: Record<string, string>): Promise<VnpayResultDto> => {
-    const res = await apiClient.get<ApiResponse<VnpayResultDto>>('/payments/vnpay/return', { params })
     return res.data.data
   },
 

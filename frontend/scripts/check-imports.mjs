@@ -26,7 +26,6 @@ const EXCEPTIONS = {
     'src/apps/backoffice/features/manager/dashboard/OrderDetailModal.tsx',
     'src/apps/customer/features/auth/LoginPage.tsx',
     'src/apps/customer/features/home/HomePage.tsx',
-    'src/apps/customer/features/orders/OrderDetailPage.tsx',
     'src/apps/customer/features/portal/PortalPage.tsx',
     'src/apps/customer/features/pricing/PriceLookup.tsx',
   ],
