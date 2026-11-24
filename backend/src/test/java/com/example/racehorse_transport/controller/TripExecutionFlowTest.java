@@ -40,6 +40,8 @@ class TripExecutionFlowTest {
     @Autowired private JwtUtils jwtUtils;
     @Autowired private LocationRepository locations;
     @Autowired private EntityManager entityManager;
+    // Lưu tệp lên Cloudinary là dịch vụ bên ngoài
+    @org.springframework.test.context.bean.override.mockito.MockitoBean private com.example.racehorse_transport.client.CloudinaryClient cloudinary;
 
     private String coordinator;
     private String driver;
@@ -116,7 +118,13 @@ class TripExecutionFlowTest {
                 .andExpect(jsonPath("$.message").value("Chưa có con nào quét đúng chip."));
         scan(escort, pickup, chip).andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.handovers[0].horses[0].microchipMatched").value(true));
+        // MAN_HINH 4.3: chưa có biên bản đã ký thì chưa hoàn tất nhận ngựa
+        jdbc.update("DELETE FROM document WHERE handover_id = ?", pickup);
+        act(escort, "/handovers/" + pickup + "/complete").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Chưa có biên bản giao nhận. Chụp biên bản đã ký trước khi hoàn tất."));
+        signedRecord(pickup);
         act(escort, "/handovers/" + pickup + "/complete").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.handovers[0].recordAttached").value(true))
                 .andExpect(jsonPath("$.data.handovers[0].status").value("DONE"))
                 .andExpect(jsonPath("$.data.horses[0].leg.status").value("IN_PROGRESS"));
 
@@ -296,6 +304,64 @@ class TripExecutionFlowTest {
                 .andExpect(jsonPath("$.message", startsWith("Bảo hiểm của")));
     }
 
+    @Test
+    void crewUploadsTheSignedRecordAndHandlesOriginalPapers() throws Exception {
+        makeLocal();
+        // Hộ chiếu ngựa đã duyệt: giấy gốc khách giao lúc nhận ngựa, trả lại lúc giao
+        long passport = jdbc.queryForObject("""
+                INSERT INTO document (document_type_id, document_requirement_id, file_url, file_name, uploaded_by, status, reviewed_by, reviewed_at, horse_id)
+                SELECT dt.id, (SELECT dr.id FROM document_requirement dr WHERE dr.document_type_id = dt.id ORDER BY dr.id LIMIT 1),
+                       'test://passport/' || md5(random()::text), 'passport.pdf', u.id, 'APPROVED', u.id, now(),
+                       (SELECT horse_id FROM booking_horse WHERE booking_id = ?)
+                FROM document_type dt, (SELECT min(id) AS id FROM app_user) u WHERE dt.code = 'HORSE_PASSPORT' RETURNING id""", Long.class, booking);
+        org.mockito.Mockito.when(cloudinary.uploadFile(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyString()))
+                .thenAnswer(call -> "https://cdn.example/record-" + System.nanoTime() + ".jpg");
+        acknowledge(driver);
+        act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + stops.get(0) + "/arrive").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + stops.get(0) + "/depart").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + stops.get(1) + "/arrive").andExpect(status().isOk());
+        long pickup = rawHandoverId(handover(escort, stops.get(1), "PICKUP").andExpect(status().isCreated()));
+        scan(escort, pickup, chip).andExpect(status().isOk());
+
+        mvc.perform(get("/handovers/{id}/papers", pickup).header(HttpHeaders.AUTHORIZATION, escort)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].documentId").value(passport)).andExpect(jsonPath("$.data[0].direction").doesNotExist());
+        paper(pickup, passport).andExpect(status().isOk()).andExpect(jsonPath("$.data[0].direction").value("RECEIVED"));
+        act(escort, "/handovers/" + pickup + "/complete").andExpect(status().isConflict());
+        uploadRecord(pickup).andExpect(status().isOk()).andExpect(jsonPath("$.data.handovers[0].recordAttached").value(true));
+        act(escort, "/handovers/" + pickup + "/complete").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + stops.get(1) + "/depart").andExpect(status().isOk());
+
+        act(driver, "/trip-stops/" + stops.get(2) + "/arrive").andExpect(status().isOk());
+        long delivery = rawHandoverId(handover(escort, stops.get(2), "DELIVERY").andExpect(status().isCreated()));
+        scan(escort, delivery, chip).andExpect(status().isOk());
+        paper(delivery, passport).andExpect(status().isOk()).andExpect(jsonPath("$.data[0].direction").value("RETURNED"));
+        uploadRecord(delivery).andExpect(status().isOk());
+        act(escort, "/handovers/" + delivery + "/complete").andExpect(status().isOk());
+        assertThat(jdbc.queryForList("SELECT direction FROM handover_document WHERE document_id = ? ORDER BY handover_id", String.class, passport))
+                .containsExactly("RECEIVED", "RETURNED");
+        // Người ngoài tổ lái không tải biên bản được
+        String stranger = token(testData.staff(testData.unique("exec.paper.stranger"), "ESCORT"), "ESCORT");
+        mvc.perform(get("/handovers/{id}/papers", delivery).header(HttpHeaders.AUTHORIZATION, stranger)).andExpect(status().isForbidden());
+    }
+
+    private ResultActions paper(long handoverId, long documentId) throws Exception {
+        return mvc.perform(post("/handovers/{id}/papers", handoverId).header(HttpHeaders.AUTHORIZATION, escort)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"documentId\":%d}".formatted(documentId)));
+    }
+
+    private ResultActions uploadRecord(long handoverId) throws Exception {
+        var file = new org.springframework.mock.web.MockMultipartFile("file", "bien-ban.jpg", "image/jpeg", new byte[] {1, 2, 3});
+        return mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart("/handovers/{id}/record", handoverId)
+                .file(file).header(HttpHeaders.AUTHORIZATION, escort));
+    }
+
+    // Lần giao nhận vừa mở, chưa có biên bản
+    private static long rawHandoverId(ResultActions result) throws Exception {
+        List<Number> ids = JsonPath.read(result.andReturn().getResponse().getContentAsString(), "$.data.handovers[*].id");
+        return ids.getLast().longValue();
+    }
+
     // Sửa thẳng DB rồi bỏ bộ đệm của JPA để service đọc lại
     private void makeLocal() {
         entityManager.flush();
@@ -336,8 +402,10 @@ class TripExecutionFlowTest {
         return mvc.perform(builder.header(HttpHeaders.AUTHORIZATION, token)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
     }
 
-    private static long handoverId(ResultActions result) throws Exception {
+    // Lần giao nhận vừa mở, kèm biên bản đã ký để các bước sau hoàn tất được (ca thiếu biên bản kiểm riêng)
+    private long handoverId(ResultActions result) throws Exception {
         List<Number> ids = JsonPath.read(result.andReturn().getResponse().getContentAsString(), "$.data.handovers[*].id");
+        signedRecord(ids.getLast().longValue());
         return ids.getLast().longValue();
     }
 
@@ -353,5 +421,11 @@ class TripExecutionFlowTest {
 
     private String token(Staff staff, String role) {
         return "Bearer " + jwtUtils.generateToken(staff.getUser().getUsername(), List.of(role));
+    }
+
+    // Biên bản đã ký (giả lập ảnh đã tải lên): bắt buộc trước khi hoàn tất nhận hoặc giao ngựa
+    private void signedRecord(long handoverId) {
+        jdbc.update("INSERT INTO document (document_type_id, file_url, file_name, uploaded_by, status, handover_id) "
+                + "SELECT id, 'test://record/' || md5(random()::text), 'record.jpg', (SELECT min(id) FROM app_user), 'UPLOADED', ? FROM document_type WHERE code = 'HANDOVER_RECORD'", handoverId);
     }
 }

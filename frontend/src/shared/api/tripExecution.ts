@@ -10,6 +10,7 @@ export type HealthLog = Schemas['HealthLogResponseDto']
 export type HealthLogCreate = Schemas['HealthLogRequestDto']
 export type HealthStatus = NonNullable<HealthLogCreate['healthStatus']>
 export type IntakeLevel = NonNullable<HealthLogCreate['waterIntake']>
+export type HandoverPaper = Schemas['HandoverPaperResponseDto']
 
 const get = async <T>(url: string) => (await apiClient.get<ApiResponse<T>>(url)).data.data
 const post = async <T>(url: string, body?: unknown) => (await apiClient.post<ApiResponse<T>>(url, body)).data.data
@@ -23,6 +24,13 @@ export const tripExecutionApi = {
   openHandover: (stopId: number, handoverType: HandoverType) => post<CrewTrip>(`/trip-stops/${stopId}/handovers`, { handoverType }),
   scan: (handoverId: number, horseLegId: number, microchip: string) => post<CrewTrip>(`/handovers/${handoverId}/horses`, { horseLegId, microchip }),
   refuse: (handoverId: number, horseLegId: number, reason: string) => post<CrewTrip>(`/handovers/${handoverId}/refusals`, { horseLegId, reason }),
+  uploadRecord: async (handoverId: number, file: File) => {
+    const body = new FormData()
+    body.append('file', file)
+    return (await apiClient.post<ApiResponse<CrewTrip>>(`/handovers/${handoverId}/record`, body, { headers: { 'Content-Type': 'multipart/form-data' } })).data.data
+  },
+  papers: (handoverId: number) => get<HandoverPaper[]>(`/handovers/${handoverId}/papers`),
+  markPaper: (handoverId: number, documentId: number) => post<HandoverPaper[]>(`/handovers/${handoverId}/papers`, { documentId }),
   completeHandover: (handoverId: number) => post<CrewTrip>(`/handovers/${handoverId}/complete`),
   startWaiting: (handoverId: number) => post<CrewTrip>(`/handovers/${handoverId}/start-waiting`),
   failDelivery: (handoverId: number) => post<CrewTrip>(`/handovers/${handoverId}/fail`),

@@ -2,6 +2,18 @@
 export const fieldCrew = {
   myTrips: {
     "run": {
+      "papers": {
+        "record": "Photo of the signed record",
+        "upload": "Upload record",
+        "recordSaved": "Record saved",
+        "recordAttached": "Record attached",
+        "needRecord": "Photograph and upload the signed record before completing.",
+        "originals": "Original papers",
+        "receive": "Original received",
+        "return": "Original returned",
+        "RECEIVED": "Original received",
+        "RETURNED": "Original returned"
+      },
       "stall": "Stall {{n}}",
       "agentParty": "Agent: {{name}}",
       "unpaidReturn": {

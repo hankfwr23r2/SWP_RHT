@@ -48,6 +48,9 @@ export function canReturnUnpaid(run: CrewTrip, stop: Stop): boolean {
     && (run.horses ?? []).some(h => h.leg?.boardTripStopId === stop.id && h.leg?.status === 'IN_PROGRESS')
 }
 
+// Nhận và giao ngựa phải có biên bản đã ký trước khi hoàn tất (MAN_HINH 4.3, 6.5)
+export const needsRecord = (handover: Handover) => handover.handoverType === 'PICKUP' || handover.handoverType === 'DELIVERY'
+
 export const canStart = (run: CrewTrip) => run.trip?.status === 'PLANNED' || run.trip?.status === 'DISPATCHED'
 
 export function canComplete(run: CrewTrip): boolean {

@@ -192,6 +192,7 @@ class HealthStayFlowTest {
         long leg = jdbc.queryForObject("SELECT id FROM horse_leg WHERE booking_horse_id = ? AND status <> 'CANCELLED' ORDER BY sequence_number DESC LIMIT 1", Long.class, line);
         mvc.perform(post("/handovers/{id}/horses", handoverId).header(HttpHeaders.AUTHORIZATION, escort).contentType(MediaType.APPLICATION_JSON)
                 .content("{\"horseLegId\":%d,\"microchip\":\"%s\"}".formatted(leg, chip))).andExpect(status().isOk());
+        signedRecord(handoverId);
         act("/handovers/" + handoverId + "/complete").andExpect(status().isOk());
     }
 
@@ -217,5 +218,11 @@ class HealthStayFlowTest {
 
     private String token(Staff staff, String role) {
         return "Bearer " + jwtUtils.generateToken(staff.getUser().getUsername(), List.of(role));
+    }
+
+    // Biên bản đã ký (giả lập ảnh đã tải lên): bắt buộc trước khi hoàn tất nhận hoặc giao ngựa
+    private void signedRecord(long handoverId) {
+        jdbc.update("INSERT INTO document (document_type_id, file_url, file_name, uploaded_by, status, handover_id) "
+                + "SELECT id, 'test://record/' || md5(random()::text), 'record.jpg', (SELECT min(id) FROM app_user), 'UPLOADED', ? FROM document_type WHERE code = 'HANDOVER_RECORD'", handoverId);
     }
 }

@@ -1524,6 +1524,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/handovers/{id}/papers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["papers"];
+        put?: never;
+        post: operations["mark"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/handovers/{id}/record": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["record_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/handovers/{id}/refusals": {
         parameters: {
             query?: never;
@@ -3159,6 +3191,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListHandoverPaperResponseDto: {
+            data?: components["schemas"]["HandoverPaperResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListHealthLogResponseDto: {
             data?: components["schemas"]["HealthLogResponseDto"][];
             message?: string;
@@ -4050,6 +4087,19 @@ export interface components {
             microchipMatched?: boolean;
             scannedMicrochip?: string;
         };
+        HandoverPaperRequestDto: {
+            /** Format: int64 */
+            documentId: number;
+        };
+        HandoverPaperResponseDto: {
+            bookingCode?: string;
+            /** @enum {string} */
+            direction?: "RECEIVED" | "RETURNED";
+            /** Format: int64 */
+            documentId?: number;
+            documentTypeName?: string;
+            ownerLabel?: string;
+        };
         HandoverRefusalRequestDto: {
             /** Format: int64 */
             horseLegId: number;
@@ -4066,6 +4116,7 @@ export interface components {
             id?: number;
             note?: string;
             partyName?: string;
+            recordAttached?: boolean;
             /** @enum {string} */
             status?: "PENDING" | "DONE" | "TIMEOUT" | "FAILED";
             /** Format: int64 */
@@ -8083,6 +8134,83 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["HandoverScanRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
+    papers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHandoverPaperResponseDto"];
+                };
+            };
+        };
+    };
+    mark: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HandoverPaperRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListHandoverPaperResponseDto"];
+                };
+            };
+        };
+    };
+    record_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
             };
         };
         responses: {

@@ -2,6 +2,18 @@
 export const fieldCrew = {
   myTrips: {
     "run": {
+      "papers": {
+        "record": "Ảnh biên bản đã ký",
+        "upload": "Tải biên bản",
+        "recordSaved": "Đã lưu biên bản",
+        "recordAttached": "Đã có biên bản",
+        "needRecord": "Chụp và tải biên bản đã ký trước khi hoàn tất.",
+        "originals": "Giấy tờ gốc",
+        "receive": "Đã nhận bản gốc",
+        "return": "Đã trả bản gốc",
+        "RECEIVED": "Đã nhận bản gốc",
+        "RETURNED": "Đã trả bản gốc"
+      },
       "stall": "Khoang số {{n}}",
       "agentParty": "Đại lý: {{name}}",
       "unpaidReturn": {

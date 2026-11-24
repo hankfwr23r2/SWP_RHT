@@ -22,6 +22,7 @@ import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.TripExecutionPolicy;
 import com.example.racehorse_transport.repository.CrewAssignmentRepository;
+import com.example.racehorse_transport.repository.DocumentRepository;
 import com.example.racehorse_transport.repository.HandoverHorseRepository;
 import com.example.racehorse_transport.repository.HandoverRepository;
 import com.example.racehorse_transport.repository.HorseLegRepository;
@@ -47,6 +48,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class HandoverServiceImpl implements HandoverService {
 
+    static final String RECORD_TYPE = "HANDOVER_RECORD";
+
     private final HandoverRepository handovers;
     private final HandoverHorseRepository scans;
     private final HorseLegRepository legs;
@@ -55,6 +58,7 @@ public class HandoverServiceImpl implements HandoverService {
     private final DispatchService dispatch;
     private final HorseLegService horseLegs;
     private final HandoverOutcomeService outcomes;
+    private final DocumentRepository documents;
     private final Clock clock;
 
     @Override
@@ -123,6 +127,10 @@ public class HandoverServiceImpl implements HandoverService {
         List<HandoverHorse> results = scans.findById_HandoverId(handover.getId()).stream()
                 .filter(r -> r.getHorseLeg().getStatus() != HorseLegStatus.CANCELLED).toList();
         TripExecutionPolicy.requireSomeMatched(results.stream().map(HandoverHorse::getMicrochipMatched).toList());
+        // Nhận và giao ngựa phải có biên bản đã ký (MAN_HINH 4.3, 6.5)
+        if (needsRecord(handover) && !documents.existsByHandover_IdAndDocumentType_Code(handover.getId(), RECORD_TYPE)) {
+            throw new DispatchRuleException("record", "Chưa có biên bản giao nhận. Chụp biên bản đã ký trước khi hoàn tất.", true);
+        }
         outcomes.complete(handover, results.stream().filter(r -> Boolean.TRUE.equals(r.getMicrochipMatched()))
                 .map(HandoverHorse::getHorseLeg).toList(), clock.instant(), actorId);
         return crewTrip(tripId, username);
@@ -239,7 +247,23 @@ public class HandoverServiceImpl implements HandoverService {
         // Lần trả ngựa đã xong: các con là các con đã ghi trong lần đó (chặng đã hủy)
         List<HorseLeg> horses = handover.getHandoverType() == HandoverType.RETURN
                 ? byLeg.values().stream().map(HandoverHorse::getHorseLeg).toList() : candidates(handover);
-        return HandoverResponseDto.from(handover, horses, byLeg);
+        return HandoverResponseDto.from(handover, horses, byLeg, documents.existsByHandover_IdAndDocumentType_Code(handover.getId(), RECORD_TYPE));
+    }
+
+    @Override
+    @Transactional
+    public Handover pendingForCrew(Long handoverId, String username) {
+        return pending(handoverId, username);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Set<Long> bookingIdsOf(Handover handover) {
+        return candidates(handover).stream().map(l -> l.getBookingHorse().getBooking().getId()).collect(Collectors.toCollection(LinkedHashSet::new));
+    }
+
+    private static boolean needsRecord(Handover handover) {
+        return handover.getHandoverType() == HandoverType.PICKUP || handover.getHandoverType() == HandoverType.DELIVERY;
     }
 
     private Handover pending(Long handoverId, String username) {
