@@ -16,6 +16,7 @@ import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
 import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HandoverType;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
+import com.example.racehorse_transport.entity.enums.TripStopType;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
@@ -148,16 +149,24 @@ public class HandoverServiceImpl implements HandoverService {
         return crewTrip(tripId, username);
     }
 
-    // Quá hạn trả số dư (#32): trả mọi con đã nhận lên xe ở điểm đón này cho người gửi trong một thao tác.
+    // Quá hạn trả số dư (#32): trả mọi con đã nhận lên xe ở nơi nhận này (điểm đón, hoặc cửa khẩu với đơn nhập) trong một thao tác.
     // Không quét lại chip: ghi lại chip đã quét đúng lúc nhận ngựa vài phút trước
     private void returnUnpaid(TripStop stop, HandoverCreateRequestDto request, CrewAssignment member) {
         List<HorseLeg> boarded = legs.findByBoardTripStop_IdAndStatusIn(stop.getId(), Set.of(HorseLegStatus.IN_PROGRESS));
         if (boarded.isEmpty()) {
             throw new DispatchRuleException("handoverType", "Không có con ngựa nào cần giao nhận loại này ở điểm dừng này.", true);
         }
+        // Đơn nhập nhận ở cửa khẩu: ngựa trả lại cho đại lý đã giao (NGHIEP_VU GĐ6)
+        boolean border = stop.getStopType() == TripStopType.BORDER;
+        Map<Long, Party> agents = new LinkedHashMap<>();
+        if (border) boarded.stream().map(l -> adjacentAgent(l, false)).filter(Objects::nonNull).forEach(p -> agents.put(p.getId(), p));
+        if (border && agents.size() != 1) {
+            throw new DispatchRuleException("handoverType", "Không xác định được đại lý nhận lại ngựa ở cửa khẩu này.", true);
+        }
         var now = clock.instant();
         outcomes.returnUnpaid(boarded, now, member.getStaff().getUserId());
         Handover handover = request.toEntity(stop, member.getStaff());
+        if (border) handover.setToParty(agents.values().iterator().next());
         handover.setStatus(HandoverStatus.DONE);
         handover.setHandedAt(now);
         handovers.saveAndFlush(handover);
@@ -166,7 +175,8 @@ public class HandoverServiceImpl implements HandoverService {
             returned.setId(new HandoverHorseId(handover.getId(), leg.getId()));
             returned.setHandover(handover);
             returned.setHorseLeg(leg);
-            returned.setScannedMicrochip(scans.findFirstByHorseLeg_IdAndHandover_HandoverTypeAndMicrochipMatchedTrue(leg.getId(), HandoverType.PICKUP)
+            returned.setScannedMicrochip(scans.findFirstByHorseLeg_IdAndHandover_HandoverTypeAndMicrochipMatchedTrue(leg.getId(),
+                            border ? HandoverType.AGENT : HandoverType.PICKUP)
                     .map(HandoverHorse::getScannedMicrochip).orElse(null));
             returned.setMicrochipMatched(true);
             scans.save(returned);

@@ -152,6 +152,70 @@ class BorderAgentFlowTest {
         assertThat(bookingStatus()).isEqualTo("IN_OPERATION");
     }
 
+    @Test
+    void importBalanceOverdueAtTheGateReturnsTheHorseToTheAgent() throws Exception {
+        long[] received = receiveImportAtTheGate();
+        long trip = received[0];
+        long gateStop = received[1];
+        // Nhận ở cửa khẩu xong thì lập khoản số dư (seed có sẵn số dư đã trả nên đã bỏ đi)
+        assertThat(jdbc.queryForObject("SELECT status FROM payment WHERE booking_id = ? AND payment_type = 'BALANCE'", String.class, booking)).isEqualTo("PENDING");
+        mvc.perform(post("/trip-stops/{id}/depart", gateStop).header(HttpHeaders.AUTHORIZATION, driver)).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message", startsWith("Đơn DEV-EXPORT-001 chưa trả đủ")));
+        // Còn trong hạn: luồng A từ chối hủy
+        returnAt(gateStop).andExpect(status().isConflict());
+
+        entityManager.flush();
+        jdbc.update("UPDATE payment SET due_at = now() - interval '1 minute' WHERE booking_id = ? AND payment_type = 'BALANCE'", booking);
+        entityManager.clear();
+        returnAt(gateStop).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.handovers[1].handoverType").value("RETURN"))
+                .andExpect(jsonPath("$.data.handovers[1].partyName").value("Đại lý vận tải Campuchia (mẫu)"))
+                .andExpect(jsonPath("$.data.handovers[1].horses[0].scannedMicrochip").value(chip));
+        assertThat(legStatus(legOnTrip(trip))).isEqualTo("CANCELLED");
+        assertThat(bookingStatus()).isEqualTo("CANCELLED");
+        // Hành trình: ngựa đang ở đại lý
+        mvc.perform(get("/bookings/{id}/journey", booking).header(HttpHeaders.AUTHORIZATION, coordinator)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.horses[0].holder").value("PARTY"));
+        mvc.perform(post("/trip-stops/{id}/depart", gateStop).header(HttpHeaders.AUTHORIZATION, driver)).andExpect(status().isOk());
+    }
+
+    // Đơn mẫu đổi thành đơn nhập chưa trả số dư; đại lý giao, tổ xe nhận lên xe ở cửa khẩu. Trả về {lượt xe, điểm cửa khẩu}
+    private long[] receiveImportAtTheGate() throws Exception {
+        java.time.LocalDate pickup = jdbc.queryForObject("SELECT requested_pickup_date FROM booking WHERE id = ?", java.sql.Date.class, booking).toLocalDate();
+        long departure = testData.departure("MOCBAI-HCM", pickup.plusDays(1), 9).getId();
+        entityManager.flush();
+        jdbc.update("UPDATE booking SET booking_type = 'IMPORT', departure_id = ? WHERE id = ?", departure, booking);
+        jdbc.update("""
+                UPDATE booking_address a SET country_code = b.country_code, province_code = b.province_code, address_line = b.address_line,
+                    latitude = b.latitude, longitude = b.longitude
+                FROM booking_address b WHERE a.booking_id = ? AND b.booking_id = a.booking_id AND b.id <> a.id""", booking);
+        jdbc.update("DELETE FROM payment WHERE booking_id = ? AND payment_type = 'BALANCE'", booking);
+        // Đơn chiếm chỗ trên chuyến mới (đổi chuyến bằng SQL nên phải ghi số chỗ đã đặt)
+        jdbc.update("UPDATE departure SET booked_stall_count = 1 WHERE id = ?", departure);
+        entityManager.clear();
+        Instant departAt = jdbc.queryForObject("SELECT planned_departure_at FROM departure WHERE id = ?", java.sql.Timestamp.class, departure).toInstant();
+        id(agentLeg(agent, gate, departAt.minusSeconds(86_400), departAt).andExpect(status().isCreated()));
+        long trip = linehaulTrip(departure, gate);
+        List<Long> stops = stopIds(trip);
+        assignLeg(trip, stops.getFirst(), stops.getLast());
+        acknowledge();
+        act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isOk());
+        act(driver, "/trip-stops/" + stops.getFirst() + "/arrive").andExpect(status().isOk());
+        long handover = handoverId(handover(stops.getFirst(), agent).andExpect(status().isCreated()));
+        scan(handover, legOnTrip(trip)).andExpect(status().isOk());
+        // Đủ giấy: giả lập bằng đơn không cần giấy như các test khác
+        entityManager.flush();
+        jdbc.update("UPDATE booking SET booking_type = 'LOCAL' WHERE id = ?", booking);
+        entityManager.clear();
+        act(escort, "/handovers/" + handover + "/complete").andExpect(status().isOk());
+        return new long[] {trip, stops.getFirst()};
+    }
+
+    private ResultActions returnAt(long stopId) throws Exception {
+        return mvc.perform(post("/trip-stops/{id}/handovers", stopId).header(HttpHeaders.AUTHORIZATION, escort)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"handoverType\":\"RETURN\"}"));
+    }
+
     private void driveToTheGate(long trip, List<Long> stops) throws Exception {
         acknowledge();
         act(driver, "/vehicle-trips/" + trip + "/start").andExpect(status().isOk());

@@ -34,6 +34,10 @@ describe('tripRunModel', () => {
     const r = run({}, { horses: [received] })
     expect(canReturnUnpaid(r, r.trip!.stops![1])).toBe(true)
     expect(canReturnUnpaid(r, r.trip!.stops![0])).toBe(false)
+    // Đơn nhập nhận từ đại lý ở cửa khẩu
+    const gate = run({ stops: [{ id: 1, stopType: 'HUB', actualArrivalAt: 't', actualDepartureAt: 't' }, { id: 2, stopType: 'BORDER', actualArrivalAt: 't' }, { id: 3, stopType: 'HUB' }] },
+      { horses: [received] })
+    expect(canReturnUnpaid(gate, gate.trip!.stops![1])).toBe(true)
     const pending = run({}, { horses: [received], handovers: [{ id: 5, tripStopId: 2, status: 'PENDING' }] })
     expect(canReturnUnpaid(pending, pending.trip!.stops![1])).toBe(false)
   })

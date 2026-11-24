@@ -26,7 +26,8 @@ public final class TrackingPolicy {
             case PICKUP, HUB_IN, HUB_OUT -> CustodyHolder.COMPANY;
             case STAY_IN, STAY_OUT, AGENT -> toParty ? CustodyHolder.PARTY : CustodyHolder.COMPANY;
             case DELIVERY -> CustodyHolder.CONSIGNEE;
-            case RETURN -> CustodyHolder.SHIPPER;
+            // Đơn nhập trả ở cửa khẩu: đại lý nhận lại thay người gửi
+            case RETURN -> toParty ? CustodyHolder.PARTY : CustodyHolder.SHIPPER;
         };
     }
 

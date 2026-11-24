@@ -154,7 +154,7 @@ test('quá hạn số dư thì hộ tống trả ngựa cho người gửi, còn
   const pickup = page.getByRole('list', { name: 'Điểm dừng' }).getByRole('listitem').filter({ has: page.locator('h2') }).nth(1)
   await pickup.getByRole('button', { name: 'Trả ngựa do quá hạn thanh toán' }).click({ timeout: 15_000 })
   const dialog = page.getByRole('alertdialog')
-  await expect(dialog).toContainText('Trả ngựa cho người gửi?')
+  await expect(dialog).toContainText('Trả lại ngựa đã nhận?')
   await dialog.getByRole('button', { name: 'Trả ngựa do quá hạn thanh toán' }).click()
   await expect(page.getByText('Đơn chưa đủ điều kiện hủy do quá thời gian chờ trả số dư.')).toBeVisible()
   await dialog.getByRole('button', { name: 'Hủy' }).click()

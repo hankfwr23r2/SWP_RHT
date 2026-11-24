@@ -20,6 +20,8 @@ class TrackingPolicyTest {
         assertThat(TrackingPolicy.holderAfter(HandoverType.AGENT, false)).isEqualTo(CustodyHolder.COMPANY);
         assertThat(TrackingPolicy.holderAfter(HandoverType.DELIVERY, false)).isEqualTo(CustodyHolder.CONSIGNEE);
         assertThat(TrackingPolicy.holderAfter(HandoverType.RETURN, false)).isEqualTo(CustodyHolder.SHIPPER);
+        // Đơn nhập trả lại cho đại lý ở cửa khẩu
+        assertThat(TrackingPolicy.holderAfter(HandoverType.RETURN, true)).isEqualTo(CustodyHolder.PARTY);
     }
 
     @Test
