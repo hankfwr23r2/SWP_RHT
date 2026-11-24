@@ -35,7 +35,12 @@ export default function HubPage() {
   const [collectAt, setCollectAt] = useState('')
   const [fee, setFee] = useState('')
   const [busy, setBusy] = useState(false)
-  const { data: hubs } = useLoad(async () => (await dispatchApi.locations()).filter(location => location.locationType === 'HUB'), [])
+  // Hub gốc của xe (trụ sở) đứng đầu và được chọn sẵn
+  const { data: hubs } = useLoad(async () => {
+    const [locations, vehicles] = await Promise.all([dispatchApi.locations(), dispatchApi.vehicles()])
+    const home = new Set(vehicles.map(vehicle => vehicle.homeHubLocationId))
+    return locations.filter(location => location.locationType === 'HUB').sort((a, b) => Number(home.has(b.id)) - Number(home.has(a.id)))
+  }, [])
   const hubId = hubChoice || (hubs?.[0]?.id ? String(hubs[0].id) : '')
   const { data, loaded, error, reload } = useLoad(async () => {
     if (!hubId) return { appointments: [], stays: [] }

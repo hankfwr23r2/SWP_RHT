@@ -542,11 +542,11 @@ export const customer = {
     methodHints: {
       pickup: {
         COMPANY: 'The driver comes to the chosen address.',
-        SELF: 'No pickup charge. Bring the horse to hub {{hub}} at the agreed time.',
+        SELF: 'No pickup charge. Bring the horse to {{hub}} at the agreed time.',
       },
       delivery: {
         COMPANY: 'Delivered to the chosen address.',
-        SELF: 'No delivery charge. Collect at hub {{hub}} at the agreed time.',
+        SELF: 'No delivery charge. Collect at {{hub}} at the agreed time.',
       },
     },
     methodRules: {

@@ -542,11 +542,11 @@ export const customer = {
     methodHints: {
       pickup: {
         COMPANY: 'Tài xế đến đúng địa chỉ bạn chọn.',
-        SELF: 'Không tính phí chặng đón. Đưa ngựa tới hub {{hub}} theo giờ hẹn.',
+        SELF: 'Không tính phí chặng đón. Đưa ngựa tới {{hub}} theo giờ hẹn.',
       },
       delivery: {
         COMPANY: 'Giao tới địa chỉ bạn chọn.',
-        SELF: 'Không tính phí chặng giao. Nhận ngựa ở hub {{hub}} theo giờ hẹn.',
+        SELF: 'Không tính phí chặng giao. Nhận ngựa ở {{hub}} theo giờ hẹn.',
       },
     },
     methodRules: {
