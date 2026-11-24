@@ -62,8 +62,11 @@ class HorseDtoTest {
         horse.setId(9L);
         horse.setHorseType(type());
 
-        assertThat(HorseResponseDto.from(horse).id()).isEqualTo(9L);
-        assertThat(HorseResponseDto.from(horse).horseTypeName()).isEqualTo("Arabian");
+        HorseResponseDto response = HorseResponseDto.from(horse, "BK-1");
+        assertThat(response.id()).isEqualTo(9L);
+        assertThat(response.horseTypeName()).isEqualTo("Arabian");
+        assertThat(response.activeBookingCode()).isEqualTo("BK-1");
+        assertThat(HorseResponseDto.from(horse, null).activeBookingCode()).isNull();
         assertThat(HorseTypeResponseDto.from(type()).id()).isEqualTo(3L);
     }
 }
