@@ -63,4 +63,12 @@ public class Departure {
     @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 30, nullable = false)
     private DepartureStatus status;
+
+    // Quản lý xác nhận chạy từ mốc quyết định; NULL = chưa xác nhận
+    @Column(name = "run_confirmed_at")
+    private Instant runConfirmedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "run_confirmed_by")
+    private AppUser runConfirmedBy;
 }

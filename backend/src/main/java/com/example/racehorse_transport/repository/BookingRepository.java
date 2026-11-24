@@ -2,6 +2,7 @@ package com.example.racehorse_transport.repository;
 
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
+import com.example.racehorse_transport.entity.enums.DepartureStatus;
 
 import jakarta.persistence.LockModeType;
 
@@ -54,4 +55,26 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     Optional<Booking> findForUpdate(@Param("id") Long id);
 
     List<Booking> findByDeparture_Id(Long departureId);
+
+    @Query("SELECT b.id FROM Booking b WHERE b.departure.id = :departureId ORDER BY b.id")
+    List<Long> findIdsByDeparture(@Param("departureId") Long departureId);
+
+    @Query("""
+            SELECT b.id FROM Booking b JOIN b.departure d
+            WHERE b.status IN :statuses AND d.status IN :departureStatuses AND d.plannedDepartureAt <= :threshold
+            ORDER BY b.id""")
+    List<Long> findIdsForDecisionRelease(@Param("statuses") Collection<BookingStatus> statuses,
+                                         @Param("departureStatuses") Collection<DepartureStatus> departureStatuses,
+                                         @Param("threshold") Instant threshold);
+
+    interface DepartureBookingCount {
+        Long getDepartureId();
+        Long getBookingCount();
+    }
+
+    @Query("""
+            SELECT b.departure.id AS departureId, COUNT(b) AS bookingCount FROM Booking b
+            WHERE b.departure.id IN :departureIds AND b.status IN :statuses GROUP BY b.departure.id""")
+    List<DepartureBookingCount> countByDeparture(@Param("departureIds") Collection<Long> departureIds,
+                                                 @Param("statuses") Collection<BookingStatus> statuses);
 }

@@ -7,7 +7,7 @@
 -- Dữ liệu nền đầy đủ sẽ bổ sung riêng (xem docs/NGU_CANH_THIET_KE_LAI.md, câu hỏi còn mở).
 --
 -- Tài khoản thử: mọi tài khoản dưới đây dùng chung mật khẩu thử DevSeed@2026 (chỉ dùng cho dev/test).
---   admin.dev, manager.dev, coordinator.dev, specialist.dev, driver1.dev, driver2.dev, escort1.dev, customer1.dev
+--   admin.dev, manager.dev, coordinator.dev, specialist.dev, driver1.dev … driver4.dev, escort1.dev … escort3.dev, customer1.dev
 
 -- ---------------------------------------------------------------------------
 -- 1. Điểm mạng lưới và vùng phục vụ
@@ -15,32 +15,44 @@
 INSERT INTO location (code, name, location_type, country_code, province_code, address, latitude, longitude, opening_time, closing_time, contact_phone, status) VALUES
     ('HUB-HCM', 'Trụ sở TP.HCM', 'HUB', 'VN', 'VN-79', 'Phường Long Trường, TP.HCM', 10.805000, 106.815000, NULL, NULL, '0900000100', 'ACTIVE'),
     ('HUB-DN', 'Hub vệ tinh Đà Nẵng', 'HUB', 'VN', 'VN-48', 'Phường Hòa Khánh, TP. Đà Nẵng', 16.075000, 108.150000, NULL, NULL, '0900000200', 'ACTIVE'),
-    ('QF-CUCHI', 'Trại cách ly Củ Chi', 'QUARANTINE_FARM', 'VN', 'VN-79', 'Xã Củ Chi, TP.HCM', 10.973000, 106.493000, TIME '07:00', TIME '18:00', '0900000300', 'ACTIVE'),
     ('REST-TRANGBANG', 'Trạm nghỉ Trảng Bàng', 'REST_STOP', 'VN', 'VN-80', 'Phường Trảng Bàng, Tây Ninh', 11.033000, 106.360000, NULL, NULL, NULL, 'ACTIVE'),
     ('GATE-MOCBAI', 'Cửa khẩu quốc tế Mộc Bài - Bavet', 'BORDER_GATE', 'VN', 'VN-80', 'Xã Bến Cầu, Tây Ninh', 11.070000, 106.200000, TIME '07:00', TIME '22:00', NULL, 'ACTIVE'),
     ('REST-PHANTHIET', 'Trạm nghỉ Phan Thiết', 'REST_STOP', 'VN', 'VN-68', 'Phường Phan Thiết, Lâm Đồng', 10.933000, 108.100000, NULL, NULL, NULL, 'ACTIVE'),
     ('REST-NHATRANG', 'Trạm nghỉ Nha Trang', 'REST_STOP', 'VN', 'VN-56', 'Phường Nha Trang, Khánh Hòa', 12.238000, 109.196000, NULL, NULL, NULL, 'ACTIVE'),
-    ('REST-QUYNHON', 'Trạm nghỉ Quy Nhơn', 'REST_STOP', 'VN', 'VN-52', 'Phường Quy Nhơn, Gia Lai', 13.776000, 109.224000, NULL, NULL, NULL, 'ACTIVE')
+    ('REST-QUYNHON', 'Trạm nghỉ Quy Nhơn', 'REST_STOP', 'VN', 'VN-52', 'Phường Quy Nhơn, Gia Lai', 13.776000, 109.224000, NULL, NULL, NULL, 'ACTIVE'),
+    ('REST-PHANRANG', 'Trạm nghỉ Phan Rang', 'REST_STOP', 'VN', 'VN-56', 'Phường Phan Rang, Khánh Hòa', 11.560000, 108.990000, NULL, NULL, NULL, 'ACTIVE'),
+    ('REST-TUYHOA', 'Trạm nghỉ Tuy Hòa', 'REST_STOP', 'VN', 'VN-66', 'Phường Tuy Hòa, Đắk Lắk', 13.100000, 109.300000, NULL, NULL, NULL, 'ACTIVE'),
+    ('REST-QUANGNGAI', 'Trạm nghỉ Quảng Ngãi', 'REST_STOP', 'VN', 'VN-51', 'Phường Nghĩa Lộ, Quảng Ngãi', 15.120000, 108.800000, NULL, NULL, NULL, 'ACTIVE'),
+    ('REST-HUE', 'Trạm nghỉ Huế', 'REST_STOP', 'VN', 'VN-46', 'Phường Thuận Hóa, TP. Huế', 16.460000, 107.600000, NULL, NULL, NULL, 'ACTIVE'),
+    ('REST-DONGHA', 'Trạm nghỉ Đông Hà', 'REST_STOP', 'VN', 'VN-44', 'Phường Đông Hà, Quảng Trị', 16.820000, 107.100000, NULL, NULL, NULL, 'ACTIVE'),
+    ('GATE-LAOBAO', 'Cửa khẩu quốc tế Lao Bảo - Densavanh', 'BORDER_GATE', 'VN', 'VN-44', 'Xã Lao Bảo, Quảng Trị', 16.620000, 106.600000, TIME '07:00', TIME '22:00', NULL, 'ACTIVE')
 ON CONFLICT (code) DO NOTHING;
+
+-- Công ty không vận hành nơi cách ly: ngừng trại mẫu đã nạp trước đây
+UPDATE location SET status = 'INACTIVE' WHERE code = 'QF-CUCHI';
 
 UPDATE location SET counterpart_country_code = 'KH'
 WHERE code = 'GATE-MOCBAI' AND location_type = 'BORDER_GATE' AND counterpart_country_code IS NULL;
+UPDATE location SET counterpart_country_code = 'LA'
+WHERE code = 'GATE-LAOBAO' AND location_type = 'BORDER_GATE' AND counterpart_country_code IS NULL;
 
 UPDATE location SET is_headquarters = true
 WHERE code = 'HUB-HCM' AND NOT EXISTS (SELECT 1 FROM location WHERE is_headquarters);
 
--- Mỗi tỉnh thuộc đúng một hub. Miền Nam về trụ sở, miền Trung về hub vệ tinh Đà Nẵng
+-- Mỗi tỉnh thuộc đúng một hub, chọn hub gần hơn theo giờ chạy: Khánh Hòa, Đắk Lắk về trụ sở
 INSERT INTO hub_service_area (hub_location_id, province_code)
 SELECT l.id, p.code
 FROM (VALUES
           ('HUB-HCM', 'VN-79'), ('HUB-HCM', 'VN-75'), ('HUB-HCM', 'VN-80'), ('HUB-HCM', 'VN-82'), ('HUB-HCM', 'VN-86'),
-          ('HUB-HCM', 'VN-91'), ('HUB-HCM', 'VN-92'), ('HUB-HCM', 'VN-96'), ('HUB-HCM', 'VN-68'),
-          ('HUB-DN', 'VN-48'), ('HUB-DN', 'VN-46'), ('HUB-DN', 'VN-51'), ('HUB-DN', 'VN-44'), ('HUB-DN', 'VN-52'),
-          ('HUB-DN', 'VN-56'), ('HUB-DN', 'VN-66')
+          ('HUB-HCM', 'VN-91'), ('HUB-HCM', 'VN-92'), ('HUB-HCM', 'VN-96'), ('HUB-HCM', 'VN-68'), ('HUB-HCM', 'VN-56'), ('HUB-HCM', 'VN-66'),
+          ('HUB-DN', 'VN-48'), ('HUB-DN', 'VN-46'), ('HUB-DN', 'VN-51'), ('HUB-DN', 'VN-44'), ('HUB-DN', 'VN-52')
      ) AS v(hub_code, province_code)
 JOIN location l ON l.code = v.hub_code
 JOIN province p ON p.code = v.province_code
 ON CONFLICT DO NOTHING;
+
+UPDATE hub_service_area SET hub_location_id = (SELECT id FROM location WHERE code = 'HUB-HCM')
+WHERE province_code IN ('VN-56', 'VN-66') AND hub_location_id = (SELECT id FROM location WHERE code = 'HUB-DN');
 
 -- ---------------------------------------------------------------------------
 -- 2. Tài khoản, nhân viên, khách hàng
@@ -52,7 +64,11 @@ INSERT INTO app_user (username, email, password_hash, is_email_verified, preferr
     ('specialist.dev', 'specialist.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'SPECIALIST'),
     ('driver1.dev', 'driver1.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'DRIVER'),
     ('driver2.dev', 'driver2.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'DRIVER'),
+    ('driver3.dev', 'driver3.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'DRIVER'),
+    ('driver4.dev', 'driver4.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'DRIVER'),
     ('escort1.dev', 'escort1.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'ESCORT'),
+    ('escort2.dev', 'escort2.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'ESCORT'),
+    ('escort3.dev', 'escort3.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'ESCORT'),
     ('customer1.dev', 'customer1.dev@racehorse.test', '$2a$10$BKYE5Xy.Gp4gx5ML9MmX9OZyFK5RbMdiFRLnurHc5nnSpjcgSwOPS', true, 'vi', 'ACTIVE', 'CUSTOMER')
 ON CONFLICT (username) DO NOTHING;
 
@@ -65,7 +81,11 @@ FROM (VALUES
           ('specialist.dev', 'SPC-001', 'Phạm Chuyên Viên (mẫu)', '0900000004', NULL, NULL::date),
           ('driver1.dev', 'DRV-001', 'Võ Tài Xế Một (mẫu)', '0900000005', 'C', DATE '2030-12-31'),
           ('driver2.dev', 'DRV-002', 'Đỗ Tài Xế Hai (mẫu)', '0900000006', 'C', DATE '2030-12-31'),
-          ('escort1.dev', 'ESC-001', 'Huỳnh Chăm Ngựa (mẫu)', '0900000007', NULL, NULL::date)
+          ('escort1.dev', 'ESC-001', 'Huỳnh Chăm Ngựa (mẫu)', '0900000007', NULL, NULL::date),
+          ('driver3.dev', 'DRV-003', 'Bùi Tài Xế Ba (mẫu)', '0900000008', 'C', DATE '2030-12-31'),
+          ('driver4.dev', 'DRV-004', 'Ngô Tài Xế Bốn (mẫu)', '0900000009', 'C', DATE '2030-12-31'),
+          ('escort2.dev', 'ESC-002', 'Đinh Chăm Ngựa (mẫu)', '0900000010', NULL, NULL::date),
+          ('escort3.dev', 'ESC-003', 'Mai Chăm Ngựa (mẫu)', '0900000011', NULL, NULL::date)
      ) AS v(username, staff_code, full_name, phone, license_class, license_expiry)
 JOIN app_user u ON u.username = v.username
 JOIN location hub ON hub.is_headquarters
@@ -82,7 +102,7 @@ INSERT INTO party (party_type, display_name, phone, email, address, country_code
 SELECT 'ORGANIZATION', v.display_name, v.phone, NULL, v.address, v.country_code, 'ACTIVE'
 FROM (VALUES
           ('Đại lý vận tải Campuchia (mẫu)', '0855000001', 'Phnom Penh, Campuchia', 'KH'),
-          ('Trại cách ly Củ Chi (mẫu)', '0900000300', 'Xã Củ Chi, TP.HCM', 'VN'),
+          ('Đại lý vận tải Lào (mẫu)', '0856000001', 'Savannakhet, Lào', 'LA'),
           ('Phòng khám thú y ngựa (mẫu)', '0900000400', 'TP.HCM', 'VN'),
           ('Đội cứu hộ xe tải (mẫu)', '0900000500', 'TP.HCM', 'VN'),
           ('Công ty bảo hiểm (mẫu)', '0900000600', 'TP.HCM', 'VN'),
@@ -94,7 +114,7 @@ INSERT INTO party_role (party_id, role_type, valid_from)
 SELECT p.id, v.role_type, DATE '2026-01-01'
 FROM (VALUES
           ('Đại lý vận tải Campuchia (mẫu)', 'DEST_AGENT'),
-          ('Trại cách ly Củ Chi (mẫu)', 'QUARANTINE_FARM'),
+          ('Đại lý vận tải Lào (mẫu)', 'DEST_AGENT'),
           ('Phòng khám thú y ngựa (mẫu)', 'VET'),
           ('Đội cứu hộ xe tải (mẫu)', 'RESCUE'),
           ('Công ty bảo hiểm (mẫu)', 'INSURER'),
@@ -102,6 +122,8 @@ FROM (VALUES
      ) AS v(display_name, role_type)
 JOIN party p ON p.display_name = v.display_name
 ON CONFLICT DO NOTHING;
+
+UPDATE party SET status = 'INACTIVE' WHERE display_name = 'Trại cách ly Củ Chi (mẫu)';
 
 -- ---------------------------------------------------------------------------
 -- 3. Xe (mọi xe thuộc trụ sở)
@@ -129,61 +151,91 @@ WHERE vehicle.license_plate = adjustment.plate AND vehicle.vehicle_class_id = vc
 -- ---------------------------------------------------------------------------
 -- 4. Tuyến trục chính, điểm dừng, lịch chạy
 -- ---------------------------------------------------------------------------
+-- Giờ chạy và km tính bằng Valhalla (xe tải 10 tấn, 80 km/h, 23/11/2026), vẫn là số mẫu. Mỗi đoạn chạy tối đa 4 giờ,
+-- nghỉ ít nhất 30 phút, tối đa 10 giờ lái giữa hai lần nghỉ đêm (DB_SCHEMA quy tắc #31).
 INSERT INTO route (code, name, origin_location_id, destination_location_id, distance_km, estimated_duration_minutes, status)
 SELECT v.code, v.name, o.id, d.id, v.distance_km, v.minutes, 'ACTIVE'
 FROM (VALUES
-          ('HCM-PNH', 'TP.HCM – Cửa khẩu Mộc Bài (đi Phnom Penh)', 'HUB-HCM', 'GATE-MOCBAI', 75.00, 120),
-          ('HCM-DN', 'TP.HCM – Đà Nẵng', 'HUB-HCM', 'HUB-DN', 960.00, 1260),
-          ('DN-HCM', 'Đà Nẵng – TP.HCM', 'HUB-DN', 'HUB-HCM', 960.00, 1260),
-          -- Chiều nhập: từ cửa khẩu về trụ sở (đơn IMPORT)
-          ('MOCBAI-HCM', 'Cửa khẩu Mộc Bài – TP.HCM (từ Phnom Penh về)', 'GATE-MOCBAI', 'HUB-HCM', 75.00, 120)
+          ('HCM-PNH', 'TP.HCM – Cửa khẩu Mộc Bài (đi Phnom Penh)', 'HUB-HCM', 'GATE-MOCBAI', 89.00, 226),
+          ('MOCBAI-HCM', 'Cửa khẩu Mộc Bài – TP.HCM (từ Phnom Penh về)', 'GATE-MOCBAI', 'HUB-HCM', 103.00, 291),
+          ('HCM-DN', 'TP.HCM – Đà Nẵng', 'HUB-HCM', 'HUB-DN', 975.00, 1781),
+          ('DN-HCM', 'Đà Nẵng – TP.HCM', 'HUB-DN', 'HUB-HCM', 982.00, 1782),
+          ('DN-LAOBAO', 'Đà Nẵng – Cửa khẩu Lao Bảo (đi Lào)', 'HUB-DN', 'GATE-LAOBAO', 294.00, 383),
+          ('LAOBAO-DN', 'Cửa khẩu Lao Bảo – Đà Nẵng (từ Lào về)', 'GATE-LAOBAO', 'HUB-DN', 291.00, 411)
      ) AS v(code, name, origin_code, destination_code, distance_km, minutes)
 JOIN location o ON o.code = v.origin_code
 JOIN location d ON d.code = v.destination_code
-ON CONFLICT (code) DO NOTHING;
+ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, distance_km = EXCLUDED.distance_km,
+    estimated_duration_minutes = EXCLUDED.estimated_duration_minutes;
 
+-- Điểm dừng của tuyến mẫu được nạp lại theo bảng dưới. Lượt xe đã lập giữ điểm dừng riêng (trip_stop) nên không đổi
+DELETE FROM route_stop WHERE route_id IN (SELECT id FROM route WHERE code IN ('HCM-PNH', 'MOCBAI-HCM', 'HCM-DN', 'DN-HCM', 'DN-LAOBAO', 'LAOBAO-DN'));
 INSERT INTO route_stop (route_id, sequence_number, location_id, stop_type, arrival_offset_minutes, dwell_minutes)
 SELECT r.id, v.sequence_number, l.id, v.stop_type, v.arrival_offset_minutes, v.dwell_minutes
 FROM (VALUES
           ('HCM-PNH', 1, 'HUB-HCM', 'HUB', 0, 30),
-          ('HCM-PNH', 2, 'REST-TRANGBANG', 'REST', 70, 20),
-          ('HCM-PNH', 3, 'GATE-MOCBAI', 'BORDER', 120, 120),
-          ('HCM-DN', 1, 'HUB-HCM', 'HUB', 0, 30),
-          ('HCM-DN', 2, 'REST-PHANTHIET', 'REST', 240, 30),
-          ('HCM-DN', 3, 'REST-NHATRANG', 'VITAL_CHECK', 540, 45),
-          ('HCM-DN', 4, 'REST-QUYNHON', 'REST', 900, 30),
-          ('HCM-DN', 5, 'HUB-DN', 'HUB', 1260, 0),
-          ('DN-HCM', 1, 'HUB-DN', 'HUB', 0, 30),
-          ('DN-HCM', 2, 'REST-QUYNHON', 'REST', 330, 30),
-          ('DN-HCM', 3, 'REST-NHATRANG', 'VITAL_CHECK', 690, 45),
-          ('DN-HCM', 4, 'REST-PHANTHIET', 'REST', 1005, 30),
-          ('DN-HCM', 5, 'HUB-HCM', 'HUB', 1260, 0),
+          ('HCM-PNH', 2, 'REST-TRANGBANG', 'REST', 160, 30),
+          ('HCM-PNH', 3, 'GATE-MOCBAI', 'BORDER', 226, 120),
           ('MOCBAI-HCM', 1, 'GATE-MOCBAI', 'BORDER', 0, 60),
-          ('MOCBAI-HCM', 2, 'REST-TRANGBANG', 'REST', 70, 20),
-          ('MOCBAI-HCM', 3, 'HUB-HCM', 'HUB', 120, 0)
+          ('MOCBAI-HCM', 2, 'REST-TRANGBANG', 'REST', 95, 30),
+          ('MOCBAI-HCM', 3, 'HUB-HCM', 'HUB', 291, 0),
+          ('HCM-DN', 1, 'HUB-HCM', 'HUB', 0, 30),
+          ('HCM-DN', 2, 'REST-PHANTHIET', 'REST', 177, 30),
+          ('HCM-DN', 3, 'REST-PHANRANG', 'REST', 343, 30),
+          ('HCM-DN', 4, 'REST-NHATRANG', 'VITAL_CHECK', 492, 45),
+          ('HCM-DN', 5, 'REST-TUYHOA', 'REST', 683, 600),
+          ('HCM-DN', 6, 'REST-QUYNHON', 'REST', 1392, 30),
+          ('HCM-DN', 7, 'REST-QUANGNGAI', 'REST', 1617, 30),
+          ('HCM-DN', 8, 'HUB-DN', 'HUB', 1781, 0),
+          ('DN-HCM', 1, 'HUB-DN', 'HUB', 0, 30),
+          ('DN-HCM', 2, 'REST-QUANGNGAI', 'REST', 166, 30),
+          ('DN-HCM', 3, 'REST-QUYNHON', 'REST', 385, 30),
+          ('DN-HCM', 4, 'REST-TUYHOA', 'REST', 525, 30),
+          ('DN-HCM', 5, 'REST-NHATRANG', 'REST', 698, 600),
+          ('DN-HCM', 6, 'REST-PHANRANG', 'REST', 1420, 30),
+          ('DN-HCM', 7, 'REST-PHANTHIET', 'REST', 1589, 30),
+          ('DN-HCM', 8, 'HUB-HCM', 'HUB', 1782, 0),
+          ('DN-LAOBAO', 1, 'HUB-DN', 'HUB', 0, 30),
+          ('DN-LAOBAO', 2, 'REST-HUE', 'REST', 129, 30),
+          ('DN-LAOBAO', 3, 'REST-DONGHA', 'REST', 262, 30),
+          ('DN-LAOBAO', 4, 'GATE-LAOBAO', 'BORDER', 383, 120),
+          ('LAOBAO-DN', 1, 'GATE-LAOBAO', 'BORDER', 0, 60),
+          ('LAOBAO-DN', 2, 'REST-DONGHA', 'REST', 152, 30),
+          ('LAOBAO-DN', 3, 'REST-HUE', 'REST', 281, 30),
+          ('LAOBAO-DN', 4, 'HUB-DN', 'HUB', 411, 0)
      ) AS v(route_code, sequence_number, location_code, stop_type, arrival_offset_minutes, dwell_minutes)
 JOIN route r ON r.code = v.route_code
-JOIN location l ON l.code = v.location_code
-ON CONFLICT DO NOTHING;
+JOIN location l ON l.code = v.location_code;
 
--- Lịch chạy: HCM-PNH thứ Hai và thứ Năm; HCM-DN thứ Ba; DN-HCM thứ Năm để xe quay về trụ sở;
--- MOCBAI-HCM chiều thứ Hai và thứ Năm, xe vừa giao ở cửa khẩu nhận ngựa nhập về
+-- Mỗi tuyến một chuyến mỗi tuần: thứ Hai HCM và Mộc Bài, thứ Ba đi Đà Nẵng, thứ Sáu đi Lao Bảo, thứ Bảy về Đà Nẵng,
+-- Chủ nhật về TP.HCM
 INSERT INTO departure_schedule (route_id, departure_time, booking_cutoff_hours, stall_capacity, valid_from, status)
-SELECT r.id, v.departure_time, v.cutoff_hours, 9, DATE '2026-11-01', 'ACTIVE'
+SELECT r.id, v.departure_time, 72, 9, DATE '2026-11-01', 'ACTIVE'
 FROM (VALUES
-          ('HCM-PNH', TIME '06:00', 72),
-          ('HCM-DN', TIME '05:00', 72),
-          ('DN-HCM', TIME '05:00', 48),
-          ('MOCBAI-HCM', TIME '14:00', 72)
-     ) AS v(route_code, departure_time, cutoff_hours)
+          ('HCM-PNH', TIME '06:00'),
+          ('MOCBAI-HCM', TIME '14:00'),
+          ('HCM-DN', TIME '05:00'),
+          ('DN-LAOBAO', TIME '05:00'),
+          ('LAOBAO-DN', TIME '07:00'),
+          ('DN-HCM', TIME '05:00')
+     ) AS v(route_code, departure_time)
 JOIN route r ON r.code = v.route_code
 WHERE NOT EXISTS (SELECT 1 FROM departure_schedule s WHERE s.route_id = r.id AND s.departure_time = v.departure_time);
 
+UPDATE departure_schedule s SET booking_cutoff_hours = 72
+FROM route r WHERE r.id = s.route_id AND r.code = 'DN-HCM' AND s.departure_time = TIME '05:00' AND s.booking_cutoff_hours = 48;
+
+-- Bỏ các ngày chạy thứ hai trong tuần của lịch mẫu cũ. Chuyến đã sinh không bị xóa
+DELETE FROM departure_schedule_day dd USING departure_schedule s, route r
+WHERE dd.departure_schedule_id = s.id AND s.route_id = r.id
+  AND ((r.code IN ('HCM-PNH', 'MOCBAI-HCM') AND dd.day_of_week = 4) OR (r.code = 'DN-HCM' AND dd.day_of_week = 4))
+  AND s.departure_time IN (TIME '05:00', TIME '06:00', TIME '14:00') AND s.valid_from = DATE '2026-11-01';
+
 INSERT INTO departure_schedule_day (departure_schedule_id, day_of_week)
 SELECT s.id, v.day_of_week
-FROM (VALUES ('HCM-PNH', 1), ('HCM-PNH', 4), ('HCM-DN', 2), ('DN-HCM', 4), ('MOCBAI-HCM', 1), ('MOCBAI-HCM', 4)) AS v(route_code, day_of_week)
+FROM (VALUES ('HCM-PNH', TIME '06:00', 1), ('MOCBAI-HCM', TIME '14:00', 1), ('HCM-DN', TIME '05:00', 2), ('DN-LAOBAO', TIME '05:00', 5), ('LAOBAO-DN', TIME '07:00', 6), ('DN-HCM', TIME '05:00', 7)) AS v(route_code, departure_time, day_of_week)
 JOIN route r ON r.code = v.route_code
-JOIN departure_schedule s ON s.route_id = r.id
+JOIN departure_schedule s ON s.route_id = r.id AND s.departure_time = v.departure_time
 ON CONFLICT DO NOTHING;
 
 -- ---------------------------------------------------------------------------
@@ -198,6 +250,8 @@ INSERT INTO price_item (price_list_id, billable_service_id, route_id, stall_type
 SELECT pl.id, s.id, r.id, v.stall_type, v.unit_price
 FROM (VALUES
           ('HCM-PNH', 'STANDARD', 6000000), ('HCM-PNH', 'WIDE', 8000000),
+          ('DN-LAOBAO', 'STANDARD', 6000000), ('DN-LAOBAO', 'WIDE', 8000000),
+          ('LAOBAO-DN', 'STANDARD', 6000000), ('LAOBAO-DN', 'WIDE', 8000000),
           ('HCM-DN', 'STANDARD', 12000000), ('HCM-DN', 'WIDE', 15000000),
           ('DN-HCM', 'STANDARD', 12000000), ('DN-HCM', 'WIDE', 15000000),
           ('MOCBAI-HCM', 'STANDARD', 6000000), ('MOCBAI-HCM', 'WIDE', 8000000)
@@ -256,19 +310,35 @@ FROM (VALUES
           ('KH', 'EXPORT', 'CUSTOMS_DECLARATION', 'COMPANY', true),
           ('KH', 'EXPORT', 'HORSE_PASSPORT', 'CUSTOMER', true),
           ('KH', 'EXPORT', 'VACCINATION_RECORD', 'CUSTOMER', true),
-          ('KH', 'EXPORT', 'LAB_TEST', 'CUSTOMER', true),
-          ('KH', 'IMPORT', 'IMPORT_PERMIT', 'COMPANY', true),
+          ('KH', 'EXPORT', 'LAB_TEST', 'COMPANY', true),
+          ('KH', 'EXPORT', 'QUARANTINE_CLEARANCE', 'COMPANY', true),
+          ('KH', 'IMPORT', 'IMPORT_APPROVAL', 'AGENT', true),
+          ('KH', 'IMPORT', 'ORIGIN_QUARANTINE_CERT', 'AGENT', true),
+          ('KH', 'IMPORT', 'IMPORT_TRANSPORT_CERT', 'AGENT', true),
           ('KH', 'IMPORT', 'HORSE_PASSPORT', 'CUSTOMER', true),
-          ('KH', 'IMPORT', 'LAB_TEST', 'CUSTOMER', true),
+          ('KH', 'IMPORT', 'LAB_TEST', 'COMPANY', true),
           ('LA', 'EXPORT', 'EXPORT_QUARANTINE_CERT', 'COMPANY', true),
           ('LA', 'EXPORT', 'IMPORT_PERMIT', 'CONSIGNEE', true),
           ('LA', 'EXPORT', 'CUSTOMS_DECLARATION', 'COMPANY', true),
           ('LA', 'EXPORT', 'HORSE_PASSPORT', 'CUSTOMER', true),
-          ('LA', 'EXPORT', 'LAB_TEST', 'CUSTOMER', true),
+          ('LA', 'EXPORT', 'LAB_TEST', 'COMPANY', true),
+          ('LA', 'EXPORT', 'QUARANTINE_CLEARANCE', 'COMPANY', true),
           ('LA', 'EXPORT', 'ATA_CARNET', 'CUSTOMER', false),
-          ('LA', 'IMPORT', 'IMPORT_PERMIT', 'COMPANY', true),
+          ('LA', 'IMPORT', 'IMPORT_APPROVAL', 'AGENT', true),
+          ('LA', 'IMPORT', 'ORIGIN_QUARANTINE_CERT', 'AGENT', true),
+          ('LA', 'IMPORT', 'IMPORT_TRANSPORT_CERT', 'AGENT', true),
           ('LA', 'IMPORT', 'HORSE_PASSPORT', 'CUSTOMER', true)
      ) AS v(country_code, direction, doc_code, submitter_type, is_mandatory)
 JOIN country_rule cr ON cr.country_code = v.country_code AND cr.direction = v.direction AND cr.valid_from = DATE '2026-01-01'
 JOIN document_type dt ON dt.code = v.doc_code
 ON CONFLICT ON CONSTRAINT uk_document_requirement DO NOTHING;
+
+-- Dữ liệu mẫu đã nạp trước đây: xét nghiệm do công ty lo, đơn nhập không dùng giấy phép nhập của nước đến
+UPDATE document_requirement dr SET submitter_type = 'COMPANY'
+FROM document_type dt, country_rule cr
+WHERE dt.id = dr.document_type_id AND cr.id = dr.country_rule_id AND dt.code = 'LAB_TEST'
+  AND cr.valid_from = DATE '2026-01-01' AND dr.submitter_type = 'CUSTOMER';
+UPDATE document_requirement dr SET is_mandatory = false
+FROM document_type dt, country_rule cr
+WHERE dt.id = dr.document_type_id AND cr.id = dr.country_rule_id AND dt.code = 'IMPORT_PERMIT'
+  AND cr.direction = 'IMPORT' AND cr.valid_from = DATE '2026-01-01';

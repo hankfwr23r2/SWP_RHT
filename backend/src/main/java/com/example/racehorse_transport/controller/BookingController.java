@@ -2,9 +2,11 @@ package com.example.racehorse_transport.controller;
 
 import com.example.racehorse_transport.dto.booking.BookingCreateRequestDto;
 import com.example.racehorse_transport.dto.booking.BookingDetailResponseDto;
+import com.example.racehorse_transport.dto.booking.BookingRescheduleRequestDto;
 import com.example.racehorse_transport.dto.booking.BookingResponseDto;
 import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.service.BookingQueryService;
+import com.example.racehorse_transport.service.BookingRescheduleService;
 import com.example.racehorse_transport.service.BookingService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -23,6 +25,7 @@ public class BookingController {
 
     private final BookingService bookings;
     private final BookingQueryService queries;
+    private final BookingRescheduleService reschedules;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -40,5 +43,12 @@ public class BookingController {
     @GetMapping("/{id}")
     public ApiResponseDto<BookingDetailResponseDto> get(@PathVariable Long id, Authentication authentication) {
         return ApiResponseDto.success(queries.get(authentication.getName(), id), "Chi tiết đơn.");
+    }
+
+    // Đơn chờ chọn lại lịch, chưa cọc
+    @PostMapping("/{id}/reschedule")
+    public ApiResponseDto<BookingResponseDto> reschedule(@PathVariable Long id, @Valid @RequestBody BookingRescheduleRequestDto request,
+                                                         Authentication authentication) {
+        return ApiResponseDto.success(reschedules.reschedule(id, authentication.getName(), request), "Đã đổi chuyến.");
     }
 }

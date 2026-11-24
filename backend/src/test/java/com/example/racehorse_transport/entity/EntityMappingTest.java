@@ -102,11 +102,11 @@ class EntityMappingTest {
 
         assertThat(route.getOrigin().getCode()).isEqualTo("HUB-HCM");
         assertThat(route.getDestination().getLocationType()).isEqualTo(LocationType.HUB);
-        assertThat(route.getDistanceKm()).isEqualByComparingTo("960.00");
-        assertThat(stops).extracting(s -> s.getId().getSequenceNumber()).containsExactly(1, 2, 3, 4, 5);
+        assertThat(route.getDistanceKm()).isEqualByComparingTo("975.00");
+        assertThat(stops).extracting(s -> s.getId().getSequenceNumber()).containsExactly(1, 2, 3, 4, 5, 6, 7, 8);
         assertThat(stops.get(0).getLocation().getCode()).isEqualTo("HUB-HCM");
-        assertThat(stops.get(2).getStopType()).isEqualTo(RouteStopType.VITAL_CHECK);
-        assertThat(stops.get(4).getLocation().getCode()).isEqualTo("HUB-DN");
+        assertThat(stops.get(3).getStopType()).isEqualTo(RouteStopType.VITAL_CHECK);
+        assertThat(stops.get(7).getLocation().getCode()).isEqualTo("HUB-DN");
     }
 
     @Test
@@ -176,7 +176,7 @@ class EntityMappingTest {
                 .findFirst().orElseThrow();
 
         List<DocumentRequirement> list = requirements.findByRule_Id(rule.getId());
-        assertThat(list).hasSize(6);
+        assertThat(list).hasSize(7);
         assertThat(list).anySatisfy(r -> {
             assertThat(r.getDocumentType().getCode()).isEqualTo("LAB_TEST");
             assertThat(r.getDocumentType().getOwnerType()).isEqualTo(DocumentSubject.BOOKING_HORSE);
@@ -189,7 +189,7 @@ class EntityMappingTest {
         DepartureSchedule schedule = schedules.findAll().stream()
                 .filter(s -> s.getRoute().getCode().equals("HCM-PNH")).findFirst().orElseThrow();
         assertThat(scheduleDays.findById_DepartureScheduleId(schedule.getId())).extracting(d -> d.getId().getDayOfWeek())
-                .containsExactlyInAnyOrder((short) 1, (short) 4);
+                .containsExactly((short) 1);
 
         // Chuyến đột xuất (không theo lịch) để không trùng các chuyến do seed sinh từ lịch
         Departure departure = new Departure();

@@ -14,6 +14,7 @@ import com.example.racehorse_transport.entity.enums.ScheduleStatus;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.BookingStatusPolicy;
 import com.example.racehorse_transport.policy.DepartureCapacityPolicy;
+import com.example.racehorse_transport.policy.DepartureDecisionPolicy;
 import com.example.racehorse_transport.policy.DepartureGenerationPolicy;
 import com.example.racehorse_transport.repository.AppUserRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
@@ -28,6 +29,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -142,15 +144,26 @@ public class DepartureServiceImpl implements DepartureService {
     public DepartureResponseDto cancel(Long departureId, String reason, String actorUsername) {
         AppUser actor = users.findByUsername(actorUsername)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy tài khoản " + actorUsername));
+        // Thứ tự khóa dùng chung với nhả chỗ, đổi chuyến: đơn (id tăng dần) trước, chuyến sau
+        Set<Long> locked = new HashSet<>(bookings.findIdsByDeparture(departureId));
+        locked.stream().sorted().forEach(bookings::findForUpdate);
         Departure departure = departures.findForUpdate(departureId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy chuyến " + departureId));
         if (!DepartureCapacityPolicy.canCancel(departure.getStatus())) {
             throw new IllegalStateException("Chuyến đã chạy hoặc đã hủy, không hủy được.");
         }
+        List<Booking> onDeparture = bookings.findByDeparture_Id(departureId);
+        if (onDeparture.stream().anyMatch(booking -> !locked.contains(booking.getId()))) {
+            throw new IllegalStateException("Chuyến vừa có thêm đơn. Tải lại rồi hủy lại.");
+        }
+        onDeparture.stream().filter(booking -> DepartureDecisionPolicy.blocksCancellation(booking.getStatus())).findFirst()
+                .ifPresent(booking -> {
+                    throw new IllegalStateException("Đơn " + booking.getCode() + " đã nhận ngựa nên không hủy chuyến. Xử lý bằng sự cố.");
+                });
         departure.setStatus(DepartureStatus.CANCELLED);
 
         String bookingReason = "Chuyến ngày " + departure.getDepartureDate() + " bị hủy: " + reason.trim();
-        for (Booking booking : bookings.findByDeparture_Id(departureId)) {
+        for (Booking booking : onDeparture) {
             if (BookingStatusPolicy.canTransition(booking.getStatus(), BookingStatus.SCHEDULE_CHANGE_REQUIRED)) {
                 bookingStatus.transition(booking.getId(), BookingStatus.SCHEDULE_CHANGE_REQUIRED, bookingReason, actor.getId());
             }

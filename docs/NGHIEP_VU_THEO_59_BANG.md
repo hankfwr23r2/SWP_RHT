@@ -69,10 +69,11 @@ Một **đơn** có nhiều ngựa. Một **lượt xe** chở ngựa của nhi�
 | Thứ Hai | HCM → Mộc Bài, rồi Mộc Bài → HCM | |
 | Thứ Ba – Tư | | HCM → Đà Nẵng, nghỉ đêm dọc đường |
 | Thứ Năm | | Giao và đón quanh Đà Nẵng |
-| Thứ Sáu | | Đà Nẵng → Lao Bảo, rồi Lao Bảo → Đà Nẵng |
-| Thứ Bảy – Chủ nhật | | Đà Nẵng → HCM, nghỉ đêm dọc đường |
+| Thứ Sáu | | Đà Nẵng → Lao Bảo, nghỉ tại Lao Bảo |
+| Thứ Bảy | | Lao Bảo → Đà Nẵng |
+| Chủ nhật – thứ Hai | | Đà Nẵng → HCM, nghỉ đêm dọc đường |
 
-Xe B đi gần trọn tuần nên cần hai xe nặng luân phiên để có tuần bảo dưỡng. Giờ chạy và quãng đường là mẫu, phải tính lại khi làm seed. Nhu cầu gấp hoặc số lượng lớn đi **chuyến đột xuất**; đơn cùng hub chạy thẳng bất kỳ ngày nào.
+Xe B đi từ thứ Ba tới thứ Hai tuần sau nên cần hai xe nặng và hai tổ xe luân phiên. Giờ chạy và quãng đường là số mẫu, tính bằng Valhalla ở 80 km/h (`R__dev_seed_base.sql`). Nhu cầu gấp hoặc số lượng lớn đi **chuyến đột xuất**; đơn cùng hub chạy thẳng bất kỳ ngày nào.
 
 **Chọn cách chạy theo hub, không theo loại đơn:**
 
@@ -175,7 +176,7 @@ Một scheduler khác chuyển `departure` sang `CLOSED` khi đã qua `booking_c
 | 1 ngày | Ngày đưa ngựa tới hub chuẩn của đơn đi trục INTERPROVINCE, EXPORT. Dùng cho cả COMPANY và SELF. Lưu chuồng sớm hơn tính theo số ngựa và số ngày |
 | 3 giờ (`HUB_CHECKIN_HOURS`) | Ngựa phải có mặt ở hub. Trễ thì điều phối chờ hoặc dời chuyến; chi phí do bên có lỗi chịu |
 
-Khi quyết định chỉ đếm chỗ của đơn CONFIRMED. Dưới `DEPARTURE_MIN_FILL_PERCENT` (30%) thì cảnh báo, quản lý vẫn là người quyết định:
+Khi quyết định chỉ đếm chỗ của đơn CONFIRMED hoặc IN_OPERATION (đã cọc). Dưới `DEPARTURE_MIN_FILL_PERCENT` (30%) thì cảnh báo, quản lý vẫn là người quyết định:
 
 | Lựa chọn | Với khách |
 |---|---|
@@ -385,7 +386,7 @@ Với `pickup_method = SELF`, kiểm giấy trước khi ký nhận tại hub, g
 | 5 | Khám nhanh, ghi tình trạng, chụp ảnh | `horse_health_log` (`trip_stop_id`), `document` ảnh hiện trường (`horse_leg_id` hoặc `handover_id`) |
 | 6 | Nhận giấy tờ gốc, ví dụ hộ chiếu ngựa | `handover_document` direction RECEIVED |
 | 7 | Ký biên bản | `document` loại HANDOVER_RECORD (`handover_id`), `handover.status = DONE`, `handed_at` |
-| 8 | Lập khoản số dư, khách trả 70% còn lại qua VNPAY | `payment` BALANCE, `due_at` = lúc nhận + `BALANCE_WAIT_MINUTES` (30 phút) |
+| 8 | Lập khoản số dư bằng tổng báo giá ACCEPTED trừ số đã trả (thường gọi là "70%"), khách trả qua VNPAY | `payment` BALANCE, `due_at` = lúc nhận + `BALANCE_WAIT_MINUTES` (30 phút) |
 | 9 | Trả đủ: ngựa lên xe | `horse_leg` PICKUP: `status = IN_PROGRESS`, `actual_start_at` |
 | 10 | Rời điểm đón | `trip_stop.actual_departure_at`, `booking.status = IN_OPERATION` |
 
@@ -577,7 +578,8 @@ Quy trình theo bản cũ của nhóm. Khác bản cũ: sự cố gắn lượt 
 
 1. Quản lý hủy hoặc dồn chuyến kèm lý do: `departure.status = CANCELLED`.
 2. Các đơn trên chuyến chuyển sang `SCHEDULE_CHANGE_REQUIRED`.
-3. Khách chọn chuyến khác (miễn phí, giữ giá) hoặc hủy và được **hoàn 100%**. Đổi chuyến thì trừ `booked_stall_count` của chuyến cũ và cộng vào chuyến mới, giữ `FOR UPDATE` trên cả hai dòng.
+3. Không hủy được chuyến khi còn đơn `IN_OPERATION` (đã nhận ngựa): xử lý bằng sự cố.
+4. Khách chọn chuyến khác (miễn phí; đơn đã cọc thì giữ giá, làm ở A8) hoặc hủy và được **hoàn 100%**. Đổi chuyến thì trừ `booked_stall_count` của chuyến cũ và cộng vào chuyến mới, giữ `FOR UPDATE` trên cả hai dòng.
 
 ### 5.3 Ngựa không đủ điều kiện
 
@@ -617,7 +619,7 @@ Khách ở Bình Dương gửi 2 con ngựa (Sao Mai, Bạch Long) tới Phnom P
 | 06/12 | Cọc 30% | `payment` DEPOSIT PAID, `payment_transaction` VNPAY. `booking` CONFIRMED, có vận đơn |
 | 08–17/12 | Thú y lấy mẫu tại chuồng; chuyên viên tải giấy | `document` LAB_TEST, QUARANTINE_CLEARANCE, EXPORT_QUARANTINE_CERT × 2 APPROVED; giấy phép nhập, tờ khai hải quan |
 | 19/12 | Quản lý quyết định chạy: 5/9 chỗ đã cọc | Điều phối tạo `vehicle_trip` LINEHAUL #T7 (`departure_id` 101) |
-| 20/12 | Đón ngựa | `vehicle_trip` PICKUP #T1 (ghép đơn cùng khu vực). `handover` PICKUP DONE. Khách trả 70%: `payment` BALANCE PAID. Xe rời: `booking` IN_OPERATION |
+| 20/12 | Đón ngựa | `vehicle_trip` PICKUP #T1 (ghép đơn cùng khu vực). `handover` PICKUP DONE. Khách trả số dư: `payment` BALANCE PAID. Xe rời: `booking` IN_OPERATION |
 | 20/12 | Vào hub, qua một đêm | `handover` HUB_IN, `horse_stay` ASSEMBLY × 2 tại `HUB-HCM`. Bữa tối và bữa sáng theo chỉ dẫn |
 | 21/12 | Chặng trục chính | `handover` HUB_OUT. `trip_stop`: hub → Trảng Bàng (nước, cỏ) → Mộc Bài. `horse_leg` #1.2, #2.2 LINEHAUL |
 | 21/12 | Cửa khẩu Mộc Bài | `handover` AGENT cho đại lý Campuchia. `horse_leg` #1.3, #2.3 có `agent_party_id` |
