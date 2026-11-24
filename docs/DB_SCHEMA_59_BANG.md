@@ -1498,4 +1498,4 @@ Các quy tắc dưới đây cần so dữ liệu ở nhiều bảng nên CHECK 
 | 37 | Người phụ trách một con ngựa là `handled_by` của `handover` DONE mới nhất mà công ty là bên nhận. Không sửa tay. `crew_assignment` chỉ là kế hoạch | handover, crew_assignment |
 | 38 | Hộ tống không kết thúc ca hoặc lượt xe khi còn phụ trách ngựa chưa bàn giao. Người ký nhận phải đang trong ca, có mặt ở nơi đó, và đã xem phiếu tóm tắt của từng con | handover, vehicle_trip |
 | 39 | Trên cùng một đoạn đường của lượt xe, hai con không trùng `stall_position`. Khoang rộng chiếm hai vị trí liền nhau **bất kỳ** (vách di động). Vị trí cuối không vượt số chỗ của xe (quy tắc #9) | horse_leg, vehicle, trip_stop |
-| 40 | Con đã lên xe không đổi `stall_position`. Lượt xe đã xuất phát thì chỉ xếp các con lên ở điểm dừng sau. Lưu sơ đồ phải khóa `vehicle_trip` và lưu cả xe trong một giao dịch | horse_leg, vehicle_trip |
+| 40 | Sơ đồ chốt **trước khi lượt xe bắt đầu**: mọi con của lượt xe phải có `stall_position` thì mới cho bắt đầu. Lượt xe đã bắt đầu thì khóa cả sơ đồ, kể cả các con đón ở điểm dừng sau. Lưu sơ đồ phải khóa `vehicle_trip` và lưu cả xe trong một giao dịch | horse_leg, vehicle_trip |
