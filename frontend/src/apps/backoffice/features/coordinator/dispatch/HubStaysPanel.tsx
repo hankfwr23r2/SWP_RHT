@@ -13,6 +13,7 @@ import { Input } from '@shared/ui/Input'
 import { Modal } from '@shared/ui/Modal'
 import { Select } from '@shared/ui/Select'
 import { Skeleton } from '@shared/ui/Skeleton'
+import { StatusBadge } from '@shared/ui/StatusBadge'
 import { Table, type TableColumn } from '@shared/ui/Table'
 import { Textarea } from '@shared/ui/Textarea'
 import { useToast } from '@shared/ui/toast'
@@ -79,7 +80,17 @@ export function HubStaysPanel() {
     { key: 'booking', header: t('dispatch.stays.colBooking'), render: stay => stay.bookingCode },
     { key: 'type', header: t('dispatch.stays.colType'), render: stay => t(`dispatch.stays.stayType.${stay.stayType}`) },
     { key: 'since', header: t('dispatch.stays.colSince'), render: stay => (stay.actualStartAt ? formatDateTime(new Date(stay.actualStartAt)) : '') },
-    { key: 'until', header: t('dispatch.stays.colUntil'), render: stay => (stay.plannedEndAt ? formatDateTime(new Date(stay.plannedEndAt)) : '') },
+    {
+      key: 'until',
+      header: t('dispatch.stays.colUntil'),
+      // Gửi chuồng quá hạn giữ (B5): phí vẫn tính mỗi ngày, quản lý quyết định
+      render: stay => stay.plannedEndAt && (
+        <span className={s.legs}>
+          {formatDateTime(new Date(stay.plannedEndAt))}
+          {stay.stayType === 'STABLING' && new Date(stay.plannedEndAt).getTime() < Date.now() && <StatusBadge tone="danger" label={t('dispatch.stays.overdue')} />}
+        </span>
+      ),
+    },
     {
       key: 'action',
       header: '',

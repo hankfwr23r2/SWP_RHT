@@ -33,14 +33,14 @@ export function handoverTypesAt(run: CrewTrip, stop: Stop): HandoverType[] {
   const boarding = horses.some(h => h.leg?.boardTripStopId === stop.id && h.leg?.status === 'PLANNED')
   const alighting = horses.some(h => h.leg?.alightTripStopId === stop.id && h.leg?.status === 'IN_PROGRESS')
   const types: HandoverType[] = []
+  const sequenceOf = new Map(stopsOf(run).map(s => [s.id, s.sequenceNumber ?? 0]))
+  const at = stop.sequenceNumber ?? 0
   if (stop.stopType === 'PICKUP' && boarding) types.push('PICKUP')
   if (stop.stopType === 'DELIVERY' && alighting) types.push('DELIVERY')
-  if (stop.stopType === 'HUB' && alighting) types.push('HUB_IN')
+  if (stop.stopType === 'HUB' && (alighting || failedAwaitingHub(run).some(h => (sequenceOf.get(h.leg?.alightTripStopId) ?? 0) < at))) types.push('HUB_IN')
   if (stop.stopType === 'HUB' && boarding) types.push('HUB_OUT')
   // Cửa khẩu: giao cho đại lý (đơn xuất) hoặc nhận từ đại lý (đơn nhập); backend chọn đại lý theo chặng
   if (stop.stopType === 'BORDER' && (alighting || boarding)) types.push('AGENT')
-  const sequenceOf = new Map(stopsOf(run).map(s => [s.id, s.sequenceNumber ?? 0]))
-  const at = stop.sequenceNumber ?? 0
   // Nghỉ đêm ở trạm nghỉ hoặc cửa khẩu: gửi chuồng các con đi qua điểm này, rồi nhận lại trước khi rời
   if (stop.stopType === 'REST' || stop.stopType === 'VITAL_CHECK' || stop.stopType === 'BORDER') {
     const stays = (run.handovers ?? []).filter(h => h.tripStopId === stop.id && h.status === 'DONE'
@@ -73,10 +73,17 @@ export const needsRecord = (handover: Handover) => handover.handoverType === 'PI
 
 export const canStart = (run: CrewTrip) => run.trip?.status === 'PLANNED' || run.trip?.status === 'DISPATCHED'
 
+// Giao thất bại (B5): con chưa giao được còn trên xe tới khi giao vào hub
+export function failedAwaitingHub(run: CrewTrip) {
+  const handedIn = new Set((run.handovers ?? []).filter(h => h.handoverType === 'HUB_IN' && h.status === 'DONE')
+    .flatMap(h => (h.horses ?? []).map(horse => horse.horseLegId)))
+  return (run.horses ?? []).filter(h => h.leg?.status === 'FAILED' && !handedIn.has(h.leg.id))
+}
+
 export function canComplete(run: CrewTrip): boolean {
   const stops = stopsOf(run)
   const last = stops[stops.length - 1]
-  return running(run) && Boolean(last?.actualArrivalAt) && !pendingAt(run, last?.id)
+  return running(run) && Boolean(last?.actualArrivalAt) && !pendingAt(run, last?.id) && failedAwaitingHub(run).length === 0
 }
 
 // Trạm nghỉ và điểm khám: phải ghi uống và ăn cho mọi con đang trên xe trước khi rời (quy tắc #34)

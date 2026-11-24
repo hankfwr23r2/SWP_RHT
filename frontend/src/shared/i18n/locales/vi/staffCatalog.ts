@@ -324,7 +324,8 @@ export const staffCatalog = {
         "MINUTE": "phút",
         "HOUR": "giờ",
         "DAY": "ngày",
-        "COUNT": ""
+        "COUNT": "",
+        "VND": "₫"
       },
       "groups": {
         "SCHEDULE_WINDOW": "Giờ đón, giao",
@@ -352,6 +353,8 @@ export const staffCatalog = {
         "HOTLINE": "Hotline",
         "OFFICE_ADDRESS": "Địa chỉ văn phòng",
         "HANDOVER_FREE_WAIT_MINUTES": "Thời gian chờ người nhận miễn phí",
+        "STABLING_MAX_DAYS": "Số ngày giữ ngựa tại hub sau khi giao thất bại",
+        "STABLING_DAILY_FEE": "Phí lưu chuồng và chăm sóc mỗi ngày khi giữ ngựa giao thất bại",
         "QUOTATION_VALID_HOURS": "Hiệu lực báo giá từ lúc gửi",
         "DEPARTURE_GENERATION_WEEKS": "Số tuần tạo chuyến trước",
         "OTP_EXPIRY_MINUTES": "Thời hạn mã xác minh",

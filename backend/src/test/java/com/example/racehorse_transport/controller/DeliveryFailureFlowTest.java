@@ -11,6 +11,7 @@ import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.security.JwtUtils;
 import com.example.racehorse_transport.service.DeliveryFailureService;
+import com.example.racehorse_transport.service.HorseStayService;
 import com.example.racehorse_transport.support.TestData;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.persistence.EntityManager;
@@ -28,7 +29,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
-// B5: quá giờ chờ người nhận → giao thất bại (TIMEOUT, chặng FAILED, sự cố HANDOVER_TIMEOUT) → về hub → giao lại thành công → đơn DELIVERED
+// B5: quá giờ chờ người nhận → giao thất bại (TIMEOUT, chặng FAILED, sự cố HANDOVER_TIMEOUT) → về hub gửi chuồng có phí theo ngày → giao lại thành công → đơn DELIVERED
 @PostgresIntegrationTest
 @AutoConfigureMockMvc
 @Transactional
@@ -41,6 +42,7 @@ class DeliveryFailureFlowTest {
     @Autowired private LocationRepository locations;
     @Autowired private EntityManager entityManager;
     @Autowired private DeliveryFailureService deliveryFailures;
+    @Autowired private HorseStayService horseStays;
 
     private String coordinator;
     private Staff coordinatorStaff;
@@ -103,10 +105,27 @@ class DeliveryFailureFlowTest {
                 .andExpect(jsonPath("$.data.horses[0].handovers[1].handoverType").value("DELIVERY"))
                 .andExpect(jsonPath("$.data.horses[0].handovers[1].status").value("TIMEOUT"));
 
-        // Xe đưa ngựa về hub và kết thúc lượt
+        // Xe đưa ngựa về hub: chưa giao con vào hub thì chưa kết thúc lượt được
         first.act("/trip-stops/" + first.stops.get(2) + "/depart").andExpect(status().isOk());
         first.act("/trip-stops/" + first.stops.get(3) + "/arrive").andExpect(status().isOk());
+        first.act("/vehicle-trips/" + first.id + "/complete").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Còn 1 con ngựa trên xe chưa bàn giao."));
+        // Giao vào hub: giữ và chăm sóc tại hub tới hạn STABLING_MAX_DAYS (3 ngày), báo khách hạn và phí mỗi ngày
+        first.scanAndComplete(first.openHandover(3, "HUB_IN"));
+        entityManager.flush();
+        assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, failedLeg)).isEqualTo("FAILED");
+        long stay = jdbc.queryForObject("SELECT id FROM horse_stay WHERE booking_horse_id = ? AND stay_type = 'STABLING' AND actual_end_at IS NULL", Long.class, line);
+        assertThat(jdbc.queryForObject("SELECT round(extract(epoch FROM planned_end_at - actual_start_at) / 86400) FROM horse_stay WHERE id = ?", Integer.class, stay))
+                .isEqualTo(3);
+        assertThat(customerNotices()).contains("Ngựa đang được giữ tại hub");
         first.act("/vehicle-trips/" + first.id + "/complete").andExpect(status().isOk());
+
+        // Quá hạn: mỗi sáng nhắc khách và quản lý, phí tạm tính vẫn chạy
+        assertThat(horseStays.remindOverdueStabling()).isZero();
+        jdbc.update("UPDATE horse_stay SET actual_start_at = now() - interval '4 days 2 hours', planned_start_at = now() - interval '4 days 2 hours', planned_end_at = now() - interval '1 day 2 hours' WHERE id = ?", stay);
+        entityManager.clear();
+        assertThat(horseStays.remindOverdueStabling()).isEqualTo(1);
+        assertThat(customerNotices()).contains("Quá hạn giữ ngựa tại hub");
 
         // Lượt 2: giao lại từ hub
         Trip second = plan("DELIVERY", 24 * 60, stop("locationId", hcm, "HUB", 24 * 60), stop("bookingAddressId", delivery, "DELIVERY", 24 * 60 + 120),
@@ -119,6 +138,11 @@ class DeliveryFailureFlowTest {
         second.act("/trip-stops/" + second.stops.get(0) + "/arrive").andExpect(status().isOk());
         // Nhận ngựa từ hub rồi mới lên xe
         second.scanAndComplete(second.openHandover(0, "HUB_OUT"));
+        // Nhận ra khỏi chuồng: phí lưu chuồng và chăm sóc 5 ngày (4 ngày 2 giờ làm tròn lên), người nhận chịu, chờ quản lý duyệt
+        entityManager.flush();
+        assertThat(jdbc.queryForMap("SELECT category, payer_type, amount, approved_at FROM cost_item WHERE horse_stay_id = ?", stay))
+                .containsEntry("category", "STABLING").containsEntry("payer_type", "CONSIGNEE")
+                .containsEntry("amount", new java.math.BigDecimal("5000000.00")).containsEntry("approved_at", null);
         second.act("/trip-stops/" + second.stops.get(0) + "/depart").andExpect(status().isOk());
         second.act("/trip-stops/" + second.stops.get(1) + "/arrive").andExpect(status().isOk());
         long redelivery = second.openHandover(1, "DELIVERY");
@@ -129,7 +153,7 @@ class DeliveryFailureFlowTest {
                 .andExpect(jsonPath("$.data.horses[0].legs.length()").value(2))
                 .andExpect(jsonPath("$.data.horses[0].legs[1].replacedHorseLegId").value(failedLeg))
                 .andExpect(jsonPath("$.data.horses[0].legs[1].status").value("COMPLETED"))
-                .andExpect(jsonPath("$.data.horses[0].handovers[*].handoverType").value(org.hamcrest.Matchers.contains("PICKUP", "DELIVERY", "HUB_OUT", "DELIVERY")));
+                .andExpect(jsonPath("$.data.horses[0].handovers[*].handoverType").value(org.hamcrest.Matchers.contains("PICKUP", "DELIVERY", "HUB_IN", "HUB_OUT", "DELIVERY")));
     }
 
     @Test
@@ -156,6 +180,13 @@ class DeliveryFailureFlowTest {
         entityManager.flush();
         entityManager.clear();
         return mvc.perform(get("/bookings/{id}/journey", booking).header(HttpHeaders.AUTHORIZATION, coordinator)).andExpect(status().isOk());
+    }
+
+    // Tiêu đề các thông báo khách nhận được trên đơn
+    private List<String> customerNotices() {
+        entityManager.flush();
+        return jdbc.queryForList("SELECT n.title FROM notification n JOIN notification_recipient r ON r.notification_id = n.id "
+                + "JOIN booking b ON b.id = n.booking_id WHERE n.booking_id = ? AND r.user_id = b.customer_id ORDER BY n.id", String.class, booking);
     }
 
     private String bookingStatus() {

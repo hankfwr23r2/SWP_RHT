@@ -6,6 +6,7 @@ import com.example.racehorse_transport.entity.Party;
 import com.example.racehorse_transport.entity.TripStop;
 import com.example.racehorse_transport.dto.operation.HubStablingRequestDto;
 import com.example.racehorse_transport.entity.HorseLeg;
+import com.example.racehorse_transport.entity.Location;
 import java.time.Instant;
 import java.util.List;
 
@@ -15,8 +16,15 @@ public interface HorseStayService {
     // Giao vào hub xong: mở lưu trú tập kết ở hub, dự kiến tới khi chặng sau bắt đầu
     void openAssembly(HorseLeg alightedLeg, Instant at);
 
-    // Nhận ra khỏi hub hoặc chuồng: đóng lưu trú đang diễn ra của con ngựa
-    void closeActive(Long bookingHorseId, Instant at);
+    // Nhận ra khỏi hub hoặc chuồng: đóng lưu trú đang diễn ra của con ngựa. Gửi chuồng sau giao thất bại thì
+    // ghi phí lưu chuồng và chăm sóc theo số ngày (người nhận chịu, chờ quản lý duyệt)
+    void closeActive(Long bookingHorseId, Instant at, Long actorUserId);
+
+    // Giao thất bại, xe về hub: giữ ngựa tại hub (STABLING) tới hạn STABLING_MAX_DAYS, báo khách hạn và phí mỗi ngày
+    void openFailedDeliveryStabling(HorseLeg failedLeg, Location hub, Instant at);
+
+    // Scheduler mỗi sáng: ngựa giữ sau giao thất bại đã quá hạn thì nhắc khách và quản lý, kèm phí tạm tính. Trả số con quá hạn
+    int remindOverdueStabling();
 
     List<HorseStayResponseDto> activeAt(Long locationId);
 

@@ -8,6 +8,8 @@ import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.CrewAssignmentStatus;
 import com.example.racehorse_transport.entity.enums.CrewRole;
 import com.example.racehorse_transport.entity.enums.HorseInsuranceStatus;
+import com.example.racehorse_transport.entity.enums.HandoverStatus;
+import com.example.racehorse_transport.entity.enums.HandoverType;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.entity.enums.TripStopType;
 import com.example.racehorse_transport.entity.enums.VehicleTripStatus;
@@ -123,7 +125,8 @@ public class TripExecutionServiceImpl implements TripExecutionService {
         TripExecutionPolicy.requireInProgress(trip.getStatus());
         List<TripStop> all = stops.findByVehicleTrip_IdOrderBySequenceNumber(trip.getId());
         TripExecutionPolicy.requireCanComplete(all.getLast().getActualArrivalAt() != null,
-                legs.countByVehicleTrip_IdAndStatus(trip.getId(), HorseLegStatus.IN_PROGRESS));
+                legs.countByVehicleTrip_IdAndStatus(trip.getId(), HorseLegStatus.IN_PROGRESS)
+                        + legs.countFailedNotInHub(trip.getId(), HorseLegStatus.FAILED, HandoverType.HUB_IN, HandoverStatus.DONE));
         trip.setStatus(VehicleTripStatus.COMPLETED);
         trip.setActualEndAt(clock.instant());
     }
