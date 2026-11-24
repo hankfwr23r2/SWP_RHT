@@ -27,6 +27,31 @@ export const coordinator = {
     "tabTrips": "Lượt xe",
     "newTrip": "Lập lượt xe",
     "loadError": "Không tải được dữ liệu điều độ",
+    "agent": {
+      "col": "Đại lý",
+      "open": "Chặng đại lý",
+      "title": "Chặng đại lý · {{horse}} · {{code}}",
+      "exportHint": "Đơn xuất: lập chặng xe tới cửa khẩu trước. Chặng đại lý đi từ cửa khẩu tới địa chỉ giao, bắt đầu khi tổ xe bàn giao ở cửa khẩu.",
+      "importHint": "Đơn nhập: lập chặng đại lý trước chặng xe. Đại lý đưa ngựa từ nơi gửi tới cửa khẩu, chặng kết thúc khi tổ xe nhận ngựa ở cửa khẩu.",
+      "legs": "Chặng đại lý của con ngựa",
+      "agent": "Đại lý",
+      "gate": "Cửa khẩu giao ngựa",
+      "plannedStart": "Bắt đầu dự kiến",
+      "plannedEnd": "Kết thúc dự kiến",
+      "create": "Lập chặng đại lý",
+      "created": "Đã lập chặng đại lý",
+      "start": "Đại lý đã nhận ngựa",
+      "started": "Đã ghi đại lý nhận ngựa",
+      "complete": "Đại lý đã giao",
+      "completed": "Đã ghi đại lý giao ngựa",
+      "cancel": "Gỡ",
+      "cancelled": "Đã gỡ chặng đại lý",
+      "status": {
+        "PLANNED": "Chưa chạy",
+        "IN_PROGRESS": "Đại lý đang chở",
+        "COMPLETED": "Đã xong"
+      }
+    },
     "bookings": {
       "emptyTitle": "Không có đơn cần xếp xe trong tuần này",
       "emptyDescription": "Đơn đã cọc có ngày đón hoặc ngày chuyến trong tuần sẽ hiện ở đây.",

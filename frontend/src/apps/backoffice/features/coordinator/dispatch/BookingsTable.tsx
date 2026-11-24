@@ -10,7 +10,11 @@ import s from './Dispatch.module.css'
 interface Row { booking: DispatchBooking; horse: DispatchHorse }
 
 // Mỗi dòng là một con ngựa của đơn, kèm các chặng đã lập
-export function BookingsTable({ bookings, onJourney }: { bookings: DispatchBooking[]; onJourney: (booking: DispatchBooking) => void }) {
+export function BookingsTable({ bookings, onJourney, onAgent }: {
+  bookings: DispatchBooking[]
+  onJourney: (booking: DispatchBooking) => void
+  onAgent: (booking: DispatchBooking, horse: DispatchHorse) => void
+}) {
   const { t } = useTranslation()
   const rows: Row[] = bookings.flatMap(booking => (booking.horses ?? []).map(horse => ({ booking, horse })))
   const columns: TableColumn<Row>[] = [
@@ -27,10 +31,18 @@ export function BookingsTable({ bookings, onJourney }: { bookings: DispatchBooki
         if (!legs.length) return <Badge tone="warning">{t('dispatch.bookings.noLegs')}</Badge>
         return (
           <span className={s.legs}>
-            {legs.map(leg => <Badge key={leg.id} tone="info">{`${t(`dispatch.tripType.${leg.legType}`)} · ${leg.vehicleTripCode ?? ''}`}</Badge>)}
+            {legs.map(leg => <Badge key={leg.id} tone="info">{`${t(`dispatch.tripType.${leg.legType}`)} · ${leg.vehicleTripCode ?? leg.agentName ?? ''}`}</Badge>)}
           </span>
         )
       },
+    },
+    {
+      // Đơn xuất, nhập: đoạn ở nước ngoài do đại lý chở
+      key: 'agent',
+      header: t('dispatch.agent.col'),
+      render: r => (r.booking.bookingType === 'EXPORT' || r.booking.bookingType === 'IMPORT'
+        ? <Button size="sm" variant="ghost" onClick={() => onAgent(r.booking, r.horse)}>{t('dispatch.agent.open')}</Button>
+        : null),
     },
     {
       key: 'journey',

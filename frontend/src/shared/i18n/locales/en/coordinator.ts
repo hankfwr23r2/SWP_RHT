@@ -27,6 +27,31 @@ export const coordinator = {
     "tabTrips": "Vehicle trips",
     "newTrip": "New trip",
     "loadError": "Could not load dispatch data",
+    "agent": {
+      "col": "Agent",
+      "open": "Agent leg",
+      "title": "Agent leg · {{horse}} · {{code}}",
+      "exportHint": "Export: plan the vehicle leg to the border first. The agent leg runs from the border to the delivery address and starts when the crew hands over at the border.",
+      "importHint": "Import: plan the agent leg before any vehicle leg. The agent brings the horse from the shipper to the border; the leg ends when the crew receives the horse there.",
+      "legs": "Agent legs of this horse",
+      "agent": "Agent",
+      "gate": "Handover border gate",
+      "plannedStart": "Planned start",
+      "plannedEnd": "Planned end",
+      "create": "Add agent leg",
+      "created": "Agent leg added",
+      "start": "Agent has the horse",
+      "started": "Agent pickup recorded",
+      "complete": "Agent delivered",
+      "completed": "Agent delivery recorded",
+      "cancel": "Remove",
+      "cancelled": "Agent leg removed",
+      "status": {
+        "PLANNED": "Not started",
+        "IN_PROGRESS": "With the agent",
+        "COMPLETED": "Done"
+      }
+    },
     "bookings": {
       "emptyTitle": "No bookings to dispatch this week",
       "emptyDescription": "Paid bookings with a pickup or departure date in this week appear here.",

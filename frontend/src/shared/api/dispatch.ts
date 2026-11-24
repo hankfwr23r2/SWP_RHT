@@ -20,6 +20,8 @@ export type VehicleTripCreate = Schemas['VehicleTripCreateRequestDto']
 export type TripStopCreate = Schemas['TripStopRequestDto']
 export type CrewRole = NonNullable<Schemas['CrewAssignmentRequestDto']['crewRole']>
 export type TripType = NonNullable<VehicleTripCreate['tripType']>
+export type AgentLegCreate = Schemas['AgentLegRequestDto']
+export type Partner = Schemas['PartyResponseDto']
 
 const get = async <T>(url: string, params?: Record<string, string>) => (await apiClient.get<ApiResponse<T>>(url, { params })).data.data
 const post = async <T>(url: string, body?: unknown) => (await apiClient.post<ApiResponse<T>>(url, body)).data.data
@@ -42,5 +44,10 @@ export const dispatchApi = {
   locations: () => get<NetworkLocation[]>('/locations', { status: 'ACTIVE' }),
   myAssignments: () => get<MyCrewAssignment[]>('/crew-assignments/mine'),
   horseStays: (locationId: number) => get<HorseStay[]>('/horse-stays', { locationId: String(locationId) }),
+  parties: () => get<Partner[]>('/parties'),
+  createAgentLeg: (bookingHorseId: number, body: AgentLegCreate) => post<HorseLeg>(`/booking-horses/${bookingHorseId}/agent-legs`, body),
+  cancelAgentLeg: (legId: number) => post<null>(`/agent-legs/${legId}/cancel`),
+  startAgentLeg: (legId: number) => post<HorseLeg>(`/agent-legs/${legId}/start`),
+  completeAgentLeg: (legId: number) => post<HorseLeg>(`/agent-legs/${legId}/complete`),
   acknowledge: (assignmentId: number) => post<MyCrewAssignment>(`/crew-assignments/${assignmentId}/acknowledge`),
 }

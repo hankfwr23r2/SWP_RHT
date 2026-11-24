@@ -62,6 +62,7 @@ export default function TripRunPage() {
   const handoverPanel = (handover: Handover) => (
     <div className={s.body}>
       <StatusBadge tone="info" label={`${t(`myTrips.run.handover.${handover.handoverType}`)} · ${t(`myTrips.run.handoverStatus.${handover.status}`)}`} />
+      {handover.partyName && <p className={s.line}>{t('myTrips.run.agentParty', { name: handover.partyName })}</p>}
       <ul className={s.list}>
         {(handover.horses ?? []).map(horse => {
           const legId = horse.horseLegId ?? 0
