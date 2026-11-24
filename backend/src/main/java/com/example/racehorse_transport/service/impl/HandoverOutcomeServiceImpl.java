@@ -4,13 +4,16 @@ import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Handover;
 import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
+import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HandoverType;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
+import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.policy.TripExecutionPolicy;
 import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.service.BookingCancellationService;
 import com.example.racehorse_transport.service.BookingHorseService;
 import com.example.racehorse_transport.service.BookingStatusService;
+import com.example.racehorse_transport.service.DocumentCompletenessService;
 import com.example.racehorse_transport.service.HandoverOutcomeService;
 import com.example.racehorse_transport.service.HorseStayService;
 import com.example.racehorse_transport.service.PaymentService;
@@ -32,12 +35,25 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
     private final BookingHorseService bookingHorses;
     private final PaymentService payments;
     private final BookingCancellationService cancellations;
+    private final DocumentCompletenessService documents;
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
-    public void complete(Handover handover, List<HorseLeg> matched, Long actorUserId) {
-        Instant now = handover.getHandedAt();
-        boolean boarding = TripExecutionPolicy.isBoarding(handover.getHandoverType());
+    public void complete(Handover handover, List<HorseLeg> matched, Instant now, Long actorUserId) {
+        boolean agent = handover.getHandoverType() == HandoverType.AGENT;
+        boolean boarding = TripExecutionPolicy.isBoarding(handover.getHandoverType(), handover.getFromParty() != null);
+        // Khóa đơn theo ID tăng dần khi một lần giao nhận có nhiều đơn
+        List<Booking> bookings = matched.stream().map(l -> l.getBookingHorse().getBooking()).distinct()
+                .sorted(Comparator.comparing(Booking::getId)).toList();
+        if (agent && boarding) {
+            // Quy tắc #35: đơn nhập chỉ nhận ngựa ở cửa khẩu khi đủ giấy bắt buộc, gồm giấy vận chuyển mẫu 14a
+            bookings.stream().filter(b -> !documents.isComplete(b.getId())).findFirst().ifPresent(b -> {
+                throw new DispatchRuleException("documents", "Đơn " + b.getCode()
+                        + " còn thiếu giấy bắt buộc (gồm giấy vận chuyển mẫu 14a). Không nhận ngựa ở cửa khẩu.", true);
+            });
+        }
+        handover.setStatus(HandoverStatus.DONE);
+        handover.setHandedAt(now);
         for (HorseLeg leg : matched) {
             if (boarding) {
                 leg.setStatus(HorseLegStatus.IN_PROGRESS);
@@ -51,12 +67,20 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
                     horseStays.openAssembly(leg, now);
                 }
             }
+            if (agent) {
+                // Đơn xuất: chặng đại lý kế tiếp bắt đầu. Đơn nhập: chặng đại lý trước đó kết thúc
+                HorseLeg adjacent = adjacentAgentLeg(leg, !boarding);
+                if (boarding) {
+                    adjacent.setStatus(HorseLegStatus.COMPLETED);
+                    adjacent.setActualEndAt(now);
+                } else {
+                    adjacent.setStatus(HorseLegStatus.IN_PROGRESS);
+                    adjacent.setActualStartAt(now);
+                }
+            }
         }
         legs.flush();
-        // Khóa đơn theo ID tăng dần khi một lần giao nhận có nhiều đơn
-        List<Booking> bookings = matched.stream().map(l -> l.getBookingHorse().getBooking()).distinct()
-                .sorted(Comparator.comparing(Booking::getId)).toList();
-        if (handover.getHandoverType() == HandoverType.PICKUP) {
+        if (handover.getHandoverType() == HandoverType.PICKUP || agent && boarding) {
             // Nhận ngựa từ khách xong thì lập khoản số dư; xe chỉ rời nơi nhận khi đã trả đủ (#32)
             bookings.stream().filter(b -> b.getStatus() == BookingStatus.CONFIRMED)
                     .forEach(b -> payments.requestBalance(b.getId(), now));
@@ -66,6 +90,12 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
                     .filter(b -> b.getStatus() == BookingStatus.IN_OPERATION && legs.countActiveHorsesNotDelivered(b.getId()) == 0)
                     .forEach(b -> bookingStatus.transition(b.getId(), BookingStatus.DELIVERED, "Đã giao xong mọi con ngựa", actorUserId));
         }
+    }
+
+    private HorseLeg adjacentAgentLeg(HorseLeg leg, boolean next) {
+        List<HorseLeg> chain = legs.findByBookingHorse_IdOrderBySequenceNumber(leg.getBookingHorse().getId()).stream()
+                .filter(l -> l.getStatus() != HorseLegStatus.CANCELLED && l.getStatus() != HorseLegStatus.FAILED).toList();
+        return chain.get(chain.indexOf(leg) + (next ? 1 : -1));
     }
 
     @Override

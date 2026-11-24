@@ -46,7 +46,8 @@ public class StopReadinessServiceImpl implements StopReadinessService {
     public void requireCanLeave(TripStop stop, String earlyReason, Long actorUserId) {
         TripExecutionPolicy.requireCanDepart(stop.getActualArrivalAt() != null, stop.getActualDepartureAt() != null,
                 handovers.countByTripStop_IdAndStatus(stop.getId(), HandoverStatus.PENDING));
-        if (stop.getStopType() == TripStopType.PICKUP) {
+        // Nơi nhận ngựa: điểm đón, hoặc cửa khẩu với đơn nhập (ngựa nhận từ đại lý lên xe ở đây)
+        if (stop.getStopType() == TripStopType.PICKUP || stop.getStopType() == TripStopType.BORDER) {
             requirePaid(stop);
         } else if (REST_STOPS.contains(stop.getStopType())) {
             requireRestStopDone(stop, earlyReason, actorUserId);

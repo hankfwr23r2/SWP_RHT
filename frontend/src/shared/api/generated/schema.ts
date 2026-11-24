@@ -52,6 +52,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/agent-legs/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["cancel_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent-legs/{id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["complete_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/agent-legs/{id}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["start_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/change-password": {
         parameters: {
             query?: never;
@@ -222,6 +270,22 @@ export interface paths {
         get: operations["billableServices"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/booking-horses/{id}/agent-legs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["create_4"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2682,6 +2746,16 @@ export interface components {
             /** Format: int64 */
             sourceCustomerAddressId?: number;
         };
+        AgentLegRequestDto: {
+            /** Format: int64 */
+            agentPartyId: number;
+            /** Format: int64 */
+            gateLocationId?: number;
+            /** Format: date-time */
+            plannedEndAt: string;
+            /** Format: date-time */
+            plannedStartAt: string;
+        };
         ApiResponseAuthResponse: {
             data?: components["schemas"]["AuthResponse"];
             message?: string;
@@ -2774,6 +2848,11 @@ export interface components {
         };
         ApiResponseHealthLogResponseDto: {
             data?: components["schemas"]["HealthLogResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseHorseLegResponseDto: {
+            data?: components["schemas"]["HorseLegResponseDto"];
             message?: string;
             status?: string;
         };
@@ -3673,6 +3752,8 @@ export interface components {
             /** @enum {string} */
             handoverType: "PICKUP" | "HUB_IN" | "HUB_OUT" | "STAY_IN" | "STAY_OUT" | "AGENT" | "DELIVERY" | "RETURN";
             note?: string;
+            /** Format: int64 */
+            partyId?: number;
         };
         HandoverHorseDto: {
             bookingCode?: string;
@@ -3698,6 +3779,7 @@ export interface components {
             /** Format: int64 */
             id?: number;
             note?: string;
+            partyName?: string;
             /** @enum {string} */
             status?: "PENDING" | "DONE" | "TIMEOUT" | "FAILED";
             /** Format: int64 */
@@ -3845,6 +3927,7 @@ export interface components {
             bookingHorseId: number;
         };
         HorseLegResponseDto: {
+            agentName?: string;
             /** Format: int64 */
             alightTripStopId?: number;
             /** Format: int64 */
@@ -5163,6 +5246,72 @@ export interface operations {
             };
         };
     };
+    cancel_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
+                };
+            };
+        };
+    };
+    complete_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHorseLegResponseDto"];
+                };
+            };
+        };
+    };
+    start_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHorseLegResponseDto"];
+                };
+            };
+        };
+    };
     changePassword: {
         parameters: {
             query?: never;
@@ -5427,6 +5576,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListBillableServiceResponseDto"];
+                };
+            };
+        };
+    };
+    create_4: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentLegRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseHorseLegResponseDto"];
                 };
             };
         };

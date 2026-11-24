@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.policy;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -10,6 +11,7 @@ import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.policy.DispatchPolicy.Interval;
 import com.example.racehorse_transport.policy.DispatchPolicy.Occupancy;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -140,5 +142,14 @@ class DispatchPolicyTest {
         assertThatCode(() -> DispatchPolicy.requireContinuous("L3", "L3")).doesNotThrowAnyException();
         assertThatThrownBy(() -> DispatchPolicy.requireContinuous("L3", "L4")).hasMessageContaining("chặng trước");
         assertThatThrownBy(() -> DispatchPolicy.requireContinuous("A7", "L7")).hasMessageContaining("chặng trước");
+    }
+
+    @Test
+    void partnerRoleMustBeValidOnTheDay() {
+        LocalDate day = LocalDate.of(2031, 3, 5);
+        assertThat(DispatchPolicy.roleValidOn(LocalDate.of(2031, 1, 1), null, day)).isTrue();
+        assertThat(DispatchPolicy.roleValidOn(day, day, day)).isTrue();
+        assertThat(DispatchPolicy.roleValidOn(day.plusDays(1), null, day)).isFalse();
+        assertThat(DispatchPolicy.roleValidOn(LocalDate.of(2031, 1, 1), day.minusDays(1), day)).isFalse();
     }
 }

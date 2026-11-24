@@ -8,8 +8,9 @@ import java.util.List;
 // Tác động của giao nhận lên chặng, lưu trú, đơn và thanh toán (B2). HandoverService gọi khi hoàn tất hoặc không nhận một con.
 public interface HandoverOutcomeService {
 
-    // Con quét đúng chip lên xe hoặc xuống xe. Nhận từ khách xong thì lập khoản số dư; giao xong con cuối thì đơn DELIVERED (#16)
-    void complete(Handover handover, List<HorseLeg> matched, Long actorUserId);
+    // Đánh dấu lần giao nhận DONE; con quét đúng chip lên xe hoặc xuống xe. Nhận từ khách (hoặc từ đại lý với đơn nhập, sau khi
+    // kiểm đủ giấy #35) thì lập khoản số dư; bàn giao đại lý thì chặng đại lý liền kề bắt đầu hoặc kết thúc; giao xong con cuối thì đơn DELIVERED (#16)
+    void complete(Handover handover, List<HorseLeg> matched, Instant at, Long actorUserId);
 
     // Không nhận một con lúc nhận: luồng A loại khỏi đơn, nhả chỗ, thay báo giá; ở đây hủy các chặng chưa chạy của con đó
     void refuse(HorseLeg leg, String reason, Long actorUserId);
