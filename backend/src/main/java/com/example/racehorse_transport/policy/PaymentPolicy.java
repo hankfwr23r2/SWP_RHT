@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.policy;
 
 import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.CostItem;
 import com.example.racehorse_transport.entity.Payment;
 import com.example.racehorse_transport.entity.Quotation;
 import com.example.racehorse_transport.entity.enums.*;
@@ -8,7 +9,9 @@ import com.example.racehorse_transport.exception.BookingRuleException;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -46,6 +49,12 @@ public final class PaymentPolicy {
                 && now.isBefore(session.createdAt().plus(Duration.ofMinutes((long) expireMinutes + graceMinutes)));
     }
 
+    public static boolean isBalanceOverdue(List<Payment> entries, Instant now, int graceMinutes) {
+        return entries.stream().anyMatch(row -> row.getPaymentType() == PaymentType.BALANCE
+                && row.getStatus() == PaymentStatus.PENDING && row.getDueAt() != null
+                && !now.isBefore(row.getDueAt().plus(Duration.ofMinutes(graceMinutes))));
+    }
+
     public static boolean isOpen(Payment payment, Booking booking, Instant now) {
         if (payment.getStatus() != PaymentStatus.PENDING || payment.getPaymentMethod() != PaymentMethod.VNPAY) {
             return false;
@@ -57,7 +66,9 @@ public final class PaymentPolicy {
                     && now.isBefore(DepositPaymentWindowPolicy.expiresAt(payment.getDueAt()));
             case BALANCE -> booking.getStatus() == BookingStatus.CONFIRMED
                     && payment.getQuotation().getStatus() == QuotationStatus.ACCEPTED;
-            default -> false;
+            case EXTRA_CHARGE -> booking.getStatus() == BookingStatus.DELIVERED
+                    && payment.getQuotation() != null && payment.getQuotation().getStatus() == QuotationStatus.ACCEPTED;
+            case REFUND -> false;
         };
     }
 
@@ -75,8 +86,71 @@ public final class PaymentPolicy {
                     && DepositPaymentWindowPolicy.canConfirm(payment.getDueAt(), session.createdAt(),
                             paidAt, receivedAt, graceMinutes);
             case BALANCE -> amount.compareTo(payment.getAmount()) >= 0 && booking.getStatus() != BookingStatus.CANCELLED;
-            default -> false;
+            case EXTRA_CHARGE -> booking.getStatus() == BookingStatus.DELIVERED
+                    && amount.compareTo(payment.getAmount()) == 0;
+            case REFUND -> false;
         };
+    }
+
+    public static BigDecimal extraChargeAmount(Long bookingId, String currency, int expectedCount, List<CostItem> costs) {
+        if (costs.size() != expectedCount || costs.stream().anyMatch(cost -> cost.getBooking() == null
+                || !bookingId.equals(cost.getBooking().getId()) || cost.getApprovedAt() == null
+                || !CostPayerPolicy.customerSide(cost.getPayerType()) || cost.getExtraChargePayment() != null
+                || !currency.equals(cost.getCurrencyCode()) || cost.getAmount().signum() <= 0)) {
+            throw BookingRuleException.conflict("Chỉ thu chi phí của đơn, đã duyệt, do khách hoặc người nhận chịu và chưa gắn khoản thu.");
+        }
+        return costs.stream().map(CostItem::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    public record RefundAllocation(Payment original, BigDecimal amount) {}
+
+    public static boolean isCommittedRefund(Payment payment) {
+        return payment.getPaymentType() == PaymentType.REFUND
+                && (payment.getStatus() == PaymentStatus.PENDING || payment.getStatus() == PaymentStatus.PAID);
+    }
+
+    public static BigDecimal committedRefunds(List<Payment> payments) {
+        return payments.stream().filter(PaymentPolicy::isCommittedRefund).map(Payment::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    public static BigDecimal unallocatedOverpayment(Quotation quotation, List<Payment> payments) {
+        BigDecimal pending = payments.stream()
+                .filter(payment -> payment.getPaymentType() == PaymentType.REFUND && payment.getStatus() == PaymentStatus.PENDING)
+                .map(Payment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return outstanding(quotation, payments).negate().subtract(pending).max(BigDecimal.ZERO);
+    }
+
+    public static List<RefundAllocation> allocate(List<Payment> payments, String currency, BigDecimal requested) {
+        if (requested.signum() < 0) {
+            throw BookingRuleException.conflict("Số tiền cần lập hoàn không hợp lệ.");
+        }
+        BigDecimal remaining = requested;
+        List<RefundAllocation> allocations = new ArrayList<>();
+        for (Payment original : payments) {
+            if (remaining.signum() == 0) {
+                break;
+            }
+            if (original.getStatus() != PaymentStatus.PAID || original.getPaymentType() == PaymentType.REFUND) {
+                continue;
+            }
+            if (!currency.equals(original.getCurrencyCode())) {
+                throw BookingRuleException.conflict("Khoản hoàn và khoản gốc phải cùng tiền tệ.");
+            }
+            BigDecimal alreadyAllocated = payments.stream().filter(PaymentPolicy::isCommittedRefund)
+                    .filter(refund -> Objects.equals(refund.getRefundedPayment().getId(), original.getId()))
+                    .map(Payment::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal available = original.getAmount().subtract(alreadyAllocated);
+            if (available.signum() > 0) {
+                BigDecimal amount = available.min(remaining);
+                allocations.add(new RefundAllocation(original, amount));
+                remaining = remaining.subtract(amount);
+            }
+        }
+        if (remaining.signum() > 0) {
+            throw BookingRuleException.conflict("Khoản hoàn vượt số tiền đã trả còn có thể hoàn.");
+        }
+        return List.copyOf(allocations);
     }
 
     public static BigDecimal outstanding(Quotation quotation, List<Payment> payments) {

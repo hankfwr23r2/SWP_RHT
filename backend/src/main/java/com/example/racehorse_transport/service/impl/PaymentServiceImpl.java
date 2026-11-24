@@ -17,7 +17,7 @@ import com.example.racehorse_transport.service.NotificationService;
 import com.example.racehorse_transport.service.PaymentService;
 import com.example.racehorse_transport.service.SystemConfigService;
 import java.math.BigDecimal;
-import java.time.Clock;
+import com.example.racehorse_transport.service.ExtraChargeService;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -38,7 +38,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final VnpayClient vnpay;
     private final BookingHorseRepository horses;
     private final DepartureService departures;
-    private final Clock clock;
+    private final ExtraChargeService extraCharges;
 
     @Override
     @Transactional(readOnly = true)
@@ -139,20 +139,15 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public boolean hasPendingBalanceConfirmation(Long bookingId) {
-        Instant now = clock.instant();
-        return transactions.findByPayment_Booking_IdAndPayment_PaymentTypeAndGatewayCodeAndStatus(bookingId,
-                        PaymentType.BALANCE, PaymentCheckoutServiceImpl.SESSION_GATEWAY, PaymentTransactionStatus.PENDING)
-                .stream().anyMatch(session -> PaymentPolicy.awaitsGateway(
-                        PaymentPolicy.parseReference(session.getGatewayTransactionNumber()), session.getPayment().getDueAt(),
-                        now, vnpay.defaultExpireMinutes(), vnpay.depositConfirmationGraceMinutes()));
+    @Transactional
+    public Long createExtraCharge(Long bookingId, List<Long> costItemIds, Long actorUserId) {
+        return extraCharges.createExtraCharge(bookingId, costItemIds, actorUserId);
     }
 
     @Override
     @Transactional
-    public Long createExtraCharge(Long bookingId, List<Long> costItemIds, Long actorUserId) {
-        throw new UnsupportedOperationException("Khoản thu thêm thuộc A8.");
+    public Long createExtraChargeForUser(Long bookingId, List<Long> costItemIds, String username) {
+        return extraCharges.createExtraChargeForUser(bookingId, costItemIds, username);
     }
 
     private static Payment newPayment(Quotation quotation, PaymentType type, BigDecimal amount, Instant dueAt) {

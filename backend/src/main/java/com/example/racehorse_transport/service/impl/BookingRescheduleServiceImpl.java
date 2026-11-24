@@ -3,16 +3,23 @@ package com.example.racehorse_transport.service.impl;
 import com.example.racehorse_transport.dto.booking.BookingRescheduleRequestDto;
 import com.example.racehorse_transport.dto.booking.BookingResponseDto;
 import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.BookingHorse;
 import com.example.racehorse_transport.entity.Departure;
 import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
+import com.example.racehorse_transport.entity.enums.HorseInsuranceStatus;
+import com.example.racehorse_transport.entity.enums.InsuranceCoverageOption;
+import com.example.racehorse_transport.entity.enums.ScheduleChangeCause;
 import com.example.racehorse_transport.exception.BookingRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.BookingSubmissionPolicy;
 import com.example.racehorse_transport.policy.DepartureDecisionPolicy;
+import com.example.racehorse_transport.policy.InsuranceReviewPolicy;
 import com.example.racehorse_transport.policy.StallSeatPolicy;
 import com.example.racehorse_transport.repository.BookingHorseRepository;
 import com.example.racehorse_transport.repository.BookingRepository;
+import com.example.racehorse_transport.repository.BookingStatusHistoryRepository;
+import com.example.racehorse_transport.repository.HorseInsuranceRepository;
 import com.example.racehorse_transport.service.BookingRescheduleService;
 import com.example.racehorse_transport.service.BookingRoutingService;
 import com.example.racehorse_transport.service.BookingStatusService;
@@ -40,6 +47,8 @@ public class BookingRescheduleServiceImpl implements BookingRescheduleService {
     private final NotificationService notifications;
     private final SystemConfigService config;
     private final Clock clock;
+    private final BookingStatusHistoryRepository history;
+    private final HorseInsuranceRepository insurance;
 
     @Override
     @Transactional
@@ -50,10 +59,8 @@ public class BookingRescheduleServiceImpl implements BookingRescheduleService {
         if (booking.getStatus() != BookingStatus.SCHEDULE_CHANGE_REQUIRED) {
             throw BookingRuleException.conflict("Chỉ đổi chuyến khi đơn đang chờ chọn lại lịch.");
         }
-        // Vận đơn chỉ được cấp sau khi khách đặt cọc
-        if (booking.getWaybillNumber() != null) {
-            throw BookingRuleException.conflict("Đơn đã đặt cọc, quản lý sẽ xử lý việc đổi chuyến.");
-        }
+        // Vận đơn chỉ được cấp sau khi khách đặt cọc.
+        boolean deposited = booking.getWaybillNumber() != null;
         LocalDate pickupDate = request.requestedPickupDate();
         if (pickupDate.isBefore(BookingSubmissionPolicy.businessDate(clock.instant()))) {
             throw new BookingRuleException("Ngày đón không được ở quá khứ.");
@@ -62,20 +69,51 @@ public class BookingRescheduleServiceImpl implements BookingRescheduleService {
         if (request.departureId().equals(oldId)) {
             throw BookingRuleException.conflict("Chọn chuyến khác chuyến hiện tại.");
         }
-        int seats = activeSeats(bookingId);
+        var active = activeHorses(bookingId);
+        int seats = seatsFor(active);
         if (seats == 0) {
             throw BookingRuleException.conflict("Đơn không có ngựa đang hoạt động.");
         }
         booking.setRequestedPickupDate(pickupDate);
         Departure replacement = routing.lockReplacement(booking, request.departureId());
+        if (deposited) {
+            validatePaidReplacement(bookingId, replacement, pickupDate, active);
+        }
         departures.reserve(replacement.getId(), seats);
         if (oldId != null) {
             departures.release(oldId, seats);
         }
         booking.setDeparture(replacement);
-        statuses.transition(bookingId, BookingStatus.UNDER_REVIEW,
+        statuses.transition(bookingId, deposited ? BookingStatus.CONFIRMED : BookingStatus.UNDER_REVIEW,
                 "Khách chọn lại chuyến ngày " + replacement.getDepartureDate(), booking.getCustomer().getUser().getId());
         return BookingResponseDto.from(booking);
+    }
+
+    private void validatePaidReplacement(Long bookingId, Departure replacement, LocalDate pickupDate, List<BookingHorse> active) {
+        var scheduleChange = history.findFirstByBooking_IdAndToStatusOrderByChangedAtDescIdDesc(
+                bookingId, BookingStatus.SCHEDULE_CHANGE_REQUIRED)
+                .filter(row -> row.getCauseType() != null && row.getPreviousDeparture() != null)
+                .orElseThrow(() -> BookingRuleException.conflict("Thiếu lịch sử chuyến vừa lỡ hoặc nguyên nhân đổi chuyến."));
+        var previous = scheduleChange.getPreviousDeparture();
+        if (replacement.getId().equals(previous.getId())
+                || !replacement.getRoute().getId().equals(previous.getRoute().getId())) {
+            throw BookingRuleException.conflict("Chọn chuyến khác cùng tuyến để giữ báo giá.");
+        }
+        BookingSubmissionPolicy.validatePriceHold(previous.getDepartureDate(), replacement.getDepartureDate(),
+                config.getInt("PRICE_HOLD_DAYS"));
+        if (scheduleChange.getCauseType() == ScheduleChangeCause.CUSTOMER
+                && history.countByBooking_IdAndToStatusAndCauseType(bookingId,
+                        BookingStatus.SCHEDULE_CHANGE_REQUIRED, ScheduleChangeCause.CUSTOMER) > 1) {
+            throw BookingRuleException.conflict("Đơn đã dùng lượt đổi chuyến miễn phí do khách.");
+        }
+        var activeHorseIds = active.stream().map(BookingHorse::getId).toList();
+        insurance.findForDetail(activeHorseIds).stream()
+                .filter(row -> row.getCoverageOption() == InsuranceCoverageOption.PERSONAL)
+                .forEach(row -> {
+                    InsuranceReviewPolicy.requireStatus(row, HorseInsuranceStatus.CONFIRMED);
+                    InsuranceReviewPolicy.validatePeriod(row.getValidFrom(), row.getValidTo(), pickupDate,
+                            replacement.getDepartureDate());
+                });
     }
 
     @Override
@@ -92,22 +130,25 @@ public class BookingRescheduleServiceImpl implements BookingRescheduleService {
         if (clock.instant().isBefore(decisionAt)) {
             return false;
         }
-        int seats = activeSeats(bookingId);
+        int seats = seatsFor(activeHorses(bookingId));
         if (seats > 0) {
             departures.release(departure.getId(), seats);
         }
         booking.setDeparture(null);
         String reason = "Chưa hoàn tất báo giá trước mốc quyết định của chuyến " + departure.getRoute().getName()
                 + " ngày " + departure.getDepartureDate();
-        statuses.transition(bookingId, BookingStatus.SCHEDULE_CHANGE_REQUIRED, reason, null);
+        statuses.requireScheduleChange(bookingId, departure, null, reason, null);
         notifications.notify(List.of(booking.getCustomer().getUser().getId()), bookingId, "Cần chọn lại chuyến",
                 reason + ". Chọn chuyến khác hoặc hủy đơn không mất phí.", null);
         return true;
     }
 
-    private int activeSeats(Long bookingId) {
-        return StallSeatPolicy.total(horses.findForDetail(bookingId).stream()
-                .filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE)
-                .map(horse -> horse.getStallType().getCode()).toList());
+    private List<BookingHorse> activeHorses(Long bookingId) {
+        return horses.findForDetail(bookingId).stream()
+                .filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE).toList();
+    }
+
+    private static int seatsFor(List<BookingHorse> active) {
+        return StallSeatPolicy.total(active.stream().map(horse -> horse.getStallType().getCode()).toList());
     }
 }

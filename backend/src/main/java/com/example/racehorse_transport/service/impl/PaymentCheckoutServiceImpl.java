@@ -2,7 +2,10 @@ package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.client.VnpayClient;
 import com.example.racehorse_transport.dto.payment.PaymentCheckoutResponseDto;
+import com.example.racehorse_transport.entity.Payment;
 import com.example.racehorse_transport.entity.PaymentTransaction;
+import java.util.List;
+import com.example.racehorse_transport.entity.enums.PaymentStatus;
 import com.example.racehorse_transport.entity.enums.PaymentTransactionStatus;
 import com.example.racehorse_transport.entity.enums.PaymentType;
 import com.example.racehorse_transport.exception.BookingRuleException;
@@ -60,6 +63,35 @@ public class PaymentCheckoutServiceImpl implements PaymentCheckoutService {
         session.setRawPayload("{}");
         transactions.save(session);
         return new PaymentCheckoutResponseDto(url, expiry);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasPendingBalanceConfirmation(Long bookingId) {
+        var now = clock.instant();
+        return transactions.findByPayment_Booking_IdAndPayment_PaymentTypeAndGatewayCodeAndStatus(
+                        bookingId, PaymentType.BALANCE, SESSION_GATEWAY, PaymentTransactionStatus.PENDING)
+                .stream().anyMatch(session -> PaymentPolicy.awaitsGateway(
+                        PaymentPolicy.parseReference(session.getGatewayTransactionNumber()), session.getPayment().getDueAt(),
+                        now, vnpay.defaultExpireMinutes(), vnpay.depositConfirmationGraceMinutes()));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean hasPendingConfirmation(Long bookingId) {
+        var now = clock.instant();
+        return transactions.findByPayment_Booking_IdAndGatewayCodeAndStatus(bookingId, SESSION_GATEWAY,
+                        PaymentTransactionStatus.PENDING).stream()
+                .filter(session -> session.getPayment().getStatus() == PaymentStatus.PENDING)
+                .anyMatch(session -> PaymentPolicy.awaitsGateway(
+                        PaymentPolicy.parseReference(session.getGatewayTransactionNumber()), null,
+                        now, vnpay.defaultExpireMinutes(), vnpay.depositConfirmationGraceMinutes()));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean isBalanceOverdue(List<Payment> entries) {
+        return PaymentPolicy.isBalanceOverdue(entries, clock.instant(), vnpay.depositConfirmationGraceMinutes());
     }
 
     private static ResourceNotFoundException notFound() {

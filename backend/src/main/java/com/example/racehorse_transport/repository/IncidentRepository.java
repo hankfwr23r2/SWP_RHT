@@ -29,6 +29,16 @@ public interface IncidentRepository extends JpaRepository<Incident, Long> {
     @Query("SELECT i FROM Incident i WHERE i.id = :id")
     Optional<Incident> findForUpdate(@Param("id") Long id);
 
+    @Query("""
+            SELECT count(i) > 0 FROM Incident i
+            LEFT JOIN i.booking b LEFT JOIN i.horseLeg affected LEFT JOIN i.vehicleTrip affectedTrip
+            LEFT JOIN affected.bookingHorse affectedHorse LEFT JOIN affectedHorse.booking affectedBooking
+            WHERE i.status <> :closed AND (b.id = :bookingId OR affectedBooking.id = :bookingId
+                OR (affected IS NULL AND EXISTS (SELECT 1 FROM HorseLeg l
+                    WHERE l.bookingHorse.booking.id = :bookingId AND l.vehicleTrip = affectedTrip)))
+            """)
+    boolean hasIncidentForBookingOtherThan(@Param("bookingId") Long bookingId, @Param("closed") IncidentStatus closed);
+
     // Báo cáo chuyến
     List<Incident> findByVehicleTrip_IdInOrderByReportedAt(Collection<Long> vehicleTripIds);
 }

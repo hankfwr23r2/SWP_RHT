@@ -4,10 +4,25 @@ import com.example.racehorse_transport.entity.BookingStatusHistory;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import com.example.racehorse_transport.entity.enums.BookingStatus;
+import com.example.racehorse_transport.entity.enums.ScheduleChangeCause;
+import java.time.Instant;
 import java.util.List;
+import org.springframework.data.jpa.repository.Query;
 import java.util.Optional;
 
 public interface BookingStatusHistoryRepository extends JpaRepository<BookingStatusHistory, Long> {
+
+    Optional<BookingStatusHistory> findFirstByBooking_IdAndToStatusOrderByChangedAtDescIdDesc(Long bookingId, BookingStatus status);
+
+    long countByBooking_IdAndToStatusAndCauseType(Long bookingId, BookingStatus status, ScheduleChangeCause cause);
+
+    @Query("""
+            SELECT DISTINCT h.booking.id FROM BookingStatusHistory h
+            WHERE h.booking.status = :status AND h.toStatus = :status AND h.changedAt <= :cutoff
+            ORDER BY h.booking.id
+            """)
+    List<Long> findBookingIdsWithStatusBefore(BookingStatus status, Instant cutoff);
 
     Optional<BookingStatusHistory> findFirstByBooking_IdOrderByChangedAtDescIdDesc(Long bookingId);
 

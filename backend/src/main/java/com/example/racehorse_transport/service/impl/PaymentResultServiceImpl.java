@@ -16,10 +16,10 @@ import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.service.BookingStatusService;
 import com.example.racehorse_transport.service.NotificationService;
 import com.example.racehorse_transport.service.PaymentResultService;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.racehorse_transport.service.RefundService;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import java.time.Clock;
 import java.time.Instant;
-import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -44,7 +44,7 @@ public class PaymentResultServiceImpl implements PaymentResultService {
     private final BookingStatusService statuses;
     private final NotificationService notifications;
     private final StaffRepository staff;
-    private final ObjectMapper json;
+    private final RefundService refunds;
     private final Clock clock;
 
     @Override
@@ -119,12 +119,15 @@ public class PaymentResultServiceImpl implements PaymentResultService {
             notifyManagers(booking, "Có tiền VNPAY cần đối soát cho đơn " + booking.getCode() + ".");
             return;
         }
-        if (result.amount().compareTo(payment.getAmount()) > 0) {
-            notifyManagers(booking, "Khách đã trả dư qua phiên VNPAY trước khi cập nhật số dư.");
-        }
+        boolean balanceWasReduced = payment.getPaymentType() == PaymentType.BALANCE
+                && result.amount().compareTo(payment.getAmount()) > 0;
         payment.setAmount(result.amount());
         payment.setStatus(PaymentStatus.PAID);
         payment.setPaidAt(result.paidAt());
+        if (balanceWasReduced) {
+            refunds.refundOverpayment(payment.getQuotation());
+            notifyManagers(booking, "Khách đã trả dư qua phiên VNPAY trước khi cập nhật số dư. Kiểm tra khoản hoàn.");
+        }
         if (payment.getPaymentType() == PaymentType.DEPOSIT) {
             if (booking.getWaybillNumber() == null) {
                 booking.setWaybillNumber("WB-" + Long.toString(booking.getId(), 36).toUpperCase(Locale.ROOT));
@@ -161,8 +164,8 @@ public class PaymentResultServiceImpl implements PaymentResultService {
     }
 
     private String safePayload(Map<String, String> parameters) {
-        Map<String, String> payload = new LinkedHashMap<>();
+        var payload = JsonNodeFactory.instance.objectNode();
         RAW_KEYS.stream().sorted().filter(parameters::containsKey).forEach(key -> payload.put(key, parameters.get(key)));
-        return json.valueToTree(payload).toString();
+        return payload.toString();
     }
 }

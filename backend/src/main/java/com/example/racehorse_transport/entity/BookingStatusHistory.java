@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.entity;
 
 import com.example.racehorse_transport.entity.enums.BookingStatus;
+import com.example.racehorse_transport.entity.enums.ScheduleChangeCause;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -60,4 +61,13 @@ public class BookingStatusHistory {
 
     @Column(name = "reason", columnDefinition = "text")
     private String reason;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cause_type", length = 30)
+    private ScheduleChangeCause causeType;
+
+    // snapshot: chuyến vừa lỡ, kể cả khi đơn đã nhả chỗ
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "previous_departure_id")
+    private Departure previousDeparture;
 }

@@ -358,9 +358,9 @@ Chưa trả đủ **không** chặn xe đi đón. Số dư thu sau khi nhận ng
 |---|---|---|
 | Khách | Miễn phí 1 lần | Mất cọc vận chuyển (5.4) |
 | Công ty | Miễn phí | Hoàn 100% |
-| Cơ quan cấp chậm | Miễn phí, không tính vào lượt | Hoàn cọc, trừ lệ phí, xét nghiệm, bảo hiểm đã chi |
+| Cơ quan cấp chậm | Miễn phí mỗi lần, không tính vào lượt của khách | Khi chưa đủ `AUTHORITY_DELAY_REFUND_MISSES` lần lỡ chuyến thì xử lý như khách hủy. Từ ngưỡng này hoàn cọc vận chuyển |
 
-Giá cũ giữ 30 ngày. Nguyên nhân và lý do ghi ở `booking_status_history.reason`; số lần đã đổi đếm từ lịch sử này.
+Giá cũ giữ trong `PRICE_HOLD_DAYS` ngày tính từ ngày chạy của chuyến vừa lỡ. Lịch sử chuyển sang `SCHEDULE_CHANGE_REQUIRED` ghi chuyến vào `previous_departure_id`, nguyên nhân vào `cause_type` và lý do vào `reason`. Đếm lượt đổi do khách và số lần lỡ chuyến do cơ quan từ loại nguyên nhân trong lịch sử. Chỉ quản lý xác nhận hoàn các dòng thu hộ và `VET_CHECK` chưa chi, theo số tiền trên báo giá ACCEPTED. Có thể đối soát sau khi khách tự hủy. `RefundService` ghi `quotation_line.refund_payment_id` trong cùng giao dịch để mỗi dòng chỉ lập hoàn một lần. Công ty hủy thì hoàn toàn bộ tiền đã trả.
 
 **Quy tắc phân xe:**
 - Tổng chỗ ngựa trên xe chiếm không vượt tổng chỗ của xe; khoang rộng 2 chỗ.
@@ -396,7 +396,7 @@ Với `pickup_method = SELF`, kiểm giấy trước khi ký nhận tại hub, g
 
 **Ngoại lệ ở bước 4–5:**
 - Chip không khớp: không nhận con đó, ghi `incident` loại DOCUMENT.
-- Ngựa không đủ sức khỏe: loại khỏi đơn (`booking_horse.status = EXCLUDED`), hủy các `horse_leg` còn lại của con đó, trừ `departure.booked_stall_count`, và điều chỉnh báo giá bằng phiên bản mới (SUPERSEDED bản cũ và ACCEPTED bản mới trong cùng transaction).
+- Ngựa không đủ sức khỏe: loại khỏi đơn (`booking_horse.status = EXCLUDED`), hủy các `horse_leg` còn lại của con đó, trừ `departure.booked_stall_count`, và điều chỉnh báo giá bằng phiên bản mới (SUPERSEDED bản cũ và ACCEPTED bản mới trong cùng transaction). Nếu đã trả dư, kể cả khi VNPAY xác nhận số dư theo link cũ sau khi thay báo giá, lập khoản hoàn phần dư.
 
 **Mốc không hoàn tiền:** khi khách đã trả đủ hoặc xe đã rời nơi nhận thì khách không tự hủy được (5.4).
 
@@ -541,7 +541,7 @@ Giao ngựa **đối xứng với đón ngựa**. **Ai:** tài xế và hộ t�
 | `RECIPIENT_ABSENT` | CONSIGNEE, không trả thì CUSTOMER |
 | `FORCE_MAJEURE` | COMPANY |
 
-Khoản khách chịu luôn gắn với một con hoặc một đơn, nên **không chia chi phí theo đầu ngựa**.
+Khoản khách chịu luôn gắn với một con hoặc một đơn, nên **không chia chi phí theo đầu ngựa**. Quản lý chọn các khoản đã duyệt chưa gắn khoản thu, backend lấy tổng theo chi phí đã ghi và khách trả `EXTRA_CHARGE` qua VNPAY.
 
 Phải hỏi khách trước khi chi khoản khách chịu (`is_customer_consulted = true`). Ngoại lệ: trường hợp khẩn cấp có số tiền nằm trong `booking.emergency_spending_limit`.
 
@@ -552,7 +552,7 @@ Phải hỏi khách trước khi chi khoản khách chịu (`is_customer_consult
 | Việc | Bảng |
 |---|---|
 | Đã trả đủ: số còn nợ theo `SettlementPolicy` bằng 0. Đơn không có khoản phát sinh tự đóng sau 7 ngày kể từ khi giao | `booking.status = COMPLETED` |
-| Khách đánh giá | `booking_rating` |
+| Khách đánh giá một lần khi đơn ở `DELIVERED` hoặc `COMPLETED` | `booking_rating` |
 | Thông báo cho các bên | `notification`, `notification_recipient` |
 
 Hạn khiếu nại là 7 ngày kể từ `handover` DELIVERY DONE.
@@ -581,7 +581,7 @@ Quy trình theo bản cũ của nhóm. Khác bản cũ: sự cố gắn lượt 
 1. Quản lý hủy hoặc dồn chuyến kèm lý do: `departure.status = CANCELLED`.
 2. Các đơn trên chuyến chuyển sang `SCHEDULE_CHANGE_REQUIRED`.
 3. Không hủy được chuyến khi còn đơn `IN_OPERATION` (đã nhận ngựa): xử lý bằng sự cố.
-4. Khách chọn chuyến khác (miễn phí; đơn đã cọc thì giữ giá, làm ở A8) hoặc hủy và được **hoàn 100%**. Đổi chuyến thì trừ `booked_stall_count` của chuyến cũ và cộng vào chuyến mới, giữ `FOR UPDATE` trên cả hai dòng.
+4. Lịch sử ghi nguyên nhân COMPANY và chuyến vừa hủy. Khách chọn chuyến khác (miễn phí; đơn đã cọc thì giữ giá trong `PRICE_HOLD_DAYS`) hoặc hủy và được **hoàn 100%**. Đổi chuyến thì trừ `booked_stall_count` của chuyến cũ và cộng vào chuyến mới, giữ `FOR UPDATE` trên cả hai dòng.
 
 ### 5.3 Ngựa không đủ điều kiện
 
@@ -601,7 +601,7 @@ Theo điều khoản của bản cũ:
 | Đã nhận ngựa, chưa trả đủ, xe chưa rời nơi nhận | Quản lý hủy do khách: mất phần cọc vận chuyển, trả ngựa tại chỗ |
 | Đã trả đủ hoặc xe đã rời nơi nhận | Khách không tự hủy được |
 
-Nguyên nhân thuộc công ty thì hoàn 100%. Hoàn tiền ghi bằng `payment` REFUND có `refunded_payment_id`.
+Nguyên nhân thuộc công ty thì hoàn 100%. Nếu đang chờ đổi chuyến do giấy không kịp, áp dụng bảng ở GĐ5. Ngoài trường hợp hoàn toàn bộ, quản lý xét từng dòng thu hộ và `VET_CHECK` chưa chi theo báo giá ACCEPTED, kể cả sau khi khách tự hủy. Khi trả ngựa tại nơi nhận, chờ hết hạn số dư cộng thời gian chờ xác nhận. Phiên VNPAY còn chờ chỉ trong cửa sổ hạn link cộng thời gian chờ kết quả. Xe chạy trễ và sự cố trên đường xử lý theo quy trình vận hành. Hoàn tiền ghi bằng `payment` REFUND có `refunded_payment_id`. Quản lý chuyển khoản ngoài hệ thống rồi ghi mã chuyển khoản và chứng từ nếu có.
 
 ### 5.5 Từ chối đơn
 

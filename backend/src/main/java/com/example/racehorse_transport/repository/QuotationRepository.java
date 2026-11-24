@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.repository;
 
 import com.example.racehorse_transport.entity.Quotation;
+import com.example.racehorse_transport.entity.QuotationLine;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.QuotationStatus;
 import java.time.Instant;
@@ -14,6 +15,12 @@ public interface QuotationRepository extends JpaRepository<Quotation, Long> {
     List<Quotation> findByBooking_IdOrderByVersion(Long bookingId);
 
     Optional<Quotation> findByBooking_IdAndStatus(Long bookingId, QuotationStatus status);
+
+    @Query("""
+            SELECT line FROM QuotationLine line LEFT JOIN FETCH line.billableService
+            WHERE line.quotation.id = :quotationId ORDER BY line.lineNumber
+            """)
+    List<QuotationLine> findLinesForCancellation(Long quotationId);
 
     @Query("select q.booking.id from Quotation q where q.id = :id")
     Optional<Long> findBookingId(Long id);

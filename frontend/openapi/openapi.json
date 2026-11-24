@@ -157,6 +157,20 @@
         },
         "type" : "object"
       },
+      "ApiResponseBookingCancellationResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/BookingCancellationResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseBookingDetailResponseDto" : {
         "properties" : {
           "data" : {
@@ -1204,6 +1218,20 @@
         },
         "type" : "object"
       },
+      "ApiResponsePaymentResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/PaymentResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponsePaymentResultResponseDto" : {
         "properties" : {
           "data" : {
@@ -1274,6 +1302,20 @@
         },
         "type" : "object"
       },
+      "ApiResponseRatingResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/RatingResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseRegulationPreviewResponseDto" : {
         "properties" : {
           "data" : {
@@ -1292,6 +1334,20 @@
         "properties" : {
           "data" : {
             "$ref" : "#/components/schemas/RouteResponse"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseSettlementResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/SettlementResponseDto"
           },
           "message" : {
             "type" : "string"
@@ -1479,6 +1535,41 @@
           },
           "status" : {
             "enum" : [ "ACTIVE", "INACTIVE" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "BookingCancellationResponseDto" : {
+        "properties" : {
+          "allowed" : {
+            "type" : "boolean"
+          },
+          "bookingId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "currencyCode" : {
+            "type" : "string"
+          },
+          "forfeited" : {
+            "type" : "number"
+          },
+          "refundable" : {
+            "type" : "number"
+          },
+          "reviewable" : {
+            "type" : "number"
+          },
+          "reviewableQuotationLineIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          },
+          "status" : {
+            "enum" : [ "PENDING_INTAKE", "UNDER_REVIEW", "NEEDS_RESUBMISSION", "QUOTING", "AWAITING_DEPOSIT", "QUOTE_EXPIRED", "CONFIRMED", "SCHEDULE_CHANGE_REQUIRED", "IN_OPERATION", "DELIVERED", "COMPLETED", "CANCELLED", "REJECTED" ],
             "type" : "string"
           }
         },
@@ -1749,6 +1840,17 @@
         "required" : [ "reason" ],
         "type" : "object"
       },
+      "CancelBookingRequestDto" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
       "ChangePasswordRequest" : {
         "properties" : {
           "confirmPassword" : {
@@ -1766,6 +1868,17 @@
           }
         },
         "required" : [ "confirmPassword", "currentPassword", "newPassword" ],
+        "type" : "object"
+      },
+      "CompanyCancelBookingRequestDto" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
         "type" : "object"
       },
       "CostItemRequestDto" : {
@@ -2832,6 +2945,20 @@
           }
         },
         "required" : [ "email" ],
+        "type" : "object"
+      },
+      "ExtraChargeRequestDto" : {
+        "properties" : {
+          "costItemIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "minItems" : 1,
+            "type" : "array"
+          }
+        },
+        "required" : [ "costItemIds" ],
         "type" : "object"
       },
       "HandoverCreateRequestDto" : {
@@ -4181,6 +4308,37 @@
         "required" : [ "password", "username" ],
         "type" : "object"
       },
+      "ManagerCancelBookingRequestDto" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "unspentQuotationLineIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "maxItems" : 200,
+            "minItems" : 0,
+            "type" : "array"
+          }
+        },
+        "required" : [ "reason", "unspentQuotationLineIds" ],
+        "type" : "object"
+      },
+      "MarkRefundedRequestDto" : {
+        "properties" : {
+          "transferReference" : {
+            "maxLength" : 100,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "transferReference" ],
+        "type" : "object"
+      },
       "MyCrewAssignmentResponseDto" : {
         "properties" : {
           "crewRole" : {
@@ -5278,6 +5436,57 @@
         "type" : "object"
       },
       "QuotationSendRequestDto" : { },
+      "RatingRequestDto" : {
+        "properties" : {
+          "comment" : {
+            "maxLength" : 2000,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "score" : {
+            "format" : "int32",
+            "maximum" : 5,
+            "minimum" : 1,
+            "type" : "integer"
+          }
+        },
+        "required" : [ "score" ],
+        "type" : "object"
+      },
+      "RatingResponseDto" : {
+        "properties" : {
+          "bookingId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "comment" : {
+            "type" : "string"
+          },
+          "ratedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "score" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "RefundQuotationLinesRequestDto" : {
+        "properties" : {
+          "unspentQuotationLineIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "minItems" : 1,
+            "type" : "array"
+          }
+        },
+        "required" : [ "unspentQuotationLineIds" ],
+        "type" : "object"
+      },
       "RegisterRequest" : {
         "properties" : {
           "acceptedTerms" : {
@@ -5400,6 +5609,21 @@
             "type" : "string"
           }
         },
+        "type" : "object"
+      },
+      "ReportDocumentDelayRequestDto" : {
+        "properties" : {
+          "cause" : {
+            "enum" : [ "CUSTOMER", "COMPANY", "AUTHORITY" ],
+            "type" : "string"
+          },
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "cause", "reason" ],
         "type" : "object"
       },
       "ReportHealthDto" : {
@@ -5688,6 +5912,46 @@
           },
           "stopType" : {
             "enum" : [ "HUB", "REST", "VITAL_CHECK", "BORDER", "QUARANTINE" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "SettlementResponseDto" : {
+        "properties" : {
+          "approvedCustomerCosts" : {
+            "type" : "number"
+          },
+          "bookingId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "costs" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CostItemResponseDto"
+            },
+            "type" : "array"
+          },
+          "currencyCode" : {
+            "type" : "string"
+          },
+          "hasOpenIncident" : {
+            "type" : "boolean"
+          },
+          "outstanding" : {
+            "type" : "number"
+          },
+          "payments" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PaymentResponseDto"
+            },
+            "type" : "array"
+          },
+          "quotationTotal" : {
+            "type" : "number"
+          },
+          "status" : {
+            "enum" : [ "PENDING_INTAKE", "UNDER_REVIEW", "NEEDS_RESUBMISSION", "QUOTING", "AWAITING_DEPOSIT", "QUOTE_EXPIRED", "CONFIRMED", "SCHEDULE_CHANGE_REQUIRED", "IN_OPERATION", "DELIVERED", "COMPLETED", "CANCELLED", "REJECTED" ],
             "type" : "string"
           }
         },
@@ -6997,6 +7261,24 @@
         "tags" : [ "booking-controller" ]
       }
     },
+    "/bookings/missing-documents" : {
+      "get" : {
+        "operationId" : "missingDocuments",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListBookingResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-review-controller" ]
+      }
+    },
     "/bookings/review-queue" : {
       "get" : {
         "operationId" : "queue",
@@ -7094,6 +7376,134 @@
         "tags" : [ "quotation-controller" ]
       }
     },
+    "/bookings/{bookingId}/ratings" : {
+      "post" : {
+        "operationId" : "rate",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "bookingId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RatingRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseRatingResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "rating-controller" ]
+      }
+    },
+    "/bookings/{bookingId}/settlement" : {
+      "get" : {
+        "operationId" : "settlement",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "bookingId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSettlementResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "settlement-controller" ]
+      }
+    },
+    "/bookings/{bookingId}/settlement/complete" : {
+      "post" : {
+        "operationId" : "complete_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "bookingId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSettlementResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "settlement-controller" ]
+      }
+    },
+    "/bookings/{bookingId}/settlement/extra-charges" : {
+      "post" : {
+        "operationId" : "createExtraCharge",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "bookingId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ExtraChargeRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePaymentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "settlement-controller" ]
+      }
+    },
     "/bookings/{id}" : {
       "get" : {
         "operationId" : "get_3",
@@ -7119,6 +7529,144 @@
           }
         },
         "tags" : [ "booking-controller" ]
+      }
+    },
+    "/bookings/{id}/cancel" : {
+      "post" : {
+        "operationId" : "cancel_1",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CancelBookingRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingCancellationResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-cancellation-controller" ]
+      }
+    },
+    "/bookings/{id}/cancel-for-company" : {
+      "post" : {
+        "operationId" : "cancelForCompany",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CompanyCancelBookingRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingCancellationResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-cancellation-controller" ]
+      }
+    },
+    "/bookings/{id}/cancel-for-customer" : {
+      "post" : {
+        "operationId" : "cancelForCustomer",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ManagerCancelBookingRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingCancellationResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-cancellation-controller" ]
+      }
+    },
+    "/bookings/{id}/cancellation-preview" : {
+      "get" : {
+        "operationId" : "preview_2",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingCancellationResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-cancellation-controller" ]
       }
     },
     "/bookings/{id}/change-departure" : {
@@ -7710,6 +8258,70 @@
         "tags" : [ "tracking-controller" ]
       }
     },
+    "/bookings/{id}/refund-review" : {
+      "get" : {
+        "operationId" : "review",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingCancellationResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "refund-controller" ]
+      }
+    },
+    "/bookings/{id}/refund-unspent-lines" : {
+      "post" : {
+        "operationId" : "refundUnspentLines",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RefundQuotationLinesRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListPaymentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "refund-controller" ]
+      }
+    },
     "/bookings/{id}/reject" : {
       "post" : {
         "operationId" : "reject_1",
@@ -7727,6 +8339,43 @@
             "application/json" : {
               "schema" : {
                 "$ref" : "#/components/schemas/BookingRejectionRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseBookingResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "booking-review-controller" ]
+      }
+    },
+    "/bookings/{id}/report-document-delay" : {
+      "post" : {
+        "operationId" : "reportDocumentDelay",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReportDocumentDelayRequestDto"
               }
             }
           },
@@ -10902,6 +11551,52 @@
           }
         },
         "tags" : [ "quotation-controller" ]
+      }
+    },
+    "/refunds/{id}/mark-refunded" : {
+      "post" : {
+        "operationId" : "markRefunded",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "properties" : {
+                  "receipt" : {
+                    "format" : "binary",
+                    "type" : "string"
+                  },
+                  "request" : {
+                    "$ref" : "#/components/schemas/MarkRefundedRequestDto"
+                  }
+                },
+                "required" : [ "request" ],
+                "type" : "object"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePaymentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "refund-controller" ]
       }
     },
     "/reports/operations" : {

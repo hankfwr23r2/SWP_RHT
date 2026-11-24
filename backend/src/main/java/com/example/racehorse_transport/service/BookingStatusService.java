@@ -1,6 +1,8 @@
 package com.example.racehorse_transport.service;
 
 import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.Departure;
+import com.example.racehorse_transport.entity.enums.ScheduleChangeCause;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 
 // Hợp đồng gọi chéo giữa hai luồng (docs/KE_HOACH_TRIEN_KHAI.md mục 3.3).
@@ -11,6 +13,14 @@ public interface BookingStatusService {
     // actorUserId NULL: hệ thống tự đổi (scheduler).
     // Luồng B gọi khi handover PICKUP đầu tiên xong (IN_OPERATION) và khi chặng giao cuối cùng xong (DELIVERED).
     void transition(Long bookingId, BookingStatus toStatus, String reason, Long actorUserId);
+
+    void transitionForUser(Long bookingId, BookingStatus toStatus, String reason, String username);
+
+    void requireScheduleChange(Long bookingId, Departure previousDeparture, ScheduleChangeCause cause,
+                               String reason, Long actorUserId);
+
+    void requireScheduleChangeForUser(Long bookingId, Departure previousDeparture, ScheduleChangeCause cause,
+                                      String reason, String username);
 
     void recordInitialStatus(Booking booking);
 }

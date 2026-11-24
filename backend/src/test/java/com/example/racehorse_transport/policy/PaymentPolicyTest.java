@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.racehorse_transport.entity.Booking;
+import com.example.racehorse_transport.entity.CostItem;
+import com.example.racehorse_transport.entity.enums.CostPayerType;
 import com.example.racehorse_transport.entity.Payment;
 import com.example.racehorse_transport.entity.Quotation;
 import com.example.racehorse_transport.entity.enums.PaymentStatus;
@@ -84,6 +86,53 @@ class PaymentPolicyTest {
         assertThat(PaymentPolicy.canApply(payment, booking, session, now, now, 5, signedAmount)).isTrue();
         booking.setStatus(BookingStatus.CANCELLED);
         assertThat(PaymentPolicy.canApply(payment, booking, session, now, now, 5, signedAmount)).isFalse();
+    }
+
+    @Test
+    void extraChargeCheckoutAndIpnRequireDeliveredBookingAndExactAmount() {
+        Instant now = Instant.parse("2027-01-15T10:00:00Z");
+        var booking = new Booking();
+        booking.setStatus(BookingStatus.DELIVERED);
+        var quotation = new Quotation();
+        quotation.setStatus(QuotationStatus.ACCEPTED);
+        quotation.setCurrencyCode("VND");
+        var extra = payment(PaymentType.EXTRA_CHARGE, PaymentStatus.PENDING, "3000", "VND");
+        extra.setPaymentMethod(PaymentMethod.VNPAY);
+        extra.setQuotation(quotation);
+        var session = new PaymentPolicy.Session(1L, now.minusSeconds(120));
+
+        assertThat(PaymentPolicy.isOpen(extra, booking, now)).isTrue();
+        assertThat(PaymentPolicy.canApply(extra, booking, session, now, now, 5, new BigDecimal("3000"))).isTrue();
+        assertThat(PaymentPolicy.canApply(extra, booking, session, now, now, 5, new BigDecimal("3100"))).isFalse();
+        booking.setStatus(BookingStatus.COMPLETED);
+        assertThat(PaymentPolicy.isOpen(extra, booking, now)).isFalse();
+        assertThat(PaymentPolicy.canApply(extra, booking, session, now, now, 5, new BigDecimal("3000"))).isFalse();
+    }
+
+    @Test
+    void extraChargeUsesApprovedCustomerSideAmountsAndRejectsLinkedCosts() {
+        var booking = new Booking();
+        booking.setId(1L);
+        var cost = new CostItem();
+        cost.setBooking(booking);
+        cost.setPayerType(CostPayerType.CONSIGNEE);
+        cost.setApprovedAt(Instant.EPOCH);
+        cost.setCurrencyCode("VND");
+        cost.setAmount(new BigDecimal("1500"));
+        assertThat(PaymentPolicy.extraChargeAmount(1L, "VND", 1, List.of(cost))).isEqualByComparingTo("1500");
+        cost.setExtraChargePayment(new Payment());
+        assertThatThrownBy(() -> PaymentPolicy.extraChargeAmount(1L, "VND", 1, List.of(cost)))
+                .isInstanceOf(BookingRuleException.class);
+    }
+
+    @Test
+    void balanceBecomesOverdueAtTheEndOfTheGracePeriod() {
+        var balance = payment(PaymentType.BALANCE, PaymentStatus.PENDING, "500", "VND");
+        balance.setDueAt(Instant.EPOCH);
+        assertThat(PaymentPolicy.isBalanceOverdue(List.of(balance), Instant.EPOCH.plusSeconds(299), 5)).isFalse();
+        assertThat(PaymentPolicy.isBalanceOverdue(List.of(balance), Instant.EPOCH.plusSeconds(300), 5)).isTrue();
+        balance.setStatus(PaymentStatus.PAID);
+        assertThat(PaymentPolicy.isBalanceOverdue(List.of(balance), Instant.EPOCH.plusSeconds(301), 5)).isFalse();
     }
 
     private static Payment payment(PaymentType type, PaymentStatus status, String amount, String currency) {

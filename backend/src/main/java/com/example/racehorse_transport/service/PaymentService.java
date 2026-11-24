@@ -13,8 +13,6 @@ public interface PaymentService {
     void requestBalance(Long bookingId, Instant receivedAt);
 
     // Còn link số dư mở trước hạn mà VNPAY chưa trả lời (tối đa hạn của link cộng thời gian chờ kết quả)
-    boolean hasPendingBalanceConfirmation(Long bookingId);
-
     // Các thao tác nội bộ A7 chạy trong transaction đang giữ khóa booking.
     void createDeposit(Quotation quotation);
 
@@ -25,4 +23,6 @@ public interface PaymentService {
     BigDecimal reconcileBalance(Quotation quotation);
 
     Long createExtraCharge(Long bookingId, List<Long> costItemIds, Long actorUserId);
+
+    Long createExtraChargeForUser(Long bookingId, List<Long> costItemIds, String username);
 }

@@ -16,6 +16,20 @@ import org.springframework.web.bind.annotation.*;
 public class BookingReviewController {
     private final BookingReviewService review;
     private final BookingQueryService queries;
+    private final ScheduleChangeService schedules;
+
+    @GetMapping("/missing-documents")
+    @PreAuthorize("hasAnyRole('SPECIALIST','MANAGER')")
+    public ApiResponseDto<List<BookingResponseDto>> missingDocuments() {
+        return ApiResponseDto.success(schedules.missingDocuments(), "Thành công.");
+    }
+
+    @PostMapping("/{id}/report-document-delay")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ApiResponseDto<BookingResponseDto> reportDocumentDelay(@PathVariable Long id, Authentication actor,
+            @Valid @RequestBody ReportDocumentDelayRequestDto request) {
+        return ApiResponseDto.success(schedules.reportDocumentDelay(id, actor.getName(), request), "Đã báo trễ giấy tờ.");
+    }
 
     @GetMapping("/review-queue")
     @PreAuthorize("hasAnyRole('SPECIALIST','MANAGER','COORDINATOR')")

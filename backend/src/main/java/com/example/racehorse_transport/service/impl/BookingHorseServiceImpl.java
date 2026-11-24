@@ -24,6 +24,7 @@ public class BookingHorseServiceImpl implements BookingHorseService {
     private final DepartureService departures;
     private final QuotationDraftService quotations;
     private final PaymentService payments;
+    private final RefundService refunds;
     private final StaffRepository staff;
     private final NotificationService notifications;
 
@@ -48,8 +49,11 @@ public class BookingHorseServiceImpl implements BookingHorseService {
         }
         var replacement = quotations.replaceAfterExclusion(horse);
         boolean overpaid = replacement.map(payments::reconcileBalance).map(amount -> amount.signum() < 0).orElse(false);
+        if (overpaid) {
+            replacement.ifPresent(refunds::refundOverpayment);
+        }
         var message = "Không nhận ngựa " + horse.getHorse().getName() + ". Lý do: " + reason.strip()
-                + (overpaid ? ". Khách đã trả dư so với báo giá thay thế. Cần đối soát khoản hoàn." : "");
+                + (overpaid ? ". Khách đã trả dư so với báo giá thay thế. Kiểm tra khoản hoàn đang chờ." : "");
         var recipients = staff.findUserIdsByRoleAndStatus("MANAGER", AppUserStatus.ACTIVE);
         if (recipients.isEmpty()) {
             log.warn("Không có quản lý đang hoạt động để nhận thông báo loại ngựa của đơn {}", bookingId);

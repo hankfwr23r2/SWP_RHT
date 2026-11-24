@@ -622,7 +622,7 @@ EXCLUDE USING gist (country_code WITH =, direction WITH =,
 | Cột | Kiểu | Null | Ràng buộc | Ý nghĩa |
 |---|---|---|---|---|
 | `id` | `bigint` | | PK, identity | |
-| `code` | `varchar(30)` | | UK | Ví dụ `HEALTH_CERT`, `EXPORT_PERMIT`, `HANDOVER_RECORD`, `TOLL_RECEIPT` |
+| `code` | `varchar(30)` | | UK | Ví dụ `HEALTH_CERT`, `EXPORT_PERMIT`, `HANDOVER_RECORD`, `TOLL_RECEIPT`, `REFUND_RECEIPT` (chủ sở hữu `BOOKING`) |
 | `name` | `varchar(200)` | | | |
 | `owner_type` | `varchar(30)` | | CK `HORSE, BOOKING, BOOKING_HORSE, HORSE_LEG, VEHICLE_TRIP, INSURANCE, INCIDENT, COST_ITEM, HANDOVER, VEHICLE, STAFF, PARTY, CUSTOMER` | Loại giấy này gắn với đối tượng nào. Mỗi giá trị ứng với đúng một cột chủ sở hữu trong `document` |
 
@@ -761,9 +761,12 @@ Index: `horse_id`.
 | `to_status` | `varchar(30)` | | | |
 | `changed_by` | `bigint` | có | FK → app_user | NULL = hệ thống tự đổi (scheduler) |
 | `changed_at` | `timestamptz` | | default `now()` | |
-| `reason` | `text` | có | | Lý do từ chối, lý do yêu cầu bổ sung hồ sơ… |
+| `reason` | `text` | có | | Lý do từ chối, yêu cầu bổ sung hồ sơ, đổi chuyến hoặc hủy đơn |
+| `cause_type` | `varchar(30)` | có | CK `CUSTOMER, COMPANY, AUTHORITY` | Nguyên nhân đổi chuyến. Để trống khi hệ thống nhả chỗ đơn chưa cọc ở mốc quyết định |
 
-Index: `(booking_id, changed_at)`.
+| `previous_departure_id` | `bigint` | có | FK → departure | Chuyến vừa lỡ khi chuyển sang SCHEDULE_CHANGE_REQUIRED. Mốc giữ giá lấy từ ngày chạy của chuyến này |
+
+Index: `(booking_id, changed_at)`, `previous_departure_id`.
 
 ### 8.7 `terms_acceptance`: bằng chứng khách đồng ý điều khoản
 
@@ -1091,13 +1094,14 @@ Index: `price_list_id`.
 | `unit_price` | `numeric(15,2)` | | snapshot | |
 | `amount` | `numeric(15,2)` | | `GENERATED ALWAYS AS (round(quantity * unit_price, 2)) STORED` | |
 | `is_pass_through` | `boolean` | | snapshot | |
+| `refund_payment_id` | `bigint` | có | FK → payment | Khoản hoàn đầu tiên được lập cho dòng này. Chỉ RefundService ghi trong giao dịch lập khoản hoàn để ngăn hoàn lặp |
 
 Ràng buộc bảng:
 - `UNIQUE (quotation_id, line_number)`
 - `CHECK (unit_price >= 0 OR line_type = 'ADJUSTMENT')`: chỉ dòng điều chỉnh được có đơn giá âm (giảm giá).
 - `CHECK (line_type = 'ADJUSTMENT' OR billable_service_id IS NOT NULL)`
 
-Index: `billable_service_id`, `price_item_id`, `booking_horse_id`, `horse_leg_id`.
+Index: `billable_service_id`, `price_item_id`, `booking_horse_id`, `horse_leg_id`, `refund_payment_id`. Sau SENT, các cột giá giữ nguyên.
 
 Tổng tiền lưu ở `quotation.total_amount`, do `QuotationService` tính từ các dòng (mục 5).
 
@@ -1371,7 +1375,8 @@ Giá trị khởi đầu của các tham số chốt ngày 23/11/2026, thêm b�
 | `MAX_DRIVE_HOURS_PER_DAY` | 10 | Giờ lái tối đa mỗi ngày |
 | `OVERNIGHT_REST_HOURS` | 10 | Thời gian nghỉ đêm |
 | `DOCUMENT_REMINDER_DAYS` | 5 | Nhắc thiếu giấy trước chuyến |
-| `PRICE_HOLD_DAYS` | 30 | Giữ giá khi đổi chuyến do giấy tờ |
+| `AUTHORITY_DELAY_REFUND_MISSES` | 2 | Số lần lỡ chuyến do cơ quan cấp giấy để hoàn cọc vận chuyển khi hủy. Đơn vị `COUNT`, giới hạn 1–10 |
+| `PRICE_HOLD_DAYS` | 30 | Giữ giá khi đổi chuyến, tính từ ngày chạy của chuyến vừa lỡ |
 | `SETTLEMENT_AUTO_CLOSE_DAYS` | 7 | Tự đóng đơn không phát sinh |
 | `HANDOVER_FREE_WAIT_MINUTES` | 1 | 1440 |
 
@@ -1467,7 +1472,7 @@ Các quy tắc dưới đây cần so dữ liệu ở nhiều bảng nên CHECK 
 | 15 | `booking_horse_service.billable_service_id` phải là dịch vụ có `layer = ADD_ON` | booking_horse_service |
 | 16 | `booking` chỉ chuyển sang DELIVERED khi mọi `booking_horse` ACTIVE đã có `horse_leg` leg_type DELIVERY hoặc DIRECT ở trạng thái COMPLETED | booking, horse_leg |
 | 17 | Đơn giá trong `quotation_line` phải lấy từ `price_item` thuộc đúng `quotation.price_list_id`. Ngoại lệ: dòng ADJUSTMENT nhập tay và dòng INSURANCE lấy `horse_insurance.premium_amount` hãng báo, cả hai có `price_item_id` NULL | quotation_line |
-| 18 | Mỗi lần đổi `booking.status` phải ghi một dòng `booking_status_history`, trong cùng transaction | booking |
+| 18 | Mỗi lần đổi `booking.status` phải ghi một dòng `booking_status_history`, trong cùng transaction. Khi chuyển sang SCHEDULE_CHANGE_REQUIRED, lưu chuyến vừa lỡ và nguyên nhân (COMPANY khi hủy chuyến, NULL khi nhả đơn chưa cọc tại mốc quyết định) | booking, booking_status_history |
 | 19 | Chọn cách chạy theo hub, không theo `booking_type`: hub đón trùng hub giao thì chạy thẳng (`DIRECT`, `departure_id` NULL); khác hub thì đi trục (bắt buộc có `departure_id`, `route` nối hai hub hoặc nối hub với cửa khẩu) | booking, hub_service_area, route |
 | 20 | `vehicle_trip.start_location_id` phải bằng `end_location_id` của lượt chạy liền trước của cùng xe. Xe tới hub vệ tinh thì phải có lượt chạy về trụ sở, ví dụ chuyến trục chiều ngược | vehicle_trip |
 | 21 | Đợt này ngựa chỉ lên xe trục ở điểm đầu tuyến và xuống ở điểm cuối tuyến. Vì vậy `departure.booked_stall_count` đếm theo cả chuyến là đúng | horse_leg, trip_stop, departure |
@@ -1481,7 +1486,7 @@ Các quy tắc dưới đây cần so dữ liệu ở nhiều bảng nên CHECK 
 | 29 | Đơn EXPORT, IMPORT chỉ đi tuyến có cửa khẩu mà `counterpart_country_code` bằng nước đối tác của đơn | booking, route, location |
 | 30 | Mọi ngựa ACTIVE của một đơn đi cùng một lượt LINEHAUL | horse_leg, vehicle_trip |
 | 31 | Trên tuyến, thời gian chạy giữa hai điểm dừng liên tiếp ≤ `MAX_CONTINUOUS_HOURS`; điểm `REST`, `VITAL_CHECK` dừng ≥ `MIN_REST_MINUTES`; chạy đủ `MAX_DRIVE_HOURS_PER_DAY` thì phải có điểm nghỉ ≥ `OVERNIGHT_REST_HOURS`. Một chiều chặng đón và giao do công ty chở ≤ `MAX_DRIVE_HOURS_PER_DAY / 2`. Nếu thời gian lái vượt `MAX_CONTINUOUS_HOURS` thì bố trí điểm nghỉ | route_stop, trip_stop |
-| 32 | Xe chỉ rời nơi nhận ngựa (điểm đón, hoặc cửa khẩu với đơn IMPORT) khi mọi đơn có ngựa lên xe ở đó đã trả đủ. Quá `BALANCE_WAIT_MINUTES` thì trả ngựa của đơn chưa trả và hủy đơn đó. Giao dịch đang chờ VNPAY xác nhận chưa bị coi là không trả | trip_stop, payment |
+| 32 | Xe chỉ rời nơi nhận ngựa (điểm đón, hoặc cửa khẩu với đơn IMPORT) khi mọi đơn có ngựa lên xe ở đó đã trả đủ. Quá `BALANCE_WAIT_MINUTES` thì trả ngựa của đơn chưa trả và hủy đơn đó. Chỉ trả ngựa sau khi hết hạn số dư cộng thời gian chờ xác nhận, và không còn phiên mở trước hạn số dư đang trong hạn link cộng thời gian chờ kết quả | trip_stop, payment |
 | 33 | `quotation.expires_at` là mốc sớm nhất trong 24 giờ sau khi gửi, hết ngày đón và hết ngày hiệu lực báo giá bảo hiểm (nếu có). Mốc `planned_departure_at − DEPARTURE_DECISION_HOURS` chỉ nhả chỗ đơn chưa gửi báo giá. Đơn AWAITING_DEPOSIT giữ chỗ đến khi báo giá hết hạn | quotation, departure |
 | 34 | Xe chỉ rời trạm nghỉ khi mọi ngựa trên xe có `horse_health_log` ở điểm đó (gồm `water_intake`, `feed_intake`) và đã nghỉ đủ. Rời sớm phải xác nhận kèm lý do | trip_stop, horse_health_log |
 | 35 | Đơn IMPORT: hoàn tất `handover` AGENT ở cửa khẩu chỉ khi đủ giấy bắt buộc, gồm `IMPORT_TRANSPORT_CERT` | handover, document |
