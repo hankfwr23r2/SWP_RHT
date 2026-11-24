@@ -1490,6 +1490,20 @@
         },
         "type" : "object"
       },
+      "ApiResponseStallPlanResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/StallPlanResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseSystemConfigResponseDto" : {
         "properties" : {
           "data" : {
@@ -3674,6 +3688,10 @@
             "type" : "string"
           },
           "sequenceNumber" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "stallPosition" : {
             "format" : "int32",
             "type" : "integer"
           },
@@ -6428,6 +6446,109 @@
           }
         },
         "required" : [ "fullName", "hireDate", "homeHubLocationId", "phone", "staffCode" ],
+        "type" : "object"
+      },
+      "StallAssignmentDto" : {
+        "properties" : {
+          "currentPosition" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "horseLegId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "stallPosition" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "horseLegId", "stallPosition" ],
+        "type" : "object"
+      },
+      "StallHorseDto" : {
+        "properties" : {
+          "alightSequence" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "alightStopName" : {
+            "type" : "string"
+          },
+          "boardSequence" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "boardStopName" : {
+            "type" : "string"
+          },
+          "bookingCode" : {
+            "type" : "string"
+          },
+          "horseLegId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "horseName" : {
+            "type" : "string"
+          },
+          "locked" : {
+            "type" : "boolean"
+          },
+          "seats" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "sex" : {
+            "enum" : [ "STALLION", "MARE", "GELDING" ],
+            "type" : "string"
+          },
+          "stallPosition" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "StallPlanApplyRequestDto" : {
+        "properties" : {
+          "horses" : {
+            "items" : {
+              "$ref" : "#/components/schemas/StallAssignmentDto"
+            },
+            "minItems" : 1,
+            "type" : "array"
+          }
+        },
+        "required" : [ "horses" ],
+        "type" : "object"
+      },
+      "StallPlanResponseDto" : {
+        "properties" : {
+          "capacity" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "editable" : {
+            "type" : "boolean"
+          },
+          "horses" : {
+            "items" : {
+              "$ref" : "#/components/schemas/StallHorseDto"
+            },
+            "type" : "array"
+          },
+          "vehicleTripId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "warnings" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
         "type" : "object"
       },
       "StallTypeResponseDto" : {
@@ -13202,6 +13323,97 @@
           }
         },
         "tags" : [ "incident-controller" ]
+      }
+    },
+    "/vehicle-trips/{id}/stall-plan" : {
+      "get" : {
+        "operationId" : "plan",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseStallPlanResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "stall-plan-controller" ]
+      }
+    },
+    "/vehicle-trips/{id}/stall-plan/apply" : {
+      "post" : {
+        "operationId" : "apply",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StallPlanApplyRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseStallPlanResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "stall-plan-controller" ]
+      }
+    },
+    "/vehicle-trips/{id}/stall-plan/suggest" : {
+      "post" : {
+        "operationId" : "suggest",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseStallPlanResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "stall-plan-controller" ]
       }
     },
     "/vehicle-trips/{id}/start" : {

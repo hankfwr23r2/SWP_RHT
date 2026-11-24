@@ -7,11 +7,11 @@ import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.entity.enums.HorseLegType;
 import java.time.Instant;
 
-// Một chặng của con ngựa. fromName, toName: tên điểm mạng lưới hoặc dòng địa chỉ của đơn; agentName: đại lý chở (chặng không có xe)
+// Một chặng của con ngựa. fromName, toName: tên điểm mạng lưới hoặc dòng địa chỉ của đơn; agentName: đại lý chở (chặng không có xe); stallPosition: vị trí khoang trên xe
 public record HorseLegResponseDto(
         Long id, Long bookingHorseId, Integer sequenceNumber, HorseLegType legType, HorseLegStatus status,
         Long vehicleTripId, String vehicleTripCode, Long boardTripStopId, Long alightTripStopId,
-        String fromName, String toName, Instant plannedStartAt, Instant plannedEndAt, String agentName) {
+        String fromName, String toName, Instant plannedStartAt, Instant plannedEndAt, String agentName, Integer stallPosition) {
 
     public static HorseLegResponseDto from(HorseLeg leg) {
         var trip = leg.getVehicleTrip();
@@ -20,7 +20,8 @@ public record HorseLegResponseDto(
                 leg.getBoardTripStop() == null ? null : leg.getBoardTripStop().getId(),
                 leg.getAlightTripStop() == null ? null : leg.getAlightTripStop().getId(),
                 nameOf(leg.getFromLocation(), leg.getFromBookingAddress()), nameOf(leg.getToLocation(), leg.getToBookingAddress()),
-                leg.getPlannedStartAt(), leg.getPlannedEndAt(), leg.getAgentParty() == null ? null : leg.getAgentParty().getDisplayName());
+                leg.getPlannedStartAt(), leg.getPlannedEndAt(), leg.getAgentParty() == null ? null : leg.getAgentParty().getDisplayName(),
+                leg.getStallPosition() == null ? null : leg.getStallPosition().intValue());
     }
 
     private static String nameOf(Location location, BookingAddress address) {

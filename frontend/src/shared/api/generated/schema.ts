@@ -2740,6 +2740,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vehicle-trips/{id}/stall-plan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["plan"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicle-trips/{id}/stall-plan/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["apply"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vehicle-trips/{id}/stall-plan/suggest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["suggest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vehicle-trips/{id}/start": {
         parameters: {
             query?: never;
@@ -3326,6 +3374,11 @@ export interface components {
         };
         ApiResponseStaffAccountResponseDto: {
             data?: components["schemas"]["StaffAccountResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseStallPlanResponseDto: {
+            data?: components["schemas"]["StallPlanResponseDto"];
             message?: string;
             status?: string;
         };
@@ -4141,6 +4194,8 @@ export interface components {
             plannedStartAt?: string;
             /** Format: int32 */
             sequenceNumber?: number;
+            /** Format: int32 */
+            stallPosition?: number;
             /** @enum {string} */
             status?: "PLANNED" | "IN_PROGRESS" | "COMPLETED" | "FAILED" | "CANCELLED";
             toName?: string;
@@ -5165,6 +5220,45 @@ export interface components {
             homeHubLocationId: number;
             phone: string;
             staffCode: string;
+        };
+        StallAssignmentDto: {
+            /** Format: int32 */
+            currentPosition?: number;
+            /** Format: int64 */
+            horseLegId: number;
+            /** Format: int32 */
+            stallPosition: number;
+        };
+        StallHorseDto: {
+            /** Format: int32 */
+            alightSequence?: number;
+            alightStopName?: string;
+            /** Format: int32 */
+            boardSequence?: number;
+            boardStopName?: string;
+            bookingCode?: string;
+            /** Format: int64 */
+            horseLegId?: number;
+            horseName?: string;
+            locked?: boolean;
+            /** Format: int32 */
+            seats?: number;
+            /** @enum {string} */
+            sex?: "STALLION" | "MARE" | "GELDING";
+            /** Format: int32 */
+            stallPosition?: number;
+        };
+        StallPlanApplyRequestDto: {
+            horses: components["schemas"]["StallAssignmentDto"][];
+        };
+        StallPlanResponseDto: {
+            /** Format: int32 */
+            capacity?: number;
+            editable?: boolean;
+            horses?: components["schemas"]["StallHorseDto"][];
+            /** Format: int64 */
+            vehicleTripId?: number;
+            warnings?: string[];
         };
         StallTypeResponseDto: {
             code?: string;
@@ -10216,6 +10310,76 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListIncidentResponseDto"];
+                };
+            };
+        };
+    };
+    plan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseStallPlanResponseDto"];
+                };
+            };
+        };
+    };
+    apply: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StallPlanApplyRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseStallPlanResponseDto"];
+                };
+            };
+        };
+    };
+    suggest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseStallPlanResponseDto"];
                 };
             };
         };
