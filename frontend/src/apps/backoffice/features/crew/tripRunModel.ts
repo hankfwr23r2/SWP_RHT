@@ -42,9 +42,9 @@ export function handoverTypesAt(run: CrewTrip, stop: Stop): HandoverType[] {
   return types
 }
 
-// Quá hạn trả số dư thì trả lại cho người gửi các con đã nhận lên xe ở điểm đón này (backend kiểm hạn với luồng A)
+// Quá hạn trả số dư thì trả lại các con đã nhận lên xe ở nơi nhận này: điểm đón (người gửi) hoặc cửa khẩu với đơn nhập (đại lý)
 export function canReturnUnpaid(run: CrewTrip, stop: Stop): boolean {
-  return running(run) && stop.stopType === 'PICKUP' && stopState(stop) === 'here' && !pendingAt(run, stop.id)
+  return running(run) && (stop.stopType === 'PICKUP' || stop.stopType === 'BORDER') && stopState(stop) === 'here' && !pendingAt(run, stop.id)
     && (run.horses ?? []).some(h => h.leg?.boardTripStopId === stop.id && h.leg?.status === 'IN_PROGRESS')
 }
 
