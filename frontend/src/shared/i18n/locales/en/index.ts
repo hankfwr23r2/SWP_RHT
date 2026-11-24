@@ -8,6 +8,7 @@ import { specialist } from './specialist'
 import { coordinator } from './coordinator'
 import { fieldCrew } from './fieldCrew'
 import { admin } from './admin'
+import { staffCatalog } from './staffCatalog'
 
 export const en = {
   ...common,
@@ -18,4 +19,5 @@ export const en = {
   ...coordinator,
   ...fieldCrew,
   ...admin,
+  ...staffCatalog,
 } as const
