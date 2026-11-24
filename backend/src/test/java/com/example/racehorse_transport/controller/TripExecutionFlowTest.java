@@ -154,6 +154,8 @@ class TripExecutionFlowTest {
                 .andExpect(jsonPath("$.data.horses[0].leg.status").value("COMPLETED"));
         assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, leg)).isEqualTo("COMPLETED");
         assertThat(bookingStatus()).isEqualTo("DELIVERED");
+        // B6: khách được báo khi ngựa được nhận và khi được giao
+        assertThat(customerNotices(booking)).contains("Đã nhận ngựa", "Đã giao ngựa");
 
         act(driver, "/trip-stops/" + stops.get(2) + "/depart").andExpect(status().isOk());
         act(driver, "/vehicle-trips/" + trip + "/complete").andExpect(status().isConflict())
@@ -427,5 +429,12 @@ class TripExecutionFlowTest {
     private void signedRecord(long handoverId) {
         jdbc.update("INSERT INTO document (document_type_id, file_url, file_name, uploaded_by, status, handover_id) "
                 + "SELECT id, 'test://record/' || md5(random()::text), 'record.jpg', (SELECT min(id) FROM app_user), 'UPLOADED', ? FROM document_type WHERE code = 'HANDOVER_RECORD'", handoverId);
+    }
+
+    // Thông báo khách nhận được trên đơn (B6), theo thứ tự gửi
+    private List<String> customerNotices(long bookingId) {
+        entityManager.flush();
+        return jdbc.queryForList("SELECT n.title FROM notification n JOIN notification_recipient r ON r.notification_id = n.id "
+                + "JOIN booking b ON b.id = n.booking_id WHERE n.booking_id = ? AND r.user_id = b.customer_id ORDER BY n.id", String.class, bookingId);
     }
 }
