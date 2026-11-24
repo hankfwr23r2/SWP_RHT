@@ -13,6 +13,7 @@ export type BookingCreateRequest = Schemas['BookingCreateRequestDto']
 export type CustomerProfile = Schemas['CustomerProfileResponseDto']
 export type BookingOrder = Schemas['BookingResponseDto']
 export type BookingStatus = NonNullable<BookingOrder['status']>
+export type BookingSummary = Schemas['BookingSummaryResponseDto']
 export type BookingDetail = Schemas['BookingDetailResponseDto']
 export type BookingCancellation = Schemas['BookingCancellationResponseDto']
 export type InsuranceRevision = Schemas['PersonalInsuranceRevisionRequestDto']
@@ -26,7 +27,7 @@ export const bookingOrdersApi = {
     (await apiClient.post<ApiResponse<PricingPreview>>('/pricing/preview', body)).data.data,
   create: async (body: BookingCreateRequest) =>
     readFormResponse<BookingOrder>(await apiClient.post('/bookings', body, formResponseOptions)),
-  list: async () => (await apiClient.get<ApiResponse<BookingOrder[]>>('/bookings')).data.data,
+  list: async () => (await apiClient.get<ApiResponse<BookingSummary[]>>('/bookings')).data.data,
   detail: async (id: number) => (await apiClient.get<ApiResponse<BookingDetail>>(`/bookings/${id}`)).data.data,
   cancellationPreview: async (id: number) =>
     (await apiClient.get<ApiResponse<BookingCancellation>>(`/bookings/${id}/cancellation-preview`)).data.data,

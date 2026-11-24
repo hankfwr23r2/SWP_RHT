@@ -16,7 +16,7 @@ public interface BookingQueryService {
 
     BookingDetailResponseDto reviewDetail(Long id);
 
-    List<BookingResponseDto> list(String username);
+    List<BookingSummaryResponseDto> list(String username);
 
     BookingDetailResponseDto get(String username, Long id);
 }

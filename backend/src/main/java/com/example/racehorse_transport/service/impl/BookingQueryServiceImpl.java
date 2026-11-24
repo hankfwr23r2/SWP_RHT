@@ -46,10 +46,8 @@ public class BookingQueryServiceImpl implements BookingQueryService {
     private final BookingStatusHistoryRepository history;
 
     @Override
-    public List<BookingResponseDto> list(String username) {
-        return bookings.findByCustomer_User_UsernameOrderByCreatedAtDescIdDesc(username).stream()
-                .map(BookingResponseDto::from)
-                .toList();
+    public List<BookingSummaryResponseDto> list(String username) {
+        return summarize(bookings.findByCustomer_User_UsernameOrderByCreatedAtDescIdDesc(username));
     }
 
     @Override
@@ -73,7 +71,10 @@ public class BookingQueryServiceImpl implements BookingQueryService {
         if (statuses.isEmpty() || page < 0) {
             throw new IllegalArgumentException("Chọn ít nhất một trạng thái và trang từ 0.");
         }
-        List<Booking> rows = bookings.findByStatusInOrderByCreatedAtDescIdDesc(statuses, PageRequest.of(page, PAGE_SIZE));
+        return summarize(bookings.findByStatusInOrderByCreatedAtDescIdDesc(statuses, PageRequest.of(page, PAGE_SIZE)));
+    }
+
+    private List<BookingSummaryResponseDto> summarize(List<Booking> rows) {
         if (rows.isEmpty()) {
             return List.of();
         }
