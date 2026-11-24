@@ -33,3 +33,14 @@ export function useAccountEditor(account: StaffAccount | undefined, reload: () =
   }
   return { ...form, ...action, save }
 }
+
+export type AccountAction = 'lock' | 'unlock'
+
+export function useAccountStatus(id: number, event: AccountAction, reload: () => unknown, close: () => void) {
+  const form = useCatalogForm({ reason: '' })
+  const action = useCatalogAction(reload)
+  async function save() {
+    if (await action.run(() => staffAccountsApi[event](id, form.values.reason.trim()))) close()
+  }
+  return { ...form, ...action, save }
+}

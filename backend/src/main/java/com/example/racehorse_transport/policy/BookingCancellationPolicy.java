@@ -24,7 +24,7 @@ public final class BookingCancellationPolicy {
     public enum Outcome {
         // Chưa trả tiền, hoặc công ty hủy chuyến: không mất phí
         FREE,
-        // Đã cọc: mất cọc, gồm cả phần thu hộ. Cơ quan chậm đủ số lần thì chỉ mất phần thu hộ và VET_CHECK
+        // Đã cọc: mất cọc, gồm cả phần thu hộ. Cơ quan chậm đủ số lần thì chỉ mất phần thu hộ
         FORFEIT_DEPOSIT,
         // Khách không tự hủy được, phải liên hệ quản lý
         NOT_ALLOWED
@@ -87,16 +87,15 @@ public final class BookingCancellationPolicy {
         return new Breakdown(net.subtract(forfeited), BigDecimal.ZERO, forfeited);
     }
 
-    // Khoản thu hộ và VET_CHECK: khách hủy hoặc hủy do cơ quan thì không hoàn
+    // Khoản thu hộ: khách hủy hoặc hủy do cơ quan thì không hoàn
     private static boolean isNonRefundable(QuotationLine line) {
-        return line.getAmount().signum() > 0 && (Boolean.TRUE.equals(line.getPassThrough())
-                || line.getBillableService() != null && "VET_CHECK".equals(line.getBillableService().getCode()));
+        return line.getAmount().signum() > 0 && Boolean.TRUE.equals(line.getPassThrough());
     }
 
     // API vẫn nhận danh sách dòng để giữ hợp đồng, nhưng không dòng nào được chọn hoàn riêng
     public static void requireNoLineRefund(List<Long> selected) {
         if (!selected.isEmpty()) {
-            throw BookingRuleException.conflict("Khoản thu hộ và phí khám thú y không được hoàn riêng khi hủy đơn.");
+            throw BookingRuleException.conflict("Khoản thu hộ không được hoàn riêng khi hủy đơn.");
         }
     }
 

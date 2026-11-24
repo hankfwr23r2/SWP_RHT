@@ -12,6 +12,10 @@ export const staffAccountsApi = {
     (await apiClient.get<ApiResponse<StaffAccount[]>>('/staff-accounts')).data.data,
   create: async (body: StaffAccountCreate) =>
     readFormResponse<StaffAccount>(await apiClient.post('/staff-accounts', body, formResponseOptions)),
+  lock: async (id: number, reason: string) =>
+    readFormResponse<StaffAccount>(await apiClient.post(`/staff-accounts/${id}/lock`, { reason }, formResponseOptions)),
+  unlock: async (id: number, reason: string) =>
+    readFormResponse<StaffAccount>(await apiClient.post(`/staff-accounts/${id}/unlock`, { reason }, formResponseOptions)),
   update: async (id: number, body: StaffAccountUpdate) =>
     readFormResponse<StaffAccount>(await apiClient.put(`/staff-accounts/${id}`, body, formResponseOptions)),
 }

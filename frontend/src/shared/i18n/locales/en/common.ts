@@ -11,6 +11,7 @@ export const common = {
     stepDone: 'Done',
   },
   common: {
+    hotline: 'Hotline',
     brandName: 'Racehorse Transport',
     brandTagline: 'Road Racehorse Transport · Vietnam · Laos · Cambodia',
     footerCopyright: '© 2026 Racehorse Transport · Vietnam · Laos · Cambodia',
@@ -198,7 +199,7 @@ export const common = {
     docAria: 'Documents',
     insuranceTitle: 'Third-Party Transit Insurance',
     insuranceDesc1: 'Clients may opt for custom livestock insurance, request assistance, or opt out per individual horse. The company coordinates with licensed underwriters and collects the transit insurance fee upfront as quoted. The quotation does not constitute an active policy until verified.',
-    insuranceDesc2: 'Upon cancellation, standard transport cancellation fees apply to the deposit. Collected insurance fees are reconciled separately based on insurer refunds.',
+    insuranceDesc2: 'If the client cancels after paying the deposit, or cancels because of the authorities, fees collected on behalf of third parties are not refunded. If the company cancels, everything paid is refunded, including those fees.',
     openInNewTab: 'Open file in new tab',
   },
   roles: {

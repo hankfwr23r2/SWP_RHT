@@ -263,6 +263,20 @@
         },
         "type" : "object"
       },
+      "ApiResponseContactResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/ContactResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseCostItemResponseDto" : {
         "properties" : {
           "data" : {
@@ -2097,6 +2111,17 @@
           }
         },
         "required" : [ "reason" ],
+        "type" : "object"
+      },
+      "ContactResponseDto" : {
+        "properties" : {
+          "hotline" : {
+            "type" : "string"
+          },
+          "officeAddress" : {
+            "type" : "string"
+          }
+        },
         "type" : "object"
       },
       "CostItemRequestDto" : {
@@ -6543,6 +6568,17 @@
         },
         "type" : "object"
       },
+      "StaffAccountStatusRequestDto" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
       "StaffAccountUpdateRequestDto" : {
         "properties" : {
           "driverLicenseClass" : {
@@ -6857,6 +6893,17 @@
             "type" : "string"
           }
         },
+        "type" : "object"
+      },
+      "SystemTextConfigUpdateRequestDto" : {
+        "properties" : {
+          "configValue" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "configValue" ],
         "type" : "object"
       },
       "TripGroupResponseDto" : {
@@ -12632,6 +12679,24 @@
         "tags" : [ "geography-controller" ]
       }
     },
+    "/public/contact" : {
+      "get" : {
+        "operationId" : "contact",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseContactResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "contact-controller" ]
+      }
+    },
     "/public/tracking" : {
       "post" : {
         "operationId" : "publicTrack",
@@ -13243,6 +13308,80 @@
         "tags" : [ "account-controller" ]
       }
     },
+    "/staff-accounts/{id}/lock" : {
+      "post" : {
+        "operationId" : "lockStaffAccount",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StaffAccountStatusRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseStaffAccountResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "account-controller" ]
+      }
+    },
+    "/staff-accounts/{id}/unlock" : {
+      "post" : {
+        "operationId" : "unlockStaffAccount",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StaffAccountStatusRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseStaffAccountResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "account-controller" ]
+      }
+    },
     "/stall-types" : {
       "get" : {
         "operationId" : "stallTypes",
@@ -13319,6 +13458,42 @@
             "application/json" : {
               "schema" : {
                 "$ref" : "#/components/schemas/SystemConfigUpdateRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSystemConfigResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "system-config-controller" ]
+      }
+    },
+    "/system-configs/{key}/text" : {
+      "put" : {
+        "operationId" : "updateSystemTextConfig",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "key",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SystemTextConfigUpdateRequestDto"
               }
             }
           },

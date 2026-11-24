@@ -28,6 +28,7 @@ public class HorseController {
     private final HorseService horses;
 
     @GetMapping("/horse-types")
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN')")
     public ApiResponseDto<List<HorseTypeResponseDto>> listHorseTypes() {
         return ApiResponseDto.success(horses.horseTypes(), "Danh sách loại ngựa");
     }

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { bookingOrdersApi } from '@shared/api/bookingOrders'
 import { useLoad } from '@shared/hooks/useLoad'
-import { HOTLINE } from '@shared/config/business-rules'
+import { useContact } from '@shared/hooks/useContact'
 import { Button } from '@shared/ui/Button'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Modal } from '@shared/ui/Modal'
@@ -27,6 +27,7 @@ export function CancelOrder({ bookingId }: { bookingId: number }) {
 function CancelDialog({ bookingId, onClose }: { bookingId: number; onClose: () => void }) {
   const { t } = useTranslation()
   const { run, busy, error } = useOrderAction()
+  const { hotline } = useContact()
   const { data: preview, loaded, error: loadError, reload } = useLoad(
     () => bookingOrdersApi.cancellationPreview(bookingId), [bookingId], { toastOnError: false })
 
@@ -42,7 +43,7 @@ function CancelDialog({ bookingId, onClose }: { bookingId: number; onClose: () =
   return (
     <ReasonDialog title={t('myOrders.cancel.title')} confirmLabel={t('myOrders.cancel.confirm')} busy={busy} error={error}
       disabled={!preview.allowed} onConfirm={cancel} onCancel={onClose} message={
-        !preview.allowed ? <p>{t('myOrders.cancel.notAllowed', { hotline: HOTLINE })}</p>
+        !preview.allowed ? <p>{t('myOrders.cancel.notAllowed', { hotline })}</p>
           : (
             <>
               <p>{t('myOrders.cancel.message')}</p>

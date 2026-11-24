@@ -8,6 +8,17 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class SystemConfigPolicyTest {
 
     @Test
+    void textSettingsOnlyAcceptTextUnitAndAPhoneNumberForHotline() {
+        SystemConfigPolicy.requireValidText("HOTLINE", "TEXT", "1900 6868");
+        SystemConfigPolicy.requireValidText("HOTLINE", "TEXT", "+84 28 3822 1234");
+        SystemConfigPolicy.requireValidText("OFFICE_ADDRESS", "TEXT", "12 Nguyễn Huệ");
+        assertThatThrownBy(() -> SystemConfigPolicy.requireValidText("HOTLINE", "TEXT", "abc"))
+                .isInstanceOf(SystemConfigRuleException.class);
+        assertThatThrownBy(() -> SystemConfigPolicy.requireValidText("OTP_MAX_ATTEMPTS", "COUNT", "5"))
+                .isInstanceOf(SystemConfigRuleException.class);
+    }
+
+    @Test
     void acceptsPositiveIntegersForTechnicalUnits() {
         assertThatCode(() -> SystemConfigPolicy.requireValidUpdate("MINUTE", 1, null, null)).doesNotThrowAnyException();
         assertThatCode(() -> SystemConfigPolicy.requireValidUpdate("COUNT", 5, null, null)).doesNotThrowAnyException();

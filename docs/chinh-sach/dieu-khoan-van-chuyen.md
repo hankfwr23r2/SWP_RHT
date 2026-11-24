@@ -79,11 +79,11 @@ Từ 48 giờ trước giờ chạy, công ty quyết định chuyến có chạ
 | Thời điểm | Kết quả |
 |---|---|
 | Trước khi cọc | Hủy miễn phí |
-| Đã cọc, công ty chưa nhận ngựa | Khách tự hủy, mất cọc vận chuyển |
+| Đã cọc, công ty chưa nhận ngựa | Khách tự hủy, mất tiền cọc, gồm cả phần thu hộ |
 | Đã nhận ngựa, quá hạn chưa trả đủ, xe chưa rời | Khách không tự hủy. Công ty hủy theo mục 6 |
 | Đã trả đủ hoặc xe đã rời nơi nhận | Khách không tự hủy được |
 
-“Cọc vận chuyển” là phần cọc không gồm khoản thu hộ và tiền thú y tại chuồng. Khi khách mất cọc vận chuyển, quản lý xem xét hoàn từng khoản thu hộ và tiền thú y **chưa chi**, theo số tiền trên báo giá. Trước khi hủy, khách thấy số tiền mất, số được hoàn và số chờ xem xét. Giấy không kịp thì áp dụng mục 8.
+Khoản thu hộ (phí bảo hiểm mua hộ, lệ phí nhà nước) **không hoàn** khi khách hủy hoặc hủy do cơ quan chức năng. Tiền thú y tại chuồng tính như dịch vụ thường. Trước khi hủy, khách thấy số tiền được hoàn và số không được hoàn. Giấy không kịp thì áp dụng mục 8.
 
 Công ty hủy đơn trước khi nhận ngựa thì hoàn 100% số đã trả. Tiền hoàn được chuyển khoản; công ty ghi mã chuyển khoản để khách đối chiếu.
 

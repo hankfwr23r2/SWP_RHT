@@ -47,6 +47,26 @@ class SystemConfigFlowTest {
     }
 
     @Test
+    void adminEditsContactTextAndEveryoneReadsIt() throws Exception {
+        String admin = staffToken("ADMIN");
+        mvc.perform(get("/public/contact")).andExpect(status().isOk()).andExpect(jsonPath("$.data.hotline").isNotEmpty());
+        mvc.perform(put("/system-configs/HOTLINE/text").header(HttpHeaders.AUTHORIZATION, admin)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"configValue\":\"gọi tôi\"}")).andExpect(status().isBadRequest());
+        mvc.perform(put("/system-configs/HOTLINE/text").header(HttpHeaders.AUTHORIZATION, admin)
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"configValue\":\" 1900 7777 \"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.configValue").value("1900 7777"));
+        mvc.perform(put("/system-configs/HOTLINE/text").header(HttpHeaders.AUTHORIZATION, staffToken("MANAGER"))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"configValue\":\"1900 8888\"}")).andExpect(status().isForbidden());
+        // Tham số số không nhận chữ, tham số chữ không nhận số
+        mvc.perform(put("/system-configs/OTP_MAX_ATTEMPTS/text").header(HttpHeaders.AUTHORIZATION, admin)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"configValue\":\"5\"}")).andExpect(status().isBadRequest());
+        mvc.perform(put("/system-configs/HOTLINE").header(HttpHeaders.AUTHORIZATION, admin)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"configValue\":5}")).andExpect(status().isBadRequest());
+        mvc.perform(get("/public/contact")).andExpect(status().isOk()).andExpect(jsonPath("$.data.hotline").value("1900 7777"))
+                .andExpect(jsonPath("$.data.officeAddress").isNotEmpty());
+    }
+
+    @Test
     void rejectsFractionalValuesAndNonAdminAccess() throws Exception {
         String admin = staffToken("ADMIN");
         mvc.perform(put(URL).header(HttpHeaders.AUTHORIZATION, admin).contentType(MediaType.APPLICATION_JSON)

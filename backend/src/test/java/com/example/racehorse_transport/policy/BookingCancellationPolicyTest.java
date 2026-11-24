@@ -70,7 +70,8 @@ class BookingCancellationPolicyTest {
         var lines = List.of(line(1L, "1000", true, null), line(2L, "500", false, "VET_CHECK"), line(3L, "9000", false, null));
 
         assertSplit(cancel(false, "4000", lines, deposit("4000")), "0", "0", "4000");
-        assertSplit(cancel(true, "4000", lines, deposit("4000")), "2500", "0", "1500");
+        // Phí thú y xử lý như cước dịch vụ, chỉ khoản thu hộ bị giữ
+        assertSplit(cancel(true, "4000", lines, deposit("4000")), "3000", "0", "1000");
         assertSplit(BookingCancellationPolicy.amounts(Outcome.FREE, false, quotation("4000"), lines, List.of(deposit("4000"))),
                 "4000", "0", "0");
     }
@@ -88,7 +89,7 @@ class BookingCancellationPolicyTest {
         var balance = payment(PaymentType.BALANCE, PaymentStatus.PAID, "6000");
 
         assertSplit(cancel(false, "4000", lines, deposit("4000"), balance), "6000", "0", "4000");
-        assertSplit(cancel(true, "4000", lines, deposit("4000"), balance), "8500", "0", "1500");
+        assertSplit(cancel(true, "4000", lines, deposit("4000"), balance), "9000", "0", "1000");
         // Cọc bằng tổng báo giá: khách hủy thì mất toàn bộ
         assertSplit(cancel(false, "10000", lines, deposit("10000")), "0", "0", "10000");
     }

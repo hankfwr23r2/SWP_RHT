@@ -15,7 +15,7 @@ function byId(items: { id?: number; name?: string; code?: string }[]) {
   return items.flatMap(item => item.id == null ? [] : [{ value: String(item.id), label: item.name ?? item.code }])
 }
 
-function PriceListDetail({ list, items = [], services = [], routes = [], stallTypes = [], classes = [], canChooseClass }: PricingDetailData) {
+function PriceListDetail({ list, items = [], services = [], routes = [], stallTypes = [], classes = [] }: PricingDetailData) {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const actions = usePricingActions()
@@ -100,7 +100,7 @@ function PriceListDetail({ list, items = [], services = [], routes = [], stallTy
     </section>
 
     {editing && <PriceListForm list={list} busy={actions.busy} fields={actions.fields} onSave={body => actions.saveList(body, id)} close={() => setEditing(false)} />}
-    {item !== undefined && <PriceItemForm item={item} options={options} canChooseClass={canChooseClass} busy={actions.busy}
+    {item !== undefined && <PriceItemForm item={item} options={options} busy={actions.busy}
       fields={actions.fields} onSave={body => actions.saveItem(id, body, item?.id)} close={() => setItem(undefined)} />}
     <PricingConfirm action={confirmation} close={() => confirm(null)} />
   </>

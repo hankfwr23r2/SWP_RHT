@@ -208,6 +208,10 @@ export const staffCatalog = {
       "RETIRED": "Đã ngừng sử dụng"
     },
     "accounts": {
+      "lock": "Khóa",
+      "unlock": "Mở khóa",
+      "lockEffect": "{{name}} sẽ bị đăng xuất và không đăng nhập được cho tới khi mở khóa.",
+      "unlockEffect": "{{name}} đăng nhập lại được ngay.",
       "title": "Tài khoản nhân viên",
       "add": "Thêm tài khoản",
       "edit": "Sửa hồ sơ nhân viên",
@@ -305,10 +309,12 @@ export const staffCatalog = {
     },
     "horseTypes": {
       "title": "Danh mục loại ngựa",
-      "unavailable": "Danh mục chưa mở cho quản trị viên",
-      "access": "Quyền đọc danh mục hiện chỉ cấp cho tài khoản khách hàng."
+      "empty": "Chưa có loại ngựa.",
+      "name": "Tên loại",
+      "description": "Mô tả"
     },
     "settings": {
+      "text": "Chữ, tối đa 500 ký tự",
       "title": "Tham số hệ thống",
       "limits": "Giới hạn",
       "positive": "Số nguyên dương",
@@ -321,6 +327,7 @@ export const staffCatalog = {
         "COUNT": ""
       },
       "groups": {
+        "CONTACT": "Liên hệ",
         "AUTH": "Đăng nhập và xác minh",
         "DEPARTURE": "Chuyến khởi hành",
         "HANDOVER": "Giao nhận",
@@ -332,6 +339,8 @@ export const staffCatalog = {
         "SCHEDULE": "Lịch chạy"
       },
       "keys": {
+        "HOTLINE": "Hotline",
+        "OFFICE_ADDRESS": "Địa chỉ văn phòng",
         "HANDOVER_FREE_WAIT_MINUTES": "Thời gian chờ người nhận miễn phí",
         "QUOTATION_VALID_HOURS": "Hiệu lực báo giá từ lúc gửi",
         "DEPARTURE_GENERATION_WEEKS": "Số tuần tạo chuyến trước",

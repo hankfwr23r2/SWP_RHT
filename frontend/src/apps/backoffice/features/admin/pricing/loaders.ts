@@ -4,16 +4,15 @@ import { priceListsApi } from '@shared/api/priceLists'
 import { loadAll, type PageLoaderContext } from '@shared/routing/pageData'
 
 export const pricingLoader = async () => ({ errors: [] as string[], pending: loadAll({ lists: priceListsApi.list() }) })
-export const pricingDetailLoader = async ({ params, session }: PageLoaderContext) => {
+export const pricingDetailLoader = async ({ params }: PageLoaderContext) => {
   const id = Number(params.id)
-  const canChooseClass = session.role === 'admin'
   return {
     errors: [] as string[],
     pending: loadAll({
       list: priceListsApi.detail(id), items: priceListsApi.items(id), services: catalogApi.billableServices(),
       routes: networkApi.routes(), stallTypes: catalogApi.stallTypes(),
-      classes: canChooseClass ? priceListsApi.vehicleClasses() : Promise.resolve([]),
-    }).then(data => ({ ...data, canChooseClass })),
+      classes: priceListsApi.vehicleClasses(),
+    }),
   }
 }
 

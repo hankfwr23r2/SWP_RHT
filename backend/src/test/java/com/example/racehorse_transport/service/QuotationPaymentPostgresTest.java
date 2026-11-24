@@ -526,7 +526,7 @@ class QuotationPaymentPostgresTest {
     }
 
     @Test
-    void customerCancellationForfeitsPassThroughAndVetCheckAndManagerCannotRefundThem() throws Exception {
+    void customerCancellationForfeitsDepositWithPassThroughAndManagerCannotRefundLines() throws Exception {
         var fixture = fixture(BookingType.LOCAL, BookingStatus.CONFIRMED);
         long booking = fixture.booking().getId();
         long quote = quote(fixture, QuotationStatus.ACCEPTED, START.plusSeconds(120), "10000", "4000");
@@ -550,7 +550,7 @@ class QuotationPaymentPostgresTest {
                             .content("{\"unspentQuotationLineIds\":[" + line + "]}")
                             .header(HttpHeaders.AUTHORIZATION, auth(fixture.manager(), "MANAGER")))
                     .andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.message").value("Khoản thu hộ và phí khám thú y không được hoàn riêng khi hủy đơn."));
+                    .andExpect(jsonPath("$.message").value("Khoản thu hộ không được hoàn riêng khi hủy đơn."));
         }
         mvc.perform(post("/bookings/{id}/refund-unspent-lines", Long.MAX_VALUE).contentType("application/json").content(input)
                 .header(HttpHeaders.AUTHORIZATION, auth(fixture.manager(), "MANAGER"))).andExpect(status().isNotFound());

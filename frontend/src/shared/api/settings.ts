@@ -9,6 +9,8 @@ export type SystemSettingUpdate = Schemas['SystemConfigUpdateRequestDto']
 export const settingsApi = {
   list: async () =>
     (await apiClient.get<ApiResponse<SystemSetting[]>>('/system-configs')).data.data,
+  updateText: async (key: string, configValue: string) =>
+    readFormResponse<SystemSetting>(await apiClient.put(`/system-configs/${encodeURIComponent(key)}/text`, { configValue }, formResponseOptions)),
   update: async (key: string, body: SystemSettingUpdate) =>
     readFormResponse<SystemSetting>(await apiClient.put(`/system-configs/${encodeURIComponent(key)}`, body, formResponseOptions)),
 }

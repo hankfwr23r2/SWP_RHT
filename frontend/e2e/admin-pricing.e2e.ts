@@ -73,17 +73,17 @@ test('quản trị viên thêm dòng giá bằng số và xác nhận kích ho�
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360)
 })
 
-test('quản lý sửa dòng giá, giữ hạng xe đã gán và xác nhận xóa bảng nháp', async ({ page }) => {
+test('quản lý sửa dòng giá, chọn được hạng xe và xác nhận xóa bảng nháp', async ({ page }) => {
   const calls = await setup(page, 'manager')
   await page.goto('/backoffice/admin/pricing/4', { waitUntil: 'domcontentloaded' })
-  await expect(page.getByRole('link', { name: 'Bảng giá', exact: true })).toHaveCount(0)
+  await expect(page.getByRole('link', { name: 'Bảng giá', exact: true })).toBeVisible()
   await page.getByRole('button', { name: 'Sửa dòng giá' }).click()
   const dialog = page.getByRole('dialog')
-  await expect(dialog.getByRole('combobox', { name: 'Hạng xe' })).toBeDisabled()
+  await expect(dialog.getByRole('combobox', { name: 'Hạng xe' })).toBeEnabled()
   await dialog.getByLabel('Đơn giá').fill('2000')
   await dialog.getByRole('button', { name: 'Lưu', exact: true }).click()
   await expect(dialog).toHaveCount(0)
-  expect(calls.some(call => call.path === '/vehicle-classes')).toBe(false)
+  expect(calls.some(call => call.path === '/vehicle-classes')).toBe(true)
   expect(calls.find(call => call.path.endsWith('/items/9') && call.method === 'PUT')?.body).toEqual({
     billableServiceId: 5, vehicleClassId: 2, unitPrice: 2000,
   })

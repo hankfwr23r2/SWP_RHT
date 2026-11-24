@@ -89,7 +89,6 @@ export const staffNetwork = {
     "kmBand": "Bậc khoảng cách",
     "kmRange": "Từ {{from}} km đến {{to}}",
     "classRetained": "Hạng xe đã gán",
-    "classAdminOnly": "Quản trị viên có thể thay đổi hạng xe.",
     "rateHint": "Nhập số từ 0 đến 1. Ví dụ 0,15 tương ứng 15%.",
     "fields": {
       "code": "Mã",
