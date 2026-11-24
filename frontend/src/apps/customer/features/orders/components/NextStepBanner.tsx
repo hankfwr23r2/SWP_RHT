@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next'
+import { currentQuotation, nextStepOf, payable } from '@shared/components/orderSteps'
 import { Button } from '@shared/ui/Button'
 import { moment } from '../format'
 import type { OrderData } from '../loaders'
-import { currentQuotation, nextStepOf, payable } from '../orderSteps'
 import s from '../Orders.module.css'
 
 // Việc tiếp theo: khách phải làm gì hoặc đang chờ ai

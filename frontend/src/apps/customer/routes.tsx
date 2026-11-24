@@ -5,7 +5,6 @@ import i18n, { i18nReady } from '@shared/i18n'
 import LoginPage from './features/auth/LoginPage'
 import HomePage from './features/home/HomePage'
 import { horseProfilesLoader } from './features/horses/loaders'
-import { portalLoader } from './features/portal/portalLoader'
 
 // Trang chủ và đăng nhập tải ngay; các trang còn lại chỉ tải khi mở tới (lazy), để lần mở web đầu tiên
 // không phải tải cả thư viện bản đồ (~1,7 MB) mà trang chủ không dùng.
@@ -16,7 +15,6 @@ const RegisterPage = lazy(() => import('./features/auth/RegisterPage'))
 const VerifyEmailPage = lazy(() => import('./features/auth/VerifyEmailPage'))
 const PolicyPage = lazy(() => import('./features/policies/PolicyPage'))
 const VnpayReturnPage = lazy(() => import('./features/payment/VnpayReturnPage'))
-const ProfilePage = lazy(() => import('./features/profile/ProfilePage'))
 
 const C = ['customer'] as AppRoute['roles']
 
@@ -34,8 +32,18 @@ export const routes: AppRoute[] = [
   { path: '/forgot-password', page: CustomerForgotPasswordPage, roles: [], title: 'Quên mật khẩu', layout: 'bare', catalog: false },
   { path: '/register', page: RegisterPage, roles: [], title: 'Đăng ký', layout: 'bare', catalog: false },
   { path: '/verify-email', page: VerifyEmailPage, roles: [], title: 'Xác thực email', layout: 'bare', catalog: false },
-  { path: '/portal', lazyPage: () => import('./features/portal/PortalPage'), loader: portalLoader, roles: C, title: 'Trang chủ', layout: 'customer' },
-  { path: '/profile', page: ProfilePage, roles: C, title: 'Hồ sơ cá nhân', layout: 'customer' },
+  {
+    path: '/portal', roles: C, layout: 'customer',
+    loader: () => import('./features/portal/loaders').then(m => m.portalLoader()),
+    lazyPage: () => Promise.all([import('./features/portal/PortalPage'), i18nReady]).then(([page]) => page),
+    get title() { return i18n.t('nav.home') },
+  },
+  {
+    path: '/profile', roles: C, layout: 'customer',
+    loader: () => import('./features/profile/loaders').then(m => m.profileLoader()),
+    lazyPage: () => Promise.all([import('./features/profile/ProfilePage'), i18nReady]).then(([page]) => page),
+    get title() { return i18n.t('profile.title') },
+  },
   {
     path: '/horses', roles: C, layout: 'customer', loader: horseProfilesLoader,
     lazyPage: () => Promise.all([import('./features/horses/HorsesPage'), i18nReady]).then(([page]) => page),

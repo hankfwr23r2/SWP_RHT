@@ -6,7 +6,6 @@ import '@fontsource-variable/roboto/wght.css'
 import '@shared/styles/base.css'
 import { i18nReady } from '@shared/i18n'
 import { AuthProvider } from '@shared/auth/AuthContext'
-import { CustomerLanguageSync } from '@shared/auth/CustomerLanguageSync'
 import { buildRouter } from '@shared/routing/buildRouter'
 import { ToastProvider } from '@shared/ui/toast'
 import { CustomerLayout } from './layouts/CustomerLayout'
@@ -21,7 +20,6 @@ createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider app="customer">
       <ToastProvider>
-        <CustomerLanguageSync />
         <RouterProvider router={router} />
       </ToastProvider>
     </AuthProvider>

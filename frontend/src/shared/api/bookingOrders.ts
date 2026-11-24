@@ -11,6 +11,7 @@ export type PricingPreviewRequest = Schemas['PricingPreviewRequestDto']
 export type PricingPreview = Schemas['PricingPreviewResponseDto']
 export type BookingCreateRequest = Schemas['BookingCreateRequestDto']
 export type CustomerProfile = Schemas['CustomerProfileResponseDto']
+export type CustomerProfileUpdate = Schemas['CustomerProfileUpdateRequestDto']
 export type BookingOrder = Schemas['BookingResponseDto']
 export type BookingStatus = NonNullable<BookingOrder['status']>
 export type BookingDetail = Schemas['BookingDetailResponseDto']
@@ -41,4 +42,6 @@ export const bookingOrdersApi = {
   },
   myProfile: async () =>
     (await apiClient.get<ApiResponse<CustomerProfile>>('/customers/me')).data.data,
+  updateMyProfile: async (body: CustomerProfileUpdate) =>
+    readFormResponse<CustomerProfile>(await apiClient.put('/customers/me', body, formResponseOptions)),
 }
