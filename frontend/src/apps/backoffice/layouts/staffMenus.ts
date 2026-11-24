@@ -3,11 +3,13 @@ import type { StaffRole } from '@shared/types/role'
 // Menu theo vai trò. Các mục của Flow 1 (tiếp nhận, duyệt báo giá, duyệt hồ sơ ngựa, phương án xe) theo quy trình mới.
 export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: { group?: string; icon?: string }][]> = {
   admin: [
-    ['/admin/pricing', 'Biểu giá & Công thức', { icon: 'fa-calculator' }],
     ['/admin/horse-types', 'Danh mục giống ngựa', { icon: 'fa-horse-head' }],
     ['/admin/fleet', 'Đội xe', { icon: 'fa-truck' }],
-    ['/admin/routes', 'Tuyến đường cố định', { icon: 'fa-road' }],
-    ['/admin/services', 'Dịch vụ & Biểu phí', { icon: 'fa-bell-concierge' }],
+    ['/admin/network/locations', 'Địa điểm', { icon: 'fa-location-dot' }],
+    ['/admin/network/areas', 'Vùng phục vụ', { icon: 'fa-diagram-project' }],
+    ['/admin/network/routes', 'Tuyến', { icon: 'fa-road' }],
+    ['/admin/network/schedules', 'Lịch chạy', { icon: 'fa-calendar-days' }],
+    ['/admin/pricing', 'Bảng giá', { icon: 'fa-calculator' }],
     ['/admin/rules', 'Quy định & Tham số', { icon: 'fa-scale-balanced' }],
     ['/admin/document-requirements', 'Giấy tờ bắt buộc', { icon: 'fa-file-circle-check' }],
     ['/admin/accounts', 'Tất cả tài khoản', { icon: 'fa-users-gear' }],

@@ -18,22 +18,7 @@ export async function accountsLoader() {
   return loadAll({ all: accountsApi.list() })
 }
 
-export async function adminRoutesLoader() {
-  const { routesApi } = await import('@shared/api/routes')
-  return loadAll({ routes: routesApi.listRoutes(), locations: routesApi.listAdminLocations() })
-}
-
-export async function adminServicesLoader() {
-  const { adminServicesApi } = await import('@shared/api/adminServices')
-  return loadAll({ services: adminServicesApi.listServices(), categories: adminServicesApi.listCategories() })
-}
-
 export async function systemConfigLoader() {
-  const { systemConfigApi } = await import('@shared/api/systemConfig')
-  return loadAll({ configs: systemConfigApi.listAdminConfigs() })
-}
-
-export async function adminPricingLoader() {
   const { systemConfigApi } = await import('@shared/api/systemConfig')
   return loadAll({ configs: systemConfigApi.listAdminConfigs() })
 }

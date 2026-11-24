@@ -8,6 +8,7 @@ import { specialist } from './specialist'
 import { coordinator } from './coordinator'
 import { fieldCrew } from './fieldCrew'
 import { admin } from './admin'
+import { staffNetwork } from './staffNetwork'
 
 export const vi = {
   ...common,
@@ -18,4 +19,5 @@ export const vi = {
   ...coordinator,
   ...fieldCrew,
   ...admin,
+  ...staffNetwork,
 } as const
