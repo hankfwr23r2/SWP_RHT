@@ -24,9 +24,6 @@ const EXCEPTIONS = {
     'src/apps/backoffice/features/coordinator/fleet/FleetPage.tsx',
     'src/apps/backoffice/features/manager/dashboard/OrderDetailModal.tsx',
     'src/apps/customer/features/auth/LoginPage.tsx',
-    'src/apps/customer/features/home/HomePage.tsx',
-    'src/apps/customer/features/portal/PortalPage.tsx',
-    'src/apps/customer/features/pricing/PriceLookup.tsx',
   ],
   R6: [
     'src/shared/services/termsConsent.test.ts',
