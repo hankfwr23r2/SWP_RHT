@@ -1012,6 +1012,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/cost-items/{id}/receipts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["receipts"];
+        put?: never;
+        post: operations["attachReceipt"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/countries": {
         parameters: {
             query?: never;
@@ -1950,6 +1966,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["confirmFit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/incidents/{id}/photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["photos"];
+        put?: never;
+        post: operations["attachPhoto"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3372,6 +3404,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListEvidenceResponseDto: {
+            data?: components["schemas"]["EvidenceResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListHandoverPaperResponseDto: {
             data?: components["schemas"]["HandoverPaperResponseDto"][];
             message?: string;
@@ -4251,6 +4288,21 @@ export interface components {
             /** Format: email */
             email: string;
             otp?: string;
+        };
+        EvidenceResponseDto: {
+            /** Format: date-time */
+            capturedAt?: string;
+            documentTypeCode?: string;
+            documentTypeName?: string;
+            fileName?: string;
+            fileUrl?: string;
+            /** Format: int64 */
+            id?: number;
+            latitude?: number;
+            longitude?: number;
+            /** Format: date-time */
+            uploadedAt?: string;
+            uploadedByName?: string;
         };
         ExtraChargeRequestDto: {
             costItemIds: number[];
@@ -7498,6 +7550,57 @@ export interface operations {
             };
         };
     };
+    receipts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListEvidenceResponseDto"];
+                };
+            };
+        };
+    };
+    attachReceipt: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListEvidenceResponseDto"];
+                };
+            };
+        };
+    };
     countries: {
         parameters: {
             query?: never;
@@ -9207,6 +9310,60 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseIncidentResponseDto"];
+                };
+            };
+        };
+    };
+    photos: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListEvidenceResponseDto"];
+                };
+            };
+        };
+    };
+    attachPhoto: {
+        parameters: {
+            query?: {
+                latitude?: number;
+                longitude?: number;
+            };
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    file: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListEvidenceResponseDto"];
                 };
             };
         };
