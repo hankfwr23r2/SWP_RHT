@@ -236,7 +236,8 @@ class DispatchFlowTest {
         mvc.perform(get("/dispatch/crew-candidates").param("role", "DRIVER").header(HttpHeaders.AUTHORIZATION, coordinator))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.data[?(@.staffId == " + driver.getUserId() + ")]").isNotEmpty());
         mvc.perform(get("/dispatch/vehicles").header(HttpHeaders.AUTHORIZATION, coordinator))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.data[?(@.id == " + vehicle.getId() + ")]").isNotEmpty());
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data[?(@.id == " + vehicle.getId() + ")]").isNotEmpty())
+                .andExpect(jsonPath("$.data[?(@.id == " + vehicle.getId() + ")].currentLocationName").isNotEmpty());
     }
 
     private ResultActions createLinehaul() throws Exception {

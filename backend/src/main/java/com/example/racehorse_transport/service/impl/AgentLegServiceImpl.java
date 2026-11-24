@@ -84,6 +84,8 @@ public class AgentLegServiceImpl implements AgentLegService {
                 .filter(a -> a.getAddressType() == (booking.getBookingType() == BookingType.EXPORT ? AddressRole.DELIVERY : AddressRole.PICKUP))
                 .findFirst().orElseThrow(() -> new DispatchRuleException("bookingHorseId", "Đơn " + booking.getCode() + " thiếu địa chỉ."));
 
+        DispatchPolicy.requireAgentOfCountry(agent.getDisplayName(), agent.getCountry().getCode(), address.getCountry().getCode());
+
         HorseLeg leg = new HorseLeg();
         leg.setBookingHorse(line);
         leg.setSequenceNumber(chain.stream().mapToInt(HorseLeg::getSequenceNumber).max().orElse(0) + 1);
@@ -117,6 +119,10 @@ public class AgentLegServiceImpl implements AgentLegService {
                     .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy điểm " + request.gateLocationId()));
             if (gate.getLocationType() != LocationType.BORDER_GATE) {
                 throw new DispatchRuleException("gateLocationId", gate.getName() + " không phải cửa khẩu.");
+            }
+            if (booking.getDeparture() != null) {
+                Location departureGate = booking.getDeparture().getRoute().getOrigin();
+                DispatchPolicy.requireGateOfDeparture(gate.getId(), departureGate.getId(), departureGate.getName());
             }
             leg.setLegType(HorseLegType.PICKUP);
             leg.setFromBookingAddress(address);

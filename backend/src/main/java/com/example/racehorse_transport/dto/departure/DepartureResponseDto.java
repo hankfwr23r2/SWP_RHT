@@ -28,6 +28,8 @@ public class DepartureResponseDto {
     private Integer bookedStallCount;
     private Integer availableStalls;
     private DepartureStatus status;
+    // Quản lý đã quyết định chạy: điều phối mới lập được lượt trục
+    private boolean runConfirmed;
 
     // Service đã nạp tuyến kèm điểm đầu, điểm cuối; số khoang còn trống do DepartureCapacityPolicy tính
     public static DepartureResponseDto from(Departure departure, int availableStalls) {
@@ -46,6 +48,7 @@ public class DepartureResponseDto {
                 .bookedStallCount(departure.getBookedStallCount())
                 .availableStalls(availableStalls)
                 .status(departure.getStatus())
+                .runConfirmed(departure.getRunConfirmedAt() != null)
                 .build();
     }
 }

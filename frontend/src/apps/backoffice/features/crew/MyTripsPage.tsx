@@ -44,8 +44,8 @@ export default function MyTripsPage() {
         {data.map(assignment => (
           <li key={assignment.id}>
             <Card
-              title={`${assignment.tripCode} · ${t(`dispatch.tripType.${assignment.tripType}`)}`}
-              actions={<Badge>{t(`dispatch.crewRole.${assignment.crewRole}`)}</Badge>}
+              title={`${assignment.tripCode} · ${t(`tripWords.type.${assignment.tripType}`)}`}
+              actions={<Badge>{t(`tripWords.role.${assignment.crewRole}`)}</Badge>}
             >
               <div className={s.body}>
                 <p className={s.line}>{t('myTrips.journey', { from: assignment.startLocationName, to: assignment.endLocationName })}</p>

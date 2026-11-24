@@ -60,7 +60,7 @@ export function GroupCard({ group, index, kind, vehicles, onCreated }: {
         </ol>
         <div className={s.form}>
           <Field label={t('dispatch.grouping.vehicle')}>
-            {c => <Select {...c} value={vehicleId} onChange={setVehicleId} placeholder={t('dispatch.detail.choose')}
+            {c => <Select {...c} value={vehicleId} onChange={setVehicleId} placeholder={t('tripWords.choose')}
               options={fits.map(vehicle => ({ value: String(vehicle.id), label: `${vehicle.licensePlate} · ${seats(vehicle)}` }))} />}
           </Field>
           <Button icon={<i className="fa-solid fa-map-location-dot" />} aria-expanded={preview} onClick={() => setPreview(open => !open)}>{t('dispatch.plan.preview')}</Button>

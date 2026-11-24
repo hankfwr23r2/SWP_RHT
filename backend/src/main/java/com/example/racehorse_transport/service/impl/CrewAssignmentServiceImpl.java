@@ -5,6 +5,7 @@ import com.example.racehorse_transport.dto.dispatch.CrewCandidateResponseDto;
 import com.example.racehorse_transport.dto.dispatch.MyCrewAssignmentResponseDto;
 import com.example.racehorse_transport.dto.dispatch.VehicleTripResponseDto;
 import com.example.racehorse_transport.entity.CrewAssignment;
+import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.Staff;
 import com.example.racehorse_transport.entity.VehicleTrip;
 import com.example.racehorse_transport.entity.enums.AppUserStatus;
@@ -178,12 +179,13 @@ public class CrewAssignmentServiceImpl implements CrewAssignmentService {
                 .stream().map(CrewAssignment::getVehicleTrip).filter(t -> !t.getId().equals(trip.getId())).toList();
         DispatchPolicy.requireNoOverlap("staffId", "Nhân viên", new Interval(trip.getPlannedStartAt(), trip.getPlannedEndAt()),
                 others.stream().map(t -> new Interval(t.getPlannedStartAt(), t.getPlannedEndAt())).toList());
-        Long expectedStart = others.stream().filter(t -> !t.getPlannedEndAt().isAfter(trip.getPlannedStartAt()))
+        Location expectedStart = others.stream().filter(t -> !t.getPlannedEndAt().isAfter(trip.getPlannedStartAt()))
                 .max(Comparator.comparing(VehicleTrip::getPlannedEndAt))
-                .map(t -> t.getEndLocation().getId())
-                .orElse(member.getHomeHubLocation() == null ? null : member.getHomeHubLocation().getId());
+                .map(VehicleTrip::getEndLocation)
+                .orElse(member.getHomeHubLocation());
         if (!midway) {
-            DispatchPolicy.requireStartsWherePreviousEnded("staffId", "Nhân viên", trip.getStartLocation().getId(), expectedStart);
+            DispatchPolicy.requireStartsWherePreviousEnded("staffId", "Nhân viên", trip.getStartLocation().getId(),
+                    expectedStart == null ? null : expectedStart.getId(), expectedStart == null ? "chưa gán hub gốc" : expectedStart.getName());
         }
     }
 

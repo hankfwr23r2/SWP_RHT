@@ -1,0 +1,16 @@
+# Chạy thử trên máy cá nhân: tua giờ, tệp lưu tại máy, thanh toán giả lập (docs/CHAY_THU.md)
+# docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d --build
+services:
+  backend:
+    environment:
+      - SPRING_PROFILES_ACTIVE=local-demo
+    volumes:
+      - local_demo:/app/local-demo
+  frontend:
+    build:
+      args:
+        VITE_TURNSTILE_SITE_KEY: 1x00000000000000000000AA
+        VITE_LOCAL_DEMO: "1"
+
+volumes:
+  local_demo:

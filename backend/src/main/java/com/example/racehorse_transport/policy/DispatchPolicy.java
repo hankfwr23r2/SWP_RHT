@@ -76,10 +76,10 @@ public final class DispatchPolicy {
     }
 
     // Quy tắc #20 (xe) và #10 (nhân viên): lượt mới bắt đầu ở nơi lượt trước kết thúc.
-    // expectedLocationId là nơi kết thúc lượt liền trước, hoặc hub gốc khi chưa có lượt nào.
-    public static void requireStartsWherePreviousEnded(String field, String subject, Long startLocationId, Long expectedLocationId) {
+    // expected là nơi kết thúc lượt liền trước, hoặc hub gốc khi chưa có lượt nào.
+    public static void requireStartsWherePreviousEnded(String field, String subject, Long startLocationId, Long expectedLocationId, String expectedName) {
         if (!Objects.equals(startLocationId, expectedLocationId)) {
-            throw new DispatchRuleException(field, subject + " không ở điểm xuất phát của lượt này: lượt trước kết thúc ở nơi khác.", true);
+            throw new DispatchRuleException(field, subject + " không ở điểm xuất phát của lượt này: lượt trước kết thúc ở nơi khác (" + expectedName + ").", true);
         }
     }
 
@@ -158,7 +158,21 @@ public final class DispatchPolicy {
     // Nơi được so bằng khóa "L<id>" (điểm mạng lưới) hoặc "A<id>" (địa chỉ của đơn).
     public static void requireContinuous(String previousEnd, String nextStart) {
         if (!Objects.equals(previousEnd, nextStart)) {
-            throw new DispatchRuleException("boardTripStopId", "Chặng mới phải bắt đầu ở nơi chặng trước của con ngựa kết thúc.", true);
+            throw new DispatchRuleException("boardTripStopId", "Chặng mới phải bắt đầu ở nơi chặng trước của con ngựa kết thúc. Hãy xếp lần lượt chặng đón, chặng trục rồi chặng giao.", true);
+        }
+    }
+
+    // Đoạn ở nước ngoài do đại lý của chính nước đó chạy (NGHIEP_VU mục 1: đại lý Campuchia, đại lý Lào)
+    public static void requireAgentOfCountry(String agentName, String agentCountryCode, String addressCountryCode) {
+        if (!Objects.equals(agentCountryCode, addressCountryCode)) {
+            throw new DispatchRuleException("agentPartyId", agentName + " không ở nước của địa chỉ này. Chọn đại lý của nước đó.");
+        }
+    }
+
+    // Đơn nhập đã giữ chỗ chuyến trục thì đại lý giao ngựa ở đúng cửa khẩu chuyến đó xuất phát
+    public static void requireGateOfDeparture(Long gateId, Long departureGateId, String departureGateName) {
+        if (departureGateId != null && !departureGateId.equals(gateId)) {
+            throw new DispatchRuleException("gateLocationId", "Chuyến trục của đơn xuất phát ở " + departureGateName + ". Chọn cửa khẩu đó.");
         }
     }
 

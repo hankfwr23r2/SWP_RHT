@@ -42,6 +42,9 @@
           "contactPhone" : {
             "type" : "string"
           },
+          "countryCode" : {
+            "type" : "string"
+          },
           "id" : {
             "format" : "int64",
             "type" : "integer"
@@ -741,6 +744,23 @@
           "data" : {
             "items" : {
               "$ref" : "#/components/schemas/DispatchBookingResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListDispatchVehicleResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DispatchVehicleResponseDto"
             },
             "type" : "array"
           },
@@ -2537,6 +2557,10 @@
       },
       "CustodyRowResponseDto" : {
         "properties" : {
+          "agentLegId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "bookingCode" : {
             "type" : "string"
           },
@@ -2956,6 +2980,9 @@
           "routeName" : {
             "type" : "string"
           },
+          "runConfirmed" : {
+            "type" : "boolean"
+          },
           "stallCapacity" : {
             "format" : "int32",
             "type" : "integer"
@@ -3109,17 +3136,44 @@
           "deliveryHubCode" : {
             "type" : "string"
           },
+          "deliveryHubName" : {
+            "type" : "string"
+          },
           "departures" : {
             "items" : {
               "$ref" : "#/components/schemas/DepartureResponse"
             },
             "type" : "array"
           },
+          "leadDays" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "pickupHubCode" : {
+            "type" : "string"
+          },
+          "pickupHubName" : {
             "type" : "string"
           },
           "routing" : {
             "enum" : [ "DIRECT", "LINEHAUL" ],
+            "type" : "string"
+          },
+          "servedProvinces" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "tooLateDepartureIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          },
+          "unavailable" : {
+            "enum" : [ "PICKUP_NOT_SERVED", "DELIVERY_NOT_SERVED", "NO_ROUTE" ],
             "type" : "string"
           }
         },
@@ -3176,6 +3230,51 @@
           "status" : {
             "enum" : [ "PENDING_INTAKE", "UNDER_REVIEW", "NEEDS_RESUBMISSION", "QUOTING", "AWAITING_DEPOSIT", "QUOTE_EXPIRED", "CONFIRMED", "SCHEDULE_CHANGE_REQUIRED", "IN_OPERATION", "DELIVERED", "COMPLETED", "CANCELLED", "REJECTED" ],
             "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "DispatchVehicleResponseDto" : {
+        "properties" : {
+          "currentLocationCode" : {
+            "type" : "string"
+          },
+          "currentLocationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "currentLocationName" : {
+            "type" : "string"
+          },
+          "freeFrom" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "homeHubLocationCode" : {
+            "type" : "string"
+          },
+          "homeHubLocationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "licensePlate" : {
+            "type" : "string"
+          },
+          "standardStallCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "status" : {
+            "enum" : [ "ACTIVE", "MAINTENANCE", "RETIRED" ],
+            "type" : "string"
+          },
+          "wideStallCount" : {
+            "format" : "int32",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -11266,7 +11365,7 @@
             "content" : {
               "*/*" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ApiResponseListVehicleResponseDto"
+                  "$ref" : "#/components/schemas/ApiResponseListDispatchVehicleResponseDto"
                 }
               }
             },

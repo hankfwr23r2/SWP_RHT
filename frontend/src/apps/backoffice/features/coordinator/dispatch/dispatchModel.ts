@@ -96,6 +96,10 @@ export function daySpan(trip: VehicleTrip, weekStart: string): { from: number; d
   return { from: first, days: Math.min(6, to) - first + 1 }
 }
 
+// Xe đang ở ngoài hub gốc sau lượt cuối: cần lập lượt về
+export const isAway = (vehicle: DispatchVehicle) =>
+  vehicle.currentLocationId != null && vehicle.currentLocationId !== vehicle.homeHubLocationId
+
 export interface BoardRow { vehicle: DispatchVehicle; trips: VehicleTrip[] }
 
 // Mỗi xe một hàng: xe đang dùng được, và xe khác nếu có lượt trong tuần
@@ -120,6 +124,16 @@ export function placesFor(type: TripType, hubId: number, bookings: DispatchBooki
 
 export const horsesNeeding = (type: TripType, bookings: DispatchBooking[]) =>
   bookings.flatMap(booking => (booking.horses ?? []).filter(horse => horse.missingLegs?.includes(type as LegType)).map(horse => horse.bookingHorseId ?? 0))
+
+// Tuần sớm nhất còn đơn chờ xếp xe, theo ngày đón khách chọn
+export function nextWaitingWeek(bookings: DispatchBooking[]): { weekStart: string; count: number } | undefined {
+  const waiting = bookings.filter(booking => booking.requestedPickupDate && missingLegs(booking).length)
+  const first = waiting.map(booking => booking.requestedPickupDate!).sort()[0]
+  if (!first) return undefined
+  const weekStart = mondayOf(first)
+  const weekEnd = addDays(weekStart, 6)
+  return { weekStart, count: waiting.filter(booking => booking.requestedPickupDate! <= weekEnd).length }
+}
 
 // Các hub, hub gốc của xe (trụ sở) đứng đầu để chọn sẵn
 export function hubsOf(locations: NetworkLocation[], vehicles: DispatchVehicle[]) {

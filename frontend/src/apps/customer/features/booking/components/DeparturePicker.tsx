@@ -27,10 +27,16 @@ interface Props {
 export function DeparturePicker({ suggestion, loaded, error, onRetry, fromDate, minDate, onFromDate, selectedId, invalid, onSelect }: Props) {
   const { t } = useTranslation()
   const departures = suggestion?.departures ?? []
+  const late = new Set(suggestion?.tooLateDepartureIds)
 
   const list = () => {
     if (error) return <ErrorState message={error.message} onRetry={onRetry} />
     if (!loaded) return <Skeleton lines={3} />
+    if (suggestion?.unavailable) return <EmptyState icon={<i className="fa-solid fa-map-location-dot" />}
+      title={t(`bookingForm.route.unavailable.${suggestion.unavailable}`)}
+      description={suggestion.unavailable === 'NO_ROUTE'
+        ? t('bookingForm.route.unavailable.noRouteHint', { hub: suggestion.pickupHubName ?? suggestion.deliveryHubName })
+        : t('bookingForm.route.unavailable.servedHint', { provinces: suggestion.servedProvinces?.join(', ') })} />
     if (!departures.length) return <EmptyState icon={<i className="fa-solid fa-truck" />}
       title={t('bookingForm.route.noDeparture')} description={t('bookingForm.route.noDepartureHint')} />
     return (
@@ -39,11 +45,12 @@ export function DeparturePicker({ suggestion, loaded, error, onRetry, fromDate, 
         <div className={s.options}>
           {departures.map(departure => (
             <label key={departure.id} className={s.option}>
-              <input type="radio" name="departure" checked={departure.id === selectedId} onChange={() => onSelect(departure)} />
+              <input type="radio" name="departure" checked={departure.id === selectedId} disabled={late.has(departure.id!)} onChange={() => onSelect(departure)} />
               <strong>{departure.plannedDepartureAt ? showDateTime(departure.plannedDepartureAt) : showDate(departure.departureDate ?? '')}</strong>
               <span>{departure.routeName}</span>
               <span>{t('bookingForm.route.seats', { count: departure.availableStalls ?? 0 })}</span>
               {departure.bookingCutoffAt && <span>{t('bookingForm.route.cutoff', { at: showDateTime(departure.bookingCutoffAt) })}</span>}
+              {late.has(departure.id!) && <span className={s.rule}>{t('bookingForm.route.tooLate', { days: suggestion?.leadDays })}</span>}
             </label>
           ))}
         </div>

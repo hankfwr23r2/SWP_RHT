@@ -10,9 +10,14 @@ public record BookingDocumentResponseDto(Long id, Long requirementId, String typ
         Instant reviewedAt, String reviewNote) {
 
     public static BookingDocumentResponseDto from(Document row) {
+        return from(row, row.getBookingHorse() == null ? null : row.getBookingHorse().getId());
+    }
+
+    // Giấy gắn với hồ sơ ngựa: service cho biết đó là con ngựa nào trong đơn
+    public static BookingDocumentResponseDto from(Document row, Long bookingHorseId) {
         return new BookingDocumentResponseDto(row.getId(), row.getDocumentRequirement().getId(),
                 row.getDocumentType().getCode(), row.getHorse() == null ? null : row.getHorse().getId(),
-                row.getBookingHorse() == null ? null : row.getBookingHorse().getId(),
+                bookingHorseId,
                 row.getFileName(), row.getFileUrl(), row.getStatus(), row.getExpiryDate(),
                 row.getReviewedAt(), row.getReviewNote());
     }

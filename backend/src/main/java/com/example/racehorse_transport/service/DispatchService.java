@@ -3,7 +3,7 @@ package com.example.racehorse_transport.service;
 import com.example.racehorse_transport.dto.dispatch.VehicleTripCancelRequestDto;
 import com.example.racehorse_transport.dto.dispatch.VehicleTripCreateRequestDto;
 import com.example.racehorse_transport.dto.dispatch.VehicleTripResponseDto;
-import com.example.racehorse_transport.dto.vehicle.VehicleResponseDto;
+import com.example.racehorse_transport.dto.dispatch.DispatchVehicleResponseDto;
 import java.time.Instant;
 import java.util.List;
 
@@ -26,5 +26,5 @@ public interface DispatchService {
     VehicleTripResponseDto swapVehicle(Long tripId, Long vehicleId);
 
     // Xe để chọn khi lập lượt (kèm trạng thái, xe không ACTIVE bị khóa ở giao diện)
-    List<VehicleResponseDto> vehicles();
+    List<DispatchVehicleResponseDto> vehicles();
 }

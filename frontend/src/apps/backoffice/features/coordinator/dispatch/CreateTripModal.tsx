@@ -1,7 +1,7 @@
 // Lập lượt xe: lượt trục theo chuyến; lượt đón, giao, chạy thẳng chọn đơn rồi hệ thống tính giờ; chuyển xe nhập giờ tay
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { dispatchApi, type DispatchBooking, type PlannedTrip, type TripType, type VehicleTrip } from '@shared/api/dispatch'
+import { dispatchApi, type DispatchBooking, type DispatchVehicle, type PlannedTrip, type TripType, type VehicleTrip } from '@shared/api/dispatch'
 import { useLoad } from '@shared/hooks/useLoad'
 import { formatDate, formatDateTime } from '@shared/lib/format'
 import { Button } from '@shared/ui/Button'
@@ -21,17 +21,19 @@ interface Props {
   bookings: DispatchBooking[]
   weekFrom: string
   weekTo: string
+  // Lập lượt đưa xe này về: xe về bằng chuyến trục chiều ngược (docs/NGHIEP_VU_THEO_59_BANG.md mục 4)
+  returning?: DispatchVehicle
   onClose: () => void
   onCreated: (trip: VehicleTrip) => void
 }
 
 const TRIP_TYPES: TripType[] = ['PICKUP', 'LINEHAUL', 'DELIVERY', 'DIRECT', 'TRANSFER']
 
-export function CreateTripModal({ bookings, weekFrom, weekTo, onClose, onCreated }: Props) {
+export function CreateTripModal({ bookings, weekFrom, weekTo, returning, onClose, onCreated }: Props) {
   const { t } = useTranslation()
   const toast = useToast()
-  const [tripType, setTripType] = useState<TripType>('PICKUP')
-  const [vehicleId, setVehicleId] = useState('')
+  const [tripType, setTripType] = useState<TripType>(returning ? 'LINEHAUL' : 'PICKUP')
+  const [vehicleId, setVehicleId] = useState(returning ? String(returning.id) : '')
   const [departureId, setDepartureId] = useState('')
   const [hubChoice, setHubChoice] = useState('')
   const [chosen, setChosen] = useState<number[]>([])
@@ -45,13 +47,19 @@ export function CreateTripModal({ bookings, weekFrom, weekTo, onClose, onCreated
     return { vehicles, departures, locations }
   }, [weekFrom, weekTo], { toastOnError: false })
 
+  const vehicle = data?.vehicles.find(item => String(item.id) === vehicleId)
+  // Chuyến không xuất phát từ nơi xe đang ở thì xe không chạy được (quy tắc #20)
+  const fromHere = (data?.departures ?? []).filter(departure => !vehicle?.currentLocationCode || departure.originCode === vehicle.currentLocationCode)
+  // Đưa xe về: ưu tiên chuyến về thẳng hub gốc; không có thì hiện mọi chuyến đi từ đây (xe ở cửa khẩu Lào về qua Đà Nẵng)
+  const homeward = returning ? fromHere.filter(departure => departure.destinationCode === returning.homeHubLocationCode) : []
+  const departures = homeward.length ? homeward : fromHere
   const hubs = hubsOf(data?.locations ?? [], data?.vehicles ?? [])
   const hubId = Number(hubChoice || hubs[0]?.id || 0)
   const byHand = manual || tripType === 'TRANSFER'
   const eligible = bookings.filter(booking => horsesNeeding(tripType, [booking]).length > 0)
   const picked = eligible.filter(booking => chosen.includes(booking.id ?? 0))
   const request = picked.length && hubId ? { tripType, places: placesFor(tripType, hubId, picked), bookingHorseIds: horsesNeeding(tripType, picked), startAt } : undefined
-  const reset = (type: TripType) => { setTripType(type); setChosen([]); setStartAt(undefined); setPlan(undefined); setManual(false) }
+  const reset = (type: TripType) => { setTripType(type); setChosen([]); setStartAt(undefined); setPlan(undefined); setManual(false); setStops(type === 'TRANSFER' ? [emptyStop(), emptyStop()] : [emptyStop(), emptyStop(), emptyStop()]) }
   const toggle = (id: number) => { setPlan(undefined); setStartAt(undefined); setChosen(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]) }
 
   const ready = vehicleId !== '' && (tripType === 'LINEHAUL' ? departureId !== '' : byHand ? stopsReady(stops) : !!request && !!plan && !plan.blocked)
@@ -78,29 +86,29 @@ export function CreateTripModal({ bookings, weekFrom, weekTo, onClose, onCreated
         <div className={s.form}>
           <Field label={t('dispatch.create.type')} required>
             {c => <Select {...c} value={tripType} onChange={value => reset(value as TripType)}
-              options={TRIP_TYPES.map(type => ({ value: type, label: t(`dispatch.tripType.${type}`) }))} />}
+              options={TRIP_TYPES.map(type => ({ value: type, label: t(`tripWords.type.${type}`) }))} />}
           </Field>
           <Field label={t('dispatch.create.vehicle')} required>
-            {c => <Select {...c} value={vehicleId} onChange={setVehicleId} placeholder={t('dispatch.detail.choose')}
+            {c => <Select {...c} value={vehicleId} onChange={setVehicleId} placeholder={t('tripWords.choose')}
               options={data.vehicles.map(vehicle => ({
                 value: `${vehicle.id}`,
-                label: vehicle.status === 'ACTIVE' ? `${vehicle.licensePlate}` : t('dispatch.create.vehicleLocked', { plate: vehicle.licensePlate, status: vehicle.status }),
+                label: vehicle.status === 'ACTIVE' ? t('dispatch.create.vehicleAt', { plate: vehicle.licensePlate, name: vehicle.currentLocationName ?? '—' }) : t('dispatch.create.vehicleLocked', { plate: vehicle.licensePlate, status: vehicle.status }),
                 disabled: vehicle.status !== 'ACTIVE',
               }))} />}
           </Field>
           {tripType === 'LINEHAUL' && (
-            <Field label={t('dispatch.create.departure')} hint={t('dispatch.create.departureHint')} required>
-              {c => <Select {...c} value={departureId} onChange={setDepartureId} placeholder={t('dispatch.detail.choose')}
-                options={data.departures.map(departure => ({
+            <Field label={t('dispatch.create.departure')} hint={t(departures.length ? 'dispatch.create.departureHint' : 'dispatch.create.noDepartureHere')} required>
+              {c => <Select {...c} value={departureId} onChange={setDepartureId} placeholder={t('tripWords.choose')}
+                options={departures.map(departure => ({
                   value: `${departure.id}`,
-                  label: `${departure.routeCode} · ${departure.plannedDepartureAt ? formatDateTime(new Date(departure.plannedDepartureAt)) : ''}`,
-                  disabled: departure.status === 'CANCELLED' || departure.status === 'COMPLETED',
+                  label: `${departure.routeCode} · ${departure.plannedDepartureAt ? formatDateTime(new Date(departure.plannedDepartureAt)) : ''}${departure.runConfirmed ? '' : ` · ${t('dispatch.create.notConfirmed')}`}`,
+                  disabled: !departure.runConfirmed || departure.status === 'CANCELLED' || departure.status === 'COMPLETED',
                 }))} />}
             </Field>
           )}
           {tripType !== 'LINEHAUL' && !byHand && (
             <Field label={t('dispatch.create.hub')} required>
-              {c => <Select {...c} value={hubId ? String(hubId) : ''} onChange={value => { setPlan(undefined); setHubChoice(value) }} placeholder={t('dispatch.detail.choose')}
+              {c => <Select {...c} value={hubId ? String(hubId) : ''} onChange={value => { setPlan(undefined); setHubChoice(value) }} placeholder={t('tripWords.choose')}
                 options={hubs.map(hub => ({ value: String(hub.id), label: hub.name ?? '' }))} />}
             </Field>
           )}

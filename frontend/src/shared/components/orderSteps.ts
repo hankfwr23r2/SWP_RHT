@@ -46,7 +46,7 @@ export const myItems = (checklist?: DocumentChecklist) => (checklist?.items ?? [
 
 // Ẩn nút nộp khi chắc chắn không nhận; backend vẫn kiểm lại
 export const canUpload = (status: BookingStatus | undefined, item: ChecklistItem, document?: BookingDocument) => {
-  if (!status || document?.status === 'APPROVED') return false
+  if (!status || document?.status === 'APPROVED' || document?.status === 'UPLOADED') return false
   return REVIEWING.includes(status) || (status === 'CONFIRMED' && !!item.requiredForQuoting)
 }
 

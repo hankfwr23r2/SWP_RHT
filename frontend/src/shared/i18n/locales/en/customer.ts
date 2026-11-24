@@ -542,11 +542,11 @@ export const customer = {
     methodHints: {
       pickup: {
         COMPANY: 'The driver comes to the chosen address.',
-        SELF: 'No pickup charge. Bring the horse to hub {{hub}} at the agreed time.',
+        SELF: 'No pickup charge. Bring the horse to {{hub}} at the agreed time.',
       },
       delivery: {
         COMPANY: 'Delivered to the chosen address.',
-        SELF: 'No delivery charge. Collect at hub {{hub}} at the agreed time.',
+        SELF: 'No delivery charge. Collect at {{hub}} at the agreed time.',
       },
     },
     methodRules: {
@@ -611,6 +611,14 @@ export const customer = {
       departures: 'Departures',
       fromDate: 'Show departures from',
       chooseDeparture: 'Choose a departure',
+      unavailable: {
+        PICKUP_NOT_SERVED: 'The pickup place is outside our service area',
+        DELIVERY_NOT_SERVED: 'The delivery place is outside our service area',
+        NO_ROUTE: 'No route for this journey yet',
+        servedHint: 'We currently serve: {{provinces}}. Please choose an address in one of these provinces.',
+        noRouteHint: '{{hub}} has no departure to this country. Choose an address served by another hub, or call us for advice.',
+      },
+      tooLate: 'Too late for the papers: {{days}} days needed before bookings close',
       noDeparture: 'No matching departure',
       noDepartureHint: 'Try another date, or call us about an extra departure.',
       seats: 'Places left: {{count}}',

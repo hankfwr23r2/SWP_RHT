@@ -106,7 +106,8 @@ FROM (VALUES
           ('Phòng khám thú y ngựa (mẫu)', '0900000400', 'TP.HCM', 'VN'),
           ('Đội cứu hộ xe tải (mẫu)', '0900000500', 'TP.HCM', 'VN'),
           ('Công ty bảo hiểm (mẫu)', '0900000600', 'TP.HCM', 'VN'),
-          ('Chuồng gửi ngựa Đà Nẵng (mẫu)', '0900000700', 'TP. Đà Nẵng', 'VN')
+          ('Chuồng gửi ngựa Đà Nẵng (mẫu)', '0900000700', 'TP. Đà Nẵng', 'VN'),
+          ('Chuồng gửi ngựa Tuy Hòa (mẫu)', '0900000701', 'Phường Tuy Hòa, Đắk Lắk', 'VN')
      ) AS v(display_name, phone, address, country_code)
 WHERE NOT EXISTS (SELECT 1 FROM party p WHERE p.display_name = v.display_name);
 
@@ -118,7 +119,8 @@ FROM (VALUES
           ('Phòng khám thú y ngựa (mẫu)', 'VET'),
           ('Đội cứu hộ xe tải (mẫu)', 'RESCUE'),
           ('Công ty bảo hiểm (mẫu)', 'INSURER'),
-          ('Chuồng gửi ngựa Đà Nẵng (mẫu)', 'STABLE')
+          ('Chuồng gửi ngựa Đà Nẵng (mẫu)', 'STABLE'),
+          ('Chuồng gửi ngựa Tuy Hòa (mẫu)', 'STABLE')
      ) AS v(display_name, role_type)
 JOIN party p ON p.display_name = v.display_name
 ON CONFLICT DO NOTHING;
@@ -168,8 +170,8 @@ JOIN location d ON d.code = v.destination_code
 ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, distance_km = EXCLUDED.distance_km,
     estimated_duration_minutes = EXCLUDED.estimated_duration_minutes;
 
--- Điểm dừng của tuyến mẫu được nạp lại theo bảng dưới. Lượt xe đã lập giữ điểm dừng riêng (trip_stop) nên không đổi
-DELETE FROM route_stop WHERE route_id IN (SELECT id FROM route WHERE code IN ('HCM-PNH', 'MOCBAI-HCM', 'HCM-DN', 'DN-HCM', 'DN-LAOBAO', 'LAOBAO-DN'));
+-- Điểm dừng của tuyến mẫu theo bảng dưới. Lượt xe đã lập tham chiếu điểm dừng của tuyến (fk_trip_stop_route_stop)
+-- nên cập nhật tại chỗ, không xóa rồi nạp lại: xóa thì backend không khởi động được trên máy đã có lượt trục.
 INSERT INTO route_stop (route_id, sequence_number, location_id, stop_type, arrival_offset_minutes, dwell_minutes)
 SELECT r.id, v.sequence_number, l.id, v.stop_type, v.arrival_offset_minutes, v.dwell_minutes
 FROM (VALUES
@@ -205,7 +207,16 @@ FROM (VALUES
           ('LAOBAO-DN', 4, 'HUB-DN', 'HUB', 411, 0)
      ) AS v(route_code, sequence_number, location_code, stop_type, arrival_offset_minutes, dwell_minutes)
 JOIN route r ON r.code = v.route_code
-JOIN location l ON l.code = v.location_code;
+JOIN location l ON l.code = v.location_code
+ON CONFLICT (route_id, sequence_number) DO UPDATE SET location_id = EXCLUDED.location_id, stop_type = EXCLUDED.stop_type,
+    arrival_offset_minutes = EXCLUDED.arrival_offset_minutes, dwell_minutes = EXCLUDED.dwell_minutes;
+
+-- Tuyến mẫu rút ngắn thì bỏ điểm thừa chưa lượt xe nào dùng
+DELETE FROM route_stop rs USING route r
+WHERE rs.route_id = r.id
+  AND rs.sequence_number > CASE r.code WHEN 'HCM-PNH' THEN 3 WHEN 'MOCBAI-HCM' THEN 3 WHEN 'HCM-DN' THEN 8
+                                       WHEN 'DN-HCM' THEN 8 WHEN 'DN-LAOBAO' THEN 4 WHEN 'LAOBAO-DN' THEN 4 ELSE 32767 END
+  AND NOT EXISTS (SELECT 1 FROM trip_stop ts WHERE ts.route_id = rs.route_id AND ts.route_stop_sequence_number = rs.sequence_number);
 
 -- Mỗi tuyến một chuyến mỗi tuần: thứ Hai HCM và Mộc Bài, thứ Ba đi Đà Nẵng, thứ Sáu đi Lao Bảo, thứ Bảy về Đà Nẵng,
 -- Chủ nhật về TP.HCM

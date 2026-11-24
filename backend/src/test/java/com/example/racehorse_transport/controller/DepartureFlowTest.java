@@ -94,6 +94,35 @@ class DepartureFlowTest {
     }
 
     @Test
+    void saysWhichSideHasNoHubAndWhereTheCompanyServes() throws Exception {
+        mvc.perform(suggestions("INTERPROVINCE", "VN-1", "VN-48"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.unavailable").value("PICKUP_NOT_SERVED"))
+                .andExpect(jsonPath("$.data.servedProvinces.length()", greaterThan(0)))
+                .andExpect(jsonPath("$.data.departures.length()").value(0));
+        mvc.perform(suggestions("IMPORT", "KH-12", "VN-1"))
+                .andExpect(jsonPath("$.data.unavailable").value("DELIVERY_NOT_SERVED"));
+        // Hub Đà Nẵng chỉ có tuyến đi Lào
+        mvc.perform(suggestions("EXPORT", "VN-48", "KH-12"))
+                .andExpect(jsonPath("$.data.unavailable").value("NO_ROUTE"))
+                .andExpect(jsonPath("$.data.pickupHubName").isNotEmpty());
+    }
+
+    @Test
+    void marksDeparturesTooCloseToFinishThePapers() throws Exception {
+        long routeId = routes.findByCode("HCM-DN").orElseThrow().getId();
+        String body = mvc.perform(post("/departures").header(HttpHeaders.AUTHORIZATION, "Bearer " + managerToken)
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"routeId":%d,"departureDate":"%s","departureTime":"07:00","bookingCutoffHours":24,"stallCapacity":6}"""
+                                .formatted(routeId, LocalDate.now().plusDays(4))))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        int id = com.jayway.jsonpath.JsonPath.read(body, "$.data.id");
+        mvc.perform(suggestions("INTERPROVINCE", "VN-75", "VN-46"))
+                .andExpect(jsonPath("$.data.leadDays", greaterThan(0)))
+                .andExpect(jsonPath("$.data.tooLateDepartureIds", org.hamcrest.Matchers.hasItem(id)));
+    }
+
+    @Test
     void bookingTypeMustMatchPlaces() throws Exception {
         mvc.perform(suggestions("LOCAL", "VN-75", "VN-79")).andExpect(status().isBadRequest());
     }

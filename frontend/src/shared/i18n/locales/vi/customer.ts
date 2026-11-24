@@ -498,7 +498,7 @@ export const customer = {
       people: 'Các bên',
     },
     horseStatus: {
-      ACTIVE: 'Đang đi',
+      ACTIVE: 'Trong đơn',
       EXCLUDED: 'Không đi chuyến này',
       CANCELLED: 'Đã hủy',
       DELIVERED: 'Đã giao',
@@ -542,11 +542,11 @@ export const customer = {
     methodHints: {
       pickup: {
         COMPANY: 'Tài xế đến đúng địa chỉ bạn chọn.',
-        SELF: 'Không tính phí chặng đón. Đưa ngựa tới hub {{hub}} theo giờ hẹn.',
+        SELF: 'Không tính phí chặng đón. Đưa ngựa tới {{hub}} theo giờ hẹn.',
       },
       delivery: {
         COMPANY: 'Giao tới địa chỉ bạn chọn.',
-        SELF: 'Không tính phí chặng giao. Nhận ngựa ở hub {{hub}} theo giờ hẹn.',
+        SELF: 'Không tính phí chặng giao. Nhận ngựa ở {{hub}} theo giờ hẹn.',
       },
     },
     methodRules: {
@@ -611,6 +611,14 @@ export const customer = {
       departures: 'Chuyến trong tuần',
       fromDate: 'Xem chuyến từ ngày',
       chooseDeparture: 'Chọn chuyến',
+      unavailable: {
+        PICKUP_NOT_SERVED: 'Nơi đón nằm ngoài vùng phục vụ',
+        DELIVERY_NOT_SERVED: 'Nơi giao nằm ngoài vùng phục vụ',
+        NO_ROUTE: 'Chưa có tuyến cho hành trình này',
+        servedHint: 'Công ty đang nhận ngựa ở: {{provinces}}. Hãy chọn địa chỉ khác trong các tỉnh này.',
+        noRouteHint: '{{hub}} chưa có chuyến tới nước này. Hãy chọn địa chỉ ở vùng của hub khác, hoặc gọi tổng đài để được tư vấn.',
+      },
+      tooLate: 'Không kịp làm giấy: cần {{days}} ngày trước hạn nhận đặt',
       noDeparture: 'Chưa có chuyến phù hợp',
       noDepartureHint: 'Hãy chọn ngày khác, hoặc gọi tổng đài để hỏi về chuyến đột xuất.',
       seats: 'Còn {{count}} chỗ',

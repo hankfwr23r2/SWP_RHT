@@ -20,10 +20,10 @@ public record DispatchBookingResponseDto(
         AddressDto pickupAddress, AddressDto deliveryAddress, List<HorseDto> horses,
         TransferMethod pickupMethod, TransferMethod deliveryMethod) {
 
-    public record AddressDto(Long id, String addressLine, String contactName, String contactPhone) {
+    public record AddressDto(Long id, String addressLine, String countryCode, String contactName, String contactPhone) {
         public static AddressDto from(BookingAddress address) {
             return address == null ? null
-                    : new AddressDto(address.getId(), address.getAddressLine(), address.getContactName(), address.getContactPhone());
+                    : new AddressDto(address.getId(), address.getAddressLine(), address.getCountry().getCode(), address.getContactName(), address.getContactPhone());
         }
     }
 

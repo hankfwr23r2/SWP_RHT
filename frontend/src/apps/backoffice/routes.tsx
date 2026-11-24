@@ -3,7 +3,7 @@ import { lazy } from 'react'
 import i18n, { i18nReady } from '@shared/i18n'
 import type { PageLoader } from '@shared/routing/pageData'
 import type { AppRoute } from '@shared/routing/types'
-import { managerTexts, reviewTexts } from '@shared/i18n/staffTexts'
+import { dispatchTexts, managerTexts, reviewTexts } from '@shared/i18n/staffTexts'
 import { ManagerLoginPage, StaffLoginPage } from './features/auth/StaffLoginPage'
 import type * as Loaders from './shared/loaders'
 import type * as NetworkLoaders from './features/admin/network/loaders'
@@ -103,13 +103,13 @@ export const routes: AppRoute[] = [
     title: 'Đơn thiếu giấy',
   },
 
-  { path: '/coordinator/dispatch', lazyPage: () => import('./features/coordinator/dispatch/DispatchPage'), roles: CO, title: 'Điều độ', layout: 'staff', catalog: false },
+  { path: '/coordinator/dispatch', lazyPage: () => Promise.all([import('./features/coordinator/dispatch/DispatchPage'), dispatchTexts()]).then(([page]) => page), roles: CO, title: 'Điều độ', layout: 'staff', catalog: false },
   { path: '/coordinator/fleet-plan', lazyPage: () => import('./features/coordinator/fleet-plan/FleetPlanListPage'), loader: load('bookingListLoader'), roles: CO, title: 'Xe và lộ trình', layout: 'staff' },
   { path: '/coordinator/fleet-plan/:id', lazyPage: () => import('./features/coordinator/fleet-plan/FleetPlanPage'), loader: load('fleetPlanLoader'), roles: CO, title: 'Chốt xe và lộ trình một đơn', layout: 'staff' },
   { path: '/coordinator/monitoring', lazyPage: () => import('./features/coordinator/monitoring/MonitoringPage'), loader: load('monitoringLoader'), roles: CO, title: 'Giám sát vận chuyển', layout: 'staff' },
-  { path: '/coordinator/plans', lazyPage: () => import('./features/coordinator/plans/PlansPage'), roles: CO, title: 'Kế hoạch đơn', layout: 'staff', catalog: false },
-  { path: '/coordinator/tracking', lazyPage: () => import('./features/coordinator/tracking/TrackingPage'), roles: CO, title: 'Theo dõi', layout: 'staff', catalog: false },
-  { path: '/coordinator/hub', lazyPage: () => import('./features/coordinator/hub/HubPage'), roles: CO, title: 'Hub', layout: 'staff', catalog: false },
+  { path: '/coordinator/plans', lazyPage: () => Promise.all([import('./features/coordinator/plans/PlansPage'), dispatchTexts()]).then(([page]) => page), roles: CO, title: 'Kế hoạch đơn', layout: 'staff', catalog: false },
+  { path: '/coordinator/tracking', lazyPage: () => Promise.all([import('./features/coordinator/tracking/TrackingPage'), dispatchTexts()]).then(([page]) => page), roles: CO, title: 'Theo dõi', layout: 'staff', catalog: false },
+  { path: '/coordinator/hub', lazyPage: () => Promise.all([import('./features/coordinator/hub/HubPage'), dispatchTexts()]).then(([page]) => page), roles: CO, title: 'Hub', layout: 'staff', catalog: false },
   { path: '/coordinator/incidents', lazyPage: () => import('./features/incidents/IncidentsBoardPage'), roles: CO, title: 'Xử lý sự cố', layout: 'staff', catalog: false },
   { path: '/coordinator/fleet', page: FleetPage, roles: CO, title: 'Đội xe', layout: 'staff' },
 

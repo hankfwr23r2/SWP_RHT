@@ -35,6 +35,9 @@ export function AgentLegModal({ booking, horse, onClose, onChanged }: Props) {
       gates: locations.filter(l => l.locationType === 'BORDER_GATE'),
     }
   }, [], { toastOnError: false })
+  // Đại lý của nước ở đầu nước ngoài; thiếu thông tin nước thì hiện đủ
+  const foreign = (isImport ? booking.pickupAddress : booking.deliveryAddress)?.countryCode
+  const agents = (data?.agents ?? []).filter(agent => !foreign || agent.countryCode === foreign)
   const agentLegs = activeLegs(horse).filter(leg => leg.agentName)
 
   const run = async (action: () => Promise<unknown>, done: string) => {
@@ -99,12 +102,12 @@ export function AgentLegModal({ booking, horse, onClose, onChanged }: Props) {
         {!loaded ? <Skeleton variant="block" lines={2} /> : error || !data ? <ErrorState title={t('dispatch.loadError')} message={error?.message} onRetry={reload} /> : (
           <div className={s.form}>
             <Field label={t('dispatch.agent.agent')} required>
-              {c => <Select {...c} value={agentId} onChange={setAgentId} placeholder={t('dispatch.detail.choose')}
-                options={data.agents.map(p => ({ value: String(p.id), label: p.displayName ?? '' }))} />}
+              {c => <Select {...c} value={agentId} onChange={setAgentId} placeholder={t('tripWords.choose')}
+                options={agents.map(p => ({ value: String(p.id), label: p.displayName ?? '' }))} />}
             </Field>
             {isImport && (
               <Field label={t('dispatch.agent.gate')} required>
-                {c => <Select {...c} value={gateId} onChange={setGateId} placeholder={t('dispatch.detail.choose')}
+                {c => <Select {...c} value={gateId} onChange={setGateId} placeholder={t('tripWords.choose')}
                   options={data.gates.map(l => ({ value: String(l.id), label: l.name ?? '' }))} />}
               </Field>
             )}

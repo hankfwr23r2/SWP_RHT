@@ -3241,6 +3241,7 @@ export interface components {
             addressLine?: string;
             contactName?: string;
             contactPhone?: string;
+            countryCode?: string;
             /** Format: int64 */
             id?: number;
         };
@@ -3476,6 +3477,11 @@ export interface components {
         };
         ApiResponseListDispatchBookingResponseDto: {
             data?: components["schemas"]["DispatchBookingResponseDto"][];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseListDispatchVehicleResponseDto: {
+            data?: components["schemas"]["DispatchVehicleResponseDto"][];
             message?: string;
             status?: string;
         };
@@ -4101,6 +4107,8 @@ export interface components {
             trip?: components["schemas"]["VehicleTripResponseDto"];
         };
         CustodyRowResponseDto: {
+            /** Format: int64 */
+            agentLegId?: number;
             bookingCode?: string;
             /** Format: int64 */
             bookingHorseId?: number;
@@ -4253,6 +4261,7 @@ export interface components {
             /** Format: int64 */
             routeId?: number;
             routeName?: string;
+            runConfirmed?: boolean;
             /** Format: int32 */
             stallCapacity?: number;
             /** @enum {string} */
@@ -4310,10 +4319,18 @@ export interface components {
         };
         DepartureSuggestionResponse: {
             deliveryHubCode?: string;
+            deliveryHubName?: string;
             departures?: components["schemas"]["DepartureResponse"][];
+            /** Format: int64 */
+            leadDays?: number;
             pickupHubCode?: string;
+            pickupHubName?: string;
             /** @enum {string} */
             routing?: "DIRECT" | "LINEHAUL";
+            servedProvinces?: string[];
+            tooLateDepartureIds?: number[];
+            /** @enum {string} */
+            unavailable?: "PICKUP_NOT_SERVED" | "DELIVERY_NOT_SERVED" | "NO_ROUTE";
         };
         DispatchBookingResponseDto: {
             /** @enum {string} */
@@ -4337,6 +4354,26 @@ export interface components {
             routeCode?: string;
             /** @enum {string} */
             status?: "PENDING_INTAKE" | "UNDER_REVIEW" | "NEEDS_RESUBMISSION" | "QUOTING" | "AWAITING_DEPOSIT" | "QUOTE_EXPIRED" | "CONFIRMED" | "SCHEDULE_CHANGE_REQUIRED" | "IN_OPERATION" | "DELIVERED" | "COMPLETED" | "CANCELLED" | "REJECTED";
+        };
+        DispatchVehicleResponseDto: {
+            currentLocationCode?: string;
+            /** Format: int64 */
+            currentLocationId?: number;
+            currentLocationName?: string;
+            /** Format: date-time */
+            freeFrom?: string;
+            homeHubLocationCode?: string;
+            /** Format: int64 */
+            homeHubLocationId?: number;
+            /** Format: int64 */
+            id?: number;
+            licensePlate?: string;
+            /** Format: int32 */
+            standardStallCount?: number;
+            /** @enum {string} */
+            status?: "ACTIVE" | "MAINTENANCE" | "RETIRED";
+            /** Format: int32 */
+            wideStallCount?: number;
         };
         DocumentApprovalRequestDto: {
             note?: string;
@@ -8620,7 +8657,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "*/*": components["schemas"]["ApiResponseListVehicleResponseDto"];
+                    "*/*": components["schemas"]["ApiResponseListDispatchVehicleResponseDto"];
                 };
             };
         };

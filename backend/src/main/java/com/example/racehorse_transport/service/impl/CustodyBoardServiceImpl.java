@@ -15,6 +15,7 @@ import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.HandoverStatus;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
+import com.example.racehorse_transport.entity.enums.HorseLegType;
 import com.example.racehorse_transport.policy.CareCheckPolicy;
 import com.example.racehorse_transport.policy.TrackingPolicy;
 import com.example.racehorse_transport.policy.TrackingPolicy.CustodyHolder;
@@ -107,7 +108,8 @@ public class CustodyBoardServiceImpl implements CustodyBoardService {
                 moving == null || moving.getVehicleTrip() == null ? null : moving.getVehicleTrip().getCode(),
                 stay != null ? stay.getLocation().getName() : stop != null ? nameOf(stop.getLocation(), stop.getBookingAddress()) : null,
                 stay != null ? point(stay.getLocation(), null) : stop != null ? point(stop.getLocation(), stop.getBookingAddress()) : null,
-                lastCheck, log == null ? null : log.getHealthStatus(), next, holder == CustodyHolder.COMPANY && CareCheckPolicy.overdue(next, now));
+                lastCheck, log == null ? null : log.getHealthStatus(), next, holder == CustodyHolder.COMPANY && CareCheckPolicy.overdue(next, now),
+                moving != null && moving.getAgentParty() != null && moving.getLegType() == HorseLegType.DELIVERY ? moving.getId() : null);
     }
 
     // Điểm dừng gần nhất xe đã tới

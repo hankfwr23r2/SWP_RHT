@@ -70,5 +70,7 @@ class BookingReviewDtoTest {
         assertThat(result.typeCode()).isEqualTo("PASSPORT");
         assertThat(result.status()).isEqualTo(DocumentStatus.UPLOADED);
         assertThat(result.expiryDate()).isEqualTo(expiry);
+        assertThat(result.bookingHorseId()).isNull();
+        assertThat(BookingDocumentResponseDto.from(row, 9L).bookingHorseId()).isEqualTo(9L);
     }
 }

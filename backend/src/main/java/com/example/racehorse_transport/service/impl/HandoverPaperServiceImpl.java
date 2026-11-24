@@ -46,7 +46,8 @@ public class HandoverPaperServiceImpl implements HandoverPaperService {
     }
 
     @Override
-    @Transactional(readOnly = true)
+    // Không đặt readOnly: pendingForCrew khóa lần giao nhận, PostgreSQL từ chối khóa trong giao dịch chỉ đọc
+    @Transactional
     public List<HandoverPaperResponseDto> papers(Long handoverId, String username) {
         Handover handover = handovers.pendingForCrew(handoverId, username);
         return describe(handover);

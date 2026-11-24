@@ -65,11 +65,11 @@ export function StopHealthPanel({ run, stop }: { run: CrewTrip; stop: Stop }) {
                 options={STATUSES.map(v => ({ value: v, label: t(`myTrips.run.health.statusValue.${v}`) }))} />}
             </Field>
             <Field label={t('myTrips.run.health.water')}>
-              {c => <Select {...c} value={draft.water} onChange={value => update({ water: value as IntakeLevel })} placeholder={t('dispatch.detail.choose')}
+              {c => <Select {...c} value={draft.water} onChange={value => update({ water: value as IntakeLevel })} placeholder={t('tripWords.choose')}
                 options={INTAKES.map(v => ({ value: v, label: t(`myTrips.run.health.intakeValue.${v}`) }))} />}
             </Field>
             <Field label={t('myTrips.run.health.feed')}>
-              {c => <Select {...c} value={draft.feed} onChange={value => update({ feed: value as IntakeLevel })} placeholder={t('dispatch.detail.choose')}
+              {c => <Select {...c} value={draft.feed} onChange={value => update({ feed: value as IntakeLevel })} placeholder={t('tripWords.choose')}
                 options={INTAKES.map(v => ({ value: v, label: t(`myTrips.run.health.intakeValue.${v}`) }))} />}
             </Field>
             <Field label={t('myTrips.run.health.temperature')}>

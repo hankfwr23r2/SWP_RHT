@@ -46,6 +46,8 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
   const role: CrewRole = data?.trip.status === 'IN_PROGRESS' ? 'ESCORT' : crewRole
   const { data: candidates } = useLoad(() => dispatchApi.crewCandidates(role), [role])
 
+  const stallName = (seats?: number) => t(seats === 2 ? 'dispatch.stall.wide' : 'dispatch.stall.standard')
+
   // Chạy một thao tác ghi: báo kết quả, tải lại lượt xe và bảng điều độ; lỗi thì hiện đúng lý do backend trả về
   const run = async (action: () => Promise<unknown>, done: string) => {
     setBusy(true)
@@ -79,14 +81,14 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
   return (
     <Modal
       wide
-      title={`${trip.code} · ${t(`dispatch.tripType.${trip.tripType}`)}`}
+      title={`${trip.code} · ${t(`tripWords.type.${trip.tripType}`)}`}
       subtitle={`${trip.licensePlate} · ${trip.startLocationName} → ${trip.endLocationName}`}
       onClose={onClose}
       footer={editable && <Button variant="danger" onClick={() => { setReason(''); setPending({ kind: 'cancel' }) }}>{t('dispatch.detail.cancelTrip')}</Button>}
     >
       <div className={s.section}>
         <div className={s.sectionHead}>
-          <StatusBadge tone={TRIP_STATUS_TONE[trip.status ?? 'PLANNED']} label={t(`dispatch.tripStatus.${trip.status}`)} />
+          <StatusBadge tone={TRIP_STATUS_TONE[trip.status ?? 'PLANNED']} label={t(`tripWords.status.${trip.status}`)} />
           {!editable && <span className={s.muted}>{t('dispatch.detail.locked')}</span>}
         </div>
       </div>
@@ -113,7 +115,7 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
               <li key={member.id} className={s.item}>
                 <span className={s.itemMain}>
                   <strong>{member.fullName}</strong>
-                  <span className={s.muted}>{t(`dispatch.crewRole.${member.crewRole}`)}</span>
+                  <span className={s.muted}>{t(`tripWords.role.${member.crewRole}`)}</span>
                 </span>
                 <span className={s.legs}>
                   <StatusBadge tone={member.status === 'ACKNOWLEDGED' ? 'success' : 'warning'} label={t(`dispatch.crewStatus.${member.status}`)} />
@@ -128,10 +130,10 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
           <div className={s.form}>
             <Field label={t('dispatch.detail.role')}>
               {c => <Select {...c} value={role} onChange={value => { setCrewRole(value as CrewRole); setStaffId('') }}
-                options={(running ? ['ESCORT'] as const : ['DRIVER', 'ESCORT'] as const).map(role => ({ value: role, label: t(`dispatch.crewRole.${role}`) }))} />}
+                options={(running ? ['ESCORT'] as const : ['DRIVER', 'ESCORT'] as const).map(role => ({ value: role, label: t(`tripWords.role.${role}`) }))} />}
             </Field>
             <Field label={t('dispatch.detail.staff')}>
-              {c => <Select {...c} value={staffId} onChange={setStaffId} placeholder={t('dispatch.detail.choose')}
+              {c => <Select {...c} value={staffId} onChange={setStaffId} placeholder={t('tripWords.choose')}
                 options={(candidates ?? []).map(person => ({ value: `${person.staffId}`, label: `${person.fullName} (${person.staffCode})` }))} />}
             </Field>
             <Button variant="primary" disabled={!staffId} loading={busy}
@@ -153,7 +155,7 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
               <li key={item.leg?.id} className={s.item}>
                 <span className={s.itemMain}>
                   <strong>{item.horseName} · {item.bookingCode}</strong>
-                  <span className={s.muted}>{`${item.leg?.fromName} → ${item.leg?.toName} · ${item.stallTypeCode}`}
+                  <span className={s.muted}>{`${item.leg?.fromName} → ${item.leg?.toName} · ${stallName(item.seats)}`}
                     {item.leg?.stallPosition ? ` · ${t('dispatch.stall.number', { n: item.leg.stallPosition })}` : ''}</span>
                 </span>
                 {editable && <Button size="sm" onClick={() => setPending({ kind: 'removeHorse', item })}>{t('dispatch.detail.release')}</Button>}
@@ -164,8 +166,8 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
         {editable && (options.length ? (
           <div className={s.form}>
             <Field label={t('dispatch.detail.horse')}>
-              {c => <Select {...c} value={horseKey} onChange={setHorseKey} placeholder={t('dispatch.detail.choose')}
-                options={options.map(option => ({ value: `${option.horse.bookingHorseId}`, label: `${option.horse.horseName} · ${option.booking.code} · ${option.horse.stallTypeCode}` }))} />}
+              {c => <Select {...c} value={horseKey} onChange={setHorseKey} placeholder={t('tripWords.choose')}
+                options={options.map(option => ({ value: `${option.horse.bookingHorseId}`, label: `${option.horse.horseName} · ${option.booking.code} · ${stallName(option.horse.seats)}` }))} />}
             </Field>
             <Button variant="primary" disabled={!chosen} loading={busy}
               onClick={() => chosen && run(() => dispatchApi.assignHorse(tripId, chosen.horse.bookingHorseId ?? 0, chosen.board, chosen.alight),

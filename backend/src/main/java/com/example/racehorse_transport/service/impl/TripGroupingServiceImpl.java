@@ -11,6 +11,7 @@ import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.enums.AddressRole;
 import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
+import com.example.racehorse_transport.entity.HorseLeg;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.entity.enums.HorseLegType;
 import com.example.racehorse_transport.entity.enums.LocationType;
@@ -45,6 +46,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -93,8 +95,12 @@ public class TripGroupingServiceImpl implements TripGroupingService {
             BookingAddress address = addresses.findByBooking_Id(booking.getId()).stream().filter(a -> a.getAddressType() == role).findFirst().orElse(null);
             List<BookingHorse> horses = bookingHorses.findForDetail(booking.getId()).stream()
                     .filter(h -> h.getStatus() == BookingHorseStatus.ACTIVE)
-                    .filter(h -> legs.findByBookingHorse_IdOrderBySequenceNumber(h.getId()).stream()
-                            .noneMatch(l -> l.getLegType() == legType && !INACTIVE.contains(l.getStatus())))
+                    .filter(h -> {
+                        Set<HorseLegType> planned = legs.findByBookingHorse_IdOrderBySequenceNumber(h.getId()).stream()
+                                .filter(l -> !INACTIVE.contains(l.getStatus())).map(HorseLeg::getLegType).collect(Collectors.toSet());
+                        // Chưa xếp chặng trục thì con ngựa chưa tới hub giao, chưa gom lượt giao được (quy tắc #7)
+                        return !planned.contains(legType) && (pickup || planned.contains(HorseLegType.LINEHAUL));
+                    })
                     .toList();
             if (address == null || horses.isEmpty()) continue;
             entries.put(booking.getId(), new Entry(booking, address, horses, booking.getDeparture().getPlannedDepartureAt(), arrivalOf(booking)));

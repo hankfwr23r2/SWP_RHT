@@ -12,7 +12,7 @@ import com.example.racehorse_transport.dto.dispatch.TripHorseResponseDto;
 import com.example.racehorse_transport.dto.dispatch.VehicleTripCancelRequestDto;
 import com.example.racehorse_transport.dto.dispatch.VehicleTripCreateRequestDto;
 import com.example.racehorse_transport.dto.dispatch.VehicleTripResponseDto;
-import com.example.racehorse_transport.dto.vehicle.VehicleResponseDto;
+import com.example.racehorse_transport.dto.dispatch.DispatchVehicleResponseDto;
 import com.example.racehorse_transport.entity.enums.CrewRole;
 import com.example.racehorse_transport.entity.enums.VehicleTripType;
 import com.example.racehorse_transport.service.CrewAssignmentService;
@@ -83,7 +83,7 @@ public class DispatchController {
     }
 
     @GetMapping("/dispatch/vehicles")
-    public ApiResponseDto<List<VehicleResponseDto>> vehicles() {
+    public ApiResponseDto<List<DispatchVehicleResponseDto>> vehicles() {
         return ApiResponseDto.success(dispatch.vehicles(), "Danh sách xe");
     }
 

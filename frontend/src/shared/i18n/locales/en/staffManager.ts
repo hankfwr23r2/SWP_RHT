@@ -200,6 +200,7 @@ export const staffManager = {
       seatCount: 'Paid {{committed}}, held {{booked}} of {{capacity}}',
       belowMinimum: 'Below minimum',
       decisionAt: 'Decide by',
+      notYet: 'Can be confirmed from this time',
       runConfirmed: 'Run confirmed',
       status: 'Status',
       actions: 'Actions',
