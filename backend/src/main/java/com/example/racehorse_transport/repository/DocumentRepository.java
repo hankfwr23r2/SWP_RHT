@@ -19,6 +19,9 @@ public interface DocumentRepository extends JpaRepository<Document, Long> {
             """)
     List<Document> findForBookingReview(Long bookingId);
 
+    // Biên bản giao nhận (HANDOVER_RECORD) đã tải cho lần giao nhận chưa
+    boolean existsByHandover_IdAndDocumentType_Code(Long handoverId, String documentTypeCode);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT d FROM Document d WHERE d.id = :id")
     Optional<Document> findForReviewUpdate(Long id);

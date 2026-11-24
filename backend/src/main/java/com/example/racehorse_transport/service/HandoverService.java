@@ -4,6 +4,8 @@ import com.example.racehorse_transport.dto.operation.CrewTripResponseDto;
 import com.example.racehorse_transport.dto.operation.HandoverCreateRequestDto;
 import com.example.racehorse_transport.dto.operation.HandoverRefusalRequestDto;
 import com.example.racehorse_transport.dto.operation.HandoverScanRequestDto;
+import com.example.racehorse_transport.entity.Handover;
+import java.util.Set;
 
 // Giao nhận ngựa tại điểm dừng (B2). Chủ sở hữu handover, handover_horse.
 public interface HandoverService {
@@ -21,4 +23,9 @@ public interface HandoverService {
 
     // Không nhận một con ở lần nhận ngựa từ khách (PICKUP): con đó bị loại khỏi đơn, các chặng chưa chạy bị hủy; hết con để nhận thì lần giao nhận FAILED
     CrewTripResponseDto refuse(Long handoverId, HandoverRefusalRequestDto request, String username);
+
+    // Lần giao nhận đang mở mà người này ở trong tổ lái; đơn của các con trong lần giao nhận (dùng cho biên bản và giấy gốc)
+    Handover pendingForCrew(Long handoverId, String username);
+
+    Set<Long> bookingIdsOf(Handover handover);
 }

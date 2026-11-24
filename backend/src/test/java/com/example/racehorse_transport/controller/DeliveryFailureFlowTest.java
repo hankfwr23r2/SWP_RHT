@@ -219,6 +219,7 @@ class DeliveryFailureFlowTest {
             long leg = jdbc.queryForObject("SELECT id FROM horse_leg WHERE booking_horse_id = ? AND vehicle_trip_id = ?", Long.class, line, id);
             mvc.perform(post("/handovers/{id}/horses", handover).header(HttpHeaders.AUTHORIZATION, driver).contentType(MediaType.APPLICATION_JSON)
                     .content("{\"horseLegId\":%d,\"microchip\":\"%s\"}".formatted(leg, chip))).andExpect(status().isOk());
+            signedRecord(handover);
             act("/handovers/" + handover + "/complete").andExpect(status().isOk());
         }
 
@@ -235,5 +236,11 @@ class DeliveryFailureFlowTest {
 
     private String token(Staff staff, String role) {
         return "Bearer " + jwtUtils.generateToken(staff.getUser().getUsername(), List.of(role));
+    }
+
+    // Biên bản đã ký (giả lập ảnh đã tải lên): bắt buộc trước khi hoàn tất nhận hoặc giao ngựa
+    private void signedRecord(long handoverId) {
+        jdbc.update("INSERT INTO document (document_type_id, file_url, file_name, uploaded_by, status, handover_id) "
+                + "SELECT id, 'test://record/' || md5(random()::text), 'record.jpg', (SELECT min(id) FROM app_user), 'UPLOADED', ? FROM document_type WHERE code = 'HANDOVER_RECORD'", handoverId);
     }
 }

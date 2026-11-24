@@ -24,6 +24,8 @@ test('hộ tống xuất phát, nhận ngựa có quét chip rồi rời điểm
   await page.addInitScript(() => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: 'escort', name: 'Hộ tống Một', username: 'escort@example.com' })))
   const run = newRun()
   const stop = (id: number) => run.trip.stops.find(s => s.id === id)!
+  const papers = [{ documentId: 900, documentTypeName: 'Hộ chiếu ngựa', ownerLabel: 'Sao Mai', bookingCode: 'BK-AAAA0001', direction: null as string | null }]
+  const sent: Record<string, unknown> = {}
   await page.route('**/api/v1/**', async route => {
     const request = route.request()
     const path = new URL(request.url()).pathname.replace('/api/v1', '')
@@ -44,6 +46,9 @@ test('hộ tống xuất phát, nhận ngựa có quét chip rồi rời điểm
       horse.microchipMatched = microchip === CHIP
       return ok(route, run)
     }
+    if (path === '/handovers/50/papers' && request.method() === 'GET') return ok(route, papers)
+    if (path === '/handovers/50/papers') { papers[0].direction = 'RECEIVED'; sent.paper = request.postDataJSON(); return ok(route, papers) }
+    if (path === '/handovers/50/record') { sent.record = true; run.handovers[0].recordAttached = true; return ok(route, run) }
     if (path === '/handovers/50/complete') {
       run.handovers[0].status = 'DONE'
       run.horses[0].leg.status = 'IN_PROGRESS'
@@ -77,6 +82,15 @@ test('hộ tống xuất phát, nhận ngựa có quét chip rồi rời điểm
   await expect(pickup).toContainText('Đúng chip')
   // Chip đúng thì hiện số khoang để dẫn ngựa vào
   await expect(pickup).toContainText('Khoang số 2')
+  // Giấy gốc: nhận hộ chiếu ngựa. Chưa có biên bản thì chưa hoàn tất được
+  await pickup.getByRole('list', { name: 'Giấy tờ gốc' }).getByRole('button', { name: 'Đã nhận bản gốc' }).click()
+  await expect(pickup.getByRole('list', { name: 'Giấy tờ gốc' })).toContainText('Đã nhận bản gốc')
+  expect(sent.paper).toEqual({ documentId: 900 })
+  await expect(pickup.getByRole('button', { name: 'Hoàn tất giao nhận' })).toBeDisabled()
+  await pickup.getByLabel('Ảnh biên bản đã ký').setInputFiles({ name: 'bien-ban.jpg', mimeType: 'image/jpeg', buffer: Buffer.from([1, 2, 3]) })
+  await pickup.getByRole('button', { name: 'Tải biên bản' }).click()
+  await expect(pickup).toContainText('Đã có biên bản')
+  expect(sent.record).toBe(true)
   await pickup.getByRole('button', { name: 'Hoàn tất giao nhận' }).click()
 
   await pickup.getByRole('button', { name: 'Rời đi' }).click()

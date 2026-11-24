@@ -55,7 +55,7 @@ class OperationDtoTest {
         scan.setMicrochipMatched(true);
         scan.setConditionNote("Khỏe");
 
-        var response = HandoverResponseDto.from(handover, List.of(scannedLeg, waitingLeg), Map.of(1L, scan));
+        var response = HandoverResponseDto.from(handover, List.of(scannedLeg, waitingLeg), Map.of(1L, scan), false);
 
         assertThat(response.tripStopId()).isEqualTo(5L);
         assertThat(response.handledByName()).isEqualTo("Hộ tống Một");

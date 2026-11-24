@@ -18,9 +18,10 @@ import { Skeleton } from '@shared/ui/Skeleton'
 import { Textarea } from '@shared/ui/Textarea'
 import { StatusBadge, type StatusTone } from '@shared/ui/StatusBadge'
 import { useToast } from '@shared/ui/toast'
+import { HandoverPapersPanel } from './HandoverPapersPanel'
 import { StopHealthPanel } from './StopHealthPanel'
 import { TripIncidentPanel } from './TripIncidentPanel'
-import { canArrive, canComplete, canDepart, canReturnUnpaid, canStart, handoverTypesAt, isRestStop, pendingAt, stopState, type StopState } from './tripRunModel'
+import { canArrive, canComplete, canDepart, canReturnUnpaid, canStart, needsRecord, handoverTypesAt, isRestStop, pendingAt, stopState, type StopState } from './tripRunModel'
 import s from './MyTrips.module.css'
 
 const STATE_TONE: Record<StopState, StatusTone> = { waiting: 'neutral', here: 'info', left: 'success' }
@@ -94,7 +95,9 @@ export default function TripRunPage() {
           )
         })}
       </ul>
-      <Button variant="primary" size="lg" fullWidth loading={busy}
+      {needsRecord(handover) && <HandoverPapersPanel handover={handover} onTrip={next => updateData(() => next)} />}
+      {needsRecord(handover) && !handover.recordAttached && <p className={s.muted}>{t('myTrips.run.papers.needRecord')}</p>}
+      <Button variant="primary" size="lg" fullWidth loading={busy} disabled={needsRecord(handover) && !handover.recordAttached}
         onClick={() => run(() => tripExecutionApi.completeHandover(handover.id ?? 0), t('myTrips.run.done.handed'))}>
         {t('myTrips.run.completeHandover')}
       </Button>
