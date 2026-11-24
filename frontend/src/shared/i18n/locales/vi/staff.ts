@@ -1,6 +1,27 @@
 // Khung chung của app nội bộ: menu, thanh trên, hồ sơ nhân viên, phần dùng chung giữa các vai trò
 export const staff = {
   staffAction: { next: 'Bước tiếp theo' },
+  managerOverview: {
+    "title": "Tổng quan",
+    "description": "Vận hành tuần này và việc đang chờ quản lý.",
+    "cardsLabel": "Số liệu tổng quan",
+    "card": { "revenue": "Doanh thu công ty 30 ngày", "trips": "Lượt xe hoàn thành tuần này", "onTime": "Tới điểm dừng đúng giờ", "incidents": "Sự cố đang mở" },
+    "details": "Xem chi tiết",
+    "incidentsTitle": "Sự cố đang mở · {{count}} chờ duyệt phương án",
+    "incidentsCaption": "Sự cố đang mở",
+    "allIncidents": "Tất cả sự cố",
+    "noIncidents": "Không có sự cố đang mở",
+    "noIncidentsDescription": "Sự cố tổ xe báo sẽ hiện ở đây tới khi đóng.",
+    "colIncident": "Sự cố",
+    "colTrip": "Lượt xe, ngựa, đơn",
+    "colStatus": "Trạng thái",
+    "colReported": "Báo lúc",
+    "tripsTitle": "Lượt xe tuần này",
+    "tripsCaption": "Lượt xe tuần này",
+    "allTrips": "Báo cáo chuyến đi",
+    "noTrips": "Tuần này chưa có lượt xe",
+    "noTripsDescription": "Lượt xe điều phối lập trong tuần sẽ hiện ở đây."
+  },
   incidents: {
     "title": "Sự cố",
     "description": "Sự cố đang xử lý: lập phương án, duyệt, theo dõi chi phí. Sự cố không đổi trạng thái đơn.",
