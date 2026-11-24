@@ -2,6 +2,18 @@
 export const coordinator = {
   dispatch: {
     "stays": {
+      "colAppointment": "Giờ hẹn",
+      "appointmentsCaption": "Lịch hẹn khách tự chở ngựa tới",
+      "receive": "Nhận ngựa",
+      "receiveTitle": "Nhận ngựa {{horse}} · {{code}}",
+      "receiveHint": "Khách tự chở ngựa tới hub. Hệ thống kiểm bảo hiểm, giấy bắt buộc và chip trước khi nhận, rồi gửi khách yêu cầu trả số dư.",
+      "receiveDone": "Đã nhận ngựa tại hub",
+      "deliver": "Trả ngựa",
+      "deliverTitle": "Trả ngựa {{horse}} · {{code}}",
+      "deliverHint": "Người nhận tới hub nhận ngựa. Quét chip để xác nhận đúng con ngựa.",
+      "deliverDone": "Đã trả ngựa cho người nhận",
+      "chip": "Chip đọc được",
+      "condition": "Tình trạng lúc giao nhận",
       "tab": "Ngựa ở hub",
       "hub": "Hub",
       "caption": "Ngựa đang lưu trú",
@@ -27,6 +39,15 @@ export const coordinator = {
     "tabTrips": "Lượt xe",
     "newTrip": "Lập lượt xe",
     "loadError": "Không tải được dữ liệu điều độ",
+    "hub": {
+      "col": "Tại hub",
+      "open": "Hẹn nhận tại hub",
+      "title": "Hẹn nhận tại hub · {{horse}} · {{code}}",
+      "hint": "Khách tự chở ngựa tới hub đầu tuyến trục. Giờ hẹn phải trước giờ xuất phát của chuyến.",
+      "at": "Giờ hẹn",
+      "appoint": "Hẹn giờ",
+      "done": "Đã hẹn nhận ngựa tại hub"
+    },
     "agent": {
       "col": "Đại lý",
       "open": "Chặng đại lý",

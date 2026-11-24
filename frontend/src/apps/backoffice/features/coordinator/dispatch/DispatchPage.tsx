@@ -15,6 +15,7 @@ import { Skeleton } from '@shared/ui/Skeleton'
 import { Tabs } from '@shared/ui/Tabs'
 import { AgentLegModal } from './AgentLegModal'
 import { BookingsTable } from './BookingsTable'
+import { HubAppointmentModal } from './HubAppointmentModal'
 import { CreateTripModal } from './CreateTripModal'
 import { HubStaysPanel } from './HubStaysPanel'
 import { TripDetailModal } from './TripDetailModal'
@@ -39,6 +40,7 @@ export default function DispatchPage() {
   const [openTripId, setOpenTripId] = useState<number>()
   const [journeyOf, setJourneyOf] = useState<DispatchBooking>()
   const [agentOf, setAgentOf] = useState<{ bookingId: number; bookingHorseId: number }>()
+  const [hubOf, setHubOf] = useState<{ booking: DispatchBooking; horse: DispatchHorse }>()
   const range = weekRange(weekStart)
   const { data, loaded, error, reload } = useLoad(async () => {
     const [bookings, trips] = await Promise.all([dispatchApi.bookings(range.fromDate, range.toDate), dispatchApi.trips(range.from, range.to)])
@@ -52,7 +54,8 @@ export default function DispatchPage() {
     if (tab === 'bookings') {
       return data.bookings.length
         ? <BookingsTable bookings={data.bookings} onJourney={setJourneyOf}
-            onAgent={(booking, horse) => setAgentOf({ bookingId: booking.id ?? 0, bookingHorseId: horse.bookingHorseId ?? 0 })} />
+            onAgent={(booking, horse) => setAgentOf({ bookingId: booking.id ?? 0, bookingHorseId: horse.bookingHorseId ?? 0 })}
+            onHub={(booking, horse) => setHubOf({ booking, horse })} />
         : <EmptyState icon={<i className="fa-solid fa-inbox" />} title={t('dispatch.bookings.emptyTitle')} description={t('dispatch.bookings.emptyDescription')} />
     }
     return data.trips.length
@@ -102,6 +105,7 @@ export default function DispatchPage() {
       {agentOf && data && agentTarget(data.bookings, agentOf) && (
         <AgentLegModal {...agentTarget(data.bookings, agentOf)!} onClose={() => setAgentOf(undefined)} onChanged={() => void reload()} />
       )}
+      {hubOf && <HubAppointmentModal {...hubOf} onClose={() => setHubOf(undefined)} onDone={() => setHubOf(undefined)} />}
       {journeyOf && (
         <Modal title={t('dispatch.bookings.journeyTitle', { code: journeyOf.code })} onClose={() => setJourneyOf(undefined)}>
           <BookingJourney bookingId={journeyOf.id!} />
