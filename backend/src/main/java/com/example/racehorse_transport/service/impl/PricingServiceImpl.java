@@ -2,12 +2,21 @@ package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.pricing.PricingPreviewRequestDto;
 import com.example.racehorse_transport.dto.pricing.PricingPreviewResponseDto;
+import com.example.racehorse_transport.dto.pricing.TransferOptionsRequestDto;
+import com.example.racehorse_transport.dto.pricing.TransferOptionsResponseDto;
+import com.example.racehorse_transport.dto.pricing.TransferOptionsResponseDto.TransferEndDto;
+import com.example.racehorse_transport.entity.enums.ServiceLayer;
+import com.example.racehorse_transport.exception.NoTruckRouteException;
+import com.example.racehorse_transport.exception.RoutingUnavailableException;
 import com.example.racehorse_transport.policy.PricingPolicy;
 import com.example.racehorse_transport.policy.PricingPolicy.PricingInput;
 import com.example.racehorse_transport.policy.PricingPolicy.PricingResult;
 import com.example.racehorse_transport.policy.PricingPolicy.RoadLeg;
+import com.example.racehorse_transport.policy.PricingPolicy.TransferStatus;
 import com.example.racehorse_transport.service.PricingDataService;
+import com.example.racehorse_transport.service.PricingDataService.TransferData;
 import com.example.racehorse_transport.service.PricingRouteService;
+import com.example.racehorse_transport.service.PricingRouteService.RoadSegment;
 import com.example.racehorse_transport.service.PricingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -36,6 +45,31 @@ public class PricingServiceImpl implements PricingService {
                 loaded.routeId(), loaded.linehaulKm(), roadLegs, loaded.stallsByType(), loaded.horseCount(),
                 loaded.addOns(), loaded.earlyPickupDays());
         return PricingPreviewResponseDto.from(input, data.calculate(input));
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.NEVER)
+    public TransferOptionsResponseDto transferOptions(TransferOptionsRequestDto request, String username) {
+        var transfers = data.loadTransfers(request, username);
+        return new TransferOptionsResponseDto(end(ServiceLayer.PICKUP, transfers), end(ServiceLayer.DELIVERY, transfers));
+    }
+
+    private TransferEndDto end(ServiceLayer layer, TransferData transfers) {
+        return transfers.segments().stream().filter(segment -> segment.layer() == layer).findFirst()
+                .map(segment -> status(segment, transfers))
+                .map(status -> TransferEndDto.from(status, PricingPolicy.transferReason(layer, status)))
+                .orElse(null);
+    }
+
+    private TransferStatus status(RoadSegment segment, TransferData transfers) {
+        try {
+            var estimate = routing.route(segment, transfers.pickupTime(), transfers.weightTons(), transfers.topSpeedKmh());
+            return PricingPolicy.transferStatus(segment.layer(), estimate.driveSeconds(), segment.maxDriveHoursPerDay());
+        } catch (NoTruckRouteException e) {
+            return TransferStatus.NO_ROUTE;
+        } catch (RoutingUnavailableException e) {
+            return TransferStatus.UNKNOWN;
+        }
     }
 
     @Override

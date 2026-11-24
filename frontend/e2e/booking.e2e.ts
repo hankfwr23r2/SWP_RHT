@@ -12,7 +12,7 @@ const departure = {
   bookingCutoffAt: '2099-01-16T22:00:00Z', availableStalls: 1,
 }
 
-async function open(page: Page, options: { feasible?: boolean; rejectFirst?: boolean } = {}) {
+async function open(page: Page, options: { feasible?: boolean; rejectFirst?: boolean; transfer?: object; noRules?: boolean } = {}) {
   const state = { created: [] as Record<string, unknown>[], priced: [] as Record<string, unknown>[], busy: 'BK-KHAC' as string | undefined }
   await page.addInitScript(() => {
     sessionStorage.setItem('SWP_SESSION_customer', JSON.stringify({ role: 'customer', name: 'Khách thử', username: 'customer.test' }))
@@ -41,6 +41,16 @@ async function open(page: Page, options: { feasible?: boolean; rejectFirst?: boo
       feasible: options.feasible ?? true, leadDays: 5,
       requirements: [{ id: 1, documentTypeName: 'Sổ tiêm phòng', submitterType: 'CUSTOMER', mandatory: true }],
     })
+    if (path === '/public/transport-rules') {
+      if (options.noRules) return route.fulfill({ status: 503, json: { status: 'error', message: 'Chưa tải được' } })
+      return reply({
+        pickupWindowStartHour: 6, pickupWindowEndHour: 18, deliveryWindowStartHour: 7, deliveryWindowEndHour: 19, hubCheckinHours: 3,
+        handoverFreeWaitMinutes: 120, balanceWaitMinutes: 30, departureDecisionHours: 48, maxTransferDriveMinutes: 300,
+      })
+    }
+    if (path === '/pricing/transfer-options') return reply(options.transfer ?? {
+      pickup: { companyAllowed: true, status: 'AVAILABLE' }, delivery: { companyAllowed: true, status: 'UNKNOWN' },
+    })
     if (path === '/pricing/preview') {
       state.priced.push(request.postDataJSON())
       return reply({ total: 12_500_000, depositRate: 0.3, lines: [{ priceItemId: 1, serviceCode: 'LINEHAUL', amount: 12_500_000 }] })
@@ -67,8 +77,8 @@ async function chooseRoute(page: Page) {
   await page.getByText('TP.HCM – Đà Nẵng').click()
 }
 
-async function toReview(page: Page) {
-  await chooseRoute(page)
+async function toReview(page: Page, fromStart = true) {
+  if (fromStart) await chooseRoute(page)
   await expect(page.getByText('Sổ tiêm phòng')).toBeVisible()
   await page.getByRole('button', { name: /Tiếp tục/ }).click()
   await page.getByRole('checkbox', { name: /Gió Nam/ }).check()
@@ -93,7 +103,14 @@ const send = async (page: Page) => {
 
 test('đặt đơn liên tỉnh từ đầu tới cuối, chỉ gửi lựa chọn, không gửi số tiền', async ({ page }) => {
   const state = await open(page)
-  await toReview(page)
+  await chooseRoute(page)
+  await expect(page.getByText('Xe đến đón từ 6 giờ, ngựa về tới hub chậm nhất 18 giờ cùng ngày.')).toBeVisible()
+  await expect(page.getByText('Có mặt ở hub chậm nhất 3 giờ trước giờ chạy.')).toBeVisible()
+  await expect(page.getByText('Xe giao từ 7 giờ đến 19 giờ, chờ người nhận miễn phí 120 phút.')).toBeVisible()
+  await toReview(page, false)
+  await expect(page.getByText('Bạn cần biết')).toBeVisible()
+  await expect(page.getByText('Trả số dư trong 30 phút')).toBeVisible()
+  await expect(page.getByText('48 giờ trước giờ chạy')).toBeVisible()
   await expect(page.getByText('12,500,000 ₫').first()).toBeVisible()
   await send(page)
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Đã gửi đơn BK-TEST')
@@ -104,6 +121,34 @@ test('đặt đơn liên tỉnh từ đầu tới cuối, chỉ gửi lựa ch�
   })
   expect(JSON.stringify(state.created[0])).not.toMatch(/amount|total|unitPrice/)
   expect(state.priced.at(-1)).toMatchObject({ pickupAddressId: 1, deliveryAddressId: 2, departureId: 7 })
+})
+
+test('xe công ty không tới được nơi đón thì khóa lựa chọn, nói lý do và chuyển sang tự chở', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 })
+  const state = await open(page, {
+    transfer: { pickup: { companyAllowed: false, status: 'TOO_FAR', reason: 'x' }, delivery: { companyAllowed: true, status: 'AVAILABLE' } },
+  })
+  await chooseRoute(page)
+  await expect(page.getByRole('radio', { name: /Xe công ty đến đón/ })).toBeDisabled()
+  await expect(page.getByRole('radio', { name: /Tôi tự chở tới hub/ })).toBeChecked()
+  await expect(page.getByText('Nơi đón quá xa hub')).toBeVisible()
+  await expect(page.getByText('tối đa 5 giờ một chiều')).toBeVisible()
+  await expect(page.getByRole('radio', { name: /Xe công ty giao tận nơi/ })).toBeChecked()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0)
+  await toReview(page, false)
+  await send(page)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Đã gửi đơn BK-TEST')
+  expect(state.created[0]).toMatchObject({ pickupMethod: 'SELF', deliveryMethod: 'COMPANY' })
+})
+
+test('chưa tải được con số quy định thì ẩn dòng số, vẫn đặt được đơn', async ({ page }) => {
+  await open(page, { noRules: true })
+  await chooseRoute(page)
+  await expect(page.getByRole('radio', { name: /Xe công ty đến đón/ })).toBeChecked()
+  await expect(page.getByText(/chậm nhất/)).toHaveCount(0)
+  await expect(page.getByText('{{')).toHaveCount(0)
+  await toReview(page, false)
+  await expect(page.getByText('Bạn cần biết')).toHaveCount(0)
 })
 
 test('không kịp làm giấy thì không cho sang bước chọn ngựa', async ({ page }) => {

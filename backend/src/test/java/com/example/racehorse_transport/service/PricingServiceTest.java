@@ -3,6 +3,10 @@ package com.example.racehorse_transport.service;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
+import com.example.racehorse_transport.dto.pricing.TransferOptionsRequestDto;
+import com.example.racehorse_transport.dto.pricing.TransferOptionsResponseDto.TransferEndDto;
+import com.example.racehorse_transport.exception.NoTruckRouteException;
+import com.example.racehorse_transport.policy.PricingPolicy.TransferStatus;
 import com.example.racehorse_transport.client.ValhallaClient;
 import com.example.racehorse_transport.dto.pricing.PricingPreviewRequestDto.HorseSelection;
 import com.example.racehorse_transport.dto.pricing.PricingPreviewRequestDto;
@@ -225,6 +229,64 @@ class PricingServiceTest {
     }
 
     @Test
+    void transferOptionsTellWhichEndTheCompanyCanServe() {
+        linehaulAddresses();
+        when(routing.truckRoute(anyList(), eq(8.0), eq(70), any())).thenAnswer(invocation -> {
+            assertThat(TransactionSynchronizationManager.isActualTransactionActive()).isFalse();
+            List<GeoPointDto> points = invocation.getArgument(0);
+            // Đầu đón quá nửa giới hạn lái 10 giờ, đầu giao đúng bằng giới hạn
+            return new RoadRouteDto(300, points.getFirst().lat() == 10.70 ? 18001 : 18000, List.of());
+        });
+
+        var options = service.transferOptions(transferRequest(), "owner");
+        assertThat(options.pickup().companyAllowed()).isFalse();
+        assertThat(options.pickup().status()).isEqualTo(TransferStatus.TOO_FAR);
+        assertThat(options.pickup().reason()).contains("tự chở ngựa tới hub");
+        assertThat(options.delivery()).isEqualTo(new TransferEndDto(true, TransferStatus.AVAILABLE, null));
+    }
+
+    @Test
+    void transferOptionsDoNotBlockTheCustomerWhenTheMapIsDown() {
+        linehaulAddresses();
+        when(routing.truckRoute(anyList(), eq(8.0), eq(70), any()))
+                .thenThrow(new RoutingUnavailableException()).thenThrow(new NoTruckRouteException());
+
+        var options = service.transferOptions(transferRequest(), "owner");
+        assertThat(options.pickup().status()).isEqualTo(TransferStatus.UNKNOWN);
+        assertThat(options.pickup().companyAllowed()).isTrue();
+        assertThat(options.delivery().status()).isEqualTo(TransferStatus.NO_ROUTE);
+        assertThat(options.delivery().companyAllowed()).isFalse();
+    }
+
+    @Test
+    void transferOptionsSkipDirectOrdersAndForeignAddresses() {
+        var direct = service.transferOptions(transferRequest(), "owner");
+        assertThat(direct.pickup()).isNull();
+        assertThat(direct.delivery()).isNull();
+        assertThatThrownBy(() -> service.transferOptions(transferRequest(), "other")).isInstanceOf(ResourceNotFoundException.class);
+
+        linehaulAddresses();
+        Country cambodia = new Country();
+        cambodia.setCode("KH");
+        addresses.findById(2L).orElseThrow().setCountry(cambodia);
+        when(routing.truckRoute(anyList(), eq(8.0), eq(70), any())).thenReturn(new RoadRouteDto(30, 600, List.of()));
+        var export = service.transferOptions(transferRequest(), "owner");
+        assertThat(export.pickup().status()).isEqualTo(TransferStatus.AVAILABLE);
+        assertThat(export.delivery()).isNull();
+    }
+
+    private void linehaulAddresses() {
+        Province secondProvince = new Province();
+        secondProvince.setCode("VN-48");
+        addresses.findById(2L).orElseThrow().setProvince(secondProvince);
+        servedBy("VN-48", 5L);
+    }
+
+    private TransferOptionsRequestDto transferRequest() {
+        return new TransferOptionsRequestDto(1L, 2L, now.plusSeconds(3600));
+    }
+
+    @Test
     void mandatoryVetCheckReplacesPartialCustomerSelection() {
         var horse = horses.findById(3L).orElseThrow();
         when(horses.findById(4L)).thenReturn(Optional.of(horse));
@@ -253,6 +315,8 @@ class PricingServiceTest {
         hub.setId(hubId);
         hub.setStatus(ActiveStatus.ACTIVE);
         hub.setLocationType(LocationType.HUB);
+        hub.setLatitude(new BigDecimal("11.00"));
+        hub.setLongitude(new BigDecimal("106.80"));
         HubServiceArea area = new HubServiceArea();
         area.setHub(hub);
         when(hubs.findById_ProvinceCode(provinceCode)).thenReturn(Optional.of(area));

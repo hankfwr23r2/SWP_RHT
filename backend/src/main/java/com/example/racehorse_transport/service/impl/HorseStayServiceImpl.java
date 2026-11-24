@@ -36,6 +36,7 @@ import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.entity.enums.HorseStayType;
 import com.example.racehorse_transport.repository.HorseLegRepository;
 import com.example.racehorse_transport.repository.HorseStayRepository;
+import com.example.racehorse_transport.service.CustomerNoticeService;
 import com.example.racehorse_transport.service.HorseStayService;
 import java.time.Duration;
 import java.time.Instant;
@@ -65,6 +66,7 @@ public class HorseStayServiceImpl implements HorseStayService {
     private final Clock clock;
     private final PartyRepository parties;
     private final PartyRoleRepository partyRoles;
+    private final CustomerNoticeService notices;
 
     @Override
     @Transactional
@@ -162,6 +164,7 @@ public class HorseStayServiceImpl implements HorseStayService {
         stay.setPlannedStartAt(plannedStartAt);
         stay.setPlannedEndAt(departAt);
         stays.saveAndFlush(stay);
+        notices.dropOffAppointed(stay);
         return HorseStayResponseDto.from(stay);
     }
 
@@ -172,8 +175,12 @@ public class HorseStayServiceImpl implements HorseStayService {
         if (!collectAt.isAfter(stay.getActualStartAt())) {
             throw new DispatchRuleException("collectAt", "Giờ hẹn phải sau lúc ngựa tới hub.");
         }
+        boolean changed = !collectAt.equals(stay.getPlannedEndAt());
         stay.setPlannedEndAt(collectAt);
         stays.flush();
+        if (changed) {
+            notices.collectionAppointed(stay);
+        }
         return HorseStayResponseDto.from(stay);
     }
 

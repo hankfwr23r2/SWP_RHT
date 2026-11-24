@@ -2356,6 +2356,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/pricing/transfer-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["transferOptions"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/provinces": {
         parameters: {
             query?: never;
@@ -2398,6 +2414,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["publicTrack"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/public/transport-rules": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["transportRules"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3651,6 +3683,16 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseTransferOptionsResponseDto: {
+            data?: components["schemas"]["TransferOptionsResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseTransportRulesResponseDto: {
+            data?: components["schemas"]["TransportRulesResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponseTripReportResponseDto: {
             data?: components["schemas"]["TripReportResponseDto"];
             message?: string;
@@ -3737,6 +3779,7 @@ export interface components {
             /** @enum {string} */
             deliveryMethod?: "COMPANY" | "SELF";
             horses?: components["schemas"]["HorseDetail"][];
+            intakeByName?: string;
             parties?: components["schemas"]["PartySnapshot"][];
             /** @enum {string} */
             pickupMethod?: "COMPANY" | "SELF";
@@ -4252,6 +4295,12 @@ export interface components {
             email: string;
             otp?: string;
         };
+        ExpectedWindowDto: {
+            /** Format: date-time */
+            from?: string;
+            /** Format: date-time */
+            to?: string;
+        };
         ExtraChargeRequestDto: {
             costItemIds: number[];
         };
@@ -4758,11 +4807,13 @@ export interface components {
             /** Format: date-time */
             actualStartAt?: string;
             agentName?: string;
+            deliveryWindow?: components["schemas"]["ExpectedWindowDto"];
             fromName?: string;
             /** Format: int64 */
             id?: number;
             /** @enum {string} */
             legType?: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "RETURN" | "DIRECT";
+            pickupWindow?: components["schemas"]["ExpectedWindowDto"];
             /** Format: date-time */
             plannedEndAt?: string;
             /** Format: date-time */
@@ -5729,6 +5780,44 @@ export interface components {
         };
         SystemTextConfigUpdateRequestDto: {
             configValue: string;
+        };
+        TransferEndDto: {
+            companyAllowed?: boolean;
+            reason?: string;
+            /** @enum {string} */
+            status?: "AVAILABLE" | "TOO_FAR" | "NO_ROUTE" | "UNKNOWN";
+        };
+        TransferOptionsRequestDto: {
+            /** Format: int64 */
+            deliveryAddressId: number;
+            /** Format: int64 */
+            pickupAddressId: number;
+            /** Format: date-time */
+            pickupAt: string;
+        };
+        TransferOptionsResponseDto: {
+            delivery?: components["schemas"]["TransferEndDto"];
+            pickup?: components["schemas"]["TransferEndDto"];
+        };
+        TransportRulesResponseDto: {
+            /** Format: int32 */
+            balanceWaitMinutes?: number;
+            /** Format: int32 */
+            deliveryWindowEndHour?: number;
+            /** Format: int32 */
+            deliveryWindowStartHour?: number;
+            /** Format: int32 */
+            departureDecisionHours?: number;
+            /** Format: int32 */
+            handoverFreeWaitMinutes?: number;
+            /** Format: int32 */
+            hubCheckinHours?: number;
+            /** Format: int32 */
+            maxTransferDriveMinutes?: number;
+            /** Format: int32 */
+            pickupWindowEndHour?: number;
+            /** Format: int32 */
+            pickupWindowStartHour?: number;
         };
         TripGroupResponseDto: {
             bookings?: components["schemas"]["GroupBookingDto"][];
@@ -10048,6 +10137,30 @@ export interface operations {
             };
         };
     };
+    transferOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferOptionsRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseTransferOptionsResponseDto"];
+                };
+            };
+        };
+    };
     provinces: {
         parameters: {
             query: {
@@ -10110,6 +10223,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListPublicTrackingResponseDto"];
+                };
+            };
+        };
+    };
+    transportRules: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseTransportRulesResponseDto"];
                 };
             };
         };

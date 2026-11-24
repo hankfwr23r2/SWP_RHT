@@ -34,6 +34,17 @@ describe('journeyEntries', () => {
     expect(byKey['leg-1'].detail).toBe('VT-1')
   })
 
+  it('khung giờ dự kiến chỉ hiện cho điểm xe chưa tới', () => {
+    const pickupWindow = { from: '2031-03-05T01:00:00Z', to: '2031-03-05T02:00:00Z' }
+    const deliveryWindow = { from: '2031-03-05T05:00:00Z', to: '2031-03-05T06:00:00Z' }
+    const sides = (status: 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED') => journeyEntries({
+      ...horse, handovers: [], legs: [{ id: 1, legType: 'DIRECT', status, pickupWindow, deliveryWindow }],
+    })[0].windows?.map(window => window.side)
+    expect(sides('PLANNED')).toEqual(['pickup', 'delivery'])
+    expect(sides('IN_PROGRESS')).toEqual(['delivery'])
+    expect(sides('COMPLETED')).toEqual([])
+  })
+
   it('chip không khớp là có vấn đề, lưu trú đang ở là đang diễn ra', () => {
     const entries = journeyEntries({
       ...horse, legs: [],

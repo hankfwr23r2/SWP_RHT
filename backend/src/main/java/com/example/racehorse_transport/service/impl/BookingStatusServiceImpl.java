@@ -14,6 +14,7 @@ import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.BookingStatusHistoryRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.service.BookingStatusService;
+import com.example.racehorse_transport.service.CustomerNoticeService;
 import com.example.racehorse_transport.service.NotificationService;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,6 +33,7 @@ public class BookingStatusServiceImpl implements BookingStatusService {
     private final AppUserRepository users;
     private final NotificationService notifications;
     private final StaffRepository staff;
+    private final CustomerNoticeService notices;
 
     @Override
     @Transactional
@@ -92,6 +94,7 @@ public class BookingStatusServiceImpl implements BookingStatusService {
     @Transactional(propagation = Propagation.MANDATORY)
     public void recordInitialStatus(Booking booking) {
         recordHistory(booking, null, null, booking.getCreatedBy(), null, null);
+        notices.bookingSubmitted(booking);
     }
 
     private void recordHistory(Booking booking, BookingStatus from, String reason,

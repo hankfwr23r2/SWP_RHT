@@ -97,6 +97,17 @@ class BookingSubmissionPostgresTest {
                 SELECT count(*) FROM booking_status_history WHERE booking_id = ?
                 AND from_status IS NULL AND to_status = 'PENDING_INTAKE'
                 """, id)).isEqualTo(1);
+        // Khách được báo đã nhận đơn, chuyên viên đang hoạt động được báo đơn mới
+        assertThat(count("""
+                SELECT count(*) FROM notification n JOIN notification_recipient r ON r.notification_id = n.id
+                JOIN booking b ON b.id = n.booking_id AND r.user_id = b.customer_id
+                WHERE n.booking_id = ? AND n.title = 'Đã nhận đơn' AND n.link_url = '/orders/' || b.id
+                """, id)).isEqualTo(1);
+        assertThat(count("""
+                SELECT count(*) FROM notification n JOIN notification_recipient r ON r.notification_id = n.id
+                JOIN app_user u ON u.id = r.user_id AND u.username = 'specialist.dev'
+                WHERE n.booking_id = ? AND n.title = 'Đơn mới chờ tiếp nhận'
+                """, id)).isEqualTo(1);
         assertThat(reserved(departure.getId())).isEqualTo(2);
         var detail = queries.get(owner, id);
         assertThat(detail.horses()).hasSize(2);

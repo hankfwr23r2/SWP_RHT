@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.pricing.PricingPreviewRequestDto;
+import com.example.racehorse_transport.dto.pricing.TransferOptionsRequestDto;
 import com.example.racehorse_transport.dto.route.GeoPointDto;
 import com.example.racehorse_transport.entity.*;
 import com.example.racehorse_transport.entity.enums.*;
@@ -83,6 +84,20 @@ public class PricingDataServiceImpl implements PricingDataService {
     }
 
     @Override
+    public TransferData loadTransfers(TransferOptionsRequestDto request, String username) {
+        CustomerAddress pickup = ownedAddress(request.pickupAddressId(), username);
+        CustomerAddress delivery = ownedAddress(request.deliveryAddressId(), username);
+        BookingType type = bookingType(pickup, delivery);
+        Location originHub = domestic(pickup) ? hub(pickup) : null;
+        Location destinationHub = type == BookingType.LOCAL ? originHub : domestic(delivery) ? hub(delivery) : null;
+        boolean direct = HubResolutionPolicy.routingOf(type, hubId(originHub), hubId(destinationHub)) == Routing.DIRECT;
+        List<RoadSegment> segments = direct ? List.of()
+                : transferSegments(pickup, originHub, delivery, destinationHub, TransferMethod.COMPANY, TransferMethod.COMPANY);
+        return new TransferData(segments, config.getInt("TRUCK_WEIGHT_TONS"), config.getInt("TRUCK_TOP_SPEED_KMH"),
+                LocalDateTime.ofInstant(request.pickupAt(), BUSINESS_ZONE));
+    }
+
+    @Override
     public PricingResult calculate(PricingInput input) {
         PriceList list = PricingPolicy.selectList(
                 lists.findByCurrencyCodeAndStatus(input.currencyCode(), PriceListStatus.ACTIVE), input);
@@ -151,14 +166,20 @@ public class PricingDataServiceImpl implements PricingDataService {
         if (!DepartureRoutePolicy.matches(route, type, hubId(originHub), hubId(destinationHub), counterpart)) {
             throw new PricingRuleException("Chuyến trục không phù hợp với địa chỉ đã chọn.");
         }
-        List<RoadSegment> roadLegs = new ArrayList<>();
-        if (originHub != null && request.pickupMethod() == TransferMethod.COMPANY) {
-            roadLegs.add(segment(ServiceLayer.PICKUP, point(pickup), point(originHub)));
+        return new RoutePlan(departure, DepartureRoutePolicy.gateId(route, type),
+                transferSegments(pickup, originHub, delivery, destinationHub, request.pickupMethod(), request.deliveryMethod()));
+    }
+
+    private List<RoadSegment> transferSegments(CustomerAddress pickup, Location originHub, CustomerAddress delivery, Location destinationHub,
+                                               TransferMethod pickupMethod, TransferMethod deliveryMethod) {
+        List<RoadSegment> segments = new ArrayList<>();
+        if (originHub != null && pickupMethod == TransferMethod.COMPANY) {
+            segments.add(segment(ServiceLayer.PICKUP, point(pickup), point(originHub)));
         }
-        if (destinationHub != null && request.deliveryMethod() == TransferMethod.COMPANY) {
-            roadLegs.add(segment(ServiceLayer.DELIVERY, point(destinationHub), point(delivery)));
+        if (destinationHub != null && deliveryMethod == TransferMethod.COMPANY) {
+            segments.add(segment(ServiceLayer.DELIVERY, point(destinationHub), point(delivery)));
         }
-        return new RoutePlan(departure, DepartureRoutePolicy.gateId(route, type), roadLegs);
+        return segments;
     }
 
     private RoadSegment segment(ServiceLayer layer, GeoPointDto from, GeoPointDto to) {

@@ -2,6 +2,7 @@ package com.example.racehorse_transport.repository;
 
 import com.example.racehorse_transport.entity.BookingStatusHistory;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.example.racehorse_transport.entity.enums.BookingStatus;
@@ -14,6 +15,10 @@ import java.util.Optional;
 public interface BookingStatusHistoryRepository extends JpaRepository<BookingStatusHistory, Long> {
 
     Optional<BookingStatusHistory> findFirstByBooking_IdAndToStatusOrderByChangedAtDescIdDesc(Long bookingId, BookingStatus status);
+
+    @EntityGraph(attributePaths = "changedBy")
+    Optional<BookingStatusHistory> findFirstByBooking_IdAndFromStatusAndToStatusOrderByChangedAtDescIdDesc(
+            Long bookingId, BookingStatus fromStatus, BookingStatus toStatus);
 
     long countByBooking_IdAndToStatusAndCauseType(Long bookingId, BookingStatus status, ScheduleChangeCause cause);
 

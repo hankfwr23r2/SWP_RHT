@@ -22,5 +22,6 @@ public interface BookingStatusService {
     void requireScheduleChangeForUser(Long bookingId, Departure previousDeparture, ScheduleChangeCause cause,
                                       String reason, String username);
 
+    // Khách vừa gửi đơn: ghi dòng lịch sử đầu tiên, báo khách và chuyên viên
     void recordInitialStatus(Booking booking);
 }
