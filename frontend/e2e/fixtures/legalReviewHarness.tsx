@@ -1,3 +1,4 @@
+import '@shared/i18n/staff'
 import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router'
 import LegalReviewPage from '../../src/apps/backoffice/features/specialist/legal/LegalReviewPage'

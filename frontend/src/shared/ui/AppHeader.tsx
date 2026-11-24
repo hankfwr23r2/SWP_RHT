@@ -1,10 +1,9 @@
 // Header gọn dùng chung cho trang làm việc: app khách (đã đăng nhập) và app nội bộ.
-// Gạch chân mục menu đang chọn trượt theo trang (GSAP).
-import { useRef, useState, useEffect, type ReactNode } from 'react'
+// Gạch chân mục menu đang chọn trượt theo trang (CSS transition).
+import { useRef, useState, useEffect, useLayoutEffect, type ReactNode } from 'react'
 import { Link, NavLink, useLocation } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { gsap } from 'gsap'
-import { useGSAP } from '@gsap/react'
+import { preloadRoute } from '../routing/preload'
 import { Button } from './Button'
 import s from './AppHeader.module.css'
 
@@ -37,12 +36,14 @@ export function AppHeader({ homeHref, badge, links, isActive, userName, profileH
   }, [])
 
   // Gạch chân trượt tới mục đang chọn
-  useGSAP(() => {
+  useLayoutEffect(() => {
     const active = nav.current?.querySelector<HTMLElement>(`.${s.active}`)
     if (!bar.current) return
-    if (!active) { gsap.to(bar.current, { opacity: 0, duration: 0.2 }); return }
-    gsap.to(bar.current, { x: active.offsetLeft, width: active.offsetWidth, opacity: 1, duration: 0.45, ease: 'power3.out' })
-  }, { dependencies: [pathname], scope: nav })
+    bar.current.style.opacity = active ? '1' : '0'
+    if (!active) return
+    bar.current.style.transform = `translateX(${active.offsetLeft}px)`
+    bar.current.style.width = `${active.offsetWidth}px`
+  }, [pathname])
 
   const activeOf = (to: string) => (isActive ? isActive(to, pathname) : pathname === to)
 
@@ -56,7 +57,7 @@ export function AppHeader({ homeHref, badge, links, isActive, userName, profileH
         </Link>
         <nav ref={nav} className={s.nav} aria-label="Menu">
           {links.map(([to, label]) => (
-            <NavLink key={to} to={to} end className={`${s.link} ${activeOf(to) ? s.active : ''}`}>{label}</NavLink>
+            <NavLink key={to} to={to} end onMouseEnter={() => preloadRoute(to)} onFocus={() => preloadRoute(to)} className={`${s.link} ${activeOf(to) ? s.active : ''}`}>{label}</NavLink>
           ))}
           <span ref={bar} className={s.indicator} />
         </nav>
