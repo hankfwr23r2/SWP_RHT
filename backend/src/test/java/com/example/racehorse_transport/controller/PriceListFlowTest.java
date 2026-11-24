@@ -57,6 +57,19 @@ class PriceListFlowTest {
 
     @Test
     @Transactional
+    void customerCanListBillableServicesButCannotListPriceLists() throws Exception {
+        String customer = data.unique("catalog-customer");
+        data.customer(customer);
+        String authorization = "Bearer " + jwt.generateToken(customer, List.of("CUSTOMER"));
+        mvc.perform(get("/billable-services").header(HttpHeaders.AUTHORIZATION, authorization))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray());
+        mvc.perform(get("/price-lists").header(HttpHeaders.AUTHORIZATION, authorization))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @Transactional
     void adminCanPersistAnOpenEndedKilometerTier() throws Exception {
         String admin = data.unique("pricing-tier-admin");
         data.staff(admin, "ADMIN");

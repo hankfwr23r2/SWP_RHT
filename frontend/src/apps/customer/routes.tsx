@@ -1,9 +1,10 @@
 // Danh sách trang của app khách: URL → trang → vai trò. Rỗng roles = công khai.
 import { lazy } from 'react'
 import type { AppRoute } from '@shared/routing/types'
+import i18n, { i18nReady } from '@shared/i18n'
 import LoginPage from './features/auth/LoginPage'
 import HomePage from './features/home/HomePage'
-import { horseListLoader, horsesLoader } from './features/horses/loaders'
+import { horseListLoader, horseProfilesLoader, horsesLoader } from './features/horses/loaders'
 import { orderDetailLoader, ordersLoader } from './features/orders/loaders'
 import { portalLoader } from './features/portal/portalLoader'
 
@@ -29,7 +30,17 @@ export const routes: AppRoute[] = [
   { path: '/verify-email', page: VerifyEmailPage, roles: [], title: 'Xác thực email', layout: 'bare', catalog: false },
   { path: '/portal', lazyPage: () => import('./features/portal/PortalPage'), loader: portalLoader, roles: C, title: 'Trang chủ', layout: 'customer' },
   { path: '/profile', page: ProfilePage, roles: C, title: 'Hồ sơ cá nhân', layout: 'customer' },
-  { path: '/horses', lazyPage: () => import('./features/horses/HorsesPage'), loader: horsesLoader, roles: C, title: 'Hồ sơ ngựa', layout: 'customer' },
+  {
+    path: '/horses', roles: C, layout: 'customer', loader: horseProfilesLoader,
+    lazyPage: () => Promise.all([import('./features/horses/HorsesPage'), i18nReady]).then(([page]) => page),
+    get title() { return i18n.t('horses.title') },
+  },
+  {
+    path: '/addresses', roles: C, layout: 'customer',
+    loader: () => import('./features/addresses/loaders').then(m => m.addressesLoader()),
+    lazyPage: () => Promise.all([import('./features/addresses/AddressBookPage'), i18nReady]).then(([page]) => page),
+    get title() { return i18n.t('addresses.title') },
+  },
   { path: '/booking/route', page: Step1RoutePage, roles: C, title: 'Đặt chuyến · Chuyến đi', layout: 'customer' },
   { path: '/booking/horses', lazyPage: () => import('./features/booking/Step2HorsesPage'), loader: horsesLoader, roles: C, title: 'Đặt chuyến · Chọn ngựa', layout: 'customer' },
   { path: '/booking/services', lazyPage: () => import('./features/booking/Step3ServicesPage'), loader: horseListLoader, roles: C, title: 'Đặt chuyến · Dịch vụ & bảo hiểm', layout: 'customer' },

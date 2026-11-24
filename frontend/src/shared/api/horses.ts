@@ -1,5 +1,23 @@
 import apiClient, { type ApiResponse } from './client'
 import { documentUploadError } from '../lib/documentUpload'
+import { formResponseOptions, readFormResponse } from './customerAddresses'
+import type { components } from './generated/schema'
+
+type Schemas = components['schemas']
+export type Horse = Schemas['HorseResponseDto']
+export type HorseType = Schemas['HorseTypeResponseDto']
+export type HorseCreate = Schemas['HorseCreateRequestDto']
+export type HorseUpdate = Schemas['HorseUpdateRequestDto']
+
+export const customerHorseApi = {
+  list: async () => (await apiClient.get<ApiResponse<Horse[]>>('/horses')).data.data,
+  getById: async (id: number) => (await apiClient.get<ApiResponse<Horse>>(`/horses/${id}`)).data.data,
+  listTypes: async () => (await apiClient.get<ApiResponse<HorseType[]>>('/horse-types')).data.data,
+  create: async (body: HorseCreate) =>
+    readFormResponse<Horse>(await apiClient.post('/horses', body, formResponseOptions)),
+  update: async (id: number, body: HorseUpdate) =>
+    readFormResponse<Horse>(await apiClient.put(`/horses/${id}`, body, formResponseOptions)),
+}
 
 export interface BackendHorseDto {
   id?: number
@@ -72,11 +90,42 @@ export interface CreateHorseTypePayload {
   insuredValue: number
 }
 
+function legacyHorse(horse: Horse): BackendHorseDto {
+  return {
+    id: horse.id,
+    horseTypeID: horse.horseTypeId,
+    horseName: horse.name ?? '',
+    microchipID: horse.microchip ?? '',
+    gender: horse.sex,
+    breed: horse.breed,
+    color: horse.color,
+    age: horse.birthYear == null ? undefined : new Date().getFullYear() - horse.birthYear,
+    weight: horse.weightKg,
+    identificationMarks: horse.identificationMarks,
+    createdAt: horse.createdAt,
+    status: horse.status,
+  }
+}
+
+function legacyHorseBody(payload: BackendHorseDto): HorseUpdate {
+  return {
+    name: payload.horseName,
+    horseTypeId: payload.horseTypeID!,
+    sex: payload.gender?.toUpperCase() as HorseUpdate['sex'],
+    breed: payload.breed,
+    color: payload.color,
+    birthYear: payload.age == null ? undefined : new Date().getFullYear() - payload.age,
+    weightKg: payload.weight,
+    identificationMarks: payload.identificationMarks,
+  }
+}
+
+// Legacy consumers retain their existing response fields while using the current horse endpoints.
 export const backendHorseApi = {
-  listTypes: async (): Promise<BackendHorseTypeDto[]> => {
-    const res = await apiClient.get<ApiResponse<BackendHorseTypeDto[]>>('/horse-types')
-    return res.data.data
-  },
+  listTypes: async (): Promise<BackendHorseTypeDto[]> =>
+    (await customerHorseApi.listTypes()).flatMap(type => type.id == null ? [] : [{
+      id: type.id, typeName: type.name ?? '', description: type.description,
+    }]),
 
   createType: async (payload: CreateHorseTypePayload): Promise<BackendHorseTypeDto> => {
     const res = await apiClient.post<ApiResponse<BackendHorseTypeDto>>('/horse-types', payload)
@@ -97,27 +146,24 @@ export const backendHorseApi = {
     return res.data.data
   },
 
-  // Lấy tất cả ngựa
-  list: async (): Promise<BackendHorseDto[]> => {
-    const res = await apiClient.get<ApiResponse<BackendHorseDto[]>>('/horses')
-    return res.data.data
-  },
+  list: async (): Promise<BackendHorseDto[]> => (await customerHorseApi.list()).map(legacyHorse),
 
-  // Lấy chi tiết ngựa theo ID
-  getById: async (id: number): Promise<BackendHorseDto> => {
-    const res = await apiClient.get<ApiResponse<BackendHorseDto>>(`/horses/${id}`)
-    return res.data.data
-  },
+  getById: async (id: number): Promise<BackendHorseDto> => legacyHorse(await customerHorseApi.getById(id)),
 
-  // Tạo mới ngựa
-  create: async (payload: BackendHorseDto): Promise<BackendHorseDto> => {
-    const res = await apiClient.post<ApiResponse<BackendHorseDto>>('/horses', payload)
-    return res.data.data
-  },
+  create: async (payload: BackendHorseDto): Promise<BackendHorseDto> =>
+    legacyHorse(await customerHorseApi.create({ ...legacyHorseBody(payload), microchip: payload.microchipID })),
 
   update: async (id: number, payload: BackendHorseDto): Promise<BackendHorseDto> => {
-    const res = await apiClient.put<ApiResponse<BackendHorseDto>>(`/horses/${id}`, payload)
-    return res.data.data
+    const current = await customerHorseApi.getById(id)
+    return legacyHorse(await customerHorseApi.update(id, {
+      ...legacyHorseBody(payload),
+      weightKg: payload.weight ?? current.weightKg,
+      passportNumber: current.passportNumber,
+      sire: current.sire,
+      dam: current.dam,
+      declaredValue: current.declaredValue,
+      declaredCurrencyCode: current.declaredCurrencyCode,
+    }))
   },
 
   // Xóa ngựa
