@@ -16,6 +16,7 @@ import { StatusBadge } from '@shared/ui/StatusBadge'
 import { Textarea } from '@shared/ui/Textarea'
 import { useToast } from '@shared/ui/toast'
 import { TRIP_STATUS_TONE, eligibleHorses, peakSeats } from './dispatchModel'
+import { StallPlanSection } from './StallPlanSection'
 import s from './Dispatch.module.css'
 
 interface Props {
@@ -144,7 +145,8 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
               <li key={item.leg?.id} className={s.item}>
                 <span className={s.itemMain}>
                   <strong>{item.horseName} · {item.bookingCode}</strong>
-                  <span className={s.muted}>{`${item.leg?.fromName} → ${item.leg?.toName} · ${item.stallTypeCode}`}</span>
+                  <span className={s.muted}>{`${item.leg?.fromName} → ${item.leg?.toName} · ${item.stallTypeCode}`}
+                    {item.leg?.stallPosition ? ` · ${t('dispatch.stall.number', { n: item.leg.stallPosition })}` : ''}</span>
                 </span>
                 {editable && <Button size="sm" onClick={() => setPending({ kind: 'removeHorse', item })}>{t('dispatch.detail.release')}</Button>}
               </li>
@@ -165,6 +167,8 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
           </div>
         ) : <p className={s.muted}>{t('dispatch.detail.noEligible')}</p>)}
       </section>
+
+      <StallPlanSection tripId={tripId} refreshKey={horses.map(item => `${item.leg?.id}:${item.leg?.stallPosition}`).join(',')} />
 
       {pending?.kind === 'release' && (
         <ConfirmDialog

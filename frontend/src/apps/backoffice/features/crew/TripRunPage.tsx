@@ -59,6 +59,7 @@ export default function TripRunPage() {
   if (error || !data?.trip) return <ErrorState title={t('myTrips.run.loadError')} message={error?.message} onRetry={reload} />
   const trip = data.trip
 
+  const stallOf = (legId: number) => (data.horses ?? []).find(h => h.leg?.id === legId)?.leg?.stallPosition
   const handoverPanel = (handover: Handover) => (
     <div className={s.body}>
       <StatusBadge tone="info" label={`${t(`myTrips.run.handover.${handover.handoverType}`)} · ${t(`myTrips.run.handoverStatus.${handover.status}`)}`} />
@@ -69,6 +70,8 @@ export default function TripRunPage() {
           return (
             <li key={legId} className={s.body}>
               <p className={s.line}>{horse.horseName} · {horse.bookingCode}</p>
+              {/* Chip đúng thì chỉ chỗ dẫn ngựa vào (MAN_HINH 4.2, 6.1) */}
+              {horse.microchipMatched && stallOf(legId) && <p className={s.line}><strong>{t('myTrips.run.stall', { n: stallOf(legId) })}</strong></p>}
               <StatusBadge
                 tone={horse.microchipMatched === undefined || horse.microchipMatched === null ? 'neutral' : horse.microchipMatched ? 'success' : 'danger'}
                 label={horse.microchipMatched === undefined || horse.microchipMatched === null ? t('myTrips.run.notScanned')

@@ -39,6 +39,23 @@ export const coordinator = {
     "tabTrips": "Vehicle trips",
     "newTrip": "New trip",
     "loadError": "Could not load dispatch data",
+    "stall": {
+      "title": "Stall plan",
+      "hint": "Position 1 is the front, {{total}} is the rear door. A wide stall takes the chosen position and the next one.",
+      "locked": "The vehicle has departed, the plan is locked.",
+      "colPosition": "Position",
+      "colHorse": "Horse",
+      "colSeats": "Stall",
+      "colRoute": "Board → alight",
+      "standard": "Standard",
+      "wide": "Wide (2 positions)",
+      "positionOf": "Position of {{name}}",
+      "warnings": "Stall plan warnings",
+      "suggest": "Re-plan automatically",
+      "save": "Save plan",
+      "saved": "Stall plan saved",
+      "number": "Stall {{n}}"
+    },
     "hub": {
       "col": "At hub",
       "open": "Book hub drop-off",

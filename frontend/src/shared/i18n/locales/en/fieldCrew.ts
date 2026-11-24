@@ -2,6 +2,7 @@
 export const fieldCrew = {
   myTrips: {
     "run": {
+      "stall": "Stall {{n}}",
       "agentParty": "Agent: {{name}}",
       "unpaidReturn": {
         "action": "Return horses: balance overdue",

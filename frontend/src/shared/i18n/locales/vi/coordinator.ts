@@ -39,6 +39,23 @@ export const coordinator = {
     "tabTrips": "Lượt xe",
     "newTrip": "Lập lượt xe",
     "loadError": "Không tải được dữ liệu điều độ",
+    "stall": {
+      "title": "Sơ đồ khoang",
+      "hint": "Vị trí 1 là đầu xe, {{total}} là cửa sau. Khoang rộng chiếm vị trí đã chọn và vị trí kế sau.",
+      "locked": "Xe đã xuất phát, sơ đồ đã khóa.",
+      "colPosition": "Vị trí",
+      "colHorse": "Ngựa",
+      "colSeats": "Khoang",
+      "colRoute": "Lên → xuống",
+      "standard": "Thường",
+      "wide": "Rộng (2 vị trí)",
+      "positionOf": "Vị trí của {{name}}",
+      "warnings": "Cảnh báo sơ đồ khoang",
+      "suggest": "Xếp lại tự động",
+      "save": "Lưu sơ đồ",
+      "saved": "Đã lưu sơ đồ khoang",
+      "number": "Khoang {{n}}"
+    },
     "hub": {
       "col": "Tại hub",
       "open": "Hẹn nhận tại hub",
