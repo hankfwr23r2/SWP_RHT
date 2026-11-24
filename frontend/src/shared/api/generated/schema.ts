@@ -4397,6 +4397,12 @@ export interface components {
             uploadedAt?: string;
             uploadedByName?: string;
         };
+        ExpectedWindowDto: {
+            /** Format: date-time */
+            from?: string;
+            /** Format: date-time */
+            to?: string;
+        };
         ExtraChargeRequestDto: {
             costItemIds: number[];
         };

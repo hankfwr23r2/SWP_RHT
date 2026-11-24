@@ -3412,6 +3412,19 @@
         },
         "type" : "object"
       },
+      "ExpectedWindowDto" : {
+        "properties" : {
+          "from" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "to" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ExtraChargeRequestDto" : {
         "properties" : {
           "costItemIds" : {
