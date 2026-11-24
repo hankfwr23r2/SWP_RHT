@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { CrewTrip } from '@shared/api/tripExecution'
-import { canArrive, canComplete, canDepart, canReturnUnpaid, canStart, handoverTypesAt, horsesPassing, isRestStop, stopState } from './tripRunModel'
+import { canArrive, canComplete, canDepart, canRefuse, canReturnUnpaid, canStart, handoverTypesAt, horsesPassing, isRestStop, stopState } from './tripRunModel'
 
 const run = (over: Partial<NonNullable<CrewTrip['trip']>> = {}, extra: Partial<CrewTrip> = {}): CrewTrip => ({
   trip: {
@@ -18,6 +18,18 @@ const run = (over: Partial<NonNullable<CrewTrip['trip']>> = {}, extra: Partial<C
 })
 
 describe('tripRunModel', () => {
+  it('không nhận một con ở điểm đón, hoặc ở cửa khẩu khi con lên xe tại đó (nhận từ đại lý)', () => {
+    const r = run({}, { horses: [
+      { leg: { id: 9, boardTripStopId: 2, alightTripStopId: 3, status: 'PLANNED' } },
+      { leg: { id: 10, boardTripStopId: 1, alightTripStopId: 2, status: 'IN_PROGRESS' } },
+    ] })
+    expect(canRefuse(r, { handoverType: 'PICKUP', tripStopId: 2 }, 9)).toBe(true)
+    expect(canRefuse(r, { handoverType: 'AGENT', tripStopId: 2 }, 9)).toBe(true)
+    // Giao cho đại lý (đơn xuất): con xuống xe ở cửa khẩu, không có từ chối
+    expect(canRefuse(r, { handoverType: 'AGENT', tripStopId: 2 }, 10)).toBe(false)
+    expect(canRefuse(r, { handoverType: 'DELIVERY', tripStopId: 3 }, 9)).toBe(false)
+  })
+
   it('ở cửa khẩu có bàn giao với đại lý khi có con xuống xe (đơn xuất) hoặc lên xe (đơn nhập)', () => {
     const border = run({ stops: [
       { id: 1, stopType: 'HUB', actualArrivalAt: 't', actualDepartureAt: 't' },

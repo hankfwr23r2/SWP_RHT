@@ -157,12 +157,14 @@ public class HandoverServiceImpl implements HandoverService {
         Handover handover = pending(handoverId, username);
         Long tripId = handover.getTripStop().getVehicleTrip().getId();
         Long actorId = requireCrew(tripId, username).getStaff().getUserId();
-        if (handover.getHandoverType() != HandoverType.PICKUP) {
-            throw new DispatchRuleException("handoverType", "Chỉ từ chối nhận ngựa khi nhận ngựa từ khách.", true);
+        // Nơi nhận: điểm đón của khách, hoặc cửa khẩu nhận từ đại lý (đơn nhập)
+        boolean fromAgent = handover.getHandoverType() == HandoverType.AGENT && handover.getFromParty() != null;
+        if (handover.getHandoverType() != HandoverType.PICKUP && !fromAgent) {
+            throw new DispatchRuleException("handoverType", "Chỉ từ chối nhận ngựa khi nhận ngựa từ khách hoặc từ đại lý ở cửa khẩu.", true);
         }
         HorseLeg leg = candidates(handover).stream().filter(l -> l.getId().equals(request.horseLegId())).findFirst()
                 .orElseThrow(() -> new DispatchRuleException("horseLegId", "Con ngựa này không thuộc lần giao nhận.", true));
-        outcomes.refuse(leg, request.reason().strip(), actorId);
+        outcomes.refuse(leg.getBookingHorse().getId(), request.reason().strip(), clock.instant(), actorId);
         // Không còn con nào để nhận thì lần giao nhận kết thúc là không thành, xe được rời điểm dừng
         if (candidates(handover).isEmpty()) {
             handover.setStatus(HandoverStatus.FAILED);

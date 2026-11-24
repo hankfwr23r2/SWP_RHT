@@ -135,3 +135,31 @@ test('người nhận tới trễ hơn giờ hẹn thì điều phối gửi chu
   await expect(present.getByRole('row', { name: /Gió Bấc/ }).getByRole('button', { name: 'Trả ngựa' })).toBeVisible()
   await expect(present.getByRole('row', { name: /Gió Bấc/ }).getByRole('button', { name: 'Gửi chuồng' })).toHaveCount(0)
 })
+
+test('tại hub điều phối không nhận một con khách tự chở tới, bắt buộc có lý do', async ({ page }) => {
+  await signIn(page)
+  const appointments = [{ id: 6, bookingHorseId: 50, bookingCode: 'BK-AAAA0002', horseName: 'Sao Mai', stayType: 'ASSEMBLY', plannedStartAt: '2031-03-05T08:00:00Z', pickupMethod: 'SELF' }]
+  let sent: unknown
+  await page.route('**/api/v1/**', async route => {
+    const request = route.request()
+    const path = new URL(request.url()).pathname.replace('/api/v1', '')
+    if (path === '/locations') return ok(route, [{ id: 1, name: 'Hub HCM', locationType: 'HUB' }])
+    if (path === '/horse-stays/appointments') return ok(route, appointments)
+    if (path === '/horse-stays/6/refusals') { sent = request.postDataJSON(); appointments.length = 0; return ok(route, null) }
+    return ok(route, [])
+  })
+  await page.goto('/backoffice/coordinator/dispatch')
+  await page.getByRole('tab', { name: 'Ngựa ở hub' }).click({ timeout: 15_000 })
+  await page.getByRole('combobox', { name: 'Hub' }).click()
+  await page.getByRole('option', { name: 'Hub HCM' }).click()
+
+  const booked = page.getByRole('table', { name: 'Lịch hẹn khách tự chở ngựa tới' })
+  await booked.getByRole('row', { name: /Sao Mai/ }).getByRole('button', { name: 'Không nhận' }).click()
+  const dialog = page.getByRole('dialog', { name: 'Không nhận ngựa Sao Mai · BK-AAAA0002' })
+  await expect(dialog.getByRole('button', { name: 'Không nhận' })).toBeDisabled()
+  await dialog.getByLabel('Lý do').fill('Ngựa què chân trước')
+  await dialog.getByRole('button', { name: 'Không nhận' }).click()
+  await expect(page.getByText('Đã ghi không nhận ngựa')).toBeVisible()
+  await expect(booked).toHaveCount(0)
+  expect(sent).toEqual({ reason: 'Ngựa què chân trước' })
+})

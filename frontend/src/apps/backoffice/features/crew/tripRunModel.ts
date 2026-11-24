@@ -62,6 +62,12 @@ export function canReturnUnpaid(run: CrewTrip, stop: Stop): boolean {
     && (run.horses ?? []).some(h => h.leg?.boardTripStopId === stop.id && h.leg?.status === 'IN_PROGRESS')
 }
 
+// Không nhận một con ở nơi nhận: điểm đón của khách, hoặc cửa khẩu khi con lên xe tại đây (nhận từ đại lý, đơn nhập)
+export function canRefuse(run: CrewTrip, handover: Handover, legId: number): boolean {
+  if (handover.handoverType === 'PICKUP') return true
+  return handover.handoverType === 'AGENT' && (run.horses ?? []).some(h => h.leg?.id === legId && h.leg?.boardTripStopId === handover.tripStopId)
+}
+
 // Nhận và giao ngựa phải có biên bản đã ký trước khi hoàn tất (MAN_HINH 4.3, 6.5)
 export const needsRecord = (handover: Handover) => handover.handoverType === 'PICKUP' || handover.handoverType === 'DELIVERY'
 

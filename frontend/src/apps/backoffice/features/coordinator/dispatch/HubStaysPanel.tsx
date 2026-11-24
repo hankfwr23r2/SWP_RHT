@@ -19,8 +19,8 @@ import { useToast } from '@shared/ui/toast'
 import { localToIso } from './dispatchModel'
 import s from './Dispatch.module.css'
 
-// Nhận, trả ngựa (quét chip); hẹn giờ người nhận tới; gửi chuồng khi quá giờ hẹn (phí người nhận chịu)
-type Action = { stay: HorseStay; kind: 'receive' | 'deliver' | 'collect' | 'stable' }
+// Nhận, trả ngựa (quét chip); không nhận (có lý do); hẹn giờ người nhận tới; gửi chuồng khi quá giờ hẹn (phí người nhận chịu)
+type Action = { stay: HorseStay; kind: 'receive' | 'refuse' | 'deliver' | 'collect' | 'stable' }
 
 export function HubStaysPanel() {
   const { t } = useTranslation()
@@ -46,6 +46,7 @@ export function HubStaysPanel() {
     try {
       const stayId = action.stay.id ?? 0
       if (action.kind === 'collect') await dispatchApi.setCollectionTime(stayId, localToIso(collectAt))
+      else if (action.kind === 'refuse') await dispatchApi.refuseAtHub(stayId, note.trim())
       else if (action.kind === 'stable') await dispatchApi.stableAtHub(stayId, Number(fee), note.trim() || undefined)
       else await (action.kind === 'receive' ? dispatchApi.receiveAtHub : dispatchApi.deliverAtHub)(stayId, chip.trim(), note.trim() || undefined)
       toast(t(`dispatch.stays.${action.kind}Done`), 'success')
@@ -62,7 +63,16 @@ export function HubStaysPanel() {
     { key: 'horse', header: t('dispatch.stays.colHorse'), render: stay => stay.horseName },
     { key: 'booking', header: t('dispatch.stays.colBooking'), render: stay => stay.bookingCode },
     { key: 'at', header: t('dispatch.stays.colAppointment'), render: stay => (stay.plannedStartAt ? formatDateTime(new Date(stay.plannedStartAt)) : '') },
-    { key: 'action', header: '', render: stay => <Button size="sm" variant="primary" onClick={() => open(stay, 'receive')}>{t('dispatch.stays.receive')}</Button> },
+    {
+      key: 'action',
+      header: '',
+      render: stay => (
+        <span className={s.legs}>
+          <Button size="sm" variant="primary" onClick={() => open(stay, 'receive')}>{t('dispatch.stays.receive')}</Button>
+          <Button size="sm" variant="danger" onClick={() => open(stay, 'refuse')}>{t('dispatch.stays.refuse')}</Button>
+        </span>
+      ),
+    },
   ]
   const columns: TableColumn<HorseStay>[] = [
     { key: 'horse', header: t('dispatch.stays.colHorse'), render: stay => stay.horseName },
@@ -118,8 +128,8 @@ export function HubStaysPanel() {
           footer={(
             <>
               <Button onClick={() => setAction(undefined)}>{t('ui.cancel')}</Button>
-              <Button variant="primary" loading={busy} onClick={() => void submit()}
-                disabled={action.kind === 'collect' ? !collectAt : action.kind === 'stable' ? !(Number(fee) > 0) : !chip.trim()}>
+              <Button variant={action.kind === 'refuse' ? 'danger' : 'primary'} loading={busy} onClick={() => void submit()}
+                disabled={action.kind === 'collect' ? !collectAt : action.kind === 'stable' ? !(Number(fee) > 0) : action.kind === 'refuse' ? !note.trim() : !chip.trim()}>
                 {t(`dispatch.stays.${action.kind}`)}
               </Button>
             </>
@@ -140,7 +150,12 @@ export function HubStaysPanel() {
               {c => <Input {...c} inputMode="numeric" value={fee} onChange={e => setFee(e.target.value.replace(/\D/g, ''))} data-autofocus />}
             </Field>
           )}
-          {action.kind !== 'collect' && (
+          {action.kind === 'refuse' && (
+            <Field label={t('dispatch.stays.reason')} required>
+              {c => <Textarea {...c} value={note} onChange={e => setNote(e.target.value)} maxLength={500} data-autofocus />}
+            </Field>
+          )}
+          {action.kind !== 'collect' && action.kind !== 'refuse' && (
             <Field label={t(action.kind === 'stable' ? 'dispatch.stays.stableNote' : 'dispatch.stays.condition')}>
               {c => <Textarea {...c} value={note} onChange={e => setNote(e.target.value)} />}
             </Field>

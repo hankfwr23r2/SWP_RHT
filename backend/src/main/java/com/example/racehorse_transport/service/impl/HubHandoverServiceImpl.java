@@ -2,6 +2,7 @@ package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.health.HorseStayResponseDto;
 import com.example.racehorse_transport.dto.operation.HubHandoverRequestDto;
+import com.example.racehorse_transport.dto.operation.HubRefusalRequestDto;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Handover;
 import com.example.racehorse_transport.entity.HandoverHorse;
@@ -55,14 +56,8 @@ public class HubHandoverServiceImpl implements HubHandoverService {
     @Override
     @Transactional
     public HorseStayResponseDto receive(Long horseStayId, HubHandoverRequestDto request, String username) {
-        HorseStay stay = assemblyStay(horseStayId);
+        HorseStay stay = awaitingSelfDropOff(horseStayId);
         Booking booking = stay.getBookingHorse().getBooking();
-        if (booking.getPickupMethod() != TransferMethod.SELF || stay.getActualStartAt() != null) {
-            throw new DispatchRuleException("horseStayId", "Lịch hẹn này không chờ nhận ngựa khách tự chở tới.", true);
-        }
-        if (stay.getBookingHorse().getStatus() != BookingHorseStatus.ACTIVE || booking.getStatus() != BookingStatus.CONFIRMED) {
-            throw new DispatchRuleException("horseStayId", "Đơn " + booking.getCode() + " không ở trạng thái nhận ngựa được.", true);
-        }
         // Đầu SELF không có chặng đón: ngựa được ghi vào chặng trục sẽ lên xe ở chính hub này
         HorseLeg next = chain(stay).stream().findFirst()
                 .filter(l -> l.getStatus() == HorseLegStatus.PLANNED && l.getBoardTripStop() != null
@@ -84,6 +79,13 @@ public class HubHandoverServiceImpl implements HubHandoverService {
         // Lập khoản số dư (xe chỉ rời hub khi đã trả đủ, #32) và báo khách
         outcomes.atHub(handover, next, handover.getHandledBy().getUserId());
         return HorseStayResponseDto.from(stay);
+    }
+
+    @Override
+    @Transactional
+    public void refuse(Long horseStayId, HubRefusalRequestDto request, String username) {
+        HorseStay stay = awaitingSelfDropOff(horseStayId);
+        outcomes.refuse(stay.getBookingHorse().getId(), request.reason().strip(), clock.instant(), actor(username).getUserId());
     }
 
     @Override
@@ -116,6 +118,19 @@ public class HubHandoverServiceImpl implements HubHandoverService {
         // Con cuối của đơn giao xong thì đơn DELIVERED (#16); báo khách
         outcomes.atHub(handover, last, handover.getHandledBy().getUserId());
         return HorseStayResponseDto.from(stay);
+    }
+
+    // Lịch hẹn khách tự chở tới còn chờ nhận: con còn trong đơn, đơn đã xác nhận
+    private HorseStay awaitingSelfDropOff(Long horseStayId) {
+        HorseStay stay = assemblyStay(horseStayId);
+        Booking booking = stay.getBookingHorse().getBooking();
+        if (booking.getPickupMethod() != TransferMethod.SELF || stay.getActualStartAt() != null) {
+            throw new DispatchRuleException("horseStayId", "Lịch hẹn này không chờ nhận ngựa khách tự chở tới.", true);
+        }
+        if (stay.getBookingHorse().getStatus() != BookingHorseStatus.ACTIVE || booking.getStatus() != BookingStatus.CONFIRMED) {
+            throw new DispatchRuleException("horseStayId", "Đơn " + booking.getCode() + " không ở trạng thái nhận ngựa được.", true);
+        }
+        return stay;
     }
 
     private HorseStay assemblyStay(Long id) {

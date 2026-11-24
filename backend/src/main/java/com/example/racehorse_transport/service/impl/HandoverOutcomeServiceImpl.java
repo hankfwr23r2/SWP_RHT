@@ -161,12 +161,19 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
-    public void refuse(HorseLeg leg, String reason, Long actorUserId) {
-        bookingHorses.exclude(leg.getBookingHorse().getId(), reason, actorUserId);
-        legs.findByBookingHorse_IdOrderBySequenceNumber(leg.getBookingHorse().getId()).stream()
-                .filter(l -> l.getStatus() == HorseLegStatus.PLANNED)
-                .forEach(l -> l.setStatus(HorseLegStatus.CANCELLED));
+    public void refuse(Long bookingHorseId, String reason, Instant at, Long actorUserId) {
+        bookingHorses.exclude(bookingHorseId, reason, actorUserId);
+        for (HorseLeg leg : legs.findByBookingHorse_IdOrderBySequenceNumber(bookingHorseId)) {
+            if (leg.getStatus() == HorseLegStatus.PLANNED) {
+                leg.setStatus(HorseLegStatus.CANCELLED);
+            } else if (leg.getStatus() == HorseLegStatus.IN_PROGRESS) {
+                // Trước nơi nhận chỉ có chặng đại lý đang chở (đơn nhập): đại lý giữ ngựa, chặng kết thúc không giao
+                leg.setStatus(HorseLegStatus.CANCELLED);
+                leg.setActualEndAt(at);
+            }
+        }
         legs.flush();
+        horseStays.dropAppointments(bookingHorseId);
     }
 
     @Override

@@ -23,7 +23,7 @@ import { useToast } from '@shared/ui/toast'
 import { HandoverPapersPanel } from './HandoverPapersPanel'
 import { StopHealthPanel } from './StopHealthPanel'
 import { TripIncidentPanel } from './TripIncidentPanel'
-import { canArrive, canComplete, canDepart, canReturnUnpaid, canStart, needsRecord, handoverTypesAt, isRestStop, pendingAt, stopState, type StopState } from './tripRunModel'
+import { canArrive, canComplete, canDepart, canRefuse, canReturnUnpaid, canStart, needsRecord, handoverTypesAt, isRestStop, pendingAt, stopState, type StopState } from './tripRunModel'
 import s from './MyTrips.module.css'
 
 const STATE_TONE: Record<StopState, StatusTone> = { waiting: 'neutral', here: 'info', left: 'success' }
@@ -97,7 +97,7 @@ export default function TripRunPage() {
                 onClick={() => run(() => tripExecutionApi.scan(handover.id ?? 0, legId, chips[legId].trim()), t('myTrips.run.done.scanned'))}>
                 {t('myTrips.run.scan')}
               </Button>
-              {handover.handoverType === 'PICKUP' && (
+              {canRefuse(data, handover, legId) && (
                 <Button variant="danger" size="lg" fullWidth
                   onClick={() => { setRefusalReason(''); setRefusing({ handoverId: handover.id ?? 0, legId, name: horse.horseName ?? '' }) }}>
                   {t('myTrips.run.refusal.refuse')}

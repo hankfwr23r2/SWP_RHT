@@ -31,6 +31,9 @@ public interface HorseStayService {
     // Khách tự chở tới hub (pickup_method SELF): điều phối hẹn giờ, lập lưu trú tập kết dự kiến ở hub đầu tuyến trục, tới giờ xuất phát
     HorseStayResponseDto planSelfDropOff(Long bookingHorseId, Instant plannedStartAt);
 
+    // Con bị loại khỏi đơn: bỏ lịch hẹn nhận ở hub chưa bắt đầu
+    void dropAppointments(Long bookingHorseId);
+
     // Lịch hẹn nhận ngựa ở hub: lưu trú dự kiến chưa bắt đầu
     List<HorseStayResponseDto> appointmentsAt(Long locationId);
 

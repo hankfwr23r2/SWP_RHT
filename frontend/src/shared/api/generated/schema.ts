@@ -1565,7 +1565,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["refuse"];
+        post: operations["refuse_1"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1710,6 +1710,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["receive"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/horse-stays/{id}/refusals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["refuse"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4533,6 +4549,9 @@ export interface components {
         HubHandoverRequestDto: {
             conditionNote?: string;
             microchip: string;
+        };
+        HubRefusalRequestDto: {
+            reason: string;
         };
         HubServiceAreaRequest: {
             /** Format: int64 */
@@ -8423,7 +8442,7 @@ export interface operations {
             };
         };
     };
-    refuse: {
+    refuse_1: {
         parameters: {
             query?: never;
             header?: never;
@@ -8655,6 +8674,32 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseHorseStayResponseDto"];
+                };
+            };
+        };
+    };
+    refuse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HubRefusalRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVoid"];
                 };
             };
         };
