@@ -515,10 +515,12 @@ Khi tính sức chứa, `STANDARD` chiếm 1 chỗ, `WIDE` chiếm 2 chỗ.
 | `id` | `bigint` | | PK, identity | |
 | `license_plate` | `varchar(20)` | | UK | |
 | `vehicle_class_id` | `bigint` | | FK → vehicle_class | |
-| `standard_stall_count` | `int` | | CK `>= 0` | |
-| `wide_stall_count` | `int` | | CK `>= 0` | |
+| `standard_stall_count` | `int` | | CK `>= 0` | Số khoang thường ở bố trí mặc định. Chỉ dùng để tính tổng chỗ |
+| `wide_stall_count` | `int` | | CK `>= 0` | Số khoang rộng ở bố trí mặc định. Chỉ dùng để tính tổng chỗ, không giới hạn số con khoang rộng và không cố định vị trí |
 | `home_hub_location_id` | `bigint` | | FK → location | Hub gốc. Đợt này mọi xe thuộc trụ sở |
 | `status` | `varchar(30)` | | CK `ACTIVE, MAINTENANCE, RETIRED` | Do quản trị viên đổi, ghi `audit_log` (quy tắc #36). Xe đang chạy hay rảnh suy ra từ `vehicle_trip` |
+
+Vách ngăn **di động**: hai vị trí liền nhau bất kỳ ghép thành một khoang rộng. Cả xe là một dãy liền, đánh số từ 1 tới tổng chỗ.
 
 Ràng buộc bảng: `CHECK (standard_stall_count + wide_stall_count > 0)`. Service kiểm tổng chỗ `standard_stall_count + 2 × wide_stall_count` ≤ `vehicle_class.max_stall_count` và yêu cầu hub gốc của xe là địa điểm được đánh dấu `is_headquarters`. Cờ này chỉ áp dụng cho `location_type = 'HUB'` và unique index cho phép tối đa một trụ sở. Hub gốc xác định đơn vị quản lý. Vị trí xe và điều kiện nhận lượt tiếp theo thuộc luồng vận hành.
 Index: `vehicle_class_id`, `home_hub_location_id`.
@@ -1495,5 +1497,5 @@ Các quy tắc dưới đây cần so dữ liệu ở nhiều bảng nên CHECK 
 | 36 | Xe không chuyển sang MAINTENANCE, RETIRED khi đang chạy hoặc còn lượt chưa hoàn thành. RETIRED không quay lại. Không gán xe khác ACTIVE vào lượt mới | vehicle, vehicle_trip |
 | 37 | Người phụ trách một con ngựa là `handled_by` của `handover` DONE mới nhất mà công ty là bên nhận. Không sửa tay. `crew_assignment` chỉ là kế hoạch | handover, crew_assignment |
 | 38 | Hộ tống không kết thúc ca hoặc lượt xe khi còn phụ trách ngựa chưa bàn giao. Người ký nhận phải đang trong ca, có mặt ở nơi đó, và đã xem phiếu tóm tắt của từng con | handover, vehicle_trip |
-| 39 | Trên cùng một đoạn đường của lượt xe, hai con không trùng `stall_position`. Khoang rộng chiếm hai vị trí liền nhau. Vị trí cuối không vượt số chỗ của xe (quy tắc #9) | horse_leg, vehicle, trip_stop |
+| 39 | Trên cùng một đoạn đường của lượt xe, hai con không trùng `stall_position`. Khoang rộng chiếm hai vị trí liền nhau **bất kỳ** (vách di động). Vị trí cuối không vượt số chỗ của xe (quy tắc #9) | horse_leg, vehicle, trip_stop |
 | 40 | Con đã lên xe không đổi `stall_position`. Lượt xe đã xuất phát thì chỉ xếp các con lên ở điểm dừng sau. Lưu sơ đồ phải khóa `vehicle_trip` và lưu cả xe trong một giao dịch | horse_leg, vehicle_trip |
