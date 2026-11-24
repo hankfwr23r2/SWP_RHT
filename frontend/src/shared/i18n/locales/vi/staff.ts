@@ -73,6 +73,12 @@ export const staff = {
     "notFit": "Chưa xác nhận đủ sức đi tiếp",
     "costs": "Chi phí",
     "noCosts": "Chưa có chi phí.",
+    "photos": "Ảnh hiện trường",
+    "receipts": "Biên lai, hóa đơn",
+    "noEvidence": "Chưa có tệp nào.",
+    "evidenceFile": "Chọn tệp",
+    "uploadEvidence": "Tải lên",
+    "evidenceUploaded": "Đã tải lên",
     "payer": {
       "COMPANY": "Công ty chịu",
       "CUSTOMER": "Khách chịu",
