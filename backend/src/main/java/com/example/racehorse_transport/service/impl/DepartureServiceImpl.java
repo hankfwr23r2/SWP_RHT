@@ -11,6 +11,7 @@ import com.example.racehorse_transport.entity.enums.ActiveStatus;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.DepartureStatus;
 import com.example.racehorse_transport.entity.enums.ScheduleStatus;
+import com.example.racehorse_transport.entity.enums.ScheduleChangeCause;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.BookingStatusPolicy;
 import com.example.racehorse_transport.policy.DepartureCapacityPolicy;
@@ -165,7 +166,7 @@ public class DepartureServiceImpl implements DepartureService {
         String bookingReason = "Chuyến ngày " + departure.getDepartureDate() + " bị hủy: " + reason.trim();
         for (Booking booking : onDeparture) {
             if (BookingStatusPolicy.canTransition(booking.getStatus(), BookingStatus.SCHEDULE_CHANGE_REQUIRED)) {
-                bookingStatus.transition(booking.getId(), BookingStatus.SCHEDULE_CHANGE_REQUIRED, bookingReason, actor.getId());
+                bookingStatus.requireScheduleChange(booking.getId(), departure, ScheduleChangeCause.COMPANY, bookingReason, actor.getId());
             }
         }
         return toDto(departures.findWithRoute(departureId).orElseThrow());

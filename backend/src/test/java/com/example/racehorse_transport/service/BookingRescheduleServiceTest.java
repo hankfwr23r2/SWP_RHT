@@ -86,11 +86,51 @@ class BookingRescheduleServiceTest {
         assertThatThrownBy(() -> reschedules.reschedule(booking, owner, request)).isInstanceOf(IllegalStateException.class);
         fixture.setWaybill(booking);
         assertThatThrownBy(() -> reschedules.reschedule(booking, owner, request)).isInstanceOf(BookingRuleException.class)
-                .hasMessageContaining("đã đặt cọc");
+                .hasMessageContaining("Thiếu lịch sử chuyến vừa lỡ");
 
         assertThat(fixture.reserved(oldId)).isEqualTo(2);
         assertThat(fixture.reserved(fullId)).isZero();
         assertThat(fixture.statusOf(booking)).isEqualTo("SCHEDULE_CHANGE_REQUIRED");
+    }
+
+    @Test
+    void paidBookingCanMoveOnceForCustomerAndKeepsCompanyAndAuthorityChangesFree() {
+        LocalDate date = fixture.day(31);
+        Long original = data.departure("HCM-DN", date, 9).getId();
+        Long replacement = data.departure("HCM-DN", date.plusDays(7), 9).getId();
+        Long tooLate = data.departure("HCM-DN", date.plusDays(31), 9).getId();
+        String owner = fixture.customer();
+        Long booking = fixture.submit(owner, original, date, "WIDE");
+        fixture.setStatus(booking, "SCHEDULE_CHANGE_REQUIRED");
+        fixture.setWaybill(booking);
+        recordMissedDeparture(booking, original, "AUTHORITY");
+        recordMissedDeparture(booking, original, "CUSTOMER");
+
+        assertThatThrownBy(() -> reschedules.reschedule(booking, owner, new BookingRescheduleRequestDto(tooLate, date.plusDays(30))))
+                .isInstanceOf(BookingRuleException.class).hasMessageContaining("ngoài hạn giữ giá");
+        assertThat(reschedules.reschedule(booking, owner, new BookingRescheduleRequestDto(replacement, date.plusDays(6))).status())
+                .isEqualTo(BookingStatus.CONFIRMED);
+        assertThat(fixture.reserved(original)).isZero();
+        assertThat(fixture.reserved(replacement)).isEqualTo(2);
+
+        fixture.setStatus(booking, "SCHEDULE_CHANGE_REQUIRED");
+        recordMissedDeparture(booking, replacement, "CUSTOMER");
+        var second = new BookingRescheduleRequestDto(tooLate, date.plusDays(30));
+        assertThatThrownBy(() -> reschedules.reschedule(booking, owner, second))
+                .isInstanceOf(BookingRuleException.class).hasMessageContaining("đã dùng lượt");
+        assertThat(fixture.reserved(replacement)).isEqualTo(2);
+
+        recordMissedDeparture(booking, replacement, "COMPANY");
+        assertThat(reschedules.reschedule(booking, owner, second).status()).isEqualTo(BookingStatus.CONFIRMED);
+        assertThat(fixture.reserved(replacement)).isZero();
+        assertThat(fixture.reserved(tooLate)).isEqualTo(2);
+    }
+
+    private void recordMissedDeparture(Long booking, Long departure, String cause) {
+        jdbc.update("""
+                insert into booking_status_history (booking_id, from_status, to_status, previous_departure_id, cause_type)
+                values (?, 'CONFIRMED', 'SCHEDULE_CHANGE_REQUIRED', ?, ?)
+                """, booking, departure, cause);
     }
 
     @Test

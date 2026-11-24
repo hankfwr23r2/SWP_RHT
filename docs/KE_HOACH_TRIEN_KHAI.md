@@ -151,7 +151,7 @@ Có **3 thành viên** thì tách luồng A thành A-BE và A-FE (khách hàng),
 | `DocumentCompletenessService.isComplete(bookingId)` | A | B | Khi xe xuất phát đón (GĐ5), khi nhận tại hub nếu SELF, hoặc khi nhận tại cửa khẩu với IMPORT |
 | `PaymentReadinessService.isPaidInFull(bookingId)` | A | B | Khi xe **rời** nơi nhận ngựa (GĐ6) |
 | `PaymentService.requestBalance(bookingId, receivedAt)` | A | B | Khi hoàn tất nhận ngựa, lập số dư một lần cho đơn CONFIRMED đã cọc và có báo giá ACCEPTED |
-| `BookingCancellationService.cancelUnpaidAtPickup(bookingId, actorUserId)` (chưa có, A8) | A | B | Trả ngựa tại chỗ khi quá thời gian chờ |
+| `BookingCancellationService.cancelUnpaidAtPickup(bookingId, actorUserId)` | A | B | Trả ngựa tại chỗ khi quá hạn số dư cộng thời gian chờ và `PaymentCheckoutService.hasPendingBalanceConfirmation` là false |
 
 ---
 
@@ -432,10 +432,10 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
 
 - **BE:**
   - `SettlementPolicy` (số còn nợ, theo `DB_SCHEMA_59_BANG.md` mục 5);
-  - `SettlementService`: lấy chi phí đã duyệt mà khách hoặc người nhận chịu, gọi `createExtraCharge` và `CostItemService.linkExtraPayment`, đóng đơn khi nợ bằng 0;
+  - `SettlementService`: lấy chi phí đã duyệt mà khách hoặc người nhận chịu, gọi `PaymentService.createExtraCharge` qua `ExtraChargeService` và gắn chi phí qua `CostItemService.linkExtraPayment`. Khách thanh toán EXTRA_CHARGE qua VNPAY. Đóng đơn khi đủ điều kiện;
   - hủy đơn theo `NGHIEP_VU_THEO_59_BANG.md` mục 5.4, gồm hủy do không trả số dư tại nơi nhận; tự đóng đơn không phát sinh sau 7 ngày;
-  - danh sách đơn thiếu giấy và đổi chuyến của đơn đã cọc (màn hình 3.5b), xử lý theo nguyên nhân ở GĐ5;
-  - `RatingService`.
+  - danh sách đơn thiếu giấy và đổi chuyến của đơn đã cọc (màn hình 3.5b), xử lý theo nguyên nhân ở GĐ5. Tính hạn giữ giá từ `previous_departure_id` và đếm theo `cause_type`;
+  - Hoàn chuyển khoản qua `RefundService`, liên kết từng khoản gốc. Khi quản lý duyệt hoàn dòng chưa chi, `RefundService` ghi `quotation_line.refund_payment_id` trong cùng giao dịch. `RatingService` cho đơn `DELIVERED` hoặc `COMPLETED`.
 - **FE:** quản lý quyết toán. Khách xem khoản thu thêm, thanh toán, đánh giá. Hóa đơn gửi qua mail.
 - **Tận dụng:** `SettlementServiceImpl`, `SettlementExpiryScheduler`, `BillMailServiceImpl`, `CustomerRatingController`, FE `orders/TripFeedback.tsx`, `manager/cancelled-orders`.
 - **Xong khi:** test số còn nợ trong các ca có hoàn tiền, có thu thêm, có khoản do người nhận chịu. Đóng đơn đúng điều kiện.
@@ -652,6 +652,6 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 | A7 | Báo giá, thanh toán | A | 4 | Chưa làm | |
 | B4 | Sự cố, chi phí | B | 4 | Xong phần chính (2 PR). Còn: phương án đổi xe, về hub tự lập lượt xe; biên lai, ảnh hiện trường | #385, #386 |
 | B5 | Giao thất bại, giao lại | B | 4 | Xong phần chính: chờ người nhận, quá giờ thì giao thất bại, về hub, giao lại. Còn: gửi chuồng | #387 |
-| A8 | Quyết toán, hủy, đánh giá | A | 5 | Chưa làm | |
+| A8 | Quyết toán, hủy, đánh giá | A | 5 | Backend đã triển khai trên nhánh A8. FE và kiểm thử PostgreSQL theo dõi riêng | |
 | B6 | Theo dõi, thông báo, báo cáo | B | 5 | Xong phần chính (6 PR): chuông thông báo, hành trình ngựa và tra cứu công khai, báo cáo vận hành, nhật ký hệ thống. Còn: báo khách khi nhận, giao ngựa (cần tách `HandoverServiceImpl`), bảng điều khiển `/manager` | #388, #389, #390, #391, #392 |
 | E | Tích hợp, dọn dẹp, ERD, merge | A + B | 6 | Chưa làm | |

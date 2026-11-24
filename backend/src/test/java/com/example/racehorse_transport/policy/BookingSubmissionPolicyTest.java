@@ -97,4 +97,12 @@ class BookingSubmissionPolicyTest {
         return new HorseInput(id, "STANDARD", null, null, false, List.of(),
                 new InsuranceDeclarationRequestDto(InsuranceCoverageOption.ARRANGED, null, null, null, null, null));
     }
+
+    @Test
+    void priceHoldIncludesTheLastDateMeasuredFromTheMissedDeparture() {
+        LocalDate missed = LocalDate.of(2027, 1, 17);
+        BookingSubmissionPolicy.validatePriceHold(missed, missed.plusDays(30), 30);
+        assertThatThrownBy(() -> BookingSubmissionPolicy.validatePriceHold(missed, missed.plusDays(31), 30))
+                .isInstanceOf(BookingRuleException.class);
+    }
 }

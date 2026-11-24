@@ -67,6 +67,35 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                                          @Param("departureStatuses") Collection<DepartureStatus> departureStatuses,
                                          @Param("threshold") Instant threshold);
 
+    @Query("""
+            SELECT b FROM Booking b JOIN FETCH b.departure d
+            WHERE b.status = :status ORDER BY d.plannedDepartureAt, b.id
+            """)
+    List<Booking> findWithDeparture(BookingStatus status);
+
+    @Query("""
+            SELECT b.id FROM Booking b JOIN b.departure d
+            WHERE b.status = :status AND d.plannedDepartureAt BETWEEN :now AND :cutoff ORDER BY b.id
+            """)
+    List<Long> findIdsForDocumentReminder(BookingStatus status, Instant now, Instant cutoff);
+
+    @Query("""
+            SELECT count(n) > 0 FROM Notification n
+            WHERE n.booking.id = :bookingId AND n.title = :title AND n.createdAt >= :start AND n.createdAt < :end
+            """)
+    boolean hasNotificationBetween(Long bookingId, String title, Instant start, Instant end);
+
+    @Query("""
+            SELECT count(hh) > 0 FROM HandoverHorse hh JOIN hh.handover h JOIN hh.horseLeg l
+            WHERE l.bookingHorse.booking.id = :bookingId
+                AND h.status = com.example.racehorse_transport.entity.enums.HandoverStatus.DONE
+                AND (h.handoverType = com.example.racehorse_transport.entity.enums.HandoverType.PICKUP
+                     OR (h.handoverType = com.example.racehorse_transport.entity.enums.HandoverType.AGENT
+                         AND h.toParty IS NULL AND l.bookingHorse.booking.bookingType =
+                             com.example.racehorse_transport.entity.enums.BookingType.IMPORT))
+            """)
+    boolean hasReceivedHorses(Long bookingId);
+
     interface DepartureBookingCount {
         Long getDepartureId();
         Long getBookingCount();

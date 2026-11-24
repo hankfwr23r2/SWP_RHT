@@ -74,6 +74,12 @@ public final class BookingSubmissionPolicy {
         }
     }
 
+    public static void validatePriceHold(LocalDate missedDate, LocalDate replacementDate, int holdDays) {
+        if (replacementDate.isAfter(missedDate.plusDays(holdDays))) {
+            throw BookingRuleException.conflict("Chuyến mới nằm ngoài hạn giữ giá.");
+        }
+    }
+
     public static void validatePickupDate(LocalDate pickupDate, LocalDate departureDate) {
         if (pickupDate.isAfter(departureDate)) {
             throw new BookingRuleException("Ngày đón phải trước hoặc cùng ngày xuất phát.");

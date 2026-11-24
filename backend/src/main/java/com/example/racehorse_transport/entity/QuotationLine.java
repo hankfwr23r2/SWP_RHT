@@ -19,6 +19,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.generator.EventType;
 
 import java.math.BigDecimal;
@@ -28,6 +29,7 @@ import java.math.BigDecimal;
 @Setter
 @NoArgsConstructor
 @Entity
+@DynamicUpdate
 @Table(name = "quotation_line")
 public class QuotationLine {
 
@@ -86,4 +88,8 @@ public class QuotationLine {
     // snapshot: dòng thu hộ hay không, chép từ dịch vụ lúc lập báo giá
     @Column(name = "is_pass_through", nullable = false)
     private Boolean passThrough;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "refund_payment_id")
+    private Payment refundPayment;
 }

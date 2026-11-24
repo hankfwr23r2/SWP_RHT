@@ -1,0 +1,18 @@
+package com.example.racehorse_transport.service;
+
+import com.example.racehorse_transport.dto.booking.BookingCancellationResponseDto;
+import com.example.racehorse_transport.dto.booking.CancelBookingRequestDto;
+import com.example.racehorse_transport.dto.booking.CompanyCancelBookingRequestDto;
+import com.example.racehorse_transport.dto.booking.ManagerCancelBookingRequestDto;
+
+public interface BookingCancellationService {
+    BookingCancellationResponseDto preview(Long bookingId, String username);
+
+    BookingCancellationResponseDto cancelByCustomer(Long bookingId, String username, CancelBookingRequestDto request);
+
+    BookingCancellationResponseDto cancelForCompany(Long bookingId, String username, CompanyCancelBookingRequestDto request);
+
+    BookingCancellationResponseDto cancelForCustomer(Long bookingId, String username, ManagerCancelBookingRequestDto request);
+
+    void cancelUnpaidAtPickup(Long bookingId, Long actorUserId);
+}

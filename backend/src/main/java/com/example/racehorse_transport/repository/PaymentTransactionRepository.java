@@ -19,6 +19,9 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
     List<PaymentTransaction> findByPayment_Booking_IdAndPayment_PaymentTypeAndGatewayCodeAndStatus(Long bookingId,
             PaymentType type, String code, PaymentTransactionStatus status);
 
+    List<PaymentTransaction> findByPayment_Booking_IdAndGatewayCodeAndStatus(Long bookingId, String code,
+            PaymentTransactionStatus status);
+
     @Modifying
     @Query(value = """
             INSERT INTO payment_transaction (payment_id, gateway_code, gateway_transaction_number,
