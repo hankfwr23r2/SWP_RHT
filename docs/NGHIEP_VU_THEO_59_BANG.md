@@ -371,6 +371,12 @@ Giá cũ giữ trong `PRICE_HOLD_DAYS` ngày tính từ ngày chạy của chuy�
 - Lượt chạy mới của một xe, một tài xế hoặc một hộ tống phải bắt đầu ở nơi lượt trước kết thúc.
 - Ngựa chỉ lên xe trục ở điểm đầu tuyến và xuống ở điểm cuối tuyến.
 
+**Xếp vị trí khoang** (`horse_leg.stall_position`):
+- Khách chọn **loại khoang**, không chọn vị trí. Hệ thống tự xếp ngay khi gán ngựa vào xe, điều phối xem sơ đồ và đổi chỗ khi cần. "Xếp lại tự động" tính lại cả xe.
+- Bắt buộc: quy tắc #39, #40. Đủ chỗ nhưng lẻ vị trí thì hệ thống dồn các con chưa lên xe; dồn không được thì từ chối và nêu con vướng.
+- Ưu tiên khi tự xếp, không chặn: con xuống trước đứng gần cửa sau; ngựa đực và ngựa cái không cạnh nhau, đực về phía đầu xe; ngựa cùng đơn cạnh nhau. Không đạt thì hiện cảnh báo, điều phối quyết định.
+- Đổi xe hoặc loại ngựa thì xếp lại các con chưa lên xe. Chuồng ở hub chưa quản lý vị trí ở đợt này.
+
 ---
 
 ### GĐ6. Nhận ngựa
@@ -389,7 +395,7 @@ Với `pickup_method = SELF`, kiểm giấy trước khi ký nhận tại hub, g
 | 6 | Nhận giấy tờ gốc, ví dụ hộ chiếu ngựa | `handover_document` direction RECEIVED |
 | 7 | Ký biên bản | `document` loại HANDOVER_RECORD (`handover_id`), `handover.status = DONE`, `handed_at` |
 | 8 | Lập khoản số dư bằng tổng báo giá ACCEPTED trừ số đã trả (thường gọi là "70%"), khách trả qua VNPAY | `payment` BALANCE, `due_at` = lúc nhận + `BALANCE_WAIT_MINUTES` (30 phút) |
-| 9 | Trả đủ: ngựa lên xe | `horse_leg` PICKUP: `status = IN_PROGRESS`, `actual_start_at` |
+| 9 | Trả đủ: ngựa lên đúng vị trí `stall_position` (màn hình hiện "Khoang số…") | `horse_leg` PICKUP: `status = IN_PROGRESS`, `actual_start_at` |
 | 10 | Rời điểm đón | `trip_stop.actual_departure_at`, `booking.status = IN_OPERATION` |
 
 **Không trả đủ trong 30 phút:** tổ xe trả ngựa và giấy gốc tại chỗ (`handover` RETURN), quản lý hủy đơn do khách (5.4), nhả chỗ. Các đơn khác trên xe đi tiếp. Link VNPAY mở trước hạn mà chưa có kết quả thì chờ thêm 5 phút sau hạn. Với đơn IMPORT, nơi nhận là cửa khẩu và quy tắc như trên, ngựa trả lại đại lý.

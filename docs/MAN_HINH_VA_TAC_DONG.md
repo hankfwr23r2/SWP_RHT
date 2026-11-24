@@ -45,6 +45,7 @@ Task nào làm tới thao tác nào thì đối chiếu dòng đó. Một dòng 
 | 3.7b | Xin chuyến đột xuất (khách, quản lý) **[mới]** | Khách yêu cầu, quản lý tạo chuyến | `departure` không có lịch | Không có xe hoặc tổ xe | Đơn gắn chuyến mới | Ngày, giá riêng |
 | 3.8 | Báo giá và thanh toán (khách) | **Chấp nhận** rồi trả cọc, hoặc **Từ chối** kèm lý do | `quotation`, `payment`, `payment_transaction` | Báo giá hết hạn hoặc đã có bản mới | Trả xong: `CONFIRMED`, cấp vận đơn. Từ chối: về `QUOTING` và giữ chỗ. Hết hạn: nhả chỗ sau thời gian chờ xác nhận nếu có phiên VNPAY chưa phản hồi | Vận đơn |
 | 3.9 | Điều độ (điều phối) | Duyệt nhóm đón, giao do hệ thống gợi ý; gán xe, tài xế, hộ tống, ngựa; xếp xe nối nhiều tuyến trong tuần | `vehicle_trip`, `trip_stop`, `crew_assignment`, `horse_leg` | Quá chỗ, quá 4 giờ, trùng giờ, xe hoặc người không ở điểm đầu, xe bảo dưỡng hoặc ngừng sử dụng, ngựa cùng đơn ở hai xe trục | Nhân viên thấy lượt xe mới. Xe bị khóa hiện lý do | Khung giờ đón |
+| 3.9a | Sơ đồ khoang của lượt xe (điều phối) **[mới]** | Xem sơ đồ hệ thống đã xếp, **Xếp lại tự động**, đổi chỗ, **Lưu** | `horse_leg.stall_position` | Trùng vị trí, khoang rộng không đủ hai vị trí liền nhau, vượt số chỗ, con đã lên xe, người khác vừa lưu | Cảnh báo đực cạnh cái, con xuống trước bị chắn. Tổ xe thấy sơ đồ mới | "Khoang số…" sau khi xếp, chỉ xem |
 | 3.10 | Lượt xe của tôi (tài xế, hộ tống) | **Xác nhận nhận việc** | `crew_assignment` ACKNOWLEDGED | Đã bị gỡ khỏi lượt xe | Điều phối thấy đã nhận; thiếu thì cảnh báo | |
 | 3.11 | Xe (quản trị viên) **[mới]** | Thêm, sửa thuộc tính; đưa vào bảo dưỡng, đưa lại hoạt động, ngừng sử dụng | `vehicle`, `audit_log` | Trùng biển số, quá số chỗ của hạng xe; xe đang chạy hoặc còn lượt chưa hoàn thành; xe đã ngừng sử dụng | Xe ẩn hoặc hiện khi gán | |
 | 3.12 | Xe về hub gốc (tài xế) **[mới]** | Báo bình thường hoặc cần bảo dưỡng | `vehicle_trip`, `vehicle` | Xe chưa về hub gốc | Cần bảo dưỡng: xe sang MAINTENANCE | |
@@ -54,7 +55,7 @@ Task nào làm tới thao tác nào thì đối chiếu dòng đó. Một dòng 
 | # | Màn hình (vai trò) | Thao tác | Ghi | Chặn khi | Tác động | Khách thấy |
 |---|---|---|---|---|---|---|
 | 4.1 | Lượt xe (tài xế) | **Xuất phát** | `vehicle_trip` IN_PROGRESS | Thiếu giấy (gồm `QUARANTINE_CLEARANCE` đơn xuất), bảo hiểm chưa xác nhận, tài xế chưa nhận việc | Điều phối thấy xe chạy | "Xe đang tới đón" |
-| 4.2 | Điểm dừng: đón (hộ tống, điện thoại) | Quét chip, khám nhanh, chụp ảnh, nhận giấy gốc | `handover` PICKUP, `handover_horse`, `horse_health_log`, `handover_document`, `document` | Chip sai thì không nhận con đó | Sự cố `DOCUMENT` | |
+| 4.2 | Điểm dừng: đón (hộ tống, điện thoại) | Quét chip, khám nhanh, chụp ảnh, nhận giấy gốc | `handover` PICKUP, `handover_horse`, `horse_health_log`, `handover_document`, `document` | Chip sai thì không nhận con đó. Chip đúng thì hiện "Khoang số…" để dẫn ngựa vào | Sự cố `DOCUMENT` | |
 | 4.3 | Như trên | Ký, **Nhận ngựa** | `handover` DONE, `payment` BALANCE nếu còn nợ | Thiếu biên bản | Gửi yêu cầu trả số dư bằng tổng báo giá đã chấp nhận trừ số đã trả. Hạn tính theo `BALANCE_WAIT_MINUTES`. **Trách nhiệm sang tổ xe** | "Đã nhận ngựa, chờ thanh toán", nút thanh toán nếu còn nợ |
 | 4.3a | Như trên **[mới]** | **Rời điểm đón** | `trip_stop`, `horse_leg`, `booking` IN_OPERATION | Còn đơn ở điểm này chưa trả đủ | Hết quyền tự hủy | "Đang vận chuyển" |
 | 4.3b | Như trên **[mới]** | **Trả ngựa tại chỗ** khi quá 30 phút chưa trả đủ (hộp xác nhận nêu hậu quả) | `handover` RETURN, `handover_document`, `booking` CANCELLED | Chưa hết giờ chờ; giao dịch đang chờ xác nhận | Nhả chỗ, mất cọc vận chuyển. Đơn khác trên xe đi tiếp | Đơn đã hủy, khoản không hoàn. Có link VNPAY đang chờ thì chờ thêm 5 phút sau hạn |
@@ -82,7 +83,7 @@ Công ty không vận hành nơi cách ly. Điều kiện cách ly thể hiện 
 
 | # | Màn hình (vai trò) | Thao tác | Ghi | Chặn khi | Tác động | Khách thấy |
 |---|---|---|---|---|---|---|
-| 6.1 | Lượt xe trục (hộ tống) | Nhận ngựa từ hub | `handover` HUB_OUT, `horse_leg` | Chip sai, chưa xong dịch vụ trước chuyến | Danh sách ngựa của mọi khách kèm chỉ dẫn từng con | "Đang đi trục" |
+| 6.1 | Lượt xe trục (hộ tống) | Nhận ngựa từ hub | `handover` HUB_OUT, `horse_leg` | Chip sai, chưa xong dịch vụ trước chuyến | Danh sách ngựa của mọi khách kèm chỉ dẫn và số khoang từng con | "Đang đi trục" |
 | 6.2 | Điểm dừng: trạm nghỉ (tài xế, hộ tống) | **Tới nơi**, cho nước và cỏ, đo và ghi ăn uống từng con, **Rời đi** | `trip_stop`, `horse_health_log` | Còn con chưa ghi; chưa nghỉ đủ 30 phút (rời sớm phải xác nhận kèm lý do) **[mới]** | Bỏ uống 2 trạm liền: `WATCH`, báo điều phối. Điều phối thấy giờ trễ | Trạm, ăn uống, chỉ số từng con |
 | 6.3 | Điểm dừng: cửa khẩu chiều xuất (tài xế) | Tải giấy, **Bàn giao đại lý** | `document`, `handover` AGENT | Thiếu giấy; không có đối tác ở ít nhất một bên | **Trách nhiệm sang đại lý**; chặng đại lý bắt đầu | "Đã qua cửa khẩu" |
 | 6.4 | Chặng đại lý (điều phối) | Nhập mốc và ảnh đại lý gửi | `horse_leg`, `document` | Mốc lùi thời gian | | Mốc, ghi rõ "theo đại lý" |
