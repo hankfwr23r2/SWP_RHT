@@ -11,6 +11,7 @@ public interface HandoverService {
     // Lượt xe nhìn từ tổ xe; chỉ người trong tổ lái (chưa bị gỡ) mới xem được
     CrewTripResponseDto crewTrip(Long vehicleTripId, String username);
 
+    // RETURN ở điểm đón: quá hạn trả số dư thì trả ngựa cho người gửi và hủy đơn ngay trong một thao tác
     CrewTripResponseDto create(Long tripStopId, HandoverCreateRequestDto request, String username);
 
     CrewTripResponseDto scan(Long handoverId, HandoverScanRequestDto request, String username);

@@ -123,6 +123,48 @@ test('hộ tống không nhận một con ở điểm đón, phải ghi lý do, 
   await expect(pickup).toContainText('Sao Mai')
 })
 
+test('quá hạn số dư thì hộ tống trả ngựa cho người gửi, còn trong hạn thì hệ thống từ chối', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.addInitScript(() => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: 'escort', name: 'Hộ tống Một', username: 'escort@example.com' })))
+  const run = newRun()
+  run.trip.status = 'IN_PROGRESS'
+  Object.assign(run.trip.stops[0], { actualArrivalAt: '2031-03-05T01:00:00Z', actualDepartureAt: '2031-03-05T01:30:00Z' })
+  Object.assign(run.trip.stops[1], { actualArrivalAt: '2031-03-05T02:00:00Z' })
+  run.horses[0].leg.status = 'IN_PROGRESS'
+  run.handovers.push({ id: 50, handoverType: 'PICKUP', status: 'DONE', tripStopId: 2, horses: [] })
+  let overdue = false
+  const sent: unknown[] = []
+  await page.route('**/api/v1/**', async route => {
+    const request = route.request()
+    const path = new URL(request.url()).pathname.replace('/api/v1', '')
+    if (path === '/crew/vehicle-trips/9') return ok(route, run)
+    if (path === '/trip-stops/2/handovers') {
+      sent.push(request.postDataJSON())
+      if (!overdue) return route.fulfill({ status: 409, json: { status: 'error', message: 'Đơn chưa đủ điều kiện hủy do quá thời gian chờ trả số dư.' } })
+      run.horses[0].leg.status = 'CANCELLED'
+      run.handovers.push({ id: 51, handoverType: 'RETURN', status: 'DONE', tripStopId: 2, horses: [{ horseLegId: 70, bookingCode: 'BK-AAAA0001', horseName: 'Sao Mai' }] })
+      return ok(route, run)
+    }
+    return ok(route, [])
+  })
+  await page.goto('/backoffice/my-trips/9')
+
+  const pickup = page.getByRole('list', { name: 'Điểm dừng' }).getByRole('listitem').filter({ has: page.locator('h2') }).nth(1)
+  await pickup.getByRole('button', { name: 'Trả ngựa do quá hạn thanh toán' }).click({ timeout: 15_000 })
+  const dialog = page.getByRole('alertdialog')
+  await expect(dialog).toContainText('Trả ngựa cho người gửi?')
+  await dialog.getByRole('button', { name: 'Trả ngựa do quá hạn thanh toán' }).click()
+  await expect(page.getByText('Đơn chưa đủ điều kiện hủy do quá thời gian chờ trả số dư.')).toBeVisible()
+  await dialog.getByRole('button', { name: 'Hủy' }).click()
+
+  overdue = true
+  await pickup.getByRole('button', { name: 'Trả ngựa do quá hạn thanh toán' }).click()
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Trả ngựa do quá hạn thanh toán' }).click()
+  await expect(page.getByText('Đã trả ngựa và hủy đơn')).toBeVisible()
+  await expect(pickup.getByRole('button', { name: 'Trả ngựa do quá hạn thanh toán' })).toHaveCount(0)
+  expect(sent).toEqual([{ handoverType: 'RETURN' }, { handoverType: 'RETURN' }])
+})
+
 test('ở trạm nghỉ hộ tống ghi ăn uống từng con, rời sớm thì gửi kèm lý do', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.addInitScript(() => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: 'escort', name: 'Hộ tống Một', username: 'escort@example.com' })))

@@ -2,6 +2,12 @@
 export const fieldCrew = {
   myTrips: {
     "run": {
+      "unpaidReturn": {
+        "action": "Return horses: balance overdue",
+        "title": "Return the horses to the shipper?",
+        "message": "The customer has not paid the balance after the waiting time. Every horse received at this stop is handed back to the shipper and the booking is cancelled. If a VNPAY payment is still pending, the system refuses and you wait a little longer.",
+        "done": "Horses returned and booking cancelled"
+      },
       "refusal": {
         "refuse": "Refuse",
         "title": "Refuse {{name}}?",
@@ -76,6 +82,7 @@ export const fieldCrew = {
         "PICKUP": "Receive horses",
         "DELIVERY": "Deliver horses",
         "HUB_IN": "Hand into hub",
+        "RETURN": "Return to shipper",
         "HUB_OUT": "Take from hub"
       },
       "handoverStatus": {

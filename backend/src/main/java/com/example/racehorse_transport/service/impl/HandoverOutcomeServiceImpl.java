@@ -8,6 +8,7 @@ import com.example.racehorse_transport.entity.enums.HandoverType;
 import com.example.racehorse_transport.entity.enums.HorseLegStatus;
 import com.example.racehorse_transport.policy.TripExecutionPolicy;
 import com.example.racehorse_transport.repository.HorseLegRepository;
+import com.example.racehorse_transport.service.BookingCancellationService;
 import com.example.racehorse_transport.service.BookingHorseService;
 import com.example.racehorse_transport.service.BookingStatusService;
 import com.example.racehorse_transport.service.HandoverOutcomeService;
@@ -30,6 +31,7 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
     private final BookingStatusService bookingStatus;
     private final BookingHorseService bookingHorses;
     private final PaymentService payments;
+    private final BookingCancellationService cancellations;
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
@@ -73,6 +75,22 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
         legs.findByBookingHorse_IdOrderBySequenceNumber(leg.getBookingHorse().getId()).stream()
                 .filter(l -> l.getStatus() == HorseLegStatus.PLANNED)
                 .forEach(l -> l.setStatus(HorseLegStatus.CANCELLED));
+        legs.flush();
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void returnUnpaid(List<HorseLeg> boarded, Instant at, Long actorUserId) {
+        // Hủy đơn trước mọi thao tác ghi: luồng A từ chối thì không có gì thay đổi. Khóa đơn theo ID tăng dần
+        boarded.stream().map(l -> l.getBookingHorse().getBooking().getId()).distinct().sorted()
+                .forEach(id -> cancellations.cancelUnpaidAtPickup(id, actorUserId));
+        for (HorseLeg leg : boarded) {
+            leg.setStatus(HorseLegStatus.CANCELLED);
+            leg.setActualEndAt(at);
+            legs.findByBookingHorse_IdOrderBySequenceNumber(leg.getBookingHorse().getId()).stream()
+                    .filter(l -> l.getStatus() == HorseLegStatus.PLANNED)
+                    .forEach(l -> l.setStatus(HorseLegStatus.CANCELLED));
+        }
         legs.flush();
     }
 }

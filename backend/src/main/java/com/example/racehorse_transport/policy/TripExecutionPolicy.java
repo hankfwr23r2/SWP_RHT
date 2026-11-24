@@ -55,7 +55,8 @@ public final class TripExecutionPolicy {
     // Loại giao nhận hợp với điểm dừng: đón ở địa chỉ đón, giao ở địa chỉ giao, vào và ra hub ở hub
     public static void requireHandoverFitsStop(HandoverType type, TripStopType stopType) {
         boolean fits = switch (type) {
-            case PICKUP -> stopType == TripStopType.PICKUP;
+            // RETURN: trả lại ngựa cho người gửi ngay tại nơi nhận (quá hạn trả số dư)
+            case PICKUP, RETURN -> stopType == TripStopType.PICKUP;
             case DELIVERY -> stopType == TripStopType.DELIVERY;
             case HUB_IN, HUB_OUT -> stopType == TripStopType.HUB;
             default -> false;
