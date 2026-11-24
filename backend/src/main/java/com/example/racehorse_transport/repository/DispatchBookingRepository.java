@@ -23,4 +23,25 @@ public interface DispatchBookingRepository extends Repository<Booking, Long> {
             """)
     List<Booking> findDispatchable(@Param("statuses") Collection<BookingStatus> statuses,
                                    @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    // Gợi ý gom lượt đón: đơn công ty đón, đi trục từ hub này, ngày đón khách muốn là ngày đó
+    @EntityGraph(attributePaths = {"departure", "departure.route"})
+    @Query("""
+            SELECT b FROM Booking b JOIN b.departure d
+            WHERE b.status IN :statuses AND b.pickupMethod = com.example.racehorse_transport.entity.enums.TransferMethod.COMPANY
+              AND d.route.origin.id = :hubId AND b.requestedPickupDate = :date
+            ORDER BY b.code
+            """)
+    List<Booking> findForPickupGrouping(@Param("statuses") Collection<BookingStatus> statuses, @Param("hubId") Long hubId, @Param("date") LocalDate date);
+
+    // Gợi ý gom lượt giao: đơn công ty giao, chuyến trục tới hub này xuất phát trong [from, to] (ngày tới nơi lọc ở service)
+    @EntityGraph(attributePaths = {"departure", "departure.route"})
+    @Query("""
+            SELECT b FROM Booking b JOIN b.departure d
+            WHERE b.status IN :statuses AND b.deliveryMethod = com.example.racehorse_transport.entity.enums.TransferMethod.COMPANY
+              AND d.route.destination.id = :hubId AND d.departureDate BETWEEN :from AND :to
+            ORDER BY b.code
+            """)
+    List<Booking> findForDeliveryGrouping(@Param("statuses") Collection<BookingStatus> statuses, @Param("hubId") Long hubId,
+                                          @Param("from") LocalDate from, @Param("to") LocalDate to);
 }
