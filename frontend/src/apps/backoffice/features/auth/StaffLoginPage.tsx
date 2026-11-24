@@ -61,7 +61,7 @@ function LoginForm({ managerOnly }: { managerOnly: boolean }) {
         username: res.email || res.username,
         staffCode: res.staffCode,
       })
-      navigate(HOME_OF[role] ?? '/manager')
+      navigate(HOME_OF[role] ?? '/manager/orders')
     } catch (err) {
       fail(err instanceof Error ? err.message : t('staffAuth.loginFailed', 'Đăng nhập không thành công. Vui lòng thử lại.'), 'password')
     } finally {

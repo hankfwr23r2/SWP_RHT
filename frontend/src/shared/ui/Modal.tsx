@@ -36,6 +36,12 @@ export function Modal({ title, subtitle, onClose, footer, wide, alert, children 
     }
   }, [])
 
+  // Nút đang giữ tiêu điểm bị khóa lúc xử lý thì tiêu điểm rơi ra trang; kéo lại để Escape và Tab vẫn dùng được
+  useEffect(() => {
+    const top = [...document.querySelectorAll('[data-dialog]')].at(-1)
+    if (document.activeElement === document.body && top === dialog.current) dialog.current?.focus()
+  })
+
   const onKeyDown = (e: KeyboardEvent) => {
     // Ô chọn đang mở tự đóng danh sách và gọi preventDefault: khi đó không đóng hộp thoại
     if (e.key === 'Escape' && !e.defaultPrevented) {

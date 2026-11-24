@@ -59,6 +59,12 @@ class HorseFlowTest {
         data.staff(staff, "MANAGER");
         mvc.perform(get("/horses").header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.generateToken(staff, List.of("MANAGER"))))
                 .andExpect(status().isForbidden());
+        mvc.perform(get("/horse-types").header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.generateToken(staff, List.of("MANAGER"))))
+                .andExpect(status().isForbidden());
+        String admin = data.unique("horse-admin");
+        data.staff(admin, "ADMIN");
+        mvc.perform(get("/horse-types").header(HttpHeaders.AUTHORIZATION, "Bearer " + jwt.generateToken(admin, List.of("ADMIN"))))
+                .andExpect(status().isOk());
         mvc.perform(get("/horses")).andExpect(status().isUnauthorized());
     }
 

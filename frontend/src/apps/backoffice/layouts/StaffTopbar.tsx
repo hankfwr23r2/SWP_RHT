@@ -14,7 +14,7 @@ import { StaffProfileModal } from './StaffProfileModal'
 import s from './StaffShell.module.css'
 
 // Trang danh sách nhận từ khóa tìm kiếm của từng vai trò
-const SEARCH_IN: Record<StaffRole, string> = { admin: '/admin/accounts', manager: '/manager/orders', specialist: HOME_OF.specialist, coordinator: '/coordinator/fleet-plan', driver: '/driver', escort: '/escort' }
+const SEARCH_IN: Record<StaffRole, string> = { admin: '/admin/accounts', manager: '/manager/orders', specialist: HOME_OF.specialist, coordinator: HOME_OF.coordinator, driver: HOME_OF.driver, escort: HOME_OF.escort }
 
 function reviewNoticeLink(path: string) {
   return path.replace(/^(?:\/backoffice)?\/specialist\/verification(?=\/|\?|#|$)/, '/specialist/review')

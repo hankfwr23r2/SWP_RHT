@@ -1,6 +1,6 @@
 import type { StaffRole } from '@shared/types/role'
 
-// Menu theo vai trò. Các mục của Flow 1 (tiếp nhận, duyệt báo giá, duyệt hồ sơ ngựa, phương án xe) theo quy trình mới.
+// Menu theo vai trò. Các màn cũ gọi API đã bỏ không có trong menu; danh sách chờ xóa ở docs/KE_HOACH_TRIEN_KHAI.md.
 export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: { group?: string; icon?: string }][]> = {
   admin: [
     ['/admin/horse-types', 'Danh mục loại ngựa', { icon: 'fa-horse-head' }],
@@ -18,13 +18,12 @@ export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: 
     ['/admin/ui-library', 'Thư viện giao diện', { icon: 'fa-swatchbook' }],
   ],
   manager: [
-    ['/manager', 'Tổng quan', { group: 'Việc cần làm', icon: 'fa-chart-pie' }],
-    ['/manager/orders', 'Đơn hàng', { icon: 'fa-inbox' }],
+    ['/manager/orders', 'Đơn hàng', { group: 'Việc cần làm', icon: 'fa-inbox' }],
     ['/manager/departures', 'Chuyến cần quyết định', { icon: 'fa-truck' }],
     ['/manager/refunds', 'Hoàn tiền', { icon: 'fa-rotate-left' }],
     ['/manager/incidents', 'Sự cố', { icon: 'fa-triangle-exclamation' }],
-    ['/manager/reports', 'Doanh thu', { group: 'Báo cáo', icon: 'fa-chart-line' }],
-    ['/manager/trip-reports', 'Chuyến đi', { icon: 'fa-clipboard-check' }],
+    ['/admin/pricing', 'Bảng giá', { icon: 'fa-calculator' }],
+    ['/manager/trip-reports', 'Chuyến đi', { group: 'Báo cáo', icon: 'fa-clipboard-check' }],
   ],
   specialist: [
     ['/specialist/review', 'Thẩm định đơn', { icon: 'fa-file-circle-check' }],
@@ -32,20 +31,17 @@ export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: 
   ],
   coordinator: [
     ['/coordinator/dispatch', 'Điều độ', { icon: 'fa-diagram-project' }],
-    ['/coordinator/fleet-plan', 'Xe và lộ trình', { icon: 'fa-route' }],
-    ['/coordinator/monitoring', 'Giám sát', { icon: 'fa-satellite-dish' }],
     ['/coordinator/incidents', 'Sự cố', { icon: 'fa-triangle-exclamation' }],
-    ['/coordinator/fleet', 'Đội xe', { icon: 'fa-truck' }],
   ],
-  driver: [['/driver', 'Chuyến của tôi'], ['/my-trips', 'Lượt xe của tôi']],
-  escort: [['/escort', 'Nhật ký sức khỏe'], ['/my-trips', 'Lượt xe của tôi']],
+  driver: [['/my-trips', 'Lượt xe của tôi']],
+  escort: [['/my-trips', 'Lượt xe của tôi']],
 }
 
 export const HOME_OF: Record<StaffRole, string> = {
   admin: '/admin/accounts',
-  manager: '/manager',
+  manager: '/manager/orders',
   specialist: '/specialist/review',
-  coordinator: '/coordinator/fleet-plan',
-  driver: '/driver',
-  escort: '/escort',
+  coordinator: '/coordinator/dispatch',
+  driver: '/my-trips',
+  escort: '/my-trips',
 }

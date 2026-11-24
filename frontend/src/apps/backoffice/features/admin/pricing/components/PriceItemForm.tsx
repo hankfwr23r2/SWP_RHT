@@ -10,8 +10,8 @@ import s from '../AdminPricing.module.css'
 
 export type PriceOptions = { services: SelectOption[]; routes: SelectOption[]; stalls: SelectOption[]; classes: SelectOption[] }
 
-export function PriceItemForm({ item, options, canChooseClass, busy, fields, onSave, close }: {
-  item: PriceItem | null; options: PriceOptions; canChooseClass: boolean; busy: boolean; fields: Record<string, string>;
+export function PriceItemForm({ item, options, busy, fields, onSave, close }: {
+  item: PriceItem | null; options: PriceOptions; busy: boolean; fields: Record<string, string>;
   onSave: (body: PriceItemCreate) => Promise<boolean>; close: () => void
 }) {
   const { t } = useTranslation()
@@ -24,7 +24,6 @@ export function PriceItemForm({ item, options, canChooseClass, busy, fields, onS
   const serviceOptions = item?.billableServiceId != null && !options.services.some(option => option.value === String(item.billableServiceId))
     ? [{ value: String(item.billableServiceId), label: t('staffNetwork.serviceRetained') }, ...options.services]
     : options.services
-  const unavailable = { value: vehicle, label: t('staffNetwork.classRetained') }
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -46,9 +45,8 @@ export function PriceItemForm({ item, options, canChooseClass, busy, fields, onS
         error={fields.billableServiceId ?? (submitted && !service ? t('staffNetwork.required') : undefined)} />
       <PriceChoice name="routeId" value={route} options={[any, ...options.routes]} onChange={setRoute} disabled={busy} error={fields.routeId} />
       <PriceChoice name="stallTypeCode" value={stall} options={[any, ...options.stalls]} onChange={setStall} disabled={busy} error={fields.stallTypeCode} />
-      <PriceChoice name="vehicleClassId" value={vehicle} options={[any, ...options.classes, ...(!canChooseClass && vehicle ? [unavailable] : [])]}
-        onChange={setVehicle} disabled={busy || !canChooseClass} error={fields.vehicleClassId}
-        hint={!canChooseClass ? t('staffNetwork.classAdminOnly') : undefined} />
+      <PriceChoice name="vehicleClassId" value={vehicle} options={[any, ...options.classes]}
+        onChange={setVehicle} disabled={busy} error={fields.vehicleClassId} />
       <PriceField name="kmFrom" type="number" min={0} step="0.01" defaultValue={item?.kmFrom} error={fields.kmFrom} />
       <PriceField name="kmTo" type="number" min={0} step="0.01" defaultValue={item?.kmTo} error={fields.kmTo} />
       <PriceField name="unitPrice" type="number" min={0} step="0.01" defaultValue={item?.unitPrice} error={fields.unitPrice} required />

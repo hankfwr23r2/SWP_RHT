@@ -39,7 +39,7 @@ Khách chọn riêng cho **từng con ngựa** khi đặt đơn. Công ty phải
 
 | Lựa chọn | Khách cần làm | Chi phí |
 |---|---|---|
-| **Nhờ công ty mua hộ** | Chọn khi đặt đơn. Công ty lấy báo giá của hãng bảo hiểm | Đúng giá hãng báo, ghi dòng riêng, thu đủ khi đặt cọc. Đây là khoản thu hộ |
+| **Nhờ công ty mua hộ** | Chọn khi đặt đơn. Công ty lấy báo giá của hãng bảo hiểm | Đúng giá hãng báo, ghi dòng riêng, thu đủ khi đặt cọc. Đây là khoản thu hộ, không hoàn khi khách hủy hoặc hủy do cơ quan chức năng |
 | **Đã có bảo hiểm** | Nộp hợp đồng, số hợp đồng và thời hạn. Hợp đồng phải còn hạn vào ngày đón và ngày xuất phát | Không thu thêm |
 | **Không mua** | Ký cam kết miễn trách cho từng con | Không thu thêm |
 

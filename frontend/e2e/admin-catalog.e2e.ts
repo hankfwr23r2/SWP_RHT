@@ -242,12 +242,66 @@ test('tham số hiển thị cận, báo lỗi dưới ô và lưu giá trị s�
   expect(values).toEqual([31, 15])
 })
 
-test('danh mục loại ngựa không gọi endpoint chỉ dành cho khách', async ({ page }) => {
-  const requests: string[] = []
-  await mock(page, path => { requests.push(path); return [] })
+test('danh mục loại ngựa hiện danh sách chỉ xem', async ({ page }) => {
+  await mock(page, path => path === '/horse-types' ? [{ id: 1, name: 'Ngựa đua', description: 'Ngựa thi đấu' }] : [])
   await page.goto('/backoffice/admin/horse-types', { waitUntil: 'domcontentloaded' })
-  await expect(page.getByRole('heading', { name: 'Danh mục chưa mở cho quản trị viên' })).toBeVisible()
-  expect(requests).not.toContain('/horse-types')
+  await expect(page.getByText('Ngựa đua', { exact: true })).toBeVisible()
+  await expect(page.getByText('Ngựa thi đấu')).toBeVisible()
+})
+
+test('hotline sửa bằng ô chữ và lưu qua API riêng', async ({ page }) => {
+  const setting = { configKey: 'HOTLINE', configValue: '1900 0000', configGroup: 'CONTACT', unit: 'TEXT' }
+  const bodies: unknown[] = []
+  await mock(page, (path, _, route) => {
+    if (path === '/system-configs') return [setting]
+    if (path === '/system-configs/HOTLINE/text') {
+      bodies.push(route.request().postDataJSON())
+      setting.configValue = route.request().postDataJSON().configValue
+      return setting
+    }
+    return []
+  })
+  await page.goto('/backoffice/admin/settings', { waitUntil: 'domcontentloaded' })
+  await expect(page.getByRole('heading', { name: 'Liên hệ' })).toBeVisible()
+  await page.getByRole('button', { name: 'Sửa', exact: true }).click()
+  const dialog = page.getByRole('dialog')
+  await dialog.getByRole('textbox', { name: 'Giá trị' }).fill('1900 1234')
+  await dialog.getByRole('button', { name: 'Lưu', exact: true }).click()
+  await expect(page.getByText('1900 1234', { exact: true })).toBeVisible()
+  expect(bodies).toEqual([{ configValue: '1900 1234' }])
+})
+
+test('khóa tài khoản cần lý do, lỗi của backend hiện trong hộp thoại, rồi mở khóa được', async ({ page }) => {
+  const account = { userId: 7, fullName: 'Lê Văn An', staffCode: 'NV-7', username: 'van.an', email: 'an@example.com', roleCode: 'DRIVER', accountStatus: 'ACTIVE' }
+  const calls: [string, unknown][] = []
+  await mock(page, async (path, _, route) => {
+    if (path.startsWith('/staff-accounts/7/')) {
+      calls.push([path, route.request().postDataJSON()])
+      if (calls.length === 1) {
+        await route.fulfill({ status: 409, json: { status: 'error', message: 'Trạng thái tài khoản đã đổi.' } })
+        return
+      }
+      account.accountStatus = path.endsWith('/unlock') ? 'ACTIVE' : 'LOCKED'
+      return account
+    }
+    return path === '/staff-accounts' ? [account] : path === '/locations' ? [hub] : []
+  })
+  await page.goto('/backoffice/admin/accounts', { waitUntil: 'domcontentloaded' })
+  await page.getByRole('button', { name: 'Khóa', exact: true }).click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog.getByText(/Lê Văn An sẽ bị đăng xuất/)).toBeVisible()
+  await dialog.getByRole('textbox').fill('Nghỉ việc')
+  await dialog.getByRole('button', { name: 'Khóa', exact: true }).click()
+  await expect(dialog.getByText('Trạng thái tài khoản đã đổi.')).toBeVisible()
+  await dialog.getByRole('button', { name: 'Khóa', exact: true }).click()
+  await page.getByRole('button', { name: 'Mở khóa', exact: true }).click()
+  await dialog.getByRole('textbox').fill('Đi làm lại')
+  await dialog.getByRole('button', { name: 'Mở khóa', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Khóa', exact: true })).toBeVisible()
+  expect(calls).toEqual([
+    ['/staff-accounts/7/lock', { reason: 'Nghỉ việc' }], ['/staff-accounts/7/lock', { reason: 'Nghỉ việc' }],
+    ['/staff-accounts/7/unlock', { reason: 'Đi làm lại' }],
+  ])
 })
 
 const log = {

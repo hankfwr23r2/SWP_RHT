@@ -10,6 +10,7 @@ import s from '@backoffice/shared/Catalog.module.css'
 import type { loader } from './loaders'
 import type { SystemSetting } from '@shared/api/settings'
 import { SettingForm } from './SettingForm'
+import { isText } from './useSettings'
 
 export default function SettingsPage() {
   const { t } = useTranslation()
@@ -28,7 +29,7 @@ export default function SettingsPage() {
   const name = (setting: SystemSetting) => t(`staffCatalog.settings.keys.${setting.configKey}`, {
     defaultValue: setting.description ?? setting.configKey ?? t('staffCatalog.unknown'),
   })
-  const limits = (setting: SystemSetting) => setting.minValue == null || setting.maxValue == null
+  const limits = (setting: SystemSetting) => isText(setting) ? t('staffCatalog.settings.text') : setting.minValue == null || setting.maxValue == null
     ? t('staffCatalog.settings.positive')
     : t('staffCatalog.settings.range', { min: setting.minValue, max: setting.maxValue })
   const unit = (setting: SystemSetting) => t(`staffCatalog.settings.units.${setting.unit}`, { defaultValue: '' })

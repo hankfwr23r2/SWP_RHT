@@ -1346,11 +1346,13 @@ Chỉ chứa tham số **không phải giá tiền**, ví dụ thời gian chờ
 | `config_value` | `varchar(500)` | | | |
 | `min_value` | `int` | có | CHECK cùng có giá trị hoặc cùng NULL với `max_value` | Cận dưới, tính cả giá trị cận |
 | `max_value` | `int` | có | CHECK `min_value <= max_value` khi có giới hạn | Cận trên, tính cả giá trị cận |
-| `unit` | `varchar(30)` | có | | `MINUTE`, `HOUR`, `DAY`, `COUNT` |
+| `unit` | `varchar(30)` | có | | `MINUTE`, `HOUR`, `DAY`, `COUNT`, `TEXT` (giá trị chữ, chỉ sửa qua API dạng chữ) |
 | `config_group` | `varchar(50)` | | | |
 | `description` | `text` | có | | |
 | `updated_by` | `bigint` | có | FK → staff(user_id) | |
 | `updated_at` | `timestamptz` | | default `now()` | |
+
+`HOTLINE` và `OFFICE_ADDRESS` (nhóm `CONTACT`, đơn vị `TEXT`) hiện cho khách qua `GET /public/contact`; `HOTLINE` phải là số điện thoại.
 
 Backend kiểm tra giới hạn khi cập nhật giá trị. Nếu hai cận đều NULL, quy tắc cập nhật số nguyên dương cho đơn vị được hỗ trợ vẫn áp dụng.
 

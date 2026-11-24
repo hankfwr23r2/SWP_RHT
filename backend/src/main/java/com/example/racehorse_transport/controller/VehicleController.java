@@ -38,7 +38,9 @@ public class VehicleController {
         return ApiResponseDto.success(vehicleService.vehicle(id), "Chi tiết xe");
     }
 
+    // Quản lý xem để sửa dòng giá theo hạng xe
     @GetMapping("/vehicle-classes")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ApiResponseDto<List<VehicleClassResponseDto>> vehicleClasses() {
         return ApiResponseDto.success(vehicleService.vehicleClasses(), "Danh sách hạng xe");
     }

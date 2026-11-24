@@ -208,6 +208,10 @@ export const staffCatalog = {
       "RETIRED": "Retired"
     },
     "accounts": {
+      "lock": "Lock",
+      "unlock": "Unlock",
+      "lockEffect": "{{name}} is signed out and cannot sign in until unlocked.",
+      "unlockEffect": "{{name}} can sign in again at once.",
       "title": "Staff accounts",
       "add": "Add account",
       "edit": "Edit staff profile",
@@ -305,10 +309,12 @@ export const staffCatalog = {
     },
     "horseTypes": {
       "title": "Horse types",
-      "unavailable": "Catalogue unavailable to administrators",
-      "access": "Catalogue access is currently limited to customer accounts."
+      "empty": "No horse types yet.",
+      "name": "Type",
+      "description": "Description"
     },
     "settings": {
+      "text": "Text, up to 500 characters",
       "title": "System settings",
       "limits": "Limits",
       "positive": "Positive whole number",
@@ -321,6 +327,7 @@ export const staffCatalog = {
         "COUNT": ""
       },
       "groups": {
+        "CONTACT": "Contact",
         "AUTH": "Sign-in and verification",
         "DEPARTURE": "Departures",
         "HANDOVER": "Handover",
@@ -332,6 +339,8 @@ export const staffCatalog = {
         "SCHEDULE": "Schedules"
       },
       "keys": {
+        "HOTLINE": "Hotline",
+        "OFFICE_ADDRESS": "Office address",
         "HANDOVER_FREE_WAIT_MINUTES": "Free waiting time for the recipient",
         "QUOTATION_VALID_HOURS": "Quotation validity after sending",
         "DEPARTURE_GENERATION_WEEKS": "Weeks of departures to generate",

@@ -3,6 +3,7 @@ package com.example.racehorse_transport.controller;
 import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.dto.config.SystemConfigResponseDto;
 import com.example.racehorse_transport.dto.config.SystemConfigUpdateRequestDto;
+import com.example.racehorse_transport.dto.config.SystemTextConfigUpdateRequestDto;
 import com.example.racehorse_transport.service.SystemConfigService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -38,5 +39,11 @@ public class SystemConfigController {
     public ApiResponseDto<SystemConfigResponseDto> updateSystemConfig(@PathVariable String key, Authentication actor,
             @Valid @RequestBody SystemConfigUpdateRequestDto request) {
         return ApiResponseDto.success(configs.updateConfiguration(key, actor.getName(), request), "Đã cập nhật tham số");
+    }
+
+    @PutMapping("/{key}/text")
+    public ApiResponseDto<SystemConfigResponseDto> updateSystemTextConfig(@PathVariable String key, Authentication actor,
+            @Valid @RequestBody SystemTextConfigUpdateRequestDto request) {
+        return ApiResponseDto.success(configs.updateText(key, actor.getName(), request), "Đã cập nhật tham số");
     }
 }

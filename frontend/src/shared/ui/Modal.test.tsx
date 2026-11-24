@@ -35,6 +35,16 @@ describe('Modal', () => {
     expect(onClose).toHaveBeenCalledTimes(1)
   })
 
+  it('tiêu điểm rơi ra trang khi nút bị khóa thì được kéo lại hộp thoại trên cùng', () => {
+    const view = (busy: boolean) => (
+      <Modal title="Ngoài" onClose={() => {}}><Modal title="Trong" onClose={() => {}}><button disabled={busy}>Lưu</button></Modal></Modal>
+    )
+    const { rerender } = render(view(false))
+    ;(document.activeElement as HTMLElement).blur()
+    rerender(view(true))
+    expect(document.activeElement).toBe(screen.getByRole('dialog', { name: 'Trong' }))
+  })
+
   it('Escape đã được ô chọn xử lý (preventDefault) thì không đóng', () => {
     const onClose = vi.fn()
     render(<Modal title="Sửa xe" onClose={onClose}><input aria-label="Biển số" onKeyDown={e => e.preventDefault()} /></Modal>)

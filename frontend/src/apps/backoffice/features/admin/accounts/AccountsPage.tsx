@@ -15,8 +15,9 @@ import { Select } from '@shared/ui/Select'
 import { CatalogStatus } from '@backoffice/shared/CatalogStatus'
 import type { StaffAccount } from '@shared/api/staffAccounts'
 import { AccountForm } from './AccountForm'
+import { AccountStatusForm } from './AccountStatusForm'
 import { filterAccounts } from './filterAccounts'
-import { staffRoles } from './useAccounts'
+import { staffRoles, type AccountAction } from './useAccounts'
 
 export default function AccountsPage() {
   const { t } = useTranslation()
@@ -26,6 +27,7 @@ export default function AccountsPage() {
   const [role, setRole] = useState('')
   const [status, setStatus] = useState('')
   const [editor, setEditor] = useState<StaffAccount | 'new'>()
+  const [transition, setTransition] = useState<{ id: number; name?: string; event: AccountAction }>()
   const accounts = state.data?.accounts ?? []
   const rows = filterAccounts(accounts, search, role, status)
   const title = t('staffCatalog.accounts.title')
@@ -58,11 +60,20 @@ export default function AccountsPage() {
               { key: 'login', header: field('username'), render: row => <>{row.username}<br />{row.email}</> },
               { key: 'role', header: field('roleCode'), render: row => roleLabel(row.roleCode) },
               { key: 'status', header: field('status'), render: row => <CatalogStatus status={row.accountStatus} /> },
-              { key: 'actions', header: field('actions'), render: row => row.userId != null && <Button size="sm" onClick={() => setEditor(row)}>{t('staffCatalog.edit')}</Button> },
+              { key: 'actions', header: field('actions'), render: row => {
+                const id = row.userId
+                if (id == null) return null
+                const event: AccountAction | undefined = row.accountStatus === 'ACTIVE' ? 'lock' : row.accountStatus === 'LOCKED' ? 'unlock' : undefined
+                return <div className={s.row}>
+                  <Button size="sm" onClick={() => setEditor(row)}>{t('staffCatalog.edit')}</Button>
+                  {event && <Button size="sm" variant="ghost" onClick={() => setTransition({ id, name: row.fullName, event })}>{t(`staffCatalog.accounts.${event}`)}</Button>}
+                </div>
+              } },
             ]} />
         </CatalogState>
       </div>
     </Card>
+    {transition && <AccountStatusForm {...transition} reload={state.reload} close={() => setTransition(undefined)} />}
     {editor && <AccountForm account={editor === 'new' ? undefined : editor}
       hubs={state.data?.hubs ?? []} reload={state.reload} close={() => setEditor(undefined)} />}
   </section>

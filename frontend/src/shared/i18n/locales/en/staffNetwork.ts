@@ -89,7 +89,6 @@ export const staffNetwork = {
     "kmBand": "Distance band",
     "kmRange": "From {{from}} km to {{to}}",
     "classRetained": "Assigned vehicle class",
-    "classAdminOnly": "Administrators can change the vehicle class.",
     "rateHint": "Enter a number from 0 to 1. For example, 0.15 means 15%.",
     "fields": {
       "code": "Code",

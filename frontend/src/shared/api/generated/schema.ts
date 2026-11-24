@@ -2340,6 +2340,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/public/contact": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["contact"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/public/tracking": {
         parameters: {
             query?: never;
@@ -2596,6 +2612,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/staff-accounts/{id}/lock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["lockStaffAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/staff-accounts/{id}/unlock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["unlockStaffAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/stall-types": {
         parameters: {
             query?: never;
@@ -2637,6 +2685,22 @@ export interface paths {
         };
         get: operations["getSystemConfig"];
         put: operations["updateSystemConfig"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/system-configs/{key}/text": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateSystemTextConfig"];
         post?: never;
         delete?: never;
         options?: never;
@@ -3060,6 +3124,11 @@ export interface components {
         };
         ApiResponseBookingResponseDto: {
             data?: components["schemas"]["BookingResponseDto"];
+            message?: string;
+            status?: string;
+        };
+        ApiResponseContactResponseDto: {
+            data?: components["schemas"]["ContactResponseDto"];
             message?: string;
             status?: string;
         };
@@ -3676,6 +3745,10 @@ export interface components {
         };
         CompanyCancelBookingRequestDto: {
             reason: string;
+        };
+        ContactResponseDto: {
+            hotline?: string;
+            officeAddress?: string;
         };
         CostItemRequestDto: {
             amount: number;
@@ -5337,6 +5410,9 @@ export interface components {
             userId?: number;
             username?: string;
         };
+        StaffAccountStatusRequestDto: {
+            reason: string;
+        };
         StaffAccountUpdateRequestDto: {
             driverLicenseClass?: string;
             /** Format: date */
@@ -5456,6 +5532,9 @@ export interface components {
             targetKey?: string;
             targetLabel?: string;
             targetTable?: string;
+        };
+        SystemTextConfigUpdateRequestDto: {
+            configValue: string;
         };
         TripGroupResponseDto: {
             bookings?: components["schemas"]["GroupBookingDto"][];
@@ -9746,6 +9825,26 @@ export interface operations {
             };
         };
     };
+    contact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseContactResponseDto"];
+                };
+            };
+        };
+    };
     publicTrack: {
         parameters: {
             query?: never;
@@ -10222,6 +10321,58 @@ export interface operations {
             };
         };
     };
+    lockStaffAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffAccountStatusRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseStaffAccountResponseDto"];
+                };
+            };
+        };
+    };
+    unlockStaffAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffAccountStatusRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseStaffAccountResponseDto"];
+                };
+            };
+        };
+    };
     stallTypes: {
         parameters: {
             query?: never;
@@ -10296,6 +10447,32 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["SystemConfigUpdateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseSystemConfigResponseDto"];
+                };
+            };
+        };
+    };
+    updateSystemTextConfig: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SystemTextConfigUpdateRequestDto"];
             };
         };
         responses: {

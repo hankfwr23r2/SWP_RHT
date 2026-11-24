@@ -11,6 +11,7 @@ export const common = {
     stepDone: 'Đã xong',
   },
   common: {
+    hotline: 'Hotline',
     brandName: 'Vận chuyển Ngựa',
     brandTagline: 'Vận chuyển ngựa đua đường bộ · Việt Nam · Lào · Campuchia',
     footerCopyright: '© 2026 Vận chuyển Ngựa đua · Việt Nam · Lào · Campuchia',
@@ -198,7 +199,7 @@ export const common = {
     docAria: 'Văn bản',
     insuranceTitle: 'Bảo hiểm bên thứ ba',
     insuranceDesc1: 'Khách chọn bảo hiểm cá nhân, yêu cầu hỗ trợ hoặc không bảo hiểm cho từng ngựa. Công ty liên hệ bên thứ ba và thu hộ phí được công bố cùng báo giá vận chuyển. Báo giá không phải xác nhận hợp đồng đã có hiệu lực.',
-    insuranceDesc2: 'Khi hủy đơn, phần cọc vận chuyển áp dụng phí hủy. Phần thu hộ được đối soát riêng dựa trên số đã chuyển đối tác và số đối tác hoàn lại.',
+    insuranceDesc2: 'Khách hủy đơn sau khi cọc, hoặc hủy do cơ quan chức năng, thì phần thu hộ không được hoàn. Công ty hủy thì hoàn toàn bộ số đã trả, gồm cả phần thu hộ.',
     openInNewTab: 'Mở tệp trong tab mới',
   },
   roles: {

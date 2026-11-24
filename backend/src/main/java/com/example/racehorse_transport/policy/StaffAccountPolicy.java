@@ -1,5 +1,6 @@
 package com.example.racehorse_transport.policy;
 
+import com.example.racehorse_transport.entity.enums.AppUserStatus;
 import com.example.racehorse_transport.entity.enums.LocationType;
 import com.example.racehorse_transport.exception.AccountRuleException;
 import java.nio.charset.StandardCharsets;
@@ -8,6 +9,18 @@ import java.time.LocalDate;
 public final class StaffAccountPolicy {
 
     private StaffAccountPolicy() {}
+
+    // Tài khoản đã ngừng (DISABLED) không khóa hay mở khóa được
+    public static void requireStatusTransition(AppUserStatus current, AppUserStatus next, boolean ownAccount) {
+        if (ownAccount) {
+            throw new AccountRuleException("Không tự khóa hoặc mở khóa tài khoản của mình.");
+        }
+        boolean lock = current == AppUserStatus.ACTIVE && next == AppUserStatus.LOCKED;
+        boolean unlock = current == AppUserStatus.LOCKED && next == AppUserStatus.ACTIVE;
+        if (!lock && !unlock) {
+            throw new AccountRuleException.InvalidStatusException();
+        }
+    }
 
     public static void requireStaffRole(String roleCode) {
         if ("CUSTOMER".equals(roleCode)) {

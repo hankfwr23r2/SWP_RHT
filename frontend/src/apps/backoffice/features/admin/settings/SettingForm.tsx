@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { CatalogForm } from '@backoffice/shared/CatalogForm'
 import type { SystemSetting } from '@shared/api/settings'
-import { useSettingEditor } from './useSettings'
+import { isText, useSettingEditor } from './useSettings'
 
 export function SettingForm({ configKey, title, setting, limits, reload, close }: {
   configKey: string
@@ -14,5 +14,5 @@ export function SettingForm({ configKey, title, setting, limits, reload, close }
   const { t } = useTranslation()
   const editor = useSettingEditor(configKey, setting, reload, close)
   return <CatalogForm {...editor} errors={editor.fields} close={close} title={title}
-    fields={[{ name: 'configValue', label: t('staffCatalog.fields.configValue'), type: 'number', required: true, hint: limits }]} />
+    fields={[{ name: 'configValue', label: t('staffCatalog.fields.configValue'), type: isText(setting) ? undefined : 'number', maxLength: isText(setting) ? 500 : undefined, required: true, hint: limits }]} />
 }

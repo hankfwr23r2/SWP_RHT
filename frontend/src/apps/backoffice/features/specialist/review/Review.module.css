@@ -1,5 +1,6 @@
 .stack, .list, .facts {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
   min-width: 0;
   overflow-wrap: anywhere;
@@ -55,6 +56,7 @@
 
 .controls {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-4);
   min-inline-size: 0;
   margin: 0;

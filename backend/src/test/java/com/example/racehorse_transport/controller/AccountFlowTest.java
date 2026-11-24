@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -28,6 +29,7 @@ class AccountFlowTest {
     @Autowired private TestData data;
     @Autowired private JwtUtils jwt;
     @Autowired private LocationRepository locations;
+    @Autowired private JdbcTemplate jdbc;
 
     @Test
     void adminCreatesDriverAndTheDriverCanSignIn() throws Exception {
@@ -89,6 +91,36 @@ class AccountFlowTest {
                                  "hireDate":"2026-11-23","homeHubLocationId":%d}
                                 """.formatted(hub)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void adminLocksAndUnlocksStaffWithAuditAndLockedTokenStopsWorking() throws Exception {
+        String admin = data.unique("lock-admin");
+        long adminId = data.staff(admin, "ADMIN").getUserId();
+        String token = "Bearer " + jwt.generateToken(admin, List.of("ADMIN"));
+        String worker = data.unique("lock-worker");
+        long id = data.staff(worker, "COORDINATOR").getUserId();
+        String workerToken = "Bearer " + jwt.generateToken(worker, List.of("COORDINATOR"));
+        String reason = "{\"reason\":\"Nghỉ việc\"}";
+
+        mvc.perform(post("/staff-accounts/{id}/lock", id).header(HttpHeaders.AUTHORIZATION, token)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"reason\":\" \"}")).andExpect(status().isBadRequest());
+        mvc.perform(post("/staff-accounts/{id}/lock", id).header(HttpHeaders.AUTHORIZATION, workerToken)
+                .contentType(MediaType.APPLICATION_JSON).content(reason)).andExpect(status().isForbidden());
+        mvc.perform(post("/staff-accounts/{id}/lock", adminId).header(HttpHeaders.AUTHORIZATION, token)
+                .contentType(MediaType.APPLICATION_JSON).content(reason)).andExpect(status().isBadRequest());
+
+        mvc.perform(post("/staff-accounts/{id}/lock", id).header(HttpHeaders.AUTHORIZATION, token)
+                        .contentType(MediaType.APPLICATION_JSON).content(reason))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.accountStatus").value("LOCKED"));
+        mvc.perform(get("/dispatch/vehicles").header(HttpHeaders.AUTHORIZATION, workerToken)).andExpect(status().isUnauthorized());
+        mvc.perform(post("/staff-accounts/{id}/lock", id).header(HttpHeaders.AUTHORIZATION, token)
+                .contentType(MediaType.APPLICATION_JSON).content(reason)).andExpect(status().isConflict());
+        mvc.perform(post("/staff-accounts/{id}/unlock", id).header(HttpHeaders.AUTHORIZATION, token)
+                        .contentType(MediaType.APPLICATION_JSON).content(reason))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.data.accountStatus").value("ACTIVE"));
+        assertThat(jdbc.queryForList("select action from audit_log where target_table = 'app_user' and target_id = ? order by id",
+                String.class, id)).containsExactly("LOCK_STAFF_ACCOUNT", "UNLOCK_STAFF_ACCOUNT");
     }
 
     private String createBody(String role, long hub) {

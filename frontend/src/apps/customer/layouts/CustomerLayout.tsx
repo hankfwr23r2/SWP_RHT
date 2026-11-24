@@ -1,6 +1,7 @@
 // Khung GỌN cho khách đã đăng nhập: header 64px, hotline nhỏ, footer mỏng.
 // Cùng màu/font/nút với trang chủ, nhưng bỏ topbar, header marketing và footer lớn để tập trung vào công việc.
 import type { ReactNode } from 'react'
+import { useContact } from '@shared/hooks/useContact'
 import { useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
@@ -13,6 +14,7 @@ const isActive = (to: string, path: string) =>
   path === to || (to === '/booking/route' && path.startsWith('/booking')) || (to === '/orders' && path.startsWith('/orders/'))
 
 export function CustomerLayout({ children }: { children: ReactNode }) {
+  const contact = useContact()
   const { t } = useTranslation()
   const { session, logout } = useAuth()
   const navigate = useNavigate()
@@ -35,7 +37,7 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
         extra={<NoticeBell />}
       />
       <main><PageTransition>{children}</PageTransition></main>
-      <footer className={h.footer}>{t('common.footerCopyright')}</footer>
+      <footer className={h.footer}>{t('common.footerCopyright')} · {t('common.hotline')}: {contact.hotline}</footer>
       <TranslateToggle />
     </>
   )

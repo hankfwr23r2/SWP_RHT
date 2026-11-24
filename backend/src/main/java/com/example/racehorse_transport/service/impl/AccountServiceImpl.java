@@ -2,6 +2,7 @@ package com.example.racehorse_transport.service.impl;
 
 import com.example.racehorse_transport.dto.account.StaffAccountCreateRequestDto;
 import com.example.racehorse_transport.dto.account.StaffAccountResponseDto;
+import com.example.racehorse_transport.dto.account.StaffAccountStatusRequestDto;
 import com.example.racehorse_transport.dto.account.StaffAccountUpdateRequestDto;
 import com.example.racehorse_transport.entity.Location;
 import com.example.racehorse_transport.entity.enums.AppUserStatus;
@@ -14,12 +15,15 @@ import com.example.racehorse_transport.repository.LocationRepository;
 import com.example.racehorse_transport.repository.RoleRepository;
 import com.example.racehorse_transport.repository.StaffRepository;
 import com.example.racehorse_transport.service.AccountService;
+import com.example.racehorse_transport.service.AuditService;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +40,7 @@ public class AccountServiceImpl implements AccountService {
     private final RoleRepository roles;
     private final LocationRepository locations;
     private final PasswordEncoder passwordEncoder;
+    private final AuditService audit;
 
     @Override
     @Transactional(readOnly = true)
@@ -90,6 +95,33 @@ public class AccountServiceImpl implements AccountService {
         } catch (DataIntegrityViolationException ex) {
             throw translateDuplicate(ex);
         }
+        return StaffAccountResponseDto.from(profile);
+    }
+
+    @Override
+    @Transactional
+    public StaffAccountResponseDto lockStaffAccount(Long id, String username, StaffAccountStatusRequestDto request) {
+        return changeStatus(id, username, request, AppUserStatus.LOCKED, "LOCK_STAFF_ACCOUNT");
+    }
+
+    @Override
+    @Transactional
+    public StaffAccountResponseDto unlockStaffAccount(Long id, String username, StaffAccountStatusRequestDto request) {
+        return changeStatus(id, username, request, AppUserStatus.ACTIVE, "UNLOCK_STAFF_ACCOUNT");
+    }
+
+    private StaffAccountResponseDto changeStatus(Long id, String username, StaffAccountStatusRequestDto request,
+                                                 AppUserStatus next, String action) {
+        var actor = users.findByUsername(username)
+                .filter(user -> user.getStatus() == AppUserStatus.ACTIVE && "ADMIN".equals(user.getRole().getCode()))
+                .orElseThrow(() -> new AccessDeniedException("Chỉ quản trị viên được khóa tài khoản."));
+        var profile = staff.findForUpdate(id).orElseThrow(this::missingStaff);
+        var user = profile.getUser();
+        AppUserStatus previous = user.getStatus();
+        StaffAccountPolicy.requireStatusTransition(previous, next, actor.getId().equals(user.getId()));
+        user.setStatus(next);
+        audit.record(actor.getId(), action, "app_user", user.getId(), Map.of("status", previous),
+                Map.of("status", next, "reason", request.reason().strip()));
         return StaffAccountResponseDto.from(profile);
     }
 
