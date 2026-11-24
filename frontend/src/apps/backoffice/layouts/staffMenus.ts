@@ -18,6 +18,7 @@ export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: 
     ['/admin/ui-library', 'Thư viện giao diện', { icon: 'fa-swatchbook' }],
   ],
   manager: [
+    ['/manager', 'Tổng quan', { icon: 'fa-chart-pie' }],
     ['/manager/orders', 'Đơn hàng', { group: 'Việc cần làm', icon: 'fa-inbox' }],
     ['/manager/departures', 'Chuyến cần quyết định', { icon: 'fa-truck' }],
     ['/manager/refunds', 'Hoàn tiền', { icon: 'fa-rotate-left' }],
