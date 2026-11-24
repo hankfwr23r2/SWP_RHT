@@ -4,7 +4,7 @@
 > `ERD_ENTITY_MERMAID.md`, `ERD_ALL_IN_ONE.md`, `ERD_ENTITY_BOXES.md` (các file đó chưa cập nhật).
 > Hệ quản trị: PostgreSQL 15 trở lên.
 
-> Migration `V202611231300__sync_names.sql` đồng bộ tên bảng, cột và các đối tượng liên quan theo [BANG_DOI_TEN.md](BANG_DOI_TEN.md).
+> Migration `V202611231300__sync_names.sql` đồng bộ tên bảng, cột và các đối tượng liên quan.
 
 ## Mục lục
 
@@ -45,7 +45,7 @@
 ### Đặt tên
 
 - Bảng và cột dùng `snake_case`, tên bảng số ít (`booking`, không phải `bookings`).
-- Mọi định danh (bảng, cột, enum, class, biến, endpoint) dùng **tiếng Anh**. Chữ hiển thị cho người dùng đi qua i18n. Bảng đối chiếu tên cũ và tên mới: [BANG_DOI_TEN.md](BANG_DOI_TEN.md).
+- Mọi định danh (bảng, cột, enum, class, biến, endpoint) dùng **tiếng Anh**. Chữ hiển thị cho người dùng đi qua i18n.
 - **N1** Không viết tắt, trừ các từ phổ biến: `id`, `url`, `otp`, `ip`, `km`, `kg`.
 - **N2** Số hiệu dùng hậu tố `_number`.
 - **N3** Thời điểm dùng hậu tố `_at`, ngày dùng `_date`. Riêng `valid_from`/`valid_to` giữ nguyên.

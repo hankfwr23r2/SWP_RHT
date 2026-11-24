@@ -442,6 +442,17 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
 
 ---
 
+### FE luồng A
+
+Trạng thái **chưa làm**. Thứ tự PR đã thống nhất ngày 24/11/2026.
+
+1. Tải nhanh, API đọc.
+2. Đặt đơn và Đơn của tôi. Làm song song Thẩm định, Mạng lưới và giá, Danh mục.
+3. Quản lý.
+4. Trang chủ, hồ sơ, xóa code cũ và E2E.
+
+Ưu tiên UI/UX thân thiện, tận dụng giao diện cũ và tăng tốc độ tải, nhất là lần đầu. Khi chưa chắc về nghiệp vụ, tham khảo cách làm tương tự ngoài thực tế.
+
 ## 7. Luồng B: vận hành
 
 ### B1. Điều độ: lượt xe, điểm dừng, tổ lái, chặng (đợt 1)
@@ -634,24 +645,24 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 | Mã | Task | Luồng | Đợt | Trạng thái | PR |
 |---|---|---|---|---|---|
 | P0.1 | Dọn code cũ, Flyway, 59 bảng | A | 0 | Xong | #344 |
-| P0.2-A | Entity, repository nhóm 1–8 | A | 0 | Chờ review (nhánh `rd/p0-2a-entities`) | |
+| P0.2-A | Entity, repository nhóm 1–8 | A | 0 | Xong backend | #346 |
 | P0.2-B | Entity, repository nhóm 9–15 | B | 0 | Xong | #351 |
-| P0.3-A | Auth, interface gọi chéo, `TestData` | A | 0 | Chờ review (nhánh `rd/p0-3a-auth`) | |
+| P0.3-A | Auth, interface gọi chéo, `TestData` | A | 0 | Xong backend | #347 |
 | P0.3-B | Document, Notification, Audit, ArchUnit, OpenAPI | B | 0 | Xong | #353 |
 | P0-FE | Token, `shared/ui`, layout, openapi-typescript, lint, i18n | B | 0 | Xong (8 PR) | #355, #358, #367, #368, #369, #372, #373, #375 |
-| A1 | Mạng lưới, tuyến, lịch, chuyến | A | 1 | Backend chờ review: PR1 danh mục (`rd/a1-network`), PR2 chuyến (`rd/a1-departures`). FE làm sau P0-FE | |
-| A2 | Xe, nhân sự, đối tác, tham số | A | 1 | Chưa làm | |
+| A1 | Mạng lưới, tuyến, lịch, chuyến | A | 1 | Xong backend | #348, #349 |
+| A2 | Xe, nhân sự, đối tác, tham số | A | 1 | Xong | |
 | B1 | Điều độ | B | 1 | Xong (4 PR) | #377, #378, #379, #380 |
-| A3 | Bảng giá, tính giá | A | 2 | Chưa làm | |
-| A4 | Quy định, giấy tờ yêu cầu | A | 2 | Chưa làm | |
+| A3 | Bảng giá, tính giá | A | 2 | Xong backend | #365 |
+| A4 | Quy định, giấy tờ yêu cầu | A | 2 | Xong backend | #363 |
 | B2 | Điểm dừng, giao nhận | B | 2 | Đang làm: PR1 backend (#381), PR2 màn tổ xe (#382), PR3 nhận ngựa lập khoản số dư, kiểm thanh toán thật khi rời nơi nhận, không nhận một con (#398), PR4 quá hạn số dư thì trả ngựa tại chỗ và hủy đơn (#399). Còn: giao nhận AGENT ở cửa khẩu, nhận và trả ngựa tại hub (SELF), biên bản và giấy gốc | #381, #382, #398, #399 |
-| A5 | Đặt đơn | A | 3 | Chưa làm | |
-| B3 | Lưu trú, sức khỏe | B | 3 | Xong phần chính (2 PR). Còn: nghỉ đêm OVERNIGHT, bàn giao ca SHIFT; hủy chặng của con bị loại chờ luồng A | #383, #384 |
-| A6 | Thẩm định, bảo hiểm | A | 4 | Backend xong, chưa commit (`feat/a6-review`) | |
-| A6b | Đồng bộ quyết định 23/11/2026 | A | 4 | PR1, PR2 đã merge. PR3 (quyết định chạy, đổi chuyến, seed) đang làm | |
-| A7 | Báo giá, thanh toán | A | 4 | Chưa làm | |
+| A5 | Đặt đơn | A | 3 | Xong backend | #364, #366 |
+| B3 | Lưu trú, sức khỏe | B | 3 | Xong phần chính (2 PR). Còn: nghỉ đêm OVERNIGHT, bàn giao ca SHIFT; hủy chặng của con bị loại ở các đường nhận còn lại (điểm đón đã nối trong #398) | #383, #384 |
+| A6 | Thẩm định, bảo hiểm | A | 4 | Xong backend | #370 |
+| A6b | Đồng bộ quyết định 23/11/2026 | A | 4 | Xong backend | #374, #376, #394 |
+| A7 | Báo giá, thanh toán | A | 4 | Xong backend | #395 |
 | B4 | Sự cố, chi phí | B | 4 | Xong phần chính (2 PR). Còn: phương án đổi xe, về hub tự lập lượt xe; biên lai, ảnh hiện trường | #385, #386 |
 | B5 | Giao thất bại, giao lại | B | 4 | Xong phần chính: chờ người nhận, quá giờ thì giao thất bại, về hub, giao lại. Còn: gửi chuồng | #387 |
-| A8 | Quyết toán, hủy, đánh giá | A | 5 | Backend đã triển khai trên nhánh A8. FE và kiểm thử PostgreSQL theo dõi riêng | |
+| A8 | Quyết toán, hủy, đánh giá | A | 5 | Xong backend | #396, #397 |
 | B6 | Theo dõi, thông báo, báo cáo | B | 5 | Xong phần chính (6 PR): chuông thông báo, hành trình ngựa và tra cứu công khai, báo cáo vận hành, nhật ký hệ thống. Còn: báo khách khi nhận, giao ngựa (đã tách `HandoverOutcomeService` ở B2 PR3), bảng điều khiển `/manager` | #388, #389, #390, #391, #392, #393 |
 | E | Tích hợp, dọn dẹp, ERD, merge | A + B | 6 | Chưa làm | |

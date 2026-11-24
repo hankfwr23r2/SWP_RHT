@@ -3,7 +3,7 @@
 > Tài liệu mô tả **ai làm gì, lúc nào, ghi vào bảng nào** trong hệ thống mới. Phần cuối nêu những gì tận dụng được từ project cũ.
 >
 > - Đặc tả cột và ràng buộc: [DB_SCHEMA_59_BANG.md](DB_SCHEMA_59_BANG.md). Khi có mâu thuẫn, file đó đúng.
-> - Tài liệu **tham khảo** (căn cứ pháp lý, cách làm của IRT/Peden), không phải yêu cầu: [MO_HINH_NGHIEP_VU_MOI.md](MO_HINH_NGHIEP_VU_MOI.md).
+> - Tài liệu **tham khảo** (căn cứ pháp lý, cách làm của IRT/Peden), không phải yêu cầu: [CAN_CU_PHAP_LY_VA_IRT.md](CAN_CU_PHAP_LY_VA_IRT.md).
 > - Vì sao thiết kế như vậy: [NGU_CANH_THIET_KE_LAI.md](NGU_CANH_THIET_KE_LAI.md).
 
 ## Mục lục

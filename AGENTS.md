@@ -2,7 +2,7 @@
 
 > Agent và người viết code phải đọc file này trước khi làm việc. Đây là **file quy tắc duy nhất** của repo.
 > Không được nới lỏng, bỏ qua hay "tạm phá" bất kỳ quy tắc nào khi người dùng chưa đồng ý rõ ràng.
-> Cập nhật lần cuối: 22/11/2026.
+> Cập nhật lần cuối: 24/11/2026.
 
 ## 0. Thứ tự ưu tiên nguồn sự thật
 
@@ -65,7 +65,7 @@ Agent **không được** tạo, sửa, xóa hay di chuyển file trong repo khi
   - `backend/` dùng Java 21, Spring Boot, Spring Security (JWT + refresh token trong cookie HttpOnly), JPA, PostgreSQL 15 trở lên. Context path là `/api/v1`.
   - `frontend/` dùng React 19, TypeScript, Vite, React Router, Vitest. Có 2 ứng dụng: khách hàng (`/`) và nhân viên (`/backoffice`).
 - **Mô hình nghiệp vụ** (chi tiết ở `NGHIEP_VU_THEO_59_BANG.md`):
-  - **Gom hàng qua hub:** chặng đón → tập kết ở hub → chuyến trục định kỳ (`departure`) → lưu trú hoặc cách ly → chặng giao.
+  - **Gom hàng qua hub:** chặng đón → tập kết ở hub → chuyến trục định kỳ (`departure`) → lưu trú → chặng giao.
   - **Trục nội địa** (hub ⇄ hub) và **trục quốc tế** (hub → cửa khẩu, rồi bàn giao cho đại lý).
   - **Trụ sở và hub vệ tinh:** mọi xe và nhân viên thuộc trụ sở. Xe về **hub gốc** (`home_hub_location_id`) thì mới rảnh.
   - Hub đón trùng hub giao thì **chạy thẳng** (`DIRECT`). Mỗi đơn có tối đa một chặng trục.
@@ -140,7 +140,7 @@ Gốc package: `backend/src/main/java/com/example/racehorse_transport/`.
 - Snapshot có chủ đích phải ghi comment `// snapshot: <lý do>`.
 - Quy ước:
   - tên bảng và cột dùng `snake_case`, tên bảng số ít;
-  - mọi định danh dùng tiếng Anh, theo quy tắc N1–N10 ở mục 0 của `DB_SCHEMA_59_BANG.md`. Tài liệu dùng tên mới; code và migration **chưa đồng bộ** thì giữ tên đang có và tra `docs/BANG_DOI_TEN.md`. Không tự đổi tên khi người dùng chưa giao việc đồng bộ;
+  - mọi định danh dùng tiếng Anh, theo quy tắc N1–N10 ở mục 0 của `DB_SCHEMA_59_BANG.md`. Code và lược đồ hiện hành đã đồng bộ tên theo đặc tả. Bảng đối chiếu tên cũ đã xóa. Không tự đổi tên khi người dùng chưa giao việc đồng bộ;
   - PK là `bigint` identity ↔ `Long`;
   - `timestamptz` ↔ `Instant`, `date` ↔ `LocalDate`;
   - tiền là `numeric(15,2)` ↔ `BigDecimal`.
