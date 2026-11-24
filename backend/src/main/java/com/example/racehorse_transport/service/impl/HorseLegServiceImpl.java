@@ -91,7 +91,8 @@ public class HorseLegServiceImpl implements HorseLegService {
         if (!trips.existsById(vehicleTripId)) {
             throw new ResourceNotFoundException("Không tìm thấy lượt xe " + vehicleTripId);
         }
-        return legs.findActiveOnTrip(vehicleTripId, INACTIVE).stream().map(TripHorseResponseDto::from).toList();
+        // Gồm cả con giao thất bại: còn trên xe tới khi giao vào hub (B5)
+        return legs.findActiveOnTrip(vehicleTripId, Set.of(HorseLegStatus.CANCELLED)).stream().map(TripHorseResponseDto::from).toList();
     }
 
     @Override

@@ -67,15 +67,20 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
             return;
         }
         if (handover.getHandoverType() == HandoverType.STAY_OUT) {
-            matched.forEach(leg -> horseStays.closeActive(leg.getBookingHorse().getId(), now));
+            matched.forEach(leg -> horseStays.closeActive(leg.getBookingHorse().getId(), now, actorUserId));
             return;
         }
         for (HorseLeg leg : matched) {
+            // Giao thất bại (B5): xe về hub, giao con vào hub thì giữ và chăm sóc tại hub; chặng thất bại giữ nguyên
+            if (leg.getStatus() == HorseLegStatus.FAILED) {
+                horseStays.openFailedDeliveryStabling(leg, handover.getTripStop().getLocation(), now);
+                continue;
+            }
             if (boarding) {
                 leg.setStatus(HorseLegStatus.IN_PROGRESS);
                 leg.setActualStartAt(now);
                 // Nhận từ hub: kết thúc lưu trú tập kết
-                horseStays.closeActive(leg.getBookingHorse().getId(), now);
+                horseStays.closeActive(leg.getBookingHorse().getId(), now, actorUserId);
             } else {
                 leg.setStatus(HorseLegStatus.COMPLETED);
                 leg.setActualEndAt(now);

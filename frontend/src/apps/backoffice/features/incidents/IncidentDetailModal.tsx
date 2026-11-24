@@ -14,6 +14,7 @@ import { Skeleton } from '@shared/ui/Skeleton'
 import { StatusBadge } from '@shared/ui/StatusBadge'
 import { Textarea } from '@shared/ui/Textarea'
 import { useToast } from '@shared/ui/toast'
+import { EvidencePanel } from '@backoffice/shared/EvidencePanel'
 import s from './Incidents.module.css'
 
 const RESOLUTIONS: ResolutionType[] = ['CONTINUE', 'VET_TREATMENT', 'STABLE_NEARBY', 'TRANSFER_VEHICLE', 'RETURN_TO_HUB', 'CANCEL']
@@ -75,6 +76,8 @@ export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Pr
         </div>
         <p className={s.muted}>{[incident.vehicleTripCode, incident.horseName, incident.bookingCode].filter(Boolean).join(' · ')}</p>
         <p>{incident.description}</p>
+        <EvidencePanel title={t('incidents.photos')} load={() => incidentsApi.photos(incidentId)}
+          upload={role === 'coordinator' && incident.status !== 'CLOSED' ? file => incidentsApi.attachPhoto(incidentId, file) : undefined} />
       </div>
 
       <section className={s.section} aria-labelledby="incident-plans">
@@ -141,6 +144,8 @@ export function IncidentDetailModal({ incidentId, role, onClose, onChanged }: Pr
                   {cost.approvedAt && <StatusBadge tone="success" label={t('incidents.approved')} />}
                 </div>
                 <p className={s.muted}>{cost.description}</p>
+                <EvidencePanel title={t('incidents.receipts')} load={() => incidentsApi.receipts(cost.id ?? 0)}
+                  upload={role === 'coordinator' && !cost.approvedAt ? file => incidentsApi.attachReceipt(cost.id ?? 0, file) : undefined} />
                 {role === 'manager' && !cost.approvedAt && (
                   <div><Button size="sm" loading={busy} onClick={() => run(() => incidentsApi.approveCost(cost.id ?? 0), t('incidents.done.costApproved'))}>{t('incidents.approveCost')}</Button></div>
                 )}

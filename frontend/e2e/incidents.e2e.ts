@@ -134,3 +134,36 @@ test('hộ tống báo sự cố cho một con và ghi chi phí', async ({ page 
   await page.getByRole('button', { name: 'Ghi chi phí' }).click()
   await expect.poll(() => sent.cost).toMatchObject({ category: 'VET', description: 'Thuốc hạ sốt', amount: 350000, incidentId: 5, customerConsulted: false })
 })
+
+test('điều phối thêm ảnh hiện trường và biên lai; quản lý xem lại khi duyệt chi phí', async ({ page }) => {
+  const incident = incidentState()
+  const photos: Record<string, unknown>[] = []
+  const receipts = [{ id: 71, documentTypeCode: 'EXPENSE_INVOICE', fileName: 'hoa-don-thu-y.jpg', fileUrl: 'https://cdn.example/hoa-don.jpg', uploadedByName: 'Tài xế A', uploadedAt: '2031-03-05T09:00:00Z' }]
+  let uploads = 0
+  await signIn(page, 'coordinator')
+  await page.route('**/api/v1/**', async route => {
+    const request = route.request()
+    const path = new URL(request.url()).pathname.replace('/api/v1', '')
+    if (path === '/incidents') return ok(route, [incident])
+    if (path === '/incidents/5') return ok(route, incident)
+    if (path === '/incidents/5/cost-items') return ok(route, [{ id: 30, category: 'VET', description: 'Khám thú y', amount: 1500000, payerType: 'CUSTOMER' }])
+    if (path === '/cost-items/30/receipts') return ok(route, receipts)
+    if (path === '/incidents/5/photos') {
+      if (request.method() === 'POST') {
+        uploads++
+        photos.push({ id: 80, documentTypeCode: 'INCIDENT_PHOTO', fileName: 'hien-truong.jpg', fileUrl: 'https://cdn.example/hien-truong.jpg', uploadedByName: 'Điều phối', capturedAt: '2031-03-05T09:30:00Z' })
+      }
+      return ok(route, photos)
+    }
+    return ok(route, [])
+  })
+  await page.goto('/backoffice/coordinator/incidents')
+  await page.getByRole('table', { name: 'Sự cố đang xử lý' }).getByRole('row', { name: /Ngựa bỏ ăn/ }).getByRole('button', { name: 'Xem' }).click({ timeout: 15_000 })
+  const dialog = page.getByRole('dialog', { name: 'Ngựa bỏ ăn' })
+  await expect(dialog.getByRole('list', { name: 'Biên lai, hóa đơn' }).getByRole('link', { name: 'hoa-don-thu-y.jpg' })).toHaveAttribute('href', 'https://cdn.example/hoa-don.jpg')
+  await expect(dialog.getByText('Chưa có tệp nào.')).toBeVisible()
+  await dialog.getByLabel('Chọn tệp').first().setInputFiles({ name: 'hien-truong.jpg', mimeType: 'image/jpeg', buffer: Buffer.from([1, 2, 3]) })
+  await dialog.getByRole('button', { name: 'Tải lên' }).first().click()
+  await expect(dialog.getByRole('list', { name: 'Ảnh hiện trường' }).getByRole('link', { name: 'hien-truong.jpg' })).toBeVisible()
+  expect(uploads).toBe(1)
+})

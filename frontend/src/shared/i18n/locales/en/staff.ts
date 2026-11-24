@@ -73,6 +73,12 @@ export const staff = {
     "notFit": "Fit to continue not confirmed",
     "costs": "Costs",
     "noCosts": "No costs yet.",
+    "photos": "Scene photos",
+    "receipts": "Receipts and invoices",
+    "noEvidence": "No files yet.",
+    "evidenceFile": "Choose file",
+    "uploadEvidence": "Upload",
+    "evidenceUploaded": "Uploaded",
     "payer": {
       "COMPANY": "Company pays",
       "CUSTOMER": "Customer pays",

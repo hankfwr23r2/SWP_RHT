@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import type { CrewTrip } from '@shared/api/tripExecution'
 import { incidentsApi, type CauseType, type CostCategory, type IncidentType } from '@shared/api/incidentOps'
 import { useLoad } from '@shared/hooks/useLoad'
+import { formatVND } from '@shared/lib/format'
 import { Button } from '@shared/ui/Button'
 import { Card } from '@shared/ui/Card'
 import { Field } from '@shared/ui/Field'
@@ -13,11 +14,36 @@ import { Select } from '@shared/ui/Select'
 import { StatusBadge } from '@shared/ui/StatusBadge'
 import { Textarea } from '@shared/ui/Textarea'
 import { useToast } from '@shared/ui/toast'
+import { EvidencePanel } from '@backoffice/shared/EvidencePanel'
 import s from './MyTrips.module.css'
 
 const TYPES: IncidentType[] = ['HEALTH', 'VEHICLE_BREAKDOWN', 'ACCIDENT', 'DELAY', 'DOCUMENT', 'OTHER']
 const CAUSES: CauseType[] = ['COMPANY_FAULT', 'HORSE_CONDITION', 'CUSTOMER_DOCS', 'AGENT_FAULT', 'FORCE_MAJEURE', 'RECIPIENT_ABSENT']
 const CATEGORIES: CostCategory[] = ['VET', 'RESCUE', 'REPAIR', 'STABLING', 'TOLL', 'FUEL', 'WAITING', 'OTHER']
+
+// Vị trí hiện tại cho ảnh hiện trường; máy không cho lấy vị trí thì gửi ảnh không kèm tọa độ
+const currentPosition = () => new Promise<{ latitude: number; longitude: number } | undefined>(resolve => {
+  if (!navigator.geolocation) return resolve(undefined)
+  navigator.geolocation.getCurrentPosition(({ coords }) => resolve({ latitude: Number(coords.latitude.toFixed(6)), longitude: Number(coords.longitude.toFixed(6)) }),
+    () => resolve(undefined), { timeout: 5000, maximumAge: 60_000 })
+})
+
+// Chi phí đã ghi của sự cố, mỗi khoản kèm biên lai; tải biên lai khi quản lý chưa duyệt
+function IncidentCosts({ incidentId }: { incidentId: number }) {
+  const { t } = useTranslation()
+  const { data } = useLoad(() => incidentsApi.costs(incidentId), [incidentId], { toastOnError: false })
+  return (
+    <ul className={s.list} aria-label={t('incidents.costs')}>
+      {(data ?? []).map(cost => (
+        <li key={cost.id} className={s.body}>
+          <p className={s.line}>{t(`incidents.category.${cost.category}`)} · {cost.description} · {formatVND(cost.amount ?? 0)}</p>
+          <EvidencePanel title={t('incidents.receipts')} load={() => incidentsApi.receipts(cost.id ?? 0)}
+            upload={cost.approvedAt ? undefined : file => incidentsApi.attachReceipt(cost.id ?? 0, file)} />
+        </li>
+      ))}
+    </ul>
+  )
+}
 
 interface CostDraft { category: CostCategory; description: string; amount: string; consulted: string }
 const emptyCost = (): CostDraft => ({ category: 'VET', description: '', amount: '', consulted: 'no' })
@@ -30,6 +56,7 @@ export function TripIncidentPanel({ run }: { run: CrewTrip }) {
   const [busy, setBusy] = useState(false)
   const [form, setForm] = useState({ scope: '', type: 'HEALTH' as IncidentType, cause: 'HORSE_CONDITION' as CauseType, title: '', description: '' })
   const [costs, setCosts] = useState<Record<number, CostDraft>>({})
+  const [costVersion, setCostVersion] = useState(0)
   const { data: incidents, reload } = useLoad(() => incidentsApi.ofTrip(tripId), [tripId])
 
   const act = async (action: () => Promise<unknown>, done: string) => {
@@ -63,6 +90,11 @@ export function TripIncidentPanel({ run }: { run: CrewTrip }) {
                 <Button variant="primary" size="lg" fullWidth loading={busy}
                   onClick={() => act(() => incidentsApi.confirmFit(id), t('myTrips.run.incident.fitDone'))}>{t('myTrips.run.incident.confirmFit')}</Button>
               )}
+              {incident.status !== 'CLOSED' && (
+                <EvidencePanel title={t('incidents.photos')} load={() => incidentsApi.photos(id)}
+                  upload={async file => incidentsApi.attachPhoto(id, file, await currentPosition())} />
+              )}
+              <IncidentCosts key={`${id}-${costVersion}`} incidentId={id} />
               {open && (
                 <div className={s.body}>
                   <Field label={t('incidents.costs')}>
@@ -83,7 +115,7 @@ export function TripIncidentPanel({ run }: { run: CrewTrip }) {
                     onClick={() => act(() => incidentsApi.recordCost({
                       category: draft.category, description: draft.description.trim(), amount: Number(draft.amount), incidentId: id,
                       customerConsulted: draft.consulted === 'yes', incurredAt: new Date().toISOString(),
-                    }), t('myTrips.run.incident.costSaved')).then(ok => { if (ok) update(emptyCost()) })}>
+                    }), t('myTrips.run.incident.costSaved')).then(ok => { if (ok) { update(emptyCost()); setCostVersion(v => v + 1) } })}>
                     {t('myTrips.run.incident.addCost')}
                   </Button>
                 </div>

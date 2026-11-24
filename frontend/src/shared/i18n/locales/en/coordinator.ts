@@ -115,6 +115,7 @@ export const coordinator = {
       "refuseTitle": "Refuse horse {{horse}} · {{code}}",
       "refuseHint": "The horse is excluded from the booking: legs are cancelled, the appointment is dropped, the quote is replaced and managers are notified. This cannot be undone.",
       "refuseDone": "Refusal recorded",
+      "overdue": "Past holding deadline",
       "reason": "Reason",
       "deliver": "Hand over",
       "deliverTitle": "Hand over {{horse}} · {{code}}",

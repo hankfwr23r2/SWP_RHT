@@ -145,6 +145,8 @@ test('tại hub điều phối không nhận một con khách tự chở tới, 
     if (path === '/locations') return ok(route, [{ id: 1, name: 'Hub HCM', locationType: 'HUB' }])
     if (path === '/horse-stays/appointments') return ok(route, appointments)
     if (path === '/horse-stays/6/refusals') { sent = request.postDataJSON(); appointments.length = 0; return ok(route, null) }
+    // Con giao thất bại giữ tại hub đã quá hạn (B5)
+    if (path === '/horse-stays') return ok(route, [{ id: 9, bookingHorseId: 52, bookingCode: 'BK-AAAA0007', horseName: 'Bão Lửa', stayType: 'STABLING', actualStartAt: '2026-01-01T05:00:00Z', plannedEndAt: '2026-01-04T05:00:00Z', deliveryMethod: 'COMPANY' }])
     return ok(route, [])
   })
   await page.goto('/backoffice/coordinator/hub')
@@ -160,4 +162,5 @@ test('tại hub điều phối không nhận một con khách tự chở tới, 
   await expect(page.getByText('Đã ghi không nhận ngựa')).toBeVisible()
   await expect(booked).toHaveCount(0)
   expect(sent).toEqual({ reason: 'Ngựa què chân trước' })
+  await expect(page.getByRole('table', { name: 'Ngựa đang lưu trú' }).getByRole('row', { name: /Bão Lửa/ })).toContainText('Quá hạn giữ')
 })

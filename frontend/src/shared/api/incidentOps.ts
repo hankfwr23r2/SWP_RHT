@@ -14,9 +14,15 @@ export type IncidentType = NonNullable<IncidentReport['incidentType']>
 export type CauseType = NonNullable<IncidentReport['causeType']>
 export type ResolutionType = NonNullable<IncidentPlanCreate['resolutionType']>
 export type CostCategory = NonNullable<CostItemCreate['category']>
+export type Evidence = Schemas['EvidenceResponseDto']
 
 const get = async <T>(url: string) => (await apiClient.get<ApiResponse<T>>(url)).data.data
 const post = async <T>(url: string, body?: unknown) => (await apiClient.post<ApiResponse<T>>(url, body)).data.data
+const upload = async (url: string, file: File, params?: Record<string, number>) => {
+  const body = new FormData()
+  body.append('file', file)
+  return (await apiClient.post<ApiResponse<Evidence[]>>(url, body, { params, headers: { 'Content-Type': 'multipart/form-data' } })).data.data
+}
 
 export const incidentsApi = {
   open: () => get<Incident[]>('/incidents'),
@@ -33,4 +39,9 @@ export const incidentsApi = {
   recordCost: (body: CostItemCreate) => post<CostItem>('/cost-items', body),
   approveCost: (costId: number) => post<CostItem>(`/cost-items/${costId}/approve`),
   parties: () => get<Party[]>('/parties'),
+  // Chứng từ: biên lai, hóa đơn kèm chi phí; ảnh hiện trường kèm sự cố (có tọa độ nếu máy cho lấy vị trí)
+  receipts: (costId: number) => get<Evidence[]>(`/cost-items/${costId}/receipts`),
+  attachReceipt: (costId: number, file: File) => upload(`/cost-items/${costId}/receipts`, file),
+  photos: (incidentId: number) => get<Evidence[]>(`/incidents/${incidentId}/photos`),
+  attachPhoto: (incidentId: number, file: File, at?: { latitude: number; longitude: number }) => upload(`/incidents/${incidentId}/photos`, file, at),
 }

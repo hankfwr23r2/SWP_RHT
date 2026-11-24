@@ -324,7 +324,8 @@ export const staffCatalog = {
         "MINUTE": "minutes",
         "HOUR": "hours",
         "DAY": "days",
-        "COUNT": ""
+        "COUNT": "",
+        "VND": "VND"
       },
       "groups": {
         "SCHEDULE_WINDOW": "Pickup and delivery hours",
@@ -352,6 +353,8 @@ export const staffCatalog = {
         "HOTLINE": "Hotline",
         "OFFICE_ADDRESS": "Office address",
         "HANDOVER_FREE_WAIT_MINUTES": "Free waiting time for the recipient",
+        "STABLING_MAX_DAYS": "Days a horse is held at the hub after a failed delivery",
+        "STABLING_DAILY_FEE": "Daily stabling and care fee for a horse held after a failed delivery",
         "QUOTATION_VALID_HOURS": "Quotation validity after sending",
         "DEPARTURE_GENERATION_WEEKS": "Weeks of departures to generate",
         "OTP_EXPIRY_MINUTES": "Verification code lifetime",
