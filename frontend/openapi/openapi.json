@@ -845,6 +845,23 @@
         },
         "type" : "object"
       },
+      "ApiResponseListPaymentResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PaymentResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListPriceItemResponseDto" : {
         "properties" : {
           "data" : {
@@ -901,6 +918,23 @@
           "data" : {
             "items" : {
               "$ref" : "#/components/schemas/PublicTrackingResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseListQuotationResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/QuotationResponseDto"
             },
             "type" : "array"
           },
@@ -1156,6 +1190,34 @@
         },
         "type" : "object"
       },
+      "ApiResponsePaymentCheckoutResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/PaymentCheckoutResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponsePaymentResultResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/PaymentResultResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponsePriceItemResponseDto" : {
         "properties" : {
           "data" : {
@@ -1188,6 +1250,20 @@
         "properties" : {
           "data" : {
             "$ref" : "#/components/schemas/PricingPreviewResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "ApiResponseQuotationResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/QuotationResponseDto"
           },
           "message" : {
             "type" : "string"
@@ -4521,6 +4597,68 @@
         },
         "type" : "object"
       },
+      "PaymentCheckoutResponseDto" : {
+        "properties" : {
+          "expiresAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "paymentUrl" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "PaymentResponseDto" : {
+        "properties" : {
+          "amount" : {
+            "type" : "number"
+          },
+          "bookingId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "currencyCode" : {
+            "type" : "string"
+          },
+          "dueAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "paidAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "quotationId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "status" : {
+            "enum" : [ "PENDING", "PAID", "FAILED", "CANCELLED" ],
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "DEPOSIT", "BALANCE", "EXTRA_CHARGE", "REFUND" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "PaymentResultResponseDto" : {
+        "properties" : {
+          "code" : {
+            "type" : "string"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "PersonalInsuranceRevisionRequestDto" : {
         "properties" : {
           "insurerPartyId" : {
@@ -5019,6 +5157,127 @@
         },
         "type" : "object"
       },
+      "QuotationAcceptRequestDto" : { },
+      "QuotationAdjustmentRequestDto" : {
+        "properties" : {
+          "adjustment" : {
+            "type" : "number"
+          },
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "adjustment", "reason" ],
+        "type" : "object"
+      },
+      "QuotationLineResponseDto" : {
+        "properties" : {
+          "amount" : {
+            "type" : "number"
+          },
+          "bookingHorseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "lineNumber" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "lineType" : {
+            "enum" : [ "LINEHAUL", "PICKUP", "DELIVERY", "DIRECT", "FUEL", "STALL", "QUARANTINE", "SERVICE", "DOCS", "INSURANCE", "ADJUSTMENT" ],
+            "type" : "string"
+          },
+          "passThrough" : {
+            "type" : "boolean"
+          },
+          "priceItemId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "quantity" : {
+            "type" : "number"
+          },
+          "unit" : {
+            "type" : "string"
+          },
+          "unitPrice" : {
+            "type" : "number"
+          }
+        },
+        "type" : "object"
+      },
+      "QuotationRejectRequestDto" : {
+        "properties" : {
+          "reason" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "reason" ],
+        "type" : "object"
+      },
+      "QuotationResponseDto" : {
+        "properties" : {
+          "bookingId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "currencyCode" : {
+            "type" : "string"
+          },
+          "departureDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "depositAmount" : {
+            "type" : "number"
+          },
+          "estimatedDeliveryDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "expiresAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "lines" : {
+            "items" : {
+              "$ref" : "#/components/schemas/QuotationLineResponseDto"
+            },
+            "type" : "array"
+          },
+          "passThroughAmount" : {
+            "type" : "number"
+          },
+          "pickupDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "status" : {
+            "enum" : [ "DRAFT", "SENT", "ACCEPTED", "REJECTED", "EXPIRED", "SUPERSEDED" ],
+            "type" : "string"
+          },
+          "totalAmount" : {
+            "type" : "number"
+          },
+          "version" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "type" : "object"
+      },
+      "QuotationSendRequestDto" : { },
       "RegisterRequest" : {
         "properties" : {
           "acceptedTerms" : {
@@ -6163,6 +6422,17 @@
         },
         "required" : [ "homeHubLocationId", "licensePlate", "standardStallCount", "vehicleClassId", "wideStallCount" ],
         "type" : "object"
+      },
+      "VnpayIpnResponseDto" : {
+        "properties" : {
+          "Message" : {
+            "type" : "string"
+          },
+          "RspCode" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
       }
     },
     "securitySchemes" : {
@@ -6745,6 +7015,85 @@
         "tags" : [ "booking-review-controller" ]
       }
     },
+    "/bookings/{bookingId}/payments" : {
+      "get" : {
+        "operationId" : "payments",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "bookingId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListPaymentResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "payment-controller" ]
+      }
+    },
+    "/bookings/{bookingId}/quotations" : {
+      "get" : {
+        "operationId" : "quotations",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "bookingId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListQuotationResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "quotation-controller" ]
+      },
+      "post" : {
+        "operationId" : "draft",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "bookingId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseQuotationResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "quotation-controller" ]
+      }
+    },
     "/bookings/{id}" : {
       "get" : {
         "operationId" : "get_3",
@@ -7031,7 +7380,7 @@
     },
     "/bookings/{id}/documents/{documentId}/reject" : {
       "post" : {
-        "operationId" : "reject_1",
+        "operationId" : "reject_2",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -7363,7 +7712,7 @@
     },
     "/bookings/{id}/reject" : {
       "post" : {
-        "operationId" : "reject",
+        "operationId" : "reject_1",
         "parameters" : [ {
           "in" : "path",
           "name" : "id",
@@ -9864,6 +10213,91 @@
         "tags" : [ "party-controller" ]
       }
     },
+    "/payments/vnpay/ipn" : {
+      "get" : {
+        "operationId" : "ipn",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "parameters",
+          "required" : true,
+          "schema" : {
+            "additionalProperties" : {
+              "type" : "string"
+            },
+            "type" : "object"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VnpayIpnResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "payment-controller" ]
+      }
+    },
+    "/payments/vnpay/return" : {
+      "get" : {
+        "operationId" : "paymentReturn",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "parameters",
+          "required" : true,
+          "schema" : {
+            "additionalProperties" : {
+              "type" : "string"
+            },
+            "type" : "object"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePaymentResultResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "payment-controller" ]
+      }
+    },
+    "/payments/{id}/checkout" : {
+      "post" : {
+        "operationId" : "checkout",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponsePaymentCheckoutResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "payment-controller" ]
+      }
+    },
     "/price-lists" : {
       "get" : {
         "operationId" : "list_1",
@@ -10322,6 +10756,152 @@
           }
         },
         "tags" : [ "tracking-controller" ]
+      }
+    },
+    "/quotations/{id}/accept" : {
+      "post" : {
+        "operationId" : "accept",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/QuotationAcceptRequestDto"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseQuotationResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "quotation-controller" ]
+      }
+    },
+    "/quotations/{id}/adjust" : {
+      "post" : {
+        "operationId" : "adjust",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/QuotationAdjustmentRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseQuotationResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "quotation-controller" ]
+      }
+    },
+    "/quotations/{id}/reject" : {
+      "post" : {
+        "operationId" : "reject",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/QuotationRejectRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseQuotationResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "quotation-controller" ]
+      }
+    },
+    "/quotations/{id}/send" : {
+      "post" : {
+        "operationId" : "send",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/QuotationSendRequestDto"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseQuotationResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "quotation-controller" ]
       }
     },
     "/reports/operations" : {

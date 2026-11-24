@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.repository;
 
 import com.example.racehorse_transport.entity.Staff;
+import com.example.racehorse_transport.entity.enums.AppUserStatus;
 import jakarta.persistence.LockModeType;
 import java.util.List;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -17,6 +18,9 @@ public interface StaffRepository extends JpaRepository<Staff, Long> {
     Optional<Staff> findByUser_Username(String username);
 
     Optional<Staff> findByStaffCode(String staffCode);
+
+    @Query("select s.userId from Staff s where s.user.role.code = :role and s.user.status = :status order by s.userId")
+    List<Long> findUserIdsByRoleAndStatus(String role, AppUserStatus status);
 
     @EntityGraph(attributePaths = {"user", "user.role", "homeHubLocation"})
     List<Staff> findAllByOrderByStaffCodeAsc();

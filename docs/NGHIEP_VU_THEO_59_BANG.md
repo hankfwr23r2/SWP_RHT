@@ -303,10 +303,10 @@ Hai nhánh chạy song song. Mỗi nhánh tự lưu trạng thái trên đối t
 | Bước | Hành động | Bảng |
 |---|---|---|
 | 1 | Backend chọn `price_list` ACTIVE có thời hạn hiệu lực chứa ngày báo giá | Đọc `price_list` |
-| 2 | Sinh từng dòng báo giá từ `price_item` theo mục 3.2. Mỗi dòng có thể gắn với một con ngựa hoặc một chặng | `quotation_line` (snapshot `unit_price`, `is_pass_through`) |
+| 2 | Sinh từng dòng báo giá từ `price_item` theo mục 3.2. Mỗi dòng có thể gắn với một con ngựa hoặc một chặng. Phí bảo hiểm mua hộ lấy trọn từ báo giá của hãng cho từng con | `quotation_line` (snapshot `unit_price`, `is_pass_through`, `price_item_id` NULL cho phí bảo hiểm mua hộ) |
 | 3 | Tạo phiên bản báo giá, chốt lịch: ngày đón, ngày xuất phát, ngày giao dự kiến | `quotation` (DRAFT, `version` tăng dần, snapshot `deposit_rate`) |
-| 4 | Quản lý có thể thêm dòng điều chỉnh giảm giá | `quotation_line` loại ADJUSTMENT |
-| 5 | Quản lý gửi báo giá cho khách | `quotation.status = SENT`, `sent_by`, `sent_at`, `expires_at`. Các bản cũ chuyển SUPERSEDED. Hạn là mốc sớm nhất trong 24 giờ sau khi gửi, hết ngày đón và hết ngày hiệu lực báo giá bảo hiểm (nếu có) |
+| 4 | Quản lý có thể thêm dòng điều chỉnh tăng hoặc giảm bằng số nguyên đồng, kèm lý do. Tổng phải đủ phần thu hộ | `quotation_line` loại ADJUSTMENT |
+| 5 | Quản lý gửi báo giá cho khách khi tổng và tiền cọc đều dương, báo giá bảo hiểm mua hộ còn hạn | `quotation.status = SENT`, `sent_by`, `sent_at`, `expires_at`. Các bản cũ đã gửi chuyển SUPERSEDED. Hạn là mốc sớm nhất trong thời gian `QUOTATION_VALID_HOURS` sau khi gửi (mặc định 24 giờ), hết ngày đón theo giờ Việt Nam và hạn báo giá bảo hiểm mua hộ (nếu có) |
 
 `QuotationService` tính và ghi `quotation.total_amount`, `pass_through_amount`, `deposit_amount` khi báo giá còn DRAFT. Sau khi SENT thì các cột này không đổi. Tiền cọc gồm **toàn bộ** phần thu hộ (bảo hiểm, lệ phí): `deposit = deposit_rate × (tổng − thu hộ) + thu hộ`, làm tròn **lên nghìn đồng** và không vượt tổng; tổng không đổi, số dư = tổng − cọc. Km tính tiền lấy km gần nhất, đơn giá sau hệ số tới đồng nên mọi dòng giá là số nguyên đồng.
 
@@ -319,11 +319,13 @@ Hai nhánh chạy song song. Mỗi nhánh tự lưu trạng thái trên đối t
 | Bước | Hành động | Bảng |
 |---|---|---|
 | 1 | Khách chấp nhận báo giá | `quotation.status = ACCEPTED`, `accepted_at`. Mỗi đơn chỉ có một báo giá ACCEPTED (partial unique index) |
-| 2 | Tạo khoản cọc | `payment` DEPOSIT, `amount = quotation.deposit_amount`, `due_at` |
+| 2 | Tạo khoản cọc | `payment` DEPOSIT, `amount = quotation.deposit_amount`, `due_at = quotation.expires_at` |
 | 3 | Khách trả qua VNPAY. Cổng gọi lại (callback và IPN) | `payment_transaction` (UK `gateway_code + gateway_transaction_number` chống ghi trùng), `payment.status = PAID` |
 | 4 | Cấp vận đơn | `booking.waybill_number`, `status = CONFIRMED` |
 
-Quá `expires_at` mà chưa cọc thì scheduler chuyển báo giá sang `EXPIRED` và đơn sang `QUOTE_EXPIRED`. Đơn hết hạn thì nhả khoang: trừ `departure.booked_stall_count` trong cùng transaction.
+Khách có thể từ chối báo giá đang chờ phản hồi và ghi lý do. Báo giá sang `REJECTED`, đơn về `QUOTING` và giữ chỗ.
+
+Quá `expires_at` mà chưa cọc thì scheduler chuyển báo giá sang `EXPIRED` và đơn sang `QUOTE_EXPIRED`. Nếu có phiên VNPAY đang chờ xác nhận, scheduler đợi thêm theo cấu hình VNPAY để ghi nhận khoản tiền đã trả trước hạn. Đơn hết hạn thì nhả chỗ và rời chuyến trong cùng transaction. Tiền về sai thời điểm hoặc sau khi hủy được ghi nhận để quản lý đối soát.
 
 ---
 

@@ -150,7 +150,7 @@ Có **3 thành viên** thì tách luồng A thành A-BE và A-FE (khách hàng),
 | `NotificationService.notify(...)`, `AuditService.record(...)` | P0 | A, B | Mọi giai đoạn |
 | `DocumentCompletenessService.isComplete(bookingId)` | A | B | Khi xe xuất phát đón (GĐ5), khi nhận tại hub nếu SELF, hoặc khi nhận tại cửa khẩu với IMPORT |
 | `PaymentReadinessService.isPaidInFull(bookingId)` | A | B | Khi xe **rời** nơi nhận ngựa (GĐ6) |
-| `PaymentService.requestBalance(bookingId, receivedAt)` (chưa có, A7) | A | B | Lập khoản số dư khi nhận ngựa xong |
+| `PaymentService.requestBalance(bookingId, receivedAt)` | A | B | Khi hoàn tất nhận ngựa, lập số dư một lần cho đơn CONFIRMED đã cọc và có báo giá ACCEPTED |
 | `BookingCancellationService.cancelUnpaidAtPickup(bookingId, actorUserId)` (chưa có, A8) | A | B | Trả ngựa tại chỗ khi quá thời gian chờ |
 
 ---
@@ -414,7 +414,8 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
   - `PaymentService`: DEPOSIT, BALANCE, REFUND;
   - `VnpayClient`: callback và IPN ghi `payment_transaction`, chống trùng bằng UK;
   - cấp vận đơn;
-  - scheduler: hết hạn báo giá (nhả chỗ). Hạn báo giá theo quy tắc #33. Số dư lập khi nhận ngựa (`requestBalance`), hạn 30 phút;
+  - scheduler: hết hạn báo giá (nhả chỗ). Hạn báo giá theo quy tắc #33;
+  - `PaymentService.requestBalance(bookingId, receivedAt)`: luồng B gọi sau khi nhận ngựa xong. Tạo tối đa một khoản số dư cho đơn CONFIRMED đã trả cọc, bằng tổng báo giá ACCEPTED trừ số đã trả. Nếu số dư dương, hạn là `receivedAt + BALANCE_WAIT_MINUTES` và thông báo khách;
   - `PaymentReadinessService`.
 - **FE:** quản lý lập, điều chỉnh, gửi báo giá. Khách xem báo giá, chấp nhận, thanh toán VNPAY, trang kết quả trả về.
 - **Tận dụng:**
