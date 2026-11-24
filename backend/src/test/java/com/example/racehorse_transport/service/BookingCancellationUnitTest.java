@@ -63,7 +63,6 @@ class BookingCancellationUnitTest {
 
     @Test
     void acceptsWhenNoBalanceSessionStillAwaitsConfirmation() {
-        when(checkout.hasPendingConfirmation(1L)).thenReturn(true);
         cancellations.cancelUnpaidAtPickup(1L, 3L);
 
         assertThat(balance.getStatus()).isEqualTo(PaymentStatus.CANCELLED);

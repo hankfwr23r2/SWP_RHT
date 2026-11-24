@@ -12,7 +12,6 @@ public interface PaymentService {
     // Luồng B gọi khi hoàn tất nhận ngựa. A khóa đơn trước khi tạo khoản thu.
     void requestBalance(Long bookingId, Instant receivedAt);
 
-    // Còn link số dư mở trước hạn mà VNPAY chưa trả lời (tối đa hạn của link cộng thời gian chờ kết quả)
     // Các thao tác nội bộ A7 chạy trong transaction đang giữ khóa booking.
     void createDeposit(Quotation quotation);
 

@@ -113,8 +113,8 @@ public class BookingCancellationServiceImpl implements BookingCancellationServic
             outcome = terms.outcome();
             refundTransport = terms.refundTransportDeposit();
         }
-        boolean awaitingVnpay = received && allowPickupCancellation ? checkout.hasPendingBalanceConfirmation(bookingId)
-                : checkout.hasPendingConfirmation(bookingId);
+        // Link bỏ dở không chặn hủy đơn; tiền về sau khi hủy được ghi nhận để quản lý đối soát
+        boolean awaitingVnpay = received && allowPickupCancellation && checkout.hasPendingBalanceConfirmation(bookingId);
         if ((received && (!allowPickupCancellation || !checkout.isBalanceOverdue(entries)))
                 || awaitingVnpay || booking.getStatus() == BookingStatus.CONFIRMED && !depositPaid && !company) {
             outcome = Outcome.NOT_ALLOWED;

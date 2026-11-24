@@ -5,10 +5,8 @@ import com.example.racehorse_transport.entity.Payment;
 import java.util.List;
 
 public interface PaymentCheckoutService {
+    // Còn link số dư mở trước hạn mà VNPAY chưa trả lời, trong thời gian chờ kết quả sau hạn
     boolean hasPendingBalanceConfirmation(Long bookingId);
-
-    // Còn link của khoản thu chưa trả mà VNPAY chưa trả lời, tính tới hết hạn link cộng thời gian chờ kết quả
-    boolean hasPendingConfirmation(Long bookingId);
 
     boolean isBalanceOverdue(List<Payment> entries);
 

@@ -53,7 +53,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 @TestPropertySource(properties = {
         "vnpay.tmn-code=A7TEST",
         "vnpay.hash-secret=a7-test-signature",
-        "quotation.expiry-scan-interval-ms=3600000"
+        "vnpay.quotation-expiry-scan-ms=3600000"
 })
 class QuotationPaymentPostgresTest {
     private static final Instant START = Instant.parse("2027-01-14T10:00:00Z");
@@ -233,8 +233,17 @@ class QuotationPaymentPostgresTest {
         assertThat(bookedSeats(departure)).isZero();
         assertThat(jdbc.queryForObject("select departure_id from booking where id = ?", Long.class,
                 fixture.booking().getId())).isNull();
-        assertThat(results.receive(callback(reference, "804903", 4000, deadline.minusSeconds(1), true)).code())
-                .isEqualTo("00");
+        var late = callback(reference, "804903", 4000, deadline.minusSeconds(1), true);
+        var shown = results.receiveReturn(late);
+        assertThat(shown.success()).isFalse();
+        assertThat(shown.needsReview()).isTrue();
+        assertThat(shown.message()).contains("liên hệ hoàn tiền");
+        assertThat(shown.amount()).isEqualByComparingTo("4000");
+        assertThat(results.receive(late).code()).isEqualTo("02");
+        assertThat(jdbc.queryForObject("""
+                select count(*) from notification where booking_id = ? and title = 'Đối soát VNPAY'
+                and message like '%4000 VND%804903%ngoài hạn%'
+                """, Integer.class, fixture.booking().getId())).isGreaterThanOrEqualTo(1);
         assertThat(gatewayRows(payment)).isEqualTo(1);
         assertThat(bookingStatus(fixture)).isEqualTo("QUOTE_EXPIRED");
     }
@@ -266,8 +275,12 @@ class QuotationPaymentPostgresTest {
         assertThat(balance.getFirst().dueAt()).isEqualTo(START.plusSeconds(1800));
         String oldLink = checkout(balance.getFirst().id(), fixture);
         assertThat(checkout.hasPendingBalanceConfirmation(fixture.booking().getId())).isTrue();
-        // Khách bỏ dở link: hết hạn link cộng thời gian chờ kết quả thì không còn là đang chờ
-        when(clock.instant()).thenReturn(START.plusSeconds(20 * 60));
+        assertThat(payments.payments(fixture.booking().getId(), fixture.customer()).getLast().confirmationUntil())
+                .isEqualTo(START.plusSeconds(35 * 60));
+        // Khách bỏ dở link: chỉ chờ thêm 5 phút sau hạn trả
+        when(clock.instant()).thenReturn(START.plusSeconds(35 * 60 - 1));
+        assertThat(checkout.hasPendingBalanceConfirmation(fixture.booking().getId())).isTrue();
+        when(clock.instant()).thenReturn(START.plusSeconds(35 * 60));
         assertThat(checkout.hasPendingBalanceConfirmation(fixture.booking().getId())).isFalse();
         when(clock.instant()).thenReturn(START);
 
@@ -338,15 +351,12 @@ class QuotationPaymentPostgresTest {
         }, () -> results.receive(callback).code());
 
         assertThat(outcomes.getLast()).isEqualTo("00");
-        assertThat(jdbc.queryForObject("select status from payment where id = ?", String.class, payment)).isEqualTo("PAID");
-        if ("cancelled".equals(outcomes.getFirst())) {
-            assertThat(bookingStatus(fixture)).isEqualTo("CANCELLED");
-            assertThat(bookedSeats(departure)).isZero();
-        } else {
-            assertThat(outcomes.getFirst()).isEqualTo("conflict");
-            assertThat(bookingStatus(fixture)).isEqualTo("CONFIRMED");
-            assertThat(bookedSeats(departure)).isEqualTo(2);
-        }
+        // Link đang chờ không chặn hủy. Hủy trước thì tiền về sau chỉ lưu để đối soát, không mất giao dịch
+        assertThat(outcomes.getFirst()).isEqualTo("cancelled");
+        assertThat(bookingStatus(fixture)).isEqualTo("CANCELLED");
+        assertThat(bookedSeats(departure)).isZero();
+        assertThat(jdbc.queryForObject("select status from payment where id = ?", String.class, payment)).isIn("PAID", "CANCELLED");
+        assertThat(gatewayRows(payment)).isEqualTo(1);
     }
 
     @Test

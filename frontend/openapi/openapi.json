@@ -4776,6 +4776,10 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "confirmationUntil" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
           "currencyCode" : {
             "type" : "string"
           },
@@ -4808,10 +4812,29 @@
       },
       "PaymentResultResponseDto" : {
         "properties" : {
+          "amount" : {
+            "type" : "number"
+          },
+          "bookingCode" : {
+            "type" : "string"
+          },
           "code" : {
             "type" : "string"
           },
           "message" : {
+            "type" : "string"
+          },
+          "needsReview" : {
+            "type" : "boolean"
+          },
+          "paymentType" : {
+            "enum" : [ "DEPOSIT", "BALANCE", "EXTRA_CHARGE", "REFUND" ],
+            "type" : "string"
+          },
+          "success" : {
+            "type" : "boolean"
+          },
+          "transactionNumber" : {
             "type" : "string"
           }
         },

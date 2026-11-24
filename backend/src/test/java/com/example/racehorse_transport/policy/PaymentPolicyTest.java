@@ -129,10 +129,10 @@ class PaymentPolicyTest {
     void balanceBecomesOverdueAtTheEndOfTheGracePeriod() {
         var balance = payment(PaymentType.BALANCE, PaymentStatus.PENDING, "500", "VND");
         balance.setDueAt(Instant.EPOCH);
-        assertThat(PaymentPolicy.isBalanceOverdue(List.of(balance), Instant.EPOCH.plusSeconds(299), 5)).isFalse();
-        assertThat(PaymentPolicy.isBalanceOverdue(List.of(balance), Instant.EPOCH.plusSeconds(300), 5)).isTrue();
+        assertThat(PaymentPolicy.isBalanceOverdue(List.of(balance), Instant.EPOCH.minusSeconds(1))).isFalse();
+        assertThat(PaymentPolicy.isBalanceOverdue(List.of(balance), Instant.EPOCH)).isTrue();
         balance.setStatus(PaymentStatus.PAID);
-        assertThat(PaymentPolicy.isBalanceOverdue(List.of(balance), Instant.EPOCH.plusSeconds(301), 5)).isFalse();
+        assertThat(PaymentPolicy.isBalanceOverdue(List.of(balance), Instant.EPOCH.plusSeconds(301))).isFalse();
     }
 
     private static Payment payment(PaymentType type, PaymentStatus status, String amount, String currency) {
@@ -145,13 +145,33 @@ class PaymentPolicyTest {
     }
 
     @Test
-    void abandonedGatewaySessionStopsCountingAfterLinkAndGraceTime() {
-        Instant opened = Instant.parse("2026-12-01T01:00:00Z");
-        var session = new PaymentPolicy.Session(1L, opened);
-        Instant due = opened.plusSeconds(60);
-        assertThat(PaymentPolicy.awaitsGateway(session, due, opened.plusSeconds(20 * 60 - 1), 15, 5)).isTrue();
-        assertThat(PaymentPolicy.awaitsGateway(session, due, opened.plusSeconds(20 * 60), 15, 5)).isFalse();
-        assertThat(PaymentPolicy.awaitsGateway(session, opened, opened.plusSeconds(1), 15, 5)).isFalse();
-        assertThat(PaymentPolicy.awaitsGateway(null, due, opened, 15, 5)).isFalse();
+    void sessionOpenedBeforeDueWaitsOnlyTheGraceTimeAfterDue() {
+        Instant due = Instant.parse("2026-12-01T01:30:00Z");
+        var early = new PaymentPolicy.Session(1L, due.minusSeconds(1500));
+        var atDue = new PaymentPolicy.Session(1L, due);
+        assertThat(PaymentPolicy.awaitsGateway(early, due, due.plusSeconds(299), 5)).isTrue();
+        assertThat(PaymentPolicy.awaitsGateway(early, due, due.plusSeconds(300), 5)).isFalse();
+        assertThat(PaymentPolicy.awaitsGateway(atDue, due, due, 5)).isFalse();
+        assertThat(PaymentPolicy.awaitsGateway(null, due, due, 5)).isFalse();
+
+        var balance = payment(PaymentType.BALANCE, PaymentStatus.PENDING, "500", "VND");
+        balance.setId(1L);
+        balance.setDueAt(due);
+        assertThat(PaymentPolicy.confirmationUntil(balance, List.of(early), 5)).isEqualTo(due.plusSeconds(300));
+        assertThat(PaymentPolicy.confirmationUntil(balance, List.of(atDue), 5)).isNull();
+        balance.setStatus(PaymentStatus.PAID);
+        assertThat(PaymentPolicy.confirmationUntil(balance, List.of(early), 5)).isNull();
+    }
+
+    @Test
+    void onlyTheTransactionThatPaidTheDebtCountsAsApplied() {
+        Instant paidAt = Instant.parse("2026-12-01T01:00:00Z");
+        var deposit = payment(PaymentType.DEPOSIT, PaymentStatus.PAID, "500", "VND");
+        deposit.setPaidAt(paidAt);
+        assertThat(PaymentPolicy.isAppliedBy(deposit, new BigDecimal("500.00"), paidAt)).isTrue();
+        assertThat(PaymentPolicy.isAppliedBy(deposit, new BigDecimal("500"), paidAt.plusSeconds(1))).isFalse();
+        assertThat(PaymentPolicy.isAppliedBy(deposit, new BigDecimal("500"), null)).isFalse();
+        deposit.setStatus(PaymentStatus.CANCELLED);
+        assertThat(PaymentPolicy.isAppliedBy(deposit, new BigDecimal("500"), paidAt)).isFalse();
     }
 }
