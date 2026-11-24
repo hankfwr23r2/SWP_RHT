@@ -101,6 +101,11 @@ export const staff = {
       "costApproved": "Cost approved"
     }
   },
+  managerWork: {
+    pending: 'Waiting: {{count}}',
+    decisions: 'Departures to decide: {{count}}',
+    documents: 'Orders missing documents: {{count}}',
+  },
   staffMenus: {
     '/coordinator/dispatch': 'Dispatch',
     '/my-trips': 'My trips',

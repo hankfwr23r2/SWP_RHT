@@ -101,6 +101,11 @@ export const staff = {
       "costApproved": "Đã duyệt chi phí"
     }
   },
+  managerWork: {
+    pending: '{{count}} việc đang chờ',
+    decisions: '{{count}} chuyến tới hạn quyết định',
+    documents: '{{count}} đơn thiếu giấy',
+  },
   staffMenus: {
     '/coordinator/dispatch': 'Điều độ',
     '/my-trips': 'Lượt xe của tôi',

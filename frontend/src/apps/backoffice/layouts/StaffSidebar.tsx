@@ -4,7 +4,7 @@ import { NavLink } from 'react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuth } from '@shared/auth/AuthContext'
 import type { StaffRole } from '@shared/types/role'
-import { countLabel, useManagerWork, type ManagerWork } from '../shared/managerWork'
+import { countLabel, useManagerWork, type ManagerWork } from '../shared/useManagerWork'
 import { STAFF_MENUS } from './staffMenus'
 import { Button } from '@shared/ui/Button'
 import s from './StaffSidebar.module.css'
@@ -45,7 +45,7 @@ export function StaffSidebar() {
             <NavLink key={to} to={to} end title={itemLabel} onPointerEnter={() => prefetchManagerPage(to)} onFocus={() => prefetchManagerPage(to)} className={({ isActive }) => `${s.item} ${isActive ? s.on : ''}`}>
               <i className={`fa-solid ${opt?.icon}`} aria-hidden="true" />
               <span>{itemLabel}</span>
-              {pending > 0 && <b className={`${s.count} ${s.countHot}`} aria-label={t('mgr.pending', { count: pending })}>{countLabel(pending)}</b>}
+              {pending > 0 && <b className={`${s.count} ${s.countHot}`} aria-label={t('managerWork.pending', { count: pending })}>{countLabel(pending)}</b>}
             </NavLink>
           )
         })}

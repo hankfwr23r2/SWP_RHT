@@ -3,6 +3,7 @@
 import { common } from './common'
 import { customer } from './customer'
 import { staff } from './staff'
+import { staffManager } from './staffManager'
 import { manager } from './manager'
 import { specialist } from './specialist'
 import { coordinator } from './coordinator'
@@ -12,7 +13,7 @@ import { admin } from './admin'
 export const en = {
   ...common,
   ...customer,
-  ...staff,
+  ...staff, ...staffManager,
   ...manager,
   ...specialist,
   ...coordinator,

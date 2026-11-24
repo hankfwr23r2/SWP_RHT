@@ -2,6 +2,7 @@
 import { lazy } from 'react'
 import type { PageLoader } from '@shared/routing/pageData'
 import type { AppRoute } from '@shared/routing/types'
+import { managerTexts } from '@shared/i18n/staffTexts'
 import { ManagerLoginPage, StaffLoginPage } from './features/auth/StaffLoginPage'
 import type * as Loaders from './shared/loaders'
 // Loader nằm ngoài gói tải đầu: chỉ tải khi mở trang có dữ liệu
@@ -45,21 +46,21 @@ export const routes: AppRoute[] = [
   { path: '/manager', lazyPage: () => import('./features/manager/dashboard/DashboardPage'), loader: load('bookingListLoader'), roles: M, title: 'Bảng điều khiển', layout: 'staff' },
   {
     path: '/manager/orders', roles: M, layout: 'staff', catalog: false,
-    lazyPage: () => import('./features/manager/orders/ManagerOrdersPage'), title: 'Đơn hàng',
+    lazyPage: () => Promise.all([import('./features/manager/orders/ManagerOrdersPage'), managerTexts()]).then(([page]) => page), title: 'Đơn hàng',
   },
   {
     path: '/manager/orders/:id', roles: M, layout: 'staff', catalog: false,
     loader: context => import('./features/manager/orders/loaders').then(m => m.orderLoader(context)),
-    lazyPage: () => import('./features/manager/orders/ManagerOrderPage'), title: 'Chi tiết đơn',
+    lazyPage: () => Promise.all([import('./features/manager/orders/ManagerOrderPage'), managerTexts()]).then(([page]) => page), title: 'Chi tiết đơn',
   },
   {
     path: '/manager/departures', roles: M, layout: 'staff', catalog: false,
     loader: () => import('./features/manager/departures/loaders').then(m => m.departuresLoader()),
-    lazyPage: () => import('./features/manager/departures/DeparturesPage'), title: 'Chuyến cần quyết định',
+    lazyPage: () => Promise.all([import('./features/manager/departures/DeparturesPage'), managerTexts()]).then(([page]) => page), title: 'Chuyến cần quyết định',
   },
   {
     path: '/manager/refunds', roles: M, layout: 'staff', catalog: false,
-    lazyPage: () => import('./features/manager/refunds/RefundsPage'), title: 'Hoàn tiền',
+    lazyPage: () => Promise.all([import('./features/manager/refunds/RefundsPage'), managerTexts()]).then(([page]) => page), title: 'Hoàn tiền',
   },
   { path: '/manager/reports', lazyPage: () => import('./features/manager/reports/ReportsPage'), loader: load('bookingListLoader'), roles: M, title: 'Báo cáo doanh thu', layout: 'staff' },
   { path: '/manager/trip-reports', lazyPage: () => import('./features/manager/trip-reports/TripReportsPage'), roles: M, title: 'Báo cáo vận hành', layout: 'staff', catalog: false },

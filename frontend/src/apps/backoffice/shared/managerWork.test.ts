@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { departuresApi } from '@shared/api/departures'
 import { managerOrdersApi } from '@shared/api/managerOrders'
 import { refundsApi } from '@shared/api/refunds'
-import { countLabel, loadManagerWork, resetManagerWork } from './managerWork'
+import { loadManagerWork, resetManagerWork } from './managerWork'
+import { countLabel } from './useManagerWork'
 
 describe('việc đang chờ của quản lý', () => {
   afterEach(() => { resetManagerWork(); vi.restoreAllMocks() })

@@ -3,11 +3,6 @@ export const staffManager = {
     close: 'Close',
     reason: 'Reason',
     required: 'Please fill this in.',
-    pending: 'Waiting: {{count}}',
-    urgent: {
-      decisions: 'Departures to decide: {{count}}',
-      documents: 'Orders missing documents: {{count}}',
-    },
     info: {
       trip: 'Journey',
       type: 'Order type',

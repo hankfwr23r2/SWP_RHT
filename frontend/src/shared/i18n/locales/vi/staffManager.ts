@@ -3,11 +3,6 @@ export const staffManager = {
     close: 'Đóng',
     reason: 'Lý do',
     required: 'Vui lòng điền mục này.',
-    pending: '{{count}} việc đang chờ',
-    urgent: {
-      decisions: '{{count}} chuyến tới hạn quyết định',
-      documents: '{{count}} đơn thiếu giấy',
-    },
     info: {
       trip: 'Hành trình',
       type: 'Loại đơn',

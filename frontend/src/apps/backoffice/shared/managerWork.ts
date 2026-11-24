@@ -1,19 +1,11 @@
 // Việc đang chờ quản lý, dùng cho số đếm ở menu và thanh việc gấp. Hai nơi dùng chung một lần tải.
-import { useEffect, useState } from 'react'
 import { departuresApi } from '@shared/api/departures'
-import { managerOrdersApi, SUMMARY_PAGE_SIZE } from '@shared/api/managerOrders'
+import { managerOrdersApi } from '@shared/api/managerOrders'
 import { refundsApi } from '@shared/api/refunds'
 import { addDays, todayIso } from './staffFormat'
-
-export interface ManagerWork {
-  quoting: number
-  documents: number
-  decisions: number
-  refunds: number
-}
+import type { ManagerWork } from './useManagerWork'
 
 const TTL_MS = 30_000
-const REFRESH_MS = 60_000
 const WEEK = 7
 let cached: { at: number; work: Promise<ManagerWork> } | undefined
 
@@ -34,19 +26,3 @@ export function loadManagerWork(now = Date.now()): Promise<ManagerWork> {
 }
 
 export const resetManagerWork = () => { cached = undefined }
-
-// Số từ trang đầu: đủ một trang thì còn nữa
-export const countLabel = (value: number) => value >= SUMMARY_PAGE_SIZE ? `${SUMMARY_PAGE_SIZE}+` : String(value)
-
-export function useManagerWork(enabled: boolean): ManagerWork | undefined {
-  const [work, setWork] = useState<ManagerWork>()
-  useEffect(() => {
-    if (!enabled) return
-    let active = true
-    const refresh = () => { if (!document.hidden) void loadManagerWork().then(next => { if (active) setWork(next) }) }
-    refresh()
-    const timer = window.setInterval(refresh, REFRESH_MS)
-    return () => { active = false; window.clearInterval(timer) }
-  }, [enabled])
-  return enabled ? work : undefined
-}
