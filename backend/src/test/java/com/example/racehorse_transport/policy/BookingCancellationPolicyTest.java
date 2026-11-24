@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.policy;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.example.racehorse_transport.entity.BillableService;
@@ -57,35 +58,64 @@ class BookingCancellationPolicyTest {
     @Test
     void splitsMoney() {
         assertSplit(BookingCancellationPolicy.refundAll(new BigDecimal("3700000")), "3700000", "0", "0");
-        assertSplit(BookingCancellationPolicy.forfeit(new BigDecimal("3700000"), new BigDecimal("1000000")), "0", "1000000", "2700000");
-        assertSplit(BookingCancellationPolicy.forfeit(new BigDecimal("500000"), new BigDecimal("1000000")), "0", "500000", "0");
+        var lines = List.of(line(1L, "1000000", true, null));
+        assertSplit(cancel(false, "3700000", lines, deposit("3700000")), "0", "0", "3700000");
+        // Mới trả một phần nhỏ hơn khoản thu hộ: không giữ quá số đã trả
+        assertSplit(cancel(false, "3700000", lines, deposit("500000")), "0", "0", "500000");
+        assertSplit(cancel(true, "3700000", lines, deposit("500000")), "0", "0", "500000");
     }
 
     @Test
-    void customerAndAuthoritySeparateTransportFromUnspentQuoteLines() {
-        var quotation = new Quotation();
-        quotation.setDepositAmount(new BigDecimal("4000"));
-        quotation.setCurrencyCode("VND");
-        var deposit = new Payment();
-        deposit.setPaymentType(PaymentType.DEPOSIT);
-        deposit.setStatus(PaymentStatus.PAID);
-        deposit.setAmount(new BigDecimal("4000"));
-        deposit.setCurrencyCode("VND");
+    void customerLosesWholeDepositAndAuthorityRefundsOnlyTransport() {
+        var lines = List.of(line(1L, "1000", true, null), line(2L, "500", false, "VET_CHECK"), line(3L, "9000", false, null));
 
-        var passThrough = line(1L, "1000", true, null);
-        var vet = line(2L, "500", false, "VET_CHECK");
-        var transport = line(3L, "9000", false, null);
-        var lines = List.of(passThrough, vet, transport);
+        assertSplit(cancel(false, "4000", lines, deposit("4000")), "0", "0", "4000");
+        assertSplit(cancel(true, "4000", lines, deposit("4000")), "2500", "0", "1500");
+        assertSplit(BookingCancellationPolicy.amounts(Outcome.FREE, false, quotation("4000"), lines, List.of(deposit("4000"))),
+                "4000", "0", "0");
+    }
 
-        var customer = BookingCancellationPolicy.amounts(Outcome.FORFEIT_DEPOSIT, false, quotation, lines, List.of(deposit));
-        var authority = BookingCancellationPolicy.amounts(Outcome.FORFEIT_DEPOSIT, true, quotation, lines, List.of(deposit));
-        assertSplit(customer, "0", "1500", "2500");
-        assertSplit(authority, "2500", "1500", "0");
-        assertSplit(BookingCancellationPolicy.includeUnspentLines(customer, lines, List.of(2L)), "500", "1000", "2500");
-        assertThatThrownBy(() -> BookingCancellationPolicy.includeUnspentLines(customer, lines, List.of(3L)))
-                .isInstanceOf(BookingRuleException.class);
-        assertThatThrownBy(() -> BookingCancellationPolicy.includeUnspentLines(customer, lines, List.of(1L, 1L)))
-                .isInstanceOf(BookingRuleException.class);
+    @Test
+    void negativeOrPlainLinesDoNotChangeForfeitedAmount() {
+        var lines = List.of(line(1L, "1000", true, null), line(2L, "-300", true, null), line(3L, "9000", false, "ESCORT"));
+
+        assertSplit(cancel(true, "4000", lines, deposit("4000")), "3000", "0", "1000");
+    }
+
+    @Test
+    void fullyPaidQuoteRefundsTheRestAfterForfeitedPart() {
+        var lines = List.of(line(1L, "1000", true, null), line(2L, "500", false, "VET_CHECK"), line(3L, "8500", false, null));
+        var balance = payment(PaymentType.BALANCE, PaymentStatus.PAID, "6000");
+
+        assertSplit(cancel(false, "4000", lines, deposit("4000"), balance), "6000", "0", "4000");
+        assertSplit(cancel(true, "4000", lines, deposit("4000"), balance), "8500", "0", "1500");
+        // Cọc bằng tổng báo giá: khách hủy thì mất toàn bộ
+        assertSplit(cancel(false, "10000", lines, deposit("10000")), "0", "0", "10000");
+    }
+
+    @Test
+    void earlierRefundsReduceRefundableBeforeForfeitedPart() {
+        var lines = List.of(line(1L, "1000", true, null));
+        var pending = payment(PaymentType.REFUND, PaymentStatus.PENDING, "700");
+        var paid = payment(PaymentType.REFUND, PaymentStatus.PAID, "300");
+
+        assertSplit(cancel(true, "4000", lines, deposit("4000"), pending, paid), "2000", "0", "1000");
+        assertSplit(cancel(false, "3000", lines, deposit("4000"), pending, paid), "0", "0", "3000");
+        // Hoàn trước đã vượt phần được hoàn: không âm
+        assertSplit(cancel(true, "4000", lines, deposit("4000"), payment(PaymentType.REFUND, PaymentStatus.PAID, "3500")),
+                "0", "0", "500");
+        assertThatThrownBy(() -> cancel(true, "4000", lines, deposit("4000"),
+                payment(PaymentType.REFUND, PaymentStatus.PAID, "4001"))).isInstanceOf(BookingRuleException.class);
+    }
+
+    @Test
+    void rejectsEveryLineSelectedForRefund() {
+        assertThatCode(() -> BookingCancellationPolicy.requireNoLineRefund(List.of())).doesNotThrowAnyException();
+        for (var selected : List.of(List.of(1L), List.of(2L), List.of(1L, 1L))) {
+            assertThatThrownBy(() -> BookingCancellationPolicy.requireNoLineRefund(selected))
+                    .isInstanceOf(BookingRuleException.class)
+                    .hasMessageContaining("không được hoàn riêng khi hủy đơn");
+        }
     }
 
     @Test
@@ -103,13 +133,39 @@ class BookingCancellationPolicyTest {
     }
 
     @Test
-    void blocksRefundWhenLineAlreadyHasARefundPayment() {
+    void lineRefundedUnderOldRuleIsNotRefundedAgain() {
         var refundedLine = line(1L, "1000", true, null);
         refundedLine.setRefundPayment(new Payment());
-        assertThat(BookingCancellationPolicy.canRefundLine(refundedLine)).isFalse();
-        assertThatThrownBy(() -> BookingCancellationPolicy.includeUnspentLines(
-                new Breakdown(BigDecimal.ZERO, new BigDecimal("2000"), BigDecimal.ZERO), List.of(refundedLine), List.of(1L)))
+        var refund = payment(PaymentType.REFUND, PaymentStatus.PAID, "1000");
+
+        assertSplit(cancel(false, "4000", List.of(refundedLine), deposit("4000"), refund), "0", "0", "3000");
+        assertThatThrownBy(() -> BookingCancellationPolicy.requireNoLineRefund(List.of(refundedLine.getId())))
                 .isInstanceOf(BookingRuleException.class);
+    }
+
+    private static Breakdown cancel(boolean refundTransport, String depositAmount, List<QuotationLine> lines, Payment... payments) {
+        return BookingCancellationPolicy.amounts(Outcome.FORFEIT_DEPOSIT, refundTransport, quotation(depositAmount),
+                lines, List.of(payments));
+    }
+
+    private static Quotation quotation(String depositAmount) {
+        var quotation = new Quotation();
+        quotation.setDepositAmount(new BigDecimal(depositAmount));
+        quotation.setCurrencyCode("VND");
+        return quotation;
+    }
+
+    private static Payment deposit(String amount) {
+        return payment(PaymentType.DEPOSIT, PaymentStatus.PAID, amount);
+    }
+
+    private static Payment payment(PaymentType type, PaymentStatus status, String amount) {
+        var payment = new Payment();
+        payment.setPaymentType(type);
+        payment.setStatus(status);
+        payment.setAmount(new BigDecimal(amount));
+        payment.setCurrencyCode("VND");
+        return payment;
     }
 
     private static QuotationLine line(Long id, String amount, boolean passThrough, String service) {

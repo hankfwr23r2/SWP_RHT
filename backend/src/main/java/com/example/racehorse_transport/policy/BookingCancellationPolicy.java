@@ -8,12 +8,11 @@ import com.example.racehorse_transport.entity.enums.PaymentStatus;
 import com.example.racehorse_transport.entity.enums.PaymentType;
 import com.example.racehorse_transport.entity.enums.ScheduleChangeCause;
 import com.example.racehorse_transport.exception.BookingRuleException;
-import java.util.HashSet;
 import java.util.List;
 import java.math.BigDecimal;
 import java.util.Set;
 
-// Quy tắc hủy đơn và tách tiền (người dùng chốt 23/11/2026, theo nghiệp vụ cũ trên main).
+// Quy tắc hủy đơn và tách tiền (người dùng chốt 23/11/2026, theo nghiệp vụ cũ trên main; 24/11/2026: khoản thu hộ không hoàn).
 public final class BookingCancellationPolicy {
 
     private static final Set<BookingStatus> BEFORE_CONFIRMED = Set.of(BookingStatus.PENDING_INTAKE, BookingStatus.UNDER_REVIEW,
@@ -25,7 +24,7 @@ public final class BookingCancellationPolicy {
     public enum Outcome {
         // Chưa trả tiền, hoặc công ty hủy chuyến: không mất phí
         FREE,
-        // Đã cọc: mất phần cọc vận chuyển, phần thu hộ do quản lý quyết định hoàn
+        // Đã cọc: mất cọc, gồm cả phần thu hộ. Cơ quan chậm đủ số lần thì chỉ mất phần thu hộ và VET_CHECK
         FORFEIT_DEPOSIT,
         // Khách không tự hủy được, phải liên hệ quản lý
         NOT_ALLOWED
@@ -44,7 +43,7 @@ public final class BookingCancellationPolicy {
         };
     }
 
-    // refundable: hoàn chắc chắn. reviewable: phần thu hộ chờ quản lý quyết định. forfeited: khách mất.
+    // refundable: hoàn chắc chắn. forfeited: khách mất. reviewable luôn bằng 0, giữ để không đổi hợp đồng API.
     public record Breakdown(BigDecimal refundable, BigDecimal reviewable, BigDecimal forfeited) {
     }
 
@@ -80,37 +79,25 @@ public final class BookingCancellationPolicy {
         if (outcome == Outcome.FREE) {
             return refundAll(net);
         }
-        BigDecimal reviewableTotal = lines.stream().filter(BookingCancellationPolicy::isReviewable)
+        BigDecimal nonRefundable = lines.stream().filter(BookingCancellationPolicy::isNonRefundable)
                 .map(QuotationLine::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal deposit = quotation.getDepositAmount().min(gross);
-        BigDecimal transport = refundTransportDeposit ? BigDecimal.ZERO : forfeit(deposit, reviewableTotal).forfeited().min(net);
-        BigDecimal reviewable = lines.stream().filter(BookingCancellationPolicy::canRefundLine)
-                .map(QuotationLine::getAmount).reduce(BigDecimal.ZERO, BigDecimal::add).min(net.subtract(transport));
-        BigDecimal refundable = net.subtract(transport).subtract(reviewable);
-        return new Breakdown(refundable, reviewable, transport);
+        // Tiền cọc đã gồm toàn bộ phần thu hộ, nên mất cọc là mất luôn phần thu hộ
+        BigDecimal kept = refundTransportDeposit ? nonRefundable : quotation.getDepositAmount().max(nonRefundable);
+        BigDecimal forfeited = kept.min(net);
+        return new Breakdown(net.subtract(forfeited), BigDecimal.ZERO, forfeited);
     }
 
-    public static boolean isReviewable(QuotationLine line) {
+    // Khoản thu hộ và VET_CHECK: khách hủy hoặc hủy do cơ quan thì không hoàn
+    private static boolean isNonRefundable(QuotationLine line) {
         return line.getAmount().signum() > 0 && (Boolean.TRUE.equals(line.getPassThrough())
                 || line.getBillableService() != null && "VET_CHECK".equals(line.getBillableService().getCode()));
     }
 
-    public static boolean canRefundLine(QuotationLine line) {
-        return line.getRefundPayment() == null && isReviewable(line);
-    }
-
-    public static Breakdown includeUnspentLines(Breakdown breakdown, List<QuotationLine> lines, List<Long> selected) {
-        Set<Long> remaining = new HashSet<>(selected);
-        if (remaining.size() != selected.size()) {
-            throw BookingRuleException.conflict("Dòng hoàn bị chọn trùng.");
+    // API vẫn nhận danh sách dòng để giữ hợp đồng, nhưng không dòng nào được chọn hoàn riêng
+    public static void requireNoLineRefund(List<Long> selected) {
+        if (!selected.isEmpty()) {
+            throw BookingRuleException.conflict("Khoản thu hộ và phí khám thú y không được hoàn riêng khi hủy đơn.");
         }
-        BigDecimal approved = lines.stream().filter(BookingCancellationPolicy::canRefundLine)
-                .filter(line -> remaining.remove(line.getId())).map(QuotationLine::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        if (!remaining.isEmpty() || approved.compareTo(breakdown.reviewable()) > 0) {
-            throw BookingRuleException.conflict("Dòng đã chọn không thuộc phần chờ đối soát của báo giá.");
-        }
-        return new Breakdown(breakdown.refundable().add(approved), breakdown.reviewable().subtract(approved), breakdown.forfeited());
     }
 
     // Công ty chỉ hủy được khi chưa nhận ngựa
@@ -122,11 +109,5 @@ public final class BookingCancellationPolicy {
     // Công ty hủy, hoặc khách hủy không mất phí: hoàn toàn bộ số đã trả, gồm phần thu hộ
     public static Breakdown refundAll(BigDecimal paid) {
         return new Breakdown(paid, BigDecimal.ZERO, BigDecimal.ZERO);
-    }
-
-    // Khách hủy sau khi cọc. Tiền cọc gồm toàn bộ phần thu hộ nên phần còn lại là cọc vận chuyển
-    public static Breakdown forfeit(BigDecimal paid, BigDecimal passThroughAmount) {
-        BigDecimal reviewable = passThroughAmount.min(paid);
-        return new Breakdown(BigDecimal.ZERO, reviewable, paid.subtract(reviewable));
     }
 }
