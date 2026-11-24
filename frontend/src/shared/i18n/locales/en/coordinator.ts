@@ -171,6 +171,7 @@ export const coordinator = {
       "ESCORT": "Escort"
     },
     "detail": {
+      "midwayHint": "The trip is running: only a relief escort can be added. The relief escort takes over at a stop; the previous escort can be removed only after handing over every horse.",
       "stops": "Stops",
       "crew": "Crew",
       "horses": "Horses on board",

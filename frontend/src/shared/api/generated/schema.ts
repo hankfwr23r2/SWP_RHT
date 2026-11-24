@@ -4178,7 +4178,7 @@ export interface components {
         };
         HandoverCreateRequestDto: {
             /** @enum {string} */
-            handoverType: "PICKUP" | "HUB_IN" | "HUB_OUT" | "STAY_IN" | "STAY_OUT" | "AGENT" | "DELIVERY" | "RETURN";
+            handoverType: "PICKUP" | "HUB_IN" | "HUB_OUT" | "STAY_IN" | "STAY_OUT" | "AGENT" | "DELIVERY" | "RETURN" | "SHIFT";
             note?: string;
             /** Format: int64 */
             partyId?: number;
@@ -4215,7 +4215,7 @@ export interface components {
             handedAt?: string;
             handledByName?: string;
             /** @enum {string} */
-            handoverType?: "PICKUP" | "HUB_IN" | "HUB_OUT" | "STAY_IN" | "STAY_OUT" | "AGENT" | "DELIVERY" | "RETURN";
+            handoverType?: "PICKUP" | "HUB_IN" | "HUB_OUT" | "STAY_IN" | "STAY_OUT" | "AGENT" | "DELIVERY" | "RETURN" | "SHIFT";
             horses?: components["schemas"]["HandoverHorseDto"][];
             /** Format: int64 */
             id?: number;
@@ -4637,7 +4637,7 @@ export interface components {
             /** Format: date-time */
             handedAt?: string;
             /** @enum {string} */
-            handoverType?: "PICKUP" | "HUB_IN" | "HUB_OUT" | "STAY_IN" | "STAY_OUT" | "AGENT" | "DELIVERY" | "RETURN";
+            handoverType?: "PICKUP" | "HUB_IN" | "HUB_OUT" | "STAY_IN" | "STAY_OUT" | "AGENT" | "DELIVERY" | "RETURN" | "SHIFT";
             /** Format: int64 */
             id?: number;
             microchipMatched?: boolean;

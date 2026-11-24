@@ -58,6 +58,8 @@ public class HandoverOutcomeServiceImpl implements HandoverOutcomeService {
         }
         handover.setStatus(HandoverStatus.DONE);
         handover.setHandedAt(now);
+        // Bàn giao ca chỉ đổi người phụ trách (người ký), ngựa vẫn trên xe, chặng không đổi
+        if (handover.getHandoverType() == HandoverType.SHIFT) return;
         for (HorseLeg leg : matched) {
             if (boarding) {
                 leg.setStatus(HorseLegStatus.IN_PROGRESS);

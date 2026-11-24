@@ -41,7 +41,9 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
     const [trip, horses] = await Promise.all([dispatchApi.trip(tripId), dispatchApi.horsesOnTrip(tripId)])
     return { trip, horses }
   }, [tripId], { toastOnError: false })
-  const { data: candidates } = useLoad(() => dispatchApi.crewCandidates(crewRole), [crewRole])
+  // Lượt đang chạy chỉ thêm hộ tống thay ca
+  const role: CrewRole = data?.trip.status === 'IN_PROGRESS' ? 'ESCORT' : crewRole
+  const { data: candidates } = useLoad(() => dispatchApi.crewCandidates(role), [role])
 
   // Chạy một thao tác ghi: báo kết quả, tải lại lượt xe và bảng điều độ; lỗi thì hiện đúng lý do backend trả về
   const run = async (action: () => Promise<unknown>, done: string) => {
@@ -64,6 +66,7 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
 
   const { trip, horses } = data
   const editable = trip.status === 'PLANNED' || trip.status === 'DISPATCHED'
+  const running = trip.status === 'IN_PROGRESS'
   const crew = (trip.crew ?? []).filter(member => member.status !== 'RELEASED')
   const options = eligibleHorses(trip, bookings, horses)
   const chosen = options.find(option => `${option.horse.bookingHorseId}` === horseKey)
@@ -110,24 +113,25 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
                 </span>
                 <span className={s.legs}>
                   <StatusBadge tone={member.status === 'ACKNOWLEDGED' ? 'success' : 'warning'} label={t(`dispatch.crewStatus.${member.status}`)} />
-                  {editable && <Button size="sm" onClick={() => setPending({ kind: 'release', member })}>{t('dispatch.detail.release')}</Button>}
+                  {(editable || running) && <Button size="sm" onClick={() => setPending({ kind: 'release', member })}>{t('dispatch.detail.release')}</Button>}
                 </span>
               </li>
             ))}
           </ul>
         ) : <p className={s.muted}>{t('dispatch.detail.noCrew')}</p>}
-        {editable && (
+        {running && <p className={s.muted}>{t('dispatch.detail.midwayHint')}</p>}
+        {(editable || running) && (
           <div className={s.form}>
             <Field label={t('dispatch.detail.role')}>
-              {c => <Select {...c} value={crewRole} onChange={value => { setCrewRole(value as CrewRole); setStaffId('') }}
-                options={(['DRIVER', 'ESCORT'] as const).map(role => ({ value: role, label: t(`dispatch.crewRole.${role}`) }))} />}
+              {c => <Select {...c} value={role} onChange={value => { setCrewRole(value as CrewRole); setStaffId('') }}
+                options={(running ? ['ESCORT'] as const : ['DRIVER', 'ESCORT'] as const).map(role => ({ value: role, label: t(`dispatch.crewRole.${role}`) }))} />}
             </Field>
             <Field label={t('dispatch.detail.staff')}>
               {c => <Select {...c} value={staffId} onChange={setStaffId} placeholder={t('dispatch.detail.choose')}
                 options={(candidates ?? []).map(person => ({ value: `${person.staffId}`, label: `${person.fullName} (${person.staffCode})` }))} />}
             </Field>
             <Button variant="primary" disabled={!staffId} loading={busy}
-              onClick={() => run(() => dispatchApi.assignCrew(tripId, Number(staffId), crewRole), t('dispatch.done.assigned')).then(() => setStaffId(''), () => {})}>
+              onClick={() => run(() => dispatchApi.assignCrew(tripId, Number(staffId), role), t('dispatch.done.assigned')).then(() => setStaffId(''), () => {})}>
               {t('dispatch.detail.assignCrew')}
             </Button>
           </div>

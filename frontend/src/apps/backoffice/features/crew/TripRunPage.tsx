@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useParams, Link } from 'react-router'
 import { useTranslation } from 'react-i18next'
+import { useAuth } from '@shared/auth/AuthContext'
 import { tripExecutionApi, type CrewTrip, type Handover } from '@shared/api/tripExecution'
 import { useLoad } from '@shared/hooks/useLoad'
 import { formatDateTime } from '@shared/lib/format'
@@ -31,6 +32,7 @@ export default function TripRunPage() {
   const tripId = Number(id)
   const { t } = useTranslation()
   const toast = useToast()
+  const { session } = useAuth()
   const [busy, setBusy] = useState(false)
   const [chips, setChips] = useState<Record<number, string>>({})
   const [earlyReasons, setEarlyReasons] = useState<Record<number, string>>({})
@@ -142,7 +144,7 @@ export default function TripRunPage() {
                     <Button variant="primary" size="lg" fullWidth loading={busy}
                       onClick={() => run(() => tripExecutionApi.arrive(stop.id ?? 0), t('myTrips.run.done.arrived'))}>{t('myTrips.run.arrive')}</Button>
                   )}
-                  {handoverTypesAt(data, stop).map(type => (
+                  {handoverTypesAt(data, stop).filter(type => type !== 'SHIFT' || session?.role === 'escort').map(type => (
                     <Button key={type} size="lg" fullWidth loading={busy}
                       onClick={() => run(() => tripExecutionApi.openHandover(stop.id ?? 0, type), t('myTrips.run.done.opened'))}>
                       {t(`myTrips.run.handover.${type}`)}

@@ -272,3 +272,44 @@ test('tài xế bắt đầu chờ người nhận rồi ghi nhận không gặp
   expect(failed).toBe(true)
   await expect(stop.getByRole('button', { name: 'Hoàn tất giao nhận' })).toHaveCount(0)
 })
+
+test('hộ tống thay ca thấy Nhận bàn giao ca ở điểm có ngựa đang trên xe, tài xế thì không', async ({ page, context }) => {
+  const run = newRun()
+  run.trip.status = 'IN_PROGRESS'
+  Object.assign(run.trip.stops[0], { actualArrivalAt: '2031-03-05T01:00:00Z', actualDepartureAt: '2031-03-05T01:30:00Z' })
+  Object.assign(run.trip.stops[1], { actualArrivalAt: '2031-03-05T02:00:00Z' })
+  run.horses[0].leg.status = 'IN_PROGRESS'
+  run.handovers.push({ id: 50, handoverType: 'PICKUP', status: 'DONE', tripStopId: 2, horses: [] })
+  let sent: unknown
+  const mock = async (target: typeof page) => target.route('**/api/v1/**', async route => {
+    const request = route.request()
+    const path = new URL(request.url()).pathname.replace('/api/v1', '')
+    if (path === '/crew/vehicle-trips/9') return ok(route, run)
+    if (path === '/trip-stops/2/handovers') {
+      sent = request.postDataJSON()
+      run.handovers.push({ id: 51, handoverType: 'SHIFT', status: 'PENDING', tripStopId: 2, horses: [{ horseLegId: 70, bookingCode: 'BK-AAAA0001', horseName: 'Sao Mai' }] })
+      return ok(route, run)
+    }
+    return ok(route, [])
+  })
+  const stopOf = (target: typeof page) => target.getByRole('list', { name: 'Điểm dừng' }).getByRole('listitem').filter({ has: target.locator('h2') }).nth(1)
+
+  // Tài xế không nhận bàn giao ca
+  const driverPage = await context.newPage()
+  await driverPage.addInitScript(() => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: 'driver', name: 'Tài xế', username: 'driver@example.com' })))
+  await mock(driverPage)
+  await driverPage.goto('/backoffice/my-trips/9')
+  await expect(stopOf(driverPage).getByRole('button', { name: 'Rời đi' })).toBeVisible({ timeout: 15_000 })
+  await expect(stopOf(driverPage).getByRole('button', { name: 'Nhận bàn giao ca' })).toHaveCount(0)
+
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.addInitScript(() => sessionStorage.setItem('SWP_SESSION_backoffice', JSON.stringify({ role: 'escort', name: 'Hộ tống thay ca', username: 'relief@example.com' })))
+  await mock(page)
+  await page.goto('/backoffice/my-trips/9')
+  await stopOf(page).getByRole('button', { name: 'Nhận bàn giao ca' }).click({ timeout: 15_000 })
+  expect(sent).toEqual({ handoverType: 'SHIFT' })
+  await expect(stopOf(page)).toContainText('Nhận bàn giao ca · Đang giao nhận')
+  await expect(stopOf(page).getByLabel('Chip của Sao Mai')).toBeVisible()
+  // Bàn giao ca không cần biên bản
+  await expect(stopOf(page).getByRole('button', { name: 'Hoàn tất giao nhận' })).toBeEnabled()
+})

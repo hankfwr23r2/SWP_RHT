@@ -9,5 +9,7 @@ public enum HandoverType {
     STAY_OUT,
     AGENT,
     DELIVERY,
-    RETURN
+    RETURN,
+    // Bàn giao ca: người phụ trách mới ký nhận, ngựa không đổi chỗ
+    SHIFT
 }

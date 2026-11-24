@@ -98,6 +98,7 @@ export const fieldCrew = {
         "HUB_IN": "Giao vào hub",
         "RETURN": "Trả ngựa cho người gửi",
         "AGENT": "Bàn giao với đại lý",
+        "SHIFT": "Nhận bàn giao ca",
         "HUB_OUT": "Nhận từ hub"
       },
       "handoverStatus": {
