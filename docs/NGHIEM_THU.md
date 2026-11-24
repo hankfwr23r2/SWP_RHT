@@ -11,6 +11,8 @@ Nghiệm thu trên nhánh `redesign/system-v2`, máy cá nhân, dữ liệu mẫ
 
 Mục tài khoản mẫu và `APP_SEED_REFERENCE_DATA` trong `README.md` là của bản cũ, không dùng.
 
+Muốn chạy hết một đơn trong một buổi (tua giờ, thanh toán giả lập, không cần khóa): `docs/CHAY_THU.md`.
+
 ## Nghiệm thu được ngay
 
 Đã mở bằng backend thật ở bề rộng 1280 và 360: mọi màn của nhân viên trong bảng. Cột "Cần thử" là việc của người nghiệm thu.
