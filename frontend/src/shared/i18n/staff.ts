@@ -6,13 +6,15 @@ import { fieldCrew } from './locales/vi/fieldCrew'
 import { manager } from './locales/vi/manager'
 import { specialist } from './locales/vi/specialist'
 import { staff } from './locales/vi/staff'
+import { staffReview } from './locales/vi/staffReview'
 
-i18n.addResourceBundle('vi', 'translation', { ...staff, ...manager, ...specialist, ...coordinator, ...fieldCrew, ...admin }, true)
+i18n.addResourceBundle('vi', 'translation', { ...staff, ...manager, ...specialist, ...staffReview, ...coordinator, ...fieldCrew, ...admin }, true)
 
 enParts.push(
   () => import('./locales/en/staff').then(m => m.staff),
   () => import('./locales/en/manager').then(m => m.manager),
   () => import('./locales/en/specialist').then(m => m.specialist),
+  () => import('./locales/en/staffReview').then(m => m.staffReview),
   () => import('./locales/en/coordinator').then(m => m.coordinator),
   () => import('./locales/en/fieldCrew').then(m => m.fieldCrew),
   () => import('./locales/en/admin').then(m => m.admin),

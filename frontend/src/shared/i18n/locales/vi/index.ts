@@ -5,6 +5,7 @@ import { customer } from './customer'
 import { staff } from './staff'
 import { manager } from './manager'
 import { specialist } from './specialist'
+import { staffReview } from './staffReview'
 import { coordinator } from './coordinator'
 import { fieldCrew } from './fieldCrew'
 import { admin } from './admin'
@@ -15,6 +16,7 @@ export const vi = {
   ...staff,
   ...manager,
   ...specialist,
+  ...staffReview,
   ...coordinator,
   ...fieldCrew,
   ...admin,

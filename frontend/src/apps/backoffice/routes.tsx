@@ -1,5 +1,6 @@
 // Danh sách trang của app nội bộ: URL → trang → vai trò.
 import { lazy } from 'react'
+import i18n, { i18nReady } from '@shared/i18n'
 import type { PageLoader } from '@shared/routing/pageData'
 import type { AppRoute } from '@shared/routing/types'
 import { ManagerLoginPage, StaffLoginPage } from './features/auth/StaffLoginPage'
@@ -50,12 +51,24 @@ export const routes: AppRoute[] = [
   { path: '/manager/cancelled-orders', lazyPage: () => import('./features/manager/cancelled-orders/CancelledOrdersPage'), loader: load('bookingListLoader'), roles: M, title: 'Đơn đã hủy', layout: 'staff' },
   { path: '/manager/incidents', lazyPage: () => import('./features/incidents/IncidentsBoardPage'), roles: M, title: 'Sự cố', layout: 'staff', catalog: false },
 
-  { path: '/specialist/verification', lazyPage: () => import('./features/specialist/verification/VerificationListPage'), loader: load('bookingListLoader'), roles: SP, title: 'Duyệt hồ sơ ngựa', layout: 'staff' },
-  { path: '/specialist/verification/:id', lazyPage: () => import('./features/specialist/verification/VerifyPage'), loader: load('verifyLoader'), roles: SP, title: 'Duyệt hồ sơ ngựa một đơn', layout: 'staff' },
-  { path: '/specialist/insurance', lazyPage: () => import('./features/specialist/insurance/InsuranceListPage'), loader: load('insuranceListLoader'), roles: SP, title: 'Bảo hiểm', layout: 'staff' },
-  { path: '/specialist/insurance/:id', lazyPage: () => import('./features/specialist/insurance/InsuranceDetailPage'), loader: load('bookingLoader'), roles: SP, title: 'Bảo hiểm theo đơn', layout: 'staff' },
-  { path: '/specialist/legal', lazyPage: () => import('./features/specialist/legal/LegalListPage'), loader: load('bookingListLoader'), roles: SP, title: 'Giấy tờ chuyến đi', layout: 'staff' },
-  { path: '/specialist/legal/:id', lazyPage: () => import('./features/specialist/legal/LegalReviewPage'), loader: load('bookingLoader'), roles: SP, title: 'Làm giấy tờ một đơn', layout: 'staff' },
+  {
+    path: '/specialist/review', roles: SP, layout: 'staff',
+    lazyPage: () => Promise.all([import('./features/specialist/review/ReviewListPage'), i18nReady]).then(([page]) => page),
+    loader: () => import('./features/specialist/review/loaders').then(m => m.reviewListLoader()),
+    get title() { return i18n.t('staffReview.title') },
+  },
+  {
+    path: '/specialist/review/:id', roles: SP, layout: 'staff',
+    lazyPage: () => Promise.all([import('./features/specialist/review/ReviewDetailPage'), i18nReady]).then(([page]) => page),
+    loader: context => import('./features/specialist/review/loaders').then(m => m.reviewDetailLoader(context)),
+    get title() { return i18n.t('staffReview.detailTitle') },
+  },
+  {
+    path: '/specialist/missing-documents', roles: SP, layout: 'staff',
+    lazyPage: () => Promise.all([import('./features/specialist/review/MissingDocumentsPage'), i18nReady]).then(([page]) => page),
+    loader: () => import('./features/specialist/review/loaders').then(m => m.missingDocumentsLoader()),
+    get title() { return i18n.t('staffReview.missingTitle') },
+  },
 
   { path: '/coordinator/dispatch', lazyPage: () => import('./features/coordinator/dispatch/DispatchPage'), roles: CO, title: 'Điều độ', layout: 'staff', catalog: false },
   { path: '/coordinator/fleet-plan', lazyPage: () => import('./features/coordinator/fleet-plan/FleetPlanListPage'), loader: load('bookingListLoader'), roles: CO, title: 'Xe và lộ trình', layout: 'staff' },

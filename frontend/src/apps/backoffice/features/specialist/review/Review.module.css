@@ -1,0 +1,63 @@
+.stack, .list, .facts {
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.stack h1, .stack h2, .stack h3, .stack p, .stack dd, .list, .facts {
+  margin: 0;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+}
+
+.search, .actions, .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  min-width: 0;
+  align-items: center;
+}
+
+.row {
+  justify-content: space-between;
+}
+
+.search {
+  align-items: end;
+}
+
+.search > :first-child {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.facts {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr));
+}
+
+.facts dt, .muted {
+  color: var(--color-muted);
+}
+
+.item {
+  min-width: 0;
+  border-block-start: 1px solid var(--color-border);
+  padding-block-start: var(--space-3);
+}
+
+.error {
+  color: var(--color-danger);
+}
+
+.controls {
+  display: grid;
+  gap: var(--space-4);
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}

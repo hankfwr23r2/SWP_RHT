@@ -20,17 +20,6 @@ export function workOf(role: StaffRole | undefined, list: Booking[], name: strin
       counts: { '/manager/intake': n.intake, '/manager/approvals': n.quote, '/manager/incidents': n.incident },
     }
   }
-  if (role === 'specialist') {
-    const mine = list.filter(b =>
-      !!b.intake?.specialist &&
-      (isAssignedTo(b.intake.specialist, name) || isAssignedTo(b.intake.specialist, username))
-    )
-    const verify = mine.filter(b => b.medical?.status === 'pending')
-    const legal = mine.filter(b => b.status === 'waybill_issued' || b.status === 'clearance_in_progress')
-    return {
-      counts: { '/specialist/verification': verify.length, '/specialist/legal': legal.length },
-    }
-  }
   if (role === 'coordinator') {
     const mine = list.filter(b => isCoordinatorTask(b, name, username, role))
     const plan = mine.filter(b => b.status === 'under_review' && !b.plan)

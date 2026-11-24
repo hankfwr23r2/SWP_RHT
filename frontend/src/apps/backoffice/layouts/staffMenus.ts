@@ -24,9 +24,8 @@ export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: 
     ['/manager/cancelled-orders', 'Đơn đã hủy', { icon: 'fa-ban' }],
   ],
   specialist: [
-    ['/specialist/verification', 'Duyệt hồ sơ ngựa', { icon: 'fa-file-medical' }],
-    ['/specialist/legal', 'Giấy tờ chuyến đi', { icon: 'fa-file-signature' }],
-    ['/specialist/insurance', 'Bảo hiểm', { icon: 'fa-shield-halved' }],
+    ['/specialist/review', 'Thẩm định đơn', { icon: 'fa-file-circle-check' }],
+    ['/specialist/missing-documents', 'Đơn thiếu giấy', { icon: 'fa-file-medical' }],
   ],
   coordinator: [
     ['/coordinator/dispatch', 'Điều độ', { icon: 'fa-diagram-project' }],
@@ -42,7 +41,7 @@ export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: 
 export const HOME_OF: Record<StaffRole, string> = {
   admin: '/admin/accounts',
   manager: '/manager',
-  specialist: '/specialist/verification',
+  specialist: '/specialist/review',
   coordinator: '/coordinator/fleet-plan',
   driver: '/driver',
   escort: '/escort',

@@ -3,7 +3,6 @@
 import type { Vehicle } from '@shared/types/fleet'
 import { loadAll, type PageLoaderContext } from '@shared/routing/pageData'
 import type { BackendLocationResponse } from '@shared/api/routes'
-import type { Booking, HorseProfile } from '@shared/types/booking'
 
 const bookings = () => import('@shared/services/bookings')
 
@@ -71,20 +70,4 @@ export async function fleetPlanLoader({ params }: PageLoaderContext) {
 export async function bookingLoader({ params }: PageLoaderContext) {
   const { bookingsApi } = await bookings()
   return loadAll({ b: bookingsApi.get(params.id ?? '') })
-}
-
-// Duyệt hồ sơ ngựa một đơn: đơn, rồi hồ sơ từng ngựa trong đơn
-export async function verifyLoader({ params }: PageLoaderContext) {
-  const [{ bookingsApi }, { horsesApi }] = await Promise.all([bookings(), import('@shared/services/horses')])
-  const { b, errors } = await loadAll({ b: bookingsApi.get(params.id ?? '') })
-  const horses: Promise<HorseProfile[]> = Promise.all((b?.horses ?? []).map(h => horsesApi.byId(h.horseId)))
-    .then(list => list.filter((h): h is HorseProfile => !!h))
-  const more = await loadAll({ horses })
-  return { b, horses: more.horses, errors: [...errors, ...more.errors] }
-}
-
-export async function insuranceListLoader() {
-  const [{ specialistApi }, { toBooking }] = await Promise.all([import('@shared/api/specialist'), import('@shared/services/bookingMapper')])
-  const all: Promise<Booking[]> = specialistApi.getInsuranceBookings().then(rows => rows.map(row => toBooking(row)))
-  return loadAll<{ all: Promise<Booking[]> }>({ all })
 }
