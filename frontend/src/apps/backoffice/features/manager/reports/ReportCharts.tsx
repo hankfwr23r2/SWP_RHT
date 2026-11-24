@@ -1,4 +1,4 @@
-// Hai biểu đồ SVG của báo cáo: đường + vùng (doanh thu, chi phí theo ngày) và cột (số chuyến hoàn thành theo ngày).
+// Biểu đồ SVG của báo cáo doanh thu: đường + vùng (doanh thu, chi phí theo ngày hoặc theo tuần).
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { DayPoint } from '@shared/lib/report'
@@ -47,17 +47,6 @@ export function MoneyChart({ pts }: { pts: DayPoint[] }) {
           </>
         )
       }}
-    </Frame>
-  )
-}
-
-export function TripsChart({ pts }: { pts: DayPoint[] }) {
-  const [hover, setHover] = useState<number | null>(null)
-  const max = Math.max(4, nice(Math.max(...pts.map(p => p.trips), 0)))
-  if (!pts.some(p => p.trips)) return <div className={s.empty}>Chưa có chuyến nào giao xong trong khoảng này.</div>
-  return (
-    <Frame W={380} pts={pts} max={max} fmt={v => String(Math.round(v))} hover={hover} setHover={setHover} tip={p => <><b>{p.label}</b><div><span>Chuyến hoàn thành</span><span>{p.trips}</span></div></>}>
-      {(x, y, step) => pts.map((p, i) => { const bw = Math.min(26, step * 0.6); return <rect key={p.at} x={x(i) - bw / 2} y={y(p.trips)} width={bw} height={y(0) - y(p.trips)} rx={4} fill="#1d5fa8" opacity={hover === i ? 1 : 0.85} /> })}
     </Frame>
   )
 }

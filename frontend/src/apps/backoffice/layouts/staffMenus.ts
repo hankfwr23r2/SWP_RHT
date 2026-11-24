@@ -23,7 +23,8 @@ export const STAFF_MENUS: Record<StaffRole, [path: string, label: string, opt?: 
     ['/manager/refunds', 'Hoàn tiền', { icon: 'fa-rotate-left' }],
     ['/manager/incidents', 'Sự cố', { icon: 'fa-triangle-exclamation' }],
     ['/admin/pricing', 'Bảng giá', { icon: 'fa-calculator' }],
-    ['/manager/trip-reports', 'Chuyến đi', { group: 'Báo cáo', icon: 'fa-clipboard-check' }],
+    ['/manager/reports', 'Doanh thu', { group: 'Báo cáo', icon: 'fa-chart-line' }],
+    ['/manager/trip-reports', 'Chuyến đi', { icon: 'fa-clipboard-check' }],
   ],
   specialist: [
     ['/specialist/review', 'Thẩm định đơn', { icon: 'fa-file-circle-check' }],

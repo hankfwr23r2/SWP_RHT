@@ -1,130 +1,125 @@
-// Manager: báo cáo doanh thu, chi phí vận hành và hiệu suất hoàn thành chuyến (PRD mục 15). Chỉ xem.
-import { useMemo, useState } from 'react'
+// Quản lý: doanh thu công ty, chi phí công ty chịu và lợi nhuận theo kỳ (B6). Số liệu do backend tính (/reports/revenue). Chỉ xem.
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { DAY } from '@shared/config/business-rules'
+import { reportsApi, type RevenueReport } from '@shared/api/reports'
+import { OrderStatusBadge } from '@shared/components/OrderStatusBadge'
+import { useLoad } from '@shared/hooks/useLoad'
 import { formatDate, formatVND } from '@shared/lib/format'
-import { bookingStatusLabel, changePct, orderFinance, series, summarize } from '@shared/lib/report'
+import type { DayPoint } from '@shared/lib/report'
+import { ErrorState } from '@shared/ui/ErrorState'
+import { Skeleton } from '@shared/ui/Skeleton'
 import { useToast } from '@shared/ui/toast'
-import { MoneyChart, TripsChart } from './ReportCharts'
+import { MoneyChart } from './ReportCharts'
 import s from './Reports.module.css'
-import { usePageData } from '@shared/routing/pageData'
-import type { bookingListLoader } from '@backoffice/shared/loaders'
 
+const DAY_MS = 86_400_000
 const PERIODS = [[7, '7 ngày'], [30, '30 ngày'], [90, '90 ngày']] as const
+// Kỳ theo ngày giờ Việt Nam, kết thúc hết hôm nay
+const endOfToday = () => new Date(`${new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' })}T00:00:00+07:00`).getTime() + DAY_MS
+const iso = (ms: number) => new Date(ms).toISOString()
+const amount = (v?: number) => v ?? 0
 const money = (v: number) => (Math.abs(v) >= 1e9 ? `${(v / 1e9).toFixed(2)} tỷ ₫` : Math.abs(v) >= 1e6 ? `${(v / 1e6).toFixed(1)} triệu ₫` : formatVND(v))
 const num1 = (v: number) => v.toLocaleString('vi-VN', { maximumFractionDigits: 1 })
 
-function Delta({ now, before, good = 'up', unit = '%' }: { now: number; before: number; good?: 'up' | 'down'; unit?: '%' | 'pt' }) {
-  const d = Number.isNaN(before) ? undefined : unit === '%' ? changePct(now, before) : before || now ? now - before : undefined
-  if (d === undefined) return <em className={s.flat}>Chưa có kỳ trước để so</em>
+function Delta({ now, before, good = 'up' }: { now: number; before: number; good?: 'up' | 'down' }) {
+  if (!before) return <em className={s.flat}>Chưa có kỳ trước để so</em>
+  const d = ((now - before) / Math.abs(before)) * 100
   if (Math.abs(d) < 0.05) return <em className={s.flat}>Không đổi so với kỳ trước</em>
   const better = (d > 0) === (good === 'up')
-  return <em className={better ? s.up : s.down}>{d > 0 ? '▲' : '▼'} {num1(Math.abs(d))}{unit === '%' ? '%' : ' điểm'} so với kỳ trước</em>
+  return <em className={better ? s.up : s.down}>{d > 0 ? '▲' : '▼'} {num1(Math.abs(d))}% so với kỳ trước</em>
 }
 
 function Kpi({ label, value, icon, children }: { label: string; value: string; icon: string; children: React.ReactNode }) {
   return <div className={s.kpi}><div><small>{label}</small><b>{value}</b>{children}</div><span className={s.ico}><i className={`fa-solid ${icon}`} aria-hidden="true" /></span></div>
 }
 
+// Điểm biểu đồ theo ngày; kỳ dài hơn 31 ngày thì gộp từng 7 ngày
+function points(report: RevenueReport): DayPoint[] {
+  const days = (report.days ?? []).map(d => ({ at: new Date(`${d.date}T00:00:00+07:00`).getTime(), revenue: amount(d.revenue), cost: amount(d.cost) }))
+  const size = days.length > 31 ? 7 : 1
+  const out: DayPoint[] = []
+  for (let i = 0; i < days.length; i += size) {
+    const chunk = days.slice(i, i + size)
+    out.push({ at: chunk[0].at, label: formatDate(chunk[0].at).slice(0, 5), revenue: chunk.reduce((a, d) => a + d.revenue, 0), cost: chunk.reduce((a, d) => a + d.cost, 0), trips: 0 })
+  }
+  return out
+}
+
 export default function ReportsPage() {
   const { t } = useTranslation()
-  const { all, errors, reload } = usePageData<typeof bookingListLoader>()
   const toast = useToast()
   const [days, setDays] = useState<(typeof PERIODS)[number][0]>(30)
-  const [now] = useState(() => Date.now())
-  const to = now + 1000, from = to - days * DAY
-  const cur = useMemo(() => summarize(all ?? [], from, to), [all, from, to])
-  const prev = useMemo(() => summarize(all ?? [], from - days * DAY, from), [all, from, days])
-  const pts = useMemo(() => series(all ?? [], from, to), [all, from, to])
-  const recent = useMemo(() => (all ?? []).map(orderFinance).filter(f => f && f.at >= from && f.at < to).sort((a, z) => z!.at - a!.at).slice(0, 8), [all, from, to])
+  const [to] = useState(endOfToday)
+  const from = to - days * DAY_MS
+  const { data, loaded, error, reload } = useLoad(async () => {
+    const [cur, prev] = await Promise.all([reportsApi.revenue(iso(from), iso(to)), reportsApi.revenue(iso(from - days * DAY_MS), iso(from))])
+    return { cur, prev }
+  }, [from, to], { toastOnError: false })
 
-  if (!all) return (
-    <div className="page"><div className="wrap"><div className={s.empty} role="alert">
-      <p>{errors.length ? 'Không tải được dữ liệu doanh thu. Vui lòng thử lại.' : 'Đang tải dữ liệu doanh thu…'}</p>
-      <button className="btn btn-primary" onClick={reload}>Tải lại</button>
-    </div></div></div>
-  )
-
-  const exportCsv = () => {
-    const rows = [['Mã đơn', 'Khách hàng', 'Ngày đặt cọc', 'Doanh thu công ty', 'Chi phí sự cố nội bộ', 'Chi phí vận hành', 'Lợi nhuận', 'Đã thu', 'Phí bảo hiểm thu hộ', 'Trạng thái'],
-      ...(all ?? []).map(orderFinance).filter(f => f && f.at >= from && f.at < to).map(f => [f!.id, f!.customer, formatDate(f!.at), f!.revenue, f!.incidentCost, f!.cost, f!.profit, f!.collected, f!.insuranceCollection, bookingStatusLabel(f!.status)])]
-    const csv = '﻿' + rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
+  const exportCsv = (report: RevenueReport) => {
+    const rows = [['Mã đơn', 'Khách hàng', 'Ngày đặt cọc', 'Doanh thu công ty', 'Tiền thu hộ', 'Đã thu', 'Trạng thái'],
+      ...(report.bookings ?? []).map(b => [b.code, b.customerName, b.depositPaidAt ? formatDate(new Date(b.depositPaidAt)) : '', amount(b.revenue), amount(b.passThrough), amount(b.collected), t(`orderStatus.${b.status}`)])]
+    const csv = '﻿' + rows.map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n')
     const a = document.createElement('a')
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = `bao-cao-${days}-ngay.csv`; a.click(); URL.revokeObjectURL(a.href)
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = `doanh-thu-${days}-ngay.csv`; a.click(); URL.revokeObjectURL(a.href)
     toast('Đã xuất báo cáo CSV')
+  }
+
+  const body = () => {
+    if (!loaded) return <Skeleton variant="block" lines={4} />
+    if (error || !data) return <ErrorState message={error?.message} onRetry={reload} />
+    const { cur, prev } = data
+    const revenue = amount(cur.revenue), profit = amount(cur.profit)
+    const bookings = cur.bookings ?? []
+    return (
+      <>
+        <div className={s.kpis}>
+          <Kpi label={t('reportsPage.revenue', 'Doanh thu công ty')} value={money(revenue)} icon="fa-sack-dollar"><Delta now={revenue} before={amount(prev.revenue)} /></Kpi>
+          <Kpi label="Chi phí công ty chịu" value={money(amount(cur.companyCost))} icon="fa-receipt"><Delta now={amount(cur.companyCost)} before={amount(prev.companyCost)} good="down" /></Kpi>
+          <Kpi label={t('reportsPage.profit', 'Lợi nhuận')} value={money(profit)} icon="fa-chart-line"><Delta now={profit} before={amount(prev.profit)} /></Kpi>
+          <Kpi label={t('reportsPage.margin', 'Biên lợi nhuận')} value={revenue > 0 ? `${num1((profit / revenue) * 100)}%` : '—'} icon="fa-percent"><em className={s.flat}>Lợi nhuận trên doanh thu công ty</em></Kpi>
+          <Kpi label="Đã thu" value={money(amount(cur.collected))} icon="fa-wallet"><em className={s.flat}>Gồm {money(amount(cur.passThrough))} thu hộ</em></Kpi>
+        </div>
+
+        <div className={s.card}>
+          <h3>{t('reportsPage.revenueAndCosts', 'Doanh thu và chi phí')}</h3>
+          <div className={s.legend}><span><i style={{ background: '#1d5fa8' }} />{t('reportsPage.revenue', 'Doanh thu công ty')}</span><span><i style={{ background: '#eb6834' }} />Chi phí công ty chịu</span><span>{days > 31 ? t('reportsPage.byWeek', 'Theo tuần') : t('reportsPage.byDepositDate', 'Theo ngày đặt cọc')}</span></div>
+          <MoneyChart pts={points(cur)} />
+        </div>
+
+        <div className={`${s.card} ${s.tableCard}`}>
+          <div className={s.tableHead}>
+            <h3>Đơn đặt cọc trong kỳ</h3>
+            <span className="text-muted small">{bookings.length} đơn · đã thu {money(amount(cur.collected))}</span>
+            <button className="btn btn-ghost" onClick={() => exportCsv(cur)}><i className="fa-solid fa-download" /> {t('reportsPage.exportCsv', 'Xuất CSV')}</button>
+          </div>
+          <div className={s.wrapT}>
+            <table aria-label="Đơn đặt cọc trong kỳ">
+              <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Ngày đặt cọc</th><th className={s.r}>Doanh thu công ty</th><th className={s.r}>Tiền thu hộ</th><th className={s.r}>Đã thu</th><th>Trạng thái</th></tr></thead>
+              <tbody>
+                {bookings.map(b => (
+                  <tr key={b.bookingId}><td><b>{b.code}</b></td><td>{b.customerName}</td><td>{b.depositPaidAt ? formatDate(new Date(b.depositPaidAt)) : ''}</td><td className={s.r}>{formatVND(amount(b.revenue))}</td><td className={s.r}>{formatVND(amount(b.passThrough))}</td><td className={s.r}>{formatVND(amount(b.collected))}</td><td><OrderStatusBadge status={b.status} /></td></tr>
+                ))}
+                {!bookings.length && <tr><td colSpan={7} className={s.empty}>Chưa có đơn đặt cọc trong khoảng này.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <p className={s.note}>Đơn tính vào kỳ của ngày trả cọc đầu tiên. Doanh thu công ty = báo giá đã chấp nhận trừ tiền thu hộ (bảo hiểm, phí thông quan...), cộng phụ thu đã trả; đơn đã hủy chỉ tính phần công ty giữ lại sau hoàn tiền. Chi phí là các khoản công ty chịu đã được duyệt, tính theo ngày phát sinh. Lợi nhuận = doanh thu công ty − chi phí công ty chịu.</p>
+      </>
+    )
   }
 
   return (
     <div className="page">
       <div className="wrap">
         <div className={s.head}>
-          <div><h1>{t('staffMenus./manager/reports', 'Doanh thu')}</h1><p>{t('reportsPage.subtitle', 'Doanh thu, chi phí vận hành và hiệu suất hoàn thành chuyến · {{from}} – {{to}}', { from: formatDate(from), to: formatDate(now) })}</p></div>
+          <div><h1>{t('staffMenus./manager/reports', 'Doanh thu')}</h1><p>{formatDate(from)} – {formatDate(to - 1)}</p></div>
           <div className={s.tools}>
             <div className={s.seg} role="group" aria-label="Khoảng thời gian">{PERIODS.map(([d, l]) => <button key={d} type="button" className={days === d ? s.on : ''} aria-pressed={days === d} onClick={() => setDays(d)}>{l}</button>)}</div>
-            <button className="btn btn-ghost" onClick={exportCsv} disabled={!all}><i className="fa-solid fa-download" /> {t('reportsPage.exportCsv', 'Xuất CSV')}</button>
           </div>
         </div>
-
-        <h2 className={s.title}>{t('reportsPage.secFinance', 'Tài chính')}</h2>
-        <div className={s.kpis}>
-          <Kpi label={t('reportsPage.revenue', 'Doanh thu công ty')} value={money(cur.revenue)} icon="fa-sack-dollar"><Delta now={cur.revenue} before={prev.revenue} /></Kpi>
-          <Kpi label={t('reportsPage.incidentCost', 'Chi phí sự cố nội bộ')} value={money(cur.incidentCost)} icon="fa-triangle-exclamation"><Delta now={cur.incidentCost} before={prev.incidentCost} good="down" /></Kpi>
-          <Kpi label={t('reportsPage.operatingCost', 'Chi phí vận hành')} value={money(cur.cost)} icon="fa-receipt"><Delta now={cur.cost} before={prev.cost} good="down" /></Kpi>
-          <Kpi label={t('reportsPage.profit', 'Lợi nhuận')} value={money(cur.profit)} icon="fa-chart-line"><Delta now={cur.profit} before={prev.profit} /></Kpi>
-          <Kpi label={t('reportsPage.margin', 'Biên lợi nhuận')} value={cur.revenue > 0 ? `${num1(cur.margin)}%` : '—'} icon="fa-percent"><Delta now={cur.margin} before={prev.revenue > 0 ? prev.margin : NaN} unit="pt" /></Kpi>
-        </div>
-
-        <div className={s.charts}>
-          <div className={s.card}>
-            <h3>{t('reportsPage.revenueAndCosts', 'Doanh thu và chi phí')}</h3>
-            <div className={s.legend}><span><i style={{ background: '#1d5fa8' }} />{t('reportsPage.revenue', 'Doanh thu công ty')}</span><span><i style={{ background: '#eb6834' }} />{t('reportsPage.operatingCost', 'Chi phí vận hành')}</span><span>{days > 31 ? t('reportsPage.byWeek', 'Theo tuần') : t('reportsPage.byDepositDate', 'Theo ngày đặt cọc')}</span></div>
-            <MoneyChart pts={pts} />
-          </div>
-          <div className={s.card}>
-            <h3>{t('reportsPage.completedTrips', 'Chuyến hoàn thành')}</h3>
-            <div className={s.legend}><span>Số chuyến giao xong mỗi {days > 31 ? 'tuần' : 'ngày'}</span></div>
-            <TripsChart pts={pts} />
-          </div>
-        </div>
-
-        <h2 className={s.title}>{t('reportsPage.secPerformance', 'Hiệu suất hoàn thành chuyến')}</h2>
-        <div className={s.perf}>
-          <Kpi label={t('reportsPage.completionRate', 'Tỷ lệ hoàn thành')} value={`${num1(cur.completionRate)}%`} icon="fa-flag-checkered">
-            <small style={{ textTransform: 'none', letterSpacing: 0 }}>{cur.delivered}/{cur.trips} chuyến đã xuất phát đã giao xong</small>
-            <div className={s.bar}><span style={{ width: `${cur.completionRate}%` }} /></div>
-            <Delta now={cur.completionRate} before={prev.trips ? prev.completionRate : NaN} unit="pt" />
-          </Kpi>
-          <Kpi label={t('reportsPage.onTimeRate', 'Giao đúng giờ')} value={`${num1(cur.onTimeRate)}%`} icon="fa-stopwatch">
-            <small style={{ textTransform: 'none', letterSpacing: 0 }}>Tới điểm giao không trễ quá 30 phút</small>
-            <div className={s.bar}><span style={{ width: `${cur.onTimeRate}%` }} /></div>
-            <Delta now={cur.onTimeRate} before={prev.trips ? prev.onTimeRate : NaN} unit="pt" />
-          </Kpi>
-          <Kpi label={t('reportsPage.incidentRate', 'Chuyến có sự cố')} value={`${num1(cur.incidentRate)}%`} icon="fa-triangle-exclamation">
-            <small style={{ textTransform: 'none', letterSpacing: 0 }}>Trên số chuyến đã xuất phát</small>
-            <div className={s.bar}><span style={{ width: `${cur.incidentRate}%`, background: '#eb6834' }} /></div>
-            <Delta now={cur.incidentRate} before={prev.trips ? prev.incidentRate : NaN} good="down" unit="pt" />
-          </Kpi>
-          <Kpi label="Thời gian giao trung bình" value={cur.delivered ? `${num1(cur.avgHours)} giờ` : '—'} icon="fa-clock">
-            <small style={{ textTransform: 'none', letterSpacing: 0 }}>{cur.avgRating ? `Khách đánh giá ${num1(cur.avgRating)}/5 sao` : 'Chưa có đánh giá của khách'}</small>
-            <Delta now={cur.avgHours} before={prev.trips ? prev.avgHours : NaN} good="down" />
-          </Kpi>
-        </div>
-
-        <div className={`${s.card} ${s.tableCard}`}>
-          <div className={s.tableHead}><h3>Đơn đặt cọc gần đây</h3><small>Doanh thu và giá vốn không gồm khoản bảo hiểm thu hộ.</small><span className="text-muted small">{cur.orders} đơn · đã thu {money(cur.collected)}</span></div>
-          <div className={s.wrapT}>
-            <table>
-              <thead><tr><th>Mã đơn</th><th>Khách hàng</th><th>Ngày đặt cọc</th><th className={s.r}>Doanh thu công ty</th><th className={s.r}>Chi phí sự cố nội bộ</th><th className={s.r}>Phí BH thu hộ</th><th className={s.r}>Chi phí vận hành</th><th className={s.r}>Lợi nhuận</th><th>Trạng thái</th></tr></thead>
-              <tbody>
-                {recent.map(f => f && (
-                  <tr key={f.id}><td><b>{f.id}</b></td><td>{f.customer}</td><td>{formatDate(f.at)}</td><td className={s.r}>{formatVND(f.revenue)}</td><td className={s.r}>{formatVND(f.incidentCost)}</td><td className={s.r}>{formatVND(f.insuranceCollection)}</td><td className={s.r}>{formatVND(f.cost)}</td><td className={`${s.r} ${f.profit >= 0 ? s.pos : s.neg}`}>{formatVND(f.profit)}</td><td>{bookingStatusLabel(f.status)}</td></tr>
-                ))}
-                {!recent.length && <tr><td colSpan={9} className={s.empty}>Chưa có đơn đặt cọc trong khoảng này.</td></tr>}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <p className={s.note}>Doanh thu công ty = doanh thu vận chuyển (tách bảo hiểm thu hộ) − thực chi sự cố có chứng từ đã được Quản lý duyệt. Lợi nhuận = doanh thu công ty − giá vốn vận hành gốc. Chi phí chờ duyệt và chi phí ước tính chưa được ghi nhận, chi phí đã duyệt được tính một lần từ chứng từ. Số mẫu theo biểu giá mẫu.</p>
+        {body()}
       </div>
     </div>
   )

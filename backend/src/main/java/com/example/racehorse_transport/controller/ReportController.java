@@ -2,9 +2,11 @@ package com.example.racehorse_transport.controller;
 
 import com.example.racehorse_transport.dto.common.ApiResponseDto;
 import com.example.racehorse_transport.dto.report.OperationsSummaryResponseDto;
+import com.example.racehorse_transport.dto.report.RevenueReportResponseDto;
 import com.example.racehorse_transport.dto.report.TripReportResponseDto;
 import com.example.racehorse_transport.dto.report.TripReportRowResponseDto;
 import com.example.racehorse_transport.service.ReportService;
+import com.example.racehorse_transport.service.RevenueReportService;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class ReportController {
 
     private final ReportService reports;
+    private final RevenueReportService revenueReports;
 
     @GetMapping("/reports/trips")
     public ApiResponseDto<List<TripReportRowResponseDto>> trips(@RequestParam Instant from, @RequestParam Instant to) {
@@ -35,5 +38,11 @@ public class ReportController {
     @GetMapping("/reports/operations")
     public ApiResponseDto<OperationsSummaryResponseDto> summary(@RequestParam Instant from, @RequestParam Instant to) {
         return ApiResponseDto.success(reports.summary(from, to), "Số liệu vận hành");
+    }
+
+    // Doanh thu: đơn theo ngày trả cọc đầu tiên trong [from, to), chi phí công ty chịu đã duyệt theo ngày phát sinh
+    @GetMapping("/reports/revenue")
+    public ApiResponseDto<RevenueReportResponseDto> revenue(@RequestParam Instant from, @RequestParam Instant to) {
+        return ApiResponseDto.success(revenueReports.revenue(from, to), "Báo cáo doanh thu");
     }
 }

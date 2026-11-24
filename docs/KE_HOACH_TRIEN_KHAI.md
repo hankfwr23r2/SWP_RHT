@@ -665,7 +665,7 @@ Xong thì chạy Quality Gate và báo kết quả thật.
 | B4 | Sự cố, chi phí | B | 4 | Xong phần chính (2 PR). Còn: phương án đổi xe, về hub tự lập lượt xe; biên lai, ảnh hiện trường | #385, #386 |
 | B5 | Giao thất bại, giao lại | B | 4 | Xong phần chính: chờ người nhận, quá giờ thì giao thất bại, về hub, giao lại. Còn: gửi chuồng | #387 |
 | A8 | Quyết toán, hủy, đánh giá | A | 5 | Xong backend | #396, #397 |
-| B6 | Theo dõi, thông báo, báo cáo | B | 5 | Xong phần chính (6 PR): chuông thông báo, hành trình ngựa và tra cứu công khai, báo cáo vận hành, nhật ký hệ thống. Báo khách khi nhận, giao ngựa và qua cửa khẩu (#430). Còn: bảng điều khiển `/manager` | #388, #389, #390, #391, #392, #393, #430 |
+| B6 | Theo dõi, thông báo, báo cáo | B | 5 | Xong phần chính (6 PR): chuông thông báo, hành trình ngựa và tra cứu công khai, báo cáo vận hành, nhật ký hệ thống. Báo khách khi nhận, giao ngựa và qua cửa khẩu (#430). Báo cáo doanh thu `/reports/revenue` (#434). Còn: bảng điều khiển `/manager` | #388, #389, #390, #391, #392, #393, #430, #434 |
 | E | Tích hợp, dọn dẹp, ERD, merge | A + B | 6 | Chưa làm | |
 
 ---
@@ -677,7 +677,7 @@ Người dùng chốt: ẩn khỏi menu và đổi trang mở đầu, chưa xóa
 | Màn cũ | Đường dẫn | Màn thay thế |
 |---|---|---|
 | Tổng quan quản lý (`manager/dashboard`, kéo theo `manager/intake`, `manager/approvals`) | `/manager` | `/manager/orders` |
-| Doanh thu (`manager/reports`) | `/manager/reports` | Chưa có màn thay |
+| Doanh thu (`manager/reports`) | `/manager/reports` | Đã chuyển sang `/reports/revenue`, hiện lại trong menu (#434) |
 | Sự cố quản lý cũ (`manager/incidents`, không còn đường dẫn) | | `/manager/incidents` (bảng sự cố mới) |
 | Xe và lộ trình (`coordinator/fleet-plan`) | `/coordinator/fleet-plan` | `/coordinator/dispatch` |
 | Giám sát (`coordinator/monitoring`) | `/coordinator/monitoring` | Chưa có màn thay |

@@ -10,38 +10,10 @@ async function open(page: Page, view: string) {
   await page.goto(`/company-cost-test?view=${view}`)
 }
 
-test('manager report deducts incident expenditure once and exports it separately', async ({ page }) => {
-  await open(page, 'reports')
-  await expect(page.getByRole('columnheader', { name: 'Chi phí sự cố nội bộ', exact: true })).toBeVisible()
-  await expect(page.getByRole('columnheader', { name: 'Doanh thu công ty', exact: true })).toBeVisible()
-  await expect(page.getByText('Doanh thu sau sự cố', { exact: true })).toHaveCount(0)
-  await expect(page.getByText('Doanh thu vận chuyển', { exact: true })).toHaveCount(0)
-  const row = page.getByRole('row').filter({ hasText: 'BK-012' })
-  await expect(row.getByRole('cell')).toHaveCount(9)
-  await expect(row.getByRole('cell', { name: /9[,.]700[,.]000/ })).toBeVisible()
-  await expect(row.getByRole('cell', { name: /800[,.]000/ })).toBeVisible()
-  const download = page.waitForEvent('download')
-  await page.getByRole('button', { name: 'Xuất CSV' }).click()
-  const stream = await (await download).createReadStream()
-  let csv = ''
-  for await (const chunk of stream!) csv += chunk.toString()
-  expect(csv).toContain('"Doanh thu công ty","Chi phí sự cố nội bộ","Chi phí vận hành"')
-  expect(csv).toContain('"9700000","800000"')
-  expect(csv).not.toMatch(/Doanh thu sau sự cố|Doanh thu vận chuyển/)
-  expect(csv.split('\n')[0].split(',')).toHaveLength(10)
-})
-
 test('manager expense approval has no customer payer selector', async ({ page }) => {
   await open(page, 'audit')
   await expect(page.getByRole('dialog')).toBeVisible()
   await expect(page.getByRole('combobox')).toHaveCount(0)
   await expect(page.getByText('Khách chịu', { exact: true })).toHaveCount(0)
   await expect(page.getByRole('cell', { name: 'Công ty chịu', exact: true })).toBeVisible()
-})
-
-test('incident costs above transport revenue remain negative on the report and chart', async ({ page }) => {
-  await open(page, 'reports&negative=1')
-  await expect(page.getByText('-1.5 triệu ₫', { exact: true })).toBeVisible()
-  await expect(page.getByText('-2 tr', { exact: true })).toBeVisible()
-  await expect(page.getByRole('row').filter({ hasText: 'BK-012' }).getByRole('cell', { name: /-1[,.]500[,.]000/ })).toBeVisible()
 })

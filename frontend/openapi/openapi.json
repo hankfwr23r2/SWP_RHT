@@ -1513,6 +1513,20 @@
         },
         "type" : "object"
       },
+      "ApiResponseRevenueReportResponseDto" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/RevenueReportResponseDto"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseRouteResponse" : {
         "properties" : {
           "data" : {
@@ -6273,6 +6287,85 @@
           }
         },
         "required" : [ "confirmPassword", "email", "newPassword", "otp" ],
+        "type" : "object"
+      },
+      "RevenueBookingDto" : {
+        "properties" : {
+          "bookingId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "code" : {
+            "type" : "string"
+          },
+          "collected" : {
+            "type" : "number"
+          },
+          "customerName" : {
+            "type" : "string"
+          },
+          "depositPaidAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "passThrough" : {
+            "type" : "number"
+          },
+          "revenue" : {
+            "type" : "number"
+          },
+          "status" : {
+            "enum" : [ "PENDING_INTAKE", "UNDER_REVIEW", "NEEDS_RESUBMISSION", "QUOTING", "AWAITING_DEPOSIT", "QUOTE_EXPIRED", "CONFIRMED", "SCHEDULE_CHANGE_REQUIRED", "IN_OPERATION", "DELIVERED", "COMPLETED", "CANCELLED", "REJECTED" ],
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
+      "RevenueDayDto" : {
+        "properties" : {
+          "cost" : {
+            "type" : "number"
+          },
+          "date" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "revenue" : {
+            "type" : "number"
+          }
+        },
+        "type" : "object"
+      },
+      "RevenueReportResponseDto" : {
+        "properties" : {
+          "bookings" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RevenueBookingDto"
+            },
+            "type" : "array"
+          },
+          "collected" : {
+            "type" : "number"
+          },
+          "companyCost" : {
+            "type" : "number"
+          },
+          "days" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RevenueDayDto"
+            },
+            "type" : "array"
+          },
+          "passThrough" : {
+            "type" : "number"
+          },
+          "profit" : {
+            "type" : "number"
+          },
+          "revenue" : {
+            "type" : "number"
+          }
+        },
         "type" : "object"
       },
       "RouteRequest" : {
@@ -13006,6 +13099,41 @@
               "*/*" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseOperationsSummaryResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "report-controller" ]
+      }
+    },
+    "/reports/revenue" : {
+      "get" : {
+        "operationId" : "revenue",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "from",
+          "required" : true,
+          "schema" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "to",
+          "required" : true,
+          "schema" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseRevenueReportResponseDto"
                 }
               }
             },
