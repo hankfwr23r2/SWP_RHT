@@ -2,6 +2,7 @@
 import { lazy } from 'react'
 import type { PageLoader } from '@shared/routing/pageData'
 import type { AppRoute } from '@shared/routing/types'
+import { managerTexts } from '@shared/i18n/staffTexts'
 import { ManagerLoginPage, StaffLoginPage } from './features/auth/StaffLoginPage'
 import type * as Loaders from './shared/loaders'
 // Loader nằm ngoài gói tải đầu: chỉ tải khi mở trang có dữ liệu
@@ -43,11 +44,26 @@ export const routes: AppRoute[] = [
   { path: '/admin/accounts/:role', lazyPage: () => import('./features/admin/accounts/AccountsPage'), loader: load('accountsLoader'), roles: A, title: 'Tài khoản theo loại', layout: 'staff' },
 
   { path: '/manager', lazyPage: () => import('./features/manager/dashboard/DashboardPage'), loader: load('bookingListLoader'), roles: M, title: 'Bảng điều khiển', layout: 'staff' },
-  { path: '/manager/intake', lazyPage: () => import('./features/manager/intake/IntakePage'), loader: load('bookingListLoader'), roles: M, title: 'Tiếp nhận đơn hàng', layout: 'staff' },
-  { path: '/manager/approvals', lazyPage: () => import('./features/manager/approvals/ApprovalsPage'), loader: load('bookingListLoader'), roles: M, title: 'Duyệt báo giá', layout: 'staff' },
+  {
+    path: '/manager/orders', roles: M, layout: 'staff', catalog: false,
+    lazyPage: () => Promise.all([import('./features/manager/orders/ManagerOrdersPage'), managerTexts()]).then(([page]) => page), title: 'Đơn hàng',
+  },
+  {
+    path: '/manager/orders/:id', roles: M, layout: 'staff', catalog: false,
+    loader: context => import('./features/manager/orders/loaders').then(m => m.orderLoader(context)),
+    lazyPage: () => Promise.all([import('./features/manager/orders/ManagerOrderPage'), managerTexts()]).then(([page]) => page), title: 'Chi tiết đơn',
+  },
+  {
+    path: '/manager/departures', roles: M, layout: 'staff', catalog: false,
+    loader: () => import('./features/manager/departures/loaders').then(m => m.departuresLoader()),
+    lazyPage: () => Promise.all([import('./features/manager/departures/DeparturesPage'), managerTexts()]).then(([page]) => page), title: 'Chuyến cần quyết định',
+  },
+  {
+    path: '/manager/refunds', roles: M, layout: 'staff', catalog: false,
+    lazyPage: () => Promise.all([import('./features/manager/refunds/RefundsPage'), managerTexts()]).then(([page]) => page), title: 'Hoàn tiền',
+  },
   { path: '/manager/reports', lazyPage: () => import('./features/manager/reports/ReportsPage'), loader: load('bookingListLoader'), roles: M, title: 'Báo cáo doanh thu', layout: 'staff' },
   { path: '/manager/trip-reports', lazyPage: () => import('./features/manager/trip-reports/TripReportsPage'), roles: M, title: 'Báo cáo vận hành', layout: 'staff', catalog: false },
-  { path: '/manager/cancelled-orders', lazyPage: () => import('./features/manager/cancelled-orders/CancelledOrdersPage'), loader: load('bookingListLoader'), roles: M, title: 'Đơn đã hủy', layout: 'staff' },
   { path: '/manager/incidents', lazyPage: () => import('./features/incidents/IncidentsBoardPage'), roles: M, title: 'Sự cố', layout: 'staff', catalog: false },
 
   { path: '/specialist/verification', lazyPage: () => import('./features/specialist/verification/VerificationListPage'), loader: load('bookingListLoader'), roles: SP, title: 'Duyệt hồ sơ ngựa', layout: 'staff' },

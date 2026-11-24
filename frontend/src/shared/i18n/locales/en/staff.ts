@@ -101,6 +101,11 @@ export const staff = {
       "costApproved": "Cost approved"
     }
   },
+  managerWork: {
+    pending: 'Waiting: {{count}}',
+    decisions: 'Departures to decide: {{count}}',
+    documents: 'Orders missing documents: {{count}}',
+  },
   staffMenus: {
     '/coordinator/dispatch': 'Dispatch',
     '/my-trips': 'My trips',
@@ -115,12 +120,12 @@ export const staff = {
     '/admin/ui-library': 'UI library',
     '/admin/accounts': 'All Accounts',
     '/manager': 'Overview',
-    '/manager/intake': 'Intake Queue',
-    '/manager/approvals': 'Quote Approvals',
+    '/manager/orders': 'Orders',
+    '/manager/departures': 'Departures to decide',
+    '/manager/refunds': 'Refunds',
     '/manager/incidents': 'Incidents',
     '/manager/reports': 'Revenue Reports',
     '/manager/trip-reports': 'Trip Reports',
-    '/manager/cancelled-orders': 'Cancelled Orders',
     '/specialist/verification': 'Horse Verification',
     '/specialist/legal': 'Border & Transit Papers',
     '/specialist/insurance': 'Insurance Review',

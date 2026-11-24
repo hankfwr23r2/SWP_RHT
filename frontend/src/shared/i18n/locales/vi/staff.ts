@@ -101,6 +101,11 @@ export const staff = {
       "costApproved": "Đã duyệt chi phí"
     }
   },
+  managerWork: {
+    pending: '{{count}} việc đang chờ',
+    decisions: '{{count}} chuyến tới hạn quyết định',
+    documents: '{{count}} đơn thiếu giấy',
+  },
   staffMenus: {
     '/coordinator/dispatch': 'Điều độ',
     '/my-trips': 'Lượt xe của tôi',
@@ -115,12 +120,12 @@ export const staff = {
     '/admin/ui-library': 'Thư viện giao diện',
     '/admin/accounts': 'Tất cả tài khoản',
     '/manager': 'Tổng quan',
-    '/manager/intake': 'Tiếp nhận',
-    '/manager/approvals': 'Duyệt giá',
+    '/manager/orders': 'Đơn hàng',
+    '/manager/departures': 'Chuyến cần quyết định',
+    '/manager/refunds': 'Hoàn tiền',
     '/manager/incidents': 'Sự cố',
     '/manager/reports': 'Doanh thu',
     '/manager/trip-reports': 'Chuyến đi',
-    '/manager/cancelled-orders': 'Đơn đã hủy',
     '/specialist/verification': 'Duyệt hồ sơ ngựa',
     '/specialist/legal': 'Giấy tờ chuyến đi',
     '/specialist/insurance': 'Bảo hiểm',
