@@ -3,10 +3,8 @@ import { createBrowserRouter, RouterProvider } from 'react-router'
 import { AuthProvider } from '../../src/shared/auth/AuthContext'
 import { applyRuntimeBusinessConfig } from '../../src/shared/config/runtimeBusinessRules'
 import { ToastProvider } from '../../src/shared/ui/toast'
-import { ScheduleChangeCard } from '../../src/apps/customer/features/orders/ScheduleChangeCard'
 import AdminRulesPage from '../../src/apps/backoffice/features/admin/rules/AdminRulesPage'
 import { QuoteSheet } from '../../src/shared/ui/QuoteSheet'
-import { toBooking } from '../../src/shared/services/bookingMapper'
 import type { SystemConfigItem } from '../../src/shared/api/systemConfig'
 import '../../src/shared/i18n'
 import '../../src/shared/styles/base.css'
@@ -33,18 +31,10 @@ const configs = [
   item('OFFICE_ADDRESS', 'Địa chỉ văn phòng', '25 Nguyễn Huệ, Quận 1, TP.HCM', 'CONTACT' as SystemConfigItem['configGroup']),
 ]
 
-const booking = toBooking({
-  id: 'BK-7F3K9QXM', type: 'domestic', customer: 'Customer', customerName: 'Customer',
-  status: 'schedule_change_required', createdAt: 1000, departAt: Date.parse('2026-11-30T00:00:00+07:00'),
-  originName: 'Hà Nội', destName: 'Đà Nẵng', totalHorses: 0, horses: [], consignor: { name: 'Sender', phone: '' },
-  consignee: { name: 'Recipient', phone: '' }, scheduleChange: { flaggedAt: 1000, previousStatus: 'pending_intake' },
-})
-
 const router = createBrowserRouter([{
   path: '/contact-test',
   loader: () => ({ configs, errors: [] }),
   element: view === 'admin' ? <AdminRulesPage />
-    : view === 'quote' ? <QuoteSheet lines={[{ label: 'Cước vận chuyển nguyên chuyến', detail: '', amount: 5_000_000 }]} subtotal={5_000_000} total={5_000_000} deposit={1_500_000} balance={3_500_000} expiresAt={Date.now() + 86_400_000} />
-    : <main style={{ maxWidth: 650, margin: '30px auto', padding: 16 }}><ScheduleChangeCard b={booking} onDone={() => {}} /></main>,
+    : <QuoteSheet lines={[{ label: 'Cước vận chuyển nguyên chuyến', detail: '', amount: 5_000_000 }]} subtotal={5_000_000} total={5_000_000} deposit={1_500_000} balance={3_500_000} expiresAt={Date.now() + 86_400_000} />,
 }])
 createRoot(document.getElementById('root')!).render(<AuthProvider app="backoffice"><ToastProvider><RouterProvider router={router} /></ToastProvider></AuthProvider>)

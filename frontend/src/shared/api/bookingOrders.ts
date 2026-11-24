@@ -12,6 +12,10 @@ export type PricingPreview = Schemas['PricingPreviewResponseDto']
 export type BookingCreateRequest = Schemas['BookingCreateRequestDto']
 export type CustomerProfile = Schemas['CustomerProfileResponseDto']
 export type BookingOrder = Schemas['BookingResponseDto']
+export type BookingStatus = NonNullable<BookingOrder['status']>
+export type BookingDetail = Schemas['BookingDetailResponseDto']
+export type BookingCancellation = Schemas['BookingCancellationResponseDto']
+export type InsuranceRevision = Schemas['PersonalInsuranceRevisionRequestDto']
 
 export const bookingOrdersApi = {
   suggestions: async (params: DepartureSuggestionQuery) =>
@@ -22,6 +26,19 @@ export const bookingOrdersApi = {
     (await apiClient.post<ApiResponse<PricingPreview>>('/pricing/preview', body)).data.data,
   create: async (body: BookingCreateRequest) =>
     readFormResponse<BookingOrder>(await apiClient.post('/bookings', body, formResponseOptions)),
+  list: async () => (await apiClient.get<ApiResponse<BookingOrder[]>>('/bookings')).data.data,
+  detail: async (id: number) => (await apiClient.get<ApiResponse<BookingDetail>>(`/bookings/${id}`)).data.data,
+  cancellationPreview: async (id: number) =>
+    (await apiClient.get<ApiResponse<BookingCancellation>>(`/bookings/${id}/cancellation-preview`)).data.data,
+  cancel: async (id: number, reason: string) =>
+    (await apiClient.post<ApiResponse<BookingCancellation>>(`/bookings/${id}/cancel`, { reason })).data.data,
+  reschedule: async (id: number, body: Schemas['BookingRescheduleRequestDto']) =>
+    (await apiClient.post<ApiResponse<BookingOrder>>(`/bookings/${id}/reschedule`, body)).data.data,
+  resubmit: async (id: number) =>
+    (await apiClient.post<ApiResponse<BookingOrder>>(`/bookings/${id}/resubmit`, {})).data.data,
+  reviseInsurance: async (id: number, insuranceId: number, body: InsuranceRevision) => {
+    await apiClient.post(`/bookings/${id}/insurances/${insuranceId}/revise`, body)
+  },
   myProfile: async () =>
     (await apiClient.get<ApiResponse<CustomerProfile>>('/customers/me')).data.data,
 }

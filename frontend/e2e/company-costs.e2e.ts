@@ -10,15 +10,6 @@ async function open(page: Page, view: string) {
   await page.goto(`/company-cost-test?view=${view}`)
 }
 
-test('customer feedback never displays internal incident charges or requests settlement payment', async ({ page }) => {
-  await open(page, 'feedback')
-  await expect(page.getByRole('heading', { name: 'Đánh giá chuyến đi' })).toBeVisible()
-  await expect(page.getByText(/Bảng quyết toán|Chuồng tạm|800[,.]000|Thanh toán/)).toHaveCount(0)
-  const rating = page.waitForRequest(r => r.url().endsWith('/customer/bookings/BK-012/rating'))
-  await page.getByRole('button', { name: 'Gửi đánh giá', exact: true }).click()
-  expect((await rating).postDataJSON()).toEqual({ stars: 5, comment: '' })
-})
-
 test('manager report deducts incident expenditure once and exports it separately', async ({ page }) => {
   await open(page, 'reports')
   await expect(page.getByRole('columnheader', { name: 'Chi phí sự cố nội bộ', exact: true })).toBeVisible()

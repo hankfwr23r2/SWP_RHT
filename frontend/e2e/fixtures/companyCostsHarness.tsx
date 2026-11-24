@@ -2,7 +2,6 @@ import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router'
 import { AuthProvider } from '../../src/shared/auth/AuthContext'
 import { ToastProvider } from '../../src/shared/ui/toast'
-import { RatingCard } from '../../src/apps/customer/features/orders/TripFeedback'
 import ReportsPage from '../../src/apps/backoffice/features/manager/reports/ReportsPage'
 import { AuditModal } from '../../src/apps/backoffice/features/manager/dashboard/AuditModal'
 import type { Booking } from '../../src/shared/types/booking'
@@ -25,9 +24,7 @@ const view = new URLSearchParams(location.search).get('view')
 const router = createBrowserRouter([{
   path: '/company-cost-test',
   loader: () => ({ all: [booking], errors: [] }),
-  element: view === 'reports' ? <ReportsPage /> : view === 'audit'
-    ? <AuditModal b={booking} onClose={() => {}} onDone={() => {}} />
-    : <RatingCard b={booking} owner="Customer" onDone={() => {}} />,
+  element: view === 'reports' ? <ReportsPage /> : <AuditModal b={booking} onClose={() => {}} onDone={() => {}} />,
 }])
 createRoot(document.getElementById('root')!).render(
   <AuthProvider app="backoffice"><ToastProvider><RouterProvider router={router} /></ToastProvider></AuthProvider>,

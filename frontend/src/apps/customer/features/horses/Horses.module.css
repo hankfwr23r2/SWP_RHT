@@ -15,7 +15,6 @@
 .horseFoot { margin-top: auto; display: grid; padding-top: var(--space-3); border-top: 1px solid var(--color-border); }
 .paginationWrap { margin-top: var(--space-6); display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-3); }
 .form, .legacyDocuments { display: grid; gap: var(--space-3); min-width: 0; }
-.legacyDocuments { margin: 0; padding: 0; border: 0; }
 .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3) var(--space-4); }
 
 @media (max-width: 1024px) {
