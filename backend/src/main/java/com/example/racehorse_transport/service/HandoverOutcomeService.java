@@ -2,6 +2,7 @@ package com.example.racehorse_transport.service;
 
 import com.example.racehorse_transport.entity.Handover;
 import com.example.racehorse_transport.entity.HorseLeg;
+import com.example.racehorse_transport.entity.Party;
 import java.time.Instant;
 import java.util.List;
 
@@ -21,4 +22,7 @@ public interface HandoverOutcomeService {
     // Nhận hoặc trả ngựa tại hub với khách tự chở (handover gắn horse_stay, đã DONE): nhận thì lập khoản số dư,
     // trả thì con cuối của đơn giao xong làm đơn DELIVERED (#16); cả hai báo khách
     void atHub(Handover handover, HorseLeg leg, Long actorUserId);
+
+    // Đối tác chuồng nhận ngựa nghỉ đêm (STAY_IN): vai trò STABLE còn hiệu lực
+    Party stablePartner(Long partyId);
 }
