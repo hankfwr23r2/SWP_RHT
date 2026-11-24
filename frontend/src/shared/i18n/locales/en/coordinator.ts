@@ -39,6 +39,22 @@ export const coordinator = {
     "tabTrips": "Vehicle trips",
     "newTrip": "New trip",
     "loadError": "Could not load dispatch data",
+    "grouping": {
+      "tab": "Grouping suggestions",
+      "date": "Run date",
+      "kind": "Trip type",
+      "chooseHub": "Choose a hub to see suggestions.",
+      "list": "Suggested groups",
+      "emptyTitle": "Nothing to group",
+      "emptyDescription": "No company pickups or deliveries at this hub on that day, or the horses already have legs.",
+      "groupTitle": "Group {{n}} · {{count}} bookings",
+      "summary": "{{seats}} seats · about {{km}} km · about {{hours}} h (estimate)",
+      "window": "Leaves hub {{start}}, back {{end}}",
+      "overHours": "Over 4 hours",
+      "vehicle": "Vehicle",
+      "approve": "Create trip",
+      "created": "Trip {{code}} created and horses assigned"
+    },
     "stall": {
       "title": "Stall plan",
       "hint": "Position 1 is the front, {{total}} is the rear door. A wide stall takes the chosen position and the next one.",

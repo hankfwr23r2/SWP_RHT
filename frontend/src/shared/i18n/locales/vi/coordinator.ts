@@ -39,6 +39,22 @@ export const coordinator = {
     "tabTrips": "Lượt xe",
     "newTrip": "Lập lượt xe",
     "loadError": "Không tải được dữ liệu điều độ",
+    "grouping": {
+      "tab": "Gợi ý gom đơn",
+      "date": "Ngày chạy",
+      "kind": "Loại lượt",
+      "chooseHub": "Chọn hub để xem gợi ý.",
+      "list": "Các nhóm gợi ý",
+      "emptyTitle": "Không có đơn cần gom",
+      "emptyDescription": "Không có đơn công ty đón hoặc giao ở hub này trong ngày, hoặc các con đã có chặng.",
+      "groupTitle": "Nhóm {{n}} · {{count}} đơn",
+      "summary": "{{seats}} chỗ · khoảng {{km}} km · khoảng {{hours}} giờ (ước lượng)",
+      "window": "Rời hub {{start}}, về hub {{end}}",
+      "overHours": "Quá 4 giờ",
+      "vehicle": "Xe",
+      "approve": "Lập lượt xe",
+      "created": "Đã lập lượt xe {{code}} và xếp ngựa"
+    },
     "stall": {
       "title": "Sơ đồ khoang",
       "hint": "Vị trí 1 là đầu xe, {{total}} là cửa sau. Khoang rộng chiếm vị trí đã chọn và vị trí kế sau.",
