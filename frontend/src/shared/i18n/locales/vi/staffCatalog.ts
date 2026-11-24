@@ -327,6 +327,7 @@ export const staffCatalog = {
         "COUNT": ""
       },
       "groups": {
+        "SCHEDULE_WINDOW": "Giờ đón, giao",
         "ADDRESS": "Sổ địa chỉ",
         "CONTACT": "Liên hệ",
         "AUTH": "Đăng nhập và xác minh",
@@ -340,6 +341,13 @@ export const staffCatalog = {
         "SCHEDULE": "Lịch chạy"
       },
       "keys": {
+        "PICKUP_WINDOW_START_HOUR": "Giờ sớm nhất xe đến đón",
+        "PICKUP_WINDOW_END_HOUR": "Giờ muộn nhất ngựa tới hub trong ngày đón",
+        "DELIVERY_WINDOW_START_HOUR": "Giờ sớm nhất xe đến giao",
+        "DELIVERY_WINDOW_END_HOUR": "Giờ muộn nhất xe đến giao",
+        "STOP_BASE_MINUTES": "Thời gian dừng cố định mỗi điểm",
+        "STOP_MINUTES_PER_HORSE": "Thời gian dừng thêm mỗi con",
+        "SCHEDULE_CHANGE_NOTICE_MINUTES": "Dời giờ quá số phút này thì báo khách",
         "ADDRESS_MAX_KM_FROM_PROVINCE": "Khoảng cách tối đa từ vị trí ghim tới trung tâm tỉnh (km)",
         "HOTLINE": "Hotline",
         "OFFICE_ADDRESS": "Địa chỉ văn phòng",

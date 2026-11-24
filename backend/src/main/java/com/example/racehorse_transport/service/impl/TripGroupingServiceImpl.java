@@ -21,6 +21,10 @@ import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.StallSeatPolicy;
 import com.example.racehorse_transport.policy.TripGroupingPolicy;
+import com.example.racehorse_transport.policy.TripSchedulePolicy;
+import com.example.racehorse_transport.policy.TripSchedulePolicy.Rules;
+import com.example.racehorse_transport.policy.TripSchedulePolicy.StopTime;
+import com.example.racehorse_transport.policy.TripSchedulePolicy.Window;
 import com.example.racehorse_transport.policy.TripGroupingPolicy.Candidate;
 import com.example.racehorse_transport.policy.TripGroupingPolicy.Group;
 import com.example.racehorse_transport.policy.TripGroupingPolicy.Point;
@@ -51,12 +55,8 @@ public class TripGroupingServiceImpl implements TripGroupingService {
 
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
     private static final Set<HorseLegStatus> INACTIVE = Set.of(HorseLegStatus.CANCELLED, HorseLegStatus.FAILED);
-    // Ngựa tới hub trước giờ chạy 3 giờ (THONG_BAO_LUONG_B B1)
-    private static final Duration HUB_ARRIVAL_BEFORE_DEPARTURE = Duration.ofHours(3);
-    // Chặng giao bắt đầu sau khi chuyến trục tới hub một khoảng dự phòng
-    private static final Duration DELIVERY_AFTER_ARRIVAL = Duration.ofHours(1);
-    // Thời gian dừng nhận hoặc giao ngựa ở mỗi địa chỉ, và chuẩn bị ở hub
-    private static final Duration STOP_DWELL = Duration.ofMinutes(30);
+    // Gợi ý nhanh nên ước lượng: tốc độ trung bình so với tốc độ tối đa. Giờ chính thức tính theo đường thật ở TripScheduleService
+    private static final double AVERAGE_SPEED_RATIO = 0.65;
 
     private final DispatchBookingRepository bookings;
     private final BookingAddressRepository addresses;
@@ -106,13 +106,19 @@ public class TripGroupingServiceImpl implements TripGroupingService {
         int capacity = vehicles.findAllByOrderByLicensePlateAsc().stream().filter(v -> v.getStatus() == VehicleStatus.ACTIVE)
                 .mapToInt(v -> v.getStandardStallCount() * StallSeatPolicy.seats("STANDARD") + v.getWideStallCount() * StallSeatPolicy.seats("WIDE"))
                 .max().orElse(0);
-        double speed = configs.getInt("TRUCK_TOP_SPEED_KMH");
+        double speed = configs.getInt("TRUCK_TOP_SPEED_KMH") * AVERAGE_SPEED_RATIO;
+        Rules rules = new Rules(configs.getInt("MAX_CONTINUOUS_HOURS"), configs.getInt("MIN_REST_MINUTES"), configs.getInt("MAX_DRIVE_HOURS_PER_DAY"),
+                configs.getInt("STOP_BASE_MINUTES"), configs.getInt("STOP_MINUTES_PER_HORSE"));
+        String side = pickup ? "PICKUP" : "DELIVERY";
+        Window window = new Window(configs.getInt(side + "_WINDOW_START_HOUR"), configs.getInt(side + "_WINDOW_END_HOUR"));
+        double maxHours = TripSchedulePolicy.rideLimitSeconds(false, rules) / 3600.0;
         Point hubPoint = point(hub.getLatitude().doubleValue(), hub.getLongitude().doubleValue());
-        List<Group> groups = TripGroupingPolicy.group(hubPoint, candidates, capacity, configs.getInt("MAX_CONTINUOUS_HOURS"), speed);
-        return groups.stream().map(group -> describe(group, entries, hub, hubPoint, pickup, speed)).toList();
+        List<Group> groups = TripGroupingPolicy.group(hubPoint, candidates, capacity, maxHours, speed);
+        return groups.stream().map(group -> describe(group, entries, hub, hubPoint, pickup, speed, date, rules, window, maxHours)).toList();
     }
 
-    private TripGroupResponseDto describe(Group group, Map<Long, Entry> entries, Location hub, Point hubPoint, boolean pickup, double speed) {
+    private TripGroupResponseDto describe(Group group, Map<Long, Entry> entries, Location hub, Point hubPoint, boolean pickup, double speed,
+                                          LocalDate date, Rules rules, Window window, double maxHours) {
         // Lượt giao đi chiều ngược: hub rồi tới địa chỉ gần hub trước
         List<Candidate> order = pickup ? group.order() : group.order().reversed();
         List<Entry> visits = order.stream().map(c -> entries.get(c.bookingId())).toList();
@@ -121,43 +127,32 @@ public class TripGroupingServiceImpl implements TripGroupingService {
         order.forEach(c -> points.add(c.point()));
         points.add(hubPoint);
 
-        // Lượt đón: tới hub trước giờ chạy sớm nhất của nhóm 3 giờ, tính lùi. Lượt giao: rời hub sau khi chuyến trục cuối của nhóm tới
+        // Lượt đón: tới địa chỉ đầu lúc mở khung giờ của ngày khách chọn. Lượt giao: sau khi chuyến trục cuối của nhóm tới, trong khung giờ giao
+        List<Long> drives = new ArrayList<>();
+        for (int i = 1; i < points.size(); i++) {
+            drives.add(Math.round(TripGroupingPolicy.km(points.get(i - 1), points.get(i)) / speed * 3600));
+        }
+        List<Integer> handled = new ArrayList<>(visits.stream().map(e -> e.horses().size()).toList());
+        int all = handled.stream().mapToInt(Integer::intValue).sum();
+        handled.addFirst(pickup ? 0 : all);
+        handled.add(pickup ? all : 0);
+        Instant start = pickup ? TripSchedulePolicy.pickupDeparture(date, window, BUSINESS_ZONE, drives, rules)
+                : TripSchedulePolicy.deliveryDeparture(visits.stream().map(Entry::arrivalAt).max(Instant::compareTo).orElseThrow()
+                        .plus(TripSchedulePolicy.dwell(all, rules)), window, BUSINESS_ZONE, handled, drives, rules);
+        List<StopTime> times = TripSchedulePolicy.schedule(start, handled, drives, rules);
         List<SuggestedStopDto> stops = new ArrayList<>();
         int count = points.size();
-        Instant[] arrive = new Instant[count];
-        Instant[] leave = new Instant[count];
-        if (pickup) {
-            Instant atHub = visits.stream().map(Entry::departureAt).min(Instant::compareTo).orElseThrow().minus(HUB_ARRIVAL_BEFORE_DEPARTURE);
-            arrive[count - 1] = atHub;
-            leave[count - 1] = atHub.plus(STOP_DWELL);
-            for (int i = count - 2; i >= 0; i--) {
-                leave[i] = arrive[i + 1].minus(drive(points.get(i), points.get(i + 1), speed));
-                arrive[i] = leave[i].minus(STOP_DWELL);
-            }
-        } else {
-            Instant start = visits.stream().map(Entry::arrivalAt).max(Instant::compareTo).orElseThrow().plus(DELIVERY_AFTER_ARRIVAL);
-            arrive[0] = start.minus(STOP_DWELL);
-            leave[0] = start;
-            for (int i = 1; i < count; i++) {
-                arrive[i] = leave[i - 1].plus(drive(points.get(i - 1), points.get(i), speed));
-                leave[i] = arrive[i].plus(STOP_DWELL);
-            }
-        }
-        stops.add(new SuggestedStopDto(hub.getId(), null, TripStopType.HUB, arrive[0], leave[0]));
+        stops.add(new SuggestedStopDto(hub.getId(), null, TripStopType.HUB, times.getFirst().arrival(), times.getFirst().departure()));
         for (int i = 0; i < visits.size(); i++) {
-            stops.add(new SuggestedStopDto(null, visits.get(i).address().getId(), pickup ? TripStopType.PICKUP : TripStopType.DELIVERY, arrive[i + 1], leave[i + 1]));
+            stops.add(new SuggestedStopDto(null, visits.get(i).address().getId(), pickup ? TripStopType.PICKUP : TripStopType.DELIVERY, times.get(i + 1).arrival(), times.get(i + 1).departure()));
         }
-        stops.add(new SuggestedStopDto(hub.getId(), null, TripStopType.HUB, arrive[count - 1], leave[count - 1]));
+        stops.add(new SuggestedStopDto(hub.getId(), null, TripStopType.HUB, times.get(count - 1).arrival(), times.get(count - 1).departure()));
 
         List<GroupBookingDto> rows = visits.stream().map(e -> new GroupBookingDto(e.booking().getId(), e.booking().getCode(), e.address().getId(),
                 e.address().getAddressLine(), e.horses().stream().map(h -> new GroupHorseDto(h.getId(), h.getHorse().getName(),
                         StallSeatPolicy.seats(h.getStallType().getCode()))).toList())).toList();
         int seats = order.stream().mapToInt(Candidate::seats).sum();
-        return new TripGroupResponseDto(seats, round(group.routeKm()), round(group.hours()), rows, stops);
-    }
-
-    private static Duration drive(Point from, Point to, double speed) {
-        return Duration.ofSeconds(Math.round(TripGroupingPolicy.km(from, to) / speed * 3600));
+        return new TripGroupResponseDto(seats, round(group.routeKm()), round(group.hours()), group.hours() > maxHours, rows, stops);
     }
 
     // Giờ chuyến trục tới hub cuối: giờ chạy cộng thời gian dự kiến của tuyến

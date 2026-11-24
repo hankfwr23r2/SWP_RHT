@@ -5,6 +5,8 @@ import com.example.racehorse_transport.dto.dispatch.CrewAssignmentRequestDto;
 import com.example.racehorse_transport.dto.dispatch.CrewCandidateResponseDto;
 import com.example.racehorse_transport.dto.dispatch.DispatchBookingResponseDto;
 import com.example.racehorse_transport.dto.dispatch.HorseLegRequestDto;
+import com.example.racehorse_transport.dto.dispatch.PlannedTripRequestDto;
+import com.example.racehorse_transport.dto.dispatch.PlannedTripResponseDto;
 import com.example.racehorse_transport.dto.dispatch.TripGroupResponseDto;
 import com.example.racehorse_transport.dto.dispatch.TripHorseResponseDto;
 import com.example.racehorse_transport.dto.dispatch.VehicleTripCancelRequestDto;
@@ -17,6 +19,7 @@ import com.example.racehorse_transport.service.CrewAssignmentService;
 import com.example.racehorse_transport.service.DispatchService;
 import com.example.racehorse_transport.service.HorseLegService;
 import com.example.racehorse_transport.service.TripGroupingService;
+import com.example.racehorse_transport.service.TripScheduleService;
 import jakarta.validation.Valid;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -43,6 +46,7 @@ public class DispatchController {
     private final CrewAssignmentService crew;
     private final HorseLegService horseLegs;
     private final TripGroupingService grouping;
+    private final TripScheduleService schedules;
 
     @GetMapping("/vehicle-trips")
     @PreAuthorize("hasAnyRole('COORDINATOR', 'MANAGER')")
@@ -100,6 +104,18 @@ public class DispatchController {
     public ApiResponseDto<List<TripGroupResponseDto>> groupingSuggestions(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date, @RequestParam Long hubId, @RequestParam VehicleTripType tripType) {
         return ApiResponseDto.success(grouping.suggest(date, hubId, tripType), "Gợi ý gom đơn");
+    }
+
+    // Xem trước giờ của một lượt đón, giao, chạy thẳng: hệ thống tính theo đường thật, chưa ghi gì
+    @PostMapping("/dispatch/trip-plans")
+    public ApiResponseDto<PlannedTripResponseDto> planTrip(@Valid @RequestBody PlannedTripRequestDto request) {
+        return ApiResponseDto.success(schedules.plan(request), "Kế hoạch lượt xe");
+    }
+
+    // Lập lượt xe kèm ngựa theo giờ hệ thống tính; lỗi thì không lưu gì
+    @PostMapping("/vehicle-trips/planned")
+    public ResponseEntity<ApiResponseDto<VehicleTripResponseDto>> createPlannedTrip(@Valid @RequestBody PlannedTripRequestDto request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponseDto.success(schedules.create(request), "Đã lập lượt xe"));
     }
 
     @GetMapping("/vehicle-trips/{id}/horse-legs")

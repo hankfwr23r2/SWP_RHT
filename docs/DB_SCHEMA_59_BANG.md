@@ -1368,10 +1368,17 @@ Backend kiểm tra giới hạn khi cập nhật giá trị. Nếu hai cận đ�
 | `DEPARTURE_MIN_FILL_PERCENT` | 1 | 100 |
 | `BALANCE_WAIT_MINUTES` | 5 | 240 |
 | `ADDRESS_MAX_KM_FROM_PROVINCE` | 50 | 500 |
+| `PICKUP_WINDOW_START_HOUR`, `DELIVERY_WINDOW_START_HOUR` | 0 | 23 |
+| `PICKUP_WINDOW_END_HOUR`, `DELIVERY_WINDOW_END_HOUR` | 1 | 24 |
+| `STOP_BASE_MINUTES` | 5 | 120 |
+| `STOP_MINUTES_PER_HORSE` | 1 | 60 |
+| `SCHEDULE_CHANGE_NOTICE_MINUTES` | 5 | 240 |
 
 Bỏ `BALANCE_DUE_DAYS_BEFORE_PICKUP`: số dư không còn trả trước ngày đón.
 
 `ADDRESS_MAX_KM_FROM_PROVINCE` (mặc định 200, nhóm `ADDRESS`): khi lưu sổ địa chỉ, vị trí ghim cách trung tâm tỉnh đã chọn tối đa bao nhiêu km.
+
+Nhóm `SCHEDULE_WINDOW` (24/11/2026): khung giờ đón, giao 6–18, dừng 20 phút cộng 10 phút mỗi con, giờ dời quá 30 phút thì báo khách. `TripSchedulePolicy` tính giờ lượt xe từ các tham số này và đường thật (Valhalla).
 
 Giá trị khởi đầu của các tham số chốt ngày 23/11/2026, thêm bằng migration ở A6b:
 

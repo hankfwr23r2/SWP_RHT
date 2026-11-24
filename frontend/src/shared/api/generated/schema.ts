@@ -1428,6 +1428,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dispatch/trip-plans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["planTrip"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/dispatch/vehicles": {
         parameters: {
             query?: never;
@@ -2836,6 +2852,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vehicle-trips/planned": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["createPlannedTrip"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/vehicle-trips/{id}": {
         parameters: {
             query?: never;
@@ -3544,6 +3576,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponsePlannedTripResponseDto: {
+            data?: components["schemas"]["PlannedTripResponseDto"];
+            message?: string;
+            status?: string;
+        };
         ApiResponsePriceItemResponseDto: {
             data?: components["schemas"]["PriceItemResponseDto"];
             message?: string;
@@ -4217,6 +4254,12 @@ export interface components {
         };
         ExtraChargeRequestDto: {
             costItemIds: number[];
+        };
+        GeoPointDto: {
+            /** Format: double */
+            lat?: number;
+            /** Format: double */
+            lng?: number;
         };
         GroupBookingDto: {
             addressLine?: string;
@@ -5002,6 +5045,12 @@ export interface components {
             /** Format: date */
             validTo: string;
         };
+        PlaceDto: {
+            /** Format: int64 */
+            bookingAddressId?: number;
+            /** Format: int64 */
+            locationId?: number;
+        };
         PlanDto: {
             /** Format: date-time */
             decidedAt?: string;
@@ -5026,6 +5075,53 @@ export interface components {
         };
         PlanRejectRequestDto: {
             reason?: string;
+        };
+        PlannedStopDto: {
+            /** Format: date-time */
+            arrivalAt?: string;
+            /** Format: int64 */
+            bookingAddressId?: number;
+            bookingCode?: string;
+            /** Format: date-time */
+            departureAt?: string;
+            /** Format: int64 */
+            driveMinutes?: number;
+            /** Format: int32 */
+            horses?: number;
+            /** Format: double */
+            km?: number;
+            /** Format: int64 */
+            locationId?: number;
+            name?: string;
+            path?: components["schemas"]["GeoPointDto"][];
+            point?: components["schemas"]["GeoPointDto"];
+            /** Format: int32 */
+            restMinutes?: number;
+            /** @enum {string} */
+            stopType?: "PICKUP" | "DELIVERY" | "HUB" | "REST" | "VITAL_CHECK" | "BORDER" | "QUARANTINE";
+        };
+        PlannedTripRequestDto: {
+            bookingHorseIds: number[];
+            places: components["schemas"]["PlaceDto"][];
+            /** Format: date-time */
+            startAt?: string;
+            /** @enum {string} */
+            tripType: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "DIRECT";
+            /** Format: int64 */
+            vehicleId?: number;
+        };
+        PlannedTripResponseDto: {
+            blocked?: boolean;
+            /** Format: int64 */
+            driveMinutes?: number;
+            /** Format: date-time */
+            endAt?: string;
+            /** Format: double */
+            km?: number;
+            /** Format: date-time */
+            startAt?: string;
+            stops?: components["schemas"]["PlannedStopDto"][];
+            warnings?: ("RIDE_TOO_LONG" | "LATE_FOR_HUB" | "DRIVER_DAY_LIMIT" | "OUTSIDE_WINDOW")[];
         };
         PriceItemCreateRequestDto: {
             /** Format: int64 */
@@ -5638,6 +5734,7 @@ export interface components {
             bookings?: components["schemas"]["GroupBookingDto"][];
             /** Format: double */
             hours?: number;
+            overLimit?: boolean;
             /** Format: double */
             routeKm?: number;
             /** Format: int32 */
@@ -8179,6 +8276,30 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseListTripGroupResponseDto"];
+                };
+            };
+        };
+    };
+    planTrip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlannedTripRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponsePlannedTripResponseDto"];
                 };
             };
         };
@@ -10781,6 +10902,30 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["VehicleTripCreateRequestDto"];
+            };
+        };
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseVehicleTripResponseDto"];
+                };
+            };
+        };
+    };
+    createPlannedTrip: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlannedTripRequestDto"];
             };
         };
         responses: {
