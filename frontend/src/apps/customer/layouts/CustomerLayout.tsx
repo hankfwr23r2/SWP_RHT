@@ -20,6 +20,7 @@ export function CustomerLayout({ children }: { children: ReactNode }) {
   const menu: [string, string][] = [
     ['/portal', t('nav.home')],
     ['/horses', t('nav.horses')],
+    ['/addresses', t('addresses.title')],
     ['/booking/route', t('common.bookNewTrip')],
     ['/orders', t('nav.myOrders')],
     ['/history', t('nav.orderHistory')],

@@ -1,0 +1,12 @@
+.heading { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--space-4); }
+.list { display: grid; gap: var(--space-3); }
+.address { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); }
+.details { min-width: 0; overflow-wrap: anywhere; }
+.details p { margin: var(--space-1) 0 0; color: var(--color-muted); }
+.label { display: flex; align-items: baseline; flex-wrap: wrap; gap: var(--space-2); }
+.label h2 { margin: 0; font-size: var(--text-lg); }
+.actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+
+@media (max-width: 480px) {
+  .address { flex-direction: column; }
+}

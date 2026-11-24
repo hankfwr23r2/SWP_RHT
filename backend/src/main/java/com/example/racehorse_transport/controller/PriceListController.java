@@ -81,6 +81,7 @@ public class PriceListController {
     }
 
     @GetMapping("/billable-services")
+    @PreAuthorize("hasAnyRole('CUSTOMER', 'ADMIN', 'MANAGER')")
     public ApiResponseDto<List<BillableServiceResponseDto>> billableServices() {
         return ApiResponseDto.success(service.billableServices(), "Thành công.");
     }

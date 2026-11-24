@@ -1,189 +1,150 @@
-// Bước 4: xác nhận và gửi đơn. Đơn gửi đi ở trạng thái "Chờ Manager tiếp nhận".
+// Bước 4: khai các bên, xem lại, đồng ý điều khoản và gửi đơn.
 import { useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router'
 import { useTranslation } from 'react-i18next'
-import { useAuth } from '@shared/auth/AuthContext'
-import { VEHICLE_CLASS } from '@shared/config/booking-rules'
-import { COUNTRIES } from '@shared/config/network'
-import { classForHorses, findLocation, fromIsoDay } from '@shared/lib/booking'
-import { formatDate, formatVND } from '@shared/lib/format'
-import { usePageData } from '@shared/routing/pageData'
-import { customerBookingsApi } from '@shared/services/bookings'
-import { SEX_LABEL, type BookingRequiredServiceCategory, type PlaceRef } from '@shared/types/booking'
-import { SERVICE_BILLING_UNIT_LABEL } from '@shared/api/serviceCatalog'
-import { Modal } from '@shared/ui/Modal'
 import { useToast } from '@shared/ui/toast'
-import { BookingShell } from './BookingShell'
-import { InsuranceSummary } from '@shared/ui/InsuranceFields'
-import type { horseListLoader } from '../horses/loaders'
-import { countriesOf, serviceOptionFor, useBookingDraft } from './draft'
-import { isBookingRouteReady } from './routeValidation'
+import { Button } from '@shared/ui/Button'
+import { Card } from '@shared/ui/Card'
+import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
+import { Field } from '@shared/ui/Field'
+import { Input } from '@shared/ui/Input'
+import { PolicyLink } from '@shared/ui/PolicyLink'
+import { Textarea } from '@shared/ui/Textarea'
+import { BookingShell, StepActions } from './BookingShell'
+import { PartyFields } from './components/PartyFields'
+import { ReviewList } from './components/ReviewList'
+import { PARTY_ROLES, useBookingDraft, type PartyDraft, type PartyRole } from './draft'
+import { addressText, findAddress, loadProfile, useBookingData } from './loaders'
+import { horsesReady, routeReady, servicesReady } from './model'
+import { useSubmitBooking } from './useSubmitBooking'
 import s from './Booking.module.css'
 
+const PARTY_FIELDS = ['fullName', 'phone', 'address'] as const
 
 export default function Step4ReviewPage() {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const toast = useToast()
-  const { session } = useAuth()
-  const owner = session!.name
-  const { draft, clear } = useBookingDraft()
-  const { horses, services = [] } = usePageData<typeof horseListLoader>()
-  const [busy, setBusy] = useState(false)
-  const [sent, setSent] = useState(false) // đã gửi: bản nháp bị xóa, không chuyển ngược về bước 1
+  const data = useBookingData()
+  const { draft, save, setParty } = useBookingDraft()
+  const { submit, busy, order, error, fields } = useSubmitBooking()
+  const [submitted, setSubmitted] = useState(false)
+  const [confirming, setConfirming] = useState(false)
 
-  const [placed, setPlaced] = useState<{ id: string; route: string; date: string; horses: number } | null>(null)
+  const pickup = findAddress(data, draft.pickupAddressId)
+  const delivery = findAddress(data, draft.deliveryAddressId)
 
-  // Đã gửi: hiện popup xác nhận, khách chọn xem đơn vừa đặt hoặc chi tiết đơn
-  if (sent) {
-    if (!placed) return null
-    const toList = () => navigate(`/orders?group=confirm&new=${placed.id}`)
+  if (order) {
     return (
-      <Modal onClose={toList} title={<><i className="fa-solid fa-circle-check" style={{ color: 'var(--green)' }} /> {t('bookingWizard.orderPlacedTitle', { id: placed.id })}</>} subtitle={t('bookingWizard.orderPlacedSubtitle')}
-        footer={<button className="btn btn-primary" onClick={toList}>{t('bookingWizard.toMyOrders')}</button>}>
-        <dl className={s.reviewGrid}>
-          <div><dt>{t('booking.summary')}</dt><dd>{placed.route}</dd></div>
-          <div><dt>{t('bookingWizard.departureDate')}</dt><dd>{placed.date}</dd></div>
-          <div><dt>{t('booking.horsesCount')}</dt><dd>{placed.horses} {t('booking.horsesUnit')}</dd></div>
-        </dl>
-        <p className="form-hint" style={{ marginTop: 14 }}>{t('bookingWizard.orderPlacedHint')}</p>
-      </Modal>
+      <div className="page"><div className="wrap">
+        <div className={s.done} role="status">
+          <i className="fa-solid fa-circle-check" aria-hidden="true" />
+          <h1>{t('bookingForm.done.title', { code: order.code })}</h1>
+          <p className={s.hint}>{t('bookingForm.done.hint')}</p>
+          <Button variant="primary" onClick={() => navigate('/orders')}>{t('bookingForm.done.orders')}</Button>
+        </div>
+      </div></div>
     )
   }
-  if (!isBookingRouteReady(draft)) return <Navigate to="/booking/route" replace />
-  const countries = countriesOf(draft)
-  if (!countries || !draft.departDate) return <Navigate to="/booking/route" replace />
-  if (!draft.horseIds.length) return <Navigate to="/booking/horses" replace />
-  if (draft.horseIds.some(id => !draft.config[id]?.insuranceDetails?.option)) return <Navigate to="/booking/services" replace />
+  if (!data.failed && (!routeReady(draft) || !pickup || !delivery)) return <Navigate to="/booking/route" replace />
+  if (!data.failed && !horsesReady(draft)) return <Navigate to="/booking/horses" replace />
+  if (!data.failed && !servicesReady(draft)) return <Navigate to="/booking/services" replace />
 
-  const international = draft.type === 'international'
-  const rows = draft.horseIds.map(id => horses?.find(h => h.id === id)).filter(Boolean) as NonNullable<typeof horses>
-  const serviceSelections = (horseId: string): Record<BookingRequiredServiceCategory, ReturnType<typeof serviceOptionFor>> => {
-    const config = draft.config[horseId]
-    return Object.fromEntries((['stall', 'feed'] as BookingRequiredServiceCategory[]).map(category => [
-      category,
-      serviceOptionFor(services, config, category),
-    ])) as Record<BookingRequiredServiceCategory, ReturnType<typeof serviceOptionFor>>
-  }
-  const serviceSelectionsValid = rows.length > 0
-    && rows.length === draft.horseIds.length
-    && rows.every(h => Object.values(serviceSelections(h.id)).every(Boolean))
-  const place = (id: string, country: PlaceRef['country']): PlaceRef => ({ id, name: findLocation(id)?.name ?? id, country })
-  const origin = place(draft.originId, countries.origin)
-  const dest = place(draft.destId, countries.dest)
-  const cls = VEHICLE_CLASS[classForHorses(rows.length)]
-
-  const submit = async () => {
-    if (busy) return
-    if (!serviceSelectionsValid) {
-      toast('Một dịch vụ đã tạm ngưng hoặc không còn áp dụng. Vui lòng quay lại chọn lại dịch vụ.', 'error')
-      return
-    }
-    if (!draft.consignor.name?.trim() || !draft.consignor.phone?.trim() || !draft.consignor.idNumber?.trim()) {
-      toast('Thông tin người gửi chưa đầy đủ (Họ tên, SĐT, CCCD/Hộ chiếu). Vui lòng bấm "Sửa" để quay lại Bước 1 bổ sung.', 'error')
-      return
-    }
-    if (!draft.consignee.name?.trim() || !draft.consignee.phone?.trim() || !draft.consignee.idNumber?.trim()) {
-      toast('Thông tin người nhận chưa đầy đủ (Họ tên, SĐT, CCCD/Hộ chiếu). Vui lòng bấm "Sửa" để quay lại Bước 1 bổ sung.', 'error')
-      return
-    }
-    setBusy(true)
+  const fillMine = async (role: PartyRole) => {
     try {
-      const order = await customerBookingsApi.create(owner, {
-        type: draft.type as 'domestic' | 'international', origin, dest,
-        departAt: fromIsoDay(draft.departDate), consignor: draft.consignor, consignee: draft.consignee,
-        horses: rows.map(h => {
-          const selectedServices = serviceSelections(h.id)
-          const insurance = draft.config[h.id].insuranceDetails!
-          return {
-            horseId: h.id, name: h.name, microchip: h.microchip, breed: h.breed, sex: h.sex,
-            insurance: { ...insurance, opted: insurance.option === 'assistance' },
-            selectedServiceCodes: Object.fromEntries(Object.entries(selectedServices).map(([key, service]) => [key, service?.serviceCode])) as Partial<Record<BookingRequiredServiceCategory, string>>,
-          }
-        }),
-        limitedLiabilityAccepted: draft.limitedLiabilityAccepted,
-      })
-      setPlaced({ id: order.id, route: `${origin.name.split(' — ')[0]} → ${dest.name.split(' — ')[0]}`, date: formatDate(fromIsoDay(draft.departDate)), horses: rows.length })
-      setSent(true)
-      clear()
-      toast(`Đã gửi đơn ${order.id}`)
-    } catch (err) {
-      toast(err instanceof Error ? err.message : 'Không gửi được đơn.', 'error')
-      setBusy(false)
+      const profile = await loadProfile()
+      const patch: Partial<PartyDraft> = {}
+      if (profile.fullName) patch.fullName = profile.fullName
+      if (profile.phone) patch.phone = profile.phone
+      // Người gửi và người nhận ở nơi đón, nơi giao; hai bên còn lại lấy địa chỉ trong hồ sơ
+      const place = role === 'SHIPPER' ? pickup : role === 'CONSIGNEE' ? delivery : undefined
+      if (place) patch.address = addressText(data, place)
+      else if (profile.address) patch.address = profile.address
+      setParty(role, patch)
+    } catch {
+      toast(t('bookingForm.parties.profileError'), 'error')
     }
+  }
+
+  const serverError = (path: string) => fields[path]
+  const partyErrors = (role: PartyRole) => {
+    const index = PARTY_ROLES.indexOf(role)
+    const errors: Partial<Record<keyof PartyDraft, string>> = {}
+    for (const field of PARTY_FIELDS) {
+      const message = serverError(`parties[${index}].${field}`)
+        ?? (submitted && !draft.parties[role][field].trim() ? t('bookingForm.required') : undefined)
+      if (message) errors[field] = message
+    }
+    return errors
+  }
+
+  const complete = PARTY_ROLES.every(role => PARTY_FIELDS.every(field => draft.parties[role][field].trim()))
+  const review = () => {
+    setSubmitted(true)
+    if (complete && draft.acceptedTerms) {
+      setConfirming(true)
+      return
+    }
+    requestAnimationFrame(() => document.querySelector('[role="alert"]')?.scrollIntoView({ block: 'center', behavior: 'smooth' }))
+  }
+
+  const send = async () => {
+    setConfirming(false)
+    if (pickup && delivery) await submit(draft, pickup, delivery)
   }
 
   return (
-    <BookingShell step={4} title={t('bookingWizard.step4Title')} subtitle={t('bookingWizard.step4Subtitle')}>
-      <div className={`card ${s.review}`} data-card>
-        <div className="card-header"><h3><i className="fa-solid fa-route" /> {t('booking.step1')}</h3><Link to="/booking/route" className={s.editLink}>{t('common.edit')}</Link></div>
-        <dl className={s.reviewGrid}>
-          <div><dt>{t('bookingWizard.tripType')}</dt><dd>{international ? <>{t('bookingWizard.international')} <span className={s.subNote}>({COUNTRIES[countries.origin].name} → {COUNTRIES[countries.dest].name})</span></> : t('bookingWizard.domestic')}</dd></div>
-          <div><dt>{t('bookingWizard.departureDate')}</dt><dd>{formatDate(fromIsoDay(draft.departDate))}</dd></div>
-          <div><dt>{t('booking.origin')}</dt><dd>{origin.name}</dd></div>
-          <div><dt>{t('booking.destination')}</dt><dd>{dest.name}</dd></div>
-          <div>
-            <dt>{t('booking.sender')}</dt>
-            <dd>
-              {draft.consignor.name}
-              <br /><small className="text-muted">{draft.consignor.phone}</small>
-              {draft.consignor.idNumber ? <><br /><small className="text-muted">ID: {draft.consignor.idNumber}</small></> : <><br /><small className="text-danger font-semibold">{i18n.language === 'en' ? 'Missing ID/Passport' : 'Thiếu CCCD/Hộ chiếu'}</small></>}
-            </dd>
-          </div>
-          <div>
-            <dt>{t('booking.receiver')}</dt>
-            <dd>
-              {draft.consignee.name}
-              <br /><small className="text-muted">{draft.consignee.phone}</small>
-              {draft.consignee.idNumber ? <><br /><small className="text-muted">ID: {draft.consignee.idNumber}</small></> : <><br /><small className="text-danger font-semibold">{i18n.language === 'en' ? 'Missing ID/Passport' : 'Thiếu CCCD/Hộ chiếu'}</small></>}
-            </dd>
-          </div>
-        </dl>
+    <BookingShell step={4} title={t('bookingForm.review.title')} subtitle={t('bookingForm.review.subtitle')}>
+      <ReviewList draft={draft} />
+
+      {PARTY_ROLES.map(role => (
+        <PartyFields key={role} role={role} party={draft.parties[role]} errors={partyErrors(role)}
+          onChange={patch => setParty(role, patch)} onUseMine={() => void fillMine(role)}
+          onCopyShipper={role === 'PAYER' || role === 'EMERGENCY_CONTACT'
+            ? () => setParty(role, { ...draft.parties.SHIPPER, identityType: '', identityNumber: '' }) : undefined} />
+      ))}
+
+      <Card title={t('bookingForm.review.more')}>
+        <div className={s.grid}>
+          <Field label={t('bookingForm.review.pickupNote')} hint={t('bookingForm.review.noteHint')}>
+            {control => <Textarea {...control} rows={2} maxLength={2000} value={draft.pickupNote} onChange={event => save({ pickupNote: event.target.value })} />}
+          </Field>
+          <Field label={t('bookingForm.review.deliveryNote')} hint={t('bookingForm.review.noteHint')}>
+            {control => <Textarea {...control} rows={2} maxLength={2000} value={draft.deliveryNote} onChange={event => save({ deliveryNote: event.target.value })} />}
+          </Field>
+          <Field label={t('bookingForm.review.emergencyLimit')} hint={t('bookingForm.review.emergencyHint')}
+            error={serverError('emergencySpendingLimit')} className={s.wide}>
+            {control => <Input {...control} inputMode="numeric" maxLength={13} value={draft.emergencySpendingLimit}
+              onChange={event => save({ emergencySpendingLimit: event.target.value.replace(/\D/g, '') })} />}
+          </Field>
+        </div>
+      </Card>
+
+      <div>
+        <label className={s.check}>
+          <input type="checkbox" checked={draft.acceptedTerms} onChange={event => save({ acceptedTerms: event.target.checked })} />
+          <span>{t('bookingForm.review.terms')} <PolicyLink doc="transport" />, <PolicyLink doc="incident_cost" />.</span>
+        </label>
+        {submitted && !draft.acceptedTerms && <p className={s.error} role="alert">{t('bookingForm.review.termsRequired')}</p>}
       </div>
 
-      <div className="card" data-card>
-        <div className="card-header"><h3><i className="fa-solid fa-horse-head" /> {rows.length} {t('booking.horsesUnit')} · {cls.label} <span className={s.subNote}>({cls.stalls})</span></h3><Link to="/booking/services" className={s.editLink}>{t('common.edit')}</Link></div>
-        {rows.map(h => {
-          const selected = serviceSelections(h.id)
-          return (
-            <div key={h.id} className={s.reviewHorseItem}>
-              <div className={s.reviewHorseHead}>
-                <div>
-                  <span className={s.reviewHorseName}>{h.name}</span>
-                  <span className={s.reviewHorseMeta}>Chip {h.microchip} · {h.breed} · {SEX_LABEL[h.sex]}</span>
-                </div>
-              </div>
-              <div className={s.reviewServicesGrid}>
-                <div className={s.reviewServiceCol}>
-                  <span className={s.reviewServiceLabel}><i className="fa-solid fa-border-all" /> {i18n.language === 'en' ? 'Transporter Stall' : 'Khoang xe'}</span>
-                  <span className={s.reviewServiceVal}>{selected.stall?.serviceName ?? (i18n.language === 'en' ? 'Unavailable' : 'Không còn áp dụng')}</span>
-                  <span className={s.reviewServiceSub}>{selected.stall ? (selected.stall.price > 0
-                    ? `${formatVND(selected.stall.price)} / ${SERVICE_BILLING_UNIT_LABEL[selected.stall.billingUnit]}`
-                    : t('bookingWizard.freeIncluded')) : (i18n.language === 'en' ? 'Please return to select service' : 'Vui lòng quay lại chọn dịch vụ')}</span>
-                </div>
-                <div className={s.reviewServiceCol}>
-                  <span className={s.reviewServiceLabel}><i className="fa-solid fa-wheat-awn" /> {i18n.language === 'en' ? 'Feeding Program' : 'Gói thức ăn'}</span>
-                  <span className={s.reviewServiceVal}>{selected.feed?.serviceName ?? (i18n.language === 'en' ? 'Unavailable' : 'Không còn áp dụng')}</span>
-                  <span className={s.reviewServiceSub}>{selected.feed ? (selected.feed.price > 0
-                    ? `${formatVND(selected.feed.price)} / ${SERVICE_BILLING_UNIT_LABEL[selected.feed.billingUnit]}`
-                    : t('bookingWizard.freeIncluded')) : (i18n.language === 'en' ? 'Please return to select service' : 'Vui lòng quay lại chọn dịch vụ')}</span>
-                </div>
-                <div className={s.reviewServiceCol}>
-                  <span className={s.reviewServiceLabel}><i className="fa-solid fa-shield-halved" /> {i18n.language === 'en' ? 'Transit Insurance' : 'Bảo hiểm chuyến đi'}</span>
-                  <InsuranceSummary insurance={draft.config[h.id].insuranceDetails} />
-                </div>
-              </div>
-            </div>
-          )
-        })}
-      </div>
+      {error && (
+        <div className={`${s.alert} ${s.danger}`} role="alert">
+          <strong>{t('bookingForm.review.failed')}</strong>
+          <span>{error}</span>
+          <span className={s.row}>
+            <Link to="/booking/route" className={s.link}>{t('bookingForm.review.checkRoute')}</Link>
+            <Link to="/booking/horses" className={s.link}>{t('bookingForm.review.checkHorses')}</Link>
+          </span>
+        </div>
+      )}
 
+      <StepActions back="/booking/services" backLabel={t('bookingForm.back')}>
+        <Button variant="primary" size="lg" loading={busy} onClick={review}>{t('bookingForm.review.send')}</Button>
+      </StepActions>
 
-      <div className={s.actions}>
-        <Link to="/booking/services" className="btn btn-ghost"><i className="fa-solid fa-arrow-left" /> {t('bookingWizard.step3Title')}</Link>
-        {!serviceSelectionsValid && <span className="form-error">{i18n.language === 'en' ? 'Services have changed or failed to load. Please return and select again.' : 'Dịch vụ đã thay đổi hoặc không tải được. Hãy quay lại chọn lại dịch vụ.'}</span>}
-        <button type="button" className="btn btn-primary btn-lg" onClick={submit} disabled={busy || !serviceSelectionsValid}><i className="fa-solid fa-paper-plane" /> {busy ? t('bookingWizard.sending') : t('bookingWizard.btnSendOrder')}</button>
-      </div>
+      {confirming && <ConfirmDialog title={t('bookingForm.review.confirmTitle')} message={t('bookingForm.review.confirmMessage')}
+        confirmLabel={t('bookingForm.review.send')} onConfirm={send} onCancel={() => setConfirming(false)} />}
     </BookingShell>
   )
 }

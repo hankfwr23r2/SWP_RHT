@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url'
 import { gzipSync } from 'node:zlib'
 
 const DIST = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist')
-const BUDGET_KB = { 'index.html': 215, 'backoffice.html': 270 }
+const BUDGET_KB = { 'index.html': 214, 'backoffice.html': 225 }
 
 let failed = false
 for (const [page, limit] of Object.entries(BUDGET_KB)) {
