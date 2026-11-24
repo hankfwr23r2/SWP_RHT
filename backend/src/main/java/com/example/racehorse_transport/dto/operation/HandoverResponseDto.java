@@ -9,10 +9,10 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
-// Một lần giao nhận ở điểm dừng: các con cần giao nhận và kết quả quét chip từng con
+// Một lần giao nhận ở điểm dừng: các con cần giao nhận và kết quả quét chip từng con; partyName: đối tác giao hoặc nhận (đại lý ở cửa khẩu)
 public record HandoverResponseDto(
         Long id, HandoverType handoverType, HandoverStatus status, Long tripStopId, String handledByName, Instant waitStartedAt, Instant handedAt, String note,
-        List<HandoverHorseDto> horses) {
+        List<HandoverHorseDto> horses, String partyName) {
 
     // scanned == null: chưa quét
     public record HandoverHorseDto(Long horseLegId, String bookingCode, String horseName, String scannedMicrochip, Boolean microchipMatched, String conditionNote) {
@@ -26,6 +26,8 @@ public record HandoverResponseDto(
     public static HandoverResponseDto from(Handover handover, List<HorseLeg> legs, Map<Long, HandoverHorse> scansByLeg) {
         return new HandoverResponseDto(handover.getId(), handover.getHandoverType(), handover.getStatus(), handover.getTripStop().getId(),
                 handover.getHandledBy().getFullName(), handover.getWaitStartedAt(), handover.getHandedAt(), handover.getNote(),
-                legs.stream().map(leg -> HandoverHorseDto.from(leg, scansByLeg.get(leg.getId()))).toList());
+                legs.stream().map(leg -> HandoverHorseDto.from(leg, scansByLeg.get(leg.getId()))).toList(),
+                handover.getToParty() != null ? handover.getToParty().getDisplayName()
+                        : handover.getFromParty() != null ? handover.getFromParty().getDisplayName() : null);
     }
 }

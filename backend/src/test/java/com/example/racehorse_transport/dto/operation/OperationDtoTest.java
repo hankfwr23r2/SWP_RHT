@@ -23,7 +23,7 @@ class OperationDtoTest {
         TripStop stop = new TripStop();
         Staff staff = new Staff();
 
-        Handover handover = new HandoverCreateRequestDto(HandoverType.PICKUP, "  Ngựa hơi mệt ").toEntity(stop, staff);
+        Handover handover = new HandoverCreateRequestDto(HandoverType.PICKUP, "  Ngựa hơi mệt ", null).toEntity(stop, staff);
 
         assertThat(handover.getId()).isNull();
         assertThat(handover.getStatus()).isNull();
@@ -33,7 +33,7 @@ class OperationDtoTest {
         assertThat(handover.getTripStop()).isSameAs(stop);
         assertThat(handover.getHandledBy()).isSameAs(staff);
         assertThat(handover.getNote()).isEqualTo("Ngựa hơi mệt");
-        assertThat(new HandoverCreateRequestDto(HandoverType.HUB_IN, " ").toEntity(stop, staff).getNote()).isNull();
+        assertThat(new HandoverCreateRequestDto(HandoverType.HUB_IN, " ", null).toEntity(stop, staff).getNote()).isNull();
     }
 
     @Test

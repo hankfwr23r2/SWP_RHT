@@ -44,11 +44,15 @@ class TripExecutionPolicyTest {
         assertThatThrownBy(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.PICKUP, TripStopType.HUB)).hasMessageContaining("PICKUP");
         assertThatThrownBy(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.HUB_IN, TripStopType.REST)).hasMessageContaining("REST");
         assertThatThrownBy(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.RETURN, TripStopType.DELIVERY)).hasMessageContaining("RETURN");
-        assertThatThrownBy(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.AGENT, TripStopType.BORDER)).hasMessageContaining("AGENT");
-        assertThat(TripExecutionPolicy.isBoarding(HandoverType.PICKUP)).isTrue();
-        assertThat(TripExecutionPolicy.isBoarding(HandoverType.HUB_OUT)).isTrue();
-        assertThat(TripExecutionPolicy.isBoarding(HandoverType.DELIVERY)).isFalse();
-        assertThat(TripExecutionPolicy.isBoarding(HandoverType.HUB_IN)).isFalse();
+        assertThatThrownBy(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.AGENT, TripStopType.PICKUP)).hasMessageContaining("AGENT");
+        assertThat(TripExecutionPolicy.isBoarding(HandoverType.PICKUP, false)).isTrue();
+        assertThat(TripExecutionPolicy.isBoarding(HandoverType.HUB_OUT, false)).isTrue();
+        assertThat(TripExecutionPolicy.isBoarding(HandoverType.DELIVERY, false)).isFalse();
+        assertThat(TripExecutionPolicy.isBoarding(HandoverType.HUB_IN, false)).isFalse();
+        // Đại lý giao cho công ty (đơn nhập) thì ngựa lên xe; công ty giao cho đại lý (đơn xuất) thì xuống xe
+        assertThat(TripExecutionPolicy.isBoarding(HandoverType.AGENT, true)).isTrue();
+        assertThat(TripExecutionPolicy.isBoarding(HandoverType.AGENT, false)).isFalse();
+        assertThatCode(() -> TripExecutionPolicy.requireHandoverFitsStop(HandoverType.AGENT, TripStopType.BORDER)).doesNotThrowAnyException();
     }
 
     @Test

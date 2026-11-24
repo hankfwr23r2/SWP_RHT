@@ -59,6 +59,8 @@ public final class TripExecutionPolicy {
             case PICKUP, RETURN -> stopType == TripStopType.PICKUP;
             case DELIVERY -> stopType == TripStopType.DELIVERY;
             case HUB_IN, HUB_OUT -> stopType == TripStopType.HUB;
+            // Bàn giao với đại lý nước ngoài ở cửa khẩu (GĐ7.4)
+            case AGENT -> stopType == TripStopType.BORDER;
             default -> false;
         };
         if (!fits) {
@@ -67,8 +69,9 @@ public final class TripExecutionPolicy {
     }
 
     // Ngựa nhận lên xe (đón, ra hub) hay trả xuống (giao, vào hub)
-    public static boolean isBoarding(HandoverType type) {
-        return type == HandoverType.PICKUP || type == HandoverType.HUB_OUT;
+    // fromPartner: đối tác là bên giao (AGENT đơn nhập: đại lý giao cho công ty, ngựa lên xe)
+    public static boolean isBoarding(HandoverType type, boolean fromPartner) {
+        return type == HandoverType.PICKUP || type == HandoverType.HUB_OUT || type == HandoverType.AGENT && fromPartner;
     }
 
     // Chip đọc được khớp chip trong hồ sơ ngựa, sau khi chuẩn hóa

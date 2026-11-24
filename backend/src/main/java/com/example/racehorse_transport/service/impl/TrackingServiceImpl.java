@@ -164,7 +164,7 @@ public class TrackingServiceImpl implements TrackingService {
 
     private static Stream<Handover> stopHandovers(Journey journey, Long stopId, boolean boarding) {
         return stopId == null ? Stream.empty() : journey.openHandovers().getOrDefault(stopId, List.of()).stream()
-                .filter(handover -> TripExecutionPolicy.isBoarding(handover.getHandoverType()) == boarding);
+                .filter(handover -> TripExecutionPolicy.isBoarding(handover.getHandoverType(), handover.getFromParty() != null) == boarding);
     }
 
     private Journey load(Booking booking) {

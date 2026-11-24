@@ -5,6 +5,7 @@ import com.example.racehorse_transport.entity.enums.EmploymentStatus;
 import com.example.racehorse_transport.entity.enums.VehicleStatus;
 import com.example.racehorse_transport.exception.DispatchRuleException;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -152,5 +153,10 @@ public final class DispatchPolicy {
         if (!Objects.equals(previousEnd, nextStart)) {
             throw new DispatchRuleException("boardTripStopId", "Chặng mới phải bắt đầu ở nơi chặng trước của con ngựa kết thúc.", true);
         }
+    }
+
+    // Quy tắc #26: đối tác chỉ được tham chiếu khi có vai trò đúng loại còn hiệu lực vào ngày đó
+    public static boolean roleValidOn(LocalDate validFrom, LocalDate validTo, LocalDate day) {
+        return (validFrom == null || !validFrom.isAfter(day)) && (validTo == null || !validTo.isBefore(day));
     }
 }
