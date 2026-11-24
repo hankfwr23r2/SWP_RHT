@@ -1,10 +1,8 @@
 // Chi tiết một lượt xe: điểm dừng, tổ lái (phân công, gỡ), ngựa trên xe (xếp, gỡ), hủy lượt
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { dispatchApi, type CrewAssignment, type CrewRole, type DispatchBooking, type TripHorse } from '@shared/api/dispatch'
 import { useLoad } from '@shared/hooks/useLoad'
-import { formatDateTime } from '@shared/lib/format'
-import { Badge } from '@shared/ui/Badge'
 import { Button } from '@shared/ui/Button'
 import { ConfirmDialog } from '@shared/ui/ConfirmDialog'
 import { ErrorState } from '@shared/ui/ErrorState'
@@ -17,6 +15,9 @@ import { Textarea } from '@shared/ui/Textarea'
 import { useToast } from '@shared/ui/toast'
 import { TRIP_STATUS_TONE, eligibleHorses, peakSeats } from './dispatchModel'
 import { StallPlanSection } from './StallPlanSection'
+import { TripMap } from './TripMap'
+import { TripTimeline } from './TripTimeline'
+import b from './Board.module.css'
 import s from './Dispatch.module.css'
 
 interface Props {
@@ -61,6 +62,10 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
     }
   }
 
+  const mapStops = useMemo(() => (data?.trip.stops ?? []).map(stop => ({
+    name: stop.locationName ?? `${stop.bookingCode}: ${stop.addressLine}`, latitude: stop.latitude, longitude: stop.longitude,
+  })), [data])
+
   if (!loaded) return <Modal title={t('dispatch.trips.view')} onClose={onClose} wide><Skeleton variant="block" lines={4} /></Modal>
   if (error || !data) return <Modal title={t('dispatch.trips.view')} onClose={onClose} wide><ErrorState message={error?.message} onRetry={reload} /></Modal>
 
@@ -88,17 +93,16 @@ export function TripDetailModal({ tripId, bookings, onClose, onChanged }: Props)
 
       <section className={s.section} aria-labelledby="trip-stops">
         <h3 id="trip-stops" className={s.sectionTitle}>{t('dispatch.detail.stops')}</h3>
-        <ol className={s.list}>
-          {(trip.stops ?? []).map(stop => (
-            <li key={stop.id} className={s.item}>
-              <span className={s.itemMain}>
-                <strong>{stop.sequenceNumber}. {stop.locationName ?? `${stop.bookingCode}: ${stop.addressLine}`}</strong>
-                <span className={s.muted}>{stop.plannedArrivalAt ? formatDateTime(new Date(stop.plannedArrivalAt)) : ''}</span>
-              </span>
-              <Badge>{stop.stopType}</Badge>
-            </li>
-          ))}
-        </ol>
+        <div className={b.plan}>
+          <TripTimeline label={t('dispatch.detail.stops')} stops={(trip.stops ?? []).map((stop, index, all) => {
+            const before = all[index - 1]?.plannedDepartureAt
+            return {
+              key: stop.id ?? index, name: mapStops[index]?.name ?? '', arrivalAt: stop.plannedArrivalAt, departureAt: stop.plannedDepartureAt,
+              driveMinutes: before && stop.plannedArrivalAt ? Math.round((Date.parse(stop.plannedArrivalAt) - Date.parse(before)) / 60_000) : 0,
+            }
+          })} />
+          <TripMap stops={mapStops} />
+        </div>
       </section>
 
       <section className={s.section} aria-labelledby="trip-crew">

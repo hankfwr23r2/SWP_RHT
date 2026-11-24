@@ -1,6 +1,45 @@
 // Trang của điều phối viên
 export const coordinator = {
   dispatch: {
+    "board": {
+      "tab": "Week board",
+      "group": "Group automatically",
+      "previous": "Previous week",
+      "next": "Next week",
+      "filter": "Filter orders",
+      "waiting": "To plan ({{count}})",
+      "all": "All ({{count}})",
+      "nothing": "Nothing left to plan",
+      "pickupOn": "Pickup {{date}}",
+      "runsAt": "linehaul at {{at}}",
+      "need": "Needs {{leg}}",
+      "complete": "All legs planned",
+      "journey": "Journey",
+      "seats": "{{count}} places",
+      "free": "Free all week",
+      "noDriver": "No driver"
+    },
+    "plan": {
+      "preview": "See times and map",
+      "failed": "Times could not be calculated",
+      "manual": "Enter times by hand",
+      "backToAuto": "Back to automatic times",
+      "summary": "About {{km}} km, {{minutes}} minutes of driving",
+      "warnings": "Plan warnings",
+      "timeline": "Times at each stop",
+      "start": "Leave the first stop at",
+      "recalculate": "Recalculate",
+      "auto": "Let the system choose",
+      "drive": "Drive {{minutes}} min",
+      "rest": "rest {{minutes}} min",
+      "horses": "Horses loaded or unloaded: {{count}}",
+      "warning": {
+        "RIDE_TOO_LONG": "A horse stays on the truck longer than the one-way driving limit.",
+        "LATE_FOR_HUB": "Horses reach the hub after the linehaul check-in deadline.",
+        "DRIVER_DAY_LIMIT": "The trip exceeds the daily driving limit.",
+        "OUTSIDE_WINDOW": "A pickup or delivery is outside the allowed hours."
+      }
+    },
     "stays": {
       "collect": "Set pickup time",
       "collectTitle": "Consignee pickup time · {{horse}} · {{code}}",
@@ -52,7 +91,6 @@ export const coordinator = {
     "weekFrom": "Week starting",
     "tabsLabel": "Dispatch views",
     "tabBookings": "Bookings to dispatch",
-    "tabTrips": "Vehicle trips",
     "newTrip": "New trip",
     "loadError": "Could not load dispatch data",
     "grouping": {
@@ -65,8 +103,7 @@ export const coordinator = {
       "emptyDescription": "No company pickups or deliveries at this hub on that day, or the horses already have legs.",
       "groupTitle": "Group {{n}} · {{count}} bookings",
       "summary": "{{seats}} seats · about {{km}} km · about {{hours}} h (estimate)",
-      "window": "Leaves hub {{start}}, back {{end}}",
-      "overHours": "Over 4 hours",
+      "overHours": "Over the one-way driving limit",
       "vehicle": "Vehicle",
       "approve": "Create trip",
       "created": "Trip {{code}} created and horses assigned"
@@ -203,6 +240,9 @@ export const coordinator = {
       "locked": "This trip has started or was cancelled and cannot be changed."
     },
     "create": {
+      "hub": "Start and end hub",
+      "bookings": "Orders on this trip",
+      "noBookings": "No order needs this leg this week.",
       "title": "New vehicle trip",
       "type": "Trip type",
       "vehicle": "Vehicle",

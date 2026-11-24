@@ -24,7 +24,8 @@ test('điều phối hẹn giờ khách tự chở ngựa tới hub', async ({ p
   })
   await page.goto('/backoffice/coordinator/dispatch')
 
-  await page.getByRole('row', { name: /Sao Mai/ }).getByRole('button', { name: 'Hẹn nhận tại hub' }).click({ timeout: 15_000 })
+  await page.getByRole('button', { name: /^Tất cả/ }).click({ timeout: 15_000 })
+  await page.getByRole('listitem').filter({ hasText: 'Sao Mai' }).getByRole('button', { name: 'Hẹn nhận tại hub' }).first().click()
   const dialog = page.getByRole('dialog', { name: 'Hẹn nhận tại hub · Sao Mai · BK-AAAA0002' })
   await expect(dialog.getByRole('button', { name: 'Hẹn giờ' })).toBeDisabled()
   await dialog.getByLabel('Giờ hẹn').fill('2031-03-05T15:00')

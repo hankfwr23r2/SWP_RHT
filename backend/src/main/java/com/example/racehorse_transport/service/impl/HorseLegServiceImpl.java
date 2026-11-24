@@ -21,6 +21,7 @@ import com.example.racehorse_transport.exception.DispatchRuleException;
 import com.example.racehorse_transport.exception.ResourceNotFoundException;
 import com.example.racehorse_transport.policy.DispatchPolicy;
 import com.example.racehorse_transport.policy.DispatchPolicy.Occupancy;
+import com.example.racehorse_transport.policy.LegNeedsPolicy;
 import com.example.racehorse_transport.policy.StallSeatPolicy;
 import com.example.racehorse_transport.repository.BookingAddressRepository;
 import com.example.racehorse_transport.repository.BookingHorseRepository;
@@ -73,7 +74,12 @@ public class HorseLegServiceImpl implements HorseLegService {
             Map<Long, List<HorseLegResponseDto>> legsByHorse = legs.findByBookingHorse_IdInOrderByBookingHorse_IdAscSequenceNumberAsc(
                             lines.stream().map(BookingHorse::getId).toList()).stream()
                     .collect(Collectors.groupingBy(l -> l.getBookingHorse().getId(), Collectors.mapping(HorseLegResponseDto::from, Collectors.toList())));
-            List<HorseDto> horses = lines.stream().map(line -> HorseDto.from(line, legsByHorse.getOrDefault(line.getId(), List.of()))).toList();
+            List<HorseDto> horses = lines.stream().map(line -> {
+                List<HorseLegResponseDto> own = legsByHorse.getOrDefault(line.getId(), List.of());
+                return HorseDto.from(line, own, LegNeedsPolicy.missing(line.getStatus(), booking.getBookingType(), booking.getDeparture() != null,
+                        booking.getPickupMethod(), booking.getDeliveryMethod(),
+                        own.stream().filter(leg -> !INACTIVE.contains(leg.status())).map(HorseLegResponseDto::legType).toList()));
+            }).toList();
             result.add(DispatchBookingResponseDto.from(booking, addresses.get(AddressRole.PICKUP), addresses.get(AddressRole.DELIVERY), horses));
         }
         return result;

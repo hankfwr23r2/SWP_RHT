@@ -1,18 +1,20 @@
-// Lập lượt xe: trục theo chuyến (điểm dừng chép từ tuyến), hoặc đón, giao, chạy thẳng, chuyển xe với điểm dừng tự lập
+// Lập lượt xe: lượt trục theo chuyến; lượt đón, giao, chạy thẳng chọn đơn rồi hệ thống tính giờ; chuyển xe nhập giờ tay
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { dispatchApi, type DispatchBooking, type TripType, type VehicleTrip } from '@shared/api/dispatch'
+import { dispatchApi, type DispatchBooking, type PlannedTrip, type TripType, type VehicleTrip } from '@shared/api/dispatch'
 import { useLoad } from '@shared/hooks/useLoad'
-import { formatDateTime } from '@shared/lib/format'
+import { formatDate, formatDateTime } from '@shared/lib/format'
 import { Button } from '@shared/ui/Button'
 import { ErrorState } from '@shared/ui/ErrorState'
 import { Field } from '@shared/ui/Field'
-import { Input } from '@shared/ui/Input'
 import { Modal } from '@shared/ui/Modal'
 import { Select } from '@shared/ui/Select'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { useToast } from '@shared/ui/toast'
-import { localToIso } from './dispatchModel'
+import { horsesNeeding, hubsOf, placesFor } from './dispatchModel'
+import { emptyStop, ManualStops, stopsReady, toStops, type StopDraft } from './ManualStops'
+import { TripPlanPreview } from './TripPlanPreview'
+import b from './Board.module.css'
 import s from './Dispatch.module.css'
 
 interface Props {
@@ -23,12 +25,7 @@ interface Props {
   onCreated: (trip: VehicleTrip) => void
 }
 
-// Nơi dừng: "L<id>" điểm mạng lưới, "P<id>" địa chỉ đón, "D<id>" địa chỉ giao
-interface StopDraft { place: string; arrival: string; leave: string }
 const TRIP_TYPES: TripType[] = ['PICKUP', 'LINEHAUL', 'DELIVERY', 'DIRECT', 'TRANSFER']
-const emptyStop = (): StopDraft => ({ place: '', arrival: '', leave: '' })
-// Loại điểm dừng theo loại địa điểm của mạng lưới
-const STOP_TYPE_OF_LOCATION: Record<string, 'HUB' | 'REST' | 'BORDER'> = { REST_STOP: 'REST', BORDER_GATE: 'BORDER' }
 
 export function CreateTripModal({ bookings, weekFrom, weekTo, onClose, onCreated }: Props) {
   const { t } = useTranslation()
@@ -36,6 +33,11 @@ export function CreateTripModal({ bookings, weekFrom, weekTo, onClose, onCreated
   const [tripType, setTripType] = useState<TripType>('PICKUP')
   const [vehicleId, setVehicleId] = useState('')
   const [departureId, setDepartureId] = useState('')
+  const [hubChoice, setHubChoice] = useState('')
+  const [chosen, setChosen] = useState<number[]>([])
+  const [startAt, setStartAt] = useState<string>()
+  const [plan, setPlan] = useState<PlannedTrip>()
+  const [manual, setManual] = useState(false)
   const [stops, setStops] = useState<StopDraft[]>([emptyStop(), emptyStop(), emptyStop()])
   const [busy, setBusy] = useState(false)
   const { data, loaded, error, reload } = useLoad(async () => {
@@ -43,22 +45,39 @@ export function CreateTripModal({ bookings, weekFrom, weekTo, onClose, onCreated
     return { vehicles, departures, locations }
   }, [weekFrom, weekTo], { toastOnError: false })
 
+  const hubs = hubsOf(data?.locations ?? [], data?.vehicles ?? [])
+  const hubId = Number(hubChoice || hubs[0]?.id || 0)
+  const byHand = manual || tripType === 'TRANSFER'
+  const eligible = bookings.filter(booking => horsesNeeding(tripType, [booking]).length > 0)
+  const picked = eligible.filter(booking => chosen.includes(booking.id ?? 0))
+  const request = picked.length && hubId ? { tripType, places: placesFor(tripType, hubId, picked), bookingHorseIds: horsesNeeding(tripType, picked), startAt } : undefined
+  const reset = (type: TripType) => { setTripType(type); setChosen([]); setStartAt(undefined); setPlan(undefined); setManual(false) }
+  const toggle = (id: number) => { setPlan(undefined); setStartAt(undefined); setChosen(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]) }
+
+  const ready = vehicleId !== '' && (tripType === 'LINEHAUL' ? departureId !== '' : byHand ? stopsReady(stops) : !!request && !!plan && !plan.blocked)
+  const submit = async () => {
+    setBusy(true)
+    try {
+      const trip = tripType === 'LINEHAUL' ? await dispatchApi.createTrip({ tripType, vehicleId: Number(vehicleId), departureId: Number(departureId) })
+        : byHand ? await dispatchApi.createTrip({ tripType, vehicleId: Number(vehicleId), stops: toStops(stops, data?.locations ?? []) })
+          : await dispatchApi.createPlannedTrip({ ...request!, vehicleId: Number(vehicleId) })
+      toast(t('dispatch.done.created', { code: trip.code }), 'success')
+      onCreated(trip)
+    } catch (e) {
+      toast(e instanceof Error ? e.message : String(e), 'error')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const body = () => {
     if (!loaded) return <Skeleton variant="block" lines={3} />
     if (error || !data) return <ErrorState message={error?.message} onRetry={reload} />
-    const places = [
-      ...data.locations.map(location => ({ value: `L${location.id}`, label: t('dispatch.create.placeHub', { name: location.name }) })),
-      ...bookings.flatMap(booking => [
-        booking.pickupAddress && { value: `P${booking.pickupAddress.id}`, label: t('dispatch.create.placePickup', { code: booking.code, line: booking.pickupAddress.addressLine }) },
-        booking.deliveryAddress && { value: `D${booking.deliveryAddress.id}`, label: t('dispatch.create.placeDelivery', { code: booking.code, line: booking.deliveryAddress.addressLine }) },
-      ].filter(Boolean) as { value: string; label: string }[]),
-    ]
-    const update = (index: number, patch: Partial<StopDraft>) => setStops(current => current.map((stop, i) => (i === index ? { ...stop, ...patch } : stop)))
     return (
       <div className={s.section}>
         <div className={s.form}>
           <Field label={t('dispatch.create.type')} required>
-            {c => <Select {...c} value={tripType} onChange={value => setTripType(value as TripType)}
+            {c => <Select {...c} value={tripType} onChange={value => reset(value as TripType)}
               options={TRIP_TYPES.map(type => ({ value: type, label: t(`dispatch.tripType.${type}`) }))} />}
           </Field>
           <Field label={t('dispatch.create.vehicle')} required>
@@ -79,64 +98,37 @@ export function CreateTripModal({ bookings, weekFrom, weekTo, onClose, onCreated
                 }))} />}
             </Field>
           )}
+          {tripType !== 'LINEHAUL' && !byHand && (
+            <Field label={t('dispatch.create.hub')} required>
+              {c => <Select {...c} value={hubId ? String(hubId) : ''} onChange={value => { setPlan(undefined); setHubChoice(value) }} placeholder={t('dispatch.detail.choose')}
+                options={hubs.map(hub => ({ value: String(hub.id), label: hub.name ?? '' }))} />}
+            </Field>
+          )}
         </div>
-        {tripType !== 'LINEHAUL' && (
+        {tripType !== 'LINEHAUL' && !byHand && (
           <fieldset className={`${s.section} ${s.fieldset}`}>
-            <legend className={s.sectionTitle}>{t('dispatch.create.stops')}</legend>
-            <p className={s.muted}>{t('dispatch.create.stopsHint')}</p>
-            {stops.map((stop, index) => (
-              <div key={index} className={s.stopRow}>
-                <Field label={t('dispatch.create.place', { n: index + 1 })} required>
-                  {c => <Select {...c} value={stop.place} onChange={value => update(index, { place: value })} placeholder={t('dispatch.detail.choose')} options={places} />}
-                </Field>
-                <Field label={t('dispatch.create.arrival')} required>
-                  {c => <Input {...c} type="datetime-local" value={stop.arrival} onChange={e => update(index, { arrival: e.target.value })} />}
-                </Field>
-                <Field label={t('dispatch.create.leave')} required>
-                  {c => <Input {...c} type="datetime-local" value={stop.leave} onChange={e => update(index, { leave: e.target.value })} />}
-                </Field>
-                <Button icon={<i className="fa-solid fa-trash" />} aria-label={t('dispatch.create.removeStop', { n: index + 1 })}
-                  disabled={stops.length <= 2} onClick={() => setStops(current => current.filter((_, i) => i !== index))} />
-              </div>
-            ))}
-            <div>
-              <Button icon={<i className="fa-solid fa-plus" />} onClick={() => setStops(current => [...current, emptyStop()])}>{t('dispatch.create.addStop')}</Button>
-            </div>
+            <legend className={s.sectionTitle}>{t('dispatch.create.bookings')}</legend>
+            {!eligible.length && <p className={s.muted}>{t('dispatch.create.noBookings')}</p>}
+            <ul className={b.pickList}>
+              {eligible.map(booking => (
+                <li key={booking.id}>
+                  <label className={b.pick}>
+                    <input type="checkbox" checked={chosen.includes(booking.id ?? 0)} onChange={() => toggle(booking.id ?? 0)} />
+                    <span><strong>{booking.code}</strong> · {(booking.horses ?? []).map(horse => horse.horseName).join(', ')}<br />
+                      {tripType === 'DELIVERY' ? booking.deliveryAddress?.addressLine : booking.pickupAddress?.addressLine}
+                      {booking.requestedPickupDate && ` · ${formatDate(new Date(booking.requestedPickupDate))}`}</span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+            <div><Button variant="ghost" size="sm" onClick={() => setManual(true)}>{t('dispatch.plan.manual')}</Button></div>
           </fieldset>
         )}
+        {request && !byHand && <TripPlanPreview request={request} onPlan={setPlan} onStart={setStartAt} onManual={() => setManual(true)} />}
+        {tripType !== 'LINEHAUL' && byHand && <ManualStops stops={stops} onChange={setStops} bookings={bookings} locations={data.locations} />}
+        {manual && tripType !== 'TRANSFER' && <div><Button variant="ghost" size="sm" onClick={() => setManual(false)}>{t('dispatch.plan.backToAuto')}</Button></div>}
       </div>
     )
-  }
-
-  const ready = vehicleId !== '' && (tripType === 'LINEHAUL' ? departureId !== '' : stops.every(stop => stop.place && stop.arrival && stop.leave))
-  const submit = async () => {
-    setBusy(true)
-    try {
-      const trip = await dispatchApi.createTrip(tripType === 'LINEHAUL'
-        ? { tripType, vehicleId: Number(vehicleId), departureId: Number(departureId) }
-        : {
-            tripType,
-            vehicleId: Number(vehicleId),
-            stops: stops.map(stop => {
-              const id = Number(stop.place.slice(1))
-              const kind = stop.place[0]
-              return {
-                locationId: kind === 'L' ? id : undefined,
-                bookingAddressId: kind === 'L' ? undefined : id,
-                stopType: kind === 'P' ? 'PICKUP' : kind === 'D' ? 'DELIVERY'
-                  : STOP_TYPE_OF_LOCATION[data?.locations.find(location => location.id === id)?.locationType ?? ''] ?? 'HUB',
-                plannedArrivalAt: localToIso(stop.arrival),
-                plannedDepartureAt: localToIso(stop.leave),
-              }
-            }),
-          })
-      toast(t('dispatch.done.created', { code: trip.code }), 'success')
-      onCreated(trip)
-    } catch (e) {
-      toast(e instanceof Error ? e.message : String(e), 'error')
-    } finally {
-      setBusy(false)
-    }
   }
 
   return (

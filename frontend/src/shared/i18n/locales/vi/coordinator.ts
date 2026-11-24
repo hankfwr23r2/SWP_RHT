@@ -1,6 +1,45 @@
 // Trang của điều phối viên
 export const coordinator = {
   dispatch: {
+    "board": {
+      "tab": "Bảng tuần",
+      "group": "Gom tự động",
+      "previous": "Tuần trước",
+      "next": "Tuần sau",
+      "filter": "Lọc đơn",
+      "waiting": "Chờ xếp ({{count}})",
+      "all": "Tất cả ({{count}})",
+      "nothing": "Không còn đơn chờ xếp",
+      "pickupOn": "Đón {{date}}",
+      "runsAt": "trục chạy {{at}}",
+      "need": "Cần {{leg}}",
+      "complete": "Đã đủ chặng",
+      "journey": "Hành trình",
+      "seats": "{{count}} chỗ",
+      "free": "Rảnh cả tuần",
+      "noDriver": "Thiếu tài xế"
+    },
+    "plan": {
+      "preview": "Xem giờ và bản đồ",
+      "failed": "Chưa tính được giờ",
+      "manual": "Nhập giờ tay",
+      "backToAuto": "Quay lại tự tính giờ",
+      "summary": "Khoảng {{km}} km, lái {{minutes}} phút",
+      "warnings": "Cảnh báo kế hoạch",
+      "timeline": "Giờ từng điểm",
+      "start": "Giờ rời điểm đầu",
+      "recalculate": "Tính lại",
+      "auto": "Để hệ thống chọn giờ",
+      "drive": "Lái {{minutes}} phút",
+      "rest": "nghỉ {{minutes}} phút",
+      "horses": "{{count}} ngựa lên hoặc xuống",
+      "warning": {
+        "RIDE_TOO_LONG": "Có con ngựa ở trên xe quá giới hạn giờ lái một chiều.",
+        "LATE_FOR_HUB": "Ngựa tới hub sau hạn có mặt của chuyến trục.",
+        "DRIVER_DAY_LIMIT": "Lượt xe lái quá giới hạn giờ trong ngày.",
+        "OUTSIDE_WINDOW": "Có điểm đón hoặc giao ngoài khung giờ."
+      }
+    },
     "stays": {
       "collect": "Hẹn giờ nhận",
       "collectTitle": "Hẹn người nhận tới · {{horse}} · {{code}}",
@@ -52,7 +91,6 @@ export const coordinator = {
     "weekFrom": "Tuần bắt đầu từ",
     "tabsLabel": "Nội dung điều độ",
     "tabBookings": "Đơn chờ xếp xe",
-    "tabTrips": "Lượt xe",
     "newTrip": "Lập lượt xe",
     "loadError": "Không tải được dữ liệu điều độ",
     "grouping": {
@@ -65,8 +103,7 @@ export const coordinator = {
       "emptyDescription": "Không có đơn công ty đón hoặc giao ở hub này trong ngày, hoặc các con đã có chặng.",
       "groupTitle": "Nhóm {{n}} · {{count}} đơn",
       "summary": "{{seats}} chỗ · khoảng {{km}} km · khoảng {{hours}} giờ (ước lượng)",
-      "window": "Rời hub {{start}}, về hub {{end}}",
-      "overHours": "Quá 4 giờ",
+      "overHours": "Quá giới hạn giờ lái một chiều",
       "vehicle": "Xe",
       "approve": "Lập lượt xe",
       "created": "Đã lập lượt xe {{code}} và xếp ngựa"
@@ -203,6 +240,9 @@ export const coordinator = {
       "locked": "Lượt xe đã chạy hoặc đã hủy, không sửa được."
     },
     "create": {
+      "hub": "Hub xuất phát và về",
+      "bookings": "Đơn trong lượt",
+      "noBookings": "Không có đơn nào cần chặng này trong tuần.",
       "title": "Lập lượt xe",
       "type": "Loại lượt",
       "vehicle": "Xe",

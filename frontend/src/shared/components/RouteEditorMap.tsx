@@ -8,8 +8,9 @@ import s from './RouteEditorMap.module.css'
 
 type Point = { id: string; name: string; latitude: number; longitude: number }
 
-export default function RouteEditorMap({ points, orderedIds, onSelect }: {
-  points: Point[]; orderedIds: string[]; onSelect?: (id: string) => void
+// path: đường đi thật; thiếu thì nối thẳng các điểm theo thứ tự
+export default function RouteEditorMap({ points, orderedIds, onSelect, path }: {
+  points: Point[]; orderedIds: string[]; onSelect?: (id: string) => void; path?: [number, number][]
 }) {
   const { t } = useTranslation()
   const host = useRef<HTMLDivElement>(null)
@@ -45,7 +46,8 @@ export default function RouteEditorMap({ points, orderedIds, onSelect }: {
       const point = byId.get(id)
       return point ? [[point.latitude, point.longitude] as L.LatLngTuple] : []
     })
-    if (route.length > 1) L.polyline(route, { className: s.line, dashArray: '7 6' }).addTo(group)
+    if (path?.length) L.polyline(path, { className: s.line, fill: false }).addTo(group)
+    else if (route.length > 1) L.polyline(route, { className: s.line, dashArray: '7 6' }).addTo(group)
 
     for (const point of points) {
       const position: L.LatLngTuple = [point.latitude, point.longitude]
@@ -61,9 +63,9 @@ export default function RouteEditorMap({ points, orderedIds, onSelect }: {
       }).addTo(group).bindTooltip(label)
       if (onSelect) marker.on('click', () => onSelect(point.id))
     }
-    const bounds = L.latLngBounds(onSelect || !route.length ? points.map(point => [point.latitude, point.longitude]) : route)
+    const bounds = L.latLngBounds(onSelect || !route.length ? points.map(point => [point.latitude, point.longitude]) : path?.length ? [...route, ...path] : route)
     if (bounds.isValid()) map.current.fitBounds(bounds, { padding: [24, 24], maxZoom: 12, animate: false })
-  }, [points, orderedIds, onSelect, attempt])
+  }, [points, orderedIds, onSelect, path, attempt])
 
   return failed
     ? <ErrorState onRetry={() => { setFailed(false); setAttempt(current => current + 1) }} />

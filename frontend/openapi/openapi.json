@@ -3726,6 +3726,13 @@
           "microchip" : {
             "type" : "string"
           },
+          "missingLegs" : {
+            "items" : {
+              "enum" : [ "PICKUP", "LINEHAUL", "DELIVERY", "TRANSFER", "RETURN", "DIRECT" ],
+              "type" : "string"
+            },
+            "type" : "array"
+          },
           "seats" : {
             "format" : "int32",
             "type" : "integer"
@@ -7431,12 +7438,18 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "latitude" : {
+            "type" : "number"
+          },
           "locationId" : {
             "format" : "int64",
             "type" : "integer"
           },
           "locationName" : {
             "type" : "string"
+          },
+          "longitude" : {
+            "type" : "number"
           },
           "plannedArrivalAt" : {
             "format" : "date-time",

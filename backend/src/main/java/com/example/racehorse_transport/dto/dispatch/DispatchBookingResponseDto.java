@@ -7,6 +7,7 @@ import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 import com.example.racehorse_transport.entity.enums.BookingType;
 import com.example.racehorse_transport.entity.enums.TransferMethod;
+import com.example.racehorse_transport.entity.enums.HorseLegType;
 import com.example.racehorse_transport.policy.StallSeatPolicy;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -27,10 +28,11 @@ public record DispatchBookingResponseDto(
     }
 
     public record HorseDto(Long bookingHorseId, String horseName, String microchip, String stallTypeCode, Integer seats,
-                           BookingHorseStatus status, List<HorseLegResponseDto> legs) {
-        public static HorseDto from(BookingHorse line, List<HorseLegResponseDto> legs) {
+                           BookingHorseStatus status, List<HorseLegResponseDto> legs, List<HorseLegType> missingLegs) {
+        // missingLegs do service tính từ LegNeedsPolicy
+        public static HorseDto from(BookingHorse line, List<HorseLegResponseDto> legs, List<HorseLegType> missingLegs) {
             return new HorseDto(line.getId(), line.getHorse().getName(), line.getHorse().getMicrochip(), line.getStallType().getCode(),
-                    StallSeatPolicy.seats(line.getStallType().getCode()), line.getStatus(), legs);
+                    StallSeatPolicy.seats(line.getStallType().getCode()), line.getStatus(), legs, missingLegs);
         }
     }
 

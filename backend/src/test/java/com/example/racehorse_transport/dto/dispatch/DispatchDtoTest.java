@@ -204,7 +204,7 @@ class DispatchDtoTest {
         assertThat(onTrip.seats()).isEqualTo(2);
 
         var waiting = DispatchBookingResponseDto.from(booking, null, delivery,
-                List.of(DispatchBookingResponseDto.HorseDto.from(line, List.of(legDto))));
+                List.of(DispatchBookingResponseDto.HorseDto.from(line, List.of(legDto), List.of())));
         assertThat(waiting.routeCode()).isEqualTo("HCM-DN");
         assertThat(waiting.pickupAddress()).isNull();
         assertThat(waiting.deliveryAddress().addressLine()).isEqualTo("Trại Huế");

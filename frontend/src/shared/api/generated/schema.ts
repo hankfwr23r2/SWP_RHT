@@ -4428,6 +4428,7 @@ export interface components {
             horseName?: string;
             legs?: components["schemas"]["HorseLegResponseDto"][];
             microchip?: string;
+            missingLegs?: ("PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "RETURN" | "DIRECT")[];
             /** Format: int32 */
             seats?: number;
             stallTypeCode?: string;
@@ -5812,9 +5813,11 @@ export interface components {
             bookingCode?: string;
             /** Format: int64 */
             id?: number;
+            latitude?: number;
             /** Format: int64 */
             locationId?: number;
             locationName?: string;
+            longitude?: number;
             /** Format: date-time */
             plannedArrivalAt?: string;
             /** Format: date-time */

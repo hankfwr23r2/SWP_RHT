@@ -5,7 +5,7 @@ const booking = {
   id: 1, code: 'BK-AAAA0001', bookingType: 'INTERPROVINCE', status: 'CONFIRMED', requestedPickupDate: '2031-03-03',
   departureId: 7, routeCode: 'HCM-DN', plannedDepartureAt: '2031-03-05T23:00:00Z',
   pickupAddress: { id: 100, addressLine: 'Trại Long Thành' }, deliveryAddress: { id: 101, addressLine: 'Trại Huế' },
-  horses: [{ bookingHorseId: 50, horseName: 'Sao Mai', microchip: '985000000100002', stallTypeCode: 'STANDARD', seats: 1, status: 'ACTIVE', legs: [] }],
+  horses: [{ bookingHorseId: 50, horseName: 'Sao Mai', microchip: '985000000100002', stallTypeCode: 'STANDARD', seats: 1, status: 'ACTIVE', legs: [], missingLegs: ['PICKUP', 'LINEHAUL', 'DELIVERY'] }],
 }
 const linehaul = {
   id: 9, code: 'VT-AAAA0009', tripType: 'LINEHAUL', status: 'PLANNED', departureId: 7, routeCode: 'HCM-DN', vehicleId: 3, licensePlate: '51C-12345',
@@ -53,7 +53,7 @@ async function mockDispatch(page: Page, control: { failBookings?: boolean } = {}
       return ok(route, linehaul, 201)
     }
     if (method === 'GET' && path === '/dispatch/vehicles') {
-      return ok(route, [{ id: 3, licensePlate: '51C-12345', status: 'ACTIVE' }, { id: 4, licensePlate: '51C-99999', status: 'MAINTENANCE' }])
+      return ok(route, [{ id: 3, licensePlate: '51C-12345', status: 'ACTIVE', standardStallCount: 6 }, { id: 4, licensePlate: '51C-99999', status: 'MAINTENANCE' }])
     }
     if (method === 'GET' && path === '/departures') return ok(route, [{ id: 7, routeCode: 'HCM-DN', plannedDepartureAt: '2031-03-05T23:00:00Z', status: 'OPEN' }])
     if (method === 'GET' && path === '/locations') return ok(route, [{ id: 1, name: 'Hub HCM', locationType: 'HUB' }])
@@ -77,11 +77,12 @@ test('điều phối xếp ngựa vào lượt xe trục và phân công tài x�
   await page.goto('/backoffice/coordinator/dispatch')
 
   await expect(page.getByRole('heading', { level: 1, name: 'Điều độ' })).toBeVisible({ timeout: 15_000 })
-  const bookings = page.getByRole('table', { name: 'Đơn chờ xếp xe' })
-  await expect(bookings.getByRole('row', { name: /Sao Mai/ })).toContainText('Chưa xếp')
+  await page.getByLabel('Tuần bắt đầu từ').fill('2031-03-05')
+  const bookings = page.getByRole('list', { name: 'Đơn chờ xếp xe' })
+  await expect(bookings.getByRole('listitem').filter({ hasText: 'BK-AAAA0001' }).first()).toContainText('Cần Đón')
+  await expect(page.getByRole('button', { name: /VT-AAAA0009/ })).toContainText('Thiếu tài xế')
 
-  await page.getByRole('tab', { name: /Lượt xe/ }).click()
-  await page.getByRole('table', { name: 'Lượt xe trong tuần' }).getByRole('row', { name: /VT-AAAA0009/ }).getByRole('button', { name: 'Xem' }).click()
+  await page.getByRole('region', { name: 'Lượt xe trong tuần' }).getByRole('button', { name: /VT-AAAA0009/ }).click({ timeout: 15_000 })
   const dialog = page.getByRole('dialog', { name: /VT-AAAA0009/ })
   await expect(dialog).toContainText('Đang dùng 0/6 chỗ')
 
@@ -129,7 +130,7 @@ test('không tải được dữ liệu thì hiện lý do và thử lại đư�
   await expect(error).toContainText('Máy chủ đang bận')
   control.failBookings = false
   await error.getByRole('button', { name: 'Thử lại' }).click()
-  await expect(page.getByRole('table', { name: 'Đơn chờ xếp xe' })).toBeVisible()
+  await expect(page.getByRole('list', { name: 'Đơn chờ xếp xe' })).toBeVisible()
 })
 
 test('bảng điều độ không tràn ngang ở bề rộng 360px', async ({ page }) => {
@@ -137,7 +138,7 @@ test('bảng điều độ không tràn ngang ở bề rộng 360px', async ({ p
   await signIn(page, 'coordinator')
   await mockDispatch(page)
   await page.goto('/backoffice/coordinator/dispatch')
-  await expect(page.getByRole('table', { name: 'Đơn chờ xếp xe' })).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByRole('list', { name: 'Đơn chờ xếp xe' })).toBeVisible({ timeout: 15_000 })
   expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0)
 })
 
