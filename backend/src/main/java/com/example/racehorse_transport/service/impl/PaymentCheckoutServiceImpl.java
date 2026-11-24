@@ -71,27 +71,16 @@ public class PaymentCheckoutServiceImpl implements PaymentCheckoutService {
         var now = clock.instant();
         return transactions.findByPayment_Booking_IdAndPayment_PaymentTypeAndGatewayCodeAndStatus(
                         bookingId, PaymentType.BALANCE, SESSION_GATEWAY, PaymentTransactionStatus.PENDING)
-                .stream().anyMatch(session -> PaymentPolicy.awaitsGateway(
-                        PaymentPolicy.parseReference(session.getGatewayTransactionNumber()), session.getPayment().getDueAt(),
-                        now, vnpay.defaultExpireMinutes(), vnpay.depositConfirmationGraceMinutes()));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public boolean hasPendingConfirmation(Long bookingId) {
-        var now = clock.instant();
-        return transactions.findByPayment_Booking_IdAndGatewayCodeAndStatus(bookingId, SESSION_GATEWAY,
-                        PaymentTransactionStatus.PENDING).stream()
-                .filter(session -> session.getPayment().getStatus() == PaymentStatus.PENDING)
+                .stream().filter(session -> session.getPayment().getStatus() == PaymentStatus.PENDING)
                 .anyMatch(session -> PaymentPolicy.awaitsGateway(
-                        PaymentPolicy.parseReference(session.getGatewayTransactionNumber()), null,
-                        now, vnpay.defaultExpireMinutes(), vnpay.depositConfirmationGraceMinutes()));
+                        PaymentPolicy.parseReference(session.getGatewayTransactionNumber()), session.getPayment().getDueAt(),
+                        now, vnpay.depositConfirmationGraceMinutes()));
     }
 
     @Override
     @Transactional(readOnly = true)
     public boolean isBalanceOverdue(List<Payment> entries) {
-        return PaymentPolicy.isBalanceOverdue(entries, clock.instant(), vnpay.depositConfirmationGraceMinutes());
+        return PaymentPolicy.isBalanceOverdue(entries, clock.instant());
     }
 
     private static ResourceNotFoundException notFound() {

@@ -4328,6 +4328,8 @@ export interface components {
             amount?: number;
             /** Format: int64 */
             bookingId?: number;
+            /** Format: date-time */
+            confirmationUntil?: string;
             currencyCode?: string;
             /** Format: date-time */
             dueAt?: string;
@@ -4343,8 +4345,15 @@ export interface components {
             type?: "DEPOSIT" | "BALANCE" | "EXTRA_CHARGE" | "REFUND";
         };
         PaymentResultResponseDto: {
+            amount?: number;
+            bookingCode?: string;
             code?: string;
             message?: string;
+            needsReview?: boolean;
+            /** @enum {string} */
+            paymentType?: "DEPOSIT" | "BALANCE" | "EXTRA_CHARGE" | "REFUND";
+            success?: boolean;
+            transactionNumber?: string;
         };
         PersonalInsuranceRevisionRequestDto: {
             /** Format: int64 */

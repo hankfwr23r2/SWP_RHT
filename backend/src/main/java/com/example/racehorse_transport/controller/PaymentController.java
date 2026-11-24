@@ -10,10 +10,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 public class PaymentController {
@@ -37,7 +39,13 @@ public class PaymentController {
     @GetMapping("/payments/vnpay/ipn")
     @PreAuthorize("permitAll()")
     public VnpayIpnResponseDto ipn(@RequestParam Map<String, String> parameters) {
-        return results.receive(parameters);
+        try {
+            return results.receive(parameters);
+        } catch (RuntimeException ex) {
+            // VNPAY đọc RspCode và gửi lại; lỗi nội bộ trả 99 theo tài liệu của cổng
+            log.error("Không xử lý được IPN VNPAY {}", parameters.get("vnp_TxnRef"), ex);
+            return new VnpayIpnResponseDto("99", "Unknown error");
+        }
     }
 
     @GetMapping("/payments/vnpay/return")

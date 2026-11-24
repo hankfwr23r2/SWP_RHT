@@ -21,6 +21,7 @@ import com.example.racehorse_transport.service.ExtraChargeService;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -45,7 +46,13 @@ public class PaymentServiceImpl implements PaymentService {
     public List<PaymentResponseDto> payments(Long bookingId, String username) {
         bookings.findByIdAndCustomer_User_Username(bookingId, username)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy đơn."));
-        return payments.findByBooking_IdOrderById(bookingId).stream().map(PaymentResponseDto::from).toList();
+        var sessions = transactions.findByPayment_Booking_IdAndGatewayCodeAndStatus(bookingId,
+                        PaymentCheckoutServiceImpl.SESSION_GATEWAY, PaymentTransactionStatus.PENDING).stream()
+                .map(session -> PaymentPolicy.parseReference(session.getGatewayTransactionNumber()))
+                .filter(Objects::nonNull).toList();
+        return payments.findByBooking_IdOrderById(bookingId).stream()
+                .map(payment -> PaymentResponseDto.from(payment, PaymentPolicy.confirmationUntil(payment, sessions,
+                        vnpay.depositConfirmationGraceMinutes()))).toList();
     }
 
     @Override

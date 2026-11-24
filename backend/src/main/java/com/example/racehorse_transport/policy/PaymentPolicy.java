@@ -7,7 +7,6 @@ import com.example.racehorse_transport.entity.Quotation;
 import com.example.racehorse_transport.entity.enums.*;
 import com.example.racehorse_transport.exception.BookingRuleException;
 import java.math.BigDecimal;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,17 +41,31 @@ public final class PaymentPolicy {
         }
     }
 
-    // Link VNPAY quá hạn trả và quá thời gian chờ kết quả thì không còn là giao dịch đang chờ.
-    // Link mở sau hạn trả số dư không kéo dài thời gian xe phải chờ.
-    public static boolean awaitsGateway(Session session, Instant dueAt, Instant now, int expireMinutes, int graceMinutes) {
-        return session != null && (dueAt == null || session.createdAt().isBefore(dueAt))
-                && now.isBefore(session.createdAt().plus(Duration.ofMinutes((long) expireMinutes + graceMinutes)));
+    // Quy tắc của hệ thống cũ: link mở trước hạn trả chỉ được chờ kết quả thêm vài phút sau hạn, không gia hạn trả tiền.
+    public static boolean awaitsGateway(Session session, Instant dueAt, Instant now, int graceMinutes) {
+        return session != null && dueAt != null && session.createdAt().isBefore(dueAt)
+                && now.isBefore(DepositPaymentWindowPolicy.confirmationUntil(dueAt, graceMinutes));
     }
 
-    public static boolean isBalanceOverdue(List<Payment> entries, Instant now, int graceMinutes) {
+    // Mốc chờ kết quả để hiện "Đang xác nhận thanh toán"; null khi không có link đang chờ
+    public static Instant confirmationUntil(Payment payment, List<Session> pendingSessions, int graceMinutes) {
+        if (payment.getStatus() != PaymentStatus.PENDING || payment.getDueAt() == null
+                || pendingSessions.stream().noneMatch(session -> session != null
+                        && session.paymentId().equals(payment.getId()) && session.createdAt().isBefore(payment.getDueAt()))) {
+            return null;
+        }
+        return DepositPaymentWindowPolicy.confirmationUntil(payment.getDueAt(), graceMinutes);
+    }
+
+    // Khoản thu đã được ghi nhận bằng đúng giao dịch này (cổng gửi lại kết quả thì vẫn là thành công)
+    public static boolean isAppliedBy(Payment payment, BigDecimal amount, Instant paidAt) {
+        return payment.getStatus() == PaymentStatus.PAID && paidAt != null && paidAt.equals(payment.getPaidAt())
+                && payment.getAmount().compareTo(amount) == 0;
+    }
+
+    public static boolean isBalanceOverdue(List<Payment> entries, Instant now) {
         return entries.stream().anyMatch(row -> row.getPaymentType() == PaymentType.BALANCE
-                && row.getStatus() == PaymentStatus.PENDING && row.getDueAt() != null
-                && !now.isBefore(row.getDueAt().plus(Duration.ofMinutes(graceMinutes))));
+                && row.getStatus() == PaymentStatus.PENDING && row.getDueAt() != null && !now.isBefore(row.getDueAt()));
     }
 
     public static boolean isOpen(Payment payment, Booking booking, Instant now) {

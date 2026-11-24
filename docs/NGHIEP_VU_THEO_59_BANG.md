@@ -325,7 +325,7 @@ Hai nhánh chạy song song. Mỗi nhánh tự lưu trạng thái trên đối t
 
 Khách có thể từ chối báo giá đang chờ phản hồi và ghi lý do. Báo giá sang `REJECTED`, đơn về `QUOTING` và giữ chỗ.
 
-Quá `expires_at` mà chưa cọc thì scheduler chuyển báo giá sang `EXPIRED` và đơn sang `QUOTE_EXPIRED`. Nếu có phiên VNPAY đang chờ xác nhận, scheduler đợi thêm theo cấu hình VNPAY để ghi nhận khoản tiền đã trả trước hạn. Đơn hết hạn thì nhả chỗ và rời chuyến trong cùng transaction. Tiền về sai thời điểm hoặc sau khi hủy được ghi nhận để quản lý đối soát.
+Quá `expires_at` mà chưa cọc thì scheduler chuyển báo giá sang `EXPIRED` và đơn sang `QUOTE_EXPIRED`. Nếu có phiên VNPAY đang chờ xác nhận, scheduler đợi thêm theo cấu hình VNPAY để ghi nhận khoản tiền đã trả trước hạn. Đơn hết hạn thì nhả chỗ và rời chuyến trong cùng transaction. Tiền về sai thời điểm hoặc sau khi hủy: lưu giao dịch, báo quản lý số tiền, mã giao dịch và lý do để quản lý hoàn ngoài hệ thống; khách thấy "Đã nhận tiền, cần đối soát" và không phải trả lại. Hệ thống không tự khôi phục chỗ.
 
 ---
 
@@ -392,7 +392,7 @@ Với `pickup_method = SELF`, kiểm giấy trước khi ký nhận tại hub, g
 | 9 | Trả đủ: ngựa lên xe | `horse_leg` PICKUP: `status = IN_PROGRESS`, `actual_start_at` |
 | 10 | Rời điểm đón | `trip_stop.actual_departure_at`, `booking.status = IN_OPERATION` |
 
-**Không trả đủ trong 30 phút:** tổ xe trả ngựa và giấy gốc tại chỗ (`handover` RETURN), quản lý hủy đơn do khách (5.4), nhả chỗ. Các đơn khác trên xe đi tiếp. Giao dịch đang chờ VNPAY xác nhận không bị coi là không trả. Với đơn IMPORT, nơi nhận là cửa khẩu và quy tắc như trên, ngựa trả lại đại lý.
+**Không trả đủ trong 30 phút:** tổ xe trả ngựa và giấy gốc tại chỗ (`handover` RETURN), quản lý hủy đơn do khách (5.4), nhả chỗ. Các đơn khác trên xe đi tiếp. Link VNPAY mở trước hạn mà chưa có kết quả thì chờ thêm 5 phút sau hạn. Với đơn IMPORT, nơi nhận là cửa khẩu và quy tắc như trên, ngựa trả lại đại lý.
 
 **Ngoại lệ ở bước 4–5:**
 - Chip không khớp: không nhận con đó, ghi `incident` loại DOCUMENT.
@@ -601,7 +601,7 @@ Theo điều khoản của bản cũ:
 | Đã nhận ngựa, chưa trả đủ, xe chưa rời nơi nhận | Quản lý hủy do khách: mất phần cọc vận chuyển, trả ngựa tại chỗ |
 | Đã trả đủ hoặc xe đã rời nơi nhận | Khách không tự hủy được |
 
-Nguyên nhân thuộc công ty thì hoàn 100%. Nếu đang chờ đổi chuyến do giấy không kịp, áp dụng bảng ở GĐ5. Ngoài trường hợp hoàn toàn bộ, quản lý xét từng dòng thu hộ và `VET_CHECK` chưa chi theo báo giá ACCEPTED, kể cả sau khi khách tự hủy. Khi trả ngựa tại nơi nhận, chờ hết hạn số dư cộng thời gian chờ xác nhận. Phiên VNPAY còn chờ chỉ trong cửa sổ hạn link cộng thời gian chờ kết quả. Xe chạy trễ và sự cố trên đường xử lý theo quy trình vận hành. Hoàn tiền ghi bằng `payment` REFUND có `refunded_payment_id`. Quản lý chuyển khoản ngoài hệ thống rồi ghi mã chuyển khoản và chứng từ nếu có.
+Nguyên nhân thuộc công ty thì hoàn 100%. Nếu đang chờ đổi chuyến do giấy không kịp, áp dụng bảng ở GĐ5. Ngoài trường hợp hoàn toàn bộ, quản lý xét từng dòng thu hộ và `VET_CHECK` chưa chi theo báo giá ACCEPTED, kể cả sau khi khách tự hủy. Trả ngựa tại nơi nhận khi quá hạn số dư; có link VNPAY mở trước hạn chưa có kết quả thì chờ thêm 5 phút sau hạn. Link bỏ dở không chặn khách hoặc công ty hủy đơn. Xe chạy trễ và sự cố trên đường xử lý theo quy trình vận hành. Hoàn tiền ghi bằng `payment` REFUND có `refunded_payment_id`. Quản lý chuyển khoản ngoài hệ thống rồi ghi mã chuyển khoản và chứng từ nếu có.
 
 ### 5.5 Từ chối đơn
 

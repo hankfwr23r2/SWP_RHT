@@ -8,6 +8,7 @@ import com.example.racehorse_transport.dto.payment.PaymentResultResponseDto;
 import com.example.racehorse_transport.entity.Booking;
 import com.example.racehorse_transport.entity.Payment;
 import com.example.racehorse_transport.entity.enums.*;
+import com.example.racehorse_transport.policy.DepositPaymentWindowPolicy;
 import com.example.racehorse_transport.policy.PaymentPolicy;
 import com.example.racehorse_transport.repository.BookingRepository;
 import com.example.racehorse_transport.repository.PaymentRepository;
@@ -100,23 +101,53 @@ public class PaymentResultServiceImpl implements PaymentResultService {
     @Transactional
     public PaymentResultResponseDto receiveReturn(Map<String, String> parameters) {
         var acknowledgment = receive(parameters);
-        if ("00".equals(acknowledgment.code()) || "02".equals(acknowledgment.code())) {
-            var gateway = vnpay.read(parameters);
-            String message = switch (transactionStatus(gateway, parameters)) {
-                case SUCCESS -> "VNPAY báo đã nhận tiền. Xem trạng thái khoản thu để biết kết quả ghi nhận.";
-                case PENDING -> "Giao dịch đang chờ VNPAY xác nhận.";
-                case FAILED -> "VNPAY báo giao dịch chưa thành công.";
-            };
-            return new PaymentResultResponseDto(gateway.responseCode(), message);
+        var gateway = vnpay.read(parameters);
+        var reference = PaymentPolicy.parseReference(gateway.reference());
+        var payment = reference == null ? null : payments.findById(reference.paymentId()).orElse(null);
+        if (payment == null || !"00".equals(acknowledgment.code()) && !"02".equals(acknowledgment.code())) {
+            return PaymentResultResponseDto.unverified(acknowledgment.code(), "Không xác minh được giao dịch.");
         }
-        return new PaymentResultResponseDto(acknowledgment.code(), "Không xác minh được giao dịch.");
+        boolean paid = gateway.success();
+        boolean success = paid && PaymentPolicy.isAppliedBy(payment, gateway.amount(), gateway.paidAt());
+        return PaymentResultResponseDto.from(payment, success, paid && !success, gateway.responseCode(),
+                success ? "Thanh toán thành công." : paid
+                        ? "Đã nhận tiền nhưng chưa thể xác nhận đơn. Nhà xe sẽ kiểm tra và liên hệ hoàn tiền."
+                        : describe(transactionStatus(gateway, parameters), gateway.responseCode()),
+                gateway.amount(), gateway.transactionNumber());
+    }
+
+    // Bảng mã vnp_ResponseCode theo tài liệu VNPAY
+    private static String describe(PaymentTransactionStatus status, String code) {
+        return switch (code) {
+            case "07" -> "Giao dịch bị nghi ngờ gian lận, đang chờ ngân hàng xác minh.";
+            case "09" -> "Thẻ hoặc tài khoản chưa đăng ký dịch vụ Internet Banking.";
+            case "10" -> "Xác thực thông tin thẻ hoặc tài khoản sai quá 3 lần.";
+            case "11" -> "Đã hết thời gian chờ thanh toán.";
+            case "12" -> "Thẻ hoặc tài khoản bị khóa.";
+            case "13" -> "Nhập sai mật khẩu xác thực giao dịch (OTP).";
+            case "24" -> "Bạn đã hủy giao dịch.";
+            case "51" -> "Tài khoản không đủ số dư.";
+            case "65" -> "Tài khoản đã vượt quá hạn mức giao dịch trong ngày.";
+            case "75" -> "Ngân hàng thanh toán đang bảo trì.";
+            case "79" -> "Nhập sai mật khẩu thanh toán quá số lần quy định.";
+            default -> status == PaymentTransactionStatus.PENDING ? "Giao dịch đang chờ VNPAY xác nhận."
+                    : "Giao dịch không thành công.";
+        };
     }
 
     private void applySuccess(Booking booking, Payment payment, GatewayResult result,
                               PaymentPolicy.Session reference, Instant receivedAt) {
         if (!PaymentPolicy.canApply(payment, booking, reference, result.paidAt(), receivedAt,
                 vnpay.depositConfirmationGraceMinutes(), result.amount())) {
-            notifyManagers(booking, "Có tiền VNPAY cần đối soát cho đơn " + booking.getCode() + ".");
+            boolean outsideWindow = payment.getPaymentType() == PaymentType.DEPOSIT && payment.getDueAt() != null
+                    && !DepositPaymentWindowPolicy.canConfirm(payment.getDueAt(), reference.createdAt(), result.paidAt(),
+                            receivedAt, vnpay.depositConfirmationGraceMinutes());
+            notifyManagers(booking, "Đã nhận " + result.amount().toBigInteger() + " VND (mã VNPAY " + result.transactionNumber()
+                    + ") cho đơn " + booking.getCode() + " nhưng không ghi nhận vào đơn: "
+                    + (outsideWindow || result.paidAt() == null
+                            ? "thanh toán ngoài hạn hoặc thiếu thời điểm thanh toán hợp lệ từ VNPAY."
+                            : "đơn hoặc khoản thu không còn nhận thanh toán (" + booking.getStatus() + ").")
+                    + " Cần kiểm tra và hoàn tiền cho khách.");
             return;
         }
         boolean balanceWasReduced = payment.getPaymentType() == PaymentType.BALANCE

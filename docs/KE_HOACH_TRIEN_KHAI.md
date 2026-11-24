@@ -151,7 +151,7 @@ Có **3 thành viên** thì tách luồng A thành A-BE và A-FE (khách hàng),
 | `DocumentCompletenessService.isComplete(bookingId)` | A | B | Khi xe xuất phát đón (GĐ5), khi nhận tại hub nếu SELF, hoặc khi nhận tại cửa khẩu với IMPORT |
 | `PaymentReadinessService.isPaidInFull(bookingId)` | A | B | Khi xe **rời** nơi nhận ngựa (GĐ6) |
 | `PaymentService.requestBalance(bookingId, receivedAt)` | A | B | Khi hoàn tất nhận ngựa, lập số dư một lần cho đơn CONFIRMED đã cọc và có báo giá ACCEPTED |
-| `BookingCancellationService.cancelUnpaidAtPickup(bookingId, actorUserId)` | A | B | Trả ngựa tại chỗ khi quá hạn số dư cộng thời gian chờ và `PaymentCheckoutService.hasPendingBalanceConfirmation` là false |
+| `BookingCancellationService.cancelUnpaidAtPickup(bookingId, actorUserId)` | A | B | Trả ngựa tại chỗ khi quá hạn số dư và `PaymentCheckoutService.hasPendingBalanceConfirmation` là false (link mở trước hạn chờ thêm 5 phút sau hạn) |
 
 ---
 

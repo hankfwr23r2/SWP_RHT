@@ -12,8 +12,8 @@ import org.springframework.stereotype.Component;
 public class QuotationExpiryScheduler {
     private final QuotationService quotations;
 
-    @Scheduled(fixedDelayString = "${quotation.expiry-scan-interval-ms:60000}",
-            initialDelayString = "${quotation.expiry-scan-interval-ms:60000}")
+    @Scheduled(fixedDelayString = "${vnpay.quotation-expiry-scan-ms:30000}",
+            initialDelayString = "${vnpay.quotation-expiry-scan-ms:30000}")
     public void expireQuotations() {
         for (Long id : quotations.expirationCandidates()) {
             try {
