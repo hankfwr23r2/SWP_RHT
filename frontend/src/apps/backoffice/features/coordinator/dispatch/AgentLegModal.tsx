@@ -13,7 +13,8 @@ import { Modal } from '@shared/ui/Modal'
 import { Select } from '@shared/ui/Select'
 import { Skeleton } from '@shared/ui/Skeleton'
 import { useToast } from '@shared/ui/toast'
-import { activeLegs, localToIso } from './dispatchModel'
+import { localToIso } from '@backoffice/shared/localTime'
+import { activeLegs } from './dispatchModel'
 import s from './Dispatch.module.css'
 
 interface Props { booking: DispatchBooking; horse: DispatchHorse; onClose: () => void; onChanged: () => void }

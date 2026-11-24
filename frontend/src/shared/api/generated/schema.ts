@@ -1172,6 +1172,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/custody-board": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["board"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/customers/me": {
         parameters: {
             query?: never;
@@ -3337,6 +3353,11 @@ export interface components {
             message?: string;
             status?: string;
         };
+        ApiResponseListCustodyRowResponseDto: {
+            data?: components["schemas"]["CustodyRowResponseDto"][];
+            message?: string;
+            status?: string;
+        };
         ApiResponseListCustomerAddressResponseDto: {
             data?: components["schemas"]["CustomerAddressResponseDto"][];
             message?: string;
@@ -3966,6 +3987,35 @@ export interface components {
             handovers?: components["schemas"]["HandoverResponseDto"][];
             horses?: components["schemas"]["TripHorseResponseDto"][];
             trip?: components["schemas"]["VehicleTripResponseDto"];
+        };
+        CustodyRowResponseDto: {
+            bookingCode?: string;
+            /** Format: int64 */
+            bookingHorseId?: number;
+            /** Format: int64 */
+            bookingId?: number;
+            careOverdue?: boolean;
+            /** @enum {string} */
+            healthStatus?: "NORMAL" | "WATCH" | "SICK" | "CRITICAL";
+            /** @enum {string} */
+            holder?: "SHIPPER" | "COMPANY" | "PARTY" | "CONSIGNEE";
+            holderName?: string;
+            /** Format: date-time */
+            holderSince?: string;
+            horseName?: string;
+            /** Format: date-time */
+            lastCheckAt?: string;
+            /** @enum {string} */
+            legType?: "PICKUP" | "LINEHAUL" | "DELIVERY" | "TRANSFER" | "RETURN" | "DIRECT";
+            /** Format: date-time */
+            nextCheckAt?: string;
+            placeName?: string;
+            point?: components["schemas"]["GeoPointDto"];
+            /** @enum {string} */
+            stayType?: "ASSEMBLY" | "QUARANTINE" | "OVERNIGHT" | "STABLING";
+            tripCode?: string;
+            /** Format: int64 */
+            vehicleTripId?: number;
         };
         CustomerAddressCreateRequestDto: {
             addressLine: string;
@@ -7794,6 +7844,26 @@ export interface operations {
                 };
                 content: {
                     "*/*": components["schemas"]["ApiResponseCrewTripResponseDto"];
+                };
+            };
+        };
+    };
+    board: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "*/*": components["schemas"]["ApiResponseListCustodyRowResponseDto"];
                 };
             };
         };

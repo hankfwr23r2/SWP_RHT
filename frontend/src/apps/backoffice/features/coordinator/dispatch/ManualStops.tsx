@@ -5,7 +5,7 @@ import { Button } from '@shared/ui/Button'
 import { Field } from '@shared/ui/Field'
 import { Input } from '@shared/ui/Input'
 import { Select } from '@shared/ui/Select'
-import { localToIso } from './dispatchModel'
+import { localToIso } from '@backoffice/shared/localTime'
 import s from './Dispatch.module.css'
 
 // Nơi dừng: "L<id>" điểm mạng lưới, "P<id>" địa chỉ đón, "D<id>" địa chỉ giao

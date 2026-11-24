@@ -11,12 +11,10 @@ import { Input } from '@shared/ui/Input'
 import { Modal } from '@shared/ui/Modal'
 import { PageHeader } from '@shared/ui/PageHeader'
 import { Skeleton } from '@shared/ui/Skeleton'
-import { Tabs } from '@shared/ui/Tabs'
 import { AgentLegModal } from './AgentLegModal'
 import { GroupingPanel } from './GroupingPanel'
 import { HubAppointmentModal } from './HubAppointmentModal'
 import { CreateTripModal } from './CreateTripModal'
-import { HubStaysPanel } from './HubStaysPanel'
 import { TripDetailModal } from './TripDetailModal'
 import { WaitingList } from './WaitingList'
 import { WeekBoard } from './WeekBoard'
@@ -36,7 +34,6 @@ const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_
 export default function DispatchPage() {
   const { t } = useTranslation()
   const [weekStart, setWeekStart] = useState(() => mondayOf(today()))
-  const [tab, setTab] = useState('board')
   const [grouping, setGrouping] = useState(false)
   const [creating, setCreating] = useState(false)
   const [openTripId, setOpenTripId] = useState<number>()
@@ -52,7 +49,6 @@ export default function DispatchPage() {
   }, [weekStart], { toastOnError: false })
 
   const content = () => {
-    if (tab === 'stays') return <HubStaysPanel />
     if (!loaded) return <Skeleton variant="block" lines={4} />
     if (error || !data) return <ErrorState title={t('dispatch.loadError')} message={error?.message} onRetry={reload} />
     return (
@@ -82,29 +78,19 @@ export default function DispatchPage() {
           </div>
         )}
       />
-      <Tabs
-        label={t('dispatch.tabsLabel')}
-        value={tab}
-        onChange={setTab}
-        items={[
-          { value: 'board', label: t('dispatch.board.tab'), count: data?.trips.length },
-          { value: 'stays', label: t('dispatch.stays.tab') },
-        ]}
-      >
-        {content()}
-      </Tabs>
+      {content()}
       {creating && data && (
         <CreateTripModal
           bookings={data.bookings}
           weekFrom={range.fromDate}
           weekTo={range.toDate}
           onClose={() => setCreating(false)}
-          onCreated={trip => { setCreating(false); setTab('board'); void reload(); setOpenTripId(trip.id) }}
+          onCreated={trip => { setCreating(false); void reload(); setOpenTripId(trip.id) }}
         />
       )}
       {grouping && (
         <Modal wide title={t('dispatch.board.group')} onClose={() => setGrouping(false)}>
-          <GroupingPanel defaultDate={weekStart} onCreated={trip => { setGrouping(false); setTab('board'); void reload(); setOpenTripId(trip.id) }} />
+          <GroupingPanel defaultDate={weekStart} onCreated={trip => { setGrouping(false); void reload(); setOpenTripId(trip.id) }} />
         </Modal>
       )}
       {openTripId !== undefined && data && (

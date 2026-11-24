@@ -651,6 +651,23 @@
         },
         "type" : "object"
       },
+      "ApiResponseListCustodyRowResponseDto" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CustodyRowResponseDto"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string"
+          }
+        },
+        "type" : "object"
+      },
       "ApiResponseListCustomerAddressResponseDto" : {
         "properties" : {
           "data" : {
@@ -2466,6 +2483,72 @@
           },
           "trip" : {
             "$ref" : "#/components/schemas/VehicleTripResponseDto"
+          }
+        },
+        "type" : "object"
+      },
+      "CustodyRowResponseDto" : {
+        "properties" : {
+          "bookingCode" : {
+            "type" : "string"
+          },
+          "bookingHorseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "bookingId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "careOverdue" : {
+            "type" : "boolean"
+          },
+          "healthStatus" : {
+            "enum" : [ "NORMAL", "WATCH", "SICK", "CRITICAL" ],
+            "type" : "string"
+          },
+          "holder" : {
+            "enum" : [ "SHIPPER", "COMPANY", "PARTY", "CONSIGNEE" ],
+            "type" : "string"
+          },
+          "holderName" : {
+            "type" : "string"
+          },
+          "holderSince" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "horseName" : {
+            "type" : "string"
+          },
+          "lastCheckAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "legType" : {
+            "enum" : [ "PICKUP", "LINEHAUL", "DELIVERY", "TRANSFER", "RETURN", "DIRECT" ],
+            "type" : "string"
+          },
+          "nextCheckAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "placeName" : {
+            "type" : "string"
+          },
+          "point" : {
+            "$ref" : "#/components/schemas/GeoPointDto"
+          },
+          "stayType" : {
+            "enum" : [ "ASSEMBLY", "QUARANTINE", "OVERNIGHT", "STABLING" ],
+            "type" : "string"
+          },
+          "tripCode" : {
+            "type" : "string"
+          },
+          "vehicleTripId" : {
+            "format" : "int64",
+            "type" : "integer"
           }
         },
         "type" : "object"
@@ -10231,6 +10314,24 @@
           }
         },
         "tags" : [ "trip-execution-controller" ]
+      }
+    },
+    "/custody-board" : {
+      "get" : {
+        "operationId" : "board",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListCustodyRowResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "custody-board-controller" ]
       }
     },
     "/customers/me" : {

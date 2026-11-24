@@ -16,13 +16,15 @@ import { Skeleton } from '@shared/ui/Skeleton'
 import { Table, type TableColumn } from '@shared/ui/Table'
 import { Textarea } from '@shared/ui/Textarea'
 import { useToast } from '@shared/ui/toast'
-import { localToIso } from './dispatchModel'
-import s from './Dispatch.module.css'
+import { PageHeader } from '@shared/ui/PageHeader'
+import { localToIso } from '@backoffice/shared/localTime'
+import s from '@backoffice/shared/StaffPanels.module.css'
+import h from './Hub.module.css'
 
 // Nhận, trả ngựa (quét chip); không nhận (có lý do); hẹn giờ người nhận tới; gửi chuồng khi quá giờ hẹn (phí người nhận chịu)
 type Action = { stay: HorseStay; kind: 'receive' | 'refuse' | 'deliver' | 'collect' | 'stable' }
 
-export function HubStaysPanel() {
+export default function HubPage() {
   const { t } = useTranslation()
   const toast = useToast()
   const [hubId, setHubId] = useState('')
@@ -67,7 +69,7 @@ export function HubStaysPanel() {
       key: 'action',
       header: '',
       render: stay => (
-        <span className={s.legs}>
+        <span className={s.row}>
           <Button size="sm" variant="primary" onClick={() => open(stay, 'receive')}>{t('dispatch.stays.receive')}</Button>
           <Button size="sm" variant="danger" onClick={() => open(stay, 'refuse')}>{t('dispatch.stays.refuse')}</Button>
         </span>
@@ -88,7 +90,7 @@ export function HubStaysPanel() {
         if (stay.deliveryMethod !== 'SELF' || (stay.stayType !== 'ASSEMBLY' && stay.stayType !== 'STABLING')) return null
         const overdue = stay.stayType === 'ASSEMBLY' && stay.plannedEndAt && new Date(stay.plannedEndAt).getTime() < Date.now()
         return (
-          <span className={s.legs}>
+          <span className={s.row}>
             <Button size="sm" onClick={() => open(stay, 'deliver')}>{t('dispatch.stays.deliver')}</Button>
             {stay.stayType === 'ASSEMBLY' && <Button size="sm" variant="ghost" onClick={() => open(stay, 'collect')}>{t('dispatch.stays.collect')}</Button>}
             {overdue && <Button size="sm" variant="danger" onClick={() => open(stay, 'stable')}>{t('dispatch.stays.stable')}</Button>}
@@ -115,8 +117,9 @@ export function HubStaysPanel() {
   }
 
   return (
-    <div className={s.section}>
-      <div className={s.form}>
+    <div className={h.section}>
+      <PageHeader title={t('dispatch.stays.tab')} description={t('dispatch.stays.subtitle')} />
+      <div className={h.form}>
         <Field label={t('dispatch.stays.hub')}>
           {c => <Select {...c} value={hubId} onChange={setHubId} placeholder={t('dispatch.detail.choose')}
             options={(hubs ?? []).map(hub => ({ value: `${hub.id}`, label: hub.name ?? '' }))} />}
@@ -134,7 +137,7 @@ export function HubStaysPanel() {
               </Button>
             </>
           )}>
-          <p className={s.muted}>{t(`dispatch.stays.${action.kind}Hint`)}</p>
+          <p className={s.hint}>{t(`dispatch.stays.${action.kind}Hint`)}</p>
           {(action.kind === 'receive' || action.kind === 'deliver') && (
             <Field label={t('dispatch.stays.chip')} required>
               {c => <Input {...c} inputMode="numeric" value={chip} onChange={e => setChip(e.target.value)} data-autofocus />}

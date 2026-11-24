@@ -4,6 +4,7 @@ import com.example.racehorse_transport.entity.BookingHorse;
 import com.example.racehorse_transport.entity.enums.BookingHorseStatus;
 import com.example.racehorse_transport.entity.enums.BookingStatus;
 
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -23,6 +24,10 @@ public interface BookingHorseRepository extends JpaRepository<BookingHorse, Long
             WHERE h.booking.id = :bookingId ORDER BY h.id
             """)
     List<BookingHorse> findForDetail(Long bookingId);
+
+    // Bảng phụ trách
+    @EntityGraph(attributePaths = {"horse", "booking"})
+    List<BookingHorse> findByStatusAndBooking_StatusIn(BookingHorseStatus status, Collection<BookingStatus> bookingStatuses);
 
     @Query("""
             SELECT DISTINCT b.code FROM BookingHorse h JOIN h.booking b

@@ -1,8 +1,60 @@
 // Trang của điều phối viên
 export const coordinator = {
+  "tracking": {
+    "title": "Theo dõi",
+    "subtitle": "Mọi con công ty hoặc đối tác đang giữ. Con trễ khám đứng đầu.",
+    "list": "Ngựa đang được giữ",
+    "empty": "Chưa có ngựa nào đang được giữ",
+    "emptyHint": "Ngựa hiện ở đây từ lúc nhận tới lúc giao.",
+    "search": "Tìm theo ngựa, đơn, nơi ở, người giữ",
+    "waiting": "Chờ xuất phát",
+    "overdue": "Trễ khám",
+    "unknownPlace": "Chưa có vị trí",
+    "heldBy": "{{name}} đang giữ",
+    "heldByPartner": "Đối tác {{name}} đang giữ",
+    "since": "từ {{at}}",
+    "lastCheck": "Khám lúc {{at}}",
+    "noCheck": "Chưa khám lần nào",
+    "nextCheck": "hạn khám {{at}}",
+    "leg": {
+      "PICKUP": "Đang đón về hub",
+      "LINEHAUL": "Đang đi trục",
+      "DELIVERY": "Đang giao",
+      "DIRECT": "Đang chạy thẳng",
+      "TRANSFER": "Đang chuyển xe",
+      "RETURN": "Đang trả về"
+    },
+    "health": {
+      "NORMAL": "Bình thường",
+      "WATCH": "Cần theo dõi",
+      "CRITICAL": "Nguy cấp",
+      "SICK": "Ốm"
+    }
+  },
+  "plans": {
+    "title": "Kế hoạch đơn",
+    "subtitle": "Đơn chưa cọc: xem chuyến đang giữ chỗ, đổi sang chuyến khác khi cần.",
+    "filter": "Trạng thái đơn",
+    "code": "Mã đơn",
+    "customer": "Khách",
+    "route": "Tuyến",
+    "departure": "Ngày chạy",
+    "pickup": "Ngày đón",
+    "horses": "Số ngựa",
+    "status": "Trạng thái",
+    "action": "Việc cần làm",
+    "change": "Đổi chuyến",
+    "changed": "Đã đổi chuyến và báo khách.",
+    "changeTitle": "Đổi chuyến · {{code}}",
+    "changeHint": "Chỗ ở chuyến cũ được nhả và khách nhận thông báo.",
+    "seats": "Còn {{count}} chỗ",
+    "noOther": "Không có chuyến khác cùng tuyến",
+    "noOtherHint": "Nhờ quản lý tạo chuyến đột xuất nếu cần.",
+    "empty": "Không có đơn ở trạng thái này",
+    "emptyHint": "Chọn trạng thái khác để xem."
+  },
   dispatch: {
     "board": {
-      "tab": "Bảng tuần",
       "group": "Gom tự động",
       "previous": "Tuần trước",
       "next": "Tuần sau",
@@ -41,6 +93,7 @@ export const coordinator = {
       }
     },
     "stays": {
+      "subtitle": "Lịch hẹn khách tự chở và ngựa đang ở hub.",
       "collect": "Hẹn giờ nhận",
       "collectTitle": "Hẹn người nhận tới · {{horse}} · {{code}}",
       "collectHint": "Giờ người nhận tới hub nhận ngựa. Quá giờ này thì gửi chuồng, người nhận trả phí.",
@@ -89,7 +142,6 @@ export const coordinator = {
     "title": "Điều độ",
     "description": "Xếp xe, tổ lái và ngựa theo tuần. Hệ thống kiểm quy tắc khi lưu và nói rõ lý do nếu không được.",
     "weekFrom": "Tuần bắt đầu từ",
-    "tabsLabel": "Nội dung điều độ",
     "tabBookings": "Đơn chờ xếp xe",
     "newTrip": "Lập lượt xe",
     "loadError": "Không tải được dữ liệu điều độ",

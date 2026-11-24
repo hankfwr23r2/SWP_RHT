@@ -266,6 +266,16 @@ class TripExecutionFlowTest {
 
         act(driver2, "/handovers/" + handover + "/complete").andExpect(status().isOk());
         assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, first)).isEqualTo("IN_PROGRESS");
+        // Bảng phụ trách: con vừa nhận đang do tài xế ký nhận giữ, con bị loại không hiện
+        String row = "$.data[?(@.bookingHorseId == " + lines.get(0) + ")]";
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/custody-board").header(HttpHeaders.AUTHORIZATION, coordinator)).andExpect(status().isOk())
+                .andExpect(jsonPath(row + ".holder").value("COMPANY"))
+                .andExpect(jsonPath(row + ".holderName").value(driverStaff.getFullName()))
+                .andExpect(jsonPath(row + ".legType").value("PICKUP"))
+                .andExpect(jsonPath(row + ".vehicleTripId").value((int) pickupTrip))
+                .andExpect(jsonPath(row + ".careOverdue").value(false))
+                .andExpect(jsonPath("$.data[?(@.bookingHorseId == " + lines.get(1) + ")]").isEmpty());
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/custody-board").header(HttpHeaders.AUTHORIZATION, driver2)).andExpect(status().isForbidden());
         assertThat(jdbc.queryForObject("SELECT status FROM horse_leg WHERE id = ?", String.class, second)).isEqualTo("CANCELLED");
     }
 

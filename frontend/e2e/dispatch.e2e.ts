@@ -165,9 +165,8 @@ test('tài xế xem lượt xe của mình và xác nhận nhận việc', async
 test('điều phối xem ngựa đang tập kết ở hub', async ({ page }) => {
   await signIn(page, 'coordinator')
   await mockDispatch(page)
-  await page.goto('/backoffice/coordinator/dispatch')
-  await page.getByRole('tab', { name: 'Ngựa ở hub' }).click()
-  await page.getByRole('combobox', { name: 'Hub' }).click()
+  await page.goto('/backoffice/coordinator/hub')
+  await page.getByRole('combobox', { name: 'Hub' }).click({ timeout: 15_000 })
   await page.getByRole('option', { name: 'Hub HCM' }).click()
   const stays = page.getByRole('table', { name: 'Ngựa đang lưu trú' })
   await expect(stays.getByRole('row', { name: /Sao Mai/ })).toContainText('Tập kết')

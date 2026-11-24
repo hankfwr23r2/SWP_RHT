@@ -679,8 +679,8 @@ Người dùng chốt: ẩn khỏi menu và đổi trang mở đầu, chưa xóa
 | Tổng quan quản lý (`manager/dashboard`, kéo theo `manager/intake`, `manager/approvals`) | `/manager` | `/manager/orders` |
 | Doanh thu (`manager/reports`) | `/manager/reports` | Đã chuyển sang `/reports/revenue`, hiện lại trong menu (#434) |
 | Sự cố quản lý cũ (`manager/incidents`, không còn đường dẫn) | | `/manager/incidents` (bảng sự cố mới) |
-| Xe và lộ trình (`coordinator/fleet-plan`) | `/coordinator/fleet-plan` | `/coordinator/dispatch` |
-| Giám sát (`coordinator/monitoring`) | `/coordinator/monitoring` | Chưa có màn thay |
+| Xe và lộ trình (`coordinator/fleet-plan`) | `/coordinator/fleet-plan` | `/coordinator/plans` và `/coordinator/dispatch` |
+| Giám sát (`coordinator/monitoring`) | `/coordinator/monitoring` | `/coordinator/tracking` |
 | Đội xe của điều phối (`coordinator/fleet`) | `/coordinator/fleet` | `/admin/vehicles` (quản trị viên) |
 | Sự cố điều phối cũ (`coordinator/incidents`, không còn đường dẫn) | | `/coordinator/incidents` (bảng sự cố mới) |
 | Chuyến của tôi (`driver`) | `/driver` | `/my-trips` |

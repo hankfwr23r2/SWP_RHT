@@ -18,15 +18,6 @@ export function weekRange(fromDate: string) {
   return { fromDate, toDate, from: start.toISOString(), to: end.toISOString() }
 }
 
-// Giá trị ô datetime-local (giờ của máy) sang ISO
-export const localToIso = (value: string) => new Date(value).toISOString()
-
-// ISO sang giá trị ô datetime-local (giờ của máy)
-export function isoToLocal(value: string) {
-  const date = new Date(value)
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000).toISOString().slice(0, 16)
-}
-
 export const activeLegs = (horse: DispatchHorse): HorseLeg[] => (horse.legs ?? []).filter(leg => !INACTIVE_LEGS.has(leg.status ?? ''))
 
 const stopWithAddress = (trip: VehicleTrip, addressId?: number) =>

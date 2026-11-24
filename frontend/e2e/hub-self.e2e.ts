@@ -56,9 +56,8 @@ test('tại hub điều phối nhận ngựa khách tự chở tới và trả n
     if (path === '/horse-stays/7/deliveries') { sent.push({ delivery: request.postDataJSON() }); stays.splice(0, 1); return ok(route, {}) }
     return ok(route, [])
   })
-  await page.goto('/backoffice/coordinator/dispatch')
-  await page.getByRole('tab', { name: 'Ngựa ở hub' }).click({ timeout: 15_000 })
-  await page.getByRole('combobox', { name: 'Hub' }).click()
+  await page.goto('/backoffice/coordinator/hub')
+  await page.getByRole('combobox', { name: 'Hub' }).click({ timeout: 15_000 })
   await page.getByRole('option', { name: 'Hub HCM' }).click()
 
   const booked = page.getByRole('table', { name: 'Lịch hẹn khách tự chở ngựa tới' })
@@ -109,9 +108,8 @@ test('người nhận tới trễ hơn giờ hẹn thì điều phối gửi chu
     }
     return ok(route, [])
   })
-  await page.goto('/backoffice/coordinator/dispatch')
-  await page.getByRole('tab', { name: 'Ngựa ở hub' }).click({ timeout: 15_000 })
-  await page.getByRole('combobox', { name: 'Hub' }).click()
+  await page.goto('/backoffice/coordinator/hub')
+  await page.getByRole('combobox', { name: 'Hub' }).click({ timeout: 15_000 })
   await page.getByRole('option', { name: 'Hub Đà Nẵng' }).click()
   const present = page.getByRole('table', { name: 'Ngựa đang lưu trú' })
   const row = present.getByRole('row', { name: /Gió Bấc/ })
@@ -149,9 +147,8 @@ test('tại hub điều phối không nhận một con khách tự chở tới, 
     if (path === '/horse-stays/6/refusals') { sent = request.postDataJSON(); appointments.length = 0; return ok(route, null) }
     return ok(route, [])
   })
-  await page.goto('/backoffice/coordinator/dispatch')
-  await page.getByRole('tab', { name: 'Ngựa ở hub' }).click({ timeout: 15_000 })
-  await page.getByRole('combobox', { name: 'Hub' }).click()
+  await page.goto('/backoffice/coordinator/hub')
+  await page.getByRole('combobox', { name: 'Hub' }).click({ timeout: 15_000 })
   await page.getByRole('option', { name: 'Hub HCM' }).click()
 
   const booked = page.getByRole('table', { name: 'Lịch hẹn khách tự chở ngựa tới' })

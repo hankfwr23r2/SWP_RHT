@@ -25,6 +25,7 @@ export const bookingReviewsApi = {
   returnForResubmission: (id: number, body: Schemas['BookingReturnRequestDto']) =>
     post<BookingOrder>(bookingPath(id) + '/return-for-resubmission', body),
   reject: (id: number, body: Schemas['BookingRejectionRequestDto']) => post<BookingOrder>(bookingPath(id) + '/reject', body),
+  changeDeparture: (id: number, departureId: number) => post<BookingOrder>(bookingPath(id) + '/change-departure', { departureId }),
   startQuoting: (id: number) => post<BookingOrder>(bookingPath(id) + '/start-quoting', {}),
   recordEvidence: (id: number, insuranceId: number, body: InsuranceEvidence) =>
     post<null>(insurancePath(id, insuranceId) + '/record-evidence', body),
