@@ -58,7 +58,7 @@ Khách chọn một loại, loại này quyết định cách tính cước.
 | `DEDICATED` | Chuyến riêng | Theo xe theo km, hoặc trọn gói theo tuyến | Thực chất là khách trả thêm để **không bị ghép**. Ghép chuyến là quyền của công ty (IRT Đức §7.4) |
 | `SHARED` | Ghép chuyến | Theo khoang (hoặc theo ngựa) theo km | Xem mục 9. Chưa chốt làm ở bản này |
 
-- Cấu hình khoang: `STALL_STANDARD` (khoang tiêu chuẩn), `STALL_WIDE` (khoang rộng một ngựa, cho ngựa giống đực, ngựa mẹ kèm con, ngựa giá trị cao).
+- Cấu hình khoang: `STALL_STANDARD` (khoang tiêu chuẩn), `STALL_WIDE` (khoang rộng một ngựa). Khách tự chọn, không bắt buộc theo giới tính.
 - Groom và chăm sóc cơ bản đã nằm trong cước.
 
 ### Lớp B. Dịch vụ bổ sung (bản rút gọn)
@@ -317,7 +317,7 @@ Gộp mọi khoảng ngựa đứng yên thành một khái niệm **lưu trú**
 | G1 | Mọi ngựa phải đủ giấy kiểm dịch trước khi lên xe. Con nào thiếu thì bị loại, chuyến vẫn chạy |
 | G2 | Cách ly có thể làm theo nhóm. Một con dương tính kéo dài thời gian cả nhóm thì tính là kéo dài không do lỗi công ty, chi phí chia theo điều khoản |
 | G3 | Chuyến trễ vì một đơn thì đơn đó chịu chi phí phát sinh |
-| G4 | Ngựa giống đực, ngựa mẹ kèm con, ngựa giá trị cao có thể bắt buộc khoang rộng hoặc không được ghép |
+| G4 | Khoang rộng do khách tự chọn. Xe có cả ngựa đực chưa thiến và ngựa cái thì cảnh báo xếp cách khoang, không chặn |
 | G5 | Xe chỉ bị giữ khi chuyến định kỳ đã mở, không giữ theo từng đơn từ lúc `under_review` |
 
 **Nếu để giai đoạn 2:** vẽ `trip` tách khỏi đơn ngay từ bây giờ và chừa `scheduled_departure_id` nullable trên đơn. Như vậy sau này thêm ghép chuyến không phải đổi cấu trúc DB.
