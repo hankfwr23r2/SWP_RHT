@@ -1,6 +1,7 @@
 package com.example.racehorse_transport.service;
 
 import com.example.racehorse_transport.dto.health.HorseStayResponseDto;
+import com.example.racehorse_transport.dto.operation.HubStablingRequestDto;
 import com.example.racehorse_transport.entity.HorseLeg;
 import java.time.Instant;
 import java.util.List;
@@ -21,4 +22,10 @@ public interface HorseStayService {
 
     // Lịch hẹn nhận ngựa ở hub: lưu trú dự kiến chưa bắt đầu
     List<HorseStayResponseDto> appointmentsAt(Long locationId);
+
+    // Người nhận tự tới hub (delivery_method SELF): hẹn giờ tới nhận, ghi vào giờ kết thúc dự kiến của lưu trú tập kết
+    HorseStayResponseDto setCollectionTime(Long horseStayId, Instant collectAt);
+
+    // Quá giờ hẹn mà người nhận chưa tới: kết thúc tập kết, mở lưu trú gửi chuồng tại hub, ghi phí gửi chuồng người nhận chịu
+    HorseStayResponseDto stableOverdue(Long horseStayId, HubStablingRequestDto request, String username);
 }

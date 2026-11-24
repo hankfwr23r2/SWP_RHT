@@ -162,6 +162,57 @@ class HubSelfFlowTest {
                 .isEqualTo(lines.size());
     }
 
+    @Test
+    void lateConsigneeHorseGoesToStablingAndTheConsigneePaysTheFee() throws Exception {
+        long trip = linehaulTrip();
+        List<Long> stops = stopIds(trip);
+        for (long line : lines) assign(trip, line, stops.getFirst(), stops.getLast());
+        long hubDn = locations.findByCode("HUB-DN").orElseThrow().getId();
+        sql("UPDATE booking SET status = 'IN_OPERATION', delivery_method = 'SELF' WHERE id = " + booking);
+        sql("UPDATE horse_leg SET status = 'COMPLETED', actual_start_at = now() - interval '1 day', actual_end_at = now() - interval '2 hour' WHERE vehicle_trip_id = " + trip);
+        List<Long> stays = new ArrayList<>();
+        for (long line : lines) {
+            stays.add(jdbc.queryForObject("""
+                    INSERT INTO horse_stay (booking_horse_id, stay_type, location_id, planned_start_at, planned_end_at, actual_start_at)
+                    VALUES (?, 'ASSEMBLY', ?, now() - interval '2 hour', now() + interval '1 day', now() - interval '2 hour') RETURNING id""",
+                    Long.class, line, hubDn));
+        }
+        long first = stays.getFirst();
+
+        // Chưa quá giờ hẹn thì chưa gửi chuồng
+        stable(first, "500000").andExpect(status().isConflict()).andExpect(jsonPath("$.message", startsWith("Chưa quá giờ hẹn người nhận tới")));
+        // Điều phối hẹn người nhận tới 30 phút trước; giờ hẹn không được trước lúc ngựa tới hub
+        collectAt(first, java.time.Instant.now().minusSeconds(3 * 3600)).andExpect(status().isBadRequest());
+        collectAt(first, java.time.Instant.now().minusSeconds(1800)).andExpect(status().isOk());
+        long stabling = ((Number) JsonPath.read(content(stable(first, "500000").andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.stayType").value("STABLING"))), "$.data.id")).longValue();
+        assertThat(jdbc.queryForObject("SELECT actual_end_at IS NOT NULL FROM horse_stay WHERE id = ?", Boolean.class, first)).isTrue();
+        var fee = jdbc.queryForMap("SELECT category, payer_type, amount, horse_stay_id, approved_at FROM cost_item WHERE horse_stay_id = ?", stabling);
+        assertThat(fee.get("category")).isEqualTo("STABLING");
+        assertThat(fee.get("payer_type")).isEqualTo("CONSIGNEE");
+        assertThat((java.math.BigDecimal) fee.get("amount")).isEqualByComparingTo("500000");
+        assertThat(fee.get("approved_at")).isNull();
+
+        // Người nhận tới: trả ngựa từ chuồng gửi, đơn giao xong khi con cuối được nhận
+        deliver(stabling, chip(lines.getFirst())).andExpect(status().isOk()).andExpect(jsonPath("$.data.actualEndAt").isNotEmpty());
+        for (int i = 1; i < lines.size(); i++) deliver(stays.get(i), chip(lines.get(i))).andExpect(status().isOk());
+        assertThat(bookingStatus()).isEqualTo("DELIVERED");
+    }
+
+    private ResultActions stable(long stay, String fee) throws Exception {
+        return mvc.perform(post("/horse-stays/{id}/stabling", stay).header(HttpHeaders.AUTHORIZATION, coordinator)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"fee\":%s,\"note\":\"Người nhận báo tới muộn\"}".formatted(fee)));
+    }
+
+    private ResultActions collectAt(long stay, java.time.Instant at) throws Exception {
+        return mvc.perform(post("/horse-stays/{id}/collection-time", stay).header(HttpHeaders.AUTHORIZATION, coordinator)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"collectAt\":\"%s\"}".formatted(at)));
+    }
+
+    private static String content(ResultActions result) throws Exception {
+        return result.andReturn().getResponse().getContentAsString();
+    }
+
     private long linehaulTrip() throws Exception {
         confirmRun(departure);
         long trip = id(mvc.perform(post("/vehicle-trips").header(HttpHeaders.AUTHORIZATION, coordinator).contentType(MediaType.APPLICATION_JSON)

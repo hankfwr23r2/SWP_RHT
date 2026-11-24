@@ -16,9 +16,11 @@ import { Skeleton } from '@shared/ui/Skeleton'
 import { Table, type TableColumn } from '@shared/ui/Table'
 import { Textarea } from '@shared/ui/Textarea'
 import { useToast } from '@shared/ui/toast'
+import { localToIso } from './dispatchModel'
 import s from './Dispatch.module.css'
 
-type Action = { stay: HorseStay; kind: 'receive' | 'deliver' }
+// Nhận, trả ngựa (quét chip); hẹn giờ người nhận tới; gửi chuồng khi quá giờ hẹn (phí người nhận chịu)
+type Action = { stay: HorseStay; kind: 'receive' | 'deliver' | 'collect' | 'stable' }
 
 export function HubStaysPanel() {
   const { t } = useTranslation()
@@ -27,6 +29,8 @@ export function HubStaysPanel() {
   const [action, setAction] = useState<Action>()
   const [chip, setChip] = useState('')
   const [note, setNote] = useState('')
+  const [collectAt, setCollectAt] = useState('')
+  const [fee, setFee] = useState('')
   const [busy, setBusy] = useState(false)
   const { data: hubs } = useLoad(async () => (await dispatchApi.locations()).filter(location => location.locationType === 'HUB'), [])
   const { data, loaded, error, reload } = useLoad(async () => {
@@ -35,13 +39,15 @@ export function HubStaysPanel() {
     return { appointments, stays }
   }, [hubId], { toastOnError: false })
 
-  const open = (stay: HorseStay, kind: Action['kind']) => { setChip(''); setNote(''); setAction({ stay, kind }) }
+  const open = (stay: HorseStay, kind: Action['kind']) => { setChip(''); setNote(''); setCollectAt(''); setFee(''); setAction({ stay, kind }) }
   const submit = async () => {
     if (!action) return
     setBusy(true)
     try {
-      const call = action.kind === 'receive' ? dispatchApi.receiveAtHub : dispatchApi.deliverAtHub
-      await call(action.stay.id ?? 0, chip.trim(), note.trim() || undefined)
+      const stayId = action.stay.id ?? 0
+      if (action.kind === 'collect') await dispatchApi.setCollectionTime(stayId, localToIso(collectAt))
+      else if (action.kind === 'stable') await dispatchApi.stableAtHub(stayId, Number(fee), note.trim() || undefined)
+      else await (action.kind === 'receive' ? dispatchApi.receiveAtHub : dispatchApi.deliverAtHub)(stayId, chip.trim(), note.trim() || undefined)
       toast(t(`dispatch.stays.${action.kind}Done`), 'success')
       setAction(undefined)
       void reload()
@@ -67,9 +73,18 @@ export function HubStaysPanel() {
     {
       key: 'action',
       header: '',
-      // Người nhận tự tới hub; backend kiểm ngựa đã tới bằng chặng cuối
-      render: stay => (stay.deliveryMethod === 'SELF' && stay.stayType === 'ASSEMBLY'
-        ? <Button size="sm" onClick={() => open(stay, 'deliver')}>{t('dispatch.stays.deliver')}</Button> : null),
+      // Người nhận tự tới hub; backend kiểm ngựa đã tới bằng chặng cuối. Quá giờ hẹn thì gửi chuồng
+      render: stay => {
+        if (stay.deliveryMethod !== 'SELF' || (stay.stayType !== 'ASSEMBLY' && stay.stayType !== 'STABLING')) return null
+        const overdue = stay.stayType === 'ASSEMBLY' && stay.plannedEndAt && new Date(stay.plannedEndAt).getTime() < Date.now()
+        return (
+          <span className={s.legs}>
+            <Button size="sm" onClick={() => open(stay, 'deliver')}>{t('dispatch.stays.deliver')}</Button>
+            {stay.stayType === 'ASSEMBLY' && <Button size="sm" variant="ghost" onClick={() => open(stay, 'collect')}>{t('dispatch.stays.collect')}</Button>}
+            {overdue && <Button size="sm" variant="danger" onClick={() => open(stay, 'stable')}>{t('dispatch.stays.stable')}</Button>}
+          </span>
+        )
+      },
     },
   ]
 
@@ -103,16 +118,33 @@ export function HubStaysPanel() {
           footer={(
             <>
               <Button onClick={() => setAction(undefined)}>{t('ui.cancel')}</Button>
-              <Button variant="primary" disabled={!chip.trim()} loading={busy} onClick={() => void submit()}>{t(`dispatch.stays.${action.kind}`)}</Button>
+              <Button variant="primary" loading={busy} onClick={() => void submit()}
+                disabled={action.kind === 'collect' ? !collectAt : action.kind === 'stable' ? !(Number(fee) > 0) : !chip.trim()}>
+                {t(`dispatch.stays.${action.kind}`)}
+              </Button>
             </>
           )}>
           <p className={s.muted}>{t(`dispatch.stays.${action.kind}Hint`)}</p>
-          <Field label={t('dispatch.stays.chip')} required>
-            {c => <Input {...c} inputMode="numeric" value={chip} onChange={e => setChip(e.target.value)} data-autofocus />}
-          </Field>
-          <Field label={t('dispatch.stays.condition')}>
-            {c => <Textarea {...c} value={note} onChange={e => setNote(e.target.value)} />}
-          </Field>
+          {(action.kind === 'receive' || action.kind === 'deliver') && (
+            <Field label={t('dispatch.stays.chip')} required>
+              {c => <Input {...c} inputMode="numeric" value={chip} onChange={e => setChip(e.target.value)} data-autofocus />}
+            </Field>
+          )}
+          {action.kind === 'collect' && (
+            <Field label={t('dispatch.stays.collectAt')} required>
+              {c => <Input {...c} type="datetime-local" value={collectAt} onChange={e => setCollectAt(e.target.value)} data-autofocus />}
+            </Field>
+          )}
+          {action.kind === 'stable' && (
+            <Field label={t('dispatch.stays.fee')} required>
+              {c => <Input {...c} inputMode="numeric" value={fee} onChange={e => setFee(e.target.value.replace(/\D/g, ''))} data-autofocus />}
+            </Field>
+          )}
+          {action.kind !== 'collect' && (
+            <Field label={t(action.kind === 'stable' ? 'dispatch.stays.stableNote' : 'dispatch.stays.condition')}>
+              {c => <Textarea {...c} value={note} onChange={e => setNote(e.target.value)} />}
+            </Field>
+          )}
         </Modal>
       )}
     </div>

@@ -4062,6 +4062,16 @@
         "required" : [ "plannedStartAt" ],
         "type" : "object"
       },
+      "HubCollectionTimeRequestDto" : {
+        "properties" : {
+          "collectAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          }
+        },
+        "required" : [ "collectAt" ],
+        "type" : "object"
+      },
       "HubHandoverRequestDto" : {
         "properties" : {
           "conditionNote" : {
@@ -4107,6 +4117,20 @@
             "type" : "string"
           }
         },
+        "type" : "object"
+      },
+      "HubStablingRequestDto" : {
+        "properties" : {
+          "fee" : {
+            "type" : "number"
+          },
+          "note" : {
+            "maxLength" : 500,
+            "minLength" : 0,
+            "type" : "string"
+          }
+        },
+        "required" : [ "fee" ],
         "type" : "object"
       },
       "IncidentPlanRequestDto" : {
@@ -10972,6 +10996,43 @@
         "tags" : [ "hub-handover-controller" ]
       }
     },
+    "/horse-stays/{id}/collection-time" : {
+      "post" : {
+        "operationId" : "collectionTime",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HubCollectionTimeRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseHorseStayResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "hub-handover-controller" ]
+      }
+    },
     "/horse-stays/{id}/deliveries" : {
       "post" : {
         "operationId" : "deliver",
@@ -11026,6 +11087,43 @@
             "application/json" : {
               "schema" : {
                 "$ref" : "#/components/schemas/HubHandoverRequestDto"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "*/*" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseHorseStayResponseDto"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "hub-handover-controller" ]
+      }
+    },
+    "/horse-stays/{id}/stabling" : {
+      "post" : {
+        "operationId" : "stable",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/HubStablingRequestDto"
               }
             }
           },
