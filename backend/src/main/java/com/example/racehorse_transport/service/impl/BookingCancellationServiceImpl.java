@@ -54,16 +54,14 @@ public class BookingCancellationServiceImpl implements BookingCancellationServic
     public BookingCancellationResponseDto preview(Long bookingId, String username) {
         var booking = bookings.findByIdAndCustomer_User_Username(bookingId, username)
                 .orElseThrow(BookingCancellationServiceImpl::notFound);
-        var cancellation = evaluate(booking, false, false);
-        return cancellation.response(booking, cancellation.amounts());
+        return evaluate(booking, false, false).response(booking);
     }
 
     @Override
     @Transactional(readOnly = true)
     public BookingCancellationResponseDto previewForManager(Long bookingId, boolean byCompany) {
         var booking = bookings.findById(bookingId).orElseThrow(BookingCancellationServiceImpl::notFound);
-        var cancellation = evaluate(booking, byCompany, !byCompany);
-        return cancellation.response(booking, cancellation.amounts());
+        return evaluate(booking, byCompany, !byCompany).response(booking);
     }
 
     @Override
@@ -132,7 +130,7 @@ public class BookingCancellationServiceImpl implements BookingCancellationServic
         var amounts = outcome == Outcome.NOT_ALLOWED
                 ? BookingCancellationPolicy.refundAll(BigDecimal.ZERO)
                 : BookingCancellationPolicy.amounts(outcome, refundTransport, quotation, lines, entries);
-        return new Cancellation(outcome, quotation, lines, entries, amounts);
+        return new Cancellation(outcome, quotation, entries, amounts);
     }
 
     private BookingCancellationResponseDto cancel(Booking booking, Cancellation cancellation, String reason,
@@ -143,7 +141,7 @@ public class BookingCancellationServiceImpl implements BookingCancellationServic
         if (cancellation.outcome() == Outcome.NOT_ALLOWED) {
             throw BookingRuleException.conflict("Đơn hiện chưa thể hủy. Kiểm tra trạng thái và giao dịch VNPAY.");
         }
-        var amounts = BookingCancellationPolicy.includeUnspentLines(cancellation.amounts(), cancellation.lines(), selectedLines);
+        BookingCancellationPolicy.requireNoLineRefund(selectedLines);
         Long bookingId = booking.getId();
         if (booking.getDeparture() != null) {
             var active = horses.findForDetail(bookingId).stream().filter(horse -> horse.getStatus() == BookingHorseStatus.ACTIVE)
@@ -164,10 +162,7 @@ public class BookingCancellationServiceImpl implements BookingCancellationServic
         } else {
             statuses.transitionForUser(bookingId, BookingStatus.CANCELLED, reason, username);
         }
-        if (!selectedLines.isEmpty()) {
-            refunds.refundUnspentLines(bookingId, selectedLines);
-        }
-        return cancellation.response(booking, amounts);
+        return cancellation.response(booking);
     }
 
     private Booking lock(Long id) {
@@ -178,14 +173,11 @@ public class BookingCancellationServiceImpl implements BookingCancellationServic
         return new ResourceNotFoundException("Không tìm thấy đơn.");
     }
 
-    private record Cancellation(Outcome outcome, Quotation quotation, List<QuotationLine> lines,
-                                List<Payment> payments, Breakdown amounts) {
-        BookingCancellationResponseDto response(Booking booking, Breakdown result) {
+    private record Cancellation(Outcome outcome, Quotation quotation, List<Payment> payments, Breakdown amounts) {
+        BookingCancellationResponseDto response(Booking booking) {
             return BookingCancellationResponseDto.from(booking, outcome != Outcome.NOT_ALLOWED,
-                    quotation == null ? null : quotation.getCurrencyCode(), result.refundable(), result.reviewable(),
-                    result.forfeited(), result.reviewable().signum() > 0
-                            ? lines.stream().filter(BookingCancellationPolicy::canRefundLine).map(QuotationLine::getId).toList()
-                            : List.of());
+                    quotation == null ? null : quotation.getCurrencyCode(), amounts.refundable(), amounts.reviewable(),
+                    amounts.forfeited(), List.of());
         }
     }
 }

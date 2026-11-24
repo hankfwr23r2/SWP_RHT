@@ -436,7 +436,7 @@ Mỗi task ghi: **BE** (backend), **FE** (frontend), **Tận dụng** (code cũ,
   - `SettlementService`: lấy chi phí đã duyệt mà khách hoặc người nhận chịu, gọi `PaymentService.createExtraCharge` qua `ExtraChargeService` và gắn chi phí qua `CostItemService.linkExtraPayment`. Khách thanh toán EXTRA_CHARGE qua VNPAY. Đóng đơn khi đủ điều kiện;
   - hủy đơn theo `NGHIEP_VU_THEO_59_BANG.md` mục 5.4, gồm hủy do không trả số dư tại nơi nhận; tự đóng đơn không phát sinh sau 7 ngày;
   - danh sách đơn thiếu giấy và đổi chuyến của đơn đã cọc (màn hình 3.5b), xử lý theo nguyên nhân ở GĐ5. Tính hạn giữ giá từ `previous_departure_id` và đếm theo `cause_type`;
-  - Hoàn chuyển khoản qua `RefundService`, liên kết từng khoản gốc. Khi quản lý duyệt hoàn dòng chưa chi, `RefundService` ghi `quotation_line.refund_payment_id` trong cùng giao dịch. `RatingService` cho đơn `DELIVERED` hoặc `COMPLETED`.
+  - Hoàn chuyển khoản qua `RefundService`, liên kết từng khoản gốc. Không hoàn riêng dòng thu hộ và `VET_CHECK` (24/11/2026). `RatingService` cho đơn `DELIVERED` hoặc `COMPLETED`.
 - **FE:** quản lý quyết toán. Khách xem khoản thu thêm, thanh toán, đánh giá. Hóa đơn gửi qua mail.
 - **Tận dụng:** `SettlementServiceImpl`, `SettlementExpiryScheduler`, `BillMailServiceImpl`, `CustomerRatingController`, FE `orders/TripFeedback.tsx`, `manager/cancelled-orders`.
 - **Xong khi:** test số còn nợ trong các ca có hoàn tiền, có thu thêm, có khoản do người nhận chịu. Đóng đơn đúng điều kiện.

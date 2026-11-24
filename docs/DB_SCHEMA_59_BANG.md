@@ -1098,7 +1098,7 @@ Index: `price_list_id`.
 | `unit_price` | `numeric(15,2)` | | snapshot | |
 | `amount` | `numeric(15,2)` | | `GENERATED ALWAYS AS (round(quantity * unit_price, 2)) STORED` | |
 | `is_pass_through` | `boolean` | | snapshot | |
-| `refund_payment_id` | `bigint` | có | FK → payment | Khoản hoàn đầu tiên được lập cho dòng này. Chỉ RefundService ghi trong giao dịch lập khoản hoàn để ngăn hoàn lặp |
+| `refund_payment_id` | `bigint` | có | FK → payment | Khoản hoàn đầu tiên được lập cho dòng này. Từ 24/11/2026 không hoàn riêng từng dòng nên không còn nơi ghi; giữ cột cho dữ liệu cũ |
 
 Ràng buộc bảng:
 - `UNIQUE (quotation_id, line_number)`
